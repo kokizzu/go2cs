@@ -24,7 +24,7 @@ internal static slice<byte> startupRand;
 // Otherwise the per-m random state should be used
 // by calling goodrand.
 
-[GoType("dyn")] [GoValueClone("seed", "state")] partial struct globalRandᴛ1 {
+[GoType("dyn")] partial struct globalRandᴛ1 {
     internal mutex @lock;
     internal array<byte> seed = new(32);
     internal chacha8rand.State state;

@@ -20,7 +20,7 @@ public static readonly @string AIAMAGBIG = "<bigaf>\n"u8;
 public static UntypedInt FL_HSZ_BIG => 0x80;
 public static UntypedInt AR_HSZ_BIG => 0x70;
 
-[GoType] [GoValueClone("Flmagic", "Flmemoff", "Flgstoff", "Flgst64off", "Flfstmoff", "Fllstmoff", "Flfreeoff")] partial struct bigarFileHeader {
+[GoType] partial struct bigarFileHeader {
     public array<byte> Flmagic = new(SAIAMAG); // Archive magic string
     public array<byte> Flmemoff = new(20);   // Member table offset
     public array<byte> Flgstoff = new(20);   // 32-bits global symtab offset
@@ -30,7 +30,7 @@ public static UntypedInt AR_HSZ_BIG => 0x70;
     public array<byte> Flfreeoff = new(20);   // First member on free list offset
 }
 
-[GoType] [GoValueClone("Arsize", "Arnxtmem", "Arprvmem", "Ardate", "Aruid", "Argid", "Armode", "Arnamlen")] partial struct bigarMemberHeader {
+[GoType] partial struct bigarMemberHeader {
     public array<byte> Arsize = new(20); // File member size
     public array<byte> Arnxtmem = new(20); // Next member pointer
     public array<byte> Arprvmem = new(20); // Previous member pointer

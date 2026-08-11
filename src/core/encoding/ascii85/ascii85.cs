@@ -97,7 +97,7 @@ public static io.WriteCloser NewEncoder(io.Writer w) {
     return new encoderжWriteCloser(Ꮡ(new encoder(w: w)));
 }
 
-[GoType] [GoValueClone("buf", "@out")] partial struct encoder {
+[GoType] partial struct encoder {
     internal error err;
     internal io.Writer w;
     internal array<byte> buf = new(4); // buffered data waiting to be encoded
@@ -263,7 +263,7 @@ public static io.Reader NewDecoder(io.Reader r) {
     return new decoderжReader(Ꮡ(new decoder(r: r)));
 }
 
-[GoType] [GoValueClone("buf", "outbuf")] partial struct decoder {
+[GoType] partial struct decoder {
     internal error err;
     internal error readErr;
     internal io.Reader r;

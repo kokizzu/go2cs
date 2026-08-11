@@ -34,10 +34,8 @@ using static go.image.png_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<FormatError, error>]
@@ -63,14 +61,14 @@ public static partial class png_package
 
     // <TypeAccessibility>
     internal partial interface opaquer {}
-    internal partial struct decoder {}
+    [GoValueClone("tmp", "transparent")] internal partial struct decoder {}
     internal partial struct interlaceScan {}
     public partial interface EncoderBufferPool {}
     public partial struct CompressionLevel {}
     public partial struct Encoder {}
-    public partial struct EncoderBuffer {}
+    [GoValueClone("Value")] public partial struct EncoderBuffer {}
     public partial struct FormatError {}
     public partial struct UnsupportedError {}
-    public partial struct encoder {}
+    [GoValueClone("header", "footer", "tmp", "cr")] public partial struct encoder {}
     // </TypeAccessibility>
 }

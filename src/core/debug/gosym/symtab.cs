@@ -697,7 +697,7 @@ break_countloop:;
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string malformedSymbolTableˢ = "<malformed symbol table>"u8;
 
-[GoLocalName("stackEnt")] [GoType("dyn")] partial struct lineFromAline_stackEnt {
+[GoType("dyn")] partial struct lineFromAline_stackEnt {
     internal @string path;
     internal nint start;
     internal nint offset;

@@ -274,7 +274,7 @@ internal static UntypedInt maxDepth => 125;
 
 // This stack will store the embedding levels and override and isolated
 // statuses
-[GoType] [GoValueClone("embeddingLevelStack", "overrideStatusStack", "isolateStatusStack")] partial struct directionalStatusStack {
+[GoType] partial struct directionalStatusStack {
     internal nint stackCounter;
     internal array<level> embeddingLevelStack = new(maxDepth + 1);
     internal array<ΔClass> overrideStatusStack = new(maxDepth + 1);

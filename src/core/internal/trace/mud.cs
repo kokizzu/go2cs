@@ -23,7 +23,7 @@ partial class trace_package {
 // It is represented as the sum of scaled uniform distribution
 // functions and Dirac delta functions (which are treated as
 // degenerate uniform distributions).
-[GoType] [GoValueClone("hist")] partial struct mud {
+[GoType] partial struct mud {
     internal slice<edge> sorted, unsorted;
     // trackMass is the inverse cumulative sum to track as the
     // distribution is updated.

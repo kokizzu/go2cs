@@ -53,7 +53,7 @@ public static UntypedInt MaxLatin1 => /* '\u00FF' */ 255; // maximum Latin-1 val
 //	{UpperLower, UpperLower, UpperLower}
 //
 // The constant UpperLower has an otherwise impossible delta value.
-[GoType] [GoValueClone("Delta")] partial struct CaseRange {
+[GoType] partial struct CaseRange {
     public uint32 Lo;
     public uint32 Hi;
     public d Delta;

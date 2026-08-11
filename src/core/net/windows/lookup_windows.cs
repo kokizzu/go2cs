@@ -49,7 +49,7 @@ internal static (nint proto, error err) getprotobyname(@string name) {
 
 // GetProtoByName return value is stored in thread local storage.
 // Start new os thread before the call to prevent races.
-[GoLocalName("result")] [GoType("dyn")] partial struct lookupProtocol_result {
+[GoType("dyn")] partial struct lookupProtocol_result {
     internal nint proto;
     internal error err;
 }
@@ -122,7 +122,7 @@ internal static (slice<@string>, error) lookupHost(this ж<Resolver> Ꮡr, conte
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string getaddrinfowˢ = "getaddrinfow"u8;
 
-[GoLocalName("ret")] [GoType("dyn")] partial struct lookupIP_ret {
+[GoType("dyn")] partial struct lookupIP_ret {
     internal slice<IPAddr> addrs;
     internal error err;
 }

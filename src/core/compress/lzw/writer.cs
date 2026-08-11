@@ -25,7 +25,7 @@ internal static UntypedInt invalidEntry => 0;
 
 // Writer is an LZW compressor. It writes the compressed form of the data
 // to an underlying writer (see [NewWriter]).
-[GoType] [GoValueClone("table")] partial struct Writer {
+[GoType] partial struct Writer {
     // w is the writer that compressed bytes are written to.
     internal writer w;
     // litWidth is the width in bits of literal codes.

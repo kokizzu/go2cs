@@ -60,7 +60,7 @@ internal static UntypedInt statusUnknownRole => 3;
     public uint8 Reserved;
 }
 
-[GoType] [GoValueClone("reserved")] partial struct beginRequest {
+[GoType] partial struct beginRequest {
     internal uint16 role;
     internal uint8 flags;
     internal array<uint8> reserved = new(5);
@@ -123,7 +123,7 @@ internal static error Close(this ж<conn> Ꮡc) {
     finally { ᒐ.Run(); }
 }
 
-[GoType] [GoValueClone("buf")] partial struct record {
+[GoType] partial struct record {
     internal header h;
     internal array<byte> buf = new(maxWrite + maxPad);
 }

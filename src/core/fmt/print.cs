@@ -135,7 +135,7 @@ public static @string FormatString(State state, rune verb) {
 }
 
 // pp is used to store a printer's state and is reused with sync.Pool to avoid allocations.
-[GoType] [GoValueClone("fmt")] partial struct pp {
+[GoType] partial struct pp {
     internal buffer buf;
     // arg holds the current item, as an interface{}.
     internal any arg;

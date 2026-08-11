@@ -33,10 +33,8 @@ using static go.@internal.trace.@internal.oldtrace_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<Events, sort_package.Interface>(Pointer = true)]
@@ -63,14 +61,14 @@ public static partial class oldtrace_package
     internal partial struct batchOffset {}
     internal partial struct gState {}
     internal partial struct gStatus {}
-    internal partial struct orderEvent {}
+    [GoValueClone("ev")] internal partial struct orderEvent {}
     internal partial struct orderEventList {}
     internal partial struct parser {}
-    internal partial struct postProcessTrace_gdesc {}
-    internal partial struct postProcessTrace_pdesc {}
+    [GoLocalName("gdesc")] internal partial struct postProcessTrace_gdesc {}
+    [GoLocalName("pdesc")] internal partial struct postProcessTrace_pdesc {}
     internal partial struct proc {}
     internal partial struct rawEvent {}
-    public partial struct Event {}
+    [GoValueClone("Args")] public partial struct Event {}
     public partial struct EventDescriptionsᴛ1 {}
     public partial struct Events {}
     public partial struct Frame {}

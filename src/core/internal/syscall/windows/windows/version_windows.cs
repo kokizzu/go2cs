@@ -11,7 +11,7 @@ using @unsafe = unsafe_package;
 partial class windows_package {
 
 // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfow
-[GoType] [GoValueClone("csdVersion")] partial struct _OSVERSIONINFOW {
+[GoType] partial struct _OSVERSIONINFOW {
     internal uint32 osVersionInfoSize;
     internal uint32 majorVersion;
     internal uint32 minorVersion;

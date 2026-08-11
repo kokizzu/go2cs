@@ -22,7 +22,7 @@ partial class base64_package {
 // encoding defined in RFC 4648 and used in MIME (RFC 2045) and PEM
 // (RFC 1421).  RFC 4648 also defines an alternate encoding, which is
 // the standard encoding with - and _ substituted for + and /.
-[GoType] [GoValueClone("encode", "decodeMap")] partial struct Encoding {
+[GoType] partial struct Encoding {
     internal array<byte> encode = new(64); // mapping of symbol index to symbol byte value
     internal array<uint8> decodeMap = new(256); // mapping of symbol byte value to symbol index
     internal rune padChar;
@@ -199,7 +199,7 @@ public static ж<Encoding> RawURLEncoding = (~URLEncoding).WithPadding(NoPadding
     return ((@string)buf);
 }
 
-[GoType] [GoValueClone("buf", "@out")] partial struct encoder {
+[GoType] partial struct encoder {
     internal error err;
     internal ж<Encoding> enc;
     internal io.Writer w;
@@ -422,7 +422,7 @@ public static @string Error(this CorruptInputError e) {
     return (dbuf[..(int)(n)], err);
 }
 
-[GoType] [GoValueClone("buf", "outbuf")] partial struct decoder {
+[GoType] partial struct decoder {
     internal error err;
     internal error readErr; // error from r.Read
     internal ж<Encoding> enc;

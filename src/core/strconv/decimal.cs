@@ -11,7 +11,7 @@ namespace go;
 
 partial class strconv_package {
 
-[GoType] [GoValueClone("d")] partial struct @decimal {
+[GoType] partial struct @decimal {
     internal array<byte> d = new(800); // digits, big-endian representation
     internal nint nd;      // number of digits used
     internal nint dp;      // decimal point

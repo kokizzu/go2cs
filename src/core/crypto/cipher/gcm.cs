@@ -66,7 +66,7 @@ partial class cipher_package {
 
 // gcm represents a Galois Counter Mode with a specific key. See
 // https://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-revised-spec.pdf
-[GoType] [GoValueClone("productTable")] partial struct gcm {
+[GoType] partial struct gcm {
     internal Block cipher;
     internal nint nonceSize;
     internal nint tagSize;

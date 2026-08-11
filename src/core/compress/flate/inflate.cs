@@ -96,7 +96,7 @@ internal static UntypedInt huffmanNumChunks => /* 1 << huffmanChunkBits */ 512;
 internal static UntypedInt huffmanCountMask => 15;
 internal static UntypedInt huffmanValueShift => 4;
 
-[GoType] [GoValueClone("chunks")] partial struct huffmanDecoder {
+[GoType] partial struct huffmanDecoder {
     internal nint min;                     // the minimum code length
     internal array<uint32> chunks = new(huffmanNumChunks); // chunks as described above
     internal slice<slice<uint32>> links;     // overflow links
@@ -251,7 +251,7 @@ internal static UntypedInt huffmanValueShift => 4;
 }
 
 // Decompress state.
-[GoType] [GoValueClone("h1", "h2", "buf")] partial struct decompressor {
+[GoType] partial struct decompressor {
     // Input source.
     internal Reader r;
     internal ж<bufio.Reader> rBuf; // created if provided io.Reader does not implement io.ByteReader

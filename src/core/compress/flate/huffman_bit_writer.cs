@@ -53,7 +53,7 @@ internal static slice<uint32> offsetBase = new uint32[]{
 // The odd order in which the codegen code sizes are written.
 internal static slice<uint32> codegenOrder = new uint32[]{16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15}.slice();
 
-[GoType] [GoValueClone("bytes", "codegenFreq")] partial struct huffmanBitWriter {
+[GoType] partial struct huffmanBitWriter {
     // writer is the underlying writer.
     // Do not use it directly; use the write method, which ensures
     // that Write errors are sticky.

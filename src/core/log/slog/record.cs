@@ -18,7 +18,7 @@ internal static UntypedInt nAttrsInline => 5;
 // Do not modify a Record after handing out a copy to it.
 // Call [NewRecord] to create a new Record.
 // Use [Record.Clone] to create a copy with no shared state.
-[GoType] [GoValueClone("front")] partial struct Record {
+[GoType] partial struct Record {
     // The time at which the output method (Log, Info, etc.) was called.
     public time.Time Time;
     // The log message.

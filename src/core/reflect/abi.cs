@@ -344,7 +344,7 @@ internal static abiStepKind abiStepFloatReg => 4; // copy to/from FP register
 }
 
 // abiDesc describes the ABI for a function or method.
-[GoType] [GoValueClone("inRegPtrs", "outRegPtrs")] partial struct abiDesc {
+[GoType] partial struct abiDesc {
     // call and ret represent the translation steps for
     // the call and return paths of a Go function.
     internal abiSeq call, ret;

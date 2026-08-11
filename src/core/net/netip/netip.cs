@@ -99,7 +99,7 @@ public static ΔAddr IPv4Unspecified() {
 }
 
 // AddrFrom4 returns the address of the IPv4 address given by the bytes in addr.
-public static ΔAddr AddrFrom4(array<byte> addr) {
+public static ΔAddr AddrFrom4([GoArrayDims(4)] array<byte> addr) {
     addr = addr.Clone();
 
     return new ΔAddr(
@@ -111,7 +111,7 @@ public static ΔAddr AddrFrom4(array<byte> addr) {
 // AddrFrom16 returns the IPv6 address given by the bytes in addr.
 // An IPv4-mapped IPv6 address is left as an IPv6 address.
 // (Use Unmap to convert them if needed.)
-public static ΔAddr AddrFrom16(array<byte> addr) {
+public static ΔAddr AddrFrom16([GoArrayDims(16)] array<byte> addr) {
     addr = addr.Clone();
 
     return new ΔAddr(

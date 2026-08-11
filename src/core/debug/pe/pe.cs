@@ -20,7 +20,7 @@ partial class pe_package {
     public uint32 Size;
 }
 
-[GoType] [GoValueClone("DataDirectory")] partial struct OptionalHeader32 {
+[GoType] partial struct OptionalHeader32 {
     public uint16 Magic;
     public uint8 MajorLinkerVersion;
     public uint8 MinorLinkerVersion;
@@ -54,7 +54,7 @@ partial class pe_package {
     public array<DataDirectory> DataDirectory = new(16);
 }
 
-[GoType] [GoValueClone("DataDirectory")] partial struct OptionalHeader64 {
+[GoType] partial struct OptionalHeader64 {
     public uint16 Magic;
     public uint8 MajorLinkerVersion;
     public uint8 MinorLinkerVersion;

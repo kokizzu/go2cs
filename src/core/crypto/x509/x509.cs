@@ -1970,7 +1970,7 @@ internal static slice<pkix.AttributeTypeAndValueSET> parseRawAttributes(slice<as
 internal static readonly @string x509CertificateRequestˢ = "x509: certificate request contains duplicate requested extensions"u8;
 
 // pkcs10Attribute reflects the Attribute structure from RFC 2986, Section 4.1.
-[GoLocalName("pkcs10Attribute")] [GoType("dyn")] partial struct parseCSRExtensions_pkcs10Attribute {
+[GoType("dyn")] partial struct parseCSRExtensions_pkcs10Attribute {
     public asn1.ObjectIdentifier Id;
     [GoTag(@"asn1:""set""")]
     public slice<asn1.RawValue> Values;

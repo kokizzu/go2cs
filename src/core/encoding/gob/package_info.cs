@@ -42,10 +42,8 @@ using static go.encoding.gob_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<CommonType, ΔgobType>(Pointer = true)]
@@ -83,10 +81,10 @@ public static partial class gob_package
     internal partial struct decInstr {}
     internal partial struct decoderState {}
     internal partial struct emptyStruct {}
-    internal partial struct encBuffer {}
+    [GoValueClone("scratch")] internal partial struct encBuffer {}
     internal partial struct encEngine {}
     internal partial struct encInstr {}
-    internal partial struct encoderState {}
+    [GoValueClone("buf")] internal partial struct encoderState {}
     internal partial struct eᴛ1 {}
     internal partial struct eᴛ2 {}
     internal partial struct eᴛ3 {}
@@ -103,7 +101,7 @@ public static partial class gob_package
     public partial interface ΔgobType {}
     public partial struct CommonType {}
     public partial struct Decoder {}
-    public partial struct Encoder {}
+    [GoValueClone("byteBuf")] public partial struct Encoder {}
     public partial struct arrayType {}
     public partial struct fieldType {}
     public partial struct gobEncoderType {}

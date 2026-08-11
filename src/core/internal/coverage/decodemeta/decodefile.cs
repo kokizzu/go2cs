@@ -26,7 +26,7 @@ partial class decodemeta_package {
 
 // CoverageMetaFileReader provides state and methods for reading
 // a meta-data file from a code coverage run.
-[GoType] [GoValueClone("hdr")] partial struct CoverageMetaFileReader {
+[GoType] partial struct CoverageMetaFileReader {
     internal ж<os.File> f;
     internal coverage.MetaFileHeader hdr;
     internal slice<byte> tmp;

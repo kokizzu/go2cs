@@ -17,7 +17,7 @@ partial class tar_package {
 // Reader provides sequential access to the contents of a tar archive.
 // Reader.Next advances to the next file in the archive (including the first),
 // and then Reader can be treated as an io.Reader to access the file's data.
-[GoType] [GoValueClone("blk")] partial struct Reader {
+[GoType] partial struct Reader {
     internal io.Reader r;
     internal int64 pad;      // Amount of padding (ignored) after current file entry
     internal fileReader curr; // Reader for current file entry

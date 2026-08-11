@@ -59,10 +59,8 @@ using static go.@internal.trace.traceviewer_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
@@ -98,14 +96,14 @@ public static partial class traceviewer_package
     internal partial struct task {}
     public partial struct ArrowEvent {}
     public partial struct AsyncSliceEvent {}
-    public partial struct Emitter {}
+    [GoValueClone("gstates", "prevGstates", "threadStats", "prevThreadStats")] public partial struct Emitter {}
     public partial struct GState {}
     public partial struct InstantEvent {}
     public partial struct Mode {}
     public partial struct ProfileRecord {}
     public partial struct Range {}
     public partial struct SliceEvent {}
-    public partial struct SplittingTraceConsumer_eventSz {}
+    [GoLocalName("eventSz")] public partial struct SplittingTraceConsumer_eventSz {}
     public partial struct ThreadState {}
     public partial struct TimeHistogram {}
     public partial struct TraceConsumer {}

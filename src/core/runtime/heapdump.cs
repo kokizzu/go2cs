@@ -111,7 +111,7 @@ internal static UntypedInt typeCacheBuckets => 256;
 
 internal static UntypedInt typeCacheAssoc => 4;
 
-[GoType] [GoValueClone("t")] partial struct typeCacheBucket {
+[GoType] partial struct typeCacheBucket {
     internal array<ж<_type>> t = new(typeCacheAssoc);
 }
 

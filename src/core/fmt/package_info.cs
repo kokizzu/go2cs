@@ -42,10 +42,8 @@ using static go.fmt_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
@@ -73,10 +71,10 @@ public static partial class fmt_package
 
     // <TypeAccessibility>
     internal partial struct buffer {}
-    internal partial struct fmt {}
+    [GoValueClone("intbuf")] internal partial struct fmt {}
     internal partial struct fmtFlags {}
-    internal partial struct pp {}
-    internal partial struct readRune {}
+    [GoValueClone("fmt")] internal partial struct pp {}
+    [GoValueClone("buf", "pendBuf")] internal partial struct readRune {}
     internal partial struct scanError {}
     internal partial struct ss {}
     internal partial struct ssave {}

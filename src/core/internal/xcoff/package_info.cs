@@ -41,10 +41,8 @@ using static go.@internal.xcoff_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<io_package.SectionReader, io_package.Reader>(Pointer = true)]
@@ -70,8 +68,8 @@ public static partial class xcoff_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct bigarFileHeader {}
-    internal partial struct bigarMemberHeader {}
+    [GoValueClone("Flmagic", "Flmemoff", "Flgstoff", "Flgst64off", "Flfstmoff", "Fllstmoff", "Flfreeoff")] internal partial struct bigarFileHeader {}
+    [GoValueClone("Arsize", "Arnxtmem", "Arprvmem", "Ardate", "Aruid", "Argid", "Armode", "Arnamlen")] internal partial struct bigarMemberHeader {}
     internal partial struct nobitsSectionReader {}
     public partial struct Archive {}
     public partial struct ArchiveHeader {}
@@ -79,7 +77,7 @@ public static partial class xcoff_package
     public partial struct AuxCSect64 {}
     public partial struct AuxFcn32 {}
     public partial struct AuxFcn64 {}
-    public partial struct AuxFile64 {}
+    [GoValueClone("Xfname")] public partial struct AuxFile64 {}
     public partial struct AuxSect64 {}
     public partial struct AuxiliaryCSect {}
     public partial struct AuxiliaryFcn {}
@@ -90,7 +88,7 @@ public static partial class xcoff_package
     public partial struct ImportedSymbol {}
     public partial struct LoaderHeader32 {}
     public partial struct LoaderHeader64 {}
-    public partial struct LoaderSymbol32 {}
+    [GoValueClone("Lname")] public partial struct LoaderSymbol32 {}
     public partial struct LoaderSymbol64 {}
     public partial struct Member {}
     public partial struct MemberHeader {}
@@ -98,9 +96,9 @@ public static partial class xcoff_package
     public partial struct Reloc32 {}
     public partial struct Reloc64 {}
     public partial struct SectionHeader {}
-    public partial struct SectionHeader32 {}
-    public partial struct SectionHeader64 {}
-    public partial struct SymEnt32 {}
+    [GoValueClone("Sname")] public partial struct SectionHeader32 {}
+    [GoValueClone("Sname")] public partial struct SectionHeader64 {}
+    [GoValueClone("Nname")] public partial struct SymEnt32 {}
     public partial struct SymEnt64 {}
     public partial struct Symbol {}
     public partial struct ΔSection {}

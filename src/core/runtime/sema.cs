@@ -49,7 +49,7 @@ internal static ref semTable semtable => ref Ꮡsemtable.Value;
 // Prime to not correlate with any user patterns.
 internal static UntypedInt semTabSize => 251;
 
-[GoType("dyn")] [GoValueClone("pad")] partial struct semTableᴛ1 {
+[GoType("dyn")] partial struct semTableᴛ1 {
     internal semaRoot root;
     internal array<byte> pad = new((uintptr)cpu.CacheLinePadSize - /* unsafe.Sizeof(semaRoot{}) */ (uintptr)24);
 }

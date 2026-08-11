@@ -94,7 +94,7 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
     );
 }
 
-[GoLocalName("eventSz")] [GoType("dyn")] partial struct SplittingTraceConsumer_eventSz {
+[GoType("dyn")] partial struct SplittingTraceConsumer_eventSz {
     public float64 Time;
     public nint Sz;
     public slice<nint> Frames;
@@ -304,7 +304,7 @@ public static ж<Emitter> NewEmitter(TraceConsumer c, time.Duration rangeStart, 
     ));
 }
 
-[GoType] [GoValueClone("gstates", "prevGstates", "threadStats", "prevThreadStats")] partial struct Emitter {
+[GoType] partial struct Emitter {
     internal TraceConsumer c;
     internal time.Duration rangeStart;
     internal time.Duration rangeEnd;

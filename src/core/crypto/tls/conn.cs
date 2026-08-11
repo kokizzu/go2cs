@@ -26,7 +26,7 @@ partial class tls_package {
 
 // A Conn represents a secured connection.
 // It implements the net.Conn interface.
-[GoType] [GoValueClone("clientFinished", "serverFinished", "@in", "@out", "tmp")] partial struct Conn {
+[GoType] partial struct Conn {
     // constant
     internal net.Conn conn;
     internal bool isClient;
@@ -158,7 +158,7 @@ partial class tls_package {
 
 // A halfConn represents one direction of the record layer
 // connection, either sending or receiving.
-[GoType] [GoValueClone("seq", "scratchBuf")] partial struct halfConn {
+[GoType] partial struct halfConn {
     public partial ref sync_package.Mutex Mutex { get; }
     internal error err;  // first permanent error
     internal uint16 version; // protocol version
@@ -572,7 +572,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 }
 
 // RecordHeaderError is returned when a TLS record header is invalid.
-[GoType] [GoValueClone("RecordHeader")] partial struct RecordHeaderError {
+[GoType] partial struct RecordHeaderError {
     // Msg contains a human readable string that describes the error.
     public @string Msg;
     // RecordHeader contains the five bytes of TLS record header that

@@ -116,7 +116,7 @@ public static UntypedInt IF_TYPE_IEEE1394 => 144;
     public SocketAddress Address;
 }
 
-[GoType] [GoValueClone("PhysicalAddress", "ZoneIndices")] partial struct IpAdapterAddresses {
+[GoType] partial struct IpAdapterAddresses {
     public uint32 Length;
     public uint32 IfIndex;
     public ж<IpAdapterAddresses> Next;
@@ -188,7 +188,7 @@ public static UntypedInt TH32CS_SNAPMODULE32 => 0x10;
 
 public static UntypedInt MAX_MODULE_NAME32 => 255;
 
-[GoType] [GoValueClone("Module", "ExePath")] partial struct ModuleEntry32 {
+[GoType] partial struct ModuleEntry32 {
     public uint32 Size;
     public uint32 ModuleID;
     public uint32 ProcessID;
@@ -393,7 +393,7 @@ public static error ErrorLoadingGetTempPath2() {
 //sys	DestroyEnvironmentBlock(block *uint16) (err error) = userenv.DestroyEnvironmentBlock
 //sys	CreateEvent(eventAttrs *SecurityAttributes, manualReset uint32, initialState uint32, name *uint16) (handle syscall.Handle, err error) = kernel32.CreateEventW
 //sys	ProcessPrng(buf []byte) (err error) = bcryptprimitives.ProcessPrng
-[GoType] [GoValueClone("ShortName", "FileName")] partial struct FILE_ID_BOTH_DIR_INFO {
+[GoType] partial struct FILE_ID_BOTH_DIR_INFO {
     public uint32 NextEntryOffset;
     public uint32 FileIndex;
     public syscall.Filetime CreationTime;
@@ -411,7 +411,7 @@ public static error ErrorLoadingGetTempPath2() {
     public array<uint16> FileName = new(1);
 }
 
-[GoType] [GoValueClone("FileName")] partial struct FILE_FULL_DIR_INFO {
+[GoType] partial struct FILE_FULL_DIR_INFO {
     public uint32 NextEntryOffset;
     public uint32 FileIndex;
     public syscall.Filetime CreationTime;

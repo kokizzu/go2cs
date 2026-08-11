@@ -35,7 +35,7 @@ internal static UntypedInt flushBuffer => /* 1 << maxWidth */ 4096;
 
 // Reader is an io.Reader which can be used to read compressed data in the
 // LZW format.
-[GoType] [GoValueClone("suffix", "prefix", "output")] partial struct Reader {
+[GoType] partial struct Reader {
     internal io.ByteReader r;
     internal uint32 bits;
     internal nuint nBits;

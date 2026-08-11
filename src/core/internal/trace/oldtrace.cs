@@ -37,7 +37,7 @@ using go.@internal.trace.@internal;
 
 partial class trace_package {
 
-[GoType] [GoValueClone("extraArr")] partial struct oldTraceConverter {
+[GoType] partial struct oldTraceConverter {
     internal oldtrace.Trace trace;
     internal ж<evTable> evt;
     internal bool preInit;

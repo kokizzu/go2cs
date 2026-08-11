@@ -29,7 +29,7 @@ public static UntypedInt HuffmanOnly => /* flate.HuffmanOnly */ -2;
 
 // A Writer takes data written to it and writes the compressed
 // form of that data to an underlying writer (see NewWriter).
-[GoType] [GoValueClone("scratch")] partial struct Writer {
+[GoType] partial struct Writer {
     internal io.Writer w;
     internal nint level;
     internal slice<byte> dict;

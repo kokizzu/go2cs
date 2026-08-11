@@ -9,22 +9,22 @@ using go.crypto;
 partial class edwards25519_package {
 
 // A dynamic lookup table for variable-base, constant-time scalar muls.
-[GoType] [GoValueClone("points")] partial struct projLookupTable {
+[GoType] partial struct projLookupTable {
     internal array<projCached> points = new(8);
 }
 
 // A precomputed lookup table for fixed-base, constant-time scalar muls.
-[GoType] [GoValueClone("points")] partial struct affineLookupTable {
+[GoType] partial struct affineLookupTable {
     internal array<affineCached> points = new(8);
 }
 
 // A dynamic lookup table for variable-base, variable-time scalar muls.
-[GoType] [GoValueClone("points")] partial struct nafLookupTable5 {
+[GoType] partial struct nafLookupTable5 {
     internal array<projCached> points = new(8);
 }
 
 // A precomputed lookup table for fixed-base, variable-time scalar muls.
-[GoType] [GoValueClone("points")] partial struct nafLookupTable8 {
+[GoType] partial struct nafLookupTable8 {
     internal array<affineCached> points = new(64);
 }
 

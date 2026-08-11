@@ -48,10 +48,8 @@ using static go.@internal.trace_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bandUtilHeap, go.container.heap_package.Interface>(Pointer = true)]
@@ -89,9 +87,9 @@ public static partial class trace_package
     internal partial struct accumulator {}
     internal partial struct bandUtil {}
     internal partial struct bandUtilHeap {}
-    internal partial struct baseEvent {}
+    [GoValueClone("args")] internal partial struct baseEvent {}
     internal partial struct batch {}
-    internal partial struct batchCursor {}
+    [GoValueClone("ev")] internal partial struct batchCursor {}
     internal partial struct cpuSample {}
     internal partial struct dataTable<EI, E> {}
     internal partial struct edge {}
@@ -107,8 +105,8 @@ public static partial class trace_package
     internal partial struct mState {}
     internal partial struct mmuBand {}
     internal partial struct mmuSeries {}
-    internal partial struct mud {}
-    internal partial struct oldTraceConverter {}
+    [GoValueClone("hist")] internal partial struct mud {}
+    [GoValueClone("extraArr")] internal partial struct oldTraceConverter {}
     internal partial struct ordering {}
     internal partial struct pState {}
     internal partial struct queue<T> {}
@@ -138,13 +136,13 @@ public static partial class trace_package
     public partial struct GoroutineSummary {}
     public partial struct MMUCurve {}
     public partial struct MutatorUtil {}
-    public partial struct MutatorUtilizationV2_perP {}
-    public partial struct MutatorUtilizationV2_procsCount {}
+    [GoLocalName("perP")] public partial struct MutatorUtilizationV2_perP {}
+    [GoLocalName("procsCount")] public partial struct MutatorUtilizationV2_procsCount {}
     public partial struct ProcID {}
     public partial struct ProcState {}
     public partial struct RangeAttribute {}
     public partial struct Reader {}
-    public partial struct RelatedGoroutinesV2_unblockEdge {}
+    [GoLocalName("unblockEdge")] public partial struct RelatedGoroutinesV2_unblockEdge {}
     public partial struct ResourceID {}
     public partial struct ResourceKind {}
     public partial struct StackFrame {}
@@ -158,7 +156,7 @@ public static partial class trace_package
     public partial struct UtilWindow {}
     public partial struct Value {}
     public partial struct ValueKind {}
-    public partial struct ΔEvent {}
+    [GoValueClone("@base")] public partial struct ΔEvent {}
     public partial struct ΔLabel {}
     public partial struct ΔLog {}
     public partial struct ΔMetric {}

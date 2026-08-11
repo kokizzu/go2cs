@@ -175,7 +175,7 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
 // traceBuf is per-M tracing buffer.
 //
 // TODO(mknyszek): Rename traceBuf to traceBatch, since they map 1:1 with event batches.
-[GoType] [GoValueClone("arr")] partial struct traceBuf {
+[GoType] partial struct traceBuf {
     internal sys.NotInHeap _;
     internal partial ref traceBufHeader traceBufHeader { get; }
     internal array<byte> arr = new(((uintptr)64 << (int)(10)) - /* unsafe.Sizeof(traceBufHeader{}) */ (uintptr)32); // underlying buffer for traceBufHeader.buf

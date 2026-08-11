@@ -249,7 +249,7 @@ public static ΔStack NoStack = new ΔStack(nil);
 }
 
 // Event represents a single event in the trace.
-[GoType] [GoValueClone("@base")] partial struct ΔEvent {
+[GoType] partial struct ΔEvent {
     internal ж<evTable> table;
     internal schedCtx ctx;
     internal baseEvent @base;

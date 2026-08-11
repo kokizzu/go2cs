@@ -27,7 +27,7 @@ partial class runtime_package {
 
 // trace is global tracing context.
 
-[GoType("dyn")] [GoValueClone("full", "doneSema", "stackTab", "stringTab", "typeTab", "cpuLogRead", "cpuLogWrite", "cpuBuf", "markWorkerLabels", "goStopReasons", "goBlockReasons")] partial struct Δtraceᴛ1 {
+[GoType("dyn")] partial struct Δtraceᴛ1 {
     // trace.lock must only be acquired on the system stack where
     // stack splits cannot happen while it is held.
     internal mutex @lock;
@@ -293,7 +293,7 @@ internal static readonly @string traceNonEmptyFullTraceˢ2 = "trace: non-empty f
 internal static readonly @string traceReadingAfterˢ = "trace: reading after shutdown"u8;
 
 // Collect all the untraced Gs.
-[GoLocalName("untracedG")] [GoType("dyn")] partial struct traceAdvance_untracedG {
+[GoType("dyn")] partial struct traceAdvance_untracedG {
     internal ж<g> gp;
     internal uint64 goid;
     internal int64 mid;

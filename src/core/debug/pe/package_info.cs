@@ -42,10 +42,8 @@ using static go.debug.pe_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Buffer, io_package.Reader>(Pointer = true)]
@@ -75,18 +73,18 @@ public static partial class pe_package
 
     // <TypeAccessibility>
     internal partial struct nobitsSectionReader {}
-    public partial struct COFFSymbol {}
+    [GoValueClone("Name")] public partial struct COFFSymbol {}
     public partial struct COFFSymbolAuxFormat5 {}
     public partial struct DataDirectory {}
     public partial struct File {}
     public partial struct FileHeader {}
     public partial struct FormatError {}
     public partial struct ImportDirectory {}
-    public partial struct OptionalHeader32 {}
-    public partial struct OptionalHeader64 {}
+    [GoValueClone("DataDirectory")] public partial struct OptionalHeader32 {}
+    [GoValueClone("DataDirectory")] public partial struct OptionalHeader64 {}
     public partial struct Reloc {}
     public partial struct SectionHeader {}
-    public partial struct SectionHeader32 {}
+    [GoValueClone("Name")] public partial struct SectionHeader32 {}
     public partial struct StringTable {}
     public partial struct Symbol {}
     public partial struct ΔSection {}

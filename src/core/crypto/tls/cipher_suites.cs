@@ -426,7 +426,7 @@ internal static UntypedInt noncePrefixLength => 4;
 
 // prefixNonceAEAD wraps an AEAD and prefixes a fixed portion of the nonce to
 // each call.
-[GoType] [GoValueClone("nonce")] partial struct prefixNonceAEAD {
+[GoType] partial struct prefixNonceAEAD {
     // nonce contains the fixed part of the nonce in the first four bytes.
     internal array<byte> nonce = new(aeadNonceLength);
     internal cipher.AEAD aead;
@@ -456,7 +456,7 @@ internal static UntypedInt noncePrefixLength => 4;
 
 // xorNonceAEAD wraps an AEAD by XORing in a fixed pattern to the nonce
 // before each call.
-[GoType] [GoValueClone("nonceMask")] partial struct xorNonceAEAD {
+[GoType] partial struct xorNonceAEAD {
     internal array<byte> nonceMask = new(aeadNonceLength);
     internal cipher.AEAD aead;
 }

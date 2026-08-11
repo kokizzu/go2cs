@@ -32,7 +32,7 @@ internal const uint32 currentVersion = 1;
 
 // A PkgEncoder provides methods for encoding a package's Unified IR
 // export data.
-[GoType] [GoValueClone("elems")] partial struct PkgEncoder {
+[GoType] partial struct PkgEncoder {
     // elems holds the bitstream for previously encoded elements.
     internal array<slice<@string>> elems = new(numRelocs);
     // stringsIdx maps previously encoded strings to their index within

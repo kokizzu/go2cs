@@ -318,7 +318,7 @@ public static Filetime /*ft*/ NsecToFiletime(int64 nsec) {
     return ft;
 }
 
-[GoType] [GoValueClone("FileName", "AlternateFileName")] partial struct Win32finddata {
+[GoType] partial struct Win32finddata {
     public uint32 FileAttributes;
     public Filetime CreationTime;
     public Filetime LastAccessTime;
@@ -333,7 +333,7 @@ public static Filetime /*ft*/ NsecToFiletime(int64 nsec) {
 
 // This is the actual system call structure.
 // Win32finddata is what we committed to in Go 1.
-[GoType] [GoValueClone("FileName", "AlternateFileName")] partial struct win32finddata1 {
+[GoType] partial struct win32finddata1 {
     public uint32 FileAttributes;
     public Filetime CreationTime;
     public Filetime LastAccessTime;
@@ -466,7 +466,7 @@ internal static UntypedInt _EXTENDED_STARTUPINFO_PRESENT => 0x00080000;
     public uint32 ThreadId;
 }
 
-[GoType] [GoValueClone("ExeFile")] partial struct ProcessEntry32 {
+[GoType] partial struct ProcessEntry32 {
     public uint32 Size;
     public uint32 Usage;
     public uint32 ProcessID;
@@ -490,7 +490,7 @@ internal static UntypedInt _EXTENDED_STARTUPINFO_PRESENT => 0x00080000;
     public uint16 Milliseconds;
 }
 
-[GoType] [GoValueClone("StandardName", "DaylightName")] partial struct Timezoneinformation {
+[GoType] partial struct Timezoneinformation {
     public int32 Bias;
     public array<uint16> StandardName = new(32);
     public Systemtime StandardDate;
@@ -699,12 +699,12 @@ public static UntypedInt DnsSectionAdditional => 0x0003;
     public uint16 Pad;
 }
 
-[GoType] [GoValueClone("StringArray")] partial struct DNSTXTData {
+[GoType] partial struct DNSTXTData {
     public uint16 StringCount;
     public array<ж<uint16>> StringArray = new(1);
 }
 
-[GoType] [GoValueClone("Data")] partial struct DNSRecord {
+[GoType] partial struct DNSRecord {
     public ж<DNSRecord> Next;
     public ж<uint16> Name;
     public uint16 Type;
@@ -741,20 +741,20 @@ public static UntypedInt SIO_GET_INTERFACE_LIST => 0x4004747F;
 
 // TODO(mattn): SockaddrGen is union of sockaddr/sockaddr_in/sockaddr_in6_old.
 // will be fixed to change variable type as suitable.
-[GoType] [GoValueClone("Address", "BroadcastAddress", "Netmask")] partial struct InterfaceInfo {
+[GoType] partial struct InterfaceInfo {
     public uint32 Flags;
     public SockaddrGen Address;
     public SockaddrGen BroadcastAddress;
     public SockaddrGen Netmask;
 }
 
-[GoType] [GoValueClone("String")] partial struct IpAddressString {
+[GoType] partial struct IpAddressString {
     public array<byte> String = new(16);
 }
 
-[GoType("IpAddressString")] [GoValueClone("Value")] partial struct IpMaskString;
+[GoType("IpAddressString")] partial struct IpMaskString;
 
-[GoType] [GoValueClone("IpAddress", "IpMask")] partial struct IpAddrString {
+[GoType] partial struct IpAddrString {
     public ж<IpAddrString> Next;
     public IpAddressString IpAddress;
     public IpMaskString IpMask;
@@ -767,7 +767,7 @@ public static UntypedInt MAX_ADAPTER_DESCRIPTION_LENGTH => 128;
 
 public static UntypedInt MAX_ADAPTER_ADDRESS_LENGTH => 8;
 
-[GoType] [GoValueClone("AdapterName", "Description", "Address", "IpAddressList", "GatewayList", "DhcpServer", "PrimaryWinsServer", "SecondaryWinsServer")] partial struct IpAdapterInfo {
+[GoType] partial struct IpAdapterInfo {
     public ж<IpAdapterInfo> Next;
     public uint32 ComboIndex;
     public array<byte> AdapterName = new(MAX_ADAPTER_NAME_LENGTH + 4);
@@ -794,7 +794,7 @@ public static UntypedInt MAX_INTERFACE_NAME_LEN => 256;
 
 public static UntypedInt MAXLEN_IFDESCR => 256;
 
-[GoType] [GoValueClone("Name", "PhysAddr", "Descr")] partial struct MibIfRow {
+[GoType] partial struct MibIfRow {
     public array<uint16> Name = new(MAX_INTERFACE_NAME_LEN);
     public uint32 Index;
     public uint32 Type;
@@ -978,7 +978,7 @@ public static UntypedInt AI_PASSIVE => 1;
 public static UntypedInt AI_CANONNAME => 2;
 public static UntypedInt AI_NUMERICHOST => 4;
 
-[GoType] [GoValueClone("Data4")] partial struct GUID {
+[GoType] partial struct GUID {
     public uint32 Data1;
     public uint16 Data2;
     public uint16 Data3;
@@ -1025,7 +1025,7 @@ public static UntypedInt PFL_HIDDEN => 0x00000004;
 public static UntypedInt PFL_MATCHES_PROTOCOL_ZERO => 0x00000008;
 public static UntypedInt PFL_NETWORKDIRECT_PROVIDER => 0x00000010;
 
-[GoType] [GoValueClone("ProviderId", "ProtocolChain", "ProtocolName")] partial struct WSAProtocolInfo {
+[GoType] partial struct WSAProtocolInfo {
     public uint32 ServiceFlags1;
     public uint32 ServiceFlags2;
     public uint32 ServiceFlags3;
@@ -1048,7 +1048,7 @@ public static UntypedInt PFL_NETWORKDIRECT_PROVIDER => 0x00000010;
     public array<uint16> ProtocolName = new(WSAPROTOCOL_LEN + 1);
 }
 
-[GoType] [GoValueClone("ChainEntries")] partial struct WSAProtocolChain {
+[GoType] partial struct WSAProtocolChain {
     public int32 ChainLen;
     public array<uint32> ChainEntries = new(MAX_PROTOCOL_CHAIN);
 }
@@ -1059,7 +1059,7 @@ public static UntypedInt PFL_NETWORKDIRECT_PROVIDER => 0x00000010;
     public uint32 Interval;
 }
 
-[GoType] [GoValueClone("PathBuffer")] partial struct symbolicLinkReparseBuffer {
+[GoType] partial struct symbolicLinkReparseBuffer {
     public uint16 SubstituteNameOffset;
     public uint16 SubstituteNameLength;
     public uint16 PrintNameOffset;
@@ -1068,7 +1068,7 @@ public static UntypedInt PFL_NETWORKDIRECT_PROVIDER => 0x00000010;
     public array<uint16> PathBuffer = new(1);
 }
 
-[GoType] [GoValueClone("PathBuffer")] partial struct mountPointReparseBuffer {
+[GoType] partial struct mountPointReparseBuffer {
     public uint16 SubstituteNameOffset;
     public uint16 SubstituteNameLength;
     public uint16 PrintNameOffset;

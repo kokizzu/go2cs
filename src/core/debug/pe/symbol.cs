@@ -17,7 +17,7 @@ partial class pe_package {
 public static UntypedInt COFFSymbolSize => 18;
 
 // COFFSymbol represents single COFF symbol table record.
-[GoType] [GoValueClone("Name")] partial struct COFFSymbol {
+[GoType] partial struct COFFSymbol {
     public array<uint8> Name = new(8);
     public uint32 Value;
     public int16 SectionNumber;
@@ -102,7 +102,7 @@ internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh,
 }
 
 // isSymNameOffset checks symbol name if it is encoded as offset into string table.
-internal static (bool, uint32) isSymNameOffset(array<byte> name) {
+internal static (bool, uint32) isSymNameOffset([GoArrayDims(8)] array<byte> name) {
     name = name.Clone();
 
     if (name[0] == 0 && name[1] == 0 && name[2] == 0 && name[3] == 0) {

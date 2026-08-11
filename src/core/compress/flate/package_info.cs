@@ -32,10 +32,8 @@ using static go.compress.flate_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<CorruptInputError, error>]
@@ -65,15 +63,15 @@ public static partial class flate_package
     internal partial struct byFreq {}
     internal partial struct byLiteral {}
     internal partial struct compressionLevel {}
-    internal partial struct compressor {}
-    internal partial struct decompressor {}
-    internal partial struct deflateFast {}
+    [GoValueClone("hashHead", "hashPrev", "hashMatch")] internal partial struct compressor {}
+    [GoValueClone("h1", "h2", "buf")] internal partial struct decompressor {}
+    [GoValueClone("table")] internal partial struct deflateFast {}
     internal partial struct dictDecoder {}
     internal partial struct dictWriter {}
     internal partial struct hcode {}
-    internal partial struct huffmanBitWriter {}
-    internal partial struct huffmanDecoder {}
-    internal partial struct huffmanEncoder {}
+    [GoValueClone("bytes", "codegenFreq")] internal partial struct huffmanBitWriter {}
+    [GoValueClone("chunks")] internal partial struct huffmanDecoder {}
+    [GoValueClone("bitCount")] internal partial struct huffmanEncoder {}
     internal partial struct levelInfo {}
     internal partial struct literalNode {}
     internal partial struct tableEntry {}
@@ -84,6 +82,6 @@ public static partial class flate_package
     public partial struct InternalError {}
     public partial struct ReadError {}
     public partial struct WriteError {}
-    public partial struct Writer {}
+    [GoValueClone("d")] public partial struct Writer {}
     // </TypeAccessibility>
 }

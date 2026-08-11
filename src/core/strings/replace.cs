@@ -266,7 +266,7 @@ internal static (@string val, nint keylen, bool found) lookup(this ж<genericRep
 
 // genericReplacer is the fully generic algorithm.
 // It's used as a fallback when nothing faster can be used.
-[GoType] [GoValueClone("mapping")] partial struct genericReplacer {
+[GoType] partial struct genericReplacer {
     internal trieNode root;
     // tableSize is the size of a trie node's lookup table. It is the number
     // of unique key bytes.
@@ -504,7 +504,7 @@ internal static ж<singleStringReplacer> makeSingleStringReplacer(@string patter
 
 // byteStringReplacer is the implementation that's used when all the
 // "old" values are single ASCII bytes but the "new" values vary in size.
-[GoType] [GoValueClone("replacements")] partial struct byteStringReplacer {
+[GoType] partial struct byteStringReplacer {
     // replacements contains replacement byte slices indexed by old byte.
     // A nil []byte means that the old byte should not be replaced.
     internal array<slice<byte>> replacements = new(256);

@@ -441,7 +441,7 @@ internal static nuint findBitRange64(uint64 c, nuint n) {
 //
 // Update the comment on (*pageAlloc).chunks should this
 // structure change.
-[GoType] [GoValueClone("scavenged")] partial struct pallocData {
+[GoType] partial struct pallocData {
     internal partial ref pallocBits pallocBits { get; }
     internal pageBits scavenged;
 }

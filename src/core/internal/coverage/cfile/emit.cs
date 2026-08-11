@@ -339,7 +339,7 @@ internal static error emitCounterDataToWriter(this ж<emitState> Ꮡs, io.Writer
 // dir. It updates mfname/mftmp/mf fields in 's', returning an error
 // if something went wrong. See the comment on the emitState type
 // definition above for more on how file opening is managed.
-[GoRecv] internal static error openMetaFile(this ref emitState s, array<byte> metaHash, uint64 metaLen) {
+[GoRecv] internal static error openMetaFile(this ref emitState s, [GoArrayDims(16)] array<byte> metaHash, uint64 metaLen) {
     metaHash = metaHash.Clone();
 
     // Open meta-outfile for reading to see if it exists.
@@ -361,7 +361,7 @@ internal static error emitCounterDataToWriter(this ж<emitState> Ꮡs, io.Writer
 // openCounterFile opens an output file for the counter data portion
 // of a test coverage run. If updates the 'cfname' and 'cf' fields in
 // 's', returning an error if something went wrong.
-[GoRecv] internal static error openCounterFile(this ref emitState s, array<byte> metaHash) {
+[GoRecv] internal static error openCounterFile(this ref emitState s, [GoArrayDims(16)] array<byte> metaHash) {
     metaHash = metaHash.Clone();
 
     nint processID = os.Getpid();
@@ -387,7 +387,7 @@ internal static error emitCounterDataToWriter(this ж<emitState> Ꮡs, io.Writer
 // 'mf', close it, and then rename 'mftmp' to 'mfname'. This function
 // also opens the counter data output file, setting 'cf' and 'cfname'
 // in the state struct.
-[GoRecv] internal static error openOutputFiles(this ref emitState s, array<byte> metaHash, uint64 metaLen, fileType which) {
+[GoRecv] internal static error openOutputFiles(this ref emitState s, [GoArrayDims(16)] array<byte> metaHash, uint64 metaLen, fileType which) {
     metaHash = metaHash.Clone();
 
     var (fi, err) = os.Stat(s.outdir);
@@ -417,7 +417,7 @@ internal static error emitCounterDataToWriter(this ж<emitState> Ꮡs, io.Writer
 // emitMetaDataFile emits coverage meta-data to a previously opened
 // temporary file (s.mftmp), then renames the generated file to the
 // final path (s.mfname).
-[GoRecv] internal static error emitMetaDataFile(this ref emitState s, array<byte> finalHash, uint64 tlen) {
+[GoRecv] internal static error emitMetaDataFile(this ref emitState s, [GoArrayDims(16)] array<byte> finalHash, uint64 tlen) {
     finalHash = finalHash.Clone();
 
     {
@@ -450,7 +450,7 @@ internal static error emitCounterDataToWriter(this ж<emitState> Ꮡs, io.Writer
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string ioWriterˢ = "<io.Writer>"u8;
 
-internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metalist, coverage.CounterMode cmode, coverage.CounterGranularity gran, array<byte> finalHash) {
+internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metalist, coverage.CounterMode cmode, coverage.CounterGranularity gran, [GoArrayDims(16)] array<byte> finalHash) {
     finalHash = finalHash.Clone();
 
     var mfw = encodemeta.NewCoverageMetaFileWriter(ioWriterˢ, w);

@@ -146,7 +146,7 @@ public static @string Dump(slice<byte> data) {
 // bufferSize is the number of hexadecimal characters to buffer in encoder and decoder.
 internal static UntypedInt bufferSize => 1024;
 
-[GoType] [GoValueClone("@out")] partial struct encoder {
+[GoType] partial struct encoder {
     internal io.Writer w;
     internal error err;
     internal array<byte> @out = new(bufferSize); // output buffer
@@ -174,7 +174,7 @@ public static io.Writer NewEncoder(io.Writer w) {
     return (n, e.err);
 }
 
-[GoType] [GoValueClone("arr")] partial struct decoder {
+[GoType] partial struct decoder {
     internal io.Reader r;
     internal error err;
     internal slice<byte> @in;      // input buffer (encoded form)
@@ -231,7 +231,7 @@ public static io.WriteCloser Dumper(io.Writer w) {
     return new dumperжWriteCloser(Ꮡ(new dumper(w: w)));
 }
 
-[GoType] [GoValueClone("rightChars", "buf")] partial struct dumper {
+[GoType] partial struct dumper {
     internal io.Writer w;
     internal array<byte> rightChars = new(18);
     internal array<byte> buf = new(14);

@@ -44,7 +44,7 @@ internal static UntypedInt minNonLiteralBlockSize => /* 1 + 1 + inputMargin */ 1
 
 // deflateFast maintains the table for matches,
 // and the previous byte block for cross block matching.
-[GoType] [GoValueClone("table")] partial struct deflateFast {
+[GoType] partial struct deflateFast {
     internal array<tableEntry> table = new(tableSize);
     internal slice<byte> prev; // Previous block, zero length if unknown.
     internal int32 cur;  // Current match offset.

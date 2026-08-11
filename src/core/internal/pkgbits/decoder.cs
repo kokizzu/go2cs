@@ -21,7 +21,7 @@ partial class pkgbits_package {
 
 // A PkgDecoder provides methods for decoding a package's Unified IR
 // export data.
-[GoType] [GoValueClone("elemEndsEnds")] partial struct PkgDecoder {
+[GoType] partial struct PkgDecoder {
     // version is the file format version.
     internal uint32 version;
     // sync indicates whether the file uses sync markers.

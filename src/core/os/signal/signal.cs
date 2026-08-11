@@ -11,7 +11,7 @@ using ꓸꓸꓸosꓸSignal = Span<osꓸSignal>;
 partial class signal_package {
 
 
-[GoType("dyn")] [GoValueClone("@ref")] partial struct handlersᴛ1 {
+[GoType("dyn")] partial struct handlersᴛ1 {
     public partial ref sync_package.Mutex Mutex { get; }
     // Map a channel to the signals that should be sent to it.
     internal map<channel/*<-*/<osꓸSignal>, ж<handler>> m;
@@ -32,7 +32,7 @@ internal static ref handlersᴛ1 handlers => ref Ꮡhandlers.Value;
     internal ж<handler> h;
 }
 
-[GoType] [GoValueClone("mask")] partial struct handler {
+[GoType] partial struct handler {
     internal array<uint32> mask = new((numSig + 31) / 32);
 }
 

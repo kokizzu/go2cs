@@ -20,7 +20,7 @@ partial class decodecounter_package {
 
 // This file contains helpers for reading counter data files created
 // during the executions of a coverage-instrumented binary.
-[GoType] [GoValueClone("hdr", "ftr")] partial struct CounterDataReader {
+[GoType] partial struct CounterDataReader {
     internal ж<stringtab.Reader> stab;
     internal map<@string, @string> args;
     internal slice<@string> osargs;
@@ -80,7 +80,7 @@ public static (ж<CounterDataReader>, error) NewCounterDataReader(@string fn, io
     return (cdr, default!);
 }
 
-internal static bool checkMagic(array<byte> v) {
+internal static bool checkMagic([GoArrayDims(4)] array<byte> v) {
     v = v.Clone();
 
     var g = coverage.CovCounterMagic.Clone();

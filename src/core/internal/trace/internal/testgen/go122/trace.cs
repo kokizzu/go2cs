@@ -175,7 +175,7 @@ public static ж<ΔGeneration> Generation(this ж<Trace> Ꮡt, uint64 gen) {
     );
 }
 
-[GoType] [GoValueClone("stk")] partial struct stack {
+[GoType] partial struct stack {
     internal array<trace.StackFrame> stk = new(32);
     internal nint len;
 }

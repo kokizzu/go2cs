@@ -88,7 +88,7 @@ partial class tabwriter_package {
 // The Writer must buffer input internally, because proper spacing
 // of one line may depend on the cells in future lines. Clients must
 // call Flush when done calling [Writer.Write].
-[GoType] [GoValueClone("padbytes")] partial struct Writer {
+[GoType] partial struct Writer {
     // configuration
     internal io.Writer output;
     internal nint minwidth;

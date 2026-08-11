@@ -190,11 +190,11 @@ internal static readonly @string float32nan3ˢ = "float32nan3"u8;
 internal static readonly @string fixedStackIsNotPowerOf2ˢ = "FixedStack is not power-of-2"u8;
 internal static readonly @string assemblyChecksFailedˢ = "assembly checks failed"u8;
 
-[GoLocalName("x1t")] [GoType("dyn")] partial struct check_x1t {
+[GoType("dyn")] partial struct check_x1t {
     internal uint8 x;
 }
 
-[GoLocalName("y1t")] [GoType("dyn")] partial struct check_y1t {
+[GoType("dyn")] partial struct check_y1t {
     internal check_x1t x1;
     internal uint8 y;
 }

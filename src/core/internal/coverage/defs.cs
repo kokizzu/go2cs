@@ -65,7 +65,7 @@ public static readonly @string MetaFilePref = "covmeta"u8;
 public static UntypedInt MetaFileVersion => 1;
 
 // MetaFileHeader stores file header information for a meta-data file.
-[GoType] [GoValueClone("Magic", "MetaFileHash")] partial struct MetaFileHeader {
+[GoType] partial struct MetaFileHeader {
     public array<byte> Magic = new(4);
     public uint32 Version;
     public uint64 TotalLength;
@@ -81,7 +81,7 @@ public static UntypedInt MetaFileVersion => 1;
 // MetaSymbolHeader stores header information for a single
 // meta-data blob, e.g. the coverage meta-data payload
 // computed for a given Go package.
-[GoType] [GoValueClone("MetaHash")] partial struct MetaSymbolHeader {
+[GoType] partial struct MetaSymbolHeader {
     public uint32 Length; // size of meta-symbol payload in bytes
     public uint32 PkgName; // string table index
     public uint32 PkgPath; // string table index
@@ -306,7 +306,7 @@ public static array<byte> CovCounterMagic = new byte[]{(rune)'\x00', (rune)'\x63
 public static UntypedInt CounterFileVersion => 1;
 
 // CounterFileHeader stores files header information for a counter-data file.
-[GoType] [GoValueClone("Magic", "MetaHash")] partial struct CounterFileHeader {
+[GoType] partial struct CounterFileHeader {
     public array<byte> Magic = new(4);
     public uint32 Version;
     public array<byte> MetaHash = new(16);
@@ -340,7 +340,7 @@ public static UntypedInt CounterFileVersion => 1;
 
 // CounterFileFooter appears at the tail end of a counter data file,
 // and stores the number of segments it contains.
-[GoType] [GoValueClone("Magic")] partial struct CounterFileFooter {
+[GoType] partial struct CounterFileFooter {
     public array<byte> Magic = new(4);
     internal array<byte> _ = new(4); // padding
     public uint32 NumSegments;

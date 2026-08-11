@@ -63,10 +63,11 @@ internal static ж<projP2> Zero(this ж<projP2> Ꮡv) {
 }
 
 // identity is the point at infinity.
-internal static ж<Point> identity = @new<Point>().SetBytes(new byte[]{
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()).Item1;
+internal static ж<Point> identity;
 internal static error _ᴛ1ʗ;
+internal static void initᴛidentity() { identity = @new<Point>().SetBytes(new byte[]{
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()).Item1; }
 
 // NewIdentityPoint returns a new Point set to the identity.
 public static ж<Point> NewIdentityPoint() {
@@ -75,12 +76,13 @@ public static ж<Point> NewIdentityPoint() {
 
 // generator is the canonical curve basepoint. See TestGenerator for the
 // correspondence of this encoding with the values in RFC 8032.
-internal static ж<Point> generator = @new<Point>().SetBytes(new byte[]{
+internal static ж<Point> generator;
+internal static error _ᴛ2ʗ;
+internal static void initᴛgenerator() { generator = @new<Point>().SetBytes(new byte[]{
     0x58, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
     0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
     0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66}.slice()).Item1;
-internal static error _ᴛ2ʗ;
+    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66}.slice()).Item1; }
 
 // NewGeneratorPoint returns a new Point set to the canonical generator.
 public static ж<Point> NewGeneratorPoint() {

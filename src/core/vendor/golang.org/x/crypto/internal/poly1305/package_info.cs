@@ -32,10 +32,8 @@ using static go.vendor.golang.org.x.crypto.@internal.poly1305_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 // </InterfaceImplementations>
@@ -56,8 +54,8 @@ public static partial class poly1305_package
 
     // <TypeAccessibility>
     internal partial struct mac {}
-    internal partial struct macGeneric {}
-    internal partial struct macState {}
+    [GoValueClone("buffer")] internal partial struct macGeneric {}
+    [GoValueClone("h", "r", "s")] internal partial struct macState {}
     internal partial struct uint128 {}
     public partial struct MAC {}
     // </TypeAccessibility>

@@ -357,7 +357,7 @@ internal static readonly @string unknownSizeForDwFormStrpˢ2 = "unknown size for
 // If we are currently parsing the compilation unit,
 // we can't evaluate Addrx or Strx until we've seen the
 // relevant base entry.
-[GoLocalName("delayed")] [GoType("dyn")] partial struct entry_delayed {
+[GoType("dyn")] partial struct entry_delayed {
     internal nint idx;
     internal uint64 off;
     internal format fmt;

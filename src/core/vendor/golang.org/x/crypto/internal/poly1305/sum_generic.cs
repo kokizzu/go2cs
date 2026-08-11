@@ -43,7 +43,7 @@ internal static macGeneric newMACGeneric(ж<array<byte>> Ꮡkey) {
 
 // macState holds numbers in saturated 64-bit little-endian limbs. That is,
 // the value of [x0, x1, x2] is x[0] + x[1] * 2⁶⁴ + x[2] * 2¹²⁸.
-[GoType] [GoValueClone("h", "r", "s")] partial struct macState {
+[GoType] partial struct macState {
     // h is the main accumulator. It is to be interpreted modulo 2¹³⁰ - 5, but
     // can grow larger during and after rounds. It must, however, remain below
     // 2 * (2¹³⁰ - 5).
@@ -53,7 +53,7 @@ internal static macGeneric newMACGeneric(ж<array<byte>> Ꮡkey) {
     internal array<uint64> s = new(2);
 }
 
-[GoType] [GoValueClone("buffer")] partial struct macGeneric {
+[GoType] partial struct macGeneric {
     internal partial ref macState macState { get; }
     internal array<byte> buffer = new(TagSize);
     internal nint offset;

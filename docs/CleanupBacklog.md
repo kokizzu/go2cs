@@ -197,14 +197,26 @@
     radius, not a side effect of the frame. Whether to take it is a real question with a real answer on
     both sides; it wants its own measurement (how many methods, what the emitted diff looks like, what
     it costs or saves) rather than a reflex.
-20. **A `-stdlib` reconvert PANICS on two auto-sibling visits.** `internal/godebug/godebug.go` and
-    `internal/concurrent/hashtriemap.go` report `visit file error: … invalid memory address or nil
+20. **A `-stdlib` reconvert PANICS on ~~two~~ THREE auto-sibling visits.** `internal/godebug/godebug.go`,
+    `internal/concurrent/hashtriemap.go` and — **re-measured r59, 2026-08-11** —
+    `internal/weak/pointer.go` report `visit file error: … invalid memory address or nil
     pointer dereference` and their `.cs.auto` REVIEW siblings are skipped. Production emission and
     package-wide state are unaffected — the auto-sibling pass is a separate re-visit whose only
-    output is the review file — so this shows up as two of item 18's stale siblings rather than as
+    output is the review file — so this shows up as ~~two~~ three of item 18's stale siblings rather than as
     corpus damage. A/B'd at r41 against the master converter: identical, so it is pre-existing and
     was not introduced by the frame arc. Worth rooting when item 18 is levelled, since `hashtriemap`
     has never had a `.cs.auto` at all and `godebug`'s is frozen at whenever the panic started.
+    `pointer.cs` joined the hand-own census at r43e, AFTER this item was written, and like
+    `hashtriemap` has never had a `.cs.auto` — so the count tracks the hand-own census and must be
+    re-measured, not carried forward.
+    **What the three have in common, and it is the actual root shape:** each is a package whose
+    ENTIRE (single) Go file is hand-owned, so `unmarkedFileCount == 0` and the auto-sibling re-visit
+    is the only visit the package gets — which is why the panic costs nothing but the review file.
+    That also generalizes a fact CLAUDE.md records in the singular: `internal/godebug` is described as
+    the one package whose `.csproj`, `package_info.cs` and `README.md` are "hand-owned by
+    consequence" and never re-emitted. It is a **class of three** on the same mechanism
+    (`internal/concurrent`, `internal/godebug`, `internal/weak`), and r59's reconvert measured exactly
+    three un-emitted `package_info.cs` for that reason.
 22. **The four items the warning-suppression arc deliberately did not take.** r46b landed the
     configuration half of [`phase4/DESIGN-warning-suppression.md`](phase4/DESIGN-warning-suppression.md)
     and stopped there on purpose; §5 and §7 of that doc carry the full detail, this is only the
@@ -269,8 +281,31 @@
     one-version trail until the NEXT release replaces them — nothing to do besides ship the next
     release, which the now-throwing verifier guards. Do not re-diagnose from the gallery page.
 
-24. **Emitted-artifact comments carry converter HISTORY into user-level files — rewrite present
-    tense, corpus-wide (user-queued 2026-08-09).** The csproj template's test-artifact exclusion
+24. ~~**Emitted-artifact comments carry converter HISTORY into user-level files — rewrite present
+    tense, corpus-wide**~~ — **DONE 2026-08-11 (r59), riding backlog 25's regen bank per the
+    coordinator's sequencing ruling.** Five comments rewrote: the csproj test-artifact exclusion, the
+    `$(GoTargetOS)` default (which justified itself by "the single-platform package this layout
+    replaced"), the `Nullable` rationale (which cited a 1,142-warning measurement from one past
+    corpus build — a number that would go stale even if the history belonged there), the test
+    csproj's MSB4006 incident report, and `package_info.cs`'s account of the run-time interface
+    resolution that was not chosen. Measured corpus footprint: **297 emitted `.csproj`** (Nullable +
+    test-artifact), **34 of those also the `$(GoTargetOS)` block** (only the L3 packages carry it),
+    and **297 `package_info.cs`**. The audit found the pubxml profiles, the emitted
+    `Directory.Build.props`/`.targets` and the README emitter clean. `package_init.cs` — a new
+    emitted artifact L4 added mid-lane — was audited and already compliant.
+    One mechanism had to exist first: `writePackageInfoFile` rebuilds only the marker SECTIONS of an
+    existing file and copies every other line through verbatim, so a template rewrite would have
+    reached NEW files only and the corpus would carry as many wordings as it has had rewrites. The
+    `<TypeAccessibility>` block already had a bespoke in-place migration for that reason; it is now a
+    shared `migrateProseBlock` both blocks use, so the next prose rewrite is two lines.
+    **Platform residual, by design of the single-target ritual:** 57 non-Windows per-GOOS
+    `package_info.cs` keep the old prose, as do the 3 fully-hand-owned packages and `unsafe`, because
+    a `-stdlib` run emits for ONE target and never re-emits a package whose every file is hand-owned.
+    The corpus therefore carries two wordings across platforms until a multi-platform `-platforms`
+    emission levels the other two — which is uniform with how L4's and L7's emission changes landed
+    in the same bank, not specific to this one.
+
+    Original text, for the record: *The csproj template's test-artifact exclusion
     comment narrates its own past ("the old `*._test.cs` pattern matched nothing the converter
     emits...") — historical precedent that is meaningless in a file every package ships. The r42
     docs ruling (present tense, educate the new reader, no history) applies with MORE force to
@@ -281,11 +316,44 @@
     constraint it serves. Comment-only change but corpus-wide: every emitted csproj moves, so it
     lands as its own regen bank (CNR behavioral-csproj re-baseline included) at an idle point or
     riding the next rebank arc. History belongs in ConversionStrategies-Reference, not in the
-    artifact.
+    artifact.*
 
-25. **Investigate moving `[GoValueClone]` — and every movable extended attribute — off the
-    mainline type declaration into `package_info.cs`'s `<TypeAccessibility>` records
-    (user-commissioned investigation, 2026-08-09).** The visible converted code should read as
+25. ~~**Investigate moving `[GoValueClone]` — and every movable extended attribute — off the
+    mainline type declaration into `package_info.cs`'s `<TypeAccessibility>` records**~~ —
+    **DONE 2026-08-11 (r59).** The investigation found a criterion sharper than "is it needed here":
+    **a stamp can move whenever its consumer reads the attribute off the TYPE rather than off a
+    particular declaration**, because C# unions the attributes of every part of a partial type, so the
+    move is invisible to runtime reflection and to any generator that resolves the symbol. That
+    criterion classifies the whole surface and the movable set is exactly two — `[GoValueClone]` and
+    `[GoLocalName]` — both moved. `[GoType] [GoValueClone("intbuf")] partial struct pp {` now reads
+    `[GoType] partial struct pp {`.
+    Measured corpus footprint: **304 stamps left mainline declarations and 304 arrived on records** —
+    the conservation is the evidence that the relocation loses nothing — of which 270 `GoValueClone`
+    and 34 `GoLocalName`. The stamps and the access modifier travel together by construction:
+    `recordTypeAccessibility` takes the stamps and RETURNS what the caller must still write inline,
+    empty when the record absorbed them, so the two paths that write no record (a hand-owned file,
+    whose emission goes to the non-compiled `.cs.auto` sibling, and a `-tests` bridge unit) keep their
+    stamps and cannot lose them.
+    The full classification is recorded in *Extended attributes: what stays on the declaration and
+    what moves* in [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md) — eleven
+    rows, must-stay reasons distinguished by LEVEL (`[GoType]` is the syntax receiver's key;
+    `[GoTag]` is field-level and a record is an empty `{}` body; `[GoRecv]` is method-level;
+    `[GoInit]` is a `using` alias for `ModuleInitializerAttribute` and the compiler wants it on the
+    method; `[GoArrayDims]` is parameter-level and not type-keyed at all, since
+    `func([32]byte) bool` and `func([64]byte) bool` share one emitted delegate type).
+    Guarded in the converter's own `go test` (the relocation returns empty on the recording path and
+    the stamps verbatim on both skip paths; the sort key orders a stamped entry with its peers), and
+    `LiftedLocalTypes` was strengthened rather than weakened: its guard pinned `[GoLocalName]` as
+    golden TEXT, and `package_info.cs` has no golden, so it now prints `%T` of a function-local named
+    type and must equal Go's `main.point *main.point` — the property the stamp exists for.
+    **Residual, left knowingly and on evidence:** the record set is keyed by the RENDERED LINE, so one
+    type yields one record only while every pass renders it identically, and the access modifier is
+    the variable. Two records for one type would each carry `[GoLocalName]`, which golib matches as a
+    single-element list, so `%T` would fall back silently — a quieter failure than the pre-existing
+    `CS0262` two-conflicting-modifiers case. Measured across the regenerated corpus: 5,140 records,
+    **zero collisions**.
+
+    Original text, for the record: *The visible converted code should read as
     close to the Go original as the emission allows; `[GoType] [GoValueClone("intbuf")] partial
     struct fmt` carries machinery the READER never needs, and package_info.cs already exists to
     hold exactly this class of per-type record out of view. Scope: (1) find `GoValueClone`'s
@@ -298,4 +366,4 @@
     emitters that write them), classifying each as movable / must-stay (e.g. anything a generator
     needs syntactically ON the declaration) / field-level-different (e.g. `[GoTag]`); (4) record
     the classification in ConversionStrategies-Reference and move what cleanly moves. Readability
-    is the goal; behavioral identity is the bar.
+    is the goal; behavioral identity is the bar.*
