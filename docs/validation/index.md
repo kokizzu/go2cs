@@ -49,6 +49,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `debug/macho` | [`debug.macho.md`](current/debug.macho.md) | [`src/core/debug/macho`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/macho) |
 | `debug/plan9obj` | [`debug.plan9obj.md`](current/debug.plan9obj.md) | [`src/core/debug/plan9obj`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/plan9obj) |
 | `encoding/ascii85` | [`encoding.ascii85.md`](current/encoding.ascii85.md) | [`src/core/encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/ascii85) |
+| `encoding/asn1` | [`encoding.asn1.md`](current/encoding.asn1.md) | [`src/core/encoding/asn1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/asn1) |
 | `encoding/base32` | [`encoding.base32.md`](current/encoding.base32.md) | [`src/core/encoding/base32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base32) |
 | `encoding/base64` | [`encoding.base64.md`](current/encoding.base64.md) | [`src/core/encoding/base64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base64) |
 | `encoding/binary` | [`encoding.binary.md`](current/encoding.binary.md) | [`src/core/encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary) |

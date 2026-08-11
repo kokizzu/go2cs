@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **126 / 215 testable packages validated — 58.6%**
+> ### Phase 4 progress: **127 / 215 testable packages validated — 59.1%**
 >
-> **14,643 matching test verdicts · 50 disclosed** *(updated 2026-08-10 — maintained as part of the
+> **14,681 matching test verdicts · 50 disclosed** *(updated 2026-08-11 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -81,6 +81,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`debug/macho`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/macho) | 7 |  | Mach-O object files — the load-command walk over the thin and fat testdata corpus, dynamic-symbol parsing including a malformed `LC_DYSYMTAB`, and the relocation/CPU stringer tables. Reached through `saferio.SliceCap` over a slice of the `Load` **interface**, whose Go size `unsafe.Sizeof` now answers from Go's own layout rule. · [proof](validation/current/debug.macho.md) |
 | [`debug/plan9obj`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/plan9obj) | 2 |  | Plan 9 a.out objects — section table and symbol parsing over the testdata corpus, plus the malformed-file error path. · [proof](validation/current/debug.plan9obj.md) |
 | [`encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/ascii85) | 9 | | Ascii85 encode/decode and streaming wrappers. · [proof](validation/current/encoding.ascii85.md) |
+| [`encoding/asn1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/asn1) | 38 | | DER marshal/unmarshal end to end — tag and class handling including SET vs SEQUENCE, `asn1:"…"` struct-tag parameters read through the reflection bridge, unexported-field guards probing settability, `big.Int`/bit-string/OID/UTC-time round-trips, and a full certificate walk. Closed by three complementary fixes across two machines (defined-type `Name()`, `StructField.PkgPath`, array dims). · [proof](validation/current/encoding.asn1.md) |
 | [`encoding/base32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base32) | 26 | | Base32 round-trips; `io.Pipe` rendezvous over the real channel core. · [proof](validation/current/encoding.base32.md) |
 | [`encoding/base64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base64) | 17 | | Base64 round-trips; goroutine + `time.After` timer path. · [proof](validation/current/encoding.base64.md) |
 | [`encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary) | 137 | 9 | Reflection-driven Read/Write — the bridge's construction/write-back surface. · [proof](validation/current/encoding.binary.md) |
