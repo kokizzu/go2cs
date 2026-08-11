@@ -1471,6 +1471,14 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	// — every test died in the class cctor on the default slice).
 	collectMovedInitVars(pkg.Fset, pkg.Types, pkg.TypesInfo, pkg.Syntax)
 
+	// ж-box A1 (three-driver rule, DESIGN-zh-box-reduction §3.5): the ref-lowering classification
+	// runs in the -tests driver too — over the PRODUCTION files only (prodEntries; the entry point
+	// additionally filters `_test.go` structurally), so the merged white-box package's test-side
+	// func-value aliases can never desynchronize this classification from the -stdlib emission's
+	// (§3.5's determinism invariant). The EXTERNAL variant carries no production files and records
+	// an empty result. Analysis only; nothing emission-side reads it at A1.
+	performRefLoweringAnalysis(prodEntries, pkg.Types, pkg.TypesInfo, options)
+
 	var compileNames []string // emitted test .cs basenames — the csproj's compile items
 	var resolveNames []string // every emission (incl. .cs.auto review siblings) for marker resolution
 
