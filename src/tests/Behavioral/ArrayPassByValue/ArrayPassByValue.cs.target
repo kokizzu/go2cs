@@ -86,7 +86,7 @@ internal static void stest(ж<@string> Ꮡp) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string goodbyeˢ = "Goodbye"u8;
 
-internal static void test(array<@string> a) {
+internal static void test([GoArrayDims(2)] array<@string> a) {
     a = a.Clone();
 
     fmt.Println(a[0], a[1]);

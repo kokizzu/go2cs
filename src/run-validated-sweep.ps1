@@ -2,7 +2,9 @@
 #
 # The charter's operational gate: after any change to golib, go2cs-gen, the converter or the
 # corpus, every already-validated package must still validate -- verdict for verdict, at its
-# exact banked count. This script is that gate.
+# exact banked count. This script is that gate. (One narrow, named exception: a row that declares
+# HOST-CONDITIONAL verdicts may exceed its banked floor by exactly those named rows -- see
+# Test-HostConditionalDelta below. Any other count movement is still a failure.)
 #
 # The roster is READ FROM docs/ValidatedTestPackages.md rather than hardcoded, so it can never
 # drift from the table a banking commit just updated: the table is the single source of truth for
@@ -46,12 +48,34 @@ if (-not $goroot) { throw 'Could not resolve GOROOT -- is the Go toolchain on PA
 # ---- roster: parse the table's rows -------------------------------------------------------------
 # Row shape:  | [`net/http/internal/ascii`](https://...) | 13 | 1 | What it exercises. |
 # Column 2 is the matching-verdict count, column 3 the disclosed count (blank when none).
+# A row may additionally declare HOST-CONDITIONAL verdicts inside its What-it-exercises cell:
+#
+#   host-conditional (<why, colon-free>): `Name`, `Name`, ...
+#
+# naming verdict rows that exist only on a host with some capability (path/filepath's six
+# TestWalkSymlinkRoot subtests exist only where symlink creation is permitted -- the parent test
+# skips before spawning them otherwise). Column 2 stays the FLOOR every host produces; the names
+# bound what a more-capable host may legitimately add. The phrase "host-conditional" is reserved
+# for this annotation. Acceptance rules live on Test-HostConditionalDelta below.
 $rows = foreach ($line in Get-Content $table) {
     if ($line -match '^\|\s*\[`([^`]+)`\]\([^)]*\)\s*\|\s*(\d+)\s*\|\s*(\d*)\s*\|') {
+        # Row fields FIRST: the annotation -match below overwrites $Matches.
+        $rowPackage = $Matches[1]
+        $rowExpected = [int]$Matches[2]
+        $rowDisclosed = if ($Matches[3]) { [int]$Matches[3] } else { 0 }
+
+        # The capture takes the run of backticked, comma-separated names right after the colon and
+        # stops at the first text that is not one -- the cell's next " * [proof]" segment ends it.
+        $rowConditional = @()
+        if ($line -match 'host-conditional\s*(?:\([^)]*\))?\s*:\s*((?:`[^`]+`\s*,\s*)*`[^`]+`)') {
+            $rowConditional = @([regex]::Matches($Matches[1], '`([^`]+)`') | ForEach-Object { $_.Groups[1].Value })
+        }
+
         [PSCustomObject]@{
-            Package   = $Matches[1]
-            Expected  = [int]$Matches[2]
-            Disclosed = if ($Matches[3]) { [int]$Matches[3] } else { 0 }
+            Package     = $rowPackage
+            Expected    = $rowExpected
+            Disclosed   = $rowDisclosed
+            Conditional = $rowConditional
         }
     }
 }
@@ -139,6 +163,134 @@ function ConvertTo-GoDuration([string] $value) {
     return [TimeSpan]::FromTicks([long][math]::Round($sign * $ticks))
 }
 
+# ---- host-conditional verdicts ------------------------------------------------------------------
+# A banked count is normally exact, but a verdict COUNT can be legitimately host-dependent:
+# path/filepath banks 61 on a host without symlink-creation privilege, where Go itself skips
+# TestWalkSymlinkRoot -- and on a host WITH the privilege the test runs and spawns its six
+# table-driven subtests, six verdict rows that simply do not exist on the banking host (the
+# skip->pass flips of the other privilege-gated tests are count-NEUTRAL; only rows that appear or
+# vanish move the count). Banking the larger number would false-red every unprivileged host, the
+# larger population -- so the roster banks the FLOOR and names the conditional verdicts, and the
+# sweep accepts floor+k ONLY when the k extra rows are exactly k of the named tests, agreeing on
+# both runtimes, with no banked verdict missing. Anything outside the named set still fails
+# loudly, exactly as before.
+#
+# The check needs the banked verdict NAME SET, not just the count -- count arithmetic alone would
+# wave through a lost banked row canceling against a rogue new one. That set is the package's
+# committed proof page (docs/validation/current/<pkg-dots>.md), read from HEAD deliberately: the
+# sweep run that just validated at the larger count has already REWRITTEN the working-tree page to
+# match itself, so only the committed copy still records what was banked.
+function Test-HostConditionalDelta {
+    param(
+        [int] $Expected,           # banked matching-verdict count (roster column 2, the floor)
+        [int] $Disclosed,          # banked disclosed count (roster column 3)
+        [string[]] $Conditional,   # the named host-conditional verdicts (roster annotation)
+        [int] $Got,                # the live run's validated count
+        $Comparison,               # the run's go2cs_test_comparison.json, ConvertFrom-Json form
+        [string[]] $BankedNames    # verdict names from the committed proof page's Verdicts table
+    )
+
+    # Local to this function -- nested definitions do not leak into the script scope.
+    function New-HostConditionalVerdictResult([bool] $accepted, [string[]] $extras, [string] $reason) {
+        return [PSCustomObject]@{ Accepted = $accepted; Extras = $extras; Reason = $reason }
+    }
+
+    $k = $Got - $Expected
+    if ($k -lt 1) {
+        return New-HostConditionalVerdictResult $false @() "count $Got is below the banked floor $Expected -- a lost verdict is never host-conditional"
+    }
+    if ($k -gt $Conditional.Count) {
+        return New-HostConditionalVerdictResult $false @() "count $Got exceeds the floor by $k, more than the $($Conditional.Count) named host-conditional verdicts"
+    }
+    if ($null -eq $Comparison -or $null -eq $Comparison.go -or $null -eq $Comparison.csharp) {
+        return New-HostConditionalVerdictResult $false @() 'comparison record carries no per-test verdict maps'
+    }
+
+    # A moved disclosed count shifts the same arithmetic this check relies on, and a disclosure
+    # appearing or retiring is roster maintenance, never host capability.
+    $liveDisclosed = if ($null -eq $Comparison.disclosed) { 0 } else { @($Comparison.disclosed).Count }
+    if ($liveDisclosed -ne $Disclosed) {
+        return New-HostConditionalVerdictResult $false @() "disclosed count moved ($liveDisclosed live vs $Disclosed banked) -- not a host-conditional shape"
+    }
+
+    # The proof page lists every compared verdict: the matched rows plus the disclosed-divergent
+    # ones. If page and roster disagree the banked evidence is inconsistent -- absorb nothing.
+    if ($BankedNames.Count -ne ($Expected + $Disclosed)) {
+        return New-HostConditionalVerdictResult $false @() "committed proof page lists $($BankedNames.Count) verdicts where the roster banks $Expected matched + $Disclosed disclosed -- page and table disagree"
+    }
+
+    $goProperties = $Comparison.go.PSObject.Properties
+    $csProperties = $Comparison.csharp.PSObject.Properties
+    $liveNames = @($goProperties | ForEach-Object { $_.Name })
+
+    $missing = @($BankedNames | Where-Object { $liveNames -notcontains $_ })
+    if ($missing.Count -gt 0) {
+        return New-HostConditionalVerdictResult $false @() "banked verdicts missing from this run: $($missing -join ', ')"
+    }
+
+    $extras = @($liveNames | Where-Object { $BankedNames -notcontains $_ })
+    $outside = @($extras | Where-Object { $Conditional -notcontains $_ })
+    if ($outside.Count -gt 0) {
+        return New-HostConditionalVerdictResult $false @() "extra verdicts outside the named host-conditional set: $($outside -join ', ')"
+    }
+
+    # With nothing missing this equals $k by construction; a mismatch means the count and the
+    # verdict maps have come apart (a converter-side accounting change) -- refuse to absorb.
+    if ($extras.Count -ne $k) {
+        return New-HostConditionalVerdictResult $false @() "the $($extras.Count) extra verdict rows do not account for the count delta of $k"
+    }
+
+    foreach ($name in $extras) {
+        $goVerdict = $goProperties[$name].Value
+        $csProperty = $csProperties[$name]
+        if ($null -eq $csProperty -or $csProperty.Value -ne $goVerdict) {
+            $csVerdict = if ($null -eq $csProperty) { 'absent' } else { $csProperty.Value }
+            return New-HostConditionalVerdictResult $false @() "conditional verdict ${name}: go '$goVerdict' vs C# '$csVerdict' -- the sides do not agree"
+        }
+    }
+
+    return New-HostConditionalVerdictResult $true $extras $null
+}
+
+# Reads the two evidence artifacts the delta check needs -- the run's own comparison record and
+# the committed proof page -- and applies Test-HostConditionalDelta. Every unreadable input is a
+# rejection with its reason, never an acceptance: the mechanism only absorbs what it can prove.
+function Get-HostConditionalVerdict {
+    param([PSCustomObject] $Row, [int] $Got, [string] $OutDir)
+
+    $comparisonPath = Join-Path $OutDir 'go2cs_test_comparison.json'
+    if (-not (Test-Path $comparisonPath)) {
+        return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "no comparison record at $comparisonPath" }
+    }
+
+    $comparison = $null
+    try { $comparison = [System.IO.File]::ReadAllText($comparisonPath) | ConvertFrom-Json } catch {}
+    if ($null -eq $comparison) {
+        return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "unreadable comparison record at $comparisonPath" }
+    }
+
+    # 2>$null is safe here: the sweep loop runs under 'Continue', so a missing page's stderr lines
+    # become discarded ErrorRecords rather than a terminating abort (the 'Stop' hazard the drift
+    # section documents), and the rejection below already names the path loudly.
+    $pageRel = 'docs/validation/current/' + ($Row.Package -replace '/', '.') + '.md'
+    $pageLines = & git -C $repo show "HEAD:$pageRel" 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $pageLines) {
+        return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "no committed proof page at HEAD:$pageRel" }
+    }
+
+    # Verdict names come from the page's "## Verdicts" table alone -- a disclosed package repeats
+    # its divergent tests' names in a later Disclosed-divergences table, which must not be counted.
+    $bankedNames = New-Object System.Collections.Generic.List[string]
+    $inVerdicts = $false
+    foreach ($pageLine in @($pageLines)) {
+        if ($pageLine -match '^##\s') { $inVerdicts = [bool]($pageLine -match '^##\s+Verdicts\b'); continue }
+        if ($inVerdicts -and $pageLine -match '^\|\s*`([^`]+)`\s*\|') { [void]$bankedNames.Add($Matches[1]) }
+    }
+
+    return Test-HostConditionalDelta -Expected $Row.Expected -Disclosed $Row.Disclosed -Conditional $Row.Conditional `
+        -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray()
+}
+
 # Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
 # SMHasher matrix runs ~15 minutes in C# (7.6 s in Go — a performance gap, not a correctness one)
 # and was BANKED under 30m; at the default it reports a timeout with every test up to the cut
@@ -178,7 +330,13 @@ function ConvertTo-GoDuration([string] $value) {
 # hence 60m; index/suffixarray's ~35 min on the i9 extrapolates to 70-105 min, hence 120m;
 # archive/zip measured 774 s here, so its 30m stands. -TestTimeout raises any of these further on
 # a still-slower box; re-measure and move a floor when a slower legitimate host proves one short.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '60m'; 'archive/zip' = '30m' }
+#
+# crypto/dsa's floor is sized to its VARIANCE, not its typical run: TestParameterGeneration is a
+# randomized prime search, and two same-machine samples an hour apart measured 1,496 s (25 min)
+# and >3,600 s (blew the then-60m floor mid-run) -- the heavy tail, not load, is the variable, so
+# the deadline must clear the tail. 120m holds both observed extremes with 2x headroom on the
+# fast sample (2026-08-11, i7-5820K).
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '30m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
@@ -215,10 +373,27 @@ foreach ($row in $rows) {
             Write-Host "  PASS  $label $got" -ForegroundColor Green
         }
         else {
-            # Validated, but NOT at its banked count -- a silent change in what the suite asserts.
-            # Treat as a failure: the table and reality must agree, one of them is now wrong.
-            $fail++; $failed += "$pkg (count $got, banked $($row.Expected))"
-            Write-Host "  COUNT $label $got, banked $($row.Expected)" -ForegroundColor Yellow
+            # Validated, but NOT at its banked count -- normally a silent change in what the suite
+            # asserts, and a failure: the table and reality must agree, one of them is now wrong.
+            # A row that declares host-conditional verdicts gets one chance to PROVE the surplus is
+            # exactly those named rows materializing on a more-capable host; anything unprovable
+            # falls through to the same failure as before, with the rejection reason attached.
+            $hostConditional = $null
+            if ($row.Conditional.Count -gt 0) {
+                $hostConditional = Get-HostConditionalVerdict -Row $row -Got $got -OutDir $outDir
+            }
+
+            if ($null -ne $hostConditional -and $hostConditional.Accepted) {
+                $pass++
+                Write-Host "  PASS  $label $got = $($row.Expected) banked + $($hostConditional.Extras.Count) host-conditional" -ForegroundColor Green
+            }
+            else {
+                $fail++; $failed += "$pkg (count $got, banked $($row.Expected))"
+                Write-Host "  COUNT $label $got, banked $($row.Expected)" -ForegroundColor Yellow
+                if ($null -ne $hostConditional -and $hostConditional.Reason) {
+                    Write-Host "        host-conditional check: $($hostConditional.Reason)" -ForegroundColor Yellow
+                }
+            }
         }
     }
     else {
@@ -243,9 +418,9 @@ $ErrorActionPreference = 'Continue'
 $drift = & git -C $repo -c core.safecrlf=false diff --numstat --ignore-cr-at-eol -- src/core
 
 if ($drift) {
-    # Twenty production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
-    # converts the package in its TEST closure, which imports more than the production closure, and
-    # a wider closure legitimately changes three things in the production emission:
+    # A couple of dozen production files drift on EVERY sweep, and none of them is a problem. A
+    # `-tests` run converts the package in its TEST closure, which imports more than the production
+    # closure, and a wider closure legitimately changes three things in the production emission:
     #
     #   Delta-io alias      `using io = io_package;` becomes a shadow-renamed alias, because the
     #                       test closure pulls in a `go.io` CHILD namespace that `io` would collide
@@ -254,19 +429,29 @@ if ($drift) {
     #                       closure imports a package whose own namespace shadows the root
     #                       (crypto/md5's byteorder; math/rand/v2's `go/format` via regress_test.go).
     #   init-tests hook     production `package_init.cs` gains the partial-method hook the test
-    #                       variant's relocated initializers implement (unicode, internal/zstd,
-    #                       time, internal/profile, syscall, and internal/buildcfg -- whose test
-    #                       half implements nothing, so the hook is erased again and the committed
-    #                       file stays hookless. time previously landed in the "inspect" bucket
-    #                       every sweep, the exact false alarm this section exists to stop).
-    #                       ⚠ THIS LIST IS OWED BY EVERY BANK. A package whose production
-    #                       package_init.cs relocates initializers gains the hook the moment its
-    #                       suite is banked, and it reports as CONTENT drift on every sweep
-    #                       thereafter until its row is added here (internal/profile, 2026-08-09).
-    #                       ⚠ AND THE PATH IS NOT ALWAYS FLAT. Under layout L3 a platform-varying
-    #                       package keeps package_init.cs in its per-GOOS folder, so the row to add
-    #                       is `<pkg>/<goos>/package_init.cs` -- which is why syscall's bank missed
-    #                       its own row while matching the class exactly (syscall, 2026-08-10).
+    #                       variant's relocated initializers implement -- and the compiler erases
+    #                       it again when that half implements nothing, which is why NO committed
+    #                       package_init.cs carries the hook and the drift is always the hook
+    #                       APPEARING, never changing or vanishing.
+    #                       ⚠ THIS CLASS IS DERIVED, AND A BANK OWES IT NOTHING. It used to be six
+    #                       hand-maintained rows in the list below under the standing warning "THIS
+    #                       LIST IS OWED BY EVERY BANK" -- a debt that went unpaid twice, and each
+    #                       time false-redded EVERY full sweep against a healthy package until
+    #                       someone re-derived the missing row from the failure (internal/profile,
+    #                       2026-08-09; syscall, 2026-08-10). Nothing is listed now. The candidates
+    #                       are every package_init.cs in the corpus, recognized by their PATH shape
+    #                       ($initHookPathShape), and membership is decided entirely by CONTENT in
+    #                       Test-InitTestsHookDrift -- which is also STRICTLY TIGHTER than the list
+    #                       it replaces: it requires the hook to be the thing that appeared and
+    #                       rejects any removed line, where a listed file was judged on its added
+    #                       lines alone.
+    #                       ⚠ THE PATH SHAPE COUNTS NO DIRECTORY SEGMENTS, deliberately. Under
+    #                       layout L3 a platform-varying package keeps its copy at
+    #                       `<pkg>/<goos>/package_init.cs` while every other package keeps it flat
+    #                       at `<pkg>/package_init.cs`; one depth-agnostic pattern matches both, so
+    #                       the flat-shape assumption that hid syscall's row is not even available
+    #                       to make. Spelling the GOOS names instead would have re-created exactly
+    #                       the maintenance this retires, at the first new port.
     #
     # Both emissions are correct for their own closure -- only the pipeline pairs them -- so this is
     # owed to whoever owns the next whole-corpus rebank, not to the person running a sweep today.
@@ -275,6 +460,11 @@ if ($drift) {
     # Listing them under the same warning as real drift trains the reader to skip the warning, which
     # is how a genuine regression gets waved through. They get their own section instead -- and only
     # if their content still MATCHES the class, so a stale entry cannot hide a real change.
+    #
+    # What stays a NAME LIST is the alias/qualification class alone. Those are ordinary production
+    # sources with no structural signature to enumerate by, and -- unlike the hook class -- they do
+    # not gain a member every time a package banks: the set moves only when the converter's aliasing
+    # or qualification changes, which is a converter arc with its own review, not a bank's paperwork.
     $closureFiles = @(
         'src/core/bufio/bufio.cs'
         'src/core/bufio/scan.cs'
@@ -285,9 +475,6 @@ if ($drift) {
         'src/core/crypto/md5/md5block.cs'
         'src/core/hash/hash.cs'
         'src/core/image/format.cs'
-        'src/core/internal/buildcfg/package_init.cs'
-        'src/core/internal/profile/package_init.cs'
-        'src/core/internal/zstd/package_init.cs'
         'src/core/math/rand/v2/pcg.cs'
         'src/core/math/rand/v2/rand.cs'
         'src/core/regexp/backtrack.cs'
@@ -295,10 +482,14 @@ if ($drift) {
         'src/core/regexp/regexp.cs'
         'src/core/strings/reader.cs'
         'src/core/strings/replace.cs'
-        'src/core/syscall/windows/package_init.cs'
-        'src/core/time/package_init.cs'
-        'src/core/unicode/package_init.cs'
     )
+
+    # The DERIVED class's candidate set: any package_init.cs anywhere under the corpus. `.+` spans
+    # any number of directory segments, so `syscall/windows/package_init.cs` (layout L3) and
+    # `unicode/package_init.cs` (flat) are the same pattern and no GOOS name appears anywhere.
+    # Being a candidate decides nothing on its own -- Test-InitTestsHookDrift below still has to
+    # recognize the content.
+    $initHookPathShape = '^src/core/.+/package_init\.cs$'
 
     # Marker glyphs come from the canonical symbol table, never spelled here -- the standing rule
     # for every consumer of the converter's naming constants.
@@ -314,11 +505,14 @@ if ($drift) {
         [regex]::Escape("$shadow" + 'io')                     # the shadow-renamed io alias
         [regex]::Escape('global::' + $root + '.')             # root-qualified reference
         [regex]::Escape($root + '.@internal')                 # root-qualified internal package
-        [regex]::Escape('init' + $temp + $temp + 'tests')     # the -tests init hook
-        '^\s*//'                                              # the hook's explanatory comment
+        [regex]::Escape('init' + $temp + $temp + 'tests')     # the -tests init hook (see below)
+        '^\s*//'                                              # a comment carried by the reorder
         '^\s*$'                                               # blank separator
     )
 
+    # Judges the NAME-LISTED alias/qualification class only. (The hook shape stays in the list
+    # above because this predicate is generic, but no listed file can gain one: the hook is emitted
+    # into package_init.cs alone, and those are routed to Test-InitTestsHookDrift instead.)
     function Test-ClosureClassDrift([string] $path) {
         $added = & git -C $repo -c core.safecrlf=false diff --ignore-cr-at-eol -U0 -- $path |
             Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' } |
@@ -331,6 +525,39 @@ if ($drift) {
         return $true
     }
 
+    # Judges the DERIVED init-tests hook class, and it is the whole safety argument for having no
+    # name list: a candidate is absorbed only when its diff IS the hook, exactly as
+    # writePackageInitFile emits it (initOrderOperations.go) -- the call inside the static ctor, a
+    # blank line, the four-line explanation, and the erasable declaration. Seven added lines, none
+    # removed. Three conditions, each closing a way a real change could pass for the class:
+    #
+    #   nothing removed   The committed corpus holds the production emission and the -tests
+    #                     emission is that PLUS the hook, so this class only ever adds. A
+    #                     package_init.cs that LOSES a line has lost a relocated initializer --
+    #                     a real regression, and the one the name list waved through, since it
+    #                     inspected added lines only.
+    #   the hook appears  Without this anchor the comment and blank shapes below would absorb any
+    #                     comment-only edit to any package_init.cs in the corpus.
+    #   nothing else      Every added line must be the hook, a comment, or blank. One added line
+    #                     of real code -- an extra relocated init call, say -- and the file goes
+    #                     back to the warning block, hook or no hook.
+    function Test-InitTestsHookDrift([string] $path) {
+        $hook = [regex]::Escape('init' + $temp + $temp + 'tests')
+        $changed = & git -C $repo -c core.safecrlf=false diff --ignore-cr-at-eol -U0 -- $path
+
+        $added = @($changed | Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' } | ForEach-Object { $_.Substring(1) })
+        $removed = @($changed | Where-Object { $_ -match '^-' -and $_ -notmatch '^---' })
+
+        if ($removed.Count -gt 0) { return $false }
+        if (-not ($added | Where-Object { $_ -match $hook })) { return $false }
+
+        foreach ($line in $added) {
+            if ($line -notmatch $hook -and $line -notmatch '^\s*//' -and $line -notmatch '^\s*$') { return $false }
+        }
+
+        return $true
+    }
+
     $known = @()
     $real = @()
 
@@ -338,7 +565,16 @@ if ($drift) {
         # numstat row: added <tab> removed <tab> path
         $path = ($entry -split "`t")[-1]
 
-        if ($closureFiles -contains $path -and (Test-ClosureClassDrift $path)) { $known += $entry } else { $real += $entry }
+        # A package_init.cs is judged by the derived check ALONE -- the name list has no say over
+        # it, in either direction, which is what makes a bank owe this section nothing.
+        $isKnown = if ($path -match $initHookPathShape) {
+            Test-InitTestsHookDrift $path
+        }
+        else {
+            ($closureFiles -contains $path) -and (Test-ClosureClassDrift $path)
+        }
+
+        if ($isKnown) { $known += $entry } else { $real += $entry }
     }
 
     if ($known) {

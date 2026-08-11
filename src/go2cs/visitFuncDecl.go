@@ -1408,6 +1408,17 @@ func (v *Visitor) generateParametersSignature(signature *types.Signature, addRec
 		} else {
 			paramTypeName := v.getCSharpTypeName(param.Type())
 
+			// A fixed-size-array parameter carries its Go DIMENSION as an attribute: `array<T>`
+			// has no const generic to hold it and a type-only position has no value or field
+			// initializer to recover it from, so without this the reflection bridge answers a
+			// dims-less array for reflect.TypeOf(f).In(i) — testing/quick then generates a
+			// ZERO-length array for a `[32]byte` parameter. See emitGoArrayDimsAttribute.
+			// One emission point serves all three signature builders (declarations/methods here,
+			// func literals and func types through convFuncType, interface methods through
+			// visitInterfaceType), so a Go func type's parameter dims are stated wherever its
+			// C# shape is written.
+			result.WriteString(emitGoArrayDimsAttribute(param.Type()))
+
 			// A FUNC-LITERAL parameter typed as a `string | []byte`-union TYPE PARAMETER
 			// renders as the type parameter itself (`(T part) => ...`): the enclosing
 			// method's type parameter is in scope inside a lambda, and every union-typed

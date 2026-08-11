@@ -24,7 +24,7 @@ internal static alias positional() {
     return new alias(1, 2);
 }
 
-internal static uint64 sum(words w) {
+internal static uint64 sum([GoArrayDims(4)] words w) {
     w = w.Clone();
 
     uint64 s = default!;
@@ -34,7 +34,7 @@ internal static uint64 sum(words w) {
     return s;
 }
 
-internal static uint64 rangeSum(words w) {
+internal static uint64 rangeSum([GoArrayDims(4)] words w) {
     w = w.Clone();
 
     uint64 s = default!;

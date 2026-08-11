@@ -149,6 +149,68 @@ public static partial class GoReflect
     }
 
     /// <summary>
+    /// Whether a managed <see cref="Type"/> stands for a Go DEFINED (named) type — the gate behind
+    /// <c>reflect.Type.Name()</c>, which reports a name for a defined type and <c>""</c> for every
+    /// other one. This is the managed reconstruction of the descriptor bit Go's own
+    /// <c>rtype.Name()</c> consults, <c>abi.Type.HasName()</c>.
+    /// </summary>
+    /// <remarks>
+    /// Mirrors <see cref="GoTypeName"/> ARM FOR ARM, and has to: <c>Name()</c> is that method's
+    /// output with the package qualifier trimmed off, so the two disagreeing would let a type report
+    /// a name it does not have — or hide one it does. False for exactly the arms that render Go
+    /// STRUCTURALLY (the raw golib containers <c>[]T</c>/<c>[N]T</c>/<c>map[K]V</c>/<c>chan T</c>/
+    /// <c>*T</c>, <c>interface {}</c>, <c>struct {}</c>, an anonymous-struct lift, and the
+    /// pointer-sourced adapter that stands for <c>*T</c>); true everywhere else — including the
+    /// predeclared scalars, since Go's <c>int</c> IS a named type, and, the case this exists for, a
+    /// DEFINED type whose underlying type is a composite.
+    ///
+    /// That last case is the whole point, and it is why the test cannot be
+    /// <c>ElementType(t) is null</c> — which is what stood in <c>rtype.Name()</c> until 2026-08-11.
+    /// A named container HAS an element type exactly as the unnamed one does, so that proxy answered
+    /// <c>""</c> for <c>type testSET []int</c> while <c>PkgPath()</c>, reading the same managed
+    /// nesting, correctly answered <c>"main"</c>. encoding/asn1's <c>getUniversalType</c> chooses
+    /// between SEQUENCE and SET on <c>strings.HasSuffix(t.Name(), "SET")</c> and nothing else, so
+    /// the entire visible symptom was one byte: <c>30</c> where Go writes <c>31</c>. Guarded by the
+    /// ReflectStructTagCopy behavioral test, which pairs every named shape with its unnamed control.
+    /// </remarks>
+    public static bool HasGoName(Type? t)
+    {
+        if (t is null)
+            return false;
+
+        // Go's empty interface is an unnamed type.
+        if (t == typeof(object))
+            return false;
+
+        // The raw golib containers ARE Go's unnamed composites. A DEFINED container type is a
+        // converted wrapper struct that merely IMPLEMENTS one of the container interfaces, so it
+        // never matches here — which is the distinction the old element-type proxy could not draw.
+        if (t.IsGenericType)
+        {
+            Type gd = t.GetGenericTypeDefinition();
+
+            if (gd == typeof(slice<>) || gd == typeof(array<>) || gd == typeof(map<,>) ||
+                gd == typeof(channel<>) || gd == typeof(ж<>))
+                return false;
+        }
+
+        // An adapter renders as what it stands for (R10): a pointer-sourced one as the unnamed
+        // `*T`, a value-sourced one as the struct it wraps — whose own name is then the answer.
+        if (TryAdapterWrappedType(t, out Type? wrapped, out bool pointerSourced))
+            return !pointerSourced && HasGoName(wrapped);
+
+        // `struct {}` and every lifted anonymous struct render structurally; a lift that carries
+        // [GoLocalName] is a NAMED function-local type and keeps its name, matching GoTypeName.
+        if (t == typeof(EmptyStruct))
+            return false;
+
+        if (t.IsValueType && goLocalNameOf(t) is null && goTypeMarkerOf(t) is { Definition: "dyn" })
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
     /// Go's structural spelling of an unnamed struct type — the text
     /// <c>reflect.Type.String()</c> reports for a type literal.
     /// </summary>

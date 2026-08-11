@@ -47,7 +47,7 @@ easily, and a .NET developer can use Go code directly within the .NET ecosystem.
 ### Frequently asked questions
 
 * Why is a Go to C# transpiler needed? _[Integration opportunities](Background.md#background)._
-* Won't converted C# code be slower? _[Yes, slower is expected](#performance)._
+* Won't converted C# code be slower? _[Usually — but no longer always](#performance)._
 
 ## Transpiler Goals
 
@@ -199,7 +199,7 @@ go2cs -tests -test-action all goroot_pkg_dir converted_pkg_dir   # ...and build,
 | `-stdlib` | Convert the Go standard library (optionally followed by specific package names). |
 | `-recurse` | Recursively convert a downloaded module **and its third-party dependencies** in dependency order, referencing (not reconverting) the pre-converted standard library through `$(go2csPath)`. An optional second positional output root isolates the generated `src\` app and `pkg\` dependency trees; references inside that graph are relative. A package that fails to load or convert is reported and skipped, and the run continues with the rest. See [Converting a real-world module](#converting-a-real-world-module). |
 | `-recurse=module` | Same recursion, narrower **scope**: convert the input module's own packages (every package under its `go.mod`, in dependency order) and **stop there** — each third-party package is still referenced into the `pkg\` tree, but none of them is converted, so a dependency closure that go2cs cannot yet convert can no longer hold up the module's own code. The referenced-but-unconverted packages are listed at the end of the run; converting them into the same output root later resolves those references. See [Converting a real-world module](#converting-a-real-world-module). |
-| `-recurse=nuget` | Same, but the standard library, the `golib` runtime and the analyzer come from NuGet — [`go.<pkg>`](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll) + [`go.lib`](https://www.nuget.org/packages/go.lib) + [`go.gen`](https://www.nuget.org/packages/go.gen) — so nothing is staged locally. The app's own and third-party converted packages stay project references. A reference style and a scope are independent, so the values combine: `-recurse=module,nuget`. |
+| `-recurse=nuget` | Same, but the standard library, the `golib` runtime and the analyzer come from NuGet — [`go.<pkg>`](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll) + [`go.lib`](https://www.nuget.org/packages/go.lib) + [`go.gen`](https://www.nuget.org/packages/go.gen) — so nothing is staged locally. The app's own and third-party converted packages stay project references. A reference style and a scope are independent, so the values combine: `-recurse=module,nuget`. **The published packages exist for one Go release** — the release go2cs itself is built with — so the module being converted has to resolve to that release; go2cs checks before writing anything and refuses, naming both versions, rather than emitting a project whose restore fails on whichever packages that release added or moved. |
 | `-tests` | Also convert the package's eligible `_test.go` suite and emit a runnable C# test-host project (default off; cannot be combined with `-recurse`). Forces `-comments` on and self-locates `$(go2csPath)` by walking up from the output directory, so the two-argument form works from a bare clone with no flags or environment setup. See [Try it yourself](#try-it-yourself--validate-a-converted-test-suite). |
 | `-test-action <action>` | With `-tests`: one of `convert` (default), `build`, `run`, `compare`, or `all`. `convert` and `all` convert the package and its tests; `build` / `run` / `compare` act on the **existing** converted artifacts — validated against the test manifest's recorded input digest — without reconverting. `compare` (and `all`) runs both `go test -json -count=1` and the converted C# test host and diffs the terminal results by test name. |
 | `-test-timeout <duration>` | Package deadline for a converted-test action, in Go duration syntax (default `2m`). For `run`/`compare` it is handed to **both** sides — `go test -timeout` and the converted host's own `-timeout` — so they agree. A suite that legitimately runs long needs a value above both defaults: `hash/maphash` takes ~15 minutes in C# where Go's takes 7.6 seconds, so it is validated with `-test-timeout 30m`. |
@@ -262,6 +262,8 @@ func main() {
 Next, pin the app to a **Go 1.23-compatible** dependency set and confirm it builds as Go.
 
 > **NOTE:** _go2cs is built with **Go 1.23**, so its type-checker only reads modules whose `go` directive — and their dependencies' — is **≤ 1.23**. `fatih/color` v1.19+ and current `golang.org/x/sys` require Go 1.25, which would fail step 2 with_ `package requires newer Go version go1.25`_; pin as shown._
+>
+> _The `GOTOOLCHAIN=local` below is what makes that error appear at all. Left unset, Go **silently downloads and re-execs** whichever newer toolchain a `go`/`toolchain` directive asks for, so the build succeeds against a standard library go2cs has no published packages for. go2cs detects the switch and says so, but pinning the toolchain keeps the whole round-trip on one Go release, which is what you want._
 
 First pin the toolchain, so Go uses the 1.23 you have instead of fetching the newer one a dependency asks
 for — the one command whose syntax is shell-specific:
@@ -322,7 +324,9 @@ internal static void Main() {
 > binaries alongside Windows. Steps 1–2 run on both platforms; steps 3–4 complete on **Windows** today, and
 > on Linux for programs whose import closure stays within the `fmt`/`os`/`time` class. A closure reaching
 > platform-divergent `syscall` surface (as this example's `x/sys` dependency does) still builds only on
-> Windows — the remaining Linux piece is in progress, see the [Roadmap](Roadmap.md)._
+> Windows — the remaining piece is the Linux side of that `syscall` surface, tracked in the Roadmap's
+> [Platforms section](Roadmap.md#platforms--linux-and-the-multi-target-corpus-in-progress) with the
+> operational detail in [PLAN-linux-operation.md](PLAN-linux-operation.md)._
 
 **3 — C#: build the generated solution.** The app's per-project `.slnx` builds the app and its whole
 converted dependency tree, restoring the go2cs packages on the way; opening it in Visual Studio makes the
@@ -492,11 +496,14 @@ strictly.
 ### Performance
 
 _Everyone asks:_ how fast is the transpiled C# compared to the original Go — including startup time,
-memory, and Native AOT builds? See the [performance comparison](Performance.md) — **`TL;DR`**: _not as fast
-as native Go, [nor is that an expected outcome](Background.md#converted-code)._ Save for initial work on a
-[ref struct](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/ref-struct)
-based [stack string](ConversionStrategies.md#strings-string-and-sstring) and
-[stack slice](ConversionStrategies.md#slices-and-arrays), optimization is targeted for _after_ Phase 4.
+memory, and Native AOT builds? See the [performance comparison](Performance.md) — **`TL;DR`**: _usually
+slower than native Go, [but no longer always](Background.md#why-convert-go-to-c)_: maps, channels and the
+optimized [stack string](ConversionStrategies.md#strings-string-and-sstring) path run at **parity with Go
+or faster in both C# variants**, and Native AOT adds more rows to that list. Most compute-shaped code sits
+within a small multiple of Go, with runtime structural-interface satisfaction the honest outlier. Save for
+the [ref struct](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/ref-struct)
+based stack string and [stack slice](ConversionStrategies.md#slices-and-arrays) work already landed, broad
+optimization is targeted for _after_ Phase 4 — the parity rows show the ceiling, not the finish line.
 
 Newer Go and .NET versions are planned; a validated baseline comes first.
 

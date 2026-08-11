@@ -164,8 +164,9 @@ initialization order for constants at all, so that edge is one the conversion ha
 
 **Full detail:** [Reference → Package-Level Variable Initialization Order](ConversionStrategies-Reference.md#package-level-variable-initialization-order) —
 the three hazard shapes, transitive dependency analysis, moved-dependency closure, addressed globals,
+[tuple-deconstructing specs relocated as one unit](ConversionStrategies-Reference.md#a-tuple-deconstructing-package-var-relocates-as-one-unit),
 the [constant-dependency edge](ConversionStrategies-Reference.md#a-constant-emitted-as-an-initialized-field-is-an-initialization-dependency-too),
-and the `PackageVarInitOrder` behavioral guard.
+and the `PackageVarInitOrder` / `InitOrderTupleSpecs` behavioral guards.
 
 ---
 
@@ -589,6 +590,23 @@ var seed = new byte[]{1, 2}.array(8);
 
 See [the reference](ConversionStrategies-Reference.md#a-fixed-array-composite-literal-carries-its-declared-length-arrayn)
 for the keyed/`SparseArray` form and the nested-array gap.
+
+`array<T>` carries its element type but not its LENGTH — C# has no const generic to hold the `N` of
+`[N]T` — so wherever the length has to be recoverable at runtime it comes from the emitted code: a
+value measures itself, and a struct field reads the dimension back out of the field initializer the
+converter emits (`= new(32)`). A func **parameter** is the one position with neither, so it carries
+the dimension as an attribute instead — which is what makes `reflect.TypeOf(f).In(0).Len()` answer
+32 rather than 0, and `testing/quick` generate a real 32-byte array rather than an empty one:
+
+```go
+f1 := func(in [32]byte, sc Scalar) bool { … }
+```
+```csharp
+var f1 = ([GoArrayDims(32)] array<byte> @in, Scalar sc) => { … };
+```
+
+See [the reference](ConversionStrategies-Reference.md) (*A func PARAMETER is the one position an
+array's LENGTH cannot be recovered from*) for the delegate-instance read behind it.
 
 `append`, `len`, `make`, and sub-slicing map to golib builtins/methods. A variadic `...T` parameter arrives
 as `params ꓸꓸꓸT`, where `ꓸꓸꓸT` is a using alias for `Span<T>` whose identifier mirrors the Go name

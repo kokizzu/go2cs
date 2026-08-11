@@ -4694,7 +4694,7 @@ discard at `file_test.cs:1195`, a build root this fix does not touch.)
 | `internal/testenv` | 3 of 4 | `TestGoToolLocation` looks for `<staging root>/bin/go.exe`; the converted host's GOROOT is the pipeline's exported root, which has no `bin`. Same shape as `internal/godebugs`' GOROOT-relative `doc/godebug.md`. |
 | `internal/fuzz` | 0 (build) | `minimize_test.cs(177): CS1003` — a **func-literal parameter whose type is an ALIAS to an anonymous struct** emits the Go type STRING verbatim: `(struct{Parent string; Path string; …} e) => …`. `CorpusEntry` is `type CorpusEntry = struct{…}`, and production emission handles it correctly (`global using CorpusEntry = …CorpusEntryᴛ1`), so the lift exists and the func-literal parameter position does not consult it. |
 | `internal/trace` | 0 (build) | `batchcursor_test.cs(92): CS0149 Method name expected` — a parameter **named `heap`** shadows golib's `heap()` intrinsic that the same body calls (`ref var sb = ref heap(new strings.Builder(), …)`). A name-collision rule the analysis does not cover: a local or parameter whose name collides with a golib intrinsic the body invokes. |
-| `crypto/internal/edwards25519` | 0 of 55 | **Package-var initialization ORDER.** Go initializes package-level vars in DEPENDENCY order; the converter emits C# static field initializers in DECLARATION order. `identity` is declared at line 66 and reads `feOne`, declared at line 140 — so `identity`'s initializer sees `null`, `field.Subtract` null-derefs, and the package cctor throws before any test runs. This is the board's init-ORDER arc (design-with-user), and this is its first WHOLE-PACKAGE casualty. |
+| `crypto/internal/edwards25519` | 0 of 55 → **52 of 55 with the tuple-spec fix** | **Package-var init ORDER, tuple-spec hole.** Go initializes `feOne`(0) and `d`(1) before `identity`(2); C# field initializers run in declaration order, so `identity` (line 66) reads `feOne` (line 140) while null, `field.Subtract` null-derefs, and the package cctor throws before any test runs. The general init-order mechanism **already exists and is correct** (`initOrderOperations.go`, landed `e39855770` 2026-07-11; 36 packages ship a generated `package_init.cs`) and it **flags these two vars correctly** — it then declines to act because they are TUPLE specs (`var identity, _ = …`), warning loudly at `visitValueSpec.go:1158`. Whole-corpus census: **exactly 2** production occurrences (both here) on Windows, **2 latent** on darwin (`os` `initCwd`/`initCwdErr`), zero elsewhere; the sibling hoisted-initializer fallback never fires. Hand-simulating the relocation takes the package to **52 of 55**; residual = `TestAllocations` (AllocsPerRun class, 5th member) and `TestScalarSetCanonicalBytes`/`TestScalarSetUniformBytes` (one shared **new** root: `testing/quick` + reflection bridge synthesizes a zero-length array for a fixed-size `[32]byte`/`[64]byte` parameter). Options, costs and recommendation: [`FINDING-init-order-tuple-specs.md`](FINDING-init-order-tuple-specs.md). **Option A ratified 2026-08-10** (extend the existing relocation to tuple specs, ~30 lines reusing the landed machinery); implementation sequenced into the post-1.23.1.6 harvest window. |
 | `net/smtp` | 9 of 14 | `TestNewClientWithTLS` fails with `loadcert: tls: failed to parse private key`; `TestSendMail`, `TestSendMailWithAuth`, `TestTLSClient` and `TestTLSConnState` infrastructure-error behind it. Shares its root with `crypto/rsa` below — PEM/ASN.1 private-key parsing. |
 | `crypto/rsa` | **BANKED r58a — 559 matching + 1 disclosed = 560** | ~~0 of 592; the test package's own static initializer panics in `parseKey` → `x509.ParsePKCS1PrivateKey` → `asn1.Unmarshal` → `parseField` "sequence truncated".~~ **The cctor panic is GONE**, closed by r56f's `reflect.StructField.Tag` bridge exactly as that write-back predicted: `parseField` reaches its `asn1:"…"` parameters through `field.Tag.Get("asn1")` (`asn1.cs:971`, `marshal.cs:509/514`), so while every converted struct reported UNTAGGED the DER walk read every field as having no `optional`/`explicit`/`tag:` modifiers and desynchronized on the first one that mattered. With tags bridged the whole suite runs: **560 verdicts, 559 matching, 13 excluded** (8 benchmarks + 5 examples, Phase-4D). The single mismatch is **`TestAllocations`** — `testing.AllocsPerRun(100, …)` around `DecryptPKCS1v15` — and it is the **AllocsPerRun-reports-BYTES shim**, now its FOURTH member after `log`'s `TestDiscard`, `net/http/internal`'s `TestChunkReaderAllocs` and `log/slog/internal/buffer`'s `TestAlloc`. Measured: **2,851,392,000 bytes over 100 runs = 28,513,920 B/run**, reported where Go reports a malloc COUNT. **Not banked and NOT disclosable** on the standing rule — the shim has never reported the number the assert is actually about, so disclosing it would launder an unmeasured quantity. This is now the largest prize gated on that one decision: **560 verdicts held by a single row**, which is the strongest argument yet for the carried AllocsPerRun-ownership item (r56d showed golib's own `ж`/`array`/`slice` constructors can supply an exact object COUNT — that is the design-with-user path to banking this package). `net/smtp`'s five and `encoding/asn1`'s 28-of-38 shared this root and are both worth an immediate re-measure. |
 | `go/build` | 57 of 58 verdicts (34 of 35 top-level) | `TestLocalDirectory`: `ImportPath="."`, want `"go/build"`. The test calls `ImportDir(os.Getwd())`; `go test` runs from the GOROOT package dir, the converted host runs from `src/core/go/build`, which is not inside a Go source tree. **The converted-host WORKING-DIRECTORY class**, third member after `internal/godebugs` (0 of 1) and `io/ioutil` (27 of 28). Not a disclosure: it is satisfiable at a layer go2cs owns (the staging root's identity), so disclosing it would launder a harness limitation as an unsatisfiable assert. |
@@ -5205,6 +5205,36 @@ waiting on one fix; they are four, and three of them belong to areas other lanes
   name comes back EMPTY (`[]` where Go has the full `[[{[2 5 4 6] XX}] …]`). The only one still
   unattributed below the surface message.
 
+> **L6 (2026-08-11) closes the last two of those bullets with ONE fix, and it is neither the
+> converter nor `makeField`.** The `set` field parameter reaches the emitted tag correctly —
+> `TestMarshalWithParams`, which is the `asn1:"set"` PARAMETER path, passed throughout. `TestMarshal`
+> #37 is `testSET([]int{10})`, the TYPE-NAME path: `getUniversalType` selects SET over SEQUENCE on
+> `strings.HasSuffix(t.Name(), "SET")` and nothing else. The bridge's `rtype.Name()` gated on
+> `GoReflect.ElementType(st) is not null` — a proxy for "unnamed composite" that is equally true of a
+> DEFINED container — so every `type S []T`/`[N]T`/`map[K]V`/`chan T`/`*T` in the corpus reported no
+> name. `PkgPath()`, reading the same managed nesting, answered `"main"` for the same types, which is
+> a pair Go's model cannot produce and is what named the defect. Fixed with `GoReflect.HasGoName`,
+> the managed stand-in for the descriptor's `TFlagNamed` bit, mirroring `GoTypeName` arm for arm.
+>
+> **`TestCertificate` is the SAME root, and is hereby attributed:** its `RDNSequence` is a
+> `[]RelativeDistinguishedNameSET`, so the inner elements were emitted as SEQUENCEs and the RDN came
+> back empty — the "unattributed below the surface message" bullet needs no separate investigation.
+> Measured A/B on one machine, same tree, same GOROOT: **35 of 38 before, 37 of 38 after**, the
+> remainder being `TestUnexportedStructField` alone (L7's `flagRO` gap). The board's projected
+> "36 of 38 when the tag row closes" was one row low for this reason.
+>
+> ⚠ **Two follow-ons for whoever plans next.** (1) `abi.Type.HasName()` is still `false` for every
+> synthesized descriptor, so `internal/reflectlite.rtype.Name()` — the ordinary converted body, which
+> gates on it — answers `""` for EVERY type, strictly worse than what `reflect` had. It is dormant
+> (reflectlite's consumers `context` and `errors` use only `String`/`Kind`/`Comparable`/
+> `AssignableTo`/`Implements`), so it was recorded rather than fixed: populating the bit also changes
+> `directlyAssignable`'s `T.HasName() && V.HasName()` short-circuit, currently over-permissive in
+> both packages, which is a corpus-wide assignability change and not a naming one. (2) The measure
+> was taken on the laptop's Go **1.23.2** GOROOT against the corpus's pinned 1.23.1; the denominator
+> was verified as **38 test functions**, unchanged between the two patch releases, and both sides of
+> the comparison read the same sources — so the per-test agreement is sound and only the absolute
+> count is developmental. Coordinator re-gates on the pinned machine.
+
 ### The final sweep, recovered after the hardware failure (2026-08-10)
 
 This lane was parked mid-sweep when the coordinator machine died, so the verdict was lost with it.
@@ -5337,3 +5367,72 @@ GOROOT-tree-reproduction is DEFERRED past 75% (four packages against a harness-c
 re-validating all 126); r59 runs as the next dedicated lane after the harvest with backlog 24
 riding its regen; NuGet 1.23.1.6 is approved after the day's final consolidated sweep (release
 push user-owned).
+
+## Harvest r60 — the post-1.23.1.6 collection (2026-08-11)
+
+The first release-gated harvest, run across two machines the same day the fixes landed. Every item
+below supersedes its older census row; the roster is the authority as always.
+
+**`encoding/asn1` — BANKED 38/38** (roster 127, `74cec76e3`). The full arc: 28/38 under one
+hypothesized DER root → r57a's `StructField.Tag` bridge closed six for free → r57b split the
+remainder into four TRUE roots → r58b's typed-nil packing took one, L6 took two
+(`TestMarshal` #37 AND `TestCertificate` — via `reflect.Type.Name()` blanking defined container
+types, NOT the hypothesized converter SET-tag defect; converter unmodified), L7 took the last
+(`StructField.PkgPath` unset on the type side — NOT flagRO; the value side was already refusing
+writes correctly). The two lanes' residual sets were exactly complementary and neither could
+observe the union; the pinned-machine measurement confirmed 38/38.
+
+**`crypto/internal/edwards25519` — measured 54/55 on merged L4+L7** (was 0/55, a whole-package
+cctor casualty). L4's tuple-spec relocation lets the package RUN; L7's array-dims fix greens both
+`quick.Check` rows with real `[32]byte`/`[64]byte` values. Sole residual: `TestAllocations`
+(109 objects vs want 0 — the ж-box arc's row; NOT disclosed per the near-budget ruling). NOT
+banked. ⚠ The fix's production emission (a new ordered `package_init.cs`) is deliberately
+UNCOMMITTED — additive-only drift owed to r59's queued whole-corpus regen, per the
+no-casual-regens rule.
+
+**`math/big` (224/226) and `nistec` (2,195/2,200) — refresh deliberately SKIPPED.** Nothing in
+this harvest touches their residual roots (the want-zero counter rows and TestMulUnbalanced's
+truthful performance measurement — all ж-box territory). Their recent measurements stand; a
+refresh would have measured the same defect-free packages against the same open arcs.
+
+### New open items from the lanes' re-attributions
+
+- **`rtype.PkgPath()` answers "main" for an UNNAMED struct where Go answers ""** — the sibling of
+  L6's Name() fix, found by L7's cross-validation, fixed by neither. Latent until a consumer
+  compares package paths of anonymous types.
+- **`abi.Type.HasName()` is false for every synthesized descriptor** — dormant, but populating it
+  changes `directlyAssignable`'s short-circuit corpus-wide; wants its own lane, not a drive-by.
+- **`StructField.Anonymous` + embedded-field ORDER** — go2cs-gen emits promoted-embed boxes after
+  declared fields, so bridge walk order differs from Go's declaration order. One increment, needs
+  a demonstrated consumer.
+- **`Out(i).Len()` for a func returning a fixed-size array** — no attribute position exists on a
+  ValueTuple; recorded, unowned.
+- **A bridge-minted method value keeps a dims-less descriptor** — adjacent to L7's fix, same
+  remedy shape, needs a consumer.
+
+### Machine traps (both cost real time on laptop-1; both now protocol)
+
+- **`-tests` self-location does NOT fire when a deployed root exists**: a valid machine-global
+  `%USERPROFILE%\go2cs` pre-empts self-location ("an explicitly configured working root always
+  wins"), and the resulting version-mixed build dies with `MSB4006 circular dependency ...
+  unsafe.csproj` — which reads exactly like a corpus defect and is not one. EVERY pipeline
+  measurement passes an explicit `-go2cspath <checkout>\src`.
+- **`Copy-Item` preserves `LastWriteTime`**, so a copy-aside/restore A/B leaves the restored file
+  OLDER than build output and MSBuild skips the rebuild — surfacing as a phantom `CS0117` against
+  source that plainly contains the member. Touch restored files; `git checkout` stamps fresh.
+
+### Process rulings recorded in passing
+
+- **Version flips belong to the release ritual; hand-fixes own numbers.** The io/rsa badge
+  regeneration pinned 1.23.1.6 pre-release (safe only because Phase 1 had already bumped); the
+  clean rule is mid-cycle regens pin the published version and the ritual does all flipping.
+- **`push-nuget.ps1`'s badge preflight is blind to a MISSING badge** — a banked package with no
+  Tests badge ships silently (crypto/rsa nearly did). Hardening owed: a banked proof page with no
+  corresponding badge claim fails as loudly as a wrong one.
+- **L5's publish-stamp follow-up stands**: the preflight still proxies "published" via the build
+  release; the repo-recorded stamp written by the publish ritual (feed query advisory-only) is the
+  ruled remedy.
+- **The proof pages are an L8-guarded surface too**: a sweep on a mispinned toolchain rewrites
+  `docs/validation/current/*`'s Go-version stamp with counts unchanged (observed:
+  `encoding.binary.md` 1.23.1 → 1.23.2, restored not banked). L8's guard covers the sweep; this
+  is the second thing it protects.

@@ -1174,8 +1174,12 @@ internal static ΔType canonType(ж<abi.Type> Ꮡt) {
             "resulting reflect.Type is non-canonical. Route the feeding path through abi.synthType.");
         return new rtypeжΔType(toRType(Ꮡt));
     }
-    nint[]? dims = Ꮡt.Value.arrayDims;
-    string dimsKey = dims is null ? "" : string.Join(',', dims);
+    // The key is the descriptor's OWN dims-knowledge rendering (abi.descriptorDimsKey), so a Type
+    // wrapper and the descriptor it wraps intern under exactly the same classes — including a func
+    // type's per-parameter dims, without which `func([32]byte) bool` and `func([64]byte) bool`
+    // (ONE managed delegate type, no arrayDims of their own) would share a wrapper and the first to
+    // intern would answer In(0).Len() for both.
+    string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims);
     return s_canonTypeCache.GetOrAdd((st, dimsKey), _ => new rtypeжΔType(toRType(Ꮡt)));
 }
 
@@ -1209,10 +1213,16 @@ internal static @string String(this ж<rtype> Ꮡt) {
     return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims);
 }
 
-// Name returns the type's name within its package (empty for an unnamed composite).
+// Name returns the type's name within its package (empty for an unnamed composite). The gate is
+// GoReflect.HasGoName — the managed stand-in for the descriptor's TFlagNamed bit, which a
+// synthesized abi.Type never carries. It was `ElementType(st) is not null` until 2026-08-11: a
+// proxy for "unnamed composite" that also caught every DEFINED container type, so `type testSET
+// []int` reported "" while PkgPath() — reading the same managed nesting — reported "main".
+// encoding/asn1's getUniversalType picks the SET tag on `HasSuffix(t.Name(), "SET")` alone, so
+// TestMarshal #37 marshalled 0x30 SEQUENCE where Go writes 0x31 SET.
 internal static @string Name(this ж<rtype> Ꮡt) {
     System.Type? st = Ꮡt.Value.t.sysType;
-    if (st is null || GoReflect.ElementType(st) is not null) {
+    if (!GoReflect.HasGoName(st)) {
         return "";
     }
     string full = GoReflect.GoTypeName(st);
@@ -1324,12 +1334,44 @@ private static bool isExportedGoName(string name) {
 // back empty for EVERY converted struct and every tag-driven decoder saw an untagged type —
 // encoding/asn1 marshalled crypto/x509's `optional` NamedCurveOID instead of omitting its nil
 // value, which is the "asn1: structure error: invalid object identifier" behind crypto/ecdsa's
-// TestEqual. Offset/PkgPath/Anonymous stay unpopulated: no truthful read backs them here.
+// TestEqual.
+//
+// PkgPath is a real read too, and the same silent-degradation class as the Tag: Go sets it to
+// the declaring package's import path for an UNEXPORTED field and leaves it empty for an
+// exported one, so `StructField.IsExported()` — which is nothing but `PkgPath == ""` — answered
+// TRUE for every field of every converted struct. Silently, because "" is the correct answer for
+// most fields. The consequence is a guard that can never fire: encoding/asn1 opens both its
+// struct arms with `if !t.Field(i).IsExported() { return StructuralError{"struct contains
+// unexported fields"} }`, so `Marshal(unexported{X:5,y:1})` returned a nil error where Go returns
+// that error, and `Unmarshal` ran on to write through the unexported field and panicked in
+// mustBeAssignable instead (asn1's TestUnexportedStructField). Note the two halves of the
+// read-only model degraded INDEPENDENTLY: the VALUE side was already right (Value.Field stamps
+// flagStickyRO from the same GoReflect.GoFields projection, which is why the write panicked
+// rather than silently succeeding) — it was the TYPE-side descriptor that had no answer. Both
+// now read exportedness from that one projection, so a probe of the type and a write through the
+// value can never disagree about a field.
+//
+// Offset stays unpopulated on the r39d rule — a descriptor field whose read cannot be honored
+// must not be populated to look truthful. A Go byte offset exists only to be added to a data
+// pointer, and managed storage has no such pointer to add it to; abi.StructType populates
+// Offset because its consumers (unique's clone sequencer, reflectlite) read it as layout
+// METADATA, never as an address to walk. Anonymous stays unpopulated for a different reason —
+// it IS knowable (an embedded field arrives through golib's promoted-embed box hop) but no
+// measured consumer demands it, and the recorded next gap of this shape is the field ORDER an
+// embedded field lands in: go2cs-gen emits the promoted-embed backing box AFTER the declared
+// fields, so `Host{X; y; Inner; inner; Ptr}` walks as X, y, Ptr, Inner, inner here where Go
+// walks it in declaration order.
 internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
     System.Type st = Ꮡt.Value.t.sysType!;
     GoReflect.GoFieldInfo f = GoReflect.GoFields(st)[(int)i];
     return new StructField(
         Name: (@string)f.Name,
+        // ⚠ GoReflect.GoPackagePath DIRECTLY, never "tidied" to route through rtype.PkgPath():
+        // StructField.PkgPath is NOT derivable from the type's own PkgPath. Verified against Go —
+        // for an UNNAMED struct both Type.Name() and Type.PkgPath() are "", yet its unexported
+        // field's StructField.PkgPath is still the declaring package (e.g. "main"). Routing
+        // through the defined-type gate would silently blank exactly the case this exists for.
+        PkgPath: f.Exported ? "" : (@string)GoReflect.GoPackagePath(st),
         Type: toType(abi.synthType(f.Type, f.ArrayDims)),
         Tag: ((StructTag)(@string)f.Tag),
         Index: new slice<nint>(new nint[] { i })
@@ -1447,8 +1489,20 @@ internal static nint NumIn(this ж<rtype> Ꮡt) {
     return funcShapeOf(Ꮡt, "NumIn"u8).ins.Length;
 }
 
+// In returns the i'th input parameter type. Its ARRAY DIMENSION rides the descriptor's
+// funcParamDims cargo: a `[32]byte` parameter emits as a bare `array<byte>` and the delegate type
+// is a `Func<array<byte>, bool>` shared with every other `func([N]byte) bool`, so the length has no
+// managed type to live in and no value or field initializer to be recovered from — the converter
+// stamps it on the parameter as [GoArrayDims] and abi.TypeOf reads it off the delegate instance.
+// Without it In(0) answered a dims-less array: Len() 0, String() "[]uint8", and reflect.New of it a
+// ZERO-length array — which is why testing/quick generated the empty value for every property test
+// over a fixed-size array (edwards25519's TestScalarSetCanonicalBytes indexed `in[len(in)-1]` and
+// panicked with index -1). A parameter the cargo does not cover keeps the dims-less descriptor,
+// which is the state every other type-only path already produces.
 internal static ΔType In(this ж<rtype> Ꮡt, nint i) {
-    return toType(abi.synthType(funcShapeOf(Ꮡt, "In"u8).ins[(int)i]));
+    nint[]?[]? paramDims = Ꮡt.Value.t.funcParamDims;
+    nint[]? dims = paramDims is not null && i >= 0 && (int)i < paramDims.Length ? paramDims[(int)i] : null;
+    return toType(abi.synthType(funcShapeOf(Ꮡt, "In"u8).ins[(int)i], dims));
 }
 
 internal static nint NumOut(this ж<rtype> Ꮡt) {

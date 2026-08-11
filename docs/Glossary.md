@@ -176,8 +176,21 @@ isolation-reconvert-diff covers production `.cs`); it re-generates every banked 
 current binary (so mixed-vintage output cannot hide); and its post-run **content-drift report**
 (`--ignore-cr-at-eol`, CRLF phantoms excluded) is what tells the coordinator whether a converter
 change silently moved any banked artifact. Serial by design (concurrent runs collide on shared
-dependency DLLs, CS2012), with per-package timeout overrides for legitimately slow suites
-(`hash/maphash` 30m, `index/suffixarray` 60m) so a slow tail is never misread as a failure.
+dependency DLLs, CS2012), with per-package deadline **floors** for legitimately slow suites
+(`$longTimeouts`: slow-host-calibrated, variance-sized for randomized workloads like
+`crypto/dsa`'s prime search, and raisable — never lowerable — by a larger `-TestTimeout`) so a
+slow tail is never misread as a failure.
+
+<a id="harvest"></a>**Harvest.**
+The deliberate collection pass that follows a landed shared-machinery capability: re-measure and
+bank the rows that capability **unblocked**. Cheap by construction — the fixes already landed, so
+the work is measurement and banking, not fixing. The third instrument in a trio: a **scout**
+characterizes what is unknown, a **sweep** re-proves what is already banked, a **harvest** banks
+what just *became* bankable. It institutionalizes the r57a lesson that a census taken under a
+live defect measures the defect, not the package — the yield is not only in what nobody has run,
+but in what nobody has **re-run since the thing blocking it got fixed**. (Named in r58a's charter
+— "then the harvest: bank crypto/rsa …, then log, …, then re-measure nistec" — where the
+allocation counter's landing turned five characterized near-misses into one collection pass.)
 
 <a id="mvp"></a>**MVP — minimum viable [increment].**
 The smallest *correct and fully-gated* first cut of a converter/runtime feature: the narrowest

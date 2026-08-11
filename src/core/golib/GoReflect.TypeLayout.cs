@@ -53,6 +53,12 @@ namespace go;
 //   case that stays unknowable — there is no first element to ask — and it answers `null` rather
 //   than guessing.
 //
+//   A func PARAMETER is the position where neither source exists — no value, no initializer — and
+//   the emitted delegate type is a bare `Func<array<byte>, bool>` that `func([32]byte) bool` and
+//   `func([64]byte) bool` share. That one position therefore DOES need an attribute, and gets it:
+//   the converter stamps `[GoArrayDims(32)]` on the parameter and `FuncParamDims` reads it back off
+//   the delegate INSTANCE. See GoArrayDimsAttribute.
+//
 // FUNC SHAPE IS READ OFF `Invoke`, AND THE MULTI-RETURN RULE IS UNAMBIGUOUS
 //   A `void` return is zero Go results; a `ValueTuple` return is Go's multi-return, unpacked to one
 //   result per element; anything else is one result. That rule is safe precisely because a
@@ -277,5 +283,58 @@ public static partial class GoReflect
             outs = [ret];
 
         return true;
+    }
+
+    /// <summary>
+    /// The per-parameter Go array dimensions of a converted func VALUE — one entry per parameter,
+    /// null where that parameter is not a fixed-size array — or null when nothing is carried.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The dimension of a `[32]byte` parameter cannot be read from the delegate TYPE (see the file
+    /// header), so the converter stamps it on the parameter as <see cref="GoArrayDimsAttribute"/>
+    /// and this reads it back off the delegate's target method. <c>Delegate.Method</c> resolves to
+    /// the real declaration for every shape go2cs emits — a declared func used as a method group, a
+    /// non-capturing lambda, a capturing lambda's display-class method, and a natural-typed lambda —
+    /// so one read covers them all.
+    /// </para>
+    /// <para>
+    /// The arity guard is what keeps it honest. A delegate whose target method's parameter list does
+    /// not line up one-for-one with <c>Invoke</c>'s — an OPEN instance delegate carries the receiver
+    /// as an extra leading parameter, and the bridge's own method values are expression-compiled
+    /// closures with no attributes at all — is answered <c>null</c> rather than mis-indexed. That is
+    /// the r39d rule in its usual form: a descriptor field that cannot be read truthfully stays
+    /// unpopulated, and a dims-less array descriptor is a state the bridge already handles.
+    /// </para>
+    /// </remarks>
+    public static nint[]?[]? FuncParamDims(object? funcValue)
+    {
+        if (funcValue is not Delegate d || d.Method is not { } method)
+            return null;
+
+        ParameterInfo[] declared = method.GetParameters();
+
+        if (declared.Length == 0 || d.GetType().GetMethod("Invoke") is not { } invoke ||
+            invoke.GetParameters().Length != declared.Length)
+        {
+            return null;
+        }
+        nint[]?[]? dims = null;
+
+        for (int i = 0; i < declared.Length; i++)
+        {
+            if (declared[i].GetCustomAttributes(typeof(GoArrayDimsAttribute), false) is not [GoArrayDimsAttribute { Dims.Length: > 0 } stamped])
+                continue;
+
+            dims ??= new nint[]?[declared.Length];
+            nint[] parsed = new nint[stamped.Dims.Length];
+
+            for (int j = 0; j < parsed.Length; j++)
+                parsed[j] = stamped.Dims[j];
+
+            dims[i] = parsed;
+        }
+
+        return dims;
     }
 }

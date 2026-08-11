@@ -14,6 +14,18 @@ partial class main_package {
     public bool Untagged;
 }
 
+[GoType("[]nint")] partial struct intSET;
+
+[GoType("[4]byte")] partial struct byteArray;
+
+[GoType("map[@string, nint]")] partial struct stringMap;
+
+[GoType("chan nint")] partial struct intChan;
+
+[GoType("ж<nint>")] partial class intPtr;
+
+[GoType("num:nint")] partial struct counter;
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string jsonˢ = "json"u8;
 private static readonly @string asn1ˢ = "asn1"u8;
@@ -27,6 +39,7 @@ private static readonly object copyStringˢ = (@string)"copy string:"u8;
 private static readonly object copyWindowˢ = (@string)"copy window:"u8;
 private static readonly object copyArrayˢ = (@string)"copy array:"u8;
 private static readonly object copyNilDstˢ = (@string)"copy nil dst:"u8;
+private static readonly object setSuffixˢ = (@string)"SET suffix:"u8;
 
 internal static void Main() {
     var t = reflect.TypeOf(new record(nil));
@@ -58,6 +71,16 @@ internal static void Main() {
     slice<byte> nilDst = default!;
     n = reflect.Copy(reflect.ValueOf(nilDst), reflect.ValueOf(new byte[]{1, 2}.slice()));
     fmt.Println(copyNilDstˢ, n);
+    foreach (var (_, vΔ1) in new any[]{new intSET(new nint[]{10}.slice()), new byteArray(new byte[4].array()), new stringMap(new map<@string, nint>{}), new intChan(0), new intPtr(Ꮡarr.at<nint>(0)), ((counter)0), new record(nil)}.slice()) {
+        var rt = reflect.TypeOf(vΔ1);
+        fmt.Printf("named %-12s name=%q pkg=%q\n"u8, rt.Kind(), rt.Name(), rt.PkgPath());
+    }
+    foreach (var (_, vΔ2) in new any[]{new nint[]{}.slice(), new byte[]{}.array(4), new map<@string, nint>{}, new channel<nint>(0), Ꮡarr, (nint)(0)}.slice()) {
+        var rt = reflect.TypeOf(vΔ2);
+        fmt.Printf("plain %-12s name=%q pkg=%q\n"u8, rt.Kind(), rt.Name(), rt.PkgPath());
+    }
+    @string nm = reflect.TypeOf(new intSET(new nint[]{}.slice())).Name();
+    fmt.Println(setSuffixˢ, len(nm) >= 3 && nm[(int)(len(nm) - 3)..] == "SET");
 }
 
 } // end main_package

@@ -23,15 +23,23 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **126 / 215 testable packages validated — 58.6%**
+> ### Phase 4 progress: **127 / 215 testable packages validated — 59.1%**
 >
-> **14,643 matching test verdicts · 50 disclosed** *(updated 2026-08-10 — maintained as part of the
+> **14,681 matching test verdicts · 50 disclosed** *(updated 2026-08-11 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
 <!-- Row format is machine-parsed by src/run-validated-sweep.ps1 (regex:
      ^\|\s*\[`pkg`\]\(...\)\s*\|\s*tests\s*\|\s*disclosed\s*\|). Keep one row per line in this exact
-     column order — reflowing, reordering, or adding columns breaks the sweep's roster parser. -->
+     column order — reflowing, reordering, or adding columns breaks the sweep's roster parser.
+     Host-conditional verdicts: a package whose verdict COUNT depends on a host capability keeps
+     the FLOOR every host produces in its Tests column and appends, inside its What-it-exercises
+     cell, the annotation host-conditional (<why, colon-free>): `Name`, `Name`, … naming the
+     verdict rows that exist only on the more-capable host. The sweep then accepts floor+k only
+     when the k extra rows are exactly k of the named tests, agreeing on both runtimes, with no
+     banked verdict missing — proven against the package's committed proof page at HEAD. Anything
+     outside the named set still fails. The phrase "host-conditional" is reserved for this
+     annotation; an older sweep that predates it simply keeps enforcing the floor. -->
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
@@ -73,6 +81,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`debug/macho`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/macho) | 7 |  | Mach-O object files — the load-command walk over the thin and fat testdata corpus, dynamic-symbol parsing including a malformed `LC_DYSYMTAB`, and the relocation/CPU stringer tables. Reached through `saferio.SliceCap` over a slice of the `Load` **interface**, whose Go size `unsafe.Sizeof` now answers from Go's own layout rule. · [proof](validation/current/debug.macho.md) |
 | [`debug/plan9obj`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/plan9obj) | 2 |  | Plan 9 a.out objects — section table and symbol parsing over the testdata corpus, plus the malformed-file error path. · [proof](validation/current/debug.plan9obj.md) |
 | [`encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/ascii85) | 9 | | Ascii85 encode/decode and streaming wrappers. · [proof](validation/current/encoding.ascii85.md) |
+| [`encoding/asn1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/asn1) | 38 | | DER marshal/unmarshal end to end — tag and class handling including SET vs SEQUENCE, `asn1:"…"` struct-tag parameters read through the reflection bridge, unexported-field guards probing settability, `big.Int`/bit-string/OID/UTC-time round-trips, and a full certificate walk. Closed by three complementary fixes across two machines (defined-type `Name()`, `StructField.PkgPath`, array dims). · [proof](validation/current/encoding.asn1.md) |
 | [`encoding/base32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base32) | 26 | | Base32 round-trips; `io.Pipe` rendezvous over the real channel core. · [proof](validation/current/encoding.base32.md) |
 | [`encoding/base64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base64) | 17 | | Base64 round-trips; goroutine + `time.After` timer path. · [proof](validation/current/encoding.base64.md) |
 | [`encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary) | 137 | 9 | Reflection-driven Read/Write — the bridge's construction/write-back surface. · [proof](validation/current/encoding.binary.md) |
@@ -140,7 +149,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) | 1 |  | The file-descriptor existence probe; its one test is Windows-gated and the converted run reaches Go's own `runtime.GOOS` guard and skips exactly where Go does. · [proof](validation/current/os.exec.internal.fdtest.md) |
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. · [proof](validation/current/os.signal.md) |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). · [proof](validation/current/path.md) |
-| [`path/filepath`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path/filepath) | 61 | | Path algebra plus the Windows symlink machinery — `EvalSymlinks` through the hand-owned `FindFirstFile` blittable mirror, `Glob`/`Walk`, junction-aware `TempDir` cleanup, `testenv.GOROOT` via the pipeline's exported root, and 20 privilege-gated skips agreeing with Go's. · [proof](validation/current/path.filepath.md) |
+| [`path/filepath`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path/filepath) | 61 | | Path algebra plus the Windows symlink machinery — `EvalSymlinks` through the hand-owned `FindFirstFile` blittable mirror, `Glob`/`Walk`, junction-aware `TempDir` cleanup, `testenv.GOROOT` via the pipeline's exported root, and 20 privilege-gated skips agreeing with Go's · host-conditional (symlink-creation privilege — the parent test skips before spawning them without it): `TestWalkSymlinkRoot/no_slash`, `TestWalkSymlinkRoot/slash`, `TestWalkSymlinkRoot/abs_no_slash`, `TestWalkSymlinkRoot/abs_with_slash`, `TestWalkSymlinkRoot/double_link_no_slash`, `TestWalkSymlinkRoot/double_link_with_slash` · [proof](validation/current/path.filepath.md) |
 | [`plugin`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/plugin) | 1 |  | That a program importing `plugin` links and starts at all — Go's own regression test for issue 28789 is an empty body asserting precisely that, and the converted binary runs it. · [proof](validation/current/plugin.md) |
 | [`regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp) | 45 | | The full RE2 engine — NFA/backtracker/one-pass executors, the RE2 exhaustive corpus, `TextMarshaler` round-trips. · [proof](validation/current/regexp.md) |
 | [`regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) | 12 | | Regexp parsing, simplification and program compilation; named-type constant tables. · [proof](validation/current/regexp.syntax.md) |
