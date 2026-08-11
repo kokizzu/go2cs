@@ -447,6 +447,7 @@
     <Project Path="tests/Behavioral/IfaceFieldMethodValueBind/IfaceFieldMethodValueBind.csproj" />
     <Project Path="tests/Behavioral/IndexExprCaseLabel/IndexExprCaseLabel.csproj" />
     <Project Path="tests/Behavioral/InferredForeignTypeNoImport/InferredForeignTypeNoImport.csproj" />
+    <Project Path="tests/Behavioral/InitOrderTupleSpecs/InitOrderTupleSpecs.csproj" />
     <Project Path="tests/Behavioral/InterfaceCasting/InterfaceCasting.csproj" />
     <Project Path="tests/Behavioral/InterfaceFieldNamedScalar/InterfaceFieldNamedScalar.csproj" />
     <Project Path="tests/Behavioral/InterfaceImplementation/InterfaceImplementation.csproj" />
