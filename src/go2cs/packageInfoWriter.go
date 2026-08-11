@@ -27,6 +27,73 @@ import (
 	"strings"
 )
 
+// legacyInterfaceImplementationsFirstLine identifies the first line of the <InterfaceImplementations>
+// explanatory block, which is the same in every wording the converter has emitted — so it locates the
+// block for migrateProseBlock whatever the rest of it says.
+const legacyInterfaceImplementationsFirstLine = "// As types are cast to interfaces in Go source code, the go2cs code converter"
+
+// interfaceImplementationsProseLines returns the <InterfaceImplementations> section's explanatory
+// comment. Like every emitted-artifact comment it states what the section holds and the constraint
+// that shape serves, and nothing about how it came to be that way — this text ships in every
+// converted package, where a reader has no way to check a claim about the converter's past.
+// package_info-template.txt carries the same lines for a file created from scratch; the two must
+// agree, which the seam guard in lineEndingSeams_test.go asserts.
+func interfaceImplementationsProseLines() []string {
+	return []string{
+		"// As types are cast to interfaces in Go source code, the go2cs code converter",
+		"// will generate an assembly level `GoImplement` attribute for each unique cast.",
+		"// This allows the interface to be implemented in the C# source code using source",
+		"// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time",
+		"// this way is what keeps startup free of reflection.",
+	}
+}
+
+// migrateProseBlock rewrites a converter-owned explanatory block in a persisted package info file to
+// its CURRENT wording. The block runs from legacyFirstLine to the line carrying marker (its section's
+// opening tag), and is replaced by prose plus the blank line that separates the two. A file whose
+// block already matches is rewritten to the identical text, so the pass is idempotent; a file that
+// does not carry legacyFirstLine at all — one rendered fresh from the template — is returned
+// untouched.
+//
+// Identifying a block by its FIRST LINE is what makes this safe: the blocks are converter-owned and
+// were only ever emitted verbatim, so an exact match cannot land on user text, and a rewrite that
+// keeps the first line (every one so far) needs no new anchor.
+func migrateProseBlock(packageInfoLines []string, legacyFirstLine string, marker string, prose []string) []string {
+	markerIndex := -1
+
+	for i, line := range packageInfoLines {
+		if strings.Contains(line, marker) {
+			markerIndex = i
+			break
+		}
+	}
+
+	if markerIndex < 0 {
+		return packageInfoLines
+	}
+
+	legacyStart := -1
+
+	for i := range markerIndex {
+		if strings.Contains(packageInfoLines[i], legacyFirstLine) {
+			legacyStart = i
+			break
+		}
+	}
+
+	if legacyStart < 0 {
+		return packageInfoLines
+	}
+
+	updated := make([]string, 0, len(packageInfoLines))
+	updated = append(updated, packageInfoLines[:legacyStart]...)
+	updated = append(updated, prose...)
+	updated = append(updated, "")
+	updated = append(updated, packageInfoLines[markerIndex:]...)
+
+	return updated
+}
+
 // writePackageInfoFile creates or updates a package information file (package_info.cs, or the
 // test conversion's package_test_info.cs) by inserting the CURRENT package-scoped metadata
 // globals (imported/exported type aliases, interface implementations, implicit conversions)
@@ -66,6 +133,14 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		templateFile := fmt.Sprintf(string(packageInfoTemplate), packageNamespace+"."+packageClassName, packageNamespace, packageName, packageClassName)
 		packageInfoLines = splitLines(templateFile)
 	}
+
+	// Converge a persisted file's converter-owned PROSE on its current wording. Only the marker
+	// sections below are rebuilt from the live globals — every other line of an existing
+	// package_info.cs is copied through verbatim — so without this a file keeps whichever wording
+	// was current when it was first created, and the corpus carries as many versions of each block
+	// as it has had rewrites.
+	packageInfoLines = migrateProseBlock(packageInfoLines, legacyInterfaceImplementationsFirstLine,
+		"<InterfaceImplementations>", interfaceImplementationsProseLines())
 
 	// Handle imported type aliases
 	startLineIndex := -1
@@ -610,9 +685,12 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 
 		lines.UnionWith(packageEmittedTypeAccess.Keys())
 
-		// Sort lines
+		// Sort lines on the DECLARATION, ignoring any movable-attribute prefix, so an entry that
+		// carries attributes keeps the place it would have had without them (typeAccessibilityKey).
 		sortedLines := lines.Keys()
-		sort.Strings(sortedLines)
+		sort.Slice(sortedLines, func(i, j int) bool {
+			return typeAccessibilityKey(sortedLines[i]) < typeAccessibilityKey(sortedLines[j])
+		})
 
 		indentedLines := make([]string, 0, len(sortedLines))
 

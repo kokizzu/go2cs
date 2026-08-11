@@ -205,9 +205,9 @@ const (
 
 	platformPropertyAnchor = "  <ItemGroup>\r\n    <!-- Remove all .cs files, including those in sub-folders -->\r\n"
 
-	platformPropertyBlock = "  <!-- Selects which per-GOOS source folder this package compiles. Defaults to `windows` so a\r\n" +
-		"       plain build reproduces the single-platform package this layout replaced; a pack pass sets\r\n" +
-		"       it explicitly per RID (-p:GoTargetOS=linux). -->\r\n" +
+	platformPropertyBlock = "  <!-- Selects which per-GOOS source folder this package compiles. Exactly one must be chosen,\r\n" +
+		"       so an unset build takes `windows`, the corpus reference target; a pack pass sets it\r\n" +
+		"       explicitly per RID (-p:GoTargetOS=linux). -->\r\n" +
 		"  <PropertyGroup Condition=\"'$(" + platformTargetOSProperty + ")'==''\">\r\n" +
 		"    <" + platformTargetOSProperty + ">" + platformDefaultTargetOS + "</" + platformTargetOSProperty + ">\r\n" +
 		"  </PropertyGroup>\r\n\r\n"

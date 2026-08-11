@@ -356,7 +356,7 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 		declaredTypeParams = fmt.Sprintf("<%s>", TypeT)
 	}
 
-	v.recordTypeAccessibility("interface", getSanitizedIdentifier(interfaceTypeName), declaredTypeParams, access)
+	v.recordTypeAccessibility("interface", getSanitizedIdentifier(interfaceTypeName), declaredTypeParams, access, "")
 
 	if len(inheritedInterfaces) > 0 {
 		inheritedResult += " :" + v.newline

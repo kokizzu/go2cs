@@ -166,8 +166,13 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		valueCloneAttr = fmt.Sprintf("[GoValueClone(%s)] ", strings.Join(quotedFields, ", "))
 	}
 
-	v.recordTypeAccessibility("struct", structTypeName, typeParams, access)
-	v.writeStringLn(target, "%s[GoType%s] %s%spartial struct %s%s%s{", localNameAttr, dynamic, valueCloneAttr, access, structTypeName, typeParams, constraints)
+	// Both stamps are MOVABLE: their consumers read them off the TYPE (go2cs-gen resolves the
+	// symbol's declarations, golib's reflection bridge reads the runtime Type), and C# unions the
+	// attributes of every partial declaration — so they belong on the package_info.cs accessibility
+	// record, out of the reader's way, and the `[GoType]` declaration keeps only what identifies it.
+	inlineAttrs := v.recordTypeAccessibility("struct", structTypeName, typeParams, access, localNameAttr+valueCloneAttr)
+
+	v.writeStringLn(target, "[GoType%s] %s%spartial struct %s%s%s{", dynamic, inlineAttrs, access, structTypeName, typeParams, constraints)
 	v.indentLevel++
 
 	var prevNameDiscardedCount int

@@ -4025,7 +4025,7 @@ receiver) clones a struct too. The struct declaration is stamped with the fields
 go2cs-gen turns the stamp into the deep copy:
 
 ```csharp
-[GoType] [GoValueClone("h", "x")] partial struct digest {
+[GoType] partial struct digest {
     internal array<uint32> h = new(8);
     internal array<byte> x = new(chunk);
     internal nint nx;
@@ -4065,6 +4065,11 @@ Four details make this correct and collision-free:
   (`type IpMaskString IpAddressString`, whose underlying holds a `[16]byte`) is emitted as go2cs-gen's
   inherited wrapper, so it is stamped `[GoValueClone("Value")]` and its clone forwards to that one
   member — without it, `syscall.IpAddrString`'s own clone had no `ΔClone` to call (CS1061).
+- **The stamp is written on the `package_info.cs` accessibility record**, not on the declaration
+  above — `[GoValueClone("h", "x")] internal partial struct digest {}` — so the converted source
+  keeps the shape of the Go struct it came from. `TypeGenerator` reads it off any part of the
+  partial type, which is also what lets a hand-owned conversion keep stamping it inline. See
+  [Extended attributes](#extended-attributes-what-stays-on-the-declaration-and-what-moves).
 - **The method is NOT named `Clone`.** A Go type may declare its own `Clone` method, which converts
   to an EXTENSION method on the package class — and an instance member of the same name silently
   SHADOWS it. Vendored `x/crypto/sha3`'s `func (d *state) Clone() ShakeHash` is the real case: its
@@ -7876,7 +7881,7 @@ type Composed struct {
 [GoType("dyn")] partial struct Composed_Ptrs  { public uint32 Size; }
 [GoType("dyn")] partial struct Composed_ByKey { public nint Count; }
 
-[GoType] [GoValueClone("Ptrs")] partial struct Composed {
+[GoType] partial struct Composed {                     // package_info.cs records [GoValueClone("Ptrs")]
     public array<ж<Composed_Ptrs>> Ptrs = new(2);
     public map<@string, Composed_ByKey> ByKey;          // was: map<@string, struct{Count int}>
 }
@@ -8273,13 +8278,19 @@ package scope under a function-prefixed name. Two Go type-identity rules ride th
   matches that slot by exact string and throws on unknown forms). The reflection bridge's
   naming (`GoReflect.GoQualifiedName` → `Type.String()`, `%T`) prefers it, so a local type
   prints Go's `*binary.Person`, never the lifted `*binary.TestNoFixedSize_Person`
-  (TestNoFixedSize asserts the exact error text):
+  (TestNoFixedSize asserts the exact error text). Being read off the runtime `Type` is also what
+  makes the stamp movable, so it is written on the `package_info.cs` accessibility record and the
+  lifted declaration reads as the plain lift it is
+  ([Extended attributes](#extended-attributes-what-stays-on-the-declaration-and-what-moves)):
 ```go
 func TestNoFixedSize(t *testing.T) {
 	type Person struct { … }
 ```
 ```csharp
-[GoLocalName("Person")] [GoType("dyn")] partial struct TestNoFixedSize_Person {
+[GoType("dyn")] partial struct TestNoFixedSize_Person {
+
+// package_info.cs
+[GoLocalName("Person")] public partial struct TestNoFixedSize_Person {}
 ```
 Guarded by the `LiftedLocalTypes` behavioral test (single lifted declaration for repeated
 anonymous occurrences + `[GoLocalName]` pinned in the golden); operationally by
@@ -12712,7 +12723,7 @@ Several Go semantics cannot be written directly in C#, so the converter emits co
 * **`ImplicitConvGenerator`** — emits the implicit conversion operators that let a [named type](#type-definitions) and its underlying types be used interchangeably.
 * **`PartialStubGenerator`** — emits a throwing `partial` implementation for any bodyless `partial` method that has no other implementing part (e.g. assembly/cgo functions with no convertible body), while leaving real hand-written companion implementations untouched.
 
-Common attributes the converter emits for the generators (and tooling) to consume: `[GoType]` (type bodies), `[GoRecv]` (receiver methods), `[GoTag]` (struct field tags), `[GoPackage]` (package info), and the test-only `[GoTestMatchingConsoleOutput]`.
+Common attributes the converter emits for the generators (and tooling) to consume: `[GoType]` (type bodies), `[GoRecv]` (receiver methods), `[GoTag]` (struct field tags), `[GoPackage]` (package info), and the test-only `[GoTestMatchingConsoleOutput]`. The full vocabulary — every stamp, where it lands, who reads it, and which of them are kept off the visible declaration — is classified in [Extended attributes: what stays on the declaration and what moves](#extended-attributes-what-stays-on-the-declaration-and-what-moves).
 
 **A generator's view of ACCESSIBILITY is provisional — its own output is what supplies the access modifier (2026-07-25).** The converter emits a Go type as a bare `[GoType] partial interface X` (or `partial struct X`) nested in the package class and leaves the access modifier to `TypeGenerator`, which derives it from the Go export convention (`GetScope` — `public` for an exported name, `internal` otherwise; an explicit modifier on the converter's part wins). A C# nested type with no modifier is **private**, so until that generated partial exists the declaration is private — accessible from inside its own package class and *inaccessible from any other class in the assembly*. A generator cannot see its own output, so a semantic query that crosses package classes sees the provisional accessibility, not the real one.
 
@@ -12753,6 +12764,41 @@ Details that make it a pure relocation of the modifier rather than a change of i
 * **Generator-side consequence:** a converted type now has two converter-written parts, so any lookup that resolves a type by **name** through the syntax trees can land on either. `Compilation.FindStructDeclaration` and `ImplicitConvGenerator.GetStructDeclaration` — both of which go on to read members or the `[GoType]` definition token — now prefer the part carrying `[GoType]` (`Common.IsGoTypeDefinition`), falling back to first-match. Without that, syntax-tree order (i.e. compile-item order, where `package_info.cs` sorts ahead of the package sources in roughly half the corpus) would silently decide.
 
 Measured, with a positive control (the `-tests` pipeline on `io`, whose `CS0535` cluster is the reproducer): recovery **on** + section on → 0 `CS0535`; recovery **neutered** + section on → 0; recovery neutered + section **off** → the cluster returns. Gates: full behavioral suite 490/490 across all four phases (460 output-compared, 30 skipped) with **every** main `.cs` golden byte-identical — the churn is 490/490 `package_info.cs`, additions only; seeded 305-package reconvert (14/14 `.cs.auto`, no marked file clobbered) + overlay + full corpus build 0 errors; converter `go test` and `GenTests` green; pipeline canaries at banked counts (errors 61, encoding/csv 71, io/fs 18, bytes 81 with 7 disclosed).
+
+### Extended attributes: what stays on the declaration and what moves
+
+The `[GoType]` declaration is the line a reader of converted code actually reads, so every *other* attribute stamped on it is machinery competing with the Go original for that reader's attention. `package_info.cs` already exists to hold per-type records out of view, and the `TypeAccessibility` section above already moved the access modifier there. **A stamp can follow it whenever its consumer reads the attribute off the TYPE rather than off a particular declaration** — C# unions the attributes of every part of a partial type, so which part carries one is invisible to runtime reflection and to any generator that resolves the symbol.
+
+That single criterion classifies the whole surface. The converter stamps nothing from the BCL — every `[StructLayout]`, `[MethodImpl]` or `[LibraryImport]` in the corpus is in `golib` or in a hand-owned file — so the vocabulary is exactly this:
+
+| Stamp | Lands on | Consumer | Verdict |
+|---|---|---|---|
+| `[GoType]`, `[GoType("dyn")]`, `[GoType("num:…")]`, … | struct / class / interface | `TypeGenerator`'s syntax receiver keys on it; also read semantically and at runtime | **Must stay** — it is the declaration's identity, and the receiver has no type to resolve until it matches |
+| `[GoValueClone("f1", "f2")]` | struct | `TypeGenerator`, reading field names to emit `Clone()` | **Moved** |
+| `[GoLocalName("Point")]` | struct (lifted function-local named type) | golib's reflection bridge, `GoReflect.TypeNaming` | **Moved** |
+| `[GoTag("json:\"x\"")]` | **field** | golib reflection, via the `DescriptionAttribute` alias | **Must stay** — field-level. A `<TypeAccessibility>` record is an empty `{}` body; C# has no way for a second part to re-declare a field and attach an attribute to it |
+| `[GoRecv]` | **method** | `RecvGenerator` syntactically, plus runtime | **Must stay** — same reason, one level up: a method exists on the part that defines its body |
+| `[GoInit]` | **method** | the **C# compiler** — it is a `using` alias for `ModuleInitializerAttribute` | **Must stay** — the compiler requires it on the method it initializes with |
+| `[GoPackage]`, `[GoImplement<T,I>]`, `[GoImplicitConv<S,T>]`, `[GoTypeAlias]` | package class / assembly | generators, runtime, and the converter's own next run | **Already there** — these are emitted into `package_info.cs` and never touched a mainline declaration |
+| `[GoManualConversion]`, `[GoRequiresUnsafe]` | module | the converter | **Already off** — hand-written, module-scoped |
+| `[GoInterfaceShell]`, `[GoReflectCompanion]` | interface / field | golib | **Not converter-emitted** — written by the generator and by hand respectively |
+
+So the movable set is `[GoValueClone]` and `[GoLocalName]`, and both moved. `[GoType] [GoValueClone("intbuf")] partial struct pp {` reads `[GoType] partial struct pp {`, with the record in `package_info.cs` carrying the rest:
+
+```csharp
+    // <TypeAccessibility>
+    [GoValueClone("grid")] internal partial struct holder {}
+    [GoValueClone("b")] internal partial struct inner {}
+    internal partial struct row {}
+    // </TypeAccessibility>
+```
+
+Mechanics worth knowing:
+
+* **The attributes and the access modifier travel together, by construction.** `recordTypeAccessibility` takes the stamps as an argument and returns what the caller must still write inline — empty when the record absorbed them. So the two paths that write **no** record keep the stamps on the declaration and cannot lose them: a hand-owned file (whose emission goes to the non-compiled `.cs.auto` review sibling) and a `-tests` bridge unit (whose accessibility is inline because its metadata anchor can be a different test class). A hand-written conversion therefore still stamps `[GoValueClone]` inline, and it still works.
+* **`TypeGenerator` reads the stamp across every partial declaration**, starting with the `[GoType]` one its receiver matched and continuing through the symbol's other `DeclaringSyntaxReferences`. That is what makes both placements equivalent rather than one replacing the other. The match itself stays syntactic, as it is for every attribute this generator reads.
+* **The section sorts on the DECLARATION, not the line.** `typeAccessibilityKey` strips the attribute prefix before comparing, so a stamped entry keeps the place its accessibility/kind/name earns instead of being pulled into a leading block by its `[`. Sorting the raw line is legal but scrambles a section whose whole value is being readable at a glance.
+* **Not a semantic change anywhere.** The relocation moves *where the attribute is written*, exactly as the `TypeAccessibility` section moved where the modifier is written. Nothing observes a difference: the generated `Clone()` is identical, and `GoReflect`'s `%T` output is identical.
 
 ## The standard-library conversion applies `-tags purego`
 

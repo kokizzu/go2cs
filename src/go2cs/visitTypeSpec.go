@@ -247,10 +247,11 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 				v.outputBuilder.WriteString(v.newline)
 			}
 
-			v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access)
 			// Cross-package twin of visitIdent's stamp: a defined type over a struct carrying
 			// fixed-size ARRAY fields needs the forwarded `Clone()` (see wrapperValueCloneAttr).
-			v.writeOutput("[GoType(\"%s\")] %s%spartial struct %s;", csName, wrapperValueCloneAttr(rhsType), access, getSanitizedIdentifier(name))
+			inlineAttrs := v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access, wrapperValueCloneAttr(rhsType))
+
+			v.writeOutput("[GoType(\"%s\")] %s%spartial struct %s;", csName, inlineAttrs, access, getSanitizedIdentifier(name))
 			v.outputBuilder.WriteString(v.newline)
 		} else {
 			v.outputBuilder.WriteString(v.convSelectorExpr(typeSpecType, DefaultLambdaContext()))
@@ -279,7 +280,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 				target.WriteString(v.newline)
 			}
 
-			v.recordTypeAccessibility("class", getSanitizedIdentifier(name), "", access)
+			v.recordTypeAccessibility("class", getSanitizedIdentifier(name), "", access, "")
 			v.writeStringLn(target, "[GoType(\"%s\")] %spartial class %s;", pointerTypeName, access, getSanitizedIdentifier(name))
 			usesUnsafeCode = true
 			finish()
