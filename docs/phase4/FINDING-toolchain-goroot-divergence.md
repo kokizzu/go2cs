@@ -228,12 +228,26 @@ same command refuses, naming both releases. (This does not by itself prove the r
 came from a toolchain *switch* rather than an ambient 1.24+ install; both produce this shape, and
 both are caught.)
 
-## 7. Gates
+## 7. Gates — run on the lane machine (laptop, 2026-08-11)
 
-Converter `go test ./...` — green, 149s, with unit guards for A and B. CNR — **A and B must change
-no emission on a matched toolchain**, which is the claim that matters: a 1.23.1 host resolves the
-same GOROOT it always did and `toolchainSwitchPossible` never fires, so the corpus must be
-byte-identical. The §2 reproduction: exits 0 with dangling `std.*.csproj` project references before,
-refuses with a named-version diagnosis and writes nothing after.
+| Gate | Result |
+|---|---|
+| Converter `go test ./...` | **green**, 149 s, with unit guards for A and B |
+| `check-no-regression.ps1` (full) | **NO REGRESSION** — generated C# and `.csproj` byte-identical across all **580** behavioral packages; 147 advisory converter warnings, zero NOT MEASURED |
+| solution-integrity + path-casing preflight | OK — 582 registered projects, 4,185 tracked paths |
+| §2 reproduction | before: exit **0** with dangling `std.*.csproj` refs · after: **refuses**, names both releases, writes nothing |
+| GOROOT-vendored naming (§4) | attempted repro **NEGATIVE** — names emit correctly prefixed; C not landed |
+
+CNR is the claim that mattered: A and B must move **no emitted byte** on a matched toolchain. A
+1.23.1 host resolves the GOROOT it always did and `toolchainSwitchPossible` never fires, so the
+corpus is untouched — confirmed byte-for-byte, which is equally the empirical proof that the
+subprocess gate costs the corpus path nothing.
 
 **Merge window:** converter change — same constraint as L4, **post-1.23.1.6**.
+
+**Open for coordinator ruling.** `publishedStdLibRelease()` uses the converter's own BUILD release as
+the proxy for "which corpus versions exist", on the standing invariant that `version.props`'
+`GoStdLibVersion` tracks the converter's `go.mod`. Free, exact, cannot go stale — but blind to what is
+actually on nuget.org, so a release that is built and never published still passes the preflight.
+Closing that needs either an embedded `version.props` value or a feed query at conversion time;
+neither was invented here.
