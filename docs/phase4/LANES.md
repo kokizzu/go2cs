@@ -127,6 +127,55 @@ seeded single-package reconvert proves it; do NOT run a whole-corpus regen (r59 
 one). Commit on your branch (subjects start "L4:"), push, signal. **Merges only after 1.23.1.6
 ships** — develop freely, the branch waits.
 
+## L6 — asn1's one-byte SET tag (the likeliest single-row win on the board)
+
+CONVERTER FIX, characterized by r57b on the board (search BOARD-next-validation-candidates.md for
+"TestMarshal #37"): `encoding/asn1` emits `300302010a` where Go writes `310302010a` — `0x30`
+SEQUENCE where the field demands `0x31` SET, because the `set` parameter is not reaching the
+emitted tag in `makeField`'s conversion. Branch from current origin/master.
+
+Root-cause against the real emitted `.cs` (the converted `encoding/asn1` marshal path in
+`src/core/encoding/asn1/`) before touching the converter — the board's attribution is a starting
+point, not a diagnosis; confirm whether the defect is converter emission or a converted-code
+runtime seam, and fix at the layer the evidence names. Gates: converter `go test ./...` if the
+converter moves; a behavioral guard if the construct generalizes (a Go program marshalling a SET
+via asn1 tags — check whether an existing asn1-adjacent behavioral test extends); CNR with any
+golden movement individually justified; the `encoding/asn1` pipeline re-measure
+(`-tests -test-action all -test-timeout 30m`) expecting **36 of 38** (from 35: this row closes;
+`TestUnexportedStructField` belongs to L7; `TestCertificate` remains unattributed — if your fix
+moves it too, document why). Commit on your branch (subjects "L6:"), push, signal.
+**Merge window: post-1.23.1.6.**
+
+## L7 — the two reflection-bridge gaps asn1 and edwards25519 measured
+
+REFLECTION-BRIDGE FIXES, two well-scoped gaps in the same Value-layer area, one lane. Branch from
+current origin/master. Read the board's asn1 section (r57b) and
+`docs/phase4/FINDING-init-order-tuple-specs.md` §residuals first, then
+`docs/phase4/DESIGN-reflection-bridge.md` for the bridge's shape.
+
+Gap 1 — **flagRO propagation**: a `Value` reached through an unexported struct field answers
+`CanSet() == true` where Go answers false, so guards that PROBE settability never fire and writes
+run on to `mustBeAssignable` (asn1's `TestUnexportedStructField` expects a returned
+`structure error`, gets a panic). The fix is read-only-flag propagation in the bridge's `Field`
+path (`src/core/reflect/value_impl.cs` and its GoReflect underpinnings) — general, since it
+surfaces anywhere a package probes rather than trusts.
+
+Gap 2 — **fixed-size-array synthesis**: `testing/quick` via the bridge synthesizes a ZERO-length
+array where a parameter is `[32]byte`/`[64]byte`, so property-based tests over fixed-size arrays
+test the empty value (edwards25519's `TestScalarSetCanonicalBytes`/`TestScalarSetUniformBytes`).
+Root the synthesis path (quick's value generation through the bridge's array construction) and
+make the synthesized array carry the parameter type's real length.
+
+Gates: GolibTests; filtered behavioral over the reflect family; a behavioral guard per gap
+(extend `ReflectTypedNilInterface`-style coverage or add narrowly); the `encoding/asn1` pipeline
+re-measure expecting `TestUnexportedStructField` to close; the `crypto/internal/edwards25519`
+pipeline re-measure expecting both quick rows to close (its full arithmetic depends on L4's
+tuple-spec fix — if L4 is unmerged when you measure, count only your two rows' movement and say
+so). Commit per gap ("L7:"), push, signal. **Merge window: post-1.23.1.6.** ⚠ The bridge is
+shared surface: check LANES/board for any live lock before editing `value_impl.cs`, and keep your
+diff disjoint from L4's files (it is, structurally — `initOrderOperations`/`visitValueSpec` vs
+the bridge).
+
 ## L3 — ж-box allocation-reduction implementation
 
 **BLOCKED until the coordinator confirms the post-1.23.1.6 harvest is complete** (the design is
