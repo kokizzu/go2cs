@@ -5205,6 +5205,36 @@ waiting on one fix; they are four, and three of them belong to areas other lanes
   name comes back EMPTY (`[]` where Go has the full `[[{[2 5 4 6] XX}] …]`). The only one still
   unattributed below the surface message.
 
+> **L6 (2026-08-11) closes the last two of those bullets with ONE fix, and it is neither the
+> converter nor `makeField`.** The `set` field parameter reaches the emitted tag correctly —
+> `TestMarshalWithParams`, which is the `asn1:"set"` PARAMETER path, passed throughout. `TestMarshal`
+> #37 is `testSET([]int{10})`, the TYPE-NAME path: `getUniversalType` selects SET over SEQUENCE on
+> `strings.HasSuffix(t.Name(), "SET")` and nothing else. The bridge's `rtype.Name()` gated on
+> `GoReflect.ElementType(st) is not null` — a proxy for "unnamed composite" that is equally true of a
+> DEFINED container — so every `type S []T`/`[N]T`/`map[K]V`/`chan T`/`*T` in the corpus reported no
+> name. `PkgPath()`, reading the same managed nesting, answered `"main"` for the same types, which is
+> a pair Go's model cannot produce and is what named the defect. Fixed with `GoReflect.HasGoName`,
+> the managed stand-in for the descriptor's `TFlagNamed` bit, mirroring `GoTypeName` arm for arm.
+>
+> **`TestCertificate` is the SAME root, and is hereby attributed:** its `RDNSequence` is a
+> `[]RelativeDistinguishedNameSET`, so the inner elements were emitted as SEQUENCEs and the RDN came
+> back empty — the "unattributed below the surface message" bullet needs no separate investigation.
+> Measured A/B on one machine, same tree, same GOROOT: **35 of 38 before, 37 of 38 after**, the
+> remainder being `TestUnexportedStructField` alone (L7's `flagRO` gap). The board's projected
+> "36 of 38 when the tag row closes" was one row low for this reason.
+>
+> ⚠ **Two follow-ons for whoever plans next.** (1) `abi.Type.HasName()` is still `false` for every
+> synthesized descriptor, so `internal/reflectlite.rtype.Name()` — the ordinary converted body, which
+> gates on it — answers `""` for EVERY type, strictly worse than what `reflect` had. It is dormant
+> (reflectlite's consumers `context` and `errors` use only `String`/`Kind`/`Comparable`/
+> `AssignableTo`/`Implements`), so it was recorded rather than fixed: populating the bit also changes
+> `directlyAssignable`'s `T.HasName() && V.HasName()` short-circuit, currently over-permissive in
+> both packages, which is a corpus-wide assignability change and not a naming one. (2) The measure
+> was taken on the laptop's Go **1.23.2** GOROOT against the corpus's pinned 1.23.1; the denominator
+> was verified as **38 test functions**, unchanged between the two patch releases, and both sides of
+> the comparison read the same sources — so the per-test agreement is sound and only the absolute
+> count is developmental. Coordinator re-gates on the pinned machine.
+
 ### The final sweep, recovered after the hardware failure (2026-08-10)
 
 This lane was parked mid-sweep when the coordinator machine died, so the verdict was lost with it.

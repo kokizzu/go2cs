@@ -1209,10 +1209,16 @@ internal static @string String(this ж<rtype> Ꮡt) {
     return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims);
 }
 
-// Name returns the type's name within its package (empty for an unnamed composite).
+// Name returns the type's name within its package (empty for an unnamed composite). The gate is
+// GoReflect.HasGoName — the managed stand-in for the descriptor's TFlagNamed bit, which a
+// synthesized abi.Type never carries. It was `ElementType(st) is not null` until 2026-08-11: a
+// proxy for "unnamed composite" that also caught every DEFINED container type, so `type testSET
+// []int` reported "" while PkgPath() — reading the same managed nesting — reported "main".
+// encoding/asn1's getUniversalType picks the SET tag on `HasSuffix(t.Name(), "SET")` alone, so
+// TestMarshal #37 marshalled 0x30 SEQUENCE where Go writes 0x31 SET.
 internal static @string Name(this ж<rtype> Ꮡt) {
     System.Type? st = Ꮡt.Value.t.sysType;
-    if (st is null || GoReflect.ElementType(st) is not null) {
+    if (!GoReflect.HasGoName(st)) {
         return "";
     }
     string full = GoReflect.GoTypeName(st);

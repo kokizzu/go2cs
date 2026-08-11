@@ -13915,6 +13915,84 @@ Go's zero-length header. (Guarded by the `ReflectStructTagCopy` behavioral test 
 truncating at either side, slice←string, an addressable array through `Elem()`, a nil
 destination, and a window slice whose copy must be visible in the ORIGINAL backing array.)
 
+### `reflect.Type.Name()` — a DEFINED type HAS a name even when its underlying type is a composite
+
+Go's rule is about DEFINEDNESS, not shape: `Name()` reports the type's name within its package for
+any defined type and `""` only for a type that was never defined — `[]int`, `map[string]int`, `*T`,
+`chan int`, `interface {}`, `struct { … }`. `type testSET []int` is defined, so its `Name()` is
+`"testSET"` even though its underlying type is a slice.
+
+The bridge had that backwards. Go's own `rtype.Name()` gates on the descriptor's `TFlagNamed` bit
+(`abi.Type.HasName()`), which a **synthesized** `abi.Type` never carries, so the hand-owned
+`rtype.Name()` substituted a shape test — `GoReflect.ElementType(st) is not null`, i.e. "does this
+type have an element type?". That is true of a defined container exactly as it is of an unnamed one,
+so every `type S []T` / `[N]T` / `map[K]V` / `chan T` / `*T` in the corpus reported no name at all.
+
+The tell was already in the same descriptor: `PkgPath()` reads the SAME managed nesting and answered
+`"main"` for those types while `Name()` answered `""` — a pair Go's own model cannot produce, since
+a type with a package path is by definition a defined type.
+
+The visible symptom was one byte. `encoding/asn1`'s `getUniversalType` distinguishes a SET from a
+SEQUENCE on the type's name and nothing else:
+
+```go
+if strings.HasSuffix(t.Name(), "SET") {
+    return false, TagSet, true, true
+}
+return false, TagSequence, true, true
+```
+
+so `Marshal(testSET([]int{10}))` produced `300302010a` where Go writes `310302010a` — `0x30`
+SEQUENCE for `0x31` SET, with no error, no panic and no other divergence anywhere in the encoding.
+
+The gate is now `GoReflect.HasGoName`, the managed stand-in for `TFlagNamed`. It mirrors
+`GoTypeName` ARM FOR ARM, because `Name()` IS that method's output with the package qualifier
+trimmed — the two disagreeing would let a type report a name it does not have, or hide one it does.
+False for exactly the arms that render Go structurally: the raw golib containers matched by open
+generic definition (`slice<>`/`array<>`/`map<,>`/`channel<>`/`ж<>`), `object` (`interface {}`),
+`EmptyStruct` (`struct {}`), an anonymous-struct lift (`[GoType("dyn")]` without a `[GoLocalName]`,
+which would make it a named function-local type), and the pointer-sourced adapter that stands for
+`*T`. True everywhere else — including the predeclared scalars, since Go's `int` IS a named type.
+
+The distinction the fix turns on is that a DEFINED container is not a golib container: the converter
+emits it as its own wrapper type that merely IMPLEMENTS the container interface, which is why the
+open-generic-definition test separates the two where an element-type probe cannot:
+
+```go
+type intSET []int
+type byteArray [4]byte
+type stringMap map[string]int
+type intChan chan int
+type intPtr *int
+```
+```csharp
+[GoType("[]nint")] partial struct intSET;
+[GoType("[4]byte")] partial struct byteArray;
+[GoType("map[@string, nint]")] partial struct stringMap;
+[GoType("chan nint")] partial struct intChan;
+[GoType("ж<nint>")] partial class intPtr;
+```
+
+Three further answers change with it, all in the same direction and none of them a value Go can
+produce: `interface {}`, `struct {}` and a lifted anonymous struct used to return their STRUCTURAL
+spelling from `Name()` (there is no dot to trim, so the whole string came back) and now correctly
+return `""`. `String()` was never affected — it has no such gate and rendered all of these correctly
+throughout, which is why the defect stayed invisible to `%T` and to the `ReflectliteTypeName` guard.
+
+(Guarded by the `ReflectStructTagCopy` behavioral test, which pairs each of the five named shapes
+with its unnamed control and re-runs asn1's own `HasSuffix(Name(), "SET")` decision. Measured on
+`encoding/asn1`'s converted suite: **37 of 38**, up from 35 — it closes `TestMarshal` #37 and also
+`TestCertificate`, whose "sequence tag mismatch" and empty RDN name had been left unattributed on
+the board and are the same root, since its `RDNSequence` is a `[]RelativeDistinguishedNameSET`.)
+
+**Still open, and dormant:** `abi.Type.HasName()` itself remains `false` for every synthesized
+descriptor. `internal/reflectlite.rtype.Name()` is the ordinary converted Go body and gates on it,
+so it answers `""` for EVERY type — strictly worse than what `reflect` had. Nothing in the corpus
+calls it (reflectlite's consumers, `context` and `errors`, use only `String`/`Kind`/`Comparable`/
+`AssignableTo`/`Implements`), so it is recorded rather than fixed. Populating the bit would ALSO
+change `directlyAssignable`'s `T.HasName() && V.HasName()` short-circuit — which is currently
+over-permissive in both packages — and that is a corpus-wide assignability change, not a naming one.
+
 ### `abi.Type`'s SPECIALIZATIONS are synthesized, not downcast — `StructType()` / `ArrayType()`
 
 Go's `(*structType)(unsafe.Pointer(t))` is the **prefix-downcast** idiom: the linker really allocated a
