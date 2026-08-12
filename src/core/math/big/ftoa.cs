@@ -99,7 +99,7 @@ public static slice<byte> Append(this ж<Float> Ꮡx, slice<byte> buf, byte fmt,
     var shortest = false;
     if (prec < 0){
         shortest = true;
-        roundShortest(Ꮡd, Ꮡx);
+        roundShortest(Ꮡd, ref (Ꮡx).DerefOrNull());
         // Precision for shortest representation mode.
         switch (fmt) {
         case (rune)'e' or (rune)'E': {
@@ -178,9 +178,8 @@ public static slice<byte> Append(this ж<Float> Ꮡx, slice<byte> buf, byte fmt,
     return append(buf, (byte)((rune)'%'), fmt);
 }
 
-internal static void roundShortest(ж<@decimal> Ꮡd, ж<Float> Ꮡx) {
+internal static void roundShortest(ж<@decimal> Ꮡd, ref Float x) {
     ref var d = ref Ꮡd.DerefOrNull();
-    ref var x = ref Ꮡx.DerefOrNull();
 
     // if the mantissa is zero, the number is zero - stop now
     if (len(d.mant) == 0) {

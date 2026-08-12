@@ -127,9 +127,9 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
         d.nx += n;
         if (d.nx == ΔBlockSize) {
             if (haveAsm){
-                block(Ꮡd, d.x[..]);
+                block(ref (Ꮡd).DerefOrNull(), d.x[..]);
             } else {
-                blockGeneric(Ꮡd, d.x[..]);
+                blockGeneric(ref (Ꮡd).DerefOrNull(), d.x[..]);
             }
             d.nx = 0;
         }
@@ -138,9 +138,9 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
     if (len(p) >= ΔBlockSize) {
         nint n = (nint)(len(p) & ~(nint)(ΔBlockSize - 1));
         if (haveAsm){
-            block(Ꮡd, p[..(int)(n)]);
+            block(ref (Ꮡd).DerefOrNull(), p[..(int)(n)]);
         } else {
-            blockGeneric(Ꮡd, p[..(int)(n)]);
+            blockGeneric(ref (Ꮡd).DerefOrNull(), p[..(int)(n)]);
         }
         p = p[(int)(n)..];
     }

@@ -49,15 +49,15 @@ partial class runtime_package {
 internal static void traceLockInit() {
     // Sharing a lock rank here is fine because they should never be accessed
     // together. If they are, we want to find out immediately.
-    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, 0).of(traceStringTable.Ꮡlock), lockRankTraceStrings);
-    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, 0).of(traceStringTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceStrings);
-    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, 1).of(traceStringTable.Ꮡlock), lockRankTraceStrings);
-    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, 1).of(traceStringTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceStrings);
-    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstackTab, 0).of(traceStackTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceStackTab);
-    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstackTab, 1).of(traceStackTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceStackTab);
-    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑtypeTab, 0).of(traceTypeTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceTypeTab);
-    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑtypeTab, 1).of(traceTypeTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceTypeTab);
-    lockInit(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock), lockRankTrace);
+    lockInit(ref Δtrace.stringTab[0].@lock, lockRankTraceStrings);
+    lockInit(ref Δtrace.stringTab[0].tab.mem.@lock, lockRankTraceStrings);
+    lockInit(ref Δtrace.stringTab[1].@lock, lockRankTraceStrings);
+    lockInit(ref Δtrace.stringTab[1].tab.mem.@lock, lockRankTraceStrings);
+    lockInit(ref Δtrace.stackTab[0].tab.mem.@lock, lockRankTraceStackTab);
+    lockInit(ref Δtrace.stackTab[1].tab.mem.@lock, lockRankTraceStackTab);
+    lockInit(ref Δtrace.typeTab[0].tab.mem.@lock, lockRankTraceTypeTab);
+    lockInit(ref Δtrace.typeTab[1].tab.mem.@lock, lockRankTraceTypeTab);
+    lockInit(ref Δtrace.@lock, lockRankTrace);
 }
 
 // lockRankMayTraceFlush records the lock ranking effects of a
@@ -219,7 +219,7 @@ internal static traceLocker traceAcquireEnabled() {
     var gen = ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡgen).Load();
     if (gen == 0) {
         mp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
         return new traceLocker(nil);
     }
     return new traceLocker(mp, gen);
@@ -267,7 +267,7 @@ internal static void traceRelease(traceLocker tl) {
         print((@string)"runtime: seq="u8, seq, (@string)"\n"u8);
         @throw(badUseOfTraceSeqlockˢ);
     }
-    releasem(tl.mp);
+    releasem(ref (tl.mp).DerefOrNull());
 }
 
 // traceExitingSyscall marks a goroutine as exiting the syscall slow path.

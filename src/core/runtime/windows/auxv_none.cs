@@ -6,7 +6,7 @@ namespace go;
 
 partial class runtime_package {
 
-internal static void sysargs(int32 argc, ж<ж<byte>> Ꮡargv) {
+internal static void sysargs(int32 argc, ref ж<byte> argv) {
 }
 
 } // end runtime_package

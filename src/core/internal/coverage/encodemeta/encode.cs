@@ -66,10 +66,8 @@ internal static void h32(uint32 x, hash.Hash h, slice<byte> tmp) {
 }
 
 // AddFunc registers a new function with the meta data builder.
-[GoRecv] public static nuint AddFunc(this ref CoverageMetaDataBuilder b, coverage.FuncDesc fʗp) {
-    ref var f = ref heap(fʗp, out var Ꮡf);
-
-    hashFuncDesc(b.h, Ꮡf, b.tmp);
+[GoRecv] public static nuint AddFunc(this ref CoverageMetaDataBuilder b, coverage.FuncDesc f) {
+    hashFuncDesc(b.h, ref f, b.tmp);
     var fd = new funcDesc(nil);
     b.tmp = b.tmp[..0];
     b.tmp = uleb128.AppendUleb128(b.tmp, (nuint)len(f.Units));
@@ -203,16 +201,14 @@ public static (array<byte>, error) Emit(this ж<CoverageMetaDataBuilder> Ꮡb, i
 public static array<byte> HashFuncDesc(ж<coverage.FuncDesc> Ꮡf) {
     var h = md5.New();
     var tmp = new slice<byte>(0, 32);
-    hashFuncDesc(h, Ꮡf, tmp);
+    hashFuncDesc(h, ref (Ꮡf).DerefOrNull(), tmp);
     array<byte> r = new(16);
     copy(r[..], h.Sum(default!));
     return r.Clone();
 }
 
 // hashFuncDesc incorporates a given function 'f' into the hash 'h'.
-internal static void hashFuncDesc(hash.Hash h, ж<coverage.FuncDesc> Ꮡf, slice<byte> tmp) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static void hashFuncDesc(hash.Hash h, ref coverage.FuncDesc f, slice<byte> tmp) {
     io.WriteString(h, f.Funcname);
     io.WriteString(h, f.Srcfile);
     foreach (var (_, u) in f.Units) {

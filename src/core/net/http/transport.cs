@@ -604,7 +604,7 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
         (ctx, var cancel) = context_package.WithCancelCause(req.Context());
         // Convert Request.Cancel into context cancelation.
         if ((~origReq).Cancel != default!) {
-            goǃ(awaitLegacyCancel, ctx, cancel, origReq);
+            goǃ((ᴛ1, ᴛ2, ᴛ3) => awaitLegacyCancel(ᴛ1, ᴛ2, ref ᴛ3.DerefOrNull()), ctx, cancel, origReq);
         }
         // Convert Transport.CancelRequest into context cancelation.
         //
@@ -704,9 +704,7 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
     ᒐdone: return (_ᴛ1, err);
 }
 
-internal static void awaitLegacyCancel(context.Context ctx, Action<error> cancel, ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.DerefOrNull();
-
+internal static void awaitLegacyCancel(context.Context ctx, Action<error> cancel, ref Request req) {
     var selᴛ91 = req.Cancel;
     var selᴛ92 = ctx.Done();
     switch (select(ᐸꟷ(selᴛ91, ꓸꓸꓸ), ᐸꟷ(selᴛ92, ꓸꓸꓸ))) {

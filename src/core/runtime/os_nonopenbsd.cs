@@ -8,12 +8,12 @@ partial class runtime_package {
 
 // osStackAlloc performs OS-specific initialization before s is used
 // as stack memory.
-internal static void osStackAlloc(ж<mspan> Ꮡs) {
+internal static void osStackAlloc(ref mspan s) {
 }
 
 // osStackFree undoes the effect of osStackAlloc before s is returned
 // to the heap.
-internal static void osStackFree(ж<mspan> Ꮡs) {
+internal static void osStackFree(ref mspan s) {
 }
 
 } // end runtime_package

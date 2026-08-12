@@ -65,9 +65,7 @@ partial class fiat_package {
 // Output Bounds:
 //
 //	out1: [0x0 ~> 0xffffffffffffffff]
-internal static void p384CmovznzU64(ж<uint64> Ꮡout1, p384Uint1 arg1, uint64 arg2, uint64 arg3) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-
+internal static void p384CmovznzU64(ref uint64 out1, p384Uint1 arg1, uint64 arg2, uint64 arg3) {
     var x1 = ((uint64)arg1 * 0xffffffffffffffffUL);
     var x2 = ((uint64)(((uint64)(x1 & arg3)) | ((uint64)((~x1) & arg2))));
     out1 = x2;
@@ -84,11 +82,7 @@ internal static void p384CmovznzU64(ж<uint64> Ꮡout1, p384Uint1 arg1, uint64 a
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void p384Mul(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p384MontgomeryDomainFieldElement> Ꮡarg1, ж<p384MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void p384Mul(ref p384MontgomeryDomainFieldElement out1, ref p384MontgomeryDomainFieldElement arg1, ref p384MontgomeryDomainFieldElement arg2) {
     var x1 = arg1[1];
     var x2 = arg1[2];
     var x3 = arg1[3];
@@ -765,18 +759,18 @@ internal static void p384Mul(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p3
     (x464, x465) = bits.Sub64(x451, 0xffffffffffffffffUL, (uint64)((p384Uint1)x463));
     uint64 x467 = default!;
     (_, x467) = bits.Sub64(x453, (uint64)0x0, (uint64)((p384Uint1)x465));
-    ref var x468 = ref heap(new uint64(), out var Ꮡx468);
-    p384CmovznzU64(Ꮡx468, ((p384Uint1)x467), x454, x441);
-    ref var x469 = ref heap(new uint64(), out var Ꮡx469);
-    p384CmovznzU64(Ꮡx469, ((p384Uint1)x467), x456, x443);
-    ref var x470 = ref heap(new uint64(), out var Ꮡx470);
-    p384CmovznzU64(Ꮡx470, ((p384Uint1)x467), x458, x445);
-    ref var x471 = ref heap(new uint64(), out var Ꮡx471);
-    p384CmovznzU64(Ꮡx471, ((p384Uint1)x467), x460, x447);
-    ref var x472 = ref heap(new uint64(), out var Ꮡx472);
-    p384CmovznzU64(Ꮡx472, ((p384Uint1)x467), x462, x449);
-    ref var x473 = ref heap(new uint64(), out var Ꮡx473);
-    p384CmovznzU64(Ꮡx473, ((p384Uint1)x467), x464, x451);
+    uint64 x468 = default!;
+    p384CmovznzU64(ref x468, ((p384Uint1)x467), x454, x441);
+    uint64 x469 = default!;
+    p384CmovznzU64(ref x469, ((p384Uint1)x467), x456, x443);
+    uint64 x470 = default!;
+    p384CmovznzU64(ref x470, ((p384Uint1)x467), x458, x445);
+    uint64 x471 = default!;
+    p384CmovznzU64(ref x471, ((p384Uint1)x467), x460, x447);
+    uint64 x472 = default!;
+    p384CmovznzU64(ref x472, ((p384Uint1)x467), x462, x449);
+    uint64 x473 = default!;
+    p384CmovznzU64(ref x473, ((p384Uint1)x467), x464, x451);
     out1[0] = x468;
     out1[1] = x469;
     out1[2] = x470;
@@ -795,10 +789,7 @@ internal static void p384Mul(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p3
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg1)) mod m
 //	0 ≤ eval out1 < m
-internal static void p384Square(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p384MontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p384Square(ref p384MontgomeryDomainFieldElement out1, ref p384MontgomeryDomainFieldElement arg1) {
     var x1 = arg1[1];
     var x2 = arg1[2];
     var x3 = arg1[3];
@@ -1475,18 +1466,18 @@ internal static void p384Square(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж
     (x464, x465) = bits.Sub64(x451, 0xffffffffffffffffUL, (uint64)((p384Uint1)x463));
     uint64 x467 = default!;
     (_, x467) = bits.Sub64(x453, (uint64)0x0, (uint64)((p384Uint1)x465));
-    ref var x468 = ref heap(new uint64(), out var Ꮡx468);
-    p384CmovznzU64(Ꮡx468, ((p384Uint1)x467), x454, x441);
-    ref var x469 = ref heap(new uint64(), out var Ꮡx469);
-    p384CmovznzU64(Ꮡx469, ((p384Uint1)x467), x456, x443);
-    ref var x470 = ref heap(new uint64(), out var Ꮡx470);
-    p384CmovznzU64(Ꮡx470, ((p384Uint1)x467), x458, x445);
-    ref var x471 = ref heap(new uint64(), out var Ꮡx471);
-    p384CmovznzU64(Ꮡx471, ((p384Uint1)x467), x460, x447);
-    ref var x472 = ref heap(new uint64(), out var Ꮡx472);
-    p384CmovznzU64(Ꮡx472, ((p384Uint1)x467), x462, x449);
-    ref var x473 = ref heap(new uint64(), out var Ꮡx473);
-    p384CmovznzU64(Ꮡx473, ((p384Uint1)x467), x464, x451);
+    uint64 x468 = default!;
+    p384CmovznzU64(ref x468, ((p384Uint1)x467), x454, x441);
+    uint64 x469 = default!;
+    p384CmovznzU64(ref x469, ((p384Uint1)x467), x456, x443);
+    uint64 x470 = default!;
+    p384CmovznzU64(ref x470, ((p384Uint1)x467), x458, x445);
+    uint64 x471 = default!;
+    p384CmovznzU64(ref x471, ((p384Uint1)x467), x460, x447);
+    uint64 x472 = default!;
+    p384CmovznzU64(ref x472, ((p384Uint1)x467), x462, x449);
+    uint64 x473 = default!;
+    p384CmovznzU64(ref x473, ((p384Uint1)x467), x464, x451);
     out1[0] = x468;
     out1[1] = x469;
     out1[2] = x470;
@@ -1506,11 +1497,7 @@ internal static void p384Square(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) + eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void p384Add(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p384MontgomeryDomainFieldElement> Ꮡarg1, ж<p384MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void p384Add(ref p384MontgomeryDomainFieldElement out1, ref p384MontgomeryDomainFieldElement arg1, ref p384MontgomeryDomainFieldElement arg2) {
     uint64 x1 = default!;
     uint64 x2 = default!;
     (x1, x2) = bits.Add64(arg1[0], arg2[0], (uint64)0x0);
@@ -1549,18 +1536,18 @@ internal static void p384Add(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p3
     (x23, x24) = bits.Sub64(x11, 0xffffffffffffffffUL, (uint64)((p384Uint1)x22));
     uint64 x26 = default!;
     (_, x26) = bits.Sub64((uint64)((p384Uint1)x12), (uint64)0x0, (uint64)((p384Uint1)x24));
-    ref var x27 = ref heap(new uint64(), out var Ꮡx27);
-    p384CmovznzU64(Ꮡx27, ((p384Uint1)x26), x13, x1);
-    ref var x28 = ref heap(new uint64(), out var Ꮡx28);
-    p384CmovznzU64(Ꮡx28, ((p384Uint1)x26), x15, x3);
-    ref var x29 = ref heap(new uint64(), out var Ꮡx29);
-    p384CmovznzU64(Ꮡx29, ((p384Uint1)x26), x17, x5);
-    ref var x30 = ref heap(new uint64(), out var Ꮡx30);
-    p384CmovznzU64(Ꮡx30, ((p384Uint1)x26), x19, x7);
-    ref var x31 = ref heap(new uint64(), out var Ꮡx31);
-    p384CmovznzU64(Ꮡx31, ((p384Uint1)x26), x21, x9);
-    ref var x32 = ref heap(new uint64(), out var Ꮡx32);
-    p384CmovznzU64(Ꮡx32, ((p384Uint1)x26), x23, x11);
+    uint64 x27 = default!;
+    p384CmovznzU64(ref x27, ((p384Uint1)x26), x13, x1);
+    uint64 x28 = default!;
+    p384CmovznzU64(ref x28, ((p384Uint1)x26), x15, x3);
+    uint64 x29 = default!;
+    p384CmovznzU64(ref x29, ((p384Uint1)x26), x17, x5);
+    uint64 x30 = default!;
+    p384CmovznzU64(ref x30, ((p384Uint1)x26), x19, x7);
+    uint64 x31 = default!;
+    p384CmovznzU64(ref x31, ((p384Uint1)x26), x21, x9);
+    uint64 x32 = default!;
+    p384CmovznzU64(ref x32, ((p384Uint1)x26), x23, x11);
     out1[0] = x27;
     out1[1] = x28;
     out1[2] = x29;
@@ -1580,11 +1567,7 @@ internal static void p384Add(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p3
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) - eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void p384Sub(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p384MontgomeryDomainFieldElement> Ꮡarg1, ж<p384MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void p384Sub(ref p384MontgomeryDomainFieldElement out1, ref p384MontgomeryDomainFieldElement arg1, ref p384MontgomeryDomainFieldElement arg2) {
     uint64 x1 = default!;
     uint64 x2 = default!;
     (x1, x2) = bits.Sub64(arg1[0], arg2[0], (uint64)0x0);
@@ -1603,8 +1586,8 @@ internal static void p384Sub(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p3
     uint64 x11 = default!;
     uint64 x12 = default!;
     (x11, x12) = bits.Sub64(arg1[5], arg2[5], (uint64)((p384Uint1)x10));
-    ref var x13 = ref heap(new uint64(), out var Ꮡx13);
-    p384CmovznzU64(Ꮡx13, ((p384Uint1)x12), (uint64)0x0, 0xffffffffffffffffUL);
+    uint64 x13 = default!;
+    p384CmovznzU64(ref x13, ((p384Uint1)x12), (uint64)0x0, 0xffffffffffffffffUL);
     uint64 x14 = default!;
     uint64 x15 = default!;
     (x14, x15) = bits.Add64(x1, ((uint64)(x13 & 0xffffffffU)), (uint64)0x0);
@@ -1636,9 +1619,7 @@ internal static void p384Sub(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p3
 //
 //	eval (from_montgomery out1) mod m = 1 mod m
 //	0 ≤ eval out1 < m
-internal static void p384SetOne(ж<p384MontgomeryDomainFieldElement> Ꮡout1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-
+internal static void p384SetOne(ref p384MontgomeryDomainFieldElement out1) {
     out1[0] = 0xffffffff00000001UL;
     out1[1] = 0xffffffffU;
     out1[2] = (uint64)0x1;
@@ -1657,10 +1638,7 @@ internal static void p384SetOne(ж<p384MontgomeryDomainFieldElement> Ꮡout1) {
 //
 //	eval out1 mod m = (eval arg1 * ((2^64)⁻¹ mod m)^6) mod m
 //	0 ≤ eval out1 < m
-internal static void p384FromMontgomery(ж<p384NonMontgomeryDomainFieldElement> Ꮡout1, ж<p384MontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p384FromMontgomery(ref p384NonMontgomeryDomainFieldElement out1, ref p384MontgomeryDomainFieldElement arg1) {
     var x1 = arg1[0];
     uint64 x2 = default!;
     (_, x2) = bits.Mul64(x1, 0x100000001UL);
@@ -2102,18 +2080,18 @@ internal static void p384FromMontgomery(ж<p384NonMontgomeryDomainFieldElement> 
     (x300, x301) = bits.Sub64(x288, 0xffffffffffffffffUL, (uint64)((p384Uint1)x299));
     uint64 x303 = default!;
     (_, x303) = bits.Sub64((uint64)((p384Uint1)x289), (uint64)0x0, (uint64)((p384Uint1)x301));
-    ref var x304 = ref heap(new uint64(), out var Ꮡx304);
-    p384CmovznzU64(Ꮡx304, ((p384Uint1)x303), x290, x278);
-    ref var x305 = ref heap(new uint64(), out var Ꮡx305);
-    p384CmovznzU64(Ꮡx305, ((p384Uint1)x303), x292, x280);
-    ref var x306 = ref heap(new uint64(), out var Ꮡx306);
-    p384CmovznzU64(Ꮡx306, ((p384Uint1)x303), x294, x282);
-    ref var x307 = ref heap(new uint64(), out var Ꮡx307);
-    p384CmovznzU64(Ꮡx307, ((p384Uint1)x303), x296, x284);
-    ref var x308 = ref heap(new uint64(), out var Ꮡx308);
-    p384CmovznzU64(Ꮡx308, ((p384Uint1)x303), x298, x286);
-    ref var x309 = ref heap(new uint64(), out var Ꮡx309);
-    p384CmovznzU64(Ꮡx309, ((p384Uint1)x303), x300, x288);
+    uint64 x304 = default!;
+    p384CmovznzU64(ref x304, ((p384Uint1)x303), x290, x278);
+    uint64 x305 = default!;
+    p384CmovznzU64(ref x305, ((p384Uint1)x303), x292, x280);
+    uint64 x306 = default!;
+    p384CmovznzU64(ref x306, ((p384Uint1)x303), x294, x282);
+    uint64 x307 = default!;
+    p384CmovznzU64(ref x307, ((p384Uint1)x303), x296, x284);
+    uint64 x308 = default!;
+    p384CmovznzU64(ref x308, ((p384Uint1)x303), x298, x286);
+    uint64 x309 = default!;
+    p384CmovznzU64(ref x309, ((p384Uint1)x303), x300, x288);
     out1[0] = x304;
     out1[1] = x305;
     out1[2] = x306;
@@ -2132,10 +2110,7 @@ internal static void p384FromMontgomery(ж<p384NonMontgomeryDomainFieldElement> 
 //
 //	eval (from_montgomery out1) mod m = eval arg1 mod m
 //	0 ≤ eval out1 < m
-internal static void p384ToMontgomery(ж<p384MontgomeryDomainFieldElement> Ꮡout1, ж<p384NonMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p384ToMontgomery(ref p384MontgomeryDomainFieldElement out1, ref p384NonMontgomeryDomainFieldElement arg1) {
     var x1 = arg1[1];
     var x2 = arg1[2];
     var x3 = arg1[3];
@@ -2726,18 +2701,18 @@ internal static void p384ToMontgomery(ж<p384MontgomeryDomainFieldElement> Ꮡou
     (x401, x402) = bits.Sub64(x389, 0xffffffffffffffffUL, (uint64)((p384Uint1)x400));
     uint64 x404 = default!;
     (_, x404) = bits.Sub64((uint64)((p384Uint1)x390), (uint64)0x0, (uint64)((p384Uint1)x402));
-    ref var x405 = ref heap(new uint64(), out var Ꮡx405);
-    p384CmovznzU64(Ꮡx405, ((p384Uint1)x404), x391, x379);
-    ref var x406 = ref heap(new uint64(), out var Ꮡx406);
-    p384CmovznzU64(Ꮡx406, ((p384Uint1)x404), x393, x381);
-    ref var x407 = ref heap(new uint64(), out var Ꮡx407);
-    p384CmovznzU64(Ꮡx407, ((p384Uint1)x404), x395, x383);
-    ref var x408 = ref heap(new uint64(), out var Ꮡx408);
-    p384CmovznzU64(Ꮡx408, ((p384Uint1)x404), x397, x385);
-    ref var x409 = ref heap(new uint64(), out var Ꮡx409);
-    p384CmovznzU64(Ꮡx409, ((p384Uint1)x404), x399, x387);
-    ref var x410 = ref heap(new uint64(), out var Ꮡx410);
-    p384CmovznzU64(Ꮡx410, ((p384Uint1)x404), x401, x389);
+    uint64 x405 = default!;
+    p384CmovznzU64(ref x405, ((p384Uint1)x404), x391, x379);
+    uint64 x406 = default!;
+    p384CmovznzU64(ref x406, ((p384Uint1)x404), x393, x381);
+    uint64 x407 = default!;
+    p384CmovznzU64(ref x407, ((p384Uint1)x404), x395, x383);
+    uint64 x408 = default!;
+    p384CmovznzU64(ref x408, ((p384Uint1)x404), x397, x385);
+    uint64 x409 = default!;
+    p384CmovznzU64(ref x409, ((p384Uint1)x404), x399, x387);
+    uint64 x410 = default!;
+    p384CmovznzU64(ref x410, ((p384Uint1)x404), x401, x389);
     out1[0] = x405;
     out1[1] = x406;
     out1[2] = x407;
@@ -2761,23 +2736,19 @@ internal static void p384ToMontgomery(ж<p384MontgomeryDomainFieldElement> Ꮡou
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
-internal static void p384Selectznz(ж<array<uint64>> Ꮡout1, p384Uint1 arg1, ж<array<uint64>> Ꮡarg2, ж<array<uint64>> Ꮡarg3) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-    ref var arg3 = ref Ꮡarg3.DerefOrNull();
-
-    ref var x1 = ref heap(new uint64(), out var Ꮡx1);
-    p384CmovznzU64(Ꮡx1, arg1, arg2[0], arg3[0]);
-    ref var x2 = ref heap(new uint64(), out var Ꮡx2);
-    p384CmovznzU64(Ꮡx2, arg1, arg2[1], arg3[1]);
-    ref var x3 = ref heap(new uint64(), out var Ꮡx3);
-    p384CmovznzU64(Ꮡx3, arg1, arg2[2], arg3[2]);
-    ref var x4 = ref heap(new uint64(), out var Ꮡx4);
-    p384CmovznzU64(Ꮡx4, arg1, arg2[3], arg3[3]);
-    ref var x5 = ref heap(new uint64(), out var Ꮡx5);
-    p384CmovznzU64(Ꮡx5, arg1, arg2[4], arg3[4]);
-    ref var x6 = ref heap(new uint64(), out var Ꮡx6);
-    p384CmovznzU64(Ꮡx6, arg1, arg2[5], arg3[5]);
+internal static void p384Selectznz(ref array<uint64> out1, p384Uint1 arg1, ref array<uint64> arg2, ref array<uint64> arg3) {
+    uint64 x1 = default!;
+    p384CmovznzU64(ref x1, arg1, arg2[0], arg3[0]);
+    uint64 x2 = default!;
+    p384CmovznzU64(ref x2, arg1, arg2[1], arg3[1]);
+    uint64 x3 = default!;
+    p384CmovznzU64(ref x3, arg1, arg2[2], arg3[2]);
+    uint64 x4 = default!;
+    p384CmovznzU64(ref x4, arg1, arg2[3], arg3[3]);
+    uint64 x5 = default!;
+    p384CmovznzU64(ref x5, arg1, arg2[4], arg3[4]);
+    uint64 x6 = default!;
+    p384CmovznzU64(ref x6, arg1, arg2[5], arg3[5]);
     out1[0] = x1;
     out1[1] = x2;
     out1[2] = x3;
@@ -2803,10 +2774,7 @@ internal static void p384Selectznz(ж<array<uint64>> Ꮡout1, p384Uint1 arg1, ж
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff]]
-internal static void p384ToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p384ToBytes(ref array<uint8> out1, ref array<uint64> arg1) {
     var x1 = arg1[5];
     var x2 = arg1[4];
     var x3 = arg1[3];
@@ -2965,10 +2933,7 @@ internal static void p384ToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡ
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
-internal static void p384FromBytes(ж<array<uint64>> Ꮡout1, ж<array<uint8>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p384FromBytes(ref array<uint64> out1, ref array<uint8> arg1) {
     var x1 = (((uint64)arg1[47] << (int)(56)));
     var x2 = (((uint64)arg1[46] << (int)(48)));
     var x3 = (((uint64)arg1[45] << (int)(40)));

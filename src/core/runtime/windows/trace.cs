@@ -433,7 +433,7 @@ internal static void traceAdvance(bool stopTrace) {
     // We're just cleaning up the last generation after this point.
     //
     // We also don't care if the GC starts again after this for the same reasons.
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     semrelease(Ꮡworldsema);
     // Snapshot allm and freem.
     //
@@ -564,7 +564,7 @@ internal static void traceAdvance(bool stopTrace) {
     foreach (var (_, pp) in allp[(int)(len(allp))..(int)(cap(allp))]) {
         pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).readyNextGen(traceNextGen(gen));
     }
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     if (stopTrace){
         // Acquire the shutdown sema to begin the shutdown process.
         semacquire(ᏑtraceShutdownSema);
@@ -647,7 +647,7 @@ internal static void traceAdvance(bool stopTrace) {
             pp.Value.trace.swept = 0;
             pp.Value.trace.reclaimed = 0;
         }
-        releasem(mpΔ5);
+        releasem(ref (mpΔ5).DerefOrNull());
     }
     // Release the advance semaphore. If stopTrace is true we're still holding onto
     // traceShutdownSema.
@@ -951,7 +951,7 @@ internal static UntypedFloat defaultTraceAdvancePeriod => 1e9; // 1 second.
 // newWakeableSleep initializes a new wakeableSleep and returns it.
 internal static ж<wakeableSleep> newWakeableSleep() {
     var s = @new<wakeableSleep>();
-    lockInit(s.of(wakeableSleep.Ꮡlock), lockRankWakeableSleep);
+    lockInit(ref (s.of(wakeableSleep.Ꮡlock)).DerefOrNull(), lockRankWakeableSleep);
     s.Value.wakeup = new channel<EmptyStruct>(1);
     s.Value.timer = @new<timer>();
     var f = (any sΔ1, uintptr _Δp1, int64 _Δp2) => {

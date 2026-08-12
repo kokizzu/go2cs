@@ -61,10 +61,8 @@ internal static void freeBitState(ж<bitState> Ꮡb) {
 
 // maxBitStateLen returns the maximum length of a string to search with
 // the backtracker using prog.
-internal static nint maxBitStateLen(ж<syntax.Prog> Ꮡprog) {
-    ref var prog = ref Ꮡprog.DerefOrNull();
-
-    if (!shouldBacktrack(Ꮡprog)) {
+internal static nint maxBitStateLen(ref syntax.Prog prog) {
+    if (!shouldBacktrack(ref prog)) {
         return 0;
     }
     return (nint)maxBacktrackVector / len(prog.Inst);
@@ -72,9 +70,7 @@ internal static nint maxBitStateLen(ж<syntax.Prog> Ꮡprog) {
 
 // shouldBacktrack reports whether the program is too
 // long for the backtracker to run.
-internal static bool shouldBacktrack(ж<syntax.Prog> Ꮡprog) {
-    ref var prog = ref Ꮡprog.DerefOrNull();
-
+internal static bool shouldBacktrack(ref syntax.Prog prog) {
     return len(prog.Inst) <= maxBacktrackProg;
 }
 

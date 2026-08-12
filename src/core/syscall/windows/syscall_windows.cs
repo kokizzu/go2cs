@@ -1270,7 +1270,7 @@ public static (ΔHandle handle, error err) FindFirstFile(ж<uint16> Ꮡname, ж<
     ref var data1 = ref heap(new win32finddata1(), out var Ꮡdata1);
     (handle, err) = findFirstFile1(Ꮡname, Ꮡdata1);
     if (err == default!) {
-        copyFindData(Ꮡdata, Ꮡdata1);
+        copyFindData(ref (Ꮡdata).DerefOrNull(), ref data1);
     }
     return (handle, err);
 }
@@ -1281,7 +1281,7 @@ public static error /*err*/ FindNextFile(ΔHandle handle, ж<Win32finddata> Ꮡd
     ref var data1 = ref heap(new win32finddata1(), out var Ꮡdata1);
     err = findNextFile1(handle, Ꮡdata1);
     if (err == default!) {
-        copyFindData(Ꮡdata, Ꮡdata1);
+        copyFindData(ref (Ꮡdata).DerefOrNull(), ref data1);
     }
     return err;
 }

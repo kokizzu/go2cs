@@ -11,9 +11,7 @@ using math;
 
 partial class md5_package {
 
-internal static void blockGeneric(ж<digest> Ꮡdig, slice<byte> p) {
-    ref var dig = ref Ꮡdig.DerefOrNull();
-
+internal static void blockGeneric(ref digest dig, slice<byte> p) {
     // load state
     var (a, b, c, d) = (dig.s[0], dig.s[1], dig.s[2], dig.s[3]);
     for (nint i = 0; i <= len(p) - (nint)ΔBlockSize; i += ΔBlockSize) {

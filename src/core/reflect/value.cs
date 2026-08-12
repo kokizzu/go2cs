@@ -495,7 +495,7 @@ stepsLoop:
                     throw panic("attempted to copy pointer to FP register");
                 }
                 @unsafe.Pointer offset = (uintptr)add(vΔ1.ptr, st.offset, precomputedValueOffsetˢ);
-                floatToReg(ᏑregArgs, st.freg, st.size, offset);
+                floatToReg(ref regArgs, st.freg, st.size, offset);
             }
             else { /* default: */
                 throw panic("unknown ABI part kind");
@@ -636,9 +636,8 @@ internal static readonly @string reflectMakeFuncˢ = "reflect.MakeFunc"u8;
 //
 // regs contains the argument values passed in registers and will contain
 // the values returned from ctxt.fn in registers.
-internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame, ж<bool> ᏑretValid, ж<abi.RegArgs> Ꮡregs) {
+internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame, ref bool retValid, ж<abi.RegArgs> Ꮡregs) {
     ref var ctxt = ref Ꮡctxt.DerefOrNull();
-    ref var retValid = ref ᏑretValid.DerefOrNull();
     ref var regs = ref Ꮡregs.DerefOrNull();
 
     if (callGC) {
@@ -791,7 +790,7 @@ stepsLoop:
                         throw panic("attempted to copy pointer to FP register");
                     }
                     @unsafe.Pointer offset = (uintptr)add(v.ptr, st.offset, precomputedValueOffsetˢ);
-                    floatToReg(Ꮡregs, st.freg, st.size, offset);
+                    floatToReg(ref (Ꮡregs).DerefOrNull(), st.freg, st.size, offset);
                 }
                 else { /* default: */
                     throw panic("unknown ABI part kind");
@@ -912,9 +911,8 @@ internal static readonly @string methodFrameSSizeˢ = "methodFrame's size > retO
 //
 // regs contains the argument values passed in registers and will contain
 // the values returned from ctxt.fn in registers.
-internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, ж<bool> ᏑretValid, ж<abi.RegArgs> Ꮡregs) {
+internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, ref bool retValid, ж<abi.RegArgs> Ꮡregs) {
     ref var ctxt = ref Ꮡctxt.DerefOrNull();
-    ref var retValid = ref ᏑretValid.DerefOrNull();
     ref var regs = ref Ꮡregs.DerefOrNull();
 
     var rcvr = ctxt.rcvr;
@@ -1008,7 +1006,7 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
  mStepΔ1.ireg, mStepΔ1.size, from);
                     }
                     else if (exprᴛ2 == abiStepFloatReg) {
-                        floatToReg(ᏑmethodRegs, mStepΔ1.freg, mStepΔ1.size, from);
+                        floatToReg(ref methodRegs, mStepΔ1.freg, mStepΔ1.size, from);
                     }
                     else if (!matchᴛ2) { /* default: */
                         throw panic("unexpected method step");

@@ -241,19 +241,19 @@ internal static (nint pivot, sortedHint hint) choosePivot(Interface data, nint a
     const nint shortestNinther = 50;
     const nint maxSwaps = /* 4 * 3 */ 12;
     nint l = b - a;
-    ref var swaps = ref heap(new nint(), out var Ꮡswaps);
+    nint swaps = default!;
     nint i = a + l / 4 * 1;
     nint j = a + l / 4 * 2;
     nint k = a + l / 4 * 3;
     if (l >= 8) {
         if (l >= shortestNinther) {
             // Tukey ninther method, the idea came from Rust's implementation.
-            i = medianAdjacent(data, i, Ꮡswaps);
-            j = medianAdjacent(data, j, Ꮡswaps);
-            k = medianAdjacent(data, k, Ꮡswaps);
+            i = medianAdjacent(data, i, ref swaps);
+            j = medianAdjacent(data, j, ref swaps);
+            k = medianAdjacent(data, k, ref swaps);
         }
         // Find the median among i, j, k and stores it into j.
-        j = median(data, i, j, k, Ꮡswaps);
+        j = median(data, i, j, k, ref swaps);
     }
     var exprᴛ1 = swaps;
     if (exprᴛ1 is 0) {
@@ -269,9 +269,7 @@ internal static (nint pivot, sortedHint hint) choosePivot(Interface data, nint a
 }
 
 // order2 returns x,y where data[x] <= data[y], where x,y=a,b or x,y=b,a.
-internal static (nint, nint) order2(Interface data, nint a, nint b, ж<nint> Ꮡswaps) {
-    ref var swaps = ref Ꮡswaps.DerefOrNull();
-
+internal static (nint, nint) order2(Interface data, nint a, nint b, ref nint swaps) {
     if (data.Less(b, a)) {
         swaps++;
         return (b, a);
@@ -280,16 +278,16 @@ internal static (nint, nint) order2(Interface data, nint a, nint b, ж<nint> Ꮡ
 }
 
 // median returns x where data[x] is the median of data[a],data[b],data[c], where x is a, b, or c.
-internal static nint median(Interface data, nint a, nint b, nint c, ж<nint> Ꮡswaps) {
-    (a, b) = order2(data, a, b, Ꮡswaps);
-    (b, c) = order2(data, b, c, Ꮡswaps);
-    (a, b) = order2(data, a, b, Ꮡswaps);
+internal static nint median(Interface data, nint a, nint b, nint c, ref nint swaps) {
+    (a, b) = order2(data, a, b, ref swaps);
+    (b, c) = order2(data, b, c, ref swaps);
+    (a, b) = order2(data, a, b, ref swaps);
     return b;
 }
 
 // medianAdjacent finds the median of data[a - 1], data[a], data[a + 1] and stores the index into a.
-internal static nint medianAdjacent(Interface data, nint a, ж<nint> Ꮡswaps) {
-    return median(data, a - 1, a, a + 1, Ꮡswaps);
+internal static nint medianAdjacent(Interface data, nint a, ref nint swaps) {
+    return median(data, a - 1, a, a + 1, ref swaps);
 }
 
 internal static void reverseRange(Interface data, nint a, nint b) {

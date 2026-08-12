@@ -482,7 +482,7 @@ internal static hash.Hash cloneHash(hash.Hash @in, crypto.Hash h) {
     if (len((~hs.clientHello).supportedSignatureAlgorithms) == 0) {
         return c.sendAlert(alertMissingExtension);
     }
-    var (certificate, err) = (~c).config.getCertificate(clientHelloInfo(hs.ctx, c, hs.clientHello));
+    var (certificate, err) = (~c).config.getCertificate(clientHelloInfo(hs.ctx, ref (c).DerefOrNull(), ref (hs.clientHello).DerefOrNull()));
     if (err != default!) {
         if (AreEqual(err, errNoCertificates)){
             c.sendAlert(alertUnrecognizedName);
@@ -491,7 +491,7 @@ internal static hash.Hash cloneHash(hash.Hash @in, crypto.Hash h) {
         }
         return err;
     }
-    (hs.sigAlg, err) = selectSignatureScheme((~c).vers, certificate, (~hs.clientHello).supportedSignatureAlgorithms);
+    (hs.sigAlg, err) = selectSignatureScheme((~c).vers, ref (certificate).DerefOrNull(), (~hs.clientHello).supportedSignatureAlgorithms);
     if (err != default!) {
         // getCertificate returned a certificate that is unsupported or
         // incompatible with the client's signature algorithms.
@@ -576,7 +576,7 @@ internal static readonly @string tlsClientIllegallyˢ = "tls: client illegally m
         c.sendAlert(alertIllegalParameter);
         return (default!, errors.New(tlsClientIndicatedEarlyˢ));
     }
-    if (illegalClientHelloChange(clientHello, hs.clientHello)) {
+    if (illegalClientHelloChange(ref (clientHello).DerefOrNull(), ref (hs.clientHello).DerefOrNull())) {
         c.sendAlert(alertIllegalParameter);
         return (default!, errors.New(tlsClientIllegallyˢ));
     }
@@ -588,10 +588,7 @@ internal static readonly @string tlsClientIllegallyˢ = "tls: client illegally m
 // illegalClientHelloChange reports whether the two ClientHello messages are
 // different, with the exception of the changes allowed before and after a
 // HelloRetryRequest. See RFC 8446, Section 4.1.2.
-internal static bool illegalClientHelloChange(ж<clientHelloMsg> Ꮡch, ж<clientHelloMsg> Ꮡch1) {
-    ref var ch = ref Ꮡch.DerefOrNull();
-    ref var ch1 = ref Ꮡch1.DerefOrNull();
-
+internal static bool illegalClientHelloChange(ref clientHelloMsg ch, ref clientHelloMsg ch1) {
     if (len(ch.supportedVersions) != len(ch1.supportedVersions) || len(ch.cipherSuites) != len(ch1.cipherSuites) || len(ch.supportedCurves) != len(ch1.supportedCurves) || len(ch.supportedSignatureAlgorithms) != len(ch1.supportedSignatureAlgorithms) || len(ch.supportedSignatureAlgorithmsCert) != len(ch1.supportedSignatureAlgorithmsCert) || len(ch.alpnProtocols) != len(ch1.alpnProtocols)) {
         return true;
     }

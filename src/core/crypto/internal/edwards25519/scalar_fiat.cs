@@ -65,9 +65,7 @@ partial class edwards25519_package {
 // Output Bounds:
 //
 //	out1: [0x0 ~> 0xffffffffffffffff]
-internal static void fiatScalarCmovznzU64(ж<uint64> Ꮡout1, fiatScalarUint1 arg1, uint64 arg2, uint64 arg3) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-
+internal static void fiatScalarCmovznzU64(ref uint64 out1, fiatScalarUint1 arg1, uint64 arg2, uint64 arg3) {
     var x1 = ((uint64)arg1 * 0xffffffffffffffffUL);
     var x2 = ((uint64)(((uint64)(x1 & arg3)) | ((uint64)((~x1) & arg2))));
     out1 = x2;
@@ -84,11 +82,7 @@ internal static void fiatScalarCmovznzU64(ж<uint64> Ꮡout1, fiatScalarUint1 ar
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void fiatScalarMul(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void fiatScalarMul(ref fiatScalarMontgomeryDomainFieldElement out1, ref fiatScalarMontgomeryDomainFieldElement arg1, ref fiatScalarMontgomeryDomainFieldElement arg2) {
     var x1 = arg1[1];
     var x2 = arg1[2];
     var x3 = arg1[3];
@@ -359,14 +353,14 @@ internal static void fiatScalarMul(ж<fiatScalarMontgomeryDomainFieldElement> �
     (x188, x189) = bits.Sub64(x179, 0x1000000000000000UL, (uint64)((fiatScalarUint1)x187));
     uint64 x191 = default!;
     (_, x191) = bits.Sub64(x181, (uint64)0x0, (uint64)((fiatScalarUint1)x189));
-    ref var x192 = ref heap(new uint64(), out var Ꮡx192);
-    fiatScalarCmovznzU64(Ꮡx192, ((fiatScalarUint1)x191), x182, x173);
-    ref var x193 = ref heap(new uint64(), out var Ꮡx193);
-    fiatScalarCmovznzU64(Ꮡx193, ((fiatScalarUint1)x191), x184, x175);
-    ref var x194 = ref heap(new uint64(), out var Ꮡx194);
-    fiatScalarCmovznzU64(Ꮡx194, ((fiatScalarUint1)x191), x186, x177);
-    ref var x195 = ref heap(new uint64(), out var Ꮡx195);
-    fiatScalarCmovznzU64(Ꮡx195, ((fiatScalarUint1)x191), x188, x179);
+    uint64 x192 = default!;
+    fiatScalarCmovznzU64(ref x192, ((fiatScalarUint1)x191), x182, x173);
+    uint64 x193 = default!;
+    fiatScalarCmovznzU64(ref x193, ((fiatScalarUint1)x191), x184, x175);
+    uint64 x194 = default!;
+    fiatScalarCmovznzU64(ref x194, ((fiatScalarUint1)x191), x186, x177);
+    uint64 x195 = default!;
+    fiatScalarCmovznzU64(ref x195, ((fiatScalarUint1)x191), x188, x179);
     out1[0] = x192;
     out1[1] = x193;
     out1[2] = x194;
@@ -384,11 +378,7 @@ internal static void fiatScalarMul(ж<fiatScalarMontgomeryDomainFieldElement> �
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) + eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void fiatScalarAdd(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void fiatScalarAdd(ref fiatScalarMontgomeryDomainFieldElement out1, ref fiatScalarMontgomeryDomainFieldElement arg1, ref fiatScalarMontgomeryDomainFieldElement arg2) {
     uint64 x1 = default!;
     uint64 x2 = default!;
     (x1, x2) = bits.Add64(arg1[0], arg2[0], (uint64)0x0);
@@ -415,14 +405,14 @@ internal static void fiatScalarAdd(ж<fiatScalarMontgomeryDomainFieldElement> �
     (x15, x16) = bits.Sub64(x7, 0x1000000000000000UL, (uint64)((fiatScalarUint1)x14));
     uint64 x18 = default!;
     (_, x18) = bits.Sub64((uint64)((fiatScalarUint1)x8), (uint64)0x0, (uint64)((fiatScalarUint1)x16));
-    ref var x19 = ref heap(new uint64(), out var Ꮡx19);
-    fiatScalarCmovznzU64(Ꮡx19, ((fiatScalarUint1)x18), x9, x1);
-    ref var x20 = ref heap(new uint64(), out var Ꮡx20);
-    fiatScalarCmovznzU64(Ꮡx20, ((fiatScalarUint1)x18), x11, x3);
-    ref var x21 = ref heap(new uint64(), out var Ꮡx21);
-    fiatScalarCmovznzU64(Ꮡx21, ((fiatScalarUint1)x18), x13, x5);
-    ref var x22 = ref heap(new uint64(), out var Ꮡx22);
-    fiatScalarCmovznzU64(Ꮡx22, ((fiatScalarUint1)x18), x15, x7);
+    uint64 x19 = default!;
+    fiatScalarCmovznzU64(ref x19, ((fiatScalarUint1)x18), x9, x1);
+    uint64 x20 = default!;
+    fiatScalarCmovznzU64(ref x20, ((fiatScalarUint1)x18), x11, x3);
+    uint64 x21 = default!;
+    fiatScalarCmovznzU64(ref x21, ((fiatScalarUint1)x18), x13, x5);
+    uint64 x22 = default!;
+    fiatScalarCmovznzU64(ref x22, ((fiatScalarUint1)x18), x15, x7);
     out1[0] = x19;
     out1[1] = x20;
     out1[2] = x21;
@@ -440,11 +430,7 @@ internal static void fiatScalarAdd(ж<fiatScalarMontgomeryDomainFieldElement> �
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) - eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void fiatScalarSub(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void fiatScalarSub(ref fiatScalarMontgomeryDomainFieldElement out1, ref fiatScalarMontgomeryDomainFieldElement arg1, ref fiatScalarMontgomeryDomainFieldElement arg2) {
     uint64 x1 = default!;
     uint64 x2 = default!;
     (x1, x2) = bits.Sub64(arg1[0], arg2[0], (uint64)0x0);
@@ -457,8 +443,8 @@ internal static void fiatScalarSub(ж<fiatScalarMontgomeryDomainFieldElement> �
     uint64 x7 = default!;
     uint64 x8 = default!;
     (x7, x8) = bits.Sub64(arg1[3], arg2[3], (uint64)((fiatScalarUint1)x6));
-    ref var x9 = ref heap(new uint64(), out var Ꮡx9);
-    fiatScalarCmovznzU64(Ꮡx9, ((fiatScalarUint1)x8), (uint64)0x0, 0xffffffffffffffffUL);
+    uint64 x9 = default!;
+    fiatScalarCmovznzU64(ref x9, ((fiatScalarUint1)x8), (uint64)0x0, 0xffffffffffffffffUL);
     uint64 x10 = default!;
     uint64 x11 = default!;
     (x10, x11) = bits.Add64(x1, ((uint64)(x9 & 0x5812631a5cf5d3edUL)), (uint64)0x0);
@@ -486,10 +472,7 @@ internal static void fiatScalarSub(ж<fiatScalarMontgomeryDomainFieldElement> �
 //
 //	eval (from_montgomery out1) mod m = -eval (from_montgomery arg1) mod m
 //	0 ≤ eval out1 < m
-internal static void fiatScalarOpp(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void fiatScalarOpp(ref fiatScalarMontgomeryDomainFieldElement out1, ref fiatScalarMontgomeryDomainFieldElement arg1) {
     uint64 x1 = default!;
     uint64 x2 = default!;
     (x1, x2) = bits.Sub64((uint64)0x0, arg1[0], (uint64)0x0);
@@ -502,8 +485,8 @@ internal static void fiatScalarOpp(ж<fiatScalarMontgomeryDomainFieldElement> �
     uint64 x7 = default!;
     uint64 x8 = default!;
     (x7, x8) = bits.Sub64((uint64)0x0, arg1[3], (uint64)((fiatScalarUint1)x6));
-    ref var x9 = ref heap(new uint64(), out var Ꮡx9);
-    fiatScalarCmovznzU64(Ꮡx9, ((fiatScalarUint1)x8), (uint64)0x0, 0xffffffffffffffffUL);
+    uint64 x9 = default!;
+    fiatScalarCmovznzU64(ref x9, ((fiatScalarUint1)x8), (uint64)0x0, 0xffffffffffffffffUL);
     uint64 x10 = default!;
     uint64 x11 = default!;
     (x10, x11) = bits.Add64(x1, ((uint64)(x9 & 0x5812631a5cf5d3edUL)), (uint64)0x0);
@@ -538,10 +521,7 @@ internal static void fiatScalarOpp(ж<fiatScalarMontgomeryDomainFieldElement> �
 // Output Bounds:
 //
 //	out1: [0x0 ~> 0xffffffffffffffff]
-internal static void fiatScalarNonzero(ж<uint64> Ꮡout1, ж<array<uint64>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void fiatScalarNonzero(ref uint64 out1, ref array<uint64> arg1) {
     var x1 = ((uint64)(arg1[0] | ((uint64)(arg1[1] | ((uint64)(arg1[2] | arg1[3]))))));
     out1 = x1;
 }
@@ -556,10 +536,7 @@ internal static void fiatScalarNonzero(ж<uint64> Ꮡout1, ж<array<uint64>> Ꮡ
 //
 //	eval out1 mod m = (eval arg1 * ((2^64)⁻¹ mod m)^4) mod m
 //	0 ≤ eval out1 < m
-internal static void fiatScalarFromMontgomery(ж<fiatScalarNonMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void fiatScalarFromMontgomery(ref fiatScalarNonMontgomeryDomainFieldElement out1, ref fiatScalarMontgomeryDomainFieldElement arg1) {
     var x1 = arg1[0];
     uint64 x2 = default!;
     (_, x2) = bits.Mul64(x1, 0xd2b51da312547e1bUL);
@@ -691,14 +668,14 @@ internal static void fiatScalarFromMontgomery(ж<fiatScalarNonMontgomeryDomainFi
     (x91, x92) = bits.Sub64(x84, 0x1000000000000000UL, (uint64)((fiatScalarUint1)x90));
     uint64 x94 = default!;
     (_, x94) = bits.Sub64((uint64)0x0, (uint64)0x0, (uint64)((fiatScalarUint1)x92));
-    ref var x95 = ref heap(new uint64(), out var Ꮡx95);
-    fiatScalarCmovznzU64(Ꮡx95, ((fiatScalarUint1)x94), x85, x78);
-    ref var x96 = ref heap(new uint64(), out var Ꮡx96);
-    fiatScalarCmovznzU64(Ꮡx96, ((fiatScalarUint1)x94), x87, x80);
-    ref var x97 = ref heap(new uint64(), out var Ꮡx97);
-    fiatScalarCmovznzU64(Ꮡx97, ((fiatScalarUint1)x94), x89, x82);
-    ref var x98 = ref heap(new uint64(), out var Ꮡx98);
-    fiatScalarCmovznzU64(Ꮡx98, ((fiatScalarUint1)x94), x91, x84);
+    uint64 x95 = default!;
+    fiatScalarCmovznzU64(ref x95, ((fiatScalarUint1)x94), x85, x78);
+    uint64 x96 = default!;
+    fiatScalarCmovznzU64(ref x96, ((fiatScalarUint1)x94), x87, x80);
+    uint64 x97 = default!;
+    fiatScalarCmovznzU64(ref x97, ((fiatScalarUint1)x94), x89, x82);
+    uint64 x98 = default!;
+    fiatScalarCmovznzU64(ref x98, ((fiatScalarUint1)x94), x91, x84);
     out1[0] = x95;
     out1[1] = x96;
     out1[2] = x97;
@@ -715,10 +692,7 @@ internal static void fiatScalarFromMontgomery(ж<fiatScalarNonMontgomeryDomainFi
 //
 //	eval (from_montgomery out1) mod m = eval arg1 mod m
 //	0 ≤ eval out1 < m
-internal static void fiatScalarToMontgomery(ж<fiatScalarMontgomeryDomainFieldElement> Ꮡout1, ж<fiatScalarNonMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void fiatScalarToMontgomery(ref fiatScalarMontgomeryDomainFieldElement out1, ref fiatScalarNonMontgomeryDomainFieldElement arg1) {
     var x1 = arg1[1];
     var x2 = arg1[2];
     var x3 = arg1[3];
@@ -958,14 +932,14 @@ internal static void fiatScalarToMontgomery(ж<fiatScalarMontgomeryDomainFieldEl
     (x164, x165) = bits.Sub64(x157, 0x1000000000000000UL, (uint64)((fiatScalarUint1)x163));
     uint64 x167 = default!;
     (_, x167) = bits.Sub64((uint64)0x0, (uint64)0x0, (uint64)((fiatScalarUint1)x165));
-    ref var x168 = ref heap(new uint64(), out var Ꮡx168);
-    fiatScalarCmovznzU64(Ꮡx168, ((fiatScalarUint1)x167), x158, x151);
-    ref var x169 = ref heap(new uint64(), out var Ꮡx169);
-    fiatScalarCmovznzU64(Ꮡx169, ((fiatScalarUint1)x167), x160, x153);
-    ref var x170 = ref heap(new uint64(), out var Ꮡx170);
-    fiatScalarCmovznzU64(Ꮡx170, ((fiatScalarUint1)x167), x162, x155);
-    ref var x171 = ref heap(new uint64(), out var Ꮡx171);
-    fiatScalarCmovznzU64(Ꮡx171, ((fiatScalarUint1)x167), x164, x157);
+    uint64 x168 = default!;
+    fiatScalarCmovznzU64(ref x168, ((fiatScalarUint1)x167), x158, x151);
+    uint64 x169 = default!;
+    fiatScalarCmovznzU64(ref x169, ((fiatScalarUint1)x167), x160, x153);
+    uint64 x170 = default!;
+    fiatScalarCmovznzU64(ref x170, ((fiatScalarUint1)x167), x162, x155);
+    uint64 x171 = default!;
+    fiatScalarCmovznzU64(ref x171, ((fiatScalarUint1)x167), x164, x157);
     out1[0] = x168;
     out1[1] = x169;
     out1[2] = x170;
@@ -989,10 +963,7 @@ internal static void fiatScalarToMontgomery(ж<fiatScalarMontgomeryDomainFieldEl
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0x1f]]
-internal static void fiatScalarToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void fiatScalarToBytes(ref array<uint8> out1, ref array<uint64> arg1) {
     var x1 = arg1[3];
     var x2 = arg1[2];
     var x3 = arg1[1];
@@ -1105,8 +1076,7 @@ internal static void fiatScalarToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0x1fffffffffffffff]]
-internal static void fiatScalarFromBytes(ж<array<uint64>> Ꮡout1, ж<array<uint8>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
+internal static void fiatScalarFromBytes(ref array<uint64> out1, ж<array<uint8>> Ꮡarg1) {
     ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = (((uint64)arg1[31] << (int)(56)));

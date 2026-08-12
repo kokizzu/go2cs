@@ -95,9 +95,7 @@ internal static error errPublicExponentLarge = errors.New("crypto/rsa: public ex
 // do not have different behavior depending on whether
 // int is 32 or 64 bits. See also
 // https://www.imperialviolet.org/2012/03/16/rsae.html.
-internal static error checkPub(ж<PublicKey> Ꮡpub) {
-    ref var pub = ref Ꮡpub.DerefOrNull();
-
+internal static error checkPub(ref PublicKey pub) {
     if (pub.N == nil) {
         return errPublicModulus;
     }
@@ -255,7 +253,7 @@ public static error Validate(this ж<PrivateKey> Ꮡpriv) {
     ref var priv = ref Ꮡpriv.DerefOrNull();
 
     {
-        var err = checkPub(Ꮡpriv.of(PrivateKey.ᏑPublicKey)); if (err != default!) {
+        var err = checkPub(ref nonnil(ref priv).PublicKey); if (err != default!) {
             return err;
         }
     }
@@ -456,9 +454,7 @@ break_NextSetOfPrimes:;
 }
 
 // incCounter increments a four byte, big-endian counter.
-internal static void incCounter(ж<array<byte>> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void incCounter(ref array<byte> c) {
     {
         c[3]++; if (c[3] != 0) {
             return;
@@ -492,7 +488,7 @@ internal static void mgf1XOR(slice<byte> @out, hash.Hash hashΔ1, slice<byte> se
             @out[done] ^= (byte)(digest[i]);
             done++;
         }
-        incCounter(Ꮡcounter);
+        incCounter(ref counter);
     }
 }
 
@@ -501,9 +497,7 @@ internal static void mgf1XOR(slice<byte> @out, hash.Hash hashΔ1, slice<byte> se
 // be returned if the size of the salt is too large.
 public static error ErrMessageTooLong = errors.New("crypto/rsa: message too long for RSA key size"u8);
 
-internal static (slice<byte>, error) encrypt(ж<PublicKey> Ꮡpub, slice<byte> plaintext) {
-    ref var pub = ref Ꮡpub.DerefOrNull();
-
+internal static (slice<byte>, error) encrypt(ref PublicKey pub, slice<byte> plaintext) {
     boring.Unreachable();
     var (N, err) = bigmod.NewModulusFromBig(pub.N);
     if (err != default!) {
@@ -544,7 +538,7 @@ public static (slice<byte>, error) EncryptOAEP(hash.Hash hashΔ1, io.Reader rand
     // well-specified number of random bytes is included in the ciphertext, in a
     // well-specified way.
     {
-        var errΔ1 = checkPub(Ꮡpub); if (errΔ1 != default!) {
+        var errΔ1 = checkPub(ref (Ꮡpub).DerefOrNull()); if (errΔ1 != default!) {
             return (default!, errΔ1);
         }
     }
@@ -584,7 +578,7 @@ public static (slice<byte>, error) EncryptOAEP(hash.Hash hashΔ1, io.Reader rand
         }
         return boring.EncryptRSANoPadding(bkey, em);
     }
-    return encrypt(Ꮡpub, em);
+    return encrypt(ref (Ꮡpub).DerefOrNull(), em);
 }
 
 // ErrDecryption represents a failure to decrypt a message.
@@ -648,9 +642,7 @@ internal const bool noCheck = false;
 // decrypt performs an RSA decryption of ciphertext into out. If check is true,
 // m^e is calculated and compared with ciphertext, in order to defend against
 // errors in the CRT computation.
-internal static (slice<byte>, error) decrypt(ж<PrivateKey> Ꮡpriv, slice<byte> ciphertext, bool check) {
-    ref var priv = ref Ꮡpriv.DerefOrNull();
-
+internal static (slice<byte>, error) decrypt(ref PrivateKey priv, slice<byte> ciphertext, bool check) {
     if (len(priv.Primes) <= 2) {
         boring.Unreachable();
     }
@@ -717,8 +709,10 @@ public static (slice<byte>, error) DecryptOAEP(hash.Hash hashΔ1, io.Reader rand
 }
 
 internal static (slice<byte>, error) decryptOAEP(hash.Hash hashΔ1, hash.Hash mgfHash, io.Reader random, ж<PrivateKey> Ꮡpriv, slice<byte> ciphertext, slice<byte> label) {
+    ref var priv = ref Ꮡpriv.DerefOrNull();
+
     {
-        var errΔ1 = checkPub(Ꮡpriv.of(PrivateKey.ᏑPublicKey)); if (errΔ1 != default!) {
+        var errΔ1 = checkPub(ref nonnil(ref priv).PublicKey); if (errΔ1 != default!) {
             return (default!, errΔ1);
         }
     }
@@ -737,7 +731,7 @@ internal static (slice<byte>, error) decryptOAEP(hash.Hash hashΔ1, hash.Hash mg
         }
         return (@out, default!);
     }
-    var (em, err) = decrypt(Ꮡpriv, ciphertext, noCheck);
+    var (em, err) = decrypt(ref (Ꮡpriv).DerefOrNull(), ciphertext, noCheck);
     if (err != default!) {
         return (default!, err);
     }

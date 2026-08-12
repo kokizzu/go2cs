@@ -15,7 +15,7 @@ internal static ж<dlogger> getCachedDlogger() {
     return default!;
 }
 
-internal static bool putCachedDlogger(ж<dlogger> Ꮡl) {
+internal static bool putCachedDlogger(ref dlogger l) {
     return false;
 }
 

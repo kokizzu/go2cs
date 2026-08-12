@@ -291,15 +291,13 @@ public static (nint n, error err) Read(this ж<Rand> Ꮡr, slice<byte> p) {
     case ж<runtimeSource> src: {
         return src.read(p, Ꮡr.of(Rand.ᏑreadVal), Ꮡr.of(Rand.ᏑreadPos));
     }}
-    return read(p, r.src, Ꮡr.of(Rand.ᏑreadVal), Ꮡr.of(Rand.ᏑreadPos));
+    return read(p, r.src, ref nonnil(ref r).readVal, ref nonnil(ref r).readPos);
 }
 
-internal static (nint n, error err) read(slice<byte> p, Source src, ж<int64> ᏑreadVal, ж<int8> ᏑreadPos) {
+internal static (nint n, error err) read(slice<byte> p, Source src, ref int64 readVal, ref int8 readPos) {
     nint n = default!;
     error err = default!;
 
-    ref var readVal = ref ᏑreadVal.DerefOrNull();
-    ref var readPos = ref ᏑreadPos.DerefOrNull();
     var pos = readPos;
     var val = readVal;
     var (rng, _) = src._<ж<rngSource>>(ᐧ);
@@ -393,7 +391,7 @@ internal static (nint n, error err) read(this ж<runtimeSource> Ꮡfs, slice<byt
     error err = default!;
 
     Ꮡfs.of(runtimeSource.Ꮡmu).Lock();
-    (n, err) = read(p, new runtimeSourceжSource(Ꮡfs), ᏑreadVal, ᏑreadPos);
+    (n, err) = read(p, new runtimeSourceжSource(Ꮡfs), ref (ᏑreadVal).DerefOrNull(), ref (ᏑreadPos).DerefOrNull());
     Ꮡfs.of(runtimeSource.Ꮡmu).Unlock();
     return (n, err);
 }
@@ -608,7 +606,7 @@ internal static (nint n, error err) read(this ж<lockedSource> Ꮡr, slice<byte>
 
     ref var r = ref Ꮡr.DerefOrNull();
     Ꮡr.of(lockedSource.Ꮡlk).Lock();
-    (n, err) = read(p, new rngSourceжSource(r.s), ᏑreadVal, ᏑreadPos);
+    (n, err) = read(p, new rngSourceжSource(r.s), ref (ᏑreadVal).DerefOrNull(), ref (ᏑreadPos).DerefOrNull());
     Ꮡr.of(lockedSource.Ꮡlk).Unlock();
     return (n, err);
 }

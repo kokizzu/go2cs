@@ -6,7 +6,7 @@ namespace go.crypto;
 
 partial class x509_package {
 
-internal static bool boringAllowCert(ж<Certificate> Ꮡc) {
+internal static bool boringAllowCert(ref Certificate c) {
     return true;
 }
 

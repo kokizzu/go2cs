@@ -740,15 +740,13 @@ public static ж<ΔInt> GCD(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy,
 // we use 'even' to track the sign of the cosequences.
 // For even iterations: u0, v1 >= 0 && u1, v0 <= 0
 // For odd  iterations: u0, v1 <= 0 && u1, v0 >= 0
-internal static (Word u0, Word u1, Word v0, Word v1, bool even) lehmerSimulate(ж<ΔInt> ᏑA, ж<ΔInt> ᏑB) {
+internal static (Word u0, Word u1, Word v0, Word v1, bool even) lehmerSimulate(ref ΔInt A, ref ΔInt B) {
     Word u0 = default!;
     Word u1 = default!;
     Word v0 = default!;
     Word v1 = default!;
     bool even = default!;
 
-    ref var A = ref ᏑA.DerefOrNull();
-    ref var B = ref ᏑB.DerefOrNull();
     // initialize the digits
     Word a1 = default!;
     Word a2 = default!;
@@ -892,7 +890,7 @@ internal static ж<ΔInt> lehmerGCD(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔIn
     // loop invariant A >= B
     while (len((~B).abs) > 1) {
         // Attempt to calculate in single-precision using leading words of A and B.
-        var (u0, u1, v0, v1, even) = lehmerSimulate(A, B);
+        var (u0, u1, v0, v1, even) = lehmerSimulate(ref (A).DerefOrNull(), ref (B).DerefOrNull());
         // multiprecision Step
         if (v0 != 0){
             // Simulate the effect of the single-precision steps using the cosequences.

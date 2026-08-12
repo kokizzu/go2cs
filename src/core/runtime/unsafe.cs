@@ -57,9 +57,7 @@ internal static void panicunsafestringnilptr() {
 }
 
 // Keep this code in sync with cmd/compile/internal/walk/builtin.go:walkUnsafeSlice
-internal static void unsafeslice(ж<_type> Ꮡet, @unsafe.Pointer ptr, nint len) {
-    ref var et = ref Ꮡet.DerefOrNull();
-
+internal static void unsafeslice(ref _type et, @unsafe.Pointer ptr, nint len) {
     if (len < 0) {
         panicunsafeslicelen1(getcallerpc());
     }
@@ -78,21 +76,19 @@ internal static void unsafeslice(ж<_type> Ꮡet, @unsafe.Pointer ptr, nint len)
 }
 
 // Keep this code in sync with cmd/compile/internal/walk/builtin.go:walkUnsafeSlice
-internal static void unsafeslice64(ж<_type> Ꮡet, @unsafe.Pointer ptr, int64 len64) {
+internal static void unsafeslice64(ref _type et, @unsafe.Pointer ptr, int64 len64) {
     nint len = (nint)len64;
     if ((int64)len != len64) {
         panicunsafeslicelen1(getcallerpc());
     }
-    unsafeslice(Ꮡet, ptr, len);
+    unsafeslice(ref et, ptr, len);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string checkptrUnsafeSliceˢ = "checkptr: unsafe.Slice result straddles multiple allocations"u8;
 
-internal static void unsafeslicecheckptr(ж<_type> Ꮡet, @unsafe.Pointer ptr, int64 len64) {
-    ref var et = ref Ꮡet.DerefOrNull();
-
-    unsafeslice64(Ꮡet, ptr, len64);
+internal static void unsafeslicecheckptr(ref _type et, @unsafe.Pointer ptr, int64 len64) {
+    unsafeslice64(ref et, ptr, len64);
     // Check that underlying array doesn't straddle multiple heap objects.
     // unsafeslice64 has already checked for overflow.
     if (checkptrStraddles(ptr, (uintptr)len64 * et.Size_)) {
@@ -131,8 +127,8 @@ internal static void panicunsafeslicenilptr1(uintptr pc) {
 }
 
 //go:linkname reflect_unsafeslice reflect.unsafeslice
-internal static void reflect_unsafeslice(ж<_type> Ꮡet, @unsafe.Pointer ptr, nint len) {
-    unsafeslice(Ꮡet, ptr, len);
+internal static void reflect_unsafeslice(ref _type et, @unsafe.Pointer ptr, nint len) {
+    unsafeslice(ref et, ptr, len);
 }
 
 } // end runtime_package

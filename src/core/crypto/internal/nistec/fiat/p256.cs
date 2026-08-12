@@ -25,7 +25,9 @@ internal static UntypedInt p256ElementLen => 32;
 
 // One sets e = 1, and returns e.
 public static ж<P256Element> One(this ж<P256Element> Ꮡe) {
-    p256SetOne(Ꮡe.of(P256Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+
+    p256SetOne(ref nonnil(ref e).x);
     return Ꮡe;
 }
 
@@ -61,11 +63,13 @@ public static slice<byte> Bytes(this ж<P256Element> Ꮡe) {
 }
 
 internal static slice<byte> bytes(this ж<P256Element> Ꮡe, ж<array<byte>> Ꮡout) {
+    ref var e = ref Ꮡe.DerefOrNull();
     ref var @out = ref Ꮡout.DerefOrNull();
 
-    ref var tmp = ref heap(new p256NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
-    p256FromMontgomery(Ꮡtmp, Ꮡe.of(P256Element.Ꮡx));
-    p256ToBytes(Ꮡout, Ꮡ((Ꮡtmp).Value.Value));
+    p256NonMontgomeryDomainFieldElement tmp = default!;
+    p256FromMontgomery(ref tmp, ref nonnil(ref e).x);
+    var ᴛ1 = tmp.Value;
+    p256ToBytes(ref (Ꮡout).DerefOrNull(), ref ᴛ1);
     p256InvertEndianness(@out[..]);
     return @out[..];
 }
@@ -77,6 +81,8 @@ private static readonly @string invalidP256Elementˢ = "invalid P256Element enco
 // If v is not 32 bytes or it encodes a value higher than 2^256 - 2^224 + 2^192 + 2^96 - 1,
 // SetBytes returns nil and an error, and e is unchanged.
 public static (ж<P256Element>, error) SetBytes(this ж<P256Element> Ꮡe, slice<byte> v) {
+    ref var e = ref Ꮡe.DerefOrNull();
+
     if (len(v) != p256ElementLen) {
         return (default!, errors.New(invalidP256Elementˢ));
     }
@@ -95,40 +101,65 @@ public static (ж<P256Element>, error) SetBytes(this ж<P256Element> Ꮡe, slice
     ref var @in = ref heap(new array<byte>(32), out var Ꮡin);
     copy(@in[..], v);
     p256InvertEndianness(@in[..]);
-    ref var tmp = ref heap(new p256NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
-    p256FromBytes(Ꮡ((Ꮡtmp).Value.Value), Ꮡin);
-    p256ToMontgomery(Ꮡe.of(P256Element.Ꮡx), Ꮡtmp);
+    p256NonMontgomeryDomainFieldElement tmp = default!;
+    var ᴛ2 = tmp.Value;
+    p256FromBytes(ref ᴛ2, ref @in);
+    p256ToMontgomery(ref nonnil(ref e).x, ref tmp);
     return (Ꮡe, default!);
 }
 
 // Add sets e = t1 + t2, and returns e.
 public static ж<P256Element> Add(this ж<P256Element> Ꮡe, ж<P256Element> Ꮡt1, ж<P256Element> Ꮡt2) {
-    p256Add(Ꮡe.of(P256Element.Ꮡx), Ꮡt1.of(P256Element.Ꮡx), Ꮡt2.of(P256Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p256Add(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Sub sets e = t1 - t2, and returns e.
 public static ж<P256Element> Sub(this ж<P256Element> Ꮡe, ж<P256Element> Ꮡt1, ж<P256Element> Ꮡt2) {
-    p256Sub(Ꮡe.of(P256Element.Ꮡx), Ꮡt1.of(P256Element.Ꮡx), Ꮡt2.of(P256Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p256Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Mul sets e = t1 * t2, and returns e.
 public static ж<P256Element> Mul(this ж<P256Element> Ꮡe, ж<P256Element> Ꮡt1, ж<P256Element> Ꮡt2) {
-    p256Mul(Ꮡe.of(P256Element.Ꮡx), Ꮡt1.of(P256Element.Ꮡx), Ꮡt2.of(P256Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p256Mul(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Square sets e = t * t, and returns e.
 public static ж<P256Element> Square(this ж<P256Element> Ꮡe, ж<P256Element> Ꮡt) {
-    p256Square(Ꮡe.of(P256Element.Ꮡx), Ꮡt.of(P256Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    p256Square(ref nonnil(ref e).x, ref nonnil(ref t).x);
     return Ꮡe;
 }
 
 // Select sets v to a if cond == 1, and to b if cond == 0.
 public static ж<P256Element> Select(this ж<P256Element> Ꮡv, ж<P256Element> Ꮡa, ж<P256Element> Ꮡb, nint cond) {
-    p256Selectznz(Ꮡ((Ꮡv.of(P256Element.Ꮡx)).Value.Value), ((p256Uint1)(uint64)cond),
-        Ꮡ((Ꮡb.of(P256Element.Ꮡx)).Value.Value), Ꮡ((Ꮡa.of(P256Element.Ꮡx)).Value.Value));
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var ᴛ3 = nonnil(ref v).x.Value;
+
+    var ᴛ4 = nonnil(ref b).x.Value;
+
+    var ᴛ5 = nonnil(ref a).x.Value;
+    p256Selectznz(ref ᴛ3, ((p256Uint1)(uint64)cond),
+        ref ᴛ4, ref ᴛ5);
     return Ꮡv;
 }
 

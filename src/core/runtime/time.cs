@@ -74,7 +74,7 @@ partial class runtime_package {
 internal static void init(this ж<timer> Ꮡt, Action<any, uintptr, int64> f, any arg) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    lockInit(Ꮡt.of(timer.Ꮡmu), lockRankTimer);
+    lockInit(ref nonnil(ref t).mu, lockRankTimer);
     t.f = f;
     t.arg = arg;
 }
@@ -218,7 +218,7 @@ internal static readonly @string updateHeapˢ = "updateHeap"u8;
 internal static bool /*updated*/ updateHeap(this ж<timer> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    assertWorldStoppedOrLockHeld(Ꮡt.of(timer.Ꮡmu));
+    assertWorldStoppedOrLockHeld(ref nonnil(ref t).mu);
     Ꮡt.trace(updateHeapˢ);
     var ts = t.ts;
     if (ts == nil || Ꮡt != (~ts).heap[0].timer) {
@@ -315,7 +315,7 @@ internal static ж<timeTimer> newTimer(int64 when, int64 period, Action<any, uin
         racerelease(new @unsafe.Pointer(t.of(timeTimer.Ꮡtimer)));
     }
     if (Ꮡc != nil) {
-        lockInit(t.of(timeTimer.ᏑsendLock), lockRankTimerSend);
+        lockInit(ref (t.of(timeTimer.ᏑsendLock)).DerefOrNull(), lockRankTimerSend);
         t.Value.isChan = true;
         c.timer = t.of(timeTimer.Ꮡtimer);
         if (c.dataqsiz == 0) {
@@ -366,7 +366,7 @@ internal static void addHeap(this ж<timers> Ꮡts, ж<timer> Ꮡt) {
     ref var ts = ref Ꮡts.DerefOrNull();
     ref var t = ref Ꮡt.DerefOrNull();
 
-    assertWorldStoppedOrLockHeld(Ꮡts.of(timers.Ꮡmu));
+    assertWorldStoppedOrLockHeld(ref nonnil(ref ts).mu);
     // Timers rely on the network poller, so make sure the poller
     // has started.
     if (ᏑnetpollInited.Load() == 0) {
@@ -631,7 +631,7 @@ internal static void maybeAdd(this ж<timer> Ꮡt) {
     }
     Ꮡt.unlock();
     ts.unlock();
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     if (wake) {
         wakeNetPoller(when);
     }
@@ -1145,7 +1145,7 @@ internal static void verify(this ж<timers> Ꮡts) {
 internal static void updateMinWhenHeap(this ж<timers> Ꮡts) {
     ref var ts = ref Ꮡts.DerefOrNull();
 
-    assertWorldStoppedOrLockHeld(Ꮡts.of(timers.Ꮡmu));
+    assertWorldStoppedOrLockHeld(ref nonnil(ref ts).mu);
     if (len(ts.heap) == 0){
         Ꮡts.of(timers.ᏑminWhenHeap).Store(0);
     } else {
@@ -1327,9 +1327,7 @@ internal static readonly @string blockTimerChanˢ = "blockTimerChan"u8;
 // The caller holds the channel lock for c and possibly other channels.
 // blockTimerChan makes sure that c is in a timer heap,
 // adding it if needed.
-internal static void blockTimerChan(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void blockTimerChan(ref Δhchan c) {
     var t = c.timer;
     t.@lock();
     t.trace(blockTimerChanˢ);
@@ -1366,9 +1364,7 @@ internal static readonly @string unblockTimerChanˢ = "unblockTimerChan"u8;
 // The caller holds the channel lock for c and possibly other channels.
 // unblockTimerChan removes c from the timer heap when nothing is
 // blocked on it anymore.
-internal static void unblockTimerChan(ж<Δhchan> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void unblockTimerChan(ref Δhchan c) {
     var t = c.timer;
     t.@lock();
     t.trace(unblockTimerChanˢ);

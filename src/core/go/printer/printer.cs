@@ -1413,9 +1413,7 @@ internal static ж<sync.Pool> ᏑprinterPool = new(new sync.Pool(
 ));
 internal static ref sync.Pool printerPool => ref ᏑprinterPool.Value;
 
-internal static ж<printer> newPrinter(ж<Config> Ꮡcfg, ж<token.FileSet> Ꮡfset, map<ast.Node, nint> nodeSizes) {
-    ref var cfg = ref Ꮡcfg.DerefOrNull();
-
+internal static ж<printer> newPrinter(ref Config cfg, ж<token.FileSet> Ꮡfset, map<ast.Node, nint> nodeSizes) {
     var p = ᏑprinterPool.Get()._<ж<printer>>();
     p.Value = new printer(
         Config: cfg,
@@ -1448,7 +1446,7 @@ internal static error /*err*/ fprint(this ж<Config> Ꮡcfg, io.Writer output, �
         ref var cfg = ref Ꮡcfg.DerefOrNull();
 
         // print node
-        var p = newPrinter(Ꮡcfg, Ꮡfset, nodeSizes);
+        var p = newPrinter(ref (Ꮡcfg).DerefOrNull(), Ꮡfset, nodeSizes);
         var pʗ1 = p;
         defer(pʗ1.free, ref ᒐ);
         {

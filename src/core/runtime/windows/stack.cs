@@ -133,11 +133,11 @@ internal static void stackinit() {
     }
     foreach (var (i, _) in stackpool) {
         stackpool[i].item.span.init();
-        lockInit(Ꮡstackpool.at<stackpoolᴛ1>(i).of(stackpoolᴛ1.Ꮡitem).of(stackpoolItem.Ꮡmu), lockRankStackpool);
+        lockInit(ref stackpool[i].item.mu, lockRankStackpool);
     }
     foreach (var (i, _) in stackLarge.free) {
         stackLarge.free[i].init();
-        lockInit(ᏑstackLarge.of(stackLargeᴛ1.Ꮡlock), lockRankStackLarge);
+        lockInit(ref stackLarge.@lock, lockRankStackLarge);
     }
 }
 
@@ -174,7 +174,7 @@ internal static gclinkptr stackpoolalloc(uint8 order) {
         if ((~s).manualFreeList.ptr() != nil) {
             @throw(badManualFreeListˢ);
         }
-        osStackAlloc(s);
+        osStackAlloc(ref (s).DerefOrNull());
         s.Value.elemsize = ((uintptr)fixedStack).Lsh((uint64)(order));
         for (var i = (uintptr)0; i < _StackCacheSize; i += s.Value.elemsize) {
             var xΔ1 = ((gclinkptr)(s.@base() + i));
@@ -230,7 +230,7 @@ internal static void stackpoolfree(gclinkptr x, uint8 order) {
         // By not freeing, we prevent step #4 until GC is done.
         Ꮡstackpool.at<stackpoolᴛ1>((nint)(order)).of(stackpoolᴛ1.Ꮡitem).of(stackpoolItem.Ꮡspan).remove(s);
         s.Value.manualFreeList = 0;
-        osStackFree(s);
+        osStackFree(ref (s).DerefOrNull());
         Ꮡmheap_.freeManual(s, spanAllocStack);
     }
 }
@@ -239,9 +239,7 @@ internal static void stackpoolfree(gclinkptr x, uint8 order) {
 // The pool is required to prevent unlimited growth of per-thread caches.
 //
 //go:systemstack
-internal static void stackcacherefill(ж<mcache> Ꮡc, uint8 order) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void stackcacherefill(ref mcache c, uint8 order) {
     if (stackDebug >= 1) {
         print((@string)"stackcacherefill order="u8, order, (@string)"\n"u8);
     }
@@ -262,9 +260,7 @@ internal static void stackcacherefill(ж<mcache> Ꮡc, uint8 order) {
 }
 
 //go:systemstack
-internal static void stackcacherelease(ж<mcache> Ꮡc, uint8 order) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void stackcacherelease(ref mcache c, uint8 order) {
     if (stackDebug >= 1) {
         print((@string)"stackcacherelease order="u8, order, (@string)"\n"u8);
     }
@@ -283,9 +279,7 @@ internal static void stackcacherelease(ж<mcache> Ꮡc, uint8 order) {
 }
 
 //go:systemstack
-internal static void stackcache_clear(ж<mcache> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void stackcache_clear(ref mcache c) {
     if (stackDebug >= 1) {
         print((@string)"stackcache clear\n"u8);
     }
@@ -360,7 +354,7 @@ internal static Δstack @stackalloc(uint32 n) {
             var c = (~(~thisg).m).p.ptr().Value.mcache;
             x = (~c).stackcache[order].list;
             if (x.ptr() == nil) {
-                stackcacherefill(c, order);
+                stackcacherefill(ref (c).DerefOrNull(), order);
                 x = (~c).stackcache[order].list;
             }
             (~c).stackcache[order].list = x.ptr().Value.next;
@@ -385,7 +379,7 @@ internal static Δstack @stackalloc(uint32 n) {
             if (s == nil) {
                 @throw(outOfMemoryˢ);
             }
-            osStackAlloc(s);
+            osStackAlloc(ref (s).DerefOrNull());
             s.Value.elemsize = (uintptr)n;
         }
         v = (@unsafe.Pointer)s.@base();
@@ -473,7 +467,7 @@ internal static void stackfree(Δstack stk) {
         } else {
             var c = (~(~gp).m).p.ptr().Value.mcache;
             if ((~c).stackcache[order].size >= _StackCacheSize) {
-                stackcacherelease(c, order);
+                stackcacherelease(ref (c).DerefOrNull(), order);
             }
             x.ptr().Value.next = (~c).stackcache[order].list;
             (~c).stackcache[order].list = x;
@@ -488,7 +482,7 @@ internal static void stackfree(Δstack stk) {
         if (gcphase == _GCoff){
             // Free the stack immediately if we're
             // sweeping.
-            osStackFree(s);
+            osStackFree(ref (s).DerefOrNull());
             Ꮡmheap_.freeManual(s, spanAllocStack);
         } else {
             // If the GC is running, we can't return a
@@ -554,9 +548,7 @@ internal static slice<@string> ptrnames = new slice<@string>(2){
 
 // adjustpointer checks whether *vpp is in the old stack described by adjinfo.
 // If so, it rewrites *vpp to point into the new stack.
-internal static void adjustpointer(ж<adjustinfo> Ꮡadjinfo, @unsafe.Pointer vpp) {
-    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
-
+internal static void adjustpointer(ref adjustinfo adjinfo, @unsafe.Pointer vpp) {
     var pp = (ж<uintptr>)(uintptr)(vpp);
     var Δp = pp.Value;
     if (stackDebug >= 4) {
@@ -591,9 +583,8 @@ internal static readonly @string invalidPointerFoundOnˢ = "invalid pointer foun
 
 // bv describes the memory starting at address scanp.
 // Adjust any pointers contained therein.
-internal static void adjustpointers(@unsafe.Pointer scanp, ж<bitvector> Ꮡbv, ж<adjustinfo> Ꮡadjinfo, ΔfuncInfo f) {
+internal static void adjustpointers(@unsafe.Pointer scanp, ж<bitvector> Ꮡbv, ref adjustinfo adjinfo, ΔfuncInfo f) {
     ref var bv = ref Ꮡbv.DerefOrNull();
-    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
 
     var minp = adjinfo.old.lo;
     var maxp = adjinfo.old.hi;
@@ -646,9 +637,8 @@ retry:
 internal static readonly @string badFramePointerˢ = "bad frame pointer"u8;
 
 // Note: the argument/return area is adjusted by the callee.
-internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinfo) {
+internal static void adjustframe(ж<stkframe> Ꮡframe, ref adjustinfo adjinfo) {
     ref var frame = ref Ꮡframe.DerefOrNull();
-    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
 
     if (frame.continpc == 0) {
         // Frame is dead.
@@ -677,7 +667,7 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
         // frame.
         // On ARM64, this is the frame pointer of the caller's caller saved
         // by the caller in its frame (one word below its SP).
-        adjustpointer(Ꮡadjinfo, (@unsafe.Pointer)frame.varp);
+        adjustpointer(ref adjinfo, (@unsafe.Pointer)frame.varp);
     }
     ref var locals = ref heap<bitvector>(out var Ꮡlocals);
     ref var args = ref heap<bitvector>(out var Ꮡargs);
@@ -685,14 +675,14 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
     // Adjust local variables if stack frame has been allocated.
     if (locals.n > 0) {
         var size = (uintptr)locals.n * (uintptr)goarch.PtrSize;
-        adjustpointers((@unsafe.Pointer)(frame.varp - size), Ꮡlocals, Ꮡadjinfo, f);
+        adjustpointers((@unsafe.Pointer)(frame.varp - size), Ꮡlocals, ref adjinfo, f);
     }
     // Adjust arguments.
     if (args.n > 0) {
         if (stackDebug >= 3) {
             print((@string)"      args\n"u8);
         }
-        adjustpointers((@unsafe.Pointer)frame.argp, Ꮡargs, Ꮡadjinfo, new ΔfuncInfo(nil));
+        adjustpointers((@unsafe.Pointer)frame.argp, Ꮡargs, ref adjinfo, new ΔfuncInfo(nil));
     }
     // Adjust pointers in all stack objects (whether they are live or not).
     // See comments in mgcmark.go:scanframeworker.
@@ -721,7 +711,7 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
             }
             for (var iΔ1 = (uintptr)0; iΔ1 < ptrdata; iΔ1 += goarch.PtrSize) {
                 if ((byte)((addb(gcdata, iΔ1 / (uintptr)(8 * goarch.PtrSize)).Value >> (int)(((uintptr)(iΔ1 / (uintptr)goarch.PtrSize & 7)))) & 1) != 0) {
-                    adjustpointer(Ꮡadjinfo, (@unsafe.Pointer)(Δp + iΔ1));
+                    adjustpointer(ref adjinfo, (@unsafe.Pointer)(Δp + iΔ1));
                 }
             }
             if (s != nil) {
@@ -734,11 +724,10 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string badTopFramePointerˢ = "bad top frame pointer"u8;
 
-internal static void adjustctxt(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
+internal static void adjustctxt(ж<g> Ꮡgp, ref adjustinfo adjinfo) {
     ref var gp = ref Ꮡgp.DerefOrNull();
-    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
 
-    adjustpointer(Ꮡadjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡctxt)).Value));
+    adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡctxt)).Value));
     if (!framepointer_enabled) {
         return;
     }
@@ -751,45 +740,43 @@ internal static void adjustctxt(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
         }
     }
     var oldfp = gp.sched.bp;
-    adjustpointer(Ꮡadjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡbp)).Value));
+    adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡbp)).Value));
     if (GOARCH == "arm64"u8) {
         // On ARM64, the frame pointer is saved one word *below* the SP,
         // which is not copied or adjusted in any frame. Do it explicitly
         // here.
         if (oldfp == gp.sched.sp - (uintptr)goarch.PtrSize) {
             memmove((@unsafe.Pointer)gp.sched.bp, (@unsafe.Pointer)oldfp, goarch.PtrSize);
-            adjustpointer(Ꮡadjinfo, (@unsafe.Pointer)gp.sched.bp);
+            adjustpointer(ref adjinfo, (@unsafe.Pointer)gp.sched.bp);
         }
     }
 }
 
-internal static void adjustdefers(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
+internal static void adjustdefers(ж<g> Ꮡgp, ref adjustinfo adjinfo) {
     ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Adjust pointers in the Defer structs.
     // We need to do this first because we need to adjust the
     // defer.link fields so we always work on the new stack.
-    adjustpointer(Ꮡadjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡ_defer)).Value));
+    adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡ_defer)).Value));
     for (var d = gp._defer; d != nil; d = d.Value.link) {
-        adjustpointer(Ꮡadjinfo, new @unsafe.Pointer(d.of(_defer.Ꮡfn)));
-        adjustpointer(Ꮡadjinfo, @unsafe.Pointer.FromRef(ref (d.of(_defer.Ꮡsp)).Value));
-        adjustpointer(Ꮡadjinfo, @unsafe.Pointer.FromRef(ref (d.of(_defer.Ꮡlink)).Value));
+        adjustpointer(ref adjinfo, new @unsafe.Pointer(d.of(_defer.Ꮡfn)));
+        adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (d.of(_defer.Ꮡsp)).Value));
+        adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (d.of(_defer.Ꮡlink)).Value));
     }
 }
 
-internal static void adjustpanics(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
+internal static void adjustpanics(ж<g> Ꮡgp, ref adjustinfo adjinfo) {
     // Panics are on stack and already adjusted.
     // Update pointer to head of list in G.
-    adjustpointer(Ꮡadjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡ_panic)).Value));
+    adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡ_panic)).Value));
 }
 
-internal static void adjustsudogs(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
-    ref var gp = ref Ꮡgp.DerefOrNull();
-
+internal static void adjustsudogs(ref g gp, ref adjustinfo adjinfo) {
     // the data elements pointed to by a SudoG structure
     // might be in the stack.
     for (var s = gp.waiting; s != nil; s = s.Value.waitlink) {
-        adjustpointer(Ꮡadjinfo, @unsafe.Pointer.FromRef(ref (s.of(sudog.Ꮡelem)).Value));
+        adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (s.of(sudog.Ꮡelem)).Value));
     }
 }
 
@@ -799,9 +786,7 @@ internal static void fillstack(Δstack stk, byte b) {
     }
 }
 
-internal static uintptr findsghi(ж<g> Ꮡgp, Δstack stk) {
-    ref var gp = ref Ꮡgp.DerefOrNull();
-
+internal static uintptr findsghi(ref g gp, Δstack stk) {
     uintptr sghi = default!;
     for (var sg = gp.waiting; sg != nil; sg = sg.Value.waitlink) {
         var Δp = (uintptr)(~sg).elem + (uintptr)(~(~sg).c).elemsize;
@@ -815,10 +800,7 @@ internal static uintptr findsghi(ж<g> Ꮡgp, Δstack stk) {
 // syncadjustsudogs adjusts gp's sudogs and copies the part of gp's
 // stack they refer to while synchronizing with concurrent channel
 // operations. It returns the number of bytes of stack copied.
-internal static uintptr syncadjustsudogs(ж<g> Ꮡgp, uintptr used, ж<adjustinfo> Ꮡadjinfo) {
-    ref var gp = ref Ꮡgp.DerefOrNull();
-    ref var adjinfo = ref Ꮡadjinfo.DerefOrNull();
-
+internal static uintptr syncadjustsudogs(ref g gp, uintptr used, ref adjustinfo adjinfo) {
     if (gp.waiting == nil) {
         return 0;
     }
@@ -840,7 +822,7 @@ internal static uintptr syncadjustsudogs(ж<g> Ꮡgp, uintptr used, ж<adjustinf
         lastc = sg.Value.c;
     }
     // Adjust sudogs.
-    adjustsudogs(Ꮡgp, Ꮡadjinfo);
+    adjustsudogs(ref gp, ref adjinfo);
     // Copy the part of the stack the sudogs point in to
     // while holding the lock to prevent races on
     // send/receive slots.
@@ -894,7 +876,7 @@ internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
         print((@string)"copystack gp="u8, Ꮡgp.OrTypedNil(), (@string)" ["u8, ((Δhex)(uint64)old.lo), (@string)" "u8, ((Δhex)(uint64)(old.hi - used)), (@string)" "u8, ((Δhex)(uint64)old.hi), (@string)"]"u8, (@string)" -> ["u8, ((Δhex)(uint64)@new.lo), (@string)" "u8, ((Δhex)(uint64)(@new.hi - used)), (@string)" "u8, ((Δhex)(uint64)@new.hi), (@string)"]/"u8, newsize, (@string)"\n"u8);
     }
     // Compute adjustment.
-    ref var adjinfo = ref heap(new adjustinfo(), out var Ꮡadjinfo);
+    adjustinfo adjinfo = default!;
     adjinfo.old = old;
     adjinfo.delta = @new.hi - old.hi;
     // Adjust sudogs, synchronizing with channel ops if necessary.
@@ -907,7 +889,7 @@ internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
             // since we could self-deadlock.
             @throw(racySudogAdjustmentDueToˢ);
         }
-        adjustsudogs(Ꮡgp, Ꮡadjinfo);
+        adjustsudogs(ref (Ꮡgp).DerefOrNull(), ref adjinfo);
     } else {
         // sudogs may be pointing in to the stack and gp has
         // released channel locks, so other goroutines could
@@ -916,19 +898,19 @@ internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
         // carefully. (This shouldn't be far from the bottom
         // of the stack, so there's little cost in handling
         // everything below it carefully.)
-        adjinfo.sghi = findsghi(Ꮡgp, old);
+        adjinfo.sghi = findsghi(ref (Ꮡgp).DerefOrNull(), old);
         // Synchronize with channel ops and copy the part of
         // the stack they may interact with.
-        ncopy -= syncadjustsudogs(Ꮡgp, used, Ꮡadjinfo);
+        ncopy -= syncadjustsudogs(ref (Ꮡgp).DerefOrNull(), used, ref adjinfo);
     }
     // Copy the stack (or the rest of it) to the new location
     memmove((@unsafe.Pointer)(@new.hi - ncopy), (@unsafe.Pointer)(old.hi - ncopy), ncopy);
     // Adjust remaining structures that have pointers into stacks.
     // We have to do most of these before we traceback the new
     // stack because gentraceback uses them.
-    adjustctxt(Ꮡgp, Ꮡadjinfo);
-    adjustdefers(Ꮡgp, Ꮡadjinfo);
-    adjustpanics(Ꮡgp, Ꮡadjinfo);
+    adjustctxt(Ꮡgp, ref adjinfo);
+    adjustdefers(Ꮡgp, ref adjinfo);
+    adjustpanics(Ꮡgp, ref adjinfo);
     if (adjinfo.sghi != 0) {
         adjinfo.sghi += adjinfo.delta;
     }
@@ -940,7 +922,7 @@ internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
     // Adjust pointers in the new stack.
     ref var u = ref heap(new unwinder(), out var Ꮡu);
     for (Ꮡu.init(Ꮡgp, 0); u.valid(); Ꮡu.next()) {
-        adjustframe(Ꮡu.of(unwinder.Ꮡframe), Ꮡadjinfo);
+        adjustframe(Ꮡu.of(unwinder.Ꮡframe), ref adjinfo);
     }
     // free old stack
     if (stackPoisonCopy != 0) {
@@ -1037,7 +1019,7 @@ internal static void newstack() {
     // into a real deadlock.
     var preempt = stackguard0 == stackPreempt;
     if (preempt) {
-        if (!canPreemptM((~thisg).m)) {
+        if (!canPreemptM(ref ((~thisg).m).DerefOrNull())) {
             // Let the goroutine keep running for now.
             // gp->preempt is set, so it will be preempted next time.
             gp.Value.stackguard0 = (~gp).stack.lo + (uintptr)stackGuard;
@@ -1132,7 +1114,7 @@ internal static void nilfunc() {
 
 // adjust Gobuf as if it executed a call to fn
 // and then stopped before the first instruction in fn.
-internal static void gostartcallfn(ж<gobuf> Ꮡgobuf, ж<funcval> Ꮡfv) {
+internal static void gostartcallfn(ref gobuf gobuf, ж<funcval> Ꮡfv) {
     ref var fv = ref Ꮡfv.DerefOrNull();
 
     @unsafe.Pointer fn = default!;
@@ -1141,7 +1123,7 @@ internal static void gostartcallfn(ж<gobuf> Ꮡgobuf, ж<funcval> Ꮡfv) {
     } else {
         fn = (@unsafe.Pointer)abi.FuncPCABIInternal(nilfunc);
     }
-    gostartcall(Ꮡgobuf, fn, new @unsafe.Pointer(Ꮡfv));
+    gostartcall(ref gobuf, fn, new @unsafe.Pointer(Ꮡfv));
 }
 
 // isShrinkStackSafe returns whether it's safe to attempt to shrink
@@ -1264,7 +1246,7 @@ internal static void freeStackSpans() {
             if ((~s).allocCount == 0) {
                 list.remove(s);
                 s.Value.manualFreeList = 0;
-                osStackFree(s);
+                osStackFree(ref (s).DerefOrNull());
                 Ꮡmheap_.freeManual(s, spanAllocStack);
             }
             s = next;
@@ -1277,7 +1259,7 @@ internal static void freeStackSpans() {
         for (var s = stackLarge.free[i].first; s != nil; ) {
             var next = s.Value.next;
             ᏑstackLarge.at(stackLargeᴛ1.Ꮡfree, i).remove(s);
-            osStackFree(s);
+            osStackFree(ref (s).DerefOrNull());
             Ꮡmheap_.freeManual(s, spanAllocStack);
             s = next;
         }

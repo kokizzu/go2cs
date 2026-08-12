@@ -1264,11 +1264,9 @@ internal static void scanOne(this ж<ss> Ꮡs, rune verb, any arg) {
 }
 
 // errorHandler turns local panics into error returns.
-internal static void errorHandler(ж<error> Ꮡerrp) {
+internal static void errorHandler(ref error errp) {
     GoFrame ᒐ = default;
     try {
-        ref var errp = ref Ꮡerrp.DerefOrNull();
-
         {
             var e = recover(); if (e != default!) {
                 {
@@ -1304,7 +1302,7 @@ internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<an
         ref var s = ref Ꮡs.DerefOrNull();
 
         ref var err = ref Ꮡerr.ValueSlot;
-        defer(errorHandler, Ꮡerr, ref ᒐ);
+        defer(ᴛ1 => errorHandler(ref ᴛ1.DerefOrNull()), Ꮡerr, ref ᒐ);
         foreach (var (_, arg) in a) {
             Ꮡs.scanOne((rune)'v', arg);
             numProcessed++;
@@ -1434,7 +1432,7 @@ internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string
         ref var s = ref Ꮡs.DerefOrNull();
 
         ref var err = ref Ꮡerr.ValueSlot;
-        defer(errorHandler, Ꮡerr, ref ᒐ);
+        defer(ᴛ1 => errorHandler(ref ᴛ1.DerefOrNull()), Ꮡerr, ref ᒐ);
         nint end = len(format) - 1;
         // We process one item per non-trivial format
         for (nint i = 0; i <= end; ) {

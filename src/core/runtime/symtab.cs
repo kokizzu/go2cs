@@ -125,9 +125,7 @@ public static ж<Frames> CallersFrames(slice<uintptr> callers) {
 // See go.dev/issue/67401.
 //
 //go:linkname runtime_FrameStartLine runtime/pprof.runtime_FrameStartLine
-internal static nint runtime_FrameStartLine(ж<Frame> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static nint runtime_FrameStartLine(ref Frame f) {
     return f.startLine;
 }
 
@@ -144,9 +142,7 @@ internal static nint runtime_FrameStartLine(ж<Frame> Ꮡf) {
 // See go.dev/issue/67401.
 //
 //go:linkname runtime_FrameSymbolName runtime/pprof.runtime_FrameSymbolName
-internal static @string runtime_FrameSymbolName(ж<Frame> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static @string runtime_FrameSymbolName(ref Frame f) {
     if (!f.funcInfo.valid()) {
         return f.Function;
     }
@@ -913,7 +909,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
                         break;
                     } else {
                         cache.Value.inUse--;
-                        releasem(mp);
+                        releasem(ref (mp).DerefOrNull());
                         return (valΔ1, pcΔ1);
                     }
                 }
@@ -925,7 +921,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
             @throw(cacheInUseOutOfRangeˢ);
         }
         cache.Value.inUse--;
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
     }
     if (!f.valid()) {
         if (strict && Ꮡpanicking.Load() == 0) {
@@ -975,7 +971,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
                     );
                 }
                 cache.Value.inUse--;
-                releasem(mp);
+                releasem(ref (mp).DerefOrNull());
             }
             return (val, prevpc);
         }

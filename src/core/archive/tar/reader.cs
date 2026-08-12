@@ -113,7 +113,7 @@ internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
                 return (default!, err);
             }
             if ((~hdr).Typeflag == TypeXGlobalHeader) {
-                mergePAX(hdr, paxHdrs);
+                mergePAX(ref (hdr).DerefOrNull(), paxHdrs);
                 return (Ꮡ(new Header(
                     Name: (~hdr).Name,
                     Typeflag: (~hdr).Typeflag,
@@ -143,7 +143,7 @@ internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
         }
         else { /* default: */
             {
-                var errΔ7 = mergePAX(hdr, // The old GNU sparse format is handled here since it is technically
+                var errΔ7 = mergePAX(ref (hdr).DerefOrNull(), // The old GNU sparse format is handled here since it is technically
  // just a regular file with additional attributes.
  paxHdrs); if (errΔ7 != default!) {
                     return (default!, errΔ7);
@@ -287,10 +287,9 @@ internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
 }
 
 // mergePAX merges paxHdrs into hdr for all relevant fields of Header.
-internal static error /*err*/ mergePAX(ж<Header> Ꮡhdr, map<@string, @string> paxHdrs) {
+internal static error /*err*/ mergePAX(ref Header hdr, map<@string, @string> paxHdrs) {
     error err = default!;
 
-    ref var hdr = ref Ꮡhdr.DerefOrNull();
     foreach (var (k, v) in paxHdrs) {
         if (v == ""u8) {
             continue; // Keep the original USTAR value

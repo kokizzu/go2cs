@@ -8,17 +8,17 @@ using syscall = syscall_package;
 
 partial class net_package {
 
-internal static (Conn, error) fileConn(ж<os.File> Ꮡf) {
+internal static (Conn, error) fileConn(ref os.File f) {
     // TODO: Implement this
     return (default!, syscall.EWINDOWS);
 }
 
-internal static (Listener, error) fileListener(ж<os.File> Ꮡf) {
+internal static (Listener, error) fileListener(ref os.File f) {
     // TODO: Implement this
     return (default!, syscall.EWINDOWS);
 }
 
-internal static (PacketConn, error) filePacketConn(ж<os.File> Ꮡf) {
+internal static (PacketConn, error) filePacketConn(ref os.File f) {
     // TODO: Implement this
     return (default!, syscall.EWINDOWS);
 }

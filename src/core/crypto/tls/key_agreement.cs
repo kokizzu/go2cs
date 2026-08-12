@@ -230,7 +230,7 @@ internal static readonly @string tlsCertificateCannotBeˢ = "tls: certificate ca
     uint8 sigType = default!;
     ref var sigHash = ref heap(new crypto.Hash(), out var ᏑsigHash);
     if (ka.version >= VersionTLS12){
-        (signatureAlgorithm, err) = selectSignatureScheme(ka.version, Ꮡcert, clientHello.supportedSignatureAlgorithms);
+        (signatureAlgorithm, err) = selectSignatureScheme(ka.version, ref (Ꮡcert).DerefOrNull(), clientHello.supportedSignatureAlgorithms);
         if (err != default!) {
             return (default!, err);
         }

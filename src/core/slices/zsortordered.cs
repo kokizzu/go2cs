@@ -261,19 +261,19 @@ internal static (nint pivot, sortedHint hint) choosePivotOrdered<E>(slice<E> dat
     const nint shortestNinther = 50;
     const nint maxSwaps = /* 4 * 3 */ 12;
     nint l = b - a;
-    ref var swaps = ref heap(new nint(), out var Ꮡswaps);
+    nint swaps = default!;
     nint i = a + l / 4 * 1;
     nint j = a + l / 4 * 2;
     nint k = a + l / 4 * 3;
     if (l >= 8) {
         if (l >= shortestNinther) {
             // Tukey ninther method, the idea came from Rust's implementation.
-            i = medianAdjacentOrdered(data, i, Ꮡswaps);
-            j = medianAdjacentOrdered(data, j, Ꮡswaps);
-            k = medianAdjacentOrdered(data, k, Ꮡswaps);
+            i = medianAdjacentOrdered(data, i, ref swaps);
+            j = medianAdjacentOrdered(data, j, ref swaps);
+            k = medianAdjacentOrdered(data, k, ref swaps);
         }
         // Find the median among i, j, k and stores it into j.
-        j = medianOrdered(data, i, j, k, Ꮡswaps);
+        j = medianOrdered(data, i, j, k, ref swaps);
     }
     var exprᴛ1 = swaps;
     if (exprᴛ1 is 0) {
@@ -289,11 +289,9 @@ internal static (nint pivot, sortedHint hint) choosePivotOrdered<E>(slice<E> dat
 }
 
 // order2Ordered returns x,y where data[x] <= data[y], where x,y=a,b or x,y=b,a.
-internal static (nint, nint) order2Ordered<E>(slice<E> data, nint a, nint b, ж<nint> Ꮡswaps)
+internal static (nint, nint) order2Ordered<E>(slice<E> data, nint a, nint b, ref nint swaps)
     where E : /* cmp.Ordered */ IAdditionOperators<E, E, E>, IEqualityOperators<E, E, bool>, IComparisonOperators<E, E, bool>, new()
 {
-    ref var swaps = ref Ꮡswaps.DerefOrNull();
-
     if (cmp.Less(data[b], data[a])) {
         swaps++;
         return (b, a);
@@ -302,20 +300,20 @@ internal static (nint, nint) order2Ordered<E>(slice<E> data, nint a, nint b, ж<
 }
 
 // medianOrdered returns x where data[x] is the median of data[a],data[b],data[c], where x is a, b, or c.
-internal static nint medianOrdered<E>(slice<E> data, nint a, nint b, nint c, ж<nint> Ꮡswaps)
+internal static nint medianOrdered<E>(slice<E> data, nint a, nint b, nint c, ref nint swaps)
     where E : /* cmp.Ordered */ IAdditionOperators<E, E, E>, IEqualityOperators<E, E, bool>, IComparisonOperators<E, E, bool>, new()
 {
-    (a, b) = order2Ordered(data, a, b, Ꮡswaps);
-    (b, c) = order2Ordered(data, b, c, Ꮡswaps);
-    (a, b) = order2Ordered(data, a, b, Ꮡswaps);
+    (a, b) = order2Ordered(data, a, b, ref swaps);
+    (b, c) = order2Ordered(data, b, c, ref swaps);
+    (a, b) = order2Ordered(data, a, b, ref swaps);
     return b;
 }
 
 // medianAdjacentOrdered finds the median of data[a - 1], data[a], data[a + 1] and stores the index into a.
-internal static nint medianAdjacentOrdered<E>(slice<E> data, nint a, ж<nint> Ꮡswaps)
+internal static nint medianAdjacentOrdered<E>(slice<E> data, nint a, ref nint swaps)
     where E : /* cmp.Ordered */ IAdditionOperators<E, E, E>, IEqualityOperators<E, E, bool>, IComparisonOperators<E, E, bool>, new()
 {
-    return medianOrdered(data, a - 1, a, a + 1, Ꮡswaps);
+    return medianOrdered(data, a - 1, a, a + 1, ref swaps);
 }
 
 internal static void reverseRangeOrdered<E>(slice<E> data, nint a, nint b)

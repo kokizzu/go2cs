@@ -187,17 +187,17 @@ internal static (ж<Regexp>, error) compile(@string expr, syntax.Flags mode, boo
     var regexp = Ꮡ(new Regexp(
         expr: expr,
         prog: prog,
-        onepass: compileOnePass(prog),
+        onepass: compileOnePass(ref (prog).DerefOrNull()),
         numSubexp: maxCap,
         subexpNames: capNames,
         cond: prog.StartCond(),
         longest: longest,
         matchcap: matchcap,
-        minInputLen: minInputLen(re)
+        minInputLen: minInputLen(ref (re).DerefOrNull())
     ));
     if ((~regexp).onepass == nil){
         (regexp.Value.prefix, regexp.Value.prefixComplete) = prog.Prefix();
-        regexp.Value.maxBitStateLen = maxBitStateLen(prog);
+        regexp.Value.maxBitStateLen = maxBitStateLen(ref (prog).DerefOrNull());
     } else {
         (regexp.Value.prefix, regexp.Value.prefixComplete, regexp.Value.prefixEnd) = onePassPrefix(prog);
     }
@@ -270,9 +270,7 @@ internal static ж<machine> get(this ж<Regexp> Ꮡre) {
 }
 
 // minInputLen walks the regexp to find the minimum length of any matchable input.
-internal static nint minInputLen(ж<syntax.Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.DerefOrNull();
-
+internal static nint minInputLen(ref syntax.Regexp re) {
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == syntax.OpAnyChar || exprᴛ1 == syntax.OpAnyCharNotNL || exprᴛ1 == syntax.OpCharClass) {
         return 1;
@@ -289,23 +287,23 @@ internal static nint minInputLen(ж<syntax.Regexp> Ꮡre) {
         return l;
     }
     if (exprᴛ1 == syntax.OpCapture || exprᴛ1 == syntax.OpPlus) {
-        return minInputLen(re.Sub[0]);
+        return minInputLen(ref (re.Sub[0]).DerefOrNull());
     }
     if (exprᴛ1 == syntax.OpRepeat) {
-        return re.Min * minInputLen(re.Sub[0]);
+        return re.Min * minInputLen(ref (re.Sub[0]).DerefOrNull());
     }
     if (exprᴛ1 == syntax.OpConcat) {
         nint l = 0;
         foreach (var (_, sub) in re.Sub) {
-            l += minInputLen(sub);
+            l += minInputLen(ref (sub).DerefOrNull());
         }
         return l;
     }
     if (exprᴛ1 == syntax.OpAlternate) {
-        nint l = minInputLen(re.Sub[0]);
+        nint l = minInputLen(ref (re.Sub[0]).DerefOrNull());
         nint lnext = default!;
         foreach (var (_, sub) in re.Sub[1..]) {
-            lnext = minInputLen(sub);
+            lnext = minInputLen(ref (sub).DerefOrNull());
             if (lnext < l) {
                 l = lnext;
             }

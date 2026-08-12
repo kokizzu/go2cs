@@ -212,7 +212,7 @@ internal static uint32 update(uint32 crc, ж<Table> Ꮡtab, slice<byte> p, bool 
         return updateIEEE(crc, p);
     }
     default: {
-        return simpleUpdate(crc, Ꮡtab, p);
+        return simpleUpdate(crc, ref (Ꮡtab).DerefOrNull(), p);
     }}
 
 }

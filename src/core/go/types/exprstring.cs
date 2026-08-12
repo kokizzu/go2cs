@@ -130,7 +130,7 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
         WriteExpr(Ꮡbuf, (~xΔ1).Fun);
         buf.WriteByte((rune)'(');
         writeExprList(Ꮡbuf, (~xΔ1).Args);
-        if (hasDots(xΔ1)) {
+        if (hasDots(ref (xΔ1).DerefOrNull())) {
             buf.WriteString("..."u8);
         }
         buf.WriteByte((rune)')');
@@ -171,7 +171,7 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
     }
     case ж<ast.FuncType> xΔ1: {
         buf.WriteString(funcˢ);
-        writeSigExpr(Ꮡbuf, xΔ1);
+        writeSigExpr(Ꮡbuf, ref (xΔ1).DerefOrNull());
         break;
     }
     case ж<ast.InterfaceType> xΔ1: {
@@ -206,9 +206,8 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
     }}
 }
 
-internal static void writeSigExpr(ж<bytes.Buffer> Ꮡbuf, ж<ast.FuncType> Ꮡsig) {
+internal static void writeSigExpr(ж<bytes.Buffer> Ꮡbuf, ref ast.FuncType sig) {
     ref var buf = ref Ꮡbuf.DerefOrNull();
-    ref var sig = ref Ꮡsig.DerefOrNull();
 
     buf.WriteByte((rune)'(');
     writeFieldList(Ꮡbuf, (~sig.Params).List, ", "u8, false);
@@ -243,7 +242,7 @@ internal static void writeFieldList(ж<bytes.Buffer> Ꮡbuf, slice<ж<ast.Field>
         // types of interface methods consist of signatures only
         {
             var (sig, _) = (~f).Type._<ж<ast.FuncType>>(ᐧ); if (sig != nil && iface) {
-                writeSigExpr(Ꮡbuf, sig);
+                writeSigExpr(Ꮡbuf, ref (sig).DerefOrNull());
                 continue;
             }
         }

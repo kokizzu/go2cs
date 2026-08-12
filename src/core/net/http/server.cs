@@ -1071,7 +1071,7 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
             }
             (w, err) = (default!, err); goto ᒐdone;
         }
-        if (!http1ServerSupportsRequest(req)) {
+        if (!http1ServerSupportsRequest(ref (req).DerefOrNull())) {
             (w, err) = (default!, new statusError(StatusHTTPVersionNotSupported, "unsupported protocol version"u8)); goto ᒐdone;
         }
         c.lastMethod = req.Value.Method;
@@ -1136,9 +1136,7 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
 
 // http1ServerSupportsRequest reports whether Go's HTTP/1.x server
 // supports the given request.
-internal static bool http1ServerSupportsRequest(ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.DerefOrNull();
-
+internal static bool http1ServerSupportsRequest(ref Request req) {
     if (req.ProtoMajor == 1) {
         return true;
     }

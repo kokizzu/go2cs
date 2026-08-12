@@ -106,13 +106,13 @@ public static bool IsLetter(rune r) {
     if ((uint32)r <= MaxLatin1) {
         return (uint8)(properties[(uint8)r] & (pLmask)) != 0;
     }
-    return isExcludingLatin(Letter, r);
+    return isExcludingLatin(ref (Letter).DerefOrNull(), r);
 }
 
 // IsMark reports whether the rune is a mark character (category [M]).
 public static bool IsMark(rune r) {
     // There are no mark characters in Latin-1.
-    return isExcludingLatin(Mark, r);
+    return isExcludingLatin(ref (Mark).DerefOrNull(), r);
 }
 
 // IsNumber reports whether the rune is a number (category [N]).
@@ -120,7 +120,7 @@ public static bool IsNumber(rune r) {
     if ((uint32)r <= MaxLatin1) {
         return (uint8)(properties[(uint8)r] & (uint8)pN) != 0;
     }
-    return isExcludingLatin(Number, r);
+    return isExcludingLatin(ref (Number).DerefOrNull(), r);
 }
 
 // IsPunct reports whether the rune is a Unicode punctuation character
@@ -150,7 +150,7 @@ public static bool IsSpace(rune r) {
 
         return false;
     }
-    return isExcludingLatin(White_Space, r);
+    return isExcludingLatin(ref (White_Space).DerefOrNull(), r);
 }
 
 // IsSymbol reports whether the rune is a symbolic character.
@@ -158,7 +158,7 @@ public static bool IsSymbol(rune r) {
     if ((uint32)r <= MaxLatin1) {
         return (uint8)(properties[(uint8)r] & (uint8)pS) != 0;
     }
-    return isExcludingLatin(Symbol, r);
+    return isExcludingLatin(ref (Symbol).DerefOrNull(), r);
 }
 
 } // end unicode_package

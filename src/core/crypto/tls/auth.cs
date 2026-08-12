@@ -206,9 +206,7 @@ internal static slice<rsaSignatureSchemesᴛ1> rsaSignatureSchemes = new rsaSign
 //
 // This function must be kept in sync with supportedSignatureAlgorithms.
 // FIPS filtering is applied in the caller, selectSignatureScheme.
-internal static slice<SignatureScheme> signatureSchemesForCertificate(uint16 version, ж<Certificate> Ꮡcert) {
-    ref var cert = ref Ꮡcert.DerefOrNull();
-
+internal static slice<SignatureScheme> signatureSchemesForCertificate(uint16 version, ref Certificate cert) {
     var (priv, ok) = cert.PrivateKey._<crypto.Signer>(ᐧ);
     if (!ok) {
         return default!;
@@ -280,10 +278,10 @@ internal static readonly @string tlsPeerDoesnTSupportAnyˢ = "tls: peer doesn't 
 // selectSignatureScheme picks a SignatureScheme from the peer's preference list
 // that works with the selected certificate. It's only called for protocol
 // versions that support signature algorithms, so TLS 1.2 and 1.3.
-internal static (SignatureScheme, error) selectSignatureScheme(uint16 vers, ж<Certificate> Ꮡc, slice<SignatureScheme> peerAlgs) {
-    var supportedAlgs = signatureSchemesForCertificate(vers, Ꮡc);
+internal static (SignatureScheme, error) selectSignatureScheme(uint16 vers, ref Certificate c, slice<SignatureScheme> peerAlgs) {
+    var supportedAlgs = signatureSchemesForCertificate(vers, ref c);
     if (len(supportedAlgs) == 0) {
-        return (0, unsupportedCertificateError(Ꮡc));
+        return (0, unsupportedCertificateError(ref c));
     }
     if (len(peerAlgs) == 0 && vers == VersionTLS12) {
         // For TLS 1.2, if the client didn't send signature_algorithms then we
@@ -305,9 +303,7 @@ internal static (SignatureScheme, error) selectSignatureScheme(uint16 vers, ж<C
 
 // unsupportedCertificateError returns a helpful error for certificates with
 // an unsupported private key.
-internal static error unsupportedCertificateError(ж<Certificate> Ꮡcert) {
-    ref var cert = ref Ꮡcert.DerefOrNull();
-
+internal static error unsupportedCertificateError(ref Certificate cert) {
     switch (cert.PrivateKey.type()) {
     case rsa.PrivateKey _:
     case ecdsa.PrivateKey _: {

@@ -220,8 +220,8 @@ internal static void poll_runtime_pollServerInit() {
 
 internal static void netpollGenericInit() {
     if (ᏑnetpollInited.Load() == 0) {
-        lockInit(ᏑnetpollInitLock, lockRankNetpollInit);
-        lockInit(Ꮡpollcache.of(pollCache.Ꮡlock), lockRankPollCache);
+        lockInit(ref netpollInitLock, lockRankNetpollInit);
+        lockInit(ref pollcache.@lock, lockRankPollCache);
         @lock(ᏑnetpollInitLock);
         if (ᏑnetpollInited.Load() == 0) {
             netpollinit();
@@ -359,7 +359,7 @@ internal static nint poll_runtime_pollWait(ж<pollDesc> Ꮡpd, nint mode) {
     }
     // As for now only Solaris, illumos, AIX and wasip1 use level-triggered IO.
     if (GOOS == "solaris"u8 || GOOS == "illumos"u8 || GOOS == "aix"u8 || GOOS == "wasip1"u8) {
-        netpollarm(Ꮡpd, mode);
+        netpollarm(ref (Ꮡpd).DerefOrNull(), mode);
     }
     while (!netpollblock(Ꮡpd, (int32)mode, false)) {
         errcode = netpollcheckerr(Ꮡpd, (int32)mode);
@@ -447,15 +447,14 @@ internal static void poll_runtime_pollSetDeadline(ж<pollDesc> Ꮡpd, int64 d, n
     }
     // If we set the new deadline in the past, unblock currently pending IO if any.
     // Note that pd.publishInfo has already been called, above, immediately after modifying rd and wd.
-    ref var delta = ref heap<int32>(out var Ꮡdelta);
-    delta = (int32)0;
+    var delta = (int32)0;
     ж<g> rg = default!;
     ж<g> wg = default!;
     if (pd.rd < 0) {
-        rg = netpollunblock(Ꮡpd, (rune)'r', false, Ꮡdelta);
+        rg = netpollunblock(Ꮡpd, (rune)'r', false, ref delta);
     }
     if (pd.wd < 0) {
-        wg = netpollunblock(Ꮡpd, (rune)'w', false, Ꮡdelta);
+        wg = netpollunblock(Ꮡpd, (rune)'w', false, ref delta);
     }
     unlock(Ꮡpd.of(pollDesc.Ꮡlock));
     if (rg != nil) {
@@ -484,10 +483,9 @@ internal static void poll_runtime_pollUnblock(ж<pollDesc> Ꮡpd) {
     ж<g> rg = default!;
     ж<g> wg = default!;
     Ꮡpd.publishInfo();
-    ref var delta = ref heap<int32>(out var Ꮡdelta);
-    delta = (int32)0;
-    rg = netpollunblock(Ꮡpd, (rune)'r', false, Ꮡdelta);
-    wg = netpollunblock(Ꮡpd, (rune)'w', false, Ꮡdelta);
+    var delta = (int32)0;
+    rg = netpollunblock(Ꮡpd, (rune)'r', false, ref delta);
+    wg = netpollunblock(Ꮡpd, (rune)'w', false, ref delta);
     if (pd.rrun) {
         Ꮡpd.of(pollDesc.Ꮡrt).stop();
         pd.rrun = false;
@@ -520,15 +518,14 @@ internal static void poll_runtime_pollUnblock(ж<pollDesc> Ꮡpd) {
 internal static int32 netpollready(ж<gList> ᏑtoRun, ж<pollDesc> Ꮡpd, int32 mode) {
     ref var toRun = ref ᏑtoRun.DerefOrNull();
 
-    ref var delta = ref heap<int32>(out var Ꮡdelta);
-    delta = (int32)0;
+    var delta = (int32)0;
     ж<g> rg = default!;
     ж<g> wg = default!;
     if (mode == (rune)'r' || mode == (rune)'r' + (rune)'w') {
-        rg = netpollunblock(Ꮡpd, (rune)'r', true, Ꮡdelta);
+        rg = netpollunblock(Ꮡpd, (rune)'r', true, ref delta);
     }
     if (mode == (rune)'w' || mode == (rune)'r' + (rune)'w') {
-        wg = netpollunblock(Ꮡpd, (rune)'w', true, Ꮡdelta);
+        wg = netpollunblock(Ꮡpd, (rune)'w', true, ref delta);
     }
     if (rg != nil) {
         toRun.push(rg);
@@ -621,9 +618,7 @@ internal static bool netpollblock(ж<pollDesc> Ꮡpd, int32 mode, bool waitio) {
 // It adds any adjustment to netpollWaiters to *delta;
 // this adjustment should be applied after the goroutine has
 // been marked ready.
-internal static ж<g> netpollunblock(ж<pollDesc> Ꮡpd, int32 mode, bool ioready, ж<int32> Ꮡdelta) {
-    ref var delta = ref Ꮡdelta.DerefOrNull();
-
+internal static ж<g> netpollunblock(ж<pollDesc> Ꮡpd, int32 mode, bool ioready, ref int32 delta) {
     var gpp = Ꮡpd.of(pollDesc.Ꮡrg);
     if (mode == (rune)'w') {
         gpp = Ꮡpd.of(pollDesc.Ꮡwg);
@@ -673,8 +668,7 @@ internal static void netpolldeadlineimpl(ж<pollDesc> Ꮡpd, uintptr seq, bool r
         unlock(Ꮡpd.of(pollDesc.Ꮡlock));
         return;
     }
-    ref var delta = ref heap<int32>(out var Ꮡdelta);
-    delta = (int32)0;
+    var delta = (int32)0;
     ж<g> rg = default!;
     if (read) {
         if (pd.rd <= 0 || !pd.rrun) {
@@ -682,7 +676,7 @@ internal static void netpolldeadlineimpl(ж<pollDesc> Ꮡpd, uintptr seq, bool r
         }
         pd.rd = -1;
         Ꮡpd.publishInfo();
-        rg = netpollunblock(Ꮡpd, (rune)'r', false, Ꮡdelta);
+        rg = netpollunblock(Ꮡpd, (rune)'r', false, ref delta);
     }
     ж<g> wg = default!;
     if (write) {
@@ -691,7 +685,7 @@ internal static void netpolldeadlineimpl(ж<pollDesc> Ꮡpd, uintptr seq, bool r
         }
         pd.wd = -1;
         Ꮡpd.publishInfo();
-        wg = netpollunblock(Ꮡpd, (rune)'w', false, Ꮡdelta);
+        wg = netpollunblock(Ꮡpd, (rune)'w', false, ref delta);
     }
     unlock(Ꮡpd.of(pollDesc.Ꮡlock));
     if (rg != nil) {
@@ -742,7 +736,7 @@ internal static ж<pollDesc> alloc(this ж<pollCache> Ꮡc) {
         @unsafe.Pointer mem = (uintptr)persistentalloc(n * pdSize, 0, Ꮡmemstats.of(mstats.Ꮡother_sys));
         for (var i = (uintptr)0; i < n; i++) {
             var pdΔ1 = (ж<pollDesc>)(uintptr)(add(mem, i * pdSize));
-            lockInit(pdΔ1.of(pollDesc.Ꮡlock), lockRankPollDesc);
+            lockInit(ref (pdΔ1.of(pollDesc.Ꮡlock)).DerefOrNull(), lockRankPollDesc);
             pdΔ1.of(pollDesc.Ꮡrt).init(default!, default!);
             pdΔ1.of(pollDesc.Ꮡwt).init(default!, default!);
             pdΔ1.Value.link = c.first;

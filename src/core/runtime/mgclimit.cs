@@ -248,7 +248,7 @@ internal static void updateLocked(this ж<gcCPULimiterState> Ꮡl, int64 now) {
             }
 
         }
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
     }
     // Compute total GC time.
     var windowGCTime = assistTime;

@@ -107,10 +107,9 @@ internal static UntypedInt negShift => 5;     // flagI<<negShift is (?-i:
 
 // addSpan enables the flags f around start..last,
 // by setting flags[start] = f and flags[last] = flagOff.
-internal static void addSpan(ж<Regexp> Ꮡstart, ж<Regexp> Ꮡlast, printFlags f, ж<map<ж<Regexp>, printFlags>> Ꮡflags) {
+internal static void addSpan(ж<Regexp> Ꮡstart, ж<Regexp> Ꮡlast, printFlags f, ref map<ж<Regexp>, printFlags> flags) {
     ref var start = ref Ꮡstart.DerefOrNull();
     ref var last = ref Ꮡlast.DerefOrNull();
-    ref var flags = ref Ꮡflags.DerefOrNull();
 
     if (flags == default!) {
         flags = new map<ж<Regexp>, printFlags>();
@@ -124,10 +123,7 @@ internal static void addSpan(ж<Regexp> Ꮡstart, ж<Regexp> Ꮡlast, printFlags
 // The first time an entry needs to be written to *flags, calcFlags allocates the map.
 // calcFlags also calculates the flags that must be active or can't be active
 // around re and returns those flags.
-internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, ж<map<ж<Regexp>, printFlags>> Ꮡflags) {
-    ref var re = ref Ꮡre.DerefOrNull();
-    ref var flags = ref Ꮡflags.DerefOrNull();
-
+internal static (printFlags must, printFlags cant) calcFlags(ref Regexp re, ref map<ж<Regexp>, printFlags> flags) {
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpLiteral) {
         foreach (var (_, r) in re.Rune) {
@@ -180,7 +176,7 @@ internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, �
         return (0, 0);
     }
     if (exprᴛ1 == OpCapture || exprᴛ1 == OpStar || exprᴛ1 == OpPlus || exprᴛ1 == OpQuest || exprᴛ1 == OpRepeat) {
-        return calcFlags(re.Sub[0], Ꮡflags);
+        return calcFlags(ref (re.Sub[0]).DerefOrNull(), ref flags);
     }
     if (exprᴛ1 == OpConcat || exprᴛ1 == OpAlternate) {
         // Gather the must and cant for each subexpression.
@@ -193,10 +189,10 @@ internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, �
         nint last = 0;
         var did = false;
         foreach (var (i, sub) in re.Sub) {
-            var (subMust, subCant) = calcFlags(sub, Ꮡflags);
+            var (subMust, subCant) = calcFlags(ref (sub).DerefOrNull(), ref flags);
             if ((printFlags)(mustΔ2 & subCant) != 0 || (printFlags)(subMust & cantΔ2) != 0) {
                 if (mustΔ2 != 0) {
-                    addSpan(re.Sub[start], re.Sub[last], mustΔ2, Ꮡflags);
+                    addSpan(re.Sub[start], re.Sub[last], mustΔ2, ref flags);
                 }
                 mustΔ2 = 0;
                 cantΔ2 = 0;
@@ -219,7 +215,7 @@ internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, �
         }
         if (mustΔ2 != 0) {
             // Conflicts found; need to finish final span.
-            addSpan(re.Sub[start], re.Sub[last], mustΔ2, Ꮡflags);
+            addSpan(re.Sub[start], re.Sub[last], mustΔ2, ref flags);
         }
         return (0, allCant);
     }
@@ -426,7 +422,7 @@ internal static void writeRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre, pri
 public static @string String(this ж<Regexp> Ꮡre) {
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     ref var flags = ref heap<map<ж<Regexp>, printFlags>>(out var Ꮡflags);
-    var (must, cant) = calcFlags(Ꮡre, Ꮡflags);
+    var (must, cant) = calcFlags(ref (Ꮡre).DerefOrNull(), ref flags);
     must |= (printFlags)((printFlags)(uint8)(((printFlags)(cant & ~flagI)) << (int)(negShift)));
     if (must != 0) {
         must |= (printFlags)(flagOff);

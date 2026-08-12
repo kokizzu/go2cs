@@ -294,9 +294,7 @@ internal static void resumeG(suspendGState state) {
 // It is nosplit because it has nosplit callers.
 //
 //go:nosplit
-internal static bool canPreemptM(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static bool canPreemptM(ref m mp) {
     return mp.locks == 0 && mp.mallocing == 0 && mp.preemptoff == ""u8 && (~mp.p.ptr()).status == _Prunning;
 }
 
@@ -390,7 +388,7 @@ internal static (bool, uintptr) isAsyncSafePoint(ж<g> Ꮡgp, uintptr pc, uintpt
         return (false, 0);
     }
     // Check M state.
-    if ((~mp).p == 0 || !canPreemptM(mp)) {
+    if ((~mp).p == 0 || !canPreemptM(ref (mp).DerefOrNull())) {
         return (false, 0);
     }
     // Check stack space.

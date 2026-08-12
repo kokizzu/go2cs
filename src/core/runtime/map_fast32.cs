@@ -40,7 +40,7 @@ internal static @unsafe.Pointer mapaccess1_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡ
                     m >>= (int)(1);
                 }
                 var oldb = (ж<bmap>)(uintptr)(add(c, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
-                if (!evacuated(oldb)) {
+                if (!evacuated(ref (oldb).DerefOrNull())) {
                     b = oldb;
                 }
             }
@@ -95,7 +95,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fast32(ж<maptype> Ꮡt, ж<h
                     m >>= (int)(1);
                 }
                 var oldb = (ж<bmap>)(uintptr)(add(c, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
-                if (!evacuated(oldb)) {
+                if (!evacuated(ref (oldb).DerefOrNull())) {
                     b = oldb;
                 }
             }
@@ -185,7 +185,7 @@ break_bucketloop:;
     // If we hit the max load factor or we have too many overflow buckets,
     // and we're not already in the middle of growing, start growing.
     if (!h.growing() && (overLoadFactor(h.count + 1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B))) {
-        hashGrow(Ꮡt, Ꮡh);
+        hashGrow(Ꮡt, ref (Ꮡh).DerefOrNull());
         goto again; // Growing the table invalidates everything, so try again
     }
     if (insertb == nil) {
@@ -279,7 +279,7 @@ break_bucketloop:;
     // If we hit the max load factor or we have too many overflow buckets,
     // and we're not already in the middle of growing, start growing.
     if (!h.growing() && (overLoadFactor(h.count + 1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B))) {
-        hashGrow(Ꮡt, Ꮡh);
+        hashGrow(Ꮡt, ref (Ꮡh).DerefOrNull());
         goto again; // Growing the table invalidates everything, so try again
     }
     if (insertb == nil) {
@@ -411,7 +411,7 @@ internal static void evacuate_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr ol
 
     var b = (ж<bmap>)(uintptr)(add(h.oldbuckets, oldbucket * (uintptr)t.BucketSize));
     var newbit = h.noldbuckets();
-    if (!evacuated(b)) {
+    if (!evacuated(ref (b).DerefOrNull())) {
         // TODO: reuse overflow buckets instead of using new ones, if there
         // is no iterator using the old buckets.  (If !oldIterator.)
         // xy contains the x and y (low and high) evacuation destinations.
@@ -486,7 +486,7 @@ internal static void evacuate_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr ol
         }
     }
     if (oldbucket == h.nevacuate) {
-        advanceEvacuationMark(Ꮡh, Ꮡt, newbit);
+        advanceEvacuationMark(ref (Ꮡh).DerefOrNull(), ref (Ꮡt).DerefOrNull(), newbit);
     }
 }
 

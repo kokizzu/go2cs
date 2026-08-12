@@ -1453,9 +1453,7 @@ internal static @string String(this seqCounter c) {
     return fmt.Sprintf("%d (gen=%d)"u8, c.seq, c.gen);
 }
 
-internal static @string dumpOrdering(ж<ordering> Ꮡorder) {
-    ref var order = ref Ꮡorder.DerefOrNull();
-
+internal static @string dumpOrdering(ref ordering order) {
     ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);
     foreach (var (id, state) in order.gStates) {
         fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "G %d [status=%s seq=%s]\n"u8, id, (~state).status, (~state).seq);

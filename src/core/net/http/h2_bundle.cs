@@ -509,7 +509,7 @@ internal static (ж<http2ClientConn>, error) getClientConn(this ж<http2clientCo
     ref var req = ref Ꮡreq.DerefOrNull();
 
     // TODO(dneil): Dial a new connection when t.DisableKeepAlives is set?
-    if (http2isConnectionCloseRequest(Ꮡreq) && dialOnMiss) {
+    if (http2isConnectionCloseRequest(ref (Ꮡreq).DerefOrNull()) && dialOnMiss) {
         // It gets its own connection.
         http2traceGetConn(Ꮡreq, addr);
         const bool singleUse = true;
@@ -542,7 +542,7 @@ internal static (ж<http2ClientConn>, error) getClientConn(this ж<http2clientCo
         var call = Ꮡp.getStartDialLocked(req.Context(), addr);
         Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock();
         ᐸꟷ((~call).done);
-        if (http2shouldRetryDial(call, Ꮡreq)) {
+        if (http2shouldRetryDial(ref (call).DerefOrNull(), Ꮡreq)) {
             continue;
         }
         var (cc, err) = (call.Value.res, call.Value.err);
@@ -756,8 +756,7 @@ internal static (ж<http2ClientConn>, error) GetClientConn(this http2noDialClien
 // retry dialing after the call finished unsuccessfully, for example
 // if the dial was canceled because of a context cancellation or
 // deadline expiry.
-internal static bool http2shouldRetryDial(ж<http2dialCall> Ꮡcall, ж<Request> Ꮡreq) {
-    ref var call = ref Ꮡcall.DerefOrNull();
+internal static bool http2shouldRetryDial(ref http2dialCall call, ж<Request> Ꮡreq) {
     ref var req = ref Ꮡreq.DerefOrNull();
 
     if (call.err == default!) {
@@ -1129,10 +1128,7 @@ internal static UntypedInt http2inflowMinRefresh => /* 4 << 10 */ 4096;
 // takeInflows attempts to take n bytes from two inflows,
 // typically connection-level and stream-level flows.
 // It reports whether both windows have available capacity.
-internal static bool http2takeInflows(ж<http2inflow> Ꮡf1, ж<http2inflow> Ꮡf2, uint32 n) {
-    ref var f1 = ref Ꮡf1.DerefOrNull();
-    ref var f2 = ref Ꮡf2.DerefOrNull();
-
+internal static bool http2takeInflows(ref http2inflow f1, ref http2inflow f2, uint32 n) {
     if (n > (uint32)f1.avail || n > (uint32)f2.avail) {
         return false;
     }
@@ -5936,7 +5932,7 @@ internal static error processData(this ж<http2serverConn> Ꮡsc, ж<http2DataFr
     }
     if (f.Length > 0) {
         // Check whether the client has flow control quota.
-        if (!http2takeInflows(Ꮡsc.of(http2serverConn.Ꮡinflow), st.of(http2stream.Ꮡinflow), f.Length)) {
+        if (!http2takeInflows(ref nonnil(ref sc).inflow, ref (st.of(http2stream.Ꮡinflow)).DerefOrNull(), f.Length)) {
             return Ꮡsc.countError(flowOnDataLengthˢ, http2streamError(id, http2ErrCodeFlowControl));
         }
         if (builtin.len(data) > 0) {
@@ -8885,9 +8881,7 @@ internal static void closeForLostPing(this ж<http2ClientConn> Ꮡcc) {
 // exported. At least they'll be DeepEqual for h1-vs-h2 comparisons tests.
 internal static error http2errRequestCanceled = errors.New("net/http: request canceled"u8);
 
-internal static (@string, error) http2commaSeparatedTrailers(ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.DerefOrNull();
-
+internal static (@string, error) http2commaSeparatedTrailers(ref Request req) {
     var keys = new slice<@string>(0, builtin.len(req.Trailer));
     foreach (var (kᴛ1, _) in req.Trailer) {
         var k = kᴛ1;
@@ -8926,9 +8920,7 @@ internal static readonly @string keepAliveˢ = "keep-alive"u8;
 // checkConnHeaders checks whether req has any invalid connection-level headers.
 // per RFC 7540 section 8.1.2.2: Connection-Specific Header Fields.
 // Certain headers are special-cased as okay but not transmitted later.
-internal static error http2checkConnHeaders(ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.DerefOrNull();
-
+internal static error http2checkConnHeaders(ref Request req) {
     {
         @string v = req.Header.Get(upgradeˢ); if (v != ""u8) {
             return fmt.Errorf("http2: invalid Upgrade request header: %q"u8, req.Header[upgradeˢ]);
@@ -8950,9 +8942,7 @@ internal static error http2checkConnHeaders(ж<Request> Ꮡreq) {
 // actualContentLength returns a sanitized version of
 // req.ContentLength, where 0 actually means zero (not unknown) and -1
 // means unknown.
-internal static int64 http2actualContentLength(ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.DerefOrNull();
-
+internal static int64 http2actualContentLength(ref Request req) {
     if (req.Body == default! || AreEqual(req.Body, NoBody)) {
         return 0;
     }
@@ -8999,7 +8989,7 @@ internal static (ж<Response>, error) roundTrip(this ж<http2ClientConn> Ꮡcc, 
         reqCancel: req.Cancel,
         isHead: req.Method == "HEAD"u8,
         reqBody: req.Body,
-        reqBodyContentLength: http2actualContentLength(Ꮡreq),
+        reqBodyContentLength: http2actualContentLength(ref (Ꮡreq).DerefOrNull()),
         trace: httptrace.ContextClientTrace(ctx),
         peerClosed: new channel<EmptyStruct>(0),
         abort: new channel<EmptyStruct>(0),
@@ -9060,7 +9050,7 @@ internal static (ж<Response>, error) roundTrip(this ж<http2ClientConn> Ꮡcc, 
         }
         res.Value.Request = Ꮡreq;
         res.Value.TLS = Ꮡcc.Value.tlsState;
-        if (AreEqual((~res).Body, http2noBody) && http2actualContentLength(Ꮡreq) == 0) {
+        if (AreEqual((~res).Body, http2noBody) && http2actualContentLength(ref (Ꮡreq).DerefOrNull()) == 0) {
             // If there isn't a request or response body still being
             // written, then wait for the stream to be closed before
             // RoundTrip returns.
@@ -9159,7 +9149,7 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
         var cc = cs.cc;
         var ctx = cs.ctx;
         {
-            var errΔ1 = http2checkConnHeaders(Ꮡreq); if (errΔ1 != default!) {
+            var errΔ1 = http2checkConnHeaders(ref (Ꮡreq).DerefOrNull()); if (errΔ1 != default!) {
                 err = errΔ1; goto ᒐdone;
             }
         }
@@ -9195,7 +9185,7 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
             }
         }
         cc.addStreamLocked(Ꮡcs); // assigns stream ID
-        if (http2isConnectionCloseRequest(Ꮡreq)) {
+        if (http2isConnectionCloseRequest(ref (Ꮡreq).DerefOrNull())) {
             cc.Value.doNotReuse = true;
         }
         cc.of(http2ClientConn.Ꮡmu).Unlock();
@@ -9351,12 +9341,12 @@ internal static error encodeAndWriteHeaders(this ж<http2clientStream> Ꮡcs, ж
         // we send: HEADERS{1}, CONTINUATION{0,} + DATA{0,} (DATA is
         // sent by writeRequestBody below, along with any Trailers,
         // again in form HEADERS{1}, CONTINUATION{0,})
-        var (trailers, err) = http2commaSeparatedTrailers(Ꮡreq);
+        var (trailers, err) = http2commaSeparatedTrailers(ref (Ꮡreq).DerefOrNull());
         if (err != default!) {
             return err;
         }
         var hasTrailers = trailers != ""u8;
-        var contentLen = http2actualContentLength(Ꮡreq);
+        var contentLen = http2actualContentLength(ref (Ꮡreq).DerefOrNull());
         var hasBody = contentLen != 0;
         (var hdrs, err) = cc.encodeHeaders(Ꮡreq, cs.requestedGzip, trailers, contentLen);
         if (err != default!) {
@@ -10717,7 +10707,7 @@ internal static error processData(this ж<http2clientConnReadLoop> Ꮡrl, ж<htt
         }
         // Check connection-level flow control.
         cc.of(http2ClientConn.Ꮡmu).Lock();
-        if (!http2takeInflows(cc.of(http2ClientConn.Ꮡinflow), cs.of(http2clientStream.Ꮡinflow), f.Length)) {
+        if (!http2takeInflows(ref (cc.of(http2ClientConn.Ꮡinflow)).DerefOrNull(), ref (cs.of(http2clientStream.Ꮡinflow)).DerefOrNull(), f.Length)) {
             cc.of(http2ClientConn.Ꮡmu).Unlock();
             return ((http2ConnectionError)(uint32)http2ErrCodeFlowControl);
         }
@@ -11259,9 +11249,7 @@ internal static (nint, error) Read(this http2errorReader r, slice<byte> p) {
 
 // isConnectionCloseRequest reports whether req should use its own
 // connection for a single request and then close the connection.
-internal static bool http2isConnectionCloseRequest(ж<Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.DerefOrNull();
-
+internal static bool http2isConnectionCloseRequest(ref Request req) {
     return req.Close || httpguts.HeaderValuesContainsToken(req.Header[connectionˢ], closeˢ);
 }
 

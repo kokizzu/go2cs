@@ -212,7 +212,7 @@ internal static (ж<PrivateKey>, error) generateNISTEC<Point>(ж<nistCurve<Point
 {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var (k, Q, err) = randomPoint(Ꮡc, rand);
+    var (k, Q, err) = randomPoint(ref (Ꮡc).DerefOrNull(), rand);
     if (err != default!) {
         return (default!, err);
     }
@@ -228,14 +228,13 @@ internal static (ж<PrivateKey>, error) generateNISTEC<Point>(ж<nistCurve<Point
 
 // randomPoint returns a random scalar and the corresponding point using the
 // procedure given in FIPS 186-4, Appendix B.5.2 (rejection sampling).
-internal static (ж<bigmodꓸNat> k, Point p, error err) randomPoint<Point>(ж<nistCurve<Point>> Ꮡc, io.Reader rand)
+internal static (ж<bigmodꓸNat> k, Point p, error err) randomPoint<Point>(ref nistCurve<Point> c, io.Reader rand)
     where Point : nistPoint<Point>
 {
     ж<bigmodꓸNat> k = default!;
     Point p = default!;
     error err = default!;
 
-    ref var c = ref Ꮡc.DerefOrNull();
     k = bigmod.NewNat();
     while (ᐧ) {
         var b = new slice<byte>(c.N.Size());
@@ -303,30 +302,30 @@ public static (slice<byte>, error) SignASN1(io.Reader rand, ж<PrivateKey> Ꮡpr
         return boring.SignMarshalECDSA(b, hash);
     }
     boring.UnreachableExceptTests();
-    var (csprng, err) = mixedCSPRNG(rand, Ꮡpriv, hash);
+    var (csprng, err) = mixedCSPRNG(rand, ref (Ꮡpriv).DerefOrNull(), hash);
     if (err != default!) {
         return (default!, err);
     }
     {
-        var (sig, errΔ2) = signAsm(Ꮡpriv, csprng, hash); if (!AreEqual(errΔ2, errNoAsm)) {
+        var (sig, errΔ2) = signAsm(ref (Ꮡpriv).DerefOrNull(), csprng, hash); if (!AreEqual(errΔ2, errNoAsm)) {
             return (sig, errΔ2);
         }
     }
     var exprᴛ1 = priv.Curve.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return signNISTEC<P224PointжnistPoint>(p224(), Ꮡpriv, csprng, hash);
+        return signNISTEC<P224PointжnistPoint>(ref (p224()).DerefOrNull(), ref (Ꮡpriv).DerefOrNull(), csprng, hash);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return signNISTEC<P256PointжnistPoint>(p256(), Ꮡpriv, csprng, hash);
+        return signNISTEC<P256PointжnistPoint>(ref (p256()).DerefOrNull(), ref (Ꮡpriv).DerefOrNull(), csprng, hash);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return signNISTEC<P384PointжnistPoint>(p384(), Ꮡpriv, csprng, hash);
+        return signNISTEC<P384PointжnistPoint>(ref (p384()).DerefOrNull(), ref (Ꮡpriv).DerefOrNull(), csprng, hash);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return signNISTEC<P521PointжnistPoint>(p521(), Ꮡpriv, csprng, hash);
+        return signNISTEC<P521PointжnistPoint>(ref (p521()).DerefOrNull(), ref (Ꮡpriv).DerefOrNull(), csprng, hash);
     }
     { /* default: */
-        return signLegacy(Ꮡpriv, csprng, hash);
+        return signLegacy(ref (Ꮡpriv).DerefOrNull(), csprng, hash);
     }
 
 }
@@ -335,21 +334,19 @@ public static (slice<byte>, error) SignASN1(io.Reader rand, ж<PrivateKey> Ꮡpr
 internal static readonly @string ecdsaInternalErrorRIsˢ = "ecdsa: internal error: r is zero"u8;
 internal static readonly @string ecdsaInternalErrorSIsˢ = "ecdsa: internal error: s is zero"u8;
 
-internal static (slice<byte> sig, error err) signNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ж<PrivateKey> Ꮡpriv, io.Reader csprng, slice<byte> hash)
+internal static (slice<byte> sig, error err) signNISTEC<Point>(ref nistCurve<Point> c, ref PrivateKey priv, io.Reader csprng, slice<byte> hash)
     where Point : nistPoint<Point>
 {
     error err = default!;
 
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var priv = ref Ꮡpriv.DerefOrNull();
     // SEC 1, Version 2.0, Section 4.1.3
-    (var k, var R, err) = randomPoint(Ꮡc, csprng);
+    (var k, var R, err) = randomPoint(ref c, csprng);
     if (err != default!) {
         return (default!, err);
     }
     // kInv = k⁻¹
     var kInv = bigmod.NewNat();
-    inverse(Ꮡc, kInv, k);
+    inverse(ref c, kInv, k);
     (var Rx, err) = R.BytesX();
     if (err != default!) {
         return (default!, err);
@@ -365,7 +362,7 @@ internal static (slice<byte> sig, error err) signNISTEC<Point>(ж<nistCurve<Poin
         return (default!, errors.New(ecdsaInternalErrorRIsˢ));
     }
     var e = bigmod.NewNat();
-    hashToNat(Ꮡc, e, hash);
+    hashToNat(ref c, e, hash);
     (var s, err) = bigmod.NewNat().SetBytes(priv.D.Bytes(), c.N);
     if (err != default!) {
         return (default!, err);
@@ -416,10 +413,9 @@ internal static void addASN1IntBytes(ж<cryptobyte.Builder> Ꮡb, slice<byte> by
 }
 
 // inverse sets kInv to the inverse of k modulo the order of the curve.
-internal static void inverse<Point>(ж<nistCurve<Point>> Ꮡc, ж<bigmodꓸNat> ᏑkInv, ж<bigmodꓸNat> Ꮡk)
+internal static void inverse<Point>(ref nistCurve<Point> c, ж<bigmodꓸNat> ᏑkInv, ж<bigmodꓸNat> Ꮡk)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.DerefOrNull();
     ref var k = ref Ꮡk.DerefOrNull();
 
     if ((~c.curve.Params()).Name == "P-256"u8) {
@@ -440,11 +436,9 @@ internal static void inverse<Point>(ж<nistCurve<Point>> Ꮡc, ж<bigmodꓸNat> 
 
 // hashToNat sets e to the left-most bits of hash, according to
 // SEC 1, Section 4.1.3, point 5 and Section 4.1.4, point 3.
-internal static void hashToNat<Point>(ж<nistCurve<Point>> Ꮡc, ж<bigmodꓸNat> Ꮡe, slice<byte> hash)
+internal static void hashToNat<Point>(ref nistCurve<Point> c, ж<bigmodꓸNat> Ꮡe, slice<byte> hash)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.DerefOrNull();
-
     // ECDSA asks us to take the left-most log2(N) bits of hash, and use them as
     // an integer modulo N. This is the absolute worst of all worlds: we still
     // have to reduce, because the result might still overflow N, but to take
@@ -475,9 +469,7 @@ internal static void hashToNat<Point>(ж<nistCurve<Point>> Ꮡc, ж<bigmodꓸNat
 // and the private key, to protect the key in case rand fails. This is
 // equivalent in security to RFC 6979 deterministic nonce generation, but still
 // produces randomized signatures.
-internal static (io.Reader, error) mixedCSPRNG(io.Reader rand, ж<PrivateKey> Ꮡpriv, slice<byte> hash) {
-    ref var priv = ref Ꮡpriv.DerefOrNull();
-
+internal static (io.Reader, error) mixedCSPRNG(io.Reader rand, ref PrivateKey priv, slice<byte> hash) {
     // This implementation derives the nonce from an AES-CTR CSPRNG keyed by:
     //
     //    SHA2-512(priv.D || entropy || hash)[:32]
@@ -544,34 +536,33 @@ public static bool VerifyASN1(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte
     }
     boring.UnreachableExceptTests();
     {
-        var err = verifyAsm(Ꮡpub, hash, sig); if (!AreEqual(err, errNoAsm)) {
+        var err = verifyAsm(ref (Ꮡpub).DerefOrNull(), hash, sig); if (!AreEqual(err, errNoAsm)) {
             return err == default!;
         }
     }
     var exprᴛ1 = pub.Curve.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return verifyNISTEC<P224PointжnistPoint>(p224(), Ꮡpub, hash, sig);
+        return verifyNISTEC<P224PointжnistPoint>(p224(), ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return verifyNISTEC<P256PointжnistPoint>(p256(), Ꮡpub, hash, sig);
+        return verifyNISTEC<P256PointжnistPoint>(p256(), ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return verifyNISTEC<P384PointжnistPoint>(p384(), Ꮡpub, hash, sig);
+        return verifyNISTEC<P384PointжnistPoint>(p384(), ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return verifyNISTEC<P521PointжnistPoint>(p521(), Ꮡpub, hash, sig);
+        return verifyNISTEC<P521PointжnistPoint>(p521(), ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
     { /* default: */
-        return verifyLegacy(Ꮡpub, hash, sig);
+        return verifyLegacy(ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
 
 }
 
-internal static bool verifyNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte> sig)
+internal static bool verifyNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ref PublicKey pub, slice<byte> hash, slice<byte> sig)
     where Point : nistPoint<Point>
 {
     ref var c = ref Ꮡc.DerefOrNull();
-    ref var pub = ref Ꮡpub.DerefOrNull();
 
     var (rBytes, sBytes, err) = parseSignature(sig);
     if (err != default!) {
@@ -591,10 +582,10 @@ internal static bool verifyNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ж<PublicKey
         return false;
     }
     var e = bigmod.NewNat();
-    hashToNat(Ꮡc, e, hash);
+    hashToNat(ref (Ꮡc).DerefOrNull(), e, hash);
     // w = s⁻¹
     var w = bigmod.NewNat();
-    inverse(Ꮡc, w, s);
+    inverse(ref (Ꮡc).DerefOrNull(), w, s);
     // p₁ = [e * s⁻¹]G
     (var p1, err) = c.newPoint().ScalarBaseMult(e.Mul(w, c.N).Bytes(c.N));
     if (err != default!) {
@@ -711,7 +702,7 @@ internal static ж<nistCurve<P224PointжnistPoint>> p224() {
         _p224 = Ꮡ(new nistCurve<P224PointжnistPoint>(
             newPoint: () => nistec.NewP224Point()
         ));
-        precomputeParams<P224PointжnistPoint>(_p224, elliptic.P224());
+        precomputeParams<P224PointжnistPoint>(ref (_p224).DerefOrNull(), elliptic.P224());
     });
     return _p224;
 }
@@ -726,7 +717,7 @@ internal static ж<nistCurve<P256PointжnistPoint>> p256() {
         _p256 = Ꮡ(new nistCurve<P256PointжnistPoint>(
             newPoint: () => nistec.NewP256Point()
         ));
-        precomputeParams<P256PointжnistPoint>(_p256, elliptic.P256());
+        precomputeParams<P256PointжnistPoint>(ref (_p256).DerefOrNull(), elliptic.P256());
     });
     return _p256;
 }
@@ -741,7 +732,7 @@ internal static ж<nistCurve<P384PointжnistPoint>> p384() {
         _p384 = Ꮡ(new nistCurve<P384PointжnistPoint>(
             newPoint: () => nistec.NewP384Point()
         ));
-        precomputeParams<P384PointжnistPoint>(_p384, elliptic.P384());
+        precomputeParams<P384PointжnistPoint>(ref (_p384).DerefOrNull(), elliptic.P384());
     });
     return _p384;
 }
@@ -756,16 +747,14 @@ internal static ж<nistCurve<P521PointжnistPoint>> p521() {
         _p521 = Ꮡ(new nistCurve<P521PointжnistPoint>(
             newPoint: () => nistec.NewP521Point()
         ));
-        precomputeParams<P521PointжnistPoint>(_p521, elliptic.P521());
+        precomputeParams<P521PointжnistPoint>(ref (_p521).DerefOrNull(), elliptic.P521());
     });
     return _p521;
 }
 
-internal static void precomputeParams<Point>(ж<nistCurve<Point>> Ꮡc, elliptic.Curve curve)
+internal static void precomputeParams<Point>(ref nistCurve<Point> c, elliptic.Curve curve)
     where Point : nistPoint<Point>
 {
-    ref var c = ref Ꮡc.DerefOrNull();
-
     var @params = curve.Params();
     c.curve = curve;
     error err = default!;

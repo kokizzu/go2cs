@@ -846,7 +846,7 @@ internal static ж<Func> customizeRecv(ж<Func> Ꮡf, @string recvTypeName, bool
     // exported fields anymore.
     foreach (var (predecl, _) in r.shadowedPredecl) {
         foreach (var (_, ityp) in r.fixmap[predecl]) {
-            removeAnonymousField(predecl, ityp);
+            removeAnonymousField(predecl, ref (ityp).DerefOrNull());
         }
     }
 }
@@ -906,9 +906,7 @@ internal static slice<@string> sortedKeys(map<@string, nint> m) {
 }
 
 // sortingName returns the name to use when sorting d into place.
-internal static @string sortingName(ж<ast.GenDecl> Ꮡd) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static @string sortingName(ref ast.GenDecl d) {
     if (len(d.Specs) == 1) {
         {
             var (s, ok) = d.Specs[0]._<ж<ast.ValueSpec>>(ᐧ); if (ok) {
@@ -930,7 +928,7 @@ internal static slice<ж<Value>> sortedValues(slice<ж<Value>> m, token.Token to
     }
     list = list[0..(int)(i)];
     slices.SortFunc(list, (ж<Value> a, ж<Value> b) => {
-        nint r = strings.Compare(sortingName((~a).Decl), sortingName((~b).Decl));
+        nint r = strings.Compare(sortingName(ref ((~a).Decl).DerefOrNull()), sortingName(ref ((~b).Decl).DerefOrNull()));
         if (r != 0) {
             return r;
         }

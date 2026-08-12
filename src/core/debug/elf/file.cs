@@ -818,9 +818,7 @@ internal static readonly @string applyRelocationsNotˢ = "applyRelocations: not 
 // Most relocations in DWARF data tend to be section-relative, but
 // some target non-section symbols (for example, low_PC attrs on
 // subprogram or compilation unit DIEs that target function symbols).
-internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
-    ref var sym = ref Ꮡsym.DerefOrNull();
-
+internal static bool canApplyRelocation(ref Symbol sym) {
     return sym.Section != SHN_UNDEF && sym.Section < SHN_LORESERVE;
 }
 
@@ -846,7 +844,7 @@ internal static readonly @string lengthOfRelocationˢ = "length of relocation se
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         // There are relocations, so this must be a normal
@@ -958,7 +956,7 @@ internal static readonly @string lengthOfRelocationˢ2 = "length of relocation s
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         // There are relocations, so this must be a normal
@@ -1006,7 +1004,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         var exprᴛ1 = t;
@@ -1041,7 +1039,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         var exprᴛ1 = t;
@@ -1123,7 +1121,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         var exprᴛ1 = t;
@@ -1167,7 +1165,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         var exprᴛ1 = t;
@@ -1209,7 +1207,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         var exprᴛ1 = t;
@@ -1251,7 +1249,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         var exprᴛ1 = t;
@@ -1293,7 +1291,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
             continue;
         }
         var sym = Ꮡ(symbols, (int)(symNo - 1));
-        if (!canApplyRelocation(sym)) {
+        if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
         var exprᴛ1 = t;

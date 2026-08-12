@@ -26,9 +26,7 @@ partial class reflect_package {
 // linkname uses.
 //
 //go:linkname unusedIfaceIndir reflect.ifaceIndir
-internal static bool unusedIfaceIndir(ж<abi.Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
+internal static bool unusedIfaceIndir(ref abi.Type t) {
     return (abiꓸKind)(t.Kind_ & abi.KindDirectIface) == 0;
 }
 

@@ -513,11 +513,9 @@ internal static ж<structType> newStructType(@string name) {
 // of ut.
 // This is only called from the encoding side. The decoding side
 // works through typeIds and userTypeInfos alone.
-internal static (ΔgobType, error) newTypeObject(@string name, ж<userTypeInfo> Ꮡut, reflectꓸType rt) {
+internal static (ΔgobType, error) newTypeObject(@string name, ref userTypeInfo ut, reflectꓸType rt) {
     GoFrame ᒐ = default;
     try {
-        ref var ut = ref Ꮡut.DerefOrNull();
-
         // Does this type implement GobEncoder?
         if (ut.externalEnc != 0) {
             return (new gobEncoderTypeжΔgobType(newGobEncoderType(name)), default!);
@@ -608,9 +606,8 @@ internal static (ΔgobType, error) newTypeObject(@string name, ж<userTypeInfo> 
                 types[rt] = new structTypeжΔgobType(st);
                 idToTypeSlice[st.of(structType.ᏑCommonType).id()] = new structTypeжΔgobType(st);
                 for (nint i = 0; i < t.NumField(); i++) {
-                    ref var f = ref heap<reflect.StructField>(out var Ꮡf);
-                    f = t.Field(i);
-                    if (!isSent(Ꮡf)) {
+                    var f = t.Field(i);
+                    if (!isSent(ref f)) {
                         continue;
                     }
                     var typ = userType(f.Type).Value.@base;
@@ -653,9 +650,7 @@ internal static bool isExported(@string name) {
 // isSent reports whether this struct field is to be transmitted.
 // It will be transmitted only if it is exported and not a chan or func field
 // or pointer to chan or func.
-internal static bool isSent(ж<reflect.StructField> Ꮡfield) {
-    ref var field = ref Ꮡfield.DerefOrNull();
-
+internal static bool isSent(ref reflect.StructField field) {
     if (!isExported(field.Name)) {
         return false;
     }
@@ -675,7 +670,7 @@ internal static bool isSent(ж<reflect.StructField> Ꮡfield) {
 // typeLock must be held.
 internal static (ΔgobType, error) getBaseType(@string name, reflectꓸType rt) {
     var ut = userType(rt);
-    return getType(name, ut, (~ut).@base);
+    return getType(name, ref (ut).DerefOrNull(), (~ut).@base);
 }
 
 // getType returns the Gob type describing the given reflect.Type.
@@ -683,12 +678,12 @@ internal static (ΔgobType, error) getBaseType(@string name, reflectꓸType rt) 
 // which may be pointers. All other types are handled through the
 // base type, never a pointer.
 // typeLock must be held.
-internal static (ΔgobType, error) getType(@string name, ж<userTypeInfo> Ꮡut, reflectꓸType rt) {
+internal static (ΔgobType, error) getType(@string name, ref userTypeInfo ut, reflectꓸType rt) {
     var (typ, present) = types[rt, ꟷ];
     if (present) {
         return (typ, default!);
     }
-    (typ, var err) = newTypeObject(name, Ꮡut, rt);
+    (typ, var err) = newTypeObject(name, ref ut, rt);
     if (err == default!) {
         types[rt] = typ;
     }
@@ -802,9 +797,7 @@ internal static ж<typeInfo> lookupTypeInfo(reflectꓸType rt) {
     return m[rt];
 }
 
-internal static (ж<typeInfo>, error) getTypeInfo(ж<userTypeInfo> Ꮡut) {
-    ref var ut = ref Ꮡut.DerefOrNull();
-
+internal static (ж<typeInfo>, error) getTypeInfo(ref userTypeInfo ut) {
     var rt = ut.@base;
     if (ut.externalEnc != 0) {
         // We want the user type, not the base type.
@@ -815,16 +808,14 @@ internal static (ж<typeInfo>, error) getTypeInfo(ж<userTypeInfo> Ꮡut) {
             return (info, default!);
         }
     }
-    return buildTypeInfo(Ꮡut, rt);
+    return buildTypeInfo(ref ut, rt);
 }
 
 // buildTypeInfo constructs the type information for the type
 // and stores it in the type info map.
-internal static (ж<typeInfo>, error) buildTypeInfo(ж<userTypeInfo> Ꮡut, reflectꓸType rt) {
+internal static (ж<typeInfo>, error) buildTypeInfo(ref userTypeInfo ut, reflectꓸType rt) {
     GoFrame ᒐ = default;
     try {
-        ref var ut = ref Ꮡut.DerefOrNull();
-
         ᏑtypeLock.Lock();
         defer(ᏑtypeLock.Unlock, ref ᒐ);
         {
@@ -838,7 +829,7 @@ internal static (ж<typeInfo>, error) buildTypeInfo(ж<userTypeInfo> Ꮡut, refl
         }
         var info = Ꮡ(new typeInfo(id: gt.id()));
         if (ut.externalEnc != 0){
-            var (userType, errΔ1) = getType(rt.Name(), Ꮡut, rt);
+            var (userType, errΔ1) = getType(rt.Name(), ref ut, rt);
             if (errΔ1 != default!) {
                 return (default!, errΔ1);
             }
@@ -900,7 +891,7 @@ internal static (ж<typeInfo>, error) buildTypeInfo(ж<userTypeInfo> Ꮡut, refl
 
 // Called only when a panic is acceptable and unexpected.
 internal static ж<typeInfo> mustGetTypeInfo(reflectꓸType rt) {
-    var (t, err) = getTypeInfo(userType(rt));
+    var (t, err) = getTypeInfo(ref (userType(rt)).DerefOrNull());
     if (err != default!) {
         throw panic("getTypeInfo: " + err.Error());
     }

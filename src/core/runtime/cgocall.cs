@@ -220,9 +220,7 @@ internal static int32 cgocall(@unsafe.Pointer fn, @unsafe.Pointer arg) {
 // the M.
 //
 //go:nosplit
-internal static void callbackUpdateSystemStack(ж<m> Ꮡmp, uintptr sp, bool signal) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static void callbackUpdateSystemStack(ref m mp, uintptr sp, bool signal) {
     var g0 = mp.g0;
     var inBound = sp > (~g0).stack.lo && sp <= (~g0).stack.hi;
     if (mp.ncgo > 0 && !inBound) {
@@ -308,7 +306,7 @@ internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uin
         exit(2);
     }
     var sp = gp.Value.m.Value.g0.Value.sched.sp; // system sp saved by cgocallback.
-    callbackUpdateSystemStack((~gp).m, sp, false);
+    callbackUpdateSystemStack(ref ((~gp).m).DerefOrNull(), sp, false);
     // The call from C is on gp.m's g0 stack, so we must ensure
     // that we stay on that M. We have to do this before calling
     // exitsyscall, since it would otherwise be free to move us to
@@ -400,7 +398,7 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
         // Add entry to defer stack in case of panic.
         ref var restore = ref heap<bool>(out var Ꮡrestore);
         restore = true;
-        defer(unwindm, Ꮡrestore, ref ᒐ);
+        defer(ᴛ1 => unwindm(ref ᴛ1.DerefOrNull()), Ꮡrestore, ref ᒐ);
         if (raceenabled) {
             raceacquire(new @unsafe.Pointer(Ꮡracecgosync));
         }
@@ -422,9 +420,7 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
     finally { ᒐ.Run(); }
 }
 
-internal static void unwindm(ж<bool> Ꮡrestore) {
-    ref var restore = ref Ꮡrestore.DerefOrNull();
-
+internal static void unwindm(ref bool restore) {
     if (restore) {
         // Restore sp saved by cgocallback during
         // unwind of g's stack (see comment at top of file).
@@ -448,7 +444,7 @@ internal static void unwindm(ж<bool> Ꮡrestore) {
         // panicking out of the callback and unwinding the g0 stack,
         // instead of reentering cgo (which requires the same thread).
         unlockOSThread();
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
     }
 }
 

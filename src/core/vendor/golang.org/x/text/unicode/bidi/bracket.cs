@@ -70,9 +70,7 @@ internal static bool Less(this bracketPairs b, nint i, nint j) {
 //
 // The identifiers for bracket types are the rune of the canonicalized opening
 // bracket for brackets (open or close) or 0 for runes that are not brackets.
-internal static void resolvePairedBrackets(ж<ΔisolatingRunSequence> Ꮡs) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
+internal static void resolvePairedBrackets(ref ΔisolatingRunSequence s) {
     var p = new bracketPairer(
         sos: s.sos,
         openers: list.New(),

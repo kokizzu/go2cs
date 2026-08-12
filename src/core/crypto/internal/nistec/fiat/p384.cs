@@ -25,7 +25,9 @@ internal static UntypedInt p384ElementLen => 48;
 
 // One sets e = 1, and returns e.
 public static ж<P384Element> One(this ж<P384Element> Ꮡe) {
-    p384SetOne(Ꮡe.of(P384Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+
+    p384SetOne(ref nonnil(ref e).x);
     return Ꮡe;
 }
 
@@ -61,11 +63,13 @@ public static slice<byte> Bytes(this ж<P384Element> Ꮡe) {
 }
 
 internal static slice<byte> bytes(this ж<P384Element> Ꮡe, ж<array<byte>> Ꮡout) {
+    ref var e = ref Ꮡe.DerefOrNull();
     ref var @out = ref Ꮡout.DerefOrNull();
 
-    ref var tmp = ref heap(new p384NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
-    p384FromMontgomery(Ꮡtmp, Ꮡe.of(P384Element.Ꮡx));
-    p384ToBytes(Ꮡout, Ꮡ((Ꮡtmp).Value.Value));
+    p384NonMontgomeryDomainFieldElement tmp = default!;
+    p384FromMontgomery(ref tmp, ref nonnil(ref e).x);
+    var ᴛ1 = tmp.Value;
+    p384ToBytes(ref (Ꮡout).DerefOrNull(), ref ᴛ1);
     p384InvertEndianness(@out[..]);
     return @out[..];
 }
@@ -77,6 +81,8 @@ private static readonly @string invalidP384Elementˢ = "invalid P384Element enco
 // If v is not 48 bytes or it encodes a value higher than 2^384 - 2^128 - 2^96 + 2^32 - 1,
 // SetBytes returns nil and an error, and e is unchanged.
 public static (ж<P384Element>, error) SetBytes(this ж<P384Element> Ꮡe, slice<byte> v) {
+    ref var e = ref Ꮡe.DerefOrNull();
+
     if (len(v) != p384ElementLen) {
         return (default!, errors.New(invalidP384Elementˢ));
     }
@@ -95,40 +101,65 @@ public static (ж<P384Element>, error) SetBytes(this ж<P384Element> Ꮡe, slice
     ref var @in = ref heap(new array<byte>(48), out var Ꮡin);
     copy(@in[..], v);
     p384InvertEndianness(@in[..]);
-    ref var tmp = ref heap(new p384NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
-    p384FromBytes(Ꮡ((Ꮡtmp).Value.Value), Ꮡin);
-    p384ToMontgomery(Ꮡe.of(P384Element.Ꮡx), Ꮡtmp);
+    p384NonMontgomeryDomainFieldElement tmp = default!;
+    var ᴛ2 = tmp.Value;
+    p384FromBytes(ref ᴛ2, ref @in);
+    p384ToMontgomery(ref nonnil(ref e).x, ref tmp);
     return (Ꮡe, default!);
 }
 
 // Add sets e = t1 + t2, and returns e.
 public static ж<P384Element> Add(this ж<P384Element> Ꮡe, ж<P384Element> Ꮡt1, ж<P384Element> Ꮡt2) {
-    p384Add(Ꮡe.of(P384Element.Ꮡx), Ꮡt1.of(P384Element.Ꮡx), Ꮡt2.of(P384Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p384Add(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Sub sets e = t1 - t2, and returns e.
 public static ж<P384Element> Sub(this ж<P384Element> Ꮡe, ж<P384Element> Ꮡt1, ж<P384Element> Ꮡt2) {
-    p384Sub(Ꮡe.of(P384Element.Ꮡx), Ꮡt1.of(P384Element.Ꮡx), Ꮡt2.of(P384Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p384Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Mul sets e = t1 * t2, and returns e.
 public static ж<P384Element> Mul(this ж<P384Element> Ꮡe, ж<P384Element> Ꮡt1, ж<P384Element> Ꮡt2) {
-    p384Mul(Ꮡe.of(P384Element.Ꮡx), Ꮡt1.of(P384Element.Ꮡx), Ꮡt2.of(P384Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p384Mul(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Square sets e = t * t, and returns e.
 public static ж<P384Element> Square(this ж<P384Element> Ꮡe, ж<P384Element> Ꮡt) {
-    p384Square(Ꮡe.of(P384Element.Ꮡx), Ꮡt.of(P384Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    p384Square(ref nonnil(ref e).x, ref nonnil(ref t).x);
     return Ꮡe;
 }
 
 // Select sets v to a if cond == 1, and to b if cond == 0.
 public static ж<P384Element> Select(this ж<P384Element> Ꮡv, ж<P384Element> Ꮡa, ж<P384Element> Ꮡb, nint cond) {
-    p384Selectznz(Ꮡ((Ꮡv.of(P384Element.Ꮡx)).Value.Value), ((p384Uint1)(uint64)cond),
-        Ꮡ((Ꮡb.of(P384Element.Ꮡx)).Value.Value), Ꮡ((Ꮡa.of(P384Element.Ꮡx)).Value.Value));
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var ᴛ3 = nonnil(ref v).x.Value;
+
+    var ᴛ4 = nonnil(ref b).x.Value;
+
+    var ᴛ5 = nonnil(ref a).x.Value;
+    p384Selectznz(ref ᴛ3, ((p384Uint1)(uint64)cond),
+        ref ᴛ4, ref ᴛ5);
     return Ꮡv;
 }
 

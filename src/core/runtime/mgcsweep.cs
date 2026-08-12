@@ -267,7 +267,7 @@ internal static void finishsweep_m() {
 
 internal static void bgsweep(channel<nint> c) {
     Δsweep.g = getg();
-    lockInit(ᏑΔsweep.of(sweepdata.Ꮡlock), lockRankSweep);
+    lockInit(ref Δsweep.@lock, lockRankSweep);
     @lock(ᏑΔsweep.of(sweepdata.Ꮡlock));
     Δsweep.parked = true;
     c.ᐸꟷ(1);
@@ -974,7 +974,7 @@ internal static void clobberfree(@unsafe.Pointer x, uintptr size) {
 //
 // The world must be stopped, or mheap_.lock must be held.
 internal static void gcPaceSweeper(uint64 trigger) {
-    assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));
+    assertWorldStoppedOrLockHeld(ref mheap_.@lock);
     // Update sweep pacing.
     if (isSweepDone()){
         mheap_.sweepPagesPerByte = 0D;

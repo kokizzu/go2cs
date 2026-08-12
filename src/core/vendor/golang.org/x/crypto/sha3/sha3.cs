@@ -74,10 +74,10 @@ internal static void permute(this ж<state> Ꮡd) {
  // before applying the permutation.
  d.storage[..(int)(d.rate)]);
         d.n = 0;
-        keccakF1600(Ꮡd.of(state.Ꮡa));
+        keccakF1600(ref nonnil(ref d).a);
     }
     else if (exprᴛ1 == spongeSqueezing) {
-        keccakF1600(Ꮡd.of(state.Ꮡa));
+        keccakF1600(ref nonnil(ref d).a);
         d.i = 0;
         copyOut(Ꮡd, // If we're squeezing, we need to apply the permutation before
  // copying more output.
@@ -128,7 +128,7 @@ internal static (nint written, error err) Write(this ж<state> Ꮡd, slice<byte>
             // The fast path; absorb a full "rate" bytes of input and apply the permutation.
             xorIn(Ꮡd, p[..(int)(d.rate)]);
             p = p[(int)(d.rate)..];
-            keccakF1600(Ꮡd.of(state.Ꮡa));
+            keccakF1600(ref nonnil(ref d).a);
         } else {
             // The slow path; buffer the input until we can fill the sponge, and then xor it in.
             nint todo = d.rate - d.n;

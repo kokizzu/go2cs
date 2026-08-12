@@ -434,9 +434,7 @@ internal static void mProf_PostSweep() {
 }
 
 // Called by malloc to record a profiled block.
-internal static void mProf_Malloc(ж<m> Ꮡmp, @unsafe.Pointer Δp, uintptr size) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static void mProf_Malloc(ref m mp, @unsafe.Pointer Δp, uintptr size) {
     if (mp.profStack == default!) {
         // mp.profStack is nil if we happen to sample an allocation during the
         // initialization of mp. This case is rare, so we just ignore such
@@ -567,7 +565,7 @@ internal static void saveblockevent(int64 cycles, int64 rate, nint skip, bucketT
         }
     }
     saveBlockEventStack(cycles, rate, (~mp).profStack[..(int)(nstk)], which);
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
 }
 
 // fpTracebackPartialExpand records a call stack obtained starting from fp.
@@ -846,7 +844,7 @@ internal static void captureStack(this ж<mLockProfile> Ꮡprof) {
         saveBlockEventStack(lost, rate, lostStk[..], mutexProfile);
     }
     prof.disabled = false;
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
 }
 
 internal static void saveBlockEventStack(int64 cycles, int64 rate, slice<uintptr> stk, bucketType which) {
@@ -1413,7 +1411,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<pro
     var pʗ1 = Δp;
     var pcbufʗ1 = pcbuf;
     systemstack(() => {
-        saveg(pc, sp, ourgʗ1, Ꮡ(pʗ1, 0), pcbufʗ1);
+        saveg(pc, sp, ourgʗ1, ref (Ꮡ(pʗ1, 0)).DerefOrNull(), pcbufʗ1);
     });
     if (labels != default!) {
         labels[0] = ourg.Value.labels;
@@ -1433,7 +1431,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<pro
     // system goroutine (to be excluded). Pick one before restarting the world.
     if (fing != nil) {
         fing.of(g.ᏑgoroutineProfiled).Store(goroutineProfileSatisfied);
-        if (readgstatus(fing) != _Gdead && !isSystemGoroutine(fing, false)) {
+        if (readgstatus(fing) != _Gdead && !isSystemGoroutine(ref (fing).DerefOrNull(), false)) {
             doRecordGoroutineProfile(fing, pcbuf);
         }
     }
@@ -1509,7 +1507,7 @@ internal static void tryRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbu
         // so here we check _Gdead first.
         return;
     }
-    if (isSystemGoroutine(Ꮡgp1, true)) {
+    if (isSystemGoroutine(ref (Ꮡgp1).DerefOrNull(), true)) {
         // System goroutines should not appear in the profile. (The finalizer
         // goroutine is marked as "already profiled".)
         return;
@@ -1537,7 +1535,7 @@ internal static void tryRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbu
             doRecordGoroutineProfile(Ꮡgp1, pcbuf);
             Ꮡgp1.of(g.ᏑgoroutineProfiled).Store(goroutineProfileSatisfied);
         }
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
     }
 }
 
@@ -1575,7 +1573,7 @@ internal static void doRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbuf
     // to avoid schedule delays.
     var pcbufʗ1 = pcbuf;
     systemstack(() => {
-        saveg(~(uintptr)0, ~(uintptr)0, Ꮡgp1, Ꮡ(goroutineProfile.records, offset), pcbufʗ1);
+        saveg(~(uintptr)0, ~(uintptr)0, Ꮡgp1, ref (Ꮡ(goroutineProfile.records, offset)).DerefOrNull(), pcbufʗ1);
     });
     if (goroutineProfile.labels != default!) {
         goroutineProfile.labels[offset] = gp1.labels;
@@ -1591,7 +1589,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
     bool isOK(ж<g> gp1) {
         // Checking isSystemGoroutine here makes GoroutineProfile
         // consistent with both NumGoroutine and Stack.
-        return gp1 != gpʗ1 && readgstatus(gp1) != _Gdead && !isSystemGoroutine(gp1, false);
+        return gp1 != gpʗ1 && readgstatus(gp1) != _Gdead && !isSystemGoroutine(ref (gp1).DerefOrNull(), false);
     }
     var pcbuf = makeProfStack(); // see saveg() for explanation
     var stw = stopTheWorld(stwGoroutineProfile);
@@ -1615,7 +1613,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
         var gpʗ2 = gp;
         var pcbufʗ1 = pcbuf;
         systemstack(() => {
-            saveg(pc, sp, gpʗ2, Ꮡ(Ꮡr.ValueSlot, 0), pcbufʗ1);
+            saveg(pc, sp, gpʗ2, ref (Ꮡ(Ꮡr.ValueSlot, 0)).DerefOrNull(), pcbufʗ1);
         });
         r = r[1..];
         // If we have a place to put our goroutine labelmap, insert it there.
@@ -1642,7 +1640,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
             // call into the schedular (see traceback.go:cgoContextPCs).
             var pcbufʗ3 = pcbufʗ2;
             systemstack(() => {
-                saveg(~(uintptr)0, ~(uintptr)0, gp1, Ꮡ(Ꮡr.ValueSlot, 0), pcbufʗ3);
+                saveg(~(uintptr)0, ~(uintptr)0, gp1, ref (Ꮡ(Ꮡr.ValueSlot, 0)).DerefOrNull(), pcbufʗ3);
             });
             if (labelsʗ1 != default!) {
                 Ꮡlbl.ValueSlot[0] = gp1.Value.labels;
@@ -1683,9 +1681,8 @@ internal static (nint n, bool ok) goroutineProfileInternal(slice<profilerecord.S
     return goroutineProfileWithLabels(Δp, default!);
 }
 
-internal static void saveg(uintptr pc, uintptr sp, ж<g> Ꮡgp, ж<profilerecord.StackRecord> Ꮡr, slice<uintptr> pcbuf) {
+internal static void saveg(uintptr pc, uintptr sp, ж<g> Ꮡgp, ref profilerecord.StackRecord r, slice<uintptr> pcbuf) {
     ref var gp = ref Ꮡgp.DerefOrNull();
-    ref var r = ref Ꮡr.DerefOrNull();
 
     // To reduce memory usage, we want to allocate a r.Stack that is just big
     // enough to hold gp's stack trace. Naively we might achieve this by

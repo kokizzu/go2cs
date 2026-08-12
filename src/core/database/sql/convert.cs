@@ -21,9 +21,7 @@ partial class sql_package {
 
 internal static error errNilPtr = errors.New("destination pointer is nil"u8); // embedded in descriptive error
 
-internal static @string describeNamedValue(ж<driver.NamedValue> Ꮡnv) {
-    ref var nv = ref Ꮡnv.DerefOrNull();
-
+internal static @string describeNamedValue(ref driver.NamedValue nv) {
     if (len(nv.Name) == 0) {
         return fmt.Sprintf("$%d"u8, nv.Ordinal);
     }
@@ -212,7 +210,7 @@ nextCheck:
             goto nextCheck;
         }
         else { /* default: */
-            return (default!, fmt.Errorf("sql: converting argument %s type: %w"u8, describeNamedValue(nv), err));
+            return (default!, fmt.Errorf("sql: converting argument %s type: %w"u8, describeNamedValue(ref (nv).DerefOrNull()), err));
         }
 
     }

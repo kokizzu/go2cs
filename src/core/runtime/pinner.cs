@@ -176,7 +176,7 @@ internal static bool setPinned(@unsafe.Pointer ptr, bool pin) {
         }
     }
     unlock(span.of(mspan.Ꮡspeciallock));
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     return true;
 }
 

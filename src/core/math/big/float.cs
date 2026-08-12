@@ -1243,10 +1243,7 @@ public static ж<Float> Neg(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
     return Ꮡz;
 }
 
-internal static void validateBinaryOperands(ж<Float> Ꮡx, ж<Float> Ꮡy) {
-    ref var x = ref Ꮡx.DerefOrNull();
-    ref var y = ref Ꮡy.DerefOrNull();
-
+internal static void validateBinaryOperands(ref Float x, ref Float y) {
     if (!debugFloat) {
         // avoid performance bugs
         throw panic("validateBinaryOperands called but debugFloat is not set");
@@ -1277,7 +1274,7 @@ internal static void uadd(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
     // Point Addition With Exact Rounding (as in the MPFR Library)"
     // http://www.vinc17.net/research/papers/rnc6.pdf
     if (debugFloat) {
-        validateBinaryOperands(Ꮡx, Ꮡy);
+        validateBinaryOperands(ref (Ꮡx).DerefOrNull(), ref (Ꮡy).DerefOrNull());
     }
     // compute exponents ex, ey for mantissa with "binary point"
     // on the right (mantissa.0) - use int64 to avoid overflow
@@ -1331,7 +1328,7 @@ internal static void usub(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
     // eventually uadd (and usub) should be optimized
     // by special-casing, and the code will diverge.
     if (debugFloat) {
-        validateBinaryOperands(Ꮡx, Ꮡy);
+        validateBinaryOperands(ref (Ꮡx).DerefOrNull(), ref (Ꮡy).DerefOrNull());
     }
     var ex = (int64)x.exp - (int64)len(x.mant) * (int64)_W;
     var ey = (int64)y.exp - (int64)len(y.mant) * (int64)_W;
@@ -1384,7 +1381,7 @@ internal static void umul(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
     ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
-        validateBinaryOperands(Ꮡx, Ꮡy);
+        validateBinaryOperands(ref (Ꮡx).DerefOrNull(), ref (Ꮡy).DerefOrNull());
     }
     // Note: This is doing too much work if the precision
     // of z is less than the sum of the precisions of x
@@ -1409,7 +1406,7 @@ internal static void uquo(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy) {
     ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
-        validateBinaryOperands(Ꮡx, Ꮡy);
+        validateBinaryOperands(ref (Ꮡx).DerefOrNull(), ref (Ꮡy).DerefOrNull());
     }
     // mantissa length in words for desired result precision + 1
     // (at least one extra bit so we get the rounding bit after
@@ -1453,7 +1450,7 @@ internal static nint ucmp(this ж<Float> Ꮡx, ж<Float> Ꮡy) {
     ref var y = ref Ꮡy.DerefOrNull();
 
     if (debugFloat) {
-        validateBinaryOperands(Ꮡx, Ꮡy);
+        validateBinaryOperands(ref (Ꮡx).DerefOrNull(), ref (Ꮡy).DerefOrNull());
     }
     switch (ᐧ) {
     case {} when x.exp < y.exp: {

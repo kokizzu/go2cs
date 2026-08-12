@@ -1434,16 +1434,14 @@ public static @string String(this ж<Ident> Ꮡid) {
 //	if err != nil { ... }
 //	gen := ast.IsGenerated(f)
 public static bool IsGenerated(ж<File> Ꮡfile) {
-    var (_, ok) = generator(Ꮡfile);
+    var (_, ok) = generator(ref (Ꮡfile).DerefOrNull());
     return ok;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string doNotEditˢ = " DO NOT EDIT."u8;
 
-internal static (@string, bool) generator(ж<File> Ꮡfile) {
-    ref var @file = ref Ꮡfile.DerefOrNull();
-
+internal static (@string, bool) generator(ref File @file) {
     foreach (var (_, group) in @file.Comments) {
         foreach (var (_, comment) in (~group).List) {
             if (comment.Pos() > @file.Package) {

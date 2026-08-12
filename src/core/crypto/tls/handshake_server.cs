@@ -179,7 +179,7 @@ internal static (ж<clientHelloMsg>, error) readClientHello(this ж<Conn> Ꮡc, 
     ж<Config> configForClient = default!;
     var originalConfig = c.config;
     if ((~c.config).GetConfigForClient != default!) {
-        var chi = clientHelloInfo(ctx, Ꮡc, clientHello);
+        var chi = clientHelloInfo(ctx, ref (Ꮡc).DerefOrNull(), ref (clientHello).DerefOrNull());
         {
             (configForClient, err) = (~c.config).GetConfigForClient(chi); if (err != default!){
                 Ꮡc.sendAlert(alertInternalError);
@@ -263,7 +263,7 @@ internal static readonly @string tlsClientDoesNotSupportˢ = "tls: client does n
     }
     hs.hello.Value.alpnProtocol = selectedProto;
     c.Value.clientProtocol = selectedProto;
-    (hs.cert, err) = (~c).config.getCertificate(clientHelloInfo(hs.ctx, c, hs.clientHello));
+    (hs.cert, err) = (~c).config.getCertificate(clientHelloInfo(hs.ctx, ref (c).DerefOrNull(), ref (hs.clientHello).DerefOrNull()));
     if (err != default!) {
         if (AreEqual(err, errNoCertificates)){
             c.sendAlert(alertUnrecognizedName);
@@ -563,7 +563,7 @@ internal static error doResumeHandshake(this ж<serverHandshakeState> Ꮡhs) {
     // secret and it's potentially encrypted with the same key, to help the
     // client avoid cross-connection tracking from a network observer.
     hs.hello.Value.ticketSupported = true;
-    hs.finishedHash = newFinishedHash((~c).vers, hs.suite);
+    hs.finishedHash = newFinishedHash((~c).vers, ref (hs.suite).DerefOrNull());
     hs.finishedHash.discardHandshakeBuffer();
     {
         var err = transcriptMsg(new clientHelloMsgжhandshakeMessage(hs.clientHello), new ΔfinishedHashжtranscriptHash(Ꮡhs.of(serverHandshakeState.ᏑfinishedHash))); if (err != default!) {
@@ -599,7 +599,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
     }
     hs.hello.Value.ticketSupported = (~hs.clientHello).ticketSupported && !(~(~c).config).SessionTicketsDisabled;
     hs.hello.Value.cipherSuite = hs.suite.Value.id;
-    hs.finishedHash = newFinishedHash((~hs.c).vers, hs.suite);
+    hs.finishedHash = newFinishedHash((~hs.c).vers, ref (hs.suite).DerefOrNull());
     if ((~(~c).config).ClientAuth == NoClientCert) {
         // No need to keep a full record of the handshake if client
         // certificates won't be used.
@@ -734,10 +734,10 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
     }
     if ((~hs.hello).extendedMasterSecret){
         c.Value.extMasterSecret = true;
-        hs.masterSecret = extMasterFromPreMasterSecret((~c).vers, hs.suite, preMasterSecret,
+        hs.masterSecret = extMasterFromPreMasterSecret((~c).vers, ref (hs.suite).DerefOrNull(), preMasterSecret,
             hs.finishedHash.Sum());
     } else {
-        hs.masterSecret = masterFromPreMasterSecret((~c).vers, hs.suite, preMasterSecret,
+        hs.masterSecret = masterFromPreMasterSecret((~c).vers, ref (hs.suite).DerefOrNull(), preMasterSecret,
             (~hs.clientHello).random, (~hs.hello).random);
     }
     {
@@ -802,7 +802,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
 
 [GoRecv] internal static error establishKeys(this ref serverHandshakeState hs) {
     var c = hs.c;
-    var (clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV) = keysFromMasterSecret((~c).vers, hs.suite, hs.masterSecret, (~hs.clientHello).random, (~hs.hello).random, (~hs.suite).macLen, (~hs.suite).keyLen, (~hs.suite).ivLen);
+    var (clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV) = keysFromMasterSecret((~c).vers, ref (hs.suite).DerefOrNull(), hs.masterSecret, (~hs.clientHello).random, (~hs.hello).random, (~hs.suite).macLen, (~hs.suite).keyLen, (~hs.suite).ivLen);
     any clientCipher = default!;
     any serverCipher = default!;
     hash.Hash clientHash = default!;
@@ -1008,10 +1008,7 @@ internal static error processCertsFromClient(this ж<Conn> Ꮡc, Certificate cer
     return default!;
 }
 
-internal static ж<ClientHelloInfo> clientHelloInfo(context.Context ctx, ж<Conn> Ꮡc, ж<clientHelloMsg> ᏑclientHello) {
-    ref var c = ref Ꮡc.DerefOrNull();
-    ref var clientHello = ref ᏑclientHello.DerefOrNull();
-
+internal static ж<ClientHelloInfo> clientHelloInfo(context.Context ctx, ref Conn c, ref clientHelloMsg clientHello) {
     var ΔsupportedVersions = clientHello.supportedVersions;
     if (len(clientHello.supportedVersions) == 0) {
         ΔsupportedVersions = supportedVersionsFromMax(clientHello.vers);

@@ -31,10 +31,7 @@ internal static ref itabTableType itabTableInit => ref ᏑitabTableInit.Value; /
     internal array<ж<itab>> entries = new(itabInitSize); // really [size] large
 }
 
-internal static uintptr itabHashFunc(ж<interfacetype> Ꮡinter, ж<_type> Ꮡtyp) {
-    ref var inter = ref Ꮡinter.DerefOrNull();
-    ref var typ = ref Ꮡtyp.DerefOrNull();
-
+internal static uintptr itabHashFunc(ref abiꓸInterfaceType inter, ref _type typ) {
     // compiler has provided some good hash codes for us.
     return (uintptr)((uint32)(inter.Type.Hash ^ typ.Hash));
 }
@@ -123,7 +120,7 @@ internal static ж<itab> find(this ж<itabTableType> Ꮡt, ж<interfacetype> Ꮡ
     // Probe sequence is h(i) = h0 + i*(i+1)/2 mod 2^k.
     // We're guaranteed to hit all table entries using this probe sequence.
     var mask = t.size - 1;
-    var h = (uintptr)(itabHashFunc(Ꮡinter, Ꮡtyp) & mask);
+    var h = (uintptr)(itabHashFunc(ref (Ꮡinter).DerefOrNull(), ref (Ꮡtyp).DerefOrNull()) & mask);
     for (var i = (uintptr)1; ᐧ ; i++) {
         var Δp = (ж<ж<itab>>)(uintptr)(add(new @unsafe.Pointer(Ꮡt.of(itabTableType.Ꮡentries)), h * (uintptr)goarch.PtrSize));
         // Use atomic read here so if we see m != nil, we also see
@@ -191,7 +188,7 @@ internal static void add(this ж<itabTableType> Ꮡt, ж<itab> Ꮡm) {
     // See comment in find about the probe sequence.
     // Insert new itab in the first empty spot in the probe sequence.
     var mask = t.size - 1;
-    var h = (uintptr)(itabHashFunc(m.Inter, m.Type) & mask);
+    var h = (uintptr)(itabHashFunc(ref (m.Inter).DerefOrNull(), ref (m.Type).DerefOrNull()) & mask);
     for (var i = (uintptr)1; ᐧ ; i++) {
         var Δp = (ж<ж<itab>>)(uintptr)(add(new @unsafe.Pointer(Ꮡt.of(itabTableType.Ꮡentries)), h * (uintptr)goarch.PtrSize));
         var m2 = Δp.ValueSlot;
@@ -282,7 +279,7 @@ break_imethods:;
 }
 
 internal static void itabsinit() {
-    lockInit(ᏑitabLock, lockRankItab);
+    lockInit(ref itabLock, lockRankItab);
     @lock(ᏑitabLock);
     foreach (var (_, md) in activeModules()) {
         foreach (var (_, i) in (~md).itablinks) {
@@ -360,7 +357,7 @@ internal static @unsafe.Pointer convT(ж<_type> Ꮡt, @unsafe.Pointer v) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     if (raceenabled) {
-        raceReadObjectPC(Ꮡt, v, getcallerpc(), abi.FuncPCABIInternal(convT));
+        raceReadObjectPC(ref (Ꮡt).DerefOrNull(), v, getcallerpc(), abi.FuncPCABIInternal(convT));
     }
     if (msanenabled) {
         msanread(v, t.Size_);
@@ -378,7 +375,7 @@ internal static @unsafe.Pointer convTnoptr(ж<_type> Ꮡt, @unsafe.Pointer v) {
 
     // TODO: maybe take size instead of type?
     if (raceenabled) {
-        raceReadObjectPC(Ꮡt, v, getcallerpc(), abi.FuncPCABIInternal(convTnoptr));
+        raceReadObjectPC(ref (Ꮡt).DerefOrNull(), v, getcallerpc(), abi.FuncPCABIInternal(convTnoptr));
     }
     if (msanenabled) {
         msanread(v, t.Size_);
@@ -698,16 +695,12 @@ internal static abi.InterfaceSwitchCache emptyInterfaceSwitchCache = new abi.Int
 // Do not remove or change the type signature.
 //
 //go:linkname reflect_ifaceE2I reflect.ifaceE2I
-internal static void reflect_ifaceE2I(ж<interfacetype> Ꮡinter, eface e, ж<iface> Ꮡdst) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-
+internal static void reflect_ifaceE2I(ж<interfacetype> Ꮡinter, eface e, ref iface dst) {
     dst = new iface(assertE2I(Ꮡinter, e._type), e.data);
 }
 
 //go:linkname reflectlite_ifaceE2I internal/reflectlite.ifaceE2I
-internal static void reflectlite_ifaceE2I(ж<interfacetype> Ꮡinter, eface e, ж<iface> Ꮡdst) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-
+internal static void reflectlite_ifaceE2I(ж<interfacetype> Ꮡinter, eface e, ref iface dst) {
     dst = new iface(assertE2I(Ꮡinter, e._type), e.data);
 }
 

@@ -629,7 +629,7 @@ internal static void enlistWorker(this ж<gcControllerState> Ꮡc) {
         if ((~Δp).status != _Prunning) {
             continue;
         }
-        if (preemptone(Δp)) {
+        if (preemptone(ref (Δp).DerefOrNull())) {
             return;
         }
     }
@@ -1084,7 +1084,7 @@ internal static void commit(this ж<gcControllerState> Ꮡc, bool isSweepDone) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     if (!c.test) {
-        assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));
+        assertWorldStoppedOrLockHeld(ref mheap_.@lock);
     }
     if (isSweepDone){
         // The sweep is done, so there aren't any restrictions on the trigger
@@ -1145,7 +1145,7 @@ internal static int32 setGCPercent(this ж<gcControllerState> Ꮡc, int32 @in) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     if (!c.test) {
-        assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));
+        assertWorldStoppedOrLockHeld(ref mheap_.@lock);
     }
     var @out = Ꮡc.of(gcControllerState.ᏑgcPercent).Load();
     if (@in < 0) {
@@ -1199,7 +1199,7 @@ internal static int64 setMemoryLimit(this ж<gcControllerState> Ꮡc, int64 @in)
     ref var c = ref Ꮡc.DerefOrNull();
 
     if (!c.test) {
-        assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));
+        assertWorldStoppedOrLockHeld(ref mheap_.@lock);
     }
     var @out = Ꮡc.of(gcControllerState.ᏑmemoryLimit).Load();
     if (@in >= 0) {
@@ -1338,7 +1338,7 @@ internal static void setMaxIdleMarkWorkers(this ж<gcControllerState> Ꮡc, int3
 //
 //go:systemstack
 internal static void gcControllerCommit() {
-    assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));
+    assertWorldStoppedOrLockHeld(ref mheap_.@lock);
     ᏑgcController.commit(isSweepDone());
     // Update mark pacing.
     if (gcphase != _GCoff) {

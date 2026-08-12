@@ -461,7 +461,7 @@ But neither is more specific than the other.
 %[1]s matches %[4]q, but %[2]s doesn't.
 %[2]s matches %[5]q, but %[1]s doesn't.
 """u8,
-            Ꮡp1.OrTypedNil(), Ꮡp2.OrTypedNil(), commonPath(Ꮡp1, Ꮡp2), differencePath(Ꮡp1, Ꮡp2), differencePath(Ꮡp2, Ꮡp1));
+            Ꮡp1.OrTypedNil(), Ꮡp2.OrTypedNil(), commonPath(ref (Ꮡp1).DerefOrNull(), ref (Ꮡp2).DerefOrNull()), differencePath(ref (Ꮡp1).DerefOrNull(), ref (Ꮡp2).DerefOrNull()), differencePath(ref (Ꮡp2).DerefOrNull(), ref (Ꮡp1).DerefOrNull()));
     }
     if (mrel == moreGeneral && prel == moreSpecific) {
         return fmt.Sprintf("%s matches more methods than %s, but has a more specific path pattern"u8, Ꮡp1.OrTypedNil(), Ꮡp2.OrTypedNil());
@@ -488,10 +488,7 @@ internal static void writeSegment(ж<strings.Builder> Ꮡb, segment s) {
 
 // commonPath returns a path that both p1 and p2 match.
 // It assumes there is such a path.
-internal static @string commonPath(ж<pattern> Ꮡp1, ж<pattern> Ꮡp2) {
-    ref var p1 = ref Ꮡp1.DerefOrNull();
-    ref var p2 = ref Ꮡp2.DerefOrNull();
-
+internal static @string commonPath(ref pattern p1, ref pattern p2) {
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     slice<segment> segs1 = default!;
     slice<segment> segs2 = default!;
@@ -515,10 +512,7 @@ internal static @string commonPath(ж<pattern> Ꮡp1, ж<pattern> Ꮡp2) {
 
 // differencePath returns a path that p1 matches and p2 doesn't.
 // It assumes there is such a path.
-internal static @string differencePath(ж<pattern> Ꮡp1, ж<pattern> Ꮡp2) {
-    ref var p1 = ref Ꮡp1.DerefOrNull();
-    ref var p2 = ref Ꮡp2.DerefOrNull();
-
+internal static @string differencePath(ref pattern p1, ref pattern p2) {
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     slice<segment> segs1 = default!;
     slice<segment> segs2 = default!;

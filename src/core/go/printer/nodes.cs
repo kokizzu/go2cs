@@ -661,12 +661,11 @@ internal static void fieldList(this ж<printer> Ꮡp, ж<ast.FieldList> Ꮡfield
 
 // ----------------------------------------------------------------------------
 // Expressions
-internal static (bool has4, bool has5, nint maxProblem) walkBinary(ж<ast.BinaryExpr> Ꮡe) {
+internal static (bool has4, bool has5, nint maxProblem) walkBinary(ref ast.BinaryExpr e) {
     bool has4 = default!;
     bool has5 = default!;
     nint maxProblem = default!;
 
-    ref var e = ref Ꮡe.DerefOrNull();
     switch (e.Op.Precedence()) {
     case 4: {
         has4 = true;
@@ -684,7 +683,7 @@ internal static (bool has4, bool has5, nint maxProblem) walkBinary(ж<ast.Binary
             // pretend this is an *ast.ParenExpr and do nothing.
             break;
         }
-        var (h4, h5, mp) = walkBinary(l);
+        var (h4, h5, mp) = walkBinary(ref (l).DerefOrNull());
         has4 = has4 || h4;
         has5 = has5 || h5;
         maxProblem = max(maxProblem, mp);
@@ -697,7 +696,7 @@ internal static (bool has4, bool has5, nint maxProblem) walkBinary(ж<ast.Binary
             // pretend this is an *ast.ParenExpr and do nothing.
             break;
         }
-        var (h4, h5, mp) = walkBinary(r);
+        var (h4, h5, mp) = walkBinary(ref (r).DerefOrNull());
         has4 = has4 || h4;
         has5 = has5 || h5;
         maxProblem = max(maxProblem, mp);
@@ -724,8 +723,8 @@ internal static (bool has4, bool has5, nint maxProblem) walkBinary(ж<ast.Binary
     return (has4, has5, maxProblem);
 }
 
-internal static nint cutoff(ж<ast.BinaryExpr> Ꮡe, nint depth) {
-    var (has4, has5, maxProblem) = walkBinary(Ꮡe);
+internal static nint cutoff(ref ast.BinaryExpr e, nint depth) {
+    var (has4, has5, maxProblem) = walkBinary(ref e);
     if (maxProblem > 0) {
         return maxProblem + 1;
     }
@@ -861,7 +860,7 @@ internal static void expr1(this ж<printer> Ꮡp, ast.Expr expr, nint prec1, nin
             p.internalError(depth1ˢ, depth);
             depth = 1;
         }
-        Ꮡp.binaryExpr(x, prec1, cutoff(x, depth), depth);
+        Ꮡp.binaryExpr(x, prec1, cutoff(ref (x).DerefOrNull(), depth), depth);
         break;
     }
     case ж<ast.KeyValueExpr> x: {

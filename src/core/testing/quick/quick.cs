@@ -323,7 +323,7 @@ public static error Check(any f, ж<Config> Ꮡconfig) {
     var rand = config.getRand();
     nint maxCount = config.getMaxCount();
     for (nint i = 0; i < maxCount; i++) {
-        var err = arbitraryValues(arguments, fType, Ꮡconfig, rand);
+        var err = arbitraryValues(arguments, fType, ref (Ꮡconfig).DerefOrNull(), rand);
         if (err != default!) {
             return err;
         }
@@ -364,7 +364,7 @@ public static error CheckEqual(any f, any g, ж<Config> Ꮡconfig) {
     var rand = config.getRand();
     nint maxCount = config.getMaxCount();
     for (nint i = 0; i < maxCount; i++) {
-        var err = arbitraryValues(arguments, xType, Ꮡconfig, rand);
+        var err = arbitraryValues(arguments, xType, ref (Ꮡconfig).DerefOrNull(), rand);
         if (err != default!) {
             return err;
         }
@@ -379,10 +379,9 @@ public static error CheckEqual(any f, any g, ж<Config> Ꮡconfig) {
 
 // arbitraryValues writes Values to args such that args contains Values
 // suitable for calling f.
-internal static error /*err*/ arbitraryValues(slice<reflectꓸValue> args, reflectꓸType f, ж<Config> Ꮡconfig, ж<rand.Rand> Ꮡrand) {
+internal static error /*err*/ arbitraryValues(slice<reflectꓸValue> args, reflectꓸType f, ref Config config, ж<rand.Rand> Ꮡrand) {
     error err = default!;
 
-    ref var config = ref Ꮡconfig.DerefOrNull();
     if (config.Values != default!) {
         config.Values(args, Ꮡrand);
         return err;

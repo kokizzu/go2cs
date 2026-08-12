@@ -382,7 +382,7 @@ internal static error /*err*/ start(this ж<worker> Ꮡw) {
         }
         var fuzzOutWʗ1 = fuzzOutW;
         defer(() => fuzzOutWʗ1.Close(), ref ᒐ);
-        setWorkerComm(cmd, new workerComm(fuzzIn: fuzzInR, fuzzOut: fuzzOutW, memMu: w.memMu));
+        setWorkerComm(ref (cmd).DerefOrNull(), new workerComm(fuzzIn: fuzzInR, fuzzOut: fuzzOutW, memMu: w.memMu));
         // Start the worker process.
         {
             var errΔ1 = cmd.Start(); if (errΔ1 != default!) {

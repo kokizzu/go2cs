@@ -25,7 +25,9 @@ internal static UntypedInt p224ElementLen => 28;
 
 // One sets e = 1, and returns e.
 public static ж<P224Element> One(this ж<P224Element> Ꮡe) {
-    p224SetOne(Ꮡe.of(P224Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+
+    p224SetOne(ref nonnil(ref e).x);
     return Ꮡe;
 }
 
@@ -61,11 +63,13 @@ public static slice<byte> Bytes(this ж<P224Element> Ꮡe) {
 }
 
 internal static slice<byte> bytes(this ж<P224Element> Ꮡe, ж<array<byte>> Ꮡout) {
+    ref var e = ref Ꮡe.DerefOrNull();
     ref var @out = ref Ꮡout.DerefOrNull();
 
-    ref var tmp = ref heap(new p224NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
-    p224FromMontgomery(Ꮡtmp, Ꮡe.of(P224Element.Ꮡx));
-    p224ToBytes(Ꮡout, Ꮡ((Ꮡtmp).Value.Value));
+    p224NonMontgomeryDomainFieldElement tmp = default!;
+    p224FromMontgomery(ref tmp, ref nonnil(ref e).x);
+    var ᴛ1 = tmp.Value;
+    p224ToBytes(ref (Ꮡout).DerefOrNull(), ref ᴛ1);
     p224InvertEndianness(@out[..]);
     return @out[..];
 }
@@ -77,6 +81,8 @@ private static readonly @string invalidP224Elementˢ = "invalid P224Element enco
 // If v is not 28 bytes or it encodes a value higher than 2^224 - 2^96 + 1,
 // SetBytes returns nil and an error, and e is unchanged.
 public static (ж<P224Element>, error) SetBytes(this ж<P224Element> Ꮡe, slice<byte> v) {
+    ref var e = ref Ꮡe.DerefOrNull();
+
     if (len(v) != p224ElementLen) {
         return (default!, errors.New(invalidP224Elementˢ));
     }
@@ -95,40 +101,65 @@ public static (ж<P224Element>, error) SetBytes(this ж<P224Element> Ꮡe, slice
     ref var @in = ref heap(new array<byte>(28), out var Ꮡin);
     copy(@in[..], v);
     p224InvertEndianness(@in[..]);
-    ref var tmp = ref heap(new p224NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
-    p224FromBytes(Ꮡ((Ꮡtmp).Value.Value), Ꮡin);
-    p224ToMontgomery(Ꮡe.of(P224Element.Ꮡx), Ꮡtmp);
+    p224NonMontgomeryDomainFieldElement tmp = default!;
+    var ᴛ2 = tmp.Value;
+    p224FromBytes(ref ᴛ2, ref @in);
+    p224ToMontgomery(ref nonnil(ref e).x, ref tmp);
     return (Ꮡe, default!);
 }
 
 // Add sets e = t1 + t2, and returns e.
 public static ж<P224Element> Add(this ж<P224Element> Ꮡe, ж<P224Element> Ꮡt1, ж<P224Element> Ꮡt2) {
-    p224Add(Ꮡe.of(P224Element.Ꮡx), Ꮡt1.of(P224Element.Ꮡx), Ꮡt2.of(P224Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p224Add(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Sub sets e = t1 - t2, and returns e.
 public static ж<P224Element> Sub(this ж<P224Element> Ꮡe, ж<P224Element> Ꮡt1, ж<P224Element> Ꮡt2) {
-    p224Sub(Ꮡe.of(P224Element.Ꮡx), Ꮡt1.of(P224Element.Ꮡx), Ꮡt2.of(P224Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p224Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Mul sets e = t1 * t2, and returns e.
 public static ж<P224Element> Mul(this ж<P224Element> Ꮡe, ж<P224Element> Ꮡt1, ж<P224Element> Ꮡt2) {
-    p224Mul(Ꮡe.of(P224Element.Ꮡx), Ꮡt1.of(P224Element.Ꮡx), Ꮡt2.of(P224Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p224Mul(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Square sets e = t * t, and returns e.
 public static ж<P224Element> Square(this ж<P224Element> Ꮡe, ж<P224Element> Ꮡt) {
-    p224Square(Ꮡe.of(P224Element.Ꮡx), Ꮡt.of(P224Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    p224Square(ref nonnil(ref e).x, ref nonnil(ref t).x);
     return Ꮡe;
 }
 
 // Select sets v to a if cond == 1, and to b if cond == 0.
 public static ж<P224Element> Select(this ж<P224Element> Ꮡv, ж<P224Element> Ꮡa, ж<P224Element> Ꮡb, nint cond) {
-    p224Selectznz(Ꮡ((Ꮡv.of(P224Element.Ꮡx)).Value.Value), ((p224Uint1)(uint64)cond),
-        Ꮡ((Ꮡb.of(P224Element.Ꮡx)).Value.Value), Ꮡ((Ꮡa.of(P224Element.Ꮡx)).Value.Value));
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var ᴛ3 = nonnil(ref v).x.Value;
+
+    var ᴛ4 = nonnil(ref b).x.Value;
+
+    var ᴛ5 = nonnil(ref a).x.Value;
+    p224Selectznz(ref ᴛ3, ((p224Uint1)(uint64)cond),
+        ref ᴛ4, ref ᴛ5);
     return Ꮡv;
 }
 

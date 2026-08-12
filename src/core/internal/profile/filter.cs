@@ -17,7 +17,7 @@ partial class profile_package {
 
     var samples = new slice<ж<Sample>>(0, len(p.Sample));
     foreach (var (_, s) in p.Sample) {
-        var (focused, ignored) = focusedSample(s, focus, ignore);
+        var (focused, ignored) = focusedSample(ref (s).DerefOrNull(), focus, ignore);
         fm = fm || focused;
         im = im || ignored;
         if (focused && !ignored) {
@@ -30,11 +30,10 @@ partial class profile_package {
 
 // focusedSample checks a sample against focus and ignore regexps.
 // Returns whether the focus/ignore regexps match any tags.
-internal static (bool fm, bool im) focusedSample(ж<Sample> Ꮡs, Func<@string, @string, int64, bool> focus, Func<@string, @string, int64, bool> ignore) {
+internal static (bool fm, bool im) focusedSample(ref Sample s, Func<@string, @string, int64, bool> focus, Func<@string, @string, int64, bool> ignore) {
     bool fm = default!;
     bool im = default!;
 
-    ref var s = ref Ꮡs.DerefOrNull();
     fm = focus == default!;
     foreach (var (key, vals) in s.Label) {
         foreach (var (_, val) in vals) {

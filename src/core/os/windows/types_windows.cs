@@ -80,9 +80,7 @@ internal static (ж<fileStat> fs, error err) newFileStatFromGetFileInformationBy
 
 // newFileStatFromWin32FileAttributeData copies all required information
 // from syscall.Win32FileAttributeData d into the newly created fileStat.
-internal static ж<fileStat> newFileStatFromWin32FileAttributeData(ж<syscall.Win32FileAttributeData> Ꮡd) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static ж<fileStat> newFileStatFromWin32FileAttributeData(ref syscall.Win32FileAttributeData d) {
     return Ꮡ(new fileStat(
         FileAttributes: d.FileAttributes,
         CreationTime: d.CreationTime,
@@ -133,9 +131,7 @@ internal static ж<fileStat> newFileStatFromFileFullDirInfo(ж<windows.FILE_FULL
 
 // newFileStatFromWin32finddata copies all required information
 // from syscall.Win32finddata d into the newly created fileStat.
-internal static ж<fileStat> newFileStatFromWin32finddata(ж<syscall.Win32finddata> Ꮡd) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static ж<fileStat> newFileStatFromWin32finddata(ref syscall.Win32finddata d) {
     var fs = Ꮡ(new fileStat(
         FileAttributes: d.FileAttributes,
         CreationTime: d.CreationTime,

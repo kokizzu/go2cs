@@ -807,11 +807,10 @@ internal static void traceback1(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp,
         // We just have to stop a signal handler from interrupting
         // in the middle of our copy.
         gp.m.of(m.ᏑcgoCallersUse).Store(1);
-        ref var ΔcgoCallers = ref heap<ΔcgoCallers>(out var ᏑcgoCallers);
-        ΔcgoCallers = (~gp.m).cgoCallers.Value.Clone();
+        var ΔcgoCallers = (~gp.m).cgoCallers.Value.Clone();
         gp.m.Value.cgoCallers.Value[0] = 0;
         gp.m.of(m.ᏑcgoCallersUse).Store(0);
-        printCgoTraceback(ᏑcgoCallers);
+        printCgoTraceback(ref ΔcgoCallers);
     }
     if ((uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan) == _Gsyscall) {
         // Override registers if blocked in system call.
@@ -1214,7 +1213,7 @@ internal static void tracebackothers(ж<g> Ꮡme) {
     // miss Gs created after this loop.
     var curgpʗ1 = curgp;
     forEachGRace((ж<g> gp) => {
-        if (gp == Ꮡme || gp == curgpʗ1 || readgstatus(gp) == _Gdead || isSystemGoroutine(gp, false) && level < 2) {
+        if (gp == Ꮡme || gp == curgpʗ1 || readgstatus(gp) == _Gdead || isSystemGoroutine(ref (gp).DerefOrNull(), false) && level < 2) {
             return;
         }
         print((@string)"\n"u8);
@@ -1291,9 +1290,7 @@ internal static void tracebackHexdump(Δstack stk, ж<stkframe> Ꮡframe, uintpt
 // If fixed is true, any goroutine that can vary between user and
 // system (that is, the finalizer goroutine) is considered a user
 // goroutine.
-internal static bool isSystemGoroutine(ж<g> Ꮡgp, bool @fixed) {
-    ref var gp = ref Ꮡgp.DerefOrNull();
-
+internal static bool isSystemGoroutine(ref g gp, bool @fixed) {
     // Keep this in sync with internal/trace.IsSystemGoroutine.
     var f = findfunc(gp.startpc);
     if (!f.valid()) {
@@ -1524,9 +1521,7 @@ internal static @unsafe.Pointer cgoSymbolizer;
 }
 
 // printCgoTraceback prints a traceback of callers.
-internal static void printCgoTraceback(ж<ΔcgoCallers> Ꮡcallers) {
-    ref var callers = ref Ꮡcallers.DerefOrNull();
-
+internal static void printCgoTraceback(ref ΔcgoCallers callers) {
     if (cgoSymbolizer == nil) {
         foreach (var (_, c) in callers) {
             if (c == 0) {

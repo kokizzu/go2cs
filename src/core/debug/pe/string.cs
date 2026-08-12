@@ -25,9 +25,7 @@ internal static @string cstring(slice<byte> b) {
 
 [GoType("[]byte")] partial struct StringTable;
 
-internal static (StringTable, error) readStringTable(ж<FileHeader> Ꮡfh, io.ReadSeeker r) {
-    ref var fh = ref Ꮡfh.DerefOrNull();
-
+internal static (StringTable, error) readStringTable(ref FileHeader fh, io.ReadSeeker r) {
     // COFF string table is located right after COFF symbol table.
     if (fh.PointerToSymbolTable <= 0) {
         return (default!, default!);

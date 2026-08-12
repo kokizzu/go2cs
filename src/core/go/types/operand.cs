@@ -116,9 +116,7 @@ internal static readonly @string withInvalidTypeˢ = " with invalid type"u8;
 //
 // cgofunc    <expr> (<untyped kind> <mode>                    )
 // cgofunc    <expr> (               <mode>       of type <typ>)
-internal static @string operandString(ж<operand> Ꮡx, Func<ж<Package>, @string> qf) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
+internal static @string operandString(ref operand x, Func<ж<Package>, @string> qf) {
     // special-case nil
     if (isTypes2){
         if (x.mode == nilvalue) {
@@ -226,7 +224,7 @@ internal static @string operandString(ж<operand> Ꮡx, Func<ж<Package>, @strin
 }
 
 internal static @string String(this ж<operand> Ꮡx) {
-    return operandString(Ꮡx, default!);
+    return operandString(ref (Ꮡx).DerefOrNull(), default!);
 }
 
 // setConst sets x to the untyped constant for literal lit.

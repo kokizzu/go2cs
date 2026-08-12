@@ -337,9 +337,7 @@ internal static readonly @string mappedReadyAndOtherˢ = "mappedReady and other 
 // readmemstats_m populates stats for internal runtime values.
 //
 // The world must be stopped.
-internal static void readmemstats_m(ж<MemStats> Ꮡstats) {
-    ref var stats = ref Ꮡstats.DerefOrNull();
-
+internal static void readmemstats_m(ref MemStats stats) {
     assertWorldStopped();
     // Flush mcaches to mcentral before doing anything else.
     //
@@ -511,7 +509,7 @@ internal static void readmemstats_m(ж<MemStats> Ꮡstats) {
 //go:linkname readGCStats runtime/debug.readGCStats
 internal static void readGCStats(ж<slice<uint64>> Ꮡpauses) {
     systemstack(() => {
-        readGCStats_m(Ꮡpauses);
+        readGCStats_m(ref (Ꮡpauses).DerefOrNull());
     });
 }
 
@@ -522,9 +520,7 @@ internal static readonly @string shortSlicePassedToˢ = "short slice passed to r
 // lock. See mheap for details.
 //
 //go:systemstack
-internal static void readGCStats_m(ж<slice<uint64>> Ꮡpauses) {
-    ref var pauses = ref Ꮡpauses.DerefOrNull();
-
+internal static void readGCStats_m(ref slice<uint64> pauses) {
     var Δp = pauses;
     // Calling code in runtime/debug should make the slice large enough.
     if (cap(Δp) < len(memstats.pause_ns) + 3) {
@@ -566,7 +562,7 @@ internal static void flushmcache(nint i) {
         return;
     }
     c.releaseAll();
-    stackcache_clear(c);
+    stackcache_clear(ref (c).DerefOrNull());
 }
 
 // flushallmcaches flushes the mcaches of all Ps.
@@ -845,7 +841,7 @@ internal static void read(this ж<consistentHeapStats> Ꮡm, ж<heapStatsDelta> 
     m.stats[(nint)(prevGen)] = new heapStatsDelta(nil);
     // Finally, copy out the complete delta.
     @out = m.stats[(nint)(currGen)].ΔClone();
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
 }
 
 [GoType] partial struct cpuStats {

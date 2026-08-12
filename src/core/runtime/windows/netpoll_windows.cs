@@ -68,9 +68,7 @@ internal static uint8 unpackNetpollSource(uintptr key) {
 // pollOperationFromOverlappedEntry returns the pollOperation contained in
 // e. It can return nil if the entry is not from internal/poll.
 // See go.dev/issue/58870
-internal static ж<pollOperation> pollOperationFromOverlappedEntry(ж<overlappedEntry> Ꮡe) {
-    ref var e = ref Ꮡe.DerefOrNull();
-
+internal static ж<pollOperation> pollOperationFromOverlappedEntry(ref overlappedEntry e) {
     if (e.ov == nil) {
         return default!;
     }
@@ -132,7 +130,7 @@ internal static int32 netpollclose(uintptr fd) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeUnusedˢ = "runtime: unused"u8;
 
-internal static void netpollarm(ж<pollDesc> Ꮡpd, nint mode) {
+internal static void netpollarm(ref pollDesc pd, nint mode) {
     @throw(runtimeUnusedˢ);
 }
 
@@ -220,7 +218,7 @@ internal static (gList, int32) netpoll(int64 delay) {
         var e = Ꮡentries.at<overlappedEntry>(i);
         var exprᴛ1 = unpackNetpollSource((~e).key);
         if (exprᴛ1 == netpollSourceReady) {
-            var op = pollOperationFromOverlappedEntry(e);
+            var op = pollOperationFromOverlappedEntry(ref (e).DerefOrNull());
             if (op == nil) {
                 // Entry from outside the Go runtime and internal/poll, ignore.
                 continue;

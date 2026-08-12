@@ -65,9 +65,7 @@ partial class fiat_package {
 // Output Bounds:
 //
 //	out1: [0x0 ~> 0xffffffffffffffff]
-internal static void p224CmovznzU64(ж<uint64> Ꮡout1, p224Uint1 arg1, uint64 arg2, uint64 arg3) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-
+internal static void p224CmovznzU64(ref uint64 out1, p224Uint1 arg1, uint64 arg2, uint64 arg3) {
     var x1 = ((uint64)arg1 * 0xffffffffffffffffUL);
     var x2 = ((uint64)(((uint64)(x1 & arg3)) | ((uint64)((~x1) & arg2))));
     out1 = x2;
@@ -84,11 +82,7 @@ internal static void p224CmovznzU64(ж<uint64> Ꮡout1, p224Uint1 arg1, uint64 a
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void p224Mul(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p224MontgomeryDomainFieldElement> Ꮡarg1, ж<p224MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void p224Mul(ref p224MontgomeryDomainFieldElement out1, ref p224MontgomeryDomainFieldElement arg1, ref p224MontgomeryDomainFieldElement arg2) {
     var x1 = arg1[1];
     var x2 = arg1[2];
     var x3 = arg1[3];
@@ -371,14 +365,14 @@ internal static void p224Mul(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p2
     (x196, x197) = bits.Sub64(x187, 0xffffffffU, (uint64)((p224Uint1)x195));
     uint64 x199 = default!;
     (_, x199) = bits.Sub64(x189, (uint64)0x0, (uint64)((p224Uint1)x197));
-    ref var x200 = ref heap(new uint64(), out var Ꮡx200);
-    p224CmovznzU64(Ꮡx200, ((p224Uint1)x199), x190, x181);
-    ref var x201 = ref heap(new uint64(), out var Ꮡx201);
-    p224CmovznzU64(Ꮡx201, ((p224Uint1)x199), x192, x183);
-    ref var x202 = ref heap(new uint64(), out var Ꮡx202);
-    p224CmovznzU64(Ꮡx202, ((p224Uint1)x199), x194, x185);
-    ref var x203 = ref heap(new uint64(), out var Ꮡx203);
-    p224CmovznzU64(Ꮡx203, ((p224Uint1)x199), x196, x187);
+    uint64 x200 = default!;
+    p224CmovznzU64(ref x200, ((p224Uint1)x199), x190, x181);
+    uint64 x201 = default!;
+    p224CmovznzU64(ref x201, ((p224Uint1)x199), x192, x183);
+    uint64 x202 = default!;
+    p224CmovznzU64(ref x202, ((p224Uint1)x199), x194, x185);
+    uint64 x203 = default!;
+    p224CmovznzU64(ref x203, ((p224Uint1)x199), x196, x187);
     out1[0] = x200;
     out1[1] = x201;
     out1[2] = x202;
@@ -395,10 +389,7 @@ internal static void p224Mul(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p2
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) * eval (from_montgomery arg1)) mod m
 //	0 ≤ eval out1 < m
-internal static void p224Square(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p224MontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p224Square(ref p224MontgomeryDomainFieldElement out1, ref p224MontgomeryDomainFieldElement arg1) {
     var x1 = arg1[1];
     var x2 = arg1[2];
     var x3 = arg1[3];
@@ -681,14 +672,14 @@ internal static void p224Square(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж
     (x196, x197) = bits.Sub64(x187, 0xffffffffU, (uint64)((p224Uint1)x195));
     uint64 x199 = default!;
     (_, x199) = bits.Sub64(x189, (uint64)0x0, (uint64)((p224Uint1)x197));
-    ref var x200 = ref heap(new uint64(), out var Ꮡx200);
-    p224CmovznzU64(Ꮡx200, ((p224Uint1)x199), x190, x181);
-    ref var x201 = ref heap(new uint64(), out var Ꮡx201);
-    p224CmovznzU64(Ꮡx201, ((p224Uint1)x199), x192, x183);
-    ref var x202 = ref heap(new uint64(), out var Ꮡx202);
-    p224CmovznzU64(Ꮡx202, ((p224Uint1)x199), x194, x185);
-    ref var x203 = ref heap(new uint64(), out var Ꮡx203);
-    p224CmovznzU64(Ꮡx203, ((p224Uint1)x199), x196, x187);
+    uint64 x200 = default!;
+    p224CmovznzU64(ref x200, ((p224Uint1)x199), x190, x181);
+    uint64 x201 = default!;
+    p224CmovznzU64(ref x201, ((p224Uint1)x199), x192, x183);
+    uint64 x202 = default!;
+    p224CmovznzU64(ref x202, ((p224Uint1)x199), x194, x185);
+    uint64 x203 = default!;
+    p224CmovznzU64(ref x203, ((p224Uint1)x199), x196, x187);
     out1[0] = x200;
     out1[1] = x201;
     out1[2] = x202;
@@ -706,11 +697,7 @@ internal static void p224Square(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) + eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void p224Add(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p224MontgomeryDomainFieldElement> Ꮡarg1, ж<p224MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void p224Add(ref p224MontgomeryDomainFieldElement out1, ref p224MontgomeryDomainFieldElement arg1, ref p224MontgomeryDomainFieldElement arg2) {
     uint64 x1 = default!;
     uint64 x2 = default!;
     (x1, x2) = bits.Add64(arg1[0], arg2[0], (uint64)0x0);
@@ -737,14 +724,14 @@ internal static void p224Add(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p2
     (x15, x16) = bits.Sub64(x7, 0xffffffffU, (uint64)((p224Uint1)x14));
     uint64 x18 = default!;
     (_, x18) = bits.Sub64((uint64)((p224Uint1)x8), (uint64)0x0, (uint64)((p224Uint1)x16));
-    ref var x19 = ref heap(new uint64(), out var Ꮡx19);
-    p224CmovznzU64(Ꮡx19, ((p224Uint1)x18), x9, x1);
-    ref var x20 = ref heap(new uint64(), out var Ꮡx20);
-    p224CmovznzU64(Ꮡx20, ((p224Uint1)x18), x11, x3);
-    ref var x21 = ref heap(new uint64(), out var Ꮡx21);
-    p224CmovznzU64(Ꮡx21, ((p224Uint1)x18), x13, x5);
-    ref var x22 = ref heap(new uint64(), out var Ꮡx22);
-    p224CmovznzU64(Ꮡx22, ((p224Uint1)x18), x15, x7);
+    uint64 x19 = default!;
+    p224CmovznzU64(ref x19, ((p224Uint1)x18), x9, x1);
+    uint64 x20 = default!;
+    p224CmovznzU64(ref x20, ((p224Uint1)x18), x11, x3);
+    uint64 x21 = default!;
+    p224CmovznzU64(ref x21, ((p224Uint1)x18), x13, x5);
+    uint64 x22 = default!;
+    p224CmovznzU64(ref x22, ((p224Uint1)x18), x15, x7);
     out1[0] = x19;
     out1[1] = x20;
     out1[2] = x21;
@@ -762,11 +749,7 @@ internal static void p224Add(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p2
 //
 //	eval (from_montgomery out1) mod m = (eval (from_montgomery arg1) - eval (from_montgomery arg2)) mod m
 //	0 ≤ eval out1 < m
-internal static void p224Sub(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p224MontgomeryDomainFieldElement> Ꮡarg1, ж<p224MontgomeryDomainFieldElement> Ꮡarg2) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-
+internal static void p224Sub(ref p224MontgomeryDomainFieldElement out1, ref p224MontgomeryDomainFieldElement arg1, ref p224MontgomeryDomainFieldElement arg2) {
     uint64 x1 = default!;
     uint64 x2 = default!;
     (x1, x2) = bits.Sub64(arg1[0], arg2[0], (uint64)0x0);
@@ -779,8 +762,8 @@ internal static void p224Sub(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p2
     uint64 x7 = default!;
     uint64 x8 = default!;
     (x7, x8) = bits.Sub64(arg1[3], arg2[3], (uint64)((p224Uint1)x6));
-    ref var x9 = ref heap(new uint64(), out var Ꮡx9);
-    p224CmovznzU64(Ꮡx9, ((p224Uint1)x8), (uint64)0x0, 0xffffffffffffffffUL);
+    uint64 x9 = default!;
+    p224CmovznzU64(ref x9, ((p224Uint1)x8), (uint64)0x0, 0xffffffffffffffffUL);
     uint64 x10 = default!;
     uint64 x11 = default!;
     (x10, x11) = bits.Add64(x1, (uint64)((p224Uint1)(((p224Uint1)x9) & 0x1)), (uint64)0x0);
@@ -804,9 +787,7 @@ internal static void p224Sub(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p2
 //
 //	eval (from_montgomery out1) mod m = 1 mod m
 //	0 ≤ eval out1 < m
-internal static void p224SetOne(ж<p224MontgomeryDomainFieldElement> Ꮡout1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-
+internal static void p224SetOne(ref p224MontgomeryDomainFieldElement out1) {
     out1[0] = 0xffffffff00000000UL;
     out1[1] = 0xffffffffffffffffUL;
     out1[2] = (uint64)0x0;
@@ -823,10 +804,7 @@ internal static void p224SetOne(ж<p224MontgomeryDomainFieldElement> Ꮡout1) {
 //
 //	eval out1 mod m = (eval arg1 * ((2^64)⁻¹ mod m)^4) mod m
 //	0 ≤ eval out1 < m
-internal static void p224FromMontgomery(ж<p224NonMontgomeryDomainFieldElement> Ꮡout1, ж<p224MontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p224FromMontgomery(ref p224NonMontgomeryDomainFieldElement out1, ref p224MontgomeryDomainFieldElement arg1) {
     var x1 = arg1[0];
     uint64 x2 = default!;
     (_, x2) = bits.Mul64(x1, 0xffffffffffffffffUL);
@@ -982,14 +960,14 @@ internal static void p224FromMontgomery(ж<p224NonMontgomeryDomainFieldElement> 
     (x107, x108) = bits.Sub64(x100, 0xffffffffU, (uint64)((p224Uint1)x106));
     uint64 x110 = default!;
     (_, x110) = bits.Sub64((uint64)0x0, (uint64)0x0, (uint64)((p224Uint1)x108));
-    ref var x111 = ref heap(new uint64(), out var Ꮡx111);
-    p224CmovznzU64(Ꮡx111, ((p224Uint1)x110), x101, x94);
-    ref var x112 = ref heap(new uint64(), out var Ꮡx112);
-    p224CmovznzU64(Ꮡx112, ((p224Uint1)x110), x103, x96);
-    ref var x113 = ref heap(new uint64(), out var Ꮡx113);
-    p224CmovznzU64(Ꮡx113, ((p224Uint1)x110), x105, x98);
-    ref var x114 = ref heap(new uint64(), out var Ꮡx114);
-    p224CmovznzU64(Ꮡx114, ((p224Uint1)x110), x107, x100);
+    uint64 x111 = default!;
+    p224CmovznzU64(ref x111, ((p224Uint1)x110), x101, x94);
+    uint64 x112 = default!;
+    p224CmovznzU64(ref x112, ((p224Uint1)x110), x103, x96);
+    uint64 x113 = default!;
+    p224CmovznzU64(ref x113, ((p224Uint1)x110), x105, x98);
+    uint64 x114 = default!;
+    p224CmovznzU64(ref x114, ((p224Uint1)x110), x107, x100);
     out1[0] = x111;
     out1[1] = x112;
     out1[2] = x113;
@@ -1006,10 +984,7 @@ internal static void p224FromMontgomery(ж<p224NonMontgomeryDomainFieldElement> 
 //
 //	eval (from_montgomery out1) mod m = eval arg1 mod m
 //	0 ≤ eval out1 < m
-internal static void p224ToMontgomery(ж<p224MontgomeryDomainFieldElement> Ꮡout1, ж<p224NonMontgomeryDomainFieldElement> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p224ToMontgomery(ref p224MontgomeryDomainFieldElement out1, ref p224NonMontgomeryDomainFieldElement arg1) {
     var x1 = arg1[1];
     var x2 = arg1[2];
     var x3 = arg1[3];
@@ -1261,14 +1236,14 @@ internal static void p224ToMontgomery(ж<p224MontgomeryDomainFieldElement> Ꮡou
     (x172, x173) = bits.Sub64(x165, 0xffffffffU, (uint64)((p224Uint1)x171));
     uint64 x175 = default!;
     (_, x175) = bits.Sub64((uint64)0x0, (uint64)0x0, (uint64)((p224Uint1)x173));
-    ref var x176 = ref heap(new uint64(), out var Ꮡx176);
-    p224CmovznzU64(Ꮡx176, ((p224Uint1)x175), x166, x159);
-    ref var x177 = ref heap(new uint64(), out var Ꮡx177);
-    p224CmovznzU64(Ꮡx177, ((p224Uint1)x175), x168, x161);
-    ref var x178 = ref heap(new uint64(), out var Ꮡx178);
-    p224CmovznzU64(Ꮡx178, ((p224Uint1)x175), x170, x163);
-    ref var x179 = ref heap(new uint64(), out var Ꮡx179);
-    p224CmovznzU64(Ꮡx179, ((p224Uint1)x175), x172, x165);
+    uint64 x176 = default!;
+    p224CmovznzU64(ref x176, ((p224Uint1)x175), x166, x159);
+    uint64 x177 = default!;
+    p224CmovznzU64(ref x177, ((p224Uint1)x175), x168, x161);
+    uint64 x178 = default!;
+    p224CmovznzU64(ref x178, ((p224Uint1)x175), x170, x163);
+    uint64 x179 = default!;
+    p224CmovznzU64(ref x179, ((p224Uint1)x175), x172, x165);
     out1[0] = x176;
     out1[1] = x177;
     out1[2] = x178;
@@ -1290,19 +1265,15 @@ internal static void p224ToMontgomery(ж<p224MontgomeryDomainFieldElement> Ꮡou
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
-internal static void p224Selectznz(ж<array<uint64>> Ꮡout1, p224Uint1 arg1, ж<array<uint64>> Ꮡarg2, ж<array<uint64>> Ꮡarg3) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg2 = ref Ꮡarg2.DerefOrNull();
-    ref var arg3 = ref Ꮡarg3.DerefOrNull();
-
-    ref var x1 = ref heap(new uint64(), out var Ꮡx1);
-    p224CmovznzU64(Ꮡx1, arg1, arg2[0], arg3[0]);
-    ref var x2 = ref heap(new uint64(), out var Ꮡx2);
-    p224CmovznzU64(Ꮡx2, arg1, arg2[1], arg3[1]);
-    ref var x3 = ref heap(new uint64(), out var Ꮡx3);
-    p224CmovznzU64(Ꮡx3, arg1, arg2[2], arg3[2]);
-    ref var x4 = ref heap(new uint64(), out var Ꮡx4);
-    p224CmovznzU64(Ꮡx4, arg1, arg2[3], arg3[3]);
+internal static void p224Selectznz(ref array<uint64> out1, p224Uint1 arg1, ref array<uint64> arg2, ref array<uint64> arg3) {
+    uint64 x1 = default!;
+    p224CmovznzU64(ref x1, arg1, arg2[0], arg3[0]);
+    uint64 x2 = default!;
+    p224CmovznzU64(ref x2, arg1, arg2[1], arg3[1]);
+    uint64 x3 = default!;
+    p224CmovznzU64(ref x3, arg1, arg2[2], arg3[2]);
+    uint64 x4 = default!;
+    p224CmovznzU64(ref x4, arg1, arg2[3], arg3[3]);
     out1[0] = x1;
     out1[1] = x2;
     out1[2] = x3;
@@ -1326,10 +1297,7 @@ internal static void p224Selectznz(ж<array<uint64>> Ꮡout1, p224Uint1 arg1, ж
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff]]
-internal static void p224ToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p224ToBytes(ref array<uint8> out1, ref array<uint64> arg1) {
     var x1 = arg1[3];
     var x2 = arg1[2];
     var x3 = arg1[1];
@@ -1430,10 +1398,7 @@ internal static void p224ToBytes(ж<array<uint8>> Ꮡout1, ж<array<uint64>> Ꮡ
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffff]]
-internal static void p224FromBytes(ж<array<uint64>> Ꮡout1, ж<array<uint8>> Ꮡarg1) {
-    ref var out1 = ref Ꮡout1.DerefOrNull();
-    ref var arg1 = ref Ꮡarg1.DerefOrNull();
-
+internal static void p224FromBytes(ref array<uint64> out1, ref array<uint8> arg1) {
     var x1 = (((uint64)arg1[27] << (int)(24)));
     var x2 = (((uint64)arg1[26] << (int)(16)));
     var x3 = (((uint64)arg1[25] << (int)(8)));

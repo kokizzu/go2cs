@@ -1032,19 +1032,17 @@ internal static readonly @string httpSuspiciouslyLongˢ = "http: suspiciously lo
     }
     switch (b.hdr.type()) {
     case ж<Request> rr: {
-        mergeSetHeader(rr.of(Request.ᏑTrailer), ((ΔHeader)(map<@string, slice<@string>>)hdr));
+        mergeSetHeader(ref (rr.of(Request.ᏑTrailer)).DerefOrNull(), ((ΔHeader)(map<@string, slice<@string>>)hdr));
         break;
     }
     case ж<Response> rr: {
-        mergeSetHeader(rr.of(Response.ᏑTrailer), ((ΔHeader)(map<@string, slice<@string>>)hdr));
+        mergeSetHeader(ref (rr.of(Response.ᏑTrailer)).DerefOrNull(), ((ΔHeader)(map<@string, slice<@string>>)hdr));
         break;
     }}
     return default!;
 }
 
-internal static void mergeSetHeader(ж<ΔHeader> Ꮡdst, ΔHeader src) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-
+internal static void mergeSetHeader(ref ΔHeader dst, ΔHeader src) {
     if (dst == default!) {
         dst = src;
         return;

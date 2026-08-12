@@ -11,7 +11,7 @@ internal const bool canCreateFile = false;
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string unimplementedˢ = "unimplemented"u8;
 
-internal static int32 create(ж<byte> Ꮡname, int32 perm) {
+internal static int32 create(ref byte name, int32 perm) {
     @throw(unimplementedˢ);
     return -1;
 }

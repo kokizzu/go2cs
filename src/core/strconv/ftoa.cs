@@ -116,15 +116,15 @@ internal static slice<byte> genericFtoa(slice<byte> dst, float64 val, byte fmt, 
     exp += flt.Value.bias;
     // Pick off easy binary, hex formats.
     if (fmt == (rune)'b') {
-        return fmtB(dst, neg, mant, exp, flt);
+        return fmtB(dst, neg, mant, exp, ref (flt).DerefOrNull());
     }
     if (fmt == (rune)'x' || fmt == (rune)'X') {
-        return fmtX(dst, prec, fmt, neg, mant, exp, flt);
+        return fmtX(dst, prec, fmt, neg, mant, exp, ref (flt).DerefOrNull());
     }
     if (!optimize) {
-        return bigFtoa(dst, prec, fmt, neg, mant, exp, flt);
+        return bigFtoa(dst, prec, fmt, neg, mant, exp, ref (flt).DerefOrNull());
     }
-    ref var digs = ref heap(new decimalSlice(), out var Ꮡdigs);
+    decimalSlice digs = default!;
     var ok = false;
     // Negative precision means "only as much as needed to be exact."
     var shortest = prec < 0;
@@ -132,7 +132,7 @@ internal static slice<byte> genericFtoa(slice<byte> dst, float64 val, byte fmt, 
         // Use Ryu algorithm.
         array<byte> buf = new(32);
         digs.d = buf[..];
-        ryuFtoaShortest(Ꮡdigs, mant, exp - (nint)(~flt).mantbits, flt);
+        ryuFtoaShortest(ref digs, mant, exp - (nint)(~flt).mantbits, flt);
         ok = true;
         // Precision for shortest representation mode.
         switch (fmt) {
@@ -174,32 +174,30 @@ internal static slice<byte> genericFtoa(slice<byte> dst, float64 val, byte fmt, 
         array<byte> buf = new(24);
         if (bitSize == 32 && digits <= 9){
             digs.d = buf[..];
-            ryuFtoaFixed32(Ꮡdigs, (uint32)mant, exp - (nint)(~flt).mantbits, digits);
+            ryuFtoaFixed32(ref digs, (uint32)mant, exp - (nint)(~flt).mantbits, digits);
             ok = true;
         } else 
         if (digits <= 18) {
             digs.d = buf[..];
-            ryuFtoaFixed64(Ꮡdigs, mant, exp - (nint)(~flt).mantbits, digits);
+            ryuFtoaFixed64(ref digs, mant, exp - (nint)(~flt).mantbits, digits);
             ok = true;
         }
     }
     if (!ok) {
-        return bigFtoa(dst, prec, fmt, neg, mant, exp, flt);
+        return bigFtoa(dst, prec, fmt, neg, mant, exp, ref (flt).DerefOrNull());
     }
     return formatDigits(dst, shortest, neg, digs, prec, fmt);
 }
 
 // bigFtoa uses multiprecision computations to format a float.
-internal static slice<byte> bigFtoa(slice<byte> dst, nint prec, byte fmt, bool neg, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
-    ref var flt = ref Ꮡflt.DerefOrNull();
-
+internal static slice<byte> bigFtoa(slice<byte> dst, nint prec, byte fmt, bool neg, uint64 mant, nint exp, ref floatInfo flt) {
     var d = @new<@decimal>();
     d.Assign(mant);
     d.Shift(exp - (nint)flt.mantbits);
     decimalSlice digs = default!;
     var shortest = prec < 0;
     if (shortest){
-        roundShortest(d, mant, exp, Ꮡflt);
+        roundShortest(d, mant, exp, ref flt);
         digs = new decimalSlice(d: (~d).d[..], nd: (~d).nd, dp: (~d).dp);
         // Precision for shortest representation mode.
         switch (fmt) {
@@ -279,9 +277,8 @@ internal static slice<byte> formatDigits(slice<byte> dst, bool shortest, bool ne
 
 // roundShortest rounds d (= mant * 2^exp) to the shortest number of digits
 // that will let the original floating point value be precisely reconstructed.
-internal static void roundShortest(ж<@decimal> Ꮡd, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
+internal static void roundShortest(ж<@decimal> Ꮡd, uint64 mant, nint exp, ref floatInfo flt) {
     ref var d = ref Ꮡd.DerefOrNull();
-    ref var flt = ref Ꮡflt.DerefOrNull();
 
     // If mantissa is zero, the number is zero; stop now.
     if (mant == 0) {
@@ -513,9 +510,7 @@ internal static slice<byte> fmtF(slice<byte> dst, bool neg, decimalSlice d, nint
 }
 
 // %b: -ddddddddp±ddd
-internal static slice<byte> fmtB(slice<byte> dst, bool neg, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
-    ref var flt = ref Ꮡflt.DerefOrNull();
-
+internal static slice<byte> fmtB(slice<byte> dst, bool neg, uint64 mant, nint exp, ref floatInfo flt) {
     // sign
     if (neg) {
         dst = append(dst, (byte)((rune)'-'));
@@ -534,9 +529,7 @@ internal static slice<byte> fmtB(slice<byte> dst, bool neg, uint64 mant, nint ex
 }
 
 // %x: -0x1.yyyyyyyyp±ddd or -0x0p+0. (y is hex digit, d is decimal digit)
-internal static slice<byte> fmtX(slice<byte> dst, nint prec, byte fmt, bool neg, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
-    ref var flt = ref Ꮡflt.DerefOrNull();
-
+internal static slice<byte> fmtX(slice<byte> dst, nint prec, byte fmt, bool neg, uint64 mant, nint exp, ref floatInfo flt) {
     if (mant == 0) {
         exp = 0;
     }

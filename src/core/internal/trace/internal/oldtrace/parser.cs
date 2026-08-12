@@ -422,7 +422,7 @@ pidLoop:
                 }
             }
             var ev = Ꮡ((~proc).events, 0);
-            var (gΔ1, initΔ1, _) = stateTransition(ev);
+            var (gΔ1, initΔ1, _) = stateTransition(ref (ev).DerefOrNull());
             // TODO(dh): This implementation matches the behavior of the
             // upstream 'go tool trace', and works in practice, but has run into
             // the following inconsistency during fuzzing: what happens if
@@ -454,13 +454,12 @@ break_pidLoop:;
             }
             break;
         }
-        ref var f = ref heap<orderEvent>(out var Ꮡf);
-        f = Ꮡfrontier.Pop();
+        var f = Ꮡfrontier.Pop();
         // We're computing the state transition twice, once when computing the
         // frontier, and now to apply the transition. This is fine because
         // stateTransition is a pure function. Computing it again is cheaper
         // than storing large items in the frontier.
-        var (g, init, next) = stateTransition(Ꮡf.of(orderEvent.Ꮡev));
+        var (g, init, next) = stateTransition(ref f.ev);
         // Get rid of "Local" events, they are intended merely for ordering.
         var exprᴛ1 = f.ev.Type;
         if (exprᴛ1 == EvGoStartLocal) {

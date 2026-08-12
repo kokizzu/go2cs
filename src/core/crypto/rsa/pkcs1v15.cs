@@ -45,7 +45,7 @@ public static (slice<byte>, error) EncryptPKCS1v15(io.Reader random, ж<PublicKe
 
     randutil.MaybeReadByte(random);
     {
-        var errΔ1 = checkPub(Ꮡpub); if (errΔ1 != default!) {
+        var errΔ1 = checkPub(ref (Ꮡpub).DerefOrNull()); if (errΔ1 != default!) {
             return (default!, errΔ1);
         }
     }
@@ -79,7 +79,7 @@ public static (slice<byte>, error) EncryptPKCS1v15(io.Reader random, ж<PublicKe
         }
         return boring.EncryptRSANoPadding(bkey, em);
     }
-    return encrypt(Ꮡpub, em);
+    return encrypt(ref (Ꮡpub).DerefOrNull(), em);
 }
 
 // DecryptPKCS1v15 decrypts a plaintext using RSA and the padding scheme from PKCS #1 v1.5.
@@ -91,8 +91,10 @@ public static (slice<byte>, error) EncryptPKCS1v15(io.Reader random, ж<PublicKe
 // forge signatures as if they had the private key. See
 // DecryptPKCS1v15SessionKey for a way of solving this problem.
 public static (slice<byte>, error) DecryptPKCS1v15(io.Reader random, ж<PrivateKey> Ꮡpriv, slice<byte> ciphertext) {
+    ref var priv = ref Ꮡpriv.DerefOrNull();
+
     {
-        var errΔ1 = checkPub(Ꮡpriv.of(PrivateKey.ᏑPublicKey)); if (errΔ1 != default!) {
+        var errΔ1 = checkPub(ref nonnil(ref priv).PublicKey); if (errΔ1 != default!) {
             return (default!, errΔ1);
         }
     }
@@ -152,8 +154,10 @@ public static (slice<byte>, error) DecryptPKCS1v15(io.Reader random, ж<PrivateK
 //   - [1] RFC 3218, Preventing the Million Message Attack on CMS,
 //     https://www.rfc-editor.org/rfc/rfc3218.html
 public static error DecryptPKCS1v15SessionKey(io.Reader random, ж<PrivateKey> Ꮡpriv, slice<byte> ciphertext, slice<byte> key) {
+    ref var priv = ref Ꮡpriv.DerefOrNull();
+
     {
-        var errΔ1 = checkPub(Ꮡpriv.of(PrivateKey.ᏑPublicKey)); if (errΔ1 != default!) {
+        var errΔ1 = checkPub(ref nonnil(ref priv).PublicKey); if (errΔ1 != default!) {
             return errΔ1;
         }
     }
@@ -203,7 +207,7 @@ internal static (nint valid, slice<byte> em, nint index, error err) decryptPKCS1
             return (valid, em, index, err);
         }
     } else {
-        (em, err) = decrypt(Ꮡpriv, ciphertext, noCheck);
+        (em, err) = decrypt(ref (Ꮡpriv).DerefOrNull(), ciphertext, noCheck);
         if (err != default!) {
             return (valid, em, index, err);
         }
@@ -298,7 +302,7 @@ public static (slice<byte>, error) SignPKCS1v15(io.Reader random, ж<PrivateKey>
         }
         return boring.SignRSAPKCS1v15(bkey, hash, hashed);
     }
-    return decrypt(Ꮡpriv, em, withCheck);
+    return decrypt(ref (Ꮡpriv).DerefOrNull(), em, withCheck);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -365,7 +369,7 @@ public static error VerifyPKCS1v15(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice
     if (pub.Size() != len(sig)) {
         return ErrVerification;
     }
-    var (em, err) = encrypt(Ꮡpub, sig);
+    var (em, err) = encrypt(ref (Ꮡpub).DerefOrNull(), sig);
     if (err != default!) {
         return ErrVerification;
     }

@@ -131,9 +131,7 @@ internal static ж<parser> incNestLev(ж<parser> Ꮡp) {
 
 // decNestLev is used to track nesting depth during parsing to prevent stack exhaustion.
 // It is used along with incNestLev in a similar fashion to how un and trace are used.
-internal static void decNestLev(ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void decNestLev(ref parser p) {
     p.nestLev--;
 }
 
@@ -1664,7 +1662,7 @@ internal static ast.Expr tryIdentOrType(this ж<parser> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
+        defer(ᴛ1 => decNestLev(ref ᴛ1.DerefOrNull()), incNestLev(Ꮡp), ref ᒐ);
         var exprᴛ1 = p.tok;
         if (exprᴛ1 == token.IDENT) {
             var typ = Ꮡp.parseTypeName(nil);
@@ -2121,7 +2119,7 @@ internal static ast.Expr parseLiteralValue(this ж<parser> Ꮡp, ast.Expr typ) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
+        defer(ᴛ1 => decNestLev(ref ᴛ1.DerefOrNull()), incNestLev(Ꮡp), ref ᒐ);
         if (p.trace) {
             defer(un, trace(Ꮡp, literalValueˢ), ref ᒐ);
         }
@@ -2258,7 +2256,7 @@ internal static ast.Expr parseUnaryExpr(this ж<parser> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
+        defer(ᴛ1 => decNestLev(ref ᴛ1.DerefOrNull()), incNestLev(Ꮡp), ref ᒐ);
         if (p.trace) {
             defer(un, trace(Ꮡp, unaryExprˢ), ref ᒐ);
         }
@@ -2730,7 +2728,7 @@ internal static ж<ast.IfStmt> parseIfStmt(this ж<parser> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
+        defer(ᴛ1 => decNestLev(ref ᴛ1.DerefOrNull()), incNestLev(Ꮡp), ref ᒐ);
         if (p.trace) {
             defer(un, trace(Ꮡp, ifStmtˢ), ref ᒐ);
         }
@@ -3097,7 +3095,7 @@ internal static ast.Stmt /*s*/ parseStmt(this ж<parser> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        defer(decNestLev, incNestLev(Ꮡp), ref ᒐ);
+        defer(ᴛ1 => decNestLev(ref ᴛ1.DerefOrNull()), incNestLev(Ꮡp), ref ᒐ);
         if (p.trace) {
             defer(un, trace(Ꮡp, statementˢ), ref ᒐ);
         }
@@ -3692,7 +3690,7 @@ internal static ж<ast.File> parseFile(this ж<parser> Ꮡp) {
             declErr = (tokenꓸPos p1, @string p2) => Ꮡp.error(p1, p2);
         }
         if ((Mode)(p.mode & SkipObjectResolution) == 0) {
-            resolveFile(f, p.@file, declErr);
+            resolveFile(ref (f).DerefOrNull(), p.@file, declErr);
         }
         return f;
     }

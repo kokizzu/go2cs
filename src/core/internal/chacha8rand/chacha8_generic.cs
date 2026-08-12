@@ -57,9 +57,7 @@ partial class chacha8rand_package {
 // setup sets up 4 ChaCha8 blocks in b32 with the counter and seed.
 // Note that b32 is [16][4]uint32 not [4][16]uint32: the blocks are interlaced
 // the same way they would be in a 4-way SIMD implementations.
-internal static void setup(ж<array<uint64>> Ꮡseed, ж<array<array<uint32>>> Ꮡb32, uint32 counter) {
-    ref var seed = ref Ꮡseed.DerefOrNull();
-
+internal static void setup(ref array<uint64> seed, ж<array<array<uint32>>> Ꮡb32, uint32 counter) {
     // Convert to uint64 to do half as many stores to memory.
     var b = (ж<array<array<uint64>>>)(uintptr)(new @unsafe.Pointer(Ꮡb32));
     // Constants; same as in ChaCha20: "expand 32-byte k"
@@ -138,7 +136,7 @@ internal static void block_generic(ж<array<uint64>> Ꮡseed, ж<array<uint64>> 
     ref var buf = ref Ꮡbuf.DerefOrNull();
 
     var b = (ж<array<array<uint32>>>)(uintptr)(new @unsafe.Pointer(Ꮡbuf));
-    setup(Ꮡseed, b, counter);
+    setup(ref (Ꮡseed).DerefOrNull(), b, counter);
     foreach (var (i, _) in b.Value[0]) {
         // Load block i from b[*][i] into local variables.
         var b0 = b.Value[0][i];

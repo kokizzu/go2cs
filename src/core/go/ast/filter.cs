@@ -25,7 +25,7 @@ internal static bool exportFilter(@string name) {
 //
 // FileExports reports whether there are exported declarations.
 public static bool FileExports(ж<File> Ꮡsrc) {
-    return filterFile(Ꮡsrc, new Func<@string, bool>(exportFilter), true);
+    return filterFile(ref (Ꮡsrc).DerefOrNull(), new Func<@string, bool>(exportFilter), true);
 }
 
 // PackageExports trims the AST for a Go package in place such that
@@ -35,7 +35,7 @@ public static bool FileExports(ж<File> Ꮡsrc) {
 // PackageExports reports whether there are exported declarations;
 // it returns false otherwise.
 public static bool PackageExports(ж<Package> Ꮡpkg) {
-    return filterPackage(Ꮡpkg, new Func<@string, bool>(exportFilter), true);
+    return filterPackage(ref (Ꮡpkg).DerefOrNull(), new Func<@string, bool>(exportFilter), true);
 }
 
 // type ΔFilter is a methodless func type — rendered inline as its base delegate
@@ -113,9 +113,7 @@ internal static bool /*removedFields*/ filterFieldList(ж<FieldList> Ꮡfields, 
     return removedFields;
 }
 
-internal static void filterCompositeLit(ж<CompositeLit> Ꮡlit, Func<@string, bool> filter, bool export) {
-    ref var lit = ref Ꮡlit.DerefOrNull();
-
+internal static void filterCompositeLit(ref CompositeLit lit, Func<@string, bool> filter, bool export) {
     nint n = len(lit.Elts);
     lit.Elts = filterExprList(lit.Elts, filter, export);
     if (len(lit.Elts) < n) {
@@ -128,7 +126,7 @@ internal static slice<Expr> filterExprList(slice<Expr> list, Func<@string, bool>
     foreach (var (_, exp) in list) {
         switch (exp.type()) {
         case ж<CompositeLit> x: {
-            filterCompositeLit(x, filter, export);
+            filterCompositeLit(ref (x).DerefOrNull(), filter, export);
             break;
         }
         case ж<KeyValueExpr> x: {
@@ -139,7 +137,7 @@ internal static slice<Expr> filterExprList(slice<Expr> list, Func<@string, bool>
             }
             {
                 var (xΔ2, ok) = (~x).Value._<ж<CompositeLit>>(ᐧ); if (ok) {
-                    filterCompositeLit(xΔ2, filter, export);
+                    filterCompositeLit(ref (xΔ2).DerefOrNull(), filter, export);
                 }
             }
             break;
@@ -280,12 +278,10 @@ internal static bool filterDecl(Decl decl, Func<@string, bool> f, bool export) {
 // FilterFile reports whether there are any top-level declarations
 // left after filtering.
 public static bool FilterFile(ж<File> Ꮡsrc, Func<@string, bool> f) {
-    return filterFile(Ꮡsrc, f, false);
+    return filterFile(ref (Ꮡsrc).DerefOrNull(), f, false);
 }
 
-internal static bool filterFile(ж<File> Ꮡsrc, Func<@string, bool> f, bool export) {
-    ref var src = ref Ꮡsrc.DerefOrNull();
-
+internal static bool filterFile(ref File src, Func<@string, bool> f, bool export) {
     nint j = 0;
     foreach (var (_, d) in src.Decls) {
         if (filterDecl(d, f, export)) {
@@ -308,15 +304,13 @@ internal static bool filterFile(ж<File> Ꮡsrc, Func<@string, bool> f, bool exp
 // FilterPackage reports whether there are any top-level declarations
 // left after filtering.
 public static bool FilterPackage(ж<Package> Ꮡpkg, Func<@string, bool> f) {
-    return filterPackage(Ꮡpkg, f, false);
+    return filterPackage(ref (Ꮡpkg).DerefOrNull(), f, false);
 }
 
-internal static bool filterPackage(ж<Package> Ꮡpkg, Func<@string, bool> f, bool export) {
-    ref var pkg = ref Ꮡpkg.DerefOrNull();
-
+internal static bool filterPackage(ref Package pkg, Func<@string, bool> f, bool export) {
     var hasDecls = false;
     foreach (var (_, src) in pkg.Files) {
-        if (filterFile(src, f, export)) {
+        if (filterFile(ref (src).DerefOrNull(), f, export)) {
             hasDecls = true;
         }
     }
@@ -334,9 +328,7 @@ public static MergeMode FilterImportDuplicates => 4;
 // nameOf returns the function (foo) or method name (foo.bar) for
 // the given function declaration. If the AST is incorrect for the
 // receiver, it assumes a function instead.
-internal static @string nameOf(ж<FuncDecl> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static @string nameOf(ref FuncDecl f) {
     {
         var r = f.Recv; if (r != nil && len((~r).List) == 1) {
             // looks like a correct receiver declaration
@@ -449,7 +441,7 @@ public static ж<File> MergePackageFiles(ж<Package> Ꮡpkg, MergeMode mode) {
                     //            multiple declarations are common.
                     {
                         var (fΔ1, isFun) = d._<ж<FuncDecl>>(ᐧ); if (isFun) {
-                            @string name = nameOf(fΔ1);
+                            @string name = nameOf(ref (fΔ1).DerefOrNull());
                             {
                                 var (j, exists) = funcs[name, ꟷ]; if (exists){
                                     // function declared already

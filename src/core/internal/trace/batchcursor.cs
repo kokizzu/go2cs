@@ -42,7 +42,7 @@ internal static (bool ok, error err) nextEvent(this ж<batchCursor> Ꮡb, slice<
         b.lastTs = freq.mul(batches[b.idx].time);
     }
     // Read an event out.
-    (var n, var tsdiff, err) = readTimedBaseEvent(batches[b.idx].data[(int)(b.dataOff)..], Ꮡb.of(batchCursor.Ꮡev));
+    (var n, var tsdiff, err) = readTimedBaseEvent(batches[b.idx].data[(int)(b.dataOff)..], ref nonnil(ref b).ev);
     if (err != default!) {
         return (false, err);
     }
@@ -68,9 +68,7 @@ internal static (bool ok, error err) nextEvent(this ж<batchCursor> Ꮡb, slice<
 //
 // It requires that the event its reading be timed, which must
 // be the case for every event in a plain EventBatch.
-internal static (nint, timestamp, error) readTimedBaseEvent(slice<byte> b, ж<baseEvent> Ꮡe) {
-    ref var e = ref Ꮡe.DerefOrNull();
-
+internal static (nint, timestamp, error) readTimedBaseEvent(slice<byte> b, ref baseEvent e) {
     // Get the event type.
     var typ = ((@event.Type)b[0]);
     var specs = go122.Specs();

@@ -428,11 +428,10 @@ public static @string String(this IPMask m) {
     return hexString(m);
 }
 
-internal static (IP ip, IPMask m) networkNumberAndMask(ж<IPNet> Ꮡn) {
+internal static (IP ip, IPMask m) networkNumberAndMask(ref IPNet n) {
     IP ip = default!;
     IPMask m = default!;
 
-    ref var n = ref Ꮡn.DerefOrNull();
     {
         ip = n.IP.To4(); if (ip == default!) {
             ip = n.IP;
@@ -462,7 +461,7 @@ internal static (IP ip, IPMask m) networkNumberAndMask(ж<IPNet> Ꮡn) {
 
 // Contains reports whether the network includes ip.
 public static bool Contains(this ж<IPNet> Ꮡn, IP ip) {
-    var (nn, m) = networkNumberAndMask(Ꮡn);
+    var (nn, m) = networkNumberAndMask(ref (Ꮡn).DerefOrNull());
     {
         var x = ip.To4(); if (x != default!) {
             ip = x;
@@ -498,7 +497,7 @@ public static @string String(this ж<IPNet> Ꮡn) {
     if (Ꮡn == nil) {
         return nilˢ;
     }
-    var (nn, m) = networkNumberAndMask(Ꮡn);
+    var (nn, m) = networkNumberAndMask(ref (Ꮡn).DerefOrNull());
     if (nn == default! || m == default!) {
         return nilˢ;
     }

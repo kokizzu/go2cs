@@ -45,13 +45,13 @@ public static (ж<Profile>, error) Merge(slice<ж<Profile>> srcs) {
             pm.mapMapping((~src).Mapping[0]);
         }
         foreach (var (_, s) in (~src).Sample) {
-            if (!isZeroSample(s)) {
+            if (!isZeroSample(ref (s).DerefOrNull())) {
                 pm.mapSample(s);
             }
         }
     }
     foreach (var (_, s) in (~p).Sample) {
-        if (isZeroSample(s)) {
+        if (isZeroSample(ref (s).DerefOrNull())) {
             // If there are any zero samples, re-merge the profile to GC
             // them.
             return Merge(new ж<Profile>[]{p}.slice());
@@ -95,9 +95,7 @@ public static (ж<Profile>, error) Merge(slice<ж<Profile>> srcs) {
     return default!;
 }
 
-internal static bool isZeroSample(ж<Sample> Ꮡs) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
+internal static bool isZeroSample(ref Sample s) {
     foreach (var (_, v) in s.Value) {
         if (v != 0) {
             return false;
@@ -452,14 +450,14 @@ internal static (ж<Profile>, error) combineHeaders(slice<ж<Profile>> srcs) {
 [GoRecv] internal static error compatible(this ref Profile p, ж<Profile> Ꮡpb) {
     ref var pb = ref Ꮡpb.DerefOrNull();
 
-    if (!equalValueType(p.PeriodType, pb.PeriodType)) {
+    if (!equalValueType(ref (p.PeriodType).DerefOrNull(), ref (pb.PeriodType).DerefOrNull())) {
         return fmt.Errorf("incompatible period types %v and %v"u8, p.PeriodType.OrTypedNil(), pb.PeriodType.OrTypedNil());
     }
     if (len(p.SampleType) != len(pb.SampleType)) {
         return fmt.Errorf("incompatible sample types %v and %v"u8, p.SampleType, pb.SampleType);
     }
     foreach (var (i, _) in p.SampleType) {
-        if (!equalValueType(p.SampleType[i], pb.SampleType[i])) {
+        if (!equalValueType(ref (p.SampleType[i]).DerefOrNull(), ref (pb.SampleType[i]).DerefOrNull())) {
             return fmt.Errorf("incompatible sample types %v and %v"u8, p.SampleType, pb.SampleType);
         }
     }
@@ -468,10 +466,7 @@ internal static (ж<Profile>, error) combineHeaders(slice<ж<Profile>> srcs) {
 
 // equalValueType returns true if the two value types are semantically
 // equal. It ignores the internal fields used during encode/decode.
-internal static bool equalValueType(ж<ValueType> Ꮡst1, ж<ValueType> Ꮡst2) {
-    ref var st1 = ref Ꮡst1.DerefOrNull();
-    ref var st2 = ref Ꮡst2.DerefOrNull();
-
+internal static bool equalValueType(ref ValueType st1, ref ValueType st2) {
     return st1.Type == st2.Type && st1.Unit == st2.Unit;
 }
 

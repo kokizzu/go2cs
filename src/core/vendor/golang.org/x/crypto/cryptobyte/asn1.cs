@@ -374,15 +374,13 @@ internal static ж<bigꓸInt> bigOne = big.NewInt(1);
 
 [GoRecv] internal static bool readASN1Int64(this ref String s, ж<int64> Ꮡout) {
     ref var bytes = ref heap<String>(out var Ꮡbytes);
-    if (!s.ReadASN1(Ꮡbytes, asn1.INTEGER) || !checkASN1Integer(bytes) || !asn1Signed(Ꮡout, bytes)) {
+    if (!s.ReadASN1(Ꮡbytes, asn1.INTEGER) || !checkASN1Integer(bytes) || !asn1Signed(ref (Ꮡout).DerefOrNull(), bytes)) {
         return false;
     }
     return true;
 }
 
-internal static bool asn1Signed(ж<int64> Ꮡout, slice<byte> n) {
-    ref var @out = ref Ꮡout.DerefOrNull();
-
+internal static bool asn1Signed(ref int64 @out, slice<byte> n) {
     nint length = len(n);
     if (length > 8) {
         return false;
@@ -399,15 +397,13 @@ internal static bool asn1Signed(ж<int64> Ꮡout, slice<byte> n) {
 
 [GoRecv] internal static bool readASN1Uint64(this ref String s, ж<uint64> Ꮡout) {
     ref var bytes = ref heap<String>(out var Ꮡbytes);
-    if (!s.ReadASN1(Ꮡbytes, asn1.INTEGER) || !checkASN1Integer(bytes) || !asn1Unsigned(Ꮡout, bytes)) {
+    if (!s.ReadASN1(Ꮡbytes, asn1.INTEGER) || !checkASN1Integer(bytes) || !asn1Unsigned(ref (Ꮡout).DerefOrNull(), bytes)) {
         return false;
     }
     return true;
 }
 
-internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
-    ref var @out = ref Ꮡout.DerefOrNull();
-
+internal static bool asn1Unsigned(ref uint64 @out, slice<byte> n) {
     nint length = len(n);
     if (length > 9 || length == 9 && n[0] != 0) {
         // Too large for uint64.
@@ -429,7 +425,7 @@ internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
 // value that can be represented in an int64.
 [GoRecv] public static bool ReadASN1Int64WithTag(this ref String s, ж<int64> Ꮡout, asn1.Tag tag) {
     ref var bytes = ref heap<String>(out var Ꮡbytes);
-    return s.ReadASN1(Ꮡbytes, tag) && checkASN1Integer(bytes) && asn1Signed(Ꮡout, bytes);
+    return s.ReadASN1(Ꮡbytes, tag) && checkASN1Integer(bytes) && asn1Signed(ref (Ꮡout).DerefOrNull(), bytes);
 }
 
 // ReadASN1Enum decodes an ASN.1 ENUMERATION into out and advances. It reports
@@ -438,8 +434,8 @@ internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
-    ref var i = ref heap(new int64(), out var Ꮡi);
-    if (!s.ReadASN1(Ꮡbytes, asn1.ENUM) || !checkASN1Integer(bytes) || !asn1Signed(Ꮡi, bytes)) {
+    int64 i = default!;
+    if (!s.ReadASN1(Ꮡbytes, asn1.ENUM) || !checkASN1Integer(bytes) || !asn1Signed(ref i, bytes)) {
         return false;
     }
     if ((int64)(nint)i != i) {

@@ -45,9 +45,7 @@ internal static (IP, error) interfaceToIPv4Addr(ж<Interface> Ꮡifi) {
     return (default!, errNoSuchInterface);
 }
 
-internal static error setIPv4MreqToInterface(ж<syscall.IPMreq> Ꮡmreq, ж<Interface> Ꮡifi) {
-    ref var mreq = ref Ꮡmreq.DerefOrNull();
-
+internal static error setIPv4MreqToInterface(ref syscall.IPMreq mreq, ж<Interface> Ꮡifi) {
     if (Ꮡifi == nil) {
         return default!;
     }

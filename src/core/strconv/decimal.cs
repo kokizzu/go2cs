@@ -71,9 +71,7 @@ internal static nint digitZero(slice<byte> dst) {
 // trim trailing zeros from number.
 // (They are meaningless; the decimal point is tracked
 // independent of the number of digits.)
-internal static void trim(ж<@decimal> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNull();
-
+internal static void trim(ref @decimal a) {
     while (a.nd > 0 && a.d[a.nd - 1] == (rune)'0') {
         a.nd--;
     }
@@ -103,7 +101,7 @@ internal static void Assign(this ж<@decimal> Ꮡa, uint64 v) {
         a.nd++;
     }
     a.dp = a.nd;
-    trim(Ꮡa);
+    trim(ref (Ꮡa).DerefOrNull());
 }
 
 // Maximum shift that we can do in one pass without overflow.
@@ -113,9 +111,7 @@ internal static UntypedInt uintSize => /* 32 << (^uint(0) >> 63) */ 64;
 internal static UntypedInt maxShift => /* uintSize - 4 */ 60;
 
 // Binary shift right (/ 2) by k bits.  k <= maxShift to avoid overflow.
-internal static void rightShift(ж<@decimal> Ꮡa, nuint k) {
-    ref var a = ref Ꮡa.DerefOrNull();
-
+internal static void rightShift(ref @decimal a, nuint k) {
     nint r = 0; // read pointer
     nint w = 0; // write pointer
     // Pick up enough leading digits to cover first shift.
@@ -161,7 +157,7 @@ internal static void rightShift(ж<@decimal> Ꮡa, nuint k) {
         n = n * 10;
     }
     a.nd = w;
-    trim(Ꮡa);
+    trim(ref a);
 }
 
 // Cheat sheet for left shift: table indexed by shift count giving
@@ -329,9 +325,7 @@ internal static bool prefixIsLessThan(slice<byte> b, @string s) {
 }
 
 // Binary shift left (* 2) by k bits.  k <= maxShift to avoid overflow.
-internal static void leftShift(ж<@decimal> Ꮡa, nuint k) {
-    ref var a = ref Ꮡa.DerefOrNull();
-
+internal static void leftShift(ref @decimal a, nuint k) {
     nint delta = leftcheats[(nint)(k)].delta;
     if (prefixIsLessThan(a.d[0..(int)(a.nd)], leftcheats[(nint)(k)].cutoff)) {
         delta--;
@@ -371,7 +365,7 @@ internal static void leftShift(ж<@decimal> Ꮡa, nuint k) {
         a.nd = len(a.d);
     }
     a.dp += delta;
-    trim(Ꮡa);
+    trim(ref a);
 }
 
 // Binary shift left (k > 0) or right (k < 0).
@@ -385,27 +379,25 @@ internal static void Shift(this ж<@decimal> Ꮡa, nint k) {
     case {} when k is > 0: {
         while (k > maxShift) {
             // nothing to do: a == 0
-            leftShift(Ꮡa, maxShift);
+            leftShift(ref (Ꮡa).DerefOrNull(), maxShift);
             k -= maxShift;
         }
-        leftShift(Ꮡa, (nuint)k);
+        leftShift(ref (Ꮡa).DerefOrNull(), (nuint)k);
         break;
     }
     case {} when k is < 0: {
         while (k < -maxShift) {
-            rightShift(Ꮡa, maxShift);
+            rightShift(ref (Ꮡa).DerefOrNull(), maxShift);
             k += maxShift;
         }
-        rightShift(Ꮡa, (nuint)(-k));
+        rightShift(ref (Ꮡa).DerefOrNull(), (nuint)(-k));
         break;
     }}
 
 }
 
 // If we chop a at nd digits, should we round up?
-internal static bool shouldRoundUp(ж<@decimal> Ꮡa, nint nd) {
-    ref var a = ref Ꮡa.DerefOrNull();
-
+internal static bool shouldRoundUp(ref @decimal a, nint nd) {
     if (nd < 0 || nd >= a.nd) {
         return false;
     }
@@ -431,7 +423,7 @@ internal static void Round(this ж<@decimal> Ꮡa, nint nd) {
     if (nd < 0 || nd >= a.nd) {
         return;
     }
-    if (shouldRoundUp(Ꮡa, nd)){
+    if (shouldRoundUp(ref (Ꮡa).DerefOrNull(), nd)){
         a.RoundUp(nd);
     } else {
         Ꮡa.RoundDown(nd);
@@ -446,7 +438,7 @@ internal static void RoundDown(this ж<@decimal> Ꮡa, nint nd) {
         return;
     }
     a.nd = nd;
-    trim(Ꮡa);
+    trim(ref (Ꮡa).DerefOrNull());
 }
 
 // Round a up to nd digits (or fewer).
@@ -487,7 +479,7 @@ internal static uint64 RoundedInteger(this ж<@decimal> Ꮡa) {
     for (; i < a.dp; i++) {
         n *= 10;
     }
-    if (shouldRoundUp(Ꮡa, a.dp)) {
+    if (shouldRoundUp(ref (Ꮡa).DerefOrNull(), a.dp)) {
         n++;
     }
     return n;

@@ -30,9 +30,7 @@ internal static readonly @string resolvedSVToPackageˢ = "resolved %s@%v to pack
 //
 // If declErr is non-nil, it is used to report declaration errors during
 // resolution. tok is used to format position in error messages.
-internal static void resolveFile(ж<ast.File> Ꮡfile, ж<tokenꓸFile> Ꮡhandle, Action<tokenꓸPos, @string> declErr) {
-    ref var @file = ref Ꮡfile.DerefOrNull();
-
+internal static void resolveFile(ref ast.File @file, ж<tokenꓸFile> Ꮡhandle, Action<tokenꓸPos, @string> declErr) {
     var pkgScope = ast.NewScope(nil);
     var r = Ꮡ(new resolver(
         handle: Ꮡhandle,

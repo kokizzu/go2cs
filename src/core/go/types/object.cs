@@ -479,7 +479,7 @@ public static ж<Func> NewFunc(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name
 // function or method obj.
 public static @string FullName(this ж<Func> Ꮡobj) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    writeFuncName(Ꮡbuf, Ꮡobj, default!);
+    writeFuncName(Ꮡbuf, ref (Ꮡobj).DerefOrNull(), default!);
     return Ꮡbuf.String();
 }
 
@@ -612,7 +612,7 @@ internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Pa
     }
     case ж<Func> objΔ1: {
         buf.WriteString(funcˢ2);
-        writeFuncName(Ꮡbuf, objΔ1, qf);
+        writeFuncName(Ꮡbuf, ref (objΔ1).DerefOrNull(), qf);
         if (typ != default!) {
             WriteSignature(Ꮡbuf, typ._<ж<ΔSignature>>(), qf);
         }
@@ -748,9 +748,8 @@ public static @string String(this ж<Nil> Ꮡobj) {
     return ObjectString(new NilжObject(Ꮡobj), default!);
 }
 
-internal static void writeFuncName(ж<bytes.Buffer> Ꮡbuf, ж<Func> Ꮡf, Func<ж<Package>, @string> qf) {
+internal static void writeFuncName(ж<bytes.Buffer> Ꮡbuf, ref Func f, Func<ж<Package>, @string> qf) {
     ref var buf = ref Ꮡbuf.DerefOrNull();
-    ref var f = ref Ꮡf.DerefOrNull();
 
     if (f.typ != default!) {
         var sig = f.typ._<ж<ΔSignature>>();

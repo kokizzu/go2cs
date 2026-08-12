@@ -58,8 +58,8 @@ internal static void init(this ж<rwmutex> Ꮡrw, lockRank readRank, lockRank re
     ref var rw = ref Ꮡrw.DerefOrNull();
 
     rw.readRank = readRank;
-    lockInit(Ꮡrw.of(rwmutex.ᏑrLock), readRankInternal);
-    lockInit(Ꮡrw.of(rwmutex.ᏑwLock), writeRank);
+    lockInit(ref nonnil(ref rw).rLock, readRankInternal);
+    lockInit(ref nonnil(ref rw).wLock, writeRank);
 }
 
 internal static UntypedInt rwmutexMaxReaders => /* 1 << 30 */ 1073741824;

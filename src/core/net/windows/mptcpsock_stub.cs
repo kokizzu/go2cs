@@ -16,7 +16,7 @@ internal static (ж<TCPListener>, error) listenMPTCP(this ж<sysListener> Ꮡsl,
     return Ꮡsl.listenTCP(ctx, Ꮡladdr);
 }
 
-internal static bool isUsingMultipathTCP(ж<netFD> Ꮡfd) {
+internal static bool isUsingMultipathTCP(ref netFD fd) {
     return false;
 }
 

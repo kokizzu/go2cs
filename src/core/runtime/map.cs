@@ -171,9 +171,7 @@ internal static uint8 tophash(uintptr hash) {
     return top;
 }
 
-internal static bool evacuated(ж<bmap> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
+internal static bool evacuated(ref bmap b) {
     var h = b.tophash[0];
     return h > emptyOne && h < minTopHash;
 }
@@ -408,7 +406,7 @@ internal static @unsafe.Pointer mapaccess1(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @uns
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapaccess1);
         racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
-        raceReadObjectPC(t.Key, key, callerpc, pc);
+        raceReadObjectPC(ref (t.Key).DerefOrNull(), key, callerpc, pc);
     }
     if (msanenabled && Ꮡh != nil) {
         msanread(key, (~t.Key).Size_);
@@ -437,7 +435,7 @@ internal static @unsafe.Pointer mapaccess1(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @uns
                 m >>= (int)(1);
             }
             var oldb = (ж<bmap>)(uintptr)(add(c, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
-            if (!evacuated(oldb)) {
+            if (!evacuated(ref (oldb).DerefOrNull())) {
                 b = oldb;
             }
         }
@@ -487,7 +485,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2(ж<maptype> Ꮡt, ж<hmap> �
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapaccess2);
         racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
-        raceReadObjectPC(t.Key, key, callerpc, pc);
+        raceReadObjectPC(ref (t.Key).DerefOrNull(), key, callerpc, pc);
     }
     if (msanenabled && Ꮡh != nil) {
         msanread(key, (~t.Key).Size_);
@@ -516,7 +514,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2(ж<maptype> Ꮡt, ж<hmap> �
                 m >>= (int)(1);
             }
             var oldb = (ж<bmap>)(uintptr)(add(c, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
-            if (!evacuated(oldb)) {
+            if (!evacuated(ref (oldb).DerefOrNull())) {
                 b = oldb;
             }
         }
@@ -567,7 +565,7 @@ internal static (@unsafe.Pointer, @unsafe.Pointer) mapaccessK(ж<maptype> Ꮡt, 
                 m >>= (int)(1);
             }
             var oldb = (ж<bmap>)(uintptr)(add(c, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
-            if (!evacuated(oldb)) {
+            if (!evacuated(ref (oldb).DerefOrNull())) {
                 b = oldb;
             }
         }
@@ -646,7 +644,7 @@ internal static @unsafe.Pointer mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsa
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapassign);
         racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
-        raceReadObjectPC(t.Key, key, callerpc, pc);
+        raceReadObjectPC(ref (t.Key).DerefOrNull(), key, callerpc, pc);
     }
     if (msanenabled) {
         msanread(key, (~t.Key).Size_);
@@ -714,7 +712,7 @@ break_bucketloop:;
     // If we hit the max load factor or we have too many overflow buckets,
     // and we're not already in the middle of growing, start growing.
     if (!h.growing() && (overLoadFactor(h.count + 1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B))) {
-        hashGrow(Ꮡt, Ꮡh);
+        hashGrow(Ꮡt, ref (Ꮡh).DerefOrNull());
         goto again; // Growing the table invalidates everything, so try again
     }
     if (inserti == nil) {
@@ -765,7 +763,7 @@ internal static void mapdelete(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer 
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapdelete);
         racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
-        raceReadObjectPC(t.Key, key, callerpc, pc);
+        raceReadObjectPC(ref (t.Key).DerefOrNull(), key, callerpc, pc);
     }
     if (msanenabled && Ꮡh != nil) {
         msanread(key, (~t.Key).Size_);
@@ -994,7 +992,7 @@ next:
             // bucket and only return the ones that will be migrated to this bucket.
             var oldbucket = (uintptr)(bucket & it.h.oldbucketmask());
             b = (ж<bmap>)(uintptr)(add((~h).oldbuckets, oldbucket * (uintptr)(~t).BucketSize));
-            if (!evacuated(b)){
+            if (!evacuated(ref (b).DerefOrNull())){
                 checkBucket = bucket;
             } else {
                 b = (ж<bmap>)(uintptr)(add(it.buckets, bucket * (uintptr)(~t).BucketSize));
@@ -1164,9 +1162,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string oldoverflowIsNotNilˢ = "oldoverflow is not nil"u8;
 
-internal static void hashGrow(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
-    ref var h = ref Ꮡh.DerefOrNull();
-
+internal static void hashGrow(ж<maptype> Ꮡt, ref hmap h) {
     // If we've hit the load factor, get bigger.
     // Otherwise, there are too many overflow buckets,
     // so keep the same number of buckets and "grow" laterally.
@@ -1263,12 +1259,9 @@ internal static void growWork(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {
     }
 }
 
-internal static bool bucketEvacuated(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {
-    ref var t = ref Ꮡt.DerefOrNull();
-    ref var h = ref Ꮡh.DerefOrNull();
-
+internal static bool bucketEvacuated(ref abiꓸMapType t, ref hmap h, uintptr bucket) {
     var b = (ж<bmap>)(uintptr)(add(h.oldbuckets, bucket * (uintptr)t.BucketSize));
-    return evacuated(b);
+    return evacuated(ref (b).DerefOrNull());
 }
 
 // evacDst is an evacuation destination.
@@ -1289,7 +1282,7 @@ internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket
 
     var b = (ж<bmap>)(uintptr)(add(h.oldbuckets, oldbucket * (uintptr)t.BucketSize));
     var newbit = h.noldbuckets();
-    if (!evacuated(b)) {
+    if (!evacuated(ref (b).DerefOrNull())) {
         // TODO: reuse overflow buckets instead of using new ones, if there
         // is no iterator using the old buckets.  (If !oldIterator.)
         // xy contains the x and y (low and high) evacuation destinations.
@@ -1389,13 +1382,11 @@ internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket
         }
     }
     if (oldbucket == h.nevacuate) {
-        advanceEvacuationMark(Ꮡh, Ꮡt, newbit);
+        advanceEvacuationMark(ref (Ꮡh).DerefOrNull(), ref (Ꮡt).DerefOrNull(), newbit);
     }
 }
 
-internal static void advanceEvacuationMark(ж<hmap> Ꮡh, ж<maptype> Ꮡt, uintptr newbit) {
-    ref var h = ref Ꮡh.DerefOrNull();
-
+internal static void advanceEvacuationMark(ref hmap h, ref abiꓸMapType t, uintptr newbit) {
     h.nevacuate++;
     // Experiments suggest that 1024 is overkill by at least an order of magnitude.
     // Put it in there as a safeguard anyway, to ensure O(1) behavior.
@@ -1403,7 +1394,7 @@ internal static void advanceEvacuationMark(ж<hmap> Ꮡh, ж<maptype> Ꮡt, uint
     if (stop > newbit) {
         stop = newbit;
     }
-    while (h.nevacuate != stop && bucketEvacuated(Ꮡt, Ꮡh, h.nevacuate)) {
+    while (h.nevacuate != stop && bucketEvacuated(ref t, ref h, h.nevacuate)) {
         h.nevacuate++;
     }
     if (h.nevacuate == newbit) {
@@ -1592,9 +1583,7 @@ internal static void reflect_mapiternext(ж<hiter> Ꮡit) {
 // See go.dev/issue/67401.
 //
 //go:linkname reflect_mapiterkey reflect.mapiterkey
-internal static @unsafe.Pointer reflect_mapiterkey(ж<hiter> Ꮡit) {
-    ref var it = ref Ꮡit.DerefOrNull();
-
+internal static @unsafe.Pointer reflect_mapiterkey(ref hiter it) {
     return it.key;
 }
 
@@ -1608,9 +1597,7 @@ internal static @unsafe.Pointer reflect_mapiterkey(ж<hiter> Ꮡit) {
 // See go.dev/issue/67401.
 //
 //go:linkname reflect_mapiterelem reflect.mapiterelem
-internal static @unsafe.Pointer reflect_mapiterelem(ж<hiter> Ꮡit) {
-    ref var it = ref Ꮡit.DerefOrNull();
-
+internal static @unsafe.Pointer reflect_mapiterelem(ref hiter it) {
     return it.elem;
 }
 
@@ -1779,7 +1766,7 @@ internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
     nint oldSrcArraySize = (nint)bucketShift(oldB);
     for (nint i = 0; i < oldSrcArraySize; i++) {
         var srcBmap = (ж<bmap>)(uintptr)(add(srcOldbuckets, (uintptr)(i * (nint)t.BucketSize)));
-        if (evacuated(srcBmap)) {
+        if (evacuated(ref (srcBmap).DerefOrNull())) {
             continue;
         }
         if (oldB >= (~dst).B) {
@@ -1839,7 +1826,7 @@ internal static void keys(any mʗp, @unsafe.Pointer Δp) {
     nint r = (nint)rand();
     var offset = (uint8)((nint)(r.Rsh((uint64)((~h).B)) & (nint)(abi.MapBucketCount - 1)));
     if ((~h).B == 0) {
-        copyKeys(t, h, (ж<bmap>)(uintptr)((~h).buckets), s, offset);
+        copyKeys(t, ref (h).DerefOrNull(), (ж<bmap>)(uintptr)((~h).buckets), ref (s).DerefOrNull(), offset);
         return;
     }
     nint arraySize = (nint)bucketShift((~h).B);
@@ -1847,27 +1834,25 @@ internal static void keys(any mʗp, @unsafe.Pointer Δp) {
     for (nint i = 0; i < arraySize; i++) {
         nint bucket = (nint)((i + r) & (arraySize - 1));
         var b = (ж<bmap>)(uintptr)(add(buckets, (uintptr)bucket * (uintptr)(~t).BucketSize));
-        copyKeys(t, h, b, s, offset);
+        copyKeys(t, ref (h).DerefOrNull(), b, ref (s).DerefOrNull(), offset);
     }
     if (h.growing()) {
         nint oldArraySize = (nint)h.noldbuckets();
         for (nint i = 0; i < oldArraySize; i++) {
             nint bucket = (nint)((i + r) & (oldArraySize - 1));
             var b = (ж<bmap>)(uintptr)(add((~h).oldbuckets, (uintptr)bucket * (uintptr)(~t).BucketSize));
-            if (evacuated(b)) {
+            if (evacuated(ref (b).DerefOrNull())) {
                 continue;
             }
-            copyKeys(t, h, b, s, offset);
+            copyKeys(t, ref (h).DerefOrNull(), b, ref (s).DerefOrNull(), offset);
         }
     }
     return;
 }
 
-internal static void copyKeys(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, ж<Δsliceᴛ> Ꮡs, uint8 offset) {
+internal static void copyKeys(ж<maptype> Ꮡt, ref hmap h, ж<bmap> Ꮡb, ref Δsliceᴛ s, uint8 offset) {
     ref var t = ref Ꮡt.DerefOrNull();
-    ref var h = ref Ꮡh.DerefOrNull();
     ref var b = ref Ꮡb.DerefOrNull();
-    ref var s = ref Ꮡs.DerefOrNull();
 
     while (Ꮡb != nil) {
         for (var i = (uintptr)0; i < abi.MapBucketCount; i++) {
@@ -1908,7 +1893,7 @@ internal static void values(any mʗp, @unsafe.Pointer Δp) {
     nint r = (nint)rand();
     var offset = (uint8)((nint)(r.Rsh((uint64)((~h).B)) & (nint)(abi.MapBucketCount - 1)));
     if ((~h).B == 0) {
-        copyValues(t, h, (ж<bmap>)(uintptr)((~h).buckets), s, offset);
+        copyValues(t, ref (h).DerefOrNull(), (ж<bmap>)(uintptr)((~h).buckets), ref (s).DerefOrNull(), offset);
         return;
     }
     nint arraySize = (nint)bucketShift((~h).B);
@@ -1916,27 +1901,25 @@ internal static void values(any mʗp, @unsafe.Pointer Δp) {
     for (nint i = 0; i < arraySize; i++) {
         nint bucket = (nint)((i + r) & (arraySize - 1));
         var b = (ж<bmap>)(uintptr)(add(buckets, (uintptr)bucket * (uintptr)(~t).BucketSize));
-        copyValues(t, h, b, s, offset);
+        copyValues(t, ref (h).DerefOrNull(), b, ref (s).DerefOrNull(), offset);
     }
     if (h.growing()) {
         nint oldArraySize = (nint)h.noldbuckets();
         for (nint i = 0; i < oldArraySize; i++) {
             nint bucket = (nint)((i + r) & (oldArraySize - 1));
             var b = (ж<bmap>)(uintptr)(add((~h).oldbuckets, (uintptr)bucket * (uintptr)(~t).BucketSize));
-            if (evacuated(b)) {
+            if (evacuated(ref (b).DerefOrNull())) {
                 continue;
             }
-            copyValues(t, h, b, s, offset);
+            copyValues(t, ref (h).DerefOrNull(), b, ref (s).DerefOrNull(), offset);
         }
     }
     return;
 }
 
-internal static void copyValues(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, ж<Δsliceᴛ> Ꮡs, uint8 offset) {
+internal static void copyValues(ж<maptype> Ꮡt, ref hmap h, ж<bmap> Ꮡb, ref Δsliceᴛ s, uint8 offset) {
     ref var t = ref Ꮡt.DerefOrNull();
-    ref var h = ref Ꮡh.DerefOrNull();
     ref var b = ref Ꮡb.DerefOrNull();
-    ref var s = ref Ꮡs.DerefOrNull();
 
     while (Ꮡb != nil) {
         for (var i = (uintptr)0; i < abi.MapBucketCount; i++) {

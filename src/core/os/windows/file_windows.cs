@@ -103,7 +103,7 @@ public static ж<File> NewFile(uintptr fd, @string name) {
     return newFile(h, name, fileˢ);
 }
 
-internal static void epipecheck(ж<File> Ꮡfile, error e) {
+internal static void epipecheck(ref File @file, error e) {
 }
 
 // DevNull is the name of the operating system's “null device.”

@@ -200,7 +200,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
         // Try to advance the head of the frontier, which should have the minimum timestamp.
         // This should be by far the most common case
         if (len(r.frontier) == 0) {
-            (e, err) = (new ΔEvent(nil), fmt.Errorf("broken trace: frontier is empty:\n[gen=%d]\n\n%s\n%s\n"u8, (~r.gen).gen, dumpFrontier(r.frontier), dumpOrdering(Ꮡr.of(Reader.Ꮡorder)))); goto ᒐdone;
+            (e, err) = (new ΔEvent(nil), fmt.Errorf("broken trace: frontier is empty:\n[gen=%d]\n\n%s\n%s\n"u8, (~r.gen).gen, dumpFrontier(r.frontier), dumpOrdering(ref nonnil(ref r).order))); goto ᒐdone;
         }
         {
             var (okΔ5, errΔ6) = tryAdvance(0); if (errΔ6 != default!){
@@ -226,7 +226,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                     }
                 }
                 if (!success) {
-                    (e, err) = (new ΔEvent(nil), fmt.Errorf("broken trace: failed to advance: frontier:\n[gen=%d]\n\n%s\n%s\n"u8, (~r.gen).gen, dumpFrontier(r.frontier), dumpOrdering(Ꮡr.of(Reader.Ꮡorder)))); goto ᒐdone;
+                    (e, err) = (new ΔEvent(nil), fmt.Errorf("broken trace: failed to advance: frontier:\n[gen=%d]\n\n%s\n%s\n"u8, (~r.gen).gen, dumpFrontier(r.frontier), dumpOrdering(ref nonnil(ref r).order))); goto ᒐdone;
                 }
             }
         }

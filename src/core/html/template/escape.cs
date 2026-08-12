@@ -584,7 +584,7 @@ internal static context join(context a, context b, parse.Node node, @string node
     var c0 = e.escapeList(c, n.List);
     if (nodeName == "range"u8) {
         if (c0.state != stateError) {
-            c0 = joinRange(c0, e.rangeContext);
+            c0 = joinRange(c0, ref (e.rangeContext).DerefOrNull());
         }
         e.rangeContext = e.rangeContext.Value.outer;
         if (c0.state == stateError) {
@@ -605,7 +605,7 @@ internal static context join(context a, context b, parse.Node node, @string node
             c0.err.Value.Description = "on range loop re-entry: "u8 + (~c0.err).Description;
             return c0;
         }
-        c0 = joinRange(c0, e.rangeContext);
+        c0 = joinRange(c0, ref (e.rangeContext).DerefOrNull());
         e.rangeContext = e.rangeContext.Value.outer;
         if (c0.state == stateError) {
             return c0;
@@ -615,9 +615,7 @@ internal static context join(context a, context b, parse.Node node, @string node
     return join(c0, c1, new parse_BranchNodeжNode(Ꮡn), nodeName);
 }
 
-internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
-    ref var rc = ref Ꮡrc.DerefOrNull();
-
+internal static context joinRange(context c0, ref rangeContext rc) {
     // Merge contexts at break and continue statements into overall body context.
     // In theory we could treat breaks differently from continues, but for now it is
     // enough to treat them both as going back to the start of the loop (which may then stop).

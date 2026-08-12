@@ -303,7 +303,7 @@ internal static UntypedInt noMatch => -1;
 
 public static @string String(this ж<Inst> Ꮡi) {
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
-    dumpInst(Ꮡb, Ꮡi);
+    dumpInst(Ꮡb, ref (Ꮡi).DerefOrNull());
     return b.String();
 }
 
@@ -328,7 +328,7 @@ internal static void dumpProg(ж<strings.Builder> Ꮡb, ж<Prog> Ꮡp) {
             pc += "*"u8;
         }
         bw(Ꮡb, pc, "\t");
-        dumpInst(Ꮡb, i);
+        dumpInst(Ꮡb, ref (i).DerefOrNull());
         bw(Ꮡb, "\n"u8);
     }
 }
@@ -351,9 +351,7 @@ internal static readonly @string rune1ˢ = "rune1 "u8;
 internal static readonly @string anyˢ = "any -> "u8;
 internal static readonly @string anynotnlˢ = "anynotnl -> "u8;
 
-internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
-    ref var i = ref Ꮡi.DerefOrNull();
-
+internal static void dumpInst(ж<strings.Builder> Ꮡb, ref Inst i) {
     var exprᴛ1 = i.Op;
     if (exprᴛ1 == InstAlt) {
         bw(Ꮡb, altˢ, u32(i.Out), ", ", u32(i.Arg));

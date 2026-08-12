@@ -329,13 +329,13 @@ public static ж<Element> Absolute(this ж<Element> Ꮡv, ж<Element> Ꮡu) {
 
 // Multiply sets v = x * y, and returns v.
 public static ж<Element> Multiply(this ж<Element> Ꮡv, ж<Element> Ꮡx, ж<Element> Ꮡy) {
-    feMul(Ꮡv, Ꮡx, Ꮡy);
+    feMul(Ꮡv, ref (Ꮡx).DerefOrNull(), ref (Ꮡy).DerefOrNull());
     return Ꮡv;
 }
 
 // Square sets v = x * x, and returns v.
 public static ж<Element> Square(this ж<Element> Ꮡv, ж<Element> Ꮡx) {
-    feSquare(Ꮡv, Ꮡx);
+    feSquare(Ꮡv, ref (Ꮡx).DerefOrNull());
     return Ꮡv;
 }
 

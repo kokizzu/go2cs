@@ -111,9 +111,7 @@ internal static @string extractCAPS(@string desc) {
 }
 
 // abbrev returns the abbreviations to use for the given zone z.
-internal static (@string std, @string dst) abbrev(ж<syscall.Timezoneinformation> Ꮡz) {
-    ref var z = ref Ꮡz.DerefOrNull();
-
+internal static (@string std, @string dst) abbrev(ref syscall.Timezoneinformation z) {
     @string stdName = syscall.UTF16ToString(z.StandardName[..]);
     var (a, ok) = abbrs[stdName, ꟷ];
     if (!ok) {
@@ -135,9 +133,7 @@ internal static (@string std, @string dst) abbrev(ж<syscall.Timezoneinformation
 // pseudoUnix returns the pseudo-Unix time (seconds since Jan 1 1970 *LOCAL TIME*)
 // denoted by the system date+time d in the given year.
 // It is up to the caller to convert this local time into a UTC-based time.
-internal static int64 pseudoUnix(nint year, ж<syscall.Systemtime> Ꮡd) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static int64 pseudoUnix(nint year, ref syscall.Systemtime d) {
     // Windows specifies daylight savings information in "day in month" format:
     // d.Month is month number (1-12)
     // d.DayOfWeek is appropriate weekday (Sunday=0 to Saturday=6)
@@ -177,7 +173,7 @@ internal static void initLocalFromTZI(ж<syscall.Timezoneinformation> Ꮡi) {
         nzone++;
     }
     l.Value.zone = new slice<zone>(nzone);
-    var (stdname, dstname) = abbrev(Ꮡi);
+    var (stdname, dstname) = abbrev(ref (Ꮡi).DerefOrNull());
     var std = Ꮡ((~l).zone, 0);
     std.Value.name = stdname;
     if (nzone == 1) {
@@ -216,11 +212,11 @@ internal static void initLocalFromTZI(ж<syscall.Timezoneinformation> Ꮡi) {
     nint txi = 0;
     for (nint y = year - 100; y < year + 100; y++) {
         var tx = Ꮡ((~l).tx, txi);
-        tx.Value.when = pseudoUnix(y, d0) - (int64)(~l).zone[i1].offset;
+        tx.Value.when = pseudoUnix(y, ref (d0).DerefOrNull()) - (int64)(~l).zone[i1].offset;
         tx.Value.index = (uint8)i0;
         txi++;
         tx = Ꮡ((~l).tx, txi);
-        tx.Value.when = pseudoUnix(y, d1) - (int64)(~l).zone[i0].offset;
+        tx.Value.when = pseudoUnix(y, ref (d1).DerefOrNull()) - (int64)(~l).zone[i0].offset;
         tx.Value.index = (uint8)i1;
         txi++;
     }

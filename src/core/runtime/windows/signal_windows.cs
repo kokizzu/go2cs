@@ -85,8 +85,7 @@ internal static bool isAbort(ж<context> Ꮡr) {
 // because of a stack overflow.
 //
 //go:nosplit
-internal static bool isgoexception(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr) {
-    ref var info = ref Ꮡinfo.DerefOrNull();
+internal static bool isgoexception(ref exceptionrecord info, ж<context> Ꮡr) {
     ref var r = ref Ꮡr.DerefOrNull();
 
     // Only handle exception if executing instructions in Go binary
@@ -220,7 +219,7 @@ internal static int32 sigtrampgo(ж<exceptionpointers> Ꮡep, nint kind) {
         // sigresume has already been set up by a previous exception.
         return ret;
     }
-    prepareContextForSigResume(ep.context);
+    prepareContextForSigResume(ref (ep.context).DerefOrNull());
     ep.context.set_sp((~(~(~gp).m).g0).sched.sp);
     ep.context.set_ip(abi.FuncPCABI0(sigresume));
     return ret;
@@ -239,7 +238,7 @@ internal static int32 exceptionhandler(ж<exceptionrecord> Ꮡinfo, ж<context> 
     ref var r = ref Ꮡr.DerefOrNull();
     ref var gp = ref Ꮡgp.DerefOrNull();
 
-    if (!isgoexception(Ꮡinfo, Ꮡr)) {
+    if (!isgoexception(ref (Ꮡinfo).DerefOrNull(), Ꮡr)) {
         return _EXCEPTION_CONTINUE_SEARCH;
     }
     if (gp.throwsplit || isAbort(Ꮡr)) {
@@ -336,7 +335,7 @@ internal static int32 sehhandler(ж<exceptionrecord> _Δp0, uint64 _Δp1, ж<con
 //
 //go:nosplit
 internal static int32 firstcontinuehandler(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<g> Ꮡgp) {
-    if (!isgoexception(Ꮡinfo, Ꮡr)) {
+    if (!isgoexception(ref (Ꮡinfo).DerefOrNull(), Ꮡr)) {
         return _EXCEPTION_CONTINUE_SEARCH;
     }
     return _EXCEPTION_CONTINUE_EXECUTION;
@@ -406,7 +405,7 @@ internal static void winthrow(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<
     if (level > 0) {
         tracebacktrap(r.ip(), r.sp(), r.lr(), Ꮡgp);
         tracebackothers(Ꮡgp);
-        dumpregs(Ꮡr);
+        dumpregs(ref (Ꮡr).DerefOrNull());
     }
     if (docrash) {
         dieFromException(Ꮡinfo, Ꮡr);

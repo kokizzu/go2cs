@@ -144,9 +144,8 @@ public static ж<Client> DefaultClient = Ꮡ(new Client(nil));
 // refererForURL returns a referer without any authentication info or
 // an empty string if lastReq scheme is https and newReq scheme is http.
 // If the referer was explicitly set, then it will continue to be used.
-internal static @string refererForURL(ж<url.URL> ᏑlastReq, ж<url.URL> ᏑnewReq, @string explicitRef) {
+internal static @string refererForURL(ж<url.URL> ᏑlastReq, ref url.URL newReq, @string explicitRef) {
     ref var lastReq = ref ᏑlastReq.DerefOrNull();
-    ref var newReq = ref ᏑnewReq.DerefOrNull();
 
     // https://tools.ietf.org/html/rfc7231#section-5.5.2
     //   "Clients SHOULD NOT include a Referer header field in a
@@ -553,12 +552,11 @@ public static error ErrUseLastResponse = errors.New("net/http: use last response
 
 // redirectBehavior describes what should happen when the
 // client encounters a 3xx status code from the server.
-internal static (@string redirectMethod, bool shouldRedirect, bool includeBody) redirectBehavior(@string reqMethod, ж<Response> Ꮡresp, ж<Request> Ꮡireq) {
+internal static (@string redirectMethod, bool shouldRedirect, bool includeBody) redirectBehavior(@string reqMethod, ref Response resp, ж<Request> Ꮡireq) {
     @string redirectMethod = default!;
     bool shouldRedirect = default!;
     bool includeBody = default!;
 
-    ref var resp = ref Ꮡresp.DerefOrNull();
     ref var ireq = ref Ꮡireq.DerefOrNull();
     switch (resp.StatusCode) {
     case 301 or 302 or 303: {
@@ -754,7 +752,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                 // Add the Referer header from the most recent
                 // request URL to the new one, if it's not https->http:
                 {
-                    @string @ref = refererForURL((~reqs[builtin.len(reqs) - 1]).URL, req.URL, req.Header.Get(refererˢ)); if (@ref != ""u8) {
+                    @string @ref = refererForURL((~reqs[builtin.len(reqs) - 1]).URL, ref (req.URL).DerefOrNull(), req.Header.Get(refererˢ)); if (@ref != ""u8) {
                         req.Header.Set(refererˢ, @ref);
                     }
                 }
@@ -799,7 +797,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                 }
             }
             bool shouldRedirect = default!;
-            (redirectMethod, shouldRedirect, includeBody) = redirectBehavior(req.Method, resp, reqs[0]);
+            (redirectMethod, shouldRedirect, includeBody) = redirectBehavior(req.Method, ref (resp).DerefOrNull(), reqs[0]);
             if (!shouldRedirect) {
                 (retres, reterr) = (resp, default!); goto ᒐdone;
             }

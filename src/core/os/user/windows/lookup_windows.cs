@@ -406,9 +406,7 @@ internal static (ж<Group>, error) lookupGroupId(@string gid) {
     return (Ꮡ(new Group(Name: groupname, Gid: gid)), default!);
 }
 
-internal static (slice<@string>, error) listGroups(ж<User> Ꮡuser) {
-    ref var user = ref Ꮡuser.DerefOrNull();
-
+internal static (slice<@string>, error) listGroups(ref User user) {
     var (sid, err) = syscall.StringToSid(user.Uid);
     if (err != default!) {
         return (default!, err);

@@ -224,9 +224,8 @@ internal static (slice<byte>, error) generateOuterECHExt(uint8 id, uint16 kdfID,
     return b.Bytes();
 }
 
-internal static error computeAndUpdateOuterECHExtension(ж<clientHelloMsg> Ꮡouter, ж<clientHelloMsg> Ꮡinner, ж<echContext> Ꮡech, bool useKey) {
+internal static error computeAndUpdateOuterECHExtension(ж<clientHelloMsg> Ꮡouter, ж<clientHelloMsg> Ꮡinner, ref echContext ech, bool useKey) {
     ref var outer = ref Ꮡouter.DerefOrNull();
-    ref var ech = ref Ꮡech.DerefOrNull();
 
     slice<byte> encapKey = default!;
     if (useKey) {

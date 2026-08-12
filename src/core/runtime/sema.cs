@@ -114,9 +114,7 @@ internal static void poll_runtime_Semrelease(ж<uint32> Ꮡaddr) {
     semrelease(Ꮡaddr);
 }
 
-internal static void readyWithTime(ж<sudog> Ꮡs, nint traceskip) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
+internal static void readyWithTime(ref sudog s, nint traceskip) {
     if (s.releasetime != 0) {
         s.releasetime = cputicks();
     }
@@ -253,7 +251,7 @@ internal static void semrelease1(ж<uint32> Ꮡaddr, bool handoff, nint skipfram
         if (handoff && cansemacquire(Ꮡaddr)) {
             s.Value.ticket = 1;
         }
-        readyWithTime(s, 5 + skipframes);
+        readyWithTime(ref (s).DerefOrNull(), 5 + skipframes);
         if ((~s).ticket == 1 && (~(~getg()).m).locks == 0) {
             // Direct G handoff
             // readyWithTime has added the waiter G as runnext in the
@@ -638,7 +636,7 @@ internal static void notifyListNotifyAll(ж<notifyList> Ꮡl) {
     while (s != nil) {
         var next = s.Value.next;
         s.Value.next = default!;
-        readyWithTime(s, 4);
+        readyWithTime(ref (s).DerefOrNull(), 4);
         s = next;
     }
 }
@@ -689,7 +687,7 @@ internal static void notifyListNotifyOne(ж<notifyList> Ꮡl) {
             }
             unlock(Ꮡl.of(notifyList.Ꮡlock));
             s.Value.next = default!;
-            readyWithTime(s, 4);
+            readyWithTime(ref (s).DerefOrNull(), 4);
             return;
         }
     }

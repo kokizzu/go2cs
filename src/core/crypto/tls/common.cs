@@ -1248,7 +1248,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
     // schemes we can use with this certificate and TLS version.
     if (len(chi.SignatureSchemes) > 0) {
         {
-            var (_, err) = selectSignatureScheme(vers, Ꮡc, chi.SignatureSchemes); if (err != default!) {
+            var (_, err) = selectSignatureScheme(vers, ref (Ꮡc).DerefOrNull(), chi.SignatureSchemes); if (err != default!) {
                 return supportsRSAFallback(err);
             }
         }
@@ -1281,7 +1281,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
                     curve = CurveP521;
                 }
                 else { /* default: */
-                    return supportsRSAFallback(unsupportedCertificateError(Ꮡc));
+                    return supportsRSAFallback(unsupportedCertificateError(ref (Ꮡc).DerefOrNull()));
                 }
 
                 bool curveOk = default!;
@@ -1309,10 +1309,10 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
             }
             default: {
                 var pub = switchᴛ3;
-                return supportsRSAFallback(unsupportedCertificateError(Ꮡc));
+                return supportsRSAFallback(unsupportedCertificateError(ref (Ꮡc).DerefOrNull()));
             }}
         } else {
-            return supportsRSAFallback(unsupportedCertificateError(Ꮡc));
+            return supportsRSAFallback(unsupportedCertificateError(ref (Ꮡc).DerefOrNull()));
         }
     }
     // Make sure that there is a mutually supported cipher suite that works with
@@ -1352,7 +1352,7 @@ internal static readonly @string chainIsNotSignedByAnˢ = "chain is not signed b
     ref var c = ref Ꮡc.DerefOrNull();
 
     {
-        var (_, err) = selectSignatureScheme(cri.Version, Ꮡc, cri.SignatureSchemes); if (err != default!) {
+        var (_, err) = selectSignatureScheme(cri.Version, ref (Ꮡc).DerefOrNull(), cri.SignatureSchemes); if (err != default!) {
             return err;
         }
     }

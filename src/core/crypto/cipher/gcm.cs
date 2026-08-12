@@ -136,15 +136,14 @@ internal static (AEAD, error) newGCMWithNonceAndTagSize(Block cipher, nint nonce
     // therefore the bits will be in the reverse order. So normally one
     // would expect, say, 4*key to be in index 4 of the table but due to
     // this bit ordering it will actually be in index 0010 (base 2) = 2.
-    ref var x = ref heap<gcmFieldElement>(out var Ꮡx);
-    x = new gcmFieldElement(
+    var x = new gcmFieldElement(
         byteorder.BeUint64(key[..8]),
         byteorder.BeUint64(key[8..])
     );
     g.Value.productTable[reverseBits(1)] = x;
     for (nint i = 2; i < 16; i += 2) {
-        g.Value.productTable[reverseBits(i)] = gcmDouble(g.at(gcm.ᏑproductTable, reverseBits(i / 2)));
-        g.Value.productTable[reverseBits(i + 1)] = gcmAdd(g.at(gcm.ᏑproductTable, reverseBits(i)), Ꮡx);
+        g.Value.productTable[reverseBits(i)] = gcmDouble(ref (g.at(gcm.ᏑproductTable, reverseBits(i / 2))).DerefOrNull());
+        g.Value.productTable[reverseBits(i + 1)] = gcmAdd(ref (g.at(gcm.ᏑproductTable, reverseBits(i))).DerefOrNull(), ref x);
     }
     return (new gcmжAEAD(g), default!);
 }
@@ -235,19 +234,15 @@ internal static nint reverseBits(nint i) {
 }
 
 // gcmAdd adds two elements of GF(2¹²⁸) and returns the sum.
-internal static gcmFieldElement gcmAdd(ж<gcmFieldElement> Ꮡx, ж<gcmFieldElement> Ꮡy) {
-    ref var x = ref Ꮡx.DerefOrNull();
-    ref var y = ref Ꮡy.DerefOrNull();
-
+internal static gcmFieldElement gcmAdd(ref gcmFieldElement x, ref gcmFieldElement y) {
     // Addition in a characteristic 2 field is just XOR.
     return new gcmFieldElement((uint64)(x.low ^ y.low), (uint64)(x.high ^ y.high));
 }
 
 // gcmDouble returns the result of doubling an element of GF(2¹²⁸).
-internal static gcmFieldElement /*double*/ gcmDouble(ж<gcmFieldElement> Ꮡx) {
+internal static gcmFieldElement /*double*/ gcmDouble(ref gcmFieldElement x) {
     gcmFieldElement @double = default!;
 
-    ref var x = ref Ꮡx.DerefOrNull();
     var msbSet = (uint64)(x.high & 1) == 1;
     // Because of the bit-ordering, doubling is actually a right shift.
     @double.high = (x.high >> (int)(1));

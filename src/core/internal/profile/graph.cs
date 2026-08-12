@@ -315,7 +315,7 @@ internal static ж<Graph> selectNodesForGraph(Nodes nodes, bool dropNegative) {
         if ((~n).Cum == 0 && (~n).Flat == 0) {
             continue;
         }
-        if (dropNegative && isNegative(n)) {
+        if (dropNegative && isNegative(ref (n).DerefOrNull())) {
             continue;
         }
         gNodes = append(gNodes, n);
@@ -329,9 +329,7 @@ internal static ж<Graph> selectNodesForGraph(Nodes nodes, bool dropNegative) {
 
 // isNegative returns true if the node is considered as "negative" for the
 // purposes of drop_negative.
-internal static bool isNegative(ж<Node> Ꮡn) {
-    ref var n = ref Ꮡn.DerefOrNull();
-
+internal static bool isNegative(ref Node n) {
     switch (ᐧ) {
     case {} when n.Flat is < 0: {
         return true;
@@ -407,16 +405,14 @@ internal static ж<Node> findOrInsertLine(this NodeMap nm, ж<Location> Ꮡl, Li
         }
     }
     {
-        var ni = nodeInfo(Ꮡl, li, objfile, Ꮡo); if (ni != nil) {
+        var ni = nodeInfo(ref (Ꮡl).DerefOrNull(), li, objfile, ref (Ꮡo).DerefOrNull()); if (ni != nil) {
             return nm.FindOrInsertNode(ni.Value, o.KeptNodes);
         }
     }
     return default!;
 }
 
-internal static ж<NodeInfo> nodeInfo(ж<Location> Ꮡl, Line line, @string objfile, ж<Options> Ꮡo) {
-    ref var l = ref Ꮡl.DerefOrNull();
-
+internal static ж<NodeInfo> nodeInfo(ref Location l, Line line, @string objfile, ref Options o) {
     if (line.Function == nil) {
         return Ꮡ(new NodeInfo(Address: l.Address));
     }

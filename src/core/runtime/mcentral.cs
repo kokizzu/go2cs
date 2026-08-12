@@ -46,10 +46,10 @@ partial class runtime_package {
 // Initialize a single central free list.
 [GoRecv] internal static void init(this ref mcentral c, spanClass spc) {
     c.spanclass = spc;
-    lockInit(Ꮡ(c.partial[0]).of(spanSet.ᏑspineLock), lockRankSpanSetSpine);
-    lockInit(Ꮡ(c.partial[1]).of(spanSet.ᏑspineLock), lockRankSpanSetSpine);
-    lockInit(Ꮡ(c.full[0]).of(spanSet.ᏑspineLock), lockRankSpanSetSpine);
-    lockInit(Ꮡ(c.full[1]).of(spanSet.ᏑspineLock), lockRankSpanSetSpine);
+    lockInit(ref nonnil(ref c).partial[0].spineLock, lockRankSpanSetSpine);
+    lockInit(ref nonnil(ref c).partial[1].spineLock, lockRankSpanSetSpine);
+    lockInit(ref nonnil(ref c).full[0].spineLock, lockRankSpanSetSpine);
+    lockInit(ref nonnil(ref c).full[1].spineLock, lockRankSpanSetSpine);
 }
 
 // partialUnswept returns the spanSet which holds partially-filled

@@ -199,7 +199,7 @@ public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
     ref var earlyData = ref heap(new uint8(), out var ᏑearlyData);
     ref var cert = ref heap(new Certificate(), out var Ꮡcert);
     ref var extra = ref heap<cryptobyte.String>(out var Ꮡextra);
-    if (!s.ReadUint16(ss.of(SessionState.Ꮡversion)) || !s.ReadUint8(Ꮡtyp) || (typ != 1 && typ != 2) || !s.ReadUint16(ss.of(SessionState.ᏑcipherSuite)) || !readUint64(Ꮡs, ss.of(SessionState.ᏑcreatedAt)) || !readUint8LengthPrefixed(Ꮡs, ss.of(SessionState.Ꮡsecret)) || !s.ReadUint24LengthPrefixed(Ꮡextra) || !s.ReadUint8(ᏑextMasterSecret) || !s.ReadUint8(ᏑearlyData) || len((~ss).secret) == 0 || !unmarshalCertificate(Ꮡs, Ꮡcert)) {
+    if (!s.ReadUint16(ss.of(SessionState.Ꮡversion)) || !s.ReadUint8(Ꮡtyp) || (typ != 1 && typ != 2) || !s.ReadUint16(ss.of(SessionState.ᏑcipherSuite)) || !readUint64(Ꮡs, ref (ss.of(SessionState.ᏑcreatedAt)).DerefOrNull()) || !readUint8LengthPrefixed(Ꮡs, ss.of(SessionState.Ꮡsecret)) || !s.ReadUint24LengthPrefixed(Ꮡextra) || !s.ReadUint8(ᏑextMasterSecret) || !s.ReadUint8(ᏑearlyData) || len((~ss).secret) == 0 || !unmarshalCertificate(Ꮡs, Ꮡcert)) {
         return (default!, errors.New(tlsInvalidSessionˢ));
     }
     while (!extra.Empty()) {

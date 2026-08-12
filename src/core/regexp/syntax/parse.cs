@@ -422,7 +422,7 @@ internal static rune minFoldRune(rune r) {
     re.Value.Sub[0] = sub;
     p.stack[n - 1] = re;
     p.checkLimits(re);
-    if (op == OpRepeat && (min >= 2 || max >= 2) && !repeatIsValid(re, 1000)) {
+    if (op == OpRepeat && (min >= 2 || max >= 2) && !repeatIsValid(ref (re).DerefOrNull(), 1000)) {
         return ("", new ΔErrorжerror(Ꮡ(new ΔError(ErrInvalidRepeatSize, before[..(int)(len(before) - len(after))]))));
     }
     return (after, default!);
@@ -437,9 +437,7 @@ internal static rune minFoldRune(rune r) {
 // We avoid this by only calling repeatIsValid when min or max >= 2.
 // In that case the depth of any >= 2 nesting can only get to 9 without
 // triggering a parse error, so each subtree can only be rewalked 9 times.
-internal static bool repeatIsValid(ж<Regexp> Ꮡre, nint n) {
-    ref var re = ref Ꮡre.DerefOrNull();
-
+internal static bool repeatIsValid(ref Regexp re, nint n) {
     if (re.Op == OpRepeat) {
         nint m = re.Max;
         if (m == 0) {
@@ -456,7 +454,7 @@ internal static bool repeatIsValid(ж<Regexp> Ꮡre, nint n) {
         }
     }
     foreach (var (_, sub) in re.Sub) {
-        if (!repeatIsValid(sub, n)) {
+        if (!repeatIsValid(ref (sub).DerefOrNull(), n)) {
             return false;
         }
     }
@@ -657,7 +655,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
         ж<Regexp> ifirst = default!;
         if (i < len(sub)) {
             ifirst = p.leadingRegexp(sub[i]);
-            if (first != nil && first.Equal(ifirst) && (isCharClass(first) || ((~first).Op == OpRepeat && (~first).Min == (~first).Max && isCharClass((~first).Sub[0])))) {
+            if (first != nil && first.Equal(ifirst) && (isCharClass(ref (first).DerefOrNull()) || ((~first).Op == OpRepeat && (~first).Min == (~first).Max && isCharClass(ref ((~first).Sub[0]).DerefOrNull())))) {
                 // first must be a character class OR a fixed repeat of a character class.
                 continue;
             }
@@ -700,7 +698,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
         //
         // Invariant: sub[start:i] consists of regexps that are either
         // literal runes or character classes.
-        if (i < len(sub) && isCharClass(sub[i])) {
+        if (i < len(sub) && isCharClass(ref (sub[i]).DerefOrNull())) {
             continue;
         }
         // sub[i] is not a char or char class;
@@ -721,7 +719,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
             }
             (sub[start], sub[max]) = (sub[max], sub[start]);
             for (nint j = start + 1; j < i; j++) {
-                mergeCharClass(sub[start], sub[j]);
+                mergeCharClass(ref (sub[start]).DerefOrNull(), ref (sub[j]).DerefOrNull());
                 p.reuse(sub[j]);
             }
             cleanAlt(sub[start]);
@@ -1385,16 +1383,12 @@ internal static bool isValidCaptureName(@string name) {
 
 // can this be represented as a character class?
 // single-rune literal string, char class, ., and .|\n.
-internal static bool isCharClass(ж<Regexp> Ꮡre) {
-    ref var re = ref Ꮡre.DerefOrNull();
-
+internal static bool isCharClass(ref Regexp re) {
     return re.Op == OpLiteral && len(re.Rune) == 1 || re.Op == OpCharClass || re.Op == OpAnyCharNotNL || re.Op == OpAnyChar;
 }
 
 // does re match r?
-internal static bool matchRune(ж<Regexp> Ꮡre, rune r) {
-    ref var re = ref Ꮡre.DerefOrNull();
-
+internal static bool matchRune(ref Regexp re, rune r) {
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpLiteral) {
         return len(re.Rune) == 1 && re.Rune[0] == r;
@@ -1432,15 +1426,12 @@ internal static bool matchRune(ж<Regexp> Ꮡre, rune r) {
 // mergeCharClass makes dst = dst|src.
 // The caller must ensure that dst.Op >= src.Op,
 // to reduce the amount of copying.
-internal static void mergeCharClass(ж<Regexp> Ꮡdst, ж<Regexp> Ꮡsrc) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-    ref var src = ref Ꮡsrc.DerefOrNull();
-
+internal static void mergeCharClass(ref Regexp dst, ref Regexp src) {
     var exprᴛ1 = dst.Op;
     if (exprᴛ1 == OpAnyChar) {
     }
     else if (exprᴛ1 == OpAnyCharNotNL) {
-        if (matchRune(Ꮡsrc, // src doesn't add anything.
+        if (matchRune(ref src, // src doesn't add anything.
  // src might add \n
  (rune)'\n')) {
             dst.Op = OpAnyChar;
@@ -1475,7 +1466,7 @@ internal static void mergeCharClass(ж<Regexp> Ꮡdst, ж<Regexp> Ꮡsrc) {
     // If above and below vertical bar are literal or char class,
     // can merge into a single char class.
     nint n = len(p.stack);
-    if (n >= 3 && (~p.stack[n - 2]).Op == opVerticalBar && isCharClass(p.stack[n - 1]) && isCharClass(p.stack[n - 3])) {
+    if (n >= 3 && (~p.stack[n - 2]).Op == opVerticalBar && isCharClass(ref (p.stack[n - 1]).DerefOrNull()) && isCharClass(ref (p.stack[n - 3]).DerefOrNull())) {
         var re1 = p.stack[n - 1];
         var re3 = p.stack[n - 3];
         // Make re3 the more complex of the two.
@@ -1483,7 +1474,7 @@ internal static void mergeCharClass(ж<Regexp> Ꮡdst, ж<Regexp> Ꮡsrc) {
             (re1, re3) = (re3, re1);
             p.stack[n - 3] = re3;
         }
-        mergeCharClass(re3, re1);
+        mergeCharClass(ref (re3).DerefOrNull(), ref (re1).DerefOrNull());
         p.reuse(re1);
         p.stack = p.stack[..(int)(n - 1)];
         return true;
@@ -1844,17 +1835,17 @@ internal static (slice<rune> @out, @string rest, error err) parseUnicodeClass(th
     }
     if ((Flags)(p.flags & FoldCase) == 0 || fold == nil){
         if (sign > 0){
-            r = appendTable(r, tab);
+            r = appendTable(r, ref (tab).DerefOrNull());
         } else {
-            r = appendNegatedTable(r, tab);
+            r = appendNegatedTable(r, ref (tab).DerefOrNull());
         }
     } else {
         // Merge and clean tab and fold in a temporary buffer.
         // This is necessary for the negative case and just tidy
         // for the positive case.
         var tmp = p.tmpClass[..0];
-        tmp = appendTable(tmp, tab);
-        tmp = appendTable(tmp, fold);
+        tmp = appendTable(tmp, ref (tab).DerefOrNull());
+        tmp = appendTable(tmp, ref (fold).DerefOrNull());
         p.tmpClass = tmp;
         tmp = cleanClass(Ꮡp.of(parser.ᏑtmpClass));
         if (sign > 0){
@@ -2116,9 +2107,7 @@ internal static slice<rune> appendNegatedClass(slice<rune> r, slice<rune> x) {
 }
 
 // appendTable returns the result of appending x to the class r.
-internal static slice<rune> appendTable(slice<rune> r, ж<unicode.RangeTable> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
+internal static slice<rune> appendTable(slice<rune> r, ref unicode.RangeTable x) {
     foreach (var (_, xr) in x.R16) {
         var (lo, hi, stride) = ((rune)xr.Lo, (rune)xr.Hi, (rune)xr.Stride);
         if (stride == 1) {
@@ -2143,9 +2132,7 @@ internal static slice<rune> appendTable(slice<rune> r, ж<unicode.RangeTable> �
 }
 
 // appendNegatedTable returns the result of appending the negation of x to the class r.
-internal static slice<rune> appendNegatedTable(slice<rune> r, ж<unicode.RangeTable> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
+internal static slice<rune> appendNegatedTable(slice<rune> r, ref unicode.RangeTable x) {
     var nextLo = (rune)'\u0000'; // lo end of next class to add
     foreach (var (_, xr) in x.R16) {
         var (lo, hi, stride) = ((rune)xr.Lo, (rune)xr.Hi, (rune)xr.Stride);

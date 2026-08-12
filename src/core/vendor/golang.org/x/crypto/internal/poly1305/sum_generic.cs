@@ -35,9 +35,8 @@ internal static void sumGeneric(ж<array<byte>> Ꮡout, slice<byte> msg, ж<arra
 }
 
 internal static macGeneric newMACGeneric(ж<array<byte>> Ꮡkey) {
-    ref var m = ref heap<macGeneric>(out var Ꮡm);
-    m = new macGeneric(nil);
-    initialize(Ꮡkey, Ꮡm.of(macGeneric.ᏑmacState));
+    var m = new macGeneric(nil);
+    initialize(Ꮡkey, ref m.macState);
     return m.ΔClone();
 }
 
@@ -73,11 +72,11 @@ internal static (nint, error) Write(this ж<macGeneric> Ꮡh, slice<byte> p) {
         }
         p = p[(int)(n)..];
         h.offset = 0;
-        updateGeneric(Ꮡh.of(macGeneric.ᏑmacState), h.buffer[..]);
+        updateGeneric(ref nonnil(ref h).macState, h.buffer[..]);
     }
     {
         nint n = len(p) - (len(p) % (nint)TagSize); if (n > 0) {
-            updateGeneric(Ꮡh.of(macGeneric.ᏑmacState), p[..(int)(n)]);
+            updateGeneric(ref nonnil(ref h).macState, p[..(int)(n)]);
             p = p[(int)(n)..];
         }
     }
@@ -91,12 +90,11 @@ internal static (nint, error) Write(this ж<macGeneric> Ꮡh, slice<byte> p) {
 // the MAC output. It does not modify its state, in order to allow for multiple
 // calls to Sum, even if no Write is allowed after Sum.
 [GoRecv] internal static void Sum(this ref macGeneric h, ж<array<byte>> Ꮡout) {
-    ref var state = ref heap<macState>(out var Ꮡstate);
-    state = h.macState.ΔClone();
+    var state = h.macState.ΔClone();
     if (h.offset > 0) {
-        updateGeneric(Ꮡstate, h.buffer[..(int)(h.offset)]);
+        updateGeneric(ref state, h.buffer[..(int)(h.offset)]);
     }
-    finalize(Ꮡout, Ꮡstate.of(macState.Ꮡh), Ꮡstate.of(macState.Ꮡs));
+    finalize(Ꮡout, ref state.h, ref state.s);
 }
 
 // [rMask0, rMask1] is the specified Poly1305 clamping mask in little-endian. It
@@ -107,9 +105,8 @@ internal static UntypedInt rMask0 => 0x0FFFFFFC0FFFFFFF;
 internal static UntypedInt rMask1 => 0x0FFFFFFC0FFFFFFC;
 
 // initialize loads the 256-bit key into the two 128-bit secret values r and s.
-internal static void initialize(ж<array<byte>> Ꮡkey, ж<macState> Ꮡm) {
+internal static void initialize(ж<array<byte>> Ꮡkey, ref macState m) {
     ref var key = ref Ꮡkey.DerefOrNull();
-    ref var m = ref Ꮡm.DerefOrNull();
 
     m.r[0] = (uint64)(binary.LittleEndian.Uint64(key[0..8]) & (uint64)rMask0);
     m.r[1] = (uint64)(binary.LittleEndian.Uint64(key[8..16]) & (uint64)rMask1);
@@ -150,9 +147,7 @@ internal static uint128 shiftRightBy2(uint128 a) {
 //
 // If the msg length is not a multiple of TagSize, it assumes the last
 // incomplete chunk is the final one.
-internal static void updateGeneric(ж<macState> Ꮡstate, slice<byte> msg) {
-    ref var state = ref Ꮡstate.DerefOrNull();
-
+internal static void updateGeneric(ref macState state, slice<byte> msg) {
     var (h0, h1, h2) = (state.h[0], state.h[1], state.h[2]);
     var (r0, r1) = (state.r[0], state.r[1]);
     while (len(msg) > 0) {
@@ -273,10 +268,8 @@ internal static UntypedInt p2 => 0x0000000000000003;
 // finalize completes the modular reduction of h and computes
 //
 //	out = h + s  mod  2¹²⁸
-internal static void finalize(ж<array<byte>> Ꮡout, ж<array<uint64>> Ꮡh, ж<array<uint64>> Ꮡs) {
+internal static void finalize(ж<array<byte>> Ꮡout, ref array<uint64> h, ref array<uint64> s) {
     ref var @out = ref Ꮡout.DerefOrNull();
-    ref var h = ref Ꮡh.DerefOrNull();
-    ref var s = ref Ꮡs.DerefOrNull();
 
     var (h0, h1, h2) = (h[0], h[1], h[2]);
     // After the partial reduction in updateGeneric, h might be more than

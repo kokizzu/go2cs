@@ -217,7 +217,7 @@ internal static (slice<byte>, error) signPSSWithSalt(ж<PrivateKey> Ꮡpriv, cry
             em = emNew;
         }
     }
-    return decrypt(Ꮡpriv, em, withCheck);
+    return decrypt(ref (Ꮡpriv).DerefOrNull(), em, withCheck);
 }
 
 public static UntypedInt PSSSaltLengthAuto => 0;
@@ -343,7 +343,7 @@ public static error VerifyPSS(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice<byte
     }
     nint emBits = pub.N.BitLen() - 1;
     nint emLen = (emBits + 7) / 8;
-    var (em, err) = encrypt(Ꮡpub, sig);
+    var (em, err) = encrypt(ref (Ꮡpub).DerefOrNull(), sig);
     if (err != default!) {
         return ErrVerification;
     }

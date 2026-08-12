@@ -33,10 +33,8 @@ internal static uint64 shiftRightBy51(uint128 a) {
     return (uint64)(((a.hi << (int)((64 - 51)))) | ((a.lo >> (int)(51))));
 }
 
-internal static void feMulGeneric(ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Element> Ꮡb) {
+internal static void feMulGeneric(ж<Element> Ꮡv, ref Element a, ref Element b) {
     ref var v = ref Ꮡv.DerefOrNull();
-    ref var a = ref Ꮡa.DerefOrNull();
-    ref var b = ref Ꮡb.DerefOrNull();
 
     var a0 = a.l0;
     var a1 = a.l1;
@@ -156,9 +154,8 @@ internal static void feMulGeneric(ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Element
     Ꮡv.carryPropagate();
 }
 
-internal static void feSquareGeneric(ж<Element> Ꮡv, ж<Element> Ꮡa) {
+internal static void feSquareGeneric(ж<Element> Ꮡv, ref Element a) {
     ref var v = ref Ꮡv.DerefOrNull();
-    ref var a = ref Ꮡa.DerefOrNull();
 
     var l0 = a.l0;
     var l1 = a.l1;

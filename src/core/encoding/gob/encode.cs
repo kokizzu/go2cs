@@ -605,7 +605,7 @@ internal static (ж<Action<ж<encInstr>, ж<encoderState>, reflectꓸValue>>, ni
                 };
             }
             else if (exprᴛ1 == reflect.Struct) {
-                getEncEngine(userType(typ), // Generate a closure that calls out to the engine for the nested type.
+                getEncEngine(ref (userType(typ)).DerefOrNull(), // Generate a closure that calls out to the engine for the nested type.
  building);
                 var info = mustGetTypeInfo(typ);
                 var infoʗ1 = info;
@@ -667,9 +667,7 @@ internal static (ж<Action<ж<encInstr>, ж<encoderState>, reflectꓸValue>>, ni
 }
 
 // compileEnc returns the engine to compile the type.
-internal static ж<encEngine> compileEnc(ж<userTypeInfo> Ꮡut, map<ж<typeInfo>, bool> building) {
-    ref var ut = ref Ꮡut.DerefOrNull();
-
+internal static ж<encEngine> compileEnc(ref userTypeInfo ut, map<ж<typeInfo>, bool> building) {
     var srt = ut.@base;
     var engine = @new<encEngine>();
     var seen = new map<reflectꓸType, ж<Action<ж<encInstr>, ж<encoderState>, reflectꓸValue>>>();
@@ -679,9 +677,8 @@ internal static ж<encEngine> compileEnc(ж<userTypeInfo> Ꮡut, map<ж<typeInfo
     }
     if (ut.externalEnc == 0 && srt.Kind() == reflect.Struct){
         for ((nint fieldNum, nint wireFieldNum) = (0, 0); fieldNum < srt.NumField(); fieldNum++) {
-            ref var f = ref heap<reflect.StructField>(out var Ꮡf);
-            f = srt.Field(fieldNum);
-            if (!isSent(Ꮡf)) {
+            var f = srt.Field(fieldNum);
+            if (!isSent(ref f)) {
                 continue;
             }
             var (op, indir) = encOpFor(f.Type, seen, building);
@@ -701,19 +698,19 @@ internal static ж<encEngine> compileEnc(ж<userTypeInfo> Ꮡut, map<ж<typeInfo
 }
 
 // getEncEngine returns the engine to compile the type.
-internal static ж<encEngine> getEncEngine(ж<userTypeInfo> Ꮡut, map<ж<typeInfo>, bool> building) {
-    var (info, err) = getTypeInfo(Ꮡut);
+internal static ж<encEngine> getEncEngine(ref userTypeInfo ut, map<ж<typeInfo>, bool> building) {
+    var (info, err) = getTypeInfo(ref ut);
     if (err != default!) {
         error_(err);
     }
     var enc = info.of(typeInfo.Ꮡencoder).Load();
     if (enc == nil) {
-        enc = buildEncEngine(info, Ꮡut, building);
+        enc = buildEncEngine(info, ref ut, building);
     }
     return enc;
 }
 
-internal static ж<encEngine> buildEncEngine(ж<typeInfo> Ꮡinfo, ж<userTypeInfo> Ꮡut, map<ж<typeInfo>, bool> building) {
+internal static ж<encEngine> buildEncEngine(ж<typeInfo> Ꮡinfo, ref userTypeInfo ut, map<ж<typeInfo>, bool> building) {
     GoFrame ᒐ = default;
     try {
         // Check for recursive types.
@@ -728,7 +725,7 @@ internal static ж<encEngine> buildEncEngine(ж<typeInfo> Ꮡinfo, ж<userTypeIn
                 building = new map<ж<typeInfo>, bool>();
             }
             building[Ꮡinfo] = true;
-            enc = compileEnc(Ꮡut, building);
+            enc = compileEnc(ref ut, building);
             Ꮡinfo.of(typeInfo.Ꮡencoder).Store(enc);
         }
         return enc;
@@ -742,8 +739,8 @@ internal static void encode(this ж<Encoder> Ꮡenc, ж<encBuffer> Ꮡb, reflect
     try {
         ref var ut = ref Ꮡut.DerefOrNull();
 
-        defer(catchError, Ꮡenc.of(Encoder.Ꮡerr), ref ᒐ);
-        var engine = getEncEngine(Ꮡut, default!);
+        defer(ᴛ1 => catchError(ref ᴛ1.DerefOrNull()), Ꮡenc.of(Encoder.Ꮡerr), ref ᒐ);
+        var engine = getEncEngine(ref (Ꮡut).DerefOrNull(), default!);
         nint indir = ut.indir;
         if (ut.externalEnc != 0) {
             indir = (nint)ut.encIndir;

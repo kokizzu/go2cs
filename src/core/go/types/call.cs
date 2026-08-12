@@ -227,7 +227,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
             case 1: {
                 Ꮡcheck.expr(nil, Ꮡx, call.Args[0]);
                 if (x.mode != invalid) {
-                    if (hasDots(Ꮡcall)) {
+                    if (hasDots(ref (Ꮡcall).DerefOrNull())) {
                         Ꮡcheck.errorf(new ast_Exprᴠpositioner(call.Args[0]), BadDotDotDotSyntax, "invalid use of ... in conversion to %s"u8, T);
                         break;
                     }
@@ -520,7 +520,7 @@ internal static ж<ΔSignature> /*rsig*/ arguments(this ж<Checker> Ꮡcheck, ж
     // --------------+------------------+----------------+
     nint nargs = len(args);
     nint npars = sig.@params.Len();
-    var ddd = hasDots(Ꮡcall);
+    var ddd = hasDots(ref (Ꮡcall).DerefOrNull());
     // set up parameters
     var sigParams = sig.@params; // adjusted for variadic functions (may be nil for empty parameter lists!)
     var adjusted = false; // indicates if sigParams is different from sig.params

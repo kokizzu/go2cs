@@ -75,10 +75,9 @@ public static (ж<bigꓸInt> r, ж<bigꓸInt> s, error err) Sign(io.Reader rand,
     return (r, s, default!);
 }
 
-internal static (slice<byte> sig, error err) signLegacy(ж<PrivateKey> Ꮡpriv, io.Reader csprng, slice<byte> hash) {
+internal static (slice<byte> sig, error err) signLegacy(ref PrivateKey priv, io.Reader csprng, slice<byte> hash) {
     error err = default!;
 
-    ref var priv = ref Ꮡpriv.DerefOrNull();
     var c = priv.Curve;
     // SEC 1, Version 2.0, Section 4.1.3
     var N = c.Params().Value.N;
@@ -134,9 +133,7 @@ public static bool Verify(ж<PublicKey> Ꮡpub, slice<byte> hash, ж<bigꓸInt> 
     return VerifyASN1(Ꮡpub, hash, sig);
 }
 
-internal static bool verifyLegacy(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte> sig) {
-    ref var pub = ref Ꮡpub.DerefOrNull();
-
+internal static bool verifyLegacy(ref PublicKey pub, slice<byte> hash, slice<byte> sig) {
     var (rBytes, sBytes, err) = parseSignature(sig);
     if (err != default!) {
         return false;

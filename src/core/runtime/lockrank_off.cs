@@ -13,7 +13,7 @@ internal const bool staticLockRanking = false;
 [GoType] partial struct lockRankStruct {
 }
 
-internal static void lockInit(ж<mutex> Ꮡl, lockRank rank) {
+internal static void lockInit(ref mutex l, lockRank rank) {
 }
 
 internal static lockRank getLockRank(ж<mutex> Ꮡl) {
@@ -39,7 +39,7 @@ internal static void unlockWithRank(ж<mutex> Ꮡl) {
 //
 //go:nosplit
 internal static void releaseLockRankAndM(lockRank rank) {
-    releasem((~getg()).m);
+    releasem(ref ((~getg()).m).DerefOrNull());
 }
 
 // This function may be called in nosplit context and thus must be nosplit.
@@ -69,7 +69,7 @@ internal static void assertWorldStopped() {
 }
 
 //go:nosplit
-internal static void assertWorldStoppedOrLockHeld(ж<mutex> Ꮡl) {
+internal static void assertWorldStoppedOrLockHeld(ref mutex l) {
 }
 
 } // end runtime_package

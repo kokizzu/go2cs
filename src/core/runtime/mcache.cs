@@ -102,7 +102,7 @@ internal static void freemcache(ж<mcache> Ꮡc) {
 
     systemstack(() => {
         Ꮡc.Value.releaseAll();
-        stackcache_clear(Ꮡc);
+        stackcache_clear(ref (Ꮡc).DerefOrNull());
         // NOTE(rsc,rlh): If gcworkbuffree comes back, we need to coordinate
         // with the stealing of gcworkbufs during garbage collection to avoid
         // a race where the workbuf is double-freed.
@@ -117,9 +117,7 @@ internal static void freemcache(ж<mcache> Ꮡc) {
 //
 // Returns nil if we're not bootstrapping or we don't have a P. The caller's
 // P must not change, so we must be in a non-preemptible state.
-internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static ж<mcache> getMCache(ref m mp) {
     // Grab the mcache, since that's where stats live.
     var pp = mp.p.ptr();
     ж<mcache> c = default!;
@@ -309,7 +307,7 @@ internal static void prepareForSweep(this ж<mcache> Ꮡc) {
         @throw(badFlushGenˢ);
     }
     c.releaseAll();
-    stackcache_clear(Ꮡc);
+    stackcache_clear(ref (Ꮡc).DerefOrNull());
     Ꮡc.of(mcache.ᏑflushGen).Store(mheap_.sweepgen); // Synchronizes with gcStart
 }
 

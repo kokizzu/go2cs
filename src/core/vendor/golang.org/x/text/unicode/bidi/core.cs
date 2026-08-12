@@ -162,7 +162,7 @@ internal static void run(this ж<paragraph> Ꮡp) {
         seq.resolveWeakTypes();
         // 4a) resolving paired brackets
         // Rule N0
-        resolvePairedBrackets(seq);
+        resolvePairedBrackets(ref (seq).DerefOrNull());
         // 4b) resolving neutral types
         // Rules N1-N3.
         seq.resolveNeutralTypes();

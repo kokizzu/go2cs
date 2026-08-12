@@ -175,7 +175,7 @@ internal static partial void wintls();
 }
 
 // Stubs so tests can link correctly. These should never be called.
-internal static int32 open(ж<byte> Ꮡname, int32 mode, int32 perm) {
+internal static int32 open(ref byte name, int32 mode, int32 perm) {
     @throw(unimplementedˢ);
     return -1;
 }
@@ -724,9 +724,7 @@ internal static void semawakeup(ж<m> Ꮡmp) {
 internal static readonly @string runtimeSemacreateˢ = "runtime.semacreate"u8;
 
 //go:nosplit
-internal static void semacreate(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static void semacreate(ref m mp) {
     if (mp.waitsema != 0) {
         return;
     }
@@ -787,7 +785,7 @@ internal static readonly @string badNewosproc0ˢ = "bad newosproc0"u8;
 //
 //go:nowritebarrierrec
 //go:nosplit
-internal static void newosproc0(ж<m> Ꮡmp, @unsafe.Pointer stk) {
+internal static void newosproc0(ref m mp, @unsafe.Pointer stk) {
     // TODO: this is completely broken. The args passed to newosproc0 (in asm_amd64.s)
     // are stacksize and function, not *m and stack.
     // Check os_linux.go for an implementation that might actually work.
@@ -797,7 +795,7 @@ internal static void newosproc0(ж<m> Ꮡmp, @unsafe.Pointer stk) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string exitThreadˢ = "exitThread"u8;
 
-internal static void exitThread(ж<atomic.Uint32> Ꮡwait) {
+internal static void exitThread(ref atomic.Uint32 wait) {
     // We should never reach exitThread on Windows because we let
     // the OS clean up threads.
     @throw(exitThreadˢ);
@@ -805,7 +803,7 @@ internal static void exitThread(ж<atomic.Uint32> Ꮡwait) {
 
 // Called to initialize a new m (including the bootstrap m).
 // Called on the parent thread (main thread in case of bootstrap), can allocate memory.
-internal static void mpreinit(ж<m> Ꮡmp) {
+internal static void mpreinit(ref m mp) {
 }
 
 //go:nosplit
@@ -912,9 +910,7 @@ internal static void unminit() {
 // resources in minit, semacreate, or elsewhere. Do not take locks after calling this.
 //
 //go:nosplit
-internal static void mdestroy(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static void mdestroy(ref m mp) {
     if (mp.highResTimer != 0) {
         stdcall1(_CloseHandle, mp.highResTimer);
         mp.highResTimer = 0;
@@ -1158,13 +1154,11 @@ internal static void profilem(ж<m> Ꮡmp, uintptr thread) {
     c = (ж<context>)(uintptr)((@unsafe.Pointer)((uintptr)(((uintptr)Ꮡcbuf.at<byte>(15)) & ~(uintptr)15)));
     c.Value.contextflags = _CONTEXT_CONTROL;
     stdcall2(_GetThreadContext, thread, (uintptr)c);
-    var gp = gFromSP(Ꮡmp, c.sp());
+    var gp = gFromSP(ref (Ꮡmp).DerefOrNull(), c.sp());
     sigprof(c.ip(), c.sp(), c.lr(), gp, Ꮡmp);
 }
 
-internal static ж<g> gFromSP(ж<m> Ꮡmp, uintptr sp) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static ж<g> gFromSP(ref m mp, uintptr sp) {
     {
         var gp = mp.g0; if (gp != nil && (~gp).stack.lo < sp && sp < (~gp).stack.hi) {
             return gp;
@@ -1331,7 +1325,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
     stdcall2(_GetThreadContext, thread, (uintptr)c);
     unlock(ᏑsuspendLock);
     // Does it want a preemption and is it safe to preempt?
-    var gp = gFromSP(Ꮡmp, c.sp());
+    var gp = gFromSP(ref (Ꮡmp).DerefOrNull(), c.sp());
     if (gp != nil && wantAsyncPreempt(gp)) {
         {
             var (ok, newpc) = isAsyncSafePoint(gp, c.ip(), c.sp(), c.lr()); if (ok) {

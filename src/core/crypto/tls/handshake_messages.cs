@@ -41,9 +41,8 @@ internal static void addUint64(ж<cryptobyte.Builder> Ꮡb, uint64 v) {
 
 // readUint64 decodes a big-endian, 64-bit value into out and advances over it.
 // It reports whether the read was successful.
-internal static bool readUint64(ж<cryptobyte.String> Ꮡs, ж<uint64> Ꮡout) {
+internal static bool readUint64(ж<cryptobyte.String> Ꮡs, ref uint64 @out) {
     ref var s = ref Ꮡs.DerefOrNull();
-    ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var hi = ref heap(new uint32(), out var Ꮡhi);
     ref var lo = ref heap(new uint32(), out var Ꮡlo);

@@ -55,8 +55,7 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
     if (typ.Kind() == reflect.Struct && !AreEqual(typ, nameType)) {
         nint n = typ.NumField();
         for (nint i = 0; i < n; i++) {
-            ref var f = ref heap<reflect.StructField>(out var Ꮡf);
-            f = typ.Field(i);
+            var f = typ.Field(i);
             if ((!f.IsExported() && !f.Anonymous) || f.Tag.Get(xmlˢ) == "-"u8) {
                 continue; // Private field
             }
@@ -75,12 +74,11 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
                         tinfo.Value.xmlname = inner.Value.xmlname;
                     }
                     foreach (var (_, vᴛ1) in (~inner).fields) {
-                        ref var finfoΔ1 = ref heap(new fieldInfo(), out var ᏑfinfoΔ1);
-                        finfoΔ1 = vᴛ1;
+                        var finfoΔ1 = vᴛ1;
 
                         finfoΔ1.idx = append(new nint[]{i}.slice(), finfoΔ1.idx.ꓸꓸꓸ);
                         {
-                            var errΔ2 = addFieldInfo(typ, tinfo, ᏑfinfoΔ1); if (errΔ2 != default!) {
+                            var errΔ2 = addFieldInfo(typ, tinfo, ref finfoΔ1); if (errΔ2 != default!) {
                                 return (default!, errΔ2);
                             }
                         }
@@ -88,7 +86,7 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
                     continue;
                 }
             }
-            var (finfo, err) = structFieldInfo(typ, Ꮡf);
+            var (finfo, err) = structFieldInfo(typ, ref f);
             if (err != default!) {
                 return (default!, err);
             }
@@ -98,7 +96,7 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
             }
             // Add the field if it doesn't conflict with other fields.
             {
-                var errΔ1 = addFieldInfo(typ, tinfo, finfo); if (errΔ1 != default!) {
+                var errΔ1 = addFieldInfo(typ, tinfo, ref (finfo).DerefOrNull()); if (errΔ1 != default!) {
                     return (default!, errΔ1);
                 }
             }
@@ -109,9 +107,7 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
 }
 
 // structFieldInfo builds and returns a fieldInfo for f.
-internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<reflect.StructField> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ref reflect.StructField f) {
     var finfo = Ꮡ(new fieldInfo(idx: f.Index));
     // Split the tag from the xml namespace if necessary.
     @string tag = f.Tag.Get(xmlˢ);
@@ -246,12 +242,11 @@ internal static ж<fieldInfo> /*xmlname*/ lookupXMLName(reflectꓸType typ) {
         return default!;
     }
     for ((nint i, nint n) = (0, typ.NumField()); i < n; i++) {
-        ref var f = ref heap<reflect.StructField>(out var Ꮡf);
-        f = typ.Field(i);
+        var f = typ.Field(i);
         if (f.Name != xmlName) {
             continue;
         }
-        var (finfo, err) = structFieldInfo(typ, Ꮡf);
+        var (finfo, err) = structFieldInfo(typ, ref f);
         if (err == default! && (~finfo).name != ""u8) {
             return finfo;
         }
@@ -269,9 +264,8 @@ internal static ж<fieldInfo> /*xmlname*/ lookupXMLName(reflectꓸType typ) {
 // A conflict occurs when the path (parent + name) to a field is
 // itself a prefix of another path, or when two paths match exactly.
 // It is okay for field paths to share a common, shorter prefix.
-internal static error addFieldInfo(reflectꓸType typ, ж<typeInfo> Ꮡtinfo, ж<fieldInfo> Ꮡnewf) {
+internal static error addFieldInfo(reflectꓸType typ, ж<typeInfo> Ꮡtinfo, ref fieldInfo newf) {
     ref var tinfo = ref Ꮡtinfo.DerefOrNull();
-    ref var newf = ref Ꮡnewf.DerefOrNull();
 
     slice<nint> conflicts = default!;
 Loop:

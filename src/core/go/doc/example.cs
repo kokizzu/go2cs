@@ -104,7 +104,7 @@ public static slice<ж<Example>> Examples(params ꓸꓸꓸжastꓸFile testFiles
                 Name: name[(int)(len("Example"))..],
                 Doc: doc,
                 Code: new ast.BlockStmtжNode((~f).Body),
-                Play: playExample(@file, f),
+                Play: playExample(ref (@file).DerefOrNull(), ref (f).DerefOrNull()),
                 Comments: (~@file).Comments,
                 Output: output,
                 Unordered: unordered,
@@ -117,7 +117,7 @@ public static slice<ж<Example>> Examples(params ꓸꓸꓸжastꓸFile testFiles
             // other top-level declarations, and no tests or
             // benchmarks, use the whole file as the example.
             flist[0].Value.Code = new ast.FileжNode(@file);
-            flist[0].Value.Play = playExampleFile(@file);
+            flist[0].Value.Play = playExampleFile(ref (@file).DerefOrNull());
         }
         list = append(list, flist.ꓸꓸꓸ);
     }
@@ -176,10 +176,7 @@ internal static readonly @string mainˢ = "main"u8;
 
 // playExample synthesizes a new *ast.File based on the provided
 // file with the provided function body as the body of main.
-internal static ж<ast.File> playExample(ж<ast.File> Ꮡfile, ж<ast.FuncDecl> Ꮡf) {
-    ref var @file = ref Ꮡfile.DerefOrNull();
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static ж<ast.File> playExample(ref ast.File @file, ref ast.FuncDecl f) {
     var body = f.Body;
     if (!strings.HasSuffix((~@file.Name).Name, testˢ2)) {
         // We don't support examples that are part of the
@@ -587,9 +584,7 @@ internal static readonly @string copyrightˢ = "Copyright"u8;
 
 // playExampleFile takes a whole file example and synthesizes a new *ast.File
 // such that the example is function main in package main.
-internal static ж<ast.File> playExampleFile(ж<ast.File> Ꮡfile) {
-    ref var @file = ref Ꮡfile.DerefOrNull();
-
+internal static ж<ast.File> playExampleFile(ref ast.File @file) {
     // Strip copyright comment if present.
     var comments = @file.Comments;
     if (len(comments) > 0 && strings.HasPrefix(comments[0].Text(), copyrightˢ)) {

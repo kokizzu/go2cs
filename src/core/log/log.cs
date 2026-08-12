@@ -106,9 +106,7 @@ public static ж<Logger> Default() {
 }
 
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
-internal static void itoa(ж<slice<byte>> Ꮡbuf, nint i, nint wid) {
-    ref var buf = ref Ꮡbuf.DerefOrNull();
-
+internal static void itoa(ref slice<byte> buf, nint i, nint wid) {
     // Assemble decimal in reverse order.
     array<byte> b = new(20);
     nint bp = len(b) - 1;
@@ -129,9 +127,7 @@ internal static void itoa(ж<slice<byte>> Ꮡbuf, nint i, nint wid) {
 //   - date and/or time (if corresponding flags are provided),
 //   - file and line number (if corresponding flags are provided),
 //   - l.prefix (if it's not blank and Lmsgprefix is set).
-internal static void formatHeader(ж<slice<byte>> Ꮡbuf, time.Time t, @string prefix, nint flag, @string @file, nint line) {
-    ref var buf = ref Ꮡbuf.DerefOrNull();
-
+internal static void formatHeader(ref slice<byte> buf, time.Time t, @string prefix, nint flag, @string @file, nint line) {
     if ((nint)(flag & (nint)Lmsgprefix) == 0) {
         buf = append(buf, prefix.ꓸꓸꓸ);
     }
@@ -141,23 +137,23 @@ internal static void formatHeader(ж<slice<byte>> Ꮡbuf, time.Time t, @string p
         }
         if ((nint)(flag & (nint)Ldate) != 0) {
             var (year, month, day) = t.Date();
-            itoa(Ꮡbuf, year, 4);
+            itoa(ref buf, year, 4);
             buf = append(buf, (byte)((rune)'/'));
-            itoa(Ꮡbuf, (nint)month, 2);
+            itoa(ref buf, (nint)month, 2);
             buf = append(buf, (byte)((rune)'/'));
-            itoa(Ꮡbuf, day, 2);
+            itoa(ref buf, day, 2);
             buf = append(buf, (byte)((rune)' '));
         }
         if ((nint)(flag & (nint)((nint)((nint)Ltime | (nint)Lmicroseconds))) != 0) {
             var (hour, min, sec) = t.Clock();
-            itoa(Ꮡbuf, hour, 2);
+            itoa(ref buf, hour, 2);
             buf = append(buf, (byte)((rune)':'));
-            itoa(Ꮡbuf, min, 2);
+            itoa(ref buf, min, 2);
             buf = append(buf, (byte)((rune)':'));
-            itoa(Ꮡbuf, sec, 2);
+            itoa(ref buf, sec, 2);
             if ((nint)(flag & (nint)Lmicroseconds) != 0) {
                 buf = append(buf, (byte)((rune)'.'));
-                itoa(Ꮡbuf, t.Nanosecond() / 1000, 6);
+                itoa(ref buf, t.Nanosecond() / 1000, 6);
             }
             buf = append(buf, (byte)((rune)' '));
         }
@@ -175,7 +171,7 @@ internal static void formatHeader(ж<slice<byte>> Ꮡbuf, time.Time t, @string p
         }
         buf = append(buf, @file.ꓸꓸꓸ);
         buf = append(buf, (byte)((rune)':'));
-        itoa(Ꮡbuf, line, -1);
+        itoa(ref buf, line, -1);
         buf = append(buf, ((@string)": "u8).ꓸꓸꓸ);
     }
     if ((nint)(flag & (nint)Lmsgprefix) != 0) {
@@ -255,7 +251,7 @@ internal static error output(this ж<Logger> Ꮡl, uintptr pc, nint calldepth, F
         }
         var buf = getBuffer();
         defer(putBuffer, buf, ref ᒐ);
-        formatHeader(buf, now, prefix, flag, @file, line);
+        formatHeader(ref (buf).DerefOrNull(), now, prefix, flag, @file, line);
         buf.ValueSlot = appendOutput(buf.ValueSlot);
         if (len(buf.ValueSlot) == 0 || (buf.ValueSlot)[len(buf.ValueSlot) - 1] != (rune)'\n') {
             buf.ValueSlot = append(buf.ValueSlot, (byte)((rune)'\n'));

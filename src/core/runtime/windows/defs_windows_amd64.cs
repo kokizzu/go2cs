@@ -89,16 +89,12 @@ internal static UntypedInt _CONTEXT_CONTROL => 0x100001;
     c.rbp = (uint64)x;
 }
 
-internal static void prepareContextForSigResume(ж<context> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void prepareContextForSigResume(ref context c) {
     c.r8 = c.rsp;
     c.r9 = c.rip;
 }
 
-internal static void dumpregs(ж<context> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static void dumpregs(ref context r) {
     print((@string)"rax     "u8, ((Δhex)r.rax), (@string)"\n"u8);
     print((@string)"rbx     "u8, ((Δhex)r.rbx), (@string)"\n"u8);
     print((@string)"rcx     "u8, ((Δhex)r.rcx), (@string)"\n"u8);

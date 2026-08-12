@@ -152,7 +152,7 @@ internal static void end(this ж<dlogger> Ꮡl) {
     // Commit the record.
     l.w.r.end = l.w.write;
     // Attempt to return this logger to the cache.
-    if (putCachedDlogger(Ꮡl)) {
+    if (putCachedDlogger(ref (Ꮡl).DerefOrNull())) {
         return;
     }
     // Return the logger to the global pool.

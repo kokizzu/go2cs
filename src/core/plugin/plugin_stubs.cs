@@ -11,7 +11,7 @@ partial class plugin_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string pluginNotImplementedˢ = "plugin: not implemented"u8;
 
-internal static (Symbol, error) lookup(ж<Plugin> Ꮡp, @string symName) {
+internal static (Symbol, error) lookup(ref Plugin p, @string symName) {
     return (default!, errors.New(pluginNotImplementedˢ));
 }
 

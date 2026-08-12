@@ -10,7 +10,7 @@ public static bool IsDigit(rune r) {
     if (r <= MaxLatin1) {
         return (rune)'0' <= r && r <= (rune)'9';
     }
-    return isExcludingLatin(Digit, r);
+    return isExcludingLatin(ref (Digit).DerefOrNull(), r);
 }
 
 } // end unicode_package

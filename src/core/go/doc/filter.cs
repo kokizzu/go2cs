@@ -25,9 +25,7 @@ internal static bool matchFields(ж<ast.FieldList> Ꮡfields, Func<@string, bool
     return false;
 }
 
-internal static bool matchDecl(ж<ast.GenDecl> Ꮡd, Func<@string, bool> f) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static bool matchDecl(ref ast.GenDecl d, Func<@string, bool> f) {
     foreach (var (_, dΔ1) in d.Specs) {
         switch (dΔ1.type()) {
         case ж<ast.ValueSpec> v: {
@@ -66,7 +64,7 @@ internal static bool matchDecl(ж<ast.GenDecl> Ꮡd, Func<@string, bool> f) {
 internal static slice<ж<Value>> filterValues(slice<ж<Value>> a, Func<@string, bool> f) {
     nint w = 0;
     foreach (var (_, vd) in a) {
-        if (matchDecl((~vd).Decl, f)) {
+        if (matchDecl(ref ((~vd).Decl).DerefOrNull(), f)) {
             a[w] = vd;
             w++;
         }
@@ -89,7 +87,7 @@ internal static slice<ж<Type>> filterTypes(slice<ж<Type>> a, Func<@string, boo
     nint w = 0;
     foreach (var (_, td) in a) {
         nint n = 0; // number of matches
-        if (matchDecl((~td).Decl, f)){
+        if (matchDecl(ref ((~td).Decl).DerefOrNull(), f)){
             n = 1;
         } else {
             // type name doesn't match, but we may have matching consts, vars, factories or methods

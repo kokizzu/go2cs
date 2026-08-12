@@ -107,7 +107,7 @@ internal static bool /*sent*/ sendActualType(this ж<Encoder> Ꮡenc, io.Writer 
             return false;
         }
     }
-    var (info, err) = getTypeInfo(Ꮡut);
+    var (info, err) = getTypeInfo(ref (Ꮡut).DerefOrNull());
     if (err != default!) {
         enc.setError(err);
         return sent;
@@ -235,7 +235,7 @@ internal static void sendTypeDescriptor(this ж<Encoder> Ꮡenc, io.Writer w, ж
             // a singleton basic type (int, []byte etc.) at top level. We don't
             // need to send the type info but we do need to update enc.sent.
             if (!sent) {
-                var (info, err) = getTypeInfo(Ꮡut);
+                var (info, err) = getTypeInfo(ref (Ꮡut).DerefOrNull());
                 if (err != default!) {
                     enc.setError(err);
                     return;

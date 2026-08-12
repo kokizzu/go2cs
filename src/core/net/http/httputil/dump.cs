@@ -84,9 +84,7 @@ internal static (nint n, error err) Read(this neverEnding b, slice<byte> p) {
 
 // outgoingLength is a copy of the unexported
 // (*http.Request).outgoingLength method.
-internal static int64 outgoingLength(ж<http.Request> Ꮡreq) {
-    ref var req = ref Ꮡreq.DerefOrNull();
-
+internal static int64 outgoingLength(ref http.Request req) {
     if (req.Body == default! || AreEqual(req.Body, http.NoBody)) {
         return 0;
     }
@@ -111,7 +109,7 @@ public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool 
         var save = req.Body;
         var dummyBody = false;
         if (!body){
-            var contentLength = outgoingLength(Ꮡreq);
+            var contentLength = outgoingLength(ref (Ꮡreq).DerefOrNull());
             if (contentLength != 0) {
                 req.Body = io.NopCloser(io.LimitReader(((neverEnding)(rune)'x'), contentLength));
                 dummyBody = true;

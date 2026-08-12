@@ -231,8 +231,8 @@ internal static void reflect_typedmemmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst,
     ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (raceenabled) {
-        raceWriteObjectPC(Ꮡtyp, dst, getcallerpc(), abi.FuncPCABIInternal(reflect_typedmemmove));
-        raceReadObjectPC(Ꮡtyp, src, getcallerpc(), abi.FuncPCABIInternal(reflect_typedmemmove));
+        raceWriteObjectPC(ref (Ꮡtyp).DerefOrNull(), dst, getcallerpc(), abi.FuncPCABIInternal(reflect_typedmemmove));
+        raceReadObjectPC(ref (Ꮡtyp).DerefOrNull(), src, getcallerpc(), abi.FuncPCABIInternal(reflect_typedmemmove));
     }
     if (msanenabled) {
         msanwrite(dst, typ.Size_);

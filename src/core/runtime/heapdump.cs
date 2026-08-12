@@ -29,8 +29,8 @@ internal static void runtime_debug_WriteHeapDump(uintptr fd) {
         // Call readmemstats_m here instead of deeper in
         // writeheapdump_m because we might blow the system stack
         // otherwise.
-        readmemstats_m(Ꮡm);
-        writeheapdump_m(fd, Ꮡm);
+        readmemstats_m(ref (Ꮡm).DerefOrNull());
+        writeheapdump_m(fd, ref (Ꮡm).DerefOrNull());
     });
     startTheWorld(stw);
 }
@@ -362,7 +362,7 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
     dumpint(gp.goid);
     dumpint((uint64)gp.gopc);
     dumpint((uint64)readgstatus(Ꮡgp));
-    dumpbool(isSystemGoroutine(Ꮡgp, false));
+    dumpbool(isSystemGoroutine(ref (Ꮡgp).DerefOrNull(), false));
     dumpbool(false); // isbackground
     dumpint((uint64)gp.waitsince);
     dumpstr(gp.waitreason.String());
@@ -570,9 +570,7 @@ internal static void dumpms() {
 }
 
 //go:systemstack
-internal static void dumpmemstats(ж<MemStats> Ꮡm) {
-    ref var m = ref Ꮡm.DerefOrNull();
-
+internal static void dumpmemstats(ref MemStats m) {
     assertWorldStopped();
     // These ints should be identical to the exported
     // MemStats structure and should be ordered the same
@@ -679,7 +677,7 @@ internal static void dumpmemprof() {
 internal static ж<slice<byte>> Ꮡdumphdr = new(slice<byte>("go1.7 heap dump\n"u8));
 internal static ref slice<byte> dumphdr => ref Ꮡdumphdr.ValueSlot;
 
-internal static void mdump(ж<MemStats> Ꮡm) {
+internal static void mdump(ref MemStats m) {
     assertWorldStopped();
     // make sure we're done sweeping
     foreach (var (_, s) in mheap_.allspans) {
@@ -695,22 +693,20 @@ internal static void mdump(ж<MemStats> Ꮡm) {
     dumpgs();
     dumpms();
     dumproots();
-    dumpmemstats(Ꮡm);
+    dumpmemstats(ref m);
     dumpmemprof();
     dumpint(tagEOF);
     flush();
 }
 
-internal static void writeheapdump_m(uintptr fd, ж<MemStats> Ꮡm) {
-    ref var m = ref Ꮡm.DerefOrNull();
-
+internal static void writeheapdump_m(uintptr fd, ref MemStats m) {
     assertWorldStopped();
     var gp = getg();
     casGToWaiting((~(~gp).m).curg, _Grunning, waitReasonDumpingHeap);
     // Set dump file.
     dumpfd = fd;
     // Call dump routine.
-    mdump(Ꮡm);
+    mdump(ref m);
     // Reset dump file.
     dumpfd = 0;
     if (tmpbuf != default!) {

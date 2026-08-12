@@ -123,7 +123,7 @@ public static QUICEventKind QUICStoreSession => 9;
 public static ж<QUICConn> QUICClient(ж<QUICConfig> Ꮡconfig) {
     ref var config = ref Ꮡconfig.DerefOrNull();
 
-    return newQUICConn(Client(default!, config.TLSConfig), Ꮡconfig);
+    return newQUICConn(Client(default!, config.TLSConfig), ref (Ꮡconfig).DerefOrNull());
 }
 
 // QUICServer returns a new TLS server side connection using QUICTransport as the
@@ -133,12 +133,11 @@ public static ж<QUICConn> QUICClient(ж<QUICConfig> Ꮡconfig) {
 public static ж<QUICConn> QUICServer(ж<QUICConfig> Ꮡconfig) {
     ref var config = ref Ꮡconfig.DerefOrNull();
 
-    return newQUICConn(Server(default!, config.TLSConfig), Ꮡconfig);
+    return newQUICConn(Server(default!, config.TLSConfig), ref (Ꮡconfig).DerefOrNull());
 }
 
-internal static ж<QUICConn> newQUICConn(ж<Conn> Ꮡconn, ж<QUICConfig> Ꮡconfig) {
+internal static ж<QUICConn> newQUICConn(ж<Conn> Ꮡconn, ref QUICConfig config) {
     ref var conn = ref Ꮡconn.DerefOrNull();
-    ref var config = ref Ꮡconfig.DerefOrNull();
 
     conn.quic = Ꮡ(new quicState(
         signalc: new channel<EmptyStruct>(0),

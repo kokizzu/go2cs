@@ -81,8 +81,7 @@ internal static ж<request> newRequest(uint16 reqId, uint8 flags) {
     internal ж<bufWriter> w;
 }
 
-internal static ж<response> newResponse(ж<child> Ꮡc, ж<request> Ꮡreq) {
-    ref var c = ref Ꮡc.DerefOrNull();
+internal static ж<response> newResponse(ref child c, ж<request> Ꮡreq) {
     ref var req = ref Ꮡreq.DerefOrNull();
 
     return Ꮡ(new response(
@@ -327,7 +326,7 @@ internal static void serveRequest(this ж<child> Ꮡc, ж<request> Ꮡreq, io.Re
     ref var c = ref Ꮡc.DerefOrNull();
     ref var req = ref Ꮡreq.DerefOrNull();
 
-    var r = newResponse(Ꮡc, Ꮡreq);
+    var r = newResponse(ref (Ꮡc).DerefOrNull(), Ꮡreq);
     var (httpReq, err) = cgi.RequestFromMap(req.@params);
     if (err != default!){
         // there was an error reading the request

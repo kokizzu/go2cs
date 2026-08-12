@@ -318,7 +318,7 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
             // work around _possibly_ broken middleboxes, but there is little-to-no
             // evidence that this is actually a problem.
             {
-                var errΔ1 = computeAndUpdateOuterECHExtension(hello, (~ech).innerHello, ech, true); if (errΔ1 != default!) {
+                var errΔ1 = computeAndUpdateOuterECHExtension(hello, (~ech).innerHello, ref (ech).DerefOrNull(), true); if (errΔ1 != default!) {
                     err = errΔ1; goto ᒐdone;
                 }
             }
@@ -555,7 +555,7 @@ internal static error handshake(this ж<clientHandshakeState> Ꮡhs) {
     if (err != default!) {
         return err;
     }
-    hs.finishedHash = newFinishedHash((~c).vers, hs.suite);
+    hs.finishedHash = newFinishedHash((~c).vers, ref (hs.suite).DerefOrNull());
     // No signatures of the handshake are needed in a resumption.
     // Otherwise, in a full handshake, if we don't have any certificates
     // configured then we will never send a CertificateVerify message and
@@ -758,7 +758,7 @@ internal static error doFullHandshake(this ж<clientHandshakeState> Ꮡhs) {
     (var certReq, ok) = msg._<ж<certificateRequestMsg>>(ᐧ);
     if (ok) {
         certRequested = true;
-        var cri = certificateRequestInfoFromMsg(hs.ctx, (~c).vers, certReq);
+        var cri = certificateRequestInfoFromMsg(hs.ctx, (~c).vers, ref (certReq).DerefOrNull());
         {
             (chainToSend, err) = c.getClientCertificate(cri); if (err != default!) {
                 c.sendAlert(alertInternalError);
@@ -801,10 +801,10 @@ internal static error doFullHandshake(this ж<clientHandshakeState> Ꮡhs) {
     }
     if ((~hs.serverHello).extendedMasterSecret){
         c.Value.extMasterSecret = true;
-        hs.masterSecret = extMasterFromPreMasterSecret((~c).vers, hs.suite, preMasterSecret,
+        hs.masterSecret = extMasterFromPreMasterSecret((~c).vers, ref (hs.suite).DerefOrNull(), preMasterSecret,
             hs.finishedHash.Sum());
     } else {
-        hs.masterSecret = masterFromPreMasterSecret((~c).vers, hs.suite, preMasterSecret,
+        hs.masterSecret = masterFromPreMasterSecret((~c).vers, ref (hs.suite).DerefOrNull(), preMasterSecret,
             (~hs.hello).random, (~hs.serverHello).random);
     }
     {
@@ -823,7 +823,7 @@ internal static error doFullHandshake(this ж<clientHandshakeState> Ꮡhs) {
         uint8 sigType = default!;
         ref var sigHash = ref heap(new crypto.Hash(), out var ᏑsigHash);
         if ((~c).vers >= VersionTLS12){
-            var (signatureAlgorithm, errΔ5) = selectSignatureScheme((~c).vers, chainToSend, (~certReq).supportedSignatureAlgorithms);
+            var (signatureAlgorithm, errΔ5) = selectSignatureScheme((~c).vers, ref (chainToSend).DerefOrNull(), (~certReq).supportedSignatureAlgorithms);
             if (errΔ5 != default!) {
                 c.sendAlert(alertIllegalParameter);
                 return errΔ5;
@@ -863,7 +863,7 @@ internal static error doFullHandshake(this ж<clientHandshakeState> Ꮡhs) {
 
 [GoRecv] internal static error establishKeys(this ref clientHandshakeState hs) {
     var c = hs.c;
-    var (clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV) = keysFromMasterSecret((~c).vers, hs.suite, hs.masterSecret, (~hs.hello).random, (~hs.serverHello).random, (~hs.suite).macLen, (~hs.suite).keyLen, (~hs.suite).ivLen);
+    var (clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV) = keysFromMasterSecret((~c).vers, ref (hs.suite).DerefOrNull(), hs.masterSecret, (~hs.hello).random, (~hs.serverHello).random, (~hs.suite).macLen, (~hs.suite).keyLen, (~hs.suite).ivLen);
     any clientCipher = default!;
     any serverCipher = default!;
     hash.Hash clientHash = default!;
@@ -1218,9 +1218,7 @@ internal static error verifyServerCertificate(this ж<Conn> Ꮡc, slice<slice<by
 
 // certificateRequestInfoFromMsg generates a CertificateRequestInfo from a TLS
 // <= 1.2 CertificateRequest, making an effort to fill in missing information.
-internal static ж<CertificateRequestInfo> certificateRequestInfoFromMsg(context.Context ctx, uint16 vers, ж<certificateRequestMsg> ᏑcertReq) {
-    ref var certReq = ref ᏑcertReq.DerefOrNull();
-
+internal static ж<CertificateRequestInfo> certificateRequestInfoFromMsg(context.Context ctx, uint16 vers, ref certificateRequestMsg certReq) {
     var cri = Ꮡ(new CertificateRequestInfo(
         AcceptableCAs: certReq.certificateAuthorities,
         Version: vers,

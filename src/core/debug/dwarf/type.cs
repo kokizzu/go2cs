@@ -431,7 +431,7 @@ public static (ΔType, error) Type(this ж<Data> Ꮡd, Offset off) {
         t.of(TypedefType.ᏑCommonType).Common().Value.ByteSize = (~t).Type.Size();
     }
     foreach (var (_, t) in tf.arraytypes) {
-        zeroArray(t);
+        zeroArray(ref (t).DerefOrNull());
     }
 }
 
@@ -938,9 +938,7 @@ Error:
     finally { ᒐ.Run(); }
 }
 
-internal static void zeroArray(ж<ΔType> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
+internal static void zeroArray(ref ΔType t) {
     var at = (t)._<ж<ArrayType>>();
     if ((~at).Type.Size() == 0) {
         return;

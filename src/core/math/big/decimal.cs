@@ -90,17 +90,15 @@ internal static void init(this ж<@decimal> Ꮡx, nat m, nint shift) {
     // Do any (remaining) shift right in decimal representation.
     if (shift < 0) {
         while (shift < -maxShift) {
-            shr(Ꮡx, maxShift);
+            shr(ref (Ꮡx).DerefOrNull(), maxShift);
             shift += maxShift;
         }
-        shr(Ꮡx, (nuint)(-shift));
+        shr(ref (Ꮡx).DerefOrNull(), (nuint)(-shift));
     }
 }
 
 // shr implements x >> s, for s <= maxShift.
-internal static void shr(ж<@decimal> Ꮡx, nuint s) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
+internal static void shr(ref @decimal x, nuint s) {
     // Division by 1<<s using shift-and-subtract algorithm.
     // pick up enough leading digits to cover first shift
     nint r = 0; // read index
@@ -148,7 +146,7 @@ internal static void shr(ж<@decimal> Ꮡx, nuint s) {
         x.mant = append(x.mant, (byte)(nuint)(d + (rune)'0'));
         n = n * 10;
     }
-    trim(Ꮡx);
+    trim(ref x);
 }
 
 [GoRecv] internal static @string String(this ref @decimal x) {
@@ -192,9 +190,7 @@ internal static slice<byte> appendZeros(slice<byte> buf, nint n) {
 // shouldRoundUp reports if x should be rounded up
 // if shortened to n digits. n must be a valid index
 // for x.mant.
-internal static bool shouldRoundUp(ж<@decimal> Ꮡx, nint n) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
+internal static bool shouldRoundUp(ref @decimal x, nint n) {
     if (x.mant[n] == (rune)'5' && n + 1 == len(x.mant)) {
         // exactly halfway - round to even
         return n > 0 && (byte)((x.mant[n - 1] - (rune)'0') & 1) != 0;
@@ -212,7 +208,7 @@ internal static void round(this ж<@decimal> Ꮡx, nint n) {
     if (n < 0 || n >= len(x.mant)) {
         return; // nothing to do
     }
-    if (shouldRoundUp(Ꮡx, n)){
+    if (shouldRoundUp(ref (Ꮡx).DerefOrNull(), n)){
         x.roundUp(n);
     } else {
         Ꮡx.roundDown(n);
@@ -248,14 +244,12 @@ internal static void roundDown(this ж<@decimal> Ꮡx, nint n) {
         return; // nothing to do
     }
     x.mant = x.mant[..(int)(n)];
-    trim(Ꮡx);
+    trim(ref (Ꮡx).DerefOrNull());
 }
 
 // trim cuts off any trailing zeros from x's mantissa;
 // they are meaningless for the value of x.
-internal static void trim(ж<@decimal> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
+internal static void trim(ref @decimal x) {
     nint i = len(x.mant);
     while (i > 0 && x.mant[i - 1] == (rune)'0') {
         i--;

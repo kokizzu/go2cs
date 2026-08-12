@@ -241,19 +241,19 @@ internal static (nint pivot, sortedHint hint) choosePivotCmpFunc<E>(slice<E> dat
     const nint shortestNinther = 50;
     const nint maxSwaps = /* 4 * 3 */ 12;
     nint l = b - a;
-    ref var swaps = ref heap(new nint(), out var Ꮡswaps);
+    nint swaps = default!;
     nint i = a + l / 4 * 1;
     nint j = a + l / 4 * 2;
     nint k = a + l / 4 * 3;
     if (l >= 8) {
         if (l >= shortestNinther) {
             // Tukey ninther method, the idea came from Rust's implementation.
-            i = medianAdjacentCmpFunc(data, i, Ꮡswaps, cmp);
-            j = medianAdjacentCmpFunc(data, j, Ꮡswaps, cmp);
-            k = medianAdjacentCmpFunc(data, k, Ꮡswaps, cmp);
+            i = medianAdjacentCmpFunc(data, i, ref swaps, cmp);
+            j = medianAdjacentCmpFunc(data, j, ref swaps, cmp);
+            k = medianAdjacentCmpFunc(data, k, ref swaps, cmp);
         }
         // Find the median among i, j, k and stores it into j.
-        j = medianCmpFunc(data, i, j, k, Ꮡswaps, cmp);
+        j = medianCmpFunc(data, i, j, k, ref swaps, cmp);
     }
     var exprᴛ1 = swaps;
     if (exprᴛ1 is 0) {
@@ -269,9 +269,7 @@ internal static (nint pivot, sortedHint hint) choosePivotCmpFunc<E>(slice<E> dat
 }
 
 // order2CmpFunc returns x,y where data[x] <= data[y], where x,y=a,b or x,y=b,a.
-internal static (nint, nint) order2CmpFunc<E>(slice<E> data, nint a, nint b, ж<nint> Ꮡswaps, Func<E, E, nint> cmp) {
-    ref var swaps = ref Ꮡswaps.DerefOrNull();
-
+internal static (nint, nint) order2CmpFunc<E>(slice<E> data, nint a, nint b, ref nint swaps, Func<E, E, nint> cmp) {
     if (cmp(data[b], data[a]) < 0) {
         swaps++;
         return (b, a);
@@ -280,16 +278,16 @@ internal static (nint, nint) order2CmpFunc<E>(slice<E> data, nint a, nint b, ж<
 }
 
 // medianCmpFunc returns x where data[x] is the median of data[a],data[b],data[c], where x is a, b, or c.
-internal static nint medianCmpFunc<E>(slice<E> data, nint a, nint b, nint c, ж<nint> Ꮡswaps, Func<E, E, nint> cmp) {
-    (a, b) = order2CmpFunc(data, a, b, Ꮡswaps, cmp);
-    (b, c) = order2CmpFunc(data, b, c, Ꮡswaps, cmp);
-    (a, b) = order2CmpFunc(data, a, b, Ꮡswaps, cmp);
+internal static nint medianCmpFunc<E>(slice<E> data, nint a, nint b, nint c, ref nint swaps, Func<E, E, nint> cmp) {
+    (a, b) = order2CmpFunc(data, a, b, ref swaps, cmp);
+    (b, c) = order2CmpFunc(data, b, c, ref swaps, cmp);
+    (a, b) = order2CmpFunc(data, a, b, ref swaps, cmp);
     return b;
 }
 
 // medianAdjacentCmpFunc finds the median of data[a - 1], data[a], data[a + 1] and stores the index into a.
-internal static nint medianAdjacentCmpFunc<E>(slice<E> data, nint a, ж<nint> Ꮡswaps, Func<E, E, nint> cmp) {
-    return medianCmpFunc(data, a - 1, a, a + 1, Ꮡswaps, cmp);
+internal static nint medianAdjacentCmpFunc<E>(slice<E> data, nint a, ref nint swaps, Func<E, E, nint> cmp) {
+    return medianCmpFunc(data, a - 1, a, a + 1, ref swaps, cmp);
 }
 
 internal static void reverseRangeCmpFunc<E>(slice<E> data, nint a, nint b, Func<E, E, nint> cmp) {

@@ -661,7 +661,7 @@ public static (nint, error) ReadFromInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж
         if (err != default!) {
             return (n, err);
         }
-        rawToSockaddrInet4((~o).rsa, Ꮡsa4);
+        rawToSockaddrInet4((~o).rsa, ref (Ꮡsa4).DerefOrNull());
         return (n, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
@@ -699,7 +699,7 @@ public static (nint, error) ReadFromInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж
         if (err != default!) {
             return (n, err);
         }
-        rawToSockaddrInet6((~o).rsa, Ꮡsa6);
+        rawToSockaddrInet6((~o).rsa, ref (Ꮡsa6).DerefOrNull());
         return (n, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
@@ -885,7 +885,7 @@ public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> �
         var (n, err) = execIO(o, (ж<operation> oΔ1) => Δsyscall.WSASend((~(~oΔ1).fd).Sysfd, Ꮡ((~oΔ1).bufs, 0), (uint32)len((~oΔ1).bufs), oΔ1.of(operation.Ꮡqty), 0, oΔ1.of(operation.Ꮡo), nil));
         o.ClearBufs();
         TestHookDidWritev(n);
-        consume(Ꮡbuf, (int64)n);
+        consume(ref (Ꮡbuf).DerefOrNull(), (int64)n);
         return ((int64)n, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
@@ -1268,9 +1268,8 @@ public static error RawWrite(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
     finally { ᒐ.Run(); }
 }
 
-internal static int32 sockaddrInet4ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<Δsyscall.SockaddrInet4> Ꮡsa) {
+internal static int32 sockaddrInet4ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ref Δsyscall.SockaddrInet4 sa) {
     ref var rsa = ref Ꮡrsa.DerefOrNull();
-    ref var sa = ref Ꮡsa.DerefOrNull();
 
     rsa = new Δsyscall.RawSockaddrAny(nil);
     var raw = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet4>();
@@ -1282,9 +1281,8 @@ internal static int32 sockaddrInet4ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж
     return (int32)/* unsafe.Sizeof(*raw) */ (uintptr)16;
 }
 
-internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<Δsyscall.SockaddrInet6> Ꮡsa) {
+internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ref Δsyscall.SockaddrInet6 sa) {
     ref var rsa = ref Ꮡrsa.DerefOrNull();
-    ref var sa = ref Ꮡsa.DerefOrNull();
 
     rsa = new Δsyscall.RawSockaddrAny(nil);
     var raw = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet6>();
@@ -1297,18 +1295,14 @@ internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж
     return (int32)/* unsafe.Sizeof(*raw) */ (uintptr)28;
 }
 
-internal static void rawToSockaddrInet4(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<Δsyscall.SockaddrInet4> Ꮡsa) {
-    ref var sa = ref Ꮡsa.DerefOrNull();
-
+internal static void rawToSockaddrInet4(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ref Δsyscall.SockaddrInet4 sa) {
     var pp = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet4>();
     var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(Δsyscall.RawSockaddrInet4.ᏑPort)));
     sa.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
     sa.Addr = pp.Value.Addr.Clone();
 }
 
-internal static void rawToSockaddrInet6(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<Δsyscall.SockaddrInet6> Ꮡsa) {
-    ref var sa = ref Ꮡsa.DerefOrNull();
-
+internal static void rawToSockaddrInet6(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ref Δsyscall.SockaddrInet6 sa) {
     var pp = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet6>();
     var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(Δsyscall.RawSockaddrInet6.ᏑPort)));
     sa.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
@@ -1319,11 +1313,11 @@ internal static void rawToSockaddrInet6(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<
 internal static (int32, error) sockaddrToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, syscallꓸSockaddr sa) {
     switch (sa.type()) {
     case ж<Δsyscall.SockaddrInet4> saΔ1: {
-        var sz = sockaddrInet4ToRaw(Ꮡrsa, saΔ1);
+        var sz = sockaddrInet4ToRaw(Ꮡrsa, ref (saΔ1).DerefOrNull());
         return (sz, default!);
     }
     case ж<Δsyscall.SockaddrInet6> saΔ1: {
-        var sz = sockaddrInet6ToRaw(Ꮡrsa, saΔ1);
+        var sz = sockaddrInet6ToRaw(Ꮡrsa, ref (saΔ1).DerefOrNull());
         return (sz, default!);
     }
     default: {
@@ -1393,7 +1387,7 @@ public static (nint, nint, nint, error) ReadMsgInet4(this ж<FD> Ꮡfd, slice<by
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSARecvMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
         err = fd.eofError(n, err);
         if (err == default!) {
-            rawToSockaddrInet4((~o).rsa, Ꮡsa4);
+            rawToSockaddrInet4((~o).rsa, ref (Ꮡsa4).DerefOrNull());
         }
         return (n, (nint)(~o).msg.Control.Len, (nint)(~o).msg.Flags, err);
     }
@@ -1427,7 +1421,7 @@ public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<by
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSARecvMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
         err = fd.eofError(n, err);
         if (err == default!) {
-            rawToSockaddrInet6((~o).rsa, Ꮡsa6);
+            rawToSockaddrInet6((~o).rsa, ref (Ꮡsa6).DerefOrNull());
         }
         return (n, (nint)(~o).msg.Control.Len, (nint)(~o).msg.Flags, err);
     }
@@ -1493,7 +1487,7 @@ public static (nint, nint, error) WriteMsgInet4(this ж<FD> Ꮡfd, slice<byte> p
         if ((~o).rsa == nil) {
             o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
-        var lenΔ1 = sockaddrInet4ToRaw((~o).rsa, Ꮡsa);
+        var lenΔ1 = sockaddrInet4ToRaw((~o).rsa, ref (Ꮡsa).DerefOrNull());
         o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
         o.Value.msg.Namelen = lenΔ1;
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSASendMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), 0, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
@@ -1523,7 +1517,7 @@ public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p
         if ((~o).rsa == nil) {
             o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
-        var lenΔ1 = sockaddrInet6ToRaw((~o).rsa, Ꮡsa);
+        var lenΔ1 = sockaddrInet6ToRaw((~o).rsa, ref (Ꮡsa).DerefOrNull());
         o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
         o.Value.msg.Namelen = lenΔ1;
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSASendMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), 0, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));

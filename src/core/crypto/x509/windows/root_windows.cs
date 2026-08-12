@@ -23,11 +23,10 @@ internal static (ж<CertPool>, error) loadSystemRoots() {
 // A pointer to the in-memory store is available in the returned CertContext's Store field.
 // The store is automatically freed when the CertContext is freed using
 // syscall.CertFreeCertificateContext.
-internal static (ж<syscall.CertContext>, error) createStoreContext(ж<Certificate> Ꮡleaf, ж<VerifyOptions> Ꮡopts) {
+internal static (ж<syscall.CertContext>, error) createStoreContext(ж<Certificate> Ꮡleaf, ref VerifyOptions opts) {
     GoFrame ᒐ = default;
     try {
         ref var leaf = ref Ꮡleaf.DerefOrNull();
-        ref var opts = ref Ꮡopts.DerefOrNull();
 
         ref var storeCtx = ref heap<ж<syscall.CertContext>>(out var ᏑstoreCtx);
         var (leafCtx, err) = syscall.CertCreateCertificateContext((uint32)((uint32)syscall.X509_ASN_ENCODING | (uint32)syscall.PKCS_7_ASN_ENCODING), Ꮡ(leaf.Raw, 0), (uint32)builtin.len(leaf.Raw));
@@ -96,9 +95,7 @@ internal static (slice<ж<Certificate>> chain, error err) extractSimpleChain(ж<
 
 // checkChainTrustStatus checks the trust status of the certificate chain, translating
 // any errors it finds into Go errors in the process.
-internal static error checkChainTrustStatus(ж<Certificate> Ꮡc, ж<syscall.CertChainContext> ᏑchainCtx) {
-    ref var chainCtx = ref ᏑchainCtx.DerefOrNull();
-
+internal static error checkChainTrustStatus(ж<Certificate> Ꮡc, ref syscall.CertChainContext chainCtx) {
     if (chainCtx.TrustStatus.ErrorStatus != syscall.CERT_TRUST_NO_ERROR) {
         var status = chainCtx.TrustStatus.ErrorStatus;
         var exprᴛ1 = status;
@@ -119,9 +116,8 @@ internal static error checkChainTrustStatus(ж<Certificate> Ꮡc, ж<syscall.Cer
 
 // checkChainSSLServerPolicy checks that the certificate chain in chainCtx is valid for
 // use as a certificate chain for a SSL/TLS server.
-internal static error checkChainSSLServerPolicy(ж<Certificate> Ꮡc, ж<syscall.CertChainContext> ᏑchainCtx, ж<VerifyOptions> Ꮡopts) {
+internal static error checkChainSSLServerPolicy(ж<Certificate> Ꮡc, ж<syscall.CertChainContext> ᏑchainCtx, ref VerifyOptions opts) {
     ref var c = ref Ꮡc.DerefOrNull();
-    ref var opts = ref Ꮡopts.DerefOrNull();
 
     var (servernamep, err) = syscall.UTF16PtrFromString(strings.TrimSuffix(opts.DNSName, "."u8));
     if (err != default!) {
@@ -184,12 +180,12 @@ internal static (slice<ж<Certificate>> chain, error err) verifyChain(ж<Certifi
 
     ref var chainCtx = ref ᏑchainCtx.DerefOrNull();
     ref var opts = ref Ꮡopts.DerefOrNull();
-    err = checkChainTrustStatus(Ꮡc, ᏑchainCtx);
+    err = checkChainTrustStatus(Ꮡc, ref (ᏑchainCtx).DerefOrNull());
     if (err != default!) {
         return (default!, err);
     }
     if (Ꮡopts != nil && builtin.len(opts.DNSName) > 0) {
-        err = checkChainSSLServerPolicy(Ꮡc, ᏑchainCtx, Ꮡopts);
+        err = checkChainSSLServerPolicy(Ꮡc, ᏑchainCtx, ref (Ꮡopts).DerefOrNull());
         if (err != default!) {
             return (default!, err);
         }
@@ -229,7 +225,7 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) systemVerify(t
     try {
         ref var opts = ref Ꮡopts.DerefOrNull();
 
-        (var storeCtx, err) = createStoreContext(Ꮡc, Ꮡopts);
+        (var storeCtx, err) = createStoreContext(Ꮡc, ref (Ꮡopts).DerefOrNull());
         if (err != default!) {
             (chains, err) = (default!, err); goto ᒐdone;
         }

@@ -223,9 +223,7 @@ internal static readonly @string idatˢ = "IDAT"u8;
 
 // Chooses the filter to use for encoding the current row, and applies it.
 // The return value is the index of the filter and also of the row in cr that has had it applied.
-internal static nint filter(ж<array<slice<byte>>> Ꮡcr, slice<byte> pr, nint bpp) {
-    ref var cr = ref Ꮡcr.DerefOrNull();
-
+internal static nint filter(ref array<slice<byte>> cr, slice<byte> pr, nint bpp) {
     // We try all five filter types, and pick the one that minimizes the sum of absolute differences.
     // This is the same heuristic that libpng uses, although the filters are attempted in order of
     // estimated most likely to be minimal (ftUp, ftPaeth, ftNone, ftSub, ftAverage), rather than
@@ -374,8 +372,7 @@ internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image
             }
             e.cr[i][0] = (uint8)i;
         }
-        ref var cr = ref heap<array<slice<uint8>>>(out var Ꮡcr);
-        cr = e.cr.Clone();
+        var cr = e.cr.Clone();
         if (cap(e.pr) < sz){
             e.pr = new slice<uint8>(sz);
         } else {
@@ -562,7 +559,7 @@ internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image
                 // Since we skip paletted images we don't have to worry about
                 // bitsPerPixel not being a multiple of 8
                 nint bpp = bitsPerPixel / 8;
-                f = filter(Ꮡcr, pr, bpp);
+                f = filter(ref cr, pr, bpp);
             }
             // Write the compressed bytes.
             {

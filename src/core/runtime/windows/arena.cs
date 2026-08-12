@@ -223,7 +223,7 @@ internal static uintptr userArenaChunkMaxAllocBytes => /* userArenaChunkBytes / 
             @throw("user arena chunks size is larger than a heap arena, but not a multiple"u8);
         }
     }
-    lockInit(ᏑuserArenaState.of(userArenaStateᴛ1.Ꮡlock), lockRankUserArenaState);
+    lockInit(ref userArenaState.@lock, lockRankUserArenaState);
 }
 
 // userArenaChunkReserveBytes returns the amount of additional bytes to reserve for
@@ -510,7 +510,7 @@ internal static @unsafe.Pointer userArenaNextFree(this ж<mspan> Ꮡs, ж<_type>
     if (ptr == nil) {
         // Failed to allocate.
         mp.Value.mallocing = 0;
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
         return default!;
     }
     if (s.needzero != 0) {
@@ -519,11 +519,11 @@ internal static @unsafe.Pointer userArenaNextFree(this ж<mspan> Ꮡs, ж<_type>
     // Set up heap bitmap and do extra accounting.
     if (typ.Pointers()) {
         if (cap >= 0){
-            userArenaHeapBitsSetSliceType(Ꮡtyp, cap, ptr, Ꮡs);
+            userArenaHeapBitsSetSliceType(ref (Ꮡtyp).DerefOrNull(), cap, ptr, Ꮡs);
         } else {
-            userArenaHeapBitsSetType(Ꮡtyp, ptr, Ꮡs);
+            userArenaHeapBitsSetType(ref (Ꮡtyp).DerefOrNull(), ptr, Ꮡs);
         }
-        var c = getMCache(mp);
+        var c = getMCache(ref (mp).DerefOrNull());
         if (c == nil) {
             @throw(mallocgcCalledWithoutAPˢ);
         }
@@ -541,7 +541,7 @@ internal static @unsafe.Pointer userArenaNextFree(this ж<mspan> Ꮡs, ж<_type>
     // but see uninitialized memory or stale heap bits.
     publicationBarrier();
     mp.Value.mallocing = 0;
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     return ptr;
 }
 
@@ -551,15 +551,13 @@ internal static readonly @string runtimeAllocationSizeOutˢ = "runtime: allocati
 // userArenaHeapBitsSetSliceType is the equivalent of heapBitsSetType but for
 // Go slice backing store values allocated in a user arena chunk. It sets up the
 // heap bitmap for n consecutive values with type typ allocated at address ptr.
-internal static void userArenaHeapBitsSetSliceType(ж<_type> Ꮡtyp, nint n, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
-    ref var typ = ref Ꮡtyp.DerefOrNull();
-
+internal static void userArenaHeapBitsSetSliceType(ref _type typ, nint n, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
     var (mem, overflow) = math.MulUintptr(typ.Size_, (uintptr)n);
     if (overflow || n < 0 || mem > maxAlloc) {
         throw panic(((plainError)(@string)runtimeAllocationSizeOutˢ));
     }
     for (nint i = 0; i < n; i++) {
-        userArenaHeapBitsSetType(Ꮡtyp, (uintptr)add(ptr, (uintptr)i * typ.Size_), Ꮡs);
+        userArenaHeapBitsSetType(ref typ, (uintptr)add(ptr, (uintptr)i * typ.Size_), Ꮡs);
     }
 }
 
@@ -567,8 +565,7 @@ internal static void userArenaHeapBitsSetSliceType(ж<_type> Ꮡtyp, nint n, @un
 // non-slice-backing-store Go values allocated in a user arena chunk. It
 // sets up the type metadata for the value with type typ allocated at address ptr.
 // base is the base address of the arena chunk.
-internal static void userArenaHeapBitsSetType(ж<_type> Ꮡtyp, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
-    ref var typ = ref Ꮡtyp.DerefOrNull();
+internal static void userArenaHeapBitsSetType(ref _type typ, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
     ref var s = ref Ꮡs.DerefOrNull();
 
     var @base = s.@base();
@@ -612,7 +609,7 @@ internal static void userArenaHeapBitsSetType(ж<_type> Ꮡtyp, @unsafe.Pointer 
     // Double-check that the bitmap was written out correctly.
     const bool doubleCheck = false;
     if (doubleCheck) {
-        doubleCheckHeapPointersInterior((uintptr)ptr, (uintptr)ptr, typ.Size_, typ.Size_, Ꮡtyp, Ꮡs.of(mspan.ᏑlargeType), Ꮡs);
+        doubleCheckHeapPointersInterior((uintptr)ptr, (uintptr)ptr, typ.Size_, typ.Size_, ref typ, Ꮡs.of(mspan.ᏑlargeType), Ꮡs);
     }
 }
 
@@ -815,7 +812,7 @@ internal static (@unsafe.Pointer, ж<mspan>) newUserArenaChunk() {
     }
     {
         nint rate = MemProfileRate; if (rate > 0) {
-            var c = getMCache(mp);
+            var c = getMCache(ref (mp).DerefOrNull());
             if (c == nil) {
                 @throw(newUserArenaChunkCalledˢ2);
             }
@@ -823,12 +820,12 @@ internal static (@unsafe.Pointer, ж<mspan>) newUserArenaChunk() {
             if (rate != 1 && userArenaChunkBytes < (~c).nextSample){
                 c.Value.nextSample -= userArenaChunkBytes;
             } else {
-                profilealloc(mp, (@unsafe.Pointer)span.@base(), userArenaChunkBytes);
+                profilealloc(ref (mp).DerefOrNull(), (@unsafe.Pointer)span.@base(), userArenaChunkBytes);
             }
         }
     }
     mp.Value.mallocing = 0;
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     // Again, because this chunk counts toward heapLive, potentially trigger a GC.
     {
         var t = (new gcTrigger(kind: gcTriggerHeap)); if (t.test()) {
@@ -996,7 +993,7 @@ internal static void freeUserArenaChunk(ж<mspan> Ꮡs, @unsafe.Pointer x) {
         userArenaState.fault = append(userArenaState.fault, new liveUserArenaChunk(Ꮡs, x.Value));
         unlock(ᏑuserArenaState.of(userArenaStateᴛ1.Ꮡlock));
     }
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

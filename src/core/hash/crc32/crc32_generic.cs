@@ -20,15 +20,13 @@ partial class crc32_package {
 // (simpleUpdate).
 internal static ж<Table> simpleMakeTable(uint32 poly) {
     var t = @new<Table>();
-    simplePopulateTable(poly, t);
+    simplePopulateTable(poly, ref (t).DerefOrNull());
     return t;
 }
 
 // simplePopulateTable constructs a Table for the specified polynomial, suitable
 // for use with simpleUpdate.
-internal static void simplePopulateTable(uint32 poly, ж<Table> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
+internal static void simplePopulateTable(uint32 poly, ref Table t) {
     for (nint i = 0; i < 256; i++) {
         var crc = (uint32)i;
         for (nint j = 0; j < 8; j++) {
@@ -44,9 +42,7 @@ internal static void simplePopulateTable(uint32 poly, ж<Table> Ꮡt) {
 
 // simpleUpdate uses the simple algorithm to update the CRC, given a table that
 // was previously computed using simpleMakeTable.
-internal static uint32 simpleUpdate(uint32 crc, ж<Table> Ꮡtab, slice<byte> p) {
-    ref var tab = ref Ꮡtab.DerefOrNull();
-
+internal static uint32 simpleUpdate(uint32 crc, ref Table tab, slice<byte> p) {
     crc = ~crc;
     foreach (var (_, v) in p) {
         crc = (uint32)(tab[(byte)((byte)crc ^ v)] ^ ((crc >> (int)(8))));
@@ -63,7 +59,7 @@ internal static UntypedInt slicing8Cutoff => 16;
 // table is suitable for use with the slicing-by-8 algorithm (slicingUpdate).
 internal static ж<slicing8Table> slicingMakeTable(uint32 poly) {
     var t = @new<slicing8Table>();
-    simplePopulateTable(poly, t.at<Table>(0));
+    simplePopulateTable(poly, ref (t.at<Table>(0)).DerefOrNull());
     for (nint i = 0; i < 256; i++) {
         var crc = t.Value[0][i];
         for (nint j = 1; j < 8; j++) {
@@ -91,7 +87,7 @@ internal static uint32 slicingUpdate(uint32 crc, ж<slicing8Table> Ꮡtab, slice
     if (len(p) == 0) {
         return crc;
     }
-    return simpleUpdate(crc, Ꮡtab.at<Table>(0), p);
+    return simpleUpdate(crc, ref nonnil(ref tab)[0], p);
 }
 
 } // end crc32_package

@@ -69,11 +69,10 @@ public static Drawer FloydSteinberg = new floydSteinberg(nil);
 [GoType] partial struct floydSteinberg {
 }
 
-internal static void Draw(this floydSteinberg _, Image dst, image.Rectangle rʗp, image.Image src, image.Point spʗp) {
+internal static void Draw(this floydSteinberg _, Image dst, image.Rectangle rʗp, image.Image src, image.Point sp) {
     ref var r = ref heap(rʗp, out var Ꮡr);
-    ref var sp = ref heap(spʗp, out var Ꮡsp);
 
-    clip(dst, Ꮡr, src, Ꮡsp, default!, nil);
+    clip(dst, Ꮡr, src, ref sp, default!, nil);
     if (r.Empty()) {
         return;
     }
@@ -83,9 +82,8 @@ internal static void Draw(this floydSteinberg _, Image dst, image.Rectangle rʗp
 // clip clips r against each image's bounds (after translating into the
 // destination image's coordinate space) and shifts the points sp and mp by
 // the same amount as the change in r.Min.
-internal static void clip(Image dst, ж<image.Rectangle> Ꮡr, image.Image src, ж<image.Point> Ꮡsp, image.Image mask, ж<image.Point> Ꮡmp) {
+internal static void clip(Image dst, ж<image.Rectangle> Ꮡr, image.Image src, ref image.Point sp, image.Image mask, ж<image.Point> Ꮡmp) {
     ref var r = ref Ꮡr.DerefOrNull();
-    ref var sp = ref Ꮡsp.DerefOrNull();
     ref var mp = ref Ꮡmp.DerefOrNull();
 
     var orig = r.Min;
@@ -118,12 +116,11 @@ public static void Draw(Image dst, image.Rectangle r, image.Image src, image.Poi
 
 // DrawMask aligns r.Min in dst with sp in src and mp in mask and then replaces the rectangle r
 // in dst with the result of a Porter-Duff composition. A nil mask is treated as opaque.
-public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, image.Point spʗp, image.Image mask, image.Point mpʗp, Op op) {
+public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, image.Point sp, image.Image mask, image.Point mpʗp, Op op) {
     ref var r = ref heap(rʗp, out var Ꮡr);
-    ref var sp = ref heap(spʗp, out var Ꮡsp);
     ref var mp = ref heap(mpʗp, out var Ꮡmp);
 
-    clip(dst, Ꮡr, src, Ꮡsp, mask, Ꮡmp);
+    clip(dst, Ꮡr, src, ref sp, mask, Ꮡmp);
     if (r.Empty()) {
         return;
     }
@@ -153,7 +150,7 @@ public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, im
                     return;
                 }
                 case ж<image.NRGBA> src0: {
-                    drawNRGBAOver(dst0, r, src0, sp);
+                    drawNRGBAOver(ref (dst0).DerefOrNull(), r, ref (src0).DerefOrNull(), sp);
                     return;
                 }
                 case ж<image.YCbCr> src0: {
@@ -167,11 +164,11 @@ public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, im
                     break;
                 }
                 case ж<image.Gray> src0: {
-                    drawGray(dst0, r, src0, sp);
+                    drawGray(ref (dst0).DerefOrNull(), r, ref (src0).DerefOrNull(), sp);
                     return;
                 }
                 case ж<image.CMYK> src0: {
-                    drawCMYK(dst0, r, src0, sp);
+                    drawCMYK(ref (dst0).DerefOrNull(), r, ref (src0).DerefOrNull(), sp);
                     return;
                 }}
             } else 
@@ -214,7 +211,7 @@ public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, im
                     return;
                 }
                 case ж<image.NRGBA> src0: {
-                    drawNRGBASrc(dst0, r, src0, sp);
+                    drawNRGBASrc(ref (dst0).DerefOrNull(), r, ref (src0).DerefOrNull(), sp);
                     return;
                 }
                 case ж<image.YCbCr> src0: {
@@ -224,11 +221,11 @@ public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, im
                     break;
                 }
                 case ж<image.Gray> src0: {
-                    drawGray(dst0, r, src0, sp);
+                    drawGray(ref (dst0).DerefOrNull(), r, ref (src0).DerefOrNull(), sp);
                     return;
                 }
                 case ж<image.CMYK> src0: {
-                    drawCMYK(dst0, r, src0, sp);
+                    drawCMYK(ref (dst0).DerefOrNull(), r, ref (src0).DerefOrNull(), sp);
                     return;
                 }}
             }
@@ -566,10 +563,7 @@ internal static void drawCopySrc(slice<byte> dstPix, nint dstStride, image.Recta
     }
 }
 
-internal static void drawNRGBAOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.NRGBA> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-    ref var src = ref Ꮡsrc.DerefOrNull();
-
+internal static void drawNRGBAOver(ref imageꓸRGBA dst, image.Rectangle r, ref image.NRGBA src, image.Point sp) {
     nint i0 = (r.Min.X - dst.Rect.Min.X) * 4;
     nint i1 = (r.Max.X - dst.Rect.Min.X) * 4;
     nint si0 = (sp.X - src.Rect.Min.X) * 4;
@@ -601,10 +595,7 @@ internal static void drawNRGBAOver(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, �
     }
 }
 
-internal static void drawNRGBASrc(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.NRGBA> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-    ref var src = ref Ꮡsrc.DerefOrNull();
-
+internal static void drawNRGBASrc(ref imageꓸRGBA dst, image.Rectangle r, ref image.NRGBA src, image.Point sp) {
     nint i0 = (r.Min.X - dst.Rect.Min.X) * 4;
     nint i1 = (r.Max.X - dst.Rect.Min.X) * 4;
     nint si0 = (sp.X - src.Rect.Min.X) * 4;
@@ -630,10 +621,7 @@ internal static void drawNRGBASrc(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж
     }
 }
 
-internal static void drawGray(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.Gray> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-    ref var src = ref Ꮡsrc.DerefOrNull();
-
+internal static void drawGray(ref imageꓸRGBA dst, image.Rectangle r, ref image.Gray src, image.Point sp) {
     nint i0 = (r.Min.X - dst.Rect.Min.X) * 4;
     nint i1 = (r.Max.X - dst.Rect.Min.X) * 4;
     nint si0 = (sp.X - src.Rect.Min.X) * 1;
@@ -654,10 +642,7 @@ internal static void drawGray(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<ima
     }
 }
 
-internal static void drawCMYK(ж<imageꓸRGBA> Ꮡdst, image.Rectangle r, ж<image.CMYK> Ꮡsrc, image.Point sp) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-    ref var src = ref Ꮡsrc.DerefOrNull();
-
+internal static void drawCMYK(ref imageꓸRGBA dst, image.Rectangle r, ref image.CMYK src, image.Point sp) {
     nint i0 = (r.Min.X - dst.Rect.Min.X) * 4;
     nint i1 = (r.Max.X - dst.Rect.Min.X) * 4;
     nint si0 = (sp.X - src.Rect.Min.X) * 4;

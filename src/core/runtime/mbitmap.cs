@@ -756,7 +756,7 @@ internal static uintptr /*scanSize*/ heapSetType(uintptr x, uintptr dataSize, ж
         if (interior + size > x + maxIterBytes) {
             size = x + maxIterBytes - interior;
         }
-        doubleCheckHeapPointersInterior(x, interior, size, dataSize, gctyp, Ꮡheader, Ꮡspan);
+        doubleCheckHeapPointersInterior(x, interior, size, dataSize, ref (gctyp).DerefOrNull(), Ꮡheader, Ꮡspan);
     }
     return scanSize;
 }
@@ -829,8 +829,7 @@ internal static void doubleCheckHeapPointers(uintptr x, uintptr dataSize, ж<_ty
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string foundBadInteriorPointerˢ = "found bad interior pointer"u8;
 
-internal static void doubleCheckHeapPointersInterior(uintptr x, uintptr interior, uintptr size, uintptr dataSize, ж<_type> Ꮡtyp, ж<ж<_type>> Ꮡheader, ж<mspan> Ꮡspan) {
-    ref var typ = ref Ꮡtyp.DerefOrNull();
+internal static void doubleCheckHeapPointersInterior(uintptr x, uintptr interior, uintptr size, uintptr dataSize, ref _type typ, ж<ж<_type>> Ꮡheader, ж<mspan> Ꮡspan) {
     ref var span = ref Ꮡspan.DerefOrNull();
 
     var bad = false;

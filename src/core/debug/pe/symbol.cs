@@ -52,9 +52,7 @@ internal static readonly @string tooManySymbolsFileMayBeˢ = "too many symbols; 
 //
 // At the moment this package only provides APIs for looking at
 // aux symbols of format 5 (associated with section definition symbols).
-internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh, io.ReadSeeker r) {
-    ref var fh = ref Ꮡfh.DerefOrNull();
-
+internal static (slice<COFFSymbol>, error) readCOFFSymbols(ref FileHeader fh, io.ReadSeeker r) {
     if (fh.PointerToSymbolTable == 0) {
         return (default!, default!);
     }

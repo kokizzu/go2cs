@@ -271,9 +271,7 @@ internal static readonly @string x509InvalidDsaParametersˢ = "x509: invalid DSA
 internal static readonly @string x509ZeroOrNegativeDsaˢ = "x509: zero or negative DSA parameter"u8;
 internal static readonly @string x509UnknownPublicKeyˢ = "x509: unknown public key algorithm"u8;
 
-internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
-    ref var keyData = ref ᏑkeyData.DerefOrNull();
-
+internal static (any, error) parsePublicKey(ref publicKeyInfo keyData) {
     var oid = keyData.Algorithm.Algorithm;
     var @params = keyData.Algorithm.Parameters;
     ref var der = ref heap<cryptobyte.String>(out var Ꮡder);
@@ -619,11 +617,10 @@ internal static bool isValidIPMask(slice<byte> mask) {
 internal static readonly @string x509Invalidˢ = "x509: invalid NameConstraints extension"u8;
 internal static readonly @string x509EmptyNameConstraintsˢ = "x509: empty name constraints extension"u8;
 
-internal static (bool unhandled, error err) parseNameConstraintsExtension(ж<Certificate> Ꮡout, pkix.Extension e) {
+internal static (bool unhandled, error err) parseNameConstraintsExtension(ref Certificate @out, pkix.Extension e) {
     bool unhandled = default!;
     error err = default!;
 
-    ref var @out = ref Ꮡout.DerefOrNull();
     // RFC 5280, 4.2.1.10
     // NameConstraints ::= SEQUENCE {
     //      permittedSubtrees       [0]     GeneralSubtrees OPTIONAL,
@@ -799,9 +796,7 @@ internal static readonly @string x509InvalidSubjectKeyˢ = "x509: invalid subjec
 internal static readonly @string x509AuthorityInfoAccessˢ = "x509: authority info access incorrectly marked critical"u8;
 internal static readonly @string x509InvalidAuthorityInfoˢ = "x509: invalid authority info access"u8;
 
-internal static error processExtensions(ж<Certificate> Ꮡout) {
-    ref var @out = ref Ꮡout.DerefOrNull();
-
+internal static error processExtensions(ref Certificate @out) {
     error err = default!;
     foreach (var (_, e) in @out.Extensions) {
         var unhandled = false;
@@ -835,7 +830,7 @@ internal static error processExtensions(ж<Certificate> Ꮡout) {
                 break;
             }
             case 30: {
-                (unhandled, err) = parseNameConstraintsExtension(Ꮡout, e);
+                (unhandled, err) = parseNameConstraintsExtension(ref @out, e);
                 if (err != default!) {
                     return err;
                 }
@@ -1126,10 +1121,11 @@ internal static (ж<Certificate>, error) parseCertificate(slice<byte> der) {
         return (default!, errors.New(x509Malformedˢ2));
     }
     if ((~cert).PublicKeyAlgorithm != UnknownPublicKeyAlgorithm) {
-        (cert.Value.PublicKey, err) = parsePublicKey(Ꮡ(new publicKeyInfo(
+        var ᴛ1 = new publicKeyInfo(
             Algorithm: pkAI,
             PublicKey: spk
-        )));
+        );
+        (cert.Value.PublicKey, err) = parsePublicKey(ref ᴛ1);
         if (err != default!) {
             return (default!, err);
         }
@@ -1168,7 +1164,7 @@ internal static (ж<Certificate>, error) parseCertificate(slice<byte> der) {
                     seenExts[oidStr] = true;
                     cert.Value.Extensions = append((~cert).Extensions, ext);
                 }
-                err = processExtensions(cert);
+                err = processExtensions(ref (cert).DerefOrNull());
                 if (err != default!) {
                     return (default!, err);
                 }

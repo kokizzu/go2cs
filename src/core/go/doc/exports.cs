@@ -25,9 +25,7 @@ internal static slice<ж<ast.Ident>> filterIdentList(slice<ж<ast.Ident>> list) 
 
 internal static ж<ast.Ident> underscore = ast.NewIdent("_"u8);
 
-internal static void filterCompositeLit(ж<ast.CompositeLit> Ꮡlit, Func<@string, bool> filter, bool export) {
-    ref var lit = ref Ꮡlit.DerefOrNull();
-
+internal static void filterCompositeLit(ref ast.CompositeLit lit, Func<@string, bool> filter, bool export) {
     nint n = len(lit.Elts);
     lit.Elts = filterExprList(lit.Elts, filter, export);
     if (len(lit.Elts) < n) {
@@ -40,7 +38,7 @@ internal static slice<ast.Expr> filterExprList(slice<ast.Expr> list, Func<@strin
     foreach (var (_, exp) in list) {
         switch (exp.type()) {
         case ж<ast.CompositeLit> x: {
-            filterCompositeLit(x, filter, export);
+            filterCompositeLit(ref (x).DerefOrNull(), filter, export);
             break;
         }
         case ж<ast.KeyValueExpr> x: {
@@ -51,7 +49,7 @@ internal static slice<ast.Expr> filterExprList(slice<ast.Expr> list, Func<@strin
             }
             {
                 var (xΔ2, ok) = (~x).Value._<ж<ast.CompositeLit>>(ᐧ); if (ok) {
-                    filterCompositeLit(xΔ2, filter, export);
+                    filterCompositeLit(ref (xΔ2).DerefOrNull(), filter, export);
                 }
             }
             break;
@@ -88,9 +86,7 @@ internal static bool hasExportedName(slice<ж<ast.Ident>> list) {
 }
 
 // removeAnonymousField removes anonymous fields named name from an interface.
-internal static void removeAnonymousField(@string name, ж<ast.InterfaceType> Ꮡityp) {
-    ref var ityp = ref Ꮡityp.DerefOrNull();
-
+internal static void removeAnonymousField(@string name, ref ast.InterfaceType ityp) {
     var list = ityp.Methods.Value.List; // we know that ityp.Methods != nil
     nint j = 0;
     foreach (var (_, field) in list) {

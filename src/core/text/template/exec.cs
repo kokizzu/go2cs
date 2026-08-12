@@ -167,11 +167,9 @@ public static error Unwrap(this ExecError e) {
 
 // errRecover is the handler that turns panics into returns from the top
 // level of Parse.
-internal static void errRecover(ж<error> Ꮡerrp) {
+internal static void errRecover(ref error errp) {
     GoFrame ᒐ = default;
     try {
-        ref var errp = ref Ꮡerrp.DerefOrNull();
-
         var e = recover();
         if (e != default!) {
             switch (e.type()) {
@@ -236,7 +234,7 @@ internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any 
         ref var t = ref Ꮡt.DerefOrNull();
 
         ref var err = ref Ꮡerr.ValueSlot;
-        defer(errRecover, Ꮡerr, ref ᒐ);
+        defer(ᴛ1 => errRecover(ref ᴛ1.DerefOrNull()), Ꮡerr, ref ᒐ);
         var (value, ok) = data._<reflectꓸValue>(ᐧ);
         if (!ok) {
             value = reflect.ValueOf(data);

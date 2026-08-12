@@ -72,7 +72,7 @@ internal static bool decBoolSlice(ж<decoderState> Ꮡstate, reflectꓸValue v, 
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         Δslice[i] = state.decodeUint() != 0;
     }
@@ -102,7 +102,7 @@ internal static bool decComplex64Slice(ж<decoderState> Ꮡstate, reflectꓸValu
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var real = float32FromBits(state.decodeUint(), ovfl);
         var imag = float32FromBits(state.decodeUint(), ovfl);
@@ -134,7 +134,7 @@ internal static bool decComplex128Slice(ж<decoderState> Ꮡstate, reflectꓸVal
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var real = float64FromBits(state.decodeUint());
         var imag = float64FromBits(state.decodeUint());
@@ -166,7 +166,7 @@ internal static bool decFloat32Slice(ж<decoderState> Ꮡstate, reflectꓸValue 
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         Δslice[i] = (float32)float32FromBits(state.decodeUint(), ovfl);
     }
@@ -196,7 +196,7 @@ internal static bool decFloat64Slice(ж<decoderState> Ꮡstate, reflectꓸValue 
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         Δslice[i] = float64FromBits(state.decodeUint());
     }
@@ -226,7 +226,7 @@ internal static bool decIntSlice(ж<decoderState> Ꮡstate, reflectꓸValue v, n
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var x = state.decodeInt();
         // MinInt and MaxInt
@@ -261,7 +261,7 @@ internal static bool decInt16Slice(ж<decoderState> Ꮡstate, reflectꓸValue v,
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var x = state.decodeInt();
         if (x < math.MinInt16 || math.MaxInt16 < x) {
@@ -295,7 +295,7 @@ internal static bool decInt32Slice(ж<decoderState> Ꮡstate, reflectꓸValue v,
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var x = state.decodeInt();
         if (x < math.MinInt32 || math.MaxInt32 < x) {
@@ -329,7 +329,7 @@ internal static bool decInt64Slice(ж<decoderState> Ꮡstate, reflectꓸValue v,
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         Δslice[i] = state.decodeInt();
     }
@@ -359,7 +359,7 @@ internal static bool decInt8Slice(ж<decoderState> Ꮡstate, reflectꓸValue v, 
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var x = state.decodeInt();
         if (x < math.MinInt8 || math.MaxInt8 < x) {
@@ -393,7 +393,7 @@ internal static bool decStringSlice(ж<decoderState> Ꮡstate, reflectꓸValue v
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var u = state.decodeUint();
         nint n = (nint)u;
@@ -437,7 +437,7 @@ internal static bool decUintSlice(ж<decoderState> Ꮡstate, reflectꓸValue v, 
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var x = state.decodeUint();
         /*TODO if math.MaxUint32 < x {
@@ -471,7 +471,7 @@ internal static bool decUint16Slice(ж<decoderState> Ꮡstate, reflectꓸValue v
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var x = state.decodeUint();
         if (math.MaxUint16 < x) {
@@ -505,7 +505,7 @@ internal static bool decUint32Slice(ж<decoderState> Ꮡstate, reflectꓸValue v
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var x = state.decodeUint();
         if (math.MaxUint32 < x) {
@@ -539,7 +539,7 @@ internal static bool decUint64Slice(ж<decoderState> Ꮡstate, reflectꓸValue v
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         Δslice[i] = state.decodeUint();
     }
@@ -569,7 +569,7 @@ internal static bool decUintptrSlice(ж<decoderState> Ꮡstate, reflectꓸValue 
         }
         if (i >= len(Δslice)) {
             // This is a slice that we only partially allocated.
-            growSlice(v, Ꮡslice, length);
+            growSlice(v, ref Δslice, length);
         }
         var x = state.decodeUint();
         if ((uint64)(~(uintptr)0) < x) {
@@ -582,9 +582,7 @@ internal static bool decUintptrSlice(ж<decoderState> Ꮡstate, reflectꓸValue 
 
 // growSlice is called for a slice that we only partially allocated,
 // to grow it up to length.
-internal static void growSlice<E>(reflectꓸValue v, ж<slice<E>> Ꮡps, nint length) {
-    ref var ps = ref Ꮡps.DerefOrNull();
-
+internal static void growSlice<E>(reflectꓸValue v, ref slice<E> ps, nint length) {
     E zero = default!;
     var s = ps;
     s = append(s, zero);

@@ -175,9 +175,9 @@ internal static void gcinit() {
     ᏑgcController.init(readGOGC(), readGOMEMLIMIT());
     work.startSema = 1;
     work.markDoneSema = 1;
-    lockInit(Ꮡwork.of(workType.ᏑsweepWaiters).of(workType_sweepWaiters.Ꮡlock), lockRankSweepWaiters);
-    lockInit(Ꮡwork.of(workType.ᏑassistQueue).of(workType_assistQueue.Ꮡlock), lockRankAssistQueue);
-    lockInit(Ꮡwork.of(workType.ᏑwbufSpans).of(workType_wbufSpans.Ꮡlock), lockRankWbufSpans);
+    lockInit(ref work.sweepWaiters.@lock, lockRankSweepWaiters);
+    lockInit(ref work.assistQueue.@lock, lockRankAssistQueue);
+    lockInit(ref work.wbufSpans.@lock, lockRankWbufSpans);
 }
 
 // gcenable is called after the bulk of the runtime initialization,
@@ -525,11 +525,11 @@ internal static void gcStart(gcTrigger trigger) {
     var mp = acquirem();
     {
         var gp = getg(); if (gp == (~mp).g0 || (~mp).locks > 1 || (~mp).preemptoff != ""u8) {
-            releasem(mp);
+            releasem(ref (mp).DerefOrNull());
             return;
         }
     }
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     mp = default!;
     // Pick up the remaining unswept/not being swept spans concurrently
     //
@@ -671,7 +671,7 @@ internal static void gcStart(gcTrigger trigger) {
     // this goroutine becomes runnable again, and we could
     // self-deadlock otherwise.
     semrelease(Ꮡworldsema);
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     // Make sure we block instead of returning to user code
     // in STW mode.
     if (mode != gcBackgroundMode) {
@@ -1089,7 +1089,7 @@ internal static void gcMarkTermination(worldStop stw) {
     semrelease(Ꮡworldsema);
     semrelease(Ꮡgcsema);
     // Careful: another GC cycle may start now.
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     mp = default!;
     // now that gc is done, kick off finalizer thread if needed
     if (!concurrentSweep) {
@@ -1120,11 +1120,11 @@ internal static void gcBgMarkStartWorkers() {
     // check for bailing.
     var mp = acquirem();
     var ready = new channel<EmptyStruct>(1);
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     while (gcBgMarkWorkerCount < gomaxprocs) {
         var mpΔ1 = acquirem(); // See above, we allocate a closure here.
         goǃ(gcBgMarkWorker, ready);
-        releasem(mpΔ1);
+        releasem(ref (mpΔ1).DerefOrNull());
         // N.B. we intentionally wait on each goroutine individually
         // rather than starting all in a batch and then waiting once
         // afterwards. By running one goroutine at a time, we can take
@@ -1225,7 +1225,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
                     // schedule again only to enter gopark and park
                     // again. Thus, we defer the release until
                     // after parking the G.
-                    releasem(mp);
+                    releasem(ref (mp).DerefOrNull());
                 }
             }
             // Release this G to the pool.
@@ -1287,7 +1287,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
                         ref var drainQ = ref heap<gQueue>(out var ᏑdrainQ);
                         (drainQ, var n) = runqdrain(ppʗ1); if (n > 0) {
                             @lock(Ꮡsched.of(schedt.Ꮡlock));
-                            globrunqputbatch(ᏑdrainQ, (int32)n);
+                            globrunqputbatch(ref (ᏑdrainQ).DerefOrNull(), (int32)n);
                             unlock(Ꮡsched.of(schedt.Ꮡlock));
                         }
                     }
@@ -1337,7 +1337,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
             // We don't need the P-local buffers here, allow
             // preemption because we may schedule like a regular
             // goroutine in gcMarkDone (block on locks, etc).
-            releasem((~node).m.ptr());
+            releasem(ref ((~node).m.ptr()).DerefOrNull());
             node.of(gcBgMarkWorkerNode.Ꮡm).set(nil);
             gcMarkDone();
         }

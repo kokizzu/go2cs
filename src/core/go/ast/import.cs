@@ -33,11 +33,11 @@ public static void SortImports(ж<token.FileSet> Ꮡfset, ж<File> Ꮡf) {
         foreach (var (j, s) in (~dΔ1).Specs) {
             if (j > i && lineAt(Ꮡfset, s.Pos()) > 1 + lineAt(Ꮡfset, (~dΔ1).Specs[j - 1].End())) {
                 // j begins a new run. End this one.
-                specs = append(specs, sortSpecs(Ꮡfset, Ꮡf, (~dΔ1).Specs[(int)(i)..(int)(j)]).ꓸꓸꓸ);
+                specs = append(specs, sortSpecs(Ꮡfset, ref (Ꮡf).DerefOrNull(), (~dΔ1).Specs[(int)(i)..(int)(j)]).ꓸꓸꓸ);
                 i = j;
             }
         }
-        specs = append(specs, sortSpecs(Ꮡfset, Ꮡf, (~dΔ1).Specs[(int)(i)..]).ꓸꓸꓸ);
+        specs = append(specs, sortSpecs(Ꮡfset, ref (Ꮡf).DerefOrNull(), (~dΔ1).Specs[(int)(i)..]).ꓸꓸꓸ);
         dΔ1.Value.Specs = specs;
         // Deduping can leave a blank line before the rparen; clean that up.
         if (len((~dΔ1).Specs) > 0) {
@@ -98,9 +98,7 @@ internal static bool collapse(Spec prev, Spec next) {
     internal ж<CommentGroup> cg;
 }
 
-internal static slice<Spec> sortSpecs(ж<token.FileSet> Ꮡfset, ж<File> Ꮡf, slice<Spec> specs) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static slice<Spec> sortSpecs(ж<token.FileSet> Ꮡfset, ref File f, slice<Spec> specs) {
     // Can't short-circuit here even if specs are already sorted,
     // since they might yet need deduplication.
     // A lone import, however, may be safely ignored.

@@ -113,17 +113,17 @@ partial class profile_package {
     foreach (var (_, x) in p.Function) {
         encodeMessage(Ꮡb, 5, new Functionжmessage(x));
     }
-    encodeStrings(Ꮡb, 6, p.stringTable);
-    encodeInt64Opt(Ꮡb, 7, p.dropFramesX);
-    encodeInt64Opt(Ꮡb, 8, p.keepFramesX);
-    encodeInt64Opt(Ꮡb, 9, p.TimeNanos);
-    encodeInt64Opt(Ꮡb, 10, p.DurationNanos);
+    encodeStrings(ref (Ꮡb).DerefOrNull(), 6, p.stringTable);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 7, p.dropFramesX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 8, p.keepFramesX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 9, p.TimeNanos);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 10, p.DurationNanos);
     {
         var pt = p.PeriodType; if (pt != nil && ((~pt).typeX != 0 || (~pt).unitX != 0)) {
             encodeMessage(Ꮡb, 11, new ValueTypeжmessage(p.PeriodType));
         }
     }
-    encodeInt64Opt(Ꮡb, 12, p.Period);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 12, p.Period);
 }
 
 // 0
@@ -175,7 +175,7 @@ internal static void initᴛprofileDecoder() { profileDecoder = new Func<ж<buff
         return decodeMessage(b, new Functionжmessage(x));
     },
     error (ж<buffer> b, message m) => {
-        var err = decodeStrings(b, m._<ж<Profile>>().of(Profile.ᏑstringTable));
+        var err = decodeStrings(ref (b).DerefOrNull(), m._<ж<Profile>>().of(Profile.ᏑstringTable));
         if (err != default!) {
             return err;
         }
@@ -184,19 +184,19 @@ internal static void initᴛprofileDecoder() { profileDecoder = new Func<ж<buff
         }
         return default!;
     },
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑdropFramesX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑkeepFramesX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑTimeNanos)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑDurationNanos)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Profile>>().of(Profile.ᏑdropFramesX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Profile>>().of(Profile.ᏑkeepFramesX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Profile>>().of(Profile.ᏑTimeNanos)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Profile>>().of(Profile.ᏑDurationNanos)),
     (ж<buffer> b, message m) => {
         var x = @new<ValueType>();
         var pp = m._<ж<Profile>>();
         pp.Value.PeriodType = x;
         return decodeMessage(b, new ValueTypeжmessage(x));
     },
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑPeriod)),
-    (ж<buffer> b, message m) => decodeInt64s(b, m._<ж<Profile>>().of(Profile.ᏑcommentX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑdefaultSampleTypeX))
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Profile>>().of(Profile.ᏑPeriod)),
+    (ж<buffer> b, message m) => decodeInt64s(ref (b).DerefOrNull(), m._<ж<Profile>>().of(Profile.ᏑcommentX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Profile>>().of(Profile.ᏑdefaultSampleTypeX))
 }.slice(); }
 
 // postDecode takes the unexported fields populated by decode (with
@@ -208,15 +208,15 @@ internal static error postDecode(this ж<Profile> Ꮡp) {
     error err = default!;
     var mappings = new map<uint64, ж<Mapping>>();
     foreach (var (_, m) in p.Mapping) {
-        (m.Value.File, err) = getString(p.stringTable, m.of(Mapping.ᏑfileX), err);
-        (m.Value.BuildID, err) = getString(p.stringTable, m.of(Mapping.ᏑbuildIDX), err);
+        (m.Value.File, err) = getString(p.stringTable, ref (m.of(Mapping.ᏑfileX)).DerefOrNull(), err);
+        (m.Value.BuildID, err) = getString(p.stringTable, ref (m.of(Mapping.ᏑbuildIDX)).DerefOrNull(), err);
         mappings[(~m).ID] = m;
     }
     var functions = new map<uint64, ж<Function>>();
     foreach (var (_, f) in p.Function) {
-        (f.Value.Name, err) = getString(p.stringTable, f.of(Function.ᏑnameX), err);
-        (f.Value.SystemName, err) = getString(p.stringTable, f.of(Function.ᏑsystemNameX), err);
-        (f.Value.Filename, err) = getString(p.stringTable, f.of(Function.ᏑfilenameX), err);
+        (f.Value.Name, err) = getString(p.stringTable, ref (f.of(Function.ᏑnameX)).DerefOrNull(), err);
+        (f.Value.SystemName, err) = getString(p.stringTable, ref (f.of(Function.ᏑsystemNameX)).DerefOrNull(), err);
+        (f.Value.Filename, err) = getString(p.stringTable, ref (f.of(Function.ᏑfilenameX)).DerefOrNull(), err);
         functions[(~f).ID] = f;
     }
     var locations = new map<uint64, ж<Location>>();
@@ -237,21 +237,20 @@ internal static error postDecode(this ж<Profile> Ꮡp) {
         locations[(~l).ID] = l;
     }
     foreach (var (_, st) in p.SampleType) {
-        (st.Value.Type, err) = getString(p.stringTable, st.of(ValueType.ᏑtypeX), err);
-        (st.Value.Unit, err) = getString(p.stringTable, st.of(ValueType.ᏑunitX), err);
+        (st.Value.Type, err) = getString(p.stringTable, ref (st.of(ValueType.ᏑtypeX)).DerefOrNull(), err);
+        (st.Value.Unit, err) = getString(p.stringTable, ref (st.of(ValueType.ᏑunitX)).DerefOrNull(), err);
     }
     foreach (var (_, s) in p.Sample) {
         var labels = new map<@string, slice<@string>>();
         var numLabels = new map<@string, slice<int64>>();
         foreach (var (_, vᴛ1) in (~s).labelX) {
-            ref var l = ref heap(new Label(), out var Ꮡl);
-            l = vᴛ1;
+            var l = vᴛ1;
 
             @string key = default!;
             @string value = default!;
-            (key, err) = getString(p.stringTable, Ꮡl.of(Label.ᏑkeyX), err);
+            (key, err) = getString(p.stringTable, ref l.keyX, err);
             if (l.strX != 0){
-                (value, err) = getString(p.stringTable, Ꮡl.of(Label.ᏑstrX), err);
+                (value, err) = getString(p.stringTable, ref l.strX, err);
                 labels[key] = append(labels[key], value);
             } else {
                 numLabels[key] = append(numLabels[key], l.numX);
@@ -269,8 +268,8 @@ internal static error postDecode(this ж<Profile> Ꮡp) {
         }
         s.Value.locationIDX = default!;
     }
-    (p.DropFrames, err) = getString(p.stringTable, Ꮡp.of(Profile.ᏑdropFramesX), err);
-    (p.KeepFrames, err) = getString(p.stringTable, Ꮡp.of(Profile.ᏑkeepFramesX), err);
+    (p.DropFrames, err) = getString(p.stringTable, ref nonnil(ref p).dropFramesX, err);
+    (p.KeepFrames, err) = getString(p.stringTable, ref nonnil(ref p).keepFramesX, err);
     {
         var pt = p.PeriodType; if (pt == nil) {
             p.PeriodType = Ꮡ(new ValueType(nil));
@@ -278,20 +277,19 @@ internal static error postDecode(this ж<Profile> Ꮡp) {
     }
     {
         var pt = p.PeriodType; if (pt != nil) {
-            (pt.Value.Type, err) = getString(p.stringTable, pt.of(ValueType.ᏑtypeX), err);
-            (pt.Value.Unit, err) = getString(p.stringTable, pt.of(ValueType.ᏑunitX), err);
+            (pt.Value.Type, err) = getString(p.stringTable, ref (pt.of(ValueType.ᏑtypeX)).DerefOrNull(), err);
+            (pt.Value.Unit, err) = getString(p.stringTable, ref (pt.of(ValueType.ᏑunitX)).DerefOrNull(), err);
         }
     }
     foreach (var (_, vᴛ2) in p.commentX) {
-        ref var i = ref heap(new int64(), out var Ꮡi);
-        i = vᴛ2;
+        var i = vᴛ2;
 
         @string c = default!;
-        (c, err) = getString(p.stringTable, Ꮡi, err);
+        (c, err) = getString(p.stringTable, ref i, err);
         p.Comments = append(p.Comments, c);
     }
     p.commentX = default!;
-    (p.DefaultSampleType, err) = getString(p.stringTable, Ꮡp.of(Profile.ᏑdefaultSampleTypeX), err);
+    (p.DefaultSampleType, err) = getString(p.stringTable, ref nonnil(ref p).defaultSampleTypeX, err);
     p.stringTable = default!;
     return err;
 }
@@ -301,8 +299,8 @@ internal static error postDecode(this ж<Profile> Ꮡp) {
 }
 
 [GoRecv] internal static void encode(this ref ValueType p, ж<buffer> Ꮡb) {
-    encodeInt64Opt(Ꮡb, 1, p.typeX);
-    encodeInt64Opt(Ꮡb, 2, p.unitX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 1, p.typeX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 2, p.unitX);
 }
 
 // 0
@@ -311,8 +309,8 @@ internal static error postDecode(this ж<Profile> Ꮡp) {
 internal static slice<Func<ж<buffer>, message, error>> valueTypeDecoder;
 internal static void initᴛvalueTypeDecoder() { valueTypeDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<ValueType>>().of(ValueType.ᏑtypeX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<ValueType>>().of(ValueType.ᏑunitX))
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<ValueType>>().of(ValueType.ᏑtypeX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<ValueType>>().of(ValueType.ᏑunitX))
 }.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Sample p) {
@@ -320,9 +318,9 @@ internal static void initᴛvalueTypeDecoder() { valueTypeDecoder = new Func<ж<
 }
 
 [GoRecv] internal static void encode(this ref Sample p, ж<buffer> Ꮡb) {
-    encodeUint64s(Ꮡb, 1, p.locationIDX);
+    encodeUint64s(ref (Ꮡb).DerefOrNull(), 1, p.locationIDX);
     foreach (var (_, x) in p.Value) {
-        encodeInt64(Ꮡb, 2, x);
+        encodeInt64(ref (Ꮡb).DerefOrNull(), 2, x);
     }
     foreach (var (_, x) in p.labelX) {
         encodeMessage(Ꮡb, 3, x);
@@ -336,8 +334,8 @@ internal static void initᴛvalueTypeDecoder() { valueTypeDecoder = new Func<ж<
 internal static slice<Func<ж<buffer>, message, error>> sampleDecoder;
 internal static void initᴛsampleDecoder() { sampleDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64s(b, m._<ж<Sample>>().of(Sample.ᏑlocationIDX)),
-    (ж<buffer> b, message m) => decodeInt64s(b, m._<ж<Sample>>().of(Sample.ᏑValue)),
+    (ж<buffer> b, message m) => decodeUint64s(ref (b).DerefOrNull(), m._<ж<Sample>>().of(Sample.ᏑlocationIDX)),
+    (ж<buffer> b, message m) => decodeInt64s(ref (b).DerefOrNull(), m._<ж<Sample>>().of(Sample.ᏑValue)),
     (ж<buffer> b, message m) => {
         var s = m._<ж<Sample>>();
         nint n = len((~s).labelX);
@@ -351,9 +349,9 @@ internal static slice<Func<ж<buffer>, message, error>> decoder(this Label p) {
 }
 
 internal static void encode(this Label p, ж<buffer> Ꮡb) {
-    encodeInt64Opt(Ꮡb, 1, p.keyX);
-    encodeInt64Opt(Ꮡb, 2, p.strX);
-    encodeInt64Opt(Ꮡb, 3, p.numX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 1, p.keyX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 2, p.strX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 3, p.numX);
 }
 
 // 0
@@ -363,9 +361,9 @@ internal static void encode(this Label p, ж<buffer> Ꮡb) {
 internal static slice<Func<ж<buffer>, message, error>> labelDecoder;
 internal static void initᴛlabelDecoder() { labelDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Label>>().of(Label.ᏑkeyX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Label>>().of(Label.ᏑstrX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Label>>().of(Label.ᏑnumX))
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Label>>().of(Label.ᏑkeyX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Label>>().of(Label.ᏑstrX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Label>>().of(Label.ᏑnumX))
 }.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Mapping p) {
@@ -373,16 +371,16 @@ internal static void initᴛlabelDecoder() { labelDecoder = new Func<ж<buffer>,
 }
 
 [GoRecv] internal static void encode(this ref Mapping p, ж<buffer> Ꮡb) {
-    encodeUint64Opt(Ꮡb, 1, p.ID);
-    encodeUint64Opt(Ꮡb, 2, p.Start);
-    encodeUint64Opt(Ꮡb, 3, p.Limit);
-    encodeUint64Opt(Ꮡb, 4, p.Offset);
-    encodeInt64Opt(Ꮡb, 5, p.fileX);
-    encodeInt64Opt(Ꮡb, 6, p.buildIDX);
-    encodeBoolOpt(Ꮡb, 7, p.HasFunctions);
-    encodeBoolOpt(Ꮡb, 8, p.HasFilenames);
-    encodeBoolOpt(Ꮡb, 9, p.HasLineNumbers);
-    encodeBoolOpt(Ꮡb, 10, p.HasInlineFrames);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 1, p.ID);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 2, p.Start);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 3, p.Limit);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 4, p.Offset);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 5, p.fileX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 6, p.buildIDX);
+    encodeBoolOpt(ref (Ꮡb).DerefOrNull(), 7, p.HasFunctions);
+    encodeBoolOpt(ref (Ꮡb).DerefOrNull(), 8, p.HasFilenames);
+    encodeBoolOpt(ref (Ꮡb).DerefOrNull(), 9, p.HasLineNumbers);
+    encodeBoolOpt(ref (Ꮡb).DerefOrNull(), 10, p.HasInlineFrames);
 }
 
 // 0
@@ -399,16 +397,16 @@ internal static void initᴛlabelDecoder() { labelDecoder = new Func<ж<buffer>,
 internal static slice<Func<ж<buffer>, message, error>> mappingDecoder;
 internal static void initᴛmappingDecoder() { mappingDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Mapping>>().of(Mapping.ᏑID)),
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Mapping>>().of(Mapping.ᏑStart)),
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Mapping>>().of(Mapping.ᏑLimit)),
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Mapping>>().of(Mapping.ᏑOffset)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Mapping>>().of(Mapping.ᏑfileX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Mapping>>().of(Mapping.ᏑbuildIDX)),
-    (ж<buffer> b, message m) => decodeBool(b, m._<ж<Mapping>>().of(Mapping.ᏑHasFunctions)),
-    (ж<buffer> b, message m) => decodeBool(b, m._<ж<Mapping>>().of(Mapping.ᏑHasFilenames)),
-    (ж<buffer> b, message m) => decodeBool(b, m._<ж<Mapping>>().of(Mapping.ᏑHasLineNumbers)),
-    (ж<buffer> b, message m) => decodeBool(b, m._<ж<Mapping>>().of(Mapping.ᏑHasInlineFrames))
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑID)),
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑStart)),
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑLimit)),
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑOffset)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑfileX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑbuildIDX)),
+    (ж<buffer> b, message m) => decodeBool(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑHasFunctions)),
+    (ж<buffer> b, message m) => decodeBool(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑHasFilenames)),
+    (ж<buffer> b, message m) => decodeBool(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑHasLineNumbers)),
+    (ж<buffer> b, message m) => decodeBool(ref (b).DerefOrNull(), m._<ж<Mapping>>().of(Mapping.ᏑHasInlineFrames))
 }.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Location p) {
@@ -416,9 +414,9 @@ internal static void initᴛmappingDecoder() { mappingDecoder = new Func<ж<buff
 }
 
 [GoRecv] internal static void encode(this ref Location p, ж<buffer> Ꮡb) {
-    encodeUint64Opt(Ꮡb, 1, p.ID);
-    encodeUint64Opt(Ꮡb, 2, p.mappingIDX);
-    encodeUint64Opt(Ꮡb, 3, p.Address);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 1, p.ID);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 2, p.mappingIDX);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 3, p.Address);
     foreach (var (i, _) in p.Line) {
         encodeMessage(Ꮡb, 4, new Lineжmessage(Ꮡ(p.Line, i)));
     }
@@ -432,9 +430,9 @@ internal static void initᴛmappingDecoder() { mappingDecoder = new Func<ж<buff
 internal static slice<Func<ж<buffer>, message, error>> locationDecoder;
 internal static void initᴛlocationDecoder() { locationDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Location>>().of(Location.ᏑID)),
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Location>>().of(Location.ᏑmappingIDX)),
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Location>>().of(Location.ᏑAddress)),
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Location>>().of(Location.ᏑID)),
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Location>>().of(Location.ᏑmappingIDX)),
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Location>>().of(Location.ᏑAddress)),
     (ж<buffer> b, message m) => {
         var pp = m._<ж<Location>>();
         nint n = len((~pp).Line);
@@ -448,8 +446,8 @@ internal static void initᴛlocationDecoder() { locationDecoder = new Func<ж<bu
 }
 
 [GoRecv] internal static void encode(this ref Line p, ж<buffer> Ꮡb) {
-    encodeUint64Opt(Ꮡb, 1, p.functionIDX);
-    encodeInt64Opt(Ꮡb, 2, p.ΔLine);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 1, p.functionIDX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 2, p.ΔLine);
 }
 
 // 0
@@ -458,8 +456,8 @@ internal static void initᴛlocationDecoder() { locationDecoder = new Func<ж<bu
 internal static slice<Func<ж<buffer>, message, error>> lineDecoder;
 internal static void initᴛlineDecoder() { lineDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Line>>().of(Line.ᏑfunctionIDX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Line>>().of(Line.ᏑΔLine))
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Line>>().of(Line.ᏑfunctionIDX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Line>>().of(Line.ᏑΔLine))
 }.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Function p) {
@@ -467,11 +465,11 @@ internal static void initᴛlineDecoder() { lineDecoder = new Func<ж<buffer>, m
 }
 
 [GoRecv] internal static void encode(this ref Function p, ж<buffer> Ꮡb) {
-    encodeUint64Opt(Ꮡb, 1, p.ID);
-    encodeInt64Opt(Ꮡb, 2, p.nameX);
-    encodeInt64Opt(Ꮡb, 3, p.systemNameX);
-    encodeInt64Opt(Ꮡb, 4, p.filenameX);
-    encodeInt64Opt(Ꮡb, 5, p.StartLine);
+    encodeUint64Opt(ref (Ꮡb).DerefOrNull(), 1, p.ID);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 2, p.nameX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 3, p.systemNameX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 4, p.filenameX);
+    encodeInt64Opt(ref (Ꮡb).DerefOrNull(), 5, p.StartLine);
 }
 
 // 0
@@ -483,11 +481,11 @@ internal static void initᴛlineDecoder() { lineDecoder = new Func<ж<buffer>, m
 internal static slice<Func<ж<buffer>, message, error>> functionDecoder;
 internal static void initᴛfunctionDecoder() { functionDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Function>>().of(Function.ᏑID)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Function>>().of(Function.ᏑnameX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Function>>().of(Function.ᏑsystemNameX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Function>>().of(Function.ᏑfilenameX)),
-    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Function>>().of(Function.ᏑStartLine))
+    (ж<buffer> b, message m) => decodeUint64(ref (b).DerefOrNull(), m._<ж<Function>>().of(Function.ᏑID)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Function>>().of(Function.ᏑnameX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Function>>().of(Function.ᏑsystemNameX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Function>>().of(Function.ᏑfilenameX)),
+    (ж<buffer> b, message m) => decodeInt64(ref (b).DerefOrNull(), m._<ж<Function>>().of(Function.ᏑStartLine))
 }.slice(); }
 
 internal static int64 addString(map<@string, nint> strings, @string s) {
@@ -499,9 +497,7 @@ internal static int64 addString(map<@string, nint> strings, @string s) {
     return (int64)i;
 }
 
-internal static (@string, error) getString(slice<@string> strings, ж<int64> Ꮡstrng, error err) {
-    ref var strng = ref Ꮡstrng.DerefOrNull();
-
+internal static (@string, error) getString(slice<@string> strings, ref int64 strng, error err) {
     if (err != default!) {
         return ("", err);
     }

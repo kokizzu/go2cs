@@ -84,9 +84,7 @@ internal static slice<byte> clientFinishedLabel = slice<byte>("client finished"u
 
 internal static slice<byte> serverFinishedLabel = slice<byte>("server finished"u8);
 
-internal static (Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>>, crypto.Hash) prfAndHashForVersion(uint16 version, ж<cipherSuite> Ꮡsuite) {
-    ref var suite = ref Ꮡsuite.DerefOrNull();
-
+internal static (Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>>, crypto.Hash) prfAndHashForVersion(uint16 version, ref cipherSuite suite) {
     var exprᴛ1 = version;
     if (exprᴛ1 == VersionTLS10 || exprᴛ1 == VersionTLS11) {
         return (prf10, ((crypto.Hash)0));
@@ -103,34 +101,34 @@ internal static (Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>>, cry
 
 }
 
-internal static Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>> prfForVersion(uint16 version, ж<cipherSuite> Ꮡsuite) {
-    var (prf, _) = prfAndHashForVersion(version, Ꮡsuite);
+internal static Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>> prfForVersion(uint16 version, ref cipherSuite suite) {
+    var (prf, _) = prfAndHashForVersion(version, ref suite);
     return prf;
 }
 
 // masterFromPreMasterSecret generates the master secret from the pre-master
 // secret. See RFC 5246, Section 8.1.
-internal static slice<byte> masterFromPreMasterSecret(uint16 version, ж<cipherSuite> Ꮡsuite, slice<byte> preMasterSecret, slice<byte> clientRandom, slice<byte> serverRandom) {
+internal static slice<byte> masterFromPreMasterSecret(uint16 version, ref cipherSuite suite, slice<byte> preMasterSecret, slice<byte> clientRandom, slice<byte> serverRandom) {
     var seed = new slice<byte>(0, len(clientRandom) + len(serverRandom));
     seed = append(seed, clientRandom.ꓸꓸꓸ);
     seed = append(seed, serverRandom.ꓸꓸꓸ);
     var masterSecret = new slice<byte>(masterSecretLength);
-    prfForVersion(version, Ꮡsuite)(masterSecret, preMasterSecret, masterSecretLabel, seed);
+    prfForVersion(version, ref suite)(masterSecret, preMasterSecret, masterSecretLabel, seed);
     return masterSecret;
 }
 
 // extMasterFromPreMasterSecret generates the extended master secret from the
 // pre-master secret. See RFC 7627.
-internal static slice<byte> extMasterFromPreMasterSecret(uint16 version, ж<cipherSuite> Ꮡsuite, slice<byte> preMasterSecret, slice<byte> transcript) {
+internal static slice<byte> extMasterFromPreMasterSecret(uint16 version, ref cipherSuite suite, slice<byte> preMasterSecret, slice<byte> transcript) {
     var masterSecret = new slice<byte>(masterSecretLength);
-    prfForVersion(version, Ꮡsuite)(masterSecret, preMasterSecret, extendedMasterSecretLabel, transcript);
+    prfForVersion(version, ref suite)(masterSecret, preMasterSecret, extendedMasterSecretLabel, transcript);
     return masterSecret;
 }
 
 // keysFromMasterSecret generates the connection keys from the master
 // secret, given the lengths of the MAC key, cipher key and IV, as defined in
 // RFC 2246, Section 6.3.
-internal static (slice<byte> clientMAC, slice<byte> serverMAC, slice<byte> clientKey, slice<byte> serverKey, slice<byte> clientIV, slice<byte> serverIV) keysFromMasterSecret(uint16 version, ж<cipherSuite> Ꮡsuite, slice<byte> masterSecret, slice<byte> clientRandom, slice<byte> serverRandom, nint macLen, nint keyLen, nint ivLen) {
+internal static (slice<byte> clientMAC, slice<byte> serverMAC, slice<byte> clientKey, slice<byte> serverKey, slice<byte> clientIV, slice<byte> serverIV) keysFromMasterSecret(uint16 version, ref cipherSuite suite, slice<byte> masterSecret, slice<byte> clientRandom, slice<byte> serverRandom, nint macLen, nint keyLen, nint ivLen) {
     slice<byte> clientMAC = default!;
     slice<byte> serverMAC = default!;
     slice<byte> clientKey = default!;
@@ -143,7 +141,7 @@ internal static (slice<byte> clientMAC, slice<byte> serverMAC, slice<byte> clien
     seed = append(seed, clientRandom.ꓸꓸꓸ);
     nint n = 2 * macLen + 2 * keyLen + 2 * ivLen;
     var keyMaterial = new slice<byte>(n);
-    prfForVersion(version, Ꮡsuite)(keyMaterial, masterSecret, keyExpansionLabel, seed);
+    prfForVersion(version, ref suite)(keyMaterial, masterSecret, keyExpansionLabel, seed);
     clientMAC = keyMaterial[..(int)(macLen)];
     keyMaterial = keyMaterial[(int)(macLen)..];
     serverMAC = keyMaterial[..(int)(macLen)];
@@ -158,12 +156,12 @@ internal static (slice<byte> clientMAC, slice<byte> serverMAC, slice<byte> clien
     return (clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV);
 }
 
-internal static ΔfinishedHash newFinishedHash(uint16 version, ж<cipherSuite> ᏑcipherSuite) {
+internal static ΔfinishedHash newFinishedHash(uint16 version, ref cipherSuite cipherSuite) {
     slice<byte> buffer = default!;
     if (version >= VersionTLS12) {
         buffer = new byte[]{}.slice();
     }
-    var (prf, hash) = prfAndHashForVersion(version, ᏑcipherSuite);
+    var (prf, hash) = prfAndHashForVersion(version, ref cipherSuite);
     if (hash != 0) {
         return new ΔfinishedHash(hash.New(), hash.New(), default!, default!, buffer, version, prf);
     }
@@ -295,7 +293,7 @@ internal static Func<@string, slice<byte>, nint, (slice<byte>, error)> ekmFromMa
             seed = append(seed, context.ꓸꓸꓸ);
         }
         var keyMaterial = new slice<byte>(length);
-        prfForVersion(version, Ꮡsuite)(keyMaterial, masterSecretʗ1, slice<byte>(label), seed);
+        prfForVersion(version, ref (Ꮡsuite).DerefOrNull())(keyMaterial, masterSecretʗ1, slice<byte>(label), seed);
         return (keyMaterial, default!);
     };
 }

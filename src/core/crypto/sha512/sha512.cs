@@ -281,14 +281,14 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
         nint n = copy(d.x[(int)(d.nx)..], p);
         d.nx += n;
         if (d.nx == chunk) {
-            block(Ꮡd, d.x[..]);
+            block(ref (Ꮡd).DerefOrNull(), d.x[..]);
             d.nx = 0;
         }
         p = p[(int)(n)..];
     }
     if (len(p) >= chunk) {
         nint n = (nint)(len(p) & ~(nint)(chunk - 1));
-        block(Ꮡd, p[..(int)(n)]);
+        block(ref (Ꮡd).DerefOrNull(), p[..(int)(n)]);
         p = p[(int)(n)..];
     }
     if (len(p) > 0) {

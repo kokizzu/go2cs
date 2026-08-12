@@ -284,14 +284,14 @@ internal static (ж<UDPConn>, error) listenMulticastUDP(this ж<sysListener> Ꮡ
     {
         var ip4 = gaddr.IP.To4(); if (ip4 != default!){
             {
-                var errΔ1 = listenIPv4MulticastUDP(c, Ꮡifi, ip4); if (errΔ1 != default!) {
+                var errΔ1 = listenIPv4MulticastUDP(ref (c).DerefOrNull(), Ꮡifi, ip4); if (errΔ1 != default!) {
                     c.of(UDPConn.Ꮡconn).Close();
                     return (default!, errΔ1);
                 }
             }
         } else {
             {
-                var errΔ2 = listenIPv6MulticastUDP(c, Ꮡifi, gaddr.IP); if (errΔ2 != default!) {
+                var errΔ2 = listenIPv6MulticastUDP(ref (c).DerefOrNull(), Ꮡifi, gaddr.IP); if (errΔ2 != default!) {
                     c.of(UDPConn.Ꮡconn).Close();
                     return (default!, errΔ2);
                 }
@@ -301,9 +301,7 @@ internal static (ж<UDPConn>, error) listenMulticastUDP(this ж<sysListener> Ꮡ
     return (c, default!);
 }
 
-internal static error listenIPv4MulticastUDP(ж<UDPConn> Ꮡc, ж<Interface> Ꮡifi, IP ip) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static error listenIPv4MulticastUDP(ref UDPConn c, ж<Interface> Ꮡifi, IP ip) {
     if (Ꮡifi != nil) {
         {
             var err = setIPv4MulticastInterface(c.fd, Ꮡifi); if (err != default!) {
@@ -324,9 +322,7 @@ internal static error listenIPv4MulticastUDP(ж<UDPConn> Ꮡc, ж<Interface> Ꮡ
     return default!;
 }
 
-internal static error listenIPv6MulticastUDP(ж<UDPConn> Ꮡc, ж<Interface> Ꮡifi, IP ip) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static error listenIPv6MulticastUDP(ref UDPConn c, ж<Interface> Ꮡifi, IP ip) {
     if (Ꮡifi != nil) {
         {
             var err = setIPv6MulticastInterface(c.fd, Ꮡifi); if (err != default!) {

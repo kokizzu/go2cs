@@ -37,8 +37,8 @@ internal static void buildSlicing8TablesOnce() {
 }
 
 internal static void buildSlicing8Tables() {
-    slicing8TableISO = makeSlicingBy8Table(makeTable(ISO));
-    slicing8TableECMA = makeSlicingBy8Table(makeTable(ECMA));
+    slicing8TableISO = makeSlicingBy8Table(ref (makeTable(ISO)).DerefOrNull());
+    slicing8TableECMA = makeSlicingBy8Table(ref (makeTable(ECMA)).DerefOrNull());
 }
 
 // MakeTable returns a [Table] constructed from the specified polynomial.
@@ -74,9 +74,7 @@ internal static ж<Table> makeTable(uint64 poly) {
     return t;
 }
 
-internal static ж<array<Table>> makeSlicingBy8Table(ж<Table> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
+internal static ж<array<Table>> makeSlicingBy8Table(ref Table t) {
     ref var helperTable = ref heap(new array<Table>(8), out var ᏑhelperTable);
     helperTable[0] = t.Clone();
     for (nint i = 0; i < 256; i++) {
@@ -146,9 +144,7 @@ internal static readonly @string hashCrc64TablesDoNotˢ = "hash/crc64: tables do
     return default!;
 }
 
-internal static uint64 update(uint64 crc, ж<Table> Ꮡtab, slice<byte> p) {
-    ref var tab = ref Ꮡtab.DerefOrNull();
-
+internal static uint64 update(uint64 crc, ref Table tab, slice<byte> p) {
     buildSlicing8TablesOnce();
     crc = ~crc;
     // Table comparison is somewhat expensive, so avoid it for small sizes
@@ -164,7 +160,7 @@ internal static uint64 update(uint64 crc, ж<Table> Ꮡtab, slice<byte> p) {
             // For smaller sizes creating extended table takes too much time
             // According to the tests between various x86 and arm CPUs, 2k is a reasonable
             // threshold for now. This may change in the future.
-            helperTable = makeSlicingBy8Table(Ꮡtab);
+            helperTable = makeSlicingBy8Table(ref tab);
         } else {
             break;
         }
@@ -184,11 +180,11 @@ internal static uint64 update(uint64 crc, ж<Table> Ꮡtab, slice<byte> p) {
 
 // Update returns the result of adding the bytes in p to the crc.
 public static uint64 Update(uint64 crc, ж<Table> Ꮡtab, slice<byte> p) {
-    return update(crc, Ꮡtab, p);
+    return update(crc, ref (Ꮡtab).DerefOrNull(), p);
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref digest d, slice<byte> p) {
-    d.crc = update(d.crc, d.tab, p);
+    d.crc = update(d.crc, ref (d.tab).DerefOrNull(), p);
     return (len(p), default!);
 }
 
@@ -204,7 +200,7 @@ public static uint64 Update(uint64 crc, ж<Table> Ꮡtab, slice<byte> p) {
 // Checksum returns the CRC-64 checksum of data
 // using the polynomial represented by the [Table].
 public static uint64 Checksum(slice<byte> data, ж<Table> Ꮡtab) {
-    return update(0, Ꮡtab, data);
+    return update(0, ref (Ꮡtab).DerefOrNull(), data);
 }
 
 // tableSum returns the ISO checksum of table t.

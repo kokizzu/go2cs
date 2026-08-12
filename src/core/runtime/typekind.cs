@@ -9,9 +9,7 @@ using @internal;
 partial class runtime_package {
 
 // isDirectIface reports whether t is stored directly in an interface value.
-internal static bool isDirectIface(ж<_type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
+internal static bool isDirectIface(ref _type t) {
     return (abiꓸKind)(t.Kind_ & abi.KindDirectIface) != 0;
 }
 

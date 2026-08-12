@@ -57,7 +57,7 @@ public static (slice<byte>, error) MarshalECPrivateKey(ж<ecdsa.PrivateKey> Ꮡk
     if (!ok) {
         return (default!, errors.New(x509UnknownEllipticCurveˢ));
     }
-    return marshalECPrivateKeyWithOID(Ꮡkey, oid);
+    return marshalECPrivateKeyWithOID(ref (Ꮡkey).DerefOrNull(), oid);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -65,9 +65,7 @@ internal static readonly @string invalidEllipticKeyPublicˢ = "invalid elliptic 
 
 // marshalECPrivateKeyWithOID marshals an EC private key into ASN.1, DER format and
 // sets the curve ID to the given OID, or omits it if OID is nil.
-internal static (slice<byte>, error) marshalECPrivateKeyWithOID(ж<ecdsa.PrivateKey> Ꮡkey, asn1.ObjectIdentifier oid) {
-    ref var key = ref Ꮡkey.DerefOrNull();
-
+internal static (slice<byte>, error) marshalECPrivateKeyWithOID(ref ecdsa.PrivateKey key, asn1.ObjectIdentifier oid) {
     if (!key.Curve.IsOnCurve(key.X, key.Y)) {
         return (default!, errors.New(invalidEllipticKeyPublicˢ));
     }

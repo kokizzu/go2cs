@@ -519,9 +519,7 @@ internal static void floatFromReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSiz
 // floatToReg stores a float value in its register representation in r.
 //
 // argSize must be either 4 or 8.
-internal static void floatToReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSize, @unsafe.Pointer from) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static void floatToReg(ref abi.RegArgs r, nint reg, uintptr argSize, @unsafe.Pointer from) {
     var exprᴛ1 = argSize;
     if (exprᴛ1 == 4) {
         r.Floats[reg] = archFloat32ToReg(~(ж<float32>)(uintptr)(from));

@@ -73,7 +73,7 @@ internal static ж<byte> argv_index(ж<ж<byte>> Ꮡargv, int32 i) {
 internal static void args(int32 c, ж<ж<byte>> Ꮡv) {
     argc = c;
     argv = Ꮡv;
-    sysargs(c, Ꮡv);
+    sysargs(c, ref (Ꮡv).DerefOrNull());
 }
 
 internal static void goargs() {
@@ -663,9 +663,7 @@ internal static ж<m> acquirem() {
 }
 
 //go:nosplit
-internal static void releasem(ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static void releasem(ref m mp) {
     var gp = getg();
     mp.locks--;
     if (mp.locks == 0 && (~gp).preempt) {

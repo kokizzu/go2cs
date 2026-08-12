@@ -58,7 +58,7 @@ public static Handle<T> Make<T>(T value)
     weak.Pointer<T> newValue() {
         if (ᏑtoInsert.ValueSlot == nil) {
             ᏑtoInsert.ValueSlot = @new<T>();
-            ᏑtoInsert.ValueSlot.ValueSlot = clone(value, mʗ1.of(uniqueMap<T>.ᏑcloneSeq));
+            ᏑtoInsert.ValueSlot.ValueSlot = clone(value, ref (mʗ1.of(uniqueMap<T>.ᏑcloneSeq)).DerefOrNull());
             ᏑtoInsertWeak.Value = weak.Make<T>(ᏑtoInsert.ValueSlot);
         }
         return ᏑtoInsertWeak.Value;

@@ -55,12 +55,12 @@ internal static (@string prefix, bool complete, uint32 pc) onePassPrefix(ж<synt
         i = Ꮡ(p.Inst, (int)(pc));
     }
     // Avoid allocation of buffer if prefix is empty.
-    if (iop(i) != syntax.InstRune || len((~i).Rune) != 1) {
+    if (iop(ref (i).DerefOrNull()) != syntax.InstRune || len((~i).Rune) != 1) {
         return ("", (~i).Op == syntax.InstMatch, (uint32)p.Start);
     }
     // Have prefix; gather characters.
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    while (iop(i) == syntax.InstRune && len((~i).Rune) == 1 && (syntax.Flags)(((syntax.Flags)(uint16)(~i).Arg) & syntax.FoldCase) == 0 && (~i).Rune[0] != utf8.RuneError) {
+    while (iop(ref (i).DerefOrNull()) == syntax.InstRune && len((~i).Rune) == 1 && (syntax.Flags)(((syntax.Flags)(uint16)(~i).Arg) & syntax.FoldCase) == 0 && (~i).Rune[0] != utf8.RuneError) {
         Ꮡbuf.WriteRune((~i).Rune[0]);
         (pc, i) = (i.Value.Out, Ꮡ(p.Inst, (int)((~i).Out)));
     }
@@ -87,9 +87,7 @@ internal static uint32 onePassNext(ж<onePassInst> Ꮡi, rune r) {
     return 0;
 }
 
-internal static syntax.InstOp iop(ж<syntax.Inst> Ꮡi) {
-    ref var i = ref Ꮡi.DerefOrNull();
-
+internal static syntax.InstOp iop(ref syntax.Inst i) {
     var op = i.Op;
     var exprᴛ1 = op;
     if (exprᴛ1 == syntax.InstRune1 || exprᴛ1 == syntax.InstRuneAny || exprᴛ1 == syntax.InstRuneAnyNotNL) {
@@ -227,10 +225,7 @@ internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> Ꮡle
 }
 
 // cleanupOnePass drops working memory, and restores certain shortcut instructions.
-internal static void cleanupOnePass(ж<onePassProg> Ꮡprog, ж<syntax.Prog> Ꮡoriginal) {
-    ref var prog = ref Ꮡprog.DerefOrNull();
-    ref var original = ref Ꮡoriginal.DerefOrNull();
-
+internal static void cleanupOnePass(ref onePassProg prog, ref syntax.Prog original) {
     foreach (var (ix, instOriginal) in original.Inst) {
         var exprᴛ1 = instOriginal.Op;
         if (exprᴛ1 == syntax.InstAlt || exprᴛ1 == syntax.InstAltMatch || exprᴛ1 == syntax.InstRune) {
@@ -247,9 +242,7 @@ internal static void cleanupOnePass(ж<onePassProg> Ꮡprog, ж<syntax.Prog> Ꮡ
 }
 
 // onePassCopy creates a copy of the original Prog, as we'll be modifying it.
-internal static ж<onePassProg> onePassCopy(ж<syntax.Prog> Ꮡprog) {
-    ref var prog = ref Ꮡprog.DerefOrNull();
-
+internal static ж<onePassProg> onePassCopy(ref syntax.Prog prog) {
     var p = Ꮡ(new onePassProg(
         Start: prog.Start,
         NumCap: prog.NumCap,
@@ -506,10 +499,9 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
 // can be recharacterized as a one-pass regexp program, or syntax.nil if the
 // Prog cannot be converted. For a one pass prog, the fundamental condition that must
 // be true is: at any InstAlt, there must be no ambiguity about what branch to  take.
-internal static ж<onePassProg> /*p*/ compileOnePass(ж<syntax.Prog> Ꮡprog) {
+internal static ж<onePassProg> /*p*/ compileOnePass(ref syntax.Prog prog) {
     ж<onePassProg> p = default!;
 
-    ref var prog = ref Ꮡprog.DerefOrNull();
     if (prog.Start == 0) {
         return default!;
     }
@@ -543,11 +535,11 @@ internal static ж<onePassProg> /*p*/ compileOnePass(ж<syntax.Prog> Ꮡprog) {
     }
     // Creates a slightly optimized copy of the original Prog
     // that cleans up some Prog idioms that block valid onepass programs
-    p = onePassCopy(Ꮡprog);
+    p = onePassCopy(ref prog);
     // checkAmbiguity on InstAlts, build onepass Prog if possible
     p = makeOnePass(p);
     if (p != nil) {
-        cleanupOnePass(p, Ꮡprog);
+        cleanupOnePass(ref (p).DerefOrNull(), ref prog);
     }
     return p;
 }

@@ -105,7 +105,7 @@ internal static bool notetsleep(ж<note> Ꮡn, int64 ns) {
     if (gp != (~(~gp).m).g0) {
         @throw(notetsleepNotOnG0ˢ);
     }
-    semacreate((~gp).m);
+    semacreate(ref ((~gp).m).DerefOrNull());
     return notetsleep_internal(Ꮡn, ns, nil, 0);
 }
 
@@ -119,7 +119,7 @@ internal static bool notetsleepg(ж<note> Ꮡn, int64 ns) {
     if (gp == (~(~gp).m).g0) {
         @throw(notetsleepgOnG0ˢ);
     }
-    semacreate((~gp).m);
+    semacreate(ref ((~gp).m).DerefOrNull());
     entersyscallblock();
     var ok = notetsleep_internal(Ꮡn, ns, nil, 0);
     exitsyscall();

@@ -439,9 +439,7 @@ internal static readonly @string importˢ = "import"u8;
 //
 // It only returns an error if there are problems reading the file,
 // not for syntax errors in the file itself.
-internal static error readGoInfo(io.Reader f, ж<fileInfo> Ꮡinfo) {
-    ref var info = ref Ꮡinfo.DerefOrNull();
-
+internal static error readGoInfo(io.Reader f, ref fileInfo info) {
     var r = newImportReader(info.name, f);
     r.readKeyword(packageˢ);
     r.readIdent();

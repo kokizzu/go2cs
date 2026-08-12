@@ -1310,11 +1310,10 @@ internal static void copyValues(urlpkg.Values dst, urlpkg.Values src) {
 internal static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
 internal static readonly @string httpPostTooLargeˢ = "http: POST too large"u8;
 
-internal static (urlpkg.Values vs, error err) parsePostForm(ж<Request> Ꮡr) {
+internal static (urlpkg.Values vs, error err) parsePostForm(ref Request r) {
     urlpkg.Values vs = default!;
     error err = default!;
 
-    ref var r = ref Ꮡr.DerefOrNull();
     if (r.Body == default!) {
         err = errors.New(missingFormBodyˢ);
         return (vs, err);
@@ -1390,7 +1389,7 @@ public static error ParseForm(this ж<Request> Ꮡr) {
     error err = default!;
     if (r.PostForm == default!) {
         if (r.Method == "POST"u8 || r.Method == "PUT"u8 || r.Method == "PATCH"u8) {
-            (r.PostForm, err) = parsePostForm(Ꮡr);
+            (r.PostForm, err) = parsePostForm(ref (Ꮡr).DerefOrNull());
         }
         if (r.PostForm == default!) {
             r.PostForm = new urlpkg.Values(0);

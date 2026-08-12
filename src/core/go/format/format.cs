@@ -66,7 +66,7 @@ public static error Node(io.Writer dst, ж<token.FileSet> Ꮡfset, any node) {
         break;
     }}
     // Sort imports if necessary.
-    if (@file != nil && hasUnsortedImports(@file)) {
+    if (@file != nil && hasUnsortedImports(ref (@file).DerefOrNull())) {
         // Make a copy of the AST because ast.SortImports is destructive.
         // TODO(gri) Do this more efficiently.
         ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -111,9 +111,7 @@ public static (slice<byte>, error) Source(slice<byte> src) {
     return format(fset, @file, sourceAdj, indentAdj, src, config);
 }
 
-internal static bool hasUnsortedImports(ж<ast.File> Ꮡfile) {
-    ref var @file = ref Ꮡfile.DerefOrNull();
-
+internal static bool hasUnsortedImports(ref ast.File @file) {
     foreach (var (_, d) in @file.Decls) {
         var (dΔ1, ok) = d._<ж<ast.GenDecl>>(ᐧ);
         if (!ok || (~dΔ1).Tok != token.IMPORT) {

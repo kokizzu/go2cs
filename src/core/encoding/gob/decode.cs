@@ -1350,7 +1350,7 @@ internal static (ж<decEngine> engine, error err) compileDec(this ж<Decoder> �
         ref var ut = ref Ꮡut.DerefOrNull();
 
         ref var err = ref Ꮡerr.ValueSlot;
-        defer(catchError, Ꮡerr, ref ᒐ);
+        defer(ᴛ1 => catchError(ref ᴛ1.DerefOrNull()), Ꮡerr, ref ᒐ);
         var rt = ut.@base;
         var srt = rt;
         if (srt.Kind() != reflect.Struct || ut.externalDec != 0) {
@@ -1469,7 +1469,7 @@ internal static void decodeValue(this ж<Decoder> Ꮡdec, typeId wireId, reflect
     try {
         ref var dec = ref Ꮡdec.DerefOrNull();
 
-        defer(catchError, Ꮡdec.of(Decoder.Ꮡerr), ref ᒐ);
+        defer(ᴛ1 => catchError(ref ᴛ1.DerefOrNull()), Ꮡdec.of(Decoder.Ꮡerr), ref ᒐ);
         // If the value is nil, it means we should just ignore this item.
         if (!value.IsValid()) {
             Ꮡdec.decodeIgnoredValue(wireId);

@@ -383,11 +383,7 @@ internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Valu
 
 // toYCbCr converts the 8x8 region of m whose top-left corner is p to its
 // YCbCr values.
-internal static void toYCbCr(image.Image m, image.Point p, ж<block> ᏑyBlock, ж<block> ᏑcbBlock, ж<block> ᏑcrBlock) {
-    ref var yBlock = ref ᏑyBlock.DerefOrNull();
-    ref var cbBlock = ref ᏑcbBlock.DerefOrNull();
-    ref var crBlock = ref ᏑcrBlock.DerefOrNull();
-
+internal static void toYCbCr(image.Image m, image.Point p, ref block yBlock, ref block cbBlock, ref block crBlock) {
     var b = m.Bounds();
     nint xmax = b.Max.X - 1;
     nint ymax = b.Max.Y - 1;
@@ -403,9 +399,8 @@ internal static void toYCbCr(image.Image m, image.Point p, ж<block> ᏑyBlock, 
 }
 
 // grayToY stores the 8x8 region of m whose top-left corner is p in yBlock.
-internal static void grayToY(ж<image.Gray> Ꮡm, image.Point p, ж<block> ᏑyBlock) {
+internal static void grayToY(ж<image.Gray> Ꮡm, image.Point p, ref block yBlock) {
     ref var m = ref Ꮡm.DerefOrNull();
-    ref var yBlock = ref ᏑyBlock.DerefOrNull();
 
     var b = m.Bounds();
     nint xmax = b.Max.X - 1;
@@ -420,11 +415,8 @@ internal static void grayToY(ж<image.Gray> Ꮡm, image.Point p, ж<block> ᏑyB
 }
 
 // rgbaToYCbCr is a specialized version of toYCbCr for image.RGBA images.
-internal static void rgbaToYCbCr(ж<imageꓸRGBA> Ꮡm, image.Point p, ж<block> ᏑyBlock, ж<block> ᏑcbBlock, ж<block> ᏑcrBlock) {
+internal static void rgbaToYCbCr(ж<imageꓸRGBA> Ꮡm, image.Point p, ref block yBlock, ref block cbBlock, ref block crBlock) {
     ref var m = ref Ꮡm.DerefOrNull();
-    ref var yBlock = ref ᏑyBlock.DerefOrNull();
-    ref var cbBlock = ref ᏑcbBlock.DerefOrNull();
-    ref var crBlock = ref ᏑcrBlock.DerefOrNull();
 
     var b = m.Bounds();
     nint xmax = b.Max.X - 1;
@@ -450,11 +442,8 @@ internal static void rgbaToYCbCr(ж<imageꓸRGBA> Ꮡm, image.Point p, ж<block>
 }
 
 // yCbCrToYCbCr is a specialized version of toYCbCr for image.YCbCr images.
-internal static void yCbCrToYCbCr(ж<image.YCbCr> Ꮡm, image.Point p, ж<block> ᏑyBlock, ж<block> ᏑcbBlock, ж<block> ᏑcrBlock) {
+internal static void yCbCrToYCbCr(ж<image.YCbCr> Ꮡm, image.Point p, ref block yBlock, ref block cbBlock, ref block crBlock) {
     ref var m = ref Ꮡm.DerefOrNull();
-    ref var yBlock = ref ᏑyBlock.DerefOrNull();
-    ref var cbBlock = ref ᏑcbBlock.DerefOrNull();
-    ref var crBlock = ref ᏑcrBlock.DerefOrNull();
 
     var b = m.Bounds();
     nint xmax = b.Max.X - 1;
@@ -480,10 +469,7 @@ internal static void yCbCrToYCbCr(ж<image.YCbCr> Ꮡm, image.Point p, ж<block>
 
 // scale scales the 16x16 region represented by the 4 src blocks to the 8x8
 // dst block.
-internal static void scale(ж<block> Ꮡdst, ж<array<block>> Ꮡsrc) {
-    ref var dst = ref Ꮡdst.DerefOrNull();
-    ref var src = ref Ꮡsrc.DerefOrNull();
-
+internal static void scale(ref block dst, ref array<block> src) {
     for (nint i = 0; i < 4; i++) {
         nint dstOff = (nint)((((nint)(i & 2)) << (int)(4)) | (((nint)(i & 1)) << (int)(2)));
         for (nint y = 0; y < 4; y++) {
@@ -534,8 +520,8 @@ internal static slice<byte> sosHeaderYCbCr = new byte[]{
     }}
 
     ref var b = ref heap(new block(), out var Ꮡb);
-    ref var cb = ref heap(new array<block>(4), out var Ꮡcb);
-    ref var cr = ref heap(new array<block>(4), out var Ꮡcr);
+    array<block> cb = new(4);
+    array<block> cr = new(4);
     int32 prevDCY = default!;
     int32 prevDCCb = default!;
     int32 prevDCCr = default!;
@@ -546,7 +532,7 @@ internal static slice<byte> sosHeaderYCbCr = new byte[]{
             // TODO(wathiede): switch on m.ColorModel() instead of type.
             for (nint x = bounds.Min.X; x < bounds.Max.X; x += 8) {
                 var p = image.Pt(x, y);
-                grayToY(mΔ1, p, Ꮡb);
+                grayToY(mΔ1, p, ref b);
                 prevDCY = e.writeBlock(Ꮡb, 0, prevDCY);
             }
         }
@@ -563,18 +549,18 @@ internal static slice<byte> sosHeaderYCbCr = new byte[]{
                     nint yOff = ((nint)(i & 2)) * 4;
                     var p = image.Pt(x + xOff, y + yOff);
                     if (rgba != nil){
-                        rgbaToYCbCr(rgba, p, Ꮡb, Ꮡcb.at<block>(i), Ꮡcr.at<block>(i));
+                        rgbaToYCbCr(rgba, p, ref b, ref cb[i], ref cr[i]);
                     } else 
                     if (ycbcr != nil){
-                        yCbCrToYCbCr(ycbcr, p, Ꮡb, Ꮡcb.at<block>(i), Ꮡcr.at<block>(i));
+                        yCbCrToYCbCr(ycbcr, p, ref b, ref cb[i], ref cr[i]);
                     } else {
-                        toYCbCr(mΔ1, p, Ꮡb, Ꮡcb.at<block>(i), Ꮡcr.at<block>(i));
+                        toYCbCr(mΔ1, p, ref b, ref cb[i], ref cr[i]);
                     }
                     prevDCY = e.writeBlock(Ꮡb, 0, prevDCY);
                 }
-                scale(Ꮡb, Ꮡcb);
+                scale(ref b, ref cb);
                 prevDCCb = e.writeBlock(Ꮡb, 1, prevDCCb);
-                scale(Ꮡb, Ꮡcr);
+                scale(ref b, ref cr);
                 prevDCCr = e.writeBlock(Ꮡb, 1, prevDCCr);
             }
         }

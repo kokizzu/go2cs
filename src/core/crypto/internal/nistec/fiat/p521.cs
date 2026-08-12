@@ -25,7 +25,9 @@ internal static UntypedInt p521ElementLen => 66;
 
 // One sets e = 1, and returns e.
 public static ж<P521Element> One(this ж<P521Element> Ꮡe) {
-    p521SetOne(Ꮡe.of(P521Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+
+    p521SetOne(ref nonnil(ref e).x);
     return Ꮡe;
 }
 
@@ -61,11 +63,13 @@ public static slice<byte> Bytes(this ж<P521Element> Ꮡe) {
 }
 
 internal static slice<byte> bytes(this ж<P521Element> Ꮡe, ж<array<byte>> Ꮡout) {
+    ref var e = ref Ꮡe.DerefOrNull();
     ref var @out = ref Ꮡout.DerefOrNull();
 
-    ref var tmp = ref heap(new p521NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
-    p521FromMontgomery(Ꮡtmp, Ꮡe.of(P521Element.Ꮡx));
-    p521ToBytes(Ꮡout, Ꮡ((Ꮡtmp).Value.Value));
+    p521NonMontgomeryDomainFieldElement tmp = default!;
+    p521FromMontgomery(ref tmp, ref nonnil(ref e).x);
+    var ᴛ1 = tmp.Value;
+    p521ToBytes(ref (Ꮡout).DerefOrNull(), ref ᴛ1);
     p521InvertEndianness(@out[..]);
     return @out[..];
 }
@@ -77,6 +81,8 @@ private static readonly @string invalidP521Elementˢ = "invalid P521Element enco
 // If v is not 66 bytes or it encodes a value higher than 2^521 - 1,
 // SetBytes returns nil and an error, and e is unchanged.
 public static (ж<P521Element>, error) SetBytes(this ж<P521Element> Ꮡe, slice<byte> v) {
+    ref var e = ref Ꮡe.DerefOrNull();
+
     if (len(v) != p521ElementLen) {
         return (default!, errors.New(invalidP521Elementˢ));
     }
@@ -95,40 +101,65 @@ public static (ж<P521Element>, error) SetBytes(this ж<P521Element> Ꮡe, slice
     ref var @in = ref heap(new array<byte>(66), out var Ꮡin);
     copy(@in[..], v);
     p521InvertEndianness(@in[..]);
-    ref var tmp = ref heap(new p521NonMontgomeryDomainFieldElement(), out var Ꮡtmp);
-    p521FromBytes(Ꮡ((Ꮡtmp).Value.Value), Ꮡin);
-    p521ToMontgomery(Ꮡe.of(P521Element.Ꮡx), Ꮡtmp);
+    p521NonMontgomeryDomainFieldElement tmp = default!;
+    var ᴛ2 = tmp.Value;
+    p521FromBytes(ref ᴛ2, ref @in);
+    p521ToMontgomery(ref nonnil(ref e).x, ref tmp);
     return (Ꮡe, default!);
 }
 
 // Add sets e = t1 + t2, and returns e.
 public static ж<P521Element> Add(this ж<P521Element> Ꮡe, ж<P521Element> Ꮡt1, ж<P521Element> Ꮡt2) {
-    p521Add(Ꮡe.of(P521Element.Ꮡx), Ꮡt1.of(P521Element.Ꮡx), Ꮡt2.of(P521Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p521Add(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Sub sets e = t1 - t2, and returns e.
 public static ж<P521Element> Sub(this ж<P521Element> Ꮡe, ж<P521Element> Ꮡt1, ж<P521Element> Ꮡt2) {
-    p521Sub(Ꮡe.of(P521Element.Ꮡx), Ꮡt1.of(P521Element.Ꮡx), Ꮡt2.of(P521Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p521Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Mul sets e = t1 * t2, and returns e.
 public static ж<P521Element> Mul(this ж<P521Element> Ꮡe, ж<P521Element> Ꮡt1, ж<P521Element> Ꮡt2) {
-    p521Mul(Ꮡe.of(P521Element.Ꮡx), Ꮡt1.of(P521Element.Ꮡx), Ꮡt2.of(P521Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t1 = ref Ꮡt1.DerefOrNull();
+    ref var t2 = ref Ꮡt2.DerefOrNull();
+
+    p521Mul(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
     return Ꮡe;
 }
 
 // Square sets e = t * t, and returns e.
 public static ж<P521Element> Square(this ж<P521Element> Ꮡe, ж<P521Element> Ꮡt) {
-    p521Square(Ꮡe.of(P521Element.Ꮡx), Ꮡt.of(P521Element.Ꮡx));
+    ref var e = ref Ꮡe.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    p521Square(ref nonnil(ref e).x, ref nonnil(ref t).x);
     return Ꮡe;
 }
 
 // Select sets v to a if cond == 1, and to b if cond == 0.
 public static ж<P521Element> Select(this ж<P521Element> Ꮡv, ж<P521Element> Ꮡa, ж<P521Element> Ꮡb, nint cond) {
-    p521Selectznz(Ꮡ((Ꮡv.of(P521Element.Ꮡx)).Value.Value), ((p521Uint1)(uint64)cond),
-        Ꮡ((Ꮡb.of(P521Element.Ꮡx)).Value.Value), Ꮡ((Ꮡa.of(P521Element.Ꮡx)).Value.Value));
+    ref var v = ref Ꮡv.DerefOrNull();
+    ref var a = ref Ꮡa.DerefOrNull();
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var ᴛ3 = nonnil(ref v).x.Value;
+
+    var ᴛ4 = nonnil(ref b).x.Value;
+
+    var ᴛ5 = nonnil(ref a).x.Value;
+    p521Selectznz(ref ᴛ3, ((p521Uint1)(uint64)cond),
+        ref ᴛ4, ref ᴛ5);
     return Ꮡv;
 }
 

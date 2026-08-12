@@ -89,9 +89,7 @@ internal static readonly @string iOTimeoutˢ = "i/o timeout"u8;
 public static error ErrNotPollable = errors.New("not pollable"u8);
 
 // consume removes data from a slice of byte slices, for writev.
-internal static void consume(ж<slice<slice<byte>>> Ꮡv, int64 n) {
-    ref var v = ref Ꮡv.DerefOrNull();
-
+internal static void consume(ref slice<slice<byte>> v, int64 n) {
     while (len(v) > 0) {
         var ln0 = (int64)len((v)[0]);
         if (ln0 > n) {

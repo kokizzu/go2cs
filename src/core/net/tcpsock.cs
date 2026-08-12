@@ -325,7 +325,7 @@ public static (bool, error) MultipathTCP(this ж<TCPConn> Ꮡc) {
     if (!Ꮡc.of(TCPConn.Ꮡconn).ok()) {
         return (false, syscall.EINVAL);
     }
-    return (isUsingMultipathTCP(c.fd), default!);
+    return (isUsingMultipathTCP(ref (c.fd).DerefOrNull()), default!);
 }
 
 internal static ж<TCPConn> newTCPConn(ж<netFD> Ꮡfd, time.Duration keepAliveIdle, KeepAliveConfig keepAliveCfg, Action<ж<netFD>> preKeepAliveHook, Action<KeepAliveConfig> keepAliveHook) {

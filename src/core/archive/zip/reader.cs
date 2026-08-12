@@ -154,7 +154,7 @@ internal static error init(this ж<Reader> Ꮡr, io.ReaderAt rdr, int64 size) {
     // the file count modulo 65536 is incorrect.
     while (ᐧ) {
         var f = Ꮡ(new File(zip: Ꮡr, zipr: rdr));
-        err = readDirectoryHeader(f, new bufio_ReaderжReader(buf));
+        err = readDirectoryHeader(ref (f).DerefOrNull(), new bufio_ReaderжReader(buf));
         if (AreEqual(err, ErrFormat) || AreEqual(err, io.ErrUnexpectedEOF)) {
             break;
         }
@@ -329,7 +329,7 @@ public static (io.ReadCloser, error) Open(this ж<File> Ꮡf) {
         }
         if (r.desr != default!){
             {
-                var err1 = readDataDescriptor(r.desr, r.f); if (err1 != default!){
+                var err1 = readDataDescriptor(r.desr, ref (r.f).DerefOrNull()); if (err1 != default!){
                     if (AreEqual(err1, io.EOF)){
                         err = io.ErrUnexpectedEOF;
                     } else {
@@ -381,9 +381,7 @@ public static (io.ReadCloser, error) Open(this ж<File> Ꮡf) {
 // readDirectoryHeader attempts to read a directory header from r.
 // It returns io.ErrUnexpectedEOF if it cannot read a complete header,
 // and ErrFormat if it doesn't find a valid header signature.
-internal static error readDirectoryHeader(ж<File> Ꮡf, io.Reader r) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static error readDirectoryHeader(ref File f, io.Reader r) {
     array<byte> buf = new(46); /* directoryHeaderLen */
     {
         var (_, err) = io.ReadFull(r, buf[..]); if (err != default!) {
@@ -564,9 +562,7 @@ break_parseExtras:;
     return default!;
 }
 
-internal static error readDataDescriptor(io.Reader r, ж<File> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static error readDataDescriptor(io.Reader r, ref File f) {
     array<byte> buf = new(16); /* dataDescriptorLen */
     // The spec says: "Although not originally assigned a
     // signature, the value 0x08074b50 has commonly been adopted
@@ -660,7 +656,7 @@ internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirector
         var (p, errΔ2) = findDirectory64End(r, directoryEndOffset);
         if (errΔ2 == default! && p >= 0) {
             directoryEndOffset = p;
-            errΔ2 = readDirectory64End(r, p, d);
+            errΔ2 = readDirectory64End(r, p, ref (d).DerefOrNull());
         }
         if (errΔ2 != default!) {
             return (default!, 0, errΔ2);
@@ -685,7 +681,8 @@ internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirector
     if (baseOffset > 0) {
         var off = (int64)(~d).directoryOffset;
         var rs = io.NewSectionReader(r, off, size - off);
-        if (readDirectoryHeader(Ꮡ(new File(nil)), new io_SectionReaderжReader(rs)) == default!) {
+        var ᴛ1 = new File(nil);
+        if (readDirectoryHeader(ref ᴛ1, new io_SectionReaderжReader(rs)) == default!) {
             baseOffset = 0;
         }
     }
@@ -726,9 +723,7 @@ internal static (int64, error) findDirectory64End(io.ReaderAt r, int64 directory
 
 // readDirectory64End reads the zip64 directory end and updates the
 // directory end with the zip64 directory end values.
-internal static error /*err*/ readDirectory64End(io.ReaderAt r, int64 offset, ж<directoryEnd> Ꮡd) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static error /*err*/ readDirectory64End(io.ReaderAt r, int64 offset, ref directoryEnd d) {
     var buf = new slice<byte>(directory64EndLen);
     {
         var (_, errΔ1) = r.ReadAt(buf, offset); if (errΔ1 != default!) {

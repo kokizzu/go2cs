@@ -576,7 +576,7 @@ internal static ж<_defer> newdefer() {
             pp.Value.deferpool = (~pp).deferpool[..(int)(n - 1)];
         }
     }
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     (mp, pp) = (default!, default!);
     if (d == nil) {
         // Allocate new defer.
@@ -587,9 +587,7 @@ internal static ж<_defer> newdefer() {
 }
 
 // popDefer pops the head of gp's defer list and frees it.
-internal static void popDefer(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.DerefOrNull();
-
+internal static void popDefer(ref g gp) {
     var d = gp._defer;
     d.Value.fn = default!; // Can in theory point to the stack
     // We must not copy the stack between the updating gp._defer and setting
@@ -627,7 +625,7 @@ internal static void popDefer(ж<g> Ꮡgp) {
     }
     d.Value = new _defer(nil);
     pp.Value.deferpool = append((~pp).deferpool, d);
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     (mp, pp) = (default!, default!);
 }
 
@@ -696,11 +694,9 @@ internal static void preprintpanics(ж<_panic> Ꮡp) {
 
 // Print all currently active panics. Used when crashing.
 // Should only be called after preprintpanics.
-internal static void printpanics(ж<_panic> Ꮡp) {
-    ref var Δp = ref Ꮡp.DerefOrNull();
-
+internal static void printpanics(ref _panic Δp) {
     if (Δp.link != nil) {
-        printpanics(Δp.link);
+        printpanics(ref (Δp.link).DerefOrNull());
         if (!(~Δp.link).goexit) {
             print((@string)"\t"u8);
         }
@@ -940,7 +936,7 @@ Recheck:
             var d = gp.Value._defer; if (d != nil && (~d).sp == (uintptr)Δp.sp) {
                 if ((~d).rangefunc) {
                     deferconvert(d);
-                    popDefer(gp);
+                    popDefer(ref (gp).DerefOrNull());
                     goto Recheck;
                 }
                 var fn = d.Value.fn;
@@ -949,7 +945,7 @@ Recheck:
                 // them reuse the one we emit for open-coded defers.
                 Δp.retpc = d.Value.pc;
                 // Unlink and free.
-                popDefer(gp);
+                popDefer(ref (gp).DerefOrNull());
                 return (fn, true);
             }
         }
@@ -1304,7 +1300,7 @@ internal static void fatalpanic(ж<_panic> Ꮡmsgs) {
             // block main from exiting, so now OK to
             // decrement runningPanicDefers.
             ᏑrunningPanicDefers.Add(-1);
-            printpanics(Ꮡmsgs);
+            printpanics(ref (Ꮡmsgs).DerefOrNull());
         }
         docrash = dopanic_m(gpʗ1, pc, sp);
     });
@@ -1447,24 +1443,24 @@ internal static bool canpanic() {
     // Yes, as long as it is running Go code, not runtime code,
     // and not stuck in a system call.
     if (gp != (~mp).curg) {
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
         return false;
     }
     // N.B. mp.locks != 1 instead of 0 to account for acquirem.
     if ((~mp).locks != 1 || (~mp).mallocing != 0 || (~mp).throwing != throwTypeNone || (~mp).preemptoff != ""u8 || (~mp).dying != 0) {
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
         return false;
     }
     var status = readgstatus(gp);
     if ((uint32)(status & ~(uint32)_Gscan) != _Grunning || (~gp).syscallsp != 0) {
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
         return false;
     }
     if (GOOS == "windows"u8 && (~mp).libcallsp != 0) {
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
         return false;
     }
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     return true;
 }
 
@@ -1473,9 +1469,7 @@ internal static bool canpanic() {
 // left alone so that LR is used as sigpanic's return PC, effectively
 // replacing the top-most frame with sigpanic. This is used by
 // preparePanic.
-internal static bool shouldPushSigpanic(ж<g> Ꮡgp, uintptr pc, uintptr lr) {
-    ref var gp = ref Ꮡgp.DerefOrNull();
-
+internal static bool shouldPushSigpanic(ref g gp, uintptr pc, uintptr lr) {
     if (pc == 0) {
         // Probably a call to a nil func. The old LR is more
         // useful in the stack trace. Not pushing the frame

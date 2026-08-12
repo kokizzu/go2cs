@@ -128,7 +128,7 @@ internal static (ж<TCPConn>, error) doDialTCPProto(this ж<sysDialer> Ꮡsd, co
     // a different reason.
     //
     // The kernel socket code is no doubt enjoying watching us squirm.
-    for (nint i = 0; i < 2 && (Ꮡladdr == nil || laddr.Port == 0) && (selfConnect(fd, err) || spuriousENOTAVAIL(err)); i++) {
+    for (nint i = 0; i < 2 && (Ꮡladdr == nil || laddr.Port == 0) && (selfConnect(ref (fd).DerefOrNull(), err) || spuriousENOTAVAIL(err)); i++) {
         if (err == default!) {
             fd.Close();
         }
@@ -140,9 +140,7 @@ internal static (ж<TCPConn>, error) doDialTCPProto(this ж<sysDialer> Ꮡsd, co
     return (newTCPConn(fd, sd.Dialer.KeepAlive, sd.Dialer.KeepAliveConfig, testPreHookSetKeepAlive, testHookSetKeepAlive), default!);
 }
 
-internal static bool selfConnect(ж<netFD> Ꮡfd, error err) {
-    ref var fd = ref Ꮡfd.DerefOrNull();
-
+internal static bool selfConnect(ref netFD fd, error err) {
     // If the connect failed, we clearly didn't connect to ourselves.
     if (err != default!) {
         return false;

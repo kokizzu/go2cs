@@ -54,7 +54,7 @@ partial class httputil_package {
 //		r.Out.Host = r.In.Host
 //	}
 [GoRecv] public static void SetURL(this ref ProxyRequest r, ж<url.URL> Ꮡtarget) {
-    rewriteRequestURL(r.Out, Ꮡtarget);
+    rewriteRequestURL(ref (r.Out).DerefOrNull(), Ꮡtarget);
     r.Out.Value.Host = ""u8;
 }
 
@@ -267,13 +267,12 @@ internal static (@string path, @string rawpath) joinURLPath(ж<url.URL> Ꮡa, ж
 //	}
 public static ж<ReverseProxy> NewSingleHostReverseProxy(ж<url.URL> Ꮡtarget) {
     var director = (ж<http.Request> req) => {
-        rewriteRequestURL(req, Ꮡtarget);
+        rewriteRequestURL(ref (req).DerefOrNull(), Ꮡtarget);
     };
     return Ꮡ(new ReverseProxy(Director: director));
 }
 
-internal static void rewriteRequestURL(ж<http.Request> Ꮡreq, ж<url.URL> Ꮡtarget) {
-    ref var req = ref Ꮡreq.DerefOrNull();
+internal static void rewriteRequestURL(ref http.Request req, ж<url.URL> Ꮡtarget) {
     ref var target = ref Ꮡtarget.DerefOrNull();
 
     @string targetQuery = target.RawQuery;

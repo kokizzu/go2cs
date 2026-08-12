@@ -372,9 +372,7 @@ internal static uintptr /*code*/ compileCallback(eface fn, bool cdecl) {
 }
 
 // callbackWrap is called by callbackasm to invoke a registered C callback.
-internal static void callbackWrap(ж<callbackArgs> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNull();
-
+internal static void callbackWrap(ref callbackArgs a) {
     var c = cbs.ctxt[(nint)(a.index)];
     a.retPop = c.retPop;
     // Convert from C to Go ABI.

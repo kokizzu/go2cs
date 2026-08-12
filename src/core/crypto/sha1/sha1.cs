@@ -133,14 +133,14 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
         nint n = copy(d.x[(int)(d.nx)..], p);
         d.nx += n;
         if (d.nx == chunk) {
-            block(Ꮡd, d.x[..]);
+            block(ref (Ꮡd).DerefOrNull(), d.x[..]);
             d.nx = 0;
         }
         p = p[(int)(n)..];
     }
     if (len(p) >= chunk) {
         nint n = (nint)(len(p) & ~(nint)(chunk - 1));
-        block(Ꮡd, p[..(int)(n)]);
+        block(ref (Ꮡd).DerefOrNull(), p[..(int)(n)]);
         p = p[(int)(n)..];
     }
     if (len(p) > 0) {
@@ -220,7 +220,7 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
         }
     }
     // compress, and only keep the digest if all fit in one block
-    block(Ꮡd, d.x[..]);
+    block(ref (Ꮡd).DerefOrNull(), d.x[..]);
     array<byte> digest = new(20); /* ΔSize */
     foreach (var (i, s) in d.h) {
         digest[i * 4] = (byte)(mask1b & (byte)((s >> (int)(24))));
@@ -238,7 +238,7 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
         }
     }
     // compress, and only keep the digest if we actually needed the second block
-    block(Ꮡd, d.x[..]);
+    block(ref (Ꮡd).DerefOrNull(), d.x[..]);
     foreach (var (i, s) in d.h) {
         digest[i * 4] |= (byte)((byte)(((byte)(~mask1b)) & (byte)((s >> (int)(24)))));
         digest[i * 4 + 1] |= (byte)((byte)(((byte)(~mask1b)) & (byte)((s >> (int)(16)))));

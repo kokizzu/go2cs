@@ -17,9 +17,7 @@ partial class strconv_package {
 // sharing the same rounding guarantees.
 
 // ryuFtoaFixed32 formats mant*(2^exp) with prec decimal digits.
-internal static void ryuFtoaFixed32(ж<decimalSlice> Ꮡd, uint32 mant, nint exp, nint prec) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static void ryuFtoaFixed32(ref decimalSlice d, uint32 mant, nint exp, nint prec) {
     if (prec < 0) {
         throw panic("ryuFtoaFixed32 called with negative prec");
     }
@@ -80,15 +78,13 @@ internal static void ryuFtoaFixed32(ж<decimalSlice> Ꮡd, uint32 mant, nint exp
         d0 = false;
     }
     // Proceed to the requested number of digits
-    formatDecimal(Ꮡd, (uint64)di, !d0, roundUp, prec);
+    formatDecimal(ref d, (uint64)di, !d0, roundUp, prec);
     // Adjust exponent
     d.dp -= q;
 }
 
 // ryuFtoaFixed64 formats mant*(2^exp) with prec decimal digits.
-internal static void ryuFtoaFixed64(ж<decimalSlice> Ꮡd, uint64 mant, nint exp, nint prec) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static void ryuFtoaFixed64(ref decimalSlice d, uint64 mant, nint exp, nint prec) {
     if (prec > 18) {
         throw panic("ryuFtoaFixed64 called with prec > 18");
     }
@@ -149,7 +145,7 @@ internal static void ryuFtoaFixed64(ж<decimalSlice> Ꮡd, uint64 mant, nint exp
         d0 = false;
     }
     // Proceed to the requested number of digits
-    formatDecimal(Ꮡd, di, !d0, roundUp, prec);
+    formatDecimal(ref d, di, !d0, roundUp, prec);
     // Adjust exponent
     d.dp -= q;
 }
@@ -162,9 +158,7 @@ internal static array<uint64> uint64pow10 = new uint64[]{
 // formatDecimal fills d with at most prec decimal digits
 // of mantissa m. The boolean trunc indicates whether m
 // is truncated compared to the original number being formatted.
-internal static void formatDecimal(ж<decimalSlice> Ꮡd, uint64 m, bool trunc, bool roundUp, nint prec) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static void formatDecimal(ref decimalSlice d, uint64 m, bool trunc, bool roundUp, nint prec) {
     var max = uint64pow10[prec];
     nint trimmed = 0;
     while (m >= max) {
@@ -227,9 +221,7 @@ internal static void formatDecimal(ж<decimalSlice> Ꮡd, uint64 m, bool trunc, 
 }
 
 // ryuFtoaShortest formats mant*2^exp with prec decimal digits.
-internal static void ryuFtoaShortest(ж<decimalSlice> Ꮡd, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static void ryuFtoaShortest(ref decimalSlice d, uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
     if (mant == 0) {
         (d.nd, d.dp) = (0, 0);
         return;
@@ -238,12 +230,12 @@ internal static void ryuFtoaShortest(ж<decimalSlice> Ꮡd, uint64 mant, nint ex
     // the previous and next integer are not admissible representations.
     if (exp <= 0 && bits.TrailingZeros64(mant) >= -exp) {
         mant >>= (int)((nuint)(-exp));
-        ryuDigits(Ꮡd, mant, mant, mant, true, false);
+        ryuDigits(ref d, mant, mant, mant, true, false);
         return;
     }
-    var (ml, mc, mu, e2) = computeBounds(mant, exp, Ꮡflt);
+    var (ml, mc, mu, e2) = computeBounds(mant, exp, ref (Ꮡflt).DerefOrNull());
     if (e2 == 0) {
-        ryuDigits(Ꮡd, ml, mc, mu, true, false);
+        ryuDigits(ref d, ml, mc, mu, true, false);
         return;
     }
     // Find 10^q *larger* than 2^-e2
@@ -331,7 +323,7 @@ internal static void ryuFtoaShortest(ж<decimalSlice> Ꮡd, uint64 mant, nint ex
     // We need to remember whether the trimmed digits of 'dc' are zero.
     var c0 = dc0 && fracc == 0;
     // render digits
-    ryuDigits(Ꮡd, dl, dc, du, c0, cup);
+    ryuDigits(ref d, dl, dc, du, c0, cup);
     d.dp -= q;
 }
 
@@ -358,13 +350,12 @@ internal static nint mulByLog10Log2(nint x) {
 // computeBounds returns a floating-point vector (l, c, u)×2^e2
 // where the mantissas are 55-bit (or 26-bit) integers, describing the interval
 // represented by the input float64 or float32.
-internal static (uint64 lower, uint64 central, uint64 upper, nint e2) computeBounds(uint64 mant, nint exp, ж<floatInfo> Ꮡflt) {
+internal static (uint64 lower, uint64 central, uint64 upper, nint e2) computeBounds(uint64 mant, nint exp, ref floatInfo flt) {
     uint64 lower = default!;
     uint64 central = default!;
     uint64 upper = default!;
     nint e2 = default!;
 
-    ref var flt = ref Ꮡflt.DerefOrNull();
     if (mant != ((uint64)1).Lsh(flt.mantbits) || exp == flt.bias + 1 - (nint)flt.mantbits){
         // regular case (or denormals)
         (lower, central, upper) = (2 * mant - 1, 2 * mant, 2 * mant + 1);
@@ -378,15 +369,13 @@ internal static (uint64 lower, uint64 central, uint64 upper, nint e2) computeBou
     }
 }
 
-internal static void ryuDigits(ж<decimalSlice> Ꮡd, uint64 lower, uint64 central, uint64 upper, bool c0, bool cup) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static void ryuDigits(ref decimalSlice d, uint64 lower, uint64 central, uint64 upper, bool c0, bool cup) {
     var (lhi, llo) = divmod1e9(lower);
     var (chi, clo) = divmod1e9(central);
     var (uhi, ulo) = divmod1e9(upper);
     if (uhi == 0){
         // only low digits (for denormals)
-        ryuDigits32(Ꮡd, llo, clo, ulo, c0, cup, 8);
+        ryuDigits32(ref d, llo, clo, ulo, c0, cup, 8);
     } else 
     if (lhi < uhi){
         // truncate 9 digits at once.
@@ -395,7 +384,7 @@ internal static void ryuDigits(ж<decimalSlice> Ꮡd, uint64 lower, uint64 centr
         }
         c0 = c0 && clo == 0;
         cup = (clo > 500000000) || (clo == 500000000 && cup);
-        ryuDigits32(Ꮡd, lhi, chi, uhi, c0, cup, 8);
+        ryuDigits32(ref d, lhi, chi, uhi, c0, cup, 8);
         d.dp += 9;
     } else {
         d.nd = 0;
@@ -410,7 +399,7 @@ internal static void ryuDigits(ж<decimalSlice> Ꮡd, uint64 lower, uint64 centr
         d.d = d.d[(int)(n)..];
         d.nd = (nint)(9 - n);
         // emit low part
-        ryuDigits32(Ꮡd, llo, clo, ulo,
+        ryuDigits32(ref d, llo, clo, ulo,
             c0, cup, d.nd + 8);
     }
     // trim trailing zeros
@@ -426,9 +415,7 @@ internal static void ryuDigits(ж<decimalSlice> Ꮡd, uint64 lower, uint64 centr
 }
 
 // ryuDigits32 emits decimal digits for a number less than 1e9.
-internal static void ryuDigits32(ж<decimalSlice> Ꮡd, uint32 lower, uint32 central, uint32 upper, bool c0, bool cup, nint endindex) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
+internal static void ryuDigits32(ref decimalSlice d, uint32 lower, uint32 central, uint32 upper, bool c0, bool cup, nint endindex) {
     if (upper == 0) {
         d.dp = endindex + 1;
         return;

@@ -110,7 +110,7 @@ public static (any pub, error err) ParsePKIXPublicKey(slice<byte> derBytes) {
             return (default!, errors.New(x509TrailingDataAfterAsnˢ));
         }
     }
-    return parsePublicKey(Ꮡpki);
+    return parsePublicKey(ref pki);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1184,11 +1184,10 @@ internal static error isIA5String(@string s) {
 
 internal static ж<godebug.Setting> x509usepolicies = godebug.New("x509usepolicies"u8);
 
-internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ж<Certificate> Ꮡtemplate, bool subjectIsEmpty, slice<byte> authorityKeyId, slice<byte> subjectKeyId) {
+internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ref Certificate template, bool subjectIsEmpty, slice<byte> authorityKeyId, slice<byte> subjectKeyId) {
     slice<pkix.Extension> ret = default!;
     error err = default!;
 
-    ref var template = ref Ꮡtemplate.DerefOrNull();
     ret = new slice<pkix.Extension>(10);
     /* maximum number of elements. */
     nint n = 0;
@@ -1479,9 +1478,7 @@ internal static (pkix.Extension, error) marshalCertificatePolicies(slice<OID> po
     return (ext, err);
 }
 
-internal static (slice<pkix.Extension>, error) buildCSRExtensions(ж<CertificateRequest> Ꮡtemplate) {
-    ref var template = ref Ꮡtemplate.DerefOrNull();
-
+internal static (slice<pkix.Extension>, error) buildCSRExtensions(ref CertificateRequest template) {
     slice<pkix.Extension> ret = default!;
     if ((builtin.len(template.DNSNames) > 0 || builtin.len(template.EmailAddresses) > 0 || builtin.len(template.IPAddresses) > 0 || builtin.len(template.URIs) > 0) && !oidInExtensions(oidExtensionSubjectAltName, template.ExtraExtensions)) {
         var (sanBytes, err) = marshalSANs(template.DNSNames, template.EmailAddresses, template.IPAddresses, template.URIs);
@@ -1496,9 +1493,7 @@ internal static (slice<pkix.Extension>, error) buildCSRExtensions(ж<Certificate
     return (append(ret, template.ExtraExtensions.ꓸꓸꓸ), default!);
 }
 
-internal static (slice<byte>, error) subjectBytes(ж<Certificate> Ꮡcert) {
-    ref var cert = ref Ꮡcert.DerefOrNull();
-
+internal static (slice<byte>, error) subjectBytes(ref Certificate cert) {
     if (builtin.len(cert.RawSubject) > 0) {
         return (cert.RawSubject, default!);
     }
@@ -1711,11 +1706,11 @@ public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certific
     if (getPublicKeyAlgorithmFromOID(publicKeyAlgorithm.Algorithm) == UnknownPublicKeyAlgorithm) {
         return (default!, fmt.Errorf("x509: unsupported public key type: %T"u8, pub));
     }
-    (var asn1Issuer, err) = subjectBytes(Ꮡparent);
+    (var asn1Issuer, err) = subjectBytes(ref (Ꮡparent).DerefOrNull());
     if (err != default!) {
         return (default!, err);
     }
-    (var asn1Subject, err) = subjectBytes(Ꮡtemplate);
+    (var asn1Subject, err) = subjectBytes(ref (Ꮡtemplate).DerefOrNull());
     if (err != default!) {
         return (default!, err);
     }
@@ -1740,7 +1735,7 @@ public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certific
             return (default!, errors.New(x509ProvidedPrivateKeyˢ));
         }
     }
-    (var extensions, err) = buildCertExtensions(Ꮡtemplate, bytes.Equal(asn1Subject, emptyASN1Subject), authorityKeyId, subjectKeyId);
+    (var extensions, err) = buildCertExtensions(ref (Ꮡtemplate).DerefOrNull(), bytes.Equal(asn1Subject, emptyASN1Subject), authorityKeyId, subjectKeyId);
     if (err != default!) {
         return (default!, err);
     }
@@ -2053,7 +2048,7 @@ public static (slice<byte> csr, error err) CreateCertificateRequest(io.Reader ra
     if (err != default!) {
         return (default!, err);
     }
-    (var extensions, err) = buildCSRExtensions(Ꮡtemplate);
+    (var extensions, err) = buildCSRExtensions(ref (Ꮡtemplate).DerefOrNull());
     if (err != default!) {
         return (default!, err);
     }
@@ -2172,15 +2167,13 @@ public static (ж<CertificateRequest>, error) ParseCertificateRequest(slice<byte
     if (builtin.len(rest) != 0) {
         return (default!, new asn1.SyntaxError(Msg: "trailing data"u8));
     }
-    return parseCertificateRequest(Ꮡcsr);
+    return parseCertificateRequest(ref csr);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string x509TrailingDataAfterXˢ = "x509: trailing data after X.509 Subject"u8;
 
-internal static (ж<CertificateRequest>, error) parseCertificateRequest(ж<certificateRequest> Ꮡin) {
-    ref var @in = ref Ꮡin.DerefOrNull();
-
+internal static (ж<CertificateRequest>, error) parseCertificateRequest(ref certificateRequest @in) {
     var @out = Ꮡ(new CertificateRequest(
         Raw: @in.Raw,
         RawTBSCertificateRequest: @in.TBSCSR.Raw,
@@ -2194,7 +2187,7 @@ internal static (ж<CertificateRequest>, error) parseCertificateRequest(ж<certi
     ));
     error err = default!;
     if ((~@out).PublicKeyAlgorithm != UnknownPublicKeyAlgorithm) {
-        (@out.Value.PublicKey, err) = parsePublicKey(Ꮡin.of(certificateRequest.ᏑTBSCSR).of(tbsCertificateRequest.ᏑPublicKey));
+        (@out.Value.PublicKey, err) = parsePublicKey(ref nonnil(ref @in).TBSCSR.PublicKey);
         if (err != default!) {
             return (default!, err);
         }
@@ -2467,7 +2460,7 @@ public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<Revoc
         return (default!, err);
     }
     // Correctly use the issuer's subject sequence if one is specified.
-    (var issuerSubject, err) = subjectBytes(Ꮡissuer);
+    (var issuerSubject, err) = subjectBytes(ref (Ꮡissuer).DerefOrNull());
     if (err != default!) {
         return (default!, err);
     }

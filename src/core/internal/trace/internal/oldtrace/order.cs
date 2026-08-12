@@ -30,12 +30,11 @@ internal const uint64 seqinc = /* ^uint64(0) - 1 */ 18446744073709551614;
 
 // stateTransition returns goroutine state (sequence and status) when the event
 // becomes ready for merging (init) and the goroutine state after the event (next).
-internal static (uint64 g, gState init, gState next) stateTransition(ж<Event> Ꮡev) {
+internal static (uint64 g, gState init, gState next) stateTransition(ref Event ev) {
     uint64 g = default!;
     gState init = default!;
     gState next = default!;
 
-    ref var ev = ref Ꮡev.DerefOrNull();
     // Note that we have an explicit return in each case, as that produces slightly better code (tested on Go 1.19).
     var exprᴛ1 = ev.Type;
     if (exprᴛ1 == EvGoCreate) {

@@ -165,9 +165,7 @@ public static bool Is(ж<RangeTable> ᏑrangeTab, rune r) {
     return false;
 }
 
-internal static bool isExcludingLatin(ж<RangeTable> ᏑrangeTab, rune r) {
-    ref var rangeTab = ref ᏑrangeTab.DerefOrNull();
-
+internal static bool isExcludingLatin(ref RangeTable rangeTab, rune r) {
     var r16 = rangeTab.R16;
     // Compare as uint32 to correctly handle negative runes.
     {
@@ -188,7 +186,7 @@ public static bool IsUpper(rune r) {
     if ((uint32)r <= MaxLatin1) {
         return (uint8)(properties[(uint8)r] & (uint8)pLmask) == pLu;
     }
-    return isExcludingLatin(Upper, r);
+    return isExcludingLatin(ref (Upper).DerefOrNull(), r);
 }
 
 // IsLower reports whether the rune is a lower case letter.
@@ -197,7 +195,7 @@ public static bool IsLower(rune r) {
     if ((uint32)r <= MaxLatin1) {
         return (uint8)(properties[(uint8)r] & (uint8)pLmask) == pLl;
     }
-    return isExcludingLatin(Lower, r);
+    return isExcludingLatin(ref (Lower).DerefOrNull(), r);
 }
 
 // IsTitle reports whether the rune is a title case letter.
@@ -205,7 +203,7 @@ public static bool IsTitle(rune r) {
     if (r <= MaxLatin1) {
         return false;
     }
-    return isExcludingLatin(Title, r);
+    return isExcludingLatin(ref (Title).DerefOrNull(), r);
 }
 
 // to maps the rune using the specified case mapping.

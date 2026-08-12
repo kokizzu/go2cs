@@ -259,7 +259,7 @@ public static void ServeContent(ResponseWriter w, ж<Request> Ꮡreq, @string na
         }
         return (size, default!);
     };
-    serveContent(w, Ꮡreq, name, modtime, sizeFunc, content);
+    serveContent(w, ref (Ꮡreq).DerefOrNull(), name, modtime, sizeFunc, content);
 }
 
 // errSeeker is returned by ServeContent's sizeFunc when the content
@@ -285,13 +285,11 @@ internal static readonly @string contentLengthˢ = "Content-Length"u8;
 // if modtime.IsZero(), modtime is unknown.
 // content must be seeked to the beginning of the file.
 // The sizeFunc is called at most once. Its error, if any, is sent in the HTTP response.
-internal static void serveContent(ResponseWriter w, ж<Request> Ꮡr, @string name, time.Time modtime, Func<(int64, error)> sizeFunc, io.ReadSeeker content) {
+internal static void serveContent(ResponseWriter w, ref Request r, @string name, time.Time modtime, Func<(int64, error)> sizeFunc, io.ReadSeeker content) {
     GoFrame ᒐ = default;
     try {
-        ref var r = ref Ꮡr.DerefOrNull();
-
         setLastModified(w, modtime);
-        var (done, rangeReq) = checkPreconditions(w, Ꮡr, modtime);
+        var (done, rangeReq) = checkPreconditions(w, ref r, modtime);
         if (done) {
             return;
         }
@@ -520,9 +518,7 @@ internal static condResult condFalse => 2;
 internal static readonly @string ifMatchˢ = "If-Match"u8;
 internal static readonly @string etagˢ = "Etag"u8;
 
-internal static condResult checkIfMatch(ResponseWriter w, ж<Request> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static condResult checkIfMatch(ResponseWriter w, ref Request r) {
     @string im = r.Header.Get(ifMatchˢ);
     if (im == ""u8) {
         return condNone;
@@ -554,9 +550,7 @@ internal static condResult checkIfMatch(ResponseWriter w, ж<Request> Ꮡr) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string ifUnmodifiedSinceˢ = "If-Unmodified-Since"u8;
 
-internal static condResult checkIfUnmodifiedSince(ж<Request> Ꮡr, time.Time modtime) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static condResult checkIfUnmodifiedSince(ref Request r, time.Time modtime) {
     @string ius = r.Header.Get(ifUnmodifiedSinceˢ);
     if (ius == ""u8 || isZeroTime(modtime)) {
         return condNone;
@@ -579,9 +573,7 @@ internal static condResult checkIfUnmodifiedSince(ж<Request> Ꮡr, time.Time mo
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string ifNoneMatchˢ = "If-None-Match"u8;
 
-internal static condResult checkIfNoneMatch(ResponseWriter w, ж<Request> Ꮡr) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static condResult checkIfNoneMatch(ResponseWriter w, ref Request r) {
     @string inm = r.Header.get(ifNoneMatchˢ);
     if (inm == ""u8) {
         return condNone;
@@ -614,9 +606,7 @@ internal static condResult checkIfNoneMatch(ResponseWriter w, ж<Request> Ꮡr) 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string ifModifiedSinceˢ = "If-Modified-Since"u8;
 
-internal static condResult checkIfModifiedSince(ж<Request> Ꮡr, time.Time modtime) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static condResult checkIfModifiedSince(ref Request r, time.Time modtime) {
     if (r.Method != "GET"u8 && r.Method != "HEAD"u8) {
         return condNone;
     }
@@ -642,9 +632,7 @@ internal static condResult checkIfModifiedSince(ж<Request> Ꮡr, time.Time modt
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string ifRangeˢ = "If-Range"u8;
 
-internal static condResult checkIfRange(ResponseWriter w, ж<Request> Ꮡr, time.Time modtime) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static condResult checkIfRange(ResponseWriter w, ref Request r, time.Time modtime) {
     if (r.Method != "GET"u8 && r.Method != "HEAD"u8) {
         return condNone;
     }
@@ -712,20 +700,19 @@ internal static readonly @string rangeˢ = "Range"u8;
 
 // checkPreconditions evaluates request preconditions and reports whether a precondition
 // resulted in sending StatusNotModified or StatusPreconditionFailed.
-internal static (bool done, @string rangeHeader) checkPreconditions(ResponseWriter w, ж<Request> Ꮡr, time.Time modtime) {
+internal static (bool done, @string rangeHeader) checkPreconditions(ResponseWriter w, ref Request r, time.Time modtime) {
     @string rangeHeader = default!;
 
-    ref var r = ref Ꮡr.DerefOrNull();
     // This function carefully follows RFC 7232 section 6.
-    condResult ch = checkIfMatch(w, Ꮡr);
+    condResult ch = checkIfMatch(w, ref r);
     if (ch == condNone) {
-        ch = checkIfUnmodifiedSince(Ꮡr, modtime);
+        ch = checkIfUnmodifiedSince(ref r, modtime);
     }
     if (ch == condFalse) {
         w.WriteHeader(StatusPreconditionFailed);
         return (true, "");
     }
-    var exprᴛ1 = checkIfNoneMatch(w, Ꮡr);
+    var exprᴛ1 = checkIfNoneMatch(w, ref r);
     if (exprᴛ1 == condFalse) {
         if (r.Method == "GET"u8 || r.Method == "HEAD"u8){
             writeNotModified(w);
@@ -736,14 +723,14 @@ internal static (bool done, @string rangeHeader) checkPreconditions(ResponseWrit
         }
     }
     if (exprᴛ1 == condNone) {
-        if (checkIfModifiedSince(Ꮡr, modtime) == condFalse) {
+        if (checkIfModifiedSince(ref r, modtime) == condFalse) {
             writeNotModified(w);
             return (true, "");
         }
     }
 
     rangeHeader = r.Header.get(rangeˢ);
-    if (rangeHeader != ""u8 && checkIfRange(w, Ꮡr, modtime) == condFalse) {
+    if (rangeHeader != ""u8 && checkIfRange(w, ref r, modtime) == condFalse) {
         rangeHeader = ""u8;
     }
     return (false, rangeHeader);
@@ -763,7 +750,7 @@ internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs
         // can't use Redirect() because that would make the path absolute,
         // which would be a problem running under StripPrefix
         if (strings.HasSuffix((~r.URL).Path, indexPage)) {
-            localRedirect(w, Ꮡr, "./"u8);
+            localRedirect(w, ref (Ꮡr).DerefOrNull(), "./"u8);
             return;
         }
         var (f, err) = fs.Open(name);
@@ -786,7 +773,7 @@ internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs
             @string url = r.URL.Value.Path;
             if (d.IsDir()){
                 if (url[builtin.len(url) - 1] != (rune)'/') {
-                    localRedirect(w, Ꮡr, path.Base(url) + "/"u8);
+                    localRedirect(w, ref (Ꮡr).DerefOrNull(), path.Base(url) + "/"u8);
                     return;
                 }
             } else 
@@ -798,7 +785,7 @@ internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs
                     serveError(w, msg, StatusInternalServerError);
                     return;
                 }
-                localRedirect(w, Ꮡr, "../"u8 + @base);
+                localRedirect(w, ref (Ꮡr).DerefOrNull(), "../"u8 + @base);
                 return;
             }
         }
@@ -806,7 +793,7 @@ internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs
             @string url = r.URL.Value.Path;
             // redirect if the directory name doesn't end in a slash
             if (url == ""u8 || url[builtin.len(url) - 1] != (rune)'/') {
-                localRedirect(w, Ꮡr, path.Base(url) + "/"u8);
+                localRedirect(w, ref (Ꮡr).DerefOrNull(), path.Base(url) + "/"u8);
                 return;
             }
             // use contents of index.html for directory, if present
@@ -824,7 +811,7 @@ internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs
         }
         // Still a directory? (we didn't find an index.html file)
         if (d.IsDir()) {
-            if (checkIfModifiedSince(Ꮡr, d.ModTime()) == condFalse) {
+            if (checkIfModifiedSince(ref (Ꮡr).DerefOrNull(), d.ModTime()) == condFalse) {
                 writeNotModified(w);
                 return;
             }
@@ -835,7 +822,7 @@ internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs
         // serveContent will check modification time
         var dʗ1 = d;
         var sizeFunc = (int64, error) () => (dʗ1.Size(), default!);
-        serveContent(w, Ꮡr, d.Name(), d.ModTime(), sizeFunc, new FileᴠReadSeeker(f));
+        serveContent(w, ref (Ꮡr).DerefOrNull(), d.Name(), d.ModTime(), sizeFunc, new FileᴠReadSeeker(f));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
@@ -864,9 +851,7 @@ internal static (@string msg, nint httpStatus) toHTTPError(error err) {
 
 // localRedirect gives a Moved Permanently response.
 // It does not convert relative paths to absolute paths like Redirect does.
-internal static void localRedirect(ResponseWriter w, ж<Request> Ꮡr, @string newPath) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static void localRedirect(ResponseWriter w, ref Request r, @string newPath) {
     {
         @string q = r.URL.Value.RawQuery; if (q != ""u8) {
             newPath += "?"u8 + q;

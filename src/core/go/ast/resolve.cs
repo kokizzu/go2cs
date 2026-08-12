@@ -49,9 +49,8 @@ partial class ast_package {
     }
 }
 
-internal static bool resolve(ж<Scope> Ꮡscope, ж<Ident> Ꮡident) {
+internal static bool resolve(ж<Scope> Ꮡscope, ref Ident ident) {
     ref var scope = ref Ꮡscope.DerefOrNull();
-    ref var ident = ref Ꮡident.DerefOrNull();
 
     for (; Ꮡscope != nil; Ꮡscope = scope.Outer) {
         scope = ref Ꮡscope.DerefOrNull();
@@ -168,7 +167,7 @@ public static (ж<Package>, error) NewPackage(ж<token.FileSet> Ꮡfset, map<@st
         }
         nint i = 0;
         foreach (var (_, ident) in (~@file).Unresolved) {
-            if (!resolve(fileScope, ident)) {
+            if (!resolve(fileScope, ref (ident).DerefOrNull())) {
                 p.errorf(ident.Pos(), "undeclared name: %s"u8, (~ident).Name);
                 @file.Value.Unresolved[i] = ident;
                 i++;

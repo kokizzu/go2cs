@@ -6,8 +6,8 @@ namespace go.crypto;
 
 partial class sha256_package {
 
-internal static void block(ж<digest> Ꮡdig, slice<byte> p) {
-    blockGeneric(Ꮡdig, p);
+internal static void block(ref digest dig, slice<byte> p) {
+    blockGeneric(ref dig, p);
 }
 
 } // end sha256_package

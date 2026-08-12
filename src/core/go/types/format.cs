@@ -34,7 +34,7 @@ internal static @string sprintf(ж<token.FileSet> Ꮡfset, Func<ж<Package>, @st
             break;
         }
         case ж<operand> a: {
-            arg = operandString(a, qf);
+            arg = operandString(ref (a).DerefOrNull(), qf);
             break;
         }
         case tokenꓸPos a: {

@@ -142,7 +142,7 @@ public static bool IsNormalString(this Form f, @string s) {
 internal static bool patchTail(ж<reorderBuffer> Ꮡrb) {
     ref var rb = ref Ꮡrb.DerefOrNull();
 
-    var (info, p) = lastRuneStart(Ꮡrb.of(reorderBuffer.Ꮡf), rb.@out);
+    var (info, p) = lastRuneStart(ref nonnil(ref rb).f, rb.@out);
     if (p == -1 || info.size == 0) {
         return true;
     }
@@ -483,12 +483,12 @@ internal static nint nextBoundary(this Form f, input src, nint nsrc, bool atEOF)
 // LastBoundary returns the position i of the last boundary in b
 // or -1 if b contains no boundary.
 public static nint LastBoundary(this Form f, slice<byte> b) {
-    return lastBoundary(formTable[f], b);
+    return lastBoundary(ref (formTable[f]).DerefOrNull(), b);
 }
 
-internal static nint lastBoundary(ж<formInfo> Ꮡfd, slice<byte> b) {
+internal static nint lastBoundary(ref formInfo fd, slice<byte> b) {
     nint i = len(b);
-    var (info, p) = lastRuneStart(Ꮡfd, b);
+    var (info, p) = lastRuneStart(ref fd, b);
     if (p == -1) {
         return -1;
     }
@@ -499,7 +499,7 @@ internal static nint lastBoundary(ж<formInfo> Ꮡfd, slice<byte> b) {
             return -1;
         }
         i = p;
-        (info, p) = lastRuneStart(Ꮡfd, b[..(int)(i)]);
+        (info, p) = lastRuneStart(ref fd, b[..(int)(i)]);
         if (p == -1) {
             // incomplete UTF-8 encoding or non-starter bytes without a starter
             return i;
@@ -515,7 +515,7 @@ internal static nint lastBoundary(ж<formInfo> Ꮡfd, slice<byte> b) {
     var ss = ((streamSafe)0);
     ssState v = ss.backwards(info);
     for (i = p; i >= 0 && v != ssStarter; i = p) {
-        (info, p) = lastRuneStart(Ꮡfd, b[..(int)(i)]);
+        (info, p) = lastRuneStart(ref fd, b[..(int)(i)]);
         {
             v = ss.backwards(info); if (v == ssOverflow) {
                 break;
@@ -599,9 +599,7 @@ end:
 
 // lastRuneStart returns the runeInfo and position of the last
 // rune in buf or the zero runeInfo and -1 if no rune was found.
-internal static (ΔProperties, nint) lastRuneStart(ж<formInfo> Ꮡfd, slice<byte> buf) {
-    ref var fd = ref Ꮡfd.DerefOrNull();
-
+internal static (ΔProperties, nint) lastRuneStart(ref formInfo fd, slice<byte> buf) {
     nint p = len(buf) - 1;
     for (; p >= 0 && !utf8.RuneStart(buf[p]); p--) {
     }
@@ -617,7 +615,7 @@ internal static void decomposeToLastBoundary(ж<reorderBuffer> Ꮡrb) {
     ref var rb = ref Ꮡrb.DerefOrNull();
 
     var fd = Ꮡrb.of(reorderBuffer.Ꮡf);
-    var (info, i) = lastRuneStart(fd, rb.@out);
+    var (info, i) = lastRuneStart(ref (fd).DerefOrNull(), rb.@out);
     if ((nint)info.size != len(rb.@out) - i) {
         // illegal trailing continuation bytes
         return;
@@ -642,7 +640,7 @@ internal static void decomposeToLastBoundary(ж<reorderBuffer> Ꮡrb) {
         if (v == ssStarter || p < 0) {
             break;
         }
-        (info, i) = lastRuneStart(fd, rb.@out[..(int)(p)]);
+        (info, i) = lastRuneStart(ref (fd).DerefOrNull(), rb.@out[..(int)(p)]);
         if ((nint)info.size != p - i) {
             break;
         }

@@ -412,7 +412,7 @@ internal static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnec
             }
         }
         {
-            var errΔ7 = computeAndUpdateOuterECHExtension(hs.hello, (~hs.echContext).innerHello, hs.echContext, false); if (errΔ7 != default!) {
+            var errΔ7 = computeAndUpdateOuterECHExtension(hs.hello, (~hs.echContext).innerHello, ref (hs.echContext).DerefOrNull(), false); if (errΔ7 != default!) {
                 return errΔ7;
             }
         }
@@ -818,7 +818,7 @@ internal static readonly @string tlsInvalidServerFinishedˢ = "tls: invalid serv
     }
     var certVerifyMsg = @new<certificateVerifyMsg>();
     certVerifyMsg.Value.hasSignatureAlgorithm = true;
-    (certVerifyMsg.Value.signatureAlgorithm, err) = selectSignatureScheme((~c).vers, cert, (~hs.certReq).supportedSignatureAlgorithms);
+    (certVerifyMsg.Value.signatureAlgorithm, err) = selectSignatureScheme((~c).vers, ref (cert).DerefOrNull(), (~hs.certReq).supportedSignatureAlgorithms);
     if (err != default!) {
         // getClientCertificate returned a certificate incompatible with the
         // CertificateRequestInfo supported signature algorithms.

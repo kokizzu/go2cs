@@ -42,8 +42,8 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
         var argList = call.Args;
         // append is the only built-in that permits the use of ... for the last argument
         var bin = predeclaredFuncs[id];
-        if (hasDots(Ꮡcall) && id != _Append) {
-            Ꮡcheck.errorf(dddErrPos(Ꮡcall),
+        if (hasDots(ref (Ꮡcall).DerefOrNull()) && id != _Append) {
+            Ꮡcheck.errorf(dddErrPos(ref (Ꮡcall).DerefOrNull()),
                 InvalidDotDotDot,
                 invalidOp + "invalid use of ... with built-in %s", bin.name);
             Ꮡcheck.use(argList.ꓸꓸꓸ);
@@ -139,7 +139,7 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
                         return default!;
                     }
                 }
-                if (nargs == 2 && hasDots(Ꮡcall)) {
+                if (nargs == 2 && hasDots(ref (Ꮡcall).DerefOrNull())) {
                     // spec: "As a special case, append also accepts a first argument assignable
                     // to type []byte with a second argument of string type followed by ... .
                     // This form appends the bytes of the string.

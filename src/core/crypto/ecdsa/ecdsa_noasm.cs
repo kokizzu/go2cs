@@ -8,11 +8,11 @@ using io = io_package;
 
 partial class ecdsa_package {
 
-internal static error verifyAsm(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte> sig) {
+internal static error verifyAsm(ref PublicKey pub, slice<byte> hash, slice<byte> sig) {
     return errNoAsm;
 }
 
-internal static (slice<byte> sig, error err) signAsm(ж<PrivateKey> Ꮡpriv, io.Reader csprng, slice<byte> hash) {
+internal static (slice<byte> sig, error err) signAsm(ref PrivateKey priv, io.Reader csprng, slice<byte> hash) {
     return (default!, errNoAsm);
 }
 

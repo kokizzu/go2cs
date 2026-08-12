@@ -56,7 +56,7 @@ public static bool Verify(ж<array<byte>> Ꮡmac, slice<byte> m, ж<array<byte>>
 // to forge messages at will.
 public static ж<MAC> New(ж<array<byte>> Ꮡkey) {
     var m = Ꮡ(new MAC(nil));
-    initialize(Ꮡkey, m.of(MAC.ᏑmacState));
+    initialize(Ꮡkey, ref (m.of(MAC.ᏑmacState)).DerefOrNull());
     return m;
 }
 

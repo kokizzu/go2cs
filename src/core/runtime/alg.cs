@@ -169,7 +169,7 @@ internal static uintptr interhash(@unsafe.Pointer Δp, uintptr h) {
         // we want to report the struct, not the slice).
         throw panic(((errorString)("hash of unhashable type "u8 + toRType(t).@string())));
     }
-    if (isDirectIface(t)){
+    if (isDirectIface(ref (t).DerefOrNull())){
         return c1 * typehash(t, @unsafe.Pointer.FromRef(ref (a.of(iface.Ꮡdata)).Value), (uintptr)(h ^ c0));
     } else {
         return c1 * typehash(t, (~a).data, (uintptr)(h ^ c0));
@@ -196,7 +196,7 @@ internal static uintptr nilinterhash(@unsafe.Pointer Δp, uintptr h) {
         // See comment in interhash above.
         throw panic(((errorString)("hash of unhashable type "u8 + toRType(t).@string())));
     }
-    if (isDirectIface(t)){
+    if (isDirectIface(ref (t).DerefOrNull())){
         return c1 * typehash(t, @unsafe.Pointer.FromRef(ref (a.of(eface.Ꮡdata)).Value), (uintptr)(h ^ c0));
     } else {
         return c1 * typehash(t, (~a).data, (uintptr)(h ^ c0));
@@ -330,7 +330,7 @@ internal static error mapKeyError2(ж<_type> Ꮡt, @unsafe.Pointer Δp) {
         if ((~tΔ2).Equal == default!) {
             return ((errorString)("hash of unhashable type "u8 + toRType(tΔ2).@string()));
         }
-        if (isDirectIface(tΔ2)){
+        if (isDirectIface(ref (tΔ2).DerefOrNull())){
             return mapKeyError2(tΔ2, @unsafe.Pointer.FromRef(ref (pdata).Value));
         } else {
             return mapKeyError2(tΔ2, pdata.Value);
@@ -440,7 +440,7 @@ internal static bool efaceeq(ж<_type> Ꮡt, @unsafe.Pointer x, @unsafe.Pointer 
     if (eq == default!) {
         throw panic(((errorString)("comparing uncomparable type "u8 + toRType(Ꮡt).@string())));
     }
-    if (isDirectIface(Ꮡt)) {
+    if (isDirectIface(ref (Ꮡt).DerefOrNull())) {
         // Direct interface types are ptr, chan, map, func, and single-element structs/arrays thereof.
         // Maps and funcs are not comparable, so they can't reach here.
         // Ptrs, chans, and single-element items can be compared directly using ==.
@@ -460,7 +460,7 @@ internal static bool ifaceeq(ж<itab> Ꮡtab, @unsafe.Pointer x, @unsafe.Pointer
     if (eq == default!) {
         throw panic(((errorString)("comparing uncomparable type "u8 + toRType(t).@string())));
     }
-    if (isDirectIface(t)) {
+    if (isDirectIface(ref (t).DerefOrNull())) {
         // See comment in efaceeq.
         return x.Value == y.Value;
     }

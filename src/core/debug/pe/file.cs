@@ -108,12 +108,12 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 
     error err = default!;
     // Read string table.
-    (f.Value.StringTable, err) = readStringTable(f.of(File.ᏑFileHeader), new io_SectionReaderжReadSeeker(sr));
+    (f.Value.StringTable, err) = readStringTable(ref (f.of(File.ᏑFileHeader)).DerefOrNull(), new io_SectionReaderжReadSeeker(sr));
     if (err != default!) {
         return (default!, err);
     }
     // Read symbol table.
-    (f.Value.COFFSymbols, err) = readCOFFSymbols(f.of(File.ᏑFileHeader), new io_SectionReaderжReadSeeker(sr));
+    (f.Value.COFFSymbols, err) = readCOFFSymbols(ref (f.of(File.ᏑFileHeader)).DerefOrNull(), new io_SectionReaderжReadSeeker(sr));
     if (err != default!) {
         return (default!, err);
     }

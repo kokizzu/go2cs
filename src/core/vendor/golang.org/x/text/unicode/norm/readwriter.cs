@@ -36,7 +36,7 @@ internal static (nint n, error err) Write(this ж<normWriter> Ꮡw, slice<byte> 
         n += m;
         // Write out complete prefix, save remainder.
         // Note that lastBoundary looks back at most 31 runes.
-        nint i = lastBoundary(Ꮡw.of(normWriter.Ꮡrb).of(reorderBuffer.Ꮡf), w.buf);
+        nint i = lastBoundary(ref nonnil(ref w).rb.f, w.buf);
         if (i == -1) {
             i = 0;
         }
@@ -112,7 +112,7 @@ internal static (nint, error) Read(this ж<normReader> Ꮡr, slice<byte> p) {
         if (AreEqual(err, io.EOF)){
             r.lastBoundary = len(r.outbuf);
         } else {
-            r.lastBoundary = lastBoundary(Ꮡr.of(normReader.Ꮡrb).of(reorderBuffer.Ꮡf), r.outbuf);
+            r.lastBoundary = lastBoundary(ref nonnil(ref r).rb.f, r.outbuf);
             if (r.lastBoundary == -1) {
                 r.lastBoundary = 0;
             }
