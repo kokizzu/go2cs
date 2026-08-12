@@ -5498,3 +5498,33 @@ Exact agreement on every aggregate the census itself prints — 25 positions / 5
 all-already-L3, hand-own 49/41/17, exported return-shaped 3 — with exported candidates 62 vs the
 laptop's 64, exactly the GOROOT patch-release shape the developmental flag existed for. A2 is
 GO on the go-ahead ratifications recorded with its opening.
+
+## L9 wave, desktop share — six hypotheses measured, six honest answers (2026-08-11 night)
+
+The stale-census re-measure wave's items 1–2 plus the seam canary, run on the pinned machine
+against post-r59 master. One census was stale in each DIRECTION, and the rest attributed:
+
+- **`debug/dwarf` — the ONE-ROW-AWAY row was stale-BANKED**: the package has been on the roster
+  at 40 for some time; tonight's pipeline re-validated it 40/40 on merged master (a free
+  re-validation, not a bank). The r57b lesson re-taught at the coordinator's own expense:
+  **roster first, board second — every census row is a hypothesis, including the hypothesis
+  that the package is still unbanked.**
+- **`net/textproto` 25/26 unchanged, with its number UPGRADED**: `TestCommonHeaders` now measures
+  **3 objects per run vs want 0** (was 816 shim-bytes) — the common-header fast path materializes
+  three golib allocations Go's interning avoids. Near-budget: not disclosed, not banked; a precise
+  interning/ж-box target.
+- **`mime/multipart` ~11/52 — real roots, census confirmed**: `TestMultipartSlowInput` crashes the
+  host mid-suite (`multipart_test.cs:172`), and the `ReadForm` limits family
+  (`TestReadFormEndlessHeaderLine`, `TestReadFormLimits`, `TestReadForm_MetadataTooLarge`) plus
+  `TestQuotedPrintableEncoding` fail on content. Needs its own characterization lane.
+- **`go/parser` 6/173 — the CWD class gains its FIFTH member**: the test package's static
+  initializer runs `var src = readFile("parser.go")` and panics (`performance_test.cs:15`), so
+  the host dies before test one. The deferred synthetic-GOROOT arc now holds **167 verdicts for
+  this package alone** on top of its original four — its deferral price has materially risen and
+  deserves re-prioritization when the wave settles.
+- **`go/doc` 24/85 unchanged — attributed**: the `Test/AllDecls/*` golden-file family RUNS and
+  fails on CONTENT (not infrastructure) — a real doc-extraction root, not the CWD class.
+- **`net/rpc` 4/13 — the seam canary reproduces the diagnosis byte-for-byte**:
+  `index out of range [0] with length 0` at `array.cs:280` via `sockaddr`
+  (`syscall_windows.cs:881`) — the exact r57b stack, on demand, same-day baseline for L10.
+  The three held rows (httputil/httptest/cookiejar) stay held, as ordered.
