@@ -248,7 +248,19 @@ from evidence, never inherit). Do not spin on a blocked package; record and move
 sweep per banked package; the standing families classify the aftermath. Commit per package
 ("L9:"), push, signal per bank so the coordinator can integrate incrementally.
 
-## L10 — the sockaddr blittable-mirror seam (unblocks the whole net cluster)
+## L10 — the sockaddr blittable-mirror seam
+
+**MERGED `7b41ca6cd` (2026-08-12), gated on G and re-gated on the coordinator** — both defects
+hand-owned (the `(*[2]byte)` port alias AND the struct-passing mirror), `SockaddrRoundTrip` guards
+the round trip value-for-value on IPv4+IPv6, syscall's banked 62/62 holds. Two corrections the lane
+measured that supersede this spec's text below: (1) hand-owning `RawSockaddrAny.Sockaddr` is
+REJECTED — its body holds the package's only ΔSockaddr casts, so skipping its emission drops the
+`GoImplement` records and `net` mints duplicate adapters (the second-identity regression; documented
+in ConversionStrategies-Reference.md); (2) **this lane does NOT unblock the net cluster** — with
+bind working, `net.Listen` stops at `internal/poll`'s ten unwired `runtime_poll*` linkname stubs,
+and behind those `asmstdcall`; that is an independent design arc needing its own DESIGN doc and a
+coordinator ruling (see the board's RESOLVED note under the sockaddr section). The consumer
+re-measures this spec asks for are therefore NOT owed — their counts cannot move until that arc lands.
 
 HAND-OWNED SYSCALL FIX with an established precedent, board-diagnosed by r57b (search
 BOARD-next-validation-candidates.md for "SockaddrInet4"). Branch from current origin/master.
