@@ -133,7 +133,7 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 	// type-wide to the generated array-backed partial (whose element type may require them).
 	typeParams, constraints := v.getGenericDefinition(identType)
 
-	v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), typeParams, access)
+	v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), typeParams, access, "")
 	v.writeString(target, "%spartial struct %s%s%s;", access, getSanitizedIdentifier(name), typeParams, constraints)
 	v.writeCommentString(target, comment, arrayType.Elt.End()+typeLenDeviation)
 	target.WriteString(v.newline)

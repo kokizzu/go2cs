@@ -12,7 +12,7 @@ partial class abi_package {
 // is implementing (Inter), and some ancillary information.
 //
 // allocated in non-garbage-collected memory
-[GoType] [GoValueClone("Fun")] partial struct ITab {
+[GoType] partial struct ITab {
     public ж<ΔInterfaceType> Inter;
     public ж<Type> Type;
     public uint32 Hash;     // copy of Type.Hash. Used for type switches.

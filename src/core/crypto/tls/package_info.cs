@@ -51,10 +51,8 @@ using static go.crypto.tls_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<CertificateVerificationError, error>(Pointer = true)]
@@ -158,7 +156,7 @@ public static partial class tls_package
     internal partial struct encryptedExtensionsMsg {}
     internal partial struct endOfEarlyDataMsg {}
     internal partial struct finishedMsg {}
-    internal partial struct halfConn {}
+    [GoValueClone("seq", "scratchBuf")] internal partial struct halfConn {}
     internal partial struct helloRequestMsg {}
     internal partial struct keyShare {}
     internal partial struct keySharePrivateKeys {}
@@ -169,9 +167,9 @@ public static partial class tls_package
     internal partial struct newSessionTicketMsg {}
     internal partial struct newSessionTicketMsgTLS13 {}
     internal partial struct permanentError {}
-    internal partial struct prefixNonceAEAD {}
+    [GoValueClone("nonce")] internal partial struct prefixNonceAEAD {}
     internal partial struct pskIdentity {}
-    internal partial struct quicState {}
+    [GoValueClone("eventArr")] internal partial struct quicState {}
     internal partial struct recordType {}
     internal partial struct rsaKeyAgreement {}
     internal partial struct rsaSignatureSchemesᴛ1 {}
@@ -180,9 +178,9 @@ public static partial class tls_package
     internal partial struct serverHelloDoneMsg {}
     internal partial struct serverHelloMsg {}
     internal partial struct serverKeyExchangeMsg {}
-    internal partial struct ticketKey {}
+    [GoValueClone("aesKey", "hmacKey")] internal partial struct ticketKey {}
     internal partial struct timeoutError {}
-    internal partial struct xorNonceAEAD {}
+    [GoValueClone("nonceMask")] internal partial struct xorNonceAEAD {}
     public partial interface ClientSessionCache {}
     public partial struct AlertError {}
     public partial struct Certificate {}
@@ -192,8 +190,8 @@ public static partial class tls_package
     public partial struct ClientAuthType {}
     public partial struct ClientHelloInfo {}
     public partial struct ClientSessionState {}
-    public partial struct Config {}
-    public partial struct Conn {}
+    [GoValueClone("SessionTicketKey")] public partial struct Config {}
+    [GoValueClone("clientFinished", "serverFinished", "@in", "@out", "tmp")] public partial struct Conn {}
     public partial struct CurveID {}
     public partial struct Dialer {}
     public partial struct ECHRejectionError {}
@@ -203,7 +201,7 @@ public static partial class tls_package
     public partial struct QUICEvent {}
     public partial struct QUICEventKind {}
     public partial struct QUICSessionTicketOptions {}
-    public partial struct RecordHeaderError {}
+    [GoValueClone("RecordHeader")] public partial struct RecordHeaderError {}
     public partial struct RenegotiationSupport {}
     public partial struct SessionState {}
     public partial struct SignatureScheme {}

@@ -181,7 +181,7 @@ public static (ж<Block> p, slice<byte> rest) Decode(slice<byte> data) {
 
 internal static UntypedInt pemLineLength => 64;
 
-[GoType] [GoValueClone("line")] partial struct lineBreaker {
+[GoType] partial struct lineBreaker {
     internal array<byte> line = new(pemLineLength);
     internal nint used;
     internal io.Writer @out;

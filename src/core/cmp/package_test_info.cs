@@ -34,7 +34,7 @@ public static partial class cmp_test_package
 
     // <TypeAccessibility>
     internal partial struct testsᴛ1 {}
-    public partial struct ExampleOr_sort_Order {}
+    [GoLocalName("Order")] public partial struct ExampleOr_sort_Order {}
     public partial struct TestOr_cases {}
     // </TypeAccessibility>
 }

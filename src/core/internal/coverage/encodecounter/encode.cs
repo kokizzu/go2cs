@@ -237,7 +237,7 @@ public static error AppendSegment(this ж<CoverageDataWriter> Ꮡcfw, map<@strin
     return default!;
 }
 
-[GoRecv] internal static error writeHeader(this ref CoverageDataWriter cfw, array<byte> metaFileHash) {
+[GoRecv] internal static error writeHeader(this ref CoverageDataWriter cfw, [GoArrayDims(16)] array<byte> metaFileHash) {
     metaFileHash = metaFileHash.Clone();
 
     // Emit file header.

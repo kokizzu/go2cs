@@ -12,7 +12,7 @@ internal static UntypedInt _CONTEXT_CONTROL => 0x100001;
     internal int64 high;
 }
 
-[GoType] [GoValueClone("anon0", "vectorregister")] partial struct context {
+[GoType] partial struct context {
     internal uint64 p1home;
     internal uint64 p2home;
     internal uint64 p3home;

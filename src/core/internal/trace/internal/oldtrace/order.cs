@@ -7,7 +7,7 @@ using errors = errors_package;
 
 partial class oldtrace_package {
 
-[GoType] [GoValueClone("ev")] partial struct orderEvent {
+[GoType] partial struct orderEvent {
     internal Event ev;
     internal ж<proc> proc;
 }

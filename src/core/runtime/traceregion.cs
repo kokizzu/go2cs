@@ -26,7 +26,7 @@ partial class runtime_package {
 // traceRegionAllocBlock is allocated from non-GC'd memory, so it must not
 // contain heap pointers. Writes to pointers to traceRegionAllocBlocks do
 // not need write barriers.
-[GoType] [GoValueClone("data")] partial struct traceRegionAllocBlock {
+[GoType] partial struct traceRegionAllocBlock {
     internal sys.NotInHeap _;
     internal partial ref traceRegionAllocBlockHeader traceRegionAllocBlockHeader { get; }
     internal array<byte> data = new(traceRegionAllocBlockData);

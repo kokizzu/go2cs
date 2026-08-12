@@ -38,10 +38,8 @@ using static go.mime.multipart_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<Part, io_package.Reader>(Pointer = true)]
@@ -78,7 +76,7 @@ public static partial class multipart_package
     // <TypeAccessibility>
     internal partial struct part {}
     internal partial struct partReader {}
-    internal partial struct readForm_writerOnly {}
+    [GoLocalName("writerOnly")] internal partial struct readForm_writerOnly {}
     internal partial struct sectionReadCloser {}
     internal partial struct stickyErrorReader {}
     public partial interface File {}

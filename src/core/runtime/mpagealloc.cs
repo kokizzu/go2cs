@@ -166,7 +166,7 @@ internal static (nint, nint) blockAlignSummaryRange(nint level, nint lo, nint hi
     internal atomic.Uintptr releasedEager;
 }
 
-[GoType] [GoValueClone("summary", "chunks")] partial struct pageAlloc {
+[GoType] partial struct pageAlloc {
     // Radix tree of summaries.
     //
     // Each slice's cap represents the whole memory reservation.

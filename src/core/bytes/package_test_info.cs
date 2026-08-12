@@ -81,11 +81,11 @@ public static partial class bytes_test_package
     public partial struct StringTest {}
     public partial struct TestIndexRune_tests {}
     public partial struct TestReaderAt_tests {}
-    public partial struct TestReaderCopyNothing_justReader {}
-    public partial struct TestReaderCopyNothing_justWriter {}
-    public partial struct TestReaderCopyNothing_nErr {}
+    [GoLocalName("justReader")] public partial struct TestReaderCopyNothing_justReader {}
+    [GoLocalName("justWriter")] public partial struct TestReaderCopyNothing_justWriter {}
+    [GoLocalName("nErr")] public partial struct TestReaderCopyNothing_nErr {}
     public partial struct TestReader_tests {}
-    public partial struct TestRepeatCatchesOverflow_testCase {}
+    [GoLocalName("testCase")] public partial struct TestRepeatCatchesOverflow_testCase {}
     public partial struct TestTrimFunc_trimmers {}
     public partial struct TitleTest {}
     public partial struct TrimFuncTest {}

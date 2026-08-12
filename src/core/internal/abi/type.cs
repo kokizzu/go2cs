@@ -280,42 +280,42 @@ public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
     return InvalidDir;
 }
 
-[GoLocalName("u")] [GoType("dyn")] partial struct Uncommon_u {
+[GoType("dyn")] partial struct Uncommon_u {
     public partial ref PtrType PtrType { get; }
     internal UncommonType u;
 }
 
-[GoLocalName("u")] [GoType("dyn")] partial struct Uncommon_uᴛ1 {
+[GoType("dyn")] partial struct Uncommon_uᴛ1 {
     public partial ref ΔFuncType FuncType { get; }
     internal UncommonType u;
 }
 
-[GoLocalName("u")] [GoType("dyn")] partial struct Uncommon_uᴛ2 {
+[GoType("dyn")] partial struct Uncommon_uᴛ2 {
     public partial ref SliceType SliceType { get; }
     internal UncommonType u;
 }
 
-[GoLocalName("u")] [GoType("dyn")] partial struct Uncommon_uᴛ3 {
+[GoType("dyn")] partial struct Uncommon_uᴛ3 {
     public partial ref ΔArrayType ArrayType { get; }
     internal UncommonType u;
 }
 
-[GoLocalName("u")] [GoType("dyn")] partial struct Uncommon_uᴛ4 {
+[GoType("dyn")] partial struct Uncommon_uᴛ4 {
     public partial ref ChanType ChanType { get; }
     internal UncommonType u;
 }
 
-[GoLocalName("u")] [GoType("dyn")] partial struct Uncommon_uᴛ5 {
+[GoType("dyn")] partial struct Uncommon_uᴛ5 {
     public partial ref ΔMapType MapType { get; }
     internal UncommonType u;
 }
 
-[GoLocalName("u")] [GoType("dyn")] partial struct Uncommon_uᴛ6 {
+[GoType("dyn")] partial struct Uncommon_uᴛ6 {
     public partial ref ΔInterfaceType InterfaceType { get; }
     internal UncommonType u;
 }
 
-[GoLocalName("u")] [GoType("dyn")] partial struct Uncommon_uᴛ7 {
+[GoType("dyn")] partial struct Uncommon_uᴛ7 {
     public partial ref Type Type { get; }
     internal UncommonType u;
 }

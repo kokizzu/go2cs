@@ -665,7 +665,10 @@ d0 := *d                 // sha256.go — Go copies the [8]uint32 state and [64]
 hash := d0.checkSum()
 ```
 ```csharp
-[GoType] [GoValueClone("h", "x")] partial struct digest { internal array<uint32> h = new(8); … }
+[GoType] partial struct digest { internal array<uint32> h = new(8); … }
+
+// package_info.cs names the fields the copy must deep-copy, keeping the declaration Go-shaped
+[GoValueClone("h", "x")] internal partial struct digest {}
 
 ref var d0 = ref heap<digest>(out var Ꮡd0);
 d0 = d.ΔClone();         // sha256.cs — without the clone, checkSum destroyed the CALLER's state

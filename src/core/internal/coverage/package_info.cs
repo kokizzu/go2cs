@@ -32,10 +32,8 @@ using static go.@internal.coverage_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 // </InterfaceImplementations>
@@ -55,8 +53,8 @@ public static partial class coverage_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial struct CounterFileFooter {}
-    public partial struct CounterFileHeader {}
+    [GoValueClone("Magic")] public partial struct CounterFileFooter {}
+    [GoValueClone("Magic", "MetaHash")] public partial struct CounterFileHeader {}
     public partial struct CounterFlavor {}
     public partial struct CounterGranularity {}
     public partial struct CounterMode {}
@@ -64,7 +62,7 @@ public static partial class coverage_package
     public partial struct CoverableUnit {}
     public partial struct FuncDesc {}
     public partial struct MetaFileCollection {}
-    public partial struct MetaFileHeader {}
-    public partial struct MetaSymbolHeader {}
+    [GoValueClone("Magic", "MetaFileHash")] public partial struct MetaFileHeader {}
+    [GoValueClone("MetaHash")] public partial struct MetaSymbolHeader {}
     // </TypeAccessibility>
 }

@@ -18,13 +18,21 @@ import (
 
 // packageEmittedTypeAccess holds one condensed, single-line C# partial declaration per `[GoType]`
 // type this conversion pass emits — `public partial interface Closer {}`, `internal partial struct
-// dirEntry {}` — carrying the access modifier the type will actually have. writePackageInfoFile
-// renders it into package_info.cs's `<TypeAccessibility>` section (inside the package class, where
-// the types are nested), which PINS each type's accessibility IN SOURCE ahead of source
-// generation: the `[GoType]` declaration itself stays bare so it reads like the Go original, and a
-// C# nested type with no modifier is PRIVATE until go2cs-gen's own partial supplies one — which a
-// generator cannot see while it is running (see the TypeAccessibility prose in any package_info.cs
-// and the Source Generators section of docs/ConversionStrategies-Reference.md).
+// dirEntry {}` — carrying the access modifier the type will actually have, and the type's MOVABLE
+// extended attributes ahead of it (`[GoValueClone("h")] internal partial struct wrapper {}`).
+// writePackageInfoFile renders it into package_info.cs's `<TypeAccessibility>` section (inside the
+// package class, where the types are nested), which PINS each type's accessibility IN SOURCE ahead
+// of source generation: the `[GoType]` declaration itself stays bare so it reads like the Go
+// original, and a C# nested type with no modifier is PRIVATE until go2cs-gen's own partial supplies
+// one — which a generator cannot see while it is running (see the TypeAccessibility prose in any
+// package_info.cs and the Source Generators section of docs/ConversionStrategies-Reference.md).
+//
+// The attributes ride here for the SAME readability reason the modifier does: they are machinery
+// the reader of the converted code never needs, and C# unions the attributes of every partial
+// declaration, so a consumer that reads them off the type — runtime reflection, or a generator
+// resolving the symbol's declarations — sees no difference. Which attributes qualify, and why the
+// rest cannot move, is classified in the Extended Attributes section of
+// docs/ConversionStrategies-Reference.md.
 //
 // The RENDERED LINE is the identity, exactly like the other package_info.cs sections, so the
 // writer's merge path (the -tests seeded files) unions the two sides without re-deriving anything.
@@ -93,30 +101,8 @@ func ensureTypeAccessibilitySection(packageInfoLines []string) []string {
 	}
 
 	if markerIndex >= 0 {
-		// Section already present. A file written before the prose was condensed carries the
-		// original explanatory block — replace it in place so every persisted package_info.cs
-		// converges on the one current wording (the block is converter-owned and was only ever
-		// emitted verbatim, so an exact first-line match identifies it safely).
-		legacyStart := -1
-
-		for i := 0; i < markerIndex; i++ {
-			if strings.Contains(packageInfoLines[i], legacyTypeAccessibilityFirstLine) {
-				legacyStart = i
-				break
-			}
-		}
-
-		if legacyStart < 0 {
-			return packageInfoLines
-		}
-
-		updated := make([]string, 0, len(packageInfoLines))
-		updated = append(updated, packageInfoLines[:legacyStart]...)
-		updated = append(updated, typeAccessibilityProseLines()...)
-		updated = append(updated, "")
-		updated = append(updated, packageInfoLines[markerIndex:]...)
-
-		return updated
+		// Section already present; converge its prose on the current wording (migrateProseBlock).
+		return migrateProseBlock(packageInfoLines, legacyTypeAccessibilityFirstLine, openTag, typeAccessibilityProseLines())
 	}
 
 	insertIndex := -1
@@ -183,33 +169,93 @@ func generatedTypeScope(identifier string) string {
 	return "internal"
 }
 
+// typeAccessibilityKey is the sort key of a `<TypeAccessibility>` entry: the declaration with its
+// movable-attribute prefix stripped. The section sorts on THIS rather than on the whole line, so an
+// entry carrying attributes still sits with its accessibility/kind/name peers — a stamped type keeps
+// the place it would have had unstamped, instead of being pushed into a separate leading block by
+// the '[' that now starts its line.
+func typeAccessibilityKey(line string) string {
+	for strings.HasPrefix(line, "[") {
+		end := attributeGroupEnd(line)
+
+		if end < 0 {
+			break
+		}
+
+		line = strings.TrimLeft(line[end+1:], " ")
+	}
+
+	return line
+}
+
+// attributeGroupEnd returns the index of the ']' closing the attribute group that starts at line[0],
+// or -1 when the group is unterminated. Brackets inside a quoted argument (a Go name a stamp carries
+// verbatim) do not nest the scan, and a backslash escapes the next character within such a string.
+func attributeGroupEnd(line string) int {
+	depth := 0
+	inString := false
+
+	for i := 0; i < len(line); i++ {
+		switch ch := line[i]; {
+		case inString && ch == '\\':
+			i++
+		case ch == '"':
+			inString = !inString
+		case inString:
+			// Any bracket here is argument text, not structure.
+		case ch == '[':
+			depth++
+		case ch == ']':
+			depth--
+
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+
+	return -1
+}
+
 // recordTypeAccessibility records the accessibility of one emitted `[GoType]` declaration for the
-// package_info.cs `<TypeAccessibility>` section. kind is the C# type kind as emitted ("struct",
-// "class" or "interface"), identifier the emitted (already sanitized) C# name, typeParams the
-// declaration's type-parameter list ("<K, V>", or "" for a non-generic type — constraints are
-// deliberately omitted, a partial declaration may leave them to another part), and access the
-// explicit modifier the converter emitted inline ("public ", from the publicization pre-pass) or ""
-// to let the generator's own name-based rule decide.
+// package_info.cs `<TypeAccessibility>` section, and RELOCATES the declaration's movable extended
+// attributes onto that record. kind is the C# type kind as emitted ("struct", "class" or
+// "interface"), identifier the emitted (already sanitized) C# name, typeParams the declaration's
+// type-parameter list ("<K, V>", or "" for a non-generic type — constraints are deliberately
+// omitted, a partial declaration may leave them to another part), access the explicit modifier the
+// converter emitted inline ("public ", from the publicization pre-pass) or "" to let the
+// generator's own name-based rule decide, and attrs the movable attribute stamps the declaration
+// would otherwise carry inline, each already trailing-spaced (`[GoValueClone("h")] `).
+//
+// The RETURN VALUE is what the caller must still write inline: empty when the record absorbed the
+// attributes, attrs verbatim when no record is written. That is the same where-is-it-written split
+// the access modifier already makes — the two must move together, since the record is the only
+// declaration that survives to carry them.
 //
 // A file whose destination `.cs` is a HAND-OWNED manual conversion ([module: GoManualConversion])
 // is skipped: the converter's emission for it goes to the non-compiled `.cs.auto` sibling, so the
 // declarations that actually compile are the hand-written ones — their kind, name and modifier are
 // the author's to choose, and a generated section entry could contradict them (CS0261/CS0262) or
-// conjure a phantom empty type the hand-written file never declares.
-func (v *Visitor) recordTypeAccessibility(kind string, identifier string, typeParams string, access string) {
+// conjure a phantom empty type the hand-written file never declares. A -tests bridge unit
+// (testInlineTypeAccess) is skipped for its own reason: its metadata anchor can be a different test
+// class, where an accessibility-only partial would declare a second type. Both keep the attributes
+// on the declaration, where they read as they always have.
+func (v *Visitor) recordTypeAccessibility(kind string, identifier string, typeParams string, access string, attrs string) string {
 	if v.manualConversion || v.options.testInlineTypeAccess || identifier == "" {
-		return
+		return attrs
 	}
 
 	if access == "" {
 		access = generatedTypeScope(identifier) + " "
 	}
 
-	line := fmt.Sprintf("%spartial %s %s%s {}", access, kind, identifier, typeParams)
+	line := fmt.Sprintf("%s%spartial %s %s%s {}", attrs, access, kind, identifier, typeParams)
 
 	packageLock.Lock()
 	packageEmittedTypeAccess.Add(line)
 	packageLock.Unlock()
+
+	return ""
 }
 
 // packagePublicizedTypes holds unexported named types in the package that must be emitted as

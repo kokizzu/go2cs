@@ -40,10 +40,8 @@ using static go.strings_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<appendSliceWriter, io_package.Writer>(Pointer = true)]
@@ -73,14 +71,14 @@ public static partial class strings_package
     internal partial struct appendSliceWriter {}
     internal partial struct asciiSet {}
     internal partial struct byteReplacer {}
-    internal partial struct byteStringReplacer {}
-    internal partial struct genericReplacer {}
+    [GoValueClone("replacements")] internal partial struct byteStringReplacer {}
+    [GoValueClone("mapping")] internal partial struct genericReplacer {}
     internal partial struct singleStringReplacer {}
-    internal partial struct stringFinder {}
+    [GoValueClone("badCharSkip")] internal partial struct stringFinder {}
     internal partial struct stringWriter {}
     internal partial struct trieNode {}
     public partial struct Builder {}
-    public partial struct FieldsFunc_span {}
+    [GoLocalName("span")] public partial struct FieldsFunc_span {}
     public partial struct Reader {}
     public partial struct Replacer {}
     // </TypeAccessibility>

@@ -82,7 +82,7 @@ internal static huffIndex huffIndexChrominanceAC => 3;
 internal static huffIndex nHuffIndex => 4;
 
 // huffmanSpec specifies a Huffman encoding.
-[GoType] [GoValueClone("count")] partial struct huffmanSpec {
+[GoType] partial struct huffmanSpec {
     // count[i] is the number of codes of length i bits.
     internal array<byte> count = new(16);
     // value[i] is the decoded value of the i'th codeword.
@@ -204,7 +204,7 @@ internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Valu
 }
 
 // encoder encodes an image to the JPEG format.
-[GoType] [GoValueClone("buf", "quant")] partial struct encoder {
+[GoType] partial struct encoder {
     // w is the writer to write to. err is the first error encountered during
     // writing. All attempted writes after the first error become no-ops.
     internal writer w;

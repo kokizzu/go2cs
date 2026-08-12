@@ -117,7 +117,7 @@ internal static bool isEmpty(uint8 x) {
 }
 
 // A bucket for a Go map.
-[GoType] [GoValueClone("tophash")] partial struct bmap {
+[GoType] partial struct bmap {
     // tophash generally contains the top byte of the hash value
     // for each key in this bucket. If tophash[0] < minTopHash,
     // tophash[0] is a bucket evacuation state instead.

@@ -385,7 +385,7 @@ public static void TestSetEncoderSETSliceSuffix(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("testCase")] [GoType("dyn")] internal partial struct BenchmarkUnmarshal_testCase {
+[GoType("dyn")] [GoLocalName("testCase")] internal partial struct BenchmarkUnmarshal_testCase {
     internal slice<byte> @in;
     internal any @out;
 }

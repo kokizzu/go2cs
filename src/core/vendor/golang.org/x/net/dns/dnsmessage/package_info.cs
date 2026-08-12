@@ -44,10 +44,8 @@ using static go.vendor.golang.org.x.net.dns.dnsmessage_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<nestedError, error>(Pointer = true)]
@@ -86,24 +84,24 @@ public static partial class dnsmessage_package
     public partial struct Class {}
     public partial struct Header {}
     public partial struct Message {}
-    public partial struct Name {}
+    [GoValueClone("Data")] public partial struct Name {}
     public partial struct OpCode {}
     public partial struct Option {}
     public partial struct Parser {}
     public partial struct RCode {}
-    public partial struct Resource {}
-    public partial struct ResourceHeader {}
+    [GoValueClone("Header")] public partial struct Resource {}
+    [GoValueClone("Name")] public partial struct ResourceHeader {}
     public partial struct Type {}
-    public partial struct ΔAAAAResource {}
-    public partial struct ΔAResource {}
-    public partial struct ΔCNAMEResource {}
-    public partial struct ΔMXResource {}
-    public partial struct ΔNSResource {}
+    [GoValueClone("AAAA")] public partial struct ΔAAAAResource {}
+    [GoValueClone("A")] public partial struct ΔAResource {}
+    [GoValueClone("CNAME")] public partial struct ΔCNAMEResource {}
+    [GoValueClone("MX")] public partial struct ΔMXResource {}
+    [GoValueClone("NS")] public partial struct ΔNSResource {}
     public partial struct ΔOPTResource {}
-    public partial struct ΔPTRResource {}
-    public partial struct ΔQuestion {}
-    public partial struct ΔSOAResource {}
-    public partial struct ΔSRVResource {}
+    [GoValueClone("PTR")] public partial struct ΔPTRResource {}
+    [GoValueClone("Name")] public partial struct ΔQuestion {}
+    [GoValueClone("NS", "MBox")] public partial struct ΔSOAResource {}
+    [GoValueClone("Target")] public partial struct ΔSRVResource {}
     public partial struct ΔTXTResource {}
     public partial struct ΔUnknownResource {}
     public partial struct Δheader {}

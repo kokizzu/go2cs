@@ -76,16 +76,18 @@ func (v *Visitor) visitIdent(ident *ast.Ident, identType types.Type, name string
 
 	if strings.HasPrefix(name, PointerPrefix) {
 		// Handle pointer types
-		v.recordTypeAccessibility("class", getSanitizedIdentifier(name), "", access)
+		v.recordTypeAccessibility("class", getSanitizedIdentifier(name), "", access, "")
 		v.writeString(target, " %spartial class %s;", access, getSanitizedIdentifier(name))
 		usesUnsafeCode = true
 	} else {
-		v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access)
 		// A defined type over a struct that carries fixed-size ARRAY fields inherits the by-value
 		// copy problem those fields cause (see wrapperValueCloneAttr): syscall's
 		// `type IpMaskString IpAddressString` wraps a `[16]byte`, and `IpAddrString`'s own clone
-		// needs a strongly-typed `Clone()` on it.
-		v.writeString(target, " %s%spartial struct %s;", wrapperValueCloneAttr(identType), access, getSanitizedIdentifier(name))
+		// needs a strongly-typed `Clone()` on it. The stamp rides the accessibility record where one
+		// is written, so the declaration here reads as the bare `[GoType]` wrapper it is.
+		inlineAttrs := v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access, wrapperValueCloneAttr(identType))
+
+		v.writeString(target, " %s%spartial struct %s;", inlineAttrs, access, getSanitizedIdentifier(name))
 	}
 
 	target.WriteString(v.newline)

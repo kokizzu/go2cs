@@ -15,7 +15,7 @@ public static UntypedInt MaxSegmentSize => /* maxByteBufferSize */ 128;
 
 // An Iter iterates over a string or byte slice, while normalizing it
 // to a given Form.
-[GoType] [GoValueClone("rb", "buf")] partial struct Iter {
+[GoType] partial struct Iter {
     internal reorderBuffer rb;
     internal array<byte> buf = new(maxByteBufferSize);
     internal ΔProperties info; // first character saved from previous iteration

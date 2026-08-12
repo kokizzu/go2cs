@@ -36,7 +36,7 @@ internal static UntypedInt init3 => 0x10325476;
 internal static UntypedInt init4 => 0xC3D2E1F0;
 
 // digest represents the partial evaluation of a checksum.
-[GoType] [GoValueClone("h", "x")] partial struct digest {
+[GoType] partial struct digest {
     internal array<uint32> h = new(5);
     internal array<byte> x = new(chunk);
     internal nint nx;

@@ -1141,7 +1141,7 @@ public static void TestNull(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("foo")] [GoType("dyn")] internal partial struct TestExplicitTagRawValueStruct_foo {
+[GoType("dyn")] [GoLocalName("foo")] internal partial struct TestExplicitTagRawValueStruct_foo {
     [GoTag(@"asn1:""optional,explicit,tag:5""")]
     public global::go.encoding.asn1_package.RawValue A;
     [GoTag(@"asn1:""optional,explicit,tag:6""")]
@@ -1167,12 +1167,12 @@ public static void TestExplicitTagRawValueStruct(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("taggedRawValue")] [GoType("dyn")] internal partial struct TestTaggedRawValue_taggedRawValue {
+[GoType("dyn")] [GoLocalName("taggedRawValue")] internal partial struct TestTaggedRawValue_taggedRawValue {
     [GoTag(@"asn1:""tag:5""")]
     public global::go.encoding.asn1_package.RawValue A;
 }
 
-[GoLocalName("untaggedRawValue")] [GoType("dyn")] internal partial struct TestTaggedRawValue_untaggedRawValue {
+[GoType("dyn")] [GoLocalName("untaggedRawValue")] internal partial struct TestTaggedRawValue_untaggedRawValue {
     public global::go.encoding.asn1_package.RawValue A;
 }
 

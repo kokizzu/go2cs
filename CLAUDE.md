@@ -599,7 +599,13 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      platform-neutral managed core of the mutex/note protocol) and `runtime/linux/lock_futex_impl.cs`
      (the futex flavor's 2-arg `notetsleep_internal`) both carry the marker. Multiple `[module:
      GoManualConversion]` attributes in ONE assembly are legal and already normal — `runtime` alone
-     carries eight — so a new marked file never needs to displace an existing one.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
+     carries eight — so a new marked file never needs to displace an existing one. ⚠ At the r59
+     regen bank (2026-08-11) the census is **49 marked files / 41 `*_impl.cs` companions / 59
+     distinct hand-owns** — r52–r59 growth over r51b's 44; re-measure, never carry, as always.
+     The regen ritual also gained a check the seed makes necessary: because seeding puts every
+     repo file in the temp root, an overlay can never reveal a file the converter has STOPPED
+     emitting — classify emitted-vs-seeded by the sentinel mtime and report would-be deletions,
+     which is what surfaced the hand-owned-by-consequence class below.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
      overlay**: the same exclusion that protects the hand-owned `.cs` beside them also freezes
      them, so they go stale on their own schedule (11 of 16 were stale at r40 — CleanupBacklog
      item 18).
@@ -645,9 +651,11 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      the byte-identical set on 2026-08-02), so any diff after an overlay is a real converter change.
      Two knowns that are NOT: `src/core/README.md` (a root attribution file the converter re-copies —
      it shows modified with an EMPTY `git diff --numstat`, a pure CRLF phantom; restore it), and
-     `internal/godebug`, whose single Go file is fully hand-owned, so `unmarkedFileCount == 0` makes
-     the driver `continue` before `writeProjectFile` — its `.csproj`, `package_info.cs` **and
-     `README.md`** are hand-owned by consequence and never re-emitted.
+     the hand-owned-by-consequence **class of three** — `internal/concurrent`, `internal/godebug`
+     and `internal/weak` (r59 measured; the note previously named godebug alone) — each a package
+     whose entire single Go file is hand-owned, so `unmarkedFileCount == 0` makes the driver
+     `continue` before `writeProjectFile` and its `.csproj`, `package_info.cs` **and `README.md`**
+     are hand-owned by consequence, never re-emitted.
   3. Build single packages with **`dotnet build <pkg>.csproj -c Debug`** — `src/core/Directory.Build.props`
      pins `$(go2csPath)` to the src root, so `core\golib` + the `go2cs-gen` analyzer resolve to live source
      with **no `-p:go2csPath` flag**; or build the whole `go2cs-stdlib.slnx` (~92–150 s warm, 305 assemblies — the 306th, `crypto/x509/internal/macos`, is darwin-exclusive and compiles nothing under the default `$(GoTargetOS)`).

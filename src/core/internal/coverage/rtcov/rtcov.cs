@@ -17,7 +17,7 @@ partial class rtcov_package {
 // the init function for a coverage-instrumented package executes, it
 // will make a call into the runtime which will create a covMetaBlob
 // object for the package and chain it onto a global list.
-[GoType] [GoValueClone("Hash")] partial struct CovMetaBlob {
+[GoType] partial struct CovMetaBlob {
     public ж<byte> P;
     public uint32 Len;
     public array<byte> Hash = new(16);
@@ -61,7 +61,7 @@ public static Metaᴛ1 Meta;
 // counter mode and granularity requested by the user. Return value is
 // the ID for the package for use by the package code itself,
 // or 0 for impossible errors.
-public static uint32 AddMeta(@unsafe.Pointer p, uint32 dlen, array<byte> hash, @string pkgpath, nint pkgid, uint8 cmode, uint8 cgran) {
+public static uint32 AddMeta(@unsafe.Pointer p, uint32 dlen, [GoArrayDims(16)] array<byte> hash, @string pkgpath, nint pkgid, uint8 cmode, uint8 cgran) {
     hash = hash.Clone();
 
     nint slot = len(Meta.List);

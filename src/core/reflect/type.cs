@@ -2826,7 +2826,7 @@ internal static slice<byte> appendVarint(slice<byte> x, uintptr v) {
     internal ж<abi.Type> rcvr; // receiver type, or nil if none
 }
 
-[GoType] [GoValueClone("abid")] partial struct layoutType {
+[GoType] partial struct layoutType {
     internal ж<abi.Type> t;
     internal ж<Δsync.Pool> framePool;
     internal abiDesc abid;

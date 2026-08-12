@@ -41,10 +41,8 @@ using static go.@internal.abi_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 // </InterfaceImplementations>
@@ -69,35 +67,35 @@ public static partial class abi_package
     public partial struct EmptyInterface {}
     public partial struct FuncFlag {}
     public partial struct FuncID {}
-    public partial struct ITab {}
+    [GoValueClone("Fun")] public partial struct ITab {}
     public partial struct Imethod {}
     public partial struct IntArgRegBitmap {}
-    public partial struct InterfaceSwitch {}
-    public partial struct InterfaceSwitchCache {}
+    [GoValueClone("Cases")] public partial struct InterfaceSwitch {}
+    [GoValueClone("Entries")] public partial struct InterfaceSwitchCache {}
     public partial struct InterfaceSwitchCacheEntry {}
     public partial struct Method {}
     public partial struct NameOff {}
     public partial struct PtrType {}
     public partial struct RF_State {}
-    public partial struct RegArgs {}
+    [GoValueClone("Ints", "Floats", "Ptrs", "ReturnIsPtr")] public partial struct RegArgs {}
     public partial struct SliceType {}
     public partial struct StructField {}
     public partial struct TFlag {}
     public partial struct TextOff {}
     public partial struct Type {}
     public partial struct TypeAssert {}
-    public partial struct TypeAssertCache {}
+    [GoValueClone("Entries")] public partial struct TypeAssertCache {}
     public partial struct TypeAssertCacheEntry {}
     public partial struct TypeOff {}
     public partial struct UncommonType {}
-    public partial struct Uncommon_u {}
-    public partial struct Uncommon_uᴛ1 {}
-    public partial struct Uncommon_uᴛ2 {}
-    public partial struct Uncommon_uᴛ3 {}
-    public partial struct Uncommon_uᴛ4 {}
-    public partial struct Uncommon_uᴛ5 {}
-    public partial struct Uncommon_uᴛ6 {}
-    public partial struct Uncommon_uᴛ7 {}
+    [GoLocalName("u")] public partial struct Uncommon_u {}
+    [GoLocalName("u")] public partial struct Uncommon_uᴛ1 {}
+    [GoLocalName("u")] public partial struct Uncommon_uᴛ2 {}
+    [GoLocalName("u")] public partial struct Uncommon_uᴛ3 {}
+    [GoLocalName("u")] public partial struct Uncommon_uᴛ4 {}
+    [GoLocalName("u")] public partial struct Uncommon_uᴛ5 {}
+    [GoLocalName("u")] public partial struct Uncommon_uᴛ6 {}
+    [GoLocalName("u")] public partial struct Uncommon_uᴛ7 {}
     public partial struct ΔArrayType {}
     public partial struct ΔChanDir {}
     public partial struct ΔFuncType {}

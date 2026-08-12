@@ -34,10 +34,8 @@ using static go.image.jpeg_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<FormatError, error>]
@@ -66,13 +64,13 @@ public static partial class jpeg_package
     internal partial struct bits {}
     internal partial struct block {}
     internal partial struct component {}
-    internal partial struct decoder {}
-    internal partial struct decoder_bytes {}
-    internal partial struct encoder {}
+    [GoValueClone("bytes", "comp", "progCoeffs", "huff", "quant", "tmp")] internal partial struct decoder {}
+    [GoValueClone("buf")] internal partial struct decoder_bytes {}
+    [GoValueClone("buf", "quant")] internal partial struct encoder {}
     internal partial struct huffIndex {}
-    internal partial struct huffman {}
+    [GoValueClone("lut", "vals", "minCodes", "maxCodes", "valsIndices")] internal partial struct huffman {}
     internal partial struct huffmanLUT {}
-    internal partial struct huffmanSpec {}
+    [GoValueClone("count")] internal partial struct huffmanSpec {}
     internal partial struct processSOS_scan {}
     internal partial struct quantIndex {}
     public partial interface Reader {}

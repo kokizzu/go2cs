@@ -114,7 +114,7 @@ public static void TestMultiWriter_String(ж<testing.T> Ꮡt) {
     testMultiWriter(Ꮡt, new bytes_BufferжtestMultiWriter_sink(@new<bytes.Buffer>()));
 }
 
-[GoLocalName("simpleWriter")] [GoType("dyn")] partial struct TestMultiWriter_WriteStringSingleAlloc_simpleWriter {
+[GoType("dyn")] partial struct TestMultiWriter_WriteStringSingleAlloc_simpleWriter {
 // hide bytes.Buffer's WriteString
     public io_package.Writer Writer;
 }

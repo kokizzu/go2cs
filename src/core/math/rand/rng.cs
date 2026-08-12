@@ -172,7 +172,7 @@ internal static array<int64> rngCooked = new int64[]{
     8382142935188824023L, 9103922860780351547L, 4152330101494654406L
 }.array();
 
-[GoType] [GoValueClone("vec")] partial struct rngSource {
+[GoType] partial struct rngSource {
     internal nint tap;          // index into vec
     internal nint feed;          // index into vec
     internal array<int64> vec = new(rngLen); // current feedback register

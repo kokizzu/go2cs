@@ -35,10 +35,8 @@ using static go.embed_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<@file, go.io.fs_package.DirEntry>(Pointer = true)]
@@ -66,7 +64,7 @@ public static partial class embed_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct @file {}
+    [GoValueClone("hash")] internal partial struct @file {}
     internal partial struct openDir {}
     internal partial struct openFile {}
     public partial struct FS {}

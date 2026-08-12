@@ -28,7 +28,7 @@ internal static UntypedInt timeHistTotalBuckets => /* timeHistNumBuckets*timeHis
 // buckets and linearly distributed sub-buckets.
 //
 // The histogram is safe for concurrent reads and writes.
-[GoType] [GoValueClone("counts")] partial struct timeHistogram {
+[GoType] partial struct timeHistogram {
     internal array<atomic.Uint64> counts = new(timeHistNumBuckets * timeHistNumSubBuckets);
     // underflow counts all the times we got a negative duration
     // sample. Because of how time works on some platforms, it's

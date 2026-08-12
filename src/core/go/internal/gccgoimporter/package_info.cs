@@ -52,10 +52,8 @@ using static go.go.@internal.gccgoimporter_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Reader, io_package.ReadSeeker>(Pointer = true)]
@@ -86,7 +84,7 @@ public static partial class gccgoimporter_package
     // <TypeAccessibility>
     internal partial struct fixupRecord {}
     internal partial struct importError {}
-    internal partial struct parseTypes_typeOffset {}
+    [GoLocalName("typeOffset")] internal partial struct parseTypes_typeOffset {}
     internal partial struct parser {}
     internal partial struct reservedᴛ1 {}
     internal partial struct seekerReadAt {}

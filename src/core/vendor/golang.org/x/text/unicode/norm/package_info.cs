@@ -33,10 +33,8 @@ using static go.vendor.golang.org.x.text.unicode.norm_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<normReader, io_package.Reader>(Pointer = true)]
@@ -63,16 +61,16 @@ public static partial class norm_package
     internal partial struct insertErr {}
     internal partial struct nfcTrie {}
     internal partial struct nfkcTrie {}
-    internal partial struct normReader {}
-    internal partial struct normWriter {}
+    [GoValueClone("rb")] internal partial struct normReader {}
+    [GoValueClone("rb")] internal partial struct normWriter {}
     internal partial struct qcInfo {}
-    internal partial struct reorderBuffer {}
+    [GoValueClone("rune", "@byte")] internal partial struct reorderBuffer {}
     internal partial struct sparseBlocks {}
     internal partial struct ssState {}
     internal partial struct streamSafe {}
     internal partial struct valueRange {}
     public partial struct Form {}
-    public partial struct Iter {}
+    [GoValueClone("rb", "buf")] public partial struct Iter {}
     public partial struct ΔProperties {}
     // </TypeAccessibility>
 }

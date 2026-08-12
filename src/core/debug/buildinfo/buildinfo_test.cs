@@ -46,7 +46,7 @@ private static readonly @string buildCompilerˢ = "build\t-compiler="u8;
 private static readonly @string doesnotexistTxtˢ = "doesnotexist.txt"u8;
 private static readonly @string emptyˢ = "empty"u8;
 
-[GoLocalName("platform")] [GoType("dyn")] partial struct TestReadFile_platform {
+[GoType("dyn")] partial struct TestReadFile_platform {
     internal @string goos, goarch;
 }
 

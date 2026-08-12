@@ -23,7 +23,7 @@ public static @string Error(this KeySizeError k) {
 }
 
 // desCipher is an instance of DES encryption.
-[GoType] [GoValueClone("subkeys")] partial struct desCipher {
+[GoType] partial struct desCipher {
     internal array<uint64> subkeys = new(16);
 }
 
@@ -68,7 +68,7 @@ public static (cipher.Block, error) NewCipher(slice<byte> key) {
 }
 
 // A tripleDESCipher is an instance of TripleDES encryption.
-[GoType] [GoValueClone("cipher1", "cipher2", "cipher3")] partial struct tripleDESCipher {
+[GoType] partial struct tripleDESCipher {
     internal desCipher cipher1, cipher2, cipher3;
 }
 

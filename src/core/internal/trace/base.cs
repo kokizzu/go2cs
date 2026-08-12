@@ -30,7 +30,7 @@ partial struct timedEventArgs;
 
 // baseEvent is the basic unprocessed event. This serves as a common
 // fundamental data structure across.
-[GoType] [GoValueClone("args")] partial struct baseEvent {
+[GoType] partial struct baseEvent {
     internal @event.Type typ;
     internal ΔTime time;
     internal timedEventArgs args;

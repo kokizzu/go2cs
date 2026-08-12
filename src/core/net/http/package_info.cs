@@ -57,10 +57,8 @@ using static go.net.http_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<Dir, FileSystem>]
@@ -285,7 +283,7 @@ public static partial class http_package
     internal partial struct conn {}
     internal partial struct connLRU {}
     internal partial struct connOrError {}
-    internal partial struct connReader {}
+    [GoValueClone("byteBuf")] internal partial struct connReader {}
     internal partial struct connectMethod {}
     internal partial struct connectMethodKey {}
     internal partial struct countingWriter {}
@@ -308,13 +306,13 @@ public static partial class http_package
     internal partial struct http2ContinuationFrame {}
     internal partial struct http2DataFrame {}
     internal partial struct http2FrameHeader {}
-    internal partial struct http2Framer {}
+    [GoValueClone("headerBuf")] internal partial struct http2Framer {}
     internal partial struct http2GoAwayError {}
     internal partial struct http2GoAwayFrame {}
     internal partial struct http2HeadersFrame {}
     internal partial struct http2HeadersFrameParam {}
     internal partial struct http2MetaHeadersFrame {}
-    internal partial struct http2PingFrame {}
+    [GoValueClone("Data")] internal partial struct http2PingFrame {}
     internal partial struct http2PriorityFrame {}
     internal partial struct http2PriorityWriteSchedulerConfig {}
     internal partial struct http2PushPromiseFrame {}
@@ -423,7 +421,7 @@ public static partial class http_package
     internal partial struct relationship {}
     internal partial struct requestAndChan {}
     internal partial struct requestBodyReadError {}
-    internal partial struct response {}
+    [GoValueClone("dateBuf", "clenBuf", "statusBuf")] internal partial struct response {}
     internal partial struct responseAndError {}
     internal partial struct routingIndex {}
     internal partial struct routingIndexKey {}

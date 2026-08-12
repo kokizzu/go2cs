@@ -25,7 +25,7 @@ internal static ж<itabTableType> ᏑitabTableInit = new(new itabTableType(size:
 internal static ref itabTableType itabTableInit => ref ᏑitabTableInit.Value; // starter table
 
 // Note: change the formula in the mallocgc call in itabAdd if you change these fields.
-[GoType] [GoValueClone("entries")] partial struct itabTableType {
+[GoType] partial struct itabTableType {
     internal uintptr size;             // length of entries array. Always a power of 2.
     internal uintptr count;             // current number of filled entries.
     internal array<ж<itab>> entries = new(itabInitSize); // really [size] large

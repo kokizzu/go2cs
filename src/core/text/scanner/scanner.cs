@@ -132,7 +132,7 @@ public static UntypedInt GoWhitespace => /* 1<<'\t' | 1<<'\n' | 1<<'\r' | 1<<' '
 internal static UntypedInt bufLen => 1024; // at least utf8.UTFMax
 
 // A Scanner implements reading of Unicode characters and tokens from an [io.Reader].
-[GoType] [GoValueClone("srcBuf")] partial struct Scanner {
+[GoType] partial struct Scanner {
     // Input
     internal io.Reader src;
     // Source buffer

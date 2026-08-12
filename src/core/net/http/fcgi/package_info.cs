@@ -45,10 +45,8 @@ using static go.net.http.fcgi_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bufWriter, io_package.Writer>(Pointer = true)]
@@ -77,14 +75,14 @@ public static partial class fcgi_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct beginRequest {}
+    [GoValueClone("reserved")] internal partial struct beginRequest {}
     internal partial struct bufWriter {}
     internal partial struct child {}
     internal partial struct conn {}
     internal partial struct envVarsContextKey {}
     internal partial struct header {}
-    internal partial struct record {}
-    internal partial struct request {}
+    [GoValueClone("buf")] internal partial struct record {}
+    [GoValueClone("buf")] internal partial struct request {}
     internal partial struct response {}
     internal partial struct streamWriter {}
     public partial struct recType {}

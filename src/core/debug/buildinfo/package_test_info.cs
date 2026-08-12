@@ -48,6 +48,6 @@ public static partial class buildinfo_test_package
 
     // <TypeAccessibility>
     public partial struct TestReadFile_cases {}
-    public partial struct TestReadFile_platform {}
+    [GoLocalName("platform")] public partial struct TestReadFile_platform {}
     // </TypeAccessibility>
 }

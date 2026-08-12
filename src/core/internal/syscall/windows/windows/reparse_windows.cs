@@ -41,7 +41,7 @@ public static UntypedInt SYMLINK_FLAG_RELATIVE => 1;
     public uint16 Reserved;
 }
 
-[GoType] [GoValueClone("PathBuffer")] partial struct SymbolicLinkReparseBuffer {
+[GoType] partial struct SymbolicLinkReparseBuffer {
     // The integer that contains the offset, in bytes,
     // of the substitute name string in the PathBuffer array,
     // computed as an offset from byte 0 of PathBuffer. Note that
@@ -68,7 +68,7 @@ public static UntypedInt SYMLINK_FLAG_RELATIVE => 1;
     return syscall.UTF16ToString((~array<uint16>.AliasPointer(Ꮡ(rb.PathBuffer, 0), 65535)).slice(n1, n2, n2));
 }
 
-[GoType] [GoValueClone("PathBuffer")] partial struct MountPointReparseBuffer {
+[GoType] partial struct MountPointReparseBuffer {
     // The integer that contains the offset, in bytes,
     // of the substitute name string in the PathBuffer array,
     // computed as an offset from byte 0 of PathBuffer. Note that

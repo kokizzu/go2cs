@@ -203,7 +203,7 @@ internal static void text(this ж<textPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, @s
 
 // A score is the score (also called weight) for a given line.
 // add and cmp add and compare scores.
-[GoLocalName("score")] [GoType("dyn")] partial struct wrap_score {
+[GoType("dyn")] partial struct wrap_score {
     internal int64 hi;
     internal int64 lo;
 }

@@ -109,7 +109,7 @@ public static void TestWaitGroupRace(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoLocalName("X")] [GoType("dyn")] partial struct TestWaitGroupAlign_X {
+[GoType("dyn")] partial struct TestWaitGroupAlign_X {
     internal byte x;
     internal Δsync.WaitGroup wg;
 }
@@ -123,7 +123,7 @@ public static void TestWaitGroupAlign(ж<Δtesting.T> Ꮡt) {
     Ꮡx.of(TestWaitGroupAlign_X.Ꮡwg).Wait();
 }
 
-[GoLocalName("PaddedWaitGroup")] [GoType("dyn")] [GoValueClone("pad")] partial struct BenchmarkWaitGroupUncontended_PaddedWaitGroup {
+[GoType("dyn")] partial struct BenchmarkWaitGroupUncontended_PaddedWaitGroup {
     public partial ref sync_package.WaitGroup WaitGroup { get; }
     internal array<uint8> pad = new(128);
 }

@@ -1431,7 +1431,7 @@ internal static (http2FrameHeader, error) http2readFrameHeader(slice<byte> buf, 
 }
 
 // A Framer reads and writes Frames.
-[GoType] [GoValueClone("headerBuf")] partial struct http2Framer {
+[GoType] partial struct http2Framer {
     internal io.Reader r;
     internal http2Frame lastFrame;
     internal error errDetail;
@@ -2052,7 +2052,7 @@ internal static error WriteSettingsAck(this ж<http2Framer> Ꮡf) {
 // from the sender, as well as determining whether an idle connection
 // is still functional.
 // See https://httpwg.org/specs/rfc7540.html#rfc.section.6.7
-[GoType] [GoValueClone("Data")] partial struct http2PingFrame {
+[GoType] partial struct http2PingFrame {
     internal partial ref http2FrameHeader http2FrameHeader { get; }
     public array<byte> Data = new(8);
 }

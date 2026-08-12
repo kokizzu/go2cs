@@ -8,7 +8,7 @@ partial class main_package {
     internal nint n;
 }
 
-[GoType("dyn")] [GoValueClone("pad")] partial struct semTableᴛ1 {
+[GoType("dyn")] partial struct semTableᴛ1 {
     internal semaRoot root;
     internal array<byte> pad = new(40);
 }

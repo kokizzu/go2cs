@@ -99,7 +99,7 @@ internal static array<nint> unzig = new nint[]{
     internal int32 n;  // the number of unread bits in a.
 }
 
-[GoType("dyn")] [GoValueClone("buf")] partial struct decoder_bytes {
+[GoType("dyn")] partial struct decoder_bytes {
     // buf[i:j] are the buffered bytes read from the underlying
     // io.Reader that haven't yet been passed further on.
     internal array<byte> buf = new(4096);
@@ -109,7 +109,7 @@ internal static array<nint> unzig = new nint[]{
     internal nint nUnreadable;
 }
 
-[GoType] [GoValueClone("bytes", "comp", "progCoeffs", "huff", "quant", "tmp")] partial struct decoder {
+[GoType] partial struct decoder {
     internal io.Reader r;
     internal bits bits;
     // bytes is a byte buffer, similar to a bufio.Reader, except that it

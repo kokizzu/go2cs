@@ -81,7 +81,7 @@ public class TypeGenerator : ISourceGenerator
 
             // Fields the converter marked as needing a DEEP copy on a Go by-value struct copy
             // (see GoValueCloneAttribute / StructTypeTemplate.ValueCloneImplementation).
-            string[] valueCloneFields = GetValueCloneFields(targetSyntax);
+            string[] valueCloneFields = GetValueCloneFields(targetSyntax, semanticModel);
 
             foreach (AttributeSyntax attribute in attributes)
             {
@@ -413,26 +413,60 @@ public class TypeGenerator : ISourceGenerator
     // Reads the field names out of the converter's [GoValueClone("f1", "f2")] stamp — the fields a
     // Go by-value copy of this struct must DEEP-copy (see GoValueCloneAttribute). Matched by syntax
     // name, like every other attribute this generator reads; the converter emits it unqualified.
-    private static string[] GetValueCloneFields(BaseTypeDeclarationSyntax targetSyntax)
+    //
+    // Scanned over EVERY partial declaration of the type, not just the [GoType] one this generator
+    // was handed: the converter writes the stamp on the package_info.cs accessibility record so the
+    // mainline declaration reads like the Go original, and a hand-owned conversion — which gets no
+    // such record — keeps it inline. C# unions a partial type's attributes, so both are the same
+    // stamp on the same type.
+    private static string[] GetValueCloneFields(BaseTypeDeclarationSyntax targetSyntax, SemanticModel semanticModel)
     {
-        foreach (AttributeListSyntax attributeList in targetSyntax.AttributeLists)
+        foreach (BaseTypeDeclarationSyntax declaration in GetPartialDeclarations(targetSyntax, semanticModel))
         {
-            foreach (AttributeSyntax attribute in attributeList.Attributes)
+            foreach (AttributeListSyntax attributeList in declaration.AttributeLists)
             {
-                string attributeName = GetSimpleName(attribute.Name.ToString());
+                foreach (AttributeSyntax attribute in attributeList.Attributes)
+                {
+                    string attributeName = GetSimpleName(attribute.Name.ToString());
 
-                if (attributeName != ValueCloneAttributeName && attributeName != $"{ValueCloneAttributeName}Attribute")
-                    continue;
+                    if (attributeName != ValueCloneAttributeName && attributeName != $"{ValueCloneAttributeName}Attribute")
+                        continue;
 
-                return attribute.GetArgumentValues()
-                    .Select(argument => argument.value.Trim())
-                    .Where(value => value.Length > 2 && value[0] == '"' && value[value.Length - 1] == '"')
-                    .Select(value => value[1..^1])
-                    .ToArray();
+                    return attribute.GetArgumentValues()
+                        .Select(argument => argument.value.Trim())
+                        .Where(value => value.Length > 2 && value[0] == '"' && value[value.Length - 1] == '"')
+                        .Select(value => value[1..^1])
+                        .ToArray();
+                }
             }
         }
 
         return [];
+    }
+
+    // Every declaration that makes up the (partial) type, starting with the one the syntax receiver
+    // matched. A type whose symbol cannot be resolved yields just that declaration, which is what
+    // this generator read before the accessibility record existed to carry attributes.
+    private static IEnumerable<BaseTypeDeclarationSyntax> GetPartialDeclarations(BaseTypeDeclarationSyntax targetSyntax, SemanticModel semanticModel)
+    {
+        yield return targetSyntax;
+
+        if (semanticModel.GetDeclaredSymbol(targetSyntax) is not INamedTypeSymbol typeSymbol)
+            yield break;
+
+        foreach (SyntaxReference reference in typeSymbol.DeclaringSyntaxReferences)
+        {
+            if (reference.GetSyntax() is not BaseTypeDeclarationSyntax declaration)
+                continue;
+
+            // Skip the one already yielded. Identity is tree + span: a SyntaxReference materializes
+            // its node on demand, so reference equality is not guaranteed to hold against the node
+            // the receiver matched.
+            if (declaration.SyntaxTree == targetSyntax.SyntaxTree && declaration.Span == targetSyntax.Span)
+                continue;
+
+            yield return declaration;
+        }
     }
 
     private static (string keyTypeName, string valueTypeName) SplitMapTypes(string typeDefinition)

@@ -18,7 +18,7 @@ using global::go.net;
 
 partial class jsonrpc_package {
 
-[GoType] [GoValueClone("req")] partial struct clientCodec {
+[GoType] partial struct clientCodec {
     internal ж<json.Decoder> dec; // for reading JSON values
     internal ж<json.Encoder> enc; // for writing JSON values
     internal io.Closer c;
@@ -43,7 +43,7 @@ public static rpc.ClientCodec NewClientCodec(io.ReadWriteCloser conn) {
     )));
 }
 
-[GoType] [GoValueClone("Params")] partial struct clientRequest {
+[GoType] partial struct clientRequest {
     [GoTag(@"json:""method""")]
     public @string Method;
     [GoTag(@"json:""params""")]

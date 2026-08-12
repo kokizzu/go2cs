@@ -52,10 +52,8 @@ using static go.runtime.pprof_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bufio_package.Writer, io_package.Writer>(Pointer = true)]
@@ -83,7 +81,7 @@ public static partial class pprof_package
     // <TypeAccessibility>
     internal partial interface countProfile {}
     internal partial struct cpuᴛ1 {}
-    internal partial struct emitLocation_newFunc {}
+    [GoLocalName("newFunc")] internal partial struct emitLocation_newFunc {}
     internal partial struct keysByCount {}
     internal partial struct label {}
     internal partial struct labelContextKey {}
@@ -94,9 +92,9 @@ public static partial class pprof_package
     internal partial struct pcDeck {}
     internal partial struct profMap {}
     internal partial struct profMapEntry {}
-    internal partial struct profileBuilder {}
+    [GoValueClone("pb")] internal partial struct profileBuilder {}
     internal partial struct profilesᴛ1 {}
-    internal partial struct protobuf {}
+    [GoValueClone("tmp")] internal partial struct protobuf {}
     internal partial struct runtimeProfile {}
     internal partial struct stackProfile {}
     internal partial struct symbolizeFlag {}

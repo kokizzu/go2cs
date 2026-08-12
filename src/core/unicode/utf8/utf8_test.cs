@@ -346,7 +346,7 @@ public static void TestDecodeInvalidSequence(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("info")] [GoType("dyn")] partial struct testSequence_info {
+[GoType("dyn")] partial struct testSequence_info {
     internal nint index;
     internal rune r;
 }

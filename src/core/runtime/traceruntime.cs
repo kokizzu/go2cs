@@ -23,7 +23,7 @@ partial class runtime_package {
 // N.B. s.statusTraced is managed and cleared separately.
 
 // mTraceState is per-M state for the tracer.
-[GoType] [GoValueClone("buf")] partial struct mTraceState {
+[GoType] partial struct mTraceState {
     internal atomic.Uintptr seqlock; // seqlock indicating that this M is writing to a trace buffer.
     internal array<ж<traceBuf>> buf = new(2); // Per-M traceBuf for writing. Indexed by trace.gen%2.
     internal ж<m> link;          // Snapshot of alllink or freelink.

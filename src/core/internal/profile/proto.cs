@@ -24,7 +24,7 @@ using fmt = fmt_package;
 
 partial class profile_package {
 
-[GoType] [GoValueClone("tmp")] partial struct buffer {
+[GoType] partial struct buffer {
     internal nint field;
     internal nint typ;
     internal uint64 u64;

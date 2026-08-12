@@ -27,7 +27,7 @@ internal static void lostProfileEvent() {
 
 // A profileBuilder writes a profile incrementally from a
 // stream of profile samples delivered by the runtime.
-[GoType] [GoValueClone("pb")] partial struct profileBuilder {
+[GoType] partial struct profileBuilder {
     internal time.Time start;
     internal time.Time end;
     internal bool havePeriod;
@@ -566,7 +566,7 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
 // We can't write out functions while in the middle of the
 // Location message, so record new functions we encounter and
 // write them out after the Location.
-[GoLocalName("newFunc")] [GoType("dyn")] partial struct emitLocation_newFunc {
+[GoType("dyn")] partial struct emitLocation_newFunc {
     internal uint64 id;
     internal @string name, @file;
     internal int64 startLine;

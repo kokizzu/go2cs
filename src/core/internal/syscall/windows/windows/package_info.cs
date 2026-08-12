@@ -36,10 +36,8 @@ using static go.@internal.syscall.windows_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 // </InterfaceImplementations>
@@ -59,13 +57,13 @@ public static partial class windows_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct _OSVERSIONINFOW {}
+    [GoValueClone("csdVersion")] internal partial struct _OSVERSIONINFOW {}
     internal partial struct sendRecvMsgFuncᴛ1 {}
     public partial struct FILE_ATTRIBUTE_TAG_INFO {}
     public partial struct FILE_BASIC_INFO {}
-    public partial struct FILE_FULL_DIR_INFO {}
-    public partial struct FILE_ID_BOTH_DIR_INFO {}
-    public partial struct IpAdapterAddresses {}
+    [GoValueClone("FileName")] public partial struct FILE_FULL_DIR_INFO {}
+    [GoValueClone("ShortName", "FileName")] public partial struct FILE_ID_BOTH_DIR_INFO {}
+    [GoValueClone("PhysicalAddress", "ZoneIndices")] public partial struct IpAdapterAddresses {}
     public partial struct IpAdapterAnycastAddress {}
     public partial struct IpAdapterDnsServerAdapter {}
     public partial struct IpAdapterGatewayAddress {}
@@ -77,8 +75,8 @@ public static partial class windows_package
     public partial struct LUID_AND_ATTRIBUTES {}
     public partial struct LocalGroupUserInfo0 {}
     public partial struct MemoryBasicInformation {}
-    public partial struct ModuleEntry32 {}
-    public partial struct MountPointReparseBuffer {}
+    [GoValueClone("Module", "ExePath")] public partial struct ModuleEntry32 {}
+    [GoValueClone("PathBuffer")] public partial struct MountPointReparseBuffer {}
     public partial struct PROCESS_MEMORY_COUNTERS {}
     public partial struct REPARSE_DATA_BUFFER {}
     public partial struct REPARSE_DATA_BUFFER_HEADER {}
@@ -87,10 +85,10 @@ public static partial class windows_package
     public partial struct SID_AND_ATTRIBUTES {}
     public partial struct SecurityAttributes {}
     public partial struct SocketAddress {}
-    public partial struct SymbolicLinkReparseBuffer {}
+    [GoValueClone("PathBuffer")] public partial struct SymbolicLinkReparseBuffer {}
     public partial struct TCP_INITIAL_RTO_PARAMETERS {}
     public partial struct TOKEN_MANDATORY_LABEL {}
-    public partial struct TOKEN_PRIVILEGES {}
+    [GoValueClone("Privileges")] public partial struct TOKEN_PRIVILEGES {}
     public partial struct TokenType {}
     public partial struct UserInfo4 {}
     public partial struct WSAMsg {}

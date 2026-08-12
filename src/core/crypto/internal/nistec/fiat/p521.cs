@@ -15,7 +15,7 @@ partial class fiat_package {
 // P521Element is an integer modulo 2^521 - 1.
 //
 // The zero value is a valid zero element.
-[GoType] [GoValueClone("x")] partial struct P521Element {
+[GoType] partial struct P521Element {
     // Values are represented internally always in the Montgomery domain, and
     // converted in Bytes and SetBytes.
     internal p521MontgomeryDomainFieldElement x;

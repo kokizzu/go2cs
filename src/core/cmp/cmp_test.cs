@@ -175,7 +175,7 @@ public static void ExampleOr() {
     fmt.Println(cmp.Or(userInput1, userInput2, defaultˢ));
 }
 
-[GoLocalName("Order")] [GoType("dyn")] partial struct ExampleOr_sort_Order {
+[GoType("dyn")] partial struct ExampleOr_sort_Order {
     public @string Product;
     public @string Customer;
     public float64 Price;

@@ -12,7 +12,7 @@ partial class main_package {
 
 [GoType("num:nint")] public partial struct level;
 
-[GoType] [GoValueClone("Delta")] partial struct CaseRange {
+[GoType] partial struct CaseRange {
     public uint32 Lo;
     public d Delta;
     public inner Item;

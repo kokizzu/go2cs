@@ -2848,6 +2848,141 @@ func TestWritePackageInfoFileInsertsTypeAccessibilitySection(t *testing.T) {
 	}
 }
 
+// Movable-attribute guard: recordTypeAccessibility relocates a declaration's movable stamps onto
+// the `<TypeAccessibility>` record and hands the caller back an EMPTY inline prefix — and, on the
+// two paths where no record is written, hands the stamps back verbatim so the declaration keeps
+// them. The attributes and the access modifier must travel together: the record is the only
+// declaration that survives to carry either, so a stamp left behind when the record is skipped
+// would be lost, and one relocated onto a record that is never written would be lost too.
+func TestRecordTypeAccessibilityRelocatesMovableAttributes(t *testing.T) {
+	const attrs = "[GoLocalName(\"span\")] [GoValueClone(\"buf\")] "
+
+	// The recording path: the stamps land on the record, the declaration is left bare.
+	resetPackageState(&packages.Package{})
+
+	v := &Visitor{}
+
+	if got := v.recordTypeAccessibility("struct", "holder", "", "", attrs); got != "" {
+		t.Fatalf("a recorded type must emit no inline attributes, got %q", got)
+	}
+
+	want := attrs + "internal partial struct holder {}"
+
+	if !packageEmittedTypeAccess.Contains(want) {
+		t.Fatalf("record must carry the attributes, got %v", packageEmittedTypeAccess.Keys())
+	}
+
+	// A HAND-OWNED file gets no record (its compiled declarations are the author's), so its
+	// `.cs.auto` review sibling must keep the stamps where they have always been.
+	resetPackageState(&packages.Package{})
+
+	v = &Visitor{manualConversion: true}
+
+	if got := v.recordTypeAccessibility("struct", "holder", "", "", attrs); got != attrs {
+		t.Fatalf("a hand-owned conversion must keep its attributes inline, got %q", got)
+	}
+
+	if len(packageEmittedTypeAccess.Keys()) != 0 {
+		t.Fatalf("a hand-owned conversion must record nothing, got %v", packageEmittedTypeAccess.Keys())
+	}
+
+	// A -tests bridge unit writes its accessibility inline for its own reason (its metadata anchor
+	// can be a different test class); the attributes follow the same route.
+	resetPackageState(&packages.Package{})
+
+	v = &Visitor{}
+	v.options.testInlineTypeAccess = true
+
+	if got := v.recordTypeAccessibility("struct", "holder", "", "", attrs); got != attrs {
+		t.Fatalf("a bridge unit must keep its attributes inline, got %q", got)
+	}
+
+	if len(packageEmittedTypeAccess.Keys()) != 0 {
+		t.Fatalf("a bridge unit must record nothing, got %v", packageEmittedTypeAccess.Keys())
+	}
+}
+
+// Sort guard: the `<TypeAccessibility>` section orders entries by the DECLARATION, so a stamped
+// type sits with its accessibility/kind/name peers. Sorting the raw line instead would let the
+// leading '[' pull every stamped entry into a block of its own ahead of the unstamped ones —
+// legal, but it scrambles a section whose whole value is being readable at a glance.
+func TestTypeAccessibilitySortIgnoresAttributePrefix(t *testing.T) {
+	for _, c := range []struct {
+		line string
+		want string
+	}{
+		{"internal partial struct row {}", "internal partial struct row {}"},
+		{"[GoValueClone(\"b\")] internal partial struct inner {}", "internal partial struct inner {}"},
+		{"[GoLocalName(\"span\")] [GoValueClone(\"buf\")] public partial struct holder {}", "public partial struct holder {}"},
+		// A bracket inside a quoted argument is argument text, not structure.
+		{"[GoLocalName(\"a]b\")] internal partial struct odd {}", "internal partial struct odd {}"},
+		// An unterminated group has no declaration to find; the line stands as its own key rather
+		// than being truncated to nothing.
+		{"[GoValueClone(\"x\" internal partial struct broken {}", "[GoValueClone(\"x\" internal partial struct broken {}"},
+	} {
+		if got := typeAccessibilityKey(c.line); got != c.want {
+			t.Errorf("typeAccessibilityKey(%q) = %q, want %q", c.line, got, c.want)
+		}
+	}
+
+	// End to end: a stamped entry keeps the place its declaration earns, not the one its '[' would.
+	dir := t.TempDir()
+	fileName := filepath.Join(dir, PackageInfoFileName)
+
+	seed := strings.Join([]string{
+		"namespace go;",
+		"",
+		"// <ImportedTypeAliases>",
+		"// </ImportedTypeAliases>",
+		"",
+		"// <ExportedTypeAliases>",
+		"// </ExportedTypeAliases>",
+		"",
+		"// <InterfaceImplementations>",
+		"// </InterfaceImplementations>",
+		"",
+		"// <ImplicitConversions>",
+		"// </ImplicitConversions>",
+		"",
+		"[GoPackage(\"value\")]",
+		"public static partial class value_package",
+		"{",
+		"}",
+	}, "\r\n")
+
+	if err := os.WriteFile(fileName, []byte(seed), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	resetPackageState(&packages.Package{})
+	packageName = "value"
+	packageNamespace = "go"
+	packageEmittedTypeAccess.Add("internal partial struct alpha {}")
+	packageEmittedTypeAccess.Add("[GoValueClone(\"b\")] internal partial struct beta {}")
+	packageEmittedTypeAccess.Add("internal partial struct gamma {}")
+
+	writePackageInfoFile(fileName, false)
+
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	contents := string(data)
+
+	alpha := strings.Index(contents, typeAccessibilityIndent+"internal partial struct alpha {}")
+	beta := strings.Index(contents, typeAccessibilityIndent+"[GoValueClone(\"b\")] internal partial struct beta {}")
+	gamma := strings.Index(contents, typeAccessibilityIndent+"internal partial struct gamma {}")
+
+	if alpha < 0 || beta < 0 || gamma < 0 {
+		t.Fatalf("every entry must be rendered:\n%s", contents)
+	}
+
+	if !(alpha < beta && beta < gamma) {
+		t.Fatalf("a stamped entry must sort with its peers, got alpha=%d beta=%d gamma=%d:\n%s", alpha, beta, gamma, contents)
+	}
+}
+
 // generatedTypeScope MUST agree with go2cs-gen's Common.GetScope — the two decide the access
 // modifier of two partial declarations of ONE type, and C# rejects conflicting accessibility
 // (CS0262). GetScope reads the C# identifier VERBATIM, so the Δ collision-rename prefix (a Greek

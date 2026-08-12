@@ -12,7 +12,7 @@ internal static spongeDirection spongeSqueezing => 1;
 
 internal static UntypedInt maxRate => 168;
 
-[GoType] [GoValueClone("a", "storage")] partial struct state {
+[GoType] partial struct state {
     // Generic sponge components.
     internal array<uint64> a = new(25); // main state of the hash
     internal nint rate;       // the number of bytes of state to use

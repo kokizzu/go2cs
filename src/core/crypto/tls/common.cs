@@ -455,7 +455,7 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
 // After one has been passed to a TLS function it must not be
 // modified. A Config may be reused; the tls package will also not
 // modify it.
-[GoType] [GoValueClone("SessionTicketKey")] partial struct Config {
+[GoType] partial struct Config {
     // Rand provides the source of entropy for nonces and RSA blinding.
     // If Rand is nil, TLS uses the cryptographic random reader in package
     // crypto/rand.
@@ -733,7 +733,7 @@ internal static time.Duration ticketKeyLifetime => /* 7 * 24 * time.Hour */ 6048
 internal static time.Duration ticketKeyRotation => /* 24 * time.Hour */ 86400000000000;
 
 // ticketKey is the internal representation of a session ticket key.
-[GoType] [GoValueClone("aesKey", "hmacKey")] partial struct ticketKey {
+[GoType] partial struct ticketKey {
     internal array<byte> aesKey = new(16);
     internal array<byte> hmacKey = new(16);
     // created is the time at which this ticket key was created. See Config.ticketKeys.
@@ -743,7 +743,7 @@ internal static time.Duration ticketKeyRotation => /* 24 * time.Hour */ 86400000
 // ticketKeyFromBytes converts from the external representation of a session
 // ticket key to a ticketKey. Externally, session ticket keys are 32 random
 // bytes and this function expands that into sufficient name and key material.
-[GoRecv] internal static ticketKey /*key*/ ticketKeyFromBytes(this ref Config c, array<byte> b) {
+[GoRecv] internal static ticketKey /*key*/ ticketKeyFromBytes(this ref Config c, [GoArrayDims(32)] array<byte> b) {
     ticketKey key = default!;
 
     b = b.Clone();

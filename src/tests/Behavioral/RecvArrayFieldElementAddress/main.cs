@@ -6,7 +6,7 @@ partial class main_package {
 
 internal static UntypedInt mask => 7;
 
-[GoType] [GoValueClone("head", "prev", "pairs")] partial struct hasher {
+[GoType] partial struct hasher {
     internal array<uint32> head = new(mask + 1);
     internal array<uint32> prev = new(16);
     internal array<array<nint>> pairs = new(2, () => new(3));

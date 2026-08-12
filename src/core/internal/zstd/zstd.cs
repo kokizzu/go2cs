@@ -19,7 +19,7 @@ partial class zstd_package {
 internal static bool fuzzing = false;
 
 // Reader implements [io.Reader] to read a zstd compressed stream.
-[GoType] [GoValueClone("seqTables", "seqTableBits", "seqTableBuffers", "scratch", "checksum")] partial struct Reader {
+[GoType] partial struct Reader {
     // The underlying Reader.
     internal io.Reader r;
     // Whether we have read the frame header.

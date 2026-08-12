@@ -42,10 +42,8 @@ using static go.debug.elf_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<FormatError, error>(Pointer = true)]
@@ -97,8 +95,8 @@ public static partial class elf_package
     public partial struct File {}
     public partial struct FileHeader {}
     public partial struct FormatError {}
-    public partial struct Header32 {}
-    public partial struct Header64 {}
+    [GoValueClone("Ident")] public partial struct Header32 {}
+    [GoValueClone("Ident")] public partial struct Header64 {}
     public partial struct ImportedSymbol {}
     public partial struct Machine {}
     public partial struct NType {}

@@ -42,10 +42,8 @@ using static go.runtime_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<boundsError, ΔError>]
@@ -108,7 +106,7 @@ public static partial class runtime_package
     internal partial interface ifaceHash_i {}
     internal partial interface stringer {}
     internal partial struct _DISPATCHER_CONTEXT {}
-    internal partial struct _OSVERSIONINFOW {}
+    [GoValueClone("csdVersion")] internal partial struct _OSVERSIONINFOW {}
     internal partial struct _typePair {}
     internal partial struct abiDesc {}
     internal partial struct abiPart {}
@@ -127,45 +125,45 @@ public static partial class runtime_package
     internal partial struct atomicSpanSetSpinePointer {}
     internal partial struct bitvector {}
     internal partial struct blockRecord {}
-    internal partial struct bmap {}
+    [GoValueClone("tophash")] internal partial struct bmap {}
     internal partial struct boundsError {}
     internal partial struct boundsErrorCode {}
     internal partial struct bucket {}
     internal partial struct bucketType {}
     internal partial struct buckhashArray {}
     internal partial struct callbackArgs {}
-    internal partial struct cbsᴛ1 {}
+    [GoValueClone("ctxt")] internal partial struct cbsᴛ1 {}
     internal partial struct cgoContextArg {}
     internal partial struct cgoSymbolizerArg {}
     internal partial struct cgoTracebackArg {}
     internal partial struct cgothreadstart {}
-    internal partial struct check_x1t {}
-    internal partial struct check_y1t {}
-    internal partial struct checkmarksMap {}
+    [GoLocalName("x1t")] internal partial struct check_x1t {}
+    [GoLocalName("y1t")] internal partial struct check_y1t {}
+    [GoValueClone("b")] internal partial struct checkmarksMap {}
     internal partial struct childInfo {}
     internal partial struct chunkIdx {}
-    internal partial struct consistentHeapStats {}
-    internal partial struct context {}
+    [GoValueClone("stats")] internal partial struct consistentHeapStats {}
+    [GoValueClone("anon0", "vectorregister")] internal partial struct context {}
     internal partial struct coro {}
-    internal partial struct cpuProfile {}
+    [GoValueClone("extra")] internal partial struct cpuProfile {}
     internal partial struct cpuStats {}
     internal partial struct cpuStatsAggregate {}
     internal partial struct dbgVar {}
     internal partial struct debugCallWrapArgs {}
-    internal partial struct debugLogBuf {}
+    [GoValueClone("b")] internal partial struct debugLogBuf {}
     internal partial struct debugLogReader {}
-    internal partial struct debugLogWriter {}
+    [GoValueClone("data", "buf")] internal partial struct debugLogWriter {}
     internal partial struct debugPtrmaskᴛ1 {}
     internal partial struct debugᴛ1 {}
     internal partial struct dlogPerM {}
-    internal partial struct dlogger {}
+    [GoValueClone("w")] internal partial struct dlogger {}
     internal partial struct errorAddressString {}
     internal partial struct errorString {}
     internal partial struct evacDst {}
     internal partial struct exceptionpointers {}
-    internal partial struct exceptionrecord {}
+    [GoValueClone("exceptioninformation")] internal partial struct exceptionrecord {}
     internal partial struct find_firstFree {}
-    internal partial struct findfuncbucket {}
+    [GoValueClone("subbuckets")] internal partial struct findfuncbucket {}
     internal partial struct fixalloc {}
     internal partial struct functab {}
     internal partial struct gList {}
@@ -173,12 +171,12 @@ public static partial class runtime_package
     internal partial struct gTraceState {}
     internal partial struct gcBgMarkWorkerNode {}
     internal partial struct gcBits {}
-    internal partial struct gcBitsArena {}
+    [GoValueClone("bits")] internal partial struct gcBitsArena {}
     internal partial struct gcBitsArenasᴛ1 {}
     internal partial struct gcBitsHeader {}
     internal partial struct gcCPULimiterState {}
     internal partial struct gcCPULimiterState_bucket {}
-    internal partial struct gcControllerState {}
+    [GoValueClone("lastConsMark")] internal partial struct gcControllerState {}
     internal partial struct gcDrainFlags {}
     internal partial struct gcMarkWorkerMode {}
     internal partial struct gcMode {}
@@ -189,23 +187,23 @@ public static partial class runtime_package
     internal partial struct gclink {}
     internal partial struct gclinkptr {}
     internal partial struct globalAllocᴛ1 {}
-    internal partial struct globalRandᴛ1 {}
+    [GoValueClone("seed", "state")] internal partial struct globalRandᴛ1 {}
     internal partial struct godebugInc {}
     internal partial struct goroutineProfileState {}
     internal partial struct goroutineProfileStateHolder {}
     internal partial struct goroutineProfileᴛ1 {}
     internal partial struct gsignalStack {}
     internal partial struct headTailIndex {}
-    internal partial struct heapArena {}
+    [GoValueClone("spans", "pageInUse", "pageMarks", "pageSpecials")] internal partial struct heapArena {}
     internal partial struct heapStatsAggregate {}
-    internal partial struct heapStatsDelta {}
+    [GoValueClone("smallAllocCount", "smallFreeCount")] internal partial struct heapStatsDelta {}
     internal partial struct hiter {}
     internal partial struct hmap {}
     internal partial struct initTask {}
     internal partial struct inlineFrame {}
     internal partial struct inlineUnwinder {}
     internal partial struct inlinedCall {}
-    internal partial struct itabTableType {}
+    [GoValueClone("entries")] internal partial struct itabTableType {}
     internal partial struct lfstack {}
     internal partial struct limiterEvent {}
     internal partial struct limiterEventStamp {}
@@ -222,54 +220,54 @@ public static partial class runtime_package
     internal partial struct mSpanList {}
     internal partial struct mSpanState {}
     internal partial struct mSpanStateBox {}
-    internal partial struct mTraceState {}
+    [GoValueClone("buf")] internal partial struct mTraceState {}
     internal partial struct mapextra {}
     internal partial struct markBits {}
-    internal partial struct mcache {}
-    internal partial struct mcentral {}
-    internal partial struct memRecord {}
+    [GoValueClone("alloc", "stackcache")] internal partial struct mcache {}
+    [GoValueClone("partial", "full")] internal partial struct mcentral {}
+    [GoValueClone("future")] internal partial struct memRecord {}
     internal partial struct memRecordCycle {}
     internal partial struct memoryBasicInformation {}
-    internal partial struct metricData {}
+    [GoValueClone("deps")] internal partial struct metricData {}
     internal partial struct metricFloat64Histogram {}
     internal partial struct metricKind {}
     internal partial struct metricName {}
     internal partial struct metricSample {}
     internal partial struct metricValue {}
-    internal partial struct mheap {}
-    internal partial struct mheap_central {}
+    [GoValueClone("pages", "arenas", "central")] internal partial struct mheap {}
+    [GoValueClone("mcentral", "pad")] internal partial struct mheap_central {}
     internal partial struct mheap_curArena {}
     internal partial struct mheap_userArena {}
     internal partial struct mlink {}
     internal partial struct moduledata {}
     internal partial struct modulehash {}
-    internal partial struct monitorSuspendResume__DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS {}
+    [GoLocalName("_DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS")] internal partial struct monitorSuspendResume__DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS {}
     internal partial struct mspan {}
-    internal partial struct mstats {}
+    [GoValueClone("heapStats", "pause_ns", "pause_end")] internal partial struct mstats {}
     internal partial struct neverCallThisFunction {}
     internal partial struct newmHandoffᴛ1 {}
     internal partial struct notInHeap {}
     internal partial struct notInHeapSlice {}
     internal partial struct notifyList {}
     internal partial struct offAddr {}
-    internal partial struct overlapped {}
+    [GoValueClone("anon0")] internal partial struct overlapped {}
     internal partial struct overlappedEntry {}
     internal partial struct pMask {}
     internal partial struct pTraceState {}
-    internal partial struct pageAlloc {}
+    [GoValueClone("summary", "chunks")] internal partial struct pageAlloc {}
     internal partial struct pageAlloc_scav {}
     internal partial struct pageBits {}
     internal partial struct pageCache {}
     internal partial struct pallocBits {}
-    internal partial struct pallocData {}
+    [GoValueClone("scavenged")] internal partial struct pallocData {}
     internal partial struct pallocSum {}
     internal partial struct pcHeader {}
-    internal partial struct pcvalueCache {}
+    [GoValueClone("entries")] internal partial struct pcvalueCache {}
     internal partial struct pcvalueCacheEnt {}
     internal partial struct persistentAlloc {}
     internal partial struct piController {}
     internal partial struct pinState {}
-    internal partial struct pinner {}
+    [GoValueClone("refStore")] internal partial struct pinner {}
     internal partial struct pinnerBits {}
     internal partial struct plainError {}
     internal partial struct pollCache {}
@@ -277,7 +275,7 @@ public static partial class runtime_package
     internal partial struct pollInfo {}
     internal partial struct pollOperation {}
     internal partial struct printDebugLog_best {}
-    internal partial struct printDebugLog_readState {}
+    [GoLocalName("readState")] internal partial struct printDebugLog_readState {}
     internal partial struct profAtomic {}
     internal partial struct profBuf {}
     internal partial struct profBufReadMode {}
@@ -298,16 +296,16 @@ public static partial class runtime_package
     internal partial struct scavengerState {}
     internal partial struct selectDir {}
     internal partial struct semTable {}
-    internal partial struct semTableᴛ1 {}
+    [GoValueClone("pad")] internal partial struct semTableᴛ1 {}
     internal partial struct semaProfileFlags {}
     internal partial struct semaRoot {}
     internal partial struct sigset {}
-    internal partial struct sigᴛ1 {}
+    [GoValueClone("mask", "wanted", "ignored", "recv")] internal partial struct sigᴛ1 {}
     internal partial struct sliceInterfacePtr {}
     internal partial struct spanAllocType {}
     internal partial struct spanClass {}
     internal partial struct spanSet {}
-    internal partial struct spanSetBlock {}
+    [GoValueClone("spans")] internal partial struct spanSetBlock {}
     internal partial struct spanSetBlockAlloc {}
     internal partial struct spanSetSpinePointer {}
     internal partial struct special {}
@@ -317,19 +315,19 @@ public static partial class runtime_package
     internal partial struct specialfinalizer {}
     internal partial struct specialprofile {}
     internal partial struct specialsIter {}
-    internal partial struct stackLargeᴛ1 {}
+    [GoValueClone("free")] internal partial struct stackLargeᴛ1 {}
     internal partial struct stackObject {}
-    internal partial struct stackObjectBuf {}
+    [GoValueClone("obj")] internal partial struct stackObjectBuf {}
     internal partial struct stackObjectBufHdr {}
     internal partial struct stackObjectRecord {}
     internal partial struct stackScanState {}
-    internal partial struct stackWorkBuf {}
+    [GoValueClone("obj")] internal partial struct stackWorkBuf {}
     internal partial struct stackWorkBufHdr {}
     internal partial struct stackfreelist {}
-    internal partial struct stackmap {}
+    [GoValueClone("bytedata")] internal partial struct stackmap {}
     internal partial struct stackpoolItem {}
     internal partial struct stackpoolᴛ1 {}
-    internal partial struct statAggregate {}
+    [GoValueClone("ensured")] internal partial struct statAggregate {}
     internal partial struct statDep {}
     internal partial struct statDepSet {}
     internal partial struct stdFunction {}
@@ -346,22 +344,22 @@ public static partial class runtime_package
     internal partial struct sysMemStat {}
     internal partial struct sysStatsAggregate {}
     internal partial struct sysmontick {}
-    internal partial struct systeminfo {}
+    [GoValueClone("anon0")] internal partial struct systeminfo {}
     internal partial struct taggedPointer {}
     internal partial struct textsect {}
     internal partial struct throwType {}
     internal partial struct ticksType {}
-    internal partial struct timeHistogram {}
+    [GoValueClone("counts")] internal partial struct timeHistogram {}
     internal partial struct timeTimer {}
     internal partial struct timer {}
     internal partial struct timerWhen {}
     internal partial struct timers {}
     internal partial struct tmpBuf {}
-    internal partial struct traceAdvance_untracedG {}
+    [GoLocalName("untracedG")] internal partial struct traceAdvance_untracedG {}
     internal partial struct traceAdvancerState {}
     internal partial struct traceArg {}
     internal partial struct traceBlockReason {}
-    internal partial struct traceBuf {}
+    [GoValueClone("arr")] internal partial struct traceBuf {}
     internal partial struct traceBufHeader {}
     internal partial struct traceBufQueue {}
     internal partial struct traceEv {}
@@ -373,19 +371,19 @@ public static partial class runtime_package
     internal partial struct traceGoStopReason {}
     internal partial struct traceLocker {}
     internal partial struct traceMap {}
-    internal partial struct traceMapNode {}
+    [GoValueClone("children")] internal partial struct traceMapNode {}
     internal partial struct traceProcStatus {}
     internal partial struct traceRegionAlloc {}
-    internal partial struct traceRegionAllocBlock {}
+    [GoValueClone("data")] internal partial struct traceRegionAllocBlock {}
     internal partial struct traceRegionAllocBlockHeader {}
-    internal partial struct traceSchedResourceState {}
+    [GoValueClone("statusTraced", "seq")] internal partial struct traceSchedResourceState {}
     internal partial struct traceStackTable {}
     internal partial struct traceStringTable {}
     internal partial struct traceTime {}
     internal partial struct traceTypeTable {}
     internal partial struct traceWriter {}
     internal partial struct tracestat {}
-    internal partial struct typeCacheBucket {}
+    [GoValueClone("t")] internal partial struct typeCacheBucket {}
     internal partial struct typePointers {}
     internal partial struct uint16InterfacePtr {}
     internal partial struct uint32InterfacePtr {}
@@ -396,7 +394,7 @@ public static partial class runtime_package
     internal partial struct userArenaStateᴛ1 {}
     internal partial struct waitq {}
     internal partial struct wakeableSleep {}
-    internal partial struct wbBuf {}
+    [GoValueClone("buf")] internal partial struct wbBuf {}
     internal partial struct winCallback {}
     internal partial struct winCallbackKey {}
     internal partial struct winlibcall {}
@@ -404,21 +402,21 @@ public static partial class runtime_package
     internal partial struct workType_assistQueue {}
     internal partial struct workType_sweepWaiters {}
     internal partial struct workType_wbufSpans {}
-    internal partial struct workbuf {}
+    [GoValueClone("obj")] internal partial struct workbuf {}
     internal partial struct workbufhdr {}
     internal partial struct worldStop {}
-    internal partial struct writeBarrierᴛ1 {}
+    [GoValueClone("pad")] internal partial struct writeBarrierᴛ1 {}
     public partial interface ΔError {}
     public partial struct BlockProfileRecord {}
     public partial struct Frame {}
-    public partial struct Frames {}
+    [GoValueClone("frameStore")] public partial struct Frames {}
     public partial struct Func {}
-    public partial struct MemProfileRecord {}
-    public partial struct MemStats {}
+    [GoValueClone("Stack0")] public partial struct MemProfileRecord {}
+    [GoValueClone("PauseNs", "PauseEnd", "BySize")] public partial struct MemStats {}
     public partial struct MemStats_BySize {}
     public partial struct PanicNilError {}
     public partial struct Pinner {}
-    public partial struct StackRecord {}
+    [GoValueClone("Stack0")] public partial struct StackRecord {}
     public partial struct TypeAssertionError {}
     public partial struct ΔcgoCallers {}
     public partial struct ΔfuncInfo {}
@@ -428,7 +426,7 @@ public static partial class runtime_package
     public partial struct Δscavengeᴛ1 {}
     public partial struct Δsliceᴛ {}
     public partial struct ΔsrcFunc {}
-    public partial struct Δtraceᴛ1 {}
+    [GoValueClone("full", "doneSema", "stackTab", "stringTab", "typeTab", "cpuLogRead", "cpuLogWrite", "cpuBuf", "markWorkerLabels", "goStopReasons", "goBlockReasons")] public partial struct Δtraceᴛ1 {}
     public partial struct ΔwriteUserArenaHeapBits {}
     // </TypeAccessibility>
 }

@@ -21,7 +21,7 @@ partial class fcgi_package {
 
 // request holds the state for an in-progress request. As soon as it's complete,
 // it's converted to an http.Request.
-[GoType] [GoValueClone("buf")] partial struct request {
+[GoType] partial struct request {
     internal ж<io.PipeWriter> pw;
     internal uint16 reqId;
     internal map<@string, @string> @params;

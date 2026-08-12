@@ -54,10 +54,8 @@ using static go.go.types_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<Alias, cleaner>(Pointer = true)]
@@ -243,7 +241,7 @@ public static partial class types_package
     internal partial struct block {}
     internal partial struct builtinId {}
     internal partial struct byUniqueMethodName {}
-    internal partial struct collectObjects_methodInfo {}
+    [GoLocalName("methodInfo")] internal partial struct collectObjects_methodInfo {}
     internal partial struct comparer {}
     internal partial struct ctxtEntry {}
     internal partial struct cycleFinder {}
@@ -262,7 +260,7 @@ public static partial class types_package
     internal partial struct importDecl {}
     internal partial struct importKey {}
     internal partial struct inSourceOrder {}
-    internal partial struct instanceLookup {}
+    [GoValueClone("buf")] internal partial struct instanceLookup {}
     internal partial struct lazyObject {}
     internal partial struct methodSet {}
     internal partial struct monoEdge {}

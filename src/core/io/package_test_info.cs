@@ -104,13 +104,13 @@ public static partial class io_test_package
     internal partial struct writeToChecker {}
     internal partial struct zeroErrReader {}
     public partial struct Buffer {}
-    public partial struct TestMultiWriter_WriteStringSingleAlloc_simpleWriter {}
+    [GoLocalName("simpleWriter")] public partial struct TestMultiWriter_WriteStringSingleAlloc_simpleWriter {}
     public partial struct TestMultiWriter_sink {}
     public partial struct TestNopCloserWriterToForwarding_type {}
     public partial struct TestNopCloserWriterToForwarding_typeᴛ1 {}
     public partial struct TestOffsetWriter_Seek_tests {}
-    public partial struct TestPipeCloseError_testError1 {}
-    public partial struct TestPipeCloseError_testError2 {}
+    [GoLocalName("testError1")] public partial struct TestPipeCloseError_testError1 {}
+    [GoLocalName("testError2")] public partial struct TestPipeCloseError_testError2 {}
     public partial struct TestSectionReader_ReadAt_tests {}
     public partial struct TestSectionReader_Size_tests {}
     // </TypeAccessibility>

@@ -95,7 +95,7 @@ public static uint64 String(ΔSeed seed, @string s) {
 // A Hash is not safe for concurrent use by multiple goroutines, but a Seed is.
 // If multiple goroutines must compute the same seeded hash,
 // each can declare its own Hash and call SetSeed with a common Seed.
-[GoType] [GoValueClone("buf")] partial struct Hash {
+[GoType] partial struct Hash {
     internal array<Action> _ = new(0); // not comparable
     internal ΔSeed seed;        // initial seed used for this hash
     internal ΔSeed state;        // current hash of all flushed bytes

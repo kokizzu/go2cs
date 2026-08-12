@@ -338,11 +338,11 @@ public static void TestWriteAfterWriterClose(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoLocalName("testError1")] [GoType("dyn")] partial struct TestPipeCloseError_testError1 {
+[GoType("dyn")] partial struct TestPipeCloseError_testError1 {
     internal error error;
 }
 
-[GoLocalName("testError2")] [GoType("dyn")] partial struct TestPipeCloseError_testError2 {
+[GoType("dyn")] partial struct TestPipeCloseError_testError2 {
     internal error error;
 }
 

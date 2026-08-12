@@ -42,10 +42,8 @@ using static go.debug.macho_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<Dylib, Load>(Pointer = true)]
@@ -113,11 +111,11 @@ public static partial class macho_package
     public partial struct RelocTypeX86_64 {}
     public partial struct Rpath {}
     public partial struct RpathCmd {}
-    public partial struct Section32 {}
-    public partial struct Section64 {}
+    [GoValueClone("Name", "Seg")] public partial struct Section32 {}
+    [GoValueClone("Name", "Seg")] public partial struct Section64 {}
     public partial struct SectionHeader {}
-    public partial struct Segment32 {}
-    public partial struct Segment64 {}
+    [GoValueClone("Name")] public partial struct Segment32 {}
+    [GoValueClone("Name")] public partial struct Segment64 {}
     public partial struct SegmentHeader {}
     public partial struct Symbol {}
     public partial struct Symtab {}

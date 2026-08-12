@@ -36,10 +36,8 @@ using static go.syscall_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<DLLError, error>(Pointer = true)]
@@ -67,11 +65,11 @@ public static partial class syscall_package
     // <TypeAccessibility>
     internal partial struct _STARTUPINFOEXW {}
     internal partial struct connectExFuncᴛ1 {}
-    internal partial struct mountPointReparseBuffer {}
+    [GoValueClone("PathBuffer")] internal partial struct mountPointReparseBuffer {}
     internal partial struct reparseDataBuffer {}
-    internal partial struct symbolicLinkReparseBuffer {}
+    [GoValueClone("PathBuffer")] internal partial struct symbolicLinkReparseBuffer {}
     internal partial struct sysLinger {}
-    internal partial struct win32finddata1 {}
+    [GoValueClone("FileName", "AlternateFileName")] internal partial struct win32finddata1 {}
     public partial class Pointer {}
     public partial interface Conn {}
     public partial interface RawConn {}
@@ -94,32 +92,32 @@ public static partial class syscall_package
     public partial struct CertUsageMatch {}
     public partial struct DNSMXData {}
     public partial struct DNSPTRData {}
-    public partial struct DNSRecord {}
+    [GoValueClone("Data")] public partial struct DNSRecord {}
     public partial struct DNSSRVData {}
-    public partial struct DNSTXTData {}
+    [GoValueClone("StringArray")] public partial struct DNSTXTData {}
     public partial struct Errno {}
     public partial struct FileNotifyInformation {}
     public partial struct Filetime {}
-    public partial struct GUID {}
+    [GoValueClone("Data4")] public partial struct GUID {}
     public partial struct Hostent {}
-    public partial struct IPMreq {}
-    public partial struct IPv6Mreq {}
-    public partial struct InterfaceInfo {}
-    public partial struct IpAdapterInfo {}
-    public partial struct IpAddrString {}
-    public partial struct IpAddressString {}
-    public partial struct IpMaskString {}
+    [GoValueClone("Multiaddr", "Interface")] public partial struct IPMreq {}
+    [GoValueClone("Multiaddr")] public partial struct IPv6Mreq {}
+    [GoValueClone("Address", "BroadcastAddress", "Netmask")] public partial struct InterfaceInfo {}
+    [GoValueClone("AdapterName", "Description", "Address", "IpAddressList", "GatewayList", "DhcpServer", "PrimaryWinsServer", "SecondaryWinsServer")] public partial struct IpAdapterInfo {}
+    [GoValueClone("IpAddress", "IpMask")] public partial struct IpAddrString {}
+    [GoValueClone("String")] public partial struct IpAddressString {}
+    [GoValueClone("Value")] public partial struct IpMaskString {}
     public partial struct Linger {}
-    public partial struct MibIfRow {}
+    [GoValueClone("Name", "PhysAddr", "Descr")] public partial struct MibIfRow {}
     public partial struct Overlapped {}
-    public partial struct ProcessEntry32 {}
+    [GoValueClone("ExeFile")] public partial struct ProcessEntry32 {}
     public partial struct ProcessInformation {}
     public partial struct Protoent {}
-    public partial struct RawSockaddr {}
-    public partial struct RawSockaddrAny {}
-    public partial struct RawSockaddrInet4 {}
-    public partial struct RawSockaddrInet6 {}
-    public partial struct RawSockaddrUnix {}
+    [GoValueClone("Data")] public partial struct RawSockaddr {}
+    [GoValueClone("Addr", "Pad")] public partial struct RawSockaddrAny {}
+    [GoValueClone("Addr", "Zero")] public partial struct RawSockaddrInet4 {}
+    [GoValueClone("Addr")] public partial struct RawSockaddrInet6 {}
+    [GoValueClone("Path")] public partial struct RawSockaddrUnix {}
     public partial struct Rusage {}
     public partial struct SID {}
     public partial struct SIDAndAttributes {}
@@ -127,27 +125,27 @@ public static partial class syscall_package
     public partial struct SecurityAttributes {}
     public partial struct Servent {}
     public partial struct SockaddrGen {}
-    public partial struct SockaddrInet4 {}
-    public partial struct SockaddrInet6 {}
-    public partial struct SockaddrUnix {}
+    [GoValueClone("Addr", "raw")] public partial struct SockaddrInet4 {}
+    [GoValueClone("Addr", "raw")] public partial struct SockaddrInet6 {}
+    [GoValueClone("raw")] public partial struct SockaddrUnix {}
     public partial struct StartupInfo {}
     public partial struct Systemtime {}
     public partial struct TCPKeepalive {}
     public partial struct Timespec {}
     public partial struct Timeval {}
-    public partial struct Timezoneinformation {}
+    [GoValueClone("StandardName", "DaylightName")] public partial struct Timezoneinformation {}
     public partial struct Token {}
     public partial struct Tokenprimarygroup {}
     public partial struct Tokenuser {}
     public partial struct TransmitFileBuffers {}
     public partial struct UserInfo10 {}
     public partial struct WSABuf {}
-    public partial struct WSAData {}
-    public partial struct WSAProtocolChain {}
-    public partial struct WSAProtocolInfo {}
+    [GoValueClone("Description", "SystemStatus")] public partial struct WSAData {}
+    [GoValueClone("ChainEntries")] public partial struct WSAProtocolChain {}
+    [GoValueClone("ProviderId", "ProtocolChain", "ProtocolName")] public partial struct WSAProtocolInfo {}
     public partial struct WaitStatus {}
     public partial struct Win32FileAttributeData {}
-    public partial struct Win32finddata {}
+    [GoValueClone("FileName", "AlternateFileName")] public partial struct Win32finddata {}
     public partial struct _PROC_THREAD_ATTRIBUTE_LIST {}
     public partial struct ΔHandle {}
     public partial struct ΔSignal {}

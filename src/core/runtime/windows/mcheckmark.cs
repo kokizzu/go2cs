@@ -24,7 +24,7 @@ partial class runtime_package {
 // per-arena bitmap with a bit for every word in the arena. The mark
 // is stored on the bit corresponding to the first word of the marked
 // allocation.
-[GoType] [GoValueClone("b")] partial struct checkmarksMap {
+[GoType] partial struct checkmarksMap {
     internal sys.NotInHeap _;
     internal array<uint8> b = new(heapArenaBytes / goarch.PtrSize / 8);
 }

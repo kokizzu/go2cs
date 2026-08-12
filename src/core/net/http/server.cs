@@ -376,7 +376,7 @@ internal static slice<byte> colonSpace = slice<byte>(": "u8);
 }
 
 // A response represents the server side of an HTTP response.
-[GoType] [GoValueClone("dateBuf", "clenBuf", "statusBuf")] partial struct response {
+[GoType] partial struct response {
     internal ж<conn> conn;
     internal ж<Request> req; // request for this response
     internal io.ReadCloser reqBody;
@@ -604,7 +604,7 @@ internal static ж<conn> newConn(this ж<Server> Ꮡsrv, net.Conn rwc) {
 // read sizes) with support for selectively keeping an io.Reader.Read
 // call blocked in a background goroutine to wait for activity and
 // trigger a CloseNotifier channel.
-[GoType] [GoValueClone("byteBuf")] partial struct connReader {
+[GoType] partial struct connReader {
     internal ж<conn> conn;
     internal sync.Mutex mu; // guards following
     internal bool hasByte;
@@ -4137,7 +4137,7 @@ internal static nint /*n*/ numLeadingCRorLF(slice<byte> v) {
 
 // tlsRecordHeaderLooksLikeHTTP reports whether a TLS record header
 // looks like it might've been a misdirected plaintext HTTP request.
-internal static bool tlsRecordHeaderLooksLikeHTTP(array<byte> hdr) {
+internal static bool tlsRecordHeaderLooksLikeHTTP([GoArrayDims(5)] array<byte> hdr) {
     hdr = hdr.Clone();
 
     var exprᴛ1 = ((sstring)(hdr[..]));

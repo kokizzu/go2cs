@@ -34,10 +34,8 @@ using static go.image.gif_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<blockReader, io_package.Reader>(Pointer = true)]
@@ -66,8 +64,8 @@ public static partial class gif_package
     internal partial interface writer {}
     internal partial struct blockReader {}
     internal partial struct blockWriter {}
-    internal partial struct decoder {}
-    internal partial struct encoder {}
+    [GoValueClone("tmp")] internal partial struct decoder {}
+    [GoValueClone("buf", "globalColorTable", "localColorTable")] internal partial struct encoder {}
     internal partial struct interlaceScan {}
     public partial struct GIF {}
     public partial struct Options {}

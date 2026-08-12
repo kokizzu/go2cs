@@ -459,7 +459,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
 }
 
 // A Resource is a DNS resource record.
-[GoType] [GoValueClone("Header")] partial struct Resource {
+[GoType] partial struct Resource {
     public ResourceHeader Header;
     public ResourceBody Body;
 }
@@ -1797,7 +1797,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // A ResourceHeader is the header of a DNS resource record. There are
 // many types of DNS resource records, but they all share the same header.
-[GoType] [GoValueClone("Name")] partial struct ResourceHeader {
+[GoType] partial struct ResourceHeader {
     // Name is the domain name for which this resource record pertains.
     public Name Name;
     // Type is the type of DNS resource record.
@@ -2076,7 +2076,7 @@ internal static UntypedInt nonEncodedNameMax => 254;
 
 // A Name is a non-encoded and non-escaped domain name. It is used instead of strings to avoid
 // allocations.
-[GoType] [GoValueClone("Data")] partial struct Name {
+[GoType] partial struct Name {
     public array<byte> Data = new(255);
     public uint8 Length;
 }
@@ -2310,7 +2310,7 @@ break_Loop:;
 }
 
 // A Question is a DNS query.
-[GoType] [GoValueClone("Name")] partial struct ΔQuestion {
+[GoType] partial struct ΔQuestion {
     public Name Name;
     public Type Type;
     public Class Class;
@@ -2422,7 +2422,7 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
 }
 
 // A CNAMEResource is a CNAME Resource record.
-[GoType] [GoValueClone("CNAME")] partial struct ΔCNAMEResource {
+[GoType] partial struct ΔCNAMEResource {
     public Name CNAME;
 }
 
@@ -2451,7 +2451,7 @@ internal static (ΔCNAMEResource, error) unpackCNAMEResource(slice<byte> msg, ni
 }
 
 // An MXResource is an MX Resource record.
-[GoType] [GoValueClone("MX")] partial struct ΔMXResource {
+[GoType] partial struct ΔMXResource {
     public uint16 Pref;
     public Name MX;
 }
@@ -2491,7 +2491,7 @@ internal static (ΔMXResource, error) unpackMXResource(slice<byte> msg, nint off
 }
 
 // An NSResource is an NS Resource record.
-[GoType] [GoValueClone("NS")] partial struct ΔNSResource {
+[GoType] partial struct ΔNSResource {
     public Name NS;
 }
 
@@ -2520,7 +2520,7 @@ internal static (ΔNSResource, error) unpackNSResource(slice<byte> msg, nint off
 }
 
 // A PTRResource is a PTR Resource record.
-[GoType] [GoValueClone("PTR")] partial struct ΔPTRResource {
+[GoType] partial struct ΔPTRResource {
     public Name PTR;
 }
 
@@ -2549,7 +2549,7 @@ internal static (ΔPTRResource, error) unpackPTRResource(slice<byte> msg, nint o
 }
 
 // An SOAResource is an SOA Resource record.
-[GoType] [GoValueClone("NS", "MBox")] partial struct ΔSOAResource {
+[GoType] partial struct ΔSOAResource {
     public Name NS;
     public Name MBox;
     public uint32 Serial;
@@ -2683,7 +2683,7 @@ internal static (ΔTXTResource, error) unpackTXTResource(slice<byte> msg, nint o
 }
 
 // An SRVResource is an SRV Resource record.
-[GoType] [GoValueClone("Target")] partial struct ΔSRVResource {
+[GoType] partial struct ΔSRVResource {
     public uint16 Priority;
     public uint16 Weight;
     public uint16 Port;
@@ -2735,7 +2735,7 @@ internal static (ΔSRVResource, error) unpackSRVResource(slice<byte> msg, nint o
 }
 
 // An AResource is an A Resource record.
-[GoType] [GoValueClone("A")] partial struct ΔAResource {
+[GoType] partial struct ΔAResource {
     public array<byte> A = new(4);
 }
 
@@ -2764,7 +2764,7 @@ internal static (ΔAResource, error) unpackAResource(slice<byte> msg, nint off) 
 }
 
 // An AAAAResource is an AAAA Resource record.
-[GoType] [GoValueClone("AAAA")] partial struct ΔAAAAResource {
+[GoType] partial struct ΔAAAAResource {
     public array<byte> AAAA = new(16);
 }
 

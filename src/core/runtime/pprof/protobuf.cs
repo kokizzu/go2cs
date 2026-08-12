@@ -6,7 +6,7 @@ namespace go.runtime;
 partial class pprof_package {
 
 // A protobuf is a simple protocol buffer encoder.
-[GoType] [GoValueClone("tmp")] partial struct protobuf {
+[GoType] partial struct protobuf {
     internal slice<byte> data;
     internal array<byte> tmp = new(16);
     internal nint nest;

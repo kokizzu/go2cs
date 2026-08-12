@@ -297,7 +297,7 @@ internal static (nint, bool) lookupType(map<ΔType, nint> m, ΔType typ) {
     return (0, false);
 }
 
-[GoType] [GoValueClone("buf")] partial struct instanceLookup {
+[GoType] partial struct instanceLookup {
     // buf is used to avoid allocating the map m in the common case of a small
     // number of instances.
     internal array<ж<Named>> buf = new(3);

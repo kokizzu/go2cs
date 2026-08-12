@@ -10,7 +10,7 @@ partial class quotedprintable_package {
 internal static UntypedInt lineMaxLen => 76;
 
 // A Writer is a quoted-printable writer that implements [io.WriteCloser].
-[GoType] [GoValueClone("line")] partial struct Writer {
+[GoType] partial struct Writer {
     // Binary mode treats the writer's input as pure binary and processes end of
     // line bytes as binary data.
     public bool Binary;

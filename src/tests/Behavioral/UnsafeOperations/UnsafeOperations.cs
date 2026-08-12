@@ -41,7 +41,7 @@ internal static ref Outer gOuter => ref ᏑgOuter.Value;
     internal int16 trail;
 }
 
-[GoType] [GoValueClone("cells")] partial struct Arrays {
+[GoType] partial struct Arrays {
     internal int16 head;
     internal array<int32> cells = new(5);
     internal byte tail;

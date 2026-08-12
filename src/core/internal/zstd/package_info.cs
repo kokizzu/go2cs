@@ -32,10 +32,8 @@ using static go.@internal.zstd_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<zstdError, error>(Pointer = true)]
@@ -64,8 +62,8 @@ public static partial class zstd_package
     internal partial struct seqCode {}
     internal partial struct seqCodeInfoData {}
     internal partial struct window {}
-    internal partial struct xxhash64 {}
+    [GoValueClone("v", "buf")] internal partial struct xxhash64 {}
     internal partial struct zstdError {}
-    public partial struct Reader {}
+    [GoValueClone("seqTables", "seqTableBits", "seqTableBuffers", "scratch", "checksum")] public partial struct Reader {}
     // </TypeAccessibility>
 }

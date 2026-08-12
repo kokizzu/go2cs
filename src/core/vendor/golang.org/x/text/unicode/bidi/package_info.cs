@@ -35,10 +35,8 @@ using static go.vendor.golang.org.x.text.unicode.bidi_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bracketPairs, sort_package.Interface>]
@@ -64,7 +62,7 @@ public static partial class bidi_package
     internal partial struct bracketPairer {}
     internal partial struct bracketPairs {}
     internal partial struct bracketType {}
-    internal partial struct directionalStatusStack {}
+    [GoValueClone("embeddingLevelStack", "overrideStatusStack", "isolateStatusStack")] internal partial struct directionalStatusStack {}
     internal partial struct level {}
     internal partial struct paragraph {}
     public partial struct Ordering {}

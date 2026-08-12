@@ -6,7 +6,7 @@ partial class main_package {
 
 [GoType("[3]nint")] partial struct Row;
 
-[GoType] [GoValueClone("arr")] partial struct holder {
+[GoType] partial struct holder {
     internal array<nint> arr = new(3);
 }
 

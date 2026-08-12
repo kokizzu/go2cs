@@ -40,10 +40,8 @@ using static go.os.signal_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<signalCtx, context_package.Context>(Pointer = true)]
@@ -67,8 +65,8 @@ public static partial class signal_package
 
     // <TypeAccessibility>
     internal partial interface stringer {}
-    internal partial struct handler {}
-    internal partial struct handlersᴛ1 {}
+    [GoValueClone("mask")] internal partial struct handler {}
+    [GoValueClone("@ref")] internal partial struct handlersᴛ1 {}
     internal partial struct signalCtx {}
     internal partial struct stopping {}
     // </TypeAccessibility>

@@ -47,10 +47,8 @@ using static go.log.slog_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<JSONHandler, ΔHandler>(Pointer = true)]
@@ -95,7 +93,7 @@ public static partial class slog_package
     public partial struct JSONHandler {}
     public partial struct LevelVar {}
     public partial struct Logger {}
-    public partial struct Record {}
+    [GoValueClone("front")] public partial struct Record {}
     public partial struct Source {}
     public partial struct TextHandler {}
     public partial struct Value {}

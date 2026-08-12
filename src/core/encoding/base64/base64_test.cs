@@ -325,7 +325,7 @@ public static void TestDecodeBounds(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoLocalName("test")] [GoType("dyn")] internal partial struct TestEncodedLen_test {
+[GoType("dyn")] [GoLocalName("test")] internal partial struct TestEncodedLen_test {
     internal ж<global::go.encoding.base64_package.Encoding> enc;
     internal nint n;
     internal int64 want;
@@ -365,7 +365,7 @@ public static void TestEncodedLen(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("test")] [GoType("dyn")] internal partial struct TestDecodedLen_test {
+[GoType("dyn")] [GoLocalName("test")] internal partial struct TestDecodedLen_test {
     internal ж<global::go.encoding.base64_package.Encoding> enc;
     internal nint n;
     internal int64 want;

@@ -30,7 +30,7 @@ partial class oldtrace_package {
 [GoType("num:int64")] partial struct Timestamp;
 
 // Event describes one event in the trace.
-[GoType] [GoValueClone("Args")] partial struct Event {
+[GoType] partial struct Event {
 // The Event type is carefully laid out to optimize its size and to avoid
 // pointers, the latter so that the garbage collector won't have to scan any
 // memory of our millions of events.
@@ -1006,7 +1006,7 @@ Type: raw.typ, P: p.lastP, G: p.lastG);
 // time stamps that do not respect actual event ordering.
 public static error ErrTimeOrder = errors.New("time stamps out of order"u8);
 
-[GoLocalName("gdesc")] [GoType("dyn")] partial struct postProcessTrace_gdesc {
+[GoType("dyn")] partial struct postProcessTrace_gdesc {
     internal nint state;
     internal ж<Event> ev;
     internal ж<Event> evStart;
@@ -1014,7 +1014,7 @@ public static error ErrTimeOrder = errors.New("time stamps out of order"u8);
     internal ж<Event> evMarkAssist;
 }
 
-[GoLocalName("pdesc")] [GoType("dyn")] partial struct postProcessTrace_pdesc {
+[GoType("dyn")] partial struct postProcessTrace_pdesc {
     internal bool running;
     internal uint64 g;
     internal ж<Event> evSweep;
