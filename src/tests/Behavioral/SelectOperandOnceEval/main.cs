@@ -27,9 +27,7 @@ internal static channel<nint> after() {
 
 internal static array<nint> sink = new(2);
 
-internal static nint swap(ж<channel<nint>> Ꮡch, channel<nint> repl) {
-    ref var ch = ref Ꮡch.DerefOrNull();
-
+internal static nint swap(ref channel<nint> ch, channel<nint> repl) {
     ch = repl;
     return 0;
 }
@@ -65,7 +63,7 @@ internal static void Main() {
     repl.ᐸꟷ(8);
     var selᴛ3 = ch;
     switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
-    case 0 when selᴛ3.ꟷᐳ(out sink[swap(Ꮡch, repl)]): {
+    case 0 when selᴛ3.ꟷᐳ(out sink[swap(ref ch, repl)]): {
         fmt.Println(s3Sink0ˢ, sink[0], lenChˢ, len(ch), lenReplˢ, len(repl));
         break;
     }}

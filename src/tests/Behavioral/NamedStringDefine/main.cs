@@ -18,9 +18,7 @@ internal static version asVersion(@string s) {
     return ((version)s);
 }
 
-internal static void mutate(ж<@string> Ꮡs) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
+internal static void mutate(ref @string s) {
     s = s + "-mutated"u8;
 }
 
@@ -32,9 +30,8 @@ internal static void Main() {
     if (fileVersion.isValid()) {
         fmt.Println(fileVersion.tag());
     }
-    ref var cause = ref heap<@string>(out var Ꮡcause);
-    cause = ""u8;
-    mutate(Ꮡcause);
+    @string cause = ""u8;
+    mutate(ref cause);
     fmt.Println("cause:" + cause);
     @string label = "x"u8;
     for (nint i = 0; i < 2; i++) {

@@ -8,13 +8,13 @@ partial class main_package {
 private static readonly @string helloWorldˢ = "Hello World"u8;
 
 internal static void Main() {
-    ref var a = ref heap(new @string(), out var Ꮡa);
+    @string a = default!;
     a = helloWorldˢ;
     test(a);
     fmt.Println(a);
     fmt.Println();
     a = helloWorldˢ;
-    test2(Ꮡa);
+    test2(ref a);
     fmt.Println(a);
 }
 
@@ -27,9 +27,7 @@ internal static void test(@string a) {
     fmt.Println(a);
 }
 
-internal static void test2(ж<@string> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNull();
-
+internal static void test2(ref @string a) {
     fmt.Println(a);
     a = goodbyeWorldˢ;
     fmt.Println(a);

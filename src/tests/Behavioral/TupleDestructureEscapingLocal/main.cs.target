@@ -12,17 +12,14 @@ internal static (gList, nint) makeList() {
     return (new gList(n: 7), 3);
 }
 
-internal static void use(ж<gList> Ꮡg) {
-    ref var g = ref Ꮡg.DerefOrNull();
-
+internal static void use(ref gList g) {
     g.n++;
 }
 
 internal static (nint, nint) run() {
-    ref var list = ref heap<gList>(out var Ꮡlist);
-    (list, var delta) = makeList();
-    use(Ꮡlist);
-    use(Ꮡlist);
+    var (list, delta) = makeList();
+    use(ref list);
+    use(ref list);
     return (list.n, delta);
 }
 

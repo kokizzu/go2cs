@@ -8,19 +8,21 @@ partial class main_package {
     internal int32 n;
 }
 
-internal static int32 bump(ж<int32> Ꮡp, int32 delta) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static int32 bump(ref int32 p, int32 delta) {
     p += delta;
     return p;
 }
 
 public static int32 Add(this ж<Counter> Ꮡc, int32 delta) {
-    return bump(Ꮡc.of(Counter.Ꮡn), delta);
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    return bump(ref nonnil(ref c).n, delta);
 }
 
 internal static int32 add(this ж<Counter> Ꮡc, int32 delta) {
-    return bump(Ꮡc.of(Counter.Ꮡn), delta);
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    return bump(ref nonnil(ref c).n, delta);
 }
 
 public static void Set(this ж<Counter> Ꮡc, int32 v) {

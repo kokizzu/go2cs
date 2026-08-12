@@ -27,9 +27,7 @@ internal static bool passThrough(ж<node> Ꮡp) {
     return inner(Ꮡp);
 }
 
-internal static nint usesValue(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static nint usesValue(ref node p) {
     return p.val;
 }
 
@@ -38,7 +36,8 @@ internal static void Main() {
     fmt.Println(onlyNilCheck(Ꮡ(new node(nil))));
     fmt.Println(passThrough(nil));
     fmt.Println(passThrough(Ꮡ(new node(nil))));
-    fmt.Println(usesValue(Ꮡ(new node(val: 9))));
+    var ᴛ1 = new node(val: 9);
+    fmt.Println(usesValue(ref ᴛ1));
 }
 
 } // end main_package

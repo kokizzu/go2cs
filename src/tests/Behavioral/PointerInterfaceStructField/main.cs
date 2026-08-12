@@ -22,9 +22,7 @@ partial class main_package {
     internal @string label;
 }
 
-internal static void assignDescriber(ж<holder> Ꮡh, ж<Setting> Ꮡs) {
-    ref var h = ref Ꮡh.DerefOrNull();
-
+internal static void assignDescriber(ref holder h, ж<Setting> Ꮡs) {
     h.d = new SettingжDescriber(Ꮡs);
 }
 
@@ -40,7 +38,7 @@ internal static void Main() {
     fmt.Println(h2.label, h2.d.Describe());
     ref var replacement = ref heap<Setting>(out var Ꮡreplacement);
     replacement = new Setting(name: "assigned"u8, value: 11);
-    assignDescriber(h, Ꮡreplacement);
+    assignDescriber(ref (h).DerefOrNull(), Ꮡreplacement);
     replacement.value = 12;
     fmt.Println((~h).label, (~h).d.Describe());
 }

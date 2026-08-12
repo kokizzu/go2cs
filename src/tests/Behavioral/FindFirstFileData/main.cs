@@ -201,16 +201,14 @@ internal static (entry, bool) toEntry(ж<syscall.Win32finddata> Ꮡdata) {
     }
     return (new entry(
         name: name,
-        alt: altName(Ꮡdata),
+        alt: altName(ref (Ꮡdata).DerefOrNull()),
         isDir: (uint32)(data.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_DIRECTORY) != 0,
         size: data.FileSizeLow,
         mtime: data.LastWriteTime.Nanoseconds()
     ), true);
 }
 
-internal static @string altName(ж<syscall.Win32finddata> Ꮡdata) {
-    ref var data = ref Ꮡdata.DerefOrNull();
-
+internal static @string altName(ref syscall.Win32finddata data) {
     if (data.AlternateFileName[0] == 0) {
         return ""u8;
     }

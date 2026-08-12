@@ -18,15 +18,11 @@ internal static void p(this tagger _) {
     internal nint n;
 }
 
-internal static void setN(ж<box> Ꮡb, nint v) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
+internal static void setN(ref box b, nint v) {
     b.n = v;
 }
 
-internal static void bump(ж<nint> Ꮡnp) {
-    ref var np = ref Ꮡnp.DerefOrNull();
-
+internal static void bump(ref nint np) {
     np += 100;
 }
 
@@ -46,12 +42,11 @@ internal static nint usesTypeP() {
 }
 
 internal static void Main() {
-    ref var Δp = ref heap<box>(out var Ꮡp);
-    Δp = new box(n: 0);
-    setN(Ꮡp, 7);
-    setN(Ꮡp, Δp.n + 3);
-    bump(Ꮡp.of(box.Ꮡn));
-    bump(ᏑΔcounter.of(box.Ꮡn));
+    var Δp = new box(n: 0);
+    setN(ref Δp, 7);
+    setN(ref Δp, Δp.n + 3);
+    bump(ref Δp.n);
+    bump(ref Δcounter.n);
     fmt.Println(Δcounter.n);
     fmt.Println(Δp.n, usesTypeP());
 }

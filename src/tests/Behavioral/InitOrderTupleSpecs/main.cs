@@ -49,9 +49,7 @@ internal static (nint, nint) constantPair() {
     return (10, 20);
 }
 
-internal static @string readThrough(ж<@string> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static @string readThrough(ref @string p) {
     return p;
 }
 
@@ -60,7 +58,7 @@ internal static void Main() {
     fmt.Println(cwd, cwdErr);
     fmt.Println(head, tail);
     fmt.Println(chained);
-    fmt.Println(readThrough(Ꮡboxed));
+    fmt.Println(readThrough(ref boxed));
     fmt.Println(safeA, safeB);
 }
 

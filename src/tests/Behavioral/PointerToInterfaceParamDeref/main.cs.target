@@ -4,11 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static void handle(@string label, ж<error> Ꮡerr) {
+internal static void handle(@string label, ref error err) {
     GoFrame ᒐ = default;
     try {
-        ref var err = ref Ꮡerr.DerefOrNull();
-
         {
             var e = recover(); if (e != default!) {
                 var prev = err;
@@ -29,7 +27,7 @@ internal static error /*err*/ doit() {
     try {
         ref var err = ref Ꮡerr.ValueSlot;
 
-        defer(handle, doitˢ, Ꮡerr, ref ᒐ);
+        defer((ᴛ1, ᴛ2) => handle(ᴛ1, ref ᴛ2.DerefOrNull()), doitˢ, Ꮡerr, ref ᒐ);
         throw panic("boom");
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

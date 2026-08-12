@@ -8,14 +8,14 @@ partial class main_package {
     internal nint n;
 }
 
-internal static void add(ж<nint> Ꮡp, nint d) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void add(ref nint p, nint d) {
     p += d;
 }
 
 internal static void bump(this ж<buf> Ꮡb) {
-    add(Ꮡb.of(buf.Ꮡn), 1);
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    add(ref nonnil(ref b).n, 1);
 }
 
 [GoRecv] internal static nint get(this ref buf b) {

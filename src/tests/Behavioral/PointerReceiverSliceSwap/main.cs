@@ -14,9 +14,7 @@ partial class main_package {
     (p)[i] = v;
 }
 
-internal static void show(ж<ints> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void show(ref ints p) {
     foreach (var (i, x) in p) {
         if (i > 0) {
             fmt.Print((@string)" "u8);
@@ -31,12 +29,12 @@ internal static void Main() {
     p.swap(0, 3);
     p.swap(1, 2);
     p.set(0, 99);
-    show(p);
+    show(ref (p).DerefOrNull());
     var q = Ꮡ(new ints(new nint[]{1, 2, 3, 4, 5}.slice()));
     for ((nint i, nint j) = (0, len(q.ValueSlot) - 1); i < j; (i, j) = (i + 1, j - 1)) {
         q.swap(i, j);
     }
-    show(q);
+    show(ref (q).DerefOrNull());
 }
 
 } // end main_package

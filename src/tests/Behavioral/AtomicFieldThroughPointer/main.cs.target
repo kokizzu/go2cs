@@ -37,9 +37,7 @@ internal static void bump(ж<owner> Ꮡo, int64 d) {
     o.deep.of(holder.Ꮡprof).of(profile.Ꮡwait).add(d);
 }
 
-internal static int64 viaPointerLocal(ж<owner> Ꮡo, int64 d) {
-    ref var o = ref Ꮡo.DerefOrNull();
-
+internal static int64 viaPointerLocal(ref owner o, int64 d) {
     var mp = o.h;
     mp.of(holder.Ꮡprof).of(profile.Ꮡwait).add(d);
     mp.of(holder.Ꮡprof).of(profile.Ꮡwait).add(d);
@@ -53,7 +51,7 @@ internal static void Main() {
     fmt.Println((~o).h.of(holder.Ꮡwait).get());
     fmt.Println((~o).deep.of(holder.Ꮡprof).of(profile.Ꮡwait).get());
     var o2 = Ꮡ(new owner(h: Ꮡ(new holder(nil))));
-    fmt.Println(viaPointerLocal(o2, 4));
+    fmt.Println(viaPointerLocal(ref (o2).DerefOrNull(), 4));
 }
 
 } // end main_package

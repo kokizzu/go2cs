@@ -14,9 +14,7 @@ partial class main_package {
     c.tag += "+"u8;
 }
 
-internal static void writeThrough(ж<counter> Ꮡp, nint k) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void writeThrough(ref counter p, nint k) {
     p.n += k;
 }
 
@@ -38,7 +36,7 @@ internal static void n2() {
         ref var c = ref heap(new counter(), out var Ꮡc);
         var p = Ꮡc;
         p.Value.n = 10;
-        writeThrough(p, 5);
+        writeThrough(ref (p).DerefOrNull(), 5);
         fmt.Println((@string)"N2:"u8, c.n);
     });
 }
@@ -75,7 +73,7 @@ internal static void n5() {
 internal static void n6() {
     run(() => {
         ref var c = ref heap(new counter(), out var Ꮡc);
-        writeThrough(Ꮡc, 11);
+        writeThrough(ref (Ꮡc).DerefOrNull(), 11);
         fmt.Println((@string)"N6:"u8, c.n);
     });
 }

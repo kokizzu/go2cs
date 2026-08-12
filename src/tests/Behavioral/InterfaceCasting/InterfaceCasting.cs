@@ -61,9 +61,7 @@ public static @string Speak(this JavaProgrammer j) {
     internal nint n;
 }
 
-internal static void addTo(ж<nint> Ꮡp, nint delta) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void addTo(ref nint p, nint delta) {
     p += delta;
 }
 
@@ -71,7 +69,9 @@ internal static void addTo(ж<nint> Ꮡp, nint delta) {
 private static readonly @string incˢ = "inc"u8;
 
 public static @string Inc(this ж<Counter> Ꮡc) {
-    addTo(Ꮡc.of(Counter.Ꮡn), 1);
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    addTo(ref nonnil(ref c).n, 1);
     return incˢ;
 }
 
@@ -185,7 +185,7 @@ internal static void Main() {
     ref var swapped = ref heap<Animal>(out var Ꮡswapped);
 
     swapped = new Dog(nil);
-    replaceAnimal(Ꮡswapped);
+    replaceAnimal(ref swapped);
     fmt.Println(replacedˢ, swapped.Speak());
     Incrementer inc2 = default!;
     var (ᴛ1, ᴛ2) = makeCounter();
@@ -237,9 +237,7 @@ internal static any describe(bool b) {
     return b.num;
 }
 
-internal static void replaceAnimal(ж<Animal> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNull();
-
+internal static void replaceAnimal(ref Animal a) {
     a = new CatжAnimal(Ꮡ(new Cat(nil)));
 }
 

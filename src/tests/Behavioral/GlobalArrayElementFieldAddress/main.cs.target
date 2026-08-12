@@ -23,18 +23,16 @@ internal static ref array<item> pool => ref Ꮡpool.Value;
 internal static ж<array<gridᴛ1>> Ꮡgrid = new(new array<gridᴛ1>(3, () => new()));
 internal static ref array<gridᴛ1> grid => ref Ꮡgrid.Value;
 
-internal static void setInt(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void setInt(ref nint p) {
     p = 7;
 }
 
 internal static void Main() {
     pool[1].inner.n = 5;
-    setInt(Ꮡpool.at<item>(1).of(item.Ꮡinner).of(sub.Ꮡmu));
-    setInt(Ꮡpool.at<item>(2).of(item.Ꮡinner).of(sub.Ꮡmu));
+    setInt(ref pool[1].inner.mu);
+    setInt(ref pool[2].inner.mu);
     grid[0].cell.n = 9;
-    setInt(Ꮡgrid.at<gridᴛ1>(0).of(gridᴛ1.Ꮡcell).of(sub.Ꮡmu));
+    setInt(ref grid[0].cell.mu);
     fmt.Println(pool[1].inner.mu, pool[1].inner.n, pool[2].inner.mu);
     fmt.Println(grid[0].cell.mu, grid[0].cell.n);
 }

@@ -9,9 +9,7 @@ partial class main_package {
     internal ж<nint> cnt;
 }
 
-internal static nint sumRange(ж<holder> Ꮡh) {
-    ref var h = ref Ꮡh.DerefOrNull();
-
+internal static nint sumRange(ref holder h) {
     nint s = 0;
     foreach (var (_, x) in h.xs.ValueSlot) {
         s += x;
@@ -19,9 +17,7 @@ internal static nint sumRange(ж<holder> Ꮡh) {
     return s;
 }
 
-internal static nint readVal(ж<holder> Ꮡh) {
-    ref var h = ref Ꮡh.DerefOrNull();
-
+internal static nint readVal(ref holder h) {
     return h.cnt.Value;
 }
 
@@ -31,8 +27,8 @@ internal static void Main() {
     ref var c = ref heap<nint>(out var Ꮡc);
     c = 7;
     var h = Ꮡ(new holder(xs: Ꮡxs, cnt: Ꮡc));
-    fmt.Println(sumRange(h));
-    fmt.Println(readVal(h));
+    fmt.Println(sumRange(ref (h).DerefOrNull()));
+    fmt.Println(readVal(ref (h).DerefOrNull()));
 }
 
 } // end main_package

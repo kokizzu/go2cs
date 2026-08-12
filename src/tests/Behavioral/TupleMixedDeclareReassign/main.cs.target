@@ -48,9 +48,7 @@ internal static (cursor, error) makeCursor(nint pos, @string tag) {
     return (new cursor(pos: pos, tag: tag), default!);
 }
 
-internal static void bump(ж<cursor> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void bump(ref cursor c) {
     c.pos++;
 }
 
@@ -59,19 +57,17 @@ private static readonly @string oneˢ = "one"u8;
 private static readonly @string twoˢ = "two"u8;
 
 internal static (nint, nint) streams() {
-    ref var rbr1 = ref heap<cursor>(out var Ꮡrbr1);
-    (rbr1, var err) = makeCursor(10, oneˢ);
+    var (rbr1, err) = makeCursor(10, oneˢ);
     if (err != default!) {
         return (0, 0);
     }
-    ref var rbr2 = ref heap<cursor>(out var Ꮡrbr2);
-    (rbr2, err) = makeCursor(20, twoˢ);
+    (var rbr2, err) = makeCursor(20, twoˢ);
     if (err != default!) {
         return (0, 0);
     }
-    bump(Ꮡrbr1);
-    bump(Ꮡrbr2);
-    bump(Ꮡrbr2);
+    bump(ref rbr1);
+    bump(ref rbr2);
+    bump(ref rbr2);
     return (rbr1.pos, rbr2.pos);
 }
 

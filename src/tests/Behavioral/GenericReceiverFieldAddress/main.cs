@@ -8,24 +8,24 @@ partial class main_package {
     internal T v;
 }
 
-internal static void setT<T>(ж<T> Ꮡp, T val) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void setT<T>(ref T p, T val) {
     p = val;
 }
 
-internal static T getT<T>(ж<T> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static T getT<T>(ref T p) {
     return p;
 }
 
 public static void Set<T>(this ж<Box<T>> Ꮡb, T val) {
-    setT(Ꮡb.of(Box<T>.Ꮡv), val);
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    setT(ref nonnil(ref b).v, val);
 }
 
 public static T Get<T>(this ж<Box<T>> Ꮡb) {
-    return getT(Ꮡb.of(Box<T>.Ꮡv));
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    return getT(ref nonnil(ref b).v);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

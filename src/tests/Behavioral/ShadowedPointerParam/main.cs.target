@@ -8,18 +8,16 @@ partial class main_package {
     internal nint n;
 }
 
-internal static nint use(ж<T> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
+internal static nint use(ref T t) {
     return t.n;
 }
 
-internal static nint outer(ж<T> Ꮡt) {
-    nint r = use(Ꮡt);
+internal static nint outer(ref T t) {
+    nint r = use(ref t);
     switch (ᐧ) {
     default: {
         ж<T> tΔ2 = Ꮡ(new T(n: 5));
-        r += use(tΔ2);
+        r += use(ref (tΔ2).DerefOrNull());
         r += (tΔ2.Value).n;
         break;
     }}
@@ -28,7 +26,8 @@ internal static nint outer(ж<T> Ꮡt) {
 }
 
 internal static void Main() {
-    fmt.Println(outer(Ꮡ(new T(n: 1))));
+    var ᴛ1 = new T(n: 1);
+    fmt.Println(outer(ref ᴛ1));
 }
 
 } // end main_package

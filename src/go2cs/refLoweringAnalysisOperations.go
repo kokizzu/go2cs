@@ -431,6 +431,14 @@ func (a *refLoweringAnalysis) collectFunc(funcDecl *ast.FuncDecl, fileIsHandOwne
 			continue
 		}
 
+		// A BLANK or unnamed pointer parameter is never referenced, so lowering it buys nothing —
+		// and the boxed signature's synthesized-name conventions (`_` / `_ΔpN`, see visitFuncDecl)
+		// only exist on that path. Never a candidate (found by the A2 corpus probe: UnnamedParams'
+		// `func setup(_ *note)` lowered vacuously and emitted an empty parameter name).
+		if param.Name() == "" || param.Name() == "_" {
+			continue
+		}
+
 		// Admit plain pointers as candidates — and NAMED pointer types (`type P *T`) as recorded
 		// X5 vetoes: their generated wrapper's operator surface must survive (§3.2 X5), but the
 		// census still counts the position. types.Alias was stripped above, so an alias to *T

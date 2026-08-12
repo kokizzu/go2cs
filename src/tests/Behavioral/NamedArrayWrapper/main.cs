@@ -14,9 +14,7 @@ partial class main_package {
 
 [GoType("[4]byte")] partial struct tb;
 
-internal static void zeroTB(ж<tb> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.DerefOrNull();
-
+internal static void zeroTB(ref tb buf) {
     buf = new tb(new byte[4].array());
 }
 
@@ -63,8 +61,7 @@ internal static void Main() {
     fmt.Println(copy(dd, src), dd[2]);
     src[0] = 100;
     fmt.Println(src[0], dd[0]);
-    ref var t = ref heap<tb>(out var Ꮡt);
-    t = new tb(new byte[4].array());
+    var t = new tb(new byte[4].array());
     fmt.Println(len(t), t[0], t[3]);
     t[2] = 9;
     fmt.Println(t[2]);
@@ -72,7 +69,7 @@ internal static void Main() {
     fmt.Println(len(w), cap(w));
     w = append(w, (uint32)(42));
     fmt.Println(len(w), w[0]);
-    zeroTB(Ꮡt);
+    zeroTB(ref t);
     fmt.Println(t[2], len(t));
     ref var c = ref heap(new callers(), out var Ꮡc);
     var h = new holder(trace: Ꮡc);
@@ -85,14 +82,18 @@ internal static void Main() {
     ref var cs = ref heap(new counters(), out var Ꮡcs);
     var pcs = Ꮡcs;
     fmt.Println(pcs.at<counter2>(0).bump(), pcs.at<counter2>(0).bump(), cs[0].n);
-    ref var sm = ref heap(new scal(), out var Ꮡsm);
-    fromBytes(Ꮡ((Ꮡsm.of(scal.Ꮡs)).Value.Value), 7);
-    @double(Ꮡsm.of(scal.Ꮡs), Ꮡ((nonMont)((Ꮡsm.of(scal.Ꮡs)).Value.Value)));
+    scal sm = new();
+    var ᴛ1 = sm.s.Value;
+    fromBytes(ref ᴛ1, 7);
+    var ᴛ2 = (nonMont)((sm.s).Value);
+    @double(ref sm.s, ref ᴛ2);
     fmt.Println(sm.s[0], sm.s[3]);
-    ref var dm = ref heap(new nonMont(), out var Ꮡdm);
-    fromBytes(Ꮡ((Ꮡdm).Value.Value), 3);
+    nonMont dm = default!;
+    var ᴛ3 = dm.Value;
+    fromBytes(ref ᴛ3, 3);
     fmt.Println(dm[1], dm[2]);
-    fromBytes(Ꮡ((Ꮡsm.of(scal.Ꮡs)).Value.Value), 20);
+    var ᴛ4 = sm.s.Value;
+    fromBytes(ref ᴛ4, 20);
     fmt.Println(sm.s[0], sm.s[3]);
     var grid = new Grid(new unit[]{2, 3, 4}.array());
     fmt.Println(grid.Total(), (nint)grid[0], len(grid));
@@ -116,18 +117,13 @@ public static nint Total(this Grid g) {
     internal mont s;
 }
 
-internal static void fromBytes(ж<array<uint64>> Ꮡout, uint64 seed) {
-    ref var @out = ref Ꮡout.DerefOrNull();
-
+internal static void fromBytes(ref array<uint64> @out, uint64 seed) {
     foreach (var (i, _) in @out) {
         @out[i] = seed + (uint64)i;
     }
 }
 
-internal static void @double(ж<mont> Ꮡout, ж<nonMont> Ꮡarg) {
-    ref var @out = ref Ꮡout.DerefOrNull();
-    ref var arg = ref Ꮡarg.DerefOrNull();
-
+internal static void @double(ref mont @out, ref nonMont arg) {
     foreach (var (i, _) in @out) {
         @out[i] = arg[i] * 2;
     }

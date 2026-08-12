@@ -4,9 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static void set(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void set(ref nint p) {
     p = 42;
 }
 
@@ -26,12 +24,12 @@ internal static ref slice<byte> @null => ref Ꮡnull.ValueSlot;
 }
 
 internal static void Main() {
-    ref var @base = ref heap(new nint(), out var Ꮡbase);
-    ref var @as = ref heap(new nint(), out var Ꮡas);
-    ref var @event = ref heap(new nint(), out var Ꮡevent);
-    set(Ꮡbase);
-    set(Ꮡas);
-    set(Ꮡevent);
+    nint @base = default!;
+    nint @as = default!;
+    nint @event = default!;
+    set(ref @base);
+    set(ref @as);
+    set(ref @event);
     @base += 1;
     fmt.Println(@base, @as, @event);
     @decimal dec = default!;

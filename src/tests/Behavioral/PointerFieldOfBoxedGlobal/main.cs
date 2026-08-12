@@ -9,12 +9,12 @@ partial class main_package {
 }
 
 internal static void push(this ж<profBuf> Ꮡb, nint v) {
-    appendInt(Ꮡb.of(profBuf.Ꮡdata), v);
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    appendInt(ref nonnil(ref b).data, v);
 }
 
-internal static void appendInt(ж<slice<nint>> Ꮡs, nint v) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
+internal static void appendInt(ref slice<nint> s, nint v) {
     s = append(s, v);
 }
 
@@ -34,14 +34,12 @@ internal static void appendInt(ж<slice<nint>> Ꮡs, nint v) {
 internal static ж<cpuProfile> Ꮡcpuprof = new(default(cpuProfile));
 internal static ref cpuProfile cpuprof => ref Ꮡcpuprof.Value;
 
-internal static void incr(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void incr(ref nint p) {
     p++;
 }
 
 internal static void run() {
-    incr(Ꮡcpuprof.of(cpuProfile.Ꮡcount));
+    incr(ref cpuprof.count);
     cpuprof.log.push(cpuprof.count);
     cpuprof.log.push(cpuprof.count);
 }
@@ -50,9 +48,7 @@ internal static void run() {
     internal ж<cpuProfile> span;
 }
 
-internal static nint viaLocal(ж<holder> Ꮡh) {
-    ref var h = ref Ꮡh.DerefOrNull();
-
+internal static nint viaLocal(ref holder h) {
     var s = h.span;
     (~s).log.push(10);
     return (~s).log.sum();
@@ -64,7 +60,7 @@ internal static void Main() {
     fmt.Println(cpuprof.count);
     fmt.Println(cpuprof.log.sum());
     var h = Ꮡ(new holder(span: Ꮡ(new cpuProfile(log: Ꮡ(new profBuf(nil))))));
-    fmt.Println(viaLocal(h));
+    fmt.Println(viaLocal(ref (h).DerefOrNull()));
 }
 
 } // end main_package
