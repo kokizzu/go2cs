@@ -23,23 +23,9 @@ public static nint NumCPU() {
     return (nint)ncpu;
 }
 
-// NumCgoCall returns the number of cgo calls made by the current process.
-public static int64 NumCgoCall() {
-    int64 n = (int64)atomic.Load64(Ꮡncgocall);
-    for (var mp = (ж<m>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡallm).Value))); mp != nil; mp = mp.Value.alllink) {
-        n += (int64)(~mp).ncgocall;
-    }
-    return n;
-}
+// go2cs generated this placeholder — func NumCgoCall is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static int64 totalMutexWaitTimeNanos() {
-    var total = Ꮡsched.of(schedt.ᏑtotalMutexWaitTime).Load();
-    total += Ꮡsched.of(schedt.ᏑtotalRuntimeLockWaitTime).Load();
-    for (var mp = (ж<m>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡallm).Value))); mp != nil; mp = mp.Value.alllink) {
-        total += mp.of(m.ᏑmLockProfile).of(mLockProfile.ᏑwaitTime).Load();
-    }
-    return total;
-}
+// go2cs generated this placeholder — func totalMutexWaitTimeNanos is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // NumGoroutine returns the number of goroutines that currently exist.
 public static nint NumGoroutine() {

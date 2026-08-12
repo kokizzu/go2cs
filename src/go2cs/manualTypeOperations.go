@@ -158,6 +158,36 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// asserts over runtime.Callers) are the demonstrated consumers.
 		"Callers":     goosAny,
 		"Frames.Next": goosAny,
+		// The metrics-table mutex (managed_impl.cs). Go's bodies acquire metricsSema, a runtime
+		// sleeping semaphore whose acquire path is getg() → sudog → gopark — the scheduler
+		// machinery that has no managed counterpart — so every path into the metrics table
+		// (readMetrics behind runtime/metrics.Read, readMetricNames behind the metrics_test push)
+		// died on the getg stub. The CONTRACT is mutual exclusion with waiter handoff over the
+		// metrics map and agg scratch state; SemaphoreSlim(1, 1) is the CLR's spelling of exactly
+		// that. Everything the lock protects (initMetrics' map build, readMetricsLocked's compute
+		// closures) stays auto-converted.
+		"metricsLock":   goosAny,
+		"metricsUnlock": goosAny,
+		// NumCgoCall (managed_impl.cs): its body walks the scheduler's `allm` thread list summing
+		// per-m cgo-call counters — a list the managed model never populates (the walk nil-derefs
+		// where Go always has at least m0). The CONTRACT is "number of cgo calls made by the
+		// current process", and the managed model makes no cgo calls at all, so zero is the true
+		// count rather than an approximation. Reached by the /cgo/go-to-c-calls:calls metric's
+		// compute closure for every metrics.Read.
+		"NumCgoCall": goosAny,
+		// totalMutexWaitTimeNanos (managed_impl.cs): the same `allm` walk as NumCgoCall, summing
+		// per-m lock-profile wait times that never exist here. The managed body keeps the two REAL
+		// counter loads (sched.totalMutexWaitTime, sched.totalRuntimeLockWaitTime) and drops only
+		// the walk. Reached by the /sync/mutex/wait/total:seconds metric's compute closure.
+		"totalMutexWaitTimeNanos": goosAny,
+		// The consistent heap-stats snapshot read (managed_impl.cs), the one call below the metrics
+		// computes that still walked the scheduler: its body disables preemption (acquirem → getg)
+		// to hold `allp` stable while merging every P's heap-stats delta. The managed model has no
+		// Ps and nothing ever writes a heapStatsDelta (the CLR allocator does not populate Go's
+		// allocator bookkeeping), so the faithful snapshot is the zero delta — the same class of
+		// honest zero ReadMemStats' hand-own documents for the identical fields. Reached from
+		// heapStatsAggregate.compute for every heap-dependent metric.
+		"consistentHeapStats.read": goosAny,
 		// The lower-case `callers` is the FUNNEL every other traceback entry point goes through
 		// (Caller, mprof's profile recorders, proc's createstack, tracestack) and the one that
 		// actually reaches getcallersp — so severing it here, one level below Callers, is what

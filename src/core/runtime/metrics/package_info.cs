@@ -56,7 +56,6 @@ public static partial class metrics_package
 
     // <TypeAccessibility>
     public partial struct Description {}
-    public partial struct Sample {}
     public partial struct Value {}
     public partial struct ValueKind {}
     public partial struct ΔFloat64Histogram {}

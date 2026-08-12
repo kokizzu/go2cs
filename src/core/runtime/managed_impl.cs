@@ -75,6 +75,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using go.golib;
+// The plain namespace using is what brings internal/runtime/atomic's [GoRecv] extension methods
+// (Int64.Load and friends) into scope — an alias alone does not participate in extension lookup.
+using go.@internal.runtime;
 
 [module: go.GoManualConversion]
 
@@ -146,6 +149,110 @@ partial class runtime_package
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
         System.GC.WaitForPendingFinalizers();
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+    }
+
+    // metricsLock/metricsUnlock protect the runtime metrics table (initMetrics' map and the agg
+    // scratch state) for readMetrics (behind runtime/metrics.Read) and readMetricNames (behind
+    // the runtime/metrics_test push). Go's bodies acquire metricsSema — a runtime sleeping
+    // semaphore whose acquire path is getg() → sudog → gopark, none of which exists under the
+    // CLR — with handoff enabled because metrics operations are long. The contract is mutual
+    // exclusion with waiter handoff, and SemaphoreSlim is the CLR's spelling of exactly that:
+    // FIFO-ish waiter wakeup, no thread affinity (a goroutine IS a managed thread here, but the
+    // lock/unlock pair need not run on one thread for the semaphore to be correct, matching Go).
+    // Everything the lock protects stays auto-converted.
+    private static readonly SemaphoreSlim s_metricsSema = new(1, 1);
+
+    internal static void metricsLock() => s_metricsSema.Wait();
+
+    internal static void metricsUnlock() => s_metricsSema.Release();
+
+    // NumCgoCall returns the number of cgo calls made by the current process. Go's body walks the
+    // scheduler's `allm` thread list summing per-m counters — a list the managed model never
+    // populates (the walk nil-derefs where Go always has at least m0). The managed model makes no
+    // cgo calls at all, so zero is the true count, not an approximation. Reached by the
+    // /cgo/go-to-c-calls:calls metric's compute closure on every metrics.Read.
+    public static int64 NumCgoCall()
+    {
+        return 0;
+    }
+
+    // totalMutexWaitTimeNanos sums the mutex wait time observed by the runtime. Go's body loads
+    // two global counters and then walks the same `allm` list as NumCgoCall for per-m
+    // lock-profile wait times — the walk nil-derefs here, and the per-m profiles it would sum
+    // never exist. The managed body keeps the two REAL counter loads and drops only the walk.
+    // Reached by the /sync/mutex/wait/total:seconds metric's compute closure.
+    internal static int64 totalMutexWaitTimeNanos()
+    {
+        var total = Ꮡsched.of(schedt.ᏑtotalMutexWaitTime).Load();
+
+        total += Ꮡsched.of(schedt.ᏑtotalRuntimeLockWaitTime).Load();
+
+        return total;
+    }
+
+    // consistentHeapStats.read takes a globally consistent snapshot of the heap-stats deltas. Go's
+    // body disables preemption (acquirem → getg) to hold `allp` stable, then merges every P's
+    // delta buffer under a generation rotation. The managed model has no Ps and nothing ever
+    // writes a heapStatsDelta — the CLR allocator does not populate Go's allocator bookkeeping —
+    // so the faithful snapshot is the ZERO delta: the same honest zero ReadMemStats reports for
+    // the identical Mallocs/Frees/HeapObjects fields (see its comment above), never an invented
+    // number. Reached from heapStatsAggregate.compute for every heap-dependent metric.
+    internal static void read(this ж<consistentHeapStats> Ꮡm, ж<heapStatsDelta> Ꮡout)
+    {
+        Ꮡout.Value = new heapStatsDelta(nil);
+    }
+
+    // readMetricsManaged is the managed crossing for runtime/metrics.Read — the shim
+    // runtime/metrics/sample.cs's hand-owned Read calls instead of the linkname-pushed
+    // readMetrics (the registerPoolCleanup pattern above: a public shim where a cross-assembly
+    // crossing cannot take its Go form). Go's crossing hands this package the RAW ADDRESS of the
+    // caller's []Sample backing store and readMetricsLocked reconstructs a []metricSample over it
+    // — an address-reinterpret no managed pointer can alias, so the reconstructed slice read
+    // garbage. This shim carries the same data as plain managed values instead: names in;
+    // computed (kind, scalar, pointer) out, index-aligned. The BATCH semantics of
+    // readMetricsLocked are preserved exactly — one metricsLock hold, one defensive agg clear,
+    // then per-sample ensure+compute in order — and everything of substance (initMetrics' table,
+    // the compute closures, the stat aggregates) stays auto-converted.
+    //
+    // The pointer column is the metricValue.pointer word as-is (histogram kinds put a runtime
+    // histogram's address there). It crosses as the same opaque address the Go form would carry
+    // and is exactly as (un)readable on the other side — Value.Float64Histogram()'s reinterpret
+    // is a pre-existing limitation of the address model, not something this shim changes.
+    public static void readMetricsManaged(slice<@string> names, slice<nint> kinds, slice<uint64> scalars, slice<unsafe_package.Pointer> pointers)
+    {
+        metricsLock();
+
+        // Ensure the map is initialized.
+        initMetrics();
+
+        // Clear agg defensively.
+        agg = new statAggregate(nil);
+
+        for (nint i = 0; i < len(names); i++)
+        {
+            ref var data = ref heap<metricData>(out var Ꮡdata);
+            (data, var ok) = metrics[names[i], ꟷ];
+
+            if (!ok)
+            {
+                kinds[i] = (nint)metricKindBad;
+                continue;
+            }
+
+            // Ensure we have all the stats we need. agg is populated lazily.
+            Ꮡagg.ensure(Ꮡdata.of(metricData.Ꮡdeps));
+
+            // Compute the value based on the stats we have.
+            ref var value = ref heap<metricValue>(out var Ꮡvalue);
+            value = new metricValue(nil);
+            data.compute(Ꮡagg, Ꮡvalue);
+
+            kinds[i] = (nint)value.kind;
+            scalars[i] = value.scalar;
+            pointers[i] = value.pointer;
+        }
+
+        metricsUnlock();
     }
 
     // Goexit terminates the goroutine that calls it. No other goroutine is affected. Goexit runs

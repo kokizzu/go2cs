@@ -794,60 +794,32 @@ internal static void release(this ж<consistentHeapStats> Ꮡm) {
     }
 }
 
-// read takes a globally consistent snapshot of m
-// and puts the aggregated value in out. Even though out is a
-// heapStatsDelta, the resulting values should be complete and
-// valid statistic values.
+// go2cs generated this placeholder — func read is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Getting preempted after this point is not safe because
+// we read allp. We need to make sure a STW can't happen
+// so it doesn't change out from under us.
+// Get the current generation. We can be confident that this
+// will not change since read is serialized and is the only
+// one that modifies currGen.
+// Prevent writers without a P from writing while we update gen.
+// Rotate gen, effectively taking a snapshot of the state of
+// these statistics at the point of the exchange by moving
+// writers to the next set of deltas.
 //
-// Not safe to call concurrently. The world must be stopped
-// or metricsSema must be held.
-internal static void read(this ж<consistentHeapStats> Ꮡm, ж<heapStatsDelta> Ꮡout) {
-    ref var m = ref Ꮡm.DerefOrNull();
-    ref var @out = ref Ꮡout.DerefOrNull();
-
-    // Getting preempted after this point is not safe because
-    // we read allp. We need to make sure a STW can't happen
-    // so it doesn't change out from under us.
-    var mp = acquirem();
-    // Get the current generation. We can be confident that this
-    // will not change since read is serialized and is the only
-    // one that modifies currGen.
-    var currGen = Ꮡm.of(consistentHeapStats.Ꮡgen).Load();
-    var prevGen = currGen - 1;
-    if (currGen == 0) {
-        prevGen = 2;
-    }
-    // Prevent writers without a P from writing while we update gen.
-    @lock(Ꮡm.of(consistentHeapStats.ᏑnoPLock));
-    // Rotate gen, effectively taking a snapshot of the state of
-    // these statistics at the point of the exchange by moving
-    // writers to the next set of deltas.
-    //
-    // This exchange is safe to do because we won't race
-    // with anyone else trying to update this value.
-    Ꮡm.of(consistentHeapStats.Ꮡgen).Swap((currGen + 1) % 3);
-    // Allow P-less writers to continue. They'll be writing to the
-    // next generation now.
-    unlock(Ꮡm.of(consistentHeapStats.ᏑnoPLock));
-    foreach (var (_, Δp) in allp) {
-        // Spin until there are no more writers.
-        while (Δp.of(runtime_package.Δp.ᏑstatsSeq).Load() % 2 != 0) {
-        }
-    }
-    // At this point we've observed that each sequence
-    // number is even, so any future writers will observe
-    // the new gen value. That means it's safe to read from
-    // the other deltas in the stats buffer.
-    // Perform our responsibilities and free up
-    // stats[prevGen] for the next time we want to take
-    // a snapshot.
-    m.stats[(nint)(currGen)].merge(Ꮡ(m.stats, (int)(prevGen)));
-    m.stats[(nint)(prevGen)] = new heapStatsDelta(nil);
-    // Finally, copy out the complete delta.
-    @out = m.stats[(nint)(currGen)].ΔClone();
-    releasem(mp);
-}
-
+// This exchange is safe to do because we won't race
+// with anyone else trying to update this value.
+// Allow P-less writers to continue. They'll be writing to the
+// next generation now.
+// Spin until there are no more writers.
+// At this point we've observed that each sequence
+// number is even, so any future writers will observe
+// the new gen value. That means it's safe to read from
+// the other deltas in the stats buffer.
+// Perform our responsibilities and free up
+// stats[prevGen] for the next time we want to take
+// a snapshot.
+// Finally, copy out the complete delta.
 [GoType] partial struct cpuStats {
 // All fields are CPU time in nanoseconds computed by comparing
 // calls of nanotime. This means they're all overestimates, because
