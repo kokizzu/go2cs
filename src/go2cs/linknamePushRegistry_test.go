@@ -121,10 +121,23 @@ func directivePhrase(hasDirective bool) string {
 
 // parseGoPackageDir parses every .go file directly in GOROOT/src/<pkgPath>, comments included and
 // build constraints ignored, so a platform-gated declaration is visible from any host.
+//
+// An EXTERNAL TEST package (`<base>_test`) has no directory of its own: its source is the base
+// package's `_test.go` files whose package clause carries the `_test` suffix. That is where a
+// production package pushing into its own test package keeps the consumer half
+// (runtime/metrics_test.runtime_readMetricNames), so the guard resolves the suffix to the base
+// directory and inverts the file selection — test files only, and only those in the external test
+// package (in-package `_test.go` files belong to `<base>` itself, a different consumer path).
 func parseGoPackageDir(t *testing.T, goRoot string, pkgPath string) []*ast.File {
 	t.Helper()
 
-	dir := filepath.Join(goRoot, "src", filepath.FromSlash(pkgPath))
+	basePath, isExternalTest := strings.CutSuffix(pkgPath, "_test")
+
+	if !isExternalTest {
+		basePath = pkgPath
+	}
+
+	dir := filepath.Join(goRoot, "src", filepath.FromSlash(basePath))
 
 	matches, err := filepath.Glob(filepath.Join(dir, "*.go"))
 
@@ -137,7 +150,7 @@ func parseGoPackageDir(t *testing.T, goRoot string, pkgPath string) []*ast.File 
 	files := make([]*ast.File, 0, len(matches))
 
 	for _, match := range matches {
-		if strings.HasSuffix(match, "_test.go") {
+		if strings.HasSuffix(match, "_test.go") != isExternalTest {
 			continue
 		}
 
@@ -146,6 +159,12 @@ func parseGoPackageDir(t *testing.T, goRoot string, pkgPath string) []*ast.File 
 		if err != nil {
 			// A file this converter never reads (assembly stubs with odd build tags) must not fail
 			// the guard; a genuinely unparseable package will simply yield no match below.
+			continue
+		}
+
+		// A `_test.go` whose package clause has no `_test` suffix is an IN-PACKAGE test file —
+		// part of `<base>`, not of the external test package this pkgPath names.
+		if isExternalTest && (file.Name == nil || !strings.HasSuffix(file.Name.Name, "_test")) {
 			continue
 		}
 

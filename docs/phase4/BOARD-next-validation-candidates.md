@@ -5748,6 +5748,35 @@ That is a narrower job than the `getg`-style "external (assembly or cgo)" rows i
 resembles: **both halves already exist in the corpus and the wiring is the whole task**, and doing it
 takes this package to 2 of 2, i.e. to a bank. Cheapest bank-per-unit-work row in the batch.
 
+**BANKED 2026-08-12 at 2 of 2 — but "the wiring is the whole task" was measured FALSE, by three
+layers.** The push wiring landed general (a `linknamePushTargets` row whose key simply spells the
+`_test` package path — `convertTestVariant` already sets `currentPackagePath` to the external
+variant's own PkgPath, so a production package pushing into its own test package needs no new
+machinery; the registry guard learned that an external test package's source lives in the base
+package's `_test.go` files). Behind it, in the order the reruns surfaced them:
+
+1. **`metricsLock` → `semacquire1` → `getg`** — the pushed body's first call was the runtime
+   sleeping semaphore. Hand-owned at the `metricsLock`/`metricsUnlock` boundary
+   (`manualConversionFuncs` + `managed_impl.cs`, a `SemaphoreSlim(1,1)`); the same fix unblocks
+   `readMetrics` for every future consumer.
+2. **`readMetricsLocked`'s slice-header reconstruct** — `metrics.Read` crosses by raw first-element
+   address and the runtime rebuilds a `[]metricSample` over it: the L10 address-reinterpret seam,
+   measured here as garbage `@string` names out of the fabricated slice. NOT chased through L10:
+   the crossing is re-shaped instead — `runtime/metrics/sample.cs` is hand-owned and `Read`
+   marshals names in / computed `(kind, scalar, pointer)` out through the public
+   `runtime.readMetricsManaged` shim (the `registerPoolCleanup` precedent), preserving
+   `readMetricsLocked`'s batch semantics; the `runtime_readMetrics` push row is recorded
+   UNHONORABLE with the reason naming the hand-own. The metrics TABLE, `initMetrics`, and every
+   compute closure stay auto-converted.
+3. **Two `allm` walkers in the compute closures** — `NumCgoCall` and `totalMutexWaitTimeNanos`
+   both walk the scheduler's m-list (nil here where Go always has m0). Hand-owned with their
+   honest managed answers (no cgo calls exist → 0; the two real wait-time counters minus the
+   per-m profile walk); `consistentHeapStats.read` likewise (no Ps, no allocator deltas → the
+   zero snapshot, the `ReadMemStats` precedent).
+
+The package is therefore no longer an L10 witness — its seam instance is routed around, not
+fixed — and chacha8rand remains L10's cheapest kernel-free reproduction.
+
 ### `internal/singleflight` — 4 of 5, one test that does not come back
 
 Go passes 5. The host passes 4 and then reports `{"action":"timeout","elapsed":1800,"output":"package

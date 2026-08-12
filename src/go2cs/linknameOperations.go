@@ -219,6 +219,37 @@ var linknamePushTargets = map[string]linknamePush{
 	// surfaced from net_package's type initializer — and every httptest consumer dies in net's cctor,
 	// whatever it was actually testing (net/http/cgi's TestCopyError is where it was found).
 	"internal/syscall/windows.GetSystemDirectory": {source: "runtime.windows_GetSystemDirectory"},
+	// runtime/metrics's test-only name reader, pushed by runtime/metrics.go — the first row whose
+	// consumer is an EXTERNAL TEST package. The -tests conversion sets currentPackagePath to the
+	// variant's own PkgPath (`runtime/metrics_test`), so the consumer-side match needs no new
+	// machinery: the key simply spells the test package path, and any production package pushing
+	// into its own `_test` package takes the same shape. The pushed body is ordinary converted Go
+	// (metricsLock/initMetrics, then collect the map keys), running against the managed model's own
+	// metrics table — the same table `metrics.All()` reads, which is exactly the agreement TestNames
+	// exists to check. metricsLock's semaphore needed its managed form first (manualConversionFuncs
+	// "metricsLock" — forwarding and unblocking the pushed body are one change, the
+	// GetSystemDirectory precedent). HANDLE consumer shape: description_test.go carries its own
+	// one-arg `//go:linkname runtime_readMetricNames` above the bodyless declaration.
+	"runtime/metrics_test.runtime_readMetricNames": {source: "runtime.readMetricNames"},
+	// runtime/metrics's Read entry point, pushed by the same runtime/metrics.go directive block —
+	// the row the one above surfaced: TestNames calls metrics.Read after reading the names. BARE
+	// consumer shape: sample.go declares `func runtime_readMetrics(unsafe.Pointer, int, int)` under
+	// a prose comment ("is defined in the runtime") with no directive of its own, exactly the
+	// syscall.runtime_envs shape.
+	//
+	// UNHONORABLE, and measured so: a forwarder was tried first and the pushed body ran to
+	// readMetricsLocked's slice-header reconstruct — `*(*[]metricSample)(unsafe.Pointer(&sl))` over
+	// a raw first-element address — which no managed pointer can alias (the L10 address-reinterpret
+	// seam), so the fabricated slice read garbage @string names. The deployed corpus never emits
+	// this declaration at all: runtime/metrics/sample.cs is hand-owned and its Read crosses through
+	// runtime.readMetricsManaged (managed_impl.cs), which carries names in and computed values out
+	// as plain managed data. This row exists for a conversion into a root WITHOUT that hand-own,
+	// where the bodyless declaration reappears — and must announce the wall, not fabricate past it.
+	"runtime/metrics.runtime_readMetrics": {
+		source:   "runtime.readMetrics",
+		bareDecl: true,
+		reason:   "the pushed body reconstructs a []metricSample from the raw address of the caller's slice, which the managed pointer model cannot alias; use the hand-owned managed crossing in runtime/metrics/sample.cs (metrics.Read -> runtime.readMetricsManaged)",
+	},
 	// internal/weak's two halves, pushed by runtime/mheap.go — the UNHONORABLE class. Both pushed
 	// bodies reach the span allocator: registerWeakPointer → getOrAddWeakHandle → spanOfHeap →
 	// `throw("getWeakHandle on invalid pointer")`, and makeStrongFromWeak reads a handle word out of

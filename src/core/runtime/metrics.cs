@@ -29,22 +29,13 @@ internal static slice<float64> timeHistBuckets;
     internal Action<ж<statAggregate>, ж<metricValue>> compute;
 }
 
-internal static void metricsLock() {
-    // Acquire the metricsSema but with handoff. Operations are typically
-    // expensive enough that queueing up goroutines and handing off between
-    // them will be noticeably better-behaved.
-    semacquire1(ᏑmetricsSema, true, 0, 0, waitReasonSemacquire);
-    if (raceenabled) {
-        raceacquire(new @unsafe.Pointer(ᏑmetricsSema));
-    }
-}
+// go2cs generated this placeholder — func metricsLock is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static void metricsUnlock() {
-    if (raceenabled) {
-        racerelease(new @unsafe.Pointer(ᏑmetricsSema));
-    }
-    semrelease(ᏑmetricsSema);
-}
+// go2cs generated this placeholder — func metricsUnlock is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Acquire the metricsSema but with handoff. Operations are typically
+// expensive enough that queueing up goroutines and handing off between
+// them will be noticeably better-behaved.
 
 // initMetrics initializes the metrics map if it hasn't been yet.
 //
@@ -797,7 +788,7 @@ internal static ref statAggregate agg => ref Ꮡagg.Value;
 // used by the runtime/metrics test and otherwise unreferenced.
 //
 //go:linkname readMetricNames runtime/metrics_test.runtime_readMetricNames
-internal static slice<@string> readMetricNames() {
+public static slice<@string> readMetricNames() {
     metricsLock();
     initMetrics();
     nint n = len(metrics);
