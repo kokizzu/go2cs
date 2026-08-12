@@ -5617,7 +5617,7 @@ ones. `go/types` is unbanked and carries no board row of its own; on this eviden
 one, and **`go/internal/gcimporter`'s 184 rows are downstream of it** — the row moves when
 `go/types` generics do, and not before. Nothing in gcimporter itself is implicated.
 
-## Scout batch 1 — twelve never-run packages (2026-08-12)
+## Scout batch 1 — twelve never-run packages (2026-08-11)
 
 Twelve packages that had never linked a test host were taken end to end through `-tests -test-action all`
 on the pinned coordinator (i7-5820K, go1.23.1). **Nothing banks**, and no row is disclosed — the
