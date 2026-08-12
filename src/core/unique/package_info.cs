@@ -64,7 +64,6 @@ public static partial class unique_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct cloneSeq {}
     internal partial struct uniqueMap<T> {}
     public partial struct Handle<T> {}
     // </TypeAccessibility>

@@ -14016,6 +14016,46 @@ driver `continue`s on `unmarkedFileCount == 0` and stops re-emitting `internal.w
 `package_info.cs` and `README.md`, and no `pointer.cs.auto` review sibling is produced — the position
 `internal/godebug` and `internal/concurrent` are already in. The marker census moves **39 → 40**.
 
+### `unique.clone` — a raw-offset string walk the managed model cannot express, hand-owned after the `@string` window made it GC-fatal
+
+Go's `unique.clone[T]` rewrites every string field of a just-interned value in place, addressing each
+by raw ABI offset so an interned handle never keeps a large parent string alive:
+
+```go
+func clone[T comparable](value T, seq *cloneSeq) T {
+	for _, offset := range seq.stringOffsets {
+		ps := (*string)(unsafe.Pointer(uintptr(unsafe.Pointer(&value)) + offset))
+		*ps = stringslite.Clone(*ps)
+	}
+	return value
+}
+```
+
+The converted form — `(ж<@string>)(uintptr)((uintptr)Ꮡvalue + offset)` followed by a `.Value` write —
+adds a **Go ABI** offset to the transient interior address of the movable `ж<T>` heap box, whose CLR
+field layout is unrelated to Go's ABI (`EnsureStableAddress` cannot pin a box whose `T` contains
+references, and for `[2]struct{a string}` the +16 offset is outside the 8-byte `array<T>` reference
+that is the entire CLR value). Every such store landed on the box's OWN fields. While `@string` was a
+single 8-byte reference the damage was a type-confused slot holding a valid object — silently wrong
+values, nothing the collector trips over. When `@string` became an offset/length **window**
+(`fc6d8c179`, r57c — 16 bytes: `byte[]` + two `int`s), the same store's integer tail began landing in
+an adjacent GC-scanned reference slot, and the next collection — which `unique`'s own `drainMaps`
+forces via `runtime.GC()` — walked a garbage pointer and fail-fasted the process with
+`COR_E_EXECUTIONENGINE` (0x80131506). Bisected, and reproduced in ~25 lines against golib alone, by
+the 2026-08-12 unique-bisect lane (the board's scout-batch-1 `unique` entry holds the full record).
+
+`src/core/unique/clone.cs` therefore carries `[module: go.GoManualConversion]` — the standard S1
+managed-referent remedy — with **only `clone<T>` departing from the conversion**. Its contract is
+"makes a copy of value, and MAY update string values found in value with a cloned version": the
+cloning is a retention optimization, never a semantic requirement, so the hand-own does the
+`T == string` case exactly (a right-sized `stringslite.Clone`, no address arithmetic — worth more,
+not less, now that `@string` windows share backing) and returns aggregate values unchanged. The one
+observable divergence from Go is retention: an interned aggregate's strings keep sharing their
+original backing arrays. Equality, identity and intern-map drainage — what `unique.Make` is *for* —
+are unaffected. `makeCloneSeq` and the `cloneSeq` builders remain the verbatim conversion (pure
+descriptor arithmetic, still validated by `TestMakeCloneSeq`), so a `clone.cs.auto` review sibling is
+emitted on every reconvert as usual.
+
 ### `internal/cpu.getGOAMD64level` — a BUILD constant, so the honest answer is the baseline
 
 Go declares `getGOAMD64level() int32` bodyless and implements it in `cpu_x86.s`, where it is not code at
