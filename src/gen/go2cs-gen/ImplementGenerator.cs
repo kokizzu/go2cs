@@ -310,11 +310,26 @@ public class ImplementGenerator : ISourceGenerator
             // promotion through an embedded POINTER field (`type rtype struct { *abi.Type }`).
             // That promotion is syntax-resolved at Go call sites (the converter emits the hop
             // `t.Type.Value.M()`), so the explicit interface implementation must forward through
-            // the same hop — `this.M()` has nothing to bind (CS1929). Gated to a SINGLE hop
-            // (Go's promotion ambiguity rules make multi-embed satisfaction rare; extend when
-            // the corpus surfaces one).
+            // the same hop — `this.M()` has nothing to bind (CS1929). A SINGLE hop takes every
+            // unbound member unconditionally: that member's promotion is what type-checked the
+            // cast, so there is nothing to decide. SEVERAL embeds is the case that must be
+            // decided per member — see multiEmbedHopPaths below.
             List<(string Name, string TypeName)> embedHops = structDecl?.GetEmbeddedPointerHopNames() ?? [];
             string? embedHop = embedHops.Count == 1 ? embedHops[0].Name : null;
+
+            // With SEVERAL embedded pointers no single hop can take every member, so both forms of the
+            // single-hop forwarding below stayed silent and every promoted member fell back to the bare
+            // `m_box.M(…)` / `this.M(…)` receiver — which binds nothing on the struct and lets overload
+            // resolution reach an unrelated same-named extension elsewhere in scope. net/rpc/jsonrpc's `type pipe
+            // struct { *io.PipeReader; *io.PipeWriter }` is the shape: Read and Write come only by
+            // promotion, and the adapter's `m_box.Read(p)` bound `io_package.Read(ref LimitedReader, …)`
+            // (CS1929 — an error naming LimitedReader from a jsonrpc test is the signature). Index the
+            // hop path PER MEMBER instead, routing each to the UNIQUE embed declaring it exactly as Go's
+            // depth-1 promotion does; a name two embeds declare is promoted from neither (Go rejects the
+            // tie), and the struct's own method, already bound above, wins over both.
+            Dictionary<string, string> multiEmbedHopPaths = embedHops.Count > 1
+                ? GetMultiEmbedHopPaths(context, syntaxContext.SemanticModel.Compilation, structType, embedHops)
+                : [];
 
             // Hop-target methods that are direct-ж primaries bind on the box FIELD itself
             // (`this.File.Read(p)`) — deref'ing first strands the extension receiver (CS1929).
@@ -604,6 +619,20 @@ public class ImplementGenerator : ISourceGenerator
                             else
                                 forwardReceivers[simpleName] = embedHopBoxMethods.Contains(simpleName) ? $"m_box.Value.{embedHop}" : $"m_box.Value.{embedHop}.Value";
                         }
+                    }
+                }
+                else if (multiEmbedHopPaths.Count > 0)
+                {
+                    // SEVERAL embedded pointers: only a member the per-embed index resolved forwards
+                    // (see GetMultiEmbedHopPaths). One it cannot place stays unbound and falls to the
+                    // template's `m_box` default exactly as before — a loud CS1929 naming the member,
+                    // never a silent wrong receiver.
+                    foreach (MethodInfo method in methods)
+                    {
+                        string simpleName = GetSimpleName(method.Name);
+
+                        if (!forwardReceivers.ContainsKey(simpleName) && multiEmbedHopPaths.TryGetValue(simpleName, out string? hopPath))
+                            forwardReceivers[simpleName] = $"m_box.Value.{hopPath}";
                     }
                 }
 
@@ -934,6 +963,11 @@ public class ImplementGenerator : ISourceGenerator
                 EmbedHop = embedHop,
                 EmbedHopBoxMethods = embedHopBoxMethods,
                 EmbedHopDeepPaths = embedHopDeepPaths,
+                // The value form promotes through embedded pointers exactly as the adapter does — a
+                // pointer embed's method set is in the STRUCT's method set too, so `var rw ReadWriter =
+                // p` (no `&`) records this pair — and it reached the same bare `this.Read(p)` fallback
+                // when several embeds left no single hop to name.
+                MultiEmbedHopPaths = multiEmbedHopPaths,
                 // An interface member with NO direct struct method and a SINGLE VALUE embed
                 // must promote through the embedded field (Go's promotion is what type-checked
                 // it) - net's `addrPortUDPAddr struct { netip.AddrPort }`: the bare
@@ -954,6 +988,65 @@ public class ImplementGenerator : ISourceGenerator
             // Add the source code to the compilation
             context.AddSource(GetUniqueHintName(emittedHintNames, GetValidFileName($"{packageNamespace}.{packageClassName}.{structName}-{interfaceName}.g.cs")), generatedSource);
         }
+    }
+
+    /// <summary>
+    /// Indexes, for a struct with SEVERAL embedded POINTER fields, the hop path each promoted method
+    /// name forwards through — the embed's ж field itself (<c>PipeReader</c>) for a direct-ж primary,
+    /// its deref'd value (<c>Reader.Value</c>) for a value/ref-receiver method. A name TWO embeds
+    /// declare is dropped: Go's depth-1 promotion rejects the tie, so nothing is promoted and only a
+    /// method the struct declares itself can satisfy the member (jsonrpc's <c>*pipe.Close</c>, over
+    /// the <c>Close</c> both <c>*io.PipeReader</c> and <c>*io.PipeWriter</c> declare).
+    /// </summary>
+    /// <remarks>
+    /// The single-embed case does not come here — its one hop takes every unbound member
+    /// unconditionally, since that member's promotion is what type-checked the cast, and no per-member
+    /// evidence is needed. It is only with several embeds that the receiver must be decided per member,
+    /// which is also what the FOREIGN-struct arm does from metadata for a struct declared elsewhere.
+    /// Each embed's method set is read from local SYNTAX where its type is declared in this compilation
+    /// and from METADATA where it is not — a referenced assembly exposes both the converter's direct-ж
+    /// primaries and the public <c>RecvGenerator</c> ж-twins as ordinary symbols, which is the whole
+    /// jsonrpc case (<c>*io.PipeReader</c>/<c>*io.PipeWriter</c> live in the compiled io assembly).
+    /// A member neither resolution places is left out, so it keeps the caller's existing fallback.
+    /// </remarks>
+    private static Dictionary<string, string> GetMultiEmbedHopPaths(GeneratorExecutionContext context, Compilation compilation, ITypeSymbol structType, List<(string Name, string TypeName)> embedHops)
+    {
+        List<(string Name, INamedTypeSymbol Type)> pointerEmbeds = StructDeclarationSyntaxExtensions.GetPointerEmbeds(structType);
+        Dictionary<string, string> hopPaths = new(StringComparer.Ordinal);
+        HashSet<string> ambiguous = new(StringComparer.Ordinal);
+
+        foreach ((string hopName, string hopTypeName) in embedHops)
+        {
+            HashSet<string> boxMethods = StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNames(hopTypeName, compilation);
+            HashSet<string> valueMethods = new(StringComparer.Ordinal);
+
+            (StructDeclarationSyntax? hopDecl, Compilation? hopCompilation) = context.GetStructDeclaration(hopTypeName);
+
+            if (hopDecl is not null && hopCompilation is not null)
+                valueMethods.UnionWith(hopDecl.GetExtensionMethods(hopCompilation).Select(method => GetSimpleName(method.Name)));
+
+            INamedTypeSymbol? hopElement = pointerEmbeds.FirstOrDefault(embed => embed.Name == hopName).Type;
+
+            if (hopElement is not null && !SymbolEqualityComparer.Default.Equals(hopElement.ContainingAssembly, compilation.Assembly))
+            {
+                boxMethods.UnionWith(StructDeclarationSyntaxExtensions.GetForeignBoxReceiverMethodNames(hopElement));
+                valueMethods.UnionWith(StructDeclarationSyntaxExtensions.GetForeignValueReceiverMethods(hopElement).Keys);
+            }
+
+            foreach (string methodName in boxMethods.Union(valueMethods))
+            {
+                // Seen on an EARLIER embed: ambiguous at depth 1, so Go promotes it from neither.
+                if (!hopPaths.ContainsKey(methodName))
+                    hopPaths[methodName] = boxMethods.Contains(methodName) ? hopName : $"{hopName}.Value";
+                else
+                    ambiguous.Add(methodName);
+            }
+        }
+
+        foreach (string methodName in ambiguous)
+            hopPaths.Remove(methodName);
+
+        return hopPaths;
     }
 
     /// <summary>

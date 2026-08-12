@@ -782,6 +782,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckMultiFileInitOrder() => CheckTarget("MultiFileInitOrder");
 
     [TestMethod]
+    public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
+
+    [TestMethod]
     public void CheckNamedArrayAnonElement() => CheckTarget("NamedArrayAnonElement");
 
     [TestMethod]

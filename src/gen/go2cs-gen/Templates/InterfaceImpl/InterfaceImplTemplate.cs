@@ -33,6 +33,11 @@ internal class InterfaceImplTemplate : TemplateBase
     // carries the `.of(…)` suffix per method name.
     public Dictionary<string, string>? EmbedHopDeepPaths;
 
+    // With SEVERAL embedded pointers there is no single hop to name, so the receiver is decided per
+    // member: each routes to the UNIQUE embed declaring it (`this.PipeReader.Read(p)`), Go's depth-1
+    // promotion rule. Empty for one embed or none — that case keeps EmbedHop above.
+    public Dictionary<string, string>? MultiEmbedHopPaths;
+
     // Single VALUE-embedded field (`addrPortUDPAddr struct { netip.AddrPort }`): an interface
     // member with no direct struct method promotes through it (`this.AddrPort.String()`).
     public string? ValueEmbedHop;
@@ -94,6 +99,10 @@ internal class InterfaceImplTemplate : TemplateBase
                             receiver = $"this.{EmbedHop}{deepPath}";
                         else
                             receiver = EmbedHopBoxMethods.Contains(simpleMethodName) ? $"this.{EmbedHop}" : $"this.{EmbedHop}.Value";
+                    }
+                    else if (!methodOverriden && MultiEmbedHopPaths is not null && MultiEmbedHopPaths.TryGetValue(simpleMethodName, out string? multiHopPath))
+                    {
+                        receiver = $"this.{multiHopPath}";
                     }
                     else if (!methodOverriden && ValueEmbedHop is not null)
                     {

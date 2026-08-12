@@ -829,6 +829,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckMultiFileInitOrder() => CheckTarget("MultiFileInitOrder");
 
     [TestMethod]
+    public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
+
+    [TestMethod]
     public void CheckNamedArrayAnonElement() => CheckTarget("NamedArrayAnonElement");
 
     [TestMethod]
