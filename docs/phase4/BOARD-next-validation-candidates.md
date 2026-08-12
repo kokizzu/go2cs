@@ -5871,6 +5871,59 @@ place, and **that is precisely why this is flagged rather than attributed**. It 
 r43e and `5fe713f98` with `unique`'s host as the probe, and it should be treated as higher severity
 than an ordinary failing row: a memory-safety fault does not stay inside the package that reveals it.
 
+#### RESOLVED (2026-08-12, unique-bisect lane) — bisected to the `@string` window; closed by a `clone.cs` hand-own
+
+**The culprit is `fc6d8c179` (r57c-zipperf, 2026-08-09): "golib: a Go string is a WINDOW".** Bisect
+over the 126-commit first-parent range `57abfe9e1..5fe713f98`, `unique`'s pipeline as the probe:
+r43e anchor GOOD (full 19-verdict map, the recorded 4-of-19-era shape), `f2b80a766` (#63) GOOD,
+`90059385b` (#80, r57b) GOOD, `515cea127` (#81, r57c) BAD, and `fc6d8c179` — the window commit,
+probed directly against its own parent's lineage — BAD. The window is present in every BAD tree and
+absent from every GOOD one.
+
+**Mechanism — one defect, two eras.** Converted `unique/clone.cs:28` rewrote every string field of a
+value IN PLACE the way Go does — `(*string)(unsafe.Pointer(uintptr(unsafe.Pointer(&value)) +
+offset))` — emitted as a read/write of `@string` through `(uintptr)Ꮡvalue + offset`: an interior
+address of the movable `ж<T>` heap box plus a **Go ABI** offset, against a CLR object whose field
+layout is unrelated to Go's ABI. For any T whose strings sit at nonzero offsets (`testStruct`'s `b`
+at +8, `testStringStructArrayStruct`'s `s[1].a` at +16 — the latter landing entirely OUTSIDE the
+8-byte `array<T>` ref that is the whole CLR value), the access lands on the box's OWN fields.
+- **Pre-window era:** `@string` was one 8-byte reference, so every mislaid store was a single
+  aligned pointer-sized slot holding a valid object — type-confusing (part of the "v0 != v1" noise
+  the r43e record shows) but nothing the collector trips over.
+- **Window era:** `@string` is 16 bytes (`byte[]` + offset + length), so the same store's INTEGER
+  tail lands in an adjacent GC-scanned reference slot of the box. The next collection walks a
+  garbage pointer and the runtime fail-fasts — and `drainMaps` FORCES that collection via
+  `runtime.GC()` in every `TestHandle` subtest, which is why the host died with zero verdicts (or
+  hung: same corruption, discovered differently under load).
+
+**Mechanism proven without `unique`:** a ~25-line program against golib alone — `ж<TT>` over
+`struct { array<SS> s }` where `SS` is `struct { @string a }`, two `@string` stores at Go offsets
+0/+16 through `(ж<@string>)(uintptr)`, then `GC.Collect` — dies with the identical
+`0x80131506`-at-`GC.Collect` stack on window-era golib, and on pre-window golib (`7c7bc7d69`)
+**survives both collections** and only faults when the program itself reads the type-confused slots
+back. The A/B isolates the window as the escalation and proves the writes were corrupting values all
+along.
+
+**The fix (this lane): `src/core/unique/clone.cs` is hand-owned** (`[module: go.GoManualConversion]`),
+the documented S1 managed-referent remedy. `clone<T>`'s contract — "MAY update string values found in
+value with a cloned version" — is a retention optimization, never a semantic requirement, so the
+hand-own clones the `T == string` case (right-sized copy via `stringslite.Clone`, no address
+arithmetic) and returns aggregates unchanged; the only divergence from Go is retention (an interned
+aggregate's strings keep sharing their original backing). `makeCloneSeq` and the builders stay in
+their converted form — pure descriptor arithmetic, still covered by `TestMakeCloneSeq`. Post-fix
+census on the `c33b3a67e` base: the host runs to completion — **5 of 19 matched** (the five
+`TestMakeCloneSeq` passes; r43e recorded 4), 13 fail / 2 infrastructure-error, all on the
+pre-existing roots this section already names (the `[GoType]` equality gate's `v0 != v1` rows, the
+eface subtest-naming pair, the nil-vs-empty `cloneSeq` DeepEqual rows). `unique` still does not bank;
+the REGRESSION row is closed.
+
+**Residual, for the ж-box arc:** the corpus has seven more `(ж<@string>)(uintptr)` sites, all in
+converted `runtime` (`map_faststr.cs:487` and `iface.cs:461` are the two WRITE sites; `alg.cs`,
+`error.cs`, `arena.cs`×3 read) — dead or near-dead under the managed model's own map/iface, but the
+same shape, and any future caller inherits the same two-era hazard. The general
+`(uintptr)ж<T>`-for-managed-T transient-address model is unchanged by this fix; that is the ж-box
+arc's charter, not this lane's.
+
 ### Five converter defects, each with a named mechanism
 
 None of these five is a wall; all are ordinary emission bugs, listed with the evidence a fix needs.
