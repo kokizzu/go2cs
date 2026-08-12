@@ -40,6 +40,11 @@ so the coordinator can calibrate assignments.
 
 ## Assignments
 
+**Tonight's fleet (2026-08-11): three machines.** The desktop (pinned, coordinator) runs L9 items
+1–2 and all merges. **Laptop R** (holds the L3 session): L3-A2 in its existing session + L8 in a
+second checkout. **Laptop G** (new): L10 primary + L9 item 3 in a second checkout. Step 0 on both
+laptops: `go env GOVERSION` must be go1.23.1 — install it first; every lane stops if unpinned.
+
 | Lane | Machine | Status | Merge window |
 |---|---|---|---|
 | L1 host-conditional roster | laptop-1 | **MERGED** `8977a0f57` — gated on the privileged host: `path/filepath 67 = 61 banked + 6 host-conditional` | done |
@@ -242,6 +247,35 @@ harvest r60 — the board's four-for-four wrong-hypothesis record this week says
 from evidence, never inherit). Do not spin on a blocked package; record and move. Gates: filtered
 sweep per banked package; the standing families classify the aftermath. Commit per package
 ("L9:"), push, signal per bank so the coordinator can integrate incrementally.
+
+## L10 — the sockaddr blittable-mirror seam (unblocks the whole net cluster)
+
+HAND-OWNED SYSCALL FIX with an established precedent, board-diagnosed by r57b (search
+BOARD-next-validation-candidates.md for "SockaddrInet4"). Branch from current origin/master.
+Step 0: `go env GOVERSION` must be go1.23.1 or STOP.
+
+The wall: `net.Listen` on Windows dies before any test logic runs. Two layers, both must fix:
+(1) `(*SockaddrInet4).sockaddr` does `p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))` to write the
+port in network byte order; the emitted `ж<array<byte>>` over a raw address materializes
+`default(array<byte>)` — length zero — so `p[0]` panics (`golib array.cs:280` via
+`syscall_windows.cs:881`). (2) Even fixed, `Bind` hands the kernel `unsafe.Pointer(&sa.raw)` where
+`RawSockaddrInet4`'s `Addr [4]byte`/`Zero [8]uint8` are managed references — the OPEN syscall
+struct-passing seam. The remedy is the ESTABLISHED blittable-mirror pattern: read
+`core/syscall/windows/zsyscall_windows_impl.cs` (GetTimeZoneInformation — the worked example,
+per-GOOS since r50a) and the board's nine-wrapper census before writing a line. Scope: the
+sockaddr family needed for listen/dial/accept on IPv4+IPv6 (`sockaddr`/`Sockaddr` round-trips,
+`Bind`/`Connect`/`Getsockname`/`Accept` as reached) — hand-owned `_impl.cs` carrying
+`[module: go.GoManualConversion]` per the marker rules; do NOT widen to the other censused
+wrappers speculatively (the board's own ruling).
+
+Guard: a NEW behavioral test doing a real loopback TCP listen→dial→write→read→close compared
+against `go run` (the LocalTimeZone precedent: compare real behavior, not absence-of-fault).
+Gates: full behavioral suite; converter go test if any emission moves (expect none — this is
+hand-own layer); filtered sweeps over any banked package whose closure touches syscall
+(`syscall` 62 itself!); then the CONSUMER re-measures that prove the seam: `net/smtp` (board:
+9/14, five rows on this exact stack) and ONE of the L9-held socket rows (`net/http/httptest`
+recommended). Commit per layer ("L10:"), push, signal. Merge window: anytime once gated — this
+lane unblocks L9's three held rows, net/smtp, net/http/cgi, and eventually `net`.
 
 ## L3 — ж-box allocation-reduction implementation
 
