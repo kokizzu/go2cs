@@ -242,3 +242,132 @@ func checkNuGetStdLibCompatibility(convertingRelease string, publishedRelease st
 			"locally converted standard library instead",
 		publishedRelease, converting, converting, publishedRelease)
 }
+
+// corpusPinnedRelease reads the Go release the CORPUS is pinned to — <GoStdLibVersion> from the go2cs
+// root's version.props, the same element publishedPackageVersion composes the published four-part
+// version from and the same one push-nuget.ps1 bumps.
+//
+// The root is read DIRECTLY rather than walked up from. Every caller already holds the resolved
+// $(go2csPath) root — self-located for -tests, the output root under -stdlib — and that is precisely
+// the tree whose corpus this conversion writes into or references. The badge machinery walks because
+// it starts from a package directory deep inside core/; here the walk's answer is already in hand.
+//
+// Returns "" when the file is absent or carries no <GoStdLibVersion>. That is a fresh or unseeded
+// root, which is the normal state of a first -stdlib conversion — not a pin to check.
+func corpusPinnedRelease(root string) string {
+	if root == "" {
+		return ""
+	}
+
+	contents, err := os.ReadFile(filepath.Join(root, versionPropsFileName))
+
+	if err != nil {
+		return ""
+	}
+
+	return firstSubmatch(goStdLibVersionPattern, string(contents))
+}
+
+// gorootVersionFileName is Go's own record, at the root of a GOROOT, of which release that tree is.
+const gorootVersionFileName = "VERSION"
+
+// gorootRelease reads the Go release of the tree at goRoot out of its own VERSION file — the release
+// whose SOURCES a conversion reading that GOROOT will actually convert.
+//
+// This is preferred over `go env GOVERSION`, because the two can disagree and when they do it is
+// GOVERSION that misdescribes the input. An ambient GOROOT environment variable overrides the
+// selected toolchain's own root, and main() treats a GOROOT it did not derive as PINNED — which
+// switches off the resolveLoaderGoRoot correction above. A 1.23.1 go binary then reports go1.23.1
+// while the converter reads a 1.23.2 tree, and a guard trusting the label would approve exactly the
+// mixed-release conversion it exists to stop. Measured on a lane machine, 2026-08-11: GOROOT set to
+// the 1.23.2 installation with a 1.23.1 toolchain selected.
+//
+// Returns "" when the file is absent or unreadable, leaving the caller on the reported version.
+func gorootRelease(goRoot string) string {
+	if goRoot == "" {
+		return ""
+	}
+
+	contents, err := os.ReadFile(filepath.Join(goRoot, gorootVersionFileName))
+
+	if err != nil {
+		return ""
+	}
+
+	// Go 1.21 added a `time <stamp>` line beneath the version; the release is the first line.
+	release, _, _ := strings.Cut(string(contents), "\n")
+
+	return strings.TrimSpace(release)
+}
+
+// convertingRelease reports the Go release a corpus-defining conversion will read its INPUT from,
+// which is the number the pin has to be checked against. GOROOT's own VERSION wins over the
+// toolchain's reported version for the reason gorootRelease documents; the reported version remains
+// the fallback for a GOROOT carrying no VERSION file.
+func convertingRelease(goRoot string) string {
+	if release := gorootRelease(goRoot); release != "" {
+		return release
+	}
+
+	return goVersion()
+}
+
+// checkCorpusToolchainPin refuses a CORPUS-DEFINING conversion — -stdlib or -tests — running on a
+// toolchain other than the release the corpus is pinned to.
+//
+// Both modes read GOROOT's sources as their INPUT, so the toolchain silently decides what gets
+// converted. A -stdlib run emits the running toolchain's standard library into a tree every gate
+// afterwards measures against the pinned release's goldens; a -tests run converts the OTHER release's
+// test sources against this release's corpus, so no roster count can honestly come from it. Neither
+// shows up as a failure, because each side stays internally consistent — which is why nothing caught
+// it. Before this guard nothing anywhere asserted the pin: a lane that ran its gates on 1.23.2 against
+// a 1.23.1 corpus passed at banked counts, and that was luck about patch-release test-set stability
+// rather than protection.
+//
+// The comparison is the FULL release, PATCH INCLUDED — which is exactly where this parts company with
+// checkNuGetStdLibCompatibility above. That guard compares version.Lang on purpose, because 1.23.1 and
+// 1.23.5 publish the same set of go.<pkg> package IDs and the floating revision in $(GoStdLibVersion)
+// already spans them. Here the patch is the entire point: 1.23.1 and 1.23.2 are different SOURCES, and
+// converting one against goldens captured from the other is the drift this exists to stop. Equality is
+// exact rather than ordered for the same reason — a pin is not a floor, and a corpus converted by a
+// NEWER toolchain is no more measurable than one converted by an older one.
+//
+// A release that cannot be read on either side is never grounds to refuse. An absent version.props
+// means a fresh or unseeded root (the normal first -stdlib conversion), and an unreadable GOVERSION
+// means the toolchain could not be interrogated — neither is a mismatch, and manufacturing one would
+// refuse legitimate runs. The failure this guard prevents is silent; its own failure mode is loud and
+// names both numbers, so erring toward refusing is the safe direction whenever both ARE readable.
+func checkCorpusToolchainPin(mode string, convertingVersion string, pinnedRelease string) error {
+	converting := normalizeGoVersion(convertingVersion)
+	pinned := normalizeGoVersion(pinnedRelease)
+
+	if converting == "" || pinned == "" || converting == pinned {
+		return nil
+	}
+
+	// version.props spells the release bare (it is also a NuGet version component); `go env GOVERSION`
+	// spells it with the prefix. Each is quoted the way its own source writes it so the reader can go
+	// look at both without translating.
+	pinnedBare := strings.TrimPrefix(pinned, "go")
+
+	consequence := fmt.Sprintf(
+		"converting %s's test sources against a corpus built from %s, which is a run no roster count can honestly come from",
+		converting, pinnedBare)
+
+	if mode == "-stdlib" {
+		consequence = fmt.Sprintf(
+			"emitting %s's standard library into a corpus every gate afterwards measures against %s goldens",
+			converting, pinnedBare)
+	}
+
+	return fmt.Errorf(
+		"%s cannot be satisfied on this toolchain: %s pins the corpus to Go %s (<GoStdLibVersion>%s</GoStdLibVersion>), "+
+			"but the Go tree this run would read is %s. %s reads GOROOT's sources as its INPUT, so it would end up %s — "+
+			"a divergence no gate reports, because each side is internally consistent. "+
+			"Either run on %s with GOROOT pointing at that same tree, or, if the corpus is deliberately moving to %s, "+
+			"bump <GoStdLibVersion> to %s first. (That release is read from GOROOT's own VERSION file, so if "+
+			"`go env GOVERSION` disagrees with it, a GOROOT environment variable is overriding the selected "+
+			"toolchain — and GOROOT is the tree that actually gets converted.)",
+		mode, versionPropsFileName, pinnedBare, pinnedBare, converting, mode, consequence,
+		pinned, converting, strings.TrimPrefix(converting, "go"))
+}
