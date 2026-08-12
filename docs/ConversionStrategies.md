@@ -1395,6 +1395,31 @@ package-level global whose address is taken is backed by a real box so `&global`
 `ж<T>` rather than C# `ref` sidesteps escape-analysis complications, at the cost of an occasional heap
 allocation.
 
+**Where no escape exists, the box does not either — the ref-lowering.** An *unexported package-level
+function's* pointer parameter whose every use is a dereference (or a forward into another such position)
+emits as a C# **`ref T` parameter**, and every call site passes a `ref` expression instead of minting a
+box: `ref` reads as Go's `&`, the signature reads as Go's `*T`, and an address-taken local whose address
+only feeds such positions reverts to a plain stack local (no `heap()` box, no pinnable slot). Any use the
+classifier does not positively recognize — identity/nilness, escapes, `unsafe`, method calls on the
+pointer, re-points, exported/func-value/linkname/hand-owned functions — keeps the boxed convention, and
+`defer f(&x)` / `go f(&x)` sites stay boxed with the thunk deriving the ref at invoke time. A nil base at
+a lowered field address panics eagerly via golib's zero-allocation `nonnil` (Go's timing); a nil pointer
+argument still enters the callee and faults at first use:
+
+```go
+func p224Sub(out1, arg1, arg2 *p224MontgomeryDomainFieldElement)   // nistec/fiat/p224_fiat64.go
+p224Sub(&e.x, &t1.x, &t2.x)
+```
+```csharp
+internal static void p224Sub(ref p224MontgomeryDomainFieldElement out1, ref p224MontgomeryDomainFieldElement arg1, ref p224MontgomeryDomainFieldElement arg2)
+p224Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
+```
+
+Detail (the classification whitelist, the seven call-site emission rows and their boxed fallbacks, the
+hoisted-temp rule for wrapper reinterprets, the locals reversion, the nil doctrine and the defer/go
+carve-out): [A pointer parameter whose every use is a dereference is a `ref`
+parameter](ConversionStrategies-Reference.md#a-pointer-parameter-whose-every-use-is-a-dereference-is-a-ref-parameter--the-ж-box-ref-lowering).
+
 An **ENTRY alias** — the `ref` a pointer RECEIVER or pointer PARAMETER binds on the way in — must not use
 `Value`. Go permits calling a method through a nil `*T`, and equally permits *passing* one: the body RUNS,
 and the panic happens only where it dereferences the pointee. That is why `os`'s fifteen nil-tolerant
