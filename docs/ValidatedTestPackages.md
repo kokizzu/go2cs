@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **127 / 215 testable packages validated — 59.1%**
+> ### Phase 4 progress: **128 / 215 testable packages validated — 59.5%**
 >
-> **14,681 matching test verdicts · 50 disclosed** *(updated 2026-08-11 — maintained as part of the
+> **14,707 matching test verdicts · 50 disclosed** *(updated 2026-08-12 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -145,6 +145,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`mime/quotedprintable`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/quotedprintable) | 5 | | Quoted-printable encoding — the reader's soft-line-break and hex-escape state machine, the writer's line wrapping, and an exhaustive encode/decode round-trip. · [proof](validation/current/mime.quotedprintable.md) |
 | [`net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) | 12 |  | The FastCGI record protocol end to end — the child's record dispatch and `FCGI_GET_VALUES` reply, multiplexed request streams over a shared connection, the `ResponseWriter`'s content-type sniffing, and a served request torn down mid-flight. · [proof](validation/current/net.http.fcgi.md) |
 | [`net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) | 13 | | ASCII case-insensitive helpers. · [proof](validation/current/net.http.internal.ascii.md) |
+| [`net/textproto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/textproto) | 26 | | Text-protocol primitives under HTTP/SMTP — MIME header reading with canonicalization (including the want-ZERO `AllocsPerRun` asserts over the common-header fast path, satisfied by the `m[string(b)]` transient-key lookup, hoisted big-const masks and `Once.Do`'s zero-alloc fast path — L11), dot-encoding reader/writer, continued lines, and pipelined request sequencing. · [proof](validation/current/net.textproto.md) |
 | [`net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) | 48 | | URL parsing, escaping and reference resolution — the query encode/decode matrix including semicolon rejection, userinfo, opaque and relative references, `JoinPath`, and `gob`/`JSON`/`TextMarshaler` round-trips of a parsed `URL`. · [proof](validation/current/net.url.md) |
 | [`os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) | 1 |  | The file-descriptor existence probe; its one test is Windows-gated and the converted run reaches Go's own `runtime.GOOS` guard and skips exactly where Go does. · [proof](validation/current/os.exec.internal.fdtest.md) |
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. · [proof](validation/current/os.signal.md) |
