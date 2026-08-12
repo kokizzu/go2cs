@@ -104,6 +104,18 @@ var refLoweringHandOwnCallers = map[string]bool{
 	"runtime.lockWithRankMayAcquire": true, // same call site as getLockRank
 }
 
+// refCanonicalPkgPath normalizes a loaded package path for the CURATED registry lookups (the
+// hand-own-caller set above and the linkname registries): a `-stdlib` load that resolves GOROOT's
+// std module without cmd/go's special-casing reports `std/hash/crc32`-shaped paths (observed on
+// an unpinned go1.23.2 host — the same environment artifact that surfaces as the loader's
+// "use of internal package not allowed" best-effort warnings), and a prefixed path must still
+// match the canonical keys the registries are written in. Everything path-CONSISTENT within a
+// run (the fixed point, call-site resolution) deliberately keeps the raw path — only lookups
+// against hard-coded canonical keys normalize.
+func refCanonicalPkgPath(path string) string {
+	return strings.TrimPrefix(path, "std/")
+}
+
 // Call-site argument shapes — the §3.3 emission rows plus the defer/go carve-out and the veto
 // bucket. Shape names are stable strings because they land in the census JSON.
 const (
@@ -410,7 +422,7 @@ func (a *refLoweringAnalysis) collectFunc(funcDecl *ast.FuncDecl, fileIsHandOwne
 		verdict.FuncVetoes = append(verdict.FuncVetoes, refFuncVetoHandOwned)
 	}
 
-	if refLoweringHandOwnCallers[a.pkg.Path()+"."+obj.Name()] {
+	if refLoweringHandOwnCallers[refCanonicalPkgPath(a.pkg.Path())+"."+obj.Name()] {
 		// Called from a hand-owned file's frozen C# (the curated set the A1 census resolved).
 		verdict.FuncVetoes = append(verdict.FuncVetoes, refFuncVetoHandOwnCaller)
 	}
@@ -479,7 +491,7 @@ func (a *refLoweringAnalysis) isLinknameExposed(name string) bool {
 		return true
 	}
 
-	qualified := a.pkg.Path() + "." + name
+	qualified := refCanonicalPkgPath(a.pkg.Path()) + "." + name
 
 	if linknameForwardTargets[qualified] || linknamePushSources[qualified] {
 		return true
