@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **127 / 215 testable packages validated — 59.1%**
+> ### Phase 4 progress: **128 / 215 testable packages validated — 59.5%**
 >
-> **14,681 matching test verdicts · 50 disclosed** *(updated 2026-08-11 — maintained as part of the
+> **14,683 matching test verdicts · 50 disclosed** *(updated 2026-08-12 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -155,6 +155,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) | 12 | | Regexp parsing, simplification and program compilation; named-type constant tables. · [proof](validation/current/regexp.syntax.md) |
 | [`runtime/internal/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/math) | 1 |  | The allocator's overflow-checked `MulUintptr` across its boundary table — the `uintptr`-typed constant shift whose width decides whether the fast path guards at 2³² or at 1. · [proof](validation/current/runtime.internal.math.md) |
 | [`runtime/internal/sys`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/sys) | 4 |  | The runtime's own bit intrinsics — `Bswap32`/`Bswap64` and `TrailingZeros32`/`TrailingZeros64` across their full input matrices. · [proof](validation/current/runtime.internal.sys.md) |
+| [`runtime/metrics`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/metrics) | 2 |  | The runtime metrics table end to end — `All()`'s sorted-name/regexp contract against `doc.go`, and a full `metrics.Read` round trip computing a kind for every published metric through the first linkname push into a `_test` package, the managed `metricsLock`, and every stat-aggregate compute closure. · [proof](validation/current/runtime.metrics.md) |
 | [`sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sort) | 63 | | Interface-driven sort, `sort.Slice` reflection swaps, NaN-aware ordering, stability. · [proof](validation/current/sort.md) |
 | [`strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) | 55 | 11 | Number↔string conversion at full precision — Ryū/Grisu float formatting, arbitrary-precision decimal shifts, complex parsing; alloc-profile disclosures. · [proof](validation/current/strconv.md) |
 | [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strings) | 68 | 4 | String algorithms; alloc-count/alloc-profile disclosures. · [proof](validation/current/strings.md) |

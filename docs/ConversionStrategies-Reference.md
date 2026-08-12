@@ -13693,6 +13693,43 @@ registry is keyed by the consumer's import path, and the behavioral harness conv
 neither a fixture path nor cross-package discovery is available to it. The pull forwarder is guarded at the same
 layer, and for the same reason, by `TestRecurseLinknameForwarder`.)
 
+**A push whose consumer is an EXTERNAL TEST package needs no new machinery — the key simply spells the test
+package path** (2026-08-12). `runtime/metrics.go` pushes its test-only name reader into the package's own
+test suite:
+
+```go
+// runtime/metrics/description_test.go — the CONSUMER, in package metrics_test (handle shape)
+//go:linkname runtime_readMetricNames
+func runtime_readMetricNames() []string
+
+// runtime/metrics.go (package runtime) — the PUSHER
+//go:linkname readMetricNames runtime/metrics_test.runtime_readMetricNames
+func readMetricNames() []string { … }
+```
+
+The `-tests` conversion's `convertTestVariant` resets package state from the external variant's own
+`packages.Package`, so `currentPackagePath` is already `runtime/metrics_test` while its files convert — the
+registry row `"runtime/metrics_test.runtime_readMetricNames"` matches through the exact code path every
+production consumer uses, and the emitted forwarder
+(`return global::go.runtime_package.readMetricNames();`) replaced the throwing stub that held the package's
+`TestNames` at 1 of 2. Any production package pushing into its own `_test` package takes the same shape. The
+registry guard learned the location half: an external test package has no GOROOT directory of its own, so
+`TestLinknamePushRegistryMatchesGoSource` resolves `<base>_test` to the base package's directory and scans
+its `_test.go` files (only those whose package clause carries the `_test` suffix — in-package test files
+belong to `<base>` itself).
+
+The same package's `Read` entry point is the registry's second **measured** unhonorable row, and the
+measurement is worth recording: a forwarder was tried first, and the pushed body ran — through the
+hand-owned managed `metricsLock` — all the way to `readMetricsLocked`'s slice-header reconstruct
+(`*(*[]metricSample)(unsafe.Pointer(&sl))` over a raw first-element address), which no managed pointer can
+alias: the fabricated slice read garbage `@string` names. The deployed corpus routes around the seam instead
+of through it — `runtime/metrics/sample.cs` is hand-owned and its `Read` marshals names in and computed
+`(kind, scalar, pointer)` out through the public `runtime.readMetricsManaged` shim (`managed_impl.cs`, the
+`registerPoolCleanup` pattern), preserving the batch semantics while the metrics table and every compute
+closure stay auto-converted — so the `runtime_readMetrics` row exists for a conversion into a root WITHOUT
+the hand-own, where the bodyless declaration reappears and must announce the wall rather than fabricate past
+it. `runtime/metrics` validates 2 of 2 on this arrangement.
+
 ### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
 
 `internal/concurrent` is the whole of `unique`'s storage, and `unique` is `net/netip`'s address interner —
