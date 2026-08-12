@@ -311,7 +311,12 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 
 		// Belt-and-suspenders _test.go filter (a `std` load carries none) + the package's own
 		// linkname handle scan (the census must not touch the conversion drivers' package state).
+		// The X5-hand-owned arm probes the corpus (read-only) for each Go file's emission target
+		// carrying the manual-conversion marker — the same per-file probe the conversion driver
+		// runs, routed through layout L3 exactly as the driver routes it.
 		syntax := make([]*ast.File, 0, len(pkg.Syntax))
+		manualFiles := map[*ast.File]bool{}
+		pkgCorpusDir := filepath.Join(options.go2csPath, "core", filepath.FromSlash(pkg.PkgPath))
 
 		for _, file := range pkg.Syntax {
 			filename := pkg.Fset.Position(file.Pos()).Filename
@@ -321,10 +326,17 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 			}
 
 			syntax = append(syntax, file)
+
+			outputFile := platformLayoutPath(pkgCorpusDir, targetParts[0],
+				strings.TrimSuffix(filepath.Base(filename), ".go")+".cs")
+
+			if manual, probeErr := containsManualConversionMarker(outputFile); probeErr == nil && manual {
+				manualFiles[file] = true
+			}
 		}
 
 		handles := censusLinknameHandles(syntax)
-		results[pkg.PkgPath] = analyzeRefLowering(pkg.Fset, syntax, pkg.Types, pkg.TypesInfo, handles)
+		results[pkg.PkgPath] = analyzeRefLowering(pkg.Fset, syntax, pkg.Types, pkg.TypesInfo, handles, manualFiles)
 	}
 
 	// A′-world resolution: the union of every package's records, exported candidates included.

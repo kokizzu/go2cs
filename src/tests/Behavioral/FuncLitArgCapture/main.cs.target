@@ -17,9 +17,7 @@ internal static void run(Action f) {
     f();
 }
 
-internal static void set(ж<box> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void set(ref box p) {
     p.x = 42;
 }
 
@@ -105,12 +103,12 @@ internal static nint nestedArgLiteralCapture() {
 internal static void Main() {
     ref var m = ref heap(new box(), out var Ꮡm);
     run(() => {
-        set(Ꮡm);
+        set(ref (Ꮡm).DerefOrNull());
     });
     fmt.Println((@string)"1:"u8, m.x);
     ref var n = ref heap(new box(), out var Ꮡn);
     run(() => {
-        set(Ꮡn);
+        set(ref (Ꮡn).DerefOrNull());
         Ꮡn.Value.y = Ꮡn.Value.x + 1;
     });
     fmt.Println((@string)"2:"u8, n.x, n.y);
@@ -122,7 +120,7 @@ internal static void Main() {
     fmt.Println((@string)"3:"u8, c.x);
     ref var d = ref heap(new box(), out var Ꮡd);
     void f() {
-        set(Ꮡd);
+        set(ref (Ꮡd).DerefOrNull());
     }
     f();
     fmt.Println((@string)"4:"u8, d.x);

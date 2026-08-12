@@ -72,9 +72,7 @@ internal static nint dynamicFn1() {
     public float32 ShoeSize;
 }
 
-internal static void consumeOne(ж<slice<Person>> Ꮡv) {
-    ref var v = ref Ꮡv.DerefOrNull();
-
+internal static void consumeOne(ref slice<Person> v) {
     v = (v)[1..];
 }
 
@@ -206,7 +204,7 @@ internal static void Main() {
     fmt.Println(ros.headcount(), len(ros));
     ref var crew = ref heap<Roster>(out var Ꮡcrew);
     crew = new Roster(new Person[]{new(Name: "Ann"u8, Age: 30), new(Name: "Bob"u8, Age: 40)}.slice());
-    consumeOne(Ꮡcrew.of(Roster.Ꮡm_value));
+    consumeOne(ref (Ꮡcrew.of(Roster.Ꮡm_value)).DerefOrNull());
     fmt.Println(consumedˢ, len(crew), crew[0].Name);
     x = """
 

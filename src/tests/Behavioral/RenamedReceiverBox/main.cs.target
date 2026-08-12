@@ -19,12 +19,12 @@ internal static void p(this tagger _) {
 }
 
 internal static void add(this ж<counter> Ꮡc, nint d) {
-    addInt(Ꮡc.of(counter.Ꮡn), d);
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    addInt(ref nonnil(ref c).n, d);
 }
 
-internal static void addInt(ж<nint> Ꮡx, nint d) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
+internal static void addInt(ref nint x, nint d) {
     x += d;
 }
 
@@ -38,7 +38,7 @@ internal static nint addInClosure(ж<counter> Ꮡp, nint d) {
 
     void apply() {
         Ꮡp.Value.n += d;
-        addInt(Ꮡp.of(counter.Ꮡn), d);
+        addInt(ref (Ꮡp.of(counter.Ꮡn)).DerefOrNull(), d);
     }
     apply();
     return Δp.n;

@@ -649,6 +649,11 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		// there is nothing in implicitPointers to trigger that rebuild. This flag forces it.
 		skippedDeadPointerAlias := false
 
+		// A ж-box ref-LOWERED pointer param (stage A2, DESIGN-zh-box-reduction §3.4) emits as
+		// `ref T <name>` and needs no deref alias at all — the parameter IS the alias — but, like
+		// the dead-alias case, nothing lands in implicitPointers to trigger the rebuild.
+		hasRefLoweredParams := false
+
 		for i := 0; i < parameters.Len(); i++ {
 			param := parameters.At(i)
 
@@ -692,6 +697,14 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 				if i == 0 && funcDecl.Recv != nil && !directBoxReceiver {
 					// Skip receiver parameter (direct-ж receivers get the deref below, so
 					// the box parameter `Ꮡx` resolves to the value `x` in the body).
+					continue
+				}
+
+				// A Phase-A ref-lowered parameter (ж-box A2): no box exists and no deref alias is
+				// emitted — the `ref T <name>` parameter itself is the value alias every body use
+				// binds. The signature rebuild below emits the lowered form.
+				if v.paramIsRefLowered(param) {
+					hasRefLoweredParams = true
 					continue
 				}
 
@@ -857,7 +870,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			blockPrefix += namedResultAliases.String()
 		}
 
-		if implicitPointers.Len() > 0 || paramHeapBoxes.Len() > 0 || skippedDeadPointerAlias {
+		if implicitPointers.Len() > 0 || paramHeapBoxes.Len() > 0 || skippedDeadPointerAlias || hasRefLoweredParams {
 			updatedSignature := strings.Builder{}
 			dupBlankParams := hasDuplicateBlankParams(parameters) || bodyUsesBlankDiscard(funcDecl)
 
@@ -939,6 +952,25 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 					updatedSignature.WriteRune(' ')
 					updatedSignature.WriteString(getVariadicParamName(param))
 				} else {
+					// A Phase-A ref-lowered pointer parameter (ж-box A2) — `ref T <name>`, the
+					// §3.4 signature: the parameter is the callee-side alias, under the ANALYZED
+					// value name so every body use binds (shadow renames included). No box name
+					// exists; the classifier guarantees no body use needs one (D1/D1′/D2 only).
+					if v.paramIsRefLowered(param) {
+						loweredPointerType, _ := v.paramPointerType(param.Type())
+						loweredParamName := param.Name()
+
+						if adjusted, ok := v.varNames[param]; ok && adjusted != "" {
+							loweredParamName = adjusted
+						}
+
+						updatedSignature.WriteString("ref ")
+						updatedSignature.WriteString(v.getCSharpTypeName(loweredPointerType.Elem()))
+						updatedSignature.WriteRune(' ')
+						updatedSignature.WriteString(getSanitizedIdentifier(loweredParamName))
+						continue
+					}
+
 					updatedSignature.WriteString(v.getCSharpTypeName(param.Type()))
 					updatedSignature.WriteRune(' ')
 

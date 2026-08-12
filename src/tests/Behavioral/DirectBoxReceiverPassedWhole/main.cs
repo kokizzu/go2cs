@@ -8,21 +8,19 @@ partial class main_package {
     internal nint n;
 }
 
-internal static void clearViaPtr(ж<mc> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void clearViaPtr(ref mc c) {
     c.n = 0;
 }
 
-internal static void bump(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void bump(ref nint p) {
     p++;
 }
 
 internal static void reset(this ж<mc> Ꮡc) {
-    bump(Ꮡc.of(mc.Ꮡn));
-    clearViaPtr(Ꮡc);
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    bump(ref nonnil(ref c).n);
+    clearViaPtr(ref (Ꮡc).DerefOrNull());
 }
 
 [GoType] partial struct wrap {

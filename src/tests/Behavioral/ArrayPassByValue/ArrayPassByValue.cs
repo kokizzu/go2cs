@@ -17,7 +17,7 @@ internal static void Main() {
     fmt.Println(a[0], a[1]);
     fmt.Println();
     a[0] = helloˢ;
-    test2(Ꮡa);
+    test2(ref a);
     fmt.Println(a[0], a[1]);
     fmt.Println();
     a[0] = helloˢ;
@@ -27,7 +27,7 @@ internal static void Main() {
     var primes = new nint[]{2, 3, 5, 7, 11, 13}.array();
     fmt.Println(primes);
     fmt.Println(a[0]);
-    stest(p);
+    stest(ref (p).DerefOrNull());
     fmt.Println(a[0]);
     assignCopies();
 }
@@ -77,9 +77,7 @@ internal static void assignCopies() {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string helloˢ2 = "hello"u8;
 
-internal static void stest(ж<@string> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void stest(ref @string p) {
     p = helloˢ2;
 }
 
@@ -94,9 +92,7 @@ internal static void test([GoArrayDims(2)] array<@string> a) {
     fmt.Println(a[0], a[1]);
 }
 
-internal static void test2(ж<array<@string>> Ꮡa) {
-    ref var a = ref Ꮡa.DerefOrNull();
-
+internal static void test2(ref array<@string> a) {
     fmt.Println(a[0], a[1]);
     a[0] = goodbyeˢ;
     fmt.Println(a[0], a[1]);

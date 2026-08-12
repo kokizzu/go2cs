@@ -30,9 +30,7 @@ internal static int64 readBack(ж<box> Ꮡb) {
     return (~c).a + (~c).b;
 }
 
-internal static void bump(ж<int64> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void bump(ref int64 p) {
     p = p + 7;
 }
 
@@ -72,7 +70,7 @@ internal static void Main() {
     fmt.Println(b.w.a, b.w.b);
     fmt.Println(readBack(Ꮡb));
     var c = Ꮡb.of(box.Ꮡw);
-    bump(c.of(wrapper.Ꮡa));
+    bump(ref (c.of(wrapper.Ꮡa)).DerefOrNull());
     fmt.Println(b.w.a, readBack(Ꮡb));
     var s = new shadowed(nil);
     s.fn = 5;
@@ -86,7 +84,7 @@ internal static void Main() {
     ref var e = ref heap<derived>(out var Ꮡe);
     e = new derived(@base: new @base(id: 21), tag: 2);
     var p = Ꮡe;
-    bump(p.of(derived.Ꮡid));
+    bump(ref (p.of(derived.Ꮡid)).DerefOrNull());
     fmt.Println(e.id, e.tag, e.twice());
     shadowed z = new(nil);
     z.ctxt.fn = 7;

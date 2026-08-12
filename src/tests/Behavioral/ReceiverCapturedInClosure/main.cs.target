@@ -8,9 +8,7 @@ partial class main_package {
     internal nint n;
 }
 
-internal static void addInt(ж<nint> Ꮡx, nint d) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
+internal static void addInt(ref nint x, nint d) {
     x += d;
 }
 
@@ -28,7 +26,7 @@ internal static nint addViaFieldPtr(this ж<counter> Ꮡc, nint d) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     void apply() {
-        addInt(Ꮡc.of(counter.Ꮡn), d);
+        addInt(ref (Ꮡc.of(counter.Ꮡn)).DerefOrNull(), d);
     }
     apply();
     return c.n;

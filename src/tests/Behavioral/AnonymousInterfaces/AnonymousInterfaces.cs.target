@@ -187,9 +187,7 @@ internal static (int64, error) fill(this ж<tally> Ꮡt, Δio.Reader r) {
     internal quad data;
 }
 
-internal static nint checksum(ж<frame> Ꮡf) {
-    ref var f = ref Ꮡf.DerefOrNull();
-
+internal static nint checksum(ref frame f) {
     nint s = 0;
     foreach (var (_, v) in f.data[..]) {
         s += (nint)v;
@@ -207,9 +205,8 @@ internal static void Main() {
     var tl = Ꮡ(new tally(nil));
     var (n, err) = tl.fill(new byteRepeatжReader(Ꮡ(new byteRepeat(left: 10))));
     fmt.Println(n, err == default!, (~tl).total);
-    ref var fr = ref heap<frame>(out var Ꮡfr);
-    fr = new frame(data: new quad(new byte[]{1, 2, 3, 4}.array()));
-    fmt.Println(checksum(Ꮡfr));
+    var fr = new frame(data: new quad(new byte[]{1, 2, 3, 4}.array()));
+    fmt.Println(checksum(ref fr));
 }
 
 } // end main_package

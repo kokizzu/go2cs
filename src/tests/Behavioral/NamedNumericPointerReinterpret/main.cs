@@ -63,9 +63,7 @@ internal static void bump(ж<coord> Ꮡc) {
 
 [GoType("@string")] partial struct namedString;
 
-internal static void setStr(ж<namedString> Ꮡs, @string v) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
+internal static void setStr(ref namedString s, @string v) {
     s = ((namedString)v);
 }
 
@@ -94,17 +92,15 @@ internal static void Main() {
     fmt.Println(xy.X, xy.Y);
     ref var s = ref heap<@string>(out var Ꮡs);
     s = beforeˢ;
-    setStr(Ꮡs.Reinterpret<@string, namedString>(), afterˢ);
+    setStr(ref (Ꮡs.Reinterpret<@string, namedString>()).DerefOrNull(), afterˢ);
     fmt.Println(s);
     ref var d = ref heap(new lfstack(), out var Ꮡd);
     d = 7;
-    storeInt64(Ꮡd.Reinterpret<lfstack, uint64>(), 99);
+    storeInt64(ref (Ꮡd.Reinterpret<lfstack, uint64>()).DerefOrNull(), 99);
     fmt.Println(Ꮡd.peek(), d);
 }
 
-internal static void storeInt64(ж<uint64> Ꮡp, uint64 v) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void storeInt64(ref uint64 p, uint64 v) {
     p = v;
 }
 

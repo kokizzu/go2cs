@@ -67,7 +67,7 @@ func analyzeFixture(t *testing.T, pkg *packages.Package) *refLoweringPackageResu
 		t.Fatalf("fixture did not type-check cleanly: %v", pkg.Errors)
 	}
 
-	return analyzeRefLowering(pkg.Fset, pkg.Syntax, pkg.Types, pkg.TypesInfo, censusLinknameHandles(pkg.Syntax))
+	return analyzeRefLowering(pkg.Fset, pkg.Syntax, pkg.Types, pkg.TypesInfo, censusLinknameHandles(pkg.Syntax), nil)
 }
 
 // paramOf fetches one parameter verdict, failing loudly when the shape moved.
@@ -600,13 +600,13 @@ var Hook = lowerme
 		t.Fatal("fixture must include a _test.go file in the merged package")
 	}
 
-	prodResult := analyzeRefLowering(pkg.Fset, production, pkg.Types, pkg.TypesInfo, censusLinknameHandles(production))
+	prodResult := analyzeRefLowering(pkg.Fset, production, pkg.Types, pkg.TypesInfo, censusLinknameHandles(production), nil)
 
 	if param := paramOf(t, prodResult, "lowerme", 0); !param.LoweredA {
 		t.Errorf("production-only classification must lower lowerme#0 (vetoes %v)", param.Vetoes)
 	}
 
-	allResult := analyzeRefLowering(pkg.Fset, all, pkg.Types, pkg.TypesInfo, censusLinknameHandles(all))
+	allResult := analyzeRefLowering(pkg.Fset, all, pkg.Types, pkg.TypesInfo, censusLinknameHandles(all), nil)
 	verdict := allResult.Funcs["lowerme"]
 
 	if verdict == nil {
@@ -682,7 +682,7 @@ func exposed(p *uint64) { *p = 1 }
 	}
 
 	pkg := loaded[0]
-	result := analyzeRefLowering(pkg.Fset, pkg.Syntax, pkg.Types, pkg.TypesInfo, censusLinknameHandles(pkg.Syntax))
+	result := analyzeRefLowering(pkg.Fset, pkg.Syntax, pkg.Types, pkg.TypesInfo, censusLinknameHandles(pkg.Syntax), nil)
 
 	assertFuncVeto := func(name, tag string) {
 		t.Helper()
@@ -704,4 +704,182 @@ func exposed(p *uint64) { *p = 1 }
 
 	assertFuncVeto("asmStub", refFuncVetoBodiless)
 	assertFuncVeto("exposed", refFuncVetoLinkname)
+}
+
+func TestRefLoweringHandOwnVetoes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the fixture package via go/packages")
+	}
+
+	// The A2 hand-own arms: a function declared in a file whose emission is hand-owned vetoes
+	// mechanically (X5-hand-owned); a function on the curated called-from-hand-own list vetoes by
+	// name (X5-hand-own-caller). Both keep the boxed signature the frozen C# compiled against.
+	pkg := loadRefLoweringFixture(t, map[string]string{
+		"go.mod": "module example.com/handown\n\ngo 1.23\n",
+		"frozen.go": `package handown
+
+// Emission of THIS file is hand-owned (simulated via the driver's manualConversion flag).
+func frozenFn(out *uint64) { *out = 1 }
+`,
+		"open.go": `package handown
+
+func openFn(out *uint64) { *out = 2 }
+
+func curatedFn(out *uint64) { *out = 3 }
+`,
+	}, false)
+
+	if len(pkg.Errors) > 0 {
+		t.Fatalf("fixture did not type-check cleanly: %v", pkg.Errors)
+	}
+
+	// Identify the files by their declared functions.
+	var frozenFile *ast.File
+
+	for _, file := range pkg.Syntax {
+		for _, decl := range file.Decls {
+			if fn, ok := decl.(*ast.FuncDecl); ok && fn.Name.Name == "frozenFn" {
+				frozenFile = file
+			}
+		}
+	}
+
+	if frozenFile == nil {
+		t.Fatal("frozen.go's syntax not found")
+	}
+
+	// Curated-list seam: register the fixture's function, restore after.
+	curatedKey := pkg.Types.Path() + ".curatedFn"
+	refLoweringHandOwnCallers[curatedKey] = true
+	defer delete(refLoweringHandOwnCallers, curatedKey)
+
+	result := analyzeRefLowering(pkg.Fset, pkg.Syntax, pkg.Types, pkg.TypesInfo,
+		censusLinknameHandles(pkg.Syntax), map[*ast.File]bool{frozenFile: true})
+
+	assertVeto := func(name, tag string, wantLowered bool) {
+		t.Helper()
+
+		verdict := result.Funcs[name]
+
+		if verdict == nil {
+			t.Fatalf("%s not classified", name)
+		}
+
+		found := false
+
+		for _, veto := range verdict.FuncVetoes {
+			if veto == tag {
+				found = true
+			}
+		}
+
+		if tag != "" && !found {
+			t.Errorf("%s must carry %s (recorded %v)", name, tag, verdict.FuncVetoes)
+		}
+
+		lowered := false
+
+		for _, param := range verdict.Params {
+			if param.LoweredA {
+				lowered = true
+			}
+		}
+
+		if lowered != wantLowered {
+			t.Errorf("%s lowered=%v, want %v", name, lowered, wantLowered)
+		}
+	}
+
+	assertVeto("frozenFn", refFuncVetoHandOwned, false)
+	assertVeto("curatedFn", refFuncVetoHandOwnCaller, false)
+	assertVeto("openFn", "", true)
+}
+
+func TestRefLoweringEmittabilityNarrowing(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the fixture package via go/packages")
+	}
+
+	// The A2 emittability narrowing: (1) a derived address whose chain auto-derefs through a
+	// POINTER field vetoes the parameter (D1' side) and strips the target position (shape side);
+	// (2) a row-5 pointer conversion of a VALUE (not an address) strips its position — the ruled
+	// hoisted-temp mechanism covers conv-of-address only.
+	pkg := loadRefLoweringFixture(t, map[string]string{
+		"go.mod": "module example.com/narrow\n\ngo 1.23\n",
+		"narrow.go": `package narrow
+
+type inner struct{ n uint64 }
+
+type outer struct{ p *inner }
+
+var globalOuter outer
+var globalArrPtr *[4]uint64
+
+// sinkA stays lowered: its shapes are all clean.
+func sinkA(x *uint64) { *x = 1 }
+
+// sinkB strips: its ONLY call site's shape is a pointer-field chain.
+func sinkB(x *uint64) { *x = 2 }
+
+// sinkC stays lowered (conv-of-address); sinkD strips (conv-of-value); sinkE strips (the D1'
+// fixture's ptr-field-chain site — the strip lands on BOTH sides of the fixed point).
+func sinkC(p *[4]uint64) { p[0]++ }
+func sinkD(p *[4]uint64) { p[0]++ }
+func sinkE(x *uint64)   { *x = 5 }
+
+// A clean site keeps sinkA lowered.
+func cleanSite() {
+	var v uint64
+	sinkA(&v)
+	_ = v
+}
+
+// D1' side: the chain crosses the pointer field p — o vetoes (and sinkE's position strips).
+func viaPtrField(o *outer) { sinkE(&o.p.n) }
+
+// Shape side: the same chain at sinkB's only site strips sinkB#0.
+func shapeSite() { sinkB(&globalOuter.p.n) }
+
+// Row 5: conv-of-address stays; conv-of-value strips.
+type mont [4]uint64
+
+var m mont
+
+func convClean() { sinkC((*[4]uint64)(&m)) }
+func convValue() { sinkD((*[4]uint64)(globalArrPtr)) }
+`,
+	}, false)
+
+	result := analyzeFixture(t, pkg)
+
+	// D1' param-side veto.
+	via := paramOf(t, result, "viaPtrField", 0)
+
+	if via.LoweredA {
+		t.Error("viaPtrField#0 must veto: its derived address crosses a pointer field")
+	}
+
+	if !hasVeto(via, refVetoOtherUse) {
+		t.Errorf("viaPtrField#0 vetoes = %v, want %s", via.Vetoes, refVetoOtherUse)
+	}
+
+	// Shape-side strips.
+	if p := paramOf(t, result, "sinkB", 0); p.LoweredA {
+		t.Error("sinkB#0 must strip: its only site is a ptr-field-chain shape")
+	} else if !strings.HasPrefix(p.StrippedBy, refVetoCallerShape) {
+		t.Errorf("sinkB#0 strippedBy = %q, want %s:*", p.StrippedBy, refVetoCallerShape)
+	}
+
+	if p := paramOf(t, result, "sinkD", 0); p.LoweredA {
+		t.Error("sinkD#0 must strip: conv-of-value has no ruled emission")
+	}
+
+	// Controls.
+	if p := paramOf(t, result, "sinkA", 0); !p.LoweredA {
+		t.Errorf("sinkA#0 must stay lowered (vetoes %v, strippedBy %q)", p.Vetoes, p.StrippedBy)
+	}
+
+	if p := paramOf(t, result, "sinkC", 0); !p.LoweredA {
+		t.Errorf("sinkC#0 must stay lowered (conv-of-address; vetoes %v, strippedBy %q)", p.Vetoes, p.StrippedBy)
+	}
 }

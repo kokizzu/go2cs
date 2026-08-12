@@ -1223,6 +1223,12 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
 
     [TestMethod]
+    public void CheckRefLoweredNilTiming() => CheckTarget("RefLoweredNilTiming");
+
+    [TestMethod]
+    public void CheckRefLoweredParams() => CheckTarget("RefLoweredParams");
+
+    [TestMethod]
     public void CheckReinterpretPinLifetime() => CheckTarget("ReinterpretPinLifetime");
 
     [TestMethod]

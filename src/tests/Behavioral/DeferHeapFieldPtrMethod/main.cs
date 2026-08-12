@@ -23,9 +23,7 @@ private static readonly object lineˢ = (@string)"line:"u8;
     internal tracker trk;
 }
 
-internal static void seed(ж<parser> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void seed(ref parser p) {
     p.trk.lines = append(p.trk.lines, "seed"u8);
 }
 
@@ -37,7 +35,7 @@ internal static void run() {
     try {
         ref var p = ref heap<parser>(out var Ꮡp);
         p = new parser(name: "p1"u8);
-        seed(Ꮡp);
+        seed(ref p);
         defer(Ꮡp.of(parser.Ꮡtrk).flush, ref ᒐ);
         p.trk.lines = append(p.trk.lines, "after-defer"u8);
         p.trk.lines = append(p.trk.lines, "final"u8);

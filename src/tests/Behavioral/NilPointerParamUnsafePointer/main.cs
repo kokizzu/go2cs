@@ -35,9 +35,7 @@ internal static ж<node> newNode(nint id, ж<node> Ꮡparent) {
     return Ꮡ(new node(id: id, parent: Ꮡparent));
 }
 
-internal static nint depth(ж<node> Ꮡn) {
-    ref var n = ref Ꮡn.DerefOrNull();
-
+internal static nint depth(ref node n) {
     nint d = 0;
     for (var p = n.parent; p != nil; p = p.Value.parent) {
         d++;
@@ -78,7 +76,7 @@ internal static void Main() {
     var child = newNode(2, root);
     var grand = newNode(3, child);
     fmt.Println(namedArgLabelˢ, (~root).id, (~child).id, (~grand).id);
-    fmt.Println(depthsˢ, depth(root), depth(child), depth(grand));
+    fmt.Println(depthsˢ, depth(ref (root).DerefOrNull()), depth(ref (child).DerefOrNull()), depth(ref (grand).DerefOrNull()));
     fmt.Println(linksˢ, (~root).parent == nil, (~child).parent == root, (~grand).parent == child);
 }
 

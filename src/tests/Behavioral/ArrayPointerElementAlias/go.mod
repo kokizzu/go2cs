@@ -1,3 +1,3 @@
 module go2cs/ArrayPointerElementAlias
 
-go 1.23.2
+go 1.23

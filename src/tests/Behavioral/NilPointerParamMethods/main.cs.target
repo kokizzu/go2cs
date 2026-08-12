@@ -229,13 +229,11 @@ internal static void Main() {
     });
     fmt.Println();
     fmt.Println(aWriteThroughAPointerˢ);
-    rename(chain, renamedˢ);
+    rename(ref (chain).DerefOrNull(), renamedˢ);
     fmt.Printf("  chain.name -> %s\n"u8, (~chain).name);
 }
 
-internal static void rename(ж<node> Ꮡp, @string s) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void rename(ref node p, @string s) {
     p.name = s;
 }
 

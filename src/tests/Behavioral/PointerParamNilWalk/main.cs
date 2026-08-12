@@ -40,9 +40,7 @@ internal static ж<node> build(params ꓸꓸꓸnint valsʗp) {
     return head;
 }
 
-internal static (ж<node>, nint) advance(ж<node> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static (ж<node>, nint) advance(ref node p) {
     return (p.next, p.val);
 }
 
@@ -53,10 +51,10 @@ internal static nint sumEveryOther(ж<node> Ꮡp) {
     nint skipped = 0;
     while (Ꮡp != nil) {
         total += p.val;
-        (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNull();
+        (Ꮡp, skipped) = advance(ref (Ꮡp).DerefOrNull()); p = ref Ꮡp.DerefOrNull();
         _ = skipped;
         if (Ꮡp != nil) {
-            (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNull();
+            (Ꮡp, skipped) = advance(ref (Ꮡp).DerefOrNull()); p = ref Ꮡp.DerefOrNull();
             total += skipped * 0;
         }
     }
@@ -67,7 +65,7 @@ internal static void bumpFirstViaTuple(ж<node> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNull();
 
     nint skipped = default!;
-    (Ꮡp, skipped) = advance(Ꮡp); p = ref Ꮡp.DerefOrNull();
+    (Ꮡp, skipped) = advance(ref (Ꮡp).DerefOrNull()); p = ref Ꮡp.DerefOrNull();
     _ = skipped;
     if (Ꮡp != nil) {
         p.val += 100;

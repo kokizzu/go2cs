@@ -1683,6 +1683,41 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// The ж-box arc's eager field/element-address nil check (docs/phase4/DESIGN-zh-box-reduction.md
+    /// §3.3, ruling §10.4): validates that <paramref name="target"/> is not a null reference before a
+    /// lowered call site derives a field address from it, and hands the same reference back.
+    /// </summary>
+    /// <typeparam name="T">Referent type.</typeparam>
+    /// <param name="target">The base reference a lowered field address is about to be derived from.</param>
+    /// <returns>The same reference, guaranteed non-null.</returns>
+    /// <remarks>
+    /// <para>
+    /// Go panics EAGERLY at <c>&amp;e.x</c> when <c>e</c> is nil — before later arguments evaluate,
+    /// before the callee is entered. A lowered call site (<c>f(ref nonnil(ref e).x, …)</c>) would
+    /// otherwise form an interior reference over a null base, which faults nowhere at formation
+    /// (byref arithmetic does not dereference) and surfaces only at the callee's first use — after
+    /// side effects Go never runs, catchable by a callee <c>recover</c> that can never fire in Go
+    /// (the panel's S-F1 third-behavior refutation). One branch, zero allocation; the throw is the
+    /// exact panic <see cref="ж{T}.Value"/> raises for a nil box, so the message and recoverability
+    /// are unchanged.
+    /// </para>
+    /// <para>
+    /// The converter elides the wrap where the base provably cannot be a null reference (a value
+    /// local, a value parameter, an addressed global's ref property); it emits it where the base is
+    /// a pointer's deref alias, whose <see cref="PointerExtensions.DerefOrNull{T}"/> binding is a
+    /// null reference exactly when the pointer is nil.
+    /// </para>
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ref T nonnil<T>(ref T target)
+    {
+        if (Unsafe.IsNullRef(ref target))
+            throw RuntimeErrorPanic.NilPointerDereference();
+
+        return ref target;
+    }
+
+    /// <summary>
     /// Creates a heap allocated pointer reference to a new zero value instance of type.
     /// </summary>
     /// <returns>Pointer to heap allocated zero value of provided type.</returns>

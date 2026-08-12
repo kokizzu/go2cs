@@ -4,23 +4,17 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static void setErr(ж<error> Ꮡerr) {
-    ref var err = ref Ꮡerr.DerefOrNull();
-
+internal static void setErr(ref error err) {
     err = fmt.Errorf("written via pointer"u8);
 }
 
-internal static void addOne(ж<nint> Ꮡn) {
-    ref var n = ref Ꮡn.DerefOrNull();
-
+internal static void addOne(ref nint n) {
     n++;
 }
 
-internal static void handlePanic(ж<error> Ꮡerr) {
+internal static void handlePanic(ref error err) {
     GoFrame ᒐ = default;
     try {
-        ref var err = ref Ꮡerr.DerefOrNull();
-
         {
             var e = recover(); if (e != default!) {
                 err = fmt.Errorf("recovered: %v"u8, e);
@@ -37,7 +31,7 @@ internal static error /*err*/ errResult(bool fail) {
     try {
         ref var err = ref Ꮡerr.ValueSlot;
 
-        defer(setErr, Ꮡerr, ref ᒐ);
+        defer(ᴛ1 => setErr(ref ᴛ1.DerefOrNull()), Ꮡerr, ref ᒐ);
         if (fail) {
             err = fmt.Errorf("original"u8); goto ᒐdone;
         }
@@ -54,7 +48,7 @@ internal static nint /*n*/ intResult() {
     try {
         ref var n = ref Ꮡn.Value;
 
-        defer(addOne, Ꮡn, ref ᒐ);
+        defer(ᴛ1 => addOne(ref ᴛ1.DerefOrNull()), Ꮡn, ref ᒐ);
         n = 5;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -68,7 +62,7 @@ internal static error /*err*/ recoverResult() {
     try {
         ref var err = ref Ꮡerr.ValueSlot;
 
-        defer(handlePanic, Ꮡerr, ref ᒐ);
+        defer(ᴛ1 => handlePanic(ref ᴛ1.DerefOrNull()), Ꮡerr, ref ᒐ);
         throw panic("boom");
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

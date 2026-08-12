@@ -16,23 +16,19 @@ partial class main_package {
     internal ж<rec> r;
 }
 
-internal static void bump(ж<cycle> Ꮡc) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
+internal static void bump(ref cycle c) {
     c.n++;
 }
 
 internal static void viaParam(ж<rec> Ꮡp, nint i) {
     var c = Ꮡp.at(rec.Ꮡfuture, i);
-    bump(c);
+    bump(ref (c).DerefOrNull());
 }
 
-internal static void viaLocal(ж<holder> Ꮡh, nint i) {
-    ref var h = ref Ꮡh.DerefOrNull();
-
+internal static void viaLocal(ref holder h, nint i) {
     var p = h.r;
     var c = p.at(rec.Ꮡfuture, i);
-    bump(c);
+    bump(ref (c).DerefOrNull());
 }
 
 internal static void Main() {
@@ -42,7 +38,7 @@ internal static void Main() {
     viaParam(Ꮡr, 0);
     fmt.Println(r.future[0].n);
     var h = Ꮡ(new holder(r: Ꮡr));
-    viaLocal(h, 1);
+    viaLocal(ref (h).DerefOrNull(), 1);
     fmt.Println(r.future[1].n);
 }
 

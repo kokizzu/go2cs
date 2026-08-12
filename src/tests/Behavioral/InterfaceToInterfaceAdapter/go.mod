@@ -1,6 +1,6 @@
 module go2cs/InterfaceToInterfaceAdapter
 
-go 1.23.2
+go 1.23
 
 require CrossPkgLib v0.0.0
 

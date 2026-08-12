@@ -17,9 +17,7 @@ partial class main_package {
 
 [GoType("[3]nint")] partial struct Trio;
 
-internal static void clip(ж<Rect> Ꮡr, nint lo, nint hi) {
-    ref var r = ref Ꮡr.DerefOrNull();
-
+internal static void clip(ref Rect r, nint lo, nint hi) {
     if (r.Min < lo) {
         r.Min = lo;
     }
@@ -28,30 +26,24 @@ internal static void clip(ж<Rect> Ꮡr, nint lo, nint hi) {
     }
 }
 
-internal static void bump(ж<nint> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static void bump(ref nint p) {
     p += 10;
 }
 
-internal static Rect clipParam(Rect rʗp) {
-    ref var r = ref heap(rʗp, out var Ꮡr);
-
-    clip(Ꮡr, 5, 5);
+internal static Rect clipParam(Rect r) {
+    clip(ref r, 5, 5);
     return r;
 }
 
-internal static Box bumpParamField(Box bʗp) {
-    ref var b = ref heap(bʗp, out var Ꮡb);
-
-    bump(Ꮡb.of(Box.ᏑR).of(Rect.ᏑMin));
+internal static Box bumpParamField(Box b) {
+    bump(ref b.R.Min);
     return b;
 }
 
-internal static array<nint> bumpParamElem(array<nint> aʗp) {
-    ref var a = ref heap(aʗp.Clone(), out var Ꮡa);
+internal static array<nint> bumpParamElem([GoArrayDims(3)] array<nint> a) {
+    a = a.Clone();
 
-    bump(Ꮡa.at<nint>(1));
+    bump(ref a[1]);
     return a.Clone();
 }
 
@@ -63,9 +55,8 @@ internal static (nint, nint) readOnlyParam(Rect rʗp) {
 }
 
 internal static Rect clipLocal() {
-    ref var r = ref heap<Rect>(out var Ꮡr);
-    r = new Rect(0, 16);
-    clip(Ꮡr, 5, 5);
+    var r = new Rect(0, 16);
+    clip(ref r, 5, 5);
     return r;
 }
 
@@ -73,35 +64,33 @@ internal static nint plainParam(Rect r) {
     return r.Max - r.Min;
 }
 
-internal static void bumpBox(ж<Box> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
+internal static void bumpBox(ref Box b) {
     b.Tag += 10;
 }
 
 public static nint BumpedRecv(this Box bʗp) {
     ref var b = ref heap(bʗp, out var Ꮡb);
 
-    bumpBox(Ꮡb);
+    bumpBox(ref b);
     return b.Tag;
 }
 
 public static (nint, nint) ClippedRecv(this Box bʗp) {
     ref var b = ref heap(bʗp, out var Ꮡb);
 
-    clip(Ꮡb.of(Box.ᏑR), 5, 5);
+    clip(ref b.R, 5, 5);
     return (b.R.Min, b.R.Max);
 }
 
 public static (nint, nint, nint) BumpedElemRecv(this Trio aʗp) {
     ref var a = ref heap(aʗp.Clone(), out var Ꮡa);
 
-    bump(Ꮡa.at<nint>(1));
+    bump(ref a[1]);
     return (a[0], a[1], a[2]);
 }
 
 public static nint BumpedElemSliceRecv(this Nums n) {
-    bump(Ꮡ(n, 1));
+    bump(ref n[1]);
     return n[1];
 }
 
@@ -115,7 +104,7 @@ public static (nint, nint) ReadOnlyRecv(this Box bʗp) {
 public static nint BumpedPtrRecv(this ж<Box> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    bumpBox(Ꮡb);
+    bumpBox(ref (Ꮡb).DerefOrNull());
     return b.Tag;
 }
 

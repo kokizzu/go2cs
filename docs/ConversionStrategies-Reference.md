@@ -10488,6 +10488,45 @@ Together these take `os.File.WriteString` from **9,208 to 3,168 bytes per call (
 
 golib-only change — no emitted-code difference. (Guarded by `GolibTests.PointerDereferenceAllocationTests`: four measured-byte assertions plus a semantics pair. With the fixes neutered they report 528 B/deref for a 512-byte pointee, 288 B/deref for a reference-bearing one, 32 B/deref through a field-pointer chain, and 200-vs-112 B/call for `of(…)` against a bare box of the same type — the last stated as a COMPARISON rather than a byte count so it survives any future change to `ж<T>`'s layout.)
 
+### A pointer parameter whose every use is a dereference is a `ref` parameter — the ж-box ref-lowering
+
+The emitted-form rule (stage A2 of [`docs/phase4/DESIGN-zh-box-reduction.md`](phase4/DESIGN-zh-box-reduction.md), rulings §10.1/§10.3/§10.4): an **unexported package-level function's** pointer parameter whose every body use is a dereference (`*p`, `p.f`, `p[i]`, `range p`), a derived address feeding another lowered position (`&p.f` → a lowered argument), or a forward into another lowered position, emits as a C# **`ref T` parameter** instead of the boxed `ж<T>` — and every call site passes a `ref` expression instead of minting or carrying a box. A `ref T` argument is an alias into the caller's storage the GC tracks and updates, so no pinning, no box, no allocation, and writes through it land in the caller's storage by construction. The signature reads as Go's `*T`, `ref` reads as Go's `&`, and the entry deref preamble disappears because the parameter *is* the alias:
+
+```go
+func p224Sub(out1, arg1, arg2 *p224MontgomeryDomainFieldElement) { ... }
+p224Sub(&e.x, &t1.x, &t2.x)
+```
+
+```csharp
+internal static void p224Sub(ref p224MontgomeryDomainFieldElement out1, ref p224MontgomeryDomainFieldElement arg1, ref p224MontgomeryDomainFieldElement arg2) { ... }
+p224Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
+```
+
+**What disqualifies (the whitelist argument — any use the classifier does not positively recognize keeps the box):** pointer identity or nilness (`p == nil`, map keys), escapes (returned, stored, captured by a closure or a defer/go argument frame), representation observations (`unsafe.Pointer(p)`, `uintptr(p)`, interface conversions, a method call ON `p`), re-pointing (`p = q`), and function-identity escapes (exported [Phase A], func-value uses, `//go:linkname` registry membership, named pointer types, bodiless assembly stubs, declaration in — or a curated call from — a `[module: GoManualConversion]` hand-owned file). Blank/unnamed pointer parameters are never candidates (no uses, nothing to gain, and the boxed path owns the synthesized-name conventions). The fixed point is two-sided: a call site whose argument shape has no `ref` emission row (including the tuple-splat `f(g())` form) strips the position rather than dead-ending emission.
+
+**The call-site emission rows** (each self-checks and falls back to today's boxed emission wrapped `.DerefOrNull()` — total over classifier-admitted shapes without coverage ever being a soundness premise):
+
+| Go argument | lowered emission |
+|:--|:--|
+| `&e.x` / `&p[i]` (base is a pointer's deref alias or a lowered `ref` param) | `ref nonnil(ref e).x` / `ref nonnil(ref p)[i]` |
+| `&x.f` / `&s[i]` (value-rooted base: local, value param, global, slice) | `ref x.f` / `ref s[i]` — `nonnil` elided, the base cannot be null |
+| `&x` (address-taken local/param/result — reverted or kept-box) | `ref x` (the plain local, or the entry ref alias into the surviving box — same storage either way) |
+| a pointer variable/field/deref/assert (carries a box) | `ref (q).DerefOrNull()` — reads the box at CALL time, so a re-pointed pointer is never stale |
+| a lowered `ref` parameter forwarded | `ref p` — it already is the ref |
+| `(*T2)(&v.x)` (the named-array-wrapper reinterpret — §10.3's hoisted-temp rule) | `var ᴛ1 = nonnil(ref v).x.Value;` … `ref ᴛ1` — the wrapper's `Value` yields its `array<T>` header, a copy whose `T[]` backing is SHARED, so element writes flow through and whole-header writes are lost in both emissions equally (byte-parity with the old `Ꮡ((Ꮡv.of(…)).Value.Value)` form). Go requires identical underlying types for pointer conversions, so the wrapper family closes under `.Value` reads and single user-defined conversions; anything else (e.g. a named-SLICE reinterpret) keeps the boxed fallback |
+| `&T{…}` composite literal | `var ᴛ1 = new T(…);` … `ref ᴛ1` — observationally identical to a distinct heap box, since a lowered callee can never compare, store, escape or convert the address |
+| the literal `nil` | `ref ((ж<T>)default!).DerefOrNull()` — binds the null ref; the callee's first use faults with Go's panic |
+
+**Address-taken locals revert for free.** A local (or value parameter, or named result) whose EVERY address-connected use feeds a lowered position — directly, outside defer/go, outside any closure — loses its `heap()` box entirely: the declaration reverts to a plain local, removing **two** counted objects per unmanaged local (the box and its eager pinnable slot). Any surviving box use (a stored address, a closure crossing, a pointer-receiver method) keeps the box, and the lowered sites alias the same storage through the entry ref alias. The reversion also collapses the per-iteration loop-variable boxing scaffold where the loop var's address only feeds lowered positions (`ForVariants`).
+
+**The nil doctrine (ruling §10.4).** Go panics eagerly at `&e.x` when `e` is nil — before the callee is entered. A naive null byref would instead let the callee run side effects Go never runs and let a callee `recover` catch a panic it can never catch (the design review's S-F1 third behavior). Lowered field/element address formation over a *nullable* base (a pointer's deref alias — null exactly when the pointer is nil) is therefore eagerly checked by golib's `nonnil(ref e)` — one branch, zero allocation, throwing the exact panic `ж<T>.Value` raises — and elided where the base provably cannot be null (a value local/parameter/result, an addressed global's ref property). A plain nil pointer ARGUMENT (`f(q)` with nil `q`) still enters the callee and faults at first use, exactly as Go. Measured gc subtlety recorded with the guard: Go evaluates sibling function CALLS among the arguments in lexical order *before* non-call operands like `&e.x`, so "later arguments unevaluated" holds only for non-call operands.
+
+**`defer f(&x)` / `go f(&x)` are boxed sites, categorically.** The defer/go machinery stores eagerly-evaluated argument values in a frame, and a managed `ref` cannot be stored there (the compiling alternative — a copy-box — silently loses writes: the panel's 0-vs-7 refutation). The eager arguments keep the boxed emission, the statement always takes the temp-param lambda form (a `ref`-parameter method group cannot convert to `Action<…>`), and the thunk derives each ref at invoke time: `defer(ᴛ1 => setErr(ref ᴛ1.DerefOrNull()), Ꮡerr, ref ᒐ);` — preserving Go's defer-time argument evaluation. An address flowing to a lowered position under defer/go keeps its box (the locals carve-out), and an address-carrying use of a candidate's OWN parameter inside a defer/go argument frame vetoes that parameter (the X2-defer-arg mirror).
+
+**Determinism across emissions:** classification reads only the production package's own files — never `_test.go` — so the `-stdlib` and `-tests` emissions of production sources agree by construction (a white-box `export_test.go` func-value alias cannot un-lower what `-stdlib` lowered; unit-guarded).
+
+Landed measured effect on the flagship: `crypto/internal/nistec/fiat` transpiles with **zero** `heap(` sites and **zero** `.of(` sites (was 158 address-taken locals and 56 field-ref argument feeds), per the design's §3.6 projection. (Guarded by the `RefLoweredParams` behavioral test — write-through, forwarding chains, the mixed kept/reverted local, the defer/go carve-out in all three observable directions, the X5 func-value exclusion — and `RefLoweredNilTiming` — the eager-panic differential in three nil spellings plus the deferred-fault half, all output-compared against `go run`. The classifier and its fixed point are unit-guarded in `refLoweringAnalysis_test.go`; the corpus-wide census instrument is `-ref-census`.)
+
 ### Pointer-typed globals and double-pointer walks (`&head`, `*pp`, `ValueSlot`)
 A package-level global of **pointer type** whose address is taken — `var head *node` with `pp := &head` — is heap-boxed like any addressed global, yielding a **double box**: `ж<ж<node>> Ꮡhead`. Three rules make the classic linked-list walk (`for pp := &head; *pp != nil; pp = &(*pp).next { … *pp = n }`) faithful:
 
