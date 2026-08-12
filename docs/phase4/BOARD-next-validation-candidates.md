@@ -2928,6 +2928,7 @@ latent — nothing in the behavioral suite or the 69-package sweep exercises the
 |:--|:--|:--|
 | ~~`findFirstFile1` / `findNextFile1`~~ | `win32finddata1` (`FileName`, `AlternateFileName`) | **FIXED 2026-08-01** — `path/filepath.EvalSymlinks` → `toNorm` → `normBase`; guarded by the `FindFirstFileData` behavioral output test |
 | ~~`Process32First` / `Process32Next`~~ | `ProcessEntry32` (`ExeFile`) | **FIXED 2026-08-03** — `os`'s `TestGetppid` → `syscall.Getppid` → `getProcessEntry`; the mirror owns `dwSize` too, since Go computes it from `unsafe.Sizeof` |
+| ~~`Bind` / `Connect` / `ConnectEx` / `Getsockname` / `Getpeername` (+ the two `sockaddr()` encoders)~~ | `RawSockaddrInet4` / `RawSockaddrInet6` (`Addr`, `Zero`) | **FIXED 2026-08-11 (lane L10)** — `net.Listen` → `listenStream` → `syscall.Bind`; guarded by the `SockaddrRoundTrip` behavioral output test. The first member with TWO defects: a `(*[2]byte)` port alias panicked (`index out of range [0] with length 0`) *before* the struct-passing seam was even reached. Mirrors are stack LOCALS, and no new `[DllImport]` was needed — golib models `unsafe.Pointer` as an address box, so the package's generated `bind`/`connect`/`connectEx` already take any address. ⚠ Hand-owning `RawSockaddrAny.Sockaddr` (the decode) was REJECTED on measurement: its body holds the only ΔSockaddr casts in the package, so skipping its emission dropped the `GoImplement` records and made `net` mint duplicate adapters — see the `ConversionStrategies-Reference.md` entry |
 | `GetIfEntry` | `MibIfRow` (`Name`, `PhysAddr`, `Descr`) | `net.Interfaces` |
 | `getStartupInfo` | `StartupInfo` (`Desktop`, `Title`) | ⚠ NOT `os` startup — corrected 2026-08-02 by the r35-os arc, which ran the whole suite without reaching it. Nothing in `os` calls it; in Go 1.23 the only caller is the public `syscall.GetStartupInfo`, exercised by syscall's own test. `Process32First`/`Next` above ARE reached from `os` (`TestGetppid` → `syscall.Getppid` → `getProcessEntry`) and did not fault, so that row is reached-and-working rather than latent. |
 | `FreeAddrInfoW` | `AddrinfoW` (`Canonname`, `Next`) | `net` DNS |
@@ -5116,6 +5117,43 @@ managed references — which is precisely the **open syscall STRUCT-PASSING seam
 above, whose remedy is the established blittable mirror (`GetTimeZoneInformation`,
 `findFirstFile1`/`findNextFile1`). The board predicted `net` would be the package that forces it.
 It has.
+
+> **RESOLVED 2026-08-11 (lane L10) — and the row does NOT close, because a second wall sits behind
+> it.** Both defects above are fixed: the port alias and the struct-passing seam are hand-owned in
+> `syscall/windows/syscall_windows_impl.cs`, `syscall.Bind` now succeeds, and the whole
+> encode → kernel → decode round trip is proven value-for-value against `go run` by the new
+> `SockaddrRoundTrip` behavioral test on both IPv4 and IPv6. **But "unblocks the whole net cluster"
+> was wrong, and the correction is worth more than the fix.** With bind working, `net.Listen` walks
+> on and stops here instead:
+>
+> ```
+> System.NotImplementedException: runtime_pollServerInit: external (assembly or cgo) function is not implemented
+>   at internal/poll.runtime_pollServerInit  (PartialStubGenerator stub)
+>   at internal/poll.pollDesc.init -> internal/poll.FD.Init  ... fd_poll_runtime.cs:48
+>   at net.netFD.init -> net.listenStream                    ... sock_posix.cs:216
+>   at net.Listen                                            ... dial.cs:933
+> ```
+>
+> `internal/poll` declares **ten** bodyless `//go:linkname` netpoll entry points
+> (`runtime_pollServerInit`, `pollOpen`, `pollClose`, `pollWait`, `pollWaitCanceled`, `pollReset`,
+> `pollSetDeadline`, `pollUnblock`, `runtime_isPollServerDescriptor`, `runtimeNano`), every one of
+> them an unimplemented stub. The counterparts EXIST in the converted runtime —
+> `runtime/netpoll.cs:217` carries `poll_runtime_pollServerInit` with its `//go:linkname` comment
+> intact — but nothing wires a linkname across assemblies. And wiring it would not be sufficient:
+> that body reaches `netpollGenericInit` → `netpollinit`, which on Windows is
+> `stdcall2(_CreateIoCompletionPort, …)` and bottoms out in `asmstdcall`, itself a
+> `PartialStubGenerator` stub. So this is an independent seam, one layer deeper than syscall, and
+> the honest remedy is the managed-API-boundary pattern already used for `sync`'s Mutex and
+> `runtime`'s traceback surface: hand-own the ten `runtime_poll*` CONTRACTS against .NET's own
+> completion-port machinery rather than emulating Go's poller. That is a design arc with a
+> deadline/unblock story to settle, not a wrapper repair — it wants its own DESIGN doc and a
+> coordinator ruling before anyone starts.
+>
+> **Consequence for the board's socket-walled rows.** `net/smtp`, `net/http/cgi`, `net/http/httptest`,
+> `net/http/httputil`, `net/http/cookiejar` and `net/rpc` stay walled, and their censuses remain
+> walled-not-stale — but the wall they are behind is now the NETPOLL one, not the sockaddr one.
+> Re-measuring any of them before that arc lands will still report the same counts; the L9 item-4
+> canary reading is therefore already answered here and need not be spent.
 
 ### The `array<T>` unshaped-instance class has a sharper root than "producer (N)"
 
