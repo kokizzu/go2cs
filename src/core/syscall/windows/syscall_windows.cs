@@ -870,19 +870,7 @@ public static bool SocketDisableIPv6;
     internal RawSockaddrInet4 raw;
 }
 
-internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet4> Ꮡsa) {
-    ref var sa = ref Ꮡsa.DerefOrNull();
-
-    if (sa.Port < 0 || sa.Port > 0xFFFF) {
-        return (default!, 0, EINVAL);
-    }
-    sa.raw.Family = AF_INET;
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw).of(RawSockaddrInet4.ᏑPort)));
-    p.Value[0] = (byte)((sa.Port >> (int)(8)));
-    p.Value[1] = (byte)sa.Port;
-    sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw)), (int32)/* unsafe.Sizeof(sa.raw) */ (uintptr)16, default!);
-}
+// go2cs generated this placeholder — func sockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoType] partial struct SockaddrInet6 {
     public nint Port;
@@ -891,20 +879,7 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet4> 
     internal RawSockaddrInet6 raw;
 }
 
-internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet6> Ꮡsa) {
-    ref var sa = ref Ꮡsa.DerefOrNull();
-
-    if (sa.Port < 0 || sa.Port > 0xFFFF) {
-        return (default!, 0, EINVAL);
-    }
-    sa.raw.Family = AF_INET6;
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw).of(RawSockaddrInet6.ᏑPort)));
-    p.Value[0] = (byte)((sa.Port >> (int)(8)));
-    p.Value[1] = (byte)sa.Port;
-    sa.raw.Scope_id = sa.ZoneId;
-    sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw)), (int32)/* unsafe.Sizeof(sa.raw) */ (uintptr)28, default!);
-}
+// go2cs generated this placeholder — func sockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoType] partial struct RawSockaddrUnix {
     public uint16 Family;
@@ -1006,55 +981,13 @@ public static error /*err*/ SetsockoptInt(ΔHandle fd, nint level, nint opt, nin
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡv.Reinterpret<int32, byte>(), (int32)/* unsafe.Sizeof(v) */ (uintptr)4);
 }
 
-public static error /*err*/ Bind(ΔHandle fd, ΔSockaddr sa) {
-    error err = default!;
+// go2cs generated this placeholder — func Bind is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    (var ptr, var n, err) = sa.sockaddr();
-    if (err != default!) {
-        return err;
-    }
-    return bind(fd, ptr, n);
-}
+// go2cs generated this placeholder — func Connect is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*err*/ Connect(ΔHandle fd, ΔSockaddr sa) {
-    error err = default!;
+// go2cs generated this placeholder — func Getsockname is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    (var ptr, var n, err) = sa.sockaddr();
-    if (err != default!) {
-        return err;
-    }
-    return connect(fd, ptr, n);
-}
-
-public static (ΔSockaddr sa, error err) Getsockname(ΔHandle fd) {
-    ΔSockaddr sa = default!;
-    error err = default!;
-
-    ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
-    ref var l = ref heap<int32>(out var Ꮡl);
-    l = (int32)/* unsafe.Sizeof(rsa) */ (uintptr)116;
-    {
-        err = getsockname(fd, Ꮡrsa, Ꮡl); if (err != default!) {
-            return (sa, err);
-        }
-    }
-    return Ꮡrsa.Sockaddr();
-}
-
-public static (ΔSockaddr sa, error err) Getpeername(ΔHandle fd) {
-    ΔSockaddr sa = default!;
-    error err = default!;
-
-    ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
-    ref var l = ref heap<int32>(out var Ꮡl);
-    l = (int32)/* unsafe.Sizeof(rsa) */ (uintptr)116;
-    {
-        err = getpeername(fd, Ꮡrsa, Ꮡl); if (err != default!) {
-            return (sa, err);
-        }
-    }
-    return Ꮡrsa.Sockaddr();
-}
+// go2cs generated this placeholder — func Getpeername is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ Listen(ΔHandle s, nint n) {
     return listen(s, (int32)n);
@@ -1174,17 +1107,7 @@ internal static error /*err*/ connectEx(ΔHandle s, @unsafe.Pointer name, int32 
     return err;
 }
 
-public static error ConnectEx(ΔHandle fd, ΔSockaddr sa, ж<byte> ᏑsendBuf, uint32 sendDataLen, ж<uint32> ᏑbytesSent, ж<Overlapped> Ꮡoverlapped) {
-    var err = LoadConnectEx();
-    if (err != default!) {
-        return errorspkg.New("failed to find ConnectEx: "u8 + err.Error());
-    }
-    (var ptr, var n, err) = sa.sockaddr();
-    if (err != default!) {
-        return err;
-    }
-    return connectEx(fd, ptr, n, ᏑsendBuf, sendDataLen, ᏑbytesSent, Ꮡoverlapped);
-}
+// go2cs generated this placeholder — func ConnectEx is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Invented structures to support what package os expects.
 [GoType] partial struct Rusage {

@@ -320,7 +320,7 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// through it, which is crypto/x509's ParsePKCS8PrivateKey and so crypto/ecdsa's TestEqual.
 		// Bridged element-wise over the same golib container interfaces every other container
 		// method uses, so a window slice writes the backing store it shares with its parent.
-		"Copy":              goosAny,
+		"Copy": goosAny,
 		// valueMethodName is runtime.Callers-based (getcallersp) — managed stack walk instead.
 		"valueMethodName":  goosAny,
 		"rtype.Key":        goosAny,
@@ -496,6 +496,49 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// to own as well: Go sets it from `unsafe.Sizeof(procEntry)`, which is the MANAGED size here.
 		"Process32First": goosWindows,
 		"Process32Next":  goosWindows,
+		// The SOCKET-ADDRESS family — the member `net` forces, and the first that is two defects
+		// rather than one (syscall_windows_impl.cs carries the full write-up).
+		//
+		// The two encode methods first. Go writes the port in network byte order through a
+		// `(*[2]byte)(unsafe.Pointer(&raw.Port))` alias, and an `array<T>` rebuilt from a raw
+		// address is a LENGTH-ZERO array, so `p[0]` panics before any socket call happens —
+		// net.Listen never reached bind. Hand-owning them replaces the alias with a plain field
+		// write; `raw` is left in exactly the state Go leaves it.
+		//
+		// RawSockaddrAny.Sockaddr — the DECODE — is deliberately NOT here even though it carries
+		// the same alias, because hand-owning it costs more than it buys. The only casts of the
+		// three Sockaddr types to ΔSockaddr in the package live in ITS body, so skipping its
+		// emission drops the `[assembly: GoImplement<…>(Pointer = true)]` records from
+		// package_info.cs — and a measured reconvert of `net` against that package_info showed net
+		// then minting its OWN adapters (syscall_SockaddrInet4жΔSockaddr) instead of using
+		// syscall's, which is precisely the SECOND-IDENTITY regression samePackageImplements.go
+		// exists to prevent. Recording the pairs from the method set instead is not available
+		// either: that recorder is deliberately limited to the VALUE method set and defers the
+		// POINTER set, which is what these are, to its own measured increment. The decode is
+		// reached only through Getsockname/Getpeername (both hand-owned below, and both decode
+		// natively without going near it) and through the AcceptEx path, which is walled
+		// independently — see syscall_windows_impl.cs.
+		"SockaddrInet4.sockaddr": goosWindows,
+		"SockaddrInet6.sockaddr": goosWindows,
+		// Then the seam itself. RawSockaddrInet4's `Addr [4]byte` / `Zero [8]uint8` are golib
+		// `array<byte>` MANAGED REFERENCES, so `unsafe.Pointer(&sa.raw)` names a ~24-byte object
+		// with references where Windows expects a 16-byte sockaddr_in with the octets inline —
+		// the same class as GetTimeZoneInformation above, and the case golib's own ж.cs note
+		// describes as having "no native layout either". Each of these builds a blittable mirror
+		// in a stack buffer and passes its ADDRESS to the package's generated wrapper, which was
+		// never the broken part; only the layout translation is hand-owned.
+		//
+		// Getsockname/Getpeername are here for the same reason a level down: their generated
+		// wrappers take a typed `ж<RawSockaddrAny>` instead of an address, so the hand-owned
+		// forms call the Syscall trampoline directly. The UDP senders (WSASendto and its Inet4/
+		// Inet6 variants) are deliberately NOT listed — nothing on the TCP listen/dial/accept
+		// path reaches them, and the board's ruling is to fix a censused wrapper when a suite
+		// reaches it rather than speculatively.
+		"Bind":        goosWindows,
+		"Connect":     goosWindows,
+		"ConnectEx":   goosWindows,
+		"Getsockname": goosWindows,
+		"Getpeername": goosWindows,
 	},
 }
 

@@ -1405,6 +1405,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSliceToArrayPointerAlias() => CheckTarget("SliceToArrayPointerAlias");
 
     [TestMethod]
+    public void CheckSockaddrRoundTrip() => CheckTarget("SockaddrRoundTrip");
+
+    [TestMethod]
     public void CheckSolitaire() => CheckTarget("Solitaire");
 
     [TestMethod]
