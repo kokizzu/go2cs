@@ -4435,7 +4435,9 @@ the batch CONVERTED; only the C# build or the run failed. This one has a one-lin
   `net/rpc` 6 of 15, `net/http/httputil` 16 of
   53, `net/http/httptest` 24 of 55, `net/http/cookiejar` 10 of 17, `debug/dwarf` 7 of 40,
   `internal/coverage/cfile` 4 of 16, `go/internal/gcimporter` 399 of 583** — first censuses, all
-  recorded here rather than in prose.
+  recorded here rather than in prose. ⚠ The last two were **re-measured 2026-08-11 (L9, laptop G)
+  and both reproduce EXACTLY** — walled, not stale, with their roots attributed in the L9 laptop-G
+  section below.
 - `net/internal/socktest`, `internal/syscall/unix`, `log/syslog`, `runtime/race` have **no eligible
   `Test` declarations on windows/amd64** — they are in the naive 215 denominator but cannot bank on
   this target.
@@ -5528,3 +5530,89 @@ against post-r59 master. One census was stale in each DIRECTION, and the rest at
   `index out of range [0] with length 0` at `array.cs:280` via `sockaddr`
   (`syscall_windows.cs:881`) — the exact r57b stack, on demand, same-day baseline for L10.
   The three held rows (httputil/httptest/cookiejar) stay held, as ordered.
+
+## L9 wave, laptop-G share — item 3's two toolchain-exec rows, both censuses CONFIRMED (2026-08-11 night)
+
+Item 3 (`internal/coverage/cfile`, `go/internal/gcimporter`) measured on **laptop G** (Ryzen 5 PRO
+6650U, 6C/12T, pinned go1.23.1) against `dc78eb63c`, `-tests -test-action all -test-timeout 30m`
+with an explicit `-go2cspath`. Wall clock: cfile **199 s**, gcimporter **~630 s** (its C# suite
+alone 235 s) — both cheap, as the wave promised.
+
+**Neither census was stale. Both reproduce their first-census number to the verdict** — 4 of 16 and
+399 of 583. These two rows are **walled, not stale**, and nothing in the nine landed fixes touches
+either wall. The item's stated expectation — "both exec the Go toolchain, so expect the
+GOROOT-tree/cwd class in the residue" — is **right for one and wrong for the other**, which is
+exactly why the row was measured rather than inherited.
+
+### `internal/coverage/cfile` — 4 of 16 confirmed; the WORKING-DIRECTORY class gains its SIXTH member
+
+Go emits 16 verdicts, the host 7; **4 match** (`TestAuxMetaDataFiles`, `TestCoverageSnapshot`,
+`TestTestSupport` pass/pass; `TestIssue56006EmitDataRaceCoverRunningGoroutine` skip/skip). Three
+top-level tests fail — and **nine of the twelve mismatches are one root's shadow**:
+`TestCoverageApis` `t.Fatal`s in its setup before any of its nine `t.Run` subtests register, so they
+compare `Go="pass"` against `C#=""` (absent). Read the row as **three** failures, not twelve.
+
+All three are the established converted-host WORKING-DIRECTORY class (§*The converted-host
+WORKING-DIRECTORY class — why no cheap subset exists*), reached because each shells out to the Go
+toolchain with a path relative to CWD whose MEANING depends on sitting under `$GOROOT/src`. The host
+runs in `<temp>/go2cs-tests/<pkg>/<guid>/cfile` (`TestHost.CreateRunDirectory`, fixtures staged
+beside it); `go test` runs in `$GOROOT/src/internal/coverage/cfile`. Two facets:
+
+- **Internal-import visibility** — `TestCoverageApis`, `TestApisOnNocoverBinary`. `buildHarness`
+  runs `go build … testdata/harness.go` (`emitdata_test.go:123`, RELATIVE) and `harness.go` imports
+  `internal/coverage/slicewriter`. The toolchain grants internal visibility by the importing FILE'S
+  LOCATION, so the staged copy under temp is refused: `testdata\harness.go:10:2: use of internal
+  package internal/coverage/slicewriter not allowed`. **The staging is not at fault** — the error
+  names line 10 column 2, which *is* that import, so the file was found and read; only its location
+  was wrong.
+- **Module resolution** — `TestIssue59563TruncatedCoverPkgAll` sets
+  `cmd.Dir = filepath.Join("testdata", "issue59563")` (`emitdata_test.go:510`) and runs
+  `go test -coverpkg=all`. Neither GOROOT's copy nor the staged one carries a `go.mod`; Go's run
+  succeeds because the parent walk reaches **`$GOROOT/src/go.mod` (`module std`)**, while the host's
+  walk reaches the filesystem root with none → `go: go.mod file not found in current directory or
+  any parent directory`.
+
+A textbook confirmation of that section's "no cheap subset" ruling, and it **extends the content
+list**: alongside `bin/go.exe`, `doc/godebug.md` and sibling sources, a synthetic GOROOT must also
+reconstruct **`src/go.mod`**, and must be a location the toolchain accepts for internal imports.
+Both facets are satisfied by that one arc and by nothing smaller — a per-test accommodation would be
+dishonest here, since these tests are measuring the real toolchain's behavior. **+12 verdicts** to
+the arc's ledger, on top of `go/parser`'s 167.
+
+### `go/internal/gcimporter` — 399 of 583 confirmed; NOT the cwd class — it is `go/types` generics
+
+583 verdicts both sides, **399 match, 184 mismatch, and every mismatch is inside ONE top-level
+test**: `TestImportTypeparamTests` (its parent row plus 183 subtests), all `Go="pass" C#="fail"`.
+Everything else agrees, including **`TestImportStdLib`'s 303 matching subtests** and 82 of the
+typeparam subtests themselves (68 pass, 14 skip).
+
+The predicted GOROOT-tree/cwd class **does not appear**, for a precise reason worth keeping:
+gcimporter's toolchain execs root their paths at `testenv.GOROOT(t)` — ABSOLUTE, and the pipeline
+exports that GOROOT to both sides deliberately (`runCommandWithTimeout`) — whereas cfile's are
+cwd-relative. Same "execs the toolchain" premise, opposite outcome.
+
+The real root sits one layer down, **in the test's own ORACLE half**. Each subtest runs
+`compile` → `importPkg` → `checkFile` in that order (`gcimporter_test.go:184-187`), and every
+failure is in `checkFile`, i.e. `go/types.Check` over the source file. **So `compile` and
+`importPkg` both SUCCEEDED for all 183** — the converted gcimporter read the gc export data fine,
+and 303 stdlib packages import correctly — and the converted **`go/types` then failed to type-check
+the generic source handed to it as the reference.** The subject of the test is healthy; its
+yardstick is not.
+
+| Shape | Count | Evidence |
+|:--|--:|:--|
+| Bogus type errors on TYPE PARAMETERS | 92 | `absdiff2.go:70:9: cannot use a.Value_ (variable of type T constrained by orderedNumeric) as T value in return statement` — T judged not assignable to T. Also `cannot assign map[K]V to map[K]V`, `S does not implement I[byte]`, `cannot infer S`, `cannot assign []int to [5]int` |
+| Nil-pointer panic inside the checker | 91 | re-panicked value is `runtime error: invalid memory address or nil pointer dereference`, surfacing through `check.cs:430` |
+
+⚠ **The panic stacks are the RE-PANIC, not the fault.** `check.cs:430` is the `default: throw
+panic(p)` arm of `handleBailout` — a faithful conversion of Go's own re-panic for a non-`bailout`
+recover value — so the frames shown are the bailout path (`430 → GoFrame.Run → 435 → 414`) and the
+ORIGINATING frames are gone. Anyone working this must instrument the re-panic or disable the
+recover; **taking `check.cs:430` as the defect site will waste the lane.**
+
+Whether the 92 and the 91 are one root or two is **not established here and must not be assumed**.
+The dominant signature — a type parameter judged not identical to itself — would plausibly produce
+both, but that is a hypothesis, and this week's board has a four-for-four record against inherited
+ones. `go/types` is unbanked and carries no board row of its own; on this evidence it has earned
+one, and **`go/internal/gcimporter`'s 184 rows are downstream of it** — the row moves when
+`go/types` generics do, and not before. Nothing in gcimporter itself is implicated.
