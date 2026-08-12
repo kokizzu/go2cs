@@ -5757,6 +5757,89 @@ run with a much larger `-test-timeout` and a print per iteration, which this bat
 is established: the other four rows agree, and the package is one row from a bank behind a question
 about goroutine parking latency, not about singleflight itself.
 
+#### Convergence measured 2026-08-12 — it CONVERGES: 20 iterations, 28.7 minutes, and the package validates 5/5
+
+The instrumented run the paragraph above asked for was spent (branch `claude/singleflight-convergence`,
+laptop lane — Ryzen 7 PRO 6850U, 16 hardware threads — solo, go1.23.1; NOT the coordinator the scout
+used, which matters below). Method: the `-tests` pipeline split at its action seams —
+`convert`, then a hand edit to the STAGED converted `singleflight_test.cs` adding a per-iteration
+stderr print (iteration, `d`, `calls`, `shared`, `ThreadPool.ThreadCount` at iteration start/end,
+pending-queue count, spawn/wait timings), then `build`, then `compare -test-timeout 90m` — the same
+phases `-test-action all` runs, split only so the edit could sit between conversion and build (the
+manifest's input digest covers Go sources, options and runtime sources, not the emitted `.cs`, so the
+staleness gate accepts an instrumented staged copy by design). Everything was reverted after: the
+measurement emitted a real proof page — the comparison genuinely printed `Validated 5 tests against
+go test`, 5/5 matched — and that page was deliberately discarded, because a hand-instrumented host
+banks nothing.
+
+**The verdict: converges.** `TestDoAndForgetUnsharedRace` passes at **iteration 20 (d=524s), test
+elapsed 1720.8s**; the other four rows total ~0.3s, package wall ≈ 1725s — a **75-second margin
+under the 30-minute deadline the scout run died at**. `go test`'s whole package on the same machine:
+**0.040s** (the race test itself 0.01s — Go converges on its first iteration; the gap is ~10^5).
+`shared` was 0 at the converging iteration, so the assert the loop protects passed: the 28.7 minutes
+is all scheduling, and none of it is singleflight.
+
+The census (run 2; run 1, without the pool columns, matched it iteration-for-iteration through 15):
+
+| iter | d | calls | pool start→end | wait |
+|--:|--:|--:|:--|--:|
+| 1-3 | 1-4ms | 20, 8, 6 | 12→258 | ~0.02s |
+| 4-10 | 8-512ms | 4-9 | 258→258, flat | ~4×d |
+| 11-15 | 1-16.4s | 4-7 | 258→354 (~+0.9/s) | ~3-4×d |
+| 16 | 32.8s | 4 | 354→**162** | 98s |
+| 17 | 65.5s | 3 | 162→221 | 197s |
+| 18 | 131s | 2 | 221→567 | 262s (=2×d) |
+| 19 | 262s | 2 | 567→**75** | 524s (=2×d) |
+| 20 | 524s | **1** | **75→1002** | 524s (=1×d) |
+
+Three mechanisms, each owning one phase of the table — and none of them is parking LATENCY:
+
+- **The goroutines that miss the window never parked slowly; they never STARTED.** `spawn_s=0.00`
+  every iteration (queueing 1000 work items is instant), and `calls ≈ ceil(1000 / live pool)`: the
+  queue drains in WAVES of pool size, and each post-wave batch dispatches only after the previous
+  call completed — which by construction mints a fresh call. Hence `wait ≈ calls×d` throughout, and
+  no value of `d` helps while the pool is small: the tail is sitting in the pool queue, not in
+  `wg.Wait`.
+- **Iterations 1-10 are pinned at golib's own floor.** `Goroutine.Start` is
+  `ThreadPool.QueueUserWorkItem` (`golib/runtime/Goroutine.cs:64`); the min-thread floor of
+  max(4×cores, 256) (`golib/builtin.cs:78`) is why the pool leaps 12→258 in three iterations and
+  then sits EXACTLY there — below the floor, creation is on demand; above it, only the starvation
+  gate injects (~0.9-1.8/s), and an iteration must hold starvation ≥ ~1s continuously to trip it,
+  which is why growth begins only at `d≥1s`.
+- **Idle-thread retirement FIGHTS the injection, so capacity cannot accumulate across iterations.**
+  Iteration 16 ends 192 threads BELOW its start — 162 live, under the min floor, which governs
+  injection aggressiveness, not keep-alive — and iteration 19 ends at 75: once `d` exceeds the
+  pool's ~20s idle timeout, every thread left idle through the final wave's sleep is culled.
+  Convergence therefore arrives only when a SINGLE `d` is long enough for in-sleep injection alone
+  to field all 1000: iteration 20 starts at 75 live and injects ~930 during one 524s sleep, every
+  arrival parking into the one in-flight call.
+
+**Why the scout run got no verdict:** the finish sits at 28.7 min ± the injection rate, and a miss
+is quantized — the ladder doubles, so slipping one iteration moves the finish to ~55 min
+(2245s+1049s), two to ~107 min. 1800s lands inside the measured run's iteration-19/20 window, so
+any marginally slower gate — the scout's host was the i7-5820K coordinator, not this laptop, and
+the rate is a runtime heuristic, not work — pushes convergence one rung up and the deadline eats
+the test mid-iteration, verdict-less, exactly as recorded. That the same ladder shape produced
+"4 of 5 + a consumed deadline" on one machine and "5/5 in 28.7 min" on another IS the fragility
+finding: the two runs differ by one rung, and a rung is a doubling.
+
+**Remedy recommendation — two options, priced:**
+
+- **A `$longTimeouts` floor of 60m banks the row as measured** (28.7 min with 2× margin, and it
+  survives a one-iteration slip at ~55 min by five minutes; only 120m survives two). ⚠ Priced
+  honestly, this floor differs in KIND from the four standing ones: maphash's 15-min-vs-7.6s is
+  deterministic work on a slow host, while this finish time is a race against the .NET thread
+  pool's injection-vs-retirement heuristics with 2× penalty steps — under the standing solo-sweep
+  rule it should hold, but it is the first deadline asked to cover a heuristic rather than work.
+  It also adds ~29-55 min to EVERY full sweep for one row.
+- **The durable path is the one golib already names.** `builtin.cs:75-76` calls the min-thread
+  floor "a mitigation, not a scheduler: programs parking thousands of goroutines remain out of
+  reach until a cooperative scheduler exists (documented divergence)". n=1000 sits exactly on that
+  line, and this table is the divergence's first quantified witness — the row is ultimately a
+  scheduler-arc row, and any floor is a bridge across it, not a fix for it.
+
+Per the errand's charter nothing was chased: measurement only, aftermath reverted, no bank.
+
 ### `unique` — a REGRESSION against this board's own record, flagged for a bisect lane
 
 The r43e-weak entry above records `unique` at **4 of 19** in a "2-minute run with 19 verdicts", after
