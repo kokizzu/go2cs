@@ -277,6 +277,39 @@ hand-own layer); filtered sweeps over any banked package whose closure touches s
 recommended). Commit per layer ("L10:"), push, signal. Merge window: anytime once gated — this
 lane unblocks L9's three held rows, net/smtp, net/http/cgi, and eventually `net`.
 
+## L11 — textproto's three objects (a bank behind an interning fix)
+
+GOLIB OPTIMIZATION WITH A BANK ATTACHED. Branch from current origin/master. Step 0:
+`go env GOVERSION` = go1.23.1 or STOP. Context: the board's L9-desktop-share section —
+`net/textproto` validates 25/26, and the sole miss, `TestCommonHeaders`, now measures an honest
+**3 golib objects per `canonicalMIMEHeaderKey` call vs Go's 0** (the counter's number, replacing
+the old shim's 816 meaningless bytes).
+
+The work: root the three allocations in the common-header fast path (run the pipeline first and
+read the REAL emitted `.cs` — likely suspects are the `[]byte`→`@string` key materialization for
+the `commonHeader` map probe and boxing at the lookup seam, but measure, don't inherit — this
+week is four-for-four against inherited hypotheses). Fix HONESTLY at the golib/emission layer:
+Go's semantics keep (`CanonicalMIMEHeaderKey` returns the interned string for common headers);
+span-shaped lookup or interning that avoids materialization is the right altitude. NO
+test-shaping, no disclosure (the near-budget ruling stands) — if the objects prove structurally
+unavoidable short of the ж-box arc, REPORT that with the decomposition instead of forcing it.
+
+Gates (golib change class): GolibTests incl. the allocation-counter guards (extend them with this
+path's exact count); full behavioral suite; filtered sweeps over the string-heavy banked rows
+(`strings`, `bytes`, `bufio`, `net/textproto`'s neighbors); then the textproto pipeline expecting
+**26/26 — a BANK**, full commit policy with the converter-composed badge pinned at the PUBLISHED
+version (1.23.1.6). Commit ("L11:"), push, signal.
+
+## L12 — mime/multipart characterization (queued behind L11)
+
+CHARACTERIZATION-THEN-NARROW-FIX. The board's L9-desktop-share section records the shape:
+`TestMultipartSlowInput` crashes the host (`multipart_test.cs:172`), the `ReadForm` limits family
+and `TestQuotedPrintableEncoding` fail on content, ~41 tests never run behind the crash. Root the
+crash FIRST (it gates the true census), then the content families. Fix only what roots narrowly
+at golib/emission altitude; anything architectural gets characterized and reported. Gates by
+change class as usual; a validation is a bank per policy, a partial is a board write-back with
+real roots. Step 0 toolchain check applies.
+
 ## L3 — ж-box allocation-reduction implementation
 
 **BLOCKED until the coordinator confirms the post-1.23.1.6 harvest is complete** (the design is
