@@ -104,6 +104,25 @@ public readonly struct @string :
 
     public @string(in slice<byte> value) : this(value.ToArray()) { }
 
+    /// <summary>
+    /// Creates a TRANSIENT @string that ALIASES <paramref name="value"/>'s backing bytes without
+    /// copying — go2cs's mirror of the Go compiler's <c>m[string(b)]</c> special case, reached
+    /// through <see cref="builtin.tmpstring"/>. Zero allocation, exactly like Go's
+    /// <c>runtime.slicebytetostringtmp</c>.
+    /// </summary>
+    /// <remarks>
+    /// The alias shares MUTABLE storage with the slice, so it is sound only under the same contract
+    /// Go's optimization holds its temporaries to: the value is consumed before the slice can next be
+    /// written and is never stored. The converter emits it solely for map-index READ keys, where the
+    /// lookup hashes and compares the key but never retains it; the miss/return paths keep the
+    /// copying conversion. Internal so no hand-written consumer can reach the raw factory — the
+    /// documented public surface is <see cref="builtin.tmpstring"/>, which carries the contract.
+    /// </remarks>
+    internal static @string TransientAliasOf(in slice<byte> value)
+    {
+        return new @string(value.m_array ?? [], (int)value.Low, (int)value.Length);
+    }
+
     public @string(in slice<char> value) : this(value.ToArray()) { }
 
     public @string(in slice<rune> value) : this(value.ToSpan()) { }

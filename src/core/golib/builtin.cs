@@ -2291,8 +2291,29 @@ public static partial class builtin
         return new complex128(0.0D, imaginary);
     }
 
+    /// <summary>
+    /// Creates a TRANSIENT Go string that ALIASES <paramref name="source"/>'s backing bytes without
+    /// copying — the go2cs form of the Go compiler's <c>m[string(b)]</c> map-lookup special case
+    /// (<c>runtime.slicebytetostringtmp</c>), where the conversion's result provably does not outlive
+    /// the expression, so no copy is needed. Zero allocation, matching Go's cost model for the idiom.
+    /// </summary>
+    /// <param name="source">Byte slice whose backing the transient string aliases.</param>
+    /// <returns>A <see cref="go.@string"/> WINDOW over <paramref name="source"/>'s live storage.</returns>
+    /// <remarks>
+    /// ⚠ The result shares MUTABLE storage with <paramref name="source"/> — @string's immutability
+    /// holds only because the value is consumed before the slice can next be written. The converter
+    /// emits this solely where Go's compiler applies the same optimization (a map-index READ key,
+    /// which is hashed and compared but never retained); every path where the string ESCAPES — a
+    /// return, a store, a map WRITE key — keeps the copying conversion. Do not use from hand-written
+    /// code unless the value dies within the consuming expression.
+    /// </remarks>
+    public static @string tmpstring(in slice<byte> source)
+    {
+        return go.@string.TransientAliasOf(source);
+    }
+
     /*
-    
+
     /// <summary>
     /// Creates a new Go <see cref="go.array{T}"/> with specified <paramref name="length"/>.
     /// </summary>

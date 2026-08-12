@@ -67,6 +67,8 @@ func resetPackageState(pkg *packages.Package) {
 	packageDynamicTypeNames = make(map[string]string)
 	packageLiftedTypeNames = HashSet[string]{}
 	productionLiftedTypeNames = nil
+	packageHoistedConstOrdinals = nil
+	productionHoistedConstOrdinals = nil
 	metadataAnchorClassPrefix = ""
 	metadataAnchorLocalTypes = false
 	packageManualTypeNames = make(map[string]bool)

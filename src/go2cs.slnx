@@ -494,6 +494,7 @@
     <Project Path="tests/Behavioral/MapCloneLinkname/MapCloneLinkname.csproj" />
     <Project Path="tests/Behavioral/MapCommaOk/MapCommaOk.csproj" />
     <Project Path="tests/Behavioral/MapPointerElementLiteral/MapPointerElementLiteral.csproj" />
+    <Project Path="tests/Behavioral/MapStringBytesLookup/MapStringBytesLookup.csproj" />
     <Project Path="tests/Behavioral/MathFloatBits/MathFloatBits.csproj" />
     <Project Path="tests/Behavioral/MethodGroupGenericArg/MethodGroupGenericArg.csproj" />
     <Project Path="tests/Behavioral/MethodOnBoxedGlobalIndex/MethodOnBoxedGlobalIndex.csproj" />

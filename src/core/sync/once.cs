@@ -1,6 +1,17 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+using go;
+
+// Hand-finished conversion (joins sync's Mutex/RWMutex/WaitGroup/Pool/Cond hand-owns). The one
+// deviation from the auto conversion is Do's fast path: the emitted `Ꮡo.of(Once.Ꮡdone).Load()`
+// minted a fresh ж field box per CALL — with the box Load itself minted, 2 objects/216 B on a path
+// Go runs allocation-free, measured by net/textproto's want-zero TestCommonHeaders (L11). Do now
+// reads the flag through atomic.Uint32's `[GoRecv] ref` receiver form (`o.done.Load()`), which is
+// zero-allocation and reads exactly like the Go source. doSlow keeps the emitted shape — it runs
+// once per Once instance (plus contended racers), where the field-box cost is irrelevant.
+[module: GoManualConversion]
+
 namespace go;
 
 using atomic = sync.atomic_package;
@@ -63,7 +74,7 @@ public static void Do(this ж<Once> Ꮡo, Action f) {
     // waiting for the first's call to f to complete.
     // This is why the slow path falls back to a mutex, and why
     // the o.done.Store must be delayed until after f returns.
-    if (Ꮡo.of(Once.Ꮡdone).Load() == 0) {
+    if (o.done.Load() == 0) {
         // Outlined slow-path to allow inlining of the fast-path.
         Ꮡo.doSlow(f);
     }

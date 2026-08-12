@@ -4169,7 +4169,7 @@ Eighteen packages match every verdict but one or two. Each cell is the whole gap
 | `crypto/cipher` | 13 of 14 | the oracle's build tags, below |
 | `crypto/internal/edwards25519/field` | 13 of 16 | the `array<T>` class, producer (3) |
 | `internal/poll` | 18 of 19 | `runtime_pollServerInit` — the netpoller has no managed body |
-| `net/textproto` | 25 of 26 | `canonicalMIMEHeaderKey allocs = 816; want 0` — a **want-ZERO** assert, ruling #1's third instance after `time`'s and `os`'s |
+| ~~`net/textproto`~~ | ~~25 of 26~~ | **BANKED at 26/26 by L11 (2026-08-12)** — the want-ZERO row closed honestly: the 3 objects/816 B per `canonicalMIMEHeaderKey` call decomposed into `Once.Do`'s two ж field-box mints (fixed: atomic scalar ops → `[GoRecv] ref` form, once.cs hand-owned), the `m[string(b)]` probe-key copy (fixed: the converter now emits golib's zero-alloc `tmpstring` transient for map-READ keys, Go's own compiler special case), and 14 dead per-call `BigInteger.Parse`s from the emitted-but-folded 128-bit mask local (fixed: function-local int-kind `GoBigConst`s hoist their parse to a `static readonly` field). No disclosure, no test-shaping |
 | `io/ioutil` | 27 of 28 | `TestReadDir` looks in `..` for the SIBLING package's `io_test.go`; also ORDER-DEPENDENT, since a sweep that ran `io` first leaves that file staged — a reason not to bank it even when it passes |
 | `net/http/cgi` | 36 of 39 | three rows |
 | `syscall` | 61 of 62 | **the pipeline's own path depth** — below |
@@ -5552,7 +5552,13 @@ against post-r59 master. One census was stale in each DIRECTION, and the rest at
 - **`net/textproto` 25/26 unchanged, with its number UPGRADED**: `TestCommonHeaders` now measures
   **3 objects per run vs want 0** (was 816 shim-bytes) — the common-header fast path materializes
   three golib allocations Go's interning avoids. Near-budget: not disclosed, not banked; a precise
-  interning/ж-box target.
+  interning/ж-box target. **CLOSED by L11 (2026-08-12): banked at 26/26** — the counter's 3 (and the
+  bytes behind them) decomposed measured, not inherited: 2 obj/216 B in `Once.Do`'s `of()` chain,
+  1 obj/40 B in the `m[string(b)]` probe-key materialization, plus 560 B/call of dead
+  `BigInteger.Parse` from the folded mask local. All three fixed at their own layers (hand-owned
+  atomic/once, converter `tmpstring` emission, converter big-const hoist); the L9 note's "likeliest
+  instant bank" hypothesis was wrong in the instructive direction — the counter-shim fix alone
+  changed the NUMBER, not the verdict.
 - **`mime/multipart` ~11/52 — real roots, census confirmed**: `TestMultipartSlowInput` crashes the
   host mid-suite (`multipart_test.cs:172`), and the `ReadForm` limits family
   (`TestReadFormEndlessHeaderLine`, `TestReadFormLimits`, `TestReadForm_MetadataTooLarge`) plus

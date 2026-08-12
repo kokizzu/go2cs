@@ -846,6 +846,19 @@ nil-key slot that every map member routes to; the test that finds it is a JIT-ti
 value-type key (`map[string]V`, `map[int]V`) compiles to exactly the code it did before and `PerfMap`
 stays flat.
 
+A **`m[string(b)]` READ does not copy the key**, matching the Go compiler's own special case
+(`runtime.slicebytetostringtmp`): a lookup hashes and compares its key but never retains it, so the
+converter emits golib's `tmpstring(b)` — a transient `@string` windowing the slice's live bytes,
+zero allocation. Everywhere the string escapes (a store `m[string(b)] = v`, `delete`, a return) the
+copying conversion stays:
+
+```go
+if v := commonHeader[string(a)]; v != "" { return v, true }   // net/textproto reader.go
+```
+```csharp
+@string v = commonHeader[tmpstring(a)]; if (v != ""u8) { return (v, true); }
+```
+
 golib's `channel<T>` is a faithful port of Go's runtime channel (hchan + selectgo): an unbuffered
 send really waits for a receiver, `cap`/`len` report Go's values, a blocking `select` commits
 exactly ONE case chosen uniformly at random among the ready ones, and close/panic semantics match
@@ -908,7 +921,8 @@ default: {
 ```
 
 **Full detail:** [Reference → Maps and Channels](ConversionStrategies-Reference.md#maps-and-channels) —
-the nil map key's dedicated slot, named map/channel types, constrained map access through type parameters, the real channel runtime
+the nil map key's dedicated slot, the `m[string(b)]` no-copy read key (`tmpstring`), named map/channel
+types, constrained map access through type parameters, the real channel runtime
 (hchan + selectgo: rendezvous, cap/len, single-fire, uniform-random), and full `select` lowering
 (terminating/empty clauses, escaping comm-clause bindings).
 

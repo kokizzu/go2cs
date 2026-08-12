@@ -830,9 +830,36 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 			constHandled := false
 
-			writeUntypedConst := func() {
+			writeUntypedConst := func(hoistToStatic bool) {
 				if i > 0 {
 					v.outputBuilder.WriteString(v.newline)
+				}
+
+				// A Go constant has no runtime existence — its value lives in the instruction
+				// stream — and GoBigConst is the one C# projection with a real per-evaluation cost:
+				// BigInteger.Parse allocates its bits array on every run. A FUNCTION-LOCAL int-kind
+				// big const therefore hoists the parse to one `static readonly` field above the
+				// function (the hoisted-string-literal pattern) and the local copies it — a
+				// BigInteger struct copy, which allocates nothing. net/textproto's
+				// validHeaderFieldByte paid the parse 14 times per canonicalMIMEHeaderKey call
+				// (560 B against Go's 0) on a want-zero AllocsPerRun path, and the local was not
+				// even referenced — every use had been folded into the emitted literal (L11).
+				// Float/complex OVERFLOW constants keep the per-call parse: their exact string may
+				// be a rational ("1/3") whose Parse throws, and a field initializer would turn that
+				// per-call throw into a package-class TypeInitializationException.
+				hoistedFieldName := ""
+
+				if v.inFunction && hoistToStatic {
+					hoistedFieldName = claimHoistedConstFieldName(csIDName)
+
+					if v.currentFuncPrefix.Len() > 0 {
+						v.currentFuncPrefix.WriteString(v.newline)
+					}
+
+					v.currentFuncPrefix.WriteString("// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)")
+					v.currentFuncPrefix.WriteString(v.newline)
+					v.currentFuncPrefix.WriteString(fmt.Sprintf("private static readonly GoBigConst %s = GoBigConst.Parse(\"%s\");", hoistedFieldName, constVal))
+					v.currentFuncPrefix.WriteString(v.newline)
 				}
 
 				if v.inFunction {
@@ -849,7 +876,12 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				v.writeComment(valueSpec.Comment, tokEnd+token.Pos(len(access)-5))
 				v.outputBuilder.WriteString(v.newline)
 
-				v.writeOutput("%sGoBigConst.Parse(\"%s\");", v.indent(v.indentLevel+1), constVal)
+				if hoistedFieldName != "" {
+					v.writeOutput("%s%s;", v.indent(v.indentLevel+1), hoistedFieldName)
+				} else {
+					v.writeOutput("%sGoBigConst.Parse(\"%s\");", v.indent(v.indentLevel+1), constVal)
+				}
+
 				constHandled = true
 			}
 
@@ -860,7 +892,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				_, errUint := strconv.ParseUint(constVal, 0, 64)
 				_, errInt := strconv.ParseInt(constVal, 0, 64)
 				if errUint != nil && errInt != nil {
-					writeUntypedConst()
+					writeUntypedConst(true)
 				}
 			}
 
@@ -868,7 +900,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				// Check if const float value will exceed float64 limits
 				if _, err := strconv.ParseFloat(constVal, 64); err != nil {
 					constVal = c.Val().ExactString()
-					writeUntypedConst()
+					writeUntypedConst(false)
 				}
 			}
 
@@ -879,7 +911,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				// representability test was fixed, EVERY complex const took this arm — see
 				// exactComplexConstString.)
 				v.showWarning("Go complex const exceeds %s range and has no C# representation - verify usage: const %s = %s", csTypeName, goIDName, constVal)
-				writeUntypedConst()
+				writeUntypedConst(false)
 			}
 
 			if c.Val().Kind() == constant.String {
@@ -1302,4 +1334,33 @@ func (v *Visitor) writeMovedPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple 
 
 	recordMovedInitMethod(ordinal, methodName)
 	v.writeComment(valueSpec.Comment, valueSpec.End())
+}
+
+// claimHoistedConstFieldName claims a package-unique `static readonly GoBigConst` field name for a
+// hoisted function-local big constant: the Go const's C# name suffixed with HoistedConstMarker,
+// plus an ordinal when the base name is already taken (two functions — or two files — declaring
+// `const mask = <big>` both land in the one `<pkg>_package` partial class). Deterministic because
+// files convert sequentially in sorted order; a `-tests` internal variant starts from the
+// production conversion's claim counts (productionHoistedConstOrdinals) because the production
+// fields already exist on disk in the same class.
+func claimHoistedConstFieldName(csIDName string) string {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	if packageHoistedConstOrdinals == nil {
+		packageHoistedConstOrdinals = make(map[string]int)
+
+		for name, count := range productionHoistedConstOrdinals {
+			packageHoistedConstOrdinals[name] = count
+		}
+	}
+
+	ordinal := packageHoistedConstOrdinals[csIDName]
+	packageHoistedConstOrdinals[csIDName] = ordinal + 1
+
+	if ordinal == 0 {
+		return csIDName + HoistedConstMarker
+	}
+
+	return fmt.Sprintf("%s%s%d", csIDName, HoistedConstMarker, ordinal)
 }

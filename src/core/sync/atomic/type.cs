@@ -8,6 +8,16 @@ using go;
 // and the CLR cannot hold a managed reference as a number across a GC move. This module marker is
 // detected by containsManualConversionMarker (go2cs/directiveOperations.go); when set, go2cs skips
 // re-converting this file so the manual edits are preserved on any future stdlib reconversion.
+//
+// The scalar types' methods (Bool/Int32/Int64/Uint32/Uint64/Uintptr) are declared in the
+// `[GoRecv] (this ref T x)` form — the same shape Value and noCopy already use here — and act on
+// `ref x.v` with Volatile/Interlocked directly. The RecvGenerator mints the ж<T> receiver overloads
+// (`ref var x = ref Ꮡx.DerefOrNull(); return x.Op(…);`), so both call shapes are ZERO-ALLOCATION.
+// The previous hand conversion routed each op through `Ꮡx.of(T.Ꮡv)`, which minted a fresh ж field
+// box per call: sync.Once's fast path measured 2 objects/216 B per Do() against Go's 0 (the
+// net/textproto TestCommonHeaders want-zero assert, L11). Same primitives, same storage, same
+// memory ordering as the doc.cs package-level functions: Load=Volatile.Read,
+// Store/Swap=Interlocked.Exchange, CompareAndSwap=Interlocked.CompareExchange, Add/And/Or=Interlocked.
 [module: GoManualConversion]
 
 namespace go.sync;
@@ -25,33 +35,24 @@ partial class atomic_package {
 }
 
 // Load atomically loads and returns the value stored in x.
-public static bool Load(this ж<Bool> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
-
-    return LoadUint32(Ꮡx.of(Bool.Ꮡv)) != 0;
+[GoRecv] public static bool Load(this ref Bool x) {
+    return Volatile.Read(ref x.v) != 0;
 }
 
 // Store atomically stores val into x.
-public static void Store(this ж<Bool> Ꮡx, bool val) {
-    ref var x = ref Ꮡx.Value;
-
-    StoreUint32(Ꮡx.of(Bool.Ꮡv), b32(val));
+[GoRecv] public static void Store(this ref Bool x, bool val) {
+    Interlocked.Exchange(ref x.v, b32(val));
 }
 
 // Swap atomically stores new into x and returns the previous value.
-public static bool /*old*/ Swap(this ж<Bool> Ꮡx, bool @new) {
-    bool old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return SwapUint32(Ꮡx.of(Bool.Ꮡv), b32(@new)) != 0;
+[GoRecv] public static bool /*old*/ Swap(this ref Bool x, bool @new) {
+    return Interlocked.Exchange(ref x.v, b32(@new)) != 0;
 }
 
 // CompareAndSwap executes the compare-and-swap operation for the boolean value x.
-public static bool /*swapped*/ CompareAndSwap(this ж<Bool> Ꮡx, bool old, bool @new) {
-    bool swapped = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return CompareAndSwapUint32(Ꮡx.of(Bool.Ꮡv), b32(old), b32(@new));
+[GoRecv] public static bool /*swapped*/ CompareAndSwap(this ref Bool x, bool old, bool @new) {
+    uint32 old32 = b32(old);
+    return Interlocked.CompareExchange(ref x.v, b32(@new), old32) == old32;
 }
 
 // b32 returns a uint32 0 or 1 representing b.
@@ -133,59 +134,40 @@ public static bool /*swapped*/ CompareAndSwap<T>(this ж<Pointer<T>> Ꮡx, ж<T>
 }
 
 // Load atomically loads and returns the value stored in x.
-public static int32 Load(this ж<Int32> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
-
-    return LoadInt32(Ꮡx.of(Int32.Ꮡv));
+[GoRecv] public static int32 Load(this ref Int32 x) {
+    return Volatile.Read(ref x.v);
 }
 
 // Store atomically stores val into x.
-public static void Store(this ж<Int32> Ꮡx, int32 val) {
-    ref var x = ref Ꮡx.Value;
-
-    StoreInt32(Ꮡx.of(Int32.Ꮡv), val);
+[GoRecv] public static void Store(this ref Int32 x, int32 val) {
+    Interlocked.Exchange(ref x.v, val);
 }
 
 // Swap atomically stores new into x and returns the previous value.
-public static int32 /*old*/ Swap(this ж<Int32> Ꮡx, int32 @new) {
-    int32 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return SwapInt32(Ꮡx.of(Int32.Ꮡv), @new);
+[GoRecv] public static int32 /*old*/ Swap(this ref Int32 x, int32 @new) {
+    return Interlocked.Exchange(ref x.v, @new);
 }
 
 // CompareAndSwap executes the compare-and-swap operation for x.
-public static bool /*swapped*/ CompareAndSwap(this ж<Int32> Ꮡx, int32 old, int32 @new) {
-    bool swapped = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return CompareAndSwapInt32(Ꮡx.of(Int32.Ꮡv), old, @new);
+[GoRecv] public static bool /*swapped*/ CompareAndSwap(this ref Int32 x, int32 old, int32 @new) {
+    return Interlocked.CompareExchange(ref x.v, @new, old) == old;
 }
 
 // Add atomically adds delta to x and returns the new value.
-public static int32 /*new*/ Add(this ж<Int32> Ꮡx, int32 delta) {
-    int32 @new = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return AddInt32(Ꮡx.of(Int32.Ꮡv), delta);
+[GoRecv] public static int32 /*new*/ Add(this ref Int32 x, int32 delta) {
+    return Interlocked.Add(ref x.v, delta);
 }
 
 // And atomically performs a bitwise AND operation on x using the bitmask
 // provided as mask and returns the old value.
-public static int32 /*old*/ And(this ж<Int32> Ꮡx, int32 mask) {
-    int32 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return AndInt32(Ꮡx.of(Int32.Ꮡv), mask);
+[GoRecv] public static int32 /*old*/ And(this ref Int32 x, int32 mask) {
+    return Interlocked.And(ref x.v, mask);
 }
 
 // Or atomically performs a bitwise OR operation on x using the bitmask
 // provided as mask and returns the old value.
-public static int32 /*old*/ Or(this ж<Int32> Ꮡx, int32 mask) {
-    int32 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return OrInt32(Ꮡx.of(Int32.Ꮡv), mask);
+[GoRecv] public static int32 /*old*/ Or(this ref Int32 x, int32 mask) {
+    return Interlocked.Or(ref x.v, mask);
 }
 
 // An Int64 is an atomic int64. The zero value is zero.
@@ -196,59 +178,40 @@ public static int32 /*old*/ Or(this ж<Int32> Ꮡx, int32 mask) {
 }
 
 // Load atomically loads and returns the value stored in x.
-public static int64 Load(this ж<Int64> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
-
-    return LoadInt64(Ꮡx.of(Int64.Ꮡv));
+[GoRecv] public static int64 Load(this ref Int64 x) {
+    return Volatile.Read(ref x.v);
 }
 
 // Store atomically stores val into x.
-public static void Store(this ж<Int64> Ꮡx, int64 val) {
-    ref var x = ref Ꮡx.Value;
-
-    StoreInt64(Ꮡx.of(Int64.Ꮡv), val);
+[GoRecv] public static void Store(this ref Int64 x, int64 val) {
+    Interlocked.Exchange(ref x.v, val);
 }
 
 // Swap atomically stores new into x and returns the previous value.
-public static int64 /*old*/ Swap(this ж<Int64> Ꮡx, int64 @new) {
-    int64 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return SwapInt64(Ꮡx.of(Int64.Ꮡv), @new);
+[GoRecv] public static int64 /*old*/ Swap(this ref Int64 x, int64 @new) {
+    return Interlocked.Exchange(ref x.v, @new);
 }
 
 // CompareAndSwap executes the compare-and-swap operation for x.
-public static bool /*swapped*/ CompareAndSwap(this ж<Int64> Ꮡx, int64 old, int64 @new) {
-    bool swapped = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return CompareAndSwapInt64(Ꮡx.of(Int64.Ꮡv), old, @new);
+[GoRecv] public static bool /*swapped*/ CompareAndSwap(this ref Int64 x, int64 old, int64 @new) {
+    return Interlocked.CompareExchange(ref x.v, @new, old) == old;
 }
 
 // Add atomically adds delta to x and returns the new value.
-public static int64 /*new*/ Add(this ж<Int64> Ꮡx, int64 delta) {
-    int64 @new = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return AddInt64(Ꮡx.of(Int64.Ꮡv), delta);
+[GoRecv] public static int64 /*new*/ Add(this ref Int64 x, int64 delta) {
+    return Interlocked.Add(ref x.v, delta);
 }
 
 // And atomically performs a bitwise AND operation on x using the bitmask
 // provided as mask and returns the old value.
-public static int64 /*old*/ And(this ж<Int64> Ꮡx, int64 mask) {
-    int64 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return AndInt64(Ꮡx.of(Int64.Ꮡv), mask);
+[GoRecv] public static int64 /*old*/ And(this ref Int64 x, int64 mask) {
+    return Interlocked.And(ref x.v, mask);
 }
 
 // Or atomically performs a bitwise OR operation on x using the bitmask
 // provided as mask and returns the old value.
-public static int64 /*old*/ Or(this ж<Int64> Ꮡx, int64 mask) {
-    int64 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return OrInt64(Ꮡx.of(Int64.Ꮡv), mask);
+[GoRecv] public static int64 /*old*/ Or(this ref Int64 x, int64 mask) {
+    return Interlocked.Or(ref x.v, mask);
 }
 
 // A Uint32 is an atomic uint32. The zero value is zero.
@@ -258,59 +221,40 @@ public static int64 /*old*/ Or(this ж<Int64> Ꮡx, int64 mask) {
 }
 
 // Load atomically loads and returns the value stored in x.
-public static uint32 Load(this ж<Uint32> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
-
-    return LoadUint32(Ꮡx.of(Uint32.Ꮡv));
+[GoRecv] public static uint32 Load(this ref Uint32 x) {
+    return Volatile.Read(ref x.v);
 }
 
 // Store atomically stores val into x.
-public static void Store(this ж<Uint32> Ꮡx, uint32 val) {
-    ref var x = ref Ꮡx.Value;
-
-    StoreUint32(Ꮡx.of(Uint32.Ꮡv), val);
+[GoRecv] public static void Store(this ref Uint32 x, uint32 val) {
+    Interlocked.Exchange(ref x.v, val);
 }
 
 // Swap atomically stores new into x and returns the previous value.
-public static uint32 /*old*/ Swap(this ж<Uint32> Ꮡx, uint32 @new) {
-    uint32 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return SwapUint32(Ꮡx.of(Uint32.Ꮡv), @new);
+[GoRecv] public static uint32 /*old*/ Swap(this ref Uint32 x, uint32 @new) {
+    return Interlocked.Exchange(ref x.v, @new);
 }
 
 // CompareAndSwap executes the compare-and-swap operation for x.
-public static bool /*swapped*/ CompareAndSwap(this ж<Uint32> Ꮡx, uint32 old, uint32 @new) {
-    bool swapped = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return CompareAndSwapUint32(Ꮡx.of(Uint32.Ꮡv), old, @new);
+[GoRecv] public static bool /*swapped*/ CompareAndSwap(this ref Uint32 x, uint32 old, uint32 @new) {
+    return Interlocked.CompareExchange(ref x.v, @new, old) == old;
 }
 
 // Add atomically adds delta to x and returns the new value.
-public static uint32 /*new*/ Add(this ж<Uint32> Ꮡx, uint32 delta) {
-    uint32 @new = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return AddUint32(Ꮡx.of(Uint32.Ꮡv), delta);
+[GoRecv] public static uint32 /*new*/ Add(this ref Uint32 x, uint32 delta) {
+    return Interlocked.Add(ref x.v, delta);
 }
 
 // And atomically performs a bitwise AND operation on x using the bitmask
 // provided as mask and returns the old value.
-public static uint32 /*old*/ And(this ж<Uint32> Ꮡx, uint32 mask) {
-    uint32 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return AndUint32(Ꮡx.of(Uint32.Ꮡv), mask);
+[GoRecv] public static uint32 /*old*/ And(this ref Uint32 x, uint32 mask) {
+    return Interlocked.And(ref x.v, mask);
 }
 
 // Or atomically performs a bitwise OR operation on x using the bitmask
 // provided as mask and returns the old value.
-public static uint32 /*old*/ Or(this ж<Uint32> Ꮡx, uint32 mask) {
-    uint32 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return OrUint32(Ꮡx.of(Uint32.Ꮡv), mask);
+[GoRecv] public static uint32 /*old*/ Or(this ref Uint32 x, uint32 mask) {
+    return Interlocked.Or(ref x.v, mask);
 }
 
 // A Uint64 is an atomic uint64. The zero value is zero.
@@ -321,59 +265,40 @@ public static uint32 /*old*/ Or(this ж<Uint32> Ꮡx, uint32 mask) {
 }
 
 // Load atomically loads and returns the value stored in x.
-public static uint64 Load(this ж<Uint64> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
-
-    return LoadUint64(Ꮡx.of(Uint64.Ꮡv));
+[GoRecv] public static uint64 Load(this ref Uint64 x) {
+    return Volatile.Read(ref x.v);
 }
 
 // Store atomically stores val into x.
-public static void Store(this ж<Uint64> Ꮡx, uint64 val) {
-    ref var x = ref Ꮡx.Value;
-
-    StoreUint64(Ꮡx.of(Uint64.Ꮡv), val);
+[GoRecv] public static void Store(this ref Uint64 x, uint64 val) {
+    Interlocked.Exchange(ref x.v, val);
 }
 
 // Swap atomically stores new into x and returns the previous value.
-public static uint64 /*old*/ Swap(this ж<Uint64> Ꮡx, uint64 @new) {
-    uint64 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return SwapUint64(Ꮡx.of(Uint64.Ꮡv), @new);
+[GoRecv] public static uint64 /*old*/ Swap(this ref Uint64 x, uint64 @new) {
+    return Interlocked.Exchange(ref x.v, @new);
 }
 
 // CompareAndSwap executes the compare-and-swap operation for x.
-public static bool /*swapped*/ CompareAndSwap(this ж<Uint64> Ꮡx, uint64 old, uint64 @new) {
-    bool swapped = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return CompareAndSwapUint64(Ꮡx.of(Uint64.Ꮡv), old, @new);
+[GoRecv] public static bool /*swapped*/ CompareAndSwap(this ref Uint64 x, uint64 old, uint64 @new) {
+    return Interlocked.CompareExchange(ref x.v, @new, old) == old;
 }
 
 // Add atomically adds delta to x and returns the new value.
-public static uint64 /*new*/ Add(this ж<Uint64> Ꮡx, uint64 delta) {
-    uint64 @new = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return AddUint64(Ꮡx.of(Uint64.Ꮡv), delta);
+[GoRecv] public static uint64 /*new*/ Add(this ref Uint64 x, uint64 delta) {
+    return Interlocked.Add(ref x.v, delta);
 }
 
 // And atomically performs a bitwise AND operation on x using the bitmask
 // provided as mask and returns the old value.
-public static uint64 /*old*/ And(this ж<Uint64> Ꮡx, uint64 mask) {
-    uint64 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return AndUint64(Ꮡx.of(Uint64.Ꮡv), mask);
+[GoRecv] public static uint64 /*old*/ And(this ref Uint64 x, uint64 mask) {
+    return Interlocked.And(ref x.v, mask);
 }
 
 // Or atomically performs a bitwise OR operation on x using the bitmask
 // provided as mask and returns the old value.
-public static uint64 /*old*/ Or(this ж<Uint64> Ꮡx, uint64 mask) {
-    uint64 old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return OrUint64(Ꮡx.of(Uint64.Ꮡv), mask);
+[GoRecv] public static uint64 /*old*/ Or(this ref Uint64 x, uint64 mask) {
+    return Interlocked.Or(ref x.v, mask);
 }
 
 // A Uintptr is an atomic uintptr. The zero value is zero.
@@ -383,59 +308,73 @@ public static uint64 /*old*/ Or(this ж<Uint64> Ꮡx, uint64 mask) {
 }
 
 // Load atomically loads and returns the value stored in x.
-public static uintptr Load(this ж<Uintptr> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
-
-    return LoadUintptr(Ꮡx.of(Uintptr.Ꮡv));
+[GoRecv] public static uintptr Load(this ref Uintptr x) {
+    // uintptr is a golib struct; atomics target its inner nuint storage (same as doc_impl.cs).
+    return Volatile.Read(ref x.v.Value);
 }
 
 // Store atomically stores val into x.
-public static void Store(this ж<Uintptr> Ꮡx, uintptr val) {
-    ref var x = ref Ꮡx.Value;
-
-    StoreUintptr(Ꮡx.of(Uintptr.Ꮡv), val);
+[GoRecv] public static void Store(this ref Uintptr x, uintptr val) {
+    Interlocked.Exchange(ref x.v.Value, val.Value);
 }
 
 // Swap atomically stores new into x and returns the previous value.
-public static uintptr /*old*/ Swap(this ж<Uintptr> Ꮡx, uintptr @new) {
-    uintptr old = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return SwapUintptr(Ꮡx.of(Uintptr.Ꮡv), @new);
+[GoRecv] public static uintptr /*old*/ Swap(this ref Uintptr x, uintptr @new) {
+    return Interlocked.Exchange(ref x.v.Value, @new.Value);
 }
 
 // CompareAndSwap executes the compare-and-swap operation for x.
-public static bool /*swapped*/ CompareAndSwap(this ж<Uintptr> Ꮡx, uintptr old, uintptr @new) {
-    bool swapped = default!;
-
-    ref var x = ref Ꮡx.Value;
-    return CompareAndSwapUintptr(Ꮡx.of(Uintptr.Ꮡv), old, @new);
+[GoRecv] public static bool /*swapped*/ CompareAndSwap(this ref Uintptr x, uintptr old, uintptr @new) {
+    return Interlocked.CompareExchange(ref x.v.Value, @new.Value, old.Value) == old.Value;
 }
 
 // Add atomically adds delta to x and returns the new value.
-public static uintptr /*new*/ Add(this ж<Uintptr> Ꮡx, uintptr delta) {
-    uintptr @new = default!;
+[GoRecv] public static uintptr /*new*/ Add(this ref Uintptr x, uintptr delta) {
+    // No Interlocked.Add over nuint: CAS loop, mirroring doc_impl.cs AddUintptr.
+    nuint initialValue, newValue;
 
-    ref var x = ref Ꮡx.Value;
-    return AddUintptr(Ꮡx.of(Uintptr.Ꮡv), delta);
+    do
+    {
+        initialValue = Volatile.Read(ref x.v.Value);
+        newValue = initialValue + delta;
+    }
+    while (Interlocked.CompareExchange(ref x.v.Value, newValue, initialValue) != initialValue);
+
+    return newValue;
 }
 
 // And atomically performs a bitwise AND operation on x using the bitmask
 // provided as mask and returns the old value.
-public static uintptr /*old*/ And(this ж<Uintptr> Ꮡx, uintptr mask) {
-    uintptr old = default!;
+[GoRecv] public static uintptr /*old*/ And(this ref Uintptr x, uintptr mask) {
+    // No Interlocked.And over nuint: CAS loop. Returns the OLD value — Go's contract
+    // (`func (x *Uintptr) And(mask uintptr) (old uintptr)`), matching what Interlocked.And
+    // returns for the fixed-width types above.
+    nuint initialValue, newValue;
 
-    ref var x = ref Ꮡx.Value;
-    return AndUintptr(Ꮡx.of(Uintptr.Ꮡv), mask);
+    do
+    {
+        initialValue = Volatile.Read(ref x.v.Value);
+        newValue = initialValue & mask;
+    }
+    while (Interlocked.CompareExchange(ref x.v.Value, newValue, initialValue) != initialValue);
+
+    return initialValue;
 }
 
 // Or atomically performs a bitwise OR operation on x using the bitmask
-// provided as mask and returns the updated value after the OR operation.
-public static uintptr /*old*/ Or(this ж<Uintptr> Ꮡx, uintptr mask) {
-    uintptr old = default!;
+// provided as mask and returns the old value.
+[GoRecv] public static uintptr /*old*/ Or(this ref Uintptr x, uintptr mask) {
+    // CAS loop returning the OLD value — Go's contract; see And above.
+    nuint initialValue, newValue;
 
-    ref var x = ref Ꮡx.Value;
-    return OrUintptr(Ꮡx.of(Uintptr.Ꮡv), mask);
+    do
+    {
+        initialValue = Volatile.Read(ref x.v.Value);
+        newValue = initialValue | mask;
+    }
+    while (Interlocked.CompareExchange(ref x.v.Value, newValue, initialValue) != initialValue);
+
+    return initialValue;
 }
 
 // noCopy may be added to structs which must not be copied

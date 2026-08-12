@@ -2398,7 +2398,7 @@ func TestTestVariantPinsProductionTypeAgainstTestMethodCollision(t *testing.T) {
 	testMethodRenames = make(map[types.Object]bool)
 	t.Cleanup(func() { testMethodRenames = nil })
 
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, nil, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2418,7 +2418,7 @@ func TestTestVariantPinsProductionTypeAgainstTestMethodCollision(t *testing.T) {
 		t.Fatalf("the production TYPE must keep its bare name in every reference:\n%s", exportCs)
 	}
 
-	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", nil, options); err != nil {
+	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", nil, nil, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2463,7 +2463,7 @@ func TestTestVariantRenamesTestMethodShadowingDotImportedFunction(t *testing.T) 
 	t.Cleanup(func() { testMethodRenames = nil })
 
 	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
-	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", nil, options); err != nil {
+	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", nil, nil, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2533,7 +2533,7 @@ func TestTestVariantRenamesTestFuncCollidingWithProductionMethodReceiver(t *test
 	t.Cleanup(func() { testMethodRenames = nil })
 
 	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, nil, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2598,7 +2598,7 @@ func TestTestVariantPinsProductionLiftedTypeNames(t *testing.T) {
 	// Unseeded (what an EXTERNAL variant gets — its own `<pkg>_test_package` class is a separate
 	// scope): the lift takes the base name. This half is what makes the seeded half meaningful.
 	unseeded := t.TempDir()
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), unseeded, "go", nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), unseeded, "go", nil, nil, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2613,7 +2613,7 @@ func TestTestVariantPinsProductionLiftedTypeNames(t *testing.T) {
 	seeded := t.TempDir()
 	seed := NewHashSet([]string{baseName})
 
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), seeded, "go", seed, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), seeded, "go", seed, nil, options); err != nil {
 		t.Fatal(err)
 	}
 

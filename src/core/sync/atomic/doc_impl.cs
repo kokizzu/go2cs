@@ -129,6 +129,9 @@ partial class atomic_package
 
     public static partial uintptr /*old*/ AndUintptr(ж<uintptr> addr, uintptr mask)
     {
+        // Returns the OLD value — Go's contract (`func AndUintptr(addr *uintptr, mask uintptr)
+        // (old uintptr)`), and what Interlocked.And returns for the fixed-width overloads above.
+        // Returned newValue until 2026-08-11 (L11), a silent wrong answer.
         nuint initialValue, newValue;
 
         do
@@ -138,7 +141,7 @@ partial class atomic_package
         }
         while (Interlocked.CompareExchange(ref addr.Value.Value, newValue, initialValue) != initialValue);
 
-        return newValue;
+        return initialValue;
     }
 
     public static partial int32 /*old*/ OrInt32(ж<int32> addr, int32 mask)
@@ -163,6 +166,7 @@ partial class atomic_package
 
     public static partial uintptr /*old*/ OrUintptr(ж<uintptr> addr, uintptr mask)
     {
+        // Returns the OLD value — Go's contract; see AndUintptr above.
         nuint initialValue, newValue;
 
         do
@@ -172,7 +176,7 @@ partial class atomic_package
         }
         while (Interlocked.CompareExchange(ref addr.Value.Value, newValue, initialValue) != initialValue);
 
-        return newValue;
+        return initialValue;
     }
 
     public static partial int32 /*val*/ LoadInt32(ж<int32> addr)

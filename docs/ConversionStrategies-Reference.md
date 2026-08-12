@@ -1790,13 +1790,54 @@ compute in the wrong width, it *throws*, so a folded value that fits int32 (`mas
 64-bit-wide targets its `…L` / `(nint)(…L)` contract already covers (a narrower signed target keeps the
 operator form, where the wrapper cast fails LOUDLY rather than silently computing the wrong value — no such
 site exists in the stdlib corpus). The `mask` local itself stays emitted, unused, carrying the gofmt'd Go
-constant as its comment: it is what makes the folded magic numbers readable back to the Go source.
+constant as its comment: it is what makes the folded magic numbers readable back to the Go source (its
+`BigInteger.Parse` hoists to a static field — see the next subsection).
 
 Corpus footprint of the fold: exactly two files across the 302-package stdlib conversion
 (`go/doc/comment/parse.cs`, `net/textproto/reader.cs`), both still compiling clean.
 (Guarded by the `UntypedConstWideMask` behavioral test — the `isHost` mask, the `&^`-inverted
 `validHeaderValueByte` mask, a small-valued high half, and a `uintptr`-target native-width mask, all
 output-compared vs Go. Without the fold the `uintptr` arm is a hard CS0030 and the `uint64` arms throw.)
+
+### A function-LOCAL `GoBigConst` hoists its parse to a `static readonly` field
+
+A Go constant has no runtime existence — its value lives in the instruction stream — and `GoBigConst`
+is the one C# constant projection with a real **per-evaluation** cost: `BigInteger.Parse` allocates its
+bits array on every run. Emitted as a plain local, that parse re-ran on **every call** of the enclosing
+function; `net/textproto`'s `validHeaderFieldByte` paid it 14 times per `canonicalMIMEHeaderKey` call
+(560 B against Go's 0) inside `TestCommonHeaders`' want-ZERO `testing.AllocsPerRun` assert — and the
+local was not even referenced, every use having been folded by the subsection above. An **int-kind**
+function-local big constant therefore hoists its parse to one `private static readonly` field above the
+function (the hoisted-string-literal pattern), and the local initializes from the field — a BigInteger
+struct copy, which allocates nothing:
+
+```go
+func validHeaderFieldByte(c byte) bool {
+	const mask = 0 | (1<<(10)-1)<<'0' | /* … */ 1<<'~'
+	…
+}
+```
+```csharp
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst maskᶜ = GoBigConst.Parse("116972063611741436228934278030836105216");
+
+internal static bool validHeaderFieldByte(byte c) {
+    GoBigConst mask = /* 0 | (1<<(10)-1)<<'0' | … */
+            maskᶜ;
+    return …;
+}
+```
+
+Field names are claimed package-wide (`<name>` + `HoistedConstMarker` `ᶜ` + ordinal on collision —
+`reader.cs` declares `maskᶜ` and `maskᶜ1` for its two functions' masks), deterministic because files
+convert sequentially; a `-tests` internal variant seeds from the production conversion's claims exactly
+as lifted type names do (`productionHoistedConstOrdinals`). **Float/complex OVERFLOW constants keep the
+per-call parse**: their exact string may be a rational (`"1/3"`) whose `Parse` throws, and a field
+initializer would turn that per-call throw into a package-class `TypeInitializationException`.
+Package-level big consts were already `static readonly` fields and are unchanged. (Guarded by
+`UntypedConstWideMask` — four functions with local big-const masks, exercising the ordinal chain — and
+by `net/textproto`'s validated `TestCommonHeaders`, whose want-zero assert is what surfaced the cost;
+L11.)
 
 ### The `&^=` (bit-clear) compound assignment on a narrow type
 C# has no `&^` (AND-NOT) operator, so Go's `a &^= b` expands to `a &= ~b`. The `~` complement always promotes its operand to `int`, and `int` is not implicitly convertible to a narrower or unsigned LHS type (`byte`/`ushort`/`uint`/`ulong`/`uintptr`/`nuint`) — so `flags &= ~b` is CS0266. The complemented value is therefore cast back to the LHS type, inside `unchecked` because for a *constant* operand `~b` folds to a negative `int` constant whose checked narrowing would overflow (CS0221):
@@ -5566,6 +5607,39 @@ var c = new channel<nint>(3);
 ```
 
 Map reads honor Go's nil-map and comma-ok semantics (see [Nil and Zero Values](#nil-and-zero-values) and [Multi-Result Values and Comma-Ok Forms](#multi-result-values-and-comma-ok-forms)).
+
+### `m[string(b)]` — the map-READ key does not copy (`tmpstring`)
+
+The Go compiler special-cases `m[string(b)]`: because a map lookup hashes and compares its key but
+never retains it, the `[]byte`→`string` conversion's result provably does not outlive the index
+expression, and the copy is skipped (`runtime.slicebytetostringtmp`). The converted C# paid that copy
+on every probe — one backing `byte[]` per call — which is exactly the allocation
+`net/textproto.TestCommonHeaders`' want-ZERO `testing.AllocsPerRun` assert measures over
+`canonicalMIMEHeaderKey`'s common-header probe (L11). The converter now recognizes the same shape and
+emits golib's `tmpstring(b)` — a TRANSIENT `@string` windowing the slice's live backing through
+`@string.TransientAliasOf`, zero allocation:
+
+```go
+if v := commonHeader[string(a)]; v != "" { return v, true }
+v, ok := m[string(b)]
+```
+```csharp
+@string v = commonHeader[tmpstring(a)]; if (v != ""u8) { return (v, true); }
+var (v, ok) = m[tmpstring(b), ꟷ];
+```
+
+The scope is deliberately EXACTLY the shape whose safety Go's own optimization proves
+(`mapReadTmpStringKey`, `convIndexExpr.go`): a map index in **rvalue** position — plain or comma-ok —
+whose key type is the PREDECLARED `string` and whose key expression is a conversion to predeclared
+`string` over a plain `[]byte` (element exactly basic `uint8`). Everywhere the string ESCAPES the
+copying conversion stays: an assignment target (`m[string(b)] = v` stores the key — emitted
+`m[((@string)b)] = v`), `delete(m, string(b))`, the function's own `return string(a)` paths, a
+named-string key type, a named-over-byte element. Compound assignments and `++` mark the index an
+assignment target, so they keep the copy for both their read and write halves. (Guarded by the
+`MapStringBytesLookup` behavioral test — hit/miss/comma-ok probes through a mutating slice, a
+sub-slice operand, and the store-then-mutate case proving the STORED key copied — and by
+`GolibTests.AllocationCounterTests.TmpStringMapProbeChargesNothing`, which pins the zero charge in
+both units.)
 
 ### The NIL map key
 

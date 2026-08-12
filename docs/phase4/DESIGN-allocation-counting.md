@@ -104,6 +104,15 @@ Since r57c an `@string` is a WINDOW (backing + offset + length), so slicing one 
 copies nothing, exactly as in Go. Before that rewrite every sub-string copied, and this census would
 have carried its busiest site here.
 
+**`tmpstring(slice<byte>)` — Go's `m[string(b)]` map-READ key — charges NOTHING, the second
+zero-by-design row (L11).** The Go compiler skips the string copy for a map-lookup key because the
+key provably does not outlive the lookup (`runtime.slicebytetostringtmp`); the converter emits
+golib's `tmpstring` for exactly that shape, which windows the slice's LIVE backing through
+`@string.TransientAliasOf` — no copy, no charge, in either unit. Every path where the string
+ESCAPES (return, store, map WRITE key) keeps the copying conversion above. net/textproto's
+`canonicalMIMEHeaderKey` common-header probe is the shape that forced it: a want-ZERO
+`AllocsPerRun` assert over a path whose only allocation was this key's backing copy.
+
 `Ꮡ(IArray<T>, index)` is the one site that charges an allocation emitted *outside* golib. A
 `slice<T>`/`array<T>` header is a struct, so `Ꮡ(s, i)` — the only shape the converter emits for Go's
 `&s[i]` — boxes one on every call. The box is created at the call site, but this overload is the only

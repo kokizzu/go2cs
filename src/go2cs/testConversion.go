@@ -646,6 +646,12 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	// test files emit into the production package class, where those names are already taken.
 	productionLiftSeed := packageLiftedTypeNames
 
+	// Same capture for the hoisted big-constant field ordinals (visitValueSpec's
+	// claimHoistedConstFieldName): a production function's `const mask = <big>` declared `maskᶜ` in
+	// the production class, and an internal-variant test hoisting its own `mask` must claim the
+	// next ordinal, not the name already on disk.
+	productionHoistedConstSeed := packageHoistedConstOrdinals
+
 	// The simple type names BOTH variant classes declare (see testAmbiguousLocalTypeNames). Both
 	// `using static` directives are in scope in the merged metadata, so these must emit
 	// class-qualified. Computed from the loaded variants before either converts, and session-scoped
@@ -762,9 +768,11 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		}
 
 		var liftSeed HashSet[string]
+		var hoistedConstSeed map[string]int
 
 		if variant == internal && !model.referencesProduction() {
 			liftSeed = productionLiftSeed
+			hoistedConstSeed = productionHoistedConstSeed
 		}
 
 		variantOptions := options
@@ -776,7 +784,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			}
 		}
 
-		variantOutputs, imports, err := convertTestVariant(variant, emitEntries, outputPath, projectNamespace, liftSeed, variantOptions)
+		variantOutputs, imports, err := convertTestVariant(variant, emitEntries, outputPath, projectNamespace, liftSeed, hoistedConstSeed, variantOptions)
 		if err != nil {
 			return result, err
 		}
@@ -1302,7 +1310,7 @@ func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bo
 // Files convert SEQUENTIALLY in pkg.Syntax order for byte-reproducible output, mirroring
 // processConversion (the per-file visitors share package-level state claimed at visit time; the
 // branch's concurrent goroutines reproduced exactly the nondeterminism master removed).
-func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPath, projectNamespace string, liftSeed HashSet[string], options Options) ([]string, HashSet[string], error) {
+func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPath, projectNamespace string, liftSeed HashSet[string], hoistedConstSeed map[string]int, options Options) ([]string, HashSet[string], error) {
 	resetPackageState(pkg)
 	packageNamespace = projectNamespace
 
@@ -1311,6 +1319,10 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	// the production `<pkg>_package` class, whose on-disk `.cs` are not regenerated here, so a lift
 	// that reuses one of those names declares the nested type twice.
 	productionLiftedTypeNames = liftSeed
+
+	// Same production-pinned seeding for the hoisted big-constant field ordinals (see
+	// productionHoistedConstOrdinals); claimHoistedConstFieldName folds it in on first claim.
+	productionHoistedConstOrdinals = hoistedConstSeed
 
 	// The package under test is RECOMPILED into this assembly, so a record naming one of its types
 	// through its fully-qualified class (how an external `<name>_test` variant renders it, having

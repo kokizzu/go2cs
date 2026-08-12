@@ -746,6 +746,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckMapSamePackageTypes() => CheckTarget("MapSamePackageTypes");
 
     [TestMethod]
+    public void CheckMapStringBytesLookup() => CheckTarget("MapStringBytesLookup");
+
+    [TestMethod]
     public void CheckMathFloatBits() => CheckTarget("MathFloatBits");
 
     [TestMethod]
