@@ -87,6 +87,13 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 			// Comma-ok map access (`v, ok := m[k]`): use golib's two-value indexer
 			// `m[key, ꟷ]`, which returns `(value, present)`.
 			if context.isTupleResult {
+				// Go's m[string(b)] read special case — see mapReadTmpStringKey. The interface/
+				// pointer/untyped-const key machinery below is all for non-string key types, so a
+				// matched key skips it whole.
+				if keyExpr, matched := v.mapReadTmpStringKey(mapType, indexExpr.Index); matched {
+					return fmt.Sprintf("%s[%s, %s]", v.convExpr(indexExpr.X, nil), keyExpr, OverloadDiscriminator)
+				}
+
 				keyContexts := []ExprContext{}
 
 				if types.Identical(mapType.Key(), types.NewInterfaceType(nil, nil)) {
@@ -173,6 +180,15 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 
 	if typeAndVal, ok := v.info.Types[indexExpr.X]; ok {
 		if mapType, isMap := typeAndVal.Type.Underlying().(*types.Map); isMap {
+			// Go's m[string(b)] READ special case — see mapReadTmpStringKey. Assignment targets are
+			// excluded: a map STORE retains its key, so the store side keeps the copying conversion
+			// (exactly the boundary Go's own optimization draws).
+			if !context.isAssignmentTarget {
+				if keyExpr, matched := v.mapReadTmpStringKey(mapType, indexExpr.Index); matched {
+					index = keyExpr
+				}
+			}
+
 			if keyIsInterface, keyIsEmptyInterface := isInterface(mapType.Key()); keyIsInterface && !keyIsEmptyInterface {
 				index = v.convertToInterfaceType(mapType.Key(), v.getType(indexExpr.Index, false), index)
 			}
@@ -268,6 +284,57 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 	}
 
 	return fmt.Sprintf("%s%s[%s]", baseExpr, ptrDeref, index)
+}
+
+// mapReadTmpStringKey recognizes Go's `m[string(b)]` map-READ special case — the compiler avoids
+// copying b's bytes into a real string because the lookup key provably does not outlive the index
+// expression (runtime.slicebytetostringtmp) — and emits the key as golib's `tmpstring(b)`, a
+// TRANSIENT @string aliasing the slice's backing. Zero allocation, matching Go's cost model
+// (net/textproto's canonicalMIMEHeaderKey common-header probe paid one backing copy per call
+// against Go's 0 on a want-zero AllocsPerRun path, L11).
+//
+// The scope is deliberately EXACTLY the shape whose safety Go's own optimization proves:
+//   - a map INDEX in rvalue position (both plain and comma-ok reads; never an assignment target,
+//     where the map STORES the key and the alias would escape into the dictionary);
+//   - the map's key type is the PREDECLARED string type (the emitted key slot is then exactly
+//     @string, which tmpstring produces — a NAMED string key converts through its wrapper and
+//     keeps the copying path);
+//   - the key expression is a conversion to predeclared string whose operand is a plain []byte
+//     (elem exactly basic uint8 — a named-over-byte element emits slice<NamedByte>, which
+//     tmpstring's slice<byte> parameter cannot take).
+func (v *Visitor) mapReadTmpStringKey(mapType *types.Map, keyExpr ast.Expr) (string, bool) {
+	keyBasic, ok := types.Unalias(mapType.Key()).(*types.Basic)
+
+	if !ok || keyBasic.Info()&types.IsString == 0 {
+		return "", false
+	}
+
+	call, ok := keyExpr.(*ast.CallExpr)
+
+	if !ok || len(call.Args) != 1 || !v.callExprIsTypeConversion(call) {
+		return "", false
+	}
+
+	// The conversion's RESULT must itself be predeclared string — `myStr(b)` keeps its wrapper path.
+	convBasic, ok := types.Unalias(v.getType(call, false)).(*types.Basic)
+
+	if !ok || convBasic.Info()&types.IsString == 0 {
+		return "", false
+	}
+
+	sliceType, ok := types.Unalias(v.getType(call.Args[0], false)).(*types.Slice)
+
+	if !ok {
+		return "", false
+	}
+
+	elemBasic, ok := types.Unalias(sliceType.Elem()).(*types.Basic)
+
+	if !ok || elemBasic.Kind() != types.Uint8 {
+		return "", false
+	}
+
+	return fmt.Sprintf("tmpstring(%s)", v.convExpr(call.Args[0], nil)), true
 }
 
 func (v *Visitor) isGenericTypeArgument(indexExpr *ast.IndexExpr) bool {

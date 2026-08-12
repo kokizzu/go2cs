@@ -687,6 +687,9 @@ public static @string CanonicalMIMEHeaderKey(@string s) {
 
 internal static UntypedInt toLower => /* 'a' - 'A' */ 32;
 
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst maskᶜ = GoBigConst.Parse("116972063611741436228934278030836105216");
+
 // validHeaderFieldByte reports whether c is a valid byte in a header
 // field name. RFC 7230 says:
 //
@@ -719,9 +722,12 @@ internal static bool validHeaderFieldByte(byte c) {
 	1<<'`' |
 	1<<'|' |
 	1<<'~' */
-            GoBigConst.Parse("116972063611741436228934278030836105216");
+            maskᶜ;
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (288068722172624896UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (6341068274398134270UL)))) != 0;
 }
+
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst maskᶜ1 = GoBigConst.Parse("170141183460469231731687303711589138944");
 
 // validHeaderValueByte reports whether c is a valid byte in a header
 // field value. RFC 7230 says:
@@ -747,7 +753,7 @@ internal static bool validHeaderValueByte(byte c) {
 	(1<<(0x7f-0x21)-1)<<0x21 |
 	1<<0x20 |
 	1<<0x09 */ // HTAB: %x09
-            GoBigConst.Parse("170141183460469231731687303711589138944");
+            maskᶜ1;
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & ~(18446744069414584832UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & ~(9223372036854775807UL)))) == 0;
 }
 
@@ -806,7 +812,7 @@ internal static (@string, bool ok) canonicalMIMEHeaderKey(slice<byte> a) {
     // case, so a copy of a's bytes into a new string does not
     // happen in this map lookup:
     {
-        @string v = commonHeader[((@string)a)]; if (v != ""u8) {
+        @string v = commonHeader[tmpstring(a)]; if (v != ""u8) {
             return (v, true);
         }
     }

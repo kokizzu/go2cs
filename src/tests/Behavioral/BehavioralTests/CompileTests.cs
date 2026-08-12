@@ -793,6 +793,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckMapSamePackageTypes() => CheckTarget("MapSamePackageTypes");
 
     [TestMethod]
+    public void CheckMapStringBytesLookup() => CheckTarget("MapStringBytesLookup");
+
+    [TestMethod]
     public void CheckMathFloatBits() => CheckTarget("MathFloatBits");
 
     [TestMethod]

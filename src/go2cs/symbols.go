@@ -37,6 +37,7 @@ const EllipsisOperator = "\uA4F8\uA4F8\uA4F8"    // Variants: ꓸꓸꓸ ᐧᐧ�
 const CapturedVarMarker = "\u0297"               // Variants: ʗ ɔ ᴄ
 const TempVarMarker = "\u1D1B"                   // Variants: ᴛ Ŧ ᵀ
 const HoistedLiteralMarker = "\u02E2"            // Suffix of a hoisted string-literal field name (trueˢ). Variants: ˢ ˢˢ
+const HoistedConstMarker = "\u1D9C"              // Suffix of a hoisted big-constant field name (maskᶜ). Variants: ᶜ ᶜᶜ
 const TrueMarker = "\u1427"                      // Variants: ᐧ true
 const OpaqueTrueMarker = TrueMarker + TrueMarker // golib static readonly true - NOT compiler-foldable (leading constant-true case, CS8120)
 const ValueAdapterInfix = "\u1D20"               // ᴠ - value-form foreign adapter infix ({Struct}ᴠ{Iface})

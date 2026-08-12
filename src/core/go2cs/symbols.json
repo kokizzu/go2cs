@@ -134,6 +134,13 @@
       "note": "U+02E2 - hoisted string-literal field-name suffix."
     },
     {
+      "name": "HoistedConstMarker",
+      "value": "\u1d9c",
+      "goEscape": true,
+      "goTrailing": "Suffix of a hoisted big-constant field name (mask\u1d9c). Variants: \u1d9c \u1d9c\u1d9c",
+      "note": "U+1D9C - hoisted function-local big-constant field-name suffix: a Go local const whose value fits neither int64 nor uint64 emits as GoBigConst (BigInteger), and the parse hoists to one static readonly field per package so the local costs a struct copy instead of a per-call BigInteger.Parse (L11). Converter-only, so no Symbols.cs projection."
+    },
+    {
       "name": "TrueMarker",
       "value": "\u1427",
       "goEscape": true,

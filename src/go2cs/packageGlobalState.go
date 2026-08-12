@@ -240,6 +240,26 @@ var goBuiltinNames = map[string]bool{
 
 var globalTempVarCount map[string]int
 
+// packageHoistedConstOrdinals counts, per Go const name, the hoisted big-constant fields this
+// package's conversion has claimed so far (visitValueSpec's writeUntypedConst — a function-local
+// int-kind GoBigConst hoists its BigInteger.Parse to a `static readonly` field named
+// `<name>ᶜ[ordinal]`). Package-scoped because every hoisted field lands in the ONE
+// `<pkg>_package` partial class: two functions (or two files) each declaring `const mask = <big>`
+// must claim distinct field names or the class declares the field twice (CS0102). Deterministic
+// because files convert sequentially in sorted order. Reset per package/variant by
+// resetPackageState; claimed under packageLock.
+var packageHoistedConstOrdinals map[string]int
+
+// productionHoistedConstOrdinals pins the hoisted big-constant ordinals the PRODUCTION conversion
+// of this package claimed, for the `-tests` INTERNAL variant only — the same production-pinned
+// seeding productionLiftedTypeNames applies to lifted type names, and for the same reason: that
+// variant's test files emit into the production `<pkg>_package` class whose on-disk `.cs` are not
+// regenerated, so a test-side hoist reusing a production field name is CS0102. Nil for a
+// production conversion and for the EXTERNAL variant (its `<pkg>_test_package` class is a separate
+// scope). Installed by convertTestVariant from the seed its caller captured before the first
+// variant's resetPackageState.
+var productionHoistedConstOrdinals map[string]int
+
 var initFuncCounter int
 
 var usesUnsafeCode bool

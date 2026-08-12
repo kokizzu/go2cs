@@ -117,6 +117,49 @@ public class AllocationCounterTests
     }
 
     [TestMethod]
+    public void TmpStringMapProbeChargesNothing()
+    {
+        // Go's `m[string(b)]` map-READ special case (runtime.slicebytetostringtmp): the compiler
+        // proves the key does not outlive the lookup and skips the copy, so the probe allocates
+        // NOTHING. The converter emits golib's tmpstring(b) for exactly that shape, and this is the
+        // path net/textproto's canonicalMIMEHeaderKey common-header probe takes 200 times inside a
+        // want-ZERO AllocsPerRun assert (L11) — the charge must be zero in BOTH units, since
+        // AllocsPerRun's zero-bytes rule is what makes the reported figure exactly 0.
+        map<@string, @string> m = new();
+        @string interned = new("Content-Length");
+        m[interned] = interned;
+
+        slice<byte> key = new(new byte[] { (byte)'C', (byte)'o', (byte)'n', (byte)'t', (byte)'e', (byte)'n', (byte)'t', (byte)'-', (byte)'L', (byte)'e', (byte)'n', (byte)'g', (byte)'t', (byte)'h' });
+
+        (long objects, long bytes) = Charge(() =>
+        {
+            @string v = m[tmpstring(key)];
+
+            if (v != interned)
+                throw new InvalidOperationException("probe missed");
+        });
+
+        Assert.AreEqual(0L, objects,
+            $"m[tmpstring(b)] charged {objects} object(s), expected 0 — the transient alias must not " +
+            "materialize the key (the census in docs/phase4/DESIGN-allocation-counting.md §4 and this " +
+            "assertion have to agree — update both, or neither).");
+
+        Assert.AreEqual(0L, bytes,
+            $"m[tmpstring(b)] allocated {bytes} B, expected 0 — testing.AllocsPerRun reports exactly 0 " +
+            "only when zero BYTES reach the heap, so the want-zero stdlib asserts depend on this in " +
+            "both units.");
+
+        // The alias WINDOWS the slice's live storage — the aliasing is the mechanism, so pin it:
+        // canonicalizing the slice in place must be visible through a fresh transient.
+        key[0] = (byte)'c';
+
+        Assert.IsTrue(tmpstring(key) == new @string("content-Length"),
+            "tmpstring must alias the slice's LIVE bytes, not a snapshot");
+
+        key[0] = (byte)'C';
+    }
+
+    [TestMethod]
     public void RangingAStringChargesItsEnumerator()
     {
         @string s = new("räng");
