@@ -556,51 +556,17 @@ func (v *Visitor) refLoweredPtrConvArg(arg ast.Expr, deferredDecls *strings.Buil
 		return v.refLoweredBoxedFallback(arg)
 	}
 
-	targetElem := types.Unalias(targetPtr.Elem())
-	sourceElem := types.Unalias(sourceType)
-	targetCS := v.getCSharpTypeName(targetElem)
-	sourceCS := v.getCSharpTypeName(sourceElem)
+	// The pairing DECISION is the shared predicate the locals census also consults
+	// (refConvPairingSupported) — the array-wrapper family only, where the temp's copied header
+	// shares its `T[]` backing. The generated `Value` property lazily materializes that backing
+	// IN the source variable when read through one (struct property access binds `ref this`),
+	// and the `[GoType]` wrapper carries the array↔wrapper conversions the cast forms bind.
+	mechanism, supported := refConvPairingSupported(sourceType, targetPtr.Elem())
 
-	// Go pointer conversions require IDENTICAL underlying types, so the array-wrapper family
-	// closes under four pairings. The generated `Value` property yields the wrapper's underlying
-	// `array<T>` header (lazily materializing the backing IN the source variable when read
-	// through one — struct property access binds `ref this`); the `[GoType]` wrapper carries the
-	// array↔wrapper conversions the cast forms bind.
-	value := ""
-	sourceNamed, sourceIsNamed := sourceElem.(*types.Named)
-	targetNamed, targetIsNamed := targetElem.(*types.Named)
-	sourceIsNamedArray := false
-	targetIsNamedArray := false
-
-	if sourceIsNamed {
-		_, sourceIsNamedArray = sourceNamed.Underlying().(*types.Array)
-	}
-
-	if targetIsNamed {
-		_, targetIsNamedArray = targetNamed.Underlying().(*types.Array)
-	}
-
-	switch {
-	case targetCS == sourceCS:
-		value = chainValue
-	case sourceIsNamedArray && targetCS == v.getCSharpTypeName(sourceNamed.Underlying()):
-		// wrapper → its raw array
-		value = chainValue + ".Value"
-	case targetIsNamedArray && sourceCS == v.getCSharpTypeName(targetNamed.Underlying()):
-		// raw array → wrapper (one user-defined conversion)
-		value = fmt.Sprintf("(%s)(%s)", targetCS, chainValue)
-	case sourceIsNamedArray && targetIsNamedArray &&
-		v.getCSharpTypeName(sourceNamed.Underlying()) == v.getCSharpTypeName(targetNamed.Underlying()):
-		// wrapper → different wrapper over the same array: hop through the raw array (C# will
-		// not chain two user-defined conversions in one cast)
-		value = fmt.Sprintf("(%s)((%s).Value)", targetCS, chainValue)
-	}
-
-	if value == "" {
-		// A pairing outside the array family (a struct-shaped reinterpret). The boxed fallback
-		// is byte-parity for a boxed root — but over a REVERTED local it copy-boxes storage the
-		// reversion assumed nothing else aliases, so say so loudly (the reversion census and
-		// this emission must agree; no corpus site reaches here today).
+	if !supported {
+		// An unsupported pairing keeps the boxed convention — byte-parity because the census's
+		// matching arm guarantees the root KEPT its identity box (the shared-predicate
+		// agreement); the warning is the tripwire should the two ever disagree again.
 		if rootObj := v.info.ObjectOf(rootIdent); rootObj != nil {
 			if rootVar, isVar := rootObj.(*types.Var); isVar && packageRefLoweringResult != nil && packageRefLoweringResult.RevertedLocalVars[rootVar] {
 				v.showWarning("ref-lowered conversion argument over reverted local '%s' has no primary emission - boxed fallback may split storage: %s",
@@ -608,6 +574,26 @@ func (v *Visitor) refLoweredPtrConvArg(arg ast.Expr, deferredDecls *strings.Buil
 			}
 		}
 
+		return v.refLoweredBoxedFallback(arg)
+	}
+
+	targetCS := v.getCSharpTypeName(types.Unalias(targetPtr.Elem()))
+	value := ""
+
+	switch mechanism {
+	case "identity":
+		value = chainValue
+	case "unwrap":
+		// wrapper → its raw array
+		value = chainValue + ".Value"
+	case "wrap":
+		// raw array → wrapper (one user-defined conversion)
+		value = fmt.Sprintf("(%s)(%s)", targetCS, chainValue)
+	case "rewrap":
+		// wrapper → different wrapper over the same array: hop through the raw array (C# will
+		// not chain two user-defined conversions in one cast)
+		value = fmt.Sprintf("(%s)((%s).Value)", targetCS, chainValue)
+	default:
 		return v.refLoweredBoxedFallback(arg)
 	}
 

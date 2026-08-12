@@ -1428,6 +1428,49 @@ func (a *refLoweringAnalysis) classifyDerivedAddress(addrExpr ast.Expr, parents 
 	}
 }
 
+// refConvPairingSupported reports whether a pointer conversion from an address of `source`
+// storage to a pointer-to-`target` has a PRIMARY ref-lowered emission (§3.3 row 5, ruling
+// §10.3's hoisted-temp rule) — and names the mechanism. Go requires identical underlying types
+// for pointer conversions, and the temp rule's byte-parity argument (a copied header whose
+// backing is SHARED) holds only for the named-ARRAY-wrapper family: the generated wrapper's
+// `Value` yields an `array<T>` header over a shared `T[]`. A named NUMERIC/STRING/struct
+// wrapper's value is a plain copy — a temp would silently drop writes — so those pairings are
+// unsupported and must keep the boxed convention END TO END: the emission falls back to the
+// aliasing boxed form, and the locals census must NOT revert a local whose address feeds such a
+// conversion (a reverted local has no identity box left for the fallback to alias — the exact
+// lost-write NamedNumericPointerReinterpret's output gate caught at A2). One predicate, shared
+// by both sides, so the census and the emission cannot disagree again.
+func refConvPairingSupported(source, target types.Type) (string, bool) {
+	src := types.Unalias(source)
+	tgt := types.Unalias(target)
+
+	if types.Identical(src, tgt) {
+		return "identity", true
+	}
+
+	if srcNamed, ok := src.(*types.Named); ok {
+		if _, isArray := srcNamed.Underlying().(*types.Array); isArray {
+			if types.Identical(srcNamed.Underlying(), tgt) {
+				return "unwrap", true
+			}
+
+			if tgtNamed, ok := tgt.(*types.Named); ok {
+				if _, isArray2 := tgtNamed.Underlying().(*types.Array); isArray2 && types.Identical(srcNamed.Underlying(), tgtNamed.Underlying()) {
+					return "rewrap", true
+				}
+			}
+		}
+	}
+
+	if tgtNamed, ok := tgt.(*types.Named); ok {
+		if _, isArray := tgtNamed.Underlying().(*types.Array); isArray && types.Identical(src, tgtNamed.Underlying()) {
+			return "wrap", true
+		}
+	}
+
+	return "", false
+}
+
 // resolveRefLoweringFixedPoint runs the two-sided fixed point (§3.2) over a function universe:
 // start from "every immediate-veto-free candidate parameter is lowered", strip positions whose
 // call sites carry an other-veto argument shape (caller-side emittability), then iterate the
@@ -1768,8 +1811,9 @@ func (a *refLoweringAnalysis) classifyLocalUse(ident *ast.Ident, bodyRoot ast.No
 }
 
 // classifyLocalAddressDisposition resolves where an explicit &x / &x.f / &x[i] address goes:
-// directly (through parens, at most one pointer conversion) into a Phase-A-lowered position
-// outside defer/go is the reverting feed; anything else keeps the box.
+// directly (through parens, at most one pointer conversion the row-5 emission can serve
+// PRIMARILY — refConvPairingSupported) into a Phase-A-lowered position outside defer/go is the
+// reverting feed; anything else keeps the box.
 func (a *refLoweringAnalysis) classifyLocalAddressDisposition(addrExpr ast.Expr, parents map[ast.Node]ast.Node, lowered map[refPosKey]bool) string {
 	node := ast.Node(addrExpr)
 	conversionSeen := false
@@ -1788,8 +1832,28 @@ func (a *refLoweringAnalysis) classifyLocalAddressDisposition(addrExpr ast.Expr,
 					return "addr-conversion-chain"
 				}
 
-				if _, isPtr := types.Unalias(a.info.TypeOf(p)).(*types.Pointer); !isPtr {
+				targetPtr, isPtr := types.Unalias(a.info.TypeOf(p)).(*types.Pointer)
+
+				if !isPtr {
 					return "addr-unsafe-conversion"
+				}
+
+				// The conversion must have a PRIMARY ref emission (the array-wrapper family's
+				// hoisted temp). An unsupported pairing keeps the boxed convention at the call
+				// site, whose aliasing depends on the local's identity box existing — so the
+				// local must keep it (the census/emission agreement the shared predicate pins).
+				if unary, ok := ast.Unparen(addrExpr).(*ast.UnaryExpr); ok {
+					sourceType := a.info.TypeOf(unary.X)
+
+					if sourceType == nil {
+						return "addr-conversion-unsupported"
+					}
+
+					if _, supported := refConvPairingSupported(sourceType, targetPtr.Elem()); !supported {
+						return "addr-conversion-unsupported"
+					}
+				} else {
+					return "addr-conversion-unsupported"
 				}
 
 				conversionSeen = true

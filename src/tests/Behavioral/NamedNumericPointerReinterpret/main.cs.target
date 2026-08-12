@@ -90,8 +90,9 @@ internal static void Main() {
     xy = new coord(1, 2);
     bump(Ꮡxy);
     fmt.Println(xy.X, xy.Y);
-    @string s = beforeˢ;
-    setStr(ref (Ꮡ(s).Reinterpret<@string, namedString>()).DerefOrNull(), afterˢ);
+    ref var s = ref heap<@string>(out var Ꮡs);
+    s = beforeˢ;
+    setStr(ref (Ꮡs.Reinterpret<@string, namedString>()).DerefOrNull(), afterˢ);
     fmt.Println(s);
     ref var d = ref heap(new lfstack(), out var Ꮡd);
     d = 7;
