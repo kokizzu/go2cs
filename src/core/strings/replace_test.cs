@@ -81,7 +81,7 @@ internal static readonly @string foobazˢ = "foobaz"u8;
 internal static readonly @string matchˢ = "[match]"u8;
 internal static readonly @string helloˢ3 = "Hello"u8;
 
-[GoLocalName("testCase")] [GoType("dyn")] partial struct TestReplacer_testCase {
+[GoType("dyn")] partial struct TestReplacer_testCase {
     internal ж<strings.Replacer> r;
     internal @string @in, @out;
 }

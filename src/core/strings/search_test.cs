@@ -42,7 +42,7 @@ public static void TestFinderNext(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] [GoValueClone("bad")] partial struct TestFinderCreation_testCases {
+[GoType("dyn")] partial struct TestFinderCreation_testCases {
     internal @string pattern;
     internal array<nint> bad = new(256);
     internal slice<nint> suf;

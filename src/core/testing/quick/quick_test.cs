@@ -11,7 +11,7 @@ using static go.testing.quick_package;
 
 partial class quick_internal_test_package {
 
-internal static array<byte> fArray(array<byte> a) {
+internal static array<byte> fArray([GoArrayDims(4)] array<byte> a) {
     a = a.Clone();
 
     return a.Clone();
@@ -413,7 +413,7 @@ public static void TestFailure(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("R")] [GoType("dyn")] public partial struct TestRecursive_R {
+[GoType("dyn")] [GoLocalName("R")] public partial struct TestRecursive_R {
     public ж<TestRecursive_R> Ptr;
     public slice<ж<TestRecursive_R>> SliceP;
     public slice<TestRecursive_R> Slice;
@@ -448,7 +448,7 @@ public static void TestMutuallyRecursive(ж<testing.T> Ꮡt) {
     Check(f, nil);
 }
 
-[GoLocalName("Q")] [GoType("dyn")] public partial struct TestNonZeroSliceAndMap_Q {
+[GoType("dyn")] [GoLocalName("Q")] public partial struct TestNonZeroSliceAndMap_Q {
     public map<nint, nint> M;
     public slice<nint> S;
 }

@@ -33,7 +33,7 @@ public static partial class utf8_test_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct testSequence_info {}
+    [GoLocalName("info")] internal partial struct testSequence_info {}
     public partial struct BenchmarkFullRune_benchmarks {}
     public partial struct RuneCountTest {}
     public partial struct RuneLenTest {}

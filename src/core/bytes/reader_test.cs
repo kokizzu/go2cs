@@ -289,16 +289,16 @@ public static void TestReaderDoubleUnreadRune(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("nErr")] [GoType("dyn")] partial struct TestReaderCopyNothing_nErr {
+[GoType("dyn")] partial struct TestReaderCopyNothing_nErr {
     internal int64 n;
     internal error err;
 }
 
-[GoLocalName("justReader")] [GoType("dyn")] partial struct TestReaderCopyNothing_justReader {
+[GoType("dyn")] partial struct TestReaderCopyNothing_justReader {
     public io_package.Reader Reader;
 }
 
-[GoLocalName("justWriter")] [GoType("dyn")] partial struct TestReaderCopyNothing_justWriter {
+[GoType("dyn")] partial struct TestReaderCopyNothing_justWriter {
     public io_package.Writer Writer;
 }
 

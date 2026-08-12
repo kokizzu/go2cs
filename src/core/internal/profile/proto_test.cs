@@ -9,7 +9,7 @@ using static go.@internal.profile_package;
 
 partial class profile_internal_test_package {
 
-[GoLocalName("testcase")] [GoType("dyn")] internal partial struct TestPackedEncoding_testcase {
+[GoType("dyn")] [GoLocalName("testcase")] internal partial struct TestPackedEncoding_testcase {
     internal slice<uint64> uint64s;
     internal slice<int64> int64s;
     internal slice<byte> encoded;

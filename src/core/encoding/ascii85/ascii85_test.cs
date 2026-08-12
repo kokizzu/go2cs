@@ -171,7 +171,7 @@ public static void TestDecoderBuffering(ж<testing.T> Ꮡt) {
 internal static readonly @string corruptionInQAtOffsetVˢ = "Corruption in %q at offset %v, want %v"u8;
 internal static readonly object decoderFailedToDetectˢ = (@string)"Decoder failed to detect corruption in"u8;
 
-[GoLocalName("corrupt")] [GoType("dyn")] internal partial struct TestDecodeCorrupt_corrupt {
+[GoType("dyn")] [GoLocalName("corrupt")] internal partial struct TestDecodeCorrupt_corrupt {
     internal @string e;
     internal nint p;
 }

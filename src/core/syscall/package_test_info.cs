@@ -54,6 +54,6 @@ public static partial class syscall_test_package
     // <TypeAccessibility>
     internal partial struct wtf8testsᴛ1 {}
     public partial struct TestEscapeArg_type {}
-    public partial struct TestWin32finddata_X {}
+    [GoLocalName("X")] [GoValueClone("fd", "pad")] public partial struct TestWin32finddata_X {}
     // </TypeAccessibility>
 }

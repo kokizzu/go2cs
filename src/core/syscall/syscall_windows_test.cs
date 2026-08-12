@@ -59,7 +59,7 @@ public static void TestComputerName(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string longNameAndExtensionˢ = "long_name.and_extension"u8;
 
-[GoLocalName("X")] [GoType("dyn")] [GoValueClone("fd", "pad")] partial struct TestWin32finddata_X {
+[GoType("dyn")] partial struct TestWin32finddata_X {
     internal syscall.Win32finddata fd;
     internal byte got;
     internal array<byte> pad = new(10); // to protect ourselves

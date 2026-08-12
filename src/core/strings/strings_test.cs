@@ -1330,7 +1330,7 @@ internal static error /*err*/ repeat(@string s, nint count) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string bitˢ = "64-bit"u8;
 
-[GoLocalName("testCase")] [GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
+[GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
     internal nint count;
     internal @string errStr;

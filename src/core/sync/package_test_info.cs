@@ -62,12 +62,12 @@ public static partial class sync_test_package
     internal partial struct mapResult {}
     internal partial struct misuseTestsᴛ1 {}
     internal partial struct one {}
-    public partial struct BenchmarkMutexUncontended_PaddedMutex {}
-    public partial struct BenchmarkRWMutexUncontended_PaddedRWMutex {}
-    public partial struct BenchmarkSemaUncontended_PaddedSem {}
-    public partial struct BenchmarkWaitGroupUncontended_PaddedWaitGroup {}
+    [GoLocalName("PaddedMutex")] [GoValueClone("pad")] public partial struct BenchmarkMutexUncontended_PaddedMutex {}
+    [GoLocalName("PaddedRWMutex")] [GoValueClone("pad")] public partial struct BenchmarkRWMutexUncontended_PaddedRWMutex {}
+    [GoLocalName("PaddedSem")] [GoValueClone("pad")] public partial struct BenchmarkSemaUncontended_PaddedSem {}
+    [GoLocalName("PaddedWaitGroup")] [GoValueClone("pad")] public partial struct BenchmarkWaitGroupUncontended_PaddedWaitGroup {}
     public partial struct DeepCopyMap {}
     public partial struct RWMutexMap {}
-    public partial struct TestWaitGroupAlign_X {}
+    [GoLocalName("X")] public partial struct TestWaitGroupAlign_X {}
     // </TypeAccessibility>
 }

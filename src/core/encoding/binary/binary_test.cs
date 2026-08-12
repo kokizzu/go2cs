@@ -456,11 +456,11 @@ public static void TestBlankFields(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("foo")] [GoType("dyn")] internal partial struct TestSizeStructCache_foo {
+[GoType("dyn")] [GoLocalName("foo")] internal partial struct TestSizeStructCache_foo {
     public uint32 A;
 }
 
-[GoLocalName("bar")] [GoType("dyn")] [GoValueClone("A", "C")] internal partial struct TestSizeStructCache_bar {
+[GoType("dyn")] [GoLocalName("bar")] [GoValueClone("A", "C")] internal partial struct TestSizeStructCache_bar {
     public Struct A;
     public TestSizeStructCache_foo B;
     public Struct C;
@@ -803,7 +803,7 @@ internal static void testReadInvalidDestination(ж<testing.T> Ꮡt, global::go.e
     }
 }
 
-[GoLocalName("Person")] [GoType("dyn")] public partial struct TestNoFixedSize_Person {
+[GoType("dyn")] [GoLocalName("Person")] public partial struct TestNoFixedSize_Person {
     public nint Age;
     public float64 Weight;
     public float64 Height;
