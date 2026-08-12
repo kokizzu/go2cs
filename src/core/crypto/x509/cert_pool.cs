@@ -147,7 +147,7 @@ internal static slice<potentialParent> findPotentialParents(this –∂<CertPool> ·è
     slice<potentialParent> matchingKeyID = default!;
     slice<potentialParent> oneKeyID = default!;
     slice<potentialParent> mismatchKeyID = default!;
-    foreach (var (_, c) in s.byName[((@string)cert.RawIssuer)]) {
+    foreach (var (_, c) in s.byName[tmpstring(cert.RawIssuer)]) {
         var (candidate, constraint, err) = s.cert(c);
         if (err != default!) {
             continue;

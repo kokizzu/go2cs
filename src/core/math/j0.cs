@@ -5,6 +5,9 @@ namespace go;
 
 partial class math_package {
 
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst Two129ᶜ = GoBigConst.Parse("680564733841876926926749214863536422912");
+
 /*
 	Bessel function of the first and second kinds of order zero.
 */
@@ -79,7 +82,7 @@ public static float64 J0(float64 x) {
     const float64 TwoM27 = /* 1.0 / (1 << 27) */ 7.450580596923828e-09; // 2**-27 0x3e40000000000000
     const float64 TwoM13 = /* 1.0 / (1 << 13) */ 0.0001220703125; // 2**-13 0x3f20000000000000
     GoBigConst Two129 = /* 1 << 129 */       // 2**129 0x4800000000000000
-            GoBigConst.Parse("680564733841876926926749214863536422912");
+            Two129ᶜ;
     const float64 R02 = 1.56249999999999947958e-02; // 0x3F8FFFFFFFFFFFFD
     const float64 R03 = -1.89979294238854721751e-04; // 0xBF28E6A5B61AC6E9
     const float64 R04 = 1.82954049532700665670e-06; // 0x3EBEB1D10C503919
@@ -144,6 +147,9 @@ public static float64 J0(float64 x) {
     return (1D + u) * (1D - u) + z * (r / s); // 1.0 < |x| < 2.0
 }
 
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst Two129ᶜ1 = GoBigConst.Parse("680564733841876926926749214863536422912");
+
 // Y0 returns the order-zero Bessel function of the second kind.
 //
 // Special cases are:
@@ -155,7 +161,7 @@ public static float64 J0(float64 x) {
 public static float64 Y0(float64 x) {
     const float64 TwoM27 = /* 1.0 / (1 << 27) */ 7.450580596923828e-09; // 2**-27 0x3e40000000000000
     GoBigConst Two129 = /* 1 << 129 */                   // 2**129 0x4800000000000000
-            GoBigConst.Parse("680564733841876926926749214863536422912");
+            Two129ᶜ1;
     const float64 U00 = -7.38042951086872317523e-02; // 0xBFB2E4D699CBD01F
     const float64 U01 = 1.76666452509181115538e-01; // 0x3FC69D019DE9E3FC
     const float64 U02 = -1.38185671945596898896e-02; // 0xBF8C4CE8B16CFA97

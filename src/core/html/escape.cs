@@ -144,13 +144,13 @@ internal static (nint dst1, nint src1) unescapeEntity(slice<byte> b, nint dst, n
     if (attribute && entityName[len(entityName) - 1] != (rune)';' && len(s) > i && s[i] == (rune)'='){
     } else 
     {
-        var x = entity[((@string)entityName)]; if (x != 0){
+        var x = entity[tmpstring(entityName)]; if (x != 0){
             // No-op.
             // No-op.
             return (dst + utf8.EncodeRune(b[(int)(dst)..], x), src + i);
         } else 
         {
-            var xΔ1 = entity2[((@string)entityName)].Clone(); if (xΔ1[0] != 0){
+            var xΔ1 = entity2[tmpstring(entityName)].Clone(); if (xΔ1[0] != 0){
                 nint dst1Δ1 = dst + utf8.EncodeRune(b[(int)(dst)..], xΔ1[0]);
                 return (dst1Δ1 + utf8.EncodeRune(b[(int)(dst1Δ1)..], xΔ1[1]), src + i);
             } else 
@@ -161,7 +161,7 @@ internal static (nint dst1, nint src1) unescapeEntity(slice<byte> b, nint dst, n
                 }
                 for (nint j = maxLen; j > 1; j--) {
                     {
-                        var xΔ2 = entity[((@string)(entityName[..(int)(j)]))]; if (xΔ2 != 0) {
+                        var xΔ2 = entity[tmpstring(entityName[..(int)(j)])]; if (xΔ2 != 0) {
                             return (dst + utf8.EncodeRune(b[(int)(dst)..], xΔ2), src + j + 1);
                         }
                     }

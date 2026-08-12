@@ -1330,7 +1330,7 @@ internal static structFields typeFields(reflectꓸType t) {
         exactNameIndex[field.name] = Ꮡ(fields, i);
         // For historical reasons, first folded match takes precedence.
         {
-            var (_, ok) = foldedNameIndex[((@string)foldName(field.nameBytes)), ꟷ]; if (!ok) {
+            var (_, ok) = foldedNameIndex[tmpstring(foldName(field.nameBytes)), ꟷ]; if (!ok) {
                 foldedNameIndex[((@string)foldName(field.nameBytes))] = Ꮡ(fields, i);
             }
         }

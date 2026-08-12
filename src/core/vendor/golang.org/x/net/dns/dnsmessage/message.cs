@@ -2161,7 +2161,7 @@ public static @string String(this Name n) {
         // bits set to 1 to indicate that it is a pointer.
         if ((i == 0 || n.Data[i - 1] == (rune)'.') && compression != default!) {
             {
-                var (ptr, ok) = compression[((@string)(n.Data[(int)(i)..(int)(n.Length)])), ꟷ]; if (ok) {
+                var (ptr, ok) = compression[tmpstring(n.Data[(int)(i)..(int)(n.Length)]), ꟷ]; if (ok) {
                     // Hit. Emit a pointer instead of the rest of
                     // the domain.
                     return (append(msg, (byte)((uint16)((ptr >> (int)(8)) | 0xC0)), (byte)ptr), default!);

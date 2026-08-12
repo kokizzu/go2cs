@@ -62,6 +62,5 @@ public static partial class sync_package
     internal partial struct readOnly {}
     public partial struct Cond {}
     public partial struct Map {}
-    public partial struct Once {}
     // </TypeAccessibility>
 }

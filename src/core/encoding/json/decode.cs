@@ -748,9 +748,9 @@ Value: "object"u8, Type: t, Offset: (int64)d.off))));
             }
             subv = mapElem;
         } else {
-            var f = fields.byExactName[((@string)key)];
+            var f = fields.byExactName[tmpstring(key)];
             if (f == nil) {
-                f = fields.byFoldedName[((@string)foldName(key))];
+                f = fields.byFoldedName[tmpstring(foldName(key))];
             }
             if (f != nil){
                 subv = v;

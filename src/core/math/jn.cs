@@ -5,6 +5,9 @@ namespace go;
 
 partial class math_package {
 
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst Two302ᶜ = GoBigConst.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
+
 /*
 	Bessel function of the first and second kinds of order n.
 */
@@ -54,7 +57,7 @@ partial class math_package {
 public static float64 Jn(nint n, float64 x) {
     const float64 TwoM29 = /* 1.0 / (1 << 29) */ 1.862645149230957e-09; // 2**-29 0x3e10000000000000
     GoBigConst Two302 = /* 1 << 302 */       // 2**302 0x52D0000000000000
-            GoBigConst.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
+            Two302ᶜ;
     // special cases
     switch (ᐧ) {
     case {} when IsNaN(x): {
@@ -232,6 +235,9 @@ public static float64 Jn(nint n, float64 x) {
     return b;
 }
 
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst Two302ᶜ1 = GoBigConst.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
+
 // Yn returns the order-n Bessel function of the second kind.
 //
 // Special cases are:
@@ -243,7 +249,7 @@ public static float64 Jn(nint n, float64 x) {
 //	Yn(n, NaN) = NaN
 public static float64 Yn(nint n, float64 x) {
     GoBigConst Two302 = /* 1 << 302 */ // 2**302 0x52D0000000000000
-            GoBigConst.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
+            Two302ᶜ1;
     // special cases
     switch (ᐧ) {
     case {} when x < 0D || IsNaN(x): {

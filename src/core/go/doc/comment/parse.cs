@@ -810,7 +810,7 @@ internal static slice<ΔText> parseLinkedText(this ж<parseDoc> Ꮡd, @string te
         case (rune)']': {
             if (start >= 0) {
                 {
-                    var (def, ok) = d.links[((@string)buf), ꟷ]; if (ok){
+                    var (def, ok) = d.links[tmpstring(buf), ꟷ]; if (ok){
                         def.Value.Used = true;
                         flush(start);
                         @out = append(@out, (ΔText)(new LinkжΔText(Ꮡ(new Link(
@@ -1118,6 +1118,9 @@ internal static bool isScheme(@string s) {
     return false;
 }
 
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst maskᶜ = GoBigConst.Parse("10633823862292363665388054147449749504");
+
 // isHost reports whether c is a byte that can appear in a URL host,
 // like www.example.com or user@[::1]:8080
 internal static bool isHost(byte c) {
@@ -1136,7 +1139,7 @@ internal static bool isHost(byte c) {
 	1<<'[' |
 	1<<']' |
 	1<<':' */
-            GoBigConst.Parse("10633823862292363665388054147449749504");
+            maskᶜ;
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (576284830442979328UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (576460746666278911UL)))) != 0;
 }
 
@@ -1156,6 +1159,9 @@ internal static bool isPunct(byte c) {
 	1<<'!' */ 10088151134830067712;
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (10088151134830067712UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (((uint64)mask).Rsh((uint64)(64)))))) != 0;
 }
+
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst maskᶜ1 = GoBigConst.Parse("148873535423923614449401688976238051328");
 
 // isPath reports whether c is a (non-punctuation) path byte.
 internal static bool isPath(byte c) {
@@ -1186,7 +1192,7 @@ internal static bool isPath(byte c) {
 	1<<'{' |
 	1<<'}' |
 	1<<'%' */
-            GoBigConst.Parse("148873535423923614449401688976238051328");
+            maskᶜ1;
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (2593985390075445248UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (8070450526610784255UL)))) != 0;
 }
 
@@ -1228,6 +1234,9 @@ internal static (@string id, bool ok) ident(@string s) {
     return (s[..(int)(n)], n > 0);
 }
 
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst maskᶜ2 = GoBigConst.Parse("10633823849912963253799171395480977408");
+
 // isIdentASCII reports whether c is an ASCII identifier byte.
 internal static bool isIdentASCII(byte c) {
     // mask is a 128-bit bitmap with 1s for allowed bytes,
@@ -1239,7 +1248,7 @@ internal static bool isIdentASCII(byte c) {
 	(1<<26-1)<<'a' |
 	(1<<10-1)<<'0' |
 	1<<'_' */
-            GoBigConst.Parse("10633823849912963253799171395480977408");
+            maskᶜ2;
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (287948901175001088UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (576460745995190270UL)))) != 0;
 }
 
@@ -1285,6 +1294,9 @@ internal static bool validImportPathElem(@string elem) {
     return true;
 }
 
+// Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
+private static readonly GoBigConst maskᶜ3 = GoBigConst.Parse("95704415580147579119642937602632318976");
+
 internal static bool importPathOK(byte c) {
     // mask is a 128-bit bitmap with 1s for allowed bytes,
     // so that the byte c can be tested with a shift and an and.
@@ -1299,7 +1311,7 @@ internal static bool importPathOK(byte c) {
 	1<<'~' |
 	1<<'_' |
 	1<<'+' */
-            GoBigConst.Parse("95704415580147579119642937602632318976");
+            maskᶜ3;
     return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (288063250384289792UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (5188146764422578174UL)))) != 0;
 }
 

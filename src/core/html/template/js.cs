@@ -106,7 +106,7 @@ internal static jsCtx nextJSCtx(slice<byte> s, jsCtx preceding) {
                 // can precede a regular expression.
                 j--;
             }
-            if (regexpPrecederKeywords[((@string)(s[(int)(j)..]))]) {
+            if (regexpPrecederKeywords[tmpstring(s[(int)(j)..])]) {
                 return jsCtxRegexp;
             }
             break;
