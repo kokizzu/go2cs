@@ -5616,3 +5616,191 @@ both, but that is a hypothesis, and this week's board has a four-for-four record
 ones. `go/types` is unbanked and carries no board row of its own; on this evidence it has earned
 one, and **`go/internal/gcimporter`'s 184 rows are downstream of it** — the row moves when
 `go/types` generics do, and not before. Nothing in gcimporter itself is implicated.
+
+## Scout batch 1 — twelve never-run packages (2026-08-12)
+
+Twelve packages that had never linked a test host were taken end to end through `-tests -test-action all`
+on the pinned coordinator (i7-5820K, go1.23.1). **Nothing banks**, and no row is disclosed — the
+2026-08-10 ratification stands, and none of these is an alloc row anyway. The value is the census: five
+packages produced a verdict map, seven died before producing one, and all twelve now have a named root.
+
+| Package | Go verdicts | C# matched | Outcome | Root / attribution |
+|:--|--:|--:|:--|:--|
+| `internal/chacha8rand` | 4 | **3** | near-miss, 1 row | array-SHAPE reinterpret (`array.cs:280`) — the seam L10 works through `sockaddr`, here with no kernel in it |
+| `runtime/metrics` | 2 | **1** | near-miss, 1 row | a `//go:linkname` PUSHED into a test package is unwired; the implementation exists in converted `runtime` |
+| `internal/singleflight` | 5 | **4** | near-miss, 1 row | `TestDoAndForgetUnsharedRace` never returns; it consumes the package deadline and leaves no verdict |
+| `net/http/httptrace` | 2 | **0** | rooted | `reflect.MakeFunc` over func-typed struct fields → `abi.FuncType`'s promoted embedded `Type` ref is null |
+| `internal/unsafeheader` | 6 | **0** | rooted (architectural) | the package's entire subject is the slice/string HEADER LAYOUT that `golib` deliberately does not have |
+| `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
+| `internal/types/errors` | 155 | — | converter defect | a Δ-renamed IMPORTED type is spelled with its bare Go name; the `typesꓸError`/`typesꓸInfo` aliases are minted and then unused |
+| `internal/fuzz` | 52 | — | converter defect | alias-to-anonymous-struct (`CorpusEntry`): the lift's `global using` lives in the production compilation and does not cross the assembly boundary |
+| `net/rpc/jsonrpc` | 9 | — | converter defect | method promotion from EMBEDDED POINTER fields is invisible to `ImplementGenerator` |
+| `testing/fstest` | 7 | — | converter defect | a defined type over ANOTHER package's named map type — the emitted two-hop conversion has only one hop |
+| `internal/syscall/windows/registry` | 6 | — | converter defect | the internal-test partial class is emitted non-`static`, and in this package nothing else declares it |
+| `embed/internal/embedtest` | 7 | — | not a candidate | test-only Go package: there is no production package for the host to reference |
+
+⚠ **The comparison JSON's `status` string is not a diagnosis.** Seven of these read
+`conversion-blocked`, but that value only records "no result file appeared". Five of the seven are C#
+COMPILE failures of the converted test sources, one (`embed/internal/embedtest`) is a package that
+cannot have a production assembly at all, and `unique` **built and ran** and then killed its own
+process. Read the errors array, not the status. (The recorded PS 5.1 `ConvertFrom-Json` duplicate-key
+trap did not fire in this batch — a census of all 24 verdict maps found **zero** case-insensitive
+duplicate keys — but the raw-text parse was used regardless.)
+
+### The address-reinterpret seam owns three of the five packages that ran
+
+`internal/chacha8rand`, `internal/unsafeheader` and `net/http/httptrace` fail at one architectural
+place: **a raw address reinterpreted into a managed shape**. They are worth reading together because
+each names a different facet of it, and fixing the narrowest one fixes none of the others.
+
+- **`internal/chacha8rand` — 3 of 4, and the wall is already written down in this repo.**
+  `TestBlockGeneric` panics `index out of range [0] with length 0` at `array.cs:280`, inside
+  `setup` (`chacha8_generic.cs:66`) reached from `block_generic` (`:141`). The emitted form is
+  `var b = (ж<array<array<uint32>>>)(uintptr)(new @unsafe.Pointer(Ꮡbuf))` for Go's
+  `(*[16][4]uint32)(unsafe.Pointer(buf))` over a `[32]uint64` — the reinterpret materializes
+  `default(array<…>)`, a LENGTH-ZERO array, exactly as `(*SockaddrInet4).sockaddr` does in r57b/L10.
+  The other three rows pass **because `block` is hand-owned**: `chacha8_impl.cs`'s header comment
+  already states that forwarding to the converted `block_generic` "is also not available — it opens
+  the `*[32]uint64` output buffer as `(*[16][4]uint32)(unsafe.Pointer(buf))`, an array-SHAPE
+  reinterpretation that a managed nested-array view cannot reconstruct." The hand-own routed around
+  the wall for every consumer; the package's own test walks straight into it.
+  ⚠ **This is a STRONGER form than sockaddr's and may not fall with it**: sockaddr needs a 2-byte
+  window onto a `uint16` field, chacha8rand needs a `[16][4]uint32` view of a `[32]uint64` —
+  different element type, different rank, same allocation. Its value to L10 is that it is a
+  **pure, kernel-free witness**: one converted function, no socket, no syscall, reproducible in
+  seconds, so it makes a far cheaper regression test than `net.Listen`.
+- **`internal/unsafeheader` — 0 of 6, and this one is architectural rather than a defect.** The
+  package exists to *describe the memory layout of a slice/string header*, and `golib`'s `slice<T>`
+  and `@string` are managed containers with no such layout by deliberate design.
+  `TestWriteThroughHeader` reports `alias of "Hello, checkptr!" constructed via String = ""` and
+  `alias of slice(…) with cap 16 has cap 0` — a header assembled from a `Data` pointer aliases
+  nothing. `TestTypeMatchesReflectType` fails one layer earlier and for a second reason: it prints
+  `0x2839d0e63b0.Data has type 0x2839d0e6878, but …`, i.e. the reflect surface renders a type as a
+  raw address (the known `rtype.String`/`TypeFor` naming row). **Recommend this package be marked
+  NOT A CANDIDATE rather than left on the queue** — banking it would require `slice`/`@string` to
+  have Go's memory layout, which is the one thing the runtime design says they will not have.
+- **`net/http/httptrace` — 0 of 2, and the seam is embedded-struct promotion.** Both tests die on
+  `panic: runtime error: invalid memory address or nil pointer dereference` at
+  `abi_package.ΔFuncType.get_Type()`, through `ж.FieldRefWrappers…getFieldRef` (`golib/ж.cs:545`).
+  `(*ClientTrace).compose` (`trace.go:179-202`) walks its own struct with reflect and calls
+  `reflect.MakeFunc` for every func-typed field; reflect reaches the func type by reinterpreting a
+  type descriptor as `*abi.FuncType`, and the generated
+  `public partial ref abi_package.Type Type => ref ᏑʗType.ValueSlot` then dereferences a promoted
+  embedded reference that the reinterpret never populated. Same family as the two above — a managed
+  shape conjured from an address — with promotion rather than an array as the victim. httptrace is
+  a two-test package sitting entirely behind it.
+
+### `runtime/metrics` — 1 of 2, and the missing row is a linkname DIRECTION
+
+`TestDocs` passes. `TestNames` reports `infrastructure-error`:
+`System.NotImplementedException: runtime_readMetricNames: external (assembly or cgo) function is not
+implemented`, from a `PartialStubGenerator` stub. **The implementation is not missing** — converted
+`runtime/metrics.cs:800` holds `internal static slice<@string> readMetricNames()` carrying its
+`//go:linkname readMetricNames runtime/metrics_test.runtime_readMetricNames` comment, and
+`runtime/metrics/description_test.cs:35` holds the matching bodyless
+`internal static partial slice<@string> runtime_readMetricNames();`. The two are never joined, because
+this linkname PUSHES a symbol from a production package INTO a test package rather than pulling one in.
+That is a narrower job than the `getg`-style "external (assembly or cgo)" rows it superficially
+resembles: **both halves already exist in the corpus and the wiring is the whole task**, and doing it
+takes this package to 2 of 2, i.e. to a bank. Cheapest bank-per-unit-work row in the batch.
+
+### `internal/singleflight` — 4 of 5, one test that does not come back
+
+Go passes 5. The host passes 4 and then reports `{"action":"timeout","elapsed":1800,"output":"package
+timeout after 00:30:00"}`; `TestDoAndForgetUnsharedRace` gets **no verdict at all**, so the emitted
+JUnit reads `tests="4" failures="0"`, which must not be read as a clean run.
+
+The test (`singleflight_test.go:145`) loops forever with no iteration bound: it launches n=1000
+goroutines that each call `g.Do` on one key whose function sleeps `d`, and if `calls != 1` — i.e. if
+the goroutines did not all park inside `g.Do` before the first call completed — it **doubles `d` and
+retries**. Whether the converted host converges slowly (each retry costs at least `d`, and `d` doubles)
+or never converges is **not established here and should not be assumed**; distinguishing them needs a
+run with a much larger `-test-timeout` and a print per iteration, which this batch did not spend. What
+is established: the other four rows agree, and the package is one row from a bank behind a question
+about goroutine parking latency, not about singleflight itself.
+
+### `unique` — a REGRESSION against this board's own record, flagged for a bisect lane
+
+The r43e-weak entry above records `unique` at **4 of 19** in a "2-minute run with 19 verdicts", after
+`runtime.GC()`'s hand-owned body learned clearpools' unique arm. Today, against `origin/master`
+(`5fe713f98`), the host produces **zero** verdicts: every `TestHandle` subtest starts, and the process
+then dies with
+
+```
+Fatal error. Internal CLR error. (0x80131506)
+   at System.GC.Collect(Int32, System.GCCollectionMode, Boolean, Boolean)
+   at go.runtime_package.GC()
+   at go.unique_internal_test_package.drainMaps(go.ж`1<T>)
+   at go.unique_internal_test_package+<>c__DisplayClass21_0`1[[…testStringStruct…]].<testHandle>b__0
+```
+
+**Reproduced twice**, per the standing "re-run before believing a crash" rule — identical stack, the
+naming subtest differing only because the subtests run in parallel. The scout's own run of the same
+package instead consumed its 30-minute deadline and was recorded by the pipeline as
+`conversion-blocked`/`dotnet timed out after 31m0s`; a hang and an execution-engine crash are the same
+"no verdicts" outcome from the pipeline's point of view, so **the recorded status understates this row
+in both runs**.
+
+`0x80131506` is `COR_E_EXECUTIONENGINE` — a GC-state fault, not a managed exception, and this board
+already ties that exact string to the address model (see the `ж<T>`/`EnsureStableAddress` analysis
+above, where a 4 KB write into freed heap surfaced as `ExecutionEngineException` and
+`Fatal error. Internal CLR error.`). `golib` has moved materially since r43e — the `@string` window,
+the allocation counters, the array-backing materializer — so a plausible story exists in more than one
+place, and **that is precisely why this is flagged rather than attributed**. It wants a bisect between
+r43e and `5fe713f98` with `unique`'s host as the probe, and it should be treated as higher severity
+than an ordinary failing row: a memory-safety fault does not stay inside the package that reveals it.
+
+### Five converter defects, each with a named mechanism
+
+None of these five is a wall; all are ordinary emission bugs, listed with the evidence a fix needs.
+
+1. **`internal/types/errors` — a Δ-renamed IMPORTED type is spelled with its bare Go name.**
+   `codes_test.cs` emits `err._<Error>(ᐧ)` (38,42) and `new Info(…)` (65,22) → CS0246 ×2. `go/types`
+   emits these as `ΔError`/`ΔInfo` (`go/types/api.cs:48,197`), and the test's own
+   `package_test_info.cs` **already mints the right aliases** —
+   `global using typesꓸError = go.go.types_package.ΔError;` (:19) and `typesꓸInfo` (:21) — they are
+   simply never used at the reference sites. Same-package references are correct
+   (`go/types/eval.cs:35` emits `new ΔInfo(`; `net`'s `_<ΔError>` likewise), so the loss is specific to
+   the cross-package path. Two sites implicated so far: a type assertion and a composite literal.
+2. **`internal/fuzz` — an alias whose RHS is an anonymous struct does not reach the test compilation.**
+   `minimize_test.cs:26` and `worker_test.cs:52` emit
+   `Func<struct{Parent string; Path string; Data []byte; …}, error>` — raw **Go** syntax in a C# file —
+   producing CS1031/CS1525/CS1003 cascades. Go declares `type CorpusEntry = struct{…}`
+   (`fuzz.go:463`), and the production emission handles it correctly by lifting it:
+   `fuzz.cs:8` carries `global using CorpusEntry = go.@internal.fuzz_package.CorpusEntryᴛ1;`.
+   `global using` is compilation-scoped, and this is a production-reference test project, so the alias
+   never crosses into the test assembly — `package_test_info.cs` contains no `CorpusEntry` line at all.
+   Remedy shape: re-emit the lifted alias into the test compilation, or spell `CorpusEntryᴛ1`.
+3. **`net/rpc/jsonrpc` — promotion from embedded POINTER fields is invisible to `ImplementGenerator`.**
+   `all_test.go:310` declares `type pipe struct { *io.PipeReader; *io.PipeWriter }`, whose
+   `Read`/`Write`/`Close` come entirely by promotion. The generated
+   `…pipe-global__go.io_package.ReadWriteCloser-ptr.g.cs` calls `.Read`/`.Write` on `ж<pipe>`, finds no
+   member, and binds an unrelated extension method instead — CS1929 naming
+   `io_package.Read(ref io_package.LimitedReader, slice<byte>)` and
+   `io_package.Write(ref io_package.OffsetWriter, …)`. An error message pointing at `LimitedReader`
+   from a jsonrpc test is the giveaway that this is an overload-resolution fallthrough, not a
+   missing reference.
+4. **`testing/fstest` — a defined type over ANOTHER package's named map type gets a one-hop conversion.**
+   Go has `type shuffledFS MapFS` where `MapFS map[string]*MapFile`. The emission declares
+   `[GoType("global::go.testing.fstest_package.MapFS")] internal partial struct shuffledFS;` and then
+   writes `((MapFS)(map<@string, ж<MapFile>>)fsys).Open(name)` — CS0030 at (62,62), because the
+   generated conversion offers `shuffledFS`→`MapFS` but not `shuffledFS`→ the raw map the intermediate
+   cast asks for.
+5. **`internal/syscall/windows/registry` — the internal-test partial class is emitted non-`static`.**
+   `export_test.cs:9` opens `partial class registry_internal_test_package {` and then declares
+   `internal static error SetValue(this …registry_package.Key k, …)` → CS1106. Banked packages get away
+   with the identical non-static opener only **incidentally**: `sort`/`bytes`/`strings` each have a
+   go2cs-gen `RecvGenerator` file that re-declares the class as `public static partial`. Registry's
+   generated set covers `registry_package` and `registry_test_package` only, so nothing supplies the
+   modifier. The emitter should not be relying on a generator for it.
+
+### `embed/internal/embedtest` should be struck from the candidate list
+
+CS0234: `embedtest_package` does not exist in `go.embed.@internal`. It never will —
+`$GOROOT/src/embed/internal/embedtest` contains `embed_test.go`, `embedx_test.go`, `testdata/` and
+`concurrency.txt` and **no non-test source**. There is no production package, hence no production
+`.csproj` in `src/core`, and the `-tests` emitter nonetheless writes
+`global using static global::go.embed.@internal.embedtest_package;` plus a production project
+reference. The tests here exercise `embed`, not a package of their own. Two follow-ups, both small:
+teach the emitter the test-only-package shape (no production reference, no `_package` using), and
+route the coverage to `embed` where it belongs. Until then this row is not a measure of anything.
