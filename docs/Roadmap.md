@@ -803,6 +803,29 @@ more than Windows.
   counterpart. The operational plan, harness findings and remaining F-items live in
   [`PLAN-linux-operation.md`](PLAN-linux-operation.md).
 
+**What a published package is, platform-wise.** Three layers with different platform models ship in
+every NuGet package, and knowing which is which explains what works where:
+
+1. **The runtime library (`go.lib`) selects its platform at RUN time**, like any cross-platform
+   .NET library — where it needs the OS (console fd writes, synchronization primitives, timers) it
+   branches per-OS, so these paths are operational on Windows, Linux and macOS today.
+2. **Platform-neutral converted packages** (~270 of ~305) contain no platform-varying code at all —
+   their IL behaves identically on any OS .NET supports. This is why `fmt`-class programs — the
+   Tour of Go, for instance — run correctly on Linux from today's packages.
+3. **Platform-varying converted packages** (the 37) select their platform at BUILD time, faithful
+   to Go's build-tag model — and today's published emission is `windows/amd64`. Reaching their
+   platform-entangled behavior on another OS (local timezones, sockets, the `syscall` surface)
+   follows Windows semantics or fails; this is the wall above, not a portability defect in the
+   layers below it.
+
+**Validation is per-target.** Every row in
+[`ValidatedTestPackages.md`](ValidatedTestPackages.md) is a `windows/amd64` verdict; a Linux
+validation campaign begins when the `GoTargetOS=linux` corpus builds, and its roster will differ
+(build tags select different test files per platform). **The packaging direction once it does:**
+RID-specific assets in a single package — one `go.<pkg>` ID carrying each target's correct
+emission under `runtimes/<rid>/`, selected automatically by the consumer's runtime identifier —
+so Go-faithful per-platform semantics never fork the package graph.
+
 ## Progress tracking
 
 | Metric | Source | Status |
