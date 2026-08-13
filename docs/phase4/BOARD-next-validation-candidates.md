@@ -5687,6 +5687,32 @@ ones. `go/types` is unbanked and carries no board row of its own; on this eviden
 one, and **`go/internal/gcimporter`'s 184 rows are downstream of it** — the row moves when
 `go/types` generics do, and not before. Nothing in gcimporter itself is implicated.
 
+#### The nil-panic is NOT confined to generics — and there is now a minimal reproducer (2026-08-13)
+
+Filed from `claude/types-errors-delta-rename`, which cleared `internal/types/errors`' build blocker
+and so ran that package's suite for the first time. Both its top-level tests die on **this exact
+signature** — `runtime error: invalid memory address or nil pointer dereference` re-surfacing
+through `check.cs:430` — and neither is a generics test.
+
+Both fail at the SAME call, `codes_test.cs:70` (`walkCodes`), which is
+`conf.Check("types", fset, []*ast.File{file}, info)` over **`codes.go` itself** — reached *before*
+any Example snippet is ever type-checked. That input is about as small as the checker's surface
+gets:
+
+- **no imports at all**, so `importer.Default()` is never invoked — the importer is out of suspicion;
+- **no generics** — `codes.go` declares exactly `type Code int` plus `iota` const blocks. (Five
+  `[T any]` greps in the file are all inside doc comments; each was checked line by line.)
+
+So the 91-count nil-panic class **cannot be wholly explained by the generics hypothesis**, and the
+"one root or two" question above now has real evidence on the *two* side. Anyone taking this on
+should prefer this reproducer over gcimporter's typeparam corpus: one import-free non-generic file,
+two failing tests, ~7 s to the panic, versus 583 verdicts behind a compile+import pipeline.
+
+⚠ The re-panic warning above applies here unchanged — `check.cs:430` is `handleBailout`'s faithful
+`default: panic(p)` arm and the originating frames are gone. Instrument the re-panic or disable the
+recover first; this lane re-derived that independently before finding the note, which is some
+evidence of how naturally the stack misleads.
+
 ## Scout batch 1 — twelve never-run packages (2026-08-11)
 
 Twelve packages that had never linked a test host were taken end to end through `-tests -test-action all`
@@ -5704,7 +5730,7 @@ its row and §"Five converter defects" item 3 below carry the measured result.)
 | `net/http/httptrace` | 2 | **0** | rooted | `reflect.MakeFunc` over func-typed struct fields → `abi.FuncType`'s promoted embedded `Type` ref is null |
 | `internal/unsafeheader` | 6 | **0** | rooted (architectural) | the package's entire subject is the slice/string HEADER LAYOUT that `golib` deliberately does not have |
 | `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
-| `internal/types/errors` | 155 | — | converter defect | a Δ-renamed IMPORTED type is spelled with its bare Go name; the `typesꓸError`/`typesꓸInfo` aliases are minted and then unused |
+| `internal/types/errors` | 155 | **0** | ~~converter defect~~ FIXED → now downstream of `go/types` | the Δ-renamed-imported-type defect is fixed (`claude/types-errors-delta-rename`); the package now BUILDS and RUNS, and both tests then die on the `go/types` checker nil-panic — see the sub-row below |
 | `internal/fuzz` | 52 | — | converter defect | alias-to-anonymous-struct (`CorpusEntry`): the lift's `global using` lives in the production compilation and does not cross the assembly boundary |
 | `net/rpc/jsonrpc` | 9 | **6** | ⬆ defect FIXED + guarded — now runs, 3 rows left | was: promotion from EMBEDDED POINTER fields invisible to `ImplementGenerator`. Fixed 2026-08-12; the 3 remaining rows are one json root, and the package is **not** socket-walled (see below) |
 | `testing/fstest` | 7 | — | converter defect | a defined type over ANOTHER package's named map type — the emitted two-hop conversion has only one hop |
@@ -5991,14 +6017,35 @@ arc's charter, not this lane's.
 
 None of these five is a wall; all are ordinary emission bugs, listed with the evidence a fix needs.
 
-1. **`internal/types/errors` — a Δ-renamed IMPORTED type is spelled with its bare Go name.**
-   `codes_test.cs` emits `err._<Error>(ᐧ)` (38,42) and `new Info(…)` (65,22) → CS0246 ×2. `go/types`
-   emits these as `ΔError`/`ΔInfo` (`go/types/api.cs:48,197`), and the test's own
-   `package_test_info.cs` **already mints the right aliases** —
-   `global using typesꓸError = go.go.types_package.ΔError;` (:19) and `typesꓸInfo` (:21) — they are
-   simply never used at the reference sites. Same-package references are correct
-   (`go/types/eval.cs:35` emits `new ΔInfo(`; `net`'s `_<ΔError>` likewise), so the loss is specific to
-   the cross-package path. Two sites implicated so far: a type assertion and a composite literal.
+1. ~~**`internal/types/errors` — a Δ-renamed IMPORTED type is spelled with its bare Go name.**~~
+   **FIXED 2026-08-13** (`claude/types-errors-delta-rename`). `codes_test.cs` emitted
+   `err._<Error>(ᐧ)` (38,42) and `new Info(…)` (65,22) → CS0246 ×2, against `go/types`' `ΔError`/
+   `ΔInfo`, while the test's own `package_test_info.cs` already minted `typesꓸError`/`typesꓸInfo`
+   and left them unused.
+
+   **The diagnosis above was one step coarse, and the correction is the useful part.** It is not
+   "the cross-package path" — the QUALIFIED cross-package spelling was always right
+   (`shapelib.Marker{…}` → `new shapelibꓸMarker(…)`, verified directly). The loss is the **bare
+   ident**, which only a DOT import produces (`codes_test.go` has `. "go/types"`). Type-DRIVEN
+   positions — declaration, parameter, conversion, field — resolve from `types.Type` through
+   `getCSharpTypeName`/`getScopeCheckedTypeName`, both of which already consulted
+   `foreignAliasedTypeName`; that is why `var mu Mutex` through a dot import has worked since
+   `DotImportRenamedPackage`. The two AST-IDENT type positions did not: a type-assertion target and
+   a composite-literal type render through `convIdent`'s `isType` arm, which returned the bare
+   sanitized Go name and consulted nothing. That arm now routes through the same lookup.
+   Guarded by `DotImportRenamedType`; CNR byte-identical across 588 packages.
+
+   **Blast radius, for whoever wonders whether a corpus regen is owed: none.** The only production
+   (non-test) dot import in the converted corpus is `go/types` → `internal/types/errors`, and that
+   package publishes ZERO collision renames; `generrordocs.go`'s dot import of `go/types` is
+   `//go:build ignore` and is not converted. The fix therefore cannot move production `src/core` —
+   it reaches `-tests` conversions only.
+
+   **The row did not validate, and its remaining blocker is NOT its own.** With the build blocker
+   cleared the host builds and runs; both top-level tests then fail with the `go/types` checker
+   nil-panic re-surfacing through `check.cs:430` — Go 155 verdicts, C# **0**. `internal/types/errors`
+   is now a second dependent of the unbanked `go/types` row, exactly as `go/internal/gcimporter`'s
+   184 rows are. Not banked; test sources and proof page deliberately not committed.
 2. **`internal/fuzz` — an alias whose RHS is an anonymous struct does not reach the test compilation.**
    `minimize_test.cs:26` and `worker_test.cs:52` emit
    `Func<struct{Parent string; Path string; Data []byte; …}, error>` — raw **Go** syntax in a C# file —

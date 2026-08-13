@@ -12862,6 +12862,50 @@ are under test, and the `other` it re-exports from — carrying one declaration 
 every declined one, asserting the derivation, its independence from run-accumulated state, and the end-to-end
 render with no `package_info.cs` present.)
 
+### A DOT-IMPORTED renamed type is spelled through the same alias as the qualified reference
+
+The two subsections above are about the alias metadata being **derived**; this one is about it being
+**used**. Having the right alias minted is not the same as reaching it, and one reference path did not.
+
+A dot import (`. "go/types"`) makes a foreign type's reference a bare `*ast.Ident` — there is no selector for
+the qualified-name resolver to rewrite — yet the type may still be collision-renamed inside its own package.
+The **type-driven** positions were always fine: a declaration, a parameter, a conversion and a field all
+resolve from `types.Type` through `getCSharpTypeName`/`getScopeCheckedTypeName`, both of which consult
+`foreignAliasedTypeName`. That is why `var mu Mutex` through a dot import has worked since
+`DotImportRenamedPackage`. The two **AST-ident** type positions did not: a *type-assertion target* and a
+*composite-literal type* render through `convIdent`'s `isType` arm, which returned the bare sanitized Go
+name and consulted nothing.
+
+So `internal/types/errors`, whose external test file dot-imports `go/types`, emitted `err._<Error>(ᐧ)` and
+`new Info(…)` against declarations named `ΔError` and `ΔInfo` — `go/types` renames `Error` for its own
+`func (err Error) Error() string` and `Info` for the unrelated `func (b *Basic) Info() BasicInfo` — while
+that test's own `package_test_info.cs` had already minted `global using typesꓸError = …ΔError;` and
+`typesꓸInfo`, and left both unused. CS0246 ×2.
+
+**Invariant:** one Go type has one C# spelling, whatever the source called it. `convIdent`'s `isType` arm
+now routes through `foreignAliasedTypeName` — the *same* recorded-alias lookup the qualified path takes — so
+`Info{…}` and `types.Info{…}` emit the identical `typesꓸInfo`. It is a no-op for a same-package type and for
+any type with no registered alias, so nothing else moves (whole-corpus CNR byte-identical).
+
+```csharp
+var m = new renamedlibꓸMarker(Name: "alpha"u8, Size: 3);          // composite literal  (was: new Marker(…))
+var (got, ok) = Describe(deltaˢ, 9)._<renamedlibꓸMarker>(ᐧ);      // type assertion     (was: _<Marker>(ᐧ))
+var pl = new Plain(Note: "eta"u8);                                 // NOT renamed — bare, unchanged
+var l = new ΔLocal(Tag: "iota"u8);                                 // same-package rename — local, no alias
+```
+
+The rename rule itself is `performNameCollisionAnalysis`'s and is worth stating exactly, because the second
+half is easy to miss: a package-level named element collides when **some** package-level `FuncDecl` in that
+package shares its name. Both a method on the type itself (`Error`) and a method on an unrelated type
+(`Info`) supply it; since Go forbids a type and a free function sharing a package-scope name, the collision
+can only ever come from a method.
+
+(Guarded by `DotImportRenamedType`: a sibling library package declaring one type of each collision shape
+plus a non-renamed control, consumed across the package boundary through a dot import via composite
+literals — value and pointer — and type assertions in comma-ok, single-value and missed forms, with a
+same-package renamed type as the second control; output-compared vs `go run`. Verified to FAIL as CS0246
+with the fix reverted.)
+
 ### Converted programs write UTF-8 stdout — the ambient console code page never reaches the bytes
 Go writes stdout as raw UTF-8, unconditionally: `fmt.Println("Hello, 世界")` emits the same bytes to a
 terminal, a pipe, or a file. .NET does not. `Console.Out` is constructed with `Console.OutputEncoding`,

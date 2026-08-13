@@ -332,6 +332,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDotImportRenamedPackage() => CheckTarget("DotImportRenamedPackage");
 
     [TestMethod]
+    public void CheckDotImportRenamedType() => CheckTarget("DotImportRenamedType");
+
+    [TestMethod]
     public void CheckDynamicInterfaceKeywordMethod() => CheckTarget("DynamicInterfaceKeywordMethod");
 
     [TestMethod]

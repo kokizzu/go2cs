@@ -122,6 +122,28 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 			if liftedName, ok := v.liftedTypeMap[identType]; ok {
 				return liftedName
 			}
+
+			// A DOT-IMPORTED (`. "go/types"`) foreign type is referenced BARE, so there is no
+			// selector for the qualified-name resolver to rewrite — yet the type may be
+			// collision-renamed inside its own package, in which case the raw Go name binds
+			// nothing (CS0246). go/types Δ-renames both `Error` (its own `Error()` method) and
+			// `Info` (`Basic.Info()`), so internal/types/errors' external test file emitted
+			// `err._<Error>(ᐧ)` and `new Info(…)` against declarations named ΔError/ΔInfo —
+			// while its package_test_info.cs had already minted the right
+			// `typesꓸError`/`typesꓸInfo` aliases and left them unused. Route through the same
+			// recorded-alias lookup the QUALIFIED path takes (getScopeCheckedTypeName /
+			// getCSharpTypeName both consult it), so one Go type cannot have two spellings
+			// depending on whether the source named it bare or through its package.
+			//
+			// Only the AST-ident type positions reach here — a type-assertion target and a
+			// composite-literal type. The type-driven positions (declarations, parameters,
+			// conversions) resolve from types.Type and were already correct, which is why
+			// `var mu Mutex` through a dot import has always worked (DotImportRenamedPackage).
+			// foreignAliasedTypeName is a no-op for a same-package type and for any type with
+			// no recorded alias, so nothing else moves.
+			if aliased, ok := v.foreignAliasedTypeName(identType); ok {
+				return aliased
+			}
 		}
 
 		return convertToCSTypeName(v.getIdentName(ident))
@@ -264,9 +286,11 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 
 // dotImportedRenamedMember resolves a BARE reference to a package-level CONST or VAR declared in
 // ANOTHER package — only a dot import can produce one — to the name that package's converted form
-// actually declares, when a name collision renamed it. A foreign TYPE already resolves this way
-// through foreignAliasedTypeName, which works from go/types rather than from the source spelling
-// and so covers the bare form for free; a const/var had no equivalent, so time's external test
+// actually declares, when a name collision renamed it. A foreign TYPE resolves the same rename
+// through foreignAliasedTypeName, which works from go/types rather than from the source spelling;
+// the type-DRIVEN positions got that for free, but the two AST-ident type positions (a
+// type-assertion target and a composite-literal type) had to be routed there explicitly — see the
+// isType arm above. A const/var had no equivalent at all, so time's external test
 // files (`. "time"`) emitted `Second`, `UTC`, `Hour`, `Minute`, `Nanosecond` and `Local` raw —
 // every one of which time Δ-renames because a `Time` METHOD shares the name (CS0103 ×176 across
 // five files). The renamed member is emitted BARE: a dot import renders as `using static

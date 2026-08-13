@@ -517,7 +517,10 @@ var d = 2 * time.ΔSecond;                // the const, not the Second() method 
 
 The consumer derives that spelling from the **dependency's own declarations**, so it is the same whether or
 not `time` happens to be converted in the same run — which is what makes a standalone `go2cs <dir>` (and
-`-recurse`) conversion of such a program compile.
+`-recurse`) conversion of such a program compile. It is likewise the same however the source *named* the
+type: a renamed type reached through a **dot import** is a bare ident with no package qualifier to rewrite,
+and it still resolves through the same imported alias (`Info{…}` and `types.Info{…}` both emit `typesꓸInfo`)
+— see [Reference → A DOT-IMPORTED renamed type](ConversionStrategies-Reference.md#a-dot-imported-renamed-type-is-spelled-through-the-same-alias-as-the-qualified-reference).
 
 **Full detail:** [Reference → Short Variable Redeclaration](ConversionStrategies-Reference.md#short-variable-redeclaration-shadowing) —
 a large family: forward-collision detection at every block level, package-function shadowing, builtin-method

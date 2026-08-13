@@ -358,6 +358,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckDotImportRenamedPackage() => CheckTarget("DotImportRenamedPackage");
 
     [TestMethod]
+    public void CheckDotImportRenamedType() => CheckTarget("DotImportRenamedType");
+
+    [TestMethod]
     public void CheckDynamicInterfaceKeywordMethod() => CheckTarget("DynamicInterfaceKeywordMethod");
 
     [TestMethod]

@@ -355,6 +355,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckDotImportRenamedPackage() => CheckTarget("DotImportRenamedPackage");
 
     [TestMethod]
+    public void CheckDotImportRenamedType() => CheckTarget("DotImportRenamedType");
+
+    [TestMethod]
     public void CheckDynamicInterfaceKeywordMethod() => CheckTarget("DynamicInterfaceKeywordMethod");
 
     [TestMethod]
