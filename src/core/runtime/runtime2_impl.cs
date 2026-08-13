@@ -5,7 +5,7 @@ using go;
 
 // Hand-finished conversion (managed-referent pointer family — runtime2.go).
 //
-// Go's guintptr/puintptr/muintptr hide a *g/*p/*m inside a uintptr so the Go GC does not
+// Go's guintptr/puintptr/muintptr hide a *g / *p / *m inside a uintptr so the Go GC does not
 // observe the reference (Go runtime code then re-anchors those objects manually). The CLR has
 // the OPPOSITE requirement: a managed reference stored as a number is invisible to the .NET GC,
 // so the referent can be collected or moved and the number is garbage. The managed conversion
