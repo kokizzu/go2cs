@@ -328,3 +328,181 @@ func TestPinGoVersionWinsOnlyBeforeFirstUse(t *testing.T) {
 		t.Errorf("goVersion() changed from %q to %q after pinning an empty value", before, after)
 	}
 }
+
+// writeVersionProps stands up a go2cs root carrying just the element corpusPinnedRelease reads, in
+// the shape src/version.props actually uses.
+func writeVersionProps(t *testing.T, body string) string {
+	t.Helper()
+
+	dir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(dir, versionPropsFileName), []byte(body), 0o644); err != nil {
+		t.Fatalf("failed to write version.props: %v", err)
+	}
+
+	return dir
+}
+
+// TestCorpusPinnedRelease covers reading the pin off version.props, and the absences that must read
+// as "no pin to check" rather than as a mismatch — an unseeded root is the normal state of a first
+// -stdlib conversion, not a fault.
+func TestCorpusPinnedRelease(t *testing.T) {
+	const props = "<Project>\r\n  <PropertyGroup>\r\n    <GoStdLibVersion>1.23.1</GoStdLibVersion>\r\n" +
+		"    <GoBuildNumber>6</GoBuildNumber>\r\n  </PropertyGroup>\r\n</Project>\r\n"
+
+	if actual := corpusPinnedRelease(writeVersionProps(t, props)); actual != "1.23.1" {
+		t.Errorf("corpusPinnedRelease() = %q, want %q", actual, "1.23.1")
+	}
+
+	// A root with no version.props at all — a bare temp -go2cspath target.
+	if actual := corpusPinnedRelease(t.TempDir()); actual != "" {
+		t.Errorf("corpusPinnedRelease(<no version.props>) = %q, want \"\"", actual)
+	}
+
+	// Present but carrying only the build number: half a version is not a pin.
+	const partial = "<Project>\r\n  <PropertyGroup>\r\n    <GoBuildNumber>6</GoBuildNumber>\r\n  </PropertyGroup>\r\n</Project>\r\n"
+
+	if actual := corpusPinnedRelease(writeVersionProps(t, partial)); actual != "" {
+		t.Errorf("corpusPinnedRelease(<no GoStdLibVersion>) = %q, want \"\"", actual)
+	}
+
+	if actual := corpusPinnedRelease(""); actual != "" {
+		t.Errorf("corpusPinnedRelease(\"\") = %q, want \"\"", actual)
+	}
+}
+
+// TestCheckCorpusToolchainPin covers both guarded paths. The refuse path is driven entirely through
+// the function's parameters — the test seam — because the alternative is installing a second Go
+// toolchain, which no machine should have to do to prove that a guard refuses.
+func TestCheckCorpusToolchainPin(t *testing.T) {
+	tests := []struct {
+		name       string
+		mode       string
+		converting string
+		pinned     string
+		wantError  bool
+	}{
+		{"exact match", "-stdlib", "1.23.1", "1.23.1", false},
+		{"toolchain's prefixed spelling", "-stdlib", "go1.23.1", "1.23.1", false},
+		{"pin written with the prefix", "-stdlib", "1.23.1", "go1.23.1", false},
+		{"surrounding whitespace", "-stdlib", " go1.23.1 ", " 1.23.1 ", false},
+
+		// The case this guard exists for — and precisely the one its NuGet sibling allows on purpose.
+		{"patch drift refuses", "-stdlib", "1.23.2", "1.23.1", true},
+		{"patch drift refuses under -tests too", "-tests", "1.23.2", "1.23.1", true},
+		{"a newer minor refuses", "-stdlib", "1.24.0", "1.23.1", true},
+		{"an older toolchain refuses equally", "-tests", "1.22.9", "1.23.1", true},
+
+		// Nothing readable on one side is not a mismatch; inventing one would refuse legitimate runs.
+		{"absent pin does not refuse", "-stdlib", "1.23.2", "", false},
+		{"absent toolchain version does not refuse", "-stdlib", "", "1.23.1", false},
+		{"devel toolchain does not refuse", "-stdlib", "devel +abc123", "1.23.1", false},
+		{"unparseable pin does not refuse", "-tests", "1.23.2", "not-a-version", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := checkCorpusToolchainPin(test.mode, test.converting, test.pinned)
+
+			if !test.wantError {
+				if err != nil {
+					t.Fatalf("checkCorpusToolchainPin(%q, %q, %q) = %v, want nil", test.mode, test.converting, test.pinned, err)
+				}
+
+				return
+			}
+
+			if err == nil {
+				t.Fatalf("checkCorpusToolchainPin(%q, %q, %q) = nil, want an error", test.mode, test.converting, test.pinned)
+			}
+
+			// A refusal the reader cannot act on is the failure mode being fixed: the message has to
+			// name the toolchain it found, the release the corpus is pinned to, and which mode stopped.
+			converting := normalizeGoVersion(test.converting)
+			pinned := strings.TrimPrefix(normalizeGoVersion(test.pinned), "go")
+
+			for _, needle := range []string{converting, pinned, test.mode, "GoStdLibVersion", "GOROOT"} {
+				if !strings.Contains(err.Error(), needle) {
+					t.Errorf("error message does not mention %q: %v", needle, err)
+				}
+			}
+		})
+	}
+}
+
+// TestCorpusPinIsStricterThanTheNuGetGuard locks the one difference between the two toolchain guards
+// in place, because it is subtle enough to look like an inconsistency worth "fixing".
+//
+// checkNuGetStdLibCompatibility compares version.Lang: 1.23.1 and 1.23.2 publish the same go.<pkg>
+// package ids, so refusing there would reject working setups. checkCorpusToolchainPin compares the
+// full release, because those same two toolchains carry DIFFERENT standard-library sources and
+// converting one against goldens captured from the other is the drift it exists to stop. Collapsing
+// this guard onto version.Lang would silently restore the hole.
+func TestCorpusPinIsStricterThanTheNuGetGuard(t *testing.T) {
+	const converting, pinned = "1.23.2", "1.23.1"
+
+	if err := checkNuGetStdLibCompatibility(converting, version.Lang(normalizeGoVersion(pinned))); err != nil {
+		t.Fatalf("the NuGet guard must still accept a patch difference, got: %v", err)
+	}
+
+	if err := checkCorpusToolchainPin("-stdlib", converting, pinned); err == nil {
+		t.Fatal("checkCorpusToolchainPin must refuse a patch difference the NuGet guard accepts")
+	}
+}
+
+// writeGoRoot stands up a directory carrying just the VERSION file gorootRelease reads.
+func writeGoRoot(t *testing.T, body string) string {
+	t.Helper()
+
+	dir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(dir, gorootVersionFileName), []byte(body), 0o644); err != nil {
+		t.Fatalf("failed to write VERSION: %v", err)
+	}
+
+	return dir
+}
+
+// TestGorootRelease covers reading a GOROOT's own release out of its VERSION file, including the
+// two-line form Go 1.21 introduced, and the absence that leaves the caller on the reported version.
+func TestGorootRelease(t *testing.T) {
+	if actual := gorootRelease(writeGoRoot(t, "go1.23.1\n")); actual != "go1.23.1" {
+		t.Errorf("gorootRelease() = %q, want %q", actual, "go1.23.1")
+	}
+
+	// Go 1.21 and later write a `time <stamp>` line beneath the release.
+	if actual := gorootRelease(writeGoRoot(t, "go1.23.1\ntime 2024-09-05T18:14:44Z\n")); actual != "go1.23.1" {
+		t.Errorf("gorootRelease(<two-line VERSION>) = %q, want %q", actual, "go1.23.1")
+	}
+
+	if actual := gorootRelease(t.TempDir()); actual != "" {
+		t.Errorf("gorootRelease(<no VERSION>) = %q, want \"\"", actual)
+	}
+
+	if actual := gorootRelease(""); actual != "" {
+		t.Errorf("gorootRelease(\"\") = %q, want \"\"", actual)
+	}
+}
+
+// TestConvertingReleaseFollowsGorootNotTheLabel covers the measured mixed state that motivated
+// reading GOROOT's VERSION at all: a GOROOT environment variable pointing at one installation while
+// a different toolchain is selected. `go env GOVERSION` then reports the SELECTED toolchain while the
+// converter reads the pinned tree's sources, so checking the reported version would wave through a
+// conversion of the wrong release. The sources win.
+func TestConvertingReleaseFollowsGorootNotTheLabel(t *testing.T) {
+	goRoot := writeGoRoot(t, "go1.23.2\n")
+
+	if actual := convertingRelease(goRoot); actual != "go1.23.2" {
+		t.Fatalf("convertingRelease() = %q, want the GOROOT's own %q", actual, "go1.23.2")
+	}
+
+	if err := checkCorpusToolchainPin("-stdlib", convertingRelease(goRoot), "1.23.1"); err == nil {
+		t.Fatal("a GOROOT holding 1.23.2 sources must be refused against a 1.23.1 pin, whatever the toolchain reports")
+	}
+
+	// A GOROOT carrying no VERSION file falls back to the reported version rather than disabling
+	// the guard outright.
+	if actual := convertingRelease(t.TempDir()); actual != goVersion() {
+		t.Errorf("convertingRelease(<no VERSION>) = %q, want the reported %q", actual, goVersion())
+	}
+}

@@ -45,6 +45,60 @@ $goroot = (& go env GOROOT).Trim()
 if (-not (Test-Path $table)) { throw "Cannot find the validated-package table at $table" }
 if (-not $goroot) { throw 'Could not resolve GOROOT -- is the Go toolchain on PATH?' }
 
+# ---- toolchain pin ------------------------------------------------------------------------------
+# The sweep re-runs each package's Go tests from GOROOT's SOURCES and compares the verdicts against
+# counts banked from one specific Go release, so the toolchain silently decides what is being
+# measured. On the wrong release this compares that toolchain's tests against the pinned release's
+# banked numbers, and nothing reports it, because each side stays internally consistent -- which is
+# how a lane's gates once passed at banked counts on a toolchain the corpus was never pinned to.
+# In the sweep's own terms such a run is NOT MEASURED, never a verdict, so it stops here rather than
+# printing counts nobody can bank. Same comparison and same failure shape as the converter's own
+# -stdlib/-tests guard (checkCorpusToolchainPin, src/go2cs/toolchainResolution.go).
+
+# GOROOT's own VERSION file is preferred over `go env GOVERSION`, because the two can disagree and
+# when they do it is the reported version that misdescribes what is being read: a GOROOT environment
+# variable overrides the selected toolchain's own root, so a 1.23.1 go binary can report go1.23.1
+# while GOROOT holds a 1.23.2 tree. The SOURCES are what the banked counts came from, so they win.
+# Same precedence as the converter's convertingRelease.
+$goversion = (& go env GOVERSION).Trim()
+$gorootVersionFile = Join-Path $goroot 'VERSION'
+
+if (Test-Path $gorootVersionFile) {
+    # Go 1.21 added a `time <stamp>` line beneath the release; the release is the first line.
+    $firstLine = Get-Content $gorootVersionFile -TotalCount 1
+
+    if ($firstLine) { $goversion = $firstLine.Trim() }
+}
+
+$versionProps = Join-Path $src 'version.props'
+$pinnedRelease = ''
+
+if (Test-Path $versionProps) {
+    $propsText = [System.IO.File]::ReadAllText($versionProps)
+
+    if ($propsText -match '<GoStdLibVersion>([^<]+)</GoStdLibVersion>') {
+        $pinnedRelease = $Matches[1].Trim()
+    }
+}
+
+# An unreadable version on EITHER side is not a mismatch -- there is nothing to assert against, and
+# refusing there would stop legitimate runs. Only a known disagreement fails.
+if ($pinnedRelease -and $goversion) {
+    $runningRelease = $goversion -replace '^go', ''
+
+    if ($runningRelease -ne $pinnedRelease) {
+        throw ("Toolchain pin: version.props pins the corpus to Go $pinnedRelease " +
+            "(<GoStdLibVersion>$pinnedRelease</GoStdLibVersion>), but the Go tree this run would " +
+            "read is $goversion, at GOROOT $goroot. The sweep re-runs each package's Go tests from " +
+            "those sources, so it would measure go$runningRelease's tests against counts banked " +
+            "from $pinnedRelease -- NOT MEASURED, never a verdict. Either run on go$pinnedRelease " +
+            "with GOROOT pointing at that same tree, or, if the corpus is deliberately moving to " +
+            "$runningRelease, bump <GoStdLibVersion> in version.props first. (If GOVERSION already " +
+            "says go$pinnedRelease, check for a GOROOT environment variable overriding the selected " +
+            "toolchain -- that mismatch is what this reads.)")
+    }
+}
+
 # ---- roster: parse the table's rows -------------------------------------------------------------
 # Row shape:  | [`net/http/internal/ascii`](https://...) | 13 | 1 | What it exercises. |
 # Column 2 is the matching-verdict count, column 3 the disclosed count (blank when none).

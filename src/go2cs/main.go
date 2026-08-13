@@ -344,6 +344,15 @@ Examples:
 		// dependencies back from the same place), so an absent core\golib is the normal state of a
 		// first conversion into a fresh root — neither a thing to relocate nor a thing to warn about.
 
+		// The toolchain pin, checked before any package is loaded. Placed at the top of the -stdlib
+		// block so it covers every mode reached through it — the conversion itself, the multi-platform
+		// emission, and both censuses — since all of them read GOROOT's sources as their input and a
+		// census taken on the wrong release measures the wrong sources just as surely as a conversion
+		// emits them.
+		if err := checkCorpusToolchainPin("-stdlib", convertingRelease(options.goRoot), corpusPinnedRelease(options.go2csPath)); err != nil {
+			log.Fatalf("%v\n", err)
+		}
+
 		// Check if specific packages are specified
 		var packageFilter []string
 
@@ -485,6 +494,18 @@ Examples:
 			// two-argument validation command then works from a clone with no flags or environment
 			// setup. An explicitly configured WORKING root wins.
 			resolveGo2CSPath(&options, outputFilePath, true)
+
+			// The toolchain pin, checked once the root above is final — it is the tree version.props is
+			// read from. Every -test-action is covered, not just the converting ones: build/run/compare
+			// act on artifacts whose Go counterpart is re-run from THIS toolchain's sources, so a
+			// mismatch invalidates the comparison as thoroughly as it invalidates a conversion. A plain
+			// single-package conversion stays unguarded — converting arbitrary Go with any toolchain is
+			// legitimate, and only the corpus-defining modes carry the pin.
+			if options.convertTests {
+				if err := checkCorpusToolchainPin("-tests", convertingRelease(options.goRoot), corpusPinnedRelease(options.go2csPath)); err != nil {
+					log.Fatalf("%v\n", err)
+				}
+			}
 
 			// -tests: convert-and-hook runs for the convert/all actions (processConversion ends
 			// by converting the package's tests); build/run/compare act on EXISTING artifacts
