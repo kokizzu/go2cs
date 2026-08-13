@@ -41,6 +41,28 @@ grind to dominate wall-clock (~25 min/publish on 2014-desktop-class hardware; me
 - JIT per-project attribution on the work laptop: **0 failed** — the one batch error was the
   known parallel-build race. If your batch build errors, attribute the same way before believing.
 
+## Runner invocation and observed quirks (from the stood-down session)
+
+- **Exact invocation:** `.\run-performance.ps1 --update-readme` from `src/tests/Performance`,
+  with `MSBUILDDISABLENODEREUSE=1` in the environment; default 5-run medians (no `--runs`
+  override — keeps the standing table's protocol).
+- **JIT batch quirk:** a warm one-shot parallel build of the 14 benchmarks may report errors
+  that per-project attribution then resolves to **0 failed** (the known parallel-build race).
+  The post-reboot cold build compiled clean first try. If "build-all reported errors" appears,
+  expect benign attribution — not a corpus defect.
+- **AOT retry quirk:** PerfStartup's first publish attempt exited 1 **on a clean tree** and
+  self-healed via the retry-from-clean-intermediates path (1,846 s total — retry-inflated, so
+  the logged time of an absorbed retry is NOT usable in the table). A cold machine's first
+  publish may exit-1 once and be absorbed; record the retry as a caveat, never its time.
+- **Hygiene:** on a fresh clone this is moot, but if any pre-existing publish artifacts could
+  be reused, clean every `Perf*/obj/aot` and `Perf*/bin/Release/aot` first.
+- **Verify phase:** never reached in either aborted attempt — no known quirks; treat its
+  verdicts fresh.
+- **Owed alongside the table:** the board's A3 section deliberately carries **no perf paragraph
+  yet**. The new machine owes that paragraph, plus §9's publish-size recording
+  (`Perf*\bin\Release\aot\<proj>.exe` sizes) and ILC times (the runner's `ok (NNNs)` lines),
+  alongside the README table `--update-readme` produces.
+
 ## New-machine provisioning (once)
 
 1. `git clone https://github.com/ritchiecarroll/go2cs` and
