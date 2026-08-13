@@ -528,7 +528,7 @@ public static (MIMEHeader, error) ReadMIMEHeader(this ж<Reader> Ꮡr) {
 
 // readMIMEHeader is a version of ReadMIMEHeader which takes a limit on the header size.
 // It is called by the mime/multipart package.
-internal static (MIMEHeader, error) readMIMEHeader(ж<Reader> Ꮡr, int64 maxMemory, int64 maxHeaders) {
+public static (MIMEHeader, error) readMIMEHeader(ж<Reader> Ꮡr, int64 maxMemory, int64 maxHeaders) {
     ref var r = ref Ꮡr.DerefOrNull();
 
     // Avoid lots of small slice allocations later by allocating one

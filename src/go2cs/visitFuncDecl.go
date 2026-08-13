@@ -1730,6 +1730,20 @@ var linknameForwardTargets = map[string]bool{
 	// The pull adds a `runtime` project reference to internal/syscall/unix, which is acyclic —
 	// runtime does not import internal/syscall/unix, directly or transitively.
 	"runtime.fcntl": true,
+	// textproto's size-limited MIME header reader, pulled by mime/multipart's readmimeheader.go
+	// (`//go:linkname readMIMEHeader net/textproto.readMIMEHeader` over a bodyless declaration) and
+	// authorized by the matching one-arg handle in net/textproto/reader.go:506, whose own comment
+	// says it "is called by the mime/multipart package". Like the tzdata and fcntl entries the
+	// implementation is ORDINARY CONVERTED Go — reader.cs carries the full body, the same one
+	// `ReadMIMEHeader` itself delegates to with MaxInt64 limits — so the forwarder is an ordinary
+	// cross-assembly call to something that genuinely works. The pull needs no new project
+	// reference: multipart already imports net/textproto for the `*textproto.Reader` parameter.
+	//
+	// What the stub was costing: EVERY part-reading path in mime/multipart bottoms out here
+	// (populateHeaders -> newPart -> nextPart, and ReadForm through it), so the throw reached 41 of
+	// the package's 52 verdicts as infrastructure-error and four more as parent-test shadows —
+	// the package measured 7 of 52 with this single symbol as the whole differential.
+	"net/textproto.readMIMEHeader": true,
 }
 
 // linknameForwardBuiltins is the whitelist of cross-package //go:linkname PULL targets whose
