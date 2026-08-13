@@ -10638,6 +10638,84 @@ p224Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
 
 Landed measured effect on the flagship: `crypto/internal/nistec/fiat` transpiles with **zero** `heap(` sites and **zero** `.of(` sites (was 158 address-taken locals and 56 field-ref argument feeds), per the design's §3.6 projection. (Guarded by the `RefLoweredParams` behavioral test — write-through, forwarding chains, the mixed kept/reverted local, the defer/go carve-out in all three observable directions, the X5 func-value exclusion — and `RefLoweredNilTiming` — the eager-panic differential in three nil spellings plus the deferred-fault half, all output-compared against `go run`. The classifier and its fixed point are unit-guarded in `refLoweringAnalysis_test.go`; the corpus-wide census instrument is `-ref-census`.)
 
+### The lowered emission, row by row — the seven argument shapes in emitted code
+
+The seven rows of [`DESIGN-zh-box-reduction.md`](phase4/DESIGN-zh-box-reduction.md) §3.3, each with its emitted form and the golden that pins it. Every snippet is verbatim from a committed `.cs.target`, quoted through [`EXEMPLARS-a2-ref-lowering.md`](phase4/EXEMPLARS-a2-ref-lowering.md) — which carries the before/after pair and the history for each; only the *current* form is stated here.
+
+| # | Go argument | boxed emission | lowered emission | golden |
+|:-:|:--|:--|:--|:--|
+| 1 | `&e.x` — field of a deref'd parameter or receiver (a **nullable** base) | `Ꮡe.of(T.Ꮡx)` — 1 box | `ref nonnil(ref e).x` | `RefLoweredParams`, `GenericReceiverFieldAddress` |
+| 2 | `&x` — an address-taken local, value parameter or named result | `Ꮡx`, the `heap()` box minted at the declaration | `ref x` — the plain local; the box and its eager `T[1]` slot are gone | `ForVariants` |
+| 3 | a pointer variable/field/deref/assert `q` — it carries a box | `q` | `ref (q).DerefOrNull()` — read at CALL time, so a re-pointed pointer is never stale | `PointerParamNilWalk`, `PointerFieldArrayElementAddress` |
+| 4 | `&s[i]` / `&x.f` over a **value-rooted** base (local, value param, global, slice) | `Ꮡ(s, i)` — 1 box + 1 interface temp; `Ꮡx.of(T.Ꮡf)` for the field form | `ref s[i]` / `ref x.f` — `nonnil` elided, the base provably cannot be null | `AddressOfParamWrite`, `PointerFieldArrayElementAddress` |
+| 5 | `(*T2)(&v.x)` — a pointer conversion over a `[GoType]` named-**array** wrapper | `Ꮡ((Ꮡv.of(…)).Value.Value)` — 2 boxes | hoisted temp: `var ᴛ1 = v.x.Value;` … `ref ᴛ1` | `NamedArrayWrapper` |
+| 6 | a non-variable pointer expression — `&T{…}`, `new(T)`, any call result | `Ꮡ(new T(…))` / carries the returned box | hoisted temp, same shape as row 5: `var ᴛ1 = new T(…);` … `ref ᴛ1` | `RefLoweredParams` |
+| 7 | the literal `nil` | `default!` | `ref ((ж<T>)default!).DerefOrNull()` — binds the null ref; the callee faults at first use | `GuardedNilPointerParamDeref` |
+
+A lowered parameter forwarded into another lowered position is `ref p` — it already is the ref. Rows 5–7 share one justification: a lowered callee can never compare, store, escape or convert the address, so a caller-side temporary is observationally identical to a distinct heap box.
+
+**Row 1 — the parameter *is* the alias, and it survives generic instantiation** (`GenericReceiverFieldAddress`; the callee's `ж<T> Ꮡp` box and its `DerefOrNull()` preamble are gone, and the caller's 128-byte-per-evaluation field box becomes free):
+
+```csharp
+internal static void setT<T>(ref T p, T val) {
+    p = val;
+}
+
+public static void Set<T>(this ж<Box<T>> Ꮡb, T val) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    setT(ref nonnil(ref b).v, val);
+}
+```
+
+**Row 2 — an address-taken local comes home from the heap** (`ForVariants`; two counted objects per unmanaged local removed, and the per-iteration boxing scaffold of a labeled loop collapses to one plain loop variable):
+
+```csharp
+nint i = 0;
+while (i < 10) {
+    f(ref i);
+    i++;
+}
+internal static void f(ref nint y) {
+    fmt.Print(y);
+}
+```
+
+**Row 3 — the callee lowers, the call site unwraps** (`PointerFieldArrayElementAddress`; `c` comes from `.at(…)` indexing and so still carries a box — each function makes its own deal and the convention change composes across the boundary):
+
+```csharp
+internal static void bump(ref cycle c) {
+    c.n++;
+}
+internal static void viaParam(ж<rec> Ꮡp, nint i) {
+    var c = Ꮡp.at(rec.Ꮡfuture, i);
+    bump(ref (c).DerefOrNull());
+}
+```
+
+The same row, dereferenced per call rather than bound once, is what keeps a **reassigned** pointer honest (`PointerParamNilWalk`, whose walk loop emits `advance(ref (Ꮡp).DerefOrNull())`); note also what does *not* lower there — a pointer escaping through a **return** keeps its box identity, so `advance`'s `(ж<node>, nint)` result is unchanged.
+
+**Row 5 — two boxes become one temp** (`NamedArrayWrapper`; the wrapper's `Value` yields an `array<T>` header whose `T[]` backing is SHARED, so element writes flow through and whole-header writes are lost in *both* emissions equally — byte-parity, not a new behavior. Type-gated by `refConvPairingSupported` to the identical-underlying-array family; a string or numeric wrapper's value is a plain copy and keeps its identity box end to end):
+
+```csharp
+scal sm = new();
+var ᴛ1 = sm.s.Value;
+fromBytes(ref ᴛ1, 7);
+var ᴛ2 = (nonMont)((sm.s).Value);
+@double(ref sm.s, ref ᴛ2);
+```
+
+**Row 7 — a lowered parameter still accepts Go's `nil`** (`GuardedNilPointerParamDeref`; the synthesized argument binds a null box and defers the fault to the first actual use inside the callee, which is Go's "a nil pointer only panics when dereferenced" timing. `RefLoweredNilTiming` pins it against `go run`):
+
+```csharp
+internal static nint digits(nint @base, ref nint invalid) {
+    ...
+}
+nint c2 = digits(10, ref ((ж<nint>)default!).DerefOrNull());
+```
+
+**The counter-examples are guarded beside the lowered ones** (`RefLoweredParams`), so the boundary is itself under test: a parameter compared to `nil` keeps its box (its *identity* is observed); one used as a func value keeps it (a method group cannot close over a `ref`); a `defer`/`go` site keeps it and derives the ref at invoke time (`defer(ᴛ1 => bump(ref ᴛ1.DerefOrNull()), Ꮡresult, ref ᒐ);`); in-lambda call sites are uniformly boxed-fallback wrapped `.DerefOrNull()`; string/numeric wrapper reinterprets sit outside row 5's family; and a blank or unnamed pointer parameter is never a candidate.
+
 ### Pointer-typed globals and double-pointer walks (`&head`, `*pp`, `ValueSlot`)
 A package-level global of **pointer type** whose address is taken — `var head *node` with `pp := &head` — is heap-boxed like any addressed global, yielding a **double box**: `ж<ж<node>> Ꮡhead`. Three rules make the classic linked-list walk (`for pp := &head; *pp != nil; pp = &(*pp).next { … *pp = n }`) faithful:
 
