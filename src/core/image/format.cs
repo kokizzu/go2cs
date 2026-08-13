@@ -5,7 +5,7 @@ namespace go;
 
 using bufio = bufio_package;
 using errors = errors_package;
-using Δio = io_package;
+using io = io_package;
 using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
 using go.sync;
@@ -18,8 +18,8 @@ public static error ErrFormat = errors.New("image: unknown format"u8);
 // A format holds an image format's name, magic header and how to decode it.
 [GoType] partial struct format {
     internal @string name, magic;
-    internal Func<Δio.Reader, (Image, error)> decode;
-    internal Func<Δio.Reader, (Config, error)> decodeConfig;
+    internal Func<io.Reader, (Image, error)> decode;
+    internal Func<io.Reader, (Config, error)> decodeConfig;
 }
 
 // Formats is the list of registered formats.
@@ -35,7 +35,7 @@ internal static ref atomic.Value atomicFormats => ref ᏑatomicFormats.Value;
 // string can contain "?" wildcards that each match any one byte.
 // [Decode] is the function that decodes the encoded image.
 // [DecodeConfig] is the function that decodes just its configuration.
-public static void RegisterFormat(@string name, @string magic, Func<Δio.Reader, (Image, error)> decode, Func<Δio.Reader, (Config, error)> decodeConfig) {
+public static void RegisterFormat(@string name, @string magic, Func<io.Reader, (Image, error)> decode, Func<io.Reader, (Config, error)> decodeConfig) {
     ᏑformatsMu.Lock();
     var (formats, _) = ᏑatomicFormats.Load()._<slice<format>>(ᐧ);
     ᏑatomicFormats.Store(append(formats, new format(name, magic, decode, decodeConfig)));
@@ -44,13 +44,13 @@ public static void RegisterFormat(@string name, @string magic, Func<Δio.Reader,
 
 // A reader is an io.Reader that can also peek ahead.
 [GoType] partial interface reader :
-    Δio.Reader
+    io.Reader
 {
     (slice<byte>, error) Peek(nint _Δp0);
 }
 
 // asReader converts an io.Reader to a reader.
-internal static reader asReader(Δio.Reader r) {
+internal static reader asReader(io.Reader r) {
     {
         var (rr, ok) = r._<reader>(ᐧ); if (ok) {
             return rr;
@@ -88,7 +88,7 @@ internal static format sniff(reader r) {
 // The string returned is the format name used during format registration.
 // Format registration is typically done by an init function in the codec-
 // specific package.
-public static (Image, @string, error) Decode(Δio.Reader r) {
+public static (Image, @string, error) Decode(io.Reader r) {
     var rr = asReader(r);
     var f = sniff(rr);
     if (f.decode == default!) {
@@ -102,7 +102,7 @@ public static (Image, @string, error) Decode(Δio.Reader r) {
 // been encoded in a registered format. The string returned is the format name
 // used during format registration. Format registration is typically done by
 // an init function in the codec-specific package.
-public static (Config, @string, error) DecodeConfig(Δio.Reader r) {
+public static (Config, @string, error) DecodeConfig(io.Reader r) {
     var rr = asReader(r);
     var f = sniff(rr);
     if (f.decodeConfig == default!) {
