@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **129 / 215 testable packages validated — 60.0%**
+> ### Phase 4 progress: **130 / 215 testable packages validated — 60.5%**
 >
-> **14,712 matching test verdicts · 47 disclosed** *(updated 2026-08-13 — maintained as part of the
+> **14,764 matching test verdicts · 47 disclosed** *(updated 2026-08-13 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -142,6 +142,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`math/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/rand) | 43 | | PRNG streams, including a child-process race test. · [proof](validation/current/math.rand.md) |
 | [`math/rand/v2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/rand/v2) | 36 | | The v2 PRNG API (PCG, ChaCha8). · [proof](validation/current/math.rand.v2.md) |
 | [`mime`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime) | 17 | 1 | MIME type tables and media-type parsing — the first package through the runtime process-control facade (`LockOSThread`, registry reads). · [proof](validation/current/mime.md) |
+| [`mime/multipart`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/multipart) | 52 | | MIME multipart reading and writing — the part reader's boundary scanner over slow, truncated and nested streams, `ReadForm`'s memory/disk spill with the `multipartmaxparts`/`multipartmaxheaders` godebug limits, quoted-printable part decoding, and the writer's boundary generation under concurrent use. Reaches `net/textproto`'s size-limited header reader through a cross-package `//go:linkname` pull — the forwarder that closed all 45 of this package's differential rows at once (L12). · [proof](validation/current/mime.multipart.md) |
 | [`mime/quotedprintable`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/quotedprintable) | 5 | | Quoted-printable encoding — the reader's soft-line-break and hex-escape state machine, the writer's line wrapping, and an exhaustive encode/decode round-trip. · [proof](validation/current/mime.quotedprintable.md) |
 | [`net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) | 12 |  | The FastCGI record protocol end to end — the child's record dispatch and `FCGI_GET_VALUES` reply, multiplexed request streams over a shared connection, the `ResponseWriter`'s content-type sniffing, and a served request torn down mid-flight. · [proof](validation/current/net.http.fcgi.md) |
 | [`net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) | 13 | | ASCII case-insensitive helpers. · [proof](validation/current/net.http.internal.ascii.md) |
