@@ -6111,3 +6111,46 @@ the −800 belongs to the next os re-instrumentation (AllocMark), not to this st
   untouched by the aftermath commits, i.e. counts held), `TestMultiWriter_WriteStringSingleAlloc`
   among the matched (pass|pass, proof page `io.md`); the assert is want-EXACTLY-one, so the pass IS
   the "still exactly 1" claim.
+
+**The perf suite — measured, AOT included, on the dedicated machine (2026-08-13; closes the §9 A3
+row's last obligation via `HANDOFF-l3-a3-perf.md`).** The work laptop's stand-down transferred the
+run to a solo, sleep-proofed machine: AMD Ryzen 5 PRO 6650U (6C/12T, 30.8 GB), Windows 11
+10.0.26200, **pinned go1.23.1 (gate zero verified)**, .NET SDK 9.0.316, MSVC 14.44 `link.exe`
+present — the AOT column is measured, not owed. Full `run-performance.ps1 --update-readme`
+(default 5-run medians, `MSBUILDDISABLENODEREUSE=1`): **Verify passed 14/14** — identical
+timing-filtered stdout across Go binary / C# JIT / C# Native AOT, the gate Measure sits behind —
+total 14,171 s wall, 13,552 s (95.6 %) of it the fourteen sequential ILC publishes. The table
+banks in `src/tests/Performance/README.md` (PERF-RESULTS; mirrored to `docs/Performance.md`), the
+first to carry the ж-bound **RefLower** row: Go 226.3 ms · JIT 660.6 ms (2.92×) · AOT 1,827.8 ms
+(8.08×). The row is the standing README record, not the arc's gate — the gate was A2's paired
+same-machine A/B per §7's protocol, and cross-table comparison against the replaced i7-5820K
+table (2026-08-11, 13 rows, same toolchain) is machine effect by construction. The §7-item-4
+recording, from the run's ILC `ok (NNNs)` lines and the published
+`Perf*\bin\Release\aot\<proj>.exe` sizes — every publish succeeded **first-try** (the work
+laptop's exit-1-then-self-heal quirk did not recur, so no retry-inflated time exists anywhere),
+each exe carrying the full converted-stdlib closure:
+
+| Benchmark | ILC wall (s) | AOT publish size (MB) |
+|:--|--:|--:|
+| PerfStartup | 981 | 296.4 |
+| PerfFib | 1,085 | 296.4 |
+| PerfSieve | 1,094 | 296.4 |
+| PerfMatMul | 1,081 | 296.9 |
+| PerfString | 972 | 296.4 |
+| PerfStringView | 929 | 296.4 |
+| PerfStringMatch | 955 | 302.3 |
+| PerfMap | 933 | 296.4 |
+| PerfSort | 909 | 297.0 |
+| PerfChannel | 923 | 296.4 |
+| PerfIfaceCall | 936 | 296.4 |
+| PerfIface | 921 | 296.5 |
+| PerfIfaceShell | 908 | 296.9 |
+| PerfRefLower | 925 | 296.4 |
+
+Two run notes for the record: the JIT one-shot batch build reported errors that per-project
+attribution resolved to **0 failed** — the known parallel-build race, exactly as the handoff
+predicted, not a corpus defect. And an observation the A′/B′ checkpoint should see: on this
+machine AOT trails JIT on the compute-bound rows (RefLower 8.08× vs 2.92×, MatMul 5.02× vs
+1.66×, Sieve 3.28× vs 1.61×) while beating it on Startup and Map — the ref-heavy hot loop is
+the widest such gap, so ILC codegen of the lowered emission is worth a look when B′'s
+dual-emission increment prices its own AOT bill.
