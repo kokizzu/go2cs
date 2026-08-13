@@ -5,7 +5,7 @@
 // Package hash provides interfaces for hash functions.
 namespace go;
 
-using io = io_package;
+using Δio = io_package;
 
 partial class hash_package {
 
@@ -26,7 +26,7 @@ partial class hash_package {
 // subject to issues such as security fixes.
 // See the Go compatibility document for background: https://golang.org/doc/go1compat
 [GoType] partial interface Hash :
-    io.Writer
+    Δio.Writer
 {
     // Sum appends the current hash to b and returns the resulting slice.
     // It does not change the underlying hash state.

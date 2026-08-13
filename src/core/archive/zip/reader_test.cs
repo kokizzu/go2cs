@@ -1102,7 +1102,7 @@ public static void TestIssue8186(ж<testing.T> Ꮡt) {
     }.slice();
     foreach (var (i, s) in dirEnts) {
         ref var f = ref heap(new global::go.archive.zip_package.File(), out var Ꮡf);
-        var err = readDirectoryHeader(Ꮡf, new zip_test_package.strings_ReaderжReader(strings.NewReader(s)));
+        var err = readDirectoryHeader(ref f, new zip_test_package.strings_ReaderжReader(strings.NewReader(s)));
         if (err != default!) {
             Ꮡt.Errorf("error reading #%d: %v"u8, i, err);
         }

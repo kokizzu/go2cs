@@ -166,8 +166,8 @@ public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
         var (gen, asm) = (New()._<ж<global::go.crypto.sha1_package.digest>>(), New()._<ж<global::go.crypto.sha1_package.digest>>());
         var buf = new slice<byte>((nint)ΔBlockSize * i);
         rand.Read(buf);
-        blockGeneric(gen, buf);
-        block(asm, buf);
+        blockGeneric(ref (gen).DerefOrNull(), buf);
+        block(ref (asm).DerefOrNull(), buf);
         if (gen.Value != asm.Value) {
             Ꮡt.Errorf("For %#v block and blockGeneric resulted in different states"u8, buf);
         }

@@ -396,7 +396,7 @@ internal static void testRandomPoint<Point>(ж<testing.T> Ꮡt, ж<global::go.cr
     // (Unless, for example, we are masking too many bits.)
     var r = io.MultiReader(new ecdsa_test_package.bytes_ReaderжReader(bytes.NewReader(bytes.Repeat(new byte[]{0xff}.slice(), 100))), rand.Reader);
     {
-        var (k, p, err) = randomPoint(Ꮡc, r); if (err != default!){
+        var (k, p, err) = randomPoint(ref (Ꮡc).DerefOrNull(), r); if (err != default!){
             Ꮡt.Fatal(err);
         } else 
         if (k.IsZero() == 1){
@@ -413,7 +413,7 @@ internal static void testRandomPoint<Point>(ж<testing.T> Ꮡt, ж<global::go.cr
     // A sequence of all zeroes will generate zero, which should be rejected.
     r = io.MultiReader(new ecdsa_test_package.bytes_ReaderжReader(bytes.NewReader(bytes.Repeat(new byte[]{0}.slice(), 100))), rand.Reader);
     {
-        var (k, p, err) = randomPoint(Ꮡc, r); if (err != default!){
+        var (k, p, err) = randomPoint(ref (Ꮡc).DerefOrNull(), r); if (err != default!){
             Ꮡt.Fatal(err);
         } else 
         if (k.IsZero() == 1){
@@ -435,7 +435,7 @@ internal static void testRandomPoint<Point>(ж<testing.T> Ꮡt, ж<global::go.cr
         return;
     }
     {
-        var (k, p, err) = randomPoint(Ꮡc, rand.Reader); if (err != default!){
+        var (k, p, err) = randomPoint(ref (Ꮡc).DerefOrNull(), rand.Reader); if (err != default!){
             Ꮡt.Fatal(err);
         } else 
         if (k.IsZero() == 1){
@@ -470,7 +470,7 @@ internal static void testHashToNat<Point>(ж<testing.T> Ꮡt, ж<global::go.cryp
 {
     for (nint l = 0; l < 600; l++) {
         var h = bytes.Repeat(new byte[]{0xff}.slice(), l);
-        hashToNat(Ꮡc, bigmod.NewNat(), h);
+        hashToNat(ref (Ꮡc).DerefOrNull(), bigmod.NewNat(), h);
     }
 }
 
@@ -551,19 +551,19 @@ internal static void testRMinusNSignature(ж<testing.T> Ꮡt, elliptic.Curve cur
 internal static error randomPointForCurve(elliptic.Curve curve, io.Reader rand) {
     var exprᴛ1 = curve.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        var (_, _, err) = randomPoint<P224PointжnistPoint>(p224(), rand);
+        var (_, _, err) = randomPoint<P224PointжnistPoint>(ref (p224()).DerefOrNull(), rand);
         return err;
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        var (_, _, err) = randomPoint<P256PointжnistPoint>(p256(), rand);
+        var (_, _, err) = randomPoint<P256PointжnistPoint>(ref (p256()).DerefOrNull(), rand);
         return err;
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        var (_, _, err) = randomPoint<P384PointжnistPoint>(p384(), rand);
+        var (_, _, err) = randomPoint<P384PointжnistPoint>(ref (p384()).DerefOrNull(), rand);
         return err;
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        var (_, _, err) = randomPoint<P521PointжnistPoint>(p521(), rand);
+        var (_, _, err) = randomPoint<P521PointжnistPoint>(ref (p521()).DerefOrNull(), rand);
         return err;
     }
     { /* default: */

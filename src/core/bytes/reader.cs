@@ -4,7 +4,7 @@
 namespace go;
 
 using errors = errors_package;
-using io = io_package;
+using Δio = io_package;
 using utf8 = go.unicode.utf8_package;
 using go.unicode;
 
@@ -43,7 +43,7 @@ partial class bytes_package {
     error err = default!;
 
     if (r.i >= (int64)len(r.s)) {
-        return (0, io.EOF);
+        return (0, Δio.EOF);
     }
     r.prevRune = -1;
     n = copy(b, r.s[(int)(r.i)..]);
@@ -64,11 +64,11 @@ internal static readonly @string bytesReaderReadAtˢ = "bytes.Reader.ReadAt: neg
         return (0, errors.New(bytesReaderReadAtˢ));
     }
     if (off >= (int64)len(r.s)) {
-        return (0, io.EOF);
+        return (0, Δio.EOF);
     }
     n = copy(b, r.s[(int)(off)..]);
     if (n < len(b)) {
-        err = io.EOF;
+        err = Δio.EOF;
     }
     return (n, err);
 }
@@ -77,7 +77,7 @@ internal static readonly @string bytesReaderReadAtˢ = "bytes.Reader.ReadAt: neg
 [GoRecv] public static (byte, error) ReadByte(this ref Reader r) {
     r.prevRune = -1;
     if (r.i >= (int64)len(r.s)) {
-        return (0, io.EOF);
+        return (0, Δio.EOF);
     }
     var b = r.s[(nint)(r.i)];
     r.i++;
@@ -105,7 +105,7 @@ internal static readonly @string bytesReaderUnreadByteAtˢ = "bytes.Reader.Unrea
 
     if (r.i >= (int64)len(r.s)) {
         r.prevRune = -1;
-        return (0, 0, io.EOF);
+        return (0, 0, Δio.EOF);
     }
     r.prevRune = (nint)r.i;
     {
@@ -145,13 +145,13 @@ internal static readonly @string bytesReaderSeekNegativeˢ = "bytes.Reader.Seek:
     r.prevRune = -1;
     int64 abs = default!;
     var exprᴛ1 = whence;
-    if (exprᴛ1 == io.SeekStart) {
+    if (exprᴛ1 == Δio.SeekStart) {
         abs = offset;
     }
-    else if (exprᴛ1 == io.SeekCurrent) {
+    else if (exprᴛ1 == Δio.SeekCurrent) {
         abs = r.i + offset;
     }
-    else if (exprᴛ1 == io.SeekEnd) {
+    else if (exprᴛ1 == Δio.SeekEnd) {
         abs = (int64)len(r.s) + offset;
     }
     else { /* default: */
@@ -166,7 +166,7 @@ internal static readonly @string bytesReaderSeekNegativeˢ = "bytes.Reader.Seek:
 }
 
 // WriteTo implements the [io.WriterTo] interface.
-[GoRecv] public static (int64 n, error err) WriteTo(this ref Reader r, io.Writer w) {
+[GoRecv] public static (int64 n, error err) WriteTo(this ref Reader r, Δio.Writer w) {
     int64 n = default!;
     error err = default!;
 
@@ -182,7 +182,7 @@ internal static readonly @string bytesReaderSeekNegativeˢ = "bytes.Reader.Seek:
     r.i += (int64)m;
     n = (int64)m;
     if (m != len(b) && err == default!) {
-        err = io.ErrShortWrite;
+        err = Δio.ErrShortWrite;
     }
     return (n, err);
 }

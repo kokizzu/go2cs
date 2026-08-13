@@ -9,7 +9,7 @@ namespace go;
 
 using bytes = bytes_package;
 using errors = errors_package;
-using io = io_package;
+using Δio = io_package;
 using strings = strings_package;
 using utf8 = unicode.utf8_package;
 using unicode;
@@ -28,7 +28,7 @@ public static error ErrNegativeCount = errors.New("bufio: negative count"u8);
 // Reader implements buffering for an io.Reader object.
 [GoType] partial struct Reader {
     internal slice<byte> buf;
-    internal io.Reader rd; // reader provided by the client
+    internal Δio.Reader rd; // reader provided by the client
     internal nint r, w;      // buf read and write positions
     internal error err;
     internal nint lastByte; // last byte read for UnreadByte; -1 means invalid
@@ -42,7 +42,7 @@ internal static UntypedInt maxConsecutiveEmptyReads => 100;
 // NewReaderSize returns a new [Reader] whose buffer has at least the specified
 // size. If the argument io.Reader is already a [Reader] with large enough
 // size, it returns the underlying [Reader].
-public static ж<Reader> NewReaderSize(io.Reader rd, nint size) {
+public static ж<Reader> NewReaderSize(Δio.Reader rd, nint size) {
     // Is it already a Reader?
     var (b, ok) = rd._<ж<Reader>>(ᐧ);
     if (ok && len((~b).buf) >= size) {
@@ -54,7 +54,7 @@ public static ж<Reader> NewReaderSize(io.Reader rd, nint size) {
 }
 
 // NewReader returns a new [Reader] whose buffer has the default size.
-public static ж<Reader> NewReader(io.Reader rd) {
+public static ж<Reader> NewReader(Δio.Reader rd) {
     return NewReaderSize(rd, defaultBufSize);
 }
 
@@ -68,7 +68,7 @@ public static ж<Reader> NewReader(io.Reader rd) {
 // Calling Reset on the zero value of [Reader] initializes the internal buffer
 // to the default size.
 // Calling b.Reset(b) (that is, resetting a [Reader] to itself) does nothing.
-public static void Reset(this ж<Reader> Ꮡb, io.Reader r) {
+public static void Reset(this ж<Reader> Ꮡb, Δio.Reader r) {
     ref var b = ref Ꮡb.DerefOrNull();
 
     // If a Reader r is passed to NewReader, NewReader will return r.
@@ -83,7 +83,7 @@ public static void Reset(this ж<Reader> Ꮡb, io.Reader r) {
     b.reset(b.buf, r);
 }
 
-[GoRecv] internal static void reset(this ref Reader b, slice<byte> buf, io.Reader r) {
+[GoRecv] internal static void reset(this ref Reader b, slice<byte> buf, Δio.Reader r) {
     b = new Reader(
         buf: buf,
         rd: r,
@@ -120,7 +120,7 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
             return;
         }
     }
-    b.err = io.ErrNoProgress;
+    b.err = Δio.ErrNoProgress;
 }
 
 [GoRecv] internal static error readErr(this ref Reader b) {
@@ -523,7 +523,7 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
 // This may make multiple calls to the [Reader.Read] method of the underlying [Reader].
 // If the underlying reader supports the [Reader.WriteTo] method,
 // this calls the underlying [Reader.WriteTo] without buffering.
-[GoRecv] public static (int64 n, error err) WriteTo(this ref Reader b, io.Writer w) {
+[GoRecv] public static (int64 n, error err) WriteTo(this ref Reader b, Δio.Writer w) {
     int64 n = default!;
     error err = default!;
 
@@ -534,14 +534,14 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
         return (n, err);
     }
     {
-        var (r, ok) = b.rd._<io.WriterTo>(ᐧ); if (ok) {
+        var (r, ok) = b.rd._<Δio.WriterTo>(ᐧ); if (ok) {
             var (m, errΔ1) = r.WriteTo(w);
             n += m;
             return (n, errΔ1);
         }
     }
     {
-        var (wΔ1, ok) = w._<io.ReaderFrom>(ᐧ); if (ok) {
+        var (wΔ1, ok) = w._<Δio.ReaderFrom>(ᐧ); if (ok) {
             var (m, errΔ2) = wΔ1.ReadFrom(b.rd);
             n += m;
             return (n, errΔ2);
@@ -559,7 +559,7 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
         }
         b.fill(); // buffer is empty
     }
-    if (AreEqual(b.err, io.EOF)) {
+    if (AreEqual(b.err, Δio.EOF)) {
         b.err = default!;
     }
     return (n, b.readErr());
@@ -568,7 +568,7 @@ internal static error errNegativeRead = errors.New("bufio: reader returned negat
 internal static error errNegativeWrite = errors.New("bufio: writer returned negative count from Write"u8);
 
 // writeBuf writes the [Reader]'s buffer to the writer.
-[GoRecv] internal static (int64, error) writeBuf(this ref Reader b, io.Writer w) {
+[GoRecv] internal static (int64, error) writeBuf(this ref Reader b, Δio.Writer w) {
     var (n, err) = w.Write(b.buf[(int)(b.r)..(int)(b.w)]);
     if (n < 0) {
         throw panic(errNegativeWrite);
@@ -589,13 +589,13 @@ internal static error errNegativeWrite = errors.New("bufio: writer returned nega
     internal error err;
     internal slice<byte> buf;
     internal nint n;
-    internal io.Writer wr;
+    internal Δio.Writer wr;
 }
 
 // NewWriterSize returns a new [Writer] whose buffer has at least the specified
 // size. If the argument io.Writer is already a [Writer] with large enough
 // size, it returns the underlying [Writer].
-public static ж<Writer> NewWriterSize(io.Writer w, nint size) {
+public static ж<Writer> NewWriterSize(Δio.Writer w, nint size) {
     // Is it already a Writer?
     var (b, ok) = w._<ж<Writer>>(ᐧ);
     if (ok && len((~b).buf) >= size) {
@@ -613,7 +613,7 @@ public static ж<Writer> NewWriterSize(io.Writer w, nint size) {
 // NewWriter returns a new [Writer] whose buffer has the default size.
 // If the argument io.Writer is already a [Writer] with large enough buffer size,
 // it returns the underlying [Writer].
-public static ж<Writer> NewWriter(io.Writer w) {
+public static ж<Writer> NewWriter(Δio.Writer w) {
     return NewWriterSize(w, defaultBufSize);
 }
 
@@ -627,7 +627,7 @@ public static ж<Writer> NewWriter(io.Writer w) {
 // Calling Reset on the zero value of [Writer] initializes the internal buffer
 // to the default size.
 // Calling w.Reset(w) (that is, resetting a [Writer] to itself) does nothing.
-public static void Reset(this ж<Writer> Ꮡb, io.Writer w) {
+public static void Reset(this ж<Writer> Ꮡb, Δio.Writer w) {
     ref var b = ref Ꮡb.DerefOrNull();
 
     // If a Writer w is passed to NewWriter, NewWriter will return w.
@@ -654,7 +654,7 @@ public static void Reset(this ж<Writer> Ꮡb, io.Writer w) {
     }
     var (n, err) = b.wr.Write(b.buf[0..(int)(b.n)]);
     if (n < b.n && err == default!) {
-        err = io.ErrShortWrite;
+        err = Δio.ErrShortWrite;
     }
     if (err != default!) {
         if (n > 0 && n < b.n) {
@@ -769,14 +769,14 @@ public static void Reset(this ж<Writer> Ꮡb, io.Writer w) {
 // If the count is less than len(s), it also returns an error explaining
 // why the write is short.
 [GoRecv] public static (nint, error) WriteString(this ref Writer b, @string s) {
-    io.StringWriter sw = default!;
+    Δio.StringWriter sw = default!;
     var tryStringWriter = true;
     nint nn = 0;
     while (len(s) > b.Available() && b.err == default!) {
         nint nΔ1 = default!;
         if (b.Buffered() == 0 && sw == default! && tryStringWriter) {
             // Check at most once whether b.wr is a StringWriter.
-            (sw, tryStringWriter) = b.wr._<io.StringWriter>(ᐧ);
+            (sw, tryStringWriter) = b.wr._<Δio.StringWriter>(ᐧ);
         }
         if (b.Buffered() == 0 && tryStringWriter){
             // Large write, empty buffer, and the underlying writer supports
@@ -804,14 +804,14 @@ public static void Reset(this ж<Writer> Ꮡb, io.Writer w) {
 // supports the ReadFrom method, this calls the underlying ReadFrom.
 // If there is buffered data and an underlying ReadFrom, this fills
 // the buffer and writes it before calling ReadFrom.
-[GoRecv] public static (int64 n, error err) ReadFrom(this ref Writer b, io.Reader r) {
+[GoRecv] public static (int64 n, error err) ReadFrom(this ref Writer b, Δio.Reader r) {
     int64 n = default!;
     error err = default!;
 
     if (b.err != default!) {
         return (0, b.err);
     }
-    var (readerFrom, readerFromOK) = b.wr._<io.ReaderFrom>(ᐧ);
+    var (readerFrom, readerFromOK) = b.wr._<Δio.ReaderFrom>(ᐧ);
     nint m = default!;
     while (ᐧ) {
         if (b.Available() == 0) {
@@ -836,7 +836,7 @@ public static void Reset(this ж<Writer> Ꮡb, io.Writer w) {
             nr++;
         }
         if (nr == maxConsecutiveEmptyReads) {
-            return (n, io.ErrNoProgress);
+            return (n, Δio.ErrNoProgress);
         }
         b.n += m;
         n += (int64)m;
@@ -844,7 +844,7 @@ public static void Reset(this ж<Writer> Ꮡb, io.Writer w) {
             break;
         }
     }
-    if (AreEqual(err, io.EOF)) {
+    if (AreEqual(err, Δio.EOF)) {
         // If we filled the buffer exactly, flush preemptively.
         if (b.Available() == 0){
             err = b.Flush();

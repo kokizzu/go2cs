@@ -167,9 +167,9 @@ public static void TestClip(ж<testing.T> Ꮡt) {
         ref var mp = ref heap<image.Point>(out var Ꮡmp);
         mp = c.mp;
         if (c.nilMask){
-            clip(new draw_test_package.image_ΔRGBAжImage(dst), Ꮡr, new image.ΔRGBAжImage(src), Ꮡsp, default!, nil);
+            clip(new draw_test_package.image_ΔRGBAжImage(dst), Ꮡr, new image.ΔRGBAжImage(src), ref sp, default!, nil);
         } else {
-            clip(new draw_test_package.image_ΔRGBAжImage(dst), Ꮡr, new image.ΔRGBAжImage(src), Ꮡsp, mask0.SubImage(c.mr), Ꮡmp);
+            clip(new draw_test_package.image_ΔRGBAжImage(dst), Ꮡr, new image.ΔRGBAжImage(src), ref sp, mask0.SubImage(c.mr), Ꮡmp);
         }
         // Check that the actual results equal the expected results.
         if (!c.r0.Eq(r)) {

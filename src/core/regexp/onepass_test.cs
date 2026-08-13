@@ -202,7 +202,7 @@ public static void TestCompileOnePass(ж<testing.T> Ꮡt) {
                 continue;
             }
         }
-        var isOnePass = compileOnePass(p) != nil;
+        var isOnePass = compileOnePass(ref (p).DerefOrNull()) != nil;
         if (isOnePass != test.isOnePass) {
             Ꮡt.Errorf("CompileOnePass(%q) got isOnePass=%v, expected %v"u8, test.re, isOnePass, test.isOnePass);
         }

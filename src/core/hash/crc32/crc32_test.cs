@@ -115,9 +115,9 @@ internal static void testCrossCheck(ж<testing.T> Ꮡt, Func<uint32, slice<byte>
 public static void TestSimple(ж<testing.T> Ꮡt) {
     ref var tab = ref heap<ж<global::go.hash.crc32_package.Table>>(out var Ꮡtab);
     tab = simpleMakeTable(IEEE);
-    testGoldenIEEE(Ꮡt, (slice<byte> b) => simpleUpdate(0, Ꮡtab.ValueSlot, b));
+    testGoldenIEEE(Ꮡt, (slice<byte> b) => simpleUpdate(0, ref (Ꮡtab.ValueSlot).DerefOrNull(), b));
     tab = simpleMakeTable(Castagnoli);
-    testGoldenCastagnoli(Ꮡt, (slice<byte> b) => simpleUpdate(0, Ꮡtab.ValueSlot, b));
+    testGoldenCastagnoli(Ꮡt, (slice<byte> b) => simpleUpdate(0, ref (Ꮡtab.ValueSlot).DerefOrNull(), b));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -207,7 +207,7 @@ public static void TestSlicing(ж<testing.T> Ꮡt) {
     foreach (var (_, poly) in new uint32[]{IEEE, Castagnoli, Koopman, 0xD5828281U}.slice()) {
         var t1 = simpleMakeTable(poly);
         var t1ʗ1 = t1;
-        var f1 = (uint32 crc, slice<byte> b) => simpleUpdate(crc, t1ʗ1, b);
+        var f1 = (uint32 crc, slice<byte> b) => simpleUpdate(crc, ref (t1ʗ1).DerefOrNull(), b);
         var t2 = slicingMakeTable(poly);
         var t2ʗ1 = t2;
         var f2 = (uint32 crc, slice<byte> b) => slicingUpdate(crc, t2ʗ1, b);

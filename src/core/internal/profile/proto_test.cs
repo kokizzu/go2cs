@@ -67,14 +67,14 @@ public static void TestPackedEncoding(ж<testing.T> Ꮡt) {
 [GoRecv] internal static slice<Func<ж<global::go.@internal.profile_package.buffer>, global::go.@internal.profile_package.message, error>> decoder(this ref packedInts u) {
     return new Func<ж<global::go.@internal.profile_package.buffer>, global::go.@internal.profile_package.message, error>[]{
         default!,
-        (ж<global::go.@internal.profile_package.buffer> b, global::go.@internal.profile_package.message m) => decodeUint64s(b, m._<ж<packedInts>>().of(packedInts.Ꮡuint64s)),
-        (ж<global::go.@internal.profile_package.buffer> b, global::go.@internal.profile_package.message m) => decodeInt64s(b, m._<ж<packedInts>>().of(packedInts.Ꮡint64s))
+        (ж<global::go.@internal.profile_package.buffer> b, global::go.@internal.profile_package.message m) => decodeUint64s(ref (b).DerefOrNull(), m._<ж<packedInts>>().of(packedInts.Ꮡuint64s)),
+        (ж<global::go.@internal.profile_package.buffer> b, global::go.@internal.profile_package.message m) => decodeInt64s(ref (b).DerefOrNull(), m._<ж<packedInts>>().of(packedInts.Ꮡint64s))
     }.slice();
 }
 
 [GoRecv] internal static void encode(this ref packedInts u, ж<global::go.@internal.profile_package.buffer> Ꮡb) {
-    encodeUint64s(Ꮡb, 1, u.uint64s);
-    encodeInt64s(Ꮡb, 2, u.int64s);
+    encodeUint64s(ref (Ꮡb).DerefOrNull(), 1, u.uint64s);
+    encodeInt64s(ref (Ꮡb).DerefOrNull(), 2, u.int64s);
 }
 
 } // end profile_internal_test_package

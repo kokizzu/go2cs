@@ -153,8 +153,8 @@ public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
     var (gen, asm) = (New()._<ж<global::go.crypto.md5_package.digest>>(), New()._<ж<global::go.crypto.md5_package.digest>>());
     var buf = new slice<byte>(ΔBlockSize * 20); // arbitrary factor
     rand.Read(buf);
-    blockGeneric(gen, buf);
-    block(asm, buf);
+    blockGeneric(ref (gen).DerefOrNull(), buf);
+    block(ref (asm).DerefOrNull(), buf);
     if (gen.Value != asm.Value) {
         Ꮡt.Error(blockAndBlockGenericˢ);
     }

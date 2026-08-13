@@ -5,9 +5,9 @@ namespace go.math.rand;
 
 using errors = errors_package;
 using byteorder = @internal.byteorder_package;
-using bits = go.math.bits_package;
+using bits = global::go.math.bits_package;
 using @internal;
-using go.math;
+using global::go.math;
 
 partial class rand_package {
 

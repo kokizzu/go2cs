@@ -5,7 +5,7 @@ namespace go;
 
 using bytes = bytes_package;
 using errors = errors_package;
-using io = io_package;
+using Δio = io_package;
 using utf8 = unicode.utf8_package;
 using unicode;
 
@@ -27,7 +27,7 @@ partial class bufio_package {
 // control over error handling or large tokens, or must run sequential scans
 // on a reader, should use [bufio.Reader] instead.
 [GoType] partial struct Scanner {
-    internal io.Reader r; // The reader provided by the client.
+    internal Δio.Reader r; // The reader provided by the client.
     internal Func<slice<byte>, bool, (nint advance, slice<byte> token, error err)> split; // The function to split the tokens.
     internal nint maxTokenSize;      // Maximum size of a token; modified by tests.
     internal slice<byte> token; // Last token returned by split.
@@ -56,7 +56,7 @@ internal static UntypedInt startBufSize => 4096; // Size of initial allocation f
 
 // NewScanner returns a new [Scanner] to read from r.
 // The split function defaults to [ScanLines].
-public static ж<Scanner> NewScanner(io.Reader r) {
+public static ж<Scanner> NewScanner(Δio.Reader r) {
     return Ꮡ(new Scanner(
         r: r,
         split: new Func<slice<byte>, bool, (nint, slice<byte>, error)>(ScanLines),
@@ -66,7 +66,7 @@ public static ж<Scanner> NewScanner(io.Reader r) {
 
 // Err returns the first non-EOF error that was encountered by the [Scanner].
 [GoRecv] public static error Err(this ref Scanner s) {
-    if (AreEqual(s.err, io.EOF)) {
+    if (AreEqual(s.err, Δio.EOF)) {
         return default!;
     }
     return s.err;
@@ -202,7 +202,7 @@ public static error ErrFinalToken = errors.New("final token"u8);
             }
             loop++;
             if (loop > maxConsecutiveEmptyReads) {
-                s.setErr(io.ErrNoProgress);
+                s.setErr(Δio.ErrNoProgress);
                 break;
             }
         }
@@ -225,7 +225,7 @@ public static error ErrFinalToken = errors.New("final token"u8);
 
 // setErr records the first error encountered.
 [GoRecv] internal static void setErr(this ref Scanner s, error err) {
-    if (s.err == default! || AreEqual(s.err, io.EOF)) {
+    if (s.err == default! || AreEqual(s.err, Δio.EOF)) {
         s.err = err;
     }
 }

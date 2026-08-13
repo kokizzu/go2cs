@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using io = io_package;
+using Δio = io_package;
 using Δsync = sync_package;
 using ꓸꓸꓸstring = Span<@string>;
 
@@ -20,7 +20,7 @@ partial class strings_package {
 // replacer is the interface that a replacement algorithm needs to implement.
 [GoType] partial interface replacer {
     @string Replace(@string s);
-    (nint n, error err) WriteString(io.Writer w, @string s);
+    (nint n, error err) WriteString(Δio.Writer w, @string s);
 }
 
 // NewReplacer returns a new [Replacer] from a list of old, new string
@@ -100,7 +100,7 @@ public static @string Replace(this ж<Replacer> Ꮡr, @string s) {
 }
 
 // WriteString writes s to w with all replacements performed.
-public static (nint n, error err) WriteString(this ж<Replacer> Ꮡr, io.Writer w, @string s) {
+public static (nint n, error err) WriteString(this ж<Replacer> Ꮡr, Δio.Writer w, @string s) {
     ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
@@ -319,15 +319,15 @@ internal static ж<genericReplacer> makeGenericReplacer(slice<@string> oldnew) {
 }
 
 [GoType] partial struct stringWriter {
-    internal io.Writer w;
+    internal Δio.Writer w;
 }
 
 internal static (nint, error) WriteString(this stringWriter w, @string s) {
     return w.w.Write(slice<byte>(s));
 }
 
-internal static io.StringWriter getStringWriter(io.Writer w) {
-    var (sw, ok) = w._<io.StringWriter>(ᐧ);
+internal static Δio.StringWriter getStringWriter(Δio.Writer w) {
+    var (sw, ok) = w._<Δio.StringWriter>(ᐧ);
     if (!ok) {
         sw = new stringWriter(w);
     }
@@ -341,7 +341,7 @@ internal static @string Replace(this ж<genericReplacer> Ꮡr, @string s) {
     return ((@string)(slice<byte>)buf);
 }
 
-internal static (nint n, error err) WriteString(this ж<genericReplacer> Ꮡr, io.Writer w, @string s) {
+internal static (nint n, error err) WriteString(this ж<genericReplacer> Ꮡr, Δio.Writer w, @string s) {
     nint n = default!;
     error err = default!;
 
@@ -420,7 +420,7 @@ internal static ж<singleStringReplacer> makeSingleStringReplacer(@string patter
     return buf.String();
 }
 
-[GoRecv] internal static (nint n, error err) WriteString(this ref singleStringReplacer r, io.Writer w, @string s) {
+[GoRecv] internal static (nint n, error err) WriteString(this ref singleStringReplacer r, Δio.Writer w, @string s) {
     nint n = default!;
     error err = default!;
 
@@ -468,7 +468,7 @@ internal static ж<singleStringReplacer> makeSingleStringReplacer(@string patter
     return ((@string)buf);
 }
 
-[GoRecv] internal static (nint n, error err) WriteString(this ref byteReplacer r, io.Writer w, @string s) {
+[GoRecv] internal static (nint n, error err) WriteString(this ref byteReplacer r, Δio.Writer w, @string s) {
     nint n = default!;
 
     var sw = getStringWriter(w);
@@ -564,7 +564,7 @@ internal static UntypedInt countCutOff => 8;
     return ((@string)buf);
 }
 
-[GoRecv] internal static (nint n, error err) WriteString(this ref byteStringReplacer r, io.Writer w, @string s) {
+[GoRecv] internal static (nint n, error err) WriteString(this ref byteStringReplacer r, Δio.Writer w, @string s) {
     nint n = default!;
     error err = default!;
 

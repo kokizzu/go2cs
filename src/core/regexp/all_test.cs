@@ -607,7 +607,7 @@ public static void TestOnePassCutoff(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatalf("compile: %v"u8, err);
     }
-    if (compileOnePass(p) != nil) {
+    if (compileOnePass(ref (p).DerefOrNull()) != nil) {
         Ꮡt.Fatalf("makeOnePass succeeded; wanted nil"u8);
     }
 }
@@ -1090,7 +1090,7 @@ internal static slice<minInputLenTestsᴛ1> minInputLenTests = new minInputLenTe
 public static void TestMinInputLen(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in minInputLenTests) {
         var (re, _) = syntax.Parse(tt.Regexp, syntax.Perl);
-        nint m = minInputLen(re);
+        nint m = minInputLen(ref (re).DerefOrNull());
         if (m != tt.min) {
             Ꮡt.Errorf("regexp %#q has minInputLen %d, should be %d"u8, tt.Regexp, m, tt.min);
         }
