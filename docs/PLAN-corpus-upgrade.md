@@ -15,12 +15,19 @@
 
 ---
 
-## 0. The ruling frame (fixed)
+## 0. The ruling frame (fixed — amended 2026-08-13, user + coordinator)
 
-1. The published corpus **completes its Go 1.23.1 campaign first**. Completion bar: **75 % of the
-   testable roster = 162 / 215**.
-2. Then a **REHEARSAL hop** to the final 1.23.x patch — same language, same package set, exercised end
-   to end so the ladder's machinery is proven on the cheapest possible delta.
+1. **75 % (162 / 215) is Go 1.23.1's TERMINAL marker, not a waypoint.** The economics force this:
+   every roster row re-derives from the new release's test sources at a hop (H10), so validation
+   spent on `.1` past the credibility milestone is spent twice. `.1` remains the campaign's
+   historical starting point; the validation campaign *continues* on the hop target, where the
+   remaining walls are solved once and banked once.
+2. Then the hop to the final 1.23.x patch (**1.23.12**) — same language, same package set — which is
+   both the ladder's machinery rehearsal **and the 1.23 story's living corpus**: the push toward the
+   1.23 terminal goal (every testable package validated or explicitly, permanently disclosed)
+   happens there, on the release users would actually choose. The adjacent **.NET 10 hop precedes
+   it** (separate hop, own gates, one variable at a time), so the ladder's differential baselines
+   are derived once on the runtime they will live on.
 3. Then **1.24.final** — the FIPS-140 reorg hop, which delivers the issue-#37 packages
    (`crypto/sha3`, `crypto/mlkem`, `crypto/hkdf`, `crypto/pbkdf2`, `crypto/fips140`, `weak`).
 4. Then an **evidence-based decision** whether 1.25 and 1.26 are separate hops or one.
@@ -699,7 +706,7 @@ table; where the prose at that mark proposes an answer, the ruling here is what 
 | **OQ-11** | Confirm NuGet version monotonicity across the ladder before the first publish | `1.23.1.6` → `1.23.12.1` → `1.24.13.1`. Believed monotonic by numeric component comparison; **not verified** | **A scripted `NuGetVersion.Compare` assertion is added to H11**, and runs **before the first publish** |
 | **OQ-12** | Close the `publishedStdLibRelease()` gap (built-but-not-published) with an embedded `version.props` value or a feed query? | Inherited open question from FINDING-toolchain-goroot-divergence §5; a hop makes the window wider | **Embedded publish-stamp**, per the standing **L5 ruling**. A feed query is **advisory** only, never the gate |
 | **OQ-13** | Policy for **removed** upstream packages on the NuGet feed — unlist, deprecate, or leave? | First arises at hop D (`cmd/doc`; the `windows/arm` port). No precedent exists | **Deprecate, with a pointer to the last release that carried it. Never unlist** |
-| **OQ-14** | Does each hop **publish**, or only **rehearse** the ritual until the ladder completes? | The frame says "rehearsed" at the parity gate; publishing every hop quadruples the public surface and the OQ-13 exposure | **Hop A rehearses only; hops B, C and D publish** |
+| **OQ-14** | Does each hop **publish**, or only **rehearse** the ritual until the ladder completes? | The frame says "rehearsed" at the parity gate; publishing every hop quadruples the public surface and the OQ-13 exposure | **Every hop publishes** — AMENDED 2026-08-13 with the frame: 1.23.12 is the 1.23 story's living corpus and supersedes `.1` on the feed, so hop A publishes too (original ruling had A rehearse-only; superseded by the frame amendment) |
 | **OQ-15** | Confirm `docs/phase4/AUDIT-handowns-go1.NN.md` as the audit's home | §3.4. Alternatives considered and rejected there | **Confirmed** |
 | **OQ-16** | Confirm the audit covers **all** hand-owns while the `.auto` differential covers only re-emitted ones | §3.5's sharpest edge; getting it wrong makes the gate either a false alarm or a rubber stamp | **Confirmed** — plus: an `*_impl.cs` companion is audited **against its principal's `.auto` diff**; a hand-owned **package** is audited by **manual upstream diff**; and **every record names its evidence class** |
 | **OQ-17** | Perf suite: once per ladder, or once per hop? | Hours per run, must be solo. Proposed: once per ladder | **Once per ladder, plus coordinator discretion** |
