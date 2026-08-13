@@ -25,7 +25,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 > ### Phase 4 progress: **129 / 215 testable packages validated — 60.0%**
 >
-> **14,712 matching test verdicts · 50 disclosed** *(updated 2026-08-13 — maintained as part of the
+> **14,712 matching test verdicts · 47 disclosed** *(updated 2026-08-13 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -160,7 +160,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sort) | 63 | | Interface-driven sort, `sort.Slice` reflection swaps, NaN-aware ordering, stability. · [proof](validation/current/sort.md) |
 | [`strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) | 55 | 11 | Number↔string conversion at full precision — Ryū/Grisu float formatting, arbitrary-precision decimal shifts, complex parsing; alloc-profile disclosures. · [proof](validation/current/strconv.md) |
 | [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strings) | 68 | 4 | String algorithms; alloc-count/alloc-profile disclosures. · [proof](validation/current/strings.md) |
-| [`sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) | 44 | 10 | The concurrency crown — `Mutex`/`RWMutex`/`WaitGroup`/`Once`/`Cond`/`Map`/`Pool` over real parked-thread semaphores, a hand-owned lock-free pool ring, and GC-integrated cleanup; `Cond`'s copy detector on root-allocation identity; alloc-profile and codegen-liveness disclosures. · [proof](validation/current/sync.md) |
+| [`sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) | 44 | 7 | The concurrency crown — `Mutex`/`RWMutex`/`WaitGroup`/`Once`/`Cond`/`Map`/`Pool` over real parked-thread semaphores, a hand-owned lock-free pool ring, and GC-integrated cleanup; `Cond`'s copy detector on root-allocation identity; alloc-profile and codegen-liveness disclosures. · [proof](validation/current/sync.md) |
 | [`syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall) | 62 | | The Windows system-call surface itself — WTF-8/UTF-16 round-trips across the whole surrogate matrix (lone highs, lone lows, paired, and the astral characters between them), `EscapeArg`'s command-line quoting rules, the environment block, `StartupInfo`/handle inheritance and permuted-fd process launch, `TOKEN_ALL_ACCESS`'s version-dependent value, and `Getwd` over a path far past `MAX_PATH` — the row that needed a converted process to be long-path aware the way every Go binary is. · [proof](validation/current/syscall.md) |
 | [`testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) | 18 | | The `io` testing helpers — the half/one-byte/timeout/error reader wrappers, `DataErrReader`'s final-read fusion, and the read/write loggers' `log` output. · [proof](validation/current/testing.iotest.md) |
 | [`testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) | 8 | | Property testing — `reflect` value generation and `Value.Call` dynamic invocation. · [proof](validation/current/testing.quick.md) |
