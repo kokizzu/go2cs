@@ -4236,6 +4236,18 @@ rules and a wrong widening drifts the corpus silently, so this wants its own arc
   it is inaccessible and the declaration falls to the throwing stub. Remedy shape is an
   accessibility bridge, not a hand-own: the white-box test model already mints an
   `InternalsVisibleTo` grant for this exact problem.
+  **CLOSED by L12 (2026-08-13): banked at 52/52.** This census was RIGHT — 7 of 52 reproduced to
+  the verdict a week later, and the root is exactly the symbol named here. Two corrections worth
+  carrying. (1) The remedy was over-designed: no `InternalsVisibleTo` grant was needed and none was
+  written. The converter already owns both halves — `linknameForwardTargets` emits the forwarder
+  body and `packageFuncAccess` widens a forward target its own package opened with a one-arg
+  `//go:linkname` handle from `internal` to `public` — so the whole fix is ONE allowlist row, and
+  the corpus moved by exactly two files (multipart's declaration becomes a forwarder; textproto's
+  `readMIMEHeader` becomes `public`). The lesson generalizes: before designing an accessibility
+  bridge, check whether the linkname machinery already covers the direction. (2) The differential
+  was ENTIRELY this one symbol — all 41 infrastructure-errors carried the identical exception and
+  the four `fail` rows were parent-test shadows — so the 45-row gap closed in a single step with no
+  second root behind it.
 - **`crypto/internal/nistec` — 0 of 2,200, build-blocked on four CS0311s**, all the same shape:
   `ж<P224Point>` (…P256/P384/P521) rejected as the type argument of the generic BENCHMARK helpers
   `benchmarkScalarMult<P>` / `benchmarkScalarBaseMult<P>`, whose Go constraint is `nistPoint[P]` — a
@@ -5563,6 +5575,20 @@ against post-r59 master. One census was stale in each DIRECTION, and the rest at
   host mid-suite (`multipart_test.cs:172`), and the `ReadForm` limits family
   (`TestReadFormEndlessHeaderLine`, `TestReadFormLimits`, `TestReadForm_MetadataTooLarge`) plus
   `TestQuotedPrintableEncoding` fail on content. Needs its own characterization lane.
+  **CLOSED by L12 (2026-08-13): banked at 52/52 — and this bullet was WRONG in every particular,
+  which is the part worth keeping.** The lane's own baseline on `137b86552` measured **7 of 52**,
+  not ~11, reproducing the ORIGINAL census (above) rather than this one. There is no host crash:
+  all 52 verdicts are reported and `TestMultipartSlowInput` is simply one more
+  `infrastructure-error`. Nothing "fails on content": the four named rows are the PARENT tests
+  whose subtests errored — the `internal/coverage/cfile` "read the row as three failures, not
+  twelve" shape, one bullet further down this very section. And the ~41 tests said to be hidden
+  behind the crash are not hidden; they run, and all 41 carry the IDENTICAL exception
+  (`readMIMEHeader: external (assembly or cgo) function is not implemented`), with no second root
+  anywhere in the log. Read together with the `net/textproto` bullet above — whose "likeliest
+  instant bank" hypothesis was also wrong — this section's own methodology note earns another
+  entry: a differential summarized from verdict NAMES invents structure that the exception TEXT
+  does not support. Attribute from the roots, and count parent rows as shadows before calling them
+  a family.
 - **`go/parser` 6/173 — the CWD class gains its FIFTH member**: the test package's static
   initializer runs `var src = readFile("parser.go")` and panics (`performance_test.cs:15`), so
   the host dies before test one. The deferred synthetic-GOROOT arc now holds **167 verdicts for
