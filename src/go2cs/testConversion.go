@@ -4682,6 +4682,18 @@ func runCommandWithTimeout(timeout time.Duration, workingDir string, options Opt
 		// reads the environment — so testenv.GOROOT consumers agree with Go only when the pipeline
 		// exports the root it converted from. Duplicate keys are fine: os/exec takes the last value.
 		cmd.Env = append(cmd.Env, "GOROOT="+options.goRoot)
+
+		// `go test` PREPENDS $GOROOT/bin to the test binary's PATH, so a test that shells out to
+		// `go` gets the toolchain matching the GOROOT it was built against. Measured against Go
+		// 1.23.1: inside a test, PATH[0] is $GOROOT/bin and exec.LookPath("go") resolves there.
+		// Without the same treatment the converted host resolves `go` from the ambient PATH, which
+		// on a machine with more than one installation is a DIFFERENT go of the same version —
+		// internal/testenv's TestGoToolLocation compares ../../../bin/go against
+		// exec.LookPath("go") with os.SameFile and fails on exactly that difference, and
+		// internal/godebugs shells out to `go list std cmd`. Reproducing go test's environment is
+		// the harness's job, and PATH is part of that environment just as GOROOT and the working
+		// directory are.
+		cmd.Env = append(cmd.Env, "PATH="+filepath.Join(options.goRoot, "bin")+string(os.PathListSeparator)+os.Getenv("PATH"))
 	}
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {

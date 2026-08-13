@@ -52,13 +52,14 @@ public sealed class TestRunner
     private int m_failures;
     private int m_infrastructureFailures;
 
-    internal TestRunner(TestRegistry registry, TestOptions options, TestReporter reporter, string workingDirectory)
+    internal TestRunner(TestRegistry registry, TestOptions options, TestReporter reporter, string workingDirectory, string runRoot)
     {
         m_registry = registry;
         m_options = options;
         m_reporter = reporter;
         m_parallelLimiter = new SemaphoreSlim(options.Parallel);
         WorkingDirectory = workingDirectory;
+        RunRoot = runRoot;
     }
 
     public bool HasRun { get; private set; }
@@ -68,6 +69,13 @@ public sealed class TestRunner
     internal string Package => m_registry.Package;
 
     internal string WorkingDirectory { get; }
+
+    /// <summary>
+    /// Gets the run sandbox's root — the private directory holding the package's whole staged
+    /// ancestry. This is where per-test temp directories live, deliberately OUTSIDE the staged
+    /// <c>src</c> tree; see <see cref="TestExecution.TempDir"/>.
+    /// </summary>
+    internal string RunRoot { get; }
 
     public nint RunAll()
     {
