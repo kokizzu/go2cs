@@ -1593,7 +1593,9 @@ drop the `seq` check: stale ticks in all four race sections).
 > the `ReflectTypedNilInterface` behavioral test.
 >
 > **`math/big` still does NOT bank**, for the reason root 3's own paragraph predicted: rows 1 and 2
-> are the alloc model and neither is disclosable. Both re-measured on this tree — `TestNewIntAllocs`:
+> are the alloc model and neither is disclosable. *(Superseded 2026-08-13 — the ж-box A3 section at
+> the end of this board carries the post-A2 pinned pipeline measure: 224/226, TestMulUnbalanced
+> 20,499,128 B (+0.06 %, unmoved), TestNewIntAllocs exactly 1 obj/run.)* Both re-measured on this tree — `TestNewIntAllocs`:
 > *"measured 81,600 allocated BYTES over 100 run(s) … got 816.000000"*; `TestMulUnbalanced`:
 > *"multiplication uses too much memory (20487208 > 51 times the size of inputs)"* (inputs =
 > (50000+40)×8 = 400,320 B, so the converted `nat.mul` allocates ~51× where Go bounds at 10×). Row 1
@@ -4974,6 +4976,8 @@ made and the reason `log` stays off the roster. What the counter adds is the all
 number: **4 objects/run against a budget of 1**, where the shim used to say 424.
 
 **`crypto/internal/nistec` re-measured: still 2,195 of 2,200, and the count CORROBORATES r56d.**
+*(Superseded 2026-08-13 — the table below is the PRE-lowering state; the ж-box A3 section at the
+end of this board carries the post-A2 pinned measure: P256 **8,528**/run, acceptance met.)*
 The five `TestAllocations` rows now report objects instead of bytes, against Go's budget of **0**:
 
 | Curve | objects/run | bytes/run |
@@ -6013,3 +6017,97 @@ CS0234: `embedtest_package` does not exist in `go.embed.@internal`. It never wil
 reference. The tests here exercise `embed`, not a package of their own. Two follow-ups, both small:
 teach the emitter the test-only-package shape (no production reference, no `_package` using), and
 route the coverage to `embed` where it belongs. Until then this row is not a measure of anything.
+
+## ж-box arc stage A3 — the pinned measure: P256 lands at 8,528, under the wall (lane L3, 2026-08-13)
+
+The §9 A3 row of [`DESIGN-zh-box-reduction.md`](DESIGN-zh-box-reduction.md), run whole on the pinned
+laptop R (Ryzen 7 PRO 6850U, 32 GB, go1.23.1 exactly; ambient load one idle two-day-old MSBuild
+node — effectively solo): the real pipeline on nistec and math/big, the r56d-method probe for the
+unit targets, the two A2-owed confirmations from the 2026-08-13 sweep's evidence, and the perf suite
+with the AOT column. The measured numbers below **supersede the r58a four-curve table and the
+r58b/r60 math/big alloc-row measurements**; §7's table carries the same numbers in its A3 column.
+
+**The verdict measure.** `-tests -test-action all -test-timeout 30m` on `crypto/internal/nistec`
+(explicit `-go2cspath`, ~8 min wall): terminal results **2,195 matched / 5 divergent of 2,200** —
+the identical arithmetic to the standing measure, the five being exactly the want-zero
+`TestAllocations` rows. The counter's numbers, against Go's want of 0:
+
+| Curve | obj/run (was, r58a) | B/run |
+|:--|--:|--:|
+| P224 | **8,484** (264,540) | 746,678 |
+| P256 | **8,528** (242,665) | 733,766 |
+| P384 | **12,572** (471,424) | 1,198,070 |
+| P521 | **17,090** (870,534) | 1,867,811 |
+
+**P256 8,528 ≤ 10,000: the §7 acceptance is MET on the recommended branch** — −96.5 % from the
+bill, and BELOW A2's approximate mirror (10,105 on the artifact-laden host; L11's Once/tmpstring/
+const-hoist landings plus the clean pinned host account for the direction). The §3.6 branch
+question stays closed; nothing re-opens.
+
+**The residual decomposes to the named classes and nothing else.** The r56d-method probe (a
+scratchpad console probe over the converted fiat/nistec + the golib `AllocationCounter`; temporary
+by construction, reverted with the session) reproduces the pipeline at **8,524 obj/run — Δ4 obj /
+466 B, the rand.Read substitution, the same gap shape r56d recorded** (positive control passed).
+Phase decomposition of the P256 body:
+
+| Phase | obj/run | B/run |
+|:--|--:|--:|
+| `NewP256Point().SetGenerator()` | 31 | 2,970 |
+| `make([]byte, 32)` + fill | 1 | 56 |
+| `ScalarBaseMult` | 1,871 | 160,652 |
+| `ScalarMult` | 6,485 | 558,077 |
+| `Bytes` | 25 | 2,128 |
+| `NewP256Point().SetBytes(out)` | 48 | 4,152 |
+| `BytesCompressed` | 25 | 2,096 |
+| `SetBytes(compressed)` | 38 | 3,168 |
+| **whole-window control** | **8,524** | **733,299** |
+
+98.0 % of the residual sits in ScalarMult + ScalarBaseMult — the `new(fiat.P256Element)` /
+`NewP256Point` temporaries of point Add/Double/table construction (**class 3b**) and their
+lazily-materialized `array<uint64>` backings (**class 4**), the two Phase-C classes. The remaining
+~168 close **to the object** at the element level: fiat `SetBytes` = 12 exactly (3 × 3b
+`minusOneEncoding` news + 5 backings + `in`'s kept box 2 + `Bytes`-chain `out` kept box 2), fiat
+`Bytes` = 3 exactly (`out` keep 2 + tmp backing 1) — the §6.3/A1-named wrapper keeps, small and
+named as priced. **Classes 1/2/3a measure ZERO**: the fiat five unit targets
+(`Mul`/`Add`/`Sub`/`Square`/`Select`, P224 and the P256 SetBytes/Bytes twins) all read **0 B/op,
+0 obj/op** (were 960 / 960 / 528 / 832 / ~1,344).
+
+**Census note, attributed — NOT the A2 host artifact.** go test additionally reports
+`TestP256OrdInverse` and `TestP256PrecomputedTable` (`(amd64||arm64) && !purego` files: the real
+toolchain exercises its asm implementation's tests; the converted purego suite doesn't declare
+them). The comparison's census gate records and excludes them — compared maps have go-only = 0 and
+the terminal arithmetic is identical to the standing 2,195/2,200. Zero `go.std.*` namespaces
+anywhere in the run: the A2 std/-prefix artifact did **not** recur on the repinned GOROOT.
+
+**math/big re-measured through the pipeline: 224/226, both alloc rows unmoved.**
+`TestMulUnbalanced` reads **20,499,128 B vs the 51× budget of 20,416,320** (51.21× on 400,320 B of
+inputs; r58b read 20,487,208 — +0.06 %, noise), and `TestNewIntAllocs` reads **exactly 1 obj/run on
+all seven `NewInt` shapes** (want 0 — class 3b, the escape-analysis elision, Phase-C). As §3.6
+forecast: `nat`'s traffic is slice-backed real allocation on both sides; Phase A promised these
+rows nothing and moved them nothing.
+
+**os probe FINDING.** `os.File.WriteString` measures **2,368 B/op (17 golib objects)** against
+§7's "3,168 unchanged (±0)" claim — moved **−800 B**, favorably. The 3,168 stamp is r39-era and
+predates r41's inline-defer retirement of that decomposition's 440 B GoFunc/defer term plus
+everything since, so the claim's baseline was stale when written; the per-term re-attribution of
+the −800 belongs to the next os re-instrumentation (AllocMark), not to this stage's arithmetic.
+
+**The two A2-owed validation items, confirmed from the 2026-08-13 sweep's evidence:**
+
+- **§3.5 func-value adapter — covered, with one precision.** `internal/profile` (swept clean, its
+  1 verdict `TestPackedEncoding` pass/pass) carries the boxed-shape adapter lambdas in its
+  white-box decoder table — `(ж<buffer> b, message m) => decodeUint64s(ref (b).DerefOrNull(), …)`
+  over the LOWERED `decodeUint64s(ref buffer b, ж<slice<uint64>> Ꮡx)` (`proto_test.cs:70-71` /
+  `proto.cs:344`) — and those sources were refreshed BY the sweep-aftermath bank itself
+  (`e4d9faa71`, `proto_test.cs` among the eleven), so the sweep validated with the adapters in
+  play and exercised (the decode path runs through the table). The precision: the corpus instance
+  is a func-LITERAL table in `proto_test.go`, not an `export_test.go` bare alias — **no swept
+  export_test.go aliases a lowered function** (measured: zero adapter shapes in committed
+  `export_test.cs` corpus-wide); that exact spelling is guarded at the converter level
+  (`refLoweringAnalysis_test.go`'s §3.5 classification-equality guard, with positive control) and
+  behaviorally (`RefLoweredParams`' func-value X5 arm). Not a gap — the mechanism is swept, the
+  spelling is unit-guarded — but stated so nobody reads "export_test.go" as sweep-evidenced.
+- **io canary — still exactly 1.** `io` swept clean at 60 matched / 1 disclosed (its roster row
+  untouched by the aftermath commits, i.e. counts held), `TestMultiWriter_WriteStringSingleAlloc`
+  among the matched (pass|pass, proof page `io.md`); the assert is want-EXACTLY-one, so the pass IS
+  the "still exactly 1" claim.

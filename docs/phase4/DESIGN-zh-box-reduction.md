@@ -546,16 +546,16 @@ Every increment lands with a before/after taken by the **same instrument the tes
 pipeline's `AllocsPerRun` object counts, plus the golib counter on targeted probes). The named
 workloads:
 
-| Workload | today (objects unless noted) | Phase A acceptance |
-|:--|--:|:--|
-| nistec `TestAllocations/P256` | 242,665 /run | ≤ 10,000 (recommended-branch projection ~7k) and the residual re-decomposes to classes 3b + 4 ONLY |
-| fiat `P224Element.Mul` / `Add` / `Sub` / `Square` / **`Select`** | 960 / 960 / 528 / 832 / ~1,344 B/op | **0 B/op, all five** (`Select` is the conversion-shape probe) |
-| fiat `SetBytes` probe | measured at A1 | residual = 3b + backings + real slice allocations only |
-| `io` `TestMultiWriter_WriteStringSingleAlloc` | exactly 1 (PASSES) | **still exactly 1** — the do-no-harm canary |
-| full validated sweep (110 pkgs, 13,628 verdicts) | banked counts | zero drift; no AllocsPerRun row increases |
-| `os.File.WriteString` probe | 3,168 B/op | unchanged (±0) — claimed, so a movement either way is a finding |
-| `math/big` `TestMulUnbalanced` ratio, `TestNewIntAllocs` | fails / 1 vs 0 | measured and reported; no target promised |
-| perf suite (JIT + AOT) | README table | see the wall-clock protocol below |
+| Workload | today (objects unless noted) | Phase A acceptance | A3 measured (2026-08-13, pinned laptop R, go1.23.1) |
+|:--|--:|:--|:--|
+| nistec `TestAllocations/P256` | 242,665 /run | ≤ 10,000 (recommended-branch projection ~7k) and the residual re-decomposes to classes 3b + 4 ONLY | **8,528 /run (−96.5 %) — MET**; 733,766 B/run; P224 8,484 · P384 12,572 · P521 17,090; residual = 3b + backings + the §6.3 wrapper keeps (classes 1/2/3a at zero — see the phase table in the board's A3 section) |
+| fiat `P224Element.Mul` / `Add` / `Sub` / `Square` / **`Select`** | 960 / 960 / 528 / 832 / ~1,344 B/op | **0 B/op, all five** (`Select` is the conversion-shape probe) | **0 / 0 / 0 / 0 / 0 B/op (0 obj/op) — MET** |
+| fiat `SetBytes` probe | measured at A1 | residual = 3b + backings + real slice allocations only | **1,016 B · 12 obj/op, closing exactly**: 3 × 3b (`minusOneEncoding` news) + 5 backings + `in`'s kept box (2) + `Bytes`-chain `out` kept box (2); `Bytes` 232 B · 3 obj (`out` keep 2 + tmp backing 1) — the A1-named terms, nothing else — MET |
+| `io` `TestMultiWriter_WriteStringSingleAlloc` | exactly 1 (PASSES) | **still exactly 1** — the do-no-harm canary | **still exactly 1** — `io` swept clean 2026-08-13 at 60 matched / 1 disclosed, canary among the matched — MET |
+| full validated sweep (110 pkgs, 13,628 verdicts) | banked counts | zero drift; no AllocsPerRun row increases | **zero drift** — the 2026-08-13 sweep at 129 pkgs / 14,712 verdicts; the one count catch was sync's three Once disclosures RETIRING (44/7, the L11 improvement) — MET |
+| `os.File.WriteString` probe | 3,168 B/op | unchanged (±0) — claimed, so a movement either way is a finding | **2,368 B/op (17 obj) — moved −800 B, a FINDING**: favorable; the 3,168 stamp predates r41's inline-defer retirement of the 440 B GoFunc/defer term and A2 — per-term re-attribution owed to the next os re-instrumentation, not asserted here |
+| `math/big` `TestMulUnbalanced` ratio, `TestNewIntAllocs` | fails / 1 vs 0 | measured and reported; no target promised | TestMulUnbalanced **20,499,128 B vs 20,416,320 budget (51.21×)** — +0.06 % vs r58b, unmoved, as §3.6 forecast for slice-backed `nat` arithmetic; TestNewIntAllocs **still exactly 1 obj/run** on all seven `NewInt` shapes (class 3b); suite 224/226 unchanged |
+| perf suite (JIT + AOT) | README table | see the wall-clock protocol below | measured at A3 — see `src/tests/Performance/README.md` (PERF-RESULTS) and the board's A3 section for AOT publish size + ILC wall time |
 
 **The wall-clock instrument — a panel-mandated addition** (§11, P-F1/P-F3/P-F4). The existing
 perf suite is structurally blind to this arc: 12 of 13 transpiled benchmarks contain **zero**
