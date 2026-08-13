@@ -5667,6 +5667,8 @@ Twelve packages that had never linked a test host were taken end to end through 
 on the pinned coordinator (i7-5820K, go1.23.1). **Nothing banks**, and no row is disclosed — the
 2026-08-10 ratification stands, and none of these is an alloc row anyway. The value is the census: five
 packages produced a verdict map, seven died before producing one, and all twelve now have a named root.
+(**Six** produce one since 2026-08-12 — `net/rpc/jsonrpc`'s build-blocker was fixed and the package runs;
+its row and §"Five converter defects" item 3 below carry the measured result.)
 
 | Package | Go verdicts | C# matched | Outcome | Root / attribution |
 |:--|--:|--:|:--|:--|
@@ -5678,7 +5680,7 @@ packages produced a verdict map, seven died before producing one, and all twelve
 | `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
 | `internal/types/errors` | 155 | — | converter defect | a Δ-renamed IMPORTED type is spelled with its bare Go name; the `typesꓸError`/`typesꓸInfo` aliases are minted and then unused |
 | `internal/fuzz` | 52 | — | converter defect | alias-to-anonymous-struct (`CorpusEntry`): the lift's `global using` lives in the production compilation and does not cross the assembly boundary |
-| `net/rpc/jsonrpc` | 9 | — | converter defect | method promotion from EMBEDDED POINTER fields is invisible to `ImplementGenerator` |
+| `net/rpc/jsonrpc` | 9 | **6** | ⬆ defect FIXED + guarded — now runs, 3 rows left | was: promotion from EMBEDDED POINTER fields invisible to `ImplementGenerator`. Fixed 2026-08-12; the 3 remaining rows are one json root, and the package is **not** socket-walled (see below) |
 | `testing/fstest` | 7 | — | converter defect | a defined type over ANOTHER package's named map type — the emitted two-hop conversion has only one hop |
 | `internal/syscall/windows/registry` | 6 | — | converter defect | the internal-test partial class is emitted non-`static`, and in this package nothing else declares it |
 | `embed/internal/embedtest` | 7 | — | not a candidate | test-only Go package: there is no production package for the host to reference |
@@ -5989,6 +5991,32 @@ None of these five is a wall; all are ordinary emission bugs, listed with the ev
    `io_package.Write(ref io_package.OffsetWriter, …)`. An error message pointing at `LimitedReader`
    from a jsonrpc test is the giveaway that this is an overload-resolution fallthrough, not a
    missing reference.
+
+   ✅ **FIXED 2026-08-12 (`ImplementGenerator` + `InterfaceImplTemplate`, generators only — zero
+   converter-emission change).** The hop forwarding was gated to a struct with exactly ONE embedded
+   pointer; with several, no hop was named and every promoted member fell through to the bare
+   `m_box.M(…)` / `this.M(…)` receiver. It now indexes the hop path **per member**, routing each to
+   the UNIQUE embed declaring it — Go's depth-1 promotion rule, with a name two embeds declare
+   dropped rather than guessed (which is why `*pipe.Close`, declared on the struct, still wins over
+   the `Close` both halves of the pipe declare). Each embed's method set is read from local syntax
+   where it is declared here and from METADATA where it is not, which is the whole jsonrpc case.
+   Guarded by the `MultiPointerEmbedPromotion` behavioral test; detail in
+   [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md#with-several-embedded-pointers-the-hop-is-chosen-per-member-not-per-struct).
+
+   ⚠ **This row is NOT socket-walled, contrary to the batch's expectation.** With the host building,
+   the package RUNS end to end: **9 Go verdicts, 6 C# matched, 3 failed**, no timeout and no netpoll
+   involvement — because jsonrpc's own tests never open a socket. They talk over the in-memory
+   `pipe` above (`myPipe()` from two `io.Pipe()`s, "Copied from package net"), which is precisely why
+   that type exists in the file. Being under `net/rpc` is not the same as reaching the kernel; the
+   walled-list membership was inherited from the parent path, not measured. The **three remaining
+   failures share one root and it is a json defect, not an rpc one** — `TestBuiltinTypes`,
+   `TestClient` and `TestServer` all report `json: cannot unmarshal array into Go value of type
+   [1]interface {}`, i.e. `encoding/json` cannot unmarshal a JSON array into a Go **fixed-size
+   array** type (jsonrpc passes params as `[1]any`). The other six pass: `TestMalformedInput`,
+   `TestMalformedOutput`, `TestServerEmptyMessage`, `TestServerErrorHasNullResult`,
+   `TestServerNoParams`, `TestUnexpectedError`. Nothing banked and no roster change — the row moves
+   from "build-blocked" to "one named json root from a bank", and that root is worth checking against
+   `encoding/json`'s own suite before anyone spends a lane on it here.
 4. **`testing/fstest` — a defined type over ANOTHER package's named map type gets a one-hop conversion.**
    Go has `type shuffledFS MapFS` where `MapFS map[string]*MapFile`. The emission declares
    `[GoType("global::go.testing.fstest_package.MapFS")] internal partial struct shuffledFS;` and then

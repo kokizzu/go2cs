@@ -832,6 +832,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckMultiFileInitOrder() => CheckTarget("MultiFileInitOrder");
 
     [TestMethod]
+    public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
+
+    [TestMethod]
     public void CheckNamedArrayAnonElement() => CheckTarget("NamedArrayAnonElement");
 
     [TestMethod]
