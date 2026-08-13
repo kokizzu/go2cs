@@ -29,6 +29,10 @@
     an i7-5820K (~3x slower than the retired baseline desktop) at 555 packages, a 300 s batch budget
     could not be met cold OR warm -- the measurement that sized the current defaults.
 
+.PARAMETER IgnoreDiskPreflight
+    Proceed even when the repo drive is below the 25 GB free-space floor. Consumed here, never
+    forwarded to the runner.
+
 .EXAMPLE
     ./run-behavioral.ps1
     ./run-behavioral.ps1 --filter Atomic
@@ -37,11 +41,29 @@
 #>
 [CmdletBinding()]
 param(
+    [switch] $IgnoreDiskPreflight,
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]] $RunnerArgs
 )
 
 $ErrorActionPreference = "Stop"
+
+# ---- disk preflight -----------------------------------------------------------------------------
+# Three separate 2026-08-13 incidents traced back to a full repo drive, and NOT ONE of them named the
+# disk in its own output: writes failed MID-RUN and surfaced as corpus FAILURES (false reds nobody
+# could reproduce), and a failed write left a TRACKED file TRUNCATED, which then reads as real drift.
+# Both shapes cost an investigation before anyone thought to look at free space, so this names the
+# number first. GetPathRoot + DriveInfo is the portable pair: 'D:\' on Windows, '/' elsewhere.
+$freeGB = [math]::Round(([System.IO.DriveInfo]::new([System.IO.Path]::GetPathRoot($PSScriptRoot))).AvailableFreeSpace / 1GB, 1)
+
+if ($freeGB -lt 25) {
+    Write-Host "*** DISK PREFLIGHT: $freeGB GB free on the repo drive -- below the 25 GB floor ***" -ForegroundColor Red
+    Write-Host '    Below this, writes fail mid-run: builds and conversions report FALSE REDS, and a' -ForegroundColor Red
+    Write-Host '    partial write leaves a TRACKED FILE TRUNCATED (three such incidents, 2026-08-13).' -ForegroundColor Red
+    Write-Host '    Free space, or pass -IgnoreDiskPreflight to proceed with unmeasurable results.' -ForegroundColor Red
+
+    if (-not $IgnoreDiskPreflight) { exit 1 }
+}
 
 . (Join-Path $PSScriptRoot '_paths.ps1')
 
