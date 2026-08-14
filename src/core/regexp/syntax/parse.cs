@@ -1545,7 +1545,8 @@ internal static void mergeCharClass(ref Regexp dst, ref Regexp src) {
 Switch:
     var exprᴛ1 = c;
     var matchᴛ1 = false;
-    { /* default: */
+    var matchᴛ2 = (exprᴛ1 is (rune)'1' or (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7') || exprᴛ1 is (rune)'0' || exprᴛ1 is (rune)'x' || exprᴛ1 is (rune)'a' || exprᴛ1 is (rune)'f' || exprᴛ1 is (rune)'n' || exprᴛ1 is (rune)'r' || exprᴛ1 is (rune)'t' || exprᴛ1 is (rune)'v';
+    if (!matchᴛ2) { /* default: */
         if (c < utf8.RuneSelf && !isalnum(c)) {
             // Escaped non-word characters are always themselves.
             // PCRE is not quite so rigorous: it accepts things like
@@ -1554,7 +1555,7 @@ Switch:
             return (c, t, default!);
         }
     }
-    if (exprᴛ1 is (rune)'1' or (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7') { matchᴛ1 = true;
+    else if (exprᴛ1 is (rune)'1' or (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7') { matchᴛ1 = true;
         do {
             if (t == ""u8 || t[0] < (rune)'0' || t[0] > (rune)'7') {
                 // Octal escapes.

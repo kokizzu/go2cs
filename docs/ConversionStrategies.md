@@ -1156,11 +1156,14 @@ case {} when path[r] == (rune)'.' && (r + 1 == n || path[r + 1] == (rune)'/'): {
 ```
 
 `fallthrough` expands to an if-chain with a fall flag and `goto`; a switch-targeting `break` inside an
-if-else arm is wrapped in a one-shot `do { … } while (false)`.
+if-else arm is wrapped in a one-shot `do { … } while (false)`. Because the chain emits clauses in
+source order, a `default:` that Go places *before* some of its cases is guarded on a predicate
+precomputed over **every** case label — never on the running match flag, which has not yet seen the
+arms below it.
 
 **Full detail:** [Reference → Expression Switch Statements](ConversionStrategies-Reference.md#expression-switch-statements) —
-constant-vs-runtime label detection, `static readonly` tags, `fallthrough` + guarded-default returns, and
-index/named-type case labels.
+constant-vs-runtime label detection, `static readonly` tags, `fallthrough` + guarded-default returns,
+non-trailing `default` clauses, and index/named-type case labels.
 
 ---
 

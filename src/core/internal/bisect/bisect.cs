@@ -250,7 +250,8 @@ public static (ж<Matcher>, error) New(@string pattern) {
         }
         var exprᴛ1 = c;
         var matchᴛ1 = false;
-        { /* default: */
+        var matchᴛ2 = (exprᴛ1 is (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7' or (rune)'8' or (rune)'9') || (exprᴛ1 is (rune)'0' or (rune)'1') || (exprᴛ1 is (rune)'a' or (rune)'b' or (rune)'c' or (rune)'d' or (rune)'e' or (rune)'f' or (rune)'A' or (rune)'B' or (rune)'C' or (rune)'D' or (rune)'E' or (rune)'F') || exprᴛ1 is (rune)'y' || (exprᴛ1 is (rune)'+' or (rune)'-');
+        if (!matchᴛ2) { /* default: */
             return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
         }
         if (exprᴛ1 is (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7' or (rune)'8' or (rune)'9') { matchᴛ1 = true;
