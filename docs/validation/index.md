@@ -35,6 +35,8 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `crypto/internal/alias` | [`crypto.internal.alias.md`](current/crypto.internal.alias.md) | [`src/core/crypto/internal/alias`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/alias) |
 | `crypto/internal/bigmod` | [`crypto.internal.bigmod.md`](current/crypto.internal.bigmod.md) | [`src/core/crypto/internal/bigmod`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/bigmod) |
 | `crypto/internal/boring` | [`crypto.internal.boring.md`](current/crypto.internal.boring.md) | [`src/core/crypto/internal/boring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/boring) |
+| `crypto/internal/edwards25519/field` | [`crypto.internal.edwards25519.field.md`](current/crypto.internal.edwards25519.field.md) | [`src/core/crypto/internal/edwards25519/field`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/edwards25519/field) |
+| `crypto/internal/hpke` | [`crypto.internal.hpke.md`](current/crypto.internal.hpke.md) | [`src/core/crypto/internal/hpke`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/hpke) |
 | `crypto/md5` | [`crypto.md5.md`](current/crypto.md5.md) | [`src/core/crypto/md5`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/md5) |
 | `crypto/rand` | [`crypto.rand.md`](current/crypto.rand.md) | [`src/core/crypto/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rand) |
 | `crypto/rc4` | [`crypto.rc4.md`](current/crypto.rc4.md) | [`src/core/crypto/rc4`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rc4) |
@@ -46,6 +48,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `database/sql/driver` | [`database.sql.driver.md`](current/database.sql.driver.md) | [`src/core/database/sql/driver`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql/driver) |
 | `debug/buildinfo` | [`debug.buildinfo.md`](current/debug.buildinfo.md) | [`src/core/debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo) |
 | `debug/dwarf` | [`debug.dwarf.md`](current/debug.dwarf.md) | [`src/core/debug/dwarf`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/dwarf) |
+| `debug/gosym` | [`debug.gosym.md`](current/debug.gosym.md) | [`src/core/debug/gosym`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/gosym) |
 | `debug/macho` | [`debug.macho.md`](current/debug.macho.md) | [`src/core/debug/macho`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/macho) |
 | `debug/plan9obj` | [`debug.plan9obj.md`](current/debug.plan9obj.md) | [`src/core/debug/plan9obj`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/plan9obj) |
 | `encoding/ascii85` | [`encoding.ascii85.md`](current/encoding.ascii85.md) | [`src/core/encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/ascii85) |
