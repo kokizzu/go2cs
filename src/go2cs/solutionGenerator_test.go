@@ -219,6 +219,68 @@ func TestCollectConvertedProjects(t *testing.T) {
 	}
 }
 
+// TestCollectConvertedProjectsIgnoresTestProjectReferences guards the ordering that keeps an
+// EXCLUDED project out of the solution's closure as well as out of its member list.
+//
+// The recovery path exists for a package the converter deliberately never transpiles (`unsafe`),
+// discovered from its dependents' <ProjectReference>s. With no convert-set graph — the
+// multi-platform merge's case, where the tree being scanned IS the finished corpus — every
+// unmatched reference is recovered, so a reference naming a file that does not exist becomes a
+// <Project> entry naming a file that does not exist, and the solution stops loading. A converted
+// per-package TEST project is exactly where such a reference lives: it is pipeline-staged, no gate
+// builds it from the solution, and `crypto/ecdh/crypto.ecdh.tests.csproj` really does carry the
+// unvendored spelling of a GOROOT-vendored project file (found 2026-08-14, by the three-target
+// merge that produced a 308-project solution against a corpus of 307).
+//
+// So: the fixture's test project references a package that exists nowhere. Its production sibling
+// is listed; the phantom is not.
+func TestCollectConvertedProjectsIgnoresTestProjectReferences(t *testing.T) {
+	root := t.TempDir()
+
+	testCsproj := strings.Join([]string{
+		`<Project Sdk="Microsoft.NET.Sdk">`,
+		`  <ItemGroup>`,
+		`    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/crypto/chacha20/golang.org.x.crypto.chacha20.csproj" />`,
+		`  </ItemGroup>`,
+		`</Project>`,
+	}, "\r\n")
+
+	files := map[string]string{
+		"core/crypto/ecdh/crypto.ecdh.csproj":       `<Project />`,
+		"core/crypto/ecdh/crypto.ecdh.tests.csproj": testCsproj,
+	}
+
+	for rel, body := range files {
+		full := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0644); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+	}
+
+	converter := &StdLibConverter{go2csPath: root}
+
+	coreProjects, err := converter.collectConvertedProjects()
+
+	if err != nil {
+		t.Fatalf("collectConvertedProjects: %v", err)
+	}
+
+	coreSet := strings.Join(coreProjects, "\n")
+
+	if !strings.Contains(coreSet, "core/crypto/ecdh/crypto.ecdh.csproj") {
+		t.Errorf("expected the production project to be listed, got %v", coreProjects)
+	}
+	if strings.Contains(coreSet, "chacha20") {
+		t.Errorf("a reference read from an EXCLUDED test project must not be recovered into the solution, got %v", coreProjects)
+	}
+	if len(coreProjects) != 1 {
+		t.Errorf("expected exactly the one production project, got %v", coreProjects)
+	}
+}
+
 // TestParseCoreProjectRefs checks that only $(go2csPath)core/ ProjectReferences are extracted
 // (normalized to forward slashes), while the analyzer's $(go2csPath)gen/ reference and NuGet
 // PackageReferences are ignored — the raw material for recovering hand-owned packages like unsafe.

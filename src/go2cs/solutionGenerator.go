@@ -172,14 +172,6 @@ func (c *StdLibConverter) collectConvertedProjects() (coreProjects []string, err
 			return nil
 		}
 
-		// Record the packages this project references so a referenced-but-unconverted (hand-owned)
-		// package can be recovered after the walk. A read error simply yields no references.
-		if data, readErr := os.ReadFile(path); readErr == nil {
-			for _, ref := range parseCoreProjectRefs(string(data)) {
-				referenced[ref] = true
-			}
-		}
-
 		// A converted per-package TEST project (`<pkg>.tests.csproj`, the Phase-4 artifact a
 		// `-tests` run emits and a validated package commits beside its production code) is
 		// deliberately left OUT of the solution. Its inputs are pipeline-staged — the `*.go`
@@ -188,8 +180,26 @@ func (c *StdLibConverter) collectConvertedProjects() (coreProjects []string, err
 		// containing one fails `dotnet build`, which is also how the standard library is packed
 		// for NuGet. The pipeline builds these by path; the solution stays the buildable,
 		// packable standard library.
+		//
+		// The skip comes BEFORE the reference harvest below, and that ordering is load-bearing: a
+		// project excluded from the solution must not contribute to the solution's closure either.
+		// It read the other way until 2026-08-14, and the multi-platform merge — the one caller that
+		// scans a FINISHED corpus with no convert-set graph, so every unmatched reference is
+		// recovered — turned a single stale reference in `crypto/ecdh/crypto.ecdh.tests.csproj`
+		// (`…/chacha20/golang.org.x.crypto.chacha20.csproj`, the unvendored spelling of a file that
+		// only exists as `vendor.golang.org.x.crypto.chacha20.csproj`) into a 308th <Project> entry
+		// naming a path that does not exist. A solution carrying one does not load, so a test
+		// project's own defect became a corpus-wide build break.
 		if strings.HasSuffix(d.Name(), ".tests.csproj") || strings.HasSuffix(d.Name(), "_test.csproj") {
 			return nil
+		}
+
+		// Record the packages this project references so a referenced-but-unconverted (hand-owned)
+		// package can be recovered after the walk. A read error simply yields no references.
+		if data, readErr := os.ReadFile(path); readErr == nil {
+			for _, ref := range parseCoreProjectRefs(string(data)) {
+				referenced[ref] = true
+			}
 		}
 
 		converted[rel] = true
