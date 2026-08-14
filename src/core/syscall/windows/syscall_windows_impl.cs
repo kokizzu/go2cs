@@ -52,20 +52,23 @@
 //
 // DELIBERATELY NOT COVERED, and each for its own measured reason.
 //
-//   - RawSockaddrAny.Sockaddr, the DECODE, carries the same port alias as the encoders and would
-//     panic identically if it were reached. It is left auto-converted anyway, because hand-owning
-//     it costs more than it buys: the only casts of the three Sockaddr types to ΔSockaddr in the
-//     package live in ITS body, so skipping its emission drops the
-//     `[assembly: GoImplement<…>(Pointer = true)]` records from package_info.cs. A reconvert of
-//     `net` against that package_info was MEASURED, and net then minted its own
+//   - WAS deliberately excluded, and is NOW covered: RawSockaddrAny.Sockaddr, the DECODE. It
+//     carries the same port alias as the encoders and panics identically wherever it is reached.
+//     Hand-owning it was REJECTED at L10 on measurement, not on effort: the only casts of the three
+//     Sockaddr types to ΔSockaddr in the package lived in ITS body, so skipping its emission dropped
+//     the `[assembly: GoImplement<…>(Pointer = true)]` records from package_info.cs, and a reconvert
+//     of `net` against that shortened package_info showed net minting its own
 //     `syscall_SockaddrInet4жΔSockaddr` adapters instead of using syscall's -- the SECOND-IDENTITY
 //     regression samePackageImplements.go exists to prevent (reflect and fmt see the wrapper where
 //     the value's own type belongs, and a direct-boxed value compares unequal to an adapter-wrapped
-//     one). Declaring the records in this file instead does not help: a DEPENDENT package's
-//     converter run reads package_info.cs, not this file. Recording them from the method set is the
-//     real answer and is already spoken for -- samePackageImplements.go covers the VALUE method set
-//     and explicitly defers the POINTER set, which is what these are, to its own increment.
-//     Getsockname/Getpeername below therefore decode natively rather than routing through it.
+//     one). Declaring the records in this file does not help either: a DEPENDENT package's converter
+//     run reads package_info.cs, not this file.
+//
+//     The converter increment L10 named as the real answer has since landed --
+//     recordSamePackageImplements records the POINTER method set as well as the value one, so the
+//     three records are sourced from types.Implements(*T, Sockaddr) and survive the body's
+//     suppression. Re-measured on this lane's own build before the decode was taken (see the method
+//     below): records present, `net` still referencing syscall's adapters.
 //   - WSASendto / wsaSendtoInet4 / wsaSendtoInet6 -- the UDP send path -- still pass the address
 //     returned by `sockaddr()`, which for the reasons above is not a native image. They are out of
 //     this lane's scope (the board's ruling is to fix a censused wrapper when a suite REACHES it,
@@ -376,6 +379,59 @@ partial class syscall_package
         }
 
         return connectEx(fd, new @unsafe.Pointer((uintptr)(void*)buffer), n, ᏑsendBuf, sendDataLen, ᏑbytesSent, Ꮡoverlapped);
+    }
+
+    // THE DECODE, and the third consumer readNativeSockaddr was written for. Go reinterprets the
+    // RawSockaddrAny as a RawSockaddrInet4/6/Unix and then reads the port through the SAME two-byte
+    // alias the encoders write it through -- so the auto conversion panics identically
+    // (`index out of range [0] with length 0`), and net's ACCEPT path is the one route that reaches
+    // it: netFD.accept decodes the GetAcceptExSockaddrs output with it
+    // (net/windows/fd_windows.cs:255-256). Getsockname/Getpeername above never go near it.
+    //
+    // Neither the alias NOR the reinterpret survives the boundary, and the second is the deeper
+    // reason this is hand-owned rather than patched. `Ꮡrsa.Reinterpret<RawSockaddrAny,
+    // RawSockaddrInet4>()` asks golib to alias one reference-bearing struct as another, which it
+    // correctly refuses (the two managed layouts share no field offsets at all -- RawSockaddrAny
+    // holds an int8[14] and an int8[100] object reference where sockaddr_in has four inline octets).
+    // So the decode is written the only way that is true on both sides: FLATTEN the managed struct
+    // back to the 116-byte native image its fields are a transcription of, and hand that to the one
+    // definition of the decode. The mapping is the Go declaration's own -- Family at 0, Addr.Data
+    // covering 2..15, Pad covering 16..115 -- and nothing else in the corpus knows it, which is why
+    // it is spelled out here rather than derived at the call site.
+    //
+    // WHO FILLS THE MANAGED STRUCT is the other half, and it is the submit seam's: the hand-owned
+    // GetAcceptExSockaddrs (zsyscall_windows_wsa_impl.cs) transcribes the kernel's native accept
+    // buffer INTO managed RawSockaddrAny values field for field, precisely so this method has a
+    // faithful managed image to read. The two are a pair; neither is meaningful alone.
+    public static unsafe (ΔSockaddr, error) Sockaddr(this ж<RawSockaddrAny> Ꮡrsa) {
+        ref var rsa = ref Ꮡrsa.Value;
+
+        // Go rewrites a leading NUL as '@' IN PLACE for an abstract Unix socket, with its own note
+        // that "the callers below don't care" -- reproduced anyway so the observable state of the
+        // caller's struct after the call is Go's, not merely the return value.
+        if (rsa.Addr.Family == AF_UNIX && rsa.Addr.Data[0] == 0) {
+            rsa.Addr.Data[0] = (int8)'@';
+        }
+
+        byte* buffer = stackalloc byte[nativeSockaddrLen];
+
+        // Family is a plain uint16 in host order on both sides -- the port is the field that is not.
+        *(uint16*)buffer = rsa.Addr.Family;
+
+        for (nint i = 0; i < 14; i++) {
+            buffer[2 + i] = (byte)rsa.Addr.Data[i];
+        }
+
+        // 2 + 14 + 100 = 116, which is what Go's unsafe.Sizeof(RawSockaddrAny{}) reports and what
+        // internal/poll hard-codes as the AcceptEx per-address length; nativeSockaddrLen (128, a
+        // sockaddr_storage) covers it with room to spare.
+        for (nint i = 0; i < 100; i++) {
+            buffer[16 + i] = (byte)rsa.Pad[i];
+        }
+
+        // The length matters only to the AF_UNIX arm, which scans sun_path for a NUL: Go bounds that
+        // scan by len(RawSockaddrUnix.Path), so the equivalent bound here is 2 + UNIX_PATH_MAX.
+        return readNativeSockaddr(buffer, (int32)(2 + UNIX_PATH_MAX));
     }
 
     // Getsockname/Getpeername go through the Syscall trampoline directly rather than their

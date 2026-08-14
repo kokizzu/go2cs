@@ -401,6 +401,22 @@ mode>`, plus an opaque `object` slot for the submitting package's per-descriptor
 it is the one identity both sides independently hold — the poller gets it in `pollOpen`, a wrapper
 gets it as its own first argument.
 
+**The golib table has two MEASURED requirements that its obvious implementation does not meet
+(S2b, prototyped as `GoAsyncIO` with 11 GolibTests; the code is not banked — §4.5 — but these are
+priced findings the implementation must honor, not advice).** **(1) Create-exactly-once is
+load-bearing, and `ConcurrentDictionary.GetOrAdd` does not provide it.** Its factory may run on
+several threads with only one result kept; a contention test built **10** operation records where
+the contract wants 1, and each record owns a `PreAllocatedOverlapped` plus native staging buffers,
+so the nine discarded ones are a native leak with no owner. The per-descriptor slot has the same
+requirement for a harder reason — that object is the `ThreadPoolBoundHandle` association, and
+associating one socket twice is a kernel error. Use `Lazy<T>` with `ExecutionAndPublication`, or an
+explicit lock over the entry; never bare `GetOrAdd`. **(2) The readiness sink must be REPLACEABLE
+per descriptor**, because the kernel reissues descriptor numbers after a close: a registration that
+refused to overwrite would leave a stale sink waking a `pollDesc` that no longer owns the fd. A
+signal for an unregistered descriptor must be a silent no-op — it runs on a CLR IO thread-pool
+thread, where an escaping exception ends the process, and a completion racing a close is a race the
+contract permits.
+
 **The record key is verified, not assumed.** `ConcurrentDictionary<ж<Overlapped>, OpRecord>` is sound:
 `ж<T>.Equals` compares `SameSource(source1, source2) && fieldId1.Equals(fieldId2)` for a struct-field
 reference, and `GetHashCode` returns `SourceIdentityHash(source)` — coarser than Equals (every field of
@@ -447,6 +463,137 @@ through the golib table's opaque slot before `internal/poll` closes the socket.
 to `true` is then part of that stage's intended A/B footprint, not drift. (The marker scan reads the
 package directory plus its per-GOOS folders, so a hand-own in `windows/` is seen; see
 *A hand-owned file can declare that it needs `/unsafe`* in ConversionStrategies-Reference.)
+
+### 4.5 The submit seam, MEASURED — what S2b settled, and the one hole §4.4 did not know about
+
+S2b took the accept decode (§7's blocker, now closed) and then priced the displacement itself against
+the corpus rather than against the plan. Three of §4.4's assumptions are now VERIFIED rather than
+assumed, one golib design defect was found and fixed in a prototype, and one item in the ruled spec
+turns out not to be implementable as written. Everything below is measured; none of it should be
+re-derived.
+
+**VERIFIED — the record key really does resolve across execIO's three call sites.** §4.4 asserted this
+from `ж.cs`'s comment; it is now traced through the code. All three of `execIO`'s
+`Ꮡo.of(operation.Ꮡo)` sites (submit `fd_windows.cs:190`, `CancelIoEx` `:212`, harvest `:220`) mint a
+FRESH `ж<Overlapped>`, but each carries the same source object — the one `ж<operation> Ꮡo` parameter
+box, so `SameSource`'s `ReferenceEquals` holds — and the same identity token, because `operation.Ꮡo`
+is a static accessor method group and `Delegate.Equals` compares method+target. `Equals` returns true
+and `GetHashCode` returns `SourceIdentityHash(Ꮡo)` for all three. **The bound on this is worth
+carrying**: equality is SOURCE-POINTER identity, not value identity — three DISTINCT `ж<operation>`
+heap boxes over the same `operation` value would compare UNEQUAL. `execIO` never does that (the
+submit lambda receives the same box via `submit(Ꮡo)`), but any future call site that re-boxes would
+silently mint a second record.
+
+**VERIFIED — a user buffer's pin is real, and the record must hold the BOX to keep it.**
+`(void*)Ꮡ(someByteSlice, 0)` resolves through `PinnableStorage` → `CanonicalElement` → the slice's
+backing `byte[]` → `PinnedBuffer.PinOnly` succeeds (blittable), so the address is genuinely pinned and
+cannot move. The pin is a `GCHandle` held by **that one `ж<byte>` box**, released only by
+`PinnedBuffer`'s finalizer — so the guarantee ends with the box, and `Ꮡ(s, 0)` mints a fresh temporary
+per call. For `WSARecv`/`WSASend` this is satisfied by the corpus already: the box lives in
+`operation.buf.Buf` (`InitBuf`, `fd_windows.cs:95`), a field of the `operation` inside the `FD`, so it
+outlives the flight. The record must still hold a reference to it rather than only to the address, or
+a future `InitBuf` on the same operation could drop the last reference to a box the kernel is still
+writing through.
+
+**VERIFIED — why `&o.o` cannot be handed to the kernel, and the exact fallback it takes.**
+`Reinterpret<T, TDst>` for a reference-bearing `T` fails BOTH aliasing routes:
+`ReinterpretAliasesStorage` is false (`IsReferenceOrContainsReferences<RawSockaddrAny>` is true
+because `array<T>` is a struct over a `T[]`, and `LayoutCompatible` then compares 2 source fields
+against 0 for `byte`), and `TryPinnedReinterpret` returns null because `GCHandle.Alloc(…, Pinned)`
+throws on a non-blittable array. It therefore lands on `(ж<TDst>)(uintptr)box`, which produces a box
+with a REAL interior address and **no pin at all** — stale the moment the `fixed` block exits. Note
+the compile-level fact underneath: golib's `fixed (void* ptr = &value.Value)` over a managed `T` is
+legal C# with `CS8500` suppressed project-wide, so nothing here is caught at build time.
+
+**FIXED IN PROTOTYPE — the golib seam, and a defect worth not repeating.** §4.4 ruled the seam into
+golib; S2b prototyped it as `GoAsyncIO` (descriptor → readiness sink; an opaque per-descriptor state
+slot; an opaque per-operation slot keyed by the waiter's pointer) with 11 GolibTests, all passing.
+The prototype is NOT banked, because dead public API in a published package is worse than a
+specification — but two things it measured belong here. **(1) `ConcurrentDictionary.GetOrAdd` does not
+guarantee single execution of its factory**: a contention test created 10 operation records where the
+contract wants 1, and each record owns a `PreAllocatedOverlapped` and native staging buffers, so the
+9 discarded ones are a native leak with no owner. The per-descriptor state has the same requirement
+for a stronger reason — that object is the `ThreadPoolBoundHandle` association, and binding one socket
+twice is a kernel error. Use `Lazy<T>` with `ExecutionAndPublication`, or an explicit lock; do not use
+bare `GetOrAdd`. **(2) The readiness sink must be REPLACEABLE per descriptor**, because the kernel
+reissues descriptor numbers after a close and a stale sink would wake a `pollDesc` that no longer owns
+the fd.
+
+**SIMPLER THAN PLANNED — `WSAGetOverlappedResult` needs only an ADDRESS from the record.** §4.4 had the
+hand-own answering from results the callback deposits, which would have required the record's result
+fields to be readable across the package boundary and would have re-derived Windows' own error
+mapping. It is enough to look the record up, take the native OVERLAPPED's address, and call the REAL
+`WSAGetOverlappedResult` on it through the existing `Syscall6` trampoline: the kernel wrote
+`Internal`/`InternalHigh` at completion time, so `wait: false` answers correctly after the CLR has
+already dequeued the packet, and — the reason this matters — it returns proper **WSA** error codes
+(`WSAEMSGSIZE`, `ERROR_MORE_DATA`), which is what `execIO` and `net` branch on. A callback's Win32
+`errorCode` is a DIFFERENT namespace (`ERROR_NETNAME_DELETED` where the suite expects
+`WSAECONNRESET`), so deriving the harvest from it would have been a quiet fidelity loss. Consequence:
+the golib contract between the two packages narrows to one property, the operation's native address.
+
+**CENSUS — `CancelIoEx` has a second, NIL-overlapped caller.** `fd_windows.cs:403` calls
+`CancelIoEx(fd.Sysfd, nil)` to cancel ALL IO on a handle (the pipe/file close path), alongside
+`:212`'s per-operation form. The hand-own must pass a nil overlapped straight through rather than
+looking anything up, and must answer `ERROR_NOT_FOUND` — which `execIO` already tolerates — for a
+non-nil overlapped with no record, rather than falling back to 0 and cancelling everything on the
+socket.
+
+> **⚠ THE HOLE, and why S2b stops here rather than landing a half-displaced set.
+> `GetAcceptExSockaddrs` carries NO identity the seam can key on, and §4.4 did not notice because it
+> reasoned about the overlapped family only.** Its signature is
+> `(buf, rxdatalen, laddrlen, raddrlen, *lrsa, *lrsalen, *rrsa, *rrsalen)` — no handle, no overlapped.
+> Go recovers everything from `buf`, which is legitimate there because the accept buffer really is the
+> caller's `[2]RawSockaddrAny` and the kernel wrote native bytes into it. Under go2cs neither half
+> survives: `net` passes `Ꮡ(rawsa, 0).Reinterpret<RawSockaddrAny, byte>()`, which per the measurement
+> above is an UNPINNED native-address box over a managed `RawSockaddrAny[]` whose layout is not the
+> native one — so the address is unusable as data, AND its identity is physical rather than
+> structural, so two evaluations of the same expression are equal only if the GC did not move the
+> array in between. It is therefore not usable as a table key either. `AcceptEx` (which does have the
+> overlapped, and so can own a native staging buffer in its record) has no way to hand that buffer to
+> `GetAcceptExSockaddrs`, and `GetAcceptExSockaddrs` has no way to ask for it.
+>
+> Two shapes were viable. **(a) A scoped handoff**: `AcceptEx`'s hand-own parks its staging buffer in
+> a slot that `GetAcceptExSockaddrs` consumes. Sound for the corpus's only caller — `net.netFD.accept`
+> runs `FD.Accept` and then `GetAcceptExSockaddrs` on one goroutine — but it is a NEW coupling between
+> two wrappers Go keeps independent, and nothing in the type system sees it. **(b) Transcribe at
+> accept-completion into the managed `rawsa`**, making `GetAcceptExSockaddrs` a purely managed parse.
+> Note what is NOT a problem under either: the out-parameters. `Ꮡlrsa`/`Ꮡrrsa` are pointers to managed
+> `ж<RawSockaddrAny>` VARIABLES, so a hand-own may write FRESH managed boxes into them; nothing in
+> `net` requires them to point into `buf`, since the only thing done with them is `.Sockaddr()` — which
+> is now hand-owned to decode from the managed image.
+>
+> > **RULED (coordinator, 2026-08-14): shape (a), with three conditions that convert its one real cost
+> > — invisible coupling — into visible, loud machinery.** Shape (b) is **rejected on its own record**:
+> > the transcriber must still find the caller's array, so it is the same hole relocated, and its only
+> > escape hatch (having `AcceptEx`'s record capture the managed `slice<RawSockaddrAny>`) is
+> > self-refuted — `AcceptEx` receives the reinterpreted byte pointer and never sees the slice.
+> >
+> > 1. **Key the slot by GOROUTINE identity, not by a bare `[ThreadStatic]`.** The identity source is
+> >    the scheduler arc's S1 registry, `go.golib.Goroutine` (`src/core/golib/runtime/Goroutine.cs`,
+> >    merged), whose per-goroutine current-instance slot and `Id` are exactly this key; the
+> >    implementing lane exposes an accessor if none is public yet. §7/OQ6's ownership split explicitly
+> >    sanctions netpoll ADOPTING scheduler identity at its own option, and this is that option
+> >    exercised. Under the dedicated-thread executor a goroutine is one thread for life, so
+> >    `[ThreadStatic]` would work *today* — goroutine-keying makes the coupling's PREMISE explicit,
+> >    survives any future executor change, and rides arc-owned identity rather than a runtime
+> >    accident. **Say so in the impl header**: the scheduler arc is what makes this handoff sound, and
+> >    that cross-arc dependency should be legible to whoever reads either arc next.
+> > 2. **Single-occupancy, consume-exactly-once, fail BY NAME.** `AcceptEx` parking into an already
+> >    occupied slot throws, naming both wrappers; `GetAcceptExSockaddrs` finding an empty slot throws
+> >    likewise. A call sequence Go permits but the corpus never issues must fail LOUDLY, never be
+> >    misread — the `NetShareAdd` declared-limit doctrine applied to a protocol instead of to a host
+> >    capability.
+> > 3. **Document the coupling where it lives**: the impl file's header states the handoff, its
+> >    goroutine-affinity premise, and the corpus census that bounds it — one caller,
+> >    `net.netFD.accept`, doing accept-then-parse on one goroutine.
+>
+> S2b's own scope call under that ruling: the seam is ALL-OR-NOTHING (S2a's analysis, unchanged) and
+> the round-trip gate cannot be met without accept, so landing
+> `WSARecv`/`WSASend`/`CancelIoEx`/`WSAGetOverlappedResult` alone would be exactly the half-displaced
+> set the stage forbids. This lane stops at that boundary with the spec SETTLED rather than opening a
+> displacement it could not also gate; the next lane implements §4.4 + §4.5 + the ruling above as
+> written, against the §7 S2 gate pair (`TcpLoopbackRoundTrip` at VALUE level, plus the §5 deadline
+> matrix).
 
 ## 5. The deadline/unblock story — the hard part, priced honestly
 
@@ -643,6 +790,24 @@ is cheap and the claim should be measured, not argued).
 > covers: *verify at VALUE level, never at fault level*. A submit seam whose buffer marshalling is
 > unproven is the wrong thing to bank, which is why this lane stops at the boundary rather than
 > landing ~530 lines against a gate it knows it cannot meet.
+>
+> > **CLOSED 2026-08-14 (lane S2b, second attempt).** The decode is hand-owned:
+> > `RawSockaddrAny.Sockaddr` joins `manualConversionFuncs["syscall"]` and
+> > `syscall/windows/syscall_windows_impl.cs` flattens the managed struct back to its 116-byte native
+> > image for the `readNativeSockaddr` the encoders already share. The record-survival witness this
+> > note demanded was re-measured on the lane's own build, not inherited: with the body displaced,
+> > `syscall`'s `package_info.cs` still carries all three `(Pointer = true)` records and a seeded
+> > reconvert of `net` still references `syscall.Sockaddr{Inet4,Inet6,Unix}жΔSockaddr` at all seven
+> > sites with zero local adapters — the whole A/B footprint being ONE file, `syscall_windows.cs`.
+> > Guarded at value level by four new `SockaddrRoundTrip` lines (IPv4; an IPv6 address deliberately
+> > crossing the `Addr.Data`/`Pad` boundary; AF_UNIX; an unknown family answering `EAFNOSUPPORT`),
+> > byte-identical to `go run`.
+> >
+> > **`TcpLoopbackRoundTrip` remains blocked, on a DIFFERENT wall.** The decode was the accept path's
+> > first obstacle, not its last: §4.5's `GetAcceptExSockaddrs` finding is the one that now holds it,
+> > and it wants a ruling before the displacement can be written. What this closure buys is that the
+> > blocker is no longer a *converter capability* question — it is a plumbing choice with two costed
+> > shapes.
 
 Gates: full behavioral suite; then the pipeline's own measure — **filtered sweep of
 `internal/poll`: the board row's target is 19/19** (from 18/19, sole miss `runtime_pollServerInit`

@@ -920,54 +920,18 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrUnix> �
     return (new @unsafe.Pointer(Ꮡsa.of(SockaddrUnix.Ꮡraw)), sl, default!);
 }
 
-public static (ΔSockaddr, error) Sockaddr(this ж<RawSockaddrAny> Ꮡrsa) {
-    ref var rsa = ref Ꮡrsa.DerefOrNull();
+// go2cs generated this placeholder — func Sockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var exprᴛ1 = rsa.Addr.Family;
-    if (exprᴛ1 == AF_UNIX) {
-        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrUnix>();
-        var sa = @new<SockaddrUnix>();
-        if ((~pp).Path[0] == 0) {
-            // "Abstract" Unix domain socket.
-            // Rewrite leading NUL as @ for textual display.
-            // (This is the standard convention.)
-            // Not friendly to overwrite in place,
-            // but the callers below don't care.
-            pp.Value.Path[0] = (rune)'@';
-        }
-        nint n = 0;
-        while (n < len((~pp).Path) && (~pp).Path[n] != 0) {
-            // Assume path ends at NUL.
-            // This is not technically the Linux semantics for
-            // abstract Unix domain sockets--they are supposed
-            // to be uninterpreted fixed-size binary blobs--but
-            // everyone uses this convention.
-            n++;
-        }
-        sa.Value.Name = ((@string)@unsafe.Slice(pp.at(RawSockaddrUnix.ᏑPath, 0).Reinterpret<int8, byte>(), n));
-        return (new SockaddrUnixжΔSockaddr(sa), default!);
-    }
-    if (exprᴛ1 == AF_INET) {
-        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet4>();
-        var sa = @new<SockaddrInet4>();
-        var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet4.ᏑPort)));
-        sa.Value.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
-        sa.Value.Addr = pp.Value.Addr.Clone();
-        return (new SockaddrInet4жΔSockaddr(sa), default!);
-    }
-    if (exprᴛ1 == AF_INET6) {
-        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet6>();
-        var sa = @new<SockaddrInet6>();
-        var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet6.ᏑPort)));
-        sa.Value.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
-        sa.Value.ZoneId = pp.Value.Scope_id;
-        sa.Value.Addr = pp.Value.Addr.Clone();
-        return (new SockaddrInet6жΔSockaddr(sa), default!);
-    }
-
-    return (default!, EAFNOSUPPORT);
-}
-
+// "Abstract" Unix domain socket.
+// Rewrite leading NUL as @ for textual display.
+// (This is the standard convention.)
+// Not friendly to overwrite in place,
+// but the callers below don't care.
+// Assume path ends at NUL.
+// This is not technically the Linux semantics for
+// abstract Unix domain sockets--they are supposed
+// to be uninterpreted fixed-size binary blobs--but
+// everyone uses this convention.
 public static (ΔHandle fd, error err) Socket(nint domain, nint typ, nint proto) {
     if (domain == AF_INET6 && SocketDisableIPv6) {
         return (InvalidHandle, EAFNOSUPPORT);
