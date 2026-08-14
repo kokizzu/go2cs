@@ -63,7 +63,14 @@ internal static class ISliceTypeTemplate
 
                 public global::System.Span<{{targetTypeName}}> ToSpan() => m_value.ToSpan();
 
-                public ISlice? Append(object[] elems) => ((ISlice)m_value).Append(elems);
+                // EXPLICIT, exactly as golib's own slice<T> declares it, and for the same reason
+                // the enumerator below is explicit: this is the boxing, interface-typed path, and
+                // the public surface is the ISlice<T> overload above. It also has to be — with
+                // T = any (`type SE []any` in fmt's suite, `type fileOps []any` in archive/tar's)
+                // `object[]` and `T[]` are the SAME parameter list, so two public Appends is
+                // CS0111. That collided for every `[]any` named slice, which is why the two
+                // packages sat behind one diagnostic.
+                ISlice? ISlice.Append(object[] elems) => ((ISlice)m_value).Append(elems);
 
                 // Forwards the CONCRETE struct enumerator, not IEnumerator<(nint, T)>: `foreach` binds
                 // GetEnumerator by pattern, so a named slice type ranges with zero heap traffic exactly

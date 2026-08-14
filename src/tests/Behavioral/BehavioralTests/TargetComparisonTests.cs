@@ -850,6 +850,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
 
     [TestMethod]
+    public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");
+
+    [TestMethod]
     public void CheckNamedArrayAnonElement() => CheckTarget("NamedArrayAnonElement");
 
     [TestMethod]

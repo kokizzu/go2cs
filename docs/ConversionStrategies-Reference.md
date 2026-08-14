@@ -4514,6 +4514,38 @@ it, which is what a built-in is handed. (Guarded by the `ClearBuiltinShadow` beh
 extended with `clear` over an array-element slice, a struct-with-array-field slice, and an
 array-of-arrays element, each written to after the clear and output-compared vs `go run`.)
 
+### A named slice wrapper's non-generic `ISlice.Append` is an EXPLICIT implementation
+
+The generated wrapper for `type S []E` implements both halves of the golib slice surface, and both
+declare an `Append`: the typed `ISlice<E>.Append(E[])` and the non-generic `ISlice.Append(object[])`.
+`ISliceTypeTemplate` emitted both **public**, which is fine for every `E` except one — with
+`E = any`, `object[]` and `E[]` are the SAME parameter list, so the wrapper carried two public
+methods differing only in return type: **CS0111**. That is a single duplicate-member emission, and
+it held two whole converted test suites, `fmt`'s `type SE []any` (63 verdicts) and `archive/tar`'s
+`type fileOps []any` (97) — a `[]any` named slice is a table-driven-test idiom, which is why the
+production corpus never met it.
+
+The non-generic overload is now explicit —
+
+```csharp
+ISlice? ISlice.Append(object[] elems) => ((ISlice)m_value).Append(elems);
+```
+
+— which is what golib's own `slice<T>` has always declared (`ISlice ISlice.Append(object[] elems)`
+beside `ISlice<T> ISlice<T>.Append(params T[] elems)`), so the wrapper now matches the type it
+wraps. The reasoning is the same one the template already applies to `GetEnumerator` in the
+subsection above: this is the boxing, interface-typed path, taken only when a consumer asks for the
+interface, and the public surface is the typed overload. Converted code never calls it by name —
+Go's `append` emits golib's `append` builtin, which reaches `slice<T>.Append` statically.
+
+Measured after: both suites clear this root and stop on unrelated ones — `fmt` on five
+(CS1955 `map` used as a method, CS0030 on renamed complex types, CS1729/CS0103/CS0034 around
+`Scan_type`), `archive/tar` on the duplicate `global using` alias its board row records as closed
+and which is in fact still live. Neither banks. Guarded by the `NamedAnySliceType` behavioral test —
+both suites' declarations verbatim, spread into a variadic `...any`, appended to, indexed, ranged,
+sub-sliced, spread into a second named `[]any`, and compared against `nil`, output-compared vs
+`go run`.
+
 ## Strings (`@string` and `sstring`)
 Go's `string` is represented by golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs), not `System.String`. That is a semantic decision, not just a naming one: Go strings are immutable byte sequences, so `len`, indexing, ranging, concatenation, conversion to `[]byte`/`[]rune`, equality, and type assertions must all observe Go's UTF-8/byte model rather than C#'s UTF-16 string model. A zero-value `@string` is also null-safe and reads as `""`, which lets `default!` stand in for Go's zero value without sprinkling null checks through converted code.
 
