@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **130 / 215 testable packages validated — 60.5%**
+> ### Phase 4 progress: **131 / 215 testable packages validated — 60.9%**
 >
-> **14,764 matching test verdicts · 47 disclosed** *(updated 2026-08-13 — maintained as part of the
+> **14,769 matching test verdicts · 47 disclosed** *(updated 2026-08-14 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -129,6 +129,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) | 3 | | Minimal integer formatting. · [proof](validation/current/internal.itoa.md) |
 | [`internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) | 1 |  | The pprof protobuf codec's packed varint encoding — round-tripped through the white-box test's own `message` implementation, which is what proved a Go package split across two assemblies still binds its unexported interface methods. · [proof](validation/current/internal.profile.md) |
 | [`internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) | 17 | | Allocation-capped I/O helpers. · [proof](validation/current/internal.saferio.md) |
+| [`internal/singleflight`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/singleflight) | 5 | | Duplicate-call suppression — and, in `TestDoAndForgetUnsharedRace`, **1000 goroutines that must all park inside one `Do` before it returns**. That row was the cooperative scheduler's whole bill: under the old ThreadPool executor a parked goroutine held shared capacity, so the test climbed a doubling ladder for 28.7 minutes; on a dedicated thread per goroutine it converges at iteration 8 in **1.2 s**. · [proof](validation/current/internal.singleflight.md) |
 | [`internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) | 1 |  | The CPU brand string the runtime reports, read through the converted `internal/cpu` name tables. · [proof](validation/current/internal.sysinfo.md) |
 | [`internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) | 3 |  | AIX XCOFF objects — the 32- and 64-bit section and symbol-table readers over the PowerPC testdata executables, `big`-format archive member enumeration, and the malformed-file error path. · [proof](validation/current/internal.xcoff.md) |
 | [`internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) | 534 | | The Zstandard decompressor — FSE/Huffman table construction, the sliding window, xxhash checksums, and 500+ fuzz-corpus round-trips. · [proof](validation/current/internal.zstd.md) |
