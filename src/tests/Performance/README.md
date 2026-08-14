@@ -49,6 +49,9 @@ separately by the Startup row.
   workload time are captured; tables report workload time (Startup row: wall).
 - Benchmarks avoid nondeterminism (no `math/rand`; inline xorshift/LCG generators), so outputs are
   byte-comparable, and print timing on a filtered `elapsed_ns:` line.
+- **Published tables come from a single designated host per era** — the Environment line names the
+  part — so the History section's cross-toolchain comparisons (e.g., .NET 9 → 10) are always
+  same-machine. Ratios from different hardware are not comparable and are never mixed.
 
 ## Running it
 
