@@ -2941,6 +2941,14 @@ mirror with `fixed` buffers for the inline arrays, a direct `[DllImport]`, and a
 field-for-field copy at the boundary, declared in `manualConversionFuncs` so the generated wrapper
 becomes a placeholder. Worked example: `src/core/syscall/zsyscall_windows_impl.cs`.
 
+⚠ **This census is scoped to `src/core/syscall`, and that scope is not the class's boundary.**
+`internal/syscall/windows` holds six more wrappers of the same shape — one of them,
+`NetShareAdd`/`SHARE_INFO_2`, is FATAL today on any host where the Server service is reachable, and
+it is what a real suite reached first. Its table is in *`os`'s "REGRESSION" is a HOST CAPABILITY* at
+the end of this file, together with the second failure shape the class takes: the kernel READING a
+managed record as a native one, dereferencing a value field as a pointer, and faulting AT the call
+rather than arbitrarily far away.
+
 **Do them when a suite reaches them, not speculatively** — each needs its own value-level
 verification (a mirror with wrong offsets returns garbage *without* faulting, so "it no longer
 crashes" proves nothing; `LocalTimeZone` compares real zone abbreviations and offsets against Go, and
@@ -6586,6 +6594,11 @@ on the unbanked list by a factor of six.
   cycle-free re-measure, so it is not the MSB4006 artifact above. Per the jsonrpc rule, **a package
   that dies mid-run has one failure and an unknown remainder, not 648** — the 31 is a floor, not a
   census. Flagged for a bisect lane; not this lane's to root.
+  **⚠ RETRACTED 2026-08-14 — not a regression.** The bisect lane reproduced the identical fault at
+  the r39-osalloc commit that recorded the 681, and rooted it in one test whose syscall is reachable
+  only on a host with the Server service running. The flag was right to raise it and right about the
+  floor; the diagnosis "REGRESSION" is withdrawn. See *`os`'s "REGRESSION" is a HOST CAPABILITY, and
+  the killer is `SHARE_INFO_2`* at the end of this file.
 - **`log`: the `AllocsPerRun` shim now reports a COUNT here.** `TestDiscard` measures
   **300 go2cs-runtime object allocations over 100 runs = 3 objects/run** against Go's want-zero
   (the board's fourth-member row read "bytes"). `net/http/internal`'s `TestChunkReaderAllocs`
@@ -6635,3 +6648,137 @@ into the static `<pkg>_test_package` partial class**, which C# forbids. It holds
 `internal/reflectlite` (30 verdicts) and `runtime/debug` (9). And **CS0111 `Append`** holds `fmt`
 (63) and `archive/tar` (97) — 160 verdicts on one duplicate-member emission. Neither is deep; both
 are the cheapest remaining pairs on this list.
+
+## RETRACTED — `os`'s "REGRESSION" is a HOST CAPABILITY, and the killer is `SHARE_INFO_2` (2026-08-14, lane os-av-bisect)
+
+Scout batch 2 flagged `os` as a REGRESSION — **31 of 679** measured against this board's **681 of
+683**, the converted host dying with `0xc0000005` after 32 verdicts — and sent it to a bisect lane
+under the `unique` precedent. **There is no culprit commit.** The access violation reproduces, frame
+for frame, at **`a936c8025` (r39-osalloc)** — the very commit whose run recorded the 681. What moved
+is the HOST, not the tree.
+
+**The killer, named.** One test: `TestNetworkSymbolicLink`. The goroutine-panic containment from the
+jsonrpc chip is what makes it nameable — the fault now arrives with a managed stack instead of a bare
+exit status:
+
+```
+Fatal error. 0xC0000005
+   at go.syscall_package.syscalln(UIntPtr, System.ReadOnlySpan`1<go.uintptr>)
+   at go.syscall_package.SyscallN(go.uintptr, System.Span`1<go.uintptr>)
+   at go.syscall_package.Syscall6(...)
+   at go.internal.syscall.windows_package.NetShareAdd(go.ж`1<UInt16>, UInt32, go.ж`1<Byte>, go.ж`1<UInt16>)
+   at go.os_test_package.TestNetworkSymbolicLink(go.ж`1<T>)
+```
+
+It is the **syscall STRUCT-PASSING seam** — the open class this file already carries — reached for
+the first time by a real suite, and reached in the direction that class had not yet shown: not the
+kernel WRITING a native record over a smaller managed one, but the kernel READING a managed record
+as a native one and dereferencing a value field as a pointer. That shape faults AT the call, not
+arbitrarily far away.
+
+**The mechanism, measured rather than argued.** `internal/syscall/windows.SHARE_INFO_2` holds four
+`ж<uint16>` pointer fields and four `uint32`s. The CLR auto-layouts a struct containing references,
+so the references are grouped FIRST — dumped by reflection from the built
+`internal.syscall.windows.dll`, the record is **48 bytes** against the native **56**:
+
+| native `SHARE_INFO_2` (x64) | native off | C# storage actually at that offset | value handed to netapi32 |
+|:--|--:|:--|:--|
+| `LPWSTR shi2_netname` | 0 | `Netname` (object reference) | a managed reference, read as runes |
+| `DWORD  shi2_type` | 8 | low half of `Remark` (nil) | 0 |
+| `LPWSTR shi2_remark` | 16 | `Path` (object reference) | a managed reference |
+| `DWORD  shi2_permissions` | 24 | low half of `Passwd` (nil) | 0 |
+| `DWORD  shi2_max_uses` | 28 | high half of `Passwd` (nil) | 0 |
+| `DWORD  shi2_current_uses` | 32 | `Type` | `0x40000000` |
+| **`LPWSTR shi2_path`** | **40** | **`MaxUses` (=1) then `CurrentUses` (=0)** | **`0x0000000000000001`** |
+| `LPWSTR shi2_passwd` | 48 | **past the end of the 48-byte record** | whatever follows on the heap |
+
+netapi32 dereferences `shi2_path` — the pointer value **1** — and the process dies. `shi2_passwd` is
+a second, independent defect in the same call: an 8-byte over-read past the managed record.
+
+**Proven without go2cs.** A standalone C# program calling `netapi32!NetShareAdd` three ways, on this
+host:
+
+| Buffer | Result |
+|:--|:--|
+| A — blittable `[StructLayout(Sequential)]` record with real `LPWSTR`s | `rc=0`, the share is genuinely created, `NetShareDel rc=0` |
+| B — object references at the NATIVE offsets | **survives**, `rc=123` (`ERROR_INVALID_NAME`) — an object reference is a readable address, so this alone is not fatal |
+| C — the MEASURED go2cs layout (refs 0/8/16/24, uints 32/36/40/44) | **`Fatal error. 0xC0000005`**, exit `-1073741819` |
+
+So the fault is not "a managed reference where `LPWSTR` belongs"; it is the **field REORDERING** that
+puts an integer `1` under `shi2_path`. B is the control that makes C mean something.
+
+**Why the board's 681 held and this host's run does not.** Go's own test treats exactly two
+`NetShareAdd` failures as a skip — `ERROR_ACCESS_DENIED` and `NERR_ServerNotStarted` (2114) — and on
+a host where either fires, netapi32 never reaches the buffer, both sides skip, and the row AGREES.
+On this host neither fires: the session is elevated, `LanmanServer` is **Running**, probe A creates a
+real share, and **Go's own `TestNetworkSymbolicLink` PASSES**. The buffer is therefore marshalled,
+and the layout defect becomes fatal. The 681 was measured on the i9 that died 2026-08-09; it cannot
+be re-measured there, and nothing about that record needs to be doubted — it needs a **precondition
+written down**, which is what this entry is.
+
+**The record survives — control run, HEAD, one test excluded.** With
+`-run '^(?!TestNetworkSymbolicLink$)'` and nothing else changed, the host runs the suite **to
+completion**: **683 verdicts — 659 pass, 21 skip, 2 test failures**, those two being `TestUTF16Alloc`
+(the recorded alloc-count-semantics **disclosure**) and `TestWriteStringAlloc` (the ONE real residual
+r39-osalloc rooted and left as an architectural arc). That is the recorded shape exactly.
+`TestNetworkSymbolicLink` is the **sole** host-killer; there is nothing behind it. (C#-side census
+only — no differential was run, and the skip count differs from the recorded 34 because a
+more-capable host skips fewer tests, which is the same host-capability fact stated from the other
+side. Do not read 683 here and 683 on the record as the same denominator.)
+
+**Verdict for the roster and the board.**
+
+- The REGRESSION row is **retracted**. `31 of 679` stands as a floor under the jsonrpc rule, and is
+  not evidence of anything having broken.
+- `os`'s **681 of 683 + 1 disclosed record stands**, now qualified: it is measurable only on a host
+  where `NetShareAdd` short-circuits. On a host with the Server service reachable, `os` measures
+  NOTHING — the process dies at test ~32 of 174.
+- `os` still does not bank, for the reason it never did: `TestWriteStringAlloc`. It has never been a
+  roster row; 681 of 683 is a board record.
+- **No commit is implicated, so nothing is reverted and no guard is added.**
+
+**The census this finding corrects.** The struct-passing census above is scoped to
+**`src/core/syscall`** and therefore could never have listed this member. `internal/syscall/windows`
+is a SECOND package holding the same class, and its own census is:
+
+| Wrapper | Non-blittable struct | Reached by |
+|:--|:--|:--|
+| `NetShareAdd` | `SHARE_INFO_2` (`Netname`, `Remark`, `Path`, `Passwd`) | **`os`'s `TestNetworkSymbolicLink` — the only caller in all of GOROOT**; fatal on a capable host |
+| `GetAdaptersAddresses` | `IpAdapterAddresses` (nine `ж<T>`, `array<byte> PhysicalAddress`, `array<uint32> ZoneIndices`) | `net.Interfaces` |
+| `Module32First` / `Module32Next` | `ModuleEntry32` (`array<uint16> Module`, `array<uint16> ExePath`) | `syscall`'s own suite |
+| `GetFileInformationByHandleEx` | `FILE_ID_BOTH_DIR_INFO` / `FILE_FULL_DIR_INFO` (`array<uint16>` names) | `os`'s `readdir` — **already answered**, and it is the worked precedent: `src/core/os/windows/dir_windows_impl.cs` reads the kernel's buffer at NATIVE offsets instead of reinterpreting it as the managed surrogate |
+| `WSASendMsg` / `WSARecvMsg` | `WSAMsg` (`ж<syscall.WSABuf>`) | `net`'s UDP OOB path |
+| `NetUserGetLocalGroups` | `ж<ж<byte>>` out-buffer | `os/user` |
+
+**Why this one is NOT fixed here, and what the candidate remedies cost.** The established remedy is a
+hand-owned wrapper with a blittable mirror and a field-for-field copy at the boundary. It does not
+reach this member, because the wrapper never sees the struct: `os_windows_test.go` writes
+`(*byte)(unsafe.Pointer(&p))`, which the converter emits as
+`Ꮡp.Reinterpret<windows.SHARE_INFO_2, byte>()`, and `Reinterpret` correctly REFUSES to alias a
+reference-bearing struct as `byte` — so it falls to `(ж<byte>)(uintptr)box` and the wrapper receives
+a NATIVE-address box with the managed identity already gone. There is nothing left to copy from.
+
+1. **Recover the struct by reading the raw address** (`Unsafe.Read<SHARE_INFO_2>`) inside a
+   hand-owned `NetShareAdd`. Rejected: it fabricates managed references out of a raw address, which
+   `ж.PointerExtensions.cs` names as a CLR type-safety break and "strictly worse than the
+   wrong-but-contained read the address route produces". It would also rest on a pin the address
+   route does not promise.
+2. **Hand-own `NetShareAdd` to fail by name** — a `manualConversionFuncs` placeholder returning a
+   declared "non-blittable struct handed to the kernel" error, the `registerCache`-style
+   announce-itself stub. Small, zero blast radius (one caller in GOROOT, and it is a test), and it
+   converts a whole-suite process death into ONE loud row. But Go PASSES this test on a capable host,
+   so the row would be a real mismatch rather than a skip, and the stub declares a capability limit —
+   a coordinator ruling, not a lane's call. **Recommended, pending that ruling.**
+3. The durable answer is the **ж-box arc's**: have the non-aliasing `Reinterpret` fallback retain the
+   source object so a hand-owned wrapper can reach it, at which point remedy 1 becomes an ordinary
+   field-for-field copy with no fabrication.
+
+Whichever lands, verify at VALUE level as the class demands: probe A above is the oracle — the share
+must actually be created and `NetShareDel` must remove it.
+
+**A measurement rule this leaves behind.** A converted suite that dies with a native fault is not
+automatically a regression, and a bisect is not automatically the right instrument. Root the fault
+site FIRST — the containment work makes that cheap now — and ask whether the failing call depends on
+a host capability the previous measurement did not have. Here one probe at the recording commit
+settled it in six minutes, where a 230-commit first-parent bisect would have found nothing and said
+so only after eight probes.
