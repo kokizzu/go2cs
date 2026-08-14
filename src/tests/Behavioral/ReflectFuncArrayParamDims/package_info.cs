@@ -59,6 +59,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct filler {}
     [GoValueClone("Buf")] internal partial struct wrap {}
     // </TypeAccessibility>
 }

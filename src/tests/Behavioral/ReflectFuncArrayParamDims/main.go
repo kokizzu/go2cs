@@ -21,6 +21,28 @@ import (
 // below is quick's generation loop in miniature — New(In(0)).Elem(), fill through Index(i).Set,
 // Call — which is the shape that has to work, not merely the reported length.
 
+// A METHOD's array parameters are the same datum reached two hops further out, and net/rpc is the
+// consumer that found both hops missing. Its server allocates every reply with
+// reflect.New(mtype.ReplyType.Elem()) where ReplyType came from mtype.In(2) — so the length has to
+// survive (1) a func type built from the method TABLE rather than read off a delegate instance, and
+// (2) a POINTER between the parameter and the array. Neither carried it: New produced a ZERO-length
+// array and the callee's first write panicked "index out of range [0] with length 0" on an rpc
+// goroutine, which killed the whole test host (net/rpc/jsonrpc's TestBuiltinTypes).
+type filler struct{}
+
+func (filler) FillPtr(i int, reply *[3]int) {
+	reply[0] = i
+	reply[2] = i * 2
+}
+
+func (filler) SumArray(in [4]int) int {
+	total := 0
+	for _, v := range in {
+		total += v
+	}
+	return total
+}
+
 type wrap struct {
 	Buf [8]byte
 }
@@ -56,6 +78,48 @@ func main() {
 	// testing/quick's generation loop, in miniature.
 	fmt.Println("generated call:", generateAndCall(reflect.ValueOf(f32)))
 	fmt.Println("generated call:", generateAndCall(reflect.ValueOf(declared)))
+
+	// net/rpc's allocate-the-argument-from-the-method-type loop, in miniature.
+	reportMethod()
+}
+
+// reportMethod walks a METHOD's array parameters the way net/rpc's server does: the func type comes
+// from the method table (Method(i).Type, receiver first), the reply argument is allocated from the
+// parameter type alone, and the callee writes through it. A dims-less descriptor is not merely
+// mis-reported here — the call PANICS.
+func reportMethod() {
+	t := reflect.TypeOf(filler{})
+
+	m, ok := t.MethodByName("FillPtr")
+	if !ok {
+		panic("FillPtr not found")
+	}
+
+	// In(0) is the receiver, so the *[3]int reply is In(2).
+	ptr := m.Type.In(2)
+	elem := ptr.Elem()
+	fmt.Println("method ptr param: kind =", ptr.Kind(), "elem =", elem, "len =", elem.Len())
+
+	reply := reflect.New(elem)
+	m.Func.Call([]reflect.Value{reflect.ValueOf(filler{}), reflect.ValueOf(7), reply})
+	fmt.Println("filled through the pointer:", reply.Elem().Interface())
+
+	s, ok := t.MethodByName("SumArray")
+	if !ok {
+		panic("SumArray not found")
+	}
+
+	in := s.Type.In(1)
+	fmt.Println("method value param:", in, in.Len())
+
+	arg := reflect.New(in).Elem()
+
+	for i := 0; i < arg.Len(); i++ {
+		arg.Index(i).SetInt(int64(i + 1))
+	}
+
+	out := s.Func.Call([]reflect.Value{reflect.ValueOf(filler{}), arg})
+	fmt.Println("method sum:", out[0].Int())
 }
 
 func report(name string, t reflect.Type) {

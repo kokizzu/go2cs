@@ -5,6 +5,26 @@ using reflect = reflect_package;
 
 partial class main_package {
 
+[GoType] partial struct filler {
+}
+
+internal static void FillPtr(this filler _, nint i, [GoArrayDims(3)] ж<array<nint>> Ꮡreply) {
+    ref var reply = ref Ꮡreply.DerefOrNull();
+
+    reply[0] = i;
+    reply[2] = i * 2;
+}
+
+internal static nint SumArray(this filler _, [GoArrayDims(4)] array<nint> @in) {
+    @in = @in.Clone();
+
+    nint total = 0;
+    foreach (var (_, v) in @in) {
+        total += v;
+    }
+    return total;
+}
+
 [GoType] partial struct wrap {
     public array<byte> Buf = new(8);
 }
@@ -55,6 +75,43 @@ internal static void Main() {
     fmt.Println(structFieldˢ, field.Name, field.Type, field.Type.Len());
     fmt.Println(generatedCallˢ, generateAndCall(reflect.ValueOf(f32)));
     fmt.Println(generatedCallˢ, generateAndCall(reflect.ValueOf(declared)));
+    reportMethod();
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fillPtrˢ = "FillPtr"u8;
+private static readonly object methodPtrParamKindˢ = (@string)"method ptr param: kind ="u8;
+private static readonly object elemˢ = (@string)"elem ="u8;
+private static readonly object lenˢ = (@string)"len ="u8;
+private static readonly object filledThroughThePointerˢ = (@string)"filled through the pointer:"u8;
+private static readonly @string sumArrayˢ = "SumArray"u8;
+private static readonly object methodValueParamˢ = (@string)"method value param:"u8;
+private static readonly object methodSumˢ = (@string)"method sum:"u8;
+
+internal static void reportMethod() {
+    var t = reflect.TypeOf(new filler(nil));
+    var (m, ok) = t.MethodByName(fillPtrˢ);
+    if (!ok) {
+        throw panic("FillPtr not found");
+    }
+    var ptr = m.Type.In(2);
+    var elem = ptr.Elem();
+    fmt.Println(methodPtrParamKindˢ, ptr.Kind(), elemˢ, elem, lenˢ, elem.Len());
+    var reply = reflect.New(elem);
+    m.Func.Call(new reflectꓸValue[]{reflect.ValueOf(new filler(nil)), reflect.ValueOf((nint)(7)), reply}.slice());
+    fmt.Println(filledThroughThePointerˢ, reply.Elem().Interface());
+    (var s, ok) = t.MethodByName(sumArrayˢ);
+    if (!ok) {
+        throw panic("SumArray not found");
+    }
+    var @in = s.Type.In(1);
+    fmt.Println(methodValueParamˢ, @in, @in.Len());
+    var arg = reflect.New(@in).Elem();
+    for (nint i = 0; i < arg.Len(); i++) {
+        arg.Index(i).SetInt((int64)(i + 1));
+    }
+    var @out = s.Func.Call(new reflectꓸValue[]{reflect.ValueOf(new filler(nil)), arg}.slice());
+    fmt.Println(methodSumˢ, @out[0].Int());
 }
 
 internal static void report(@string name, reflectꓸType t) {
