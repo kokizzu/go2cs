@@ -1036,6 +1036,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckNestedVarShadow() => CheckTarget("NestedVarShadow");
 
     [TestMethod]
+    public void CheckNetListenSmoke() => CheckTarget("NetListenSmoke");
+
+    [TestMethod]
     public void CheckNewAnonStructIfaceEmbed() => CheckTarget("NewAnonStructIfaceEmbed");
 
     [TestMethod]

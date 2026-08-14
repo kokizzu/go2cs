@@ -986,6 +986,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckNestedVarShadow() => CheckTarget("NestedVarShadow");
 
     [TestMethod]
+    public void CheckNetListenSmoke() => CheckTarget("NetListenSmoke");
+
+    [TestMethod]
     public void CheckNewAnonStructIfaceEmbed() => CheckTarget("NewAnonStructIfaceEmbed");
 
     [TestMethod]

@@ -505,6 +505,35 @@ Gates: full behavioral suite; then the pipeline's own measure — **filtered swe
 `internal/poll`: the board row's target is 19/19** (from 18/19, sole miss `runtime_pollServerInit`
 — the row this design exists to close).
 
+> **⚠ FINDING (implementation lane, 2026-08-13, measured at S1): that gate has an unrecorded
+> PREREQUISITE — `internal/poll`'s converted test host does not currently BUILD, so the row is not
+> measurable at any value, before or after this arc.** Measuring it at S1 (regression diligence: S1
+> lets `TestWSASocketConflict` run past the `fd.Init` that used to kill it, so "further than it has
+> ever run" is where a new hang would live) produced a C# compile error rather than a verdict:
+> ```
+> export_test.cs(13,62): error CS0123: No overload for 'consume' matches
+>                        delegate 'Action<ж<slice<slice<byte>>>, long>'
+> ```
+> `export_test.go`'s `var Consume = consume` is a func VALUE of a function whose `*[][]byte`
+> parameter the production emission now lowers to a C# `ref` (`consume(ref slice<slice<byte>> v,
+> int64 n)`, `fd.cs:92`), while the test file still spells the delegate in the `ж<T>` box form. A
+> `ref`-taking method cannot bind to that delegate. Both files are ordinary converted output that
+> this arc does not touch — the netpoll hand-own supplies partial BODIES for the ten `runtime_poll*`
+> methods and cannot alter `consume`'s signature — so this is the ref-lowering arc meeting
+> func-value conversion, and it is **not this arc's to fix** (recorded and handed to the coordinator
+> rather than reached across, per OQ6's ownership line). The board's "18 of 19" reading therefore
+> predates the ref-lowering landing and should be treated as stale until the host compiles again.
+>
+> Two facts worth carrying to whoever picks it up. The Go side of the same run is itself **not
+> clean on every host**: `TestSerialFdsAreInitialised/COM4` fails wherever a real COM4 exists, so
+> the differential's Go baseline is host-dependent and the target may not be a round 19/19. And the
+> S1 hazard the measurement was meant to probe remains **unprobed** — `FD.WSAIoctl`
+> (`windows/sockopt_windows.cs:11`) bypasses `execIO` entirely and hands the kernel the CALLER's
+> `syscall.Overlapped`, which after this arc lands is an overlapped operation on a socket bound to
+> the CLR's completion port. See the same warning in `runtime_netpoll_impl.cs`'s completion-sink
+> commentary; it is the one place a foreign OVERLAPPED can reach that port without going through
+> S2's records.
+
 **S3 — consumer re-measures (the board rows behind the netpoll wall).** The RESOLVED note freezes
 the walled set and this design inherits it as its unlock ledger: `net/smtp` (9/14, five rows on
 this exact stack — the first re-measure, per the L10 spec's consumer-proof pattern), then ONE of
