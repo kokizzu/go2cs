@@ -661,11 +661,21 @@ private static uintptr reflectPointerToken(ΔValue v) {
     // (equal pointers token equally; same-storage element pointers order by index; channel
     // copies share their core's token — internal/fmtsort orders map keys by this). Anything
     // else (a func delegate, a map) falls back to reference identity.
-    return cur switch {
+    uintptr token = cur switch {
         INilPointer p => ((uintptr)p.PointerOrderToken),
         IChannel c => ((uintptr)c.PointerOrderToken),
         _ => ((uintptr)(nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cur))
     };
+    // Go also permits the OTHER direction — converting the scalar back to a pointer and
+    // dereferencing it (`(*bool)(v.FieldByName(name).Addr().UnsafePointer())`, go/types'
+    // check_test.go) — which an order token alone cannot serve, because the box it named is
+    // exactly what the projection to a scalar drops. Remember the association so the uintptr →
+    // pointer conversion can put it back; the token VALUE is unchanged, so every consumer that
+    // only orders or nil-tests the result sees precisely what it saw before.
+    // The type-descriptor path above is deliberately excluded: its tokens are packed type NAMES,
+    // shared by every descriptor with the same name, and so are not identities to recover.
+    ManagedPointerTokens.Register((nuint)token.Value, cur);
+    return token;
 }
 
 // typeDescriptorOrderToken answers the order token for a pointer to a TYPE DESCRIPTOR (*rtype or

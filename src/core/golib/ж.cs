@@ -1070,6 +1070,13 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     // Aliasing keeps `uintptr(unsafe.Pointer(p))` an exact round-trip, as Go requires.
     public static unsafe explicit operator ж<T>(uintptr value)
     {
+        // A pointer to MANAGED storage has no address to have been converted from: what a reflect
+        // projection handed out was an order token (see ManagedPointerTokens). Recover the box that
+        // token named, so `(*T)(v.Addr().UnsafePointer())` yields a pointer to the very storage the
+        // reflect Value aliased — instead of a native box over a number that is not an address.
+        if (ManagedPointerTokens.Resolve((nuint)value.Value) is ж<T> aliased)
+            return aliased;
+
         return new ж<T>((nuint)value.Value);
     }
 
