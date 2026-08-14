@@ -6493,3 +6493,145 @@ machine AOT trails JIT on the compute-bound rows (RefLower 8.08× vs 2.92×, Mat
 1.66×, Sieve 3.28× vs 1.61×) while beating it on Startup and Map — the ref-heavy hot loop is
 the widest such gap, so ILC codegen of the lowered emission is worth a look when B′'s
 dual-emission increment prices its own AOT bill.
+
+## Scout batch 2 — the never-measured/stale tail, 50 packages re-run; 3 bank, 8 roots MOVED (2026-08-14, lane B)
+
+The derivation first, because the denominator is the part boards get wrong. **305** package
+directories under `src/core` carry a production `.csproj`; **216** of them have a `func Test` in
+their Go 1.23.1 GOROOT sources; subtracting hand-owned `testing` (skip-listed, never queued)
+reconciles that to the roster header's **215** exactly, and 215 − 136 banked = **79** unbanked.
+Of the 79, five have *no eligible `Test` declaration on windows/amd64* (`internal/runtime/syscall`,
+`internal/syscall/unix`, `net/internal/socktest`, `log/syslog`, `runtime/race`) and `os/user`
+cannot bank at all (Go's own `TestGroupIds` fails in the oracle); the named walls (netpoll sockets,
+scheduler-walled `internal/singleflight`, `go/types`, synthetic-GOROOT `go/build`) and the censuses
+taken since 2026-08-09 were left to their owners. **Fifty** packages were run end to end through
+`-tests -test-action all`.
+
+**Three bank, forty-six are rooted, and one is NOT MEASURED.** Roster **136 → 139 (63.3% →
+64.7%), 15,137 → 15,181 matching verdicts, 47 disclosed (unchanged).**
+
+### The three
+
+`crypto/internal/hpke` (19) · `crypto/internal/edwards25519/field` (16) · `debug/gosym` (9)
+
+None needed a change of any kind — each is a capability that landed in the preceding week finally
+being *looked at*, which is r43c's lesson executed for the third time. `crypto/internal/hpke` was
+held by the JSON-into-a-lifted-anonymous-struct root (`claude/json-fixed-array-unmarshal`);
+`crypto/internal/edwards25519/field` by the `array<T>` unshaped-instance class it was recorded as
+"producer (3)" of; `debug/gosym`'s `TestPCLine` by the converted host's working directory — it
+shells out to the real Go toolchain to build `testdata/`, so it closed when the host learned to
+reproduce a package's directory **ancestry** (`40beb776e`), not merely its shape.
+
+### ⚠ The measurement hazard this pass paid for twice — MSB4006 is NOT a build root
+
+r44a's trap #2 recorded that a failed run's leftover `<pkg>.tests.csproj` can produce
+`NuGet.targets(1311,5): error MSB4006: circular dependency … "_GenerateRestoreProjectPathWalk"`.
+This pass hit a **second, sharper form of the same hazard, and the poisoned file is TRACKED**: a
+`-tests` run rewrites the production `.csproj` of packages in its closure, and the `runtime` run
+rewrites `src/core/runtime/runtime.csproj`'s windows-conditional `ItemGroup` to add
+`internal/syscall/windows` — which references `syscall`, which references `runtime`. That is a real
+project-path cycle, and *every package whose closure reaches `runtime` then fails to restore*. Four
+packages (`runtime`, `crypto/tls`, `go/internal/gcimporter`, `os`) were first recorded as
+"conversion-blocked" this way, which reads exactly like a build root and is not one.
+
+Two rules follow, and the second cost more than the first:
+
+1. **Restore tracked `.csproj` drift between pipeline runs**, not just untracked artifacts, then
+   re-measure. Proof: with `runtime.csproj` at HEAD and no prior `runtime` run, `crypto/tls`
+   compiles and reaches its own diagnostic in 337 s — no cycle. All four were re-measured this way
+   and the three that could be are reported below on their real roots.
+2. **Do NOT "clean" by deleting `*.tests.csproj` wholesale.** 136 of them are *committed source*
+   under the validated-package commit policy. An over-broad prophylactic delete wiped every banked
+   package's test project in one command; `git checkout -- src/core` restores it, but a lane that
+   did not notice would have banked the deletion. Scope such a clean to `git clean`, which by
+   construction cannot touch tracked files — never to a `Get-ChildItem | Remove-Item` sweep.
+
+`runtime` itself remains **NOT MEASURED**: its own `-tests` run is what writes the cycle, so the
+package cannot be measured without first fixing that emission. That is the finding, and it is a
+converter defect — a test-closure-only reference reaching a **production** `.csproj`.
+
+### Eight roots MOVED — the board's recorded first diagnostic is stale for these
+
+| Package | Census | Board had | Measured 2026-08-14 |
+|:--|:--:|:--|:--|
+| `archive/tar` | 0 of 97 | CS1537 ×3, duplicate `using` alias in one file | **CS0111** — `tar_internal_test_package.fileOps` already defines `Append`. The alias-dedupe root is CLOSED; behind it is the same defect as `fmt` |
+| `fmt` | 0 of 63 | CS0111 `fmt_test_package.SE` already defines `Append` | unchanged — **and it is now a two-package root** with `archive/tar` |
+| `sync/atomic` | 0 of 108 | CS0103 `ᏑᏑX`, double address-prefix | **CS0841** — cannot use local `magic64` before it is declared. The double-`Ꮡ` is closed |
+| `internal/reflectlite` | 0 of 30 | CS0016 could not write to output file | **CS0715** — static classes cannot contain user-defined operators: a generic test-local type's `==`/`!=` emitted into the static `reflectlite_test_package` |
+| `runtime/debug` | 0 of 9 | CS0264, not taken past the first diagnostic | **CS0264 + CS0715** — the same static-class-operator defect as `internal/reflectlite`. Two packages, one root |
+| `database/sql` | 0 of 25 | CS0029 | **CS0121** ambiguous `stubDriverStmt(NilType)` constructor + **CS0117** `sql_package` has no `Δtable` |
+| `crypto/x509` | 0 of 335 | CS0102 duplicate definition in `x509_package` | **CS0234** `cryptobyte_package` / **CS0246** `hash_package` unresolved *in the production files* under the `-tests` closure |
+| `internal/platform` | 0 of 1 | JSON array into a slice of a lifted anonymous struct | **panic: nil dereference** in `text/template`'s `errRecover` — `TestGenerated` renders its expectation through a template. The lift question may still sit behind it, but it is no longer the failing edge |
+
+### `crypto/tls` — 0 of 3,519, and the `vendor` root is in GENERATED code
+
+The recorded root ("CS0234 `'vendor' does not exist` — the test half's vendored import") is right
+about the token and wrong about the file. The errors are **CS0246 `vendor` could not be found** in
+`go2cs-gen` RecvGenerator output — e.g.
+`go.crypto.tls_package.NonceSize.global__go.crypto.tls_package.prefixNonceAEAD.g.cs(17,7)`. The
+generator emits a receiver overload whose parameter type names the GOROOT-vendored root namespace,
+so this is an emission question in the analyzer, not an import list. It is the largest verdict count
+on the unbanked list by a factor of six.
+
+### Re-baselines this pass owes the board
+
+- **`go/internal/gcimporter`: 399 → 475 of 583.** The L9 laptop-G census was taken with the
+  `go/types` checker nil-panic live; `25108403e` (2026-08-13) closed it and moved **76 rows** with
+  no work aimed at this package. The residual is **108 rows, all `TestImportTypeparamTests/*`** —
+  still the type-parameter class, so the wall is narrower, not gone. 1,391 s to measure.
+- **⚠ `os`: 681 of 683 (board) → 31 of 679 (measured), and this is a REGRESSION to bisect.** The
+  converted host dies with **exit status `0xc0000005` (access violation)** after recording 32
+  verdicts, the last four being `TestLookupEnv`, `TestMkdirAllAtSlash`,
+  `TestMkdirAllExtendedLengthAtRoot`, `TestMkdirAllVolumeNameAtRoot`. Reproduced on a clean,
+  cycle-free re-measure, so it is not the MSB4006 artifact above. Per the jsonrpc rule, **a package
+  that dies mid-run has one failure and an unknown remainder, not 648** — the 31 is a floor, not a
+  census. Flagged for a bisect lane; not this lane's to root.
+- **`log`: the `AllocsPerRun` shim now reports a COUNT here.** `TestDiscard` measures
+  **300 go2cs-runtime object allocations over 100 runs = 3 objects/run** against Go's want-zero
+  (the board's fourth-member row read "bytes"). `net/http/internal`'s `TestChunkReaderAllocs`
+  reproduces r58a exactly at **2 objects/run against a budget of 1**. `log/slog/internal/buffer`
+  is unchanged — still **bytes** (1,520 B over 5 runs), so r58a's "counter saw none" stands for
+  that one. `log` is 7 of 9; `TestAll` is its second, separate row.
+- **`log/slog`: 153 of 213 matched.** Recorded differently by r44b (185 pass / 28 fail / 1 crash),
+  which counted the C# side rather than agreement with Go; the two are not comparable and this row
+  is the differential. Not re-attributed here.
+
+### Reproduced verbatim — no re-measure owed until a relevant capability lands
+
+`go/doc` 24 of 85 · `encoding/gob` 99 of 106 · `crypto/cipher` 13 of 14 · `debug/pe` 9 of 10 ·
+`html` 2 of 3 · `internal/trace/internal/oldtrace` 2 of 3 · `internal/weak` 1 of 3 ·
+`log/slog/internal/buffer` 1 of 2 · `iter` 0 of 28 (`newcoro`/`coroswitch` stubs) ·
+`runtime/trace` 0 of 2 (`getg` stub) · `internal/concurrent` 0 of 20 (CS0426 `node<,>`) ·
+`debug/elf` 0 of 31 (CS8183 at `file_test.cs(1195,5)`) · `os/exec` 0 of 22 (CS0103 `var`) ·
+`text/template` 0 of 52 and `html/template` 0 of 243 (CS0030 `S`→`I`) · `slices` 0 of 122
+(CS0305/CS0411) · `encoding/xml` 0 of 386 (CS0426 `ΔToken`) · `encoding/json` 0 of 491
+(CS0050/CS0053) · `net/netip` 0 of 266 (CS1002/CS1525) · `internal/trace` 0 of 92 and
+`runtime/pprof` 0 of 174 (CS0149 `Method name expected`; pprof also still CS0103 `ᏑᏑsalts`) ·
+`internal/runtime/atomic` 0 of 15 (CS0103 `ᏑᏑx`) · `flag` 0 of 24 (CS1929 on
+`ж<flag_test_package.URLValue>`) · `crypto/ed25519` 0 of 9 (CS0030 `PrivateKey`→`crypto.Signer`) ·
+`crypto/internal/mlkem768` 0 of 11 (CS0315, plus CS0841) · `reflect` — the converter itself still
+fails on `all_test.go` (`1e+06 not an Int`).
+
+### Four packages measured for the FIRST time — no prior board row of any kind
+
+| Package | Census | Root |
+|:--|:--:|:--|
+| `net/http/pprof` | 5 of 15 | `TestHandlers` fails and seven of its subtests infrastructure-error (`/debug/pprof/{heap,mutex,trace,profile,block,goroutine}`); `TestDeltaProfile` skips where Go passes. Profile collection has no managed body — sibling of `runtime/pprof`'s and `runtime/trace`'s stubs |
+| `internal/godebug` | 3 of 5 | `TestCmdBisect` and `TestMetrics` fail; `TestBisectTestCase` and the rest pass. The package is fully hand-owned, so this is the hand-own's own contract being measured for the first time |
+| `internal/syscall/windows` | 0 of 2 | `TestRunAtLowIntegrity`, `TestSupportUnixSocket` — both fail. This is also the package whose `-tests` run participates in the MSB4006 cycle above |
+| `crypto/internal/boring/bcache` | 0 of 1 | `NotImplementedException: registerCache: external (assembly or cgo) function is not implemented` — a `PartialStubGenerator` stub reached from `Register[K,V]`. The board had only "first divergent verdict recorded; not root-attributed" |
+
+`net/mail` gets its first real census too — **7 of 11**, the four `TestAddress*` rows
+infrastructure-erroring on `System.ArgumentException: Indices low, high and max represent a range
+outside bounds of the array reference` — where the board had only "first divergent verdict
+recorded". And `go/internal/srcimporter` (0 of 7) fails before any test with
+`flag provided but not defined: -json`, i.e. the process the host launches is not the go2cs test
+host; that is an infrastructure root, not the recorded build block.
+
+### The prize left on the table
+
+Two packages, one defect: **CS0715 — a generic test-local type's `==`/`!=` operators are emitted
+into the static `<pkg>_test_package` partial class**, which C# forbids. It holds
+`internal/reflectlite` (30 verdicts) and `runtime/debug` (9). And **CS0111 `Append`** holds `fmt`
+(63) and `archive/tar` (97) — 160 verdicts on one duplicate-member emission. Neither is deep; both
+are the cheapest remaining pairs on this list.
