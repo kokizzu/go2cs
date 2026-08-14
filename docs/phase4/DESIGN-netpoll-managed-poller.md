@@ -530,10 +530,14 @@ taken fresh when this machinery exists, not promised now.
 - **No `net` operational campaign** — §6's adjacent-walls list is the boundary of the claim.
 - **No os-file async IO** — files stay non-pollable, exactly as Go 1.23 has them on Windows.
 
-## 9. Open questions for coordinator ruling
+## 9. Open questions — RULED (coordinator, 2026-08-13)
 
-None of these are ratified by this document; each carries this lane's recommendation and the
-evidence section it rests on.
+> **All eight recommendations are RATIFIED as written.** The arc is chartered; §4.2's
+> `ThreadPoolBoundHandle` plumbing, §4.3.3's displacement mechanism and staging, §5's deadline
+> semantics list, and §6's file placement are now the implementation contract. One clause stays
+> live by design: OQ3's UDP-fold — if the S2 sweep shows UDP-shaped `internal/poll` tests failing
+> on the stubs, UDP folds into S2 without re-ruling. Each item below retains its original
+> recommendation text as the record of what was ratified and why.
 
 - **OQ1 — Completion delivery mechanism** (§4.2): `ThreadPoolBoundHandle` (recommended) vs own
   IOCP + poller thread. The contract layer is identical under both; ruling picks the plumbing and
