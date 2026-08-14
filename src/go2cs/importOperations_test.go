@@ -271,6 +271,134 @@ func TestProjectNameFallsBackWhenNoModuleRoot(t *testing.T) {
 	}
 }
 
+// TestStdLibImportPathFromTargetDir pins the recovery itself: a core-rooted directory yields the
+// ON-DISK import path (vendored spelling included), and anything else yields nothing so the caller
+// stays on the import path as written.
+func TestStdLibImportPathFromTargetDir(t *testing.T) {
+	cases := []struct {
+		targetDir string
+		want      string
+		wantOK    bool
+	}{
+		{"$(go2csPath)core/vendor/golang.org/x/crypto/chacha20", "vendor/golang.org/x/crypto/chacha20", true},
+		{"$(go2csPath)core/unicode/utf8", "unicode/utf8", true},
+		{"$(go2csPath)core/fmt", "fmt", true},
+		// The host spelling pathReplace hands back on Windows must read the same.
+		{`$(go2csPath)core\vendor\golang.org\x\crypto\chacha20`, "vendor/golang.org/x/crypto/chacha20", true},
+		// Not core-rooted: the GOROOT rewrite found no match (warnGoRootPathReplace's case), or the
+		// reference belongs to another tree entirely.
+		{`C:\Program Files\Go\src\fmt`, "", false},
+		{"$(go2csPath)pkg/github.com/google/uuid", "", false},
+		{"$(go2csPath)core", "", false},
+		// `core` must match a whole path SEGMENT: a sibling root that merely starts with it is not
+		// the core tree, and reading it as one would yield a truncated import path.
+		{"$(go2csPath)corelib/fmt", "", false},
+	}
+
+	for _, tc := range cases {
+		got, ok := stdLibImportPathFromTargetDir(tc.targetDir)
+
+		if ok != tc.wantOK || got != tc.want {
+			t.Errorf("stdLibImportPathFromTargetDir(%q) = %q, %v; want %q, %v", tc.targetDir, got, ok, tc.want, tc.wantOK)
+		}
+	}
+}
+
+// TestGorootVendoredReferenceNamesTheVendoredProject is the regression for the phantom
+// <ProjectReference> that made crypto/ecdh's committed test project unbuildable: the directory
+// resolved to the vendored location while the project FILE NAME was composed from the unvendored
+// import path, so the reference named `…/vendor/golang.org/x/crypto/chacha20/golang.org.x.crypto.chacha20.csproj`
+// — a real directory holding no such file. MSBuild fails outright on a missing ProjectReference.
+//
+// The same stale name later leaked into go2cs-stdlib.slnx as a phantom 308th project through the
+// multi-platform merge's solution-recovery path (fixed separately, on the solution side, by
+// TestCollectConvertedProjectsIgnoresTestProjectReferences); this is the emission half.
+//
+// Driven through getLocalModulePackageInfo, which is the branch a GOROOT-vendored import actually
+// reaches: build.Import cannot vendor-resolve `golang.org/x/…` with no source dir to resolve
+// against, so resolution falls through to the module-aware loader's dir — the vendored one — while
+// the import path stays as written. The fixture is synthetic so the assertion does not depend on
+// which packages the host toolchain happens to vendor.
+func TestGorootVendoredReferenceNamesTheVendoredProject(t *testing.T) {
+	previous := importPackageDirs
+	t.Cleanup(func() { importPackageDirs = previous })
+
+	goRoot := t.TempDir()
+	vendoredDir := filepath.Join(goRoot, "src", "vendor", "golang.org", "x", "crypto", "chacha20")
+
+	const importPath = "golang.org/x/crypto/chacha20"
+
+	importPackageDirs = map[string]importedPackageMeta{
+		importPath: {Dir: vendoredDir, Name: "chacha20"},
+	}
+
+	info, ok := getLocalModulePackageInfo(importPath, Options{goRoot: goRoot, goPath: build.Default.GOPATH})
+
+	if !ok {
+		t.Fatalf("getLocalModulePackageInfo(%q) did not resolve", importPath)
+	}
+
+	if !info.IsStdLib {
+		t.Error("a GOROOT-vendored package is standard library")
+	}
+
+	const wantReference = "$(go2csPath)core/vendor/golang.org/x/crypto/chacha20/vendor.golang.org.x.crypto.chacha20.csproj"
+
+	if info.ProjectReference != wantReference {
+		t.Errorf("ProjectReference = %q, want %q", info.ProjectReference, wantReference)
+	}
+
+	// PackageName is not only the .csproj name: it keys the embedded standard-library metadata and
+	// composes the imported-alias class path, both of which record the vendored spelling.
+	if want := "vendor.golang.org.x.crypto.chacha20"; info.PackageName != want {
+		t.Errorf("PackageName = %q, want %q", info.PackageName, want)
+	}
+
+	if _, recorded := stdLibExportedMetadata(info.PackageName); !recorded {
+		t.Errorf("embedded metadata has no record for %q — the name does not key the record it must", info.PackageName)
+	}
+
+	// The Go package name is the leaf either way; the vendor prefix must not reach it.
+	if want := "chacha20"; info.RootPackageName != want {
+		t.Errorf("RootPackageName = %q, want %q", info.RootPackageName, want)
+	}
+}
+
+// TestStdLibReferenceUnchangedForUnvendoredPackage is the no-op half: for every package that is NOT
+// GOROOT-vendored — which is the whole corpus bar the vendor/ tree — the on-disk path and the import
+// path are the same string, so deriving the name from the directory changes nothing. This is what
+// makes check-no-regression's zero-movement verdict meaningful rather than lucky.
+func TestStdLibReferenceUnchangedForUnvendoredPackage(t *testing.T) {
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	options := Options{goRoot: goRoot, goPath: build.Default.GOPATH, targetPlatform: runtime.GOOS + "/" + runtime.GOARCH}
+
+	build.Default.GOROOT = options.goRoot
+	build.Default.GOPATH = options.goPath
+
+	cases := map[string]string{
+		"fmt":          "$(go2csPath)core/fmt/fmt.csproj",
+		"unicode/utf8": "$(go2csPath)core/unicode/utf8/unicode.utf8.csproj",
+		"net/http":     "$(go2csPath)core/net/http/net.http.csproj",
+	}
+
+	for importPath, want := range cases {
+		info, ok := getImportPackageInfo([]string{importPath}, options)[importPath]
+
+		if !ok || info.Err != nil {
+			t.Fatalf("getImportPackageInfo(%q): %v", importPath, info.Err)
+		}
+
+		if info.ProjectReference != want {
+			t.Errorf("ProjectReference(%q) = %q, want %q", importPath, info.ProjectReference, want)
+		}
+	}
+}
+
 // The recurse module-cache branch composes its own $(go2csPath)pkg reference from the version-free
 // import path, so it is a second emission site with the same invariant.
 func TestEmittedProjectReferenceForModuleCachePath(t *testing.T) {

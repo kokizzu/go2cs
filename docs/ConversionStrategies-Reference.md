@@ -253,6 +253,28 @@ Seven hand-owned `core` files are never re-emitted (`golib`, `testing`, `unsafe`
 
 Guarded by `TestEmbeddedCsprojTemplatesUseForwardSlashesOnly` and `TestValidationPackBlockUsesForwardSlashesOnly` (`csprojTemplate_test.go` — both templates are asserted to contain *no* backslash at all, so a future addition is covered without the guard enumerating it) and by `TestEmittedProjectReferenceIsHostIndependent` / `TestEmittedProjectReferenceForModuleCachePath` (`importOperations_test.go`).
 
+### A GOROOT-vendored reference is named for the package's ON-DISK path
+
+**A standard-library reference takes its project file name from the directory it resolved to, not from the import path as written.** The two are the same string for every package in the standard library except one class — the GOROOT-**vendored** ones, imported as `golang.org/x/…` but existing on disk, and therefore as converted projects, only under `vendor/golang.org/x/…`.
+
+```xml
+<!-- crypto/ecdh imports `golang.org/x/crypto/chacha20` -->
+<ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/crypto/chacha20/vendor.golang.org.x.crypto.chacha20.csproj" />
+```
+
+The directory half was always right — it is rewritten from the resolved source dir — while the file name was composed from the import path, so the emitted reference named a real directory and a file in it that exists nowhere: `…/vendor/golang.org/x/crypto/chacha20/golang.org.x.crypto.chacha20.csproj`. Deriving the name from the directory (`stdLibImportPathFromTargetDir`, applied in both stdlib arms of `importOperations.go`) is what makes the two halves agree *structurally* rather than coincidentally: `getProjectName` — the producer, which names the `.csproj` the vendored package actually emits — has always derived it from that same `GOROOT/src`-relative directory.
+
+This is the third derivation in one family, and they must all resolve the vendored spelling or they disagree about which package is being named: the **namespace** (`resolveGorootVendoredPath`, under [Cross-package imports](#cross-package-imports-importing-another-package--assembly)), the **dependency-graph key** (`stdLibConverter`), and now the **project file name**.
+
+Two consequences beyond the file name, because `PackageName` is not only a file name:
+
+* It keys the embedded standard-library metadata, which records the vendored spelling (`##vendor.golang.org.x.crypto.chacha20`), so the unvendored name matched no section at all (asserted directly by the guard). Wherever that record is the source — a dependency with no `package_info.cs` on disk, i.e. a `-recurse=nuget` reference — the package's exported aliases and `GoImplement` records would have come back empty and silently fallen through to the derive-from-declarations path.
+* It composes the imported-alias class path. The unvendored form yields `go.golang.org.x.crypto.chacha20_package`, which names a class that exists nowhere — the CS0234 family the namespace arm above exists to prevent. It was latent rather than active only because `loadImportedTypeAliases` dedupes on the *dependency's* `package_info.cs` path, which is the same file for both spellings, so whichever spelling was resolved first won and the other never applied its aliases.
+
+**Where it surfaced, and what it did NOT do.** Only a `-tests` conversion could emit it: production emission resolves the vendored path upstream (`visitImportSpec`), while the test project's dependency list is the raw import set, which carries both spellings — so `crypto/ecdh`'s test project named the package twice, once correctly and once not. It is worth being precise about the damage, because a missing `<ProjectReference>` sounds fatal and is not: MSBuild degrades it to **warning MSB9008** and builds on (measured — the pre-fix `crypto.ecdh.tests.csproj` builds, 0 errors), and here the correct sibling reference supplied the assembly anyway. The real cost was downstream: the stale name was harvested into `go2cs-stdlib.slnx` as a phantom 308th project by the multi-platform merge's solution-recovery path (fixed on the solution side by `TestCollectConvertedProjectsIgnoresTestProjectReferences`; this is the emission half).
+
+Guarded by `TestGorootVendoredReferenceNamesTheVendoredProject` (the vendored spelling, the metadata key, and the leaf package name), `TestStdLibImportPathFromTargetDir` (the recovery, including the non-core-rooted no-match that leaves the caller on the import path) and `TestStdLibReferenceUnchangedForUnvendoredPackage` (the no-op half — the whole corpus bar the `vendor/` tree, which is what makes a zero-movement [CNR](Glossary.md#cnr) verdict meaningful rather than lucky), all in `importOperations_test.go`.
+
 ### Generated output path: `$(OutDir)` defers to `$(BaseOutputPath)`
 
 Both project templates (`src/go2cs/csproj-template.xml` and the `-tests` host's `test-csproj-template.xml`) give the generated project a stable default output path:

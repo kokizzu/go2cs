@@ -377,14 +377,23 @@ func getImportPackageInfo(importPaths []string, options Options) map[string]Pack
 		sourceDir := pkg.Dir
 		var targetDir string
 
+		// The package's identity for naming purposes: its ON-DISK path, which for a GOROOT-vendored
+		// package is the `vendor/`-prefixed one and for everything else is the import path itself
+		// (resolved below, once the stdlib branch has produced the directory to read it from).
+		canonicalImportPath := importPath
+
 		if isStdLib {
 			goRootSrc := filepath.Join(options.goRoot, "src")
 
 			var rewritten bool
-			targetDir, rewritten = pathReplace(sourceDir, goRootSrc, "$(go2csPath)core")
+			targetDir, rewritten = pathReplace(sourceDir, goRootSrc, go2csCoreRoot)
 
 			if !rewritten {
 				warnGoRootPathReplace(sourceDir, goRootSrc)
+			}
+
+			if canonical, ok := stdLibImportPathFromTargetDir(targetDir); ok {
+				canonicalImportPath = canonical
 			}
 		} else {
 			// A no-match here is ROUTINE — a non-stdlib package resolved by go/build commonly sits
@@ -393,7 +402,7 @@ func getImportPackageInfo(importPaths []string, options Options) map[string]Pack
 			targetDir, _ = pathReplace(sourceDir, filepath.Join(options.goPath, "pkg"), "$(go2csPath)pkg")
 		}
 
-		importPathParts := strings.Split(importPath, "/")
+		importPathParts := strings.Split(canonicalImportPath, "/")
 		packageName := strings.Join(importPathParts, ".")
 		projectReference := emittedProjectReference(targetDir, projectFileBaseName(packageName)+".csproj")
 
@@ -453,13 +462,23 @@ func getLocalModulePackageInfo(importPath string, options Options) (PackageInfo,
 	goRootSrc := filepath.Join(options.goRoot, "src")
 
 	if isPathUnder(meta.Dir, goRootSrc) {
-		targetDir, rewritten := pathReplace(meta.Dir, goRootSrc, "$(go2csPath)core")
+		targetDir, rewritten := pathReplace(meta.Dir, goRootSrc, go2csCoreRoot)
 
 		if !rewritten {
 			warnGoRootPathReplace(meta.Dir, goRootSrc)
 		}
 
-		importPathParts := strings.Split(importPath, "/")
+		// The ON-DISK spelling names the package (see stdLibImportPathFromTargetDir). This is the
+		// branch a GOROOT-VENDORED import reaches: go/build cannot resolve `golang.org/x/crypto/…`
+		// with no source dir to vendor-resolve against, so it falls through to the module-aware
+		// loader's dir — which IS the vendored one — while the import path stays as written.
+		canonicalImportPath := importPath
+
+		if canonical, ok := stdLibImportPathFromTargetDir(targetDir); ok {
+			canonicalImportPath = canonical
+		}
+
+		importPathParts := strings.Split(canonicalImportPath, "/")
 		packageName := strings.Join(importPathParts, ".")
 		projectReference := emittedProjectReference(targetDir, projectFileBaseName(packageName)+".csproj")
 
@@ -582,6 +601,57 @@ func packageQualifiedName(namespace, packageName string) string {
 	}
 
 	return nsPrefix + "." + packageName
+}
+
+// go2csCoreRoot is the emitted root of the ONE converted standard library — the prefix every stdlib
+// reference is rewritten to, and the prefix stdLibImportPathFromTargetDir reads back off.
+const go2csCoreRoot = "$(go2csPath)core"
+
+// stdLibImportPathFromTargetDir recovers a standard-library package's canonical, ON-DISK import path
+// from the $(go2csPath)core-rooted directory its reference already resolved to. Returns ok=false when
+// the directory is not core-rooted (the GOROOT rewrite found no match — warnGoRootPathReplace's case),
+// leaving the caller on the import path as written.
+//
+// The two spellings differ for exactly one class: a GOROOT-VENDORED package. `crypto/ecdh` imports
+// `golang.org/x/crypto/chacha20`, but that package exists on disk — and therefore as a converted
+// project — only at `vendor/golang.org/x/crypto/chacha20`. The DIRECTORY was always right (it is
+// rewritten from the resolved source dir), while the project FILE NAME was composed from the import
+// path as written, so the reference named a real directory and a file in it that exists nowhere:
+// `…/vendor/golang.org/x/crypto/chacha20/golang.org.x.crypto.chacha20.csproj` against the real
+// `vendor.golang.org.x.crypto.chacha20.csproj`.
+//
+// A missing <ProjectReference> sounds fatal and is not — MSBuild degrades it to warning MSB9008 and
+// builds on (measured: the pre-fix crypto.ecdh.tests.csproj builds, 0 errors, and the correct sibling
+// reference supplied the assembly anyway). The cost was downstream: the stale name was harvested into
+// go2cs-stdlib.slnx as a phantom 308th project by the multi-platform merge's solution recovery
+// (fixed on the solution side by TestCollectConvertedProjectsIgnoresTestProjectReferences).
+//
+// Deriving the name from the directory is what makes the two sides structurally agree rather than
+// coincidentally: getProjectName — the PRODUCER, which names the .csproj the vendored package
+// actually emits — has always derived it from that same GOROOT/src-relative directory. Anything that
+// resolves the directory correctly now names the file correctly by construction.
+//
+// PackageName is not only the file name, so the correction reaches further: it keys the embedded
+// standard-library metadata (stdlibMetadata.go records the vendored spelling,
+// `##vendor.golang.org.x.crypto.chacha20`, so the unvendored lookup MISSED), and it composes the
+// imported-alias class path (`go.vendor.golang.org.x.crypto.chacha20_package` — the unvendored
+// `go.golang.org…_package` names a class that exists nowhere, the CS0234 family
+// resolveGorootVendoredPath was added to prevent on the namespace side).
+func stdLibImportPathFromTargetDir(targetDir string) (string, bool) {
+	rest, found := strings.CutPrefix(normalizeEmittedPath(targetDir), go2csCoreRoot)
+
+	// The separator is required, not merely trimmed: `core` must match the whole path SEGMENT, or a
+	// sibling root that merely starts with it would be read as the core tree plus a truncated import
+	// path. `$(go2csPath)core` itself (the root, no package) is likewise not a package path.
+	if !found || !strings.HasPrefix(rest, "/") {
+		return "", false
+	}
+
+	if rest = rest[1:]; rest == "" {
+		return "", false
+	}
+
+	return rest, true
 }
 
 // emittedProjectReference joins a reference DIRECTORY (an $(go2csPath)-rooted or absolute path) and a
