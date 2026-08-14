@@ -570,6 +570,28 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Getsockname": goosWindows,
 		"Getpeername": goosWindows,
 	},
+	// The SECOND package holding the syscall struct-passing class, and the one member of it whose
+	// established remedy is measured UNREACHABLE — so this entry declares a CAPABILITY LIMIT rather
+	// than repairing a layout. Coordinator ruling 2026-08-14; the mechanism, the three costed
+	// remedies and the six same-shape wrappers behind this one are in
+	// docs/phase4/BOARD-next-validation-candidates.md, "RETRACTED — `os`'s REGRESSION is a HOST
+	// CAPABILITY, and the killer is SHARE_INFO_2".
+	//
+	// Why the blittable-mirror remedy cannot reach it: the wrapper never sees the struct. os's
+	// TestNetworkSymbolicLink writes `(*byte)(unsafe.Pointer(&p))`, which converts to
+	// `Ꮡp.Reinterpret<windows.SHARE_INFO_2, byte>()`, and Reinterpret correctly REFUSES to alias a
+	// reference-bearing struct as byte — so it falls to `(ж<byte>)(uintptr)box` and NetShareAdd
+	// receives a native-address box with the managed identity already gone. There is nothing left to
+	// copy from, and recovering the struct by reading that raw address would fabricate managed
+	// references out of it, which ж.PointerExtensions.cs names as a CLR type-safety break.
+	//
+	// What the hand-own buys: netapi32 dereferences shi2_path — which, under the CLR's
+	// reference-first auto-layout of SHARE_INFO_2, holds the integer 1 — and the process DIES with
+	// 0xC0000005 partway through os's suite, turning 683 measurable verdicts into an unknown
+	// remainder. Failing BY NAME converts a whole-suite process death into ONE loud row.
+	"internal/syscall/windows": {
+		"NetShareAdd": goosWindows,
+	},
 }
 
 // isManualType reports whether the named type (raw Go name) is hand-converted in this package.
