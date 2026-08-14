@@ -26,7 +26,7 @@ partial class runtime_package {
     internal uint32 vd_next; /* Offset in bytes to next verdef entry */
 }
 
-[GoType] [GoValueClone("e_ident")] partial struct elfEhdr {
+[GoType] partial struct elfEhdr {
     internal array<byte> e_ident = new(_EI_NIDENT); /* Magic number and other info */
     internal uint16 e_type;           /* Object file type */
     internal uint16 e_machine;           /* Architecture */

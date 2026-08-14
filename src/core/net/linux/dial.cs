@@ -549,7 +549,7 @@ public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ct
     finally { ᒐ.Run(); }
 }
 
-[GoLocalName("dialResult")] [GoType("dyn")] partial struct dialParallel_dialResult {
+[GoType("dyn")] partial struct dialParallel_dialResult {
     public Conn Conn;
     internal error error;
     internal bool primary;

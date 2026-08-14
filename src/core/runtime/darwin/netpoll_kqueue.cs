@@ -68,7 +68,7 @@ internal static int32 netpollclose(uintptr fd) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeUnusedˢ = "runtime: unused"u8;
 
-internal static void netpollarm(ж<pollDesc> Ꮡpd, nint mode) {
+internal static void netpollarm(ref pollDesc pd, nint mode) {
     @throw(runtimeUnusedˢ);
 }
 
@@ -130,7 +130,7 @@ retry:
     var delta = (int32)0;
     for (nint i = 0; i < (nint)n; i++) {
         var ev = Ꮡevents.at<keventt>(i);
-        if (isWakeup(ev)) {
+        if (isWakeup(ref (ev).DerefOrNull())) {
             if (delay != 0) {
                 // netpollBreak could be picked up by a nonblocking poll.
                 // Only call drainWakeupEvent and reset the netpollWakeSig if blocking.

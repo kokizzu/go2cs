@@ -19,9 +19,7 @@ internal static (slice<route.Message>, error) interfaceMessages(nint ifindex) {
 
 // interfaceMulticastAddrTable returns addresses for a specific
 // interface.
-internal static (slice<ΔAddr>, error) interfaceMulticastAddrTable(ж<Interface> Ꮡifi) {
-    ref var ifi = ref Ꮡifi.DerefOrNull();
-
+internal static (slice<ΔAddr>, error) interfaceMulticastAddrTable(ref Interface ifi) {
     var (rib, err) = route.FetchRIB(syscall.AF_UNSPEC, syscall.NET_RT_IFLIST2, ifi.Index);
     if (err != default!) {
         return (default!, err);

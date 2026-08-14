@@ -368,7 +368,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
         // live-lock problem. Apparently this could happen on darwin. See
         // issue #37741.
         // Only send a signal if there isn't already one pending.
-        signalM(Ꮡmp, sigPreempt);
+        signalM(ref (Ꮡmp).DerefOrNull(), sigPreempt);
     }
     if (GOOS == "darwin"u8 || GOOS == "ios"u8) {
         ᏑexecLock.runlock();
@@ -463,7 +463,7 @@ internal static void sigtrampgo(uint32 sig, ж<siginfo> Ꮡinfo, @unsafe.Pointer
     setg((~(~gp).m).gsignal);
     // If some non-Go code called sigaltstack, adjust.
     ref var gsignalStack = ref heap(new gsignalStack(), out var ᏑgsignalStack);
-    var setStack = adjustSignalStack(sig, (~gp).m, ᏑgsignalStack);
+    var setStack = adjustSignalStack(sig, ref ((~gp).m).DerefOrNull(), ᏑgsignalStack);
     if (setStack) {
         gp.Value.m.Value.gsignal.Value.stktopsp = getcallersp();
     }
@@ -537,10 +537,9 @@ internal static void sigprofNonGoPC(uintptr pc) {
 // signal stack in *gsigstack.
 //
 //go:nosplit
-internal static bool adjustSignalStack(uint32 sigʗp, ж<m> Ꮡmp, ж<gsignalStack> ᏑgsigStack) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static bool adjustSignalStack(uint32 sigʗp, ref m mp, ж<gsignalStack> ᏑgsigStack) {
     ref var sig = ref heap(sigʗp, out var Ꮡsig);
+
     var sp = (uintptr)Ꮡsig;
     if (sp >= (~mp.gsignal).stack.lo && sp < (~mp.gsignal).stack.hi) {
         return false;
@@ -549,7 +548,7 @@ internal static bool adjustSignalStack(uint32 sigʗp, ж<m> Ꮡmp, ж<gsignalSta
     sigaltstack(nil, Ꮡst);
     var stsp = (uintptr)st.ss_sp;
     if ((int32)(st.ss_flags & (int32)_SS_DISABLE) == 0 && sp >= stsp && sp < stsp + st.ss_size) {
-        setGsignalStack(Ꮡst, ᏑgsigStack);
+        setGsignalStack(ref st, ᏑgsigStack);
         return true;
     }
     if (sp >= (~mp.g0).stack.lo && sp < (~mp.g0).stack.hi) {
@@ -566,7 +565,7 @@ internal static bool adjustSignalStack(uint32 sigʗp, ж<m> Ꮡmp, ж<gsignalSta
         ref var stΔ1 = ref heap<stackt>(out var ᏑstΔ1);
         stΔ1 = new stackt(ss_size: (~mp.g0).stack.hi - (~mp.g0).stack.lo);
         setSignalstackSP(ᏑstΔ1, (~mp.g0).stack.lo);
-        setGsignalStack(ᏑstΔ1, ᏑgsigStack);
+        setGsignalStack(ref stΔ1, ᏑgsigStack);
         return true;
     }
     // sp is not within gsignal stack, g0 stack, or sigaltstack. Bad.
@@ -575,7 +574,7 @@ internal static bool adjustSignalStack(uint32 sigʗp, ж<m> Ꮡmp, ж<gsignalSta
     if ((int32)(st.ss_flags & (int32)_SS_DISABLE) != 0){
         noSignalStack(sig);
     } else {
-        sigNotOnStack(sig, sp, Ꮡmp);
+        sigNotOnStack(sig, sp, ref mp);
     }
     dropm();
     return false;
@@ -708,7 +707,7 @@ internal static void sighandler(uint32 sig, ж<siginfo> Ꮡinfo, @unsafe.Pointer
     if (Ꮡcrashing.Load() == 0) {
         startpanic_m();
     }
-    Ꮡgp = fatalsignal(sig, c, Ꮡgp, mp); gp = ref Ꮡgp.DerefOrNull();
+    Ꮡgp = fatalsignal(sig, c, Ꮡgp, ref (mp).DerefOrNull()); gp = ref Ꮡgp.DerefOrNull();
     var (level, _, docrash) = gotraceback();
     if (level > 0) {
         goroutineheader(Ꮡgp);
@@ -782,10 +781,9 @@ internal static void sighandler(uint32 sig, ж<siginfo> Ꮡinfo, @unsafe.Pointer
     exit(2);
 }
 
-internal static ж<g> fatalsignal(uint32 sig, ж<sigctxt> Ꮡc, ж<g> Ꮡgp, ж<m> Ꮡmp) {
+internal static ж<g> fatalsignal(uint32 sig, ж<sigctxt> Ꮡc, ж<g> Ꮡgp, ref m mp) {
     ref var c = ref Ꮡc.DerefOrNull();
     ref var gp = ref Ꮡgp.DerefOrNull();
-    ref var mp = ref Ꮡmp.DerefOrNull();
 
     if (sig < (uint32)len(sigtable)){
         print(sigtable[(nint)(sig)].name, (@string)"\n"u8);
@@ -1027,7 +1025,7 @@ internal static void ensureSigM() {
             sigBlocked = sigset_all.Clone();
             foreach (var (i, _) in sigtable) {
                 if (!blockableSig((uint32)i)) {
-                    sigdelset(ᏑsigBlocked, i);
+                    sigdelset(ref (ᏑsigBlocked).DerefOrNull(), i);
                 }
             }
             sigprocmask(_SIG_SETMASK, ᏑsigBlocked, nil);
@@ -1037,13 +1035,13 @@ internal static void ensureSigM() {
                 switch (select(ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
                 case 0 when selᴛ2.ꟷᐳ(out var sig): {
                     if (sig > 0) {
-                        sigdelset(ᏑsigBlocked, (nint)sig);
+                        sigdelset(ref (ᏑsigBlocked).DerefOrNull(), (nint)sig);
                     }
                     break;
                 }
                 case 1 when selᴛ3.ꟷᐳ(out var sig): {
                     if (sig > 0 && blockableSig(sig)) {
-                        sigaddset(ᏑsigBlocked, (nint)sig);
+                        sigaddset(ref (ᏑsigBlocked).DerefOrNull(), (nint)sig);
                     }
                     break;
                 }}
@@ -1073,9 +1071,7 @@ internal static readonly @string nonGoCodeSetUpSignalˢ = "non-Go code set up si
 // This is called if we receive a signal when there is a signal stack
 // but we are not on it. This can only happen if non-Go code called
 // sigaction without setting the SS_ONSTACK flag.
-internal static void sigNotOnStack(uint32 sig, uintptr sp, ж<m> Ꮡmp) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static void sigNotOnStack(uint32 sig, uintptr sp, ref m mp) {
     println((@string)"signal"u8, sig, (@string)"received but handler not on signal stack"u8);
     print((@string)"mp.gsignal stack ["u8, ((Δhex)(uint64)(~mp.gsignal).stack.lo), (@string)" "u8, ((Δhex)(uint64)(~mp.gsignal).stack.hi), (@string)"], "u8);
     print((@string)"mp.g0 stack ["u8, ((Δhex)(uint64)(~mp.g0).stack.lo), (@string)" "u8, ((Δhex)(uint64)(~mp.g0).stack.hi), (@string)"], sp="u8, ((Δhex)(uint64)sp), (@string)"\n"u8);
@@ -1237,9 +1233,9 @@ internal static void initᴛsigsetAllExiting() { sigsetAllExiting = ((Func<sigse
     ref var res = ref heap<sigset>(out var Ꮡres);
     res = sigset_all.Clone();
     if (GOOS == "linux"u8 && iscgo) {
-        sigdelset(Ꮡres, 32);
-        sigdelset(Ꮡres, 33);
-        sigdelset(Ꮡres, 34);
+        sigdelset(ref (Ꮡres).DerefOrNull(), 32);
+        sigdelset(ref (Ꮡres).DerefOrNull(), 33);
+        sigdelset(ref (Ꮡres).DerefOrNull(), 34);
     }
     return res.Clone();
 }))(); }
@@ -1271,7 +1267,7 @@ internal static void sigblock(bool exiting) {
 //go:nowritebarrierrec
 internal static void unblocksig(uint32 sig) {
     ref var set = ref heap(new sigset(), out var Ꮡset);
-    sigaddset(Ꮡset, (nint)sig);
+    sigaddset(ref set, (nint)sig);
     sigprocmask(_SIG_UNBLOCK, Ꮡset, nil);
 }
 
@@ -1300,7 +1296,7 @@ internal static void minitSignalStack() {
         signalstack((~mp).gsignal.of(g.Ꮡstack));
         mp.Value.newSigstack = true;
     } else {
-        setGsignalStack(Ꮡst, mp.of(m.ᏑgoSigStack));
+        setGsignalStack(ref st, mp.of(m.ᏑgoSigStack));
         mp.Value.newSigstack = false;
     }
 }
@@ -1318,7 +1314,7 @@ internal static void minitSignalMask() {
     nmask = getg().Value.m.Value.sigmask.Clone();
     foreach (var (i, _) in sigtable) {
         if (!blockableSig((uint32)i)) {
-            sigdelset(Ꮡnmask, i);
+            sigdelset(ref nmask, i);
         }
     }
     sigprocmask(_SIG_SETMASK, Ꮡnmask, nil);
@@ -1384,8 +1380,7 @@ internal static bool blockableSig(uint32 sig) {
 //
 //go:nosplit
 //go:nowritebarrierrec
-internal static void setGsignalStack(ж<stackt> Ꮡst, ж<gsignalStack> Ꮡold) {
-    ref var st = ref Ꮡst.DerefOrNull();
+internal static void setGsignalStack(ref stackt st, ж<gsignalStack> Ꮡold) {
     ref var old = ref Ꮡold.DerefOrNull();
 
     var gp = getg();

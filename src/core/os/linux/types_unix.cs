@@ -10,7 +10,7 @@ using time = time_package;
 partial class os_package {
 
 // A fileStat is the implementation of FileInfo returned by Stat and Lstat.
-[GoType] [GoValueClone("sys")] partial struct fileStat {
+[GoType] partial struct fileStat {
     internal @string name;
     internal int64 size;
     internal FileMode mode;
@@ -34,10 +34,7 @@ internal static any Sys(this ж<fileStat> Ꮡfs) {
     return Ꮡfs.of(fileStat.Ꮡsys);
 }
 
-internal static bool sameFile(ж<fileStat> Ꮡfs1, ж<fileStat> Ꮡfs2) {
-    ref var fs1 = ref Ꮡfs1.DerefOrNull();
-    ref var fs2 = ref Ꮡfs2.DerefOrNull();
-
+internal static bool sameFile(ref fileStat fs1, ref fileStat fs2) {
     return fs1.sys.Dev == fs2.sys.Dev && fs1.sys.Ino == fs2.sys.Ino;
 }
 

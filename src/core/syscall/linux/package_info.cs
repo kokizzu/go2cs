@@ -34,10 +34,8 @@ using static go.syscall_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<Errno, error>]
@@ -72,9 +70,9 @@ public static partial class syscall_package
     internal partial struct _Gid_t {}
     internal partial struct capData {}
     internal partial struct capHeader {}
-    internal partial struct caps {}
+    [GoValueClone("data")] internal partial struct caps {}
     internal partial struct cloneArgs {}
-    internal partial struct iflags {}
+    [GoValueClone("name")] internal partial struct iflags {}
     internal partial struct mmapper {}
     internal partial struct pollFd {}
     public partial interface Conn {}
@@ -82,25 +80,25 @@ public static partial class syscall_package
     public partial interface Sockaddr {}
     public partial struct Cmsghdr {}
     public partial struct Credential {}
-    public partial struct Dirent {}
+    [GoValueClone("Name", "Pad_cgo_0")] public partial struct Dirent {}
     public partial struct EpollEvent {}
     public partial struct Errno {}
-    public partial struct FdSet {}
-    public partial struct Flock_t {}
-    public partial struct Fsid {}
-    public partial struct ICMPv6Filter {}
-    public partial struct IPMreq {}
-    public partial struct IPMreqn {}
-    public partial struct IPv6MTUInfo {}
-    public partial struct IPv6Mreq {}
+    [GoValueClone("Bits")] public partial struct FdSet {}
+    [GoValueClone("Pad_cgo_0", "Pad_cgo_1")] public partial struct Flock_t {}
+    [GoValueClone("X__val")] public partial struct Fsid {}
+    [GoValueClone("Data")] public partial struct ICMPv6Filter {}
+    [GoValueClone("Multiaddr", "Interface")] public partial struct IPMreq {}
+    [GoValueClone("Multiaddr", "Address")] public partial struct IPMreqn {}
+    [GoValueClone("Addr")] public partial struct IPv6MTUInfo {}
+    [GoValueClone("Multiaddr")] public partial struct IPv6Mreq {}
     public partial struct IfAddrmsg {}
     public partial struct IfInfomsg {}
-    public partial struct Inet4Pktinfo {}
-    public partial struct Inet6Pktinfo {}
-    public partial struct InotifyEvent {}
+    [GoValueClone("Spec_dst", "Addr")] public partial struct Inet4Pktinfo {}
+    [GoValueClone("Addr")] public partial struct Inet6Pktinfo {}
+    [GoValueClone("Name")] public partial struct InotifyEvent {}
     public partial struct Iovec {}
     public partial struct Linger {}
-    public partial struct Msghdr {}
+    [GoValueClone("Pad_cgo_0", "Pad_cgo_1")] public partial struct Msghdr {}
     public partial struct NetlinkMessage {}
     public partial struct NetlinkRouteAttr {}
     public partial struct NetlinkRouteRequest {}
@@ -109,13 +107,13 @@ public static partial class syscall_package
     public partial struct NlMsghdr {}
     public partial struct ProcAttr {}
     public partial struct PtraceRegs {}
-    public partial struct RawSockaddr {}
-    public partial struct RawSockaddrAny {}
-    public partial struct RawSockaddrInet4 {}
-    public partial struct RawSockaddrInet6 {}
-    public partial struct RawSockaddrLinklayer {}
+    [GoValueClone("Data")] public partial struct RawSockaddr {}
+    [GoValueClone("Addr", "Pad")] public partial struct RawSockaddrAny {}
+    [GoValueClone("Addr", "Zero")] public partial struct RawSockaddrInet4 {}
+    [GoValueClone("Addr")] public partial struct RawSockaddrInet6 {}
+    [GoValueClone("Addr")] public partial struct RawSockaddrLinklayer {}
     public partial struct RawSockaddrNetlink {}
-    public partial struct RawSockaddrUnix {}
+    [GoValueClone("Path")] public partial struct RawSockaddrUnix {}
     public partial struct Rlimit {}
     public partial struct RtAttr {}
     public partial struct RtGenmsg {}
@@ -123,29 +121,29 @@ public static partial class syscall_package
     public partial struct RtNexthop {}
     public partial struct Rusage {}
     public partial struct SockFilter {}
-    public partial struct SockFprog {}
-    public partial struct SockaddrInet4 {}
-    public partial struct SockaddrInet6 {}
-    public partial struct SockaddrLinklayer {}
+    [GoValueClone("Pad_cgo_0")] public partial struct SockFprog {}
+    [GoValueClone("Addr", "raw")] public partial struct SockaddrInet4 {}
+    [GoValueClone("Addr", "raw")] public partial struct SockaddrInet6 {}
+    [GoValueClone("Addr", "raw")] public partial struct SockaddrLinklayer {}
     public partial struct SockaddrNetlink {}
-    public partial struct SockaddrUnix {}
+    [GoValueClone("raw")] public partial struct SockaddrUnix {}
     public partial struct SocketControlMessage {}
-    public partial struct Stat_t {}
-    public partial struct Statfs_t {}
+    [GoValueClone("X__unused")] public partial struct Stat_t {}
+    [GoValueClone("Fsid", "Spare")] public partial struct Statfs_t {}
     public partial struct SysProcAttr {}
     public partial struct SysProcIDMap {}
-    public partial struct Sysinfo_t {}
-    public partial struct TCPInfo {}
-    public partial struct Termios {}
+    [GoValueClone("Loads", "Pad_cgo_0", "X_f", "Pad_cgo_1")] public partial struct Sysinfo_t {}
+    [GoValueClone("Pad_cgo_0")] public partial struct TCPInfo {}
+    [GoValueClone("Cc", "Pad_cgo_0")] public partial struct Termios {}
     public partial struct Time_t {}
     public partial struct Timespec {}
     public partial struct Timeval {}
-    public partial struct Timex {}
+    [GoValueClone("Pad_cgo_0", "Pad_cgo_1", "Pad_cgo_2", "Pad_cgo_3")] public partial struct Timex {}
     public partial struct Tms {}
     public partial struct Ucred {}
-    public partial struct Ustat_t {}
+    [GoValueClone("Pad_cgo_0", "Fname", "Fpack", "Pad_cgo_1")] public partial struct Ustat_t {}
     public partial struct Utimbuf {}
-    public partial struct Utsname {}
+    [GoValueClone("Sysname", "Nodename", "Release", "Version", "Machine", "Domainname")] public partial struct Utsname {}
     public partial struct WaitStatus {}
     public partial struct _Socklen {}
     public partial struct ΔSignal {}

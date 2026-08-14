@@ -61,10 +61,8 @@ using static go.net_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 [assembly: GoImplement<AddrError, error>(Pointer = true)]
@@ -147,11 +145,11 @@ public static partial class net_package
     internal partial struct canceledError {}
     internal partial struct conf {}
     internal partial struct conn {}
-    internal partial struct dialParallel_dialResult {}
+    [GoLocalName("dialResult")] internal partial struct dialParallel_dialResult {}
     internal partial struct dnsConfig {}
-    internal partial struct doBlockingWithCtx_result {}
+    [GoLocalName("result")] internal partial struct doBlockingWithCtx_result {}
     internal partial struct fileAddr {}
-    internal partial struct goLookupIPCNAMEOrder_result {}
+    [GoLocalName("result")] internal partial struct goLookupIPCNAMEOrder_result {}
     internal partial struct hostsᴛ1 {}
     internal partial struct ipAttr {}
     internal partial struct ipStackCapabilities {}

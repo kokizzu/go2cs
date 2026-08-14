@@ -72,7 +72,7 @@ public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> �
             }
             TestHookDidWritev((nint)wrote);
             n += (int64)wrote;
-            consume(Ꮡv, (int64)wrote);
+            consume(ref (Ꮡv).DerefOrNull(), (int64)wrote);
             clear(iovecs);
             if (err != default!) {
                 if (AreEqual(err, Δsyscall.EINTR)) {

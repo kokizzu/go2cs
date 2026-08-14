@@ -140,7 +140,7 @@ internal static readonly @string runtimeNameOffsetBaseˢ = "runtime: name offset
 //go:linkname resolveNameOff
 internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff off) {
     if (off == 0) {
-        return new name();
+        return new abiꓸName();
     }
     var @base = (uintptr)ptrInModule;
     for (var md = Ꮡfirstmoduledata; md != nil; md = md.Value.next) {
@@ -150,7 +150,7 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
                 println((@string)"runtime: nameOff"u8, ((Δhex)(uint64)(int32)off), (@string)"out of range"u8, ((Δhex)(uint64)(~md).types), (@string)"-"u8, ((Δhex)(uint64)(~md).etypes));
                 @throw(runtimeNameOffsetOutOfˢ);
             }
-            return new name(Bytes: (ж<byte>)(uintptr)((@unsafe.Pointer)resΔ1));
+            return new abiꓸName(Bytes: (ж<byte>)(uintptr)((@unsafe.Pointer)resΔ1));
         }
     }
     // No module found. see if it is a run time name.
@@ -164,7 +164,7 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
         }
         @throw(runtimeNameOffsetBaseˢ);
     }
-    return new name(Bytes: (ж<byte>)(uintptr)(res));
+    return new abiꓸName(Bytes: (ж<byte>)(uintptr)(res));
 }
 
 internal static abiꓸName nameOff(this Δrtype t, nameOff off) {

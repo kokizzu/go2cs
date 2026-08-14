@@ -7,7 +7,7 @@ namespace go;
 partial class syscall_package {
 
 // adjustFileLimit adds per-OS limitations on the Rlimit used for RLIMIT_NOFILE. See rlimit.go.
-internal static void adjustFileLimit(ж<Rlimit> Ꮡlim) {
+internal static void adjustFileLimit(ref Rlimit lim) {
 }
 
 } // end syscall_package

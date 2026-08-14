@@ -54,11 +54,9 @@ internal static partial void runtime_AfterForkInChild();
 // functions that do not grow the stack.
 //
 //go:norace
-internal static (nint pid, Errno err1) forkAndExecInChild(ж<byte> Ꮡargv0, slice<ж<byte>> argv, slice<ж<byte>> envv, ж<byte> Ꮡchroot, ж<byte> Ꮡdir, ж<ProcAttr> Ꮡattr, ж<SysProcAttr> Ꮡsys, nint pipe) {
+internal static (nint pid, Errno err1) forkAndExecInChild(ж<byte> Ꮡargv0, slice<ж<byte>> argv, slice<ж<byte>> envv, ж<byte> Ꮡchroot, ж<byte> Ꮡdir, ref ProcAttr attr, ref SysProcAttr sys, nint pipe) {
     ref var err1 = ref heap(new Errno(), out var Ꮡerr1);
 
-    ref var attr = ref Ꮡattr.DerefOrNull();
-    ref var sys = ref Ꮡsys.DerefOrNull();
     // Declare all variables at top in case any
     // declarations require heap allocation (e.g., err1).
     uintptr r1 = default!;

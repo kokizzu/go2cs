@@ -43,7 +43,7 @@ loop:
                 if (errΔ2 != default!) {
                     return (default!, os.NewSyscallError(parsenetlinkrouteattrˢ, errΔ2));
                 }
-                ift = append(ift, newLink(ifim, attrs).Value);
+                ift = append(ift, newLink(ref (ifim).DerefOrNull(), attrs).Value);
                 if (ifindex == (nint)(~ifim).Index) {
                     goto break_loop;
                 }
@@ -62,9 +62,7 @@ internal static UntypedInt sysARPHardwareIPv6IPv4 => 776; // IPv6 over IPv4 tunn
 internal static UntypedInt sysARPHardwareGREIPv4 => 778; // any over GRE over IPv4 tunneling
 internal static UntypedInt sysARPHardwareGREIPv6 => 823; // any over GRE over IPv6 tunneling
 
-internal static ж<Interface> newLink(ж<syscall.IfInfomsg> Ꮡifim, slice<syscall.NetlinkRouteAttr> attrs) {
-    ref var ifim = ref Ꮡifim.DerefOrNull();
-
+internal static ж<Interface> newLink(ref syscall.IfInfomsg ifim, slice<syscall.NetlinkRouteAttr> attrs) {
     var ifi = Ꮡ(new Interface(Index: (nint)ifim.Index, Flags: linkFlags(ifim.Flags)));
     foreach (var (_, a) in attrs) {
         var exprᴛ1 = a.Attr.Type;
@@ -187,7 +185,7 @@ loop:
                 if (err != default!) {
                     return (default!, os.NewSyscallError(parsenetlinkrouteattrˢ, err));
                 }
-                var ifa = newAddr(ifam, attrs);
+                var ifa = newAddr(ref (ifam).DerefOrNull(), attrs);
                 if (ifa != default!) {
                     ifat = append(ifat, ifa);
                 }
@@ -200,9 +198,7 @@ break_loop:;
     return (ifat, default!);
 }
 
-internal static ΔAddr newAddr(ж<syscall.IfAddrmsg> Ꮡifam, slice<syscall.NetlinkRouteAttr> attrs) {
-    ref var ifam = ref Ꮡifam.DerefOrNull();
-
+internal static ΔAddr newAddr(ref syscall.IfAddrmsg ifam, slice<syscall.NetlinkRouteAttr> attrs) {
     bool ipPointToPoint = default!;
     // Seems like we need to make sure whether the IP interface
     // stack consists of IP point-to-point numbered or unnumbered

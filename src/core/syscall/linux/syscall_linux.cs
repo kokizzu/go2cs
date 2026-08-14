@@ -596,7 +596,7 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrUnix
     return (new @unsafe.Pointer(Ꮡsa.of(SockaddrUnix.Ꮡraw)), sl, default!);
 }
 
-[GoType] [GoValueClone("Addr", "raw")] partial struct SockaddrLinklayer {
+[GoType] partial struct SockaddrLinklayer {
     public uint16 Protocol;
     public nint Ifindex;
     public uint16 Hatype;

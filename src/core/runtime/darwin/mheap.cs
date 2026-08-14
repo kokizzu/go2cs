@@ -27,7 +27,7 @@ internal const bool physPageAlignedStacks = /* GOOS == "openbsd" */ false;
     internal uintptr @base, end;
 }
 
-[GoType("dyn")] [GoValueClone("mcentral", "pad")] partial struct mheap_central {
+[GoType("dyn")] partial struct mheap_central {
     internal mcentral mcentral;
     internal array<byte> pad = new((uintptr)((uintptr)cpu.CacheLinePadSize - /* unsafe.Sizeof(mcentral{}) */ (uintptr)168 % (uintptr)cpu.CacheLinePadSize) % cpu.CacheLinePadSize);
 }
@@ -52,7 +52,7 @@ internal const bool physPageAlignedStacks = /* GOOS == "openbsd" */ false;
 //
 // mheap must not be heap-allocated because it contains mSpanLists,
 // which must not be heap-allocated.
-[GoType] [GoValueClone("pages", "arenas", "central")] partial struct mheap {
+[GoType] partial struct mheap {
     internal sys.NotInHeap _;
     // lock must only be acquired on the system stack, otherwise a g
     // could self-deadlock if its stack grows with the lock held.
@@ -192,7 +192,7 @@ internal static ref mheap mheap_ => ref Ꮡmheap_.Value;
 
 // A heapArena stores metadata for a heap arena. heapArenas are stored
 // outside of the Go heap and accessed via the mheap_.arenas index.
-[GoType] [GoValueClone("spans", "pageInUse", "pageMarks", "pageSpecials")] partial struct heapArena {
+[GoType] partial struct heapArena {
     internal sys.NotInHeap _;
     // spans maps from virtual address page ID within this arena to *mspan.
     // For allocated spans, their pages map to the span itself.
@@ -656,8 +656,8 @@ internal static (ж<heapArena> arena, uintptr pageIdx, uint8 pageMask) pageIndex
 internal static void init(this ж<mheap> Ꮡh) {
     ref var h = ref Ꮡh.DerefOrNull();
 
-    lockInit(Ꮡh.of(mheap.Ꮡlock), lockRankMheap);
-    lockInit(Ꮡh.of(mheap.Ꮡspeciallock), lockRankMheapSpecial);
+    lockInit(ref nonnil(ref h).@lock, lockRankMheap);
+    lockInit(ref nonnil(ref h).speciallock, lockRankMheapSpecial);
     h.spanalloc.init(/* unsafe.Sizeof(mspan{}) */ (uintptr)160, recordspan, (uintptr)@unsafe.Pointer.FromRef(ref h), Ꮡmemstats.of(mstats.Ꮡmspan_sys));
     h.cachealloc.init(/* unsafe.Sizeof(mcache{}) */ (uintptr)1200, default!, nil, Ꮡmemstats.of(mstats.Ꮡmcache_sys));
     h.specialfinalizeralloc.init(/* unsafe.Sizeof(specialfinalizer{}) */ (uintptr)48, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
@@ -754,7 +754,7 @@ internal static void reclaim(this ж<mheap> Ꮡh, uintptr npage) {
         Δtrace.GCSweepDone();
         traceRelease(Δtrace);
     }
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
 }
 
 // reclaimChunk sweeps unmarked spans that start at page indexes [pageIdx, pageIdx+n).
@@ -1631,7 +1631,7 @@ internal static void init(this ж<mspan> Ꮡspan, uintptr @base, uintptr npages)
     span.gcmarkBits = default!;
     span.pinnerBits = default!;
     Ꮡspan.of(mspan.Ꮡstate).set(mSpanDead);
-    lockInit(Ꮡspan.of(mspan.Ꮡspeciallock), lockRankMspanSpecial);
+    lockInit(ref nonnil(ref span).speciallock, lockRankMspanSpecial);
 }
 
 [GoRecv] internal static bool inList(this ref mspan span) {
@@ -1814,7 +1814,7 @@ internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs) {
         spanHasSpecials(span);
     }
     unlock(span.of(mspan.Ꮡspeciallock));
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     return !exists; // already exists
 }
 
@@ -1847,7 +1847,7 @@ internal static ж<special> removespecial(@unsafe.Pointer Δp, uint8 kind) {
         spanHasNoSpecials(span);
     }
     unlock(span.of(mspan.Ꮡspeciallock));
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     return result;
 }
 
@@ -1918,7 +1918,7 @@ internal static bool addfinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡf, uintptr
             // Mark the finalizer itself, since the
             // special isn't part of the GC'd heap.
             scanblock((uintptr)@unsafe.Pointer.FromRef(ref (s.of(specialfinalizer.Ꮡfn)).Value), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), gcw, nil);
-            releasem(mp);
+            releasem(ref (mp).DerefOrNull());
         }
         return true;
     }
@@ -1984,7 +1984,7 @@ internal static @unsafe.Pointer internal_weak_runtime_makeStrongFromWeak(@unsafe
     var mp = acquirem();
     var Δp = handle.Load();
     if (Δp == 0) {
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
         return default!;
     }
     // Be careful. p may or may not refer to valid memory anymore, as it could've been
@@ -1993,7 +1993,7 @@ internal static @unsafe.Pointer internal_weak_runtime_makeStrongFromWeak(@unsafe
     var span = spanOfHeap(Δp);
     if (span == nil) {
         // The span probably got swept and released.
-        releasem(mp);
+        releasem(ref (mp).DerefOrNull());
         return default!;
     }
     // Ensure the span is swept.
@@ -2003,7 +2003,7 @@ internal static @unsafe.Pointer internal_weak_runtime_makeStrongFromWeak(@unsafe
     // Even if we just swept some random span that doesn't contain this object, because
     // this object is long dead and its memory has since been reused, we'll just observe nil.
     @unsafe.Pointer ptr = (@unsafe.Pointer)handle.Load();
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     return ptr;
 }
 
@@ -2036,7 +2036,7 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
             // Mark the weak handle itself, since the
             // special isn't part of the GC'd heap.
             scanblock((uintptr)@unsafe.Pointer.FromRef(ref (s.of(specialWeakHandle.Ꮡhandle)).Value), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), gcw, nil);
-            releasem(mp);
+            releasem(ref (mp).DerefOrNull());
         }
         return (~s).handle;
     }
@@ -2081,7 +2081,7 @@ internal static ж<atomic.Uintptr> getWeakHandle(@unsafe.Pointer Δp) {
         handle = ((iter.ValueSlot.Reinterpret<special, specialWeakHandle>())).Value.handle;
     }
     unlock(span.of(mspan.Ꮡspeciallock));
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     return handle;
 }
 
@@ -2227,7 +2227,7 @@ internal static uintptr gcBitsHeaderBytes => /* unsafe.Sizeof(gcBitsHeader{}) */
     internal uintptr next; // *gcBits triggers recursive type bug. (issue 14620)
 }
 
-[GoType] [GoValueClone("bits")] partial struct gcBitsArena {
+[GoType] partial struct gcBitsArena {
     internal sys.NotInHeap _;
     // gcBitsHeader // side step recursive type bug (issue 14620) by including fields by hand.
     internal uintptr free; // free is the index into bits of the next free byte; read/write atomically

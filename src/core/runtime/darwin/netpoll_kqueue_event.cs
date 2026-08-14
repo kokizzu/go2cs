@@ -66,9 +66,7 @@ internal static void wakeNetpoll(int32 kq) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeNetpollBreakFdˢ = "runtime: netpoll: break fd ready for something unexpected"u8;
 
-internal static bool isWakeup(ж<keventt> Ꮡev) {
-    ref var ev = ref Ꮡev.DerefOrNull();
-
+internal static bool isWakeup(ref keventt ev) {
     if (ev.filter == _EVFILT_USER) {
         if (ev.ident == kqIdent) {
             return true;

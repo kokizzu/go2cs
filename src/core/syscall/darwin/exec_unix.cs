@@ -214,7 +214,7 @@ internal static (nint pid, error err) forkExec(@string argv0, slice<@string> arg
         }
     }
     // Kick off child.
-    (pid, err1) = forkAndExecInChild(argv0p, argvp, envvp, chroot, dir, Ꮡattr, sys, p[1]);
+    (pid, err1) = forkAndExecInChild(argv0p, argvp, envvp, chroot, dir, ref (Ꮡattr).DerefOrNull(), ref (sys).DerefOrNull(), p[1]);
     if (err1 != 0) {
         Close(p[0]);
         Close(p[1]);

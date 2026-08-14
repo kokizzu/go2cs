@@ -45,11 +45,10 @@ public static void SetKevent(ж<Kevent_t> Ꮡk, nint fd, nint mode, nint flags) 
     cmsg.Len = (uint32)length;
 }
 
-internal static (nint written, error err) sendfile(nint outfd, nint infd, ж<int64> Ꮡoffset, nint count) {
+internal static (nint written, error err) sendfile(nint outfd, nint infd, ref int64 offset, nint count) {
     nint written = default!;
     error err = default!;
 
-    ref var offset = ref Ꮡoffset.DerefOrNull();
     ref var length = ref heap(new uint64(), out var Ꮡlength);
 
     length = (uint64)count;

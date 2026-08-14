@@ -265,14 +265,14 @@ internal static void mallocinit() {
     // Initialize the heap.
     Ꮡmheap_.init();
     mcache0 = allocmcache();
-    lockInit(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡlock), lockRankGcBitsArenas);
-    lockInit(ᏑprofInsertLock, lockRankProfInsert);
-    lockInit(ᏑprofBlockLock, lockRankProfBlock);
-    lockInit(ᏑprofMemActiveLock, lockRankProfMemActive);
+    lockInit(ref gcBitsArenas.@lock, lockRankGcBitsArenas);
+    lockInit(ref profInsertLock, lockRankProfInsert);
+    lockInit(ref profBlockLock, lockRankProfBlock);
+    lockInit(ref profMemActiveLock, lockRankProfMemActive);
     foreach (var (i, _) in profMemFutureLock) {
-        lockInit(ᏑprofMemFutureLock.at<mutex>(i), lockRankProfMemFuture);
+        lockInit(ref profMemFutureLock[i], lockRankProfMemFuture);
     }
-    lockInit(ᏑglobalAlloc.of(globalAllocᴛ1.Ꮡmutex), lockRankGlobalAlloc);
+    lockInit(ref globalAlloc.mutex, lockRankGlobalAlloc);
     // Create initial arena growth hints.
     if (goarch.PtrSize == 8){
         // On a 64-bit machine, we pick the following hints
@@ -406,13 +406,13 @@ internal static void mallocinit() {
         if (mheap_.heapArenaAlloc.next <= Δp && Δp < mheap_.heapArenaAlloc.end) {
             Δp = mheap_.heapArenaAlloc.end;
         }
-        Δp = alignUp(Δp + ((uintptr)(256 << (int)(10))), heapArenaBytes);
+        Δp = alignUp(Δp + (((uintptr)256 << (int)(10))), heapArenaBytes);
         // Because we're worried about fragmentation on
         // 32-bit, we try to make a large initial reservation.
         var arenaSizes = new uintptr[]{
-            (uintptr)(512 << (int)(20)),
-            (uintptr)(256 << (int)(20)),
-            (uintptr)(128 << (int)(20))
+            ((uintptr)512 << (int)(20)),
+            ((uintptr)256 << (int)(20)),
+            ((uintptr)128 << (int)(20))
         }.slice();
         foreach (var (_, arenaSize) in arenaSizes) {
             var (a, size) = sysReserveAligned((@unsafe.Pointer)Δp, arenaSize, heapArenaBytes);
@@ -893,7 +893,7 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
     mp.Value.mallocing = 1;
     var shouldhelpgc = false;
     var dataSize = userSize;
-    var c = getMCache(mp);
+    var c = getMCache(ref (mp).DerefOrNull());
     if (c == nil) {
         @throw(mallocgcCalledWithoutAPˢ);
     }
@@ -970,7 +970,7 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
                 c.Value.tinyoffset = off + size;
                 c.Value.tinyAllocs++;
                 mp.Value.mallocing = 0;
-                releasem(mp);
+                releasem(ref (mp).DerefOrNull());
                 return x;
             }
             // Allocate a new maxTinySize block.
@@ -1093,12 +1093,12 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
             if (rate != 1 && fullSize < (~c).nextSample){
                 c.Value.nextSample -= fullSize;
             } else {
-                profilealloc(mp, x, fullSize);
+                profilealloc(ref (mp).DerefOrNull(), x, fullSize);
             }
         }
     }
     mp.Value.mallocing = 0;
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     // Objects can be zeroed late in a context where preemption can occur.
     // If the object contains pointers, its pointer data must be cleared
     // or otherwise indicate that the GC shouldn't scan it.
@@ -1109,10 +1109,10 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
         // Finish storing the type information for this case.
         if (!noscan) {
             var mpΔ1 = acquirem();
-            getMCache(mpΔ1).Value.scanAlloc += heapSetType((uintptr)x, dataSize, Ꮡtyp, header, span);
+            getMCache(ref (mpΔ1).DerefOrNull()).Value.scanAlloc += heapSetType((uintptr)x, dataSize, Ꮡtyp, header, span);
             // Publish the type information with the zeroed memory.
             publicationBarrier();
-            releasem(mpΔ1);
+            releasem(ref (mpΔ1).DerefOrNull());
         }
     }
     if (debug.malloc) {
@@ -1297,13 +1297,13 @@ internal static @unsafe.Pointer reflect_unsafe_NewArray(ж<_type> Ꮡtyp, nint n
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string profileallocCalledˢ = "profilealloc called without a P or outside bootstrapping"u8;
 
-internal static void profilealloc(ж<m> Ꮡmp, @unsafe.Pointer x, uintptr size) {
-    var c = getMCache(Ꮡmp);
+internal static void profilealloc(ref m mp, @unsafe.Pointer x, uintptr size) {
+    var c = getMCache(ref mp);
     if (c == nil) {
         @throw(profileallocCalledˢ);
     }
     c.Value.nextSample = nextSample();
-    mProf_Malloc(Ꮡmp, x, size);
+    mProf_Malloc(ref mp, x, size);
 }
 
 // nextSample returns the next sampling point for heap profiling. The goal is
@@ -1476,7 +1476,7 @@ internal static ж<notInHeap> persistentalloc1(uintptr size, uintptr align, ж<s
     }
     var Δp = (~persistent).@base.add((~persistent).off);
     persistent.Value.off += size;
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     if (persistent == ᏑglobalAlloc.of(globalAllocᴛ1.ᏑpersistentAlloc)) {
         unlock(ᏑglobalAlloc.of(globalAllocᴛ1.Ꮡmutex));
     }
@@ -1571,28 +1571,28 @@ internal static ж<notInHeap> add(this ж<notInHeap> Ꮡp, uintptr bytes) {
 internal static uintptr computeRZlog(uintptr userSize) {
     switch (ᐧ) {
     case {} when userSize <= (64 - 16): {
-        return (uintptr)(16 << (int)(0));
+        return ((uintptr)16 << (int)(0));
     }
     case {} when userSize <= (128 - 32): {
-        return (uintptr)(16 << (int)(1));
+        return ((uintptr)16 << (int)(1));
     }
     case {} when userSize <= (512 - 64): {
-        return (uintptr)(16 << (int)(2));
+        return ((uintptr)16 << (int)(2));
     }
     case {} when userSize <= (4096 - 128): {
-        return (uintptr)(16 << (int)(3));
+        return ((uintptr)16 << (int)(3));
     }
     case {} when userSize <= ((1 << (int)(14))) - 256: {
-        return (uintptr)(16 << (int)(4));
+        return ((uintptr)16 << (int)(4));
     }
     case {} when userSize <= ((1 << (int)(15))) - 512: {
-        return (uintptr)(16 << (int)(5));
+        return ((uintptr)16 << (int)(5));
     }
     case {} when userSize <= ((1 << (int)(16))) - 1024: {
-        return (uintptr)(16 << (int)(6));
+        return ((uintptr)16 << (int)(6));
     }
     default: {
-        return (uintptr)(16 << (int)(7));
+        return ((uintptr)16 << (int)(7));
     }}
 
 }

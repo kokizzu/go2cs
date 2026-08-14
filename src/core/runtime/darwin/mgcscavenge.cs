@@ -125,7 +125,7 @@ internal static uint64 heapRetained() {
 //
 // mheap_.lock must be held or the world must be stopped.
 internal static void gcPaceScavenger(int64 memoryLimit, uint64 heapGoal, uint64 lastHeapGoal) {
-    assertWorldStoppedOrLockHeld(Ꮡmheap_.of(mheap.Ꮡlock));
+    assertWorldStoppedOrLockHeld(ref mheap_.@lock);
     // As described at the top of this file, there are two scavenge goals here: one
     // for gcPercent and one for memoryLimit. Let's handle the latter first because
     // it's simpler.
@@ -293,7 +293,7 @@ internal static void init(this ж<scavengerState> Ꮡs) {
     if (s.g != nil) {
         @throw(scavengerStateIsAlreadyˢ);
     }
-    lockInit(Ꮡs.of(scavengerState.Ꮡlock), lockRankScavenge);
+    lockInit(ref nonnil(ref s).@lock, lockRankScavenge);
     s.g = getg();
     s.timer = @new<timer>();
     var f = (any sΔ1, uintptr _Δp1, int64 _Δp2) => {

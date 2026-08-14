@@ -95,27 +95,27 @@ internal static UntypedInt _O_TRUNC => 0x400;
 internal static UntypedInt _VM_REGION_BASIC_INFO_COUNT_64 => 0x9;
 internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
 
-[GoType] [GoValueClone("pad_cgo_0")] partial struct stackt {
+[GoType] partial struct stackt {
     internal ж<byte> ss_sp;
     internal uintptr ss_size;
     internal int32 ss_flags;
     internal array<byte> pad_cgo_0 = new(4);
 }
 
-[GoType] [GoValueClone("__sigaction_u")] partial struct sigactiont {
+[GoType] partial struct sigactiont {
     internal array<byte> __sigaction_u = new(8);
     internal @unsafe.Pointer sa_tramp;
     internal uint32 sa_mask;
     internal int32 sa_flags;
 }
 
-[GoType] [GoValueClone("__sigaction_u")] partial struct usigactiont {
+[GoType] partial struct usigactiont {
     internal array<byte> __sigaction_u = new(8);
     internal uint32 sa_mask;
     internal int32 sa_flags;
 }
 
-[GoType] [GoValueClone("si_value", "__pad")] partial struct siginfo {
+[GoType] partial struct siginfo {
     internal int32 si_signo;
     internal int32 si_errno;
     internal int32 si_code;
@@ -128,7 +128,7 @@ internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
     internal array<uint64> __pad = new(7);
 }
 
-[GoType] [GoValueClone("pad_cgo_0")] partial struct timeval {
+[GoType] partial struct timeval {
     internal int64 tv_sec;
     internal int32 tv_usec;
     internal array<byte> pad_cgo_0 = new(4);
@@ -138,7 +138,7 @@ internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
     tv.tv_usec = x;
 }
 
-[GoType] [GoValueClone("it_interval", "it_value")] partial struct itimerval {
+[GoType] partial struct itimerval {
     internal timeval it_interval;
     internal timeval it_value;
 }
@@ -154,20 +154,20 @@ internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
     ts.tv_nsec = ns % 1000000000;
 }
 
-[GoType] [GoValueClone("pad_cgo_0")] partial struct fpcontrol {
+[GoType] partial struct fpcontrol {
     internal array<byte> pad_cgo_0 = new(2);
 }
 
-[GoType] [GoValueClone("pad_cgo_0")] partial struct fpstatus {
+[GoType] partial struct fpstatus {
     internal array<byte> pad_cgo_0 = new(2);
 }
 
-[GoType] [GoValueClone("mmst_reg", "mmst_rsrv")] partial struct regmmst {
+[GoType] partial struct regmmst {
     internal array<int8> mmst_reg = new(10);
     internal array<int8> mmst_rsrv = new(6);
 }
 
-[GoType] [GoValueClone("xmm_reg")] partial struct regxmm {
+[GoType] partial struct regxmm {
     internal array<int8> xmm_reg = new(16);
 }
 
@@ -195,7 +195,7 @@ internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
     internal uint64 gs;
 }
 
-[GoType] [GoValueClone("fpu_reserved", "fpu_fcw", "fpu_fsw", "fpu_stmm0", "fpu_stmm1", "fpu_stmm2", "fpu_stmm3", "fpu_stmm4", "fpu_stmm5", "fpu_stmm6", "fpu_stmm7", "fpu_xmm0", "fpu_xmm1", "fpu_xmm2", "fpu_xmm3", "fpu_xmm4", "fpu_xmm5", "fpu_xmm6", "fpu_xmm7", "fpu_xmm8", "fpu_xmm9", "fpu_xmm10", "fpu_xmm11", "fpu_xmm12", "fpu_xmm13", "fpu_xmm14", "fpu_xmm15", "fpu_rsrv4")] partial struct floatstate64 {
+[GoType] partial struct floatstate64 {
     internal array<int32> fpu_reserved = new(2);
     internal fpcontrol fpu_fcw;
     internal fpstatus fpu_fsw;
@@ -245,7 +245,7 @@ internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
     internal uint64 faultvaddr;
 }
 
-[GoType] [GoValueClone("fs", "pad_cgo_0")] partial struct mcontext64 {
+[GoType] partial struct mcontext64 {
     internal exceptionstate64 es;
     internal regs64 ss;
     internal floatstate64 fs;
@@ -271,7 +271,7 @@ internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
     internal uint32 gs;
 }
 
-[GoType] [GoValueClone("fpu_reserved", "fpu_fcw", "fpu_fsw", "fpu_stmm0", "fpu_stmm1", "fpu_stmm2", "fpu_stmm3", "fpu_stmm4", "fpu_stmm5", "fpu_stmm6", "fpu_stmm7", "fpu_xmm0", "fpu_xmm1", "fpu_xmm2", "fpu_xmm3", "fpu_xmm4", "fpu_xmm5", "fpu_xmm6", "fpu_xmm7", "fpu_rsrv4")] partial struct floatstate32 {
+[GoType] partial struct floatstate32 {
     internal array<int32> fpu_reserved = new(2);
     internal fpcontrol fpu_fcw;
     internal fpstatus fpu_fsw;
@@ -313,13 +313,13 @@ internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
     internal uint32 faultvaddr;
 }
 
-[GoType] [GoValueClone("fs")] partial struct mcontext32 {
+[GoType] partial struct mcontext32 {
     internal exceptionstate32 es;
     internal regs32 ss;
     internal floatstate32 fs;
 }
 
-[GoType] [GoValueClone("uc_stack")] partial struct ucontext {
+[GoType] partial struct ucontext {
     internal int32 uc_onstack;
     internal uint32 uc_sigmask;
     internal stackt uc_stack;
@@ -339,27 +339,27 @@ internal static UntypedInt _VM_REGION_BASIC_INFO_64 => 0x9;
 
 [GoType("num:uintptr")] partial struct pthread;
 
-[GoType] [GoValueClone("X__opaque")] partial struct pthreadattr {
+[GoType] partial struct pthreadattr {
     public int64 X__sig;
     public array<int8> X__opaque = new(56);
 }
 
-[GoType] [GoValueClone("X__opaque")] partial struct pthreadmutex {
+[GoType] partial struct pthreadmutex {
     public int64 X__sig;
     public array<int8> X__opaque = new(56);
 }
 
-[GoType] [GoValueClone("X__opaque")] partial struct pthreadmutexattr {
+[GoType] partial struct pthreadmutexattr {
     public int64 X__sig;
     public array<int8> X__opaque = new(8);
 }
 
-[GoType] [GoValueClone("X__opaque")] partial struct pthreadcond {
+[GoType] partial struct pthreadcond {
     public int64 X__sig;
     public array<int8> X__opaque = new(40);
 }
 
-[GoType] [GoValueClone("X__opaque")] partial struct pthreadcondattr {
+[GoType] partial struct pthreadcondattr {
     public int64 X__sig;
     public array<int8> X__opaque = new(8);
 }

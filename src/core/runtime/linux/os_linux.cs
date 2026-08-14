@@ -284,7 +284,7 @@ internal static void sysargs(int32 argc, ж<ж<byte>> Ꮡargv) {
             return;
         }
         uintptr nΔ1 = default!;
-        for (nΔ1 = (uintptr)(4 << (int)(10)); nΔ1 < size; nΔ1 <<= (int)(1)) {
+        for (nΔ1 = ((uintptr)4 << (int)(10)); nΔ1 < size; nΔ1 <<= (int)(1)) {
             var errΔ1 = mincore((@unsafe.Pointer)((uintptr)Δp + nΔ1), 1, Ꮡaddrspace_vec.at<byte>(0));
             if (errΔ1 == 0) {
                 physPageSize = nΔ1;
@@ -425,7 +425,7 @@ internal static void unminit() {
 
 // Called from exitm, but not from drop, to undo the effect of thread-owned
 // resources in minit, semacreate, or elsewhere. Do not take locks after calling this.
-internal static void mdestroy(ж<m> Ꮡmp) {
+internal static void mdestroy(ref m mp) {
 }
 
 // #ifdef GOARCH_386
@@ -492,7 +492,7 @@ internal static UntypedInt _sigev_max_size => 64;
 internal static void setsig(uint32 i, uintptr fn) {
     ref var sa = ref heap(new sigactiont(), out var Ꮡsa);
     sa.sa_flags = (uint64)((UntypedInt)((UntypedInt)(_SA_SIGINFO | _SA_ONSTACK) | _SA_RESTORER) | (uint64)_SA_RESTART);
-    sigfillset(Ꮡsa.of(sigactiont.Ꮡsa_mask));
+    sigfillset(ref sa.sa_mask);
     // Although Linux manpage says "sa_restorer element is obsolete and
     // should not be used". x86_64 kernel requires it. Only use it on
     // x86.
@@ -580,9 +580,7 @@ internal static partial nint getpid();
 internal static partial void tgkill(nint tgid, nint tid, nint sig);
 
 // signalM sends a signal to mp.
-internal static void signalM(ж<m> Ꮡmp, nint sig) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static void signalM(ref m mp, nint sig) {
     tgkill(getpid(), (nint)mp.procid, sig);
 }
 
@@ -787,7 +785,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_runtime_doAllThrea
         r2 = 0;
     }
     if (errno != 0) {
-        releasem((~getg()).m);
+        releasem(ref ((~getg()).m).DerefOrNull());
         ᏑallocmLock.unlock();
         startTheWorld(stw);
         return (r1, r2, errno);
@@ -854,7 +852,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_runtime_doAllThrea
             continue;
         }
         mp.of(m.ᏑneedPerThreadSyscall).Store(1);
-        signalM(mp, sigPerThreadSyscall);
+        signalM(ref (mp).DerefOrNull(), sigPerThreadSyscall);
     }
     // Wait for all threads to complete.
     for (var mp = allm; mp != nil; mp = mp.Value.alllink) {
@@ -866,7 +864,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_runtime_doAllThrea
         }
     }
     perThreadSyscall = new perThreadSyscallArgs(nil);
-    releasem((~getg()).m);
+    releasem(ref ((~getg()).m).DerefOrNull());
     ᏑallocmLock.unlock();
     startTheWorld(stw);
     return (r1, r2, errno);

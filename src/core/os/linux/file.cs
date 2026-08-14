@@ -240,7 +240,7 @@ public static (nint n, error err) Write(this ж<File> Ꮡf, slice<byte> b) {
     if (n != len(b)) {
         err = Δio.ErrShortWrite;
     }
-    epipecheck(Ꮡf, e);
+    epipecheck(ref (Ꮡf).DerefOrNull(), e);
     if (e != default!) {
         err = f.wrapErr(writeˢ, e);
     }

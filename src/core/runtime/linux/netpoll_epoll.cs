@@ -67,7 +67,7 @@ internal static uintptr netpollclose(uintptr fd) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeUnusedˢ = "runtime: unused"u8;
 
-internal static void netpollarm(ж<pollDesc> Ꮡpd, nint mode) {
+internal static void netpollarm(ref pollDesc pd, nint mode) {
     @throw(runtimeUnusedˢ);
 }
 

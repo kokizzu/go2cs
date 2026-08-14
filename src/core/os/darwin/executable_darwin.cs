@@ -11,9 +11,9 @@ partial class os_package {
 //go:linkname executablePath
 public static @string executablePath; // set by ../runtime/os_darwin.go
 
-internal static (@string, error) tupleᴛ1ʗ = Getwd();
-internal static @string initCwd = tupleᴛ1ʗ.Item1;
-internal static error initCwdErr = tupleᴛ1ʗ.Item2;
+internal static @string initCwd;
+internal static error initCwdErr;
+internal static void initᴛinitCwd() { var tupleᴛ1ʗ = Getwd(); initCwd = tupleᴛ1ʗ.Item1; initCwdErr = tupleᴛ1ʗ.Item2; }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string cannotFindExecutablePathˢ = "cannot find executable path"u8;

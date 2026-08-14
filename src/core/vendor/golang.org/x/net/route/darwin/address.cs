@@ -122,7 +122,7 @@ internal static (nint, Addr, error) parseKernelLinkAddr(nint _, slice<byte> b) {
 }
 
 // An Inet4Addr represents an internet address for IPv4.
-[GoType] [GoValueClone("IP")] partial struct Inet4Addr {
+[GoType] partial struct Inet4Addr {
     public array<byte> IP = new(4); // IP address
 }
 
@@ -147,7 +147,7 @@ internal static (nint, Addr, error) parseKernelLinkAddr(nint _, slice<byte> b) {
 }
 
 // An Inet6Addr represents an internet address for IPv6.
-[GoType] [GoValueClone("IP")] partial struct Inet6Addr {
+[GoType] partial struct Inet6Addr {
     public array<byte> IP = new(16); // IP address
     public nint ZoneID;     // zone identifier
 }

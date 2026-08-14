@@ -246,9 +246,7 @@ internal static partial void sigpipe();
 // epipecheck raises SIGPIPE if we get an EPIPE error on standard
 // output or standard error. See the SIGPIPE docs in os/signal, and
 // issue 11845.
-internal static void epipecheck(ж<File> Ꮡfile, error e) {
-    ref var @file = ref Ꮡfile.DerefOrNull();
-
+internal static void epipecheck(ref File @file, error e) {
     if (AreEqual(e, syscall.EPIPE) && @file.stdoutOrErr) {
         sigpipe();
     }

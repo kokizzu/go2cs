@@ -86,7 +86,7 @@ internal static void dumpregs(ж<sigctxt> Ꮡc) {
     // In case we are panicking from external code, we need to initialize
     // Go special registers. We inject sigpanic0 (instead of sigpanic),
     // which takes care of that.
-    if (shouldPushSigpanic(Ꮡgp, pc, ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)sp))){
+    if (shouldPushSigpanic(ref (Ꮡgp).DerefOrNull(), pc, ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)sp))){
         c.pushCall(abi.FuncPCABI0(sigpanic0), pc);
     } else {
         // Not safe to push the call. Just clobber the frame.

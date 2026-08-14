@@ -4,7 +4,7 @@ namespace go.runtime;
 
 partial class pprof_package {
 
-[GoType] [GoValueClone("Offset", "Pad_cgo_1")] partial struct machVMRegionBasicInfoData {
+[GoType] partial struct machVMRegionBasicInfoData {
     public int32 Protection;
     public int32 Max_protection;
     public uint32 Inheritance;
