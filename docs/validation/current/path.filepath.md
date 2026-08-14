@@ -6,12 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `path/filepath` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-13 · converter `3e440711f`*
+*Validated 2026-08-04 · converter `f6e9c0cf0`*
 
-**67 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**61 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/path/filepath`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path/filepath).
 
-Both runtimes skip 4 of the matched tests identically.
+Both runtimes skip 20 of the matched tests identically.
 
 ## Verdicts
 
@@ -27,34 +27,34 @@ Both runtimes skip 4 of the matched tests identically.
 | `TestDir` | pass | pass |
 | `TestDriveLetterInEvalSymlinks` | pass | pass |
 | `TestEscaping` | pass | pass |
-| `TestEvalSymlinks` | pass | pass |
-| `TestEvalSymlinksAboveRoot` | pass | pass |
-| `TestEvalSymlinksAboveRootChdir` | pass | pass |
+| `TestEvalSymlinks` | skip | skip |
+| `TestEvalSymlinksAboveRoot` | skip | skip |
+| `TestEvalSymlinksAboveRootChdir` | skip | skip |
 | `TestEvalSymlinksCanonicalNames` | pass | pass |
 | `TestEvalSymlinksCanonicalNamesWith8dot3Disabled` | skip | skip |
-| `TestEvalSymlinksIsNotExist` | pass | pass |
-| `TestEvalSymlinksJunctionToVolumeID` | pass | pass |
-| `TestEvalSymlinksMountPointRecursion` | pass | pass |
-| `TestEvalSymlinksTooManyLinks` | pass | pass |
+| `TestEvalSymlinksIsNotExist` | skip | skip |
+| `TestEvalSymlinksJunctionToVolumeID` | skip | skip |
+| `TestEvalSymlinksMountPointRecursion` | skip | skip |
+| `TestEvalSymlinksTooManyLinks` | skip | skip |
 | `TestExt` | pass | pass |
 | `TestFromAndToSlash` | pass | pass |
 | `TestGlob` | pass | pass |
 | `TestGlobError` | pass | pass |
-| `TestGlobSymlink` | pass | pass |
+| `TestGlobSymlink` | skip | skip |
 | `TestGlobUNC` | pass | pass |
 | `TestIsAbs` | pass | pass |
 | `TestIsLocal` | pass | pass |
-| `TestIssue13582` | pass | pass |
+| `TestIssue13582` | skip | skip |
 | `TestIssue29372` | pass | pass |
 | `TestIssue51617` | pass | pass |
 | `TestIssue52476` | pass | pass |
 | `TestJoin` | pass | pass |
 | `TestLocalize` | pass | pass |
 | `TestMatch` | pass | pass |
-| `TestNTNamespaceSymlink` | pass | pass |
+| `TestNTNamespaceSymlink` | skip | skip |
 | `TestNonWindowsGlobEscape` | skip | skip |
 | `TestRel` | pass | pass |
-| `TestRelativeSymlinkToAbsolute` | pass | pass |
+| `TestRelativeSymlinkToAbsolute` | skip | skip |
 | `TestSplit` | pass | pass |
 | `TestSplitList` | pass | pass |
 | `TestToNorm` | pass | pass |
@@ -64,8 +64,8 @@ Both runtimes skip 4 of the matched tests identically.
 | `TestWalk/PermErr` | skip | skip |
 | `TestWalkDir` | pass | pass |
 | `TestWalkDir/PermErr` | skip | skip |
-| `TestWalkDirectoryJunction` | pass | pass |
-| `TestWalkDirectorySymlink` | pass | pass |
+| `TestWalkDirectoryJunction` | skip | skip |
+| `TestWalkDirectorySymlink` | skip | skip |
 | `TestWalkFileError` | pass | pass |
 | `TestWalkSkipAllOnFile` | pass | pass |
 | `TestWalkSkipAllOnFile/Walk` | pass | pass |
@@ -73,16 +73,10 @@ Both runtimes skip 4 of the matched tests identically.
 | `TestWalkSkipDirOnFile` | pass | pass |
 | `TestWalkSkipDirOnFile/Walk` | pass | pass |
 | `TestWalkSkipDirOnFile/WalkDir` | pass | pass |
-| `TestWalkSymlink` | pass | pass |
-| `TestWalkSymlinkRoot` | pass | pass |
-| `TestWalkSymlinkRoot/abs_no_slash` | pass | pass |
-| `TestWalkSymlinkRoot/abs_with_slash` | pass | pass |
-| `TestWalkSymlinkRoot/double_link_no_slash` | pass | pass |
-| `TestWalkSymlinkRoot/double_link_with_slash` | pass | pass |
-| `TestWalkSymlinkRoot/no_slash` | pass | pass |
-| `TestWalkSymlinkRoot/slash` | pass | pass |
+| `TestWalkSymlink` | skip | skip |
+| `TestWalkSymlinkRoot` | skip | skip |
 | `TestWinSplitListTestsAreValid` | pass | pass |
-| `TestWindowsEvalSymlinks` | pass | pass |
+| `TestWindowsEvalSymlinks` | skip | skip |
 | `TestWindowsGlob` | pass | pass |
 
 ## Excluded declarations
