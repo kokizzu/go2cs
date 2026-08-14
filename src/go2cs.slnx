@@ -469,6 +469,7 @@
     <Project Path="tests/Behavioral/ItabLateRegistration/ItabLateRegistration.csproj" />
     <Project Path="tests/Behavioral/ItabLateRegistration/lib/ItabLateRegistration.lib.csproj" />
     <Project Path="tests/Behavioral/ItabLateRegistration/latelib/ItabLateRegistration.latelib.csproj" />
+    <Project Path="tests/Behavioral/JsonFixedArrayUnmarshal/JsonFixedArrayUnmarshal.csproj" />
     <Project Path="tests/Behavioral/JsonUnmarshalerDispatch/JsonUnmarshalerDispatch.csproj" />
     <Project Path="tests/Behavioral/KeyedLiteralIfaceAssign/KeyedLiteralIfaceAssign.csproj" />
     <Project Path="tests/Behavioral/KeywordNamedTypes/KeywordNamedTypes.csproj" />

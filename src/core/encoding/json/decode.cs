@@ -571,6 +571,7 @@ internal static error Δarray(this ж<decodeState> Ꮡd, reflectꓸValue v) {
     // Check type of target.
     var exprᴛ1 = v.Kind();
     var matchᴛ1 = false;
+    var matchᴛ2 = exprᴛ1 == reflect.ΔInterface || (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice);
     if (exprᴛ1 == reflect.ΔInterface) { matchᴛ1 = true;
         if (v.NumMethod() == 0) {
             // Decoding into nil interface? Switch to non-reflect code.
@@ -580,7 +581,7 @@ internal static error Δarray(this ж<decodeState> Ꮡd, reflectꓸValue v) {
         }
         fallthrough = true;
     }
-    if (fallthrough || !matchᴛ1) { /* default: */
+    if (fallthrough || !matchᴛ2) { /* default: */
         d.saveError(new UnmarshalTypeErrorжerror(Ꮡ(new UnmarshalTypeError( // Otherwise it's invalid.
 Value: "array"u8, Type: v.Type(), Offset: (int64)d.off))));
         Ꮡd.skip();

@@ -7584,6 +7584,71 @@ form leaves C# unable to prove exhaustiveness, so a value-returning terminal swi
 trailing `return default!;`. Guarded by `SwitchFallthroughDefault` (a `fallthrough`+`default` switch
 where a matched non-fallthrough case must NOT run the default, output-compared vs Go).
 
+### A NON-TRAILING `default` is guarded on the PRECOMPUTED any-case-match, never the running flag
+Go allows `default` in **any** clause position and still picks it only when no case matches — position
+is presentation, not semantics. The if-chain lowering emits clauses in **source order**, so a default
+that is not last is guarded by a predicate that has only seen the arms emitted *before* it. Every clause
+after such a default is then dead code, and the default body runs for values those clauses own. Two
+shapes reach the chain, and the corpus held one live instance of each:
+
+**Fallen into.** `encoding/json`'s `decode.go` `array` is the witness:
+
+```go
+switch v.Kind() {
+case reflect.Interface:
+	if v.NumMethod() == 0 { … return nil }
+	fallthrough
+default:
+	d.saveError(&UnmarshalTypeError{Value: "array", Type: v.Type(), …})
+	d.skip()
+	return nil
+case reflect.Array, reflect.Slice:
+	break
+}
+```
+
+The default participates in fallthrough, so it **cannot** be reordered — the `fallthrough` link is
+source-order-sensitive. It was emitted `if (fallthrough || !matchᴛ1)`, and for a slice or array target
+`matchᴛ1` was still `false` (only the `Interface` arm had run), so the error arm fired and the
+`Array, Slice` arm below it was unreachable. `json.Unmarshal` therefore failed **every** JSON array
+whose target was not a bare `interface{}` — `json: cannot unmarshal array into Go value of type
+[1]interface {}` for a fixed-size array (which is how `net/rpc/jsonrpc` passes its `[1]any` params),
+and the identical error for every `[]T`. The default now reads the **precomputed** any-case-match
+already built for the mirror shape — the OR of every case condition in the switch, materialized ahead
+of the chain — so it fires only when nothing matches:
+
+```csharp
+var exprᴛ1 = v.Kind();
+var matchᴛ1 = false;
+var matchᴛ2 = exprᴛ1 == reflect.ΔInterface || (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice);
+if (exprᴛ1 == reflect.ΔInterface) { matchᴛ1 = true; … fallthrough = true; }
+if (fallthrough || !matchᴛ2) { /* default: */ … }
+if (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice) { matchᴛ1 = true; … }
+```
+
+**Participating in no fallthrough at all.** For a non-constant-label tagged switch the converter
+already normalized this shape by *moving* the default clause to the end. A **constant**-label switch
+that has fallthroughs elsewhere also lowers to the chain, and that reorder gate did not cover it — so
+the un-moved default emitted as a **bare block**, with no condition at all, and ran unconditionally.
+`internal/bisect`'s `parsePattern` leads with `default: return …parseError`, so every bisect pattern
+parse returned "invalid pattern syntax" and all six digit arms below it were dead code.
+(`regexp/syntax`'s `parseEscape` has the identical shape and survived only by luck: its default body
+re-tests `!isalnum(c)`, which happens to exclude every one of its own case labels.)
+
+These are now guarded **in place** — `if (!matchᴛ2) { /* default: */ … }` — rather than reordered.
+Widening the reorder gate was tried and rejected: reordering moves the clause's *statements*, but
+comments attach by source position, so `parseEscape`'s default-clause commentary migrated up into the
+octal arm above it. Guarding in place fixes the same defect with no code motion, keeps the emitted C#
+in Go's clause order, and costs nothing structurally — emitting an `if` instead of a bare block is
+precisely what lets the following clause keep its `else`, which is the CS8641 problem the reorder
+exists to avoid in the first place.
+
+Guarded by `JsonFixedArrayUnmarshal`, which unmarshals JSON arrays into `[1]any`, `[2]int`, `[3]string`,
+nested `[2][2]int` and a struct array — including the over-length (truncate) and under-length
+(zero-fill) cases — and, in the other direction, asserts that the `default` arm still produces Go's
+exact error for the targets it genuinely owns, so the fix cannot be an over-broad one that drops the
+guard.
+
 ### A clause's `else` may only be dropped when EVERY preceding clause terminates
 In the if-chain lowering the converter omits the `else` before a clause when the preceding clause
 ended in a `return` — the chain is then unnecessary, since control cannot reach the later clause

@@ -284,6 +284,14 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 	// through out (those are source-order-sensitive); removing a fallthrough-independent default
 	// preserves every other clause's fallthrough link. The C# `switch` branches accept `default`
 	// anywhere, so this is only for the if/else-chain path.
+	//
+	// A default this does NOT move — because it participates in fallthrough, or because the switch
+	// took the chain via hasFallthroughs with constant labels — is guarded IN PLACE on the
+	// precomputed any-case-match below instead. Widening this gate to cover those was tried and
+	// rejected: reordering moves the clause's STATEMENTS but comments attach by source position, so
+	// regexp/syntax parseEscape's default-clause commentary migrated into the octal arm above it.
+	// Guarding in place fixes the same defect with no code motion, and keeps the emitted C# in Go's
+	// clause order.
 	if !allConst && tag != nil {
 		for i, caseClause := range caseClauses {
 			if caseClause.List != nil || i == len(caseClauses)-1 {
@@ -344,17 +352,36 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 		// false-init + per-case set semantics (each case's `!match &&` prefix reads it, so
 		// it cannot double as the precomputed predicate). Conditions are rendered ONCE here
 		// (convExpr has side effects) and consumed by the emission loop below.
-		nonTrailingDefaultFallsThrough := false
+		// ANY default the reorder above left in a non-trailing position needs it — not just one that
+		// falls through. The running match flag only reflects the arms emitted BEFORE the default, so
+		// every guard built from it is wrong for a value one of the LATER cases matches: `!match` is
+		// true, the default body runs, and those cases are dead code. Three shapes reach here, and the
+		// corpus held one live instance of each of the first two:
+		//
+		//   FALLEN INTO — `case reflect.Interface: … fallthrough; default: …; case reflect.Array,
+		//   reflect.Slice:` (encoding/json decode.go array). Emitted `if (fallthrough || !match)`, so
+		//   every array and slice target took the error arm: json.Unmarshal failed EVERY JSON array
+		//   whose target was not a bare interface ("cannot unmarshal array into Go value of type
+		//   [1]interface {}" — net/rpc/jsonrpc passes params as [1]any — and the same for every []T).
+		//
+		//   BARE BLOCK — a leading/middle default in a constant-label switch with fallthroughs, which
+		//   the reorder's gate does not cover. Emitted `{ /* default: */ … }` with no condition at
+		//   all, so it ran unconditionally: internal/bisect parsePattern failed EVERY pattern with
+		//   "invalid pattern syntax". (regexp/syntax parseEscape has the same shape and survived only
+		//   because its default body re-tests !isalnum(c), excluding its own case labels by accident.)
+		//
+		//   FALLS OUT — `default: … fallthrough; case 3:` (ascii85), already handled here.
+		nonTrailingDefault := false
 
 		for ci, cc := range caseClauses {
-			if cc.List == nil && ci < len(caseClauses)-1 && caseHasFallthroughStmt[ci] {
-				nonTrailingDefaultFallsThrough = true
+			if cc.List == nil && ci < len(caseClauses)-1 {
+				nonTrailingDefault = true
 			}
 		}
 
 		var anyMatchVarName string
 
-		if nonTrailingDefaultFallsThrough {
+		if nonTrailingDefault {
 			anyMatchVarName = v.getTempVarName("match")
 		}
 
@@ -481,38 +508,39 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 
 			v.outputBuilder.WriteString(matchVarName)
 			v.outputBuilder.WriteString(" = false;" + v.newline)
+		}
 
-			if nonTrailingDefaultFallsThrough {
-				// Precomputed any-case-match (see above). Note this evaluates every case
-				// label up front — a side-effecting label would reorder; Go tagged-switch
-				// labels are near-universally constants.
-				parts := make([]string, 0, len(caseClauses))
+		// Precomputed any-case-match (see above). Declared independently of the running match flag:
+		// a non-trailing default needs it whether or not the switch has fallthroughs. Note this
+		// evaluates every case label up front — a side-effecting label would reorder; Go
+		// tagged-switch labels are near-universally constants.
+		if anyMatchVarName != "" {
+			parts := make([]string, 0, len(caseClauses))
 
-				for ci, cc := range caseClauses {
-					if cc.List == nil {
-						continue
-					}
-
-					condPart := caseConds[ci]
-
-					if len(cc.List) > 1 || strings.Contains(condPart, " || ") {
-						condPart = "(" + condPart + ")"
-					}
-
-					parts = append(parts, condPart)
+			for ci, cc := range caseClauses {
+				if cc.List == nil {
+					continue
 				}
 
-				if v.options.preferVarDecl {
-					v.writeOutput("var ")
-				} else {
-					v.writeOutput("bool ")
+				condPart := caseConds[ci]
+
+				if len(cc.List) > 1 || strings.Contains(condPart, " || ") {
+					condPart = "(" + condPart + ")"
 				}
 
-				v.outputBuilder.WriteString(anyMatchVarName)
-				v.outputBuilder.WriteString(" = ")
-				v.outputBuilder.WriteString(strings.Join(parts, " || "))
-				v.outputBuilder.WriteString(";" + v.newline)
+				parts = append(parts, condPart)
 			}
+
+			if v.options.preferVarDecl {
+				v.writeOutput("var ")
+			} else {
+				v.writeOutput("bool ")
+			}
+
+			v.outputBuilder.WriteString(anyMatchVarName)
+			v.outputBuilder.WriteString(" = ")
+			v.outputBuilder.WriteString(strings.Join(parts, " || "))
+			v.outputBuilder.WriteString(";" + v.newline)
 		}
 
 		// A `default:` reached via fallthrough is emitted as a GUARDED `if (fallthrough || !match)` block
@@ -567,19 +595,36 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 
 			// Handle default case
 			if caseClause.List == nil {
+				nonTrailing := i < len(caseClauses)-1
+
 				if caseFallsThrough {
-					v.outputBuilder.WriteString(fmt.Sprintf("if (fallthrough || !%s) { /* default: */", matchVarName))
+					// A TRAILING default may read the running flag: every case has been tested by the
+					// time control reaches it. A NON-TRAILING one may not (see nonTrailingDefault
+					// above) — it reads the precomputed predicate over EVERY case label instead, which
+					// is what makes the arms below it reachable.
+					guardVarName := matchVarName
+
+					if nonTrailing {
+						guardVarName = anyMatchVarName
+					}
+
+					v.outputBuilder.WriteString(fmt.Sprintf("if (fallthrough || !%s) { /* default: */", guardVarName))
 
 					// A trailing default emitted in the guarded form leaves C# unable to prove the switch
 					// is exhaustive (see guardedTerminalDefault above).
-					if i == len(caseClauses)-1 {
+					if !nonTrailing {
 						guardedTerminalDefault = true
 					}
-				} else if nonTrailingDefaultFallsThrough && i < len(caseClauses)-1 {
-					// A leading/middle default runs only when NO case matches (anyMatch is
-					// precomputed above); its own `fallthrough` chains into the next case.
+				} else if nonTrailing {
+					// A leading/middle default runs only when NO case matches (anyMatch is precomputed
+					// above). This covers the clause that falls OUT into the next case (ascii85) and
+					// equally the one that participates in no fallthrough at all — which used to emit a
+					// BARE, unguarded block that ran every time (internal/bisect). Emitting an `if`
+					// rather than a block also keeps the chain intact, so the next clause can take its
+					// `else` (a plain block followed by `else if` is CS8641, which is why the reorder
+					// above exists at all).
 					v.outputBuilder.WriteString(fmt.Sprintf("if (!%s) { /* default: */", anyMatchVarName))
-				} else if i == len(caseClauses)-1 && hasFallthroughs {
+				} else if hasFallthroughs {
 					// A TRAILING default in a switch WITH fallthroughs must be guarded on !match. The
 					// else-if chain is broken by the fallthrough-TARGET if-blocks (a case rendered
 					// `if (fallthrough || !match && <labels>) {…}`), so a bare `else` here is the else of

@@ -715,6 +715,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
 
     [TestMethod]
+    public void CheckJsonFixedArrayUnmarshal() => CheckTarget("JsonFixedArrayUnmarshal");
+
+    [TestMethod]
     public void CheckJsonUnmarshalerDispatch() => CheckTarget("JsonUnmarshalerDispatch");
 
     [TestMethod]
