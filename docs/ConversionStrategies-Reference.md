@@ -6134,11 +6134,12 @@ legacy `Sending` path):
 * **`make(chan T)` emits `new channel<T>(0)`** — capacity 0 is a real rendezvous channel; `cap()` is
   `dataqsiz` and `len()` is `qcount`, so `make(chan T)` vs `make(chan T, 1)` are finally distinct
   (the make default in `convCallExpr.go` covers plain and named channels; the gen Channel template's
-  wrapper constructor no longer clamps `size < 1` to 1). A parked operation holds its ThreadPool
-  thread (goroutines are pool work items), so golib's module initializer raises the pool's
-  min-thread floor to `max(256, 4 × processor count)` — a mitigation, not a scheduler: programs
-  parking thousands of goroutines remain out of reach until a cooperative scheduler exists
-  (documented divergence).
+  wrapper constructor no longer clamps `size < 1` to 1). A parked operation blocks its goroutine's
+  own dedicated thread (`Goroutine.Start`), so parking costs nobody else's capacity and a program
+  can park thousands of goroutines at once — the shape `GoroutineParkStorm` guards. golib used to
+  queue goroutines on the shared ThreadPool and raise its min-thread floor to
+  `max(256, 4 × processor count)` to compensate; both the floor and its premise retired with the
+  dedicated-thread executor (`docs/phase4/DESIGN-cooperative-scheduler.md`).
 * **Blocking select is a selectgo port behind the unchanged emitted text.** The registration
   methods (`Receiving`, `Sending`, `ᐸꟷ(ch, ꓸꓸꓸ)`, `ch.ᐸꟷ(v, ꓸꓸꓸ)`) return type-erased `SelectOp`
   descriptors — invisible to overload resolution at every emitted call site — and
@@ -7042,8 +7043,8 @@ the inner registration lands there rather than in the enclosing function's. Guar
 
 ### An unrecovered panic crashes the process Go-style: report on stderr, exit code 2
 `throw panic(x)` unwinds until some enclosing frame's deferred sequence recovers it. When nothing
-does — including in a **goroutine**, since `goǃ` queues the body on the bare thread pool with no frame
-around it and a frame's exception filter only adopts panic-convertible exceptions — the exception reaches
+does — including in a **goroutine**, since `goǃ` runs the body at the root of its own dedicated thread
+with no frame around it and a frame's exception filter only adopts panic-convertible exceptions — the exception reaches
 golib's `AppDomain.UnhandledException` backstop (registered in `builtin.InitializeGoLib`). The backstop
 matches Go: it writes the report to **stderr** (`panic: <message>`, first mapping runtime-error
 exceptions through `RuntimeErrorPanic.TryAsPanic` so e.g. an integer divide by zero reports Go's
@@ -14623,7 +14624,7 @@ The channel side is a general hook, not a `time` special case: golib gains `ICha
 
 Two places are deliberately **not** Go. Upstream `Stop` drains after releasing `sendLock` and `Reset` drains before releasing it; this holds `sendLock` across the drain in **both**, because Go can afford the looser order only thanks to lazy heaping (a sync-mode chan timer is in a heap only while a receiver is blocked on it, so nothing can produce a tick between `Stop`'s unlock and its drain) and this model's service thread is always live and always eager — a `Reset` racing another goroutine's `Stop` could otherwise have its fresh tick drained by the `Stop`. And Go fires a sync-mode chan timer **lazily** (`runtime.maybeRunChan`, at receive time) where this fires eagerly from the service heap; that is what mechanism 3 exists for, and *with* it `Stop`'s answer is the same either way — but eager firing still costs Go 1.23's early GC of unreferenced timers, since an armed timer stays reachable from the service heap. `GODEBUG=asynctimerchan` selects the model as upstream: `0` (default) synchronous, `1` pre-1.23 asynchronous (package `time`'s own `syncTimer` withholds the channel, so none is ever registered), `2` asynchronous semantics over a registered channel — and modes 1 and 2 run the pre-existing model unchanged, every branch being gated on the live setting. Measured on `time`'s own `TestChan`: all six subtests (`asynctimerchan={0,1,2}` × Timer/Ticker) pass, where before only `{1,2}` did. Guarded end-to-end by the `SyncTimerChannel` behavioral project, whose stdout is byte-compared against `go run`: `Stop`/`Reset` `pending` after a fire, no stale tick, `len`/`cap` 0, `AfterFunc` untouched, and three things a single-shot test cannot see: 200 `Reset`-to-imminent timers that must still deliver (the counter-property that keeps the drain honest), 600 ticker `Stop`/`Reset`-vs-firing races that must revoke exactly nothing, and two 600-timer batches armed against ONE absolute deadline and stopped/reset at that instant, every one of which must report `pending`. The last is what exposed mechanism 3's absence, and it only samples the window because the batch and the caller's sleep share a deadline — give each timer its own relative duration and the caller wakes milliseconds after the last tick has already landed, so the window is never entered and a broken implementation passes.
 
-**Reach.** Timers gate roughly 35 stdlib suites. `encoding/base64`'s `TestDecoderIssue3577` and four of `internal/singleflight`'s five tests flip to passing on this alone; `singleflight`'s fifth needs 1000 *simultaneously parked* goroutines, which is the separately-documented cooperative-scheduler limitation in golib's `goǃ` (a goroutine is a ThreadPool work item and holds its thread while parked, so the 256-thread floor bounds how many can be parked at once), not a timer issue.
+**Reach.** Timers gate roughly 35 stdlib suites. `encoding/base64`'s `TestDecoderIssue3577` and four of `internal/singleflight`'s five tests flip to passing on this alone; `singleflight`'s fifth needs 1000 *simultaneously parked* goroutines, which was the separately-documented cooperative-scheduler limitation in golib's `goǃ` (a goroutine was a ThreadPool work item and held its thread while parked, so the 256-thread floor bounded how many could be parked at once), not a timer issue. The dedicated-thread executor retired that bound (`docs/phase4/DESIGN-cooperative-scheduler.md`).
 
 ### The runtime's PROCESS-CONTROL surface: implement the CONTRACT, never the mechanism
 
@@ -14770,9 +14771,9 @@ a mass infrastructure wall. `Goroutine.ContainUnhandledExceptions(policy)` lets 
 containment policy, which golib consults through an exception **filter** (never a catch-and-rethrow, so
 the uncontained path is bit-for-bit the old behavior — unhandled, stack intact, intervening `finally`
 blocks unrun). A panic is never offered to a policy. The host attributes the failure to the right test
-with an `AsyncLocal` set on the test thread: it flows with the `ExecutionContext` that
-`ThreadPool.QueueUserWorkItem` captures, which is exactly how golib dispatches a goroutine, so the
-attribution survives goroutines spawning goroutines. If the crashed goroutine was the one that would
+with an `AsyncLocal` set on the test thread: it flows with the `ExecutionContext` that `Thread.Start`
+captures, which is exactly how golib dispatches a goroutine, so the attribution survives goroutines
+spawning goroutines. If the crashed goroutine was the one that would
 have unblocked its test, that test now waits for the package timeout — which still writes every result
 gathered so far, where the crash wrote none.
 
