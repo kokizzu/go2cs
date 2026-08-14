@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **134 / 215 testable packages validated — 62.3%**
+> ### Phase 4 progress: **135 / 215 testable packages validated — 62.8%**
 >
-> **14,973 matching test verdicts · 47 disclosed** *(updated 2026-08-13 — maintained as part of the
+> **15,128 matching test verdicts · 47 disclosed** *(updated 2026-08-13 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -132,7 +132,11 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) | 1 |  | The pprof protobuf codec's packed varint encoding — round-tripped through the white-box test's own `message` implementation, which is what proved a Go package split across two assemblies still binds its unexported interface methods. · [proof](validation/current/internal.profile.md) |
 | [`internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) | 17 | | Allocation-capped I/O helpers. · [proof](validation/current/internal.saferio.md) |
 | [`internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) | 1 |  | The CPU brand string the runtime reports, read through the converted `internal/cpu` name tables. · [proof](validation/current/internal.sysinfo.md) |
+<<<<<<< HEAD
 | [`internal/testenv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/testenv) | 7 | | The capability probes the rest of the standard library's suites gate themselves on — `HasGoBuild`/`MustHaveExec`/`MustHaveGoRun` consistency, and `TestGoToolLocation`, which resolves `../../../bin/go` from the package's own directory and requires `os.SameFile` agreement with `exec.LookPath("go")`: the test that pins both halves of the host's execution environment, its working directory and its PATH. · [proof](validation/current/internal.testenv.md) |
+=======
+| [`internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) | 155 |  | Every `go/types` error code, checked two ways against the real type checker: each code's documented Example snippet must actually produce that code, and the codes themselves must stay dense, uniquely named and correctly styled. Its `walkCodes` type-checks `codes.go` through `go/types.Check` on the way in, so this is also the first package to exercise the converted checker over real source. · [proof](validation/current/internal.types.errors.md) |
+>>>>>>> 25108403ef8b00c10443ac0f8156a49fcc484213
 | [`internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) | 3 |  | AIX XCOFF objects — the 32- and 64-bit section and symbol-table readers over the PowerPC testdata executables, `big`-format archive member enumeration, and the malformed-file error path. · [proof](validation/current/internal.xcoff.md) |
 | [`internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) | 534 | | The Zstandard decompressor — FSE/Huffman table construction, the sliding window, xxhash checksums, and 500+ fuzz-corpus round-trips. · [proof](validation/current/internal.zstd.md) |
 | [`io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) | 60 | 1 | The core reader/writer contracts — pipes over real goroutine rendezvous, `MultiReader`/`MultiWriter` flattening via `runtime.Callers`, `OffsetWriter` on real temp files (`os.runtime_rand`), `WriteString` interface dispatch under `-tests` renaming; alloc-count disclosures. · [proof](validation/current/io.md) |
