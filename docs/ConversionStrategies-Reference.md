@@ -11725,6 +11725,38 @@ The rule is keyed at the **wrapper's own emission site** (`unsafePointerBoxEmiss
 
 Corpus footprint: **494 sites across 45 files** in a seeded two-temp-root A/B whole-stdlib reconvert — 249 in `syscall/zsyscall_windows.cs` alone, 65 in `internal/syscall/windows/zsyscall_windows.cs`, 25 each in `runtime/heapdump.cs` and `runtime/os_windows.cs` — plus 10 across four behavioral goldens; every changed line in the A/B is reproduced exactly by the transformation and none is anything else. Measured with a `GC.GetAllocatedBytesForCurrentThread` probe over 2,000 calls: `syscall.Write` **1,072 → 544 B/op** (−49.3 %) and `os.File.WriteString` **9,208 → 8,680 B/op**, i.e. 528 bytes — three wrapper objects — off every zsyscall wrapper call chain. (The hand-owned `crypto/subtle/xor_generic.cs` keeps its three sites, as it must: the converter regenerates it into the `xor_generic.cs.auto` review sibling instead of over it.) (Guarded by the `UintptrUnsafePointerIdiom` behavioral **output** test — address identity across two takes of one global, a pointer parameter, the nil pointer's 0, an array-element stride, an existing `unsafe.Pointer` value round-trip, a dereferenced pointer-to-pointer operand, and a write read back through the same pointer, all vs `go run` — plus the re-baselined `NilPointerUintptr`, `NilPointerParamUnsafePointer`, `FixedArrayBufferPointer` and `UnsafeOperations` goldens, which diverge the moment the peephole is neutered.)
 
+### A pointer `reflect` handed out as an `unsafe.Pointer` must convert BACK — the order token is remembered, not redefined
+
+A Go pointer to managed storage has no machine address to report, so every projection of one to a scalar answers with a stable **order token** instead: `INilPointer.PointerOrderToken`, whose own remarks say plainly that tokens "are order keys, never an identity substitute". `reflect.Value.Pointer` and `reflect.Value.UnsafePointer` both project through it (`reflect/value_impl.cs`'s `reflectPointerToken`), and that contract is exactly right for the consumers it was written for — `fmt`'s `%p`, and `internal/fmtsort`'s ordering of pointer-keyed map entries, which compares two tokens arithmetically.
+
+It is not sufficient for the other direction Go permits: converting the scalar back to a pointer and dereferencing it. `go/types`' own test suite does precisely that to reach the unexported `Config._Trace` field:
+
+```go
+func boolFieldAddr(conf *Config, name string) *bool {
+	v := reflect.Indirect(reflect.ValueOf(conf))
+	return (*bool)(v.FieldByName(name).Addr().UnsafePointer())
+}
+
+*boolFieldAddr(&conf, "_Trace") = manual && testing.Verbose()   // check_test.go:166
+```
+
+which converts to
+
+```csharp
+internal static ж<bool> boolFieldAddr(ж<types.Config> Ꮡconf, @string name) {
+    var v = reflect.Indirect(reflect.ValueOf(Ꮡconf.OrTypedNil()));
+    return (ж<bool>)(uintptr)(v.FieldByName(name).Addr().UnsafePointer());
+}
+```
+
+`ж<T>`'s `explicit operator ж<T>(uintptr)` builds a **native-address** box over whatever number it is handed (`m_nativeAddr`), so the `.Value` store writes a `bool` at the numeric value of an order token — an access violation when that page is not mapped, and silent heap corruption when it is. It killed `go/types`' converted test host outright at the first test that reaches the idiom, `TestCheck/blank.go`, with 542 verdicts behind it; the fault arrives as a bare `System.AccessViolationException` in `testFilesImpl` with no frame below it, because the faulting store is inlined at the call site.
+
+The information needed to do better is never actually lost. `reflect.Value.Addr` surfaces the **real aliasing box** — an addressable Value already carries `addrBox`, minted by `GoReflect.FieldAliasBox` — and only the projection to a scalar discards it. So golib's `ManagedPointerTokens` (`golib/ж.PointerTokens.cs`) remembers the association the projection drops: the token that was handed out, and the box it named. `reflectPointerToken` registers on the way out, and the `uintptr → ж<T>` operator consults the table **first**, so a token that came from there recovers its own box and aliases the original storage exactly as Go's pointer would. Everything else keeps the pre-existing native-address route unchanged.
+
+Two properties are deliberate. **The token VALUE does not change.** The obvious alternative — minting self-identifying handles from a reserved numeric range — would also change what `%p` prints and what order pointer-keyed maps print in, because those read the very same token; carrying the association out of band instead leaves every existing observable byte-identical, and costs one dictionary probe on a conversion that was already allocating an object. **Entries are weak, and verified on resolve**: the table must never be the reason a box stays alive, and a resolve re-derives the box's current token and requires equality, so a stale entry cannot answer. The type-descriptor path (`typeDescriptorOrderToken`, which packs type NAMES so fmtsort orders them lexically) returns before registration and is untouched — those tokens are shared by every descriptor with the same name and are not identities to recover.
+
+Corpus footprint of the idiom: in all of GOROOT it is `go/types`' `check_test.go` (bool and string), its `cmd/compile/internal/types2` twin, and four descriptor-walking sites in `reflect/type.go`; `sync/atomic`'s two uses only test alignment (`p&7 != 0`) and never dereference. (Guarded by the `ReflectFieldAddrWrite` behavioral **output** test — writes to a bool, a string and an int field through `Addr().UnsafePointer()`, each read back through the ORIGINAL struct to prove aliasing rather than a detached copy, two derivations of one field compared for pointer equality, and the untouched neighbours asserted unchanged, all vs `go run`. It faults with an access violation on pre-fix golib.)
+
 ### Pointer DISPLAY never dereferences out-of-range; `unsafe.StringData("")` is nil
 
 Printing a pointer (`ж<T>.ToString()` → `PrintPointer`, the stub-fmt fallback for `%v`/`%p` of a

@@ -668,6 +668,7 @@
     <Project Path="tests/Behavioral/ReceiverFieldAddress/ReceiverFieldAddress.csproj" />
     <Project Path="tests/Behavioral/ReceiverFieldMethodCall/ReceiverFieldMethodCall.csproj" />
     <Project Path="tests/Behavioral/ReceiverPointerValue/ReceiverPointerValue.csproj" />
+    <Project Path="tests/Behavioral/ReflectFieldAddrWrite/ReflectFieldAddrWrite.csproj" />
     <Project Path="tests/Behavioral/ReflectFuncArrayParamDims/ReflectFuncArrayParamDims.csproj" />
     <Project Path="tests/Behavioral/ReflectMapRangeNilKey/ReflectMapRangeNilKey.csproj" />
     <Project Path="tests/Behavioral/ReflectMethodTableWalk/ReflectMethodTableWalk.csproj" />

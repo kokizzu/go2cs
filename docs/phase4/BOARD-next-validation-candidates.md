@@ -6874,3 +6874,129 @@ site FIRST — the containment work makes that cheap now — and ask whether the
 a host capability the previous measurement did not have. Here one probe at the recording commit
 settled it in six minutes, where a 230-commit first-parent bisect would have found nothing and said
 so only after eight probes.
+
+---
+
+## RESOLVED (2026-08-14, lane `claude/go-types-av`) — `go/types`' access violation is a reflect POINTER TOKEN converted back to a pointer; 15 → 202 verdicts
+
+`go/types`' converted test host builds and runs now that the CS0839 `defer panic(err)` blocker is
+fixed, and it died with a bare access violation after 15 verdicts:
+
+```
+Fatal error. System.AccessViolationException: Attempted to read or write protected memory.
+   at go.go.types_test_package.testFilesImpl(...)
+   at go.go.types_test_package.testFiles(...)
+   at go.go.types_test_package.testPkg(...)
+```
+
+Exit `0xc0000005`, zero verdicts after, 542 behind it. **First-contact territory, so the OS playbook
+applied rather than a bisect** — and it paid the same way: the fault site named the defect outright,
+with no probing of history at all.
+
+**The fault site.** `testFilesImpl`'s FIRST statement after building the Config is
+
+```go
+*boolFieldAddr(&conf, "_Trace") = manual && testing.Verbose()      // check_test.go:166
+
+func boolFieldAddr(conf *Config, name string) *bool {              // check_test.go:343
+	v := reflect.Indirect(reflect.ValueOf(conf))
+	return (*bool)(v.FieldByName(name).Addr().UnsafePointer())
+}
+```
+
+There is no frame below `testFilesImpl` because the faulting store is inlined at the call site;
+`boolFieldAddr` itself returns perfectly well. **`TestCheck` is the first test alphabetically that
+reaches `testFilesImpl` at all** — not one of the nine before it (`TestAlias_Rhs` …
+`TestBuiltinSignatures`) calls `testFiles`; they type-check through `mustTypecheck` or not at all, and
+neither route uses this idiom — and `blank.go` is the first file in
+`testdata/check`. So the crash is the FIRST EVER EXECUTION of the idiom, not corruption surfacing
+late. `blank.go` being a five-line `package _` file is a coincidence of alphabetical order and means
+nothing.
+
+**The mechanism.** A Go pointer to managed storage has no machine address, so `reflect.Value.Pointer`
+and `.UnsafePointer` both project through `reflectPointerToken` (`reflect/value_impl.cs`) and answer
+with a stable **order token** — `INilPointer.PointerOrderToken`, whose own remarks say tokens "are
+order keys, never an identity substitute". The hand-own's header says what it was written for: *"fmt
+uses it only to test nil-ness and to print an address for %p."* `go/types` is a new caller with the
+other need. Emitted, its line is
+
+```csharp
+return (ж<bool>)(uintptr)(v.FieldByName(name).Addr().UnsafePointer());
+```
+
+and `ж<T>`'s `explicit operator ж<T>(uintptr)` builds a **native-address** box over whatever number it
+is handed. The subsequent `.Value` store writes a bool at the numeric value of an order token — an
+access violation where that page is unmapped, silent heap corruption where it is not. Note this is the
+`unique`/`clone.cs` family stated from the other end: there an interior address was fabricated by
+ARITHMETIC on a movable box; here it is fabricated by a projection that never was an address.
+
+**Proven without `go/types`, in 22 lines** — a struct with an unexported bool, string and int field,
+the `boolFieldAddr` idiom verbatim, no other package involved. Go prints `x true`; the converted C#
+dies `System.AccessViolationException` at `go.main_package.Main()`, the identical frame shape (the
+store inlined into its caller). It is the whole defect, with go/types removed.
+
+**The fix — golib remembers what the projection drops.** The information was never lost:
+`reflect.Value.Addr` surfaces the real aliasing box (`addrBox`, minted by `GoReflect.FieldAliasBox`),
+and only the scalar projection discards it. `golib/ж.PointerTokens.cs` adds `ManagedPointerTokens`, a
+weak token→box table that `reflectPointerToken` registers into and the `uintptr → ж<T>` operator
+consults first; a token that came from there recovers its box and aliases the original storage exactly
+as Go's pointer would, and everything else keeps the native-address route unchanged.
+
+Two properties are deliberate, and both exist to keep the blast radius at zero. **The token VALUE does
+not change** — minting self-identifying handles from a reserved range would also move what `%p` prints
+and what order pointer-keyed maps print in, since `fmt` and `internal/fmtsort` read the very same
+token — so the association is carried out of band instead. **Reads are lock-free with an empty fast
+path**: `Resolve` sits on 875 emitted cast sites corpus-wide (54 in the syscall wrappers), and a
+program that never asks reflect for a pointer's scalar form answers from a single volatile load. The
+type-descriptor path (`typeDescriptorOrderToken`) returns before registration and is untouched.
+
+**Measured movement: 15 verdicts → 202** (169 pass, 33 fail), zero access violations anywhere in the
+run. The 33 failures are entirely the KNOWN-OPEN type-parameter class — `TestCheck/{chans,
+funcinference,typeinst1,typeparams,map0,map1,slices,issues1}.go`, `TestExamples/{functions,
+inference}.go` — the same signature as `go/internal/gcimporter`'s residual 108.
+
+**The next wall, named: the SAME open root, in its non-terminating form.** The run now dies at
+`TestFixedbugs/issue48951.go` with `0xc00000fd` — **STATUS_STACK_OVERFLOW**, an unbounded recursion in
+`validType0`:
+
+```
+   at go.go.types_package.validType0(...)      × until the stack is gone
+   at go.go.types_package.validType(...)
+   at go.go.types_package.processDelayed(...)
+```
+
+`issue48951.go` is the *invalid recursive type* testdata (`A2[P any] [10]A2[*P]`), and Go's cycle guard
+is `for _, e := range nest { if Identical(e, t) { … } }` (`validtype.go:104`). A converted `Identical`
+that judges a parameterized named type not identical to itself never finds the cycle, so the walk
+recurses forever. That is **the board's already-open second root** — "a type parameter judged not
+identical to itself" — appearing as a hang rather than as a bogus error message. It is a consequence
+of that root, not a new defect, and it is not this lane's.
+
+**Roster arithmetic: `go/types` does NOT bank.** 202 of 557 with a live process-killer behind it; test
+sources deliberately not committed, and the pipeline's churn under `src/core/go/types` restored.
+
+**`go/internal/gcimporter` re-measured on the same tree: 475 of 583 matched, 108 mismatched —
+UNCHANGED from its baseline, to the verdict.** All 108 are still `Go="pass" C#="fail"` inside
+`TestImportTypeparamTests`, and nothing else moved in either direction (14m20s, under concurrent
+lane load). That is the expected answer and worth recording as a NEGATIVE result: gcimporter's
+residual is the generics root in `go/types`' checker, which this fix does not touch, so a package
+whose failures all sit there should not move — and did not. The two measurements now agree on the
+same open root from opposite directions.
+
+**Gates.** `GolibTests` 111/111. Full behavioral suite **PASS — 574/574 transpile, compile and
+goldens; 548 stdout comparisons, 0 failed, 26 skipped (no `package main`); 3,769 s** (i7-5820K,
+solo). `check-no-regression` **NO REGRESSION — generated C# and
+`.csproj` byte-identical across all 601 behavioral packages, 1,025 s** (2 advisory converter
+warnings, 0 NOT MEASURED).
+`go2cs.slnx` **build succeeded, 0 errors, 585 s** — owed because golib's public surface
+gained a type. Guarded by the new
+`ReflectFieldAddrWrite` behavioral **output** test, which faults with an access violation on pre-fix
+golib. Doctrine: `ConversionStrategies-Reference.md`, *A pointer `reflect` handed out as an
+`unsafe.Pointer` must convert BACK*.
+
+**What this leaves for the ж-box arc.** The arc's charter item — "have the non-aliasing fallback retain
+the source object" (remedy 3 of the `NetShareAdd` entry above) — is the general form of what this table
+does for one seam. This fix is deliberately narrower: it restores the round trip for pointers that
+`reflect` itself handed out, and changes nothing about the transient-address model that
+`(uintptr)ж<T>` uses for everything else. A pointer whose scalar form was produced by arithmetic
+(`uintptr(unsafe.Pointer(&x)) + offset`) still cannot come back, and still should not.
