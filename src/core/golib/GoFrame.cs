@@ -117,9 +117,10 @@ public ref struct GoFrame
     /// what lets a deferred call recover the panic raised by the body it was registered in.
     /// </para>
     /// <para>
-    /// This is <c>GoFunc.HandleFinally</c>'s logic verbatim — the <c>HandledPanic</c>
-    /// save/restore, the re-panic <c>InheritThrowSite</c> rule, and the final re-throw of an
-    /// unrecovered panic all behave exactly as they did. It moved; it did not change.
+    /// This is <c>GoFunc.HandleFinally</c>'s logic — the <c>HandledPanic</c> save/restore, the
+    /// re-panic <c>InheritThrowSite</c> rule, and the final re-throw of an unrecovered panic — with
+    /// ONE correction: a panic raised BY a deferred call now becomes the frame's in-flight panic and
+    /// the sequence CONTINUES, instead of aborting it. See the catch below.
     /// </para>
     /// </remarks>
     public void Run()
@@ -143,14 +144,39 @@ public ref struct GoFrame
                     {
                         Pop()();
                     }
-                    catch (PanicException rePanic) when (handling is not null)
+                    catch (Exception ex) when (IsPanic(ex, out PanicException? raised))
                     {
-                        // Go's re-panic idiom (`defer func(){ panic(recover()) }()`, which is how
-                        // sync.OnceFunc replays a panic on every call) raises a NEW panic from the
-                        // deferred frame. Go's traceback still shows the original panic's frames, so
-                        // the new panic adopts the origin rather than starting a fresh, shallower one.
-                        rePanic.InheritThrowSite(handling);
-                        throw;
+                        // A deferred call PANICKED. Go does not stop the sequence here: the new
+                        // panic joins the one already unwinding (replacing it as the value a
+                        // recover() answers), and this frame's REMAINING deferred calls still run —
+                        // which is exactly what lets an earlier-registered deferred recover() catch
+                        // a panic that a later-registered one raised. `defer panic(v)` is the
+                        // smallest case (guarded by the DeferPanicArg behavioral test): the panic
+                        // thunk runs first, the recover thunk second. Parking the panic where
+                        // recover() reads it and continuing the loop is the whole correction; if
+                        // nothing recovers it, the tail below re-raises it to the caller, unchanged.
+                        //
+                        // Before this, the catch was `when (handling is not null)` + `throw;`, so a
+                        // deferred panic in a NON-panicking frame escaped the loop uncaught (the
+                        // remaining defers were skipped and no recover() ever saw it), and one in a
+                        // panicking frame aborted the rest of the sequence.
+                        //
+                        // The filter is IsPanic, matching the emitted frame's own catch, so a
+                        // runtime fault in a deferred call is recoverable here exactly as it is in
+                        // the body. GoexitException deliberately FAILS that filter, so a
+                        // runtime.Goexit still unwinds through this frame as before.
+                        if (handling is not null)
+                        {
+                            // Go's re-panic idiom (`defer func(){ panic(recover()) }()`, which is how
+                            // sync.OnceFunc replays a panic on every call) raises a NEW panic from the
+                            // deferred frame. Go's traceback still shows the original panic's frames, so
+                            // the new panic adopts the origin rather than starting a fresh, shallower one.
+                            raised.InheritThrowSite(handling);
+                        }
+
+                        GoFuncRoot.CapturedPanicValue = raised;
+                        GoFuncRoot.HandledPanicValue = raised;
+                        handling = raised;
                     }
                 }
             }

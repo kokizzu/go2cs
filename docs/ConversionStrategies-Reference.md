@@ -7073,6 +7073,51 @@ siblings carry a `ǃ` (U+01C3, a legal C# identifier character where `!` is not)
 own: `goǃ` cannot be `go`, which is the root namespace every converted file sits in, and `makeǃ`
 cannot be `make`, which is a predeclared Go identifier a package may shadow.
 
+### `defer panic(v)` captures its value at the defer, and the sequence survives it
+
+`panic` is the one built-in emitted as a `throw` **statement** rather than as a call, and that made it
+the one built-in the deferred-argument machinery could not see. Argument capture happens in exactly one
+place — the argument-list renderer substitutes a temp parameter (`ᴛN`) into the thunk body and hands the
+eager expression to the registration — and the `panic` arm returns `throw panic(<expr>)` before reaching
+it. So the thunk inlined the ORIGINAL expression and the registration's argument slot was left empty:
+
+```csharp
+defer(ᴛ1 => throw panic(errΔ2), , ref ᒐ);   // CS0839: Argument missing
+```
+
+The arm now performs the substitution itself, so the value is evaluated at the `defer` and thrown from
+the thunk's parameter:
+
+```go
+err := fmt.Errorf("first")
+defer panic(err)
+err = fmt.Errorf("second")     // Go recovers "first" — arguments evaluate at the defer
+```
+
+```csharp
+defer(ᴛ1 => throw panic(ᴛ1), err, ref ᒐ);
+```
+
+Capturing the expression in the thunk body instead — dropping the parameter — also compiles, and is
+**wrong** for exactly the shape above: it would report whatever the variable held when the frame
+unwound. The same rule reaches `go panic(v)`; `visitGoStmt` now forces the temp-param form for a
+built-in callee just as `visitDeferStmt` does, which also repairs `go close(ch)` (a built-in's method
+group is generic with `in` parameters and never converted to `Action<T>` — CS1503).
+
+Compiling was only half of it. A deferred `panic` is also the smallest case of a panic raised **by** a
+deferred call, and `GoFrame.Run` treated that as the end of the sequence: the panic escaped the loop
+and the frame's remaining deferred calls never ran, so the `recover()` thunk registered *before* the
+`panic` thunk never saw it. Go continues the sequence — the new panic joins the one unwinding and
+becomes what a later `recover()` answers — so `Run` now parks the raised panic where `recover()` reads
+it and keeps going, re-raising it at the end only if nothing recovered it. The catch filter is `IsPanic`,
+matching the emitted frame's own catch, so a runtime fault in a deferred call is recoverable exactly as
+one in the body is; `GoexitException` deliberately fails that filter and still unwinds.
+
+Guarded by `DeferPanicArg`, which output-compares six shapes against `go run`: a plain value, an error
+variable reassigned after the defer, a computed expression, a pointer value round-tripping the `any`
+boundary and answering a type assertion, a deferred panic replacing one already in flight, and two
+deferred panics in one frame (Go keeps the LAST one to run, i.e. the FIRST registered).
+
 ### A nested defer scope gets a frame of its own
 
 A `ref struct` cannot be captured by a lambda, and it does not need to be: a function literal that
