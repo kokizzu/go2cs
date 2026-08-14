@@ -401,6 +401,22 @@ mode>`, plus an opaque `object` slot for the submitting package's per-descriptor
 it is the one identity both sides independently hold — the poller gets it in `pollOpen`, a wrapper
 gets it as its own first argument.
 
+**The golib table has two MEASURED requirements that its obvious implementation does not meet
+(S2b, prototyped as `GoAsyncIO` with 11 GolibTests; the code is not banked — §4.5 — but these are
+priced findings the implementation must honor, not advice).** **(1) Create-exactly-once is
+load-bearing, and `ConcurrentDictionary.GetOrAdd` does not provide it.** Its factory may run on
+several threads with only one result kept; a contention test built **10** operation records where
+the contract wants 1, and each record owns a `PreAllocatedOverlapped` plus native staging buffers,
+so the nine discarded ones are a native leak with no owner. The per-descriptor slot has the same
+requirement for a harder reason — that object is the `ThreadPoolBoundHandle` association, and
+associating one socket twice is a kernel error. Use `Lazy<T>` with `ExecutionAndPublication`, or an
+explicit lock over the entry; never bare `GetOrAdd`. **(2) The readiness sink must be REPLACEABLE
+per descriptor**, because the kernel reissues descriptor numbers after a close: a registration that
+refused to overwrite would leave a stale sink waking a `pollDesc` that no longer owns the fd. A
+signal for an unregistered descriptor must be a silent no-op — it runs on a CLR IO thread-pool
+thread, where an escaping exception ends the process, and a completion racing a close is a race the
+contract permits.
+
 **The record key is verified, not assumed.** `ConcurrentDictionary<ж<Overlapped>, OpRecord>` is sound:
 `ж<T>.Equals` compares `SameSource(source1, source2) && fieldId1.Equals(fieldId2)` for a struct-field
 reference, and `GetHashCode` returns `SourceIdentityHash(source)` — coarser than Equals (every field of
@@ -536,25 +552,48 @@ socket.
 > overlapped, and so can own a native staging buffer in its record) has no way to hand that buffer to
 > `GetAcceptExSockaddrs`, and `GetAcceptExSockaddrs` has no way to ask for it.
 >
-> Two shapes look viable and both need a ruling rather than a lane's discretion. **(a) A
-> thread-scoped handoff**: `AcceptEx`'s hand-own parks its staging buffer in a `[ThreadStatic]` slot
-> that `GetAcceptExSockaddrs` consumes. Sound for the corpus's only caller — `net.netFD.accept` runs
-> `FD.Accept` and then `GetAcceptExSockaddrs` on one goroutine, and a go2cs goroutine is one managed
-> thread — but it is a NEW coupling between two wrappers that Go keeps independent, and it is invisible
-> to the type system. **(b) Transcribe at accept-completion into the managed `rawsa`**, and make
-> `GetAcceptExSockaddrs` a purely managed parse. This has the same lookup problem in a different place
-> (the transcriber must find the caller's array), unless `AcceptEx`'s record captures the managed
-> `slice<RawSockaddrAny>` — which it cannot, because it receives only the reinterpreted byte pointer.
-> Note what is NOT a problem: the out-parameters. `Ꮡlrsa`/`Ꮡrrsa` are pointers to managed
+> Two shapes were viable. **(a) A scoped handoff**: `AcceptEx`'s hand-own parks its staging buffer in
+> a slot that `GetAcceptExSockaddrs` consumes. Sound for the corpus's only caller — `net.netFD.accept`
+> runs `FD.Accept` and then `GetAcceptExSockaddrs` on one goroutine — but it is a NEW coupling between
+> two wrappers Go keeps independent, and nothing in the type system sees it. **(b) Transcribe at
+> accept-completion into the managed `rawsa`**, making `GetAcceptExSockaddrs` a purely managed parse.
+> Note what is NOT a problem under either: the out-parameters. `Ꮡlrsa`/`Ꮡrrsa` are pointers to managed
 > `ж<RawSockaddrAny>` VARIABLES, so a hand-own may write FRESH managed boxes into them; nothing in
 > `net` requires them to point into `buf`, since the only thing done with them is `.Sockaddr()` — which
 > is now hand-owned to decode from the managed image.
 >
-> S2b's ruling for itself: the seam is ALL-OR-NOTHING (S2a's analysis, unchanged), the accept half of
-> it has no implementable form under the ruled spec, and the round-trip gate cannot be met without
-> accept. Landing `WSARecv`/`WSASend`/`CancelIoEx`/`WSAGetOverlappedResult` alone would be exactly the
-> half-displaced set the stage forbids. So the displacement does not land, and the next lane starts
-> from a ruling on (a) vs (b) rather than from a rediscovery.
+> > **RULED (coordinator, 2026-08-14): shape (a), with three conditions that convert its one real cost
+> > — invisible coupling — into visible, loud machinery.** Shape (b) is **rejected on its own record**:
+> > the transcriber must still find the caller's array, so it is the same hole relocated, and its only
+> > escape hatch (having `AcceptEx`'s record capture the managed `slice<RawSockaddrAny>`) is
+> > self-refuted — `AcceptEx` receives the reinterpreted byte pointer and never sees the slice.
+> >
+> > 1. **Key the slot by GOROUTINE identity, not by a bare `[ThreadStatic]`.** The identity source is
+> >    the scheduler arc's S1 registry, `go.golib.Goroutine` (`src/core/golib/runtime/Goroutine.cs`,
+> >    merged), whose per-goroutine current-instance slot and `Id` are exactly this key; the
+> >    implementing lane exposes an accessor if none is public yet. §7/OQ6's ownership split explicitly
+> >    sanctions netpoll ADOPTING scheduler identity at its own option, and this is that option
+> >    exercised. Under the dedicated-thread executor a goroutine is one thread for life, so
+> >    `[ThreadStatic]` would work *today* — goroutine-keying makes the coupling's PREMISE explicit,
+> >    survives any future executor change, and rides arc-owned identity rather than a runtime
+> >    accident. **Say so in the impl header**: the scheduler arc is what makes this handoff sound, and
+> >    that cross-arc dependency should be legible to whoever reads either arc next.
+> > 2. **Single-occupancy, consume-exactly-once, fail BY NAME.** `AcceptEx` parking into an already
+> >    occupied slot throws, naming both wrappers; `GetAcceptExSockaddrs` finding an empty slot throws
+> >    likewise. A call sequence Go permits but the corpus never issues must fail LOUDLY, never be
+> >    misread — the `NetShareAdd` declared-limit doctrine applied to a protocol instead of to a host
+> >    capability.
+> > 3. **Document the coupling where it lives**: the impl file's header states the handoff, its
+> >    goroutine-affinity premise, and the corpus census that bounds it — one caller,
+> >    `net.netFD.accept`, doing accept-then-parse on one goroutine.
+>
+> S2b's own scope call under that ruling: the seam is ALL-OR-NOTHING (S2a's analysis, unchanged) and
+> the round-trip gate cannot be met without accept, so landing
+> `WSARecv`/`WSASend`/`CancelIoEx`/`WSAGetOverlappedResult` alone would be exactly the half-displaced
+> set the stage forbids. This lane stops at that boundary with the spec SETTLED rather than opening a
+> displacement it could not also gate; the next lane implements §4.4 + §4.5 + the ruling above as
+> written, against the §7 S2 gate pair (`TcpLoopbackRoundTrip` at VALUE level, plus the §5 deadline
+> matrix).
 
 ## 5. The deadline/unblock story — the hard part, priced honestly
 
