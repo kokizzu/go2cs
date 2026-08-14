@@ -64,7 +64,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -72,14 +71,6 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 // deadline-exceeded error predicate), and member lookup inside poll_package beats both the using
 // directive above and a using ALIAS -- so the timer sentinel is spelled out in full at each use
 // below. That is not a style choice; anything shorter resolves to the method and fails CS0119.
-
-// CA1416 reports ThreadPoolBoundHandle as "reachable on all platforms" because internal.poll targets
-// net9.0 with no RID. That premise is false for THIS file by construction: it lives in windows/ and
-// is compiled only when $(GoTargetOS)==windows selects that folder (internal.poll.csproj's L3 glob),
-// which is the same mechanism every other per-GOOS source in the corpus relies on. Annotating the
-// bodies [SupportedOSPlatform("windows")] instead would only push the warning onto their callers --
-// converted code (pollDesc.init) that carries no platform annotations and must not grow any.
-#pragma warning disable CA1416
 
 // Hand-owned (no runtime_netpoll_impl.go exists, so a reconvert never regenerates this file);
 // marked per the hand-own rules so a -stdlib run cannot emit a Go version over it.
@@ -166,16 +157,11 @@ partial class poll_package
             Write.Owner = this;
         }
 
-        // The socket handle this desc was opened for. Bookkeeping only -- nothing routes by it.
+        // The socket handle this desc was opened for. The submit seam keys its per-descriptor state
+        // by this same value (it is the one identity both sides independently hold -- the poller
+        // gets it in pollOpen, a wrapper gets it as its own first argument), so pollClose can retire
+        // that state without the caller supplying the descriptor a second time.
         internal nuint Fd;
-
-        // The CLR's own IOCP association for this socket (OQ1 mechanism (a)). Held for the desc's
-        // lifetime and disposed at pollClose, BEFORE internal/poll closes the socket
-        // (fd_windows.cs:378 runs pd.close() ahead of CloseFunc precisely so a poller can
-        // unregister first). Disposing it does not close the handle: the SafeHandle below is
-        // non-owning and ThreadPoolBoundHandle.Dispose releases only its own association.
-        internal ThreadPoolBoundHandle? Bound;
-        internal SafeHandle? BoundHandle;
     }
 
     // ctx token -> desc. Go returns the *pollDesc itself as a uintptr and defends staleness with
@@ -208,17 +194,38 @@ partial class poll_package
 
     // ---- 2. runtime_pollOpen ---------------------------------------------------------------------
 
-    // Register fd with the poller; return an opaque nonzero ctx, or (0, errno) on failure so
-    // pollDesc.init's errnoErr(syscall.Errno(errno)) path stays live (fd_poll_runtime.cs:49-52).
+    // Register fd with the poller and return an opaque nonzero ctx. The contract also allows
+    // (0, errno) -- pollDesc.init converts a nonzero errno with errnoErr(syscall.Errno(errno))
+    // (fd_poll_runtime.cs:49-52) -- but this body has nothing left that can fail: since the
+    // association moved to the first submit (below), registration is a token and a desc. The errno
+    // arm stays reachable in SIGNATURE only, which is the honest state; a bind failure now surfaces
+    // where the bind happens, as a submit error.
     //
-    // THE BIND IS THE ARC'S ONE REAL OQ1 RISK, so it happens here rather than being deferred to the
-    // first submit: ThreadPoolBoundHandle.BindHandle associates the socket with the CLR's IO
-    // completion port, and §4.2 names "a handle the CLR refuses to bind" as the single condition
-    // that would send the design to fallback mechanism (b). Binding at open means the first
-    // net.Listen answers that question, with a real kernel, before any IO machinery is built on top.
+    // WHAT THIS DOES NOT DO, AND WHY (design §4.2, AMENDED at S2). S1 associated the socket with the
+    // CLR's completion port here, which answered OQ1's one real risk against a real kernel --
+    // ThreadPoolBoundHandle.BindHandle accepts a Go-created socket. That question is settled, and the
+    // bind has since MOVED to the first submit, in the operation-record machinery. The reason is a
+    // guard Go has and the CLR does not:
     //
-    // The handle is wrapped NON-OWNING: internal/poll closes the socket itself in FD.destroy
-    // (CloseFunc right after pd.close()), so a SafeHandle that released it would double-close.
+    //   Go's poller REJECTS completions it does not own. pollOperationFromOverlappedEntry
+    //   (runtime/netpoll_windows.go) packs the *pollDesc into the completion KEY and compares it
+    //   against the pollDesc recorded in the operation; a mismatch returns nil and the completion is
+    //   ignored, citing go.dev/issue/58870 -- the issue internal/poll's own TestWSASocketConflict
+    //   regression-guards. ThreadPoolBoundHandle has no equivalent: its callback resolves state FROM
+    //   the NativeOverlapped it allocated, so a FOREIGN overlapped arriving at that port is MISREAD,
+    //   not ignored.
+    //
+    // Binding every pollable socket at open made each one eligible to receive such a completion, and
+    // internal/poll has a live producer: FD.WSAIoctl (windows/sockopt_windows.cs:11) bypasses execIO
+    // and hands the kernel the CALLER's syscall.Overlapped -- which, being an all-scalar struct in a
+    // STANDARD box, genuinely pins and genuinely reaches the kernel. Binding lazily removes that
+    // structurally rather than detecting it after the fact: a socket that only ever sees foreign
+    // overlapped IO is never associated at all, so its completion signals the caller's own event
+    // exactly as on an unregistered socket.
+    //
+    // So pollOpen now does exactly what its CONTRACT requires and nothing more: mint a token and
+    // create the desc. The association is the submit seam's to make, when it has an operation to
+    // make it for (S2b).
     internal static partial (uintptr, nint) runtime_pollOpen(uintptr fd)
     {
         // internal/poll reaches pollOpen only through serverInit.Do(runtime_pollServerInit), so a
@@ -229,45 +236,10 @@ partial class poll_package
         nuint handle = fd;
         ManagedPollDesc desc = new(){ Fd = handle };
 
-        try
-        {
-            SafeHandle safeHandle = new NonOwningHandle(handle);
-            desc.BoundHandle = safeHandle;
-            desc.Bound = ThreadPoolBoundHandle.BindHandle(safeHandle);
-        }
-        catch (Exception ex)
-        {
-            // Report the failure the way Go's netpollopen does -- as an errno the caller converts
-            // with errnoErr -- rather than letting an exception escape into converted code that has
-            // no catch for it. ERROR_INVALID_PARAMETER is what CreateIoCompletionPort answers for a
-            // handle that cannot be associated, which is the shape every BindHandle failure takes.
-            desc.BoundHandle?.Dispose();
-            return (0, ex is ArgumentException ? errorInvalidParameter : errorInvalidHandle);
-        }
-
         // Interlocked, not the dictionary's own count: tokens must never be reused within a run.
         uintptr ctx = (uintptr)(nuint)(ulong)Interlocked.Increment(ref nextPollToken);
         pollTable[ctx] = desc;
         return (ctx, 0);
-    }
-
-    private const int errorInvalidHandle = 6;          // ERROR_INVALID_HANDLE
-    private const int errorInvalidParameter = 87;      // ERROR_INVALID_PARAMETER
-
-    // A SafeHandle over a descriptor somebody else owns. ThreadPoolBoundHandle.BindHandle takes a
-    // SafeHandle (it keeps the handle alive across the association), but internal/poll's FD owns the
-    // socket's lifetime end to end, so this wrapper must never release it.
-    private sealed class NonOwningHandle : SafeHandle
-    {
-        internal NonOwningHandle(nuint value)
-            : base(unchecked((nint)(-1)), ownsHandle: false)
-        {
-            SetHandle(unchecked((nint)value));
-        }
-
-        public override bool IsInvalid => handle == unchecked((nint)(-1)) || handle == 0;
-
-        protected override bool ReleaseHandle() => true;
     }
 
     // ---- 3. runtime_pollClose --------------------------------------------------------------------
@@ -301,14 +273,13 @@ partial class poll_package
             desc.Write.Deadline?.Dispose();
             desc.Read.Deadline = null;
             desc.Write.Deadline = null;
-
-            // Before internal/poll closes the socket, per FD.destroy's ordering comment.
-            desc.Bound?.Dispose();
-            desc.BoundHandle?.Dispose();
-            desc.Bound = null;
-            desc.BoundHandle = null;
         }
 
+        // S2b lands the matching teardown here: the submit seam's per-descriptor binding (the
+        // ThreadPoolBoundHandle created at first submit) is disposed at this point, BEFORE
+        // internal/poll closes the socket -- FD.destroy calls pd.close() ahead of CloseFunc
+        // precisely so a poller can unregister first. Disposing that association never closes the
+        // descriptor; it stays internal/poll's throughout.
         pollTable.TryRemove(ctx, out _);
     }
 
@@ -611,31 +582,32 @@ partial class poll_package
     // completes an overlapped operation internal/poll submitted, the CLR's IO thread pool runs the
     // record's callback, which lands here.
     //
-    // RECORDED SEAM (design §4.3, for S2). The overlapped submissions live in the `syscall` and
-    // `internal/syscall/windows` packages, which internal/poll REFERENCES -- so they cannot call back
-    // into this package directly. The plumbing S2 lands is therefore a push: this package installs a
-    // per-handle readiness sink into the submit seam's registry at pollOpen, and the registry's
-    // completion callback invokes it. The contract layer above is unaffected either way, which is
-    // what §4.2 means by the choice being confined to pollServerInit/pollOpen and the callback's
-    // plumbing.
+    // THE SEAM, AND WHY IT IS A PUSH (design §4.3; S2b lands the other end). The overlapped
+    // submissions live in the `syscall` and `internal/syscall/windows` packages, which internal/poll
+    // REFERENCES -- so a completion callback there has no legal way to call back into this package.
+    // The plumbing is therefore inverted: pollOpen will register a per-descriptor readiness sink
+    // closing over the ctx, in the one assembly both sides see (golib), and the submit seam's
+    // callback invokes it knowing only the descriptor and the mode -- which is all a completion
+    // callback CAN know. The contract layer above is unaffected either way, which is what §4.2 means
+    // by the choice being confined to pollServerInit/pollOpen and the callback's plumbing.
     //
-    // ⚠ HARD CONSTRAINT THE BIND IMPOSES ON S2, recorded here because it is not obvious from the
-    // design text and is undefined behavior rather than a wrong answer. Because pollOpen associates
-    // the socket with the CLR's OWN completion port, every overlapped operation issued on that socket
-    // must carry a NativeOverlapped allocated from THAT bound handle
-    // (ThreadPoolBoundHandle.AllocateNativeOverlapped). The CLR's IO thread pool resolves a completion
-    // by reading its own state off the NativeOverlapped it handed out; a FOREIGN overlapped arriving
-    // at that port is not an error it reports, it is memory it misreads.
+    // ⚠ THE CONSTRAINT THAT SHAPES THE WHOLE SUBMIT SEAM, and the reason the bind is LAZY rather than
+    // done at pollOpen. Once a socket is associated with the CLR's completion port, every overlapped
+    // operation on it must carry a NativeOverlapped allocated from THAT binding
+    // (ThreadPoolBoundHandle.AllocateNativeOverlapped) -- the CLR's IO thread pool resolves a
+    // completion by reading its own state off the overlapped it handed out, so a FOREIGN overlapped
+    // is not an error it reports, it is memory it misreads. Go, by contrast, REJECTS what it does not
+    // own: pollOperationFromOverlappedEntry compares the completion key against the pollDesc recorded
+    // in the operation and drops a mismatch (go.dev/issue/58870).
     //
-    // This is not confined to the S2 wrappers. internal/poll has a live path that submits an
-    // overlapped operation WITHOUT going through execIO at all: FD.WSAIoctl
-    // (windows/sockopt_windows.cs:11) passes the CALLER's syscall.Overlapped straight to
-    // syscall.WSAIoctl, and internal/poll's own TestWSASocketConflict drives exactly that shape --
-    // fd.Init("tcp", pollable: true) and then a SIO_TCP_INFO WSAIoctl with a caller-owned OVERLAPPED
-    // and event. Before the bind that test died at Init, so it never reached the ioctl; it does now.
-    // Whether the completion is actually posted there is a question to MEASURE, not to reason about
-    // (an unconnected socket may well fail the ioctl synchronously, in which case no packet is
-    // queued), which is why the internal/poll row is measured at S1 rather than only at S2.
+    // internal/poll has a live producer of exactly such a foreign overlapped -- FD.WSAIoctl
+    // (windows/sockopt_windows.cs:11) bypasses execIO and passes the CALLER's syscall.Overlapped
+    // straight through, which its own TestWSASocketConflict drives. Binding at first SUBMIT instead
+    // of at open removes that structurally: a socket that only ever sees foreign overlapped IO is
+    // never associated, so its completion signals the caller's own event exactly as it would on an
+    // unregistered socket. A census of the corpus's FD.WSAIoctl callers (net/windows/fd_windows.cs:177,
+    // net/windows/tcpsockopt_windows.cs:124) shows both pass a NIL overlapped, so no production path
+    // mixes the two on one socket.
     internal static void netpollReady(uintptr ctx, nint mode)
     {
         ManagedPollDesc? desc = descFor(ctx);
