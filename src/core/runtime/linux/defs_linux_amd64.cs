@@ -153,21 +153,21 @@ internal static UntypedInt _O_TRUNC => 0x200;
 internal static UntypedInt _O_NONBLOCK => 0x800;
 internal static UntypedInt _O_CLOEXEC => 0x80000;
 
-[GoType] [GoValueClone("__val")] partial struct usigset {
+[GoType] partial struct usigset {
     internal array<uint64> __val = new(16);
 }
 
-[GoType] [GoValueClone("significand", "padding")] partial struct fpxreg {
+[GoType] partial struct fpxreg {
     internal array<uint16> significand = new(4);
     internal uint16 exponent;
     internal array<uint16> padding = new(3);
 }
 
-[GoType] [GoValueClone("element")] partial struct xmmreg {
+[GoType] partial struct xmmreg {
     internal array<uint32> element = new(4);
 }
 
-[GoType] [GoValueClone("_st", "_xmm", "padding")] partial struct fpstate {
+[GoType] partial struct fpstate {
     internal uint16 cwd;
     internal uint16 swd;
     internal uint16 ftw;
@@ -181,17 +181,17 @@ internal static UntypedInt _O_CLOEXEC => 0x80000;
     internal array<uint32> padding = new(24);
 }
 
-[GoType] [GoValueClone("significand", "padding")] partial struct fpxreg1 {
+[GoType] partial struct fpxreg1 {
     internal array<uint16> significand = new(4);
     internal uint16 exponent;
     internal array<uint16> padding = new(3);
 }
 
-[GoType] [GoValueClone("element")] partial struct xmmreg1 {
+[GoType] partial struct xmmreg1 {
     internal array<uint32> element = new(4);
 }
 
-[GoType] [GoValueClone("_st", "_xmm", "padding")] partial struct fpstate1 {
+[GoType] partial struct fpstate1 {
     internal uint16 cwd;
     internal uint16 swd;
     internal uint16 ftw;
@@ -205,25 +205,25 @@ internal static UntypedInt _O_CLOEXEC => 0x80000;
     internal array<uint32> padding = new(24);
 }
 
-[GoType] [GoValueClone("significand")] partial struct fpreg1 {
+[GoType] partial struct fpreg1 {
     internal array<uint16> significand = new(4);
     internal uint16 exponent;
 }
 
-[GoType] [GoValueClone("pad_cgo_0")] partial struct stackt {
+[GoType] partial struct stackt {
     internal ж<byte> ss_sp;
     internal int32 ss_flags;
     internal array<byte> pad_cgo_0 = new(4);
     internal uintptr ss_size;
 }
 
-[GoType] [GoValueClone("gregs", "__reserved1")] partial struct mcontext {
+[GoType] partial struct mcontext {
     internal array<uint64> gregs = new(23);
     internal ж<fpstate> fpregs;
     internal array<uint64> __reserved1 = new(8);
 }
 
-[GoType] [GoValueClone("uc_stack", "uc_mcontext", "uc_sigmask", "__fpregs_mem")] partial struct ucontext {
+[GoType] partial struct ucontext {
     internal uint64 uc_flags;
     internal ж<ucontext> uc_link;
     internal stackt uc_stack;
@@ -232,7 +232,7 @@ internal static UntypedInt _O_CLOEXEC => 0x80000;
     internal fpstate __fpregs_mem;
 }
 
-[GoType] [GoValueClone("__reserved1")] partial struct sigcontext {
+[GoType] partial struct sigcontext {
     internal uint64 r8;
     internal uint64 r9;
     internal uint64 r10;
@@ -263,7 +263,7 @@ internal static UntypedInt _O_CLOEXEC => 0x80000;
     internal array<uint64> __reserved1 = new(8);
 }
 
-[GoType] [GoValueClone("path")] partial struct sockaddr_un {
+[GoType] partial struct sockaddr_un {
     internal uint16 family;
     internal array<byte> path = new(108);
 }

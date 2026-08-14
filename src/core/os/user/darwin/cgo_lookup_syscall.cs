@@ -19,9 +19,7 @@ using @internal.syscall;
 
 partial class user_package {
 
-internal static _C_uid_t _C_pw_uid(ж<_C_struct_passwd> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static _C_uid_t _C_pw_uid(ref _C_struct_passwd p) {
     return p.Uid;
 }
 
@@ -29,9 +27,7 @@ internal static ж<_C_uid_t> _C_pw_uidp(ж<_C_struct_passwd> Ꮡp) {
     return Ꮡp.of(_C_struct_passwd.ᏑUid);
 }
 
-internal static _C_gid_t _C_pw_gid(ж<_C_struct_passwd> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static _C_gid_t _C_pw_gid(ref _C_struct_passwd p) {
     return p.Gid;
 }
 
@@ -39,33 +35,23 @@ internal static ж<_C_gid_t> _C_pw_gidp(ж<_C_struct_passwd> Ꮡp) {
     return Ꮡp.of(_C_struct_passwd.ᏑGid);
 }
 
-internal static ж<_C_char> _C_pw_name(ж<_C_struct_passwd> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static ж<_C_char> _C_pw_name(ref _C_struct_passwd p) {
     return p.Name;
 }
 
-internal static ж<_C_char> _C_pw_gecos(ж<_C_struct_passwd> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static ж<_C_char> _C_pw_gecos(ref _C_struct_passwd p) {
     return p.Gecos;
 }
 
-internal static ж<_C_char> _C_pw_dir(ж<_C_struct_passwd> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
+internal static ж<_C_char> _C_pw_dir(ref _C_struct_passwd p) {
     return p.Dir;
 }
 
-internal static _C_gid_t _C_gr_gid(ж<_C_struct_group> Ꮡg) {
-    ref var g = ref Ꮡg.DerefOrNull();
-
+internal static _C_gid_t _C_gr_gid(ref _C_struct_group g) {
     return g.Gid;
 }
 
-internal static ж<_C_char> _C_gr_name(ж<_C_struct_group> Ꮡg) {
-    ref var g = ref Ꮡg.DerefOrNull();
-
+internal static ж<_C_char> _C_gr_name(ref _C_struct_group g) {
     return g.Name;
 }
 

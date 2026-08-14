@@ -1523,7 +1523,7 @@ internal static (ж<fileInfo>, error) matchFile(this ж<Context> Ꮡctxt, @strin
         return (default!, err);
     }
     if (strings.HasSuffix(name, ".go"u8)){
-        err = readGoInfo(f, info);
+        err = readGoInfo(f, ref (info).DerefOrNull());
         if (strings.HasSuffix(name, testGoˢ)) {
             ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNull(); // ignore //go:binary-only-package comments in _test.go files
         }

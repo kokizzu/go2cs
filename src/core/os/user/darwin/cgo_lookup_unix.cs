@@ -18,14 +18,14 @@ internal static (ж<User>, error) current() {
 }
 
 internal static (ж<User>, error) lookupUser(@string username) {
-    ref var pwd = ref heap(new _C_struct_passwd(), out var Ꮡpwd);
+    _C_struct_passwd pwd = default!;
     bool found = default!;
     var nameC = new slice<byte>(len(username) + 1);
     copy(nameC, username);
     var nameCʗ1 = nameC;
     var err = retryWithBuffer(userBuffer, (slice<byte> buf) => {
         syscall.Errno errno = default!;
-        (Ꮡpwd.Value, found, errno) = _C_getpwnam_r(Ꮡ(nameCʗ1, 0),
+        (pwd, found, errno) = _C_getpwnam_r(Ꮡ(nameCʗ1, 0),
             Ꮡ(buf, 0), ((_C_size_t)len(buf)));
         return errno;
     });
@@ -35,7 +35,7 @@ internal static (ж<User>, error) lookupUser(@string username) {
     if (err != default!) {
         return (default!, fmt.Errorf("user: lookup username %s: %v"u8, username, err));
     }
-    return (buildUser(Ꮡpwd), err);
+    return (buildUser(ref pwd), err);
 }
 
 internal static (ж<User>, error) lookupUserId(@string uid) {
@@ -47,11 +47,11 @@ internal static (ж<User>, error) lookupUserId(@string uid) {
 }
 
 internal static (ж<User>, error) lookupUnixUid(nint uid) {
-    ref var pwd = ref heap(new _C_struct_passwd(), out var Ꮡpwd);
+    _C_struct_passwd pwd = default!;
     bool found = default!;
     var err = retryWithBuffer(userBuffer, (slice<byte> buf) => {
         syscall.Errno errno = default!;
-        (Ꮡpwd.Value, found, errno) = _C_getpwuid_r(((_C_uid_t)uid),
+        (pwd, found, errno) = _C_getpwuid_r(((_C_uid_t)uid),
             Ꮡ(buf, 0), ((_C_size_t)len(buf)));
         return errno;
     });
@@ -61,16 +61,16 @@ internal static (ж<User>, error) lookupUnixUid(nint uid) {
     if (err != default!) {
         return (default!, fmt.Errorf("user: lookup userid %d: %v"u8, uid, err));
     }
-    return (buildUser(Ꮡpwd), default!);
+    return (buildUser(ref pwd), default!);
 }
 
-internal static ж<User> buildUser(ж<_C_struct_passwd> Ꮡpwd) {
+internal static ж<User> buildUser(ref _C_struct_passwd pwd) {
     var u = Ꮡ(new User(
-        Uid: strconv.FormatUint((uint64)_C_pw_uid(Ꮡpwd), 10),
-        Gid: strconv.FormatUint((uint64)_C_pw_gid(Ꮡpwd), 10),
-        Username: _C_GoString(_C_pw_name(Ꮡpwd)),
-        Name: _C_GoString(_C_pw_gecos(Ꮡpwd)),
-        HomeDir: _C_GoString(_C_pw_dir(Ꮡpwd))
+        Uid: strconv.FormatUint((uint64)_C_pw_uid(ref pwd), 10),
+        Gid: strconv.FormatUint((uint64)_C_pw_gid(ref pwd), 10),
+        Username: _C_GoString(_C_pw_name(ref pwd)),
+        Name: _C_GoString(_C_pw_gecos(ref pwd)),
+        HomeDir: _C_GoString(_C_pw_dir(ref pwd))
     ));
     // The pw_gecos field isn't quite standardized. Some docs
     // say: "It is expected to be a comma separated list of
@@ -81,14 +81,14 @@ internal static ж<User> buildUser(ж<_C_struct_passwd> Ꮡpwd) {
 }
 
 internal static (ж<Group>, error) lookupGroup(@string groupname) {
-    ref var grp = ref heap(new _C_struct_group(), out var Ꮡgrp);
+    _C_struct_group grp = default!;
     bool found = default!;
     var cname = new slice<byte>(len(groupname) + 1);
     copy(cname, groupname);
     var cnameʗ1 = cname;
     var err = retryWithBuffer(groupBuffer, (slice<byte> buf) => {
         syscall.Errno errno = default!;
-        (Ꮡgrp.Value, found, errno) = _C_getgrnam_r(Ꮡ(cnameʗ1, 0),
+        (grp, found, errno) = _C_getgrnam_r(Ꮡ(cnameʗ1, 0),
             Ꮡ(buf, 0), ((_C_size_t)len(buf)));
         return errno;
     });
@@ -98,7 +98,7 @@ internal static (ж<Group>, error) lookupGroup(@string groupname) {
     if (err != default!) {
         return (default!, fmt.Errorf("user: lookup groupname %s: %v"u8, groupname, err));
     }
-    return (buildGroup(Ꮡgrp), default!);
+    return (buildGroup(ref grp), default!);
 }
 
 internal static (ж<Group>, error) lookupGroupId(@string gid) {
@@ -110,11 +110,11 @@ internal static (ж<Group>, error) lookupGroupId(@string gid) {
 }
 
 internal static (ж<Group>, error) lookupUnixGid(nint gid) {
-    ref var grp = ref heap(new _C_struct_group(), out var Ꮡgrp);
+    _C_struct_group grp = default!;
     bool found = default!;
     var err = retryWithBuffer(groupBuffer, (slice<byte> buf) => {
         syscall.Errno errno = default!;
-        (Ꮡgrp.Value, found, errno) = _C_getgrgid_r(((_C_gid_t)gid),
+        (grp, found, errno) = _C_getgrgid_r(((_C_gid_t)gid),
             Ꮡ(buf, 0), ((_C_size_t)len(buf)));
         return errno;
     });
@@ -124,13 +124,13 @@ internal static (ж<Group>, error) lookupUnixGid(nint gid) {
     if (err != default!) {
         return (default!, fmt.Errorf("user: lookup groupid %d: %v"u8, gid, err));
     }
-    return (buildGroup(Ꮡgrp), default!);
+    return (buildGroup(ref grp), default!);
 }
 
-internal static ж<Group> buildGroup(ж<_C_struct_group> Ꮡgrp) {
+internal static ж<Group> buildGroup(ref _C_struct_group grp) {
     var g = Ꮡ(new Group(
-        Gid: strconv.Itoa((nint)_C_gr_gid(Ꮡgrp)),
-        Name: _C_GoString(_C_gr_name(Ꮡgrp))
+        Gid: strconv.Itoa((nint)_C_gr_gid(ref grp)),
+        Name: _C_GoString(_C_gr_name(ref grp))
     ));
     return g;
 }

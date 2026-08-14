@@ -17,9 +17,7 @@ partial class user_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string userListGroupsEmptyˢ = "user: list groups: empty username"u8;
 
-internal static (slice<@string>, error) listGroupsFromReader(ж<User> Ꮡu, io.Reader r) {
-    ref var u = ref Ꮡu.DerefOrNull();
-
+internal static (slice<@string>, error) listGroupsFromReader(ref User u, io.Reader r) {
     if (u.Username == ""u8) {
         return (default!, errors.New(userListGroupsEmptyˢ));
     }
@@ -91,7 +89,7 @@ internal static (slice<@string>, error) listGroupsFromReader(ж<User> Ꮡu, io.R
     return (groups, default!);
 }
 
-internal static (slice<@string>, error) listGroups(ж<User> Ꮡu) {
+internal static (slice<@string>, error) listGroups(ref User u) {
     GoFrame ᒐ = default;
     try {
         var (f, err) = os.Open(groupFile);
@@ -100,7 +98,7 @@ internal static (slice<@string>, error) listGroups(ж<User> Ꮡu) {
         }
         var fʗ1 = f;
         defer(() => fʗ1.Close(), ref ᒐ);
-        return listGroupsFromReader(Ꮡu, new os_FileжReader(f));
+        return listGroupsFromReader(ref u, new os_FileжReader(f));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }

@@ -424,9 +424,7 @@ internal static (bool, error) matchURIConstraint(ж<url.URL> Ꮡuri, @string con
     return matchDomainConstraint(host, constraint);
 }
 
-internal static (bool, error) matchIPConstraint(net.IP ip, ж<net.IPNet> Ꮡconstraint) {
-    ref var constraint = ref Ꮡconstraint.DerefOrNull();
-
+internal static (bool, error) matchIPConstraint(net.IP ip, ref net.IPNet constraint) {
     if (builtin.len(ip) != builtin.len(constraint.IP)) {
         return (false, default!);
     }
@@ -631,7 +629,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
                     }
                     {
                         var errΔ10 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, ipAddressˢ, ip.String(), ip,
-                            (any parsedName, any constraint) => matchIPConstraint(parsedName._<net.IP>(), constraint._<ж<net.IPNet>>()), Ꮡc.Value.PermittedIPRanges, Ꮡc.Value.ExcludedIPRanges); if (errΔ10 != default!) {
+                            (any parsedName, any constraint) => matchIPConstraint(parsedName._<net.IP>(), ref (constraint._<ж<net.IPNet>>()).DerefOrNull()), Ꮡc.Value.PermittedIPRanges, Ꮡc.Value.ExcludedIPRanges); if (errΔ10 != default!) {
                             return errΔ10;
                         }
                     }
@@ -672,7 +670,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
             return new CertificateInvalidError(Ꮡc, TooManyIntermediates, ""u8);
         }
     }
-    if (!boringAllowCert(Ꮡc)) {
+    if (!boringAllowCert(ref (Ꮡc).DerefOrNull())) {
         // IncompatibleUsage is not quite right here,
         // but it's also the "no chains found" error
         // and is close enough.
@@ -814,9 +812,7 @@ internal static slice<ж<Certificate>> appendToFreshChain(slice<ж<Certificate>>
 // subject, public key, and SAN, if present, are equal. This prevents loops that
 // are created by mutual cross-signatures, or other cross-signature bridge
 // oddities.
-internal static bool alreadyInChain(ж<Certificate> Ꮡcandidate, slice<ж<Certificate>> chain) {
-    ref var candidate = ref Ꮡcandidate.DerefOrNull();
-
+internal static bool alreadyInChain(ref Certificate candidate, slice<ж<Certificate>> chain) {
     ж<pkix.Extension> candidateSAN = default!;
     foreach (var (_, vᴛ1) in candidate.Extensions) {
         ref var ext = ref heap(new pkix.Extension(), out var Ꮡext);
@@ -875,7 +871,7 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) buildChains(th
     ref var hintCert = ref heap<ж<Certificate>>(out var ᏑhintCert);
     var currentChainʗ1 = currentChain;
     void considerCandidate(nint certType, potentialParent candidate) {
-        if ((~candidate.cert).PublicKey == default! || alreadyInChain(candidate.cert, currentChainʗ1)) {
+        if ((~candidate.cert).PublicKey == default! || alreadyInChain(ref (candidate.cert).DerefOrNull(), currentChainʗ1)) {
             return;
         }
         if (ᏑsigChecks == nil) {

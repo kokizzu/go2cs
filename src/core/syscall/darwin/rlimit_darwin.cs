@@ -10,9 +10,7 @@ partial class syscall_package {
 internal static readonly @string kernMaxfilesperprocˢ = "kern.maxfilesperproc"u8;
 
 // adjustFileLimit adds per-OS limitations on the Rlimit used for RLIMIT_NOFILE. See rlimit.go.
-internal static void adjustFileLimit(ж<Rlimit> Ꮡlim) {
-    ref var lim = ref Ꮡlim.DerefOrNull();
-
+internal static void adjustFileLimit(ref Rlimit lim) {
     // On older macOS, setrlimit(RLIMIT_NOFILE, lim) with lim.Cur = infinity fails.
     // Set to the value of kern.maxfilesperproc instead.
     var (n, err) = SysctlUint32(kernMaxfilesperprocˢ);

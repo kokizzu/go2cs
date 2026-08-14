@@ -115,7 +115,7 @@ internal static partial (uintptr r1, uintptr r2, syscall.Errno err) syscall_sysc
 //go:linkname syscall_syscall9 syscall.syscall9
 internal static partial (uintptr r1, uintptr r2, syscall.Errno err) syscall_syscall9(uintptr fn, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9);
 
-[GoType] [GoValueClone("unexported")] partial struct ResState {
+[GoType] partial struct ResState {
     internal array<uintptr> unexported = new(69);
 }
 

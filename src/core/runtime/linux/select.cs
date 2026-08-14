@@ -26,9 +26,7 @@ internal static void initᴛchansendpc() { chansendpc = abi.FuncPCABIInternal(ch
 internal static uintptr chanrecvpc;
 internal static void initᴛchanrecvpc() { chanrecvpc = abi.FuncPCABIInternal(chanrecv); }
 
-internal static void selectsetpc(ж<uintptr> Ꮡpc) {
-    ref var pc = ref Ꮡpc.DerefOrNull();
-
+internal static void selectsetpc(ref uintptr pc) {
     pc = getcallerpc();
 }
 
@@ -311,7 +309,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
             c.of(runtime_package.Δhchan.Ꮡrecvq).enqueue(sgΔ1);
         }
         if ((~c).timer != nil) {
-            blockTimerChan(c);
+            blockTimerChan(ref (c).DerefOrNull());
         }
     }
     // wait for someone to wake us up
@@ -345,7 +343,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     foreach (var (_, casei) in lockorder) {
         k = Ꮡ(scases, casei);
         if ((~(~k).c).timer != nil) {
-            unblockTimerChan((~k).c);
+            unblockTimerChan(ref ((~k).c).DerefOrNull());
         }
         if (sg == sglist){
             // sg has already been dequeued by the G that woke us up.
@@ -384,10 +382,10 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     }
     if (raceenabled) {
         if (casi < nsends){
-            raceReadObjectPC((~c).elemtype, (~cas).elem, casePC(casi), chansendpc);
+            raceReadObjectPC(ref ((~c).elemtype).DerefOrNull(), (~cas).elem, casePC(casi), chansendpc);
         } else 
         if ((~cas).elem != nil) {
-            raceWriteObjectPC((~c).elemtype, (~cas).elem, casePC(casi), chanrecvpc);
+            raceWriteObjectPC(ref ((~c).elemtype).DerefOrNull(), (~cas).elem, casePC(casi), chanrecvpc);
         }
     }
     if (msanenabled) {
@@ -412,7 +410,7 @@ bufrecv:
     if (raceenabled) {
         // can receive from buffer
         if ((~cas).elem != nil) {
-            raceWriteObjectPC((~c).elemtype, (~cas).elem, casePC(casi), chanrecvpc);
+            raceWriteObjectPC(ref ((~c).elemtype).DerefOrNull(), (~cas).elem, casePC(casi), chanrecvpc);
         }
         racenotify(c, (~c).recvx, nil);
     }
@@ -439,7 +437,7 @@ bufsend:
     if (raceenabled) {
         // can send to buffer
         racenotify(c, (~c).sendx, nil);
-        raceReadObjectPC((~c).elemtype, (~cas).elem, casePC(casi), chansendpc);
+        raceReadObjectPC(ref ((~c).elemtype).DerefOrNull(), (~cas).elem, casePC(casi), chansendpc);
     }
     if (msanenabled) {
         msanread((~cas).elem, (~(~c).elemtype).Size_);
@@ -481,7 +479,7 @@ rclose:
 send:
     if (raceenabled) {
         // can send to a sleeping receiver (sg)
-        raceReadObjectPC((~c).elemtype, (~cas).elem, casePC(casi), chansendpc);
+        raceReadObjectPC(ref ((~c).elemtype).DerefOrNull(), (~cas).elem, casePC(casi), chansendpc);
     }
     if (msanenabled) {
         msanread((~cas).elem, (~(~c).elemtype).Size_);
@@ -574,7 +572,7 @@ internal static (nint, bool) reflect_rselect(slice<runtimeSelect> cases) {
     if (raceenabled) {
         var pcs = new slice<uintptr>(nsends + nrecvs);
         foreach (var (i, _) in pcs) {
-            selectsetpc(Ꮡ(pcs, i));
+            selectsetpc(ref pcs[i]);
         }
         pc0 = Ꮡ(pcs, 0);
     }

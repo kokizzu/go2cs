@@ -156,14 +156,13 @@ internal static partial void runtime_AfterForkInChild();
 // functions that do not grow the stack.
 //
 //go:norace
-internal static (nint pid, Errno err) forkAndExecInChild(ж<byte> Ꮡargv0, slice<ж<byte>> argv, slice<ж<byte>> envv, ж<byte> Ꮡchroot, ж<byte> Ꮡdir, ж<ProcAttr> Ꮡattr, ж<SysProcAttr> Ꮡsys, nint pipe) {
+internal static (nint pid, Errno err) forkAndExecInChild(ж<byte> Ꮡargv0, slice<ж<byte>> argv, slice<ж<byte>> envv, ж<byte> Ꮡchroot, ж<byte> Ꮡdir, ref ProcAttr attr, ref SysProcAttr sys, nint pipe) {
     nint pid = default!;
     Errno err = default!;
 
-    ref var sys = ref Ꮡsys.DerefOrNull();
     // Set up and fork. This returns immediately in the parent or
     // if there's an error.
-    (var upid, var pidfd, err, var mapPipe, var locked) = forkAndExecInChild1(Ꮡargv0, argv, envv, Ꮡchroot, Ꮡdir, Ꮡattr, Ꮡsys, pipe);
+    (var upid, var pidfd, err, var mapPipe, var locked) = forkAndExecInChild1(Ꮡargv0, argv, envv, Ꮡchroot, Ꮡdir, ref attr, ref sys, pipe);
     if (locked) {
         runtime_AfterFork();
     }
@@ -182,7 +181,7 @@ internal static (nint pid, Errno err) forkAndExecInChild(ж<byte> Ꮡargv0, slic
         // namespaces.
         if ((uintptr)(sys.Unshareflags & (uintptr)CLONE_NEWUSER) == 0) {
             {
-                var errΔ1 = writeUidGidMappings(pid, Ꮡsys); if (errΔ1 != default!) {
+                var errΔ1 = writeUidGidMappings(pid, ref sys); if (errΔ1 != default!) {
                     err2 = errΔ1._<Errno>();
                 }
             }
@@ -206,7 +205,7 @@ internal static UntypedInt _LINUX_CAPABILITY_VERSION_3 => 0x20080522;
     internal uint32 inheritable;
 }
 
-[GoType] [GoValueClone("data")] partial struct caps {
+[GoType] partial struct caps {
     internal capHeader hdr;
     internal array<capData> data = new(2);
 }
@@ -247,15 +246,13 @@ internal static uint32 capToMask(uintptr cap) {
 //go:noinline
 //go:norace
 //go:nocheckptr
-internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool locked) forkAndExecInChild1(ж<byte> Ꮡargv0, slice<ж<byte>> argv, slice<ж<byte>> envv, ж<byte> Ꮡchroot, ж<byte> Ꮡdir, ж<ProcAttr> Ꮡattr, ж<SysProcAttr> Ꮡsys, nint pipe) {
+internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool locked) forkAndExecInChild1(ж<byte> Ꮡargv0, slice<ж<byte>> argv, slice<ж<byte>> envv, ж<byte> Ꮡchroot, ж<byte> Ꮡdir, ref ProcAttr attr, ref SysProcAttr sys, nint pipe) {
     uintptr pid = default!;
     ref var pidfd = ref heap(new int32(), out var Ꮡpidfd);
     ref var err1 = ref heap(new Errno(), out var Ꮡerr1);
     array<nint> mapPipe = default!;
     bool locked = default!;
 
-    ref var attr = ref Ꮡattr.DerefOrNull();
-    ref var sys = ref Ꮡsys.DerefOrNull();
     // Defined in linux/prctl.h starting with Linux 4.3.
     uintptr PR_CAP_AMBIENT = 0x2f;
     
@@ -751,9 +748,7 @@ internal static error writeSetgroups(nint pid, bool enable) {
 
 // writeUidGidMappings writes User ID and Group ID mappings for user namespaces
 // for a process and it is called from the parent process.
-internal static error writeUidGidMappings(nint pid, ж<SysProcAttr> Ꮡsys) {
-    ref var sys = ref Ꮡsys.DerefOrNull();
-
+internal static error writeUidGidMappings(nint pid, ref SysProcAttr sys) {
     if (sys.UidMappings != default!) {
         @string uidf = "/proc/"u8 + itoa.Itoa(pid) + "/uid_map"u8;
         {

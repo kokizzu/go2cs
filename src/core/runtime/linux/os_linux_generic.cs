@@ -19,22 +19,16 @@ internal static ref sigset sigset_all => ref Ꮡsigset_all.Value;
 
 //go:nosplit
 //go:nowritebarrierrec
-internal static void sigaddset(ж<sigset> Ꮡmask, nint i) {
-    ref var mask = ref Ꮡmask.DerefOrNull();
-
+internal static void sigaddset(ref sigset mask, nint i) {
     (mask)[(i - 1) / 32] |= (uint32)(((uint32)1 << (int)(((uint32)(((uint32)i - 1) & 31)))));
 }
 
-internal static void sigdelset(ж<sigset> Ꮡmask, nint i) {
-    ref var mask = ref Ꮡmask.DerefOrNull();
-
+internal static void sigdelset(ref sigset mask, nint i) {
     (mask)[(i - 1) / 32] &= unchecked((uint32)~(uint32)(((uint32)1 << (int)(((uint32)(((uint32)i - 1) & 31))))));
 }
 
 //go:nosplit
-internal static void sigfillset(ж<uint64> Ꮡmask) {
-    ref var mask = ref Ꮡmask.DerefOrNull();
-
+internal static void sigfillset(ref uint64 mask) {
     mask = ~(uint64)0;
 }
 

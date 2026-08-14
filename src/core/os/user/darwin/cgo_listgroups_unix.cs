@@ -12,9 +12,7 @@ partial class user_package {
 
 internal static UntypedInt maxGroups => 2048;
 
-internal static (slice<@string>, error) listGroups(ж<User> Ꮡu) {
-    ref var u = ref Ꮡu.DerefOrNull();
-
+internal static (slice<@string>, error) listGroups(ref User u) {
     var (ug, err) = strconv.Atoi(u.Gid);
     if (err != default!) {
         return (default!, fmt.Errorf("user: list groups for %s: invalid gid %q"u8, u.Username, u.Gid));

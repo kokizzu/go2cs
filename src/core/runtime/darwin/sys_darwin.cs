@@ -770,7 +770,7 @@ internal static partial void pthread_cond_signal_trampoline();
 internal static readonly @string exitThreadˢ = "exitThread"u8;
 
 // Not used on Darwin, but must be defined.
-internal static void exitThread(ж<atomic.Uint32> Ꮡwait) {
+internal static void exitThread(ref atomic.Uint32 wait) {
     @throw(exitThreadˢ);
 }
 

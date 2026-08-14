@@ -35,7 +35,7 @@ internal static ref atomic.Pointer<Rlimit> origRlimitNofile => ref ᏑorigRlimit
             ref var nlim = ref heap<Rlimit>(out var Ꮡnlim);
             nlim = lim;
             nlim.Cur = nlim.Max;
-            adjustFileLimit(Ꮡnlim);
+            adjustFileLimit(ref nlim);
             setrlimit(RLIMIT_NOFILE, Ꮡnlim);
         }
     }

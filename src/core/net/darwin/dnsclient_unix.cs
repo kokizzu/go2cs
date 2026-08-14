@@ -662,7 +662,7 @@ internal static (slice<IPAddr> addrs, error err) goLookupIP(this –∂<Resolver> ·è
     return (addrs, err);
 }
 
-[GoLocalName("result")] [GoType("dyn")] partial struct goLookupIPCNAMEOrder_result {
+[GoType("dyn")] partial struct goLookupIPCNAMEOrder_result {
     internal dnsmessage.Parser p;
     internal @string server;
     internal error error;

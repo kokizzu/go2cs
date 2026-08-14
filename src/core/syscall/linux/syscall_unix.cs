@@ -283,20 +283,20 @@ public static bool SocketDisableIPv6;
     (@unsafe.Pointer ptr, _Socklen len, error err) sockaddr(); // lowercase; only we can define Sockaddrs
 }
 
-[GoType] [GoValueClone("Addr", "raw")] partial struct SockaddrInet4 {
+[GoType] partial struct SockaddrInet4 {
     public nint Port;
     public array<byte> Addr = new(4);
     internal RawSockaddrInet4 raw;
 }
 
-[GoType] [GoValueClone("Addr", "raw")] partial struct SockaddrInet6 {
+[GoType] partial struct SockaddrInet6 {
     public nint Port;
     public uint32 ZoneId;
     public array<byte> Addr = new(16);
     internal RawSockaddrInet6 raw;
 }
 
-[GoType] [GoValueClone("raw")] partial struct SockaddrUnix {
+[GoType] partial struct SockaddrUnix {
     public @string Name;
     internal RawSockaddrUnix raw;
 }
@@ -365,11 +365,10 @@ public static (nint n, Sockaddr from, error err) Recvfrom(nint fd, slice<byte> p
     return (n, from, err);
 }
 
-internal static (nint n, error err) recvfromInet4(nint fd, slice<byte> p, nint flags, ж<SockaddrInet4> Ꮡfrom) {
+internal static (nint n, error err) recvfromInet4(nint fd, slice<byte> p, nint flags, ref SockaddrInet4 from) {
     nint n = default!;
     error err = default!;
 
-    ref var from = ref Ꮡfrom.DerefOrNull();
     ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
     ref var socklen = ref heap(new _Socklen(), out var Ꮡsocklen);
     socklen = SizeofSockaddrAny;
@@ -385,11 +384,10 @@ internal static (nint n, error err) recvfromInet4(nint fd, slice<byte> p, nint f
     return (n, err);
 }
 
-internal static (nint n, error err) recvfromInet6(nint fd, slice<byte> p, nint flags, ж<SockaddrInet6> Ꮡfrom) {
+internal static (nint n, error err) recvfromInet6(nint fd, slice<byte> p, nint flags, ref SockaddrInet6 from) {
     nint n = default!;
     error err = default!;
 
-    ref var from = ref Ꮡfrom.DerefOrNull();
     ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
     ref var socklen = ref heap(new _Socklen(), out var Ꮡsocklen);
     socklen = SizeofSockaddrAny;
@@ -406,13 +404,12 @@ internal static (nint n, error err) recvfromInet6(nint fd, slice<byte> p, nint f
     return (n, err);
 }
 
-internal static (nint n, nint oobn, nint recvflags, error err) recvmsgInet4(nint fd, slice<byte> p, slice<byte> oob, nint flags, ж<SockaddrInet4> Ꮡfrom) {
+internal static (nint n, nint oobn, nint recvflags, error err) recvmsgInet4(nint fd, slice<byte> p, slice<byte> oob, nint flags, ref SockaddrInet4 from) {
     nint n = default!;
     nint oobn = default!;
     nint recvflags = default!;
     error err = default!;
 
-    ref var from = ref Ꮡfrom.DerefOrNull();
     ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
     (n, oobn, recvflags, err) = recvmsgRaw(fd, p, oob, flags, Ꮡrsa);
     if (err != default!) {
@@ -425,13 +422,12 @@ internal static (nint n, nint oobn, nint recvflags, error err) recvmsgInet4(nint
     return (n, oobn, recvflags, err);
 }
 
-internal static (nint n, nint oobn, nint recvflags, error err) recvmsgInet6(nint fd, slice<byte> p, slice<byte> oob, nint flags, ж<SockaddrInet6> Ꮡfrom) {
+internal static (nint n, nint oobn, nint recvflags, error err) recvmsgInet6(nint fd, slice<byte> p, slice<byte> oob, nint flags, ref SockaddrInet6 from) {
     nint n = default!;
     nint oobn = default!;
     nint recvflags = default!;
     error err = default!;
 
-    ref var from = ref Ꮡfrom.DerefOrNull();
     ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
     (n, oobn, recvflags, err) = recvmsgRaw(fd, p, oob, flags, Ꮡrsa);
     if (err != default!) {

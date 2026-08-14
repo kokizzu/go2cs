@@ -11,5 +11,6 @@ partial class os_package {
         initᴛStdin();
         initᴛStdout();
         initᴛStderr();
+        initᴛinitCwd();
     }
 } // end os_package

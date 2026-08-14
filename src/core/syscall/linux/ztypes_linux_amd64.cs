@@ -30,7 +30,7 @@ public static UntypedInt PathMax => 0x1000;
     public int64 Usec;
 }
 
-[GoType] [GoValueClone("Pad_cgo_0", "Pad_cgo_1", "Pad_cgo_2", "Pad_cgo_3")] partial struct Timex {
+[GoType] partial struct Timex {
     public uint32 Modes;
     public array<byte> Pad_cgo_0 = new(4);
     public int64 Offset;
@@ -97,7 +97,7 @@ public static UntypedInt PathMax => 0x1000;
 
 [GoType("num:uint32")] partial struct _Gid_t;
 
-[GoType] [GoValueClone("X__unused")] partial struct Stat_t {
+[GoType] partial struct Stat_t {
     public uint64 Dev;
     public uint64 Ino;
     public uint64 Nlink;
@@ -115,7 +115,7 @@ public static UntypedInt PathMax => 0x1000;
     public array<int64> X__unused = new(3);
 }
 
-[GoType] [GoValueClone("Fsid", "Spare")] partial struct Statfs_t {
+[GoType] partial struct Statfs_t {
     public int64 Type;
     public int64 Bsize;
     public uint64 Blocks;
@@ -130,7 +130,7 @@ public static UntypedInt PathMax => 0x1000;
     public array<int64> Spare = new(4);
 }
 
-[GoType] [GoValueClone("Name", "Pad_cgo_0")] partial struct Dirent {
+[GoType] partial struct Dirent {
     public uint64 Ino;
     public int64 Off;
     public uint16 Reclen;
@@ -139,11 +139,11 @@ public static UntypedInt PathMax => 0x1000;
     public array<byte> Pad_cgo_0 = new(5);
 }
 
-[GoType] [GoValueClone("X__val")] partial struct Fsid {
+[GoType] partial struct Fsid {
     public array<int32> X__val = new(2);
 }
 
-[GoType] [GoValueClone("Pad_cgo_0", "Pad_cgo_1")] partial struct Flock_t {
+[GoType] partial struct Flock_t {
     public int16 Type;
     public int16 Whence;
     public array<byte> Pad_cgo_0 = new(4);
@@ -153,14 +153,14 @@ public static UntypedInt PathMax => 0x1000;
     public array<byte> Pad_cgo_1 = new(4);
 }
 
-[GoType] [GoValueClone("Addr", "Zero")] partial struct RawSockaddrInet4 {
+[GoType] partial struct RawSockaddrInet4 {
     public uint16 Family;
     public uint16 Port;
     public array<byte> Addr = new(4); /* in_addr */
     public array<uint8> Zero = new(8);
 }
 
-[GoType] [GoValueClone("Addr")] partial struct RawSockaddrInet6 {
+[GoType] partial struct RawSockaddrInet6 {
     public uint16 Family;
     public uint16 Port;
     public uint32 Flowinfo;
@@ -168,12 +168,12 @@ public static UntypedInt PathMax => 0x1000;
     public uint32 Scope_id;
 }
 
-[GoType] [GoValueClone("Path")] partial struct RawSockaddrUnix {
+[GoType] partial struct RawSockaddrUnix {
     public uint16 Family;
     public array<int8> Path = new(108);
 }
 
-[GoType] [GoValueClone("Addr")] partial struct RawSockaddrLinklayer {
+[GoType] partial struct RawSockaddrLinklayer {
     public uint16 Family;
     public uint16 Protocol;
     public int32 Ifindex;
@@ -190,12 +190,12 @@ public static UntypedInt PathMax => 0x1000;
     public uint32 Groups;
 }
 
-[GoType] [GoValueClone("Data")] partial struct RawSockaddr {
+[GoType] partial struct RawSockaddr {
     public uint16 Family;
     public array<int8> Data = new(14);
 }
 
-[GoType] [GoValueClone("Addr", "Pad")] partial struct RawSockaddrAny {
+[GoType] partial struct RawSockaddrAny {
     public RawSockaddr Addr;
     public array<int8> Pad = new(96);
 }
@@ -212,23 +212,23 @@ public static UntypedInt PathMax => 0x1000;
     public uint64 Len;
 }
 
-[GoType] [GoValueClone("Multiaddr", "Interface")] partial struct IPMreq {
+[GoType] partial struct IPMreq {
     public array<byte> Multiaddr = new(4); /* in_addr */
     public array<byte> Interface = new(4); /* in_addr */
 }
 
-[GoType] [GoValueClone("Multiaddr", "Address")] partial struct IPMreqn {
+[GoType] partial struct IPMreqn {
     public array<byte> Multiaddr = new(4); /* in_addr */
     public array<byte> Address = new(4); /* in_addr */
     public int32 Ifindex;
 }
 
-[GoType] [GoValueClone("Multiaddr")] partial struct IPv6Mreq {
+[GoType] partial struct IPv6Mreq {
     public array<byte> Multiaddr = new(16); /* in6_addr */
     public uint32 Interface;
 }
 
-[GoType] [GoValueClone("Pad_cgo_0", "Pad_cgo_1")] partial struct Msghdr {
+[GoType] partial struct Msghdr {
     public ж<byte> Name;
     public uint32 Namelen;
     public array<byte> Pad_cgo_0 = new(4);
@@ -246,23 +246,23 @@ public static UntypedInt PathMax => 0x1000;
     public int32 Type;
 }
 
-[GoType] [GoValueClone("Spec_dst", "Addr")] partial struct Inet4Pktinfo {
+[GoType] partial struct Inet4Pktinfo {
     public int32 Ifindex;
     public array<byte> Spec_dst = new(4); /* in_addr */
     public array<byte> Addr = new(4); /* in_addr */
 }
 
-[GoType] [GoValueClone("Addr")] partial struct Inet6Pktinfo {
+[GoType] partial struct Inet6Pktinfo {
     public array<byte> Addr = new(16); /* in6_addr */
     public uint32 Ifindex;
 }
 
-[GoType] [GoValueClone("Addr")] partial struct IPv6MTUInfo {
+[GoType] partial struct IPv6MTUInfo {
     public RawSockaddrInet6 Addr;
     public uint32 Mtu;
 }
 
-[GoType] [GoValueClone("Data")] partial struct ICMPv6Filter {
+[GoType] partial struct ICMPv6Filter {
     public array<uint32> Data = new(8);
 }
 
@@ -272,7 +272,7 @@ public static UntypedInt PathMax => 0x1000;
     public uint32 Gid;
 }
 
-[GoType] [GoValueClone("Pad_cgo_0")] partial struct TCPInfo {
+[GoType] partial struct TCPInfo {
     public uint8 State;
     public uint8 Ca_state;
     public uint8 Retransmits;
@@ -490,13 +490,13 @@ public static UntypedInt SizeofSockFprog => 0x10;
     public uint32 K;
 }
 
-[GoType] [GoValueClone("Pad_cgo_0")] partial struct SockFprog {
+[GoType] partial struct SockFprog {
     public uint16 Len;
     public array<byte> Pad_cgo_0 = new(6);
     public ж<SockFilter> Filter;
 }
 
-[GoType] [GoValueClone("Name")] partial struct InotifyEvent {
+[GoType] partial struct InotifyEvent {
     public int32 Wd;
     public uint32 Mask;
     public uint32 Cookie;
@@ -536,11 +536,11 @@ public static UntypedInt SizeofInotifyEvent => 0x10;
     public uint64 Gs;
 }
 
-[GoType] [GoValueClone("Bits")] partial struct FdSet {
+[GoType] partial struct FdSet {
     public array<int64> Bits = new(16);
 }
 
-[GoType] [GoValueClone("Loads", "Pad_cgo_0", "X_f", "Pad_cgo_1")] partial struct Sysinfo_t {
+[GoType] partial struct Sysinfo_t {
     public int64 Uptime;
     public array<uint64> Loads = new(3);
     public uint64 Totalram;
@@ -559,7 +559,7 @@ public static UntypedInt SizeofInotifyEvent => 0x10;
     public array<byte> Pad_cgo_1 = new(4);
 }
 
-[GoType] [GoValueClone("Sysname", "Nodename", "Release", "Version", "Machine", "Domainname")] partial struct Utsname {
+[GoType] partial struct Utsname {
     public array<int8> Sysname = new(65);
     public array<int8> Nodename = new(65);
     public array<int8> Release = new(65);
@@ -568,7 +568,7 @@ public static UntypedInt SizeofInotifyEvent => 0x10;
     public array<int8> Domainname = new(65);
 }
 
-[GoType] [GoValueClone("Pad_cgo_0", "Fname", "Fpack", "Pad_cgo_1")] partial struct Ustat_t {
+[GoType] partial struct Ustat_t {
     public int32 Tfree;
     public array<byte> Pad_cgo_0 = new(4);
     public uint64 Tinode;
@@ -595,7 +595,7 @@ internal static UntypedInt _AT_EMPTY_PATH => 0x1000;
     public int16 Revents;
 }
 
-[GoType] [GoValueClone("Cc", "Pad_cgo_0")] partial struct Termios {
+[GoType] partial struct Termios {
     public uint32 Iflag;
     public uint32 Oflag;
     public uint32 Cflag;

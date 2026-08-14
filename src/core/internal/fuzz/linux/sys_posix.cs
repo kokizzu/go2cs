@@ -50,9 +50,7 @@ internal static (ж<sharedMem>, error) sharedMemMapFile(ж<os.File> Ꮡf, nint s
 
 // setWorkerComm configures communication channels on the cmd that will
 // run a worker process.
-internal static void setWorkerComm(ж<exec.Cmd> Ꮡcmd, workerComm comm) {
-    ref var cmd = ref Ꮡcmd.DerefOrNull();
-
+internal static void setWorkerComm(ref exec.Cmd cmd, workerComm comm) {
     var mem = ᐸꟷ(comm.memMu);
     var memFile = mem.Value.f;
     comm.memMu.ᐸꟷ(mem);

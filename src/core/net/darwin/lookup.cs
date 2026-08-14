@@ -70,7 +70,7 @@ internal static (nint, error) lookupProtocolMap(@string name) {
     array<byte> lowerProtocol = new(25); /* maxProtoLength */
     nint n = copy(lowerProtocol[..], name);
     lowerASCIIBytes(lowerProtocol[..(int)(n)]);
-    var (proto, found) = protocols[((@string)(lowerProtocol[..(int)(n)])), ꟷ];
+    var (proto, found) = protocols[tmpstring(lowerProtocol[..(int)(n)]), ꟷ];
     if (!found || n != len(name)) {
         return (0, new AddrErrorжerror(Ꮡ(new AddrError(Err: "unknown IP protocol specified"u8, Addr: name))));
     }
@@ -115,7 +115,7 @@ internal static (nint port, error error) lookupPortMapWithNetwork(@string networ
             nint n = copy(lowerService[..], service);
             lowerASCIIBytes(lowerService[..(int)(n)]);
             {
-                var (portΔ1, okΔ1) = m[((@string)(lowerService[..(int)(n)])), ꟷ]; if (okΔ1 && n == len(service)) {
+                var (portΔ1, okΔ1) = m[tmpstring(lowerService[..(int)(n)]), ꟷ]; if (okΔ1 && n == len(service)) {
                     return (portΔ1, default!);
                 }
             }

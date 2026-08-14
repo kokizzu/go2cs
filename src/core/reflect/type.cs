@@ -1740,7 +1740,7 @@ internal static ΔType initFuncTypes(nint n) {
         funcTypes[n] = StructOf(new StructField[]{
             new(
                 Name: "FuncType"u8,
-                Type: TypeOf(new funcType())
+                Type: TypeOf(new abiꓸFuncType())
             ),
             new(
                 Name: "Args"u8,

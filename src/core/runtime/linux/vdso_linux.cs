@@ -79,8 +79,7 @@ internal static byte _ELF_ST_TYPE(byte val) {
 }
 
 // see vdso_linux_*.go for vdsoSymbolKeys[] and vdso*Sym vars
-internal static void vdsoInitFromSysinfoEhdr(ж<vdsoInfo> Ꮡinfo, ж<elfEhdr> Ꮡhdr) {
-    ref var info = ref Ꮡinfo.DerefOrNull();
+internal static void vdsoInitFromSysinfoEhdr(ref vdsoInfo info, ж<elfEhdr> Ꮡhdr) {
     ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     info.valid = false;
@@ -163,9 +162,8 @@ internal static void vdsoInitFromSysinfoEhdr(ж<vdsoInfo> Ꮡinfo, ж<elfEhdr> �
     info.valid = true;
 }
 
-internal static int32 vdsoFindVersion(ж<vdsoInfo> Ꮡinfo, ж<vdsoVersionKey> Ꮡver) {
+internal static int32 vdsoFindVersion(ж<vdsoInfo> Ꮡinfo, ref vdsoVersionKey ver) {
     ref var info = ref Ꮡinfo.DerefOrNull();
-    ref var ver = ref Ꮡver.DerefOrNull();
 
     if (!info.valid) {
         return 0;
@@ -254,10 +252,10 @@ internal static void vdsoauxv(uintptr tag, uintptr val) {
         }
         ref var info = ref heap(new vdsoInfo(), out var Ꮡinfo);
         var info1 = Ꮡinfo;
-        vdsoInitFromSysinfoEhdr(info1, // TODO(rsc): I don't understand why the compiler thinks info escapes
+        vdsoInitFromSysinfoEhdr(ref (info1).DerefOrNull(), // TODO(rsc): I don't understand why the compiler thinks info escapes
  // when passed to the three functions below.
  (ж<elfEhdr>)(uintptr)((@unsafe.Pointer)val));
-        vdsoParseSymbols(info1, vdsoFindVersion(info1, ᏑvdsoLinuxVersion));
+        vdsoParseSymbols(info1, vdsoFindVersion(info1, ref vdsoLinuxVersion));
     }
 
 }

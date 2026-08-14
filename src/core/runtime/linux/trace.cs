@@ -27,7 +27,7 @@ partial class runtime_package {
 
 // trace is global tracing context.
 
-[GoType("dyn")] [GoValueClone("full", "doneSema", "stackTab", "stringTab", "typeTab", "cpuLogRead", "cpuLogWrite", "cpuBuf", "markWorkerLabels", "goStopReasons", "goBlockReasons")] partial struct Δtraceᴛ1 {
+[GoType("dyn")] partial struct Δtraceᴛ1 {
     // trace.lock must only be acquired on the system stack where
     // stack splits cannot happen while it is held.
     internal mutex @lock;
@@ -293,7 +293,7 @@ internal static readonly @string traceNonEmptyFullTraceˢ2 = "trace: non-empty f
 internal static readonly @string traceReadingAfterˢ = "trace: reading after shutdown"u8;
 
 // Collect all the untraced Gs.
-[GoLocalName("untracedG")] [GoType("dyn")] partial struct traceAdvance_untracedG {
+[GoType("dyn")] partial struct traceAdvance_untracedG {
     internal ж<g> gp;
     internal uint64 goid;
     internal int64 mid;
@@ -433,7 +433,7 @@ internal static void traceAdvance(bool stopTrace) {
     // We're just cleaning up the last generation after this point.
     //
     // We also don't care if the GC starts again after this for the same reasons.
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     semrelease(Ꮡworldsema);
     // Snapshot allm and freem.
     //
@@ -564,7 +564,7 @@ internal static void traceAdvance(bool stopTrace) {
     foreach (var (_, pp) in allp[(int)(len(allp))..(int)(cap(allp))]) {
         pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).readyNextGen(traceNextGen(gen));
     }
-    releasem(mp);
+    releasem(ref (mp).DerefOrNull());
     if (stopTrace){
         // Acquire the shutdown sema to begin the shutdown process.
         semacquire(ᏑtraceShutdownSema);
@@ -647,7 +647,7 @@ internal static void traceAdvance(bool stopTrace) {
             pp.Value.trace.swept = 0;
             pp.Value.trace.reclaimed = 0;
         }
-        releasem(mpΔ5);
+        releasem(ref (mpΔ5).DerefOrNull());
     }
     // Release the advance semaphore. If stopTrace is true we're still holding onto
     // traceShutdownSema.
@@ -951,7 +951,7 @@ internal static UntypedFloat defaultTraceAdvancePeriod => 1e9; // 1 second.
 // newWakeableSleep initializes a new wakeableSleep and returns it.
 internal static ж<wakeableSleep> newWakeableSleep() {
     var s = @new<wakeableSleep>();
-    lockInit(s.of(wakeableSleep.Ꮡlock), lockRankWakeableSleep);
+    lockInit(ref (s.of(wakeableSleep.Ꮡlock)).DerefOrNull(), lockRankWakeableSleep);
     s.Value.wakeup = new channel<EmptyStruct>(1);
     s.Value.timer = @new<timer>();
     var f = (any sΔ1, uintptr _Δp1, int64 _Δp2) => {

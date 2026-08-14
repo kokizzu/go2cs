@@ -42,10 +42,8 @@ using static go.@internal.syscall.unix_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 // </InterfaceImplementations>
@@ -68,6 +66,6 @@ public static partial class unix_package
     public partial struct Addrinfo {}
     public partial struct Group {}
     public partial struct Passwd {}
-    public partial struct ResState {}
+    [GoValueClone("unexported")] public partial struct ResState {}
     // </TypeAccessibility>
 }

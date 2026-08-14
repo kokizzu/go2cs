@@ -39,9 +39,7 @@ internal static ж<syscall.SysProcAttr> ensurePidfd(ж<syscall.SysProcAttr> Ꮡs
     return ᏑsysAttr;
 }
 
-internal static (uintptr, bool) getPidfd(ж<syscall.SysProcAttr> ᏑsysAttr) {
-    ref var sysAttr = ref ᏑsysAttr.DerefOrNull();
-
+internal static (uintptr, bool) getPidfd(ref syscall.SysProcAttr sysAttr) {
     if (!pidfdWorks()) {
         return (0, false);
     }

@@ -35,7 +35,7 @@ internal static RoutingMessage toRoutingMessage(this ж<anyMessage> Ꮡany, slic
 // containing network interface address entries.
 //
 // Deprecated: Use golang.org/x/net/route instead.
-[GoType] [GoValueClone("Header")] partial struct InterfaceMulticastAddrMessage {
+[GoType] partial struct InterfaceMulticastAddrMessage {
     public IfmaMsghdr2 Header;
     public slice<byte> Data;
 }

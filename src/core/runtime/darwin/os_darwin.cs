@@ -9,7 +9,7 @@ using @internal;
 
 partial class runtime_package {
 
-[GoType] [GoValueClone("mutex", "cond")] partial struct mOS {
+[GoType] partial struct mOS {
     internal bool initialized;
     internal pthreadmutex mutex;
     internal pthreadcond cond;
@@ -376,7 +376,7 @@ internal static void unminit() {
 
 // Called from exitm, but not from drop, to undo the effect of thread-owned
 // resources in minit, semacreate, or elsewhere. Do not take locks after calling this.
-internal static void mdestroy(ж<m> Ꮡmp) {
+internal static void mdestroy(ref m mp) {
 }
 
 //go:nosplit
@@ -459,15 +459,11 @@ internal static void setSignalstackSP(ж<stackt> Ꮡs, uintptr sp) {
 
 //go:nosplit
 //go:nowritebarrierrec
-internal static void sigaddset(ж<sigset> Ꮡmask, nint i) {
-    ref var mask = ref Ꮡmask.DerefOrNull();
-
+internal static void sigaddset(ref sigset mask, nint i) {
     mask |= (sigset)((sigset)((uint32)1 << (int)(((uint32)i - 1))));
 }
 
-internal static void sigdelset(ж<sigset> Ꮡmask, nint i) {
-    ref var mask = ref Ꮡmask.DerefOrNull();
-
+internal static void sigdelset(ref sigset mask, nint i) {
     mask &= unchecked((sigset)~(sigset)((sigset)((uint32)1 << (int)(((uint32)i - 1)))));
 }
 
@@ -480,7 +476,7 @@ internal static void setThreadCPUProfiler(int32 hz) {
 }
 
 //go:nosplit
-internal static bool validSIGPROF(ж<m> Ꮡmp, ж<sigctxt> Ꮡc) {
+internal static bool validSIGPROF(ref m mp, ref sigctxt c) {
     return true;
 }
 
@@ -503,9 +499,7 @@ internal static void sysargs(int32 argc, ж<ж<byte>> Ꮡargv) {
     }
 }
 
-internal static void signalM(ж<m> Ꮡmp, nint sig) {
-    ref var mp = ref Ꮡmp.DerefOrNull();
-
+internal static void signalM(ref m mp, nint sig) {
     pthread_kill(((pthread)(uintptr)mp.procid), (uint32)sig);
 }
 

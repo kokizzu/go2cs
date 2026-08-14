@@ -68,7 +68,7 @@ internal static (ж<SockaddrDatalink>, error) parseSockaddrLink(slice<byte> b) {
 // +----------------------------+
 // | Data            (variable) |
 // +----------------------------+
-[GoLocalName("linkLayerAddr")] [GoType("dyn")] partial struct parseLinkLayerAddr_linkLayerAddr {
+[GoType("dyn")] partial struct parseLinkLayerAddr_linkLayerAddr {
     public byte Type;
     public byte Nlen;
     public byte Alen;
@@ -224,7 +224,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
 // entries.
 //
 // Deprecated: Use golang.org/x/net/route instead.
-[GoType] [GoValueClone("Header")] partial struct RouteMessage {
+[GoType] partial struct RouteMessage {
     public RtMsghdr Header;
     public slice<byte> Data;
 }
@@ -273,7 +273,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
 // network interface entries.
 //
 // Deprecated: Use golang.org/x/net/route instead.
-[GoType] [GoValueClone("Header")] partial struct InterfaceMessage {
+[GoType] partial struct InterfaceMessage {
     public IfMsghdr Header;
     public slice<byte> Data;
 }
@@ -295,7 +295,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
 // network interface address entries.
 //
 // Deprecated: Use golang.org/x/net/route instead.
-[GoType] [GoValueClone("Header")] partial struct InterfaceAddrMessage {
+[GoType] partial struct InterfaceAddrMessage {
     public IfaMsghdr Header;
     public slice<byte> Data;
 }
