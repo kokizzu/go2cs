@@ -57,9 +57,18 @@ public sealed class TestExecution
     // Go goroutine stacks GROW (to ~1GB on 64-bit), so deeply recursive test code is legal Go —
     // io/fs's TestCVE202230630 legitimately recurses 10,001 frames through globWithLimit before
     // its own depth guard fires. A .NET thread's stack is a FIXED reservation (default ~1MB) and
-    // an overflow is uncatchable, killing the whole host. 256MB reserves address space only
-    // (pages commit on demand), giving Go-scale headroom at no real memory cost.
-    private const int TestThreadStackSize = 256 * 1024 * 1024;
+    // an overflow is uncatchable, killing the whole host. The reservation costs address space only
+    // (pages commit on demand), so it is sized at Go's OWN ceiling rather than at a fraction of it.
+    //
+    // 256MB was not Go-scale, and go/parser is the proof: its parser guards recursion with
+    // maxNestLev = 1e5 and TestParseDepthLimit feeds it maxNestLev+1 deliberately, so Go recurses
+    // 100,001 levels — about four converted frames each through
+    // parseType -> parseFieldDecl -> parseStructType -> tryIdentOrType — before its own guard fires.
+    // That is ~400k frames, which 256MB serves only if every frame fits in 671 bytes; the converted
+    // frames do not, and the host died with an uncatchable "Stack overflow." partway through the
+    // suite, taking every later verdict with it. Matching Go's 1GB maximum makes the host's headroom
+    // the same headroom the code was written against.
+    private const int TestThreadStackSize = 1024 * 1024 * 1024;
 
     // The test a goroutine belongs to. Set on the test's own thread, it flows into every goroutine
     // that thread starts (and into theirs, transitively) because ThreadPool.QueueUserWorkItem —
@@ -265,9 +274,25 @@ public sealed class TestExecution
         m_holdsParallelSlot = true;
     }
 
+    /// <summary>
+    /// Go's <c>t.TempDir()</c>: a per-test directory, removed when the test finishes.
+    /// </summary>
+    /// <remarks>
+    /// It lives at the run sandbox's ROOT rather than under the working directory, and the
+    /// difference is observable. Go's <c>TempDir</c> goes through <c>os.MkdirTemp("")</c>, so it
+    /// lands in the system temp — a location with no <c>go.mod</c> anywhere above it and outside the
+    /// package's own directory. Under the working directory it would be neither: the staged ancestry
+    /// puts <c>src/go.mod</c> (module std) and a <c>vendor</c> directory above every path inside the
+    /// package tree, so a test that runs the toolchain in its own temp directory would have the
+    /// module walk terminate at the standard library instead of finding nothing — go/build's
+    /// TestImportPackageOutsideModule wants exactly "go.mod file not found in current directory or
+    /// any parent directory" and got the vendor-mode error instead. Hoisting it to the run root
+    /// restores Go's property, and incidentally keeps <c>.tmp</c> out of the working directory a
+    /// test may enumerate.
+    /// </remarks>
     public @string TempDir()
     {
-        string path = Path.Combine(m_runner.WorkingDirectory, ".tmp", TempDirName(Name), Interlocked.Increment(ref m_tempDirSequence).ToString(CultureInfo.InvariantCulture));
+        string path = Path.Combine(m_runner.RunRoot, ".tmp", TempDirName(Name), Interlocked.Increment(ref m_tempDirSequence).ToString(CultureInfo.InvariantCulture));
         Directory.CreateDirectory(path);
         Cleanup(() => RemoveAllWithWindowsRetry(path));
         return path;

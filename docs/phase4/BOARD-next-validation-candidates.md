@@ -5210,6 +5210,74 @@ and it interacts with the staging path that feeds the input-digest manifest. Des
 breadth lane's — and NOT a disclosure, for the reason already recorded: it is satisfiable at a layer
 go2cs owns.
 
+> **RESOLVED 2026-08-13 (lane `claude/synthetic-goroot-class`) — four of the six bank, and the
+> class was TWO roots, not one.** Design: [`DESIGN-package-ancestry-view.md`](DESIGN-package-ancestry-view.md).
+> The remedy is an ANCESTRY view, not a synthetic GOROOT, and the difference was measured rather
+> than argued. `PackageAncestry` stages GOROOT's content from its top level down to the package —
+> sibling directories as links, files as hard links, the path to the package materialized, the
+> package's own directory real copies — under a working directory that gains the `src` level this
+> section correctly predicted it needed. GOROOT itself keeps pointing at the real installation.
+>
+> **Why not the synthetic GOROOT this section expected.** A linked mirror is not walk-equivalent to
+> the real tree: Go reports a junction from `Lstat` as an irregular file, so `filepath.WalkDir`
+> steps over it rather than descending. Measured against Go 1.23.1 on a mirrored root — a walk
+> counting `*.gz` under GOROOT finds **0** where the real tree has **4**, and a walk of
+> `src/unicode` reports **1** entry against the real **19**. Two ALREADY-BANKED packages walk GOROOT
+> that way (`compress/gzip`'s issue14937, `path/filepath`), so repointing GOROOT would have
+> REGRESSED them. Reads through a junction are faithful and every member of this class resolves
+> against its working directory, so leaving GOROOT real costs nothing here. The feared "changes the
+> execution contract for all 122 banked packages at once" did not materialize: nothing about GOROOT
+> resolution moved.
+>
+> **Banked: `go/parser` 173/173, `io/ioutil` 28/28, `internal/testenv` 7/7, `internal/godebugs` 1/1**
+> — +209 verdicts, the arc's ledger paid in full and then some (the deferral price this board
+> tracked was 167 + 12).
+>
+> **Two corrections to this board's own rows, both from reading the sources rather than the verdict
+> names** — the same methodology note §*go/parser 6/173* already earned:
+> - `go/parser`'s initializer reads **`../printer/nodes.go`**, not `parser.go`. That is the whole
+>   design question: its own sources would be served by staging the package directory; a SIBLING
+>   package's are not.
+> - `internal/godebugs` needs more than `doc/godebug.md`. Past that read, `TestAll` runs
+>   `go list -f={{.Dir}} std cmd` and reads every `.go` file it names — a working toolchain, not a
+>   staged file.
+>
+> **The residue is a SECOND root — GOROOT-IDENTITY — and it holds the two that did not bank.**
+> Both need the importing/asking file to sit under the GOROOT the toolchain itself uses, which no
+> ancestry view can provide and which repointing GOROOT cannot fix either (the child `go` resolves
+> its own GOROOT from its executable location — measured: `go list` returns real-GOROOT paths with
+> `GOROOT` set to a mirror).
+> - **`go/build` 57/58, unchanged and now precisely attributed.** `TestLocalDirectory`'s
+>   `ImportDir(cwd)` derives the import path by relating cwd to the GOROOT the process REPORTS.
+> - **`internal/coverage/cfile` 4/16 — same count, but a root MOVED, which is why it was
+>   re-measured.** The module-resolution facet is **closed**: `TestIssue59563TruncatedCoverPkgAll`
+>   no longer dies on `go.mod file not found`, it runs `go test -coverpkg=all` to completion and
+>   emits a full profile, failing now on CONTENT (`wanted 1 found, got 0`) — a real coverage
+>   question, no longer infrastructure. The internal-import facet stands:
+>   `use of internal package internal/coverage/slicewriter not allowed`, because the staged
+>   `harness.go` is outside the tree the toolchain resolves `internal/...` within. Read the row as
+>   one GOROOT-identity failure plus one content failure, with the nine `TestCoverageApis` subtests
+>   still shadows of their parent.
+>
+> **Two host defects surfaced on the way and are fixed here**, both general and both previously
+> masked:
+> - **PATH fidelity.** `go test` PREPENDS `$GOROOT/bin` to the test binary's PATH (measured:
+>   `PATH[0]` is `$GOROOT/bin`, `exec.LookPath("go")` resolves there). The pipeline now does the
+>   same, beside its existing GOROOT export. On a machine carrying two installations of the same Go
+>   version this is the difference between pass and fail for `internal/testenv`.
+> - **`t.TempDir()` placement.** It sat under the WORKING directory; Go's sits in the system temp,
+>   with no `go.mod` above it. The staged ancestry puts `src/go.mod` above the package tree, so it
+>   is hoisted to the run root. This unmasked a **false pass**: `go/build`'s
+>   `TestImportPackageOutsideModule` wants "go.mod file not found in current directory or any parent
+>   directory" and was getting it only because the old sandbox had no `go.mod` ANYWHERE.
+>
+> **And one wall behind the wall.** With its initializer working, `go/parser` ran and died on an
+> uncatchable `Stack overflow.` — `TestParseDepthLimit` drives Go's own `maxNestLev` of 100,001
+> levels deliberately, ~400k converted frames, which the host's 256 MB per-test thread served only
+> if every frame fit in 671 bytes. Raised to Go's own 1 GB ceiling (reservation is address space;
+> pages commit on demand). Any lane hitting a deep-recursion wall elsewhere should suspect this
+> constant before suspecting the conversion.
+
 `net/textproto` also re-measures unchanged at 25 of 26 — still the want-ZERO
 `canonicalMIMEHeaderKey allocs = 816` against the AllocsPerRun-reports-BYTES shim, still not a
 disclosure candidate under ruling #1.
