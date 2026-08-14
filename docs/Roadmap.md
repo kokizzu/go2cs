@@ -795,13 +795,16 @@ more than Windows.
 - **Running on Linux works today for programs whose import closure stays within the
   `fmt`/`os`/`time` class** — the first native Linux run of a converted program landed 2026-08-08
   (tag `linux-first-run-2026-08-08`).
-- **The remaining wall is the platform-divergent `syscall` surface.** A closure reaching it (e.g.
-  anything pulling `x/sys`) still builds only for the Windows target: the
-  `-p:GoTargetOS=linux` corpus build does not yet complete
-  ([`phase4/DESIGN-multiplatform-corpus.md`](phase4/DESIGN-multiplatform-corpus.md) §12), and the
-  syscall struct-passing seam solved on Windows with blittable mirrors needs its Linux
-  counterpart. The operational plan, harness findings and remaining F-items live in
-  [`PLAN-linux-operation.md`](PLAN-linux-operation.md).
+- **The full corpus compiles for Linux — all 307 projects, zero errors** (2026-08-14; the
+  three-target emission verified idempotent, with the Windows corpus byte-identical alongside it).
+  Compiling is the milestone, not operational — the same distinction the Windows corpus walked
+  between its Phase 3 and Phase 4: the platform-divergent `syscall` surface still needs its
+  *operational* Linux counterparts (the struct-passing seam solved on Windows with blittable
+  mirrors, the netpoll contracts), and a Linux validation campaign then follows with its own
+  per-platform roster. The operational plan and remaining F-items live in
+  [`PLAN-linux-operation.md`](PLAN-linux-operation.md);
+  [`phase4/CENSUS-linux-compile-wall.md`](phase4/CENSUS-linux-compile-wall.md) records how the
+  compile wall fell.
 
 **What a published package is, platform-wise.** Three layers with different platform models ship in
 every NuGet package, and knowing which is which explains what works where:
