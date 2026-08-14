@@ -334,6 +334,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckDeferValueFieldPtrReceiver() => CheckTarget("DeferValueFieldPtrReceiver");
 
     [TestMethod]
+    public void CheckDefinedOverNamedComposite() => CheckTarget("DefinedOverNamedComposite");
+
+    [TestMethod]
     public void CheckDefinedTypeOverForeignStruct() => CheckTarget("DefinedTypeOverForeignStruct");
 
     [TestMethod]

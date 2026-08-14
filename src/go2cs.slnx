@@ -330,6 +330,8 @@
     <Project Path="tests/Behavioral/DeferSimple/DeferSimple.csproj" />
     <Project Path="tests/Behavioral/DeferTypelessReturns/DeferTypelessReturns.csproj" />
     <Project Path="tests/Behavioral/DeferValueFieldPtrReceiver/DeferValueFieldPtrReceiver.csproj" />
+    <Project Path="tests/Behavioral/DefinedOverNamedComposite/DefinedOverNamedComposite.csproj" />
+    <Project Path="tests/Behavioral/DefinedOverNamedComposite/fslike/DefinedOverNamedComposite.fslike.csproj" />
     <Project Path="tests/Behavioral/DefinedTypeOverForeignStruct/DefinedTypeOverForeignStruct.csproj" />
     <Project Path="tests/Behavioral/DefinedTypeOverForeignStruct/ptlike/DefinedTypeOverForeignStruct.ptlike.csproj" />
     <Project Path="tests/Behavioral/DefinedTypeOverInterface/DefinedTypeOverInterface.csproj" />

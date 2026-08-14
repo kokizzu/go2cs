@@ -60,3 +60,22 @@ func writtenRHSIsUnnamedArray(named *types.Named) bool {
 	_, isArray := types.Unalias(rhs).(*types.Array)
 	return isArray
 }
+
+// writtenRHSIsNamedType reports whether `named` was declared DIRECTLY over `base` —
+// `type shuffledFS MapFS`, whose written RHS is the NAMED MapFS rather than the
+// `map[string]*MapFile` go/types resolves the underlying to. That distinction decides a
+// conversion's shape: the wrapper's implicit operators target its WRITTEN RHS, so
+// `MapFS(fsys)` binds as ONE user-defined conversion and needs no hop, while the
+// shared-underlying hop the two-distinct-defined-types case requires would be the illegal
+// two-operator chain here (shuffledFS -> MapFS -> map, CS0030). Unknown or cross-package
+// types miss and callers keep the pre-existing route.
+func writtenRHSIsNamedType(named *types.Named, base *types.Named) bool {
+	rhs, ok := packageTypeSpecRHS[named.Obj()]
+
+	if !ok || rhs == nil {
+		return false
+	}
+
+	rhsNamed, isNamed := types.Unalias(rhs).(*types.Named)
+	return isNamed && rhsNamed == base
+}

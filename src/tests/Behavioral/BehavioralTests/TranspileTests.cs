@@ -331,6 +331,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckDeferValueFieldPtrReceiver() => CheckTarget("DeferValueFieldPtrReceiver");
 
     [TestMethod]
+    public void CheckDefinedOverNamedComposite() => CheckTarget("DefinedOverNamedComposite");
+
+    [TestMethod]
     public void CheckDefinedTypeOverForeignStruct() => CheckTarget("DefinedTypeOverForeignStruct");
 
     [TestMethod]

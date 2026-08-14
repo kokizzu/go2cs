@@ -1545,7 +1545,22 @@ When the target basic *is* the named type's exact underlying (`int32(s)` for `Na
 
 **Named SLICE types keep the named type when sliced.** The generated slice wrapper's Range indexer and `Slice()` overloads return the wrapper (`nat[a:b]` IS a `nat` — a fresh wrapper sharing the same backing window), so a method call directly on a slice expression binds the named type's extensions (`u[s:].norm()` bound the raw `slice<Word>` instead, math/big CS1929 ×21). The explicit `ISlice<T>` implementations keep the raw slice type.
 
-A conversion **between two named slice types** sharing an identical underlying (tar's `sparseElem(s[i*24:])`, both `[]byte`) hops through the shared underlying slice — `((sparseElem)(slice<byte>)(…))` — since the wrapper-returning slicing makes the argument the NAMED wrapper and a direct cast would chain two user-defined operators (CS0030). (Guarded by `SortArrayType`'s `Roster(byAge[0:2])`.)
+A conversion **between two named slice types** sharing an identical underlying (tar's `sparseElem(s[i*24:])`, both `[]byte`) hops through the shared underlying slice — `((sparseElem)(slice<byte>)(…))` — since the wrapper-returning slicing makes the argument the NAMED wrapper and a direct cast would chain two user-defined operators (CS0030). (Guarded by `SortArrayType`'s `Roster(byAge[0:2])`.) The same hop covers the map and array underlyings (net/mail's `textproto.MIMEHeader(h)`, where `Header` and `MIMEHeader` are both written over `map[string][]string`).
+
+**…but NOT when one of the two was written directly over the other.** Go's `Underlying()` resolves through the whole declaration chain, so `type shuffledFS MapFS` — testing/fstest's own suite, over a `MapFS` that is itself `map[string]*MapFile` — passes the shared-underlying test above while being a completely different shape. The wrapper for a non-basic underlying keeps the **NAMED** base (`[GoType("global::go.testing.fstest_package.MapFS")]`, see `visitIdent`/`visitTypeSpec`), so `shuffledFS` declares exactly ONE conversion operator and it targets `MapFS`. Hopping through the raw map therefore *creates* the two-operator chain the hop exists to prevent — `shuffledFS`→`MapFS`→`map`, CS0030 — where the plain cast Go actually wrote binds in one step:
+
+```go
+f, err := MapFS(fsys).Open(name)          // fsys is shuffledFS
+```
+```csharp
+var (f, err) = ((global::go.testing.fstest_package.MapFS)fsys).Open(name);
+```
+
+The written right-hand side is recovered from `packageTypeSpecRHS` (`writtenUnderlyingOperations.go`), the same per-package pre-pass the named-**numeric** hop already consults for its own version of this exception — with one difference: the numeric exception is gated to a CROSS-package base, because a same-package numeric chain resolves to the basic underlying (`[GoType("num:uintptr")]`, no named-base operator to bind). A composite underlying keeps the named base either way, so the composite exception needs no package gate. Both directions are covered (the arg written over the target, and the target written over the arg), and all three composite arms — map, slice and array. Unrecorded or cross-package declarations miss the lookup and keep the pre-existing route.
+
+Measured on `testing/fstest`, whose whole 7-verdict suite sat behind this one CS0030: it now runs at **6 of 7**, the residual being `TestShuffledFS`'s runtime assertion that the returned `*shuffledFile` satisfies `fs.ReadDirFile` — the pointer-adapter identity class, unrelated. (Guarded by the `DefinedOverNamedComposite` behavioral test: a child package owning the named map/slice/array, defined types over each in both directions plus a same-package one, and the net/mail two-raw-map control in the same program so the hop is proven to still fire.)
+
+> A defined type over a named COMPOSITE gets an inherited wrapper that does not expose the golib sequence surface, so `len(x)` directly on one is CS0315 against `builtin.len<TSeq>`. That is a separate, pre-existing gap — no corpus site asks for it, and the guard above deliberately measures through the base type instead.
 
 (Guarded by `NamedNumericConversion`, `NamedNumericShiftConv`, `NamedTypeBitwiseConst`, `IotaEnum`, `FuncTypeParam`, and `CrossPkgUser`; the `string`-target exception is guarded by `StringConvPostfix` and `UnsafeOperations`; verified by the full behavioral suite — output comparisons confirm the precedence is unchanged.)
 

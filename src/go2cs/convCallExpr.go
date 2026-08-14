@@ -823,8 +823,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if sliceUnder, ok := named.Underlying().(*types.Slice); ok {
 				if argNamed, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Named); ok && argNamed != named {
 					if _, argIsSlice := argNamed.Underlying().(*types.Slice); argIsSlice && types.Identical(argNamed.Underlying(), named.Underlying()) {
-						underlyingCS := convertToCSTypeName(v.getAliasQualifiedTypeName(sliceUnder, false))
-						return fmt.Sprintf("((%s)(%s)(%s))", targetTypeName, underlyingCS, expr)
+						// Same EXCEPTION the map/array twin of this rule carries further down: one
+						// of the two was WRITTEN directly over the other (`type shuffledList List`),
+						// so its wrapper's single conversion operator targets that NAMED type rather
+						// than the shared `slice<E>` — and the hop's first leg becomes the very
+						// two-operator chain this rule exists to prevent. The plain cast binds.
+						if !writtenRHSIsNamedType(argNamed, named) && !writtenRHSIsNamedType(named, argNamed) {
+							underlyingCS := convertToCSTypeName(v.getAliasQualifiedTypeName(sliceUnder, false))
+							return fmt.Sprintf("((%s)(%s)(%s))", targetTypeName, underlyingCS, expr)
+						}
 					}
 				}
 			}
@@ -1031,13 +1038,27 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if targetNamed, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Named); ok {
 			if convArgType := v.info.TypeOf(arg); convArgType != nil {
 				if argNamed, ok := types.Unalias(convArgType).(*types.Named); ok && !types.Identical(targetNamed, argNamed) && types.Identical(targetNamed.Underlying(), argNamed.Underlying()) {
-					// Map/slice/array underlyings have a nameable C# cast target (map<K,V>, slice<T>,
-					// array<T>). A STRUCT underlying is anonymous (struct{...} — not a valid cast term,
-					// CS1525) AND is the reverse *underlying->*named REINTERPRET case (NamedPointerReinterpret),
-					// so it is excluded.
-					switch targetNamed.Underlying().(type) {
-					case *types.Map, *types.Slice, *types.Array:
-						expr = fmt.Sprintf("(%s)%s", convertToCSTypeName(v.getAliasQualifiedTypeName(targetNamed.Underlying(), false)), expr)
+					// EXCEPTION, the composite twin of the named-numeric one above: one of the two
+					// was WRITTEN directly over the other — `type shuffledFS MapFS`, where MapFS is
+					// itself `map[string]*MapFile` (testing/fstest's own suite). go/types resolves
+					// both underlyings to the raw map, so the shared-underlying test passes, but the
+					// wrapper does NOT convert to that map: visitIdent/visitTypeSpec keep the NAMED
+					// base for any non-basic underlying (`[GoType("…fstest_package.MapFS")]`), so
+					// `shuffledFS` declares exactly one operator and it targets `MapFS`. The hop's
+					// first leg is then the very two-operator chain the hop exists to prevent
+					// (shuffledFS→MapFS→map, CS0030 at testfs_test.cs:62), while the plain cast the
+					// fall-through emits binds in one step. Unlike the numeric exception this needs
+					// NO cross-package gate — the named base is kept for a composite underlying
+					// whether that base is same-package or not.
+					if !writtenRHSIsNamedType(argNamed, targetNamed) && !writtenRHSIsNamedType(targetNamed, argNamed) {
+						// Map/slice/array underlyings have a nameable C# cast target (map<K,V>, slice<T>,
+						// array<T>). A STRUCT underlying is anonymous (struct{...} — not a valid cast term,
+						// CS1525) AND is the reverse *underlying->*named REINTERPRET case (NamedPointerReinterpret),
+						// so it is excluded.
+						switch targetNamed.Underlying().(type) {
+						case *types.Map, *types.Slice, *types.Array:
+							expr = fmt.Sprintf("(%s)%s", convertToCSTypeName(v.getAliasQualifiedTypeName(targetNamed.Underlying(), false)), expr)
+						}
 					}
 				}
 			}
