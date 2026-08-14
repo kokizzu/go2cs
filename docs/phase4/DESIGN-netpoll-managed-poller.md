@@ -594,6 +594,43 @@ is cheap and the claim should be measured, not argued).
   error; completion-races-deadline delivers the data (point 7); the pending-op cancel/harvest
   invariant (point 6).
 
+> **⚠ BLOCKER (S2b lane, measured 2026-08-14): `TcpLoopbackRoundTrip` is UNREACHABLE until the
+> sockaddr DECODE is fixed, and it blocks the seam's most dangerous surface from value-level
+> verification.** `net`'s accept path calls `RawSockaddrAny.Sockaddr()` on the `GetAcceptExSockaddrs`
+> output (`net/windows/fd_windows.cs:255–256`), and that decode still carries the port ALIAS L10
+> hand-owned away on the ENCODE side — `var p = (ж<array<byte>>)(uintptr)(new
+> @unsafe.Pointer(pp.of(RawSockaddrInet4.ᏑPort)))` (`syscall/windows/syscall_windows.cs:953`). An
+> `array<T>` rebuilt from a raw address materializes length ZERO, so `p[0]` panics. Measured directly
+> rather than inferred, with a throwaway probe that constructs an `AF_INET` `RawSockaddrAny` and calls
+> `Sockaddr()`: Go answers `decoded AF_INET port=0 addr=[0 0 0 0]`; C# answers
+> `panic: runtime error: index out of range [0] with length 0`.
+>
+> L10 left this auto-converted **deliberately and correctly**: hand-owning it drops the three
+> `[assembly: GoImplement<Sockaddr{Inet4,Inet6,Unix}, ΔSockaddr>(Pointer = true)]` records
+> (`syscall/windows/package_info.cs:45–47`) that its body's casts are the only witness for, and a
+> MEASURED reconvert of `net` against the shortened `package_info` showed `net` minting duplicate
+> adapters — the second-identity regression. The real answer L10 named is the converter's POINTER
+> method-set recording, and that is **still deferred**: `samePackageImplements.go:68` states the
+> pointer set "is owed its own increment with its own measured footprint" (548 same-package pairs vs
+> 168 for the value set). So the fix is a converter increment, not a hand-own, and not this arc's.
+>
+> **What survives, precisely.** A census of every `.Sockaddr()` call site in `net` finds six: the two
+> accept-path sites above, three in `interface_windows.cs` (`net.Interfaces`) and one in
+> `dnsconfig_windows.cs` — the last four already named as adjacent walls in §6. **The DIAL path never
+> touches it**, because `netFD`'s local/peer addresses come from `Getsockname`/`Getpeername`, which
+> L10 hand-owned to decode natively. So a dialed client conn is fully usable (the kernel completes the
+> handshake from the listen backlog with no accept on the other end — the shape `SockaddrRoundTrip`
+> already relies on), which makes `NetDeadlineMatrix` achievable in full and exercises five of the six
+> wrappers; `AcceptEx` is reachable too, but only up to a DEADLINE-cancelled accept, never a
+> successful one.
+>
+> That is deliberately **not** treated as good enough to land the seam on. What no dial-only gate can
+> prove is that bytes arrive correctly — the native `WSABUF` mirroring, the pinned user buffer and the
+> transferred counts are exactly the "returns garbage without crashing" class the repo's standing rule
+> covers: *verify at VALUE level, never at fault level*. A submit seam whose buffer marshalling is
+> unproven is the wrong thing to bank, which is why this lane stops at the boundary rather than
+> landing ~530 lines against a gate it knows it cannot meet.
+
 Gates: full behavioral suite; then the pipeline's own measure — **filtered sweep of
 `internal/poll`: the board row's target is 19/19** (from 18/19, sole miss `runtime_pollServerInit`
 — the row this design exists to close).
