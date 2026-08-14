@@ -5898,7 +5898,9 @@ on the pinned coordinator (i7-5820K, go1.23.1). **Nothing banks**, and no row is
 2026-08-10 ratification stands, and none of these is an alloc row anyway. The value is the census: five
 packages produced a verdict map, seven died before producing one, and all twelve now have a named root.
 (**Six** produce one since 2026-08-12 — `net/rpc/jsonrpc`'s build-blocker was fixed and the package runs;
-its row and §"Five converter defects" item 3 below carry the measured result.)
+its row and §"Five converter defects" item 3 below carry the measured result. The "nothing banks"
+above has since been overtaken by one row: `net/rpc/jsonrpc` **banked 9/9 on 2026-08-14**, three
+converter defects after this census first named it.)
 
 | Package | Go verdicts | C# matched | Outcome | Root / attribution |
 |:--|--:|--:|:--|:--|
@@ -5910,7 +5912,7 @@ its row and §"Five converter defects" item 3 below carry the measured result.)
 | `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
 | `internal/types/errors` | 155 | **0** | ~~converter defect~~ FIXED → now downstream of `go/types` | the Δ-renamed-imported-type defect is fixed (`claude/types-errors-delta-rename`); the package now BUILDS and RUNS, and both tests then die on the `go/types` checker nil-panic — see the sub-row below |
 | `internal/fuzz` | 52 | — | converter defect | alias-to-anonymous-struct (`CorpusEntry`): the lift's `global using` lives in the production compilation and does not cross the assembly boundary |
-| `net/rpc/jsonrpc` | 9 | **6** | ⬆ json root FIXED + guarded — still 3 rows, now on a SECOND root | two defects fixed so far (embedded-pointer promotion 2026-08-12; the non-trailing-`default` switch lowering 2026-08-13). The same 3 rows remain — `TestBuiltinTypes`, `TestClient`, `TestServer` — but they no longer report the json error: they now panic `index out of range [0] with length 0`, which **kills the host process**, so a full run records 0 verdicts, not 6. The other 6 still pass when run filtered. Not socket-walled (see below) |
+| `net/rpc/jsonrpc` | 9 | **9** | ✅ **BANKED 2026-08-14** — three converter defects deep | embedded-pointer promotion (2026-08-12), the non-trailing-`default` switch lowering (2026-08-13), and a fixed-size array's LENGTH reaching reflect through a METHOD's POINTER parameter (2026-08-14). The last was one test, not the three recorded here: `TestBuiltinTypes` sorts first, its goroutine panic killed the host, and the other eight recorded no verdict — which is also why the host now reports a goroutine panic with its traceback and flushes what it has. Never socket-walled |
 | `testing/fstest` | 7 | — | converter defect | a defined type over ANOTHER package's named map type — the emitted two-hop conversion has only one hop |
 | `internal/syscall/windows/registry` | 6 | — | converter defect | the internal-test partial class is emitted non-`static`, and in this package nothing else declares it |
 | `embed/internal/embedtest` | 7 | — | not a candidate | test-only Go package: there is no production package for the host to reference |
@@ -6289,6 +6291,47 @@ None of these five is a wall; all are ordinary emission bugs, listed with the ev
    chain does run the `= new(1)` field initializer. No stack trace is available from the host: it
    prints `panic: {message}` with an empty `StackTrace`, which is itself worth fixing, because a
    goroutine panic with no frame is the hardest possible diagnostic to act on.
+
+   ✅ **CLOSED 2026-08-14 (`claude/jsonrpc-goroutine-panic`) — the package VALIDATES 9/9 and is
+   BANKED.** Two landings, and the first one is what found the second.
+
+   **(a) The host no longer swallows a goroutine panic's traceback.** The frameless report was not
+   a missing `catch` — it was golib's AppDomain backstop doing exactly its job: it prints the panic
+   VALUE and exits 2, which is Go's own report for a *program* and useless to a *host* running many
+   Go programs in one process. `Goroutine.ObserveUnhandledPanic` now lets a host WATCH a panic cross
+   a goroutine root from an exception FILTER that always declines — so the fatal path stays
+   byte-identical (Go fidelity, and the oracle keeps observing it) while the report is written with
+   the stack still standing. The converted-test host installs one: it attributes the panic to the
+   test whose goroutine it was, reports it as that test's terminal FAIL **with the full traceback**,
+   and FLUSHES the result files the fatal path used to discard whole. A goroutine panic now costs
+   the tail of a run instead of all of it. Guards: `GolibTests/GoroutineRootPanicTests` (5 tests over
+   the root's whole policy — observed-and-still-escapes, the fault site surviving, a runtime-error
+   panic, containment still taking non-panic exceptions, Goexit taking neither).
+
+   **(b) With the trace liberated, the panic rooted in one read — and it was ONE test, not three.**
+   The trace named `array.get_Item` under `all_test.cs`'s own `BuiltinTypes.Array(i int, reply
+   *[1]int)`, called through `reflect.Call` from `net/rpc`'s `service.call`. net/rpc allocates every
+   reply from the method type alone — `reflect.New(mtype.ReplyType.Elem())` — and the `[1]int`'s
+   LENGTH did not survive the trip, so `New` built a zero-length array and the callee's first write
+   panicked. Two hops were missing, both now closed: a METHOD's func type is built from the method
+   TABLE and never passes through a delegate, so `GoReflect.MethodParamDims` reads the
+   `[GoArrayDims]` stamps off the `MethodInfo` directly; and the array sits behind a POINTER, so the
+   converter stamps a parameter's POINTEE dims and a pointer descriptor's dims pass through `Elem()`
+   unshifted. The converter half had to go into `visitFuncDecl`'s REBUILT signature path, which is
+   the one a `*[N]T` parameter always takes — having a pointer parameter is itself what triggers the
+   rebuild — and that same gap had been silently dropping the stamp from VALUE array parameters in
+   heap-boxing functions too. Full mechanism:
+   [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md); guarded by the
+   extended `ReflectFuncArrayParamDims` behavioral test (rpc's shape in miniature) and by
+   `TestGoArrayDimsAttribute`.
+
+   **The "three failing tests" were one.** `TestClient` and `TestServer` never failed on this root at
+   all — `TestBuiltinTypes` sorts first, its panic killed the host, and the other eight recorded no
+   verdict. That is precisely the misreading (a) exists to prevent, and it is worth carrying as a
+   rule: **a package that records 0 verdicts has one failure and an unknown remainder, not N
+   failures.** Corpus footprint of the converter half, over all 592 behavioral packages: 5
+   declarations in 5 files, one line each. Gates: behavioral suite 566/566 + 540/540 output, CNR
+   classified, GolibTests 102/102, converter `go test ./...`, filtered sweep `PASS net/rpc/jsonrpc 9`.
 4. **`testing/fstest` — a defined type over ANOTHER package's named map type gets a one-hop conversion.**
    Go has `type shuffledFS MapFS` where `MapFS map[string]*MapFile`. The emission declares
    `[GoType("global::go.testing.fstest_package.MapFS")] internal partial struct shuffledFS;` and then

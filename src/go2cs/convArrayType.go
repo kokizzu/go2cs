@@ -41,8 +41,9 @@ func goArrayDims(t types.Type) []int64 {
 	}
 }
 
-// emitGoArrayDimsAttribute renders the `[GoArrayDims(...)]` parameter attribute carrying t's Go
-// array dimensions, or "" when t is not an unnamed array type.
+// emitGoArrayDimsAttribute renders the `[GoArrayDims(...)]` parameter attribute carrying the Go
+// array dimensions t DENOTES -- its own when t is an unnamed array type, its pointee's when t is a
+// pointer to one -- or "" when neither.
 //
 // It is a PARAMETER attribute rather than anything on the type because the parameter position is
 // the only place the datum can live: the emitted delegate type is a bare `Func<array<byte>, bool>`,
@@ -51,8 +52,23 @@ func goArrayDims(t types.Type) []int64 {
 // shape go2cs emits -- a declared func used as a method group, a non-capturing lambda, a capturing
 // lambda's display-class method, and a natural-typed lambda -- and stamps it as descriptor cargo in
 // abi.TypeOf, so reflect.Type.In(i) hands out an array type that knows its length.
+//
+// The POINTER hop is there because `*[N]T` is where a caller ALLOCATES from the parameter type: a
+// callee that must write its result through the parameter takes a pointer, so the type-only
+// position a length has to survive is exactly the pointee's. net/rpc is the case -- every service
+// method's reply is a `*T`, and the server does `reflect.New(mtype.ReplyType.Elem())` -- and with
+// no dims on the parameter it allocated a ZERO-length array for a `*[1]int` reply, which the callee
+// then indexed ("index out of range [0] with length 0", net/rpc/jsonrpc's TestBuiltinTypes). The
+// dims ride the POINTER descriptor and the bridge's Elem() hands them to the pointee; one hop only,
+// because one hop is what a Go signature ever spells at this position.
 func emitGoArrayDimsAttribute(t types.Type) string {
 	dims := goArrayDims(t)
+
+	if len(dims) == 0 {
+		if pointer, ok := types.Unalias(t).(*types.Pointer); ok {
+			dims = goArrayDims(pointer.Elem())
+		}
+	}
 
 	if len(dims) == 0 {
 		return ""

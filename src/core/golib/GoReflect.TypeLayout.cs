@@ -319,6 +319,30 @@ public static partial class GoReflect
         {
             return null;
         }
+
+        return paramDims(declared);
+    }
+
+    /// <summary>
+    /// The per-parameter Go array dimensions of the <paramref name="index"/>'th method of
+    /// <paramref name="t"/>'s method set — the same cargo <see cref="FuncParamDims"/> reads for a
+    /// func value, for the func type <c>reflect.Type.Method(i).Type</c> reports.
+    /// </summary>
+    /// <remarks>
+    /// A method needs its own reader because its func type is built from the method TABLE
+    /// (<see cref="GoMethodFuncType"/> over the <c>MethodInfo</c>'s parameters) and never passes
+    /// through a delegate instance, so the delegate route above has nothing to read. No arity guard
+    /// is owed here for the same reason: the delegate type is synthesized FROM this parameter list,
+    /// receiver included, so the indices line up with <c>In(i)</c> by construction — which is Go's
+    /// own shape for a method type, receiver first.
+    /// </remarks>
+    public static nint[]?[]? MethodParamDims(Type? t, int index)
+    {
+        return paramDims(MethodAt(t, index).Method.GetParameters());
+    }
+
+    private static nint[]?[]? paramDims(ParameterInfo[] declared)
+    {
         nint[]?[]? dims = null;
 
         for (int i = 0; i < declared.Length; i++)

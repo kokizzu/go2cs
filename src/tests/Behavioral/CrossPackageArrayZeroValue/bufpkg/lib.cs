@@ -20,7 +20,7 @@ partial class bufpkg_package {
     s.N = (uint32)len(s.Buf);
 }
 
-public static void FillArray(ж<array<uint64>> Ꮡbuf) {
+public static void FillArray([GoArrayDims(4)] ж<array<uint64>> Ꮡbuf) {
     ref var buf = ref Ꮡbuf.DerefOrNull();
 
     foreach (var (i, _) in buf) {

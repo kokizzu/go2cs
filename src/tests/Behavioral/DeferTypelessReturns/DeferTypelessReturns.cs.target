@@ -46,7 +46,7 @@ internal static error closeIt(ж<nint> Ꮡp, nint tag) {
     return default!;
 }
 
-internal static byte first(array<byte> valueʗp) {
+internal static byte first([GoArrayDims(4)] array<byte> valueʗp) {
     ref var value = ref heap(valueʗp.Clone(), out var Ꮡvalue);
 
     var p = Ꮡvalue.at<byte>(0);

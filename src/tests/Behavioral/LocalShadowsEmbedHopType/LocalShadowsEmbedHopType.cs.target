@@ -14,7 +14,7 @@ partial class main_package {
     }
 }
 
-[GoRecv] internal static void Store(this ref inner g, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static void Store(this ref inner g, [GoArrayDims(4)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     @out[0] = (byte)g.total;

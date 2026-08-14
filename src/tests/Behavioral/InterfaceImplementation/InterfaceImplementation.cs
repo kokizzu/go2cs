@@ -119,7 +119,7 @@ internal static void useAndRelease() {
     finally { ᒐ.Run(); }
 }
 
-public static void ShowZoo(ж<array<Animal>> Ꮡzoo) {
+public static void ShowZoo([GoArrayDims(2)] ж<array<Animal>> Ꮡzoo) {
     ref var zoo = ref Ꮡzoo.DerefOrNull();
 
     Animal a = default!;

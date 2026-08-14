@@ -971,6 +971,12 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 						continue
 					}
 
+					// The fixed-size-array dimension carrier, as in generateParametersSignature —
+					// and this path is the one a `*[N]T` parameter always takes, because HAVING a
+					// pointer parameter is what triggers the rebuild. So the pointee dims of
+					// net/rpc's every reply argument could only ever be stamped here.
+					updatedSignature.WriteString(emitGoArrayDimsAttribute(param.Type()))
+
 					updatedSignature.WriteString(v.getCSharpTypeName(param.Type()))
 					updatedSignature.WriteRune(' ')
 

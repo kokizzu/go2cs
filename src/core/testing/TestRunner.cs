@@ -185,6 +185,38 @@ public sealed class TestRunner
     }
 
     /// <summary>
+    /// Reports a PANIC that escaped a goroutine root. The process is about to end on it (Go's own
+    /// behavior for an unrecovered panic in any goroutine), so this is the run's only chance to say
+    /// which test it belonged to and where it faulted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The panic is a genuine, Go-comparable VERDICT — converted code panicked where Go's did not —
+    /// so it is recorded as a test FAILURE, not as an infrastructure error. The distinction is the
+    /// one this class draws throughout: infrastructure means the host could not run the test, and the
+    /// host ran this one exactly as asked.
+    /// </para>
+    /// <para>
+    /// The traceback comes from <see cref="PanicException.StackTrace"/>, which prefers the panic's
+    /// ORIGIN over the frames it unwound through — without it the report names whichever machinery
+    /// re-raised the panic last, which is the same as naming nothing.
+    /// </para>
+    /// </remarks>
+    internal void ReportGoroutinePanic(PanicException panic)
+    {
+        // Go's own shape: the panic value first, then the traceback.
+        string report = $"panic: {panic.Message}{Environment.NewLine}{panic.StackTrace}";
+
+        if (TestExecution.Current is TestExecution execution)
+            execution.RecordGoroutinePanic(report);
+        else
+            RecordInfrastructureFailure("", $"panic on a goroutine outside any test{Environment.NewLine}{report}");
+
+        // The package's terminal event, because RunAll will never reach its own.
+        m_reporter.ReportPackage("fail", output: "test binary died on an unrecovered panic in a goroutine");
+    }
+
+    /// <summary>
     /// Records a host-level infrastructure failure that cannot be attached to a live execution —
     /// e.g. testing.T misuse observed after its test already completed, or an unexpected exception
     /// escaping an execution thread. Counted toward the exit code and disclosed as an event so the

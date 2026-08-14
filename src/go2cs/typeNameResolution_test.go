@@ -176,8 +176,11 @@ func TestUnclosedBracketTerminates(t *testing.T) {
 // struct field reads the declaring type's zero instance — while a func PARAMETER has neither and
 // gets the attribute instead. The cases below are the boundary: an unnamed array is stamped
 // (outermost dimension first), an ALIAS for one is stamped because a Go alias IS its target type,
-// and a DEFINED (named) array type is NOT — its managed form is a generated wrapper rather than
-// `array<T>`, so dims cargo could not be consumed even if it were carried.
+// a POINTER to one is stamped with its POINTEE's dims — `*[N]T` is where a caller allocates from the
+// parameter type (net/rpc's every reply), so that pointee is a type-only position too — and a
+// DEFINED (named) array type is NOT: its managed form is a generated wrapper rather than
+// `array<T>`, so dims cargo could not be consumed even if it were carried. One pointer hop only,
+// which is all a Go signature ever spells here.
 func TestGoArrayDimsAttribute(t *testing.T) {
 	byteType := types.Typ[types.Byte]
 	intType := types.Typ[types.Int]
@@ -199,7 +202,11 @@ func TestGoArrayDimsAttribute(t *testing.T) {
 		{"defined array type", named, ""},
 		{"slice", types.NewSlice(byteType), ""},
 		{"scalar", intType, ""},
-		{"pointer to array", types.NewPointer(array32), ""},
+		{"pointer to array", types.NewPointer(array32), "[GoArrayDims(32)] "},
+		{"pointer to nested array", types.NewPointer(nested), "[GoArrayDims(2, 3)] "},
+		{"pointer to a defined array type", types.NewPointer(named), ""},
+		{"pointer to a slice", types.NewPointer(types.NewSlice(byteType)), ""},
+		{"pointer to a pointer to an array", types.NewPointer(types.NewPointer(array32)), ""},
 	}
 
 	for _, c := range cases {

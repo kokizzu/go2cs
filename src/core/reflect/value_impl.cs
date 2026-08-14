@@ -1241,10 +1241,18 @@ internal static @string PkgPath(this ж<rtype> Ꮡt) {
 
 // Elem returns the element type of a slice/array/pointer/map/chan. An array descriptor's inner
 // dims thread through (the element of a dims-carrying [4][8]byte is [8]byte with dims [8]).
+//
+// A POINTER descriptor's dims are the POINTEE's and pass through UNSHIFTED — there is nothing else
+// they could describe, a pointer having no length of its own. That is the shape a `*[N]T` parameter
+// carries (see In and emitGoArrayDimsAttribute): the caller allocates from `In(i).Elem()`, so the
+// length has to survive exactly this hop or reflect.New builds a zero-length array for it.
 internal static ΔType Elem(this ж<rtype> Ꮡt) {
+    System.Type? st = Ꮡt.Value.t.sysType;
     nint[]? dims = Ꮡt.Value.t.arrayDims;
-    nint[]? elemDims = dims is { Length: > 1 } ? dims[1..] : null;
-    return toType(abi.synthType(GoReflect.ElementType(Ꮡt.Value.t.sysType), elemDims));
+    nint kind = st is null ? -1 : GoReflect.KindOf(st);
+    bool throughPointer = kind == GoReflect.Pointer || kind == GoReflect.UnsafePointer;
+    nint[]? elemDims = throughPointer ? dims : dims is { Length: > 1 } ? dims[1..] : null;
+    return toType(abi.synthType(GoReflect.ElementType(st), elemDims));
 }
 
 // Key returns a map type's key type.
@@ -1298,7 +1306,12 @@ internal static ΔMethod Method(this ж<rtype> Ꮡt, nint i) {
     return new ΔMethod(
         Name: (@string)name,
         PkgPath: (@string)(isExportedGoName(name) ? "" : GoReflect.GoPackagePath(st)),
-        Type: toType(abi.synthType(GoReflect.GoMethodFuncType(st, (int)i))),
+        // The func type carries the method's per-parameter array dims (receiver included, so the
+        // indices are In(i)'s): a method type is built from the method TABLE and never passes
+        // through a delegate instance, so abi.TypeOf's func-value route cannot supply them here.
+        // net/rpc reads exactly this — mtype.In(2) for every service method's reply — and without
+        // the cargo a `*[1]int` reply allocated a ZERO-length array through reflect.New.
+        Type: toType(abi.synthType(GoReflect.GoMethodFuncType(st, (int)i), null, GoReflect.MethodParamDims(st, (int)i))),
         Func: fn is null ? new ΔValue(nil) : makeReflectValue(fn),
         Index: i
     );

@@ -11,7 +11,7 @@ internal static Row typedCastDeref(ж<Row> Ꮡp) {
     return (~Ꮡp).Clone();
 }
 
-internal static array<uintptr> typedCastDerefDirect(ж<array<uintptr>> Ꮡp) {
+internal static array<uintptr> typedCastDerefDirect([GoArrayDims(2)] ж<array<uintptr>> Ꮡp) {
     return (~Ꮡp).Clone();
 }
 
