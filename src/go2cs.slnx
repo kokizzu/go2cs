@@ -584,6 +584,7 @@
     <Project Path="tests/Behavioral/NestedPromotedEmbedInit/NestedPromotedEmbedInit.csproj" />
     <Project Path="tests/Behavioral/NestedSelectRecvTarget/NestedSelectRecvTarget.csproj" />
     <Project Path="tests/Behavioral/NestedVarShadow/NestedVarShadow.csproj" />
+    <Project Path="tests/Behavioral/NetListenSmoke/NetListenSmoke.csproj" />
     <Project Path="tests/Behavioral/NewAnonStructIfaceEmbed/NewAnonStructIfaceEmbed.csproj" />
     <Project Path="tests/Behavioral/NilChannelInSelect/NilChannelInSelect.csproj" />
     <Project Path="tests/Behavioral/NilChannelSelectDefault/NilChannelSelectDefault.csproj" />

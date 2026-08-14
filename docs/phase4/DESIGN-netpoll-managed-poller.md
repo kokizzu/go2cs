@@ -267,6 +267,33 @@ surfaces (e.g., a handle the CLR refuses to bind). Nothing in the contract layer
 them — the choice is confined to `pollServerInit`/`pollOpen` and the callback's plumbing — so a
 later swap is not a redesign. **OQ1.**
 
+> **RESOLVED at S1 (2026-08-13): mechanism (a) holds.** `ThreadPoolBoundHandle.BindHandle` accepts a
+> Go-created socket handle against a real kernel — `net.Listen` completes and `NetListenSmoke` matches
+> `go run` byte for byte. The fallback to (b) is not needed.
+>
+> **AMENDED at S2 (2026-08-14): the bind moves from `pollOpen` to the FIRST SUBMIT (lazy), inside the
+> §4.3 record machinery.** This is the plumbing latitude this paragraph already grants ("confined to
+> `pollServerInit`/`pollOpen` and the callback's plumbing"), taken for a reason S1 measured rather than
+> a preference. Go's poller REJECTS completions it does not own: `pollOperationFromOverlappedEntry`
+> (`runtime/netpoll_windows.go`) checks the completion key against the `pollDesc` pointer packed into
+> it and returns nil on mismatch, citing go.dev/issue/58870 — the issue `internal/poll`'s own
+> `TestWSASocketConflict` regression-guards. The CLR's `ThreadPoolBoundHandle` offers no equivalent:
+> its callback resolves state FROM the `NativeOverlapped` it allocated, so a foreign overlapped
+> arriving at that port is MISREAD rather than ignored.
+>
+> Binding at `pollOpen` therefore made every pollable socket eligible to receive a foreign completion,
+> and `internal/poll` has a live path that produces one: `FD.WSAIoctl`
+> (`windows/sockopt_windows.cs:11`) bypasses `execIO` entirely and hands the kernel the CALLER's
+> `syscall.Overlapped` — which, being an all-scalar struct in a STANDARD box, really does pin and
+> really does reach the kernel. Binding lazily removes the hazard structurally instead of detecting it:
+> a socket that only ever sees foreign overlapped IO is never associated with the CLR's port, so its
+> completions signal the caller's own event exactly as on an unregistered socket, and a socket doing
+> our IO is bound at its first submit, after which every operation on it carries a CLR-allocated
+> overlapped. The residual — one socket doing BOTH — is not reachable in the corpus: a census of every
+> `FD.WSAIoctl` caller (`net/windows/fd_windows.cs:177` SIO_TCP_INITIAL_RTO,
+> `net/windows/tcpsockopt_windows.cs:124` SIO_KEEPALIVE_VALS) shows both pass a **nil** overlapped, so
+> no production path issues an asynchronous foreign operation at all.
+
 One converted behavior interacts here and is kept: `FD.Init` enables
 `SetFileCompletionNotificationModes(FILE_SKIP_COMPLETION_PORT_ON_SUCCESS)` for TCP/UDP when safe
 and sets `skipSyncNotif` (`fd_windows.cs:333–345`), so synchronously-completing operations post
@@ -354,6 +381,72 @@ speculatively"* — nothing outside a stage's gate lands with that stage. `LoadC
 `WSAIoctl` function-pointer lookup and the socket-creation path (`WSASocket`, `bind`, `listen`,
 `setsockopt`) are synchronous and already work under the existing dispatcher + L10 mirrors; they
 are NOT part of this arc's surface.
+
+### 4.4 The submit seam, specified — findings from S2a that the implementation should not re-derive
+
+Everything below was measured or read out of the corpus while landing S1/S2a. It is recorded because
+each item cost a non-obvious investigation and each one constrains the implementation.
+
+**The reference graph forces a PUSH, and golib is the only place the table can live.** The waiter is
+`internal/poll`; the submissions are in `syscall` and `internal/syscall/windows`; `internal/poll`
+REFERENCES both, so a completion callback cannot call back into the poller. The three candidate
+resolutions and why two lose: a `public` seam on `syscall_package` would add a non-Go symbol to a
+PUBLISHED package's API surface; reading the `operation` back from the overlapped (Go's own trick —
+`pollOperationFromOverlappedEntry` casts the OVERLAPPED to the enclosing struct) is impossible here
+because `ж<T>`'s `m_structFieldRef` is private with no accessor, so a field-reference box cannot be
+walked back to its source object. What remains is a descriptor-keyed callback table in **golib**, the
+one assembly both sides see. Keep it platform-neutral to belong there: `nuint handle → Action<nint
+mode>`, plus an opaque `object` slot for the submitting package's per-descriptor state (naming
+`ThreadPoolBoundHandle` in golib would drag Windows into it). The descriptor is the right key because
+it is the one identity both sides independently hold — the poller gets it in `pollOpen`, a wrapper
+gets it as its own first argument.
+
+**The record key is verified, not assumed.** `ConcurrentDictionary<ж<Overlapped>, OpRecord>` is sound:
+`ж<T>.Equals` compares `SameSource(source1, source2) && fieldId1.Equals(fieldId2)` for a struct-field
+reference, and `GetHashCode` returns `SourceIdentityHash(source)` — coarser than Equals (every field of
+one `operation` hashes alike) but consistent with it, which is all a dictionary requires. So
+`Ꮡo.of(operation.Ꮡo)` minted at `execIO`'s three separate call sites — submit, `CancelIoEx`, harvest —
+resolves to ONE record. `ж.cs`'s own comment says this property exists to serve "the address-keyed
+runtime semaphores in the hand-owned sync/internal-poll implementations", so the arc is reusing a
+guarantee the corpus already depends on rather than leaning on an accident.
+
+**Why `&o.o` genuinely cannot be handed to the kernel, confirmed at the source.** `Overlapped` is
+all-scalar (`Internal`, `InternalHigh`, `Offset`, `OffsetHigh`, `HEvent`) and so is blittable on its
+own — but that is not what decides it. `EnsureStableAddress` pins `PinnableStorage`, and for a
+struct-field reference that recurses to the CONTAINER's storage: the `ж<operation>` box's `m_slot`,
+which is **null**, because `operation` holds managed references (`ж<FD> fd`, `WSABuf.Buf`,
+`slice<WSABuf> bufs`, `ж<RawSockaddrAny> rsa`) and the value constructor allocates a pinnable slot only
+for a `T` free of them. So the address is transient exactly as §4.3 claims. Note the contrast that makes
+the `FD.WSAIoctl` hazard real: a caller's own `var ov syscall.Overlapped` is a STANDARD box of a
+blittable `T`, so it *does* get a slot, *does* pin, and *does* reach the kernel.
+
+**Wrapper inventory, corrected.** `ConnectEx` is **already hand-owned** by the L10 sockaddr lane
+(`syscall/windows/syscall_windows_impl.cs:363`, placeholder at `syscall_windows.cs:1110`) and today
+passes `Ꮡoverlapped` straight through to the generated `connectEx` — it must be EXTENDED to use the
+record's native overlapped, not newly displaced, and it needs no new `manualConversionFuncs` entry.
+The genuinely new entries are `WSARecv`, `WSASend`, `AcceptEx`, `GetAcceptExSockaddrs`, `CancelIoEx`
+(all `"syscall"`, `goosWindows`) and `WSAGetOverlappedResult` (a new `"internal/syscall/windows"` key).
+All six generated bodies share one shape — marshal through `Syscall`/`Syscall9`, test `r1` against
+`socket_error` (or `0` for the BOOL-returning ones), `errnoErr(e1)` — so the hand-owns should reproduce
+that error handling verbatim rather than inventing one.
+
+**Mode is known from the wrapper, not from the operation.** The callback must name a mode, and the
+record cannot read `operation.mode` (previous point). It does not need to: `WSARecv`/`WSARecvFrom`/
+`AcceptEx`/`WSARecvMsg` are always the READ operation and `WSASend`/`WSASendto`/`ConnectEx`/
+`WSASendMsg` always the WRITE one, because each `FD` has exactly one `rop` and one `wop` for its
+lifetime. The wrapper knows which it is by being itself.
+
+**Where the bind goes.** First submit, inside the record machinery, per the §4.2 amendment — not
+`pollOpen`. `AllocateNativeOverlapped` must come from that same binding, and `pollClose` disposes it
+through the golib table's opaque slot before `internal/poll` closes the socket.
+
+**`AllowUnsafeBlocks` splits between the two displacement packages, and the difference is owed work.**
+`syscall.csproj` already emits `true`, so its mirrors and `NativeOverlapped*` need no marker.
+`internal/syscall/windows` emits **`false`**, so its `WSAGetOverlappedResult` hand-own must carry
+`[module: go.GoRequiresUnsafe]` if it touches a pointer type — and the regenerated `.csproj` flipping
+to `true` is then part of that stage's intended A/B footprint, not drift. (The marker scan reads the
+package directory plus its per-GOOS folders, so a hand-own in `windows/` is seen; see
+*A hand-owned file can declare that it needs `/unsafe`* in ConversionStrategies-Reference.)
 
 ## 5. The deadline/unblock story — the hard part, priced honestly
 
@@ -504,6 +597,45 @@ is cheap and the claim should be measured, not argued).
 Gates: full behavioral suite; then the pipeline's own measure — **filtered sweep of
 `internal/poll`: the board row's target is 19/19** (from 18/19, sole miss `runtime_pollServerInit`
 — the row this design exists to close).
+
+> **⚠ FINDING (implementation lane, 2026-08-13, measured at S1): that gate has an unrecorded
+> PREREQUISITE — `internal/poll`'s converted test host does not currently BUILD, so the row is not
+> measurable at any value, before or after this arc.** Measuring it at S1 (regression diligence: S1
+> lets `TestWSASocketConflict` run past the `fd.Init` that used to kill it, so "further than it has
+> ever run" is where a new hang would live) produced a C# compile error rather than a verdict:
+> ```
+> export_test.cs(13,62): error CS0123: No overload for 'consume' matches
+>                        delegate 'Action<ж<slice<slice<byte>>>, long>'
+> ```
+> `export_test.go`'s `var Consume = consume` is a func VALUE of a function whose `*[][]byte`
+> parameter the production emission now lowers to a C# `ref` (`consume(ref slice<slice<byte>> v,
+> int64 n)`, `fd.cs:92`), while the test file still spells the delegate in the `ж<T>` box form. A
+> `ref`-taking method cannot bind to that delegate. Both files are ordinary converted output that
+> this arc does not touch — the netpoll hand-own supplies partial BODIES for the ten `runtime_poll*`
+> methods and cannot alter `consume`'s signature — so this is the ref-lowering arc meeting
+> func-value conversion, and it is **not this arc's to fix** (recorded and handed to the coordinator
+> rather than reached across, per OQ6's ownership line). The board's "18 of 19" reading therefore
+> predates the ref-lowering landing and should be treated as stale until the host compiles again.
+>
+> **ATTRIBUTED AND CHARTERED ELSEWHERE (coordinator, 2026-08-14).** This CS0123 is the first real
+> corpus witness of the ж-box arc's §3.5 **func-value adapter gap** — a Go func VALUE aliasing a
+> ref-lowered function — which is precisely the evidence class A3 recorded as missing. It gets its
+> own lane, and this note is where that lane starts. The netpoll arc does not fix it and does not
+> wait for it: per the same ruling, S2 runs on its other gates and reports this row as
+> **blocked-with-cause**, citing this error. When the lane lands, whoever re-measures should
+> re-derive the target rather than expecting 19/19 — see the COM4 host-dependence below.
+>
+> Two facts worth carrying to whoever picks it up. The Go side of the same run is itself **not
+> clean on every host**: `TestSerialFdsAreInitialised/COM4` fails wherever a real COM4 exists, so
+> the differential's Go baseline is host-dependent and the target may not be a round 19/19 —
+> re-derive it at measure time rather than treating a non-round result as a miss.
+>
+> The other fact this measurement was meant to probe — the `FD.WSAIoctl` foreign-overlapped hazard —
+> is **closed structurally at S2a and no longer needs probing**: the CLR association moved from
+> `pollOpen` to the first submit (§4.2's amendment), so a socket that only ever sees foreign
+> overlapped IO is never bound at all. That is why the unmeasurable row costs this arc nothing it
+> cannot recover: the one thing the row was uniquely positioned to catch has been removed rather than
+> merely watched for.
 
 **S3 — consumer re-measures (the board rows behind the netpoll wall).** The RESOLVED note freezes
 the walled set and this design inherits it as its unlock ledger: `net/smtp` (9/14, five rows on
