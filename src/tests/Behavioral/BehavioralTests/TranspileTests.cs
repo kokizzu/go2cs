@@ -106,6 +106,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckArrayWideIndexAddress() => CheckTarget("ArrayWideIndexAddress");
 
     [TestMethod]
+    public void CheckAssignThroughTypeAssert() => CheckTarget("AssignThroughTypeAssert");
+
+    [TestMethod]
     public void CheckAtomicFieldThroughPointer() => CheckTarget("AtomicFieldThroughPointer");
 
     [TestMethod]

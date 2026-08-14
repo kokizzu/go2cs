@@ -495,7 +495,8 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	referenceImports = append(referenceImports, declarationClosureImports(
 		[]*packages.Package{production, internal, external}, compileExcluded,
 		append([]string{production.PkgPath}, referenceImports...),
-		packageImplementBases(platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform))))...)
+		packageImplementBases(platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform))),
+		foreignImplementBasesResolver(options))...)
 
 	testProjectName := projectFileBaseName(projectName) + ".tests.csproj"
 	if err := writeTestProject(filepath.Join(outputPath, testProjectName), projectName, projectNamespace, model, productionFiles, outputFiles, fixtures, referenceImports, options); err != nil {
@@ -2944,6 +2945,44 @@ func packageImplementBases(packageInfoFile string) map[string][]string {
 	return bases
 }
 
+// foreignImplementBasesResolver returns the per-package record lookup declarationClosureImports'
+// implementEdge uses for a type declared OUTSIDE the roots: the same packageImplementBases parse,
+// pointed at the DECLARING package's own emitted package_info.cs in the runtime root rather than at
+// the package under test's. Resolution reuses getImportPackageInfo, so it follows exactly the route
+// the emitted `<ImportedTypeAliases>` block already reads a dependency's metadata by — including
+// layout L3's per-GOOS placement (platformPackageInfoPath).
+//
+// Memoized per import path because the walk asks once per NAMED TYPE and a suite mentions the same
+// few dependencies repeatedly. A package with no readable package_info.cs — never converted, or a
+// runtime root that does not hold it — caches an empty map and simply contributes no edge, which is
+// the same silent-nothing the root lookup produces from an unreadable file and is why the resolved
+// root gets the loud once-per-run warning documented in CLAUDE.md.
+func foreignImplementBasesResolver(options Options) func(string) map[string][]string {
+	cache := map[string]map[string][]string{}
+
+	return func(importPath string) map[string][]string {
+		if bases, ok := cache[importPath]; ok {
+			return bases
+		}
+
+		bases := map[string][]string{}
+
+		for _, info := range getImportPackageInfo([]string{importPath}, options) {
+			if info.Err != nil || len(info.TargetDir) == 0 {
+				continue
+			}
+
+			if parsed := packageImplementBases(platformPackageInfoPath(info.TargetDir, goosOfTarget(options.targetPlatform))); parsed != nil {
+				bases = parsed
+			}
+		}
+
+		cache[importPath] = bases
+
+		return bases
+	}
+}
+
 // recordTypeGoName recovers the Go type name a record's IMPLEMENTATION side was emitted from, by
 // undoing the spellings identifierNaming adds: the `@` keyword escape, the `Δ` reserved/collision
 // prefix and its `ᴛ` type marker, and a generic instantiation's argument list
@@ -3073,7 +3112,7 @@ func referenceScanTargets(line string) []string {
 //     referenced no `sync` and the compile died `CS0012 … 'sync_package.Mutex'` twice, so the package
 //     never linked a host and had never been measured. See the seed's own minimality note below.
 //
-//   - THE INTERFACES THAT RECEIVER'S DECLARATION IMPLEMENTS — what binding the member costs ON TOP
+//   - THE INTERFACES A NAMED TYPE'S DECLARATION IMPLEMENTS — what binding a member costs ON TOP
 //     of binding the type. A converted CONCRETE type names no interface in its own emitted
 //     declaration (`[GoType("[]ж<ΔError>")] partial struct ErrorList;`): its bases arrive as the
 //     VALUE-form `[assembly: GoImplement<T, I>]` records its package emits, which go2cs-gen realizes
@@ -3081,6 +3120,12 @@ func referenceScanTargets(line string) []string {
 //     metadata type therefore declares that base, and binding any member on it resolves the list:
 //     go/scanner's `list.Sort()`, `len(list)` and the generated `error` adapter's own
 //     `m_value.Equals(…)` all failed `CS0012 … 'sort_package.Interface'`, ×13.
+//
+//     The records are read PER DECLARING PACKAGE, so the edge reaches a FOREIGN type's base list
+//     too: go/types' check_test.go asserts `err.(scanner.ErrorList)` and calls `len(list)` on the
+//     result, and `sort` — which go/types' PRODUCTION project references and no test file imports —
+//     is surfaced only from go/scanner's own record set. Reading the declaring package's
+//     package_info.cs is what makes that one lookup answer both shapes.
 //
 // Neither scan covers these because the named type itself DOES bind: its package IS referenced.
 // What is missing is a package named inside that type's own C# declaration — or, for the third edge,
@@ -3129,7 +3174,7 @@ func referenceScanTargets(line string) []string {
 // Only the declaring package's own IMPORTS are scanned, so a same-package base contributes nothing
 // new and needs no separate visit: an interface implements its base's bases too, so those candidates
 // are found directly. Output is a sorted set, so the map-ordered walk stays deterministic.
-func declarationClosureImports(roots []*packages.Package, compileExcluded map[string]bool, referenced []string, recordedBases map[string][]string) []string {
+func declarationClosureImports(roots []*packages.Package, compileExcluded map[string]bool, referenced []string, recordedBases map[string][]string, foreignBases func(importPath string) map[string][]string) []string {
 	found := HashSet[string]{}
 	seen := NewHashSet(referenced)
 	visited := map[*types.Named]bool{}
@@ -3240,15 +3285,33 @@ func declarationClosureImports(roots []*packages.Package, compileExcluded map[st
 			return
 		}
 
-		// Scoped to the package UNDER TEST, which is where the records are read from: a foreign
-		// type's base list is its own package's record set, in its own package_info.cs, and no
-		// measured case has ever demanded one (widening is this same lookup pointed at that file).
-		// The path check is what keeps a same-named production type from answering for it.
-		if object == nil || object.Pkg() == nil || !rootPaths.Contains(object.Pkg().Path()) {
+		if object == nil || object.Pkg() == nil {
 			return
 		}
 
+		// The records are read PER DECLARING PACKAGE. A ROOT type's list is the record set the
+		// production half of this same run just emitted (recordedBases); a FOREIGN type's is its own
+		// package's, in its own package_info.cs — the widening this lookup was always shaped for
+		// ("no measured case has ever demanded one" held until go/types), and it is the same gate
+		// pointed at a different file, not a looser one. The per-package keying is what keeps a
+		// same-named production type from answering for a foreign one.
+		//
+		// go/types' check_test.go is the measured case: `if list, _ := err.(scanner.ErrorList);
+		// len(list) > 0`. `ErrorList` is declared in go/scanner — REFERENCED, so it binds — but its
+		// realized base list comes from go/scanner's own
+		// `[assembly: GoImplement<ErrorList, sort_package.Interface>]`, and resolving the `len(list)`
+		// overload against it failed `CS0012 … 'sort_package.Interface'`. `sort` is in the PRODUCTION
+		// project's references (go/types imports it) and in no test import, so only this edge can
+		// surface it.
 		targets := recordedBases[object.Name()]
+
+		if !rootPaths.Contains(object.Pkg().Path()) {
+			if foreignBases == nil {
+				return
+			}
+
+			targets = foreignBases(object.Pkg().Path())[object.Name()]
+		}
 
 		if len(targets) == 0 {
 			return
@@ -3306,6 +3369,23 @@ func declarationClosureImports(roots []*packages.Package, compileExcluded map[st
 		for _, named := range seeds.memberBases {
 			reach(named)
 			enqueue(named)
+			implementEdge(named)
+		}
+
+		// The implemented-interface edge ALSO fires where a member is bound on a value WITHOUT a
+		// selector: `len(list)`, `range list`, `list[i]`. Each lowers to a member on the value's
+		// type — golib's generic `len`, the emitted enumeration, the indexer — so resolving it makes
+		// the compiler read that type's realized base list exactly as `x.M` does. go/types'
+		// check_test.go binds `scanner.ErrorList` only that way (`len(list)` and `range list`; there
+		// is no `list.Sort()` anywhere in the suite), and failed `CS0012 … 'sort_package.Interface'`.
+		//
+		// Deliberately NOT routed through reach()/enqueue() the way memberBases is, and deliberately
+		// NOT seeded from every NAMED type. Both restrictions keep the pinned negatives true: a type
+		// a test file merely spells or PASSES ALONG (`var r Rows; Order(r)`) binds no member and
+		// needs no base assembly — measured, and the boundary this edge is not allowed to cross —
+		// while the type's OWN package is referenced by construction, since the value is spelled by
+		// a package the suite imports.
+		for _, named := range seeds.memberBound {
 			implementEdge(named)
 		}
 
@@ -3432,6 +3512,11 @@ type typeSeeds struct {
 	constructed      []*types.Named
 	constructedEmpty []*types.Named
 	memberBases      []*types.Named
+	// memberBound carries the types a compiled test source binds a member on through a form that
+	// spells no selector — a builtin call, a range, an index/slice. It feeds ONLY the
+	// implemented-interface edge (see declarationClosureImports): the demand is on the type's
+	// realized base list, never on its own package, which the spelling already references.
+	memberBound []*types.Named
 }
 
 // referencedTypeSeeds collects those seeds from the files the test assembly actually COMPILES.
@@ -3492,6 +3577,38 @@ func referencedTypeSeeds(pkg *packages.Package, compileExcluded map[string]bool)
 				// the import that spells it already carries the reference.
 				if isTestFile {
 					seeds.memberBases = append(seeds.memberBases, namedTypesIn(pkg.TypesInfo.Types[typed.X].Type)...)
+				}
+			case *ast.RangeStmt:
+				// `range list` enumerates the value, which binds a member on its type.
+				if isTestFile {
+					seeds.memberBound = append(seeds.memberBound, namedTypesIn(pkg.TypesInfo.Types[typed.X].Type)...)
+				}
+			case *ast.IndexExpr:
+				// `list[i]` binds the indexer. A generic INSTANTIATION wears the same node shape;
+				// its base is a func/type, not a value, so namedTypesIn over the operand's type
+				// yields the instantiated named type — harmless, and still record-gated.
+				if isTestFile {
+					seeds.memberBound = append(seeds.memberBound, namedTypesIn(pkg.TypesInfo.Types[typed.X].Type)...)
+				}
+			case *ast.SliceExpr:
+				// `list[1:2]` binds the slice member for the same reason.
+				if isTestFile {
+					seeds.memberBound = append(seeds.memberBound, namedTypesIn(pkg.TypesInfo.Types[typed.X].Type)...)
+				}
+			case *ast.CallExpr:
+				// A BUILTIN call (`len`, `cap`, `append`, `copy`, `clear`, `delete`) lowers to a
+				// golib member resolved against the ARGUMENT's type — the shape go/types' failing
+				// `len(list)` takes. An ordinary call is NOT this: passing a value to a function
+				// with an exact parameter type binds nothing on the value's own type, which is the
+				// measured negative (`Order(r)`) this must not cross.
+				if isTestFile {
+					if identifier, isIdent := typed.Fun.(*ast.Ident); isIdent {
+						if _, isBuiltin := pkg.TypesInfo.Uses[identifier].(*types.Builtin); isBuiltin {
+							for _, argument := range typed.Args {
+								seeds.memberBound = append(seeds.memberBound, namedTypesIn(pkg.TypesInfo.Types[argument].Type)...)
+							}
+						}
+					}
 				}
 			case *ast.CompositeLit:
 				// An IMPLICIT element literal ([]T{{…}}) carries no Type expression of its own;

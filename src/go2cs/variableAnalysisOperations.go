@@ -1048,6 +1048,21 @@ func (v *Visitor) performVariableAnalysis(funcDecl *ast.FuncDecl, signature *typ
 							// keeps the raw name and, being declared later, is CS0841 (or a silent wrong bind).
 							// The call's RESULT is the navigated base, so the descent stops here.
 							visitNode(cur)
+						case *ast.TypeAssertExpr:
+							// A TYPE ASSERTION in the LHS chain — `n.Values[0].(*ast.CompositeLit).Type.
+							// (*ast.ArrayType).Len = nil` (go/types generate_test.go's fixGlobalTypVarDecl).
+							// The assertion is a navigation step like the selector and index cases above, but
+							// it was in NO arm, so the descent stopped dead at it: everything below — the
+							// index sub-expressions AND the chain's root ident — went unvisited and kept its
+							// raw name. `getIdentifier` does not see through an assertion either, so the root
+							// gets no reassignVar mapping to fall back on, which is what makes this shape
+							// distinct from the paren-rooted target noted above. Visit the OPERAND subtree
+							// whole (the CallExpr treatment): it carries every ident that needs the rename,
+							// while the asserted TYPE carries none. Without it, a shadow-renamed root emits
+							// the ENCLOSING variable's name — `(~n).Values[0]…` against the outer `ast.Node`
+							// parameter rather than the case variable `nΔ1` (CS0023, and a silent wrong bind
+							// wherever the outer name happens to type-check).
+							visitNode(e.X)
 						}
 
 						break
