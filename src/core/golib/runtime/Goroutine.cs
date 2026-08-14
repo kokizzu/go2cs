@@ -28,6 +28,9 @@ public static class Goroutine
     // whose filter observed a policy can never find it gone by the time the handler runs.
     private static Action<Exception>? s_containment;
 
+    // The panic observer, when a HOST installed one. Read once per escaping panic and never cleared.
+    private static Action<PanicException>? s_panicObserver;
+
     /// <summary>
     /// Indicates whether the calling thread is running a goroutine body rather than the main
     /// goroutine.
@@ -89,7 +92,37 @@ public static class Goroutine
         Volatile.Write(ref s_containment, policy);
     }
 
-    private static void Run(Action body)
+    /// <summary>
+    /// Installs a HOST observer that is handed a PANIC escaping a goroutine root, immediately before
+    /// the fatal path it is entitled to takes the process down.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This contains nothing and cannot: an unrecovered panic in a goroutine kills a Go program, so
+    /// it kills a converted one (see <see cref="ContainUnhandledExceptions"/> for why a host may not
+    /// opt out of that). The observer runs from an exception FILTER — first pass, before any unwind —
+    /// and the filter always declines, so the panic still reaches golib's AppDomain backstop with its
+    /// stack intact and the intervening finally blocks unrun, byte-identical to an unobserved run.
+    /// </para>
+    /// <para>
+    /// It exists because that fatal path is FRAMELESS by design: the backstop prints the panic VALUE
+    /// and exits 2, which is Go's own report and exactly what a converted program should print. A
+    /// host running many independent Go programs in one process needs more than the value — WHICH
+    /// program died, WHERE it faulted, and a last chance to flush the results it has already gathered
+    /// but not yet written. Without this, a goroutine panic anywhere in a converted package's test
+    /// suite erased every verdict in the run and reported one line with no frame in their place.
+    /// </para>
+    /// </remarks>
+    public static void ObserveUnhandledPanic(Action<PanicException> observer)
+    {
+        ArgumentNullException.ThrowIfNull(observer);
+        Volatile.Write(ref s_panicObserver, observer);
+    }
+
+    // The goroutine ROOT itself, on the CALLING thread. Start queues it; GolibTests calls it directly,
+    // because the root's policy can only be observed from a thread whose exception the caller can
+    // still catch — the real path ends in an unhandled exception and a dead process by design.
+    internal static void Run(Action body)
     {
         using Scope scope = Enter();
 
@@ -118,10 +151,44 @@ public static class Goroutine
             // unrecovered panic in any goroutine.
             Volatile.Read(ref s_containment)!(ex);
         }
+        catch (Exception ex) when (Observed(ex))
+        {
+            // Unreachable by construction: Observed always returns false, so this root catches a
+            // panic no more than it did before an observer could exist. The clause is here only to
+            // give the filter — which runs while the panicking stack is still standing — a place to
+            // be attached.
+        }
     }
 
     private static bool CanContain(Exception ex) =>
         Volatile.Read(ref s_containment) is not null && !RuntimeErrorPanic.TryAsPanic(ex, out _);
+
+    // Hands an escaping panic to the host observer and ALWAYS declines it. Reached only after
+    // CanContain has said no, which for a panic is unconditional.
+    private static bool Observed(Exception ex)
+    {
+        if (Volatile.Read(ref s_panicObserver) is not { } observer)
+            return false;
+
+        // Adoption also snapshots the panic's ORIGIN (RuntimeErrorPanic's documented side effect at
+        // every adoption point), so a panic that passed through no defer frame at all — nothing to
+        // catch it between the fault and here — still reports where it faulted rather than naming
+        // this root.
+        if (!RuntimeErrorPanic.TryAsPanic(ex, out PanicException? panic))
+            return false;
+
+        try
+        {
+            observer(panic);
+        }
+        catch
+        {
+            // An observer is a diagnostic, never a participant: whatever it does, or fails to do,
+            // the panic reaches the fatal path unchanged.
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Restores the goroutine marking a matching <see cref="Enter"/> replaced.

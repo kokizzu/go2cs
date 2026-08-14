@@ -123,6 +123,14 @@ public static class TestHost
             // program keeps Go's process-death fidelity, which is golib's default.
             Goroutine.ContainUnhandledExceptions(runner.ContainGoroutineException);
 
+            // TEST-HOST-ONLY: a PANIC escaping a goroutine still kills the process — that is Go's
+            // behavior and the oracle must keep observing it — but it no longer takes the run's
+            // evidence with it. The panic is attributed to the test that started the goroutine and
+            // reported WITH its traceback, and every verdict gathered so far is flushed to the result
+            // files, which the fatal path would otherwise discard whole (a package that had already
+            // passed six tests recorded zero).
+            Goroutine.ObserveUnhandledPanic(panic => ReportFatalGoroutinePanic(runner, reporter, registry, options, panic));
+
             // Set immediately before the clock starts, so testing.T.Deadline() and the Wait below
             // are answering about the same instant.
             PackageDeadlineUtc = options.Timeout > TimeSpan.Zero ? DateTime.UtcNow + options.Timeout : null;
@@ -309,6 +317,30 @@ public static class TestHost
         }
 
         return (up, tail);
+    }
+
+    /// <summary>
+    /// Says what died and writes the run's evidence out, in the moment between a panic escaping a
+    /// goroutine root and the process ending on it.
+    /// </summary>
+    /// <remarks>
+    /// Ordering is the whole point: the attribution has to be recorded BEFORE the files are written,
+    /// or the panic itself is the one verdict the files do not carry. Everything here is best-effort
+    /// — the process is already dying, and a failure to write must not replace the panic's own report
+    /// with a report about the writer.
+    /// </remarks>
+    private static void ReportFatalGoroutinePanic(TestRunner runner, TestReporter reporter, TestRegistry registry, TestOptions options, PanicException panic)
+    {
+        try
+        {
+            runner.ReportGoroutinePanic(panic);
+            WriteResults(options.ResultFile, registry.Package, options, reporter.Events);
+            WriteJUnit(options.JUnitFile, registry.Package, reporter.Events);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"go2cs test host: could not record the goroutine panic: {ex}");
+        }
     }
 
     private static void WriteResults(string? path, string package, TestOptions options, IReadOnlyList<TestEvent> events)

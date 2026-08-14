@@ -461,6 +461,49 @@ public sealed class TestExecution
         }
     }
 
+    /// <summary>
+    /// Records the panic that is about to end the process against this test, and reports the terminal
+    /// event its own thread will now never reach.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="RecordGoroutineFailure"/> there is no "and the run continues" here: the
+    /// caller is inside the fatal path, so marking the execution finished and reporting its verdict
+    /// IS the completion. A panic that arrives after the test already reported is recorded at the
+    /// runner level instead, exactly as a late infrastructure failure is.
+    /// </remarks>
+    internal void RecordGoroutinePanic(string report)
+    {
+        string message = $"panic on a goroutine started by {Name}{Environment.NewLine}{report}";
+        bool completed;
+        string output;
+
+        lock (m_syncRoot)
+        {
+            completed = m_finished;
+
+            if (!completed)
+            {
+                // Claim the terminal event here: Execute's finally is on a thread that will be
+                // killed mid-test, so nothing else will ever report this execution.
+                m_finished = true;
+                m_failed = true;
+                m_logs.Add(message);
+            }
+
+            output = string.Join(Environment.NewLine, m_logs);
+        }
+
+        if (completed)
+        {
+            m_runner.RecordInfrastructureFailure(Name, message);
+            return;
+        }
+
+        m_parent?.FailFromChild();
+        m_runner.Report(new TestEvent(m_runner.Package, Name, "fail", 0.0D, output, Source, Line));
+        m_runner.Completed(this);
+    }
+
     private void Execute(Action<ж<testing_package.T>> action)
     {
         Stopwatch timer = Stopwatch.StartNew();
