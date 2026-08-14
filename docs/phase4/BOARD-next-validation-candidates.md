@@ -5951,7 +5951,7 @@ converter defects after this census first named it.)
 | `internal/unsafeheader` | 6 | **0** | rooted (architectural) | the package's entire subject is the slice/string HEADER LAYOUT that `golib` deliberately does not have |
 | `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
 | `internal/types/errors` | 155 | **0** | ~~converter defect~~ FIXED → now downstream of `go/types` | the Δ-renamed-imported-type defect is fixed (`claude/types-errors-delta-rename`); the package now BUILDS and RUNS, and both tests then die on the `go/types` checker nil-panic — see the sub-row below |
-| `internal/fuzz` | 52 | — | converter defect | alias-to-anonymous-struct (`CorpusEntry`): the lift's `global using` lives in the production compilation and does not cross the assembly boundary |
+| `internal/fuzz` | 52 | **52** | ✅ **BANKED 2026-08-14** — two blockers deep | alias-to-anonymous-struct (`CorpusEntry`) cleared the BUILD (`79f2b5e62`); the run then died at `flag provided but not defined: -json` because `worker_test.go`'s `TestMain` calls `flag.Parse()`. The host's `TestFlagBridge` now declares its own command line on `flag.CommandLine` the way `testing.Init()` declares `-test.*`, and the suite validates whole |
 | `net/rpc/jsonrpc` | 9 | **9** | ✅ **BANKED 2026-08-14** — three converter defects deep | embedded-pointer promotion (2026-08-12), the non-trailing-`default` switch lowering (2026-08-13), and a fixed-size array's LENGTH reaching reflect through a METHOD's POINTER parameter (2026-08-14). The last was one test, not the three recorded here: `TestBuiltinTypes` sorts first, its goroutine panic killed the host, and the other eight recorded no verdict — which is also why the host now reports a goroutine panic with its traceback and flushes what it has. Never socket-walled |
 | `testing/fstest` | 7 | — | converter defect | a defined type over ANOTHER package's named map type — the emitted two-hop conversion has only one hop |
 | `internal/syscall/windows/registry` | 6 | — | converter defect | the internal-test partial class is emitted non-`static`, and in this package nothing else declares it |
@@ -6312,6 +6312,14 @@ None of these five is a wall; all are ordinary emission bugs, listed with the ev
    `global using` is compilation-scoped, and this is a production-reference test project, so the alias
    never crosses into the test assembly — `package_test_info.cs` contains no `CorpusEntry` line at all.
    Remedy shape: re-emit the lifted alias into the test compilation, or spell `CorpusEntryᴛ1`.
+
+   ✅ **FIXED (`79f2b5e62`, converter) and the package is now BANKED 52/52 (2026-08-14).** Clearing
+   the build did not validate it: the host then died before any test on
+   `flag provided but not defined: -json`, because `worker_test.go`'s `TestMain` calls `flag.Parse()`
+   and nothing had ever declared the host's own command line on the converted `flag.CommandLine`.
+   That second blocker is a whole CLASS, remedied host-only by `src/core/testing/TestFlagBridge.cs`
+   — see the flag-bridge entry above for the class census, the measurements that ruled out a
+   `testing` → `flag` project reference, and where the other three members stand.
 3. **`net/rpc/jsonrpc` — promotion from embedded POINTER fields is invisible to `ImplementGenerator`.**
    `all_test.go:310` declares `type pipe struct { *io.PipeReader; *io.PipeWriter }`, whose
    `Read`/`Write`/`Close` come entirely by promotion. The generated
@@ -6718,6 +6726,79 @@ runs. In Go, `testing.M` registers those flags on `flag.CommandLine` before `Tes
 which is what makes the same `flag.Parse()` legal there. The remedy belongs to the hand-owned
 `src/core/testing` host — register its flags on the converted `flag.CommandLine` — and is a
 separate, unclaimed item. Every package whose `TestMain` calls `flag.Parse()` sits behind it.
+
+✅ **REMEDIED 2026-08-14 (lane `claude/testmain-flag-bridge`) — `src/core/testing/TestFlagBridge.cs`,
+host-only, zero converter change.** The host now DECLARES its own command line on the converted
+`flag.CommandLine` before it invokes a converted `TestMain`, which is precisely what
+`testing.Init()` does for `-test.*` and precisely what was missing. Four things the implementation
+had to get right, each measured rather than assumed:
+
+1. **The whole `-test.*` set is registered, not just the spellings the host was given** — with this
+   run's real values (`test.run` ← `-run`, `test.parallel` ← `-parallel`, `test.v`, `test.short`,
+   `test.count`, `test.timeout`, `test.shuffle`; the rest at Go's defaults), because converted tests
+   READ them: `os/exec`'s `TestMain` gates on `flag.Lookup("test.run").Value.String() == ""` and
+   `flag.Lookup("test.list")`, and `runtime`'s gdb tests do
+   `flag.Lookup("test.parallel").Value.(flag.Getter).Get().(int)`. Registering only what appeared on
+   the command line would have traded a parse error for a nil dereference. For the same reason the
+   TYPED registrars are used and not `flag.Func`/`BoolFunc`, whose `funcValue` has an empty
+   `String()` and is not a `Getter`.
+2. **The `flag` package is bound LATE, by name, not by project reference.** Go's `testing` imports
+   `flag`, so the reference is the obvious mirror — and it was tried and MEASURED and it does not
+   work here. The generated test csproj sets `DisableTransitiveProjectReferences=true` (load-bearing:
+   CS0576 against the emitted `using` aliases), so a `testing` → `flag` reference does **not** deploy
+   `flag.dll` beside the 124 of 141 test hosts whose own package does not import `flag` — an
+   unconditional use would `FileNotFoundException` every one of them. It also cost every test
+   project's build **+33%** (unicode/utf8: 7.5 s warm → 10.2 s). Late binding is the accurate
+   statement of the dependency, not a dodge: the converted `flag` package is in a test compilation
+   **iff** the package under test imports it, which is exactly when a converted `flag.Parse()` is
+   reachable and `flag.CommandLine` observable at all. Only the `flag_package` TYPE is resolved by
+   name; every argument type (`@string`, `nint`, `nuint`, `time.Duration`) is a golib/`time` type
+   the host already references.
+3. **A name the test package already defined is skipped** — the converted `FlagSet.Var` PANICS on
+   redefinition, and the host must not turn a package's own flag into a crash. Only the host's
+   unprefixed spellings can collide (Go's `test.` prefix exists to make collision impossible), and
+   across all of GOROOT's non-`cmd` test sources exactly one such definition exists (`-v`, in
+   `cmd/compile/internal/ssa`, which is not converted).
+4. **Scope boundary, deliberate:** Go's `M.Run` also calls `flag.Parse()` when it is not yet parsed.
+   That is NOT mirrored — no class member needs it (every one's `TestMain` parses explicitly), and
+   an unconditional parse would newly reach `ExitOnError`/`os.Exit(2)` for the sixteen banked
+   packages that merely reference `flag`. Registration alone is the minimal change that closes the
+   class.
+
+**Class census (GOROOT non-`cmd` test sources calling `flag.Parse()`, per package):** `internal/fuzz`,
+`go/internal/srcimporter`, `os/exec`, `crypto/tls` — four members. (`runtime` and `syscall` match a
+naive grep and are NOT members: `runtime/runtime-gdb_unix_test.go`'s two hits are inside a Go source
+STRING literal for a helper program and the file is unix-only; `syscall/syscall_unix_test.go`'s is in
+a unix-only re-exec helper. `flag/example_test.go` and `database/sql/example_cli_test.go` are Example
+bodies.) Where the four stand after the bridge:
+
+| Package | Before | After | Note |
+|:--|:--:|:--:|:--|
+| `internal/fuzz` | 0 (died at `flag.Parse`) | **BANKED 52/52** | the 141st roster row; its `TestMain` now parses the host's command line |
+| `go/internal/srcimporter` | 0 of 7 (died at `flag.Parse`) | **5 of 7** | not banked; the two failures share ONE root and it is not this class — see below |
+| `os/exec` | build-blocked | build-blocked | still upstream of the bridge — see below |
+| `crypto/tls` | not measured | not measured | left for a lane that can afford it |
+
+**`go/internal/srcimporter` — 5 of 7, one root, and it belongs to `go/types`.** `TestIssue20855`,
+`TestIssue23092`, `TestIssue24392`, `TestReimport` pass and `TestCgo` skips identically. The two
+failures — `TestImportStdLib` and `TestImportedTypes` — both die inside the converted `go/types`
+checker on the SAME construct: `internal/syscall/windows/version_windows.go:87`'s call to
+`sync.OnceValue(func() bool {…})` reports *"in call to sync.OnceValue, cannot infer T"* /
+*"cannot use (func() bool literal) (value of type func() bool) as func() T value"*. That is generic
+type-parameter inference from a func-literal argument, failing in the converted checker where Go's
+succeeds — a third dependent of the unbanked `go/types` row, alongside `internal/types/errors` and
+`go/internal/gcimporter`'s 184. srcimporter type-checks GOROOT from source, so every package whose
+import graph reaches `os` inherits it, which is why both failures name a different top-level package
+and the same innermost cause.
+
+**`os/exec` — still build-blocked, and the root is now exact.** Three `CS0103: The name 'var' does
+not exist in the current context`, all one shape: an **UNNAMED variadic parameter**. `exec_test.go`
+declares `func cmdPipeTest(...string)`, `func cmdStderrFail(...string)` and `func cmdStdinClose(...string)`
+— Go permits a parameter with no name at all — and the converter emits the variadic unpacking with an
+empty variable name: `internal static void cmdPipeTest(params ꓸꓸꓸstring ʗp) { var  = ʗp.slice(); … }`.
+The parameter itself is named fine (`ʗp`); it is the *unpacked local* that inherits the absent Go name.
+A one-line converter fix (emit no unpacking, or a discard, when the Go parameter is unnamed) puts
+`os/exec` behind the bridge instead of in front of it.
 
 ### The prize left on the table
 

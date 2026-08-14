@@ -50,6 +50,14 @@ internal sealed class TestOptions
     public string? JUnitFile { get; private set; }
     private Regex[]? Filters { get; set; }
 
+    // The RAW text of -run and -shuffle, kept beside the compiled forms because TestFlagBridge
+    // republishes this run's command line to the converted flag package and a converted test READS
+    // it back: os/exec's TestMain gates on flag.Lookup("test.run").Value.String() being empty. A
+    // Regex[] cannot answer that question — Regex.ToString() would report the first SEGMENT of a
+    // `/`-split pattern — so the value the host was given is what gets carried.
+    public string RunPattern { get; private set; } = "";
+    public string ShuffleValue { get; private set; } = "off";
+
     public static TestOptions Parse(string[] args)
     {
         TestOptions options = new();
@@ -88,6 +96,7 @@ internal sealed class TestOptions
                 case "-run":
                 case "-test.run":
                     value ??= NextValue(args, ref i, key);
+                    options.RunPattern = value;
                     options.Filters = value.Split('/').Select(part =>
                         new Regex(part, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1.0D))).ToArray();
                     break;
@@ -106,6 +115,7 @@ internal sealed class TestOptions
                 case "-shuffle":
                 case "-test.shuffle":
                     value ??= NextValue(args, ref i, key);
+                    options.ShuffleValue = value;
                     options.ShuffleSeed = value == "on"
                         ? Random.Shared.Next()
                         : value == "off" ? null : int.Parse(value, CultureInfo.InvariantCulture);

@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **140 / 215 testable packages validated — 65.1%**
+> ### Phase 4 progress: **141 / 215 testable packages validated — 65.6%**
 >
-> **15,186 matching test verdicts · 47 disclosed** *(updated 2026-08-14 — maintained as part of the
+> **15,238 matching test verdicts · 47 disclosed** *(updated 2026-08-14 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -129,6 +129,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`internal/dag`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/dag) | 6 | | The dependency-graph language the standard library's own layering rules are written in — rule parsing, topological order, transpose, and transitive reduction. · [proof](validation/current/internal.dag.md) |
 | [`internal/diff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/diff) | 13 | | The unified-diff engine over its testdata corpus — every edit shape from empty-to-full through EOF-newline edge cases. · [proof](validation/current/internal.diff.md) |
 | [`internal/fmtsort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/fmtsort) | 3 | | `fmt`'s map-key ordering — `Value.Convert`, arithmetically-ordered pointer/channel tokens, `-tests` init-order relocation. · [proof](validation/current/internal.fmtsort.md) |
+| [`internal/fuzz`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/fuzz) | 52 | | Go's fuzzing engine, the layer below `testing`'s fuzz targets — corpus-file marshal/unmarshal round-trips over every basic type (float edge cases, rune validity, integer overflow, malformed records, Windows line endings), the byte-slice mutator table, input minimization, and the worker queue. The first package banked through the host's `TestMain` **flag bridge**: its `TestMain` calls `flag.Parse()`, which now finds the host's own command line declared on `flag.CommandLine` exactly the way `testing.Init()` declares `-test.*`. · [proof](validation/current/internal.fuzz.md) |
 | [`internal/godebugs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/godebugs) | 1 | | The GODEBUG registry, cross-checked against the world outside the package: every entry must be documented in GOROOT's `doc/godebug.md` and must have a matching `IncNonDefault()` call site, found by running `go list std cmd` through the real toolchain and reading every `.go` file it names. · [proof](validation/current/internal.godebugs.md) |
 | [`internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/gover) | 5 | | Toolchain version ordering. · [proof](validation/current/internal.gover.md) |
 | [`internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) | 3 | | Minimal integer formatting. · [proof](validation/current/internal.itoa.md) |

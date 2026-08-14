@@ -115,6 +115,15 @@ public static class TestHost
             CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
             Environment.SetEnvironmentVariable("TZ", "UTC");
 
+            // Declare this run's command line on the converted flag package, the way testing.Init()
+            // declares -test.* before a Go test binary's TestMain runs — otherwise a converted
+            // TestMain calling flag.Parse() rejects the host's own arguments ("flag provided but not
+            // defined: -json") before a single test executes. Placed HERE, after the isolated
+            // environment is in place and before anything from the package under test is touched,
+            // because that is the same moment Go's testing.Init() occupies: the test binary is
+            // already running where `go test` put it, and no test code has run yet.
+            TestFlagBridge.Register(options);
+
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
 
