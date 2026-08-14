@@ -535,21 +535,31 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// net.Listen never reached bind. Hand-owning them replaces the alias with a plain field
 		// write; `raw` is left in exactly the state Go leaves it.
 		//
-		// RawSockaddrAny.Sockaddr — the DECODE — is deliberately NOT here even though it carries
-		// the same alias, because hand-owning it costs more than it buys. The only casts of the
-		// three Sockaddr types to ΔSockaddr in the package live in ITS body, so skipping its
-		// emission drops the `[assembly: GoImplement<…>(Pointer = true)]` records from
-		// package_info.cs — and a measured reconvert of `net` against that package_info showed net
-		// then minting its OWN adapters (syscall_SockaddrInet4жΔSockaddr) instead of using
-		// syscall's, which is precisely the SECOND-IDENTITY regression samePackageImplements.go
-		// exists to prevent. Recording the pairs from the method set instead is not available
-		// either: that recorder is deliberately limited to the VALUE method set and defers the
-		// POINTER set, which is what these are, to its own measured increment. The decode is
-		// reached only through Getsockname/Getpeername (both hand-owned below, and both decode
-		// natively without going near it) and through the AcceptEx path, which is walled
-		// independently — see syscall_windows_impl.cs.
-		"SockaddrInet4.sockaddr": goosWindows,
-		"SockaddrInet6.sockaddr": goosWindows,
+		// RawSockaddrAny.Sockaddr — the DECODE — carries the SAME alias, and is here NOW; it was
+		// deliberately absent until 2026-08-14 and that reason is worth keeping, because it is the
+		// clearest case in the corpus of a hand-own gated on a CONVERTER CAPABILITY rather than on
+		// effort. The only casts of the three Sockaddr types to ΔSockaddr in the package used to live
+		// in ITS body, so displacing it dropped the `[assembly: GoImplement<…>(Pointer = true)]`
+		// records from package_info.cs — and a MEASURED reconvert of `net` against that shortened
+		// package_info showed net minting its OWN `syscall_SockaddrInet4жΔSockaddr` adapters instead
+		// of using syscall's: the SECOND-IDENTITY regression samePackageImplements.go exists to
+		// prevent.
+		//
+		// What changed is that recordSamePackageImplements now records the POINTER method set as well
+		// as the value one, so the three records are sourced from types.Implements(*T, Sockaddr)
+		// rather than from this body's casts. They survive its suppression, and the netpoll S2b lane
+		// re-measured exactly that on its own build before adding the line below: with the body
+		// displaced, syscall's package_info.cs still carries all three records and a reconvert of
+		// `net` still references syscall's adapters rather than minting its own.
+		//
+		// Why it is taken at all: net's ACCEPT path decodes the AcceptEx output through it
+		// (net/windows/fd_windows.cs:255-256), the one route to a Sockaddr that the hand-owned
+		// Getsockname/Getpeername do not already cover — so no TCP round trip is reachable while it
+		// panics. The old note said this path was "walled independently"; that wall is this arc.
+		//
+		"SockaddrInet4.sockaddr":  goosWindows,
+		"SockaddrInet6.sockaddr":  goosWindows,
+		"RawSockaddrAny.Sockaddr": goosWindows,
 		// Then the seam itself. RawSockaddrInet4's `Addr [4]byte` / `Zero [8]uint8` are golib
 		// `array<byte>` MANAGED REFERENCES, so `unsafe.Pointer(&sa.raw)` names a ~24-byte object
 		// with references where Windows expects a 16-byte sockaddr_in with the octets inline —
