@@ -3491,6 +3491,39 @@ the package under test, whose `package_info.cs` this run has just written; a for
 own package's record set in its own `package_info.cs`, and no measured case has ever demanded one — widening
 is the same lookup pointed at that file.
 
+*`go/types` — the widening, measured.* That last sentence held until `go/types`' own suite, whose host build
+produced exactly one error: `check_test.cs(78,66): CS0012 … 'sort_package.Interface'`, at `len(list)` in
+`if list, _ := err.(scanner.ErrorList); len(list) > 0`. The type is `go/scanner`'s `ErrorList` — the very
+type the same-package edge was built for, one package over. `go/scanner` **is** referenced (the suite imports
+it) so `ErrorList` binds; what does not resolve is the base list `go/scanner`'s **own** record set realizes on
+it, and `sort` sits in `go/types`' PRODUCTION project references (the package imports it) and in no test
+import. So the records are now read **per declaring package**: a root type's from the `package_info.cs` this
+run just wrote, a foreign type's from that package's, resolved through the same `getImportPackageInfo` route
+the `<ImportedTypeAliases>` block already reads a dependency's metadata by (layout L3's per-GOOS placement
+included) and memoized per import path. An unreadable or absent file yields no edge, exactly as it does for
+the package under test. The gate itself is untouched — same value-form records, same per-type key, same
+candidate match — which is why the widening does not reopen the 16-of-96 question: it points one lookup at a
+different file.
+
+*The other half: the member bindings that spell no selector.* The same measurement moved the edge's SEED as
+well. `check_test.go` never writes `list.Sort()` — it binds `ErrorList` only through `len(list)` and
+`range list` — so the member-access seed (`x.M`, the third edge's) never saw it. Each of those lowers to a
+member on the value's type all the same: golib's generic `len`, the emitted enumeration, an indexer. The seed
+therefore also carries the types a compiled `_test.go` binds a member on through a **builtin call, a range, or
+an index/slice** (`memberBound`), and that set feeds the implemented-interface edge **only** — never
+`reach`/`enqueue`, because the value is spelled by a package the suite already imports. The boundary the
+member-access edge measured stays exactly where it was, and is pinned by the same negatives: a test that
+merely NAMES a value of such a type, or PASSES IT ALONG to a function with an exact parameter type
+(`var r Rows; Order(r)`), binds nothing on it and surfaces nothing. Seeding this edge from every named type
+instead would cross that line — the existing negative fails immediately — which is why the shape is the
+member binding rather than the mention. `go/types`' reference set gains exactly one line, `core/sort`, and the
+host builds clean. (Guarded by `TestDeclarationClosureImportsSurfacesForeignImplementedBases` — the foreign
+positive plus four negatives (no resolver, empty record set, a record keyed to another type, and the
+name-and-pass boundary) and the range/index forms — and by
+`TestForeignImplementBasesResolverReadsDeclaringPackageInfo`, which pins the value-form-only parse, the
+memoization, and the silent-nothing on an absent file. Both fail against the pre-fix converter, and each half
+of the fix fails it independently.)
+
 Guarded by the `TestDeclarationClosureImportsSurfacesZeroValueVarDeclarations` (the log shape through real
 test variants, plus the foreign-struct accessibility negative and the production-source scoping negative) and
 `TestDeclarationClosureImportsSurfacesImplementedInterfaceBases` (the scanner shape, plus the three negatives
