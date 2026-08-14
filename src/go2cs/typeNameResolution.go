@@ -314,7 +314,7 @@ func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) str
 		}
 	}
 
-	if name, ok := v.liftedTypeMap[t]; ok {
+	if name, ok := v.liftedNameFor(t); ok {
 		return name
 	}
 
@@ -530,7 +530,7 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 		return v.getFullyQualifiedTypeName(sig, isUnderlying)
 	}
 
-	if name, ok := v.liftedTypeMap[t]; ok {
+	if name, ok := v.liftedNameFor(t); ok {
 		return name
 	}
 
@@ -1370,7 +1370,7 @@ func (v *Visitor) implicitConvStructTypeName(t types.Type) string {
 	// This visitor's lifted name is type-identity-keyed — precise even when two anonymous
 	// structs share a structural signature (Process_data vs main_data); the shared registry
 	// and the deferred marker are the cross-file fallbacks.
-	if name, ok := v.liftedTypeMap[t]; ok {
+	if name, ok := v.liftedNameFor(t); ok {
 		return name
 	}
 

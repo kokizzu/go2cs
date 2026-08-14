@@ -6640,6 +6640,15 @@ outside bounds of the array reference` — where the board had only "first diver
 recorded". And `go/internal/srcimporter` (0 of 7) fails before any test with
 `flag provided but not defined: -json`, i.e. the process the host launches is not the go2cs test
 host; that is an infrastructure root, not the recorded build block.
+⚠ **The last clause of that diagnosis is CORRECTED (2026-08-14, lane `claude/defect-batch-1`).**
+The process IS the go2cs test host. `internal/fuzz` reaches the identical symptom once its build
+blocker is cleared, and there the cause is exact: `worker_test.go`'s `TestMain` calls
+`flag.Parse()`, and the converted `flag.CommandLine` has never been told about the host's own
+`--json` / `--result` / `--junit` / `-timeout` arguments, so parsing rejects them before any test
+runs. In Go, `testing.M` registers those flags on `flag.CommandLine` before `TestMain` executes,
+which is what makes the same `flag.Parse()` legal there. The remedy belongs to the hand-owned
+`src/core/testing` host — register its flags on the converted `flag.CommandLine` — and is a
+separate, unclaimed item. Every package whose `TestMain` calls `flag.Parse()` sits behind it.
 
 ### The prize left on the table
 

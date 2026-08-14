@@ -99,6 +99,36 @@ func (v *Visitor) liftedTypeNameTaken(name string) bool {
 	return packageLiftedTypeNames.Contains(name) || productionLiftedTypeNames.Contains(name)
 }
 
+// liftedNameFor resolves a type to the C# name it was LIFTED under: this visitor's own per-file
+// claim first, then the PRODUCTION conversion's package-scope ALIAS lifts.
+//
+// The second source exists for the `-tests` REFERENCE model alone. `type CorpusEntry =
+// struct{Parent string; Path string; …}` (internal/fuzz) is lifted in production to a real nested
+// type and reached through a compilation-scoped `global using CorpusEntry = …CorpusEntryᴛ1;`. A
+// reference-model test project does not recompile the production sources, so nothing visits that
+// declaration and nothing claims the lift — every test-side reference to the alias then fell
+// through to `t.String()` and emitted RAW GO SYNTAX into a C# file
+// (`Func<struct{Parent string; …}, error>`: CS1031/CS1525/CS1003 cascades in minimize_test.cs and
+// worker_test.cs, with all 52 of that package's verdicts behind it). The map is seeded from the
+// production package's own PUBLISHED aliases, alongside the `global using` that makes the name
+// resolvable in the test compilation — see seedProductionAliasLifts. Empty for a production
+// conversion, so this is a pure no-op there.
+func (v *Visitor) liftedNameFor(t types.Type) (string, bool) {
+	if name, ok := v.liftedTypeMap[t]; ok {
+		return name, true
+	}
+
+	if len(productionAliasLiftedTypes) == 0 {
+		return "", false
+	}
+
+	packageLock.Lock()
+	name, ok := productionAliasLiftedTypes[t]
+	packageLock.Unlock()
+
+	return name, ok
+}
+
 // claimLiftedTypeName records a lifted type name against this file and — unless the file is
 // hand-owned — against the package (see liftedTypeNameTaken).
 func (v *Visitor) claimLiftedTypeName(name string) {

@@ -17,7 +17,7 @@ func (v *Visitor) convInterfaceType(interfaceType *ast.InterfaceType, context Id
 
 	t := v.getType(interfaceType, false)
 
-	if liftedName, ok := v.liftedTypeMap[t]; ok {
+	if liftedName, ok := v.liftedNameFor(t); ok {
 		return liftedName
 	}
 

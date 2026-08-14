@@ -959,6 +959,86 @@ func TestWhiteboxBridgeUnitIsWrittenWithoutBridgeRecords(t *testing.T) {
 	resetPackageState(&packages.Package{})
 }
 
+// A production ALIAS whose right-hand side is an anonymous struct has no C# spelling of its own:
+// the production conversion LIFTS it to a real nested type and reaches it through a
+// compilation-scoped `global using`. A reference-model test project is a SECOND compilation and
+// does not recompile the production sources, so neither the name nor the lift crossed — every
+// test-side reference fell through to `t.String()` and emitted raw GO syntax into a C# file
+// (internal/fuzz's `Func<struct{Parent string; …}, error>`, CS1031/CS1525/CS1003, with all 52 of
+// that package's verdicts behind it). Both halves are seeded from the production package_info the
+// test conversion already reads: the TYPE, so every renderer spells the alias, and the alias
+// itself, so the name resolves in the test compilation.
+func TestSeedProductionAliasLiftsCarriesLiftAndAliasTogether(t *testing.T) {
+	dir := t.TempDir()
+
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/aliaslift\n\ngo 1.23\n",
+		// CorpusEntry's shape: an EXPORTED alias to an anonymous struct. Unexported and
+		// named-RHS aliases sit beside it as the negative controls.
+		"value.go": "package aliaslift\n\n" +
+			"type CorpusEntry = struct{ Parent string; Data []byte }\n\n" +
+			"type hidden = struct{ N int }\n\n" +
+			"type Named = Concrete\n\n" +
+			"type Concrete struct{ M int }\n\n" +
+			"func Use(e CorpusEntry) int { return len(e.Data) }\n",
+		"value_test.go": "package aliaslift\n\n" +
+			"func helper(fn func(CorpusEntry) error) error { return fn(CorpusEntry{}) }\n",
+	})
+
+	infoPath := filepath.Join(dir, "package_info.cs")
+	info := "// <ExportedTypeAliases>\r\n" +
+		"[assembly: GoTypeAlias(\"CorpusEntry\", \"go.example.aliaslift_package.CorpusEntryᴛ1\")]\r\n" +
+		"[assembly: GoTypeAlias(\"Named\", \"go.example.aliaslift_package.Concrete\")]\r\n" +
+		"// </ExportedTypeAliases>\r\n"
+
+	if err := os.WriteFile(infoPath, []byte(info), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	internal, _ := loadTestVariantsForDir(t, dir)
+
+	if internal == nil {
+		t.Fatal("fixture must load the internal test variant")
+	}
+
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+
+	seedProductionAliasLifts(internal, infoPath)
+
+	if got := importedTypeAliases["CorpusEntry"]; got != "go.example.aliaslift_package.CorpusEntryᴛ1" {
+		t.Fatalf("the alias must be re-emitted into the test compilation, got %q", got)
+	}
+
+	// The lift map must name the same alias for the anonymous struct itself, or the renderer
+	// still writes Go syntax while the `global using` sits unused.
+	obj := internal.Types.Scope().Lookup("CorpusEntry")
+
+	if obj == nil {
+		t.Fatal("fixture is inert: CorpusEntry must be in package scope")
+	}
+
+	if got := productionAliasLiftedTypes[types.Unalias(obj.Type())]; got != "CorpusEntry" {
+		t.Fatalf("the anonymous struct must resolve to its alias name, got %q", got)
+	}
+
+	// A NAMED right-hand side already renders through its own qualified name, so seeding an
+	// alias for it would put an avoidable global-using name into the test compilation.
+	if _, seeded := importedTypeAliases["Named"]; seeded {
+		t.Fatal("an alias over a NAMED type must not be seeded — it has its own spelling")
+	}
+
+	// An UNEXPORTED alias publishes nothing, so seeding its type would render a name the test
+	// compilation cannot resolve.
+	if hidden := internal.Types.Scope().Lookup("hidden"); hidden != nil {
+		if _, seeded := productionAliasLiftedTypes[types.Unalias(hidden.Type())]; seeded {
+			t.Fatal("an unpublished alias must not be seeded — its name would not resolve")
+		}
+	}
+
+	resetPackageState(&packages.Package{})
+}
+
 // Change C project shape: a REFERENCE-model test project binds the production package through a
 // colocated ProjectReference and carries NO production compile items; the recompile model keeps
 // the original recompiled shape and no production reference.
