@@ -39,6 +39,7 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Device, Describer>(Pointer = true)]
 [assembly: GoImplement<MyCustomError, Abser>(Promoted = true)]
 [assembly: GoImplement<MyCustomError, Abser>]
 [assembly: GoImplement<counterKind, stamper>(Pointer = true)]

@@ -1746,7 +1746,7 @@ Two corrections to the row as filed below, both measured rather than reasoned:
   match and the consumer's local adapter is the only realization. `color.Palette`→`color.Model` (5)
   survives for the same reason. **A pair a package satisfies but never records is its own root** —
   the one place where "the declaring assembly implements it" is true in Go and false in the emitted
-  C#. **That increment is now DONE** (`recordSamePackageValueImplements`, `samePackageImplements.go`):
+  C#. **That increment is now DONE** (`recordSamePackageImplements`, `samePackageImplements.go`):
   the declaring side records the VALUE pairs it satisfies, behind five gates — exported interface,
   underlying not a `*types.Signature`, neither side generic, both sides declared in a file the run
   converts, and every interface method reachable within ONE embed hop (ImplementGenerator forwards a
@@ -1756,6 +1756,38 @@ Two corrections to the row as filed below, both measured rather than reasoned:
   `go2cs-stdlib.slnx` 0 errors. `HandlerFunc`→`ΔHandler` is absent, as the delegate gate requires.
   Owed, and the reason the depth gate is conservative: extending ImplementGenerator's promoted-member
   forwarding past one hop would recover `net`'s two `tcpConnWithout*`→`Conn` records.
+  **The POINTER half of the SAME-PACKAGE recorder is now DONE too (2026-08-14, lane D)** — distinct from
+  the foreign-record key increment two paragraphs below, which fixed how a record is LOOKED UP; this fixes
+  which records EXIST. `recordSamePackageValueImplements` became `recordSamePackageImplements` and asks
+  `types.Implements(*T, Iface)` as well, behind the five value gates with TWO changes, each forced by the
+  different trust rule. **Added:** BOTH sides EXPORTED (`pointerRecordIsPubliclyRealizable`), because a
+  `(Pointer = true)` record is consumed by NAMING the generated `<T>ж<Iface>` class and ImplementGenerator
+  scopes it `public` only when both participants are — an unexported participant would advertise a class no
+  consumer can reference (CS0122). **Tightened:** realizability requires DIRECT resolution (index length 1),
+  no promotion, where the value bound allows one embed hop — the ж adapter's promoted-member arms are keyed
+  on embedded POINTER fields and, with exactly one present, take every unbound member unconditionally, which
+  is sound for a DEMANDED record and not for a speculative one.
+  `StructPointerPromotionWithInterface`'s `MyCustomError` (embeds both the `Abser` interface and `*MyError`;
+  `Abs` comes from the interface) is the corpus instance, and the `go2cs.slnx` build caught it as CS1929
+  binding `Abs` to `time.Abs` — a reminder that the solution build is the only gate compiling generated
+  adapters tree-wide, and that a speculative record must be bounded by what the GENERATOR can realize, not
+  by what Go's method set says.
+  Whole-stdlib A/B, both roots seeded, 304/304 per side: **75 files, 184 records added / 117 removed
+  (net +67, 1,071 → 1,138), 318 adapter constructions repointed**, 0 `.csproj`, 0 `README.md`, marker gate
+  0 violations. Every removal is a consumer-local duplicate the declaring assembly now owns — `go/parser`
+  49 and `go/types` 28 of `go/ast`'s node types, the five `debug/*` readers' `io.SectionReader` pairs,
+  `net/http`'s `io.Pipe*` and `sync.Mutex`→`Locker`. The 548-pair figure the deferral quoted was the raw
+  same-package pair count, not the delta: most were already recorded from cast sites.
+  **This retires the L10 second-identity trap at the root.** `syscall`'s three `Sockaddr` pairs were
+  witnessed by one method body, so hand-owning `RawSockaddrAny.Sockaddr` dropped all three records and
+  `net` minted duplicates. Re-running that exact probe on both converters: pre-increment the records are
+  absent and `net` emits `syscall_SockaddrInet4жΔSockaddr`; post-increment all three are present and `net`
+  emits `syscall.SockaddrInet4жΔSockaddr`. The netpoll arc's §7 blocker is unblocked at the record level
+  (the port-alias decode defect itself still stands — see that doc).
+  Guards: `SamePackageImplementNoWitness` (`*Tally`→`Metric` moved negative→positive; new
+  unexported-target negative `tick`), `ForeignPointerImplementSuppression` (`Lone` likewise; `shade.Level`
+  negative byte-identical). Still owed: the `-tests` closure emits these records too, so the committed
+  test sources of the validated roster want a refresh at the next milestone rebank.
   Guard: `SamePackageImplementNoWitness`. Rule:
   [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A package records the
   pairs it SATISFIES, not only the ones it witnesses*. Its whole corpus footprint, measured on the post-fix

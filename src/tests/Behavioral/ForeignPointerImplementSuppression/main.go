@@ -12,8 +12,11 @@
 // records its own `Node` bare, which is why one canonical spelling — not a heuristic — is the fix.
 //
 // Both sides now compose through implementRecordKey, so these conversions reference tone's own
-// adapters. The two negatives below must survive that: `Lone`, which tone satisfies but never
-// records, and `shade.Level`, an interface with the same SIMPLE name as tone's.
+// adapters. `Lone` was the negative for "a pair tone satisfies but never records"; the declaring
+// side now records the POINTER pairs it merely satisfies (samePackageImplements.go), so it has
+// become this test's proof that a record needs no witnessing cast. The negative that must survive
+// is `shade.Level` — an interface with the same SIMPLE name as tone's, whose pair has no record
+// and must keep its local adapter.
 package main
 
 import (
@@ -75,13 +78,13 @@ func main() {
 	// equal by box, but only one of them is the type the declaring assembly registered.
 	fmt.Println("describe:", tone.Describe(t) == l)
 
-	// NEGATIVE 1 — a pair tone SATISFIES but never RECORDS. No adapter exists over there, so this
-	// conversion must keep minting its own.
+	// WITNESSLESS PAIR — tone satisfies it and never casts it, yet the record exists, so this
+	// references tone's own adapter exactly as the cast pairs above do.
 	var ln tone.Level = &tone.Lone{D: 5}
 	ln.Set(2)
 	fmt.Println("lone:", ln.Tone(), ln.Name())
 
-	// NEGATIVE 2 — a SAME-NAMED interface in another package. tone's Tone→tone.Level record must
+	// NEGATIVE — a SAME-NAMED interface in another package. tone's Tone→tone.Level record must
 	// not satisfy Tone→shade.Level; that one has no record and keeps its local adapter.
 	var sl shade.Level = t
 	sl.Set(9)

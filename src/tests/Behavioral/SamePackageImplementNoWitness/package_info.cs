@@ -36,9 +36,9 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Stamp, Marker>(Pointer = true)]
 [assembly: GoImplement<Stamp, Marker>]
 [assembly: GoImplement<go.SamePackageImplementNoWitness.ledger_package.Meter, go.SamePackageImplementNoWitness.ledger_package.Metric>]
-[assembly: GoImplement<go.SamePackageImplementNoWitness.ledger_package.Tally, go.SamePackageImplementNoWitness.ledger_package.Metric>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

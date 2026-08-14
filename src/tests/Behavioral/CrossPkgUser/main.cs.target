@@ -161,7 +161,7 @@ internal static (CrossPkgLib.Reporter, error) getReporter() {
     return (new relayжReporter(ᴛ1), ᴛ2);
 }
 
-internal static CrossPkgLib.Emitter leafEmitter = new CrossPkgLib_LeafжEmitter(CrossPkgLib.NewLeaf("leaf"u8));
+internal static CrossPkgLib.Emitter leafEmitter = new CrossPkgLib.LeafжEmitter(CrossPkgLib.NewLeaf("leaf"u8));
 
 internal static CrossPkgLib.Emitter branchEmitter = new CrossPkgLib_BranchжEmitter(CrossPkgLib.NewBranch("branch"u8, 3));
 
@@ -302,7 +302,7 @@ internal static void Main() {
         CrossPkgLib.Rated rt = ct;
         fmt.Println(sd.Label(), rt.Rating());
         var pr = Ꮡ(new CrossPkgLib.Probe(nil));
-        CrossPkgLib.Sampler sam = new CrossPkgLib_ProbeжSampler(pr);
+        CrossPkgLib.Sampler sam = new CrossPkgLib.ProbeжSampler(pr);
         fmt.Println(sam.Sample(), sam.Sample(), (~pr).Hits);
         var h = Ꮡ(new holder<nint>(Cache: Ꮡ(new CrossPkgLib.Cache<nint>(nil)), name: "h"u8));
         fmt.Println(h.Value.Cache.Value.Bump(), h.Value.Cache.Value.Bump(), (~h).name);

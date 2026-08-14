@@ -36,6 +36,7 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Float64Slice, Interface>(Pointer = true)]
 [assembly: GoImplement<Float64Slice, Interface>]
 [assembly: GoImplement<reverse, Interface>(Pointer = true)]
 [assembly: GoImplement<reverse, Interface>(Promoted = true)]

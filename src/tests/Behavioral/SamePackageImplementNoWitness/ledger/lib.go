@@ -6,8 +6,11 @@
 // side must therefore record what Go already says is true, or every consumer mints its own
 // `ledger_<T>ᴠMetric` adapter — a SECOND IDENTITY for one Go value.
 //
-// Everything below the two positives is a NEGATIVE the recording rule has to leave alone, and
-// each one is live rather than merely asserted.
+// The POINTER method set is now recorded on the same principle, so Tally below moved from
+// negative to positive: its `*Tally → Metric` pair is realized ONCE, as ledger's own
+// `TallyжMetric`, instead of once per consumer. Everything else below the positives is still a
+// NEGATIVE the recording rule has to leave alone, and each one is live rather than merely
+// asserted.
 package ledger
 
 // Metric is the EXPORTED interface. Exported is load-bearing: a record is a CROSS-ASSEMBLY
@@ -40,14 +43,34 @@ type Meter func() int
 
 func (m Meter) Value() int { return m() }
 
-// Tally implements Metric only through its POINTER method set. That set is the far larger one
-// and its records are adapter-class existence signals with a different trust rule, so it is
-// deliberately out of scope here: the consumer's pointer adapter must be unchanged.
+// Tally implements Metric only through its POINTER method set — the POSITIVE for that form, and
+// the exact shape the syscall Sockaddr regression had. A pointer record is an adapter-class
+// EXISTENCE signal rather than an implicit-conversion licence, so recording it makes the
+// consumer reference ledger's own `TallyжMetric` instead of minting `ledger_TallyжMetric`. Both
+// adapters alias the same box and compare equal, so the failure this prevents is not a wrong
+// answer but a NON-DETERMINISTIC one: each adapter's module initializer registers itself with
+// AdapterRegistry first-wins, so which class a type assert re-wraps into followed assembly load
+// order.
 type Tally struct {
 	N int
 }
 
 func (t *Tally) Value() int { return t.N }
+
+// tick is the UNEXPORTED-TARGET NEGATIVE, and it exists only for the POINTER form. A value
+// record is consumed by an implicit conversion and needs no name, so an unexported target is
+// harmless there and the value rule gates only the interface. A POINTER record is consumed by
+// NAMING the generated `<T>ж<Iface>` class, and ImplementGenerator scopes that class `internal`
+// unless BOTH sides are exported — so recording this pair would advertise a class no other
+// assembly can reference (CS0122). ledger's metadata must stay empty of it.
+type tick struct {
+	N int
+}
+
+func (t *tick) Value() int { return t.N }
+
+// Count keeps tick live WITHOUT converting it to Metric.
+func Count(n int) int { return (&tick{N: n}).Value() }
 
 // Box is the GENERIC NEGATIVE. A type parameter cannot appear in an assembly-attribute type
 // argument (CS0246), so neither side of a recorded pair may be generic.

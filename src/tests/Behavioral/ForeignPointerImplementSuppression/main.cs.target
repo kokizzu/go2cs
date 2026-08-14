@@ -62,7 +62,7 @@ internal static void Main() {
     fmt.Println(plainˢ2, pl.Tone(), pl.Name(), (~p).D);
     fmt.Println(libˢ, tone.Default.Tone(), tone.DefaultPlain.Tone());
     fmt.Println(describeˢ, AreEqual(tone.Describe(t), l));
-    tone.Level ln = new tone_LoneжLevel(Ꮡ(new tone.Lone(D: 5)));
+    tone.Level ln = new tone.LoneжLevel(Ꮡ(new tone.Lone(D: 5)));
     ln.Set(2);
     fmt.Println(loneˢ, ln.Tone(), ln.Name());
     shade.Level sl = new tone_ΔToneжLevel(t);

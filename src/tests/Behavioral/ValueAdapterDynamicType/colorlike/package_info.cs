@@ -36,7 +36,9 @@ using static go.ValueAdapterDynamicType.colorlike_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Gray, Color>(Pointer = true)]
 [assembly: GoImplement<Gray, Color>]
+[assembly: GoImplement<NRGBA, Color>(Pointer = true)]
 [assembly: GoImplement<NRGBA, Color>]
 // </InterfaceImplementations>
 

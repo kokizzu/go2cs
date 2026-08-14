@@ -41,6 +41,8 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Blob, Encoder>(Pointer = true)]
+[assembly: GoImplement<Tag, Encoder>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

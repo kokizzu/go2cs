@@ -610,9 +610,22 @@ is cheap and the claim should be measured, not argued).
 > (`syscall/windows/package_info.cs:45–47`) that its body's casts are the only witness for, and a
 > MEASURED reconvert of `net` against the shortened `package_info` showed `net` minting duplicate
 > adapters — the second-identity regression. The real answer L10 named is the converter's POINTER
-> method-set recording, and that is **still deferred**: `samePackageImplements.go:68` states the
-> pointer set "is owed its own increment with its own measured footprint" (548 same-package pairs vs
-> 168 for the value set). So the fix is a converter increment, not a hand-own, and not this arc's.
+> method-set recording.
+>
+> > **UNBLOCKED at the record level (2026-08-14, lane D).** That converter increment has LANDED:
+> > `recordSamePackageImplements` now records the POINTER method set as well as the value one, behind
+> > the value form's five gates plus a both-sides-EXPORTED gate (a `(Pointer = true)` record is
+> > consumed by NAMING the generated adapter, which `ImplementGenerator` scopes `public` only when
+> > both participants are). The three `ΔSockaddr` pairs are now sourced from
+> > `types.Implements(*T, Sockaddr)` instead of from `(*RawSockaddrAny).Sockaddr`'s casts, and the
+> > exact probe that measured the regression now proves its absence: with that method suppressed
+> > through `manualConversionFuncs`, `syscall`'s `package_info.cs` still carries all three records and
+> > a reconvert of `net` still references `syscall.SockaddrInet4жΔSockaddr` rather than minting its
+> > own. **What this does and does not unblock:** hand-owning `RawSockaddrAny.Sockaddr` is now safe
+> > from the second-identity consequence, so the port-alias decode defect can be fixed the same way
+> > L10 fixed its encode twin. It does NOT by itself fix that defect — the `array<T>`-from-raw-address
+> > seam is still there in the auto conversion — so `TcpLoopbackRoundTrip` remains blocked until
+> > someone takes the hand-own this increment made available.
 >
 > **What survives, precisely.** A census of every `.Sockaddr()` call site in `net` finds six: the two
 > accept-path sites above, three in `interface_windows.cs` (`net.Interfaces`) and one in

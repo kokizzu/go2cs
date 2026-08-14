@@ -36,8 +36,11 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Bag, Describer>(Pointer = true)]
 [assembly: GoImplement<Bag, Describer>]
+[assembly: GoImplement<List, Describer>(Pointer = true)]
 [assembly: GoImplement<List, Describer>]
+[assembly: GoImplement<Reg, Describer>(Pointer = true)]
 [assembly: GoImplement<Reg, Describer>]
 // </InterfaceImplementations>
 

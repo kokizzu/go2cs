@@ -34,6 +34,18 @@ public static nint Value(this Meter m) {
     return t.N;
 }
 
+[GoType] partial struct tick {
+    public nint N;
+}
+
+[GoRecv] internal static nint Value(this ref tick t) {
+    return t.N;
+}
+
+public static nint Count(nint n) {
+    return (Ꮡ(new tick(N: n))).Value();
+}
+
 [GoType] partial struct Box<T> {
     public T V;
 }
