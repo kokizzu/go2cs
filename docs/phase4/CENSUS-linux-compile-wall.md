@@ -1,8 +1,14 @@
 # CENSUS — the Linux compile wall, 2026-08-13
 
-> **STATUS: CENSUS COMPLETE; the mechanical wave is DIAGNOSED, PRICED and DELIBERATELY NOT EXECUTED
-> on this host.** Measured on branch `claude/linux-compile-wall` against `058b37e49`, host **i7-5820K**
-> (6C/12T, the interim coordinator machine). Toolchain `go1.23.1`, .NET SDK 9.0.
+> **STATUS: THE WAVE IS EXECUTED. The Linux corpus compiles 307/307, zero errors** (2026-08-14, lane
+> `claude/linux-regen-wave`, in the **`C:` clone** — §10 is the execution record and it supersedes §6's
+> "not executed" and §9's standing). Everything above §10 is kept as written: the diagnosis it made
+> was confirmed exactly, including the parts the execution corrected.
+>
+> **STATUS AS FIRST WRITTEN: CENSUS COMPLETE; the mechanical wave is DIAGNOSED, PRICED and
+> DELIBERATELY NOT EXECUTED on this host.** Measured on branch `claude/linux-compile-wall` against
+> `058b37e49`, host **i7-5820K** (6C/12T, the interim coordinator machine). Toolchain `go1.23.1`,
+> .NET SDK 9.0.
 >
 > **Doctrine:** the Phase-3 pattern applied to a platform — **COMPILE is the milestone**, operational is
 > later. Prior art, read first: [`DESIGN-multiplatform-corpus.md`](DESIGN-multiplatform-corpus.md) §12
@@ -297,6 +303,10 @@ The second is the one that would have caught this on day one, in seconds, on any
 
 ## 9. The honest distance to a full Linux compile
 
+> ⚠ **This section is the pre-execution reading and its "after" row is superseded by §10** (the wave
+> ran on 2026-08-14: 307/307, zero errors). Kept unedited because its *estimate* is the thing worth
+> checking against the outcome — and it was right, including where it hedged.
+
 | | |
 |:--|:--|
 | Packages compiling under `GOOS=linux` **before** this session | **143 / 307** |
@@ -312,3 +322,142 @@ says the regen may need to be followed by one more build/bucket cycle, not by fo
 *not* in evidence, and must not be assumed, is that 307/307 returns in a single pass — the five-day
 window contains arcs (`gen` interface-satisfaction, the Δ-rename spelling change) whose Linux-side
 effects have never been compiled.
+
+---
+
+## 10. The wave, executed — 2026-08-14
+
+> Lane `claude/linux-regen-wave`, same host (**i7-5820K**), **`C:` clone**. This section replaces §9's
+> standing and §6's "not executed". Everything §1–§8 diagnosed held; the two places the execution
+> corrected the census are called out as corrections, not smoothed over.
+
+### 10.1 Result
+
+| | Before (§2) | After |
+|:--|--:|--:|
+| Projects in `go2cs-stdlib.slnx` | 307 | **307** |
+| **Packages compiling under `GOOS=linux`** | **143** | **307 — the whole corpus** |
+| Packages failing with own-errors | 1 (`runtime`) | **0** |
+| Projects skipped as dependents | 163 | **0** |
+| Total errors | **112** | **0** |
+| Wall time, `--no-incremental` | 53m 10s (on the failed `D:`) | **7m 55s** |
+
+**Zero mechanical fixes were needed after the regen.** §4 projected that the build would advance and
+possibly stop again in one of 14 further packages "in the same class, cleared by the same single
+action". It did not stop at all: the single action cleared every one of them at once. §4's method was
+sound — those 14 packages did carry the divergence — but its caution about a second build/bucket cycle
+was one cycle too pessimistic, and §9's "must not be assumed that 307/307 returns in a single pass" is
+now answered: it did.
+
+The Linux build is a real Linux build, not a mis-targeted one, by increment 3.5b's own control:
+`log/syslog` — whose Go source is excluded on Windows in its entirety — produces a **346,112-byte**
+assembly, the exact figure recorded there for the real Linux flavor (the Windows flavor is 322,560
+bytes with no Go source in it). 306 distinct assemblies were produced.
+
+### 10.2 Method — and the control that makes the result mean something
+
+One command, twice:
+
+```
+go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 ^
+      -platform-stage <C:-scratch> -go2cspath C:\Projects\go2cs\src
+```
+
+Seeding is the converter's own (`platformEmit.go` seeds each staging root from `-go2cspath`, wipes and
+re-seeds per run); the stage root was deleted before each run and no `go2cs.exe` was alive at either
+start, per r41's rule. **38 minutes per pass** on `C:` — against the ~3.3 hours §5 priced on `D:`,
+which is that finding restated in the units that matter.
+
+**The run was made twice deliberately**, and the second pass is the instrument:
+
+| | pass 1 (against the committed corpus) | pass 2 (against pass 1's output) |
+|:--|:--|:--|
+| windows/amd64 emission | 1,663 `.cs` — 1,612 reproduce the seed, 49 line-endings-only, **2 differ** | 1,663 — **1,663 reproduce the seed, 0 differ** |
+| linux/amd64 emission | 1,732 — 1,604 reproduce, 47 LE-only, **81 differ** | 1,732 — **1,732 reproduce, 0 differ** |
+| darwin/amd64 emission | 1,731 — 1,593 reproduce, 47 LE-only, **91 differ** | 1,731 — **1,731 reproduce, 0 differ** |
+| merge | 238 artifacts written, 8 stale copies removed | **0 written, 0 removed**, 2,168 already current |
+| marker gate (line-anchored, per-path) | **53** hand-owned files, **0** violations ×3 targets | 53, **0** ×3 targets |
+
+Pass 2 is simultaneously the **idempotence proof** the design claims for `platformEmit` and the
+**self-consistency proof** the whole exercise was for: after the wave, all three platforms' emissions
+reproduce the corpus byte for byte, which is precisely the property that was false when this census
+was written. Marker census re-measured, never carried: **53** marked files / **42** `*_impl.cs`
+companions, against r59's 49/41.
+
+### 10.3 The acceptance standard, item by item
+
+**1. Windows side byte-identical, or every differing file individually classified.** Not byte-identical;
+**five** corpus files differ, each classified, plus eight byte-preserving relocations:
+
+| Class | Count | Files | Verdict |
+|:--|--:|:--|:--|
+| **Dot-imported Δ-renamed alias spelling** — arc `e6060f626` landed without its corpus regen | 2 | `reflect/type.cs` (`new funcType()` → `new abiꓸFuncType()`), `runtime/type.cs` (3× `new name()` → `new abiꓸName()`) | Windows-side corpus debt of the **same species** this census diagnoses on the Linux side, levelled by the same run. Not caused by the merge — the converter's own windows control isolates it at exactly 2 files |
+| **README validation badge** — the Tests badge reads `docs/validation/current/`, which moved | 3 | `internal/types/errors` (not-yet-validated → 155/155), `path/filepath` (61/61 → 67/67), `sync` (41/51 → 44/51) | Repository state, not emission. Validation banks landed without a regen |
+| **Flat → `windows/` relocation** | 8 | `internal/filepathlite/path.cs`, `net/{file,interface,tcpsock}.cs`, `os/{exec_posix,types}.cs`, `runtime/{cgocall,runtime1}.cs` | **Byte-preserving, all 8 verified against their committed bytes.** A genuine L3 reclassification: A2's ref-lowering is a package-global decision and a package's file set differs by GOOS, so a *shared* file's call sites now lower differently per platform. Windows compile inputs are unchanged in content; only their path (and thus compile-item order, the seam §12 increment 3 named and the user ruled on) moves |
+
+**2. Overlay only `linux/` and `darwin/`.** Held for content: 155 platform-side files changed (72 linux,
+83 darwin) plus 16 new per-GOOS copies, and **no `.csproj` reference group changed** — the merge reports
+2 packages with conditioned references (`log/syslog`, `os/user`), the same 2 the corpus already carries.
+
+**3. Marker gate path-precise, line-anchored, re-measured.** 53 files, 0 violations, six times
+(3 targets × 2 passes).
+
+**4. Re-run the Linux build and re-bucket.** §10.1. There is no bucket table because there are no
+buckets.
+
+### 10.4 The finding the wave produced: a test project's defect became a corpus-wide build break
+
+The first merge generated a **308**-project solution against a corpus of **307**, the extra
+`<Project>` naming
+`core/vendor/golang.org/x/crypto/chacha20/golang.org.x.crypto.chacha20.csproj` — **a path that does not
+exist**. A solution carrying one does not load, so this would have shipped as a Windows-lane break in
+the same commit that fixed Linux.
+
+Root cause, and it is two defects stacked:
+
+1. `crypto/ecdh/crypto.ecdh.tests.csproj` (committed, pre-existing, untouched by this wave) carries the
+   **unvendored** spelling of a GOROOT-vendored project file — `golang.org.x.crypto.chacha20.csproj`
+   where only `vendor.golang.org.x.crypto.chacha20.csproj` exists. The `-tests` emission resolves the
+   vendored *directory* correctly and derives the *file name* from the unvendored import path.
+2. `collectConvertedProjects` harvested `<ProjectReference>`s from every `.csproj` it walked **before**
+   skipping the test projects it deliberately excludes from the solution. The multi-platform merge is
+   the one caller that scans a FINISHED corpus with no convert-set graph, so every unmatched reference
+   is *recovered* into the solution — turning (1) into a phantom member.
+
+**(2) is fixed** (the skip now precedes the harvest — an excluded project must not contribute to the
+solution's closure either), guarded by `TestCollectConvertedProjectsIgnoresTestProjectReferences` with a
+neutered-fix control that reproduces the exact phantom. Pass 2's solution is **307**, byte-identical to
+the committed one. **(1) is open** and is a `-tests` emission defect, not a solution-generator one; it
+also means `crypto/ecdh`'s committed test project cannot build by path. Filed separately.
+
+This is worth carrying beyond its own fix: it is the **first measured instance of a `.tests.csproj`
+defect escaping into the packable standard library**, and it escaped through the one code path that
+treats the corpus as authoritative rather than the convert set.
+
+### 10.5 What this changes about §8's process finding
+
+§8 named the gap as "a surface with no gate at all" and framed it as the per-GOOS folders going stale.
+The execution widens that by one direction: **the shared files go stale too.** Two of them
+(`reflect/type.cs`, `runtime/type.cs`) were emitted by an older converter than the one in the tree, and
+no gate said so either — the Windows corpus is not self-checked against the converter any more than the
+Linux one is. §8's second candidate remedy (an emission stamp in `package_info.cs`, compared without
+building) covers both directions and remains the one that would have caught this on day one, in seconds.
+
+The first candidate — "make the regen ritual three-target by default" — is now cheap enough to state
+plainly: on a healthy disk a three-target merge is **38 minutes** and its second pass is free evidence.
+The single-target reconvert has no advantage left except speed.
+
+### 10.6 Gates run
+
+| Gate | Result |
+|:--|:--|
+| `dotnet build go2cs-stdlib.slnx -c Debug -m --no-incremental -p:UseSharedCompilation=false` (property ABSENT = windows) | **0 errors**, 8m 36s |
+| …same, `-p:GoTargetOS=linux` | **0 errors**, 7m 55s |
+| converter `go test ./...` | **green**, 167s |
+| `check-no-regression.ps1` | **byte-identical** across all **592** behavioral packages, 1,203s (2 advisory warnings); solution integrity 594/594, path casing 4,270/4,270 |
+| `run-behavioral.ps1` (full, 4 phases) | **566/566** transpile + compile + golden, **540/540** stdout vs `go run`, 26 skipped, 1,805s |
+
+Host budgets measured here, for the table in `CLAUDE.md` (i7-5820K, **`C:`**, solo): three-target
+merge **38 min**; corpus build 8m36s (windows) / 7m55s (linux) at `--no-incremental`; CNR 20 min;
+full behavioral suite 30 min. Every one of these is *faster* than the same row's `D:` figure — §5 is
+a disk finding, and this section is its control.
