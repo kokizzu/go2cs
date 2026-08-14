@@ -5736,7 +5736,7 @@ its row and §"Five converter defects" item 3 below carry the measured result.)
 | `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
 | `internal/types/errors` | 155 | **0** | ~~converter defect~~ FIXED → now downstream of `go/types` | the Δ-renamed-imported-type defect is fixed (`claude/types-errors-delta-rename`); the package now BUILDS and RUNS, and both tests then die on the `go/types` checker nil-panic — see the sub-row below |
 | `internal/fuzz` | 52 | — | converter defect | alias-to-anonymous-struct (`CorpusEntry`): the lift's `global using` lives in the production compilation and does not cross the assembly boundary |
-| `net/rpc/jsonrpc` | 9 | **6** | ⬆ defect FIXED + guarded — now runs, 3 rows left | was: promotion from EMBEDDED POINTER fields invisible to `ImplementGenerator`. Fixed 2026-08-12; the 3 remaining rows are one json root, and the package is **not** socket-walled (see below) |
+| `net/rpc/jsonrpc` | 9 | **6** | ⬆ json root FIXED + guarded — still 3 rows, now on a SECOND root | two defects fixed so far (embedded-pointer promotion 2026-08-12; the non-trailing-`default` switch lowering 2026-08-13). The same 3 rows remain — `TestBuiltinTypes`, `TestClient`, `TestServer` — but they no longer report the json error: they now panic `index out of range [0] with length 0`, which **kills the host process**, so a full run records 0 verdicts, not 6. The other 6 still pass when run filtered. Not socket-walled (see below) |
 | `testing/fstest` | 7 | — | converter defect | a defined type over ANOTHER package's named map type — the emitted two-hop conversion has only one hop |
 | `internal/syscall/windows/registry` | 6 | — | converter defect | the internal-test partial class is emitted non-`static`, and in this package nothing else declares it |
 | `embed/internal/embedtest` | 7 | — | not a candidate | test-only Go package: there is no production package for the host to reference |
@@ -6094,6 +6094,27 @@ None of these five is a wall; all are ordinary emission bugs, listed with the ev
    `TestServerNoParams`, `TestUnexpectedError`. Nothing banked and no roster change — the row moves
    from "build-blocked" to "one named json root from a bank", and that root is worth checking against
    `encoding/json`'s own suite before anyone spends a lane on it here.
+
+   **UPDATE 2026-08-13 — the json root is fixed, and it was WIDER than recorded here; jsonrpc now
+   stands on a second, unrelated root.** The defect was not in the reflection bridge or in `array<T>`
+   at all: it was the converter's `switch` lowering for a `default` clause that Go places **before**
+   some of its cases (`claude/json-fixed-array-unmarshal`, guarded by `JsonFixedArrayUnmarshal`; full
+   mechanism in `ConversionStrategies-Reference.md`). Scope correction: converted `encoding/json`
+   could not decode a JSON array into **any** target except a bare `interface{}` — every `[N]T` *and*
+   every `[]T` took the error arm, not only fixed-size arrays. The same converter bug independently
+   made `internal/bisect` reject every pattern it was given.
+   jsonrpc's 3 rows are unchanged in NAME but not in cause: `TestBuiltinTypes`, `TestClient` and
+   `TestServer` now get past json and panic **`index out of range [0] with length 0`**. Two things
+   make this worth a fresh lane rather than a footnote: (1) the panic escapes on a goroutine and
+   **takes the host process down**, so the package now records **0** verdicts where it used to record
+   6 — a full-suite run of this package reads worse than before even though the corpus is strictly
+   better; run it filtered (`-test.run` over the other six) to see the 6 passes. (2) The obvious
+   suspect is ruled OUT: a struct-typed field holding a `[1]any`, left at its zero value by a keyed
+   composite literal that omits it, was probed directly (`codec{name:…, id:…}` → `c.req.Params[0] = …`,
+   plus the bare-`var` and local-`var` shapes) and **matches Go exactly** — the generated constructor
+   chain does run the `= new(1)` field initializer. No stack trace is available from the host: it
+   prints `panic: {message}` with an empty `StackTrace`, which is itself worth fixing, because a
+   goroutine panic with no frame is the hardest possible diagnostic to act on.
 4. **`testing/fstest` — a defined type over ANOTHER package's named map type gets a one-hop conversion.**
    Go has `type shuffledFS MapFS` where `MapFS map[string]*MapFile`. The emission declares
    `[GoType("global::go.testing.fstest_package.MapFS")] internal partial struct shuffledFS;` and then
