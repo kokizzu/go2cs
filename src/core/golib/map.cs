@@ -104,19 +104,19 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     /// </remarks>
     private sealed class NilKeyDictionary : Dictionary<TKey, TValue>
     {
-        public NilKeyDictionary()
+        public NilKeyDictionary() : base(s_comparer)
         {
         }
 
-        public NilKeyDictionary(int capacity) : base(capacity)
+        public NilKeyDictionary(int capacity) : base(capacity, s_comparer)
         {
         }
 
-        public NilKeyDictionary(IDictionary<TKey, TValue> source) : base(source)
+        public NilKeyDictionary(IDictionary<TKey, TValue> source) : base(source, s_comparer)
         {
         }
 
-        public NilKeyDictionary(IEnumerable<KeyValuePair<TKey, TValue>> source) : base(source)
+        public NilKeyDictionary(IEnumerable<KeyValuePair<TKey, TValue>> source) : base(source, s_comparer)
         {
         }
 
@@ -126,6 +126,13 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         /// <summary>Gets or sets the value stored under the nil key (meaningful only when <see cref="HasNilKey"/>).</summary>
         public TValue NilKeyValue = default!;
     }
+
+    // Go compares interface KEYS by (dynamic type, dynamic value) — the same relation `==` uses — but
+    // a converted interface value is presented through whichever generated adapter its current static
+    // interface calls for, so Dictionary's default comparer (wrapper identity) makes the SAME Go key
+    // unfindable after a type assertion. Null for every other key type, which keeps
+    // EqualityComparer<TKey>.Default's fast path. See GoEqualityComparer.
+    private static readonly IEqualityComparer<TKey>? s_comparer = GoEqualityComparer.ForKeys<TKey>();
 
     private readonly NilKeyDictionary m_map;
 

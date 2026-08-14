@@ -65,6 +65,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `go/format` | [`go.format.md`](current/go.format.md) | [`src/core/go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) |
 | `go/importer` | [`go.importer.md`](current/go.importer.md) | [`src/core/go/importer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/importer) |
 | `go/internal/gccgoimporter` | [`go.internal.gccgoimporter.md`](current/go.internal.gccgoimporter.md) | [`src/core/go/internal/gccgoimporter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/internal/gccgoimporter) |
+| `go/parser` | [`go.parser.md`](current/go.parser.md) | [`src/core/go/parser`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/parser) |
 | `go/printer` | [`go.printer.md`](current/go.printer.md) | [`src/core/go/printer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/printer) |
 | `go/scanner` | [`go.scanner.md`](current/go.scanner.md) | [`src/core/go/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/scanner) |
 | `go/token` | [`go.token.md`](current/go.token.md) | [`src/core/go/token`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/token) |
@@ -93,15 +94,19 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/dag` | [`internal.dag.md`](current/internal.dag.md) | [`src/core/internal/dag`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/dag) |
 | `internal/diff` | [`internal.diff.md`](current/internal.diff.md) | [`src/core/internal/diff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/diff) |
 | `internal/fmtsort` | [`internal.fmtsort.md`](current/internal.fmtsort.md) | [`src/core/internal/fmtsort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/fmtsort) |
+| `internal/godebugs` | [`internal.godebugs.md`](current/internal.godebugs.md) | [`src/core/internal/godebugs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/godebugs) |
 | `internal/gover` | [`internal.gover.md`](current/internal.gover.md) | [`src/core/internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/gover) |
 | `internal/itoa` | [`internal.itoa.md`](current/internal.itoa.md) | [`src/core/internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) |
 | `internal/profile` | [`internal.profile.md`](current/internal.profile.md) | [`src/core/internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) |
 | `internal/saferio` | [`internal.saferio.md`](current/internal.saferio.md) | [`src/core/internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) |
 | `internal/sysinfo` | [`internal.sysinfo.md`](current/internal.sysinfo.md) | [`src/core/internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) |
+| `internal/testenv` | [`internal.testenv.md`](current/internal.testenv.md) | [`src/core/internal/testenv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/testenv) |
+| `internal/types/errors` | [`internal.types.errors.md`](current/internal.types.errors.md) | [`src/core/internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) |
 | `internal/xcoff` | [`internal.xcoff.md`](current/internal.xcoff.md) | [`src/core/internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) |
 | `internal/zstd` | [`internal.zstd.md`](current/internal.zstd.md) | [`src/core/internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) |
 | `io` | [`io.md`](current/io.md) | [`src/core/io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) |
 | `io/fs` | [`io.fs.md`](current/io.fs.md) | [`src/core/io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) |
+| `io/ioutil` | [`io.ioutil.md`](current/io.ioutil.md) | [`src/core/io/ioutil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/ioutil) |
 | `log/slog/internal/benchmarks` | [`log.slog.internal.benchmarks.md`](current/log.slog.internal.benchmarks.md) | [`src/core/log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) |
 | `maps` | [`maps.md`](current/maps.md) | [`src/core/maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) |
 | `math` | [`math.md`](current/math.md) | [`src/core/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) |

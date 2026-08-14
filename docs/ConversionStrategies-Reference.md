@@ -5722,6 +5722,59 @@ unspecified. Pre-fix it reports `any: 0 0 1 5 3` — zero interface-kind keys, z
 invalid key, and a value sum of 5 instead of 6 because the nil entry was skipped — against Go's
 `any: 3 1 0 6 3`.)
 
+### An INTERFACE map key compares by Go equality, never by adapter identity
+
+Go compares interface values by (dynamic type, dynamic value), and that **one** relation serves both
+`==` and map-key lookup: a `map[Iface]V` finds an entry under exactly the values `==` calls equal. In
+the conversion the two had diverged. Emitted `==`/`!=` route through golib's
+[`builtin.AreEqual`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs),
+which unwraps the three generated adapter tiers (`IInterfaceAdapter`, `IжAdapter`, `IValueAdapter`)
+before comparing — but `map<K,V>`'s backing `Dictionary<TKey,TValue>` used the **default** comparer and
+compared the *wrappers*.
+
+That gap is observable because an interface value's wrapper is not stable. The same Go dynamic value is
+presented through whichever adapter the static interface currently holding it calls for, so asserting an
+`Object` to a narrower `dependency` yields a **different** wrapper object over the same receiver box.
+Under the default comparer the asserted value could no longer find its own entry in the map it came out
+of — while `==` on the very same pair still answered `true`, because `AreEqual` unwrapped. Equal but
+unfindable:
+
+```go
+M := make(map[dependency]*graphNode)
+for obj := range objMap {                       // objMap is map[Object]*declInfo
+    if obj, _ := obj.(dependency); obj != nil {
+        M[obj] = &graphNode{obj: obj}
+    }
+}
+for obj, n := range M {
+    for d := range objMap[obj].deps { /* ... */ }   // every key of M IS a key of objMap
+}
+```
+```csharp
+foreach (var (obj, n) in M) {
+    foreach (var (d, _) in (~objMap[obj]).deps) { /* ... */ }
+}
+```
+
+This is `go/types`' own `initorder.dependencyGraph`, and it is why the converted type checker could not
+type-check **any** source: the missed lookup returned a nil `ж<declInfo>`, and `~` on it nil-panicked
+one frame later — surfacing through `check.cs:430`, `handleBailout`'s faithful re-panic of Go's own
+`default: panic(p)` arm, which is a bailout frame and not the fault site.
+
+The fix is in golib and centralizes on the relation that already existed:
+[`GoEqualityComparer`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoEqualityComparer.cs)
+projects `AreEqual` as an `IEqualityComparer<TKey>`, hashing the **unwrapped root** so the hash stays
+consistent with it — the same rule the compile-time `ImplementGenerator` adapters already applied
+(`m_box.GetHashCode()`), which the runtime shells never had. It is installed only for key types that can
+actually carry an adapter (`typeof(TKey).IsInterface`, or `any`); a concrete key — `@string`, an
+integer, a converted struct — is never wrapped and keeps `EqualityComparer<TKey>.Default`'s
+devirtualized path, the test being a JIT-time constant per instantiation. Restating the relation inside
+each generated shell was rejected for the reason the defect illustrates: `AreEqual` is golib's single
+definition of Go equality, and a second copy per shell class is exactly the drift that produced this.
+(Guarded by the `InterfaceAssertionMapKey` behavioral test — pointer- and value-receiver implementors,
+an `Object` that is not a `dependency`, lookup after narrowing, lookup after re-widening, and the
+`Object(d) != obj` identity probe that pinned the equal-but-unfindable split.)
+
 ### Named map types and constrained map access
 
 A defined map type — `type Grades map[string]int` — emits the `[GoType("map[K, V]")] partial struct` forward declaration (completing the long-standing `visitMapType` stub), implemented by go2cs-gen's Map template: full forwarding of `IMap<K, V>` (including the two-value comma-ok indexer), `IDictionary<K, V>`, enumeration, and the `ISupportMake` factory through the wrapped `map<K, V>`. Its composite literal wraps the concrete map literal in the named constructor — `new Grades(new map<@string, nint>{["a"u8] = 1})` — mirroring named arrays/slices (a direct indexer-initializer would target a default wrapper with no backing dictionary; the old emission produced Go-style `key: value` inside C# braces — CS1513). Comma-ok indexing works through a **constrained map type parameter** too: `v, ok := m[k]` where `M ~map[K]V` detects the map CORE of the constraint (both at the assignment's tuple gate and in the index emission) and routes the same `m[k, ꟷ]` two-value indexer, which lives on `IMap<K, V>` itself. The **nil comparison** `m == nil` — Go's only legal map comparison, maps.Clone's nil-preserve guard — emits the `IMap.IsNil` property (`if (m.IsNil)`; backing-store null, distinct from an allocated empty map — no operator exists on a type parameter, CS8761), and `delete(m, k)` on a constrained map binds a golib `delete(IMap<K, V>, K)` overload (key/value types infer from the interface conversion). (Guarded by the `GenericTypeInference` extension `EqualMaps` — a maps.Equal clone over a named map type through the constraint, comma-ok + comparable-erased equality, values vs Go.)
@@ -7583,6 +7636,71 @@ in the broken chain, so it is a safe general lowering. Like the fallthrough-reac
 form leaves C# unable to prove exhaustiveness, so a value-returning terminal switch still gets its
 trailing `return default!;`. Guarded by `SwitchFallthroughDefault` (a `fallthrough`+`default` switch
 where a matched non-fallthrough case must NOT run the default, output-compared vs Go).
+
+### A NON-TRAILING `default` is guarded on the PRECOMPUTED any-case-match, never the running flag
+Go allows `default` in **any** clause position and still picks it only when no case matches — position
+is presentation, not semantics. The if-chain lowering emits clauses in **source order**, so a default
+that is not last is guarded by a predicate that has only seen the arms emitted *before* it. Every clause
+after such a default is then dead code, and the default body runs for values those clauses own. Two
+shapes reach the chain, and the corpus held one live instance of each:
+
+**Fallen into.** `encoding/json`'s `decode.go` `array` is the witness:
+
+```go
+switch v.Kind() {
+case reflect.Interface:
+	if v.NumMethod() == 0 { … return nil }
+	fallthrough
+default:
+	d.saveError(&UnmarshalTypeError{Value: "array", Type: v.Type(), …})
+	d.skip()
+	return nil
+case reflect.Array, reflect.Slice:
+	break
+}
+```
+
+The default participates in fallthrough, so it **cannot** be reordered — the `fallthrough` link is
+source-order-sensitive. It was emitted `if (fallthrough || !matchᴛ1)`, and for a slice or array target
+`matchᴛ1` was still `false` (only the `Interface` arm had run), so the error arm fired and the
+`Array, Slice` arm below it was unreachable. `json.Unmarshal` therefore failed **every** JSON array
+whose target was not a bare `interface{}` — `json: cannot unmarshal array into Go value of type
+[1]interface {}` for a fixed-size array (which is how `net/rpc/jsonrpc` passes its `[1]any` params),
+and the identical error for every `[]T`. The default now reads the **precomputed** any-case-match
+already built for the mirror shape — the OR of every case condition in the switch, materialized ahead
+of the chain — so it fires only when nothing matches:
+
+```csharp
+var exprᴛ1 = v.Kind();
+var matchᴛ1 = false;
+var matchᴛ2 = exprᴛ1 == reflect.ΔInterface || (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice);
+if (exprᴛ1 == reflect.ΔInterface) { matchᴛ1 = true; … fallthrough = true; }
+if (fallthrough || !matchᴛ2) { /* default: */ … }
+if (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice) { matchᴛ1 = true; … }
+```
+
+**Participating in no fallthrough at all.** For a non-constant-label tagged switch the converter
+already normalized this shape by *moving* the default clause to the end. A **constant**-label switch
+that has fallthroughs elsewhere also lowers to the chain, and that reorder gate did not cover it — so
+the un-moved default emitted as a **bare block**, with no condition at all, and ran unconditionally.
+`internal/bisect`'s `parsePattern` leads with `default: return …parseError`, so every bisect pattern
+parse returned "invalid pattern syntax" and all six digit arms below it were dead code.
+(`regexp/syntax`'s `parseEscape` has the identical shape and survived only by luck: its default body
+re-tests `!isalnum(c)`, which happens to exclude every one of its own case labels.)
+
+These are now guarded **in place** — `if (!matchᴛ2) { /* default: */ … }` — rather than reordered.
+Widening the reorder gate was tried and rejected: reordering moves the clause's *statements*, but
+comments attach by source position, so `parseEscape`'s default-clause commentary migrated up into the
+octal arm above it. Guarding in place fixes the same defect with no code motion, keeps the emitted C#
+in Go's clause order, and costs nothing structurally — emitting an `if` instead of a bare block is
+precisely what lets the following clause keep its `else`, which is the CS8641 problem the reorder
+exists to avoid in the first place.
+
+Guarded by `JsonFixedArrayUnmarshal`, which unmarshals JSON arrays into `[1]any`, `[2]int`, `[3]string`,
+nested `[2][2]int` and a struct array — including the over-length (truncate) and under-length
+(zero-fill) cases — and, in the other direction, asserts that the `default` arm still produces Go's
+exact error for the targets it genuinely owns, so the fix cannot be an over-broad one that drops the
+guard.
 
 ### A clause's `else` may only be dropped when EVERY preceding clause terminates
 In the if-chain lowering the converter omits the `else` before a clause when the preceding clause

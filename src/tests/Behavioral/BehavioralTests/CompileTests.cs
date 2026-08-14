@@ -664,6 +664,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckInitOrderTupleSpecs() => CheckTarget("InitOrderTupleSpecs");
 
     [TestMethod]
+    public void CheckInterfaceAssertionMapKey() => CheckTarget("InterfaceAssertionMapKey");
+
+    [TestMethod]
     public void CheckInterfaceCasting() => CheckTarget("InterfaceCasting");
 
     [TestMethod]
@@ -710,6 +713,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
+
+    [TestMethod]
+    public void CheckJsonFixedArrayUnmarshal() => CheckTarget("JsonFixedArrayUnmarshal");
 
     [TestMethod]
     public void CheckJsonUnmarshalerDispatch() => CheckTarget("JsonUnmarshalerDispatch");

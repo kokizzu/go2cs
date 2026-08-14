@@ -103,7 +103,12 @@ public static class TestHost
 
         try
         {
-            CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory);
+            // The ancestry goes in FIRST, so the fixture staging that follows can replace any linked
+            // component it needs to write into with a real one. GOROOT is what the pipeline exports to
+            // both sides; when there is none, staging is skipped and the sandbox is what it always was.
+            PackageAncestry.TryStage(Environment.GetEnvironmentVariable("GOROOT"), registry.Package, runRoot, workingDirectory);
+
+            CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory, runRoot);
             CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
             Environment.CurrentDirectory = workingDirectory;
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -111,7 +116,7 @@ public static class TestHost
             Environment.SetEnvironmentVariable("TZ", "UTC");
 
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
-            TestRunner runner = new(registry, options, reporter, workingDirectory);
+            TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
 
             // TEST-HOST-ONLY: contain an unhandled exception escaping a goroutine so it fails ONE
             // test instead of the whole run. See TestRunner.ContainGoroutineException — a converted
@@ -156,7 +161,10 @@ public static class TestHost
             try
             {
                 // The whole run root, so the package-named directory's private parent goes with it.
-                Directory.Delete(runRoot, true);
+                // Junction-aware: a recursive delete does not FOLLOW a link (which is what keeps the
+                // real GOROOT safe) but it does not remove one either, so the ancestry's links are
+                // unlinked first.
+                PackageAncestry.Delete(runRoot);
             }
             catch
             {
@@ -237,7 +245,7 @@ public static class TestHost
     // must find them here too. Names only, created empty: the name is what such a test observes, and
     // a sibling package's files are staged by that package's own run. (testdata, when the suite has
     // one, is created here too and then filled in by CopyFixtures — CreateDirectory is idempotent.)
-    private static void CreateFixtureDirectories(IReadOnlyList<string> directories, string workingDirectory)
+    private static void CreateFixtureDirectories(IReadOnlyList<string> directories, string workingDirectory, string runRoot)
     {
         foreach (string name in directories)
         {
@@ -248,7 +256,7 @@ public static class TestHost
             if (!target.StartsWith(workingDirectory, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"fixture directory escapes run root: {name}");
 
-            Directory.CreateDirectory(target);
+            PackageAncestry.EnsureWritable(target, runRoot);
         }
     }
 
@@ -276,7 +284,11 @@ public static class TestHost
                 !target.StartsWith(runRoot, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"fixture escapes run root: {relativePath}");
 
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            // The ancestry view may hold a LINK at the fixture's parent — compress/{flate,zlib,lzw}
+            // all stage into `../testdata` — and writing through one would put staged fixtures inside
+            // the real Go installation. EnsureWritable makes every component below the run root a
+            // real directory first.
+            PackageAncestry.EnsureWritable(Path.GetDirectoryName(target)!, runRoot);
             File.Copy(source, target, true);
         }
     }
@@ -397,15 +409,19 @@ public static class TestHost
         return sanitized?.ToString() ?? value;
     }
 
-    // The package's directory path under the run root, mirroring its whole Go import path
-    // ("compress/flate" -> "compress\flate"). The last element is what `go test` makes the working
-    // directory's base name; the ANCESTORS matter too, because a package that reads a shared
-    // fixture ("../testdata/e.txt", "../../testdata/Isaac.Newton-Opticks.txt") needs those levels to
-    // exist INSIDE the sandbox for the relative open() to resolve. Mirroring the import path gives
-    // exactly Go's own layout, so the depth is always sufficient and never guessed. It also
-    // preserves the property the flat form was chosen for — the parent of the working directory
-    // holds nothing but the package (io/fs's TestGlob globs `*/glob.go` against os.DirFS("..") and
-    // expects `fs/glob.go`) — since each mirrored level holds only the next.
+    // The package's directory path under the run root, mirroring its whole Go import path BENEATH a
+    // `src` level ("compress/flate" -> "src\compress\flate"). The last element is what `go test`
+    // makes the working directory's base name; the ANCESTORS matter too, because a package that reads
+    // a shared fixture ("../testdata/e.txt", "../../testdata/Isaac.Newton-Opticks.txt") needs those
+    // levels to exist INSIDE the sandbox for the relative open() to resolve. Mirroring the import
+    // path gives exactly Go's own layout, so the depth is always sufficient and never guessed.
+    //
+    // `src` is a level of GOROOT, so it is a level here: without it, a package's climb out of its own
+    // tree lands one short. internal/godebugs reads ../../../doc/godebug.md, which is GOROOT's `doc`
+    // beside `src` and not a fourth level above the package; internal/testenv stats ../../../bin/go
+    // the same way. It is also where the Go toolchain's module walk finds `module std`, which is what
+    // internal/coverage/cfile needs for `go test` inside a testdata directory to resolve at all.
+    // PackageAncestry fills these levels with the real GOROOT's content.
     private static string PackageDirectoryPath(string importPath)
     {
         string[] segments = importPath.TrimEnd('/')
@@ -414,7 +430,7 @@ public static class TestHost
             .Where(segment => !string.IsNullOrEmpty(segment))
             .ToArray();
 
-        return segments.Length == 0 ? "pkg" : Path.Combine(segments);
+        return Path.Combine("src", segments.Length == 0 ? "pkg" : Path.Combine(segments));
     }
 
     private static string SanitizePath(string value) =>

@@ -5210,6 +5210,74 @@ and it interacts with the staging path that feeds the input-digest manifest. Des
 breadth lane's — and NOT a disclosure, for the reason already recorded: it is satisfiable at a layer
 go2cs owns.
 
+> **RESOLVED 2026-08-13 (lane `claude/synthetic-goroot-class`) — four of the six bank, and the
+> class was TWO roots, not one.** Design: [`DESIGN-package-ancestry-view.md`](DESIGN-package-ancestry-view.md).
+> The remedy is an ANCESTRY view, not a synthetic GOROOT, and the difference was measured rather
+> than argued. `PackageAncestry` stages GOROOT's content from its top level down to the package —
+> sibling directories as links, files as hard links, the path to the package materialized, the
+> package's own directory real copies — under a working directory that gains the `src` level this
+> section correctly predicted it needed. GOROOT itself keeps pointing at the real installation.
+>
+> **Why not the synthetic GOROOT this section expected.** A linked mirror is not walk-equivalent to
+> the real tree: Go reports a junction from `Lstat` as an irregular file, so `filepath.WalkDir`
+> steps over it rather than descending. Measured against Go 1.23.1 on a mirrored root — a walk
+> counting `*.gz` under GOROOT finds **0** where the real tree has **4**, and a walk of
+> `src/unicode` reports **1** entry against the real **19**. Two ALREADY-BANKED packages walk GOROOT
+> that way (`compress/gzip`'s issue14937, `path/filepath`), so repointing GOROOT would have
+> REGRESSED them. Reads through a junction are faithful and every member of this class resolves
+> against its working directory, so leaving GOROOT real costs nothing here. The feared "changes the
+> execution contract for all 122 banked packages at once" did not materialize: nothing about GOROOT
+> resolution moved.
+>
+> **Banked: `go/parser` 173/173, `io/ioutil` 28/28, `internal/testenv` 7/7, `internal/godebugs` 1/1**
+> — +209 verdicts, the arc's ledger paid in full and then some (the deferral price this board
+> tracked was 167 + 12).
+>
+> **Two corrections to this board's own rows, both from reading the sources rather than the verdict
+> names** — the same methodology note §*go/parser 6/173* already earned:
+> - `go/parser`'s initializer reads **`../printer/nodes.go`**, not `parser.go`. That is the whole
+>   design question: its own sources would be served by staging the package directory; a SIBLING
+>   package's are not.
+> - `internal/godebugs` needs more than `doc/godebug.md`. Past that read, `TestAll` runs
+>   `go list -f={{.Dir}} std cmd` and reads every `.go` file it names — a working toolchain, not a
+>   staged file.
+>
+> **The residue is a SECOND root — GOROOT-IDENTITY — and it holds the two that did not bank.**
+> Both need the importing/asking file to sit under the GOROOT the toolchain itself uses, which no
+> ancestry view can provide and which repointing GOROOT cannot fix either (the child `go` resolves
+> its own GOROOT from its executable location — measured: `go list` returns real-GOROOT paths with
+> `GOROOT` set to a mirror).
+> - **`go/build` 57/58, unchanged and now precisely attributed.** `TestLocalDirectory`'s
+>   `ImportDir(cwd)` derives the import path by relating cwd to the GOROOT the process REPORTS.
+> - **`internal/coverage/cfile` 4/16 — same count, but a root MOVED, which is why it was
+>   re-measured.** The module-resolution facet is **closed**: `TestIssue59563TruncatedCoverPkgAll`
+>   no longer dies on `go.mod file not found`, it runs `go test -coverpkg=all` to completion and
+>   emits a full profile, failing now on CONTENT (`wanted 1 found, got 0`) — a real coverage
+>   question, no longer infrastructure. The internal-import facet stands:
+>   `use of internal package internal/coverage/slicewriter not allowed`, because the staged
+>   `harness.go` is outside the tree the toolchain resolves `internal/...` within. Read the row as
+>   one GOROOT-identity failure plus one content failure, with the nine `TestCoverageApis` subtests
+>   still shadows of their parent.
+>
+> **Two host defects surfaced on the way and are fixed here**, both general and both previously
+> masked:
+> - **PATH fidelity.** `go test` PREPENDS `$GOROOT/bin` to the test binary's PATH (measured:
+>   `PATH[0]` is `$GOROOT/bin`, `exec.LookPath("go")` resolves there). The pipeline now does the
+>   same, beside its existing GOROOT export. On a machine carrying two installations of the same Go
+>   version this is the difference between pass and fail for `internal/testenv`.
+> - **`t.TempDir()` placement.** It sat under the WORKING directory; Go's sits in the system temp,
+>   with no `go.mod` above it. The staged ancestry puts `src/go.mod` above the package tree, so it
+>   is hoisted to the run root. This unmasked a **false pass**: `go/build`'s
+>   `TestImportPackageOutsideModule` wants "go.mod file not found in current directory or any parent
+>   directory" and was getting it only because the old sandbox had no `go.mod` ANYWHERE.
+>
+> **And one wall behind the wall.** With its initializer working, `go/parser` ran and died on an
+> uncatchable `Stack overflow.` — `TestParseDepthLimit` drives Go's own `maxNestLev` of 100,001
+> levels deliberately, ~400k converted frames, which the host's 256 MB per-test thread served only
+> if every frame fit in 671 bytes. Raised to Go's own 1 GB ceiling (reservation is address space;
+> pages commit on demand). Any lane hitting a deep-recursion wall elsewhere should suspect this
+> constant before suspecting the conversion.
+
 `net/textproto` also re-measures unchanged at 25 of 26 — still the want-ZERO
 `canonicalMIMEHeaderKey allocs = 816` against the AllocsPerRun-reports-BYTES shim, still not a
 disclosure candidate under ruling #1.
@@ -5717,6 +5785,112 @@ two failing tests, ~7 s to the panic, versus 583 verdicts behind a compile+impor
 recover first; this lane re-derived that independently before finding the note, which is some
 evidence of how naturally the stack misleads.
 
+#### ROOT FOUND AND FIXED (2026-08-13, `claude/go-types-checker-wall`) — an interface MAP KEY compared by wrapper identity
+
+The reproducer above did its job: the fault is **one golib defect**, it is **not** generics, **not**
+the importer, and **not** the ж-box or scheduler arcs' territory.
+
+**How it was reached.** The re-panic warning is correct and the stack really is useless, but the
+originating frames were never destroyed — they are snapshotted at the point the .NET exception is
+ADOPTED as a Go panic (`RuntimeErrorPanic.TryAsPanic` → `PanicException.CaptureThrowSite`). Dumping
+`PanicTrace` there named the site in one run:
+
+```
+at go.ж`1.op_OnesComplement(ж`1 value)            in golib\ж.cs:957
+at go.go.types_package.dependencyGraph(map`2 objMap) in go\types\initorder.cs:233
+at go.go.types_package.initOrder(ж`1 Ꮡcheck)      in go\types\initorder.cs:33
+at go.go.types_package.checkFiles(...)            in go\types\check.cs:515
+```
+
+*(Why `InheritThrowSite` did not already surface this: the re-panic at `check.cs:430` is thrown
+INSIDE `handleBailout`'s own `try`, so the emitted `catch … when (GoFrame.IsPanic(…))` snapshots its
+own one-frame site first, and `InheritThrowSite`'s `??=` then declines the origin. Worth a separate
+diagnostic fix — it is what makes this stack mislead every reader — but it is not the wall.)*
+
+**The mechanism.** `initorder.cs:233` is `for d := range objMap[obj].deps`, and `objMap[obj]`
+**missed**, returning a nil `ж<declInfo>` that `~` dereferenced one frame later. In Go the lookup
+cannot miss: every key of `M` came from ranging `objMap`. The two differ only in the STATIC interface
+the key is held in — `Object` going in, `dependency` coming back out of `obj.(dependency)`.
+
+Go compares interface values by (dynamic type, dynamic value), and that ONE relation serves both `==`
+and map-key lookup. In the conversion they had diverged: emitted `==`/`!=` route through
+`builtin.AreEqual`, which unwraps the three adapter tiers, while `map<K,V>`'s backing `Dictionary`
+used the DEFAULT comparer and compared the WRAPPERS — and an interface value's wrapper is not stable,
+since asserting to a narrower interface yields a different adapter object over the same receiver box.
+**Equal but unfindable**: `Object(d) != obj` answered correctly (`AreEqual` unwrapped) while
+`objMap[d]` missed. Only the compile-time `ImplementGenerator` adapters ever carried the
+unwrap-and-hash contract; the runtime shells `go2cs-gen` builds for a duck-typed assert
+(`Δ<iface><T>`, `Δ<iface>ᴛObj`) override neither `Equals` nor `GetHashCode`.
+
+**The fix** is golib-only and centralizes rather than duplicates: `GoEqualityComparer` projects
+`AreEqual` as an `IEqualityComparer<TKey>` and hashes the UNWRAPPED root (the same rule the
+compile-time adapters already used), installed by `map<K,V>` only when `typeof(TKey).IsInterface` or
+`TKey` is `any` — so concrete keys keep `EqualityComparer<TKey>.Default`'s devirtualized path, the
+test being a JIT-time constant per instantiation. Restating the relation in each generated shell was
+rejected: `AreEqual` is golib's single definition of Go equality and a per-shell copy is exactly the
+drift that produced this. Guarded by the **`InterfaceAssertionMapKey`** behavioral test; documented in
+`ConversionStrategies-Reference.md` under *An INTERFACE map key compares by Go equality*.
+
+**Measured movement.** `internal/types/errors` **BANKS at 155/155** (0 mismatches, `status:
+validated`) — the row's full 155 verdicts, from **0** before. The pre-fix host produced two
+nil-panics and zero verdicts; post-fix it type-checks `codes.go` and every Example snippet, and the
+subtests that pass include the generics family (`NotAGenericType`, `WrongTypeArgCount`,
+`CannotInferTypeArgs`, `InvalidTypeArg`, `InvalidInstanceCycle`, `MisplacedTypeParam`).
+
+**`go/internal/gcimporter` moves 399 → 475 of 583** (+76; mismatches 184 → 108), and the split the
+row's census left open — "whether the 92 and the 91 are one root or two is NOT established here and
+must not be assumed" — is now **answered: TWO**. The nil-panic class is *entirely* gone (zero
+`invalid memory address` and zero `check.cs:430` occurrences across the whole 583-verdict run); every
+one of the 108 residual mismatches is the OTHER class, the bogus type-parameter errors, unchanged in
+signature (`absdiff2.go:70:9: cannot use a.Value_ (variable of type T constrained by orderedNumeric)
+as T value in return statement`). That second root — a type parameter judged not identical to itself —
+is **still open and is not this fix's**, and gcimporter's remaining rows stay downstream of it. The
+row does NOT bank; test sources deliberately not committed.
+
+**`go/types` itself: NOT measured — one BUILD blocker, and it is not the wall.** With the wall down,
+`go/types`' own suite was taken through `-tests -test-action all -test-timeout 90m` for the first
+time. The conversion **fully succeeds** — all 34 `_test.cs` files emit — and the host build produces
+**exactly one** error:
+
+```
+check_test.cs(200,53): error CS0839: Argument missing
+    defer(ᴛ1 => throw panic(errΔ2), , ref ᒐ);        // Go: `defer panic(err)` (check_test.go:170)
+```
+
+**Mechanism.** `visitDeferStmt.go:62-66` forces the temp-param lambda form for a BUILTIN callee, so
+`paramCount == 1` and `lambdaContext.callArgs` is sized 1 — but `panic` is not rendered as a call.
+It emits `throw panic(<expr>)` with the ORIGINAL argument expression inlined in the lambda body, so
+the `ᴛ1` substitution never happens and `callArgs[0]` is never filled, leaving the empty argument slot
+above. Note the near neighbours are fine: `defer delete(w.seen, typ)` (`infer.go:715`,
+`typestring.go:121`) converts and compiles today, which is why the corpus never surfaced this — the
+defect is specific to the one builtin that is a `throw`, not a call.
+
+**Remedy shape.** Prefer routing `panic` through the same temp-param substitution as every other
+builtin — `defer(ᴛ1 => throw panic(ᴛ1), errΔ2, ref ᒐ)`. The tempting alternative (drop the lambda
+param and let the body capture the expression) is WRONG: Go evaluates a deferred call's arguments at
+`defer` time, so capturing `errΔ2` would report whatever the variable held when the frame unwound.
+Small and well-scoped, but it is a CONVERTER change and therefore owes its own CNR + full behavioral
+gate, which is why this lane characterized it rather than folding it into a golib-only commit.
+
+**Adjacent, NOT measured — a plausible sibling worth one probe.** go2cs-gen's struct-equality template
+compares an INTERFACE-typed field with C# `==` and hashes it with `HashCode.Combine(field, …)` — e.g.
+`go/types`' own `graphNode`: `this.obj == other.obj`. On a C# interface `==` is reference equality, so
+a struct carrying an interface field would compare by ADAPTER identity rather than by Go's (dynamic
+type, dynamic value) — the same class as this fix, one level up. Unlike the map defect it is at least
+self-consistent (Equals and GetHashCode are both reference-based), so it produces no equal-but-
+unfindable split and no nil-panic; it would show as two structs holding the same dynamic value
+comparing unequal. **This is read off the generated template, not observed in a failing test** — it
+may well be masked in practice, and it is stated here as a candidate to measure, not as a finding. The
+remedy shape, if it reproduces, is the same one used here: route the field through `AreEqual` and hash
+`GoEqualityComparer.RootOf`.
+
+⚠ **One environmental note for anyone re-running these by hand:** four subtests
+(`InvalidPkgUse`, `UnusedImport`, `UndeclaredImportedName`, `UnexportedName`) use
+`importer.Default()` and fail with `could not import fmt … ($GOROOT not set)` when the host exe is
+launched directly. That is the known GOROOT-resolution class, not a checker defect — the pipeline
+exports GOROOT to both sides, and under it the package is 155/155. Running the host bare gives
+150/156.
+
 ## Scout batch 1 — twelve never-run packages (2026-08-11)
 
 Twelve packages that had never linked a test host were taken end to end through `-tests -test-action all`
@@ -5736,7 +5910,7 @@ its row and §"Five converter defects" item 3 below carry the measured result.)
 | `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
 | `internal/types/errors` | 155 | **0** | ~~converter defect~~ FIXED → now downstream of `go/types` | the Δ-renamed-imported-type defect is fixed (`claude/types-errors-delta-rename`); the package now BUILDS and RUNS, and both tests then die on the `go/types` checker nil-panic — see the sub-row below |
 | `internal/fuzz` | 52 | — | converter defect | alias-to-anonymous-struct (`CorpusEntry`): the lift's `global using` lives in the production compilation and does not cross the assembly boundary |
-| `net/rpc/jsonrpc` | 9 | **6** | ⬆ defect FIXED + guarded — now runs, 3 rows left | was: promotion from EMBEDDED POINTER fields invisible to `ImplementGenerator`. Fixed 2026-08-12; the 3 remaining rows are one json root, and the package is **not** socket-walled (see below) |
+| `net/rpc/jsonrpc` | 9 | **6** | ⬆ json root FIXED + guarded — still 3 rows, now on a SECOND root | two defects fixed so far (embedded-pointer promotion 2026-08-12; the non-trailing-`default` switch lowering 2026-08-13). The same 3 rows remain — `TestBuiltinTypes`, `TestClient`, `TestServer` — but they no longer report the json error: they now panic `index out of range [0] with length 0`, which **kills the host process**, so a full run records 0 verdicts, not 6. The other 6 still pass when run filtered. Not socket-walled (see below) |
 | `testing/fstest` | 7 | — | converter defect | a defined type over ANOTHER package's named map type — the emitted two-hop conversion has only one hop |
 | `internal/syscall/windows/registry` | 6 | — | converter defect | the internal-test partial class is emitted non-`static`, and in this package nothing else declares it |
 | `embed/internal/embedtest` | 7 | — | not a candidate | test-only Go package: there is no production package for the host to reference |
@@ -6094,6 +6268,27 @@ None of these five is a wall; all are ordinary emission bugs, listed with the ev
    `TestServerNoParams`, `TestUnexpectedError`. Nothing banked and no roster change — the row moves
    from "build-blocked" to "one named json root from a bank", and that root is worth checking against
    `encoding/json`'s own suite before anyone spends a lane on it here.
+
+   **UPDATE 2026-08-13 — the json root is fixed, and it was WIDER than recorded here; jsonrpc now
+   stands on a second, unrelated root.** The defect was not in the reflection bridge or in `array<T>`
+   at all: it was the converter's `switch` lowering for a `default` clause that Go places **before**
+   some of its cases (`claude/json-fixed-array-unmarshal`, guarded by `JsonFixedArrayUnmarshal`; full
+   mechanism in `ConversionStrategies-Reference.md`). Scope correction: converted `encoding/json`
+   could not decode a JSON array into **any** target except a bare `interface{}` — every `[N]T` *and*
+   every `[]T` took the error arm, not only fixed-size arrays. The same converter bug independently
+   made `internal/bisect` reject every pattern it was given.
+   jsonrpc's 3 rows are unchanged in NAME but not in cause: `TestBuiltinTypes`, `TestClient` and
+   `TestServer` now get past json and panic **`index out of range [0] with length 0`**. Two things
+   make this worth a fresh lane rather than a footnote: (1) the panic escapes on a goroutine and
+   **takes the host process down**, so the package now records **0** verdicts where it used to record
+   6 — a full-suite run of this package reads worse than before even though the corpus is strictly
+   better; run it filtered (`-test.run` over the other six) to see the 6 passes. (2) The obvious
+   suspect is ruled OUT: a struct-typed field holding a `[1]any`, left at its zero value by a keyed
+   composite literal that omits it, was probed directly (`codec{name:…, id:…}` → `c.req.Params[0] = …`,
+   plus the bare-`var` and local-`var` shapes) and **matches Go exactly** — the generated constructor
+   chain does run the `= new(1)` field initializer. No stack trace is available from the host: it
+   prints `panic: {message}` with an empty `StackTrace`, which is itself worth fixing, because a
+   goroutine panic with no frame is the hardest possible diagnostic to act on.
 4. **`testing/fstest` — a defined type over ANOTHER package's named map type gets a one-hop conversion.**
    Go has `type shuffledFS MapFS` where `MapFS map[string]*MapFile`. The emission declares
    `[GoType("global::go.testing.fstest_package.MapFS")] internal partial struct shuffledFS;` and then
@@ -6212,3 +6407,46 @@ the −800 belongs to the next os re-instrumentation (AllocMark), not to this st
   untouched by the aftermath commits, i.e. counts held), `TestMultiWriter_WriteStringSingleAlloc`
   among the matched (pass|pass, proof page `io.md`); the assert is want-EXACTLY-one, so the pass IS
   the "still exactly 1" claim.
+
+**The perf suite — measured, AOT included, on the dedicated machine (2026-08-13; closes the §9 A3
+row's last obligation via `HANDOFF-l3-a3-perf.md`).** The work laptop's stand-down transferred the
+run to a solo, sleep-proofed machine: AMD Ryzen 5 PRO 6650U (6C/12T, 30.8 GB), Windows 11
+10.0.26200, **pinned go1.23.1 (gate zero verified)**, .NET SDK 9.0.316, MSVC 14.44 `link.exe`
+present — the AOT column is measured, not owed. Full `run-performance.ps1 --update-readme`
+(default 5-run medians, `MSBUILDDISABLENODEREUSE=1`): **Verify passed 14/14** — identical
+timing-filtered stdout across Go binary / C# JIT / C# Native AOT, the gate Measure sits behind —
+total 14,171 s wall, 13,552 s (95.6 %) of it the fourteen sequential ILC publishes. The table
+banks in `src/tests/Performance/README.md` (PERF-RESULTS; mirrored to `docs/Performance.md`), the
+first to carry the ж-bound **RefLower** row: Go 226.3 ms · JIT 660.6 ms (2.92×) · AOT 1,827.8 ms
+(8.08×). The row is the standing README record, not the arc's gate — the gate was A2's paired
+same-machine A/B per §7's protocol, and cross-table comparison against the replaced i7-5820K
+table (2026-08-11, 13 rows, same toolchain) is machine effect by construction. The §7-item-4
+recording, from the run's ILC `ok (NNNs)` lines and the published
+`Perf*\bin\Release\aot\<proj>.exe` sizes — every publish succeeded **first-try** (the work
+laptop's exit-1-then-self-heal quirk did not recur, so no retry-inflated time exists anywhere),
+each exe carrying the full converted-stdlib closure:
+
+| Benchmark | ILC wall (s) | AOT publish size (MB) |
+|:--|--:|--:|
+| PerfStartup | 981 | 296.4 |
+| PerfFib | 1,085 | 296.4 |
+| PerfSieve | 1,094 | 296.4 |
+| PerfMatMul | 1,081 | 296.9 |
+| PerfString | 972 | 296.4 |
+| PerfStringView | 929 | 296.4 |
+| PerfStringMatch | 955 | 302.3 |
+| PerfMap | 933 | 296.4 |
+| PerfSort | 909 | 297.0 |
+| PerfChannel | 923 | 296.4 |
+| PerfIfaceCall | 936 | 296.4 |
+| PerfIface | 921 | 296.5 |
+| PerfIfaceShell | 908 | 296.9 |
+| PerfRefLower | 925 | 296.4 |
+
+Two run notes for the record: the JIT one-shot batch build reported errors that per-project
+attribution resolved to **0 failed** — the known parallel-build race, exactly as the handoff
+predicted, not a corpus defect. And an observation the A′/B′ checkpoint should see: on this
+machine AOT trails JIT on the compute-bound rows (RefLower 8.08× vs 2.92×, MatMul 5.02× vs
+1.66×, Sieve 3.28× vs 1.61×) while beating it on Startup and Map — the ref-heavy hot loop is
+the widest such gap, so ILC codegen of the lowered emission is worth a look when B′'s
+dual-emission increment prices its own AOT bill.

@@ -849,6 +849,18 @@ nil-key slot that every map member routes to; the test that finds it is a JIT-ti
 value-type key (`map[string]V`, `map[int]V`) compiles to exactly the code it did before and `PerfMap`
 stays flat.
 
+An **interface key compares by Go equality, not by wrapper identity**. Go compares interface values by
+(dynamic type, dynamic value), and that one relation serves both `==` and map lookup. But a converted
+interface value is presented through whichever generated adapter its current static interface calls for,
+so asserting an `Object` to a narrower `dependency` hands back a *different* wrapper over the same
+receiver box. A map keyed by an interface therefore installs golib's `GoEqualityComparer`, which projects
+the same `builtin.AreEqual` that emitted `==` uses and hashes the unwrapped root; without it the asserted
+value could not find its own entry, while `==` on that very pair still said `true`. That split is what
+stopped `go/types` from type-checking anything — `initorder.dependencyGraph` is exactly this shape — and
+it is scoped to interface/`any` keys, so concrete keys keep `EqualityComparer<K>.Default`'s fast path.
+See the [interface map key](ConversionStrategies-Reference.md#an-interface-map-key-compares-by-go-equality-never-by-adapter-identity)
+section of the reference.
+
 A **`m[string(b)]` READ does not copy the key**, matching the Go compiler's own special case
 (`runtime.slicebytetostringtmp`): a lookup hashes and compares its key but never retains it, so the
 converter emits golib's `tmpstring(b)` — a transient `@string` windowing the slice's live bytes,
@@ -1144,11 +1156,14 @@ case {} when path[r] == (rune)'.' && (r + 1 == n || path[r + 1] == (rune)'/'): {
 ```
 
 `fallthrough` expands to an if-chain with a fall flag and `goto`; a switch-targeting `break` inside an
-if-else arm is wrapped in a one-shot `do { … } while (false)`.
+if-else arm is wrapped in a one-shot `do { … } while (false)`. Because the chain emits clauses in
+source order, a `default:` that Go places *before* some of its cases is guarded on a predicate
+precomputed over **every** case label — never on the running match flag, which has not yet seen the
+arms below it.
 
 **Full detail:** [Reference → Expression Switch Statements](ConversionStrategies-Reference.md#expression-switch-statements) —
-constant-vs-runtime label detection, `static readonly` tags, `fallthrough` + guarded-default returns, and
-index/named-type case labels.
+constant-vs-runtime label detection, `static readonly` tags, `fallthrough` + guarded-default returns,
+non-trailing `default` clauses, and index/named-type case labels.
 
 ---
 

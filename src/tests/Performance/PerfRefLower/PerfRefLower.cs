@@ -5,7 +5,7 @@ using time = time_package;
 
 partial class main_package {
 
-[GoType] [GoValueClone("x")] partial struct felem {
+[GoType] partial struct felem {
     internal array<uint64> x = new(4);
 }
 

@@ -85,7 +85,7 @@ silently report a benchmark that computes something different in C#.
 
 <!-- PERF-RESULTS:BEGIN -->
 
-**Environment:** Intel(R) Core(TM) i7-5820K CPU @ 3.30GHz · Microsoft Windows 10.0.26100 · go1.23.1 · .NET SDK 9.0.316 · 2026-08-11
+**Environment:** AMD Ryzen 5 PRO 6650U with Radeon Graphics · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-08-13
 
 C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true` self-contained, partial trim. Median of 5 runs (1 discarded warmup). Workload time is measured in-program and excludes process startup; the Startup row is pure process wall time. Ratios are relative to Go.
 
@@ -93,37 +93,39 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 23.4 | 293.1 (12.51×) | 80.8 (3.45×) |
-| Fib | 133.1 | 159.0 (1.19×) | 126.9 (0.95×) |
-| Sieve | 122.2 | 158.4 (1.30×) | 380.3 (3.11×) |
-| MatMul | 150.1 | 305.1 (2.03×) | 507.3 (3.38×) |
-| String | 165.1 | 997.6 (6.04×) | 1,247.7 (7.55×) |
-| StringView | 30.7 | 28.3 (0.92×) | 25.9 (0.84×) |
-| StringMatch | 552.6 | 1,398.7 (2.53×) | 1,857.3 (3.36×) |
-| Map | 596.5 | 567.4 (0.95×) | 240.3 (0.40×) |
-| Sort | 159.1 | 437.7 (2.75×) | 415.0 (2.61×) |
-| Channel | 105.7 | 97.3 (0.92×) | 92.2 (0.87×) |
-| IfaceCall | 257.3 | 761.4 (2.96×) | 743.0 (2.89×) |
-| Iface | 123.7 | 859.8 (6.95×) | 603.9 (4.88×) |
-| IfaceShell | 29.4 | 941.8 (32.05×) | 1,474.9 (50.19×) |
+| Startup | 25.2 | 223.3 (8.88×) | 77.8 (3.09×) |
+| Fib | 116.5 | 191.2 (1.64×) | 172.8 (1.48×) |
+| Sieve | 65.6 | 105.4 (1.61×) | 215.2 (3.28×) |
+| MatMul | 104.3 | 173.0 (1.66×) | 523.2 (5.02×) |
+| String | 103.0 | 1,006.3 (9.77×) | 1,257.2 (12.21×) |
+| StringView | 19.7 | 20.5 (1.04×) | 18.5 (0.94×) |
+| StringMatch | 189.0 | 978.0 (5.18×) | 1,220.2 (6.46×) |
+| Map | 617.2 | 478.2 (0.77×) | 180.5 (0.29×) |
+| Sort | 136.8 | 429.6 (3.14×) | 438.3 (3.20×) |
+| Channel | 39.3 | 90.4 (2.30×) | 110.0 (2.80×) |
+| IfaceCall | 179.6 | 432.4 (2.41×) | 451.1 (2.51×) |
+| Iface | 94.9 | 543.6 (5.73×) | 452.5 (4.77×) |
+| IfaceShell | 21.4 | 865.2 (40.50×) | 1,288.6 (60.32×) |
+| RefLower | 226.3 | 660.6 (2.92×) | 1,827.8 (8.08×) |
 
 **Peak memory** (working set, MB -- lower is better):
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 3.8 | 43.9 | 77.9 |
-| Fib | 5.3 | 45.5 | 78.1 |
-| Sieve | 34.6 | 65.1 | 97.7 |
-| MatMul | 10.5 | 51.9 | 84.4 |
-| String | 5.2 | 54.1 | 86.4 |
-| StringView | 5.3 | 45.6 | 78.1 |
-| StringMatch | 5.2 | 53.8 | 87.7 |
-| Map | 158.3 | 164.3 | 196.6 |
-| Sort | 21.4 | 70.3 | 102.0 |
-| Channel | 5.2 | 50.1 | 81.4 |
-| IfaceCall | 5.2 | 44.9 | 78.2 |
-| Iface | 5.3 | 45.2 | 78.4 |
-| IfaceShell | 5.3 | 65.2 | 96.8 |
+| Startup | 3.0 | 45.1 | 78.4 |
+| Fib | 5.7 | 45.3 | 78.6 |
+| Sieve | 26.3 | 65.6 | 98.2 |
+| MatMul | 10.3 | 52.4 | 84.9 |
+| String | 5.8 | 55.1 | 87.3 |
+| StringView | 5.8 | 45.5 | 78.5 |
+| StringMatch | 5.8 | 55.5 | 88.7 |
+| Map | 158.8 | 164.8 | 197.0 |
+| Sort | 21.9 | 61.4 | 94.0 |
+| Channel | 5.7 | 51.0 | 86.3 |
+| IfaceCall | 5.7 | 46.2 | 78.7 |
+| Iface | 5.7 | 45.7 | 78.9 |
+| IfaceShell | 5.7 | 66.2 | 97.7 |
+| RefLower | 5.7 | 46.3 | 78.6 |
 
 <!-- PERF-RESULTS:END -->
 
