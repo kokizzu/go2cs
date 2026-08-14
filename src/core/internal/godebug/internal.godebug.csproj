@@ -14,8 +14,9 @@
     <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
     <ApplicationIcon>go2cs.ico</ApplicationIcon>
     <!-- `annotations`, not `enable`: Go has no non-nullable pointer, interface, map, slice, channel
-         or func, so nullable flow analysis asks a question the source language cannot pose. This
-         keeps `?` meaningful (golib's `ж<T>?`) without the 1,142 warnings the analysis produces. -->
+         or func, so nullable flow analysis asks a question the source language cannot pose, and
+         would warn across the whole conversion. This keeps `?` meaningful (golib's `ж<T>?`) with
+         the analysis itself off. -->
     <Nullable>annotations</Nullable>
     <!-- Diagnostics that are structural to the Go emission model, not defects: Go type names
          (CS8981/CS8860), split partial structs (CS0282), Go comparison operators on value types
@@ -125,9 +126,9 @@
     <Compile Remove="**/*.cs" />
     <!-- Include only .cs files from current folder -->
     <Compile Include="*.cs" />
-    <!-- Remove converted test artifacts from current folder (compiled by the colocated
-         <name>.tests.csproj instead; the old `*._test.cs` pattern matched nothing the
-         converter emits â€” Go test files are `*_test.go` so their outputs are `*_test.cs`) -->
+    <!-- Converted test artifacts share this folder but belong to the colocated
+         <name>.tests.csproj, which compiles them. A Go test file is `*_test.go`, so its
+         conversion is `*_test.cs`. -->
     <Compile Remove="*_test.cs;package_test_info.cs;go2cs_test_host.cs" />
     <!--Remove all sub-folders -->
     <None Remove="*/**/*" />
