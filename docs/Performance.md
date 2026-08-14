@@ -11,9 +11,10 @@ Each benchmark is a tiny Go program (same shape as the
 chosen to exercise one Go construct with a real C# cost model — slices, strings, maps, channels,
 interface dispatch — plus raw compute loops where the two runtimes should be close. This is not an
 exhaustive benchmark game; it gives the common expected range of differences. The short version:
-transpiled C# is **usually slower than Go, but not universally** — maps, channels and the
-stack-string path run at parity or faster in both C# variants, and Native AOT adds more rows;
-the structural-interface assert is the honest outlier at the other end.
+transpiled C# is **usually slower than Go, but not universally** — maps and the stack-string
+path run at parity or faster in both C# variants (maps dramatically so under Native AOT), while
+the rest ranges from ~1.5× on tight compute to the structural-interface assert, the honest
+outlier at the other end.
 
 ## The benchmarks
 
@@ -143,8 +144,8 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   the self-contained binary maps the whole compiled closure into the process — so AOT currently
   trades memory for its startup and per-benchmark wins. Reducing both floors is optimization
   surface (trimming eligibility, lazy package init), not a semantic cost.
-- **Function calls / integers (Fib):** the closest workload — the JIT runs within ~20% of Go and
-  **Native AOT edges past Go outright**.
+- **Function calls / integers (Fib):** the closest compute workload — ~1.6× under the JIT and
+  ~1.5× under Native AOT, the one tight loop where AOT leads the JIT rather than trailing it.
 - **Slices & floats (Sieve, MatMul):** the gap is `slice<T>` header emulation and bounds checks the
   JIT can't always elide, compounded on nested `[][]float64` access. **AOT is *slower* than the JIT
   here** — ILC lacks the JIT's dynamic PGO/OSR loop optimizations, trading tight-loop throughput for
@@ -171,8 +172,11 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 - **Sort:** the runtime's `sort.Interface` shim (`Interface<T>`) binds `Len`/`Less`/`Swap` via
   reflection-created delegates — cached, but a delegate hop per comparison.
 - **Channel:** `channel<T>` + goroutine emulation over managed threading vs Go's runtime scheduler —
-  real unbuffered rendezvous, single-fire select, operand-once hoisting. **Runs at parity with Go
-  or better in both C# variants** on this producer→consumer churn.
+  real unbuffered rendezvous, single-fire select, operand-once hoisting. Currently ~2.3–2.8× on
+  this producer→consumer churn: the rendezvous rides managed synchronization primitives where Go's
+  scheduler hands off directly, a cost the cooperative-scheduler arc
+  ([DESIGN-cooperative-scheduler.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-cooperative-scheduler.md))
+  owns. Notably machine-sensitive — measure on your own hardware before drawing conclusions.
 - **IfaceCall:** pure interface method dispatch — no asserts, no shell construction, just calling
   through an interface value built once, in a megamorphic hot loop. The floor for what *calling*
   through an interface costs, distinct from *obtaining* one (the two rows below).
@@ -191,3 +195,9 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   the reflective object shell, and AOT's reflective invokers can't emit IL stubs. Optimization
   directions:
   [DESIGN-iface-shell-caching.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-iface-shell-caching.md).
+- **RefLower:** the ж-bound hot path — pointer parameters feeding pointer parameters, address-taken
+  locals, field addresses — after the ref-lowering arc replaced its heap boxes with native `ref`
+  (before that arc this shape ran ~25× Go; the lowering brought the JIT to ~2.9×). AOT currently
+  trails the JIT here by a wide margin (~8×) — ILC's codegen of the ref-lowered loop is a priced
+  open question for the arc's next phase
+  ([DESIGN-zh-box-reduction.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-zh-box-reduction.md)).
