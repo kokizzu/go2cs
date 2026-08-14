@@ -178,7 +178,7 @@ internal static (ж<DecapsulationKey>, error) newKeyFromExtendedEncoding(ж<Deca
 // It implements ML-KEM.KeyGen according to FIPS 203 (DRAFT), Algorithm 15, and
 // K-PKE.KeyGen according to FIPS 203 (DRAFT), Algorithm 12. The two are merged
 // to save copies and allocations.
-internal static ж<DecapsulationKey> kemKeyGen(ж<DecapsulationKey> Ꮡdk, ж<array<byte>> Ꮡd, ж<array<byte>> Ꮡz) {
+internal static ж<DecapsulationKey> kemKeyGen(ж<DecapsulationKey> Ꮡdk, [GoArrayDims(32)] ж<array<byte>> Ꮡd, [GoArrayDims(32)] ж<array<byte>> Ꮡz) {
     ref var dk = ref Ꮡdk.DerefOrNull();
     ref var d = ref Ꮡd.DerefOrNull();
     ref var z = ref Ꮡz.DerefOrNull();
@@ -252,7 +252,7 @@ public static (slice<byte> ciphertext, slice<byte> sharedKey, error err) Encapsu
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string mlkem768Invalidˢ2 = "mlkem768: invalid encapsulation key length"u8;
 
-internal static (slice<byte> ciphertext, slice<byte> sharedKey, error err) encapsulate(ж<array<byte>> Ꮡcc, slice<byte> encapsulationKey) {
+internal static (slice<byte> ciphertext, slice<byte> sharedKey, error err) encapsulate([GoArrayDims(1088)] ж<array<byte>> Ꮡcc, slice<byte> encapsulationKey) {
     if (len(encapsulationKey) != EncapsulationKeySize) {
         return (default!, default!, errors.New(mlkem768Invalidˢ2));
     }
@@ -268,7 +268,7 @@ internal static (slice<byte> ciphertext, slice<byte> sharedKey, error err) encap
 // kemEncaps generates a shared key and an associated ciphertext.
 //
 // It implements ML-KEM.Encaps according to FIPS 203 (DRAFT), Algorithm 16.
-internal static (slice<byte> c, slice<byte> K, error err) kemEncaps(ж<array<byte>> Ꮡcc, slice<byte> ek, ж<array<byte>> Ꮡm) {
+internal static (slice<byte> c, slice<byte> K, error err) kemEncaps([GoArrayDims(1088)] ж<array<byte>> Ꮡcc, slice<byte> ek, [GoArrayDims(32)] ж<array<byte>> Ꮡm) {
     slice<byte> c = default!;
     slice<byte> K = default!;
 
@@ -328,7 +328,7 @@ internal static error parseEK(ref encryptionKey ex, slice<byte> ekPKE) {
 //
 // It implements K-PKE.Encrypt according to FIPS 203 (DRAFT), Algorithm 13,
 // although the computation of t and AT is done in parseEK.
-internal static slice<byte> pkeEncrypt(ж<array<byte>> Ꮡcc, ref encryptionKey ex, ж<array<byte>> Ꮡm, slice<byte> rnd) {
+internal static slice<byte> pkeEncrypt([GoArrayDims(1088)] ж<array<byte>> Ꮡcc, ref encryptionKey ex, [GoArrayDims(32)] ж<array<byte>> Ꮡm, slice<byte> rnd) {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
     byte N = default!;
@@ -384,7 +384,7 @@ public static (slice<byte> sharedKey, error err) Decapsulate(ж<DecapsulationKey
 // kemDecaps produces a shared key from a ciphertext.
 //
 // It implements ML-KEM.Decaps according to FIPS 203 (DRAFT), Algorithm 17.
-internal static slice<byte> /*K*/ kemDecaps(ref DecapsulationKey dk, ж<array<byte>> Ꮡc) {
+internal static slice<byte> /*K*/ kemDecaps(ref DecapsulationKey dk, [GoArrayDims(1088)] ж<array<byte>> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     var h = dk.dk[(int)(decryptionKeySize + encryptionKeySize)..(int)(decryptionKeySize + encryptionKeySize + 32)];
@@ -432,7 +432,7 @@ internal static error parseDK(ref decryptionKey dx, slice<byte> dkPKE) {
 //
 // It implements K-PKE.Decrypt according to FIPS 203 (DRAFT), Algorithm 14,
 // although the computation of s is done in parseDK.
-internal static slice<byte> pkeDecrypt(ref decryptionKey dx, ж<array<byte>> Ꮡc) {
+internal static slice<byte> pkeDecrypt(ref decryptionKey dx, [GoArrayDims(1088)] ж<array<byte>> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     var u = new slice<ringElement>(k);
@@ -749,7 +749,7 @@ internal static slice<byte> ringCompressAndEncode10(slice<byte> s, ringElement f
 //
 // It implements ByteDecode₁₀, according to FIPS 203 (DRAFT), Algorithm 5,
 // followed by Decompress₁₀, according to FIPS 203 (DRAFT), Definition 4.6.
-internal static ringElement ringDecodeAndDecompress10(ж<array<byte>> Ꮡbb) {
+internal static ringElement ringDecodeAndDecompress10([GoArrayDims(320)] ж<array<byte>> Ꮡbb) {
     ref var bb = ref Ꮡbb.DerefOrNull();
 
     var b = bb[..];

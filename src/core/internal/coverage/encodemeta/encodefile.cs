@@ -41,7 +41,7 @@ public static ж<CoverageMetaFileWriter> NewCoverageMetaFileWriter(@string mfnam
     return r;
 }
 
-public static error Write(this ж<CoverageMetaFileWriter> Ꮡm, array<byte> finalHash, slice<slice<byte>> blobs, coverage.CounterMode mode, coverage.CounterGranularity granularity) {
+public static error Write(this ж<CoverageMetaFileWriter> Ꮡm, [GoArrayDims(16)] array<byte> finalHash, slice<slice<byte>> blobs, coverage.CounterMode mode, coverage.CounterGranularity granularity) {
     finalHash = finalHash.Clone();
 
     ref var m = ref Ꮡm.DerefOrNull();

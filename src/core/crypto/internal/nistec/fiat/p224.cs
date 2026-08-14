@@ -62,7 +62,7 @@ public static slice<byte> Bytes(this ж<P224Element> Ꮡe) {
     return Ꮡe.bytes(Ꮡout);
 }
 
-internal static slice<byte> bytes(this ж<P224Element> Ꮡe, ж<array<byte>> Ꮡout) {
+internal static slice<byte> bytes(this ж<P224Element> Ꮡe, [GoArrayDims(28)] ж<array<byte>> Ꮡout) {
     ref var e = ref Ꮡe.DerefOrNull();
     ref var @out = ref Ꮡout.DerefOrNull();
 

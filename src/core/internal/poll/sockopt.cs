@@ -27,7 +27,7 @@ public static error SetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name, nint
 }
 
 // SetsockoptInet4Addr wraps the setsockopt network call with an IPv4 address.
-public static error SetsockoptInet4Addr(this ж<FD> Ꮡfd, nint level, nint name, array<byte> arg) {
+public static error SetsockoptInet4Addr(this ж<FD> Ꮡfd, nint level, nint name, [GoArrayDims(4)] array<byte> arg) {
     GoFrame ᒐ = default;
     try {
         arg = arg.Clone();

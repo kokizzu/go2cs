@@ -198,7 +198,7 @@ internal static slice<byte> stringtoslicebyte(ж<tmpBuf> Ꮡbuf, @string s) {
     return b;
 }
 
-internal static slice<rune> stringtoslicerune(ж<array<rune>> Ꮡbuf, @string s) {
+internal static slice<rune> stringtoslicerune([GoArrayDims(32)] ж<array<rune>> Ꮡbuf, @string s) {
     ref var buf = ref Ꮡbuf.DerefOrNull();
 
     // two passes.
@@ -267,7 +267,7 @@ internal static ж<stringStruct> stringStructOf(ж<@string> Ꮡsp) {
     return Ꮡsp.Reinterpret<@string, stringStruct>();
 }
 
-internal static @string /*s*/ intstring(ж<array<byte>> Ꮡbuf, int64 v) {
+internal static @string /*s*/ intstring([GoArrayDims(4)] ж<array<byte>> Ꮡbuf, int64 v) {
     @string s = default!;
 
     ref var buf = ref Ꮡbuf.DerefOrNull();

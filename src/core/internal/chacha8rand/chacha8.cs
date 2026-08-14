@@ -18,7 +18,7 @@ internal static UntypedInt chunk => 32; // each chunk produced by block is 32 ui
 internal static UntypedInt reseed => 4; // reseed with 4 words
 
 // block is the chacha8rand block function.
-internal static partial void block(ж<array<uint64>> seed, ж<array<uint64>> blocks, uint32 counter);
+internal static partial void block([GoArrayDims(4)] ж<array<uint64>> seed, [GoArrayDims(32)] ж<array<uint64>> blocks, uint32 counter);
 
 // A State holds the state for a single random generator.
 // It must be used from one goroutine at a time.
@@ -52,7 +52,7 @@ internal static partial void block(ж<array<uint64>> seed, ж<array<uint64>> blo
 }
 
 // Init seeds the State with the given seed value.
-public static void Init(this ж<State> Ꮡs, array<byte> seed) {
+public static void Init(this ж<State> Ꮡs, [GoArrayDims(32)] array<byte> seed) {
     seed = seed.Clone();
 
     Ꮡs.Init64(new uint64[]{
@@ -64,7 +64,7 @@ public static void Init(this ж<State> Ꮡs, array<byte> seed) {
 }
 
 // Init64 seeds the state with the given seed value.
-public static void Init64(this ж<State> Ꮡs, array<uint64> seed) {
+public static void Init64(this ж<State> Ꮡs, [GoArrayDims(4)] array<uint64> seed) {
     seed = seed.Clone();
 
     ref var s = ref Ꮡs.DerefOrNull();

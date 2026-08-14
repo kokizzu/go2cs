@@ -578,7 +578,7 @@ internal static map<@string, @string> captureOsArgs() {
 
 // emitCounterDataFile emits the counter data portion of a
 // coverage output file (to the file 's.cf').
-internal static error emitCounterDataFile(this ж<emitState> Ꮡs, array<byte> finalHash, io.Writer w) {
+internal static error emitCounterDataFile(this ж<emitState> Ꮡs, [GoArrayDims(16)] array<byte> finalHash, io.Writer w) {
     finalHash = finalHash.Clone();
 
     var cfw = encodecounter.NewCoverageDataWriter(w, coverage.CtrULeb128);

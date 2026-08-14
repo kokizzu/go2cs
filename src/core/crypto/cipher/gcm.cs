@@ -323,7 +323,7 @@ internal static slice<uint16> gcmReductionTable = new uint16[]{
 
 // gcmInc32 treats the final four bytes of counterBlock as a big-endian value
 // and increments it.
-internal static void gcmInc32(ж<array<byte>> ᏑcounterBlock) {
+internal static void gcmInc32([GoArrayDims(16)] ж<array<byte>> ᏑcounterBlock) {
     ref var counterBlock = ref ᏑcounterBlock.DerefOrNull();
 
     var ctr = counterBlock[(int)(len(counterBlock) - 4)..];
@@ -351,7 +351,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 }
 
 // counterCrypt crypts in to out using g.cipher in counter mode.
-[GoRecv] internal static void counterCrypt(this ref gcm g, slice<byte> @out, slice<byte> @in, ж<array<byte>> Ꮡcounter) {
+[GoRecv] internal static void counterCrypt(this ref gcm g, slice<byte> @out, slice<byte> @in, [GoArrayDims(16)] ж<array<byte>> Ꮡcounter) {
     ref var counter = ref Ꮡcounter.DerefOrNull();
 
     array<byte> mask = new(16); /* gcmBlockSize */
@@ -372,7 +372,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 // deriveCounter computes the initial GCM counter state from the given nonce.
 // See NIST SP 800-38D, section 7.1. This assumes that counter is filled with
 // zeros on entry.
-[GoRecv] internal static void deriveCounter(this ref gcm g, ж<array<byte>> Ꮡcounter, slice<byte> nonce) {
+[GoRecv] internal static void deriveCounter(this ref gcm g, [GoArrayDims(16)] ж<array<byte>> Ꮡcounter, slice<byte> nonce) {
     ref var counter = ref Ꮡcounter.DerefOrNull();
 
     // GCM has two modes of operation with respect to the initial counter
@@ -396,7 +396,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 
 // auth calculates GHASH(ciphertext, additionalData), masks the result with
 // tagMask and writes the result to out.
-[GoRecv] internal static void auth(this ref gcm g, slice<byte> @out, slice<byte> ciphertext, slice<byte> additionalData, ж<array<byte>> ᏑtagMask) {
+[GoRecv] internal static void auth(this ref gcm g, slice<byte> @out, slice<byte> ciphertext, slice<byte> additionalData, [GoArrayDims(16)] ж<array<byte>> ᏑtagMask) {
     ref var tagMask = ref ᏑtagMask.DerefOrNull();
 
     ref var y = ref heap(new gcmFieldElement(), out var Ꮡy);

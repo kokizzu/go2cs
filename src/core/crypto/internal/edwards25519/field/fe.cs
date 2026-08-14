@@ -244,7 +244,7 @@ public static (ж<Element>, error) SetBytes(this ж<Element> Ꮡv, slice<byte> x
     return v.bytes(Ꮡout);
 }
 
-[GoRecv] internal static slice<byte> bytes(this ref Element v, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static slice<byte> bytes(this ref Element v, [GoArrayDims(32)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     ref var t = ref heap<Element>(out var Ꮡt);

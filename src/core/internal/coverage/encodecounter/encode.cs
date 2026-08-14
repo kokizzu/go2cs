@@ -60,7 +60,7 @@ public static ж<CoverageDataWriter> NewCoverageDataWriter(io.Writer w, coverage
 // Write writes the contents of the count-data file to the writer
 // previously supplied to NewCoverageDataWriter. Returns an error
 // if something went wrong somewhere with the write.
-public static error Write(this ж<CoverageDataWriter> Ꮡcfw, array<byte> metaFileHash, map<@string, @string> args, CounterVisitor visitor) {
+public static error Write(this ж<CoverageDataWriter> Ꮡcfw, [GoArrayDims(16)] array<byte> metaFileHash, map<@string, @string> args, CounterVisitor visitor) {
     metaFileHash = metaFileHash.Clone();
 
     ref var cfw = ref Ꮡcfw.DerefOrNull();

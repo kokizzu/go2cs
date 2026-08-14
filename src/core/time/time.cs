@@ -670,7 +670,7 @@ public static @string String(this Duration d) {
 
 // format formats the representation of d into the end of buf and
 // returns the offset of the first character.
-internal static nint format(this Duration d, ж<array<byte>> Ꮡbuf) {
+internal static nint format(this Duration d, [GoArrayDims(32)] ж<array<byte>> Ꮡbuf) {
     ref var buf = ref Ꮡbuf.DerefOrNull();
 
     // Largest time is 2540400h10m10.000000000s

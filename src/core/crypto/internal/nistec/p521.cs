@@ -166,7 +166,7 @@ internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521El
     return p.bytes(Ꮡout);
 }
 
-[GoRecv] internal static slice<byte> bytes(this ref P521Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static slice<byte> bytes(this ref P521Point p, [GoArrayDims(133)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
@@ -193,7 +193,7 @@ internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521El
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string p521PointIsThePointAtˢ = "P521 point is the point at infinity"u8;
 
-[GoRecv] internal static (slice<byte>, error) bytesX(this ref P521Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static (slice<byte>, error) bytesX(this ref P521Point p, [GoArrayDims(66)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
@@ -214,7 +214,7 @@ private static readonly @string p521PointIsThePointAtˢ = "P521 point is the poi
     return p.bytesCompressed(Ꮡout);
 }
 
-[GoRecv] internal static slice<byte> bytesCompressed(this ref P521Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static slice<byte> bytesCompressed(this ref P521Point p, [GoArrayDims(67)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {

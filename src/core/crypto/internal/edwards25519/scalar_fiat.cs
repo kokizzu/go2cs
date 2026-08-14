@@ -1076,7 +1076,7 @@ internal static void fiatScalarToBytes(ref array<uint8> out1, ref array<uint64> 
 // Output Bounds:
 //
 //	out1: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0x1fffffffffffffff]]
-internal static void fiatScalarFromBytes(ref array<uint64> out1, ж<array<uint8>> Ꮡarg1) {
+internal static void fiatScalarFromBytes(ref array<uint64> out1, [GoArrayDims(32)] ж<array<uint8>> Ꮡarg1) {
     ref var arg1 = ref Ꮡarg1.DerefOrNull();
 
     var x1 = (((uint64)arg1[31] << (int)(56)));

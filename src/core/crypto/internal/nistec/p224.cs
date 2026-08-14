@@ -166,7 +166,7 @@ internal static error p224CheckOnCurve(ж<fiat.P224Element> Ꮡx, ж<fiat.P224El
     return p.bytes(Ꮡout);
 }
 
-[GoRecv] internal static slice<byte> bytes(this ref P224Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static slice<byte> bytes(this ref P224Point p, [GoArrayDims(57)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
@@ -193,7 +193,7 @@ internal static error p224CheckOnCurve(ж<fiat.P224Element> Ꮡx, ж<fiat.P224El
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string p224PointIsThePointAtˢ = "P224 point is the point at infinity"u8;
 
-[GoRecv] internal static (slice<byte>, error) bytesX(this ref P224Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static (slice<byte>, error) bytesX(this ref P224Point p, [GoArrayDims(28)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
@@ -214,7 +214,7 @@ private static readonly @string p224PointIsThePointAtˢ = "P224 point is the poi
     return p.bytesCompressed(Ꮡout);
 }
 
-[GoRecv] internal static slice<byte> bytesCompressed(this ref P224Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static slice<byte> bytesCompressed(this ref P224Point p, [GoArrayDims(29)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {

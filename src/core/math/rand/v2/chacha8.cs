@@ -29,7 +29,7 @@ public static ж<ChaCha8> NewChaCha8([GoArrayDims(32)] array<byte> seed) {
 }
 
 // Seed resets the ChaCha8 to behave the same way as NewChaCha8(seed).
-public static void Seed(this ж<ChaCha8> Ꮡc, array<byte> seed) {
+public static void Seed(this ж<ChaCha8> Ꮡc, [GoArrayDims(32)] array<byte> seed) {
     seed = seed.Clone();
 
     ref var c = ref Ꮡc.DerefOrNull();

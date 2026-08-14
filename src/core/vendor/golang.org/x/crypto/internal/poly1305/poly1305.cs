@@ -28,7 +28,7 @@ public static UntypedInt TagSize => 16;
 // Sum generates an authenticator for msg using a one-time key and puts the
 // 16-byte result into out. Authenticating two different messages with the same
 // key allows an attacker to forge messages at will.
-public static void Sum(ж<array<byte>> Ꮡout, slice<byte> m, ж<array<byte>> Ꮡkey) {
+public static void Sum([GoArrayDims(16)] ж<array<byte>> Ꮡout, slice<byte> m, [GoArrayDims(32)] ж<array<byte>> Ꮡkey) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     var h = New(Ꮡkey);
@@ -37,7 +37,7 @@ public static void Sum(ж<array<byte>> Ꮡout, slice<byte> m, ж<array<byte>> �
 }
 
 // Verify returns true if mac is a valid authenticator for m with the given key.
-public static bool Verify(ж<array<byte>> Ꮡmac, slice<byte> m, ж<array<byte>> Ꮡkey) {
+public static bool Verify([GoArrayDims(16)] ж<array<byte>> Ꮡmac, slice<byte> m, [GoArrayDims(32)] ж<array<byte>> Ꮡkey) {
     ref var mac = ref Ꮡmac.DerefOrNull();
 
     ref var tmp = ref heap(new array<byte>(16), out var Ꮡtmp);
@@ -54,7 +54,7 @@ public static bool Verify(ж<array<byte>> Ꮡmac, slice<byte> m, ж<array<byte>>
 // The key must be unique for each message, as authenticating
 // two different messages with the same key allows an attacker
 // to forge messages at will.
-public static ж<MAC> New(ж<array<byte>> Ꮡkey) {
+public static ж<MAC> New([GoArrayDims(32)] ж<array<byte>> Ꮡkey) {
     var m = Ꮡ(new MAC(nil));
     initialize(Ꮡkey, ref (m.of(MAC.ᏑmacState)).DerefOrNull());
     return m;

@@ -1235,7 +1235,7 @@ public static error /*err*/ SetsockoptLinger(ΔHandle fd, nint level, nint opt, 
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡsys.Reinterpret<sysLinger, byte>(), (int32)/* unsafe.Sizeof(sys) */ (uintptr)4);
 }
 
-public static error /*err*/ SetsockoptInet4Addr(ΔHandle fd, nint level, nint opt, array<byte> valueʗp) {
+public static error /*err*/ SetsockoptInet4Addr(ΔHandle fd, nint level, nint opt, [GoArrayDims(4)] array<byte> valueʗp) {
     ref var value = ref heap(valueʗp.Clone(), out var Ꮡvalue);
 
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡvalue.at<byte>(0), 4);

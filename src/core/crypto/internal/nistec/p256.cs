@@ -167,7 +167,7 @@ internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256El
     return p.bytes(Ꮡout);
 }
 
-[GoRecv] internal static slice<byte> bytes(this ref P256Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static slice<byte> bytes(this ref P256Point p, [GoArrayDims(65)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
@@ -194,7 +194,7 @@ internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256El
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string p256PointIsThePointAtˢ = "P256 point is the point at infinity"u8;
 
-[GoRecv] internal static (slice<byte>, error) bytesX(this ref P256Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static (slice<byte>, error) bytesX(this ref P256Point p, [GoArrayDims(32)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {
@@ -215,7 +215,7 @@ private static readonly @string p256PointIsThePointAtˢ = "P256 point is the poi
     return p.bytesCompressed(Ꮡout);
 }
 
-[GoRecv] internal static slice<byte> bytesCompressed(this ref P256Point p, ж<array<byte>> Ꮡout) {
+[GoRecv] internal static slice<byte> bytesCompressed(this ref P256Point p, [GoArrayDims(33)] ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.DerefOrNull();
 
     if (p.z.IsZero() == 1) {

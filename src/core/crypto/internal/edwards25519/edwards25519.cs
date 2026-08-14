@@ -126,7 +126,7 @@ public static slice<byte> Bytes(this ж<Point> Ꮡv) {
     return Ꮡv.bytes(Ꮡbuf);
 }
 
-internal static slice<byte> bytes(this ж<Point> Ꮡv, ж<array<byte>> Ꮡbuf) {
+internal static slice<byte> bytes(this ж<Point> Ꮡv, [GoArrayDims(32)] ж<array<byte>> Ꮡbuf) {
     checkInitialized(Ꮡv);
     ref var zInv = ref heap(new field.Element(), out var ᏑzInv);
     ref var x = ref heap(new field.Element(), out var Ꮡx);
@@ -190,7 +190,7 @@ public static (ж<Point>, error) SetBytes(this ж<Point> Ꮡv, slice<byte> x) {
     return (Ꮡv, default!);
 }
 
-internal static slice<byte> copyFieldElement(ж<array<byte>> Ꮡbuf, ж<field.Element> Ꮡv) {
+internal static slice<byte> copyFieldElement([GoArrayDims(32)] ж<array<byte>> Ꮡbuf, ж<field.Element> Ꮡv) {
     ref var buf = ref Ꮡbuf.DerefOrNull();
     ref var v = ref Ꮡv.DerefOrNull();
 
