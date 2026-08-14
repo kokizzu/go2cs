@@ -2026,6 +2026,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 
 		// Handle panic call as a special case
 		if ident.Name == "panic" {
+			// The deferred/spawned argument slot belongs to the ENCLOSING LambdaContext, which
+			// the basic-literal context below shadows — read it first (see the substitution
+			// at the end of this arm).
+			deferCallArgs := context.callArgs
+			deferRenderParams := context.renderParams
+
 			context := DefaultBasicLitContext()
 			context.u8StringOK = false
 			context.spanTargetUnsupported = true
@@ -2037,6 +2043,26 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			panicValueType := types.NewInterfaceType(nil, nil)
 			contexts := v.emptyInterfacePointerContexts(panicValueType, callExpr.Args[0], []ExprContext{context})
 			panicValue := v.boxPointerIntoEmptyInterface(panicValueType, callExpr.Args[0], v.convExpr(callExpr.Args[0], contexts))
+
+			// A DEFERRED or SPAWNED panic (`defer panic(err)` — go/types check_test.go:170) must
+			// capture its argument at defer/go time: Go evaluates a deferred call's arguments when
+			// the DEFER statement executes, not when the frame unwinds, so a `panic(err)` deferred
+			// before `err` is reassigned must report the value `err` held at the defer. `panic` is
+			// the one built-in this arm renders as a `throw` rather than as a call, so its argument
+			// never reaches convExprList — the single place the temp-parameter (ᴛN) substitution
+			// happens and the eager-argument slot is filled. Left alone, the registration emitted an
+			// EMPTY argument slot (`defer(ᴛ1 => throw panic(errΔ2), , ref ᒐ)` — CS0839) while the
+			// body inlined the ORIGINAL expression, which would additionally have read the variable
+			// at unwind time. Perform the substitution here: the boxed value becomes the eager
+			// argument, and the thunk throws its parameter. (Capturing the expression in the lambda
+			// body instead — dropping the parameter — compiles but is semantically WRONG for exactly
+			// the reassignment case above.) Both visitDeferStmt and visitGoStmt force the temp-param
+			// form for a built-in callee, so renderParams is set whenever callArgs is.
+			if deferCallArgs != nil && len(deferCallArgs) == 1 && deferRenderParams {
+				deferCallArgs[0] = panicValue
+
+				return fmt.Sprintf("throw panic(%s1)", TempVarMarker)
+			}
 
 			return fmt.Sprintf("throw panic(%s)", panicValue)
 		}

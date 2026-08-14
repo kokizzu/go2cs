@@ -100,6 +100,18 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 		renderLambdaParams = true
 	}
 
+	// A BUILTIN callee is generic with `in` parameters — its method group neither infers nor
+	// converts to Action<T> (`goǃ(close, ch)` — CS1503) — and `panic` is not rendered as a call
+	// at all: the panic arm of convCallExpr fills the eager-argument slot ONLY under the
+	// temp-param form, so without this `go panic(v)` emits `goǃ(throw panic(v), )` (CS0839, plus
+	// a `throw` in argument position). Render the lambda (`goǃ(ᴛ1 => close(ᴛ1), ch)`) so the
+	// eager argument still evaluates at spawn time. Exact mirror of the arm in visitDeferStmt.
+	if calleeIdent, ok := goStmt.Call.Fun.(*ast.Ident); ok && paramCount > 0 {
+		if _, isBuiltin := v.info.ObjectOf(calleeIdent).(*types.Builtin); isBuiltin {
+			renderLambdaParams = true
+		}
+	}
+
 	// A ж-box ref-LOWERED callee (A2, the §3.3 boxed carve-out): its `ref` parameters make the
 	// method group inconvertible to goǃ's Action<…>, so the goroutine call always takes the
 	// temp-param lambda form — eager arguments stay boxed and the thunk derives each ref at

@@ -325,6 +325,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckDeferLambdaParam() => CheckTarget("DeferLambdaParam");
 
     [TestMethod]
+    public void CheckDeferPanicArg() => CheckTarget("DeferPanicArg");
+
+    [TestMethod]
     public void CheckDeferSimple() => CheckTarget("DeferSimple");
 
     [TestMethod]
