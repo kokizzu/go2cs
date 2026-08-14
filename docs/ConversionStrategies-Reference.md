@@ -13198,7 +13198,7 @@ That single criterion classifies the whole surface. The converter stamps nothing
 | `[GoLocalName("Point")]` | struct (lifted function-local named type) | golib's reflection bridge, `GoReflect.TypeNaming` | **Moved** |
 | `[GoTag("json:\"x\"")]` | **field** | golib reflection, via the `DescriptionAttribute` alias | **Must stay** — field-level. A `<TypeAccessibility>` record is an empty `{}` body; C# has no way for a second part to re-declare a field and attach an attribute to it |
 | `[GoRecv]` | **method** | `RecvGenerator` syntactically, plus runtime | **Must stay** — same reason, one level up: a method exists on the part that defines its body |
-| `[GoArrayDims(4, 8)]` | **parameter** | golib reflection, `GoReflect.FuncParamDims`, off the delegate instance's `Method.GetParameters()` | **Must stay** — the sharpest case in the set: the datum is not type-keyed at all. It distinguishes two funcs that share one emitted delegate type (`func([32]byte) bool` and `func([64]byte) bool` are both `Func<array<byte>, bool>`), so a record keyed by type has nothing to key on, and the consumer reads the parameter's own metadata |
+| `[GoArrayDims(4, 8)]` | **parameter** | golib reflection — `GoReflect.FuncParamDims` off the delegate instance's `Method.GetParameters()`, or `MethodParamDims` off the method table's `ParameterInfo`s | **Must stay** — the sharpest case in the set: the datum is not type-keyed at all. It distinguishes two funcs that share one emitted delegate type (`func([32]byte) bool` and `func([64]byte) bool` are both `Func<array<byte>, bool>`), so a record keyed by type has nothing to key on, and the consumer reads the parameter's own metadata |
 | `[GoInit]` | **method** | the **C# compiler** — it is a `using` alias for `ModuleInitializerAttribute` | **Must stay** — the compiler requires it on the method it initializes with |
 | `[GoPackage]`, `[GoImplement<T,I>]`, `[GoImplicitConv<S,T>]`, `[GoTypeAlias]` | package class / assembly | generators, runtime, and the converter's own next run | **Already there** — these are emitted into `package_info.cs` and never touched a mainline declaration |
 | `[GoManualConversion]`, `[GoRequiresUnsafe]` | module | the converter | **Already off** — hand-written, module-scoped |
@@ -13775,16 +13775,51 @@ closures with no attributes — is answered `null` rather than mis-indexed, whic
 its usual form: a dims-less descriptor is a state the bridge already handles, a mis-indexed one is
 not.
 
+**The same datum two hops further out — a METHOD's parameters, and a `*[N]T` (2026-08-14).**
+`net/rpc` is the consumer that found both hops missing, and it found them the hard way. Its server
+allocates every reply argument from the method type alone —
+`replyv = reflect.New(mtype.ReplyType.Elem())`, where `ReplyType` came from `mtype.In(2)` — so a
+service method declared `func (BuiltinTypes) Array(i int, reply *[1]int) error` needs the `1` to
+survive two hops the func-value route does not have:
+
+1. **The func type comes from the method TABLE, not from a delegate instance.**
+   `reflect.Type.Method(i).Type` is synthesized in `value_impl.cs` from `GoMethodFuncType` over the
+   `MethodInfo`'s parameters, and nothing in that path ever holds a delegate for
+   `GoReflect.FuncParamDims` to read. `GoReflect.MethodParamDims(t, i)` reads the same
+   `[GoArrayDims]` stamps straight off those `ParameterInfo`s, and `Method(i)` carries them as the
+   descriptor's `funcParamDims`. It owes no arity guard, unlike the delegate route: the delegate
+   type is synthesized FROM that parameter list, receiver included, so the indices line up with
+   `In(i)` by construction — which is Go's own shape for a method type, receiver first.
+2. **The array sits behind a POINTER.** A callee that writes its result through a parameter takes a
+   `*T`, so the type-only position whose length must survive is the *pointee's*. The converter now
+   stamps a parameter's pointee dims (one hop; that is all a Go signature spells here), and a
+   pointer descriptor's dims pass through `Elem()` **unshifted** — there is nothing else they could
+   describe, a pointer having no length of its own — while an array's dims still shift, its element
+   consuming the outer one. The stamp had to be added to `visitFuncDecl`'s REBUILT signature path as
+   well, and that is where it actually fires: having a pointer parameter is itself what triggers the
+   rebuild, so a `*[N]T` parameter never reaches `generateParametersSignature` at all.
+
+Without either hop, `reflect.New(In(2).Elem())` built a zero-length array and the callee's first
+write panicked `index out of range [0] with length 0` — on an rpc goroutine, which took the entire
+converted-test host down with it (`net/rpc/jsonrpc`'s `TestBuiltinTypes`; the same run's other eight
+tests then recorded no verdict at all, which is what made the panic read as three failures instead
+of one).
+
 Guard: `tests/Behavioral/ReflectFuncArrayParamDims`, byte-identical to `go run` — `In(0)`'s
 `String`/`Kind`/`Len` and the `New`/`Zero` lengths across a literal, a multi-parameter literal, a
 nested `[2][3]int`, a declared func used as a value and a func with no array parameter at all; the
 distinctness of `[32]byte` and `[64]byte` as `In(0)` types; the inner dimension surviving `Elem()`;
 the struct-field route still answering; and quick's generation loop in miniature (allocate from the
 parameter type, fill through `Index(i).Set`, `Call`), so a zero-length synthesis shows up as the
-callee's wrong answer rather than a silent pass. Converter unit guard:
-`TestGoArrayDimsAttribute`. Corpus footprint, measured by re-transpiling all 557 behavioral
-packages: **3 files, 6 declarations** — every func in the tree with an unnamed fixed-size-array
-parameter, and nothing else.
+callee's wrong answer rather than a silent pass. It carries rpc's shape too, since 2026-08-14:
+`Method(i).Type.In(2).Elem().Len()` for a `*[3]int` reply, `reflect.New` of it, and the callee
+writing through the pointer — a length the descriptor does not know is not merely mis-reported
+there, it PANICS. Converter unit guard: `TestGoArrayDimsAttribute` (both shapes, including the
+boundaries: a pointer to a DEFINED array type, to a slice, and a double pointer are all unstamped).
+Corpus footprint of the 2026-08-14 half, measured by re-transpiling all 592 behavioral packages:
+**5 declarations in 5 files, one line each** — four `*[N]T` parameters, plus one `[4]byte` VALUE
+parameter (`DeferTypelessReturns`' `first`) that had been silently unstamped all along, its function
+taking the rebuilt path because it heap-boxes. Nothing else moved.
 
 **The `reflect.DeepEqual` bridge (`reflect/deepequal_impl.cs`, Phase-4 — blocker-map R5).** Go's
 `deepValueEqual` keys its cycle-detection `visited` map on the values' internal data words (`v.ptr` /
@@ -14893,6 +14928,29 @@ with an `AsyncLocal` set on the test thread: it flows with the `ExecutionContext
 attribution survives goroutines spawning goroutines. If the crashed goroutine was the one that would
 have unblocked its test, that test now waits for the package timeout — which still writes every result
 gathered so far, where the crash wrote none.
+
+**A PANIC on a goroutine still kills the host — but it no longer takes the run's evidence with it
+(2026-08-14).** Containment stops at panics deliberately (above), so the fatal path stayed: golib's
+backstop printed `panic: <value>` and exited 2. For a converted PROGRAM that is right and complete —
+it is Go's own report. For a host it was the hardest possible diagnostic: no frame, no test name, and
+every verdict already gathered discarded unwritten. `net/rpc/jsonrpc` is the case that made it
+concrete — a `reflect`-allocated `[1]int` reply panicked on an rpc goroutine, the host died, and the
+package recorded **0** verdicts where it had been recording 6, so a strictly BETTER corpus read as a
+worse one and the one real failure read as three.
+
+`Goroutine.ObserveUnhandledPanic(observer)` is the other half of the containment pair, and it
+contains nothing: the observer runs from an exception filter that **always declines**, so the panic
+still reaches the backstop with its stack intact and the intervening `finally` blocks unrun —
+byte-identical to an unobserved run, which is what keeps Go's fidelity and the differential oracle's
+view of it. What the filter buys is the moment BEFORE the unwind. The test host uses it to attribute
+the panic to the test whose goroutine it was (the same `AsyncLocal`), report that test's terminal
+`fail` carrying the full traceback (`PanicException.StackTrace`, which prefers the panic's ORIGIN over
+the frames it unwound through), and flush the result and JUnit files. A goroutine panic now costs the
+TAIL of a run rather than all of it — which is also what `go test` shows, since a Go binary that dies
+this way has already streamed the verdicts it reached. Guard:
+`GolibTests/GoroutineRootPanicTests`, over the root's whole policy — a panic observed and still
+escaping, its fault site surviving, a mapped runtime-error panic, a non-panic exception still going to
+containment and not to the observer, and `Goexit` reaching neither.
 
 **The unhandled-exception backstop prints the whole exception chain for a NON-panic failure.** A real
 panic keeps Go's report shape (`panic: <value>` on stderr, exit 2). Anything else is a *defect to
