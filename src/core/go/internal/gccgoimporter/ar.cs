@@ -140,7 +140,7 @@ internal static readonly @string goExportˢ = ".go_export"u8;
 // elfFromAr tries to get export data from an archive member as an ELF file.
 // If there is no export data, this returns nil, nil.
 internal static (io.ReadSeeker, error) elfFromAr(ж<io.SectionReader> Ꮡmember) {
-    var (ef, err) = elf.NewFile(new io_SectionReaderжReaderAt(Ꮡmember));
+    var (ef, err) = elf.NewFile(new io.SectionReaderжReaderAt(Ꮡmember));
     if (err != default!) {
         return (default!, err);
     }

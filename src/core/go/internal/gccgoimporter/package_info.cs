@@ -57,7 +57,6 @@ using static go.go.@internal.gccgoimporter_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Reader, io_package.ReadSeeker>(Pointer = true)]
-[assembly: GoImplement<io_package.SectionReader, io_package.ReaderAt>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.Closer>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.ReadSeeker>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.ReaderAt>(Pointer = true)]

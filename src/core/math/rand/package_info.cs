@@ -36,6 +36,8 @@ using static go.math.rand_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Rand, Source64>(Pointer = true)]
+[assembly: GoImplement<Rand, Source>(Pointer = true)]
 [assembly: GoImplement<lockedSource, Source>(Pointer = true)]
 [assembly: GoImplement<rngSource, Source>(Pointer = true)]
 [assembly: GoImplement<runtimeSource, Source64>(Pointer = true)]

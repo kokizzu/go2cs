@@ -61,11 +61,13 @@ using static go.net.http_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Dir, FileSystem>(Pointer = true)]
 [assembly: GoImplement<Dir, FileSystem>]
 [assembly: GoImplement<File, io_package.ReadSeeker>]
 [assembly: GoImplement<HandlerFunc, ΔHandler>]
 [assembly: GoImplement<MaxBytesError, error>(Pointer = true)]
 [assembly: GoImplement<ProtocolError, error>(Pointer = true)]
+[assembly: GoImplement<ResponseController, Hijacker>(Pointer = true)]
 [assembly: GoImplement<ResponseWriter, io_package.Writer>]
 [assembly: GoImplement<ServeMux, ΔHandler>(Pointer = true)]
 [assembly: GoImplement<Transport, RoundTripper>(Pointer = true)]
@@ -169,9 +171,6 @@ using static go.net.http_package;
 [assembly: GoImplement<initALPNRequest, ΔHandler>]
 [assembly: GoImplement<ioFS, FileSystem>]
 [assembly: GoImplement<ioFile, File>]
-[assembly: GoImplement<io_package.PipeReader, io_package.ReadCloser>(Pointer = true)]
-[assembly: GoImplement<io_package.PipeReader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<io_package.PipeWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<io_package.ReadWriteCloser, io_package.ReadCloser>]
 [assembly: GoImplement<loggingConn, net_package.Conn>(Pointer = true)]
 [assembly: GoImplement<loggingConn, net_package.Conn>(Promoted = true)]
@@ -213,7 +212,6 @@ using static go.net.http_package;
 [assembly: GoImplement<statusError, error>]
 [assembly: GoImplement<stringWriter, io_package.StringWriter>]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<sync_package.Mutex, sync_package.Locker>(Pointer = true)]
 [assembly: GoImplement<textSig, sniffSig>]
 [assembly: GoImplement<timeoutError, error>(Pointer = true)]
 [assembly: GoImplement<timeoutHandler, ΔHandler>(Pointer = true)]

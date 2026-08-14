@@ -31,7 +31,7 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
     ref var e = ref Ꮡe.DerefOrNull();
 
     x.mode = invalid;
-    x.expr = new ast_IdentжExpr(Ꮡe);
+    x.expr = new ast.IdentжExpr(Ꮡe);
     // Note that we cannot use check.lookup here because the returned scope
     // may be different from obj.Parent(). See also Scope.LookupParent doc.
     var (scope, obj) = check.scope.LookupParent(e.Name, check.pos);

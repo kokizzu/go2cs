@@ -107,7 +107,7 @@ internal static (slice<ΔType>, slice<ast.Expr>) funcInst(this ж<Checker> Ꮡch
             // that makes sense when reported in error messages from infer, below.
             var expr = ast.NewIdent(T.desc);
             expr.Value.NamePos = x.Pos(); // correct position
-            args = new ж<operand>[]{Ꮡ(new operand(mode: value, expr: new ast_IdentжExpr(expr), typ: new ΔSignatureжΔType(T.sig)))}.slice();
+            args = new ж<operand>[]{Ꮡ(new operand(mode: value, expr: new ast.IdentжExpr(expr), typ: new ΔSignatureжΔType(T.sig)))}.slice();
             reverse = true;
         }
         // Rename type parameters to avoid problems with recursive instantiations.
@@ -206,7 +206,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
     var exprᴛ1 = x.mode;
     if (exprᴛ1 == invalid) {
         Ꮡcheck.use(call.Args.ꓸꓸꓸ);
-        x.expr = new ast_CallExprжExpr(Ꮡcall);
+        x.expr = new ast.CallExprжExpr(Ꮡcall);
         return statement;
     }
     if (exprᴛ1 == typexpr) {
@@ -250,7 +250,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
             }}
         }
 
-        x.expr = new ast_CallExprжExpr(Ꮡcall);
+        x.expr = new ast.CallExprжExpr(Ꮡcall);
         return Δconversion;
     }
     if (exprᴛ1 == Δbuiltinᴛ) {
@@ -259,7 +259,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
  Ꮡcall, id)) {
             x.mode = invalid;
         }
-        x.expr = new ast_CallExprжExpr(Ꮡcall);
+        x.expr = new ast.CallExprжExpr(Ꮡcall);
         if (x.mode != invalid && x.mode != constant_) {
             // a non-constant result implies a function call
             check.hasCallOrRecv = true;
@@ -275,7 +275,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
     if (sig == nil) {
         Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidCall, invalidOp + "cannot call non-function %s", Ꮡx.OrTypedNil());
         x.mode = invalid;
-        x.expr = new ast_CallExprжExpr(Ꮡcall);
+        x.expr = new ast.CallExprжExpr(Ꮡcall);
         return statement;
     }
     // Capture wasGeneric before sig is potentially instantiated below.
@@ -289,7 +289,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
         if (targs == default!) {
             Ꮡcheck.use(call.Args.ꓸꓸꓸ);
             x.mode = invalid;
-            x.expr = new ast_CallExprжExpr(Ꮡcall);
+            x.expr = new ast.CallExprжExpr(Ꮡcall);
             return statement;
         }
         assert(len(targs) == len(xlist));
@@ -300,7 +300,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
             Ꮡcheck.errorf(new ast_Exprᴠpositioner(xlist[want]), WrongTypeArgCount, "got %d type arguments but want %d"u8, got, want);
             Ꮡcheck.use(call.Args.ꓸꓸꓸ);
             x.mode = invalid;
-            x.expr = new ast_CallExprжExpr(Ꮡcall);
+            x.expr = new ast.CallExprжExpr(Ꮡcall);
             return statement;
         }
         // If sig is generic and all type arguments are provided, preempt function
@@ -345,7 +345,7 @@ internal static exprKind callExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, �
         break;
     }}
 
-    x.expr = new ast_CallExprжExpr(Ꮡcall);
+    x.expr = new ast.CallExprжExpr(Ꮡcall);
     check.hasCallOrRecv = true;
     // if type inference failed, a parameterized result must be invalidated
     // (operands cannot have a parameterized type)
@@ -769,7 +769,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                             }
                         }
                         if (exp == default!) {
-                            Ꮡcheck.errorf(new ast_Identжpositioner(e.Sel), UndeclaredImportedName, "undefined: %s"u8, ((ast.Expr)new ast_SelectorExprжExpr(Ꮡe))); // cast to ast.Expr to silence vet
+                            Ꮡcheck.errorf(new ast_Identжpositioner(e.Sel), UndeclaredImportedName, "undefined: %s"u8, ((ast.Expr)new ast.SelectorExprжExpr(Ꮡe))); // cast to ast.Expr to silence vet
                             goto ΔError;
                         }
                         Ꮡcheck.objDecl(exp, nil);
@@ -777,7 +777,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                         exp = (~pkg).scope.Lookup(sel);
                         if (exp == default!) {
                             if (!(~pkg).fake) {
-                                Ꮡcheck.errorf(new ast_Identжpositioner(e.Sel), UndeclaredImportedName, "undefined: %s"u8, ((ast.Expr)new ast_SelectorExprжExpr(Ꮡe)));
+                                Ꮡcheck.errorf(new ast_Identжpositioner(e.Sel), UndeclaredImportedName, "undefined: %s"u8, ((ast.Expr)new ast.SelectorExprжExpr(Ꮡe)));
                             }
                             goto ΔError;
                         }
@@ -831,7 +831,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                         throw panic("unreachable");
                         break;
                     }}
-                    x.expr = new ast_SelectorExprжExpr(Ꮡe);
+                    x.expr = new ast.SelectorExprжExpr(Ꮡe);
                     return;
                 }
             }
@@ -870,7 +870,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
     // TODO(rfindley): We should do better by refusing to check selectors in all cases where
     // x.typ is incomplete.
     if (wantType) {
-        Ꮡcheck.errorf(new ast_Identжpositioner(e.Sel), NotAType, "%s is not a type"u8, ((ast.Expr)new ast_SelectorExprжExpr(Ꮡe)));
+        Ꮡcheck.errorf(new ast_Identжpositioner(e.Sel), NotAType, "%s is not a type"u8, ((ast.Expr)new ast.SelectorExprжExpr(Ꮡe)));
         goto ΔError;
     }
     (obj, index, indirect) = lookupFieldOrMethod(x.typ, x.mode == variable, check.pkg, sel, false);
@@ -1031,11 +1031,11 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
     }
     // remove receiver
     // everything went well
-    x.expr = new ast_SelectorExprжExpr(Ꮡe);
+    x.expr = new ast.SelectorExprжExpr(Ꮡe);
     return;
 ΔError:
     x.mode = invalid;
-    x.expr = new ast_SelectorExprжExpr(Ꮡe);
+    x.expr = new ast.SelectorExprжExpr(Ꮡe);
 }
 
 // use type-checks each argument.
@@ -1104,7 +1104,7 @@ internal static bool use1(this ж<Checker> Ꮡcheck, ast.Expr e, bool lhs) {
                 }
             }
         }
-        Ꮡcheck.exprOrType(Ꮡx, new ast_IdentжExpr(n), true);
+        Ꮡcheck.exprOrType(Ꮡx, new ast.IdentжExpr(n), true);
         if (v != nil) {
             v.Value.used = v_used; // restore v.used
         }

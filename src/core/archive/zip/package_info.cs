@@ -58,7 +58,6 @@ using static go.archive.zip_package;
 [assembly: GoImplement<fileWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<go.io.fs_package.File, io_package.Reader>]
 [assembly: GoImplement<headerFileInfo, fileInfoDirEntry>]
-[assembly: GoImplement<io_package.SectionReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<nopCloser, io_package.WriteCloser>(Pointer = true)]
 [assembly: GoImplement<nopCloser, io_package.Writer>(Promoted = true)]
 [assembly: GoImplement<openDir, go.io.fs_package.File>(Pointer = true)]

@@ -76,7 +76,7 @@ internal static (ж<populateResponse>, /*<-*/channel<ж<Response>>) newPopulateR
             ProtoMajor: 1,
             Header: new ΔHeader(0),
             Close: true,
-            Body: new io_PipeReaderжReadCloser(pr)
+            Body: new io.PipeReaderжReadCloser(pr)
         ))
     ));
     return (rw, (~rw).ch);

@@ -37,6 +37,8 @@ using static go.sync_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Mutex, Locker>(Pointer = true)]
+[assembly: GoImplement<RWMutex, Locker>(Pointer = true)]
 [assembly: GoImplement<rlocker, Locker>(Pointer = true)]
 // </InterfaceImplementations>
 

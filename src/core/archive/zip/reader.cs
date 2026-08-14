@@ -147,7 +147,7 @@ internal static error init(this ж<Reader> Ꮡr, io.ReaderAt rdr, int64 size) {
             return err;
         }
     }
-    var buf = bufio.NewReader(new io_SectionReaderжReader(rs));
+    var buf = bufio.NewReader(new io.SectionReaderжReader(rs));
     // The count of files inside a zip is truncated to fit in a uint16.
     // Gloss over this by reading headers until we encounter
     // a bad one, and then only report an ErrFormat or UnexpectedEOF if
@@ -257,10 +257,10 @@ public static (io.ReadCloser, error) Open(this ж<File> Ꮡf) {
     if (dcomp == default!) {
         return (default!, ErrAlgorithm);
     }
-    io.ReadCloser rc = dcomp(new io_SectionReaderжReader(r));
+    io.ReadCloser rc = dcomp(new io.SectionReaderжReader(r));
     io.Reader desr = default!;
     if (Ꮡf.of(File.ᏑFileHeader).hasDataDescriptor()) {
-        desr = new io_SectionReaderжReader(io.NewSectionReader(f.zipr, f.headerOffset + bodyOffset + size, dataDescriptorLen));
+        desr = new io.SectionReaderжReader(io.NewSectionReader(f.zipr, f.headerOffset + bodyOffset + size, dataDescriptorLen));
     }
     rc = new checksumReaderжReadCloser(Ꮡ(new checksumReader(
         rc: rc,
@@ -279,7 +279,7 @@ public static (io.ReadCloser, error) Open(this ж<File> Ꮡf) {
         return (default!, err);
     }
     var r = io.NewSectionReader(f.zipr, f.headerOffset + bodyOffset, (int64)f.CompressedSize64);
-    return (new io_SectionReaderжReader(r), default!);
+    return (new io.SectionReaderжReader(r), default!);
 }
 
 [GoType] partial struct dirReader {
@@ -682,7 +682,7 @@ internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirector
         var off = (int64)(~d).directoryOffset;
         var rs = io.NewSectionReader(r, off, size - off);
         var ᴛ1 = new File(nil);
-        if (readDirectoryHeader(ref ᴛ1, new io_SectionReaderжReader(rs)) == default!) {
+        if (readDirectoryHeader(ref ᴛ1, new io.SectionReaderжReader(rs)) == default!) {
             baseOffset = 0;
         }
     }

@@ -40,10 +40,12 @@ using static go.go.doc.comment_package;
 [assembly: GoImplement<Code, Block>(Pointer = true)]
 [assembly: GoImplement<DocLink, ΔText>(Pointer = true)]
 [assembly: GoImplement<Heading, Block>(Pointer = true)]
+[assembly: GoImplement<Italic, ΔText>(Pointer = true)]
 [assembly: GoImplement<Italic, ΔText>]
 [assembly: GoImplement<Link, ΔText>(Pointer = true)]
 [assembly: GoImplement<List, Block>(Pointer = true)]
 [assembly: GoImplement<Paragraph, Block>(Pointer = true)]
+[assembly: GoImplement<Plain, ΔText>(Pointer = true)]
 [assembly: GoImplement<Plain, ΔText>]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 // </InterfaceImplementations>

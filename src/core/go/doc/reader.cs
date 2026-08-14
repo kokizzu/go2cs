@@ -702,7 +702,7 @@ internal static void readFile(this ж<reader> Ꮡr, ж<ast.File> Ꮡsrc) {
 
                                     TokPos: s.Pos(),
                                     Tok: token.TYPE,
-                                    Specs: new ast.Spec[]{new ast_TypeSpecжSpec(s)}.slice()
+                                    Specs: new ast.Spec[]{new ast.TypeSpecжSpec(s)}.slice()
                                 ));
                                 r.readType(fake, s);
                             }
@@ -781,10 +781,10 @@ internal static ж<Func> customizeRecv(ж<Func> Ꮡf, @string recvTypeName, bool
     origPos = newField.Type.Pos();
     var (_, origRecvIsPtr) = newField.Type._<ж<ast.StarExpr>>(ᐧ);
     var newIdent = Ꮡ(new ast.Ident(NamePos: origPos, Name: recvTypeName));
-    ast.Expr typ = new ast_IdentжExpr(newIdent);
+    ast.Expr typ = new ast.IdentжExpr(newIdent);
     if (!embeddedIsPtr && origRecvIsPtr) {
         newIdent.Value.NamePos++; // '*' is one character
-        typ = new ast_StarExprжExpr(Ꮡ(new ast.StarExpr(Star: origPos, X: new ast_IdentжExpr(newIdent))));
+        typ = new ast.StarExprжExpr(Ꮡ(new ast.StarExpr(Star: origPos, X: new ast.IdentжExpr(newIdent))));
     }
     newField.Type = typ;
     // copy existing receiver field list and set new receiver field

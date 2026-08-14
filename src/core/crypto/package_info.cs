@@ -39,6 +39,7 @@ using static go.crypto_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Hash, SignerOpts>(Pointer = true)]
 [assembly: GoImplement<Hash, SignerOpts>]
 // </InterfaceImplementations>
 

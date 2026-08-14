@@ -65,7 +65,7 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
     }
     case ж<ast.FuncLit> xΔ1: {
         buf.WriteByte((rune)'(');
-        WriteExpr(Ꮡbuf, new ast_FuncTypeжExpr((~xΔ1).Type));
+        WriteExpr(Ꮡbuf, new ast.FuncTypeжExpr((~xΔ1).Type));
         buf.WriteString(literalˢ); // shortened
         break;
     }

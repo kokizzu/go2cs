@@ -304,15 +304,15 @@ internal static void removeAnonymousField(@string name, ref ast.InterfaceType it
 internal static ast.Expr copyConstType(ast.Expr typ, tokenꓸPos pos) {
     switch (typ.type()) {
     case ж<ast.Ident> typΔ1: {
-        return new ast_IdentжExpr(Ꮡ(new ast.Ident(Name: (~typΔ1).Name, NamePos: pos)));
+        return new ast.IdentжExpr(Ꮡ(new ast.Ident(Name: (~typΔ1).Name, NamePos: pos)));
     }
     case ж<ast.SelectorExpr> typΔ1: {
         {
             var (id, ok) = (~typΔ1).X._<ж<ast.Ident>>(ᐧ); if (ok) {
                 // presumably a qualified identifier
-                return new ast_SelectorExprжExpr(Ꮡ(new ast.SelectorExpr(
+                return new ast.SelectorExprжExpr(Ꮡ(new ast.SelectorExpr(
                     Sel: ast.NewIdent((~(~typΔ1).Sel).Name),
-                    X: new ast_IdentжExpr(Ꮡ(new ast.Ident(Name: (~id).Name, NamePos: pos)))
+                    X: new ast.IdentжExpr(Ꮡ(new ast.Ident(Name: (~id).Name, NamePos: pos)))
                 )));
             }
         }

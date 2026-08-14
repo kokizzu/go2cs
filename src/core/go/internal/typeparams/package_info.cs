@@ -39,8 +39,6 @@ using static go.go.@internal.typeparams_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.go.ast_package.IndexExpr, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.IndexListExpr, go.go.ast_package.Expr>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
