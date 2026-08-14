@@ -23,9 +23,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **136 / 215 testable packages validated — 63.3%**
+> ### Phase 4 progress: **137 / 215 testable packages validated — 63.7%**
 >
-> **15,137 matching test verdicts · 47 disclosed** *(updated 2026-08-14 — maintained as part of the
+> **15,156 matching test verdicts · 47 disclosed** *(updated 2026-08-14 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -67,6 +67,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`crypto/internal/alias`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/alias) | 1 | | The buffer-overlap predicate every cipher mode's in-place guard is built on, over the full offset matrix. · [proof](validation/current/crypto.internal.alias.md) |
 | [`crypto/internal/bigmod`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/bigmod) | 14 | | Constant-time modular arithmetic on big naturals — Montgomery domain round-trips, `Exp`, modular add/sub identities, limb expansion and `SetBytes` bounds, all on the `purego` word-at-a-time path. · [proof](validation/current/crypto.internal.bigmod.md) |
 | [`crypto/internal/boring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/boring) | 3 |  | The not-BoringCrypto build's own contract — `Enabled` false, and the `Unreachable`/`UnreachableExceptTests` guards that a BoringCrypto-only path must never execute staying quiet under it. · [proof](validation/current/crypto.internal.boring.md) |
+| [`crypto/internal/hpke`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/hpke) | 19 |  | Hybrid public-key encryption against the RFC 9180 vector set — DHKEM(X25519, HKDF-SHA256) base-mode setup over both AEADs, the exporter secret, and `Seal`/`Open` at every sequence number in the vectors including the 255→256 nonce-width boundary; the P-256/P-521 suites reach Go's own `SupportedKEMs` guard and skip identically on both sides. The whole vector set is `encoding/json`-decoded into a slice of a converter-**lifted anonymous struct** — the shape that held this package until the lift's element Kind reached `Unmarshal`. · [proof](validation/current/crypto.internal.hpke.md) |
 | [`crypto/md5`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/md5) | 11 | 1 | MD5 — the golden digest matrix, binary marshal/unmarshal of a half-written state, large-input block handling, and `cryptotest.TestHash`'s stateful-write matrix; alloc-profile disclosure. · [proof](validation/current/crypto.md5.md) |
 | [`crypto/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rand) | 298 |  | Cryptographically secure random integers over the real `math/big` arithmetic — `Int`'s rejection-sampled bit-mask loop across the whole modulus matrix, `Prime` generation and its degenerate bit-length errors, the `Read`/`Reader` surface, and the empty-max panic contract. · [proof](validation/current/crypto.rand.md) |
 | [`crypto/rc4`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rc4) | 2 | | RC4 keystream golden vectors across every key length, and the in-place `XORKeyStream` block matrix. · [proof](validation/current/crypto.rc4.md) |
