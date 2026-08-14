@@ -409,7 +409,12 @@ function Get-HostConditionalVerdict {
 # and >3,600 s (blew the then-60m floor mid-run) -- the heavy tail, not load, is the variable, so
 # the deadline must clear the tail. 120m holds both observed extremes with 2x headroom on the
 # fast sample (2026-08-11, i7-5820K).
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '30m' }
+#
+# go/parser's floor covers its deliberate deep-recursion suite (TestParseDepthLimit walks
+# hundreds of thousands of converted frames per variant): 17 min measured solo on SSD
+# (2026-08-14, i7-5820K), and the 10m default reported a passing suite as NOT MEASURED the
+# first time the full sweep ran it under load. 40m clears the solo figure with 2x headroom.
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '30m'; 'go/parser' = '40m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
