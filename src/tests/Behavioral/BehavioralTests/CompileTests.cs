@@ -562,6 +562,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckGenericUntypedIntArg() => CheckTarget("GenericUntypedIntArg");
 
     [TestMethod]
+    public void CheckGenericValueInterfaceImpl() => CheckTarget("GenericValueInterfaceImpl");
+
+    [TestMethod]
     public void CheckGenericVariadicFunc() => CheckTarget("GenericVariadicFunc");
 
     [TestMethod]

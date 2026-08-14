@@ -123,9 +123,24 @@ public static class Common
 
         if (dropGeneric)
         {
-            startIndex = typeName.IndexOf('<');
+            // Index into simpleName, and admit index 1. This read `typeName.IndexOf('<') > 1`
+            // until 2026-08-14, and both halves of that were wrong:
+            //   * `> 1` silently exempted every ONE-CHARACTER generic name. `G<T>` carries its
+            //     '<' at index 1, so the argument list SURVIVED a "drop the generics" request and
+            //     StructTypeTemplate spelled its constructor `public G<T>(NilType _)`. That is not
+            //     a constructor to C#, so the `partial struct G<T>` scope never opens and every
+            //     member the template writes lands in the containing STATIC package class —
+            //     CS0715 (operators) and CS0708 (instance members), the shared root under
+            //     `internal/reflectlite`'s `B[T any]` and `runtime/debug`'s `G[T any]`. Every
+            //     multi-character generic in the corpus (`meta<T>`, `nistCurve<Point>`) cleared
+            //     the guard, which is why this held until the first single-letter one.
+            //   * the index came from typeName but sliced simpleName, which is SHORTER whenever
+            //     the name is dotted — `a.Map<K, V>` indexes at 5 into an 8-char `Map<K, V>` and
+            //     yields the garbage `Map<K`. Unreached today; corrected rather than left latent.
+            // Index 0 stays excluded: it would name an empty type.
+            startIndex = simpleName.IndexOf('<');
 
-            if (startIndex > 1 && typeName.EndsWith(">"))
+            if (startIndex > 0 && typeName.EndsWith(">"))
                 simpleName = $"{simpleName[..startIndex]}";
         }
 

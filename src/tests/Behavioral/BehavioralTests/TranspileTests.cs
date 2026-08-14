@@ -562,6 +562,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckGenericUntypedIntArg() => CheckTarget("GenericUntypedIntArg");
 
     [TestMethod]
+    public void CheckGenericValueInterfaceImpl() => CheckTarget("GenericValueInterfaceImpl");
+
+    [TestMethod]
     public void CheckGenericVariadicFunc() => CheckTarget("GenericVariadicFunc");
 
     [TestMethod]

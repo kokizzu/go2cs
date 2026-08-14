@@ -85,6 +85,18 @@ public class ImplementGenerator : ISourceGenerator
         // (struct, interface) pair here, so emit the class only for the first — a second would
         // redeclare it (CS0102). Keyed by the open definition + interface.
         HashSet<string> emittedGenericPointerAdapters = new(StringComparer.Ordinal);
+
+        // The VALUE-form sibling of the set above, and it exists for a sharper reason than
+        // tidiness: a partial declaration can only extend the OPEN generic definition. Emitting
+        // the CONSTRUCTED form (`partial struct G<IntPtr>`, from Go's `var dummy I = G[int]{}`)
+        // makes C# read `IntPtr` as a type-PARAMETER NAME, which disagrees with the converter's
+        // `partial struct G<T>` (CS0264) and then spills every generated member — operators,
+        // Equals, the explicit impl — into the containing STATIC package class
+        // (CS0715/CS0708/CS0563). Keyed by the open definition + interface, so `G[int]` and
+        // `G[G[int]]` collapse to the one partial that serves every instantiation — which is
+        // also what Go means: a method on a generic type is declared for all of them.
+        HashSet<string> emittedGenericValueImpls = new(StringComparer.Ordinal);
+
         HashSet<string> emittedInterfaceAdapters = new(StringComparer.Ordinal);
 
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, _, _) in attributeFinder.TargetAttributes)
@@ -935,9 +947,29 @@ public class ImplementGenerator : ISourceGenerator
                 continue;
             }
 
+            // A GENERIC struct partials at its OPEN definition (see emittedGenericValueImpls) —
+            // the declaration name carries the type-PARAMETER names, and every closed record for
+            // the same open pair folds into the first. Constraints are deliberately omitted: a
+            // partial declaration may leave them off, they merge from the converter's own
+            // declaration, and omitting them can never produce CS0265.
+            string implStructName = EscapeCsKeyword(structName);
+            string implHintName = structName;
+            string implTypeKey = structType.ToDisplayString();
+
+            if (structType is INamedTypeSymbol { IsGenericType: true } genericValueStruct)
+            {
+                string openTypeParameters = $"<{string.Join(", ", genericValueStruct.TypeParameters.Select(typeParameter => typeParameter.Name))}>";
+                implStructName = $"{EscapeCsKeyword(genericValueStruct.Name)}{openTypeParameters}";
+                implHintName = $"{genericValueStruct.Name}{openTypeParameters}";
+                implTypeKey = genericValueStruct.OriginalDefinition.ToDisplayString();
+
+                if (!emittedGenericValueImpls.Add($"{implTypeKey}|{interfaceName}"))
+                    continue;
+            }
+
             // One value-form impl per pair — a plain + Promoted duplicate would re-emit the
             // comparison operators (CS0111); the promotedPairs pre-index folds the flag in.
-            if (!emittedValuePairs.Add($"{structType.ToDisplayString()}|{interfaceType.ToDisplayString()}"))
+            if (!emittedValuePairs.Add($"{implTypeKey}|{interfaceType.ToDisplayString()}"))
                 continue;
 
             // Drop members already emitted in an earlier partial of the SAME struct (a member
@@ -945,7 +977,7 @@ public class ImplementGenerator : ISourceGenerator
             // emittedPartialMembers). The earlier partial's impl satisfies it for the whole struct;
             // re-declaring it here is CS0111/CS8646. An empty resulting partial is valid.
             List<MethodInfo> partialMethods = methods
-                .Where(method => emittedPartialMembers.Add($"{structType.ToDisplayString()}|{method.Name}"))
+                .Where(method => emittedPartialMembers.Add($"{implTypeKey}|{method.Name}"))
                 .ToList();
 
             string generatedSource = new InterfaceImplTemplate
@@ -954,8 +986,9 @@ public class ImplementGenerator : ISourceGenerator
                 PackageName = packageName,
                 // A bare SYMBOL name arrives UNescaped (unlike display strings) — a keyword-named
                 // struct must be "@"-escaped or `partial struct fixed` parses as a fixed-size
-                // buffer (the reported CS0708 'main_package.' cascade). No-op otherwise.
-                StructName = EscapeCsKeyword(structName),
+                // buffer (the reported CS0708 'main_package.' cascade). No-op otherwise. A
+                // generic struct arrives here in its OPEN form.
+                StructName = implStructName,
                 InterfaceName = interfaceName,
                 Promoted = promoted || promotedPairs.Contains($"{structType.ToDisplayString()}|{interfaceType.ToDisplayString()}"),
                 Overrides = overrides,
@@ -985,8 +1018,10 @@ public class ImplementGenerator : ISourceGenerator
             }
             .Generate();
 
-            // Add the source code to the compilation
-            context.AddSource(GetUniqueHintName(emittedHintNames, GetValidFileName($"{packageNamespace}.{packageClassName}.{structName}-{interfaceName}.g.cs")), generatedSource);
+            // Add the source code to the compilation. The hint name uses the same OPEN form the
+            // declaration does, so a generic struct's one partial does not take its file name
+            // from whichever instantiation the record list happened to list first.
+            context.AddSource(GetUniqueHintName(emittedHintNames, GetValidFileName($"{packageNamespace}.{packageClassName}.{implHintName}-{interfaceName}.g.cs")), generatedSource);
         }
     }
 

@@ -530,6 +530,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckGenericUntypedIntArg() => CheckTarget("GenericUntypedIntArg");
 
     [TestMethod]
+    public void CheckGenericValueInterfaceImpl() => CheckTarget("GenericValueInterfaceImpl");
+
+    [TestMethod]
     public void CheckGenericVariadicFunc() => CheckTarget("GenericVariadicFunc");
 
     [TestMethod]
