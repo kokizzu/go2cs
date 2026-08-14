@@ -6709,6 +6709,15 @@ outside bounds of the array reference` — where the board had only "first diver
 recorded". And `go/internal/srcimporter` (0 of 7) fails before any test with
 `flag provided but not defined: -json`, i.e. the process the host launches is not the go2cs test
 host; that is an infrastructure root, not the recorded build block.
+⚠ **The last clause of that diagnosis is CORRECTED (2026-08-14, lane `claude/defect-batch-1`).**
+The process IS the go2cs test host. `internal/fuzz` reaches the identical symptom once its build
+blocker is cleared, and there the cause is exact: `worker_test.go`'s `TestMain` calls
+`flag.Parse()`, and the converted `flag.CommandLine` has never been told about the host's own
+`--json` / `--result` / `--junit` / `-timeout` arguments, so parsing rejects them before any test
+runs. In Go, `testing.M` registers those flags on `flag.CommandLine` before `TestMain` executes,
+which is what makes the same `flag.Parse()` legal there. The remedy belongs to the hand-owned
+`src/core/testing` host — register its flags on the converted `flag.CommandLine` — and is a
+separate, unclaimed item. Every package whose `TestMain` calls `flag.Parse()` sits behind it.
 
 ### The prize left on the table
 
@@ -6838,6 +6847,20 @@ a NATIVE-address box with the managed identity already gone. There is nothing le
    converts a whole-suite process death into ONE loud row. But Go PASSES this test on a capable host,
    so the row would be a real mismatch rather than a skip, and the stub declares a capability limit —
    a coordinator ruling, not a lane's call. **Recommended, pending that ruling.**
+
+   ✅ **RATIFIED and LANDED 2026-08-14 (lane `claude/defect-batch-1`).** The coordinator ruled for
+   remedy 2; the wrapper is displaced through `manualConversionFuncs` and reimplemented in
+   `src/core/internal/syscall/windows/windows/zsyscall_windows_impl.cs`, throwing a
+   `NotSupportedException` that names the capability limit, the layout mechanism and this entry.
+   The impl file's header carries the six same-shape wrappers above as a table, so the boundary of
+   the limit is readable where the limit is declared. **The value is measured, on the capable host
+   that produced this entry:** `os` no longer dies at test ~32 of 174 — it runs the suite to
+   completion and the differential is **679 matched of 683**, with exactly four divergent rows:
+   `TestNetworkSymbolicLink` (this declared limit, an honest mismatch — Go passes it),
+   `TestUTF16Alloc` and `TestWriteStringAlloc` (the recorded alloc-count disclosure and the
+   r39-osalloc architectural residual), and `TestDirectorySymbolicLink`, which SKIPS where Go
+   passes and is not attributed here. Compare the pre-fix floor on the same host: **31 of 679**.
+   `os` still does not bank, for the reason it never did.
 3. The durable answer is the **ж-box arc's**: have the non-aliasing `Reinterpret` fallback retain the
    source object so a hand-owned wrapper can reach it, at which point remedy 1 becomes an ordinary
    field-for-field copy with no fabrication.

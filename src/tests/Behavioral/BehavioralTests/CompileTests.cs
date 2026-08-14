@@ -334,6 +334,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckDeferValueFieldPtrReceiver() => CheckTarget("DeferValueFieldPtrReceiver");
 
     [TestMethod]
+    public void CheckDefinedOverNamedComposite() => CheckTarget("DefinedOverNamedComposite");
+
+    [TestMethod]
     public void CheckDefinedTypeOverForeignStruct() => CheckTarget("DefinedTypeOverForeignStruct");
 
     [TestMethod]
@@ -563,6 +566,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckGenericUntypedIntArg() => CheckTarget("GenericUntypedIntArg");
+
+    [TestMethod]
+    public void CheckGenericValueInterfaceImpl() => CheckTarget("GenericValueInterfaceImpl");
 
     [TestMethod]
     public void CheckGenericVariadicFunc() => CheckTarget("GenericVariadicFunc");
@@ -848,6 +854,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
+
+    [TestMethod]
+    public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");
 
     [TestMethod]
     public void CheckNamedArrayAnonElement() => CheckTarget("NamedArrayAnonElement");

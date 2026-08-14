@@ -439,15 +439,7 @@ public static error /*err*/ VirtualQuery(uintptr address, ж<MemoryBasicInformat
     return err;
 }
 
-public static error /*neterr*/ NetShareAdd(ж<uint16> ᏑserverName, uint32 level, ж<byte> Ꮡbuf, ж<uint16> ᏑparmErr) {
-    error neterr = default!;
-
-    var (r0, _, _) = syscall.Syscall6(procNetShareAdd.Addr(), 4, (uintptr)ᏑserverName, (uintptr)level, (uintptr)Ꮡbuf, (uintptr)ᏑparmErr, 0, 0);
-    if (r0 != 0) {
-        neterr = ((syscall.Errno)r0);
-    }
-    return neterr;
-}
+// go2cs generated this placeholder — func NetShareAdd is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*neterr*/ NetShareDel(ж<uint16> ᏑserverName, ж<uint16> ᏑnetName, uint32 reserved) {
     error neterr = default!;

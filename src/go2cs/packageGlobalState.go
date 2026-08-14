@@ -316,6 +316,17 @@ var packageLiftedTypeNames HashSet[string]
 // caller captured before the first variant's resetPackageState.
 var productionLiftedTypeNames HashSet[string]
 
+// productionAliasLiftedTypes maps an anonymous struct/interface TYPE to the package-scope ALIAS
+// name the PRODUCTION conversion lifted it under (`type CorpusEntry = struct{…}` → "CorpusEntry").
+// Populated for a `-tests` conversion only, by seedProductionAliasLifts, and only for aliases the
+// production package_info.cs actually PUBLISHES — the map and the `global using` that makes the
+// name resolvable in the test compilation are seeded together, so a name is never rendered without
+// its alias. Keyed by go/types identity, which is exact here: production and test variants are
+// type-checked in ONE `go/packages` load, so the alias's right-hand side and every test-side
+// reference to it are the same *types.Struct. Nil for a production conversion. Guarded by
+// packageLock; reset per package/variant by resetPackageState.
+var productionAliasLiftedTypes map[types.Type]string
+
 // testAmbiguousLocalTypeNames holds the SIMPLE type names declared by BOTH `-tests` variant
 // classes — the package under test (`<pkg>_package`, production files plus its internal `_test.go`
 // files) and the external suite (`<pkg>_test_package`). The merged test metadata files carry a

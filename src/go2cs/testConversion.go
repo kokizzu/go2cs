@@ -1302,6 +1302,96 @@ func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bo
 	return excluded
 }
 
+// seedProductionAliasLifts makes the production conversion's package-scope ALIAS LIFTS reachable
+// from the test compilation — both halves of "reachable", which is why they are seeded together.
+//
+// Go's `type CorpusEntry = struct{Parent string; Path string; …}` (internal/fuzz's fuzz.go) has no
+// C# spelling of its own, so the production conversion LIFTS the anonymous struct to a real nested
+// type and reaches it through a compilation-scoped `global using CorpusEntry = …CorpusEntryᴛ1;`.
+// `global using` is scoped to ONE compilation and a reference-model test project is a second one,
+// so neither the name nor the lift crossed: every test-side reference fell through to `t.String()`
+// and emitted raw GO syntax into a C# file — `Func<struct{Parent string; …}, error>` in
+// minimize_test.cs and worker_test.cs, CS1031/CS1525/CS1003, with all 52 of internal/fuzz's
+// verdicts behind it.
+//
+// The production package's OWN package_info.cs is the authority for both halves: it publishes
+// `[assembly: GoTypeAlias("CorpusEntry", "go.@internal.fuzz_package.CorpusEntryᴛ1")]`, which gives
+// the exact target the production compilation uses. Recording it in importedTypeAliases re-emits
+// the `global using` into the test metadata file, and recording the TYPE in
+// productionAliasLiftedTypes makes every renderer spell the alias (see liftedNameFor).
+//
+// Deliberately NARROW on both axes. Only an alias whose right-hand side is an anonymous
+// struct/interface is seeded — that is exactly the set with no other spelling; a named RHS already
+// renders through its own qualified name, and adding aliases for it would put avoidable
+// `global using` names into the test compilation where a test-local type could collide. And only
+// an alias the production package_info PUBLISHES is seeded, so a type is never rendered under a
+// name the test compilation cannot resolve; an unexported alias to an anonymous struct publishes
+// nothing and keeps the pre-existing route.
+func seedProductionAliasLifts(pkg *packages.Package, productionInfoPath string) {
+	if pkg == nil || pkg.Types == nil {
+		return
+	}
+
+	published, err := parseExportedTypeAliases(productionInfoPath)
+
+	if err != nil || len(published) == 0 {
+		return
+	}
+
+	targets := make(map[string]string, len(published))
+
+	for _, entry := range published {
+		targets[entry[0]] = entry[1]
+	}
+
+	scope := pkg.Types.Scope()
+
+	for _, name := range scope.Names() {
+		typeName, ok := scope.Lookup(name).(*types.TypeName)
+
+		if !ok || !typeName.IsAlias() {
+			continue
+		}
+
+		target, published := targets[name]
+
+		if !published {
+			continue
+		}
+
+		// A test file's own alias lifts normally in THIS conversion; only the production
+		// declarations are missing one.
+		if strings.HasSuffix(pkg.Fset.Position(typeName.Pos()).Filename, "_test.go") {
+			continue
+		}
+
+		resolved := types.Unalias(typeName.Type())
+
+		switch underlying := resolved.(type) {
+		case *types.Struct:
+			if isEmptyStructType(underlying) {
+				continue
+			}
+		case *types.Interface:
+			if underlying.Empty() {
+				continue
+			}
+		default:
+			continue
+		}
+
+		packageLock.Lock()
+
+		if productionAliasLiftedTypes == nil {
+			productionAliasLiftedTypes = map[types.Type]string{}
+		}
+
+		productionAliasLiftedTypes[resolved] = name
+		importedTypeAliases[name] = target
+		packageLock.Unlock()
+	}
+}
+
 // convertTestVariant converts one test package variant's _test.go files into C# in outputPath.
 // The whole variant (production + test files) feeds the package-wide analyses so the test files
 // convert with complete state, but only the test files are EMITTED here. The production .cs already
@@ -1354,7 +1444,9 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	}
 
 	if productionName != "" {
-		loadPackageImplements(platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform)), productionName)
+		productionInfoPath := platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform))
+		loadPackageImplements(productionInfoPath, productionName)
+		seedProductionAliasLifts(pkg, productionInfoPath)
 	}
 
 	allEntries := make([]FileEntry, 0, len(pkg.Syntax))
@@ -2021,7 +2113,19 @@ func writeWhiteboxVariantMetadata(testInfoPath, outputPath, productionClassName,
 
 	unitName := ""
 
-	if !bridgeAnchored.isEmpty() {
+	// The bridge unit is written whether or not this variant contributed records, because the
+	// file is not only a metadata anchor — it is the ONLY place `<pkg>_internal_test_package` is
+	// declared `public static partial`. Every converted SOURCE file opens its package class bare
+	// (`partial class X {`) by design; the modifier lives in the metadata file, exactly as it does
+	// for the production and external-test classes. A record-less bridge therefore had no static
+	// declaration at all, and an internal test file declaring an extension method is then CS1106 —
+	// `internal/syscall/windows/registry`'s `export_test.go`, whose whole 6-verdict suite sat
+	// behind `func (k Key) SetValue(…)`. Banked mixed suites only appear to escape it: `sort`,
+	// `bytes` and `strings` each happen to have a go2cs-gen RecvGenerator file that re-declares
+	// the class `public static partial`, i.e. a GENERATOR supplying a modifier the emitter owes.
+	// A bridge with no records writes an anchor whose sections are all empty, which is what the
+	// production and external-test seeds already do in the same situation.
+	{
 		unitPath := filepath.Join(outputPath, internalTestPackageInfoFileName)
 
 		if _, err := os.Stat(unitPath); os.IsNotExist(err) {

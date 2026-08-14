@@ -29,7 +29,7 @@ func (v *Visitor) convStructType(structType *ast.StructType, context IdentContex
 
 	t := v.getType(structType, false)
 
-	if liftedName, ok := v.liftedTypeMap[t]; ok {
+	if liftedName, ok := v.liftedNameFor(t); ok {
 		return liftedName
 	}
 

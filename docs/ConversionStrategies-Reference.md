@@ -1648,7 +1648,22 @@ When the target basic *is* the named type's exact underlying (`int32(s)` for `Na
 
 **Named SLICE types keep the named type when sliced.** The generated slice wrapper's Range indexer and `Slice()` overloads return the wrapper (`nat[a:b]` IS a `nat` — a fresh wrapper sharing the same backing window), so a method call directly on a slice expression binds the named type's extensions (`u[s:].norm()` bound the raw `slice<Word>` instead, math/big CS1929 ×21). The explicit `ISlice<T>` implementations keep the raw slice type.
 
-A conversion **between two named slice types** sharing an identical underlying (tar's `sparseElem(s[i*24:])`, both `[]byte`) hops through the shared underlying slice — `((sparseElem)(slice<byte>)(…))` — since the wrapper-returning slicing makes the argument the NAMED wrapper and a direct cast would chain two user-defined operators (CS0030). (Guarded by `SortArrayType`'s `Roster(byAge[0:2])`.)
+A conversion **between two named slice types** sharing an identical underlying (tar's `sparseElem(s[i*24:])`, both `[]byte`) hops through the shared underlying slice — `((sparseElem)(slice<byte>)(…))` — since the wrapper-returning slicing makes the argument the NAMED wrapper and a direct cast would chain two user-defined operators (CS0030). (Guarded by `SortArrayType`'s `Roster(byAge[0:2])`.) The same hop covers the map and array underlyings (net/mail's `textproto.MIMEHeader(h)`, where `Header` and `MIMEHeader` are both written over `map[string][]string`).
+
+**…but NOT when one of the two was written directly over the other.** Go's `Underlying()` resolves through the whole declaration chain, so `type shuffledFS MapFS` — testing/fstest's own suite, over a `MapFS` that is itself `map[string]*MapFile` — passes the shared-underlying test above while being a completely different shape. The wrapper for a non-basic underlying keeps the **NAMED** base (`[GoType("global::go.testing.fstest_package.MapFS")]`, see `visitIdent`/`visitTypeSpec`), so `shuffledFS` declares exactly ONE conversion operator and it targets `MapFS`. Hopping through the raw map therefore *creates* the two-operator chain the hop exists to prevent — `shuffledFS`→`MapFS`→`map`, CS0030 — where the plain cast Go actually wrote binds in one step:
+
+```go
+f, err := MapFS(fsys).Open(name)          // fsys is shuffledFS
+```
+```csharp
+var (f, err) = ((global::go.testing.fstest_package.MapFS)fsys).Open(name);
+```
+
+The written right-hand side is recovered from `packageTypeSpecRHS` (`writtenUnderlyingOperations.go`), the same per-package pre-pass the named-**numeric** hop already consults for its own version of this exception — with one difference: the numeric exception is gated to a CROSS-package base, because a same-package numeric chain resolves to the basic underlying (`[GoType("num:uintptr")]`, no named-base operator to bind). A composite underlying keeps the named base either way, so the composite exception needs no package gate. Both directions are covered (the arg written over the target, and the target written over the arg), and all three composite arms — map, slice and array. Unrecorded or cross-package declarations miss the lookup and keep the pre-existing route.
+
+Measured on `testing/fstest`, whose whole 7-verdict suite sat behind this one CS0030: it now runs at **6 of 7**, the residual being `TestShuffledFS`'s runtime assertion that the returned `*shuffledFile` satisfies `fs.ReadDirFile` — the pointer-adapter identity class, unrelated. (Guarded by the `DefinedOverNamedComposite` behavioral test: a child package owning the named map/slice/array, defined types over each in both directions plus a same-package one, and the net/mail two-raw-map control in the same program so the hop is proven to still fire.)
+
+> A defined type over a named COMPOSITE gets an inherited wrapper that does not expose the golib sequence surface, so `len(x)` directly on one is CS0315 against `builtin.len<TSeq>`. That is a separate, pre-existing gap — no corpus site asks for it, and the guard above deliberately measures through the base type instead.
 
 (Guarded by `NamedNumericConversion`, `NamedNumericShiftConv`, `NamedTypeBitwiseConst`, `IotaEnum`, `FuncTypeParam`, and `CrossPkgUser`; the `string`-target exception is guarded by `StringConvPostfix` and `UnsafeOperations`; verified by the full behavioral suite — output comparisons confirm the precedence is unchanged.)
 
@@ -3342,7 +3357,20 @@ The white-box extension has five coupled parts:
 3. `go/packages` loads production, internal and external test variants together. An external test reference is routed to the bridge only when its `go/types.Object` belongs to the production import path **and** its declaration position is in `_test.go`; production objects and same-spelled unrelated declarations keep their ordinary route. This is how `io_test` reaches `ErrInvalidWrite` from `export_test.go` without source rewriting or a generated alias contract.
 4. Test-contributed implementation adapters are owned by test metadata anchors — a MIXED suite has **two**. The generators host output in the FIRST class of the attribute-bearing file, and a mixed white-box assembly has two classes generated code must merge into, so the B4/B5 two-file split returns in mirror image: records whose generated partial must merge with a **bridge-declared** type (a BARE record name in the internal variant's declared-name set — `splitWhiteboxVariantRecords`) anchor in **`package_info_internal_test.cs`**, whose first — and only — class is the bridge (also the bridge's single `static` declaration and its `[GoPackage]` carrier); every other record — production-qualified, foreign, or external-declared — stays in `package_test_info.cs` under the external test class. Anchoring a bridge implementer in the external class would generate a phantom empty type there instead of merging with the real declaration. Deferred adapter markers are redirected only when the exact `(struct, interface)` pair appears in a test anchor (`emittedAdapterPair`); the anchored reference is composed `<anchor>.<member>` where the member comes from the **record's** spelling (`anchoredAdapterMemberName` — `adapterStructKey` normalizes a qualified production struct to the generator's foreign `<pkg>_<Simple>` form and leaves a variant-local name bare, exactly the generator's local-vs-foreign naming split; composing from the cast site's spelling instead emitted `ParseErrorжerror` where the generator wrote `csv_ParseErrorжerror`), and each pair remembers **which** anchor file recorded it. Imported production adapters keep pointing to their defining assembly. The generator also recognizes a collision-renamed embedded value property (`ΔBuffer` for embedded `bytes.Buffer`) as the same promotion hop, and scans the current compilation for friend-bridge box-receiver extensions by **simple name** when — and only when — the struct has no local declaration (the bridge spells its box parameter through the imported alias, `this ж<Replacer>`, and the metadata-only case is precisely the one whose discovery compilation is null).
 5. The metadata seed imports the production, bridge and external-test classes as needed, but its first and only declaration remains the selected test anchor. An internal-only suite's bridge is both the test class and the bridge, so the seed imports it exactly once (a second, global import of the same class is CS8933). This keeps go2cs-gen's positional anchor contract deterministic for mixed and internal-only suites.
+   **A MIXED suite's `package_info_internal_test.cs` is therefore written UNCONDITIONALLY, records or not (2026-08-14).** The file is not only a metadata anchor: it is the bridge class's ONLY `public static partial` declaration. Every converted SOURCE file opens its package class bare — `partial class registry_internal_test_package {` — exactly as production and external-test sources do, with the modifier living in the metadata file; see [`package_info.cs`'s `TypeAccessibility` section](#package_infocss-typeaccessibility-section-pins-each-types-accessibility-in-source) for the same division of labour applied to types. Writing the unit only when the variant contributed bridge-anchored `GoImplement`/`GoImplicitConv` records therefore left a record-less bridge with no `static` declaration anywhere, and an internal test file declaring a method on a production type — which converts to an EXTENSION method — is then **CS1106**. `internal/syscall/windows/registry`'s whole 6-verdict suite sat behind one such line, `func (k Key) SetValue(name string, valtype uint32, data []byte) error` in its `export_test.go`. Mixed suites that appear to escape it do so *incidentally*: `sort`, `bytes` and `strings` each happen to have a go2cs-gen `RecvGenerator` file that re-declares the class `public static partial` — a generator supplying a modifier the emitter owes. A record-less bridge writes an anchor whose sections are all empty, which is what the production and external-test seeds already do in the same situation. Measured: registry moves from build-blocked to **4 of 6** (residuals `TestValues`, a raw-address array reinterpret materializing a zero-length `array<T>`, and `TestGetMUIStringValue`); guarded by `TestWhiteboxBridgeUnitIsWrittenWithoutBridgeRecords`.
 6. The friend grant is **inserted after template rendering**, never as a template verb: a user-supplied `-csproj` template keeps its historical verb count and renders exactly as before (`insertFriendAssemblyAccess`, anchored on the first closing `PropertyGroup`). And the reference models' anchored metadata writes treat the anchor class as the local type scope (`metadataAnchorLocalTypes`), while the recompile model's anchored writes keep the historical production-local qualification — there the production class genuinely is local to the assembly.
+
+**A production ALIAS whose right-hand side is ANONYMOUS is carried across with its `global using` (2026-08-14).** Go's `type CorpusEntry = struct{Parent string; Path string; Data []byte; …}` (internal/fuzz's `fuzz.go`) has no C# spelling of its own, so the production conversion LIFTS the anonymous struct to a real nested type and reaches it through a compilation-scoped alias — `global using CorpusEntry = go.@internal.fuzz_package.CorpusEntryᴛ1;` at the top of `fuzz.cs`. `global using` is scoped to ONE compilation, and a reference-model test project is a second one that does not recompile the production sources, so neither half crossed: nothing visited the declaration, nothing claimed the lift, and every test-side reference fell through to `t.String()` and emitted **raw Go syntax into a C# file** —
+
+```csharp
+internal Func<struct{Parent string; Path string; Data []byte; Values []any; Generation int; IsSeed bool}, error> fn;
+```
+
+— CS1031/CS1525/CS1003 cascades in `minimize_test.cs` and `worker_test.cs`, with all 52 of the package's verdicts behind them. `seedProductionAliasLifts` now reads the production package's own `package_info.cs` (which the test conversion already opens for its `GoImplement` pairs) and seeds **both halves together**: the alias into `importedTypeAliases`, so the test metadata file re-emits the `global using`, and the anonymous TYPE into `productionAliasLiftedTypes`, so every renderer spells `CorpusEntry` (`liftedNameFor`, consulted wherever `liftedTypeMap` was). Keying by go/types identity is exact here — production and test variants are type-checked in one `go/packages` load, so the alias's right-hand side and every test-side reference are the same `*types.Struct`.
+
+Narrow on both axes, deliberately. Only an **anonymous** right-hand side is seeded: a named RHS already renders through its own qualified name, and aliasing it would put avoidable `global using` names into a compilation where a test-local type could collide. And only an alias the production `package_info.cs` **publishes** is seeded, so a type is never rendered under a name the test compilation cannot resolve; an unexported alias to an anonymous struct publishes nothing and keeps the pre-existing route. Guarded by `TestSeedProductionAliasLiftsCarriesLiftAndAliasTogether`, which carries both negative controls.
+
+`internal/fuzz` builds clean afterwards (0 errors, from four parse-error families) and then stops one layer further out, on an infrastructure root that is **not** this one and is worth recording precisely: its `worker_test.go` `TestMain` calls `flag.Parse()`, and the converted `flag.CommandLine` has never been told about the host's own `--json` / `--result` / `--junit` / `-timeout` arguments, so the run dies with `flag provided but not defined: -json` before any test executes. In Go, `testing.M` registers those flags on `flag.CommandLine` before `TestMain` runs, which is what makes the same `flag.Parse()` legal there. This also **corrects** the board's attribution of the identical symptom on `go/internal/srcimporter` ("the process the host launches is not the go2cs test host"): the process IS the host — what it lacks is the flag registration.
 
 **Fallback is based on mutation, not merely on a production-qualified record.** Pointer/value adapters and the shared `T → ж<T>` boxing route are relocatable. A structural conversion involving a production type, or a numeric conversion whose two operands are both production types, would require an operator on a closed referenced type; `recordsRequireProductionMutation` returns `errProductionAnchoredRecords`, and the already-loaded variants are re-emitted once under `recompile`. The older black-box `recordsRequireProductionAnchor` gate remains conservative for the ordinary reference model.
 
@@ -4616,6 +4644,38 @@ value where the shape is known statically; `GoZero` recovers it from a value tha
 it, which is what a built-in is handed. (Guarded by the `ClearBuiltinShadow` behavioral test,
 extended with `clear` over an array-element slice, a struct-with-array-field slice, and an
 array-of-arrays element, each written to after the clear and output-compared vs `go run`.)
+
+### A named slice wrapper's non-generic `ISlice.Append` is an EXPLICIT implementation
+
+The generated wrapper for `type S []E` implements both halves of the golib slice surface, and both
+declare an `Append`: the typed `ISlice<E>.Append(E[])` and the non-generic `ISlice.Append(object[])`.
+`ISliceTypeTemplate` emitted both **public**, which is fine for every `E` except one — with
+`E = any`, `object[]` and `E[]` are the SAME parameter list, so the wrapper carried two public
+methods differing only in return type: **CS0111**. That is a single duplicate-member emission, and
+it held two whole converted test suites, `fmt`'s `type SE []any` (63 verdicts) and `archive/tar`'s
+`type fileOps []any` (97) — a `[]any` named slice is a table-driven-test idiom, which is why the
+production corpus never met it.
+
+The non-generic overload is now explicit —
+
+```csharp
+ISlice? ISlice.Append(object[] elems) => ((ISlice)m_value).Append(elems);
+```
+
+— which is what golib's own `slice<T>` has always declared (`ISlice ISlice.Append(object[] elems)`
+beside `ISlice<T> ISlice<T>.Append(params T[] elems)`), so the wrapper now matches the type it
+wraps. The reasoning is the same one the template already applies to `GetEnumerator` in the
+subsection above: this is the boxing, interface-typed path, taken only when a consumer asks for the
+interface, and the public surface is the typed overload. Converted code never calls it by name —
+Go's `append` emits golib's `append` builtin, which reaches `slice<T>.Append` statically.
+
+Measured after: both suites clear this root and stop on unrelated ones — `fmt` on five
+(CS1955 `map` used as a method, CS0030 on renamed complex types, CS1729/CS0103/CS0034 around
+`Scan_type`), `archive/tar` on the duplicate `global using` alias its board row records as closed
+and which is in fact still live. Neither banks. Guarded by the `NamedAnySliceType` behavioral test —
+both suites' declarations verbatim, spread into a variadic `...any`, appended to, indexed, ranged,
+sub-sliced, spread into a second named `[]any`, and compared against `nil`, output-compared vs
+`go run`.
 
 ## Strings (`@string` and `sstring`)
 Go's `string` is represented by golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs), not `System.String`. That is a semantic decision, not just a naming one: Go strings are immutable byte sequences, so `len`, indexing, ranging, concatenation, conversion to `[]byte`/`[]rune`, equality, and type assertions must all observe Go's UTF-8/byte model rather than C#'s UTF-16 string model. A zero-value `@string` is also null-safe and reads as `""`, which lets `default!` stand in for Go's zero value without sprinkling null checks through converted code.
@@ -6815,6 +6875,44 @@ consistently with both compare forms). (Guarded by the `GenericStructEquality` b
 the `Handle` pointer-identity shape, the plain-T fallback shape, a T-independent-field struct, the
 `Null`-shaped mix, a nested generic struct field, and a generic struct as a map key, all
 output-compared vs Go.)
+
+### A generic struct implementing an interface BY VALUE partials at its OPEN definition
+A Go method on a generic type is declared for every instantiation, so `func (g G[T]) M()` makes
+`G[int]`, `G[string]` and `G[G[int]]` all satisfy an interface with `M`. The converter records a
+`[assembly: GoImplement<…>]` per instantiation it sees, and `ImplementGenerator`'s value-form arm
+wrote one `partial struct` per record, spelled with the record's TYPE ARGUMENTS:
+`partial struct G<IntPtr> : I`. C# reads that argument list as a **type-parameter list**, so the
+declaration disagrees with the converter's own `partial struct G<T>` (CS0264) and the mismatched
+parts stop merging — every member the template writes then lands in the containing **static**
+package class instead (CS0715 on the operators, CS0708 on `Equals`/`GetHashCode`/`ToString`,
+CS0563 and CS0540 in the cascade). The arm now emits ONE partial against the open definition, keyed
+by `(OriginalDefinition, interface)` so all instantiations of a pair fold into it; the member and
+value-pair dedupe indexes key on the same open form, since two interfaces over one open generic
+share a single partial. Constraints are deliberately omitted — a partial declaration may leave them
+off and they merge from the converter's declaration, so omission can never raise CS0265. The
+pointer-adapter arm had always done this (`emittedGenericPointerAdapters`, crypto/elliptic's
+`nistCurve[Point]`); this is its value-form sibling.
+
+Behind it sat a second, independent defect in the shared `GetSimpleName` helper, and it is the one
+that explains why the two packages holding this class both name their generic with a **single
+letter**. Asked to drop a type-argument list, the helper tested `typeName.IndexOf('<') > 1` — so
+`G<T>`, whose `<` sits at index 1, kept its arguments. `StructTypeTemplate` derives the constructor
+name from that call, and emitted `public G<T>(NilType _)`, which is not a constructor to C#: the
+`partial struct G<T>` scope never opens and the same spill follows. Every multi-character generic
+in the corpus (`meta<T>`, `nistCurve<Point>`, `Handle<T>`) cleared the guard, which is why this
+survived to the first single-letter one. The guard is now `> 0` and indexes the *simple* name
+rather than the full one — the latter also closes a latent, currently unreached miscut on a dotted
+generic (`a.Map<K, V>` indexed at 5 into an 8-character `Map<K, V>`, yielding `Map<K`).
+
+Measured on `internal/reflectlite` (`type B[T any] struct{}`) and `runtime/debug`
+(`type G[T any] struct{}` with `var dummy I = G[int]{}` and `var dummy2 I = G[G[int]]{}`), the two
+packages the board recorded behind one CS0715 root. `runtime/debug` moves from build-blocked to a
+measured **2 of 9**; `internal/reflectlite` clears this root and stops on five unrelated ones.
+Guarded by the `GenericValueInterfaceImpl` behavioral test — a single-letter generic held as an
+interface at three instantiations, a sibling type named exactly like the type parameter (the
+`runtime/debug` shape that made the spilled members render as `debug_test_package.T`), struct
+equality, struct-versus-interface comparison, and interface dispatch over a mixed slice, all
+output-compared against `go run`.
 
 ### The `string | []byte` union
 C# generic constraints are conjunctive ("and"), so they cannot express Go's `string | []byte` union directly. The two members share no operators (the union is neither comparable nor additive), so a conforming body may only use the read operations common to both — indexing, `len`, and sub-slicing. These are captured by the golib read-only byte-sequence interface [`IByteSeq`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/IByteSeq.cs), which both `@string` and `slice<T>` implement; the converter emits it for the union and suppresses the (spurious) lifted operator constraints:
