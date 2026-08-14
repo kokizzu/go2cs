@@ -5,24 +5,83 @@
 // that can be found in the LICENSE file.
 
 using System;
+using System.Collections.Concurrent;
+using System.Globalization;
 using System.Threading;
 
 namespace go.golib;
 
 /// <summary>
-/// The goroutine ROOT — where the body of every Go <c>go</c> statement begins and ends.
+/// A goroutine's IDENTITY, and the ROOT where the body of every Go <c>go</c> statement begins and
+/// ends.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Every <c>builtin.goǃ</c> overload dispatches through <see cref="Start"/>, so the root's policy is
-/// stated exactly once instead of being duplicated across the arity overloads.
+/// stated exactly once instead of being duplicated across the arity overloads. That funnel is also
+/// what makes the EXECUTOR a single method body: <see cref="Start"/> gives each goroutine its own
+/// dedicated thread, so a parked goroutine can never delay a not-yet-started one.
+/// </para>
+/// <para>
+/// <b>Why not the ThreadPool.</b> Goroutines used to be <c>ThreadPool.QueueUserWorkItem</c> work
+/// items. A goroutine that parks — an unbuffered rendezvous, a full buffer, a blocked select, a
+/// <c>WaitGroup</c>, a sleep — blocks its thread for as long as it is parked, so on a SHARED pool
+/// every parked goroutine subtracted one unit of capacity from the goroutines that had not started
+/// yet. The pool answers a capacity shortfall with heuristics (hill-climbing injection at roughly
+/// one thread per second, gated on ~1s of continuous starvation, fighting a ~20s idle-retirement
+/// timeout), and those heuristics — not parking latency — were the whole cost: a 1000-goroutine
+/// rendezvous storm drained in pool-sized waves, and <c>internal/singleflight</c>'s
+/// <c>TestDoAndForgetUnsharedRace</c> spent 28.7 MINUTES climbing that ladder for work Go finishes
+/// in 0.04s. A thread per goroutine makes capacity equal demand by construction: there is no queue,
+/// no floor and no inference to get wrong. See <c>docs/phase4/DESIGN-cooperative-scheduler.md</c>
+/// §1 for the measured ladder and §4 for the mechanisms priced against each other.
+/// </para>
+/// <para>
+/// <b>What this is not.</b> Not an M:N scheduler. The CLR offers no stack switching, so a go2cs
+/// goroutine is, and remains, a thread for its whole life — every thread-affinity invariant golib
+/// relies on (the Goexit gate, <c>recover()</c>'s slots, <c>GoFrame</c>'s <c>ref struct</c> defer
+/// frames, <c>procPin</c>'s shard id, the high-resolution sleep timer) holds by construction
+/// because the body still runs start-to-finish on one thread. The cost is that OS threads bound
+/// this model at roughly 10⁴ concurrent goroutines rather than Go's 10⁶ — a documented divergence,
+/// smaller than the one it replaces.
+/// </para>
 /// </remarks>
-public static class Goroutine
+public sealed class Goroutine
 {
-    // True only while this thread is executing a goroutine body. Goroutines run on POOL threads, so
-    // the flag MUST be restored on the way out: a thread that finished one goroutine returns to the
-    // pool and must no longer look like one.
+    /// <summary>
+    /// Environment variable overriding <see cref="StackReserve"/>.
+    /// </summary>
+    public const string StackReserveVariable = "GO2CS_GOROUTINE_STACK";
+
+    // Go goroutine stacks GROW (to ~1GB on 64-bit), so deeply recursive code is legal Go, while a
+    // .NET thread's stack is a FIXED reservation whose overflow is uncatchable and kills the whole
+    // process. A reservation is ADDRESS SPACE, not memory — pages commit on demand — so 256MB buys
+    // Go-scale headroom at no real cost: 10⁴ goroutines reserve ~2.5TB of a 64-bit process's 128TB,
+    // and it is the live THREAD count, never the reserve, that bounds this model.
+    //
+    // Deliberately SEPARATE from the converted-test host's per-test thread reserve
+    // (testing/TestExecution.cs). That one sizes ONE thread per test and answers "how deep does a
+    // TEST BODY recurse"; this one is multiplied by the goroutine count and answers "how deep does a
+    // GOROUTINE body recurse". The two are not required to agree and nothing should unify them — a
+    // host that needs deeper test stacks must not drag every goroutine's reservation up with it, and
+    // the multipliers differ by orders of magnitude. GO2CS_GOROUTINE_STACK overrides this one alone.
+    private const int DefaultStackReserve = 256 * 1024 * 1024;
+
+    private static readonly int s_stackReserve = ResolveStackReserve();
+
+    // The live-goroutine REGISTRY. The set answers "which goroutines exist" for the consumers this
+    // unblocks (runtime.NumGoroutine, the deadlock detector, Goexit option A — none of which land
+    // here); the count is carried separately because ConcurrentDictionary.Count takes every lock and
+    // is O(buckets), which is the wrong shape for something a program may poll.
+    private static readonly ConcurrentDictionary<long, Goroutine> s_live = new();
+    private static long s_nextId;
+    private static int s_count;
+
+    // The identity of the goroutine running on this thread — getg(), in Go's terms — or null on a
+    // thread that is not running Go code at all (BCL callbacks, the timer service thread, the
+    // finalizer). Goroutine state is thread-affine everywhere in golib, so this is the natural root.
     [ThreadStatic]
-    private static bool t_onGoroutine;
+    private static Goroutine? t_current;
 
     // The containment policy, when a HOST installed one. Only ever assigned non-null, so a root
     // whose filter observed a policy can never find it gone by the time the handler runs.
@@ -30,6 +89,38 @@ public static class Goroutine
 
     // The panic observer, when a HOST installed one. Read once per escaping panic and never cleared.
     private static Action<PanicException>? s_panicObserver;
+
+    private Goroutine(long id, bool isMain)
+    {
+        Id = id;
+        IsMain = isMain;
+    }
+
+    // Monotonic, and deliberately INTERNAL: Go hides goroutine ids from programs precisely so that
+    // nothing builds goroutine-local storage on them, and a converted program must inherit that
+    // constraint. It exists for the thread name and the debugger.
+    internal long Id { get; }
+
+    // The main goroutine is registered like any other — it is what runtime.NumGoroutine counts and
+    // what a deadlock detector must see — but it is NOT "a goroutine" for the one contract that
+    // distinguishes them: runtime.Goexit means something different there (see OnGoroutine).
+    internal bool IsMain { get; }
+
+    // Running until a park-accounting scope says otherwise. Written only by this goroutine's own
+    // thread. The Parked side arrives with the gopark/goready accounting contract that wraps the
+    // existing wait primitives (DESIGN-cooperative-scheduler.md §5.3) — until then every live
+    // goroutine is Running by construction.
+    internal GoroutineState State { get; set; } = GoroutineState.Running;
+
+    /// <summary>
+    /// The stack size, in bytes, reserved for each goroutine's thread.
+    /// </summary>
+    public static int StackReserve => s_stackReserve;
+
+    /// <summary>
+    /// The number of goroutines that currently exist, including the main goroutine.
+    /// </summary>
+    public static int Count => Volatile.Read(ref s_count);
 
     /// <summary>
     /// Indicates whether the calling thread is running a goroutine body rather than the main
@@ -40,31 +131,57 @@ public static class Goroutine
     /// goroutine it ends that goroutine, while from the MAIN goroutine it ends <c>main</c> without
     /// returning and leaves the program running its other goroutines — a shape with no managed
     /// counterpart today, so the main-goroutine case stays gated (see the runtime package's
-    /// <c>managed_impl.cs</c>).
+    /// <c>managed_impl.cs</c>). A thread with no identity at all is not a goroutine either, so the
+    /// gate reads false there too — exactly as it did when this was a bare <c>[ThreadStatic]</c>
+    /// flag.
     /// </remarks>
-    public static bool OnGoroutine => t_onGoroutine;
+    public static bool OnGoroutine => t_current is { IsMain: false };
 
     /// <summary>
     /// Marks the calling thread as running a goroutine body for the lifetime of the returned scope.
     /// </summary>
     /// <remarks>
-    /// Used by hosts that run Go code on a thread they created themselves rather than through
-    /// <see cref="Start"/> — the converted-test host runs each test on a dedicated thread, and that
-    /// thread IS the test's goroutine in Go terms (Go's <c>tRunner</c> runs every test in one).
+    /// Used by <see cref="Start"/> itself, and by hosts that run Go code on a thread they created
+    /// themselves rather than through it — the converted-test host runs each test on a dedicated
+    /// thread, and that thread IS the test's goroutine in Go terms (Go's <c>tRunner</c> runs every
+    /// test in one). Entering a thread that already has an identity keeps that identity and returns
+    /// an inert scope, so nesting can neither mint a second goroutine for one thread nor retire the
+    /// outer one early.
     /// </remarks>
     public static Scope Enter()
     {
-        Scope scope = new(t_onGoroutine);
-        t_onGoroutine = true;
-        return scope;
+        if (t_current is not null)
+            return default;
+
+        Goroutine goroutine = Register(isMain: false);
+        t_current = goroutine;
+
+        // Named for the debugger and for a thread dump, which is where a leaked or wedged goroutine
+        // is diagnosed. A host that named the thread itself keeps its own name.
+        Thread.CurrentThread.Name ??= $"goroutine-{goroutine.Id.ToString(CultureInfo.InvariantCulture)}";
+
+        return new Scope(goroutine);
     }
 
     /// <summary>
-    /// Queues <paramref name="body"/> to run as a goroutine.
+    /// Starts <paramref name="body"/> as a goroutine.
     /// </summary>
+    /// <remarks>
+    /// One dedicated background thread per goroutine — see the type remarks for why this is not a
+    /// pool work item. <c>IsBackground</c> is Go's exit semantics: when <c>main</c> returns the
+    /// process exits regardless of how many goroutines are still live or parked, which a foreground
+    /// thread would prevent. The <see cref="ExecutionContext"/> flows into the new thread exactly as
+    /// it did through <c>QueueUserWorkItem</c> — <c>Thread.Start</c> captures it the same way — which
+    /// is what keeps a failure inside a goroutine attributable to the test that spawned it.
+    /// </remarks>
     public static void Start(Action body)
     {
-        ThreadPool.QueueUserWorkItem(_ => Run(body));
+        Thread thread = new(() => Run(body), s_stackReserve)
+        {
+            IsBackground = true
+        };
+
+        thread.Start();
     }
 
     /// <summary>
@@ -117,6 +234,108 @@ public static class Goroutine
     {
         ArgumentNullException.ThrowIfNull(observer);
         Volatile.Write(ref s_panicObserver, observer);
+    }
+
+    /// <summary>
+    /// Registers the calling thread as the MAIN goroutine.
+    /// </summary>
+    /// <remarks>
+    /// Called once from golib's module initializer, which runs on the thread that first touches
+    /// golib — <c>main</c>, in a converted program. The main goroutine is registered so that the
+    /// live count includes it, as Go's does; it is not marked as "on a goroutine", so the
+    /// <c>runtime.Goexit</c> gate keeps reading false there.
+    /// </remarks>
+    internal static void RegisterMainGoroutine()
+    {
+        if (t_current is not null)
+            return;
+
+        t_current = Register(isMain: true);
+    }
+
+    private static Goroutine Register(bool isMain)
+    {
+        Goroutine goroutine = new(Interlocked.Increment(ref s_nextId), isMain);
+
+        s_live[goroutine.Id] = goroutine;
+        Interlocked.Increment(ref s_count);
+
+        return goroutine;
+    }
+
+    private static void Unregister(Goroutine goroutine)
+    {
+        if (s_live.TryRemove(goroutine.Id, out _))
+            Interlocked.Decrement(ref s_count);
+    }
+
+    private static int ResolveStackReserve()
+    {
+        string? setting = Environment.GetEnvironmentVariable(StackReserveVariable);
+
+        if (string.IsNullOrWhiteSpace(setting))
+            return DefaultStackReserve;
+
+        // 0 is meaningful and deliberately allowed: it hands Thread the framework default (~1MB),
+        // which is the escape hatch for a host where reserved address space is genuinely scarce.
+        if (TryParseByteSize(setting, out long bytes) && bytes >= 0 && bytes <= int.MaxValue)
+            return (int)bytes;
+
+        // Loud once, never fatal, and on stderr so it cannot contaminate a converted program's
+        // compared stdout: a misspelled override that silently did nothing would be indistinguishable
+        // from one that worked.
+        Console.Error.WriteLine(
+            $"go2cs: ignoring {StackReserveVariable}=\"{setting}\" — expected a byte count with an " +
+            $"optional B, KiB, MiB or GiB suffix; using the default {DefaultStackReserve / (1024 * 1024)}MiB reservation.");
+
+        return DefaultStackReserve;
+    }
+
+    // Go's own convention for a memory-sized environment variable (GOMEMLIMIT): a decimal byte count
+    // with an optional power-of-two unit suffix.
+    internal static bool TryParseByteSize(string setting, out long bytes)
+    {
+        // Deliberately a LOCAL, not a static field: s_stackReserve's initializer calls this, and
+        // static field initializers run in TEXTUAL order — a static table declared below it would
+        // still be null here, and only for the one input (an override that is actually set) that
+        // reaches this far.
+        // Longest match first: "KiB" must be tested before "B".
+        ReadOnlySpan<(string Suffix, long Factor)> suffixes =
+        [
+            ("KiB", 1024L),
+            ("MiB", 1024L * 1024L),
+            ("GiB", 1024L * 1024L * 1024L),
+            ("B", 1L)
+        ];
+
+        bytes = 0;
+
+        ReadOnlySpan<char> value = setting.AsSpan().Trim();
+        long scale = 1;
+
+        foreach ((string suffix, long factor) in suffixes)
+        {
+            if (!value.EndsWith(suffix, StringComparison.Ordinal))
+                continue;
+
+            value = value[..^suffix.Length].TrimEnd();
+            scale = factor;
+            break;
+        }
+
+        if (!long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out long count))
+            return false;
+
+        try
+        {
+            bytes = checked(count * scale);
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     // The goroutine ROOT itself, on the CALLING thread. Start queues it; GolibTests calls it directly,
@@ -191,20 +410,42 @@ public static class Goroutine
     }
 
     /// <summary>
-    /// Restores the goroutine marking a matching <see cref="Enter"/> replaced.
+    /// Retires the goroutine identity a matching <see cref="Enter"/> minted.
     /// </summary>
     public readonly struct Scope : IDisposable
     {
-        private readonly bool m_previous;
+        private readonly Goroutine? m_goroutine;
 
-        internal Scope(bool previous)
+        internal Scope(Goroutine goroutine)
         {
-            m_previous = previous;
+            m_goroutine = goroutine;
         }
 
         public void Dispose()
         {
-            t_onGoroutine = m_previous;
+            // Inert when Enter() found an identity already in place: that scope minted nothing, so
+            // it retires nothing. A thread that finished its goroutine must stop looking like one.
+            if (m_goroutine is null)
+                return;
+
+            t_current = null;
+            Unregister(m_goroutine);
         }
     }
+}
+
+/// <summary>
+/// What a goroutine is doing, as the runtime accounts for it.
+/// </summary>
+internal enum GoroutineState
+{
+    /// <summary>
+    /// Runnable or running — the CLR schedules the goroutine's thread.
+    /// </summary>
+    Running,
+
+    /// <summary>
+    /// Blocked on a Go-semantic wait (a channel operation, a semaphore, a sleep).
+    /// </summary>
+    Parked
 }

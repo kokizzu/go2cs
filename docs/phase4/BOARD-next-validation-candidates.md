@@ -3812,7 +3812,7 @@ keeps classifying them rather than reporting them as content drift.
 | `testing/slogtest` | ✅ **BANKED 2026-08-07 (r44b-slog) — 17/17, no disclosures.** Both `log/slog` roots below are closed; see *`testing/slogtest` banks* at the end of this document. ~~`runtime.Caller` → the `getcallersp` stub, reached from a package initializer, so the whole package infrastructure-errors. Same `getcallersp` row the reflection arc carries.~~ **Caller root CLOSED 2026-08-07 (r43g-caller)** — the package now initializes and RUNS its whole matrix for the first time: `TestRun` 7 of 18 subtests pass. Two `log/slog` roots stand behind it, neither a slogtest defect: (1) **`unsafe.SliceData` over a reference-bearing element type** — `slog.GroupValue`'s `groupptr(unsafe.SliceData(as))` on `[]Attr` reaches `slice<T>.buffer` → `PinnedBuffer` → `GCHandle.Alloc(…, Pinned)`, which throws `ArgumentException: Object contains references` (5 infrastructure-errors: `groups`, `empty-group`, `inline-group`, `resolve-groups`, `resolve-WithAttrs-groups`); (2) a **`WithAttrs` attribute-loss** (4 fails: `WithAttrs`, `multi-With`, `empty-group-record`, `resolve-WithAttrs` — all "missing key"), whose likely shape is `Value.Kind()`/`isEmptyGroup` misclassifying a non-group value so `commonHandler.withAttrs`'s `countEmptyGroups(as) == len(as)` early-return drops the attrs. Both belong to a `log/slog` operational arc, which is unmeasured (`log/slog` is on neither the roster nor this board). |
 | `internal/unsafeheader` | `TestTypeMatchesReflectType` / `TestWriteThroughHeader`: the converted `unsafeheader.Slice`/`String` do not alias the same storage a `slice<T>` does, so a write through the header is invisible. Structural — a managed slice is not a `{Data,Len,Cap}` triple. |
 | `io/ioutil` | `TestReadDir` reads `..` and expects the **sibling** package's `io_test.go`. The pipeline stages Go sources only for the package under test, so the parent directory holds none. Environment, not conversion. |
-| `internal/singleflight` | The only **hang** in the batch: `TestDoAndForgetUnsharedRace` never returns and the package hits the deadline. |
+| `internal/singleflight` | ✅ **BANKED 2026-08-14 (SCHED-S2) — 5/5, no disclosures.** ~~The only **hang** in the batch: `TestDoAndForgetUnsharedRace` never returns and the package hits the deadline.~~ The hang was never singleflight: it was the ThreadPool executor charging a parked goroutine against the capacity of ones that had not started. A dedicated thread per goroutine converges the test in **1.2 s** (was 28.7 min); see *Convergence measured 2026-08-12* → *RESOLVED 2026-08-14* above. |
 | `crypto/cipher` (`TestGCMAsm`), `internal/godebugs` (`TestAll`) | one row each, both `Go="pass" C#="skip"` — a build-tag/capability gate the C# side answers differently. |
 | `crypto/elliptic` (`TestInfinity/P224/Params`), `crypto/internal/edwards25519/field` (`TestBytesBigEquivalence`), `crypto/internal/boring/bcache` (init in `cache_test.cs`), `internal/chacha8rand` (`TestBlockGeneric`), `internal/profile` (`TestPackedEncoding` encodes empty), `encoding/asn1` (`TestCertificate`), `go/doc` (`Test/default/a`), `net/mail` (`TestAddressParser`), `net/http/httptrace` (`TestCompose`), `mime/multipart` (`TestLineContinuation`) | first divergent verdict recorded; not root-attributed. |
 
@@ -4169,7 +4169,7 @@ Eighteen packages match every verdict but one or two. Each cell is the whole gap
 | `internal/godebugs` | 0 of 1 | `TestAll` reads GOROOT-relative `../../../doc/godebug.md`; the pipeline's working dir has none |
 | `html` | 2 of 3 | the `array<T>` unshaped-instance class, producer (1) |
 | `internal/chacha8rand` | 3 of 4 | the same class, producer (2) |
-| `internal/singleflight` | 4 of 5 | `TestDoAndForgetUnsharedRace` never returns — still the only hang in the tail |
+| ~~`internal/singleflight`~~ | ~~4 of 5~~ | **BANKED 5/5 by the scheduler arc** — the hang was the ThreadPool executor, not the package |
 | ~~`internal/cpu`~~ | ~~7 of 8~~ | **BANKED this arc** |
 | ~~`go/ast`~~ | ~~8 of 9~~ | **BANKED by r57b at 9/9** — two roots: the unbridged map read pair, then the lift's leaked C# name |
 | `debug/gosym` | 8 of 9 | `TestPCLine`'s child process exits 1 |
@@ -5914,7 +5914,7 @@ converter defects after this census first named it.)
 |:--|--:|--:|:--|:--|
 | `internal/chacha8rand` | 4 | **3** | near-miss, 1 row | array-SHAPE reinterpret (`array.cs:280`) — the seam L10 works through `sockaddr`, here with no kernel in it |
 | `runtime/metrics` | 2 | **1** | near-miss, 1 row | a `//go:linkname` PUSHED into a test package is unwired; the implementation exists in converted `runtime` |
-| `internal/singleflight` | 5 | **4** | near-miss, 1 row | `TestDoAndForgetUnsharedRace` never returns; it consumes the package deadline and leaves no verdict |
+| ~~`internal/singleflight`~~ | ~~5~~ | ~~**4**~~ | **BANKED 5/5** | the scheduler arc retired the wall — `TestDoAndForgetUnsharedRace` converges in **1.2 s** (was 28.7 min), banked inside the DEFAULT deadline with no `$longTimeouts` entry (SCHED-S2) |
 | `net/http/httptrace` | 2 | **0** | rooted | `reflect.MakeFunc` over func-typed struct fields → `abi.FuncType`'s promoted embedded `Type` ref is null |
 | `internal/unsafeheader` | 6 | **0** | rooted (architectural) | the package's entire subject is the slice/string HEADER LAYOUT that `golib` deliberately does not have |
 | `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
@@ -6116,6 +6116,43 @@ finding: the two runs differ by one rung, and a rung is a doubling.
   scheduler-arc row, and any floor is a bridge across it, not a fix for it.
 
 Per the errand's charter nothing was chased: measurement only, aftermath reverted, no bank.
+
+#### RESOLVED 2026-08-14 — the scheduler arc landed and the row banks 5/5 in 1.2 s (SCHED-S1/S2)
+
+The recommendation above ("the durable path is the one golib already names") was taken. `Goroutine.Start`
+now creates one dedicated background thread per goroutine instead of queueing a ThreadPool work item, and
+the min-thread floor retired in the same commit (`DESIGN-cooperative-scheduler.md` §5.2, OQ1/OQ3). **No
+`$longTimeouts` entry was ever landed** — OQ9 resolved in the ratifying direction, and the bridge is now
+dead as designed.
+
+Re-measured on **the same laptop, solo, go1.23.1** — the machine that produced the 1720.8 s table above, so
+this is a clean A/B and not a hardware difference. Same method, same instrumentation seams:
+
+| iter | d | calls | pool start→end | goroutines live (peak) | spawn | wait |
+|--:|--:|--:|:--|--:|--:|--:|
+| 1 | 1ms | 165 | 3→3 | 4 | 141ms | 141ms |
+| 2 | 2ms | 112 | 3→3 | 10 | 141ms | 141ms |
+| 3 | 4ms | 83 | 3→3 | 20 | 125ms | 125ms |
+| 4 | 8ms | 54 | 3→3 | 41 | 125ms | 140ms |
+| 5 | 16ms | 35 | 3→3 | 85 | 125ms | 125ms |
+| 6 | 32ms | 30 | 3→3 | 45 | 125ms | 157ms |
+| 7 | 64ms | 6 | 3→3 | 392 | 125ms | 140ms |
+| 8 | 128ms | **1** | 3→3 | **1001** | 110ms | 172ms |
+
+**Converges at iteration 8, d=128ms, test elapsed 1.2318 s** (was iteration 20, d=524s, 1720.8 s — a
+**1,397× reduction**). Package wall 1.54 s against `go test`'s 0.040 s, so the residual gap is ~31×, not ~10⁵.
+
+Read the pool column: it is **flat at 3 for every iteration**. Every mechanism the original table
+identified is now structurally absent rather than merely faster — there is no queue to drain in waves, no
+floor to sit at, and no injection-vs-retirement race, because nothing Go-semantic touches the pool at all.
+What remains is honest work: `spawn ≈ 110-141ms` is the cost of creating 1000 real threads (~125 µs each),
+and the ladder now climbs only until `d` exceeds that spawn window — which is why it stops at 128ms. The
+live-goroutine count is the new registry's, and it returns to 2 after every iteration, so 1000 threads are
+created and retired eight times over with no leak.
+
+The fragility finding retires with the row: the finish no longer sits on a heuristic's knife edge, so it
+cannot slip a rung between machines. Banked per the validated-package ritual (roster line, proof page,
+committed test sources) inside the DEFAULT deadline with ~3 orders of margin.
 
 ### `unique` — a REGRESSION against this board's own record, flagged for a bisect lane
 

@@ -65,17 +65,21 @@ public static partial class builtin
         // unless golib asks for it here. See builtin.WindowsLongPaths.cs.
         InitializeWindowsLongPaths();
 
-        // Goroutines are synchronous ThreadPool work items, and a goroutine parked on a channel
-        // operation (a true unbuffered rendezvous, a full buffer, or a blocked select) holds its
-        // pool thread while parked. Below the pool's minimum the hill-climbing injector adds
-        // threads at ~1/500 ms, so a burst of parked goroutines could starve the not-yet-started
-        // goroutine that would unblock them for seconds. A generous floor (256, or 4× the
-        // processor count if larger) keeps injection immediate at go2cs scales; min threads are
-        // created on demand, so the floor costs nothing until actually parked. This is a
-        // mitigation, not a scheduler: programs parking thousands of goroutines remain out of
-        // reach until a cooperative scheduler exists (documented divergence).
-        ThreadPool.GetMinThreads(out int workerThreads, out int completionPortThreads);
-        ThreadPool.SetMinThreads(Math.Max(Math.Max(workerThreads, Environment.ProcessorCount * 4), 256), completionPortThreads);
+        // The thread that first touches golib is the one running `main`. Registering it makes the
+        // main goroutine visible to the live-goroutine registry, as Go's own accounting sees it —
+        // without marking the thread as being "on a goroutine", which is a different question that
+        // only runtime.Goexit asks (golib/runtime/Goroutine.cs).
+        //
+        // There is deliberately NO ThreadPool.SetMinThreads floor here any more. golib used to raise
+        // the pool's minimum to max(4×cores, 256) because goroutines were pool work items and a
+        // parked one held a pool thread, so a burst of parked goroutines could starve the
+        // not-yet-started goroutine that would unblock them. That floor called itself "a mitigation,
+        // not a scheduler", and its premise is now gone: goroutines get dedicated threads
+        // (Goroutine.Start), so nothing Go-semantic parks on the pool and there is no shortfall to
+        // pre-warm. The floor was also process-GLOBAL — it distorted the host, timer callbacks and
+        // every other .NET consumer of the pool for a problem none of them had. The pool goes back
+        // to being .NET's utility, at .NET's defaults.
+        Goroutine.RegisterMainGoroutine();
         return;
 
         [MethodImpl(MethodImplOptions.Synchronized)]
