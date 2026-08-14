@@ -39,6 +39,7 @@ using static go.main_package;
 [assembly: GoImplement<G<@string>, I>]
 [assembly: GoImplement<G<G<nint>>, I>]
 [assembly: GoImplement<G<nint>, I>]
+[assembly: GoImplement<T, I>(Pointer = true)]
 [assembly: GoImplement<T, I>]
 // </InterfaceImplementations>
 

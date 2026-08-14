@@ -93,9 +93,12 @@ public class PanicException(object? state, Exception? innerException = null) :
     }
 
     // Adopt the origin of the panic being handled when this one is raised from a deferred call —
-    // Go's traceback there still shows the original panic's frames.
+    // Go's traceback there still shows the original panic's frames. Deliberately UNCONDITIONAL,
+    // overriding CaptureThrowSite's first-adoption snapshot: the drain's own IsPanic filter adopts
+    // the new panic (at the deferred call's site) before the drain can express the inheritance, and
+    // an explicit re-panic inheritance is the stronger semantic at this method's one call site.
     internal void InheritThrowSite(PanicException origin)
     {
-        PanicTrace ??= origin.PanicTrace;
+        PanicTrace = origin.PanicTrace ?? PanicTrace;
     }
 }
