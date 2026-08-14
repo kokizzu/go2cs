@@ -37,8 +37,10 @@ using static go.ForeignValueImplementSuppression.hue_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Gray, Tint>(Pointer = true)]
 [assembly: GoImplement<Gray, Tint>]
 [assembly: GoImplement<Tinter, Tint>]
+[assembly: GoImplement<ΔShade, Tint>(Pointer = true)]
 [assembly: GoImplement<ΔShade, Tint>]
 // </InterfaceImplementations>
 

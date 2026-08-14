@@ -1,4 +1,4 @@
-// Same-package VALUE-implement guard: the pair a package SATISFIES but never WITNESSES.
+// Same-package implement guard: the pair a package SATISFIES but never WITNESSES.
 //
 // Every [assembly: GoImplement<T, Iface>] record the converter writes comes from a CAST it
 // converted, so a package that satisfies its own exported interface structurally and never
@@ -11,9 +11,16 @@
 //
 // The declaring side is `ledger`. Post-fix its metadata carries Counter → Metric and Gauge →
 // Metric, THIS package's metadata carries neither (it no longer needs a local record), and
-// the conversions below hand over the bare value. The four negatives — a named FUNC type, a
-// pointer-only implementer, an unexported interface and a generic — must all still take the
-// path they took before, which is what keeps the rule from over-recording.
+// the conversions below hand over the bare value.
+//
+// The POINTER method set is recorded on the same principle, so `*Tally → Metric` moved from
+// negative to positive: ledger's metadata carries it as `(Pointer = true)` and the conversion
+// below references ledger's own `TallyжMetric` rather than minting `ledger_TallyжMetric` here.
+// That form's failure is not a wrong answer — both adapters alias the same box and compare
+// equal — but a NON-DETERMINISTIC dynamic type, since AdapterRegistry registration is
+// first-wins across assemblies. The remaining negatives — a named FUNC type, an unexported
+// interface, a generic, and (pointer-only) an unexported TARGET — must all still take the path
+// they took before, which is what keeps the rule from over-recording.
 package main
 
 import (
@@ -86,12 +93,22 @@ func main() {
 	var f ledger.Metric = ledger.Meter(func() int { return 11 })
 	fmt.Println("func:", f.Value())
 
-	// NEGATIVE — POINTER method set only, a separate increment: the pointer path is unchanged.
+	// POSITIVE — POINTER method set only. ledger records the pair, so this references ledger's
+	// own `TallyжMetric` adapter; identity below must still resolve on the Go dynamic type.
 	var p ledger.Metric = &ledger.Tally{N: 5}
 	fmt.Println("ptr:", p.Value())
 
+	tp, tok := p.(*ledger.Tally)
+	fmt.Println("ptr-assert:", tok, tp.N)
+	_, tbad := p.(ledger.Counter)
+	fmt.Println("ptr-assert-miss:", tbad)
+
 	// NEGATIVE — an UNEXPORTED interface, satisfied and used entirely inside ledger.
 	fmt.Println("hidden:", ledger.Depth(3))
+
+	// NEGATIVE — an UNEXPORTED TARGET whose POINTER set implements the exported interface. Its
+	// adapter class would be `internal`, so no record may advertise it.
+	fmt.Println("unexported-target:", ledger.Count(6))
 
 	// NEGATIVE — a GENERIC implementer, never converted to the interface.
 	b := ledger.Box[int]{V: 9}

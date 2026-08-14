@@ -46,11 +46,6 @@ using static go.go.printer_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.go.ast_package.BasicLit, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.BinaryExpr, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.CallExpr, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.Ident, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.UnaryExpr, go.go.ast_package.Expr>(Pointer = true)]
 [assembly: GoImplement<go.text.tabwriter_package.Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<sizeCounter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<trimmer, io_package.Writer>(Pointer = true)]

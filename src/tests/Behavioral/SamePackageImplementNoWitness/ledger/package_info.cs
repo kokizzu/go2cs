@@ -36,8 +36,11 @@ using static go.SamePackageImplementNoWitness.ledger_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Counter, Metric>(Pointer = true)]
 [assembly: GoImplement<Counter, Metric>]
+[assembly: GoImplement<Gauge, Metric>(Pointer = true)]
 [assembly: GoImplement<Gauge, Metric>]
+[assembly: GoImplement<Tally, Metric>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -56,6 +59,7 @@ public static partial class ledger_package
 
     // <TypeAccessibility>
     internal partial interface probe {}
+    internal partial struct tick {}
     internal partial struct well {}
     public partial interface Metric {}
     public partial struct Box<T> {}

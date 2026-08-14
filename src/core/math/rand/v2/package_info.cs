@@ -36,6 +36,10 @@ using static go.math.rand.rand_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<ChaCha8, Source>(Pointer = true)]
+[assembly: GoImplement<PCG, Source>(Pointer = true)]
+[assembly: GoImplement<Rand, Source>(Pointer = true)]
+[assembly: GoImplement<Zipf, Source>(Pointer = true)]
 [assembly: GoImplement<runtimeSource, Source>]
 // </InterfaceImplementations>
 

@@ -38,9 +38,9 @@ using static go.image.draw_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Op, Drawer>(Pointer = true)]
 [assembly: GoImplement<Op, Drawer>]
 [assembly: GoImplement<floydSteinberg, Drawer>]
-[assembly: GoImplement<go.image.color_package.RGBA64, go.image.color_package.Color>(Pointer = true)]
 [assembly: GoImplement<image_package.Paletted, Image>(Pointer = true)]
 // </InterfaceImplementations>
 

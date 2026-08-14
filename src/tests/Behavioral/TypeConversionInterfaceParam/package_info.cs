@@ -36,6 +36,7 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Processor, DataProcessor>(Pointer = true)]
 [assembly: GoImplement<Processor, DataProcessor>]
 // </InterfaceImplementations>
 

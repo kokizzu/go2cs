@@ -915,7 +915,7 @@ every consumer minted its own `binary_bigEndianᴠByteOrder` adapter. This is th
 declaring assembly implements this pair* is TRUE in Go and FALSE in the emitted C#, and it is the root
 the section above measured but did not close.
 
-`recordSamePackageValueImplements` (`samePackageImplements.go`, called from `processConversion` after
+`recordSamePackageImplements` (`samePackageImplements.go`, called from `processConversion` after
 the file visits and before `writePackageInfoFile`) walks the package scope and records the VALUE-form
 pairs the package satisfies. `encoding/binary`'s metadata gains:
 
@@ -975,10 +975,9 @@ the record order is deterministic across runs.
 The gates bind only the SPECULATIVE recorder. A pair the source actually casts is DEMANDED and still
 records at its cast site — promotion depth and all — so none of this narrows existing behavior.
 
-The **POINTER** method set is deliberately out of scope: `types.Implements(*T, Iface)` is the far larger
-set (548 same-package pairs in the standard library against 168 for the value set), its records are
-adapter-class *existence* signals with a different trust rule, and it is owed its own increment with its
-own measured footprint.
+The **POINTER** method set was deliberately out of scope here — `types.Implements(*T, Iface)` is the far
+larger set, its records are adapter-class *existence* signals with a different trust rule, and it was owed
+its own increment with its own measured footprint. That increment has since landed; see the next section.
 
 **Footprint,** from a whole-stdlib A/B with both roots seeded (302/302 converted per side, 3690 files
 compared CRLF-normalized): **68 files**, split evenly between metadata and code. **33 records** appear
@@ -998,14 +997,118 @@ ABSENT is `net/http`'s `HandlerFunc`→`ΔHandler`: the delegate gate holds on t
 motivated it.
 
 Guarded by the `SamePackageImplementNoWitness` behavioral test — a sibling `ledger` package that
-declares an exported interface and value implementers and never converts one to the other, with all four
-negatives live rather than asserted (a named FUNC type, a pointer-only implementer, an unexported
-interface, a generic). The pre-fix converter records nothing and mints four adapters where the fixed one
-mints none; both negatives (`ledger_MeterᴠMetric`, `ledger_TallyжMetric`) are byte-identical across the
-fix. `CrossPkgLib`/`CrossPkgUser` and `ValueAdapterDynamicType` carry the same shape and re-baselined to
-the bare value. The realizability gate is guarded by COMPILE rather than by a golden, and by the corpus
-case that found it: `CrossPkgUser`'s `rig` is the depth-2 promotion, so dropping the gate puts a
-`GoImplement<rig, Labeled>` back and the suite goes red on CS1503 in the generated forwarder.
+declares an exported interface and value implementers and never converts one to the other, with its
+negatives live rather than asserted (a named FUNC type, an unexported interface, a generic; the
+pointer-only implementer was a fourth until the next section made it a positive). The pre-fix converter
+records nothing and mints four adapters where the fixed one mints one; the delegate negative
+(`ledger_MeterᴠMetric`) is byte-identical across the fix. `CrossPkgLib`/`CrossPkgUser` and
+`ValueAdapterDynamicType` carry the same shape and re-baselined to the bare value. The realizability gate
+is guarded by COMPILE rather than by a golden, and by the corpus case that found it: `CrossPkgUser`'s
+`rig` is the depth-2 promotion, so dropping the gate puts a `GoImplement<rig, Labeled>` back and the suite
+goes red on CS1503 in the generated forwarder.
+
+### The POINTER method set records the same way, for a different contract
+
+The section above closed the VALUE half of "the declaring assembly implements this pair is TRUE in Go and
+FALSE in the emitted C#" and named the POINTER half as owed. This is that increment.
+
+**Why it is not just "the same rule with a bigger set."** A value record and a pointer record are consumed
+differently, and the difference decides both the gates and the failure mode. A VALUE record licenses an
+IMPLICIT conversion: the declaring assembly's `partial struct T : Iface` means a consumer hands over the
+bare value and names nothing. A POINTER record is an adapter-class EXISTENCE signal — `Pointer = true` is
+exactly the shape `ImplementGenerator` realizes as `<T>ж<Iface>` — and the consumer CONSUMES it by NAME,
+emitting `new pkg.TжIface(x)` where it would otherwise mint its own `pkg_TжIface`.
+
+**Why cast-site sourcing is not good enough, stated as the bug it caused.** Every record the converter
+writes comes from a cast it converted, so a pair's record lives or dies with the ONE body that happens to
+witness it. `syscall`'s three `Sockaddr{Inet4,Inet6,Unix} → Sockaddr` pairs are witnessed by exactly one
+method body, `(*RawSockaddrAny).Sockaddr`, and hand-owning that single function — which the blittable-
+mirror work has every reason to want — silently dropped all three `(Pointer = true)` records, after which a
+reconvert of `net` minted `syscall_SockaddrInet4жΔSockaddr` beside `syscall`'s own. Nothing failed to
+compile; the L10 lane found it only because it re-converted a dependent and diffed. The pointer form's
+symptom is milder than the value form's `%v`-over-the-wrapper crash — both adapters wrap the same box and
+compare equal — but it is a NON-DETERMINISTIC dynamic type: each adapter's module initializer calls
+`AdapterRegistry.Register` first-wins, so which class a type assert re-wraps into follows assembly load
+order. Sourcing the record from the METHOD SET makes the pair independent of which bodies a run converts,
+which is the root fix rather than a rule about what may be hand-owned.
+
+`recordSamePackageImplements` (the renamed `recordSamePackageValueImplements`) therefore asks BOTH
+questions of every candidate and records both forms. The pointer set is a SUPERSET of the value set, so a
+value-satisfied pair is recorded twice, and that is deliberate: Go's `T` and `*T` are two dynamic types,
+realized as the partial struct and the adapter respectively, and dropping the pointer record for such a
+pair leaves a consumer's `var i Iface = &t` with nothing to reference.
+
+**The gates are the same five, plus one.** The added gate is the trust rule made mechanical:
+
+* **BOTH sides are EXPORTED** (`pointerRecordIsPubliclyRealizable`). `ImplementGenerator` scopes the
+  adapter class `public` only when the struct and the interface are each public, `internal` otherwise. A
+  record is a cross-assembly contract, and this form's contract is *"this class exists and you may name
+  it"* — so a record naming an unexported participant advertises a class no consumer can reference
+  (CS0122), an existence signal that is a lie. The value form needs only the interface gate because its
+  contract is realized by a conversion that names nothing, which is why the two rules differ here and only
+  here.
+
+The realizability gate is not merely re-asked of `*T` — it is TIGHTENED, and that is the second place
+the two forms genuinely differ. `generatorCanForwardPointerMethodSet` requires every interface method to
+resolve **DIRECTLY** on the type (index length 1), admitting no promotion at all, where the value bound
+admits one embed hop. A partial struct's explicit implementation resolves a promoted member the way the
+converter's own call sites do; the ж adapter does not. Its promoted-member arms are keyed on embedded
+**POINTER** fields (`GetEmbeddedPointerHopNames`), and with exactly one such field the single-hop arm
+takes every unbound member *unconditionally* — which the generator says outright, and is right to, because
+for a DEMANDED record that member's promotion is what type-checked the cast. For a SPECULATIVE record it
+is not: the member's true source may be a different embed entirely.
+
+`StructPointerPromotionWithInterface`'s `MyCustomError` is the corpus instance, and the `go2cs.slnx` build
+found it rather than reasoning did. It embeds BOTH the `Abser` interface and `*MyError`; `Abs` is promoted
+from the INTERFACE, but the adapter's lone pointer embed is `*MyError`, so the generated forwarder bound
+`Abs` against `MyError` — where the only candidate in scope was `time.Abs(Duration)`: **CS1929**, in a
+generated file, naming `time` from a test about struct promotion. **Depth is not the discriminator** (that
+promotion is index length 2, which the value bound admits); the KIND of hop is, and modelling the
+generator's exact hop selection inside the converter would duplicate its internals in a second place —
+the very drift this recorder's design exists to prevent. So the bound is conservative in the same spirit
+as the value one and safe in the same way: withholding a speculative record leaves the consumer with the
+local adapter it already had. A pair the source actually CASTS is untouched and keeps the full promotion
+support the generator was built for, which is what that behavioral test guards. A named FUNC type is
+excluded before either question is asked, as before.
+
+**Footprint,** from a whole-stdlib A/B with both roots seeded (304/304 converted per side; marker gate
+54 marked files / 43 `*_impl.cs` companions / **0 violations** on both roots): **75 files** — 35
+`package_info.cs` and 40 code — with **0** `.csproj` and **0** `README.md` moved. **184 records appear**
+across 22 declaring packages (`go/ast` 96, `image` 17, `io` 14, `image/color` 12, `database/sql` 8,
+`net` 7, `math/rand/v2` 4, `sort` 3, …) and **117 go away**, every one a consumer-local duplicate the
+declaring assembly now owns: `go/parser` 49, `go/types` 28, `go/doc` 8, `go/printer` 5 (all of them
+`go/ast` node types), `net/http` 4, the five `debug/*` + `internal/xcoff` readers' `io.SectionReader`
+pairs, `net/http/httputil`'s `io.Pipe{Reader,Writer}`, and one each for `sync.Mutex`→`Locker`,
+`image/color.RGBA64`→`Color` and `parse.BranchNode`→`Node`. Net corpus movement is **+67** pointer
+records (1,071 → 1,138), not the 548 the deferral's raw pair count suggested — most of that set was
+already recorded from cast sites, and the gates take the rest.
+
+**318 adapter constructions** are repointed across 40 files, every changed line the same edit —
+`new pkg_TжIface(x)` becomes `new pkg.TжIface(x)` — which is the second-identity elimination measured:
+318 sites that used to name a locally minted duplicate now name the declaring assembly's one adapter.
+There is no third family; a classifier over the whole diff reports **zero** unclassified added lines.
+
+Guarded by `SamePackageImplementNoWitness`, whose `*Tally → Metric` pair moved from negative to positive
+(the consumer now references `ledger.TallyжMetric` instead of minting `ledger_TallyжMetric`) and which
+gained the negative this gate needs — `tick`, an UNEXPORTED target whose pointer set implements the
+exported interface, kept live through `ledger.Count` and absent from `ledger`'s metadata. Also guarded by
+`ForeignPointerImplementSuppression`, where `Lone` — a pair `tone` satisfies and never casts — flipped the
+same way and is now that test's proof that a record needs no witnessing cast, while its `shade.Level`
+negative (a same-SIMPLE-named interface in another package, which must keep its local adapter) is
+byte-identical across the change. Unit-guarded by `TestPointerRecordIsPubliclyRealizable`,
+`TestGeneratorCanForwardMethodSetDepthBound` and `TestPointerMethodSetSubsumesValueMethodSet`.
+
+**Acceptance witness — the L10 probe, re-run to prove the absence of what it once measured.** With
+`RawSockaddrAny.Sockaddr` suppressed through `manualConversionFuncs` (a scratch build on each side, so
+the only variable is the recorder), `syscall` and `net` were reconverted into seeded roots:
+
+| | `syscall`'s `(Pointer = true)` Sockaddr records | `net`'s six construction sites |
+|---|---|---|
+| pre-increment converter + suppression | **absent** (all three) | `new syscall_SockaddrInet4жΔSockaddr(…)` — locally minted duplicates |
+| post-increment converter + suppression | **all three present** | `new syscall.SockaddrInet4жΔSockaddr(…)` — syscall's own adapter |
+
+The pre-increment row is the regression exactly as L10 measured it; the post-increment row is the same
+probe finding nothing to report. That is what makes the hand-own safe rather than merely discouraged.
 
 ### Standard-library solution file (`.slnx`)
 
@@ -11414,7 +11517,7 @@ public static @unsafe.Pointer Load(this ж<UnsafePointer> Ꮡu) {
 
 **Fourth member, and the first carrying TWO defects: the sockaddr family (2026-08-11, lane L10).** `net.Listen` on Windows is what forced this one, and it never even reached the seam — it died one layer earlier. Go writes the port in network byte order through a two-byte alias over the raw struct's port field, `p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))`, and the auto conversion of that rebuilds an `array<byte>` from a raw address, which materializes `default(array<byte>)` — a LENGTH-ZERO array — so `p[0]` panicked with `index out of range [0] with length 0` (golib `array.cs:280` via `syscall_windows.cs:881`). An `array<T>` is a managed container with its own header, not two inline bytes, so no address reinterpret can ever produce one; the encoders are hand-owned and write the field arithmetically instead, leaving `raw` in exactly the state Go leaves it. Behind that sat the ordinary form of this class: `RawSockaddrInet4`'s `Addr [4]byte` / `Zero [8]uint8` are `array<byte>` managed references, so `unsafe.Pointer(&sa.raw)` names a ~24-byte object with object references where Windows wants a 16-byte `sockaddr_in` with the octets inline — the case golib's own `ж.cs` describes when it explains why a reference-bearing pointee gets no pinnable storage ("such a value's C# layout is not a native layout either, so no syscall can meaningfully be handed its address"). **Two departures from the precedent above are worth cribbing.** The mirror is a LOCAL at each call site rather than a field the way `Timezoneinformation`'s is: a sockaddr's native image is needed for the duration of one call, and a stack buffer is trivially stable for exactly that long, where a managed field's address would need a pin whose lifetime nothing owns. And no new `[DllImport]`/`[LibraryImport]` is declared at all — golib models `unsafe.Pointer` as a box over a plain address (`unsafe`'s `Pointer : ж<uintptr>`, whose `uintptr` operator returns the stored address), so the package's OWN generated `bind`/`connect`/`connectEx` wrappers already accept any address and were never the broken part; handing them the mirror's address reuses their errno handling verbatim and keeps the hand-owned surface to the layout translation, which is the only thing that was wrong. `Getsockname`/`Getpeername` are the exception, and for a precise reason: their generated wrappers take a typed `ж<RawSockaddrAny>` rather than an address, so those two call the package's `Syscall` trampoline directly, mirroring the generated wrappers' error handling. (Guarded by the `SockaddrRoundTrip` behavioral **output** test — `socket`/`bind`/`getsockname`/`listen`/`connect`/`getpeername` on loopback over both IPv4 and IPv6 — which prints kernel-derived values and cross-checks them rather than checking for absence of a fault: the client's `getpeername` must equal the listener's bound address field for field, closing encode → kernel → decode → encode → kernel → decode. Ephemeral ports are never printed, only whether the two ends agree about them, so the output is host-independent.)
 
-**⚠ A hand-own removes its body's EMISSION, and with it any `[assembly: GoImplement]` its body witnessed — check before listing a function in `manualConversionFuncs`.** This is a general trap the sockaddr work surfaced, not a sockaddr detail. Every `GoImplement` record the converter writes comes from a CAST it converted, so a function whose body holds the only casts of a type to an interface is also the only thing recording that pair. `RawSockaddrAny.Sockaddr` is exactly that function for all three `Sockaddr` types, and hand-owning it dropped the three `GoImplement<…, ΔSockaddr>(Pointer = true)` records from `syscall`'s `package_info.cs`. The consequence is not a build failure, which is what makes it dangerous: a MEASURED reconvert of `net` against the shortened `package_info` showed `net` quietly minting its own `syscall_SockaddrInet4жΔSockaddr` adapters instead of using `syscall`'s — the SECOND-IDENTITY regression `samePackageImplements.go` exists to prevent, where reflect and fmt see the wrapper in place of the value's own type and a direct-boxed value compares unequal to an adapter-wrapped one. Declaring the records in the `*_impl.cs` does NOT fix it: a dependent package's converter run reads `package_info.cs`, not the manual file. Recording them from the method set is the real answer and is already spoken for — `recordSamePackageValueImplements` covers the VALUE method set and explicitly defers the POINTER set, which these are, to its own increment with its own measured footprint. So the decode was left auto-converted and the two hand-owned readers decode natively instead of routing through it. The cheap check before hand-owning anything: grep the body for interface conversions, and if it has any, reconvert one DEPENDENT package and diff.
+**⚠ A hand-own removes its body's EMISSION, and with it any `[assembly: GoImplement]` its body witnessed — check before listing a function in `manualConversionFuncs`.** This is a general trap the sockaddr work surfaced, not a sockaddr detail. Every `GoImplement` record the converter writes comes from a CAST it converted, so a function whose body holds the only casts of a type to an interface is also the only thing recording that pair. `RawSockaddrAny.Sockaddr` is exactly that function for all three `Sockaddr` types, and hand-owning it dropped the three `GoImplement<…, ΔSockaddr>(Pointer = true)` records from `syscall`'s `package_info.cs`. The consequence is not a build failure, which is what makes it dangerous: a MEASURED reconvert of `net` against the shortened `package_info` showed `net` quietly minting its own `syscall_SockaddrInet4жΔSockaddr` adapters instead of using `syscall`'s — the SECOND-IDENTITY regression `samePackageImplements.go` exists to prevent, where reflect and fmt see the wrapper in place of the value's own type and a direct-boxed value compares unequal to an adapter-wrapped one. Declaring the records in the `*_impl.cs` does NOT fix it: a dependent package's converter run reads `package_info.cs`, not the manual file. Recording them from the method set is the real answer, and it has since LANDED — `recordSamePackageImplements` now covers the POINTER method set as well as the value one, so these three pairs are recorded from `types.Implements(*T, Sockaddr)` and no longer depend on any body being converted. Proven by re-running exactly the probe that measured the regression: with `RawSockaddrAny.Sockaddr` suppressed through `manualConversionFuncs`, `syscall`'s `package_info.cs` still carries all three `(Pointer = true)` records and a reconvert of `net` still references `syscall.SockaddrInet4жΔSockaddr` rather than minting its own. **The general trap is narrower now but not gone**, and the check is unchanged for the cases the recorder's gates exclude — a pair whose interface or target is UNEXPORTED, a named FUNC target, a generic, or a promotion deeper than one embed hop is still witnessed only by its casts, as is any pair whose interface is declared in a DIFFERENT package (the recorder is same-package only, so a body holding the only `*T → io.Reader` cast is exactly as load-bearing as before). The cheap check before hand-owning anything: grep the body for interface conversions, and if it has any, reconvert one DEPENDENT package and diff.
 
 **The wall BEHIND this one (recorded 2026-08-11 so it is not rediscovered).** Fixing the sockaddr seam does not by itself make `net` work, and the board's expectation that it would was formed while the panic masked what follows. With `bind` succeeding, `net.Listen` walks on to `internal/poll`'s `pollDesc.init` and stops at `runtime_pollServerInit` — one of ten bodyless `//go:linkname` netpoll entry points that the `PartialStubGenerator` emits as "external (assembly or cgo) function is not implemented". The counterpart exists in the converted runtime (`runtime/netpoll.cs` carries `poll_runtime_pollServerInit`), but nothing wires the linkname across assemblies — and wiring it would not be enough either, because the Windows implementation bottoms out in `netpollinit` → `stdcall2(_CreateIoCompletionPort)` → `asmstdcall`, itself a stub. So this is a second, independent seam whose honest remedy is the managed-API-boundary pattern already used for `sync`'s Mutex and `runtime`'s traceback surface — hand-own the ten `runtime_poll*` contracts against .NET's own completion-port machinery rather than emulating Go's poller — and it is a design arc, not a wrapper repair. **RESOLVED for the listener lifecycle 2026-08-13** (design ruled, arc S1): the ten contracts are hand-owned in `internal/poll/windows/runtime_netpoll_impl.cs` and `net.Listen` now completes against a real kernel — see *The managed netpoller* below. The prediction in this paragraph held exactly, including that the deep wall is the scheduler rather than `asmstdcall`; what it did NOT anticipate is that making `pollWait` wake up is only half the arc, because the overlapped submissions `execIO` issues cannot yet reach the kernel safely (the OVERLAPPED lifetime seam, S2).
 

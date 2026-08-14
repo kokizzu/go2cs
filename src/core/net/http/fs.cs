@@ -389,9 +389,9 @@ internal static void serveContent(ResponseWriter w, ref Request r, @string name,
             sendSize = rangesMIMESize(ranges, ctype, size);
             code = StatusPartialContent;
             var (pr, pw) = io.Pipe();
-            var mw = multipart.NewWriter(new io_PipeWriterжWriter(pw));
+            var mw = multipart.NewWriter(new io.PipeWriterжWriter(pw));
             w.Header().Set(contentTypeˢ, "multipart/byteranges; boundary="u8 + mw.Boundary());
-            sendContent = new io_PipeReaderжReader(pr);
+            sendContent = new io.PipeReaderжReader(pr);
             var prʗ1 = pr;
             defer(() => prʗ1.Close(), ref ᒐ); // cause writing goroutine to fail and exit if CopyN doesn't finish.
             var mwʗ1 = mw;

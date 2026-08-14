@@ -49,8 +49,11 @@ using static go.@internal.pkgbits_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<CodeObj, ΔCode>(Pointer = true)]
 [assembly: GoImplement<CodeObj, ΔCode>]
+[assembly: GoImplement<CodeType, ΔCode>(Pointer = true)]
 [assembly: GoImplement<CodeType, ΔCode>]
+[assembly: GoImplement<CodeVal, ΔCode>(Pointer = true)]
 [assembly: GoImplement<CodeVal, ΔCode>]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]

@@ -2075,7 +2075,7 @@ internal static (http2Frame, error) http2parsePingFrame(ж<http2frameCache> _, h
     return (new http2PingFrameжhttp2Frame(f), default!);
 }
 
-internal static error WritePing(this ж<http2Framer> Ꮡf, bool ack, array<byte> data) {
+internal static error WritePing(this ж<http2Framer> Ꮡf, bool ack, [GoArrayDims(8)] array<byte> data) {
     data = data.Clone();
 
     ref var f = ref Ꮡf.DerefOrNull();
@@ -3678,7 +3678,7 @@ internal static (nint n, error err) Read(this ж<http2pipe> Ꮡp, slice<byte> d)
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.c.L == default!) {
-            p.c.L = new sync_MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
+            p.c.L = new sync.MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
         }
         while (ᐧ) {
             if (p.breakErr != default!) {
@@ -3718,7 +3718,7 @@ internal static (nint n, error err) Write(this ж<http2pipe> Ꮡp, slice<byte> d
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.c.L == default!) {
-            p.c.L = new sync_MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
+            p.c.L = new sync.MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
         }
         defer(Ꮡp.of(http2pipe.Ꮡc).Signal, ref ᒐ);
         if (p.err != default! || p.breakErr != default!) {
@@ -3771,7 +3771,7 @@ internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, e
         Ꮡp.of(http2pipe.Ꮡmu).Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.c.L == default!) {
-            p.c.L = new sync_MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
+            p.c.L = new sync.MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
         }
         defer(Ꮡp.of(http2pipe.Ꮡc).Signal, ref ᒐ);
         if (dst != default!) {
@@ -8375,7 +8375,7 @@ internal static (ж<http2ClientConn>, error) newClientConn(this ж<http2Transpor
     if (http2VerboseLogs) {
         t.vlogf("http2: Transport creating client conn %p to %v"u8, cc.OrTypedNil(), c.RemoteAddr());
     }
-    cc.Value.cond = sync.NewCond(new sync_MutexжLocker(cc.of(http2ClientConn.Ꮡmu)));
+    cc.Value.cond = sync.NewCond(new sync.MutexжLocker(cc.of(http2ClientConn.Ꮡmu)));
     cc.of(http2ClientConn.Ꮡflow).add((int32)http2initialWindowSize);
     // TODO: adjust this writer size to account for frame size +
     // MTU + crypto/tls record padding.

@@ -36,6 +36,7 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Box, Bumper>(Pointer = true)]
 [assembly: GoImplement<Box, Bumper>]
 // </InterfaceImplementations>
 

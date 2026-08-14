@@ -513,7 +513,7 @@ internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) {
                         Lhs: lhs,
                         Tok: token.DEFINE,
                         TokPos: (~n).TokPos,
-                        Rhs: new ast.Expr[]{new ast_UnaryExprжExpr(Ꮡ(new ast.UnaryExpr(Op: token.RANGE, X: (~n).X)))}.slice()
+                        Rhs: new ast.Expr[]{new ast.UnaryExprжExpr(Ꮡ(new ast.UnaryExpr(Op: token.RANGE, X: (~n).X)))}.slice()
                     ));
                     // TODO(rFindley): this walkLHS reproduced the parser resolution, but
                     // is it necessary? By comparison, for a normal AssignStmt we don't

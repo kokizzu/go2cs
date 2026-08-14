@@ -32,10 +32,12 @@ func (p *Plain) Tone() int    { return p.D * 10 }
 func (p *Plain) Name() string { return "plain" }
 func (p *Plain) Set(d int)    { p.D = d }
 
-// Lone is the NEGATIVE that keeps the fix from over-widening: it satisfies Level exactly as the
-// two above do, but this package never converts one, so no record is written and an importer has
-// nothing to reference — it must still mint its own local adapter. (encoding/binary's ByteOrder is
-// the corpus instance of a pair a package satisfies but never records.)
+// Lone satisfies Level exactly as the two above do and this package never converts one, so it is
+// the in-test proof that a pointer record is sourced from the METHOD SET rather than from a cast:
+// its `[assembly: GoImplement<Lone, Level>(Pointer = true)]` exists with no witness anywhere, and
+// the importer references tone's adapter for it just as for the two that are cast. That is the
+// property syscall's Sockaddr pairs needed — hand-owning the one method body that cast them used
+// to drop all three records, and the importer silently minted duplicates.
 type Lone struct{ D int }
 
 func (l *Lone) Tone() int    { return l.D * 100 }

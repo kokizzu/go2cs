@@ -36,9 +36,13 @@ using static go.ItabLateRegistration.lib_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Circle, Named>(Pointer = true)]
 [assembly: GoImplement<Circle, Named>]
+[assembly: GoImplement<Circle, Sized>(Pointer = true)]
 [assembly: GoImplement<Circle, Sized>]
+[assembly: GoImplement<Square, Named>(Pointer = true)]
 [assembly: GoImplement<Square, Named>]
+[assembly: GoImplement<Square, Sized>(Pointer = true)]
 [assembly: GoImplement<Square, Sized>]
 // </InterfaceImplementations>
 

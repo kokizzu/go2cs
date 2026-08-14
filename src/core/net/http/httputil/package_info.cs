@@ -56,8 +56,6 @@ using static go.net.http.httputil_package;
 [assembly: GoImplement<dumpConn, net_package.Conn>(Pointer = true)]
 [assembly: GoImplement<failureToReadBody, io_package.ReadCloser>]
 [assembly: GoImplement<go.net.http_package.ResponseWriter, io_package.Writer>]
-[assembly: GoImplement<io_package.PipeReader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<io_package.PipeWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<io_package.ReadWriteCloser, io_package.ReadWriter>]
 [assembly: GoImplement<io_package.WriteCloser, io_package.Writer>]
 [assembly: GoImplement<maxLatencyWriter, io_package.Writer>(Pointer = true)]

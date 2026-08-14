@@ -37,18 +37,30 @@ using static go.image.color_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Alpha, Color>(Pointer = true)]
 [assembly: GoImplement<Alpha, Color>]
+[assembly: GoImplement<Alpha16, Color>(Pointer = true)]
 [assembly: GoImplement<Alpha16, Color>]
+[assembly: GoImplement<CMYK, Color>(Pointer = true)]
 [assembly: GoImplement<CMYK, Color>]
+[assembly: GoImplement<Gray, Color>(Pointer = true)]
 [assembly: GoImplement<Gray, Color>]
+[assembly: GoImplement<Gray16, Color>(Pointer = true)]
 [assembly: GoImplement<Gray16, Color>]
+[assembly: GoImplement<NRGBA, Color>(Pointer = true)]
 [assembly: GoImplement<NRGBA, Color>]
+[assembly: GoImplement<NRGBA64, Color>(Pointer = true)]
 [assembly: GoImplement<NRGBA64, Color>]
+[assembly: GoImplement<NYCbCrA, Color>(Pointer = true)]
 [assembly: GoImplement<NYCbCrA, Color>]
+[assembly: GoImplement<Palette, Model>(Pointer = true)]
 [assembly: GoImplement<Palette, Model>]
+[assembly: GoImplement<RGBA64, Color>(Pointer = true)]
 [assembly: GoImplement<RGBA64, Color>]
+[assembly: GoImplement<YCbCr, Color>(Pointer = true)]
 [assembly: GoImplement<YCbCr, Color>]
 [assembly: GoImplement<modelFunc, Model>(Pointer = true)]
+[assembly: GoImplement<ΔRGBA, Color>(Pointer = true)]
 [assembly: GoImplement<ΔRGBA, Color>]
 // </InterfaceImplementations>
 

@@ -37,7 +37,6 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.ForeignPointerImplementSuppression.tone_package.Lone, go.ForeignPointerImplementSuppression.tone_package.Level>(Pointer = true)]
 [assembly: GoImplement<go.ForeignPointerImplementSuppression.tone_package.ΔTone, go.ForeignPointerImplementSuppression.shade_package.Level>(Pointer = true)]
 // </InterfaceImplementations>
 

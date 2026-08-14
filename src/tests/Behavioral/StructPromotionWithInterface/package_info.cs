@@ -39,7 +39,9 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<MyAbser, Abser>(Pointer = true)]
 [assembly: GoImplement<MyAbser, Abser>]
+[assembly: GoImplement<MyCustomError, Abser>(Pointer = true)]
 [assembly: GoImplement<MyCustomError, Abser>(Promoted = true)]
 [assembly: GoImplement<MyCustomError, error>(Promoted = true)]
 // </InterfaceImplementations>

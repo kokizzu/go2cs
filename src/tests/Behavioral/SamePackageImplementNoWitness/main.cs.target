@@ -31,7 +31,10 @@ private static readonly object callˢ = (@string)"call:"u8;
 private static readonly object explicitˢ = (@string)"explicit:"u8;
 private static readonly object funcˢ = (@string)"func:"u8;
 private static readonly object ptrˢ = (@string)"ptr:"u8;
+private static readonly object ptrAssertˢ = (@string)"ptr-assert:"u8;
+private static readonly object ptrAssertMissˢ = (@string)"ptr-assert-miss:"u8;
 private static readonly object hiddenˢ = (@string)"hidden:"u8;
+private static readonly object unexportedTargetˢ = (@string)"unexported-target:"u8;
 private static readonly object genericˢ = (@string)"generic:"u8;
 private static readonly object localˢ = (@string)"local:"u8;
 
@@ -69,9 +72,14 @@ internal static void Main() {
     fmt.Println(explicitˢ, sc.Value());
     ledger.Metric f = new ledger_MeterᴠMetric(new ledger.Meter(() => 11));
     fmt.Println(funcˢ, f.Value());
-    ledger.Metric p = new ledger_TallyжMetric(Ꮡ(new ledger.Tally(N: 5)));
+    ledger.Metric p = new ledger.TallyжMetric(Ꮡ(new ledger.Tally(N: 5)));
     fmt.Println(ptrˢ, p.Value());
+    var (tp, tok) = p._<ж<ledger.Tally>>(ᐧ);
+    fmt.Println(ptrAssertˢ, tok, (~tp).N);
+    var (_, tbad) = p._<ledger.Counter>(ᐧ);
+    fmt.Println(ptrAssertMissˢ, tbad);
     fmt.Println(hiddenˢ, ledger.Depth(3));
+    fmt.Println(unexportedTargetˢ, ledger.Count(6));
     var b = new ledger.Box<nint>(V: 9);
     fmt.Println(genericˢ, b.Value(), b.V);
     fmt.Println(localˢ, new Stamp(S: "s"u8).Mark());

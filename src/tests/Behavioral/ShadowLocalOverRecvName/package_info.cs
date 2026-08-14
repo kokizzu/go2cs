@@ -38,6 +38,7 @@ using static go.main_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<Box, HasName>(Promoted = true)]
 [assembly: GoImplement<Box, HasName>]
+[assembly: GoImplement<Tag, HasName>(Pointer = true)]
 [assembly: GoImplement<Tag, HasName>]
 // </InterfaceImplementations>
 

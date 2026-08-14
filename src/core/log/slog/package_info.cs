@@ -58,6 +58,7 @@ using static go.log.slog_package;
 [assembly: GoImplement<defaultHandler, ΔHandler>(Pointer = true)]
 [assembly: GoImplement<handlerWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<ΔLevel, Leveler>(Pointer = true)]
 [assembly: GoImplement<ΔLevel, Leveler>]
 // </InterfaceImplementations>
 

@@ -36,6 +36,7 @@ using static go.vlib.vlib_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<PCG, Source>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

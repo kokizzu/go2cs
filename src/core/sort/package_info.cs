@@ -38,8 +38,11 @@ using static go.sort_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Float64Slice, Interface>(Pointer = true)]
 [assembly: GoImplement<Float64Slice, Interface>]
+[assembly: GoImplement<IntSlice, Interface>(Pointer = true)]
 [assembly: GoImplement<IntSlice, Interface>]
+[assembly: GoImplement<StringSlice, Interface>(Pointer = true)]
 [assembly: GoImplement<StringSlice, Interface>]
 [assembly: GoImplement<reverse, Interface>(Pointer = true)]
 [assembly: GoImplement<reverse, Interface>(Promoted = true)]

@@ -262,7 +262,7 @@ internal static error handleRecord(this ж<child> Ꮡc, ж<record> Ꮡrec) {
                 // body could be an io.LimitReader, but it shouldn't matter
                 // as long as both sides are behaving.
                 var (ᴛ1, ᴛ2) = io.Pipe();
-                (body, req.Value.pw) = (new io_PipeReaderжReadCloser(ᴛ1), ᴛ2);
+                (body, req.Value.pw) = (new io.PipeReaderжReadCloser(ᴛ1), ᴛ2);
             } else {
                 body = emptyBody;
             }

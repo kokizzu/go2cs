@@ -1368,8 +1368,10 @@ where inference IS complete: when a type and an EXPORTED interface are declared 
 both are in hand as that package converts, so the pairs it satisfies are recorded even with no cast
 anywhere — `encoding/binary`'s `var BigEndian bigEndian` carries no `var _ ByteOrder = BigEndian`, and
 without the record every consumer minted a `binary_bigEndianᴠByteOrder` wrapper that became a second
-identity for the value (89 constructions across the stdlib). Named FUNC types, generics and the pointer
-method set are excluded — see
+identity for the value (89 constructions across the stdlib). The **pointer** method set is recorded on the
+same reasoning, with one extra gate: a `(Pointer = true)` record is consumed by NAMING the generated
+adapter class, and that class is `public` only when both the type and the interface are exported, so an
+unexported participant is excluded. Named FUNC types and generics are excluded from both forms — see
 [Reference → A package records the pairs it SATISFIES](ConversionStrategies-Reference.md#a-package-records-the-pairs-it-satisfies-not-only-the-ones-it-witnesses). Structural satisfaction is resolved at RUN TIME instead: `TypeGenerator` emits **two runtime duck-typing
 shells** beside every non-generic, non-constraint, non-empty interface — named or anonymous alike — found
 through a `[GoInterfaceShell]` stamp: a delegate-bound generic shell for a pointer-sourced value (`ж<X>`) and

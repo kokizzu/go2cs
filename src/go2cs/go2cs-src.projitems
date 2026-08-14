@@ -141,6 +141,7 @@
     <None Include="$(MSBuildThisFileDirectory)resolveGo2CSPath_test.go" />
     <None Include="$(MSBuildThisFileDirectory)rootShadowQualification_test.go" />
     <None Include="$(MSBuildThisFileDirectory)samePackageImplements.go" />
+    <None Include="$(MSBuildThisFileDirectory)samePackageImplements_test.go" />
     <None Include="$(MSBuildThisFileDirectory)sanitization_test.go" />
     <None Include="$(MSBuildThisFileDirectory)siblingAddressedGlobals_test.go" />
     <None Include="$(MSBuildThisFileDirectory)solutionGenerator.go" />

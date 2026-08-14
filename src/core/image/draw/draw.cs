@@ -431,7 +431,7 @@ public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, im
  // declared outside of the inner loop) to avoid the implicit
  // conversion to color.Color here allocating memory in the
  // inner loop if sizeof(color.RGBA64) > sizeof(uintptr).
- y, new color_RGBA64жColor(Ꮡout));
+ y, new color.RGBA64жColor(Ꮡout));
                 break;
             }}
 
@@ -1126,7 +1126,7 @@ internal static void drawPaletted(Image dst, image.Rectangle r, image.Image src,
                 // declared outside of the inner loop) to avoid the implicit
                 // conversion to color.Color here allocating memory in the
                 // inner loop if sizeof(color.RGBA64) > sizeof(uintptr).
-                dst.Set(r.Min.X + x, r.Min.Y + y, new color_RGBA64жColor(Ꮡout));
+                dst.Set(r.Min.X + x, r.Min.Y + y, new color.RGBA64жColor(Ꮡout));
                 if (!floydSteinberg) {
                     continue;
                 }

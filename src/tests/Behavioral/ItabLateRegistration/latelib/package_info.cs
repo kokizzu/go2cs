@@ -36,8 +36,6 @@ using static go.ItabLateRegistration.latelib_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.ItabLateRegistration.lib_package.Circle, go.ItabLateRegistration.lib_package.Named>(Pointer = true)]
-[assembly: GoImplement<go.ItabLateRegistration.lib_package.Square, go.ItabLateRegistration.lib_package.Sized>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

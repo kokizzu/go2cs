@@ -36,7 +36,9 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Circle, Shape>(Pointer = true)]
 [assembly: GoImplement<Circle, Shape>]
+[assembly: GoImplement<Square, Shape>(Pointer = true)]
 [assembly: GoImplement<Square, Shape>]
 // </InterfaceImplementations>
 
