@@ -538,10 +538,18 @@ carries one.
 S1 and S2 are one lane's natural span (S2 is a measurement of S1). S3 is separable and safe to
 defer — nothing in S1/S2 depends on it; it exists for the §1.1 consumers.
 
-## 11. Open questions for coordinator ruling
+## 11. Open questions — RULED (coordinator, 2026-08-13)
 
-None of these are ratified by this document; each carries this lane's recommendation and the
-section it rests on.
+> **All nine recommendations are RATIFIED as written.** The arc is chartered: dedicated thread per
+> goroutine behind the r16 funnel, the 256MB shared reserve, floor retirement in the executor-swap
+> commit, park accounting wrapped around the existing hardened primitives, and the §7 netpoll
+> ownership split. Two annotations: (1) OQ5's out-of-scope recording for async lowering is
+> ratified WITH a named reopening path — .NET 11's runtime-async transform (observed in the C# 15
+> preview notes, 2026-08-13) is the watch-item that would qualify as "a future arc with a real
+> consumer" under §8's principle-amendment route; (2) OQ9 resolves in the ratifying direction —
+> no `$longTimeouts` bridge was landed, the arc is chartered promptly, S2 banks singleflight
+> inside the default deadline. Each item below retains its original recommendation text as the
+> record of what was ratified and why.
 
 - **OQ1 — Executor** (§4): dedicated thread per goroutine (recommended) vs owned pooled executor
   with park-driven injection (rejected as first move: same thread count where it matters, strictly
