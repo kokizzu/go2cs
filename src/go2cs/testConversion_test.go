@@ -913,6 +913,52 @@ func TestInternalTestPackageInfoSeedAnchorsBridgeClass(t *testing.T) {
 	}
 }
 
+// …and that unit is written whether or not the variant contributed any bridge-anchored records,
+// because the seed is the bridge class's ONLY `public static partial` declaration: every converted
+// SOURCE file opens its package class bare (`partial class X {`) by design, exactly as the
+// production and external-test classes do, with the modifier living in the metadata file. Gating
+// the unit on having records left a record-less bridge with no static declaration anywhere, and an
+// internal test file declaring a method on a production type then emits an EXTENSION method into a
+// non-static class — CS1106, with `internal/syscall/windows/registry`'s whole 6-verdict suite
+// behind `func (k Key) SetValue(…)` in its export_test.go. Mixed suites that appear to escape it do
+// so incidentally: sort/bytes/strings each have a go2cs-gen RecvGenerator file that re-declares the
+// class `public static partial`, i.e. a GENERATOR supplying a modifier the emitter owes.
+func TestWhiteboxBridgeUnitIsWrittenWithoutBridgeRecords(t *testing.T) {
+	dir := t.TempDir()
+
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+
+	testInfoPath := filepath.Join(dir, "package_test_info.cs")
+	testSeed := referenceModelTestPackageInfoSeed("go", "value_test_package", "value_test", "value_package")
+
+	if err := os.WriteFile(testInfoPath, []byte(testSeed), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Nothing recorded at all — the record-less bridge registry reproduces.
+	unitName, err := writeWhiteboxVariantMetadata(testInfoPath, dir, "value_package", "value_internal_test_package",
+		"value", "go.value_internal_test_package", "go.value_test_package", HashSet[string]{}, true)
+	if err != nil {
+		t.Fatalf("writeWhiteboxVariantMetadata: %v", err)
+	}
+
+	if unitName != internalTestPackageInfoFileName {
+		t.Fatalf("the bridge unit must be listed as an output file so the .tests.csproj compiles it, got %q", unitName)
+	}
+
+	unit, err := os.ReadFile(filepath.Join(dir, internalTestPackageInfoFileName))
+	if err != nil {
+		t.Fatalf("the bridge unit must be written with no bridge-anchored records: %v", err)
+	}
+
+	if !strings.Contains(string(unit), "public static partial class value_internal_test_package") {
+		t.Fatalf("the bridge unit must declare the bridge class public static partial:\n%s", unit)
+	}
+
+	resetPackageState(&packages.Package{})
+}
+
 // Change C project shape: a REFERENCE-model test project binds the production package through a
 // colocated ProjectReference and carries NO production compile items; the recompile model keeps
 // the original recompiled shape and no production reference.

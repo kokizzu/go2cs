@@ -2021,7 +2021,19 @@ func writeWhiteboxVariantMetadata(testInfoPath, outputPath, productionClassName,
 
 	unitName := ""
 
-	if !bridgeAnchored.isEmpty() {
+	// The bridge unit is written whether or not this variant contributed records, because the
+	// file is not only a metadata anchor — it is the ONLY place `<pkg>_internal_test_package` is
+	// declared `public static partial`. Every converted SOURCE file opens its package class bare
+	// (`partial class X {`) by design; the modifier lives in the metadata file, exactly as it does
+	// for the production and external-test classes. A record-less bridge therefore had no static
+	// declaration at all, and an internal test file declaring an extension method is then CS1106 —
+	// `internal/syscall/windows/registry`'s `export_test.go`, whose whole 6-verdict suite sat
+	// behind `func (k Key) SetValue(…)`. Banked mixed suites only appear to escape it: `sort`,
+	// `bytes` and `strings` each happen to have a go2cs-gen RecvGenerator file that re-declares
+	// the class `public static partial`, i.e. a GENERATOR supplying a modifier the emitter owes.
+	// A bridge with no records writes an anchor whose sections are all empty, which is what the
+	// production and external-test seeds already do in the same situation.
+	{
 		unitPath := filepath.Join(outputPath, internalTestPackageInfoFileName)
 
 		if _, err := os.Stat(unitPath); os.IsNotExist(err) {
