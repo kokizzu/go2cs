@@ -5717,6 +5717,112 @@ two failing tests, ~7 s to the panic, versus 583 verdicts behind a compile+impor
 recover first; this lane re-derived that independently before finding the note, which is some
 evidence of how naturally the stack misleads.
 
+#### ROOT FOUND AND FIXED (2026-08-13, `claude/go-types-checker-wall`) — an interface MAP KEY compared by wrapper identity
+
+The reproducer above did its job: the fault is **one golib defect**, it is **not** generics, **not**
+the importer, and **not** the ж-box or scheduler arcs' territory.
+
+**How it was reached.** The re-panic warning is correct and the stack really is useless, but the
+originating frames were never destroyed — they are snapshotted at the point the .NET exception is
+ADOPTED as a Go panic (`RuntimeErrorPanic.TryAsPanic` → `PanicException.CaptureThrowSite`). Dumping
+`PanicTrace` there named the site in one run:
+
+```
+at go.ж`1.op_OnesComplement(ж`1 value)            in golib\ж.cs:957
+at go.go.types_package.dependencyGraph(map`2 objMap) in go\types\initorder.cs:233
+at go.go.types_package.initOrder(ж`1 Ꮡcheck)      in go\types\initorder.cs:33
+at go.go.types_package.checkFiles(...)            in go\types\check.cs:515
+```
+
+*(Why `InheritThrowSite` did not already surface this: the re-panic at `check.cs:430` is thrown
+INSIDE `handleBailout`'s own `try`, so the emitted `catch … when (GoFrame.IsPanic(…))` snapshots its
+own one-frame site first, and `InheritThrowSite`'s `??=` then declines the origin. Worth a separate
+diagnostic fix — it is what makes this stack mislead every reader — but it is not the wall.)*
+
+**The mechanism.** `initorder.cs:233` is `for d := range objMap[obj].deps`, and `objMap[obj]`
+**missed**, returning a nil `ж<declInfo>` that `~` dereferenced one frame later. In Go the lookup
+cannot miss: every key of `M` came from ranging `objMap`. The two differ only in the STATIC interface
+the key is held in — `Object` going in, `dependency` coming back out of `obj.(dependency)`.
+
+Go compares interface values by (dynamic type, dynamic value), and that ONE relation serves both `==`
+and map-key lookup. In the conversion they had diverged: emitted `==`/`!=` route through
+`builtin.AreEqual`, which unwraps the three adapter tiers, while `map<K,V>`'s backing `Dictionary`
+used the DEFAULT comparer and compared the WRAPPERS — and an interface value's wrapper is not stable,
+since asserting to a narrower interface yields a different adapter object over the same receiver box.
+**Equal but unfindable**: `Object(d) != obj` answered correctly (`AreEqual` unwrapped) while
+`objMap[d]` missed. Only the compile-time `ImplementGenerator` adapters ever carried the
+unwrap-and-hash contract; the runtime shells `go2cs-gen` builds for a duck-typed assert
+(`Δ<iface><T>`, `Δ<iface>ᴛObj`) override neither `Equals` nor `GetHashCode`.
+
+**The fix** is golib-only and centralizes rather than duplicates: `GoEqualityComparer` projects
+`AreEqual` as an `IEqualityComparer<TKey>` and hashes the UNWRAPPED root (the same rule the
+compile-time adapters already used), installed by `map<K,V>` only when `typeof(TKey).IsInterface` or
+`TKey` is `any` — so concrete keys keep `EqualityComparer<TKey>.Default`'s devirtualized path, the
+test being a JIT-time constant per instantiation. Restating the relation in each generated shell was
+rejected: `AreEqual` is golib's single definition of Go equality and a per-shell copy is exactly the
+drift that produced this. Guarded by the **`InterfaceAssertionMapKey`** behavioral test; documented in
+`ConversionStrategies-Reference.md` under *An INTERFACE map key compares by Go equality*.
+
+**Measured movement.** `internal/types/errors` **BANKS at 155/155** (0 mismatches, `status:
+validated`) — the row's full 155 verdicts, from **0** before. The pre-fix host produced two
+nil-panics and zero verdicts; post-fix it type-checks `codes.go` and every Example snippet, and the
+subtests that pass include the generics family (`NotAGenericType`, `WrongTypeArgCount`,
+`CannotInferTypeArgs`, `InvalidTypeArg`, `InvalidInstanceCycle`, `MisplacedTypeParam`).
+
+**`go/internal/gcimporter` moves 399 → 475 of 583** (+76; mismatches 184 → 108), and the split the
+row's census left open — "whether the 92 and the 91 are one root or two is NOT established here and
+must not be assumed" — is now **answered: TWO**. The nil-panic class is *entirely* gone (zero
+`invalid memory address` and zero `check.cs:430` occurrences across the whole 583-verdict run); every
+one of the 108 residual mismatches is the OTHER class, the bogus type-parameter errors, unchanged in
+signature (`absdiff2.go:70:9: cannot use a.Value_ (variable of type T constrained by orderedNumeric)
+as T value in return statement`). That second root — a type parameter judged not identical to itself —
+is **still open and is not this fix's**, and gcimporter's remaining rows stay downstream of it. The
+row does NOT bank; test sources deliberately not committed.
+
+**`go/types` itself: NOT measured — one BUILD blocker, and it is not the wall.** With the wall down,
+`go/types`' own suite was taken through `-tests -test-action all -test-timeout 90m` for the first
+time. The conversion **fully succeeds** — all 34 `_test.cs` files emit — and the host build produces
+**exactly one** error:
+
+```
+check_test.cs(200,53): error CS0839: Argument missing
+    defer(ᴛ1 => throw panic(errΔ2), , ref ᒐ);        // Go: `defer panic(err)` (check_test.go:170)
+```
+
+**Mechanism.** `visitDeferStmt.go:62-66` forces the temp-param lambda form for a BUILTIN callee, so
+`paramCount == 1` and `lambdaContext.callArgs` is sized 1 — but `panic` is not rendered as a call.
+It emits `throw panic(<expr>)` with the ORIGINAL argument expression inlined in the lambda body, so
+the `ᴛ1` substitution never happens and `callArgs[0]` is never filled, leaving the empty argument slot
+above. Note the near neighbours are fine: `defer delete(w.seen, typ)` (`infer.go:715`,
+`typestring.go:121`) converts and compiles today, which is why the corpus never surfaced this — the
+defect is specific to the one builtin that is a `throw`, not a call.
+
+**Remedy shape.** Prefer routing `panic` through the same temp-param substitution as every other
+builtin — `defer(ᴛ1 => throw panic(ᴛ1), errΔ2, ref ᒐ)`. The tempting alternative (drop the lambda
+param and let the body capture the expression) is WRONG: Go evaluates a deferred call's arguments at
+`defer` time, so capturing `errΔ2` would report whatever the variable held when the frame unwound.
+Small and well-scoped, but it is a CONVERTER change and therefore owes its own CNR + full behavioral
+gate, which is why this lane characterized it rather than folding it into a golib-only commit.
+
+**Adjacent, NOT measured — a plausible sibling worth one probe.** go2cs-gen's struct-equality template
+compares an INTERFACE-typed field with C# `==` and hashes it with `HashCode.Combine(field, …)` — e.g.
+`go/types`' own `graphNode`: `this.obj == other.obj`. On a C# interface `==` is reference equality, so
+a struct carrying an interface field would compare by ADAPTER identity rather than by Go's (dynamic
+type, dynamic value) — the same class as this fix, one level up. Unlike the map defect it is at least
+self-consistent (Equals and GetHashCode are both reference-based), so it produces no equal-but-
+unfindable split and no nil-panic; it would show as two structs holding the same dynamic value
+comparing unequal. **This is read off the generated template, not observed in a failing test** — it
+may well be masked in practice, and it is stated here as a candidate to measure, not as a finding. The
+remedy shape, if it reproduces, is the same one used here: route the field through `AreEqual` and hash
+`GoEqualityComparer.RootOf`.
+
+⚠ **One environmental note for anyone re-running these by hand:** four subtests
+(`InvalidPkgUse`, `UnusedImport`, `UndeclaredImportedName`, `UnexportedName`) use
+`importer.Default()` and fail with `could not import fmt … ($GOROOT not set)` when the host exe is
+launched directly. That is the known GOROOT-resolution class, not a checker defect — the pipeline
+exports GOROOT to both sides, and under it the package is 155/155. Running the host bare gives
+150/156.
+
 ## Scout batch 1 — twelve never-run packages (2026-08-11)
 
 Twelve packages that had never linked a test host were taken end to end through `-tests -test-action all`

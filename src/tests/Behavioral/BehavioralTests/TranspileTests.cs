@@ -664,6 +664,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckInitOrderTupleSpecs() => CheckTarget("InitOrderTupleSpecs");
 
     [TestMethod]
+    public void CheckInterfaceAssertionMapKey() => CheckTarget("InterfaceAssertionMapKey");
+
+    [TestMethod]
     public void CheckInterfaceCasting() => CheckTarget("InterfaceCasting");
 
     [TestMethod]

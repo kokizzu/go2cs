@@ -5722,6 +5722,59 @@ unspecified. Pre-fix it reports `any: 0 0 1 5 3` — zero interface-kind keys, z
 invalid key, and a value sum of 5 instead of 6 because the nil entry was skipped — against Go's
 `any: 3 1 0 6 3`.)
 
+### An INTERFACE map key compares by Go equality, never by adapter identity
+
+Go compares interface values by (dynamic type, dynamic value), and that **one** relation serves both
+`==` and map-key lookup: a `map[Iface]V` finds an entry under exactly the values `==` calls equal. In
+the conversion the two had diverged. Emitted `==`/`!=` route through golib's
+[`builtin.AreEqual`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs),
+which unwraps the three generated adapter tiers (`IInterfaceAdapter`, `IжAdapter`, `IValueAdapter`)
+before comparing — but `map<K,V>`'s backing `Dictionary<TKey,TValue>` used the **default** comparer and
+compared the *wrappers*.
+
+That gap is observable because an interface value's wrapper is not stable. The same Go dynamic value is
+presented through whichever adapter the static interface currently holding it calls for, so asserting an
+`Object` to a narrower `dependency` yields a **different** wrapper object over the same receiver box.
+Under the default comparer the asserted value could no longer find its own entry in the map it came out
+of — while `==` on the very same pair still answered `true`, because `AreEqual` unwrapped. Equal but
+unfindable:
+
+```go
+M := make(map[dependency]*graphNode)
+for obj := range objMap {                       // objMap is map[Object]*declInfo
+    if obj, _ := obj.(dependency); obj != nil {
+        M[obj] = &graphNode{obj: obj}
+    }
+}
+for obj, n := range M {
+    for d := range objMap[obj].deps { /* ... */ }   // every key of M IS a key of objMap
+}
+```
+```csharp
+foreach (var (obj, n) in M) {
+    foreach (var (d, _) in (~objMap[obj]).deps) { /* ... */ }
+}
+```
+
+This is `go/types`' own `initorder.dependencyGraph`, and it is why the converted type checker could not
+type-check **any** source: the missed lookup returned a nil `ж<declInfo>`, and `~` on it nil-panicked
+one frame later — surfacing through `check.cs:430`, `handleBailout`'s faithful re-panic of Go's own
+`default: panic(p)` arm, which is a bailout frame and not the fault site.
+
+The fix is in golib and centralizes on the relation that already existed:
+[`GoEqualityComparer`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoEqualityComparer.cs)
+projects `AreEqual` as an `IEqualityComparer<TKey>`, hashing the **unwrapped root** so the hash stays
+consistent with it — the same rule the compile-time `ImplementGenerator` adapters already applied
+(`m_box.GetHashCode()`), which the runtime shells never had. It is installed only for key types that can
+actually carry an adapter (`typeof(TKey).IsInterface`, or `any`); a concrete key — `@string`, an
+integer, a converted struct — is never wrapped and keeps `EqualityComparer<TKey>.Default`'s
+devirtualized path, the test being a JIT-time constant per instantiation. Restating the relation inside
+each generated shell was rejected for the reason the defect illustrates: `AreEqual` is golib's single
+definition of Go equality, and a second copy per shell class is exactly the drift that produced this.
+(Guarded by the `InterfaceAssertionMapKey` behavioral test — pointer- and value-receiver implementors,
+an `Object` that is not a `dependency`, lookup after narrowing, lookup after re-widening, and the
+`Object(d) != obj` identity probe that pinned the equal-but-unfindable split.)
+
 ### Named map types and constrained map access
 
 A defined map type — `type Grades map[string]int` — emits the `[GoType("map[K, V]")] partial struct` forward declaration (completing the long-standing `visitMapType` stub), implemented by go2cs-gen's Map template: full forwarding of `IMap<K, V>` (including the two-value comma-ok indexer), `IDictionary<K, V>`, enumeration, and the `ISupportMake` factory through the wrapped `map<K, V>`. Its composite literal wraps the concrete map literal in the named constructor — `new Grades(new map<@string, nint>{["a"u8] = 1})` — mirroring named arrays/slices (a direct indexer-initializer would target a default wrapper with no backing dictionary; the old emission produced Go-style `key: value` inside C# braces — CS1513). Comma-ok indexing works through a **constrained map type parameter** too: `v, ok := m[k]` where `M ~map[K]V` detects the map CORE of the constraint (both at the assignment's tuple gate and in the index emission) and routes the same `m[k, ꟷ]` two-value indexer, which lives on `IMap<K, V>` itself. The **nil comparison** `m == nil` — Go's only legal map comparison, maps.Clone's nil-preserve guard — emits the `IMap.IsNil` property (`if (m.IsNil)`; backing-store null, distinct from an allocated empty map — no operator exists on a type parameter, CS8761), and `delete(m, k)` on a constrained map binds a golib `delete(IMap<K, V>, K)` overload (key/value types infer from the interface conversion). (Guarded by the `GenericTypeInference` extension `EqualMaps` — a maps.Equal clone over a named map type through the constraint, comma-ok + comparable-erased equality, values vs Go.)
