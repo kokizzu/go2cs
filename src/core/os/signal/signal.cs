@@ -224,7 +224,9 @@ public static void Stop(channel/*<-*/<osꓸSignal> c) {
 
 // Wait until there are no more signals waiting to be delivered.
 // Defined by the runtime package.
-internal static partial void signalWaitUntilIdle();
+internal static void signalWaitUntilIdle() {
+    go.runtime_package.signalWaitUntilIdle();
+}
 
 internal static void process(osꓸSignal sig) {
     GoFrame ᒐ = default;

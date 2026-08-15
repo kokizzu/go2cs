@@ -135,7 +135,7 @@ internal static readonly @string signalRecvInconsistentˢ = "signal_recv: incons
 // Must only be called from a single goroutine at a time.
 //
 //go:linkname signal_recv os/signal.signal_recv
-internal static uint32 signal_recv() {
+public static uint32 signal_recv() {
     while (ᐧ) {
         // Serve any signals from local copy.
         for (var i = (uint32)0; i < _NSIG; i++) {
@@ -187,7 +187,7 @@ break_Receive:;
 // by the os/signal package.
 //
 //go:linkname signalWaitUntilIdle os/signal.signalWaitUntilIdle
-internal static void signalWaitUntilIdle() {
+public static void signalWaitUntilIdle() {
     // Although the signals we care about have been removed from
     // sig.wanted, it is possible that another thread has received
     // a signal, has read from sig.wanted, is now updating sig.mask,
@@ -207,7 +207,7 @@ internal static void signalWaitUntilIdle() {
 // Must only be called from a single goroutine at a time.
 //
 //go:linkname signal_enable os/signal.signal_enable
-internal static void signal_enable(uint32 s) {
+public static void signal_enable(uint32 s) {
     if (!sig.inuse) {
         // This is the first call to signal_enable. Initialize.
         sig.inuse = true; // enable reception of signals; cannot disable
@@ -232,7 +232,7 @@ internal static void signal_enable(uint32 s) {
 // Must only be called from a single goroutine at a time.
 //
 //go:linkname signal_disable os/signal.signal_disable
-internal static void signal_disable(uint32 s) {
+public static void signal_disable(uint32 s) {
     if (s >= (uint32)(len(sig.wanted) * 32)) {
         return;
     }
@@ -245,7 +245,7 @@ internal static void signal_disable(uint32 s) {
 // Must only be called from a single goroutine at a time.
 //
 //go:linkname signal_ignore os/signal.signal_ignore
-internal static void signal_ignore(uint32 s) {
+public static void signal_ignore(uint32 s) {
     if (s >= (uint32)(len(sig.wanted) * 32)) {
         return;
     }
@@ -272,7 +272,7 @@ internal static void sigInitIgnored(uint32 s) {
 // Checked by signal handlers.
 //
 //go:linkname signal_ignored os/signal.signal_ignored
-internal static bool signal_ignored(uint32 s) {
+public static bool signal_ignored(uint32 s) {
     var i = atomic.Load(Ꮡsig.at(sigᴛ1.Ꮡignored, (nint)(s / 32)));
     return (uint32)(i & (((uint32)1 << (int)(((uint32)(s & 31)))))) != 0;
 }

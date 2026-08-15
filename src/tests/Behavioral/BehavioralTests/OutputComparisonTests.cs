@@ -1367,6 +1367,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSiblingTestAddressedGlobal() => CheckTarget("SiblingTestAddressedGlobal");
 
     [TestMethod]
+    public void CheckSignalPrimitives() => CheckTarget("SignalPrimitives");
+
+    [TestMethod]
     public void CheckSlice3IndexWideBound() => CheckTarget("Slice3IndexWideBound");
 
     [TestMethod]

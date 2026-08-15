@@ -15,14 +15,10 @@ global using osꓸFileInfo = go.io.fs_package.FileInfo;
 global using osꓸFileMode = go.io.fs_package.FileMode;
 global using osꓸPathError = go.io.fs_package.PathError;
 global using osꓸSignal = go.os_package.ΔSignal;
-global using runtimeꓸError = go.runtime_package.ΔError;
-global using syscallꓸHandle = go.syscall_package.ΔHandle;
-global using syscallꓸSignal = go.syscall_package.ΔSignal;
-global using syscallꓸSockaddr = go.syscall_package.ΔSockaddr;
 // </ImportedTypeAliases>
 
 using go;
-using static go.os.signal_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -45,18 +41,16 @@ using static go.os.signal_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<signalCtx, context_package.Context>(Pointer = true)]
-[assembly: GoImplement<signalCtx, context_package.Context>(Promoted = true)]
-[assembly: GoImplement<syscall_package.ΔSignal, os_package.ΔSignal>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
 // </ImplicitConversions>
 
-namespace go.os;
+namespace go;
 
-[GoPackage("signal")]
-public static partial class signal_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -65,10 +59,5 @@ public static partial class signal_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface stringer {}
-    [GoValueClone("mask")] internal partial struct handler {}
-    [GoValueClone("@ref")] internal partial struct handlersᴛ1 {}
-    internal partial struct signalCtx {}
-    internal partial struct stopping {}
     // </TypeAccessibility>
 }
