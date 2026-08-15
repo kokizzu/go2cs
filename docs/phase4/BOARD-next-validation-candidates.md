@@ -7960,7 +7960,7 @@ struct — the reflection bridge's descent rule*.
 
 ## 💡 CAPTURED (2026-08-15, user, from the live NuGet page) — README badge layout + a partial-progress badge idea
 
-**1. Badge-line wrap on NuGet — QUEUED, small converter change.** The four badges emit as one
+**1. Badge-line wrap on NuGet — ✅ LANDED (lane `claude/badge-break`, merged 2026-08-15).** The four badges emit as one
 markdown line (`readmeValidationBadge.go`), and NuGet's narrow README pane wraps them raggedly.
 User ruling: hard line break between the docs badges and the source badges — line one carries
 **Tests + Docs** (the Tests badge is the variable-width one and gets the room), line two carries

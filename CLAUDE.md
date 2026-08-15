@@ -733,6 +733,11 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
 - **Metric:** measure **packages-compiling**, not raw error count. Fixing file-inclusion bugs (e.g. the
   filename build-constraint fix) *raises* the error count because newly-included files surface their own
   latent defects — that's progress, not regression.
+- **A corpus regen that moves `package_info.cs` records owes `go generate .` in `src/go2cs`** —
+  `stdlib-metadata.txt` is generated FROM the corpus and gated by `TestStdLibMetadataInSync` under the
+  plain converter `go test`, so banking a regen without the regenerate leaves the converter gate red at
+  master for whoever runs it next (happened 2026-08-15: the second leveling regen moved 6 records and
+  the drift surfaced in an unrelated lane's gate run). Regenerate, verify the test, commit together.
 - **Don't commit corpus regens casually.** `src/core/<pkg>` is regenerable; the unit of work is the
   **converter fix**. Keep the tree restorable (overlay into a branch or restore with `git checkout HEAD --`
   + remove untracked) so a converter-fix commit isn't buried under thousands of generated-file changes.
