@@ -95,11 +95,14 @@ func pinGoVersion(resolved string) {
 // idempotent via needToWriteFile, mirroring how the icon and .csproj files are written, and uses
 // CRLF line endings to match the converter's other generated text output (and avoid autocrlf churn).
 //
-// Between the attribution blockquote and the package's own documentation sits the badge line — its
-// own paragraph, holding the validation badge and the Go-documentation badge per readmeBadgeLine,
-// each omitted when this conversion cannot compose an honest one. sourceDir is the package's Go
-// source directory, which both badges read: the validation badge to see the `_test.go` files the
-// conversion itself never compiles, the docs badge to recover the package's Go import path.
+// Between the attribution blockquote and the package's own documentation sits the badge paragraph —
+// two lines, Tests + Docs then the Source pair, per readmeBadgeLine, each badge omitted when this
+// conversion cannot compose an honest one. sourceDir is the package's Go source directory, which the
+// badges read: the validation badge to see the `_test.go` files the conversion itself never compiles,
+// the docs and Go source badges to recover the package's Go import path.
+//
+// The CRLF pass at the bottom is what carries the badge paragraph's internal hard break to disk, so
+// readmeBadgeLine composes that break with a bare \n and lets this one conversion cover it.
 func writeReadmeFile(projectPath string, projectName string, packageDoc string, sourceDir string, options Options) error {
 	projectPath = strings.TrimRight(projectPath, string(filepath.Separator)) + string(filepath.Separator)
 	readmeFileName := projectPath + "README.md"

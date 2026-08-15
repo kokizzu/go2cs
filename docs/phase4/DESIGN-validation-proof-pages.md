@@ -112,11 +112,12 @@ sheets, each one `go test` agreeing with the C#, test by test.
   becomes `Source-@<version>` — matching the Docs badge, where the logo alone has always carried
   the language. Refinement 15.
 
-## The badges (Tests 2026-08-02, Docs 2026-08-08, Source pair 2026-08-08)
+## The badges (Tests 2026-08-02, Docs 2026-08-08, Source pair 2026-08-08, two-line split 2026-08-15)
 
-One badge-only line per package README, its own paragraph between the attribution blockquote and the
-godoc body. No emoji, no trailing text link — **each badge IS its link**. It holds four badges, in
-this order, separated by a single space so a narrow renderer wraps between them:
+One badge-only paragraph per package README, between the attribution blockquote and the godoc body.
+No emoji, no trailing text link — **each badge IS its link**. It holds four badges in this order,
+over **two lines**: Tests + Docs, a hard break, then Source·Go + Source·C#, single-spaced within a
+line.
 
 1. the **Tests** badge — this package's validation state, linking its proof;
 2. the **Docs** badge — the official Go documentation for the sources it was converted from;
@@ -128,6 +129,21 @@ package *is* — validated, and what it mirrors. The Source pair comes **last** 
 reader's *second* question: having been told this C# mirrors that Go, go read both. The pair is
 deliberately adjacent and deliberately in convert-**from** → convert-**to** order, so the line reads
 in the direction the conversion runs.
+
+**That order is also where the break goes** (user ruling 2026-08-15, from the live NuGet page). All
+four on one line wrapped raggedly in nuget.org's narrow README pane — it broke at whatever the pane's
+width happened to be rather than where the meaning is. Breaking at the seam the order already names
+gives the one variable-width badge (Tests, `<m>/<t> validated`) the room and keeps the fixed-width
+Source pair together. The break is a **trailing backslash** — CommonMark's explicit hard line break,
+so the result is two lines of ONE paragraph, not two paragraphs. `<br/>` was rejected because
+nuget.org's published list of supported Markdown features has no HTML in it, and the classic
+two-trailing-spaces form because invisible whitespace does not survive editors, linters or
+`git diff --check`;
+the backslash is visible, survives trimming, and is covered by name in that list ("backslash
+escapes", the CommonMark section that specifies the end-of-line hard break). Verified by rendering:
+GitHub's `/markdown` API and Markdig (the engine nuget.org names) both emit one `<p>` holding
+`Tests Docs <br /> Source Source`. It degrades by construction — the break JOINS the lines present,
+so a package that can compose only one of them emits that line with no break at all.
 
 Tests' label was reduced from `Go_tests` to `Tests` by user ruling 2026-08-03: the `?logo=go` gopher
 already says Go, so the word in the label was redundant.
@@ -155,10 +171,12 @@ badges read as the Go they point at rather than as go2cs status lights; `512BD4`
 Source·C# is the one badge on the line that is not Go-blue — which is exactly the distinction it
 carries. The three Go badges use `?logo=go`, Source·C# uses `?logo=dotnet`. Neither Source badge
 carries language text in its message (refinement 15) — the logo alone says which side of the
-conversion it links, the same convention the Docs badge already used. The rendered line, for `bufio`:
+conversion it links, the same convention the Docs badge already used. The emitted paragraph, for
+`bufio` (the `\` ending the first line is the hard break):
 
 ```markdown
-[![Tests](https://img.shields.io/badge/Tests-80%2F81_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/bufio.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/bufio@go1.23.1) [![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/bufio) [![Source](https://img.shields.io/badge/Source-@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/bufio)
+[![Tests](https://img.shields.io/badge/Tests-80%2F81_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.4/bufio.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/bufio@go1.23.1)\
+[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/bufio) [![Source](https://img.shields.io/badge/Source-@1.23.1.4-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.4/src/core/bufio)
 ```
 
 The Tests badge's three states **partition the corpus**, which is what makes it auditable rather than
