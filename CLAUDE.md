@@ -335,6 +335,15 @@ ONE stdlib in a build; there is now only one on disk.
   the runner **DETACHED** via `Start-Process` so it is not a child of the turn's process tree. Same shape
   as the sweep caveat in the budget table below (a LANE parking a detached sweep still loses it); the
   difference is that `Start-Process` detachment is what makes a long run survivable at all.
+  **The detachment flags are load-bearing (measured 2026-08-14, the argv-stop and os-signal lanes):**
+  `Start-Process -WindowStyle Hidden` with output redirected to a log file survives the reap;
+  `Start-Process -NoNewWindow` followed by `Wait-Process` does NOT — the wait re-parents the session's
+  fate onto the child and the turn boundary kills it exactly as if it had been spawned inline. Poll the
+  log file (or the process by PID) instead of `Wait-Process`. Two adjacent PS 5.1 traps the same lanes
+  paid for: a repo script's `Write-Host` output goes to the INFORMATION stream, so capture with `*>&1`
+  (a bare `2>&1` silently drops every `==>` status line and the log reads as hung); and the sweep's
+  `-SkipBuild` expects the converter at `src\go2cs\bin\go2cs.exe` — an outside-the-repo binary path is
+  not consulted, so a lane that built elsewhere re-pays the build or copies the exe there first.
   **⚠ `dotnet build-server shutdown` is ALSO machine-global** (found 2026-08-03: one lane's startup
   cleanup yanked the shared MSBuild servers out from under a sibling's in-flight compile — same
   truncated-log signature, no Stop-Process anywhere). While sibling sessions may be building, do NOT
