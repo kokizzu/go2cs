@@ -497,10 +497,10 @@ strictly.
 
 _Everyone asks:_ how fast is the transpiled C# compared to the original Go — including startup time,
 memory, and Native AOT builds? See the [performance comparison](Performance.md) — **`TL;DR`**: _usually
-slower than native Go, [but not always](Background.md#why-convert-go-to-c)_: maps, channels and the
-optimized [stack string](ConversionStrategies.md#strings-string-and-sstring) path run at **parity with Go
-or faster in both C# variants**, and Native AOT adds more rows to that list. Most compute-shaped code sits
-within a small multiple of Go, with runtime structural-interface satisfaction the honest outlier. Save for
+slower than native Go, [but not always](Background.md#why-convert-go-to-c)_: maps and the optimized
+[stack string](ConversionStrategies.md#strings-string-and-sstring) path run at **parity with Go or
+faster in both C# variants**. Most compute-shaped code — channels included — sits within a small
+multiple of Go, with runtime structural-interface satisfaction the honest outlier. Save for
 the [ref struct](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/ref-struct)
 based stack string and [stack slice](ConversionStrategies.md#slices-and-arrays) work already landed, broad
 optimization is targeted for _after_ Phase 4 — the parity rows show the ceiling, not the finish line.
