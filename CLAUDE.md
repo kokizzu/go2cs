@@ -590,6 +590,15 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   build compiles two copies) — one more reason the seeding is non-negotiable. Hand-owned files are
   routed too, by their principal's platform set; the invariant is guarded by `platformHandOwn_test.go`
   under the plain `go test ./...`. Design: `docs/phase4/DESIGN-multiplatform-corpus.md`.
+  **Two L3 gate lessons (measured 2026-08-15, the three-target leveling lane):** (1) a change whose
+  files live in linux/darwin per-GOOS folders is NOT compiled by the default windows build — the
+  windows `go2cs-stdlib.slnx` gate alone would have skipped 15 of that regen's 27 files, so L3 work
+  owes a `-p:GoTargetOS=linux` build too (darwin does not currently build — `os/dir.cs` cannot
+  resolve `File.readdir`, 19 pre-existing errors proven at master; census that, don't re-diagnose).
+  (2) **A `GoTargetOS` switch poisons `obj/`**: the `<Compile>` item set changes while timestamps
+  don't, so an incremental build after a target switch silently validates the OTHER target's
+  assemblies — purge `bin`/`obj`/`Generated` between target switches before trusting any build or
+  suite that follows one.
 - **The on-disk corpus can be stale** relative to converter changes made since the last regen; building
   the committed tree measures *that* output, not today's. To measure the current converter you reconvert.
 - **Reconvert → overlay → build → bucket (the measurement loop):**
