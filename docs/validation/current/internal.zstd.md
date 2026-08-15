@@ -6,19 +6,23 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/zstd` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-04 · converter `f6e9c0cf0`*
+*Validated 2026-08-15 · converter `29cc12b69`*
 
-**534 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**536 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd).
+
+Both runtimes skip 2 of the matched tests identically.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
+| `TestAlloc` | skip | skip |
 | `TestFileSamples` | pass | pass |
 | `TestFileSamples/1890a371.gettysburg.txt-100x.zst` | pass | pass |
 | `TestFileSamples/f2a8e35c.helloworld-11000x.zst` | pass | pass |
 | `TestFileSamples/fcf30b99.zero-dictionary-ids.zst` | pass | pass |
+| `TestLarge` | skip | skip |
 | `TestLargeXXHash` | pass | pass |
 | `TestPredefinedTables` | pass | pass |
 | `TestPredefinedTables/literal` | pass | pass |
@@ -563,5 +567,3 @@ the capability it needs.
 - FuzzReader (fuzz): fuzz execution is deferred to Phase 4D
 - FuzzReverse (fuzz): fuzz execution is deferred to Phase 4D
 - FuzzXXHash (fuzz): fuzz execution is deferred to Phase 4D
-- TestAlloc (test): requires unsupported testing capabilities: TB.Fatal, TB.Skip
-- TestLarge (test): requires unsupported testing capabilities: TB.Fatal, TB.Skip

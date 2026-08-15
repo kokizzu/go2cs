@@ -21,6 +21,7 @@ internal static class Go2CsTestHost
         {
             "testdata",
         });
+        registry.Add("Test115PclnParsing", gosym_internal_test_package.Test115PclnParsing, "pclntab_test.go", 313);
         registry.Add("TestGenericNames", gosym_internal_test_package.TestGenericNames, "symtab_test.go", 36);
         registry.Add("TestIssue29551", gosym_internal_test_package.TestIssue29551, "symtab_test.go", 64);
         registry.Add("TestLineAline", gosym_internal_test_package.TestLineAline, "pclntab_test.go", 161);

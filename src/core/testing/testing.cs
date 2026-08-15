@@ -35,10 +35,21 @@ public static partial class testing_package
     /// The testing.TB interface — the common surface of T and B that test-support packages
     /// (internal/testenv is the driving consumer) accept as parameters. Declared with Go 1.23's
     /// full public member set so the compiled shape never drifts as more helpers convert.
-    /// T does not yet implement TB (no suite validated so far passes a T into a TB parameter —
-    /// sort uses only testenv's t-free helpers); wiring the implementation lands with the first
-    /// suite that needs it.
     /// </summary>
+    /// <remarks>
+    /// T reaches this interface the way every converted type reaches a foreign one: the converter
+    /// emits <c>[assembly: GoImplement&lt;testing_package.T, testing_package.TB&gt;(Pointer = true)]</c>
+    /// into the consuming package, and go2cs-gen mints a <c>testing_TжTB</c> adapter over the
+    /// <c>ж&lt;T&gt;</c> box that forwards every member below to the package-scope T implementation.
+    /// So T needs no base list here, and there is nothing to "wire up" per suite — an earlier note
+    /// on this type predicted that work, and the adapter had already made it unnecessary.
+    ///
+    /// Every member is therefore backed by the same TestExecution the T spelling uses: a
+    /// <c>TB.Fatal</c> logs and calls FailNow, which throws TestAbortException and ends the test,
+    /// exactly as <c>t.Fatal</c> does. The one asymmetry is B: an adapter built from a
+    /// <c>*testing.B</c> forwards to the compile-only no-ops below, which is sound only because
+    /// benchmarks are never registered or run (Phase 4D).
+    /// </remarks>
     public interface TB
     {
         void Cleanup(Action cleanup);

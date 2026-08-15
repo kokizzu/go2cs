@@ -2400,6 +2400,33 @@ func supportedTestCapabilities() []string {
 		// widening (charter §9): the only validated package whose _test.go calls it is os/signal,
 		// and both call sites are in `//go:build unix` files this platform never builds.
 		"T.Deadline",
+		// The testing.TB surface. A capability name is keyed on the RECEIVER's named type
+		// (analyzeTestingCapabilities), so a helper declared `func h(t testing.TB)` records TB.Fatal
+		// where the identical call on a *testing.T records T.Fatal — two rosters over ONE
+		// implementation. Listing only the T spelling therefore excluded every test that funnels
+		// through a same-package TB-typed helper, whole: os/exec's tests all reach
+		// `exePath(t testing.TB)`, and 26 of them — every process-spawn shape the package has —
+		// were gated out and had never run.
+		//
+		// What makes these honest is that nothing here is new behavior. "Supported" means three
+		// things hold, and for TB all three already did: core/testing's TB interface declares the
+		// member (Go 1.23's full 18, minus the unexported private()); go2cs-gen's ImplementGenerator
+		// mints the `testing_TжTB` adapter the converter's `[assembly: GoImplement<T, TB>(Pointer =
+		// true)]` record asks for, forwarding EVERY member to the package-scope T implementation
+		// (`TB.Fatal(Span<object>) => testing_package.Fatal(m_box, args)` — verified against the
+		// generated file, not assumed); and that implementation is the same TestExecution-backed one
+		// T.Fatal has always answered, so a TB.FailNow throws the same TestAbortException and aborts
+		// the same way. No member of Go's TB is absent: TB has no Run, Parallel or Deadline to want.
+		//
+		// The one declared limit, and it is a property of B rather than of TB: an adapter built from
+		// a *testing.B forwards to B's compile-only no-ops. Benchmarks are never registered or run,
+		// so the only path that puts a live B behind a TB parameter is a Test that calls
+		// testing.Benchmark itself and passes the b onward — no suite does, and if one appears its
+		// failure reports would be silently swallowed. That is a benchmark-execution question
+		// (Phase 4D), not a reason to withhold the T-backed surface from every test that has one.
+		"TB.Cleanup", "TB.Error", "TB.Errorf", "TB.Fail", "TB.FailNow", "TB.Failed",
+		"TB.Fatal", "TB.Fatalf", "TB.Helper", "TB.Log", "TB.Logf", "TB.Name", "TB.Setenv",
+		"TB.Skip", "TB.SkipNow", "TB.Skipf", "TB.Skipped", "TB.TempDir",
 		"testing.AllocsPerRun", "testing.CoverMode", "testing.Short", "testing.Verbose",
 		// In-process benchmarking driven from a Test function: testing.Benchmark runs a
 		// func(*B) closure and returns a BenchmarkResult, setting B.N and exposing NsPerOp

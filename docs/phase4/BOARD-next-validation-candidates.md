@@ -6776,7 +6776,7 @@ bodies.) Where the four stand after the bridge:
 |:--|:--:|:--:|:--|
 | `internal/fuzz` | 0 (died at `flag.Parse`) | **BANKED 52/52** | the 141st roster row; its `TestMain` now parses the host's command line |
 | `go/internal/srcimporter` | 0 of 7 (died at `flag.Parse`) | **5 of 7** | not banked; the two failures share ONE root and it is not this class — see below |
-| `os/exec` | build-blocked | **builds; 22 of 22 match** | the unnamed-variadic block is FIXED (lane `claude/unnamed-variadic`, 2026-08-14) — 40 further tests are excluded for want of `TB.*`, see that section |
+| `os/exec` | build-blocked | **builds; 22 of 22 match** | the unnamed-variadic block is FIXED (lane `claude/unnamed-variadic`, 2026-08-14) — 40 further tests are excluded for want of `TB.*`, see that section. That exclusion is CLOSED too (lane `claude/tb-surface`, same day): the 22 became **101 rows, 48 agreeing**, and what was behind it was two HOST roots — see the `TB.*` section at the end of this file |
 | `crypto/tls` | not measured | **build-blocked, measured** | reached 2026-08-14 by the same lane; two roots, neither this one — see that section |
 
 **`go/internal/srcimporter` — 5 of 7, one root, and it belongs to `go/types`.** `TestIssue20855`,
@@ -7164,3 +7164,136 @@ does for one seam. This fix is deliberately narrower: it restores the round trip
 `reflect` itself handed out, and changes nothing about the transient-address model that
 `(uintptr)ж<T>` uses for everything else. A pointer whose scalar form was produced by arithmetic
 (`uintptr(unsafe.Pointer(&x)) + offset`) still cannot come back, and still should not.
+
+## ✅ CLOSED — the `TB.*` domino: the whole `testing.TB` surface is supported, and `os/exec` is measured for the FIRST time (2026-08-14, lane `claude/tb-surface`)
+
+The unnamed-variadic lane's closing prediction — "naming `TB.*` support in the hand-owned `core/testing`
+host is the exact next domino, and it is a host change with no converter component" — was right about
+the domino and inverted about where the work lived. Nothing in the host needed implementing, and the one
+line of code that changed is in the CONVERTER: the capability ROSTER was the entire defect.
+
+**The mechanism, because it is not obvious.** A capability name is keyed on the RECEIVER's named type
+(`analyzeTestingCapabilities`): a call written `t.Fatal(err)` records `T.Fatal` when `t` is a
+`*testing.T` and `TB.Fatal` when the enclosing helper declares `t testing.TB`. Those are two roster
+entries over ONE implementation, and `supportedTestCapabilities` listed only the first. So any test
+whose transitive same-package closure touched a `testing.TB`-typed helper was gated out wholesale —
+not for anything it did, but for the type its helper's parameter happened to name.
+
+**Why widening it is honest, and what "supported" mechanically requires.** Three things must hold, and
+for `TB` all three already did:
+
+1. `core/testing` declares the member — its `TB` interface carries Go 1.23's full public set (the 18,
+   minus the unexported `private()`).
+2. Something forwards it for the concrete receiver. The converter already emits
+   `[assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]` into every
+   consuming package, and go2cs-gen's `ImplementGenerator` mints the `testing_TжTB` adapter from it —
+   read out of the generated file rather than assumed:
+   `void TB.Fatal(Span<object> args) => testing_package.Fatal(m_box, args);`, once per member, all 18.
+3. The implementation is real. Each forward lands on the same `TestExecution`-backed member the `T`
+   spelling has always used, so a `TB.FailNow` throws the same `TestAbortException` and aborts the
+   same way.
+
+So `T` never needed a base list and no per-suite wiring was ever owed — a standing note on
+`core/testing`'s `TB` predicted that work, and the adapter had already made it unnecessary. That note
+is now corrected in place.
+
+**The one declared limit,** and it is a property of `B`, not of `TB`: an adapter built from a
+`*testing.B` forwards to `B`'s compile-only no-ops. Benchmarks are never registered or run, so the
+only path that puts a live `B` behind a `TB` parameter is a Test that calls `testing.Benchmark` itself
+and hands the `b` onward. No suite does. If one appears its failure reports would be silently
+swallowed — a Phase-4D benchmark-execution question, not a reason to withhold the `T`-backed surface
+from every test that has one.
+
+**Charter §9 discharged — the roster scan, with its positive control.** Widening
+`supportedTestCapabilities` moves excluded tests into the RUN set of packages already banked, so the
+rule is to scan every validated package first. Same-package `testing.TB` helpers exist in 15 GOROOT
+packages (`cmd` excluded); the only two non-test files that declare one are `internal/testenv`'s, and
+those are consumed cross-package, which the same-package reference graph deliberately does not follow.
+Four of the 15 are banked, and one of those four — `internal/fuzz` — does not move, because its
+`newWorkerForTest(tb testing.TB)` is reached only from `Benchmark` declarations already excluded by
+kind. Positive control: the scan finds `os/exec`'s `exePath`, the helper this whole entry is about.
+
+The three that DO move were re-measured, and every one moved by COUNT ONLY — the sweep's sole complaint
+in each case, with no verdict disagreeing on either side:
+
+| Package | Banked | Now | The tests that were being withheld |
+|:--|:--:|:--:|:--|
+| `debug/gosym` | 9 | **10** | `Test115PclnParsing` — pass/pass |
+| `internal/zstd` | 534 | **536** | `TestAlloc`, `TestLarge` — skip/skip, both gated on a `zstd` binary this host lacks |
+| `archive/zip` | 98 | **100** | `TestZip64`, `TestZip64EdgeCase` — pass/pass; the first streams 4 GiB through the writer, and is most of that row's 775 s |
+
+`strings`, `bytes` and `context` re-validated at their exact banked counts as capability-regression
+controls: their exclusion sets are unchanged, which is the property a widening most needs to prove.
+
+One caveat is banked with `internal/zstd`, because a skip that agrees is not a test that agrees: on a
+host WITH `zstd` installed both rows actually RUN, and `TestAlloc` asserts an exact **zero** allocations
+— the `alloc-profile` class the CLR provably cannot satisfy. Expect it to need a disclosure there. The
+row COUNT is stable either way, so the sweep's floor holds; only the verdict would move.
+
+### `os/exec` — measured for the first time: 101 verdict rows, 48 agreeing, and TWO host roots
+
+Before this change the pipeline compared **22** rows and all 22 matched, which read like a nearly-clean
+package. It was not a measurement: the 26 excluded tests were every process-spawn shape `os/exec` has,
+and nothing was known about them. With the surface widened the manifest carries **40 included test
+declarations and zero capability-blocked ones** (13 excluded remain, all Phase-4D: 12 `Example`, 1
+`Benchmark`), and the comparison covers **101 verdict rows**.
+
+| Class | Rows | What it is |
+|:--|:--:|:--|
+| agree | **48** | 40 pass + 8 skip, the skips identical on both sides |
+| disagree — **root A**, helper-command argv | **26** | every one `Go="pass" C#="fail"` |
+| disagree — **root B**, relocatable single-file test executable | **27** | every one `Go="pass" C#="fail"` |
+
+**No verdict disagrees for a reason belonging to `os/exec` itself.** Both roots are properties of the
+converted TEST HOST, and one of the two is an impossibility this file already declared.
+
+**Root A — the host throws on its own test binary's argv.** `os/exec` drives its helpers by re-executing
+the test binary with a bare command name (`exec.Command(exePath(t), "cat")`), and its `TestMain`
+dispatches on `os.Args[1]`. Go's `flag.Parse()` stops at the first non-flag argument and leaves the rest
+for the program. The converted host's `TestOptions.Parse` instead has no stopping rule: its `default:`
+arm throws `ArgumentException("unsupported converted test option: cat")`, so every helper child dies at
+startup with exit 2 before `TestMain` is ever entered. The parent then reports the *downstream* symptom
+— `echo: want "foo bar baz\n", got ""`, `ExitCode got 2, want 42`, `Wait: exit status 2`, `first output
+line: EOF` — which is why this reads as twenty different failures instead of one. It is a small, closed
+fix: `os.Args` is wired to `Environment.GetCommandLineArgs()` (`runtime/goargs_impl.cs`) independently
+of the option parser, so the child already CAN see its argv; the host merely has to stop rejecting it,
+with Go's stop-at-first-non-flag rule rather than by ignoring unknown tokens (`exe cat -n` must leave
+`-n` to the child, not parse it as a host flag). **This is the next domino.**
+
+**Root B — the same `0x8000809a` this file already names.** `TestLookPathWindows` and `TestCommand`
+build their fixtures by COPYING the test binary into a temp directory and running the copy. Every such
+row fails with `exit status 0x8000809a` and *The application to execute does not exist:
+'…\p1\os.exec.tests.dll'* — byte for byte the `LibHostAppRootFindFailure` already declared for
+`os_test.TestRemoveAllWithExecutedProcess` under the capability **"relocatable single-file test
+executable"**: an apphost is a stub bound at build time to a managed assembly of the same base name that
+must sit beside it. Go's statically-linked test binary is the only reason the premise holds there.
+
+**Deliberately NOT gated.** Root B's 27 rows could be excluded by declaration name the way `os`'s one
+test is, but doing it now would be half-work: root A's 26 rows would still fail, so `os/exec` would not
+bank either way, and the next lane would have to revisit the same list. Root A is *unimplemented*, not
+impossible, so it must never become a gate entry at all (the standing rule for
+`unsupportedRuntimeCapabilities`). `os/exec` therefore stays unbanked, with both roots named, and its
+converted test sources were removed rather than committed.
+
+### The CLASS this domino was holding — every package with a same-package `testing.TB` helper
+
+`internal/testenv`'s TB-typed helpers, which most of the corpus calls, never gated anything: the
+capability graph closes over SAME-package references only, so a cross-package helper gates through its
+own package's conversion instead. What gated was a package's own test-file helper. The complete GOROOT
+census (`cmd` and `testdata` excluded), with the banked rows re-measured here and the rest recorded:
+
+| Package | Banked? | TB-typed helper | Effect of the widening |
+|:--|:--:|:--|:--|
+| `os/exec` | no | `exePath` | **26 tests unblocked** — measured above; the reason this lane exists |
+| `archive/zip` | yes | `testZip64` | re-measured, see the roster |
+| `debug/gosym` | yes | `read115Executable` | re-measured, see the roster |
+| `internal/zstd` | yes | `findXxhsum`, `bigData`, `findZstd`, `zstdBigData` | re-measured, see the roster |
+| `internal/fuzz` | yes | `newWorkerForTest` | **none** — reached only from `Benchmark`s, excluded by kind |
+| `database/sql` | no | 36 sites, the widest in the corpus | pending its own measurement |
+| `net` | no | 9 sites | pending |
+| `net/http` | no | 8 sites | pending |
+| `crypto/tls` | no | 3 sites | pending; still build-blocked on two unrelated roots (above) |
+| `crypto/internal/mlkem768`, `crypto/x509`, `go/types`, `net/netip`, `os`, `runtime` | no | 1 site each | pending |
+
+The nine unbanked rows are not claims — no run was commissioned for them. They are named so the next
+lane to reach any of them knows this particular exclusion is already gone.

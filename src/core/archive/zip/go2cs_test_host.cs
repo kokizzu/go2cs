@@ -101,7 +101,9 @@ internal static class Go2CsTestHost
         registry.Add("TestWriterTime", zip_internal_test_package.TestWriterTime, "writer_test.go", 241);
         registry.Add("TestWriterUTF8", zip_internal_test_package.TestWriterUTF8, "writer_test.go", 160);
         registry.Add("TestZeroLengthHeader", zip_internal_test_package.TestZeroLengthHeader, "zip_test.go", 747);
+        registry.Add("TestZip64", zip_internal_test_package.TestZip64, "zip_test.go", 275);
         registry.Add("TestZip64DirectoryOffset", zip_internal_test_package.TestZip64DirectoryOffset, "zip_test.go", 302);
+        registry.Add("TestZip64EdgeCase", zip_internal_test_package.TestZip64EdgeCase, "zip_test.go", 285);
         registry.Add("TestZip64LargeDirectory", zip_internal_test_package.TestZip64LargeDirectory, "zip_test.go", 496);
         registry.Add("TestZip64ManyRecords", zip_internal_test_package.TestZip64ManyRecords, "zip_test.go", 347);
         return TestHost.Run(registry, args);

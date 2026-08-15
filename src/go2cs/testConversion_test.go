@@ -2036,6 +2036,66 @@ func TestUnsupportedTestingCapabilityIsDiscovered(t *testing.T) {
 	}
 }
 
+// A helper declared `func h(t testing.TB)` records its calls under the TB receiver, NOT under T, so
+// the two spellings are separate capability names over one implementation. The whole TB surface must
+// stay listed: it was the absence of every TB member that excluded os/exec's 26 process-spawn tests
+// wholesale, through the single helper `exePath(t testing.TB)`. Pins both the attribution (a TB
+// receiver yields TB.*) and the roster (all 18 of Go 1.23's public TB members are supported).
+func TestTestingTBCapabilitiesAreSupported(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"go.mod":   "module example/tbsurface\n\ngo 1.23\n",
+		"value.go": "package tbsurface\n",
+		"value_test.go": "package tbsurface\n" +
+			"import \"testing\"\n" +
+			"func exePath(tb testing.TB) string { tb.Helper(); tb.Fatal(\"boom\"); return \"\" }\n" +
+			"func TestViaTB(t *testing.T) { _ = exePath(t) }\n",
+	}
+	for name, contents := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(contents), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, internal := loadTestVariantForDir(t, dir)
+
+	analysis := analyzeTestingCapabilities(internal)
+	declarations, _ := discoverTestDeclarations(internal, testFileEntries(internal), dir, analysis, NewHashSet(supportedTestCapabilities()))
+
+	if len(declarations) != 1 || declarations[0].Name != "TestViaTB" {
+		t.Fatalf("declarations = %#v, want just TestViaTB", declarations)
+	}
+
+	// Attribution: the requirement is recorded against the TB receiver the helper declares, and
+	// reaches the test transitively — the shape that gated os/exec.
+	required := NewHashSet(declarations[0].RequiredCapabilities)
+	for _, capability := range []string{"TB.Helper", "TB.Fatal"} {
+		if !required.Contains(capability) {
+			t.Fatalf("required capabilities %v do not contain %q — a testing.TB receiver must attribute to TB.*", declarations[0].RequiredCapabilities, capability)
+		}
+	}
+	if required.Contains("T.Fatal") {
+		t.Fatalf("a testing.TB receiver must not attribute to T.*, got %v", declarations[0].RequiredCapabilities)
+	}
+
+	// Roster: with the surface supported the test is included, not disclosed-unsupported.
+	if declarations[0].Status != "included" {
+		t.Fatalf("TestViaTB status = %q reason %q, want included — the TB surface is supported", declarations[0].Status, declarations[0].Reason)
+	}
+
+	// And the whole surface stays listed: Go 1.23's testing.TB, whose every member core/testing
+	// implements on T and the generated ж-adapter forwards. A member dropped here silently excludes
+	// every test in the corpus that reaches a helper calling it.
+	supported := NewHashSet(supportedTestCapabilities())
+	for _, member := range []string{
+		"Cleanup", "Error", "Errorf", "Fail", "FailNow", "Failed", "Fatal", "Fatalf", "Helper",
+		"Log", "Logf", "Name", "Setenv", "Skip", "SkipNow", "Skipf", "Skipped", "TempDir",
+	} {
+		if !supported.Contains("TB." + member) {
+			t.Fatalf("TB.%s must be a supported capability — core/testing's TB declares it and T implements it", member)
+		}
+	}
+}
+
 // The unsupported-RUNTIME-capability gate maps a SYMBOL to the CAPABILITY it requires, and what the
 // report shows is the capability. Guards all three properties the mechanism turns on: the lookup
 // answers with the capability rather than the symbol, it stays package-scope only, and runtime.Goexit

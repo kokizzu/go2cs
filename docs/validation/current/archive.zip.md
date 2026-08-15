@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `archive/zip` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-09 · converter `7c7bc7d69`*
+*Validated 2026-08-15 · converter `29cc12b69`*
 
-**98 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**100 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/archive/zip`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/archive/zip).
 
 ## Verdicts
@@ -104,9 +104,11 @@ comparison — it is the evidence behind the `archive/zip` row in
 | `TestWriterTime` | pass | pass |
 | `TestWriterUTF8` | pass | pass |
 | `TestZeroLengthHeader` | pass | pass |
+| `TestZip64` | pass | pass |
 | `TestZip64DirectoryOffset` | pass | pass |
 | `TestZip64DirectoryOffset/uint32max-1_Zip64` | pass | pass |
 | `TestZip64DirectoryOffset/uint32max-2_NoZip64` | pass | pass |
+| `TestZip64EdgeCase` | pass | pass |
 | `TestZip64LargeDirectory` | pass | pass |
 | `TestZip64LargeDirectory/uint32max-1_NoZip64` | pass | pass |
 | `TestZip64LargeDirectory/uint32max_HasZip64` | pass | pass |
@@ -129,5 +131,3 @@ the capability it needs.
 - ExampleWriter (example): example execution is deferred to Phase 4D
 - ExampleWriter_RegisterCompressor (example): example execution is deferred to Phase 4D
 - FuzzReader (fuzz): fuzz execution is deferred to Phase 4D
-- TestZip64 (test): requires unsupported testing capabilities: TB.Errorf, TB.Fatal
-- TestZip64EdgeCase (test): requires unsupported testing capabilities: TB.Errorf, TB.Fatal
