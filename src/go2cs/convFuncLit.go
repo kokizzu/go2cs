@@ -541,8 +541,13 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		// arms below) — trim before probing for the opening brace.
 		trimmedBody := strings.TrimSpace(body)
 
-		if strings.HasPrefix(trimmedBody, "{") {
-			param := litSig.Params().At(litSig.Params().Len() - 1)
+		param := litSig.Params().At(litSig.Params().Len() - 1)
+
+		// An unnamed (`func(...int) { … }`) or blank (`func(_ ...int) { … }`) variadic parameter is
+		// unreferenceable by Go law, so the prologue this block exists to inject would declare a dead
+		// local — with an EMPTY name for the unnamed case, and under a name the literal's signature
+		// never declared. See variadicParamIsUnreferenceable.
+		if strings.HasPrefix(trimmedBody, "{") && !variadicParamIsUnreferenceable(param) {
 			var prologue string
 			useSSlice := v.ssliceEligible[param]
 			sliceMethod := "slice"

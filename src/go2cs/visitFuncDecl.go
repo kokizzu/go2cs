@@ -806,6 +806,12 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 			// Check if parameter is variadic, in this case parameter is a C# params array that needs to be converted to a Go slice<T>
 			if i == parameters.Len()-1 && signature.Variadic() {
+				// An unnamed or blank variadic parameter is unreferenceable by Go law, so its
+				// unpacked local is dead — and emitting it is broken, not merely redundant.
+				if variadicParamIsUnreferenceable(param) {
+					continue
+				}
+
 				useSSlice := v.ssliceEligible[param]
 				sliceMethod := "slice"
 				sliceType := "slice"
@@ -1556,6 +1562,34 @@ func (v *Visitor) generateResultSignature(signature *types.Signature) string {
 
 func getVariadicParamName(param *types.Var) string {
 	return fmt.Sprintf("%s%sp", getSanitizedIdentifier(param.Name()), CapturedVarMarker)
+}
+
+// variadicParamIsUnreferenceable reports whether a variadic parameter's unpacked `slice<T>` local
+// must NOT be emitted. A variadic parameter that is UNNAMED (`func cmdPipeTest(...string)` — Go
+// permits omitting the name entirely) or BLANK (`func f(_ ...int)`) cannot be referenced from the
+// body under Go's own rules, so the local is dead by construction. Emitting it anyway is not merely
+// redundant, it is broken, in two distinct ways:
+//
+//   - UNNAMED: the local inherits the absent Go name, so the declaration comes out with an EMPTY
+//     identifier — `var  = ʗp.slice();`, which the C# parser reads as an assignment to a nonexistent
+//     `var` (CS0103 ×3 in os/exec's converted test sources, the wall that held that package in front
+//     of the TestMain flag bridge). Inside a FUNCTION LITERAL it is worse still: the literal's
+//     signature builder normalizes the absent name to `_` and emits `params ꓸꓸꓸnint _ʗp`, while the
+//     prologue keeps rendering `ʗp` from the raw name — an empty declared name AND a signature
+//     mismatch on the same line.
+//   - BLANK: `var _ = _ʗp.slice();` compiles, but it declares a REAL local named `_` (a plain
+//     `var _ = e;` declaration is a variable, not a discard), which then hijacks every `_ = …`
+//     discard the body writes — the same CS0029 class bodyUsesBlankDiscard exists to prevent for a
+//     blank PARAMETER name.
+//
+// Skipping is the same ruling, for the same reason, that an unnamed/blank POINTER parameter's deref
+// alias already takes (see the `param.Name() == "" || param.Name() == "_"` skip in visitFuncDecl's
+// implicit-pointer loop, which exists because the deref would emit `ref var  = ref Ꮡ.Value;`). The
+// signature is untouched either way: the `params` array keeps its own `ʗp` name and simply goes
+// unread, exactly as the Go parameter does.
+func variadicParamIsUnreferenceable(param *types.Var) bool {
+	name := param.Name()
+	return name == "" || name == "_"
 }
 
 // getHeapBoxParamName returns the incoming-parameter name for a heap-boxed value parameter
