@@ -787,6 +787,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckLocalTimeZone() => CheckTarget("LocalTimeZone");
 
     [TestMethod]
+    public void CheckLocalTypeAliasScope() => CheckTarget("LocalTypeAliasScope");
+
+    [TestMethod]
     public void CheckLocalTypeSliceElement() => CheckTarget("LocalTypeSliceElement");
 
     [TestMethod]

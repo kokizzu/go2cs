@@ -13,6 +13,26 @@ import (
 	"strings"
 )
 
+// identIsUniverseNil reports whether an identifier IS the Go literal `nil`. `nil` is a PREDECLARED
+// identifier in universe scope, not a keyword, so a user object may shadow it (`nil := 5`) — only
+// one that resolves to the universe nil is the literal, and a shadowing object renders as an
+// ordinary identifier. A synthetic ident with no type info keeps the literal reading.
+//
+// Whether that literal then emits golib's `nil` or the typeless `default!` is a matter of RENDER
+// context and belongs to the caller (see convIdent); callers that must know only whether they are
+// looking at a nil — such as the ambiguous one-field constructor argument in convCompositeLit —
+// share this predicate rather than re-deriving it.
+func (v *Visitor) identIsUniverseNil(ident *ast.Ident) bool {
+	if ident == nil || ident.Name != "nil" {
+		return false
+	}
+
+	obj := v.info.ObjectOf(ident)
+	_, isUniverseNil := obj.(*types.Nil)
+
+	return isUniverseNil || obj == nil
+}
+
 func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 	// A selected method remains an extension-method member name. External white-box files import
 	// the bridge statically; inserting the class between receiver and method would form
@@ -30,21 +50,15 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 		}
 	}
 
-	// `nil` is a Go PREDECLARED identifier (universe scope), not a keyword — a user object may
-	// shadow it (`nil := 5`). Only an ident that resolves to the universe nil is the literal
-	// (pointer context: golib `nil`; value context: `default!`); a shadowing object falls
-	// through to normal identifier rendering (mirrors the `true`/`false` handling below). A
-	// synthetic ident with no type info keeps the literal rendering.
-	if ident.Name == "nil" {
-		obj := v.info.ObjectOf(ident)
-
-		if _, isUniverseNil := obj.(*types.Nil); isUniverseNil || obj == nil {
-			if context.isPointer {
-				return "nil"
-			}
-
-			return "default!"
+	// The Go literal `nil` (see identIsUniverseNil): pointer context renders golib's `nil`, value
+	// context the typeless `default!`. A shadowing object is not the literal and falls through to
+	// normal identifier rendering, mirroring the `true`/`false` handling below.
+	if v.identIsUniverseNil(ident) {
+		if context.isPointer {
+			return "nil"
 		}
+
+		return "default!"
 	}
 
 	// `true`/`false` are C# KEYWORDS but Go PREDECLARED identifiers (universe scope). A VALUE
