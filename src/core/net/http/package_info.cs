@@ -157,7 +157,7 @@ using static go.net.http_package;
 [assembly: GoImplement<http2sortPriorityNodeSiblings, sort_package.Interface>]
 [assembly: GoImplement<http2sorter, sort_package.Interface>(Pointer = true)]
 [assembly: GoImplement<http2stickyErrWriter, io_package.Writer>]
-[assembly: GoImplement<http2timeTimer, http2timer>]
+[assembly: GoImplement<http2timeTimer, http2timerᴛ1>]
 [assembly: GoImplement<http2transportResponseBody, io_package.ReadCloser>]
 [assembly: GoImplement<http2write100ContinueHeadersFrame, http2writeFramer>]
 [assembly: GoImplement<http2writeData, http2writeFramer>(Pointer = true)]

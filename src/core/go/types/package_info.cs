@@ -42,7 +42,6 @@ using static go.go.types_package;
 
 // <ExportedTypeAliases>
 [assembly: GoTypeAlias("Error", "ΔError")]
-[assembly: GoTypeAlias("Expr", "go.go.ast_package.Expr")]
 [assembly: GoTypeAlias("Info", "ΔInfo")]
 [assembly: GoTypeAlias("Scope", "ΔScope")]
 [assembly: GoTypeAlias("Signature", "ΔSignature")]
@@ -66,7 +65,6 @@ using static go.go.types_package;
 [assembly: GoImplement<Builtin, go.go.types_package.Object>(Pointer = true)]
 [assembly: GoImplement<Chan, ΔType>(Pointer = true)]
 [assembly: GoImplement<Const, go.go.types_package.Object>(Pointer = true)]
-[assembly: GoImplement<Expr, positioner>]
 [assembly: GoImplement<Interface, cleaner>(Pointer = true)]
 [assembly: GoImplement<Interface, ΔType>(Pointer = true)]
 [assembly: GoImplement<Label, go.go.types_package.Object>(Pointer = true)]

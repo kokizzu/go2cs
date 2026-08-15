@@ -52,13 +52,13 @@ using static go.os_package;
 [assembly: GoImplement<LinkError, error>(Pointer = true)]
 [assembly: GoImplement<SyscallError, error>(Pointer = true)]
 [assembly: GoImplement<dirFS, go.io.fs_package.FS>]
-[assembly: GoImplement<fileStat, FileInfo>(Pointer = true)]
+[assembly: GoImplement<fileStat, go.io.fs_package.FileInfo>(Pointer = true)]
 [assembly: GoImplement<fileWithoutReadFrom, io_package.Writer>]
 [assembly: GoImplement<fileWithoutWriteTo, io_package.Reader>]
 [assembly: GoImplement<go.io.fs_package.File, io_package.Reader>]
 [assembly: GoImplement<rawConn, syscall_package.RawConn>(Pointer = true)]
 [assembly: GoImplement<syscall_package.ΔSignal, ΔSignal>]
-[assembly: GoImplement<unixDirent, DirEntry>(Pointer = true)]
+[assembly: GoImplement<unixDirent, go.io.fs_package.DirEntry>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
