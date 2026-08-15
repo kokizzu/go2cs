@@ -394,6 +394,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckEmbeddedPointerNilAssign() => CheckTarget("EmbeddedPointerNilAssign");
 
     [TestMethod]
+    public void CheckEmbeddedStructValueCopy() => CheckTarget("EmbeddedStructValueCopy");
+
+    [TestMethod]
     public void CheckEmbeddedTypeNameCollision() => CheckTarget("EmbeddedTypeNameCollision");
 
     [TestMethod]

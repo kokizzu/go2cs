@@ -7081,3 +7081,101 @@ does for one seam. This fix is deliberately narrower: it restores the round trip
 `reflect` itself handed out, and changes nothing about the transient-address model that
 `(uintptr)ж<T>` uses for everything else. A pointer whose scalar form was produced by arithmetic
 (`uintptr(unsafe.Pointer(&x)) + offset`) still cannot come back, and still should not.
+
+
+## RESOLVED (2026-08-14, lane `claude/typeparam-identity`) — the type-parameter identity wall is EMBEDDED-STRUCT COPY ALIASING, and the fix is one generator field
+
+The campaign's last mega-wall — one root, three dependents, ~450 verdicts: `go/internal/gcimporter`'s
+108 `TestImportTypeparamTests` mismatches (the `constrained by` signature), `go/types`' own 33
+failures plus the `0xc00000fd` stack overflow at `TestFixedbugs/issue48951.go`, and
+`go/internal/srcimporter`'s 2 `cannot infer T` failures. **None of it is generics, `Identical`, or
+the instance caches.** It is a struct value copy that was not a copy.
+
+**The hypothesis was wrong, and instrumentation said so in one run.** The standing suspicion —
+`*TypeParam` compared by pointer identity through a conversion that mints distinct
+wrappers/adapters/boxes, so `Identical(t, t)` fails reflexivity — is **false**. Instrumented at
+`predicates.cs`'s `identical`, the two operands of the failing comparison are TWO DIFFERENT
+`*TypeParam` objects (ids 2 and 3) and `AreEqual` answers `False` **correctly**; a same-object
+comparison answers `True` with the same box on both sides. The `Context`/`instanceHash`/`lookup`
+caches were instrumented too and behave exactly as Go's: distinct hashes (`00S[T₂]` vs `00S[T₃]`),
+zero cache hits, no collapse. Everything the board pointed at was healthy.
+
+**The 7-line reproducer.** Driving the converted `go/types.Check` directly over a tiny source (the
+types/errors lane's harness shape — build once, then a ~1 s run per probe) minimizes
+`test/typeparam/absdiff2.go`'s 13 errors down to:
+
+```go
+package main
+
+type S[T any] struct{ V T }
+
+func (a S[T]) M1() T { return a.V }
+
+func (a S[T]) M2() T { return a.V }     // C#: cannot use a.V (variable of type T …) as T value
+```
+
+Go reports 0 errors. The converted checker reports 1, **on the SECOND method only** — delete `M1`
+and it passes. Spelling the second method's parameter differently (`func (b S[U]) M2() U`) prints
+the tell outright: `b.V` has type **`T`**, the FIRST method's type parameter.
+
+**The mechanism, printed.** `Named.expandUnderlying` substitutes the origin's underlying per
+instance. Instrumented:
+
+```
+[EXPAND] targs=[TP#2] origUnder=struct{TP#1} smap={TP#1->TP#2}  ->  newUnder=struct{TP#2}
+[EXPAND] targs=[TP#3] origUnder=struct{TP#2} smap={TP#1->TP#3}  ->  newUnder=struct{TP#2}
+                                        ^^^^ the ORIGIN was mutated by the first substitution
+```
+
+`subst.go`'s `substVar` is `copy := *v; copy.typ = typ`. `go/types.Var` EMBEDS `object`, which
+carries `typ` — and go2cs-gen held a promoted embed in a **shared `ж<T>` box**, so the C# struct
+assignment `copy = v` handed both sides one `object` and `copy.typ = typ` wrote into the ORIGINAL.
+The origin's `struct{V T₁}` became `struct{V T₂}`; the second method then substituted `{T₁ → T₃}`
+over a struct that no longer mentioned `T₁`, kept `T₂`, and `Identical(T₂, T₃)` correctly said no.
+`cannot infer T` and `validType0`'s unbounded recursion are the same fact in their other costumes.
+
+**Proven at golib level in 12 lines, no `go/types` involved** — a struct embedding another, one
+plain assignment and one `c := *p`:
+
+| | Go | C# (pre-fix) |
+|:--|:--|:--|
+| `a.v` after `b := a; b.v = 2` | `1` | **`2`** |
+| `a.tag` (an ORDINARY field) after `b.tag = "b"` | `a` | `a` |
+| `orig.v` after `c := *orig; c.v = 99` | `10` | **`99`** |
+
+The ordinary field copies correctly; only the embed aliases. This is the gap
+`GoValueCloneAttribute`'s own remarks had already NAMED and set aside — *"embedded-struct copy
+aliasing is a separate, pre-existing gap"* — declared in the array-clone arc and never priced. Its
+price was this wall.
+
+**The fix is one field in `StructTypeTemplate`: the embed becomes an INLINE field.**
+
+```csharp
+private @object ʗobject;                                          // was: private readonly ж<@object> Ꮡʗobject;
+[UnscopedRef] internal partial ref @object @object => ref ʗobject;  // was: => ref Ꮡʗobject.ValueSlot;
+```
+
+The box existed only because a struct member cannot ref-return its own instance state (CS8170);
+`[UnscopedRef]` states the ref's lifetime is the receiver's — exactly the guarantee Go gives, since
+the selection IS the enclosing value's storage — and the repo already used that technique in
+`InheritedTypeTemplate`. Five emission sites in one file (field, accessor, promoted-field accessor,
+two constructor initializers). **No converter change, no corpus regen, no golden churn**: the
+generator's output is not committed, so the emitted `.cs` is byte-identical.
+
+Two things improve for free: a `default(T)` reached where no constructor runs (a missing-key map
+read, a freshly `make`d element) no longer carries a null embed box — the previously documented
+residual gap narrows to embedded types that need construction in their own right; and the C# struct
+`=` now means what Go's `=` means for every embedding type in the corpus.
+
+**The one residue, named and unchanged.** A fixed ARRAY reached only THROUGH an embed is still
+shared after a copy (`array<T>` is a struct over a shared `T[]`, and `typeNeedsValueClone` skips
+embedded fields when deciding the `[GoValueClone]` stamp). It was shared before this fix and is
+shared after, by a different mechanism. Widening the walk is now SOUND — the generated
+`copy.<member> = <member>.ΔClone()` lands in the copy's own inline storage instead of corrupting the
+source, which is precisely why it was excluded — but it moves converter EMISSION corpus-wide and
+belongs to a change that owns that footprint.
+
+Guarded by the new **`EmbeddedStructValueCopy`** behavioral output test (assignment, by-value
+parameter, a two-level `c := *p`, a slice-element read, and a pointer embed proving both halves of
+Go's rule). Doctrine: `ConversionStrategies-Reference.md`, *An embedded struct is an INLINE field,
+so a value copy copies it*.

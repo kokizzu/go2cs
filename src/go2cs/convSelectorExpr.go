@@ -167,6 +167,16 @@ func (v *Visitor) fieldTypeIsRenamed(x ast.Expr) bool {
 	return packageHasMethodNamed(obj.Pkg(), obj.Name())
 }
 
+// selectorTargetIsDirectBoxMethod reports whether the method a selector names is emitted with the
+// BOX as its receiver (`this ж<T>`) rather than as a `[GoRecv] ref` extension. Such a target binds
+// only a real `ж<T>`, so a caller that would otherwise prefer a plain addressable member chain must
+// keep the box form. Origin-keyed, matching packageDirectBoxReceiverMethods' interning.
+func (v *Visitor) selectorTargetIsDirectBoxMethod(selectorExpr *ast.SelectorExpr) bool {
+	funcObj, isFunc := v.info.ObjectOf(selectorExpr.Sel).(*types.Func)
+
+	return isFunc && packageDirectBoxReceiverMethods[funcObj.Origin()]
+}
+
 // structFieldBoxName returns the member name for a struct field's box accessor (`Type.Ꮡ<member>`),
 // matching the field's DECLARED C# name (visitStructType uses getCoreSanitizedIdentifier plus the
 // type-colliding rename) and the TypeGenerator's `Ꮡ<member>` static. It deliberately does NOT apply
@@ -1373,6 +1383,35 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 								if _, xIsPtr := v.info.TypeOf(selectorExpr.X).Underlying().(*types.Pointer); xIsPtr && !v.exprIsDerefAliasedPointer(selectorExpr.X) {
 									return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, nil), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 								}
+							}
+
+							// The &-machinery's LAST-RESORT arm renders `Ꮡ(<value>)` — a box over a
+							// COPY, because a C# struct VALUE has no address to alias. Descending that
+							// box reaches the copy, so every write a promoted POINTER-RECEIVER method
+							// makes is discarded. It went unnoticed while an embed was held in a shared
+							// ж<T> box, which made the copy's embed the SOURCE's embed and repaired the
+							// write by accident; with the embed an inline field (its correct Go shape)
+							// the loss is real, and it surfaced as three behavioral tests going quiet —
+							// `PromotedEmbedZeroValueField`'s count stuck at 0, `LocalShadowsEmbedHopType`
+							// summing into nothing, `CrossPkgUser`'s two-level `rg.Calibrate(3)`.
+							//
+							// No box is needed here for the same reason the receiver arm above needs
+							// none: every hop accessor is an `[UnscopedRef] ref` property, so the plain
+							// member chain `<base>.<hop>….<method>` is a genuine ref into the base's own
+							// storage and binds the promoted method's `[GoRecv] ref` overload with
+							// faithful write-through. Gated to a copy box (a real box descends
+							// correctly and keeps its path byte for byte) and to a target that HAS the
+							// ref overload — a direct-ж method takes `ж<T>` and would not bind (CS1929),
+							// and for it the copy box remains the only available spelling.
+							if strings.HasPrefix(fieldAddr, AddressPrefix+"(") && !v.selectorTargetIsDirectBoxMethod(selectorExpr) {
+								hopPath := make([]string, 0, len(hopFields))
+
+								for _, hop := range hopFields {
+									hopPath = append(hopPath, v.structFieldBoxName(&ast.Ident{Name: hop.Name()}, selectorExpr.X))
+								}
+
+								return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s.%s", v.convExpr(selectorExpr.X, nil),
+									strings.Join(hopPath, "."), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 							}
 
 							for k := 1; k < len(hopFields); k++ {

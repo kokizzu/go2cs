@@ -41,12 +41,12 @@ partial class main_package {
 }
 
 [GoRecv] public static void Write(this ref Hash h, slice<byte> p) {
-    Ꮡ(h.acc).of(acc.Ꮡinner).Add(p);
+    h.acc.inner.Add(p);
 }
 
 [GoRecv] public static slice<byte> Sum(this ref Hash h, slice<byte> b) {
     ref var acc = ref heap(new array<byte>(4), out var Ꮡacc);
-    Ꮡ(h.acc).of(main_package.acc.Ꮡinner).Store(Ꮡacc);
+    h.acc.inner.Store(Ꮡacc);
     h.finalized = true;
     return append(b, acc[..].ꓸꓸꓸ);
 }
@@ -55,7 +55,7 @@ partial class main_package {
     nint acc = 0;
     {
         ref var deep = ref heap(new array<byte>(4), out var Ꮡdeep);
-        Ꮡ(d.deep).of(main_package.deep.Ꮡacc).of(main_package.acc.Ꮡinner).Store(Ꮡdeep);
+        d.deep.acc.inner.Store(Ꮡdeep);
         foreach (var (i, b) in deep) {
             if (i < len(expected) && b == expected[i]) {
                 acc++;
@@ -63,6 +63,12 @@ partial class main_package {
         }
     }
     return acc == len(expected);
+}
+
+internal static array<byte> resetVia(ж<DeepHash> Ꮡp) {
+    ref var acc = ref heap(new array<byte>(4), out var Ꮡacc);
+    Ꮡp.of(DeepHash.Ꮡdeep).of(deep.Ꮡacc).of(main_package.acc.Ꮡinner).Store(Ꮡacc);
+    return acc.Clone();
 }
 
 internal static void Main() {
@@ -77,6 +83,7 @@ internal static void Main() {
     fmt.Println(@out);
     fmt.Println(d.Verify(@out[..]));
     fmt.Println(d.Verify(new byte[]{0, 0}.slice()));
+    fmt.Println(resetVia(d));
 }
 
 } // end main_package

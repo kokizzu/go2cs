@@ -77,6 +77,19 @@ func (d *DeepHash) Verify(expected []byte) bool {
 	return acc == len(expected)
 }
 
+// resetVia keeps the BOX path while STILL shadowing the hop type name, which is what makes the
+// qualification observable at all. A promoted pointer-receiver call whose base is a plain VALUE
+// (`h.acc` on a `ref` receiver, a local struct) now emits the addressable member chain instead of
+// a boxed COPY, and a member chain spells no type name -- so without this site the test would
+// stop exercising the qualifier it was written for. Here the base is a pointer VARIABLE, so the
+// &-machinery has a real box to descend and the `.of(<Owner>.Ꮡ<field>)` hop, with its
+// qualification, stays live.
+func resetVia(p *DeepHash) [4]byte {
+	var acc [4]byte
+	p.deep.Store(&acc)
+	return acc
+}
+
 func main() {
 	h := &Hash{}
 	h.Write([]byte("go2cs"))
@@ -90,4 +103,5 @@ func main() {
 	fmt.Println(out)
 	fmt.Println(d.Verify(out[:]))
 	fmt.Println(d.Verify([]byte{0, 0}))
+	fmt.Println(resetVia(d))
 }
