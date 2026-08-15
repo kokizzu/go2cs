@@ -617,6 +617,22 @@ semantics are guarded end to end; every compiling package attempted is honestly 
 three representative leaf packages are validated (including external-package and subtest/parallel cases).
 Only **validated** satisfies the default Phase 5 behavior gate.
 
+### Phase 4 — declared host limits and their retirement path
+
+A small class of test verdicts is disclosed under the **`host-limit`** class defined in
+[`ValidatedTestPackages.md`](ValidatedTestPackages.md): tests whose premise rests on a property of the
+test *binary* that the converted host's current deployment shape structurally lacks — today, the
+relocatable single-file executable that Go's static linking provides and a framework-dependent .NET
+apphost (a native stub bound to a same-basename managed assembly beside it) does not. These are not
+permanent exclusions, and the roadmap carries a proposed resolution: **publish the test host
+self-contained and single-file**, evaluated with the .NET toolchain hop, where publish shapes are
+re-priced anyway (the performance suite already proves converted code runs Native AOT, so the
+capability is a packaging decision, not a porting question). The disclosure machinery is built to
+force that revisit rather than allow drift: disclosed tests keep running in every sweep, so the day
+the host becomes relocatable they begin passing, the sweep's disclosure arithmetic breaks loudly, and
+the entries must be removed. Proof pages that carry a `host-limit` disclosure point back to this
+section as the standing answer to "why not just make the host single-file today."
+
 ### Phase 4 follow-up (deferred) — expand the `sstring` stack-string MVP
 
 The escape-analysis-driven stack-string emission landed as a deliberately conservative **MVP** (2026-07-12,
