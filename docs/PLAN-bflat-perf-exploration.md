@@ -15,7 +15,11 @@ tight-loop rows are expected to land within noise of the existing AOT column. Th
 **how much of the AOT floor — startup time, binary size, working set — is recoverable**, and how
 much of that recovery needs bflat at all versus feature switches the stock SDK already exposes.
 The floor is the table's weakest story (AOT startup ~3x Go; working set carries the whole compiled
-closure), so even a null result closes a real question with receipts.
+closure), so even a null result closes a real question with receipts. CPU-bound improvement is not
+this exploration's territory at all: it arrives with newer .NET versions on the corpus-upgrade
+ladder (same ILC lineage, newer codegen), which is one more reason bflat is exploratory-only —
+user + coordinator ruling, 2026-08-15 — and its release cadence alone disqualifies it from ever
+being a first-class citizen of go2cs builds.
 
 ## 1. Facts pinned (verified against the repo, 2026-08-15)
 
