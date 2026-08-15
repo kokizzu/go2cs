@@ -1450,6 +1450,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSliceAliasing() => CheckTarget("SliceAliasing");
 
     [TestMethod]
+    public void CheckSliceElementFieldAddress() => CheckTarget("SliceElementFieldAddress");
+
+    [TestMethod]
     public void CheckSliceFieldElementAddress() => CheckTarget("SliceFieldElementAddress");
 
     [TestMethod]

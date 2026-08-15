@@ -437,6 +437,35 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 						return fmt.Sprintf("%s.of(%s)", baseAddr, fieldRef)
 					}
 
+					// When the base is a slice/array ELEMENT — `&p.Inst[pc].Out` (regexp's
+					// onePassCopy) — its address is the element-ALIASING form the index branch
+					// below renders (`Ꮡ(s, i)` for a slice, `.at<E>(i)` for an array/pointer-to-
+					// array), so recurse for it and field-ref this level. The `Ꮡ(value)` fallback
+					// at the end of this arm boxes a COPY of the ELEMENT, and every write through
+					// the returned pointer is silently dropped — the same class the slice, array
+					// and pointer-to-array branches below already call out by name (tabwriter's
+					// empty lines, flate's literals-only levels 2-9, crc32's all-zero tables),
+					// reached here through a promoted or ordinary FIELD of the element instead of
+					// through the element itself.
+					//
+					// This was latent while go2cs-gen held a promoted embed in a shared `ж<T>` box:
+					// the embed's reference semantics meant a copied element still pointed at the
+					// origin's embedded storage, so a write through `Ꮡ(elem).of(T.ᏑPromoted)` reached
+					// the real element by accident. Making an embed an INLINE field (1ae49db8a) was
+					// correct and removed that accident, which is what surfaced this — regexp's
+					// `p_A_Other := &p.Inst[pc].Out` stopped patching the program and
+					// TestCompileOnePass lost two one-pass rewrites. That commit fixed the sibling
+					// arm (a promoted pointer-receiver CALL descending a copy box); this is the
+					// address-of-FIELD arm of the same defect.
+					//
+					// Ordered BEFORE the heap-boxed branch, which recurses identically for an
+					// IndexExpr base — a boxed base reaches the same emission either way, so no
+					// existing site moves.
+					if indexExpr, ok := selectorExpr.X.(*ast.IndexExpr); ok && v.exprIsIndexableElement(indexExpr) {
+						baseAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
+						return fmt.Sprintf("%s.of(%s)", baseAddr, fieldRef)
+					}
+
 					if v.isHeapBoxedExpr(selectorExpr.X) {
 						// When the base is itself a nested field selector or an array/slice index —
 						// `&work.sweepWaiters.lock` (field of a field) or `&stackpool[i].item.mu`

@@ -9535,6 +9535,53 @@ two-level `c := *p`, a slice-element read, plus a pointer embed proving both hal
 reassigning the copy's embedded pointer leaves the source's alone, while the pointee stays shared
 when it is not reassigned.
 
+### The address of a FIELD of a slice or array element aliases the element
+
+Go's `&s[i].f` is a pointer *into* the backing storage: a write through it changes `s[i]`. The
+`&`-machinery builds such an address in two steps — the element's address, then a field reference on
+it — and the first step has to be the **element-aliasing** form the index branch already renders for
+`&s[i]` itself (`Ꮡ(s, i)` for a slice, `Ꮡarr.at<E>(i)` / `p.at<E>(i)` for an array or a
+pointer-to-array). The arm's last-resort fallback instead renders `Ꮡ(<value>)`, a box over a **copy**
+of the element, and a field ref rooted there aliases the copy: every write through the pointer is
+dropped while every read still looks right, so the container simply never changes.
+
+```go
+p_A_Other := &p.Inst[pc].Out        // regexp/onepass.go, onePassCopy
+*p_B_Alt = *p_A_Other               // patches the compiled program in place
+```
+
+```csharp
+var p_A_Other = Ꮡ((~p).Inst, pc).of(onePassInst.ᏑOut);          // aliases the element
+// NOT: Ꮡ((~p).Inst[pc]).of(onePassInst.ᏑOut)                   // a box over a COPY — write lost
+```
+
+This is the same write-dropping class the slice, array and pointer-to-array index branches each call
+out by name (`text/tabwriter`'s empty lines, `compress/flate` emitting literals only at levels 2–9,
+`hash/crc32`'s all-zero slicing tables), reached through a **field of the element** rather than
+through the element itself. The predicate is `exprIsIndexableElement`: slice, array, or
+pointer-to-array only. A map is excluded because Go does not permit `&m[k]` at all, so an index over
+one can never legitimately reach the `&`-machinery, and admitting it would mask a front-end error as
+a plausible emission; a generic instantiation shares `*ast.IndexExpr`'s shape but types as a
+signature or a named type and falls out without a special case. The recursion is ordered *before* the
+heap-boxed branch, which already recursed identically for an `IndexExpr` base, so a boxed base
+reaches the same emission either way and no existing site moves.
+
+**Why it surfaced when it did.** The PROMOTED case was masked for as long as `go2cs-gen` held an
+embed in a shared `ж<T>` box (see *An embedded struct is an INLINE field, so a value copy copies it*
+above): the embed's reference semantics meant a copied element still pointed at the origin's embedded
+storage, so `Ꮡ(elem).of(T.ᏑPromoted)` reached the real element **by accident**. Making the embed an
+inline field was correct and removed that accident, which is what exposed this — `regexp`'s
+`onePassCopy` stopped patching, and `TestCompileOnePass` reported `isOnePass=false` for
+`^(?:(?:a+)*)$` and `^(?:(?:(?:a*)+))$`. That commit fixed the sibling arm (a promoted
+pointer-receiver **call** descending a copy box); this is the address-of-**field** arm of the same
+defect. An ordinary, non-embedded field of an element was never masked and was broken all along.
+
+Guarded by the **`SliceElementFieldAddress`** behavioral test — the deliberate mirror of
+`SliceFieldElementAddress` (that one is `&(slice field)[i]`, this one is `&(slice[i]).field`) —
+covering an ordinary field of a slice local and of an array local, a promoted field of a slice field
+reached through a pointer, and `onePassCopy`'s own idioms: two pointers into one element swapped and
+then written through, and a cross-element `*dst = *src`.
+
 ### A promoted field whose name equals the enclosing type is Δ-renamed
 
 Go lets an embedded struct carry a field whose name equals the type doing the embedding —

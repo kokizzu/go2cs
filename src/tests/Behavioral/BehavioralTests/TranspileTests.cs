@@ -1447,6 +1447,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSliceAliasing() => CheckTarget("SliceAliasing");
 
     [TestMethod]
+    public void CheckSliceElementFieldAddress() => CheckTarget("SliceElementFieldAddress");
+
+    [TestMethod]
     public void CheckSliceFieldElementAddress() => CheckTarget("SliceFieldElementAddress");
 
     [TestMethod]
