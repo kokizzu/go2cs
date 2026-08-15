@@ -318,7 +318,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							}
 						}
 					} else {
-						access := packageVarAccess(goIDName, v.getIdentType(ident))
+						access := v.testDeclaredValueAccess(packageVarAccess(goIDName, v.getIdentType(ident)), ident.Pos(), v.getIdentType(ident))
 						typeLenDeviation += token.Pos(len(access) + 6)
 
 						// A fixed-size array global must be allocated (`new(N)`); the default
@@ -512,7 +512,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					} else {
 						csTypeName = v.getCSharpTypeName(def.Type())
 
-						access := packageVarAccess(goIDName, v.getIdentType(ident))
+						access := v.testDeclaredValueAccess(packageVarAccess(goIDName, v.getIdentType(ident)), ident.Pos(), v.getIdentType(ident))
 						typeLenDeviation = token.Pos(len(csTypeName)+(len(csIDName)-len(goIDName))) - token.Pos(len(access)+9)
 
 						// A multi-value inner call spread in the initializer (`var debug =
@@ -647,7 +647,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					}
 				}
 			} else {
-				access := packageVarAccess(goIDName, v.getIdentType(ident))
+				access := v.testDeclaredValueAccess(packageVarAccess(goIDName, v.getIdentType(ident)), ident.Pos(), v.getIdentType(ident))
 				typeLenDeviation += token.Pos(len(access) + 4)
 
 				// A Go-CONSTANT-valued initializer is still order-sensitive in C#. Go folds the
@@ -713,7 +713,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 			goTypeName := v.getAliasQualifiedTypeName(declType, false)
 			csTypeName := convertToCSTypeName(goTypeName)
-			access := getAccess(goIDName)
+			access := v.testDeclaredValueAccess(getAccess(goIDName), ident.Pos(), declType)
 			typeLenDeviation := token.Pos(len(csTypeName) + len(access) + (len(csIDName) - len(goIDName)))
 
 			// Check if the type is a named type (user-defined), not a basic type. Unalias first: a
@@ -1254,7 +1254,7 @@ func (v *Visitor) visitPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *type
 
 		firstLine = false
 		csTypeName := v.getCSharpTypeName(tuple.At(i).Type())
-		access := getAccess(goIDName)
+		access := v.testDeclaredValueAccess(getAccess(goIDName), ident.Pos(), tuple.At(i).Type())
 
 		// An ALL-BLANK spec (`var _, _ = f()`) must still evaluate the call once for its side
 		// effect: carry it on the first blank's initializer. Otherwise blanks stay uninitialized —
@@ -1315,7 +1315,7 @@ func (v *Visitor) writeMovedPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple 
 
 		firstLine = false
 		csTypeName := v.getCSharpTypeName(tuple.At(i).Type())
-		access := getAccess(goIDName)
+		access := v.testDeclaredValueAccess(getAccess(goIDName), ident.Pos(), tuple.At(i).Type())
 
 		if v.isAddressedGlobal(ident) {
 			v.writeAddressedGlobalDecl(access, csTypeName, csIDName, "", isInherentlyHeapAllocatedType(tuple.At(i).Type()))

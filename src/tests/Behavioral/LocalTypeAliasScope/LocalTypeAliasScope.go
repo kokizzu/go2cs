@@ -107,10 +107,41 @@ func localAliases() {
 	fmt.Println("localAliases:", h, plain, plain.String(), Header{Name: "raw", Size: 1})
 }
 
+// namer is a LOCAL interface that a FOREIGN interface's method set already satisfies. Because it
+// is declared downstream of fmt, fmt.Stringer cannot inherit it, so go2cs satisfies the conversion
+// with a generated `<pkg>_<Src>ᴠ<Iface>` value-adapter class instead.
+type namer interface {
+	String() string
+}
+
+// aliasedIfaceConv: a function-local alias to a FOREIGN named interface, whose value is then
+// converted to a local one. The adapter class go2cs-gen emits is minted from the RESOLVED type —
+// fmt.Stringer — because the `[assembly: GoImplement<…>]` record carries a C# type, not a
+// spelling. So the CAST SITE must compose the same name from the type. Composing it from the
+// spelling instead worked only while a local alias happened to be named exactly like its target:
+// once the alias is lifted to `aliasedIfaceConv_S`, the site referenced
+// `fmt_aliasedIfaceConv_Sᴠnamer`, a class nothing declares (CS0246).
+//
+// go/types' `rangeStmt` is the corpus shape this reproduces: `type Expr = ast.Expr` declared
+// inside the function, converted to the package's own `positioner` by `check.errorf(lhs[i], …)`.
+func aliasedIfaceConv() {
+	type S = fmt.Stringer
+
+	var s S = Header{Name: "alias.txt", Size: 2}
+	var n namer = s
+
+	// The same conversion from the target's own spelling, so the two must land on ONE adapter.
+	var direct fmt.Stringer = Header{Name: "direct.txt", Size: 4}
+	var d namer = direct
+
+	fmt.Println("aliasedIfaceConv:", n.String(), d.String())
+}
+
 func main() {
 	writeOps()
 	fileOps()
 	localAliases()
+	aliasedIfaceConv()
 	secondWriteOps()
 	secondAliases()
 }

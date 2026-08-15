@@ -66,6 +66,24 @@ func (v *Visitor) convertExprToInterfaceType(interfaceExpr ast.Expr, targetExpr 
 }
 
 func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType types.Type, exprResult string) string {
+	// A type ALIAS is TRANSPARENT — `type Expr = ast.Expr` names the type ast.Expr already names —
+	// but a SPELLING is not a type, and every name composed below is GENERATOR-FACING: the
+	// `[assembly: GoImplement<Src, Iface>]` record, and the `<pkg>_<Src>ᴠ<Iface>` adapter class the
+	// cast site references. go2cs-gen composes that class name from the RESOLVED SYMBOL, never from
+	// the spelling the record carries, so a spelling that is not the type's own name puts the two
+	// sides on different names — the cast site references a class the generator never emits (CS0246).
+	// Resolve both operands to the type itself, once, so the record and the reference agree by
+	// construction. (Five sites below already reach through the alias ad hoc to get at the named
+	// type; doing it at the entry is that same move made total.)
+	//
+	// go/types' `rangeStmt` is the archetype: it declares `type Expr = ast.Expr` function-locally,
+	// which lifts to `rangeStmt_Expr`, and `check.errorf(lhs[i], …)` then composed
+	// `ast_rangeStmt_Exprᴠpositioner` against the generator's `ast_Exprᴠpositioner`. The defect is
+	// older than the lift that exposed it: ANY alias whose name differs from its target's — a
+	// package-level `type E = ast.Expr` just as much — mismatched the same way. It stayed invisible
+	// only because the pre-lift local alias happened to be spelled exactly like its target.
+	interfaceType, targetType = types.Unalias(interfaceType), types.Unalias(targetType)
+
 	// Track interface types that need to an implementation mapping
 	// to properly handle duck typed Go interface implementations
 	var interfaceTypeName string
