@@ -7526,6 +7526,10 @@ process-killer, and it is a different animal (next entry).
 
 ### The NEXT wall, named: `TestSizeof` exhausts the stack in golib's reflect LAYOUT walk
 
+> **RESOLVED 2026-08-15** (lane `claude/gosizeof-recursion`) — pre-existing golib defect, exactly as
+> this section suspected but declined to assert; the standalone probe it asked for measured the
+> cycle identically on both golibs. `go/types` banks at **557**. Entry at the end of this board.
+
 `go/types`' run now dies at `TestSizeof` — the first test alphabetically past the ones that pass —
 with an unbounded recursion whose frames alternate exactly two functions:
 
@@ -7789,3 +7793,97 @@ own preamble is likewise still worded for the two CLR-measurement classes only. 
 renderer fixes and BOTH were left alone on purpose: touching the renderer restyles all 144 proof
 pages, and they only rewrite as each package is next re-validated, so the change would dribble a
 whole-corpus docs diff through unrelated lanes. It belongs in a pass that re-validates the roster.
+## ✅ CLOSED (2026-08-15, lane `claude/gosizeof-recursion`) — `TestSizeof`'s stack exhaustion is a PRE-EXISTING classification defect in `KindOf`, and `go/types` BANKS at 557
+
+The wall named in the entry above is gone, and it was never the embed change's. `go/types` now runs
+**557 verdicts, 557 agreeing with `go test`, zero mismatches** (1 skipped identically on both sides,
+6 disclosed-unsupported declarations excluded) — `status: validated`. That is exactly the 513 the
+type-parameter unlock produced plus the 44 the process-killer had been swallowing, and it is the
+converted **Go type-checker itself**: `TestCheck`/`TestSpec`/`TestFixedbugs` over the language's own
+conformance corpora, `TestStdlib` type-checking all of GOROOT from source, and `TestSizeof` — the
+test that priced this defect — asking `reflect` for the amd64 size of all 25 type and object nodes.
+
+### Attribution, settled FIRST and by measurement — pre-existing, not embed-implicated
+
+The previous entry asked for this explicitly and declined to guess, correctly: the argument that the
+projection reports the same field type before and after was an argument, not a measurement, and
+nobody had run the walk on the pre-change golib because the type-parameter wall stopped the suite
+~300 verdicts earlier.
+
+A standalone probe settles it. It mirrors `GoSizeOf`/`tryStructLayout` exactly — same `KindOf`
+classification, same `GoFields` projection — but carries a path stack, so instead of exhausting the
+stack it NAMES the cycle. Built twice against the same converted `go/types` corpus, once against
+golib at HEAD and once against golib at `48274ae2b` (the merge immediately BEFORE the embed change),
+both runs print the same 30 lines:
+
+```
+  Named        CYCLE  Named -> Mutex -> SemaphoreSlim -> TaskNode -> TaskNode (REVISIT)
+  ...
+  SUMMARY cases=25 matched=24 mismatched=0 cycle=1 unknown=0 missing=0
+  structs=89 cyclic=3     (Named, Context, lazyObject — one distinct cycle tail)
+```
+
+**Byte-identical on both golibs.** The other 24 of `TestSizeof`'s 25 cases already produced Go's
+exact size on both. So: a golib defect in its own right, older than the embed model, and the embed
+lane's decision not to attribute it to itself was right.
+
+### Root cause — `KindOf` called a managed REFERENCE a struct, and Struct is the kind that descends
+
+`KindOf`'s last line answered `Struct` for any reference type it did not otherwise recognize. Struct
+is the one kind whose walks look INSIDE the type, so `GoSizeOf`/`GoAlignOf` — and
+`StructFieldsComparable`, which `synthesizeDescriptor` calls on the very next line — enumerated the
+CLR's own private fields and descended into the BCL object graph. A Go type graph cannot recurse
+that way: Go's layout rule stops at every pointer, slice, map, chan, interface and func, and a Go
+struct that contained itself by value would be a type Go itself rejects. The BCL graph has no such
+rule, and `SemaphoreSlim`'s async wait queue is a linked list — `TaskNode.Next` is a `TaskNode` —
+so the descent alternated `tryStructLayout`/`GoSizeOf` frames until the stack was gone.
+
+The corpus entry point is `sync.Mutex`, hand-owned since 2026-07-11 on a lazily-created
+`SemaphoreSlim` gate because Go's runtime sleeping semaphore has no managed form. Every struct that
+holds one inherits the cycle: in `go/types` that is `Named` (via `mu sync.Mutex`), `Context`, and
+`lazyObject` (via `sync.Once`). Nothing about this needed `go/types` — `fmt.Println` of any
+`sync.Mutex`-bearing struct was on the same cliff.
+
+**Why it was a process-killer and not a failure.** A `StackOverflowException` cannot be caught in
+.NET. It took `TestSizeof` and every test alphabetically after it, and the run reported 44 ABSENT
+verdicts rather than one failing test — the worst failure shape the campaign has, because absent
+verdicts are unmeasurable rather than wrong.
+
+### The fix — one classification line, then one memoized walk behind it
+
+**1. The classification (the root cause).** go2cs emits every Go struct as a C# VALUE type — the
+corpus carries exactly seven `[GoType] partial class` declarations and all seven are named-POINTER
+types (`type P *T`), already classified `Pointer` structurally. So a reference type reaching that
+final line is never a Go struct: it is an opaque managed handle, the backing object a hand-owned
+shim holds in place of Go's own representation, and in the Go model a handle is one pointer word.
+`KindOf` now says `Pointer`, the descent stops at the handle, and the answer is Go's own — a Go
+`sync.Mutex` is 8 bytes and so, now, is the converted one. `Named` computes to **112**, which is
+what `TestSizeof` wants.
+
+**2. The durable shape on top.** Offsets, size and alignment now come out of ONE memoized pass
+(`structLayoutOf`) instead of two walks that could disagree, and alignment is accumulated over every
+field even after a size becomes unknowable, because the two questions are independent. A depth cap
+(128) sits underneath as a safety net that answers "size unknown" — the r39d rule, a descriptor
+field that cannot be read truthfully stays unpopulated — rather than overflowing. It is unreachable
+by construction: only Struct and Array recurse, Struct is now answered for value types alone, and
+C# forbids a value type from containing itself transitively (CS0523). Tripping it would mean the
+CLASSIFICATION is wrong again, and the point is that the next such defect costs a wrong number
+instead of a dead process and 44 unmeasurable verdicts.
+
+**A cycle guard proper was deliberately NOT added.** The brief's requirement — a guard must produce
+CORRECT sizes for legal self-referential graphs, not merely avoid crashing — is met by the
+classification rather than by detection: a struct holding a pointer to itself terminates at the
+pointer and answers 24, not "unknown". Guarded by
+`GoStructLayoutTests.SelfReferentialThroughPointer_IsFiniteAndCorrect`.
+
+### Guards
+
+Three new tests in `src/tests/GolibTests/GoStructLayoutTests.cs`, the golib home of this walk
+(114/114, was 111/111): a managed reference is one word and not a struct to descend into
+(`SemaphoreSlim` included, so the real BCL graph is in the assertion); a self-referential managed
+class terminates; and Go's own legal self-reference through a pointer is finite AND correct. The
+first two are guards against a stack overflow, which no assertion can catch — reaching the assert at
+all is the guard, and the value proves the walk stopped at the handle rather than merely stopping.
+
+Doctrine: `ConversionStrategies-Reference.md`, *A managed reference is a Go POINTER, not a Go
+struct — the reflection bridge's descent rule*.

@@ -74,6 +74,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `go/printer` | [`go.printer.md`](current/go.printer.md) | [`src/core/go/printer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/printer) |
 | `go/scanner` | [`go.scanner.md`](current/go.scanner.md) | [`src/core/go/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/scanner) |
 | `go/token` | [`go.token.md`](current/go.token.md) | [`src/core/go/token`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/token) |
+| `go/types` | [`go.types.md`](current/go.types.md) | [`src/core/go/types`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/types) |
 | `go/version` | [`go.version.md`](current/go.version.md) | [`src/core/go/version`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/version) |
 | `hash` | [`hash.md`](current/hash.md) | [`src/core/hash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash) |
 | `hash/adler32` | [`hash.adler32.md`](current/hash.adler32.md) | [`src/core/hash/adler32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/adler32) |

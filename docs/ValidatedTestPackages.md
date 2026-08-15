@@ -34,9 +34,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **144 / 215 testable packages validated — 67.0%**
+> ### Phase 4 progress: **145 / 215 testable packages validated — 67.4%**
 >
-> **15,907 matching test verdicts · 74 disclosed** *(updated 2026-08-15 — maintained as part of the
+> **16,464 matching test verdicts · 74 disclosed** *(updated 2026-08-15 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -117,6 +117,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`go/printer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/printer) | 45 | | The Go pretty-printer — the golden-file corpus (declarations, expressions, generics, comments, `//go:build` lines), comment placement and bad-node recovery, `CommentedNode`, and base-indentation modes. · [proof](validation/current/go.printer.md) |
 | [`go/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/scanner) | 11 | | Go's lexical scanner — the whole token and literal matrix, automatic semicolon insertion, `//line` directive handling (valid and invalid), `ErrorList` collection with its sort and one-per-line dedup, and CR stripping in raw strings. · [proof](validation/current/go.scanner.md) |
 | [`go/token`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/token) | 31 | | FileSet/Position machinery; a full `encoding/gob` serialization round-trip — the reflect type-relation mirrors driving real Encoder/Decoder engines. · [proof](validation/current/go.token.md) |
+| [`go/types`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/types) | 557 | | The Go type-checker itself, end to end. `TestCheck`, `TestSpec` and `TestFixedbugs` run the language's own conformance corpora file by file and require the converted checker to report exactly the errors Go reports at exactly the positions; `TestStdlib` then type-checks all of GOROOT from source. `TestSizeof` asks `reflect` for the amd64 size of every type and object node, which makes the reflection bridge's Go layout walk a first-class assertion rather than an implementation detail — and it is the test that priced the walk's one process-killing defect, a managed reference classified as a struct sending it into the BCL's cyclic object graph. · [proof](validation/current/go.types.md) |
 | [`go/version`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/version) | 3 | | Go version-string comparison. · [proof](validation/current/go.version.md) |
 | [`hash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash) | 18 | | The `hash.Hash` contract itself — `encoding.BinaryMarshaler`/`BinaryUnmarshaler` state round-trips exercised across **every** standard-library digest (adler32, crc32/64, the six FNV widths, md5, sha1, and the six SHA-2 variants). · [proof](validation/current/hash.md) |
 | [`hash/adler32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/adler32) | 2 | | Adler-32 checksum. · [proof](validation/current/hash.adler32.md) |

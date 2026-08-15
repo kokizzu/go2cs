@@ -15224,9 +15224,9 @@ the descriptor itself is:
 | `ArrayType.Len` / `.Elem` / `.Slice` | the descriptor's carried array dims, the element descriptor, and `[]T`'s |
 
 The offsets are Go's numbers, not the CLR's — a Go `string` is 16 bytes where `@string` is an 8-byte
-reference — and they come from the SAME walk that stamps a descriptor's `Size_`
-(`GoReflect.GoFieldOffsets`, factored out of `GoSizeOf`'s struct arm), so a field's `Offset` and its
-struct's `Size_` cannot disagree. `unique`'s `cloneSeq` values are the demonstrated consumer:
+reference — and they come from the SAME walk that stamps a descriptor's `Size_` and `Align_`
+(`GoReflect.GoFieldOffsets`, `GoSizeOf` and `GoAlignOf` all read one memoized `structLayoutOf` pass),
+so a field's `Offset`, its struct's `Size_` and its `Align_` cannot disagree. `unique`'s `cloneSeq` values are the demonstrated consumer:
 `struct{ z float64; b string }` → offsets `[8]`, `[2]struct{ a string }` → `[0 16]`, `[3]string` →
 `[0 16 32]`, each matching `go test` exactly.
 
@@ -15251,6 +15251,60 @@ Guarded by `GolibTests.GoStructLayoutTests` (Go offsets and sizes for the exact 
 `FieldOffsets_ApplyGoAlignmentPadding`), and measured by `unique`'s own suite: **1 → 4 of 19 matched**,
 with all six `IndexOutOfRangeException` rows gone and the three `TestHandle` ones moved on to the
 `internal/weak` linkname root behind them.
+
+### A managed REFERENCE is a Go pointer, not a Go struct — the reflection bridge's descent rule
+
+`GoReflect.KindOf` classifies a managed `Type` to a Go `reflect.Kind`, and exactly one of those kinds
+means *look inside*: `Struct`. `GoSizeOf`, `GoAlignOf` and `IsComparable` all stop at every other
+kind, because that is Go's own layout rule — a pointer, slice, map, chan, interface or func field is
+a fixed-size header (8/24/8/8/16/8 bytes on amd64) whatever it refers to, and only struct and array
+fields recurse. Go can afford that rule because a Go struct containing itself by value is a type Go
+itself rejects, so the descent is finite by the source language's own definition.
+
+`KindOf`'s fallback answered `Struct` for any managed **reference** type it did not otherwise
+recognize, and that broke the rule in the one direction that matters. The converter emits every Go
+struct as a C# **value** type — the entire converted corpus carries seven `[GoType] partial class`
+declarations and all seven are named-POINTER types (`type P *T`), classified `Pointer` structurally
+before the fallback is reached — so a reference type arriving there is never a Go struct at all. It
+is an opaque managed handle: the backing object a hand-owned shim holds in place of Go's own
+representation. Answering `Struct` sent the walks into the CLR's own private fields and from there
+into the BCL object graph, which has no rule against cycles:
+
+```
+Named -> Mutex -> SemaphoreSlim -> TaskNode -> TaskNode -> ...
+```
+
+`sync.Mutex` is the corpus entry point — hand-owned on a lazily-created `SemaphoreSlim` because Go's
+runtime sleeping semaphore has no managed form — and `SemaphoreSlim`'s async wait queue is a linked
+list, so `TaskNode.Next` is a `TaskNode` and the descent never ends. `go/types`' `TestSizeof` asks
+`reflect` for the size of `Named`, which holds a `sync.Mutex`, and the run died there with a
+`StackOverflowException`: uncatchable, so it took the whole process and reported the 44 tests
+alphabetically after it as **absent** verdicts rather than as one failure.
+
+The rule is therefore stated positively: **a managed reference is one pointer word wide and is never
+descended into.** `KindOf` reports `Pointer` for it, which is both finite and Go's own answer —
+`sync.Mutex` is 8 bytes in Go, and the shim that stands in for it is 8 bytes here, which is why
+`go/types`' `Named` computes to Go's exact 112. Termination now rests on a rule that holds in the
+target language rather than the source one: only `Struct` and `Array` recurse, `Struct` is answered
+for value types alone, and C# forbids a value type from containing itself transitively (CS0523).
+
+Two consequences worth carrying:
+
+- **A legal self-referential Go type still gets a real size, not a bail-out.** `type node struct {
+  value string; next *node }` terminates at the pointer and answers offsets `[0 16]`, size 24. A
+  cycle *detector* would have answered "unknown" here; the classification answers correctly, which
+  is why the fix is the classification and not a guard.
+- **The depth cap underneath is a safety net, not the algorithm.** `structLayoutOf` refuses to
+  recurse past 128 levels and answers "size unknown" (the r39d rule — a descriptor field that cannot
+  be read truthfully stays unpopulated). No legal graph can reach it; tripping it would mean the
+  classification is wrong again, and the point is that the next such defect costs a wrong number
+  instead of a dead process and a run's worth of unmeasurable verdicts.
+
+Guarded by `GolibTests.GoStructLayoutTests` — `ManagedReferenceField_IsOneWord_NotAStructToDescendInto`,
+`CyclicManagedReferenceGraph_Terminates` and `SelfReferentialThroughPointer_IsFiniteAndCorrect`, the
+first two of which are guards against a stack overflow no assertion can catch, so reaching the
+assert at all is the guard. Measured by `go/types`: 513 verdicts with 44 absent, then **557 of 557
+agreeing with `go test`**.
 
 ### Realizing the runtime TIMER contract (`Sleep` / `newTimer` / `stopTimer` / `resetTimer`)
 

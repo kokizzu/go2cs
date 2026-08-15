@@ -198,9 +198,20 @@ public static partial class GoReflect
         // A converted Go struct is a [GoType] value type; anything else value-typed still reports Struct.
         if (t.IsValueType) return Struct;
 
-        // Reference-typed converted types (classes) that are none of the above are treated as pointers
-        // to their referent in the Go model (rare on the fmt path); default to Struct otherwise.
-        return Struct;
+        // REFERENCE-typed and none of the above. go2cs emits every Go struct as a C# VALUE type, so
+        // this can never be a Go struct: it is an opaque managed handle — the backing object a
+        // hand-owned shim holds in place of Go's own representation, `sync.Mutex`'s `SemaphoreSlim`
+        // gate being the demonstrated case — and in the Go model a handle is one pointer word.
+        //
+        // Answering Struct here was the classification defect behind the only process-KILLING failure
+        // mode this bridge has had. Struct is the one kind whose walks descend into the type's fields,
+        // so it sent GoSizeOf/GoAlignOf (and StructFieldsComparable) into the CLR's OWN private fields
+        // and from there into the BCL object graph, which is cyclic where a Go type graph cannot be:
+        // `Named -> Mutex -> SemaphoreSlim -> TaskNode -> TaskNode` exhausted the stack in go/types'
+        // TestSizeof and took the 44 verdicts alphabetically after it with the process. Reported as a
+        // pointer the descent stops at the handle, which is both finite and Go's own answer — a Go
+        // `sync.Mutex` is 8 bytes and so, now, is the converted one.
+        return Pointer;
     }
 
     /// <summary>
@@ -236,7 +247,13 @@ public static partial class GoReflect
     // A struct is comparable iff every field is (Go). Recurses over the converted [GoType] struct's
     // instance fields; a field of slice/map/func kind — or a nested struct/array that contains one —
     // makes the whole struct non-comparable. Pointer/interface/chan fields stay comparable without
-    // recursing into their referents, so this terminates (Go forbids a struct containing itself by value).
+    // recursing into their referents.
+    //
+    // Termination rests on KindOf, not on Go: only the Struct and Array kinds recurse, Struct is now
+    // answered for VALUE types alone, and C# forbids a value type from containing itself directly or
+    // transitively (CS0523). Go's "no struct contains itself by value" rule says the same thing about
+    // the source language, but it is the C# rule that binds here — the walk reads managed metadata,
+    // and it was a managed reference classified as Struct that once made this descend forever.
     private static bool StructFieldsComparable(Type t)
     {
         foreach (FieldInfo f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
