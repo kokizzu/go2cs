@@ -721,6 +721,7 @@
     <Project Path="tests/Behavioral/ShiftPrecedenceUnsigned/ShiftPrecedenceUnsigned.csproj" />
     <Project Path="tests/Behavioral/ShellForwardArity/ShellForwardArity.csproj" />
     <Project Path="tests/Behavioral/SiblingTestAddressedGlobal/SiblingTestAddressedGlobal.csproj" />
+    <Project Path="tests/Behavioral/SignalPrimitives/SignalPrimitives.csproj" />
     <Project Path="tests/Behavioral/Slice3IndexWideBound/Slice3IndexWideBound.csproj" />
     <Project Path="tests/Behavioral/SliceAliasing/SliceAliasing.csproj" />
     <Project Path="tests/Behavioral/SliceFieldElementAddress/SliceFieldElementAddress.csproj" />

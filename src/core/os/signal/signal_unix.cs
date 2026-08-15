@@ -10,15 +10,25 @@ using syscall = syscall_package;
 partial class signal_package {
 
 // Defined by the runtime package.
-internal static partial void signal_disable(uint32 _);
+internal static void signal_disable(uint32 _) {
+    go.runtime_package.signal_disable(_);
+}
 
-internal static partial void signal_enable(uint32 _);
+internal static void signal_enable(uint32 _) {
+    go.runtime_package.signal_enable(_);
+}
 
-internal static partial void signal_ignore(uint32 _);
+internal static void signal_ignore(uint32 _) {
+    go.runtime_package.signal_ignore(_);
+}
 
-internal static partial bool signal_ignored(uint32 _);
+internal static bool signal_ignored(uint32 _) {
+    return go.runtime_package.signal_ignored(_);
+}
 
-internal static partial uint32 signal_recv();
+internal static uint32 signal_recv() {
+    return go.runtime_package.signal_recv();
+}
 
 internal static void loop() {
     while (ᐧ) {

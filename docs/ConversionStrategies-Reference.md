@@ -14602,6 +14602,65 @@ closure stay auto-converted — so the `runtime_readMetrics` row exists for a co
 the hand-own, where the bodyless declaration reappears and must announce the wall rather than fabricate past
 it. `runtime/metrics` validates 2 of 2 on this arrangement.
 
+**`os/signal`'s six primitives — the push that needed an OS EDGE and a real BLOCK before it could be
+honored** (2026-08-14). `os/signal` declares six symbols the runtime defines, all bare shape: five under one
+`// Defined by the runtime package.` comment in `signal_unix.go` (whose build constraint includes windows),
+and `signalWaitUntilIdle` in `signal.go`. `runtime/sigqueue.go` carries the matching two-argument directives.
+Every one was a throwing `PartialStubGenerator` stub, which is what put `os/exec`'s `TestWaitInterrupt` rows
+on the board: the `hang` helper's `signal.Ignore(os.Interrupt)` died with
+`NotImplementedException: signal_ignore`.
+
+The rows themselves are unremarkable — six `{source: "runtime.signal_…", bareDecl: true}` entries, and the
+first forwarders with a BLANK parameter, which emit `signal_disable(_)` against the parameter the signature
+already names `_`. What the row set is worth recording for is the `GetSystemDirectory` precedent applied
+twice over, because the pushed bodies bottomed out in two dead ends rather than one:
+
+1. **Nobody was queueing.** Go arms Windows signal delivery in `osinit` with
+   `stdcall2(_SetConsoleCtrlHandler, ctrlHandlerPC, 1)`, and neither half runs in the managed model —
+   `osinit` is emitted already marked not-run, `stdcall` bottoms out in `asmstdcall`, and `compileCallback`
+   builds a native thunk out of generated assembly. So the converted `ctrlHandler` was reachable code nobody
+   called, and a forwarder alone would have made `signal.Notify` succeed and then never deliver.
+2. **Nobody could wait.** `signal_recv` blocks in `notetsleepg(&sig.note, -1)`, whose Go prologue is
+   `getg()` — still an unimplemented intrinsic — so the receive loop threw before it reached the note.
+
+Both were closed in the same change, and the shape of each closure is the point. The OS edge is a hand-owned
+`runtime/windows/signal_windows_impl.cs` that registers a real `SetConsoleCtrlHandler` whose
+`[UnmanagedCallersOnly]` callback calls the **converted** `ctrlHandler` — it reimplements no mapping, no
+bitset and no state machine, so `sigsend`, `signal_recv` and the `{sigIdle, sigReceiving, sigSending}` CAS
+protocol all stay auto-converted in `runtime/sigqueue.cs`. `notetsleepg` joins the mutex/note family in
+`manualConversionFuncs` and gains the family's only genuinely BLOCKING body
+(`runtime/lock_managed_impl.cs`): a `Monitor.Wait` against a gate that `notewakeup` pulses after it flips the
+key, rather than the `SpinWait` escalation its siblings use, because its two callers — `signal_recv` and
+`profbuf`'s reader — idle indefinitely and polling either would burn a thread forever to observe nothing.
+No park-accounting scope is taken: `DESIGN-cooperative-scheduler.md` §6 row 11 places the note protocol below
+the goroutine model by ruling, and golib's `Goroutine.Park` is design-only regardless.
+
+**Faithfulness is the whole mechanism, including where it looks wrong.** With both halves landed the pushed
+bodies run end to end and Go's own Windows semantics fall out unaltered. `sigenable`/`sigdisable`/`sigignore`
+really are empty on Windows — `signal_windows.go` says so under a literal "Following are not implemented" —
+so the `wanted` bitset is the only gate there is: `Notify` makes ^C and ^BREAK deliver `os.Interrupt` and the
+program survive, `Stop`/`Reset` restore the default, and `Ignore` clears `wanted` and sets `ignored`, which
+leaves ^C **terminating the process** while `Ignored()` truthfully answers `true`. That last one reads like a
+defect and is not: `os/signal`'s own `doc.go` documents only `Notify`, `Reset` and `Stop` under "# Windows",
+because `Ignore` has no console-event lever to pull. It is Go's behavior, not a go2cs declared limit, and
+reproducing it rather than "fixing" it is the requirement. Signals with no Windows source are the same story
+— `ctrlHandler` can only ever produce `SIGINT` and `SIGTERM`, so a `Notify` for anything else simply never
+fires, in Go and here alike. `Reset` not clearing the `ignored` bit is a third such subtlety, and the
+`SignalPrimitives` behavioral test pins all of them against `go run` — including, indirectly, that
+`signal_recv` really parks, since `Stop` blocks in `signalWaitUntilIdle` until the watcher goroutine
+has reached `sigReceiving`.
+
+Delivery itself was measured out of band, in `TestCtrlBreak`'s own shape: a child started with
+`CREATE_NEW_PROCESS_GROUP` and sent `GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, childPid)`, run
+against the converted child and against a native Go child built from the same source. Both print
+`ready` then `got: interrupt` and exit 0. One trap that probe is worth remembering for: sending the
+event on a fixed timer races a cold Debug child carrying the whole converted runtime closure, and
+losing that race looks alarming rather than obviously benign — the child dies with `0xc000013a`
+(STATUS_CONTROL_C_EXIT) and **no output at all**, because it had not yet reached `signal.Notify`, so
+the `wanted` bit was unset, `sigsend` correctly returned false, the default handler killed it, and
+its buffered stdout went with it. That is the machinery working exactly as specified. Wait for the
+child to announce readiness rather than sleeping on a timer.
+
 ### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
 
 `internal/concurrent` is the whole of `unique`'s storage, and `unique` is `net/netip`'s address interner —

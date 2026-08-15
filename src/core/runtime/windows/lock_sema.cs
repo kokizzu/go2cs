@@ -109,22 +109,7 @@ internal static bool notetsleep(ж<note> Ꮡn, int64 ns) {
     return notetsleep_internal(Ꮡn, ns, nil, 0);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string notetsleepgOnG0ˢ = "notetsleepg on g0"u8;
-
-// same as runtime·notetsleep, but called on user g (not g0)
-// calls only nosplit functions between entersyscallblock/exitsyscall.
-internal static bool notetsleepg(ж<note> Ꮡn, int64 ns) {
-    var gp = getg();
-    if (gp == (~(~gp).m).g0) {
-        @throw(notetsleepgOnG0ˢ);
-    }
-    semacreate(ref ((~gp).m).DerefOrNull());
-    entersyscallblock();
-    var ok = notetsleep_internal(Ꮡn, ns, nil, 0);
-    exitsyscall();
-    return ok;
-}
+// go2cs generated this placeholder — func notetsleepg is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (ж<g>, bool) beforeIdle(int64 _Δp0, int64 _Δp1) {
     return (default!, false);

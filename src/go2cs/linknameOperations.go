@@ -273,6 +273,49 @@ var linknamePushTargets = map[string]linknamePush{
 		source: "runtime.internal_weak_runtime_makeStrongFromWeak",
 		reason: "the pushed body re-derives an object pointer from a heap address, which the managed model cannot do; use the hand-owned managed weak reference in internal/weak/pointer.cs",
 	},
+	// os/signal's SIX runtime primitives, pushed by runtime/sigqueue.go. BARE consumer shape in every
+	// case: signal_unix.go declares the five under one `// Defined by the runtime package.` comment
+	// and signal.go declares signalWaitUntilIdle under its own prose comment, none of them carrying a
+	// directive — the syscall.runtime_envs shape. signal_unix.go's build constraint includes windows,
+	// so these are the declarations Windows compiles.
+	//
+	// The pushed bodies are runtime/sigqueue.go's own state machine, converted whole and unmodified:
+	// the {sigIdle, sigReceiving, sigSending} CAS protocol, the wanted/ignored/mask/recv bitsets, and
+	// sigsend, which the OS-side handler calls to queue a signal. Nothing about it is reimplemented
+	// here — the registry's job is only to let os/signal reach it.
+	//
+	// The GetSystemDirectory precedent ("forwarding and populating are one change") governs, and it
+	// bit twice over, because the pushed bodies bottomed out in TWO dead ends rather than one:
+	//
+	//   1. NOBODY WAS QUEUEING. Go arms the delivery path in osinit with
+	//      `stdcall2(_SetConsoleCtrlHandler, ctrlHandlerPC, 1)`, and neither half runs in the managed
+	//      model — osinit is Go's bootstrap, emitted already marked not-run, and stdcall bottoms out
+	//      in asmstdcall, a throwing stub. So ctrlHandler was never reached, sigsend never called, and
+	//      a forwarder alone would have made signal.Notify SUCCEED and then never deliver: a
+	//      plausible-looking wrong answer, not an error. The hand-owned
+	//      runtime/windows/signal_windows_impl.cs supplies exactly that missing edge and nothing else
+	//      — a managed SetConsoleCtrlHandler whose callback calls the CONVERTED ctrlHandler.
+	//   2. NOBODY COULD WAIT. signal_recv's block is `notetsleepg(&sig.note, -1)`, whose Go prologue
+	//      is getg() — still an unimplemented intrinsic — so the receive loop threw before it reached
+	//      the note. notetsleepg therefore joins the mutex/note family in manualConversionFuncs and
+	//      gains a real blocking wait in runtime/lock_managed_impl.cs.
+	//
+	// With both landed the pushed bodies run end to end, and Go's OWN Windows semantics fall out of
+	// them unaltered — including the ones a POSIX reading would get wrong. sigenable/sigdisable/
+	// sigignore really are empty on Windows (signal_windows.go's "Following are not implemented"), so
+	// the wanted bitset is the only gate: Notify makes ^C/^BREAK deliver os.Interrupt and the program
+	// survive, Stop/Reset restore the default, and Ignore — which clears wanted and sets ignored —
+	// leaves ^C terminating the process while Ignored() truthfully reports true. That last one is not
+	// a go2cs limit to declare; it is what Go does on Windows, and os/signal's own doc.go says so by
+	// documenting only Notify/Reset/Stop under "# Windows". Signals with no Windows source (anything
+	// but SIGINT/SIGTERM, which are all ctrlHandler can produce) simply never arrive, in Go and here
+	// alike. Faithfulness is the whole mechanism: none of it is decided in this file.
+	"os/signal.signal_disable":      {source: "runtime.signal_disable", bareDecl: true},
+	"os/signal.signal_enable":       {source: "runtime.signal_enable", bareDecl: true},
+	"os/signal.signal_ignore":       {source: "runtime.signal_ignore", bareDecl: true},
+	"os/signal.signal_ignored":      {source: "runtime.signal_ignored", bareDecl: true},
+	"os/signal.signal_recv":         {source: "runtime.signal_recv", bareDecl: true},
+	"os/signal.signalWaitUntilIdle": {source: "runtime.signalWaitUntilIdle", bareDecl: true},
 }
 
 // linknamePushSources is the reverse index of the FORWARDED entries of linknamePushTargets: the set

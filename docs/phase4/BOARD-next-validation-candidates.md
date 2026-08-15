@@ -7326,28 +7326,62 @@ like a flag (`-run -v` filters on `-v`), and one or two leading dashes name the 
 undashed. Nothing records the leftover tokens: the program reads its own argv, and an unread property
 would be machinery this host does not need.
 
-### `os/exec` re-measured: 101 rows, **71 agreeing** (63 pass + 8 skip), 30 disagreeing
+### `os/exec` re-measured: 101 rows, **74 agreeing** (67 pass + 7 skip), 27 disagreeing
 
 | Class | Rows | Then | Now |
 |:--|:--:|:--:|:--|
-| agree | **71** | 48 | 40 → 63 pass, 8 skip unchanged |
-| disagree — **root A**, helper-command argv | **0** | 26 | ✅ closed by this lane |
+| agree | **74** | 48 → 71 | 67 pass, 7 skip |
+| disagree — **root A**, helper-command argv | **0** | 26 | ✅ closed by the host-argv-stop lane |
 | disagree — **root B**, relocatable single-file test executable | **27** | 27 | unchanged, and still a DECLARED limit |
-| disagree — **root C**, `os/signal`'s runtime primitives are unimplemented stubs | **3** | (hidden behind A) | NEW |
+| disagree — **root C**, `os/signal`'s runtime primitives are unimplemented stubs | **0** | 3 | ✅ closed by the os-signal-primitives lane |
 
-**Root C, named precisely, because it was invisible until now.** `TestWaitInterrupt/{Wait,Exit-hang}`
-and their parent fail because the `hang` helper child exits 2, and the child's own stderr says why —
-run it directly and it prints `NotImplementedException: signal_ignore: external (assembly or cgo)
-function is not implemented`, thrown out of `cmdHang`'s `signal.Ignore(os.Interrupt)`. **All five**
-`os/signal` runtime primitives are `PartialStubGenerator` stubs in the converted corpus
-(`signal_enable`, `signal_disable`, `signal_ignore`, `signal_ignored`, `signal_recv`, plus
-`signalWaitUntilIdle`) even though `runtime/sigqueue.cs` carries the matching
-`//go:linkname signal_ignore os/signal.signal_ignore` pushes — the pushes are not landing, and the
-`os/signal` side is being taken from `signal_unix.cs` on Windows. Banked `os/signal` (1 test,
-Ctrl+Break) does not reach them, which is why nothing had reported this. `TestWaitInterrupt/SIGKILL-hang`
-PASSES only by luck: its child is killed before the exit code is examined. This is *unimplemented*,
-not impossible, so it must never become an `unsupportedRuntimeCapabilities` entry — it is a real
-next domino, and it belongs to whoever takes `os/signal` beyond its one test.
+**Root C is closed** (2026-08-14). The six primitives now forward through the `//go:linkname` push
+registry into `runtime/sigqueue.cs`'s own state machine, and the two dead ends behind the forwarders —
+nothing armed the Windows console control handler, and `notetsleepg` threw on `getg()` before it could
+block — are closed with it. `TestWaitInterrupt/{Wait,Exit-hang}` and their parent all pass;
+`cmdHang`'s `signal.Ignore(os.Interrupt)` runs. Detail:
+[ConversionStrategies-Reference](../ConversionStrategies-Reference.md#manually-converted-declarations),
+"`os/signal`'s six primitives".
+
+**The disagreeing set is now exactly root B** — the 14 `TestCommand/*`, 11 `TestLookPathWindows/*`
+and their two parents — so `os/exec` sits at all-agree-except-declared-limit, which is precisely the
+shape the coordinator ruling below was reserved for. **This lane therefore reports and STOPS: no
+bank.**
+
+**`os/signal`'s own suite cannot pay this domino back, and the census says why** (2026-08-14). It was
+re-run end to end (`-test-action all`) after the primitives landed and it **re-validates 1/1**,
+unchanged — because its Windows-eligible RUN surface is exactly one test. `signal_test.go` is
+`//go:build unix`, `signal_linux_test.go` is linux, `signal_cgo_test.go` needs cgo,
+`signal_plan9_test.go` is plan9, and `example_test.go`'s two examples carry no `// Output:` comment,
+so `go test` never executes them (they stay excluded on both sides). That leaves `TestCtrlBreak`,
+which compiles a **native Go child** with the real go tool and sends it a console control event — so
+it exercises `syscall.LoadDLL`/`GenerateConsoleCtrlEvent` and `os/exec`, and never touches a single
+converted signal primitive. That is why it passed while all six were throwing stubs, and why it still
+passes now: it is not a regression detector for this area in either direction. The guard that *does*
+cover the primitives is the `SignalPrimitives` behavioral test (Notify/Stop/Ignore/Reset/Ignored
+transitions compared against `go run`, which also proves `signal_recv` really parks — `Stop` blocks
+in `signalWaitUntilIdle` until the watcher goroutine reaches `sigReceiving`).
+
+Real console-event DELIVERY was **measured out of band** rather than left to inference: a scratch
+two-process probe in `TestCtrlBreak`'s own shape — child started with `CREATE_NEW_PROCESS_GROUP`,
+`GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, childPid)` from the parent — run against the converted
+child and against a native Go child built from the same source. Both print `ready` then
+`got: interrupt` and exit 0, repeatably. Worth recording from that probe: the FIRST attempt reported
+`exit status 0xc000013a` (STATUS_CONTROL_C_EXIT) with **no output at all**, and it was a cold-start
+race in the probe, not a defect — a cold Debug child carrying the full converted runtime closure had
+not yet reached `signal.Notify` when the 3-second timer fired, so the `wanted` bit was unset,
+`sigsend` correctly returned false and the default handler killed it (buffered stdout dying with it).
+Raising the delay to 8 s made it deterministic. A probe that sends the event on a timer instead of
+waiting for the child to announce readiness will keep re-finding this. DELIVERY still has no
+SUITE guarding it — that fixture is the honest next item here.
+
+⚠ **One row of the split is unreconciled, and is recorded rather than smoothed.** The totals move
+exactly as root C predicts (101 unchanged; disagree 30 → 27; agree 71 → 74), but the internal split
+moved by four passes and one skip (63 pass + 8 skip → 67 pass + 7 skip) where root C accounts for
+three. The likely cause is that a subtest of the previously-FAILING `TestWaitInterrupt` parent was
+counted as a skip while its parent failed and now runs and passes; that was not re-derived against
+the old binary, so it is a hypothesis, not a finding. The 27 disagreeing rows were enumerated by name
+from the run and are all root B.
 
 **Two minor host observations, recorded rather than fixed** (neither moves a verdict): the host's
 fmt-free `TestFormat` renders `*exec.Cmd` and `*strings.Builder` under `%v`/`%s` as raw pointers

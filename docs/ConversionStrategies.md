@@ -1691,6 +1691,11 @@ the one case libc cannot distinguish is disclosed in the file.
 [Full detail](ConversionStrategies-Reference.md#the-linux-syscall-bottom--one-libc-pinvoke-and-why-r2-is-exact-rather-than-approximate),
 including the [scheduler brackets that are a faithful no-op](ConversionStrategies-Reference.md#the-scheduler-brackets-are-a-faithful-no-op-not-an-omission)
 and [why `runtime.argslice` must be populated in the same change that forwards it](ConversionStrategies-Reference.md#runtimeargslice--forwarding-and-populating-are-one-change).
+`os/signal`'s six runtime primitives are the sharpest case of that same rule: forwarding them needed an OS
+edge (a real `SetConsoleCtrlHandler` feeding the *converted* `ctrlHandler`) and a genuinely blocking
+`notetsleepg` before the pushed bodies could run at all — after which Go's own Windows semantics fall out
+unaltered, including the ones that read like defects (`Ignore` does **not** suppress ^C on Windows, and
+`Reset` leaves the ignored bit set).
 
 **Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference.md#manually-converted-declarations) —
 every hand-owned surface in full: the guintptr family, `sync/atomic.Value`, the reflection bridge,

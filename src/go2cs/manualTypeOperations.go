@@ -101,19 +101,30 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// flavors need hand-owning and both converge on the same managed model — a {0, keyLocked}
 		// latch with SpinWait escalation — which is why the scope is goosAny and why the managed
 		// core is ONE flat file (runtime/lock_managed_impl.cs) rather than a copy per flavor. Thin
-		// wrappers (lock/unlock/noteclear/notetsleep[g]) and the consts stay auto on both.
+		// wrappers (lock/unlock/noteclear/notetsleep) and the consts stay auto on both.
 		//
 		// The flavors DO differ in one signature: notetsleep_internal is (n, ns, gp, deadline) in
 		// lock_sema.go and (n, ns) in lock_futex.go. A name-keyed registry cannot express that and
 		// does not try — each flavor's own *_impl.cs declares its own, delegating to the shared core
 		// (windows/darwin/lock_sema_impl.cs, linux/lock_futex_impl.cs), and layout L3 routes each to
 		// exactly the platforms its principal is built on.
+		//
+		// notetsleepg is the one thin wrapper that could NOT stay auto. Its Go body opens with getg()
+		// — still an unimplemented intrinsic — then semacreate/entersyscallblock over the same dead
+		// g/m graph, so every caller threw before reaching the note at all. Its two callers are
+		// exactly the ones that must WAIT rather than poll: sigqueue's signal_recv (idle until a
+		// signal arrives, possibly for the life of the process) and profbuf's reader. Both run on a
+		// goroutine, which golib gives a dedicated thread, so the managed body is a real blocking
+		// wait — the only member of this family that blocks rather than spins. Its g0 sibling
+		// notetsleep shares the getg() prologue but has no reachable caller, so it stays auto and
+		// stays throwing rather than being hand-owned speculatively.
 		"mutexContended":      goosAny,
 		"lock2":               goosAny,
 		"unlock2":             goosAny,
 		"notewakeup":          goosAny,
 		"notesleep":           goosAny,
 		"notetsleep_internal": goosAny,
+		"notetsleepg":         goosAny,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and
