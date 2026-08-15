@@ -537,7 +537,21 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					// that it took the struct-field arm's `Ꮡ(value)` fallback, a box over a COPY of
 					// the element, which is what made runtime-shaped `semtable.rootFor` (`&t[i].root`)
 					// hand every caller a pointer into a throwaway copy.
-					if ident != nil && isRecvPointer && v.identResolvesToReceiver(ident, recvName) {
+					//
+					// The base must be the receiver IDENTIFIER ITSELF, not merely rooted at it — the
+					// same object-identity-vs-root-identifier rule the slice and array branches below
+					// state, and for the same reason inverted: `getIdentifier` walks a selector chain
+					// to its root, so `&p.chunks[l1][l2]` (runtime's pageAlloc.chunkOf) and
+					// `&u.inlTree[uf.index]` (symtabinl) report the receiver as their root while their
+					// actual base — a pointer-to-array FIELD — is a genuine `ж<[N]E>` rvalue that DOES
+					// have a box and must keep `.at<E>(i)`. Boxing those through the two-arg overload
+					// hands it a `ж<array<E>>` where it wants an `IArray<E>`, which does not bind.
+					baseIsRecvIdent := false
+					if baseIdent, isIdent := indexExpr.X.(*ast.Ident); isIdent {
+						baseIsRecvIdent = isRecvPointer && v.identResolvesToReceiver(baseIdent, recvName)
+					}
+
+					if baseIsRecvIdent {
 						return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.castWideIntegerToInt(indexExpr.Index))
 					}
 

@@ -9594,6 +9594,16 @@ That is exactly the treatment the receiver's array FIELD already gets in the sam
 address of an ARRAY FIELD of the receiver* under Slices and Arrays), for the same reason. A
 deref-aliased pointer PARAMETER and a box-valued LOCAL both DO have a box and keep `.at<E>(i)`.
 
+The base has to be the receiver **identifier itself**, not merely rooted at it — the same
+object-identity-versus-root-identifier rule the slice and array branches state, inverted.
+`getIdentifier` walks a selector chain to its root, so `&p.chunks[l1][l2]` (runtime's
+`pageAlloc.chunkOf`) and `&u.inlTree[uf.index]` (`symtabinl`) both report the receiver as their root
+while their actual base is a pointer-to-array FIELD — a genuine `ж<[N]E>` rvalue that does have a box
+and must keep `.at<E>(i)`. Routing those through the two-arg overload hands it a `ж<array<E>>` where
+it wants an `IArray<E>`, which does not bind. Neither shape has a behavioral test, and the corpus is
+what caught them: a `-stdlib` reconvert of the affected packages moved both files, and reverting them
+is what the identifier restriction does.
+
 Guarded by the **`SliceElementFieldAddress`** behavioral test — the deliberate mirror of
 `SliceFieldElementAddress` (that one is `&(slice field)[i]`, this one is `&(slice[i]).field`) —
 covering an ordinary field of a slice local and of an array local, a promoted field of a slice field
