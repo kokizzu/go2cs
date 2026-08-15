@@ -10,22 +10,33 @@ every listed package on demand, reading its own roster straight from the table b
 [Try it yourself](README.md#try-it-yourself--validate-a-converted-test-suite) to reproduce any row
 from a clone with one command.
 
-A disclosure is a specific Go assertion the managed CLR provably cannot satisfy — not a skipped
-test, not a tolerance. Two classes exist:
+A disclosure is a specific Go assertion the converted suite provably cannot satisfy — not a skipped
+test, not a tolerance. Three classes exist: two name something the managed runtime cannot *measure*,
+the third something the test host cannot *be*.
 
 - **`alloc-profile`** — a test asserts an exact allocation count; Go's compiler stack-allocates the
   value where .NET must heap-allocate it.
 - **`codegen-liveness`** — a test asserts, from inside its own frame, that an object it just stopped
   using is now collectible. Go's GC drops a local at its last use via per-safepoint liveness maps;
   the CLR reports a frame's slots live for the frame's whole lifetime.[^codegen-liveness]
+- **`host-limit`** — a test's premise rests on a property of the test *binary* that the converted
+  host's deployment shape structurally lacks. One capability is named today, a **relocatable
+  single-file test executable**: Go's test binary is statically linked, so `os/exec` copies it into
+  a temporary directory and runs the copy, while a .NET apphost is bound at build time to a
+  same-basename managed assembly that must sit beside it — a lone relocated file gets hostfxr's
+  `LibHostAppRootFindFailure`. The bar is deliberately narrow: an entry must name a structural
+  property of the deployment shape, never an unimplemented-but-fixable defect. It is also written to
+  retire itself, because the tests keep running and keep being compared — publish the host
+  self-contained and single-file and those rows begin passing, which breaks the arithmetic below
+  until the entry is removed.
 
 Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **143 / 215 testable packages validated — 66.5%**
+> ### Phase 4 progress: **144 / 215 testable packages validated — 67.0%**
 >
-> **15,833 matching test verdicts · 47 disclosed** *(updated 2026-08-15 — maintained as part of the
+> **15,907 matching test verdicts · 74 disclosed** *(updated 2026-08-15 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -161,6 +172,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`net/rpc/jsonrpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc/jsonrpc) | 9 |  | JSON-RPC 1.0 client and server codecs driven through the real `net/rpc` server over an in-memory `net.Pipe` — hand-coded request framing, out-of-order concurrent calls, the `map`/`slice`/`[1]int` builtin reply types the server allocates from the method type alone (`reflect.New(mtype.ReplyType.Elem())` — the row that made a fixed-size array's LENGTH reach reflect through a method's pointer parameter), malformed input and output, and the null-result error path. · [proof](validation/current/net.rpc.jsonrpc.md) |
 | [`net/textproto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/textproto) | 26 | | Text-protocol primitives under HTTP/SMTP — MIME header reading with canonicalization (including the want-ZERO `AllocsPerRun` asserts over the common-header fast path, satisfied by the `m[string(b)]` transient-key lookup, hoisted big-const masks and `Once.Do`'s zero-alloc fast path — L11), dot-encoding reader/writer, continued lines, and pipelined request sequencing. · [proof](validation/current/net.textproto.md) |
 | [`net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) | 48 | | URL parsing, escaping and reference resolution — the query encode/decode matrix including semicolon rejection, userinfo, opaque and relative references, `JoinPath`, and `gob`/`JSON`/`TextMarshaler` round-trips of a parsed `URL`. · [proof](validation/current/net.url.md) |
+| [`os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) | 74 | 27 | Running external processes end to end, driven by Go's own helper protocol — which re-executes the test binary itself as the child, so every `Cmd` path here is exercised against a real process tree: pipes and `StdinPipe`/`StdoutPipe` teardown, `Output`/`CombinedOutput`/`Wait`, `ExtraFiles` handle inheritance, environment de-duplication and NUL rejection, `LookPath` with Windows `PATHEXT` and `ErrDot`, exit-status plumbing, and `context` cancellation with `Cancel`/`WaitDelay` including the interrupt-and-hang matrix. The 27 disclosed rows are the roster's first **`host-limit`** class (relocatable single-file test executable): `TestCommand` and `TestLookPathWindows` build fixtures by COPYING the test executable and running the copy, which a .NET apphost bound to a same-basename assembly beside it cannot be — 25 leaves pinned by signature, their 2 parents by aggregation, every one named on the proof page. · [proof](validation/current/os.exec.md) |
 | [`os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) | 1 |  | The file-descriptor existence probe; its one test is Windows-gated and the converted run reaches Go's own `runtime.GOOS` guard and skips exactly where Go does. · [proof](validation/current/os.exec.internal.fdtest.md) |
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. · [proof](validation/current/os.signal.md) |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). · [proof](validation/current/path.md) |

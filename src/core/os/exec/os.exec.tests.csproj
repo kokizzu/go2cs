@@ -18,8 +18,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-    <RootNamespace>go.os.exec.@internal</RootNamespace>
-    <AssemblyName>os.exec.internal.fdtest.tests</AssemblyName>
+    <RootNamespace>go.os</RootNamespace>
+    <AssemblyName>os.exec.tests</AssemblyName>
     <Product>go2cs</Product>
     <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
@@ -55,7 +55,7 @@
   <PropertyGroup Condition="'$(go2csPath)'==''">
     <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)/go2cs/</go2csPath>
     <go2csPath Condition="'$(Configuration)'=='Debug' and '$(SolutionDir)'!=''">$(SolutionDir)</go2csPath>
-    <go2csPath Condition="'$(go2csPath)'==''">$(MSBuildThisFileDirectory)../../../../../</go2csPath>
+    <go2csPath Condition="'$(go2csPath)'==''">$(MSBuildThisFileDirectory)../../../</go2csPath>
   </PropertyGroup>
 
   <!-- Expose output of source generators as local files -->
@@ -69,26 +69,78 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="exists_test.cs" />
+    <Compile Include="dot_test.cs" />
+    <Compile Include="env_test.cs" />
+    <Compile Include="exec_test.cs" />
+    <Compile Include="exec_windows_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
+    <Compile Include="internal_test.cs" />
+    <Compile Include="lp_test.cs" />
+    <Compile Include="lp_windows_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
+    <Compile Include="package_init_external_test.cs" />
     <Compile Include="package_test_info.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="exists_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exists_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exists_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exists_windows.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="bench_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="dot_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="env_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_linux_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_other_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_plan9.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_posix_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_unix.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_windows.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="exec_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="internal_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="lp_linux_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="lp_plan9.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="lp_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="lp_unix.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="lp_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="lp_wasm.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="lp_windows.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="lp_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="read3.go" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(go2csPath)core/bufio/bufio.csproj" />
+    <ProjectReference Include="$(go2csPath)core/bytes/bytes.csproj" />
+    <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
+    <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
+    <ProjectReference Include="$(go2csPath)core/flag/flag.csproj" />
+    <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/poll/internal.poll.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
+    <ProjectReference Include="$(go2csPath)core/log/log.csproj" />
+    <ProjectReference Include="$(go2csPath)core/net/http/httptest/net.http.httptest.csproj" />
+    <ProjectReference Include="$(go2csPath)core/net/http/net.http.csproj" />
+    <ProjectReference Include="$(go2csPath)core/net/net.csproj" />
+    <ProjectReference Include="$(go2csPath)core/os/exec/internal/fdtest/os.exec.internal.fdtest.csproj" />
     <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
+    <ProjectReference Include="$(go2csPath)core/os/signal/os.signal.csproj" />
+    <ProjectReference Include="$(go2csPath)core/path/filepath/path.filepath.csproj" />
+    <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
+    <ProjectReference Include="$(go2csPath)core/runtime/debug/runtime.debug.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
+    <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
+    <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />
+    <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
+    <ProjectReference Include="$(go2csPath)core/sync/atomic/sync.atomic.csproj" />
+    <ProjectReference Include="$(go2csPath)core/sync/sync.csproj" />
+    <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
     <ProjectReference Include="$(go2csPath)core/testing/testing.csproj" />
-    <ProjectReference Include="os.exec.internal.fdtest.csproj" />
+    <ProjectReference Include="$(go2csPath)core/time/time.csproj" />
+    <ProjectReference Include="os.exec.csproj" />
     <ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 
