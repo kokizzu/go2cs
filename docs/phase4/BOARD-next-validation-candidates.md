@@ -6776,8 +6776,8 @@ bodies.) Where the four stand after the bridge:
 |:--|:--:|:--:|:--|
 | `internal/fuzz` | 0 (died at `flag.Parse`) | **BANKED 52/52** | the 141st roster row; its `TestMain` now parses the host's command line |
 | `go/internal/srcimporter` | 0 of 7 (died at `flag.Parse`) | **5 of 7** | not banked; the two failures share ONE root and it is not this class — see below |
-| `os/exec` | build-blocked | build-blocked | still upstream of the bridge — see below |
-| `crypto/tls` | not measured | not measured | left for a lane that can afford it |
+| `os/exec` | build-blocked | **builds; 22 of 22 match** | the unnamed-variadic block is FIXED (lane `claude/unnamed-variadic`, 2026-08-14) — 40 further tests are excluded for want of `TB.*`, see that section |
+| `crypto/tls` | not measured | **build-blocked, measured** | reached 2026-08-14 by the same lane; two roots, neither this one — see that section |
 
 **`go/internal/srcimporter` — 5 of 7, one root, and it belongs to `go/types`.** `TestIssue20855`,
 `TestIssue23092`, `TestIssue24392`, `TestReimport` pass and `TestCgo` skips identically. The two
@@ -6799,6 +6799,11 @@ empty variable name: `internal static void cmdPipeTest(params ꓸꓸꓸstring ʗ
 The parameter itself is named fine (`ʗp`); it is the *unpacked local* that inherits the absent Go name.
 A one-line converter fix (emit no unpacking, or a discard, when the Go parameter is unnamed) puts
 `os/exec` behind the bridge instead of in front of it.
+⚠ **FIXED 2026-08-14 (lane `claude/unnamed-variadic`) — and it was not one line or one site.** The
+prologue is emitted at TWO sites (`visitFuncDecl` and `convFuncLit`), and the blank (`_ ...T`)
+spelling is a third symptom that COMPILED and so was invisible here. `os/exec` builds clean now.
+See *the unnamed-variadic build block is fixed* below for the fix, the zero-mover census, and where
+`os/exec` actually stands.
 
 ### The prize left on the table
 
@@ -6807,6 +6812,84 @@ into the static `<pkg>_test_package` partial class**, which C# forbids. It holds
 `internal/reflectlite` (30 verdicts) and `runtime/debug` (9). And **CS0111 `Append`** holds `fmt`
 (63) and `archive/tar` (97) — 160 verdicts on one duplicate-member emission. Neither is deep; both
 are the cheapest remaining pairs on this list.
+
+## ✅ CLOSED — the unnamed-variadic build block is fixed; `os/exec` now BUILDS and its next wall is `TB.*` (2026-08-14, lane `claude/unnamed-variadic`)
+
+The one-line prediction above was right about the root and wrong about the size: the defect has
+**two** emission sites and **three** symptoms, and the probe found the third.
+
+**The fix.** `visitFuncDecl` and `convFuncLit` each emit a variadic parameter's unpacking prologue
+(`var <name> = <name>ʗp.slice();`). Both now skip it when the Go parameter is UNNAMED or BLANK, via
+one shared predicate, `variadicParamIsUnreferenceable`. Either spelling is unreferenceable under Go's
+own rules, so the local is dead by construction — and this is the same ruling, for the same reason,
+that an unnamed/blank POINTER parameter's deref alias already takes (it would otherwise emit
+`ref var  = ref Ꮡ.Value;`). The A2 rebank note's precedent chose *skip*, so this matches it rather
+than synthesizing a name. A NAMED variadic still unpacks; the signature is untouched in every case,
+keeping its `params` array under its own `ʗp` name and simply leaving it unread.
+
+**Three symptoms, not one.** (1) UNNAMED at a top-level func or method — `var  = ʗp.slice();`, the
+empty identifier the board recorded. (2) UNNAMED inside a FUNCTION LITERAL — worse, and previously
+unrecorded: the literal's signature builder normalizes the absent name to `_` and declares
+`params ꓸꓸꓸnint _ʗp`, while the prologue kept rendering `ʗp` from the raw name, so the dead local
+carried an empty name AND a name the signature never declared. (3) BLANK (`_ ...T`) anywhere —
+`var _ = _ʗp.slice();`, which *compiles*, so it was invisible, but declares a REAL local named `_`
+(a plain `var _ = e;` declaration is a variable, not a discard) that then hijacks every `_ = …`
+discard in the body — the CS0029 class `bodyUsesBlankDiscard` exists to prevent for a blank
+*parameter* name.
+
+**Corpus movers: zero, and that is measured, not assumed.** An AST census of GOROOT (production +
+tests, `cmd` and `testdata` excluded) finds **five** sites total. Exactly one is production —
+`syscall/syscall_linux.go`'s `func cgocaller(unsafe.Pointer, ...uintptr) uintptr` — and it is
+**bodyless** (a `//go:uintptrescapes` linkname target, emitted
+`internal static partial uintptr cgocaller(@unsafe.Pointer _Δp0, params ꓸꓸꓸuintptr ʗp);`), so it has
+no prologue to skip on *any* target, Linux included. The other four are all `os/exec` test sources:
+`exec_test.go`'s `cmdPipeTest`/`cmdStdinClose`/`cmdStderrFail` and `exec_posix_test.go`'s `cmdPwd`.
+CNR agrees: one changed file across 601 behavioral packages, and it is the guard test itself.
+
+**Guard:** `UnnamedParams` extended (not a new project — it is already the unnamed/blank *parameter*
+guard, and the pointer precedent this follows lives there). It now pins all three shapes — unnamed,
+blank, and a NAMED control that IS read — at declaration, method and function-literal positions,
+output-compared vs `go run`.
+
+### `os/exec` — the build block is GONE; 22 of 22 run, 22 of 22 MATCH, and the next wall is named
+
+The pipeline (`-tests -test-action all -test-timeout 30m`) now builds `os/exec` with **zero compile
+errors**, and the three helpers emit exactly as Go declares them — `internal static void
+cmdPipeTest(params ꓸꓸꓸstring ʗp) {` with no prologue, registered as method groups
+(`["pipetest"u8] = cmdPipeTest,`) into the converted `map[string]func(...string)`.
+
+It is **not bankable**, and the reason is not `os/exec` and not the host environment:
+
+| Class | Count | What it is |
+|:--|:--:|:--|
+| ran and **matched Go exactly** | **22** | 19 pass + 3 skip; the `go` and `csharp` verdict maps are identical, including the three Windows skips (`TestExtraFiles`, `TestPipeLookPathLeak`, `TestString`) |
+| excluded — `TB.Fatal` unsupported | **26** | the roster in `supportedTestCapabilities` carries the whole `*testing.T` surface but **no `TB.*` member at all**; `os/exec`'s tests funnel through `exePath(t testing.TB)`, which every `helperCommand` call reaches |
+| excluded — Phase-4D deferral | **14** | 13 `ExampleXxx` + 1 `BenchmarkExecHostname`; a standing pipeline policy, not an `os/exec` fact |
+
+The run still exits 1, and that too is *not* a divergence: with the 26 `TB.Fatal` tests excluded, the
+helper commands they drive go unused, and `os/exec`'s own `TestMain` self-audit fails a run that
+leaves a registered helper unused (`helper command unused: "echo"`, …) — on **both** sides. So the
+honest verdict is that `os/exec` has **no measured behavioral divergence at all**; it has 40 tests
+that never ran. The process-spawn shapes the board expected to wall on host semantics
+(`TestEcho`, `TestCatStdin`, `TestPipes`, `TestStdinClose`, `TestExitStatus`, `TestWaitInterrupt`,
+`TestContextCancel`, …) are all in the `TB.Fatal` bucket — **excluded, never executed** — so nothing
+is yet known about how they behave. Naming `TB.*` support in the hand-owned `core/testing` host is
+the exact next domino, and it is a host change with no converter component.
+
+### `crypto/tls` — measured for the first time: BUILD-BLOCKED on two roots, neither of them this one
+
+The fourth flag-bridge class member, pipelined once (93 s) to record its outcome class. It does not
+reach the bridge — it does not build. Four errors, two roots, both new board entries:
+
+- **CS0012 ×3** — `crypto/tls/example_test.cs` (88, 99, 198): *the type `tls_package.Config` is
+  defined in an assembly that is not referenced*, naming `crypto.tls`. A fresh instance of the
+  `-tests` reference-closure family (recorded CLOSED 2026-07-27) arriving through **Example**
+  declarations in the black-box `tls_test` package.
+- **CS1503 ×1** — `crypto/tls/tls_test.cs:1893`: cannot convert `System.Func<ushort, ushort, int>`
+  to `System.Func<ushort, ushort, nint>`. A comparator lambda whose return renders `int` where the
+  target signature says `nint`.
+
+No deep chase was commissioned and none was done.
 
 ## RETRACTED — `os`'s "REGRESSION" is a HOST CAPABILITY, and the killer is `SHARE_INFO_2` (2026-08-14, lane os-av-bisect)
 
