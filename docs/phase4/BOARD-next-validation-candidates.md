@@ -7175,6 +7175,53 @@ shared after, by a different mechanism. Widening the walk is now SOUND — the g
 source, which is precisely why it was excluded — but it moves converter EMISSION corpus-wide and
 belongs to a change that owns that footprint.
 
+### The unlock, MEASURED across all three dependents
+
+| Package | Baseline | After | Verdict |
+|:--|:--|:--|:--|
+| `go/internal/gcimporter` | 475 of 583 (108 mismatches, all `TestImportTypeparamTests`) | **583 / 583, 0 mismatches** | **BANKED** — `status: validated`, 14 skipped identically |
+| `go/internal/srcimporter` | 5 of 7 (`TestImportStdLib`, `TestImportedTypes` died on `sync.OnceValue(func() bool {…})` — *cannot infer T*) | **7 / 7, 0 mismatches** | **BANKED** — `status: validated`, `TestCgo` skipped identically |
+| `go/types` | 202 verdicts (169 pass / 33 fail), then `0xc00000fd` in `validType0` at `TestFixedbugs/issue48951.go` | **513 verdicts, 512 pass + 1 skip, ZERO failures** | not banked — 44 verdicts never produced; a NEW wall, below |
+
+`go/types` is the measurement that settles it: the type-parameter class is **entirely gone**. Every
+`TestCheck/*`, every `TestExamples/*`, and every `TestFixedbugs/*` — issue48951 among them, the
+invalid-recursive-generic that used to exhaust the stack because `Identical(e, t)` never fired —
+now passes, and not one produced verdict disagrees with `go test`. Its 44 absent rows are one
+process-killer, and it is a different animal (next entry).
+
+### The NEXT wall, named: `TestSizeof` exhausts the stack in golib's reflect LAYOUT walk
+
+`go/types`' run now dies at `TestSizeof` — the first test alphabetically past the ones that pass —
+with an unbounded recursion whose frames alternate exactly two functions:
+
+```
+   at go.GoReflect.tryStructLayout(System.Type, IntPtr[] ByRef, IntPtr ByRef)
+   at go.GoReflect.GoSizeOf(System.Type, IntPtr[])          x until the stack is gone
+   at go.internal.abi_package.synthesizeDescriptor(...)
+   at go.reflect_package.TypeOf(System.Object)
+   at go.go.types_internal_test_package.TestSizeof(...)
+```
+
+It takes `TestSizeof` and everything alphabetically after it (`TestSpec/*` and the rest — 44
+verdicts) and it is **not** the type-parameter class: `GoSizeOf` has no memo and no depth guard,
+and the walk is reached the moment `reflect.TypeOf` is asked to synthesize a descriptor for a
+go/types struct. Deliberately NOT attributed to the embed change on the evidence available: the
+projection reports the SAME field TYPE for an embed before and after (the old arm unwrapped
+`ж<T>` to `T`; the new one reads the inline field, whose type is `T`), so the walk sees the same
+graph — but that is an argument, not a measurement, and nobody has run this test on the pre-change
+golib because the type-parameter wall stopped the suite ~300 verdicts earlier. **Whoever takes it
+should settle that first**, with a standalone `GoSizeOf` probe over the same types on both
+golibs; if it is pre-existing it is a golib defect in its own right (a memo plus a cycle guard is
+the obvious shape), and if it is not, the embed model is implicated and the probe says how.
+
+One coupling the embed change DID break and this lane fixed: `GoReflect.collectGoFields`
+recognized a promoted embed by the old box shape (a field named `ᏑʗName` whose type is `ж<T>`),
+so an inline `ʗName` fell through to the generic arm and reported the Go field under its MANGLED
+name. The projection now keys on the `ʗ` marker alone and reports the field's own type with no
+pointer hop. It does NOT change the recursion above (measured: identical stack, identical 44
+absent verdicts before and after), which is part of the evidence that the recursion is not the
+embed's.
+
 Guarded by the new **`EmbeddedStructValueCopy`** behavioral output test (assignment, by-value
 parameter, a two-level `c := *p`, a slice-element read, and a pointer embed proving both halves of
 Go's rule). Doctrine: `ConversionStrategies-Reference.md`, *An embedded struct is an INLINE field,

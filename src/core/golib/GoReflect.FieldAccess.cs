@@ -259,8 +259,6 @@ public static partial class GoReflect
             return;
         }
 
-        string embedPrefix = AddressPrefix + CapturedVarMarker;
-
         foreach (FieldInfo field in fields)
         {
             string name = field.Name;
@@ -271,13 +269,21 @@ public static partial class GoReflect
             if (field.GetCustomAttributes(typeof(GoReflectCompanionAttribute), false).Length != 0)
                 continue;
 
-            // Promoted-embed backing box: `private readonly ж<T> ᏑʗName` → Go field `Name` of type T.
-            if (name.StartsWith(embedPrefix, StringComparison.Ordinal) &&
-                field.FieldType is { IsGenericType: true } boxType && boxType.GetGenericTypeDefinition() == typeof(ж<>))
+            // Promoted-embed backing field: `private T ʗName` → Go field `Name` of type T, with the
+            // field's own type projected verbatim so a VALUE embed reports the struct and a POINTER
+            // embed reports the `ж<T>` pointer, exactly as Go's `struct{ T }` / `struct{ *T }` do.
+            // No hop: the embed is an INLINE field of the enclosing struct, so the accessor path
+            // reads it directly. (It was a `ж<T>` BOX named `ᏑʗName` until 2026-08-14 — a shared box
+            // that made a struct value copy alias its embed, the defect behind go/types'
+            // type-parameter identity wall — and the projection then had to unwrap the box and mark
+            // the extra pointer hop. Keying on the box shape is what tied this walk to that model:
+            // the moment the embed became a field, an unrecognized `ʗName` fell through to the
+            // generic arm and reported the Go field under its MANGLED name.)
+            if (name.StartsWith(CapturedVarMarker, StringComparison.Ordinal))
             {
-                string goName = name[embedPrefix.Length..];
-                Type embedded = boxType.GetGenericArguments()[0];
-                result.Add(new GoFieldInfo(goName, embedded, null, [.. prefixPath, field], [.. prefixHops, true], goTagOf(field)));
+                string goName = name[CapturedVarMarker.Length..];
+                nint[]? embedDims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
+                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field)));
                 continue;
             }
 

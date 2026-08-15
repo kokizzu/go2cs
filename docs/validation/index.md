@@ -68,6 +68,8 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `go/format` | [`go.format.md`](current/go.format.md) | [`src/core/go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) |
 | `go/importer` | [`go.importer.md`](current/go.importer.md) | [`src/core/go/importer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/importer) |
 | `go/internal/gccgoimporter` | [`go.internal.gccgoimporter.md`](current/go.internal.gccgoimporter.md) | [`src/core/go/internal/gccgoimporter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/internal/gccgoimporter) |
+| `go/internal/gcimporter` | [`go.internal.gcimporter.md`](current/go.internal.gcimporter.md) | [`src/core/go/internal/gcimporter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/internal/gcimporter) |
+| `go/internal/srcimporter` | [`go.internal.srcimporter.md`](current/go.internal.srcimporter.md) | [`src/core/go/internal/srcimporter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/internal/srcimporter) |
 | `go/parser` | [`go.parser.md`](current/go.parser.md) | [`src/core/go/parser`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/parser) |
 | `go/printer` | [`go.printer.md`](current/go.printer.md) | [`src/core/go/printer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/printer) |
 | `go/scanner` | [`go.scanner.md`](current/go.scanner.md) | [`src/core/go/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/scanner) |
