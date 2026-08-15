@@ -736,6 +736,32 @@ func (v *Visitor) typeReferencesUnexportedProductionNamed(t types.Type, pkg *typ
 	return false
 }
 
+// testDeclaredValueAccess applies the test-file accessibility downgrade to a package-level VAR or
+// CONST — the exact mirror of the one visitFuncDecl applies to an exported test-file free function,
+// and it rests on the same reasoning (see signatureReferencesUnexportedProductionType): production
+// emits an unexported type `internal` and is converted independently of, and before, the test files,
+// so a PUBLIC test-declared field over one is CS0052 — its type is less accessible than the field.
+// The recompile test model puts production + internal + external test files in ONE self-contained
+// assembly, so `internal` is both correct and sufficient: every caller is a sibling test file.
+//
+// Go's `var Options = options` in internal/cpu's export_test.go is the archetype — `options` is
+// `[]option` and `option` is an unexported production struct. The field was harmless while the
+// white-box bridge class carried no access modifier (a top-level C# class with none is internal, so
+// its `public` members were internal in effect); it became CS0052 the moment the bridge gained the
+// `public static partial` declaration it needs to host extension methods, which is why this rule
+// only surfaced with that emission and not with the FUNC rule it mirrors.
+func (v *Visitor) testDeclaredValueAccess(access string, pos token.Pos, valueType types.Type) string {
+	if access != "public" || !v.isTestFileDecl(pos) {
+		return access
+	}
+
+	if !v.typeReferencesUnexportedProductionNamed(valueType, v.pkg) {
+		return access
+	}
+
+	return "internal"
+}
+
 // isTestFileDecl reports whether the declaration at pos originates from a Go test file (`*_test.go`).
 // Used to gate test-only accessibility handling; resolves the source filename through the visitor's
 // FileSet so it is independent of which file the visitor currently has open.

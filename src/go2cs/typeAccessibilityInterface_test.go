@@ -7,6 +7,7 @@
 package main
 
 import (
+	"go/token"
 	"go/types"
 	"testing"
 )
@@ -212,6 +213,102 @@ type Outer interface {
 
 	if !publicizedTypeNames()["embLen"] {
 		t.Fatalf("an EMBEDDED unexported interface method's signature types must be publicized; publicized: %v", publicizedTypeNames())
+	}
+}
+
+// A Go-EXPORTED package-level var declared in a WHITE-BOX test file, whose type reaches an
+// unexported type declared in a PRODUCTION file, is emitted `internal` — the exact mirror of the
+// downgrade visitFuncDecl already applies to an exported test-file free function.
+//
+// internal/cpu's export_test.go is the archetype: `var Options = options` over the production
+// `type option struct{…}`. Production emits `option` internal and is converted before (and
+// independently of) the test files, so a PUBLIC field over it is CS0052 — the field's type is less
+// accessible than the field. The whole 8-verdict suite sat behind that one diagnostic once the
+// white-box bridge class gained the `public static partial` declaration it needs to host extension
+// methods; before that the bridge carried no modifier at all, so it was internal by C# default and
+// its `public` members were internal in effect.
+//
+// The three negative controls are what keep this from becoming a blanket downgrade, and each pins a
+// different clause: an EXPORTED production element type needs no downgrade (the field's type is
+// already public); a TEST-FILE-declared unexported element type needs none either, because the
+// publicize pass re-emits such a type `public` within this same test pass (the reason the rule is
+// restricted to production-file declarations); and a PRODUCTION-declared exported var over the same
+// unexported type must stay public, since the gate is where the DECLARATION lives, not what its type
+// is — production's own publicize pass owns that case.
+func TestExportedTestFileVarOverProductionTypeIsDowngraded(t *testing.T) {
+	dir := t.TempDir()
+
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/whitebox\n\ngo 1.23\n",
+		"whitebox.go": `package whitebox
+
+type option struct{ Name string }
+
+var options []option
+
+type Feature struct{ Name string }
+
+var features []Feature
+
+// A PRODUCTION exported var over the same unexported type — publicization's domain, not the
+// downgrade's.
+var Table []option
+`,
+		"export_test.go": `package whitebox
+
+type localOnly struct{ N int }
+
+var (
+	Options  = options
+	Features = features
+	Locals   []localOnly
+)
+`,
+	})
+
+	_, internal := loadTestVariantForDir(t, dir)
+
+	v := &Visitor{info: internal.TypesInfo, pkg: internal.Types, fset: internal.Fset}
+
+	access := func(name string) string {
+		t.Helper()
+
+		obj := internal.Types.Scope().Lookup(name)
+
+		if obj == nil {
+			t.Fatalf("%s was not found in the white-box variant's package scope", name)
+		}
+
+		return v.testDeclaredValueAccess("public", obj.Pos(), obj.Type())
+	}
+
+	if got := access("Options"); got != "internal" {
+		t.Fatalf("a test-file EXPORTED var over a production unexported type must emit internal (CS0052); got %q", got)
+	}
+
+	if got := access("Features"); got != "public" {
+		t.Fatalf("a test-file exported var over an EXPORTED production type needs no downgrade; got %q", got)
+	}
+
+	if got := access("Locals"); got != "public" {
+		t.Fatalf("a test-file exported var over a TEST-declared type needs no downgrade (the publicize pass re-emits it public in this same pass); got %q", got)
+	}
+
+	if got := access("Table"); got != "public" {
+		t.Fatalf("a PRODUCTION-declared exported var must be untouched — the gate is the declaring file, not the type; got %q", got)
+	}
+
+	// An already-unexported declaration is never touched, whatever its type reaches.
+	obj := internal.Types.Scope().Lookup("Options")
+
+	if got := v.testDeclaredValueAccess("internal", obj.Pos(), obj.Type()); got != "internal" {
+		t.Fatalf("a non-public access must pass through unchanged; got %q", got)
+	}
+
+	// And an invalid position (a synthesized declaration with no source) resolves to no file, so it
+	// can never be mistaken for a test-file declaration.
+	if got := v.testDeclaredValueAccess("public", token.NoPos, obj.Type()); got != "public" {
+		t.Fatalf("a positionless declaration must not be treated as test-file-declared; got %q", got)
 	}
 }
 

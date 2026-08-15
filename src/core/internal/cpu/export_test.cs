@@ -7,7 +7,7 @@ using static go.@internal.cpu_package;
 
 partial class cpu_internal_test_package {
 
-public static slice<global::go.@internal.cpu_package.option> Options;
+internal static slice<global::go.@internal.cpu_package.option> Options;
 internal static void initᴛOptions() { Options = options; }
 
 } // end cpu_internal_test_package

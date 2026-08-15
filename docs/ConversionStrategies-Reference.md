@@ -8731,6 +8731,28 @@ Because whole-package conversions (`-stdlib`, every behavioral test) write with 
 they never take this path, so the corpus and behavioral goldens are byte-identical. Guarded by
 `TestMergedStaleGoImplementSpellingCollapses`.
 
+**A type ALIAS is the third spelling, and it is resolved at the SOURCE.** The two collapses above
+reconcile spellings of one type *after* they are rendered. An alias cannot be reconciled that way:
+`type Expr = ast.Expr` is a name for a type that already has a name, and go2cs-gen composes the
+adapter class from the *resolved symbol*, never from the record's text — so a cast site that
+composes the class name from the alias spelling names a class the generator never emits (CS0246),
+and the pair is additionally recorded twice, once per spelling. `convertToInterfaceType` therefore
+resolves BOTH operands through `types.Unalias` before composing anything, which is where the
+function already reached ad hoc at five later points.
+
+The defect long predates the case that exposed it: any alias whose name differs from its target's
+mismatched the same way, and a *package-level* `type E = ast.Expr` would have done it just as well.
+It stayed invisible because the only aliases the corpus reached were spelled exactly like their
+targets, so the composed name happened to be right. `go/types`' `rangeStmt` declares
+`type Expr = ast.Expr` **function-locally**, and once function-local type declarations began taking
+the enclosing-function lift (`rangeStmt_Expr`, so two functions never claim one compilation-scoped
+`global using`), `check.errorf(lhs[i], …)` started composing `ast_rangeStmt_Exprᴠpositioner` against
+the generator's `ast_Exprᴠpositioner` — 557 verdicts behind two lines. With the resolution in place
+the aliased and unaliased cast sites in that same function land on one adapter and one record.
+(Guarded by the `LocalTypeAliasScope` extension: a function-local `type S = fmt.Stringer` converted
+to a local `namer` beside the same conversion written through `fmt.Stringer` directly, so a
+spelling-composed name shows up as both a second `ᴠ` class and a duplicate `GoImplement` record.)
+
 ### A test project's references cover UNROOTED alias targets (single- AND multi-segment)
 A `-tests` project sets `DisableTransitiveProjectReferences`, so its references are the
 direct-import closure plus whatever `aliasReferenceImports` recovers by scanning the emitted `using`
@@ -10511,6 +10533,29 @@ blocker that lets `strconv`'s test host reach compilation of its file-reading su
 read `testdata/testfp.txt` via `os.Open` + `bufio.Scanner`). No behavioral guard is expressible — the
 `-tests` recompile model has no normal-path analogue — so the guard is the `strconv` pipeline (its
 `internal_test.cs` emits `NewDecimal` `internal`; the CS0050 no longer blocks).
+
+**The same downgrade applies to a package-level VAR or CONST — the CS0052 half of the rule.** A
+white-box test file's exported *value* faces the identical arithmetic on a *field* rather than a
+method: `internal/cpu`'s `export_test.go` declares `var Options = options` over the production
+`type option struct{…}`, and a `public` field of type `slice<option>` is **CS0052 — inconsistent
+accessibility**, the field's type being less accessible than the field. `visitValueSpec` runs every
+package-level var/const access through `testDeclaredValueAccess`, which applies exactly the
+predicate the func rule uses (`typeReferencesUnexportedProductionNamed`, peeling
+pointer/slice/array/map/chan) and downgrades to `internal` on a hit; the production-file restriction
+and the self-contained-assembly reasoning carry over unchanged.
+
+This half only became reachable when the white-box **bridge class** started carrying an access
+modifier. Before [the unconditional bridge metadata
+unit](#test-suites-reference-the-production-project-instead-of-recompiling-it), an internal
+test file's `partial class cpu_internal_test_package {` was the class's ONLY declaration, and a
+top-level C# class with no modifier is `internal` — so its `public` members were internal *in
+effect* and the inconsistency never arose. Making the bridge `public static partial` (which a
+record-less mixed suite needs, or an extension method in an internal test file is CS1106) exposed
+every such field at once. `internal/cpu`'s whole 8-verdict suite sat behind the one line.
+(Guarded by `TestExportedTestFileVarOverProductionTypeIsDowngraded`, with three negative controls:
+an exported production element type, a test-file-declared element type — which the publicize pass
+re-emits `public` in this same pass — and a production-declared exported var over the same
+unexported type, which stays `public` because the gate is the declaring FILE, not the type.)
 
 ### A publicized unexported interface is emitted `public`
 The accessibility pass records an unexported **interface** used in an exported surface exactly like a

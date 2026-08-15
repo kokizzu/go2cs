@@ -36,6 +36,8 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Header, fmt_package.Stringer>]
+[assembly: GoImplement<fmt_package.Stringer, namer>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -54,6 +56,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface namer {}
     [GoLocalName("makeReg")] internal partial struct fileOps_makeReg {}
     [GoLocalName("makeSparse")] internal partial struct fileOps_makeSparse {}
     [GoLocalName("readOp")] internal partial struct secondWriteOps_readOp {}

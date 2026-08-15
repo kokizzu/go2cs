@@ -47,8 +47,8 @@ using static go.main_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<CrossPkgLib_package.Branch, CrossPkgLib_package.Emitter>(Pointer = true)]
 [assembly: GoImplement<CrossPkgLib_package.Sensor, Labeled>(Pointer = true)]
+[assembly: GoImplement<badge, CrossPkgLib_package.Labeled>]
 [assembly: GoImplement<badge, Labeled>]
-[assembly: GoImplement<badge, Tagged>]
 [assembly: GoImplement<cert, Labeled>]
 [assembly: GoImplement<cert, certificate>]
 [assembly: GoImplement<counter, ΔMeter>]

@@ -2,6 +2,7 @@ global using writeOps_testFnc = object;
 global using fileOps_testFnc = object;
 global using fileOps_fileMaker = object;
 global using localAliases_hdr = go.main_package.Header;
+global using aliasedIfaceConv_S = go.fmt_package.Stringer;
 
 namespace go;
 
@@ -88,10 +89,26 @@ internal static void localAliases() {
     fmt.Println(localAliasesˢ, h, plain, plain.String(), new Header(Name: "raw"u8, Size: 1));
 }
 
+[GoType] partial interface namer {
+    @string String();
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object aliasedIfaceConvˢ = (@string)"aliasedIfaceConv:"u8;
+
+internal static void aliasedIfaceConv() {
+    aliasedIfaceConv_S s = new Header(Name: "alias.txt"u8, Size: 2);
+    namer n = new fmt_Stringerᴠnamer(s);
+    fmt.Stringer direct = new Header(Name: "direct.txt"u8, Size: 4);
+    namer d = new fmt_Stringerᴠnamer(direct);
+    fmt.Println(aliasedIfaceConvˢ, n.String(), d.String());
+}
+
 internal static void Main() {
     writeOps();
     fileOps();
     localAliases();
+    aliasedIfaceConv();
     secondWriteOps();
     secondAliases();
 }
