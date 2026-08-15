@@ -545,7 +545,7 @@ public static error /*err*/ SetsockoptInt(nint fd, nint level, nint opt, nint va
     return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡn), 4);
 }
 
-public static error /*err*/ SetsockoptInet4Addr(nint fd, nint level, nint opt, array<byte> valueʗp) {
+public static error /*err*/ SetsockoptInet4Addr(nint fd, nint level, nint opt, [GoArrayDims(4)] array<byte> valueʗp) {
     ref var value = ref heap(valueʗp.Clone(), out var Ꮡvalue);
 
     return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue.at<byte>(0)), 4);

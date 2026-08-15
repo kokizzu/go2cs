@@ -49,6 +49,7 @@ using static go.vendor.golang.org.x.net.route_package;
 [assembly: GoImplement<Inet4Addr, Addr>(Pointer = true)]
 [assembly: GoImplement<Inet6Addr, Addr>(Pointer = true)]
 [assembly: GoImplement<InterfaceAddrMessage, Message>(Pointer = true)]
+[assembly: GoImplement<InterfaceAnnounceMessage, Message>(Pointer = true)]
 [assembly: GoImplement<InterfaceMessage, Message>(Pointer = true)]
 [assembly: GoImplement<InterfaceMetrics, ΔSys>(Pointer = true)]
 [assembly: GoImplement<InterfaceMulticastAddrMessage, Message>(Pointer = true)]

@@ -1131,7 +1131,7 @@ internal static void nextGen(this ж<scavengeIndex> Ꮡs) {
 // setEmpty may only run concurrently with find.
 [GoRecv] internal static void setEmpty(this ref scavengeIndex s, chunkIdx ci) {
     var val = Ꮡ(s.chunks, (int)(nuint)(ci)).load();
-    Ꮡ(val).of(scavChunkData.ᏑscavChunkFlags).setEmpty();
+    val.scavChunkFlags.setEmpty();
     Ꮡ(s.chunks, (int)(nuint)(ci)).store(val);
 }
 
@@ -1217,7 +1217,7 @@ internal static UntypedInt scavChunkInUseMask => /* (1 << logScavChunkInUseMax) 
 // shouldScavenge returns true if the corresponding chunk should be interrogated
 // by the scavenger.
 internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool force) {
-    if (Ꮡ(sc).of(scavChunkData.ᏑscavChunkFlags).isEmpty()) {
+    if (sc.scavChunkFlags.isEmpty()) {
         // Nothing to scavenge.
         return false;
     }
