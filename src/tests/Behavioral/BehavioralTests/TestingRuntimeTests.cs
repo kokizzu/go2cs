@@ -340,6 +340,70 @@ public class TestingRuntimeTests
     }
 
     [TestMethod]
+    public void FlagParsingStopsAtTheFirstNonFlagAndLeavesTheRestToTheProgram()
+    {
+        // Root-A guard: a Go test binary is a program, and its TestMain may take arguments. Go's
+        // flag.Parse stops at the first non-flag token; the host used to throw on it, which killed
+        // every os/exec helper child (`exec.Command(exePath(t), "cat")`) at startup with exit 2
+        // before TestMain could dispatch — 26 comparison rows failing for one host defect.
+
+        // Recognized flags still parse, and BOTH dash spellings name the same flag the way Go's
+        // one-or-two-dash stripping does (TestFlagBridge already republishes them undashed).
+        Assert.AreEqual((0, true, true), RunArgv("-v"));
+        Assert.AreEqual((0, true, true), RunArgv("--v"));
+        Assert.AreEqual((0, true, true), RunArgv("--json"), "--json implies -v");
+        Assert.AreEqual((0, true, true), RunArgv("-json"));
+
+        // The first non-flag STOPS the parse — the run proceeds instead of dying at startup.
+        Assert.AreEqual((0, true, false), RunArgv("cat"));
+
+        // Flags BEFORE the stop are parsed; tokens AFTER it are left alone. A trailing `-v` is the
+        // sharp version of that claim: consuming it would flip Verbose and rejecting it would exit
+        // 2, and the host must do neither, because that token belongs to the child.
+        Assert.AreEqual((0, true, true), RunArgv("-v", "cat", "-n"));
+        Assert.AreEqual((0, true, false), RunArgv("cat", "-v"), "a token after the stop must not be parsed as a host flag");
+        Assert.AreEqual((0, true, false), RunArgv("cat", "-nosuchflag"), "a token after the stop must not be rejected either");
+
+        // A lone `-` is a non-flag by Go's length test, and `--` terminates the flags; both stop
+        // the parse, so the `-v` behind them stays the program's.
+        Assert.AreEqual((0, true, false), RunArgv("-", "-v"));
+        Assert.AreEqual((0, true, false), RunArgv("--", "-v"));
+
+        // An unrecognized -flag BEFORE any non-flag is the HOST's own command line being wrong, and
+        // Go errors there too — the stopping rule must not be widened into ignoring unknown flags.
+        Assert.AreEqual((2, false, false), RunArgv("-nosuchflag"));
+        Assert.AreEqual((2, false, false), RunArgv("-nosuchflag", "cat"));
+        Assert.AreEqual((2, false, false), RunArgv("---json"), "bad flag syntax stays an error");
+
+        // A non-boolean flag takes the NEXT token as its value even when that token looks like a
+        // flag, so the stopping rule never sees it: `-run -v` filters on "-v" (matching no test)
+        // rather than setting Verbose or erroring for want of an argument.
+        Assert.AreEqual((0, false, false), RunArgv("-run", "-v"));
+
+        // ...and a value that does match still runs the test, so the filter really was applied.
+        Assert.AreEqual((0, true, false), RunArgv("-run", "TestFlags"));
+    }
+
+    // Runs a one-test registry with the given command line, reporting the host's exit code, whether
+    // the test ran at all, and what testing.Verbose() saw from inside it. Verbose is the probe
+    // because a trailing `-v` the host wrongly consumed shows up here as a true the child should
+    // have owned; `ran` separates "the filter applied" from "the host rejected the command line".
+    private static (int ExitCode, bool Ran, bool Verbose) RunArgv(params string[] args)
+    {
+        bool verbose = false;
+        bool ran = false;
+
+        TestRegistry registry = new("runtime/argv", []);
+        registry.Add("TestFlags", _ =>
+        {
+            verbose = testing_package.Verbose();
+            ran = true;
+        }, "runtime_test.go", 1);
+
+        return (TestHost.Run(registry, args), ran, verbose);
+    }
+
+    [TestMethod]
     public void AllocsPerRunMapsZeroExactlyAndReportsBytesWhenAllocating()
     {
         // F4 support guard: .NET has no malloc counter, so testing.AllocsPerRun measures

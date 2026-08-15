@@ -7297,3 +7297,89 @@ census (`cmd` and `testdata` excluded), with the banked rows re-measured here an
 
 The nine unbanked rows are not claims — no run was commissioned for them. They are named so the next
 lane to reach any of them knows this particular exclusion is already gone.
+
+## ✅ CLOSED — the helper-argv domino: the host stops at the first non-flag argument, and `os/exec`'s root A is gone. It does NOT bank: root B holds, and a THIRD root appears underneath (2026-08-14, lane `claude/host-argv-stop`)
+
+The `TB.*` lane named root A as the next domino and priced it as "a small, closed fix". It was: one
+hand-owned file, `src/core/testing/TestOptions.cs`, and no converter component at all. **23 of root
+A's 26 rows now agree.** The other 3 were never really root A — the helper child died at argv before
+it could reach the thing that was ALSO going to kill it, and fixing the first revealed the second.
+
+**The fix, and why it is Go's rule rather than a leniency.** `flag.(*FlagSet).parseOne` stops at the
+first token that is not at least two characters long and beginning with `-`; that token and every one
+after it belong to the program. A Go test binary IS a program — its `TestMain` may take arguments —
+and `os/exec` drives its entire helper protocol that way: `exec.Command(exePath(t), "cat")`, with
+`TestMain` dispatching on `flag.Args()[0]`. `TestOptions.Parse` had no stopping rule; its `default:`
+arm threw `unsupported converted test option: cat` and the host exited 2 before `TestMain` was
+entered. Nothing else was owed: the converted `os` package fills `os.Args` from the real command line
+independently of this parser (Windows via `syscall.GetCommandLine` + `commandLineToArgv`; unix via
+`runtime.argslice`), so the host's whole obligation is to stop and leave the rest untouched.
+
+**Stopping is not ignoring**, in both directions, and the guard pins both: `exe cat -n` must leave
+`-n` to the child, while an unrecognized `-flag` BEFORE any non-flag is the host's own command line
+being wrong and still exits 2 — with Go's wording now (`flag provided but not defined: -x`), since
+this host stands in for a Go test binary and its stderr is read beside one. The rest of `parseOne` is
+mirrored for the same reason: a lone `-` is a non-flag, `--` terminates and is consumed, `---x`/`-=x`
+are `bad flag syntax`, a non-boolean flag takes the next token as its VALUE even when that token looks
+like a flag (`-run -v` filters on `-v`), and one or two leading dashes name the same flag — the
+`--json` ≡ `-json` equivalence `TestFlagBridge` already assumed when it republishes these options
+undashed. Nothing records the leftover tokens: the program reads its own argv, and an unread property
+would be machinery this host does not need.
+
+### `os/exec` re-measured: 101 rows, **71 agreeing** (63 pass + 8 skip), 30 disagreeing
+
+| Class | Rows | Then | Now |
+|:--|:--:|:--:|:--|
+| agree | **71** | 48 | 40 → 63 pass, 8 skip unchanged |
+| disagree — **root A**, helper-command argv | **0** | 26 | ✅ closed by this lane |
+| disagree — **root B**, relocatable single-file test executable | **27** | 27 | unchanged, and still a DECLARED limit |
+| disagree — **root C**, `os/signal`'s runtime primitives are unimplemented stubs | **3** | (hidden behind A) | NEW |
+
+**Root C, named precisely, because it was invisible until now.** `TestWaitInterrupt/{Wait,Exit-hang}`
+and their parent fail because the `hang` helper child exits 2, and the child's own stderr says why —
+run it directly and it prints `NotImplementedException: signal_ignore: external (assembly or cgo)
+function is not implemented`, thrown out of `cmdHang`'s `signal.Ignore(os.Interrupt)`. **All five**
+`os/signal` runtime primitives are `PartialStubGenerator` stubs in the converted corpus
+(`signal_enable`, `signal_disable`, `signal_ignore`, `signal_ignored`, `signal_recv`, plus
+`signalWaitUntilIdle`) even though `runtime/sigqueue.cs` carries the matching
+`//go:linkname signal_ignore os/signal.signal_ignore` pushes — the pushes are not landing, and the
+`os/signal` side is being taken from `signal_unix.cs` on Windows. Banked `os/signal` (1 test,
+Ctrl+Break) does not reach them, which is why nothing had reported this. `TestWaitInterrupt/SIGKILL-hang`
+PASSES only by luck: its child is killed before the exit code is examined. This is *unimplemented*,
+not impossible, so it must never become an `unsupportedRuntimeCapabilities` entry — it is a real
+next domino, and it belongs to whoever takes `os/signal` beyond its one test.
+
+**Two minor host observations, recorded rather than fixed** (neither moves a verdict): the host's
+fmt-free `TestFormat` renders `*exec.Cmd` and `*strings.Builder` under `%v`/`%s` as raw pointers
+(`0x1fc631592e0`), so `t.Log(cmd)` and `t.Logf("stderr:\n%s", cmd.Stderr)` print addresses — which is
+what made root C's diagnostic invisible in the comparison output and cost a direct child run to see.
+
+### ⛔ STOPPED for a coordinator ruling — and the ruling is no longer load-bearing for `os/exec`
+
+The lane was chartered to stop, if `os/exec` landed at all-agree-except-declared-limit, and ask
+whether declared-host-limit rows can carry a bank the way alloc-profile disclosures do. **It did not
+land there** — root C is undeclared and unimplemented, so `os/exec` is unbankable on its own merits
+whatever the answer. Its converted test sources were removed rather than committed, exactly as the
+`TB.*` lane left them. The question is still worth answering, so here is the measured shape:
+
+- **Can the disclosure machinery pin root B by signature? Mechanically, yes.** All **25** leaf rows
+  (14 under `TestCommand`, 11 under `TestLookPathWindows`) carry `exit status 0x8000809a` and
+  *The application to execute does not exist* in their C# failure text — verified, 25 occurrences for
+  25 leaves. `matchTerminalStatuses` needs exactly that: an entry keyed on the test NAME, `Go="pass"`
+  ∧ `C#="fail"`, and the declared `signature` present as a substring. The **2 parent rows** carry no
+  own output and would ride the existing disclosed-parent aggregation rule (no own text, ≥1 disclosed
+  descendant, no mismatched descendant), so 25 entries would cover all 27.
+- **But the precedent for this exact capability is a GATE, not a disclosure.** `os_test.TestRemoveAllWithExecutedProcess`
+  is listed in `unsupportedRuntimeCapabilities` under the same
+  `relocatable single-file test executable` name — the test is EXCLUDED from the run set, never run
+  and disclosed. A gate keys on the test DECLARATION, so `TestCommand` and `TestLookPathWindows`
+  would be **2** entries rather than 25.
+- **And no banked package currently carries either form of this limit.** `os` is not on the roster
+  (only `os/exec/internal/fdtest` and `os/signal` are), so the 141-package roster contains no
+  precedent for a bank resting on a declared HOST limit. Every existing disclosure class is about
+  *measurement* the CLR cannot perform (alloc counts), not about a test the host cannot run at all.
+
+That is the whole question, and it is a policy one: whether "the host provably cannot execute this
+shape" is bankable at all, and if so whether it should read as an excluded capability (2 gate
+entries, tests never run) or as disclosed divergences (25 signature entries, tests run and fail
+visibly). Recorded here for the next lane that reaches a package where it IS load-bearing.
