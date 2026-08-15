@@ -31,7 +31,9 @@ internal static class Go2CsTestHost
         {
             "testdata",
         });
+        registry.Add("TestAlloc", zstd_internal_test_package.TestAlloc, "zstd_test.go", 255);
         registry.Add("TestFileSamples", zstd_internal_test_package.TestFileSamples, "zstd_test.go", 274);
+        registry.Add("TestLarge", zstd_internal_test_package.TestLarge, "zstd_test.go", 213);
         registry.Add("TestLargeXXHash", zstd_internal_test_package.TestLargeXXHash, "xxhash_test.go", 40);
         registry.Add("TestPredefinedTables", zstd_internal_test_package.TestPredefinedTables, "fse_test.go", 40);
         registry.Add("TestReaderBad", zstd_internal_test_package.TestReaderBad, "zstd_test.go", 307);
