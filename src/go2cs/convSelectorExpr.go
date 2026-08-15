@@ -474,6 +474,39 @@ func (v *Visitor) exprIsValueFieldOfPointer(expr ast.Expr) bool {
 	}
 }
 
+// exprIsIndexableElement reports whether indexExpr indexes storage whose ELEMENT the &-machinery can
+// alias — a slice, an array, or a pointer-to-array (Go's auto-deref). For those three the index
+// branch of convUnaryExpr renders an element-ALIASING address (`Ꮡ(s, i)` / `Ꮡ(a, i)` / `p.at<E>(i)`)
+// that shares the backing storage, so `&s[i].field` can be built as that address plus a field ref
+// rather than as `Ꮡ(s[i])` — a box over a COPY of the element, through which every write is lost.
+//
+// A MAP is deliberately excluded: Go does not permit `&m[k]` at all (a map element is not
+// addressable), so an index over one can never legitimately reach the address-of machinery, and
+// admitting it would only mask a front-end error as a plausible emission. A STRING is excluded for
+// the same reason (`&s[i]` is illegal) — and neither has a field to select in any case. A GENERIC
+// instantiation shares *ast.IndexExpr's shape but is not an index at all; it types as a signature or
+// a named type rather than a slice/array/pointer-to-array, so it falls out here without a special
+// case.
+func (v *Visitor) exprIsIndexableElement(indexExpr *ast.IndexExpr) bool {
+	baseType := v.getType(indexExpr.X, true)
+
+	if baseType == nil {
+		return false
+	}
+
+	switch t := baseType.Underlying().(type) {
+	case *types.Slice, *types.Array:
+		return true
+	case *types.Pointer:
+		// `&t[i].field` where t is `*[N]E`: Go auto-derefs the index, and the element lives in the
+		// pointed-to array, which `.at<E>(i)` aliases through the box.
+		_, isArray := t.Elem().Underlying().(*types.Array)
+		return isArray
+	}
+
+	return false
+}
+
 // exprIsValueFieldOfDerefdPointerRoot reports whether expr is a VALUE struct field whose selector
 // chain, after peeling value-field selectors, roots at a deref-aliased pointer PARAMETER or the
 // pointer RECEIVER — a bare ident emitted as `ref var x = ref Ꮡx.Value`, whose box is `Ꮡx`. Examples:

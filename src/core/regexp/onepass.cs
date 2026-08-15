@@ -259,8 +259,8 @@ internal static ж<onePassProg> onePassCopy(ref syntax.Prog prog) {
     foreach (var (pc, _) in (~p).Inst) {
         var exprᴛ1 = (~p).Inst[pc].Op;
         if (exprᴛ1 == syntax.InstAlt || exprᴛ1 == syntax.InstAltMatch) {
-            var p_A_Other = Ꮡ((~p).Inst[pc]).of(onePassInst.ᏑOut);
-            var p_A_Alt = Ꮡ((~p).Inst[pc]).of(onePassInst.ᏑArg);
+            var p_A_Other = Ꮡ((~p).Inst, pc).of(onePassInst.ᏑOut);
+            var p_A_Alt = Ꮡ((~p).Inst, pc).of(onePassInst.ᏑArg);
             var instAlt = (~p).Inst[(nint)(p_A_Alt.Value)];
             if (!(instAlt.Op == syntax.InstAlt || instAlt.Op == syntax.InstAltMatch)) {
                 // A:Bx + B:Ay
@@ -277,8 +277,8 @@ internal static ж<onePassProg> onePassCopy(ref syntax.Prog prog) {
                 // too complicated
                 continue;
             }
-            var p_B_Alt = Ꮡ((~p).Inst[(nint)(p_A_Alt.Value)]).of(onePassInst.ᏑOut);
-            var p_B_Other = Ꮡ((~p).Inst[(nint)(p_A_Alt.Value)]).of(onePassInst.ᏑArg);
+            var p_B_Alt = Ꮡ((~p).Inst, (int)(p_A_Alt.Value)).of(onePassInst.ᏑOut);
+            var p_B_Other = Ꮡ((~p).Inst, (int)(p_A_Alt.Value)).of(onePassInst.ᏑArg);
             var patch = false;
             if (instAlt.Out == (uint32)pc){
                 // simple empty transition loop

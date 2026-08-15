@@ -437,6 +437,35 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 						return fmt.Sprintf("%s.of(%s)", baseAddr, fieldRef)
 					}
 
+					// When the base is a slice/array ELEMENT — `&p.Inst[pc].Out` (regexp's
+					// onePassCopy) — its address is the element-ALIASING form the index branch
+					// below renders (`Ꮡ(s, i)` for a slice, `.at<E>(i)` for an array/pointer-to-
+					// array), so recurse for it and field-ref this level. The `Ꮡ(value)` fallback
+					// at the end of this arm boxes a COPY of the ELEMENT, and every write through
+					// the returned pointer is silently dropped — the same class the slice, array
+					// and pointer-to-array branches below already call out by name (tabwriter's
+					// empty lines, flate's literals-only levels 2-9, crc32's all-zero tables),
+					// reached here through a promoted or ordinary FIELD of the element instead of
+					// through the element itself.
+					//
+					// This was latent while go2cs-gen held a promoted embed in a shared `ж<T>` box:
+					// the embed's reference semantics meant a copied element still pointed at the
+					// origin's embedded storage, so a write through `Ꮡ(elem).of(T.ᏑPromoted)` reached
+					// the real element by accident. Making an embed an INLINE field (1ae49db8a) was
+					// correct and removed that accident, which is what surfaced this — regexp's
+					// `p_A_Other := &p.Inst[pc].Out` stopped patching the program and
+					// TestCompileOnePass lost two one-pass rewrites. That commit fixed the sibling
+					// arm (a promoted pointer-receiver CALL descending a copy box); this is the
+					// address-of-FIELD arm of the same defect.
+					//
+					// Ordered BEFORE the heap-boxed branch, which recurses identically for an
+					// IndexExpr base — a boxed base reaches the same emission either way, so no
+					// existing site moves.
+					if indexExpr, ok := selectorExpr.X.(*ast.IndexExpr); ok && v.exprIsIndexableElement(indexExpr) {
+						baseAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
+						return fmt.Sprintf("%s.of(%s)", baseAddr, fieldRef)
+					}
+
 					if v.isHeapBoxedExpr(selectorExpr.X) {
 						// When the base is itself a nested field selector or an array/slice index —
 						// `&work.sweepWaiters.lock` (field of a field) or `&stackpool[i].item.mu`
@@ -495,6 +524,37 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 			// `*[]E` for indexing; it is written `(*t)[i]`, a StarExpr the slice branch handles).
 			if ptr, isPtr := exprType.(*types.Pointer); isPtr {
 				if arrayType, isArray := ptr.Elem().Underlying().(*types.Array); isArray {
+					// The pointer RECEIVER is the one base with NO box to go through: a Go pointer
+					// receiver renders as `this ref T recv`, so `recv.at<E>(i)` names a member the
+					// value does not have (CS1061). It needs no box — a named fixed-array type is
+					// generated as `IArray<E>` over a shared backing `E[]`, so the two-arg
+					// element-aliasing overload aliases correctly on the wrapper itself. Exactly the
+					// treatment the receiver's array FIELD already gets in the array branch below,
+					// for the same reason. (A deref-aliased pointer PARAMETER and a box-valued LOCAL
+					// both DO have a box and keep the `.at<E>(i)` form.)
+					//
+					// Reached only since `&recv[i].field` began recursing here for its base — before
+					// that it took the struct-field arm's `Ꮡ(value)` fallback, a box over a COPY of
+					// the element, which is what made runtime-shaped `semtable.rootFor` (`&t[i].root`)
+					// hand every caller a pointer into a throwaway copy.
+					//
+					// The base must be the receiver IDENTIFIER ITSELF, not merely rooted at it — the
+					// same object-identity-vs-root-identifier rule the slice and array branches below
+					// state, and for the same reason inverted: `getIdentifier` walks a selector chain
+					// to its root, so `&p.chunks[l1][l2]` (runtime's pageAlloc.chunkOf) and
+					// `&u.inlTree[uf.index]` (symtabinl) report the receiver as their root while their
+					// actual base — a pointer-to-array FIELD — is a genuine `ж<[N]E>` rvalue that DOES
+					// have a box and must keep `.at<E>(i)`. Boxing those through the two-arg overload
+					// hands it a `ж<array<E>>` where it wants an `IArray<E>`, which does not bind.
+					baseIsRecvIdent := false
+					if baseIdent, isIdent := indexExpr.X.(*ast.Ident); isIdent {
+						baseIsRecvIdent = isRecvPointer && v.identResolvesToReceiver(baseIdent, recvName)
+					}
+
+					if baseIsRecvIdent {
+						return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.castWideIntegerToInt(indexExpr.Index))
+					}
+
 					elemCSType := convertToCSTypeName(v.getScopeCheckedTypeName(arrayType.Elem()))
 					// Render the base in POINTER context so it yields the `ж<[N]E>` BOX (`Ꮡtab` for a
 					// deref-aliased pointer PARAMETER, or the box-valued LOCAL `t` from `@new`), not the
