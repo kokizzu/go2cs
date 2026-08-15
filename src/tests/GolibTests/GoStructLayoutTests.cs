@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
 
@@ -64,6 +65,36 @@ public class GoStructLayoutTests
         public uint8 c;
         public @string d;
     }
+
+    // The shape of a hand-owned runtime shim: a converted Go struct whose field is a managed
+    // BACKING OBJECT rather than Go's own representation. sync.Mutex is the real one — Go's
+    // `struct { state int32; sema uint32 }` is a SemaphoreSlim gate here — and its class graph
+    // is the BCL's, which cycles (SemaphoreSlim -> TaskNode -> TaskNode).
+    private struct TestShimStruct
+    {
+        public SemaphoreSlim? gate;
+    }
+
+    // A managed class that refers to itself: the minimal reproduction of the same cycle with no
+    // dependency on the BCL's internals staying shaped as they are today.
+    private sealed class SelfReferential
+    {
+        public SelfReferential? next;
+        public int64 payload;
+    }
+
+    private struct TestSelfReferentialField
+    {
+        public SelfReferential? node;
+    }
+
+    // Go's own legal self-reference: a struct reachable from itself THROUGH A POINTER. Finite in
+    // Go and finite here, and the size is an answer rather than a bail-out.
+    private struct TestListNode
+    {
+        public @string value;
+        public ж<TestListNode> next;
+    }
 #pragma warning restore CS0649
 
     [TestMethod]
@@ -108,6 +139,46 @@ public class GoStructLayoutTests
             Assert.IsNotNull(offsets, $"{t.Name} has a knowable layout");
             Assert.IsTrue(offsets[^1] < GoReflect.GoSizeOf(t), $"{t.Name}: last field offset must fall inside the struct");
         }
+    }
+
+    [TestMethod]
+    public void ManagedReferenceField_IsOneWord_NotAStructToDescendInto()
+    {
+        // go2cs emits every Go struct as a C# VALUE type, so a managed REFERENCE is never a Go
+        // struct — it is an opaque handle, one pointer word wide. Answering Struct here is what
+        // sent the layout walk into the CLR's own private fields.
+        Assert.AreEqual(GoReflect.Pointer, GoReflect.KindOf(typeof(SemaphoreSlim)));
+        Assert.AreEqual(GoReflect.Pointer, GoReflect.KindOf(typeof(SelfReferential)));
+        Assert.AreEqual((nint)8, GoReflect.GoSizeOf(typeof(SemaphoreSlim)));
+
+        // Go's sync.Mutex is 8 bytes; so is the shim that stands in for it.
+        Assert.AreEqual((nint)8, GoReflect.GoSizeOf(typeof(TestShimStruct)));
+        CollectionAssert.AreEqual(new nint[] { 0 }, GoReflect.GoFieldOffsets(typeof(TestShimStruct)));
+    }
+
+    [TestMethod]
+    public void CyclicManagedReferenceGraph_Terminates()
+    {
+        // The regression this guards is a STACK OVERFLOW, which no assertion can catch — it takes
+        // the whole test host. Reaching the assert at all is the guard; the value proves the walk
+        // stopped at the handle rather than merely stopping somewhere.
+        //
+        // Measured 2026-08-15 on both the pre- and post-embed-change golib: go/types' TestSizeof
+        // died in `Named -> Mutex -> SemaphoreSlim -> TaskNode -> TaskNode`, alternating
+        // GoSizeOf/tryStructLayout frames until the stack was gone, and took the 44 verdicts
+        // alphabetically after it with the process.
+        Assert.AreEqual((nint)8, GoReflect.GoSizeOf(typeof(TestSelfReferentialField)));
+        Assert.AreEqual((nint)8, GoReflect.GoAlignOf(typeof(TestSelfReferentialField)));
+    }
+
+    [TestMethod]
+    public void SelfReferentialThroughPointer_IsFiniteAndCorrect()
+    {
+        // Go: type node struct { value string; next *node } -> 0, 16 (size 24). Legal in Go, and
+        // the answer has to be the SIZE, not an "unknown" a cycle guard bailed out with.
+        CollectionAssert.AreEqual(new nint[] { 0, 16 }, GoReflect.GoFieldOffsets(typeof(TestListNode)));
+        Assert.AreEqual((nint)24, GoReflect.GoSizeOf(typeof(TestListNode)));
+        Assert.AreEqual((nint)8, GoReflect.GoAlignOf(typeof(TestListNode)));
     }
 
     [TestMethod]

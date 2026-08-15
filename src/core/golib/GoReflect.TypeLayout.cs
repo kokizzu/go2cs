@@ -35,6 +35,15 @@ namespace go;
 //   sizes follow Go's alignment rules over the PROJECTED Go fields (see GoReflect.FieldAccess.cs),
 //   which is best-effort composite fidelity and recorded as such.
 //
+// THE WALK DESCENDS ONLY THROUGH STRUCTS AND ARRAYS, WHICH IS WHAT MAKES IT FINITE
+//   Every other kind is a fixed-size header and is answered without looking inside it — a pointer,
+//   slice, map, chan, interface or func field is 8/24/8/8/16/8 bytes whatever it refers to. That is
+//   Go's own layout rule, and it is the entire termination argument: only value types recurse, and
+//   C# forbids a value type from containing itself (CS0523). It held only once `KindOf` stopped
+//   calling an unrecognized managed REFERENCE a struct — until 2026-08-15 a `sync.Mutex`'s
+//   `SemaphoreSlim` gate sent this walk into the BCL's own object graph (`SemaphoreSlim` →
+//   `TaskNode` → `TaskNode`), where it exhausted the stack and killed the process.
+//
 //   UNIFIED 2026-08-09 (r56a): `unsafe.Sizeof` now answers through THIS rule too (see
 //   core/unsafe/unsafe.cs), so a Go size has one definition in the runtime rather than two. The
 //   named consumer the deferral (I2.R R-14) was waiting for arrived as three packages at once —
@@ -81,6 +90,14 @@ public static partial class GoReflect
     /// </summary>
     public static nint GoSizeOf(Type t, nint[]? arrayDims = null)
     {
+        return goSizeOf(t, arrayDims, 0);
+    }
+
+    private static nint goSizeOf(Type t, nint[]? arrayDims, int depth)
+    {
+        if (depth > MaxLayoutDepth)
+            return -1;
+
         switch (KindOf(t))
         {
             case Bool or Int8 or Uint8: return 1;
@@ -95,11 +112,11 @@ public static partial class GoReflect
                 if (arrayDims is not { Length: > 0 })
                     return -1;
 
-                nint elemSize = GoSizeOf(ElementType(t)!, arrayDims.Length > 1 ? arrayDims[1..] : null);
+                nint elemSize = goSizeOf(ElementType(t)!, arrayDims.Length > 1 ? arrayDims[1..] : null, depth + 1);
                 return elemSize < 0 ? -1 : elemSize * arrayDims[0];
             }
             case Struct:
-                return tryStructLayout(t, out _, out nint structSize) ? structSize : -1;
+                return structLayoutOf(t, depth).Size;
             default:
                 return -1;
         }
@@ -113,73 +130,106 @@ public static partial class GoReflect
     /// every LATER offset a guess rather than an answer.
     /// </summary>
     /// <remarks>
-    /// Offsets and <see cref="GoSizeOf"/> run the SAME layout walk, so a descriptor's stamped
-    /// <c>Size_</c> and its fields' <c>Offset</c>s can never disagree. The demonstrated consumer
+    /// Offsets, <see cref="GoSizeOf"/> and <see cref="GoAlignOf"/> all read the SAME memoized layout
+    /// pass, so a descriptor's stamped <c>Size_</c>, its <c>Align_</c> and its fields'
+    /// <c>Offset</c>s can never disagree about one struct. The demonstrated consumer
     /// is internal/abi's synthesized <c>StructType()</c> specialization, which is what
     /// <c>unique.buildStructCloneSeq</c> walks to find the string offsets inside a value.
     /// </remarks>
     public static nint[]? GoFieldOffsets(Type t)
     {
-        return KindOf(t) == Struct && tryStructLayout(t, out nint[] offsets, out _) ? offsets : null;
-    }
-
-    // The one Go struct layout walk: per-field aligned offsets plus the aligned total size.
-    // False (with size -1) when any field's Go size is unknowable.
-    private static bool tryStructLayout(Type t, out nint[] offsets, out nint size)
-    {
-        GoFieldInfo[] fields = GoFields(t);
-        offsets = new nint[fields.Length];
-        size = 0;
-        nint maxAlign = 1;
-
-        for (int i = 0; i < fields.Length; i++)
-        {
-            GoFieldInfo field = fields[i];
-            nint[]? dims = KindOf(field.Type) == Array ? field.ArrayDims : null;
-            nint fieldSize = GoSizeOf(field.Type, dims);
-
-            if (fieldSize < 0)
-            {
-                offsets = [];
-                size = -1;
-                return false;
-            }
-
-            nint align = GoAlignOf(field.Type);
-            maxAlign = align > maxAlign ? align : maxAlign;
-            size = (size + align - 1) / align * align;
-            offsets[i] = size;
-            size += fieldSize;
-        }
-
-        size = (size + maxAlign - 1) / maxAlign * maxAlign;
-        return true;
+        return KindOf(t) == Struct && structLayoutOf(t, 0) is { Size: >= 0 } layout ? layout.Offsets : null;
     }
 
     /// <summary>The Go (amd64) alignment of a type (struct = max field alignment; array = element alignment).</summary>
     public static nint GoAlignOf(Type t)
     {
+        return goAlignOf(t, 0);
+    }
+
+    private static nint goAlignOf(Type t, int depth)
+    {
+        if (depth > MaxLayoutDepth)
+            return 8;
+
         switch (KindOf(t))
         {
             case Bool or Int8 or Uint8: return 1;
             case Int16 or Uint16: return 2;
             case Int32 or Uint32 or Float32 or Complex64: return 4;
-            case Array: return ElementType(t) is { } elem ? GoAlignOf(elem) : 8;
-            case Struct:
-            {
-                nint maxAlign = 1;
-
-                foreach (GoFieldInfo field in GoFields(t))
-                {
-                    nint align = GoAlignOf(field.Type);
-                    maxAlign = align > maxAlign ? align : maxAlign;
-                }
-
-                return maxAlign;
-            }
-            default:
-                return 8;
+            case Array: return ElementType(t) is { } elem ? goAlignOf(elem, depth + 1) : 8;
+            case Struct: return structLayoutOf(t, depth).Align;
+            default: return 8;
         }
+    }
+
+    // -------- the one struct layout walk (offsets, size and alignment from a single pass) --------
+
+    /// <summary>A struct's Go layout: per-field offsets, the aligned total size (-1 when unknowable), and the struct's own alignment.</summary>
+    private readonly record struct StructLayout(nint[] Offsets, nint Size, nint Align);
+
+    private static readonly ConcurrentDictionary<Type, StructLayout> s_structLayouts = new();
+
+    // A recursion ceiling no LEGAL graph can reach, kept as a safety net rather than an algorithm.
+    // Only Struct and Array recurse, Struct is answered for value types alone, and C# forbids a value
+    // type from containing itself transitively (CS0523) — so the depth of this walk is bounded by a
+    // real nesting depth the compiler already had to accept. Tripping the cap therefore means the
+    // CLASSIFICATION is wrong somewhere, and the honest answer to that is "size unknown" (the r39d
+    // rule: a descriptor field that cannot be read truthfully stays unpopulated), never a stack
+    // overflow — which takes the whole process, and with it every verdict the run had not yet
+    // produced. That is exactly what a managed reference classified as Struct once cost here.
+    private const int MaxLayoutDepth = 128;
+
+    // The one Go struct layout walk. Offsets, size and alignment come out of a SINGLE pass and are
+    // memoized per type, so no two of them can describe different shapes, and a struct reached once
+    // per field of every enclosing struct is walked once in total.
+    //
+    // Alignment is accumulated over every field even after a size becomes unknowable, because the two
+    // questions are independent: an array whose dims the managed type does not carry has no knowable
+    // size, while its alignment is its element's and stays an answer.
+    private static StructLayout structLayoutOf(Type t, int depth)
+    {
+        if (s_structLayouts.TryGetValue(t, out StructLayout cached))
+            return cached;
+
+        if (depth > MaxLayoutDepth)
+            return new StructLayout([], -1, 8);
+
+        GoFieldInfo[] fields = GoFields(t);
+        nint[] offsets = new nint[fields.Length];
+        nint size = 0;
+        nint maxAlign = 1;
+        bool sizeKnown = true;
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            GoFieldInfo field = fields[i];
+            nint align = goAlignOf(field.Type, depth + 1);
+            maxAlign = align > maxAlign ? align : maxAlign;
+
+            if (!sizeKnown)
+                continue;
+
+            nint[]? dims = KindOf(field.Type) == Array ? field.ArrayDims : null;
+            nint fieldSize = goSizeOf(field.Type, dims, depth + 1);
+
+            if (fieldSize < 0)
+            {
+                sizeKnown = false;
+                continue;
+            }
+
+            size = (size + align - 1) / align * align;
+            offsets[i] = size;
+            size += fieldSize;
+        }
+
+        StructLayout layout = sizeKnown
+            ? new StructLayout(offsets, (size + maxAlign - 1) / maxAlign * maxAlign, maxAlign)
+            : new StructLayout([], -1, maxAlign);
+
+        s_structLayouts[t] = layout;
+        return layout;
     }
 
     // -------- array dimension recovery (descriptor cargo; canonType interning is NOT widened) --------
