@@ -7956,3 +7956,26 @@ all is the guard, and the value proves the walk stopped at the handle rather tha
 
 Doctrine: `ConversionStrategies-Reference.md`, *A managed reference is a Go POINTER, not a Go
 struct — the reflection bridge's descent rule*.
+
+
+## 💡 CAPTURED (2026-08-15, user, from the live NuGet page) — README badge layout + a partial-progress badge idea
+
+**1. Badge-line wrap on NuGet — QUEUED, small converter change.** The four badges emit as one
+markdown line (`readmeValidationBadge.go`), and NuGet's narrow README pane wraps them raggedly.
+User ruling: hard line break between the docs badges and the source badges — line one carries
+**Tests + Docs** (the Tests badge is the variable-width one and gets the room), line two carries
+**Source·Go + Source·.NET**. Sequencing: land AFTER the in-flight second leveling regen merges
+(the emitter change re-levels the whole README family at the next regen; published NuGet pages
+pick it up at the next version push). Update `readmeValidationBadge_test.go`'s expectations in
+the same change.
+
+**2. Partial-progress badge for not-yet-validated packages — DEFERRED, captured verbatim.** User:
+"does it make sense to carry partial test results, as a badge link to the 'not yet validated' so
+users can get a sense of how close things sit?" Honest constraints, recorded so the future design
+starts from them: the roster's integrity principle is validated-only rows (a package that almost
+passes never appears — that is what keeps the denominator honest); partial counts have no
+machine-maintained data source today (the sweep records validated packages only, and this board's
+census entries are prose); and many unvalidated packages do not yet COMPILE their `-tests`
+closure, so "how close" is not a number for them at all. A future shape would need a sweep mode
+that records per-package partial verdicts and a badge/proof surface that cannot be mistaken for
+validation. Revisit after the 75% terminal marker, possibly with the queued proof-renderer pass.
