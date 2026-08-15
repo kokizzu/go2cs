@@ -26,7 +26,27 @@
   ],
   "excluded": [
     "BenchmarkAlpha (benchmark): benchmark execution is deferred",
-    "ExampleAlpha (example): example execution is deferred"
+    "ExampleAlpha (example): example execution is deferred",
+    "TestDelta (test): requires unsupported testing capabilities: relocatable single-file test executable",
+    "TestEpsilon (test): requires unsupported testing capabilities: relocatable single-file test executable"
   ],
-  "errors": []
+  "errors": [],
+  "gated": [
+    {
+      "name": "TestDelta",
+      "capabilities": "relocatable single-file test executable",
+      "rows": [
+        "TestDelta",
+        "TestDelta/copied_beside_a_bat",
+        "TestDelta/copied_to_temp"
+      ]
+    },
+    {
+      "name": "TestEpsilon",
+      "capabilities": "relocatable single-file test executable",
+      "rows": [
+        "TestEpsilon"
+      ]
+    }
+  ]
 }
