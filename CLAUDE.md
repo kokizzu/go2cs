@@ -344,6 +344,11 @@ ONE stdlib in a build; there is now only one on disk.
   (a bare `2>&1` silently drops every `==>` status line and the log reads as hung); and the sweep's
   `-SkipBuild` expects the converter at `src\go2cs\bin\go2cs.exe` — an outside-the-repo binary path is
   not consulted, so a lane that built elsewhere re-pays the build or copies the exe there first.
+  **⚠ The scratchpad directory is SHARED across concurrent lanes on one machine** (measured
+  2026-08-15: two lanes both writing `cnr.log` — one clobbered the other's gate log mid-run, and the
+  verdict had to be recovered from `git status`). It is session-scoped, not lane-scoped. Prefix every
+  scratch filename with your lane/branch name (`<lane>-cnr.log`), and treat an unexpectedly truncated
+  or rewritten scratch log as a collision first, a gate failure second.
   **⚠ `dotnet build-server shutdown` is ALSO machine-global** (found 2026-08-03: one lane's startup
   cleanup yanked the shared MSBuild servers out from under a sibling's in-flight compile — same
   truncated-log signature, no Stop-Process anywhere). While sibling sessions may be building, do NOT

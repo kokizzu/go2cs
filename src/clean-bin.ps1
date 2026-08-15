@@ -1,8 +1,14 @@
 # Clean-Bin.ps1
-# Script to remove all bin, obj and Generated folders from the current directory and subdirectories
+# Script to remove all bin, obj and Generated folders from a root directory and subdirectories.
+# The root defaults to this script's own tree (src\), NEVER the caller's current directory:
+# invoking by absolute path from another cwd used to enumerate whatever tree the caller
+# happened to be sitting in (near-missed a sibling checkout, 2026-08-15). Pass -Root to
+# clean a different tree deliberately.
+param(
+    [string]$Root = $PSScriptRoot
+)
 
-# Set the current location as the root directory for the search
-$rootDirectory = Get-Location
+$rootDirectory = (Resolve-Path -Path $Root).Path
 
 # Count variables to track progress
 $totalFoldersFound = 0
@@ -33,7 +39,7 @@ if ($confirmation -ne "Y") {
 # Process each folder
 foreach ($folder in $foldersToDelete) {
     try {
-        $relativePath = $folder.FullName.Substring($rootDirectory.Path.Length + 1)
+        $relativePath = $folder.FullName.Substring($rootDirectory.Length + 1)
         Write-Host "Removing: $relativePath" -ForegroundColor Yellow -NoNewline
         
         Remove-Item -Path $folder.FullName -Recurse -Force -ErrorAction Stop
