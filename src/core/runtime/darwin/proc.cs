@@ -6851,7 +6851,7 @@ retry:
 // Batch is a ring buffer starting at batchHead.
 // Returns number of grabbed goroutines.
 // Can be executed by any P.
-internal static uint32 runqgrab(ж<Δp> Ꮡpp, ж<array<Δguintptr>> Ꮡbatch, uint32 batchHead, bool stealRunNextG) {
+internal static uint32 runqgrab(ж<Δp> Ꮡpp, [GoArrayDims(256)] ж<array<Δguintptr>> Ꮡbatch, uint32 batchHead, bool stealRunNextG) {
     ref var pp = ref Ꮡpp.DerefOrNull();
     ref var batch = ref Ꮡbatch.DerefOrNull();
 

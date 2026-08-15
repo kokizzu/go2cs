@@ -46,6 +46,8 @@ using static go.runtime_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<PanicNilError, ΔError>(Pointer = true)]
+[assembly: GoImplement<TypeAssertionError, ΔError>(Pointer = true)]
 [assembly: GoImplement<boundsError, ΔError>]
 [assembly: GoImplement<errorAddressString, ΔError>]
 [assembly: GoImplement<errorString, ΔError>]

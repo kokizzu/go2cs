@@ -1143,7 +1143,7 @@ public static (nint n, bool ok) BlockProfile(slice<BlockProfileRecord> Δp) {
 internal static void expandFrames(slice<BlockProfileRecord> Δp) {
     var expandedStack = makeProfStack();
     foreach (var (i, _) in Δp) {
-        var cf = CallersFrames(Ꮡ(Δp[i]).of(BlockProfileRecord.ᏑStackRecord).Stack());
+        var cf = CallersFrames(Δp[i].StackRecord.Stack());
         nint j = 0;
         for (; j < len(expandedStack); j++) {
             var (f, more) = cf.Next();
