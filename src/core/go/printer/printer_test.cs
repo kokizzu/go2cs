@@ -608,7 +608,7 @@ public static void TestBaseIndent(ж<testing.T> Ꮡt) {
 public static void TestFuncType(ж<testing.T> Ꮡt) {
     var src = Ꮡ(new ast.File(
         Name: Ꮡ(new ast.Ident(Name: "p"u8)),
-        Decls: new ast.Decl[]{new printer_test_package.ast_FuncDeclжDecl(Ꮡ(new ast.FuncDecl(
+        Decls: new ast.Decl[]{new ast.FuncDeclжDecl(Ꮡ(new ast.FuncDecl(
             Name: Ꮡ(new ast.Ident(Name: "f"u8)),
             Type: Ꮡ(new ast.FuncType(nil))
         )))
@@ -641,12 +641,12 @@ internal static readonly @string chanIntNilˢ = @"<-(<-chan int)(nil)"u8;
 public static void TestChanType(ж<testing.T> Ꮡt) {
     var expr = Ꮡ(new ast.UnaryExpr(
         Op: token.ARROW,
-        X: new printer_test_package.ast_CallExprжExpr(Ꮡ(new ast.CallExpr(
-            Fun: new printer_test_package.ast_ChanTypeжExpr(Ꮡ(new ast.ChanType(
+        X: new ast.CallExprжExpr(Ꮡ(new ast.CallExpr(
+            Fun: new ast.ChanTypeжExpr(Ꮡ(new ast.ChanType(
                 Dir: ast.RECV,
-                Value: new printer_test_package.ast_IdentжExpr(Ꮡ(new ast.Ident(Name: "int"u8)))
+                Value: new ast.IdentжExpr(Ꮡ(new ast.Ident(Name: "int"u8)))
             ))),
-            Args: new ast.Expr[]{new printer_test_package.ast_IdentжExpr(Ꮡ(new ast.Ident(Name: "nil"u8)))}.slice()
+            Args: new ast.Expr[]{new ast.IdentжExpr(Ꮡ(new ast.Ident(Name: "nil"u8)))}.slice()
         )))
     ));
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);

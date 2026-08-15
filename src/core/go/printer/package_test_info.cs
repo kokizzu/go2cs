@@ -31,11 +31,6 @@ using static global::go.go.printer_test_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.CallExpr, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.ChanType, go.go.ast_package.Expr>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.FuncDecl, go.go.ast_package.Decl>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.GenDecl, go.go.ast_package.Decl>(Pointer = true)]
-[assembly: GoImplement<go.go.ast_package.Ident, go.go.ast_package.Expr>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

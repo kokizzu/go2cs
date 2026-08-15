@@ -212,7 +212,7 @@ public static void TestNonDeterministicComparison(ж<testing.T> Ꮡt) {
             }
         }, ref ᒐ);
         var td = Ꮡ(new nonDeterministicTestingData(
-            r: rand.New(new sort_test_package.rand_PCGжSource(rand.NewPCG(0, 0)))
+            r: rand.New(new rand.PCGжSource(rand.NewPCG(0, 0)))
         ));
         for (nint i = 0; i < 10; i++) {
             Sort(new sort_test_package.nonDeterministicTestingDataжInterface(td));

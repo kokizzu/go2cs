@@ -437,8 +437,8 @@ public static void TestReader(ж<testing.T> Ꮡt) {
                 continue;
             }
             var (piper, pipew) = io.Pipe();
-            var pb = bufio.NewScanner(new png_test_package.io_PipeReaderжReader(piper));
-            goǃ(sng, new png_test_package.io_PipeWriterжWriteCloser(pipew), fn, img);
+            var pb = bufio.NewScanner(new io.PipeReaderжReader(piper));
+            goǃ(sng, new io.PipeWriterжWriteCloser(pipew), fn, img);
             var piperʗ1 = piper;
             defer(() => piperʗ1.Close(), ref ᒐ);
             // Read the .sng file.

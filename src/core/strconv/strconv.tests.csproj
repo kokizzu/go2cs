@@ -82,6 +82,7 @@
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="internal_test.cs" />
     <Compile Include="itoa_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_init_external_test.cs" />
     <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />

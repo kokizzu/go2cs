@@ -35,7 +35,6 @@ using static global::go.sync_test_package;
 [assembly: GoImplement<DeepCopyMap, mapInterface>(Pointer = true)]
 [assembly: GoImplement<RWMutexMap, mapInterface>(Pointer = true)]
 [assembly: GoImplement<sync_package.Map, mapInterface>(Pointer = true)]
-[assembly: GoImplement<sync_package.Mutex, sync_package.Locker>(Pointer = true)]
 [assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]
 // </InterfaceImplementations>
 

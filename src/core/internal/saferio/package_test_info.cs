@@ -18,7 +18,6 @@ using static global::go.@internal.saferio_internal_test_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.ReaderAt>(Pointer = true)]
-[assembly: GoImplement<io_package.SectionReader, io_package.ReaderAt>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

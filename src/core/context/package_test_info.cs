@@ -31,7 +31,6 @@ using static global::go.context_test_package;
 [assembly: GoImplement<customDoneContext, context_package.Context>(Promoted = true)]
 [assembly: GoImplement<otherContext, context_package.Context>(Promoted = true)]
 [assembly: GoImplement<otherContext, context_package.Context>]
-[assembly: GoImplement<sync_package.Mutex, sync_package.Locker>(Pointer = true)]
 [assembly: GoImplement<testing_package.T, global::go.context_internal_test_package.testingT>(Pointer = true)]
 // </InterfaceImplementations>
 

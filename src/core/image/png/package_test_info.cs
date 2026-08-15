@@ -33,8 +33,6 @@ using static global::go.image.png_test_package;
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<image_package.NRGBA, go.image.draw_package.Image>(Pointer = true)]
-[assembly: GoImplement<io_package.PipeReader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<io_package.PipeWriter, io_package.WriteCloser>(Pointer = true)]
 [assembly: GoImplement<io_package.WriteCloser, io_package.Writer>]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]

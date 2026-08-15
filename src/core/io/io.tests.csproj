@@ -73,6 +73,7 @@
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="io_test.cs" />
     <Compile Include="multi_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="pipe_test.cs" />

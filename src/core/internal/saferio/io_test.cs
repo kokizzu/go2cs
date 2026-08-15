@@ -102,7 +102,7 @@ public static void TestReadDataAt(ж<testing.T> Ꮡt) {
         // of the section will return EOF, but ReadDataAt
         // should succeed and return 0 bytes.
         var sr = io.NewSectionReader(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ4)), 0, 0);
-        var (got, err) = ReadDataAt(new saferio_internal_test_package.io_SectionReaderжReaderAt(sr), 0, 0);
+        var (got, err) = ReadDataAt(new io.SectionReaderжReaderAt(sr), 0, 0);
         if (err != default!) {
             tΔ4.Fatal(err);
         }

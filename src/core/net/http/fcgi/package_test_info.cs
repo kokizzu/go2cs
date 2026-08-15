@@ -34,7 +34,6 @@ using static global::go.net.http.fcgi_internal_test_package;
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<go.net.http_package.HandlerFunc, go.net.http_package.ΔHandler>]
 [assembly: GoImplement<go.net.http_package.ResponseWriter, io_package.Writer>]
-[assembly: GoImplement<io_package.PipeReader, io_package.ReadCloser>(Pointer = true)]
 [assembly: GoImplement<io_package.ReadCloser, io_package.Reader>]
 [assembly: GoImplement<nilCloser, io_package.ReadWriteCloser>(Pointer = true)]
 [assembly: GoImplement<nilCloser, io_package.ReadWriter>(Promoted = true)]

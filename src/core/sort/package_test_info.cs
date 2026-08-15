@@ -24,7 +24,6 @@ using static global::go.sort_test_package;
 [assembly: GoImplement<ByName, sort_package.Interface>]
 [assembly: GoImplement<ByWeight, sort_package.Interface>]
 [assembly: GoImplement<adversaryTestingData, sort_package.Interface>(Pointer = true)]
-[assembly: GoImplement<go.math.rand.rand_package.PCG, go.math.rand.rand_package.Source>(Pointer = true)]
 [assembly: GoImplement<intPairs, sort_package.Interface>]
 [assembly: GoImplement<multiSorter, sort_package.Interface>(Pointer = true)]
 [assembly: GoImplement<myStructs, sort_package.Interface>]

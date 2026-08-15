@@ -203,7 +203,7 @@ public static void ExampleAfterFunc_cond() {
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
         finally { ᒐ.Run(); }
     }
-    var cond = Δsync.NewCond(new context_test_package.sync_MutexжLocker(@new<Δsync.Mutex>()));
+    var cond = Δsync.NewCond(new Δsync.MutexжLocker(@new<Δsync.Mutex>()));
     ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
     for (nint i = 0; i < 4; i++) {
         Ꮡwg.Add(1);

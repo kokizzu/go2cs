@@ -73,6 +73,7 @@
     <Compile Include="export_windows_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="match_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="path_test.cs" />

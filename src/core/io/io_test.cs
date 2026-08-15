@@ -369,7 +369,7 @@ public static void TestTeeReader(ж<testing.T> Ꮡt) {
     rb = bytes.NewBuffer(src);
     var (pr, pw) = Pipe();
     pr.Close();
-    r = TeeReader(new io_test_package.bytes_BufferжReader(rb), new io_test_package.io_PipeWriterжWriter(pw));
+    r = TeeReader(new io_test_package.bytes_BufferжReader(rb), new Δio.PipeWriterжWriter(pw));
     {
         var (n, err) = ReadFull(r, dst); if (n != 0 || !AreEqual(err, ErrClosedPipe)) {
             Ꮡt.Errorf("closed tee: ReadFull(r, dst) = %d, %v; want 0, EPIPE"u8, n, err);
@@ -767,7 +767,7 @@ public static void TestOffsetWriter_Write(ж<testing.T> Ꮡt) {
             var (w2, f2) = makeOffsetWriterʗ1(name);
             var f2ʗ1 = f2;
             defer(() => f2ʗ1.Close(), ref ᒐ);
-            Copy(new io_test_package.io_OffsetWriterжWriter(w2), new io_test_package.os_FileжReader(f));
+            Copy(new Δio.OffsetWriterжWriter(w2), new io_test_package.os_FileжReader(f));
             checkContentʗ1(name, f2);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -784,7 +784,7 @@ public static void TestOffsetWriter_Write(ж<testing.T> Ꮡt) {
             var (w, f) = makeOffsetWriterʗ2(name);
             var fʗ2 = f;
             defer(() => fʗ2.Close(), ref ᒐ);
-            Copy(new io_test_package.io_OffsetWriterжWriter(w), new io_test_package.strings_ReaderжReader(strings.NewReader(content)));
+            Copy(new Δio.OffsetWriterжWriter(w), new io_test_package.strings_ReaderжReader(strings.NewReader(content)));
             checkContentʗ2(name, f);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

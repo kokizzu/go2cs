@@ -28,7 +28,7 @@ public static void TestAuto(ж<testing.T> Ꮡt) {
     // Strictly speaking, we should look for them in order,
     // but this is good enough and not significantly more
     // likely to have a false positive.
-    var r = New(new rand_test_package.rand_PCGжSource(NewPCG(1, 0)));
+    var r = New(new rand.PCGжSource(NewPCG(1, 0)));
     nint found = 0;
     for (nint i = 0; i < 1000; i++) {
         var x = r.Int64();

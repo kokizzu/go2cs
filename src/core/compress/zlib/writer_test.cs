@@ -68,7 +68,7 @@ internal static void testLevelDict(ж<testing.T> Ꮡt, @string fn, slice<byte> b
             try {
                 var pipewʗ2 = pipewʗ1;
                 defer(() => pipewʗ2.Close(), ref ᒐ);
-                var (zlibw, errΔ1) = NewWriterLevelDict(new zlib_test_package.io_PipeWriterжWriter(pipewʗ1), level, dictʗ1);
+                var (zlibw, errΔ1) = NewWriterLevelDict(new io.PipeWriterжWriter(pipewʗ1), level, dictʗ1);
                 if (errΔ1 != default!) {
                     Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, errΔ1);
                     return;
@@ -84,7 +84,7 @@ internal static void testLevelDict(ж<testing.T> Ꮡt, @string fn, slice<byte> b
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
         });
-        var (zlibr, err) = NewReaderDict(new zlib_test_package.io_PipeReaderжReader(piper), dict);
+        var (zlibr, err) = NewReaderDict(new io.PipeReaderжReader(piper), dict);
         if (err != default!) {
             Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err);
             return;

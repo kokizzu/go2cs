@@ -72,6 +72,7 @@
     <Compile Include="encodedword_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="mediatype_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="type_test.cs" />
   </ItemGroup>

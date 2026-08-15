@@ -21,7 +21,6 @@ global using tokenꓸFile = go.go.token_package.ΔFile;
 global using tokenꓸPos = go.go.token_package.ΔPos;
 global using tokenꓸPosition = go.go.token_package.ΔPosition;
 global using typesꓸError = go.go.types_package.ΔError;
-global using typesꓸExpr = go.go.ast_package.Expr;
 global using typesꓸInfo = go.go.types_package.ΔInfo;
 global using typesꓸScope = go.go.types_package.ΔScope;
 global using typesꓸSignature = go.go.types_package.ΔSignature;

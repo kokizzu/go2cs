@@ -81,7 +81,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
     image.Image src = default!;
     var exprᴛ2 = scm;
     if (AreEqual(exprᴛ2, default!)) {
-        src = new draw_test_package.image_UniformжImage(Ꮡ(new image.Uniform(C: new colorꓸRGBA(0x11, 0x22, 0x33, 0x44))));
+        src = new image.UniformжImage(Ꮡ(new image.Uniform(C: new colorꓸRGBA(0x11, 0x22, 0x33, 0x44))));
     }
     else if (AreEqual(exprᴛ2, color.CMYKModel)) {
         var src1 = image.NewCMYK(image.Rect(0, 0, srcw, srch));

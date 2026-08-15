@@ -72,6 +72,7 @@
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="iter_test.cs" />
     <Compile Include="maps_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
   </ItemGroup>
 

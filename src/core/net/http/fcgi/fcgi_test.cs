@@ -476,7 +476,7 @@ public static void TestSlowRequest(ж<testing.T> Ꮡt) {
             ᐸꟷ(writerDoneʗ2);
             pwʗ2.Close();
         }, ref ᒐ);
-        var rc = Ꮡ(new signalingNopWriteCloser(new fcgi_internal_test_package.io_PipeReaderжReadCloser(pr), new channel<bool>(0)));
+        var rc = Ꮡ(new signalingNopWriteCloser(new io.PipeReaderжReadCloser(pr), new channel<bool>(0)));
         var handlerDone = new channel<bool>(0);
         var handlerDoneʗ1 = handlerDone;
         var c = newChild(new fcgi_internal_test_package.signalingNopWriteCloserжReadWriteCloser(rc), new fcgi_internal_test_package.http_HandlerFuncᴠΔHandler(new http.HandlerFunc((http.ResponseWriter w, ж<http.Request> r) => {

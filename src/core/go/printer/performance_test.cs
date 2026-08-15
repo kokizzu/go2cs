@@ -55,7 +55,7 @@ internal static void initialize() {
         //	var unresolved = new(ast.Object)
         {
             var (declΔ1, ok) = decl._<ж<ast.GenDecl>>(ᐧ); if (ok && (~declΔ1).Tok == token.VAR) {
-                declNode = new printer_test_package.ast_GenDeclжDecl(declΔ1);
+                declNode = new ast.GenDeclжDecl(declΔ1);
                 declSize = (int64)(fset.Position(declΔ1.End()).Offset - fset.Position(declΔ1.Pos()).Offset);
                 break;
             }

@@ -31,7 +31,7 @@ public static void TestPipe1(ж<testing.T> Ꮡt) {
     var c = new channel<nint>(0);
     var (r, w) = Pipe();
     slice<byte> buf = new slice<byte>(64);
-    goǃ(checkWrite, Ꮡt, new io_test_package.io_PipeWriterжWriter(w), slice<byte>("hello, world"u8), c);
+    goǃ(checkWrite, Ꮡt, new Δio.PipeWriterжWriter(w), slice<byte>("hello, world"u8), c);
     var (n, err) = r.Read(buf);
     if (err != default!){
         Ꮡt.Errorf("read: %v"u8, err);
@@ -63,7 +63,7 @@ internal static void reader(ж<testing.T> Ꮡt, Δio.Reader r, channel<nint> c) 
 public static void TestPipe2(ж<testing.T> Ꮡt) {
     var c = new channel<nint>(0);
     var (r, w) = Pipe();
-    goǃ(reader, Ꮡt, new io_test_package.io_PipeReaderжReader(r), c);
+    goǃ(reader, Ꮡt, new Δio.PipeReaderжReader(r), c);
     slice<byte> buf = new slice<byte>(64);
     for (nint i = 0; i < 5; i++) {
         var p = buf[0..(int)(5 + i * 10)];
@@ -105,7 +105,7 @@ public static void TestPipe3(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(wdat); i++) {
         wdat[i] = (byte)i;
     }
-    goǃ(writer, new io_test_package.io_PipeWriterжWriteCloser(w), wdat, c);
+    goǃ(writer, new Δio.PipeWriterжWriteCloser(w), wdat, c);
     slice<byte> rdat = new slice<byte>(1024);
     nint tot = 0;
     for (nint n = 1; n <= 256; n *= 2) {
@@ -244,7 +244,7 @@ public static void TestPipeWriteClose(ж<testing.T> Ꮡt) {
         } else {
             delayClose(Ꮡt, new io_test_package.io_PipeReaderжcloser(r), c, tt);
         }
-        var (n, err) = WriteString(new io_test_package.io_PipeWriterжWriter(w), helloWorldˢ3);
+        var (n, err) = WriteString(new Δio.PipeWriterжWriter(w), helloWorldˢ3);
         ᐸꟷ(c);
         var expect = tt.err;
         if (expect == default!) {
@@ -284,7 +284,7 @@ public static void TestWriteEmpty(ж<testing.T> Ꮡt) {
         wʗ1.Close();
     });
     array<byte> b = new(2);
-    ReadFull(new io_test_package.io_PipeReaderжReader(r), b[0..2]);
+    ReadFull(new Δio.PipeReaderжReader(r), b[0..2]);
     r.Close();
 }
 
@@ -296,7 +296,7 @@ public static void TestWriteNil(ж<testing.T> Ꮡt) {
         wʗ1.Close();
     });
     array<byte> b = new(2);
-    ReadFull(new io_test_package.io_PipeReaderжReader(r), b[0..2]);
+    ReadFull(new Δio.PipeReaderжReader(r), b[0..2]);
     r.Close();
 }
 
@@ -321,7 +321,7 @@ public static void TestWriteAfterWriterClose(ж<testing.T> Ꮡt) {
         });
         var buf = new slice<byte>(100);
         @string result = default!;
-        var (n, err) = ReadFull(new io_test_package.io_PipeReaderжReader(r), buf);
+        var (n, err) = ReadFull(new Δio.PipeReaderжReader(r), buf);
         if (err != default! && !AreEqual(err, ErrUnexpectedEOF)) {
             Ꮡt.Fatalf("got: %q; want: %q"u8, err, ErrUnexpectedEOF);
         }

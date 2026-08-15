@@ -24,8 +24,6 @@ using static global::go.compress.zlib_test_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<io_package.PipeReader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<io_package.PipeWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
 

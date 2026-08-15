@@ -53,7 +53,7 @@ internal static void testFile(ж<testing.T> Ꮡt, @string fn, global::go.compres
                 defer(() => rawʗ2.Close(), ref ᒐ);
                 var pipewʗ2 = pipewʗ1;
                 defer(() => pipewʗ2.Close(), ref ᒐ);
-                var lzww = NewWriter(new lzw_internal_test_package.io_PipeWriterжWriter(pipewʗ1), order, litWidth);
+                var lzww = NewWriter(new io.PipeWriterжWriter(pipewʗ1), order, litWidth);
                 var lzwwʗ1 = lzww;
                 defer(() => lzwwʗ1.Close(), ref ᒐ);
                 ref var b = ref heap(new array<byte>(4096), out var Ꮡb);
@@ -76,7 +76,7 @@ internal static void testFile(ж<testing.T> Ꮡt, @string fn, global::go.compres
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
         });
-        var lzwr = NewReader(new lzw_internal_test_package.io_PipeReaderжReader(piper), order, litWidth);
+        var lzwr = NewReader(new io.PipeReaderжReader(piper), order, litWidth);
         var lzwrʗ1 = lzwr;
         defer(() => lzwrʗ1.Close(), ref ᒐ);
         // Compare the two.

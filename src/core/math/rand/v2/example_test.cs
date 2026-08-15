@@ -68,7 +68,7 @@ public static void Example_rand() {
         // Create and seed the generator.
         // Typically a non-fixed seed should be used, such as Uint64(), Uint64().
         // Using a fixed seed will produce the same output on every run.
-        var r = rand.New(new rand_test_package.rand_PCGжSource(rand.NewPCG(1, 2)));
+        var r = rand.New(new rand.PCGжSource(rand.NewPCG(1, 2)));
         // The tabwriter here helps us generate aligned output.
         var w = tabwriter.NewWriter(new os.FileжWriter(os.Stdout), 1, 1, 1, (rune)' ', 0);
         var wʗ1 = w;

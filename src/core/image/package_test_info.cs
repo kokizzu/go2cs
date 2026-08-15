@@ -28,7 +28,6 @@ using static global::go.image_test_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<bufio_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<global::go.image_package.Rectangle, global::go.image_package.Image>]
-[assembly: GoImplement<global::go.image_package.Uniform, global::go.image_package.Image>(Pointer = true)]
 [assembly: GoImplement<global::go.image_package.Uniform, go.image.color_package.Color>(Pointer = true)]
 [assembly: GoImplement<global::go.image_package.ΔRGBA, global::go.image_package.Image>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]

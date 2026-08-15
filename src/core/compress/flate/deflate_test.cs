@@ -401,7 +401,7 @@ internal static void testToFromWithLevelAndLimit(ж<testing.T> Ꮡt, nint level,
     testSync(Ꮡt, level, input, name);
 }
 
-internal static void testToFromWithLimit(ж<testing.T> Ꮡt, slice<byte> input, @string name, array<nint> limit) {
+internal static void testToFromWithLimit(ж<testing.T> Ꮡt, slice<byte> input, @string name, [GoArrayDims(11)] array<nint> limit) {
     limit = limit.Clone();
 
     for (nint i = 0; i < 10; i++) {

@@ -34,7 +34,6 @@ using static global::go.image.draw_test_package;
 [assembly: GoImplement<image_package.NRGBA64, global::go.image.draw_package.Image>(Pointer = true)]
 [assembly: GoImplement<image_package.Paletted, global::go.image.draw_package.Image>(Pointer = true)]
 [assembly: GoImplement<image_package.RGBA64, global::go.image.draw_package.Image>(Pointer = true)]
-[assembly: GoImplement<image_package.Uniform, image_package.Image>(Pointer = true)]
 [assembly: GoImplement<image_package.ΔRGBA, global::go.image.draw_package.Image>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>

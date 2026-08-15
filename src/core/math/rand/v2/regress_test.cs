@@ -41,7 +41,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
     slice<int64> int64s = new int64[]{1, 10, 32, ((int64)1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, ((int64)1 << (int)(30)), 2147483648L - 2, 2147483648L - 1, 1000000000000000000L, 1152921504606846976L, 9223372036854775806L, 9223372036854775807L}.slice();
     slice<uint64> uint64s = new uint64[]{1, 10, 32, ((uint64)1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, ((uint64)1 << (int)(30)), (uint64)(2147483648L - 2), (uint64)(2147483648L - 1), 1000000000000000000UL, ((uint64)1 << (int)(60)), 9223372036854775806UL, 9223372036854775807UL, 18446744073709551614UL, 18446744073709551615UL}.slice();
     slice<nint> permSizes = new nint[]{0, 1, 5, 8, 9, 10, 16}.slice();
-    nint n = reflect.TypeOf(New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2))).OrTypedNil()).NumMethod();
+    nint n = reflect.TypeOf(New(new rand.PCGжSource(NewPCG(1, 2))).OrTypedNil()).NumMethod();
     nint p = 0;
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     if (update.Value) {
@@ -51,7 +51,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
         if (update.Value && i > 0) {
             fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\n"u8);
         }
-        var r = New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)));
+        var r = New(new rand.PCGжSource(NewPCG(1, 2)));
         var rv = reflect.ValueOf(r.OrTypedNil());
         var m = rv.Type().Method(i);
         var mv = rv.Method(i);

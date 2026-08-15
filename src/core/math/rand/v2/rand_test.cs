@@ -112,7 +112,7 @@ internal static void checkSampleSliceDistributions(ж<testing.T> Ꮡt, slice<flo
 // Normal distribution tests
 //
 internal static slice<float64> generateNormalSamples(nint nsamples, float64 mean, float64 stddev, uint64 seed) {
-    var r = New(new rand_test_package.rand_PCGжSource(NewPCG(seed, seed)));
+    var r = New(new rand.PCGжSource(NewPCG(seed, seed)));
     var samples = new slice<float64>(nsamples);
     foreach (var (i, _) in samples) {
         samples[i] = r.NormFloat64() * stddev + mean;
@@ -163,7 +163,7 @@ public static void TestNonStandardNormalValues(ж<testing.T> Ꮡt) {
 // Exponential distribution tests
 //
 internal static slice<float64> generateExponentialSamples(nint nsamples, float64 rate, uint64 seed) {
-    var r = New(new rand_test_package.rand_PCGжSource(NewPCG(seed, seed)));
+    var r = New(new rand.PCGжSource(NewPCG(seed, seed)));
     var samples = new slice<float64>(nsamples);
     foreach (var (i, _) in samples) {
         samples[i] = r.ExpFloat64() / rate;
@@ -421,7 +421,7 @@ internal static nint encodePerm(slice<nint> s) {
 
 // TestUniformFactorial tests several ways of generating a uniform value in [0, n!).
 public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
-    var r = New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)));
+    var r = New(new rand.PCGжSource(NewPCG(1, 2)));
     nint top = 6;
     if (testing.Short()) {
         top = 3;
@@ -509,7 +509,7 @@ public static ж<uint64> ᏑSink = new(default(uint64));
 public static ref uint64 Sink => ref ᏑSink.Value;
 
 internal static ж<rand.Rand> testRand() {
-    return New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)));
+    return New(new rand.PCGжSource(NewPCG(1, 2)));
 }
 
 public static void BenchmarkSourceUint64(ж<testing.B> Ꮡb) {

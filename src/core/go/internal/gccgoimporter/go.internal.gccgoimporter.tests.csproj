@@ -120,7 +120,6 @@
     <ProjectReference Include="$(go2csPath)core/bytes/bytes.csproj" />
     <ProjectReference Include="$(go2csPath)core/debug/elf/debug.elf.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
-    <ProjectReference Include="$(go2csPath)core/go/ast/go.ast.csproj" />
     <ProjectReference Include="$(go2csPath)core/go/constant/go.constant.csproj" />
     <ProjectReference Include="$(go2csPath)core/go/token/go.token.csproj" />
     <ProjectReference Include="$(go2csPath)core/go/types/go.types.csproj" />
