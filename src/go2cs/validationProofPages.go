@@ -268,6 +268,40 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 		}
 	}
 
+	if len(comparison.Gated) > 0 {
+		page.WriteString("\n## Gated by a host capability\n\n")
+		page.WriteString("A gate names a declaration the converted test host *provably cannot run at all* — not an\n")
+		page.WriteString("assertion it fails. It is filtered from **both** sides of the comparison, and because the gate\n")
+		page.WriteString("keys on the DECLARATION, every verdict row `go test` reports underneath it is withdrawn with\n")
+		page.WriteString("it. None of the rows below is claimed by the matched count above; they are named here so this\n")
+		page.WriteString("page states exactly what the row leaves out.\n")
+
+		for _, declaration := range comparison.Gated {
+			fmt.Fprintf(&page, "\n### `%s` — %s\n\n", declaration.Name, declaration.Capabilities)
+
+			if len(declaration.Rows) == 0 {
+				page.WriteString("`go test` reported no verdict row for this declaration on this platform.\n")
+
+				continue
+			}
+
+			quoted := make([]string, len(declaration.Rows))
+
+			for i, row := range declaration.Rows {
+				quoted[i] = "`" + row + "`"
+			}
+
+			suffix := "s"
+
+			if len(quoted) == 1 {
+				suffix = ""
+			}
+
+			fmt.Fprintf(&page, "%d verdict row%s `go test` reports and this comparison does not claim:\n\n%s\n",
+				len(quoted), suffix, strings.Join(quoted, ", "))
+		}
+	}
+
 	return page.String()
 }
 

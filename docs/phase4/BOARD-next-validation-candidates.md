@@ -7561,3 +7561,181 @@ Guarded by the new **`EmbeddedStructValueCopy`** behavioral output test (assignm
 parameter, a two-level `c := *p`, a slice-element read, and a pointer embed proving both halves of
 Go's rule). Doctrine: `ConversionStrategies-Reference.md`, *An embedded struct is an INLINE field,
 so a value copy copies it*.
+
+## ⛔ MEASURED, DOES NOT BANK — the host-limit GATE is self-defeating on `os/exec`, and it costs 13 agreeing rows before it even gets there (2026-08-15, lane `claude/os-exec-gate-bank`)
+
+The coordinator ruling delivered to this lane was to bank `os/exec` at 74 agreeing verdicts under the
+GATE form: two declaration-keyed entries in `unsupportedRuntimeCapabilities`, tests excluded from the
+run set, no disclosure. The gate itself works exactly as designed — the keys are right, the two
+declarations are blocked, the manifest reads 38 included + 2 capability-blocked + 13 Phase-4D
+excluded, and every surviving row agrees on both sides. **It still does not bank**, for two reasons
+the ruling's evidence could not have contained, both measured here rather than argued.
+
+### The keys, since the brief asked them to be verified empirically
+
+`TestCommand` and `TestLookPathWindows` both live in `lp_windows_test.go`, which is `package
+exec_test`, so the keys are the EXTERNAL test package's path:
+
+```go
+"os/exec_test.TestCommand":         "relocatable single-file test executable",
+"os/exec_test.TestLookPathWindows": "relocatable single-file test executable",
+```
+
+`os/exec_test`, not `os/exec` and not `exec_test`. Both fired on the first attempt.
+
+### Finding 1 — a declaration-keyed gate withdraws **40** rows, not 27, and `os/exec` under it is **61**
+
+`eligibleTerminalTestResults` cuts a verdict row at its first `/`, so gating a declaration takes
+every subtest with it — including the ones that were already agreeing. Measured on the same machine,
+same toolchain, back to back:
+
+| | rows | go | go2cs | agreeing |
+|:--|:--:|:--|:--|:--:|
+| ungated | 101 | 93 pass, 8 skip | 66 pass, 27 fail, 8 skip | **74** (66 pass + 8 skip) |
+| gated (2 entries) | 61 | 53 pass, 8 skip | 53 pass, 8 skip | **61**, zero mismatches |
+
+The 40 withdrawn rows are 18 under `TestCommand` (parent + 17 subtests) and 22 under
+`TestLookPathWindows` (parent + 21). Only 27 of them were disagreeing; the other **13 are passes**
+that the gate discards along with them — 10 of `TestLookPathWindows`' 21 subtests and 3 of
+`TestCommand`'s 17. The reason a table-driven test splits at all is that not every case reaches a
+copied executable: for `TestLookPathWindows` the correlation is exact, every failing case wanting a
+`.exe` (which the ground-truth check then RUNS) and every passing case either expecting
+`exec.ErrNotFound` — nothing is executed — or wanting a `.bat`, which `installBat` writes as text
+rather than copying. So the choice is not "74 with a gate or 74 with disclosures" — it is **61 with a
+gate or 74 with disclosures**. The 74 figure in the ruling is reachable only by the arm the ruling
+declined.
+
+The ungated re-measurement also reconciles the split the previous lane recorded as unreconciled: it
+is **66 pass + 8 skip**, not 67 + 7. One row differs, and this run agrees with the arithmetic in both
+directions (61 gated agreeing + 13 withdrawn passes = 74; 8 skips are all outside the gated set).
+
+### Finding 2 — the gate ARMS a `TestMain` census that only the gated tests could have satisfied
+
+This is the decisive one, and it is a property of gating rather than of `os/exec`. Under the gate the
+run reports **zero mismatches** — and then the converted host exits 1 anyway:
+
+```
+helper command unused: "printpath"
+```
+
+`os/exec`'s `TestMain` runs a completeness census after `m.Run()`: every helper registered with
+`registerHelperCommand` must have been marked used. `lp_windows_test.go`'s `init()` registers
+`printpath`, and the ONLY callers of `maySkipHelperCommand("printpath")` are the two tests the gate
+removed. Their `init()` still runs — a gate excludes declarations, not files — so the helper is
+registered and never claimed.
+
+**Gating the failures is what arms the census.** Go guards it with `code == 0`, so in the ungated run
+the 27 failures made `m.Run()` non-zero and the census never executed; that is why no earlier
+measurement of `os/exec` ever saw this line. The gate greens the suite, the census fires, and the
+package fails at the process level with no failing test to point at. Under the gate `os/exec` does
+not validate at 61 or at any other count.
+
+**Why the precedent looked free.** `os_test.TestRemoveAllWithExecutedProcess` is gated under the same
+capability name and has never shown this, because `os`'s `TestMain` is `Exit(m.Run())` with no census
+— and because `os` is not on the roster, so nothing measures it. The precedent is therefore evidence
+that the gate MECHANISM works, not that it is free.
+
+### The general shape, and the seam where the gate form could be made viable
+
+A capability gate is **invisible to the converted host**: the converter simply omits the declaration
+from the emitted `TestRegistry`, so nothing at runtime knows a subset is running. Go's own vocabulary
+for "a subset ran" is a non-empty `-test.run`, which is exactly what its census gates on
+(`flag.Lookup("test.run").Value.String() == ""`), and `TestFlagBridge` publishes `test.run` as
+`options.RunPattern` — empty on every pipeline run. So **any converted suite whose `TestMain` asserts
+that the whole suite ran will answer wrongly while a gate is active.** `os/exec` is the first package
+in the corpus where a gate and such a `TestMain` coexist; it will not be the last.
+
+Making the gate arm viable therefore means making the host's `test.run` truthful: the converter would
+have to emit the gated set into the generated host (it currently just drops it), and the bridge would
+publish a pattern naming the included set. That is honest rather than lenient — it is Go's own
+statement of the same fact — but it is a converter change plus a hand-owned `core/testing` change,
+so it owes a full validated sweep, and **even then the package banks 61, not 74.**
+
+### The disclosure arm, priced rather than assumed
+
+Measured on the same binary with the gate disabled and a 25-entry signature manifest.
+
+```
+Validated 74 tests against go test (8 skipped identically on both sides,
+27 disclosed-divergent (, host-limit), 13 disclosed-unsupported declarations excluded).
+```
+
+It **validates**, and at exactly the count the ruling named — 74 matched, 27 disclosed, a proof page
+written. Nothing was banked from it: the artifacts are removed from this branch and the arm is
+recorded here as a measurement, because admitting the class is the coordinator's call, not a lane's.
+
+All 25 leaves carry `exit status 0x8000809a` (verified: 25 occurrences for 25 leaves) and both
+parents carry no failure output of their own, so they ride `matchTerminalStatuses`' existing
+disclosed-parent aggregation. Because the tests RUN and fail, `m.Run()` is non-zero and the helper
+census never arms — Finding 2 does not exist on this arm. The `csErr` forgiveness path
+(`goErr == nil && len(disclosed) > 0 && len(mismatches) == 0 && len(csResults) > 0`) covers the
+host's nonzero exit.
+
+The `(, host-limit)` in that line is quoted verbatim and is a pre-existing cosmetic defect, not a
+symptom: the class list is built from `disclosures[name].Class` over every disclosed row, and the two
+rows disclosed by the parent-aggregation rule carry no manifest entry, so the empty class joins the
+set. Any package with an aggregated disclosed parent prints it (`encoding/binary`'s `TestSizeAllocs`
+is the same shape). Recorded, not fixed here.
+
+What it costs is doctrinal, and it is the cost the ruling already weighed: 25 signature entries
+rather than 2 declaration keys, and a THIRD disclosure class alongside `alloc-profile` and
+`codegen-liveness` — one that is not about a measurement the CLR cannot perform but about a test
+whose whole premise the host cannot satisfy. `docs/ValidatedTestPackages.md`'s preamble defines a
+disclosure narrowly enough that admitting this class is a decision, not an application.
+
+### What landed on this branch regardless of the fork
+
+The proof page now enumerates, per capability-gated declaration, **every verdict row `go test`
+reports underneath it**, read from the UNFILTERED Go results (they exist nowhere after
+`eligibleTerminalTestResults`) and published under a *Gated by a host capability* section. This was
+the ruling's third annotation requirement, and it had to be a generator feature rather than a hand
+edit, because a proof page is regenerated on every sweep and a hand-added section would be silently
+overwritten. It is also what makes Finding 1 visible: without it a gate reads as "2 declarations
+excluded" on the page while withdrawing 40 rows.
+
+It is owed by the NEXT gated package to bank rather than by this one: three capability entries stand
+today (`syscall.CommandLineToArgv`, `os_test.createMountPoint`,
+`os_test.TestRemoveAllWithExecutedProcess`), all in packages not yet on the roster, and `os` — already
+measured at 158/178 — carries two of them. Its page would otherwise claim a matched count while
+saying nothing about the rows those gates take.
+
+Guarded by `TestCapabilityGatedDeclarationsEnumerateSubtestRows` (the row roll-up, the sorted order,
+the prefix-vs-segment distinction, and the empty case) and by
+`TestDeclarationKeyedCapabilityEntries`, which pins the standing declaration entry by exact key and
+requires any entry naming a `Test` to be keyed on an EXTERNAL test package path — a mis-keyed gate
+fires silently, which is the trap this lane nearly walked into.
+
+⚠ **The evidence for that feature is split across two halves rather than one end-to-end run, and it
+has to be, today.** The producing half ran on real data — the gated `os/exec` comparison recorded
+`TestCommand` → 18 rows and `TestLookPathWindows` → 22 — and the rendering half is pinned by the
+fixture golden. What has never executed is the composition, because the page is written only for a
+comparison that VALIDATES and no gated package validates yet (Finding 2 is why). The first package to
+bank with a gate active is the end-to-end proof; until then this is two proven halves and one
+function call between them.
+
+**Not landed:** no roster row, no proof page, no committed test sources, no disclosure manifest —
+and **not the two gate entries either.** `os/exec` remains unbanked and, more importantly, stays
+MEASURABLE exactly as it was: 101 rows, 74 agreeing, 27 rooted failures. Landing the entries would
+have traded that for one opaque process-level exit, so they live in this entry (verified, above,
+ready to paste) and as a standing note beside `unsupportedRuntimeCapabilities` rather than in the map.
+The branch carries the page feature, the guards, and this record.
+
+### What is actually open, in the coordinator's terms
+
+Three ways forward, each with its measured price:
+
+1. **Gate, made viable** — publish a truthful `test.run` when declarations are gated (converter emits
+   the gated set into the host; `TestFlagBridge` publishes a pattern). Costs a hand-owned
+   `core/testing` change and therefore a full validated sweep; `os/exec` then banks **61**.
+2. **Disclosure** — 25 signature entries land today and `os/exec` banks **74 matched · 27 disclosed**,
+   with no new machinery. Costs a third disclosure class and a preamble that admits host limits
+   alongside CLR-measurement limits.
+3. **Neither** — drop the gate entries and leave `os/exec` unbanked but fully MEASURABLE at 101 rows
+   with 27 rooted failures, which is what it is today. The cheapest, and it keeps the 74/27 shape
+   visible for whenever the single-file-publish capability is actually built.
+
+Option 3 is where this branch leaves things, because it is the only one a lane can choose on its own:
+options 1 and 2 each change doctrine (a hand-owned host contract, or what the word *disclosure*
+admits), and those are rulings. The one thing that must not happen is adding the gate entries without
+option 1's work — that trades 27 visible, rooted, well-understood failures for a single opaque
+process-level exit and makes the package measure worse than it does today.

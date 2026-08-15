@@ -46,3 +46,25 @@ the capability it needs.
 
 - BenchmarkAlpha (benchmark): benchmark execution is deferred
 - ExampleAlpha (example): example execution is deferred
+- TestDelta (test): requires unsupported testing capabilities: relocatable single-file test executable
+- TestEpsilon (test): requires unsupported testing capabilities: relocatable single-file test executable
+
+## Gated by a host capability
+
+A gate names a declaration the converted test host *provably cannot run at all* — not an
+assertion it fails. It is filtered from **both** sides of the comparison, and because the gate
+keys on the DECLARATION, every verdict row `go test` reports underneath it is withdrawn with
+it. None of the rows below is claimed by the matched count above; they are named here so this
+page states exactly what the row leaves out.
+
+### `TestDelta` — relocatable single-file test executable
+
+3 verdict rows `go test` reports and this comparison does not claim:
+
+`TestDelta`, `TestDelta/copied_beside_a_bat`, `TestDelta/copied_to_temp`
+
+### `TestEpsilon` — relocatable single-file test executable
+
+1 verdict row `go test` reports and this comparison does not claim:
+
+`TestEpsilon`

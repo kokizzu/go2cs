@@ -2501,6 +2501,28 @@ var unsupportedRuntimeCapabilities = map[string]string{
 	// reason its premise holds there. Satisfying it means publishing every converted test host
 	// self-contained single-file — ~70 MB and a publish rather than a build, per package.
 	"os_test.TestRemoveAllWithExecutedProcess": "relocatable single-file test executable",
+
+	// os/exec's TestCommand and TestLookPathWindows want this SAME capability from the other
+	// direction — installExe (lp_windows_test.go) copies the running test executable into a
+	// t.TempDir() tree and runs the copy — and they are deliberately NOT listed here, because
+	// gating them was measured and leaves the package worse off than leaving them failing. Both
+	// reasons, and the verified keys ready to paste back, are in
+	// docs/phase4/BOARD-next-validation-candidates.md (2026-08-15, lane claude/os-exec-gate-bank):
+	//
+	//  1. A gate is DECLARATION-keyed and eligibleTerminalTestResults cuts a verdict row at its
+	//     first "/", so 2 entries withdraw 40 rows rather than the 27 that were failing. The other
+	//     13 are agreeing passes, and os/exec drops from 74 agreeing rows to 61.
+	//  2. Gating the failures is what BREAKS it. os/exec's TestMain runs a helper-registry census
+	//     guarded by `code == 0`, and the only callers of maySkipHelperCommand("printpath") are the
+	//     two tests a gate removes — their file's init() still registers the helper. Green the
+	//     suite and the census fires: `helper command unused: "printpath"`, exit 1, and the package
+	//     validates at no count at all.
+	//
+	// os_test.TestRemoveAllWithExecutedProcess never showed (2) only because os's TestMain is a bare
+	// Exit(m.Run()). A gate is invisible to the running host — nothing publishes the fact that a
+	// SUBSET ran, where Go's own vocabulary for it is a non-empty test.run — so any suite asserting
+	// that the whole suite ran will mis-answer while one is active. Check for such a TestMain before
+	// adding a declaration-keyed entry.
 }
 
 // unsupportedRuntimeCapability reports whether fn requires a listed unsupported runtime capability,
@@ -4458,6 +4480,22 @@ type testComparison struct {
 	Disclosed []string          `json:"disclosed"`
 	Excluded  []string          `json:"excluded"`
 	Errors    []string          `json:"errors"`
+
+	// Gated is the row-level detail behind the capability-gated members of Excluded, and it exists
+	// because a DECLARATION-keyed gate is not a declaration-sized omission: eligibleTerminalTestResults
+	// cuts a verdict row at its first "/", so gating one table-driven test can withdraw dozens of rows
+	// from both sides at once. A matched count that silently absorbed that would be the quiet kind of
+	// dishonest, so the rows are enumerated from the UNFILTERED `go test` results and published on the
+	// proof page. Empty for every package with no gated declaration, which is nearly all of them.
+	Gated []capabilityGatedDeclaration `json:"gated,omitempty"`
+}
+
+// capabilityGatedDeclaration records one test declaration the converted host provably cannot run,
+// the capability it would need, and every verdict row `go test` reports underneath it.
+type capabilityGatedDeclaration struct {
+	Name         string   `json:"name"`
+	Capabilities string   `json:"capabilities"`
+	Rows         []string `json:"rows"`
 }
 
 // testDisclosure pins one test-level disclosed divergence — extending the declaration-level
@@ -4734,6 +4772,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	disclosures, disclosureErr := loadTestDisclosures(outputPath)
 	var manifest testManifest
 	var censusGaps []string
+	var gated []capabilityGatedDeclaration
 	manifestData, manifestErr := os.ReadFile(filepath.Join(outputPath, testManifestFileName))
 	if manifestErr == nil {
 		manifestErr = json.Unmarshal(manifestData, &manifest)
@@ -4742,6 +4781,10 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 			// filtering below — the filter shares the manifest with discovery, so only the
 			// unfiltered stream can expose a declaration discovery missed.
 			censusGaps = manifestCensusGaps(goResults, manifest)
+			// Same window, same reason: the rows a capability gate withdraws exist only in the
+			// unfiltered stream, and the proof page publishes them so the matched count below
+			// never absorbs a subtest silently.
+			gated = capabilityGatedDeclarations(goResults, manifest)
 			goResults = eligibleTerminalTestResults(goResults, manifest)
 			csResults = eligibleTerminalTestResults(csResults, manifest)
 		}
@@ -4769,6 +4812,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	result := testComparison{
 		Package: filepath.Base(inputPath), Status: status, Go: goResults, CSharp: csResults,
 		Matched: true, Skipped: []string{}, Disclosed: []string{}, Excluded: excludedDeclarations(manifest), Errors: []string{},
+		Gated: gated,
 	}
 	if disclosureErr != nil {
 		result.Matched = false
@@ -4894,6 +4938,60 @@ func terminalTestOutputs(output string) map[string]string {
 		}
 	}
 	return result
+}
+
+// capabilityGatedDeclarations enumerates, per capability-gated declaration, the verdict rows the
+// UNFILTERED `go test` run produced for it — the declaration itself plus every subtest underneath.
+// It must be called before eligibleTerminalTestResults, which is precisely what removes those rows;
+// after the filter the information no longer exists anywhere.
+//
+// Ordering is fully determined here — declarations and rows are both sorted — so the proof page this
+// feeds is byte-stable for a given row SET. The set itself comes from a live `go test`, which is the
+// one thing this cannot pin: a gated test whose subtests vary run to run would churn its page on
+// every sweep, where a non-gated one would fail the verdict count instead. No such test is gated
+// today (both os/exec candidates are fixed tables), and the first that is should be checked for it.
+func capabilityGatedDeclarations(goResults map[string]string, manifest testManifest) []capabilityGatedDeclaration {
+	gated := make(map[string]string)
+
+	for _, test := range manifest.Tests {
+		if test.Status == "unsupported" && strings.HasPrefix(test.Reason, unsupportedCapabilityReasonPrefix) {
+			gated[test.Name] = strings.TrimPrefix(test.Reason, unsupportedCapabilityReasonPrefix)
+		}
+	}
+
+	if len(gated) == 0 {
+		return nil
+	}
+
+	rows := make(map[string][]string)
+
+	for name := range goResults {
+		topLevelName, _, _ := strings.Cut(name, "/")
+
+		if _, blocked := gated[topLevelName]; blocked {
+			rows[topLevelName] = append(rows[topLevelName], name)
+		}
+	}
+
+	names := make([]string, 0, len(gated))
+
+	for name := range gated {
+		names = append(names, name)
+	}
+
+	sort.Strings(names)
+
+	declarations := make([]capabilityGatedDeclaration, 0, len(names))
+
+	for _, name := range names {
+		declarationRows := rows[name]
+		sort.Strings(declarationRows)
+		declarations = append(declarations, capabilityGatedDeclaration{
+			Name: name, Capabilities: gated[name], Rows: declarationRows,
+		})
+	}
+
+	return declarations
 }
 
 func eligibleTerminalTestResults(results map[string]string, manifest testManifest) map[string]string {

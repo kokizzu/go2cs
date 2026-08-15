@@ -2165,6 +2165,83 @@ func TestUnsupportedRuntimeCapabilityGatesTheDeclarationItself(t *testing.T) {
 	}
 }
 
+// A declaration-keyed entry must be keyed on the EXTERNAL TEST package's import path, which is the
+// package path with "_test" appended: os/exec's helper-copying tests live in `package exec_test`,
+// whose types.Package path is os/exec_test — not os/exec, and not exec_test. Getting it wrong is
+// SILENT, because the map lookup simply misses: every gated test runs, the package reports its old
+// failing count, and nothing anywhere names the cause. So the shape is pinned for every entry that
+// names a test, and the one standing entry is pinned by exact key.
+func TestDeclarationKeyedCapabilityEntries(t *testing.T) {
+	const standing = "os_test.TestRemoveAllWithExecutedProcess"
+
+	if capability := unsupportedRuntimeCapabilities[standing]; capability != "relocatable single-file test executable" {
+		t.Fatalf("standing declaration entry %q names capability %q", standing, capability)
+	}
+
+	for key := range unsupportedRuntimeCapabilities {
+		packagePath, name, split := strings.Cut(key, ".")
+
+		// Only entries naming a Test DECLARATION are in scope. The rest key on a symbol a test
+		// calls (syscall.CommandLineToArgv), where no such convention applies.
+		if !split || !isGoTestName(name, "Test") {
+			continue
+		}
+
+		if !strings.HasSuffix(packagePath, "_test") {
+			t.Fatalf("entry %q names a test but is not keyed on an external test package path "+
+				"(want <import path>_test.%s) — a mis-keyed gate never fires and never says so", key, name)
+		}
+	}
+}
+
+// A DECLARATION-keyed gate is not a declaration-sized omission: eligibleTerminalTestResults cuts a
+// verdict row at its first "/", so gating one table-driven test withdraws every subtest with it.
+// This is the guard that those rows are enumerated for the proof page rather than absorbed — os/exec
+// measured 40 rows withdrawn by 2 entries where only 27 were failing, and the page must name them.
+func TestCapabilityGatedDeclarationsEnumerateSubtestRows(t *testing.T) {
+	manifest := testManifest{Tests: []testDeclaration{
+		{Name: "TestCommand", Kind: "test", Status: "unsupported",
+			Reason: unsupportedCapabilityReasonPrefix + "relocatable single-file test executable"},
+		{Name: "TestOrdinary", Kind: "test", Status: "included"},
+		{Name: "TestDeferred", Kind: "example", Status: "unsupported", Reason: "example execution is deferred to Phase 4D"},
+	}}
+
+	goResults := map[string]string{
+		"TestCommand":          "pass",
+		"TestCommand/relative": "pass",
+		"TestCommand/absolute": "pass",
+		"TestCommandOther":     "pass",
+		"TestOrdinary":         "pass",
+		"TestOrdinary/subtest": "pass",
+		"TestDeferred":         "pass",
+	}
+
+	gated := capabilityGatedDeclarations(goResults, manifest)
+
+	if len(gated) != 1 {
+		t.Fatalf("expected exactly the capability-gated declaration, got %d: %+v", len(gated), gated)
+	}
+
+	if gated[0].Name != "TestCommand" || gated[0].Capabilities != "relocatable single-file test executable" {
+		t.Fatalf("gated declaration is %+v", gated[0])
+	}
+
+	// Sorted, and prefix matching is on the WHOLE first segment — TestCommandOther is a different
+	// declaration that merely shares a prefix, and an included test's subtests stay claimed.
+	want := []string{"TestCommand", "TestCommand/absolute", "TestCommand/relative"}
+
+	if !reflect.DeepEqual(gated[0].Rows, want) {
+		t.Fatalf("withdrawn rows are %v, want %v", gated[0].Rows, want)
+	}
+
+	// Nothing gated ⇒ nothing published: the page section must not appear for the ordinary package.
+	clean := testManifest{Tests: []testDeclaration{{Name: "TestOrdinary", Kind: "test", Status: "included"}}}
+
+	if enumerated := capabilityGatedDeclarations(goResults, clean); enumerated != nil {
+		t.Fatalf("a package with no capability gate must enumerate nothing, got %+v", enumerated)
+	}
+}
+
 // AllocsPerRun support guard: the shim implements testing.AllocsPerRun (byte-derived — see
 // core/testing/testing.cs), so a test requiring it must convert as INCLUDED while the
 // requirement still appears in the manifest's per-test attribution.
