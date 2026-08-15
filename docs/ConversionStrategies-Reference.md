@@ -9576,11 +9576,33 @@ inline field was correct and removed that accident, which is what exposed this �
 pointer-receiver **call** descending a copy box); this is the address-of-**field** arm of the same
 defect. An ordinary, non-embedded field of an element was never masked and was broken all along.
 
+**The base the recursion newly exposed: a pointer RECEIVER over a named array.** `&t[i].field` where
+`t` is `*semTable` (`type semTable [4]struct{…}`, runtime's `semtable.rootFor`) now reaches the
+index arm's pointer-to-array branch, which renders `t.at<E>(i)` on the assumption that a
+pointer-to-array base yields a `ж<[N]E>` box. A Go pointer receiver does not: it renders as
+`this ref T recv`, which has no box companion, so `recv.at<E>(i)` names a member the value does not
+have (CS1061). It needs none — a named fixed-array type is generated as `IArray<E>` over a shared
+backing `E[]`, so the two-arg element-aliasing overload aliases correctly on the wrapper itself:
+
+```csharp
+[GoRecv] internal static ж<semaRoot> rootFor(this ref semTable t, nint i) {
+    return Ꮡ(t, i).of(semTableᴛ1.Ꮡroot);          // was: Ꮡ(t.Value[i]).of(…) — a COPY
+}
+```
+
+That is exactly the treatment the receiver's array FIELD already gets in the same arm (see *Element
+address of an ARRAY FIELD of the receiver* under Slices and Arrays), for the same reason. A
+deref-aliased pointer PARAMETER and a box-valued LOCAL both DO have a box and keep `.at<E>(i)`.
+
 Guarded by the **`SliceElementFieldAddress`** behavioral test — the deliberate mirror of
 `SliceFieldElementAddress` (that one is `&(slice field)[i]`, this one is `&(slice[i]).field`) —
 covering an ordinary field of a slice local and of an array local, a promoted field of a slice field
 reached through a pointer, and `onePassCopy`'s own idioms: two pointers into one element swapped and
-then written through, and a cross-element `*dst = *src`.
+then written through, and a cross-element `*dst = *src`. The pointer-receiver-over-named-array
+sub-case above is guarded by **`NamedArrayAnonElement`**'s Compile and golden phases rather than
+behaviorally: its `main` deliberately never indexes the array, because zero-valuing a named
+fixed-size array type does not yet materialize its backing on the value itself (a separate,
+pre-existing gap that a behavioral assertion there would encode rather than test).
 
 ### A promoted field whose name equals the enclosing type is Δ-renamed
 

@@ -524,6 +524,23 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 			// `*[]E` for indexing; it is written `(*t)[i]`, a StarExpr the slice branch handles).
 			if ptr, isPtr := exprType.(*types.Pointer); isPtr {
 				if arrayType, isArray := ptr.Elem().Underlying().(*types.Array); isArray {
+					// The pointer RECEIVER is the one base with NO box to go through: a Go pointer
+					// receiver renders as `this ref T recv`, so `recv.at<E>(i)` names a member the
+					// value does not have (CS1061). It needs no box — a named fixed-array type is
+					// generated as `IArray<E>` over a shared backing `E[]`, so the two-arg
+					// element-aliasing overload aliases correctly on the wrapper itself. Exactly the
+					// treatment the receiver's array FIELD already gets in the array branch below,
+					// for the same reason. (A deref-aliased pointer PARAMETER and a box-valued LOCAL
+					// both DO have a box and keep the `.at<E>(i)` form.)
+					//
+					// Reached only since `&recv[i].field` began recursing here for its base — before
+					// that it took the struct-field arm's `Ꮡ(value)` fallback, a box over a COPY of
+					// the element, which is what made runtime-shaped `semtable.rootFor` (`&t[i].root`)
+					// hand every caller a pointer into a throwaway copy.
+					if ident != nil && isRecvPointer && v.identResolvesToReceiver(ident, recvName) {
+						return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.castWideIntegerToInt(indexExpr.Index))
+					}
+
 					elemCSType := convertToCSTypeName(v.getScopeCheckedTypeName(arrayType.Elem()))
 					// Render the base in POINTER context so it yields the `ж<[N]E>` BOX (`Ꮡtab` for a
 					// deref-aliased pointer PARAMETER, or the box-valued LOCAL `t` from `@new`), not the

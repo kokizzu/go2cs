@@ -16,7 +16,7 @@ partial class main_package {
 [GoType("[4]semTableᴛ1")] partial struct semTable;
 
 [GoRecv] internal static ж<semaRoot> rootFor(this ref semTable t, nint i) {
-    return Ꮡ(t.Value[i]).of(semTableᴛ1.Ꮡroot);
+    return Ꮡ(t, i).of(semTableᴛ1.Ꮡroot);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
