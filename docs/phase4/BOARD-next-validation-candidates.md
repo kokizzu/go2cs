@@ -7564,6 +7564,11 @@ so a value copy copies it*.
 
 ## ⛔ MEASURED, DOES NOT BANK — the host-limit GATE is self-defeating on `os/exec`, and it costs 13 agreeing rows before it even gets there (2026-08-15, lane `claude/os-exec-gate-bank`)
 
+> **RULING REVISED on this evidence, same day — the gate preference is WITHDRAWN and root B resolves
+> as a DISCLOSURE.** `os/exec` banks at **74 matched · 27 disclosed (`host-limit`)** — see the
+> disposition at the end of this entry. Everything below stands as measured; it is the evidence the
+> revision rests on, not a live proposal.
+
 The coordinator ruling delivered to this lane was to bank `os/exec` at 74 agreeing verdicts under the
 GATE form: two declaration-keyed entries in `unsupportedRuntimeCapabilities`, tests excluded from the
 run set, no disclosure. The gate itself works exactly as designed — the keys are right, the two
@@ -7739,3 +7744,48 @@ options 1 and 2 each change doctrine (a hand-owned host contract, or what the wo
 admits), and those are rulings. The one thing that must not happen is adding the gate entries without
 option 1's work — that trades 27 visible, rooted, well-understood failures for a single opaque
 process-level exit and makes the package measure worse than it does today.
+
+
+### ✅ DISPOSITION (2026-08-15, ruling revised, lane `claude/os-exec-disclosure-bank`) — root B is a DISCLOSURE, `os/exec` BANKS at 74 + 27
+
+The coordinator withdrew the gate preference on the measurement above and ruled root B a disclosure.
+The deciding property is one this lane had priced only as a cost: **a disclosure keeps every row
+running, so it retires itself.** A gate withdraws the 27 rows from the comparison entirely, which
+means the day a self-contained single-file test host makes their premise true, *nothing happens* —
+no signal, no failure, the entries simply stay forever. Disclosed, those rows keep executing and keep
+being compared, so on that day they start passing, the disclosed arithmetic stops matching, and the
+sweep fails loudly until the entries are removed. Add the 13 destroyed passes and the self-defeating
+`TestMain` census, and the fork closes.
+
+**Banked:** 74 matching (66 pass + 8 skip) + 27 disclosed-divergent. 25 leaf rows pinned by signature
+on `exit status 0x8000809a`; the 2 parents carry no failure text of their own and ride
+`matchTerminalStatuses`' disclosed-parent aggregation. Roster row 144;
+`docs/validation/current/os.exec.md` names all 27 with class and reason.
+
+**The third class, `host-limit`, is authorized and its bar is recorded** in two places —
+`docs/ValidatedTestPackages.md`'s preamble (the reader-facing definition) and
+`docs/ConversionStrategies-Reference.md`'s *"`host-limit` — the third disclosed-divergence class"*
+(the full mechanism). The bar: an entry must pin a **structural** property of the current deployment
+shape, provable from how the artifact is built, never an unimplemented-but-fixable defect. `log`
+remains the negative control on the other side of that line — a Go-source position map would satisfy
+its `.go:63` assert exactly, so it stays unbanked rather than disclosed around.
+
+**QUEUED, not closed — the gate mechanism's truthful `test.run`.** The hazard Finding 2 exposed is
+real and unfixed: a capability gate is invisible to the running host, so any suite whose `TestMain`
+asserts that the whole suite ran will mis-answer while one is active. The hardening is to emit the
+gated set into the generated host and have `TestFlagBridge` publish a `test.run` naming the included
+set — Go's own vocabulary for "a subset ran". It is **load-bearing only when a gate meets a
+completeness-asserting `TestMain`**, and nothing is broken today: the only gated declarations live in
+`os` and `syscall`, and `os`'s `TestMain` is a bare `Exit(m.Run())`. It becomes owed the moment
+either a gated package with such a `TestMain` is banked, or `os` itself banks with its gate entries
+intact. Cost when it lands: a converter change plus a hand-owned `core/testing` change, therefore a
+full validated sweep.
+
+**One cosmetic defect left standing, deliberately.** The summary line prints
+`27 disclosed-divergent (, host-limit)` — the empty class comes from the two aggregation-disclosed
+parents, which carry no manifest entry and so contribute `""` to the class set. It is pre-existing
+(any package with an aggregated disclosed parent prints it) and cosmetic. The generated proof page's
+own preamble is likewise still worded for the two CLR-measurement classes only. Both are one-line
+renderer fixes and BOTH were left alone on purpose: touching the renderer restyles all 144 proof
+pages, and they only rewrite as each package is next re-validated, so the change would dribble a
+whole-corpus docs diff through unrelated lanes. It belongs in a pass that re-validates the roster.

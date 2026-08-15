@@ -129,6 +129,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `net/rpc/jsonrpc` | [`net.rpc.jsonrpc.md`](current/net.rpc.jsonrpc.md) | [`src/core/net/rpc/jsonrpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc/jsonrpc) |
 | `net/textproto` | [`net.textproto.md`](current/net.textproto.md) | [`src/core/net/textproto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/textproto) |
 | `net/url` | [`net.url.md`](current/net.url.md) | [`src/core/net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) |
+| `os/exec` | [`os.exec.md`](current/os.exec.md) | [`src/core/os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) |
 | `os/exec/internal/fdtest` | [`os.exec.internal.fdtest.md`](current/os.exec.internal.fdtest.md) | [`src/core/os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) |
 | `os/signal` | [`os.signal.md`](current/os.signal.md) | [`src/core/os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) |
 | `path` | [`path.md`](current/path.md) | [`src/core/path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path) |

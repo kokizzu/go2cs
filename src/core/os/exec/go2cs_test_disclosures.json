@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestCommand/current_directory",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/from_PATH_with_no_match_in_Dir",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/relative_to_Dir",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/relative_to_Dir_with_dot_and_extra_PATH",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/relative_to_Dir_with_dot_and_extra_PATH_and_no_extension",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/relative_to_Dir_with_explicit_dot",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/relative_to_Dir_with_extra_PATH",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/relative_to_Dir_with_extra_PATH_and_no_extension",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/with_dir",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/with_explicit_dot",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/with_extra_PATH",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/with_extra_PATH_and_no_extension",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/with_irrelevant_PATH",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestCommand/with_slash_and_no_extension",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/directory,_no_extension",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/dirs_with_extensions",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/doubled_extension",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/extension_not_in_PATHEXT",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/extensionless_file_in_CWD_ignored",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/extensionless_file_in_PATH_ignored",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/first_PATHEXT_entry",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/first_allowed_by_PATHEXT",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/first_match",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/first_with_extension",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    },
+    {
+      "name": "TestLookPathWindows/specific_name",
+      "class": "host-limit",
+      "signature": "exit status 0x8000809a",
+      "reason": "the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, \"The application to execute does not exist\")"
+    }
+  ]
+}

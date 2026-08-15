@@ -2504,10 +2504,15 @@ var unsupportedRuntimeCapabilities = map[string]string{
 
 	// os/exec's TestCommand and TestLookPathWindows want this SAME capability from the other
 	// direction — installExe (lp_windows_test.go) copies the running test executable into a
-	// t.TempDir() tree and runs the copy — and they are deliberately NOT listed here, because
-	// gating them was measured and leaves the package worse off than leaving them failing. Both
-	// reasons, and the verified keys ready to paste back, are in
-	// docs/phase4/BOARD-next-validation-candidates.md (2026-08-15, lane claude/os-exec-gate-bank):
+	// t.TempDir() tree and runs the copy — and they are NOT listed here. They are DISCLOSED
+	// instead, under the host-limit class ruled 2026-08-15: src/core/os/exec's committed
+	// go2cs_test_disclosures.json pins 25 leaf rows on `exit status 0x8000809a`, their 2 parents
+	// ride the disclosed-parent aggregation, and os/exec banks at 74 matched + 27 disclosed. The
+	// class and the bar an entry must clear are in docs/ConversionStrategies-Reference.md,
+	// "host-limit — the third disclosed-divergence class". Gating them was measured FIRST and is
+	// worse on three counts — the two below, plus that a gate hides the very rows whose future
+	// passing is the only signal the limit has lifted
+	// (docs/phase4/BOARD-next-validation-candidates.md, lane claude/os-exec-gate-bank):
 	//
 	//  1. A gate is DECLARATION-keyed and eligibleTerminalTestResults cuts a verdict row at its
 	//     first "/", so 2 entries withdraw 40 rows rather than the 27 that were failing. The other
@@ -2519,10 +2524,13 @@ var unsupportedRuntimeCapabilities = map[string]string{
 	//     validates at no count at all.
 	//
 	// os_test.TestRemoveAllWithExecutedProcess never showed (2) only because os's TestMain is a bare
-	// Exit(m.Run()). A gate is invisible to the running host — nothing publishes the fact that a
-	// SUBSET ran, where Go's own vocabulary for it is a non-empty test.run — so any suite asserting
-	// that the whole suite ran will mis-answer while one is active. Check for such a TestMain before
-	// adding a declaration-keyed entry.
+	// Exit(m.Run()), and os is not yet on the roster — its disposition is decided when it banks.
+	// The underlying hazard is unfixed and QUEUED rather than closed: a gate is invisible to the
+	// running host, since nothing publishes the fact that a SUBSET ran where Go's own vocabulary for
+	// it is a non-empty test.run. So any suite asserting that the whole suite ran will mis-answer
+	// while a gate is active. Nothing is broken today (the only gated declarations live in os, whose
+	// TestMain asserts nothing), but CHECK FOR SUCH A TestMain before adding a declaration-keyed
+	// entry — and prefer a disclosure whenever the tests can still run.
 }
 
 // unsupportedRuntimeCapability reports whether fn requires a listed unsupported runtime capability,
