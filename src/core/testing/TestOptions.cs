@@ -58,83 +58,139 @@ internal sealed class TestOptions
     public string RunPattern { get; private set; } = "";
     public string ShuffleValue { get; private set; } = "off";
 
+    /// <summary>
+    /// Parses the host's command line with Go's <c>flag</c> package semantics.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Parsing STOPS at the first non-flag token</b>, which is <c>flag.(*FlagSet).parseOne</c>'s
+    /// own rule and not a convenience: a Go test binary is a program in its own right, and its
+    /// <c>TestMain</c> is free to take arguments. <c>os/exec</c> is the corpus's example and drives
+    /// its entire helper protocol this way — it re-executes the test binary as
+    /// <c>exec.Command(exePath(t), "cat")</c> and dispatches on <c>flag.Args()[0]</c>. Rejecting
+    /// <c>cat</c> as an unknown host option killed every helper child at startup with exit 2 before
+    /// <c>TestMain</c> was entered, and the parent then reported the DOWNSTREAM symptom (<c>echo:
+    /// want "foo bar baz\n", got ""</c>), so one host defect read as twenty unrelated failures.
+    /// </para>
+    /// <para>
+    /// Stopping is not the same as ignoring, and the difference is load-bearing: <c>exe cat -n</c>
+    /// must leave <c>-n</c> to the child rather than parse it here. Everything BEFORE the stop is
+    /// still parsed strictly — an unrecognized <c>-flag</c> there is the host's own command line
+    /// being wrong, which Go reports as an error too, so it stays one. A lone <c>-</c> is a
+    /// non-flag (Go's length test), and <c>--</c> terminates the flags and is itself consumed.
+    /// </para>
+    /// <para>
+    /// What is left over is deliberately NOT recorded here. The program reads its own arguments the
+    /// way any Go program does — through <c>os.Args</c>, which the converted <c>os</c> package fills
+    /// from the real command line independently of this parser, or through <c>flag.Args()</c> after
+    /// its own <c>flag.Parse()</c>. The host's whole obligation is to stop, and to leave them
+    /// untouched on the way past.
+    /// </para>
+    /// </remarks>
     public static TestOptions Parse(string[] args)
     {
         TestOptions options = new();
 
-        for (int i = 0; i < args.Length; i++)
+        for (int index = 0; index < args.Length; index++)
         {
-            string arg = args[i];
-            string key = arg;
+            string arg = args[index];
+
+            // parseOne's stopping test, verbatim: a token shorter than two characters, or one that
+            // does not open with '-', ends the flag section — it and everything after it are the
+            // program's. This is what `-` alone is, too.
+            if (arg.Length < 2 || arg[0] != '-')
+                break;
+
+            int dashes = 1;
+
+            if (arg[1] == '-')
+            {
+                dashes = 2;
+
+                // "--" terminates the flags and is itself consumed.
+                if (arg.Length == 2)
+                    break;
+            }
+
+            // Go strips one OR two leading dashes and matches on the NAME, so `--json` and `-json`
+            // are one flag — the equivalence TestFlagBridge already relies on when it republishes
+            // these same options to the converted flag.CommandLine under their undashed names.
+            string name = arg[dashes..];
+
+            if (name.Length == 0 || name[0] is '-' or '=')
+                throw new ArgumentException($"bad flag syntax: {arg}");
+
             string? value = null;
-            int equals = arg.IndexOf('=');
+            int equals = name.IndexOf('=');
 
             if (equals >= 0)
             {
-                key = arg[..equals];
-                value = arg[(equals + 1)..];
+                value = name[(equals + 1)..];
+                name = name[..equals];
             }
 
-            switch (key)
+            switch (name)
             {
-                case "--json":
+                case "json":
                     options.Json = true;
                     // `go test -json` implies -v (cmd/go passes -test.v), so the Go side of the
                     // differential runs with testing.Verbose() == true; mirror it or tests that
                     // gate on Verbose() (sort's countOps) skip here while passing there.
                     options.Verbose = true;
                     break;
-                case "-v":
-                case "-test.v":
+                case "v":
+                case "test.v":
                     options.Verbose = value is null || bool.Parse(value);
                     break;
-                case "-short":
-                case "-test.short":
+                case "short":
+                case "test.short":
                     // Backs testing.Short() in the shim; go test's default (flag absent) is false.
                     options.Short = value is null || bool.Parse(value);
                     break;
-                case "-run":
-                case "-test.run":
-                    value ??= NextValue(args, ref i, key);
+                case "run":
+                case "test.run":
+                    value ??= NextValue(args, ref index, name);
                     options.RunPattern = value;
                     options.Filters = value.Split('/').Select(part =>
                         new Regex(part, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1.0D))).ToArray();
                     break;
-                case "-count":
-                case "-test.count":
-                    value ??= NextValue(args, ref i, key);
+                case "count":
+                case "test.count":
+                    value ??= NextValue(args, ref index, name);
                     options.Count = Math.Max(1, int.Parse(value, CultureInfo.InvariantCulture));
                     break;
-                case "-parallel":
-                case "-test.parallel":
+                case "parallel":
+                case "test.parallel":
                     // Caps simultaneously RUNNING parallel tests, like go test's -parallel flag
                     // (whose default is GOMAXPROCS — the processor count matches that default).
-                    value ??= NextValue(args, ref i, key);
+                    value ??= NextValue(args, ref index, name);
                     options.Parallel = Math.Max(1, int.Parse(value, CultureInfo.InvariantCulture));
                     break;
-                case "-shuffle":
-                case "-test.shuffle":
-                    value ??= NextValue(args, ref i, key);
+                case "shuffle":
+                case "test.shuffle":
+                    value ??= NextValue(args, ref index, name);
                     options.ShuffleValue = value;
                     options.ShuffleSeed = value == "on"
                         ? Random.Shared.Next()
                         : value == "off" ? null : int.Parse(value, CultureInfo.InvariantCulture);
                     break;
-                case "-timeout":
-                case "-test.timeout":
-                    value ??= NextValue(args, ref i, key);
+                case "timeout":
+                case "test.timeout":
+                    value ??= NextValue(args, ref index, name);
                     options.Timeout = ParseDuration(value);
                     break;
-                case "--result":
-                    value ??= NextValue(args, ref i, key);
+                case "result":
+                    value ??= NextValue(args, ref index, name);
                     options.ResultFile = value;
                     break;
-                case "--junit":
-                    value ??= NextValue(args, ref i, key);
+                case "junit":
+                    value ??= NextValue(args, ref index, name);
                     options.JUnitFile = value;
                     break;
                 default:
-                    throw new ArgumentException($"unsupported converted test option: {arg}");
+                    // Go's own wording, because this host stands in for a Go test binary and its
+                    // stderr is read beside one in the differential comparison.
+                    throw new ArgumentException($"flag provided but not defined: -{name}");
             }
         }
 
@@ -164,10 +220,13 @@ internal sealed class TestOptions
         return true;
     }
 
+    // A non-boolean flag whose value did not arrive as `-name=value` takes the NEXT token, whatever
+    // it looks like — Go's parseOne does the same, so `-run -v` makes "-v" the pattern rather than a
+    // second flag, and the stopping rule never sees it.
     private static string NextValue(string[] args, ref int index, string option)
     {
         if (++index >= args.Length)
-            throw new ArgumentException($"missing value for {option}");
+            throw new ArgumentException($"flag needs an argument: -{option}");
         return args[index];
     }
 
