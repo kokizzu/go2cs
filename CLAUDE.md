@@ -348,7 +348,12 @@ ONE stdlib in a build; there is now only one on disk.
   2026-08-15: two lanes both writing `cnr.log` — one clobbered the other's gate log mid-run, and the
   verdict had to be recovered from `git status`). It is session-scoped, not lane-scoped. Prefix every
   scratch filename with your lane/branch name (`<lane>-cnr.log`), and treat an unexpectedly truncated
-  or rewritten scratch log as a collision first, a gate failure second.
+  or rewritten scratch log as a collision first, a gate failure second. Make the name unique per RUN
+  too, not just per lane — a REUSED log path on Windows can splice a fresh run's header onto a stale
+  run's tail (file tunneling + partial overwrite) and fabricate readings like "CNR finished in 20 s"
+  (measured 2026-08-15). And never census with `grep -P` on this box: it dies with "-P supports only
+  unibyte and UTF-8 locales", so with stderr discarded it returns 0 matches and reads as "no sites"
+  — a false-empty census that nearly got banked. Use ripgrep (`rg`)/the Grep tool.
   **⚠ `dotnet build-server shutdown` is ALSO machine-global** (found 2026-08-03: one lane's startup
   cleanup yanked the shared MSBuild servers out from under a sibling's in-flight compile — same
   truncated-log signature, no Stop-Process anywhere). While sibling sessions may be building, do NOT
@@ -606,6 +611,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   suite that follows one.
 - **The on-disk corpus can be stale** relative to converter changes made since the last regen; building
   the committed tree measures *that* output, not today's. To measure the current converter you reconvert.
+- **⚠ For ADDRESS-OF/ALIASING (`Ꮡ`-machinery) converter changes, a seeded corpus reconvert-and-BUILD
+  joins the gate list — CNR alone is not sufficient** (proven 2026-08-15, the element-field-address
+  fix: of the three defects in that arc, CNR caught ONE; the other two — a pointer-receiver named-array
+  blind spot and its over-broad first fix — appeared in NO behavioral test's shape and were found only
+  because the whole corpus was reconverted and compiled. The same census surfaced a real shipped lost
+  write, `encoding/xml`'s attribute-namespace translation writing into a copy). The behavioral corpus
+  is a SAMPLE of Go's shapes; the stdlib is the population — aliasing changes get measured against the
+  population before banking.
 - **Reconvert → overlay → build → bucket (the measurement loop):**
   1. **⚠ SEED FIRST — non-negotiable (learned 2026-07-25, cost a false operational-break alarm):**
      `cp -r src/core <tmp>/core` BEFORE reconverting. The converter emits a hand-owned
