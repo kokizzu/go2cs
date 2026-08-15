@@ -368,6 +368,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckEmbeddedPointerNilAssign() => CheckTarget("EmbeddedPointerNilAssign");
 
     [TestMethod]
+    public void CheckEmbeddedStructValueCopy() => CheckTarget("EmbeddedStructValueCopy");
+
+    [TestMethod]
     public void CheckEmbeddedTypeNameCollision() => CheckTarget("EmbeddedTypeNameCollision");
 
     [TestMethod]

@@ -241,7 +241,7 @@ internal static void Main() {
         rg.Temp = 66D;
         fmt.Println((float64)rg.Device.Sensor.Temp);
         fmt.Println(rg.Device.Sensor.Hot());
-        Ꮡ(rg).of(rig.ᏑDevice).of(CrossPkgLib.Device.ᏑSensor).Calibrate(3D);
+        rg.Device.Sensor.Calibrate(3D);
         fmt.Println((float64)rg.Device.Sensor.Temp);
         var exprᴛ1 = CrossPkgLib.Precision;
         if (exprᴛ1 == 1) {

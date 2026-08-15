@@ -41,10 +41,16 @@ func typeIsArrayValue(t types.Type) bool {
 // `[GoValueClone(…)]`, go2cs-gen generates its field-precise `Clone()`, and every copy site here
 // appends it.
 //
-// EMBEDDED (promoted) struct members are deliberately NOT a reason to clone, and are not cloned:
-// go2cs-gen holds an embed in a `ж<T>` box whose member accessor writes THROUGH the box, so a clone
-// that assigned one would corrupt the source. Embedded-struct copy aliasing is a separate,
-// pre-existing gap in the embed model, untouched here.
+// EMBEDDED (promoted) struct members are not a reason to clone: go2cs-gen holds an embed as an
+// INLINE field, so the plain C# struct copy already copies it, exactly as Go does. (Until
+// 2026-08-14 an embed was a shared `ж<T>` box, which gave it reference semantics a value copy then
+// aliased — the defect behind go/types' type-parameter identity wall; see
+// ConversionStrategies-Reference, *An embedded struct is an INLINE field, so a value copy copies
+// it*.) What the skip below still costs is narrower and named: a fixed ARRAY reached only THROUGH
+// an embed is not seen, so such a struct is not stamped and the array backing stays shared. Widening
+// the walk is now sound — the generated `copy.<member> = <member>.ΔClone()` lands in the copy's own
+// inline storage — but it moves EMISSION corpus-wide, so it belongs to a change that owns that
+// footprint.
 func typeNeedsValueClone(t types.Type) bool {
 	return typeNeedsValueCloneSeen(t, map[types.Type]bool{})
 }

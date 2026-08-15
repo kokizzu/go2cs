@@ -17,9 +17,13 @@ namespace go;
 /// <remarks>
 /// The converter is the single source of truth here: only it has the Go type information that
 /// decides which fields need the deep copy, and it emits the matching <c>.Clone()</c> at every Go
-/// by-value copy site. EMBEDDED (promoted) struct members are deliberately NOT listed — they are
-/// held as <c>ж&lt;T&gt;</c> boxes whose accessor writes THROUGH the box, so assigning one in a
-/// clone would corrupt the source; embedded-struct copy aliasing is a separate, pre-existing gap.
+/// by-value copy site. An EMBEDDED (promoted) struct member needs no listing for its own sake: it is
+/// an INLINE field of the enclosing struct, so the C# struct copy already copies it, exactly as Go
+/// does. (It was held in a shared <c>ж&lt;T&gt;</c> box until 2026-08-14, which gave the embed
+/// reference semantics that a value copy then aliased — the defect behind go/types' type-parameter
+/// identity wall.) Listing an embed remains meaningful only when the embedded TYPE itself carries a
+/// fixed array; the converter does not walk into embeds yet, so an array reached only THROUGH an
+/// embed is the one named residue of this attribute's class.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Struct)]
 public sealed class GoValueCloneAttribute(params string[] fields) : Attribute

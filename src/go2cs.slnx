@@ -353,6 +353,7 @@
     <Project Path="tests/Behavioral/ElidedStructInterfaceField/ElidedStructInterfaceField.csproj" />
     <Project Path="tests/Behavioral/EmbeddedPointerFieldIdentity/EmbeddedPointerFieldIdentity.csproj" />
     <Project Path="tests/Behavioral/EmbeddedPointerNilAssign/EmbeddedPointerNilAssign.csproj" />
+    <Project Path="tests/Behavioral/EmbeddedStructValueCopy/EmbeddedStructValueCopy.csproj" />
     <Project Path="tests/Behavioral/EmbeddedTypeNameCollision/EmbeddedTypeNameCollision.csproj" />
     <Project Path="tests/Behavioral/EmbeddedTypeNameCollision/inner/EmbeddedTypeNameCollision.inner.csproj" />
     <Project Path="tests/Behavioral/EmbeddedValuePointerMethod/EmbeddedValuePointerMethod.csproj" />

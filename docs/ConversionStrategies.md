@@ -1291,8 +1291,11 @@ internal static bool Less(this reverse r, nint i, nint j) {
 }
 ```
 
-Promoted-embed structs construct through a generated constructor (never `default`, which would leave null
-boxes). Cross-package embeds resolve through the compiled type's metadata, and pointer-receiver methods
+An embed is an **inline field**, so a Go value copy copies it exactly as Go does — it was held in a shared
+`ж<T>` box until 2026-08-14, which gave the embed reference semantics a C# struct assignment then aliased,
+and that is the defect that made the converted `go/types` judge a type parameter not identical to itself.
+Promoted-embed structs still construct through a generated constructor when the embedded type needs one of
+its own (a fixed-size array at some depth). Cross-package embeds resolve through the compiled type's metadata, and pointer-receiver methods
 promoted through a value embed are routed at the call site (`t.of(timeTimer.Ꮡtimer).modify(…)`) so writes
 land on the real storage. Such a method is *also* emitted as a `ж<T>`-receiver extension on the outer type,
 because that emitted set is what golib reads back at run time as the type's Go **method set** — so a
@@ -1307,8 +1310,8 @@ internal static ж<FD> Ꮡpfd(ref File instance) => instance.@file.of(global::go
 ```
 
 **Full detail:** [Reference → Struct Type Embedding](ConversionStrategies-Reference.md#struct-type-embedding) —
-transitive/pointer promotion, zero-value construction, cross-package (metadata) embeds, pointer-embed field
-identity, interface-adapter projection through embeds, and box-receiver primaries.
+transitive/pointer promotion, the inline-field copy rule, zero-value construction, cross-package (metadata)
+embeds, pointer-embed field identity, interface-adapter projection through embeds, and box-receiver primaries.
 
 ---
 

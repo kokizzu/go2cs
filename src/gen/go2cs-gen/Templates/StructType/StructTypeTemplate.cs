@@ -49,7 +49,7 @@ internal class StructTypeTemplate : TemplateBase
             [{{GeneratedCodeAttribute}}]
             {{Scope}} partial struct {{StructName}}{{ValueCloneBaseList}}
             {
-                // Promoted Struct References
+                // Promoted Struct Fields
                 {{PromotedStructDeclarations}}
 
                 // Field References
@@ -95,8 +95,11 @@ internal class StructTypeTemplate : TemplateBase
     // the original, and the aliased state made every second Sum wrong. The CONVERTER decides which
     // fields need the deep copy (it alone has the Go type information) and names them in
     // [GoValueClone(…)]; this emits the matching Clone(), and every Go by-value copy site calls it.
-    // EMBEDDED members are never listed — they are held as ж<T> boxes whose accessor writes THROUGH
-    // the box (see GoValueCloneAttribute).
+    // An EMBEDDED member needs no listing for its own sake — it is an INLINE field (see
+    // PromotedStructDeclarations), so the C# struct copy already copies it, exactly as Go does. It is
+    // listed only when the embedded TYPE itself carries a fixed array, and then the ordinary
+    // `copy.<member> = <member>.ΔClone()` line is correct: the assignment lands in the copy's own
+    // inline storage, never in the source's.
     private string ValueCloneBaseList => ValueCloneFields.Length > 0 ? " : IGoValueClone" : "";
 
     private string ValueCloneImplementation
@@ -144,30 +147,48 @@ internal class StructTypeTemplate : TemplateBase
 
             StringBuilder result = new();
 
-            // The composed box-field name must use the unescaped member name — a C#-keyword embed
-            // (`type base struct{…}`) arrives escaped `@base`, but `Ꮡʗ@base` is invalid ('@' only
+            // An embed is an INLINE FIELD, never a box. Go copies an embedded struct with the value
+            // that carries it — it is a field like any other — so a heap ж<T> box gave the embed
+            // REFERENCE semantics that a C# struct assignment then shared: `copy = value` handed both
+            // sides one storage and every write through the copy reached the source. That is the
+            // defect that made go/types judge a type parameter not identical to itself — subst's
+            // `copy := *v` mutated the ORIGIN Var's field type in place, so the second instantiation
+            // of a generic type substituted over an already-substituted underlying (see the
+            // EmbeddedStructValueCopy behavioral test, and ConversionStrategies-Reference under
+            // *An embedded struct is an INLINE field, so a value copy copies it*).
+            //
+            // The composed field name must use the unescaped member name — a C#-keyword embed
+            // (`type base struct{…}`) arrives escaped `@base`, but `ʗ@base` is invalid ('@' only
             // leads an identifier). The standalone member ACCESS sites keep `@base`.
             foreach ((string typeName, string memberName, _, _) in promotedStructs)
             {
                 if (result.Length > 0)
                     result.Append($"\r\n{TypeElemIndent}");
 
-                result.Append($"private readonly {PointerPrefix}<{typeName}> {AddressPrefix}{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)};");
+                result.Append($"private {typeName} {CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)};");
             }
 
             result.Append($"\r\n\r\n{TypeElemIndent}// Promoted Struct Accessors");
 
-            // ValueSlot, not Value: the Ꮡʗ box is a real constructor allocation, so resolving the
-            // accessor is a READ OF THE HELD VALUE, never a dereference of the box — for a POINTER
-            // embed (a ж<ж<T>> box) whose held ж<T> is null, `.Value` treated that as a nil-pointer
-            // deref and panicked, making Go-legal post-construction ASSIGNMENT of the embedded
-            // pointer (`s.setting = lookup(…)`, internal/godebug's New→once.Do shape) impossible.
-            // A genuine deref of a nil embed still panics downstream, on the held ж<T>'s own Value
-            // (the promoted field/method accessors descend `<embed>.Value.<member>`).
+            // [UnscopedRef] is what makes the ref accessor legal at all: a struct member returning a
+            // ref to its own instance state is CS8170 by default, because the receiver could be a
+            // temporary. The attribute states the ref's lifetime is the RECEIVER's — exactly the
+            // guarantee Go gives, since the selection IS the enclosing value's storage — and moves the
+            // burden to the call site, where C#'s ref-safety rules then reject precisely the cases Go
+            // also rejects (taking the address of a non-variable). Same technique the
+            // InheritedTypeTemplate uses to forward a defined-type-over-struct's fields.
+            //
+            // The accessor is a REF, not get/set, for the same reason it always was: in Go the
+            // selection is a variable — addressable, and usable as the receiver of a value-receiver
+            // method the converter emits `this ref`. A POINTER embed's slot holds a possibly-null
+            // ж<T>; reading or ASSIGNING it never dereferences (internal/godebug's
+            // `s.setting = lookup(…)` post-construction shape), and a genuine deref still panics
+            // downstream on the held ж<T>'s own Value — the promoted field/method accessors descend
+            // `<embed>.Value.<member>`.
             foreach ((string typeName, string memberName, _, _) in promotedStructs)
             {
                 string typeScope = GetScope(GetSimpleName(typeName));
-                result.Append($"\r\n{TypeElemIndent}{typeScope} partial ref {typeName} {memberName} => ref {AddressPrefix}{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)}.ValueSlot;");
+                result.Append($"\r\n{TypeElemIndent}[global::System.Diagnostics.CodeAnalysis.UnscopedRef] {typeScope} partial ref {typeName} {memberName} => ref {CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)};");
             }
 
             result.Append($"\r\n\r\n{TypeElemIndent}// Promoted Struct Field Accessors");
@@ -245,7 +266,7 @@ internal class StructTypeTemplate : TemplateBase
                     // Like the Ꮡ-prefixed accessors below, the Δ-prefixed NAME composes on the
                     // UNESCAPED member name — `Δ@base` is invalid ('@' only leads).
                     string accessorName = GetSimpleName(memberName) == NonGenericStructName ? $"{ShadowVarMarker}{GetUnsanitizedIdentifier(memberName)}" : memberName;
-                    result.Append($"\r\n{TypeElemIndent}{typeScope} ref {SubstituteTypeParameters(typeName, typeArgMap)} {accessorName} => ref {EmbedHop(promotedStructType, promotedMemberName)}.{memberName};");
+                    result.Append($"\r\n{TypeElemIndent}[global::System.Diagnostics.CodeAnalysis.UnscopedRef] {typeScope} ref {SubstituteTypeParameters(typeName, typeArgMap)} {accessorName} => ref {EmbedHop(promotedStructType, promotedMemberName)}.{memberName};");
                 }
             }
 
@@ -1030,7 +1051,7 @@ internal class StructTypeTemplate : TemplateBase
                 result.Append($"{TypeElemIndent}    ");
                 // A keyword-named embed composes the box field from the UNESCAPED member name
                 // ('@' is only valid leading an identifier - 'Ꮡʗ@base' is CS1002).
-                result.AppendLine($"{AddressPrefix}{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)} = new {PointerPrefix}<{typeName}>(new {typeName}(nil));");
+                result.AppendLine($"{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)} = new {typeName}(nil);");
                 continue;
             }
 
@@ -1090,8 +1111,13 @@ internal class StructTypeTemplate : TemplateBase
             if (GetSimpleName(memberName) == "_")
                 continue;
 
-            // A promoted embed surfaces as a `partial ref` PROPERTY (isProperty) — its box is
-            // constructor-allocated, so the enclosing default is broken.
+            // A promoted embed surfaces as a `partial ref` PROPERTY (isProperty). Its inline slot's
+            // own `default` is now a usable Go zero value, so this is CONSERVATIVE rather than
+            // required: it keeps the constructor route (and therefore the converter's `new(nil)`
+            // renderings, which key off the same shape) for every embed, whether or not the embedded
+            // type is itself needy. Narrowing it to `NeedsConstruction(memberType, seen)` would be
+            // correct and would drop some constructions, but it moves converter EMISSION and is left
+            // to a change that owns that footprint.
             if (isProperty)
                 return true;
 
@@ -1208,7 +1234,7 @@ internal class StructTypeTemplate : TemplateBase
             // omitted (a caller-supplied value is used as-is — no extra allocation, unchanged reference
             // semantics), exactly mirroring the POINTER-embed `memberValue` handling above.
             result.AppendLine(isPromotedStruct ?
-                $"{AddressPrefix}{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)} = new {PointerPrefix}<{typeName}>({memberValue});" :
+                $"{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)} = {memberValue};" :
                 IsFixedArrayMember(typeName, isReferenceType) ?
                     $"if ({memberName}.Source is not null) this.{memberName} = {memberName};" :
                     IsNeedyValueStructMember(typeName, isReferenceType, isPromotedStruct) ?

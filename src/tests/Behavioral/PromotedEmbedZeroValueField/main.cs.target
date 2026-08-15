@@ -28,9 +28,9 @@ private static readonly object nameEmptyˢ = (@string)"name-empty:"u8;
 
 internal static void Main() {
     var b = new slotBox(id: 3);
-    Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
-    Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
-    Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
+    b.slot.counter.inc();
+    b.slot.counter.inc();
+    b.slot.counter.inc();
     fmt.Println((@string)"id:"u8, b.id, countˢ, b.slot.n, nameEmptyˢ, b.slot.name == ""u8);
 }
 

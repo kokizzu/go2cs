@@ -7383,3 +7383,147 @@ That is the whole question, and it is a policy one: whether "the host provably c
 shape" is bankable at all, and if so whether it should read as an excluded capability (2 gate
 entries, tests never run) or as disclosed divergences (25 signature entries, tests run and fail
 visibly). Recorded here for the next lane that reaches a package where it IS load-bearing.
+
+## RESOLVED (2026-08-14, lane `claude/typeparam-identity`) — the type-parameter identity wall is EMBEDDED-STRUCT COPY ALIASING, and the fix is one generator field
+
+The campaign's last mega-wall — one root, three dependents, ~450 verdicts: `go/internal/gcimporter`'s
+108 `TestImportTypeparamTests` mismatches (the `constrained by` signature), `go/types`' own 33
+failures plus the `0xc00000fd` stack overflow at `TestFixedbugs/issue48951.go`, and
+`go/internal/srcimporter`'s 2 `cannot infer T` failures. **None of it is generics, `Identical`, or
+the instance caches.** It is a struct value copy that was not a copy.
+
+**The hypothesis was wrong, and instrumentation said so in one run.** The standing suspicion —
+`*TypeParam` compared by pointer identity through a conversion that mints distinct
+wrappers/adapters/boxes, so `Identical(t, t)` fails reflexivity — is **false**. Instrumented at
+`predicates.cs`'s `identical`, the two operands of the failing comparison are TWO DIFFERENT
+`*TypeParam` objects (ids 2 and 3) and `AreEqual` answers `False` **correctly**; a same-object
+comparison answers `True` with the same box on both sides. The `Context`/`instanceHash`/`lookup`
+caches were instrumented too and behave exactly as Go's: distinct hashes (`00S[T₂]` vs `00S[T₃]`),
+zero cache hits, no collapse. Everything the board pointed at was healthy.
+
+**The 7-line reproducer.** Driving the converted `go/types.Check` directly over a tiny source (the
+types/errors lane's harness shape — build once, then a ~1 s run per probe) minimizes
+`test/typeparam/absdiff2.go`'s 13 errors down to:
+
+```go
+package main
+
+type S[T any] struct{ V T }
+
+func (a S[T]) M1() T { return a.V }
+
+func (a S[T]) M2() T { return a.V }     // C#: cannot use a.V (variable of type T …) as T value
+```
+
+Go reports 0 errors. The converted checker reports 1, **on the SECOND method only** — delete `M1`
+and it passes. Spelling the second method's parameter differently (`func (b S[U]) M2() U`) prints
+the tell outright: `b.V` has type **`T`**, the FIRST method's type parameter.
+
+**The mechanism, printed.** `Named.expandUnderlying` substitutes the origin's underlying per
+instance. Instrumented:
+
+```
+[EXPAND] targs=[TP#2] origUnder=struct{TP#1} smap={TP#1->TP#2}  ->  newUnder=struct{TP#2}
+[EXPAND] targs=[TP#3] origUnder=struct{TP#2} smap={TP#1->TP#3}  ->  newUnder=struct{TP#2}
+                                        ^^^^ the ORIGIN was mutated by the first substitution
+```
+
+`subst.go`'s `substVar` is `copy := *v; copy.typ = typ`. `go/types.Var` EMBEDS `object`, which
+carries `typ` — and go2cs-gen held a promoted embed in a **shared `ж<T>` box**, so the C# struct
+assignment `copy = v` handed both sides one `object` and `copy.typ = typ` wrote into the ORIGINAL.
+The origin's `struct{V T₁}` became `struct{V T₂}`; the second method then substituted `{T₁ → T₃}`
+over a struct that no longer mentioned `T₁`, kept `T₂`, and `Identical(T₂, T₃)` correctly said no.
+`cannot infer T` and `validType0`'s unbounded recursion are the same fact in their other costumes.
+
+**Proven at golib level in 12 lines, no `go/types` involved** — a struct embedding another, one
+plain assignment and one `c := *p`:
+
+| | Go | C# (pre-fix) |
+|:--|:--|:--|
+| `a.v` after `b := a; b.v = 2` | `1` | **`2`** |
+| `a.tag` (an ORDINARY field) after `b.tag = "b"` | `a` | `a` |
+| `orig.v` after `c := *orig; c.v = 99` | `10` | **`99`** |
+
+The ordinary field copies correctly; only the embed aliases. This is the gap
+`GoValueCloneAttribute`'s own remarks had already NAMED and set aside — *"embedded-struct copy
+aliasing is a separate, pre-existing gap"* — declared in the array-clone arc and never priced. Its
+price was this wall.
+
+**The fix is one field in `StructTypeTemplate`: the embed becomes an INLINE field.**
+
+```csharp
+private @object ʗobject;                                          // was: private readonly ж<@object> Ꮡʗobject;
+[UnscopedRef] internal partial ref @object @object => ref ʗobject;  // was: => ref Ꮡʗobject.ValueSlot;
+```
+
+The box existed only because a struct member cannot ref-return its own instance state (CS8170);
+`[UnscopedRef]` states the ref's lifetime is the receiver's — exactly the guarantee Go gives, since
+the selection IS the enclosing value's storage — and the repo already used that technique in
+`InheritedTypeTemplate`. Five emission sites in one file (field, accessor, promoted-field accessor,
+two constructor initializers). **No converter change, no corpus regen, no golden churn**: the
+generator's output is not committed, so the emitted `.cs` is byte-identical.
+
+Two things improve for free: a `default(T)` reached where no constructor runs (a missing-key map
+read, a freshly `make`d element) no longer carries a null embed box — the previously documented
+residual gap narrows to embedded types that need construction in their own right; and the C# struct
+`=` now means what Go's `=` means for every embedding type in the corpus.
+
+**The one residue, named and unchanged.** A fixed ARRAY reached only THROUGH an embed is still
+shared after a copy (`array<T>` is a struct over a shared `T[]`, and `typeNeedsValueClone` skips
+embedded fields when deciding the `[GoValueClone]` stamp). It was shared before this fix and is
+shared after, by a different mechanism. Widening the walk is now SOUND — the generated
+`copy.<member> = <member>.ΔClone()` lands in the copy's own inline storage instead of corrupting the
+source, which is precisely why it was excluded — but it moves converter EMISSION corpus-wide and
+belongs to a change that owns that footprint.
+
+### The unlock, MEASURED across all three dependents
+
+| Package | Baseline | After | Verdict |
+|:--|:--|:--|:--|
+| `go/internal/gcimporter` | 475 of 583 (108 mismatches, all `TestImportTypeparamTests`) | **583 / 583, 0 mismatches** | **BANKED** — `status: validated`, 14 skipped identically |
+| `go/internal/srcimporter` | 5 of 7 (`TestImportStdLib`, `TestImportedTypes` died on `sync.OnceValue(func() bool {…})` — *cannot infer T*) | **7 / 7, 0 mismatches** | **BANKED** — `status: validated`, `TestCgo` skipped identically |
+| `go/types` | 202 verdicts (169 pass / 33 fail), then `0xc00000fd` in `validType0` at `TestFixedbugs/issue48951.go` | **513 verdicts, 512 pass + 1 skip, ZERO failures** | not banked — 44 verdicts never produced; a NEW wall, below |
+
+`go/types` is the measurement that settles it: the type-parameter class is **entirely gone**. Every
+`TestCheck/*`, every `TestExamples/*`, and every `TestFixedbugs/*` — issue48951 among them, the
+invalid-recursive-generic that used to exhaust the stack because `Identical(e, t)` never fired —
+now passes, and not one produced verdict disagrees with `go test`. Its 44 absent rows are one
+process-killer, and it is a different animal (next entry).
+
+### The NEXT wall, named: `TestSizeof` exhausts the stack in golib's reflect LAYOUT walk
+
+`go/types`' run now dies at `TestSizeof` — the first test alphabetically past the ones that pass —
+with an unbounded recursion whose frames alternate exactly two functions:
+
+```
+   at go.GoReflect.tryStructLayout(System.Type, IntPtr[] ByRef, IntPtr ByRef)
+   at go.GoReflect.GoSizeOf(System.Type, IntPtr[])          x until the stack is gone
+   at go.internal.abi_package.synthesizeDescriptor(...)
+   at go.reflect_package.TypeOf(System.Object)
+   at go.go.types_internal_test_package.TestSizeof(...)
+```
+
+It takes `TestSizeof` and everything alphabetically after it (`TestSpec/*` and the rest — 44
+verdicts) and it is **not** the type-parameter class: `GoSizeOf` has no memo and no depth guard,
+and the walk is reached the moment `reflect.TypeOf` is asked to synthesize a descriptor for a
+go/types struct. Deliberately NOT attributed to the embed change on the evidence available: the
+projection reports the SAME field TYPE for an embed before and after (the old arm unwrapped
+`ж<T>` to `T`; the new one reads the inline field, whose type is `T`), so the walk sees the same
+graph — but that is an argument, not a measurement, and nobody has run this test on the pre-change
+golib because the type-parameter wall stopped the suite ~300 verdicts earlier. **Whoever takes it
+should settle that first**, with a standalone `GoSizeOf` probe over the same types on both
+golibs; if it is pre-existing it is a golib defect in its own right (a memo plus a cycle guard is
+the obvious shape), and if it is not, the embed model is implicated and the probe says how.
+
+One coupling the embed change DID break and this lane fixed: `GoReflect.collectGoFields`
+recognized a promoted embed by the old box shape (a field named `ᏑʗName` whose type is `ж<T>`),
+so an inline `ʗName` fell through to the generic arm and reported the Go field under its MANGLED
+name. The projection now keys on the `ʗ` marker alone and reports the field's own type with no
+pointer hop. It does NOT change the recursion above (measured: identical stack, identical 44
+absent verdicts before and after), which is part of the evidence that the recursion is not the
+embed's.
+
+Guarded by the new **`EmbeddedStructValueCopy`** behavioral output test (assignment, by-value
+parameter, a two-level `c := *p`, a slice-element read, and a pointer embed proving both halves of
+Go's rule). Doctrine: `ConversionStrategies-Reference.md`, *An embedded struct is an INLINE field,
+so a value copy copies it*.
