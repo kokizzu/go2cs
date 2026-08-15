@@ -4,13 +4,13 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// Every converted standard-library package's NuGet README carries one badge line — the first thing a
-// visitor sees on nuget.org and in the repository. It holds four badges, space separated so a narrow
-// renderer wraps between them:
+// Every converted standard-library package's NuGet README carries one badge paragraph — the first
+// thing a visitor sees on nuget.org and in the repository. It holds four badges over TWO lines:
 //
 //	Tests      this package's validation state (below)
 //	Docs       the official Go documentation for the very sources it was converted from, pinned to
 //	           the version that produced them (readmeDocsBadgeLine)
+//	· · · · · · · · · · · · · ·  hard line break  · · · · · · · · · · · · · ·
 //	Source·Go  the Go sources themselves, in the Go repository at the release tag that produced them
 //	           (readmeGoSourceBadgeLine)
 //	Source·C#  the converted C# beside this README, in the go2cs repository at the release tag this
@@ -20,6 +20,13 @@
 // Tests and Docs state what this package IS (validated, and what it mirrors), while the Source pair
 // is the invitation to go read both sides. The pair is deliberately adjacent and deliberately in
 // convert-FROM → convert-TO order, so the line reads as the conversion it describes.
+//
+// That reading order is also WHERE the break goes (user ruling 2026-08-15, from the live NuGet page).
+// All four on one line wrapped raggedly in nuget.org's narrow README pane — it broke wherever the
+// pane's width fell rather than where the meaning does. Splitting at the seam the order already names
+// gives the one variable-width badge (Tests, whose message is `<m>/<t> validated`) the room, and
+// leaves the fixed-width Source pair together on a line that cannot outgrow the pane. It stays ONE
+// paragraph of two lines rather than two paragraphs: the four badges are a single statement.
 //
 // The Tests badge is the package's honesty contract:
 //
@@ -117,6 +124,33 @@ const (
 	// vendorModulesFileName is GOROOT's own record — src/vendor/modules.txt — of which module and
 	// which exact version each vendored package was drawn from.
 	vendorModulesFileName = "modules.txt"
+
+	// badgeSeparator spaces the badges that share a line. A single space is what lets a renderer
+	// narrower than the pair wrap between them rather than clip, and it is also what terminates a
+	// badge's URL for push-nuget.ps1's link-retarget patterns — see the segment note there.
+	badgeSeparator = " "
+
+	// badgeLineBreak ends the first badge line: a trailing BACKSLASH, which is CommonMark's explicit
+	// hard line break, so the two lines render as two lines of ONE paragraph.
+	//
+	// Chosen over the two other candidates for the same reason, from opposite directions. `<br/>` is
+	// raw HTML, and nuget.org — which renders READMEs with Markdig and publishes the exact list of
+	// features it supports — does not list HTML at all, so the tag would be at the mercy of its
+	// sanitizer on the one surface this break exists for. Two TRAILING SPACES are the classic form,
+	// but they are invisible and every whitespace-trimming tool in the path (editors, linters,
+	// `git diff --check`, a well-meant future format pass over the emitter) silently deletes them and
+	// silently re-joins the badges. The backslash is visible, survives trimming, and is covered by
+	// name in nuget.org's supported list — the CommonMark "backslash escapes" section is where the
+	// end-of-line hard break is specified — as well as by GitHub's GFM.
+	//
+	// Verified by rendering the emitted README through both engines rather than by reading the specs:
+	// GitHub's own /markdown API and Markdig (the engine nuget.org names) each produce ONE <p> holding
+	// `Tests Docs <br /> Source Source` — two lines, one paragraph, in Markdig's core and advanced
+	// pipelines alike.
+	//
+	// The newline is a bare \n on purpose: writeReadmeFile converts the whole README to CRLF in one
+	// pass, so emitting \r\n here would double the CR.
+	badgeLineBreak = "\\\n"
 )
 
 // The published version lives in version.props as two elements; these mirror push-nuget.ps1's own
@@ -126,36 +160,55 @@ var (
 	goBuildNumberPattern   = regexp.MustCompile(`<GoBuildNumber>([^<]+)</GoBuildNumber>`)
 )
 
-// readmeBadgeLine composes a converted stdlib package's whole badge line — Tests, Docs, Source·Go,
-// Source·C# — separated by single spaces. Each badge is emitted only when it can be composed
-// honestly, so the line may hold any subset, or — when none has the inputs it needs — nothing at all,
-// in which case the README carries no badge paragraph, exactly as it did before badges existed.
+// readmeBadgeLine composes a converted stdlib package's whole badge paragraph — Tests and Docs on
+// the first line, Source·Go and Source·C# on the second, one badgeLineBreak apart and single spaces
+// within each line.
+//
+// Each badge is emitted only when it can be composed honestly, so the paragraph may hold any subset,
+// or — when none has the inputs it needs — nothing at all, in which case the README carries no badge
+// paragraph, exactly as it did before badges existed. The break is a JOIN between the two lines
+// rather than a terminator on the first, so a missing badge can never leave a dangling break or an
+// empty line: an unseeded reconvert (Docs and Source·Go only) emits one badge per line with the
+// break between them, a package that can compose only one line emits that line alone with no break
+// at all, and no badges at all is still the empty string.
 //
 // The badges answer independent questions from independent inputs, so none suppresses another: Tests
 // and Source·C# read the repository (version.props, the proof pages), while Docs and Source·Go read
 // the Go toolchain and GOROOT. That split is what an unseeded reconvert makes visible — it emits the
-// two toolchain badges and neither repository one.
+// two toolchain badges and neither repository one, one on each line, which is exactly why the break
+// has to be composed from what is present rather than written into a fixed template.
 func readmeBadgeLine(projectPath string, projectName string, sourceDir string, options Options) string {
-	badges := make([]string, 0, 4)
 	importPath := stdLibImportPath(sourceDir, options.goRoot)
+	state := make([]string, 0, 2)
+	source := make([]string, 0, 2)
 
 	if badge := readmeValidationBadgeLine(projectPath, projectName, sourceDir); badge != "" {
-		badges = append(badges, badge)
+		state = append(state, badge)
 	}
 
 	if badge := readmeDocsBadgeLine(importPath, goVersion(), options.goRoot); badge != "" {
-		badges = append(badges, badge)
+		state = append(state, badge)
 	}
 
 	if badge := readmeGoSourceBadgeLine(importPath, goVersion(), options.goRoot); badge != "" {
-		badges = append(badges, badge)
+		source = append(source, badge)
 	}
 
 	if badge := readmeCSharpSourceBadgeLine(projectPath); badge != "" {
-		badges = append(badges, badge)
+		source = append(source, badge)
 	}
 
-	return strings.Join(badges, " ")
+	lines := make([]string, 0, 2)
+
+	if len(state) > 0 {
+		lines = append(lines, strings.Join(state, badgeSeparator))
+	}
+
+	if len(source) > 0 {
+		lines = append(lines, strings.Join(source, badgeSeparator))
+	}
+
+	return strings.Join(lines, badgeLineBreak)
 }
 
 // readmeGoSourceBadgeLine returns the Source·Go badge — the ORIGINAL Go source this package was
