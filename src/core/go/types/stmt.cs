@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements typechecking of statements.
-global using Expr = go.go.ast_package.Expr;
-global using identType = go.go.ast_package.Ident;
+global using rangeStmt_Expr = go.go.ast_package.Expr;
+global using rangeStmt_identType = go.go.ast_package.Ident;
 
 namespace go.go;
 
@@ -978,7 +978,7 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
         ref var check = ref Ꮡcheck.DerefOrNull();
         ref var s = ref Ꮡs.DerefOrNull();
 
-        @string identName(ж<identType> n) => (~n).Name;
+        @string identName(ж<rangeStmt_identType> n) => (~n).Name;
         var (sKey, sValue) = (s.Key, s.Value);
         ast.Expr sExtra = default!;         // (used only in types2 fork)
         var isDef = s.Tok == token.DEFINE;
@@ -1025,7 +1025,7 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
         // check assignment to/declaration of iteration variables
         // (irregular assignment, cannot easily map to existing assignment checks)
         // lhs expressions and initialization value (rhs) types
-        var lhs = new Expr[]{sKey, sValue}.array(); // sKey, sValue may be nil
+        var lhs = new rangeStmt_Expr[]{sKey, sValue}.array(); // sKey, sValue may be nil
         var rhs = new ΔType[]{key, val}.array(); // key, val may be nil
         var rangeOverInt = isInteger(x.typ);
         if (isDef){
@@ -1038,7 +1038,7 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
                 // determine lhs variable
                 ж<Var> obj = default!;
                 {
-                    var (ident, _) = lhsΔ1._<ж<identType>>(ᐧ); if (ident != nil){
+                    var (ident, _) = lhsΔ1._<ж<rangeStmt_identType>>(ᐧ); if (ident != nil){
                         // declare new variable
                         @string name = identName(ident);
                         obj = NewVar(ident.Pos(), check.pkg, name, default!);

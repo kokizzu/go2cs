@@ -74,7 +74,7 @@ internal static void probe(this ж<ipStackCapabilities> Ꮡp) {
             }
             defer(poll.CloseFunc, sΔ1, ref ᒐ);
             syscall.SetsockoptInt(sΔ1, syscall.IPPROTO_IPV6, syscall.IPV6_V6ONLY, probes[i].value);
-            (var sa, errΔ1) = Ꮡ(probes[i]).of(probe_type.Ꮡladdr).sockaddr(syscall.AF_INET6);
+            (var sa, errΔ1) = Ꮡ(probes, i).of(probe_type.Ꮡladdr).sockaddr(syscall.AF_INET6);
             if (errΔ1 != default!) {
                 continue;
             }

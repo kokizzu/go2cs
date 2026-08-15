@@ -324,7 +324,7 @@ internal static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
         d.pushElement(t1.Name);
         d.translate(Ꮡ(t1).of(StartElement.ᏑName), true);
         foreach (var (i, _) in t1.Attr) {
-            d.translate(Ꮡ(t1.Attr[i]).of(Attr.ᏑName), false);
+            d.translate(Ꮡ(t1.Attr, i).of(Attr.ᏑName), false);
         }
         t = t1;
         break;

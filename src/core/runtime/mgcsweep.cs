@@ -94,7 +94,7 @@ internal static (spanClass spc, bool full) split(this sweepClass s) {
     var sg = h.sweepgen;
     for (var sc = ᏑΔsweep.of(sweepdata.ᏑcentralIndex).load(); sc < numSweepClasses; sc++) {
         var (spc, full) = sc.split();
-        var c = Ꮡ(h.central[spc]).of(mheap_central.Ꮡmcentral);
+        var c = Ꮡ(h.central, spc).of(mheap_central.Ꮡmcentral);
         ж<mspan> s = default!;
         if (full){
             s = c.fullUnswept(sg).pop();
