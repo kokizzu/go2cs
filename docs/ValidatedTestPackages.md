@@ -34,9 +34,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **145 / 215 testable packages validated — 67.4%**
+> ### Phase 4 progress: **146 / 215 testable packages validated — 67.9%**
 >
-> **16,464 matching test verdicts · 74 disclosed** *(updated 2026-08-15 — maintained as part of the
+> **16,561 matching test verdicts · 74 disclosed** *(updated 2026-08-15 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -54,6 +54,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
+| [`archive/tar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/archive/tar) | 97 | | TAR archives end to end — the V7, USTAR, PAX, GNU and STAR formats read and written against a corpus of real archives, PAX record parse/format including the sorted-header and non-ASCII/xattr paths, sparse-file maps in both the GNU and PAX encodings, octal and base-256 numeric fields at their width boundaries, the USTAR 100-byte name split, `fs.FS` traversal via `AddFS`, and the insecure-path and truncation regression sets. Its table-driven suite is written on function-local `any` types, which is what put all 97 verdicts behind one alias emission. · [proof](validation/current/archive.tar.md) |
 | [`archive/zip`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/archive/zip) | 100 | | ZIP archives end to end — central-directory and data-descriptor parsing over a corpus of real archives written by 7-Zip, InfoZip, WinRAR, WinZip and OS X, `fs.FS` traversal, UTF-8 vs CP-437 name/comment detection, the CVE regression set, and the zip64 boundaries at `uint16max`/`uint32max` — including a **4 GiB central directory**, the case whose rune walk over 65,535-byte names proved `@string` slicing had to become a window. `TestZip64` streams a further **4 GiB** through the writer and back, which is most of this row's ~775 s sweep time. · [proof](validation/current/archive.zip.md) |
 | [`bufio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bufio) | 80 | 1 | Buffered reader/writer/scanner — fill, rewind, split functions, `io` error propagation. · [proof](validation/current/bufio.md) |
 | [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes) | 82 | 6 | Byte-slice algorithms; alloc-profile disclosures. · [proof](validation/current/bytes.md) |

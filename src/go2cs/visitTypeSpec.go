@@ -157,10 +157,31 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			}
 		}
 
-		v.typeAliasDeclarations.WriteString(fmt.Sprintf("global using %s = %s;%s", name, typeName, v.newline))
+		// A function-local type declaration is scoped to its function; the `global using` this
+		// branch emits is scoped to the whole COMPILATION. Every OTHER local type-declaration kind
+		// already takes the liftLocalTypeDecl rename for that reason — this branch was the one that
+		// did not, so two functions declaring `type testFnc any` collided under one alias name:
+		// CS1537, whether they sit in one file or in two of the same compilation (archive/tar
+		// declares it in writer_test.go's TestWriter AND TestFileWriter, and again in
+		// reader_test.go's TestFileReader, with `fileMaker` alongside it — 3 diagnostics, all 97 of
+		// the package's verdicts behind them). Take the same lift, and register it so every
+		// reference in the function resolves to the lifted name.
+		aliasName := name
 
-		// Add exported type aliases to package info
-		if getAccess(name) == "public" {
+		if v.inFunction {
+			aliasName = v.liftLocalTypeDeclName(name)
+
+			if liftedTypeDeclaredBy(identType, v.info.Defs[typeSpec.Name]) {
+				v.liftedTypeMap[identType] = aliasName
+			}
+		}
+
+		v.typeAliasDeclarations.WriteString(fmt.Sprintf("global using %s = %s;%s", aliasName, typeName, v.newline))
+
+		// Add exported type aliases to package info. Never for a function-local declaration: it is
+		// not part of the package's exported surface whatever its Go name looks like, and the lift
+		// above means the name a consumer would import does not exist.
+		if !v.inFunction && getAccess(name) == "public" {
 			packageLock.Lock()
 			exportedTypeAliases[name] = typeName
 			packageLock.Unlock()
@@ -308,14 +329,10 @@ func (v *Visitor) liftLocalTypeDecl(name string, identType types.Type) (liftedNa
 
 	target = &strings.Builder{}
 
-	if !strings.HasPrefix(name, v.currentFuncName+"_") {
-		name = fmt.Sprintf("%s_%s", v.currentFuncName, name)
-	}
-
 	preLiftIndentLevel := v.indentLevel
 	v.indentLevel = 0
 
-	name = v.getUniqueLiftedTypeName(name)
+	name = v.liftLocalTypeDeclName(name)
 
 	if identType != nil {
 		v.liftedTypeMap[identType] = name
@@ -329,6 +346,42 @@ func (v *Visitor) liftLocalTypeDecl(name string, identType types.Type) (liftedNa
 		v.currentFuncPrefix.WriteString(target.String())
 		v.indentLevel = preLiftIndentLevel
 	}
+}
+
+// liftLocalTypeDeclName is the NAMING half of liftLocalTypeDecl: it prefixes a function-local type
+// declaration with its enclosing function and runs the result through getUniqueLiftedTypeName's ᴛN
+// disambiguation, so two functions declaring the same local type name never claim one C# name.
+//
+// It is shared with visitTypeSpec's type-ALIAS branch, which needs exactly this uniqueness but not
+// the member-level builder redirection — a `global using` is emitted at file scope either way.
+func (v *Visitor) liftLocalTypeDeclName(name string) string {
+	if !strings.HasPrefix(name, v.currentFuncName+"_") {
+		name = fmt.Sprintf("%s_%s", v.currentFuncName, name)
+	}
+
+	return v.getUniqueLiftedTypeName(name)
+}
+
+// liftedTypeDeclaredBy reports whether t is the type the given declaration INTRODUCES, rather than
+// a type it merely names. It gates registering a lifted name against t in liftedTypeMap, where a
+// wrong key renames every reference to an unrelated type: `type X = Header` inside a function binds
+// the declaration's object to the *existing* Header named type (and, without materialized aliases,
+// `type X = int` binds it to plain int), so keying the lift on it would rewrite every Header — or
+// every int — in the file. Only a *types.Named or *types.Alias whose own Obj IS this declaration
+// qualifies; anything else registers nothing and simply renders as it does today.
+func liftedTypeDeclaredBy(t types.Type, declared types.Object) bool {
+	if t == nil || declared == nil {
+		return false
+	}
+
+	switch typed := t.(type) {
+	case *types.Named:
+		return typed.Obj() == declared
+	case *types.Alias:
+		return typed.Obj() == declared
+	}
+
+	return false
 }
 
 // golibAliasSafeNames maps the golib csproj-level `<Using Alias="...">` names to equivalents

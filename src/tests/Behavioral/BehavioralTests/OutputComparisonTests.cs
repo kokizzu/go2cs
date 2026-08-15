@@ -740,6 +740,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckLocalTimeZone() => CheckTarget("LocalTimeZone");
 
     [TestMethod]
+    public void CheckLocalTypeAliasScope() => CheckTarget("LocalTypeAliasScope");
+
+    [TestMethod]
     public void CheckLocalTypeSliceElement() => CheckTarget("LocalTypeSliceElement");
 
     [TestMethod]

@@ -5392,6 +5392,27 @@ ptrs  = append(ptrs,  (ж<nint>)(nil));                 // pointer element (nil 
 ```
 A nil element is only ever valid when the element type is nillable, so the cast target always exists. Spread appends (`append(dst, src...)`) are excluded (the existing `Ellipsis.IsValid()` guard). Guarded by the `AppendNilSliceElement` behavioral test (slice/map/pointer element types, output-compared vs Go).
 
+### A ONE-FIELD struct's positional `nil` literal names its field constructor
+The universe `nil` renders in a value context as the typeless `default!`, which takes its type from
+whatever it is assigned or returned into. A constructor ARGUMENT is the one position where nothing
+supplies that type, and a generated struct partial offers exactly two one-argument constructors: the
+nil constructor `T(NilType)` and the field constructor `T(F field = default!)`. `default!` converts
+to both, so a one-field struct's positional literal carrying `nil` is `CS0121 — the call is
+ambiguous`:
+```csharp
+new TestWriter_testClose(default!)          // ambiguous: T(NilType) vs T(error)
+new TestWriter_testClose((error)default!)   // names the field constructor, and only it
+```
+The argument now carries the field's type, via the same per-element `castArgToType` plumbing the
+narrow-integer and `any`-field element casts use. **Only** a one-field struct can reach this: Go
+requires a positional composite literal to list every field in order, so at any other arity the call
+already differs from `T(NilType)` in argument count — and only `nil` can, because every other element
+renders with a type of its own. A POINTER field is excluded and deliberately unchanged: there the
+literal renders golib's `nil`, whose type `NilType` is an *exact* match for `T(NilType)` and so beats
+the field constructor's user-defined conversion without ambiguity, producing the zero struct, which
+is the correct value. `archive/tar`'s `testClose{nil}` is the reported shape (×9, and the last wall
+in front of that package's 97 verdicts); `database/sql`'s `stubDriverStmt{nil}` is the same root.
+
 ### A struct-literal interface field takes a pointer element's adapter
 A composite struct literal whose field is an INTERFACE type, initialized with a POINTER element whose pointer-receiver method set satisfies that interface, must record and route the same `*T`→interface adapter a call argument does — `&handlerWriter{l.Handler(), &logLoggerLevel, capturePC}` (log/slog SetDefault), where field `level` is `Leveler` and `*LevelVar` implements Leveler via a pointer-receiver `Level()`. The struct-field interface routing (`checkStructFields`) recorded/routed a NAMED VALUE element that satisfies the field (`DecodingError{InvalidIndexError(idx)}`) but matched only a `*types.Named` element, so a POINTER element fell through: no `GoImplement<LevelVar, Leveler>(Pointer = true)` was recorded, and the box `ᏑlogLoggerLevel` was passed bare to the interface-typed constructor parameter (CS1503). The detection now takes the concrete satisfying type from the element OR the pointee of a POINTER element (`types.Implements` tested on the element's own pointer method set, the non-interface guard tested on the pointee), so a pointer element records and routes exactly like the value case:
 ```csharp
@@ -6160,6 +6181,45 @@ Two completions of the same rule, both demonstrated by `encoding/gob`'s test sui
   `liftedTypeMap` **when the hoist actually renamed the declaration**; a package-level declaration
   never renames, so its emission is untouched (verified byte-identical across the whole behavioral
   corpus and the 302-package stdlib).
+
+**The ALIAS kind takes the lift too — and for a different reason.** A local declaration that emits a
+`using` ALIAS rather than a nested type — a real `type X = Y`, or a defined type over a *named*
+interface such as `type X any` — was the last local type-declaration kind not taking the hoist. It
+needs no member-level redirection (an alias is emitted at file scope either way), but it needs the
+NAME, because the alias it writes is a `global using`: scoped to the whole **compilation**, not to
+the file, let alone the function. Two functions declaring `type testFnc any` therefore claimed one
+alias name — `CS1537 the using alias 'testFnc' appeared previously in this namespace` — whether they
+sat in one file or in two of the same compilation. `archive/tar`'s suite is the shape: `testFnc` is
+declared in `writer_test.go`'s `TestWriter` **and** `TestFileWriter`, and again in `reader_test.go`'s
+`TestFileReader`, with `fileMaker` alongside it; three diagnostics held all **97** of that package's
+verdicts. The naming half of `liftLocalTypeDecl` is now the shared `liftLocalTypeDeclName`, and the
+alias branch calls it when `v.inFunction`, emitting `global using TestWriter_testFnc = object;`.
+
+The reference mapping is registered under a **guard**, `liftedTypeDeclaredBy`: only a `*types.Named`
+or `*types.Alias` whose own `Obj` **is** this declaration qualifies. A wrong key here renames every
+reference to an unrelated type — `type X = Header` inside a function binds the declaration's object
+to the *existing* `Header`, and (without materialized aliases) `type X = int` binds it to plain
+`int`, so keying the lift on either would rewrite every `Header`, or every `int`, in the file.
+Anything that does not qualify registers nothing and renders exactly as before. A function-local
+declaration is also no longer published in `exportedTypeAliases`: it is not part of the package's
+exported surface whatever its Go name looks like, and after the lift the name a consumer would
+import does not exist. **Zero production-corpus impact by construction** — an AST scan of the Go
+1.23.1 sources finds *no* function-local alias-or-defined-over-interface declaration in any compiled
+stdlib file (all 50 hits are `internal/types/testdata`, which is never built), which is why only two
+test suites ever met it. (Guarded by the `LocalTypeAliasScope` behavioral test — the same local
+names declared in two functions of one file and again in a second file of the same package, plus a
+real `type hdr = Header` alias whose target is used bare alongside it; the unfixed converter emits
+five duplicate `global using` lines.)
+
+**Known residual, a different one, in the same emission line:** an alias whose target is an *unnamed
+composite* renders its type ARGUMENTS unrooted — `type names = []string` emits `global using names =
+go.slice<@string>;`, where only the outermost name is rooted and `@string`, a nested `slice`,
+`error`, `complex64`, a same-package `Header` and a foreign `io_package.Reader` all arrive bare and
+do not resolve at compilation scope (`CS0246`). This is **package-level**, not function-local, and
+predates the lift above; `getUsingAliasSafeTypeName` exists for exactly this class of problem
+(a using-alias RHS is resolved without reference to other using directives) but rewrites only the
+csproj-level golib name aliases, never the rooting. No converted stdlib package declares such an
+alias, so the corpus has never reached it; a converted user module would.
 
 **Known residual:** a *conversion expression* to a hoisted local named **pointer** type
 (`NodePtr(&Node{V: 9})`, with `type NodePtr *Node` declared in the function) still emits the

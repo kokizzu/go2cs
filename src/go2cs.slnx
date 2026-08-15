@@ -495,6 +495,7 @@
     <Project Path="tests/Behavioral/LocalShadowsEmbedHopType/LocalShadowsEmbedHopType.csproj" />
     <Project Path="tests/Behavioral/LocalStructFieldAddr/LocalStructFieldAddr.csproj" />
     <Project Path="tests/Behavioral/LocalTimeZone/LocalTimeZone.csproj" />
+    <Project Path="tests/Behavioral/LocalTypeAliasScope/LocalTypeAliasScope.csproj" />
     <Project Path="tests/Behavioral/LocalTypeSliceElement/LocalTypeSliceElement.csproj" />
     <Project Path="tests/Behavioral/MakeLenNamedNumeric/MakeLenNamedNumeric.csproj" />
     <Project Path="tests/Behavioral/MakeSlicePanicRange/MakeSlicePanicRange.csproj" />

@@ -736,6 +736,29 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		}
 	}
 
+	// A ONE-FIELD struct's positional literal carrying `nil` — `testClose{nil}` (archive/tar's
+	// writer_test.go), `stubDriverStmt{nil}` (database/sql). The universe nil renders in a value
+	// context as the TYPELESS `default!`, which cannot take part in C# overload resolution, and the
+	// generated struct offers exactly two one-argument constructors: `T(NilType)` and the field
+	// constructor `T(F field = default!)`. `default!` converts to both, so the call is CS0121 —
+	// ambiguous, ×9 in archive/tar alone. Give the argument the field's type so it names the field
+	// constructor and nothing else.
+	//
+	// Only a struct with ONE field can hit this: Go requires a positional literal to list every
+	// field in order, so any other arity already differs from the NilType constructor's. And only
+	// `nil` can: every other element renders with a type of its own. Nothing else moves.
+	if st, ok := exprType.Underlying().(*types.Struct); ok && st.NumFields() == 1 && len(compositeLit.Elts) == 1 {
+		if ident, isIdent := compositeLit.Elts[0].(*ast.Ident); isIdent && v.identIsUniverseNil(ident) {
+			if _, isPointerField := st.Field(0).Type().Underlying().(*types.Pointer); !isPointerField {
+				if callContext.castArgToType == nil {
+					callContext.castArgToType = make(map[int]string)
+				}
+
+				callContext.castArgToType[0] = convertToCSTypeName(v.getAliasQualifiedTypeName(st.Field(0).Type(), false))
+			}
+		}
+	}
+
 	var lbracePrefix, rbracePrefix string
 	lbrace := "{"
 	rbrace := "}"

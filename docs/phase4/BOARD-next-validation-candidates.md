@@ -3824,7 +3824,7 @@ keeps classifying them rather than reporting them as content drift.
 |:--|:--|:--|
 | ~~`log`, `go/scanner`~~ | ~~CS0012~~ | **CLOSED 2026-08-07 (r43f-closure-edge): both edges landed, `go/scanner` BANKED 11/11, `log` does NOT bank — two roots stand behind the closure one. Full account in the last section of this file.** The rooting below called both mechanisms correctly and was wrong about two details worth carrying: `log`'s literal is not `log.Logger{}` but `var l Logger` (a zero-value DECLARATION, in the INTERNAL white-box half — no composite literal exists, which is exactly why no literal walk could see it), and the implemented-interface gate is not `types.Implements` but the package's own emitted VALUE-form `GoImplement` RECORDS: satisfaction alone drifts 16 of the 96 banked projects. Original rooting: ~~**A fourth declaration-closure edge**, the same family the 2026-07-27 arc closed for interface bases, struct fields and member-access receivers. `log`'s external test half writes `log.Logger{}`; under the white-box `InternalsVisibleTo` grant the package-under-test's **internal fieldwise constructor IS a resolution candidate**, so binding it needs `atomic.Bool`'s assembly. `go/scanner`'s generated `ErrorList`↔`error` witness calls `m_value.Equals(…)`, and binding a member on `ErrorList` needs the assemblies of the interfaces **its own declaration implements** (`sort.Interface`, ×13). The existing rule's minimality gate fires the struct edge on an EMPTY literal only for a ROOT package — `log`'s case says the white-box grant is the same situation by a different route. Both are one edge each on `declarationClosureImports`, and both must be measured with that rule's own instrument: regenerate every banked `.tests.csproj` and require zero drift. **The cheapest two banks left on this list.**~~ |
 | `slices` | CS0305 / CS0411 | Go infers `S ~[]E` **and** `E` from a single argument; C# cannot infer `E` from `S`. `Equal`/`EqualFunc`/`CompareFunc`/`Reverse`/`Insert`/`CompactFunc` emit as two-parameter generics and essentially every call site fails. Needs element-type deduction (or witness parameters) for constrained slice generics — the widest root in the batch, and it blocks the largest unbanked leaf (63 Test funcs). |
-| `archive/tar` | CS1537 ×3 | `writer_test.cs` emits the same `using` alias **twice in one file** (`testFnc`, `fileMaker`), plus one CS0111. A test-half alias emission that does not dedupe within a file. Shallow. |
+| ~~`archive/tar`~~ | ~~CS1537 ×3~~ | ~~`writer_test.cs` emits the same `using` alias **twice in one file** (`testFnc`, `fileMaker`), plus one CS0111. A test-half alias emission that does not dedupe within a file. Shallow.~~ — **BANKED 97/97 2026-08-15 (`claude/dup-append-emission`).** The rooting was right about the symptom and wrong about the scope in two ways: the collision is not per-file but per-COMPILATION (`global using`), and dedupe is not the fix — two functions declaring `type testFnc any` declare two unrelated Go types, so the alias takes the same enclosing-function lift every other local type-declaration kind already took. CS0121 on a one-field `nil` constructor stood behind it. See *CLOSED for `archive/tar`* at the end of this file. |
 | ~~`archive/zip`~~ | ~~CS1929~~ | ~~The generated `ReadCloser`→`fs.FS` witness binds `Open` against a `ж<Reader>` receiver while holding a **value** `ReadCloser`~~ — **BUILD ROOT CLEARED 2026-08-09 (r56g).** The receiver split was a symptom: `Open` is a pointer-receiver method promoted from `ReadCloser`'s **exported** `Reader` value embed, and that promotion was not emitted at all (root 1), then emitted `internal` because the scope heuristic reads a tuple return's trailing `error)` as unexported (root 3). Package now BUILDS and RUNS at **95 of 98**; the residual is `TestZip64LargeDirectory` + 2 subtests as a **performance** row (Go 13.2 s, C# > 45 m), not a defect. See *r56g* below. — **BANKED 98/98 2026-08-09 (r57c)**: the performance row was `@string` slicing in O(n); see *r57c* at the end of this file. |
 | `testing/fstest` | CS0030 | Converting the test-local named type `shuffledFS` to its underlying `map[string]*MapFile`. |
 | `internal/types/errors` | CS0246 | `Error` / `Info` — names the emitted code does not declare for a test-local enumeration. |
@@ -4461,7 +4461,7 @@ and it points the opposite way from nistec.
 | `sync/atomic` | 108 | CS0103 `ᏑᏑX` — a DOUBLE address-prefix marker |
 | `runtime/pprof` | — | CS0103 `ᏑᏑsalts` — **the same double-`Ꮡ` root** |
 | `crypto/ecdsa` | 82 | the nistec family |
-| `fmt` | 63 | CS0111 `fmt_test_package.SE` already defines `Append` |
+| `fmt` | 63 | ~~CS0111 `fmt_test_package.SE` already defines `Append`~~ — closed by `14bf20010`; **five roots behind it**, censused 2026-08-15 in *CLOSED for `archive/tar`* at the end of this file |
 | `text/template` | 52 | CS0030 on a test-local named type |
 | `debug/elf` | 31 | CS8183 cannot infer the type of an implicitly-typed discard |
 | `internal/reflectlite` | 30 | CS0016 could not write to output file |
@@ -6639,8 +6639,8 @@ converter defect — a test-closure-only reference reaching a **production** `.c
 
 | Package | Census | Board had | Measured 2026-08-14 |
 |:--|:--:|:--|:--|
-| `archive/tar` | 0 of 97 | CS1537 ×3, duplicate `using` alias in one file | **CS0111** — `tar_internal_test_package.fileOps` already defines `Append`. The alias-dedupe root is CLOSED; behind it is the same defect as `fmt` |
-| `fmt` | 0 of 63 | CS0111 `fmt_test_package.SE` already defines `Append` | unchanged — **and it is now a two-package root** with `archive/tar` |
+| `archive/tar` | ~~0 of 97~~ **97 of 97, BANKED** | CS1537 ×3, duplicate `using` alias in one file | **CS0111** — `tar_internal_test_package.fileOps` already defines `Append`. The alias-dedupe root is CLOSED; behind it is the same defect as `fmt` — ⚠ **and that "CLOSED" was wrong**: CS1537 was still live and became this package's next wall once CS0111 fell. See *CLOSED for `archive/tar`* below (2026-08-15) |
+| `fmt` | 0 of 63 | CS0111 `fmt_test_package.SE` already defines `Append` | CS0111 closed by `14bf20010`; **five roots behind it** — censused in *CLOSED for `archive/tar`* below (2026-08-15). It was never a two-package root past CS0111 |
 | `sync/atomic` | 0 of 108 | CS0103 `ᏑᏑX`, double address-prefix | **CS0841** — cannot use local `magic64` before it is declared. The double-`Ꮡ` is closed |
 | `internal/reflectlite` | 0 of 30 | CS0016 could not write to output file | **CS0715** — static classes cannot contain user-defined operators: a generic test-local type's `==`/`!=` emitted into the static `reflectlite_test_package` |
 | `runtime/debug` | 0 of 9 | CS0264, not taken past the first diagnostic | **CS0264 + CS0715** — the same static-class-operator defect as `internal/reflectlite`. Two packages, one root |
@@ -6809,9 +6809,78 @@ See *the unnamed-variadic build block is fixed* below for the fix, the zero-move
 
 Two packages, one defect: **CS0715 — a generic test-local type's `==`/`!=` operators are emitted
 into the static `<pkg>_test_package` partial class**, which C# forbids. It holds
-`internal/reflectlite` (30 verdicts) and `runtime/debug` (9). And **CS0111 `Append`** holds `fmt`
-(63) and `archive/tar` (97) — 160 verdicts on one duplicate-member emission. Neither is deep; both
-are the cheapest remaining pairs on this list.
+`internal/reflectlite` (30 verdicts) and `runtime/debug` (9). ~~And **CS0111 `Append`** holds `fmt`
+(63) and `archive/tar` (97) — 160 verdicts on one duplicate-member emission.~~ **The `Append` half
+is spent** — see the two entries below: `14bf20010` closed CS0111 itself, and
+`claude/dup-append-emission` cleared the two walls behind it in `archive/tar`, which **banks 97/97**.
+`fmt` did not follow; its five remaining roots are censused below. CS0715 is now the cheapest
+remaining pair on this list.
+
+## ✅ CLOSED for `archive/tar` (banks 97/97) — two walls behind the `Append` root; `fmt` does not follow (2026-08-15, lane `claude/dup-append-emission`)
+
+**The brief was stale, and that is the first finding.** The CS0111 `Append` root this lane was sent
+to take had already been fixed by `14bf20010` (2026-08-14) — a named `[]any` slice wrapper's
+non-generic `ISlice.Append(object[])` became an EXPLICIT implementation, guarded by
+`NamedAnySliceType` — but that commit did not update this board, so the "eight roots MOVED" table
+and *The prize left on the table* above both still named it. **Re-measure before believing a board
+row**; the row above is now struck through rather than deleted so the same mistake is not made twice.
+
+Behind it, `archive/tar` had **two more walls**, both general converter defects, both fixed here:
+
+1. **CS1537 ×3 — a function-LOCAL type declaration emitted as a COMPILATION-scoped `global using`.**
+   The board's "eight roots MOVED" table recorded tar's alias-dedupe root as CLOSED; the
+   `NamedAnySliceType` lane reported it as still live, and it was. Root: every local
+   type-declaration kind (struct, interface, slice, map, channel, pointer, named-ident) takes
+   `liftLocalTypeDecl` — enclosing-function prefix, `ᴛN` uniquification, `liftedTypeMap`
+   registration — except the branch that emits a `using` ALIAS, which is what a real `type X = Y`
+   and a defined-over-named-interface `type X any` both take. A `global using` is scoped to the
+   whole compilation, so `type testFnc any` in `writer_test.go`'s `TestWriter` **and**
+   `TestFileWriter`, and again in `reader_test.go`'s `TestFileReader` (with `fileMaker` alongside),
+   claimed one alias name. Fix: the naming half of `liftLocalTypeDecl` is factored to
+   `liftLocalTypeDeclName` and the alias branch calls it in-function, with the reference mapping
+   registered only when the declaration's own object IS the type (`liftedTypeDeclaredBy` — keying it
+   on the *target* would rename every `Header`, or every `int`, in the file). **Zero production
+   emission impact by construction:** an AST scan of Go 1.23.1 finds no function-local
+   alias-or-defined-over-interface declaration in any *compiled* stdlib file — all 50 hits are
+   `internal/types/testdata`. Guard: `LocalTypeAliasScope` (the unfixed converter emits five
+   duplicate `global using` lines).
+2. **CS0121 ×9 — an ambiguous one-field `nil` constructor.** `testClose{nil}` emitted
+   `new TestWriter_testClose(default!)`; the typeless `default!` converts to both generated
+   one-argument constructors, `T(NilType)` and `T(error field = default!)`. The argument now carries
+   the field's type. Narrow by construction — Go requires a positional literal to list every field,
+   so only a one-field struct has the arity, and only `nil` renders typeless. **`database/sql`'s
+   recorded `stubDriverStmt(NilType)` CS0121 is the same root** and should be re-measured.
+
+**`archive/tar` census: 97 rows, 97 agree, 0 disagree, 0 skipped, 0 disclosed**, 3 excluded (the
+standard Phase-4D `Benchmark`/`Example`/`Fuzz` deferrals). Banked — roster row, proof page,
+committed test sources.
+
+**A third defect this work found and did NOT fix** (chip raised, reported here for the record): an
+alias whose target is an unnamed composite emits its type ARGUMENTS unrooted —
+`type names = []string` → `global using names = go.slice<@string>;`, where `@string`, a nested
+`slice`, `error`, `complex64`, a same-package `Header` and a foreign `io_package.Reader` all arrive
+bare and do not resolve at compilation scope. It is **package-level and pre-existing**, unrelated to
+the scope fix, and no converted stdlib package declares such an alias — but any converted user
+module would. It surfaced only because the `LocalTypeAliasScope` guard was first written with such
+an alias in it.
+
+### `fmt` — still 0 of 63, and it is FIVE roots, not one
+
+Measured 2026-08-15 with both fixes above in place. Neither touches `fmt`: it has no function-local
+alias declaration and no one-field `nil` literal. The `Append` root is genuinely gone; what is
+behind it is a fan-out, not a queue, and three of the five cluster on one test type:
+
+| Diagnostic | Site | Shape |
+|:--|:--|:--|
+| `CS1955` non-invocable `map<TKey, TValue>` | `fmt_test.cs(838)` | `map[int]byte(nil)` — a CONVERSION to a map type emits an INVOCATION, `map<nint, byte>(default!)`, not a cast. The sibling `[]int(nil)` survives only because golib happens to expose a `slice` builtin of that name; there is no `map` one. One emission rule, two spellings |
+| `CS0030` `float`→`renamedComplex64`, `double`→`renamedComplex128` ×4 | `fmt_test.cs(941,942,951)`, `scan_test.cs(394)` | a named type over `complex64`/`complex128` does not admit the real→complex conversion Go allows |
+| `CS1729` `Scan_type` has no 1-arg constructor | `scan_test.cs(576)` | — |
+| `CS0103` `Reader` does not exist | ImplementGenerator output for `Scan_type`→`io.Reader` | the generated wrapper names the interface unqualified |
+| `CS0034` `==` ambiguous on `Scan_type` | same generated file | — |
+
+The last three are one type's story and are likely one root; the first two are independent. This is
+a materially different proposition from the 97-verdict single-wall `archive/tar` half — the "160
+verdicts on one defect" framing above never held for `fmt`.
 
 ## ✅ CLOSED — the unnamed-variadic build block is fixed; `os/exec` now BUILDS and its next wall is `TB.*` (2026-08-14, lane `claude/unnamed-variadic`)
 
