@@ -1759,6 +1759,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckWrittenCaptureParam() => CheckTarget("WrittenCaptureParam");
 
     [TestMethod]
+    public void CheckWsaProtocolInfo() => CheckTarget("WsaProtocolInfo");
+
+    [TestMethod]
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]
