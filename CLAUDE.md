@@ -354,6 +354,14 @@ ONE stdlib in a build; there is now only one on disk.
   (measured 2026-08-15). And never census with `grep -P` on this box: it dies with "-P supports only
   unibyte and UTF-8 locales", so with stderr discarded it returns 0 matches and reads as "no sites"
   — a false-empty census that nearly got banked. Use ripgrep (`rg`)/the Grep tool.
+  **Scope DELETES by lane prefix too, not just writes** (measured 2026-08-16: a lane's cleanup swept
+  the whole shared scratchpad and unrecoverably deleted sibling lanes' artifacts). A cleanup command
+  must name your own `<lane>-*` files; `Remove-Item <scratchpad>\*` is a cross-lane destructive act.
+  **⚠ Killing `go2cs.exe` alone ORPHANS its `dotnet run` child and the test host under it**, which
+  keeps `runtime.dll` locked — the NEXT pipeline run then fails MSB3027/MSB3021 and its comparison
+  reports `Go="pass" C#=""` for every test, reading exactly like total conversion failure (measured
+  2026-08-16, cost one invalid run). It is a file lock: kill the process TREE by verified parentage,
+  then re-run before believing any mass-empty verdict.
   **⚠ `dotnet build-server shutdown` is ALSO machine-global** (found 2026-08-03: one lane's startup
   cleanup yanked the shared MSBuild servers out from under a sibling's in-flight compile — same
   truncated-log signature, no Stop-Process anywhere). While sibling sessions may be building, do NOT
