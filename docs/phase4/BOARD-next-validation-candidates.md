@@ -8406,3 +8406,174 @@ package the sweep never visits would be dead configuration.
 
 Converted test sources are **not** committed, per the validated-package commit policy — that policy
 covers packages that validate, and this one does not.
+
+## ⛔ RE-MEASURED, DOES NOT BANK — `crypto/tls` reaches **127 of 180** Go-passing top-level tests; three of the four named roots are CLOSED and the whole remaining divergence is ONE converter defect class in two shapes (2026-08-16, lane `claude/tls-remeasure`)
+
+The 2026-08-15 entry left four roots and said the next move was `ConnectEx` plus the
+`TestConnCloseBreakingWrite` hang. Both landed (netpoll S2b), the reflect-bridge lane closed a third,
+and this lane re-measured the package on the post-poller tree. **The three fixes all hold, and none of
+the remaining divergence is a poller defect.**
+
+### The headline, and the number that went DOWN
+
+| Measure | 2026-08-15 | now |
+|---|---|---|
+| top-level tests the ONE-PROCESS run reaches before parking | 23 | **7** |
+| top-level tests that PASS when each is run on its own | *not measured* | **127 of 180** |
+| C# verdicts agreeing with Go | 26 (floor, uncensused) | **127 top-level / 274 incl. subtests** |
+| divergences rooted or named | 4 roots, remainder unknown | **53 of 53, zero unrooted** |
+
+⚠ **The single-process floor got WORSE, and that is progress, not regression — do not read the 23 → 7
+as a loss.** Under the old `ConnectEx` failure every handshake-driving test died in ~2 ms, so the
+alphabet advanced fast and *then* parked. Those same tests now do real work, and one of them parks
+forever, so a single package deadline buys fewer completed tests than a fast-failing suite did.
+**Once a suite contains a hang, "how far the one-process run gets" stops measuring capability and
+starts measuring where the first hang sits.** The per-test census below is the measurement that
+answers the question the floor was standing in for; the floor number is kept only because it is what
+the previous entry recorded.
+
+**Method.** Each of the 190 top-level `Test*` functions in the staged `_test.go` set was run in its
+OWN process (`-run '^Name$' -timeout 20s`), so one hang costs 20 s instead of the whole package
+deadline. 6 of the 190 are `//go:build boringcrypto` and are absent from Go's run — 190 − 6 = **184**,
+which is exactly the count Go executes, so the enumeration is confirmed rather than assumed. Go's own
+run on this host reproduces the previous entry's numbers exactly: **184 top-level (180 pass, 4 fail);
+1,251 pass / 2,381 skip / 12 fail at all levels**, 46.5 s.
+
+C# per-test: **127 PASS, 34 FAIL, 13 HANG, 9 infrastructure-error, 1 process CRASH** = 184, and the
+cross-tab against Go closes with no remainder: 127 agreeing passes + 53 real divergences (Go passes,
+C# does not) + 4 both-fail + 6 build-tag-excluded = 190.
+
+### The four roots, re-measured
+
+| # (2026-08-15) | verdict now | evidence |
+|---|---|---|
+| 1. `failed to find ConnectEx` ×9 | ✅ **CLOSED** | **zero** occurrences of the string across all 190 test outputs; ESTABLISHED loopback pairs observed live (`127.0.0.1:42281 ↔ :42159`); full TLS **1.2** handshakes complete end-to-end (`TestClientAuth/TLSv12`, `TestConnectionState/TLSv12`, …) |
+| 2. `TestConnCloseBreakingWrite` blocks forever | ✅ **CLOSED** | **PASSES**, 3.5 s. S2b's second acceptance anchor holds at suite level, not just at golib level |
+| 3. `Not a pointer box type: sync_package+RWState` | ✅ **CLOSED** | **zero** occurrences corpus-wide in the outputs; `TestCloneNonFuncFields` **PASSES** |
+| 4. `TestCertCache` ref-count timing | ⛔ **still open** | `timed out waiting for expected ref count` — unchanged, 1 divergence |
+
+### The 53 divergences, every one rooted
+
+| count | root |
+|---:|---|
+| **30** | **A** — `ticketKey.aesKey` is length 0 → `tls: failed to create cipher while encrypting ticket: crypto/aes: invalid key size 0`. Every TLS **1.3** session-ticket path |
+| **10** | **B** — `net/netip.As16` slices a zero-length array → `System.ArgumentException`, full stack captured |
+| **7** | **B-shaped** — silent hang, zero verdicts: server parked in `pollBlock` reading the ClientHello while the client goroutine is *gone*. Same stack shape as B; the killing exception is NOT captured (see "why it hangs") |
+| **2** | **F** — hang after partial progress (`TestConnectionState`, `TestHandshakeKyber`: TLS 1.2 subtests pass, the 1.3 subtest parks) |
+| **1** | **D** — `TestCertCache` weak-ref timing (root 4 above) |
+| **1** | **E** — `TestBogoSuite` against the external BoGo shim; not a conversion signal |
+| **1** | **G** — `TestQUICHandshakeError`: `panic: runtime error: invalid memory address or nil pointer dereference` at `golib/ж.cs:957` `ж<T>.op_OnesComplement` |
+| **1** | **H** — `TestVerifyHostname`: **process access violation `0xC0000005`** in `syscall.GetAddrInfoW` |
+
+**A and B are the SAME converter defect**, and together they are 47 of the 53.
+
+### The root: the zero value of an array-bearing type is emitted as `default!`
+
+C# `default` produces the all-zero value and **does not run field initializers** — those run only
+through a constructor. go2cs's `array<T>` is a struct carrying its own `m_length`, so a `default`
+one has length **0**, not `N`.
+
+**Shape 1 — a `[N]T` named return.** `net/netip`'s `func (ip Addr) As16() (a16 [16]byte)` becomes
+(`src/core/net/netip/netip.cs:718`):
+
+```csharp
+public static array<byte> /*a16*/ As16(this ΔAddr ip) {
+    array<byte> a16 = default!;                      // ← length 0, not [16]byte
+    byteorder.BePutUint64(a16[..8], ip.addr.hi);     // ← throws here
+```
+
+**Shape 2 — a struct whose fields are fixed arrays.** `crypto/tls`'s `ticketKey` declares
+`internal array<byte> aesKey = new(16);`, and `ticketKeyFromBytes` opens with
+`ticketKey key = default!;` (`src/core/crypto/tls/common.cs:747`) — which skips exactly that
+initializer, so `copy(key.aesKey[..], …)` copies nothing and `aes.NewCipher` is handed 0 bytes.
+
+**The converter already knows the right emission** — three lines from the broken one,
+`src/core/net/ip.cs:529` builds the same zero value correctly as `new byte[]{}.array(16)` in
+composite-literal position. Only the zero-value *declaration* path emits `default!`.
+
+**Census (Windows target, committed corpus — this is a SHIPPED defect, not something this run
+emitted; `git status` on `src/core/net/netip` is clean).**
+
+* **10** sites of the direct `array<T> x = default!;` form, in 5 packages: `net/netip` ×2
+  (**`As16` and `As4`**), `vendor/golang.org/x/crypto/sha3` ×4, `internal/pkgbits` ×1,
+  `syscall` ×3 (linux/darwin only).
+* **24** sites declaring `= default!` on one of the **269** structs that carry `array<…> … = new(…)`
+  field initializers. Not all 24 are live — a site that assigns the whole struct afterwards is
+  harmless — but `ticketKey` is proven live by execution.
+
+**Why it HANGS instead of failing, which is the expensive half.** The throw is a plain
+`ArgumentException` from `slice<T>`'s **constructor** (`golib/slice.cs:227`), not the
+`RuntimeErrorPanic.SliceBoundsOutOfRange` that the reslice path raises. A non-panic exception
+satisfies `Goroutine.CanContain`, so the test host *contains* it and records it on the
+`TestExecution`. If the test then completes, the record flushes and you get the
+`INFRASTRUCTURE-ERROR` line with the full stack (the 10 B rows). If the dying goroutine was the one
+another goroutine was waiting on, the test never completes, the record never flushes, and the whole
+package deadline burns with **no output at all** (the 7 B-shaped rows). A Go-visible `panic:` here
+would have failed 17 tests loudly in milliseconds instead.
+
+**The one-line reproducer for whoever takes this:** `TestHostnameInSNI` **hangs** — a pure table test
+with no sockets and no TLS, whose table contains IP literals. It reaches
+`hostnameInSNI → net.ParseIP → parseIP → As16` and dies. `As16` is only reached when the string
+genuinely parses as an IP, which is why hostname-SNI TLS 1.2 handshakes pass while everything
+touching `127.0.0.1` dies. The second reach path is server-side and equally common:
+`x509.VerifyHostname → net.ParseIP → As16` (captured in `TestFallbackSCSV`'s stack).
+
+**Not fixed here, deliberately.** It is a converter emission change with a corpus-wide blast radius
+(34 candidate sites across 5+ packages), so it owes the converter gate set plus a seeded reconvert —
+its own lane, with a behavioral guard pinning both shapes (a `[N]T` named return and a
+zero-valued struct with an array field) and the `slice<T>` constructor's panic-vs-exception question
+decided alongside it.
+
+### Two singletons worth their own lines
+
+* **`GetAddrInfoW` access-violates.** `TestVerifyHostname` kills the process outright:
+  `Fatal error. 0xC0000005` through `net.DialContext → resolveAddrList → LookupPort → lookupPort →
+  syscall.GetAddrInfoW → Syscall6`. This is the **open non-blittable-syscall class** CLAUDE.md
+  records after the `Timezoneinformation` fix — *"9 more syscall wrappers pass a non-blittable struct
+  by address … Nothing exercises them today; `net` and `crypto/x509` will."* `net` just did, and
+  `AddrinfoW` is the first member with a measured consumer.
+* **`ж<T>.op_OnesComplement` nil-derefs** (`golib/ж.cs:957`) under `TestQUICHandshakeError`.
+
+### Go's own 4 failures are EXPIRED TEST FIXTURES, not a host defect
+
+The previous entry flagged `TestResumption`, `TestVerifyConnection`, `TestResumptionKeepsOCSPAndSCT`
+and `TestCrossVersionResume` as "host-environmental until proven otherwise". They are, and the reason
+is now named: the certificates those tests carry expired on **2025-01-01**, and this host's clock is
+**2026-08-16** —
+
+```
+x509: certificate has expired or is not yet valid:
+current time 2026-08-16T02:57:52-05:00 is after 2025-01-01T00:00:00Z
+```
+
+Both languages fail them identically, so they are correctly excluded from the differential (C# turns
+them into hangs rather than failures, which is root B's containment behavior again). **This will
+worsen with time on any machine, and it caps `crypto/tls` at 180 of 184 no matter what go2cs does** —
+whoever eventually banks this package needs that fact before reading a differential, and it is a
+Go-toolchain-version property, not a go2cs one.
+
+### Not banked, and not bankable
+
+Builds-and-partly-runs, exactly as the previous entry. No roster row, no proof page, no disclosures —
+none of the 53 divergences is a disclosed-divergence candidate under `alloc-profile`,
+`codegen-liveness` or `host-limit`: every one is either a real defect go2cs owns or an environmental
+fixture expiry. Converted test sources are **not** committed, per the validated-package commit policy.
+
+**Next move**, in dependency order: the `default!` zero-value emission (closes 47 of 53 at one
+stroke), then `GetAddrInfoW`, then the two singletons, then `TestCertCache`. The 7 B-shaped silent
+hangs should be re-measured *after* the emission fix rather than investigated now — the cheapest way
+to learn whether they were the same root is to remove the root.
+
+### Method notes worth keeping
+
+* **A `-tests` pipeline run cannot be interrupted by killing `go2cs.exe` alone.** Doing so orphans the
+  `dotnet run` child and its `crypto.tls.tests.exe` grandchild, which keep running, keep the suite's
+  sockets open, and hold `runtime.dll` locked — the next run then dies with **MSB3027/MSB3021** and its
+  comparison reports `Go="pass" C#=""` for ~180 tests, which reads exactly like a total conversion
+  failure. It is a file lock. Kill the TREE (by verified parentage), not the parent.
+* **`go2cs` does not relay the test host's stdout live** — it captures and prints at exit, so a log
+  tail shows nothing at all for the entire run. CPU sampling and the process tree are the only live
+  instruments; `dotnet-stack report -p <pid>` on the parked host is what produced every root above.
+* **Flat CPU dates a stall but not its beginning** (the previous entry's lesson) — sampling from t=0
+  put this stall at ~30 s into the host run. Both readings were 8.3 s of CPU, which is a coincidence
+  worth not over-reading: it is where a `crypto/tls` host stops, by two different mechanisms.
