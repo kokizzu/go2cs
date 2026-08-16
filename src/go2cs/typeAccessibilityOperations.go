@@ -258,6 +258,50 @@ func (v *Visitor) recordTypeAccessibility(kind string, identifier string, typePa
 	return ""
 }
 
+// localTypeAccess returns the access modifier a FUNCTION-LOCAL type must carry in the internal
+// white-box test bridge, or "" when the caller's own rule applies.
+//
+// A type declared inside a function body has NO Go exportedness. The export convention governs
+// PACKAGE-LEVEL identifiers; a function-local `S8` is exactly as unreachable from outside its
+// function as `embed2` is, and Go draws no distinction between them. go2cs hoists such a type to
+// package scope under a `<Func>_<name>` identifier, and both name-based accessibility rules then
+// read an export meaning into a name that never carried one:
+//
+//   - the bridge arm of visitTypeSpec asks generatedTypeScope for the LOCAL name, so the siblings
+//     declared by one function split between public and internal;
+//   - a lifted ANONYMOUS struct/interface carries no modifier at all, so go2cs-gen's GetScope reads
+//     the MANGLED name and inherits the case of the ENCLOSING FUNCTION — `TestEncoderSetEscapeHTML_type`
+//     is public because the Test function is.
+//
+// C#'s accessibility-consistency rule then rejects the mixture. encoding/json's
+// TestUnmarshalEmbeddedUnexported declares `S8` beside `embed2` and makes one a field of the other:
+// a public S8 over an internal embed2 is CS0053, with CS0050/CS0051 following on the accessors and
+// constructor go2cs-gen generates for the promotion, and CS0052 on the third shape (a lifted
+// anonymous struct over the package-level unexported `strMarshaler`). That is the ENTIRE compile
+// wall of the package's suite — 76 errors, four codes, one cause.
+//
+// `internal` is both faithful and sufficient: no Go consumer outside the function can name the type,
+// and every emitted C# consumer — the hoisted siblings and the converted function body — compiles
+// into the same test assembly. Writing it INLINE is what makes go2cs-gen follow: the generator
+// honors a modifier the declaration already carries and falls back to its own name rule only for a
+// bare one (measured — `internal partial struct TestUnmarshalEmbeddedUnexported_embed2` is
+// reproduced verbatim in the generated part, while the bare lifts were regenerated `public`).
+//
+// Deliberately scoped to the bridge. The PRODUCTION path leaves access empty and lets
+// recordTypeAccessibility pin generatedTypeScope of the MANGLED name, which gives every local type
+// of one function the SAME modifier — uniform, and consistent for that reason rather than by
+// design. The identical latent mixture exists there (a function-local struct with an exported field
+// of a package-level unexported type), but no corpus package exhibits it today, and flipping
+// production local types to internal would move a public value adapter's operand out from under it.
+// Measured and boarded rather than changed speculatively.
+func (v *Visitor) localTypeAccess() string {
+	if v.inFunction && v.options.testInlineTypeAccess {
+		return "internal "
+	}
+
+	return ""
+}
+
 // packagePublicizedTypes holds unexported named types in the package that must be emitted as
 // `public` because they are used as the type of an exported (public) struct field. C# requires a
 // field's type to be at least as accessible as the field itself, so an exported field of an

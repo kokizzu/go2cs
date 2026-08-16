@@ -10884,6 +10884,62 @@ an exported production element type, a test-file-declared element type — which
 re-emits `public` in this same pass — and a production-declared exported var over the same
 unexported type, which stays `public` because the gate is the declaring FILE, not the type.)
 
+### A FUNCTION-LOCAL type is emitted `internal` — its Go name's case carries no export meaning
+Both rules above read an access modifier out of an identifier's first rune, which is exactly what Go's
+export convention licenses — **for a package-level identifier**. A type declared *inside a function
+body* is a different animal: it is unreachable from outside that function by construction, so Go
+draws no visibility distinction between `S8` and `embed2` there. Neither is exported; neither can be.
+
+go2cs hoists such a type to package scope under a `<Func>_<name>` identifier (see the lift sections),
+and that hoist is where the meaning gets invented. Go's `encoding/json` `decode_test.go` is the
+witness — one function, two local types, one a field of the other:
+
+```go
+func TestUnmarshalEmbeddedUnexported(t *testing.T) {
+	type embed2 struct{ Q int }
+	type S8 struct {
+		embed2
+		R int
+	}
+	…
+}
+```
+
+The white-box bridge arm asked `generatedTypeScope` for the **local** name, so the two siblings landed
+on opposite sides:
+
+```csharp
+[GoType("dyn")] [GoLocalName("embed2")] internal partial struct TestUnmarshalEmbeddedUnexported_embed2 { … }
+[GoType("dyn")] [GoLocalName("S8")]     public   partial struct TestUnmarshalEmbeddedUnexported_S8 {
+    public TestUnmarshalEmbeddedUnexported_embed2 embed2;   // CS0053 — less accessible than the property
+}
+```
+
+and a lifted **anonymous** struct, which carries no modifier at all, was scoped by go2cs-gen's own
+rule from the **hoisted** name — inheriting the case of the enclosing function, so
+`TestEncoderSetEscapeHTML_type` came out `public` and its exported fields over the package-level
+unexported `strMarshaler` were CS0052.
+
+`localTypeAccess` (`typeAccessibilityOperations.go`) resolves both by emitting a function-local type
+`internal`, consumed at the three points that finalize a modifier — `visitTypeSpec`'s bridge arm, and
+the lift defaults in `visitStructType` and `visitInterfaceType`. `internal` is faithful (no Go
+consumer outside the function can name the type) and sufficient (every emitted C# consumer — the
+hoisted siblings and the converted function body — compiles into the same test assembly). Writing it
+**inline** is load-bearing: go2cs-gen reproduces a modifier the declaration already carries and falls
+back to its name rule only for a bare declaration, so pinning it inline is what stops the generator
+from re-deriving `public` and colliding (CS0262). This was the entire compile wall of `encoding/json`'s
+suite — **76 errors across CS0050/CS0051/CS0052/CS0053, four codes, one cause**.
+
+The rule is scoped to the bridge arm. On the production path the modifier is left empty and
+`recordTypeAccessibility` pins `generatedTypeScope` of the **mangled** name, which gives every local
+type of one function the same modifier — uniform, and therefore consistent, though for a reason
+nobody chose. The same latent mixture is expressible there (a function-local struct with an exported
+field of a package-level unexported type); no corpus package presents it, and flipping production
+local types would move a public value adapter's operand out from under it, so it is recorded rather
+than pre-emptively changed. Guarded by `TestFunctionLocalTypesShareOneAccessibility`, which pins all
+three shapes — the uppercase local, the lowercase local, and the anonymous lift reaching a
+package-level unexported production type — and fails without the fix.
+
 ### A publicized unexported interface is emitted `public`
 The accessibility pass records an unexported **interface** used in an exported surface exactly like a
 struct or func type — testing's `type testDeps interface { … }` reached through `func MainStart(deps

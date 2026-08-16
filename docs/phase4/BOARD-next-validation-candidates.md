@@ -4464,7 +4464,7 @@ and it points the opposite way from nistec.
 | `crypto/internal/nistec` | 2,200 | CS0311, above |
 | `runtime` | 870 | build-blocked |
 | `go/types` | 557 | CS0839 `Argument missing` |
-| `encoding/json` | 491 | CS0050 inconsistent accessibility on a test-local return type |
+| `encoding/json` | 491 | ~~CS0050 inconsistent accessibility on a test-local return type~~ — the type is FUNCTION-local, not test-local, and that is the fix: **the accessibility wall is CLOSED** (2026-08-16, lane `claude/json-measure`, 76 errors → 0). Two roots remain behind it at 8 errors — see *`encoding/json` — the compile wall was ONE defect* at the end of this file |
 | `encoding/xml` | 386 | CS0426 `ΔToken` does not exist in `xml_package` |
 | `crypto/x509` | 335 | CS0102 duplicate definition in `x509_package` |
 | `net/netip` | 266 | CS1525 `Invalid expression term '<'` |
@@ -6706,8 +6706,9 @@ on the unbanked list by a factor of six.
 `runtime/trace` 0 of 2 (`getg` stub) · `internal/concurrent` 0 of 20 (CS0426 `node<,>`) ·
 `debug/elf` 0 of 31 (CS8183 at `file_test.cs(1195,5)`) · `os/exec` 0 of 22 (CS0103 `var`) ·
 `text/template` 0 of 52 and `html/template` 0 of 243 (CS0030 `S`→`I`) · `slices` 0 of 122
-(CS0305/CS0411) · `encoding/xml` 0 of 386 (CS0426 `ΔToken`) · `encoding/json` 0 of 491
-(CS0050/CS0053) · `net/netip` 0 of 266 (CS1002/CS1525) · `internal/trace` 0 of 92 and
+(CS0305/CS0411) · `encoding/xml` 0 of 386 (CS0426 `ΔToken`) · ~~`encoding/json` 0 of 491
+(CS0050/CS0053)~~ — **still 0 of 491, but the CS0050/CS0053 wall is CLOSED and the block is now
+CS1503/CS1061/CS1739 ×8 in two named roots (2026-08-16)** · `net/netip` 0 of 266 (CS1002/CS1525) · `internal/trace` 0 of 92 and
 `runtime/pprof` 0 of 174 (CS0149 `Method name expected`; pprof also still CS0103 `ᏑᏑsalts`) ·
 `internal/runtime/atomic` 0 of 15 (CS0103 `ᏑᏑx`) · `flag` 0 of 24 (CS1929 on
 `ж<flag_test_package.URLValue>`) · `crypto/ed25519` 0 of 9 (CS0030 `PrivateKey`→`crypto.Signer`) ·
@@ -9678,3 +9679,101 @@ and a proof page written today must say so.
 
 Still builds-and-partly-runs; no roster row, no proof page, no disclosures, converted test sources not
 committed.
+
+## ⛔ `encoding/json` — the compile wall was ONE defect, and it is FIXED; two roots stand behind it (2026-08-16, lane `claude/json-measure`)
+
+**First measurement of the package.** The board's prior rows — `encoding/json | 491 | CS0050
+inconsistent accessibility on a test-local return type` and `encoding/json 0 of 491 (CS0050/CS0053)`
+— **reproduce exactly**, and the diagnosis behind them was right about the symptom and one word off
+about the cause: the offending types are not "test-local", they are **function-local**, and that
+distinction is the whole fix.
+
+### The wall: 76 errors, four codes, one cause — CLOSED
+
+| Code | Count | Shape |
+|:--|--:|:--|
+| CS0053 | 35 | property type less accessible than property |
+| CS0050 | 20 | return type less accessible than method (the generated `Ꮡ`-accessors) |
+| CS0051 | 19 | parameter type less accessible than method (the generated constructors) |
+| CS0052 | 2 | field type less accessible than field |
+
+**A type declared inside a function body has no Go exportedness.** The export convention governs
+PACKAGE-LEVEL identifiers; a function-local `S8` is exactly as unreachable from outside its function
+as `embed2` is, and Go draws no distinction between them. go2cs hoists both to package scope as
+`<Func>_<name>`, and at that point an accessibility rule reads a case out of the name — by either of
+two routes, which is why the failure looked like several defects:
+
+1. **the converter's bridge arm** (`visitTypeSpec`, under `testInlineTypeAccess`) asked
+   `generatedTypeScope` for the **LOCAL** name, so the siblings one function declares split
+   public/internal — `[GoLocalName("S8")] public partial struct TestUnmarshalEmbeddedUnexported_S8`
+   holding a field of `[GoLocalName("embed2")] internal partial struct
+   TestUnmarshalEmbeddedUnexported_embed2`;
+2. **a lifted ANONYMOUS struct** carries no modifier at all, so **go2cs-gen's** own rule read the
+   **HOISTED** name and inherited the case of the *enclosing function* — `TestEncoderSetEscapeHTML_type`
+   is public because the `Test…` function is, and its exported fields over the package-level
+   unexported `strMarshaler`/`strPtrMarshaler` are the two CS0052.
+
+**Fix (landed):** a function-local type is emitted `internal`, always — `localTypeAccess` in
+`typeAccessibilityOperations.go`, consumed at the three finalization points (`visitTypeSpec`'s bridge
+arm, `visitStructType`'s and `visitInterfaceType`'s lift defaults). `internal` is both faithful and
+sufficient: no Go consumer outside the function can name the type, and every emitted C# consumer
+compiles into the same test assembly. Writing it **inline** is what makes the generator follow —
+measured, not assumed: the generator reproduces a modifier the declaration already carries
+(`internal partial struct TestUnmarshalEmbeddedUnexported_embed2` appears verbatim in its output) and
+falls back to its name rule only for a bare one. Guarded by `TestFunctionLocalTypesShareOneAccessibility`
+(converter `go test`), which pins all three shapes and **fails without the fix** (A/B verified —
+`TestLocals_S8` reverts to `public`).
+
+**Deliberately scoped to the bridge.** The production path leaves the modifier empty and lets
+`recordTypeAccessibility` pin `generatedTypeScope` of the **mangled** name, which gives every local
+type of one function the SAME modifier — uniform, and consistent for that reason rather than by
+design. ⚠ **The identical latent mixture exists in production** (a function-local struct with an
+exported field of a package-level unexported type) and no corpus package exhibits it today; flipping
+production local types to internal would also move a public value adapter's operand out from under
+it. Measured and left, not changed speculatively — if a production package ever presents the shape,
+this is its root.
+
+### Behind it: two roots, 8 errors, and the package still does not run
+
+Re-running the pipeline on the fixed converter took the wall from 76 to **8**, in two families that
+were **masked, not caused** — `renamedByte`, `strMarshaler` and `strPtrMarshaler` are package-level
+types the fix does not touch, and they error now for the first time.
+
+**R2 — a hoisted function-local type's EMBEDDED-field member keeps the hoisted name, while use sites
+spell the Go field name** (CS1061 ×2, CS1739 ×1). The converter is internally inconsistent about one
+name. `type S struct{ *myInt }` inside `TestAnonymousFields` emits the member as
+`TestAnonymousFields_myIntᴛ1` (declaration *and* go2cs-gen's promotion and constructor), while the
+converted body says `s.myInt` and the composite literal says
+`new TestUnmarshalEmbeddedUnexported_S3(embed1: …)`. The Go field name of an embedded `*myInt` is
+`myInt`, and `[GoLocalName]` already records it for `%T` — the promotion simply does not use it.
+Naming the member by the Go local name is collision-free (it lives inside the struct), but the fix
+spans the converter's embedded-field emission **and** go2cs-gen's promotion generator, so it is its
+own arc.
+
+**R3 — a string↔byte-slice conversion loses its footing when either side is a DEFINED type**
+(CS1503 ×5), in two directions of one idea:
+
+| Direction | Emitted | Sites |
+|:--|:--|:--|
+| `[]byte(namedString)` | `slice<byte>(v)` where `v` is `[GoType("@string")]` | `marshaledValue`, `strMarshaler`, `strPtrMarshaler` |
+| `[]NamedByte(string)` | `slice<TestSliceOfCustomByte_Uint8>("hello")`, `slice<renamedByte>((@string)"abc"u8)` | `TestSliceOfCustomByte`, `TestEncodeRenamedByteSlice` |
+
+Overload resolution lands on `slice<T>(T[])` and reports `cannot convert from '…strMarshaler' to
+'byte[]'`. golib's string constructor is reachable only for the exact `@string` → `slice<byte>`
+pairing; a named type on either side is not routed through it. **The emitted FORM is not the
+problem** — positive control: the identical `slice<byte>(s)` conversion appears in the banked suites
+of `archive/zip`, `bytes` and `compress/zlib` and compiles there, because the operand is a plain
+`@string`. What is missing is the unwrap of a DEFINED type to its underlying at the conversion site
+(or the participation of the generated implicit conversion in overload resolution) — a
+golib/converter boundary question that wants a measurement of its own. The shape is ordinary Go, so
+it is very likely NOT confined to this package.
+
+### Where `encoding/json` stands
+
+**0 of 491, still compile-blocked — but the block is now 8 errors in two named roots rather than 76
+in one, and the converter fix that closed the first is general (any package whose tests declare types
+inside a function body).** No roster row, no proof page, no disclosures, converted test sources not
+committed. The suite converts cleanly end to end — every `_test.go` file emits, and the production
+`encoding.json.dll` builds — so the remaining distance is exactly R2 and R3, and neither is a
+reflection-bridge question. Nothing here touches the descriptor/assignability semantics the
+`claude/assignableto-arc` lane owns; no cross-reference is owed.
