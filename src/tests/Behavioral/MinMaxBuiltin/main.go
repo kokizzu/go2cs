@@ -14,6 +14,16 @@
 // reject (CS1503 — params-span element binding does not apply the user-defined implicit
 // conversion). The converter casts such an argument to the call's Go-resolved result type:
 // `min(n, (uintptr)(limit))`. Literal and typed arguments are unchanged.
+//
+// And: an argument of a NAMED numeric type is the go2cs-gen wrapper STRUCT, not the underlying
+// primitive. golib's two-argument overloads bind `IComparisonOperators<T,T,bool>` (which the
+// wrapper declares), but the N-argument `params ReadOnlySpan<T>` overloads bind `IComparable<T>`
+// (which it did NOT) — so `min(a-got, got-a, a-got+q, got-a+q)` over crypto/internal/mlkem768's
+// `type fieldElement uint16` was CS0315, "no boxing conversion from fieldElement to
+// System.IComparable<fieldElement>". The generated wrapper now carries IComparable<T> and its
+// CompareTo on the SAME kind-gate as its ordered operators (every numeric kind except complex,
+// which Go orders no more than C# does), so a named numeric binds both overload shapes. The three
+// named kinds below cover unsigned, floating and signed underlyings.
 package main
 
 import "fmt"
@@ -26,6 +36,18 @@ func clampU(n uintptr) uintptr { return min(n, limit) }
 
 //go:noinline
 func clampI(d int32) int32 { return max(d, floor) }
+
+type fieldElement uint16 // the crypto/internal/mlkem768 shape
+type ratio float64
+type delta int8
+
+// spread is TestDecompressCompress's own call — four arguments of a named UNSIGNED type, so the
+// params overload, over wrapper arithmetic that wraps exactly as Go's uint16 does.
+//
+//go:noinline
+func spread(a, b fieldElement) fieldElement {
+	return min(a-b, b-a, a-b+3329, b-a+3329)
+}
 
 func main() {
 	// Two-argument integer min/max (the most common form, e.g. crypto/subtle).
@@ -59,4 +81,21 @@ func main() {
 	// both arguments constant, one named-untyped (result type from the typed literal context)
 	var big uintptr = 200000
 	fmt.Println(min(big, limit, 500)) // 500
+
+	// NAMED numeric types — the generated wrapper struct, not the primitive. Four arguments take
+	// the IComparable<T> params overload; two take the IComparisonOperators one. Both must bind.
+	a, b, c, d := fieldElement(10), fieldElement(3329), fieldElement(7), fieldElement(500)
+	fmt.Println(min(a, b, c, d), max(a, b, c, d)) // 7 3329
+	fmt.Println(min(a, c), max(a, c))             // 7 10
+	fmt.Println(spread(10, 3))                    // 7
+
+	// named FLOATING underlying
+	p, q, r := ratio(2.5), ratio(-1.25), ratio(8)
+	fmt.Println(min(p, q, r), max(p, q, r)) // -1.25 8
+	fmt.Println(min(p, q), max(p, q))       // -1.25 2.5
+
+	// named SIGNED underlying (negative values order below zero, not by bit pattern)
+	i, j, k := delta(-5), delta(3), delta(-100)
+	fmt.Println(min(i, j, k), max(i, j, k)) // -100 3
+	fmt.Println(min(i, j), max(i, j))       // -5 3
 }

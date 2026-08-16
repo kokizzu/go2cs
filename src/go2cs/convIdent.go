@@ -258,6 +258,26 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 		}
 	}
 
+	// The same collision against a package-level CONST. Go's `q := big.NewInt(q)` (crypto/internal/
+	// mlkem768's TestZetas/TestGammas, over `const q = 3329`) is legal because a short var decl's
+	// scope starts AFTER its own ValueSpec, so the initializer still reads the constant; C# scopes
+	// the local to the whole block and the initializer binds to the local it is declaring — CS0841.
+	//
+	// A const cannot fall back on the local-rename half of this defence: performVariableAnalysis's
+	// usedPackageVarNames pre-scan records only objects that are *types.Var and live in globalScope
+	// (which is map[string]*types.Var), so a const-shadowing local is never shadow-renamed. That is
+	// why the const arm qualifies rather than renames, and why it uses the WIDER local set:
+	// funcLevelDecls holds only declarations directly in the function body, but the same shape
+	// inside an `if`/`for` init is not function-level, while funcScopeVarNames is every variable
+	// declared anywhere in the function (nested blocks and func literals included). Qualifying a
+	// reference that no local actually shadows costs verbosity and never changes meaning, so the
+	// wider set is the safe side to err on.
+	if v.pkg != nil && v.funcScopeVarNames.Contains(ident.Name) {
+		if cn, ok := v.info.ObjectOf(ident).(*types.Const); ok && cn.Parent() == v.pkg.Scope() {
+			return v.packageScopeClassName(cn) + "." + getSanitizedIdentifier(v.getIdentName(ident))
+		}
+	}
+
 	// A PACKAGE ident whose using-alias is shadowed by a same-package method/function name
 	// (`func (s *byLiteral) sort(…)` vs `import "sort"` — the member lookup binds the method
 	// group before the alias, CS0119, compress/flate) qualifies through the _package class.
