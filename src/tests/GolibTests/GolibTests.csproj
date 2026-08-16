@@ -30,6 +30,11 @@
     <Using Include="System.Int32" Alias="rune" />
 
     <ProjectReference Include="..\..\core\golib\golib.csproj" />
+
+    <!-- Sha3ReinterpretVectorTests: the ONLY guard the hand-owned sha3 xor.cs has (no _test.go in
+         GOROOT, not reachable from a behavioral test). Binding a converted package from an MSTest
+         tier follows GenericTests, which references core/sort. -->
+    <ProjectReference Include="..\..\core\vendor\golang.org\x\crypto\sha3\vendor.golang.org.x.crypto.sha3.csproj" />
   </ItemGroup>
 
 </Project>
