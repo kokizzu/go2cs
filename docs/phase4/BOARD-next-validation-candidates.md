@@ -8859,6 +8859,13 @@ pipeline converts it but cannot build it:
 Fixing those two would bank mlkem768 as a roster package AND retire this guard gap in one arc; it is
 the cheapest available roster growth in the crypto tree.
 
+> **CLOSED 2026-08-16** by lane `claude/mlkem768`. Both defects are fixed at their real layer, the
+> package banks **12/12 · 0 disclosed** as roster row 147, and the guard gap this paragraph opened is
+> retired. One correction to the bullets above: the second defect is not an *emission-ordering*
+> defect — nothing is emitted out of order. It is a package-level **const** taking neither half of
+> the local-shadow defence, and it produces CS0165 as readily as CS0841 depending only on whether
+> the C# declaration says `var`. See the entry at the end of this board.
+
 ### Method notes worth keeping
 
 * **A per-test census script must be written against the CONVERTED host's verdict format, not
@@ -8876,3 +8883,150 @@ the cheapest available roster growth in the crypto tree.
   `keccakf_amd64.cs` the `-stdlib` driver excludes, and dropped the csproj's validation-proof block —
   three single-package-vs-stdlib artifacts that read exactly like drift. Use the seeded `-stdlib`
   reconvert to measure emission.
+
+## ✅ `crypto/internal/mlkem768` BANKS 12/12 — sha3's only available operational guard, and the two defects that stood in front of it (2026-08-16, lane `claude/mlkem768`)
+
+The `sha3` entry above closed an AccessViolation and then recorded a gap it could not close itself:
+`crypto/internal/mlkem768` is the only operational guard the hand-owned `sha3` fix can have — the
+vendored `golang.org/x/crypto/sha3` ships no GOROOT test suite and is not importable from a
+behavioral test — and the `-tests` pipeline converted mlkem768 but could not build it, on two
+defects that had nothing to do with sha3, with crypto, or with each other. Both are now fixed at
+their real layer, both proven failing-first by behavioral guards, and the package banks
+**12 matched · 0 disclosed** as roster row **147** (16,573 verdicts, 68.4%).
+
+### Defect 1 — CS0315: a named numeric was ordered by OPERATORS but was not `IComparable<T>`
+
+`min(a-got, got-a, a-got+q, got-a+q)` over `type fieldElement uint16` (`TestDecompressCompress`)
+did not compile: *"no boxing conversion from `fieldElement` to `System.IComparable<fieldElement>`"*.
+
+Ordering has **two** surfaces in .NET and the generated `[GoType num:]` wrapper carried only one.
+`IComparisonOperators<T,T,bool>` — which the wrapper declares — serves a constraint lifted from
+`cmp.Ordered`, and golib's TWO-argument `min`/`max` bind it. The N-argument forms cannot: a
+`params ReadOnlySpan<T>` element has to compare through a *member*, so they bind `IComparable<T>`,
+which the wrapper did not implement. So a named numeric bound `min(a, b)` and failed
+`min(a, b, c, d)` — an arity cliff, which is why nothing had tripped it before.
+
+Fixed in **go2cs-gen**, not at the call site and not by relaxing golib's constraint:
+`InheritedTypeTemplate` declares `IComparable<T>` on the **same kind-gate** as `IComparisonOperators`
+(every numeric kind except complex, which Go orders no more than C# does) and `NumericTypeTemplate`
+emits its one member inside the same gated block, `CompareTo` forwarding to the UNDERLYING value's:
+
+```csharp
+public int CompareTo(fieldElement other) => m_value.CompareTo(other.m_value);
+```
+
+Forwarding rather than re-deriving from the wrapper's own `<`/`>` is deliberate — it keeps a named
+float on the BCL total order (NaN below everything), which is what makes `min` yield NaN when any
+argument is NaN, as Go's does. The wrapper was already `IEquatable<T>`; it is ordered now too,
+matching the golib `uintptr` and `@string` structs, which are both.
+
+**Why this layer and not golib.** Relaxing the params overload to `IComparisonOperators` was the
+alternative, and it is the wrong general fix: the two overloads differ only in constraint, so it
+would have to REPLACE the `IComparable<T>` one, silently withdrawing N-argument `min`/`max` from
+every type that is comparable without carrying operators. The wrapper's missing interface was the
+actual incompleteness, and filling it also buys `Array`/`List.Sort`, `SortedSet<T>` and
+`Comparer<T>.Default` over every named numeric in the corpus.
+
+### Defect 2 — CS0841/CS0165: a package-level CONST had NEITHER half of the local-shadow defence
+
+`q := big.NewInt(q)` (`TestZetas`, `TestGammas`, over `const q = 3329`). Legal Go — a short variable
+declaration's scope begins *after* its own ValueSpec, so the initializer reads the constant — and
+illegal C#, where the local owns the name for the whole block and its own initializer binds to it.
+
+The converter already defends this shape twice over, and **both defences are keyed to `*types.Var`**:
+
+* the LOCAL-rename half (`usedPackageVarNames`, variableAnalysisOperations) pre-scans for idents
+  resolving to a package-level object found in `globalScope` — typed `map[string]*types.Var`, so a
+  const is not in it and a const-shadowing local is never renamed;
+* the QUALIFY half (convIdent) rewrites the *global's* reference to `<pkg>_package.name`, gated on
+  `v.info.ObjectOf(ident).(*types.Var)` — a const does not match the type assertion.
+
+A `*types.Const` fell between them. Fixed by giving convIdent a const arm beside the var arm, with
+one deliberate difference: it consults `funcScopeVarNames` (every variable declared ANYWHERE in the
+function) rather than `funcLevelDecls` (declarations directly in the function body), because the
+same shape inside an `if`/`for` init is not function-level and the const has no rename to fall back
+on. Qualifying a reference no local actually shadows costs verbosity and never changes meaning, so
+the wider set is the safe side to err on.
+
+**The board's characterization of this one was wrong and is corrected in place above.** It reads as
+an "emission-ordering defect"; nothing is emitted out of order. It is also not reliably CS0841: that
+diagnostic appears only when the C# declaration infers `var` (which `big.NewInt` does). Declare the
+type and the identical Go source produces **CS0165, "use of unassigned local variable"** — one root,
+two diagnostics, which is why the guard carries both shapes.
+
+### Guards, proven failing-first
+
+Both fixes extend an EXISTING behavioral project rather than adding one — each defect is a new
+member of a family that project already documents.
+
+| Guard | Extension | Pre-fix verdict |
+|---|---|---|
+| `MinMaxBuiltin` | `min`/`max` at 2 and 4 arguments over named **unsigned** (`fieldElement uint16`, including mlkem768's own four-argument call), **floating** (`ratio float64`) and **signed** (`delta int8`) underlyings | **CS0315 ×10** across all three kinds |
+| `GlobalShadowedByLocal` | a self-referencing initializer at function level, the same shape in an `if` init, the `var`-inferred form that reproduces mlkem768's exact CS0841, and an unshadowed control that must keep the bare name | **CS0165 ×2** (explicit-type shapes); the `var` shape adds the CS0841 |
+
+Both were run with the fixes reverted and the binaries rebuilt, not asserted.
+
+### Corpus footprint: measured at ZERO
+
+A seeded `-stdlib` reconvert (5,055 files seeded incl. `version.props` + `docs/validation`; 59
+`[module: GoManualConversion]` files, **0** marker-gate violations; 1,664 files emitted) produced
+**50 CRLF phantoms and exactly ONE real content diff** — `crypto/internal/mlkem768/README.md`, whose
+Tests badge flips to `12/12 validated` because the package now has a proof page. That is the bank's
+own artifact, not the converter's. So the const arm changes no stdlib package's emission: no
+converted function both references a package const and declares a same-named local. The generator
+change is compile-time and changes no emission at all; its gate is the corpus BUILD, which is clean.
+
+### The census, honestly
+
+**12 of 12 top-level tests match, 0 disclosed, 0 skipped**, 4 declarations excluded on both sides
+(`BenchmarkKeyGen`, `BenchmarkEncaps`, `BenchmarkDecaps`, `BenchmarkRoundTrip` — the standard
+Phase-4D benchmark deferral). No third defect appeared behind the two: the suite built and ran
+first try once they were fixed, which is worth recording against this week's pattern.
+
+C# runtime, i7-5820K, solo: **434.7 s**, and it is one test —
+
+| Test | C# elapsed |
+|---|--:|
+| `TestPQCrystalsAccumulated` | 417.3 s |
+| `TestFieldReduce` | 7.4 s |
+| `TestFieldSub` | 3.2 s |
+| `TestFieldMul` | 2.8 s |
+| `TestFieldAdd` | 2.6 s |
+| the other seven | < 1 s each |
+
+`TestPQCrystalsAccumulated` runs 10,000 full key-gen/encapsulate/decapsulate rounds and accumulates
+them into a SHAKE-128 digest. 435 s clears the sweep's 10 m default by only **1.4x** — inside the
+spread a loaded sweep produces — so this package is owed a `$longTimeouts` floor and gets **30m**
+(4x headroom). That is the sixth entry in that table; the rule it follows is unchanged (a floor, not
+an override — a larger `-TestTimeout` still raises it).
+
+### The guard gap closes
+
+mlkem768's production code drives `sha3.Sum512`, `New512`, `Sum256`, `New256`, `NewShake256` and
+`NewShake128` — six entry points across key generation, encapsulation, decapsulation and the
+sampling PRFs — and every one of them is on the path of the banked verdicts. The `sha3` entry's
+hand-owned `xor.cs` (the array-reinterpret fix) therefore now has a committed suite that exercises
+it on every sweep, which is exactly what that entry said it lacked. `crypto/tls`'s 176-of-184
+remains the wider witness; this is the *repeatable* one.
+
+**Run, not asserted — the neutered-fix control.** Restoring the auto-converted `xor.cs` over the
+hand-own (its `.cs.auto` sibling is committed beside it) and rebuilding kills the mlkem768 test host
+outright, exactly as the `sha3` entry predicted for `crypto/tls`: a **fatal
+`AccessViolationException`, exit `0xC0000005`**, on the stack
+
+```
+go.slice<byte>..ctor  ←  array<byte>.Slice  ←  sha3.copyOut  ←  padAndPermute  ←  Read
+                      ←  sha3.Sum  ←  Sum512  ←  mlkem768.kemKeyGen  ←  generateKey
+                      ←  GenerateKey  ←  TestBadLengths
+```
+
+The host dies at the FIRST test that generates a key, so the comparison reports `Go="pass" C#=""`
+for all 12 rows — the documented dead-host signature, not twelve failures. Restore the hand-own and
+all 12 pass again. That is the guard doing its job, measured on the committed suite.
+
+⚠ **A restore-from-backup trap, worth one line because it cost a run.** `Copy-Item` PRESERVES the
+source file's `LastWriteTime`, so copying a backup back over `xor.cs` gives the restored file an
+*older* timestamp than the neutered build's assembly — MSBuild judges the project up to date and
+keeps the NEUTERED dll. The re-run then reproduces the AV with clean, HEAD-matching source and a
+`git status` that shows nothing at all. Touch the restored file (or build `--no-incremental`) before
+believing any verdict that follows a hand-own swap.
