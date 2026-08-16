@@ -54,5 +54,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct delta {}
+    internal partial struct fieldElement {}
+    internal partial struct ratio {}
     // </TypeAccessibility>
 }

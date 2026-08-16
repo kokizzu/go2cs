@@ -75,7 +75,16 @@ internal class InheritedTypeTemplate : TemplateBase
             // Complex kinds have no ordered comparisons (Go spec: == / != only; C# complex has no
             // <//<=/>/>= either) — the operators are gated in NumericTypeTemplate, so declaring
             // IComparisonOperators here would be CS0535.
-            string comparisonInterface = TypeName.StartsWith("complex") ? "" : $" global::System.Numerics.IComparisonOperators<{TargetTypeName}, {TargetTypeName}, bool>,";
+            //
+            // IComparable<T> rides the SAME gate and is the ordering interface's other half: the
+            // operators satisfy a constraint that lifts to IComparisonOperators, but the BCL's own
+            // ordering surface — Array/List.Sort, SortedSet, Comparer<T>.Default, and golib's
+            // N-argument `min`/`max` (`where T : IComparable<T>`) — binds IComparable<T> instead,
+            // which a named numeric could not satisfy. Go's `min(a-got, got-a, a-got+q, got-a+q)`
+            // over `type fieldElement uint16` (crypto/internal/mlkem768's TestDecompressCompress)
+            // was CS0315 for exactly that reason. The wrapper is IEquatable<T> already; this makes
+            // it ordered as well, matching the golib `uintptr`/`@string` structs, which are both.
+            string comparisonInterface = TypeName.StartsWith("complex") ? "" : $" global::System.IComparable<{TargetTypeName}>, global::System.Numerics.IComparisonOperators<{TargetTypeName}, {TargetTypeName}, bool>,";
 
             string interfaces = $" : global::System.IEquatable<{TargetTypeName}>, global::System.Numerics.IAdditionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.ISubtractionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IMultiplyOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IDivisionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IEqualityOperators<{TargetTypeName}, {TargetTypeName}, bool>,{comparisonInterface} global::System.Numerics.IIncrementOperators<{TargetTypeName}>, global::System.Numerics.IDecrementOperators<{TargetTypeName}>, global::System.Numerics.IUnaryNegationOperators<{TargetTypeName}, {TargetTypeName}>";
 

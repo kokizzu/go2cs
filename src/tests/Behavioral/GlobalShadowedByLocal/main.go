@@ -78,7 +78,59 @@ func tupleInitShadow(key string) int {
 	return -1
 }
 
+// mlkemQ is the package-level CONST half of the same collision — crypto/internal/mlkem768's
+// `const q = 3329` against `q := big.NewInt(q)` in TestZetas/TestGammas. Go resolves the
+// initializer to the constant (a short var decl's scope begins after its own ValueSpec); C#
+// scopes the local to the whole block, so the initializer bound the local it was declaring
+// (CS0841 ×2). A const cannot take the LOCAL-rename half of the defence `hosts` above uses:
+// the pre-scan feeding it records only objects that are *types.Var, so a const-shadowing local
+// is never renamed. The CONST reference is package-qualified instead (`main_package.mlkemQ`)
+// and the local keeps its own name.
+const mlkemQ = 3329
+
+//go:noinline
+func constSelfInitShadow() int {
+	mlkemQ := mlkemQ * 2 // initializer reads the package CONST (6658); the local shadows it
+	return mlkemQ + 1    // 6659
+}
+
+// constNestedInitShadow puts the same shape in an `if` INIT — not a declaration directly in the
+// function body, so the function-level map the var arm consults does not see it. The const arm
+// consults every variable declared anywhere in the function instead, which is what reaches here.
+//
+//go:noinline
+func constNestedInitShadow() int {
+	if mlkemQ := mlkemQ / 1000; mlkemQ > 2 {
+		return mlkemQ // 3
+	}
+	return -1
+}
+
+type qbox struct{ v int }
+
+//go:noinline
+func newQbox(n int) *qbox { return &qbox{v: n} }
+
+// constVarInitShadow is mlkem768's own `q := big.NewInt(q)` letter for letter: the local's type
+// comes from a call, so the declaration emits `var`, and it is `var` that produces the CS0841 the
+// package reported. The two shapes above declare an explicit C# type and surface the same defect
+// as CS0165 ("use of unassigned local variable") instead — one root, two diagnostics, so the guard
+// carries both.
+//
+//go:noinline
+func constVarInitShadow() int {
+	mlkemQ := newQbox(mlkemQ) // initializer reads the package CONST; the local shadows it
+	return mlkemQ.v           // 3329
+}
+
+// constUnshadowedElsewhere proves the qualification is scoped to functions that DECLARE the
+// name: this one only reads the const, so it must still emit the bare `mlkemQ`.
+//
+//go:noinline
+func constUnshadowedElsewhere() int { return mlkemQ }
+
 func main() {
+	fmt.Println(constSelfInitShadow(), constNestedInitShadow(), constVarInitShadow(), constUnshadowedElsewhere()) // 6659 3 3329 3329
 	fmt.Println(collisionGlobalShadow()) // 49
 	fmt.Println(plainGlobalShadow())     // 205
 	fmt.Println(trace.addr, plainCounter) // 42 100 (globals unchanged)

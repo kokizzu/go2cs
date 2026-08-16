@@ -56,6 +56,7 @@ public static partial class main_package
     // <TypeAccessibility>
     internal partial struct acquirer {}
     internal partial struct buildRec {}
+    internal partial struct qbox {}
     internal partial struct snapshot {}
     // </TypeAccessibility>
 }

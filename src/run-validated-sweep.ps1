@@ -414,7 +414,13 @@ function Get-HostConditionalVerdict {
 # hundreds of thousands of converted frames per variant): 17 min measured solo on SSD
 # (2026-08-14, i7-5820K), and the 10m default reported a passing suite as NOT MEASURED the
 # first time the full sweep ran it under load. 40m clears the solo figure with 2x headroom.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '30m'; 'go/parser' = '40m' }
+#
+# crypto/internal/mlkem768's floor is owed by ONE test: TestPQCrystalsAccumulated runs 10,000 full
+# ML-KEM key-gen/encapsulate/decapsulate rounds and accumulates them into a SHAKE-128 digest, and
+# measured 417.3 s of the package's 434.7 s total (2026-08-16, i7-5820K, solo). That clears the 10m
+# default by only 1.4x -- inside the run-to-run spread a loaded sweep produces -- so the package
+# would report NOT MEASURED on a bad day without a floor. 30m gives the measured figure 4x headroom.
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '30m'; 'go/parser' = '40m'; 'crypto/internal/mlkem768' = '30m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package

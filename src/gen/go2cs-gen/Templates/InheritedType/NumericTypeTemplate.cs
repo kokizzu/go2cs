@@ -45,9 +45,20 @@ internal static class NumericTypeTemplate
     // complex types to == / !=), and C#'s complex representations have no <//<=/>/>= either —
     // emitting them for a named complex type is CS0019 ×4 (testing/quick's TestComplex64Alias).
     // The IComparisonOperators interface declaration is gated the same way (InheritedTypeTemplate).
+    //
+    // CompareTo rides this same gate — it is IComparable<T>'s only member (declared alongside
+    // IComparisonOperators in InheritedTypeTemplate, see the note there). It forwards to the
+    // UNDERLYING value's CompareTo rather than being written out of the wrapper's own </>
+    // operators, so a named FLOAT keeps the BCL's total order — NaN below everything — which is
+    // what makes golib's `min`/`max` yield NaN when any argument is NaN, as Go's do. Every
+    // underlying a `[GoType num:]` wrapper can name is IComparable<itself>: the aliases are BCL
+    // primitives, `uintptr` is a golib struct that declares it, and a wrapper over another
+    // wrapper picks up the member this very template gives it.
     private static string GetComparisonOperators(string typeName, string targetTypeName) => typeName.StartsWith("complex") ? "" :
        $"""
 
+
+                public int CompareTo({targetTypeName} other) => m_value.CompareTo(other.m_value);
 
                 public static bool operator <({targetTypeName} left, {targetTypeName} right) => left.m_value < right.m_value;
 

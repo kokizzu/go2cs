@@ -65,10 +65,44 @@ internal static nint tupleInitShadow(@string key) {
     return -1;
 }
 
+internal static UntypedInt mlkemQ => 3329;
+
+internal static nint constSelfInitShadow() {
+    nint mlkemQ = main_package.mlkemQ * 2;
+    return mlkemQ + 1;
+}
+
+internal static nint constNestedInitShadow() {
+    {
+        nint mlkemQ = main_package.mlkemQ / 1000; if (mlkemQ > 2) {
+            return mlkemQ;
+        }
+    }
+    return -1;
+}
+
+[GoType] partial struct qbox {
+    internal nint v;
+}
+
+internal static ж<qbox> newQbox(nint n) {
+    return Ꮡ(new qbox(v: n));
+}
+
+internal static nint constVarInitShadow() {
+    var mlkemQ = newQbox(main_package.mlkemQ);
+    return (~mlkemQ).v;
+}
+
+internal static nint constUnshadowedElsewhere() {
+    return mlkemQ;
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object mainFieldˢ = (@string)"main field:"u8;
 
 internal static void Main() {
+    fmt.Println(constSelfInitShadow(), constNestedInitShadow(), constVarInitShadow(), constUnshadowedElsewhere());
     fmt.Println(collisionGlobalShadow());
     fmt.Println(plainGlobalShadow());
     fmt.Println(Δtrace.addr, plainCounter);
