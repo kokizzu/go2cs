@@ -207,6 +207,8 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 The dated floor exploration (stock-SDK trim profiles vs bflat; concluded 2026-08-16 — the floor
 is a trim-rooting question, not a toolchain question) lives in
-[`docs/PLAN-bflat-perf-exploration.md`](../../../docs/PLAN-bflat-perf-exploration.md), results
-section included. [`run-performance-floor.ps1`](run-performance-floor.ps1) is its measurement
-harness and is not part of the canonical suite above.
+[`docs/PLAN-bflat-perf-exploration.md`](https://github.com/ritchiecarroll/go2cs/blob/master/docs/PLAN-bflat-perf-exploration.md),
+results section included.
+[`run-performance-floor.ps1`](https://github.com/ritchiecarroll/go2cs/blob/master/src/tests/Performance/run-performance-floor.ps1)
+is its measurement harness and is not part of the canonical suite above. (Links are absolute
+because this file mirrors verbatim to `docs/Performance.md` after each canonical run.)
