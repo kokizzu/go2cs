@@ -375,7 +375,23 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     // managed reference, so every site this fires on was already broken, and it was broken in the
     // one way that cost the most to diagnose. Computed from the type, so the branch folds away at
     // JIT/ILC time for every T that carries no references.
-    private static readonly bool s_nativeReadFabricatesReference = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    //
+    // ⚠ The VALUE-TYPE term is load-bearing, and `IsReferenceOrContainsReferences` alone is the
+    // WRONG predicate — it conflates two opposite situations. Where T is a value-type surrogate
+    // (`array<U>`, `slice<U>`, `@string`, `map<K,V>` — all readonly structs holding a backing
+    // reference) the read manufactures that reference out of DATA, which is the fatal case above.
+    // Where T is a reference TYPE (`unsafe.Pointer`, `ж<U>`, any class) the address names a
+    // reference SLOT and reading it yields a real, heap-valid object reference — which is precisely
+    // the managed-referent model the corpus is built on ("hold the ж<T>/object DIRECTLY, never a
+    // nuint round-trip"). `time.syncTimer` is the witness for the second, and it was measured, not
+    // reasoned about: `return ~Ꮡc.Reinterpret<channel<Time>, unsafe.Pointer>()` lands on the address
+    // route (Pointer is a class, so no arm of ReinterpretAliasesStorage can engage), and the wider
+    // predicate refused it — taking down `time.NewTimer`, and with it every crypto/tls test that
+    // opens a pipe. The reference it hands back is type-CONFUSED rather than fabricated: it is the
+    // real channel object, and nothing ever calls a Pointer member on it. Refusing it buys nothing
+    // and costs a hot path.
+    private static readonly bool s_nativeReadFabricatesReference =
+        typeof(T).IsValueType && RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     // Whether dereferencing THIS box would be refused — a native alias whose pointee carries a
     // managed reference. Exposed for the DISPLAY path, which must answer for every box a program can
