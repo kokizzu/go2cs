@@ -12,11 +12,24 @@
   <Folder Name="/core/cmp/">
     <Project Path="core/cmp/cmp.csproj" />
   </Folder>
+  <Folder Name="/core/crypto/">
+    <Project Path="core/crypto/crypto.csproj" />
+  </Folder>
+  <Folder Name="/core/crypto/subtle/">
+    <Project Path="core/crypto/subtle/crypto.subtle.csproj" />
+  </Folder>
+  <Folder Name="/core/encoding/" />
+  <Folder Name="/core/encoding/binary/">
+    <Project Path="core/encoding/binary/encoding.binary.csproj" />
+  </Folder>
   <Folder Name="/core/errors/">
     <Project Path="core/errors/errors.csproj" />
   </Folder>
   <Folder Name="/core/fmt/">
     <Project Path="core/fmt/fmt.csproj" />
+  </Folder>
+  <Folder Name="/core/hash/">
+    <Project Path="core/hash/hash.csproj" />
   </Folder>
   <Folder Name="/core/internal/" />
   <Folder Name="/core/internal/abi/">
@@ -93,12 +106,18 @@
   <Folder Name="/core/internal/runtime/exithook/">
     <Project Path="core/internal/runtime/exithook/internal.runtime.exithook.csproj" />
   </Folder>
+  <Folder Name="/core/internal/runtime/syscall/">
+    <Project Path="core/internal/runtime/syscall/internal.runtime.syscall.csproj" />
+  </Folder>
   <Folder Name="/core/internal/stringslite/">
     <Project Path="core/internal/stringslite/internal.stringslite.csproj" />
   </Folder>
   <Folder Name="/core/internal/syscall/" />
   <Folder Name="/core/internal/syscall/execenv/">
     <Project Path="core/internal/syscall/execenv/internal.syscall.execenv.csproj" />
+  </Folder>
+  <Folder Name="/core/internal/syscall/unix/">
+    <Project Path="core/internal/syscall/unix/internal.syscall.unix.csproj" />
   </Folder>
   <Folder Name="/core/internal/syscall/windows/">
     <Project Path="core/internal/syscall/windows/internal.syscall.windows.csproj" />
@@ -190,6 +209,13 @@
   </Folder>
   <Folder Name="/core/unsafe/">
     <Project Path="core/unsafe/unsafe.csproj" />
+  </Folder>
+  <Folder Name="/core/vendor/" />
+  <Folder Name="/core/vendor/golang.org/x/crypto/sha3/">
+    <Project Path="core/vendor/golang.org/x/crypto/sha3/vendor.golang.org.x.crypto.sha3.csproj" />
+  </Folder>
+  <Folder Name="/core/vendor/golang.org/x/sys/cpu/">
+    <Project Path="core/vendor/golang.org/x/sys/cpu/vendor.golang.org.x.sys.cpu.csproj" />
   </Folder>
   <Folder Name="/docs/">
     <File Path="../.gitattributes" />

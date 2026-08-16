@@ -8681,3 +8681,198 @@ sits behind it" that just paid off here — then `GetAddrInfoW`, then the two si
 
 Still builds-and-partly-runs; no roster row, no proof page, no disclosures, converted test sources
 not committed.
+
+## ⛔ STILL DOES NOT BANK — the `sha3` AccessViolation closes and `crypto/tls` goes **163 → 176 of 184**; real divergences **17 → 4**, and every one of them was already on this board (2026-08-16, lane `claude/sha3-copyout-av`)
+
+The previous entry named the `sha3.copyOut` AccessViolation the new head of the queue, priced it at
+10, and said to re-census the 3 unrooted hangs *after* removing it rather than investigating them
+first. Both calls were right, and the second paid better than the first: the same per-test method —
+one process per top-level `Test*`, `-run '^Name$' -timeout 20s`, the same 184 non-boringcrypto
+functions — now measures **176 PASS, 7 FAIL, 0 HANG, 1 CRASH, 0 infrastructure-error** in 728 s.
+
+| Measure | 2026-08-16 (pre-`default!`) | after `default!` | now |
+|---|---|---|---|
+| top-level tests that PASS run on their own | 127 of 184 | 163 of 184 | **176 of 184** |
+| real divergences (Go passes, C# does not) | 53 | 17 | **4** |
+| distinct roots behind them | 8 | 5 | **3** |
+| silent HANGs | 13 | 4 | **0** |
+
+184 − 176 = 8 non-passing, and **four of those are Go's OWN expired-certificate failures**
+(`TestResumption`, `TestResumptionKeepsOCSPAndSCT`, `TestVerifyConnection`, `TestCrossVersionResume`)
+— unchanged, both languages fail them, still the 180-of-184 ceiling this host cannot beat. So the
+real divergence count is **4**.
+
+### What closed
+
+All **10** of the tests the previous entry attributed to this root now PASS: `TestDialTimeout`,
+`TestHandshakeKyber`, `TestHostnameInSNI`, `TestKyberDecapsulate`, `TestKyberEncapsulate`,
+`TestSCTHandshake`, `TestServerSelectingUnconfiguredApplicationProtocol`,
+`TestServerSelectingUnconfiguredCipherSuite`, `TestTLS13OnlyClientHelloCipherSuite`, `TestVersion`.
+
+And so do all **3** of the unrooted silent hangs — `TestCipherSuitePreference`,
+`TestConnectionState`, `TestDialer`. They were the same root, exactly as the "remove the root
+before investigating what sits behind it" heuristic predicted for the second time running. **The
+package now has zero hangs**, which is worth recording on its own: a suite that contains a hang
+cannot be measured by a single-process run at all (the 23 → 7 floor the 2026-08-16 entry had to
+explain away), and this one no longer does.
+
+### The root, named exactly — and it was not about sha3, or about crypto, or about the OS
+
+The previous entry read the fault as "`ref state` not addressing managed storage". That is the
+symptom, not the defect, and the receiver is fine. Reproduced in **25 lines with no crypto in it**:
+
+```go
+type state struct{ a [4]uint64 }
+var d state
+ab := (*[32]byte)(unsafe.Pointer(&d.a))
+copy(b, ab[:])                            // Fatal AccessViolationException
+```
+
+which emits, identically to sha3's `xorIn`/`copyOut`:
+
+```csharp
+var ab = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡd.of(state.Ꮡa)));
+copy(b, (~ab)[..]);
+```
+
+A `byte[]` view over a `uint64[]` has no managed spelling, so `pointerReinterpretManagedSource`
+correctly excludes pointer-to-ARRAY targets and the site keeps the raw-address route. That box is a
+perfectly good **address**. The defect is the **dereference**: `~ab` reads an `array<byte>` STRUCT —
+a backing-store *reference* plus bounds — out of the keccak state's own DATA, fabricating a managed
+reference. The stack the previous entry recorded is the fabricated reference being *used*, one
+frame removed from the reinterpret that built it:
+
+```
+System.AccessViolationException
+   at go.slice`1[Byte]..ctor(Byte[], IntPtr, IntPtr, IntPtr)
+   at go.array`1[Byte].Slice(Int32, Int32)
+   at go.array`1[Byte].get_Item(System.Range)
+```
+
+⚠ The previous entry's "reading `d.storage[..rate]`" is a misattribution worth correcting: that is
+the *argument* at the call site, and it evaluates fine. The fault is inside `copyOut`'s own `ab[:]`.
+
+### The two fixes, at the two layers that have one
+
+**No general fix exists**, and that is the finding rather than a shortfall: `slice<T>`/`array<T>` are
+windows on a real `T[]`, and a `U[]` view over a `V[]` cannot be constructed. This is the raw-metal
+fork the S1/CS0030 ruling already governs, and `crypto/subtle`'s `xor_generic.cs` is the same case
+one type-pair over (a `uintptr[]` view over a `byte[]`).
+
+**The site** is `src/core/vendor/golang.org/x/crypto/sha3/xor.cs`, which takes `[module:
+GoManualConversion]` and `crypto/subtle`'s remedy: `MemoryMarshal.AsBytes` over the state array's own
+span is a genuine ALIASING view, so the absorb's XOR lands in the real state and the squeeze reads
+it. Go's `cpu.IsBigEndian` branch is left exactly as converted. Marker census **58 → 59**.
+
+⚠ **The layer fix was BUILT, MEASURED, and REJECTED — and the reasons are the most transferable
+thing in this entry.** An AccessViolation is the worst available failure mode (uncatchable, no
+diagnostic, names the innocent consumer), so `ж<T>` was made to refuse the read with a contained
+panic instead. Two counter-examples killed it, **both found by gates rather than by reasoning**:
+
+1. **`RuntimeHelpers.IsReferenceOrContainsReferences<T>()` alone is too WIDE.** `time.syncTimer` is
+   `return ~Ꮡc.Reinterpret<channel<Time>, unsafe.Pointer>()`, and `unsafe.Pointer` is a CLASS, so it
+   lands on the same address route — but reading it yields the REAL channel object, type-CONFUSED
+   rather than fabricated. That is the managed-referent model the corpus is built on. The wide form
+   took down `time.NewTimer`, and with it every `crypto/tls` test that opens a pipe, on the first
+   host run. Adding a `typeof(T).IsValueType` term fixed that one.
+2. **The narrowed form still regressed `ArrayCastDerefClone`** — the behavioral guard for this very
+   fork, caught by the full suite (Output `exit code mismatch: C# 2 vs Go 0`). Its
+   `*(*Row)(unsafe.Pointer(&r))` over a ZERO-valued array reads an `array<nint>` whose fabricated
+   backing reference is **null**, and `array<T>`'s null-safe zero value absorbs it — so the site
+   produced garbage *harmlessly*, which is exactly the "compiles and does not crash" bar the S1
+   ruling sets for raw-metal stubs. The refusal converted a tolerated stub into a panic.
+
+**The distinction the remedy actually needs is not the pointee's TYPE but whether the fabricated
+reference comes out NULL** — benign when it does, fatal when it does not. That cannot be tested
+without first materializing a `T` with a wild reference in a stack slot, which is itself unsafe (a
+GC scanning that slot is the same crash). So the class keeps the AccessViolation, and the sketch
+above is the starting point for whoever revisits it. Anyone tempted to re-add the refusal should
+read this paragraph first: the wide form and the narrow form have both already been tried.
+
+### Census of the class, and of the siblings
+
+The emitted shape appears in **43 corpus files**. Almost all are either address-only (never
+dereferenced) or in `runtime` raw-metal paths nothing reaches — `runtime` and its per-GOOS folders
+hold 26 of the 43. The live remainder is `internal/syscall/windows/registry`'s
+`SetDWordValue`/`SetQWordValue`, `reflect`/`runtime`'s `name.pkgPath`, `internal/reflectlite`,
+`internal/poll/windows`, `syscall/windows` and `go/types`. Each is now a **named panic** instead of
+a process kill, and each gets fixed when a suite reaches it — not speculatively.
+
+**Sibling vendored crypto is CLEAN.** sha3's two lines are the only `(*[N]T)(unsafe.Pointer(…))` in
+all of `vendor/golang.org/x/crypto`: `chacha20`, `chacha20poly1305`, `internal/poly1305`,
+`curve25519`, `hkdf` and `cryptobyte` use none (the only other `unsafe.Pointer` uses are
+`internal/alias`'s address COMPARISONS, which are not reinterprets), and `blake2b` is not vendored
+into GOROOT at all. The suspicion that "they use similar state tricks" does not survive the census.
+
+### The 4 that remain, by root
+
+| count | root | status |
+|---:|---|---|
+| 1 | `TestVerifyHostname` — process AV `0xC0000005` in `syscall.GetAddrInfoW` | unchanged; the open non-blittable-syscall class. **Now the head of the queue** |
+| 1 | `TestQUICHandshakeError` — `ж<T>.op_OnesComplement` nil-deref on a goroutine | unchanged singleton |
+| 1 | `TestCertCache` — weak-ref timing | unchanged (old root 4) |
+| 1 | `TestBogoSuite` — external BoGo shim | not a conversion signal |
+
+**Next move**: `GetAddrInfoW` (the last root shared with another package — `net` and `crypto/x509`
+both want it), then the `op_OnesComplement` singleton. `TestCertCache` and `TestBogoSuite` are not
+worth an arc: one is a GC-timing assertion the CLR cannot be made to satisfy on demand, the other is
+an external binary. At 4 divergences, **the question `crypto/tls` now poses is a banking question,
+not a debugging one** — what a roster row and a disclosure manifest would have to say about the
+four.
+
+### Guarding, honestly
+
+No **behavioral** guard is available for the sha3 fix, and the reason is structural rather than an
+omission: the vendored package has no `_test.go` in GOROOT, and a behavioral test cannot import
+`golang.org/x/crypto/sha3` (the converter resolves it to `core/golang.org/…`, not
+`core/vendor/golang.org/…`). What guards it instead:
+
+* **`GolibTests.Sha3ReinterpretVectorTests`** — known-answer vectors run against the corpus package
+  directly. FIPS-202's own SHA3-256("")/SHA3-256("abc")/SHA3-512("abc")/SHAKE256("abc"), plus
+  lengths 135/136/137/200/1000/4096 and an offset-13 sub-slice checked against the **OS SHA-3
+  implementation** — an oracle with no dependency on this repository. 136 is SHA3-256's exact rate,
+  so those three straddle the multi-block boundary where `xorIn`'s fast path engages and the state
+  is XORed and permuted repeatedly; the offset sub-slice makes the input's word-at-a-time read
+  unaligned, which the always-aligned state span never exercises. What they really prove is that the
+  aliasing view WRITES THROUGH — a snapshot instead of an alias gives a wrong digest on the first
+  vector. ⚠ The "no test tier is shaped for this" instinct was wrong and worth un-learning:
+  `GenericTests` already references `core/sort`, so an MSTest tier binding a converted package is
+  established practice, not new infrastructure.
+* **The marker gate** — proven by reconvert: `xor.cs` untouched, emission redirected to
+  `xor.cs.auto`.
+
+**Neutered-fix control, run rather than asserted.** Restoring the auto-converted `xor.cs` does not
+merely fail the four vector tests — it KILLS the test host with an `AccessViolationException` inside
+`slice<byte>..ctor`. That is the defect's whole character, and the reason the layer fix above was
+attempted at all: expect a dead host, not a red test, if you re-run that control.
+
+⚠ **`crypto/internal/mlkem768` is the natural operational guard and it is BLOCKED, on two defects
+that have nothing to do with any of this.** Its suite is the direct consumer of sha3 (`TestRoundTrip`,
+`TestPQCrystalsAccumulated` and the field/compress vectors all drive SHAKE), and the `-tests`
+pipeline converts it but cannot build it:
+
+* `mlkem768_test.cs(94)`: **CS0315** — `builtin.min<T>` over `fieldElement`, a `[GoType("num:uint16")]`
+  named numeric, which the generated wrapper does not give `IComparable<T>`.
+* `mlkem768_test.cs(182,194)`: **CS0841** — "cannot use local variable `q` before it is declared",
+  an emission-ordering defect in the test file.
+
+Fixing those two would bank mlkem768 as a roster package AND retire this guard gap in one arc; it is
+the cheapest available roster growth in the crypto tree.
+
+### Method notes worth keeping
+
+* **A per-test census script must be written against the CONVERTED host's verdict format, not
+  `go test`'s.** The host prints `PASS<pad><Name>` / `FAIL<pad><Name> — reason`, not
+  `--- PASS: Name`. A classifier carrying the `go test` shapes filed **every pass as CRASH** and
+  reported 177 CRASH / 7 FAIL for a run that was really 176 PASS. The per-test stdout was saved to
+  disk, so the verdict was recovered by reclassifying offline rather than by re-running — save the
+  raw output, always, and treat a summary that is *uniformly* bad as a classifier bug before
+  believing it.
+* **A top-level verdict line can carry a trailing message** (`PASS  TestDialTimeout — with timeout
+  100000, …retrying`), so an end-anchored name match under-counts passes. Anchor on "not followed by
+  a name character or `/`" instead, or subtests are miscounted too.
+* **A SINGLE-PACKAGE reconvert proves a MARKER, never an emission.** Run against sha3 it also
+  rewrote `sha3.cs` (`keccakF1600(ref nonnil(ref d).a)` → `keccakF1600(Ꮡd.of(state.Ꮡa))`), emitted a
+  `keccakf_amd64.cs` the `-stdlib` driver excludes, and dropped the csproj's validation-proof block —
+  three single-package-vs-stdlib artifacts that read exactly like drift. Use the seeded `-stdlib`
+  reconvert to measure emission.
