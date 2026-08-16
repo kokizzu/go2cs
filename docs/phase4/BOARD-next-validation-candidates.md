@@ -8814,21 +8814,33 @@ four.
 
 ### Guarding, honestly
 
-There is **no behavioral guard available for the sha3 fix**, and the reasons are structural rather
-than an omission: the vendored package has no `_test.go` in GOROOT, and a behavioral test cannot
-import `golang.org/x/crypto/sha3` (the converter resolves it to `core/golang.org/…`, not
+No **behavioral** guard is available for the sha3 fix, and the reason is structural rather than an
+omission: the vendored package has no `_test.go` in GOROOT, and a behavioral test cannot import
+`golang.org/x/crypto/sha3` (the converter resolves it to `core/golang.org/…`, not
 `core/vendor/golang.org/…`). What guards it instead:
 
-* **NIST known-answer vectors, run against the corpus package directly** — SHA3-256(""),
-  SHA3-256("abc"), SHA3-512("abc") and SHAKE256("abc") all match, which exercises absorb, squeeze
-  and the whole keccak permutation together. (Not committed: it needs a project that references a
-  converted package, and no test tier in the repo is shaped for that today.)
+* **`GolibTests.Sha3ReinterpretVectorTests`** — known-answer vectors run against the corpus package
+  directly. FIPS-202's own SHA3-256("")/SHA3-256("abc")/SHA3-512("abc")/SHAKE256("abc"), plus
+  lengths 135/136/137/200/1000/4096 and an offset-13 sub-slice checked against the **OS SHA-3
+  implementation** — an oracle with no dependency on this repository. 136 is SHA3-256's exact rate,
+  so those three straddle the multi-block boundary where `xorIn`'s fast path engages and the state
+  is XORed and permuted repeatedly; the offset sub-slice makes the input's word-at-a-time read
+  unaligned, which the always-aligned state span never exercises. What they really prove is that the
+  aliasing view WRITES THROUGH — a snapshot instead of an alias gives a wrong digest on the first
+  vector. ⚠ The "no test tier is shaped for this" instinct was wrong and worth un-learning:
+  `GenericTests` already references `core/sort`, so an MSTest tier binding a converted package is
+  established practice, not new infrastructure.
 * **`GolibTests.NativeReinterpretRefusalTests`** for the class — the refusal through both `Value`
   and `ValueSlot`, the pure-data pointee that must still read natively, the display path that must
-  not raise it, and the address round-trip that must be unaffected. Neuter the guard and the first
-  test kills the test host with an AccessViolation.
+  not raise it, and the address round-trip that must be unaffected.
 * **The marker gate** — proven by reconvert: `xor.cs` untouched, emission redirected to
   `xor.cs.auto`.
+
+**Neutered-fix control, run rather than asserted.** Restoring the auto-converted `xor.cs` fails all
+four vector tests, and it fails them the NEW way: the test host SURVIVES and reports four named
+failures whose stacks point at `sha3_package.xorIn`, where before the golib refusal it died outright
+with an `AccessViolationException` naming `slice<byte>..ctor`. One control demonstrates both halves
+of the arc.
 
 ⚠ **`crypto/internal/mlkem768` is the natural operational guard and it is BLOCKED, on two defects
 that have nothing to do with any of this.** Its suite is the direct consumer of sha3 (`TestRoundTrip`,
