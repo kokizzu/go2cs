@@ -125,9 +125,6 @@ public static (CFRef, error) SecTrustCreateWithCertificates(CFRef certs, CFRef p
 
 internal static partial void x509_SecTrustCreateWithCertificates_trampoline();
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string secCertificateCreateWithDataˢ = "SecCertificateCreateWithData: invalid certificate"u8;
-
 //go:cgo_import_dynamic x509_SecCertificateCreateWithData SecCertificateCreateWithData "/System/Library/Frameworks/Security.framework/Versions/A/Security"
 public static (CFRef, error) SecCertificateCreateWithData(slice<byte> b) {
     GoFrame ᒐ = default;
@@ -138,7 +135,7 @@ public static (CFRef, error) SecCertificateCreateWithData(slice<byte> b) {
         // Returns NULL if the data passed in the data parameter is not a valid
         // DER-encoded X.509 certificate.
         if (ret == 0) {
-            return (0, errors.New(secCertificateCreateWithDataˢ));
+            return (0, errors.New("SecCertificateCreateWithData: invalid certificate"u8));
         }
         return (((CFRef)ret), default!);
     }

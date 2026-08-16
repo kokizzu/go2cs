@@ -2,7 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-7%2F7_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.6/go.internal.srcimporter.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/go/internal/srcimporter@go1.23.1) [![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/go/internal/srcimporter) [![Source](https://img.shields.io/badge/Source-@1.23.1.6-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.6/src/core/go/internal/srcimporter)
+[![Tests](https://img.shields.io/badge/Tests-7%2F7_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.6/go.internal.srcimporter.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/go/internal/srcimporter@go1.23.1)\
+[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/go/internal/srcimporter) [![Source](https://img.shields.io/badge/Source-@1.23.1.6-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.6/src/core/go/internal/srcimporter)
 
 Package srcimporter implements importing directly from source files rather than installed packages.
 

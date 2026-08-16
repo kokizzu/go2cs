@@ -3,13 +3,13 @@
 // license that can be found in the LICENSE file.
 //go:build !osusergo && darwin
 global using _C_char = byte;
-global using _C_int = go.int32;
-global using _C_gid_t = go.uint32;
-global using _C_uid_t = go.uint32;
+global using _C_int = int;
+global using _C_gid_t = uint;
+global using _C_uid_t = uint;
 global using _C_size_t = go.uintptr;
 global using _C_struct_group = go.@internal.syscall.unix_package.Group;
 global using _C_struct_passwd = go.@internal.syscall.unix_package.Passwd;
-global using _C_long = go.int64;
+global using _C_long = long;
 
 namespace go.os;
 

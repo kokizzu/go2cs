@@ -3,9 +3,9 @@
 // license that can be found in the LICENSE file.
 //go:build !netgo && darwin
 global using _C_char = byte;
-global using _C_int = go.int32;
+global using _C_int = int;
 global using _C_uchar = byte;
-global using _C_uint = go.uint32;
+global using _C_uint = uint;
 global using _C_socklen_t = nint;
 global using _C_struct___res_state = go.@internal.syscall.unix_package.ResState;
 global using _C_struct_addrinfo = go.@internal.syscall.unix_package.Addrinfo;

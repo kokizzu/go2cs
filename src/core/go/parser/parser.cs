@@ -1911,7 +1911,6 @@ internal static ast.Expr parseTypeAssertion(this ж<parser> Ꮡp, ast.Expr x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string parseIndexOrSliceOrInstanceˢ = "parseIndexOrSliceOrInstance"u8;
 internal static readonly @string middleIndexRequiredIn3ˢ = "middle index required in 3-index slice"u8;
 internal static readonly @string finalIndexRequiredIn3ˢ = "final index required in 3-index slice"u8;
 
@@ -1921,7 +1920,7 @@ internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.E
         ref var p = ref Ꮡp.DerefOrNull();
 
         if (p.trace) {
-            defer(un, trace(Ꮡp, parseIndexOrSliceOrInstanceˢ), ref ᒐ);
+            defer(un, trace(Ꮡp, "parseIndexOrSliceOrInstance"u8), ref ᒐ);
         }
         ref var lbrack = ref heap<tokenꓸPos>(out var Ꮡlbrack);
         lbrack = Ꮡp.expect(token.LBRACK);

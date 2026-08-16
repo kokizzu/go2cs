@@ -593,7 +593,7 @@ public static (nint fd, error err) Socket(nint domain, nint typ, nint proto) {
 }
 
 public static (array<nint> fd, error err) Socketpair(nint domain, nint typ, nint proto) {
-    array<nint> fd = default!;
+    array<nint> fd = new(2);
     error err = default!;
 
     ref var fdx = ref heap(new array<int32>(2), out var Ꮡfdx);

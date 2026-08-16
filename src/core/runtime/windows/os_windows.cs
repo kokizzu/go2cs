@@ -257,8 +257,6 @@ internal static int64 windows_QueryPerformanceFrequency() {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string bcryptprimitivesDllNotˢ = "bcryptprimitives.dll not found"u8;
 internal static readonly @string ntdllDllNotFoundˢ = "ntdll.dll not found"u8;
-internal static readonly @string ntCreateWaitCompletionPacketˢ = "NtCreateWaitCompletionPacket exists but NtAssociateWaitCompletionPacket does not"u8;
-internal static readonly @string ntCreateWaitCompletionPacketˢ2 = "NtCreateWaitCompletionPacket exists but NtCancelWaitCompletionPacket does not"u8;
 
 internal static void loadOptionalSyscalls() {
     var bcryptPrimitives = windowsLoadSystemLib(bcryptprimitivesdll[..]);
@@ -275,11 +273,11 @@ internal static void loadOptionalSyscalls() {
         // These functions should exists if NtCreateWaitCompletionPacket exists.
         _NtAssociateWaitCompletionPacket = windowsFindfunc(n32, slice<byte>("NtAssociateWaitCompletionPacket\u0000"u8));
         if (_NtAssociateWaitCompletionPacket == default!) {
-            @throw(ntCreateWaitCompletionPacketˢ);
+            @throw("NtCreateWaitCompletionPacket exists but NtAssociateWaitCompletionPacket does not"u8);
         }
         _NtCancelWaitCompletionPacket = windowsFindfunc(n32, slice<byte>("NtCancelWaitCompletionPacket\u0000"u8));
         if (_NtCancelWaitCompletionPacket == default!) {
-            @throw(ntCreateWaitCompletionPacketˢ2);
+            @throw("NtCreateWaitCompletionPacket exists but NtCancelWaitCompletionPacket does not"u8);
         }
     }
     _RtlGetCurrentPeb = windowsFindfunc(n32, slice<byte>("RtlGetCurrentPeb\u0000"u8));
@@ -826,7 +824,6 @@ internal static void sigblock(bool exiting) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeMinitˢ = "runtime.minit: duplicatehandle failed"u8;
 internal static readonly @string createWaitableTimerExˢ = "CreateWaitableTimerEx when creating timer failed"u8;
-internal static readonly @string ntCreateWaitCompletionPacketˢ3 = "NtCreateWaitCompletionPacket failed"u8;
 internal static readonly @string virtualQueryForStackBaseˢ = "VirtualQuery for stack base failed"u8;
 internal static readonly @string badG0Stackˢ = "bad g0 stack"u8;
 
@@ -860,7 +857,7 @@ internal static void minit() {
         var errno = stdcall3(_NtCreateWaitCompletionPacket, (uintptr)@unsafe.Pointer.FromRef(ref (mp.of(m.ᏑwaitIocpHandle)).Value), GENERIC_ALL, 0);
         if ((~mp).waitIocpHandle == 0) {
             print((@string)"runtime: NtCreateWaitCompletionPacket failed; errno="u8, errno, (@string)"\n"u8);
-            @throw(ntCreateWaitCompletionPacketˢ3);
+            @throw("NtCreateWaitCompletionPacket failed"u8);
         }
     }
     unlock(mp.of(m.ᏑthreadLock));

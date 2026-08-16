@@ -670,7 +670,7 @@ internal static (slice<IPAddr> addrs, error err) goLookupIP(this ж<Resolver> �
 
 internal static (slice<IPAddr> addrs, dnsmessage.Name cname, error err) goLookupIPCNAMEOrder(this ж<Resolver> Ꮡr, context.Context ctx, @string network, @string name, ΔhostLookupOrder order, ж<dnsConfig> Ꮡconf) {
     slice<IPAddr> addrs = default!;
-    dnsmessage.Name cname = default!;
+    dnsmessage.Name cname = new();
 
     ref var conf = ref Ꮡconf.DerefOrNull();
     if (order == hostLookupFilesDNS || order == hostLookupFiles) {
