@@ -716,7 +716,7 @@ public static (ΔPrefix, error) Prefix(this ΔAddr ip, nint b) {
 // [Addr.Zone] method to get it).
 // The ip zero value returns all zeroes.
 public static array<byte> /*a16*/ As16(this ΔAddr ip) {
-    array<byte> a16 = default!;
+    array<byte> a16 = new(16);
 
     byteorder.BePutUint64(a16[..8], ip.addr.hi);
     byteorder.BePutUint64(a16[8..], ip.addr.lo);
@@ -727,7 +727,7 @@ public static array<byte> /*a16*/ As16(this ΔAddr ip) {
 // If ip is the zero [Addr] or an IPv6 address, As4 panics.
 // Note that 0.0.0.0 is not the zero Addr.
 public static array<byte> /*a4*/ As4(this ΔAddr ip) {
-    array<byte> a4 = default!;
+    array<byte> a4 = new(4);
 
     if (ip.z == z4 || ip.Is4In6()) {
         byteorder.BePutUint32(a4[..], (uint32)ip.addr.lo);

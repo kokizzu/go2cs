@@ -392,6 +392,27 @@ and [the reflection read path](ConversionStrategies-Reference.md#reflectvalueint
 Zero-value reference-backed values are null-safe: a `default!` `@string` reads as `""` rather than
 throwing.
 
+But `default!` is the Go zero value only for a type whose all-bits-zero form is already usable
+storage, and a **fixed-size array is not**: golib's `array<T>` carries its length in the constructed
+instance, and C# `default` runs neither a constructor nor a field initializer. So every declaration
+with no initializer — a `var x T`, a package global, or a **named result** — climbs one shared
+ladder: an unnamed `[N]T` constructs (`new(N)`), a struct with a promoted embed constructs
+(`new(nil)`), a struct carrying a fixed array at any depth constructs (`new()`), and everything else
+keeps `default!`.
+
+```go
+func (ip Addr) As16() (a16 [16]byte)                    // Go: sixteen zeroed bytes
+```
+```csharp
+public static array<byte> /*a16*/ As16(this ΔAddr ip) {
+    array<byte> a16 = new(16);                          // not default! — that is length 0
+```
+
+Getting this wrong stays silent until it isn't: `a16[:8]` on a length-0 array is a slice-bounds
+fault, which golib now raises as Go's own recoverable `runtime error: slice bounds out of range
+[:8] with capacity 0` panic rather than a .NET `ArgumentException` — a non-panic exception is
+*contained* by a converted test host, which turns a crash into a hang.
+
 Nilness is **representation** identity, not emptiness: `s == nil` on a slice is true exactly for the
 nil slice (null backing array), so a non-nil empty (`[]byte{}`, `make([]T, 0)`, `s[len(s):]`) stays
 observably non-nil, and nil survives reslicing (`nil[0:0]`) and no-op appends — the distinctions

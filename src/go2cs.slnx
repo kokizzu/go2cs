@@ -832,6 +832,7 @@
     <Project Path="tests/Behavioral/VersionedImport/vlib/vlib.v2.csproj" />
     <Project Path="tests/Behavioral/WrittenCaptureParam/WrittenCaptureParam.csproj" />
     <Project Path="tests/Behavioral/ZeroValueArrayField/ZeroValueArrayField.csproj" />
+    <Project Path="tests/Behavioral/ZeroValueArrayNamedResult/ZeroValueArrayNamedResult.csproj" />
     <Project Path="tests/Behavioral/ZeroValueStructVar/ZeroValueStructVar.csproj" />
   </Folder>
   <Folder Name="/tests/library/">

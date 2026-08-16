@@ -562,15 +562,10 @@ func (v *Visitor) namedReturnDeclLines(sig *types.Signature, indentLevel int, de
 			continue
 		}
 
-		// A promoted-embed struct result must construct through the NilType ctor — `default!`
-		// leaves the readonly embed boxes null (see structHasPromotedEmbeds).
-		zeroValue := "default!"
-
-		if v.structHasPromotedEmbeds(param.Type()) {
-			zeroValue = "new(nil)"
-		}
-
-		decls.WriteString(fmt.Sprintf("%s%s%s %s = %s;", v.newline, v.indent(indentLevel), v.getCSharpTypeName(param.Type()), v.namedResultName(param), zeroValue))
+		// A result whose Go zero value is not all-bits-zero — a fixed-size array, a promoted-embed
+		// struct, a struct carrying a fixed array at any depth — must construct rather than take
+		// `default!` (see zeroValueInitializer).
+		decls.WriteString(fmt.Sprintf("%s%s%s %s = %s;", v.newline, v.indent(indentLevel), v.getCSharpTypeName(param.Type()), v.namedResultName(param), v.zeroValueInitializer(param.Type())))
 	}
 
 	return decls.String()

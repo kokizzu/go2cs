@@ -46,6 +46,17 @@ public static class RuntimeErrorPanic
         return new PanicException(SliceBoundsOutOfRangeMessage + bounds);
     }
 
+    private const string ArrayConversionLengthMessage = $"{RuntimeErrorMessage}cannot convert slice with length {{0}} to array or pointer to array with length {{1}}";
+
+    /// <summary>
+    /// Go's panic for a <c>[N]T(s)</c> / <c>(*[N]T)(s)</c> conversion whose source slice is shorter
+    /// than <c>N</c> — the message the runtime itself prints, raised as a recoverable panic.
+    /// </summary>
+    public static PanicException ArrayConversionLength(int64 sourceLength, int64 length)
+    {
+        return new PanicException(string.Format(ArrayConversionLengthMessage, sourceLength, length));
+    }
+
     private const string IntegerDivideByZeroMessage = $"{RuntimeErrorMessage}integer divide by zero";
 
     /// <summary>

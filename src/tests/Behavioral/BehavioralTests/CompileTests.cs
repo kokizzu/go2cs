@@ -1768,6 +1768,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]
+    public void CheckZeroValueArrayNamedResult() => CheckTarget("ZeroValueArrayNamedResult");
+
+    [TestMethod]
     public void CheckZeroValueStructVar() => CheckTarget("ZeroValueStructVar");
 
     // </TestMethods>

@@ -1694,6 +1694,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]
+    public void CheckZeroValueArrayNamedResult() => CheckTarget("ZeroValueArrayNamedResult");
+
+    [TestMethod]
     public void CheckZeroValueStructVar() => CheckTarget("ZeroValueStructVar");
 
     // </TestMethods>

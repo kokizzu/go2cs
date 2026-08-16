@@ -4040,6 +4040,70 @@ the `NestedPromotedEmbedInit` output-compared test (a `printer` holding a `forma
 `flags` and holds a `[3]byte`, reached via both `new(printer)` and `&printer{}`, its promoted fields and
 array written and printed against Go); before the fix the promoted-field write NRE'd.
 
+#### The zero-value ladder is one ladder, and a NAMED RESULT climbs it too
+
+The `var x T` path above and the named-result prologue are the same question asked at two syntactic
+sites — *what does a declaration with no initializer put in the slot?* — but only the first had the
+full answer. A named result declared `T name = default!;` at function entry got exactly one rung
+(`structHasPromotedEmbeds` → `new(nil)`); the fixed-array and `structZeroValueNeedsConstruction`
+rungs were missing, so a `[N]T` result arrived with **length 0** and an array-bearing struct result
+arrived with a null backing. Both shapes were shipped, and both were measured live in `crypto/tls`:
+
+```csharp
+// src/core/net/netip/netip.cs — func (ip Addr) As16() (a16 [16]byte)
+array<byte> a16 = default!;                   // was: length 0, null backing
+byteorder.BePutUint64(a16[..8], ip.addr.hi);  // -> ArgumentException out of slice<T>'s ctor
+
+// src/core/crypto/tls/common.cs — func (c *Config) ticketKeyFromBytes(b [32]byte) (key ticketKey)
+ticketKey key = default!;                     // skips `aesKey = new(16)`, `hmacKey = new(16)`
+copy(key.aesKey[..], hashed[16..]);           // -> copies 0 bytes -> "aes: invalid key size 0"
+```
+
+Both now emit their construction — `array<byte> a16 = new(16);` and `ticketKey key = new();` — from
+a single shared helper, `zeroValueInitializer`, which the three named-result declaration sites
+(`visitFuncDecl`'s plain and blank-slot prologues, `iifeOperations.namedReturnDeclLines` for a
+function literal and the deferred-named-return lowering) and the `var`/global paths all read. Its
+rungs, in order: an **unnamed** fixed-size array → `new(N)` plus `arrayZeroValueArgs`' element
+factory; a promoted-embed struct → `new(nil)`; a struct carrying a fixed array at any depth →
+`new()`; everything else → `default!`. A **named** array type is deliberately excluded — go2cs-gen's
+array wrapper allocates its backing lazily from its own known size, so its `default` is already
+usable — and a scalar-only result still stays `default!`, which is what keeps the change confined
+to types whose Go zero value genuinely is not all-bits-zero.
+
+Guarded by the `ZeroValueArrayNamedResult` output-compared test, which pins all five emission sites
+against `go run`: an `As16`-shaped `[16]byte` result written through a slice of itself, a
+`ticketKey`-shaped struct result filled by `copy`, a nested value-struct result, a result declared
+by the deferred-named-return lowering, and a function literal's named result — plus a scalar-only
+control proving the ladder does not over-fire.
+
+Two sites of the same class are knowingly **not** changed, because the corpus does not exercise
+either and an unexercised emission change is an unmeasured one: the tuple element a *blank* named
+result contributes to an explicit return (`visitReturnStmt`), and the zero-results `return default!;`
+that closes a value-returning function's recovered-panic catch arm (`visitFuncDecl`/`convFuncLit`).
+Censused at zero — no `return default!;` in the corpus sits in a function whose return type mentions
+`array<`, and GOROOT declares no blank named result of array type. A third, narrower gap stays open
+for the same reason: a **map miss** on an array-valued map returns `default(V)` rather than Go's
+zeroed `[N]T` (`html/entity`'s `map[string][2]rune`, the corpus's only such map, only ever reads on
+a hit).
+
+##### A slice-bounds fault is a PANIC, not an ArgumentException
+
+The same investigation named why this defect was so expensive to find. `slice<T>`'s two windowing
+constructors threw a plain `ArgumentException`/`ArgumentOutOfRangeException` for an out-of-bounds
+window, and `array<T>`'s slice→array conversion threw `IndexOutOfRangeException`. Neither is a
+`PanicException`, so neither is visible to `recover()` and — the expensive part — both satisfy
+`Goroutine.CanContain`, which means a converted test host *contains* them and records them on the
+`TestExecution` instead of failing. When the dying goroutine is the one another goroutine is waiting
+on, the record never flushes and the package deadline burns with no output at all. 17 of
+`crypto/tls`'s 53 measured divergences presented that way — 10 as an infrastructure-error line, 7 as
+a silent hang — where Go would have failed loudly in milliseconds.
+
+All six throws now raise `RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, capacity)`, whose
+message shapes already mirror the Go runtime's, and the conversion-length check raises the new
+`RuntimeErrorPanic.ArrayConversionLength` (same text as before — it was already Go's — now as a
+recoverable panic). The netip case reproduces Go's message exactly: `a16[:8]` on a length-0 array
+prints `runtime error: slice bounds out of range [:8] with capacity 0`.
+
 #### Prefer the file-local package alias over the fully-qualified `_package` name
 
 A cross-package named type has two C# spellings: the **fully-qualified** form `sync.atomic_package.Int32` (the namespace-rooted class, from `getFullyQualifiedTypeName`) and the **file-local alias** form `atomic.Int32` (the `using atomic = sync.atomic_package;` shorthand, from `getAliasQualifiedTypeName`). For *visual* fidelity — the converted C# should read like the Go original, which writes `atomic.Int32` — body emission prefers the alias. But the alias is only resolvable where the `using` is in scope, so the choice is made per emission site by `getScopeCheckedTypeName`, which returns the alias form **only when every cross-package type referenced by the type is imported in the current file** (checked against the per-file `importQueue`), and otherwise falls back to the fully-qualified form.

@@ -177,6 +177,48 @@ func (v *Visitor) arrayZeroValueArgs(lengthExpr string, arrayType types.Type) st
 	return fmt.Sprintf("%s, () => %s", lengthExpr, elemFactory)
 }
 
+// zeroValueInitializer renders the initializer a DECLARATION SITE must use for a type's Go zero
+// value — the `<expr>` in `T name = <expr>;`. C# `default` runs neither a constructor nor a field
+// initializer, so it is the correct Go zero value only for a type whose all-bits-zero form is
+// already usable storage. Three shapes are not, and each has an existing construction route:
+//
+//   - an UNNAMED fixed-size array (`[16]byte`): golib's `array<T>` carries its length in the
+//     constructed instance, so `default(array<T>)` has length 0 and a null backing where Go has N
+//     zeroed elements. `new(N)` (plus arrayZeroValueArgs' element factory for a nested/needy
+//     element) builds it. A NAMED array type is excluded — its generated wrapper allocates its
+//     backing lazily from its own known size, exactly as arrayElemFactory documents;
+//   - a struct with a PROMOTED EMBED, whose readonly `ж<T>` box exists only when a constructor
+//     runs — `new(nil)`;
+//   - a struct carrying a fixed-array field at any depth, whose `= new(N)` field initializer only
+//     runs inside an explicitly declared constructor — `new()` (go2cs-gen always emits the
+//     parameterless one for this reason).
+//
+// This is the single ladder every zero-value declaration site shares: the local and global `var x
+// T` paths (visitValueSpec) and the named-result prologues (visitFuncDecl, iifeOperations). The
+// value-spec paths resolve an array's length from the AST first so a symbolic length keeps its
+// `/* bufSize */` comment; this types-only form is what a site with no type syntax in hand uses.
+func (v *Visitor) zeroValueInitializer(t types.Type) string {
+	if t == nil {
+		return "default!"
+	}
+
+	if _, isNamed := types.Unalias(t).(*types.Named); !isNamed {
+		if array, isArray := t.Underlying().(*types.Array); isArray {
+			return fmt.Sprintf("new(%s)", v.arrayZeroValueArgs(strconv.FormatInt(array.Len(), 10), array))
+		}
+	}
+
+	if v.structHasPromotedEmbeds(t) {
+		return "new(nil)"
+	}
+
+	if v.structZeroValueNeedsConstruction(t) {
+		return "new()"
+	}
+
+	return "default!"
+}
+
 // arrayElemFactory renders the target-typed construction expression for one element of a
 // fixed-size array, or "" when `default(T)` is already the correct zero value. See
 // arrayZeroValueArgs for which element shapes need one.

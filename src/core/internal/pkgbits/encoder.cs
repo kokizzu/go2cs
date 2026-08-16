@@ -66,7 +66,7 @@ public static PkgEncoder NewPkgEncoder(nint syncFrames) {
 // DumpTo writes the package's encoded data to out0 and returns the
 // package fingerprint.
 public static array<byte> /*fingerprint*/ DumpTo(this ж<PkgEncoder> Ꮡpw, io.Writer out0) {
-    array<byte> fingerprint = default!;
+    array<byte> fingerprint = new(8);
 
     ref var pw = ref Ꮡpw.DerefOrNull();
     var h = md5.New();

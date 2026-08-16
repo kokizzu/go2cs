@@ -814,7 +814,7 @@ public static @string String(this ΔChanDir d) {
 
 // Method returns the i'th method in the type's method set.
 internal static ΔMethod /*m*/ Method(this ж<interfaceType> Ꮡt, nint i) {
-    ΔMethod m = default!;
+    ΔMethod m = new();
 
     ref var t = ref Ꮡt.DerefOrNull();
     if (i < 0 || i >= len(t.Methods)) {
@@ -841,7 +841,7 @@ internal static ΔMethod /*m*/ Method(this ж<interfaceType> Ꮡt, nint i) {
 
 // MethodByName method with the given name in the type's method set.
 internal static (ΔMethod m, bool ok) MethodByName(this ж<interfaceType> Ꮡt, @string name) {
-    ΔMethod m = default!;
+    ΔMethod m = new();
     bool ok = default!;
 
     ref var t = ref Ꮡt.DerefOrNull();
@@ -2844,7 +2844,7 @@ internal static ref Δsync.Map layoutCache => ref ᏑlayoutCache.Value; // map[l
 // the name for possible debugging use.
 internal static (ж<abi.Type> frametype, ж<Δsync.Pool> framePool, abiDesc abid) funcLayout(ж<funcType> Ꮡt, ж<abi.Type> Ꮡrcvr) {
     ж<Δsync.Pool> framePool = default!;
-    abiDesc abid = default!;
+    abiDesc abid = new();
 
     ref var t = ref Ꮡt.DerefOrNull();
     ref var rcvr = ref Ꮡrcvr.DerefOrNull();

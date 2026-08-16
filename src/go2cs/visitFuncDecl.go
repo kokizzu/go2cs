@@ -568,14 +568,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 							// exists — the wrapper returns the tuple directly.
 							if v.namedReturnDeferMode {
 								blankParam := resultParams.At(paramIndex)
-								blankZeroValue := "default!"
-
-								if v.structHasPromotedEmbeds(blankParam.Type()) {
-									blankZeroValue = "new(nil)"
-								}
 
 								resultDeclTarget.WriteString(v.newline)
-								v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSharpTypeName(blankParam.Type()), v.namedResultName(blankParam), blankZeroValue)
+								v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSharpTypeName(blankParam.Type()), v.namedResultName(blankParam), v.zeroValueInitializer(blankParam.Type()))
 							}
 
 							paramIndex++
@@ -625,16 +620,10 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 							continue
 						}
 
-						// A promoted-embed struct result must construct through the NilType
-						// ctor — `default!` leaves the readonly embed boxes null (see
-						// structHasPromotedEmbeds).
-						zeroValue := "default!"
-
-						if v.structHasPromotedEmbeds(param.Type()) {
-							zeroValue = "new(nil)"
-						}
-
-						v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSharpTypeName(param.Type()), paramName, zeroValue)
+						// A result whose Go zero value is not all-bits-zero — a fixed-size array,
+						// a promoted-embed struct, a struct carrying a fixed array at any depth —
+						// must construct rather than take `default!` (see zeroValueInitializer).
+						v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSharpTypeName(param.Type()), paramName, v.zeroValueInitializer(param.Type()))
 
 						paramIndex++
 					}
