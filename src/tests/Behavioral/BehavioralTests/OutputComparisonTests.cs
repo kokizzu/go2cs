@@ -1016,6 +1016,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckNestedVarShadow() => CheckTarget("NestedVarShadow");
 
     [TestMethod]
+    public void CheckNetDeadlineMatrix() => CheckTarget("NetDeadlineMatrix");
+
+    [TestMethod]
     public void CheckNetListenSmoke() => CheckTarget("NetListenSmoke");
 
     [TestMethod]
@@ -1512,6 +1515,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSystemCollidingTypeName() => CheckTarget("SystemCollidingTypeName");
+
+    [TestMethod]
+    public void CheckTcpLoopbackRoundTrip() => CheckTarget("TcpLoopbackRoundTrip");
 
     [TestMethod]
     public void CheckTransitiveAliasPreload() => CheckTarget("TransitiveAliasPreload");

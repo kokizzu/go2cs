@@ -1063,6 +1063,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckNestedVarShadow() => CheckTarget("NestedVarShadow");
 
     [TestMethod]
+    public void CheckNetDeadlineMatrix() => CheckTarget("NetDeadlineMatrix");
+
+    [TestMethod]
     public void CheckNetListenSmoke() => CheckTarget("NetListenSmoke");
 
     [TestMethod]
@@ -1580,6 +1583,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSystemCollidingTypeName() => CheckTarget("SystemCollidingTypeName");
+
+    [TestMethod]
+    public void CheckTcpLoopbackRoundTrip() => CheckTarget("TcpLoopbackRoundTrip");
 
     [TestMethod]
     public void CheckTransitiveAliasPreload() => CheckTarget("TransitiveAliasPreload");

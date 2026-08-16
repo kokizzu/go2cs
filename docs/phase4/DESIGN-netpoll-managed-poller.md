@@ -1,8 +1,12 @@
 # The managed netpoller — hand-owning the ten `runtime_poll*` contracts
 
-> **STATUS: DESIGN — PROPOSED (2026-08-12, lane netpoll-design). Nothing in this document is
-> ratified.** Every decision below is a proposal with a recommendation; §9 collects the ones that
-> need a coordinator ruling before any implementation lane starts. Commissioned by the board's
+> **STATUS: RATIFIED (§9, coordinator 2026-08-13) and IMPLEMENTED through S2.** S1 (the ten
+> `runtime_poll*` contracts, `internal/poll/windows/runtime_netpoll_impl.cs`) landed 2026-08-13; S2 —
+> the overlapped SUBMIT seam and its golib rendezvous — landed 2026-08-15 (see the LANDED notes in
+> §4.3, the implementation findings in §4.6, and the S2 gate results in §7). S3 (UDP wrappers, the
+> consumer re-measures) is open. The prose below is kept in its original PROPOSED voice, with each
+> ruling, amendment, correction and landing recorded inline as a dated blockquote where it applies —
+> that history is the point of the document, so nothing is rewritten in place. Commissioned by the board's
 > sockaddr RESOLVED note ([`BOARD-next-validation-candidates.md`](BOARD-next-validation-candidates.md),
 > "RESOLVED 2026-08-11 (lane L10)": *"that is a design arc with a deadline/unblock story to settle,
 > not a wrapper repair — it wants its own DESIGN doc and a coordinator ruling before anyone
@@ -382,6 +386,37 @@ speculatively"* — nothing outside a stage's gate lands with that stage. `LoadC
 `setsockopt`) are synchronous and already work under the existing dispatcher + L10 mirrors; they
 are NOT part of this arc's surface.
 
+> **LANDED at S2b (2026-08-15). The S1–S2 row is implemented as written, with ONE correction to the
+> paragraph above.**
+>
+> Implemented: `WSARecv`, `WSASend`, `AcceptEx`, `GetAcceptExSockaddrs`, `CancelIoEx` displaced into
+> `syscall/windows/zsyscall_windows_wsa_impl.cs`; `WSAGetOverlappedResult` into
+> `internal/syscall/windows/windows/zsyscall_windows_wsa_impl.cs`; `ConnectEx` EXTENDED in place
+> (it was already hand-owned by L10, exactly as §4.4 predicted) to rearm the record's overlapped.
+> `internal.syscall.windows.csproj` flips `AllowUnsafeBlocks` to `true`, also as predicted, and that
+> flip is part of the intended footprint. The golib rendezvous is `core/golib/GoAsyncIO.cs`
+> (9 GolibTests).
+>
+> ⚠ **CORRECTION — `LoadConnectEx` does NOT "already work", and it is the reason every dial died.**
+> The claim above was an assumption, not a measurement, and the crypto/tls census contradicted it
+> nine times over: `failed to find ConnectEx: An invalid argument was supplied`, one per loopback
+> dial, each in ~2 ms. Its single `WSAIoctl` is defective at BOTH ends, and neither end is about
+> asynchrony — this is the ordinary struct-passing class at a site nobody had censused:
+>
+> - **IN.** `ᏑWSAID_CONNECTEX.Reinterpret<GUID, byte>()`. `syscall.GUID` carries `Data4 [8]byte` as a
+>   golib `array<byte>` MANAGED REFERENCE, so the struct is reference-bearing; `Reinterpret` refuses
+>   to alias it, falls back to an unpinned raw-address box, and the 16 bytes Windows compares against
+>   its extension-function table are a CLR auto-layout image with an object reference inside. Windows
+>   answers `WSAEINVAL` deterministically, on every host, for every program that dials.
+> - **OUT.** `ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡaddr).Reinterpret<uintptr, byte>()` is an interior
+>   field address inside a struct that holds an `error`, hence unpinnable and transient — so even a
+>   succeeding call could write the function pointer into memory the GC had moved.
+>
+> `LoadConnectEx` is therefore hand-owned too (same file, same stack-mirror pattern; the GUID VALUE
+> is still read out of the converted declaration, so the constant keeps one definition). The lesson
+> generalizes: "synchronous, therefore fine" is not a safe inference for any wrapper that hands the
+> kernel the address of a converted struct — only a census is.
+
 ### 4.4 The submit seam, specified — findings from S2a that the implementation should not re-derive
 
 Everything below was measured or read out of the corpus while landing S1/S2a. It is recorded because
@@ -595,6 +630,58 @@ socket.
 > written, against the §7 S2 gate pair (`TcpLoopbackRoundTrip` at VALUE level, plus the §5 deadline
 > matrix).
 
+### 4.6 The submit seam, LANDED — what implementing §4.4/§4.5 actually cost (2026-08-15)
+
+Every specified item above held on contact. The list below is what the SPEC did not know, recorded on
+the same terms it set: each cost a real investigation, and none of it should be re-derived.
+
+**The record key is stable ACROSS CALLS, not merely across execIO's three sites — and that mattered
+more than the property §4.5 verified.** §4.5 traced `Ꮡo.of(operation.Ꮡo)` through submit, cancel and
+harvest *within one `execIO`*, where the same `ж<operation>` box is passed to all three. What the
+implementation depends on additionally is that TWO SEPARATE `FD.Read` calls also resolve to one
+record: each mints a fresh `Ꮡfd.of(FD.Ꮡrop)` intermediate, and only `SameSource`'s RECURSIVE pointer
+resolution (`ж.cs`, "an `of()` chain mints a FRESH intermediate box on every access") makes those
+equal. Had equality been object identity at that level, every read would have built a new record with
+its own `PreAllocatedOverlapped` and native staging — a per-operation native leak that no test would
+have shown as anything but memory growth.
+
+**The overlapped must be freed at the NEXT submit, not in the completion callback.** `execIO` harvests
+with `WSAGetOverlappedResult` *after* its wait returns, and that call reads `Internal`/`InternalHigh`
+out of the very control block the kernel wrote, so freeing in the callback destroys the result before
+anyone reads it. Free-then-allocate at each `Rearm` is also what `PreAllocatedOverlapped` requires (one
+outstanding allocation at a time) and what covers the `skipSyncNotif` path, where a synchronously
+successful submit posts no packet and no callback ever runs. One rule serves all three.
+
+**⚠ `ж<T>.IsNull` and `ж<T>.Value` both VALUE-PEEK, and a hand-own writing a POINTER out-parameter is
+exactly where that bites.** `GetAcceptExSockaddrs` writes `**RawSockaddrAny` out-params, i.e. a
+`ж<ж<RawSockaddrAny>>` whose held value is legitimately `nil` on entry. Two consequences, both
+measured as failures before they were understood:
+
+- A `Ꮡp is not null && !Ꮡp.IsNull` guard reads FALSE-NIL for such a box (`IsNull` is true whenever the
+  held reference is null), so the write was silently skipped and `net` then dereferenced a nil
+  `lrsa`. The pointer-identity predicate is `Ꮡp != nil`, which is what the corpus's own generated code
+  uses; `IsNull` is a dereference guard and nothing else.
+- `Ꮡp.Value = box` then panics with a nil-pointer dereference on the very write that fills it in,
+  because `Value`'s nil check consults the same value-peeking predicate. **`ValueSlot` is the
+  documented form for this shape** and golib's own remarks name it: "a heap-boxed pointer… captured by
+  a closure (a `ж<ж<T>>`)". Any future hand-own with a `**T` out-parameter owes both.
+
+**The accept handoff, as built.** Shape (a) with the three ruled conditions, keyed on
+`golib.Goroutine.Current` (exposed publicly for this; `Id` deliberately stays internal, so the key is
+an opaque identity and not a number a program could build goroutine-local storage on). One refinement
+the ruling's letter did not cover and the corpus forces: **re-parking the SAME operation record is a
+REPLACE, not a fault.** `FD.Accept` re-submits `fd.rop` after a `WSAECONNRESET` with no intervening
+parse, which is a sequence the corpus really does issue; the park's content is identical anyway (same
+record, same staging block), so replacing is idempotent. Parking over a *different* record still
+throws, naming both wrappers, which is the case the ruling is actually about — two distinct accepts
+interleaved on one goroutine.
+
+**What the record does NOT need to hold.** §4.4's "the record owns the completion results" line is
+superseded by §4.5's own simplification and the implementation confirms it: the callback deposits
+nothing at all. It signals a descriptor and a mode, and the harvest asks Windows. That keeps the
+cross-package contract at one property (the native address) and keeps WSA-vs-Win32 error namespaces
+from ever being confused.
+
 ## 5. The deadline/unblock story — the hard part, priced honestly
 
 This section is the reason the board said "a deadline/unblock story to settle, not a wrapper
@@ -699,6 +786,19 @@ Converter change: `manualConversionFuncs` map entries ONLY — data, not logic; 
 `.go` file (no `projitems` entry owed); `go test ./...` and CNR classify the one-time regen of the
 displaced wrapper files as the change's intended A/B footprint. The hand-own census GROWS —
 re-measure at the regen per the ritual, never carry forward (CLAUDE.md, corpus mechanics §1).
+
+> **MEASURED at S2b (2026-08-15): 58 marked files**, up from 56 — the two new `_impl.cs` above.
+> Re-measured with the line-anchored scan (`^\s*\[module:\s*(go\.)?GoManualConversion\]`), never
+> carried forward: an unanchored `grep GoManualConversion` still over-counts, because `reflect` and
+> `internal/reflectlite` MENTION the marker inside placeholder comments. `runtime_netpoll_impl.cs`
+> was already counted at S1.
+>
+> One line of the table above needs correcting against what landed: the design listed `ConnectEx`
+> among the wrappers to DISPLACE, and it is not — L10 had already hand-owned it, so it was EXTENDED
+> in `syscall_windows_impl.cs` and needed no registry entry (§4.4 predicted exactly this and the
+> implementation confirmed it). Two entries the design did NOT anticipate joined instead:
+> `GetAcceptExSockaddrs` (in the table, but see §4.5's hole and its ruling) and **`LoadConnectEx`**,
+> which was outside the arc's declared surface until it was measured broken (§4.3's correction).
 
 **Adjacent walls this design deliberately does NOT claim** (so nobody reads "netpoll landed" as
 "net validates"): `net`'s own `runtime_rand` bodyless stub (`net/dnsclient.cs:20`), the DNS
@@ -808,6 +908,25 @@ is cheap and the claim should be measured, not argued).
 > > and it wants a ruling before the displacement can be written. What this closure buys is that the
 > > blocker is no longer a *converter capability* question — it is a plumbing choice with two costed
 > > shapes.
+> >
+> > > **BLOCKER FULLY CLOSED, S2 MET (2026-08-15, lane netpoll-s2b).** Both gate programs are banked
+> > > and byte-identical to `go run`:
+> > >
+> > > - **`TcpLoopbackRoundTrip`** — listen → dial → accept → 64 KiB write → echo → read → close, on
+> > >   IPv4 **and** IPv6, with the payload compared by CHECKSUM (not length), the accepted conn's
+> > >   remote address compared against the client's own local address (which is what proves the
+> > >   `AcceptEx` staging → `GetAcceptExSockaddrs` → `RawSockaddrAny.Sockaddr` transcription, and
+> > >   cannot be faked — the port is ephemeral), plus close-breaks-a-blocked-READ and
+> > >   close-breaks-a-blocked-WRITE.
+> > > - **`NetDeadlineMatrix`** — eleven §5 interleavings, all matching Go on the FIRST run of the
+> > >   converted host, and stable across repeats.
+> > >
+> > > One §5 expectation was corrected by measuring Go rather than trusting the write-up: an
+> > > ALREADY-EXPIRED mode fails a read even when bytes are sitting in the socket buffer, because
+> > > `execIO` calls `pd.prepare()` before it submits anything and prepare's order is
+> > > closing > timeout > clear-readiness. §5 point 7's "readiness beats both" is about `pollWait`,
+> > > the post-submit path — not about `prepare`. The guard now asserts both halves, in the
+> > > directions Go actually takes them.
 
 Gates: full behavioral suite; then the pipeline's own measure — **filtered sweep of
 `internal/poll`: the board row's target is 19/19** (from 18/19, sole miss `runtime_pollServerInit`
