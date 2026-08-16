@@ -861,7 +861,35 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						namedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(named, false))
 
 						if !strings.HasPrefix(expr, "(("+namedCS+")") && !strings.HasPrefix(expr, "("+namedCS+")") && !strings.HasPrefix(expr, "new ") {
-							if castOperandNeedsParens(namedCS, expr) {
+							// TWO independent questions have to be asked of a cast's operand, and
+							// this arm asked only the second. castOperandNeedsParens answers the
+							// cast-vs-subtraction PARSE AMBIGUITY (`(Named)-1` reads as a
+							// subtraction unless the operand is wrapped) — a leading-sign text
+							// test. PRECEDENCE is separate: a C# cast binds tighter than EVERY
+							// binary operator, so a constant operand that renders as a top-level
+							// binary expression has the cast claim its LEFT OPERAND ALONE.
+							//
+							// Go folds `rf(3 / 2)` in arbitrary precision — untyped integer
+							// division, so 1 — then converts. `((rf)3 / 2)` casts 3 to rf FIRST
+							// and divides in the target's own arithmetic: 1.5. The defect is
+							// therefore VALUE-CHANGING and silent wherever the first leg happens
+							// to compile (every named int/float type, whose [GoType] wrapper
+							// supplies the operator), and only becomes a hard error where it does
+							// not: a named COMPLEX type has no float→named-complex conversion, so
+							// `renamedComplex64(3 + 4i)` → `((renamedComplex64)3F + 4F.i())` is
+							// CS0030 (fmt's own tests, four sites). Same root, two symptoms.
+							//
+							// Keyed on the AST rather than the rendered text: the operand's own
+							// emission may be a call, a literal or a folded constant, and only the
+							// written expression says whether a binary operator is left exposed. A
+							// ParenExpr operand already renders wrapped, so the direct type test
+							// is sufficient. UNARY operands are deliberately NOT included — a cast
+							// and a unary operator share precedence and associate right, so
+							// `(T)~0` already means `(T)(~0)`; their only hazard is the sign
+							// ambiguity castOperandNeedsParens covers.
+							_, operandIsBinary := arg.(*ast.BinaryExpr)
+
+							if operandIsBinary || castOperandNeedsParens(namedCS, expr) {
 								return fmt.Sprintf("((%s)(%s))", namedCS, expr)
 							}
 

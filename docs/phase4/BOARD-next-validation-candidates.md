@@ -4472,7 +4472,7 @@ and it points the opposite way from nistec.
 | `sync/atomic` | 108 | CS0103 `ᏑᏑX` — a DOUBLE address-prefix marker |
 | `runtime/pprof` | — | CS0103 `ᏑᏑsalts` — **the same double-`Ꮡ` root** |
 | `crypto/ecdsa` | 82 | the nistec family |
-| `fmt` | 63 | ~~CS0111 `fmt_test_package.SE` already defines `Append`~~ — closed by `14bf20010`; **five roots behind it**, censused 2026-08-15 in *CLOSED for `archive/tar`* at the end of this file |
+| `fmt` | 63 | ~~CS0111 `fmt_test_package.SE` already defines `Append`~~ — closed by `14bf20010`; ~~**five roots behind it**~~ — **the COMPILE WALL IS CLOSED** (2026-08-16, lane `claude/fmt-roots`): the host builds and **62 of 63 verdicts agree**. One verdict (`TestSprintf`) remains, behind three reflect/fmt-bridge divergences — see *`fmt`'s compile wall is CLOSED* at the end of this file |
 | `text/template` | 52 | CS0030 on a test-local named type |
 | `debug/elf` | 31 | CS8183 cannot infer the type of an implicitly-typed discard |
 | `internal/reflectlite` | 30 | CS0016 could not write to output file |
@@ -6651,7 +6651,7 @@ converter defect — a test-closure-only reference reaching a **production** `.c
 | Package | Census | Board had | Measured 2026-08-14 |
 |:--|:--:|:--|:--|
 | `archive/tar` | ~~0 of 97~~ **97 of 97, BANKED** | CS1537 ×3, duplicate `using` alias in one file | **CS0111** — `tar_internal_test_package.fileOps` already defines `Append`. The alias-dedupe root is CLOSED; behind it is the same defect as `fmt` — ⚠ **and that "CLOSED" was wrong**: CS1537 was still live and became this package's next wall once CS0111 fell. See *CLOSED for `archive/tar`* below (2026-08-15) |
-| `fmt` | 0 of 63 | CS0111 `fmt_test_package.SE` already defines `Append` | CS0111 closed by `14bf20010`; **five roots behind it** — censused in *CLOSED for `archive/tar`* below (2026-08-15). It was never a two-package root past CS0111 |
+| `fmt` | ~~0 of 63~~ **62 of 63** | CS0111 `fmt_test_package.SE` already defines `Append` | **COMPILE WALL CLOSED** (2026-08-16, lane `claude/fmt-roots`) — two converter roots, not four; the host builds and 62 verdicts agree. `TestSprintf` is the one open verdict, behind three reflect/fmt-bridge divergences. See *`fmt`'s compile wall is CLOSED* below |
 | `sync/atomic` | 0 of 108 | CS0103 `ᏑᏑX`, double address-prefix | **CS0841** — cannot use local `magic64` before it is declared. The double-`Ꮡ` is closed |
 | `internal/reflectlite` | 0 of 30 | CS0016 could not write to output file | **CS0715** — static classes cannot contain user-defined operators: a generic test-local type's `==`/`!=` emitted into the static `reflectlite_test_package` |
 | `runtime/debug` | 0 of 9 | CS0264, not taken past the first diagnostic | **CS0264 + CS0715** — the same static-class-operator defect as `internal/reflectlite`. Two packages, one root |
@@ -9356,3 +9356,137 @@ matrix descriptions above and each is 10–25 lines; the guard spec is the durab
 `go2cs.exe -go2cspath <worktree>/src <dir>`, then
 `dotnet build <dir>.csproj -c Debug -p:go2csPath=<worktree>/src/ -p:UseSharedCompilation=false`,
 then run and diff against `go run .`.
+
+## ✅ `fmt`'s compile wall is CLOSED — two roots, not four; 62 of 63 verdicts agree (2026-08-16, lane `claude/fmt-roots`)
+
+**The census above was stale in the usual direction, and the usual way.** It recorded four
+remaining roots after the `CS1955` map-nil row closed. Re-measured on master (`9c64f0a44`) the
+compile wall is **two** roots — the census's last three rows were, as it predicted, "one type's
+story", and they are indeed ONE root. Both are general converter defects; neither is
+`fmt`-specific; both now carry failing-first behavioral guards.
+
+### Root 1 — a cast's operand asks TWO questions, and the arm asked only one
+
+`CS0030 float→renamedComplex64 / double→renamedComplex128` ×4 (8 diagnostics across the internal
+and external test variants). The named-numeric **identity-constant** arm of `convCallExpr` (reached
+because go/types gives a constant operand the target type, so the conversion reads as an identity)
+consulted only `castOperandNeedsParens` — a leading-sign TEXT test that answers the *cast-vs-
+subtraction parse ambiguity*. It never asked the **precedence** question: a C# cast binds tighter
+than every binary operator, so a constant operand rendering as a top-level binary expression has
+the cast claim its **left operand alone**.
+
+```csharp
+((renamedComplex64)3F + 4F.i())   // was; the cast applies to 3F alone, CS0030
+((renamedComplex64)(3F + 4F.i())) // now
+```
+
+**The compile error is the mild symptom.** The same emission is **silently value-changing** on
+every named int/float type, where the `[GoType]` wrapper supplies an operator for the mis-bound
+first leg and the code compiles clean:
+
+| Go | emitted (before) | Go value | C# value |
+|:--|:--|:--|:--|
+| `rf(3 / 2)` | `((rf)3 / 2)` | `1` | `1.5` |
+| `rf(7 / 2)` | `((rf)7 / 2)` | `3` | `3.5` |
+| `rf(1 / 3)` | `((rf)1 / 3)` | `0` | `0.3333333333333333` |
+
+Go folds the constant expression in exact arbitrary precision — untyped INTEGER division — and
+then converts; the mis-bound cast converts first and divides in the target's own float arithmetic.
+Measured end to end, not argued: a four-line probe printed `1 3 0 1` under Go and
+`1.5 3.5 0.3333333333333333 1.25` under the transpiled C#. A named **complex** target has no
+float→named-complex conversion at all, which is the only reason the class ever surfaced as an
+error rather than as a wrong answer.
+
+Keyed on the AST (`*ast.BinaryExpr`), not the rendered text — only the written expression says
+whether a binary operator is left exposed. **Unary operands are deliberately excluded**: a cast and
+a unary operator share precedence and associate right, so `(T)~0` already means `(T)(~0)`.
+Guard: `NamedConstConversionPrecedence` (output-compared, so the silent value divergence fails the
+gate and not merely the CS0030). Detail: `docs/ConversionStrategies-Reference.md` §Named Numeric
+Types and Constant Contexts, "A cast's operand asks TWO questions".
+
+### Root 2 — `inFunction` does not mean "there is a function DECLARATION"
+
+`CS1729` + `CS0103` + `CS0034` — the census's last three rows, and one root exactly as predicted.
+`convFuncLit` sets `inFunction` for a literal's body (correctly — its locals are function scope),
+but `currentFuncName` and `currentFuncPrefix`, the lift's **name prefix** and its **declaration
+sink**, are allocated together by `visitFuncDecl`. For a literal in a package-level initializer
+they therefore held whatever the PREVIOUS function declaration in the file left behind. Every
+type-lift site keys on `lifted && inFunction` and writes into that prefix, so `fmt`
+scan_test.go's
+
+```go
+{"ReaderOnly", func(s string) io.Reader { return struct{ io.Reader }{strings.NewReader(s)} }},
+```
+
+lifted a type named after an unrelated preceding function and wrote its declaration into that
+function's already-flushed buffer. The declaration **vanished**; only the use site survived —
+`new Scan_type(…)`, CS1729 (no one-argument constructor), plus CS0103/CS0034 in the
+`ImplementGenerator` wrapper generated for the phantom type from its surviving
+`[assembly: GoImplement]` record.
+
+**And it has a second, worse symptom the census never saw.** With NO preceding function
+declaration the buffer is not stale but **nil**, and the lift panics (nil receiver in
+`strings.Builder.copyCheck`). That panic is recovered per file, so the entire FILE is skipped with
+only a `visit file error` warning — a silent, total loss of one file's conversion. Which symptom
+appears depends solely on declaration order within the file, which is why `fmt` showed the compile
+errors while a minimal standalone reproduction showed the panic.
+
+A package-level literal now gets its own sink, flushed at **package scope** — where a lifted type
+belongs anyway, and exactly where the sibling package-level lift (`readersᴛ1`) already goes — with
+its name seeded from the declaration being initialized (`readers_type`, unique per var as
+`readersᴛ1` already is). Guard: `PackageVarFuncLitTypeLift`, whose two files cover both symptoms
+(`main.go` puts a function declaration before the var; `varfirst.go` declares the var first).
+Detail: `docs/ConversionStrategies-Reference.md` §Struct Types, "A lift inside a PACKAGE-LEVEL func
+literal".
+
+### Root 3 (bridge) — `reflect.Value.Bytes` had no Array arm
+
+Behind the compile wall the first run threw
+`InvalidCastException: go.array<byte> → go.slice<byte>` out of the hand-owned
+`core/reflect/value_impl.cs`. Go's `bytesSlow` accepts an **addressable byte array** as well as a
+byte slice, and fmt's `printValue` calls `Bytes()` whenever `f.Kind() == Slice || f.CanAddr()` — so
+`Sprintf("%s", &[3]byte{'a','b','c'})`, whose pointer deref IS addressable, reached a function that
+handled only slice shapes. `CanAddr()` was right; `Bytes` was incomplete. It now takes Go's Array
+arm, aliasing the array's storage through `array<T>.Slice` exactly as Go's `unsafe.Slice(p, n)`
+does (a copy would silently break writers), and panics with Go's own text on an unaddressable byte
+array. **Zero regression risk by construction:** that shape previously always threw.
+
+### `fmt` census — 63 verdicts, 62 agree, 1 open, 0 disclosed
+
+| | |
+|:--|:--|
+| Go | 62 pass, 1 skip (`TestCountMallocs`, `GOMAXPROCS>1`) |
+| C# | 61 pass, 1 skip, **1 infrastructure-error** |
+| Divergences | **1** — `TestSprintf` |
+| Excluded | 42 (standard Phase-4D `Benchmark`/`Example`/`Fuzz` deferrals) |
+| Disclosed | 0 |
+
+**Not banked**, and deliberately: banking wants genuine closure, and `TestSprintf` is a real
+divergence rather than a disclosure candidate (the existing disclosure classes are alloc-count
+asserts the CLR provably cannot satisfy; a formatting mismatch is not one).
+
+### What `TestSprintf` is standing on — three co-located bridge divergences
+
+All three live inside that one table-driven test, so none can move the verdict alone. Each is
+measured, not inferred; the first two are reported by the test itself before the third aborts it.
+
+| # | Entry (`fmt_test.go`) | Go | C# | Root |
+|:--|:--|:--|:--|:--|
+| 1 | `{"%#12.5g", 1230000 - 0i, …}` (line 565) | `+0.0000i` | `-0.0000i` | The converter emits Go's constant complex expression as RUNTIME arithmetic (`1230000D - 0D.i()`), and .NET's `double - Complex` computes `-right.Imaginary`, turning `+0` into `-0`. Go folds the constant exactly, and an exact zero has no sign. Isolated in a probe: only the SUBTRACTION form diverges — `complex(1230000.0, 0.0)` and `1230000D + 0D.i()` are both correct |
+| 2 | `{"%#v", TestFmtInterface, "(func(*testing.T))(0xPTR)"}` (line 717) | `(func(*testing.T))(…)` | ``(Action`1)(…)`` | `GoReflect.TypeNaming.cs` has **no delegate handling at all** — rendering a Go func signature from a CLR `Action`/`Func`/`Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` is an unimplemented bridge feature, not a defect. Sized as its own arc |
+| 3 | `{"%x", []renamedUint8{…}}` and five siblings (lines 734–735, 839–842) | `68656c6c6f` | throws | `Bytes()` on a slice whose element is a NAMED uint8 type. Go permits it (`Elem().Kind() == Uint8`) and ALIASES through the slice header; the bridge holds `slice<renamedUint8>` of wrapper structs, which is not layout-compatible with `byte[]`, so no safe aliasing conversion exists. Deliberately NOT half-fixed here — a copy would silently break writers of a core reflect API. A representation-level question |
+
+**Fix 1 was measured and deliberately NOT landed.** Folding complex constant expressions is the
+right general answer (the established precedent is `foldedNamedFloatConstLiteral`, which folds
+float constant conversions so Go's exact evaluation rounds only once). But the census says the
+subtraction form has **zero production sites** corpus-wide — all 115 are test files in `fmt`,
+`math/cmplx`, `strconv` and `internal/fmtsort`, three of which are BANKED — so landing it would
+churn banked packages' committed test sources and owe them a re-sweep, while moving no verdict on
+its own (2 and 3 would still fail). It belongs with the `TestSprintf` arc, not ahead of it.
+
+**Recommendation for whoever takes `TestSprintf`:** it is one lane, and #2 is its centre of gravity
+— #1 and #3 are each contained, #2 is a bridge feature. All three must land together for the
+verdict to move, and `fmt` then banks at 63/63. That bank is worth more than its own row: the
+behavioral suite's ~520 stdout comparisons all run through converted `fmt`, so `fmt`'s own
+`%v`/`%T` table is the deepest test the reflection bridge has, and every Printf-comparing
+behavioral test is strengthened by it.

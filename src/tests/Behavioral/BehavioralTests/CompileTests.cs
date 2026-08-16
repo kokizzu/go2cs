@@ -889,6 +889,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckNamedChannelType() => CheckTarget("NamedChannelType");
 
     [TestMethod]
+    public void CheckNamedConstConversionPrecedence() => CheckTarget("NamedConstConversionPrecedence");
+
+    [TestMethod]
     public void CheckNamedConstFloatFold() => CheckTarget("NamedConstFloatFold");
 
     [TestMethod]
@@ -1118,6 +1121,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckPackageShadowPointerParam() => CheckTarget("PackageShadowPointerParam");
+
+    [TestMethod]
+    public void CheckPackageVarFuncLitTypeLift() => CheckTarget("PackageVarFuncLitTypeLift");
 
     [TestMethod]
     public void CheckPackageVarInitOrder() => CheckTarget("PackageVarInitOrder");

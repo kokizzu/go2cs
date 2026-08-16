@@ -181,6 +181,17 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				}
 			}
 
+			// A func literal inside a PACKAGE-LEVEL initializer converts its body with
+			// inFunction = true but has no enclosing function DECLARATION, so a type it lifts has
+			// no name seed of its own. Record the declaration being initialized as that seed —
+			// `var readers = []struct{…}{{…, func(s string) io.Reader { return struct{ io.Reader
+			// }{…} }}}` (fmt's scan_test.go) lifts to `readers_type`, alongside the outer anonymous
+			// struct's `readersᴛ1`. Package-level value specs do not nest, and the in-function arms
+			// never read this, so a plain assignment (no save/restore) is sufficient.
+			if !v.inFunction {
+				v.packageInitLiftName = csIDName
+			}
+
 			context := DefaultBasicLitContext()
 			// An EMPTY-interface declared type boxes a string LITERAL through @string
 			// (`var v any = "x"` → `(@string)"x"u8`), the same rendering the assignment form takes —

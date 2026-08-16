@@ -372,6 +372,35 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	savedInFunction := v.inFunction
 	v.inFunction = true
 
+	// `inFunction` says the BODY is function scope; it does NOT say there is an enclosing function
+	// DECLARATION. currentFuncName and currentFuncPrefix are owned by visitFuncDecl (allocated
+	// together there), so for a literal in a package-level initializer they hold whatever the
+	// PREVIOUS function declaration in the file left behind — or nothing at all, when none has been
+	// visited yet. Every type-lift site keys on `lifted && v.inFunction` and then writes the
+	// declaration into currentFuncPrefix, so a type lifted here — fmt scan_test.go's
+	// `struct{ io.Reader }`, returned from a func literal inside the package-level `readers` — was
+	// named after an UNRELATED preceding function and written into that function's ALREADY-FLUSHED
+	// buffer, i.e. silently dropped: `new Scan_type(…)` with no declaration anywhere (CS1729, plus
+	// CS0103/CS0034 in the ImplementGenerator's wrapper for the phantom type). With NO preceding
+	// function declaration the buffer is nil outright and the converter PANICS (nil receiver in
+	// strings.Builder.copyCheck, recovered as "visit file error" — the whole FILE is skipped).
+	// ONE root; which of the two symptoms appears depends only on declaration order in the file.
+	//
+	// Give the literal its own sink and a name seed from the declaration being initialized, then
+	// flush at package scope — where a lifted type belongs anyway, and exactly where the sibling
+	// package-level lift (`readersᴛ1`) already goes. The flush lands before the var's own field
+	// because a package-level initializer is converted to a STRING first and written afterwards.
+	savedFuncName := v.currentFuncName
+	savedFuncPrefix := v.currentFuncPrefix
+
+	var packageLevelLifts *strings.Builder
+
+	if !savedInFunction {
+		packageLevelLifts = &strings.Builder{}
+		v.currentFuncName = v.packageInitLiftName
+		v.currentFuncPrefix = packageLevelLifts
+	}
+
 	// A literal's body is NOT inside the ENCLOSING function's GoFrame, whatever that function emits
 	// as: a `defer` written here belongs to this literal, and a ref struct cannot be captured by a
 	// lambda in any case. It gets a frame of its OWN when it defers or recovers, and that frame is a
@@ -397,6 +426,13 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		v.inGoFrame = savedInGoFrame
 		v.goFrameNamedExit = savedGoFrameNamedExit
 		v.openGoFrames = savedOpenGoFrames
+		v.currentFuncName = savedFuncName
+		v.currentFuncPrefix = savedFuncPrefix
+
+		if packageLevelLifts != nil && packageLevelLifts.Len() > 0 {
+			v.outputBuilder.WriteString(v.newline)
+			v.outputBuilder.WriteString(packageLevelLifts.String())
+		}
 	}()
 
 	if v.lambdaCapture == nil {
