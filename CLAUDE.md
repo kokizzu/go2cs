@@ -788,6 +788,12 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
     packages dissolved it, so the whole tree moved at once instead. The hand-owned
     `[module: GoManualConversion]` / `*_impl.cs` files now simply LIVE in the one tree — no canonical copy,
     no overlay-back step, no two-tree exceptions.
+  - **⚠ Swapping a hand-own's file contents (backup restore, A/B neutering) can leave a STALE dll
+    winning the build**: `Copy-Item` preserves `LastWriteTime`, so the restored source is OLDER than
+    the assembly built from the neutered version and incremental MSBuild keeps the wrong dll — a
+    defect then "reproduces" against clean, HEAD-matching source with a clean `git status` (measured
+    2026-08-16, cost one invalid run). After any hand-own swap: touch the file or build
+    `--no-incremental` before believing a repro.
   - **⚠ Phase-4 operational: two hand-owned patterns, and a WHOLE-FILE rewrite MUST carry the marker.** Making a
     package *run* (not just compile) often needs a native reimplementation where the literal conversion compiles
     but cannot work — e.g. `sync`'s Mutex/RWMutex/WaitGroup (2026-07-11), whose Go runtime sleeping semaphore
