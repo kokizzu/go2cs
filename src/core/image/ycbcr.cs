@@ -24,7 +24,6 @@ internal static readonly @string yCbCrSubsampleRatio420ˢ = "YCbCrSubsampleRatio
 internal static readonly @string yCbCrSubsampleRatio440ˢ = "YCbCrSubsampleRatio440"u8;
 internal static readonly @string yCbCrSubsampleRatio411ˢ = "YCbCrSubsampleRatio411"u8;
 internal static readonly @string yCbCrSubsampleRatio410ˢ = "YCbCrSubsampleRatio410"u8;
-internal static readonly @string yCbCrSubsampleRatioUnknownˢ = "YCbCrSubsampleRatioUnknown"u8;
 
 public static @string String(this YCbCrSubsampleRatio s) {
     var exprᴛ1 = s;
@@ -47,7 +46,7 @@ public static @string String(this YCbCrSubsampleRatio s) {
         return yCbCrSubsampleRatio410ˢ;
     }
 
-    return yCbCrSubsampleRatioUnknownˢ;
+    return "YCbCrSubsampleRatioUnknown"u8;
 }
 
 // YCbCr is an in-memory image of Y'CbCr colors. There is one Y sample per

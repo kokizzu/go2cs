@@ -143,7 +143,6 @@ internal static slice<@string> pathExt() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string noDefaultCurrentDirectoryInExePathˢ = "NoDefaultCurrentDirectoryInExePath"u8;
 internal static readonly @string pathˢ = "path"u8;
 
 // lookPath implements LookPath for the given PATHEXT list.
@@ -168,7 +167,7 @@ internal static (@string, error) lookPath(@string @file, slice<@string> exts) {
     
     error dotErr = default!;
     {
-        var (_, found) = syscall.Getenv(noDefaultCurrentDirectoryInExePathˢ); if (!found) {
+        var (_, found) = syscall.Getenv("NoDefaultCurrentDirectoryInExePath"u8); if (!found) {
             {
                 var (f, err) = findExecutable(filepath.Join("."u8, @file), exts); if (err == default!) {
                     if (execerrdot.Value() == "0"u8) {

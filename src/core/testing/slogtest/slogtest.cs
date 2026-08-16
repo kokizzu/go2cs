@@ -61,7 +61,7 @@ internal static slice<testCase> cases = new testCase[]{
         name: "empty-attr"u8,
         explanation: withSource("a Handler should ignore an empty Attr"u8),
         f: (ж<slog.Logger> l) => {
-            l.Info("msg"u8, (@string)"a"u8, (@string)"b"u8, (@string)""u8, default!, (@string)"c"u8, (@string)"d"u8);
+            l.Info("msg"u8, (@string)"a"u8, (@string)"b"u8, (@string)""u8, (any)(default!), (@string)"c"u8, (@string)"d"u8);
         },
         checks: new Func<map<@string, any>, @string>[]{
             hasAttr("a"u8, (@string)"b"u8),

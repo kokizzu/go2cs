@@ -1447,9 +1447,6 @@ public static (ΔHandle, error) CreateIoCompletionPort(ΔHandle filehandle, ΔHa
     return createIoCompletionPort(filehandle, cphandle, (uintptr)key, threadcnt);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string getQueuedCompletionStatusˢ = "GetQueuedCompletionStatus returned key overflow"u8;
-
 // Deprecated: GetQueuedCompletionStatus has the wrong function signature. Use x/sys/windows.GetQueuedCompletionStatus.
 public static error GetQueuedCompletionStatus(ΔHandle cphandle, ж<uint32> Ꮡqty, ж<uint32> Ꮡkey, ж<ж<Overlapped>> Ꮡoverlapped, uint32 timeout) {
     ref var key = ref Ꮡkey.DerefOrNull();
@@ -1464,7 +1461,7 @@ public static error GetQueuedCompletionStatus(ΔHandle cphandle, ж<uint32> Ꮡq
     if (Ꮡkey != nil) {
         key = (uint32)ukey;
         if ((uintptr)(key) != ukey && err == default!) {
-            err = errorspkg.New(getQueuedCompletionStatusˢ);
+            err = errorspkg.New("GetQueuedCompletionStatus returned key overflow"u8);
         }
     }
     return err;

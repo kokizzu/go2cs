@@ -1680,7 +1680,7 @@ public static ΔType MapOf(ΔType key, ΔType elem) {
     // in ../cmd/compile/internal/reflectdata/reflect.go:writeType.
     ref var imap = ref heap<any>(out var Ꮡimap);
 
-    imap = (map<@unsafe.Pointer, @unsafe.Pointer>)(default!);
+    imap = ((map<@unsafe.Pointer, @unsafe.Pointer>)default!);
     ref var mt = ref heap<mapType>(out var Ꮡmt);
     mt = (~Ꮡimap.Reinterpret<any, ж<mapType>>()).Value;
     mt.Str = resolveReflectName(newName(s, ""u8, false, false));

@@ -250,7 +250,7 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
     uintptr pid = default!;
     ref var pidfd = ref heap(new int32(), out var Ꮡpidfd);
     ref var err1 = ref heap(new Errno(), out var Ꮡerr1);
-    array<nint> mapPipe = default!;
+    array<nint> mapPipe = new(2);
     bool locked = default!;
 
     // Defined in linux/prctl.h starting with Linux 4.3.
