@@ -492,7 +492,12 @@ ONE stdlib in a build; there is now only one on disk.
   than spending the full budget on all 555 to re-learn one fact.
   ⚠ **Piping a long run through `Select-Object -Last N` buffers ALL output until it completes** — a
   backgrounded suite will look stuck at its first line for its entire duration. Check liveness with
-  `Get-Process BehavioralRunner,dotnet`, not the output file.
+  `Get-Process BehavioralRunner,dotnet`, not the output file. **`-First N` is WORSE: it terminates
+  the pipeline once satisfied and KILLS the upstream native process mid-run** (measured 2026-08-16:
+  a `-stdlib` reconvert died at ~100/304 with exit −1, reading exactly like a converter failure).
+  Redirect long runs to a file and read the file. And never inject non-ASCII C# source (`Ꮡ`, `ж`,
+  `Δ`) through a PowerShell command STRING — the argument pass mojibakes it even when file I/O is
+  correct; write such content with the Edit/Write tools.
 
 ### Performance comparison suite (`src/tests/Performance`, 2026-07-02)
 - **Purpose:** answer "how fast is the transpiled C# vs the original Go?" — 14 small `Perf*` benchmark
