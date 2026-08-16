@@ -646,6 +646,39 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// memory the GC has moved. Both ends are fixed with the package's established stack-mirror
 		// pattern; the GUID value still comes from the converted declaration.
 		"LoadConnectEx": goosWindows,
+		// The INITIALISATION pair, and the last two struct-passing members `net` reaches. Both run
+		// inside internal/poll's InitWSA, once per process that imports `net`, one statement apart —
+		// which is why they arrive together even though the chip named only the second.
+		//
+		// WSAEnumProtocols is the WORST OVERWRITE in the census by an order of magnitude.
+		// WSAPROTOCOL_INFOW is 628 bytes native and ends in szProtocol[256] INLINE, with a GUID
+		// ([8]byte) and a WSAPROTOCOLCHAIN ([7]uint32) nested inside it — three inline arrays the
+		// conversion holds as three `array<T>` MANAGED REFERENCES, so the managed record is roughly
+		// 120 bytes. checkSetFileCompletionNotificationModes asks for 32 of them and tells the kernel
+		// so in BYTES: `len = unsafe.Sizeof(buf)`, which the converter answers with Go's 20,096 —
+		// correct as a native size, and four fifths of it past the end of the ~3.8 KB managed array
+		// the same call hands over. Compounding it, `Ꮡbuf.at<WSAProtocolInfo>(0)` cannot even be
+		// pinned (PinnedBuffer.PinOnly refuses a reference-bearing element type), so the address was
+		// transient as well as wrong. SIZE IS AN INPUT here exactly as it is for Process32First's
+		// dwSize, with a second edge: the count Windows RETURNS interprets against native strides,
+		// and on WSAENOBUFS it rewrites the caller's length with a required size that is a whole
+		// number of NATIVE records.
+		//
+		// WSAStartup is the same class over WSADATA (~408 bytes native, szDescription[257] and
+		// szSystemStatus[129] inline) and is here because it is UPSTREAM: the probe that reproduces
+		// the enumeration defect could not reach it. `net` never reads the WSAData it passes, so the
+		// overwrite has been silent since the corpus first dialled a socket — but a program that
+		// reads Description dies with an ACCESS_VIOLATION in slice<byte>..ctor before
+		// WSAEnumProtocols is called at all, the same signature GetTimeZoneInformation had. Silent is
+		// not benign: this one runs in every converted program that imports `net`.
+		//
+		// Both answers are load-bearing beyond the corruption. useSetFileCompletionNotificationModes
+		// is set only when EVERY enumerated entry carries XP1_IFS_HANDLES, and it decides
+		// FD.skipSyncNotif — whether a synchronously-completing overlapped operation returns at once
+		// or waits for a completion packet, which is the behaviour the netpoll design's OQ5 ratified
+		// keeping. A corrupt enumeration silently picks the other IO path.
+		"WSAStartup":       goosWindows,
+		"WSAEnumProtocols": goosWindows,
 	},
 	// The SECOND package holding the syscall struct-passing class, and the one member of it whose
 	// established remedy is measured UNREACHABLE — so this entry declares a CAPABILITY LIMIT rather

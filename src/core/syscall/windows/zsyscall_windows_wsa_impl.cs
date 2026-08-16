@@ -4,10 +4,16 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// Hand-written implementations of the OVERLAPPED (asynchronous) half of the Windows socket surface --
-// the SUBMIT SEAM of the managed netpoller arc. Design and rulings:
-// docs/phase4/DESIGN-netpoll-managed-poller.md §4.3/§4.4/§4.5 (§9 RULED 2026-08-13; the accept
-// handover RULED 2026-08-14).
+// Hand-written implementations of the ws2_32 surface go2cs cannot convert literally. The bulk of it
+// is the OVERLAPPED (asynchronous) half -- the SUBMIT SEAM of the managed netpoller arc. Design and
+// rulings: docs/phase4/DESIGN-netpoll-managed-poller.md §4.3/§4.4/§4.5 (§9 RULED 2026-08-13; the
+// accept handover RULED 2026-08-14).
+//
+// TWO SYNCHRONOUS MEMBERS LIVE HERE TOO, and the file is the ws2_32 family rather than the async one
+// because of them. LoadConnectEx (below) is the dial path's extension-pointer lookup. WSAStartup and
+// WSAEnumProtocols are the INITIALISATION pair, added 2026-08-16 -- see "The INITIALISATION pair" at
+// the foot of this file for why they are here and not in zsyscall_windows_impl.cs, which is the same
+// struct-passing class over kernel32.
 //
 // WHAT THE POLLER ALONE COULD NOT DO. internal/poll's ten runtime_poll* contracts are hand-owned in
 // internal/poll/windows/runtime_netpoll_impl.cs, and they make a completion WAKE a blocked goroutine.
@@ -651,5 +657,278 @@ partial class syscall_package
     // arc existed) and needs the same record machinery as the wrappers above.
     internal static unsafe uintptr rearmOverlapped(ΔHandle handle, ж<Overlapped> Ꮡoverlapped, nint mode) {
         return (uintptr)(void*)operationFor(handle, Ꮡoverlapped, mode).Rearm();
+    }
+
+    // ---- The INITIALISATION pair -----------------------------------------------------------------
+    //
+    // WHY HERE. These two are the plain native-layout wall of zsyscall_windows_impl.cs -- no
+    // overlapped, no lifetime beyond the call, no identity -- so on the class alone they would live
+    // there. They are here instead because that file is the kernel32 side of the wall
+    // (GetTimeZoneInformation, FindFirstFileW, Process32FirstW) and this one is ws2_32's, and the
+    // family is worth keeping whole: a reader chasing a Winsock defect should find every Winsock
+    // hand-own in one file. LoadConnectEx already set that precedent. The coupling is real in one
+    // more direction too -- the enumeration below computes the answer this file's own skipSyncNotif
+    // reasoning turns on (see "THE OVERLAPPED IS FREED AT THE NEXT SUBMIT" in the header).
+    //
+    // Both files are windows-only and sit in the same per-GOOS folder, so the helpers they share
+    // (copyNativeName in zsyscall_windows_impl.cs) are routed to the same platform set by layout L3.
+
+    // WSADESCRIPTION_LEN / WSASYS_STATUS_LEN / WSAPROTOCOL_LEN / MAX_PROTOCOL_CHAIN as the native
+    // layouts use them. syscall's own are UntypedInt properties, not compile-time constants, and a
+    // `fixed` buffer needs one -- the same reason zsyscall_windows_impl.cs restates maxPath.
+    private const int wsaDescriptionLen = 256;
+    private const int wsaSysStatusLen = 128;
+    private const int wsaProtocolLen = 255;
+    private const int maxProtocolChain = 7;
+
+    // WSADATA exactly as Windows lays it out for _WIN64: 408 bytes with both character buffers
+    // INLINE. The converted WSAData holds them as two `array<byte>` MANAGED REFERENCES and the vendor
+    // pointer as a ж<byte>, so it is roughly 40 bytes with every field at the wrong offset -- the
+    // kernel wrote 408 bytes over it and left ASCII where the two array references belong, which is
+    // why reading Description faulted in slice<byte>..ctor.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeWSAData
+    {
+        public uint16 Version;
+        public uint16 HighVersion;
+        public uint16 MaxSockets;
+        public uint16 MaxUdpDg;
+        public byte* VendorInfo;
+        public fixed byte Description[wsaDescriptionLen + 1];
+        public fixed byte SystemStatus[wsaSysStatusLen + 1];
+    }
+
+    // WSAStartup is the native transcription of the generated wrapper. Return values follow the Go
+    // original exactly: WSAStartup reports its failure through the RETURN VALUE rather than
+    // WSAGetLastError, so a non-zero r0 becomes that Errno directly and no last-error is consulted.
+    public static unsafe error /*sockerr*/ WSAStartup(uint32 verreq, ж<WSAData> Ꮡdata) {
+        NativeWSAData native = default;
+
+        var (r0, _, _) = Syscall(procWSAStartup.Addr(), 2, (uintptr)verreq, (uintptr)(void*)(&native), 0);
+
+        if (r0 != 0) {
+            // `data` is left untouched on failure, as it is in Go, because the kernel did not write it.
+            return ((Errno)r0);
+        }
+
+        if (Ꮡdata != nil) {
+            ref WSAData data = ref Ꮡdata.Value;
+
+            data.Version = native.Version;
+            data.HighVersion = native.HighVersion;
+            data.MaxSockets = native.MaxSockets;
+            data.MaxUdpDg = native.MaxUdpDg;
+
+            // lpVendorInfo is documented RESERVED and every supported Windows leaves it NULL, which
+            // is the nil a Go caller reads. It is reported as nil rather than wrapped: a raw native
+            // address has no managed referent to name, and fabricating one is the type-safety break
+            // ж.PointerExtensions.cs forbids. If a provider ever set it, this is where that shows.
+            data.VendorInfo = nil;
+
+            // Copied WHOLE, NULs included, for the reason copyNativeName gives: Go reads these as a
+            // NUL-terminated run and Windows pads the remainder.
+            copyNativeBytes(native.Description, ref data.Description, wsaDescriptionLen + 1);
+            copyNativeBytes(native.SystemStatus, ref data.SystemStatus, wsaSysStatusLen + 1);
+        }
+
+        return default!;
+    }
+
+    // GUID exactly as Windows lays it out: 16 bytes with Data4 inline. LoadConnectEx above builds the
+    // same image by hand into a stackalloc because it needs only one, in one direction; this is the
+    // same 16 bytes as a type, because WSAPROTOCOL_INFOW embeds it.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeGuid
+    {
+        public uint32 Data1;
+        public uint16 Data2;
+        public uint16 Data3;
+        public fixed byte Data4[8];
+    }
+
+    // WSAPROTOCOLCHAIN: 32 bytes, ChainEntries[7] inline.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeWSAProtocolChain
+    {
+        public int32 ChainLen;
+        public fixed uint32 ChainEntries[maxProtocolChain];
+    }
+
+    // WSAPROTOCOL_INFOW exactly as Windows lays it out: 628 bytes, ending in szProtocol[256] inline
+    // 512 bytes past the fields the catalog's contract pins. Field names and order follow the
+    // converted WSAProtocolInfo, which is the struct the copy below fills.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeWSAProtocolInfoW
+    {
+        public uint32 ServiceFlags1;
+        public uint32 ServiceFlags2;
+        public uint32 ServiceFlags3;
+        public uint32 ServiceFlags4;
+        public uint32 ProviderFlags;
+        public NativeGuid ProviderId;
+        public uint32 CatalogEntryId;
+        public NativeWSAProtocolChain ProtocolChain;
+        public int32 Version;
+        public int32 AddressFamily;
+        public int32 MaxSockAddr;
+        public int32 MinSockAddr;
+        public int32 SocketType;
+        public int32 Protocol;
+        public int32 ProtocolMaxOffset;
+        public int32 NetworkByteOrder;
+        public int32 SecurityScheme;
+        public uint32 MessageSize;
+        public uint32 ProviderReserved;
+        public fixed uint16 ProtocolName[wsaProtocolLen + 1];
+    }
+
+    // WSAEnumProtocols is the native transcription of the generated wrapper. THREE things distinguish
+    // it from the other members of this class, and all three come from one fact: this call is sized
+    // by a BYTE COUNT the caller computed, over an array it also hands over.
+    //
+    //   (1) The kernel writes into a NATIVE block this function owns, never into the managed array.
+    //       `*bufferLength` is Go's `unsafe.Sizeof(buf)`, which the converter answers with Go's --
+    //       i.e. the native -- size, so it is already the number Windows expects; what it is not is
+    //       the size of the managed array, which is roughly a fifth of it. The block is sized from
+    //       that same byte count, so the two agree by construction.
+    //
+    //   (2) SIZE IS AN INPUT AND AN OUTPUT. On WSAENOBUFS Windows rewrites `*bufferLength` with the
+    //       size the catalog needs, expressed in NATIVE strides -- which the Go caller then compares
+    //       against its own unsafe.Sizeof arithmetic. It is passed straight back out unaltered: it is
+    //       native-side arithmetic on both sides of the boundary, and converting it would be the
+    //       defect, not the fix.
+    //
+    //   (3) The count Windows returns is a count of NATIVE records, so the copy-back walks the
+    //       staging block at the native stride and steps the caller's pointer with unsafe.Add, which
+    //       resolves through the backing array (the same mechanism stageBuffers relies on).
+    public static unsafe (int32 n, error err) WSAEnumProtocols(ж<int32> Ꮡprotocols, ж<WSAProtocolInfo> ᏑprotocolBuffer, ж<uint32> ᏑbufferLength) {
+        nuint stride = (nuint)sizeof(NativeWSAProtocolInfoW);
+        uint32 length = ᏑbufferLength == nil ? 0 : ᏑbufferLength.Value;
+        nuint capacity = ᏑprotocolBuffer == nil ? 0 : (nuint)length / stride;
+
+        // A non-NULL buffer stays non-NULL even when the caller declared it empty: that is the
+        // required-size query, and Windows distinguishes the two pointers.
+        void* staging = ᏑprotocolBuffer == nil ? null : NativeMemory.AllocZeroed(length == 0 ? 1 : (nuint)length);
+
+        try {
+            uint32 inout = length;
+            int32 n;
+            Errno e1;
+
+            // `protocols` is the caller's NUL-terminated int32 list, reached through a golib pointer
+            // box whose uintptr conversion can only hand back a TRANSIENT address. Pinning it here
+            // keeps it fixed for the whole call -- `Value` on an element box resolves to a ref INTO
+            // the caller's backing array, so `fixed` pins that array and the whole list stays
+            // contiguous behind the pointer (the same pattern findFirstFile1 uses for its name).
+            // A nil list is legal and means "every protocol".
+            if (Ꮡprotocols == nil) {
+                (n, e1) = enumProtocols(null, staging, &inout);
+            } else {
+                fixed (int32* protocols = &Ꮡprotocols.Value) {
+                    (n, e1) = enumProtocols(protocols, staging, &inout);
+                }
+            }
+
+            if (ᏑbufferLength != nil) {
+                ᏑbufferLength.Value = inout;
+            }
+
+            if (n == -1) {
+                // The buffer is left untouched on failure, as it is in Go, because the kernel wrote
+                // nothing into it -- WSAENOBUFS reports only the size it would have needed.
+                return (n, errnoErr(e1));
+            }
+
+            nuint written = n < 0 ? 0 : (nuint)n;
+
+            // Windows cannot have written more records than the declared byte count holds, but the
+            // clamp states that rather than trusting it: `written` is the loop bound over a block
+            // this function sized.
+            if (written > capacity) {
+                written = capacity;
+            }
+
+            for (nuint i = 0; i < written; i++) {
+                copyNativeProtocolInfo(
+                    (NativeWSAProtocolInfoW*)((byte*)staging + i * stride),
+                    i == 0 ? ᏑprotocolBuffer : unsafe_package.Add(ᏑprotocolBuffer, (uintptr)i));
+            }
+
+            return (n, default!);
+        } finally {
+            NativeMemory.Free(staging);
+        }
+    }
+
+    // The call itself, split out so the pinned and unpinned forms of the protocol list share one
+    // spelling of it. Returns the raw result and the Errno, which only the caller knows how to read.
+    private static unsafe (int32, Errno) enumProtocols(int32* protocols, void* buffer, uint32* length) {
+        var (r0, _, e1) = Syscall(procWSAEnumProtocolsW.Addr(), 3, (uintptr)(void*)protocols, (uintptr)buffer, (uintptr)(void*)length);
+
+        return ((int32)r0, e1);
+    }
+
+    // Copies one native record into the converted WSAProtocolInfo. Every field is carried, not only
+    // the ones the corpus reads today: the Go declaration exposes all of them, and a field left
+    // behind is the quiet-wrong-answer shape this whole class takes.
+    private static unsafe void copyNativeProtocolInfo(NativeWSAProtocolInfoW* native, ж<WSAProtocolInfo> Ꮡinfo) {
+        ref WSAProtocolInfo info = ref Ꮡinfo.Value;
+
+        info.ServiceFlags1 = native->ServiceFlags1;
+        info.ServiceFlags2 = native->ServiceFlags2;
+        info.ServiceFlags3 = native->ServiceFlags3;
+        info.ServiceFlags4 = native->ServiceFlags4;
+        info.ProviderFlags = native->ProviderFlags;
+
+        info.ProviderId.Data1 = native->ProviderId.Data1;
+        info.ProviderId.Data2 = native->ProviderId.Data2;
+        info.ProviderId.Data3 = native->ProviderId.Data3;
+        copyNativeBytes(native->ProviderId.Data4, ref info.ProviderId.Data4, 8);
+
+        info.CatalogEntryId = native->CatalogEntryId;
+
+        info.ProtocolChain.ChainLen = native->ProtocolChain.ChainLen;
+        copyNativeWords(native->ProtocolChain.ChainEntries, ref info.ProtocolChain.ChainEntries, maxProtocolChain);
+
+        info.Version = native->Version;
+        info.AddressFamily = native->AddressFamily;
+        info.MaxSockAddr = native->MaxSockAddr;
+        info.MinSockAddr = native->MinSockAddr;
+        info.SocketType = native->SocketType;
+        info.Protocol = native->Protocol;
+        info.ProtocolMaxOffset = native->ProtocolMaxOffset;
+        info.NetworkByteOrder = native->NetworkByteOrder;
+        info.SecurityScheme = native->SecurityScheme;
+        info.MessageSize = native->MessageSize;
+        info.ProviderReserved = native->ProviderReserved;
+
+        // Copied WHOLE, NULs included: Go reads it as UTF16ToString(p.ProtocolName[:]), which stops
+        // at the first NUL, and one WSAProtocolInfo is reused across a whole enumeration.
+        copyNativeName(native->ProtocolName, ref info.ProtocolName, wsaProtocolLen + 1);
+    }
+
+    // copyNativeName's byte and uint32 siblings (that one lives in zsyscall_windows_impl.cs and is
+    // uint16). Each (re)allocates a destination that is not already the right length, so a struct
+    // that reached here as `default` -- its field initializer never having run, which is what a
+    // nested struct FIELD like GUID.Data4 always is -- is filled rather than dereferenced through a
+    // null backing.
+    private static unsafe void copyNativeBytes(byte* source, ref array<byte> destination, nint length) {
+        if (destination.Length != length) {
+            destination = new array<byte>(length);
+        }
+
+        for (nint i = 0; i < length; i++) {
+            destination[i] = source[i];
+        }
+    }
+
+    private static unsafe void copyNativeWords(uint32* source, ref array<uint32> destination, nint length) {
+        if (destination.Length != length) {
+            destination = new array<uint32>(length);
+        }
+
+        for (nint i = 0; i < length; i++) {
+            destination[i] = source[i];
+        }
     }
 }

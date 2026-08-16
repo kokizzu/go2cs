@@ -1765,6 +1765,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckWrittenCaptureParam() => CheckTarget("WrittenCaptureParam");
 
     [TestMethod]
+    public void CheckWsaProtocolInfo() => CheckTarget("WsaProtocolInfo");
+
+    [TestMethod]
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]

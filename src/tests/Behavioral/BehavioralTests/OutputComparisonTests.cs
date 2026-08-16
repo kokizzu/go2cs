@@ -1691,6 +1691,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckWrittenCaptureParam() => CheckTarget("WrittenCaptureParam");
 
     [TestMethod]
+    public void CheckWsaProtocolInfo() => CheckTarget("WsaProtocolInfo");
+
+    [TestMethod]
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]

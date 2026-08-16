@@ -1472,17 +1472,7 @@ public static error /*err*/ WSACleanup() {
     return err;
 }
 
-public static (int32 n, error err) WSAEnumProtocols(ж<int32> Ꮡprotocols, ж<WSAProtocolInfo> ᏑprotocolBuffer, ж<uint32> ᏑbufferLength) {
-    int32 n = default!;
-    error err = default!;
-
-    var (r0, _, e1) = Syscall(procWSAEnumProtocolsW.Addr(), 3, (uintptr)Ꮡprotocols, (uintptr)ᏑprotocolBuffer, (uintptr)ᏑbufferLength);
-    n = (int32)r0;
-    if (n == -1) {
-        err = errnoErr(e1);
-    }
-    return (n, err);
-}
+// go2cs generated this placeholder — func WSAEnumProtocols is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ WSAIoctl(ΔHandle s, uint32 iocc, ж<byte> Ꮡinbuf, uint32 cbif, ж<byte> Ꮡoutbuf, uint32 cbob, ж<uint32> Ꮡcbbr, ж<Overlapped> Ꮡoverlapped, uintptr completionRoutine) {
     error err = default!;
@@ -1518,15 +1508,7 @@ public static error /*err*/ WSASendTo(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 buf
     return err;
 }
 
-public static error /*sockerr*/ WSAStartup(uint32 verreq, ж<WSAData> Ꮡdata) {
-    error sockerr = default!;
-
-    var (r0, _, _) = Syscall(procWSAStartup.Addr(), 2, (uintptr)verreq, (uintptr)Ꮡdata, 0);
-    if (r0 != 0) {
-        sockerr = ((Errno)r0);
-    }
-    return sockerr;
-}
+// go2cs generated this placeholder — func WSAStartup is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static error /*err*/ bind(ΔHandle s, @unsafe.Pointer name, int32 namelen) {
     error err = default!;
