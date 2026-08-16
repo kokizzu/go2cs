@@ -39,6 +39,19 @@
 This document supplies the ladder's research, the per-hop step inventory, the gate definitions, the risk
 register, and the sequencing — in gate-cycles, not wall-clock.
 
+**.NET 10 hop scope additions (2026-08-16, from the concluded bflat floor exploration —
+`PLAN-bflat-perf-exploration.md`):** the hop's evaluation owns the **deployment-shape decision**
+with two payoffs priced together: (1) **golib trim-safety** — stock-SDK `TrimMode=full` matches
+the best measurable AOT floor (single-digit-MB binaries, ~3x-faster startup, working set near
+Go's) but is gated on the trim diagnostics named by file in the perf README's Exploration
+section; (2) the **self-contained single-file test host** that retires the `host-limit`
+disclosure class (Roadmap, "declared host limits and their retirement path"). Disposition on
+`SuppressTrimAnalysisWarnings`: it stays in the perf tree's defaults (perf publishes should not
+fail on trim noise), and the trim-safety work runs its own audit build with warnings visible —
+the suppression must never be the reason the diagnostics go unread. The hop's CPU measurement
+should also expect real codegen gains (the exploration's one anomalous CPU row ran under
+.NET-10-preview codegen and halved; unattributable there, decidable here).
+
 ---
 
 ## 1. The version ladder — research

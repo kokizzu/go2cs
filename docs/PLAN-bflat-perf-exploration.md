@@ -1,5 +1,17 @@
 # PLAN — bflat performance-floor exploration (laptop G)
 
+> **✅ CONCLUDED 2026-08-16 — outcome §5.1, executed on laptop G (branch
+> `claude/bflat-floor-exploration`, merged `987f40298`).** The floor was never a bflat question:
+> `TrimMode=partial` rooting every converted assembly whole accounts for ~99% of the size gap, and
+> stock-SDK `TrimMode=full` matches bflat's floor (size, startup, working set) from the toolchain
+> already installed. No bflat adoption; no fourth column. Adopting the full-trim floor is gated on
+> golib trim-safety (the diagnostics are named by file in the Exploration section of
+> `src/tests/Performance/README.md`) and is folded into the .NET 10 hop evaluation in
+> `PLAN-corpus-upgrade.md`, alongside the single-file host that retires the `host-limit`
+> disclosures — one deployment-shape decision, two payoffs. The one CPU anomaly (Fib under bflat's
+> .NET-10-preview codegen) is unattributable to bflat and stands as an argument for measuring the
+> hop itself.
+
 > Exploratory. Nothing in this plan changes the canonical performance table, user-facing docs, or
 > any build default until the worthiness gate at the end passes. Executes on **laptop G** (the
 > designated perf-canon host) while idle — no earlier than 2026-08-16 per user timing. Dated
