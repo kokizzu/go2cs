@@ -138,6 +138,31 @@ public sealed class Goroutine
     public static bool OnGoroutine => t_current is { IsMain: false };
 
     /// <summary>
+    /// The goroutine running on the calling thread — <c>getg()</c>, in Go's terms — or <c>null</c>
+    /// on a thread that is not running Go code (a BCL callback, an IO completion, the finalizer).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Exposed as an opaque IDENTITY, never as a number. <see cref="Id"/> stays internal on purpose:
+    /// Go hides goroutine ids from programs precisely so nothing builds goroutine-local storage on
+    /// them, and a converted program inherits that constraint. A reference is a different thing — it
+    /// cannot be parsed, forged or persisted past the goroutine's life, and it is what a hand-owned
+    /// implementation needs when a pair of OS calls Go keeps independent must be correlated across
+    /// one goroutine's own call sequence.
+    /// </para>
+    /// <para>
+    /// The corpus's first consumer is the Windows accept path, where <c>AcceptEx</c> stages a native
+    /// buffer that <c>GetAcceptExSockaddrs</c> — a routine carrying neither handle nor overlapped —
+    /// then parses (<c>syscall/windows/zsyscall_windows_wsa_impl.cs</c>;
+    /// <c>docs/phase4/DESIGN-netpoll-managed-poller.md</c> §4.5). Under the dedicated-thread executor
+    /// a goroutine is one thread for life, so a <c>[ThreadStatic]</c> would work today; keying on the
+    /// goroutine instead makes that handoff's PREMISE explicit and survives an executor that stops
+    /// making it true.
+    /// </para>
+    /// </remarks>
+    public static Goroutine? Current => t_current;
+
+    /// <summary>
     /// Marks the calling thread as running a goroutine body for the lifetime of the returned scope.
     /// </summary>
     /// <remarks>

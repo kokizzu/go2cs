@@ -607,6 +607,45 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"ConnectEx":   goosWindows,
 		"Getsockname": goosWindows,
 		"Getpeername": goosWindows,
+		// The OVERLAPPED family — the SUBMIT SEAM of the managed netpoller arc
+		// (docs/phase4/DESIGN-netpoll-managed-poller.md §4.3/§4.4/§4.5;
+		// syscall/windows/zsyscall_windows_wsa_impl.cs carries the full write-up). Same
+		// struct-passing class as the sockaddr members above, plus the dimension async adds: the
+		// kernel keeps the OVERLAPPED and the buffer pointers until COMPLETION, and `&o.o` is an
+		// interior field address inside a reference-bearing `operation`, which golib's address model
+		// explicitly cannot hold still — a transient address with an UNBOUNDED window. The OVERLAPPED
+		// is also the operation's kernel-side IDENTITY: execIO names the same one at three call sites
+		// (submit, CancelIoEx, WSAGetOverlappedResult) and cancellation matches BY ADDRESS, so a
+		// fresh native copy per call would break cancellation outright. The hand-owns key a
+		// per-operation record off the ж<Overlapped> and own the native lifetime.
+		//
+		// GetAcceptExSockaddrs is here for a DIFFERENT reason and is the one member with no identity
+		// of its own — no handle, no overlapped, just the caller's buffer, which under go2cs is an
+		// unpinned reinterpret over a managed array. It consumes a goroutine-keyed handoff AcceptEx
+		// parks; the coupling is documented at both ends (coordinator ruling 2026-08-14).
+		"WSARecv":              goosWindows,
+		"WSASend":              goosWindows,
+		"AcceptEx":             goosWindows,
+		"GetAcceptExSockaddrs": goosWindows,
+		"CancelIoEx":           goosWindows,
+		// The UDP family (WSARecvFrom, WSASendto and its Inet4/Inet6 variants) and TransmitFile are
+		// the same machinery with more staging and are deliberately absent: nothing on the TCP
+		// listen/dial/accept/read/write path reaches them, and the board's ruling is to fix a
+		// censused wrapper when a suite REACHES it.
+		//
+		// LoadConnectEx is NOT overlapped at all, and is here because the netpoll design recorded the
+		// extension-pointer lookup as "synchronous and already working" and the crypto/tls census
+		// MEASURED otherwise: nine loopback dials died in ~2 ms with "failed to find ConnectEx: An
+		// invalid argument was supplied". Its single WSAIoctl is defective at both ends. IN:
+		// `WSAID_CONNECTEX.Reinterpret<GUID, byte>()` — syscall.GUID holds `Data4 [8]byte` as a golib
+		// array<byte> MANAGED REFERENCE, so the struct is reference-bearing, the reinterpret falls
+		// back to an unpinned raw-address box, and the 16 bytes Windows compares are a CLR auto-layout
+		// image with an object reference in them. Windows answers WSAEINVAL, every time, on every
+		// host. OUT: the result address is an interior field of a struct holding an `error`, so it is
+		// unpinnable and transient — even a successful call could write the function pointer into
+		// memory the GC has moved. Both ends are fixed with the package's established stack-mirror
+		// pattern; the GUID value still comes from the converted declaration.
+		"LoadConnectEx": goosWindows,
 	},
 	// The SECOND package holding the syscall struct-passing class, and the one member of it whose
 	// established remedy is measured UNREACHABLE — so this entry declares a CAPABILITY LIMIT rather
@@ -629,6 +668,20 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// remainder. Failing BY NAME converts a whole-suite process death into ONE loud row.
 	"internal/syscall/windows": {
 		"NetShareAdd": goosWindows,
+		// The HARVEST half of the netpoll submit seam, and the only member of it outside `syscall`.
+		// execIO harvests by naming the SAME `&o.o` it submitted, but the operation's real control
+		// block is the native OVERLAPPED syscall's record allocated — so this wrapper must call the
+		// real WSAGetOverlappedResult against THAT address. It reads it through golib's GoAsyncIO,
+		// which is the whole contract between the two packages: syscall cannot expose the record
+		// (a public seam on a published package is a non-Go symbol) and this package cannot reach
+		// into it. Deriving the result from the completion callback instead was rejected on a
+		// measured fidelity ground: a callback's errorCode is a WIN32 code where execIO and net
+		// branch on WSA ones (ERROR_NETNAME_DELETED vs WSAECONNRESET).
+		//
+		// ⚠ This package's generated csproj emits AllowUnsafeBlocks=false, so its hand-own carries
+		// [module: go.GoRequiresUnsafe] and the csproj flipping to true is part of the intended
+		// footprint — unlike `syscall`, which already emits true.
+		"WSAGetOverlappedResult": goosWindows,
 	},
 }
 

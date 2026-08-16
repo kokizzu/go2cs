@@ -1665,6 +1665,39 @@ scheduler-level mechanics. The same "realize, don't stub" instinct also ports an
 layer for real wherever .NET exposes the same instructions the `.s` file issues — `hash/crc32`'s SSE4.2
 `CRC32` and PCLMULQDQ folding.
 
+**Asynchronous sockets are the deepest application of that rule, and it takes two hand-owns facing each
+other.** Go's network poller is only half an API — the other half is called by the *scheduler*, from
+`findrunnable` and sysmon — so wiring the converted runtime would initialize an IOCP and then block
+forever. Instead, `internal/poll`'s ten `//go:linkname runtime_poll*` contracts are reimplemented on the
+CLR's own completion machinery, and the overlapped WSA wrappers below them are displaced so each
+operation owns a NATIVE control block for as long as the kernel holds it: `&o.o` is an interior field
+inside a reference-bearing struct, so golib cannot pin it, and the OVERLAPPED is also the operation's
+kernel-side identity (`CancelIoEx` matches by address). The two halves live in packages that cannot
+reference each other, so the completion signal is pushed through a small platform-neutral rendezvous in
+golib keyed by the descriptor — the one identity both sides independently hold. Everything above the
+seam stays auto-converted, `execIO` and `FD` included:
+
+```go
+// Go — internal/poll/fd_poll_runtime.go: ten bodyless entry points into the runtime's poller
+func runtime_pollWait(ctx uintptr, mode int) int
+```
+```csharp
+// C# — internal/poll/windows/runtime_netpoll_impl.cs: the CONTRACT, on a Monitor and a Timer
+internal static partial nint runtime_pollWait(uintptr ctx, nint mode)
+{
+    ManagedPollDesc? desc = descFor(ctx);
+
+    if (desc is null)
+        return pollErrClosing;
+
+    return pollBlock(desc, modeState(desc, mode), ignoreErrors: false);
+}
+```
+
+[Full detail](ConversionStrategies-Reference.md#the-managed-netpoller--the-ten-runtime_poll-contracts-on-nets-completion-machinery),
+including [the submit seam's operation records, the golib rendezvous and the accept
+handover](ConversionStrategies-Reference.md#the-overlapped-submit-seam--a-per-operation-record-owning-native-lifetime-and-a-golib-rendezvous).
+
 **On Linux the whole kernel boundary is one hand-own.** Go funnels every syscall through a single
 assembly function, `internal/runtime/syscall.Syscall6`, so the managed corpus needs exactly one native
 binding — glibc's `syscall(2)` — and the entire generated wrapper surface (open, read, write, stat,

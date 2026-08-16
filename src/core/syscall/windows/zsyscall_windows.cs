@@ -531,15 +531,7 @@ public static error /*err*/ CancelIo(ΔHandle s) {
     return err;
 }
 
-public static error /*err*/ CancelIoEx(ΔHandle s, ж<Overlapped> Ꮡo) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall(procCancelIoEx.Addr(), 2, (uintptr)s, (uintptr)Ꮡo, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func CancelIoEx is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ CloseHandle(ΔHandle handle) {
     error err = default!;
@@ -1369,20 +1361,9 @@ internal static error /*err*/ writeFile(ΔHandle handle, slice<byte> buf, ж<uin
     return err;
 }
 
-public static error /*err*/ AcceptEx(ΔHandle ls, ΔHandle @as, ж<byte> Ꮡbuf, uint32 rxdatalen, uint32 laddrlen, uint32 raddrlen, ж<uint32> Ꮡrecvd, ж<Overlapped> Ꮡoverlapped) {
-    error err = default!;
+// go2cs generated this placeholder — func AcceptEx is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var (r1, _, e1) = Syscall9(procAcceptEx.Addr(), 8, (uintptr)ls, (uintptr)@as, (uintptr)Ꮡbuf, (uintptr)rxdatalen, (uintptr)laddrlen, (uintptr)raddrlen, (uintptr)Ꮡrecvd, (uintptr)Ꮡoverlapped, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
-
-public static void GetAcceptExSockaddrs(ж<byte> Ꮡbuf, uint32 rxdatalen, uint32 laddrlen, uint32 raddrlen, ж<ж<RawSockaddrAny>> Ꮡlrsa, ж<int32> Ꮡlrsalen, ж<ж<RawSockaddrAny>> Ꮡrrsa, ж<int32> Ꮡrrsalen) {
-    Syscall9(procGetAcceptExSockaddrs.Addr(), 8, (uintptr)Ꮡbuf, (uintptr)rxdatalen, (uintptr)laddrlen, (uintptr)raddrlen, (uintptr)Ꮡlrsa, (uintptr)Ꮡlrsalen, (uintptr)Ꮡrrsa, (uintptr)Ꮡrrsalen, 0);
-    return;
-}
+// go2cs generated this placeholder — func GetAcceptExSockaddrs is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ TransmitFile(ΔHandle s, ΔHandle handle, uint32 bytesToWrite, uint32 bytsPerSend, ж<Overlapped> Ꮡoverlapped, ж<TransmitFileBuffers> ᏑtransmitFileBuf, uint32 flags) {
     error err = default!;
@@ -1513,15 +1494,7 @@ public static error /*err*/ WSAIoctl(ΔHandle s, uint32 iocc, ж<byte> Ꮡinbuf,
     return err;
 }
 
-public static error /*err*/ WSARecv(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 bufcnt, ж<uint32> Ꮡrecvd, ж<uint32> Ꮡflags, ж<Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall9(procWSARecv.Addr(), 7, (uintptr)s, (uintptr)Ꮡbufs, (uintptr)bufcnt, (uintptr)Ꮡrecvd, (uintptr)Ꮡflags, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine, 0, 0);
-    if (r1 == socket_error) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func WSARecv is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ WSARecvFrom(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 bufcnt, ж<uint32> Ꮡrecvd, ж<uint32> Ꮡflags, ж<RawSockaddrAny> Ꮡfrom, ж<int32> Ꮡfromlen, ж<Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
     error err = default!;
@@ -1533,15 +1506,7 @@ public static error /*err*/ WSARecvFrom(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 b
     return err;
 }
 
-public static error /*err*/ WSASend(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 bufcnt, ж<uint32> Ꮡsent, uint32 flags, ж<Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall9(procWSASend.Addr(), 7, (uintptr)s, (uintptr)Ꮡbufs, (uintptr)bufcnt, (uintptr)Ꮡsent, (uintptr)flags, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine, 0, 0);
-    if (r1 == socket_error) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func WSASend is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ WSASendTo(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 bufcnt, ж<uint32> Ꮡsent, uint32 flags, ж<RawSockaddrAny> Ꮡto, int32 tolen, ж<Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
     error err = default!;

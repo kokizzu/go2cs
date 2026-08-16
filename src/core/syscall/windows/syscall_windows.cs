@@ -1032,30 +1032,7 @@ public static error LoadGetAddrInfo() {
 internal static ж<connectExFuncᴛ1> ᏑconnectExFunc = new(default(connectExFuncᴛ1));
 internal static ref connectExFuncᴛ1 connectExFunc => ref ᏑconnectExFunc.Value;
 
-public static error LoadConnectEx() {
-    ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡonce).Do(() => {
-        GoFrame ᒐ = default;
-        try {
-            ΔHandle s = default!;
-            (s, connectExFunc.err) = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-            if (connectExFunc.err != default!) {
-                return;
-            }
-            defer(CloseHandle, s, ref ᒐ);
-            ref var n = ref heap(new uint32(), out var Ꮡn);
-            connectExFunc.err = WSAIoctl(s,
-                SIO_GET_EXTENSION_FUNCTION_POINTER,
-                ᏑWSAID_CONNECTEX.Reinterpret<GUID, byte>(),
-                (uint32)/* unsafe.Sizeof(WSAID_CONNECTEX) */ (uintptr)16,
-                ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡaddr).Reinterpret<uintptr, byte>(),
-                (uint32)/* unsafe.Sizeof(connectExFunc.addr) */ (uintptr)8,
-                Ꮡn, nil, 0);
-        }
-        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-        finally { ᒐ.Run(); }
-    });
-    return connectExFunc.err;
-}
+// go2cs generated this placeholder — func LoadConnectEx is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static error /*err*/ connectEx(ΔHandle s, @unsafe.Pointer name, int32 namelen, ж<byte> ᏑsendBuf, uint32 sendDataLen, ж<uint32> ᏑbytesSent, ж<Overlapped> Ꮡoverlapped) {
     error err = default!;

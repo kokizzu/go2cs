@@ -593,6 +593,7 @@
     <Project Path="tests/Behavioral/NestedPromotedEmbedInit/NestedPromotedEmbedInit.csproj" />
     <Project Path="tests/Behavioral/NestedSelectRecvTarget/NestedSelectRecvTarget.csproj" />
     <Project Path="tests/Behavioral/NestedVarShadow/NestedVarShadow.csproj" />
+    <Project Path="tests/Behavioral/NetDeadlineMatrix/NetDeadlineMatrix.csproj" />
     <Project Path="tests/Behavioral/NetListenSmoke/NetListenSmoke.csproj" />
     <Project Path="tests/Behavioral/NewAnonStructIfaceEmbed/NewAnonStructIfaceEmbed.csproj" />
     <Project Path="tests/Behavioral/NilChannelInSelect/NilChannelInSelect.csproj" />
@@ -769,6 +770,7 @@
     <Project Path="tests/Behavioral/SwitchFallthroughDefaultReturn/SwitchFallthroughDefaultReturn.csproj" />
     <Project Path="tests/Behavioral/SwitchNonConstCaseLabel/SwitchNonConstCaseLabel.csproj" />
     <Project Path="tests/Behavioral/SystemCollidingTypeName/SystemCollidingTypeName.csproj" />
+    <Project Path="tests/Behavioral/TcpLoopbackRoundTrip/TcpLoopbackRoundTrip.csproj" />
     <Project Path="tests/Behavioral/TransitiveAliasPreload/TransitiveAliasPreload.csproj" />
     <Project Path="tests/Behavioral/TupleDestructureEscapingLocal/TupleDestructureEscapingLocal.csproj" />
     <Project Path="tests/Behavioral/TupleMixedDeclareReassign/TupleMixedDeclareReassign.csproj" />

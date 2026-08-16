@@ -239,6 +239,15 @@ partial class poll_package
         // Interlocked, not the dictionary's own count: tokens must never be reused within a run.
         uintptr ctx = (uintptr)(nuint)(ulong)Interlocked.Increment(ref nextPollToken);
         pollTable[ctx] = desc;
+
+        // Publish the readiness sink for this descriptor. It is the ONLY route a completion has back
+        // into this package (see netpollReady): the submit seam lives in `syscall`, which
+        // internal/poll references, so the callback cannot call in -- golib is the one assembly both
+        // sides see. Registration REPLACES any previous sink for the same descriptor, and must: the
+        // kernel reissues descriptor numbers after a close, so refusing to overwrite would leave a
+        // retired desc being woken for a socket it no longer owns.
+        golib.GoAsyncIO.SetReadiness(handle, mode => netpollReady(ctx, mode));
+
         return (ctx, 0);
     }
 
@@ -275,11 +284,14 @@ partial class poll_package
             desc.Write.Deadline = null;
         }
 
-        // S2b lands the matching teardown here: the submit seam's per-descriptor binding (the
-        // ThreadPoolBoundHandle created at first submit) is disposed at this point, BEFORE
+        // Retire the descriptor's seam state: the readiness sink registered at pollOpen and the
+        // submit seam's per-descriptor binding (the completion-port association made at its first
+        // submit, together with every operation record hanging off it). This runs BEFORE
         // internal/poll closes the socket -- FD.destroy calls pd.close() ahead of CloseFunc
         // precisely so a poller can unregister first. Disposing that association never closes the
         // descriptor; it stays internal/poll's throughout.
+        golib.GoAsyncIO.RemoveDescriptor(desc.Fd);
+
         pollTable.TryRemove(ctx, out _);
     }
 
@@ -578,18 +590,21 @@ partial class poll_package
 
     // ---- The completion sink ---------------------------------------------------------------------
 
-    // The ONLY writer of Ready, and the seam the submit half of this arc (S2) drives: when the kernel
+    // The ONLY writer of Ready, and the seam the submit half of this arc drives: when the kernel
     // completes an overlapped operation internal/poll submitted, the CLR's IO thread pool runs the
     // record's callback, which lands here.
     //
-    // THE SEAM, AND WHY IT IS A PUSH (design §4.3; S2b lands the other end). The overlapped
-    // submissions live in the `syscall` and `internal/syscall/windows` packages, which internal/poll
-    // REFERENCES -- so a completion callback there has no legal way to call back into this package.
-    // The plumbing is therefore inverted: pollOpen will register a per-descriptor readiness sink
-    // closing over the ctx, in the one assembly both sides see (golib), and the submit seam's
-    // callback invokes it knowing only the descriptor and the mode -- which is all a completion
-    // callback CAN know. The contract layer above is unaffected either way, which is what §4.2 means
-    // by the choice being confined to pollServerInit/pollOpen and the callback's plumbing.
+    // THE SEAM, AND WHY IT IS A PUSH (design §4.3/§4.4). The overlapped submissions live in the
+    // `syscall` and `internal/syscall/windows` packages, which internal/poll REFERENCES -- so a
+    // completion callback there has no legal way to call back into this package. Go closes the loop
+    // with pointer arithmetic (its poller reads the enclosing `operation` back out of the OVERLAPPED
+    // it dequeued), which go2cs cannot reproduce: a ж<T> field reference does not expose the object
+    // it was taken from. The plumbing is therefore inverted -- pollOpen registers a per-descriptor
+    // readiness sink closing over the ctx, in the one assembly both sides see (golib's GoAsyncIO),
+    // and the submit seam's callback invokes it knowing only the descriptor and the mode, which is
+    // all a completion callback CAN know. The contract layer above is unaffected either way, which is
+    // what §4.2 means by the choice being confined to pollServerInit/pollOpen and the callback's
+    // plumbing.
     //
     // ⚠ THE CONSTRAINT THAT SHAPES THE WHOLE SUBMIT SEAM, and the reason the bind is LAZY rather than
     // done at pollOpen. Once a socket is associated with the CLR's completion port, every overlapped

@@ -363,6 +363,18 @@ partial class syscall_package
         return connect(fd, new @unsafe.Pointer((uintptr)(void*)buffer), n);
     }
 
+    // ConnectEx is the DIAL half of the submit seam and was hand-owned here (for the sockaddr layout
+    // alone) before that seam existed. Two things changed when it landed.
+    //
+    // The overlapped is now the OPERATION RECORD's native control block rather than the caller's
+    // `&o.o` -- for exactly the reasons zsyscall_windows_wsa_impl.cs's header gives, and with the
+    // same consequence: execIO's CancelIoEx and WSAGetOverlappedResult resolve to this same address,
+    // because all three name one record. ConnectEx is internal/poll's WRITE operation (it runs on
+    // fd.wop), which is the mode the completion signals.
+    //
+    // The generated `connectEx` below is bypassed for the same reason Getsockname bypasses its
+    // wrapper: it takes a typed ж<Overlapped>, and a native control block is not one. The error
+    // handling is that wrapper's, verbatim (r1 == 0 -> e1, else EINVAL).
     public static unsafe error ConnectEx(ΔHandle fd, ΔSockaddr sa, ж<byte> ᏑsendBuf, uint32 sendDataLen, ж<uint32> ᏑbytesSent, ж<Overlapped> Ꮡoverlapped) {
         var err = LoadConnectEx();
 
@@ -378,7 +390,19 @@ partial class syscall_package
             return err;
         }
 
-        return connectEx(fd, new @unsafe.Pointer((uintptr)(void*)buffer), n, ᏑsendBuf, sendDataLen, ᏑbytesSent, Ꮡoverlapped);
+        uintptr overlapped = rearmOverlapped(fd, Ꮡoverlapped, wsaModeWrite);
+
+        var (r1, _, e1) = Syscall9(connectExFunc.addr, 7, (uintptr)fd, (uintptr)(void*)buffer, (uintptr)n, (uintptr)ᏑsendBuf, (uintptr)sendDataLen, (uintptr)ᏑbytesSent, overlapped, 0, 0);
+
+        if (r1 == 0) {
+            if (e1 != 0) {
+                return ((error)e1);
+            }
+
+            return EINVAL;
+        }
+
+        return default!;
     }
 
     // THE DECODE, and the third consumer readNativeSockaddr was written for. Go reinterprets the

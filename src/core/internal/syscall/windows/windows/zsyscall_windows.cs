@@ -510,19 +510,7 @@ public static error /*err*/ GetProfilesDirectory(ж<uint16> Ꮡdir, ж<uint32> �
     return err;
 }
 
-public static error /*err*/ WSAGetOverlappedResult(syscallꓸHandle h, ж<syscall.Overlapped> Ꮡo, ж<uint32> Ꮡbytes, bool wait, ж<uint32> Ꮡflags) {
-    error err = default!;
-
-    uint32 _p0 = default!;
-    if (wait) {
-        _p0 = 1;
-    }
-    var (r1, _, e1) = syscall.Syscall6(procWSAGetOverlappedResult.Addr(), 5, (uintptr)h, (uintptr)Ꮡo, (uintptr)Ꮡbytes, (uintptr)_p0, (uintptr)Ꮡflags, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func WSAGetOverlappedResult is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static (syscallꓸHandle handle, error err) WSASocket(int32 af, int32 typ, int32 protocol, ж<syscall.WSAProtocolInfo> Ꮡprotinfo, uint32 group, uint32 flags) {
     syscallꓸHandle handle = default!;
