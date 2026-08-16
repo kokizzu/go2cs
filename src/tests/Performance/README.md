@@ -202,3 +202,214 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   trails the JIT here by a wide margin (~8×) — ILC's codegen of the ref-lowered loop is a priced
   open question for the arc's next phase
   ([DESIGN-zh-box-reduction.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-zh-box-reduction.md)).
+
+## Exploration — performance floor (2026-08-16)
+
+> **Exploratory, and self-contained.** A one-off investigation run under
+> [PLAN-bflat-perf-exploration.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/PLAN-bflat-perf-exploration.md).
+> It changes **no build default**, alters **nothing** in the three-column table above, and proposes
+> **no new toolchain dependency**. [bflat](https://github.com/bflattened/bflat) appears here as a
+> measuring instrument, never as a candidate: per the user + coordinator ruling recorded in that
+> plan, its release cadence disqualifies it from becoming a first-class citizen of go2cs builds.
+> Numbers come from `run-performance-floor.ps1`, a standalone harness that leaves
+> `PerformanceRunner` and `run-performance.ps1` untouched.
+
+The canonical table's weakest story is the **floor**: Native AOT starts ~3× slower than Go, and its
+working set carries the whole compiled closure. How much of that floor is recoverable, and how much
+of the recovery needs bflat rather than switches the stock .NET SDK already exposes? A null result
+would have been an acceptable answer. This is not one.
+
+**Environment:** AMD Ryzen 5 PRO 6650U with Radeon Graphics · Microsoft Windows 10.0.26200 ·
+go1.23.1 · .NET SDK 9.0.316 · 2026-08-16 — the same host and conventions as the canonical table, so
+the two are directly comparable (this harness independently reproduced the published Startup row:
+24.5 vs 25.2 ms Go, 232.0 vs 223.3 JIT, 79.7 vs 77.8 AOT).
+
+Median of 5 runs after 1 discarded warmup. `Startup` reports process wall time; every other row
+reports in-program `elapsed_ns:` workload time; memory is peak working set. **Verify gate:** a
+variant's timing-filtered stdout had to match the Go binary exactly or it earned no number — every
+variant below passed on all five benchmarks.
+
+### The variants
+
+| Key | Build | Role |
+|---|---|---|
+| `A0` | stock `-p:PerfAot=true` | the control — exactly what the canonical AOT column publishes |
+| `A1` | `A0` + `InvariantGlobalization` + `UseSystemResourceKeys` + `StackTraceSupport=false` + `IlcGenerateStackTraceData=false` + `OptimizationPreference=Size` | the plan's "AOT-min" profile |
+| `A2` | as `A1` but `OptimizationPreference=Speed` | |
+| `X1` | `A0` + `TrimMode=full` | **probe, out of profile** — read the caveat below |
+| `X2` | `A1` + `TrimMode=full` | **probe, out of profile** |
+| `B1` | bflat `--stdlib DotNet -Ot` | |
+| `B2` | bflat `--stdlib DotNet -Os --no-globalization --no-stacktrace-data --no-exception-messages` | |
+
+bflat pinned at **v10.0.0-rc.1**, `bflat-10.0.0-rc.1-windows-x64.zip`, SHA256
+`59FC623E751AE1AA8C7A6531B356F83A9063A7F0B13C835E43ACE44ADE2D24CD` (MIT). `--stdlib:zero` and
+`--no-reflection` were out of scope throughout: golib's `fmt` formatting and sort's `Interface<T>`
+bind members reflectively.
+
+### Finding 1 — the size floor is a trim-ROOTING question, not a toolchain question
+
+Executable on disk (MB). The JIT column is its framework-dependent output tree excluding `.pdb`,
+and is **not** a deployable size — it needs the shared runtime installed.
+
+| Benchmark | Go | JIT tree | `A0` | `A1` | `A2` | `X1` | `X2` | `B1` | `B2` |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Startup | 2.12 | 22.41 | 288.26 | 221.74 | 234.38 | 10.94 | 8.77 | 8.73 | 7.74 |
+| Fib | 2.12 | 22.41 | 288.26 | — | — | 11.11 | 8.93 | 8.88 | 7.88 |
+| Map | 2.13 | 22.41 | 288.26 | 221.74 | 234.38 | 11.12 | 8.93 | 8.88 | 7.89 |
+| String | 2.12 | 22.41 | 288.26 | — | — | 11.11 | 8.93 | 8.88 | 7.88 |
+| Channel | 2.12 | 22.41 | 288.26 | — | — | 11.12 | 8.94 | 8.89 | 7.89 |
+
+The stock profile emits **288 MB for a program that prints two lines**, and that figure barely moves
+across benchmarks because it is not the benchmark — it is the whole converted standard library.
+
+Of the ~279 MB between the stock profile and bflat, **~99% is `TrimMode=partial` and ~1% is the
+feature switches.** `partial` roots all 57 assemblies of the converted closure whole; bflat's ILC has
+no rooting concept and always compiles to reachability. Give the stock SDK the same policy and it
+lands at 8.77 MB against bflat's 8.73 — a 0.5% difference, which is nothing.
+
+That is the result. bflat is the same ILC/RyuJIT the AOT column already uses; once rooting policy
+matches, it offers no size advantage the installed SDK cannot reach on its own.
+
+### Finding 2 — startup and working set fall with it
+
+Peak working set on a ~33 ms process is sampling-sensitive — a 5-run pass gave one variant 2.5 MB —
+so Startup was re-measured at 15 runs. `A1`/`A2` were published later and measured in their own
+5-run pass; the two passes are shown separately with their own Go baselines rather than blended,
+since the baseline itself moved 23.5 → 24.5 ms between them. Ratios are always against the Go value
+from the same pass.
+
+| Startup, 15-run pass | Go | JIT | `A0` | `X1` | `X2` | `B1` | `B2` |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| wall time (ms) | 24.5 | 232.0 | 79.7 | 33.0 | 33.2 | 34.5 | 33.6 |
+| vs Go | 1.00× | 9.47× | 3.25× | **1.35×** | **1.36×** | 1.41× | 1.37× |
+| peak working set (MB) | 2.5 | 43.7 | 74.4 | 8.0 | 6.8 | 6.7 | 8.3 |
+
+| Startup, 5-run composites pass | Go | `A1` | `A2` |
+|---|---:|---:|---:|
+| wall time (ms) | 23.5 | 78.5 | 76.0 |
+| vs Go | 1.00× | 3.34× | 3.23× |
+| peak working set (MB) | 2.5 | 75.8 | 70.7 |
+
+**AOT startup goes from 3.25× Go to 1.35×, and peak working set from 74.4 MB to 6.8 MB** — an 11×
+reduction — purely from the rooting policy. The feature switches alone move neither: `A1`/`A2` come
+in at 3.34× and 3.23× against their own baseline, with working set barely shifted (75.8 and 70.7 MB
+against `A0`'s 74.4). This is the plan's floor question answered — most of the AOT startup gap was
+initialization and paging of a closure the program never touches.
+
+Workload time and peak working set on the other four benchmarks (one internally consistent 5-run
+pass):
+
+| Benchmark | metric | Go | JIT | `A0` | `X1` | `X2` | `B1` | `B2` |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| Fib | ms | 117.7 | 181.1 | 175.6 | 175.4 | 175.3 | **70.9** | 99.9 |
+| Fib | MB | 5.2 | 45.5 | 75.6 | 13.6 | 13.4 | 13.7 | 13.6 |
+| Map | ms | 628.2 | 469.6 | 236.3 | 227.7 | 222.6 | 236.8 | 237.3 |
+| Map | MB | 157.7 | 164.1 | 194.5 | 132.1 | 132.2 | 130.5 | 130.4 |
+| String | ms | 107.2 | 1029.4 | 1275.5 | 1311.6 | 1284.9 | 1109.1 | 1114.0 |
+| String | MB | 5.2 | 54.5 | 84.8 | 22.3 | 22.1 | 22.4 | 22.1 |
+| Channel | ms | 41.2 | 87.3 | 130.5 | 120.7 | 109.0 | 116.1 | 79.8 |
+| Channel | MB | 5.2 | 49.4 | 83.9 | 22.0 | 20.7 | 21.5 | 17.6 |
+
+Working set drops on every row and, on Map, falls **below Go** (132 vs 158 MB). Trimming costs no
+measurable workload time on the SDK side: `X1`/`X2` track `A0` within noise everywhere.
+
+### Finding 3 — build time collapses too
+
+Wall-clock seconds for one benchmark's build, measured on this host:
+
+| | `A0` | `A1` / `A2` | `X1` / `X2` | `B1` | `B2` |
+|---|---:|---:|---:|---:|---:|
+| seconds | 977–1049 | 1532–1662 | 28–29 | 28–38 | 24–25 |
+
+The suite's ~17-minute AOT publishes are almost entirely ILC compiling code no benchmark can reach.
+Under full trim the same publish links in under 30 seconds — a ~34× difference measured across four
+independent benchmarks. Note that the feature-switch profiles are *slower* to build than the stock
+one (~1600 s vs ~1000 s): they add substitution work while still rooting everything.
+
+The rooting policy dominates disk too. This exploration peaked at **~12 GB** — 2.5 GB of published
+binaries across 29 variant trees, 8.7 GB of ILC native intermediates, and 0.8 GB of pinned bflat
+archives — and a single stock AOT publish also drops a **1.5 GB `.pdb`** beside its 288 MB
+executable. All of it was purged afterward; the harness deletes each publish's `.pdb` as it goes,
+and excludes `.pdb` from every size figure above.
+
+### Finding 4 — bflat has a real CPU advantage, and it is not attributable to bflat
+
+`B1` runs **Fib in 70.9 ms against the SDK's 175.6** — 2.5× faster, and faster than Go itself
+(117.7 ms). An independent 11-run pass reproduced it (71.4 vs 175.7, Go 120.5). On String it is ~14%
+faster. This is the one place bflat shows something the stock SDK did not.
+
+It probably is not bflat. bflat v10.0.0-rc.1 ships the **.NET 10.0.0-rc.1** ILC and framework, newer
+than this host's SDK 9.0.316, so the comparison mixes "bflat" with "one .NET generation of RyuJIT
+improvements". The obvious control — bflat v8.0.2 on a .NET 8 base — **cannot be run at all**:
+
+```
+error CS1705: Assembly 'golib' ... uses 'System.Runtime, Version=9.0.0.0' which has a higher
+version than referenced assembly 'System.Runtime, Version=8.0.0.0'
+```
+
+and installing a .NET 10 SDK to control it from the other side would mutate the perf-canon host's
+toolchain, which this suite does not do to itself. So the CPU row stays **unattributed** — and per
+the plan, CPU-bound gains from newer .NET belong to the corpus-upgrade ladder, not to this
+exploration. It is a reason to want the .NET 10 hop measured, not a reason to want bflat.
+
+### Finding 5 — the only bflat that can consume this corpus is a pre-release
+
+The error above is from the last **stable** bflat, v8.0.2 (2024-02-29, SHA256
+`25B03214C6085607EC2EC5FC86139C93E054EDD60266296E708F763455961E7E`). It is a .NET 8 toolchain and
+the corpus targets net9.0, so it cannot link the corpus at all. Adoption would therefore have meant
+pinning **v10.0.0-rc.1** — a pre-release with no stable successor — and every .NET hop reopens the
+question. That is the plan's re-measurability caveat in concrete form.
+
+### The caveat on `X1`/`X2` — read before quoting these numbers
+
+`TrimMode=full` is **not a recommendation**, and these rows are **not a proposed publish profile**.
+The plan fixes `TrimMode=partial` for a real reason: golib's `fmt` formatting and sort's
+`Interface<T>` bind members through reflection, and full trim can remove exactly those. Both probes
+passed Verify on all five benchmarks — but five small programs are a sample, not the population, and
+they do not exercise `fmt`'s reflective surface broadly. Read every `X` row as *"the floor is at
+least this low"*, never as *"adopt this"*.
+
+What would have to happen first is now precisely located. Every reachability-trimmed build emits 94
+trim-analysis diagnostics, concentrated in golib's adapter and reflection layer:
+
+| File | Diagnostics |
+|---|---:|
+| `golib/TypeExtensions.ExtensionMethodRegistry.cs` | 16 |
+| `golib/GoReflect.FieldAccess.cs` | 14 |
+| `golib/AdapterBinder.cs` | 14 |
+| `core/reflect/value_impl.cs` | 8 |
+| `golib/TypeExtensions.GoMethodSets.cs` | 8 |
+| `golib/GoReflect*.cs` (3 files) | 18 |
+| others (`PointerExtensions`, `builtin`, `array`, `managed_impl`) | 16 |
+
+Making that surface trim-safe (`DynamicallyAccessedMembers` annotations, `DynamicDependency`) is the
+prerequisite for any of this shipping — and it would unlock the floor for the stock SDK and bflat
+alike, which is one more reason bflat cannot be the answer. Note that 22 of the 94 are IL3050
+(`RequiresDynamicCode`), which applies to the **existing** AOT column too and is not introduced by
+trimming.
+
+A related observation: `Directory.Build.props` here sets `SuppressTrimAnalysisWarnings=true`, so the
+SDK's own AOT publishes hide this diagnostic. bflat surfaced a surface our configuration was
+suppressing.
+
+### Verdict against the plan's worthiness gate
+
+**Outcome 1 — Arm A captures the floor win; bflat is confirming data, no new toolchain.** Size,
+startup, and working set are all recoverable inside the stock SDK, and bflat matches rather than
+beats it on every one. Its lone advantage is CPU, which is unattributable and belongs to the .NET
+ladder. The pre-release-only constraint (Finding 5) independently rules out adoption.
+
+The floor win is **not yet claimable**, because the lever is a setting the plan fixed for
+correctness. The honest statement is that **the floor is gated by golib's trim-safety, not by the
+toolchain**, and the follow-on work is golib annotation — not a fourth column, and not bflat.
+
+Scope actually run, so the gaps are visible: `A1` was measured on Startup and Map only, and `A2`
+likewise; single-switch attribution (`InvariantGlobalization`, `UseSystemResourceKeys`,
+`StackTraceSupport`, `IlcGenerateStackTraceData` in isolation) was **not** run. Both were dropped
+once the trim result made the switch bundle's ~23% a rounding error against the ~99% the rooting
+policy carries. Reproduce or extend with:
+
+```powershell
+cd src/tests/Performance
+./run-performance-floor.ps1 -Benchmarks PerfStartup -Variants 'A0,A1,X1,X2' -Phase 'publish,verify,measure'
+```
