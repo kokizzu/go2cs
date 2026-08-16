@@ -1168,13 +1168,43 @@ type testFileExclusionInfo struct {
 }
 
 // classifyTestFileForExclusion evaluates condition (1) for one test file and captures the go/types
-// objects condition (2) needs. A file qualifies when it declares at least one Phase-4D-deferred
-// Example/Benchmark function and NOTHING else at top level (import declarations aside).
+// objects condition (2) needs. A file qualifies when every RUNNABLE declaration it contributes is a
+// Phase-4D-deferred Example/Benchmark function, plus — since the crypto/tls measurement, 2026-08-15 —
+// the pure TYPE declarations and METHODS such a function needs to express itself.
+//
+// Why types and methods joined, and why nothing else did. The original predicate accepted a file
+// whose declarations were EXCLUSIVELY Example/Benchmark funcs, which is the shape go/token's
+// example_test.go happens to have. crypto/tls's is the same file in every way that matters — it is
+// the package's ONLY black-box file and every runnable thing in it is an Example — except that its
+// Examples need an io.Reader to hand `Config.Rand`, so it declares `type zeroSource struct{}` and one
+// `Read` method on it. That one helper type kept the whole file compiled, and under the recompile
+// model a compiled black-box Example is exactly what the ruling exists to prevent: `http.Transport`'s
+// `TLSClientConfig` field names `tls_package.Config` in the PRODUCTION assembly while the test
+// assembly recompiles its own, so the field is unnameable — CS0012 ×3 at example_test.cs 88/99/198,
+// two of `crypto/tls`'s four build errors. Adding the production reference cannot fix it (the two
+// `Config`s stay distinct types and CS0012 merely becomes CS0029), so the file must not be compiled.
+//
+// A type declaration and its methods are admissible because they have no RUN-TIME behavior of their
+// own: nothing executes at package init, and any use by a retained file is a reference condition (2)
+// already resolves by go/types object identity — which is why the type and method objects are now
+// recorded in `declared`, without which widening condition (1) would silently disarm condition (2).
+// Everything else stays disqualifying, deliberately: a `var`/`const` initializer can carry side
+// effects, and a plain helper func can be `init()`, neither of which any reference edge would reveal.
 func classifyTestFileForExclusion(file *ast.File, info *types.Info, path string) *testFileExclusionInfo {
 	result := &testFileExclusionInfo{path: path, used: make(map[types.Object]bool)}
 
 	qualifies := true
 	hasExcludedFunc := false
+
+	declare := func(name *ast.Ident) {
+		if name == nil {
+			return
+		}
+
+		if object := info.Defs[name]; object != nil {
+			result.declared = append(result.declared, object)
+		}
+	}
 
 	for _, decl := range file.Decls {
 		switch typed := decl.(type) {
@@ -1182,17 +1212,30 @@ func classifyTestFileForExclusion(file *ast.File, info *types.Info, path string)
 			if typed.Tok == token.IMPORT {
 				continue // imports are not declarations for this predicate
 			}
-			qualifies = false // a top-level var/const/type disqualifies the file
-		case *ast.FuncDecl:
-			if isPhase4DExcludedTestFunc(typed, info) {
-				hasExcludedFunc = true
-				if typed.Name != nil {
-					if object := info.Defs[typed.Name]; object != nil {
-						result.declared = append(result.declared, object)
-					}
+
+			if typed.Tok != token.TYPE {
+				qualifies = false // a top-level var/const disqualifies the file
+				continue
+			}
+
+			// A pure type declaration is admissible; record it so condition (2) can see a
+			// retained file's reference to it.
+			for _, spec := range typed.Specs {
+				if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+					declare(typeSpec.Name)
 				}
-			} else {
-				qualifies = false // a Test/TestMain/Fuzz func, a method, or a helper disqualifies
+			}
+		case *ast.FuncDecl:
+			switch {
+			case isPhase4DExcludedTestFunc(typed, info):
+				hasExcludedFunc = true
+				declare(typed.Name)
+			case typed.Recv != nil:
+				// A method on a file-local type: admissible with its receiver type, and
+				// recorded for the same condition-(2) reason.
+				declare(typed.Name)
+			default:
+				qualifies = false // a Test/TestMain/Fuzz func, an init, or a plain helper disqualifies
 			}
 		default:
 			qualifies = false
@@ -1220,10 +1263,12 @@ func classifyTestFileForExclusion(file *ast.File, info *types.Info, path string)
 // selectCompileExcludedTestFiles applies the user-approved Phase-4D file-exclusion ruling
 // ("option a", 2026-07-24): a _test.go file is dropped from the -tests conversion/compile set iff
 //
-//	(1) every top-level declaration it contributes is a Phase-4D-deferred declaration — the file's
-//	    declarations are EXCLUSIVELY func Example* / func Benchmark* (imports do not count as
-//	    declarations; any var/const/type, or any other func — a Test/TestMain/Fuzz func, a method,
-//	    or a mis-signatured Example/Benchmark — disqualifies the file, conservative by design), AND
+//	(1) every RUNNABLE declaration it contributes is a Phase-4D-deferred declaration — the file
+//	    declares at least one func Example* / func Benchmark* and, apart from those, only pure TYPE
+//	    declarations and METHODS (imports do not count as declarations; any var/const, or any other
+//	    plain func — a Test/TestMain/Fuzz func, an init, or a mis-signatured Example/Benchmark —
+//	    disqualifies the file, conservative by design; see classifyTestFileForExclusion for why the
+//	    type/method admission is safe and why nothing beyond it is), AND
 //	(2) no RETAINED test file references any object the file declares (resolved by go/types object
 //	    identity across the loaded variant set, never by filename or text).
 //

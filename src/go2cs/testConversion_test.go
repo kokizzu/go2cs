@@ -488,10 +488,62 @@ func TestSelectCompileExcludedTestFilesDropsExampleAndBenchmarkOnly(t *testing.T
 	}
 }
 
-// Condition (1) negative: an Example-only-LOOKING file that also declares a top-level var/const/type
-// is NOT excluded — imports do not count, but any non-Example/Benchmark declaration disqualifies the
-// whole file (conservative by design), so its Example still compiles alongside the disqualifying
-// declaration.
+// Condition (1) POSITIVE, widened arm (2026-08-15, crypto/tls): an Example-only file that also
+// declares a pure helper TYPE and its METHODS is excluded. crypto/tls's example_test.go is the
+// package's only black-box file and every runnable thing in it is an Example, but its Examples need
+// an io.Reader to hand Config.Rand, so it declares `type zeroSource struct{}` with a `Read` method —
+// and that one helper kept the whole file compiled, which under the recompile model is exactly the
+// CS0012 cross-assembly duplication the ruling exists to prevent (3 of the package's 4 build errors).
+// A type and its methods run nothing at package init, so admitting them costs no runtime behavior.
+func TestSelectCompileExcludedTestFilesDropsExampleWithHelperType(t *testing.T) {
+	dir := t.TempDir()
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/helpertype\n\ngo 1.23\n",
+		"lib.go": "package helpertype\n\nfunc Read(r interface{ Read([]byte) (int, error) }) int {\n\tn, _ := r.Read(make([]byte, 4))\n\treturn n\n}\n",
+		"lib_test.go": "package helpertype\n\nimport \"testing\"\n\n" +
+			"func TestPresent(t *testing.T) {}\n",
+		"example_test.go": "package helpertype_test\n\nimport (\n\t\"fmt\"\n\n\t\"example/helpertype\"\n)\n\n" +
+			"type zeroSource struct{}\n\n" +
+			"func (zeroSource) Read(b []byte) (int, error) { return len(b), nil }\n\n" +
+			"func ExampleRead() {\n\tfmt.Println(helpertype.Read(zeroSource{}))\n\t// Output: 4\n}\n",
+	})
+
+	internal, external := loadTestVariantsForDir(t, dir)
+	got := excludedBaseNames(selectCompileExcludedTestFiles(internal, external))
+	want := map[string]bool{"example_test.go": true}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("excluded files = %v, want %v", got, want)
+	}
+}
+
+// Condition (2) over the widened arm: the helper TYPE a retained test references pulls its file back
+// in. Widening condition (1) without recording the type/method objects in `declared` would have
+// silently disarmed condition (2) for exactly the declarations it just admitted — the file would be
+// dropped and the retained test's reference left undefined.
+func TestSelectCompileExcludedTestFilesKeepsHelperTypeUsedByRetainedTest(t *testing.T) {
+	dir := t.TempDir()
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/sharedtype\n\ngo 1.23\n",
+		"lib.go": "package sharedtype\n\nfunc Size(b []byte) int { return len(b) }\n",
+		"example_test.go": "package sharedtype_test\n\nimport (\n\t\"fmt\"\n\n\t\"example/sharedtype\"\n)\n\n" +
+			"type zeroSource struct{}\n\n" +
+			"func (zeroSource) Read(b []byte) (int, error) { return sharedtype.Size(b), nil }\n\n" +
+			"func ExampleSize() {\n\tfmt.Println(sharedtype.Size(nil))\n\t// Output: 0\n}\n",
+		"use_test.go": "package sharedtype_test\n\nimport \"testing\"\n\n" +
+			"func TestUsesHelper(t *testing.T) {\n\tvar z zeroSource\n\tif n, _ := z.Read(make([]byte, 3)); n != 3 {\n\t\tt.Fatal(\"bad\")\n\t}\n}\n",
+	})
+
+	internal, external := loadTestVariantsForDir(t, dir)
+	got := excludedBaseNames(selectCompileExcludedTestFiles(internal, external))
+	if len(got) != 0 {
+		t.Fatalf("a helper type a retained test references must keep its file compiled; got %v", got)
+	}
+}
+
+// Condition (1) negative: an Example-only-LOOKING file that also declares a top-level var/const
+// is NOT excluded — imports do not count and pure type/method declarations are admitted (above), but
+// a var/const initializer can carry side effects, so it disqualifies the whole file (conservative by
+// design) and its Example still compiles alongside the disqualifying declaration.
 func TestSelectCompileExcludedTestFilesKeepsExampleWithTopLevelVar(t *testing.T) {
 	dir := t.TempDir()
 	writeModuleFiles(t, dir, map[string]string{

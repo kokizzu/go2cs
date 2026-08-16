@@ -14,12 +14,17 @@ import (
 	"strings"
 )
 
-// numericBasicLit returns the (optionally SUB-negated) INT or FLOAT basic literal behind
-// expr, if any — the numeric cousin of isStringBasicLit, serving the multi-result func-lit
-// inference scan (an untyped numeric constant element emits bare, so its arm infers the
-// literal's natural C# type instead of the declared result element's).
+// numericBasicLit returns the (optionally sign-prefixed) INT or FLOAT basic literal behind
+// expr, if any — the numeric cousin of isStringBasicLit, serving the func-lit inference scans
+// (an untyped numeric constant arm emits bare, so it infers the literal's natural C# type
+// instead of the declared result's).
+//
+// Both signs are stripped. Go writes an explicitly POSITIVE literal wherever it pairs with a
+// negative one, which is exactly the comparator shape these scans exist for — crypto/tls's
+// `isBetter` returns `-1` and `+1` — and `+1` emits identically to `1`, so treating it as
+// anything other than a numeric literal only blinds the caller to half of its own arm set.
 func numericBasicLit(expr ast.Expr) (*ast.BasicLit, bool) {
-	if unary, ok := expr.(*ast.UnaryExpr); ok && unary.Op == token.SUB {
+	if unary, ok := expr.(*ast.UnaryExpr); ok && (unary.Op == token.SUB || unary.Op == token.ADD) {
 		expr = unary.X
 	}
 
@@ -63,6 +68,77 @@ func (v *Visitor) funcLitReturnsUntypedNamedConst(funcLit *ast.FuncLit) bool {
 	})
 
 	return found
+}
+
+// funcLitNumericArmsMisinfer reports whether EVERY one of the literal's OWN top-level single-result
+// return arms is a numeric basic literal whose natural C# type differs from the declared basic
+// result — the arm set on which C# infers a delegate the literal's Go signature does not describe
+// (see the arm in convFuncLit that consumes it).
+//
+// The gate is narrow because it is keyed to what the converter actually EMITS, not to the literal's
+// Go-side natural type — measured against real output, twice, after two wider cuts each proved to
+// over-apply:
+//
+//   - An INT literal at a declared INTEGER width emits BARE (`return 9;` under an `int64` result),
+//     so it is naturally C# `int`. That is the misinferring case, and the only one.
+//   - The same INT literal at a declared FLOATING result does NOT emit bare — it takes the declared
+//     width's suffix (`func() float64 { return 3 }` renders `3D`), so inference already lands on
+//     `double`.
+//   - A FLOAT literal likewise carries the declared width (`func() float32 { return 0.5 }` renders
+//     `0.5F`, not `0.5`).
+//
+// So only a declared integer type OTHER than int32 can be misinferred; `int32`/`rune` IS the bare
+// literal's own C# type. The `FuncLitUntypedConstReturn` guard carries all four shapes side by side
+// so the split stays pinned to the emission rather than to this comment.
+//
+// Every other arm reports false, which is what keeps the predicate churn-free: an arm it cannot
+// classify (any expression that is not an INT literal) is ASSUMED to carry the declared type, so a
+// mixed arm set keeps its present emission. A bare `return` against named results does the same — it
+// emits the declared-typed result variables. A literal with no single-result return arm at all
+// reports false rather than vacuously true.
+func (v *Visitor) funcLitNumericArmsMisinfer(funcLit *ast.FuncLit, declared *types.Basic) bool {
+	hasArm := false
+	allMisinfer := true
+
+	ast.Inspect(funcLit.Body, func(n ast.Node) bool {
+		if !allMisinfer {
+			return false
+		}
+
+		if _, isLit := n.(*ast.FuncLit); isLit && n != funcLit.Body {
+			return false // a nested literal's returns belong to it
+		}
+
+		ret, ok := n.(*ast.ReturnStmt)
+
+		if !ok {
+			return true
+		}
+
+		if len(ret.Results) == 0 {
+			// A bare `return` against named results emits the declared-typed names.
+			allMisinfer = false
+			return false
+		}
+
+		if len(ret.Results) != 1 {
+			return true
+		}
+
+		hasArm = true
+		lit, isNumeric := numericBasicLit(ret.Results[0])
+
+		// Anything but an INT literal at a declared INTEGER type other than int32 already infers
+		// correctly — see the emission evidence in the doc comment.
+		if !isNumeric || lit.Kind != token.INT || declared.Info()&types.IsInteger == 0 || declared.Kind() == types.Int32 {
+			allMisinfer = false
+			return false
+		}
+
+		return true
+	})
+
+	return hasArm && allMisinfer
 }
 
 // returnArmKeepsUntypedWrapper reports whether a single-result return arm's emission keeps a golib
@@ -818,9 +894,39 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 						// type explicitly (`var maxRune = rune (rune _) => …`) converts each arm
 						// in place. Gated to a BASIC numeric result (a named type would need a
 						// second user conversion the wrapper cannot chain — see
-						// lambdaConstReturnCastType's named-type rationale); literal-only arm
-						// sets (`return 'a'`, `return -1`) keep inferred typing — those render at
-						// concrete C# types already (no churn).
+						// lambdaConstReturnCastType's named-type rationale); a literal-only arm
+						// set is the separate arm below.
+						returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
+					} else if basic.Info()&types.IsNumeric != 0 && v.funcLitNumericArmsMisinfer(funcLit, basic) {
+						// A NUMERIC-result literal whose arms are ALL numeric literals of a
+						// natural C# type the DECLARED result does not share. The arm above used
+						// to record literal-only arm sets as "no churn — those render at concrete
+						// C# types already"; they do, but at the LITERAL's type, not the declared
+						// one, and the two differ whenever the declared Go type is not the
+						// literal's natural width. crypto/tls's TestCipherSuites has the shape:
+						// `isBetter := func(a, b uint16) int { …; return -1; …; return +1 }`
+						// renders every arm as C# `int` where Go's `int` is `nint`, so the
+						// inferred delegate is `Func<ushort, ushort, int>` — accepted everywhere
+						// the variable is CALLED (int→nint converts), rejected the moment it is
+						// passed as a delegate VALUE, delegate types being invariant:
+						// `slices.IsSortedFunc(prefOrder, isBetter)`, CS1503, one of the package's
+						// four build errors. Stating the declared type (`var isBetter = nint
+						// (uint16 a, uint16 b) => …`) converts each arm in place.
+						//
+						// Scope. Assignment position only, for the same reason as every arm above
+						// (elsewhere the literal is target-typed by its delegate). A literal
+						// bound to a name that is ONLY ever called never reaches here at all —
+						// localFunctionDefine already emits it as a local function carrying an
+						// explicit result type — so this arm can only fire where the delegate
+						// type is genuinely observable. And a single arm of a type the declared
+						// result already matches suppresses it, which keeps the pervasive
+						// `func(…) int32 { return 0 }` / `func(…) float64 { return 1.5 }` shapes
+						// and every mixed arm set on their present emission (C# picks the wider
+						// type there, which is the declared one). The mixed-arm case where the
+						// declared type is NARROWER than C# would pick — `func(…) uint16` with
+						// one `0` arm and one `ushort` arm, where ushort widens to int — is not
+						// covered and has no measured instance; it needs the natural type of an
+						// arbitrary arm, which this predicate deliberately does not attempt.
 						returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 					}
 				}

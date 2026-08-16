@@ -6777,7 +6777,7 @@ bodies.) Where the four stand after the bridge:
 | `internal/fuzz` | 0 (died at `flag.Parse`) | **BANKED 52/52** | the 141st roster row; its `TestMain` now parses the host's command line |
 | `go/internal/srcimporter` | 0 of 7 (died at `flag.Parse`) | **5 of 7** | not banked; the two failures share ONE root and it is not this class — see below |
 | `os/exec` | build-blocked | **builds; 22 of 22 match** | the unnamed-variadic block is FIXED (lane `claude/unnamed-variadic`, 2026-08-14) — 40 further tests are excluded for want of `TB.*`, see that section. That exclusion is CLOSED too (lane `claude/tb-surface`, same day): the 22 became **101 rows, 48 agreeing**, and what was behind it was two HOST roots — see the `TB.*` section at the end of this file |
-| `crypto/tls` | not measured | **build-blocked, measured** | reached 2026-08-14 by the same lane; two roots, neither this one — see that section |
+| `crypto/tls` | not measured | **builds; blocked at RUN** | reached 2026-08-14 by the same lane; two roots, neither this one. Both closed 2026-08-15 (lane `claude/crypto-tls`) along with a third behind them — the package now compiles and its host reaches the flag bridge, where a different wall stops it: see the section at the end of this file |
 
 **`go/internal/srcimporter` — 5 of 7, one root, and it belongs to `go/types`.** `TestIssue20855`,
 `TestIssue23092`, `TestIssue24392`, `TestReimport` pass and `TestCgo` skips identically. The two
@@ -6959,6 +6959,11 @@ reach the bridge — it does not build. Four errors, two roots, both new board e
   target signature says `nint`.
 
 No deep chase was commissioned and none was done.
+
+✅ **BOTH ROOTS CLOSED, and a third behind them — `crypto/tls` BUILDS (2026-08-15, lane
+`claude/crypto-tls`).** Re-measured at master `6dd7547e4` before anything was believed, per the
+stale-premise rule: both reproduced **verbatim**, same codes, same four call sites. This board entry
+was accurate. Its *attribution* of the first root was not — see the section at the end of this file.
 
 ## RETRACTED — `os`'s "REGRESSION" is a HOST CAPABILITY, and the killer is `SHARE_INFO_2` (2026-08-14, lane os-av-bisect)
 
@@ -7361,7 +7366,7 @@ census (`cmd` and `testdata` excluded), with the banked rows re-measured here an
 | `database/sql` | no | 36 sites, the widest in the corpus | pending its own measurement |
 | `net` | no | 9 sites | pending |
 | `net/http` | no | 8 sites | pending |
-| `crypto/tls` | no | 3 sites | pending; still build-blocked on two unrelated roots (above) |
+| `crypto/tls` | no | 3 sites | pending; the two build roots are CLOSED (2026-08-15) and the package compiles, but its run does not reach these sites — see the section at the end of this file |
 | `crypto/internal/mlkem768`, `crypto/x509`, `go/types`, `net/netip`, `os`, `runtime` | no | 1 site each | pending |
 
 The nine unbanked rows are not claims — no run was commissioned for them. They are named so the next
@@ -7979,3 +7984,170 @@ census entries are prose); and many unvalidated packages do not yet COMPILE thei
 closure, so "how close" is not a number for them at all. A future shape would need a sweep mode
 that records per-package partial verdicts and a badge/proof surface that cannot be mistaken for
 validation. Revisit after the 75% terminal marker, possibly with the queued proof-renderer pass.
+
+## ✅ `crypto/tls` BUILDS — both recorded roots closed, a third behind them, and the RUN wall resolved into four named roots (2026-08-15, lane `claude/crypto-tls`)
+
+**Both recorded roots reproduced verbatim** at master `6dd7547e4` before anything was believed —
+same codes, same four call sites. That entry was accurate; the campaign's stale-premise rule cost one
+93-second pipeline run to confirm and was worth paying. What was NOT accurate was its *attribution*
+of the first root, and what nobody had seen was a **third root standing behind the first two**, which
+is the reason a build-blocked package is only ever measured one wall at a time.
+
+Four errors → **zero. The package compiles for the first time**, and its host runs.
+
+### Root 1 — CS0012 ×3 is NOT a missing reference; it is the Phase-4D exclusion being too conservative
+
+Recorded as "a fresh instance of the `-tests` reference-closure family". It is not: adding the
+reference cannot fix it and makes the diagnostic worse. `crypto/tls` selects the whitebox-reference
+model and then FALLS BACK to **recompile** (`recordsRequireProductionMutation`), which compiles the
+production `.cs` into the test assembly. `example_test.go` is the package's ONLY black-box file, and
+its Examples reach `http.Transport{TLSClientConfig: …}`, `http.Server{TLSConfig: …}` and
+`httptest.Server.TLS` — fields whose type is `tls_package.Config` **in the production assembly**,
+while the recompile has just made a second, distinct local copy. The field is therefore unnameable.
+Referencing `crypto.tls` as well would let the compiler *name* the type and then reject the
+assignment between the two copies: CS0012 becomes CS0029. The file simply must not be compiled.
+
+Which is what the Phase-4D file-exclusion ruling exists to do — go/token's `example_test.go` is the
+recorded precedent, *the same failure in the same model*. `crypto/tls`'s file differs in one respect:
+its Examples need an `io.Reader` to hand `Config.Rand`, so it declares `type zeroSource struct{}` and
+one `Read` method, and condition (1) disqualified the whole file for it. **Condition (1) now admits
+pure TYPE declarations and METHODS** — they have no run-time behavior, nothing executes at package
+init, and any use by a retained file is a reference condition (2) already resolves. The type and
+method objects are now recorded in `declared`, without which the widening would have silently
+disarmed condition (2) for exactly the declarations it just admitted. `var`/`const` (initializer side
+effects) and plain funcs (`init`) stay disqualifying. Doctrine + the two new unit guards:
+`ConversionStrategies-Reference.md`, *An Example/Benchmark-ONLY test file is dropped from the compile
+set*.
+
+**Phase-4D widening confirmed by coordinator ruling 2026-08-15; the 2026-07-24 conservatism's safety
+property is preserved by the declared-object fixpoint.** The lane flagged this as a ruled boundary
+being moved rather than assuming it. The original ruling's "conservative by design" existed to
+guarantee one property — nothing a test file declares can vanish from the compilation while anything
+still references it — and the widening RETAINS it, because the admitted type and method objects are
+recorded in `declared`, so condition (2)'s fixpoint still forces the file back in whenever a
+cross-file reference exists. What it removes is a false positive the alternative cannot fix at all
+(the recompile model's duplicate type: adding the reference turns CS0012 into CS0029, never into a
+fix). A conservatism whose protective content survives the refinement intact is not weakened by it,
+only made precise. The three conditions the ruling attached are met and deliberately kept visible:
+the fixpoint protection is stated in the code where the widening lives
+(`classifyTestFileForExclusion`), the two unit guards
+(`TestSelectCompileExcludedTestFilesDropsExampleWithHelperType`,
+`…KeepsHelperTypeUsedByRetainedTest`), and the reference-doc section.
+
+### Root 2 — CS1503 is a delegate-VALUED comparator, and the first fix silently did nothing
+
+`isBetter := func(a, b uint16) int { …; return -1; …; return +1; …; return 0 }` passed to
+`slices.IsSortedFunc`. All-INT-literal arms emit **bare**, so C# infers `Func<ushort, ushort, int>`
+against a Go `int` (`nint`) result. Every *call* of the variable accepts that (`int` converts to
+`nint`) — only the delegate-valued use rejects it, delegate types being invariant. `convFuncLit` now
+states the declared return type for that arm set.
+
+Two things this cost, both worth carrying:
+
+1. **`numericBasicLit` stripped unary `-` but not unary `+`.** The comparator returns `-1` AND `+1`,
+   so the predicate saw a non-literal arm, suppressed itself, and the first fix emitted **nothing at
+   all** — a green build of a converter that had not changed its output. Go writes an explicitly
+   positive literal precisely where it pairs with a negative one, which is the comparator shape this
+   arm exists for. Both signs are stripped now.
+2. **Two successive cuts OVER-applied, and only the emitted C# showed it.** The natural rule — "any
+   numeric literal whose natural C# type differs from the declared result" — is wrong, because the
+   converter does not emit every literal bare: a declared FLOATING result carries its width into the
+   literal (`func() float32 { return 0.5 }` → `0.5F`; `func() float64 { return 3 }` → `3D`), so those
+   already infer correctly. Only a declared INTEGER width other than `int32` leaves the literal bare.
+   **A predicate about C# inference must be measured against emitted output, never derived from the
+   Go-side type.** All five shapes are pinned side by side in the extended
+   `FuncLitUntypedConstReturn` behavioral guard.
+
+### Root 3 — CS7013: the hoisted-literal slug budget never bound the first word
+
+Behind the other two, and previously unseen. `key_schedule_test.go` carries a **2,176-character** hex
+test vector; the hoist slug is built from the literal's own content and truncated at a word boundary
+within a 24-character budget — but the truncation only applied once the slug was non-empty, so the
+leading word was written whole. A literal that is ONE long word became an identifier of exactly its
+own length: `CS7013: Name '…' exceeds the maximum length allowed in metadata`.
+
+The committed corpus was already past the design's intent without failing — **33 of 5,928** hoisted
+names exceed 24 characters, the longest **256** — so this was luck, not a boundary case. Raising the
+number would not close the class; making the budget total does, and `len(literalSlug(v)) ≤ 24` is now
+an invariant. Those 33 inline instead of hoisting; **zero** behavioral goldens move.
+
+**⚠ The A/B footprint splits 11 / 22, and the second half is LATENT — expect it, do not re-diagnose
+it.** A seeded whole-corpus reconvert (single run, `version.props` + `docs/validation` seeded, marker
+gate **52 marked / 0 violations**) emitted 1,960 files and changed 352, and the accounting closes
+exactly:
+
+- **~297 `README.md`** — the `badge-break` line-break emitter, already merged to master with its
+  corpus re-level still pending. **Not this arc's**, and it will vanish at the next leveling regen.
+- **49 `.cs` CRLF phantoms** — the known in-string-LF class; CR-stripped comparison is identical.
+- **6 `.cs` real content diffs** — every one this fix, every one an over-budget first word now
+  inlined (`crypto/elliptic/nistec.cs`, `go/parser/parser.cs`, `image/ycbcr.cs`,
+  `os/exec/windows/lp_windows.cs`, `runtime/windows/os_windows.cs`,
+  `syscall/windows/syscall_windows.cs`). **0 new files, and ZERO func-literal changes corpus-wide** —
+  the root-2 fix has no stdlib footprint at all, which together with CNR's single-file result is two
+  independent confirmations that its gate is tight rather than merely plausible.
+
+That is 10 of the 33 names. The other 23: **one** is
+`crypto/x509/internal/macos/darwin/security.cs`, darwin-exclusive and correctly not emitted by a
+windows-target run; the remaining **22 live in committed `*_test.cs` sources** across ~14 banked
+packages (`regexp`, `bufio`, `bytes`, `context`, `compress/flate`, `crypto/{dsa,ecdh,rsa}`,
+`encoding/base32`, `go/scanner`, `internal/cpu`, `mime/multipart`, `os/exec`, `path/filepath`,
+`strings`), which a `-stdlib` run never re-emits. They will re-level at each package's next `-tests`
+run and show up in a future sweep or leveling regen as unexplained-looking test-source churn. It is
+this fix, it is expected, and it is benign.
+
+### The host RUNS — 23 of 184 top-level tests before the deadline, and the roots are named
+
+⚠ **A live-diagnosis correction, recorded because the method failed, not just the guess.** This lane
+first reported the host as "blocked from the start — 8.3 s CPU across twenty minutes, flat across
+eleven samples, I/O-blocked". The CPU reading was accurate and the inference from it was **wrong**.
+The host runs the suite alphabetically and got through **23 top-level tests in roughly the first
+minute**, most of them failing fast; it then blocked inside `TestConnCloseBreakingWrite` and spent the
+remaining ~38 minutes of the deadline parked there. The first CPU sample was taken about nine minutes
+in, by which time the interesting part was already over — so a flat sample series was read as "never
+started" when it meant "already finished the part that moves". **Flat CPU dates a stall; it cannot
+date its beginning.** Sample from t=0 or read the verdict stream; do not infer a run's shape from
+its tail.
+
+**The measured outcome** (converted host, `-test-timeout 40m`): **26 pass, 12 fail, 1
+infrastructure-error, 1 package timeout** over **23** top-level tests reached. Go's own run of the
+same suite on the same host executes **184** top-level tests (1,251 pass / 2,381 skip / 12 fail).
+Per the jsonrpc rule this board already applies, *a package that dies mid-run has one failure and an
+unknown remainder* — the 26 is a **floor, not a census**, and no differential is claimable from it.
+
+Four distinct roots, in order of weight:
+
+1. **`localPipe: dial tcp 127.0.0.1:…: failed to find ConnectEx: An invalid argument was supplied.`
+   ×9** — the dominant one, and far more specific than "the net stack". `localPipe()` dials a
+   loopback listener, and the converted Windows socket layer cannot resolve the **`ConnectEx`
+   extension function pointer** (`WSAIoctl` / `SIO_GET_EXTENSION_FUNCTION_POINTER`). Every
+   handshake-driving test dies on it in ~2 ms. This is **S2b netpoll + `syscall`** territory and is
+   the priority signal this lane hands over.
+2. **`TestConnCloseBreakingWrite` blocks indefinitely** and consumes the entire remaining deadline —
+   the reason nothing past `TestConn…` was reached. A separate defect from #1 (it does not fail fast;
+   it never returns) and the single highest-leverage fix for coverage, since the alphabet beyond it is
+   unexplored.
+3. **A golib REFLECT gap, not a net one** —
+   `System.InvalidOperationException: Not a pointer box type: go.sync_package+RWState` in
+   `GoReflect.slotAccessorShape` (`golib/GoReflect.FieldAccess.cs:125`), reached
+   `reflect.DeepEqual` → `deepValueEqual` → `deepValueEqualBoxed` → `reflect.Elem`, from
+   `TestCloneNonFuncFields`. `sync.RWMutex`'s `RWState` box is not recognised as a pointer box, so
+   `DeepEqual` cannot descend a struct containing one. Independently actionable, unrelated to sockets,
+   and it will bite any package that `DeepEqual`s a struct holding a `sync` primitive.
+4. **`TestCertCache`: "timed out waiting for expected ref count"** — weak-reference/GC observability,
+   the `internal/weak` family. **`TestBogoSuite`** fails against the external BoGo shim and is not a
+   conversion signal.
+
+**One result worth stating: `TestCipherSuites` PASSES.** That is the exact test whose comparator
+produced the CS1503 above — so root 2's fix is validated *by execution*, not merely by compiling.
+
+⚠ **Go itself fails 4 top-level tests on this host** — `TestResumption`, `TestVerifyConnection`,
+`TestResumptionKeepsOCSPAndSCT`, `TestCrossVersionResume` (12 verdicts with subtests). Whoever takes
+the differential must treat those as host-environmental until proven otherwise, exactly as the `os`
+`SHARE_INFO_2` retraction demands.
+
+**Not banked, and not bankable on this evidence.** Builds-and-partly-runs is precisely the partial
+result the roster's validated-only integrity principle excludes — no roster row, no proof page, no
+disclosures. The three converter fixes and their guards are the deliverable; `crypto/tls` returns to
+the board as a package whose *build* question is answered, whose *run* question is now four named
+roots rather than one vague one, and whose next move is `ConnectEx` plus the
+`TestConnCloseBreakingWrite` hang.
