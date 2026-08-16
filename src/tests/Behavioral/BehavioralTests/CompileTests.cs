@@ -1186,6 +1186,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckPointerReceiverPointerLocalField() => CheckTarget("PointerReceiverPointerLocalField");
 
     [TestMethod]
+    public void CheckPointerReceiverRepoint() => CheckTarget("PointerReceiverRepoint");
+
+    [TestMethod]
     public void CheckPointerReceiverSliceSwap() => CheckTarget("PointerReceiverSliceSwap");
 
     [TestMethod]

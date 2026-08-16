@@ -623,6 +623,7 @@
     <Project Path="tests/Behavioral/PointerCastSliceRange/PointerCastSliceRange.csproj" />
     <Project Path="tests/Behavioral/PointerCastSliceReinterpret/PointerCastSliceReinterpret.csproj" />
     <Project Path="tests/Behavioral/PointerReinterpretIdentity/PointerReinterpretIdentity.csproj" />
+    <Project Path="tests/Behavioral/PointerReceiverRepoint/PointerReceiverRepoint.csproj" />
     <Project Path="tests/Behavioral/PointerReceiverSliceSwap/PointerReceiverSliceSwap.csproj" />
     <Project Path="tests/Behavioral/PointerCoreConstraints/PointerCoreConstraints.csproj" />
     <Project Path="tests/Behavioral/PointerSelectorDeref/PointerSelectorDeref.csproj" />
