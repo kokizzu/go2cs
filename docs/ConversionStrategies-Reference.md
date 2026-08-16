@@ -2282,6 +2282,48 @@ Guarded by `TypedNilInterface` (extended with the slice/map/anonymous-struct typ
 `object`-reference nil compare working); part of the reflection-bridge Phase-3 chip (see
 `docs/phase4/DESIGN-reflection-bridge.md`).
 
+**A nil converted to an unnamed MAP type is a cast, not an invocation.** The star form above is one
+half of the type-literal problem; `map[string]int(nil)` — no pointer, the map type literal written
+directly — is the other, and it did not merely erase a type, it failed to compile. The
+composite-literal arm of `isTypeConversion` claims a target only when target and argument share an
+underlying type, and untyped nil's underlying is *itself*, so the shape was never claimed as a
+conversion and fell through to the regular CALL path. What that path emits for a call whose callee
+is a type is the type followed by an argument list — `map<@string, nint>(default!)` — which is
+**CS1955**, "non-invocable member `map<TKey, TValue>` cannot be used like a method", and the whole
+package fails. An untyped-nil operand against a map-underlying target is therefore claimed
+explicitly, and the ordinary conversion renderer emits the cast:
+
+```go
+fmt.Println(reflect.TypeOf(map[string]int(nil)))
+```
+```csharp
+fmt.Println(reflect.TypeOf(((map<@string, nint>)default!)));
+```
+
+The NAMED twin `myMap(nil)` was always correct — `types.ConvertibleTo` holds for it, so the general
+named path claimed it and cast — which is why only the type-LITERAL spelling ever broke. The two
+sibling nil-able type literals are deliberately left on the routes they are already on, having no
+defect: `[]byte(nil)` emits `slice<byte>(default!)`, which is not an invocation of a type but a call
+to golib's real `builtin.slice<T>(T[])` conversion helper — the same helper `[]byte("…")` is emitted
+against — and yields the nil slice; and `(chan T)(nil)` already renders as a cast. Claiming either
+alongside the map would rewrite roughly twenty-five corpus sites to no effect.
+
+The spelling matters, and it is why the corpus never showed this. The BARE `map[K]V(nil)` — the
+broken one — appears in **no** standard-library production source; all thirteen of its GOROOT sites
+are in `_test.go` files, and Go's own suites lean on it heavily (`fmt`'s
+`{"%#v", map[int]byte(nil), …}` table row, one of that package's censused conversion roots;
+`reflect`'s TypeOf/DeepEqual tables; `encoding/json`'s encode table; `internal/reflectlite`). The
+PARENTHESIZED `(map[K]V)(nil)` reaches the conversion fork through `convParenExpr` instead and was
+already emitting a cast, so its one production site — `reflect/type.go`'s
+`var imap any = (map[unsafe.Pointer]unsafe.Pointer)(nil)` — compiled all along. Claiming the shape
+in `isTypeConversion` now routes that site through the ordinary renderer too, which changes its
+parentheses (`(map<…>)(default!)` → `((map<…>)default!)`) and nothing else. So this is a
+converted-test and end-user fix whose only corpus footprint is one line of re-parenthesization.
+(Guarded by the `UnnamedMapNilConversion` behavioral test — four unnamed-map nil conversions
+including composite and struct-keyed element types, a nilness/length/absent-key read proving the
+converted nil IS nil rather than merely typed, and the named-map, named-slice, `[]byte`, `chan` and
+`*int` controls, output-compared vs Go.)
+
 ### `reflect.Value.Interface()` is a boundary into interface space, so it packs the typed nil too
 
 The rule above says the canonical instance is minted where the type becomes *observable* — at the
@@ -7143,7 +7185,7 @@ type table = map[string]int
 ```csharp
 global using P = go.ж<bool>;
 global using M = go.map<nint, nint>;
-global using table = go.map<@string, nint>;
+global using table = go.map<go.@string, nint>;
 ```
 
 **A `global using` RHS renders csproj-alias numerics as C# keywords.** C# resolves a using directive's target *without reference to other using directives* — aliases are invisible to one another — so the golib csproj-level aliases (`uint64`, `float64`, `any`, …) that resolve everywhere else in the compilation are CS0246 inside `global using X = …;`. The alias-declaration emission (only) rewrites those names to their using-safe keyword/BCL equivalents: fiat's `type p224UntypedFieldElement = [4]uint64` emits `global using p224UntypedFieldElement = go.array<ulong>;`. Body code keeps the Go-visual alias names; already-safe names (`byte`, `bool`, `nint`, `go.@string`) are untouched, and the rewrite deliberately skips dot-qualified names so a package type sharing a builtin name is left alone. (Guarded by the `AliasStructComposite` extension `words` — an alias to `[4]uint64` used as a parameter type, output-compared.)
@@ -7151,6 +7193,29 @@ global using table = go.map<@string, nint>;
 **An alias to an unnamed array/slice resolves through `types.Unalias` at type-switched decision points.** An alias is a `*types.Alias` (Go 1.22+) — neither the AST's `ast.ArrayType` nor the resolved `*types.Array` — so an emission that type-switches on the syntax node or the unresolved type misses it. Three sites resolve through `types.Unalias`: (1) the **`range` operand dispatch** — `for _, e := range w` on an alias-typed array previously matched no arm and emitted the *whole loop* as a C# comment, a silent behavioral hole; it now emits the normal `foreach (var (_, e) in w)`. (2) the **composite-literal dispatch** — `words{10, 20, 30, 40}` emits the same element-array projection the unnamed literal uses, `new uint64[]{10, 20, 30, 40}.array()`; the alias name renders as an Ident (not an `ast.ArrayType`), so it cannot take the composite-initializer bracket rewrite, and keeping it produced a C# collection initializer on the alias (`new words{…}` — CS1061, `array<T>` has no `Add`). (3) **`var` declarations** — a local or package-level `var w words` allocates the fixed-size backing (`words z = new(4);` / `internal static words gw = new(4);`) instead of `default!`/uninitialized, whose null backing array throws NRE on the first element write. An alias to a *named* type is unaffected: unaliasing lands on `*types.Named` and the existing wrapper-struct arms apply, with the alias name preserved. (Guarded by the `AliasStructComposite` extensions — alias-typed range loop, composite literal, and local + global `var` with element writes, values vs Go.)
 
 **A same-package alias TARGET carries the package's FULL namespace, not just its class.** An exported alias whose target is *lifted* into the package class — `type CorpusEntry = struct{…}` lifts its anonymous struct to a nested `CorpusEntryᴛ1` (and the same for an alias to a same-package named type) — must qualify that target with the package's whole namespace. For a package in a **nested** namespace (`internal/fuzz` → namespace `go.@internal`, class `fuzz_package`; `net/http` → `go.net` / `http_package`) the lifted type lives at `go.@internal.fuzz_package.CorpusEntryᴛ1`. Building the qualifier from the bare `<pkg>_package` class alone dropped the intervening namespace segment, so the emitted `global using CorpusEntry = go.fuzz_package.CorpusEntryᴛ1;` — and the matching `[assembly: GoTypeAlias("CorpusEntry", "go.fuzz_package.CorpusEntryᴛ1")]` that every consumer replays verbatim through its `<ImportedTypeAliases>` block — named a namespace that does not exist → CS0234 at the using-alias line and at every use (internal/fuzz's `CorpusEntry`, ×60). The qualifier is now taken from the same `packageNamespace` that emits the `namespace …;` declaration (minus the root, plus the class), so the target and the declaration always agree: `go.@internal.fuzz_package.CorpusEntryᴛ1`. A **top-level** package's namespace is exactly the root (`go`), leaving no intervening segment, so its target stays `go.<pkg>_package.…` — the emission is byte-for-byte unchanged there. (Guarded by the `NestedAliasUser` behavioral test — a top-level `package main` that imports its own nested `inner` subpackage, whose C# namespace is `go.NestedAliasUser`; `inner` exports an anon-struct alias `Entry`, and both `inner`'s own `global using` and the consumer's imported `global using innerꓸEntry` resolve to `go.NestedAliasUser.inner_package.Entryᴛ1`, values vs Go.)
+
+**The whole RHS is namespace-ROOTED, at every nesting depth — the alias resolves at COMPILATION scope.** The two paragraphs above each close one hole in this wall; this is the wall. C# resolves a using alias's target *as if the immediately containing compilation unit had no using directives*, which puts it **outside** the file's `namespace go;`, **outside** the emitted `<pkg>_package` class, and with none of the csproj-level golib aliases in effect. Every other rendering in the converter elides the root namespace from nested names, because every other rendering lands *inside* `namespace go` — where the elision is legal and is what makes the emitted C# read like Go. Only the outermost name was rooted here, so each type ARGUMENT under it named nothing: `type names = []string` emitted `global using names = go.slice<@string>;`, CS0246 on `@string`. The same held for `slice`, `error`, `complex64` and `ж`; for a same-package `Header` (which is `go.main_package.Header` at that scope); for a cross-package `io_package.Reader` (`go.io_package.Reader`); and for the BCL `Func`/`Action` of a func-type alias, since `System` is not in scope there either. Nine aliases produced seventeen CS0246.
+
+The alias emission therefore renders in a **rooted-nesting** mode, in which the target *and* everything it nests carry full qualification:
+
+```go
+type Header struct{ Name string }
+
+type nested = map[string][]Header
+type fn = func(string) int
+type rdrs = []io.Reader
+```
+```csharp
+global using nested = go.map<go.@string, go.slice<go.main_package.Header>>;
+global using fn = System.Func<go.@string, nint>;
+global using rdrs = go.slice<go.io_package.Reader>;
+```
+
+Four qualifiers are in play and they are not interchangeable: golib types root to `go.`, the BCL delegates to `System.`, golib's variadic delegate FAMILY (`Actionꓸꓸꓸ`/`Funcꓸꓸꓸ`) back to `go.`, and a same-package name to `go.<ns>.<pkg>_package.` — the mechanism of the paragraph above, applied now at every depth rather than to the target alone (which is why the target no longer needs a prefix computed for it separately). The csproj-alias names are the exception that proves the rule: `uint64`, `float64`, `any` and friends are not members of `go` at all, so they are **substituted** with the keyword or BCL type they stand for rather than rooted — the first paragraph's rewrite, moved inward. An alias whose target is ITSELF an alias resolves through `types.Unalias` before rendering, since a C# using alias may not name another using alias.
+
+This is a **user-code** defect rather than a corpus one, and the census says so precisely for the type-ARGUMENT arm: the whole converted standard library declares exactly four package-level aliases with type arguments (fiat's `p224`/`p256`/`p384`/`p521`, each `[4]uint64`), and all four take a C# keyword as their argument, so that arm moves nothing. An end-user package that aliases a slice, map, channel or func type — the ordinary `type Handlers = map[string]Handler` — hit it on the first build, and a `-recurse` module conversion hit it over a third-party type.
+
+The **substitution** arm is the one with corpus sites, and they were live **CS0234** nobody had seen. A csproj-alias name reaching the alias RHS as the WHOLE target was rooted rather than substituted — `go.int32`, which the compiler rejects with "the type or namespace name `int32` does not exist in the namespace `go`", since `int32` is a `<Using Alias=…>` for `System.Int32` and not a member of `go` at all. `getUsingAliasSafeTypeName` could not catch it because that sweep deliberately skips dot-qualified names, exactly so a package type sharing a builtin name is left alone. Six sites carried it, all cgo `_C_*` typedefs in **darwin-exclusive** files (`os/user/darwin/cgo_lookup_syscall.cs`, `net/darwin/cgo_unix_syscall.cs`), which is why they stayed latent: the default `$(GoTargetOS)` is `windows`, so nothing compiles them. `type _C_int = int32` now emits `global using _C_int = int;`, and the neighbours that were already right are unmoved — `_C_char = byte` (a C# keyword) and `_C_size_t = go.uintptr` (`uintptr` IS a real golib struct, so rooting it is correct). (Guarded by the `PackageAliasRootedTypeArgs` behavioral test — twenty-five package-level aliases covering golib element types, keyword element types that must NOT be rooted, same-package named types at one and two levels of nesting, a lifted anonymous struct and interface, a cross-package interface, both directional channel forms, both delegate spellings, and an alias to an alias, output-compared vs Go. Also pinned by `TestRecurseChannelOfHyphenatedModulePath`, whose assertion recorded the unrooted cross-package form until this landed.)
 
 ## Delegates to Value Receiver Instances
 

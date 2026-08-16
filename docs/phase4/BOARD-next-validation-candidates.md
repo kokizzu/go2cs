@@ -6865,6 +6865,29 @@ the scope fix, and no converted stdlib package declares such an alias — but an
 module would. It surfaced only because the `LocalTypeAliasScope` guard was first written with such
 an alias in it.
 
+> **LANDED 2026-08-16, lane `claude/emission-defects`.** The alias RHS now renders in a
+> ROOTED-NESTING mode: the target and every name it nests carry full qualification, with four
+> qualifiers that are not interchangeable (`go.` for golib types, `System.` for the BCL
+> `Func`/`Action`, `go.` again for the variadic `Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` family, and
+> `go.<ns>.<pkg>_package.` for a same-package name), while the csproj-alias names (`uint64`,
+> `any`, …) are SUBSTITUTED rather than rooted — they are not members of `go` at all. Two shapes
+> beyond this row's census turned out to be in the same class and are fixed with it: a **func-type**
+> alias (`Func`/`Action` need `System.`, which is no more in scope than `go`) and an alias whose
+> target is **itself an alias** (a C# using alias may not name another). The census re-verification
+> confirms this row's "no converted stdlib package declares such an alias" for the type-ARGUMENT
+> arm — the corpus holds exactly **four** package-level aliases with type arguments (fiat's
+> `p224`/`p256`/`p384`/`p521`, each `[4]uint64`), all four taking a C# keyword as the argument, so
+> that arm moves nothing. The **substitution** arm did have corpus sites the row did not predict,
+> and they were live **CS0234**: a csproj-alias name standing as the WHOLE target was rooted
+> (`global using _C_int = go.int32;` — `int32` is a `<Using Alias=…>` for `System.Int32`, not a
+> member of `go`, and the existing safe-name sweep skips dot-qualified names by design). **Six**
+> sites, all cgo `_C_*` typedefs in **darwin-exclusive** files (`os/user/darwin/`, `net/darwin/`),
+> latent because the default `$(GoTargetOS)` is `windows` and nothing compiles them; they now emit
+> `int`/`uint`/`long`. Guard: `PackageAliasRootedTypeArgs` (25 aliases,
+> output-compared; the unfixed converter fails it with CS0246 and a golden mismatch). Detail:
+> `docs/ConversionStrategies-Reference.md` §Type Alias Declarations, "The whole RHS is
+> namespace-ROOTED".
+
 ### `fmt` — still 0 of 63, and it is FIVE roots, not one
 
 Measured 2026-08-15 with both fixes above in place. Neither touches `fmt`: it has no function-local
@@ -6873,7 +6896,7 @@ behind it is a fan-out, not a queue, and three of the five cluster on one test t
 
 | Diagnostic | Site | Shape |
 |:--|:--|:--|
-| `CS1955` non-invocable `map<TKey, TValue>` | `fmt_test.cs(838)` | `map[int]byte(nil)` — a CONVERSION to a map type emits an INVOCATION, `map<nint, byte>(default!)`, not a cast. The sibling `[]int(nil)` survives only because golib happens to expose a `slice` builtin of that name; there is no `map` one. One emission rule, two spellings |
+| ~~`CS1955` non-invocable `map<TKey, TValue>`~~ **FIXED** | `fmt_test.cs(838)` | `map[int]byte(nil)` — a CONVERSION to a map type emitted an INVOCATION, `map<nint, byte>(default!)`, not a cast. **LANDED 2026-08-16, lane `claude/emission-defects`:** an untyped-nil operand against a map-underlying type LITERAL is now claimed by `isTypeConversion` (the identical-underlying guard rejected it, since untyped nil's underlying is itself) and the ordinary renderer casts — `((map<nint, byte>)default!)`. The row's "one emission rule, two spellings" reading of the sibling `[]int(nil)` was measured and does not hold: `slice<T>(default!)` binds `builtin.slice<T>(T[])`, golib's REAL conversion helper — the same one `[]byte("…")` is emitted against, documented as such — and yields the nil slice, so it is correct rather than lucky, and `(chan T)(nil)` already cast. Both are deliberately left on their existing routes; claiming them would rewrite ~25 corpus sites to no effect. Census, by SPELLING: the BARE `map[K]V(nil)` — the broken one — has **0** stdlib production sites and 13 test-file sites (`fmt`, `reflect`, `encoding/json`, `internal/reflectlite`), which is why the corpus never showed it; the PARENTHESIZED `(map[K]V)(nil)` reached the fork via `convParenExpr` and was already casting, so its single production site (`reflect/type.go:1837`) compiled all along and now only re-parenthesizes. Total corpus footprint: one line. Guard: `UnnamedMapNilConversion`. Detail: `docs/ConversionStrategies-Reference.md` §Canonical typed-nil pointer boxing, "A nil converted to an unnamed MAP type is a cast" |
 | `CS0030` `float`→`renamedComplex64`, `double`→`renamedComplex128` ×4 | `fmt_test.cs(941,942,951)`, `scan_test.cs(394)` | a named type over `complex64`/`complex128` does not admit the real→complex conversion Go allows |
 | `CS1729` `Scan_type` has no 1-arg constructor | `scan_test.cs(576)` | — |
 | `CS0103` `Reader` does not exist | ImplementGenerator output for `Scan_type`→`io.Reader` | the generated wrapper names the interface unqualified |
@@ -6882,6 +6905,12 @@ behind it is a fan-out, not a queue, and three of the five cluster on one test t
 The last three are one type's story and are likely one root; the first two are independent. This is
 a materially different proposition from the 97-verdict single-wall `archive/tar` half — the "160
 verdicts on one defect" framing above never held for `fmt`.
+
+**Root 1 of the five is closed** (2026-08-16, lane `claude/emission-defects` — see the struck row).
+`fmt`'s wall is now FOUR roots; the remaining four are untouched by that lane, so the package's
+verdict count is unchanged until they are worked. Whoever picks `fmt` up next should re-measure
+rather than assume this row's sites, since the CS1955 no longer masks whatever follows it in
+`fmt_test.cs`.
 
 ## ✅ CLOSED — the unnamed-variadic build block is fixed; `os/exec` now BUILDS and its next wall is `TB.*` (2026-08-14, lane `claude/unnamed-variadic`)
 

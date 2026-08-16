@@ -1232,8 +1232,15 @@ func TestRecurseChannelOfHyphenatedModulePath(t *testing.T) {
 
 	// The fully-qualified render, where the crash lived — the channel constructor intact and the
 	// hyphenated multi-segment path resolved to its namespace.
-	wantAlias := "global using TopoChan = " + RootNamespace +
-		"./*<-*/channel<example.com.mongo_driver.mongo.description" + PackageSuffix + ".Topology>;"
+	//
+	// The element carries the ROOT namespace as well, and that is load-bearing rather than
+	// decorative: a using alias resolves at COMPILATION scope, where `example.com…` is not a
+	// namespace of anything (CS0246). This assertion read the unrooted form until the alias
+	// renderer was given its rooted-nesting mode, i.e. it was pinning the defect — a `-recurse`
+	// module conversion is exactly the audience for it, since an end-user alias over a
+	// third-party type is ordinary code (guard: PackageAliasRootedTypeArgs).
+	wantAlias := "global using TopoChan = " + RootNamespace + "./*<-*/channel<" + RootNamespace +
+		".example.com.mongo_driver.mongo.description" + PackageSuffix + ".Topology>;"
 
 	if !strings.Contains(mainCs, wantAlias) {
 		t.Errorf("app main.cs missing %q:\n%s", wantAlias, mainCs)

@@ -995,12 +995,20 @@ type table = map[string]int
 ```
 ```csharp
 global using P = go.ж<bool>;
-global using table = go.map<@string, nint>;
+global using table = go.map<go.@string, nint>;
 ```
 
+The RHS is namespace-rooted all the way down, unlike every other rendering the converter emits. C#
+resolves a using alias's target *as if the compilation unit had no using directives*, which puts it
+outside the file's `namespace go;` and outside the package class — so a nested `@string` would name
+nothing there, and neither would a same-package `Header` (it is `go.main_package.Header`) or the `Func`
+of a func-type alias (`System.Func`). The golib csproj-alias names go the other way and are substituted
+rather than rooted, since `uint64` and friends stand for C# keywords: `type fe = [4]uint64` emits
+`global using fe = go.array<ulong>;`.
+
 **Full detail:** [Reference → Type Aliasing](ConversionStrategies-Reference.md#type-aliasing) — self-boxing
-pointer conversions, keyword-safe `global using` RHS rendering, `types.Unalias` at type-switched decision
-points, and same-package alias-target namespace qualification.
+pointer conversions, the rooted-nesting RHS and its four qualifiers, keyword-safe RHS rendering,
+`types.Unalias` at type-switched decision points, and same-package alias-target namespace qualification.
 
 ---
 

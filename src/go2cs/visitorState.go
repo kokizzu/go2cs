@@ -145,6 +145,13 @@ type Visitor struct {
 	liftedTypeMap      map[types.Type]string
 	subStructTypes     map[types.Type][]types.Type
 
+	// inUsingAliasTarget is set only while a type alias's `global using` RHS is being rendered.
+	// That RHS resolves at COMPILATION scope — outside `namespace go` and outside the emitted
+	// `<pkg>_package` class — so every same-package name in it needs a qualification the code-body
+	// renderings deliberately elide (see usingAliasTypeQualifier). Set and cleared around the
+	// single render call in visitTypeSpec's alias branch.
+	inUsingAliasTarget bool
+
 	// Lifted ANONYMOUS struct types deduplicated by structural signature within a function:
 	// structurally identical anonymous structs are ONE Go type, so repeated occurrences must
 	// lift to a single C# type or reflect.Type identity splits per occurrence (see

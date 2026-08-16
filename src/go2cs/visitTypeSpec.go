@@ -56,8 +56,6 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			panic(fmt.Sprintf("@visitTypeSpec - Failed to get type for type alias %s", name))
 		}
 
-		var usePackagePrefix bool
-
 		// Check if the aliased type is a struct or pointer to a struct
 		if structType, exprType := v.extractStructType(typeSpec.Type); structType != nil && !v.liftedTypeExists(structType) {
 			if v.inFunction {
@@ -69,8 +67,6 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			if v.inFunction {
 				v.indentLevel--
 			}
-
-			usePackagePrefix = true
 		}
 
 		// Check if the aliased type is an anonymous interface
@@ -84,46 +80,19 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			if v.inFunction {
 				v.indentLevel--
 			}
-
-			usePackagePrefix = true
 		}
 
-		// A type alias to a SAME-PACKAGE named type (`type alias = Inner`) must qualify the target
-		// with the package class — the `global using` sits at namespace scope, outside the class, so
-		// a bare `go.Inner` does not resolve (Inner is `go.main_package.Inner`). Cross-package targets
-		// already carry their own qualification, so only same-package named targets need this.
-		if !usePackagePrefix {
-			if named, ok := types.Unalias(typeSpecType).(*types.Named); ok {
-				if obj := named.Obj(); obj != nil && obj.Pkg() == v.pkg {
-					usePackagePrefix = true
-				}
-			}
-		}
+		// A `global using` RHS is the one rendering that lands at COMPILATION scope, so — unlike
+		// every code-body rendering — nothing in it may lean on `namespace go` or on the enclosing
+		// `<pkg>_package` class being in scope. Both halves of that are switched on here and only
+		// here: usingAliasTypeQualifier package-qualifies each same-package name (the target and
+		// everything it nests — a lifted anonymous type, a slice element, a map value), and
+		// renderCSFullTypeName's rootNested mode roots each remaining nested name.
+		v.inUsingAliasTarget = true
 
-		var typeNamePrefix string
+		typeName := renderCSFullTypeName(v.getFullyQualifiedTypeName(typeSpecType, false), true)
 
-		if usePackagePrefix {
-			// The same-package alias TARGET must be qualified with the package CLASS
-			// (`<pkg>_package`), but for a package in a NESTED namespace (internal/fuzz →
-			// `go.@internal`, io/fs → `go.io`) the class alone roots the target one segment too
-			// shallow: a bare `fuzz_package/CorpusEntryᴛ1` renders `go.fuzz_package.CorpusEntryᴛ1`,
-			// but the lifted type lives at `go.@internal.fuzz_package.CorpusEntryᴛ1` → CS0234 at the
-			// `global using` line and every use (internal/fuzz's CorpusEntry, ×60). Prepend the
-			// namespace segments between the root and the class (`@internal`, `io`), taken from the
-			// SAME packageNamespace that emitted the `namespace …;` declaration so the two always
-			// agree. A top-level package's namespace is exactly RootNamespace, leaving no prefix
-			// segments, so the target stays `<pkg>_package/…` (byte-for-byte no-op).
-			nsSegments := strings.TrimPrefix(strings.TrimPrefix(packageNamespace, RootNamespace), ".")
-			classQualifier := getSanitizedImport(fmt.Sprintf("%s%s", packageName, PackageSuffix))
-
-			if nsSegments == "" {
-				typeNamePrefix = classQualifier + "/"
-			} else {
-				typeNamePrefix = nsSegments + "." + classQualifier + "/"
-			}
-		}
-
-		typeName := convertToCSFullTypeName(typeNamePrefix + v.getFullyQualifiedTypeName(typeSpecType, false))
+		v.inUsingAliasTarget = false
 
 		// The empty interface target (`type X any` / `type X = any` / `type X interface{}`) renders
 		// as `go.any`, which does not resolve in a using-alias RHS (any is a csproj-level alias, and
@@ -382,6 +351,29 @@ func liftedTypeDeclaredBy(t types.Type, declared types.Object) bool {
 	}
 
 	return false
+}
+
+// samePackageTypeQualifier returns the prefix that qualifies a SAME-PACKAGE type name with its
+// emitted package CLASS (`<pkg>_package`) for a `global using` alias RHS, which sits outside both
+// `namespace go` and that class.
+//
+// For a package in a NESTED namespace (internal/fuzz → `go.@internal`, io/fs → `go.io`) the class
+// alone roots the name one segment too shallow: a bare `fuzz_package/CorpusEntryᴛ1` renders
+// `go.fuzz_package.CorpusEntryᴛ1`, but the lifted type lives at
+// `go.@internal.fuzz_package.CorpusEntryᴛ1` → CS0234 at the `global using` line and every use
+// (internal/fuzz's CorpusEntry, ×60). Prepend the namespace segments between the root and the class
+// (`@internal`, `io`), taken from the SAME packageNamespace that emitted the `namespace …;`
+// declaration so the two always agree. A top-level package's namespace is exactly RootNamespace,
+// leaving no prefix segments, so the name stays `<pkg>_package/…`.
+func samePackageTypeQualifier() string {
+	nsSegments := strings.TrimPrefix(strings.TrimPrefix(packageNamespace, RootNamespace), ".")
+	classQualifier := getSanitizedImport(fmt.Sprintf("%s%s", packageName, PackageSuffix))
+
+	if nsSegments == "" {
+		return classQualifier + "/"
+	}
+
+	return nsSegments + "." + classQualifier + "/"
 }
 
 // golibAliasSafeNames maps the golib csproj-level `<Using Alias="...">` names to equivalents
