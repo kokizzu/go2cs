@@ -1453,20 +1453,252 @@ internal static bool Implements(this ж<rtype> Ꮡt, ΔType u) {
     return GoReflect.GoImplements(sysTypeOfReflectType(u), Ꮡt.Value.t.sysType);
 }
 
-// AssignableTo reports whether a value of the type is assignable to type u — identity on the
-// carried System.Type (named-type distinctness is free: distinct Go types are distinct managed
-// types), or interface-implements. The Go unnamed↔named underlying rule is deferred with a
-// named consumer (mirrors reflectlite's AssignableTo).
-internal static bool AssignableTo(this ж<rtype> Ꮡt, ΔType u) {
-    if (u == default!) {
-        throw panic("reflect: nil type passed to Type.AssignableTo");
+// AssignableTo is NO LONGER HAND-OWNED. It read `identity on the carried System.Type, or
+// interface-implements`, which is a strictly narrower relation than Go's: Go also admits a value
+// whose type has the same UNDERLYING type as the destination when at least one of the two is not
+// a defined type. database/sql's TestUserDefinedBytes is the measured consumer — convertAssignRows
+// assigns a driver's []byte into a `type userDefinedBytes []byte`, which Go accepts and CLONES,
+// while the identity rule rejected it and fell through to the CONVERT arm, handing the caller a
+// view over the driver's own array ("got potentially dirty driver memory").
+//
+// Go's own body is now what runs: `directlyAssignable(uu.t, t.t) || implements(uu.t, t.t)`. It
+// could not run before because three of the things it stands on were not answerable — the
+// descriptor's TFlagNamed bit (now carried, internal/abi/type_impl.cs), the `implements` free
+// function and haveIdenticalUnderlyingType's downcast arms (both below). Retiring a hand-own is
+// the point of fixing those: the less of Go's algorithm this bridge restates, the fewer places
+// its semantics can drift.
+
+// implements reports whether the type V implements the interface type T — the FREE function Go's
+// own directlyAssignable/AssignableTo/convertOp/assignTo all route through, as distinct from the
+// rtype.Implements method below (which is the public API boundary and panics for a non-interface
+// argument; this one answers false, exactly as Go's does).
+//
+// The auto form reinterprets the abi.Type as an interfaceType specialization and reads .Methods
+// off a promoted-embed box that is DEFAULT behind a synthesized descriptor, so the first read of a
+// NON-EMPTY interface throws from ж.ValueSlot. Bridged over GoReflect.GoImplements — the same
+// method-set probe the emitted `_<T>` asserts and rtype.Implements use — so a method set can never
+// be answered one way by a type assertion and another by reflection, and so the three call sites
+// that reach this function cannot disagree with the one that reaches the method.
+internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
+    if (ᏑT == nil || abi.Kind(ref ᏑT.Value) != abi.Interface) {
+        return false;
     }
-    System.Type? uu = sysTypeOfReflectType(u);
-    System.Type? tt = Ꮡt.Value.t.sysType;
-    if (uu is not null && uu == tt) {
+    return GoReflect.GoImplements(ᏑT.Value.sysType, ᏑV == nil ? null : ᏑV.Value.sysType);
+}
+
+// ChanDir returns a channel type's direction. See internal/abi's ChanDir for why the answer is
+// always BothDir: a Go channel type emits as golib's `channel<T>` whatever its direction, so the
+// bridge can only ever describe the bidirectional type, and BothDir is that type's real
+// direction. The auto form downcast the descriptor onto the chanType record Go's linker allocates
+// behind it and read a direction out of the memory that follows the value slot instead —
+// non-deterministically, so reflect.MakeChan's `ChanDir() != BothDir` guard and the identity
+// walk's chan arm each answered differently run to run.
+internal static ΔChanDir ChanDir(this ж<rtype> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
+    if (t.Kind() != Chan) {
+        throw panic("reflect: ChanDir of non-chan type " + Ꮡt.String());
+    }
+    return ((ΔChanDir)(nint)abi.ChanDir(Ꮡt.common()));
+}
+
+// ==== type IDENTITY: haveIdenticalUnderlyingType, arm for arm over answerable accessors ====
+//
+// THE seat of Go's type-identity relation: `ConvertibleTo` reaches it through convertOp,
+// `AssignableTo` through directlyAssignable, and Value.assignTo/Convert through both. Go's body is
+// a switch on kind, and five of its eight arms already worked here — the scalar arm needs nothing,
+// and Array/Map/Pointer/Slice recurse through Elem()/Key()/Len(), which internal/abi synthesizes
+// from the descriptor's carried System.Type.
+//
+// The other three reached their operands by the PREFIX-DOWNCAST idiom the rest of this bridge has
+// already had to replace — `(*structType)(unsafe.Pointer(t))` and its funcType/interfaceType
+// siblings — and there is nothing behind a ж<abi.Type> to downcast to. They did not fail loudly.
+// They read ZERO of everything and returned TRUE:
+//
+//   * STRUCT — `len(t.Fields)` came back 0 for both operands, so the field loop never ran and any
+//     two structs compared identical. Measured: `struct{B []byte; M map[string]int}` was reported
+//     convertible to the same struct with `M map[string]int64`, AND to one whose second field is
+//     merely RENAMED, AND to one with a different field COUNT.
+//   * FUNC — the same, through InCount/OutCount: any two func types compared identical.
+//   * INTERFACE — Go's own arm answers true only when BOTH sides have zero methods; reading zero
+//     methods off both made every interface pair identical.
+//
+// A false positive in an identity relation is the most dangerous shape this board tracks, because
+// every caller reads it as permission. It was already live through ConvertibleTo, and retiring the
+// AssignableTo hand-own would have widened it to assignment — which is why the sequence recorded
+// on the board fixes these arms in the SAME change, not after it.
+//
+// The struct arm is bridged at the REFLECT level rather than in internal/abi on purpose. abi's
+// synthesized StructType() deliberately leaves StructField.Name the zero ΔName — a ΔName is a
+// pointer into the linker's name blob and every reader walks it with raw-address arithmetic — so
+// the field NAMES and TAGS Go's identity walk compares are not there to be had one layer down.
+// reflect already owns the named-field projection (rtype.Field, over GoReflect.GoFields), and this
+// walk reads the SAME projection, so the fields a type hands out and the fields its identity is
+// decided by cannot disagree.
+internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, bool cmpTags) {
+    if (ᏑT == ᏑV) {
         return true;
     }
-    return GoReflect.GoImplements(uu, tt);
+    if (ᏑT == nil || ᏑV == nil) {
+        return false;
+    }
+    ref var T = ref ᏑT.DerefOrNull();
+    ref var V = ref ᏑV.DerefOrNull();
+    // The internal/abi accessors are called in QUALIFIED STATIC form throughout this walk
+    // (`abi.Elem(x)`, not `x.Elem()`). Extension-method lookup searches the file's enclosing
+    // namespaces, and `go.@internal` is a CHILD of this file's `go`, not a parent — so an
+    // unqualified call binds to reflect_package's own same-named extension over ж<rtype> and
+    // fails to compile. internal/abi's own type_impl.cs can use the instance form because it
+    // lives in that namespace; this file cannot.
+    ΔKind kind = ((ΔKind)(nuint)(uint8)abi.Kind(ref T));
+    if (kind != ((ΔKind)(nuint)(uint8)abi.Kind(ref V))) {
+        return false;
+    }
+    // Non-composite types of equal kind have the same underlying type (the predefined instance).
+    if (ΔBool <= kind && kind <= Complex128 || kind == ΔString || kind == ΔUnsafePointer) {
+        return true;
+    }
+    // Composite types — Go's switch, in Go's order.
+    var exprᴛ1 = kind;
+    if (exprᴛ1 == Array) {
+        return abi.Len(ᏑT) == abi.Len(ᏑV) && haveIdenticalType(abi.Elem(ᏑT), abi.Elem(ᏑV), cmpTags);
+    }
+    if (exprᴛ1 == Chan) {
+        return abi.ChanDir(ᏑT) == abi.ChanDir(ᏑV) && haveIdenticalType(abi.Elem(ᏑT), abi.Elem(ᏑV), cmpTags);
+    }
+    if (exprᴛ1 == Func) {
+        return haveIdenticalFuncShape(ᏑT, ᏑV, cmpTags);
+    }
+    if (exprᴛ1 == ΔInterface) {
+        return isEmptyGoInterface(T.sysType) && isEmptyGoInterface(V.sysType);
+    }
+    if (exprᴛ1 == Map) {
+        return haveIdenticalType(abi.Key(ᏑT), abi.Key(ᏑV), cmpTags) && haveIdenticalType(abi.Elem(ᏑT), abi.Elem(ᏑV), cmpTags);
+    }
+    if (exprᴛ1 == ΔPointer || exprᴛ1 == ΔSlice) {
+        return haveIdenticalType(abi.Elem(ᏑT), abi.Elem(ᏑV), cmpTags);
+    }
+    if (exprᴛ1 == Struct) {
+        return haveIdenticalStructShape(ᏑT, ᏑV, cmpTags);
+    }
+    return false;
+}
+
+// isEmptyGoInterface answers Go's `len(interfaceType.Methods) == 0` for a managed interface type.
+// Go's `any`/`interface{}` is emitted as `object`, which is the only interface type this bridge
+// can prove methodless: a DEFINED empty interface with a managed type of its own is answered
+// false, i.e. NOT identical. That is the conservative direction on purpose — a false negative in
+// an identity relation degrades a caller to "this needs a conversion", while a false positive
+// hands it a silent wrong assignment. (No measured consumer compares two distinct empty interface
+// types; the assignability of a concrete value TO `any` does not come through here at all, it
+// comes through implements().)
+private static bool isEmptyGoInterface(System.Type? st) {
+    return st == typeof(object);
+}
+
+// haveIdenticalFuncShape compares two func types by the parameter and result types the delegate's
+// Invoke signature carries (GoReflect.TryFuncShape — the SAME shape rtype.NumIn/In/NumOut/Out
+// read), plus variadicity, which Go carries in the top bit of the descriptor's OutCount and
+// therefore compares as part of the same count check. A parameter's ARRAY DIMS ride the
+// descriptor's funcParamDims cargo, so `func([32]byte) bool` and `func([64]byte) bool` — ONE
+// managed delegate type — stay distinguishable exactly where a source knew the lengths.
+private static bool haveIdenticalFuncShape(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, bool cmpTags) {
+    System.Type? ts = ᏑT.Value.sysType;
+    System.Type? vs = ᏑV.Value.sysType;
+    if (ts is null || vs is null ||
+        !GoReflect.TryFuncShape(ts, out System.Type[]? tin, out System.Type[]? tout, out bool tVariadic) ||
+        !GoReflect.TryFuncShape(vs, out System.Type[]? vin, out System.Type[]? vout, out bool vVariadic)) {
+        return false;
+    }
+    if (tin!.Length != vin!.Length || tout!.Length != vout!.Length || tVariadic != vVariadic) {
+        return false;
+    }
+    nint[]?[]? tParamDims = ᏑT.Value.funcParamDims;
+    nint[]?[]? vParamDims = ᏑV.Value.funcParamDims;
+    for (int i = 0; i < tin.Length; i++) {
+        var tp = abi.synthType(tin[i], funcParamDimsAt(tParamDims, i));
+        var vp = abi.synthType(vin[i], funcParamDimsAt(vParamDims, i));
+        if (!haveIdenticalType(tp, vp, cmpTags)) {
+            return false;
+        }
+    }
+    for (int i = 0; i < tout.Length; i++) {
+        if (!haveIdenticalType(abi.synthType(tout[i]), abi.synthType(vout[i]), cmpTags)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+private static nint[]? funcParamDimsAt(nint[]?[]? paramDims, int i) {
+    return paramDims is not null && i < paramDims.Length ? paramDims[i] : null;
+}
+
+// haveIdenticalStructShape is Go's field loop over GoReflect.GoFields — the projection rtype.Field
+// and the value side already read, so a struct's identity and the fields it hands out are decided
+// by one walk. Every clause Go compares is compared here: field COUNT, the struct's PkgPath, and
+// per field the NAME, the TYPE, the TAG (only when cmpTags — the single place assignability and
+// convertibility diverge, which is why the projection has to carry tags at all), the OFFSET and
+// EMBEDDEDNESS (`struct{T}` is not `struct{T T}`, and nothing else separates them: an embed's Go
+// field name IS its type name).
+//
+// The offsets are compared only when BOTH sides can compute a layout. A struct holding a field of
+// unknowable Go size has no truthful offset table at all — the same condition under which abi's
+// StructType() answers Go's nil — and in that state the comparison is not weakened in any way that
+// matters: identical field names, types and order determine identical offsets by construction, so
+// Go compares them defensively rather than decisively.
+private static bool haveIdenticalStructShape(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, bool cmpTags) {
+    System.Type? ts = ᏑT.Value.sysType;
+    System.Type? vs = ᏑV.Value.sysType;
+    if (ts is null || vs is null) {
+        return false;
+    }
+    GoReflect.GoFieldInfo[] tFields = GoReflect.GoFields(ts);
+    GoReflect.GoFieldInfo[] vFields = GoReflect.GoFields(vs);
+    if (tFields.Length != vFields.Length) {
+        return false;
+    }
+    if (structTypePkgPath(ts, tFields) != structTypePkgPath(vs, vFields)) {
+        return false;
+    }
+    nint[]? tOffsets = GoReflect.GoFieldOffsets(ts);
+    nint[]? vOffsets = GoReflect.GoFieldOffsets(vs);
+    bool compareOffsets = tOffsets is not null && vOffsets is not null;
+    for (int i = 0; i < tFields.Length; i++) {
+        GoReflect.GoFieldInfo tf = tFields[i];
+        GoReflect.GoFieldInfo vf = vFields[i];
+        if (tf.Name != vf.Name || tf.Embedded != vf.Embedded) {
+            return false;
+        }
+        if (cmpTags && tf.Tag != vf.Tag) {
+            return false;
+        }
+        if (!haveIdenticalType(structFieldDescriptor(tf), structFieldDescriptor(vf), cmpTags)) {
+            return false;
+        }
+        if (compareOffsets && tOffsets![i] != vOffsets![i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// structTypePkgPath is Go's abi.StructType.PkgPath: the declaring package when the struct holds an
+// unexported field, "" otherwise. It is what makes two structurally identical structs from
+// DIFFERENT packages non-identical when either hides a field.
+private static @string structTypePkgPath(System.Type st, GoReflect.GoFieldInfo[] fields) {
+    foreach (GoReflect.GoFieldInfo f in fields) {
+        if (!f.Exported) {
+            return (@string)GoReflect.GoPackagePath(st);
+        }
+    }
+    return "";
+}
+
+// structFieldDescriptor mints a field's descriptor exactly as abi's synthesizeStructType does, so
+// the identity walk and the abi.StructType a caller can read are built from one rule.
+private static ж<abi.Type> structFieldDescriptor(GoReflect.GoFieldInfo f) {
+    nint[]? dims = GoReflect.KindOf(f.Type) == GoReflect.Array ? f.ArrayDims : null;
+    return abi.synthType(f.Type, dims);
 }
 
 // PointerTo returns the pointer type with element t — the managed ж<T> pointer form,

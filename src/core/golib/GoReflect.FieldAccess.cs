@@ -234,6 +234,16 @@ public static partial class GoReflect
         /// <summary>Go exportedness (uppercase first rune of <see cref="Name"/>).</summary>
         public readonly bool Exported;
 
+        /// <summary>
+        /// Whether this is an EMBEDDED field — Go's <c>struct{ T }</c> rather than
+        /// <c>struct{ T T }</c>. The two are otherwise indistinguishable through this projection:
+        /// an embed's Go field name IS its type name, so name and type match and only this flag
+        /// separates them. <c>reflect</c>'s struct-identity walk compares it for exactly that
+        /// reason (Go's <c>haveIdenticalUnderlyingType</c> ends each field with
+        /// <c>tf.Embedded() != vf.Embedded()</c>), which is what it exists for.
+        /// </summary>
+        public readonly bool Embedded;
+
         /// <summary>Array dims when <see cref="Type"/> is an array kind and the declaring zero instance reveals them.</summary>
         public readonly nint[]? ArrayDims;
 
@@ -249,13 +259,14 @@ public static partial class GoReflect
         internal readonly FieldInfo[] Path;
         internal readonly bool[] BoxHop;
 
-        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "")
+        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false)
         {
             Name = name;
             Type = type;
             Exported = name.Length > 0 && name != "_" && char.IsUpper(name[0]);
             ArrayDims = arrayDims;
             Tag = tag;
+            Embedded = embedded;
             Path = path;
             BoxHop = boxHop;
         }
@@ -335,7 +346,7 @@ public static partial class GoReflect
             {
                 string goName = name[CapturedVarMarker.Length..];
                 nint[]? embedDims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
-                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field)));
+                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), embedded: true));
                 continue;
             }
 

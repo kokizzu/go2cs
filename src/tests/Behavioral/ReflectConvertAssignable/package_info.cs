@@ -61,13 +61,23 @@ public static partial class main_package
     // <TypeAccessibility>
     internal partial class myPtr {}
     internal partial class myWidePtr {}
+    internal partial struct fieldsA {}
+    internal partial struct fieldsRenamed {}
+    internal partial struct fieldsShort {}
+    internal partial struct fieldsTagged {}
+    internal partial struct fieldsWideElem {}
+    internal partial struct main_i {}
+    internal partial struct mute {}
     internal partial struct myArray {}
     internal partial struct myBytes {}
     internal partial struct myChan {}
     internal partial struct myInts {}
     internal partial struct myKeyMap {}
     internal partial struct myMap {}
+    internal partial struct myOtherBytes {}
     internal partial struct myWideArray {}
     internal partial struct myWideMap {}
+    internal partial struct namedFieldsA {}
+    internal partial struct speaker {}
     // </TypeAccessibility>
 }

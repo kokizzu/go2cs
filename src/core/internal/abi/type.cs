@@ -261,16 +261,7 @@ public static ΔChanDir InvalidDir => 0;
     internal UncommonType u;
 }
 
-// ChanDir returns the direction of t if t is a channel type, otherwise InvalidDir (0).
-public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    if (t.Kind() == Chan) {
-        var ch = Ꮡt.Reinterpret<Type, ChanType>();
-        return (~ch).Dir;
-    }
-    return InvalidDir;
-}
+// go2cs generated this placeholder — func ChanDir is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoType("dyn")] partial struct Uncommon_u {
     public partial ref PtrType PtrType { get; }

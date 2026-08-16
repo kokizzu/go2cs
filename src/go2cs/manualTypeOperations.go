@@ -244,6 +244,15 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// is what reflect's own rtype.Len reads), so hand-owning it turns a garbage read into the
 		// same truthful one, one layer down.
 		"Type.Len": goosAny,
+		// Type.ChanDir is the FOURTH member of that family and the only one with no synthesis
+		// waiting for it: the direction is not unpopulated, it is not in the managed type at all.
+		// `<-chan int`, `chan<- int` and `chan int` all emit as golib's `channel<T>`, so the
+		// bridge can only ever describe the BIDIRECTIONAL type — and BothDir is that type's real
+		// direction, which Type.String() has always agreed with (`chan T`). The downcast instead
+		// read a direction out of the memory following the value slot, non-deterministically.
+		// A directional Go channel type remains undescribable here; that is a limit of the
+		// converter's channel emission one layer up, recorded in ConversionStrategies-Reference.md.
+		"Type.ChanDir": goosAny,
 	},
 	// internal/cpu.getGOAMD64level is declared in cpu_x86.s and its body is a COMPILE-TIME constant:
 	// the GOAMD64_vN define the toolchain sets from `go env GOAMD64`, with `#else MOVL $1` as the
@@ -394,13 +403,43 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// is default behind a synthesized descriptor (gob's init died there); PointerTo builds
 		// a ptrType prototype through an eface Reinterpret; Convert dispatches into the cvt*
 		// family, which allocates through the nil unsafe_New stub (internal/fmtsort's ct()
-		// table, R-13/R-14). All four are bridged in value_impl.cs over the shared golib
+		// table, R-13/R-14). All are bridged in value_impl.cs over the shared golib
 		// machinery (GoReflect.GoImplements / TryConvertTo) — one method-set/convertibility
 		// rule everywhere.
-		"rtype.Implements":   goosAny,
-		"rtype.AssignableTo": goosAny,
-		"PointerTo":          goosAny,
-		"Value.Convert":      goosAny,
+		//
+		// `implements` is the FREE function behind rtype.Implements, and it is registered
+		// separately because it is what Go's OWN directlyAssignable / AssignableTo / convertOp /
+		// Value.assignTo route through. Bridging the method alone left those four on the
+		// throwing downcast, and it is also what let rtype.AssignableTo RETIRE from this list:
+		// with `implements` and haveIdenticalUnderlyingType answerable and the descriptor
+		// carrying TFlagNamed, Go's own `directlyAssignable(uu.t, t.t) || implements(uu.t, t.t)`
+		// is correct, and a hand-own that restated it as identity-on-the-managed-type was
+		// strictly narrower than the spec — database/sql's TestUserDefinedBytes is the measured
+		// consumer that named the gap.
+		"rtype.Implements": goosAny,
+		"implements":       goosAny,
+		// haveIdenticalUnderlyingType is THE seat of Go's type-identity relation (ConvertibleTo
+		// through convertOp, AssignableTo through directlyAssignable, assignTo/Convert through
+		// both). Five of its eight arms already worked — Array/Map/Pointer/Slice recurse through
+		// the Elem()/Key()/Len() internal/abi synthesizes, and the scalar arm needs nothing. The
+		// STRUCT, FUNC and INTERFACE arms reached their operands by the prefix-downcast idiom
+		// instead, and did not fail loudly: they read ZERO fields / ZERO in-out counts / ZERO
+		// methods off a default promoted-embed box and returned TRUE, so any two structs and any
+		// two funcs compared IDENTICAL. Measured: `struct{B []byte; M map[string]int}` reported
+		// convertible to the same struct with `M map[string]int64`, to one whose field is merely
+		// renamed, and to one with a different field COUNT. A false positive in an identity
+		// relation is read by every caller as permission, which is why it is fixed in the same
+		// change that lets AssignableTo reach it.
+		"haveIdenticalUnderlyingType": goosAny,
+		// rtype.ChanDir downcasts onto the chanType record and reads a direction out of the
+		// memory following the value slot — NON-DETERMINISTICALLY, so MakeChan's
+		// `ChanDir() != BothDir` guard and the identity walk's chan arm each answered differently
+		// run to run. The bridge answers BothDir because that is the only channel type it can
+		// describe: a Go channel emits as golib's `channel<T>` whatever its direction, which
+		// Type.String() has always reported as `chan T`. See internal/abi's Type.ChanDir.
+		"rtype.ChanDir": goosAny,
+		"PointerTo":     goosAny,
+		"Value.Convert": goosAny,
 		// rtype.FieldByName Reinterprets the descriptor as a structType and reads .Fields off
 		// the default promoted-embed box (gob's compileDec matching wire fields to the local
 		// struct). Bridged over the shared GoFields projection — the SAME field table
