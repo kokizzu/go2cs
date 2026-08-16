@@ -9030,3 +9030,329 @@ source file's `LastWriteTime`, so copying a backup back over `xor.cs` gives the 
 keeps the NEUTERED dll. The re-run then reproduces the AV with clean, HEAD-matching source and a
 `git status` that shows nothing at all. Touch the restored file (or build `--no-incremental`) before
 believing any verdict that follows a hand-own swap.
+## 🔎 SCOUT — golib's name surface leaks into every converted package, and ONE shape of collision compiles and lies (2026-08-16, lane `claude/golib-name-scout`)
+
+**FIX IS QUEUED, NOT PRESSING** (user ruling at the time this was raised). Nothing in the corpus is
+broken today; the exposure is user-code- and `-recurse`-facing. This entry is the census, the
+measured resolution matrix, the defense recommendation and the guard spec, so the fix lane starts
+from measurement rather than from re-derivation.
+
+### The question (user-raised)
+
+golib publishes helper names into the scope every converted file compiles under — `builtin` members
+(`mapclone`, `tmpstring`, `subslice3`, …), the runtime types (`slice`, `map`, `@string`, `error`, …),
+extension methods. End-user Go code may legally declare identifiers with those exact names, and Go
+even permits shadowing its own predeclared identifiers (`func len(...)` at package scope is legal Go
+— verified, not assumed). What happens in the emitted C#?
+
+### The scope converted code compiles under — measured from the emission, not from doctrine
+
+Three channels, and only the first is obvious:
+
+1. **`<Using Include="go.builtin" Static="True" />`** in `csproj-template.xml` (every converted
+   `.csproj` carries it) — every `public static` member of `go.builtin` is a **bare simple name** in
+   every converted file.
+2. **`namespace go;`** — converted code is emitted *inside* golib's own namespace, so every public
+   golib type there (`slice<T>`, `map<K,V>`, `channel<T>`, `array<T>`, `@string`, `error`, `sstring`,
+   `uintptr`, `comparable<T>`, `complex64`, `ж<T>`, …) is a **bare type name**, and the nested
+   namespace **`go.golib`** is a bare namespace name.
+3. **The alias `<Using>` items** — `any`, `uint8`…`uint64`, `int8`…`int64`, `float32/64`,
+   `complex128`, `rune`, `GoBigConst`, `GoTagAttribute`, `GoInitAttribute` — plus `using System;` and
+   `using System.Numerics;`. `package_info.cs` adds `using go;` + `using static go.<pkg>_package;`.
+
+⚠ **`src/core/GlobalUsings.cs` is DEAD and misleads a reader into thinking it is the mechanism.**
+There is no `.csproj` at `src/core/`; `golib.csproj` has no explicit `<Compile>` and SDK globbing is
+rooted at its own directory; every converted csproj does `<Compile Remove="**/*.cs" />` then
+`<Compile Include="*.cs" />` — current folder only. Nothing compiles it, and it has drifted (it still
+declares a `GoTag` alias no live csproj uses). Live global usings come **exclusively** from
+`csproj-template.xml`. Deleting the file, or wiring it, is a separate small cleanup.
+
+### Census of the exposed surface
+
+| Bucket | Count | Names |
+|---|---|---|
+| (a) all-lowercase ASCII | **46** | `append array builtin cap channel clear close comparable complex complex64 copy defer delete error fallthrough fatal heap i imag iota len make map mapclone max min nil nonnil panic print println range real recover select slice sslice sstring str subslice subslice3 tmpstring type uintptr widen zero` |
+| (a′) lowercase-initial, mixed | +4 | `_` `errorExtensions` `initPackage` `trySelect` |
+| (b) glyph-bearing | 9 | `ᐧ` `ᐧᐧ` `ꟷ` `ꓸꓸꓸ` `ᐸꟷ` `ж` `Ꮡ` `makeǃ` `goǃ` |
+| (c) `@`-escaped | 1 | **`@string`** — the collision that matters, see p17 |
+| (d) PascalCase | 11 + ~60 types | `AreEqual` `ConvertToType` `ConvertToUInt64` `GetGoTypeName` `GoZero` `Implements` `StackAllocThreshold` `ToUTF8Bytes` `TryTypeAssert` (+ `InitializeGoLib`/`ZeroIsDefault`, internal), plus the public type/attribute/interface surface |
+| extension-method names in scope | 16 | `_ array DerefOrNil DerefOrNull i Lsh OrTypedNil PrintPointer Reinterpret Rsh slice sslice ToGoString ToSlice ToUTF8Bytes type` |
+
+golib's `internal` members are **not** in scope for converted packages — `ж.cs:18-19` grants
+`InternalsVisibleTo` only to `unsafe` and `GolibTests`. `go2cs.Symbols`' 15 constants are **not**
+bare names either (no `using static go2cs.Symbols;` in any converted csproj); only the namespace
+simple name `go2cs` leaks.
+
+### Three C# resolution rules, MEASURED — this is what decides each row
+
+* **R1 — a member of `<pkg>_package` HIDES the using-static member of the same name, and C# does not
+  merge the candidate sets.** Lookup stops at the first *scope* that has the name, not the first
+  *applicable* overload. So a signature-compatible user declaration is **silently captured**; an
+  incompatible one is a compile error whose message names a helper the user never wrote.
+* **R2 — a call site emitted with EXPLICIT TYPE ARGUMENTS is IMMUNE.** Arity participates in lookup,
+  so `heap<box>(out var Ꮡb)` skips a non-generic member *and a local variable* named `heap`.
+  Measured at p03 and p15. **This is load-bearing**: it removes `heap`, `zero`, `subslice`,
+  `subslice3`, `slice`, `make`, `clear`, `min`, `max` from the dangerous class and shrinks the fix
+  by most of its apparent size.
+* **R3 — a nested type hides a `namespace go` type of the SAME ARITY only.** `type slice struct{}`
+  (arity 0) does *not* hide `slice<T>` (arity 1) — but `type string struct{}` emits `@string`
+  (arity 0) and *does* hide `go.@string` (arity 0). Measured at p17.
+
+### The measured resolution matrix — 21 probes, transpiled, compiled, run and diffed against `go run`
+
+Probes were behavioral-test-shaped single packages built against the worktree's live `src/`
+(`-p:go2csPath=<worktree>/src/ -p:UseSharedCompilation=false`). Every probe's Go program runs clean
+first, so a divergence is the conversion, never the source.
+
+| # | Scenario | C# result | Class |
+|---|---|---|---|
+| p01 | pkg `func len([]int) int` (predeclared shadow) + slice exprs, range | compiles, matches | benign |
+| p02 | pkg `func append(a, b int) int` | compiles, matches | benign |
+| p03 | pkg `func heap(int) int` + `&T{}` and an escaping local | compiles, matches | benign (R2) |
+| p04 | pkg `func mapclone(int) int` + `maps.Clone` | compiles, matches | benign (call emits qualified `maps.Clone<…>`) |
+| p05 | pkg `func str([]byte) string` | compiles, matches | benign (no `builtin.str` site emitted here) |
+| p06 | pkg `func nonnil(int) int`, no trigger | compiles, matches | benign |
+| p07 | pkg `func tmpstring(int) int` + `m[string(b)]` | **CS1503** `cannot convert from 'go.slice<byte>' to 'nint'` | LOUD |
+| p08 | `type error struct{}`, unused | compiles, matches | benign |
+| p09 | `type string struct{}`, unused | compiles, matches | benign |
+| p10 | `type slice struct{}` + real slices | compiles, matches — emitted `Δslice` | benign, **existing defense** |
+| p11 | pkg `var append = 11` | compiles, matches | benign |
+| p12 | pkg `func subslice3(int) int` + `s[1:3:4]` | compiles, matches (emits `s.slice(1,3,4)`) | benign |
+| **p14** | pkg **`func tmpstring(b []byte) string`** + `m[string(b)]` | **compiles; Go `11 ZZ` vs C# `0 ZZ`** | **SILENT WRONG** |
+| p15 | **LOCAL** `heap := 5` in a function with a heap-promoted local | compiles, matches | benign (R2) |
+| p16 | pkg `func nonnil(int) int` + `setOne(&e.x)` on a pointer param | **CS1615** `Argument 1 may not be passed with the 'ref' keyword` | LOUD |
+| p17 | `type string struct{}` **+ a real string in the package** | **CS0029** `Cannot implicitly convert 'ReadOnlySpan<byte>' to 'go.main_package.@string'` | LOUD |
+| p18 | `type error struct{}` + a real `errors.New` value | compiles, matches | benign |
+| p19 | pkg `func len` + `copy`/map/range-over-string/3-index/variadic sweep | compiles, matches | benign |
+| p20 | **LOCAL** vars `str`, `zero`, `nonnil`, `subslice`, `tmpstring` | compiles, matches | benign |
+| p21 | `type error struct{}` + dynamic `interface{ Error() string }` assert | compiles, matches | benign |
+| p13 | `type array` + `type channel` alongside real arrays/channels | compiles, matches — `Δarray`/`Δchannel` | benign, **existing defense** |
+| p23 | **`-recurse=module`** app with a package named **`golib`** | **CS0576** `Namespace 'go' contains a definition conflicting with alias 'golib'` | LOUD, `-recurse`-only |
+
+**Verdict census: 1 compiles-and-WRONG, 4 compile errors, 16 benign.**
+
+#### p14 is the whole finding
+
+Go source says `table[string(b)]`. The converter emits `table[tmpstring(b)]` — `builtin.tmpstring`
+is the zero-copy map-index-key optimization, a name the *Go source never spells*. A user who happens
+to declare `func tmpstring(b []byte) string` gets `@string tmpstring(slice<byte>)` in
+`main_package`, which by R1 hides the golib helper and by luck **matches its signature**. The map
+lookup silently routes through the user's function, misses, and returns the zero value. **No
+warning, no error, exit 0, wrong answer.** The converter's transpile step exits 0 and prints
+nothing.
+
+The same shape is live for every helper the converter emits implicitly and *without* explicit type
+arguments. Derived from the census and the emission sites (`convIndexExpr.go:337` `tmpstring(%s)`,
+`refLoweringEmissionOperations.go:530` `nonnil(ref %s)`, `visitFuncDecl.go:1788` `maps.clone →
+mapclone`, and the `str`/`trySelect`/`fatal`/`i`/`widen` sites), the **dangerous class is 12 names**:
+
+> `_ fatal i initPackage iota mapclone nil nonnil str tmpstring trySelect widen`
+
+The other 34 of the 46 fall out for three reasons, and the first is free immunity worth naming:
+
+* **Six are Go KEYWORDS and can never be a user identifier at all** — `defer`, `fallthrough`, `map`,
+  `range`, `select`, `type`. golib spells them as C# members precisely *because* Go reserves them, so
+  that slice of the surface defends itself.
+* **Eighteen are Go universe names** (`append`, `cap`, `clear`, `close`, `complex`, `copy`, `delete`,
+  `imag`, `len`, `make`, `max`, `min`, `new`, `panic`, `print`, `println`, `real`, `recover`) — already
+  defended by `goBuiltinNames`/`packageBuiltinShadows`, below.
+* **The remainder are generic-with-explicit-type-arguments** (`heap`, `zero`, `subslice`, `subslice3`,
+  `slice`, `sslice`, `array`, `channel`, …) — immune by R2, or handled on the type side.
+
+Two of the twelve are **not** function-call shaped and route through different emission paths, so
+they need their own attention in the fix: **`nil`** (a `static readonly` field the converter emits in
+every `== nil` / `= nil`, and `var nil int` is legal Go) and **`iota`** (a `const`, likewise legal as
+a Go package-level name). Neither was probed; both belong in the guard project.
+
+⚠ **Extension-form emissions (`i`, `_`, `type`, `slice`, `array`, `sslice`, `ToUTF8Bytes`) were NOT
+probed for silent capture.** Extension-method lookup runs only after instance lookup fails and is not
+hidden by a same-named *static* member, so they are low-risk by construction — but that is reasoning,
+not measurement, and the fix lane should probe one before dismissing the bucket.
+
+### Live corpus near-misses — 5 packages already do this, all benign TODAY
+
+The corpus compiles and 130 packages validate, so nothing here is broken. But the stdlib is *already*
+one emission away from p14:
+
+| Package | Declaration | Shadows | Why it survives |
+|---|---|---|---|
+| `runtime` | `map.cs:1656` `internal static any mapclone(any mʗp)` | `builtin.mapclone(any)` — **identical signature** | `runtime` never emits a `maps.Clone` call. This is p14's exact shape, sitting in the tree. |
+| `math` | `fma.cs:11` `internal static uint64 zero(uint64 x)` | `builtin.zero<T>()` | R2 — `zero<T>()` always carries explicit type args |
+| `runtime`, `sync` | `panic.cs:1103`, `mutex.cs:35` `fatal(@string)` | `builtin.fatal(string, nint = 1)` | no `builtin.fatal` site in either package (`mutex.cs` is hand-owned, so this one is deliberate) |
+| `log/slog` | `value.cs:354` `str(this Value v)`, plus local funcs `str` in `level.cs:65` and `json_handler.cs:201` | `builtin.str` | no `builtin.str` site in slog |
+| `runtime` | `debuglog.cs:191` `i(this ж<dlogger> Ꮡl, nint x)` | `builtin.i` (extension) | extension-vs-extension on different receivers |
+
+That is the honest answer to "does the corpus trip this today": **no — but it holds five loaded
+guns, one of them (`runtime.mapclone`) with a signature that matches exactly.**
+
+### What defends this today, and the exact gap
+
+Five hand-maintained lists, none of them derived from golib:
+
+| List | File | Size | What it does |
+|---|---|---|---|
+| `keywords` | `identifierNaming.go:33` | 65 | `@`-escape — this is what turns Go `string` into `@string`, i.e. it *creates* p17's collision |
+| `reserved` | `identifierNaming.go:85` | 52 | Δ-rename (`Δfoo`, or `Δfooᴛ` when also collision-flagged) — holds `array`, `builtin`, `channel`, `slice`, `sstring`, `GoFrame`, `NilType`, `PanicException`, `AreEqual`, `GetGoTypeName`, `ToUTF8Bytes`, `type`, and 4 marker glyphs |
+| `emitterSpelledTypeNames` | `nameCollisionAnalysisOperations.go:37` | **4** (`any`, `rune`, `nint`, `nuint`) | package-scoped Δ-rename, **TYPES only** |
+| `goBuiltinNames` | `packageGlobalState.go:234` | 18 | a package-level func/method with a Go **universe** name → the converter's own builtin calls emit qualified as `builtin.X(…)` (`packageBuiltinShadows`). **This is the mechanism that covers the universe-name family — p01/p02/p11/p19.** |
+| `csharpKeywordCastTypes` | `convCallExpr.go:26` | 15 | cast parenthesization, not naming |
+
+**The gap, stated exactly:** *nothing in the converter enumerates golib's `builtin` member surface or
+its type surface.* `reserved` covers 4 of the ~30 public `builtin` statics and misses `mapclone`,
+`tmpstring`, `str`, `subslice`, `subslice3`, `nonnil`, `heap`, `zero`, `fatal`, `range`, `select`,
+`trySelect`, `initPackage`, `widen`, `i`, `Implements`, `TryTypeAssert`; on the type side it misses
+`error`, `comparable`, `complex64`, `uintptr`, `sslice`, and the **`go.golib` namespace**.
+`goBuiltinNames` is correct but scoped to the 18 universe names and to func/method declarations only.
+
+**The symbol table does not help and was checked because it looked like it should.**
+`src/core/go2cs/symbols.json` → `gensymbols` → `symbols.go` + `Symbols.cs` is purely the *glyph and
+marker* vocabulary (27 entries: `ж`, `Ꮡ`, `Δ`, `ᴛ`, `ʗ`, `ˢ`, `_package`, …). It carries **no**
+reserved-name data, and `nameCollisionAnalysisOperations.go` does not read it at all — the only seam
+is `identifierNaming.go:94`, which drops four marker glyphs into `reserved`. `check-symbol-sync.ps1`
+verifies only that the two projections match the JSON, and **is wired into no gate** (not CNR, not
+the behavioral runners, not `go test`; there is no CI workflow). So the generator precedent exists
+and is good — it simply was never pointed at this problem.
+
+**No unit test guards any of the five lists.** `sanitization_test.go` covers import-path segments
+only. The 46 behavioral projects matching Collision/Shadow/Reserved/Keyword/Builtin cover the
+machinery well — `ReservedNameShadows` is the closest — but every one of them tests names *already
+in* the lists. None tests the gap, by construction.
+
+### Recommendation — one generated list, feeding two mechanisms that already exist
+
+The durable fix is **not** to grow `reserved` by hand. Two reasons, and the second is a trap:
+
+1. Hand-maintenance is exactly what drifted; golib gains members freely and nothing notices.
+2. ⚠ **`reserved` is the WRONG mechanism for these names.** Its own doc comment already warns that
+   names the *emitter itself spells* must never go in it, because legitimate emissions flow back
+   through the same string-based sanitizers (`slice<rune>` corpus-wide would corrupt to
+   `slice<Δrune>`). `mapclone`, `tmpstring`, `nonnil`, `str` are precisely emitter-spelled names.
+   Adding them to `reserved` would corrupt the converter's own output.
+
+So: **generate the list, and feed it to the mechanisms already proven for the universe builtins.**
+
+* **New:** `src/go2cs/internal/gengolibsurface` → committed `src/go2cs/golibSurface.go`, a
+  `map[string]golibNameKind` (`builtinMember` / `namespaceType` / `namespaceChild` / `extensionMethod`)
+  produced by scanning `src/core/golib/*.cs` for `public static` members of `partial class builtin`
+  and public types in `namespace go`. Modeled on `gensymbols` — deterministic, `go generate`-driven,
+  BOM/line-ending preserving.
+* **Gate it in the plain `go test ./...` run**, the `projitemsIntegrity_test.go` precedent: regenerate
+  in-memory, compare against the committed file, print the exact missing entry on failure. That is
+  what makes the list *unable* to drift from golib. (Optionally also wire `check-symbol-sync.ps1`
+  into CNR while in the neighbourhood — it currently gates nothing.)
+* **Consumer 1 — builtin members → qualification, not renaming.** Extend `performNameCollisionAnalysis`
+  so a package-level declarator (func, type, const **or var**) whose name is a `builtinMember`
+  registers in `packageBuiltinShadows`. Then thread `builtin.` through the implicit emission sites —
+  `convIndexExpr.go:337` (`tmpstring`), `refLoweringEmissionOperations.go:530` (`nonnil`),
+  `visitFuncDecl.go:1788`'s helper map, and the `str`/`range`/`select`/`trySelect`/`fatal`/`widen`
+  sites — via one small helper (`golibHelperName("tmpstring")` → `"builtin.tmpstring"` when shadowed).
+  Qualification beats renaming here: it leaves the user's Go name intact in the emitted C#, which is
+  the project's stated readability goal, and it is the mechanism already proven for the 18 universe
+  names. **R2 means the generic-with-explicit-args sites need no change at all.**
+* **Consumer 2 — golib TYPES → the existing package-scoped Δ-rename.** Add `namespaceType` names to
+  what `emitterSpelledTypeNames` covers (`error`, `comparable`, `complex64`, `uintptr`, `sslice`,
+  and — the p17 case — the post-`@`-escape spelling `@string`). Note the ordering hazard:
+  `string` becomes `@string` in `getCoreSanitizedIdentifier` *before* the reserved check, so the
+  collision test must run against the **emitted** spelling, not the Go one.
+* **Consumer 3 — `namespaceChild` → the existing import-alias rename.** `importAliasOperations.go`
+  already renames an alias that collides with a child namespace (`using Δunicode = unicode_package;`
+  in `strings.cs` is that machinery working). It simply does not know `go.golib` is a child
+  namespace. Adding `golib` to its set closes p23 in ~5 lines.
+
+### Guard spec
+
+Three behavioral projects, output-compared against `go run` (`[GoTestMatchingConsoleOutput]`), all
+currently FAILING — so they land **with** the fix, never before it:
+
+1. **`GolibHelperShadows`** — the p14/p07/p16 family in one package: `func tmpstring(b []byte) string`
+   with a `m[string(b)]` map index; `func nonnil(a int) int` with a `setOne(&e.x)` pointer-field call;
+   `func mapclone(...)` with a `maps.Clone`; `func str(b []byte) string`; `func fatal(s string)`.
+   Each helper's Go-visible answer must survive AND the converter's own helper call must still do its
+   job. This is the project that proves the qualification path.
+2. **`GolibTypeShadows`** — `type string struct{}` *used alongside real strings* (p17), plus `type
+   error`, `type comparable`, `type uintptr`, `type complex64`, `type sslice` each exercised next to
+   the real golib type. `ReservedNameShadows` already owns `any`/`rune`/`nint`/`builtin`/`sstring`/
+   `GoFrame`; this is its missing half and could reasonably be folded in rather than added beside it.
+3. **`RecursePackageNamedGolib`** — p23. `-recurse`-shaped, so it may not fit the behavioral runner's
+   single-package mold; if not, a converter integration test in
+   `moduleConverter_integration_test.go` is the right home.
+
+Plus the drift test above (`golibSurfaceIntegrity_test.go`), which is the guard that actually
+prevents recurrence — the behavioral projects prove today's fix, the drift test prevents tomorrow's
+golib member from re-opening the hole silently.
+
+**Neutered-fix control the lane owes:** revert the qualification helper and confirm
+`GolibHelperShadows` reports an OUTPUT divergence (not merely a compile failure) — p14's whole
+character is that it compiles.
+
+### Size estimate
+
+**One lane, medium — roughly a day of work plus a CNR pass.** Generator + generated list + drift test
+~250 lines across 3 new files; collision-analyzer extension ~40 lines across two existing files; the
+emission-site qualification helper plus ~10–15 call-site swaps; ~5 lines for the import-alias set; 2–3
+behavioral projects with goldens and `.slnx` registration.
+
+⚠ **The lane owes a CNR run and must not assume zero corpus drift.** Five stdlib packages already
+declare shadowing names (table above); the moment `packageBuiltinShadows` learns about them, any
+implicit helper call *inside those packages* starts emitting `builtin.X(…)`. `runtime` in particular
+declares three of them (`mapclone`, `fatal`, `i`) and is a large package. Expect a small, explainable
+emission diff in `runtime`/`math`/`sync`/`log/slog`, verify each hunk is exactly a qualification, and
+budget for a targeted regen rather than assuming none.
+
+### Two side findings this scout tripped over, both worth their own chips
+
+* **Δ-renamed unexported types are emitted PUBLIC — a live, corpus-wide over-export.** The
+  `<TypeAccessibility>` block computes exported-ness from the *emitted* name, and `Δ` (U+0394, an
+  uppercase Greek letter) reads as exported. Measured in the corpus, not inferred:
+  `database/sql/package_info.cs:132` `public partial struct ΔconnStmt {}` (Go `connStmt`,
+  unexported), `encoding/gob:101` `public partial interface ΔgobType {}` (Go `gobType`),
+  `syscall/windows:76,150,151` `ΔSockaddr`/`ΔHandle`/`ΔSignal`, `debug/{pe,macho,plan9obj}` `ΔSection`,
+  `database/sql:130,131` `ΔConn`/`ΔStmt`, `database/sql/driver:118` `ΔRowsAffected`, `syscall/linux:149`
+  `ΔSignal`. It is already **banked in a golden** — `ReservedNameShadows/package_info.cs` carries
+  `public partial struct Δbuiltin/Δsstring/Δany/Δrune/Δnint {}`. `getAccess` (`identifierNaming.go:260`)
+  *does* strip `Δ` before judging exported-ness, so the `package_info` writer is reaching the answer
+  by a different path; that path is the bug. Not a correctness break — C# over-visibility only — but
+  it leaks unexported Go types into the public API surface of every NuGet-published package, so it
+  matters more than it looks.
+* **`src/core/GlobalUsings.cs` is dead and stale** (see above). Delete it or wire it; leaving a file
+  that *looks* like the global-using mechanism next to the real one costs the next reader a full
+  investigation.
+
+### What cut against the brief
+
+* **The brief expected "silent capture of converter-emitted helper calls" to be the common case for a
+  user func in the same package. It is the RARE case.** R1 stops lookup at the first scope, so an
+  incompatible signature is a hard compile error — 4 of the 5 non-benign rows are loud. Only an
+  *accidentally signature-compatible* declaration goes silent (p14). That is better than feared, and
+  also worse: the one silent row has no diagnostic whatsoever, and its trigger (`func tmpstring([]byte)
+  string`) is a shape a real Go program would plausibly contain.
+* **The brief flagged unicode-prefixed names (`ж`, `Ꮡ`, `Δ`, `ᴛ`) as low-probability collisions. They
+  are effectively zero-probability *and already defended*** — `identifierNaming.go:94` puts
+  `PointerPrefix`/`TrueMarker`/`OverloadDiscriminator`/`EllipsisOperator` into `reserved` from the
+  generated symbol table, the one place the symbol table and the reserved logic already meet. No
+  probe was spent there.
+* **Type-name collisions were expected to be the soft spot; they are mostly the best-defended area.**
+  `slice`, `array`, `channel`, `builtin`, `sstring`, `any`, `rune`, `nint`, `nuint`, `GoFrame` all
+  Δ-rename correctly today (p10, p13). The type-side gap is narrow: `@string` (p17) and the
+  `error`/`comparable`/`uintptr`/`complex64`/`sslice` set, which `ReservedNameShadows` currently
+  treats as *pass-through controls* — and does so only as **locals**, never as package-level types.
+  That is the precise blind spot.
+* **R2 was not anticipated by the brief and materially shrinks the fix.** Half the scary-looking
+  names (`heap` at 1,858 call sites, `zero`, `subslice3`, `slice`, `make`, `clear`, `min`, `max`) are
+  immune because their call sites carry explicit type arguments — proven by p03/p15 (a *local
+  variable* named `heap` sitting directly above a `heap<box>(out var Ꮡb)` call compiles and runs
+  correctly). Do not spend the fix on them.
+* **The corpus check came back richer than "clean".** The brief expected no stdlib package to trip
+  this. Strictly true — but five packages already declare shadowing names and one of them
+  (`runtime.mapclone`) has a byte-identical signature to the golib helper it hides. The risk is
+  user-code-facing *today*; it is corpus-facing the moment `runtime` gains a `maps.Clone` call.
+
+### Reproducing
+
+The 21 probe packages were built under the session scratchpad and **deliberately not committed** —
+they are all currently-failing or currently-passing-by-accident, so committing them would either
+break the behavioral suite or bank the wrong baseline. Every probe's Go source is reproduced in the
+matrix descriptions above and each is 10–25 lines; the guard spec is the durable form. Method:
+`go2cs.exe -go2cspath <worktree>/src <dir>`, then
+`dotnet build <dir>.csproj -c Debug -p:go2csPath=<worktree>/src/ -p:UseSharedCompilation=false`,
+then run and diff against `go run .`.
