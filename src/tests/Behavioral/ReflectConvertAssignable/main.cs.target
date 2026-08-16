@@ -25,12 +25,68 @@ partial class main_package {
 
 [GoType("[4]byte")] partial struct myWideArray;
 
+[GoType("[]byte")] partial struct myOtherBytes;
+
+[GoType] partial struct fieldsA {
+    public slice<byte> B;
+    public map<@string, nint> M;
+}
+
+[GoType] partial struct namedFieldsA {
+    public slice<byte> B;
+    public map<@string, nint> M;
+}
+
+[GoType] partial struct fieldsWideElem {
+    public slice<byte> B;
+    public map<@string, int64> M;
+}
+
+[GoType] partial struct fieldsRenamed {
+    public slice<byte> B;
+    public map<@string, nint> N;
+}
+
+[GoType] partial struct fieldsShort {
+    public slice<byte> B;
+}
+
+[GoType] partial struct fieldsTagged {
+    [GoTag(@"json:""b""")]
+    public slice<byte> B;
+    [GoTag(@"json:""m""")]
+    public map<@string, nint> M;
+}
+
+[GoType] partial struct speaker {
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string speakerˢ = "speaker"u8;
+
+internal static @string String(this speaker _) {
+    return speakerˢ;
+}
+
+[GoType] partial struct mute {
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object sliceˢ = (@string)"slice"u8;
 private static readonly object mapˢ = (@string)"map"u8;
 private static readonly object ptrˢ = (@string)"ptr"u8;
 private static readonly object arrayˢ = (@string)"array"u8;
 private static readonly object elemˢ = (@string)"elem"u8;
+private static readonly object assignˢ = (@string)"assign"u8;
+private static readonly object ifaceˢ = (@string)"iface"u8;
+private static readonly object structˢ = (@string)"struct"u8;
+private static readonly object funcˢ = (@string)"func"u8;
+private static readonly object chanˢ = (@string)"chan"u8;
+
+[GoType("dyn")] partial struct main_i {
+    public slice<byte> B;
+    public map<@string, nint> M;
+}
 
 internal static void Main() {
     var bytes = reflect.TypeOf(slice<byte>(default!));
@@ -63,6 +119,42 @@ internal static void Main() {
     var myChanType = reflect.TypeOf(((myChan)default!));
     fmt.Println(elemˢ, named.Elem().Kind(), namedMap.Key().Kind(), namedMap.Elem().Kind());
     fmt.Println(elemˢ, namedPtr.Elem().Kind(), myChanType.Elem().Kind(), namedArr.Elem().Kind());
+    var other = reflect.TypeOf(((myOtherBytes)default!));
+    fmt.Println(assignˢ, bytes.AssignableTo(named), named.AssignableTo(bytes));
+    fmt.Println(assignˢ, named.AssignableTo(named), bytes.AssignableTo(bytes));
+    fmt.Println(assignˢ, named.AssignableTo(other), other.AssignableTo(named));
+    fmt.Println(assignˢ, named.AssignableTo(namedInts), bytes.AssignableTo(ints));
+    fmt.Println(assignˢ, named.AssignableTo(namedMap), plain.AssignableTo(named));
+    var stringerType = reflect.TypeOf(((ж<fmt.Stringer>)nil)).Elem();
+    var emptyType = reflect.TypeOf(((ж<any>)nil)).Elem();
+    fmt.Println(ifaceˢ, reflect.TypeOf(new speaker(nil)).AssignableTo(stringerType));
+    fmt.Println(ifaceˢ, reflect.TypeOf(new mute(nil)).AssignableTo(stringerType));
+    fmt.Println(ifaceˢ, named.AssignableTo(emptyType), stringerType.AssignableTo(emptyType));
+    var structA = reflect.TypeOf(new fieldsA(nil));
+    var structWideElem = reflect.TypeOf(new fieldsWideElem(nil));
+    var structRenamed = reflect.TypeOf(new fieldsRenamed(nil));
+    var structShort = reflect.TypeOf(new fieldsShort(nil));
+    var namedStructA = reflect.TypeOf(new namedFieldsA(nil));
+    fmt.Println(structˢ, structA.ConvertibleTo(structA), structA.ConvertibleTo(structWideElem));
+    fmt.Println(structˢ, structA.ConvertibleTo(structRenamed), structA.ConvertibleTo(structShort));
+    fmt.Println(structˢ, structA.AssignableTo(namedStructA), namedStructA.AssignableTo(structA));
+    fmt.Println(structˢ, structWideElem.AssignableTo(namedStructA), structShort.AssignableTo(namedStructA));
+    var structTagged = reflect.TypeOf(new fieldsTagged(nil));
+    var unnamedStruct = reflect.TypeOf(new main_i());
+    fmt.Println(structˢ, structA.ConvertibleTo(structTagged), structTagged.ConvertibleTo(structA));
+    fmt.Println(structˢ, unnamedStruct.AssignableTo(structA), unnamedStruct.AssignableTo(structTagged));
+    fmt.Println(structˢ, unnamedStruct.ConvertibleTo(structTagged), unnamedStruct.AssignableTo(structShort));
+    var funcIB = reflect.TypeOf(bool (nint _) => false);
+    var funcSB = reflect.TypeOf(bool (@string _) => false);
+    var funcII = reflect.TypeOf(nint (nint _) => 0);
+    var funcI2B = reflect.TypeOf(bool (nint _Δp0, nint _Δp1) => false);
+    fmt.Println(funcˢ, funcIB.ConvertibleTo(funcIB), funcIB.ConvertibleTo(funcSB));
+    fmt.Println(funcˢ, funcIB.ConvertibleTo(funcII), funcIB.ConvertibleTo(funcI2B));
+    var plainChan = reflect.TypeOf(new channel<nint>(0));
+    var wideChan = reflect.TypeOf(new channel<int64>(0));
+    fmt.Println(chanˢ, plainChan.AssignableTo(myChanType), myChanType.AssignableTo(plainChan));
+    fmt.Println(chanˢ, wideChan.AssignableTo(myChanType), plainChan.AssignableTo(plainChan));
+    fmt.Println(chanˢ, plainChan.ConvertibleTo(myChanType), wideChan.ConvertibleTo(myChanType));
 }
 
 } // end main_package

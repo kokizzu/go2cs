@@ -87,6 +87,128 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
+## ✅ CLOSED (2026-08-16, lane `claude/assignableto-arc`) — the `AssignableTo` deferral is retired, with the struct/func/interface identity arms and the chan direction fixed in the same change
+
+The reflect-bridge lane recorded the retirement SEQUENCE rather than the fix, and the sequence was
+right in every particular: `HasName()` had to become truthful first, and the struct and chan arms of
+`haveIdenticalUnderlyingType` had to be fixed *with* the hand-own's retirement rather than after it.
+Following it turned up one arm the sequence did not name — **func** — and one it did name as
+undecidable turned out to be decidable after all, once the question was asked about the right object.
+
+`database/sql` moves **135 → 136 of 139**. It does **not** bank: `TestConnRaw` is still open, and
+this lane measured something about it that changes what "open" costs (below).
+
+### What each of the four pieces actually was
+
+| Piece | Before | Now |
+|:--|:--|:--|
+| `abi.Type.HasName()` | `false` for EVERY synthesized descriptor — `TFlagNamed` was never carried | `synthesizeDescriptor` stamps the bit from `GoReflect.HasGoName`, the SAME gate `reflect`'s own `rtype.Name()` already stood on |
+| `implements` (the free function) | reinterprets the descriptor as an `interfaceType` and reads `.Methods` off a default promoted-embed box — **throws** for any non-empty interface | bridged over `GoReflect.GoImplements`, the probe `rtype.Implements` and the emitted `_<T>` asserts already share |
+| `haveIdenticalUnderlyingType` struct / func / interface arms | prefix-downcast; read ZERO fields / ZERO in-out counts / ZERO methods and returned **true** | Go's own clauses over `GoReflect.GoFields` + `TryFuncShape`, at the `reflect` level |
+| `ChanDir()` (both `abi.Type` and `rtype`) | reads a direction out of the memory FOLLOWING the descriptor's value slot — non-deterministically | `BothDir`, the real direction of the only channel type the bridge can describe |
+| `rtype.AssignableTo` | hand-owned as identity-on-the-managed-type + implements | **RETIRED** — Go's `directlyAssignable(uu.t, t.t) \|\| implements(uu.t, t.t)` runs |
+
+**The struct arm was worse than recorded, and the recorded shape understated it.** The board said "any
+two structs of EQUAL FIELD COUNT compare identical". Measured: the count check itself reads
+`len(Fields)` off the same dead downcast, so it is `0 == 0` for both operands and even a **differing
+field COUNT** compares identical. `struct{B []byte; M map[string]int}` was reported convertible to the
+same struct with `M map[string]int64`, to one whose second field is merely RENAMED, and to
+`struct{B []byte}`.
+
+**The FUNC arm is the one the sequence did not name, and it had to be fixed here.** It fails the same
+way through `InCount`/`OutCount`, so any two func types compared identical. It was already live
+through `ConvertibleTo`, and it would have widened to assignment the moment `AssignableTo` started
+routing through the walk — the exact trade the recorded sequence exists to prevent. It is answered
+from `GoReflect.TryFuncShape`, the same shape `rtype.NumIn`/`In`/`NumOut`/`Out` read.
+
+### The CHAN ruling — decidable, because the question was being asked about the wrong object
+
+The scout recorded `ChanDir` as "the only one of the family with **no synthesis waiting for it**:
+`<-chan int` and `chan int` are both `channel<nint>`, so a direction is not recoverable from the
+managed type for an unnamed directional channel. This one needs a ruling, not a fix." Both halves of
+that are true, and the conclusion still does not follow — **because a directional channel type is
+never an OPERAND here.** The bridge cannot build a descriptor for `<-chan int` at all; it builds one
+for `channel<T>`, whose direction genuinely is `BothDir`, and whose `Type.String()` has said `chan T`
+since the beginning. Answering `BothDir` is therefore not a guess about something unknown — it is the
+correct answer about the descriptor actually being asked, and it makes the descriptor's kind, name and
+direction agree where the downcast made one of the three disagree at random.
+
+The limit is real but it lives **one layer up**, in the converter's channel emission: `reflect.TypeOf`
+over a `<-chan int` reports `chan int`. That is stated in
+`ConversionStrategies-Reference.md` rather than hidden, and it is **not disclosable and needs no
+gate**, for a specific reason worth recording: no package on the validated roster observes it. The
+one corpus consumer that branches on direction is `text/template`'s `walkRange` (rejecting a range
+over a send-only channel), and `text/template` is not on the roster — only `text/template/parse` is.
+Recovering the direction would mean carrying it as descriptor cargo the way array dims are carried,
+which no measured consumer asks for (the r39d rule). **If `text/template` is ever taken up, this is
+the row to expect**, and the remedy is cargo, not a disclosure.
+
+Two residuals stated the same way: the **interface** arm proves "methodless" only for `object` (Go's
+`any`), so a defined empty interface with a managed type of its own answers *not identical* — the
+conservative direction, since a false negative degrades a caller to "needs a conversion" while a false
+positive is a silent wrong assignment; and a **defined methodless func type has no managed identity at
+all** (the converter renders it inline as its base delegate), so the named/unnamed pairs every other
+kind asserts cannot be produced for funcs.
+
+### `database/sql` — 136 of 139, and `TestConnRaw` is a HANG, which reprices the owed floor
+
+`TestUserDefinedBytes` flips exactly as predicted, and `TestConversions` stays passed. 139 rows, **136
+agree, 3 disagree, 0 skipped, 0 disclosed**, 27 excluded (the standard `Benchmark`/`Example`
+deferrals). The three: `TestGrabConnAllocs` and `TestRawBytesAllocs`, the standing **`alloc-profile`**
+class, and `TestConnRaw`.
+
+⚠ **The brief for this lane predicted 137 of 139; the arithmetic was one high** (135 + the one flip =
+136). Recording it so the next planner starts from the measured number.
+
+**The new measurement.** `TestConnRaw` does not merely assert wrong — it **hangs**, and it is the
+entire runtime of the package:
+
+| | C# | Go |
+|:--|--:|--:|
+| whole-package terminal elapsed | 3,423.3 s | 46 s |
+| `TestConnRaw` alone | **3,418.2 s** | 0.005 s |
+| every other test COMBINED | **5.1 s** | — |
+
+So the `'database/sql' = '60m'` `$longTimeouts` floor two previous entries record as owed is **not
+"this package is slow"** — it is this one test. Fix `TestConnRaw` and `database/sql` runs in about
+five seconds and needs **no floor entry at all**. Nothing is added to `$longTimeouts` today (the
+package still has no roster row, and a floor for a package the sweep never visits is dead
+configuration) — but the entry that banks it should re-measure before assuming it owes one. It also
+retro-explains the previous two lanes' 1,712 s and 3,423 s figures, which were read as machine load
+and lane contention: both were this test blocking until whatever bound applied.
+
+**Where the root is NOT.** The converted `Conn.Raw` emission is structurally correct: `fPanic` and the
+named result `err` are captured by REFERENCE while `dc`/`release` are snapshotted, the deferred lambda
+runs from `finally { ᒐ.Run(); }`, and `ᒐdone: return err` sits after the try/finally so the deferred
+write to `err` is observed. The suspect path is what the defer CALLS —
+`release(driver.ErrBadConn)` → `closemuRUnlockCondReleaseConn` (`closemu.RUnlock()`, then
+`errors.Is`, then `c.close(err)`) → `Conn.close`, which takes `closemu.Lock()`, a WRITE lock, before
+setting `c.dc = nil`, while the test's own recover handler independently takes `conn.closemu.Lock()`.
+A deadlock or lost wakeup in the hand-owned `sync.RWMutex` shim under that ordering is the leading
+hypothesis; `errors.Is` answering false for an identity comparison is the cheap one to falsify first.
+Not chased further here — it is a `sync`/defer-during-panic question, not an assignability one.
+
+### Guards, and the corpus footprint
+
+- **`ReflectConvertAssignable`** (extended, 14 → 34 compared rows) — Go's assignability rule clause by
+  clause: both gates of the unnamed↔named rule INCLUDING the two-defined-types negative that
+  `HasName()` alone decides, the interface clause both ways, the struct arm against a differing field
+  type / a renamed field / a differing field count / a tag that conversion ignores and assignment
+  honors, the func arm's parameter and result discrimination, and the chan rows the bridge can
+  truthfully produce. **Measured failing-first**: the struct and func arms answered `true` where Go
+  answers `false`, and the `assign` rows answered `false` where Go answers `true`.
+- **`GolibTests.GoStructLayoutTests.EmbeddedField_IsDistinguishableFromADeclaredFieldOfTheSameNameAndType`**
+  — pins the new `GoFieldInfo.Embedded` projection the struct arm stands on; `struct{T}` and
+  `struct{T T}` agree on field count, name, type, tag and offset and are separated by nothing else.
+  Neuter-verified (removing the flag fails it with the exact assertion).
+- Corpus footprint: **two regenerated files**, `internal/abi/type.cs` and `reflect/type.cs` (four Go
+  bodies replaced by placeholders, one placeholder replaced by Go's own restored `AssignableTo`).
+
+Doctrine: `ConversionStrategies-Reference.md` — *Go's ASSIGNABILITY rule, and the identity walk
+underneath it* (new), which also CLOSES the follow-on recorded at the end of *`reflect.Type.Name()` —
+a DEFINED type HAS a name even when its underlying type is a composite*: `reflectlite.rtype.Name()`
+becomes truthful for free, since it gates on the bit this lane started carrying.
+
 ## OPEN — `-recurse` emission is covered by NO standing gate, and issue #35 proves what that costs (2026-08-08)
 
 **Every standing gate measures the behavioral corpus or the standard library. Neither can see a

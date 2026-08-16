@@ -15606,13 +15606,151 @@ with its unnamed control and re-runs asn1's own `HasSuffix(Name(), "SET")` decis
 `TestCertificate`, whose "sequence tag mismatch" and empty RDN name had been left unattributed on
 the board and are the same root, since its `RDNSequence` is a `[]RelativeDistinguishedNameSET`.)
 
-**Still open, and dormant:** `abi.Type.HasName()` itself remains `false` for every synthesized
-descriptor. `internal/reflectlite.rtype.Name()` is the ordinary converted Go body and gates on it,
-so it answers `""` for EVERY type — strictly worse than what `reflect` had. Nothing in the corpus
-calls it (reflectlite's consumers, `context` and `errors`, use only `String`/`Kind`/`Comparable`/
-`AssignableTo`/`Implements`), so it is recorded rather than fixed. Populating the bit would ALSO
-change `directlyAssignable`'s `T.HasName() && V.HasName()` short-circuit — which is currently
-over-permissive in both packages — and that is a corpus-wide assignability change, not a naming one.
+**The follow-on this section recorded is now CLOSED.** It read: `abi.Type.HasName()` itself is still
+`false` for every synthesized descriptor, so `internal/reflectlite.rtype.Name()` — the ordinary
+converted Go body, which gates on it — answers `""` for EVERY type; and populating the bit would
+ALSO change `directlyAssignable`'s `T.HasName() && V.HasName()` short-circuit, "a corpus-wide
+assignability change, not a naming one". That reading was exactly right, and the assignability
+change is precisely why the bit was worth carrying. `synthesizeDescriptor` now stamps `TFlagNamed`
+from the same `GoReflect.HasGoName` gate this section installed, so the descriptor bit and the name
+a `Type` reports come from ONE predicate, and `reflectlite`'s `Name()` becomes truthful with it. See
+[*Go's ASSIGNABILITY rule, and the identity walk underneath
+it*](#gos-assignability-rule-and-the-identity-walk-underneath-it).
+
+### Go's ASSIGNABILITY rule, and the identity walk underneath it
+
+`reflect.Type.AssignableTo` was hand-owned as **identity on the carried `System.Type`, or
+interface-implements**. Distinct Go types are distinct managed types, so identity gets named-type
+distinctness for free — but it is strictly narrower than Go's rule, which also admits a value whose
+type has the same UNDERLYING type as the destination provided **at least one of the two is not a
+defined type**:
+
+```go
+type userDefinedBytes []byte
+var u userDefinedBytes
+u = []byte{1, 2, 3}   // legal: []byte is undefined, userDefinedBytes is defined
+```
+
+`database/sql`'s `TestUserDefinedBytes` is the measured consumer, and its symptom is a data bug
+rather than an error. `convertAssignRows` tries two arms in order:
+
+```csharp
+if (sv.IsValid() && sv.Type().AssignableTo(dv.Type())) {
+    case slice<byte> b: dv.Set(reflect.ValueOf(bytes.Clone(b)));   // arm 1 — CLONES
+}
+if (dv.Kind() == sv.Kind() && sv.Type().ConvertibleTo(dv.Type())) {
+    dv.Set(sv.Convert(dv.Type()));                                 // arm 2 — SHARES the array
+}
+```
+
+Go takes arm 1 and copies. The identity rule rejected the pair, so the converted run fell through to
+arm 2 and handed the caller a **view over the driver's own array** — the test's own words, "got
+potentially dirty driver memory".
+
+**The hand-own is retired.** Go's body runs: `directlyAssignable(uu.t, t.t) || implements(uu.t, t.t)`.
+It could not run before, because three things it stands on had no answer — and each had to land in
+the same change, or the fix would have traded one wrong answer for a wider one.
+
+**(1) `HasName()` had to become truthful FIRST.** `directlyAssignable`'s first gate is
+`if T.HasName() && V.HasName() || T.Kind() != V.Kind() { return false }`. With the bit never set,
+that gate passed for every pair — so retiring the hand-own without it would have called two DISTINCT
+defined types over one underlying type assignable, which Go rejects:
+
+```go
+type myBytes []byte
+type myOtherBytes []byte
+// Go: myBytes is NOT assignable to myOtherBytes — both are defined.
+```
+
+**(2) `implements` — the FREE function — had to be bridged, not just the method.** `rtype.Implements`
+was already hand-owned over `GoReflect.GoImplements`, but Go's own `directlyAssignable`,
+`AssignableTo`, `convertOp` and `Value.assignTo` all route through the free `implements(T, V)`, whose
+auto form reinterprets the descriptor as an `interfaceType` and reads `.Methods` off a promoted-embed
+box that is default behind a synthesized descriptor — it **throws** for any non-empty interface. It
+now answers from the same `GoReflect.GoImplements` probe the emitted `_<T>` asserts use, so a method
+set cannot be answered one way by a type assertion and another by reflection.
+
+**(3) `haveIdenticalUnderlyingType`'s downcast arms had to be fixed WITH it.** This is THE seat of
+Go's type-identity relation — `ConvertibleTo` reaches it through `convertOp`, `AssignableTo` through
+`directlyAssignable`. Five of its eight arms already worked: the scalar arm needs nothing, and
+Array/Map/Pointer/Slice recurse through the `Elem()`/`Key()`/`Len()` that `internal/abi` synthesizes
+(previous section). The **struct**, **func** and **interface** arms reached their operands by the
+prefix-downcast idiom instead — and they did not fail loudly. They read ZERO of everything and
+returned **true**:
+
+| Arm | What it read | What it therefore reported |
+|---|---|---|
+| Struct | `len(structType.Fields)` → 0 for both operands, so the field loop never ran | any two structs IDENTICAL — including different field TYPES, a renamed field, and a different field COUNT |
+| Func | `funcType.InCount`/`OutCount` → 0 for both | any two func types IDENTICAL |
+| Interface | `len(interfaceType.Methods)` → 0 for both, which is Go's own "both empty ⇒ identical" | any two interface types IDENTICAL |
+
+A false positive in an identity relation is the most dangerous shape this bridge produces, because
+every caller reads it as permission. It was already live through `ConvertibleTo`; routing
+`AssignableTo` through the same walk would have widened it to assignment.
+
+All three arms are now bridged in `reflect`'s `value_impl.cs`, and the struct arm sits at the
+**`reflect`** level on purpose rather than in `internal/abi`. abi's synthesized `StructType()`
+deliberately leaves `StructField.Name` the zero `ΔName` — a `ΔName` is a pointer into the linker's
+name blob and every reader walks it with raw-address arithmetic — so the field NAMES and TAGS Go's
+identity walk compares are not there to be had one layer down. `reflect` already owns the named-field
+projection (`rtype.Field`, over `GoReflect.GoFields`), and the walk reads that SAME projection, so
+the fields a type hands out and the fields its identity is decided by cannot disagree. Every clause
+Go compares is compared: field count, the struct's `PkgPath` (set when the struct holds an unexported
+field), and per field the name, the type, the **tag when `cmpTags`** — the single place assignability
+and convertibility diverge — the offset, and **embeddedness**, for which `GoReflect.GoFieldInfo`
+gained an `Embedded` flag, since `struct{T}` and `struct{T T}` agree on everything else (an embed's
+Go field name IS its type name).
+
+Two residuals are stated rather than hidden. The **interface** arm proves "methodless" only for
+`object` (Go's `any`), so a DEFINED empty interface with a managed type of its own is answered *not
+identical* — the conservative direction, since a false negative degrades a caller to "this needs a
+conversion" while a false positive hands it a silent wrong assignment. And a **defined methodless
+func type has no managed identity at all**: the converter renders it inline as its base delegate, so
+`type myFunc func(int) bool` and `func(int) bool` are one managed type, and the named/unnamed pairs
+every other kind can assert cannot be produced for funcs.
+
+#### The CHAN direction is a representational limit, and it sits one layer ABOVE this walk
+
+`ChanDir()` is the fourth member of the downcast family and the only one with no synthesis waiting
+for it, because the direction is not merely unpopulated — it is **not in the managed type at all**.
+A Go channel type emits as golib's `channel<T>` whatever its direction:
+
+```go
+var recv <-chan int
+var send chan<- int
+var both chan int
+```
+```csharp
+channel<nint> recv;   // all three land on ONE managed type
+channel<nint> send;
+channel<nint> both;
+```
+
+So the bridge can only ever DESCRIBE the bidirectional channel type, and `BothDir` is that type's
+real direction — which `Type.String()` has always agreed with, rendering every `channel<T>` as
+`chan T`. The downcast instead read a direction out of the memory following the descriptor's value
+slot, **non-deterministically**, so `reflect.MakeChan`'s `ChanDir() != BothDir` guard and the identity
+walk's chan arm each answered differently run to run. Both `internal/abi`'s `Type.ChanDir` and
+`reflect`'s `rtype.ChanDir` now answer `BothDir` for a chan-kind descriptor, which makes the
+descriptor's kind, name and direction consistent where the downcast made one of the three disagree.
+
+The residual is upstream of `reflect` entirely: **`reflect.TypeOf` over a `<-chan int` reports
+`chan int`**, so a consumer that branches on direction — `text/template`'s `walkRange` rejecting a
+range over a send-only channel — sees the bidirectional answer. Recovering it would mean carrying
+direction as descriptor cargo the way array dims are carried, which no measured consumer asks for
+(the r39d rule: a descriptor field whose read cannot be honored must not be populated to look
+truthful, and one no consumer reads must not be invented). No package on the validated roster
+observes it; `text/template` is not on the roster, only `text/template/parse`.
+
+(Guarded by the `ReflectConvertAssignable` behavioral test, extended from the `ConvertibleTo`
+recursions to Go's full assignability rule: both gates of the unnamed↔named clause including the
+two-defined-types negative, the interface clause in both directions, the struct arm against a
+differing field type / a renamed field / a differing field count / a tag that conversion ignores and
+assignment honors, the func arm's parameter and result discrimination, and the chan rows the bridge
+can truthfully produce. 34 rows, compared line for line against `go run`, measured failing-first —
+the struct and func arms reported `true` where Go reports `false`.
+`GolibTests.GoStructLayoutTests.EmbeddedField_IsDistinguishableFromADeclaredFieldOfTheSameNameAndType`
+pins the projection flag the struct arm stands on.)
 
 ### `abi.Type`'s SPECIALIZATIONS are synthesized, not downcast — `StructType()` / `ArrayType()`
 

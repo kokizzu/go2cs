@@ -95,7 +95,57 @@ public class GoStructLayoutTests
         public @string value;
         public ж<TestListNode> next;
     }
+
+    private struct TestEmbedInner
+    {
+        public nint X;
+    }
+
+    // `struct { TestEmbedInner }` — go2cs-gen emits a promoted-embed backing field named with the
+    // ʗ marker plus the embedded type's name, whose own type IS the embedded type.
+    private struct TestEmbeddingStruct
+    {
+        public TestEmbedInner ʗTestEmbedInner;
+    }
+
+    // `struct { TestEmbedInner TestEmbedInner }` — a DECLARED field that happens to be named after
+    // its own type. Go's field name for an embed IS the type name, so these two structs project the
+    // same field name and the same field type and differ in nothing else a field walk can see.
+    private struct TestNamedFieldStruct
+    {
+        public TestEmbedInner TestEmbedInner;
+    }
 #pragma warning restore CS0649
+
+    // The projection carries EMBEDDEDNESS because reflect's struct-identity walk compares it, and
+    // nothing else in the projection can: `struct{T}` and `struct{T T}` are DIFFERENT Go types that
+    // agree on field count, field name, field type, tag and offset. Go's
+    // haveIdenticalUnderlyingType ends every field comparison with `tf.Embedded() != vf.Embedded()`
+    // for exactly this pair, and reflect's own walk (value_impl.cs haveIdenticalStructShape) reads
+    // that answer from here — the SAME projection NumField/Field and the value side read, so the
+    // fields a type hands out and the fields its identity is decided by cannot disagree.
+    [TestMethod]
+    public void EmbeddedField_IsDistinguishableFromADeclaredFieldOfTheSameNameAndType()
+    {
+        GoReflect.GoFieldInfo[] embedded = GoReflect.GoFields(typeof(TestEmbeddingStruct));
+        GoReflect.GoFieldInfo[] declared = GoReflect.GoFields(typeof(TestNamedFieldStruct));
+
+        Assert.AreEqual(1, embedded.Length);
+        Assert.AreEqual(1, declared.Length);
+
+        // Everything else a struct-identity walk reads is IDENTICAL between the two...
+        Assert.AreEqual("TestEmbedInner", embedded[0].Name, "an embed's Go field name is its type name");
+        Assert.AreEqual(embedded[0].Name, declared[0].Name);
+        Assert.AreEqual(embedded[0].Type, declared[0].Type);
+        Assert.AreEqual(embedded[0].Tag, declared[0].Tag);
+        CollectionAssert.AreEqual(
+            GoReflect.GoFieldOffsets(typeof(TestEmbeddingStruct)),
+            GoReflect.GoFieldOffsets(typeof(TestNamedFieldStruct)));
+
+        // ...so this flag is the ONLY thing that keeps the two Go types apart.
+        Assert.IsTrue(embedded[0].Embedded, "a ʗ-marked backing field is Go's embedded field");
+        Assert.IsFalse(declared[0].Embedded, "an ordinary declared field is not embedded");
+    }
 
     [TestMethod]
     public void FieldOffsets_SingleString_IsZero()

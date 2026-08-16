@@ -94,6 +94,29 @@ public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDi
 private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims) {
     ref var t = ref heap<Type>(out var Ꮡt);
     t.Kind_ = (ΔKind)((uint8)GoReflect.KindOf(st));
+    // TFlagNamed — the descriptor bit that says "this is a DEFINED type", carried because three
+    // separate readers consult it and a synthesized descriptor answered NO to all of them:
+    // abi.Type.HasName(), internal/reflectlite's rtype.Name() (which gates on it and therefore
+    // answered "" for EVERY type), and — the reason this had to land before Go's assignability
+    // rule could — reflect/reflectlite's directlyAssignable, whose FIRST gate is
+    // `T.HasName() && V.HasName()`. Go's rule admits two types with identical underlying types
+    // only when at least one side is UNDEFINED; with the bit never set, that gate passed for
+    // every pair and would have called two DISTINCT named types over one underlying type
+    // assignable, which Go rejects.
+    //
+    // GoReflect.HasGoName is the managed reconstruction of the bit (it mirrors GoTypeName arm for
+    // arm, so a type reports a name exactly when it has one), and it is the SAME gate reflect's
+    // own hand-owned rtype.Name() already stood on — so the descriptor bit and the name a Type
+    // reports cannot disagree. Populating it honors the r39d rule rather than bending it: this is
+    // a field whose read CAN be honored, and leaving it zero was the untruth.
+    //
+    // The rest of TFlag stays zero, deliberately. TFlagUncommon would promise a uncommonType
+    // sub-record behind the descriptor (there is none); TFlagExtraStar promises a name blob whose
+    // first byte is a '*' to strip; TFlagRegularMemory/TFlagUnrolledBitmap describe a GC bitmap
+    // layout the managed heap does not have. Each is a read this bridge cannot honor.
+    if (GoReflect.HasGoName(st)) {
+        t.TFlag |= (TFlag)TFlagNamed;
+    }
     t.sysType = st;
     t.arrayDims = arrayDims;
     t.funcParamDims = funcParamDims;
@@ -251,6 +274,37 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
     nint[]? dims = Ꮡt.Value.arrayDims;
     nint[]? elemDims = kind == Pointer ? dims : dims is { Length: > 1 } ? dims[1..] : null;
     return synthType(elem, elemDims);
+}
+
+// ChanDir returns the direction of t if t is a channel type, otherwise InvalidDir.
+//
+// The FOURTH accessor of the same downcast family — `(*chanType)(unsafe.Pointer(t))` reaching the
+// record's Dir field — and the ONE member with no synthesis waiting for it, because the direction
+// is not merely unpopulated: it is not IN the managed type at all. A Go channel type emits as
+// golib's `channel<T>` whatever its direction, so `<-chan int`, `chan<- int` and `chan int` are
+// ONE managed type, and no descriptor built from a value can tell them apart.
+//
+// That makes the honest answer BothDir rather than a guess, and the distinction matters. The
+// bridge is not failing to recover a direction it holds; it can only ever DESCRIBE the
+// bidirectional channel type, and BothDir is that type's true direction. Type.String() has always
+// said the same thing — GoTypeName renders every `channel<T>` as `chan T` — so this makes the
+// descriptor's three answers (kind, name, direction) consistent where the downcast made ChanDir
+// alone disagree by reading a direction out of the memory following the value slot. That read was
+// the worst kind of wrong: NON-DETERMINISTIC, so reflect.MakeChan's `ChanDir() != BothDir` guard
+// and haveIdenticalUnderlyingType's chan arm both answered differently run to run.
+//
+// The residual is stated rather than hidden: a DIRECTIONAL Go channel type cannot be described by
+// this bridge, so reflect.TypeOf over a `<-chan int` reports `chan int` and any consumer that
+// branches on direction (text/template's walkRange rejecting a send-only channel) sees the
+// bidirectional answer. It is a limit of the converter's channel EMISSION, one layer above this
+// accessor, and it is recorded in ConversionStrategies-Reference.md; no roster package observes
+// it. Recovering it would mean carrying direction as descriptor cargo the way array dims are
+// carried, and no measured consumer asks (the r39d rule).
+public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
+    if (Ꮡt == nil || Ꮡt.Value.Kind() != Chan) {
+        return InvalidDir;
+    }
+    return BothDir;
 }
 
 // Key returns the key type for t if t is a map, otherwise nil.
