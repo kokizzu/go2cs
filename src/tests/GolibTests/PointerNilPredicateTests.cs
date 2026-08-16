@@ -196,4 +196,105 @@ public class PointerNilPredicateTests
         Assert.IsFalse(a == c);
         Assert.AreEqual(2, new Dictionary<ж<nint>, string> { [a] = "a", [b] = "b", [c] = "c" }.Count);
     }
+
+    // ---- Pointer KIND is not the same question as pointer BOX (the descent rule's value side) ----
+    //
+    // KindOf answers Pointer for every managed REFERENCE it does not otherwise recognize — the
+    // layout rule that stops the size/offset walks at an opaque handle (GoStructLayoutTests'
+    // ManagedReferenceField_IsOneWord_NotAStructToDescendInto). The VALUE walks then have to ask a
+    // second, different question before dereferencing one: is there a slot behind it at all? For an
+    // opaque handle there is not — what it refers to has no Go representation — so "one word, do not
+    // descend into it" is also "no slot, do not read through it", and reflect.Value.Elem must answer
+    // the invalid Value exactly as it does for a nil pointer.
+    //
+    // Reading anyway threw `Not a pointer box type: go.sync_package+RWState` out of
+    // ReadPointerSlot and took out every reflect.DeepEqual over a struct holding a sync primitive
+    // (crypto/tls's TestCloneNonFuncFields is the measured case). The behavioral half is guarded by
+    // the DeepEqual test's `guarded` struct; the classification itself is guarded here.
+
+    // A stand-in for a hand-owned shim's backing object — sync.Mutex's SemaphoreSlim gate,
+    // sync.RWMutex's RWState. A plain managed class: no ж<T>, no IPointer<T>, nothing to read.
+    private sealed class opaqueHandle
+    {
+        internal readonly object Gate = new();
+    }
+
+    [TestMethod]
+    public void OpaqueManagedHandleIsPointerKindButNotAPointerBox()
+    {
+        // BOTH halves of the rule, stated together — this pair IS the doctrine, and asserting
+        // either alone would let the other drift back.
+        Assert.AreEqual(GoReflect.Pointer, GoReflect.KindOf(typeof(opaqueHandle)),
+            "an opaque managed handle is one pointer word wide (the descent rule)");
+        Assert.IsFalse(GoReflect.TryPointerBoxElement(typeof(opaqueHandle), out System.Type? elem),
+            "...and has no pointee slot, so no value walk may dereference it");
+        Assert.IsNull(elem);
+
+        // The real shims, so the assertion carries the shapes that actually broke rather than only
+        // the fixture: SemaphoreSlim is sync.Mutex's gate, and a BCL type is exactly what a future
+        // change would be most likely to start reading through.
+        Assert.AreEqual(GoReflect.Pointer, GoReflect.KindOf(typeof(System.Threading.SemaphoreSlim)));
+        Assert.IsFalse(GoReflect.TryPointerBoxElement(typeof(System.Threading.SemaphoreSlim), out _));
+        Assert.IsFalse(GoReflect.TryPointerBoxElement(null, out _));
+    }
+
+    [TestMethod]
+    public void PointerBoxShapesResolveTheirPointee()
+    {
+        // The positive half: every shape a converted program can actually produce a Go pointer as
+        // must still resolve, or the fix above would silently turn real dereferences into nil.
+        Assert.IsTrue(GoReflect.TryPointerBoxElement(typeof(ж<nint>), out System.Type? boxElem));
+        Assert.AreSame(typeof(nint), boxElem);
+
+        Assert.IsTrue(GoReflect.TryPointerBoxElement(typeof(ж<pair>), out System.Type? structElem));
+        Assert.AreSame(typeof(pair), structElem);
+
+        // A go2cs-gen named-pointer wrapper (`type P *T`) routes through IPointer<T> — a non-generic
+        // class, so only the interface probe can see its pointee.
+        Assert.IsTrue(GoReflect.TryPointerBoxElement(typeof(namedPointer), out System.Type? namedElem));
+        Assert.AreSame(typeof(ж<nint>), namedElem);
+
+        // And each one still READS, so the classification and the slot accessor cannot disagree:
+        // both now come from one predicate.
+        ж<nint> target = new(23);
+        Assert.AreSame(target, GoReflect.ReadPointerSlot(new ж<ж<nint>>(target)));
+        Assert.AreSame(target, GoReflect.ReadPointerSlot(new namedPointer(new ж<ж<nint>>(target))));
+    }
+
+    // ---- The element/key resolution the abi descriptor's Elem()/Key() now stands on ----
+    //
+    // internal/abi's Type.Elem()/Key() reach their answer through Go's prefix-downcast idiom, which
+    // has no managed form; type_impl.cs synthesizes both from the descriptor's carried System.Type
+    // over exactly these two helpers. That makes them load-bearing for every
+    // reflect.ConvertibleTo/AssignableTo recursion in the corpus — a kind that stops resolving here
+    // re-nils Elem(), and reflect's haveIdenticalType nil-dereferences on it rather than testing it
+    // (database/sql's TestConversions/TestUserDefinedBytes were the measured pair; the behavioral
+    // half is the ReflectConvertAssignable test).
+
+    [TestMethod]
+    public void ElementAndKeyResolveForEveryKindTheDescriptorMustServe()
+    {
+        // Go's Elem() switch, kind for kind: array, chan, map (its VALUE), pointer, slice.
+        Assert.AreSame(typeof(byte), GoReflect.ElementType(typeof(array<byte>)));
+        Assert.AreSame(typeof(nint), GoReflect.ElementType(typeof(channel<nint>)));
+        Assert.AreSame(typeof(nint), GoReflect.ElementType(typeof(map<@string, nint>)));
+        Assert.AreSame(typeof(pair), GoReflect.ElementType(typeof(ж<pair>)));
+        Assert.AreSame(typeof(byte), GoReflect.ElementType(typeof(slice<byte>)));
+
+        // Key() is the map's other half, and the ONLY accessor that reads it.
+        Assert.AreSame(typeof(@string), GoReflect.KeyType(typeof(map<@string, nint>)));
+        Assert.IsNull(GoReflect.KeyType(typeof(slice<byte>)), "only a map has a key type");
+
+        // A NAMED container (`type myBytes []byte`) is a generated wrapper rather than a raw golib
+        // container, and answers through the container interface it implements. It is not asserted
+        // here on purpose: hand-rolling an ISlice<byte> fixture would pin this file's idea of that
+        // interface instead of the converter's real emission, and the ReflectConvertAssignable
+        // behavioral test already exercises named slice, map, pointer and array wrappers built by
+        // the converter itself — which is the stronger evidence for exactly this shape.
+
+        // A kind with no element answers Go's nil rather than a plausible-looking type.
+        Assert.IsNull(GoReflect.ElementType(typeof(@string)));
+        Assert.IsNull(GoReflect.ElementType(typeof(nint)));
+        Assert.IsNull(GoReflect.ElementType(null));
+    }
 }

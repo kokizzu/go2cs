@@ -541,10 +541,19 @@ public static ΔValue Elem(this ΔValue v) {
         if (cur is null || (cur is INilPointer nilable && nilable.IsNilPointer)) {
             return new ΔValue(nil);
         }
-        Type? pointee = GoReflect.ElementType(cur.GetType());
-        if (pointee is null) {
-            // Not a box shape golib can alias — detached read so existing readers keep working.
-            return makeReflectValue(GoReflect.ReadPointerSlot(cur));
+        if (!GoReflect.TryPointerBoxElement(cur.GetType(), out Type? pointee)) {
+            // An OPAQUE managed handle, not a pointer box — the value-side twin of the descent
+            // rule. KindOf reports Pointer for every managed reference it does not otherwise
+            // recognize (one word wide, never looked inside), and a hand-owned shim's backing
+            // object is exactly that: sync.Mutex's SemaphoreSlim gate, sync.RWMutex's RWState.
+            // Nothing behind such a handle has a Go representation, so there is no pointee to
+            // hand back and the walk STOPS here with the invalid Value — the same answer a nil
+            // pointer already gives. Reading a slot instead threw "Not a pointer box type" and
+            // took out every DeepEqual over a struct holding a sync primitive; and the blindness
+            // is what makes two such structs compare deeply equal, which is Go's own answer
+            // (Go compares the primitives' state WORDS, and a used-then-released lock is back at
+            // its zero state — crypto/tls's TestCloneNonFuncFields is the measured case).
+            return new ΔValue(nil);
         }
         // An array pointee reveals its real dims through the live value behind the box (the
         // TestSliceRoundTrip path: ValueOf(&[100]T{}).Elem().Type() must carry 100).

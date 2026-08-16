@@ -236,15 +236,7 @@ internal static @unsafe.Pointer addChecked(@unsafe.Pointer p, uintptr x, @string
     public uintptr Len;
 }
 
-// Len returns the length of t if t is an array type, otherwise 0
-public static nint Len(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    if (t.Kind() == Array) {
-        return (nint)(Ꮡt.Reinterpret<Type, ΔArrayType>()).Value.Len;
-    }
-    return 0;
-}
+// go2cs generated this placeholder — func Len is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static ж<Type> Common(this ж<Type> Ꮡt) {
     return Ꮡt;
@@ -358,34 +350,7 @@ public static ж<UncommonType> Uncommon(this ж<Type> Ꮡt) {
 
 }
 
-// Elem returns the element type for t if t is an array, channel, map, pointer, or slice, otherwise nil.
-public static ж<Type> Elem(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    var exprᴛ1 = t.Kind();
-    if (exprᴛ1 == Array) {
-        var tt = Ꮡt.Reinterpret<Type, ΔArrayType>();
-        return (~tt).Elem;
-    }
-    if (exprᴛ1 == Chan) {
-        var tt = Ꮡt.Reinterpret<Type, ChanType>();
-        return (~tt).Elem;
-    }
-    if (exprᴛ1 == Map) {
-        var tt = Ꮡt.Reinterpret<Type, ΔMapType>();
-        return (~tt).Elem;
-    }
-    if (exprᴛ1 == Pointer) {
-        var tt = Ꮡt.Reinterpret<Type, PtrType>();
-        return (~tt).Elem;
-    }
-    if (exprᴛ1 == Slice) {
-        var tt = Ꮡt.Reinterpret<Type, SliceType>();
-        return (~tt).Elem;
-    }
-
-    return default!;
-}
+// go2cs generated this placeholder — func Elem is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func StructType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
@@ -504,14 +469,7 @@ public static nint NumMethod(this ж<Type> Ꮡt) {
     return (uint32)(mt.Flags & 16) != 0;
 }
 
-public static ж<Type> Key(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    if (t.Kind() == Map) {
-        return (Ꮡt.Reinterpret<Type, ΔMapType>()).Value.Key;
-    }
-    return default!;
-}
+// go2cs generated this placeholder — func Key is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoType] partial struct SliceType {
     public partial ref Type Type { get; }

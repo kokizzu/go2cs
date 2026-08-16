@@ -131,10 +131,13 @@ partial class reflectlite_package
             if (cur is null || (cur is INilPointer nilable && nilable.IsNilPointer))
                 return new Value(nil);
 
-            System.Type? pointee = GoReflect.ElementType(cur.GetType());
-
-            if (pointee is null)
-                return makeReflectValue(GoReflect.ReadPointerSlot(cur));
+            // An OPAQUE managed handle is not a pointer box — the value-side twin of the descent
+            // rule (see GoReflect.TryPointerBoxElement). KindOf reports Pointer for every managed
+            // reference it does not otherwise recognize, and a hand-owned shim's backing object is
+            // exactly that; nothing behind it has a Go representation, so the walk stops here with
+            // the invalid Value, as it already does for a nil pointer.
+            if (!GoReflect.TryPointerBoxElement(cur.GetType(), out System.Type? pointee))
+                return new Value(nil);
 
             ж<abi_package.Type> t = abi_package.synthType(pointee);
             Value elem = new(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(pointee)) | flagAddr | flagIndir);

@@ -59,13 +59,15 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct guarded {}
-    internal partial struct hooks {}
-    internal partial struct named {}
-    internal partial struct namedAny {}
-    internal partial struct namedSlices {}
-    internal partial struct node {}
-    internal partial struct point {}
-    internal partial struct wrap {}
+    internal partial class myPtr {}
+    internal partial class myWidePtr {}
+    internal partial struct myArray {}
+    internal partial struct myBytes {}
+    internal partial struct myChan {}
+    internal partial struct myInts {}
+    internal partial struct myKeyMap {}
+    internal partial struct myMap {}
+    internal partial struct myWideArray {}
+    internal partial struct myWideMap {}
     // </TypeAccessibility>
 }
