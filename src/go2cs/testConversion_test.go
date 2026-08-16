@@ -3508,3 +3508,58 @@ func TestWhiteboxBridgeDeclaredNamesCoverMethodsAndPackageDecls(t *testing.T) {
 		}
 	}
 }
+
+// A box-field accessor (`Type.Ꮡfield`, used by `receiver.of(Type.Ꮡfield)`) qualifies its owner
+// type with a package static class whenever a bare name could be shadowed — and under the
+// white-box test model that class must be the BRIDGE, not the production package, for a type an
+// internal `_test.go` declares. database/sql's `fakedb_test.go` is the corpus instance:
+// `type table struct { mu sync.Mutex; … }` sits beside `func (db *fakeDB) table(string)`, so the
+// TYPE is Δ-renamed and therefore always qualified — and all six `t.mu.Lock()` sites spelled
+// `sql_package.Δtable.Ꮡmu`, a class with no such member (CS0117 ×6).
+//
+// Both directions are asserted: the bridge class appears, and the production class does not.
+func TestTestVariantBoxAccessorNamesBridgeDeclaringClass(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"go.mod":   "module example/boxacc\n\ngo 1.23\n",
+		"value.go": "package boxacc\n\ntype Holder struct{ n int }\n\nfunc NewHolder(n int) *Holder { return &Holder{n: n} }\n",
+		// `probe` the TYPE collides with `probe` the METHOD, which Δ-renames the type — exactly
+		// fakedb_test.go's `table`/`(*fakeDB).table` pairing.
+		"export_test.go": "package boxacc\n\ntype probe struct{ n int }\n\n" +
+			"func (h *Holder) probe() int { return h.n }\n\n" +
+			"func probeAddr(p *probe) *int { return &p.n }\n",
+	}
+	for name, contents := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(contents), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	internal, _ := loadBothTestVariantsForDir(t, dir)
+	if internal == nil {
+		t.Fatal("the internal test variant was not loaded")
+	}
+
+	outputPath := t.TempDir()
+	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
+	// What convertTestVariants sets for the internal variant under the white-box model.
+	options.testClassNameOverride = getSanitizedImport("boxacc_internal_test" + PackageSuffix)
+
+	testMethodRenames = make(map[types.Object]bool)
+	t.Cleanup(func() { testMethodRenames = nil })
+
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, nil, options); err != nil {
+		t.Fatal(err)
+	}
+
+	exportCs := readConvertedTestFile(t, outputPath, "export_test.cs")
+
+	accessor := ShadowVarMarker + "probe." + AddressPrefix + "n"
+
+	if !strings.Contains(exportCs, "boxacc_internal_test"+PackageSuffix+"."+accessor) {
+		t.Fatalf("the box accessor must name the BRIDGE class that declares the test type:\n%s", exportCs)
+	}
+	if strings.Contains(exportCs, "boxacc"+PackageSuffix+"."+accessor) {
+		t.Fatalf("the production class does not declare a test-file type — it must not be the qualifier:\n%s", exportCs)
+	}
+}

@@ -144,7 +144,7 @@ func scanFileForCaptureModeMethods(file *ast.File, info *types.Info) {
 			info:     info,
 		})
 
-		if bodyTakesReceiverFieldAddress(funcDecl.Body, recvName) || bodyReturnsReceiver(funcDecl.Body, recvName) || bodyUsesReceiverAsPointerValue(funcDecl.Body, recvName, info) || bodyCapturesReceiverInClosure(funcDecl.Body, recvName, signature.Recv(), info) || bodyHasPointerMethodValueOnReceiver(funcDecl.Body, recvName, info) || bodyCapturesReceiverInValueMethodValue(funcDecl.Body, recvName, info) || bodyHasGoStmtLambdaCapturingReceiver(funcDecl.Body, recvName, signature.Recv(), info) || bodyPassesReceiverAsPointerArg(funcDecl.Body, recvName, info) || bodyWrappedInDeferContext(funcDecl.Body, recvName, info) {
+		if bodyTakesReceiverFieldAddress(funcDecl.Body, recvName) || bodyReturnsReceiver(funcDecl.Body, recvName) || bodyReassignsReceiver(funcDecl.Body, recvName, signature.Recv(), info) || bodyUsesReceiverAsPointerValue(funcDecl.Body, recvName, info) || bodyCapturesReceiverInClosure(funcDecl.Body, recvName, signature.Recv(), info) || bodyHasPointerMethodValueOnReceiver(funcDecl.Body, recvName, info) || bodyCapturesReceiverInValueMethodValue(funcDecl.Body, recvName, info) || bodyHasGoStmtLambdaCapturingReceiver(funcDecl.Body, recvName, signature.Recv(), info) || bodyPassesReceiverAsPointerArg(funcDecl.Body, recvName, info) || bodyWrappedInDeferContext(funcDecl.Body, recvName, info) {
 			// Key by the generic origin so instantiated call sites (Set[int]) match.
 			origin := funcObj.Origin()
 			packageCaptureModeMethods[origin] = true
@@ -343,6 +343,55 @@ func selectorRootsAtReceiverValueFieldChain(expr ast.Expr, recvName string, info
 			return false
 		}
 	}
+}
+
+// bodyReassignsReceiver reports whether the body REPOINTS the receiver variable at a different
+// value (`s = s.next`, a linked-list walk). Go's pointer receiver is an ordinary local, so this is
+// legal and rebinds only the callee's copy — but the converter deref-aliases a pointer receiver to a
+// value var (`ref var s = ref Ꮡs.Value`), and a value alias cannot be repointed: the assignment
+// emits `ж<T>` into a `ref T` (CS0029).
+//
+// The direct-ж receiver is what makes it expressible — with the box `Ꮡs` as the parameter,
+// visitAssignStmt's exprIsCurrentDirectBoxReceiver arm repoints the box and re-aliases the value
+// (`Ꮡs = s.next; s = ref Ꮡs.DerefOrNull();`, container/ring's `Move`). That arm already exists; it
+// was simply unreachable for a method no OTHER trigger marked. `ring.Move` reaches it only because
+// it also returns its receiver, and every other production instance is likewise carried by a
+// neighbouring trigger — which is why the gap surfaced first in a test file
+// (database/sql's `fakedb_test.go`, `func (s *fakeStmt) QueryContext` walking `s = s.next`).
+//
+// Matched by OBJECT identity, not by name: an inner `:=` that shadows the receiver's name declares a
+// different variable, and assigning to THAT is not a repoint of the receiver.
+func bodyReassignsReceiver(body *ast.BlockStmt, recvName string, recv *types.Var, info *types.Info) bool {
+	if recv == nil || info == nil {
+		return false
+	}
+
+	found := false
+
+	ast.Inspect(body, func(node ast.Node) bool {
+		assignStmt, ok := node.(*ast.AssignStmt)
+
+		if !ok || assignStmt.Tok == token.DEFINE {
+			return true
+		}
+
+		for _, lhs := range assignStmt.Lhs {
+			ident, ok := lhs.(*ast.Ident)
+
+			if !ok || ident.Name != recvName {
+				continue
+			}
+
+			if info.Uses[ident] == types.Object(recv) {
+				found = true
+				return false
+			}
+		}
+
+		return true
+	})
+
+	return found
 }
 
 // bodyReturnsReceiver reports whether the body returns the receiver itself (`return recvName`).

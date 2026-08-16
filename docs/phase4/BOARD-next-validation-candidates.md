@@ -7979,3 +7979,89 @@ census entries are prose); and many unvalidated packages do not yet COMPILE thei
 closure, so "how close" is not a number for them at all. A future shape would need a sweep mode
 that records per-package partial verdicts and a badge/proof surface that cannot be mistaken for
 validation. Revisit after the 75% terminal marker, possibly with the queued proof-renderer pass.
+
+## ⛔ MEASURED FOR THE FIRST TIME, DOES NOT BANK — `database/sql` builds and runs at 133 of 139; the two compile roots are CLOSED and three divergence roots are named (2026-08-15, lane `claude/database-sql`)
+
+The board carried `database/sql` as **0 of 25, CS0121 + CS0117** and the TB.* census listed it as
+"36 sites, the widest in the corpus — pending its own measurement". Both compile roots are gone and
+the suite now runs end to end: **139 rows, 133 agree, 6 disagree, 0 skipped, 0 disclosed**, 8
+excluded (the standard Phase-4D `Benchmark`/`Example` deferrals). It does **not** bank — four of the
+six are genuine divergences — but it is no longer build-blocked, and every remaining root is named.
+
+**The recorded CS0121 was already closed, exactly as the tar lane predicted.** `stubDriverStmt(NilType)`
+was the typed-nil constructor argument (`08afdd267`); it emits `new stubDriverStmt(want)` today and
+never appeared in this lane's build. The prediction was worth acting on — but the roots BEHIND it
+were two, not zero.
+
+### Compile census — two roots, both general converter defects, both fixed here
+
+| Diagnostic | Sites | Root |
+|:--|:--:|:--|
+| **CS0117** `'sql_package' does not contain a definition for 'Δtable'` | 6 | A box-field accessor (`Type.Ꮡfield`) qualified its owner with the PRODUCTION package class even when an internal `_test.go` declares the type. `fakedb_test.go`'s `type table` collides with `func (db *fakeDB) table(string)`, so the type is Δ-renamed — and Δ-renamed always qualifies — putting all six `t.mu.Lock()`/`Unlock()` sites in a class that has no such member. `packageScopeClassName` already drew the production/bridge line for package-level VALUE references; the accessor now uses it for the TYPE. Provably inert outside `-tests`: with no class override the helper returns the production class |
+| **CS0029** cannot convert `ж<fakeStmt>` to `fakeStmt` | 1 | `func (s *fakeStmt) QueryContext` walks `s = s.next`. Go's pointer receiver is an ordinary local, so repointing it is legal; the converter deref-aliases the receiver to a value var, which cannot be repointed. `visitAssignStmt`'s repoint-and-re-alias arm (`Ꮡs = s.next; s = ref Ꮡs.DerefOrNull();`) has existed as long as the pointer-PARAMETER twin, but it is reachable only through the box — so it needed a direct-ж trigger the pre-pass did not have. `bodyReassignsReceiver` adds it, matched by object identity so a shadowing inner `:=` does not promote |
+
+**The receiver-repoint trigger is corpus-invisible by construction, and that is why it surfaced in a
+test file.** All ten production sites in the converted scope are *also* carried by a neighbouring
+predicate — `container/ring`'s `Move` and `go/types`' `LookupParent` return their receiver;
+`math/big`'s `fmtX`, `net/http`'s `addBytes` and `time`'s two `(*Location)` lookups already emit
+`this ж<T> Ꮡx` — verified against the committed corpus before the change and re-verified by the
+whole-stdlib A/B after it. (`internal/concurrent` and `testing` also match the shape and are
+hand-owned, so they never convert.)
+
+### Verdict census — 6 disagreeing rows, 4 distinct roots
+
+| Rows | Root | Class |
+|:--:|:--|:--|
+| `TestGrabConnAllocs`, `TestRawBytesAllocs` | `testing.AllocsPerRun` want-zero asserts (`grabConn` 4 objects/run; `RawBytes` 15). The existing measured-allocation gap | **`alloc-profile`** — disclosable under the existing class if the other three roots ever close |
+| `TestConversions`, `TestUserDefinedBytes` | **`abi.Type.Elem()` nil** — see below | real defect, `reflect`/`internal/abi` |
+| `TestNullByteSlice` | **an untyped `nil` in a variadic slot vanished** — fixed here, see below | was a converter defect |
+| `TestConnRaw` | `conn.Raw(func(…) { panic(…) })` must leave the connection CLOSED: `Raw`'s deferred cleanup sets `err = driver.ErrBadConn` while a panic is in flight and calls `release(err)`. The converted run panics correctly (the test's own `recover()` assertion passes) but `conn.dc` is still non-nil afterward, and `closeDB` then reports `1 connections still open`. Not rooted further by this lane — a defer-during-panic + named-result + capture question inside the converted `sql.cs` | real defect, unrooted |
+
+**`TestNullByteSlice` was a CONVERTER root and is fixed.** `exec(t, db, "INSERT|t|id=10,name=?", nil)`
+emitted `exec(…, insertTId10Nameˢ, default!)` against `params ꓸꓸꓸany argsʗp`. A typeless `default!`
+converts to the params ARRAY as readily as to its element, and C# prefers a call's normal form over
+its expanded one — so the argument bound as a null `any[]`, the callee saw `len(args) == 0`, and the
+fake driver answered `sql: expected 1 arguments, got 0`. **A silent behavioral divergence, not a
+compile error**, which is what makes it worth naming: the emission is valid C# that means something
+else, and nothing but a differential run would have caught it. Every trailing argument of an
+expanded variadic call that is the predeclared `nil` now states the element type — `(any)(default!)`.
+A spread call is excluded (it passes the slice whole, so `describe(none...)` still yields 0).
+
+**`TestConversions`/`TestUserDefinedBytes` are ONE root, and it belongs to `reflect`, not to
+`database/sql`.** Both die in the same stack: `convertAssignRows` → `rtype.ConvertibleTo` →
+`convertOp` → `haveIdenticalUnderlyingType` → `haveIdenticalType` → `nameFor` → the hand-owned
+`reflect.Name`, which reads `Ꮡt.Value.t.sysType` and nil-dereferences. The nil comes from
+`abi.Type.Elem()`: it reaches its element through the prefix-downcast idiom
+(`Ꮡt.Reinterpret<Type, SliceType>()` and the Array/Chan/Map/Pointer siblings) — the exact route
+`internal/abi`'s hand-owned `type_impl.cs` already documents as unusable under the managed bridge
+("there is nothing behind a `ж<abi.Type>` to downcast to"), and which it replaced with SYNTHESIS
+from the descriptor's carried `System.Type` for `StructType()` and `ArrayType()`. `Elem()` and
+`Key()` were never routed through that synthesis, so they answer nil for a slice/pointer/chan/map
+descriptor, and any `reflect` path recursing through them nil-derefs. `TestUserDefinedBytes` is the
+minimal shape: `convertAssign(&u, v)` with `u userDefinedBytes` (a local named `[]byte`) and
+`v []byte` reaches `sv.Type().ConvertibleTo(dv.Type())`, both Kind Slice, and the slice arm
+immediately recurses on `Elem()`.
+
+**This is a shared root worth its own lane, not a `database/sql` fix.** The remedy is the pattern
+`type_impl.cs` already establishes — synthesize `SliceType`/`PtrType`/`ChanType`/`MapType` from
+`sysType` and route `Elem()`/`Key()` through them, populating nothing that cannot be honored (the
+r39d rule). It gates every `reflect.ConvertibleTo`/`AssignableTo` recursion in the corpus, not just
+these two rows.
+
+### Timing — a `$longTimeouts` floor is owed IF this package ever banks
+
+The converted run took **1,712.7 s (28.5 min)** under `-test-timeout 30m`, i.e. it cleared the
+deadline with about 90 seconds to spare on a quiet i7-5820K. At the sweep's default it would
+false-red. Nothing is owed today (the package has no roster row), but the entry that banks it owes
+`'database/sql' = '60m'` in `run-validated-sweep.ps1`'s `$longTimeouts` in the same change.
+
+### What this lane banked
+
+The two compile fixes and the variadic-nil fix, each with a guard and a reference-doc entry —
+`bodyReassignsReceiver` (guard: `PointerReceiverRepoint`, a receiver-repointing list walk written to
+avoid every other trigger), the bridge-qualified box accessor (guard:
+`TestTestVariantBoxAccessorNamesBridgeDeclaringClass`, asserting both directions), and the variadic
+untyped-nil cast (guard: the `VariadicSlotInterfaces` extension, arity in four positions against
+three controls). Both compile-root guards were neuter-verified: reverted, each fails with the exact
+diagnostic censused above. `database/sql`'s converted test sources are NOT committed — the
+validated-package commit policy covers packages that validate, and this one does not.

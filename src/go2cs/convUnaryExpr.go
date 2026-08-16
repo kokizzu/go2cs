@@ -60,7 +60,10 @@ func (v *Visitor) convArrayIndex(index ast.Expr) string {
 // scope the type is not reachable by that name at all, so every bare occurrence the EMITTER produces
 // is meant as the type — which makes package-qualifying it always value-correct. funcScopeVarNames
 // carries the current function's declared variable names (see performVariableAnalysis).
-func (v *Visitor) boxAccessorType(typeName, receiver string) string {
+// owner carries the accessor's declaring type when the call site has it, so the qualifier can name
+// the class that actually DECLARES it (see boxAccessorQualifier); a nil owner keeps the production
+// class, which is what every non-test conversion resolves to anyway.
+func (v *Visitor) boxAccessorType(typeName, receiver string, owner types.Type) string {
 	// An already-qualified cross-package type (contains '.') is left alone.
 	if strings.Contains(typeName, ".") {
 		return typeName
@@ -106,10 +109,37 @@ func (v *Visitor) boxAccessorType(typeName, receiver string) string {
 		receiver == AddressPrefix+typeName ||
 		strings.HasPrefix(receiver, AddressPrefix+typeName+".") ||
 		v.funcScopeVarNames.Contains(typeName) {
-		return getSanitizedImport(packageName+PackageSuffix) + "." + typeName
+		return v.boxAccessorQualifier(owner) + "." + typeName
 	}
 
 	return typeName
+}
+
+// boxAccessorQualifier names the static class that DECLARES the box accessor's owner type.
+//
+// Normally that is the production `<pkg>_package`. Under the white-box test model the emission unit
+// is the bridge class instead, and a type contributed by an internal `_test.go` is nested THERE, not
+// in the production class — so the production qualifier names nothing (CS0117). database/sql's
+// `fakedb_test.go` declares `type table struct { mu sync.Mutex; … }` beside a colliding
+// `func (db *fakeDB) table(string)`, which Δ-renames the type and therefore forces the qualification
+// above on every `t.mu.Lock()` in the file: six sites spelled `sql_package.Δtable.Ꮡmu`, a class that
+// has no such member. packageScopeClassName already draws exactly this production/bridge line for
+// package-level VALUE references; a box accessor's owner type is the same question about a type.
+//
+// A nil or non-named owner (a lifted anonymous struct, whose name the call site resolves by other
+// means) keeps the production class — unchanged behavior for every site that cannot name an object.
+func (v *Visitor) boxAccessorQualifier(owner types.Type) string {
+	if owner != nil {
+		if pointer, ok := owner.(*types.Pointer); ok {
+			owner = pointer.Elem()
+		}
+
+		if named, ok := owner.(*types.Named); ok && named.Obj() != nil {
+			return v.packageScopeClassName(named.Obj())
+		}
+	}
+
+	return getSanitizedImport(packageName + PackageSuffix)
 }
 
 // isHeapBoxedExpr reports whether the expression refers to a variable that the
@@ -212,6 +242,7 @@ func (v *Visitor) lambdaBoxRefAddressForm(unaryExpr *ast.UnaryExpr) (string, boo
 		}
 
 		var typeName string
+		var ownerType types.Type
 
 		switch t := v.getType(operand.X, true).(type) {
 		case *types.Struct:
@@ -226,12 +257,13 @@ func (v *Visitor) lambdaBoxRefAddressForm(unaryExpr *ast.UnaryExpr) (string, boo
 			}
 
 			typeName = convertToCSTypeName(v.getAliasQualifiedTypeName(t.Elem(), false))
+			ownerType = t.Elem()
 		default:
 			return "", false
 		}
 
 		boxName := v.boxBaseName(baseIdent)
-		fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(typeName, ""), AddressPrefix, v.structFieldBoxName(operand.Sel, operand.X))
+		fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(typeName, "", ownerType), AddressPrefix, v.structFieldBoxName(operand.Sel, operand.X))
 
 		return fmt.Sprintf("%s%s.of(%s)", AddressPrefix, boxName, fieldRef), true
 	}
@@ -313,7 +345,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					}
 
 					if _, ok := recvType.(*types.Named); ok {
-						fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(convertToCSTypeName(v.getAliasQualifiedTypeName(recvType, false)), ""), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
+						fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(convertToCSTypeName(v.getAliasQualifiedTypeName(recvType, false)), "", recvType), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
 
 						// Direct-ж: the receiver box is the parameter `Ꮡx` (see
 						// packageDirectBoxReceiverMethods), so field-ref through it directly. No
@@ -390,7 +422,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 						}
 
 						typeName := convertToCSTypeName(v.getAliasQualifiedTypeName(ptrType.Elem(), false))
-						fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(typeName, structExpr), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
+						fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(typeName, structExpr, ptrType.Elem()), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
 						return fmt.Sprintf("%s.of(%s)", structExpr, fieldRef)
 					}
 				}
@@ -420,7 +452,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					// another file of the package (e.g. `&cpu.X86.HasADX`).
 					structExpr := v.convExpr(selectorExpr.X, nil)
 					typeName := v.dynamicStructTypeName(selectorExpr.X)
-					fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(typeName, ""), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
+					fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(typeName, "", nil), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
 
 					// When the base is itself a VALUE field reached through a pointer field —
 					// `&gp.m.mLockProfile.waitTime`, base `gp.m.mLockProfile` a value field of the

@@ -1315,6 +1315,35 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// An untyped `nil` in a VARIADIC slot must state the element type, or C# binds the
+			// call's NORMAL form and the argument DISAPPEARS. `exec(t, db, "INSERT|…", nil)`
+			// (database/sql's sql_test.go, one element: Go reads `nil` as a single `any` value,
+			// since passing the slice itself would need `nil...`) emitted
+			// `exec(…, insertTId10Nameˢ, default!)` against `params ꓸꓸꓸany argsʗp` — and a typeless
+			// `default!` converts to the params ARRAY as readily as to its element, so C#'s
+			// preference for the normal form over the expanded one binds it as a null `any[]`.
+			// The callee then saw `len(args) == 0` and the driver answered
+			// `sql: expected 1 arguments, got 0` — a SILENT divergence, not a compile error, which
+			// is what makes it worth a cast the other nil positions do not need: a non-variadic
+			// parameter has only one form to bind, so `f(nil)` there is already unambiguous.
+			// Casting to `paramType` is casting to the ELEMENT type — getParameterType already
+			// yields it for the variadic slot — and every trailing argument is checked because the
+			// nil need not be the first (`f(a, nil, b)`). A SPREAD call (`f(args...)`) passes the
+			// slice whole, so there is no expansion to disambiguate and it is excluded.
+			if funcSignature.Variadic() && i == params.Len()-1 && !callExprContext.hasSpreadOperator {
+				for j := i; j < len(callExpr.Args); j++ {
+					if !argIsUntypedNil(callExpr.Args[j], v.info) {
+						continue
+					}
+
+					if callExprContext.castArgToType == nil {
+						callExprContext.castArgToType = make(map[int]string)
+					}
+
+					callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(paramType, false))
+				}
+			}
+
 			// A Go string passed to a generic type-parameter parameter must be cast to
 			// golib's `@string` (a struct). Without a target type, a bare string literal
 			// converts to a .NET `System.String`, so C# infers the type argument as
