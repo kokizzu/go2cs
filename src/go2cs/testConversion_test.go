@@ -3615,3 +3615,81 @@ func TestTestVariantBoxAccessorNamesBridgeDeclaringClass(t *testing.T) {
 		t.Fatalf("the production class does not declare a test-file type — it must not be the qualifier:\n%s", exportCs)
 	}
 }
+
+// A type declared INSIDE a function body has no Go exportedness. The export convention governs
+// PACKAGE-LEVEL identifiers, so a function-local `S8` is exactly as unreachable from outside its
+// function as `embed2` is — Go draws no distinction between them. go2cs hoists both to package scope
+// as `<Func>_<name>`, and deriving an access modifier from a name at that point invents a split Go
+// never had, by either of two routes: the bridge arm reads the LOCAL name (so siblings of one
+// function land on opposite sides), and a lifted ANONYMOUS struct carries no modifier at all, so
+// go2cs-gen's own rule reads the HOISTED name and inherits the case of the enclosing function.
+//
+// C#'s accessibility-consistency rule then rejects the mixture, and it was the ENTIRE compile wall of
+// encoding/json's suite: TestUnmarshalEmbeddedUnexported makes `embed2` a field of `S8`, and a public
+// S8 over an internal embed2 is CS0053 — 76 errors across CS0050/51/52/53, four codes, one cause.
+// All three shapes are pinned here: the uppercase local, the lowercase local, and the anonymous lift
+// (whose fields reach a package-level unexported production type — the CS0052 member of the family).
+func TestFunctionLocalTypesShareOneAccessibility(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"go.mod": "module example/localaccess\n\ngo 1.23\n",
+		// A package-level unexported PRODUCTION type — emitted `internal`, and the operand that
+		// makes an anonymous lift's exported field CS0052 when the lift is scoped from its name.
+		"value.go": "package localaccess\n\ntype hidden struct{ N int }\n",
+		"value_test.go": "package localaccess\n\nimport \"testing\"\n\n" +
+			"func TestLocals(t *testing.T) {\n" +
+			"\ttype embed2 struct{ Q int }\n" +
+			"\ttype S8 struct {\n\t\tembed2\n\t\tR int\n\t}\n" +
+			"\tanon := struct{ H hidden }{}\n" +
+			"\t_ = S8{}\n" +
+			"\t_ = anon\n" +
+			"}\n",
+	}
+	for name, contents := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(contents), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	internal, _ := loadBothTestVariantsForDir(t, dir)
+	if internal == nil {
+		t.Fatal("the internal test variant was not loaded")
+	}
+
+	outputPath := t.TempDir()
+	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
+	// What convertTestVariants sets for the internal variant under the white-box model — the arm
+	// that writes accessibility inline, and therefore the one this rule lives in.
+	options.testClassNameOverride = getSanitizedImport("localaccess_internal_test" + PackageSuffix)
+	options.testInlineTypeAccess = true
+
+	testMethodRenames = make(map[types.Object]bool)
+	t.Cleanup(func() { testMethodRenames = nil })
+
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, nil, options); err != nil {
+		t.Fatal(err)
+	}
+
+	valueCs := readConvertedTestFile(t, outputPath, "value_test.cs")
+
+	// Both named locals are internal — the uppercase one is the half that used to read `public`.
+	for _, want := range []string{
+		"internal partial struct TestLocals_S8",
+		"internal partial struct TestLocals_embed2",
+	} {
+		if !strings.Contains(valueCs, want) {
+			t.Errorf("a function-local type has no Go exportedness to read a modifier from; want %q:\n%s", want, valueCs)
+		}
+	}
+
+	// No local type is public, whatever the case of its Go name.
+	if strings.Contains(valueCs, "public partial struct TestLocals_") {
+		t.Errorf("no function-local type may be public — its Go name's case carries no export meaning:\n%s", valueCs)
+	}
+
+	// And none is left BARE: a declaration with nothing between `]` and `partial` hands the decision
+	// to go2cs-gen, which scopes it from the hoisted name and lands back on public.
+	if strings.Contains(valueCs, "] partial struct TestLocals_") {
+		t.Errorf("a bare local declaration lets the generator scope it from the hoisted name:\n%s", valueCs)
+	}
+}

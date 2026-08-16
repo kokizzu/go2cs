@@ -193,7 +193,15 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 	} else if v.options.testInlineTypeAccess {
 		// Bridge-owned named types carry accessibility inline. Their metadata anchor can be a
 		// different test class, where an accessibility-only partial would declare a second type.
-		v.pendingTypeAccess = generatedTypeScope(getSanitizedIdentifier(name)) + " "
+		//
+		// A FUNCTION-LOCAL declaration takes the local-type rule instead: its Go name carries no
+		// export meaning, so deriving a modifier from it splits the types ONE function declares
+		// between public and internal and breaks C#'s accessibility consistency (localTypeAccess).
+		if localAccess := v.localTypeAccess(); localAccess != "" {
+			v.pendingTypeAccess = localAccess
+		} else {
+			v.pendingTypeAccess = generatedTypeScope(getSanitizedIdentifier(name)) + " "
+		}
 	}
 
 	defer func() { v.pendingTypeAccess = "" }()

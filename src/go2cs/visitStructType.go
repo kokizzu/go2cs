@@ -148,6 +148,15 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		access = "public "
 	}
 
+	// A FUNCTION-LOCAL lift that is neither publicized nor carrying a TypeSpec's modifier would be
+	// emitted BARE, leaving go2cs-gen to scope it from the hoisted `<Func>_<name>` identifier — whose
+	// leading case belongs to the enclosing function, not to a type Go ever made visible. Pin it
+	// internal instead, so the local declarations of one function share one accessibility
+	// (localTypeAccess).
+	if access == "" {
+		access = v.localTypeAccess()
+	}
+
 	// A struct carrying FIXED-SIZE ARRAY fields (directly, or through another such struct) is not
 	// completely copied by a plain C# struct assignment — `array<T>` is a struct over a shared T[]
 	// backing, so the copy's array writes reach back into the source. Name those fields for

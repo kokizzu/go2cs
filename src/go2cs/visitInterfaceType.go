@@ -38,6 +38,13 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 	access := v.pendingTypeAccess
 	v.pendingTypeAccess = ""
 
+	// A FUNCTION-LOCAL interface (declared, or lifted anonymously, inside a function body) has no Go
+	// exportedness to read a modifier out of — see the struct twin in visitStructType and the rule in
+	// localTypeAccess. Pin it internal so it agrees with the sibling types the same function declares.
+	if access == "" {
+		access = v.localTypeAccess()
+	}
+
 	for _, field := range interfaceType.Methods.List {
 		// Check if this is an actual method (has a function type)
 		if funcType, ok := field.Type.(*ast.FuncType); ok {
