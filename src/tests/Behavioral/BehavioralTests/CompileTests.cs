@@ -793,6 +793,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckLocalTypeSliceElement() => CheckTarget("LocalTypeSliceElement");
 
     [TestMethod]
+    public void CheckLookupServicePort() => CheckTarget("LookupServicePort");
+
+    [TestMethod]
     public void CheckMakeLenNamedNumeric() => CheckTarget("MakeLenNamedNumeric");
 
     [TestMethod]

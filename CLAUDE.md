@@ -772,10 +772,19 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   whose `array<uint16>` name fields are managed references where Windows expects inline `WCHAR[32]`. That
   wrapper is now hand-owned against a blittable mirror (`core/syscall/windows/zsyscall_windows_impl.cs` — per-GOOS since r50a), guarded
   by the `LocalTimeZone` behavioral test — which compares real zone abbreviations and offsets against
-  `go run`, not merely the absence of a fault. **The CLASS is still open:** 9 more syscall wrappers pass a
-  non-blittable struct by address (census, per-member remedy and why they are deliberately NOT fixed
-  speculatively: [`docs/phase4/BOARD-next-validation-candidates.md`](docs/phase4/BOARD-next-validation-candidates.md)).
-  Nothing exercises them today; `net` and `crypto/x509` will.
+  `go run`, not merely the absence of a fault. **The CLASS is still open, and it is now TWO classes**
+  — wrappers passing a non-blittable struct by ADDRESS (the layout defect above), and wrappers taking
+  a `**T` OUT-parameter, which arrive as NULL because `ж<T> → uintptr` answers 0 for a heap-boxed
+  pointer that is still nil. The running census, the per-member remedy and why they are deliberately
+  NOT fixed speculatively live on
+  [`docs/phase4/BOARD-next-validation-candidates.md`](docs/phase4/BOARD-next-validation-candidates.md);
+  re-measure there rather than carrying a count. The old note said "nothing exercises them today;
+  `net` and `crypto/x509` will" — both now do: `net`'s DNS path forced `GetAddrInfoW`/`FreeAddrInfoW`
+  (fixed 2026-08-16, guarded by `LookupServicePort`), and `crypto/x509`'s Windows system verifier is
+  the measured consumer of the OUT-parameter class. Two walls behind them are open and are `net` /
+  `crypto/x509` arcs rather than syscall ones: `net.adapterAddresses` reinterprets a native
+  `IP_ADAPTER_ADDRESSES` chain out of a managed byte buffer, and the CryptoAPI chain walk reads
+  `CertContext` / `CertChainContext` back through raw addresses.
 - **Phase 3 complete (2026-07-10 — commit `51ba5d9cf`, tag `stdlib-green-2026-07-10`):** all **302**
   packages of the full conversion (Go 1.23.1) compile clean — zero errors, zero
   exclusions (`runtime`, `reflect`, `net/http`, `go/types`, `crypto/tls`, `database/sql`, … all included).
