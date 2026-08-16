@@ -392,15 +392,6 @@ public static class PointerExtensions
         if (ptr.ArrayRef is var (array, index) && !array.IndexIsValid(index))
             return array.PrintPointer();
 
-        // A native alias whose pointee carries a managed reference cannot be dereferenced at all —
-        // reading it would fabricate that reference, so the box REFUSES (see ж<T>'s
-        // s_nativeReadFabricatesReference). Its address is nonetheless exactly the token this wants,
-        // and a display helper must never be the thing that fails a program: a debugger watch, an
-        // interpolated $"{p}", or a diagnostic printed while ROOTING such a pointer would otherwise
-        // raise the very panic it was called to explain.
-        if (ptr.NativeReadWouldFabricate)
-            return $"0x{(nuint)(uintptr)ptr:x}";
-
         return ptr.Value.PrintPointer();
     }
 

@@ -8759,27 +8759,35 @@ windows on a real `T[]`, and a `U[]` view over a `V[]` cannot be constructed. Th
 fork the S1/CS0030 ruling already governs, and `crypto/subtle`'s `xor_generic.cs` is the same case
 one type-pair over (a `uintptr[]` view over a `byte[]`).
 
-* **The site.** `src/core/vendor/golang.org/x/crypto/sha3/xor.cs` takes `[module:
-  GoManualConversion]` and `crypto/subtle`'s remedy: `MemoryMarshal.AsBytes` over the state array's
-  own span is a genuine ALIASING view, so the absorb's XOR lands in the real state and the squeeze
-  reads it. Go's `cpu.IsBigEndian` branch is left exactly as converted. Marker census **58 → 59**.
-* **The layer.** An AccessViolation is the worst available failure mode — uncatchable, no
-  diagnostic, and it names the innocent consumer — and localizing this one cost a full per-test
-  census. `ж<T>` now refuses the read: a native-backed box whose pointee is a **value-type**
-  surrogate carrying a managed reference raises `RuntimeErrorPanic.UnrepresentableNativeReinterpret`,
-  a contained Go panic naming the pointee. The pointer stays usable as an address; only the
-  dereference is refused, and `PrintPointer` answers with the address token so a diagnostic can
-  never raise the panic it was called to explain.
+**The site** is `src/core/vendor/golang.org/x/crypto/sha3/xor.cs`, which takes `[module:
+GoManualConversion]` and `crypto/subtle`'s remedy: `MemoryMarshal.AsBytes` over the state array's own
+span is a genuine ALIASING view, so the absorb's XOR lands in the real state and the squeeze reads
+it. Go's `cpu.IsBigEndian` branch is left exactly as converted. Marker census **58 → 59**.
 
-⚠ **The VALUE-TYPE term in that predicate is load-bearing, and it was measured, not reasoned
-about.** `RuntimeHelpers.IsReferenceOrContainsReferences<T>()` alone conflates two opposite
-situations, and the wider form took down `time.NewTimer` on the very first host run:
-`time.syncTimer` is `return ~Ꮡc.Reinterpret<channel<Time>, unsafe.Pointer>()`, and `unsafe.Pointer`
-is a CLASS, so it lands on the same address route — but reading it yields the real channel object,
-type-CONFUSED rather than fabricated, which is the managed-referent model the corpus is built on.
-Refusing it bought nothing and cost every test that opens a pipe. Value-type surrogates
-(`array<U>`, `slice<U>`, `@string`, `map<K,V>`) manufacture a reference out of DATA; reference-type
-pointees name a reference slot. Only the first is fatal.
+⚠ **The layer fix was BUILT, MEASURED, and REJECTED — and the reasons are the most transferable
+thing in this entry.** An AccessViolation is the worst available failure mode (uncatchable, no
+diagnostic, names the innocent consumer), so `ж<T>` was made to refuse the read with a contained
+panic instead. Two counter-examples killed it, **both found by gates rather than by reasoning**:
+
+1. **`RuntimeHelpers.IsReferenceOrContainsReferences<T>()` alone is too WIDE.** `time.syncTimer` is
+   `return ~Ꮡc.Reinterpret<channel<Time>, unsafe.Pointer>()`, and `unsafe.Pointer` is a CLASS, so it
+   lands on the same address route — but reading it yields the REAL channel object, type-CONFUSED
+   rather than fabricated. That is the managed-referent model the corpus is built on. The wide form
+   took down `time.NewTimer`, and with it every `crypto/tls` test that opens a pipe, on the first
+   host run. Adding a `typeof(T).IsValueType` term fixed that one.
+2. **The narrowed form still regressed `ArrayCastDerefClone`** — the behavioral guard for this very
+   fork, caught by the full suite (Output `exit code mismatch: C# 2 vs Go 0`). Its
+   `*(*Row)(unsafe.Pointer(&r))` over a ZERO-valued array reads an `array<nint>` whose fabricated
+   backing reference is **null**, and `array<T>`'s null-safe zero value absorbs it — so the site
+   produced garbage *harmlessly*, which is exactly the "compiles and does not crash" bar the S1
+   ruling sets for raw-metal stubs. The refusal converted a tolerated stub into a panic.
+
+**The distinction the remedy actually needs is not the pointee's TYPE but whether the fabricated
+reference comes out NULL** — benign when it does, fatal when it does not. That cannot be tested
+without first materializing a `T` with a wild reference in a stack slot, which is itself unsafe (a
+GC scanning that slot is the same crash). So the class keeps the AccessViolation, and the sketch
+above is the starting point for whoever revisits it. Anyone tempted to re-add the refusal should
+read this paragraph first: the wide form and the narrow form have both already been tried.
 
 ### Census of the class, and of the siblings
 
@@ -8830,17 +8838,13 @@ omission: the vendored package has no `_test.go` in GOROOT, and a behavioral tes
   vector. ⚠ The "no test tier is shaped for this" instinct was wrong and worth un-learning:
   `GenericTests` already references `core/sort`, so an MSTest tier binding a converted package is
   established practice, not new infrastructure.
-* **`GolibTests.NativeReinterpretRefusalTests`** for the class — the refusal through both `Value`
-  and `ValueSlot`, the pure-data pointee that must still read natively, the display path that must
-  not raise it, and the address round-trip that must be unaffected.
 * **The marker gate** — proven by reconvert: `xor.cs` untouched, emission redirected to
   `xor.cs.auto`.
 
-**Neutered-fix control, run rather than asserted.** Restoring the auto-converted `xor.cs` fails all
-four vector tests, and it fails them the NEW way: the test host SURVIVES and reports four named
-failures whose stacks point at `sha3_package.xorIn`, where before the golib refusal it died outright
-with an `AccessViolationException` naming `slice<byte>..ctor`. One control demonstrates both halves
-of the arc.
+**Neutered-fix control, run rather than asserted.** Restoring the auto-converted `xor.cs` does not
+merely fail the four vector tests — it KILLS the test host with an `AccessViolationException` inside
+`slice<byte>..ctor`. That is the defect's whole character, and the reason the layer fix above was
+attempted at all: expect a dead host, not a red test, if you re-run that control.
 
 ⚠ **`crypto/internal/mlkem768` is the natural operational guard and it is BLOCKED, on two defects
 that have nothing to do with any of this.** Its suite is the direct consumer of sha3 (`TestRoundTrip`,

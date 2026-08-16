@@ -31,6 +31,11 @@ public class Sha3ReinterpretVectorTests
     // (`GenericTests` referencing `core/sort` is the precedent for an MSTest tier binding a
     // converted package.)
     //
+    // ⚠ NEUTERED-FIX CONTROL — restoring the auto-converted `xor.cs` does not merely fail these
+    // tests, it KILLS the test host with an AccessViolationException inside `slice<byte>`'s
+    // constructor. That is the defect's whole character and why it cost a per-test census of
+    // crypto/tls to localize; expect a dead host, not a red test, if you ever re-run that control.
+    //
     // The short vectors are FIPS-202's own. The long ones are checked against the OS SHA-3
     // implementation, an oracle with no dependency on anything in this repository, and are chosen to
     // straddle the rate boundary (136 bytes for SHA3-256, 72 for SHA3-512) so the multi-block absorb

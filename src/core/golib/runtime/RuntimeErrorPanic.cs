@@ -80,48 +80,6 @@ public static class RuntimeErrorPanic
         return new PanicException(IntegerDivideByZeroValue?.Invoke() ?? IntegerDivideByZeroMessage);
     }
 
-    private const string UnrepresentableNativeReinterpretMessage =
-        "go2cs: cannot dereference a native address as '{0}' -- the type holds a managed reference, " +
-        "which reading it from raw memory would FABRICATE. This is a `(*U)(unsafe.Pointer(p))` " +
-        "reinterpret the managed model cannot express as an alias (see PointerExtensions.Reinterpret): " +
-        "the pointer is usable as an address, but not as a pointee. Convert the site by hand " +
-        "(`[module: GoManualConversion]`), as crypto/subtle's xor_generic.cs and " +
-        "vendor/golang.org/x/crypto/sha3's xor.cs are.";
-
-    /// <summary>
-    /// The refusal raised when a NATIVE-backed pointer whose pointee type carries a managed reference
-    /// is dereferenced — the unrepresentable half of Go's <c>(*U)(unsafe.Pointer(p))</c>.
-    /// </summary>
-    /// <remarks>
-    /// Raised as a panic so the failure is CONTAINED and named. Left to the CLR it is an
-    /// <c>AccessViolationException</c>: a process kill with no diagnostic, no <c>recover()</c>, and a
-    /// stack naming whichever consumer first touched the fabricated reference rather than the
-    /// reinterpret that built it. See <c>ж&lt;T&gt;</c>'s <c>s_nativeReadFabricatesReference</c> for
-    /// the full account and the sha3 witness.
-    /// </remarks>
-    public static PanicException UnrepresentableNativeReinterpret(Type pointeeType)
-    {
-        return new PanicException(string.Format(UnrepresentableNativeReinterpretMessage, readableName(pointeeType)));
-
-        // `Type.Name` renders the witness type as "array`1", which names neither the element type nor
-        // anything a reader can grep for. One level of generic arguments is what makes the message
-        // point at the actual reinterpret ("array<Byte>"); this stays local rather than reaching for
-        // GoReflect's Go-name machinery, which sits above golib's own error path.
-        static string readableName(Type type)
-        {
-            if (!type.IsGenericType)
-                return type.Name;
-
-            string name = type.Name;
-            int arity = name.IndexOf('`');
-
-            if (arity > 0)
-                name = name[..arity];
-
-            return $"{name}<{string.Join(", ", Array.ConvertAll(type.GetGenericArguments(), arg => arg.Name))}>";
-        }
-    }
-
     private const string MakeSliceLenOutOfRangeMessage = $"{RuntimeErrorMessage}makeslice: len out of range";
     public static PanicException MakeSliceLenOutOfRange()
     {

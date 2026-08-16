@@ -1704,10 +1704,10 @@ squeeze. Both are ordinary managed storage on both sides, and neither view exist
 a `slice<T>`/`array<T>` is a window on a real `T[]`, and there is no `U[]` view over a `V[]`. Each file
 is hand-owned and takes the same remedy: `MemoryMarshal.Cast`/`AsBytes` over the storage's own span,
 which is a genuine *aliasing* view, so writes through it land. Where such a reinterpret is left
-auto-converted the pointer is still a valid **address**, but dereferencing it would read the surrogate's
-backing *reference* out of the pointed-at data — so `ж<T>` refuses that read with a named panic
-identifying the pointee, rather than letting the CLR fabricate a reference and fault later, somewhere
-else, in code that did nothing wrong.
+auto-converted the pointer is still a valid **address**, but dereferencing it reads the surrogate's
+backing *reference* out of the pointed-at data — a fabricated reference whose first use is an access
+violation. Those sites are the deliberate raw-metal fork: they compile, they are not expected to
+produce Go's values, and each is hand-owned only when a suite reaches it.
 
 Go's network poller is only half an API — the other half is called by the *scheduler*, from
 `findrunnable` and sysmon — so wiring the converted runtime would initialize an IOCP and then block
