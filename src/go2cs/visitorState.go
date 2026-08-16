@@ -233,8 +233,14 @@ type Visitor struct {
 	currentReturnSignature *types.Signature
 	currentFuncName        string
 	currentFuncPrefix      *strings.Builder
-	paramNames             HashSet[string]
-	paramObjects           map[types.Object]bool
+	// packageInitLiftName is the name of the PACKAGE-LEVEL declaration whose initializer is
+	// currently being converted — the name seed a type lifted from inside a func literal in that
+	// initializer takes, standing in for the enclosing function name it has no access to.
+	// currentFuncName/currentFuncPrefix are owned by visitFuncDecl and are STALE at package level
+	// (see convFuncLit's package-level lift block).
+	packageInitLiftName string
+	paramNames          HashSet[string]
+	paramObjects        map[types.Object]bool
 	// erasedTypeParams holds the current FUNCTION declaration's pointer-core (erased) type
 	// parameters, identity-keyed to their pointer types (see collectErasedTypeParams) — the
 	// single source every renderer/classifier consults so the erasure flips coherently, and

@@ -2069,6 +2069,24 @@ var mask = ((int64)(-1) << (int)((nuint)bits));
 
 Two emission sites carry it: the type-conversion cast (convCallExpr, `castOperandNeedsParens`) covers `level(-1)`/`int64(-1)`, and the wide-shift left-operand cast (convBinaryExpr) covers `-1 << bits` (a wide shift type does not promote to `int`, so its left operand is cast to that type). A keyword target (`(int)-1`, `(nint)-1`) and a non-negative operand keep the bare form (no golden churn). (Guarded by the `CastNegativeNamedType` and `ShiftNegativeWideConst` behavioral tests.)
 
+### A cast's operand asks TWO questions: parse ambiguity AND precedence
+The section above answers the *parse-ambiguity* question — does `(T)-1` read as a cast or as a subtraction? A cast's operand poses a second, independent question that `castOperandNeedsParens` (a leading-sign TEXT test) cannot see: a C# cast binds tighter than **every** binary operator, so an operand that renders as a top-level binary expression has the cast claim its **left operand alone**.
+
+The named-numeric *identity-constant* arm (convCallExpr — reached when go/types gives a constant operand the target type, so the conversion looks like an identity) asked only the first question. Both symptoms below are the same emission:
+
+```go
+rf(3 / 2)                  // type rf float64 -- Go folds 3/2 as untyped INTEGER division: 1
+renamedComplex64(3 + 4i)   // type renamedComplex64 complex64
+```
+```csharp
+((rf)(3 / 2))                      // was: ((rf)3 / 2)
+((renamedComplex64)(3F + 4F.i()))  // was: ((renamedComplex64)3F + 4F.i())
+```
+
+The first was **silently value-changing** and compiled cleanly: Go folds the constant expression in exact arbitrary precision *before* converting (untyped integer division gives `1`), whereas `((rf)3 / 2)` converts first and divides in the target's own float arithmetic (`1.5`). Every named int/float type hides the defect this way, because its `[GoType]` wrapper supplies an operator for the mis-bound first leg. A named **complex** type has no float→named-complex conversion at all, so there the same emission is a hard **CS0030** — which is how the class was found, holding `fmt`'s own test suite (`fmt_test.go`/`scan_test.go`'s `renamedComplex64`/`renamedComplex128` entries).
+
+Keyed on the **AST**, not the rendered text: the operand's emission may be a call, a literal or a folded constant, and only the written expression says whether a binary operator is left exposed. A `ParenExpr` operand already renders wrapped, so the direct type test suffices. **Unary operands are deliberately excluded** — a cast and a unary operator share precedence and associate right, so `(T)~0` already means `(T)(~0)`; their only hazard is the sign ambiguity the section above covers. (Guarded by the `NamedConstConversionPrecedence` behavioral test, which is output-compared so the silent value divergence is caught, not merely the CS0030.)
+
 ### A named complex type emits only Go's complex operator set
 The generated named-numeric wrapper (`go2cs-gen` `InheritedTypeTemplate`/`NumericTypeTemplate`) emits the operator surface of the *underlying kind*, and Go's complex kinds define only `==`/`!=`, `+`/`-`/`*`/`/`, unary `-`, and `++`/`--` — **no ordered comparisons and no `%`** (the Go spec limits `<`/`<=`/`>`/`>=` to ordered types and `%` to integers; C#'s `System.Numerics.Complex` and golib `complex64` have neither operator either). A `type C complex128` therefore gets no `<`/`<=`/`>`/`>=`/`%` operators and no `IComparisonOperators` interface declaration — emitting them was **CS0019 ×5 per type** (first hit: `testing/quick`'s `TestComplex64Alias`/`TestComplex128Alias`, which compile-blocked the whole quick test host). Integer named types keep the full set including `%`/bitwise/shifts, and float named types keep ordering (and C#'s native float `%`, inert for converted Go, stays). Same kind-gate shape as the pre-existing complement/shift gate (`GetComplementOperator`). Guarded by the `NamedNumericIncDec` behavioral test's named-complex block (`++`/`--`/arithmetic/equality on a `type cx complex128`).
 
@@ -9083,6 +9101,54 @@ func TestNoFixedSize(t *testing.T) {
 Guarded by the `LiftedLocalTypes` behavioral test (single lifted declaration for repeated
 anonymous occurrences + `[GoLocalName]` pinned in the golden); operationally by
 encoding/binary's banked suite.
+
+### A lift inside a PACKAGE-LEVEL func literal flushes at package scope, seeded by the declaration
+A func literal's body is function scope, and `convFuncLit` sets `inFunction` for it accordingly —
+but that flag does **not** say there is an enclosing function DECLARATION. `currentFuncName` and
+`currentFuncPrefix` (the lift's name prefix and its declaration sink) are allocated together by
+`visitFuncDecl`, so for a literal in a package-level initializer they held whatever the *previous*
+function declaration in the file left behind. Every lift site keys on `lifted && inFunction` and
+then writes into that prefix, so a type lifted there was named after an unrelated function and
+written into a buffer already flushed:
+
+```go
+var readers = []struct {
+	name string
+	f    func(string) io.Reader
+}{
+	{"ReaderOnly", func(s string) io.Reader {
+		return struct{ io.Reader }{strings.NewReader(s)}   // fmt/scan_test.go
+	}},
+}
+```
+
+The declaration **vanished**, leaving only its use site — `new Scan_type(…)` named after the
+preceding `Scan…` function, with no such type declared anywhere: **CS1729** (no one-argument
+constructor), plus **CS0103**/**CS0034** in the `ImplementGenerator` wrapper generated for the
+phantom type from its `[assembly: GoImplement]` record. With **no** preceding function declaration
+the buffer was nil rather than stale and the converter **panicked** (nil receiver inside
+`strings.Builder.copyCheck`); that panic is recovered per file, so the whole FILE was skipped with
+only a `visit file error` warning. One root — which symptom appeared depended solely on
+declaration order within the file.
+
+A package-level literal now gets its **own** sink, flushed at package scope, and takes its name
+seed from the declaration being initialized (`packageInitLiftName`, set by `visitValueSpec`):
+
+```csharp
+[GoType("dyn")] partial struct readersᴛ1 { … }   // the OUTER anonymous struct (unchanged)
+
+[GoType("dyn")] partial struct readers_type {    // the lift from inside the func literal
+    public io_package.Reader Reader;
+}
+```
+
+Package scope is where a lifted type belongs anyway — it is exactly where the sibling
+package-level lift (`readersᴛ1`) already goes — and the flush lands before the var's own field
+because a package-level initializer is converted to a string first and written afterwards.
+Seeding from the declaration is what keeps the name unique per var, as `readersᴛ1` already is.
+(Guarded by the `PackageVarFuncLitTypeLift` behavioral test, whose two files cover BOTH symptoms:
+`main.go` places a function declaration before the var — the dropped-declaration form — and
+`varfirst.go` declares the var first — the panic form.)
 
 ### A methodless named func type renders as its base delegate
 

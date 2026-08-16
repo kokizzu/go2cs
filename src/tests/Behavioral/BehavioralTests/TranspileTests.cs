@@ -889,6 +889,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckNamedChannelType() => CheckTarget("NamedChannelType");
 
     [TestMethod]
+    public void CheckNamedConstConversionPrecedence() => CheckTarget("NamedConstConversionPrecedence");
+
+    [TestMethod]
     public void CheckNamedConstFloatFold() => CheckTarget("NamedConstFloatFold");
 
     [TestMethod]
@@ -1118,6 +1121,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckPackageShadowPointerParam() => CheckTarget("PackageShadowPointerParam");
+
+    [TestMethod]
+    public void CheckPackageVarFuncLitTypeLift() => CheckTarget("PackageVarFuncLitTypeLift");
 
     [TestMethod]
     public void CheckPackageVarInitOrder() => CheckTarget("PackageVarInitOrder");

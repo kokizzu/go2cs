@@ -591,7 +591,25 @@ public static ΔValue Addr(this ΔValue v) {
 
 // Bytes returns v's underlying value (v's underlying value must be a slice of bytes or an addressable array of bytes).
 // A named []byte wrapper answers through its ISlice<byte> view (sharing the backing store).
+//
+// The ARRAY arm is Go's bytesSlow Array case (reflect/value.go), and it is NOT optional: fmt's
+// printValue calls Bytes() whenever `f.Kind() == Slice || f.CanAddr()`, so an addressable byte
+// array — `Sprintf("%s", &[3]byte{'a','b','c'})`, whose pointer deref IS addressable — reaches
+// here as a `go.array<byte>` and used to fall to the catch-all conversion, throwing
+// InvalidCastException (array<byte> declares no conversion to slice<byte>). Go returns
+// `unsafe.Slice(p, n)`, an ALIAS of the array's storage rather than a copy, which array<T>.Slice
+// reproduces exactly (it windows the same backing store), so a write through the returned slice
+// is still visible in the array — the semantics Go's callers may rely on.
 public static slice<byte> Bytes(this ΔValue v) {
+    if (v.live is array<byte> arr) {
+        // Go panics on an unaddressable byte array rather than silently copying; fmt takes its own
+        // element-by-element path for that case and never calls Bytes(). Both messages, and the
+        // non-byte-element ones below, are Go's own text.
+        if (!v.CanAddr()) {
+            throw panic("reflect.Value.Bytes of unaddressable byte array");
+        }
+        return arr.Slice(0, (int)arr.Length);
+    }
     return v.live switch {
         slice<byte> s => s,
         ISlice<byte> view => new slice<byte>(view),
