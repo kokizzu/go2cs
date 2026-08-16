@@ -223,10 +223,27 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// FIRST iteration of unique.buildStructCloneSeq, and internal/reflectlite's NumField/Len read
 	// the same garbage. type_impl.cs synthesizes both specializations from the descriptor's
 	// carried System.Type over the same golib layout machinery that stamps Size_/Align_.
+	// Type.Elem / Type.Key are the SAME idiom one level in — Elem downcasts the header to the
+	// slice/array/chan/map/ptr record that sits behind it and reads its Elem field, Key does it for
+	// a map — so both inherited the defect and answered nil for every non-scalar descriptor. Nil is
+	// not a state Go's callers test here: reflect's haveIdenticalType recurses straight into
+	// nameFor(t), which nil-dereferences, so every ConvertibleTo/AssignableTo over a slice, map,
+	// pointer, chan or array died (database/sql's TestConversions and TestUserDefinedBytes are the
+	// measured pair). type_impl.cs synthesizes both from the carried System.Type over the SAME
+	// golib element/key resolution reflect's own rtype.Elem/rtype.Key use one layer up.
 	"internal/abi": {
 		"TypeOf":          goosAny,
 		"Type.StructType": goosAny,
 		"Type.ArrayType":  goosAny,
+		"Type.Elem":       goosAny,
+		"Type.Key":        goosAny,
+		// Type.Len is the third accessor of that same recursion, and the one whose failure is
+		// nastiest: it reads a length out of the memory following the descriptor's value slot, so
+		// two array descriptors read two different pieces of garbage and haveIdenticalUnderlyingType
+		// reports [3]byte and [3]byte as different types. The carried dims already answer it (that
+		// is what reflect's own rtype.Len reads), so hand-owning it turns a garbage read into the
+		// same truthful one, one layer down.
+		"Type.Len": goosAny,
 	},
 	// internal/cpu.getGOAMD64level is declared in cpu_x86.s and its body is a COMPILE-TIME constant:
 	// the GOAMD64_vN define the toolchain sets from `go env GOAMD64`, with `#else MOVL $1` as the

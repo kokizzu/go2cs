@@ -2,6 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using reflect = reflect_package;
+using Δsync = sync_package;
 
 partial class main_package {
 
@@ -29,6 +30,14 @@ partial class main_package {
     internal @string name;
     internal Func<nint, nint> fill;
     internal Action step;
+}
+
+[GoType] partial struct guarded {
+    internal Δsync.Mutex mu;
+    internal Δsync.RWMutex rw;
+    internal Δsync.Once once;
+    internal nint n;
+    internal @string name;
 }
 
 internal static void Main() {
@@ -132,6 +141,22 @@ internal static void Main() {
     fmt.Println(reflect.DeepEqual(nilFn, nilFn));
     fmt.Println(reflect.DeepEqual(nilFn, () => {
     }));
+    var g1 = Ꮡ(new guarded(n: 1, name: "a"u8));
+    var g2 = Ꮡ(new guarded(n: 1, name: "a"u8));
+    g1.of(guarded.Ꮡmu).Lock();
+    g1.of(guarded.Ꮡmu).Unlock();
+    g1.of(guarded.Ꮡrw).RLock();
+    g1.of(guarded.Ꮡrw).RUnlock();
+    fmt.Println(reflect.DeepEqual(g1.OrTypedNil(), g2.OrTypedNil()));
+    fmt.Println(reflect.DeepEqual(g1.OrTypedNil(), g1.OrTypedNil()));
+    fmt.Println(reflect.DeepEqual(g1.OrTypedNil(), Ꮡ(new guarded(n: 2, name: "a"u8))));
+    fmt.Println(reflect.DeepEqual(g1.OrTypedNil(), Ꮡ(new guarded(n: 1, name: "b"u8))));
+    fmt.Println(reflect.DeepEqual(new ж<guarded>[]{g1}.slice(), new ж<guarded>[]{g2}.slice()));
+    fmt.Println(reflect.DeepEqual(new map<@string, ж<guarded>>{["k"u8] = g1}, new map<@string, ж<guarded>>{["k"u8] = g2}));
+    var g3 = Ꮡ(new guarded(n: 1, name: "a"u8));
+    g3.of(guarded.Ꮡonce).Do(() => {
+    });
+    fmt.Println(reflect.DeepEqual(g3.OrTypedNil(), g2.OrTypedNil()));
 }
 
 } // end main_package

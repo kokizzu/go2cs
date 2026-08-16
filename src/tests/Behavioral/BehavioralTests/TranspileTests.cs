@@ -1303,6 +1303,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReflectConvertAssignable() => CheckTarget("ReflectConvertAssignable");
+
+    [TestMethod]
     public void CheckReflectFieldAddrWrite() => CheckTarget("ReflectFieldAddrWrite");
 
     [TestMethod]

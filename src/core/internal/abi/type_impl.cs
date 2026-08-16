@@ -212,6 +212,72 @@ public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
     return s_arrayTypes.GetOrAdd(Ꮡt, static box => synthesizeArrayType(box));
 }
 
+// ==== the descriptor ACCESSORS that reach an element or a key: Elem() / Key() ====
+//
+// The SAME prefix-downcast idiom as the specializations above, one level in: Go's Elem() casts the
+// Type header to the sliceType/arrayType/chanType/mapType/ptrType the linker really allocated
+// behind it and reads that record's Elem field, and Key() does it for a mapType. So both inherited
+// exactly the defect documented above — Reinterpret rightly refuses to alias managed storage for a
+// reference-bearing pair — and answered nil for every slice, array, chan, map and pointer
+// descriptor in the corpus.
+//
+// Nil is NOT a state Go's callers test for here, which is what made it fatal rather than merely
+// wrong: reflect's haveIdenticalType recurses straight into nameFor(t), which reads the
+// descriptor's carried System.Type and nil-dereferences. That is the whole of
+// ConvertibleTo/AssignableTo for any operand that is not a scalar — measured as database/sql's
+// TestConversions and TestUserDefinedBytes, and it gates every such recursion corpus-wide.
+//
+// Synthesized from the carried System.Type over the SAME golib element/key resolution that
+// reflect's own hand-owned rtype.Elem / rtype.Key use one layer up, so the descriptor layer and
+// the reflect layer cannot disagree about what an element type is. Nothing that is not knowable is
+// invented (the r39d rule): a descriptor with no System.Type, or a managed type with no element,
+// answers Go's nil — which is exactly what Go's own Elem() answers for a kind that has none.
+public static ж<Type> Elem(this ж<Type> Ꮡt) {
+    if (Ꮡt == nil) {
+        return default!;
+    }
+    var kind = Ꮡt.Value.Kind();
+    // Go's own switch: the five kinds that carry an element type, and nil for everything else.
+    if (kind != Array && kind != Chan && kind != Map && kind != Pointer && kind != Slice) {
+        return default!;
+    }
+    System.Type? elem = GoReflect.ElementType(Ꮡt.Value.sysType);
+    if (elem is null) {
+        return default!;
+    }
+    // An ARRAY descriptor's dims read [outer]…[inner], so its element takes the TAIL; a POINTER's
+    // dims are the pointee's already and pass through UNSHIFTED, a pointer having no length of its
+    // own. The same rule rtype.Elem applies to the same cargo one layer up.
+    nint[]? dims = Ꮡt.Value.arrayDims;
+    nint[]? elemDims = kind == Pointer ? dims : dims is { Length: > 1 } ? dims[1..] : null;
+    return synthType(elem, elemDims);
+}
+
+// Key returns the key type for t if t is a map, otherwise nil.
+public static ж<Type> Key(this ж<Type> Ꮡt) {
+    if (Ꮡt == nil || Ꮡt.Value.Kind() != Map) {
+        return default!;
+    }
+    System.Type? key = GoReflect.KeyType(Ꮡt.Value.sysType);
+    return key is null ? default! : synthType(key);
+}
+
+// Len returns the length of t if t is an array type, otherwise 0 — the descriptor's carried dims,
+// which is exactly what reflect's own rtype.Len reads one layer up.
+//
+// The third accessor of the same recursion, and the one whose downcast failed WORST: Elem()/Key()
+// answered a clean nil, but Len() read a uintptr out of the memory following the descriptor's value
+// slot, so two array descriptors read two DIFFERENT pieces of garbage and haveIdenticalUnderlyingType
+// reported [3]byte and [3]byte as different types. A length the descriptor does not know is still
+// answered as Go's 0 — array dims are non-identity cargo (the recorded §5 limitation), so two
+// dimension-less array descriptors compare equal rather than randomly unequal.
+public static nint Len(this ж<Type> Ꮡt) {
+    if (Ꮡt == nil || Ꮡt.Value.Kind() != Array) {
+        return 0;
+    }
+    return Ꮡt.Value.arrayDims is { Length: > 0 } dims ? dims[0] : 0;
+}
+
 private static ж<ΔArrayType> synthesizeArrayType(ж<Type> Ꮡt) {
     System.Type at = Ꮡt.Value.sysType!;
     System.Type? elem = GoReflect.ElementType(at);

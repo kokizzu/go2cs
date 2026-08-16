@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using go.golib;
@@ -112,19 +113,70 @@ public static partial class GoReflect
         })(box, value);
     }
 
+    /// <summary>
+    /// Resolves the pointee a managed type hands out through a value slot — a closed
+    /// <c>ж&lt;T&gt;</c> reads its own slot, a generated named-pointer wrapper reads through
+    /// <see cref="IPointer{T}"/>'s ref-returning <c>Value</c> — reporting <c>false</c> when
+    /// <paramref name="boxType"/> is not a pointer box at all.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The NEGATIVE answer is the load-bearing one, and it names a real Go shape rather than a
+    /// misuse. <see cref="KindOf"/> classifies every managed REFERENCE it does not otherwise
+    /// recognize as <c>Pointer</c> — the reflection bridge's descent rule: an opaque handle a
+    /// hand-owned shim holds in place of Go's own representation (<c>sync.Mutex</c>'s
+    /// <c>SemaphoreSlim</c> gate, <c>sync.RWMutex</c>'s <c>RWState</c>) is one pointer word wide
+    /// and is never looked inside. That rule has a VALUE-side twin, and this is where it is
+    /// asked: such a handle has no pointee, because whatever it refers to has no Go
+    /// representation at all — so "one word, do not descend into it" is also "no slot, do not
+    /// read through it".
+    /// </para>
+    /// <para>
+    /// A caller holding a Pointer-kind value must therefore ask here before dereferencing:
+    /// <c>reflect.Value.Elem</c> (and its <c>internal/reflectlite</c> twin) answer the invalid
+    /// Value for a handle, exactly as they do for a nil pointer. Reading anyway threw
+    /// <c>Not a pointer box type</c> out of <see cref="ReadPointerSlot"/>, which took out every
+    /// <c>reflect.DeepEqual</c> over a struct holding a <c>sync</c> primitive.
+    /// </para>
+    /// </remarks>
+    public static bool TryPointerBoxElement(Type? boxType, [NotNullWhen(true)] out Type? elemType)
+    {
+        return tryPointerBoxShape(boxType, out _, out elemType);
+    }
+
     // A raw closed ж<T> uses the ValueSlot pair; a generated named-pointer wrapper (a non-generic
     // class implementing IPointer<T>) routes through the interface's ref-returning Value.
+    private static bool tryPointerBoxShape(Type? boxType, out bool viaInterface, [NotNullWhen(true)] out Type? elemType)
+    {
+        viaInterface = false;
+        elemType = null;
+
+        if (boxType is null)
+            return false;
+
+        if (boxType.IsGenericType && boxType.GetGenericTypeDefinition() == typeof(ж<>))
+        {
+            elemType = boxType.GetGenericArguments()[0];
+            return true;
+        }
+
+        if (ContainerInterfaceArguments(boxType, typeof(IPointer<>)) is not { } args)
+            return false;
+
+        viaInterface = true;
+        elemType = args[0];
+        return true;
+    }
+
+    // The reader/writer selection for a box whose shape the caller has already accepted. Reaching
+    // the throw means a caller dereferenced without asking TryPointerBoxElement first — a bridge
+    // invariant violation, not a Go state, so it stays loud.
     private static (bool viaInterface, Type elemType) slotAccessorShape(Type boxType)
     {
-        if (boxType.IsGenericType && boxType.GetGenericTypeDefinition() == typeof(ж<>))
-            return (false, boxType.GetGenericArguments()[0]);
-
-        Type[]? args = ContainerInterfaceArguments(boxType, typeof(IPointer<>));
-
-        if (args is null)
+        if (!tryPointerBoxShape(boxType, out bool viaInterface, out Type? elemType))
             throw new InvalidOperationException($"Not a pointer box type: {boxType}");
 
-        return (true, args[0]);
+        return (viaInterface, elemType);
     }
 
     private static object? readSlot<T>(object box)

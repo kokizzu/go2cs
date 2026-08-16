@@ -8236,3 +8236,172 @@ disclosures. The three converter fixes and their guards are the deliverable; `cr
 the board as a package whose *build* question is answered, whose *run* question is now four named
 roots rather than one vague one, and whose next move is `ConnectEx` plus the
 `TestConnCloseBreakingWrite` hang.
+
+## ✅ CLOSED (2026-08-15, lane `claude/reflect-bridge-gaps`) — both named reflect-bridge gaps, and one root that stood behind them
+
+Two entries on this board named two independent defects. Both reproduced verbatim before anything
+was believed, both are fixed at the classification/routing principle rather than at the symptom, and
+a **third** root of the same family stood behind the first — the pattern this board keeps recording:
+a wall is only ever measured one layer at a time.
+
+### Gap 1 — `abi.Type.Elem()` / `Key()` (and `Len()`) reached their answer by prefix downcast
+
+Recorded as "`Elem()`/`Key()` were never routed through the synthesis path, so they return nil and
+`reflect.Name` nil-derefs". Accurate, and the reproduction is sharper than "returns nil": a program
+whose first statement is `reflect.TypeOf([]byte(nil)).ConvertibleTo(reflect.TypeOf(myBytes(nil)))`
+**panics before printing a single line**.
+
+That is the whole point of this root. `StructType()`/`ArrayType()` also answer nil when a layout is
+unknowable, and every Go caller of those tests the nil. **Nothing tests `Elem()`.** Go's
+`haveIdenticalType` recurses straight into `nameFor(t)`, which reads the descriptor's carried
+`System.Type` — so a nil element is not a wrong answer that propagates, it is a nil dereference that
+ends the process. `ConvertibleTo`/`AssignableTo` over any operand that is not a scalar was
+unreachable corpus-wide.
+
+Both are now hand-owned in `internal/abi/type_impl.cs` (`Type.Elem` / `Type.Key` in
+`manualConversionFuncs`) and synthesized from the carried `System.Type` over
+`GoReflect.ElementType` / `KeyType` — **the same golib resolution `reflect`'s own hand-owned
+`rtype.Elem`/`rtype.Key` already use one layer up**, so the descriptor layer and the `reflect` layer
+cannot disagree about what an element type is. The array-dims cargo threads by the rule `rtype.Elem`
+already applies: an array's element takes the tail of `[outer]…[inner]`, a pointer's dims are the
+pointee's and pass through unshifted.
+
+**The third root, found by the guard rather than by the census.** With `Elem()`/`Key()` fixed the
+new behavioral test still disagreed with `go run` on the ARRAY rows, and `Type.Len()` is why: it is
+the same downcast, and its failure is the *nastiest* of the three, because it does not answer nil —
+it reads a `uintptr` out of the memory following the descriptor's value slot. Two `[3]byte`
+descriptors therefore read two DIFFERENT numbers and `haveIdenticalUnderlyingType` reported
+`[3]byte` and `[3]byte` as different types. `Type.Len` is hand-owned too, over the same carried
+dims; a length no source knew still answers Go's 0, so two dimension-less array descriptors compare
+equal rather than randomly unequal.
+
+### Gap 2 — `slotAccessorShape` threw because pointer KIND was being read as pointer BOX
+
+Recorded as a golib descent-rule sibling of the `KindOf` fix, and that attribution is exactly right.
+`KindOf` classifies every managed REFERENCE it does not otherwise recognize as `Pointer` — the fix
+that stopped the layout walks descending into the BCL object graph. What that settled was the
+LAYOUT question. It left a second, different question for the VALUE walks: *is there a slot behind
+this handle at all?*
+
+For an opaque handle there is not — a hand-owned shim's backing object (`sync.Mutex`'s
+`SemaphoreSlim` gate, `sync.RWMutex`'s `RWState`, `sync.WaitGroup`'s `WaitGroupState`) stands in for
+a representation Go has and the CLR does not, and nothing behind it has a Go form. So **"one word
+wide, do not descend into it" is also "no slot, do not read through it"** — one rule at two layers,
+of which only the first half had been stated.
+
+`reflect.Value.Elem` asked the wrong one: it resolved a pointee with `GoReflect.ElementType` and, on
+null, fell through to a "detached read" through `ReadPointerSlot`, which classifies the box shape
+itself and threw `Not a pointer box type: go.sync_package+RWState`. The classification now lives in
+ONE place — `GoReflect.TryPointerBoxElement`, which `slotAccessorShape` is refactored onto — so "can
+I read through this?" and "what will I read?" can never be answered by two different probes.
+`reflect.Value.Elem` and its `internal/reflectlite` twin ask first and answer the **invalid Value**
+for a handle, which is what they already answer for a nil pointer.
+
+**The resulting blindness is Go's own answer, not a concession.** Go's `sync.RWMutex` is state
+*words*, and a used-then-released lock is back at its zero state, so two of them are deeply equal —
+which is what two handles now compare as, whether or not the shim has lazily created one of them
+(`crypto/tls`'s `TestCloneNonFuncFields` is the measured consumer). Real Go state beside the handle
+is still seen: a `sync.Once` that has run differs from a fresh one, because `done` is an ordinary
+field and not part of the handle. The `DeepEqual` behavioral test asserts both directions.
+
+### Three adjacent roots this lane measured and deliberately did NOT chase
+
+The new guard was written to cover every element-bearing kind and was then TRIMMED to what the
+corpus can truthfully produce, because a guard that asserts an answer the corpus cannot give is a
+standing false red, and one that asserts the current answer pins a defect as a contract. Each row
+removed is named here instead:
+
+| Surface | Root | Why not here |
+|:--|:--|:--|
+| `AssignableTo` (all kinds) | `reflect`'s `rtype.AssignableTo` is hand-owned as identity-on-the-managed-type plus interface-implements | A **recorded** deferral — and as of this lane it HAS a measured consumer, `database/sql`'s `TestUserDefinedBytes` (see below). Still a of Go's unnamed↔named underlying rule, and retiring it is not the one-liner it looks like: a synthesized descriptor never sets `TFlagNamed`, so `HasName()` is false for every type and `directlyAssignable`'s first gate would call two DISTINCT named types with one underlying type assignable — which Go rejects. Needs `HasName` before it needs the hand-own removed |
+| STRUCT identity | `haveIdenticalUnderlyingType`'s struct arm downcasts `ж<abi.Type>` to `structType` DIRECTLY rather than through the synthesized `StructType()` | Reads zero fields, so any two structs of equal field count compare identical — a silent FALSE POSITIVE, measured: `struct{B []byte; M map[string]int; …}` and the same struct with `M map[string]int64` are reported convertible. The fix is a `reflect`-level hand-own, not an `abi` one |
+| CHAN identity | its arm compares `ChanDir()` first, the same downcast | The only one of the family with **no synthesis waiting for it**: `<-chan int` and `chan int` are both `channel<nint>`, so a direction is not recoverable from the managed type for an unnamed directional channel. This one needs a ruling, not a fix |
+
+`MapType()`, `FuncType()` and `InterfaceType()` remain on the same list for the reason they always
+were — each awaits a measured consumer, and a synthesized `ΔMapType` would have to populate
+runtime-map fields (`Hasher`, `KeySize`, the indirect-key/elem flags) that have no managed answer.
+
+### Guards
+
+- **`ReflectConvertAssignable`** (new behavioral test) — `ConvertibleTo` across slice, map, pointer
+  and array, named and unnamed, in both directions, with differing-element and differing-key
+  negatives so an accessor that answered a constant would fail too; plus `Len()` over equal and
+  differing lengths, and an element/key kind readback through the public `Type` surface. 14 lines,
+  compared to `go run`. **Neuter-verified in the right order**: measured as a nil-deref panic
+  *before* the fix.
+- **`DeepEqual`** (extended) — a `guarded` struct holding `sync.Mutex`, `sync.RWMutex` and
+  `sync.Once`, compared through pointers, slices and maps after the locks have been used and
+  released. Also measured failing first, with the exact `slotAccessorShape` stack.
+- **`GolibTests.PointerNilPredicateTests`** (117/117, was 114) —
+  `OpaqueManagedHandleIsPointerKindButNotAPointerBox` asserts BOTH halves of the rule in one test
+  (either alone would let the other drift back), `PointerBoxShapesResolveTheirPointee` pins the
+  positive side so the fix cannot turn real dereferences into nil, and
+  `ElementAndKeyResolveForEveryKindTheDescriptorMustServe` pins the golib resolution the `abi`
+  synthesis now stands on.
+
+Doctrine: `ConversionStrategies-Reference.md` — *`abi.Type`'s SPECIALIZATIONS are synthesized, not
+downcast* (extended with `Elem`/`Key`/`Len`) and *A managed REFERENCE is a Go pointer, not a Go
+struct* (extended with a new subsection, *The VALUE side of the same rule: pointer KIND is not
+pointer BOX*).
+
+### Corpus footprint, measured
+
+A seeded whole-stdlib reconvert A/Bs to **exactly one** regenerated file, `internal/abi/type.cs`
+(three Go bodies replaced by placeholders). Two families of difference the same A/B reports are
+**pre-existing regen debt at master, not this lane's and deliberately not carried**: 300 package
+`README.md` files (the merged badge-line break awaiting its re-level) and seven `.cs` files
+(`crypto/elliptic/nistec.cs`, `go/parser/parser.cs`, `image/ycbcr.cs`, `os/exec/windows/lp_windows.cs`,
+`runtime/windows/os_windows.cs`, `syscall/windows/syscall_windows.cs`, `testing/slogtest/slogtest.cs`
+— string-literal hoisting and the variadic untyped-nil cast, both banked without a corpus regen).
+
+### `database/sql` — measured again after the fixes: **135 of 139**, and the last non-alloc row is now ROOTED
+
+Re-run end to end (`-test-action all -test-timeout 60m`; 3,423 s under concurrent lane load, vs the
+1,712 s the previous lane measured solo — the machine, not the package). The census moves from
+**133 agreeing to 135**, and the change is exactly what this lane predicted plus one it did not:
+
+| Row | Before | Now |
+|:--|:--|:--|
+| `TestConversions` | `abi.Type.Elem()` nil → `reflect.Name` nil-deref | **passes** |
+| `TestUserDefinedBytes` | the same nil-deref | fails DIFFERENTLY, and the new failure is rooted below |
+| `TestGrabConnAllocs`, `TestRawBytesAllocs` | `AllocsPerRun` want-zero | unchanged — the standing **`alloc-profile`** class |
+| `TestConnRaw` | `conn.dc` non-nil after a callback panic | unchanged, still unrooted |
+
+**It does NOT bank**, and the reason is worth more than the row would have been.
+
+**`TestUserDefinedBytes` is now a MEASURED CONSUMER of the `AssignableTo` deferral.** The test does
+`convertAssign(&u, v)` with `u userDefinedBytes` (a named `[]byte`) and `v []byte`, then asserts
+`&u[0] != &v[0]` — "got potentially dirty driver memory". `convertAssignRows` has two arms in
+sequence:
+
+```csharp
+if (sv.IsValid() && sv.Type().AssignableTo(dv.Type())) {
+    case slice<byte> b: dv.Set(reflect.ValueOf(bytes.Clone(b)));   // arm 1 — CLONES
+}
+if (dv.Kind() == sv.Kind() && sv.Type().ConvertibleTo(dv.Type())) {
+    dv.Set(sv.Convert(dv.Type()));                                 // arm 2 — SHARES the array
+}
+```
+
+Go takes **arm 1**: `[]byte` is an unnamed type and `userDefinedBytes` is named with the identical
+underlying type, so Go's assignability rule admits it, and the `[]byte` case clones. The converted
+run takes **arm 2**, because `rtype.AssignableTo` is hand-owned as identity-on-the-managed-type and
+the two managed types are distinct — so `Convert` hands back a view over the driver's own array and
+the assertion fires.
+
+Two things follow. First, arm 2 is *reachable at all* only because this lane's `Elem()` fix made
+`ConvertibleTo` answer: before it, the same row died in `nameFor(nil)`. The fix moved the test from
+a panic to the wrong arm, which is progress and is also how the root became visible. Second, the
+`AssignableTo` entry in the table above should now be read as **has a named consumer**, not "awaits
+one" — and the sequence it needs is fixed: `HasName()` must become truthful on a synthesized
+descriptor *before* the hand-own can retire, and the struct and chan arms of
+`haveIdenticalUnderlyingType` must be fixed *with* it, or retiring the hand-own trades one wrong
+answer for a wider one (every two structs of equal field count would become assignable). That is a
+second arc of this same family, not a tail of this one.
+
+**The `$longTimeouts` floor is still owed if it ever banks** — `'database/sql' = '60m'`, per the
+previous lane's note. Nothing is added today: the package has no roster row, and a floor for a
+package the sweep never visits would be dead configuration.
+
+Converted test sources are **not** committed, per the validated-package commit policy — that policy
+covers packages that validate, and this one does not.

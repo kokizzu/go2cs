@@ -1306,6 +1306,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReflectConvertAssignable() => CheckTarget("ReflectConvertAssignable");
+
+    [TestMethod]
     public void CheckReflectFieldAddrWrite() => CheckTarget("ReflectFieldAddrWrite");
 
     [TestMethod]

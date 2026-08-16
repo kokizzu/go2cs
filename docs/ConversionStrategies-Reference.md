@@ -15472,16 +15472,37 @@ is a state the format *defines* rather than a fabrication. A named field descrip
 from `reflect`'s hand-owned `rtype.Field` over `GoReflect.GoFields`, and no converted caller of
 `abi.StructType` reads a field name.
 
-Same defect class, **still open** and deliberately not chased here: `Type.Elem()`, `MapType()`,
-`FuncType()`, `InterfaceType()`, `Key()` and the free `Len()` reinterpret the same way. `Elem()`'s
-pointer arm is the mechanism behind the board's separate "`abi.TypeFor<T>()` is silently wrong for an
-interface `T`" root.
+**`Elem()` and `Key()` are the same idiom one level in, and they are synthesized too.** `Elem()`
+downcasts the header to the `sliceType`/`arrayType`/`chanType`/`mapType`/`ptrType` behind it and reads
+that record's `Elem` field; `Key()` does it for a `mapType`. They inherited the defect exactly, and
+answered **nil** for every slice, array, chan, map and pointer descriptor in the corpus.
+
+Nil is what made this one *fatal* rather than merely wrong. The specializations above return nil for
+an unknowable layout and every Go caller tests it — but nothing tests `Elem()`. `reflect`'s
+`haveIdenticalType` recurses straight into `nameFor(t)`, which reads the descriptor's carried
+`System.Type` and nil-dereferences, so the whole of `ConvertibleTo`/`AssignableTo` died for any
+operand that was not a scalar. Both are now hand-owned (`Type.Elem` / `Type.Key` in
+`manualConversionFuncs`) over `GoReflect.ElementType` / `KeyType` — the **same** golib resolution
+`reflect`'s own hand-owned `rtype.Elem` / `rtype.Key` use one layer up, so the descriptor layer and
+the `reflect` layer cannot disagree about what an element type is. The dims cargo threads by the same
+rule `rtype.Elem` applies: an array descriptor's element takes the **tail** of `[outer]…[inner]`,
+while a pointer's dims are the pointee's already and pass through unshifted. Kinds with no element
+still answer Go's nil, which is Go's own answer for them.
+
+Same defect class, **still open** and deliberately not chased here: `MapType()`, `FuncType()`,
+`InterfaceType()` and the free `Len()` reinterpret the same way — each awaiting a measured consumer,
+since a synthesized `ΔMapType` would have to populate runtime-map fields (`Hasher`, `KeySize`, the
+indirect-key/elem flags) that have no managed answer at all.
 
 Guarded by `GolibTests.GoStructLayoutTests` (Go offsets and sizes for the exact shapes `unique`'s
 `TestMakeCloneSeq` exercises, plus alignment padding — removing the per-field alignment rounding fails
 `FieldOffsets_ApplyGoAlignmentPadding`), and measured by `unique`'s own suite: **1 → 4 of 19 matched**,
 with all six `IndexOutOfRangeException` rows gone and the three `TestHandle` ones moved on to the
-`internal/weak` linkname root behind them.
+`internal/weak` linkname root behind them. `Elem()`/`Key()` are guarded by the
+`ReflectConvertAssignable` behavioral test — `ConvertibleTo`/`AssignableTo` across all six
+element-bearing kinds, named and unnamed, compared line for line against `go run` — with the golib
+resolution they stand on pinned by `GolibTests.PointerNilPredicateTests`'
+`ElementAndKeyResolveForEveryKindTheDescriptorMustServe`.
 
 ### A managed REFERENCE is a Go pointer, not a Go struct — the reflection bridge's descent rule
 
@@ -15536,6 +15557,39 @@ Guarded by `GolibTests.GoStructLayoutTests` — `ManagedReferenceField_IsOneWord
 first two of which are guards against a stack overflow no assertion can catch, so reaching the
 assert at all is the guard. Measured by `go/types`: 513 verdicts with 44 absent, then **557 of 557
 agreeing with `go test`**.
+
+#### The VALUE side of the same rule: pointer KIND is not pointer BOX
+
+Classifying the handle `Pointer` settled what the *layout* walks do with it, and left a second
+question the *value* walks have to ask before dereferencing one: **is there a slot behind it at
+all?** For an opaque handle there is not — what it refers to has no Go representation — so "one word
+wide, do not descend into it" is also **"no slot, do not read through it."** The two are one rule
+asked at two layers, and only the first half had been stated.
+
+`reflect.Value.Elem` asked the wrong question. It resolved a pointee with `GoReflect.ElementType`
+and, on `null`, fell through to a "detached read" through `GoReflect.ReadPointerSlot` — which
+classifies the box shape itself and threw `Not a pointer box type: go.sync_package+RWState`. That is
+every `reflect.DeepEqual` over a struct holding a `sync` primitive: `DeepEqual` reaches `Pointer`
+kind, calls `Elem` on both sides, and dies (`crypto/tls`'s `TestCloneNonFuncFields` is the measured
+case, and `sync.Mutex`'s `SemaphoreSlim` gate, `sync.RWMutex`'s `RWState` and `sync.WaitGroup`'s
+`WaitGroupState` are all the same shape).
+
+The classification now lives in **one** place — `GoReflect.TryPointerBoxElement`, which
+`slotAccessorShape` is refactored onto, so "can I read through this?" and "what will I read?" can
+never be answered by two different probes. A caller holding a `Pointer`-kind value asks first;
+`reflect.Value.Elem` and its `internal/reflectlite` twin answer the **invalid Value** for a handle,
+which is the answer they already give for a nil pointer.
+
+That blindness is deliberate and it is *Go's own answer*, not a concession. Go's `sync.RWMutex` is
+state **words**, and a used-then-released lock is back at its zero state, so two of them are deeply
+equal — which is exactly what two handles now compare as, whether or not the shim has lazily created
+one of them. What the walk still sees is any **real** Go state beside the handle: a `sync.Once` that
+has run differs from a fresh one, because `done` is an ordinary field and not part of the handle.
+Guarded by `GolibTests.PointerNilPredicateTests` —
+`OpaqueManagedHandleIsPointerKindButNotAPointerBox` asserts *both* halves in one test, since either
+alone would let the other drift back, and `PointerBoxShapesResolveTheirPointee` pins the positive
+side so the fix cannot turn real dereferences into nil — and by the `DeepEqual` behavioral test's
+`guarded` struct, which compares a locked-then-released `Mutex`/`RWMutex` pair against `go run`.
 
 ### Realizing the runtime TIMER contract (`Sleep` / `newTimer` / `stopTimer` / `resetTimer`)
 

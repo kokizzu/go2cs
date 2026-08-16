@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"sync"
 )
 
 type point struct {
@@ -27,6 +28,15 @@ type hooks struct {
 	name string
 	fill func(int) int
 	step func()
+}
+
+// A struct holding sync primitives, always reached through a pointer so nothing copies a lock.
+type guarded struct {
+	mu   sync.Mutex
+	rw   sync.RWMutex
+	once sync.Once
+	n    int
+	name string
 }
 
 func main() {
@@ -159,4 +169,28 @@ func main() {
 	var nilFn func()
 	fmt.Println(reflect.DeepEqual(nilFn, nilFn))
 	fmt.Println(reflect.DeepEqual(nilFn, func() {}))
+
+	// A struct holding SYNC primitives. Go compares their state words field by field, so two
+	// used-then-released locks are deeply equal to two fresh ones. The managed shims replace those
+	// words with a lazily-created backing object — an OPAQUE managed handle, which the reflection
+	// bridge's descent rule classifies as a pointer one word wide. There is nothing behind such a
+	// handle to descend into, so the walk must STOP at it (as it already does for a nil pointer)
+	// rather than trying to read a pointee slot that does not exist.
+	g1 := &guarded{n: 1, name: "a"}
+	g2 := &guarded{n: 1, name: "a"}
+	g1.mu.Lock()
+	g1.mu.Unlock()
+	g1.rw.RLock()
+	g1.rw.RUnlock()
+	fmt.Println(reflect.DeepEqual(g1, g2))
+	fmt.Println(reflect.DeepEqual(g1, g1))
+	fmt.Println(reflect.DeepEqual(g1, &guarded{n: 2, name: "a"}))
+	fmt.Println(reflect.DeepEqual(g1, &guarded{n: 1, name: "b"}))
+	fmt.Println(reflect.DeepEqual([]*guarded{g1}, []*guarded{g2}))
+	fmt.Println(reflect.DeepEqual(map[string]*guarded{"k": g1}, map[string]*guarded{"k": g2}))
+	// sync.Once carries REAL Go state (a done flag) alongside its lock, and both models keep it —
+	// so stopping at the opaque handle must not make a used Once equal to a fresh one.
+	g3 := &guarded{n: 1, name: "a"}
+	g3.once.Do(func() {})
+	fmt.Println(reflect.DeepEqual(g3, g2))
 }
