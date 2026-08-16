@@ -1447,20 +1447,9 @@ public static error /*err*/ GetUserProfileDirectory(Token t, ж<uint16> Ꮡdir, 
     return err;
 }
 
-public static void FreeAddrInfoW(ж<AddrinfoW> Ꮡaddrinfo) {
-    Syscall(procFreeAddrInfoW.Addr(), 1, (uintptr)Ꮡaddrinfo, 0, 0);
-    return;
-}
+// go2cs generated this placeholder — func FreeAddrInfoW is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*sockerr*/ GetAddrInfoW(ж<uint16> Ꮡnodename, ж<uint16> Ꮡservicename, ж<AddrinfoW> Ꮡhints, ж<ж<AddrinfoW>> Ꮡresult) {
-    error sockerr = default!;
-
-    var (r0, _, _) = Syscall6(procGetAddrInfoW.Addr(), 4, (uintptr)Ꮡnodename, (uintptr)Ꮡservicename, (uintptr)Ꮡhints, (uintptr)Ꮡresult, 0, 0);
-    if (r0 != 0) {
-        sockerr = ((Errno)r0);
-    }
-    return sockerr;
-}
+// go2cs generated this placeholder — func GetAddrInfoW is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ WSACleanup() {
     error err = default!;

@@ -679,6 +679,30 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// keeping. A corrupt enumeration silently picks the other IO path.
 		"WSAStartup":       goosWindows,
 		"WSAEnumProtocols": goosWindows,
+		// The NAME-RESOLUTION pair, and the first member of this class whose OUTPUT is a LINKED
+		// structure (zsyscall_windows_addrinfo_impl.cs carries the full write-up). Native ADDRINFOW
+		// is 48 bytes of scalars and raw pointers where the converted AddrinfoW holds Canonname, Addr
+		// and Next as MANAGED REFERENCES, so both directions are wrong: the hints Windows READS are
+		// garbage, and the `*ADDRINFOW` it WRITES lands in a reference slot. Measured as a process
+		// kill — `Fatal error. 0xC0000005` inside Syscall6 — with crypto/tls's TestVerifyHostname as
+		// the first consumer; every converted program that resolves a name or a service reaches it
+		// (net.Dial → resolveAddrList → LookupPort).
+		//
+		// Copying the top level alone would not be enough, which is what makes this one long: net
+		// reads the sockaddr THROUGH the result (`(*RawSockaddrInet4)(unsafe.Pointer(result.Addr))`),
+		// and RawSockaddrInet4's `Addr [4]byte` is an array<byte> BACKING REFERENCE — reading it out
+		// of a native sockaddr_in is the fabricated-reference deref the sha3 arc named, which has no
+		// general fix. So the whole chain is transcribed into managed records and the sockaddr with
+		// it, carried across the `unsafe.Pointer` field by golib's ManagedPointerTokens (this is the
+		// second minter of those tokens, and exactly the round trip they were written for).
+		//
+		// FreeAddrInfoW is hand-owned as a NO-OP for the same reason: the native chain is freed
+		// eagerly at the copy, so nothing native escapes, and handing a managed object's address to
+		// ws2_32's real free would release memory it does not own. GetAddrInfoW is the only producer
+		// of a *AddrinfoW in Go's syscall package, so no caller can reach the free holding a chain
+		// this file did not build.
+		"GetAddrInfoW":  goosWindows,
+		"FreeAddrInfoW": goosWindows,
 	},
 	// The SECOND package holding the syscall struct-passing class, and the one member of it whose
 	// established remedy is measured UNREACHABLE — so this entry declares a CAPABILITY LIMIT rather

@@ -183,8 +183,9 @@ func (f *File) Readdir(n int) ([]FileInfo, error) { return nil, nil }
 // readdir did.
 func TestWindowsOnlyEntriesAreScopedToWindows(t *testing.T) {
 	windowsOnly := map[string][]string{
-		"syscall": {"GetTimeZoneInformation", "findFirstFile1", "findNextFile1", "Process32First", "Process32Next"},
-		"os":      {"readReparseLink"},
+		"syscall": {"GetTimeZoneInformation", "findFirstFile1", "findNextFile1", "Process32First", "Process32Next",
+			"GetAddrInfoW", "FreeAddrInfoW"},
+		"os": {"readReparseLink"},
 	}
 
 	for pkgPath, names := range windowsOnly {

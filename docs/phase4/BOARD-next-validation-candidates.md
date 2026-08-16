@@ -2967,8 +2967,9 @@ latent — nothing in the behavioral suite or the 69-package sweep exercises the
 | ~~`WSAStartup` / `WSAEnumProtocols`~~ | `WSAData` (`Description`, `SystemStatus`, `VendorInfo`), `WSAProtocolInfo` (`ProtocolName`, and the nested `GUID.Data4` / `WSAProtocolChain.ChainEntries`) | **FIXED 2026-08-16 (lane `claude/wsaenum-mirror`)** — `internal/poll`'s `InitWSA`, once per process that imports `net`; guarded at VALUE level by the `WsaProtocolInfo` behavioral output test. NEITHER was on this census (see the ⚠ below), and the pair is the class's **largest overwrite by an order of magnitude**: `WSAPROTOCOL_INFOW` is 628 bytes native with three inline arrays the conversion collapses to references, so the managed record is ~120 bytes — and `checkSetFileCompletionNotificationModes` asks for **32** of them, telling the kernel `unsafe.Sizeof(buf)` = **20,096 bytes** while handing over a ~3.8 KB managed array. `WSAStartup` is the same shape over `WSADATA` (408 native vs ~40 managed) and is UPSTREAM of it: reading `data.Description` after it dies with `ACCESS_VIOLATION` in `slice<byte>..ctor` **before** the enumeration is reached, which is why the two arrived together. ⚠ The `WSAStartup` overwrite has been live since the corpus first dialled a socket and was SILENT only because `net` never reads the `WSAData` it passes — the strongest instance yet of "it did not crash" proving nothing. The enumeration's answer is load-bearing too: it sets `useSetFileCompletionNotificationModes` → `FD.skipSyncNotif`, the IO path the netpoll design's OQ5 ratified keeping. Both mirrors live in `syscall/windows/zsyscall_windows_wsa_impl.cs` (the ws2_32 family, beside `LoadConnectEx`), and `WSAEnumProtocols` adds a third SIZE-IS-AN-INPUT edge after `Process32First`'s `dwSize`: the byte count is also an OUTPUT, rewritten on `WSAENOBUFS` with a required size expressed in NATIVE strides |
 | `GetIfEntry` | `MibIfRow` (`Name`, `PhysAddr`, `Descr`) | `net.Interfaces` |
 | `getStartupInfo` | `StartupInfo` (`Desktop`, `Title`) | ⚠ NOT `os` startup — corrected 2026-08-02 by the r35-os arc, which ran the whole suite without reaching it. Nothing in `os` calls it; in Go 1.23 the only caller is the public `syscall.GetStartupInfo`, exercised by syscall's own test. `Process32First`/`Next` above ARE reached from `os` (`TestGetppid` → `syscall.Getppid` → `getProcessEntry`) and did not fault, so that row is reached-and-working rather than latent. |
-| `FreeAddrInfoW` | `AddrinfoW` (`Canonname`, `Next`) | `net` DNS |
+| ~~`GetAddrInfoW` / `FreeAddrInfoW`~~ | `AddrinfoW` (`Canonname`, `Addr`, `Next`) | **FIXED 2026-08-16 (lane `claude/tls-endgame`)** — `net.Dial` → `resolveAddrList` → `LookupPort`, i.e. every converted program that resolves a name or a service; measured first as a process AV from `crypto/tls`'s `TestVerifyHostname`. The class's first LINKED output, and the first where copying the top-level record is NOT enough: `net` reads the sockaddr THROUGH the result, so the whole chain and its sockaddrs are transcribed into managed boxes and the managed pointer is carried across the `unsafe.Pointer` field by `ManagedPointerTokens` (its second minter ever; the reflection bridge was the first). `FreeAddrInfoW` becomes a hand-owned NO-OP, because the native chain is freed eagerly at the copy and nothing native escapes the call. Guarded at VALUE level by the `LookupServicePort` behavioral output test, proven failing-first (`exit code mismatch: C# -1073741819 vs Go 0`). ⚠ Fixing it does NOT make `TestVerifyHostname` pass — `net.adapterAddresses` is the wall behind it; see the entry at the end of this file |
 | `CertEnumCertificatesInStore`, `CertFreeCertificateChain`, `CertFreeCertificateContext` | `CertContext`, `CertChainContext` | `crypto/x509` on Windows |
+| ⚠ **A SECOND class, censused 2026-08-16 and distinct from this one:** 13 wrappers take a `**T` OUT-parameter and receive **NULL**, silently — `ж<T> → uintptr` answers 0 for a `ж<ж<T>>` whose held pointer is null, which is every out-parameter before the call. Measured through `CertAddCertificateContextToStore` (`err == nil`, `storeCtx == nil`, and `crypto/x509`'s `systemVerify` then nil-derefs). Full list and reasoning in the entry at the end of this file | — | — |
 
 **Remedy, per member:** the established one — a blittable `[StructLayout(LayoutKind.Sequential)]`
 mirror with `fixed` buffers for the inline arrays, a direct `[DllImport]`, and an explicit
@@ -9490,3 +9491,190 @@ verdict to move, and `fmt` then banks at 63/63. That bank is worth more than its
 behavioral suite's ~520 stdout comparisons all run through converted `fmt`, so `fmt`'s own
 `%v`/`%T` table is the deepest test the reflection bridge has, and every Printf-comparing
 behavioral test is strengthened by it.
+## ⛔ STILL DOES NOT BANK — `crypto/tls` holds at **176 of 184**, but the four divergences are now four DIFFERENT things, and only one of them is a disclosure (2026-08-16, lane `claude/tls-endgame`)
+
+The `sha3` entry above ended by saying "the question `crypto/tls` now poses is a banking question,
+not a debugging one", and named the four remaining divergences as `GetAddrInfoW`, an
+`op_OnesComplement` singleton, `TestCertCache` and `TestBogoSuite`. This lane took all four. The
+headline number does not move — the same per-test method (one process per top-level `Test*`,
+`-test.run '^Name$'`, 25 s cap, raw stdout saved) measures **176 PASS, 7 FAIL, 1 process-AV** in
+853 s — and that is the finding rather than a disappointment: **`GetAddrInfoW` is FIXED and the test
+that measured it still fails, because a second wall of the same family stood behind it.**
+
+| Measure | after `default!` | after `sha3` | now |
+|---|---|---|---|
+| top-level tests that PASS run on their own | 163 of 184 | 176 of 184 | **176 of 184** |
+| real divergences (Go passes, C# does not) | 17 | 4 | **4** |
+| distinct roots behind them | 5 | 3 | **4** |
+| of those, disclosable under an existing class | 0 | — | **1** |
+
+Go on this host, re-measured rather than carried: **184 top-level, 180 pass, 4 fail**, 79.9 s. The
+four failures are the same expired-fixture set (`TestResumption`,
+`TestResumptionKeepsOCSPAndSCT`, `TestVerifyConnection`, `TestCrossVersionResume` — the test
+certificates expired 2025-01-01), and the converted host fails **exactly those four, with the same
+`x509: certificate has expired` text**, so they are AGREEING rows, not divergences. The cross-tab
+closes with no remainder: 176 agreeing passes + 4 agreeing failures + 4 divergences = 184.
+
+### 1. `GetAddrInfoW` — FIXED, and the class gained its LINKED-OUTPUT member
+
+The open non-blittable-syscall class CLAUDE.md has carried since the `Timezoneinformation` fix
+("`net` and `crypto/x509` will" reach it) now has its DNS member closed. Native `ADDRINFOW` is 48
+bytes of scalars and raw pointers where the converted `AddrinfoW` holds `Canonname`, `Addr` and
+`Next` as managed references, so the hints Windows read were garbage and the `*ADDRINFOW` it wrote
+landed in a reference slot — `Fatal error. 0xC0000005` inside `Syscall6`, killing the process.
+
+What makes this member different from every earlier one, and what the next member of the class
+should read first: **copying the top-level record would not have been enough.** `net` reads the
+sockaddr THROUGH the result (`(*syscall.RawSockaddrInet4)(unsafe.Pointer(result.Addr))`), and
+`RawSockaddrInet4.Addr [4]byte` is an `array<byte>` — a backing-array REFERENCE plus bounds — so
+reading that struct out of a native `sockaddr_in` fabricates managed references from address bytes.
+That is the fork the `sha3` entry proved has no general fix. So the hand-own transcribes the WHOLE
+chain into managed boxes, sockaddr included, typed by `ai_family`; frees the native chain eagerly
+(which makes `FreeAddrInfoW` a hand-owned no-op — nothing native escapes the call); and carries the
+managed sockaddr pointer across the `unsafe.Pointer` field through golib's `ManagedPointerTokens`,
+whose only previous minter was the reflection bridge. Two properties worth carrying:
+
+* the token must be wrapped in a `Pointer` built over a **native-address** `ж<EmptyStruct>`, because
+  the generated named-pointer wrapper's `uintptr` conversion returns the address of the storage its
+  box addresses — which for a native box IS the number handed in, so the token survives unchanged;
+* the token table is **weak by design**, so the hand-own owns the strong reference — a
+  `ConditionalWeakTable` keyed on the record box, which is exactly the Go lifetime. Without it a live
+  token could name a collected box and the consumer's cast would fall back to a wild native read,
+  turning a loud defect into a silent one.
+
+Guarded by the new **`LookupServicePort`** behavioral output test: `net.LookupPort` for
+`tcp`/`udp`/`tcp4`/`tcp6` services is the one reach into this pair needing neither DNS nor a network,
+and it exercises the hints mirror, the chain copy, the token handoff and BOTH sockaddr flavors at
+VALUE level (a byte-order slip prints a swapped port rather than failing). Proven failing-first: with
+the hand-own removed the guard reports `exit code mismatch: C# -1073741819 vs Go 0` — the access
+violation itself. Marker census: the two entries join `manualConversionFuncs["syscall"]`, and
+`TestWindowsOnlyEntriesAreScopedToWindows` now pins their platform scope.
+
+### 2. …and `TestVerifyHostname` STILL fails, one layer further out
+
+It now dies in **`net.adapterAddresses`**, which is `dnsReadConfig`'s only source of DNS servers on
+Windows:
+
+```
+Fatal error. System.AccessViolationException
+   at go.ж`1[IpAdapterAddresses].op_Equality(ж`1<IpAdapterAddresses>, NilType)
+   at go.net_package.adapterAddresses()
+   at go.net_package.dnsReadConfig(string)      <- via getSystemDNSConfig, from lookupIP
+```
+
+Same family, bigger structure, and NOT a wrapper defect: `adapterAddresses` asks
+`GetAdaptersAddresses` to fill a managed `slice<byte>` (that part is legitimate) and then walks it as
+`Ꮡ(b, 0).Reinterpret<byte, IpAdapterAddresses>()`. `IP_ADAPTER_ADDRESSES` is a linked record with
+three raw string pointers, a `[8]byte` physical address, a `[16]uint32` zone-index array and **six**
+nested linked lists; reading it out of a byte buffer fabricates a managed reference on the first
+field touched — here the `Next` comparison itself. The remedy is the same transcription shape this
+lane just built for `ADDRINFOW`, one structure size up, and it belongs to a **`net` interfaces arc**
+(`adapterAddresses` also backs `interfaceTable`, `interfaceAddrTable` and `Interfaces()`), not to
+`crypto/tls`. It is what stands between the corpus and any name resolution at all on Windows.
+
+### 3. The `op_OnesComplement` singleton is a SECOND syscall class — `**T` OUT-parameters arrive NULL, censused at 13
+
+The brief for this lane (and the entry above) read `TestQUICHandshakeError` as "a golib operator on a
+nil box … make it a Go-shaped panic, not an NRE". **Both halves are wrong, and the correction is the
+most transferable thing here.** The panic already IS Go-shaped — golib's `~` raises
+`RuntimeErrorPanic.NilPointerDereference`, printed as `panic: runtime error: invalid memory address
+or nil pointer dereference` — and golib is the innocent frame. The nil comes from three frames out:
+
+```
+crypto/x509 systemVerify -> (*storeCtx).Store        <- storeCtx is nil, and err was nil
+             createStoreContext -> CertAddCertificateContextToStore(handle, leafCtx, ADD_ALWAYS, &storeCtx)
+```
+
+`&storeCtx` is a `ж<ж<CertContext>>`, and golib's `ж<T> → uintptr` answers **0** for it: `IsNull` is
+the VALUE-PEEKING question, and a heap-boxed POINTER legitimately holds null before the call. That
+answer is deliberate and correct for the case it was written for (`syscall.Write` hands `writeFile` a
+nil `*Overlapped`; `uintptr(unsafe.Pointer(nil))` is 0 in Go) and silently wrong for the shape every
+out-parameter takes: the wrapper tells the kernel "no output wanted", `ppStoreContext` is documented
+OPTIONAL, the call SUCCEEDS, and the caller reads back the nil it started with. Note the 0 is
+accidentally the SAFER outcome — a real address would have had the kernel write a native pointer into
+a slot the collector reads as an object reference — so the remedy is a per-wrapper hand-own, never a
+change to the operator.
+
+**Census of the emitted wrappers taking a `**T`: 13.** `CertAddCertificateContextToStore`,
+`CertGetCertificateChain`, `ConvertSidToStringSid`, `ConvertStringSidToSid`, `DnsQuery`, `_DnsQuery`,
+`GetFullPathName`, `getQueuedCompletionStatus`, `GetQueuedCompletionStatus` in `syscall`; plus
+`CreateEnvironmentBlock`, `NetGetJoinInformation`, `NetUserGetInfo`, `NetUserGetLocalGroups` in
+`internal/syscall/windows`. Two more of the shape are already hand-owned for other reasons
+(`GetAddrInfoW`, `GetAcceptExSockaddrs`). Not fixed speculatively, on the standing
+fix-it-when-a-suite-reaches-it rule.
+
+Closing `TestQUICHandshakeError` is therefore a **`crypto/x509` Windows system-verifier arc**: the
+out-parameter is only the first defect, because `CertContext`, `CertChainContext`, `CertSimpleChain`
+and `CertChainElement` are all read back through raw addresses afterwards — the fabricated-reference
+fork again, over six CryptoAPI wrappers.
+
+### 4. `TestCertCache` IS `codegen-liveness`, and it is the only disclosable row
+
+The test nils its own local, calls `runtime.GC()`, and polls for 4 s waiting for a finalizer to
+decrement a ref count. Measured, not argued:
+
+* Go passes it in 0.00 s; the converted host fails at the **first** check (`refs 2 → 1`) — 4.3 s of
+  polling on top of a 3.8 s host startup, and `t.Fatal` aborts before the second check.
+* It fails **identically in an optimized Release build** (a separately built Release host), so it is
+  not the non-optimizing JIT's frame-wide liveness.
+* The finalizer bridge itself works: `runtime.SetFinalizer` is the hand-owned
+  `ConditionalWeakTable` + sentinel bridge, `runtime.GC()` is `Collect → WaitForPendingFinalizers →
+  Collect`, and `sync`'s banked `TestPoolGC` measures 98 of 100 objects finalizing on the first try.
+
+That is the roster's existing `codegen-liveness` class verbatim — "a test asserts, from inside its own
+frame, that an object it just stopped referencing is collectible". The likely rooting slot is the same
+one `sync`'s `TestOnceXGC` disclosure names: `var (certA, err) = cc.newCert(...)` materializes an
+address-exposed tuple temp, and an address-exposed slot is not lifetime-tracked. That last step is
+INFERRED from the class's known mechanism, not read out of the JIT — the three bullets above are the
+measurements. **No new class, so no coordinator ruling is owed**; the row is disclosable whenever the
+package can bank.
+
+### 5. `TestBogoSuite` is NOT "external infrastructure" — it is a fixable test-host defect
+
+The previous entry recorded it as "an external binary … not a conversion signal". Measured, that is
+wrong. Go passes it on this host, so BoGo downloads, builds and runs here. It drives the shim as
+`-shim-path=os.Args[0] -shim-extra-flags=-bogo-mode`, i.e. it re-executes **the test binary itself**.
+Run the converted host that way and it answers:
+
+```
+> tlsendHost.exe -bogo-mode
+flag provided but not defined: -bogo-mode
+```
+
+`bogo-mode` IS registered by the converted source (`handshake_test.cs:50`, a `flag.Bool` package-var
+initializer) — but `testing`'s host parses `args` itself in `TestOptions.Parse` and **throws on any
+name it does not recognize**, before the package's own `flag.Parse()` in `TestMain` ever runs. Go's
+test binary cannot behave that way: `testing.Init()` merely DEFINES the `-test.*` flags on
+`flag.CommandLine`, and one `flag.Parse()` then covers the host's flags and the package's together.
+`TestFlagBridge` already does the first half (publishing the host's flags into `flag.CommandLine`); the
+missing half is tolerating the package's. So every BoGo case fails instantly, the runner exits 1
+without writing results, and the test reports `bogo failed: exit status 1`.
+
+Sizing it honestly: fixing the pass-through is small and general (any package with its own test flags
+benefits), but it lives in the shared hand-owned `testing` host, so it owes the **full validated
+sweep** as a gate — and it must defer the unknown-flag ERROR to `flag.Parse()` rather than dropping
+it, or the host stops rejecting typos. And even fixed, `TestBogoSuite` becomes a **long external TLS
+interop measurement**, not a pass: it is its own arc. Deliberately not taken here.
+
+### One more thing the bogo failure printed, unrelated and worth a look
+
+`t.Fatalf("bogo failed: %s\n%s", err, out)` printed the second operand as `0x19c45d7c4f8`. `out` is a
+`*strings.Builder`, whose pointer-receiver `String()` makes it a `fmt.Stringer` in Go; the converted
+`fmt` reached its `p.arg._<Stringer>` assertion and missed. Reproducible on every run of that test.
+Whether this is general (any `%s`/`%v` on a pointer whose `String()` was never cast to `Stringer` in
+converted source) or specific to `strings.Builder` is UNMEASURED — recorded with its exact site so
+whoever looks does not have to find one.
+
+### Where `crypto/tls` stands
+
+**Four divergences, four different owners, and only one of them is `crypto/tls`'s to answer.** Two
+are Windows syscall arcs that other packages want more than this one does (`net`'s interfaces,
+`crypto/x509`'s system verifier); one is a `testing`-host gap; one is a disclosure. Nothing here is a
+TLS defect — the protocol work has been green since the `sha3` fix, TLS 1.2 and 1.3, QUIC, session
+tickets, ECH and the whole handshake matrix. **The expired-fixture ceiling deserves repeating for
+whoever eventually banks it: 180 of 184 is the most this host can score, both languages fail the same
+four rows, and it worsens with time** — a Go patch release or regenerated fixtures changes the shape,
+and a proof page written today must say so.
+
+Still builds-and-partly-runs; no roster row, no proof page, no disclosures, converted test sources not
+committed.
