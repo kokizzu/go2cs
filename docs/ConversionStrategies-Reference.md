@@ -3546,7 +3546,7 @@ program does not carry; see *`runtime.Caller` works by severing the FUNNEL* belo
 
 `Example` and `Benchmark` declarations are uniformly **Phase-4D-deferred** — `discoverTestDeclarations` records them in the manifest with status `unsupported` ("… execution is deferred to Phase 4D") and the differential oracle filters them from both sides (`eligibleTerminalTestResults` admits only `included` `test`-kind declarations). The **option-a ruling** (2026-07-24) extends that deferral from the *declaration* to the *file*: a `_test.go` file is dropped from the `-tests` conversion/compile set (`selectCompileExcludedTestFiles`) iff **both**
 
-1. **every top-level declaration it contributes is a Phase-4D-deferred `func Example*`/`func Benchmark*`** — imports do not count as declarations; any top-level `var`/`const`/`type`, or any other func (a `Test`/`TestMain`/`Fuzz` func, a method, or a *mis-signatured* Example/Benchmark), disqualifies the whole file (conservative by design; `TestMain`/`Fuzz` are deliberately out of scope). The classification is the **exact** `isPhase4DExcludedTestFunc` predicate `discoverTestDeclarations` uses (no receiver, no results, no type params, and either a zero-parameter `Example*` or a single-`*testing.B`-parameter `Benchmark*`), so a file qualifies only when it truly contributes nothing to the run registry; **and**
+1. **every RUNNABLE declaration it contributes is a Phase-4D-deferred `func Example*`/`func Benchmark*`** — imports do not count as declarations, and (since 2026-08-15) neither do pure `type` declarations and methods; any top-level `var`/`const`, or any other plain func (a `Test`/`TestMain`/`Fuzz` func, an `init`, or a *mis-signatured* Example/Benchmark), disqualifies the whole file (conservative by design; `TestMain`/`Fuzz` are deliberately out of scope). The Example/Benchmark classification is the **exact** `isPhase4DExcludedTestFunc` predicate `discoverTestDeclarations` uses (no receiver, no results, no type params, and either a zero-parameter `Example*` or a single-`*testing.B`-parameter `Benchmark*`), so a file qualifies only when it truly contributes nothing to the run registry; **and**
 2. **no RETAINED test file references any object the file declares**, resolved by go/types **object identity** across the loaded variant set (never filename or text) — a promotion **fixpoint** over both variants, so an Example a retained test takes by value (`[]func(){ExampleWired}`) keeps its file compiled, and a candidate promoted back to retained can in turn pull further candidates in.
 
 The predicate is pure `go/ast`+`go/types`: go/token's `example_test.go` declares **only** `func Example_retrievePositionInfo()` at top level (its `type p = token.Pos` / `const bad` / `func ok` live inside a raw-string literal fed to `parser.ParseFile`), so a text scan would wrongly disqualify it while the AST predicate correctly qualifies it. Excluding it is the **demonstrated consumer**: that external `package token_test` file, recompiled into go/token's mixed whitebox+blackbox test assembly, names `token.FileSet`/`ΔPos`/`Token` — types the referenced `go.parser`/`go.ast` assemblies surface from the *production* `go.token` assembly while the recompile makes a *second*, local copy — CS0012. With the file excluded, go/token compiles.
@@ -3555,7 +3555,9 @@ The predicate is pure `go/ast`+`go/types`: go/token's `example_test.go` declares
 
 **Blast radius (banked packages).** Because the policy changes which files a *banked* package compiles, a GOROOT scan of every committed test suite (with go/token as the positive control) found **18** packages with a qualifying file — each re-validated with identical `Test` counts and rebanked to remove the excluded `*_test.cs`, its `.tests.csproj` compile item, the project references + `using` aliases the excluded file **exclusively** pulled in (verified by import analysis, e.g. math/cmplx's fmt, encoding/hex's os/io.fs/log), and — where the excluded external file was the sole contributor to the external anchor — the orphaned `package_info_external_test.cs`. One subtlety is guarded operationally: the metadata writer **merges** with the committed anchor, so a `GoImplement`/`GoImplicitConv` record contributed *only* by the excluded file (math/rand's `GoImplement<text.tabwriter.Writer, io.Writer>`, from an Example that casts a `*tabwriter.Writer`) survives the merge as a stale record referencing a now-unreferenced assembly (CS0234); regenerating the anchor from a clean state (as a whole-corpus reconvert would) drops it. The 17 packages with no qualifying file stay byte-identical.
 
-Guarded by the `TestSelectCompileExcludedTestFilesDropsExampleAndBenchmarkOnly` (positive: external Example-only + internal Benchmark-only), `TestSelectCompileExcludedTestFilesKeepsExampleWithTopLevelVar` (condition 1 negative), `TestSelectCompileExcludedTestFilesKeepsReferencedExample` (condition 2 fixpoint), and `TestSelectCompileExcludedTestFilesKeepsTestMainAndFuzzOnly` converter unit tests.
+**Condition (1) admits pure TYPE declarations and METHODS** (2026-08-15, the `crypto/tls` lane). The original wording — every top-level declaration is an Example/Benchmark — is the shape go/token's `example_test.go` happens to have, and `crypto/tls`'s is the same file in every way that matters: the package's ONLY black-box file, every runnable thing in it an Example. It differs in one respect — its Examples need an `io.Reader` to hand `Config.Rand`, so it declares `type zeroSource struct{}` and one `Read` method — and that single helper kept the whole file compiled, producing precisely the failure this ruling exists to prevent: `http.Transport`'s `TLSClientConfig` field names `tls_package.Config` in the PRODUCTION assembly while the recompile makes a second local copy, so the field is unnameable — **CS0012 ×3** at `example_test.cs` 88/99/198, three of `crypto/tls`'s four build errors. Adding the production reference cannot fix that (the two `Config`s stay distinct types and CS0012 merely becomes CS0029); the file must not be compiled. A type declaration and its methods are admissible because they have no RUN-TIME behavior of their own — nothing executes at package init — and any use by a retained file is a reference condition (2) already resolves. That last clause is load-bearing and is why the type and method objects are now recorded in `declared`: widening condition (1) without it would have silently disarmed condition (2) for exactly the declarations it just admitted. Everything else stays disqualifying, deliberately: a `var`/`const` initializer can carry side effects and a plain helper func can be `init()`, neither of which any reference edge would reveal.
+
+Guarded by the `TestSelectCompileExcludedTestFilesDropsExampleAndBenchmarkOnly` (positive: external Example-only + internal Benchmark-only), `TestSelectCompileExcludedTestFilesDropsExampleWithHelperType` (the crypto/tls widened-arm positive), `TestSelectCompileExcludedTestFilesKeepsHelperTypeUsedByRetainedTest` (condition 2 over the widened arm — the disarm this change had to avoid), `TestSelectCompileExcludedTestFilesKeepsExampleWithTopLevelVar` (condition 1 negative), `TestSelectCompileExcludedTestFilesKeepsReferencedExample` (condition 2 fixpoint), and `TestSelectCompileExcludedTestFilesKeepsTestMainAndFuzzOnly` converter unit tests.
 
 ### A package-qualifier `using` in a converted TEST SOURCE contributes a project reference
 
@@ -5194,7 +5196,8 @@ call; there are never two fields for one literal.
 
 **Naming.** `HoistedLiteralMarker` (`ˢ`, U+02E2 — a new `symbols.json` entry, never hardcoded)
 suffixes a camelCase slug of the literal's own content, joined at word boundaries and truncated at
-≤ 24 characters. The alphabet is **ASCII** letters and digits, not `unicode.IsLetter`: a C#
+≤ 24 characters. That budget is **total**, first word included (corrected 2026-08-15 — see below).
+The alphabet is **ASCII** letters and digits, not `unicode.IsLetter`: a C#
 identifier is lexed over UTF-16 code units, so a letter outside the BMP is a surrogate pair and can
 never appear in one — `go/types` spells its universe type set `"𝓤"` (U+1D4E4, category Lu), and a
 rune-wide slug emitted `𝓤ˢ`, a CS1056/CS1519 cascade. An ALL-CAPS word folds whole
@@ -5204,6 +5207,22 @@ Distinct literals whose slug collides take a package-wide first-occurrence ordin
 checked against the package's declared names *and* the already-claimed hoist names —
 `performNameCollisionAnalysis` walks Go declarations only and never sees a synthetic name. Because
 every hoisted name ends in `ˢ`, it can collide with neither a C# keyword nor a Go-derived identifier.
+
+**The 24-character budget binds the FIRST word too** (2026-08-15, the `crypto/tls` lane). It did not:
+the word-boundary truncation only applied once the slug was non-empty, so the leading word was written
+whole at whatever length it happened to be. A literal that is ONE long word — a hex test vector, a
+base64 blob, an alphabet string — therefore minted an identifier of exactly its own length, and
+`crypto/tls`'s `key_schedule_test.go` carries a **2,176-character** hex vector: the field name was
+2,176 characters and the compile died `CS7013: Name '…' exceeds the maximum length allowed in
+metadata`. The committed corpus was already past the design's intent without failing — 33 of its 5,928
+hoisted names exceeded 24 characters, the longest 256 — so this was luck, not a boundary case. Raising
+the number would not close the class; making the budget total does: `len(literalSlug(v)) ≤ 24` is now
+an invariant, so a literal of any size mints a name within budget or no name at all. A word that alone
+overflows has no word-boundary truncation available (the design's "never mid-word — that is where
+unreadable names come from" rule), so the slug is empty and the degenerate rule keeps the literal
+inline, which is exactly where an unreadable identifier was the alternative. A/B footprint: those 33
+literals inline instead of hoisted, all but a handful hex/base64/alphabet content; **zero** behavioral
+goldens move (no behavioral literal has an over-budget first word).
 
 **Two orderings the mechanism has to respect.**
 
@@ -12426,7 +12445,29 @@ The SINGLE-result numeric sibling of the string arm above (2026-07-17; the Phase
 ```csharp
 var maxFn = rune (rune _) => maxRune;
 ```
-Same gates as the string arm: assignment position only (argument/return/composite-element literals are target-typed — no inference to fail), and a BASIC numeric result (a named numeric type would need a second user conversion the wrapper cannot chain — the `lambdaConstReturnCastType` named-type rationale). Literal-only arm sets stay inferred (no churn): an int literal is already C# `int`, a rune literal emits `(rune)'a'`, so `minRune := func(rune) rune { return 'a' }` infers correctly without a prefix.
+Same gates as the string arm: assignment position only (argument/return/composite-element literals are target-typed — no inference to fail), and a BASIC numeric result (a named numeric type would need a second user conversion the wrapper cannot chain — the `lambdaConstReturnCastType` named-type rationale).
+
+**Literal-only arm sets are NOT automatically safe** (corrected 2026-08-15, the `crypto/tls` lane). This section used to end "literal-only arm sets stay inferred (no churn): an int literal is already C# `int`". They *are* concretely typed — but a BARE int literal is C# `int`, which is the declared type only when the Go result is `int32`. `crypto/tls` `TestCipherSuites`' comparator is the counterexample:
+```go
+isBetter := func(a, b uint16) int { …; return -1; …; return +1; …; return 0 }
+…
+if !slices.IsSortedFunc(prefOrder, isBetter) { … }
+```
+Every arm rendered as C# `int` against a Go `int` (C# `nint`) result, so the inferred delegate was `Func<ushort, ushort, int>`. Every *call* of the variable accepted it (`int` converts to `nint`); the delegate-VALUED use did not, delegate types being invariant — `CS1503: cannot convert from 'System.Func<ushort, ushort, int>' to 'System.Func<ushort, ushort, nint>'`, one of the package's four build errors. So a third arm joins: when **every** top-level single-result return arm is an INT literal and the declared basic result is an integer type other than `int32`, the declared type is stated:
+```csharp
+var isBetter = nint (uint16 a, uint16 b) => { …; return -1; …; return +1; …; return 0; };
+```
+**The gate is keyed to what the converter EMITS, not to the literal's Go-side natural type.** Two wider cuts were written and each measured to over-apply before this one:
+
+| shape | emitted arm | C# infers | prefix? |
+|:--|:--|:--|:--:|
+| `func(…) int { return -1 }` | `-1` (bare) | `int` — wrong | **yes** |
+| `func(bool) int64 { return 9 }` | `9` (bare) | `int` — wrong | **yes** |
+| `func(bool) int32 { return 100 }` | `100` (bare) | `int32` — right | no |
+| `func() float32 { return 0.5 }` | `0.5F` | `float` — right | no |
+| `func() float64 { return 3 }` | `3D` | `double` — right | no |
+
+Only a declared **integer** width leaves the literal bare: a floating result carries its width into the literal, and `int32`/`rune` *is* the bare literal's own C# type. Three further things bound the rule. Any arm the predicate cannot classify suppresses it — every non-INT-literal expression is *assumed* to carry the declared type — so mixed arm sets keep their present emission, as does a bare `return` against named results. A literal bound to a name that is only ever CALLED never reaches this code at all: `localFunctionDefine` has already emitted it as a C# local function carrying an explicit result type, so the arm can only fire where the delegate type is genuinely observable. And both literal SIGNS are stripped (`numericBasicLit` now unwraps unary `+` as well as unary `-`): Go writes an explicitly-positive literal precisely where it pairs with a negative one, which is the comparator shape this arm exists for, and treating `+1` as a non-literal blinded the predicate to half its own arm set — it did, on the first cut, where the fix silently emitted nothing at all. Not covered, and with no measured instance: a MIXED arm set whose declared type is NARROWER than the type C# picks (`func(…) uint16` with one `0` arm and one `ushort` arm, where `ushort` widens to `int`); that needs the natural C# type of an arbitrary expression, which the predicate deliberately does not attempt. (All five table rows sit side by side in the `FuncLitUntypedConstReturn` behavioral test, so the split stays pinned to the emission rather than to this table.)
 
 A constant operator **expression** arm containing a named untyped constant counts the same as the bare reference (2026-07-17; the B7b gap — bytes TestMap's `invalidRune := func(r rune) rune { return utf8.MaxRune + 1 }` was the one remaining bytes build error): the operator result keeps the wrapper type, so the inferred delegate was `Func<int, UntypedInt>` against Map's `Func<int, int>` parameter (CS1503). The arm test (`returnArmKeepsUntypedWrapper`) walks paren/unary/binary trees for an untyped-named-const leaf, **except** when a constant fold (`overflowingConstLiteral` / `floatContextConstLiteral`) rewrites the whole arm to a plain literal — that emission is concretely typed and needs no prefix. All other gates unchanged. (Guarded by the `FuncLitUntypedConstReturn` behavioral test — the single-arm CS1503 shape, the mixed-arm CS8917 shape, an `int64` result with a beyond-int32 const arm, the const-expression arm (`return maxRune + 1`), plus literal-only and argument-position controls that must keep the plain form; output-compared vs Go.)
 

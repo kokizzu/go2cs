@@ -766,7 +766,19 @@ func literalSlug(value string) string {
 		next := camelCaseSlugWord(word, i == 0)
 
 		// Truncate at a WORD boundary — never mid-word, which is where unreadable names come from.
-		if slug.Len() > 0 && slug.Len()+len(next) > maxHoistSlugLength {
+		//
+		// The budget binds the FIRST word too (2026-08-15, crypto/tls). It did not, and that
+		// exemption was unbounded: a literal that is ONE long word — a hex test vector, a base64
+		// blob, an alphabet string — became an identifier of exactly its own length. crypto/tls
+		// key_schedule_test.go's 2,176-character hex vector minted a 2,176-character field name and
+		// the compile died `CS7013: Name '…' exceeds the maximum length allowed in metadata`, the
+		// package's last build error. Raising a number would not close that class; making the budget
+		// total does — `len(literalSlug(v)) <= maxHoistSlugLength` is now an invariant, so a literal
+		// of any size mints a name within budget or no name at all. A word that alone overflows has
+		// no word-boundary truncation available, so the slug is empty and §4.2's degenerate rule
+		// keeps the literal inline — which is where an unreadable identifier was the alternative.
+		// Corpus footprint: 33 of 5,928 hoisted literals, all but a handful hex/base64/alphabet.
+		if slug.Len()+len(next) > maxHoistSlugLength {
 			break
 		}
 
