@@ -73,7 +73,7 @@ public static (ж<Reader>, error) NewReader(io.Reader r) {
 // If the stream has been exhausted, it returns an invalid
 // event and io.EOF.
 public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
-    ΔEvent e = default!;
+    ΔEvent e = new();
     error err = default!;
     GoFrame ᒐ = default;
     try {

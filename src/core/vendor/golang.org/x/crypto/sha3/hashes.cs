@@ -72,7 +72,7 @@ public static hash.Hash NewLegacyKeccak512() {
 
 // Sum224 returns the SHA3-224 digest of the data.
 public static array<byte> /*digest*/ Sum224(slice<byte> data) {
-    array<byte> digest = default!;
+    array<byte> digest = new(28);
 
     var h = New224();
     h.Write(data);
@@ -82,7 +82,7 @@ public static array<byte> /*digest*/ Sum224(slice<byte> data) {
 
 // Sum256 returns the SHA3-256 digest of the data.
 public static array<byte> /*digest*/ Sum256(slice<byte> data) {
-    array<byte> digest = default!;
+    array<byte> digest = new(32);
 
     var h = New256();
     h.Write(data);
@@ -92,7 +92,7 @@ public static array<byte> /*digest*/ Sum256(slice<byte> data) {
 
 // Sum384 returns the SHA3-384 digest of the data.
 public static array<byte> /*digest*/ Sum384(slice<byte> data) {
-    array<byte> digest = default!;
+    array<byte> digest = new(48);
 
     var h = New384();
     h.Write(data);
@@ -102,7 +102,7 @@ public static array<byte> /*digest*/ Sum384(slice<byte> data) {
 
 // Sum512 returns the SHA3-512 digest of the data.
 public static array<byte> /*digest*/ Sum512(slice<byte> data) {
-    array<byte> digest = default!;
+    array<byte> digest = new(64);
 
     var h = New512();
     h.Write(data);

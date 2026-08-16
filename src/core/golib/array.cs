@@ -216,8 +216,12 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     private static void checkArrayConversionLength(nint sourceLength, nint length)
     {
+        // A PANIC, not an IndexOutOfRangeException: Go's `[N]T(s)` on a short slice is a
+        // recoverable runtime panic, and only a PanicException is both visible to `recover()` and
+        // excluded from a host containment policy (see the note on slice<T>'s windowing ctors).
+        // The message text is unchanged — it was already Go's.
         if (sourceLength < length)
-            throw new IndexOutOfRangeException($"runtime error: cannot convert slice with length {sourceLength} to array or pointer to array with length {length}");
+            throw RuntimeErrorPanic.ArrayConversionLength(sourceLength, length);
     }
 
     public array(Span<T> source)

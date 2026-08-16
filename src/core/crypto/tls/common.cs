@@ -744,7 +744,7 @@ internal static time.Duration ticketKeyRotation => /* 24 * time.Hour */ 86400000
 // ticket key to a ticketKey. Externally, session ticket keys are 32 random
 // bytes and this function expands that into sufficient name and key material.
 [GoRecv] internal static ticketKey /*key*/ ticketKeyFromBytes(this ref Config c, [GoArrayDims(32)] array<byte> b) {
-    ticketKey key = default!;
+    ticketKey key = new();
 
     b = b.Clone();
     var hashed = sha512.Sum512(b[..]);

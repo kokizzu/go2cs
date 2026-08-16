@@ -1771,6 +1771,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]
+    public void CheckZeroValueArrayNamedResult() => CheckTarget("ZeroValueArrayNamedResult");
+
+    [TestMethod]
     public void CheckZeroValueStructVar() => CheckTarget("ZeroValueStructVar");
 
     // </TestMethods>

@@ -1774,6 +1774,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]
+    public void CheckZeroValueArrayNamedResult() => CheckTarget("ZeroValueArrayNamedResult");
+
+    [TestMethod]
     public void CheckZeroValueStructVar() => CheckTarget("ZeroValueStructVar");
 
     // </TestMethods>

@@ -174,6 +174,16 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         m_capacity = copy.Length;
     }
 
+    // Every out-of-bounds throw in the two windowing constructors below raises Go's OWN
+    // slice-bounds PANIC (RuntimeErrorPanic.SliceBoundsOutOfRange), not a .NET argument exception.
+    // The distinction is behavioral, not cosmetic: a PanicException is recoverable by `recover()`
+    // and is never contained by a host policy (Goroutine.CanContain excludes panics), so an
+    // out-of-bounds window crashes Go-style with a Go-shaped message. A plain ArgumentException
+    // satisfied the containment filter, so a converted test host swallowed it and recorded it on
+    // the TestExecution — and when the dying goroutine was the one another goroutine awaited, the
+    // record never flushed and the whole package deadline burned with NO output at all. 17 of
+    // crypto/tls's 53 measured divergences presented that way (10 as an infrastructure-error line,
+    // 7 as silent hangs) where Go would have failed loudly in milliseconds.
     public slice(T[]? array, nint low = 0, nint high = -1)
     {
         // Slicing a nil source is legal in Go while the indices stay within its zero
@@ -181,14 +191,14 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (array is null)
         {
             if (low != 0 || high > 0)
-                throw new ArgumentException($"Indices {nameof(low)} and {nameof(high)} represent a range outside bounds of the array reference.");
+                throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, 0, 0);
 
             this = default;
             return;
         }
 
         if (low < 0)
-            throw new ArgumentOutOfRangeException(nameof(low), "Value is less than zero.");
+            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, array.Length, array.Length);
 
         if (high == -1)
             high = array.Length;
@@ -196,7 +206,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         nint length = high - low;
 
         if (array.Length - low < length)
-            throw new ArgumentException($"Indices {nameof(low)} and {nameof(high)} represent a range outside bounds of the array reference.");
+            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, array.Length, array.Length);
 
         m_array = array;
         m_low = low;
@@ -214,17 +224,17 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (array is null)
         {
             if (low != 0 || high > 0 || max > 0)
-                throw new ArgumentException($"Indices {nameof(low)}, {nameof(high)} and {nameof(max)} represent a range outside bounds of the array reference.");
+                throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, 0);
 
             this = default;
             return;
         }
 
         if (low < 0)
-            throw new ArgumentOutOfRangeException(nameof(low), "Value is less than zero.");
+            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, array.Length);
 
         if (high < low || max < high || max > array.Length)
-            throw new ArgumentException($"Indices {nameof(low)}, {nameof(high)} and {nameof(max)} represent a range outside bounds of the array reference.");
+            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, array.Length);
 
         m_array = array;
         m_low = low;

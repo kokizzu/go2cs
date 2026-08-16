@@ -592,7 +592,7 @@ public static @string Error(this RecordHeaderError e) {
 }
 
 [GoRecv] internal static RecordHeaderError /*err*/ newRecordHeaderError(this ref Conn c, net.Conn conn, @string msg) {
-    RecordHeaderError err = default!;
+    RecordHeaderError err = new();
 
     err.Msg = msg;
     err.Conn = conn;

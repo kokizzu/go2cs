@@ -8616,3 +8616,68 @@ to learn whether they were the same root is to remove the root.
 * **Flat CPU dates a stall but not its beginning** (the previous entry's lesson) — sampling from t=0
   put this stall at ~30 s into the host run. Both readings were 8.3 s of CPU, which is a coincidence
   worth not over-reading: it is where a `crypto/tls` host stops, by two different mechanisms.
+
+## ⛔ STILL DOES NOT BANK — the `default!` zero-value emission LANDED and `crypto/tls` goes **127 → 163 of 184**; the remaining wall is ONE pre-existing root worth 10 tests (2026-08-16, lane `claude/zero-value-arrays`)
+
+The previous entry's "next move, in dependency order" opened with the `default!` zero-value emission
+and priced it at 47 of 53. It landed (`claude/zero-value-arrays`), and the re-census on the same
+per-test method — one process per top-level `Test*`, `-run '^Name$' -timeout 20s`, the same 184
+non-boringcrypto functions — measures **163 PASS, 0 FAIL, 4 HANG, 14 CRASH, 3 infrastructure-error**
+in 691 s.
+
+| Measure | 2026-08-16 (pre-fix) | now |
+|---|---|---|
+| top-level tests that PASS run on their own | 127 of 184 | **163 of 184** |
+| real divergences (Go passes, C# does not) | 53 | **17** |
+| distinct roots behind them | 8 | **5** |
+
+Four of the 21 non-passing are Go's OWN expired-certificate failures (`TestResumption`,
+`TestResumptionKeepsOCSPAndSCT`, `TestVerifyConnection`, `TestCrossVersionResume`) — unchanged, both
+languages fail them, still the 180-of-184 ceiling this host cannot beat. 184 − 163 − 4 = **17**.
+
+### The roots that closed
+
+Roots **A** (30 tests, `ticketKey.aesKey` length 0 → `aes: invalid key size 0`) and **B** + **B-shaped**
+(17 tests, `netip.As16` slicing a zero-length array) were the same defect and are both **CLOSED**.
+Every TLS 1.3 session-ticket path now passes — `TestQUICSessionResumption`, `TestQUICEarlyData`,
+`TestQUICPostHandshakeKeyUpdate` and the rest of the QUIC family are green — and the 7 silent
+B-shaped hangs are gone, which answers the previous entry's open question: they *were* the same root,
+and removing it was indeed the cheapest way to learn that. Root **F** (hang after partial progress)
+is also gone as a category.
+
+### The root that was HIDING behind them — 10 of the remaining 17
+
+`TestHostnameInSNI`, the previous entry's one-line reproducer, no longer hangs: it drives a real
+handshake and dies further down, in **`sha3.copyOut`**, with a fatal
+`AccessViolationException` reading `d.storage[..rate]` — i.e. `ref state d` does not address a valid
+managed `state`. Reach: `mlkem768.NewKeyFromSeed → kemKeyGen → sha3.Sum512`, which every TLS 1.3
+ClientHello performs, so it now claims **10** tests: `TestDialTimeout`, `TestHandshakeKyber`,
+`TestHostnameInSNI`, `TestKyberDecapsulate`, `TestKyberEncapsulate`, `TestSCTHandshake`,
+`TestServerSelectingUnconfiguredApplicationProtocol`,
+`TestServerSelectingUnconfiguredCipherSuite`, `TestTLS13OnlyClientHelloCipherSuite`, `TestVersion`.
+
+**It is PRE-EXISTING, and that was proven rather than assumed.** The suspicion is natural — this
+lane changed `sha3`'s four `Sum*` functions, whose `digest [N]byte` named results were four of its
+14 sites — so the four sites were reverted to `default!`, the host rebuilt, and the test re-run: the
+**identical** stack reproduces. The `in` argument plays no part in the faulting path either
+(`Sum` fills a freshly `make`-d buffer and only touches `in` in the closing `append`). It was simply
+unreachable behind the netip wall.
+
+### The remaining 17, by root
+
+| count | root | status |
+|---:|---|---|
+| **10** | `sha3.copyOut` AccessViolation via `mlkem768` key-gen — `ref state` not addressing managed storage | **NEW HEAD OF THE QUEUE**; pre-existing, newly reached |
+| 3 | hangs with no output: `TestCipherSuitePreference`, `TestConnectionState`, `TestDialer` | unrooted — first census with no output at all to root them |
+| 1 | `TestVerifyHostname` — process AV `0xC0000005` in `syscall.GetAddrInfoW` | unchanged; the open non-blittable-syscall class |
+| 1 | `TestQUICHandshakeError` — `ж<T>.op_OnesComplement` nil-deref | unchanged singleton |
+| 1 | `TestCertCache` — weak-ref timing | unchanged (old root 4) |
+| 1 | `TestBogoSuite` — external BoGo shim | not a conversion signal |
+
+**Next move**, in dependency order: the `sha3`/`mlkem768` `ref state` AccessViolation (10 at one
+stroke, and it is a POINTER-materialization defect, so it likely reaches well past `crypto/tls`),
+then re-census the 3 unrooted hangs *after* it — the same "remove the root before investigating what
+sits behind it" that just paid off here — then `GetAddrInfoW`, then the two singletons.
+
+Still builds-and-partly-runs; no roster row, no proof page, no disclosures, converted test sources
+not committed.
