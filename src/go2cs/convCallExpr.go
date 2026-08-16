@@ -3829,6 +3829,25 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 				}
 			}
 
+			// An untyped-nil operand converting to an unnamed MAP type — `map[string]int(nil)`,
+			// the `reflect.TypeOf(map[K]V(nil))` descriptor idiom. UntypedNil's underlying is
+			// itself, so the identical-underlying guard below rejected the shape and it fell
+			// through to the regular CALL path, which emitted `map<@string, nint>(default!)` —
+			// CS1955, since `map<TKey, TValue>` is a type and not a method. The NAMED twin
+			// `myMap(nil)` is already claimed further down (ConvertibleTo holds for it) and casts
+			// correctly, so only the type-LITERAL spelling ever broke.
+			//
+			// Slice and channel literals are deliberately NOT claimed alongside it, having no
+			// defect to fix: `[]byte(nil)` binds golib's real `builtin.slice<T>(T[])` conversion
+			// helper — the same one `[]byte("…")` is emitted against — and yields the nil slice,
+			// while `(chan T)(nil)` already renders as a cast. Claiming either would rewrite
+			// ~25 corpus sites to no effect.
+			if _, targetIsMap := targetType.Underlying().(*types.Map); targetIsMap {
+				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
+					return true, v.getAliasQualifiedTypeName(targetType, false)
+				}
+			}
+
 			if !types.Identical(targetType.Underlying(), argType.Underlying()) {
 				return false, ""
 			}

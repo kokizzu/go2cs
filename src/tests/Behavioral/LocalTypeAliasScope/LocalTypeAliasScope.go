@@ -93,11 +93,12 @@ func fileOps() {
 // name must not be registered against the TARGET type, or every Header in this file would be
 // renamed along with it — which is what the plain `Header` uses below prove it is not.
 //
-// (An alias to an unnamed composite — `type names = []string` — belongs here too and is
-// deliberately absent: its RHS is emitted with UNROOTED type arguments, `go.slice<@string>`,
-// which does not resolve at compilation scope. That is a separate, pre-existing defect of the
-// same emission line, and it is package-level, not function-local — this guard would fail for a
-// reason that has nothing to do with the scope question it exists to hold.)
+// (An alias to an unnamed composite — `type names = []string` — is deliberately absent, and stays
+// absent now that it works. Its RHS was emitted with UNROOTED type arguments, `go.slice<@string>`,
+// which does not resolve at compilation scope: a separate defect of the same emission line, since
+// fixed and held by the PackageAliasRootedTypeArgs guard. It is package-level rather than
+// function-local, so hosting it here would make this guard fail for a reason that has nothing to
+// do with the scope question it exists to hold — and each guard holds one question.)
 func localAliases() {
 	type hdr = Header
 

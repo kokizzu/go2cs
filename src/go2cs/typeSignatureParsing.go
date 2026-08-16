@@ -120,7 +120,12 @@ func splitTopLevelParams(paramString string) []string {
 	return append(result, paramString[start:])
 }
 
-func extractTypes(signature string) []string {
+// extractTypes renders a Go func-type PARAMETER list in C# form. rootNested is threaded from
+// renderCSFullTypeName (its sole caller) so a `global using` alias RHS roots every parameter
+// type — the alias `type fn = func(string) int` must emit `System.Func<go.@string, nint>`, since
+// a using-alias target resolves at compilation scope where neither `Func` nor `@string` is in
+// scope.
+func extractTypes(signature string, rootNested bool) []string {
 	// Remove any whitespace at the ends
 	signature = strings.TrimSpace(signature)
 
@@ -166,11 +171,11 @@ func extractTypes(signature string) []string {
 		// type (mirror of iifeDelegateType): convert the element and keep an ellipsis-family
 		// marker prefix for the func-type reassembly to hoist into the delegate family name.
 		if elem, ok := strings.CutPrefix(paramType, "..."); ok {
-			types = append(types, EllipsisOperator+convertToCSTypeName(strings.TrimSpace(elem)))
+			types = append(types, EllipsisOperator+renderCSTypeName(strings.TrimSpace(elem), rootNested))
 			continue
 		}
 
-		types = append(types, convertToCSTypeName(paramType))
+		types = append(types, renderCSTypeName(paramType, rootNested))
 	}
 
 	return types
@@ -181,10 +186,11 @@ func extractTypes(signature string) []string {
 // its bare type (a C# 1-tuple is CS8124); several yield the C#-ordered named tuple
 // (`(@string importPath, bool ok)`). Go result lists are all-named or all-unnamed; a leading
 // token is a NAME only when it is a plain identifier that is not a type-leading keyword
-// (`chan int` stays a type).
-func convertToCSResultList(resultType string) string {
+// (`chan int` stays a type). rootNested is threaded from renderCSFullTypeName exactly as for
+// extractTypes — a `global using` alias RHS roots the result types too.
+func convertToCSResultList(resultType string, rootNested bool) string {
 	if !strings.HasPrefix(resultType, "(") || !strings.HasSuffix(resultType, ")") {
-		return convertToCSTypeName(resultType)
+		return renderCSTypeName(resultType, rootNested)
 	}
 
 	inner := resultType[1 : len(resultType)-1]
@@ -238,17 +244,17 @@ func convertToCSResultList(resultType string) string {
 
 	if len(elements) == 1 {
 		if allNamed {
-			return convertToCSTypeName(strings.TrimSpace(elements[0][len(names[0]):]))
+			return renderCSTypeName(strings.TrimSpace(elements[0][len(names[0]):]), rootNested)
 		}
 
-		return convertToCSTypeName(elements[0])
+		return renderCSTypeName(elements[0], rootNested)
 	}
 
 	parts := make([]string, len(elements))
 
 	for i, element := range elements {
 		if allNamed {
-			elemType := convertToCSTypeName(strings.TrimSpace(element[len(names[i]):]))
+			elemType := renderCSTypeName(strings.TrimSpace(element[len(names[i]):]), rootNested)
 
 			// A BLANK Go result name (`func match(x, y Value) (_, _ Value)`, go/constant) must
 			// NOT become a C# tuple element name — two `_` elements collide (CS8127). Emit the
@@ -259,7 +265,7 @@ func convertToCSResultList(resultType string) string {
 				parts[i] = elemType + " " + getSanitizedIdentifier(names[i])
 			}
 		} else {
-			parts[i] = convertToCSTypeName(element)
+			parts[i] = renderCSTypeName(element, rootNested)
 		}
 	}
 

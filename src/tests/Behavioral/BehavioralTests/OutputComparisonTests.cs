@@ -1058,6 +1058,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]
+    public void CheckPackageAliasRootedTypeArgs() => CheckTarget("PackageAliasRootedTypeArgs");
+
+    [TestMethod]
     public void CheckPackageNameShadowing() => CheckTarget("PackageNameShadowing");
 
     [TestMethod]
@@ -1575,6 +1578,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckUnicodeConsoleOutput() => CheckTarget("UnicodeConsoleOutput");
+
+    [TestMethod]
+    public void CheckUnnamedMapNilConversion() => CheckTarget("UnnamedMapNilConversion");
 
     [TestMethod]
     public void CheckUnnamedParams() => CheckTarget("UnnamedParams");

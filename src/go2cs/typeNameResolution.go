@@ -511,6 +511,16 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 		return ""
 	}
 
+	// A `global using` RHS may not name another using alias — C# resolves it with the compilation
+	// unit's using directives NOT in effect — so an alias reached while rendering one must be
+	// replaced by what it RESOLVES to, at any depth. `type second = first` (with `type first =
+	// []Header`) otherwise renders the alias's own name and resolves to nothing.
+	if v.inUsingAliasTarget {
+		if unaliased := types.Unalias(t); unaliased != t {
+			return v.getFullyQualifiedTypeName(unaliased, isUnderlying)
+		}
+	}
+
 	if pointer, ok := t.(*types.Pointer); ok {
 		return "*" + v.getFullyQualifiedTypeName(pointer.Elem(), isUnderlying)
 	}
@@ -531,7 +541,7 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 	}
 
 	if name, ok := v.liftedNameFor(t); ok {
-		return name
+		return v.usingAliasTypeQualifier(t) + name
 	}
 
 	// An array/slice type is rendered structurally — the `[N]`/`[]` marker plus the recursively
@@ -602,6 +612,10 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 			return baseName
 		}
 
+		// Empty everywhere except inside a `global using` alias RHS, where a same-package name has
+		// to carry the package-class qualifier (see usingAliasTypeQualifier).
+		qualifier := v.usingAliasTypeQualifier(t)
+
 		// A SAME-PACKAGE instantiated generic renders structurally too — each type ARGUMENT recursively
 		// named — otherwise the t.String() fall-through below path-qualifies a cross-package argument and
 		// the slash-strip eats the `Name[` header (crypto/elliptic's embedded `nistCurve[*nistec.P256Point]`
@@ -617,7 +631,11 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 				}
 			}
 
-			return obj.Name() + "[" + strings.Join(args, ", ") + "]"
+			return qualifier + obj.Name() + "[" + strings.Join(args, ", ") + "]"
+		}
+
+		if qualifier != "" {
+			return qualifier + obj.Name()
 		}
 	}
 
@@ -625,7 +643,7 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 	// name or a deferred marker, never raw Go type text (see the getAliasQualifiedTypeName twin).
 	if !isUnderlying {
 		if name := deferredDynamicTypeName(t); name != "" {
-			return name
+			return v.usingAliasTypeQualifier(t) + name
 		}
 	}
 
@@ -634,7 +652,19 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 
 	// Remove the current package's path prefix from the type name (ReplaceAll so a composite
 	// type naming two current-package types doesn't keep a self-qualified one — see getAliasQualifiedTypeName).
-	typeName = strings.ReplaceAll(typeName, packagePathPrefix, "")
+	//
+	// A `global using` alias RHS SUBSTITUTES the package class for that path rather than dropping
+	// it, because the alias resolves where a bare same-package name resolves to nothing. This tail
+	// is where the shapes the structural arms above do not decompose land — a map's key/value, a
+	// func type's parameters and results — so `type m = map[string]Header` needs it to reach
+	// `go.map<go.@string, go.main_package.Header>` (see usingAliasTypeQualifier).
+	packagePathReplacement := ""
+
+	if qualifier := v.usingAliasTypeQualifier(t); qualifier != "" {
+		packagePathReplacement = strings.TrimSuffix(qualifier, "/") + "."
+	}
+
+	typeName = strings.ReplaceAll(typeName, packagePathPrefix, packagePathReplacement)
 
 	// Skip the cross-package last-segment strip for composite/func type strings whose slashes are
 	// internal (e.g. `func(go2cs/x/sub.Record)`); they are converted structurally downstream.
@@ -647,6 +677,32 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 	}
 
 	return typeName
+}
+
+// usingAliasTypeQualifier returns the `<ns>.<pkg>_package/` prefix a SAME-PACKAGE type name needs
+// while a `global using` alias RHS is being rendered, and "" in every other context.
+//
+// A using alias resolves at COMPILATION scope — outside `namespace go` and outside the emitted
+// `<pkg>_package` class — so a same-package type is `go.<pkg>_package.T` there, never a bare `T`.
+// It applies at EVERY depth: to the alias target itself (which is why visitTypeSpec no longer
+// computes a prefix of its own) and to every type the target nests — a slice element, a map
+// key/value, a channel element, a generic argument (`global using hdrs = go.slice<Header>;` was
+// CS0246 on `Header`). A cross-package name is excluded because it already qualifies itself.
+//
+// The `/` terminator is not decoration: convertToCSFullTypeName treats what precedes it as an
+// import PATH, which is what carries `<pkg>_package/T` through to `go.<pkg>_package.T`.
+func (v *Visitor) usingAliasTypeQualifier(t types.Type) string {
+	if !v.inUsingAliasTarget {
+		return ""
+	}
+
+	if named, ok := t.(*types.Named); ok {
+		if obj := named.Obj(); obj == nil || obj.Pkg() == nil || obj.Pkg() != v.pkg {
+			return ""
+		}
+	}
+
+	return samePackageTypeQualifier()
 }
 
 // collectCrossPackagePaths gathers the import paths of every cross-package named type referenced
@@ -995,7 +1051,18 @@ func (v *Visitor) exprIsMethodGroup(expr ast.Expr) bool {
 }
 
 func convertToCSTypeName(typeName string) string {
-	fullTypeName := convertToCSFullTypeName(typeName)
+	return renderCSTypeName(typeName, false)
+}
+
+// renderCSTypeName is convertToCSTypeName with the ROOTED-NESTING switch the `global using`
+// alias RHS needs (see renderCSFullTypeName). With rootNested set the root namespace is KEPT
+// rather than elided, so a nested name renders in its fully qualified form.
+func renderCSTypeName(typeName string, rootNested bool) string {
+	fullTypeName := renderCSFullTypeName(typeName, rootNested)
+
+	if rootNested {
+		return fullTypeName
+	}
 
 	// If full type name starts with root namespace, remove it
 	if strings.HasPrefix(fullTypeName, RootNamespace+".") {
@@ -1058,6 +1125,45 @@ func isImportPathByte(c byte) bool {
 }
 
 func convertToCSFullTypeName(typeName string) string {
+	return renderCSFullTypeName(typeName, false)
+}
+
+// delegateRoot returns the namespace qualifier a rendered delegate name needs when the rendering
+// must resolve at COMPILATION scope (rootNested — see renderCSFullTypeName). The two delegate
+// spellings root to DIFFERENT namespaces: plain `Action`/`Func` are the BCL delegates in `System`,
+// while the variadic FAMILY `Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` (family == EllipsisOperator) is golib's, in the
+// root namespace. Outside that context it contributes nothing, since both are in scope there.
+func delegateRoot(rootNested bool, family string) string {
+	if !rootNested {
+		return ""
+	}
+
+	if family == EllipsisOperator {
+		return RootNamespace + "."
+	}
+
+	return "System."
+}
+
+// renderCSFullTypeName is convertToCSFullTypeName plus the ROOTED-NESTING switch.
+//
+// Every rendering in this file roots only the OUTERMOST name and elides the root namespace from
+// each nested one (`go.slice<@string>`), because every code-body rendering lands inside
+// `namespace go;` where the elision is both legal and what makes the emitted C# read like Go.
+// A `global using` alias RHS is the one context where that is wrong: C# resolves a using-alias
+// target as if the compilation unit had NO using directives, so it resolves at COMPILATION scope
+// — outside `namespace go` and outside the package class — where a nested `@string`, `slice`,
+// `error`, `Header` or `io_package.Reader` names nothing at all (CS0246 ×17 on a nine-alias
+// program). With rootNested set every nested name keeps its full qualification, so the whole RHS
+// resolves from the global namespace.
+//
+// Two families are deliberately NOT rooted, both because they are not members of `go` to begin
+// with: the golib csproj-level `<Using Alias=…>` names (`uint64`, `float64`, `any`, …), which
+// resolve to a C# keyword or BCL type and are mapped straight to it here — the same substitution
+// getUsingAliasSafeTypeName applies to the outermost name, for the same reason; and the BCL
+// `Action`/`Func` delegates, which root to `System.` rather than to `go.` (the golib variadic
+// FAMILY `Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` does live in `go`, and is rooted there).
+func renderCSFullTypeName(typeName string, rootNested bool) string {
 	typeName = strings.TrimPrefix(typeName, "~")
 
 	if strings.HasPrefix(typeName, "untyped ") {
@@ -1140,19 +1246,19 @@ func convertToCSFullTypeName(typeName string) string {
 	typeName = strings.ReplaceAll(typeName, "]", ">")
 
 	if strings.HasPrefix(typeName, "<>") {
-		return fmt.Sprintf("%s.slice<%s>", RootNamespace, convertToCSTypeName(typeName[2:]))
+		return fmt.Sprintf("%s.slice<%s>", RootNamespace, renderCSTypeName(typeName[2:], rootNested))
 	}
 
 	if strings.HasPrefix(typeName, "chan ") {
-		return fmt.Sprintf("%s.channel<%s>", RootNamespace, convertToCSTypeName(typeName[5:]))
+		return fmt.Sprintf("%s.channel<%s>", RootNamespace, renderCSTypeName(typeName[5:], rootNested))
 	}
 
 	if strings.HasPrefix(typeName, "chan<- ") {
-		return fmt.Sprintf("%s.channel/*<-*/<%s>", RootNamespace, convertToCSTypeName(typeName[7:]))
+		return fmt.Sprintf("%s.channel/*<-*/<%s>", RootNamespace, renderCSTypeName(typeName[7:], rootNested))
 	}
 
 	if strings.HasPrefix(typeName, "<-chan ") {
-		return fmt.Sprintf("%s./*<-*/channel<%s>", RootNamespace, convertToCSTypeName(typeName[7:]))
+		return fmt.Sprintf("%s./*<-*/channel<%s>", RootNamespace, renderCSTypeName(typeName[7:], rootNested))
 	}
 
 	// Handle array types — the leading `<` is the `[` of `[N]`, so its `>` closes the length.
@@ -1169,7 +1275,7 @@ func convertToCSFullTypeName(typeName string) string {
 	// C# name that fails visibly at compile time, rather than a dead run with no output at all.
 	if strings.HasPrefix(typeName, "<") {
 		if closeIndex := strings.IndexByte(typeName, '>'); closeIndex != -1 {
-			return fmt.Sprintf("%s.array<%s>", RootNamespace, convertToCSTypeName(typeName[closeIndex+1:]))
+			return fmt.Sprintf("%s.array<%s>", RootNamespace, renderCSTypeName(typeName[closeIndex+1:], rootNested))
 		}
 
 		showWarning("Cannot render a C# type name for the unrecognized type expression \"%s\" - emitting it as a name", typeName)
@@ -1178,7 +1284,7 @@ func convertToCSFullTypeName(typeName string) string {
 	if strings.HasPrefix(typeName, "map<") {
 		innerType := typeName[4:]
 		keyType, valueType := splitMapKeyValue(innerType)
-		return fmt.Sprintf("%s.map<%s, %s>", RootNamespace, convertToCSTypeName(keyType), convertToCSTypeName(valueType))
+		return fmt.Sprintf("%s.map<%s, %s>", RootNamespace, renderCSTypeName(keyType, rootNested), renderCSTypeName(valueType, rootNested))
 	}
 
 	// Find all types inside '<T1, T2>' type expressions and recurse into them for conversion
@@ -1214,7 +1320,7 @@ func convertToCSFullTypeName(typeName string) string {
 				// the default named-type path — emitting C# `string` (System.String) instead of
 				// golib `@string`. That violates the generic `new()` constraint the converter adds
 				// (CS0310) and breaks string-literal assignment (CS0029).
-				subTypes[i] = convertToCSTypeName(strings.TrimSpace(subTypes[i]))
+				subTypes[i] = renderCSTypeName(strings.TrimSpace(subTypes[i]), rootNested)
 			}
 
 			base := typeName[:start]
@@ -1235,7 +1341,7 @@ func convertToCSFullTypeName(typeName string) string {
 	}
 
 	if typeName == "func()" {
-		return "Action"
+		return delegateRoot(rootNested, "") + "Action"
 	}
 
 	if strings.HasPrefix(typeName, "func(") {
@@ -1256,12 +1362,12 @@ func convertToCSFullTypeName(typeName string) string {
 		}
 
 		if closingParenIndex == -1 {
-			return "Action" // Malformed input (unexpected)
+			return delegateRoot(rootNested, "") + "Action" // Malformed input (unexpected)
 		}
 
 		// Extract parameter types, handling nested functions
 		paramString := typeName[5:closingParenIndex]
-		paramTypes := extractTypes(paramString)
+		paramTypes := extractTypes(paramString, rootNested)
 
 		// extractTypes already renders each parameter in C# form (a NAMED param has its type
 		// converted after the name is stripped; the bare-type case is converted in place), so use
@@ -1292,26 +1398,37 @@ func convertToCSFullTypeName(typeName string) string {
 			// func field): split the elements, strip the Go-ordered names, and rebuild —
 			// ONE result unwraps to its bare type (a C# 1-tuple is CS8124), several yield
 			// the C#-ordered named tuple `(@string importPath, bool ok)`.
-			csReturnType := convertToCSResultList(remainingType)
+			csReturnType := convertToCSResultList(remainingType, rootNested)
 
 			if len(csTypeNames) > 0 {
-				return fmt.Sprintf("Func%s<%s, %s>", family, strings.Join(csTypeNames, ", "), csReturnType)
+				return fmt.Sprintf("%sFunc%s<%s, %s>", delegateRoot(rootNested, family), family, strings.Join(csTypeNames, ", "), csReturnType)
 			}
 
-			return fmt.Sprintf("Func<%s>", csReturnType)
+			return fmt.Sprintf("%sFunc<%s>", delegateRoot(rootNested, ""), csReturnType)
 		}
 
 		// No return type, use Action
 		if len(csTypeNames) > 0 {
-			return fmt.Sprintf("Action%s<%s>", family, strings.Join(csTypeNames, ", "))
+			return fmt.Sprintf("%sAction%s<%s>", delegateRoot(rootNested, family), family, strings.Join(csTypeNames, ", "))
 		}
 
-		return "Action"
+		return delegateRoot(rootNested, "") + "Action"
 	}
 
 	// Handle pointer types
 	if strings.HasPrefix(typeName, "*") {
-		return fmt.Sprintf("%s.%s<%s>", RootNamespace, PointerPrefix, convertToCSTypeName(typeName[1:]))
+		return fmt.Sprintf("%s.%s<%s>", RootNamespace, PointerPrefix, renderCSTypeName(typeName[1:], rootNested))
+	}
+
+	// A golib csproj-level `<Using Alias=…>` name is not a member of `go` and cannot be rooted:
+	// it stands for a C# keyword or BCL type, and a using-alias RHS cannot see another alias.
+	// Substitute the target directly so the rooted rendering is self-contained rather than
+	// depending on getUsingAliasSafeTypeName's later sweep of the assembled string (which the
+	// outermost name still takes, harmlessly — the substitution is idempotent).
+	if rootNested {
+		if safeName, isAlias := golibAliasSafeNames[typeName]; isAlias {
+			return safeName
+		}
 	}
 
 	switch typeName {
