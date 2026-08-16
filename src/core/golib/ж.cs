@@ -243,9 +243,11 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     {
         get
         {
-            // Alias native memory at the address this box holds (never managed storage).
+            // Alias native memory at the address this box holds (never managed storage). Reading it
+            // as a T that carries a managed reference is refused rather than faulted — see
+            // s_nativeReadFabricatesReference.
             if (m_nativeAddr != 0)
-                return ref Unsafe.AsRef<T>((void*)m_nativeAddr);
+                return ref nativeValue();
 
             // Get reference to standard pointer value
             if (m_structFieldRef is null && m_arrayIndexRef is null)
@@ -299,7 +301,7 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         {
             // Alias native memory at the address this box holds (see Value).
             if (m_nativeAddr != 0)
-                return ref Unsafe.AsRef<T>((void*)m_nativeAddr);
+                return ref nativeValue();
 
             if (m_structFieldRef is null && m_arrayIndexRef is null)
                 return ref m_slot is null ? ref m_val! : ref MemoryMarshal.GetArrayDataReference(m_slot);
@@ -347,6 +349,49 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     // Computed from the type instead of by boxing default(T), so type initialization allocates
     // nothing either.
     private static readonly bool s_valueCanBeNull = !typeof(T).IsValueType || Nullable.GetUnderlyingType(typeof(T)) is not null;
+
+    // Whether reading a NATIVE address as T would FABRICATE a managed reference — true exactly when
+    // T's layout contains one. A native-backed box means "the pointee lives at this address", and
+    // `Unsafe.AsRef<T>` over it is correct for pure data; where T holds a reference field, the
+    // reference is manufactured from whatever bytes happen to sit there. That is a CLR type-safety
+    // break, and its first use is an AccessViolationException — a process kill with no diagnostic,
+    // no recover(), and a stack that names the innocent consumer rather than the reinterpret that
+    // built the box.
+    //
+    // The class this catches is the unrepresentable half of `(*U)(unsafe.Pointer(p))`. golib's
+    // Reinterpret takes the ALIASING arm wherever the managed model can express it (see
+    // ReinterpretAliasesStorage) and the raw-ADDRESS arm where it cannot; a pointer-to-ARRAY target
+    // over differently-typed storage is always the latter, because `array<U>` is a backing-store
+    // REFERENCE plus bounds and no `U[]` view over a `V[]` exists. Dereferencing such a box reads an
+    // `array<U>` STRUCT out of the pointed-at DATA. sha3's `(*[200]byte)(unsafe.Pointer(&d.a))` over
+    // its `[25]uint64` sponge state was the witness: `copy(b, ab[:])` faulted inside slice<byte>'s
+    // constructor and killed the process, and every TLS 1.3 ClientHello reached it through
+    // mlkem768 key generation. (That site is hand-owned now; the class is not closed — see
+    // docs/phase4/BOARD-next-validation-candidates.md.)
+    //
+    // Reported as a PanicException so the failure is CONTAINED and named: a converted test host
+    // records it against the running test, `recover()` sees it, and a stack trace points at the
+    // dereference. Nothing correct is lost — there is no defensible program that reads a fabricated
+    // managed reference, so every site this fires on was already broken, and it was broken in the
+    // one way that cost the most to diagnose. Computed from the type, so the branch folds away at
+    // JIT/ILC time for every T that carries no references.
+    private static readonly bool s_nativeReadFabricatesReference = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+
+    // Whether dereferencing THIS box would be refused — a native alias whose pointee carries a
+    // managed reference. Exposed for the DISPLAY path, which must answer for every box a program can
+    // hold, including one it can never legally read (see PointerExtensions.PrintPointer).
+    internal bool NativeReadWouldFabricate => m_nativeAddr != 0 && s_nativeReadFabricatesReference;
+
+    private ref T nativeValue()
+    {
+        if (s_nativeReadFabricatesReference)
+            throw RuntimeErrorPanic.UnrepresentableNativeReinterpret(typeof(T));
+
+        unsafe
+        {
+            return ref Unsafe.AsRef<T>((void*)m_nativeAddr);
+        }
+    }
 
     /// <summary>
     /// Gets a flag indicating whether this box IS the nil pointer — the STRUCTURAL predicate
