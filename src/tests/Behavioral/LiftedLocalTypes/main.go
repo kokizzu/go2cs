@@ -31,4 +31,62 @@ func main() {
 	fmt.Printf("%T %T\n", p, &p)
 
 	describe(func(x int) int { return 0 })
+
+	embeddedLocalTypes()
+}
+
+// embeddedLocalTypes pins the NAME of an EMBEDDED field whose type is a function-local one.
+// Go names an embedded field after the unqualified type name — `myInt`, `embed1` — while the
+// converter HOISTS the local type to package scope under a mangled name. Naming the C# member
+// after the hoisted type left the declaration (and go2cs-gen's generated constructor and
+// promotion, which are both read off it) spelling `TestX_myIntᴛ1` while every use site spelled
+// the Go field name: `s.myInt` was CS1061 and `S3{embed1: …}` was CS1739. It also flipped the
+// field's EXPORTEDNESS, since the mangled name begins with the enclosing function's capital.
+// These are encoding/json's TestAnonymousFields / TestUnmarshalEmbeddedUnexported shapes.
+func embeddedLocalTypes() {
+	type (
+		myInt int
+		MyInt int
+		embed struct{ Q int }
+
+		// Embeds of all three: a local named non-struct, its exported twin, and a local
+		// struct — by value and by pointer.
+		holder struct {
+			myInt
+			MyInt
+			embed
+		}
+		ptrHolder struct {
+			*myInt
+			*embed
+		}
+	)
+
+	// Positional construction, then field access BY THE GO FIELD NAME.
+	h := holder{1, 2, embed{Q: 3}}
+	fmt.Println(h.myInt, h.MyInt, h.embed.Q)
+
+	// Promotion through the embedded struct reads the same field without naming it.
+	fmt.Println(h.Q)
+
+	// Keyed construction names the fields explicitly.
+	k := holder{myInt: 4, MyInt: 5, embed: embed{Q: 6}}
+	fmt.Println(k.myInt, k.MyInt, k.Q)
+
+	// Writing through an embedded field, and through a pointer embed.
+	k.myInt = 7
+	fmt.Println(k.myInt)
+
+	i := myInt(8)
+	e := embed{Q: 9}
+	pp := ptrHolder{myInt: &i, embed: &e}
+	*pp.myInt = 10
+	pp.embed.Q = 11
+	fmt.Println(*pp.myInt, pp.embed.Q, pp.Q)
+
+	// The local STRUCT type's Go name survives for reflection when it is reached through an
+	// embedded field, exactly as it does for a plain local (the [GoLocalName] stamp above).
+	// Its non-struct sibling — `%T` of h.myInt — still prints the hoisted identifier, because
+	// only lifted STRUCT types are stamped; that is a separate, boarded gap, not this one.
+	fmt.Printf("%T\n", h.embed)
 }

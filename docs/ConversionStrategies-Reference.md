@@ -5169,7 +5169,49 @@ sig := htmlSig("<!DOCTYPE HTML")
 var sig = ((htmlSig)slice<byte>((@string)"<!DOCTYPE HTML"u8));
 ```
 
-The rune form decodes code points — `runeSig("héllo")` yields a rune-counted `slice<rune>` — matching Go's conversion semantics. String **variables** are unaffected (no instance in the corpus; a named-slice wrapper conversion from a `@string` variable would surface as a loud CS0030, not silent misbehavior). (Guarded by the behavioral test `NamedByteSliceFromStringLit` — direct, composite-element, and argument positions, byte/rune element reads, all output-compared vs Go.)
+The rune form decodes code points — `runeSig("héllo")` yields a rune-counted `slice<rune>` — matching Go's conversion semantics. The rule is stated over the OPERAND'S TYPE, not over its syntax: a string **variable** and a defined string are the same two-hop problem (`((namedByteSlice)plainVar)` was CS0030 exactly as the literal form was), so any string-typed operand takes the underlying-slice hop. (Guarded by the behavioral test `NamedByteSliceFromStringLit` — direct, composite-element, and argument positions, byte/rune element reads, all output-compared vs Go — and by `DefinedElemStringConversion` for the variable and defined-string operands.)
+
+### A string ↔ byte/rune-slice conversion with a DEFINED type on either END
+
+Go spells `[]byte(s)`, `[]E(s)` and `string(b)` identically whether the string, the slice or its element is a defined type or the plain builtin — the conversion is defined over the UNDERLYING types. C# reaches the two ends through different machinery, and **neither end can be reached by chaining**, because C# applies at most ONE user-defined conversion in a single context. The two ends therefore have two different remedies, and one conversion may need both at once.
+
+**The STRING end.** A `[GoType("@string")]` wrapper converts to golib `@string`, and `@string` converts to `byte[]`/`rune[]` — two user-defined hops, so `slice<byte>(v)` over a defined string finds no applicable `slice<T>(T[])` overload (`CS1503: cannot convert from 'strMarshaler' to 'byte[]'`). Spelling the `(@string)` step leaves exactly one implicit step for the argument conversion — the same remedy the split-literal idiom above already takes:
+
+```go
+type strMarshaler string
+func (s strMarshaler) MarshalJSON() ([]byte, error) { return []byte(s), nil }
+```
+```csharp
+[GoType("@string")] internal partial struct strMarshaler;
+
+internal static (slice<byte>, error) MarshalJSON(this strMarshaler s) {
+    return (slice<byte>((@string)s), default!);
+}
+```
+
+**The ELEMENT end.** `slice<byte>` and `slice<myByte>` are unrelated generic instantiations with no conversion between them at all — the element wrapper's own `byte`↔`myByte` operators say nothing about the slices written over them. The elements are projected one at a time through that operator, using golib's `widen`. This is not a concession: Go's string↔slice conversion always materializes fresh storage, so an element-wise copy is exactly its cost model (`[]E(s)` and `string(b)` both allocate in Go too), and the projection preserves its source's nil-vs-empty identity.
+
+```go
+type Uint8 byte
+type renamedRenamedByteSlice []renamedByte
+
+want := []Uint8("hello")
+r := renamedRenamedByteSlice("abc")
+s := string(want)
+```
+```csharp
+var want = widen<byte, Uint8>(slice<byte>((@string)"hello"u8), elemᴛ0 => (Uint8)elemᴛ0);
+var r = ((renamedRenamedByteSlice)widen<byte, renamedByte>(slice<byte>((@string)"abc"u8), elemᴛ0 => (renamedByte)elemᴛ0));
+var s = ((@string)widen<Uint8, byte>(want, elemᴛ0 => (byte)elemᴛ0));
+```
+
+The lambda parameter carries the temp-var marker (`ᴛ`) because C# rejects a lambda parameter that shadows an enclosing local, and a converted Go identifier can be any plain name.
+
+A plain string converting to a plain `[]byte`/`[]rune` is deliberately **not** claimed by either arm: golib's `@string` converts straight to `byte[]`/`rune[]`, so the existing single call already IS the whole conversion, and claiming it would rewrite the corpus to no effect. `[]E(s)` is also the only direction a defined element can be reached from — Go permits a slice→slice conversion only between identical element types, so `[]myByte([]byte)` is not Go at all and the projection is never asked to alias.
+
+**Census.** Across the whole Go 1.23.1 standard library — production *and* test sources — the shapes appear five times, all in `encoding/json`'s suite (`[]byte(strMarshaler)`, `[]byte(*strPtrMarshaler)`, `[]byte(marshaledValue)`, `[]Uint8("hello")`, `renamedRenamedByteSlice("abc")`), which is why the corpus compiled clean without them; the `string([]myByte)` direction has zero stdlib sites but is ordinary Go and is emitted by the same rule. These were five of the eight errors standing between `encoding/json` and its first run. (Guarded by the behavioral test `DefinedElemStringConversion` — every direction, value and pointer operands, named and unnamed slices, byte and rune elements, with the plain-on-plain controls in the same program.)
+
+⚠ The **reflection** mirror of the element end is still open: `reflect.Value.Bytes()` casts its receiver to `slice<byte>` and throws `InvalidCastException` for a `slice<myByte>` (`core/reflect/value_impl.cs`), which is what `encoding/json`'s `TestSliceOfCustomByte` and `TestEncodeRenamedByteSlice` report. Emission and reflection are independent seams; closing this one did not close that one.
 
 ### A string literal with high raw-byte escapes (`\xHH` hex, `\NNN` octal) emits a byte-array `@string`
 Go's `\x` escape is **exactly two** hex digits denoting one raw byte; C#'s `\x` escape is a **greedy** 1-to-4-hex-digit code-*unit* escape, and a C# `"…"u8` literal UTF-8-re-encodes its content. So re-emitting a Go token verbatim as a C# string literal both (a) mis-parses `\xdb` followed by ASCII `"5""0"` (the token `\xdb50`) as the single code unit U+DB50 — a lone high surrogate that cannot UTF-8-encode into a golib `@string` (CS9026, time/tzdata's embedded zip blob) — and (b) silently widens every byte ≥ 0x80 to two UTF-8 bytes, so `@string` byte indexing / `len` would not match Go. Such literals are emitted as the exact bytes in a **parenthesized** byte-array-backed `@string`:
@@ -9901,6 +9943,39 @@ value, so no converter reference to the renamed accessor needs coordinating; a p
 read `outerFunc.Func` would surface CS1061 in the gate (none does). Cleared debug/gosym's lone
 CS0542. Guarded by `PromotedFieldNameIsType` (a `Node` embedding a `*sym` whose `Node` field
 collides — accessed through the explicit embedded path, values vs Go).
+
+### An embedded field is named by GO, not by the C# rendering of its type
+
+Go names an embedded field after the **unqualified type name** — the field of `struct{ *myInt }` is `myInt`, the field of `struct{ io.Writer }` is `Writer`. The converter used to derive that member name from the *rendered C# type*, stripping the package qualifier and any type arguments back to something that looked like the Go name. For every ordinary embed the two strings are identical, which is why the derivation served for years; they part company the moment the converter **renames the type**.
+
+A function-local type is hoisted to package scope under a mangled name (`type myInt int` inside `TestAnonymousFields` becomes `TestAnonymousFields_myIntᴛ1`). Naming the member after *that* left the declaration — and go2cs-gen's generated constructor and promotion accessor, which are both read off it — spelling one thing while every use site kept spelling the Go field name:
+
+```
+encode_test.cs(604): CS1061 'TestAnonymousFields_Sᴛ4' does not contain a definition for 'myInt'
+decode_test.cs(2532): CS1739 the best overload for 'TestUnmarshalEmbeddedUnexported_S3' does not have a parameter named 'embed1'
+```
+
+It also silently flipped the field's **exportedness**, because the derived name begins with the enclosing function's capital: `embed1`, unexported in Go, was emitted `public`. That is not cosmetic — `encoding/json` reads exportedness off the field, and `TestUnmarshalEmbeddedUnexported` asserts precisely that such a field is *not* settable.
+
+The member name is therefore taken from the Go **object** the embed resolves to: a same-package embed resolves to the field itself (`*types.Var`, whose name IS the Go field name by definition), and a selector embed to the embedded type's own `TypeName`. Both are already unqualified and free of type arguments, so this replaces the stripping rather than adding to it; a `*types.PkgName` (an unresolved selector) is deliberately not claimed, since it would name the member after the package.
+
+```go
+type (
+    myInt int
+    MyInt int
+    holder struct{ myInt; MyInt }
+)
+```
+```csharp
+[GoType("dyn")] partial struct embeddedLocalTypes_holder {
+    internal partial ref embeddedLocalTypes_myInt myInt { get; }
+    public partial ref embeddedLocalTypes_MyInt MyInt { get; }
+}
+```
+
+**The generator follows.** `StructTypeTemplate`'s promoted-struct accessor derived its access modifier from the same rendered type name; C# requires both halves of a partial member to agree, so the corrected declaration met a generator that still said the opposite (`CS8799`). The accessor now scopes by the **member** name, which is what every sibling accessor in that template already did. (Guarded by the `LiftedLocalTypes` behavioral test — value and pointer embeds of function-local named and struct types, positional and keyed construction, writes through an embedded field, and promotion through the embedded struct, all output-compared vs Go.)
+
+⚠ Related but distinct, and still open: `%T` of a lifted function-local **non-struct** named type still prints the hoisted identifier, because only lifted STRUCT types carry the `[GoLocalName]` stamp that the reflection bridge reads.
 
 ### An EMBEDDED field whose derived name equals the enclosing type is Δ-renamed
 

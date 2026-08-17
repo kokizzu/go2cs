@@ -646,10 +646,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// appendSliceWriter []byte` (strings replace.go) — hops through the written
 			// underlying: the [GoType] wrapper converts only to slice<byte>, and
 			// slice<byte>→@string is a SECOND user conversion C# won't chain (CS0030).
-			if argNamed, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Named); ok {
-				if sliceType, ok := argNamed.Underlying().(*types.Slice); ok {
-					if basic, ok := sliceType.Elem().Underlying().(*types.Basic); ok && (basic.Kind() == types.Byte || basic.Kind() == types.Rune) {
-						return fmt.Sprintf("((@string)(%s)%s)", v.getCSharpTypeName(sliceType), expr)
+			//
+			// When the ELEMENT is itself a defined type (`string(b)` over `[]myByte`, named
+			// slice or not) the hop is not enough either — `slice<myByte>` has no conversion
+			// to @string at all — and the elements are projected back to their underlying
+			// basic first. See stringSliceConversions.go for both ends of this family.
+			if argType := v.info.TypeOf(arg); argType != nil {
+				if sliceType, ok := argType.Underlying().(*types.Slice); ok && isByteOrRuneSlice(sliceType) {
+					sliceExpr := expr
+					_, argIsNamed := types.Unalias(argType).(*types.Named)
+
+					if argIsNamed {
+						sliceExpr = fmt.Sprintf("(%s)%s", v.getCSharpTypeName(sliceType), expr)
+					}
+
+					if projected, ok := v.byteSliceToStringConversion(sliceType, sliceExpr); ok {
+						return projected
+					}
+
+					// A plain element over an UNNAMED slice needs no interception —
+					// `slice<byte>`→@string is a single conversion — so it keeps falling
+					// through to the general cast below, byte-identically.
+					if argIsNamed {
+						return fmt.Sprintf("((@string)%s)", sliceExpr)
 					}
 				}
 			}
@@ -705,18 +724,27 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				if basic, ok := named.Underlying().(*types.Basic); ok && basic.Kind() == types.String {
 					return fmt.Sprintf("((%s)(@string)%s)", targetTypeName, expr)
 				}
+			}
+		}
 
-				// The BYTE/RUNE-slice sibling: a string literal converting to a NAMED type whose
-				// underlying is `[]byte`/`[]rune` — `htmlSig("<!DOCTYPE HTML")`, `type htmlSig
-				// []byte` (net/http sniff.go's signature table, CS0030 ×17). The u8 span converts
-				// to neither the wrapper (whose [GoType] operator takes exactly its underlying
-				// slice) nor through @string in one hop (C# chains at most one user-defined
-				// conversion). Materialize the underlying slice the way the plain `[]byte("…")`
-				// conversion does — the slice<T>(T[]) builtin over the literal's @string — and the
-				// wrapper's own operator applies: `((htmlSig)slice<byte>((@string)"…"u8))`.
-				if sliceType, ok := named.Underlying().(*types.Slice); ok {
-					if basic, ok := sliceType.Elem().Underlying().(*types.Basic); ok && (basic.Kind() == types.Byte || basic.Kind() == types.Rune) {
-						return fmt.Sprintf("((%s)%s((@string)%s))", targetTypeName, v.getCSharpTypeName(sliceType), expr)
+		// The BYTE/RUNE-slice sibling of the block above: a STRING converting to a NAMED type whose
+		// underlying is `[]byte`/`[]rune` — `htmlSig("<!DOCTYPE HTML")`, `type htmlSig []byte`
+		// (net/http sniff.go's signature table, CS0030 ×17). Neither a `u8` span nor an `@string`
+		// reaches the wrapper in ONE hop (its [GoType] operator takes exactly its underlying slice,
+		// and C# chains at most one user-defined conversion). Materialize the underlying slice the
+		// way the plain `[]byte("…")` conversion does and let the wrapper's own operator apply:
+		// `((htmlSig)slice<byte>((@string)"…"u8))`.
+		//
+		// Any string-typed operand qualifies, not just a literal — a `string` VARIABLE and a DEFINED
+		// string are the same two-hop problem, and rendered as the bare cast they used to fall
+		// through to they were CS0030 exactly as the literal was. The operand's own `@string` step,
+		// and a DEFINED element type (`type S []myByte`, which no conversion reaches from
+		// `slice<byte>` at all), both live in stringSliceConversions.go.
+		if targetTypeName != "@string" {
+			if named, ok := v.info.TypeOf(callExpr).(*types.Named); ok {
+				if sliceType, ok := named.Underlying().(*types.Slice); ok && isByteOrRuneSlice(sliceType) {
+					if argType := v.info.TypeOf(arg); argType != nil && isStringTyped(argType) {
+						return fmt.Sprintf("((%s)%s)", targetTypeName, v.stringToByteSliceConversion(sliceType, arg, expr))
 					}
 				}
 			}
@@ -2359,6 +2387,31 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 
 			return fmt.Sprintf("slice<%s>((@string)(%s))", elementName, v.convExpr(callExpr.Args[0], nil))
+		}
+	}
+
+	// A string→byte/rune-slice conversion with an UNNAMED slice target in which a DEFINED type
+	// sits on one end or the other — `[]byte(v)` over `type strMarshaler string`, `[]Uint8("hello")`
+	// over `type Uint8 byte` (both encoding/json's suite). Neither end is reachable by chaining
+	// conversions: a defined string needs `[GoType]`→`@string`→`byte[]` (two user-defined hops,
+	// CS1503), and `slice<byte>`→`slice<Uint8>` does not exist at all. The named-slice target takes
+	// the same route from its own arm on the conversion path; see stringSliceConversions.go.
+	//
+	// A plain string converting to a plain `[]byte`/`[]rune` is deliberately NOT claimed — golib's
+	// `@string` converts straight to `byte[]`/`rune[]`, so the general path already emits the one
+	// call that is the whole conversion, and claiming it would rewrite the corpus to no effect.
+	if len(callExpr.Args) == 1 {
+		if targetSlice, ok := types.Unalias(funcType).(*types.Slice); ok && isByteOrRuneSlice(targetSlice) {
+			arg := callExpr.Args[0]
+
+			if argType := v.getType(arg, false); argType != nil && isStringTyped(argType) {
+				_, elemDefined := sliceElemIsDefined(targetSlice)
+				_, srcDefined := types.Unalias(argType).(*types.Named)
+
+				if elemDefined || srcDefined {
+					return v.stringToByteSliceConversion(targetSlice, arg, v.convExpr(arg, []ExprContext{callExprContext}))
+				}
+			}
 		}
 	}
 

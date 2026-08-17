@@ -4464,7 +4464,7 @@ and it points the opposite way from nistec.
 | `crypto/internal/nistec` | 2,200 | CS0311, above |
 | `runtime` | 870 | build-blocked |
 | `go/types` | 557 | CS0839 `Argument missing` |
-| `encoding/json` | 491 | ~~CS0050 inconsistent accessibility on a test-local return type~~ — the type is FUNCTION-local, not test-local, and that is the fix: **the accessibility wall is CLOSED** (2026-08-16, lane `claude/json-measure`, 76 errors → 0). Two roots remain behind it at 8 errors — see *`encoding/json` — the compile wall was ONE defect* at the end of this file |
+| `encoding/json` | 491 | ~~CS0050 inconsistent accessibility~~ ~~· CS1061/CS1739/CS1503 ×8~~ — **the compile wall is CLOSED end to end** (2026-08-16, lanes `claude/json-measure` then `claude/json-unlock`: 76 → 8 → 0). The package RUNS: **400 of 491 matching**, 91 divergent in four named roots — see *`encoding/json` — the wall is down and the package RUNS* at the end of this file |
 | `encoding/xml` | 386 | CS0426 `ΔToken` does not exist in `xml_package` |
 | `crypto/x509` | 335 | CS0102 duplicate definition in `x509_package` |
 | `net/netip` | 266 | CS1525 `Invalid expression term '<'` |
@@ -6707,8 +6707,8 @@ on the unbanked list by a factor of six.
 `debug/elf` 0 of 31 (CS8183 at `file_test.cs(1195,5)`) · `os/exec` 0 of 22 (CS0103 `var`) ·
 `text/template` 0 of 52 and `html/template` 0 of 243 (CS0030 `S`→`I`) · `slices` 0 of 122
 (CS0305/CS0411) · `encoding/xml` 0 of 386 (CS0426 `ΔToken`) · ~~`encoding/json` 0 of 491
-(CS0050/CS0053)~~ — **still 0 of 491, but the CS0050/CS0053 wall is CLOSED and the block is now
-CS1503/CS1061/CS1739 ×8 in two named roots (2026-08-16)** · `net/netip` 0 of 266 (CS1002/CS1525) · `internal/trace` 0 of 92 and
+(CS0050/CS0053)~~ — **the compile wall is CLOSED end to end and the package RUNS: 400 of 491
+matching, 91 divergent in four named roots (2026-08-16)** · `net/netip` 0 of 266 (CS1002/CS1525) · `internal/trace` 0 of 92 and
 `runtime/pprof` 0 of 174 (CS0149 `Method name expected`; pprof also still CS0103 `ᏑᏑsalts`) ·
 `internal/runtime/atomic` 0 of 15 (CS0103 `ᏑᏑx`) · `flag` 0 of 24 (CS1929 on
 `ж<flag_test_package.URLValue>`) · `crypto/ed25519` 0 of 9 (CS0030 `PrivateKey`→`crypto.Signer`) ·
@@ -9680,7 +9680,7 @@ and a proof page written today must say so.
 Still builds-and-partly-runs; no roster row, no proof page, no disclosures, converted test sources not
 committed.
 
-## ⛔ `encoding/json` — the compile wall was ONE defect, and it is FIXED; two roots stand behind it (2026-08-16, lane `claude/json-measure`)
+## ⛔ `encoding/json` — the wall is down and the package RUNS: 400 of 491, four roots (2026-08-16, lanes `claude/json-measure` + `claude/json-unlock`)
 
 **First measurement of the package.** The board's prior rows — `encoding/json | 491 | CS0050
 inconsistent accessibility on a test-local return type` and `encoding/json 0 of 491 (CS0050/CS0053)`
@@ -9777,3 +9777,71 @@ committed. The suite converts cleanly end to end — every `_test.go` file emits
 `encoding.json.dll` builds — so the remaining distance is exactly R2 and R3, and neither is a
 reflection-bridge question. Nothing here touches the descriptor/assignability semantics the
 `claude/assignableto-arc` lane owns; no cross-reference is owed.
+
+---
+
+### UPDATE 2026-08-16 (lane `claude/json-unlock`) — both roots closed; FIRST measurement: 400 of 491
+
+R2 and R3 are fixed, the test half compiles with **0 errors**, and `encoding/json` ran for the first
+time. It does not validate: **400 of 491 verdicts match**, 91 diverge. The reflection-heavy body is
+now measured rather than guessed at, and the divergences cluster the way this week's other packages
+did — **four roots and one loose end**, none of them an emission defect.
+
+**R2 — an embedded field is named by GO, not by the C# rendering of its type.** `visitStructType`
+derived the member name from the rendered type, which coincides with the Go field name for every
+ordinary embed and parts from it the moment the converter RENAMES the type: a function-local `type
+myInt int` hoists to `TestAnonymousFields_myIntᴛ1`, and the declaration (plus go2cs-gen's generated
+constructor and promotion accessor, both read off it) then spelled that while every use site spelled
+`s.myInt` / `S3{embed1: …}`. The name now comes from the Go OBJECT the embed resolves to — the field
+`*types.Var` for a same-package embed, the embedded type's `TypeName` for a selector embed — which is
+the Go field name by definition and is already unqualified and type-argument-free, so it REPLACES the
+bracket/dot stripping rather than adding to it. It also settles the field's EXPORTEDNESS, which the
+hoisted name silently flipped (`embed1` is unexported; the `TestUnmarshalEmbeddedUnexported_` prefix
+made the member public — the opposite of what that test asserts). The generator followed: its
+promoted-struct accessor scoped by TYPE name where every sibling accessor already scoped by MEMBER
+name, so the corrected declaration met the opposite modifier (CS8799). Guarded by `LiftedLocalTypes`
+(extended), proven failing-first.
+
+**R3 — a string ↔ byte/rune-slice conversion with a DEFINED type on either end.** Two ends, two
+remedies, one rule: the STRING end spells the `(@string)` hop explicitly (a `[GoType("@string")]`
+wrapper needs wrapper→`@string`→`byte[]`, two user-defined conversions, and C# chains at most one);
+the ELEMENT end projects element-wise through the wrapper's own operator with golib's `widen`
+(`slice<byte>` and `slice<myByte>` are unrelated instantiations with NO conversion between them).
+Go's string↔slice conversion always materializes fresh storage, so the element-wise copy is its cost
+model, not a concession. **Corpus census (type-aware, `go/packages` over all of `std` with tests):
+FIVE sites in the entire Go 1.23.1 standard library, production and test, all in `encoding/json`'s
+own suite** — which is exactly why the corpus compiled clean without them; the `string([]myByte)`
+direction has zero stdlib sites and is emitted by the same rule. Zero committed corpus files move.
+A pre-existing sibling hole closed with it: a named byte-slice type converted from a string VARIABLE
+(`plainByteSlice(s)`) was a bare cast, CS0030 — only the LITERAL form had ever been fixed. Guarded by
+the new `DefinedElemStringConversion`, proven failing-first (23 errors without the fix).
+
+### The 91 divergences
+
+| # | Root | Verdicts | Evidence |
+|:--|:--|--:|:--|
+| A | **An embedded field is invisible to the reflection view as an EMBED** — `reflect` does not report the field as anonymous, so `encoding/json` never flattens it | ≈31 | every embed marshals as a NAMED object instead of promoting: `{"S1":{"X":2},"S2":{"X":4}}` for `want {}`, `{"S":"B","BugA":{"S":"A"}}` for `want {"S":"B"}`; `DisallowUnknownFields` then reports `unknown field "Level1b"` where Go reports `"extra"`. Covers `TestAnonymousFields`, `TestUnmarshalEmbeddedUnexported`, `TestEmbeddedBug`, `TestDuplicatedFieldDisappears`, `TestTaggedFieldDominates`, `TestMarshalEmbeds`, `TestUnmarshal/#56`–`#63`/`#89`/`#91`/`#93`/`#139`/`#140`. R2 was the naming PREREQUISITE for this; the anonymous FLAG is a separate seam |
+| B | **`reflect.DeepEqual(ptr, reflect.New(T).Interface())` is false for a fresh zero** | ≈41 | `TestUnmarshal`'s own precondition — `unmarshalTest.ptr %#v is not a pointer to a zero value` — fires before the subtest's real assertion runs, so these 40-odd verdicts are UNREACHED rather than wrong. One fix would re-open them all |
+| C | **The reflection view of a slice whose ELEMENT or whose SLICE TYPE is DEFINED** | 3 | `reflect.Value.Bytes()` (`core/reflect/value_impl.cs:616`) ends in `(slice<byte>)other!` and throws `InvalidCastException` for `slice<Uint8>` / `renamedRenamedByteSlice` (`TestSliceOfCustomByte`, `TestEncodeRenamedByteSlice`, both surfacing as `infrastructure-error`); `TestByteKind` instead marshals a local `type byteKind []byte` as a generic array, so its Kind is not seen either. ⚠ Note the asymmetry with R3: Go's `Value.Bytes()` ALIASES the storage, so this fix must project a view, not a copy |
+| D | **Cycle detection recurses forever → `StackOverflowException` kills the host** | 13 unrecorded | `TestUnsupportedValues` marshals a self-referential map; Go returns `UnsupportedValueError: encountered a cycle`, the converted encoder recurses `interfaceEncoder`→`mapEncoder` without bound and the process dies with `0xc00000fd`. Per the jsonrpc rule this is ONE failure plus an unmeasured tail: `TestValid` ×7, `TestUnsupportedValues` ×4, `TestIndentBig`, `TestMarshalFloat` recorded no verdict at all |
+| E | **A recovered panic value's boxed type** | 2 | `TestMarshalPanic`/`TestUnmarshalPanic` panic with `0xdead` and compare `reflect.DeepEqual(recover(), 0xdead)`; the C# side reports the right VALUE (`57005`) and still fails the compare — the untyped-int panic argument boxes at a different width than the comparand |
+| — | loose end | 1 | `TestLargeByteSlice` round-trips a PLAIN 2000-byte `[]byte` and diverges at byte 0. No defined type anywhere in it, so it is not root C; unclassified, and worth one look because it is the only base64 round-trip failure |
+
+**Roots A, B, C and E are all reflection-bridge seams; none is a converter emission defect.** Root A
+is the biggest single unlock (a third of the divergences) and it is the classic Go-embedding contract
+that `encoding/json`, `encoding/xml`, `encoding/gob` and `text/template` all read. ⚠ Root B is
+adjacent to the descriptor semantics `claude/assignableto-arc` owns — cross-referenced, deliberately
+not touched here.
+
+No roster row, no proof page, no disclosures, converted test sources NOT committed: 400 of 491 is a
+measurement, not a validation.
+
+**Corpus footprint of both fixes: zero.** A seeded stdlib reconvert on the fixed converter (304
+packages, 0 failed, 13m32s; marker gate 60 marked / 0 clobbered) emitted 1,681 artifacts, of which
+1,629 are byte-identical to the committed tree and 51 of the remaining 52 are the documented CRLF
+phantom (identical once CRs are stripped). ⚠ The one REAL difference is **not from this lane and is
+owed by another**: `vendor/golang.org/x/text/unicode/bidi/core.cs` emits `((level)(maxDepth + 2))`
+where the committed file has `((level)maxDepth + 2)` — the residue of the cast-precedence fix that
+landed in `claude/fmt-roots` (`93ef5abaa`, guarded by `NamedConstConversionPrecedence`) without its
+corpus regen. It is the arc's ONLY stdlib site; whoever next levels the corpus should expect exactly
+that one file.
