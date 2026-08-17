@@ -1,3 +1,4 @@
+<!-- {% raw %} — Jekyll/Liquid guard: this doc contains {{ sequences (Go template/composite syntax) that Liquid would otherwise parse or silently eat. Keep the matching endraw as the final line. -->
 # Validated Test Packages
 
 Each package below has its own Go 1.23.1 `_test.go` suite converted to C#, built against the
@@ -206,3 +207,5 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 [^codegen-liveness]: A by-value struct argument wider than a machine word is passed by hidden
     reference, so the caller's temp is address-exposed and therefore untracked by liveness analysis.
+
+<!-- {% endraw %} -->

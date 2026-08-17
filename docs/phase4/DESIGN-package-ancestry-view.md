@@ -1,3 +1,4 @@
+<!-- {% raw %} — Jekyll/Liquid guard: this doc contains {{ sequences (Go template/composite syntax) that Liquid would otherwise parse or silently eat. Keep the matching endraw as the final line. -->
 # DESIGN — the converted host's package ancestry view
 
 **Status:** implemented, lane `claude/synthetic-goroot-class`, 2026-08-13.
@@ -150,3 +151,5 @@ per-test thread reserved 256 MB, which suffices only if every frame fits in 671 
 do not. `TestThreadStackSize` is raised to Go's own 1 GB ceiling. The reservation costs address space
 only — pages commit on demand — which is why the existing design already chose a large reservation; it
 was simply sized at a fraction of Go's rather than at Go's.
+
+<!-- {% endraw %} -->

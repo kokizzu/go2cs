@@ -3992,7 +3992,6 @@ the moment each package's `-tests` pipeline ran, with no separate work. Zero rem
    exactly (both SHAs point at tree `15e4eca18`), which made the stamp correctable textually rather
    than by re-running 17 packages.
 
-<!-- {% endraw %} -->
 
 ## The r43c breadth pass — 58 candidates measured, 23 bank, every non-bank rooted (2026-08-07)
 
@@ -10176,3 +10175,5 @@ a placeholder (`Value.SetBytes` joins the hand-owns).
 here read only each file's first 40 lines and reported **35** marked files against the real **60**,
 which would have made the clobber gate vacuous for 25 hand-owns. The rule is already written as
 line-anchored; it must also be whole-file.
+
+<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

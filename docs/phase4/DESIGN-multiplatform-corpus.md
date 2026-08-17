@@ -1,3 +1,4 @@
+<!-- {% raw %} — Jekyll/Liquid guard: this doc contains {{ sequences (Go template/composite syntax) that Liquid would otherwise parse or silently eat. Keep the matching endraw as the final line. -->
 # DESIGN — one corpus, three platforms: what a multiplatform standard library costs, and how it ships
 
 > **STATUS: ACCEPTED** (user ruling 2026-08-08: recommendations accepted as written — layout L3 + packaging option (a) RID assemblies; increments proceed in order).
@@ -1476,3 +1477,5 @@ modification time — that comparison is no longer a throwaway probe but `src/go
 inferred. Census D enumerates `types.Package.Scope()` exported names via `go/packages` under each `GOOS`;
 its probe source was throwaway and was not committed. The commands above are sufficient to regenerate every
 number in this document.
+
+<!-- {% endraw %} -->
