@@ -66,6 +66,7 @@ public static partial class main_package
     internal partial struct definedBytes {}
     internal partial struct holder {}
     internal partial struct host {}
+    internal partial struct mapHolder {}
     internal partial struct namedPlainBytes {}
     internal partial struct nested {}
     internal partial struct sliceKey {}

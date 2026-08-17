@@ -87,6 +87,14 @@ type holder struct {
 	Ps []*inner
 }
 
+// The MAP flavour of the same shape — encoding/json's `All.MapP`. A map entry is a SLOT, so its
+// value must be described by the map's declared element type; read by the stored object's dynamic
+// type instead, an entry physically holding null reports the INVALID Value and a nil element then
+// compares equal to a MISSING key and unequal to the canonical typed nil a reflective write stores.
+type mapHolder struct {
+	Ms map[string]*inner
+}
+
 // encoding/json's slice cycle key, verbatim: the data pointer paired with the length.
 type sliceKey struct {
 	ptr any
@@ -194,6 +202,34 @@ func main() {
 	grown.Index(0).Set(reflect.ValueOf(&inner{X: 1}))
 	tv.Set(grown)
 	fmt.Printf("decoded vs literal: %v %v %v\n", reflect.DeepEqual(target, want), want.Ps[1], target.Ps[1])
+
+	// ---- 3d. a nil map ELEMENT is one nil, however the map was built ----
+	//
+	// The map flavour of 3c, and the one that actually held encoding/json's `All` fixture: DeepEqual
+	// walks a map's entries out of the backing store, so unless each entry is typed by the map's
+	// DECLARED element type the two spellings of one nil separate — a literal's `nil` entry is stored
+	// as a raw null, while an entry written through reflect carries the canonical typed-nil box.
+	mapWant := mapHolder{Ms: map[string]*inner{"a": {X: 1}, "b": nil}}
+	var mapTarget mapHolder
+	mv2 := reflect.ValueOf(&mapTarget).Elem().Field(0)
+	mv2.Set(reflect.MakeMap(mv2.Type()))
+	mv2.SetMapIndex(reflect.ValueOf("a"), reflect.ValueOf(&inner{X: 1}))
+	mv2.SetMapIndex(reflect.ValueOf("b"), reflect.Zero(mv2.Type().Elem()))
+	fmt.Printf("map nil element: %v %v %v %v\n", reflect.DeepEqual(mapTarget, mapWant),
+		reflect.DeepEqual(mapWant, mapTarget), mapWant.Ms["b"], mapTarget.Ms["b"])
+
+	// ...and the separations that must SURVIVE the fix: a nil element is not a missing key, and it is
+	// not a present non-nil one. Typing an entry by the element type must not coarsen either.
+	nilElem := map[string]*inner{"b": nil}
+	otherKey := map[string]*inner{"c": nil}
+	nonNil := map[string]*inner{"b": {X: 1}}
+	fmt.Println("map nil element separations:", reflect.DeepEqual(nilElem, otherKey),
+		reflect.DeepEqual(nilElem, nonNil), reflect.DeepEqual(nilElem, map[string]*inner{"b": nil}))
+
+	// The INTERFACE-valued flavour, where a nil entry is the nil interface rather than a typed nil.
+	anyNil := map[string]any{"a": nil, "b": 1}
+	fmt.Println("map nil interface element:", reflect.DeepEqual(anyNil, map[string]any{"a": nil, "b": 1}),
+		reflect.DeepEqual(anyNil, map[string]any{"a": 0, "b": 1}))
 
 	// ---- 4 ----
 	sliceEq, sliceElemEq := zeroAgrees[[]any]()
