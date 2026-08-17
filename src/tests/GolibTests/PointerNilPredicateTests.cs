@@ -197,6 +197,68 @@ public class PointerNilPredicateTests
         Assert.AreEqual(2, new Dictionary<ж<nint>, string> { [a] = "a", [b] = "b", [c] = "c" }.Count);
     }
 
+    // ---- The ADDRESS of a pointer-to-pointer, and why the syscall boundary cannot use it ----
+    //
+    // `&p` for a Go `var p *T` is a ж<ж<T>>, and asking it for its ADDRESS is what every `**T`
+    // syscall OUT-PARAMETER does. Both answers below are the ones golib gives today, both are
+    // deliberate, and NEITHER is usable at a native boundary — which is the whole reason the
+    // remedy for that class lives in the wrappers (syscall/windows/zsyscall_windows_ptrout_impl.cs)
+    // and not here. They are pinned so a future lane reading only the first half of the story
+    // cannot "fix" the operator into the second, which is the dangerous one:
+    //
+    //   * a box whose held pointer is still null answers 0. That is correct for the case the
+    //     operator was written for — syscall.Write hands writeFile a nil *Overlapped, and Go's own
+    //     `uintptr(unsafe.Pointer(nil))` is 0 — and it is why an out-parameter silently told
+    //     Windows "no output wanted";
+    //   * a box whose held pointer is NOT null answers a real MANAGED address, of a slot the
+    //     collector reads as an object reference. Handing THAT to a kernel that writes eight raw
+    //     bytes into it is heap corruption, silent until the next collection. The 0 is the
+    //     accidentally safer of the two.
+    //
+    // No single address can be both kernel-writable as eight raw bytes and managed-readable as a
+    // ж<T>, so there is nothing for the operator to return that would serve the boundary. That is
+    // the assertion this pair really makes.
+
+    [TestMethod]
+    public void AddressOfAPointerToPointerIsNotAKernelWritableSlot()
+    {
+        ж<ж<nint>> outParam = new(default(ж<nint>)!);
+
+        // It is a REAL pointer — structurally non-nil — that nonetheless reports address 0.
+        Assert.IsFalse(outParam.IsNilPointer);
+        Assert.IsTrue(outParam.IsNull, "the value-peeking predicate is what answers 0 below");
+        Assert.AreEqual((nuint)0, (nuint)(uintptr)outParam);
+
+        // Once the held pointer is non-null the SAME operator hands out a live managed address.
+        outParam.ValueSlot = new ж<nint>(7);
+
+        Assert.IsFalse(outParam.IsNull);
+        Assert.AreNotEqual((nuint)0, (nuint)(uintptr)outParam,
+            "...and this is the address a kernel must never be given: it names a reference slot");
+    }
+
+    [TestMethod]
+    public void PublishingANativeAddressThroughValueSlotIsTheBoundaryRemedy()
+    {
+        // What the hand-owned wrappers do after the call: turn the raw word the kernel wrote into
+        // a pointer box and store it through ValueSlot (never Value, whose nil guard value-peeks
+        // and would panic on the very write that fills the slot in).
+        ж<ж<nint>> outParam = new(default(ж<nint>)!);
+
+        outParam.ValueSlot = (ж<nint>)(uintptr)(nuint)0x4000;
+
+        Assert.IsTrue(outParam.ValueSlot != nil);
+        Assert.AreEqual((nuint)0x4000, (nuint)(uintptr)outParam.ValueSlot,
+            "the published pointer round-trips to the exact address the kernel reported");
+
+        // A ZERO report publishes the nil pointer with no special case, matching Go's
+        // `(*T)(unsafe.Pointer(uintptr(0))) == nil` — which is what lets the wrappers write one
+        // unconditional assignment for both the written and unwritten cases.
+        outParam.ValueSlot = (ж<nint>)(uintptr)(nuint)0;
+
+        Assert.IsTrue(outParam.ValueSlot == nil);
+    }
+
     // ---- Pointer KIND is not the same question as pointer BOX (the descent rule's value side) ----
     //
     // KindOf answers Pointer for every managed REFERENCE it does not otherwise recognize — the

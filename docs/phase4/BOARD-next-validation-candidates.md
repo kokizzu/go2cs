@@ -3180,7 +3180,7 @@ latent — nothing in the behavioral suite or the 69-package sweep exercises the
 | `getStartupInfo` | `StartupInfo` (`Desktop`, `Title`) | ⚠ NOT `os` startup — corrected 2026-08-02 by the r35-os arc, which ran the whole suite without reaching it. Nothing in `os` calls it; in Go 1.23 the only caller is the public `syscall.GetStartupInfo`, exercised by syscall's own test. `Process32First`/`Next` above ARE reached from `os` (`TestGetppid` → `syscall.Getppid` → `getProcessEntry`) and did not fault, so that row is reached-and-working rather than latent. |
 | ~~`GetAddrInfoW` / `FreeAddrInfoW`~~ | `AddrinfoW` (`Canonname`, `Addr`, `Next`) | **FIXED 2026-08-16 (lane `claude/tls-endgame`)** — `net.Dial` → `resolveAddrList` → `LookupPort`, i.e. every converted program that resolves a name or a service; measured first as a process AV from `crypto/tls`'s `TestVerifyHostname`. The class's first LINKED output, and the first where copying the top-level record is NOT enough: `net` reads the sockaddr THROUGH the result, so the whole chain and its sockaddrs are transcribed into managed boxes and the managed pointer is carried across the `unsafe.Pointer` field by `ManagedPointerTokens` (its second minter ever; the reflection bridge was the first). `FreeAddrInfoW` becomes a hand-owned NO-OP, because the native chain is freed eagerly at the copy and nothing native escapes the call. Guarded at VALUE level by the `LookupServicePort` behavioral output test, proven failing-first (`exit code mismatch: C# -1073741819 vs Go 0`). ⚠ Fixing it does NOT make `TestVerifyHostname` pass — `net.adapterAddresses` is the wall behind it; see the entry at the end of this file |
 | `CertEnumCertificatesInStore`, `CertFreeCertificateChain`, `CertFreeCertificateContext` | `CertContext`, `CertChainContext` | `crypto/x509` on Windows |
-| ⚠ **A SECOND class, censused 2026-08-16 and distinct from this one:** 13 wrappers take a `**T` OUT-parameter and receive **NULL**, silently — `ж<T> → uintptr` answers 0 for a `ж<ж<T>>` whose held pointer is null, which is every out-parameter before the call. Measured through `CertAddCertificateContextToStore` (`err == nil`, `storeCtx == nil`, and `crypto/x509`'s `systemVerify` then nil-derefs). Full list and reasoning in the entry at the end of this file | — | — |
+| ⚠ **A SECOND class, censused 2026-08-16 and distinct from this one:** 13 wrappers take a `**T` OUT-parameter and receive **NULL**, silently — `ж<T> → uintptr` answers 0 for a `ж<ж<T>>` whose held pointer is null, which is every out-parameter before the call. Measured through `CertAddCertificateContextToStore` (`err == nil`, `storeCtx == nil`, and `crypto/x509`'s `systemVerify` then nil-derefs). **CLOSED AT THE BOUNDARY 2026-08-17 (lane `claude/x509-cryptoapi`)**: the operator has TWO wrong answers here, not one — a live MANAGED address once the held pointer is non-null, which is worse — and neither is fixable in `ж.cs`, so the remedy is a native out-cell plus a `ValueSlot` publish in the wrapper. 5 of the 13 taken (the SID pair, `NetGetJoinInformation`, and the two crypt32 members), guarded by the `PointerOutParameter` behavioral test; 8 left for stated reasons. ⚠ Attribution correction: `NetGetJoinInformation` and `NetUserGetInfo` are in `syscall`, not `internal/syscall/windows` — the split is 11 + 2. Full disposition in the entry at the end of this file | — | — |
 
 **Remedy, per member:** the established one — a blittable `[StructLayout(LayoutKind.Sequential)]`
 mirror with `fixed` buffers for the inline arrays, a direct `[DllImport]`, and an explicit
@@ -10265,5 +10265,187 @@ Everything the entry above boarded rather than took is still open and still unro
 no managed identity, projected field ORDER putting every embed last, and the NaN-in-a-composite map
 key. None of them is reachable from any measured consumer, and this arc found no new one behind the
 map-element root — the census is honest at one root, not one root plus a remainder.
+
+## ⛔ The `**T` OUT-PARAMETER class is CLOSED at the boundary — and `crypto/x509` is walled twice more behind it (2026-08-17, lane `claude/x509-cryptoapi`)
+
+The entry above censused a second syscall class at thirteen wrappers and named its root: `ж<T>` →
+`uintptr` answers 0 for a `ж<ж<T>>` whose held pointer is still null, so an out-parameter tells
+Windows "no output wanted". **That reading is right and incomplete, and the missing half decides the
+fix layer.** Measured directly against golib on current master:
+
+| the box | `IsNilPointer` | `IsNull` | `(uintptr)` |
+|:--|:--|:--|:--|
+| `&p` before the call (held pointer null) | false | **true** | **0** |
+| `&p` after anything fills it (held pointer non-null) | false | false | **a live MANAGED address** |
+
+So the operator has **two** wrong answers here, and the second is far worse than the first: a real
+address of a slot the collector reads as an OBJECT REFERENCE, handed to a kernel that writes eight
+raw bytes into it. The board already suspected as much ("the 0 is accidentally the SAFER outcome");
+this measures it. `EnsureStableAddress` does not even pin such a slot — `GCHandle` pins only
+reference-free storage — so the address is transient as well as wrong.
+
+### The layer, decided by measurement rather than by preference
+
+**Nothing golib can return would serve the boundary.** The kernel's representation is eight raw
+bytes; the managed one is an object reference; no single address is both. Reconciling them needs a
+SYNC POINT — the moment the raw word becomes a pointer box — and that moment is "after the call
+returns", which only the wrapper knows. The remedy is therefore per-wrapper, but the *mechanism* is
+one shape for the whole class: a native cell local to the call, its address handed over, and a
+publish through `ValueSlot` afterwards (never `Value`, whose nil guard value-peeks and would panic
+on the very write that fills the slot in). A zero report publishes the nil pointer with no special
+case, because `ж<T>`'s native constructor already treats address 0 as nil.
+
+`ж.cs` is **unchanged**. The operator's answer is correct for the case it was written for, and the
+contract is now pinned from the other side by two `GolibTests` cases
+(`AddressOfAPointerToPointerIsNotAKernelWritableSlot`,
+`PublishingANativeAddressThroughValueSlotIsTheBoundaryRemedy`) so a future lane cannot "fix" it into
+the dangerous answer.
+
+### Class disposition: 13 wrappers, 5 taken, 8 left for stated reasons
+
+The census re-measures at **13**, and one attribution on it is wrong: `NetGetJoinInformation` and
+`NetUserGetInfo` are in **`syscall`**, not `internal/syscall/windows` — so the split is 11 + 2, not
+9 + 4. Taken (`syscall/windows/zsyscall_windows_ptrout_impl.cs`, five entries in
+`manualConversionFuncs`):
+
+| Wrapper | Out-param | Why taken |
+|:--|:--|:--|
+| `ConvertSidToStringSid` | `**uint16` | `SID.String()`; half of a round trip |
+| `ConvertStringSidToSid` | `**SID` | `StringToSid`; `SID` is Go's EMPTY struct — an opaque handle nothing reads through — so a native box is not merely safe but exactly right |
+| `NetGetJoinInformation` | `**uint16` | a THIRD DLL (netapi32) with a different free routine (`NetApiBufferFree`) — what makes the guard evidence for a CLASS rather than one advapi32 accident |
+| `CertAddCertificateContextToStore` | `**CertContext` | crypto/x509's measured consumer |
+| `CertGetCertificateChain` | `**CertChainContext` | crypto/x509's measured consumer |
+
+Left, each for a reason rather than for lack of effort: **`DnsQuery` / `_DnsQuery`** (`**DNSRecord`)
+— the pointee is a LINKED native chain whose converted record holds managed references, so
+publishing the address alone would replace a silent nil with a fabricated-reference landmine; it
+wants the whole-chain transcription `zsyscall_windows_addrinfo_impl.cs` gives `ADDRINFOW`, in a `net`
+DNS arc. **`getQueuedCompletionStatus` / `GetQueuedCompletionStatus`** (`**Overlapped`) — an
+OVERLAPPED's identity belongs to the netpoll arc's per-operation record, and a bare native box would
+mint an identity that arc does not know. **`GetFullPathName`**, **`NetUserGetInfo`**, and
+`internal/syscall/windows`' **`CreateEnvironmentBlock`** / **`NetUserGetLocalGroups`** — the same safe
+shape, no corpus consumer, therefore no value-level proof available (Go's own `syscall.FullPath`
+passes nil for `fname`, so even its one caller does not exercise it).
+
+### The guard, and what failing-first actually printed
+
+New behavioral output test **`PointerOutParameter`**: the four well-known SIDs round-tripped
+string→`*SID`→string, a malformed SID that must still be REJECTED, a stability check, and
+`NetGetJoinInformation` whose returned buffer is WALKED to its NUL rather than merely tested for nil
+— reading through the published pointer is what proves the address is the one Windows wrote.
+
+Proven failing-first by neutering the cell address. The output is worth recording because it is
+**not a crash**:
+
+```
+StringToSid error: The parameter is incorrect.      (x4)
+malformed SID rejected: true
+stable: true false                                   <- silently wrong, and self-consistent
+NetGetJoinInformation error: The parameter is incorrect.
+exit=0
+```
+
+advapi32 REQUIRES its out-parameter (unlike `ppStoreContext`, which is documented OPTIONAL), so the
+defect surfaces there as a plausible-looking `ERROR_INVALID_PARAMETER` rather than as silence — and
+`stable: true false` is the quiet-wrong-answer shape this class's history keeps warning about: two
+empty strings agreeing with each other and with nothing else.
+
+### `crypto/x509` census: the suite cannot be measured, and the verifier is walled twice
+
+**The pipeline does not reach a verdict.** `go2cs -tests -test-action all` converts every `_test.go`
+file cleanly and the production assembly builds, but the test host fails to compile with **5 errors
+in 3 roots** — far smaller than the board's older `CS0102 duplicate definition` row implies, and none
+of them about CryptoAPI:
+
+| Root | Errors | What it is |
+|:--|--:|:--|
+| A name minted by the TEST half collides with one the PRODUCTION half already emitted | CS0111 ×2 | `x509.go` and `x509_test.go` both blank-import `crypto/sha256` and `crypto/sha512`; each emits `initᴛᴛblankImportꓸcryptoꓸsha256` into the same partial class. General to any package whose tests repeat a production blank import |
+| The same collision through the BLANK-IDENTIFIER counter | CS0102 ×1 | `pem_decrypt.cs` has `_ᴛ1ʗ` (a blank const in an iota block) and `oid_test.cs` re-mints `_ᴛ1ʗ` for `var _ encoding.BinaryMarshaler = OID{}` — the counter restarts for the test half |
+| `hash_package` unresolved in the PRODUCTION files under the tests closure | CS0246 ×2 | the tests csproj sets `DisableTransitiveProjectReferences`, and `hash` reaches `x509.cs` / `pem_decrypt.cs` only TRANSITIVELY (via `crypto/sha256`); the production csproj does not reference it either and does not need to |
+
+All three are `-tests` emission defects, all three are general, and together they are what stands
+between `crypto/x509` and any operational number at all. Deliberately not taken here — they are a
+test-pipeline arc, not a CryptoAPI one.
+
+**So the verifier was measured directly instead**, with an offline probe: a self-signed ECDSA leaf,
+`Verify` with `Roots == nil` (which on Windows routes through `systemVerify`). Go reaches
+`UnknownAuthorityError` immediately. The converted program, **with this lane's fix**:
+
+```
+created der: true
+parsed cn: go2cs.example
+<hangs>
+```
+
+It no longer nil-dereferences at `(*storeCtx).Store` — that defect is gone — and `dotnet-stack`
+names the new wall exactly:
+
+```
+[Native Frames]
+syscall!go.syscall_package.Syscall9(...)
+syscall!go.syscall_package.CertGetCertificateChain(...)
+crypto.x509!go.crypto.x509_package.systemVerify(...)
+```
+
+Blocked INSIDE the kernel call, ~1.7 s of CPU across minutes of wall time. The mechanism is the
+OTHER, established class: `CertChainPara` is handed to the kernel BY ADDRESS while holding
+`RequestedUsage.Usage.UsageIdentifiers` as `ж<ж<byte>>` and `CacheResync` as `ж<Filetime>` — managed
+references — and `systemVerify` writes `para.Size = 80`, the NATIVE size, into a much smaller managed
+object. Every field past the first therefore reads from the wrong offset, `dwUrlRetrievalTimeout`
+among them, which is a blocking network budget. (`(~storeCtx).Store`, passed as `additionalStore` in
+the same call, is read at a wrong managed offset for the same reason.)
+
+**The full remaining CryptoAPI wall**, so the next lane needs no census:
+
+| Direction | Structs | Reference-bearing fields |
+|:--|:--|:--|
+| PASSED by address (kernel READS) | `CertChainPara`, `CertChainPolicyPara`, `SSLExtraCertChainPolicyPara`, `CertChainPolicyStatus` | `ж<ж<byte>> UsageIdentifiers`, `ж<Filetime> CacheResync`, `Pointer ExtraPolicyPara`, `ж<uint16> ServerName`, `Pointer ExtraPolicyStatus` |
+| READ BACK through raw addresses (kernel WROTE) | `CertContext`, `CertChainContext`, `CertSimpleChain`, `CertChainElement`, `CertRevocationInfo` | `ж<byte> EncodedCert`, `ж<CertInfo>`, `ж<ж<CertSimpleChain>> Chains`, `ж<ж<CertChainContext>> LowerQualityChains`, `ж<ж<CertChainElement>> Elements`, `ж<CertContext>`, `ж<CertEnhKeyUsage>` ×2, … |
+
+⚠ The read-back half cannot be answered the way `GetAddrInfoW` was. That hand-own transcribes the
+whole chain into managed boxes and makes the free a NO-OP, which works because nothing native has to
+survive the call. Here `CertVerifyCertificateChainPolicy` and `CertFreeCertificateChain` both need
+the ORIGINAL native pointer back, so any remedy needs a DUAL identity — a managed view that still
+remembers its native address. That is the arc, and it is not a small one.
+
+### Adjacent, found while guarding: `(*[N]T)(unsafe.Pointer(p))[:]` over a NATIVE pointer is the fabricated-reference fork again
+
+The guard's first draft read `NetGetJoinInformation`'s result with Go's classic pre-`unsafe.Slice`
+idiom and died:
+
+```
+Fatal error. System.AccessViolationException
+   at go.slice`1[UInt16]..ctor(UInt16[], IntPtr, IntPtr, IntPtr)
+   at go.array`1[UInt16].Slice(Int32, Int32)
+```
+
+`array<T>.AliasPointer` windows a real backing array when the pointer HAS managed element storage,
+and otherwise falls to `(ж<array<T>>)(uintptr)element` — a native-address box over `array<T>`, which
+is itself reference-bearing. Dereferencing it fabricates a `T[]` reference out of address bytes.
+**Live corpus sites over genuinely native pointers**: `net/windows/lookup_windows.cs` lines 395, 465
+and 500 (the DNS answer walk — SRV `Target`, NS `Host`, TXT `StringArray`) and `reflect/type.cs:1887`
+(`t.t.GCData`). The `syscall`/`internal/syscall/windows` uses are over MANAGED element pointers and
+are fine. Note where the DNS three sit: directly behind the `DnsQuery` member this lane deferred, so
+that arc owns two walls, not one.
+
+### Cross-package effect on `crypto/tls`, recorded rather than measured
+
+`TestQUICHandshakeError` — the one `crypto/tls` divergence rooted in this class — is **expected to
+still fail**, because the nil it dies on is only the first of three defects on that path; the chain
+para and the chain walk stand behind it. `TestVerifyHostname` is likewise still expected to fail on
+`net.adapterAddresses`, which this lane does not touch. **The full tls census was deliberately NOT
+re-run**: a sibling lane is live on shared paths, and re-measuring 184 tests to confirm two
+predictions is not worth the contention. Owed at post-merge: one `crypto/tls` per-test census, whose
+honest prediction is **176 of 184, unchanged**, with `TestQUICHandshakeError`'s failure having moved
+from a nil-pointer panic to whatever the chain para produces.
+
+### Gate verdicts
+
+Converter `go test ./...` ok (207 s) · `GolibTests` **148/148** · `PointerOutParameter` PASS on all
+four phases, proven failing-first · `syscall` package builds clean · solution integrity 622/622 ·
+full CNR and the `go2cs-stdlib.slnx` windows build recorded with the commit.
+
+Still builds-and-partly-runs for `crypto/x509`: no roster row, no proof page, no disclosures,
+converted test sources NOT committed — the package cannot yet produce a verdict to commit.
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

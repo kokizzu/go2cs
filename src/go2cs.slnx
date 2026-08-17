@@ -659,6 +659,7 @@
     <Project Path="tests/Behavioral/PointerReceiverRepoint/PointerReceiverRepoint.csproj" />
     <Project Path="tests/Behavioral/PointerReceiverSliceSwap/PointerReceiverSliceSwap.csproj" />
     <Project Path="tests/Behavioral/PointerCoreConstraints/PointerCoreConstraints.csproj" />
+    <Project Path="tests/Behavioral/PointerOutParameter/PointerOutParameter.csproj" />
     <Project Path="tests/Behavioral/PointerSelectorDeref/PointerSelectorDeref.csproj" />
     <Project Path="tests/Behavioral/PointerCopyWalk/PointerCopyWalk.csproj" />
     <Project Path="tests/Behavioral/PointerEmbedBoxReceiver/PointerEmbedBoxReceiver.csproj" />

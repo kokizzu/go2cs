@@ -746,6 +746,42 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// this file did not build.
 		"GetAddrInfoW":  goosWindows,
 		"FreeAddrInfoW": goosWindows,
+		// The `**T` OUT-PARAMETER class — a SECOND syscall class, distinct from every member
+		// above (zsyscall_windows_ptrout_impl.cs carries the full write-up). The members above
+		// fail on a struct's LAYOUT; these fail with no struct in sight, because the argument is
+		// one machine word and a golib pointer box has no such word to lend. `&p` for a Go
+		// `var p *T` renders as ж<ж<T>>, whose storage is an OBJECT REFERENCE, and BOTH answers
+		// golib's ж→uintptr operator can give are wrong: 0 while the held pointer is still null
+		// (which is every out-parameter before the call), telling Windows "no output wanted" so
+		// the call SUCCEEDS and the caller reads back its own nil; and a live MANAGED address
+		// once it is not, which would have the kernel write a raw pointer over a slot the
+		// collector reads as an object reference. Neither is fixable in the operator — no single
+		// address is both kernel-writable as eight raw bytes and managed-readable as a ж<T> — so
+		// the remedy is a native out-cell plus a publish at the one moment that can reconcile
+		// them, which only the wrapper knows. The operator is deliberately unchanged.
+		//
+		// FIVE of the corpus's thirteen wrappers of this shape are taken, on the standing
+		// fix-it-when-a-suite-reaches-it rule plus the requirement that a VALUE-LEVEL guard can
+		// prove each one ("it no longer returns nil" is exactly the evidence this class's history
+		// says not to trust). The SID pair is a round trip through advapi32 over `**uint16` and
+		// `**SID` (Go's empty struct — an opaque handle nothing reads through, so a native box is
+		// not merely safe but exactly right); NetGetJoinInformation adds a third DLL and a
+		// different free routine, which is what makes the guard evidence for a CLASS; and the two
+		// crypt32 members are crypto/x509's measured consumer. All five are guarded by the
+		// PointerOutParameter behavioral output test.
+		//
+		// The eight left are left for stated reasons, not for lack of effort: DnsQuery/_DnsQuery
+		// return a LINKED chain whose converted record holds managed references (the OTHER class,
+		// wanting the ADDRINFOW treatment, in a `net` DNS arc); getQueuedCompletionStatus and its
+		// exported sibling carry an OVERLAPPED whose identity the netpoll arc's per-operation
+		// record owns; and GetFullPathName / NetUserGetInfo (plus internal/syscall/windows'
+		// CreateEnvironmentBlock / NetUserGetLocalGroups) are the same safe shape with no corpus
+		// consumer, hence no available proof.
+		"ConvertSidToStringSid":            goosWindows,
+		"ConvertStringSidToSid":            goosWindows,
+		"NetGetJoinInformation":            goosWindows,
+		"CertAddCertificateContextToStore": goosWindows,
+		"CertGetCertificateChain":          goosWindows,
 	},
 	// The SECOND package holding the syscall struct-passing class, and the one member of it whose
 	// established remedy is measured UNREACHABLE — so this entry declares a CAPABILITY LIMIT rather

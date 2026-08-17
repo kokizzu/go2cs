@@ -1714,6 +1714,22 @@ backing *reference* out of the pointed-at data — a fabricated reference whose 
 violation. Those sites are the deliberate raw-metal fork: they compile, they are not expected to
 produce Go's values, and each is hand-owned only when a suite reaches it.
 
+**A Go pointer VARIABLE's address is the one thing the boundary cannot hand over, and that is a second
+reason a syscall wrapper gets hand-owned.** The family above is about *layout* — a struct whose fields
+sit at the wrong offsets. This one has no struct in it at all. A `**T` out-parameter (`&p` for a
+`var p *T`) is, in Go, eight bytes of stack the kernel overwrites with an address; converted, it is a
+`ж<ж<T>>` whose storage is a managed *object reference*, and golib's `ж<T>` → `uintptr` operator has
+two answers for it, both wrong: `0` while the held pointer is still null — which tells Windows "no
+output wanted", so the call succeeds and the caller reads back its own nil — and a live managed
+address once it is not, which would have the kernel write raw bytes over a slot the collector reads as
+a reference. Neither is fixable in the operator, because no single address is both kernel-writable as
+eight raw bytes and managed-readable as a `ж<T>`; reconciling the two needs a *sync point*, and the
+only code that knows when the raw word becomes a pointer again is the wrapper. So the remedy is a
+native cell local to the call and a publish afterwards through `ValueSlot` — never `Value`, whose nil
+guard would panic on the very write that fills the slot in. Same rule as the layout family for scope:
+[fixed when a suite reaches it](ConversionStrategies-Reference.md#pointers), and verified at *value*
+level, because the failure shape here is a quiet wrong answer rather than a crash.
+
 Go's network poller is only half an API — the other half is called by the *scheduler*, from
 `findrunnable` and sysmon — so wiring the converted runtime would initialize an IOCP and then block
 forever. Instead, `internal/poll`'s ten `//go:linkname runtime_poll*` contracts are reimplemented on the

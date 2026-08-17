@@ -1189,6 +1189,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckPointerInterfaceStructField() => CheckTarget("PointerInterfaceStructField");
 
     [TestMethod]
+    public void CheckPointerOutParameter() => CheckTarget("PointerOutParameter");
+
+    [TestMethod]
     public void CheckPointerParamCapturedInClosure() => CheckTarget("PointerParamCapturedInClosure");
 
     [TestMethod]
