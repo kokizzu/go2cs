@@ -142,6 +142,17 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         if (m1 is null || m2 is null) {
             return m1 is null == m2 is null;
         }
+        // Every element Value is typed by the map's DECLARED element type, exactly as MapIndex and
+        // MapIter.Value type theirs — never by the stored object's dynamic type. A slot-derived Value
+        // is Go's rule for the whole bridge, and a map entry is a slot: an element read through
+        // makeReflectValue instead reports the INVALID zero Value whenever the entry physically holds
+        // C# null, so a nil map element compared EQUAL to a missing key and UNEQUAL to the canonical
+        // typed nil the write path stores. The two spellings of one nil then separated every map with
+        // a nil element that had been WRITTEN through reflect on one side and declared as a literal on
+        // the other — `map[string]*Small{"20": nil}` decoded by encoding/json vs the same literal
+        // (encoding/json's TestUnmarshal `All` fixture, rows #56–#63, is exactly that pair).
+        System.Type? elemType1 = elementTypeOf(v1);
+        System.Type? elemType2 = elementTypeOf(v2);
         // Go's range visits a NIL key like any other, but the backing Dictionary cannot HOLD one —
         // golib keeps that entry in a dedicated slot, invisible to the walk below (and its presence
         // alone does not show up in the Len comparison above, which one extra ordinary key hides).
@@ -150,7 +161,8 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         if (nilPresent1 != nilPresent2) {
             return false;
         }
-        if (nilPresent1 && !deepValueEqualBoxed(makeReflectValue(nilValue1), makeReflectValue(nilValue2), visited)) {
+        if (nilPresent1 && !deepValueEqualBoxed(mapElemValue(nilValue1, elemType1, v1.flag),
+                                                mapElemValue(nilValue2, elemType2, v2.flag), visited)) {
             return false;
         }
         foreach (DictionaryEntry entry in m1) {
@@ -158,8 +170,12 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
                 // Go: MapIndex yields the invalid Value for a missing key → not equal.
                 return false;
             }
-            // Two stored nil interface values recurse to invalid==invalid → equal, matching Go.
-            if (!deepValueEqualBoxed(makeReflectValue(entry.Value), makeReflectValue(m2[entry.Key]), visited)) {
+            // Two stored nil elements now recurse as two VALID nil Values of the element type, and
+            // agree through the kind's own nil rule (pointer: both boxes nil; interface: IsNil ==
+            // IsNil), rather than through the invalid==invalid rule that only held when BOTH sides
+            // happened to spell nil the same way.
+            if (!deepValueEqualBoxed(mapElemValue(entry.Value, elemType1, v1.flag),
+                                     mapElemValue(m2[entry.Key], elemType2, v2.flag), visited)) {
                 return false;
             }
         }
@@ -199,6 +215,20 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         // Can't do better than this: normal equality suffices.
         return AreEqual(valueInterface(v1, false), valueInterface(v2, false));
     }
+}
+
+// elementTypeOf returns a map Value's DECLARED element type, or null when the bridge has no managed
+// type for it (a synthetic descriptor with no sysType) — in which case the walk falls back to the
+// dynamic typing it had before, which is right for every entry that physically holds a value.
+private static System.Type? elementTypeOf(ΔValue v) {
+    return v.typ_ == nil ? null : GoReflect.ElementType(v.typ_.Value.sysType);
+}
+
+// mapElemValue builds the Value for one map entry, typed by the map's declared element type — the
+// slot rule MapIndex and MapIter.Value already follow, so a lookup, a range and a DeepEqual over one
+// map all describe its elements identically.
+private static ΔValue mapElemValue(object? boxed, System.Type? elemType, flag inheritRO) {
+    return elemType is null ? makeReflectValue(boxed) : makeTypedValue(boxed, elemType, null, inheritRO);
 }
 
 // A visited entry: the identity roots of two values under in-progress comparison, compared by managed

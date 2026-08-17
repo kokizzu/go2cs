@@ -78,6 +78,10 @@ internal static (bool, error) mixed(nint a, @string b) {
     public slice<ж<inner>> Ps;
 }
 
+[GoType] partial struct mapHolder {
+    public map<@string, ж<inner>> Ms;
+}
+
 [GoType] partial struct sliceKey {
     internal any ptr;
     internal nint len;
@@ -94,6 +98,8 @@ private static readonly object fieldsˢ = (@string)"fields:"u8;
 private static readonly object promotedThroughAnˢ = (@string)"promoted through an unexported embed:"u8;
 private static readonly object embedAndPlainUnexportedˢ = (@string)"embed and plain unexported are read-only:"u8;
 private static readonly @string innerˢ = "inner"u8;
+private static readonly object mapNilElementSeparationsˢ = (@string)"map nil element separations:"u8;
+private static readonly object mapNilInterfaceElementˢ = (@string)"map nil interface element:"u8;
 private static readonly object newReflectNewˢ = (@string)"new==reflect.New:"u8;
 private static readonly object newTIsNilˢ = (@string)"new(T) is nil:"u8;
 private static readonly object arrayTypeThroughAPointerˢ = (@string)"array type through a pointer:"u8;
@@ -149,6 +155,22 @@ internal static void Main() {
     grown.Index(0).Set(reflect.ValueOf(Ꮡ(new inner(X: 1))));
     tv.Set(grown);
     fmt.Printf("decoded vs literal: %v %v %v\n"u8, reflect.DeepEqual(target, want), want.Ps[1].OrTypedNil(), target.Ps[1].OrTypedNil());
+    var mapWant = new mapHolder(Ms: new map<@string, ж<inner>>{["a"u8] = Ꮡ(new inner(X: 1)), ["b"u8] = default!});
+    ref var mapTarget = ref heap(new mapHolder(), out var ᏑmapTarget);
+    var mv2 = reflect.ValueOf(ᏑmapTarget).Elem().Field(0);
+    mv2.Set(reflect.MakeMap(mv2.Type()));
+    mv2.SetMapIndex(reflect.ValueOf((@string)"a"u8), reflect.ValueOf(Ꮡ(new inner(X: 1))));
+    mv2.SetMapIndex(reflect.ValueOf((@string)"b"u8), reflect.Zero(mv2.Type().Elem()));
+    fmt.Printf("map nil element: %v %v %v %v\n"u8, reflect.DeepEqual(mapTarget, mapWant),
+        reflect.DeepEqual(mapWant, mapTarget), mapWant.Ms["b"u8].OrTypedNil(), mapTarget.Ms["b"u8].OrTypedNil());
+    var nilElem = new map<@string, ж<inner>>{["b"u8] = default!};
+    var otherKey = new map<@string, ж<inner>>{["c"u8] = default!};
+    var nonNil = new map<@string, ж<inner>>{["b"u8] = Ꮡ(new inner(X: 1))};
+    fmt.Println(mapNilElementSeparationsˢ, reflect.DeepEqual(nilElem, otherKey),
+        reflect.DeepEqual(nilElem, nonNil), reflect.DeepEqual(nilElem, new map<@string, ж<inner>>{["b"u8] = default!}));
+    var anyNil = new map<@string, any>{["a"u8] = default!, ["b"u8] = (nint)(1)};
+    fmt.Println(mapNilInterfaceElementˢ, reflect.DeepEqual(anyNil, new map<@string, any>{["a"u8] = default!, ["b"u8] = (nint)(1)}),
+        reflect.DeepEqual(anyNil, new map<@string, any>{["a"u8] = (nint)(0), ["b"u8] = (nint)(1)}));
     var (sliceEq, sliceElemEq) = zeroAgrees<slice<any>>();
     var (mapEq, mapElemEq) = zeroAgrees<map<@string, nint>>();
     var (arrEq, arrElemEq) = zeroAgrees<array<nint>>();

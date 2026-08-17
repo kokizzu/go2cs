@@ -15024,6 +15024,22 @@ non-nil func field compared to **itself** (Go says not equal), differing non-fun
 slice elements and as map values, and the top-level nil/non-nil pair that the old arm did handle.
 Counter-proven by neutering the arm back to `return false`: the guard's output comparison fails.
 
+**A fourth defect, the same shape one level out: the MAP arm read its entries UNTYPED (2026-08-17).**
+The walk builds each entry's Value from the backing `Dictionary` — it cannot use the `MapRange`
+iterator, because golib keeps a nil KEY in a side slot no iterator can see — and it built them with
+`makeReflectValue`, i.e. from the stored object's dynamic type, where every other arm in the bridge
+types a slot-derived Value by the slot's DECLARED type. An entry physically holding C# `null` therefore
+came back as the **invalid** Value, so a nil element compared equal to a MISSING key and unequal to the
+canonical typed nil that a reflective write stores. `encoding/json`'s `TestUnmarshal` rows #56–#63
+decode into the 40-field `All` fixture and compare it against the table literal; `All.MapP` carries a
+nil element, the decoder writes the box, the literal writes null, and eight subtests plus the aggregate
+failed on that alone while `Marshal` of both sides produced byte-identical JSON. Entries are typed by
+`Elem()` of the map's type now (`mapElemValue`), which is what `MapIndex` and `MapIter.Value` have
+always done — so a lookup, a range and a `DeepEqual` over one map finally describe its elements
+identically. The full rule, and why the container's verdict disagreed with every one of its elements,
+is *A map ENTRY is a SLOT* below. Guarded by `ReflectBridgeClosure`'s *map nil element* rows;
+counter-proven by reverting the arm, which reports `false false` where Go reports `true true`.
+
 **The Windows directory-entry walk (`os/dir_windows_impl.cs`, Phase-4 — os operational).** Go's
 `(*File).readdir` walks the buffer `GetFileInformationByHandleEx` fills by REINTERPRETING it as a Go
 struct — `info := (*windows.FILE_ID_BOTH_DIR_INFO)(entry)`, then
@@ -16377,6 +16393,49 @@ answering by identity the lookup never matched an entry it had itself stored, no
 and `Marshal` of a self-referential value recursed until the process died — `0xc00000fd`, which is
 uncatchable and takes every verdict the run had not yet produced with it. Go returns
 `UnsupportedValueError: encountered a cycle`.
+
+### A map ENTRY is a SLOT — its Value is typed by the map's ELEMENT type, never by what it holds
+
+Every Value the bridge hands out of a container is *slot-derived*: a struct field, a slice element, an
+array element, a func result and a `MapIndex` lookup all build their Value from the **declared** type
+of the place the value sits (`makeTypedValue`), not from the object found there (`makeReflectValue`,
+which is Go's rule only for `ValueOf` and interface `Elem`, where the type genuinely does come from the
+value). The distinction is invisible until the slot holds nothing: a null read through the declared
+type is a VALID nil Value of that type, while the same null read dynamically is the **invalid zero
+Value** — a different thing entirely, and the one Go reserves for "this slot does not exist".
+
+`deepValueEqual`'s map arm was the last read that skipped it. It walks the backing `Dictionary`
+directly — it must, because golib keeps a nil KEY in a side slot no iterator can see — and it built
+each entry's Value from the stored object. That is harmless while both sides spell nil the same way,
+and the two sides do not:
+
+```go
+want := map[string]*Small{"19": {Tag: "tag19"}, "20": nil}  // literal: the entry physically holds C# null
+json.Unmarshal(data, &got)                                  // decoded: the reflective write stores the canonical nil box
+reflect.DeepEqual(got, want)                                // false — invalid Value vs valid nil pointer
+```
+
+Two spellings of one nil is not itself a defect: `packInterfaceValue` re-encodes a null pointer slot as
+`ж<T>.NilBox` precisely so a typed nil survives being handed out as an interface, and the write path has
+always stored that box. A type-blind READ is what makes them observably different — and in the same
+stroke it makes a nil element compare EQUAL to a missing key, since both answer the invalid Value.
+Typing the entry by `Elem()` of the map's own type collapses both: two nil elements meet at the kind's
+nil rule (pointer — neither box is a real address; interface — `IsNil() == IsNil()`), a missing key
+still fails on `Contains`, and a nil element still separates from a present non-nil one.
+
+It is the whole of `encoding/json`'s last divergence. `TestUnmarshal` rows **#56–#63** decode into the
+40-field `All` fixture and compare with one top-level `DeepEqual`; `Marshal` of both sides produced
+**byte-identical** JSON, so nothing in the failure text pointed at a field. A field-by-field walk did:
+`All.MapP` — `map[string]*Small{"19": …, "20": nil}` — reported false **at the map** while every element
+compared equal beneath it, because that walk re-boxed each element through `Interface()` and so
+re-entered the dynamic path on both sides. A container's verdict disagreeing with its own contents' is
+the signature of a slot read that lost its type, and it is worth recognizing on sight: the same
+discrepancy named the FUNC arm of this very function earlier (see *Manually-Converted Declarations*).
+
+Guarded by `ReflectBridgeClosure`'s *map nil element* rows — a map built through `SetMapIndex` compared
+against the same map written as a literal, both directions, plus the separations that must survive (a
+nil element vs a different key, vs a present non-nil element) and the interface-valued flavour, where a
+nil entry is the nil interface rather than a typed nil.
 
 ### A NaN map key is never equal to anything, itself included
 
