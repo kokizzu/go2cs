@@ -192,25 +192,9 @@ internal static ж<LazyProc> procsetsockopt = modws2_32.NewProc("setsockopt"u8);
 internal static ж<LazyProc> procshutdown = modws2_32.NewProc("shutdown"u8);
 internal static ж<LazyProc> procsocket = modws2_32.NewProc("socket"u8);
 
-public static error /*err*/ ConvertSidToStringSid(ж<SID> Ꮡsid, ж<ж<uint16>> ᏑstringSid) {
-    error err = default!;
+// go2cs generated this placeholder — func ConvertSidToStringSid is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var (r1, _, e1) = Syscall(procConvertSidToStringSidW.Addr(), 2, (uintptr)Ꮡsid, (uintptr)ᏑstringSid, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
-
-public static error /*err*/ ConvertStringSidToSid(ж<uint16> ᏑstringSid, ж<ж<SID>> Ꮡsid) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall(procConvertStringSidToSidW.Addr(), 2, (uintptr)ᏑstringSid, (uintptr)Ꮡsid, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func ConvertStringSidToSid is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ CopySid(uint32 destSidLen, ж<SID> ᏑdestSid, ж<SID> ᏑsrcSid) {
     error err = default!;
@@ -364,15 +348,7 @@ public static error /*regerrno*/ RegQueryValueEx(ΔHandle key, ж<uint16> Ꮡnam
     return regerrno;
 }
 
-public static error /*err*/ CertAddCertificateContextToStore(ΔHandle store, ж<CertContext> ᏑcertContext, uint32 addDisposition, ж<ж<CertContext>> ᏑstoreContext) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall6(procCertAddCertificateContextToStore.Addr(), 4, (uintptr)store, (uintptr)ᏑcertContext, (uintptr)addDisposition, (uintptr)ᏑstoreContext, 0, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func CertAddCertificateContextToStore is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ CertCloseStore(ΔHandle store, uint32 flags) {
     error err = default!;
@@ -423,15 +399,7 @@ public static error /*err*/ CertFreeCertificateContext(ж<CertContext> Ꮡctx) {
     return err;
 }
 
-public static error /*err*/ CertGetCertificateChain(ΔHandle engine, ж<CertContext> Ꮡleaf, ж<Filetime> Ꮡtime, ΔHandle additionalStore, ж<CertChainPara> Ꮡpara, uint32 flags, uintptr reserved, ж<ж<CertChainContext>> ᏑchainCtx) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall9(procCertGetCertificateChain.Addr(), 8, (uintptr)engine, (uintptr)Ꮡleaf, (uintptr)Ꮡtime, (uintptr)additionalStore, (uintptr)Ꮡpara, (uintptr)flags, (uintptr)reserved, (uintptr)ᏑchainCtx, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func CertGetCertificateChain is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static (ΔHandle handle, error err) CertOpenStore(uintptr storeProvider, uint32 msgAndCertEncodingType, uintptr cryptProv, uint32 flags, uintptr para) {
     ΔHandle handle = default!;
@@ -1385,15 +1353,7 @@ public static error /*neterr*/ NetApiBufferFree(ж<byte> Ꮡbuf) {
     return neterr;
 }
 
-public static error /*neterr*/ NetGetJoinInformation(ж<uint16> Ꮡserver, ж<ж<uint16>> Ꮡname, ж<uint32> ᏑbufType) {
-    error neterr = default!;
-
-    var (r0, _, _) = Syscall(procNetGetJoinInformation.Addr(), 3, (uintptr)Ꮡserver, (uintptr)Ꮡname, (uintptr)ᏑbufType);
-    if (r0 != 0) {
-        neterr = ((Errno)r0);
-    }
-    return neterr;
-}
+// go2cs generated this placeholder — func NetGetJoinInformation is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*neterr*/ NetUserGetInfo(ж<uint16> ᏑserverName, ж<uint16> ᏑuserName, uint32 level, ж<ж<byte>> Ꮡbuf) {
     error neterr = default!;
