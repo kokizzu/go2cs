@@ -123,6 +123,18 @@ public static partial class GoReflect
 
         if (t.BaseType == typeof(ж<uintptr>)) return "unsafe.Pointer";
 
+        // An UNNAMED func type renders STRUCTURALLY, exactly as an unnamed struct does — `func()`,
+        // `func(*testing.T)`, `func(int, ...string) (bool, error)`. A Go DEFINED func type keeps its
+        // name, and the two are told apart by the SAME test every other named type uses: a defined
+        // func type is emitted as a `delegate` nested in its `<pkg>_package` class
+        // (`http.HandlerFunc`), while an unnamed one lands on a BCL/golib delegate family
+        // (`Action<ж<T>>`, `Func<…>`, the variadic `Funcꓸꓸꓸ`/`Actionꓸꓸꓸ`) that no Go package
+        // declares. Without this arm the family's own C# name leaked out of `%v`/`%T` —
+        // `Sprintf("%#v", TestFmtInterface)` printed ``(Action`1)(0x…)`` where Go prints
+        // `(func(*testing.T))(0x…)`.
+        if (isUnnamedFuncType(t))
+            return goFuncTypeString(t);
+
         // A generated interface-implementation adapter stands in for the Go dynamic value it
         // wraps: a pointer-sourced ж-adapter renders as Go's *T, a value-sourced ᴠ-adapter as
         // the wrapped struct type itself — never as the adapter class.
@@ -207,7 +219,86 @@ public static partial class GoReflect
         if (t.IsValueType && goLocalNameOf(t) is null && goTypeMarkerOf(t) is { Definition: "dyn" })
             return false;
 
+        // An unnamed func type renders structurally, so it has no name — the same arm GoTypeName
+        // grew for it. A DEFINED func type is a delegate the converter declared inside a
+        // `<pkg>_package` class and keeps its name here, as it does there.
+        if (isUnnamedFuncType(t))
+            return false;
+
         return true;
+    }
+
+    /// <summary>
+    /// Whether a managed type is a Go UNNAMED func type — a delegate that no converted package
+    /// declares, i.e. one of the BCL/golib delegate families the converter uses to spell a func
+    /// type it has no name for.
+    /// </summary>
+    /// <remarks>
+    /// A Go DEFINED func type (<c>type HandlerFunc func(ResponseWriter, *Request)</c>) IS emitted
+    /// as its own <c>delegate</c> nested in the declaring <c>&lt;pkg&gt;_package</c> class, so the
+    /// declaring-class test is exact for both directions and needs no name parsing. The residual
+    /// is stated rather than hidden: a defined METHODLESS func type the converter renders inline as
+    /// its base delegate family is indistinguishable from an unnamed one here, and reports the
+    /// unnamed answer — the conservative direction, and the same "describe the type the bridge can
+    /// actually build a descriptor for" rule <c>ChanDir</c> settles on.
+    /// </remarks>
+    private static bool isUnnamedFuncType(Type t)
+    {
+        return typeof(Delegate).IsAssignableFrom(t) && goPackageNameOf(t.DeclaringType).Length == 0;
+    }
+
+    /// <summary>
+    /// Go's structural spelling of an unnamed func type — the text <c>reflect.Type.String()</c>
+    /// reports for a func type literal.
+    /// </summary>
+    /// <remarks>
+    /// Built from <see cref="TryFuncShape"/>, the SAME projection <c>rtype.NumIn</c>/<c>In</c>/
+    /// <c>NumOut</c>/<c>Out</c>/<c>IsVariadic</c> read, so the name a func type reports and the
+    /// signature it hands out cannot disagree. Go's format, verified against the toolchain:
+    /// <c>func(</c> + the inputs joined by <c>", "</c> + <c>)</c>, the variadic tail written
+    /// <c>...T</c> over its ELEMENT type; then nothing for no results, <c>" T"</c> for one, and
+    /// <c>" (T, U)"</c> for several.
+    /// </remarks>
+    private static string goFuncTypeString(Type t)
+    {
+        if (!TryFuncShape(t, out Type[]? ins, out Type[]? outs, out bool isVariadic))
+            return "func()";
+
+        StringBuilder builder = new("func(");
+
+        for (int i = 0; i < ins.Length; i++)
+        {
+            if (i > 0)
+                builder.Append(", ");
+
+            if (isVariadic && i == ins.Length - 1)
+                builder.Append("...").Append(GoTypeName(ElementType(ins[i])));
+            else
+                builder.Append(GoTypeName(ins[i]));
+        }
+
+        builder.Append(')');
+
+        if (outs.Length == 1)
+        {
+            builder.Append(' ').Append(GoTypeName(outs[0]));
+        }
+        else if (outs.Length > 1)
+        {
+            builder.Append(" (");
+
+            for (int i = 0; i < outs.Length; i++)
+            {
+                if (i > 0)
+                    builder.Append(", ");
+
+                builder.Append(GoTypeName(outs[i]));
+            }
+
+            builder.Append(')');
+        }
+
+        return builder.ToString();
     }
 
     /// <summary>

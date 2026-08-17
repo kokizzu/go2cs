@@ -346,7 +346,7 @@ public static partial class GoReflect
             {
                 string goName = name[CapturedVarMarker.Length..];
                 nint[]? embedDims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
-                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), embedded: true));
+                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true));
                 continue;
             }
 
@@ -372,6 +372,30 @@ public static partial class GoReflect
         return field.GetCustomAttributes(typeof(GoTagAttribute), false) is [GoTagAttribute tag]
             ? tag.Description
             : "";
+    }
+
+    // The declared Go struct tag of an EMBEDDED field, which lives at a DIFFERENT declaration site
+    // from every other field's and therefore needs its own read.
+    //
+    // An embed is emitted by the converter as a partial PROPERTY (`[GoTag("json:\"e,omitempty\"")]
+    // public partial ref ж<Embed0b> Embed0b { get; }`) and by go2cs-gen as the backing FIELD the
+    // property returns a ref to (`private ж<Embed0b> ʗEmbed0b;`). The generator does not carry the
+    // declaration's attributes onto the field it mints, so reading the field alone reported EVERY
+    // embedded field as untagged — silently, because "" is the right answer for most embeds. The
+    // consequence is a tag-driven decoder seeing an untagged embed: encoding/json's TestMarshalEmbeds
+    // emitted `"Embed0b":{…}` where Go emits `"e":{…}`, and marshalled the `json:"-"` embed it must
+    // omit entirely.
+    //
+    // The property is the DECLARATION, so it is asked first; the field keeps the fallback so a
+    // future generator that does propagate the attribute needs no change here.
+    private static string embedTagOf(Type declaringType, FieldInfo field, string goName)
+    {
+        PropertyInfo? declaration = declaringType.GetProperty(goName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (declaration is not null && declaration.GetCustomAttributes(typeof(GoTagAttribute), false) is [GoTagAttribute tag])
+            return tag.Description;
+
+        return goTagOf(field);
     }
 
     private static bool isAllUnderscores(string name)

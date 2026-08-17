@@ -97,9 +97,74 @@ internal static class GoEqualityComparer
     /// </remarks>
     public static IEqualityComparer<T>? ForKeys<T>()
     {
-        return typeof(T).IsInterface || typeof(T) == typeof(object) ?
-            GoEqualityComparer<T>.Default :
-            null;
+        if (typeof(T).IsInterface || typeof(T) == typeof(object))
+            return GoEqualityComparer<T>.Default;
+
+        // A FLOAT-kinded key needs Go's IEEE rule, which Dictionary's default comparer deliberately
+        // does NOT use: BCL `Double.Equals` reports NaN equal to NaN so that a NaN stored in a
+        // collection can be found again, while Go's map applies `==` unchanged — so a NaN key is
+        // never equal to anything, INCLUDING an existing NaN key. `m[NaN] = 1` twice therefore
+        // stores TWO entries in Go and one here, and in Go neither can ever be read back or deleted.
+        // fmt's own TestSprintf reads that difference out: `%v` of `map[float64]int{NaN: 1, NaN: 1}`
+        // printed `map[NaN:1]` against Go's `map[NaN:1 NaN:1]`.
+        //
+        // The comparers below are per-representation and non-boxing, so an ordinary float-keyed map
+        // keeps a direct call where routing it through the interface arm above would box every
+        // probe. `==` is the whole implementation, because C#'s float `==` IS the IEEE relation Go's
+        // map applies; the hash stays the type's own, and a NaN that hashes consistently while
+        // comparing unequal builds exactly the same-bucket/never-equal chain Go's map builds for it.
+        //
+        // Scoped to the raw representations, with the residual stated rather than covered
+        // speculatively (the r39d rule): a NAMED float type's wrapper, and a struct or array that
+        // CONTAINS a float, still compare through their generated equality, which inherits the BCL
+        // rule. No measured consumer reaches those, and covering them would mean routing every
+        // struct-keyed map through the reflective relation.
+        if (typeof(T) == typeof(double))
+            return (IEqualityComparer<T>)(object)s_float64Keys;
+
+        if (typeof(T) == typeof(float))
+            return (IEqualityComparer<T>)(object)s_float32Keys;
+
+        if (typeof(T) == typeof(System.Numerics.Complex))
+            return (IEqualityComparer<T>)(object)s_complex128Keys;
+
+        if (typeof(T) == typeof(complex64))
+            return (IEqualityComparer<T>)(object)s_complex64Keys;
+
+        return null;
+    }
+
+    private static readonly Float64KeyComparer s_float64Keys = new();
+    private static readonly Float32KeyComparer s_float32Keys = new();
+    private static readonly Complex128KeyComparer s_complex128Keys = new();
+    private static readonly Complex64KeyComparer s_complex64Keys = new();
+
+    private sealed class Float64KeyComparer : IEqualityComparer<double>
+    {
+        public bool Equals(double x, double y) => x == y;
+
+        public int GetHashCode(double value) => value.GetHashCode();
+    }
+
+    private sealed class Float32KeyComparer : IEqualityComparer<float>
+    {
+        public bool Equals(float x, float y) => x == y;
+
+        public int GetHashCode(float value) => value.GetHashCode();
+    }
+
+    private sealed class Complex128KeyComparer : IEqualityComparer<System.Numerics.Complex>
+    {
+        public bool Equals(System.Numerics.Complex x, System.Numerics.Complex y) => x == y;
+
+        public int GetHashCode(System.Numerics.Complex value) => value.GetHashCode();
+    }
+
+    private sealed class Complex64KeyComparer : IEqualityComparer<complex64>
+    {
+        public bool Equals(complex64 x, complex64 y) => x == y;
+
+        public int GetHashCode(complex64 value) => value.GetHashCode();
     }
 
     /// <summary>

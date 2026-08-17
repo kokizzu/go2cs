@@ -289,6 +289,10 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.Index":         goosAny,
 		"Value.Elem":          goosAny,
 		"Value.Bytes":         goosAny,
+		// The WRITE half of Bytes, hand-owned for the same reason one layer down: the auto body is
+		// `*(*[]byte)(v.ptr) = x`, a store through the Go data word this bridge never populates, so
+		// it wrote nowhere for EVERY byte slice — silently. See reflect/value_impl.cs.
+		"Value.SetBytes":      goosAny,
 		"Value.NumField":      goosAny,
 		"Value.Field":         goosAny,
 		"Value.UnsafePointer": goosAny,

@@ -152,7 +152,12 @@ public static ж<Type> TypeOf(any a) {
     }
     System.Type dyn = GoReflect.GoDynamicTypeOf(a);
     nint kind = GoReflect.KindOf(dyn);
-    nint[]? dims = kind == GoReflect.Array ? GoReflect.ArrayDimsOfValue(a) : null;
+    // A POINTER carries its POINTEE's dims unshifted, which is the rule Elem() already applies when
+    // it hands the cargo down — so `*[3]int` must be measured here or `Elem()` describes a
+    // dimension-less array and reflect.New allocates a zero-length one. See PointeeArrayDims.
+    nint[]? dims = kind == GoReflect.Array ? GoReflect.ArrayDimsOfValue(a)
+                 : kind == GoReflect.Pointer ? GoReflect.PointeeArrayDims(a)
+                 : null;
     nint[]?[]? paramDims = kind == GoReflect.Func ? GoReflect.FuncParamDims(a) : null;
     return synthType(dyn, dims, paramDims);
 }
