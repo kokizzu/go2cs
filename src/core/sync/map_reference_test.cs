@@ -351,7 +351,7 @@ public static void Clear(this ж<DeepCopyMap> Ꮡm) {
     try {
         Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
         defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock, ref ᒐ);
-        Ꮡm.of(DeepCopyMap.Ꮡclean).Store((map<any, any>)(default!));
+        Ꮡm.of(DeepCopyMap.Ꮡclean).Store(((map<any, any>)default!));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }

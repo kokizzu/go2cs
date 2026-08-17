@@ -353,6 +353,116 @@ public class GoFrameTests
         CollectionAssert.AreEqual(new[] { "inner defer", "outer defer" }, log);
     }
 
+    [TestMethod]
+    public void AFrameCalledFromADeferredCallDoesNotReRaiseTheOuterPanic()
+    {
+        // The re-raise belongs to the frame that CAUGHT the panic, not to the thread. A callee
+        // invoked from a deferred call caught nothing — it exits through the same finally, but the
+        // panic parked there is somebody else's, and re-raising it aborts the caller's cleanup at
+        // whatever statement happens to follow the call.
+        //
+        // Measured on database/sql's Conn.Raw: the deferred release reaches Conn.close through
+        // withLock, a helper holding one defer and panicking nothing, whose Run threw the parked
+        // panic on the way out — so `c.dc = nil` never ran, the connection stayed open, and
+        // TestConnRaw blocked on a poll that could never succeed for the package's whole deadline.
+        List<string> log = [];
+
+        PanicException? escaped = RunInFrame((ref GoFrame outer) =>
+        {
+            outer.Push(() =>
+            {
+                log.Add("cleanup begin");
+                RunInNestedFrame((ref GoFrame callee) => callee.Push(() => log.Add("callee defer")));
+                log.Add("cleanup end");
+            });
+
+            throw panic("boom");
+        });
+
+        CollectionAssert.AreEqual(new[] { "cleanup begin", "callee defer", "cleanup end" }, log,
+            "a callee's frame re-raised the caller's panic and truncated the deferred cleanup");
+        Assert.IsNotNull(escaped, "the panic must still escape once the OWNING frame's defers have run");
+        Assert.AreEqual((@string)"boom", escaped.State);
+    }
+
+    [TestMethod]
+    public void AFrameWithNoDefersCalledDuringAPanicDoesNotReRaiseItEither()
+    {
+        // Same rule, the m_count == 0 path: a frame whose defers were all conditional still runs
+        // Run() from its finally, and it must be as silent as one that registered none.
+        List<string> log = [];
+
+        RunInFrame((ref GoFrame outer) =>
+        {
+            outer.Push(() =>
+            {
+                RunInNestedFrame((ref GoFrame callee) => log.Add("callee body"));
+                log.Add("cleanup end");
+            });
+
+            throw panic("boom");
+        });
+
+        CollectionAssert.AreEqual(new[] { "callee body", "cleanup end" }, log);
+    }
+
+    [TestMethod]
+    public void APanicRaisedByADeferredCallStillEscapesAFrameThatCaughtNothing()
+    {
+        // The negative that keeps the ownership rule from becoming a swallow: this frame caught no
+        // panic, so it claims none — but a panic raised by its OWN deferred call is still its to
+        // continue, and must reach the caller.
+        List<string> log = [];
+
+        PanicException? escaped = RunInFrame((ref GoFrame frame) =>
+        {
+            frame.Push(() =>
+            {
+                log.Add("defer");
+                throw panic("from defer");
+            });
+
+            log.Add("body");
+        });
+
+        Assert.IsNotNull(escaped, "a panic raised by a deferred call must escape its own frame");
+        Assert.AreEqual((@string)"from defer", escaped.State);
+        CollectionAssert.AreEqual(new[] { "body", "defer" }, log);
+    }
+
+    [TestMethod]
+    public void APanicRaisedInsideADeferredCleanupReplacesTheOneUnwinding()
+    {
+        // Both rules at once, and the shape that would break if ownership were decided by depth
+        // rather than by who caught what: an outer panic is unwinding, its cleanup calls a callee,
+        // and THAT callee's deferred call panics. Go lets the newer panic replace the one in
+        // flight, so it is what a recover() upstream answers — and the statement after the callee
+        // is correctly skipped, because this time a panic really did pass through.
+        List<string> log = [];
+
+        PanicException? escaped = RunInFrame((ref GoFrame outer) =>
+        {
+            outer.Push(() =>
+            {
+                log.Add("cleanup begin");
+
+                RunInNestedFrame((ref GoFrame callee) =>
+                {
+                    callee.Push(() => throw panic("callee boom"));
+                    log.Add("callee body");
+                });
+
+                log.Add("unreachable");
+            });
+
+            throw panic("outer boom");
+        });
+
+        Assert.IsNotNull(escaped);
+        Assert.AreEqual((@string)"callee boom", escaped.State);
+        CollectionAssert.AreEqual(new[] { "cleanup begin", "callee body" }, log);
+    }
+
     // --- allocation ----------------------------------------------------------------------------
 
     [TestMethod]

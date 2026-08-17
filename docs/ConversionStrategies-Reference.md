@@ -7641,6 +7641,70 @@ variable reassigned after the defer, a computed expression, a pointer value roun
 boundary and answering a type assertion, a deferred panic replacing one already in flight, and two
 deferred panics in one frame (Go keeps the LAST one to run, i.e. the FIRST registered).
 
+### The re-raise of an unrecovered panic belongs to the frame that CAUGHT it, not to the thread
+
+`GoFrame.Run` ends by re-raising a panic no deferred call recovered. The panic itself is parked in a
+thread slot (`GoFuncRoot.CapturedPanic`, where `recover()` reads it), so the obvious tail — *if the
+slot is non-empty, throw it* — reads correctly and is wrong, because the slot is the THREAD's and
+`Run` is a FRAME's. It stays non-empty for the whole of the panicking frame's deferred sequence, and
+every ordinary function that sequence calls runs its own `Run` from its own `finally`. Each of those
+callees caught nothing; each of them found a panic parked; each of them threw it. The caller's
+deferred cleanup was therefore abandoned at whatever statement happened to follow the first callee
+that had a `defer` of its own — with no diagnostic, because a panic escaping a deferred sequence is
+exactly what is supposed to happen next.
+
+Go has no such rule. A panic resumes unwinding when the frame that is panicking has finished its
+deferred calls; a function *called* during that sequence returns normally, runs its own defers, and
+resumes the caller.
+
+So the claim is made explicit rather than inferred. The emitted `catch` body already calls
+`GoFrame.Capture`, and a catch body and its `finally` are adjacent — nothing runs between them — so
+`Capture` ARMS a claim that the next `Run` on the thread CLAIMS, and that next `Run` is always the
+same frame's. A frame that caught nothing claims null and leaves the in-flight panic alone. The
+emission is unchanged: this is entirely inside golib.
+
+```csharp
+public void Run()
+{
+    PanicException? owned = GoFuncRoot.ClaimPanic();   // null unless MY catch just captured
+    …                                                  // deferred calls, LIFO
+    if (owned is not null && GoFuncRoot.CapturedPanicValue is not null)
+        throw GoFuncRoot.CapturedPanicValue;
+}
+```
+
+Two cases keep the rule from becoming a swallow. A panic raised by **this** frame's own deferred call
+becomes owned even though nothing was claimed on entry (`owned = raised` in the sequence's catch), so
+`defer func(){ panic(v) }()` still escapes a frame that was never panicking; and a callee that panics
+while an outer panic is unwinding still replaces it, which is Go's own behaviour.
+
+Measured on `database/sql`'s `TestConnRaw`. `Conn.Raw`'s deferred cleanup calls `release` →
+`closemuRUnlockCondReleaseConn` → `Conn.close`, and `close` reaches `c.dc = nil` only after
+`dc.releaseConn` → `db.putConn` → `dc.Close` → `finalClose` → `withLock` — a two-line helper holding
+one `defer` and panicking nothing, whose `Run` threw the callback's panic on the way out. The
+connection was left open, and the test's five-second `waitCondition` poll (which sizes itself from
+`t.Deadline()`) burned the package's ENTIRE deadline: 3,418 s against Go's 0.005 s, which read as a
+hang rather than as the assertion failure it was. The package validates at 137 of 139 with the rule
+in place, and its suite runs in about three seconds.
+
+Guarded twice, both neuter-verified. `PanicDeferCalleeFrame` output-compares the shape against
+`go run` — the reduced acquire/cleanup/release chain, three deferring callees stacked below one
+deferred call, and the two negatives. `GolibTests.GoFrameTests` pins it at the frame:
+`AFrameCalledFromADeferredCallDoesNotReRaiseTheOuterPanic`,
+`AFrameWithNoDefersCalledDuringAPanicDoesNotReRaiseItEither` (the `m_count == 0` path, which skips
+the sequence entirely and reaches the tail directly),
+`APanicRaisedByADeferredCallStillEscapesAFrameThatCaughtNothing` and
+`APanicRaisedInsideADeferredCleanupReplacesTheOneUnwinding`.
+
+**Adjacent and still open, deliberately unfixed:** the parked panic is one slot per thread, so a
+`recover()` reached during a nested frame's OWN deferred sequence clears the outer frame's panic too,
+and the outer `Run` then finds nothing to re-raise. That is a second consequence of the shared slot
+rather than of the ownership rule — it predates this change and is unaffected by it — and no measured
+consumer asks for it today, so it is recorded here rather than repaired speculatively. Closing it
+means giving the slot the same save/restore discipline `HandledPanic` already has, which also has to
+decide what go2cs's deliberately looser `recover()` (Go answers nil unless recover is called
+*directly* by a deferred function of the panicking frame) should mean at a nested call.
+
 ### A nested defer scope gets a frame of its own
 
 A `ref struct` cannot be captured by a lambda, and it does not need to be: a function literal that

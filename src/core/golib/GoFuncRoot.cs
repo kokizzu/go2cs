@@ -25,6 +25,15 @@ public class GoFuncRoot
     // (saved and restored), which is what keeps it from ever going stale.
     protected static readonly ThreadLocal<PanicException?> HandledPanic = new();
 
+    // The panic a frame's own catch has just captured and that no GoFrame.Run has CLAIMED yet.
+    // This is what makes the re-raise of an unrecovered panic frame-OWNED instead of thread-global:
+    // GoFrame.Capture arms this slot and the very next GoFrame.Run on the thread claims it, which is
+    // always that same frame's finally, because nothing runs between an emitted catch body and its
+    // finally. A frame that caught nothing therefore claims null and leaves an in-flight panic
+    // alone, rather than re-raising another frame's panic from the middle of that frame's deferred
+    // sequence — see GoFrame.Run.
+    protected static readonly ThreadLocal<PanicException?> UnclaimedPanic = new();
+
     /// <summary>
     /// Gets the panic whose traceback a <c>runtime.Stack</c>/<c>debug.Stack</c> call on this thread
     /// should report — the one being handled by an enclosing deferred sequence, else one caught and
@@ -38,8 +47,8 @@ public class GoFuncRoot
     /// </remarks>
     public static PanicException? InFlightPanic => HandledPanic.Value ?? CapturedPanic.Value;
 
-    // The two slots, reachable by the golib members that read and write them: GoFrame's catch/
-    // finally pair and builtin.recover().
+    // The slots, reachable by the golib members that read and write them: GoFrame's catch/finally
+    // pair (all three) and builtin.recover() (the captured one).
     internal static PanicException? CapturedPanicValue
     {
         get => CapturedPanic.Value;
@@ -50,5 +59,24 @@ public class GoFuncRoot
     {
         get => HandledPanic.Value;
         set => HandledPanic.Value = value;
+    }
+
+    // Arms the re-raise claim for a panic a frame's catch just captured.
+    internal static void ArmPanicClaim(PanicException panic)
+    {
+        UnclaimedPanic.Value = panic;
+    }
+
+    // Claims the armed panic, if any, and disarms the slot: the caller — one GoFrame.Run — becomes
+    // the single frame responsible for continuing that panic once its deferred sequence has run.
+    // Returns null for a frame that caught nothing, which is the whole point.
+    internal static PanicException? ClaimPanic()
+    {
+        PanicException? claimed = UnclaimedPanic.Value;
+
+        if (claimed is not null)
+            UnclaimedPanic.Value = null;
+
+        return claimed;
     }
 }

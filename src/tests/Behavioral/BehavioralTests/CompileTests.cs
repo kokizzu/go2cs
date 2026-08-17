@@ -1132,6 +1132,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckPackageVarInitOrder() => CheckTarget("PackageVarInitOrder");
 
     [TestMethod]
+    public void CheckPanicDeferCalleeFrame() => CheckTarget("PanicDeferCalleeFrame");
+
+    [TestMethod]
     public void CheckPanicRecover() => CheckTarget("PanicRecover");
 
     [TestMethod]
