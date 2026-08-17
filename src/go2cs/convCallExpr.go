@@ -2150,6 +2150,25 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			contexts := v.emptyInterfacePointerContexts(panicValueType, callExpr.Args[0], []ExprContext{context})
 			panicValue := v.boxPointerIntoEmptyInterface(panicValueType, callExpr.Args[0], v.convExpr(callExpr.Args[0], contexts))
 
+			// ...and the UNTYPED-CONSTANT boundary is the same story one step on. `panic`'s
+			// parameter is `any`, so an untyped constant argument takes Go's DEFAULT type there —
+			// `panic(0xdead)` panics with an `int` — and every ordinary call site already applies
+			// that rule inside the declared-parameter loop this arm bypasses. Without it the value
+			// boxed as C#'s `int`, which is Go's INT32, so a recovering `r.(int)`, a `case int:` and
+			// a `reflect.DeepEqual(recover(), 0xdead)` all saw a type Go never panicked with.
+			// encoding/json's TestMarshalPanic and TestUnmarshalPanic compare exactly that.
+			//
+			// NUMERIC constants only. A `panic("…")` needs no cast here because golib's `panic`
+			// normalizes a C# string to `@string` at that single boxing boundary already — and it
+			// does so DELIBERATELY, to cover the computed and hand-owned callers a per-site cast
+			// cannot reach. Re-stating it here would restate nothing and churn every `panic("…")`
+			// in the corpus (measured: 279 files).
+			if tv, isConst := v.info.Types[callExpr.Args[0]]; isConst && tv.Value != nil {
+				if basic, isBasic := tv.Type.(*types.Basic); isBasic && basic.Info()&types.IsString == 0 {
+					panicValue = v.boxUntypedConstAsDefaultType(panicValueType, callExpr.Args[0], panicValue)
+				}
+			}
+
 			// A DEFERRED or SPAWNED panic (`defer panic(err)` — go/types check_test.go:170) must
 			// capture its argument at defer/go time: Go evaluates a deferred call's arguments when
 			// the DEFER statement executes, not when the frame unwinds, so a `panic(err)` deferred

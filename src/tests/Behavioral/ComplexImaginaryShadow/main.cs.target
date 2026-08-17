@@ -10,7 +10,7 @@ private static readonly @string zeroˢ = "zero"u8;
 
 internal static @string encComplex(nint i, complex128 c) {
     _ = i;
-    if (c != 0D + 0D.i()) {
+    if (c != 0D.i()) {
         return nonzeroˢ;
     }
     return zeroˢ;

@@ -31,7 +31,7 @@ private static readonly @string localˢ = "local"u8;
 private static readonly object overFitsFloat32ˢ = (@string)"over-fits-float32"u8;
 
 internal static void Main() {
-    var huge = new complex128[]{34359738368D, 1766847064778384329583297500742918515827483896875618958121606201292619776D, -1329227995784915872903807060280344576D, 1357421751691302484408532992D}.slice();
+    var huge = new complex128[]{3.4359738368e+10D + 0D.i(), 1.7668470647783843e+72D + 0D.i(), -1.329227995784916e+36D + 0D.i(), 1.3574217516913025e+27D + 0D.i()}.slice();
     foreach (var (_, h) in huge) {
         fmt.Println(real(h));
     }

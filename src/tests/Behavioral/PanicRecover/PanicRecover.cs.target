@@ -119,7 +119,7 @@ internal static void panicValues() {
         throw panic(((panicValues_label)(@string)"x"u8));
     }));
     fmt.Println(panicValueKind(() => {
-        throw panic(42);
+        throw panic((nint)(42));
     }));
     fmt.Println(panicValueKind(() => {
     }));

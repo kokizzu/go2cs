@@ -821,6 +821,90 @@ func (v *Visitor) bigIntegerConstMaterialization(expr ast.Expr, rendered string)
 //     what `1<<40 * 1.5` needs (see the untyped context handling below). The int-context counterpart
 //     — an inner shift left `untyped int` by an int64-typed parent (`1<<40 + 7`) — is not this
 //     function's business: it keeps IsInteger and overflowingConstLiteral folds it to `…L`.
+// complexConstLiteral returns the EXACT folded C# text for a COMPLEX-kind constant operator
+// expression — `1230000 - 0i` as `1230000D + 0D.i()` — or "" for anything that is not one.
+//
+// The float sibling above folds only where a named untyped const forces it, on the stated ground
+// that a pure-literal float constant "computes exactly in C# double, so its readable operator form
+// is kept". That ground does not hold for COMPLEX, and the counter-example is not exotic: .NET's
+// mixed real/complex operators are not Go's constant arithmetic and are not even IEEE. Its
+// `double - Complex` computes the imaginary part as `-right.Imaginary` rather than
+// `left.Imaginary - right.Imaginary`, so `1230000D - 0D.i()` yields imaginary **-0** where Go —
+// which folds the untyped expression in exact rational arithmetic, and an exact zero has no sign —
+// yields +0. fmt's own TestSprintf reads the sign back out: `%#12.5g` of `1230000 - 0i` printed
+// `-0.0000i` against Go's `+0.0000i`.
+//
+// So the rule is stated the way Go states it — a complex constant expression HAS an exact value and
+// is emitted as that value — rather than as a repair of one operator. Deliberately no `/* <gofmt> */`
+// annotation, unlike the float fold: `exactComplexConstString` re-renders in the same `re + imi`
+// shape convBasicLit already emits, so the common case (`3 + 4i` → `3F + 4F.i()`) is byte-identical
+// to the operator rendering it replaces and only the cases where the two genuinely DISAGREE move.
+// A constant that will not fit its declared width keeps its operator form (the ok flag), which is
+// the same fallback exactComplexConstString serves at a const declaration.
+func (v *Visitor) complexConstLiteral(expr ast.Expr) string {
+	tv, ok := v.info.Types[expr]
+
+	// Kind() == Complex is exactly "this expression has an imaginary component": go/constant
+	// normalizes a real-valued result to an Int/Float kind, so a real-only expression in a complex
+	// context is left to the float/integer folds above and to its own operator form.
+	if !ok || tv.Value == nil || tv.Type == nil || tv.Value.Kind() != constant.Complex {
+		return ""
+	}
+
+	// The width follows the UNDERLYING basic type, so a named complex type folds at its own width
+	// and the surrounding conversion still wraps the result (convCallExpr's named-numeric arm keys
+	// on the AST, not on the rendered text).
+	basic, isBasic := tv.Type.Underlying().(*types.Basic)
+
+	if !isBasic {
+		return ""
+	}
+
+	kind := basic.Kind()
+
+	// An UNTYPED complex constant takes its width from the PROPAGATED context first and only then
+	// from Go's default type. go/types resolves a constant expression's context on the OUTERMOST
+	// node, so `real(2.5 - 3.5i)` assigned to a float32 leaves the argument `untyped complex` while
+	// its real width is 32 — the same asymmetry markUntypedConstContexts exists to repair for the
+	// float fold, and reading the default type instead would widen `real(…)`'s result to float64
+	// against a float32 slot (which C# rejects outright — there is no implicit double→float).
+	if basic.Info()&types.IsUntyped != 0 {
+		if kind != types.UntypedComplex {
+			return ""
+		}
+
+		kind = types.Complex128
+
+		if context := v.untypedConstContext(expr); context != nil {
+			switch context.Kind() {
+			case types.Float32, types.Complex64:
+				kind = types.Complex64
+			}
+		}
+	}
+
+	if kind != types.Complex64 && kind != types.Complex128 {
+		return ""
+	}
+
+	text, representable := exactComplexConstString(tv.Value, kind == types.Complex64)
+
+	if !representable {
+		return ""
+	}
+
+	// A fold that swallows a NAMED constant's reference keeps it visible as a comment, exactly as
+	// foldedNamedFloatConstLiteral does for the same reason: `1i * gPi` folding silently to a magic
+	// number costs the reader the one identifier that explained it. A pure-literal fold needs no
+	// annotation — it re-renders in the shape convBasicLit already emits, so most sites stay
+	// byte-identical to the operator form they replace.
+	if v.containsUntypedNamedConstRef(expr) {
+		return fmt.Sprintf("/* %s */ %s", strings.TrimSpace(v.getPrintedNode(expr)), text)
+	}
+
+	return text
+}
+
 func (v *Visitor) floatContextConstLiteral(expr ast.Expr) string {
 	tv, ok := v.info.Types[expr]
 
@@ -962,6 +1046,12 @@ func (v *Visitor) convBinaryExpr(binaryExpr *ast.BinaryExpr, context PatternMatc
 				}
 			}
 		}
+	}
+
+	// A COMPLEX constant operator expression folds to its exact value, because C# cannot reproduce
+	// Go's constant arithmetic for one — see complexConstLiteral.
+	if lit := v.complexConstLiteral(binaryExpr); lit != "" {
+		return lit
 	}
 
 	// A constant operator expression whose value overflows int32 must emit as the folded 64-bit
