@@ -16,12 +16,12 @@ public static void TestJoinReturnsNil(ж<testing.T> Ꮡt) {
         }
     }
     {
-        var err = errors.Join(default!); if (err != default!) {
+        var err = errors.Join((error)(default!)); if (err != default!) {
             Ꮡt.Errorf("errors.Join(nil) = %v, want nil"u8, err);
         }
     }
     {
-        var err = errors.Join(default!, default!); if (err != default!) {
+        var err = errors.Join((error)(default!), (error)(default!)); if (err != default!) {
             Ꮡt.Errorf("errors.Join(nil, nil) = %v, want nil"u8, err);
         }
     }

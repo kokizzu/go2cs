@@ -38,7 +38,7 @@ public static void TestError(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestStripAnnotations_type {
+[GoType("dyn")] internal partial struct TestStripAnnotations_type {
     internal @string @in, want;
 }
 

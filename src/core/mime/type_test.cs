@@ -138,7 +138,7 @@ internal static readonly @string fooLetterˢ = "foo/letter"u8;
 internal static readonly @string pngˢ = ".PNG"u8;
 internal static readonly @string imagePngˢ = "image/png"u8;
 
-[GoType("dyn")] partial struct TestExtensionsByType_tests {
+[GoType("dyn")] internal partial struct TestExtensionsByType_tests {
     internal @string typ;
     internal slice<@string> want;
     internal @string wantErr;
@@ -244,7 +244,7 @@ public static void BenchmarkExtensionsByType(ж<testing.B> Ꮡb) {
     }
 }
 
-[GoType("dyn")] partial struct TestExtensionsByType2_tests {
+[GoType("dyn")] internal partial struct TestExtensionsByType2_tests {
     internal @string typ;
     internal slice<@string> want;
 }

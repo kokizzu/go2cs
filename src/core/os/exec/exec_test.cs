@@ -74,7 +74,6 @@ internal static bool haveUnexpectedFDs;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string goExecTestPidˢ = "GO_EXEC_TEST_PID"u8;
-internal static readonly @string noDefaultCurrentDirectoryInExePathˢ = "NoDefaultCurrentDirectoryInExePath"u8;
 internal static readonly @string trueˢ = "TRUE"u8;
 internal static readonly @string testRunˢ = "test.run"u8;
 internal static readonly @string testListˢ = "test.list"u8;
@@ -102,7 +101,7 @@ public static void TestMain(ж<testing.M> Ꮡm) {
             // Per https://learn.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-needcurrentdirectoryforexepathw#remarks,
             // “the existence of the NoDefaultCurrentDirectoryInExePath environment
             // variable is checked, and not its value.”
-            os.Setenv(noDefaultCurrentDirectoryInExePathˢ, trueˢ);
+            os.Setenv("NoDefaultCurrentDirectoryInExePath"u8, trueˢ);
         }
         nint code = Ꮡm.Run();
         if (code == 0 && (~flag.Lookup(testRunˢ)).Value.String() == ""u8 && (~flag.Lookup(testListˢ)).Value.String() == ""u8) {

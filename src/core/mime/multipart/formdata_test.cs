@@ -308,7 +308,7 @@ Content-Disposition: form-data; name="largetext"
 internal static readonly @string formDataNameAˢ = @"form-data; name=""a"""u8;
 internal static readonly @string xFooˢ = "X-Foo"u8;
 
-[GoType("dyn")] partial struct TestReadForm_MetadataTooLarge_type {
+[GoType("dyn")] internal partial struct TestReadForm_MetadataTooLarge_type {
     internal @string name;
     internal Action<ж<global::go.mime.multipart_package.Writer>> f;
 }
@@ -467,7 +467,7 @@ internal static void testReadFormManyFiles(ж<testing.T> Ꮡt, bool distinct) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestReadFormLimits_type {
+[GoType("dyn")] internal partial struct TestReadFormLimits_type {
     internal nint values;
     internal nint files;
     internal nint extraKeysPerFile;
@@ -546,7 +546,7 @@ public static void TestReadFormLimits(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string boundaryˢ = "boundary"u8;
 
-[GoType("dyn")] partial struct TestReadFormEndlessHeaderLine_type {
+[GoType("dyn")] internal partial struct TestReadFormEndlessHeaderLine_type {
     internal @string name;
     internal @string prefix;
 }
@@ -594,7 +594,7 @@ internal static (nint n, error err) Read(this neverendingReader r, slice<byte> p
     return (len(p), default!);
 }
 
-[GoType("dyn")] partial struct BenchmarkReadForm_type {
+[GoType("dyn")] internal partial struct BenchmarkReadForm_type {
     internal @string name;
     internal Action<ж<global::go.mime.multipart_package.Writer>, nint> form;
 }

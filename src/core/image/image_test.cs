@@ -91,7 +91,7 @@ public static void TestImage(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestNewXxxBadRectangle_testCases {
+[GoType("dyn")] internal partial struct TestNewXxxBadRectangle_testCases {
     internal @string name;
     internal Action<global::go.image_package.Rectangle> f;
 }
@@ -229,7 +229,7 @@ public static void Test16BitsPerColorChannel(ж<testing.T> Ꮡt) {
 //
 // The Uniform and Rectangle types are also special-cased, as they
 // don't have a Set or SetRGBA64 method.
-[GoType("dyn")] partial interface TestRGBA64Image_type {
+[GoType("dyn")] internal partial interface TestRGBA64Image_type {
     void SetRGBA64(nint x, nint y, color.RGBA64 c);
 }
 

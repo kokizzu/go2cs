@@ -387,7 +387,7 @@ public static void TestPlusBuildLines(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object expressionDidNotTriggerˢ = (@string)"expression did not trigger limit"u8;
 
-[GoType("dyn")] partial struct TestSizeLimits_type {
+[GoType("dyn")] internal partial struct TestSizeLimits_type {
     internal @string name;
     internal @string expr;
 }
@@ -433,7 +433,7 @@ public static void TestSizeLimits(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestPlusSizeLimits_type {
+[GoType("dyn")] internal partial struct TestPlusSizeLimits_type {
     internal @string name;
     internal @string expr;
 }

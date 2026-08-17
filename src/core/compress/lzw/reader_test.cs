@@ -172,7 +172,7 @@ public static void TestReaderReset(ж<testing.T> Ꮡt) {
             (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
             var b2 = b.Bytes();
             if (err != default!) {
-                Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, default!);
+                Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, (any)(default!));
                 continue;
             }
             if (!bytes.Equal(b1, b2)) {
@@ -211,7 +211,7 @@ public static void TestHiCodeDoesNotOverflow(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestNoLongerSavingPriorExpansions_iterations {
+[GoType("dyn")] internal partial struct TestNoLongerSavingPriorExpansions_iterations {
     internal nint width, n;
 }
 

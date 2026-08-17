@@ -39,12 +39,11 @@ internal static void runDebugOptionsTest(ж<testing.T> Ꮡt, @string test, @stri
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string testAllCapabilitiesDisabledˢ = "TestAllCapabilitiesDisabled"u8;
 internal static readonly @string cpuAllOffˢ = "cpu.all=off"u8;
 
 public static void TestDisableAllCapabilities(ж<testing.T> Ꮡt) {
     MustSupportFeatureDetection(Ꮡt);
-    runDebugOptionsTest(Ꮡt, testAllCapabilitiesDisabledˢ, cpuAllOffˢ);
+    runDebugOptionsTest(Ꮡt, "TestAllCapabilitiesDisabled"u8, cpuAllOffˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

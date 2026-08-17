@@ -534,7 +534,7 @@ public static void TestIsEmpty(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("nil tree is not empty"u8);
     }
     foreach (var (_, test) in isEmptyTests) {
-        var (tree, err) = New(rootˢ).Parse(test.input, ""u8, ""u8, new map<@string, ж<global::go.text.template.parse_package.Tree>>(), default!);
+        var (tree, err) = New(rootˢ).Parse(test.input, ""u8, ""u8, new map<@string, ж<global::go.text.template.parse_package.Tree>>(), (map<@string, any>)(default!));
         if (err != default!) {
             Ꮡt.Errorf("%q: unexpected error: %v"u8, test.name, err);
             continue;
@@ -551,7 +551,7 @@ public static void TestIsEmpty(ж<testing.T> Ꮡt) {
 internal static readonly @string ifTrueEndˢ = "{{if true}}{{end}}"u8;
 
 public static void TestErrorContextWithTreeCopy(ж<testing.T> Ꮡt) {
-    var (tree, err) = New(rootˢ).Parse(ifTrueEndˢ, ""u8, ""u8, new map<@string, ж<global::go.text.template.parse_package.Tree>>(), default!);
+    var (tree, err) = New(rootˢ).Parse(ifTrueEndˢ, ""u8, ""u8, new map<@string, ж<global::go.text.template.parse_package.Tree>>(), (map<@string, any>)(default!));
     if (err != default!) {
         Ꮡt.Fatalf("unexpected tree parse failure: %v"u8, err);
     }
@@ -697,7 +697,7 @@ public static void TestBlock(ж<testing.T> Ꮡt) {
     @string outer = @"a{{template ""inner"" .}}b"u8;
     @string inner = @"bar{{.}}baz"u8;
     var treeSet = new map<@string, ж<global::go.text.template.parse_package.Tree>>();
-    var (tmpl, err) = New(outerˢ).Parse(input, ""u8, ""u8, treeSet, default!);
+    var (tmpl, err) = New(outerˢ).Parse(input, ""u8, ""u8, treeSet, (map<@string, any>)(default!));
     if (err != default!) {
         Ꮡt.Fatal(err);
     }

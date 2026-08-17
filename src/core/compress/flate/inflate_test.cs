@@ -36,7 +36,7 @@ public static void TestReset(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestReaderTruncated_vectors {
+[GoType("dyn")] internal partial struct TestReaderTruncated_vectors {
     internal @string input, output;
 }
 
@@ -94,10 +94,8 @@ public static void TestResetDict(ж<testing.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string bufferIsReusedˢ = "BufferIsReused"u8;
-internal static readonly @string bufferIsNotReusedWhenGotByteReaderˢ = "BufferIsNotReusedWhenGotByteReader"u8;
-internal static readonly @string bufferIsCreatedAfterByteReaderˢ = "BufferIsCreatedAfterByteReader"u8;
 
-[GoType("dyn")] partial struct TestReaderReusesReaderBuffer_encodedNotByteReader {
+[GoType("dyn")] internal partial struct TestReaderReusesReaderBuffer_encodedNotByteReader {
     public io_package.Reader Reader;
 }
 
@@ -119,7 +117,7 @@ public static void TestReaderReusesReaderBuffer(ж<testing.T> Ꮡt) {
     });
     var encodedNotByteReaderʗ2 = encodedNotByteReader;
     var encodedReaderʗ1 = encodedReader;
-    Ꮡt.Run(bufferIsNotReusedWhenGotByteReaderˢ, (ж<testing.T> tΔ2) => {
+    Ꮡt.Run("BufferIsNotReusedWhenGotByteReader"u8, (ж<testing.T> tΔ2) => {
         var f = NewReader(encodedNotByteReaderʗ2)._<ж<global::go.compress.flate_package.decompressor>>();
         {
             var (_, ok) = (~f).r._<ж<bufio.Reader>>(ᐧ); if (!ok) {
@@ -133,7 +131,7 @@ public static void TestReaderReusesReaderBuffer(ж<testing.T> Ꮡt) {
     });
     var encodedNotByteReaderʗ3 = encodedNotByteReader;
     var encodedReaderʗ2 = encodedReader;
-    Ꮡt.Run(bufferIsCreatedAfterByteReaderˢ, (ж<testing.T> tΔ3) => {
+    Ꮡt.Run("BufferIsCreatedAfterByteReader"u8, (ж<testing.T> tΔ3) => {
         foreach (var (i, r) in new io.Reader[]{new flate_test_package.bytes_Readerжio_Reader(encodedReaderʗ2), new flate_test_package.bufio_ReaderжReader(bufio.NewReader(new flate_test_package.bytes_Readerжio_Reader(encodedReaderʗ2)))}.slice()) {
             var f = NewReader(r)._<ж<global::go.compress.flate_package.decompressor>>();
             if (!AreEqual((~f).r, r)) {

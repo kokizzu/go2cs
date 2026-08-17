@@ -33,7 +33,7 @@ internal static slice<int16> matchPredefinedDistribution = new int16[]{
     (int16)(-1), (int16)(-1), (int16)(-1), (int16)(-1), (int16)(-1)
 }.slice();
 
-[GoType("dyn")] partial struct TestPredefinedTables_tests {
+[GoType("dyn")] internal partial struct TestPredefinedTables_tests {
     internal @string name;
     internal slice<int16> distribution;
     internal nint tableBits;

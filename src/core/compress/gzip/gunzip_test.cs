@@ -507,7 +507,7 @@ Found:
     r.Multistream(false);
     var (data, err) = io.ReadAll(new gzip_test_package.gzip_ReaderжReader(Ꮡr));
     if (((sstring)data) != hello || err != default!) {
-        Ꮡt.Fatalf("first stream = %q, %v, want %q, %v"u8, ((@string)data), err, hello, default!);
+        Ꮡt.Fatalf("first stream = %q, %v, want %q, %v"u8, ((@string)data), err, hello, (any)(default!));
     }
     {
         var errΔ2 = r.Reset(new gzip_test_package.bytes_ReaderжReader(br)); if (errΔ2 != default!) {
@@ -517,7 +517,7 @@ Found:
     r.Multistream(false);
     (data, err) = io.ReadAll(new gzip_test_package.gzip_ReaderжReader(Ꮡr));
     if (((sstring)data) != hello || err != default!) {
-        Ꮡt.Fatalf("second stream = %q, %v, want %q, %v"u8, ((@string)data), err, hello, default!);
+        Ꮡt.Fatalf("second stream = %q, %v, want %q, %v"u8, ((@string)data), err, hello, (any)(default!));
     }
     {
         var errΔ3 = r.Reset(new gzip_test_package.bytes_ReaderжReader(br)); if (!AreEqual(errΔ3, io.EOF)) {
@@ -535,7 +535,7 @@ public static void TestNilStream(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestTruncatedStreams_cases {
+[GoType("dyn")] internal partial struct TestTruncatedStreams_cases {
     internal @string name;
     internal slice<byte> data;
 }

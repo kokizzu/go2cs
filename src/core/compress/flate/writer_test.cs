@@ -62,7 +62,7 @@ internal static readonly object expectedAnErrorOnCloseˢ = (@string)"Expected an
 internal static readonly object gotUnexpectedErrorAfterˢ = (@string)"Got unexpected error after reset:"u8;
 internal static readonly object got0LengthWriteExpected0ˢ = (@string)"Got 0 length write, expected > 0"u8;
 
-[GoType("dyn")] partial struct TestWriteError_src {
+[GoType("dyn")] internal partial struct TestWriteError_src {
     public io_package.Reader Reader;
 }
 
@@ -143,7 +143,7 @@ public static void TestDeterministic(ж<testing.T> Ꮡt) {
     });
 }
 
-[GoType("dyn")] partial struct testDeterministic_src {
+[GoType("dyn")] internal partial struct testDeterministic_src {
     public io_package.Reader Reader;
 }
 

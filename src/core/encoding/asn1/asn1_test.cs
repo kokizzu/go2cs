@@ -557,7 +557,7 @@ public static void TestUnmarshal(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestUnmarshalWithNilOrNonPointer_tests {
+[GoType("dyn")] internal partial struct TestUnmarshalWithNilOrNonPointer_tests {
     internal slice<byte> b;
     internal any v;
     internal @string want;
@@ -1071,7 +1071,7 @@ public static void TestUnmarshalInvalidUTF8(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestMarshalNilValue_nilValueTestData {
+[GoType("dyn")] internal partial struct TestMarshalNilValue_nilValueTestData {
     public any V;
 }
 
@@ -1176,7 +1176,7 @@ public static void TestExplicitTagRawValueStruct(ж<testing.T> Ꮡt) {
     public global::go.encoding.asn1_package.RawValue A;
 }
 
-[GoType("dyn")] partial struct TestTaggedRawValue_tests {
+[GoType("dyn")] internal partial struct TestTaggedRawValue_tests {
     internal bool shouldMatch;
     internal slice<byte> derBytes;
 }

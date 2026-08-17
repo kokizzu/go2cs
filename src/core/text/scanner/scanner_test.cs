@@ -740,7 +740,7 @@ public static void TestIssue29723(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestNumbers_type {
+[GoType("dyn")] internal partial struct TestNumbers_type {
     internal rune tok;
     internal @string src, tokens, err;
 }
@@ -889,7 +889,7 @@ public static void TestNumbers(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestIssue30320_type {
+[GoType("dyn")] internal partial struct TestIssue30320_type {
     internal @string @in, want;
     internal nuint mode;
 }

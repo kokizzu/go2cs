@@ -53,7 +53,7 @@ partial class fuzz_internal_test_package {
     throw panic("unimplemented");
 }
 
-[GoType("dyn")] partial struct TestByteSliceMutators_type {
+[GoType("dyn")] internal partial struct TestByteSliceMutators_type {
     internal @string name;
     internal Func<ж<global::go.@internal.fuzz_package.mutator>, slice<byte>, slice<byte>> mutator;
     internal slice<nint> randVals;

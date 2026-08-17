@@ -97,7 +97,7 @@ public static void TestMontgomeryRoundtrip(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object examplesAreOnlyValidIn64ˢ = (@string)"examples are only valid in 64 bit"u8;
 
-[GoType("dyn")] partial struct TestShiftIn_examples {
+[GoType("dyn")] internal partial struct TestShiftIn_examples {
     internal slice<byte> m, x, expected;
     internal uint64 y;
 }
@@ -153,7 +153,7 @@ public static void TestModulusAndNatSizes(ж<testing.T> Ꮡt) {
     NewNat().SetBytes(xb, m);
 }
 
-[GoType("dyn")] partial struct TestSetBytes_tests {
+[GoType("dyn")] internal partial struct TestSetBytes_tests {
     internal slice<byte> m, b;
     internal bool fail;
 }
@@ -234,7 +234,7 @@ public static void TestSetBytes(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestExpand_examples {
+[GoType("dyn")] internal partial struct TestExpand_examples {
     internal slice<nuint> @in;
     internal nint n;
     internal slice<nuint> @out;

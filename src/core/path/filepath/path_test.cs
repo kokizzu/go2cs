@@ -2010,15 +2010,12 @@ public static void TestEvalSymlinksAboveRoot(ж<testing.T> Ꮡt) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string testEvalSymlinksAboveRootChdirˢ = "TestEvalSymlinksAboveRootChdir"u8;
-
 // Issue 30520 part 2.
 public static void TestEvalSymlinksAboveRootChdir(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
         testenv.MustHaveSymlink(new filepath_test_package.testing_TжTB(Ꮡt));
-        var (tmpDir, err) = os.MkdirTemp(""u8, testEvalSymlinksAboveRootChdirˢ);
+        var (tmpDir, err) = os.MkdirTemp(""u8, "TestEvalSymlinksAboveRootChdir"u8);
         if (err != default!) {
             Ꮡt.Fatal(err);
         }

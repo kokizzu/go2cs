@@ -8,7 +8,7 @@ using static global::go.go.token_package;
 
 partial class token_internal_test_package {
 
-[GoType("dyn")] partial struct TestIsIdentifier_tests {
+[GoType("dyn")] internal partial struct TestIsIdentifier_tests {
     internal @string name;
     internal @string @in;
     internal bool want;

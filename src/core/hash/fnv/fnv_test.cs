@@ -104,7 +104,7 @@ internal static void testGolden(ж<testing.T> Ꮡt, hash.Hash hashΔ1, slice<gol
     }
 }
 
-[GoType("dyn")] partial struct TestGoldenMarshal_tests {
+[GoType("dyn")] internal partial struct TestGoldenMarshal_tests {
     internal @string name;
     internal Func<hash.Hash> newHash;
     internal slice<golden> gold;

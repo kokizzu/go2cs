@@ -866,7 +866,6 @@ public static void TestNewWriterSizeIdempotent(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string abcdefghijklmnopqrstuvwxyˢ = "abcdefghijklmnopqrstuvwxy"u8;
 internal static readonly object writeStringˢ = (@string)"WriteString"u8;
 
 public static void TestWriteString(ж<Δtesting.T> Ꮡt) {
@@ -876,7 +875,7 @@ public static void TestWriteString(ж<Δtesting.T> Ꮡt) {
     b.WriteString("0"u8); // easy
     b.WriteString("123456"u8); // still easy
     b.WriteString("7890"u8); // easy after flush
-    b.WriteString(abcdefghijklmnopqrstuvwxyˢ); // hard
+    b.WriteString("abcdefghijklmnopqrstuvwxy"u8); // hard
     b.WriteString("z"u8);
     {
         var err = b.Flush(); if (err != default!) {
@@ -1800,7 +1799,6 @@ public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
 internal static readonly @string thenErrorˢ = "5-then-error"u8;
 
 [GoType("dyn")] partial struct TestReaderDiscard_tests {
@@ -1820,7 +1818,7 @@ public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
     var tests = new TestReaderDiscard_tests[]{
         new(
             name: "normal case"u8,
-            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
+            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader("abcdefghijklmnopqrstuvwxyz"u8)),
             peekSize: 16,
             n: 6,
             want: 6,
@@ -1828,21 +1826,21 @@ public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
         ),
         new(
             name: "discard causing read"u8,
-            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
+            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader("abcdefghijklmnopqrstuvwxyz"u8)),
             n: 6,
             want: 6,
             wantBuffered: 10
         ),
         new(
             name: "discard all without peek"u8,
-            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
+            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader("abcdefghijklmnopqrstuvwxyz"u8)),
             n: 26,
             want: 26,
             wantBuffered: 0
         ),
         new(
             name: "discard more than end"u8,
-            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
+            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader("abcdefghijklmnopqrstuvwxyz"u8)),
             n: 27,
             want: 26,
             wantErr: Δio.EOF,

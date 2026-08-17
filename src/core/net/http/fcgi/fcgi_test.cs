@@ -377,7 +377,7 @@ public static void TestChildServeReadsEnvVars(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string gopherˢ = "gopher"u8;
 
-[GoType("dyn")] partial struct TestResponseWriterSniffsContentType_type {
+[GoType("dyn")] internal partial struct TestResponseWriterSniffsContentType_type {
     internal @string name;
     internal @string body;
     internal @string wantCT;

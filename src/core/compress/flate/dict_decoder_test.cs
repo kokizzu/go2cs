@@ -10,7 +10,7 @@ using static go.compress.flate_package;
 
 partial class flate_internal_test_package {
 
-[GoType("dyn")] partial struct TestDictDecoder_type {
+[GoType("dyn")] internal partial struct TestDictDecoder_type {
     internal nint dist; // Backward distance (0 if this is an insertion)
     internal nint length; // Length of copy or insertion
 }

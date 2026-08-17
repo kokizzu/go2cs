@@ -53,7 +53,7 @@ internal static slice<byte> lzwEncode(slice<byte> @in) {
     return b.Bytes();
 }
 
-[GoType("dyn")] partial struct TestDecode_testCases {
+[GoType("dyn")] internal partial struct TestDecode_testCases {
     internal nint nPix; // The number of pixels in the image data.
     // If non-zero, write this many extra bytes inside the data sub-block
     // containing the LZW end code.
@@ -316,7 +316,7 @@ public static void TestTransparentPixelOutsidePaletteRange(ж<testing.T> Ꮡt) {
 internal static readonly object decodeAllˢ = (@string)"DecodeAll:"u8;
 internal static readonly object encodeAllˢ = (@string)"EncodeAll:"u8;
 
-[GoType("dyn")] partial struct TestLoopCount_testCases {
+[GoType("dyn")] internal partial struct TestLoopCount_testCases {
     internal @string name;
     internal slice<byte> data;
     internal nint loopCount;

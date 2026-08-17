@@ -250,7 +250,7 @@ internal static readonly object decoderWronglyDetectedˢ = (@string)"Decoder wro
 internal static readonly @string corruptionInQAtOffsetVˢ = "Corruption in %q at offset %v, want %v"u8;
 internal static readonly object decoderFailedToDetectˢ = (@string)"Decoder failed to detect corruption in"u8;
 
-[GoType("dyn")] partial struct TestDecodeCorrupt_testCases {
+[GoType("dyn")] internal partial struct TestDecodeCorrupt_testCases {
     internal @string input;
     internal nint offset; // -1 means no corruption.
 }

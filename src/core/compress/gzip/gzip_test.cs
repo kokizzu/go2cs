@@ -127,7 +127,7 @@ public static void TestLatin1(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestLatin1RoundTrip_testCases {
+[GoType("dyn")] internal partial struct TestLatin1RoundTrip_testCases {
     internal @string name;
     internal bool ok;
 }

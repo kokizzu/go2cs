@@ -163,7 +163,7 @@ public static void TestReadMIMEHeaderSingle(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestReaderUpcomingHeaderKeys_type {
+[GoType("dyn")] internal partial struct TestReaderUpcomingHeaderKeys_type {
     internal @string input;
     internal nint want;
 }
@@ -542,7 +542,7 @@ Non-Interned: test
 
 """u8, "\n"u8, "\r\n"u8, -1);
 
-[GoType("dyn")] partial struct BenchmarkReadMIMEHeader_type {
+[GoType("dyn")] internal partial struct BenchmarkReadMIMEHeader_type {
     internal @string name;
     internal @string headers;
 }

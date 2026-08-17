@@ -851,7 +851,7 @@ internal static void checkErrors(slice<error> got, error want, ж<testing.T> Ꮡ
     }
 }
 
-[GoType("dyn")] partial struct TestBestSpeedMatch_cases {
+[GoType("dyn")] internal partial struct TestBestSpeedMatch_cases {
     internal slice<byte> previous, current;
     internal int32 t, s, want;
 }

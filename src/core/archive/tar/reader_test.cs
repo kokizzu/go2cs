@@ -32,7 +32,7 @@ partial class tar_internal_test_package {
 internal static readonly @string longˢ = "long"u8;
 internal static readonly @string bz2ˢ = ".bz2"u8;
 
-[GoType("dyn")] partial struct TestReader_vectors {
+[GoType("dyn")] internal partial struct TestReader_vectors {
     internal @string @file;   // Test input file
     internal slice<ж<global::go.archive.tar_package.Header>> headers; // Expected output headers
     internal slice<@string> chksums; // MD5 checksum of files, leave as nil if not checked
@@ -700,7 +700,7 @@ public static void TestReader(ж<testing.T> Ꮡt) {
     internal @string output; // Expected value of string read
 }
 
-[GoType("dyn")] partial struct TestPartialRead_vectors {
+[GoType("dyn")] internal partial struct TestPartialRead_vectors {
     internal @string @file;
     internal slice<TestPartialRead_testCase> cases;
 }
@@ -741,12 +741,12 @@ public static void TestPartialRead(ж<testing.T> Ꮡt) {
                 foreach (var (i, tc) in vʗ1.cases) {
                     var (hdr, errΔ1) = tr.Next();
                     if (errΔ1 != default! || hdr == nil) {
-                        tΔ1.Fatalf("entry %d, Next(): got %v, want %v"u8, i, errΔ1, default!);
+                        tΔ1.Fatalf("entry %d, Next(): got %v, want %v"u8, i, errΔ1, (any)(default!));
                     }
                     var buf = new slice<byte>(tc.cnt);
                     {
                         var (_, errΔ2) = io.ReadFull(new global::go.archive.tar_package.ReaderжReader(tr), buf); if (errΔ2 != default!) {
-                            tΔ1.Fatalf("entry %d, ReadFull(): got %v, want %v"u8, i, errΔ2, default!);
+                            tΔ1.Fatalf("entry %d, ReadFull(): got %v, want %v"u8, i, errΔ2, (any)(default!));
                         }
                     }
                     if (((sstring)buf) != tc.output) {
@@ -811,7 +811,7 @@ internal static readonly @string manualˢ = "manual"u8;
 internal static readonly @string ioReadSeekerˢ = "io.ReadSeeker"u8;
 internal static readonly @string readBadSeekerˢ = "ReadBadSeeker"u8;
 
-[GoType("dyn")] partial struct TestReadTruncation_vectors {
+[GoType("dyn")] internal partial struct TestReadTruncation_vectors {
     internal @string input; // Input stream
     internal nint cnt;   // Expected number of headers read
     internal error err;  // Expected error outcome
@@ -977,7 +977,7 @@ public static void TestReadHeaderOnly(ж<testing.T> Ꮡt) {
                 break;
             }
             if (errΔ1 != default!) {
-                Ꮡt.Errorf("Next(): got %v, want %v"u8, errΔ1, default!);
+                Ꮡt.Errorf("Next(): got %v, want %v"u8, errΔ1, (any)(default!));
                 continue;
             }
             hdrs = append(hdrs, hdr);
@@ -1004,7 +1004,7 @@ public static void TestReadHeaderOnly(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestMergePAX_vectors {
+[GoType("dyn")] internal partial struct TestMergePAX_vectors {
     internal map<@string, @string> @in;
     internal ж<global::go.archive.tar_package.Header> want;
     internal bool ok;
@@ -1062,7 +1062,7 @@ public static void TestMergePAX(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestParsePAX_vectors {
+[GoType("dyn")] internal partial struct TestParsePAX_vectors {
     internal @string @in;
     internal map<@string, @string> want;
     internal bool ok;
@@ -1105,7 +1105,7 @@ public static void TestParsePAX(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string fewaˢ = "fewa"u8;
 
-[GoType("dyn")] partial struct TestReadOldGNUSparseMap_vectors {
+[GoType("dyn")] internal partial struct TestReadOldGNUSparseMap_vectors {
     internal slice<byte> input;
     internal global::go.archive.tar_package.sparseDatas wantMap;
     internal int64 wantSize;
@@ -1229,7 +1229,7 @@ public static void TestReadOldGNUSparseMap(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestReadGNUSparsePAXHeaders_vectors {
+[GoType("dyn")] internal partial struct TestReadGNUSparsePAXHeaders_vectors {
     internal @string inputData;
     internal map<@string, @string> inputHdrs;
     internal global::go.archive.tar_package.sparseDatas wantMap;
@@ -1473,7 +1473,7 @@ internal static (nint, error) Read(this testNonEmptyReader r, slice<byte> b) {
     internal int64 size;
 }
 
-[GoType("dyn")] partial struct TestFileReader_vectors {
+[GoType("dyn")] internal partial struct TestFileReader_vectors {
     internal TestFileReader_fileMaker maker;
     internal slice<TestFileReader_testFnc> tests;
 }

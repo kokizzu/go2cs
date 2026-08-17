@@ -178,7 +178,7 @@ public static void TestBasicOperations(ж<testing.T> Ꮡt) {
         var (n, err) = buf.Write(testBytes[0..1]);
         {
             nint want = 1; if (err != default! || n != want) {
-                Ꮡt.Errorf("Write: got (%d, %v), want (%d, %v)"u8, n, err, want, default!);
+                Ꮡt.Errorf("Write: got (%d, %v), want (%d, %v)"u8, n, err, want, (any)(default!));
             }
         }
         check(Ꮡt, testBasicOperations4ˢ, Ꮡbuf, "a"u8);
@@ -187,7 +187,7 @@ public static void TestBasicOperations(ж<testing.T> Ꮡt) {
         (n, err) = buf.Write(testBytes[2..26]);
         {
             nint want = 24; if (err != default! || n != want) {
-                Ꮡt.Errorf("Write: got (%d, %v), want (%d, %v)"u8, n, err, want, default!);
+                Ꮡt.Errorf("Write: got (%d, %v), want (%d, %v)"u8, n, err, want, (any)(default!));
             }
         }
         check(Ꮡt, testBasicOperations6ˢ, Ꮡbuf, testString[0..26]);
@@ -201,7 +201,7 @@ public static void TestBasicOperations(ж<testing.T> Ꮡt) {
         (var c, err) = buf.ReadByte();
         {
             var want = testString[1]; if (err != default! || c != want) {
-                Ꮡt.Errorf("ReadByte: got (%q, %v), want (%q, %v)"u8, c, err, want, default!);
+                Ꮡt.Errorf("ReadByte: got (%q, %v), want (%q, %v)"u8, c, err, want, (any)(default!));
             }
         }
         (c, err) = buf.ReadByte();
@@ -702,7 +702,6 @@ public static void TestReadEmptyAtEOF(ж<testing.T> Ꮡt) {
 internal static readonly object unreadByteAtEofGotNoˢ = (@string)"UnreadByte at EOF: got no error"u8;
 internal static readonly object readByteAtEofGotNoErrorˢ = (@string)"ReadByte at EOF: got no error"u8;
 internal static readonly object unreadByteAfterReadByteˢ = (@string)"UnreadByte after ReadByte at EOF: got no error"u8;
-internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
 internal static readonly object unreadByteAfterReadNilˢ = (@string)"UnreadByte after Read(nil): got no error"u8;
 
 public static void TestUnreadByte(ж<testing.T> Ꮡt) {
@@ -724,7 +723,7 @@ public static void TestUnreadByte(ж<testing.T> Ꮡt) {
         }
     }
     // check not at EOF
-    b.WriteString(abcdefghijklmnopqrstuvwxyzˢ);
+    b.WriteString("abcdefghijklmnopqrstuvwxyz"u8);
     // after unsuccessful read
     {
         var (n, errΔ4) = b.Read(default!); if (n != 0 || errΔ4 != default!) {

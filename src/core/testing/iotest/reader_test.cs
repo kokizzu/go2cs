@@ -283,7 +283,7 @@ public static void TestDataErrReader_emptyReader(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestErrReader_cases {
+[GoType("dyn")] internal partial struct TestErrReader_cases {
     internal @string name;
     internal error err;
 }

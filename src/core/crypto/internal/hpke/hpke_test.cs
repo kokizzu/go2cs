@@ -79,7 +79,7 @@ internal static readonly @string sequenceNumberˢ = "sequence number"u8;
 internal static readonly @string nonceˢ = "nonce"u8;
 internal static readonly @string aadˢ = "aad"u8;
 
-[GoType("dyn")] partial struct TestRFC9180Vectors_vectors {
+[GoType("dyn")] internal partial struct TestRFC9180Vectors_vectors {
     public @string Name;
     public @string Setup;
     public @string Encryptions;

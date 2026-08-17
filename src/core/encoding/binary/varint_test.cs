@@ -133,7 +133,7 @@ public static void TestBufferTooSmall(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestBufferTooBigWithOverflow_tests {
+[GoType("dyn")] internal partial struct TestBufferTooBigWithOverflow_tests {
     internal slice<byte> @in;
     internal @string name;
     internal nint wantN;

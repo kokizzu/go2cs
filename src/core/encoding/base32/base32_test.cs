@@ -237,7 +237,7 @@ public static void TestDecoder(ж<testing.T> Ꮡt) {
 internal static readonly @string badReaderErrorˢ = "bad reader error"u8;
 internal static readonly @string decodingOfQErrVExpectedVˢ = "Decoding of %q err = %v, expected %v"u8;
 
-[GoType("dyn")] partial struct TestIssue20044_testCases {
+[GoType("dyn")] internal partial struct TestIssue20044_testCases {
     internal badReader r;
     internal @string res;
     internal error err;
@@ -398,7 +398,7 @@ internal static readonly object decoderWronglyDetectedˢ = (@string)"Decoder wro
 internal static readonly @string corruptionInQAtOffsetVˢ = "Corruption in %q at offset %v, want %v"u8;
 internal static readonly object decoderFailedToDetectˢ = (@string)"Decoder failed to detect corruption in"u8;
 
-[GoType("dyn")] partial struct TestDecodeCorrupt_testCases {
+[GoType("dyn")] internal partial struct TestDecodeCorrupt_testCases {
     internal @string input;
     internal nint offset; // -1 means no corruption.
 }
@@ -525,7 +525,10 @@ public static void TestNewLineCharacters(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string jrxxezlnebuxa43vnuqgi33mn5zca43joqqgc3lfoqwcay3pnzzwky3umv2hk4ˢ = """
+internal static readonly object decodedResultsNotEqualˢ = (@string)"Decoded results not equal"u8;
+
+public static void TestDecoderIssue4779(ж<testing.T> Ꮡt) {
+    @string encoded = """
 JRXXEZLNEBUXA43VNUQGI33MN5ZCA43JOQQGC3LFOQWCAY3PNZZWKY3UMV2HK4
 RAMFSGS4DJONUWG2LOM4QGK3DJOQWCA43FMQQGI3YKMVUXK43NN5SCA5DFNVYG64RANFXGG2LENFSH
 K3TUEB2XIIDMMFRG64TFEBSXIIDEN5WG64TFEBWWCZ3OMEQGC3DJOF2WCLRAKV2CAZLONFWQUYLEEB
@@ -538,10 +541,6 @@ NZ2CYIDTOVXHIIDJNYFGG5LMOBQSA4LVNEQG6ZTGNFRWSYJAMRSXGZLSOVXHIIDNN5WGY2LUEBQW42
 LNEBUWIIDFON2CA3DBMJXXE5LNFY==
 ====
 """u8;
-internal static readonly object decodedResultsNotEqualˢ = (@string)"Decoded results not equal"u8;
-
-public static void TestDecoderIssue4779(ж<testing.T> Ꮡt) {
-    @string encoded = jrxxezlnebuxa43vnuqgi33mn5zca43joqqgc3lfoqwcay3pnzzwky3umv2hk4ˢ;
     @string encodedShort = strings.ReplaceAll(encoded, "\n"u8, ""u8);
     var dec = NewDecoder(StdEncoding, new base32_test_package.strings_ReaderжReader(strings.NewReader(encoded)));
     var (res1, err) = io.ReadAll(dec);
@@ -666,7 +665,7 @@ public static void TestDecodeWithWrongPadding(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestBufferedDecodingSameError_testcases {
+[GoType("dyn")] internal partial struct TestBufferedDecodingSameError_testcases {
     internal @string prefix;
     internal slice<slice<@string>> chunkCombinations;
     internal error expected;
@@ -742,7 +741,7 @@ public static void TestBufferedDecodingSameError(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestBufferedDecodingPadding_testcases {
+[GoType("dyn")] internal partial struct TestBufferedDecodingPadding_testcases {
     internal slice<@string> chunks;
     internal @string expectedError;
 }

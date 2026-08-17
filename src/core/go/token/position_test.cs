@@ -417,7 +417,7 @@ public static void TestRemoveFile(ж<testing.T> Ꮡt) {
     checkNumFiles(1);
 }
 
-[GoType("dyn")] partial struct TestFileAddLineColumnInfo_tests {
+[GoType("dyn")] internal partial struct TestFileAddLineColumnInfo_tests {
     internal @string name;
     internal slice<global::go.go.token_package.lineInfo> infos;
     internal slice<global::go.go.token_package.lineInfo> want;
@@ -564,7 +564,7 @@ public static void TestIssue57490(ж<testing.T> Ꮡt) {
         }
         want = fmt.Sprintf("%s:1:%d"u8, f.Name(), (nint)(fsize + 1));
         {
-            @string got = f.Position(((global::go.go.token_package.ΔPos)fsize + 1)).String(); if (got != want) {
+            @string got = f.Position(((global::go.go.token_package.ΔPos)(fsize + 1))).String(); if (got != want) {
                 Ꮡt.Errorf("position = %s, want %s"u8, got, want);
             }
         }

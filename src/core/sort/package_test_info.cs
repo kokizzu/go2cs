@@ -20,7 +20,6 @@ using static global::go.sort_test_package;
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
-[assembly: GoImplement<ByAge, sort_package.Interface>]
 [assembly: GoImplement<ByName, sort_package.Interface>]
 [assembly: GoImplement<ByWeight, sort_package.Interface>]
 [assembly: GoImplement<adversaryTestingData, sort_package.Interface>(Pointer = true)]
@@ -59,14 +58,12 @@ public static partial class sort_test_package
     internal partial struct testingData {}
     internal partial struct testsᴛ1 {}
     internal partial struct wrappertestsᴛ1 {}
-    public partial struct ByAge {}
     public partial struct ByName {}
     public partial struct ByWeight {}
     public partial struct Change {}
     public partial struct Grams {}
     public partial struct Organ {}
     public partial struct Organs {}
-    public partial struct Person {}
     public partial struct Planet {}
     public partial struct TestFind_tests {}
     public partial struct multiSorter {}

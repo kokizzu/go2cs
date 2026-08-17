@@ -413,7 +413,7 @@ public static void TestFailure(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] [GoLocalName("R")] public partial struct TestRecursive_R {
+[GoType("dyn")] [GoLocalName("R")] internal partial struct TestRecursive_R {
     public ж<TestRecursive_R> Ptr;
     public slice<ж<TestRecursive_R>> SliceP;
     public slice<TestRecursive_R> Slice;
@@ -448,7 +448,7 @@ public static void TestMutuallyRecursive(ж<testing.T> Ꮡt) {
     Check(f, nil);
 }
 
-[GoType("dyn")] [GoLocalName("Q")] public partial struct TestNonZeroSliceAndMap_Q {
+[GoType("dyn")] [GoLocalName("Q")] internal partial struct TestNonZeroSliceAndMap_Q {
     public map<nint, nint> M;
     public slice<nint> S;
 }

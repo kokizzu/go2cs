@@ -126,7 +126,7 @@ public static void TestWriter(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestWriterComment_type {
+[GoType("dyn")] internal partial struct TestWriterComment_type {
     internal @string comment;
     internal bool ok;
 }
@@ -178,7 +178,7 @@ public static void TestWriterComment(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestWriterUTF8_type {
+[GoType("dyn")] internal partial struct TestWriterUTF8_type {
     internal @string name;
     internal @string comment;
     internal bool nonUTF8;
@@ -343,7 +343,7 @@ public static void TestWriterOffset(ж<testing.T> Ꮡt) {
 internal static readonly @string fooˢ = "foo"u8;
 internal static readonly object noBytesWrittenAfterFlushˢ = (@string)"No bytes written after Flush"u8;
 
-[GoType("dyn")] partial struct TestWriterFlush_w {
+[GoType("dyn")] internal partial struct TestWriterFlush_w {
     public io_package.Writer Writer;
 }
 
@@ -487,7 +487,7 @@ public static void TestWriterCopy(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestWriterCreateRaw_files {
+[GoType("dyn")] internal partial struct TestWriterCreateRaw_files {
     internal @string name;
     internal slice<byte> content;
     internal uint16 method;

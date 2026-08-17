@@ -90,7 +90,7 @@ public static void TestWriter(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestWriterPaletted_testCases {
+[GoType("dyn")] internal partial struct TestWriterPaletted_testCases {
     internal nint plen;
     internal uint8 bitdepth;
     internal nint datalen;
@@ -248,7 +248,7 @@ public static void TestSubImage(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestWriteRGBA_testCases {
+[GoType("dyn")] internal partial struct TestWriteRGBA_testCases {
     internal @string name;
     internal image.Image img;
 }

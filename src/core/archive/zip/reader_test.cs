@@ -1201,7 +1201,7 @@ public static void TestIssue12449(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFS_type {
+[GoType("dyn")] internal partial struct TestFS_type {
     internal @string @file;
     internal slice<@string> want;
 }
@@ -1246,7 +1246,7 @@ public static void TestFS(ж<testing.T> Ꮡt) {
 internal static readonly object succeededButWantErrorˢ = (@string)"succeeded but want error"u8;
 internal static readonly object unexpectedErrorˢ = (@string)"unexpected error"u8;
 
-[GoType("dyn")] partial struct TestFSWalk_type {
+[GoType("dyn")] internal partial struct TestFSWalk_type {
     internal @string @file;
     internal slice<@string> want;
     internal bool wantErr;
@@ -1309,7 +1309,7 @@ public static void TestFSWalk(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testdataSubdirZipˢ = "testdata/subdir.zip"u8;
 
-[GoType("dyn")] partial struct TestFSModTime_type {
+[GoType("dyn")] internal partial struct TestFSModTime_type {
     internal @string name;
     internal time.Time want;
 }

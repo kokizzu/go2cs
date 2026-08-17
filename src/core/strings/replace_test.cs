@@ -541,13 +541,10 @@ public static void BenchmarkByteStringReplacerWriteString(ж<testing.B> Ꮡb) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
-
 public static void BenchmarkByteReplacerWriteString(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    @string str = Repeat(abcdefghijklmnopqrstuvwxyzˢ, 100);
+    @string str = Repeat("abcdefghijklmnopqrstuvwxyz"u8, 100);
     var buf = @new<bytes.Buffer>();
     for (nint i = 0; i < b.N; i++) {
         capitalLetters.WriteString(new strings_test_package.bytes_BufferжWriter(buf), str);

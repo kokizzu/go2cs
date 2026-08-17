@@ -19,7 +19,7 @@ using static go.mime.quotedprintable_package;
 
 partial class quotedprintable_internal_test_package {
 
-[GoType("dyn")] partial struct TestReader_tests {
+[GoType("dyn")] internal partial struct TestReader_tests {
     internal @string @in, want;
     internal any err;
 }

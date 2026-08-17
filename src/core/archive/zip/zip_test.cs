@@ -798,7 +798,7 @@ public static void TestHeaderTooShort(ж<testing.T> Ꮡt) {
     testValidHeader(Ꮡh, Ꮡt);
 }
 
-[GoType("dyn")] partial struct TestHeaderTooLongErr_type {
+[GoType("dyn")] internal partial struct TestHeaderTooLongErr_type {
     internal @string name;
     internal slice<byte> extra;
     internal error wanterr;

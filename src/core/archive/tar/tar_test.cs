@@ -113,7 +113,7 @@ internal static bool equalSparseEntries(slice<global::go.archive.tar_package.spa
     return (len(x) == 0 && len(y) == 0) || reflect.DeepEqual(x, y);
 }
 
-[GoType("dyn")] partial struct TestSparseEntries_vectors {
+[GoType("dyn")] internal partial struct TestSparseEntries_vectors {
     internal slice<global::go.archive.tar_package.sparseEntry> @in;
     internal int64 size;
     internal bool wantValid;          // Result of validateSparseEntries
@@ -605,7 +605,7 @@ public static void TestHeaderRoundTrip(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestHeaderAllowedFormats_vectors {
+[GoType("dyn")] internal partial struct TestHeaderAllowedFormats_vectors {
     internal ж<global::go.archive.tar_package.Header> header;        // Input header
     internal map<@string, @string> paxHdrs; // Expected PAX headers that may be needed
     internal global::go.archive.tar_package.Format formats;            // Expected formats that can encode the header
@@ -858,7 +858,7 @@ internal static readonly @string readerˢ = "Reader"u8;
     internal slice<byte> body;
 }
 
-[GoType("dyn")] partial struct Benchmark_vectors {
+[GoType("dyn")] internal partial struct Benchmark_vectors {
     internal @string label;
     internal slice<Benchmark_file> files;
 }

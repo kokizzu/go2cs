@@ -17,8 +17,6 @@ using static global::go.container.heap_test_package;
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
-[assembly: GoImplement<IntHeap, go.container.heap_package.Interface>(Pointer = true)]
-[assembly: GoImplement<PriorityQueue, go.container.heap_package.Interface>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -36,8 +34,5 @@ public static partial class heap_test_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial struct IntHeap {}
-    public partial struct Item {}
-    public partial struct PriorityQueue {}
     // </TypeAccessibility>
 }

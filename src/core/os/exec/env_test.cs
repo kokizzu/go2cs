@@ -9,7 +9,7 @@ using static go.os.exec_package;
 
 partial class exec_internal_test_package {
 
-[GoType("dyn")] partial struct TestDedupEnv_tests {
+[GoType("dyn")] internal partial struct TestDedupEnv_tests {
     internal bool noCase;
     internal bool nulOK;
     internal slice<@string> @in;

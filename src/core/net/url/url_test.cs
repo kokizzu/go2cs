@@ -817,7 +817,7 @@ public static void TestURLString(ж<testing.T> Ꮡt) {
 internal static readonly @string userˢ = "user"u8;
 internal static readonly @string passwordˢ = "password"u8;
 
-[GoType("dyn")] partial struct TestURLRedacted_cases {
+[GoType("dyn")] internal partial struct TestURLRedacted_cases {
     internal @string name;
     internal ж<global::go.net.url_package.URL> url;
     internal @string want;
@@ -1703,7 +1703,7 @@ public static void TestParseFailure(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestParseErrors_tests {
+[GoType("dyn")] internal partial struct TestParseErrors_tests {
     internal @string @in;
     internal bool wantErr;
 }
@@ -1957,7 +1957,7 @@ public static void TestURLErrorImplementsNetError(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestURLHostnameAndPort_tests {
+[GoType("dyn")] internal partial struct TestURLHostnameAndPort_tests {
     internal @string @in; // URL.Host field
     internal @string host;
     internal @string port;
@@ -2251,7 +2251,7 @@ public static void BenchmarkPathUnescape(ж<testing.B> Ꮡb) {
 internal static readonly @string nilˢ2 = "nil"u8;
 internal static readonly @string nonNilErrorˢ = "non-nil error"u8;
 
-[GoType("dyn")] partial struct TestJoinPath_tests {
+[GoType("dyn")] internal partial struct TestJoinPath_tests {
     internal @string @base;
     internal slice<@string> elem;
     internal @string @out;

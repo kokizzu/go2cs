@@ -30,13 +30,13 @@ internal static readonly @string durationˢ = "duration"u8;
 internal static readonly @string timeˢ2 = "time"u8;
 internal static readonly @string errorˢ = "error"u8;
 
-[GoType("dyn")] partial struct BenchmarkAttrs_type {
+[GoType("dyn")] internal partial struct BenchmarkAttrs_type {
     internal @string name;
     internal slogꓸHandler h;
     internal bool skipRace;
 }
 
-[GoType("dyn")] partial struct BenchmarkAttrs_typeᴛ1 {
+[GoType("dyn")] internal partial struct BenchmarkAttrs_typeᴛ1 {
     internal @string name;
     internal Action f;
 }

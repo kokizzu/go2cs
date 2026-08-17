@@ -563,7 +563,7 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestParseAndCompile_type {
+[GoType("dyn")] internal partial struct TestParseAndCompile_type {
     internal syntax.Flags reFlags;
     internal bool expMatch;
 }
@@ -784,13 +784,12 @@ public static void BenchmarkMatchClass_InRange(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
 internal static readonly @string cjrwˢ = "[cjrw]"u8;
 
 public static void BenchmarkReplaceAll(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    @string x = abcdefghijklmnopqrstuvwxyzˢ;
+    @string x = "abcdefghijklmnopqrstuvwxyz"u8;
     b.StopTimer();
     var re = MustCompile(cjrwˢ);
     b.StartTimer();
@@ -919,30 +918,24 @@ public static void BenchmarkNotOnePassShortB(ж<testing.B> Ꮡb) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ2 = "^abcdefghijklmnopqrstuvwxyz.*$"u8;
-
 public static void BenchmarkOnePassLongPrefix(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
-    var re = MustCompile(abcdefghijklmnopqrstuvwxyzˢ2);
+    var re = MustCompile("^abcdefghijklmnopqrstuvwxyz.*$"u8);
     b.StartTimer();
     for (nint i = 0; i < b.N; i++) {
         re.Match(x);
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string bcdefghijklmnopqrstuvwxyzˢ = "^.bcdefghijklmnopqrstuvwxyz.*$"u8;
-
 public static void BenchmarkOnePassLongNotPrefix(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
-    var re = MustCompile(bcdefghijklmnopqrstuvwxyzˢ);
+    var re = MustCompile("^.bcdefghijklmnopqrstuvwxyz.*$"u8);
     b.StartTimer();
     for (nint i = 0; i < b.N; i++) {
         re.Match(x);
@@ -1005,7 +998,7 @@ public static void BenchmarkQuoteMetaAll(ж<testing.B> Ꮡb) {
 public static void BenchmarkQuoteMetaNone(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    @string s = abcdefghijklmnopqrstuvwxyzˢ;
+    @string s = "abcdefghijklmnopqrstuvwxyz"u8;
     b.SetBytes((int64)len(s));
     b.ResetTimer();
     for (nint i = 0; i < b.N; i++) {

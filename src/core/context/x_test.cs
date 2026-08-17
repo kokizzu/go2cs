@@ -1128,13 +1128,10 @@ public static void TestWithoutCancel(ж<testing.T> Ꮡt) {
     return c.donec;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string testCustomContextPropagationˢ = "TestCustomContextPropagation"u8;
-
 public static void TestCustomContextPropagation(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        var cause = errors.New(testCustomContextPropagationˢ);
+        var cause = errors.New("TestCustomContextPropagation"u8);
         var donec = new channel<EmptyStruct>(0);
         var (ctx1, cancel1) = WithCancelCause(Background());
         var ctx2 = Ꮡ(new customDoneContext(
@@ -1265,12 +1262,12 @@ public static void TestCustomContextCause(ж<testing.T> Ꮡt) {
     }
     {
         var got = ccc.Err(); if (got != default!) {
-            Ꮡt.Errorf("after CancelCauseFunc ccc.Err() = %v, want %v"u8, got, default!);
+            Ꮡt.Errorf("after CancelCauseFunc ccc.Err() = %v, want %v"u8, got, (any)(default!));
         }
     }
     {
         var got = Cause(new context_test_package.customCauseContextжContext(ccc)); if (got != default!) {
-            Ꮡt.Errorf("after CancelCauseFunc Cause(ccc) = %v, want %v"u8, got, default!);
+            Ꮡt.Errorf("after CancelCauseFunc Cause(ccc) = %v, want %v"u8, got, (any)(default!));
         }
     }
     // Test that if we now cancel the parent custom context,

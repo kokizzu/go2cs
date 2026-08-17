@@ -15,7 +15,7 @@ partial class mime_internal_test_package {
 internal static readonly @string c3A9ˢ = "=C3=A9"u8;
 internal static readonly @string gICAˢ = "gICA"u8;
 
-[GoType("dyn")] partial struct TestEncodeWord_tests {
+[GoType("dyn")] internal partial struct TestEncodeWord_tests {
     internal global::go.mime_package.WordEncoder enc;
     internal @string charset;
     internal @string src, exp;
@@ -51,7 +51,7 @@ public static void TestEncodeWord(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestEncodedWordLength_tests {
+[GoType("dyn")] internal partial struct TestEncodedWordLength_tests {
     internal global::go.mime_package.WordEncoder enc;
     internal @string src;
 }
@@ -82,7 +82,7 @@ public static void TestEncodedWordLength(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestDecodeWord_tests {
+[GoType("dyn")] internal partial struct TestDecodeWord_tests {
     internal @string src, exp;
     internal bool hasErr;
 }
@@ -120,7 +120,7 @@ public static void TestDecodeWord(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestDecodeHeader_tests {
+[GoType("dyn")] internal partial struct TestDecodeHeader_tests {
     internal @string src, exp;
 }
 
@@ -168,7 +168,7 @@ public static void TestDecodeHeader(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestCharsetDecoder_tests {
+[GoType("dyn")] internal partial struct TestCharsetDecoder_tests {
     internal @string src;
     internal @string want;
     internal slice<@string> charsets;

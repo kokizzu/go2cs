@@ -11,7 +11,7 @@ using static go.archive.tar_package;
 
 partial class tar_internal_test_package {
 
-[GoType("dyn")] partial struct TestFitsInBase256_vectors {
+[GoType("dyn")] internal partial struct TestFitsInBase256_vectors {
     internal int64 @in;
     internal nint width;
     internal bool ok;
@@ -43,7 +43,7 @@ public static void TestFitsInBase256(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestParseNumeric_vectors {
+[GoType("dyn")] internal partial struct TestParseNumeric_vectors {
     internal @string @in;
     internal int64 want;
     internal bool ok;
@@ -105,7 +105,7 @@ public static void TestParseNumeric(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFormatNumeric_vectors {
+[GoType("dyn")] internal partial struct TestFormatNumeric_vectors {
     internal int64 @in;
     internal @string want;
     internal bool ok;
@@ -175,7 +175,7 @@ public static void TestFormatNumeric(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFitsInOctal_vectors {
+[GoType("dyn")] internal partial struct TestFitsInOctal_vectors {
     internal int64 input;
     internal nint width;
     internal bool ok;
@@ -215,7 +215,7 @@ public static void TestFitsInOctal(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestParsePAXTime_vectors {
+[GoType("dyn")] internal partial struct TestParsePAXTime_vectors {
     internal @string @in;
     internal time.Time want;
     internal bool ok;
@@ -299,7 +299,7 @@ public static void TestParsePAXTime(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFormatPAXTime_vectors {
+[GoType("dyn")] internal partial struct TestFormatPAXTime_vectors {
     internal int64 sec, nsec;
     internal @string want;
 }
@@ -345,7 +345,7 @@ public static void TestFormatPAXTime(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestParsePAXRecord_vectors {
+[GoType("dyn")] internal partial struct TestParsePAXRecord_vectors {
     internal @string @in;
     internal @string wantRes;
     internal @string wantKey;
@@ -404,7 +404,7 @@ public static void TestParsePAXRecord(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFormatPAXRecord_vectors {
+[GoType("dyn")] internal partial struct TestFormatPAXRecord_vectors {
     internal @string inKey;
     internal @string inVal;
     internal @string want;

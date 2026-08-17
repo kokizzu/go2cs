@@ -80,7 +80,7 @@ public static void TestRemotePackage(ж<testing.T> Ꮡt) {
     assertString(Ꮡt, fmt.Sprintf("receiver of %q"u8, s2.Name), s2.ReceiverName(), ""u8);
 }
 
-[GoType("dyn")] partial struct TestIssue29551_tests {
+[GoType("dyn")] internal partial struct TestIssue29551_tests {
     internal global::go.debug.gosym_package.Sym sym;
     internal @string pkgName;
 }

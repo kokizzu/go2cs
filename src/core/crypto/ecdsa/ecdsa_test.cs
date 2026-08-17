@@ -29,7 +29,7 @@ using static go.crypto.ecdsa_package;
 
 partial class ecdsa_internal_test_package {
 
-[GoType("dyn")] partial struct testAllCurves_tests {
+[GoType("dyn")] internal partial struct testAllCurves_tests {
     internal @string name;
     internal elliptic.Curve curve;
 }
@@ -572,7 +572,7 @@ internal static error randomPointForCurve(elliptic.Curve curve, io.Reader rand) 
 
 }
 
-[GoType("dyn")] partial struct benchmarkAllCurves_tests {
+[GoType("dyn")] internal partial struct benchmarkAllCurves_tests {
     internal @string name;
     internal elliptic.Curve curve;
 }

@@ -683,7 +683,7 @@ internal static void testHash(ж<testing.T> Ꮡt, @string name, @string @in, @st
     }
 }
 
-[GoType("dyn")] partial struct TestGolden_tests {
+[GoType("dyn")] internal partial struct TestGolden_tests {
     internal @string name;
     internal Func<slice<byte>, slice<byte>> oneShotHash;
     internal hash.Hash digest;
@@ -737,7 +737,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestGoldenMarshal_tests {
+[GoType("dyn")] internal partial struct TestGoldenMarshal_tests {
     internal @string name;
     internal Func<hash.Hash> newHash;
     internal slice<sha512Test> golden;

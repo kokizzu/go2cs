@@ -601,8 +601,6 @@ public static void TestRawPart(ж<testing.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testdataNestedMimeˢ = "testdata/nested-mime"u8;
-internal static readonly @string e89a8ff1c1e83553e304be640612ˢ = "e89a8ff1c1e83553e304be640612"u8;
-internal static readonly @string e89a8ff1c1e83553e004be640610ˢ = "e89a8ff1c1e83553e004be640610"u8;
 
 // Test parsing an image attachment from gmail, which previously failed.
 public static void TestNested(ж<testing.T> Ꮡt) {
@@ -616,13 +614,13 @@ public static void TestNested(ж<testing.T> Ꮡt) {
         }
         var fʗ1 = f;
         defer(() => fʗ1.Close(), ref ᒐ);
-        var mr = NewReader(new multipart_test_package.os_FileжReader(f), e89a8ff1c1e83553e304be640612ˢ);
+        var mr = NewReader(new multipart_test_package.os_FileжReader(f), "e89a8ff1c1e83553e304be640612"u8);
         (var p, err) = mr.NextPart();
         if (err != default!) {
             Ꮡt.Fatalf("error reading first section (alternative): %v"u8, err);
         }
         // Read the inner text/plain and text/html sections of the multipart/alternative.
-        var mr2 = NewReader(new global::go.mime.multipart_package.PartжReader(p), e89a8ff1c1e83553e004be640610ˢ);
+        var mr2 = NewReader(new global::go.mime.multipart_package.PartжReader(p), "e89a8ff1c1e83553e004be640610"u8);
         (p, err) = mr2.NextPart();
         if (err != default!) {
             Ꮡt.Fatalf("reading text/plain part: %v"u8, err);

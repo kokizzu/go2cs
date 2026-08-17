@@ -140,7 +140,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestGoldenMarshal_tests {
+[GoType("dyn")] internal partial struct TestGoldenMarshal_tests {
     internal @string name;
     internal Func<hash.Hash> newHash;
     internal slice<sha256Test> gold;

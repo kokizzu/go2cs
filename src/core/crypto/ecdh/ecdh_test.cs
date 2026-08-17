@@ -214,13 +214,12 @@ public static void TestString(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800ˢ = "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"u8;
 private static readonly @string identityPointˢ = "identity point"u8;
 private static readonly @string lowOrderPointˢ = "low order point"u8;
 
 public static void TestX25519Failure(ж<testing.T> Ꮡt) {
     var identity = hexDecode(Ꮡt, "0000000000000000000000000000000000000000000000000000000000000000"u8);
-    var lowOrderPoint = hexDecode(Ꮡt, e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800ˢ);
+    var lowOrderPoint = hexDecode(Ꮡt, "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"u8);
     var randomScalar = new slice<byte>(32);
     rand.Read(randomScalar);
     var identityʗ1 = identity;

@@ -9,7 +9,7 @@ using static go.os.exec_package;
 
 partial class exec_internal_test_package {
 
-[GoType("dyn")] partial struct TestPrefixSuffixSaver_tests {
+[GoType("dyn")] internal partial struct TestPrefixSuffixSaver_tests {
     public nint N;
     internal slice<@string> writes;
     internal @string want;
@@ -53,7 +53,7 @@ public static void TestPrefixSuffixSaver(ж<testing.T> Ꮡt) {
         foreach (var (_, s) in tt.writes) {
             var (n, err) = io.WriteString(new global::go.os.exec_package.prefixSuffixSaverжWriter(w), s);
             if (err != default! || n != len(s)) {
-                Ꮡt.Errorf("%d. WriteString(%q) = %v, %v; want %v, %v"u8, i, s, n, err, len(s), default!);
+                Ꮡt.Errorf("%d. WriteString(%q) = %v, %v; want %v, %v"u8, i, s, n, err, len(s), (any)(default!));
             }
         }
         {

@@ -305,7 +305,7 @@ public static void TestScan(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestStripCR_type {
+[GoType("dyn")] internal partial struct TestStripCR_type {
     internal @string have, want;
 }
 
@@ -605,7 +605,6 @@ internal static slice<segment> invalidSegments = new segment[]{
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string dirˢ = "dir"u8;
-internal static readonly @string testInvalidLineDirectivesˢ = "TestInvalidLineDirectives"u8;
 
 // Verify that invalid line directives get the correct error message.
 public static void TestInvalidLineDirectives(ж<testing.T> Ꮡt) {
@@ -617,7 +616,7 @@ public static void TestInvalidLineDirectives(ж<testing.T> Ꮡt) {
     // verify scan
     global::go.go.scanner_package.Scanner S = default!;
     ref var s = ref heap(new segment(), out var Ꮡs);               // current segment
-    var @file = fset.AddFile(filepath.Join(dirˢ, testInvalidLineDirectivesˢ), fset.Base(), len(src));
+    var @file = fset.AddFile(filepath.Join(dirˢ, "TestInvalidLineDirectives"), fset.Base(), len(src));
     S.Init(@file, slice<byte>(src), (tokenꓸPosition pos, @string msg) => {
         if (msg != Ꮡs.Value.filename) {
             Ꮡt.Errorf("got error %q; want %q"u8, msg, Ꮡs.Value.filename);
@@ -945,7 +944,7 @@ public static void BenchmarkScanFiles(ж<testing.B> Ꮡb) {
     }
 }
 
-[GoType("dyn")] partial struct TestNumbers_type {
+[GoType("dyn")] internal partial struct TestNumbers_type {
     internal token.Token tok;
     internal @string src, tokens, err;
 }

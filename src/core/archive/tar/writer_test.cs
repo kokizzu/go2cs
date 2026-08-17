@@ -83,7 +83,7 @@ internal static readonly @string longnameˢ = "longname/"u8;
     internal error wantErr;
 }
 
-[GoType("dyn")] partial struct TestWriter_vectors {
+[GoType("dyn")] internal partial struct TestWriter_vectors {
     internal @string @file; // Optional filename of expected output
     internal slice<TestWriter_testFnc> tests;
 }
@@ -1034,7 +1034,7 @@ public static void TestWriterErrors(ж<testing.T> Ꮡt) {
     });
 }
 
-[GoType("dyn")] partial struct TestSplitUSTARPath_vectors {
+[GoType("dyn")] internal partial struct TestSplitUSTARPath_vectors {
     internal @string input; // Input path
     internal @string prefix; // Expected output prefix
     internal @string suffix; // Expected output suffix
@@ -1119,7 +1119,7 @@ public static void TestIssue12594(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestWriteLongHeader_type {
+[GoType("dyn")] internal partial struct TestWriteLongHeader_type {
     internal @string name;
     internal ж<global::go.archive.tar_package.Header> h;
 }
@@ -1198,7 +1198,7 @@ internal static (nint, error) Write(this testNonEmptyWriter w, slice<byte> b) {
     internal int64 size;
 }
 
-[GoType("dyn")] partial struct TestFileWriter_vectors {
+[GoType("dyn")] internal partial struct TestFileWriter_vectors {
     internal TestFileWriter_fileMaker maker;
     internal slice<TestFileWriter_testFnc> tests;
 }

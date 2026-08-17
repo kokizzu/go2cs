@@ -224,19 +224,15 @@ public static void TestVerifyPKCS1v15(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string fjOVdirUzFoLlukv80dBllMLjXythIf22feqPrNo0YoIjzyzyoMFiLjAcˢ = "fjOVdirUzFoLlukv80dBllMLjXythIf22feqPrNo0YoIjzyzyoMFiLjAc/Y4krkeZ11XFThIrEvw\nkRiZcCq5ng=="u8;
 internal static readonly object rsaDecryptedAMessageThatˢ = (@string)"RSA decrypted a message that was too long."u8;
 
 public static void TestOverlongMessagePKCS1v15(ж<testing.T> Ꮡt) {
-    var ciphertext = decodeBase64(fjOVdirUzFoLlukv80dBllMLjXythIf22feqPrNo0YoIjzyzyoMFiLjAcˢ);
+    var ciphertext = decodeBase64("fjOVdirUzFoLlukv80dBllMLjXythIf22feqPrNo0YoIjzyzyoMFiLjAc/Y4krkeZ11XFThIrEvw\nkRiZcCq5ng=="u8);
     var (_, err) = DecryptPKCS1v15(default!, rsaPrivateKey, ciphertext);
     if (err == default!) {
         Ꮡt.Error(rsaDecryptedAMessageThatˢ);
     }
 }
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string pX4DR8azytjdQ1rtUiC040FjkepuQut5q2ZFX1pTjBrOVKNjgsCDyiJDGZTCNoh9qpXYbhl7iEym30BWWwuiZgˢ = "pX4DR8azytjdQ1rtUiC040FjkepuQut5q2ZFX1pTjBrOVKNjgsCDyiJDGZTCNoh9qpXYbhl7iEym30BWWwuiZg=="u8;
 
 public static void TestUnpaddedSignature(ж<testing.T> Ꮡt) {
     var msg = slice<byte>("Thu Dec 19 18:06:16 EST 2013\n"u8);
@@ -246,7 +242,7 @@ public static void TestUnpaddedSignature(ж<testing.T> Ꮡt) {
     //
     // Where "key" contains the RSA private key given at the bottom of this
     // file.
-    var expectedSig = decodeBase64(pX4DR8azytjdQ1rtUiC040FjkepuQut5q2ZFX1pTjBrOVKNjgsCDyiJDGZTCNoh9qpXYbhl7iEym30BWWwuiZgˢ);
+    var expectedSig = decodeBase64("pX4DR8azytjdQ1rtUiC040FjkepuQut5q2ZFX1pTjBrOVKNjgsCDyiJDGZTCNoh9qpXYbhl7iEym30BWWwuiZg=="u8);
     var (sig, err) = SignPKCS1v15(default!, rsaPrivateKey, ((crypto.Hash)0), msg);
     if (err != default!) {
         Ꮡt.Fatalf("SignPKCS1v15 failed: %s"u8, err);

@@ -769,7 +769,7 @@ public static void TestGray8Transparent(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object skippingTestsWhichˢ = (@string)"skipping tests which allocate large pixel buffers"u8;
 
-[GoType("dyn")] partial struct TestDimensionOverflow_testCases {
+[GoType("dyn")] internal partial struct TestDimensionOverflow_testCases {
     internal slice<byte> src;
     internal bool unsupportedConfig;
     internal nint width;

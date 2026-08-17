@@ -332,7 +332,7 @@ public static void BenchmarkMarshal(ж<testing.B> Ꮡb) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object unmarshalReturnedExtraˢ = (@string)"Unmarshal returned extra garbage"u8;
 
-[GoType("dyn")] partial struct TestSetEncoder_testStruct {
+[GoType("dyn")] internal partial struct TestSetEncoder_testStruct {
     [GoTag(@"asn1:""set""")]
     public slice<@string> Strings;
 }
