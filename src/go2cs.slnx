@@ -500,6 +500,7 @@
     <Project Path="tests/Behavioral/InvalidRuneString/InvalidRuneString.csproj" />
     <Project Path="tests/Behavioral/IoLike/IoLike.csproj" />
     <Project Path="tests/Behavioral/IoLike/FsLike/IoLike.FsLike.csproj" />
+    <Project Path="tests/Behavioral/IpAdapterAddresses/IpAdapterAddresses.csproj" />
     <Project Path="tests/Behavioral/IotaEnum/IotaEnum.csproj" />
     <Project Path="tests/Behavioral/ItabLateRegistration/ItabLateRegistration.csproj" />
     <Project Path="tests/Behavioral/ItabLateRegistration/lib/ItabLateRegistration.lib.csproj" />

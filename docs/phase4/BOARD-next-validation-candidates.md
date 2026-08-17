@@ -7312,7 +7312,7 @@ is a SECOND package holding the same class, and its own census is:
 | Wrapper | Non-blittable struct | Reached by |
 |:--|:--|:--|
 | `NetShareAdd` | `SHARE_INFO_2` (`Netname`, `Remark`, `Path`, `Passwd`) | **`os`'s `TestNetworkSymbolicLink` — the only caller in all of GOROOT**; fatal on a capable host |
-| `GetAdaptersAddresses` | `IpAdapterAddresses` (nine `ж<T>`, `array<byte> PhysicalAddress`, `array<uint32> ZoneIndices`) | `net.Interfaces` |
+| ~~`GetAdaptersAddresses`~~ | `IpAdapterAddresses` (nine `ж<T>`, `array<byte> PhysicalAddress`, `array<uint32> ZoneIndices`) | **ROW WITHDRAWN 2026-08-17 — it was never a member of this census.** The wrapper is handed a byte BUFFER and fills it, which is what a byte buffer is for; it is correct and stays auto-converted. The defect is entirely in the CALLER, `net.adapterAddresses`, which reinterprets the filled buffer as the record — the `readReparseLink` / `dir_windows_impl` fork, not the mirror-the-wrapper one. Fixed in the `net` interfaces arc; see the entry at the end of this file |
 | `Module32First` / `Module32Next` | `ModuleEntry32` (`array<uint16> Module`, `array<uint16> ExePath`) | `syscall`'s own suite |
 | `GetFileInformationByHandleEx` | `FILE_ID_BOTH_DIR_INFO` / `FILE_FULL_DIR_INFO` (`array<uint16>` names) | `os`'s `readdir` — **already answered**, and it is the worked precedent: `src/core/os/windows/dir_windows_impl.cs` reads the kernel's buffer at NATIVE offsets instead of reinterpreting it as the managed surrogate |
 | `WSASendMsg` / `WSARecvMsg` | `WSAMsg` (`ж<syscall.WSABuf>`) | `net`'s UDP OOB path |
@@ -10447,5 +10447,119 @@ full CNR and the `go2cs-stdlib.slnx` windows build recorded with the commit.
 
 Still builds-and-partly-runs for `crypto/x509`: no roster row, no proof page, no disclosures,
 converted test sources NOT committed — the package cannot yet produce a verdict to commit.
+
+## ✅ WINDOWS NAME RESOLUTION WORKS — `net.adapterAddresses` transcribes the adapter chain, and the wall the tls-endgame lane found was never a wrapper defect (2026-08-17, lane `claude/net-interfaces`)
+
+The tls-endgame entry above ended by naming `net.adapterAddresses` as "what stands between the
+corpus and any name resolution at all on Windows", and filed it under the syscall struct-passing
+class with `GetAdaptersAddresses` as the censused wrapper. **The wall is down, and the filing was
+wrong — that correction is the most transferable thing here.**
+
+### The row is WITHDRAWN, not marked fixed
+
+`internal/syscall/windows`'s `GetAdaptersAddresses` is handed a byte BUFFER and fills it, which is
+exactly what a byte buffer is for. The wrapper is correct, it stays auto-converted, and hand-owning
+it would have fixed nothing. The defect was entirely in the CALLER — `net`'s own
+`adapterAddresses`, which walks the filled buffer AS the record:
+
+```
+for aa := (*windows.IpAdapterAddresses)(unsafe.Pointer(&b[0])); aa != nil; aa = aa.Next
+```
+
+`IpAdapterAddresses` is the corpus's most reference-dense converted struct (nine `ж<T>`, an
+`array<byte>` `PhysicalAddress`, an `array<uint32>` `ZoneIndices`) where the native record has raw
+pointers and inline storage, so golib rightly declines to alias the byte run as it, the reinterpret
+falls to a native-address box, and the loop's OWN nil test fabricates a managed reference out of
+adapter bytes — `ACCESS_VIOLATION` in `ж<IpAdapterAddresses>.op_Equality`. So this belongs to the
+**`readReparseLink` / `dir_windows_impl` fork** (a byte buffer the kernel filled, reinterpreted by
+its consumer), not the mirror-the-wrapper one. The row is struck from the
+`internal/syscall/windows` census above and from that package's own hand-own table, which had
+asserted it was "repairable by the ORDINARY mirror remedy, because each receives the struct as a
+typed pointer rather than through a byte reinterpret" — precisely backwards for this member.
+
+**The lesson for the rows that remain: which struct is non-blittable does not tell you where the
+repair goes. Who OWNS the memory it is read out of does.**
+
+### The remedy, and three properties that generalize
+
+`core/net/windows/interface_windows_impl.cs` holds the buffer in NATIVE memory that never escapes
+the function, transcribes the whole chain into managed boxes, and frees it eagerly in a `finally`.
+
+1. **The output is a chain OF CHAINS.** Each adapter record carries six nested linked lists
+   (unicast, anycast, multicast, DNS-server, prefix, WINS-server and gateway — five sharing one
+   native shape), and every consumer reaches THROUGH a record into them, so a top-level copy would
+   have moved the fabrication one hop out rather than removing it.
+2. **Whether a managed pointer needs a `ManagedPointerTokens` handoff is decided by the GO
+   DECLARATION, not by the data.** `AddrinfoW.Addr` is an untyped `syscall.Pointer` the consumer
+   casts by hand, so it needs a token; `SocketAddress.Sockaddr` is a TYPED `*syscall.RawSockaddrAny`
+   that converts to a field carrying a managed box directly — no `unsafe.Pointer` round trip to
+   survive, so no token, no weak table, no anchor. Reaching for that machinery here would have been
+   ceremony, and the brief for this lane expected it.
+3. **The transcription writes the image an EXISTING hand-own reads.** Consumers call `.Sockaddr()`,
+   which is `syscall`'s hand-owned decode; it flattens the managed `RawSockaddrAny` back to its
+   116-byte native image, so this is the same inverse-flattening `GetAcceptExSockaddrs` performs
+   (Family at 0, `Addr.Data` 2..15, `Pad` 16..115).
+
+The copy is FAITHFUL rather than minimal: `Length`, `AdapterName`, `DnsSuffix`, `Description`,
+`Flags`, `ZoneIndices`, `FirstPrefix`, the link speeds and the WINS list are carried although no
+consumer reads them today, because this record is the public shape behind `net.Interfaces` and a
+declared field left nil is a SILENT divergence for the next consumer rather than a loud one.
+
+### The payoff, measured
+
+A probe run under Go and under the converted corpus, output byte-identical:
+
+```
+LookupIP(localhost) err: <nil> count>0: true
+LookupHost(localhost) err: <nil> count>0: true
+LookupPort(tcp,https): 443 <nil>
+LookupHost(dns.google) err: <nil> count>0: true
+Dial(dns.google:443): connected
+```
+
+The last two lines are the result: a LIVE DNS resolution through the server list `dnsReadConfig`
+builds from `adapterAddresses`, then a TCP connection to the resolved address. It is deliberately
+NOT promoted to a behavioral guard — it needs a network and an external host — so the suite keeps
+the network-free `IpAdapterAddresses` guard instead and this stays a recorded probe.
+
+`crypto/tls`'s `TestVerifyHostname` was NOT re-measured this lane; the probe answers the same
+question more directly and an hour-plus census was not spent to restate it. Its verdict stays open.
+
+### `net`'s FIRST pipeline census — it runs, and it does not bank
+
+`go2cs -tests -test-action all -test-timeout 60m` over `net` (57 Windows-eligible `_test.go` files).
+The suite CONVERTS and COMPILES, and the host RUNS — where before this arc anything reaching
+`adapterAddresses` killed the process.
+
+| Measure | Value |
+|---|---|
+| Go on this host | 474 verdicts, **695.6 s**, FAIL (network-dependent) |
+| converted host | **25 verdicts**, then killed at the 61-minute safety net |
+| matched / excluded / errors | 1 / 53 (benchmarks) / **461** |
+
+Every one of the 461 "errors" is `Go="pass" C#=""` — a test the host never REACHED, not a conversion
+failure. The 25 it did reach ran `TestAcceptError` → `TestClosingListener`, with `TestAddrList`,
+`TestAddrListPartition`, `TestCancelAfterDial`, `TestCloseError` and the accept-path tests passing.
+**So the root is a severe SLOWDOWN, not a correctness wall**, and `net` needs a poller/performance
+arc before its census is even measurable. ⚠ This is exactly the mass-empty shape that reads like
+total conversion failure; the 25 real verdicts are what prove it is not one.
+
+### Gates
+
+Converter `go test ./...` ok (216.8 s) · full CNR **byte-identical across 620 behavioral packages**,
+nothing NOT MEASURED · seeded full reconvert **304/304**, and the overlay is **0 content differences
+/ 0 file-set differences** with the marker gate at **61 marked files, 0 clobber violations** (18
+`.cs.auto` emitted) — so the hand-own is stable under regeneration, including its L3 routing into
+`net/windows/` and the `AllowUnsafeBlocks` flip its `[module: GoRequiresUnsafe]` causes · full
+behavioral suite **593/593** across all four phases, 567 output comparisons, 0 failures (3,077.4 s) ·
+solution integrity ok (622 projects). The guard is proven failing-first: with the auto body restored
+it reports `exit code mismatch: C# -1073741819 vs Go 0`, the access violation itself.
+
+⚠ Two process traps paid for here, both already in CLAUDE.md and both re-encountered: PowerShell's
+`Start-Process -ArgumentList` ARRAY form does not quote a path containing a space, so the first
+pipeline launch died with `Failed to access input file path "C:\Program"` — which reads exactly like
+a missing GOROOT and is not (use the single-string form with embedded quotes); and an
+`until ! powershell -Command "exit (…)"` wait-loop reported a still-running `go test` as finished,
+the documented `exit $true` trap, caught only against a positive process count.
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

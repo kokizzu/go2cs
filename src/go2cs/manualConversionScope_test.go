@@ -186,6 +186,11 @@ func TestWindowsOnlyEntriesAreScopedToWindows(t *testing.T) {
 		"syscall": {"GetTimeZoneInformation", "findFirstFile1", "findNextFile1", "Process32First", "Process32Next",
 			"GetAddrInfoW", "FreeAddrInfoW"},
 		"os": {"readReparseLink"},
+		// net's Windows interface enumeration. interface_windows.go is the only file in net that
+		// declares adapterAddresses — every other platform reaches interfaceTable by a completely
+		// different route (route sockets on BSD, netlink on Linux) — so an unscoped entry is inert
+		// today and a trap the moment one of those grows a same-named helper.
+		"net": {"adapterAddresses"},
 	}
 
 	for pkgPath, names := range windowsOnly {

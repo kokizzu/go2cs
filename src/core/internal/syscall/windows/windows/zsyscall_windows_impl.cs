@@ -53,7 +53,7 @@
 // 683. Failing by name converts that whole-suite process death into ONE loud row. It is a real
 // mismatch rather than a skip, and that is the honest report: Go passes this test and go2cs cannot.
 //
-// THE BOUNDARY OF THE LIMIT, so it is readable in place. `internal/syscall/windows` holds six more
+// THE BOUNDARY OF THE LIMIT, so it is readable in place. `internal/syscall/windows` holds four more
 // wrappers of the same shape. None is hand-owned here — the board's standing rule is to fix a
 // censused wrapper when a suite reaches it, not speculatively — and each is repairable by the
 // ORDINARY mirror remedy, because each receives the struct as a typed pointer rather than through a
@@ -62,13 +62,21 @@
 //   | Wrapper                          | Non-blittable struct                                   | Reached by                                    |
 //   |----------------------------------|--------------------------------------------------------|-----------------------------------------------|
 //   | NetShareAdd (THIS FILE)          | SHARE_INFO_2 (Netname, Remark, Path, Passwd)             | os's TestNetworkSymbolicLink — the only caller |
-//   | GetAdaptersAddresses             | IpAdapterAddresses (nine ж<T>, array<byte>, array<uint32>)| net.Interfaces                                |
 //   | Module32First / Module32Next     | ModuleEntry32 (array<uint16> Module, ExePath)            | syscall's own suite                            |
 //   | GetFileInformationByHandleEx     | FILE_ID_BOTH_DIR_INFO / FILE_FULL_DIR_INFO               | os's readdir — ALREADY ANSWERED, and the worked |
 //   |                                  | (array<uint16> names)                                    | precedent: os/windows/dir_windows_impl.cs reads |
 //   |                                  |                                                          | the kernel buffer at NATIVE offsets            |
 //   | WSASendMsg / WSARecvMsg          | WSAMsg (ж<syscall.WSABuf>)                               | net's UDP OOB path                             |
 //   | NetUserGetLocalGroups            | ж<ж<byte>> out-buffer                                    | os/user                                        |
+//
+// ⚠ GetAdaptersAddresses used to head that list and was WITHDRAWN from it on 2026-08-17: it never
+// belonged. It takes a byte BUFFER (`(*IpAdapterAddresses)(unsafe.Pointer(&b[0]))`) and fills it,
+// which is what a byte buffer is for, so the wrapper is correct and stays auto-converted. The defect
+// was entirely in the CALLER — net.adapterAddresses walking that buffer AS the record — and it takes
+// the readReparseLink / dir_windows_impl fork instead: net/windows/interface_windows_impl.cs holds
+// the buffer in native memory and transcribes the whole chain. The lesson for the rows that remain is
+// that "which struct is non-blittable" does not by itself say where the repair goes; who OWNS the
+// memory the struct is read out of does.
 //
 // Whichever remedy eventually lands for this one, verify at VALUE level as the class demands: the
 // probe above is the oracle — the share must actually be created and NetShareDel must remove it.

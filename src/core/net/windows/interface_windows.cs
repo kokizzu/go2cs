@@ -11,40 +11,9 @@ using @internal.syscall;
 
 partial class net_package {
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string getadaptersaddressesˢ = "getadaptersaddresses"u8;
+// go2cs generated this placeholder — func adapterAddresses is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// adapterAddresses returns a list of IP adapter and address
-// structures. The structure contains an IP adapter and flattened
-// multiple IP addresses including unicast, anycast and multicast
-// addresses.
-internal static (slice<ж<windows.IpAdapterAddresses>>, error) adapterAddresses() {
-    slice<byte> b = default!;
-    ref var l = ref heap<uint32>(out var Ꮡl);
-    l = (uint32)15000; // recommended initial size
-    while (ᐧ) {
-        b = new slice<byte>((nint)(l));
-        const uint32 flags = /* windows.GAA_FLAG_INCLUDE_PREFIX | windows.GAA_FLAG_INCLUDE_GATEWAYS */ 144;
-        var err = windows.GetAdaptersAddresses(syscall.AF_UNSPEC, flags, 0, Ꮡ(b, 0).Reinterpret<byte, windows.IpAdapterAddresses>(), Ꮡl);
-        if (err == default!) {
-            if (l == 0) {
-                return (default!, default!);
-            }
-            break;
-        }
-        if (err._<syscall.Errno>() != syscall.ERROR_BUFFER_OVERFLOW) {
-            return (default!, os.NewSyscallError(getadaptersaddressesˢ, err));
-        }
-        if (l <= (uint32)len(b)) {
-            return (default!, os.NewSyscallError(getadaptersaddressesˢ, err));
-        }
-    }
-    slice<ж<windows.IpAdapterAddresses>> aas = default!;
-    for (var aa = Ꮡ(b, 0).Reinterpret<byte, windows.IpAdapterAddresses>(); aa != nil; aa = aa.Value.Next) {
-        aas = append(aas, aa);
-    }
-    return (aas, default!);
-}
+// recommended initial size
 
 // If the ifindex is zero, interfaceTable returns mappings of all
 // network interfaces. Otherwise it returns a mapping of a specific

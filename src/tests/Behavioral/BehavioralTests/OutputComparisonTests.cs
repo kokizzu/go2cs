@@ -689,6 +689,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckIotaEnum() => CheckTarget("IotaEnum");
 
     [TestMethod]
+    public void CheckIpAdapterAddresses() => CheckTarget("IpAdapterAddresses");
+
+    [TestMethod]
     public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
 
     [TestMethod]

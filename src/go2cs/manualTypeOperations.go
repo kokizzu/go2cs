@@ -541,6 +541,39 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"File.readdir":    goosWindowsDarwin,
 		"readReparseLink": goosWindows,
 	},
+	// net.adapterAddresses is the SAME fork as os.readdir/readReparseLink above, at the biggest
+	// record in the corpus — and it is the single producer behind every Windows interface and
+	// DNS-configuration answer net can give (interfaceTable, interfaceAddrTable,
+	// interfaceMulticastAddrTable, and dnsReadConfig, which is getSystemDNSConfig's ONLY source of
+	// DNS servers on Windows). Go fills a []byte with GetAdaptersAddresses and then walks it as a
+	// linked record: `(*windows.IpAdapterAddresses)(unsafe.Pointer(&b[0]))`. The CALL is legitimate;
+	// the WALK is not. IpAdapterAddresses carries nine `ж<T>` fields, an `array<byte>` and an
+	// `array<uint32>` where the native record has raw pointers and inline storage, so golib
+	// correctly refuses to alias the byte run as that struct and the reinterpret falls to a
+	// native-address box — after which the loop's own nil test fabricates a managed reference out of
+	// adapter bytes and the PROCESS dies (ACCESS_VIOLATION in ж<IpAdapterAddresses>.op_Equality,
+	// measured from crypto/tls's TestVerifyHostname through dnsReadConfig). It is what stood between
+	// the corpus and any name resolution at all on Windows, one layer behind the GetAddrInfoW fix.
+	//
+	// The remedy is ADDRINFOW's, one structure size up: net/windows/interface_windows_impl.cs holds
+	// the buffer in NATIVE memory that never escapes the function and transcribes the whole chain —
+	// including each record's SIX nested lists and every sockaddr — into managed boxes, freeing the
+	// native buffer eagerly. Its sockaddrs need no ManagedPointerTokens (unlike ADDRINFOW's) because
+	// Go declares that field as a TYPED `*syscall.RawSockaddrAny`, so there is no unsafe.Pointer
+	// round trip to survive — the consumers' `.Sockaddr()` is syscall's own hand-owned decode, and
+	// the transcription writes the managed image that decode reads.
+	//
+	// ONLY adapterAddresses is hand-owned: its three interface_windows.go siblings and
+	// dnsconfig_windows.go's dnsReadConfig read the managed records it returns and convert
+	// faithfully. The generated windows.GetAdaptersAddresses wrapper is left auto too — it is
+	// CORRECT for the native-address box the hand-own hands it, so hand-owning it would have fixed
+	// nothing and frozen a faithful conversion for no gain.
+	//
+	// Declared only in net's interface_windows.go, so the entry is inert elsewhere; scoped anyway so
+	// a same-named unix declaration cannot silently inherit a Windows hand-own the way readdir did.
+	"net": {
+		"adapterAddresses": goosWindows,
+	},
 	// sync's copyChecker detects a copied Cond by storing its OWN ADDRESS in itself and comparing:
 	// `uintptr(*c) != uintptr(unsafe.Pointer(c))`. Both halves are raw-metal on a managed referent.
 	// The stored word cannot be an address at all (the GC moves boxes, so a compaction between two

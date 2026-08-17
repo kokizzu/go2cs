@@ -784,10 +784,16 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   re-measure there rather than carrying a count. The old note said "nothing exercises them today;
   `net` and `crypto/x509` will" — both now do: `net`'s DNS path forced `GetAddrInfoW`/`FreeAddrInfoW`
   (fixed 2026-08-16, guarded by `LookupServicePort`), and `crypto/x509`'s Windows system verifier is
-  the measured consumer of the OUT-parameter class. Two walls behind them are open and are `net` /
-  `crypto/x509` arcs rather than syscall ones: `net.adapterAddresses` reinterprets a native
-  `IP_ADAPTER_ADDRESSES` chain out of a managed byte buffer, and the CryptoAPI chain walk reads
-  `CertContext` / `CertChainContext` back through raw addresses.
+  the measured consumer of the OUT-parameter class. Two walls stood behind them, both `net` /
+  `crypto/x509` arcs rather than syscall ones — a **third** fork, where the kernel memory is a byte
+  buffer the CALLER reinterprets, so no wrapper is at fault and no mirror-the-wrapper remedy applies.
+  The first is CLOSED: `net.adapterAddresses` walked a native `IP_ADAPTER_ADDRESSES` chain out of a
+  managed byte buffer and killed the process on the loop's own nil test; it is hand-owned since
+  2026-08-17 (`core/net/windows/interface_windows_impl.cs` transcribes the whole chain — every
+  record, its six nested lists and every sockaddr — into managed boxes), guarded by the
+  `IpAdapterAddresses` behavioral test, and it is what unblocked Windows name resolution at all,
+  since `dnsReadConfig` is `getSystemDNSConfig`'s only source of DNS servers. The second is still
+  open: the CryptoAPI chain walk reads `CertContext` / `CertChainContext` back through raw addresses.
 - **Phase 3 complete (2026-07-10 — commit `51ba5d9cf`, tag `stdlib-green-2026-07-10`):** all **302**
   packages of the full conversion (Go 1.23.1) compile clean — zero errors, zero
   exclusions (`runtime`, `reflect`, `net/http`, `go/types`, `crypto/tls`, `database/sql`, … all included).
