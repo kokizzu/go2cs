@@ -7312,7 +7312,7 @@ is a SECOND package holding the same class, and its own census is:
 | Wrapper | Non-blittable struct | Reached by |
 |:--|:--|:--|
 | `NetShareAdd` | `SHARE_INFO_2` (`Netname`, `Remark`, `Path`, `Passwd`) | **`os`'s `TestNetworkSymbolicLink` — the only caller in all of GOROOT**; fatal on a capable host |
-| `GetAdaptersAddresses` | `IpAdapterAddresses` (nine `ж<T>`, `array<byte> PhysicalAddress`, `array<uint32> ZoneIndices`) | `net.Interfaces` |
+| ~~`GetAdaptersAddresses`~~ | `IpAdapterAddresses` (nine `ж<T>`, `array<byte> PhysicalAddress`, `array<uint32> ZoneIndices`) | **ROW WITHDRAWN 2026-08-17 — it was never a member of this census.** The wrapper is handed a byte BUFFER and fills it, which is what a byte buffer is for; it is correct and stays auto-converted. The defect is entirely in the CALLER, `net.adapterAddresses`, which reinterprets the filled buffer as the record — the `readReparseLink` / `dir_windows_impl` fork, not the mirror-the-wrapper one. Fixed in the `net` interfaces arc; see the entry at the end of this file |
 | `Module32First` / `Module32Next` | `ModuleEntry32` (`array<uint16> Module`, `array<uint16> ExePath`) | `syscall`'s own suite |
 | `GetFileInformationByHandleEx` | `FILE_ID_BOTH_DIR_INFO` / `FILE_FULL_DIR_INFO` (`array<uint16>` names) | `os`'s `readdir` — **already answered**, and it is the worked precedent: `src/core/os/windows/dir_windows_impl.cs` reads the kernel's buffer at NATIVE offsets instead of reinterpreting it as the managed surrogate |
 | `WSASendMsg` / `WSARecvMsg` | `WSAMsg` (`ж<syscall.WSABuf>`) | `net`'s UDP OOB path |

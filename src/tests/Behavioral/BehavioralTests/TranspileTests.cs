@@ -733,6 +733,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckIotaEnum() => CheckTarget("IotaEnum");
 
     [TestMethod]
+    public void CheckIpAdapterAddresses() => CheckTarget("IpAdapterAddresses");
+
+    [TestMethod]
     public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
 
     [TestMethod]
