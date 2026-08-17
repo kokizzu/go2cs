@@ -21,9 +21,9 @@ public static void TestFormatComplex(ж<testing.T> Ꮡt) {
     var tests = new TestFormatComplex_tests[]{ // a variety of signs
 
         new(1D + 2D.i(), (rune)'g', -1, 128, "(1+2i)"u8),
-        new(3D - 4D.i(), (rune)'g', -1, 128, "(3-4i)"u8),
+        new(3D + -4D.i(), (rune)'g', -1, 128, "(3-4i)"u8),
         new(-5D + 6D.i(), (rune)'g', -1, 128, "(-5+6i)"u8),
-        new(-7D - 8D.i(), (rune)'g', -1, 128, "(-7-8i)"u8), // test that fmt and prec are working
+        new(-7D + -8D.i(), (rune)'g', -1, 128, "(-7-8i)"u8), // test that fmt and prec are working
 
         new(3.14159D + 0.00123D.i(), (rune)'e', 3, 128, "(3.142e+00+1.230e-03i)"u8),
         new(3.14159D + 0.00123D.i(), (rune)'f', 3, 128, "(3.142+0.001i)"u8),
