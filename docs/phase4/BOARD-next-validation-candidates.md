@@ -87,6 +87,95 @@
 > fails on a count mismatch, so a package that still passes but asserts something different is
 > caught rather than assumed.
 
+## ✅ BANKED (2026-08-17, lane `claude/connraw-hang`) — `database/sql` validates 137 of 139 as roster row **148**; `TestConnRaw` was never a lock, and the guilty layer was `GoFrame.Run`
+
+**The hypothesis this lane was handed was wrong in every particular, and one `dotnet-stack` report
+against the hung host said so before any code was read** — which is the sixth consecutive brief this
+week to name the wrong layer, and the reason the instruction to measure first is worth its cost.
+
+The brief's leading suspicion was a deadlock or lost wakeup in golib's hand-owned `sync.RWMutex`
+shim, from `release(ErrBadConn)` → `closemuRUnlockCondReleaseConn` → `Conn.close` taking
+`closemu.Lock()` against the test's own recover handler. **No thread was blocked on `closemu`, or on
+any lock.** The only test thread was in `time.Sleep`, inside `waitCondition`, inside `closeDB` — the
+package's ordinary teardown poll. `sync`'s shim is innocent and unchanged; so is the `Conn.Raw`
+emission the previous entry had already cleared.
+
+### The hang was never a hang — it is `waitCondition` sized by `t.Deadline()`
+
+`closeDB` ends with `waitCondition(t, func() bool { return db.numOpenConns() == 0 })`, and
+`waitCondition` does not poll for five seconds when the test has a deadline: it polls for
+`time.Until(deadline)` minus 10 % headroom. So an assertion failure that leaves ONE connection open
+does not fail fast — it consumes 90 % of whatever `-test-timeout` was passed, then reports. That is
+the whole of the 3,418 s: at `-test-timeout 60m`, 0.9 × 60 min. The two previous entries' 1,712 s and
+3,423 s package figures are the same arithmetic at their own deadlines, not machine load and not lane
+contention.
+
+**Consequence for the board's reading habits:** a Phase-4 row whose C# elapsed lands suspiciously
+near `0.9 × -test-timeout` is a *failing assertion inside a deadline-sized wait*, not a deadlock. Run
+it again with a small `-test-timeout` (20 s was enough here) and it prints its real failure in
+seconds. Do not reach for `dotnet-stack` first — but if you do, it answers immediately too.
+
+### The root: `GoFrame.Run` re-raised a panic the frame never caught
+
+Probes on the converted `sql.cs` caught the panic being re-thrown from a frame that had nothing to do
+with it. `Conn.Raw`'s deferred cleanup reaches `Conn.close`, which sets `c.dc = nil` only AFTER
+`dc.releaseConn` → `db.putConn` → `dc.Close` → `finalClose` → `withLock`. `withLock` is two lines, it
+holds one `defer`, and it panics nothing — but its `finally`'s `ᒐ.Run()` ended with
+
+```csharp
+if (GoFuncRoot.CapturedPanicValue is not null)
+    throw GoFuncRoot.CapturedPanicValue;
+```
+
+and that slot is the THREAD's, non-empty for the whole of the panicking frame's deferred sequence. So
+`withLock` threw `Conn.Raw`'s panic on the way out, `close` never reached `c.dc = nil`, `conn.dc`
+stayed non-nil (the failure the previous entry recorded), the later deferred `conn.Close()` found
+`done` already true and returned `ErrConnDone` without releasing (the "1 connections still open"),
+and `waitCondition` sat on it for the rest of the deadline. **One root, both recorded symptoms, and
+the hang.**
+
+The rule is now stated instead of inferred: the re-raise belongs to the frame whose own `catch`
+caught the panic. `GoFrame.Capture` arms a claim, the next `Run` on the thread claims it — always
+that same frame's, because nothing runs between an emitted catch body and its `finally` — and a frame
+that caught nothing claims null. **The emission is untouched**; the change is 33 lines inside
+`golib/GoFrame.cs` + `GoFuncRoot.cs`, and no converted file moved.
+
+This is a general class, not a `database/sql` fix: EVERY converted function with a `defer` was a
+spurious re-raise site whenever it was called during another frame's deferred sequence. Cleanup paths
+that call helpers are the common shape, so expect other Phase-4 rows in the "cleanup didn't finish"
+family to move without being touched.
+
+Doctrine: `ConversionStrategies-Reference.md` — *The re-raise of an unrecovered panic belongs to the
+frame that CAUGHT it, not to the thread*, which also records the one adjacent hole left deliberately
+open (a nested frame's `recover()` clears the outer frame's parked panic — same shared slot, predates
+this change, no measured consumer).
+
+### `database/sql` — 137 of 139, and the owed `$longTimeouts` floor is repriced away
+
+139 rows, **137 agree, 2 disclosed, 0 skipped**, 27 excluded (the standard `Benchmark`/`Example`
+deferrals). The two are `TestGrabConnAllocs` and `TestRawBytesAllocs`, the standing **`alloc-profile`**
+class, pinned by signature in a hand-owned `go2cs_test_disclosures.json`.
+
+**No `$longTimeouts` entry is owed, and the two previous entries' "`'database/sql' = '60m'` if it ever
+banks" is formally repriced to zero.** The converted suite now runs in **3.5 s** (Go: 46 s); the whole
+`-test-action all` round trip, both builds included, is 33 s. The sweep's default deadline clears it
+by three orders of magnitude.
+
+### Guards, and the corpus footprint
+
+- **`PanicDeferCalleeFrame`** (new behavioral test) — output-compared against `go run`: the reduced
+  `Conn.Raw` shape (acquire → panic in the callback → cleanup that must still reach `open = false`),
+  three deferring callees stacked below one deferred call, and the two negatives (a panic raised by a
+  frame's own deferred call still escapes it; one raised inside a deferred cleanup still replaces the
+  panic already unwinding). Neuter-verified: reverted, the run diverges from Go.
+- **`GolibTests.GoFrameTests`** — four rows pinning the rule at the frame itself, including the
+  `m_count == 0` path that skips the deferred sequence and reaches the tail directly. Neuter-verified:
+  the two that pin the fix fail with the exact truncated-cleanup collection; the other two are the
+  over-suppression negatives and pass either way, by design.
+- Corpus footprint: **zero regenerated files**. `database/sql`'s `sql.cs` and `database.sql.csproj`
+  came back byte-identical from a seeded scoped reconvert, whose only diff was the README's Tests
+  badge (`137/139`).
+
 ## ✅ CLOSED (2026-08-16, lane `claude/assignableto-arc`) — the `AssignableTo` deferral is retired, with the struct/func/interface identity arms and the chan direction fixed in the same change
 
 The reflect-bridge lane recorded the retirement SEQUENCE rather than the fix, and the sequence was

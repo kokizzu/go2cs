@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestGrabConnAllocs",
+      "class": "alloc-profile",
+      "signature": "Conn.grabConn allocated ",
+      "reason": "want-zero AllocsPerRun assert: four golib-counted objects per run where Go allocates none — the interior field pointers the emission mints to reach c.done, c.releaseConnOnce and c.closemu (Go's &c.field is an address, not an allocation) plus the display class the sync.Once closure needs on every call, even though the cached releaseConnCache method value it installs is built once"
+    },
+    {
+      "name": "TestRawBytesAllocs",
+      "class": "alloc-profile",
+      "signature": "allocs = ",
+      "reason": "want-zero AllocsPerRun assert: fifteen golib-counted objects per run where Go allocates none — each convertAssign round materializes the managed backing for the formatted value and boxes the any-typed source, where Go's escape analysis proves the temporaries non-escaping and appends into the pre-sized RawBytes in place"
+    }
+  ]
+}
