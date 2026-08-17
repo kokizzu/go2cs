@@ -116,6 +116,49 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     public slice(array<T> array) : this((T[])array) { }
 
     /// <summary>
+    /// A <c>slice&lt;T&gt;</c> ALIASING <paramref name="source"/>'s backing storage, with the
+    /// element type re-spelled from <typeparamref name="TSrc"/> to <typeparamref name="T"/>. The
+    /// window (low / length / capacity) carries across unchanged, so the result is the SAME Go
+    /// slice under a different element NAME — a write through either side is visible in the other.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This exists for exactly one Go relation, and it is not a general reinterpret: Go's
+    /// <c>reflect.Value.Bytes</c>/<c>SetBytes</c> accept any slice whose element KIND is
+    /// <c>Uint8</c> — <c>[]byte</c>, <c>[]renamedByte</c>, <c>type S []Uint8</c> — and reach the
+    /// storage by re-typing the slice HEADER, never by copying. A copy would silently break every
+    /// writer of a core reflect API, so a caller that needs a <c>[]byte</c> over a
+    /// <c>[]DefinedByte</c> needs an alias or nothing.
+    /// </para>
+    /// <para>
+    /// <b>Precondition, enforced by the caller and never here:</b> the two element types must be
+    /// ONE representation under two names — both value types, both free of managed references, and
+    /// both exactly one byte wide. <see cref="GoReflect.TryByteSliceView"/> is that caller and
+    /// gates on precisely those facts (the same three the blessed
+    /// <c>ReinterpretAliasesStorage</c> gate asks of a pointee pair). Under them the two backing
+    /// objects are byte-for-byte the same shape and differ only in their method table, and every
+    /// access golib makes through a <c>slice&lt;T&gt;</c> — element load/store, <c>ToSpan</c>,
+    /// <c>CopyTo</c> — addresses the data from the STATIC element type and the array's own length
+    /// field, never from that method table (<c>Span&lt;T&gt;</c>'s array constructor skips its
+    /// covariance check outright for a value-typed T). What the pun does NOT survive is a runtime
+    /// type test on the array OBJECT — <c>Array.Copy</c>'s element-type check,
+    /// <c>backing is byte[]</c>, <c>backing.GetType()</c> — so nothing may reach one through the
+    /// result, which is why this is an internal bridge primitive and not a public conversion.
+    /// </para>
+    /// </remarks>
+    internal static slice<T> AliasOfElement<TSrc>(in slice<TSrc> source)
+    {
+        // A nil slice re-spells as the nil slice: there is no storage to alias, and Go's own
+        // header re-typing carries the nil data pointer across in exactly this way.
+        if (source.m_array is null)
+            return default;
+
+        T[] aliased = Unsafe.As<T[]>(source.m_array);
+
+        return new slice<T>(aliased, source.m_low, source.m_low + source.m_length, source.m_low + source.m_capacity);
+    }
+
+    /// <summary>
     /// Creates a slice over an existing slice VIEW (an <see cref="ISlice{T}"/>-boxed value — a
     /// constrained type parameter or a named-slice wrapper), SHARING its backing storage: a
     /// boxed <see cref="slice{T}"/> unwraps directly; any other implementer is reconstructed

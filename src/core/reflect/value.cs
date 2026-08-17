@@ -1825,19 +1825,10 @@ internal static bool /*selected*/ send(this ΔValue v, ΔValue xʗp, bool nb) {
 
 // go2cs generated this placeholder — func SetBool is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// do not let unexported x leak
+// go2cs generated this placeholder — func SetBytes is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// SetBytes sets v's underlying value.
-// It panics if v's underlying value is not a slice of bytes.
-public static void SetBytes(this ΔValue v, slice<byte> x) {
-    v.mustBeAssignable();
-    v.mustBe(ΔSlice);
-    if (toRType(v.typ()).Elem().Kind() != Uint8) {
-        // TODO add Elem method, fix mustBe(Slice) to return slice.
-        throw panic("reflect.Value.SetBytes of non-byte slice");
-    }
-    ((ж<slice<byte>>)(uintptr)(v.ptr)).ValueSlot = x;
-}
+// do not let unexported x leak
+// TODO add Elem method, fix mustBe(Slice) to return slice.
 
 // setRunes sets v's underlying value.
 // It panics if v's underlying value is not a slice of runes (int32s).

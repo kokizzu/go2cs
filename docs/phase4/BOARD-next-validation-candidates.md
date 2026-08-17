@@ -10056,3 +10056,123 @@ where the committed file has `((level)maxDepth + 2)` — the residue of the cast
 landed in `claude/fmt-roots` (`93ef5abaa`, guarded by `NamedConstConversionPrecedence`) without its
 corpus regen. It is the arc's ONLY stdlib site; whoever next levels the corpus should expect exactly
 that one file.
+
+## ✅ `fmt` BANKS at 63/63 · ⛔ `encoding/json` reaches 482 of 491 — the REFLECT-BRIDGE CLOSURE arc (2026-08-17, lane `claude/reflect-closure`)
+
+The union of the roots holding `encoding/json` (400/491) and `fmt` (62/63) turned out to be **one
+subsystem with nine roots**, and they came out in dependency order exactly as the brief predicted:
+descriptor cargo first, then the value operations, then the consumers. Two of the nine were on no
+list at all — each stood *behind* one that was, which is this board's recurring shape.
+
+| Package | Before | After |
+|:--|--:|--:|
+| `fmt` | 62 of 63 | **63 of 63 — BANKED, roster row 149** |
+| `encoding/json` | 400 of 491, 13 unrecorded (process death) | **482 of 491, 0 unrecorded** |
+
+`encoding/json`'s whole suite now runs in **24 s**, where before it either exhausted a 20-minute
+deadline or died of stack exhaustion partway through.
+
+### The nine roots
+
+| # | Root | Where | Verdicts |
+|:--|:--|:--|--:|
+| 1 | `StructField.Anonymous` was never populated, so **no embed was an embed** to any Go encoder | `reflect/value_impl.cs` | ~31 |
+| 2 | An embed's `[GoTag]` sits on the emitted partial PROPERTY while the backing FIELD is generated — so every embedded field read as untagged | `GoReflect.FieldAccess.cs` | with #1 |
+| 3 | `new(T)` ran golib's ALLOCATING parameterless constructor, so `new([]T)` / `new(map[K]V)` pointed at a non-nil EMPTY container where Go points at nil | `builtin.cs` | ~41 |
+| 3b | A POINTER descriptor never carried its POINTEE's array dims, so `reflect.New` over `TypeOf(new([3]int)).Elem()` allocated a ZERO-length array | `internal/abi/type_impl.cs`, `GoReflect.TypeLayout.cs` | with #3 |
+| 4 | Three identity rules were each too FINE for a cycle detector: `unsafe.Pointer` compared by BOX, a map/slice `UnsafePointer` tokened the HEADER copy, and a struct's generated `Equals` compared an interface field with C# `==` | `unsafe.cs`, `golib/ж.cs`, `reflect/value_impl.cs`, **`go2cs-gen`** | 13 + the process |
+| 5 | `Value.Bytes` threw for a DEFINED byte element, and `Value.SetBytes` wrote through the never-populated Go data word — silently, for EVERY byte slice | `reflect/value_impl.cs`, `GoReflect.ValueMarshalling.cs`, `slice.cs` | 3 + 1 (fmt) |
+| 6 | An unnamed FUNC type had no Go rendering at all — `GoReflect.TypeNaming` had no delegate arm | `GoReflect.TypeNaming.cs` | 1 (fmt) |
+| 7 | A COMPLEX constant expression was emitted as RUNTIME arithmetic, and .NET's `double - Complex` negates `+0` | converter, `convBinaryExpr.go` | 1 (fmt) |
+| 8 | **(on no list)** An unexported EMBED took `flagStickyRO` where Go gives it `flagEmbedRO` — only the sticky bit inherits, so every field promoted through an unexported embed was read-only | `reflect/value_impl.cs` | 7 |
+| 9 | **(on no list)** `rtype.FieldByName` searched DIRECT fields only, so a promoted name read as ABSENT — and `Value.FieldByName` then handed the EMPTY index to `FieldByIndex`, which answers the struct ITSELF | `reflect/value_impl.cs` | with #8 |
+
+Two more surfaced as consequences of the fixes above and are closed with them: a NaN map key
+compared equal to itself (BCL collection semantics, not Go's `==`) — `fmt`'s own `%v` of
+`map[float64]int{NaN:1, NaN:1}` reads it back — and a variadic tail was detected by the delegate
+FAMILY NAME, which C#'s natural delegate type does not carry, so `func(string, ...int)` reported
+non-variadic and rendered `func(string, Span'1)`.
+
+**Root 4 is the one worth reading twice.** Go's cycle detectors are written on identity —
+`e.ptrSeen[v.Interface()]` for a pointer, `[v.UnsafePointer()]` for a map, and
+`[struct{ptr any; len int}]` for a slice — and each of the three keys took a different route to
+being unfindable. The third is a `go2cs-gen` defect with nothing to do with reflection: the
+generated memberwise `Equals` compared an INTERFACE-typed member with C# `==`, i.e. by reference,
+where Go compares interface values by dynamic type and value. Since a struct's `Equals` is also what
+a map LOOKUP calls, such a struct could never be found under a key it had itself stored. The
+consequence was not a wrong answer but a dead process: `Marshal` of a self-referential value recursed
+until `0xc00000fd`, which is uncatchable and took every verdict the run had not yet produced with it.
+
+Doctrine: `ConversionStrategies-Reference.md` gained seven sections — *An EMBEDDED field is an embed
+to `reflect`*, *An UNNAMED func type renders STRUCTURALLY*, *`reflect.Value.Bytes`/`SetBytes` are
+defined over the element KIND, and they ALIAS*, *`new(T)` is Go's ZERO value*, *An `unsafe.Pointer`
+is compared BY ADDRESS*, *A NaN map key is never equal to anything*, and *A COMPLEX constant
+expression must be FOLDED*.
+
+### Where `encoding/json` still stands: 482 of 491, ONE root, and it is NOT rooted
+
+`TestUnmarshal` rows **#56–#63** — eight subtests of one table — plus the aggregate row. Each decodes
+into the 40-field `All` fixture and compares the result against the table's literal with
+`reflect.DeepEqual`. `gotJSON` and `wantJSON` are **byte-identical**, so the decode itself is right;
+the only structural difference the failure message shows is one element:
+
+```
+got  … [0x…  <nil>  0x…] …          // SliceP, the decoded side
+want … [0x…          0x…] …         // SliceP, the table literal — middle element prints EMPTY
+```
+
+`allValue.SliceP` is `[]*Small{{Tag:"tag22"}, nil, {Tag:"tag23"}}`, emitted as
+`new ж<Small>[]{Ꮡ(…), default!, Ꮡ(…)}.slice()`, so its middle element is a C# `null` where the
+decoder writes the canonical typed-nil box. **That is the obvious hypothesis and it is measured
+WRONG**: a minimal reproduction of exactly that shape — a nil hole in a `[]*T`, built once as a
+literal and once through `reflect.MakeSlice` into a struct field, compared with `DeepEqual` and
+printed with `%v` — agrees with `go run` on both counts, and it is committed as the
+`ReflectBridgeClosure` behavioral test's `nil element` / `decoded vs literal` rows. Normalizing a
+null pointer read to the canonical nil at `Value.live` was tried, moved nothing, and was
+**reverted** rather than banked as speculative machinery.
+
+So the root is something in the larger value, not the nil encoding alone. The next lane should start
+by finding which of `All`'s forty fields `DeepEqual` actually separates — `%v` of the whole struct is
+too lossy to say — and the cheapest instrument is a hand-written probe that walks the two values
+field by field with `reflect.DeepEqual` rather than the test's single top-level call.
+
+No roster row, no proof page, no disclosures, converted test sources NOT committed: 482 of 491 is a
+measurement, not a validation.
+
+### Adjacent, boarded rather than taken
+
+* **A conversion of `nil` to a defined METHODLESS func type does not compile.** `handler(nil)` emits
+  `new Func<nint, error>(default!)` — CS8716 + CS0149. It is converter emission work, outside this
+  lane's boundary by the brief's own rule; the `ReflectBridgeClosure` test writes a declared value
+  instead of the conversion so it fails on the naming rule alone.
+* **A defined METHODLESS func type has no managed identity** — the converter renders it inline as its
+  base delegate family — so `reflect` reports it as UNNAMED. A defined func type carrying a method
+  does get its own delegate and keeps its name. Same shape as the `ChanDir` ruling: the bridge
+  describes the type it can actually build a descriptor for.
+* **Projected field ORDER puts every embed last.** `go2cs-gen` emits the promoted-embed backing field
+  in a generated partial, after the declaring part's plain fields, so `Host{X; y; Inner; inner; Ptr}`
+  projects as `X, y, Ptr, Inner, inner`. No measured consumer observes it — json's dominance rules
+  read depth and tag, and its one order-sensitive test declares its single plain field first — so it
+  is recorded rather than fixed; the remedy is declaration-order cargo, not a re-sort. The behavioral
+  guard looks its fields up BY NAME so it cannot pin the gap as a contract.
+* **A NAMED float type's wrapper, and a struct or array CONTAINING a float, still compare a NaN map
+  key by the BCL rule.** Covering them would mean routing every struct-keyed map through the
+  reflective relation, and no measured consumer reaches them.
+
+### Corpus footprint, measured
+
+A seeded whole-stdlib reconvert (304 packages, 0 failed, 9m00s; marker gate **60 marked / 0
+clobbered**, full-file line-anchored scan) emitted 1,664 artifacts, of which 1,609 are byte-identical
+and 49 of the remaining 55 are the documented CRLF phantom. **Six real differences, all owed:**
+`encoding/gob/{encode,enc_helpers}.cs` (the complex fold renders `0+0i` as the bare `0D.i()` —
+value-identical, Go's own spelling), `encoding/json/{decode,encode}.cs` (restored to the clean
+emission after this lane's own pipeline runs), `fmt/README.md` (the validation badge `fmt` earns by
+banking), and `vendor/golang.org/x/text/unicode/bidi/core.cs` — **the debt the `claude/json-unlock`
+entry above predicted by name**, the residue of `claude/fmt-roots`' cast-precedence fix landing
+without its corpus regen. It is paid here. `reflect/value.cs` also moves, by one Go body replaced with
+a placeholder (`Value.SetBytes` joins the hand-owns).
+
+⚠ **A caution for the next regen census: scan the WHOLE file for the hand-own marker.** A first pass
+here read only each file's first 40 lines and reported **35** marked files against the real **60**,
+which would have made the clobber gate vacuous for 25 hand-owns. The rule is already written as
+line-anchored; it must also be whole-file.

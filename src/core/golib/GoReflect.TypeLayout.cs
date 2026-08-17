@@ -260,6 +260,41 @@ public static partial class GoReflect
         return inner is null ? null : [length, .. inner];
     }
 
+    /// <summary>
+    /// The array dims of the value BEHIND a live pointer — <c>*[3]int</c> reports <c>[3]</c> — or
+    /// null when <paramref name="value"/> is not a pointer to an array whose length a source knows.
+    /// </summary>
+    /// <remarks>
+    /// A POINTER descriptor carries its POINTEE's dims unshifted (a pointer has no length of its
+    /// own), which is the rule <c>abi.Type.Elem</c> and <c>rtype.Elem</c> already apply when they
+    /// hand the cargo down. Nothing was populating it: <c>abi.TypeOf</c> measured dims for an ARRAY
+    /// value only, so <c>reflect.TypeOf(new([3]int)).Elem()</c> described a dimension-LESS
+    /// <c>[N]int</c> and <c>reflect.New</c> of it allocated a ZERO-length array. That is not a
+    /// cosmetic loss — the fresh value then has a different Type from the one it is supposed to
+    /// mirror, so <c>reflect.DeepEqual(new([3]int), reflect.New(typ).Interface())</c> is false, which
+    /// is the precondition encoding/json's whole TestUnmarshal table checks before every subtest.
+    /// </remarks>
+    public static nint[]? PointeeArrayDims(object? value)
+    {
+        object? box = value;
+
+        while (box is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            box = interfaceAdapter.Value;
+
+        if (box is IжAdapter { Box: not null } pointerAdapter)
+            box = pointerAdapter.Box;
+
+        // A nil pointer has nothing to measure, and an opaque managed handle has no pointee at all
+        // (the descent rule's value-side twin — see TryPointerBoxElement).
+        if (box is null || box is INilPointer { IsNilPointer: true } ||
+            !TryPointerBoxElement(box.GetType(), out Type? pointee) || KindOf(pointee) != Array)
+        {
+            return null;
+        }
+
+        return ArrayDimsOfValue(ReadPointerSlot(box));
+    }
+
     private static object? firstArrayElement(object arrayValue, Type elemType)
     {
         MethodInfo reader = typeof(GoReflect).GetMethod(nameof(readFirstElement), BindingFlags.NonPublic | BindingFlags.Static)!
@@ -311,17 +346,31 @@ public static partial class GoReflect
             return false;
 
         ParameterInfo[] parameters = invoke.GetParameters();
-        string name = delegateType.Name;
-        isVariadic = name.StartsWith("Func" + EllipsisOperator, StringComparison.Ordinal) ||
-                     name.StartsWith("Action" + EllipsisOperator, StringComparison.Ordinal);
 
         ins = new Type[parameters.Length];
 
         for (int i = 0; i < parameters.Length; i++)
             ins[i] = parameters[i].ParameterType;
 
-        if (isVariadic && ins.Length > 0 && ins[^1] is { IsGenericType: true } tail && tail.GetGenericTypeDefinition() == typeof(Span<>))
-            ins[^1] = typeof(slice<>).MakeGenericType(tail.GetGenericArguments()[0]);
+        // A trailing `Span<T>` IS the variadic tail, and testing for it is what makes this exact.
+        // The golib variadic delegate families (`Funcꓸꓸꓸ`/`Actionꓸꓸꓸ`) are only ONE of the shapes a
+        // converted variadic func value takes: a declared `func(string, ...int)` used as a method
+        // group in an `any` position acquires C#'s NATURAL delegate type instead, whose name carries
+        // no family marker at all — so the name test reported it non-variadic and `In(1)` handed back
+        // a raw `Span<int>`, which then rendered as `func(string, Span\`1)`. A `Span<T>` parameter
+        // cannot arise any other way in converted code (Go has no such type and the converter emits
+        // one only for a variadic tail), so the shape test subsumes the name test rather than
+        // widening it.
+        bool spanTail = ins.Length > 0 && ins[^1] is { IsGenericType: true } tail &&
+                        tail.GetGenericTypeDefinition() == typeof(Span<>);
+
+        string name = delegateType.Name;
+        isVariadic = spanTail ||
+                     name.StartsWith("Func" + EllipsisOperator, StringComparison.Ordinal) ||
+                     name.StartsWith("Action" + EllipsisOperator, StringComparison.Ordinal);
+
+        if (spanTail)
+            ins[^1] = typeof(slice<>).MakeGenericType(ins[^1].GetGenericArguments()[0]);
 
         Type ret = invoke.ReturnType;
 

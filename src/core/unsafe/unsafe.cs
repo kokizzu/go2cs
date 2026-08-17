@@ -230,6 +230,40 @@ public class Pointer : ж<uintptr> {
     // address is what makes the uintptr round-trip of a nil pointer exact — the ctor above.
     public override nuint PointerOrderToken => IsNull ? 0 : Value.Value;
 
+    // ...and because the VALUE is the address, IDENTITY is the address too. That is Go's rule for
+    // this one type and it is the reason both members below exist: `ж<T>` compares and hashes a
+    // heap box BY REFERENCE (the box IS the storage it names, so two boxes are two addresses),
+    // which is right for every other pointer and wrong for exactly this one — an unsafe.Pointer
+    // CARRIES an address rather than being one, and the converter mints a fresh box on every
+    // `uintptr → unsafe.Pointer` conversion (875 emitted call sites). Two boxes over one address
+    // are therefore ONE Go pointer, and reference identity called them different.
+    //
+    // The measured consumer is any unsafe.Pointer used as a MAP KEY, which is how Go's own
+    // cycle detectors are written: encoding/json's encoder stores `e.ptrSeen[v.UnsafePointer()]`
+    // and looks it up again on the next level down, so with per-box identity it never found the
+    // entry it had just written, no cycle was ever detected, and marshalling a self-referential
+    // map or slice recursed until the process died of stack exhaustion instead of returning Go's
+    // `UnsupportedValueError: encountered a cycle`. Both members answer through
+    // PointerOrderToken, so equality, hashing and ordering are one fact about the address rather
+    // than three that can drift apart — and a nil pointer, whichever of its two representations,
+    // tokens 0 and so equals and hashes with the other.
+    // Overriding the VIRTUAL ж<T>.Equals rather than adding an operator or an object-Equals arm is
+    // what makes all four question forms answer once: `p1 == p2` (the base `==` calls it),
+    // `p1.Equals(p2)`, `((object)p1).Equals(p2)`, and a Dictionary/golib-map lookup keyed on the
+    // boxed pointer. An `operator ==(Pointer, Pointer)` would additionally have made every existing
+    // `uintptr == unsafe.Pointer` comparison AMBIGUOUS (both operands convert to both sides —
+    // measured as CS0034 in runtime's map.cs and mfinal.cs), so the operator route is not merely
+    // redundant, it is unavailable.
+    public override bool Equals(ж<uintptr>? other)
+    {
+        return other is Pointer pointer ? PointerOrderToken == pointer.PointerOrderToken : base.Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return PointerOrderToken.GetHashCode();
+    }
+
     public Pointer this[int index] => Value + (uintptr)index;
 
     public Pointer this[nint index] => Value + (uintptr)index;

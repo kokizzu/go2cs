@@ -1730,9 +1730,36 @@ public static partial class builtin
         // No `where T : new()` bound: an unconstrained Go type parameter does not carry one, so that a
         // delegate/func type argument like `atomic.Pointer[func()]` stays legal. Construct the zero value the
         // way Go's `new(T)` does: a value type is zero-initialized via its parameterless ctor (running
-        // any field initializers, e.g. fixed-size array fields); a reference/delegate type is null.
-        T value = typeof(T).IsValueType ? Activator.CreateInstance<T>() : default!;
+        // any field initializers, e.g. fixed-size array fields); a reference/delegate type is null — with
+        // the one kind-family where running that ctor is NOT Go's zero carved out by GoNewZero.
+        T value = GoNewZero<T>.UseDefault ? default! : Activator.CreateInstance<T>();
         return new ж<T>(value);
+    }
+
+    // Whether `new(T)` must take `default(T)` rather than run T's parameterless constructor.
+    //
+    // Go's `new(T)` yields a pointer to the ZERO value of T, and for the three REFERENCE kinds that zero
+    // is the NIL one — `p := new([]int); *p == nil` and `p := new(map[K]V); *p == nil` are both true in
+    // Go. golib's container structs each declare a parameterless constructor that ALLOCATES (map<K,V>
+    // makes its backing Dictionary, slice<T> takes the empty array), and Activator.CreateInstance<T>
+    // honors a declared parameterless constructor — so `new(map[string]any)` and `new([]any)` handed back
+    // a pointer to a non-nil EMPTY container where Go hands back nil.
+    //
+    // Silently, which is why it lasted: the two differ only under `== nil`, len() agrees at 0, a range
+    // over either yields nothing, and encoding/json marshals them by the same branch. It surfaced through
+    // reflection, where the two zero-FABRICATION paths finally met — reflect.Zero/New build a zero through
+    // GoReflect.ZeroValueOf, which has always answered the NIL container for these kinds — so
+    // `reflect.DeepEqual(new([]any), reflect.New(typ).Interface())` compared a nil slice against an empty
+    // one and was false. That comparison is the precondition encoding/json's whole TestUnmarshal table
+    // checks before every subtest, and it blocked forty-odd of them. The two rules now agree by
+    // construction: this IS ZeroValueOf's classification, asked of the same KindOf.
+    //
+    // Every other kind must still RUN the constructor — that is what materializes a struct's fixed-size
+    // ARRAY fields from the initializers the converter emits into it (`= new(4)`).
+    private static class GoNewZero<T>
+    {
+        internal static readonly bool UseDefault =
+            !typeof(T).IsValueType || GoReflect.KindOf(typeof(T)) is GoReflect.Slice or GoReflect.Map or GoReflect.Chan;
     }
 
     /// <summary>

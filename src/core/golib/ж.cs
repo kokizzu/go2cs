@@ -648,7 +648,16 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     }
 
     /// <inheritdoc/>
-    public bool Equals(ж<T>? other)
+    /// <remarks>
+    /// VIRTUAL for one derived class and one reason: <c>unsafe.Pointer</c> is a
+    /// <c>ж&lt;uintptr&gt;</c> whose VALUE is the address, so two of them over one address are ONE
+    /// Go pointer — where every other box IS the storage it names, and identity is therefore
+    /// reference identity. Overriding here makes <c>==</c> (which routes through this),
+    /// <c>Equals(object)</c> and a map-key lookup all answer through the one rule; an
+    /// <c>operator ==(Pointer, Pointer)</c> on the derived class would have made every existing
+    /// <c>uintptr == unsafe.Pointer</c> comparison ambiguous instead (CS0034).
+    /// </remarks>
+    public virtual bool Equals(ж<T>? other)
     {
         // A null REFERENCE and a structurally nil box are the same Go nil pointer — the two
         // representations coexist (`(ж<T>)default!` emits null; `ж<T> p = nil` and the canonical

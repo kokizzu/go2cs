@@ -49,7 +49,7 @@ public static void TestParseComplex(ж<testing.T> Ꮡt) {
         new("(i)"u8, 0D, ErrSyntax),
         new("(0)"u8, 0D, default!),
         new("(1i)"u8, 1D.i(), default!),
-        new("(3.0+5.5i)"u8, 3.0D + 5.5D.i(), default!),
+        new("(3.0+5.5i)"u8, 3D + 5.5D.i(), default!),
         new("(1)+1i"u8, 0D, ErrSyntax),
         new("(3.0+5.5i"u8, 0D, ErrSyntax),
         new("3.0+5.5i)"u8, 0D, ErrSyntax), // NaNs
@@ -89,9 +89,9 @@ public static void TestParseComplex(ж<testing.T> Ꮡt) {
         new("-0e+0-0e+0i"u8, 0D, default!), // Regular non-zeroes
 
         new("0.1"u8, 0.1D, default!),
-        new("0.1i"u8, 0D + 0.1D.i(), default!),
+        new("0.1i"u8, 0.1D.i(), default!),
         new("0.123"u8, 0.123D, default!),
-        new("0.123i"u8, 0D + 0.123D.i(), default!),
+        new("0.123i"u8, 0.123D.i(), default!),
         new("0.123+0.123i"u8, 0.123D + 0.123D.i(), default!),
         new("99"u8, 99D, default!),
         new("+99"u8, 99D, default!),
@@ -100,22 +100,22 @@ public static void TestParseComplex(ж<testing.T> Ꮡt) {
         new("-1i"u8, -1D.i(), default!),
         new("+3+1i"u8, 3D + 1D.i(), default!),
         new("30+3i"u8, 30D + 3D.i(), default!),
-        new("+3e+3-3e+3i"u8, 3e+3D - 3e+3D.i(), default!),
-        new("+3e+3+3e+3i"u8, 3e+3D + 3e+3D.i(), default!),
+        new("+3e+3-3e+3i"u8, 3000D + -3000D.i(), default!),
+        new("+3e+3+3e+3i"u8, 3000D + 3000D.i(), default!),
         new("+3e+3+3e+3i+"u8, 0D, ErrSyntax), // Separators
 
         new("0.1"u8, 0.1D, default!),
-        new("0.1i"u8, 0D + 0.1D.i(), default!),
+        new("0.1i"u8, 0.1D.i(), default!),
         new("0.1_2_3"u8, 0.123D, default!),
         new("+0x_3p3i"u8, 24D.i(), default!),
         new("0_0+0x_0p0i"u8, 0D, default!),
         new("0x_10.3p-8+0x3p3i"u8, 0.063232421875D + 24D.i(), default!),
         new("+0x_1_0.3p-8+0x_3_0p3i"u8, 0.063232421875D + 384D.i(), default!),
-        new("0x1_0.3p+8-0x_3p3i"u8, 4144D - 24D.i(), default!), // Hexadecimals
+        new("0x1_0.3p+8-0x_3p3i"u8, 4144D + -24D.i(), default!), // Hexadecimals
 
         new("0x10.3p-8+0x3p3i"u8, 0.063232421875D + 24D.i(), default!),
         new("+0x10.3p-8+0x3p3i"u8, 0.063232421875D + 24D.i(), default!),
-        new("0x10.3p+8-0x3p3i"u8, 4144D - 24D.i(), default!),
+        new("0x10.3p+8-0x3p3i"u8, 4144D + -24D.i(), default!),
         new("0x1p0"u8, 1D, default!),
         new("0x1p1"u8, 2D, default!),
         new("0x1p-1"u8, 0.5D, default!),
@@ -138,9 +138,9 @@ public static void TestParseComplex(ж<testing.T> Ꮡt) {
  // borderline - okay
 
         new("+0x1.fffffffffffff7fffp1023+0x1.fffffffffffff7fffp1023i"u8, 1.7976931348623157e+308D + 1.7976931348623157e+308D.i(), default!),
-        new("+0x1.fffffffffffff7fffp1023-0x1.fffffffffffff7fffp1023i"u8, 1.7976931348623157e+308D - 1.7976931348623157e+308D.i(), default!),
+        new("+0x1.fffffffffffff7fffp1023-0x1.fffffffffffff7fffp1023i"u8, 1.7976931348623157e+308D + -1.7976931348623157e+308D.i(), default!),
         new("-0x1.fffffffffffff7fffp1023+0x1.fffffffffffff7fffp1023i"u8, -1.7976931348623157e+308D + 1.7976931348623157e+308D.i(), default!),
-        new("-0x1.fffffffffffff7fffp1023-0x1.fffffffffffff7fffp1023i"u8, -1.7976931348623157e+308D - 1.7976931348623157e+308D.i(), default!), // borderline - too large
+        new("-0x1.fffffffffffff7fffp1023-0x1.fffffffffffff7fffp1023i"u8, -1.7976931348623157e+308D + -1.7976931348623157e+308D.i(), default!), // borderline - too large
 
         new("+0x1.fffffffffffff8p1023"u8, infp0, ErrRange),
         new("-0x1fffffffffffff.8p+971"u8, infm0, ErrRange),

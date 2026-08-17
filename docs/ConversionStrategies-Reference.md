@@ -16188,6 +16188,237 @@ alone would let the other drift back, and `PointerBoxShapesResolveTheirPointee` 
 side so the fix cannot turn real dereferences into nil — and by the `DeepEqual` behavioral test's
 `guarded` struct, which compares a locked-then-released `Mutex`/`RWMutex` pair against `go run`.
 
+### An EMBEDDED field is an embed to `reflect`, tag included — and Go's whole embedding contract reads it
+
+`reflect.StructField.Anonymous` is not a cosmetic flag. It is the signal every Go encoder uses to
+decide whether a field's own fields are *flattened* into the enclosing object: `encoding/json`'s
+`typeFields`, and the same walk in `encoding/xml`, `encoding/gob` and `text/template`, treat a field
+as an embed exactly when `Anonymous` is set and no name tag overrides it.
+
+The bridge left it unpopulated, on the recorded ground that no consumer demanded it. One does.
+Reported `false`, every embed became an ORDINARY field named after its type:
+
+```
+{"S1":{"X":2},"S2":{"X":4}}      // where Go writes {}
+{"S":"B","BugA":{"S":"A"}}       // where Go writes {"S":"B"}
+json: unknown field "Level1b"    // where Go reports "extra"
+```
+
+It is a real READ, not a reconstruction: the converter emits an embed as a partial property over a
+marker-prefixed backing box, and golib's field projection records that shape as
+`GoFieldInfo.Embedded` — the same flag `reflect`'s struct-identity walk already compares (Go's
+`haveIdenticalUnderlyingType` ends each field with `tf.Embedded() != vf.Embedded()`).
+
+**An embed's TAG lives at a different declaration site, and that is the second half.** The converter
+stamps `[GoTag]` on the emitted partial PROPERTY:
+
+```csharp
+[GoTag(@"json:""e,omitempty""")]
+public partial ref ж<Embed0b> Embed0b { get; }
+```
+
+while `go2cs-gen` mints the backing field the property returns a ref to — *without* carrying the
+attribute across:
+
+```csharp
+private global::go.ж<…Embed0b> ʗEmbed0b;    // no [GoTag]
+```
+
+The projection reads FIELDS, so every embedded field came back untagged — silently, because `""` is
+the right answer for most embeds. `GoReflect`'s embed arm now asks the PROPERTY first (the
+declaration) and keeps the field as a fallback, so a tagged embed reports its tag with no generator
+change: `encoding/json`'s `TestMarshalEmbeds` emitted `"Embed0b":{…}` where Go emits `"e":{…}`, and
+marshalled the `json:"-"` embed it must omit entirely.
+
+**Recorded, not fixed: field ORDER.** `go2cs-gen` emits the promoted-embed backing field in a
+generated partial, i.e. AFTER the declaring part's plain fields, so `Host{X; y; Inner; inner; Ptr}`
+projects as `X, y, Ptr, Inner, inner` where Go walks it in declaration order. No measured consumer
+observes it — `encoding/json`'s dominance rules are decided by DEPTH and tag, never by declaration
+order, and its one order-sensitive test (`TestMarshalEmbeds`) declares its single plain field first,
+so the two orders coincide. The shape that will expose it is a struct interleaving plain and embedded
+fields whose *key order* is compared, and the remedy is declaration-order cargo (the way array dims
+are carried), not a re-sort in the projection. Guarded by the `ReflectBridgeClosure` behavioral test,
+which looks its fields up BY NAME for exactly this reason — a guard that asserted the current order
+would pin the gap as a contract.
+
+### An UNNAMED func type renders STRUCTURALLY, exactly as an unnamed struct does
+
+`GoReflect.TypeNaming` had no delegate handling at all, so a Go func value printed the CLR delegate
+family standing in for it — `fmt`'s own `TestSprintf` reads it back:
+
+```
+(Action`1)(0x26d47ab)          // was
+(func(*testing.T))(0xPTR)      // Go
+```
+
+A func type is named or unnamed by the same test every other type uses, and for converted code that
+test is exact: a Go DEFINED func type is emitted as its own `delegate` nested in the declaring
+`<pkg>_package` class (`http.HandlerFunc`), while an unnamed one lands on a BCL/golib delegate family
+(`Action<ж<T>>`, `Func<…>`, the variadic `Funcꓸꓸꓸ`/`Actionꓸꓸꓸ`, or C#'s natural delegate type) that
+no converted package declares. So `GoTypeName` renders the second group from `TryFuncShape` in Go's
+own format — `func(` inputs `)`, then nothing / ` T` / ` (T, U)` for zero, one and several results,
+with a variadic tail written `...T` — and `HasGoName` answers `false` for it, arm for arm, which is
+what keeps `Name()` and the descriptor's `TFlagNamed` agreeing with the string.
+
+**The variadic tail is recognized by SHAPE, not by the delegate family's name.** The golib families
+carry a name marker and the detection used to rely on it, but a declared `func(string, ...int)` used
+as a method group in an `any` position acquires C#'s NATURAL delegate type instead, whose name carries
+no marker — so it reported non-variadic and `In(1)` handed back a raw `Span<int>`, rendering
+``func(string, Span`1)``. A `Span<T>` parameter cannot arise any other way in converted code (Go has
+no such type, and the converter emits one only for a variadic tail), so testing for it subsumes the
+name test rather than widening it.
+
+Residual, stated rather than hidden: a defined **methodless** func type has no managed identity — the
+converter renders it inline as its base delegate family — so it is indistinguishable from an unnamed
+one here and reports the unnamed answer. That is the same "describe the type the bridge can actually
+build a descriptor for" rule `ChanDir` settles on. A defined func type carrying a method does get its
+own delegate and keeps its name. Guarded by `ReflectBridgeClosure` (six unnamed shapes and one named,
+against `go run`) and `GolibTests.GoReflectBridgeClosureTests`.
+
+### `reflect.Value.Bytes`/`SetBytes` are defined over the element KIND, and they ALIAS
+
+Go's `Bytes()` accepts any slice whose element kind is `Uint8` — `[]byte`, `[]renamedByte` where
+`type renamedByte byte`, and a defined slice type over either — plus an addressable byte ARRAY, and it
+reaches the storage by re-typing the slice HEADER. `SetBytes` assigns one back the same way. Neither
+ever copies, and that is not an implementation detail: `Bytes()` is how a caller *writes into* a
+reflected byte slice.
+
+Two of the three slice shapes were already aliased (a raw `slice<byte>` is itself; a defined slice
+type over plain byte answers through its `ISlice<byte>` view, which shares its backing). The third — a
+DEFINED byte ELEMENT — had no route at all: `slice<renamedByte>` holds a `renamedByte[]` of one-field
+wrapper structs, an unrelated instantiation with no conversion to `slice<byte>`, so the catch-all cast
+threw `InvalidCastException` out of a core reflect API (`encoding/json`'s `TestSliceOfCustomByte` and
+`TestEncodeRenamedByteSlice`; `fmt`'s `%x` of a `[]renamedUint8` and five siblings of one table-driven
+test).
+
+The route is `slice<T>.AliasOfElement`, a bridge primitive that re-spells a slice's element type while
+carrying its window across unchanged, and its whole safety argument is the gate in front of it: the
+two element types must be ONE representation under two Go names — **both value types, both free of
+managed references, both exactly one byte wide** — asked of the managed types directly and never
+inferred from the `[GoType]` token. Those are the same three facts the blessed
+`ReinterpretAliasesStorage` gate asks of a pointee pair. Under them the two backing objects are
+byte-for-byte the same shape and differ only in their method table, and every access golib makes
+through a `slice<T>` addresses the data from the STATIC element type and the array's own length field
+(`Span<T>`'s array constructor skips its covariance check outright for a value-typed `T`). What the
+pun does not survive is a runtime type test on the array OBJECT — `Array.Copy`'s element check,
+`backing is byte[]`, `backing.GetType()` — so nothing may reach one through the result, which is why
+it is an internal primitive rather than a public conversion.
+
+**`SetBytes` was worse than incomplete, and for a reason with nothing to do with named types.** Its
+auto body is `*(*[]byte)(v.ptr) = x`, which converts to a store through
+`(ж<slice<byte>>)(uintptr)(v.ptr)` — `v.ptr` is the Go data word this bridge never populates, so the
+store went through a box over address 0 and landed nowhere, for EVERY byte slice including a plain
+`[]byte`. Silently: `encoding/json`'s `literalStore` decodes base64 into a fresh buffer and hands it
+over with exactly this call, so every `[]byte` field decoded as empty and `TestLargeByteSlice`
+reported a 2000-byte round trip diverging at byte 0. It is hand-owned now and writes where every other
+setter writes, through the addressable Value's aliased box.
+
+### `new(T)` is Go's ZERO value — and for a container kind that means the NIL one
+
+`p := new([]int)` in Go yields a pointer to the zero slice, which is **nil**; likewise
+`new(map[K]V)` and `new(chan T)`. golib's container structs each declare a parameterless constructor
+that ALLOCATES (`map<K,V>` makes its backing dictionary, `slice<T>` takes the empty array), and
+`Activator.CreateInstance<T>` honors a declared parameterless constructor — so `new(T)` handed back a
+pointer to a non-nil EMPTY container.
+
+It went unnoticed because the two differ only under `== nil`: `len()` agrees at 0, a range over either
+yields nothing, and `encoding/json` marshals them by the same branch. It surfaced where the two
+zero-FABRICATION paths finally met. `reflect.Zero`/`New` build a zero through `GoReflect.ZeroValueOf`,
+which has always answered the NIL container for these kinds, so
+
+```go
+reflect.DeepEqual(new([]any), reflect.New(typ).Interface())
+```
+
+compared a nil slice against an empty one and was false — and that comparison is the precondition
+`encoding/json`'s whole `TestUnmarshal` table checks before every subtest, which is how one
+constructor blocked forty-odd verdicts at once. `builtin.@new<T>` now takes `default(T)` for the
+slice/map/chan kinds and keeps running the constructor for every other kind, because that is what
+materializes a struct's fixed-size ARRAY fields from the initializers the converter emits into it. The
+two rules are one classification now, asked of the same `KindOf`.
+
+**Its other half is descriptor cargo.** A POINTER descriptor carries its POINTEE's array dims
+unshifted — the rule `Elem()` already applies when it hands them down — but nothing populated it, so
+`reflect.TypeOf(new([3]int)).Elem()` described a dimension-LESS array and `reflect.New` of it
+allocated a zero-length one, giving the fresh value a different Type from the one it mirrors.
+`abi.TypeOf` measures it now, through `GoReflect.PointeeArrayDims`.
+
+### An `unsafe.Pointer` is compared BY ADDRESS, and a container's pointer names its STORAGE
+
+Three separate identity rules meet in Go's own cycle detectors, and all three were wrong in the same
+direction — too *fine*, so nothing ever compared equal to itself:
+
+1. **`unsafe.Pointer`.** It is a `ж<uintptr>` whose VALUE is the address, and `ж<T>` compares and
+   hashes a heap box by REFERENCE — right for every other pointer (the box IS the storage it names)
+   and wrong for this one, which CARRIES an address while the converter mints a fresh box on every
+   `uintptr → unsafe.Pointer` conversion. `ж<T>.Equals` is `virtual` for this single override, which
+   makes `==`, `Equals` and a map-key lookup answer through one rule; an
+   `operator ==(Pointer, Pointer)` would instead have made every existing
+   `uintptr == unsafe.Pointer` comparison ambiguous (CS0034, measured in `runtime`'s `map.cs` and
+   `mfinal.cs`).
+2. **A MAP or SLICE reached through `reflect.Value.UnsafePointer`.** Go answers the STORAGE address —
+   the hmap for a map, `&s[0]` for a slice — while the managed value is a HEADER STRUCT, freshly boxed
+   on every read out of a slot, so two reads of one Go map tokened differently. The token now comes
+   from the backing store (plus the window offset for a slice), which is the same root
+   `deepValueEqual` keys its own cycle detection on, so the two walks cannot disagree about what "the
+   same map" means.
+3. **A struct field of INTERFACE type.** `go2cs-gen`'s memberwise `Equals` compared every member with
+   C# `==`, which for an interface or `object` operand is reference identity where Go compares
+   interface values by dynamic type and value. Since a struct's `Equals` is also what a map LOOKUP
+   calls, such a struct could never be found under a key it had itself been stored under. Those
+   members now route through `builtin.AreEqual`, the same relation the converter emits for a bare Go
+   `==` between interface operands; `ж<T>`, named-pointer wrappers and delegates keep `==`, because
+   pointer identity IS Go's pointer relation and a struct holding a func is not comparable in Go at
+   all.
+
+`encoding/json`'s encoder needs all three: it keys `e.ptrSeen` on `v.Interface()` for a pointer, on
+`v.UnsafePointer()` for a map, and on `struct{ ptr any; len int }` for a slice. With any of them
+answering by identity the lookup never matched an entry it had itself stored, no cycle was detected,
+and `Marshal` of a self-referential value recursed until the process died — `0xc00000fd`, which is
+uncatchable and takes every verdict the run had not yet produced with it. Go returns
+`UnsupportedValueError: encountered a cycle`.
+
+### A NaN map key is never equal to anything, itself included
+
+BCL `Double.Equals` reports NaN equal to NaN, deliberately, so that a NaN stored in a collection can
+be found again. Go applies `==` unchanged, so a NaN key is equal to nothing: `m[NaN] = 1` twice stores
+TWO entries, and neither can ever be read back or deleted. `fmt`'s own `TestSprintf` reads the
+difference out of `%v` of a map — `map[NaN:1]` against Go's `map[NaN:1 NaN:1]`.
+
+`GoEqualityComparer.ForKeys` therefore supplies a per-representation, non-boxing comparer for the four
+float representations, whose entire implementation is `==` — because C#'s float `==` IS the IEEE
+relation Go's map applies. The hash stays the type's own, and a NaN that hashes consistently while
+comparing unequal builds exactly the same-bucket/never-equal chain Go's map builds for it. Scoped to
+the raw representations: a NAMED float type's wrapper, and a struct or array that CONTAINS a float,
+still compare through their generated equality and inherit the BCL rule. No measured consumer reaches
+those, and covering them would mean routing every struct-keyed map through the reflective relation.
+
+### A COMPLEX constant expression must be FOLDED — .NET's mixed operators are not Go's arithmetic
+
+The float sibling of this rule (see *Named Numeric Types and Constant Contexts*) folds a constant
+expression only where a named untyped const forces it, on the stated ground that a pure-literal float
+constant "computes exactly in C# double, so its readable operator form is kept". That ground does not
+hold for COMPLEX, and the counter-example is ordinary: .NET's mixed real/complex operators are not
+Go's constant arithmetic and are not even IEEE. `Complex.operator -(double, Complex)` computes the
+imaginary part as `-right.Imaginary` rather than `left.Imaginary - right.Imaginary`, so
+
+```csharp
+1230000D - 0D.i()      // imaginary -0
+```
+
+where Go — which folds the untyped expression in exact rational arithmetic, and an exact zero has no
+sign — yields `+0`. `fmt`'s `TestSprintf` reads the sign back out: `%#12.5g` of `1230000 - 0i` printed
+`-0.0000i` against Go's `+0.0000i`.
+
+So the rule is stated the way Go states it: a complex-kind constant operator expression HAS an exact
+value and is emitted as that value, through the same `exactComplexConstString` a complex const
+DECLARATION already uses. Keyed on `constant.Complex` — go/constant normalizes a real-valued result to
+an Int/Float kind, so a real-only expression in a complex context is left to the float and integer
+folds above it. Deliberately no `/* <gofmt> */` annotation, unlike the float fold: the folded text
+re-renders in the same `re + imi` shape `convBasicLit` already emits, so the common case (`3 + 4i` →
+`3F + 4F.i()`) is byte-identical to the operator rendering it replaces, and only the cases where the
+two genuinely disagree move.
+
 ### Realizing the runtime TIMER contract (`Sleep` / `newTimer` / `stopTimer` / `resetTimer`)
 
 `time`'s four timer entry points have no Go body — they are `//go:linkname`'d into `runtime/time.go` — so the converter emits them as bodyless `partial`s that the [`PartialStubGenerator`](#source-generators) fills with `NotImplementedException`. A stub throw on a timer path is uniquely destructive: it lands on whichever goroutine touched the timer, and an unrecovered panic in *any* goroutine terminates the process, so every package that so much as called `time.Sleep` once was unreachable. `time_impl.cs` supplies the four bodies (the same supplemental-companion mechanism as `math_impl.cs` and the clock reads above it), and the whole model is a single `_impl.cs` region — no converter or golib change.

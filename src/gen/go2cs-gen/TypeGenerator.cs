@@ -119,7 +119,13 @@ public class TypeGenerator : ISourceGenerator
                             // independent of the unconstrained type parameters compares with ==,
                             // and only the rest fall back to golib's AreEqual (never a blanket
                             // `false`, which broke ==-independent structs like unique.Handle<T>).
-                            EqualityFallbackMembers = hasEqualityOperators ? null : structDeclaration.GetEqualityFallbackMembers(context.Compilation),
+                            // An INTERFACE-typed member joins that set for every struct, generic or
+                            // not, and for the opposite reason: its == compiles and is REFERENCE
+                            // identity, where Go compares interface values by dynamic type and
+                            // value. See GetInterfaceValueMembers.
+                            EqualityFallbackMembers = CombineEqualityFallbacks(
+                                hasEqualityOperators ? null : structDeclaration.GetEqualityFallbackMembers(context.Compilation),
+                                structDeclaration.GetInterfaceValueMembers(context.Compilation)),
                             ValueCloneFields = valueCloneFields,
                             UsingStatements = usingStatements
                         }
@@ -562,5 +568,21 @@ public class TypeGenerator : ISourceGenerator
         }
 
         return null;
+    }
+
+    // Unions the two reasons a member cannot compare with C# `==` into the one set the template
+    // consults. `null` is meaningful downstream — with no fallback set AND no whole-struct equality
+    // constraint, the template emits a constant-false Equals — so an EMPTY interface-member set must
+    // leave a null fallback null rather than turning it into an empty one.
+    private static HashSet<string>? CombineEqualityFallbacks(HashSet<string>? fallbackMembers, HashSet<string> interfaceMembers)
+    {
+        if (interfaceMembers.Count == 0)
+            return fallbackMembers;
+
+        if (fallbackMembers is null)
+            return interfaceMembers;
+
+        fallbackMembers.UnionWith(interfaceMembers);
+        return fallbackMembers;
     }
 }

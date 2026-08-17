@@ -177,10 +177,87 @@ public static class StructDeclarationSyntaxExtensions
         return fallbackMembers;
     }
 
+    /// <summary>
+    /// Gets the names of the struct's instance members whose type is a Go INTERFACE — <c>any</c>
+    /// included — for which C#'s <c>==</c> compiles but means the WRONG THING, so the generated
+    /// <c>Equals</c> must compare them through golib's <c>AreEqual</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the one member kind where "== compiles" and "== is Go's relation" come apart, and the
+    /// sibling <see cref="GetEqualityFallbackMembers"/> deliberately answers the first question only.
+    /// C# <c>==</c> on an interface or <c>object</c> operand is REFERENCE identity; Go compares two
+    /// interface values by DYNAMIC TYPE and dynamic value, which is what <c>builtin.AreEqual</c>
+    /// implements and what the converter already emits for a bare Go <c>==</c> between interface
+    /// operands. A struct with an interface-typed field therefore compared equal only to itself —
+    /// and because a struct's <c>Equals</c> is also what a map LOOKUP calls, such a struct could
+    /// never be found under a key it had itself been stored under.
+    /// </para>
+    /// <para>
+    /// The measured consumer is encoding/json's cycle detector, whose slice arm keys
+    /// <c>e.ptrSeen</c> on <c>struct{ ptr any; len int }</c>. The lookup never matched, no cycle was
+    /// reported for a self-referential slice, and the encoder recursed until the process died. Its
+    /// map arm survived only because that key is the pointer ITSELF rather than a struct around it.
+    /// </para>
+    /// <para>
+    /// Interfaces only. A <c>ж&lt;T&gt;</c>, a named-pointer wrapper and a delegate are reference
+    /// types too and each keeps <c>==</c>: pointer identity IS Go's pointer relation, and a Go struct
+    /// holding a func is not comparable at all, so no valid Go program observes that member's answer.
+    /// </para>
+    /// </remarks>
+    public static HashSet<string> GetInterfaceValueMembers(
+        this StructDeclarationSyntax structDeclaration,
+        Compilation compilation)
+    {
+        SemanticModel semanticModel = compilation.GetSemanticModel(structDeclaration.SyntaxTree);
+        HashSet<string> interfaceMembers = new(StringComparer.Ordinal);
+
+        foreach (MemberDeclarationSyntax member in structDeclaration.Members)
+        {
+            if (member.Modifiers.Any(SyntaxKind.StaticKeyword))
+                continue;
+
+            switch (member)
+            {
+                case PropertyDeclarationSyntax propertyDeclaration:
+                {
+                    // Same membership as GetStructMembers(filterToRefProperties: true): only the
+                    // promoted-embed `partial ref` properties participate in the comparison.
+                    if (propertyDeclaration.Type is RefTypeSyntax refType &&
+                        IsGoInterfaceValue(semanticModel.GetTypeInfo(refType.Type).Type))
+                    {
+                        interfaceMembers.Add(propertyDeclaration.Identifier.Text);
+                    }
+
+                    break;
+                }
+                case FieldDeclarationSyntax fieldDeclaration:
+                {
+                    if (!IsGoInterfaceValue(semanticModel.GetTypeInfo(fieldDeclaration.Declaration.Type).Type))
+                        continue;
+
+                    foreach (VariableDeclaratorSyntax variable in fieldDeclaration.Declaration.Variables)
+                        interfaceMembers.Add(variable.Identifier.Text);
+
+                    break;
+                }
+            }
+        }
+
+        return interfaceMembers;
+    }
+
+    // A Go interface value: a C# interface, or `object` — which is how `any` is spelled.
+    private static bool IsGoInterfaceValue(ITypeSymbol? type)
+    {
+        return type is not null && (type.TypeKind == TypeKind.Interface || type.SpecialType == SpecialType.System_Object);
+    }
+
     // Reports whether `left == right` COMPILES for operands of this type — the per-member question
     // the fallback set is built from. Deliberately about compilability, not semantics: wherever ==
     // is legal it is emitted, matching what a NON-generic struct's memberwise compare has always
-    // done for the same member type.
+    // done for the same member type. The one member kind where compilability and SEMANTICS diverge
+    // is handled separately — see GetInterfaceValueMembers.
     private static bool SupportsEqualityOperator(ITypeSymbol? type, INamedTypeSymbol? equalityOperators)
     {
         if (type is null)

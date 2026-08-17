@@ -11,6 +11,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using go.golib;
 
 namespace go;
@@ -338,6 +339,135 @@ public static partial class GoReflect
     private static object newBox<T>(object? value)
     {
         return value is null ? new ж<T>(default(T)!) : new ж<T>((T)value);
+    }
+
+    // -------- the []byte VIEW of any Uint8-element slice (reflect.Value.Bytes / SetBytes) --------
+    //
+    // Go's Bytes()/SetBytes() are defined over the element KIND, not the element TYPE: any slice
+    // whose element is Uint8-kinded qualifies — `[]byte`, `[]renamedByte` where
+    // `type renamedByte byte`, and a defined slice type over either — and both reach the storage by
+    // re-typing the slice HEADER. That is an ALIAS, and it has to stay one: `Bytes()` is how a
+    // caller writes INTO a reflected byte slice, so a copy would compile, satisfy every read-only
+    // consumer, and silently drop every write.
+    //
+    // Two of the three shapes were already aliased (a raw slice<byte> is itself; a defined slice
+    // type over plain byte answers through its ISlice<byte> view, which shares its backing). The
+    // third — a DEFINED byte ELEMENT — had no route at all: slice<renamedByte> holds a
+    // renamedByte[] of one-field wrapper structs, an unrelated instantiation with no conversion to
+    // slice<byte>, so the catch-all cast threw InvalidCastException out of a core reflect API
+    // (encoding/json's TestSliceOfCustomByte and TestEncodeRenamedByteSlice; fmt's `%x` of a
+    // []renamedUint8 and five siblings of one table-driven test).
+    //
+    // The route is slice<T>.AliasOfElement, and the gate below is its whole safety argument: the
+    // two element types must be ONE representation under two Go names. That is asked of the managed
+    // types directly — value type, no managed references, exactly one byte wide — and never
+    // inferred from the [GoType] token, so a wrapper that ever stopped being a bare byte would fall
+    // out of the alias rather than pun something wider.
+    private static class ByteAliasableElement<E>
+    {
+        internal static readonly bool Value =
+            typeof(E).IsValueType &&
+            !RuntimeHelpers.IsReferenceOrContainsReferences<E>() &&
+            Unsafe.SizeOf<E>() == 1 &&
+            KindOf(typeof(E)) == Uint8;
+    }
+
+    private static readonly ConcurrentDictionary<Type, Func<object, slice<byte>?>?> s_byteSliceViews = new();
+
+    /// <summary>
+    /// The <c>[]byte</c> ALIASING <paramref name="container"/>'s storage, when
+    /// <paramref name="container"/> is a Go slice of Uint8-kinded elements however the element and
+    /// the slice type are NAMED; <c>false</c> when it is not such a slice (Go panics there, and the
+    /// caller owns that message).
+    /// </summary>
+    public static bool TryByteSliceView(object? container, out slice<byte> view)
+    {
+        view = default;
+
+        switch (container)
+        {
+            case null:
+                return false;
+            // The two shapes that were always aliased: a raw []byte, and a defined slice type over
+            // plain byte (its ISlice<byte> view shares the backing store — see slice's view ctor).
+            case slice<byte> raw:
+                view = raw;
+                return true;
+            case ISlice<byte> named:
+                view = new slice<byte>(named);
+                return true;
+        }
+
+        Func<object, slice<byte>?>? viewer = s_byteSliceViews.GetOrAdd(container.GetType(), static ct =>
+        {
+            Type? elem = KindOf(ct) == Slice ? ElementType(ct) : null;
+
+            return elem is null
+                ? null
+                : typeof(GoReflect).GetMethod(nameof(byteSliceViewOf), BindingFlags.NonPublic | BindingFlags.Static)!
+                    .MakeGenericMethod(elem).CreateDelegate<Func<object, slice<byte>?>>();
+        });
+
+        if (viewer?.Invoke(container) is not { } aliased)
+            return false;
+
+        view = aliased;
+        return true;
+    }
+
+    private static slice<byte>? byteSliceViewOf<E>(object container)
+    {
+        if (!ByteAliasableElement<E>.Value)
+            return null;
+
+        // A defined SLICE type over a defined byte element reaches its window through the same
+        // shared-backing view ctor the plain-byte case above uses; a raw slice<E> unboxes.
+        slice<E> source = container is slice<E> raw ? raw : new slice<E>((ISlice<E>)container);
+
+        return slice<byte>.AliasOfElement(in source);
+    }
+
+    private static readonly ConcurrentDictionary<Type, Func<slice<byte>, object?>?> s_byteSliceStores = new();
+
+    /// <summary>
+    /// <paramref name="bytes"/> re-spelled as a value of the Uint8-element slice type
+    /// <paramref name="sliceType"/>, ALIASING the same storage — the write half of
+    /// <see cref="TryByteSliceView"/> (<c>reflect.Value.SetBytes</c>, whose Go form assigns the
+    /// slice HEADER into the slot). <c>false</c> when <paramref name="sliceType"/> is not such a
+    /// slice type.
+    /// </summary>
+    public static bool TryByteSliceAs(Type sliceType, slice<byte> bytes, out object? stored)
+    {
+        stored = null;
+
+        Func<slice<byte>, object?>? storer = s_byteSliceStores.GetOrAdd(sliceType, static st =>
+        {
+            Type? elem = KindOf(st) == Slice ? ElementType(st) : null;
+
+            return elem is null
+                ? null
+                : typeof(GoReflect).GetMethod(nameof(byteSliceAsOf), BindingFlags.NonPublic | BindingFlags.Static)!
+                    .MakeGenericMethod(elem).CreateDelegate<Func<slice<byte>, object?>>();
+        });
+
+        if (storer?.Invoke(bytes) is not { } aliased)
+            return false;
+
+        // The ELEMENT is now spelled right; a DEFINED slice type still needs its wrapper, and that
+        // is the one assignability relation Value.Set already routes through — so a named []byte
+        // and a named []DefinedByte are reached by one rule rather than two.
+        return TryMarshalAssignable(aliased, sliceType, out stored);
+    }
+
+    private static object? byteSliceAsOf<E>(slice<byte> bytes)
+    {
+        if (typeof(E) == typeof(byte))
+            return bytes;
+
+        if (!ByteAliasableElement<E>.Value)
+            return null;
+
+        return slice<E>.AliasOfElement(in bytes);
     }
 
     // -------- Go convertibility (Set{Int,Uint,Float,Complex,String,Bool} + future Convert) --------

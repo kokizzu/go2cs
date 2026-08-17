@@ -610,11 +610,45 @@ public static slice<byte> Bytes(this ΔValue v) {
         }
         return arr.Slice(0, (int)arr.Length);
     }
-    return v.live switch {
-        slice<byte> s => s,
-        ISlice<byte> view => new slice<byte>(view),
-        var other => (slice<byte>)other!
-    };
+    // Go decides on the element KIND, not the element TYPE — `[]renamedByte` and
+    // `type S []Uint8` qualify exactly as `[]byte` does — and it ALIASES. GoReflect.TryByteSliceView
+    // is that whole relation in one place (see its banner for why the alias is not negotiable and
+    // what makes the defined-element case safe); reaching it is the ONLY way a caller writing
+    // through the result stays visible in the original.
+    if (GoReflect.TryByteSliceView(v.live, out slice<byte> aliased)) {
+        return aliased;
+    }
+    if (v.live is null) {
+        // The nil slice: nothing to alias, and Go's own header re-typing answers the nil []byte.
+        return default!;
+    }
+    throw panic("reflect.Value.Bytes of non-byte slice");
+}
+
+// SetBytes sets v's underlying value — the WRITE half of Bytes, and the same element-KIND relation.
+//
+// The auto form is `*(*[]byte)(v.ptr) = x`, which converts to a store through
+// `(ж<slice<byte>>)(uintptr)(v.ptr)`: `v.ptr` is the Go data word, which this bridge never
+// populates, so the store went through a box over address 0 and landed nowhere — SILENTLY, for
+// EVERY byte slice including a plain []byte. encoding/json's literalStore decodes base64 into a
+// fresh buffer and hands it over with exactly this call, so every []byte field decoded as empty
+// and TestLargeByteSlice reported a 2000-byte round trip diverging at byte 0. The bridge writes
+// where every other setter writes — through the addressable Value's aliased box — and re-spells the
+// incoming []byte as the SLOT's own slice type without copying, which is what Go's header
+// assignment does.
+public static void SetBytes(this ΔValue v, slice<byte> x) {
+    v.flag.mustBeAssignable();
+    v.flag.mustBe(ΔSlice);
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    if (st is null || !GoReflect.TryByteSliceAs(st, x, out object? stored)) {
+        throw panic("reflect.Value.SetBytes of non-byte slice");
+    }
+    if (v.addrBox is null) {
+        // mustBeAssignable already rejected an unaddressable Value, so a missing box is a bridge
+        // invariant violation rather than a Go state — fail loud instead of writing into a copy.
+        throw panic("reflect.Value.SetBytes of value with no aliased storage");
+    }
+    GoReflect.WritePointerSlot(v.addrBox, stored);
 }
 
 // NumField returns the number of fields in the struct v — the PROJECTED Go fields of the
@@ -641,7 +675,24 @@ public static ΔValue Field(this ΔValue v, nint i) {
         throw panic("reflect: Field index out of range");
     }
     GoReflect.GoFieldInfo f = fields[(int)i];
-    flag ro = (flag)((flag)(v.flag & flagRO) | (f.Exported ? default : flagStickyRO));
+    // Go's two read-only bits are NOT interchangeable, and this is the one place that decides which
+    // of them a field gets — the same clause as reflect's own Value.Field:
+    //
+    //     fl := v.flag&(flagStickyRO|flagIndir|flagAddr) | flag(typ.Kind())
+    //     if !field.Name.IsExported() {
+    //         if field.Embedded() { fl |= flagEmbedRO } else { fl |= flagStickyRO }
+    //     }
+    //
+    // Both bits block a write through the field ITSELF, so reading one for the other looks
+    // harmless. What differs is INHERITANCE: only flagStickyRO propagates to a child, so an
+    // exported field reached THROUGH an unexported embedded struct is writable in Go — which is the
+    // whole of `type S struct{ embed }` where `embed` carries exported fields, an ordinary Go idiom
+    // every decoder meets. Marking an unexported EMBED sticky made every promoted field read-only,
+    // and encoding/json's Unmarshal panicked in mustBeAssignable instead of filling it
+    // (TestUnmarshalEmbeddedUnexported, plus TestUnmarshal's DisallowUnknownFields rows).
+    // GoFieldInfo.Embedded is what makes the distinction expressible; before it the two cases were
+    // indistinguishable through this projection.
+    flag ro = (flag)((flag)(v.flag & flagStickyRO) | (f.Exported ? default : f.Embedded ? flagEmbedRO : flagStickyRO));
     if (v.addrBox is not null) {
         var elem = makeTypedValue(null, f.Type, f.ArrayDims, ro);
         elem.flag |= flagAddr | flagIndir;
@@ -668,6 +719,16 @@ public static uintptr Pointer(this ΔValue v) {
     return reflectPointerToken(v);
 }
 
+// A slice's Go data address is `&s[0]` — its BACKING STORE plus its window offset — so the token
+// combines the two, exactly as deepValueEqual's identityRoot does. A nil slice has no storage and
+// tokens 0, which is what the nil test one level up already answers for every other kind.
+private static uintptr sliceStorageToken(object boxed) {
+    (object? data, nint low) = sliceData(boxed);
+    return data is null
+        ? 0
+        : ((uintptr)(nuint)(uint)System.HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(data), low));
+}
+
 private static uintptr reflectPointerToken(ΔValue v) {
     object? cur = v.live;
     while (cur is IInterfaceAdapter { Value: not null } interfaceAdapter) {
@@ -686,11 +747,25 @@ private static uintptr reflectPointerToken(ΔValue v) {
     }
     // Pointer-bearing golib values answer their own stable, order-consistent address token
     // (equal pointers token equally; same-storage element pointers order by index; channel
-    // copies share their core's token — internal/fmtsort orders map keys by this). Anything
-    // else (a func delegate, a map) falls back to reference identity.
+    // copies share their core's token — internal/fmtsort orders map keys by this).
+    //
+    // A MAP or a SLICE is the case that cannot use the boxed value's own identity: Go's
+    // UnsafePointer answers the STORAGE address — the hmap for a map, `&s[0]` for a slice — while
+    // the managed value is a HEADER STRUCT, freshly boxed on every read out of a slot. So two
+    // reads of ONE Go map tokened differently, which is not a wrong ORDER (nothing orders maps) but
+    // a broken IDENTITY, and identity is exactly what encoding/json's cycle detector asks for:
+    // `e.ptrSeen[v.UnsafePointer()]` never matched an entry it had itself stored, so a
+    // self-referential map or slice was never detected, `interfaceEncoder`→`mapEncoder` recursed
+    // without bound, and the process died of stack exhaustion (0xc00000fd) — taking every verdict
+    // the run had not yet produced with it. The storage identity is the SAME root deepValueEqual
+    // keys its cycle detection on (mapBacking / sliceData), so the two walks cannot disagree about
+    // what "the same map" means. A slice folds its window offset in, as Go's `&s[0]` does.
+    // Anything else (a func delegate) falls back to reference identity.
     uintptr token = cur switch {
         INilPointer p => ((uintptr)p.PointerOrderToken),
         IChannel c => ((uintptr)c.PointerOrderToken),
+        IMap => ((uintptr)(nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(mapBacking(cur) ?? cur)),
+        ISlice => sliceStorageToken(cur),
         _ => ((uintptr)(nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cur))
     };
     // Go also permits the OTHER direction — converting the scalar back to a pointer and
@@ -1405,15 +1480,36 @@ private static bool isExportedGoName(string name) {
 // must not be populated to look truthful. A Go byte offset exists only to be added to a data
 // pointer, and managed storage has no such pointer to add it to; abi.StructType populates
 // Offset because its consumers (unique's clone sequencer, reflectlite) read it as layout
-// METADATA, never as an address to walk. Anonymous stays unpopulated for a different reason —
-// it IS knowable (an embedded field arrives through golib's promoted-embed box hop) but no
-// measured consumer demands it, and the recorded next gap of this shape is the field ORDER an
-// embedded field lands in: go2cs-gen emits the promoted-embed backing box AFTER the declared
-// fields, so `Host{X; y; Inner; inner; Ptr}` walks as X, y, Ptr, Inner, inner here where Go
-// walks it in declaration order.
+// METADATA, never as an address to walk.
+//
+// Anonymous IS populated, and its measured consumer is the whole Go EMBEDDING contract:
+// encoding/json's typeFields (and encoding/xml's, encoding/gob's, text/template's) flattens a
+// field's own fields into the enclosing object exactly when StructField.Anonymous is set and the
+// field carries no name tag. Reported false, every embed became an ORDINARY field named after its
+// type — `{"S1":{"X":2},"S2":{"X":4}}` where Go writes `{}`, `{"S":"B","BugA":{"S":"A"}}` where Go
+// writes `{"S":"B"}` — and `DisallowUnknownFields` then named the promoted field's own key as the
+// unknown one. It is a real READ, not a reconstruction: the converter emits an embed as a partial
+// property over a marker-prefixed backing box and golib's field projection records that shape as
+// GoFieldInfo.Embedded, which is the same flag reflect's struct-identity walk already compares
+// (Go's haveIdenticalUnderlyingType ends each field with `tf.Embedded() != vf.Embedded()`).
+//
+// The recorded next gap of this shape is the field ORDER an embedded field lands in: go2cs-gen
+// emits the promoted-embed backing box AFTER the declared fields, so `Host{X; y; Inner; inner; Ptr}`
+// walks as X, y, Ptr, Inner, inner here where Go walks it in declaration order. It is deliberately
+// NOT fixed with Anonymous, because no measured consumer observes it yet (the r39d rule): json's
+// dominance rules are decided by DEPTH and tag, not by declaration order, and its one order-sensitive
+// test — TestMarshalEmbeds — declares its single plain field FIRST, so the projected order and Go's
+// coincide. A struct that interleaves plain and embedded fields AND is marshalled by key order is
+// the shape that will expose it, and the remedy is declaration-order cargo, not a re-sort here.
 internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
     System.Type st = Ꮡt.Value.t.sysType!;
-    GoReflect.GoFieldInfo f = GoReflect.GoFields(st)[(int)i];
+    return structFieldOf(st, GoReflect.GoFields(st)[(int)i], [i]);
+}
+
+// The descriptor for one projected field of `st`, reached by `index`. Split out of Field so a
+// PROMOTED field (whose index is a PATH through one or more embeds) is described by the same rule
+// as a direct one — everything but Index is the deepest field's own property.
+private static StructField structFieldOf(System.Type st, GoReflect.GoFieldInfo f, nint[] index) {
     return new StructField(
         Name: (@string)f.Name,
         // ⚠ GoReflect.GoPackagePath DIRECTLY, never "tidied" to route through rtype.PkgPath():
@@ -1424,7 +1520,8 @@ internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
         PkgPath: f.Exported ? "" : (@string)GoReflect.GoPackagePath(st),
         Type: toType(abi.synthType(f.Type, f.ArrayDims)),
         Tag: ((StructTag)(@string)f.Tag),
-        Index: new slice<nint>(new nint[] { i })
+        Index: new slice<nint>(index),
+        Anonymous: f.Embedded
     );
 }
 
@@ -1746,10 +1843,83 @@ internal static (StructField, bool) FieldByName(this ж<rtype> Ꮡt, @string nam
         throw panic("reflect: FieldByName of non-struct type");
     }
     GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(st);
+    bool hasEmbeds = false;
     for (nint i = 0; i < fields.Length; i++) {
         if ((@string)fields[i].Name == name) {
             return (Field(Ꮡt, i), true);
         }
+        hasEmbeds |= fields[(int)i].Embedded;
+    }
+    // Go's own shape: the direct scan above is the quick path AND the whole answer for a struct
+    // with no embedded fields; only an embed makes a deeper search possible at all.
+    if (!hasEmbeds) {
+        return (default!, false);
+    }
+    return promotedFieldByName(Ꮡt, st, name);
+}
+
+// Go's PROMOTED-field search — structType.FieldByNameFunc, breadth first over embedded fields.
+//
+// Until StructField.Anonymous became truthful this could not be written: an embed is what defines a
+// promotion, and nothing distinguished one. Without it FieldByName answered only DIRECT fields and
+// reported a promoted name as ABSENT — silently, and then destructively, because Value.FieldByName
+// hands the zero index sequence to FieldByIndex, which answers the STRUCT ITSELF, so a write through
+// the "field" landed on the whole value.
+//
+// Two properties of Go's search are load-bearing and are reproduced exactly rather than
+// approximated:
+//
+//   * BREADTH FIRST, with a SHALLOWER name always winning — that is Go's field-dominance rule, the
+//     same one encoding/json states as "the least deeply nested field wins";
+//   * an AMBIGUITY at one depth is NOT a match. Two embeds carrying the same name at the same depth
+//     annihilate each other and the name is simply absent (Go's `ok == false`), which is why the
+//     count at each level is what decides rather than the first hit found.
+//
+// An embedded POINTER is followed through its pointee, as Go does; a visited set keeps a cyclic
+// embed graph finite (`type Loop struct { Loop1 int; *Loop }` — encoding/json's own fixture).
+private static (StructField, bool) promotedFieldByName(ж<rtype> Ꮡt, System.Type st, @string name) {
+    var current = new System.Collections.Generic.List<(System.Type owner, nint[] index)> { (st, []) };
+    var visited = new System.Collections.Generic.HashSet<System.Type> { st };
+
+    while (current.Count > 0) {
+        var next = new System.Collections.Generic.List<(System.Type owner, nint[] index)>();
+        nint[]? found = null;
+        System.Type? foundOwner = null;
+        int matches = 0;
+
+        foreach ((System.Type owner, nint[] index) in current) {
+            GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(owner);
+
+            for (int i = 0; i < fields.Length; i++) {
+                GoReflect.GoFieldInfo f = fields[i];
+                nint[] path = [.. index, (nint)i];
+
+                if ((@string)f.Name == name) {
+                    matches++;
+                    found = path;
+                    foundOwner = owner;
+                    continue;
+                }
+                if (!f.Embedded) {
+                    continue;
+                }
+                // An embedded pointer promotes its POINTEE's fields.
+                System.Type embedded = GoReflect.KindOf(f.Type) == GoReflect.Pointer
+                    ? GoReflect.ElementType(f.Type)!
+                    : f.Type;
+                if (embedded is not null && GoReflect.KindOf(embedded) == GoReflect.Struct && visited.Add(embedded)) {
+                    next.Add((embedded, path));
+                }
+            }
+        }
+        // Exactly one match at this depth wins; two or more annihilate (Go reports absent).
+        if (matches == 1) {
+            return (structFieldOf(foundOwner!, GoReflect.GoFields(foundOwner!)[(int)found![^1]], found), true);
+        }
+        if (matches > 1) {
+            return (default!, false);
+        }
+        current = next;
     }
     return (default!, false);
 }

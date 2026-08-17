@@ -10,7 +10,7 @@ private static readonly object sprintˢ = (@string)"sprint:"u8;
 
 internal static void Main() {
     complex128 c128 = 2D + 3D.i();
-    complex128 neg = 2D - 3D.i();
+    complex128 neg = 2D + -3D.i();
     complex128 frac = complex(2.5D, -1.25D);
     complex128 realOnly = complex(5D, 0D);
     complex128 imagOnly = 3D.i();
