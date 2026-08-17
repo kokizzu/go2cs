@@ -61,6 +61,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `encoding/binary` | [`encoding.binary.md`](current/encoding.binary.md) | [`src/core/encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary) |
 | `encoding/csv` | [`encoding.csv.md`](current/encoding.csv.md) | [`src/core/encoding/csv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/csv) |
 | `encoding/hex` | [`encoding.hex.md`](current/encoding.hex.md) | [`src/core/encoding/hex`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/hex) |
+| `encoding/json` | [`encoding.json.md`](current/encoding.json.md) | [`src/core/encoding/json`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/json) |
 | `encoding/pem` | [`encoding.pem.md`](current/encoding.pem.md) | [`src/core/encoding/pem`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/pem) |
 | `errors` | [`errors.md`](current/errors.md) | [`src/core/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/errors) |
 | `expvar` | [`expvar.md`](current/expvar.md) | [`src/core/expvar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/expvar) |

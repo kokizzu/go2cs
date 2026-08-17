@@ -10176,3 +10176,93 @@ a placeholder (`Value.SetBytes` joins the hand-owns).
 here read only each file's first 40 lines and reported **35** marked files against the real **60**,
 which would have made the clobber gate vacuous for 25 hand-owns. The rule is already written as
 line-anchored; it must also be whole-file.
+
+## ✅ `encoding/json` BANKS at 491/491 — ONE root, and it was a map ENTRY read without its type (2026-08-17, lane `claude/json-lastroot`)
+
+The entry above left `encoding/json` at 482 of 491 with the remainder **unrooted**: `TestUnmarshal`
+rows #56–#63 plus the aggregate, all comparing a decoded 40-field `All` fixture against the table
+literal with one top-level `reflect.DeepEqual`, and `Marshal` of both sides producing **byte-identical**
+JSON. It also left the right next step — *find which of `All`'s forty fields `DeepEqual` separates* —
+and that instrument cost about two minutes and answered on the first run.
+
+| Package | Before | After |
+|:--|--:|--:|
+| `encoding/json` | 482 of 491 | **491 of 491 — BANKED, roster row 150** |
+
+491 matched, **0 disclosed**, 0 skipped, 41 Benchmark/Example/Fuzz declarations excluded under the
+standard Phase-4D deferral. The whole suite runs in ~24 s, so it needs no `$longTimeouts` floor.
+
+### The leaf, and the root behind it
+
+A field-by-field probe — walk both structs with `reflect`, `DeepEqual` each field, recurse, print the
+first path that separates — named **`All.MapP`** immediately, and named it in the informative way:
+
+```
+DIFF All.MapP: DeepEqual FALSE but every child compares equal (kind map)
+```
+
+`All.MapP` is `map[string]*Small{"19": {Tag:"tag19"}, "20": nil}`. Reduced, the divergence is four
+lines and does not involve `encoding/json` at all — it needs only that ONE side was written through
+`reflect` and the other declared as a literal:
+
+| | |
+|:--|:--|
+| two literals | equal ✓ |
+| two decoded | equal ✓ |
+| decoded vs literal | **false** ✗ |
+
+**Root: `deepValueEqual`'s map arm built each entry's Value from the STORED OBJECT, not from the
+map's declared element type.** Every other read in the bridge is slot-derived — `Field`, `Index`,
+`Elem`, `MapIndex`, `MapIter.Value` all type by the declaring slot — but the DeepEqual map arm walks
+the backing `Dictionary` directly (it must: golib keeps a nil KEY in a side slot no iterator can see)
+and used `makeReflectValue`. A slot physically holding C# `null` therefore came back as the **invalid
+zero Value** instead of a valid nil pointer. The two sides spell nil differently and always have — a
+literal's `nil` element is stored as raw null, while a reflective write stores the canonical
+`ж<T>.NilBox` that `packInterfaceValue` needs so a typed nil survives being handed out as an
+interface — so one side read valid and the other invalid, and the map compared unequal. The same
+blindness made a nil element compare EQUAL to a **missing key** (both invalid), which is the more
+alarming half and had no consumer.
+
+The fix is `mapElemValue`: type each entry by `Elem()` of the map's own type, exactly as `MapIndex`
+does. Two nil elements then meet at the kind's nil rule; a missing key still fails on `Contains`; a
+nil element still separates from a present non-nil one. **13 lines in `reflect/deepequal_impl.cs`**,
+no converter change, no golib change.
+
+**Why the visible-difference hypothesis missed it.** The previous lane read the failure text, saw
+`SliceP`'s nil element print differently, reduced exactly that shape, and measured it AGREEING — a
+correct measurement of the wrong object. `SliceP` is a slice, and the slice arm has always used
+`v1.Index(i)`, which is typed. Only the map arm was blind. The lesson is the one the entry above
+already wrote down and this lane simply executed: when `%v` is too lossy, bisect with a probe rather
+than reason from the rendering.
+
+**And the signature is reusable.** *A container reporting unequal while every one of its elements
+compares equal* is what a lost slot type looks like from outside, because a walk that re-boxes each
+element through `Interface()` re-enters the dynamic path on both sides and cannot see the difference.
+The identical discrepancy named this function's FUNC arm on 2026-07-31 (`compress/flate`'s
+`TestWriterReset`, ten levels failing while every field matched). Two arms of one function, four
+months apart, found by the same tell.
+
+### What the bank proves
+
+`encoding/json` is **not** the roster's biggest suite by verdict count — at 491 it is sixth, behind
+`go/doc/comment` (10,059), `go/internal/gcimporter` (583), `crypto/rsa` (559), `go/types` (557) and
+`internal/zstd` (536) — and the claim worth making is a different one: it is by some distance the
+most reflection-dense suite on the roster. Nearly every row of it is a
+reflection walk checked against Go's own answer: struct-tag naming, embedding under Go's full
+dominance rules, `Marshaler`/`Unmarshaler`/`TextMarshaler` dispatch at depth, `MakeMap`/`MakeSlice`/
+`SetMapIndex` writes into every container kind, cycle detection keyed on `UnsafePointer`, and
+`DeepEqual` over the results. The reflect-closure arc alone rooted nine defects, seven of them
+credited to `encoding/json` verdicts, and this lane's map-element root is the tenth and last.
+Banking it means the managed `reflect` is no longer *assumed* adequate for the encoding packages —
+it is differentially proven against the standard library's own hardest consumer of it.
+
+Roster: **150 / 215 (69.8%)**, 17,264 matching verdicts, 76 disclosed — header recomputed from the
+table itself.
+
+### Carried forward, unchanged
+
+Everything the entry above boarded rather than took is still open and still unrooted-by-choice: the
+`handler(nil)` methodless-func conversion (converter emission), a methodless defined func type having
+no managed identity, projected field ORDER putting every embed last, and the NaN-in-a-composite map
+key. None of them is reachable from any measured consumer, and this arc found no new one behind the
+map-element root — the census is honest at one root, not one root plus a remainder.
