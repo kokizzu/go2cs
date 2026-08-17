@@ -54,12 +54,11 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct embeddedLocalTypes_MyInt {}
-    [GoLocalName("embed")] internal partial struct embeddedLocalTypes_embed {}
-    [GoLocalName("holder")] internal partial struct embeddedLocalTypes_holder {}
-    internal partial struct embeddedLocalTypes_myInt {}
-    [GoLocalName("ptrHolder")] internal partial struct embeddedLocalTypes_ptrHolder {}
-    internal partial struct main_a {}
-    [GoLocalName("point")] internal partial struct main_point {}
+    internal partial struct namedByte {}
+    internal partial struct namedByteSlice {}
+    internal partial struct namedRune {}
+    internal partial struct namedRuneSlice {}
+    internal partial struct namedString {}
+    internal partial struct plainByteSlice {}
     // </TypeAccessibility>
 }

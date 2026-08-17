@@ -185,10 +185,19 @@ internal class StructTypeTemplate : TemplateBase
             // `s.setting = lookup(…)` post-construction shape), and a genuine deref still panics
             // downstream on the held ж<T>'s own Value — the promoted field/method accessors descend
             // `<embed>.Value.<member>`.
+            // The accessor's scope follows the MEMBER, not the type it is written over. The two are
+            // the same string for an ordinary embed — which is why reading it off the type served
+            // for so long — but they part company whenever the converter RENAMES the type: a
+            // function-local `type MyInt int` is hoisted to `<Func>_MyInt`, whose leading case
+            // belongs to the enclosing function, not to the field. The declaration this implements
+            // now carries the Go FIELD name and its exportedness (visitStructType), so reading the
+            // type could hand back the opposite modifier and C# rejects the pair outright (CS8799 —
+            // encoding/json's TestAnonymousFields). Every sibling accessor below already scopes by
+            // member name; this one was the outlier.
             foreach ((string typeName, string memberName, _, _) in promotedStructs)
             {
-                string typeScope = GetScope(GetSimpleName(typeName));
-                result.Append($"\r\n{TypeElemIndent}[global::System.Diagnostics.CodeAnalysis.UnscopedRef] {typeScope} partial ref {typeName} {memberName} => ref {CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)};");
+                string memberScope = GetScope(GetSimpleName(memberName));
+                result.Append($"\r\n{TypeElemIndent}[global::System.Diagnostics.CodeAnalysis.UnscopedRef] {memberScope} partial ref {typeName} {memberName} => ref {CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)};");
             }
 
             result.Append($"\r\n\r\n{TypeElemIndent}// Promoted Struct Field Accessors");

@@ -1320,6 +1320,11 @@ internal static bool Less(this reverse r, nint i, nint j) {
 }
 ```
 
+The embed field is named by **Go**, not by the C# rendering of its type: Go calls the field of `struct{ *myInt }`
+`myInt`, and that name — with its Go exportedness — is what the member, the generated constructor parameter and
+the promotion accessor all carry. The two strings coincide for an ordinary embed; they diverge whenever the
+converter renames the type, as it does when hoisting a function-local one to package scope.
+
 An embed is an **inline field**, so a Go value copy copies it exactly as Go does — it was held in a shared
 `ж<T>` box until 2026-08-14, which gave the embed reference semantics a C# struct assignment then aliased,
 and that is the defect that made the converted `go/types` judge a type parameter not identical to itself.

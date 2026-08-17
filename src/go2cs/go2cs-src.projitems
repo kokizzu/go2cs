@@ -151,6 +151,7 @@
     <None Include="$(MSBuildThisFileDirectory)stdLibConverter.go" />
     <None Include="$(MSBuildThisFileDirectory)stdlibMetadata.go" />
     <None Include="$(MSBuildThisFileDirectory)stdlibMetadata_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)stringSliceConversions.go" />
     <None Include="$(MSBuildThisFileDirectory)symbols.go" />
     <None Include="$(MSBuildThisFileDirectory)syncCopyChecker_test.go" />
     <None Include="$(MSBuildThisFileDirectory)testAliasShadowOperations.go" />

@@ -412,6 +412,32 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 			identType := identObj.Type().Underlying()
 
+			// An EMBEDDED field is NAMED BY GO, not by the C# rendering of its type. The two coincide
+			// for every ordinary embed — which is why the rendered name served for so long — but they
+			// part company the moment the converter RENAMES the type: a function-local `type myInt int`
+			// is hoisted to package scope as `TestAnonymousFields_myIntᴛ1`, and naming the member after
+			// that left the declaration (and go2cs-gen's constructor and promotion, both read off it)
+			// spelling one thing while every use site spelled the Go field name — `s.myInt` (CS1061) and
+			// `new S3(embed1: …)` (CS1739) in encoding/json's suite. The Go object's OWN name is the
+			// field name by definition (Go spec: an embedded field's name is the unqualified type name),
+			// so it is authoritative where the rendered string is derived — and it settles the field's
+			// EXPORTEDNESS too, which the hoisted name silently flipped (`embed1` is unexported; the
+			// `TestUnmarshalEmbeddedUnexported_` prefix made the member public, the opposite of what the
+			// test asserts about it). The bracket/dot stripping above is what this supersedes: a
+			// generic embed's object is already the base type, and a qualified one is already
+			// unqualified, so the stripping is left in place only for the unclaimed PkgName arm.
+			switch identObj.(type) {
+			case *types.Var, *types.TypeName:
+				// A same-package embed resolves to the FIELD itself (*types.Var, whose name IS
+				// the Go field name); a SELECTOR embed was re-resolved above to the embedded
+				// type's own TypeName, which the spec makes the field name too. A *types.PkgName
+				// — an unresolved selector — is deliberately not claimed: it would name the
+				// member after the package.
+				if name := identObj.Name(); name != "" {
+					goTypeName = name
+				}
+			}
+
 			// An EMBEDDED field's member name is the unqualified type name (Go spec), so it can
 			// equal the ENCLOSING struct's own name — io_test.go's `type Buffer struct{
 			// bytes.Buffer }` derives the member `Buffer` inside struct `Buffer`, which C# forbids

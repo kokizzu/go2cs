@@ -2245,6 +2245,15 @@ public static partial class builtin
     /// generated pointer adapter does), so the slice is projected element-wise through the
     /// adapter. Only the slice header is copied; elements alias the original objects through the
     /// shared boxes.
+    /// <para>
+    /// It is also the emission for a string ↔ byte/rune-slice CONVERSION whose element type is a
+    /// DEFINED type — <c>[]Uint8("hello")</c>, <c>string(b)</c> over a <c>[]myByte</c>. There
+    /// <c>slice&lt;byte&gt;</c> and <c>slice&lt;myByte&gt;</c> are unrelated generic instantiations
+    /// with no conversion between them, so the elements are projected one at a time through the
+    /// element wrapper's own operator. "Widen" is the wrong word for the narrowing direction, but
+    /// the operation is the same one and a second primitive would only duplicate it; Go's
+    /// string↔slice conversion always materializes fresh storage, so the copy is faithful there.
+    /// </para>
     /// </remarks>
     public static slice<TWide> widen<T, TWide>(slice<T> source, Func<T, TWide> conv)
     {
