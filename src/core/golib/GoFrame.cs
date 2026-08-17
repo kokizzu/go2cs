@@ -119,19 +119,35 @@ public ref struct GoFrame
     /// <para>
     /// This is <c>GoFunc.HandleFinally</c>'s logic — the <c>HandledPanic</c> save/restore, the
     /// re-panic <c>InheritThrowSite</c> rule, and the final re-throw of an unrecovered panic — with
-    /// ONE correction: a panic raised BY a deferred call now becomes the frame's in-flight panic and
-    /// the sequence CONTINUES, instead of aborting it. See the catch below.
+    /// TWO corrections. First: a panic raised BY a deferred call now becomes the frame's in-flight
+    /// panic and the sequence CONTINUES, instead of aborting it. See the catch below. Second: the
+    /// re-throw is the OWNING frame's, claimed from <see cref="Capture"/>, rather than a read of the
+    /// thread's captured-panic slot — a frame called from another frame's deferred sequence must not
+    /// re-raise a panic it never caught. See the claim below.
     /// </para>
     /// </remarks>
     public void Run()
     {
+        // The panic THIS frame is responsible for continuing, if any: the one its own catch just
+        // captured. Claiming it here — rather than reading the thread's captured-panic slot at the
+        // tail — is what keeps the re-raise frame-owned. A frame that caught nothing claims null and
+        // must leave an in-flight panic exactly where it is, because it is being CALLED from some
+        // other frame's deferred sequence and that frame's Run is the one that continues the panic.
+        //
+        // Reading the slot instead made every such callee re-raise the caller's panic from its own
+        // finally, aborting the rest of the deferred cleanup at an arbitrary point: database/sql's
+        // Conn.Raw panic path left the connection open because withLock — three calls below the
+        // deferred release, panicking nothing itself — threw the parked panic on the way out and
+        // Conn.close never reached `c.dc = nil`.
+        PanicException? owned = GoFuncRoot.ClaimPanic();
+
         if (m_count > 0)
         {
             // The panic this deferred sequence is handling, if any. It stays observable through
             // InFlightPanic for the whole sequence — recover() clears the captured panic, but Go's
             // traceback keeps showing the panicking frames until the panic completes. Strictly
             // save/restore scoped, so it cannot outlive the sequence.
-            PanicException? handling = GoFuncRoot.CapturedPanicValue;
+            PanicException? handling = owned;
             PanicException? outer = GoFuncRoot.HandledPanicValue;
 
             GoFuncRoot.HandledPanicValue = handling ?? outer;
@@ -177,6 +193,11 @@ public ref struct GoFrame
                         GoFuncRoot.CapturedPanicValue = raised;
                         GoFuncRoot.HandledPanicValue = raised;
                         handling = raised;
+
+                        // A panic raised by THIS frame's own deferred call is this frame's to
+                        // continue, whether or not the frame was already panicking — so the tail
+                        // re-raises it even when nothing was claimed on entry.
+                        owned = raised;
                     }
                 }
             }
@@ -186,7 +207,7 @@ public ref struct GoFrame
             }
         }
 
-        if (GoFuncRoot.CapturedPanicValue is not null)
+        if (owned is not null && GoFuncRoot.CapturedPanicValue is not null)
             throw GoFuncRoot.CapturedPanicValue;
     }
 
@@ -261,10 +282,18 @@ public ref struct GoFrame
     /// Keeping it in the catch BODY preserves <c>GoFunc.Execute</c>'s ordering exactly. The origin
     /// snapshot is not repeated here — <see cref="RuntimeErrorPanic.TryAsPanic"/> already took it
     /// at the adoption point, and it is once-only.
+    /// <para>
+    /// It also ARMS the re-raise claim, which is what tells the <c>finally</c>'s <see cref="Run"/>
+    /// that the parked panic is this frame's to continue. Arming here rather than in the filter is
+    /// deliberate for the same ordering reason, and it needs no change to the emitted frame: a catch
+    /// body and its finally are adjacent, so the next <see cref="Run"/> on the thread is always this
+    /// frame's.
+    /// </para>
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepperBoundary]
     public static void Capture(PanicException panic)
     {
         GoFuncRoot.CapturedPanicValue = panic;
+        GoFuncRoot.ArmPanicClaim(panic);
     }
 }
