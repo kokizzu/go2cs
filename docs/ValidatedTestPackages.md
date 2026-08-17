@@ -34,9 +34,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **148 / 215 testable packages validated — 68.8%**
+> ### Phase 4 progress: **149 / 215 testable packages validated — 69.3%**
 >
-> **16,710 matching test verdicts · 76 disclosed** *(updated 2026-08-17 — maintained as part of the
+> **16,773 matching test verdicts · 76 disclosed** *(updated 2026-08-17 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -107,6 +107,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`encoding/pem`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/pem) | 8 | | PEM block parsing and round-trips. · [proof](validation/current/encoding.pem.md) |
 | [`errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/errors) | 61 | | `errors.Is`/`As`/`Join` — reflection-bridge write-back (`Value.Set`, addressability). · [proof](validation/current/errors.md) |
 | [`expvar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/expvar) | 11 |  | The exported-variable registry — `Int`/`Float`/`String`/`Map`/`Func` publication and atomic update, `Map` key ordering with delete/init, JSON quoting across every rune class, and the `/debug/vars` handler. · [proof](validation/current/expvar.md) |
+| [`fmt`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/fmt) | 63 |  | Go's formatted I/O end to end — the whole `Printf` verb matrix over every kind with its width/precision/flag combinations, `Formatter`/`Stringer`/`GoStringer`/`error` dispatch and the recursion guards around it, `%v`/`%+v`/`%#v` of nested structs, maps (ordered by `internal/fmtsort`), slices, funcs, pointers and typed nils, the `Append*`/`Fprint*` and `Sscan*` surfaces, and the panic-in-`String` and bad-verb error texts byte for byte. It is the deepest test the reflection bridge has — `%v` and `%T` ARE `reflect` walks, so every row is a descriptor read checked against Go's own answer — and the behavioral suite's ~520 stdout comparisons all run through this package, so banking it strengthens each of them. · [proof](validation/current/fmt.md) |
 | [`go/ast`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/ast) | 9 |  | The Go syntax tree — comment maps and doc association, `FilterFile`/`FilterPackage` deduplication, `Walk`/`Preorder` traversal with early break, and `ast.Fprint`'s reflective dump of a parsed tree (map iteration and unnamed struct types through the reflection bridge). · [proof](validation/current/go.ast.md) |
 | [`go/build/constraint`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/build/constraint) | 89 | | Build-constraint expression parsing. · [proof](validation/current/go.build.constraint.md) |
 | [`go/constant`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/constant) | 9 | | Exact-precision Go constant arithmetic — the int/rational/float representation ladder, `Make`/`Bytes` round trips, `BitLen`, and the full binary/unary operator and comparison matrix. · [proof](validation/current/go.constant.md) |
