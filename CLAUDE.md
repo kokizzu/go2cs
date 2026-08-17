@@ -655,6 +655,9 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      marker, returned to 40 when `internal/weak/pointer.cs` joined at r43e, and is **41** since
      `internal/cpu/cpu_x86_impl.cs` joined at r44a. This is exactly why the census is re-measured,
      never carried forward.
+     **The marker scan must read WHOLE FILES** — a head-window scan (e.g. first 40 lines) reported
+     35 marked files against the real 60 (measured 2026-08-17), which would have made the clobber
+     gate vacuous for 25 hand-owns; some markers sit below long license/using blocks.
      **The marker scan must be LINE-ANCHORED (`^\s*\[module:\s*(go\.)?GoManualConversion\]`)** —
      `reflect/value.cs` and `internal/reflectlite/value.cs` *mention* the marker inside
      bodyless-partial placeholder comments; an unanchored `grep GoManualConversion` reports **63**
