@@ -757,14 +757,46 @@ func (v *Visitor) signatureReferencesUnexportedProductionType(sig *types.Signatu
 }
 
 // typeReferencesUnexportedProductionNamed reports whether t is, or wraps (through pointer/slice/array/
-// map/channel), an unexported named type of pkg declared in a production (non-test) file — the read-
-// only counterpart of collectUnexportedNamedTypes, with the production-file gate described on
+// map/channel, a generic type ARGUMENT, an alias, or a signature's parameters and results), an
+// unexported named type of pkg declared in a production (non-test) file — the read-only counterpart
+// of collectUnexportedNamedTypes, with the production-file gate described on
 // signatureReferencesUnexportedProductionType.
+//
+// Three of those wrappers were added when net/netip's export_test.go reached them, and each one is a
+// position C# accessibility-consistency looks through exactly as it looks through a pointer:
+//
+//   - A generic type ARGUMENT. `var Z0 = unique.Make(…)` types as `unique.Handle[addrDetail]`, whose
+//     own named type is EXPORTED and lives in another package, so the Named arm answered false and
+//     the public field kept its accessibility over an internal argument — CS0052 ×3.
+//   - An ALIAS. `func MakeAddrDetail(…) AddrDetail` names the test file's own `type AddrDetail =
+//     addrDetail`, a *types.Alias that matched no arm at all — CS0050 ×2, CS0051 ×2 with Uint128.
+//   - A SIGNATURE. A test-declared func-typed var emits a delegate over its parameter and result
+//     types, so an unexported production type there is the same violation one level in.
+//
+// Nothing is lost by looking too far: the downgrade only ever moves a declaration from public to
+// internal inside a test assembly that has no external consumer, while missing a position is a build
+// error. But it is not a blanket downgrade either — every arm still ends at the same question about
+// a NAMED type's own package, export and declaring file.
 func (v *Visitor) typeReferencesUnexportedProductionNamed(t types.Type, pkg *types.Package) bool {
 	switch t := t.(type) {
+	case *types.Alias:
+		return v.typeReferencesUnexportedProductionNamed(types.Unalias(t), pkg)
 	case *types.Named:
 		obj := t.Obj()
-		return obj.Pkg() == pkg && !obj.Exported() && !v.isTestFileDecl(obj.Pos())
+
+		if obj.Pkg() == pkg && !obj.Exported() && !v.isTestFileDecl(obj.Pos()) {
+			return true
+		}
+
+		if typeArgs := t.TypeArgs(); typeArgs != nil {
+			for i := range typeArgs.Len() {
+				if v.typeReferencesUnexportedProductionNamed(typeArgs.At(i), pkg) {
+					return true
+				}
+			}
+		}
+
+		return false
 	case *types.Pointer:
 		return v.typeReferencesUnexportedProductionNamed(t.Elem(), pkg)
 	case *types.Slice:
@@ -775,6 +807,8 @@ func (v *Visitor) typeReferencesUnexportedProductionNamed(t types.Type, pkg *typ
 		return v.typeReferencesUnexportedProductionNamed(t.Key(), pkg) || v.typeReferencesUnexportedProductionNamed(t.Elem(), pkg)
 	case *types.Chan:
 		return v.typeReferencesUnexportedProductionNamed(t.Elem(), pkg)
+	case *types.Signature:
+		return v.signatureReferencesUnexportedProductionType(t, pkg)
 	}
 
 	return false
