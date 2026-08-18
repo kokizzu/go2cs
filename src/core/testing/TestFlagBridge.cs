@@ -157,6 +157,42 @@ internal static class TestFlagBridge
     }
 
     /// <summary>
+    /// Whether the converted <c>flag.CommandLine</c> defines <paramref name="name"/> — the question
+    /// that decides an unrecognized host flag, once the package under test has initialized.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>False when the converted <c>flag</c> package is absent, and that is the right answer
+    /// rather than a fallback.</b> A package that does not import <c>flag</c> cannot have declared a
+    /// flag, so no name the host does not own can belong to it, and the host's rejection of a typo
+    /// stays exactly as strict as it was for the 124 of 141 test projects in that position.
+    /// </para>
+    /// <para>
+    /// Only DEFINEDNESS is asked. Whether the flag is boolean — Go's <c>parseOne</c> consults
+    /// <c>boolFlag.IsBoolFlag()</c> to decide if the next token is its value — is deliberately not,
+    /// because <see cref="TestOptions.Parse"/> has already stopped by the time this runs and left
+    /// the remainder to the program's own <c>flag.Parse()</c>, which answers it with the real flag
+    /// set instead of through reflection over a generated interface wrapper.
+    /// </para>
+    /// </remarks>
+    public static bool IsDefined(string name)
+    {
+        Type? flagPackage = Type.GetType(FlagPackageTypeName, throwOnError: false);
+
+        return flagPackage is not null &&
+               BindLookup(flagPackage).Invoke(null, [(@string)name]) is not null;
+    }
+
+    private static MethodInfo BindLookup(Type flagPackage) =>
+        Bind(flagPackage, "Lookup", typeof(@string));
+
+    private static MethodInfo Bind(Type flagPackage, string name, params Type[] parameterTypes) =>
+        flagPackage.GetMethod(name, BindingFlags.Public | BindingFlags.Static, binder: null, parameterTypes, modifiers: null) ??
+        throw new InvalidOperationException(
+            $"testing: the converted flag package does not declare {name}({string.Join(", ", parameterTypes.Select(type => type.Name))}) — " +
+            "the test host cannot declare its own command line and a converted TestMain calling flag.Parse() would reject it");
+
+    /// <summary>
     /// The converted <c>flag</c> package's typed package-level registrars, bound once by name.
     /// </summary>
     /// <remarks>
@@ -177,7 +213,7 @@ internal static class TestFlagBridge
 
         public Registrar(Type flagPackage)
         {
-            m_lookup = Bind(flagPackage, "Lookup", typeof(@string));
+            m_lookup = BindLookup(flagPackage);
             m_bool = Bind(flagPackage, "Bool", typeof(@string), typeof(bool), typeof(@string));
             m_int = Bind(flagPackage, "Int", typeof(@string), typeof(nint), typeof(@string));
             m_uint = Bind(flagPackage, "Uint", typeof(@string), typeof(nuint), typeof(@string));
@@ -206,11 +242,5 @@ internal static class TestFlagBridge
 
             registrar.Invoke(null, [(@string)name, value, (@string)usage]);
         }
-
-        private static MethodInfo Bind(Type flagPackage, string name, params Type[] parameterTypes) =>
-            flagPackage.GetMethod(name, BindingFlags.Public | BindingFlags.Static, binder: null, parameterTypes, modifiers: null) ??
-            throw new InvalidOperationException(
-                $"testing: the converted flag package does not declare {name}({string.Join(", ", parameterTypes.Select(type => type.Name))}) — " +
-                "the test host cannot declare its own command line and a converted TestMain calling flag.Parse() would reject it");
     }
 }

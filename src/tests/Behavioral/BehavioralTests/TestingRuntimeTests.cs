@@ -384,6 +384,68 @@ public class TestingRuntimeTests
         Assert.AreEqual((0, true, false), RunArgv("-run", "TestFlags"));
     }
 
+    [TestMethod]
+    public void APackageRegisteredFlagParticipatesAndAnUndefinedOneIsStillRejected()
+    {
+        // Root guard for the flag LIFECYCLE. Go's test binary reaches exactly one flag.Parse(), by
+        // which time testing.Init() has defined -test.* AND the package's own package-level
+        // flag.Bool variables have initialized — so a package flag on the command line is simply
+        // one of the names in scope. The host's own parse necessarily runs earlier than the
+        // package's initialization, and it used to REJECT anything it did not personally define:
+        // crypto/tls's BoGo runner re-executes the test binary as its TLS shim with `-bogo-mode`
+        // (a flag.Bool in handshake_test.go), and every one of the 3,242 BoGo cases died at
+        // startup with `flag provided but not defined: -bogo-mode` before TestMain ran.
+
+        // The package's flag is declared where Go declares it — in package-level variable
+        // initialization, which converted C# performs in the class's static constructor — and the
+        // host must run that before deciding, exactly as Go runs package init before main.
+        Assert.AreEqual(0, TestHost.Run(BogoLikeRegistry(), ["-harness-package-mode"]));
+        Assert.IsTrue(BogoLikePackage.Ran, "the run must proceed past a flag the PACKAGE defines");
+        Assert.IsNotNull(BogoLikePackage.Mode, "the package's own initializer is what defines it");
+
+        // The package flag STOPS the host's parse, because nothing here knows a foreign flag's
+        // arity. Flags before it are the host's; everything after belongs to the program, and the
+        // sharp form of that claim is a `-v` on each side of it.
+        Assert.AreEqual(0, TestHost.Run(BogoLikeRegistry(), ["-v", "-harness-package-mode"]));
+        Assert.IsTrue(BogoLikePackage.Verbose, "a flag BEFORE the package's is still parsed here");
+
+        Assert.AreEqual(0, TestHost.Run(BogoLikeRegistry(), ["-harness-package-mode", "-v"]));
+        Assert.IsFalse(BogoLikePackage.Verbose, "a flag AFTER the package's belongs to the program");
+
+        // And the deferral is a MOVE, not a removal. With the converted flag package present and
+        // initialized, a name neither vocabulary defines is still the command line being wrong.
+        Assert.AreEqual(2, TestHost.Run(BogoLikeRegistry(), ["-nosuchflag"]));
+        Assert.AreEqual(2, TestHost.Run(BogoLikeRegistry(), ["-harness-package-mode-typo"]));
+    }
+
+    private static TestRegistry BogoLikeRegistry()
+    {
+        TestRegistry registry = new("runtime/packageflag", []);
+        registry.Add("TestFlags", BogoLikePackage.TestFlags, "runtime_test.go", 1);
+        return registry;
+    }
+
+    // Stands in for the package under test: a class whose STATIC CONSTRUCTOR declares a flag, which
+    // is what a converted package-level `var mode = flag.Bool(...)` compiles to. Written with an
+    // explicit static constructor rather than a field initializer so the CLR's precise (non
+    // beforefieldinit) rules apply — the guard is about WHO runs it and WHEN, and a beforefieldinit
+    // class the runtime may initialize early would let it pass without the host doing anything.
+    private static class BogoLikePackage
+    {
+        internal static bool Ran;
+        internal static bool Verbose;
+        internal static ж<bool>? Mode;
+
+        static BogoLikePackage() =>
+            Mode = flag_package.Bool((@string)"harness-package-mode", false, (@string)"stands in for a package's own flag");
+
+        internal static void TestFlags(ж<testing_package.T> _)
+        {
+            Ran = true;
+            Verbose = testing_package.Verbose();
+        }
+    }
+
     // Runs a one-test registry with the given command line, reporting the host's exit code, whether
     // the test ran at all, and what testing.Verbose() saw from inside it. Verbose is the probe
     // because a trailing `-v` the host wrongly consumed shows up here as a true the child should

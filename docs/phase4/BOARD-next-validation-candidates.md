@@ -10562,4 +10562,194 @@ a missing GOROOT and is not (use the single-string form with embedded quotes); a
 `until ! powershell -Command "exit (…)"` wait-loop reported a still-running `go test` as finished,
 the documented `exit $true` trap, caught only against a positive process count.
 
+## ⛔ `crypto/tls` STILL does not bank — but its endgame collapses from FOUR owners to ONE, and BoGo was never the wall it looked like (2026-08-17, lane `claude/tls-finish`)
+
+The tls-endgame entry above left four divergences with four different owners and predicted where
+each would land once the syscall arcs merged. This lane re-measured all four. **Three of the four
+predictions were right and the fourth was wrong in the useful direction**: `TestBogoSuite`'s host
+defect is fixed, and BoGo does not merely start — a real BoringSSL interop case **passes end to
+end** through the converted host as its TLS shim. What is left is one arc, not four.
+
+### The census, re-measured today
+
+Same method as the tls-endgame lane (one process per top-level `Test*`, `-run '^Name$'`, 25 s cap,
+raw stdout saved, classified offline against the CONVERTED host's `PASS<pad><Name>` format).
+`TestBogoSuite` is measured separately below, because a 25 s cap cannot hold it on either runtime.
+
+| Measure | after `sha3` | after the syscall arcs | now |
+|---|---|---|---|
+| top-level tests that PASS run on their own | 176 of 184 | (not re-run) | **176 of 184** |
+| real divergences (Go passes, C# does not) | 4 | 4 predicted | **3 measured + BoGo** |
+| distinct roots behind them | 3 | — | **2** |
+| of those, disclosable under an existing class | 1 | — | **1** |
+
+Go on this host, re-measured rather than carried (`go test -json -count=1`, 56.9 s): **184
+top-level, 180 pass, 4 fail**, and the four are the same expired-fixture set — `TestResumption`,
+`TestResumptionKeepsOCSPAndSCT`, `TestVerifyConnection`, `TestCrossVersionResume` (the test
+certificates expired 2025-01-01). The converted host fails **exactly those four**, so they are
+AGREEING rows. The cross-tab closes with no remainder: **176 agreeing passes + 4 agreeing failures +
+3 divergences + `TestBogoSuite` = 184.**
+
+⚠ The expired-fixture ceiling is re-confirmed rather than carried: **180 of 184 is the most this
+host can score in either language, it worsens with time, and a Go patch release or regenerated
+fixtures changes the shape.** Any proof page written for this package must say so.
+
+### 1. `TestVerifyHostname` — the `net` wall is DOWN, and what it uncovered is not tls's
+
+The net-interfaces entry above declined to re-measure this test, on the ground that its own probe
+answered the question more directly. It did, and the census now confirms it from the consumer side:
+`Dial("tcp", "www.google.com:https", nil)` **resolves the name AND the service, connects, and
+completes a TLS 1.3 handshake through the server's Certificate message** before failing. Everything
+the two syscall arcs bought is exercised on that one line — `GetAddrInfoW` for `LookupPort`'s
+`https`, `adapterAddresses` for the DNS server list, the poller for the connect and the record
+reads.
+
+It then dies one layer further out, and NOT in `net`:
+
+```
+INFRASTRUCTURE-ERROR TestVerifyHostname — System.Runtime.InteropServices.SEHException (0x80004005)
+   at go.syscall_package.Syscall9(...)
+   at go.syscall_package.CertGetCertificateChain(...)      <- zsyscall_windows_ptrout_impl.cs:222
+   at go.crypto.x509_package.systemVerify(...)             <- root_windows.cs:272
+   at go.crypto.x509_package.Verify(...)
+   at go.crypto.tls_package.verifyServerCertificate(...)
+   at go.crypto.tls_package.readServerCertificate(...)     <- handshake_client_tls13.cs:692
+```
+
+That is the wall the x509-cryptoapi entry named: `CertChainPara` is handed to the kernel BY ADDRESS
+while holding `RequestedUsage.Usage.UsageIdentifiers` as `ж<ж<byte>>` and `CacheResync` as
+`ж<Filetime>`, so `systemVerify`'s `para.Size = 80` writes the NATIVE size into a much smaller
+managed object and every field past the first is read from the wrong offset. Note **where** the
+frame is: inside the hand-owned `zsyscall_windows_ptrout_impl.cs` wrapper, i.e. the out-parameter
+fix is doing its job and the defect is the *other* class, exactly as that lane predicted.
+
+### 2. `TestQUICHandshakeError` — the prediction was right, and the shape is a HANG
+
+The x509 lane predicted this row would still fail, "with its failure having moved from a nil-pointer
+panic to whatever the chain para produces". Measured: it produces **nothing** — the process is still
+inside `CertGetCertificateChain` when the census's 25 s cap fires (`TIMEOUT — package timeout after
+00:00:25`), the same blocked-in-the-kernel signature that lane's offline probe recorded with
+`dotnet-stack`. The corrupted `CertChainPara` includes `dwUrlRetrievalTimeout`, a blocking network
+budget, read at the wrong offset.
+
+**So `TestVerifyHostname` and `TestQUICHandshakeError` are ONE root, not two** — the same CryptoAPI
+structure-passing wall, reached by two different tls paths (a real server's chain, and a QUIC
+handshake against an untrusted test certificate). Neither is disclosable: this is an
+unimplemented-but-fixable defect, which is exactly what the `host-limit` bar excludes.
+
+### 3. `TestCertCache` — disclosed, `codegen-liveness`, signature-pinned
+
+Re-measured and unchanged: `FAIL TestCertCache — timed out waiting for expected ref count`, at the
+FIRST check (`refs 2 → 1`), 8.1 s in the per-test census. Argued from the test's own assertion: it
+nils its local, calls `runtime.GC()` and polls four seconds for a finalizer to decrement a count,
+while `certA, err := cc.newCert(p.Bytes)` is a two-result call whose results materialize an
+address-exposed frame temp — a slot the CLR reports live for the whole method, so the `activeCert`
+cannot be collected until `TestCertCache` RETURNS. The finalizer bridge itself is proven working by
+`sync`'s banked `TestPoolGC`. Committed as
+[`src/core/crypto/tls/go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/crypto/tls/go2cs_test_disclosures.json)
+ahead of a bank the package cannot yet make, so the row is pinned by exact signature the moment it
+can.
+
+### 4. `TestBogoSuite` — the host defect is FIXED, and the converted TLS stack talks to BoringSSL
+
+The tls-endgame entry read this as "a fixable test-host defect", and beyond it, "a long external TLS
+interop measurement, not a pass: it is its own arc". The first half was right. **The second half is
+wrong, and the correction is the most encouraging thing in this entry.**
+
+*The host defect, and its real mechanism.* BoGo re-executes the test binary as its shim
+(`-shim-path=os.Args[0] -shim-extra-flags=-bogo-mode`), and `-bogo-mode` is a package-level
+`flag.Bool` in `handshake_test.go`. The board read the defect as "the host parses `args` itself and
+throws on any name it does not recognize, before the package's own `flag.Parse()` runs" — true, but
+the fix is NOT to tolerate unknown flags. Go's test binary reaches exactly ONE `flag.Parse()`, by
+which time `testing.Init()` has defined `-test.*` **and the package's own package-level flag
+variables have initialized**, so both vocabularies live in one flag set and an unknown name is still
+an error there. What the converted host lacked was the ORDER: nothing had run the package's
+initialization at the moment the host had to decide what its command line meant.
+
+*The fix, in the shared hand-owned host (three files under `src/core/testing/`).* An unrecognized
+flag name no longer throws — `TestOptions.Parse` records it and STOPS, the way a non-flag token
+stops the parse, because nothing there can know a foreign flag's arity (`-port 5000`'s value is
+indistinguishable from a program argument). `TestHost.Run` then does what Go does before main: it
+runs the package's own initialization — `RuntimeHelpers.RunClassConstructor` over the declaring
+types of the registry's delegates, which are exactly the converted package's classes — registers the
+host's own flags on top, and only then asks the converted `flag.CommandLine` whether the recorded
+name is defined. Undefined — or no `flag` package in the compilation at all, which is 124 of 141
+test projects — is still `flag provided but not defined: -x` and still exit 2. **The rejection
+moved; it did not go away.** Deliberately NOT done: a host-side `flag.Parse()` mirroring `M.Run`'s
+`if !flag.Parsed()`, which the reference already rules out as newly reaching `ExitOnError` for
+packages that merely reference `flag`.
+
+*One measured surprise worth carrying.* Creating a delegate over a static method does **not** run
+its declaring type's static constructor — `ldftn`+`newobj` is neither a static-field access nor an
+invocation — so the generated test host's `registry.Add("TestX", pkg_test_package.TestX, …)` lines
+leave the package uninitialized until the first test BODY runs. That is what makes the forcing
+load-bearing rather than belt-and-braces, and it is proven failing-first: with the
+`InitializePackageUnderTest` call neutered, the new guard reports `flag provided but not defined:
+-harness-package-mode` and exit 2 — the BoGo failure verbatim.
+
+*Guarded* by `TestingRuntimeTests.APackageRegisteredFlagParticipatesAndAnUndefinedOneIsStillRejected`,
+which stands a class whose STATIC CONSTRUCTOR declares a flag in for the package under test (written
+with an explicit static ctor, not a field initializer, so the CLR's precise non-`beforefieldinit`
+rules apply and a runtime that chose to initialize early could not fake a pass). It pins all four
+claims: the package's flag participates, a flag BEFORE it is still the host's, a flag AFTER it
+belongs to the program, and an undefined name is still exit 2. This is the one test that needs the
+converted `flag` package present, so `BehavioralTests.csproj` now references it — `testing.csproj`
+still must not, and does not, which is the whole point of the late binding.
+
+*What BoGo then did.* Two measurements, both value-level:
+
+```
+> tls.test.exe             -bogo-mode -is-handshaker-supported   ->  No     (0.038 s)
+> crypto.tls.tests.exe     -bogo-mode -is-handshaker-supported   ->  No     (3.30 s)
+```
+
+— byte-identical output from the shim entry point, network-free. And then the real thing, the
+converted host driven by BoringSSL's own runner:
+
+```
+> crypto.tls.tests.exe -run "^TestBogoSuite$" -v -timeout 14m -bogo-filter Client-Verify-ECDSA-TLS1
+RUN                  TestBogoSuite
+RUN                  TestBogoSuite/Client-Verify-ECDSA-TLS1
+PASS                 TestBogoSuite/Client-Verify-ECDSA-TLS1
+PASS                 TestBogoSuite
+```
+
+12.1 s, including `go mod download` of the pinned boringssl module, building the BoGo runner with
+the Go toolchain, and a TLS 1.0 client handshake with certificate verification against BoringSSL as
+the peer. **The converted TLS implementation interoperates with a foreign, adversarial TLS
+implementation** — which nothing in the corpus had shown before.
+
+*Why the full suite was still not run.* Go's own run here is **3,242 BoGo cases (861 pass, 2,381
+skip, 0 fail) in 31.8 s**; BoGo spawns the shim once per case, and the converted host's shim
+invocation costs 3.30 s against the Go binary's 0.038 s — **~87x, and ~3 hours of process startup
+alone** before any TLS work. That is a cost multiplier, not a correctness wall, it is the same
+managed-startup number every converted test host pays, and it is not on `crypto/tls`'s critical
+path, because the package cannot bank on the x509 root regardless. Left deliberately
+unmeasured-in-full and named for whoever wants it: the honest prediction is that it PASSES, given
+roughly a four-hour deadline.
+
+### Where `crypto/tls` stands
+
+**One arc — `crypto/x509`'s Windows system verifier — is now the entire distance between
+`crypto/tls` and a roster row.** Everything else is settled: the protocol work has been green since
+`sha3` (TLS 1.2 and 1.3, QUIC, session tickets, ECH, the whole handshake matrix, and now BoringSSL
+interop), the four expired-fixture failures agree with Go, `TestCertCache` is disclosed and
+committed, and `TestBogoSuite`'s host defect is closed by a general fix the whole roster now
+carries. The remaining root has a full census in the x509-cryptoapi entry above (four structures
+passed by address, five read back through raw addresses, and the dual-identity problem that makes
+the `GetAddrInfoW` transcription shape inapplicable) — and note that `crypto/x509`'s own suite still
+cannot be measured at all, on three unrelated `-tests` emission defects, so that arc owes a
+test-pipeline arc in front of it.
+
+Still builds-and-partly-runs: no roster row, no proof page, converted test sources not committed
+(the disclosure manifest is, as the one hand-owned artifact that outlives the measurement).
+
+### Gates
+
+Full validated sweep — the gate every `core/testing` change owes, and the canaries `fmt`,
+`database/sql` and `os/exec` are rows inside it · `TestingRuntimeTests` 26/26 including the new
+guard, proven failing-first · solution integrity 623/623 · `go2cs.slnx` build, the only gate that
+compiles `BehavioralTests.csproj`, whose reference set changed. No converter change, so neither
+`go test ./...` nor CNR is owed — `src/go2cs` is untouched.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
