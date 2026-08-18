@@ -1972,15 +1972,8 @@ public static ΔType SliceOf(ΔType t) {
 // The structLookupCache caches StructOf lookups.
 // StructOf does not share the common lookupCache since we need to pin
 // the memory associated with *structTypeFixedN.
-
-[GoType("dyn")] partial struct structLookupCacheᴛ1 {
-    public partial ref sync_package.Mutex Mutex { get; } // Guards stores (but not loads) on m.
-    // m is a map[uint32][]Type keyed by the hash calculated in StructOf.
-    // Elements in m are append-only and thus safe for concurrent reading.
-    internal Δsync.Map m;
-}
-internal static ж<structLookupCacheᴛ1> ᏑstructLookupCache = new(new structLookupCacheᴛ1(nil));
-internal static ref structLookupCacheᴛ1 structLookupCache => ref ᏑstructLookupCache.Value;
+internal static ж<funcLookupCacheᴛ1> ᏑstructLookupCache = new(new funcLookupCacheᴛ1(nil));
+internal static ref funcLookupCacheᴛ1 structLookupCache => ref ᏑstructLookupCache.Value;
 
 [GoType] partial struct structTypeUncommon {
     internal partial ref structType structType { get; }
@@ -2312,7 +2305,7 @@ public static ΔType StructOf(slice<StructField> fields) {
         }
         // Look in cache.
         {
-            var (ts, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+            var (ts, ok) = ᏑstructLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
                 foreach (var (_, st) in ts._<slice<ΔType>>()) {
                     var t = st.common();
                     if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
@@ -2322,10 +2315,10 @@ public static ΔType StructOf(slice<StructField> fields) {
             }
         }
         // Not in cache, lock and retry.
-        ᏑstructLookupCache.of(structLookupCacheᴛ1.ᏑMutex).Lock();
-        defer(ᏑstructLookupCache.of(structLookupCacheᴛ1.ᏑMutex).Unlock, ref ᒐ);
+        ᏑstructLookupCache.of(funcLookupCacheᴛ1.ᏑMutex).Lock();
+        defer(ᏑstructLookupCache.of(funcLookupCacheᴛ1.ᏑMutex).Unlock, ref ᒐ);
         {
-            var (ts, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+            var (ts, ok) = ᏑstructLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
                 foreach (var (_, st) in ts._<slice<ΔType>>()) {
                     var t = st.common();
                     if (haveIdenticalUnderlyingType(typ.of(structType.ᏑType), t, true)) {
@@ -2337,11 +2330,11 @@ public static ΔType StructOf(slice<StructField> fields) {
         ΔType addToCache(ΔType t) {
             slice<ΔType> ts = default!;
             {
-                var (ti, ok) = ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
+                var (ti, ok) = ᏑstructLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
                     ts = ti._<slice<ΔType>>();
                 }
             }
-            ᏑstructLookupCache.of(structLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(ts, t));
+            ᏑstructLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(ts, t));
             return t;
         }
         // Look in known types.

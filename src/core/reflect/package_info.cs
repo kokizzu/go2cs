@@ -106,7 +106,6 @@ public static partial class reflect_package
     internal partial struct rtype {}
     internal partial struct runtimeSelect {}
     internal partial struct sliceType {}
-    internal partial struct structLookupCacheᴛ1 {}
     internal partial struct structType {}
     internal partial struct structTypeUncommon {}
     internal partial struct visibleFieldsWalker {}

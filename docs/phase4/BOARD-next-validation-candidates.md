@@ -11642,4 +11642,95 @@ Output** (26 skipped, no `package main`), 0 failures, 4,070 s. No golib change, 
 `GolibTests`/`go2cs.slnx` are not owed. This branch carries both feeder lanes as merges
 (`8f63c1dde`, `dd11e1e35`) — their entries above land with it.
 
+## ✅ BANKED — `crypto/ed25519` validates 8/8 (+1 disclosed) behind the local-value cast fix; `internal/reflectlite`'s compile wall was THREE roots, all closed, and the package now RUNS into the reflection mini-bridge (2026-08-18, lane `claude/local-iface-cast`)
+
+The cheapest unowned root two lanes converged on — a LOCAL named value source with an interface
+target falling through `convCallExpr`'s conversion branch to a plain cast that records nothing —
+is closed the way the one-diagnostic-remeasure entry priced it, and the boundary it retired turned
+out to be misreasoned rather than load-bearing: a local type CAN be partial'd to declare the
+interface, and that is exactly why the route matters, because the partial is go2cs-gen's, minted
+from the `[assembly: GoImplement<T, Iface>]` record the plain cast never wrote. Framed by SYNTAX
+it is one rule: `Iface(x)` and `var i Iface = x` are the same Go conversion and now take the same
+route. For a local non-func value source the route is RECORD-ONLY — the corpus re-proof measured
+the claim rather than arguing it (seeded reconvert, 1,668 emitted, 0 real differences, 0 new; 63
+marked hand-owns, 0 clobbered) — and the pairs it newly records are precisely the two shapes the
+speculative recorder declines: a FOREIGN interface (`recordSamePackageImplements` pairs two locals
+only) and an UNEXPORTED local one (its exported gate). Guards failing-first at both levels
+(`TestLocalValueIfaceCallConversion`; behavioral `LocalValueIfaceCallConversion`, all four phases).
+
+### `crypto/ed25519` — banked, 151/215 (70.2%)
+
+First attempt at the wall: the suite converts, builds and runs 8 of 9 verdicts matching `go test
+-json` — sign/verify plain/ph/ctx, `crypto.Signer` through the interface surface (the cast that
+named the defect), RFC 8032 golden vectors, the extended edge-case set, equality, malleability.
+The ninth is `TestAllocations`, want-zero AllocsPerRun over a loop that derives keys and signs —
+disclosed `alloc-profile`, the bytes/strings precedent verbatim. Roster header recomputed from the
+table: **151/215, 17,272 matching, 77 disclosed**; proof page converter-generated at `0f3495688`.
+
+### `internal/reflectlite` — the wall was three deep; the compiler is no longer the owner
+
+Closing CS0030 exposed the harvest entry's CS8130 as TWO defects, and a third behind both. All
+three are general, all guarded failing-first (`packageLevelAnonStructLift_test.go`):
+
+* **Package-level anonymous-struct lifts now dedupe by structural identity within a file** — the
+  function-scoped dedup (TestSizeStructCache) extended to package scope with an explicit scope
+  discriminator (`currentFuncName` is never reset after a FuncDecl and would have leaked). Two
+  package vars over one written anonymous struct are one Go type; splitting them made
+  `append(assignableTests, implementsTests...)` un-unifiable (CS9244 + CS8130 ×2). Corpus
+  footprint: exactly ONE production site — `reflect`'s `funcLookupCache`/`structLookupCache` pair,
+  the same shape in production clothing, adopted with the fix (reflect builds clean; behavioral
+  corpus byte-identical 623/623; stdlib-metadata in sync). The recorded residual narrows to
+  cross-FILE and cross-SCOPE splits.
+* **A whitebox-production type is not a LOCAL operand for a `GoImplicitConv` record.**
+  `obj.Pkg() == v.pkg` read production `flag` as local (go/packages merges the variants), but its
+  C# is the closed referenced assembly, so the record minted the phantom `partial struct flag`
+  whose `.Value` does not exist — CS1061, the exact shape `conversionRecordHasLocalOperand`
+  already declines for the both-foreign pair. `whiteboxProductionObject` now excludes it;
+  declining costs nothing (the cast site's explicit chain needs no operator, and production's own
+  package_info.cs carries `GoImplicitConv<flag, abiꓸKind>`). Option-gated: non-`-tests`
+  conversions untouched by construction.
+
+With the wall down the package RUNS: **5 of 30 agree** (`TestImplicitSetConversion`,
+`TestNilPtrValueSub`, `TestPtrSetNil`, `TestTypeOf`, `TestUnaddressableField`), 2 skip-parity, and
+all 23 remaining failures stop in the reflectlite reflection CORE — `packEface` nil-deref
+(`value.cs:125`), descriptor field walks (`Field index out of bounds`/`out of range` through
+`export_test`'s `Field`/`TField`), `bad indir` (`value.cs:116`). That is the mini-bridge the board
+already records as "only ever landed `Len`/`Swapper`" — the reflection-bridge arc owns this
+package now, not a converter lane. Nothing banks; no test artifacts committed.
+
+### A third call-syntax gap, measured and deliberately not taken
+
+The behavioral guard's negative case measured the INTERFACE-source twin of the same family:
+`valued(d)` with `d` an interface emits a plain cast that throws `InvalidCastException` at runtime
+where `var dv valued = d` builds the `describedᴠvalued` adapter — same
+call-syntax-skips-the-route class, but the route is `recordableInterface`'s adapter-wrapping
+emission, a wider change owing its own re-proof. The guard pins the position UNTOUCHED so a later
+widening cannot move it silently; whoever takes it inherits a measured repro.
+
+### The measurement hazard this lane paid for
+
+**A stale machine-global `~/go2cs` deploy root hijacks the canonical two-arg `-tests` form.**
+Self-location defers to a CONFIGURED root that exists, and the default `-go2cspath` (`~/go2cs`) IS
+one wherever `deploy-core` ever ran — on this laptop that root carries its own circular-restore
+defect (`MSB4006` in its `unsafe.csproj`), and the pipeline reported it as the mass-empty
+`Go="pass" C#=""` verdict, reading exactly like total conversion failure. The harness rule
+generalizes: pass an EXPLICIT `-go2cspath <repo>\src` on every pipeline invocation from a repo
+with work in flight; the two-arg form is only canonical on a machine with no deploy root.
+
+### The ranked queue, updated
+
+1. **`debug/elf` (31)** — CS8183 ×1 (`_ = net.ResolveIPAddr`, implicitly-typed discard of a
+   method group), reproduced verbatim 2026-08-18 by the sibling lane and untouched here: the next
+   bounded one-diagnostic item.
+2. **`encoding/xml` (386) / `net/netip` (266)** — the assembly-scoped-alias CS0426 root, ranked
+   ahead on verdict mass by the harvest entry, unmoved.
+3. **`internal/reflectlite` (30)** — behind the reflection-bridge arc now; `runtime/debug` (9)
+   still unmeasured since the CS0715 retirement.
+
+Gates: converter `go test ./...` ok twice (219.3 s / 193.2 s) · full CNR byte-identical across all
+623 behavioral packages twice (0 NOT MEASURED both runs) · TWO seeded whole-stdlib reconverts, 63
+marked / 0 clobbered both, every real mover named · `reflect` single-package build 0 errors ·
+solution integrity 625/625, path casing 4,485→4,492. Banked: `0f3495688` (cast fix + guards),
+ed25519 bank, `e61758549` (reflectlite's two remaining roots + reflect adoption).
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
