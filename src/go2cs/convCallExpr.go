@@ -2295,7 +2295,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// circular dependency.
 		if resultType.String() == "unsafe.Pointer" {
 			if len(constructType) == 0 {
-				constructType = "(uintptr)"
+				// …unless the call IS a bare expression statement, where nothing consumes the
+				// result and C# allows only a call, never a cast: `func() { SwapPointer(nil, nil) }`
+				// (sync/atomic's nil-deref table) emitted `(uintptr)SwapPointer(nil, nil);` — CS0201.
+				// Node identity, not a flag, so a nested call in the same statement whose value IS
+				// consumed keeps the prefix (see visitExprStmt).
+				if callExpr != v.resultDiscardedExpr {
+					constructType = "(uintptr)"
+				}
 			} else if len(callExpr.Args) == 1 && v.currentFuncSignature != nil {
 				// The ref-based extension-function rewrite below only applies to a pointer-receiver
 				// METHOD whose argument aliases the receiver; a package-scope initializer (e.g.

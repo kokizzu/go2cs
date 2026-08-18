@@ -167,6 +167,14 @@ type Visitor struct {
 	// restore around nested statements so an inner statement's decls don't leak to the outer buffer.
 	hoistedDecls *strings.Builder
 
+	// resultDiscardedExpr is the expression of the statement currently being emitted as a bare
+	// EXPRESSION STATEMENT — the one syntactic slot where C# admits a call but not a cast. A call
+	// returning `unsafe.Pointer` takes a `(uintptr)` construct prefix (convCallExpr's pointer-cast
+	// note), which is harmless where a value is consumed but turns `SwapPointer(nil, nil);` into
+	// `(uintptr)SwapPointer(nil, nil);` — CS0201. Held by NODE IDENTITY, not by a boolean, so a
+	// nested call inside the same statement (whose result IS consumed) keeps its conversion.
+	resultDiscardedExpr ast.Expr
+
 	// globalDeclHoist, when non-nil, is the PACKAGE-LEVEL var-initializer spill sink: a
 	// multi-value inner call spread at a package-level initializer (`var debug = template.Must(
 	// template.New(…).Parse(…))`) has no statement sink, so convExprList emits a hidden static
