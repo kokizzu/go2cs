@@ -1431,6 +1431,17 @@ func renderCSFullTypeName(typeName string, rootNested bool) string {
 		}
 	}
 
+	// An ALREADY-ROOTED name is rooted: the default arm below prefixes the root namespace
+	// unconditionally, and a white-box test conversion hands this renderer names the test-alias
+	// qualifiers built with an explicit `global::` (testAliasShadowOperations) — so a `global using`
+	// RHS came out as `go.global::go.<pkg>_package.T`, which is CS7000 "unexpected use of an aliased
+	// name" (net/netip's export_test.go `type Uint128 = uint128`, and every same-shaped test alias
+	// to a production type). Rooting is idempotent by intent, so say so here rather than at the one
+	// caller: `global::` is the root, and prefixing it can only ever produce a name that is not one.
+	if strings.HasPrefix(typeName, "global::") {
+		return typeName
+	}
+
 	switch typeName {
 	case "int":
 		return "nint"

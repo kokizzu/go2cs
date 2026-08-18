@@ -10562,4 +10562,134 @@ a missing GOROOT and is not (use the single-string form with embedded quotes); a
 `until ! powershell -Command "exit (…)"` wait-loop reported a still-running `go test` as finished,
 the documented `exit $true` trap, caught only against a positive process count.
 
+## ⛔ HARVEST — the pure-compute tail re-measured; nothing banks, `net/netip`'s SYNTAX wall falls, and three "reproduced verbatim" rows re-earn that phrase (2026-08-17, lane `claude/harvest`)
+
+A ranked breadth pass over the unbanked pure-compute candidates, run on the r43c/r44a doctrine and
+returning the least fashionable answer this board records: **six candidates measured, zero banked.**
+That is worth writing down precisely because every previous breadth pass here banked something — the
+cheap rows are spent, and what is left in the pure-compute tail is walls with names. The pass is
+still worth its cost twice over: two converter defects that emit UNPARSEABLE C# are closed, and a
+root the board has recommended twice as "the cheapest remaining pair" turns out to be spent.
+
+### The enumeration, and what it excludes
+
+**305** converted package directories under `src/core` carry a production `.csproj` (306 counting the
+hand-written `golib`); **216** have a `func Test` in their Go 1.23.1 GOROOT sources; minus hand-owned
+`testing` that is the roster header's **215**, and 215 − 150 banked = **65** unbanked. Of those, the following are excluded from a *pure-compute*
+harvest rather than measured: the socket-walled `net` family (`net`, `net/http`, `net/http/{cgi,
+cookiejar,httptest,httptrace,httputil,internal,pprof}`, `net/rpc`, `net/smtp`, `net/mail`,
+`net/internal/socktest`, `log/syslog`) behind the poller-throughput arc; the runtime/OS internals
+(`runtime`, `runtime/{debug,pprof,race,trace}`, `internal/runtime/*`, `internal/poll`,
+`internal/syscall/*`, `internal/trace*`, `internal/coverage/cfile`); the lane-owned `crypto/tls`,
+`crypto/x509` and `reflect`; the packages a ratified ruling already blocks (`math/big` 224/226 and
+`net/http/internal` 9/10, both held by the *undisclosed* near-budget alloc counts; `log` 7/9 behind
+the `runtime.Caller` arc; `os/user`, whose `TestGroupIds` fails in Go's own oracle); the
+working-directory class (`go/build` 57/58, `internal/platform`, `internal/godebugs`); and the
+architectural rows (`internal/unsafeheader` 0/6, `iter` 0/28 on the `newcoro`/`coroswitch` stubs,
+`slices` 0/122 on element-type deduction for constrained slice generics).
+
+### The six, in the order they were run
+
+| Package | Verdicts | Board had | Measured 2026-08-17 |
+|:--|:--:|:--|:--|
+| `html` | 3 | 2 of 3 | **2 of 3, unmoved.** `TestUnescape` — the map-MISS producer of the `array<T>`-without-its-Go-length class. The `default!` zero-value emission (`claude/zero-value-arrays`) does NOT reach it: that fix covers declared zero values, and a map miss has no declaration to read a shape from. Still the converter+golib arc r57b priced |
+| `internal/chacha8rand` | 4 | 3 of 4 | **3 of 4, unmoved.** `TestBlockGeneric` panics `index out of range [0] with length 0` at `chacha8_generic.cs:64` — and the producer is NOT a declaration either: it is the `unsafe.Pointer` array-SHAPE reinterpret (`[32]uint64` → `[16][4]uint32`) that hands back a length-0 outer `array<T>`. Same seam as `debug/pe`'s, with no kernel in it |
+| `debug/pe` | 10 | 9 of 10 | **9 of 10, unmoved.** `TestReadCOFFSymbolAuxInfo` — the byte-level struct pun across surrogate layouts, exactly as recorded |
+| `encoding/gob` | 106 | 99 of 106 | **100 of 106 — one row, from the reflect-bridge closure.** `TestSingletons` closed. The six that remain are four roots: the `array<T>` length class (`TestEndToEnd`, `TestIndirectSliceMapArray`), gob's own decoder IGNORE path (`TestBadData`, `TestIgnoreRecursiveType`), `reflect.Value.IsNil` on an INTERFACE asking the pointee (`TestNilPointerInsideInterface`), plus `TestIgnoreDepthLimit` infrastructure-erroring on the `reflect.ArrayOf`→`typelinks` stub |
+| `net/netip` | 266 | 0 of 266, CS1002/CS1525 | **The SYNTAX wall is CLOSED — two converter defects, both fixed below — and three semantic roots stand behind it.** Still 0 of 266 |
+| `internal/reflectlite` | 30 | 0 of 30, CS0715 | **0 of 30, and the root MOVED.** CS0715 is gone; two different diagnostics now: **CS0030** and **CS8130**, below |
+
+### The two converter defects `net/netip` was the first thing in the corpus to reach
+
+Both emit C# that does not PARSE, so nothing downstream of the compiler could have caught them, and
+both are shapes the production corpus happens not to contain — which is why they survived to be
+found by a Phase-4 measurement rather than by a build. Both are fixed, each with a failing-first
+guard in `src/go2cs/mixedKeyedComposite_test.go`.
+
+**1. Go's all-or-nothing keying rule is a STRUCT-literal rule.** An ARRAY or SLICE literal may MIX
+positional and keyed elements — `[]byte{0xfe, 0x80, 15: 0x01}` is a SIXTEEN-byte value — and every
+keyed path in `convCompositeLit` decided from `Elts[0]` alone (`compositeLitIsKeyed`'s comment stated
+the wrong rule as its justification). A mixed literal therefore took the plain positional emission
+while its keyed elements still rendered through the key/value arm, whose sparse form wants a target
+ident that does not exist in an expression position:
+`new byte[]{0xfe, 0x80, <nil>[15] = 0x01}` — CS1525. The fix normalizes the POSITIONAL elements to
+the indices Go gives them (first element 0; after a keyed element at k, continue at k+1) so the
+literal is all-keyed and the existing SparseArray machinery renders it — `new slice<byte>(16){[0] =
+0xfe, [1] = 0x80, [15] = 0x01}`, which also recovers the length a wrong emission gets silently wrong.
+An all-positional or already-all-keyed literal is untouched by construction, which is why the whole
+corpus is byte-identical. A literal whose keys will not fold to constants is left exactly as it was:
+an index the converter cannot compute is one it must not invent.
+
+**2. Rooting a `global using` RHS was not idempotent.** `renderCSFullTypeName`'s default arm prefixes
+the root namespace unconditionally, and a WHITE-BOX test conversion hands it names the test-alias
+qualifiers (`testAliasShadowOperations`) have already rooted with an explicit `global::` — so
+`export_test.go`'s `type Uint128 = uint128` emitted
+`global using Uint128 = go.global::go.net.netip_package.uint128;`, CS7000 "unexpected use of an
+aliased name". `global::` IS the root; prefixing it can only produce a name that is not one.
+
+### What stands behind them — `net/netip`, three roots, all semantic
+
+The package now COMPILES past the parser and stops on eight diagnostics in three families:
+
+| Root | Sites | Note |
+|:--|:--|:--|
+| **An EXPORTED test declaration over an UNEXPORTED production type is emitted more accessible than the type** | CS0050 ×2, CS0052 ×3 in `export_test.cs` | `func MakeAddrDetail(…) addrDetail` and `var Z0 = …Handle[addrDetail]` are exported Go names, so they emit public; `addrDetail`/`uint128` are unexported, so they emit internal. Legal Go, illegal C#. A test assembly's `public` has no external consumer, so clamping an internal-test declaration's accessibility to its type's is the shape of the remedy |
+| **A `global using` alias is assembly-scoped, not a namespace member** | CS0426 in `netip_test.cs` | `netip_package.AddrDetail` — the class `importOperations.go:894` names, whose CROSS-package two-hop form is already fixed; this is the SAME-package (white-box test) instance of it. `encoding/xml`'s recorded blocker reads identically (`ΔToken` does not exist in `xml_package`, 386 verdicts) and `html/template`'s CS0030 sits next door — whether one fix serves all three is a hypothesis this pass did NOT measure, but it is the cheapest one to test |
+| **A generic test helper's constraint renders non-generically** | CS0305/CS0308 in `fuzz_test.cs` | `comparable<T>` used with no type argument, and `netipTypeCmp` used with one |
+
+### `internal/reflectlite` — the recorded root is spent, and the two behind it are named
+
+CS0715 (a generic test-local type's operators emitted into the static test partial) no longer
+appears, which retires the board's "cheapest remaining pair" framing — the pair is now one package
+(`runtime/debug`, 9, unmeasured this pass) plus two fresh roots here:
+
+* **CS0030 — a Go conversion-to-interface written in CALL syntax takes a raw C# cast.**
+  `pinUnexpMeth(EmbedWithUnexpMeth{})` emits `((pinUnexpMeth)new EmbedWithUnexpMeth(nil))`; the
+  converted struct does not declare the interface (that is `go2cs-gen`'s adapter's job), so the cast
+  is illegal. `T(x)` where T is an interface must route through `convertToInterfaceType`, exactly as
+  an assignment to an interface-typed slot does.
+* **CS8130 — a range over an `append(…)` result cannot infer its deconstruction.**
+  `for i, tt := range append(assignableTests, implementsTests...)` emits
+  `foreach (var (i, tt) in append(…))` and neither `i` nor `tt` has an inferable type.
+
+### The ranked queue this pass hands on
+
+1. **`encoding/xml` (386) and `net/netip` (266)** — the assembly-scoped-alias CS0426 root, measured
+   in both and identical in shape. `html/template` (243) and `text/template` (52) sit behind a
+   CS0030 that may or may not be the same family; measure `encoding/xml` first, since its
+   diagnostic is the one that matches.
+2. **`sync/atomic` (108)** — CS0841 (use of a local before its declaration); `debug/elf` (31) —
+   CS8183 (implicitly-typed discard); `flag` (24) — CS1929; `crypto/ed25519` (9) — CS0030;
+   `internal/concurrent` (20) — CS0426 `node<,>`. Five one-diagnostic build blocks, each unmeasured
+   since scout batch 2 and each therefore a candidate for having MOVED, as reflectlite's just did.
+3. **`encoding/gob` (106)** — three roots, of which `Value.IsNil` on an interface is a five-line
+   bridge fix the board has carried since r39.
+4. **`internal/reflectlite` (30) + `runtime/debug` (9)** — behind the two roots above.
+5. **`crypto/internal/edwards25519` (55)** — the ratified Option A tuple-spec init-order fix is
+   still unimplemented; the residual after it is one AllocsPerRun row.
+
+Deliberately NOT re-measured: `unique` (4/19), `log/slog` (153/213), `go/doc` (24/85) — each has a
+current census and a named owner, and r44a's lesson is that the yield is in what nobody has run.
+
+### The measurement hazard this pass paid for
+
+**MSB4166 "Child node exited prematurely" is NOT a build root.** `debug/pe` first measured as a hard
+build failure with eleven MSB4166s and no CS diagnostic at all; re-run with
+`MSBUILDDISABLENODEREUSE=1` it reached its real 9-of-10 in 45 s. The pipeline shells out to
+`dotnet run`, whose MSBuild leaves node-reuse workers alive BETWEEN pipeline runs, and a reused node
+that dies takes the next package's build with it. Set `MSBUILDDISABLENODEREUSE=1` for any queue that
+runs several `-tests` conversions back to back — it is also the isolation flag a lane owes its
+siblings.
+
+### Gates
+
+Converter `go test ./...` ok (274.3 s) · full CNR **byte-identical across all 621 behavioral
+packages**, nothing NOT MEASURED, 2 advisory warnings (1,440 s) · **seeded full corpus reconvert**
+(307 projects, 549 s) **1,665 emitted artifacts, 1,665 identical, 0 differing, 0 new** — the
+zero-corpus-churn claim measured rather than argued, and self-validating on the hand-own marker gate
+(a failed seeding would have emitted the hand-owns as plain `.cs` and they would have shown as
+differing) · both guards proven failing-first (`<nil>[15] = 0x01` and
+`go.global::go.net.netip_package.uint128` each reproduce with its fix neutered). No roster row, no
+proof page, no disclosures, no converted test sources committed: six measurements, zero validations.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
