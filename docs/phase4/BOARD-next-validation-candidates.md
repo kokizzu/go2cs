@@ -10562,4 +10562,123 @@ a missing GOROOT and is not (use the single-string form with embedded quotes); a
 `until ! powershell -Command "exit (…)"` wait-loop reported a still-running `go test` as finished,
 the documented `exit $true` trap, caught only against a positive process count.
 
+## ⛔ The three `-tests` roots were SIX, they are all RECOMPILE-MODEL roots, and `crypto/x509`'s compile wall is now ONE FILE behind a model-selection arc (2026-08-17, lane `claude/x509-unlock`)
+
+The entry above censused `crypto/x509`'s test host at **5 errors in 3 roots** and called all three
+general `-tests` emission defects. The count was right, the reading was right, and it was **half the
+depth**: closing those three exposed three more of the same family, and closing all six took the
+package from 5 errors to **6, in one file** — a 97 % reduction that ends at a different class
+entirely. Every one of the six is fixed in the converter with a failing-first guard.
+
+### One principle, five supplies: under the RECOMPILE model the test half CONTINUES the production pass
+
+Two supplies were already pinned this way (`productionLiftedTypeNames`,
+`productionHoistedConstOrdinals`). Three more owed it, and the fix collects all five into one
+`productionSeed` struct captured before the first variant's `resetPackageState`:
+
+| # | Supply | Emitted name | `crypto/x509`'s collision | Errors |
+|--:|:--|:--|:--|--:|
+| 1 | blank-import force hooks | `initᴛᴛblankImportꓸcryptoꓸsha256` | `x509.go` and `x509_test.go` both blank-import sha256 and sha512 | CS0111 ×2 |
+| 2 | the blank-identifier counter | `_ᴛ1ʗ` | `pem_decrypt.go`'s blank iota const vs `oid_test.go`'s `var _ encoding.BinaryMarshaler` | CS0102 |
+| 5 | `func init()` ordinals | `init` / `initΔ1` | `windows/root_windows.go`'s `init` vs `x509_test.go`'s | CS0111 |
+
+None of these is exotic Go — a test repeating a production blank import is what a test exercising
+those registrations *does*. The blank-import hook is the one whose OWNERSHIP is worth stating and not
+merely its uniqueness: exactly one hook per (assembly, imported package), and the **production** half
+owns it whenever its file is in the compilation, because that file is the one a `-tests` run cannot
+rewrite.
+
+### Three more: a recompile-model test project compiles the production sources, so it owes their references and their per-GOOS half
+
+| # | Root | `crypto/x509`'s symptom | Errors |
+|--:|:--|:--|--:|
+| 3 | the B2c alias scan read only the TEST-emitted files | `x509.cs`/`pem_decrypt.cs` emit `using hash = hash_package;` (`crypto.Hash.New()` RETURNS `hash.Hash`, so `hash` is in no import list and in no production reference) — and `DisableTransitiveProjectReferences` hides it | CS0246 ×2 |
+| 4 | `productionCSFiles` was FLAT-only, and layout L3 is not flat | the whole Windows verifier (`windows/verify.cs`, `windows/root_windows.cs`) fell out of the test compilation | **187** |
+| 6 | the production static-ctor probe was FLAT-only | a SECOND `static x509_package()` emitted beside the real one in `windows/package_init.cs` | CS0111 |
+
+Root 3's omission hides in the ordinary case, because a production file's aliases are usually its own
+package's direct imports, which the import-derived set already carries; it bites only where the alias
+names a package reached transitively. Roots 4 and 6 had never been exercised because **`crypto/x509`
+is the corpus's only L3 package on the recompile model** — every other L3 suite takes a reference
+model, where the production ASSEMBLY carries its per-GOOS half. Note root 4's shape: 187 errors, every
+one of them reported against a TEST file, none of them naming the missing folder.
+
+### Unlock breadth: measured, and NARROW — because all six are recompile-model-only
+
+Worth stating plainly, because the honest answer is smaller than the brief expected. All six roots
+live on the path taken only when the test half emits into the production class, i.e. the `recompile`
+model, which is a deterministic FALLBACK rather than a selection. Measured on this branch:
+
+- **3 of 151 committed `.tests.csproj` are on the recompile model**: `crypto/ecdh`, `crypto/x509`,
+  `text/tabwriter`. Every other banked package is `reference` or `whitebox-reference`.
+- **Thirteen recorded build-blocked packages sampled, ZERO on recompile** — `encoding/xml`,
+  `net/netip`, `html/template`, `flag`, `debug/elf`, `os/exec`, `database/sql`, `text/template`,
+  `internal/concurrent`, `crypto/ecdsa`, `runtime/pprof`, `encoding/json` (all whitebox-reference)
+  and `sync/atomic` (reference). **None of their walls is one of these six.**
+- The two OTHER banked recompile packages are **byte-identical** under the fixed converter
+  (`crypto/ecdh`, `text/tabwriter`: empty-numstat CRLF phantoms plus `ecdh`'s expected `package_init`
+  `-tests` hook, nothing else) — which is the regression proof that matters most here, since they are
+  the only banked packages the change can reach at all.
+
+So: general in FORM, `crypto/x509`-specific in PRACTICE today, and free for any future package that
+falls back to recompile. That is the whole breadth; there is no larger unlock hiding behind it.
+
+### `crypto/x509`'s census: 5 → 6 errors, ONE file, and the wall is the one the reference model exists to prevent
+
+The remaining six errors are all in **`hybrid_pool_test.cs`**, and they are the recompile model's
+signature defect, already written down in this repo's own doctrine (`testProjectReference`'s
+declaration comment): a referenced assembly whose API mentions a production type names it in the
+PRODUCTION assembly, while the test assembly's recompiled copy is a DISTINCT type.
+
+```
+googChain := c.ConnectionState().PeerCertificates      // c is a crypto/tls Conn — a REFERENCED assembly
+```
+
+→ `CS0012: The type 'x509_package.Certificate' is defined in an assembly that is not referenced …
+'crypto.x509'` ×4, plus `CS1929 … the best extension method overload 'Verify(ж<Certificate>,
+VerifyOptions)' requires a receiver of type 'go.ж<go.crypto.x509_package.Certificate>'` ×2. No
+compile-set or reference adjustment repairs an identity split; the remedy is to stop needing the
+fallback.
+
+**Why x509 falls back, censused exactly — ONE record.** Instrumenting
+`recordsRequireProductionMutation` on this branch prints exactly one offender:
+
+```
+CENSUS implicit: global::go.crypto.x509_package.Certificate -> ж<global::go.crypto.x509_package.Certificate>
+```
+
+That is the shared Go pointer-boxing route `T → ж<T>`, and the adjacent
+`indirectImplicitConversions` loop **already exempts precisely this shape**, with the reasoning
+spelled out in its own comment ("the generator intentionally emits no type-owned operator for a
+foreign T, so it does not mutate production"). The exemption is simply absent from the DIRECT
+`implicitConversions`/`invertedImplicitConversions` loop above it. That is the next lane's move and
+this lane deliberately did **not** take it: it changes MODEL SELECTION, whose blast radius is the
+three recompile packages above — two of them banked and validated — so it owes their re-proof plus a
+sweep, which is a different arc from six naming/closure fixes and must not be smuggled in behind
+them.
+
+**The predicted census if that one line lands** (not measured — the measurement run was started and
+is not part of this bank): x509 moves from *build-blocked* to a real verdict set of **335**, with
+`TestHybridPool` skipping (no external network), `TestSystemVerify`/`TestPlatformVerifier`/
+`TestSystemCertPool`/`TestSystemRootsError` on the **stack-proven `CertChainPara` wall** the entry
+above censused (`systemVerify` blocks inside `CertGetCertificateChain`), and the pure-parsing
+majority — parsing, marshalling, name constraints, OID, PKCS#1/8, SEC1, PEM — free of any known
+wall. That is the shape to expect, not a promise.
+
+### Gate verdicts
+
+Converter `go test ./...` ok · full CNR byte-identical · the two other banked recompile-model packages
+re-converted byte-identical · `encoding/json` canary re-swept (491) · six guards proven failing-first
+by neutering each fix in turn (the neutered runs print the real diagnostics: `_ᴛ1ʗ` re-minted,
+`windows/verify.cs` missing from the compile set, `hash` absent from the reference set).
+
+⚠ Process note, both already in CLAUDE.md and both re-paid here: the `Start-Process -ArgumentList`
+array form does not quote `C:\Program Files\…` (died as `Failed to access input file path
+"C:\Program"`), and the Bash tool's timeout **caps at 600 s regardless of the value passed** — a
+20-minute pipeline run passed `3000000` and was killed at exactly 10 minutes with exit 143, orphaning
+the `dotnet run` child that then held `runtime.dll` locked. Long runs go through detached
+`Start-Process` with a PID poll, and the orphan sweep must be scoped by COMMAND LINE
+(`Win32_Process … CommandLine -like '*<lane>*'`), never by process name — three sibling lanes were
+live on this machine throughout.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

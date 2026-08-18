@@ -448,7 +448,7 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 		return err
 	}
 
-	productionFiles, err := productionCSFiles(outputPath)
+	productionFiles, err := productionCSFiles(outputPath, goosOfTarget(options.targetPlatform))
 	if err != nil {
 		return err
 	}
@@ -462,23 +462,9 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	dependencies = removeString(dependencies, "testing")
 	sort.Strings(dependencies)
 
-	// B2c: a seeded/merged `using` ALIAS in the test metadata — or a package-qualifier `using`
-	// emitted into a converted test SOURCE — can target an assembly the package reaches only
-	// TRANSITIVELY (sort's `global using reflectliteꓸKind = go.@internal.abi_package.ΔKind;`
-	// targets internal/abi via sort → reflectlite → abi; math/rand's default_test.cs needs
-	// os/exec purely because testenv.Command RETURNS *exec.Cmd, so "os/exec" appears in no
-	// import list), which DisableTransitiveProjectReferences (B2b) hides from the test compile
-	// view (CS0234). Add direct F15-mapped project references for every such target; the
-	// manifest's dependency list stays import-derived — alias targets are purely a
-	// project-reference concern.
-	aliasScanFiles := []string{testInfoPath, filepath.Join(outputPath, externalTestPackageInfoFileName)}
-
-	for _, outputFile := range outputFiles {
-		aliasScanFiles = append(aliasScanFiles, filepath.Join(outputPath, outputFile))
-	}
-
 	referenceImports := append(append([]string{}, dependencies...), aliasReferenceImports(
-		aliasScanFiles, production.PkgPath, dependencies)...)
+		testProjectAliasScanFiles(model, outputPath, testInfoPath, outputFiles, productionFiles),
+		production.PkgPath, dependencies)...)
 
 	// Close the reference set under the C# DECLARATION edges the converter emits
 	// (declarationClosureImports): binding a type the compilation NAMES needs the assemblies its
@@ -640,18 +626,22 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		whiteboxBridgeDeclaredNames = collectWhiteboxBridgeDeclaredNames(internal)
 	}
 
-	// The lifted type names the PRODUCTION conversion of this package claimed. It ran in this same
+	// The naming state the PRODUCTION conversion of this package left standing. It ran in this same
 	// process moments ago (processConversion converts the production sources, then calls
-	// processTestConversion), so its live claim set is still standing here — captured BEFORE the
-	// first variant's resetPackageState clears it. Only the INTERNAL variant is seeded with it: its
+	// processTestConversion), so its live claims are still here — captured BEFORE the first
+	// variant's resetPackageState clears them. Only the INTERNAL variant is seeded with it: its
 	// test files emit into the production package class, where those names are already taken.
-	productionLiftSeed := packageLiftedTypeNames
-
-	// Same capture for the hoisted big-constant field ordinals (visitValueSpec's
-	// claimHoistedConstFieldName): a production function's `const mask = <big>` declared `maskᶜ` in
-	// the production class, and an internal-variant test hoisting its own `mask` must claim the
-	// next ordinal, not the name already on disk.
-	productionHoistedConstSeed := packageHoistedConstOrdinals
+	// See productionSeed for what each member pins and why. Captured by REFERENCE deliberately:
+	// resetPackageState replaces each of these globals with a fresh instance rather than clearing
+	// the one in place, so the captured production state stays pristine while the variant claims
+	// into its own.
+	internalSeed := productionSeed{
+		liftedTypeNames:      packageLiftedTypeNames,
+		hoistedConstOrdinals: packageHoistedConstOrdinals,
+		globalTempVarCounts:  globalTempVarCount,
+		blankImportForces:    packageBlankImportForces,
+		initFuncs:            initFuncCounter,
+	}
 
 	// The simple type names BOTH variant classes declare (see testAmbiguousLocalTypeNames). Both
 	// `using static` directives are in scope in the merged metadata, so these must emit
@@ -768,12 +758,14 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			result.requiredCapabilities.UnionWith(foundMain.RequiredCapabilities)
 		}
 
-		var liftSeed HashSet[string]
-		var hoistedConstSeed map[string]int
+		// The seed is the INTERNAL variant's under the RECOMPILE model alone — that is exactly the
+		// case where the production `.cs` are compile items of this assembly and share the emitted
+		// class. Under the reference model production is a separate assembly; the external variant
+		// has a class of its own. Both may reuse every seeded name.
+		var seed productionSeed
 
 		if variant == internal && !model.referencesProduction() {
-			liftSeed = productionLiftSeed
-			hoistedConstSeed = productionHoistedConstSeed
+			seed = internalSeed
 		}
 
 		variantOptions := options
@@ -785,7 +777,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			}
 		}
 
-		variantOutputs, imports, err := convertTestVariant(variant, emitEntries, outputPath, projectNamespace, liftSeed, hoistedConstSeed, variantOptions)
+		variantOutputs, imports, err := convertTestVariant(variant, emitEntries, outputPath, projectNamespace, seed, variantOptions)
 		if err != nil {
 			return result, err
 		}
@@ -1438,6 +1430,54 @@ func seedProductionAliasLifts(pkg *packages.Package, productionInfoPath string) 
 	}
 }
 
+// productionSeed carries the naming state the PRODUCTION conversion of this package left standing
+// when it finished, so a `-tests` variant that emits into the SAME `<pkg>_package` class can
+// continue from it rather than start over.
+//
+// Every member exists for one reason: under the RECOMPILE model the production `.cs` on disk are
+// compile items of the test assembly and are NOT regenerated, so every package-scope name they
+// already declare is immutable. A converter counter or claim set that restarts for the test
+// emission pass re-mints one of those names and the class declares it twice. The seed is therefore
+// the INTERNAL variant's alone (its files land in the production class); the EXTERNAL variant's
+// `<pkg>_test_package` is a separate scope that may reuse every one of these names freely, and
+// seeding it would only churn names for no compile-level reason.
+//
+// A zero value is the "no production half to continue from" case — an external variant, the
+// reference model (production is a separate ASSEMBLY there, so nothing it declares can collide),
+// and every direct unit-test call.
+type productionSeed struct {
+	// liftedTypeNames — the anonymous-struct/interface lifts already nested in the class.
+	liftedTypeNames HashSet[string]
+
+	// hoistedConstOrdinals — per Go const name, the `<name>ᶜ[ordinal]` big-constant fields claimed.
+	hoistedConstOrdinals map[string]int
+
+	// globalTempVarCounts — the package-scope generated-name counters (getGlobalTempVarName): the
+	// blank identifier `_` (a blank package var, const or func becomes `_ᴛNʗ` / `_ᴛN`, since C#
+	// has no package-scope discard) and the hidden `tupleᴛNʗ` holders. crypto/x509's pem_decrypt.cs
+	// declares `_ᴛ1ʗ` for a blank const in an iota block, and oid_test.cs's
+	// `var _ encoding.BinaryMarshaler = OID{}` re-minted the very same name into the very same
+	// class — CS0102, one of the three roots that stood between that package and any verdict at all.
+	globalTempVarCounts map[string]int
+
+	// blankImportForces — the imported paths a `[GoInit] initᴛᴛblankImportꓸ…` hook was already
+	// emitted for. The hook forces a blank-imported package's module constructor and is idempotent
+	// by construction: exactly one per (assembly, imported package). A test file repeating a
+	// production blank import is the ordinary case, not an exotic one — `x509.go` and `x509_test.go`
+	// both blank-import `crypto/sha256` and `crypto/sha512`, and each half emitted the same hook
+	// into the same partial class (CS0111 ×2). The PRODUCTION half owns the hook whenever its file
+	// is in the compilation, because that file is the one this run cannot rewrite.
+	blankImportForces HashSet[string]
+
+	// initFuncs — how many Go `func init()` declarations the class already carries. Go allows any
+	// number per package and C# needs a distinct name for each, so the first takes `init` and the
+	// rest `initΔN`. The counter restarting for the test emission pass gives the test half's own
+	// `func init()` the bare `init` a production file already declares: `crypto/x509`'s
+	// windows/root_windows.cs and x509_test.go, CS0111 again. Same shape as globalTempVarCounts —
+	// a per-class name supply that one emission pass must not restart.
+	initFuncs int
+}
+
 // convertTestVariant converts one test package variant's _test.go files into C# in outputPath.
 // The whole variant (production + test files) feeds the package-wide analyses so the test files
 // convert with complete state, but only the test files are EMITTED here. The production .cs already
@@ -1446,7 +1486,7 @@ func seedProductionAliasLifts(pkg *packages.Package, productionInfoPath string) 
 // Files convert SEQUENTIALLY in pkg.Syntax order for byte-reproducible output, mirroring
 // processConversion (the per-file visitors share package-level state claimed at visit time; the
 // branch's concurrent goroutines reproduced exactly the nondeterminism master removed).
-func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPath, projectNamespace string, liftSeed HashSet[string], hoistedConstSeed map[string]int, options Options) ([]string, HashSet[string], error) {
+func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPath, projectNamespace string, seed productionSeed, options Options) ([]string, HashSet[string], error) {
 	resetPackageState(pkg)
 	packageNamespace = projectNamespace
 
@@ -1454,11 +1494,25 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	// productionLiftedTypeNames). Non-nil for the INTERNAL variant only — its test files emit into
 	// the production `<pkg>_package` class, whose on-disk `.cs` are not regenerated here, so a lift
 	// that reuses one of those names declares the nested type twice.
-	productionLiftedTypeNames = liftSeed
+	productionLiftedTypeNames = seed.liftedTypeNames
 
 	// Same production-pinned seeding for the hoisted big-constant field ordinals (see
 	// productionHoistedConstOrdinals); claimHoistedConstFieldName folds it in on first claim.
-	productionHoistedConstOrdinals = hoistedConstSeed
+	productionHoistedConstOrdinals = seed.hoistedConstOrdinals
+
+	// The counters and claim sets that have no production-pinned mirror of their own are seeded
+	// straight into the live state resetPackageState just cleared: nothing else reads them, so a
+	// second global would carry no information the live set cannot. All three say the same thing —
+	// this emission pass CONTINUES the production one rather than restarting it (see productionSeed).
+	for prefix, count := range seed.globalTempVarCounts {
+		globalTempVarCount[prefix] = count
+	}
+
+	for importPath := range seed.blankImportForces {
+		packageBlankImportForces.Add(importPath)
+	}
+
+	initFuncCounter = seed.initFuncs
 
 	// The package under test is RECOMPILED into this assembly, so a record naming one of its types
 	// through its fully-qualified class (how an external `<name>_test` variant renders it, having
@@ -1705,7 +1759,13 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		if options.testClassNameOverride != "" {
 			variantClassName = options.testClassNameOverride
 		} else if !isExternalVariant {
-			_, statErr := os.Stat(filepath.Join(outputPath, PackageInitFileName))
+			// Layout L3 puts the production package_init.cs in the package's per-GOOS folder (Go's
+			// InitOrder differs when the file set does — conversionDriver.go), so this must ask
+			// where the tree actually keeps it. A flat-only probe answered "no production ctor" for
+			// every L3 package and emitted a SECOND `static <pkg>_package()` beside the real one:
+			// CS0111 on the constructor itself, once crypto/x509's platform folder started
+			// compiling into its test assembly at all.
+			_, statErr := os.Stat(platformLayoutPath(outputPath, goosOfTarget(options.targetPlatform), PackageInitFileName))
 			implementHook = statErr == nil
 		}
 
@@ -2906,6 +2966,48 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 // the aliases — including the /vN major-version collapse — so matching is exact. When several
 // closure paths render the same token (math/rand beside math/rand/v2), the lexically first is
 // taken, deterministically.
+// testProjectAliasScanFiles returns the files whose emitted `using` aliases and conversion records
+// the B2c project-reference scan must read: EVERY C# source the test project compiles, plus the two
+// metadata files.
+//
+// B2c: a seeded/merged `using` ALIAS in the test metadata — or a package-qualifier `using` emitted
+// into a converted SOURCE — can target an assembly the package reaches only TRANSITIVELY (sort's
+// `global using reflectliteꓸKind = go.@internal.abi_package.ΔKind;` targets internal/abi via
+// sort → reflectlite → abi; math/rand's default_test.cs needs os/exec purely because
+// testenv.Command RETURNS *exec.Cmd, so "os/exec" appears in no import list), which
+// DisableTransitiveProjectReferences (B2b) hides from the test compile view. The manifest's
+// dependency list stays import-derived — alias targets are purely a project-reference concern.
+//
+// The PRODUCTION sources belong in that scan under the RECOMPILE model for exactly the same reason
+// the test sources do, and for no other: there they are compile items of the test assembly (see
+// writeTestProject), so an alias one of them emits is a reference the TEST project owns. That
+// production sources were omitted was a scan-set gap, not a different rule — and the omission is
+// invisible in the ordinary case because a production file's aliases are usually its own package's
+// direct imports, which `dependencies` already carries. It bites where the alias names a package
+// the production half reaches only transitively: `crypto/x509`'s x509.cs and pem_decrypt.cs emit
+// `using hash = hash_package;` (crypto.Hash.New() RETURNS hash.Hash — `hash` is in no import list
+// of x509 and in no reference of its own production csproj, which compiles only because it does NOT
+// disable transitive references), and the test build failed CS0246 inside the PRODUCTION files.
+//
+// Under the REFERENCE model the production sources compile in their own project and are bound
+// through its assembly reference, so their aliases are that project's concern; scanning them here
+// would add references the test project does not need.
+func testProjectAliasScanFiles(model testProjectModel, outputPath, testInfoPath string, testFiles, productionFiles []string) []string {
+	scanFiles := []string{testInfoPath, filepath.Join(outputPath, externalTestPackageInfoFileName)}
+
+	for _, testFile := range testFiles {
+		scanFiles = append(scanFiles, filepath.Join(outputPath, testFile))
+	}
+
+	if !model.referencesProduction() {
+		for _, productionFile := range productionFiles {
+			scanFiles = append(scanFiles, filepath.Join(outputPath, productionFile))
+		}
+	}
+
+	return scanFiles
+}
+
 func aliasReferenceImports(infoFiles []string, productionPkgPath string, directDependencies []string) []string {
 	direct := NewHashSet(directDependencies)
 	tokens := make(map[string][]string)
@@ -3894,8 +3996,53 @@ func isSelfProjectReference(reference, projectName string) bool {
 	return strings.EqualFold(path.Base(normalizeEmittedPath(reference)), projectFileBaseName(projectName)+".csproj")
 }
 
-func productionCSFiles(outputPath string) ([]string, error) {
-	entries, err := os.ReadDir(outputPath)
+// productionCSFiles enumerates the package's converted PRODUCTION sources — the compile items a
+// recompile-model test project adds to its own (see writeTestProject), and the files the B2c alias
+// scan must read for it (testProjectAliasScanFiles).
+//
+// Layout L3: a package whose emitted C# varies by GOOS keeps the varying files in per-GOOS
+// subfolders and its production csproj compiles exactly one of them via `$(GoTargetOS)/*.cs`
+// (docs/phase4/DESIGN-multiplatform-corpus.md). The test project lists its compile items
+// EXPLICITLY, so the same selection has to be made here or the recompiled half is simply missing
+// those files. `crypto/x509` is the corpus's only L3 package on the recompile model — every other
+// L3 suite takes the reference model, where the production ASSEMBLY carries its per-GOOS half — so
+// the omission had never been exercised. What it costs is not subtle: x509's whole Windows verifier
+// (windows/verify.cs, windows/root_windows.cs) fell out of the test compilation, and with it
+// `Verify`, `VerifyOptions`' fields, `loadSystemRoots`, `domainToReverseLabels` and every error
+// type's `Error()` method — 187 errors that name the TEST files, not the missing folder.
+//
+// The per-GOOS `package_init.cs` belongs in the set for the same reason: a `-tests` run rewrites it
+// to declare the `initᴛᴛtests()` partial hook the internal variant's package_init_internal_test.cs
+// implements, and a declaration in one compilation with its implementation in another is no hook at
+// all. Only the TARGET platform's folder is taken; the others are a different build.
+func productionCSFiles(outputPath string, goos string) ([]string, error) {
+	result, err := productionCSFilesIn(outputPath, "")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(goos) > 0 && isPlatformSourceFolder(outputPath, goos) {
+		platformFiles, err := productionCSFilesIn(filepath.Join(outputPath, goos), goos)
+
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, platformFiles...)
+	}
+
+	sort.Strings(result)
+	return result, nil
+}
+
+// productionCSFilesIn returns the converted production sources directly inside one directory, named
+// relative to the package root (so a per-GOOS folder's files carry their `<goos>/` prefix, which is
+// exactly the compile-item and scan spelling both callers need). Subdirectories are never
+// descended: below a per-GOOS folder there is nothing, and below the package root there are only
+// NESTED PACKAGES, which are separate assemblies.
+func productionCSFilesIn(directory string, relativeTo string) ([]string, error) {
+	entries, err := os.ReadDir(directory)
 	if err != nil {
 		return nil, err
 	}
@@ -3907,9 +4054,11 @@ func productionCSFiles(outputPath string) ([]string, error) {
 			lower == strings.ToLower(PackageInfoFileName) || lower == testPackageInfoFileName || lower == testHostFileName || strings.HasSuffix(lower, ".g.cs") {
 			continue
 		}
+		if relativeTo != "" {
+			name = relativeTo + "/" + name
+		}
 		result = append(result, name)
 	}
-	sort.Strings(result)
 	return result, nil
 }
 
