@@ -10657,13 +10657,31 @@ three recompile packages above — two of them banked and validated — so it ow
 sweep, which is a different arc from six naming/closure fixes and must not be smuggled in behind
 them.
 
-**The predicted census if that one line lands** (not measured — the measurement run was started and
-is not part of this bank): x509 moves from *build-blocked* to a real verdict set of **335**, with
-`TestHybridPool` skipping (no external network), `TestSystemVerify`/`TestPlatformVerifier`/
-`TestSystemCertPool`/`TestSystemRootsError` on the **stack-proven `CertChainPara` wall** the entry
-above censused (`systemVerify` blocks inside `CertGetCertificateChain`), and the pure-parsing
-majority — parsing, marshalling, name constraints, OID, PKCS#1/8, SEC1, PEM — free of any known
-wall. That is the shape to expect, not a promise.
+**The census with that one line applied is MEASURED, not predicted** — run on a throwaway binary,
+with the branch's source unchanged and the experimental binary deleted afterwards. It is the most
+useful number this lane produced:
+
+| | |
+|:--|--:|
+| **verdicts agreeing** | **264 of 335** |
+| divergent | 71 |
+| — of those: `Go=pass C#=""` (no verdict produced) | 51 |
+| — of those: `Go=skip C#=""` | 16 |
+| — of those: **real C# failures** | **4** |
+
+The host **compiles clean and RUNS**: zero C# errors, and 264 of the suite's own verdicts agree with
+`go test` — parsing, marshalling, name constraints, PEM, SEC1, CRL creation, path building, EKU
+enforcement. The run then **times out at 1h1m** (the safety net past `-test-timeout 60m`), and the
+67 empty verdicts are dominated by `TestSystemVerify/*` and everything sequenced after it — exactly
+the stack-proven `CertChainPara` wall the entry above censused, now visible as a HANG rather than as
+a nil dereference. `TestHybridPool` is among the empty rows.
+
+The four genuine divergences are small, named, and independent of every wall above:
+**`TestParsePKIXPublicKey`** (and its `X25519` subtest), **`TestOIDMarshal`**, **`TestPKCS8`**.
+
+So the ordering for the next lane is settled by measurement rather than by guess: land the
+model-selection exemption (with `crypto/ecdh` and `text/tabwriter` re-proved), and `crypto/x509`
+becomes a package with **four ordinary divergences and one big wall**, not a build-blocked one.
 
 ### Gate verdicts
 
