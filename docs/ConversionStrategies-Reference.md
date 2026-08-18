@@ -12729,6 +12729,30 @@ Two properties are deliberate. **The token VALUE does not change.** The obvious 
 
 Corpus footprint of the idiom: in all of GOROOT it is `go/types`' `check_test.go` (bool and string), its `cmd/compile/internal/types2` twin, and four descriptor-walking sites in `reflect/type.go`; `sync/atomic`'s two uses only test alignment (`p&7 != 0`) and never dereference. (Guarded by the `ReflectFieldAddrWrite` behavioral **output** test — writes to a bool, a string and an int field through `Addr().UnsafePointer()`, each read back through the ORIGINAL struct to prove aliasing rather than a detached copy, two derivations of one field compared for pointer equality, and the untouched neighbours asserted unchanged, all vs `go run`. It faults with an access violation on pre-fix golib.)
 
+### An OPAQUE `*struct{}` conversion mints a recoverable token — `syscall.Pointer(unsafe.Pointer(p))` keeps its referent
+
+Windows type definitions use `type Pointer *struct{}` for a "pointer to one of many types" field — `CERT_CHAIN_POLICY_PARA.pvExtraPolicyPara`, `WSAMsg.Name` — and Go populates it with `T(unsafe.Pointer(p))` over whatever record the API expects. The emission used to be the numeric chain `(T)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer(p))`, which projects p's box to a scalar at the `@unsafe.Pointer` constructor (the class holds only a number — `Pointer : ж<uintptr>`). For a pointee **carrying managed references** that scalar is a transient GC-heap address with no recoverable box behind it: golib's `uintptr` operator pins only reference-free storage, so the number that reaches the boundary is neither stable nor resolvable, and the referent's liveness ends at the JIT's discretion.
+
+The measured victim was crypto/x509's `checkChainSSLServerPolicy` — the mint-site problem the CryptoAPI chain arc left open by name. Its `SSLExtraCertChainPolicyPara` holds `ServerName *uint16`, a managed reference, so the SSL policy parameter crossed into `CertVerifyCertificateChainPolicy` as a wrong-layout transient address: `Fatal error 0xC0000005` inside `Syscall6`, the last crypt32 member standing between `crypto/tls` and a roster row.
+
+The conversion now emits golib's referent-preserving mint whenever the target's underlying type is `*struct{}` and the source is `unsafe.Pointer(p)` over a Go pointer whose box the emitter has in hand:
+
+```go
+sslPara := &syscall.SSLExtraCertChainPolicyPara{ AuthType: syscall.AUTHTYPE_SERVER, ServerName: servernamep }
+para := &syscall.CertChainPolicyPara{ ExtraPolicyPara: (syscall.Pointer)(unsafe.Pointer(sslPara)) }
+```
+
+```csharp
+var sslPara = Ꮡ(new syscall.SSLExtraCertChainPolicyPara(AuthType: syscall.AUTHTYPE_SERVER, ServerName: servernamep));
+var para = Ꮡ(new syscall.CertChainPolicyPara(ExtraPolicyPara: ((syscall.Pointer)ManagedPointerTokens.MintOpaque(sslPara))));
+```
+
+`ManagedPointerTokens.MintOpaque` (`golib/ж.PointerTokens.cs`) keeps the numeric route **byte for byte** for every pointee that route already answered exactly — nil is 0, a native-backed box is its real address, a reference-free pointee pins and reports stable storage — and diverges only for the reference-bearing class, where three things happen at the mint: the scalar becomes the box's own `PointerOrderToken`; the token is `Register`ed so a boundary wrapper recovers the box with `Resolve` (the same round trip the reflect projection above and the ADDRINFOW hand-own's sockaddr fields take — this is the table's third minter); and the minted `ж<EmptyStruct>` holds the referent reachable for its own lifetime through a `ConditionalWeakTable`, so the opaque pointer keeps its pointee alive exactly as the Go pointer it stands for would — the referent is otherwise reachable only through a local the JIT is free to retire before the syscall that consumes the token.
+
+The consuming side is `syscall`'s hand-owned `CertVerifyCertificateChainPolicy` (`zsyscall_windows_certchain_impl.cs`): a scalar the table recognizes as an `SSLExtraCertChainPolicyPara` box is transcribed — server name and all — into native mirrors for exactly the duration of the call; a scalar it does not recognize passes through unchanged, which is both the nil pointer and any genuinely native (or pinned reference-free) address, for which pass-through is the correct native call.
+
+Scope is deliberate on three edges. The target must be `*struct{}`-underlying: such a type names an opaque pointer **by construction** (there is nothing to dereference), so no reader can depend on the scalar being a dereferenceable address; wider named-pointer targets keep their existing routes. The source must be the `unsafe.Pointer(p)` call form — a stored `unsafe.Pointer` variable or a `uintptr` has already lost its referent and keeps the numeric chain. And the emission-level fix, rather than a hand-own of the one x509 function, is what covers every author of the Go shape — `internal/poll`'s six `WSAMsg.Name` mints (whose `RawSockaddrAny` referents now stay alive for the message's lifetime, ready for the WSA-msg wrappers when that arc lands), converted test suites, and user code. (Guarded by the `SystemCertVerify` behavioral **output** test's policy rows, which drive the same mint from test code against a trusted-by-waiver chain: with `CERT_CHAIN_POLICY_ALLOW_UNKNOWN_CA_FLAG` set, a MATCHING server name answers `0` and a MISMATCHED one answers `CERT_E_CN_NO_MATCH` — an answer crypt32 can only give if the name crossed the boundary intact — and with nothing waived the same chain answers `CERT_E_UNTRUSTEDROOT`. Pre-fix, the first policy call dies with the access violation above.)
+
 ### Pointer DISPLAY never dereferences out-of-range; `unsafe.StringData("")` is nil
 
 Printing a pointer (`ж<T>.ToString()` → `PrintPointer`, the stub-fmt fallback for `%v`/`%p` of a

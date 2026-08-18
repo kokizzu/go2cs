@@ -552,6 +552,13 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if ptrUnder, ok := named.Underlying().(*types.Pointer); ok {
 				if argType := v.info.TypeOf(arg); argType != nil {
 					if basic, ok := argType.Underlying().(*types.Basic); ok && (basic.Kind() == types.UnsafePointer || basic.Kind() == types.Uintptr) {
+						// The OPAQUE-pointer MINT: when the target's pointee is the empty struct
+						// and the referent is statically in hand, preserve it — the numeric chain
+						// below is where crypto/x509's pvExtraPolicyPara lost its box.
+						if emission, ok := v.opaquePointerMintEmission(callExpr, arg, targetTypeName); ok {
+							return emission
+						}
+
 						elemCS := convertToCSTypeName(v.getAliasQualifiedTypeName(ptrUnder.Elem(), false))
 						return fmt.Sprintf("((%s)(%s<%s>)(uintptr)(%s))", targetTypeName, PointerPrefix, elemCS, expr)
 					}
@@ -4938,6 +4945,79 @@ func (v *Visitor) unsafePointerBoxEmission(callExpr *ast.CallExpr, arg ast.Expr,
 	}
 
 	return operandExpr
+}
+
+// opaquePointerMintEmission renders golib's referent-preserving mint for the conversion
+// `T(unsafe.Pointer(p))` where T's underlying type is `*struct{}` — the OPAQUE pointer form
+// Windows type definitions use for a "pointer to one of many types" field (syscall's
+// `type Pointer *struct{}`) — and p is a Go pointer whose box is statically in hand.
+//
+// The numeric chain this replaces — `(T)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer(p))` —
+// projects p's box to a scalar at the @unsafe.Pointer constructor, and for a pointee CARRYING
+// MANAGED REFERENCES that scalar is a transient GC-heap address with no recoverable box behind it:
+// golib's uintptr operator pins only reference-free storage (ж.cs, EnsureStableAddress). The
+// measured victim is crypto/x509's checkChainSSLServerPolicy, whose
+// SSL_EXTRA_CERT_CHAIN_POLICY_PARA — ServerName itself a pointer — crossed into
+// CertVerifyCertificateChainPolicy as exactly such an address: an ACCESS_VIOLATION inside
+// Syscall6, and the one mint-site standing between crypto/tls and a roster row (BOARD
+// "THE CRYPTOAPI CHAIN WALL IS DOWN", 2026-08-18). Guarded by the SystemCertVerify behavioral
+// test's policy rows, which drive the same mint from test code — which is why the remedy is this
+// emission rather than a hand-own of the one x509 function: a hand-own would leave every OTHER
+// author of the same Go shape, converted test suites included, minting the same lost pointer.
+//
+// golib's ManagedPointerTokens.MintOpaque keeps the numeric route byte for byte for every pointee
+// that route already answered exactly (nil → 0, native → its address, reference-free → pinned
+// stable storage) and diverges only for the reference-bearing class: the scalar becomes the box's
+// own pointer-order token, registered so the consuming boundary wrapper
+// (zsyscall_windows_certchain_impl.cs) recovers the referent with Resolve, and the minted box
+// holds the referent reachable for its own lifetime — the emitted mint's referent is otherwise
+// reachable only through a local the JIT is free to retire before the syscall that consumes it.
+//
+// Scope: the target's pointee must be the EMPTY struct — `*struct{}` names an opaque pointer BY
+// CONSTRUCTION (there is nothing to dereference), so no reader can depend on the scalar being a
+// dereferenceable address. Wider named-pointer targets keep their existing routes. A source that
+// is not `unsafe.Pointer(p)`-over-a-pointer (a uintptr, a stored unsafe.Pointer variable — the
+// referent is already gone there) keeps the numeric chain, as does a pointer the emitter cannot
+// render as a box (a deref-aliased receiver).
+func (v *Visitor) opaquePointerMintEmission(callExpr *ast.CallExpr, arg ast.Expr, targetTypeName string) (string, bool) {
+	named, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Named)
+
+	if !ok {
+		return "", false
+	}
+
+	ptrUnder, ok := named.Underlying().(*types.Pointer)
+
+	if !ok {
+		return "", false
+	}
+
+	structElem, ok := ptrUnder.Elem().Underlying().(*types.Struct)
+
+	if !ok || !isEmptyStructType(structElem) {
+		return "", false
+	}
+
+	inner := v.unwrapUnsafePointerConversion(arg)
+
+	if inner == nil {
+		return "", false
+	}
+
+	if _, isPtr := v.info.TypeOf(inner).(*types.Pointer); !isPtr {
+		return "", false
+	}
+
+	// A deref-aliased pointer RECEIVER renders as the pointed-to value alias and has no box for
+	// the mint to hold — the numeric chain is that shape's pre-existing (and only) route.
+	if v.exprIsDerefAliasedPointer(inner) && !v.exprIsDerefdPointerParam(inner) {
+		return "", false
+	}
+
+	identContext := DefaultIdentContext()
+	identContext.isPointer = true
+
+	return fmt.Sprintf("((%s)ManagedPointerTokens.MintOpaque(%s))", targetTypeName, v.convExpr(inner, []ExprContext{identContext})), true
 }
 
 // unwrapUnsafePointerConversion returns the argument of an `unsafe.Pointer(x)` conversion, or nil

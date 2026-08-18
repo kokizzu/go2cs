@@ -88,7 +88,7 @@ var reserved = NewHashSet([]string{
 	"GoImplicitConvAttribute", "GoPackage", "GoPackageAttribute", "GoRecv", "GoRecvAttribute",
 	"GoTestMatchingConsoleOutput", "GoTestMatchingConsoleOutputAttribute", "GoTag", "GoTagAttribute",
 	"GoTypeAlias", "GoTypeAliasAttribute", "GoType", "GoTypeAttribute", "GoBigConst", "go\u01C3",
-	"IArray", "IChannel", "IMap", "ISlice", "ISupportMake", "make\u01C3", "MemberwiseClone", "NilType",
+	"IArray", "IChannel", "IMap", "ISlice", "ISupportMake", "make\u01C3", "ManagedPointerTokens", "MemberwiseClone", "NilType",
 	"PanicException", "PrintPointer", "slice", "sstring", "ToString", "ToUTF8Bytes", "TryCastAsInteger", "type",
 	"UntypedInt", "UntypedFloat", "UntypedComplex",
 	PointerPrefix, TrueMarker, OverloadDiscriminator, EllipsisOperator,

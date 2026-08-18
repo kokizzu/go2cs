@@ -129,7 +129,7 @@ internal static error checkChainSSLServerPolicy(ж<Certificate> Ꮡc, ж<syscall
     ));
     sslPara.Value.Size = (uint32)/* unsafe.Sizeof(*sslPara) */ (uintptr)24;
     var para = Ꮡ(new syscall.CertChainPolicyPara(
-        ExtraPolicyPara: ((syscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer(sslPara)))
+        ExtraPolicyPara: ((syscall.Pointer)ManagedPointerTokens.MintOpaque(sslPara))
     ));
     para.Value.Size = (uint32)/* unsafe.Sizeof(*para) */ (uintptr)16;
     ref var status = ref heap<syscall.CertChainPolicyStatus>(out var Ꮡstatus);
