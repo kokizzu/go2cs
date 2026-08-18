@@ -95,6 +95,7 @@
     <None Include="$(MSBuildThisFileDirectory)linknameOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)linknamePush_test.go" />
     <None Include="$(MSBuildThisFileDirectory)linknamePushRegistry_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)localValueIfaceCallConversion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)main.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionMarker_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionScope_test.go" />
@@ -108,6 +109,7 @@
     <None Include="$(MSBuildThisFileDirectory)namedResultLiveness_test.go" />
     <None Include="$(MSBuildThisFileDirectory)nativeIntConstWidth_test.go" />
     <None Include="$(MSBuildThisFileDirectory)nestedArgScaling_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)packageLevelAnonStructLift_test.go" />
     <None Include="$(MSBuildThisFileDirectory)packageGlobalState.go" />
     <None Include="$(MSBuildThisFileDirectory)packageInfoWriter.go" />
     <None Include="$(MSBuildThisFileDirectory)packageStateOperations.go" />

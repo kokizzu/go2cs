@@ -39,13 +39,27 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// Structurally IDENTICAL anonymous struct types are ONE Go type: repeated textual
 		// occurrences of `struct{ A Struct }` inside a function must lift to a SINGLE C# type,
 		// or reflect.Type identity splits per occurrence (encoding/binary's TestSizeStructCache
-		// counts descriptor-cache entries — Go adds ONE for four occurrences). A NAMED local
-		// declaration keeps per-declaration identity and never dedupes. Function-scoped: the
-		// cross-function/package-level anonymous split is a recorded residual.
+		// counts descriptor-cache entries — Go adds ONE for four occurrences). The SAME rule at
+		// PACKAGE level: two package vars over one written anonymous struct are one Go type, and
+		// splitting them makes their C# types un-unifiable where Go unifies freely —
+		// internal/reflectlite's `append(assignableTests, implementsTests...)` could not type
+		// (CS9244 + CS8130 ×2), because each var's slice element had lifted to its own nominal
+		// struct. A NAMED declaration keeps per-declaration identity and never dedupes. The
+		// key's scope discriminator is EXPLICIT ("" at package level) rather than
+		// v.currentFuncName, which is never reset after a FuncDecl and would leak the previous
+		// function's name onto a package var declared below it. Scopes stay separate (a
+		// function-local lift never unifies with a package-level one) and the map is
+		// per-visitor, so the residual narrows to the cross-FILE and cross-SCOPE splits.
 		var anonLiftKey string
 
-		if _, isAnonStruct := identType.(*types.Struct); isAnonStruct && v.inFunction && structSignatureType != nil {
-			anonLiftKey = v.currentFuncName + "\x00" + structSignatureType.String()
+		if _, isAnonStruct := identType.(*types.Struct); isAnonStruct && structSignatureType != nil {
+			liftScope := ""
+
+			if v.inFunction {
+				liftScope = v.currentFuncName
+			}
+
+			anonLiftKey = liftScope + "\x00" + structSignatureType.String()
 
 			if existing, ok := v.liftedAnonStructNames[anonLiftKey]; ok {
 				v.liftedTypeMap[identType] = existing

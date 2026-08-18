@@ -1,0 +1,11 @@
+{
+ "schemaVersion": 1,
+ "disclosures": [
+  {
+   "name": "TestAllocations",
+   "class": "alloc-profile",
+   "signature": "expected zero allocations, got ",
+   "reason": "want-zero AllocsPerRun assert: the run loop builds seed/message slices, derives a key, signs and verifies -- every step allocates in the managed model (golib slices, ж boxes, edwards25519 scalar/point state) where Go's escape analysis and fixed-size arrays keep the whole round on the stack"
+  }
+ ]
+}

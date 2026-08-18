@@ -471,20 +471,45 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					return fmt.Sprintf("((%s)%s)", targetTypeName, v.convertToInterfaceType(callTargetType, argPtrType, v.convExpr(arg, []ExprContext{identContext})))
 				}
 
-				// The VALUE mirror: a FOREIGN named VALUE source — `crypto.SignerOpts(sigHash)`
-				// with `sigHash crypto.Hash` (crypto/tls, CS0030 ×4). The plain cast cannot bind:
-				// a foreign value type implements its interfaces via extension methods (never
-				// structurally), and this assembly cannot partial it — route through
-				// convertToInterfaceType, which records + references the LOCAL value adapter
-				// (the both-foreign arm; syscall.Signal→os.Signal precedent) or no-ops into the
-				// plain spelling when the defining assembly already implements the pair. LOCAL
-				// value sources keep the plain-cast/partial-impl route (no churn). The outer
-				// interface cast stays load-bearing exactly like the pointer arm: `var signOpts
-				// = …` must type as the INTERFACE, not the adapter class — each tls site
+				// The VALUE mirror, for a named non-interface VALUE source wherever it is
+				// declared. Two shapes, one route:
+				//
+				//   - a FOREIGN source — `crypto.SignerOpts(sigHash)` with `sigHash crypto.Hash`
+				//     (crypto/tls, CS0030 ×4). The plain cast cannot bind: a foreign value type
+				//     implements its interfaces via extension methods (never structurally), and
+				//     this assembly cannot partial it. convertToInterfaceType records + references
+				//     the LOCAL value adapter (the both-foreign arm; syscall.Signal→os.Signal
+				//     precedent) or no-ops into the plain spelling when the defining assembly
+				//     already implements the pair.
+				//   - a LOCAL source — `crypto.Signer(private)` with `type PrivateKey []byte`
+				//     (crypto/ed25519, CS0030 ×2) and `pinUnexpMeth(EmbedWithUnexpMeth{})`
+				//     (internal/reflectlite). A local type CAN be partial'd to declare the
+				//     interface, and that is exactly why it must route here: the partial is
+				//     go2cs-gen's, minted from an `[assembly: GoImplement<T, Iface>]` record, and
+				//     a plain cast records NOTHING. So the cast had nothing to bind to whenever no
+				//     other site recorded the pair — which is every pair the speculative recorder
+				//     declines: an interface in ANOTHER assembly (recordSamePackageImplements only
+				//     pairs two locals) and an UNEXPORTED local interface (its exported gate,
+				//     load-bearing because a record is a cross-assembly contract).
+				//
+				// Framed by SYNTAX rather than by locality, this is one rule: Go's `Iface(x)` and
+				// `var i Iface = x` are the same conversion, and the assignment form has always
+				// routed through convertToInterfaceType (visitValueSpec). A conversion's emission
+				// must not depend on which of Go's two spellings the source used. For a local
+				// non-func value source the route is record-only — it returns the expression
+				// unchanged — so the corpus text does not move; a local named FUNC source is the
+				// one shape whose emission does, and correctly: a C# delegate cannot be a partial
+				// struct, so the generator emits the `ᴠ` value adapter the arm now references.
+				//
+				// The outer interface cast stays load-bearing exactly like the pointer arm: `var
+				// signOpts = …` must type as the INTERFACE, not the adapter class — each tls site
 				// reassigns signOpts to a different adapter two lines later (CS0029 hazard).
+				//
+				// An INTERFACE source keeps its plain cast: interface→interface is the separate
+				// recordableInterface class, whose adapter-wrapping emission is a different arc.
 				if argType := v.getType(arg, false); argType != nil {
 					if named, ok := types.Unalias(argType).(*types.Named); ok && !types.IsInterface(named) {
-						if pkg := named.Obj().Pkg(); pkg != nil && pkg != v.pkg {
+						if pkg := named.Obj().Pkg(); pkg != nil {
 							return fmt.Sprintf("((%s)%s)", targetTypeName, v.convertToInterfaceType(callTargetType, argType, v.convExpr(arg, nil)))
 						}
 					}
@@ -3003,6 +3028,19 @@ func (v *Visitor) conversionRecordHasLocalOperand(funcType, argType types.Type) 
 // typeDeclaredInConvertedPackage reports whether a named/aliased type is declared by the package
 // currently being converted. An unnamed type (basic, literal struct) has no declaring package and
 // answers false.
+//
+// A WHITEBOX-PRODUCTION declaration answers false too: on the internal `-tests` variant,
+// go/packages merges the production files into the test package, so a production type's obj.Pkg()
+// IS v.pkg — local in the Go sense — while its C# lives in the CLOSED referenced production
+// assembly, which the generator cannot extend with an operator. Counting it local re-created the
+// exact phantom the caller exists to prevent: internal/reflectlite's export_test.go converts
+// `flag(typ.Kind())`, the pair recorded with the production `flag` as its host, and the generator
+// declared `partial struct flag` in the TEST class — a phantom whose `.Value` does not exist
+// (CS1061). Declining costs nothing, exactly as for the both-foreign pair: the cast site already
+// emits the explicit chain (`(flag)(uintptr)(uint8)typ.Kind()`), which needs no generated
+// operator, and production's own operators (its package_info.cs carries `GoImplicitConv<flag,
+// abiꓸKind>`) serve any implicit position. whiteboxProductionObject is option-gated, so every
+// non-`-tests` conversion is untouched by construction.
 func (v *Visitor) typeDeclaredInConvertedPackage(t types.Type) bool {
 	if t == nil || v.pkg == nil {
 		return false
@@ -3019,7 +3057,7 @@ func (v *Visitor) typeDeclaredInConvertedPackage(t types.Type) bool {
 		return false
 	}
 
-	return obj != nil && obj.Pkg() == v.pkg
+	return obj != nil && obj.Pkg() == v.pkg && !v.whiteboxProductionObject(obj)
 }
 
 // numericConversionValueTypeName renders the C# name of the PRIMITIVE that backs a named (or

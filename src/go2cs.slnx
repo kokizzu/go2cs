@@ -523,6 +523,7 @@
     <Project Path="tests/Behavioral/LocalFunctionEmission/LocalFunctionEmission.csproj" />
     <Project Path="tests/Behavioral/LocalShadowsEmbedHopType/LocalShadowsEmbedHopType.csproj" />
     <Project Path="tests/Behavioral/LocalStructFieldAddr/LocalStructFieldAddr.csproj" />
+    <Project Path="tests/Behavioral/LocalValueIfaceCallConversion/LocalValueIfaceCallConversion.csproj" />
     <Project Path="tests/Behavioral/LocalTimeZone/LocalTimeZone.csproj" />
     <Project Path="tests/Behavioral/LocalTypeAliasScope/LocalTypeAliasScope.csproj" />
     <Project Path="tests/Behavioral/LocalTypeSliceElement/LocalTypeSliceElement.csproj" />
