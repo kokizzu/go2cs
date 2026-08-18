@@ -793,6 +793,17 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 							if !innerNeedsBoxRouting {
 								innerNeedsBoxRouting = v.isHeapBoxedExpr(innerSel)
 							}
+						} else if innerIdent, ok := innerIndex.X.(*ast.Ident); ok {
+							// The inner base can also be a bare heap-escaped IDENT rather than a
+							// selector — `&ack[me][i%3]` over a `[2][3]int32` local captured by a
+							// goroutine literal. Its own element address now routes through the box
+							// (`Ꮡack.at<array<int32>>(me)`), so the OUTER element address must chain
+							// onto that; without this the pair fell to the naive prefix and emitted
+							// `ᏑᏑack.Value[me].at<int32>(…)` — CS0103, the 2-D sibling of the
+							// single-index case below.
+							if obj := v.info.ObjectOf(innerIdent); obj != nil && v.identEscapesHeap[obj] {
+								innerNeedsBoxRouting = true
+							}
 						}
 
 						if innerNeedsBoxRouting {
@@ -811,6 +822,26 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					if ident, ok := indexExpr.X.(*ast.Ident); ok && v.identIsParameter(ident) {
 						if obj := v.info.ObjectOf(ident); obj == nil || !v.identEscapesHeap[obj] {
 							return fmt.Sprintf("%s(%s).at<%s>(%s)", AddressPrefix, v.convExpr(indexExpr.X, nil), csTypeName, v.convArrayIndex(indexExpr.Index))
+						}
+					}
+
+					// A heap-escaped array LOCAL owns an identity box — `ref var X = ref
+					// heap<array<E>>(out var ᏑX)` — and its DEFAULT render is that box's value alias
+					// (`ᏑX.Value`, the form a closure that captured it must use, since C# cannot
+					// capture a ref local). Textually prefixing `Ꮡ` onto that composes two box
+					// spellings into one name that was never declared: `&X[me]` inside a goroutine
+					// literal emitted `ᏑᏑX.Value.at<int32>(me)` — CS0103, the same naive-prefix
+					// hazard the slice and pointer-to-array branches above each record. Alias the
+					// element THROUGH the box exactly as the pointer-to-array branch does: render
+					// the base in POINTER context to get `ᏑX`, then `.at<E>(i)`. ж's `at` reads
+					// through `Value` and returns a pointer over the SHARED backing, so writes
+					// through it land in the escaped storage (a `Ꮡ(X[i])` copy-form would drop them).
+					if ident, ok := indexExpr.X.(*ast.Ident); ok {
+						if obj := v.info.ObjectOf(ident); obj != nil && v.identEscapesHeap[obj] {
+							boxIdentContext := DefaultIdentContext()
+							boxIdentContext.isPointer = true
+
+							return fmt.Sprintf("%s.at<%s>(%s)", v.convExpr(indexExpr.X, []ExprContext{boxIdentContext}), csTypeName, v.convArrayIndex(indexExpr.Index))
 						}
 					}
 

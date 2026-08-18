@@ -11383,4 +11383,143 @@ with the fix neutered every time. The arm's decision was extracted to
 measured `net/netip` run. A guard that passes while its fix is neutered guards nothing, and noticing
 that is the only reason this one exists in the shape it does.
 
+## MEASURED — the five one-diagnostic build blocks re-measured: ONE moved and its wall FELL, four stood, and `crypto/ed25519` turns out to be `internal/reflectlite` (2026-08-18, lane `claude/one-diagnostic-remeasure`)
+
+The harvest entry's queue item 2 listed five packages "each unmeasured since scout batch 2 and each
+therefore a candidate for having MOVED, as reflectlite's just did." All five are now re-measured on
+current master (`eda03743e`). **One moved; four are reproduced verbatim.** The one that moved,
+`sync/atomic`, moved because its recorded diagnostic was never its only one — and closing the two
+defects behind it takes the package from build-blocked to **running, 65 of 108 verdicts agreeing**,
+stopped by a single named behavioral root rather than by the compiler.
+
+Nothing banks. The honest summary is one build wall closed, two general converter defects fixed with
+failing-first guards, and four walls re-priced with their current owners named.
+
+### The five, in the order they were run
+
+| Package | Verdicts | Board had | Measured 2026-08-18 |
+|:--|:--:|:--|:--|
+| `sync/atomic` | 108 | CS0841 | **MOVED, and the wall FELL.** CS0841 is gone entirely; the build stopped instead on CS0103 ×12 + CS0201 ×2, both fixed below. The package now COMPILES and RUNS: **65 of 108 agree, 43 diverge** on ONE root |
+| `debug/elf` | 31 | CS8183 | **CS8183 ×1, unmoved.** `file_test.cs(1195)`: `_ = net.ResolveIPAddr` — a Go blank assignment from a bare func reference. C# cannot infer the type of an implicitly-typed discard from a method group |
+| `flag` | 24 | CS1929 | **CS1929 ×10, unmoved — and the owner is NOT the converter.** Every one is inside a `go2cs-gen` GENERATED adapter (`Generated/go2cs-gen/go2cs.ImplementGenerator/go.flag_test_package.<T>-global__go.flag_package.Value-ptr.g.cs`) |
+| `internal/concurrent` | 20 | CS0426 `node<,>` | **CS0426 ×1, unmoved.** Plus a finding the board did not have: the converter CRASHES on this package's hand-owned file |
+| `crypto/ed25519` | 9 | CS0030 | **CS0030 ×2, unmoved — and it is `internal/reflectlite`'s root, exactly.** `crypto.Signer(private)` emits `((crypto.Signer)@private)` |
+
+### The two converter defects `sync/atomic` was the first thing in the corpus to reach
+
+Both are shapes the production corpus happens not to contain, which is why each survived to be found
+by a Phase-4 measurement. Both are fixed, with failing-first guards in
+`src/go2cs/escapedArrayElementAddress_test.go`.
+
+**1. The address of an element of a heap-escaped array LOCAL composed two box spellings.** An array
+local that a closure captures escapes to the heap and owns an identity box — `ref var X = ref
+heap<array<int32>>(out var ᏑX)`. C# cannot capture the `ref` alias that names its value, so every
+reference inside the closure renders through the box instead. The element-address arm then prefixed
+the address operator onto THAT already-boxed render, naming a box of a box that was never declared:
+`&X[me]` inside a goroutine literal emitted `ᏑᏑX.Value.at<int32>(me)` — CS0103 — and `&ack[me][i%3]`
+the same one hop deeper, because the nested-index router recognised only a SELECTOR inner base, never
+a bare escaped ident. This is the same naive-prefix hazard the slice branch and the pointer-to-array
+branch above it each already record, arriving at the one base class neither covered. The fix renders
+the base in POINTER context to get the box and aliases the element through it — `ᏑX.at<int32>(me)`,
+`Ꮡack.at<array<int32>>(me).at<int32>(k)` — which is also what keeps writes through the returned
+pointer landing in the escaped storage rather than in a copy: golib's `at` materializes the backing on
+the real storage and returns a pointer over the SHARED array.
+
+**2. A DISCARDED `unsafe.Pointer` result kept the cast that types a CONSUMED one.** Any call whose
+result type is `unsafe.Pointer` takes a `(uintptr)` construct prefix so the value converts. In an
+expression STATEMENT nothing consumes the value, and a statement slot is the one place C# admits a
+call but not a cast: Go's `func() { SwapPointer(nil, nil) }` — a row in sync/atomic's nil-deref table
+— emitted `(uintptr)SwapPointer(nil, nil);`, CS0201. The suppression is keyed on AST-NODE IDENTITY,
+not a boolean, so a call nested inside the same statement whose value IS consumed keeps its
+conversion; the guard asserts both directions.
+
+### What stands behind them in `sync/atomic` — ONE root, and it is the copy-box
+
+The 43 divergences are not 43 problems. Every one is a lost write through a boxed COPY of a
+non-escaped struct local:
+
+```
+delta=1 i=0 j=1 k=1        // TestAddInt32Method
+```
+
+`x.i.Add(delta)` returns the right value (k=1) and then `x.i` reads back 0. The emission is
+`Ꮡ(x).of(TestAddInt32Method_x.Ꮡi).Add(delta)` — the one-arg `Ꮡ(in T)` overload boxes a COPY of the
+local struct `x`, so the atomic mutates a temporary and the next occurrence makes a fresh copy. `x`
+has no identity box because escape analysis never marked it, even though its field's address is
+taken. That accounts for all 35 `*Method` rows, `TestAutoAligned64`, `TestHammer32/64`,
+`TestLoadPointer`/`TestStorePointer`/`TestSwapPointer` and `TestValue_CompareAndSwap`. The
+seq-consistency tests the two fixes above were found in — `TestStoreLoadSeqCst32/64` — PASS, which is
+the positive control that the element-address fix aliases rather than copies.
+
+This is the documented `Ꮡ(value)` limitation, and the remedy is an ESCAPE-ANALYSIS change (mark a
+local whose field address is taken through a method call), whose blast radius is the whole corpus. It
+is not a bounded single-package fix and this lane deliberately did not take it.
+
+### `crypto/ed25519` and `internal/reflectlite` are ONE root, and the remedy is already written down
+
+The harvest entry named reflectlite's CS0030: "a Go conversion-to-interface written in CALL syntax
+takes a raw C# cast … `T(x)` where T is an interface must route through `convertToInterfaceType`."
+`crypto/ed25519`'s two errors are that root verbatim — `crypto.Signer(private)` on
+`type PrivateKey []byte`.
+
+The gap is precisely locatable. `convCallExpr.go`'s interface-target conversion branch already routes
+two source shapes through `convertToInterfaceType`: a POINTER source, and a FOREIGN named VALUE source
+(`pkg != v.pkg`, the `crypto.SignerOpts(sigHash)` precedent). A **LOCAL** named value source falls
+through to the plain cast, on the stated reasoning that a local type can be partial'd to declare the
+interface. That reasoning holds for a local interface and fails for a FOREIGN one: nothing records the
+`[assembly: GoImplement<PrivateKey, crypto.Signer>]` pair, so no adapter exists and the cast has
+nothing to bind to.
+
+Deliberately NOT taken here, for the same reason the x509-unlock lane declined model selection: the
+"no churn" boundary on local value sources is load-bearing and the change owes a corpus-wide re-proof,
+which is a different arc from two emission fixes. Two lanes have now converged on it — it is the
+cheapest unbanked root on this board that nobody owns.
+
+### `flag`'s owner is `go2cs-gen`, not the converter
+
+Worth stating because it re-prices the row. All ten CS1929 are inside GENERATED adapter sources: the
+`ImplementGenerator` adapter for a TEST-package type implementing the PRODUCTION `flag.Value`
+interface cannot find the type's own `String` method on the box, and binds `bytes_package.String`
+instead. No converter emission is at fault, so the row belongs to whoever owns the generator's
+handling of test-package types — a different arc from every other row in this batch.
+
+### `internal/concurrent` — the recorded diagnostic stands, and there is a crash behind it
+
+CS0426 `node<,>` reproduces exactly (`hashtriemap_test.cs(406,145)`). The finding the board did not
+have is in the same run's stderr:
+
+```
+WARNING: visit file error: runtime error: invalid memory address or nil pointer dereference
+in "hashtriemap.go" (auto-conversion sibling skipped)
+```
+
+`internal/concurrent` is one of the three hand-owned-by-consequence packages (its entire single Go
+file is hand-owned), so the crash is confined to the `.cs.auto` review sibling and cannot reach the
+corpus — which is exactly why it has gone unnoticed. It is a converter nil-deref on a real stdlib
+file and should be root-caused before the `.cs.auto` backlog (CleanupBacklog item 18) is levelled,
+since that item's whole purpose is refreshing the siblings this crash silently skips.
+
+### The measurement hazard this lane paid for
+
+**A `-tests` batch that runs CONCURRENTLY reports CS2012 as if it were a package diagnostic.** The
+first pass of this batch launched all four remaining packages at once (a PowerShell capture bug: the
+launcher's `PID=` line goes to the INFORMATION stream, so `2>&1` missed it, the wait was skipped and
+the loop ran on). `debug/elf` and `flag` came back with **CS2012 "cannot open file … being used by
+another process"** and no other error — which reads exactly like a real one-diagnostic build block,
+in a batch whose entire premise is one-diagnostic build blocks. Re-run sequentially they report
+CS8183 ×1 and CS1929 ×10. Two lessons, one already in CLAUDE.md and one not: capture repo-script
+output with `*>&1`, never `2>&1`; and **treat CS2012 as contention, never as a root** — it is the
+build-lock analogue of the MSB4166 hazard the harvest entry recorded, and it fabricates precisely the
+finding this kind of batch is looking for. All five results above are from sequential runs.
+
+### Gates
+
+Converter `go test ./...` **ok, 205.2 s, zero failures** (includes `projitemsIntegrity_test.go` over
+the newly registered guard file) · full `check-no-regression.ps1` **byte-identical across all 621 behavioral packages**, nothing NOT MEASURED, 2 advisory converter warnings (1,060 s); solution integrity 623/623 and path casing 4,478/4,478 in its preflight · both guards proven failing-first by
+neutering each fix in turn: the doubled prefix reproduces and `(uintptr)swapPtr(` reappears in a
+statement slot. No golib change, so `GolibTests`/behavioral/`go2cs.slnx` are not owed. No roster row,
+no proof page, no disclosures, no converted test sources committed: five measurements, zero
+validations.
+
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

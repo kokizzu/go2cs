@@ -31,6 +31,15 @@ func (v *Visitor) visitExprStmt(exprStmt *ast.ExprStmt, format FormattingContext
 
 	defer func() { v.hoistedDecls = savedHoist }()
 
+	// This statement's own expression is emitted with its result DISCARDED. C# admits a call in a
+	// statement slot but not a cast, so a conversion applied purely to type the result has nothing
+	// left to serve here and is a syntax error (CS0201). Publish the node so convCallExpr can tell
+	// THIS call from a nested one whose value is still consumed. Save/restore guards nesting.
+	savedDiscard := v.resultDiscardedExpr
+	v.resultDiscardedExpr = exprStmt.X
+
+	defer func() { v.resultDiscardedExpr = savedDiscard }()
+
 	expr := v.convExpr(exprStmt.X, nil)
 
 	if hoistBuf != nil && hoistBuf.Len() > 0 {
