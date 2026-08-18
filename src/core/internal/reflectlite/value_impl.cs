@@ -154,6 +154,14 @@ partial class reflectlite_package
     // a heap box holding a nil value is a non-nil pointer holding nil.
     public static bool IsNil(this Value v)
     {
+        // An INTERFACE-kind value's nilness is a property of the INTERFACE, never of the
+        // pointer it happens to carry: an interface holding a typed nil `(*T)(nil)` is a
+        // NON-nil interface. Mirrors reflect's IsNil one layer down (the gob
+        // TestNilPointerInsideInterface root); reflectlite's own TestIsNil `struct{ x any }`
+        // rows exercise both directions.
+        if (v.kind() == abi_package.Interface)
+            return v.live is null;
+
         object? cur = v.live;
 
         while (cur is IInterfaceAdapter { Value: not null } interfaceAdapter)

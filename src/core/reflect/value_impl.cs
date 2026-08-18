@@ -235,6 +235,17 @@ public static @string String(this ΔValue v) {
 // Slices/channels/named wrappers answer through their own generated `== nil` operator — the same
 // nilness the emitted comparisons observe (isNilGoValue).
 public static bool IsNil(this ΔValue v) {
+    // An INTERFACE-kind value's nilness is a property of the INTERFACE, never of whatever
+    // pointer it happens to carry: an interface holding a typed nil `(*T)(nil)` is a NON-nil
+    // interface (Go packs (type=*T, value=nil) — packInterfaceValue's own encoding). The
+    // unwrap below asked the POINTEE instead and inverted the answer, and IsZero for an
+    // interface IS IsNil, so encoding/gob's `!state.sendZero && v.IsZero()` skipped the field
+    // outright and its "gob: cannot encode nil pointer inside interface" path was unreachable
+    // (TestNilPointerInsideInterface; the ReflectTypedNilInterface behavioral shape pins both
+    // directions with the nil-interface control).
+    if (v.kind() == ΔInterface) {
+        return v.live is null;
+    }
     object? cur = v.live;
     while (cur is IInterfaceAdapter { Value: not null } interfaceAdapter) {
         cur = interfaceAdapter.Value;

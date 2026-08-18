@@ -8,6 +8,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using static go2cs.Symbols;
@@ -157,6 +158,13 @@ public static partial class GoReflect
         if (t.IsValueType && goLocalNameOf(t) is null && goTypeMarkerOf(t) is { Definition: "dyn" })
             return goStructTypeString(t);
 
+        // An anonymous INTERFACE lift is the struct lift's rule one type category over: the same
+        // [GoType("dyn")] stamp, and Go renders it structurally — `interface { F() }` — never by
+        // the lifted C# identifier (internal/reflectlite's TestNames measured `typeᴛ30` escaping
+        // from Name(), which is this method's output with the qualifier trimmed).
+        if (t.IsInterface && goLocalNameOf(t) is null && goTypeMarkerOf(t) is { Definition: "dyn" })
+            return goInterfaceTypeString(t);
+
         return GoQualifiedName(t);
     }
 
@@ -216,7 +224,7 @@ public static partial class GoReflect
         if (t == typeof(EmptyStruct))
             return false;
 
-        if (t.IsValueType && goLocalNameOf(t) is null && goTypeMarkerOf(t) is { Definition: "dyn" })
+        if ((t.IsValueType || t.IsInterface) && goLocalNameOf(t) is null && goTypeMarkerOf(t) is { Definition: "dyn" })
             return false;
 
         // An unnamed func type renders structurally, so it has no name — the same arm GoTypeName
@@ -346,6 +354,97 @@ public static partial class GoReflect
     }
 
     /// <summary>
+    /// Go's structural spelling of an unnamed interface type — the text
+    /// <c>reflect.Type.String()</c> reports for an interface literal the converter lifted.
+    /// </summary>
+    /// <remarks>
+    /// Methods are gathered flattened (Go flattens embedded interfaces) and rendered in sorted
+    /// order, which is the descriptor order Go's own String() walks. Signatures render types
+    /// only — parameter names are not in Go's descriptors either — in goFuncTypeString's format:
+    /// a ValueTuple return is Go's multi-result list, a params-array tail is Go's variadic.
+    /// Property accessors and other special-name members are skipped; a converted Go interface
+    /// declares methods alone.
+    /// </remarks>
+    private static string goInterfaceTypeString(Type t)
+    {
+        List<System.Reflection.MethodInfo> methods = [];
+
+        foreach (System.Reflection.MethodInfo method in t.GetMethods())
+        {
+            if (!method.IsSpecialName)
+                methods.Add(method);
+        }
+
+        foreach (Type embedded in t.GetInterfaces())
+        {
+            foreach (System.Reflection.MethodInfo method in embedded.GetMethods())
+            {
+                if (!method.IsSpecialName)
+                    methods.Add(method);
+            }
+        }
+
+        if (methods.Count == 0)
+            return "interface {}";
+
+        methods.Sort(static (a, b) => string.CompareOrdinal(a.Name, b.Name));
+
+        StringBuilder builder = new("interface { ");
+
+        for (int i = 0; i < methods.Count; i++)
+        {
+            if (i > 0)
+                builder.Append("; ");
+
+            System.Reflection.MethodInfo method = methods[i];
+            System.Reflection.ParameterInfo[] parameters = method.GetParameters();
+
+            builder.Append(method.Name).Append('(');
+
+            for (int j = 0; j < parameters.Length; j++)
+            {
+                if (j > 0)
+                    builder.Append(", ");
+
+                if (j == parameters.Length - 1 && parameters[j].GetCustomAttributes(typeof(ParamArrayAttribute), false).Length > 0)
+                    builder.Append("...").Append(GoTypeName(ElementType(parameters[j].ParameterType)));
+                else
+                    builder.Append(GoTypeName(parameters[j].ParameterType));
+            }
+
+            builder.Append(')');
+
+            Type returnType = method.ReturnType;
+
+            if (returnType != typeof(void))
+            {
+                if (returnType.IsGenericType && returnType.FullName?.StartsWith("System.ValueTuple", StringComparison.Ordinal) == true)
+                {
+                    Type[] results = returnType.GetGenericArguments();
+
+                    builder.Append(" (");
+
+                    for (int j = 0; j < results.Length; j++)
+                    {
+                        if (j > 0)
+                            builder.Append(", ");
+
+                        builder.Append(GoTypeName(results[j]));
+                    }
+
+                    builder.Append(')');
+                }
+                else
+                {
+                    builder.Append(' ').Append(GoTypeName(returnType));
+                }
+            }
+        }
+
+        return builder.Append(" }").ToString();
+    }
+
+    /// <summary>
     /// Go's <c>strconv.Quote</c> of a struct tag, which is how a tag appears inside a struct type's
     /// string. Tags are printable text by convention, where Quote escapes only the quote and the
     /// backslash; the C0 controls carry Go's own escapes so an unconventional tag still round-trips.
@@ -432,6 +531,21 @@ public static partial class GoReflect
     // with no `_package` declaring class falls back to its bare name.
     private static string GoQualifiedName(Type t)
     {
+        string name = goBareTypeName(t);
+
+        if (goPackageNameOf(t.DeclaringType) is { Length: > 0 } packageName)
+            return packageName + "." + name;
+
+        return name;
+    }
+
+    // The UNQUALIFIED Go name of a converted named type — GoQualifiedName without the package
+    // prefix. An INSTANTIATED generic type replaces the CLR arity spelling (`B`1`) with Go's
+    // bracket instantiation (`B[<args>]`), each type argument qualified by IMPORT PATH per
+    // goTypeArgumentName — which is what makes rtype.Name()'s trim-at-the-last-dot-outside-
+    // brackets recover Go's exact `B[internal/reflectlite_test.A]`.
+    private static string goBareTypeName(Type t)
+    {
         string name = t.Name;
 
         if (goLocalNameOf(t) is { } localName)
@@ -440,10 +554,44 @@ public static partial class GoReflect
         if (name.StartsWith(ShadowVarMarker, StringComparison.Ordinal))
             name = name[ShadowVarMarker.Length..];
 
-        if (goPackageNameOf(t.DeclaringType) is { Length: > 0 } packageName)
-            return packageName + "." + name;
+        if (t.IsGenericType && !t.IsGenericTypeDefinition)
+        {
+            int arity = name.IndexOf('`');
+
+            if (arity >= 0)
+            {
+                StringBuilder builder = new(name[..arity]);
+                Type[] args = t.GetGenericArguments();
+
+                builder.Append('[');
+
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (i > 0)
+                        builder.Append(',');
+
+                    builder.Append(goTypeArgumentName(args[i]));
+                }
+
+                name = builder.Append(']').ToString();
+            }
+        }
 
         return name;
+    }
+
+    // Go qualifies the type ARGUMENTS of an instantiated type by IMPORT PATH, never by package
+    // name — `B[internal/reflectlite_test.A]`, verified against the toolchain by reflectlite's
+    // TestNames. A predeclared or unnamed argument keeps its ordinary Go spelling (`B[int]`,
+    // `B[[]byte]`), and nesting recurses through the same rule.
+    private static string goTypeArgumentName(Type t)
+    {
+        string path = GoPackagePath(t);
+
+        if (path.Length == 0)
+            return GoTypeName(t);
+
+        return path + "." + goBareTypeName(t);
     }
 
     /// <summary>

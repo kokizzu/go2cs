@@ -110,4 +110,20 @@ func main() {
 	// 7. Elem() of the typed nil is the INVALID Value (there is nothing to point at), which is
 	//    how a walker distinguishes "typed nil" from "pointer to zero value".
 	fmt.Printf("elem-of-typed-nil valid=%v\n", rs.Index(0).Elem().IsValid())
+
+	// 8. An INTERFACE-kind Value holding a typed nil pointer: the interface itself is NON-nil,
+	//    so IsNil and IsZero answer about the INTERFACE, and only Elem() reaches the pointer's
+	//    own nilness. This is encoding/gob's TestNilPointerInsideInterface — with the answer
+	//    inverted, `!sendZero && v.IsZero()` skips the field and the "nil pointer inside
+	//    interface" error path is never reached.
+	var np *Blob
+	si := struct{ I any }{I: np}
+	f := reflect.ValueOf(si).Field(0)
+	fmt.Printf("ifaceField: kind=%v isNil=%v isZero=%v elemKind=%v elemIsNil=%v\n",
+		f.Kind(), f.IsNil(), f.IsZero(), f.Elem().Kind(), f.Elem().IsNil())
+
+	// ...and the nil-INTERFACE control, where both answers flip together.
+	sn := struct{ I any }{}
+	fn := reflect.ValueOf(sn).Field(0)
+	fmt.Printf("nilIfaceField: isNil=%v isZero=%v elemValid=%v\n", fn.IsNil(), fn.IsZero(), fn.Elem().IsValid())
 }
