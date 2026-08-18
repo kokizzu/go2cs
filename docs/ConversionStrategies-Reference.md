@@ -9313,9 +9313,17 @@ package scope under a function-prefixed name. Two Go type-identity rules ride th
   occurrences (`new(struct{ A Struct })` four times in encoding/binary's TestSizeStructCache)
   must lift to a SINGLE C# type — per-occurrence lifts split `reflect.Type` identity per
   occurrence, so binary's `structSize` cache gained four entries where Go adds one. Lifted
-  anonymous structs dedupe by structural signature within a function; NAMED local declarations
-  keep per-declaration identity and never dedupe. (The cross-function/package-level anonymous
-  split is a recorded residual.)
+  anonymous structs dedupe by structural signature within a function — and, since 2026-08-18,
+  at PACKAGE level within a file: two package vars over one written anonymous struct
+  (internal/reflectlite's `assignableTests`/`implementsTests`, reflect's own
+  `funcLookupCache`/`structLookupCache`) are one Go type, and splitting them made the C# types
+  un-unifiable where Go unifies freely — `append(assignableTests, implementsTests...)` could not
+  type (CS9244 + CS8130 on the range deconstruction). The scope discriminator is explicit
+  (function name, or "" at package level) so the scopes never unify with each other, and NAMED
+  declarations keep per-declaration identity and never dedupe. Corpus footprint of the
+  package-level extension: exactly one site, reflect's lookup-cache pair (measured by seeded
+  whole-stdlib reconvert; behavioral corpus byte-identical). The residual narrows to the
+  cross-FILE and cross-SCOPE splits. (Guarded by `TestPackageLevelAnonStructDedup`.)
 - **A lifted local NAMED type carries its original Go name** via the golib `[GoLocalName]`
   attribute — a SEPARATE attribute, never a `[GoType]` definition token (the TypeGenerator
   matches that slot by exact string and throws on unknown forms). The reflection bridge's

@@ -3021,6 +3021,19 @@ func (v *Visitor) conversionRecordHasLocalOperand(funcType, argType types.Type) 
 // typeDeclaredInConvertedPackage reports whether a named/aliased type is declared by the package
 // currently being converted. An unnamed type (basic, literal struct) has no declaring package and
 // answers false.
+//
+// A WHITEBOX-PRODUCTION declaration answers false too: on the internal `-tests` variant,
+// go/packages merges the production files into the test package, so a production type's obj.Pkg()
+// IS v.pkg — local in the Go sense — while its C# lives in the CLOSED referenced production
+// assembly, which the generator cannot extend with an operator. Counting it local re-created the
+// exact phantom the caller exists to prevent: internal/reflectlite's export_test.go converts
+// `flag(typ.Kind())`, the pair recorded with the production `flag` as its host, and the generator
+// declared `partial struct flag` in the TEST class — a phantom whose `.Value` does not exist
+// (CS1061). Declining costs nothing, exactly as for the both-foreign pair: the cast site already
+// emits the explicit chain (`(flag)(uintptr)(uint8)typ.Kind()`), which needs no generated
+// operator, and production's own operators (its package_info.cs carries `GoImplicitConv<flag,
+// abiꓸKind>`) serve any implicit position. whiteboxProductionObject is option-gated, so every
+// non-`-tests` conversion is untouched by construction.
 func (v *Visitor) typeDeclaredInConvertedPackage(t types.Type) bool {
 	if t == nil || v.pkg == nil {
 		return false
@@ -3037,7 +3050,7 @@ func (v *Visitor) typeDeclaredInConvertedPackage(t types.Type) bool {
 		return false
 	}
 
-	return obj != nil && obj.Pkg() == v.pkg
+	return obj != nil && obj.Pkg() == v.pkg && !v.whiteboxProductionObject(obj)
 }
 
 // numericConversionValueTypeName renders the C# name of the PRIMITIVE that backs a named (or
