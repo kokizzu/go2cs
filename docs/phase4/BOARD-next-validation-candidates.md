@@ -11732,7 +11732,6 @@ Gates: converter `go test ./...` ok twice (219.3 s / 193.2 s) · full CNR byte-i
 marked / 0 clobbered both, every real mover named · `reflect` single-package build 0 errors ·
 solution integrity 625/625, path casing 4,485→4,492. Banked: `0f3495688` (cast fix + guards),
 ed25519 bank, `e61758549` (reflectlite's two remaining roots + reflect adoption).
-<<<<<<< HEAD
 
 ## ✅ `internal/reflectlite` VALIDATES 27+3/30 — the mini-bridge was seven roots, five of them SHARED machinery; `encoding/gob` 100 → 103 of 106 and its census halves (2026-08-18, lane `claude/reflect-minibridge`)
 
@@ -11817,7 +11816,5 @@ GATES_PLACEHOLDER
 2. **The chan-direction cargo arc** — three pinned repros in reflectlite's disclosure manifest;
    retires a disclosure class.
 3. **`debug/elf` (31)** — CS8183 ×1, unmoved, still the next bounded one-diagnostic item.
-=======
->>>>>>> origin/master
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
