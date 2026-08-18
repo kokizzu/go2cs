@@ -9409,7 +9409,8 @@ package scope under a function-prefixed name. Two Go type-identity rules ride th
   instead the ADOPTION path's job: a lift **adopts a PACKAGE-LEVEL lift of the same anonymous
   type** rather than minting a second one (so a function-local literal of a package-lifted
   anonymous struct reuses the package's type — Go's anonymous-struct identity is scopeless, and
-  assigning the local to a package var is legal Go needing one C# type): `encoding/xml`'s
+  assigning the local to a package var is legal Go needing one C# type — the coordinator ruling
+  at the local-iface-cast × escape-box-copy merge): `encoding/xml`'s
   `read_test.go` declares `type Child struct{ G struct{ I int } }` — lifted `Child_G` — and then
   writes the same anonymous type as a composite literal inside a function, and Go assigns one to the
   other (CS1503 ×6 while they were two C# structs). The package-level registry decides it, keyed by
