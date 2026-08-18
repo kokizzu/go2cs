@@ -799,6 +799,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckLocalTypeSliceElement() => CheckTarget("LocalTypeSliceElement");
 
     [TestMethod]
+    public void CheckLocalValueIfaceCallConversion() => CheckTarget("LocalValueIfaceCallConversion");
+
+    [TestMethod]
     public void CheckLookupServicePort() => CheckTarget("LookupServicePort");
 
     [TestMethod]

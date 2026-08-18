@@ -752,6 +752,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckLocalTypeSliceElement() => CheckTarget("LocalTypeSliceElement");
 
     [TestMethod]
+    public void CheckLocalValueIfaceCallConversion() => CheckTarget("LocalValueIfaceCallConversion");
+
+    [TestMethod]
     public void CheckLookupServicePort() => CheckTarget("LookupServicePort");
 
     [TestMethod]
