@@ -59,6 +59,12 @@ internal sealed class TestOptions
     public string ShuffleValue { get; private set; } = "off";
 
     /// <summary>
+    /// The first flag name this host does not define, undashed, or <c>null</c> when the parse met
+    /// none. Its verdict is deferred rather than decided here — see <see cref="Parse"/>.
+    /// </summary>
+    public string? UnrecognizedFlag { get; private set; }
+
+    /// <summary>
     /// Parses the host's command line with Go's <c>flag</c> package semantics.
     /// </summary>
     /// <remarks>
@@ -74,10 +80,32 @@ internal sealed class TestOptions
     /// </para>
     /// <para>
     /// Stopping is not the same as ignoring, and the difference is load-bearing: <c>exe cat -n</c>
-    /// must leave <c>-n</c> to the child rather than parse it here. Everything BEFORE the stop is
-    /// still parsed strictly — an unrecognized <c>-flag</c> there is the host's own command line
-    /// being wrong, which Go reports as an error too, so it stays one. A lone <c>-</c> is a
-    /// non-flag (Go's length test), and <c>--</c> terminates the flags and is itself consumed.
+    /// must leave <c>-n</c> to the child rather than parse it here. A lone <c>-</c> is a non-flag
+    /// (Go's length test), and <c>--</c> terminates the flags and is itself consumed.
+    /// </para>
+    /// <para>
+    /// <b>A flag name this host does not define STOPS the parse too, and its verdict is DEFERRED</b>
+    /// to <see cref="UnrecognizedFlag"/> rather than raised here. Go's test binary never faces this
+    /// question, because it reaches exactly ONE <c>flag.Parse()</c> — by which time
+    /// <c>testing.Init()</c> has defined the <c>-test.*</c> set AND the package's own package-level
+    /// <c>flag.Bool</c>/<c>flag.String</c> variables have initialized, so both vocabularies are
+    /// present in a single flag set. This host's parse necessarily runs EARLIER than the package's
+    /// initialization, so a name it does not recognize is not yet knowably wrong: it may be the
+    /// package's. <c>crypto/tls</c> is the corpus's example — the BoGo runner re-executes the test
+    /// binary as its own TLS shim (<c>-shim-path=os.Args[0] -shim-extra-flags=-bogo-mode</c>), and
+    /// <c>-bogo-mode</c> is a package-level <c>flag.Bool</c> in <c>handshake_test.go</c>. Rejecting
+    /// it here killed every BoGo case at startup before <c>TestMain</c> ran.
+    /// </para>
+    /// <para>
+    /// The rejection is not dropped, only moved: <see cref="TestHost"/> initializes the package the
+    /// way Go does — before main — and then asks the converted <c>flag.CommandLine</c> whether the
+    /// name is defined, reporting this same wording and exit code when it is not. Stopping (rather
+    /// than skipping and continuing) is what keeps the host out of a question it cannot answer:
+    /// nothing here knows a foreign flag's ARITY, so <c>-port 5000</c>'s value is indistinguishable
+    /// from a program argument. Everything from the unrecognized name onward is therefore the
+    /// program's, exactly as after a non-flag token — which also means a HOST flag placed after a
+    /// package flag is left to <c>flag.Parse()</c> rather than read here. The pipeline places the
+    /// host's own flags first, and Go's single parse makes the ordering irrelevant on its side.
     /// </para>
     /// <para>
     /// What is left over is deliberately NOT recorded here. The program reads its own arguments the
@@ -188,9 +216,11 @@ internal sealed class TestOptions
                     options.JUnitFile = value;
                     break;
                 default:
-                    // Go's own wording, because this host stands in for a Go test binary and its
-                    // stderr is read beside one in the differential comparison.
-                    throw new ArgumentException($"flag provided but not defined: -{name}");
+                    // Not this host's flag — and not yet knowably nobody's. Record it and stop; the
+                    // package's own flag set does not exist until it initializes, and TestHost asks
+                    // the question there. See the remarks.
+                    options.UnrecognizedFlag = name;
+                    return options;
             }
         }
 

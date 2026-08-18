@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -115,6 +116,17 @@ public static class TestHost
             CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
             Environment.SetEnvironmentVariable("TZ", "UTC");
 
+            // Go's package-level variable initializers run BEFORE main, so a package that declares
+            // `var mode = flag.Bool("bogo-mode", ...)` has already put that name on
+            // flag.CommandLine by the time its test binary parses anything. The converted analogue
+            // is the test package class's static constructor, which the CLR would not run until the
+            // first test body executes — long after the host had to decide what its command line
+            // meant. Forcing it here restores Go's ORDER, and it is done only when the parse
+            // actually met a name the host does not own: every other run keeps the initialization
+            // exactly where it was.
+            if (options.UnrecognizedFlag is not null)
+                InitializePackageUnderTest(registry);
+
             // Declare this run's command line on the converted flag package, the way testing.Init()
             // declares -test.* before a Go test binary's TestMain runs — otherwise a converted
             // TestMain calling flag.Parse() rejects the host's own arguments ("flag provided but not
@@ -123,6 +135,17 @@ public static class TestHost
             // because that is the same moment Go's testing.Init() occupies: the test binary is
             // already running where `go test` put it, and no test code has run yet.
             TestFlagBridge.Register(options);
+
+            // The deferred verdict on an unrecognized flag (see TestOptions.Parse). Both vocabularies
+            // now exist — the package's, from the initialization above, and the host's, from the
+            // registration — which is the state Go's single flag.Parse() sees. A name neither one
+            // defines is the command line being wrong, and it is still rejected, in flag's own
+            // wording and with flag's ExitOnError code.
+            if (options.UnrecognizedFlag is { } unrecognized && !TestFlagBridge.IsDefined(unrecognized))
+            {
+                Console.Error.WriteLine($"flag provided but not defined: -{unrecognized}");
+                return 2;
+            }
 
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
@@ -188,6 +211,37 @@ public static class TestHost
                 // Per-test cleanup failures are reported; final process cleanup is best effort.
             }
         }
+    }
+
+    /// <summary>
+    /// Runs the package under test's own initialization — the converted form of Go's package-level
+    /// variable initializers, which run before main.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The registered tests ARE the package: each is a delegate over one of its converted methods,
+    /// so their declaring types are exactly the classes whose static state the package declares
+    /// (the internal test variant recompiles the production class, the external one adds
+    /// <c>&lt;pkg&gt;_test</c>). Deriving them from the registry rather than taking them as a
+    /// parameter keeps the generated host unchanged.
+    /// </para>
+    /// <para>
+    /// Failures are NOT caught. A Go package whose initializer panics dies before main with that
+    /// panic, and here the exception reaches Run's handler as an infrastructure error — which says
+    /// the same thing about the same moment. Swallowing it would move the failure to whichever test
+    /// happened to touch the class first.
+    /// </para>
+    /// </remarks>
+    private static void InitializePackageUnderTest(TestRegistry registry)
+    {
+        IEnumerable<Type> declaringTypes = registry.Tests
+            .Select(test => test.Action.Method.DeclaringType)
+            .Append(registry.TestMain?.Method.DeclaringType)
+            .OfType<Type>()
+            .Distinct();
+
+        foreach (Type declaringType in declaringTypes)
+            RuntimeHelpers.RunClassConstructor(declaringType.TypeHandle);
     }
 
     private static nint RunTests(TestRegistry registry, TestRunner runner)

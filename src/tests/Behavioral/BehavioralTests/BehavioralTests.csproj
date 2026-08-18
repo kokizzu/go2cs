@@ -52,6 +52,12 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
+    <!-- The converted flag package is what TestFlagBridge binds LATE and deliberately never
+         references, so the condition it exists for — "the package under test brought flag into the
+         compilation" — cannot be reproduced unless flag is present HERE. TestingRuntimeTests'
+         package-flag guard is the one test that needs it; testing.csproj still must not reference
+         it, and does not. -->
+    <ProjectReference Include="$(go2csPath)core\flag\flag.csproj" />
   </ItemGroup>
 
 </Project>
