@@ -235,6 +235,16 @@ ONE stdlib in a build; there is now only one on disk.
   invariant `tests/Behavioral/check-solution-integrity.ps1` applies to `go2cs.slnx`.) The file is
   UTF-8 **with BOM** and its line endings are uniform — a third guard holds both, so edit it in place
   or via `[System.IO.File]::ReadAllText/WriteAllText`, never PS 5.1 `Get-Content`/`Out-File`.
+  **Three more census/launch traps, each paid repeatedly (2026-08-17):** a DEFAULT ripgrep honors
+  `src/core/.gitignore` and under-counts the marker census by one — census with `git grep` or a raw
+  filesystem walk, never bare `rg` over `src/core`. `Start-Process -ArgumentList` in ARRAY form does
+  not quote a path containing a space (`C:\Program Files\Go` dies as `Failed to access input file
+  path "C:\Program"`, reading exactly like a missing GOROOT — three lanes paid this); pass ONE
+  pre-quoted argument string. And `MSB4166 "child node exited prematurely"` is a BUILD-INFRASTRUCTURE
+  crash, not a package root — a `-tests` batch measured a package as a hard build failure (eleven
+  MSB4166s, zero CS diagnostics) that reached its real 9-of-10 verdict in 45 s once
+  `MSBUILDDISABLENODEREUSE=1` was set; set it for any back-to-back `-tests` queue before believing a
+  diagnostic-free build failure.
 - **FALSE-GREEN route #3 — NESTED sub-library packages were never enumerated (fixed 2026-08-02).** All
   three transpile gates walked `tests\Behavioral\*` **top-level only**, so the 22 sub-library packages
   nested inside a test folder (`IoLike\FsLike`, `VersionedImport\vlib`, `CrossPackageArrayZeroValue\bufpkg`,
