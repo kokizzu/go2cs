@@ -37,8 +37,6 @@ using static go.main_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<gold, badge>]
-[assembly: GoImplement<main_type, badge>(Pointer = true)]
-[assembly: GoImplement<main_type, badge>(Promoted = true)]
 [assembly: GoImplement<reservedᴛ1, badge>(Pointer = true)]
 [assembly: GoImplement<reservedᴛ1, badge>(Promoted = true)]
 // </InterfaceImplementations>
@@ -61,7 +59,6 @@ public static partial class main_package
     // <TypeAccessibility>
     internal partial interface badge {}
     internal partial struct gold {}
-    internal partial struct main_type {}
     internal partial struct reservedᴛ1 {}
     // </TypeAccessibility>
 }

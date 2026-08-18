@@ -65,7 +65,38 @@ func (v *Visitor) convertExprToInterfaceType(interfaceExpr ast.Expr, targetExpr 
 	return v.convertToInterfaceType(v.getType(interfaceExpr, false), v.getType(targetExpr, false), exprResult)
 }
 
+// convertToInterfaceType routes a Go value into an interface-typed slot: it RECORDS the
+// `[assembly: GoImplement<Src, Iface>]` pair the duck-typed implementation needs, and returns the
+// expression the cast site emits.
+//
+// A TYPE-PARAMETER slot is the one case where those two halves part company, and it needs both of
+// them changed. Passing a concrete value to `func checkStringParseRoundTrip[P netipTypeCmp](…, x P,
+// …)` (net/netip's fuzz_test.go) must satisfy P's CONSTRAINT, which is the only one of the two with
+// a C# spelling — carrying the bare parameter name through instead recorded
+// `[assembly: GoImplement<AddrPort, P>]`, a type argument out of scope at assembly-attribute level
+// (CS0246 ×3) and not an interface at all, which the ImplementGenerator rejects outright and which
+// takes the whole generated adapter set down with it (CS8785). So the record is minted against the
+// constraint, which is also what makes it USEFUL: C# enforces `where P : netipTypeCmp` NOMINALLY, so
+// the concrete type needs the pair naming the constraint.
+//
+// And precisely because C# enforces the constraint nominally and INFERS P from the argument, the
+// argument must arrive as its OWN type: an adapter wrap there is a `netip_ΔAddrᴠnetipTypeCmp` handed
+// to a parameter of type P (CS1503 ×5). Record the pair, emit the value unchanged.
+//
+// An unconstrained `[T any]` resolves to the empty interface and is dropped by the empty-interface
+// guards exactly as before.
 func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType types.Type, exprResult string) string {
+	if typeParam, ok := types.Unalias(interfaceType).(*types.TypeParam); ok {
+		v.convertToInterfaceTypeSlot(typeParam.Constraint(), targetType, exprResult)
+		return exprResult
+	}
+
+	return v.convertToInterfaceTypeSlot(interfaceType, targetType, exprResult)
+}
+
+// convertToInterfaceTypeSlot is convertToInterfaceType's body; see that function for the
+// type-parameter split it sits behind.
+func (v *Visitor) convertToInterfaceTypeSlot(interfaceType types.Type, targetType types.Type, exprResult string) string {
 	// A type ALIAS is TRANSPARENT — `type Expr = ast.Expr` names the type ast.Expr already names —
 	// but a SPELLING is not a type, and every name composed below is GENERATOR-FACING: the
 	// `[assembly: GoImplement<Src, Iface>]` record, and the `<pkg>_<Src>ᴠ<Iface>` adapter class the

@@ -11297,4 +11297,228 @@ statement slot. No golib change, so `GolibTests`/behavioral/`go2cs.slnx` are not
 no proof page, no disclosures, no converted test sources committed: five measurements, zero
 validations.
 
+## ⛔ The assembly-scoped-alias CS0426 was ONE root in name only — `encoding/xml` goes 0 → 353 of 386, `net/netip` sheds three of four roots, and the lost write behind xml's last dozen is MEASURED (2026-08-18, lane `claude/xml-netip-alias`)
+
+The harvest entry handed on `encoding/xml` (386) and `net/netip` (266) as one shared root — "the
+assembly-scoped-alias CS0426 root, measured in both and identical in shape". Measured from both ends,
+the DIAGNOSTIC is identical and the ROOT is not: they are two different aliases, minted by two
+different mechanisms, and neither fix reaches the other package. Both are closed, along with four
+more roots the two packages were hiding behind them, and `encoding/xml` runs for the first time.
+
+Six converter fixes, each with a failing-first guard. **Neither package banks** — xml is 353 of 386
+with five named residual roots, netip is still 0 of 266 behind a structural wall — so there is no
+roster row, no proof page and no committed test sources.
+
+### The two CS0426s are two roots
+
+Both are the same PRINCIPLE — a `global using` alias is assembly-scoped and is a member of no C#
+class, so nothing may qualify it through one — and that is where the resemblance ends.
+
+| | `encoding/xml` (36 sites) | `net/netip` (1 site) |
+|:--|:--|:--|
+| The alias | `ΔToken`, from `type Token any` | `AddrDetail`, from `type AddrDetail = addrDetail` |
+| Declared in | a PRODUCTION file (`xml.go`) | a TEST file (`export_test.go`) |
+| Why it is an alias | a DEFINED type over an interface has exactly that interface's method set and can carry no methods of its own, so visitTypeSpec emits `global using ΔToken = object;` rather than a class member | an ordinary Go type alias |
+| Who qualifies it wrongly | the INTERNAL test half, through the production class it cannot see into (`global::go.encoding.xml_package.ΔToken`) | the EXTERNAL test half, through the package's using alias (`netip.AddrDetail`), because Go says `netip.AddrDetail` during a test build |
+| Fix | seed the alias from the production `package_info.cs` into the test compilation — the NAME into `productionAliasLiftedTypes` so every renderer spells it, the TARGET into `importedTypeAliases` so the `global using` is re-emitted | render it BARE: the internal half's `global using` is compilation-scoped and the external half lands in the SAME compilation |
+
+xml's fix reuses `seedProductionAliasLifts`'s two-halves-together shape verbatim and follows the same
+TWO-HOP published chain a cross-package consumer follows (`GoTypeAlias("Token","ΔToken")` then
+`GoTypeAlias("ΔToken","object")`), so the name seeded is the one the production compilation actually
+declares. It is gated OFF for the recompile model, and for the reason that matters rather than for
+safety: there the production `.cs` are compile items, the alias is already declared, and re-declaring
+it would be the defect. The predicate needs the production files' AST and cannot be recovered from
+go/types — `type X any` and `type X interface{}` are the same `*types.Named` over the same empty
+`*types.Interface`, and only the right-hand SYNTAX says which one emits a class member.
+
+### `encoding/xml`: 0 → 353 of 386, and the second root was a residual its own comment had named
+
+Closing the CS0426 left ONE error, six times: `CS1503, cannot convert from
+'TestUnmarshalEmptyValues_type' to 'Child_G'`. `read_test.go` declares
+`type Child struct{ G struct{ I int } }` — package-level, lifted `Child_G` — and then writes the very
+same anonymous type as a composite literal inside a function, which minted a SECOND C# type. Go says
+those are one type and assigns one to the other.
+
+`visitStructType` already deduped structurally identical anonymous structs, and its own comment
+recorded the wider case as open: *"Function-scoped: the cross-function/package-level anonymous split
+is a recorded residual."* The package-level registry `registerDynamicTypeName` is the authority for
+closing it — package-scoped, so an unexported field name can only mean this package's, and keyed by
+the full `types.String()` **including field tags**, which is exactly what Go's struct identity
+compares. Reuse is one-directional: a function-local lift adopts a package-level name, never the
+reverse.
+
+Corpus effect, measured by CNR: **two behavioral packages**, both intended, both the same collapse.
+`TypeConversionInterfaceParam` had three C# types for one Go type (`DataProcessor_data`,
+`Process_data`, `main_data`) — and its own Go source comments them as *"Define the SAME anonymous
+struct inline"*, which is the invariant the emission now honors; `NewAnonStructIfaceEmbed` had two
+(`reservedᴛ1`, `main_type`). The residual that remains is ORDERING, not scope: the package-level
+declaration must already have been visited, which holds within one file and not across files.
+
+### xml's differential: 353 of 386, five roots, and one of them is a SHIPPED LOST WRITE worth 12
+
+386 verdicts, 8 excluded (3 benchmarks, 5 examples), **353 agree, 33 diverge**.
+
+| Root | Verdicts | Note |
+|:--|:--:|:--|
+| **A type-switch binding whose address is taken is not heap-boxed** | **12** | measured, below |
+| `reflect.canonType` assertion — "abi.Type has no System.Type (synthType was bypassed)" | 15 | `structType.FieldByIndex` reaches `toType(Ꮡt.of(structType.ᏑType))` on a `Reinterpret<rtype, structType>` result; the process TERMINATES, so every later test in `read_test.go` is absent rather than failed. A `reflect` root, reached from `xml.getTypeInfo` |
+| `CopyToken(CharData)` / `(Comment)` "uses same buffer" | 2 | the copy is not copying its backing bytes |
+| `reflect.Type.Name()` on a GENERIC type returns the CLR arity-mangled name | 1 | `TestMarshal/47`: marshals a `Generic` type under its `Generic` + backtick-1 CLR name where Go writes `Generic` |
+| embedded-struct field ORDER in marshal output | 1 | `TestMarshal/64`: promoted fields emit in a different order than Go's |
+
+(plus `TestToken` and the two parent verdicts `TestMarshal`/`TestUnmarshal`.)
+
+### The lost write, measured — and the two wrong turns on the way to it
+
+`Token()`'s `case StartElement:` arm is emitted
+
+```
+d.pushElement(t1.Name);
+d.translate(Ꮡ(t1).of(StartElement.ᏑName), true);          // element name
+foreach (var (i, _) in t1.Attr) {
+    d.translate(Ꮡ(t1.Attr, i).of(Attr.ᏑName), false);     // attribute names
+}
+t = t1;
+```
+
+`Ꮡ(t1)` is golib's `Ꮡ<T>(in T)` — its own doc says *"Pointer to a new heap allocated COPY"* — so
+`translate` writes the resolved namespace into a copy and `t = t1` re-boxes the untouched local. The
+ATTRIBUTE line is fine: `Ꮡ(t1.Attr, i)` aliases the slice's real backing array, which is the
+element-field-address form a previous arc already fixed. Go writes through `&t1.Name` and then
+assigns `t = t1`, so Go's semantics require the local to BE the storage — i.e. escape analysis must
+heap-box the type-switch binding, and does not.
+
+**Measured A/B**, hand-boxing the local and reading it back: `encoding/xml` **353 → 365 of 386**,
++12 verdicts, every namespace row (`TestUnmarshal/46,61,62,70,71,87,106–109`, `TestIssue7113`).
+
+**Census of the emitted shape** across the whole production corpus: a bare-local address-of followed
+by a field select occurs at **6 sites in 4 files** — `encoding/xml/xml.cs:325`,
+`net/netip/netip.cs:385` and `:391`, `net/rpc/debug.cs:99`, `runtime/symtab.cs:1102` and `:1146`.
+Only xml's is a WRITE; the other five read. So exactly ONE shipped lost write today, and a
+correspondingly small blast radius for the fix.
+
+Two wrong turns worth recording, because both are traps this repo's own doctrine warns about and both
+were paid anyway:
+
+* **`-test-action compare` silently reported a CACHED comparison.** Three A/B runs returned an
+  identical `353/386` because the manifest was stale (`test manifest is stale: input digest changed`)
+  and the comparison JSON on disk was the previous run's. A hand-edited corpus file cannot be
+  measured through `compare`; run the host directly (`dotnet run --project <pkg>.tests.csproj
+  --no-build -- --json`) and diff its stdout against the Go map the last valid comparison recorded.
+  Before that, a FIRST run measured a stale `.dll` (built 02:26, source edited 02:51) — `compare`
+  does not rebuild.
+* **The minimal fixture does not reproduce it.** Every reduction attempted — a plain type switch, a
+  slice-element sibling call, a pointer-parameter sibling call — had the ref-lowering pass resolve
+  `fix(n *Name)` to `ref Name`, which aliases correctly. What forces xml's `translate` to the
+  `ж<Name>` box form instead is UNIDENTIFIED, and identifying it is the first step of the fix, not a
+  detail of it. Do not assume "type switch" is the whole predicate.
+
+### `net/netip`: 13 errors in 4 roots → 7 in 2, and the wall behind it is the x509 split seen from the other side
+
+Three roots closed, all general:
+
+| Root | Errors | Fix |
+|:--|:--:|:--|
+| An EXPORTED test declaration over an UNEXPORTED production type | CS0050 ×2, CS0051 ×2, CS0052 ×3 | the downgrade-to-`internal` machinery already existed; its predicate looked through pointer/slice/array/map/chan and **not** through a generic type ARGUMENT (`unique.Handle[addrDetail]`), an ALIAS (`AddrDetail`), or a SIGNATURE. All three are positions C# accessibility-consistency looks through exactly as it looks through a pointer |
+| The same-package white-box CS0426 | 1 | above |
+| A constraint interface embedding `comparable` | CS0305, CS0308 | Go's built-in `comparable` is not expressible in C# — the bare-constraint arm has emitted nothing for it since golib's `comparable<T>` CRTP turned out to be implemented by nothing. An EMBEDDED one inherits that fact, and the two sides disagreed: the declaration dropped to arity-0 while the constraint took the generic CRTP form `netipTypeCmp<P>`. Now `comparable` is dropped from the C# base list AND discounted when deciding whether an interface is a method set. **Zero production-corpus sites** — censused before the change |
+
+A fourth root, an `[assembly: GoImplement<AddrPort, P>]` record naming a type PARAMETER (CS0246 ×3,
+plus CS8785 taking the whole generated adapter set down with it), splits into two halves that must
+move in opposite directions: the RECORD belongs against P's CONSTRAINT (the only one of the two with
+a C# spelling, and the one C# checks), while the EMISSION must pass the value UNCHANGED (C# infers P
+from the argument, so an adapter wrap there is CS1503 ×5 — measured, in that order, one fix at a
+time).
+
+**What remains — and the first of the two is structural.**
+
+* **CS0315 ×5 — a generic function constrained by a TEST-DECLARED interface cannot be instantiated
+  with a PRODUCTION type under the white-box REFERENCE model.** `checkStringParseRoundTrip[P
+  netipTypeCmp]` is called with `Addr`, `AddrPort` and `Prefix`, all declared in the referenced
+  production assembly; `netipTypeCmp` is declared in `fuzz_test.go`. C# enforces
+  `where P : netipTypeCmp` NOMINALLY, and `go2cs-gen` can only make a production type satisfy a
+  test-declared interface by generating an ADAPTER class — never the partial declaration a nominal
+  constraint needs. This is `crypto/x509`'s identity split seen from the other side: x509 needs the
+  REFERENCE model to avoid a split identity, and netip's `fuzz_test.go` needs the RECOMPILE model to
+  satisfy a nominal constraint. One package, one model, and no model serves both files.
+* **CS0019 ×2 — an untyped-constant complement keeps C#'s `int`.** `uint128_test.cs:84,87`:
+  `^uint64(0) & ^1` emits a complemented `uint64` zero anded with a complemented bare `1`, and that
+  `1` is a C# `int` while Go types the whole constant `uint64` → "Operator '&' cannot be applied to
+  'ulong' and 'int'". Bounded: the shape is a complement of a BasicLit whose go/types type is a basic
+  other than `int`, and `convUnaryExpr`'s XOR arm already imposes the type for a NAMED operand and
+  for `uint8`/`uint16`. Deliberately NOT taken here — it is a production-reachable emission change
+  and belongs in an arc with room to measure its corpus churn, not tacked onto six other fixes.
+
+### What this lane did NOT do
+
+No roster row, no proof page, no disclosures, no committed test sources: `encoding/xml` does not
+validate at 353 of 386 and `net/netip` still produces no verdicts. The corpus is restored — the two
+packages' `-tests` artifacts are removed and the `initᴛᴛtests()` `package_init.cs` hook (the fourth
+`-tests`-closure phantom shape) restored — so the only tracked changes are the converter, its guards,
+two intended behavioral goldens, and this entry.
+
+### The corpus effect, isolated by a CONTROL reconvert
+
+Two of the six fixes reach PRODUCTION emission (the anonymous-struct lift and the type-parameter
+slot), and CNR only samples the shapes the behavioral corpus happens to contain — so the stdlib was
+measured too, twice, under identical seeding:
+
+| Seeded full-corpus reconvert (304 packages) | identical | differing | new |
+|:--|--:|--:|--:|
+| this branch | 1,611 | **53** | 0 |
+| CONTROL, master's converter | 1,613 | **51** | 0 |
+
+Marker gate on both runs: **62 marked files, 0 violations** — so neither seeding failed, and the
+differing sets are comparable. The set difference is exactly TWO files, both only in this branch and
+nothing only in the control:
+
+* `runtime/mstats.cs` and `runtime/windows/package_info.cs` — `readmemstats_m`'s local
+  `struct{Size uint32; Mallocs, Frees uint64}` is the SAME Go type as `MemStats.BySize`'s, and now
+  adopts that lift (`MemStats_BySize`) instead of declaring `readmemstats_m_bySize` beside it. The
+  same collapse the behavioral goldens show, in the package where `ReadMemStats` copies between the
+  two — the identical latent hazard `encoding/xml` actually hit. Applied into the real tree,
+  `runtime` builds **0 errors**; the corpus was then restored, so this commit carries no corpus
+  change and the next full regen will pick these two up.
+
+The other 51 are the documented CRLF phantoms — CR-stripped identical to the committed tree —
+**plus one that is not, and is not this lane's either**: `crypto/internal/edwards25519/field`'s
+README emits the `not_yet_validated` badge where the committed file carries `16/16 validated`. It
+differs identically in the control, so it is a pre-existing badge-emission anomaly (every other
+banked package's README reproduced byte-for-byte under the same seeding). Worth someone's attention;
+not this one's.
+
+### Gates
+
+Converter `go test ./...` ok (138.5 s), with all six guards, each proven failing-first by neutering
+its own fix · full **CNR byte-identical across all 621 behavioral packages except the two intended
+ones**, 0 NOT MEASURED, 0 advisory warnings — and both intended packages re-baselined and green on
+all four phases (Transpile/Compile/Target/Output), so the new emission matches `go run` as well as
+its golden · seeded full-corpus reconvert **plus a control reconvert against master's converter**,
+above · `runtime` built clean with the one corpus change applied. No golib change, so no
+GolibTests/behavioral-suite/`go2cs.slnx` gate is owed; no corpus regen banked, so no `go generate`
+is owed.
+
+### Guards
+
+All six fixes carry a guard in `src/go2cs/assemblyScopedAlias_test.go`, each proven failing-first by
+neutering its own fix:
+
+| Guard | Pins |
+|:--|:--|
+| `TestSeedProductionInterfaceAliasesFollowsPublishedChain` | the AST predicate (exactly the named-RHS declarations, never the inline `interface{…}` beside them), both seeded halves, the two-hop chain resolving to the alias the production compilation DECLARES, the recompile-model gate, and the `_test.go`-declared negative control |
+| `TestFunctionLocalAnonStructAdoptsPackageLift` | the literal constructs the field's lifted type, the package-level lift is declared exactly once, no second lift is minted — and a DIFFERENT signature keeps its own, so the reuse is identity-driven and not a blanket collapse |
+| `TestPublishedAliasChainTerminates` | the chain's four ends, including a self-referential published set (read from a file this run did not necessarily write) |
+| `TestUnexportedProductionTypeReachedThroughWrappers` | the three new positions (generic type ARGUMENT, ALIAS, SIGNATURE) alongside the pointer that already worked, plus both negative controls |
+| `TestComparableConstraintInterfaceEmitsMethodSetForm` | both sides of the embedded `comparable` agreeing, and the type-parameter slot's record-vs-emission split in the same fixture |
+| `TestTestDeclaredAliasSpelledBare` | the external-variant rule and each of the four clauses that must hold it back |
+
+One of those is a PREDICATE guard rather than an emission guard, and the reason is worth carrying: the
+qualified spelling `netip.AddrDetail` depends on which file-local package aliases a real conversion
+happens to register, and three successive fixtures (same-package generic, foreign generic, bare var,
+each with a dot import) all emitted the bare name for reasons unrelated to the fix — the guard passed
+with the fix neutered every time. The arm's decision was extracted to
+`testDeclaredAliasSpelledBare` so the rule itself could be pinned; the EMISSION is covered by the
+measured `net/netip` run. A guard that passes while its fix is neutered guards nothing, and noticing
+that is the only reason this one exists in the shape it does.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

@@ -54,6 +54,35 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			}
 		}
 
+		// The SAME rule one scope wider, and the residual that comment names: a function-local lift
+		// of an anonymous struct the PACKAGE has already lifted is a lift of a type that already has
+		// a C# name. encoding/xml's read_test.go declares `type Child struct { G struct{ I int } }`
+		// — package-level, lifted `Child_G` and registered — and then writes the very same anonymous
+		// type as a composite literal inside TestUnmarshalEmptyValues, which minted a SECOND type
+		// `TestUnmarshalEmptyValues_type`. Go says those are one type and assigns one to the other;
+		// C# saw two structs and refused (CS1503 ×6, the package's only remaining build error and
+		// all 386 of its verdicts).
+		//
+		// The registry is the authority and needs no widening: it is package-scoped (so an
+		// unexported field name can only mean this package's, keeping signature equality equivalent
+		// to Go type identity) and its key is the full types.String() including field TAGS, which is
+		// exactly what Go's own struct identity compares. Reuse is one-directional — a function-local
+		// lift adopts a package-level name, never the reverse — so no package-level lift is ever
+		// renamed by this and the shared registry keeps its single deterministic winner.
+		//
+		// The residual that remains is ORDERING, not scope: the package-level declaration must have
+		// been visited already for its name to be registered, which is guaranteed within one file
+		// (declaration order) and not across files. A cross-file instance still splits, exactly as
+		// before.
+		if anonLiftKey != "" {
+			if existing := lookupDynamicTypeName(structSignatureType.String()); existing != "" {
+				v.liftedTypeMap[identType] = existing
+				v.liftedTypeMap[structSignatureType] = existing
+				v.liftedAnonStructNames[anonLiftKey] = existing
+				return existing
+			}
+		}
+
 		if v.inFunction {
 			if target == nil {
 				target = &strings.Builder{}

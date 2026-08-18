@@ -7234,6 +7234,17 @@ The same explicit-type-argument rule applies to a generic function referenced as
 
 Go's built-in `comparable` admits every `==`-able Go type — numerics, strings, pointers, channels, and comparable structs/arrays/interfaces. No C# constraint can express that set: golib's old `comparable<T>` CRTP interface was implemented by *nothing* (every real instantiation failed — `maps.Keys[M ~map[K]V, K comparable]` could not be used at all), and lifting `IEqualityOperators` would reject structs, which Go admits. A `comparable` type parameter therefore emits **no C# constraint** beyond the standard `new()` — `where K : /* comparable */ new()` — relying on the two facts that make it sound: Go's checker already validated every instantiation, and emitted equality on type parameters routes through `AreEqual`, never operator `==`.
 
+An interface that **embeds** `comparable` inherits that fact whole, and both sides of the emission
+have to say so. `type netipTypeCmp interface { comparable; netipType }` (net/netip's `fuzz_test.go`)
+disagreed with itself: the DECLARATION appended a bare `comparable` to the C# base list — that
+unimplementable generic named with no type argument, CS0305 — while the CONSTRAINT decided the
+interface was not a method set and took the generic CRTP form `netipTypeCmp<P>` against a declaration
+emitted arity-0, CS0308. `comparable` contributes no methods, so it is dropped from the base list
+(leaving the interface's C# surface exact) and DISCOUNTED when deciding whether an interface is a
+pure method set — which puts the constraint in the arity-0 `where P : netipTypeCmp` form the
+declaration actually emits. An interface mixing `comparable` with a real type-term union still
+restricts its type set and keeps the generic treatment.
+
 `AreEqual` itself is not a performance tax on that path: a generic overload `AreEqual<T>(T, T)` — automatically preferred by overload resolution exactly where both operands share the type parameter — takes `EqualityComparer<T>.Default.Equals` for value-type arguments, which the JIT specializes per type and devirtualizes to the type's own `IEquatable<T>` (operator-comparable speed, no reflection or boxing; golib wrappers emit `operator ==` and `Equals` as consistent pairs, so semantics match). Reference/interface type arguments delegate to the reflective `AreEqual(object, object)` overload, preserving its typed-null and runtime-type semantics. (A constraint-differentiated overload pair is not expressible — C# treats `where` clauses as outside the signature, CS0111 — and a source-generated `==` twin is unnecessary given the `EqualityComparer<T>.Default` JIT intrinsic.) (The behavioral `GenericVariadicFunc` golden captures the erased form with unchanged output.)
 
 **Floating-point equality follows Go's IEEE-754 `==`, not `Equals`.** The `Equals`-based fast path
@@ -9314,8 +9325,15 @@ package scope under a function-prefixed name. Two Go type-identity rules ride th
   must lift to a SINGLE C# type — per-occurrence lifts split `reflect.Type` identity per
   occurrence, so binary's `structSize` cache gained four entries where Go adds one. Lifted
   anonymous structs dedupe by structural signature within a function; NAMED local declarations
-  keep per-declaration identity and never dedupe. (The cross-function/package-level anonymous
-  split is a recorded residual.)
+  keep per-declaration identity and never dedupe. A function-local lift also **adopts a
+  PACKAGE-LEVEL lift of the same anonymous type** rather than minting a second one: `encoding/xml`'s
+  `read_test.go` declares `type Child struct{ G struct{ I int } }` — lifted `Child_G` — and then
+  writes the same anonymous type as a composite literal inside a function, and Go assigns one to the
+  other (CS1503 ×6 while they were two C# structs). The package-level registry decides it, keyed by
+  the full `types.String()` **including field tags**, which is exactly what Go's struct identity
+  compares; reuse is one-directional, so no package-level lift is ever renamed. The residual that
+  remains is ORDERING, not scope — the package-level declaration must already have been visited,
+  which holds within one file and not across files.
 - **A lifted local NAMED type carries its original Go name** via the golib `[GoLocalName]`
   attribute — a SEPARATE attribute, never a `[GoType]` definition token (the TypeGenerator
   matches that slot by exact string and throws on unknown forms). The reflection bridge's

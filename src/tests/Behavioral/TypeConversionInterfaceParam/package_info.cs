@@ -41,8 +41,6 @@ using static go.main_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<Process_data, DataProcessor_data>(Inverted = true)]
-[assembly: GoImplicitConv<main_data, DataProcessor_data>]
 // </ImplicitConversions>
 
 namespace go;
@@ -58,10 +56,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct main_data {}
     public partial interface DataProcessor {}
     public partial struct DataProcessor_data {}
-    public partial struct Process_data {}
     public partial struct Processor {}
     // </TypeAccessibility>
 }
