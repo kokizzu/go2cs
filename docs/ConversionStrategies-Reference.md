@@ -9404,9 +9404,12 @@ package scope under a function-prefixed name. Two Go type-identity rules ride th
   `funcLookupCache`/`structLookupCache`) are one Go type, and splitting them made the C# types
   un-unifiable where Go unifies freely — `append(assignableTests, implementsTests...)` could not
   type (CS9244 + CS8130 on the range deconstruction). The scope discriminator is explicit
-  (function name, or "" at package level) so the scopes never dedupe with each other, and NAMED
-  declarations keep per-declaration identity and never dedupe. A lift also **adopts a
-  PACKAGE-LEVEL lift of the same anonymous type** rather than minting a second one: `encoding/xml`'s
+  (function name, or "" at package level) so the scope-keyed MAP never dedupes across scopes, and
+  NAMED declarations keep per-declaration identity and never dedupe. Cross-scope unification is
+  instead the ADOPTION path's job: a lift **adopts a PACKAGE-LEVEL lift of the same anonymous
+  type** rather than minting a second one (so a function-local literal of a package-lifted
+  anonymous struct reuses the package's type — Go's anonymous-struct identity is scopeless, and
+  assigning the local to a package var is legal Go needing one C# type): `encoding/xml`'s
   `read_test.go` declares `type Child struct{ G struct{ I int } }` — lifted `Child_G` — and then
   writes the same anonymous type as a composite literal inside a function, and Go assigns one to the
   other (CS1503 ×6 while they were two C# structs). The package-level registry decides it, keyed by

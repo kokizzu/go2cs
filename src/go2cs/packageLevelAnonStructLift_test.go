@@ -135,11 +135,24 @@ func main() {
 		t.Errorf("a structurally DIFFERENT anonymous struct must keep its own lifted type, got %d:\n%s", got, mainCs)
 	}
 
-	// The function-local identical struct stays scope-separate: its own lifted declaration under
-	// the function-name prefix (bare — with the package-level second lift gone, nothing collides,
-	// so no suffix is minted).
-	if got := strings.Count(mainCs, "partial struct main_local"); got != 1 {
-		t.Errorf("a function-local identical struct must keep its function-scoped lift, got %d:\n%s", got, mainCs)
+	// The function-local identical struct ADOPTS the package-level lift rather than minting a
+	// function-scoped one. Go's anonymous-struct identity is scopeless — purely structural — so
+	// the local literal IS the package vars' type, and the adoption path (the registry keyed by
+	// the full types.String() including tags, reuse one-directional) is what unifies across
+	// scopes; the scope-keyed dedup map itself never does. (This assertion originally pinned
+	// scope SEPARATION, written when the package-level dedup landed alone; merging it with the
+	// package-registry adoption rule — encoding/xml's Child_G — made cross-scope adoption the
+	// behavior, and it is the more Go-faithful one: assigning the local to a package var is
+	// legal Go and needs one C# type.)
+	if strings.Contains(mainCs, "partial struct main_local") {
+		t.Errorf("a function-local identical struct must adopt the package-level lift, not mint its own:\n%s", mainCs)
+	}
+
+	// ...and the local composite literal builds the adopted package-level struct (the two
+	// package vars plus the local = three constructions; the local is `var`-typed so the
+	// slice<T> spelling itself appears only on the package vars).
+	if got := strings.Count(mainCs, "new implementsTests"+TempVarMarker+"1[]"); got != 3 {
+		t.Errorf("the function-local composite must construct the adopted package-level struct, found %d constructions:\n%s", got, mainCs)
 	}
 }
 
