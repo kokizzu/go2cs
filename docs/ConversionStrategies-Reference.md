@@ -14524,6 +14524,71 @@ Making `pollWait` wake up is half the netpoller arc. The other half is that the 
 
 Guarded at VALUE level by two behavioral output tests: `TcpLoopbackRoundTrip` (listen → dial → accept → 64 KiB echo → close on IPv4 and IPv6, payload compared by checksum, the accepted conn's remote address compared against the client's own local address — which is what proves the accept transcription and cannot be faked, the port being ephemeral — plus close-breaks-a-blocked-read and close-breaks-a-blocked-write) and `NetDeadlineMatrix` (eleven deadline interleavings). Neither prints a port, a timing or an error string, so both are host-independent. `GoAsyncIO` itself carries 9 GolibTests, two of them real contention tests for the create-exactly-once requirement.
 
+### The CryptoAPI chain seam — when a native record must be READ as a struct and HANDED BACK as a pointer
+
+`crypto/x509`'s Windows system verifier is the one place in the corpus where the two syscall
+boundary classes meet inside a single call, and the transferable finding is that **they are not
+separable**. `zsyscall_windows_certchain_impl.cs` owns `CertGetCertificateChain`,
+`CertAddCertificateContextToStore` and the two `CertFree*` routines that pair with them.
+
+The **input** half is the ordinary struct-passing defect over an unusually bad record.
+`CERT_CHAIN_PARA` is 80 native bytes and Go's declaration mirrors them exactly — which is why
+`root_windows.go` writes `para.Size = unsafe.Sizeof(*para)` and means the native size by it — while
+the converted struct holds `RequestedUsage.Usage.UsageIdentifiers` as `ж<ж<byte>>` and `CacheResync`
+as `ж<Filetime>`, so the CLR lays it out reference-first at roughly a third of the size. The field
+that decides the symptom is `dwUrlRetrievalTimeout` at native offset 56: a **blocking network
+budget** read out of whatever managed bytes land there, which is why the observed failures are a
+process-length hang (`crypto/tls`'s `TestQUICHandshakeError`) or an `SEHException` out of `Syscall9`
+(`TestVerifyHostname`, and the offline verifier) rather than a clean error. `UsageIdentifiers` is
+the part that is more than a layout copy — an array of C string pointers into NUL-terminated managed
+byte slices, with no native form at either level — so it is transcribed into one native block for
+exactly the duration of the call, per the mirror-is-a-local doctrine.
+
+**Fixing only that was measured NOT to be enough**, and the reason generalizes past CryptoAPI: one
+of this call's arguments is a field the CALLER reads out of a native record before the wrapper is
+ever entered. `syscall.CertGetCertificateChain(0, storeCtx, verifyTime, storeCtx.Store, …)` reads
+`hCertStore` at the *converted* `CertContext`'s offset, which under reference-first auto-layout is
+where the native record keeps `cbCertEncoded` — so the store handle crypt32 receives is a
+certificate LENGTH. With the parameter mirror in place and nothing else, the identical
+`SEHException` remained. **When a wrapper's argument is a field of another wrapper's result, the
+input fix and the read-back fix are one change.**
+
+The read-back cannot take the `GetAddrInfoW` shape. That hand-own transcribes a native chain into
+managed records and makes the free a NO-OP, which works because nothing native has to survive the
+call; here the original pointer must go back to crypt32 three more times (as the next call's leaf,
+to `CertVerifyCertificateChainPolicy`, and to the two `CertFree*` routines, which release
+reference-counted memory). A managed view alone leaks a chain per verification; a native box alone
+reads every field from the wrong offset. So each returned pointer becomes a **managed view that
+remembers its native identity**: a real `ж<CertContext>`/`ж<CertChainContext>` the converted Go code
+reads as an ordinary struct, with the address it was built from recorded beside it in a weak
+`ConditionalWeakTable`. Every wrapper that must hand a pointer back asks that table first and falls
+back to the box's own address, which is what lets `CertCreateCertificateContext` and
+`CertEnumCertificatesInStore` stay generated — they produce plain native boxes nothing reads a field
+through. The table is a **syscall-local** seam by design: `ж<T>` has no business knowing that one
+pointee is reference-counted by crypt32, and the sync point is again something only the wrapper
+knows. Note this is the third answer the corpus now has for a returned native pointer, and the
+question that selects between them is not the struct's shape but **who else needs the pointer**:
+publish a native box (`zsyscall_windows_ptrout_impl.cs`, for opaque handles), transcribe and free
+eagerly (`zsyscall_windows_addrinfo_impl.cs`, when nothing native survives), or transcribe and
+remember (here, when it must).
+
+Guarded at VALUE level by the `SystemCertVerify` behavioral output test: a self-signed ECDSA leaf
+verified with `Roots == nil` (an untrusted-root verdict every Windows host agrees on, with no
+network and no dependence on the machine's stores), followed by the same CryptoAPI sequence driven
+directly — the store handle read back through the context compared against the handle the store was
+opened with, and the leaf's DER recovered through `CertChainElement → CertContext → EncodedCert` and
+compared byte for byte against the original. A verdict alone could not carry this: a misread trust
+status produces the same "unknown authority" answer, so the round trip is the evidence. Proven
+failing-first — the pre-fix binary prints the first two lines and then dies with the SEHException.
+
+**Still open, and named rather than papered over:** `CertVerifyCertificateChainPolicy`. Its
+`CERT_CHAIN_POLICY_PARA` carries `pvExtraPolicyPara` as Go's opaque `syscall.Pointer`, minted in
+`crypto/x509` as `unsafe.Pointer(sslPara)` over an `SSLExtraCertChainPolicyPara` whose `ServerName`
+is itself a managed reference — so what reaches the boundary is a transient managed address with no
+recoverable box behind it. That is a MINT-SITE problem (a `ManagedPointerTokens` registration at the
+conversion, or a hand-own of `checkChainSSLServerPolicy`), not a boundary one, and it is reached
+only when a chain is TRUSTED *and* the caller supplied a DNS name.
+
 ### A hand-owned file can declare that it needs `/unsafe`
 
 `<AllowUnsafeBlocks>` is converter-generated from `usesUnsafeCode`, and `usesUnsafeCode` is an **emission** fact: it is set while visiting Go source, so it sees only C# the converter itself wrote. A hand-owned file is by definition code the converter did not write. That left a hole with no honest way through it — a package whose only need for `/unsafe` was hand-written could not express it, because the `.csproj` is regenerated on every transpile and any value set by hand is undone by the next reconvert overlay.

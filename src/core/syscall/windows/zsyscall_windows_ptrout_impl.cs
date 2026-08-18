@@ -186,47 +186,20 @@ partial class syscall_package
     }
 
     // ---- crypt32: the two members crypto/x509's system verifier reaches ----------------------
-
-    // ⚠ WHAT THIS FIXES AND WHAT IT DOES NOT. Both wrappers below now hand back the REAL
-    // PCCERT_CONTEXT / PCCERT_CHAIN_CONTEXT the kernel produced, which is what crypto/x509 needs
-    // to get past `storeCtx == nil`. Reading THROUGH those pointers is a separate, still-open
-    // defect of the OTHER class: the converted `CertContext` holds `EncodedCert` and `CertInfo` as
-    // `ж<T>` MANAGED REFERENCES, and `CertChainContext` / `CertSimpleChain` / `CertChainElement`
-    // likewise, so `(~storeCtx).Store` and the whole chain walk in root_windows.cs read a native
-    // record at managed offsets and fabricate object references from address bytes. That is the
-    // CryptoAPI chain-walk arc; it is not this one, and it stands immediately behind these two.
-
-    // CertAddCertificateContextToStore(store, certContext, addDisposition, &storeContext).
-    // ppStoreContext is documented OPTIONAL and crypto/x509 passes nil for every intermediate it
-    // adds, so the nil case is a real caller and not merely a defensive branch.
-    public static unsafe error /*err*/ CertAddCertificateContextToStore(ΔHandle store, ж<CertContext> ᏑcertContext, uint32 addDisposition, ж<ж<CertContext>> ᏑstoreContext) {
-        nuint cell = 0;
-        uintptr cellAddr = ᏑstoreContext == nil ? 0 : (uintptr)(void*)(&cell);
-
-        var (r1, _, e1) = Syscall6(procCertAddCertificateContextToStore.Addr(), 4, (uintptr)store, (uintptr)ᏑcertContext, (uintptr)addDisposition, cellAddr, 0, 0);
-
-        if (r1 == 0) {
-            return errnoErr(e1);
-        }
-
-        publishPointerOut(ᏑstoreContext, cell);
-
-        return default!;
-    }
-
-    // CertGetCertificateChain(engine, leaf, time, additionalStore, para, flags, reserved, &chainCtx).
-    public static unsafe error /*err*/ CertGetCertificateChain(ΔHandle engine, ж<CertContext> Ꮡleaf, ж<Filetime> Ꮡtime, ΔHandle additionalStore, ж<CertChainPara> Ꮡpara, uint32 flags, uintptr reserved, ж<ж<CertChainContext>> ᏑchainCtx) {
-        nuint cell = 0;
-        uintptr cellAddr = ᏑchainCtx == nil ? 0 : (uintptr)(void*)(&cell);
-
-        var (r1, _, e1) = Syscall9(procCertGetCertificateChain.Addr(), 8, (uintptr)engine, (uintptr)Ꮡleaf, (uintptr)Ꮡtime, (uintptr)additionalStore, (uintptr)Ꮡpara, (uintptr)flags, (uintptr)reserved, cellAddr, 0);
-
-        if (r1 == 0) {
-            return errnoErr(e1);
-        }
-
-        publishPointerOut(ᏑchainCtx, cell);
-
-        return default!;
-    }
+    //
+    // CertAddCertificateContextToStore and CertGetCertificateChain are BOTH members of this class
+    // and NEITHER is written here: they live in zsyscall_windows_certchain_impl.cs, because for both
+    // of them the out-cell above is only half the answer.
+    //
+    // The out-cell publishes the REAL PCCERT_CONTEXT / PCCERT_CHAIN_CONTEXT the kernel produced,
+    // which is what got crypto/x509 past `storeCtx == nil` when this file was written. Reading
+    // THROUGH those pointers is the other class: the converted CertContext holds EncodedCert and
+    // CertInfo as `ж<T>` MANAGED REFERENCES, and CertChainContext / CertSimpleChain /
+    // CertChainElement likewise, so `storeCtx.Store` and the whole chain walk in root_windows.cs read
+    // a native record at managed offsets. That was recorded here as "the CryptoAPI chain-walk arc; it
+    // is not this one" -- and the measurement that arc opened with is that the two are NOT separable
+    // at this call site, since `storeCtx.Store` is an ARGUMENT of the very next call. So both
+    // wrappers publish a managed VIEW that remembers its native identity, and the certchain file
+    // states both remedies in one place. `publishPointerOut` above is unchanged and still serves the
+    // three members that genuinely want an opaque native box.
 }

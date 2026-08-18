@@ -1612,6 +1612,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSynthesizedDelegateCrossPkg() => CheckTarget("SynthesizedDelegateCrossPkg");
 
     [TestMethod]
+    public void CheckSystemCertVerify() => CheckTarget("SystemCertVerify");
+
+    [TestMethod]
     public void CheckSystemCollidingTypeName() => CheckTarget("SystemCollidingTypeName");
 
     [TestMethod]

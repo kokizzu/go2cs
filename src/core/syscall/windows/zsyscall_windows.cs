@@ -384,20 +384,9 @@ public static (ж<CertContext> context, error err) CertEnumCertificatesInStore(�
     return (context, err);
 }
 
-public static void CertFreeCertificateChain(ж<CertChainContext> Ꮡctx) {
-    Syscall(procCertFreeCertificateChain.Addr(), 1, (uintptr)Ꮡctx, 0, 0);
-    return;
-}
+// go2cs generated this placeholder — func CertFreeCertificateChain is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*err*/ CertFreeCertificateContext(ж<CertContext> Ꮡctx) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall(procCertFreeCertificateContext.Addr(), 1, (uintptr)Ꮡctx, 0, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func CertFreeCertificateContext is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func CertGetCertificateChain is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

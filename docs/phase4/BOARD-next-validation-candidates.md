@@ -11019,4 +11019,144 @@ guard, proven failing-first · solution integrity 623/623 · `go2cs.slnx` build,
 compiles `BehavioralTests.csproj`, whose reference set changed. No converter change, so neither
 `go test ./...` nor CNR is owed — `src/go2cs` is untouched.
 
+## ✅ THE CRYPTOAPI CHAIN WALL IS DOWN — and the finding is that its two halves were never separable (2026-08-18, lane `claude/x509-verifier`)
+
+Three entries above named this wall from three sides: the x509-cryptoapi lane censused it (four
+structures passed by address, five read back through raw addresses, "the dual-identity problem that
+makes the `GetAddrInfoW` transcription shape inapplicable"), the x509-unlock lane measured it as a
+1-hour hang swallowing 67 verdicts, and the tls-finish lane measured it as the single arc standing
+between `crypto/tls` and a roster row. **`crypto/x509`'s Windows system verifier now runs end to
+end, offline, with every value agreeing with Go.**
+
+### What the brief predicted, and the one prediction that was wrong
+
+The lane was scoped in two phases: fix the INPUT (`CertChainPara` by address) and measure whether
+the call RETURNS; only then consider the read-back. That sequencing turned out to be the most
+useful thing measured, because **phase 1 alone changes nothing**, and the reason is general:
+
+```
+baseline (no fix)          SEHException 0x80004005 out of Syscall9
+                             at CertGetCertificateChain   <- zsyscall_windows_ptrout_impl.cs:222
+                             at systemVerify              <- root_windows.cs:272
+
+parameter mirror ONLY      SEHException 0x80004005 out of Syscall9   (identical)
+                             at CertGetCertificateChain   <- zsyscall_windows_certchain_impl.cs:183
+
+parameter + read-back      all fourteen lines agree with `go run`, 1.44 s
+```
+
+`root_windows.go` calls `CertGetCertificateChain(0, storeCtx, verifyTime, storeCtx.Store, para, …)`.
+`storeCtx.Store` is a field the CALLER reads out of a native `CERT_CONTEXT` before the wrapper is
+ever entered — at the *converted* struct's offset, which under the CLR's reference-first auto-layout
+is where the native record keeps `cbCertEncoded`. The store handle crypt32 receives is a certificate
+LENGTH. **When one wrapper's argument is a field of another wrapper's result, the input fix and the
+read-back fix are one change**, and no amount of work on the parameter can show progress alone.
+That is worth carrying to the remaining members of both syscall classes.
+
+(The input half is real and does have to be fixed. `CERT_CHAIN_PARA` is 80 native bytes against a
+managed record roughly a third that size, and the field that decides the SYMPTOM is
+`dwUrlRetrievalTimeout` at native offset 56 — a blocking network budget read from arbitrary managed
+bytes, which is why the same root shows as a multi-minute hang from `crypto/tls` and as an SEH from
+the offline verifier. `RequestedUsage.Usage.UsageIdentifiers` is an array of C string pointers into
+NUL-terminated managed byte slices — no native form at either level — and is transcribed into one
+native block for exactly the duration of the call.)
+
+### The dual identity, and why it needed no golib change
+
+The read-back could not take the `GetAddrInfoW` shape, exactly as the census said: that hand-own
+transcribes a native chain and makes the free a NO-OP, which works only because nothing native has
+to survive the call. Here the original pointer must go back to crypt32 three more times — as the
+next call's leaf, to `CertVerifyCertificateChainPolicy`, and to the two `CertFree*` routines, which
+release reference-counted memory. A managed view alone leaks a chain per verification; a native box
+alone reads every field from the wrong offset.
+
+So each returned pointer becomes a **managed view that remembers its native identity**: a real
+`ж<CertContext>` / `ж<CertChainContext>` whose fields the converted Go code reads as an ordinary
+struct, with the address it was built from recorded beside it in a weak `ConditionalWeakTable`.
+Wrappers that must hand a pointer back ask that table first and fall back to the box's own address —
+which is why `CertCreateCertificateContext` and `CertEnumCertificatesInStore` stay generated and
+keep working: they produce plain native boxes nothing reads a field through.
+
+**`ж.cs` is untouched, and ManagedPointerTokens was not needed either.** The table is a syscall-local
+seam on purpose: `ж<T>` has no business knowing that one pointee is reference-counted by crypt32,
+and the sync point ("the moment a raw word becomes a pointer box") is again something only the
+wrapper knows — the same argument the `**T` out-parameter entry made for its own remedy. The corpus
+now has THREE answers for a native pointer coming back, and the question that selects between them
+is not the struct's shape but **who else needs the pointer**: publish a native box (ptrout, for
+opaque handles), transcribe and free eagerly (addrinfo, when nothing native survives), or transcribe
+and remember (here, when it must).
+
+### The guard, and what failing-first printed
+
+New behavioral output test **`SystemCertVerify`**. A self-signed ECDSA leaf, generated in-process
+(so it never expires and never depends on the host's certificate stores), verified with
+`Roots == nil` — which on Windows routes to `systemVerify` — for an untrusted-root verdict every
+Windows host agrees on with no network. Then the same CryptoAPI sequence driven DIRECTLY, because a
+verdict alone cannot carry this evidence: a misread trust status produces the same "unknown
+authority" answer. The round trip is what proves it.
+
+```
+created der: true                          leaf der round-trips: true
+parsed cn: go2cs.example                   store handle round-trips: true
+verify chains: 0                           store context der length: true
+verify error: x509: certificate signed by unknown authority
+unknown authority: true                    chain count: 1
+verify with dnsname error: … unknown authority
+hostname mismatch: true                    chain reports untrusted root: true
+                                           simple chain elements: 1
+```
+
+`store handle round-trips` is the dual identity read back by value (the handle inside the context
+equals the handle `CertOpenStore` returned); `leaf der round-trips` walks
+`CertChainContext → Chains → Elements → CertContext → EncodedCert` and compares the recovered DER
+byte for byte against the original, which exercises the transcribed pointer arrays and
+`unsafe.Slice` over them. Proven failing-first: the pre-fix binary prints the first two lines and
+dies with the SEHException above.
+
+### Deliberately NOT taken, with the reason: `CertVerifyCertificateChainPolicy`
+
+Its `CERT_CHAIN_POLICY_PARA` carries `pvExtraPolicyPara` as Go's opaque `syscall.Pointer`, minted in
+`crypto/x509` as `unsafe.Pointer(sslPara)` over an `SSLExtraCertChainPolicyPara` whose `ServerName`
+is itself a managed reference. What reaches the boundary is therefore a **transient managed address
+with no recoverable box behind it** — golib's uintptr operator declines to pin reference-bearing
+storage, so there is nothing for the wrapper to resolve and nothing to copy from. This is a
+MINT-SITE problem, not a boundary one, and it has two priced remedies, neither of them this arc:
+
+| Remedy | Cost | Note |
+|:--|:--|:--|
+| Register a `ManagedPointerTokens` entry when `ж<T> → uintptr` cannot pin | golib, corpus-wide | changes what 875 emitted conversion sites hand out; the token table was written for exactly this round trip, but making the operator a MINTER is a model change and wants its own ruling |
+| Hand-own `crypto/x509`'s `checkChainSSLServerPolicy` | ~80 lines, one package | builds the two policy mirrors itself and calls crypt32 directly; puts a native mirror in a non-syscall package, which no hand-own does today |
+
+It is reached only when a chain is TRUSTED **and** the caller supplied a DNS name.
+
+### What this means for `crypto/tls` and `crypto/x509` — predicted, not measured
+
+Neither package was re-censused here: `crypto/x509`'s suite still cannot build (three `-tests`
+emission defects the x509-cryptoapi entry names), and a `crypto/tls` census is 184 processes for a
+prediction. Recorded honestly as predictions, for whoever runs them:
+
+* **`TestQUICHandshakeError`** — an untrusted test certificate, so `checkChainTrustStatus` answers
+  before any policy call. **Expected to flip.** Its failure was the hang this arc removes.
+* **`TestVerifyHostname`** — a real server's TRUSTED chain with a DNS name, so it reaches
+  `checkChainSSLServerPolicy`. **Expected to still fail**, now on the one wall named above rather
+  than inside `CertGetCertificateChain`. So the flagship row is `177 of 184`, not 178, and
+  `crypto/tls` still does not bank — but its remaining distance is one *named, priced* mint-site
+  question rather than an arc.
+* **`crypto/x509`'s own census** (264 of 335 agreeing, 67 empty verdicts dominated by
+  `TestSystemVerify/*` and everything sequenced after the 1h1m timeout) should recover most of that
+  tail: the hang that swallowed it is gone, and `TestSystemVerify` itself exercises exactly the
+  offline verdict this lane's guard pins. `TestHybridPool` is in that tail.
+
+### Footprint and gates
+
+One new hand-owned file (`syscall/windows/zsyscall_windows_certchain_impl.cs`), two members MOVED
+into it from `zsyscall_windows_ptrout_impl.cs` with the reason stated at both ends, two new
+`manualConversionFuncs` entries (`CertFreeCertificateContext`, `CertFreeCertificateChain`) and their
+two generated bodies replaced by placeholders. No golib change, no converter behavior change beyond
+the registry, no `crypto/x509` change at all.
+
+Converter `go test ./...` ok (185 s) · full CNR · seeded reconvert with the path-precise marker gate
+· `run-validated-sweep.ps1 -Filter syscall` canary · `go2cs-stdlib.slnx` windows build ·
+`SystemCertVerify` PASS on all four phases, proven failing-first · solution integrity 625/625.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
