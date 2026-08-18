@@ -135,11 +135,19 @@ func main() {
 		t.Errorf("a structurally DIFFERENT anonymous struct must keep its own lifted type, got %d:\n%s", got, mainCs)
 	}
 
-	// The function-local identical struct stays scope-separate: its own lifted declaration under
-	// the function-name prefix (bare — with the package-level second lift gone, nothing collides,
-	// so no suffix is minted).
-	if got := strings.Count(mainCs, "partial struct main_local"); got != 1 {
-		t.Errorf("a function-local identical struct must keep its function-scoped lift, got %d:\n%s", got, mainCs)
+	// The function-local identical struct ADOPTS the package-level lift rather than minting a
+	// function-scoped one: Go's struct identity is structural (tags included), so the local
+	// composite literal IS the package-level type, and the adoption rule (see the xml `Child_G`
+	// entry in ConversionStrategies-Reference) makes the emitted C# unify exactly as Go does.
+	// This assertion originally pinned the opposite (a function-scoped lift) — that pin was about
+	// the dedup REGISTRY's scope keying, not observable semantics, and the union of the two
+	// 2026-08-18 lanes resolved it in favor of Go's structural identity: coordinator ruling at
+	// the merge of claude/local-iface-cast x claude/escape-box-copy.
+	if strings.Contains(mainCs, "partial struct main_local") {
+		t.Errorf("a function-local identical struct must ADOPT the package-level lift, not mint its own:\n%s", mainCs)
+	}
+	if got := strings.Count(mainCs, "partial struct implementsTests"+TempVarMarker+"1"); got != 1 {
+		t.Errorf("adoption must not duplicate the package-level declaration, got %d:\n%s", got, mainCs)
 	}
 }
 
