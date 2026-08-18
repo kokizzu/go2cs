@@ -436,6 +436,26 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 		}
 		return declarations[i].Name < declarations[j].Name
 	})
+
+	// Hand-owned companions of TEST-file conversions — `*_impl_test.cs`
+	// (internal/reflectlite's export_impl_test.cs is the pattern's first instance). They are
+	// committed beside the package exactly like the production `*_impl.cs` companions and are
+	// compiled into the TEST project: the `_test.cs` suffix keeps them under the production
+	// side's existing test-artifact exclusion (csproj template and productionCSFiles both),
+	// so no production emission changes. Globbed FRESH (F7) so a companion appearing or
+	// disappearing re-shapes the project without a recorded list; testInputDigest globs the
+	// same pattern so editing one invalidates a prior comparison.
+	testImplCompanions, err := filepath.Glob(filepath.Join(outputPath, "*_impl_test.cs"))
+	if err != nil {
+		return err
+	}
+	for _, companion := range testImplCompanions {
+		name := filepath.Base(companion)
+		if !containsString(outputFiles, name) {
+			outputFiles = append(outputFiles, name)
+		}
+	}
+
 	sort.Strings(outputFiles)
 
 	fixtures, err := copyTestFixtures(inputPath, outputPath)
@@ -4574,6 +4594,16 @@ func testInputDigest(inputPath, outputPath string, options Options, revision str
 		return "", err
 	}
 	for _, path := range companions {
+		inputs = append(inputs, "output:"+filepath.Base(path))
+	}
+
+	// TEST-file companions (`*_impl_test.cs`) are conversion inputs exactly as the production
+	// `*_impl.cs` companions above are: editing one must invalidate a prior comparison.
+	testCompanions, err := filepath.Glob(filepath.Join(outputPath, "*_impl_test.cs"))
+	if err != nil {
+		return "", err
+	}
+	for _, path := range testCompanions {
 		inputs = append(inputs, "output:"+filepath.Base(path))
 	}
 

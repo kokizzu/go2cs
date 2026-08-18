@@ -204,29 +204,14 @@ public static bool CanSet(this Value v) {
 
 // go2cs generated this placeholder — func Elem is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-[GoType("dyn")] partial interface valueInterface_type {
-    void M();
-}
-
-// The returned value's address is v's value.
-internal static any valueInterface(Value v) {
-    if (v.flag == 0) {
-        throw panic(Ꮡ(new ValueError("reflectlite.Value.Interface"u8, 0)));
-    }
-    if (v.kind() == abi.Interface) {
-        // Special case: return the element inside the interface.
-        // Empty interface has one layout, all interfaces with
-        // methods have a second layout.
-        if (v.numMethod() == 0) {
-            return ~(ж<any>)(uintptr)(v.ptr);
-        }
-        return ((ж<valueInterface_type>)(uintptr)(v.ptr)).ValueSlot;
-    }
-    return packEface(v);
-}
+// go2cs generated this placeholder — func valueInterface is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func IsNil is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// The returned value's address is v's value.
+// Special case: return the element inside the interface.
+// Empty interface has one layout, all interfaces with
+// methods have a second layout.
 // if v.flag&flagMethod != 0 {
 // 	return false
 // }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
@@ -358,5 +359,31 @@ public class PointerNilPredicateTests
         Assert.IsNull(GoReflect.ElementType(typeof(@string)));
         Assert.IsNull(GoReflect.ElementType(typeof(nint)));
         Assert.IsNull(GoReflect.ElementType(null));
+    }
+
+    // The CANONICAL NIL FUNC — the delegate-shaped half of the one-nil-encoding rule. A nil func
+    // packed into interface space must keep its type (Go's eface carries (func-type, nil); a null
+    // delegate carries nothing), and every read-back path must resolve the carrier AWAY: the
+    // dynamic type is the delegate type, the assertion to exactly that type succeeds with the
+    // null delegate, any other assertion fails, the nilness predicate answers nil, and a store
+    // into its own func-typed slot lands null. Either half alone would let the carrier leak — a
+    // mint with no resolution shows the carrier class to user code; a resolution with no mint
+    // never runs.
+    [TestMethod]
+    public void CanonicalNilFuncCarriesItsTypeAndResolvesAwayOnEveryReadBack()
+    {
+        object carrier = GoReflect.CanonicalNilFunc(typeof(Action<nint>));
+
+        Assert.AreSame(carrier, GoReflect.CanonicalNilFunc(typeof(Action<nint>)), "interned per delegate type");
+        Assert.AreSame(typeof(Action<nint>), GoReflect.GoDynamicTypeOf(carrier), "the eface type word survives");
+        Assert.IsTrue(GoReflect.IsNilGoValue(carrier), "a nil func is nil");
+
+        Assert.IsTrue(go.builtin._<Action<nint>>(carrier, out Action<nint> asserted), "asserts to its own func type");
+        Assert.IsNull(asserted, "the asserted value is Go's nil func");
+        Assert.IsFalse(go.builtin._<Action<bool>>(carrier, out _), "any other func type is Go's failed assertion");
+
+        Assert.IsTrue(GoReflect.TryMarshalAssignable(carrier, typeof(Action<nint>), out object? stored), "stores into its own slot type");
+        Assert.IsNull(stored, "the slot representation of a nil func is null");
+        Assert.IsFalse(GoReflect.TryMarshalAssignable(carrier, typeof(Action<bool>), out _), "distinct func types are never assignable");
     }
 }

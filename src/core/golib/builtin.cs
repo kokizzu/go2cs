@@ -1893,6 +1893,16 @@ public static partial class builtin
                 return true;
         }
 
+        // The CANONICAL NIL FUNC (GoReflect.CanonicalNilFunc — a nil func packed into interface
+        // space) asserts to exactly its own delegate type, yielding Go's nil func: success with
+        // the null delegate. Every other target type is Go's failed assertion. Placed BELOW the
+        // `case T` arm so an assert to `any`/object keeps the carrier in interface space.
+        if (target is NilFuncValue nilFunc)
+        {
+            value = default!;
+            return nilFunc.Type == typeOfT;
+        }
+
         // An interface value created from a Go POINTER (`var s Iface = &t`) is a generated
         // IжAdapter wrapping the receiver box; a type assert back to the pointer type
         // (`s.(*T)`, targeting ж<T>) unwraps the adapter to the original box, matching
@@ -2010,16 +2020,25 @@ public static partial class builtin
                 // Check if target type has the same fields as the asserted type
                 if (targetType.GetStructFieldNames().Except(typeOfTFieldNames).Count == 0)
                 {
-                    // Create a new instance of the asserted type
-                    T newInstance = (T)Activator.CreateInstance(typeOfT)!;
+                    // Create a new instance of the asserted type — held BOXED for the copy:
+                    // FieldInfo.SetValue on an unboxed struct mutates a fresh transient box per
+                    // call and the writes vanish (the copy came back all zeros).
+                    object newInstance = Activator.CreateInstance(typeOfT)!;
 
-                    // Copy the values of the fields from the target to the new instance
+                    // Copy the values of the fields from the target to the new instance. The
+                    // lookup must span NONPUBLIC fields: an unexported Go field emits `internal`,
+                    // so the public-only GetField(string) answered null and the copy of any
+                    // struct with a lowercase field NRE'd — reflectlite's TestBigUnnamedStruct
+                    // (`struct{ a, b, c, d int64 }` lifted twice by two spellings) was the
+                    // measured caller of both halves.
                 #pragma warning disable IL2075
+                    const BindingFlags CopyFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
                     foreach (string field in typeOfTFieldNames)
-                        typeOfT.GetField(field)!.SetValue(newInstance,  targetType.GetField(field)!.GetValue(target));
+                        typeOfT.GetField(field, CopyFlags)!.SetValue(newInstance, targetType.GetField(field, CopyFlags)!.GetValue(target));
                 #pragma warning restore IL2075
 
-                    value = newInstance;
+                    value = (T)newInstance;
                     return true;
                 }
             }

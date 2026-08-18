@@ -491,19 +491,58 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// Value) or descriptor sub-records synthType never populates (rtype.Elem panicked;
 		// implements() reinterpreted the descriptor). Bridged in value_impl.cs / type_impl.cs
 		// over the carried System.Type + the golib method-set machinery.
-		"Value.Elem":         goosAny,
-		"Value.IsNil":        goosAny,
-		"Value.Set":          goosAny,
-		"rtype.Elem":         goosAny,
-		"rtype.Implements":   goosAny,
-		"rtype.AssignableTo": goosAny,
-		"methodName":         goosAny,
+		"Value.Elem":       goosAny,
+		"Value.IsNil":      goosAny,
+		"Value.Set":        goosAny,
+		"rtype.Elem":       goosAny,
+		"rtype.Implements": goosAny,
+		"methodName":       goosAny,
 		// rtype.String reads a type-descriptor NAME OFFSET into the linker-built name blob
 		// (`t.nameOff(t.Str).Name()`) that a synthesized descriptor never populates, so it
 		// answered "" for EVERY type — silently, since the empty string is a legal name for an
 		// unnamed type. reflect's own rtype.String is already hand-owned over GoReflect.GoTypeName;
 		// this is the same answer for the mini-bridge, so the two can never disagree.
 		"rtype.String": goosAny,
+		// rtype.PkgPath reads the uncommonType's PkgPath name offset — the same linker name
+		// blob as rtype.String, so it answered "" for every type. Bridged over
+		// GoReflect.GoPackagePath, the exact machinery reflect's side uses, gated on HasGoName
+		// so an anonymous lift answers Go's "" (reflectlite's TestImportPath measured
+		// encoding/base64 and the test package's own path).
+		"rtype.PkgPath": goosAny,
+		// rtype.AssignableTo is NO LONGER hand-owned — the identity-on-the-managed-type
+		// restatement was strictly narrower than Go's rule, exactly the defect reflect retired
+		// (database/sql's TestUserDefinedBytes there; reflectlite's TestAssignableTo `*int` ↔
+		// `type IntPtr *int` rows here). Go's own body runs over the two bridged primitives
+		// below, mirroring reflect's retirement one layer down.
+		//
+		// `implements` is the FREE function directlyAssignable/AssignableTo/assignTo route
+		// through (the auto form reinterprets the descriptor as an interfaceType and reads
+		// .Methods off a default promoted-embed box); haveIdenticalUnderlyingType is THE seat
+		// of the identity relation, whose struct/func/interface arms reached their operands by
+		// the prefix-downcast idiom and answered TRUE off zero-read records. Both bridged in
+		// type_impl.cs over the same golib machinery as reflect's (GoImplements, GoFields,
+		// TryFuncShape), so the two layers cannot disagree.
+		"implements":                  goosAny,
+		"haveIdenticalUnderlyingType": goosAny,
+		// The reflection surface export_test.go hands the SUITE — Field/TField/Zero — builds
+		// raw Value{typ, ptr, flag} triples over descriptor downcasts, neither of which the
+		// managed bridge populates (v.ptr is never a real address; the downcast reads a
+		// default record). Hand-owned in export_impl_test.cs — the first TEST-file companion,
+		// carried by the `*_impl_test.cs` convention (the `_test.cs` suffix keeps it under the
+		// production csproj's existing test-artifact exclusion; testConversion globs it into
+		// the tests project) — mirroring reflect's hand-owned Value.Field/Zero over
+		// GoFields/FieldAliasBox/ZeroValueOf. StructFieldType stays literal: it walks whatever
+		// StructType record it is HANDED, and the hand-owned TField hands it the synthesized
+		// one (abi's Type.StructType()).
+		"Field":  goosAny,
+		"TField": goosAny,
+		"Zero":   goosAny,
+		// valueInterface is the mini-bridge's packEface seam: the literal packEface
+		// reinterprets a heap `any` as an eface and derefs the never-populated words ("bad
+		// indir" / nil ж deref — seven of the suite's 23 mini-bridge failures). Mirrors
+		// reflect's packInterfaceValue: the live boxed value, with a null read out of a
+		// POINTER-kinded Value re-encoded as the canonical typed nil.
+		"valueInterface": goosAny,
 	},
 	// os.(*File).readdir walks the raw buffer GetFileInformationByHandleEx fills by REINTERPRETING
 	// it as a Go struct — `(*windows.FILE_ID_BOTH_DIR_INFO)(entry)`. That struct is managed-referent

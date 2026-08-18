@@ -115,6 +115,26 @@ public class GoStructLayoutTests
     {
         public TestEmbedInner TestEmbedInner;
     }
+
+    // Go's `struct { TestEmbedInner; x, X int }` — the embed declared FIRST — as the converter and
+    // go2cs-gen actually emit it: the converter's partial declares x and X, the GENERATOR's partial
+    // mints the ʗ backing field, and partial parts concatenate, so CLR metadata order is x, X,
+    // ʗTestEmbedInner — the embed LAST, where Go declared it FIRST. The generator's all-fields
+    // constructor is the surviving record of the Go declaration order (it is emitted from the
+    // declaration syntax), which is what the projection reorders by.
+    private struct TestEmbedFirstStruct
+    {
+        internal nint x;
+        public nint X;
+        public TestEmbedInner ʗTestEmbedInner;
+
+        internal TestEmbedFirstStruct(TestEmbedInner TestEmbedInner = default, nint x = default, nint X = default)
+        {
+            ʗTestEmbedInner = TestEmbedInner;
+            this.x = x;
+            this.X = X;
+        }
+    }
 #pragma warning restore CS0649
 
     // The projection carries EMBEDDEDNESS because reflect's struct-identity walk compares it, and
@@ -145,6 +165,34 @@ public class GoStructLayoutTests
         // ...so this flag is the ONLY thing that keeps the two Go types apart.
         Assert.IsTrue(embedded[0].Embedded, "a ʗ-marked backing field is Go's embedded field");
         Assert.IsFalse(declared[0].Embedded, "an ordinary declared field is not embedded");
+    }
+
+    // Field order is Go DECLARATION order, not CLR metadata order. go2cs-gen mints every embed's
+    // backing field in a GENERATED partial, and partial parts concatenate — so a struct whose Go
+    // declaration EMBEDS first carries its embed LAST in metadata. Everything indexed
+    // (Field(i)/rtype.Field(i)/the offsets table) and everything ordered (fmt's %v walk, json's
+    // member order) reads this projection, so the wrong order walked reflectlite's
+    // TestCanSetField index chains into an int field (`Field index out of range` one hop later)
+    // and printed Talias2's embeds reversed under %#v. The generator's all-fields constructor
+    // parameters carry the declaration order, and the projection reorders by them exactly when
+    // an embedded field is present (an embed-free struct's metadata order IS declaration order).
+    [TestMethod]
+    public void FieldOrder_IsGoDeclarationOrder_NotMetadataOrder()
+    {
+        GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(typeof(TestEmbedFirstStruct));
+
+        Assert.AreEqual(3, fields.Length);
+        Assert.AreEqual("TestEmbedInner", fields[0].Name, "the embed Go-declared first projects first");
+        Assert.IsTrue(fields[0].Embedded);
+        Assert.AreEqual("x", fields[1].Name);
+        Assert.AreEqual("X", fields[2].Name);
+
+        // The offsets table pairs with the projection BY INDEX, so it must reorder with it:
+        // Go's layout for struct{ TestEmbedInner; x, X int } is [0 8 16].
+        nint[]? offsets = GoReflect.GoFieldOffsets(typeof(TestEmbedFirstStruct));
+
+        Assert.IsNotNull(offsets);
+        CollectionAssert.AreEqual(new nint[] { 0, 8, 16 }, offsets);
     }
 
     [TestMethod]

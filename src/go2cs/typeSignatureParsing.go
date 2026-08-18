@@ -125,6 +125,12 @@ func splitTopLevelParams(paramString string) []string {
 // type — the alias `type fn = func(string) int` must emit `System.Func<go.@string, nint>`, since
 // a using-alias target resolves at compilation scope where neither `Func` nor `@string` is in
 // scope.
+// typeLeadingKeywords are the Go keywords a TYPE may begin with where a space follows — the set
+// that disambiguates "name type" from a bare keyword-led type in parameter and result lists
+// (`chan int` is a type; `c chan int` is a named parameter). Shared by extractTypes and
+// convertToCSResultList so the two lists can never disagree about the rule.
+var typeLeadingKeywords = map[string]bool{"chan": true, "func": true, "map": true, "struct": true, "interface": true}
+
 func extractTypes(signature string, rootNested bool) []string {
 	// Remove any whitespace at the ends
 	signature = strings.TrimSpace(signature)
@@ -161,9 +167,17 @@ func extractTypes(signature string, rootNested bool) []string {
 
 		if typeStart == 0 {
 			paramType = param
-		} else {
-			// Extract everything after the space
+		} else if leading := param[:typeStart]; isSimpleIdentifierName(leading) && !typeLeadingKeywords[leading] {
+			// The leading token is a parameter NAME only when it is a plain identifier that is
+			// not a type-leading keyword — the same rule convertToCSResultList applies to result
+			// lists. Without it the `chan` of a BARE channel parameter was stripped as a name and
+			// the channel layer vanished from the delegate: `func(chan *integer, *int8)` emitted
+			// `Action<ж<integer>, ж<int8>>` (reflectlite's typeTests measured the missing
+			// `chan`). A directed `<-chan T` never matched the identifier test and was already
+			// kept whole.
 			paramType = strings.TrimSpace(param[typeStart:])
+		} else {
+			paramType = param
 		}
 
 		// A VARIADIC tail (`...string`, from the structural signature render) lowers to the golib
@@ -215,8 +229,6 @@ func convertToCSResultList(resultType string, rootNested bool) string {
 	}
 
 	elements = append(elements, strings.TrimSpace(inner[start:]))
-
-	typeLeadingKeywords := map[string]bool{"chan": true, "func": true, "map": true, "struct": true, "interface": true}
 
 	names := make([]string, len(elements))
 	allNamed := true

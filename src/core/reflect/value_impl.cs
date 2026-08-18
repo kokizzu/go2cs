@@ -66,26 +66,13 @@ internal static ΔValue makeTypedValue(object? boxed, System.Type staticType, ni
     return v;
 }
 
-// isNilGoValue answers Go nilness for a boxed container/pointer/func value through the SAME
-// machinery the emitted `x == nil` comparisons use: the structural pointer predicate, the map's
-// representational nilness, or the type's generated/golib `== nil` operator (slices raw and
-// named, channels, wrappers) — one rule, never a second nilness implementation.
-private static readonly System.Collections.Concurrent.ConcurrentDictionary<System.Type, System.Func<object, bool>?> s_nilOperators = new();
-
+// isNilGoValue answers Go nilness for a boxed container/pointer/func value — since 2026-08-18 a
+// direct delegation to golib's GoReflect.IsNilGoValue, where the rule moved so
+// internal/reflectlite's mirror IsNil reads the SAME nilness (its own switch lacked the
+// generated-operator probe, so a nil slice/chan read out of a struct field answered NOT nil —
+// reflectlite's TestIsNil rows).
 internal static bool isNilGoValue(object? cur) {
-    switch (cur) {
-    case null:
-        return true;
-    case INilPointer nilable:
-        return nilable.IsNilPointer;
-    case IMap m:
-        return m.IsNil;
-    }
-    var probe = s_nilOperators.GetOrAdd(cur.GetType(), static t => {
-        MethodInfo? op = t.GetMethod("op_Equality", BindingFlags.Public | BindingFlags.Static, [t, typeof(NilType)]);
-        return op is null ? null : v => (bool)op.Invoke(null, [v, default(NilType)])!;
-    });
-    return probe is not null && probe(cur);
+    return GoReflect.IsNilGoValue(cur);
 }
 
 // ValueOf returns a new Value initialized to the concrete value stored in the interface i.
@@ -138,6 +125,14 @@ internal static any /*i*/ packInterfaceValue(ΔValue v) {
         return cur;
     }
     ΔKind k = v.kind();
+    // A nil FUNC packs as (type=func-type, value=nil) exactly as a nil pointer does — the
+    // delegate-shaped half of the one-nil-encoding rule (GoReflect.CanonicalNilFunc; a null
+    // delegate slot is correct IN the slot and type-erasing in interface space, where `%T`
+    // must print `func(int8, int32)` — reflectlite's TestFunctionValue/TestTypes rows).
+    if (k == Func) {
+        System.Type? ft = v.typ_ == nil ? null : v.typ_.Value.sysType;
+        return (ft is null ? null : GoReflect.CanonicalNilFunc(ft))!;
+    }
     if (k != ΔPointer && k != ΔUnsafePointer) {
         return cur!;
     }

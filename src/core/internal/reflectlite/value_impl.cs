@@ -77,11 +77,62 @@ partial class reflectlite_package
         return v;
     }
 
+    // makeTypedValue builds a Value typed by a STATIC System.Type (a slot's declared type), so
+    // an interface-typed slot reports Kind Interface even while holding null — a null in such a
+    // slot is a VALID nil Value of the slot's kind, never the invalid zero Value. inheritRO
+    // carries the parent's read-only bits (Go's flagRO stickiness). Mirrors reflect's
+    // makeTypedValue one layer down.
+    internal static Value makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO)
+    {
+        ж<abi_package.Type> t = abi_package.synthType(staticType, arrayDims);
+        Value v = new Value(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(staticType)) | ((flag)(inheritRO & flagRO)));
+
+        v.boxed = boxed;
+
+        return v;
+    }
+
     // ValueOf returns a new Value initialized to the concrete value stored in the interface i.
     // ValueOf(nil) returns the zero Value.
     public static Value ValueOf(any i)
     {
         return i == default! ? new Value(nil) : makeReflectValue(i);
+    }
+
+    // valueInterface is the mini-bridge's packEface seam — the literal packEface reinterprets a
+    // heap `any` as an eface and dereferences the never-populated words ("bad indir" for a
+    // typed field Value, a nil ж deref for an addressable one). Mirrors reflect's
+    // packInterfaceValue: the LIVE boxed value is the interface value, and a null read out of a
+    // POINTER-kinded slot is re-encoded as the canonical typed nil for the slot's static type
+    // (ж<T>.NilBox — one nil encoding system-wide; see reflect/value_impl.cs for the full
+    // rationale). An interface- or func-typed slot holding null IS the nil interface/func and
+    // passes through unchanged.
+    internal static any valueInterface(Value v)
+    {
+        if (v.flag == 0)
+            throw panic(Ꮡ(new ValueError("reflectlite.Value.Interface"u8, 0)));
+
+        object? cur = v.live;
+
+        if (cur is not null)
+            return cur;
+
+        abiꓸKind k = v.kind();
+
+        // A nil FUNC packs as (type=func-type, value=nil) exactly as a nil pointer does —
+        // GoReflect.CanonicalNilFunc, mirroring reflect's packInterfaceValue arm.
+        if (k == abi_package.Func)
+        {
+            System.Type? ft = v.typ_ == nil ? null : v.typ_.Value.sysType;
+            return (ft is null ? null : GoReflect.CanonicalNilFunc(ft))!;
+        }
+
+        if (k != abi_package.Pointer && k != abi_package.UnsafePointer)
+            return cur!;
+
+        System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+
+        return (st is null ? null : GoReflect.CanonicalNilPointer(st))!;
     }
 
     // unpackEface converts the empty interface i to a Value.
@@ -170,13 +221,12 @@ partial class reflectlite_package
         if (cur is IжAdapter { Box: not null } pointerAdapter)
             cur = pointerAdapter.Box;
 
-        return cur switch
-        {
-            null => true,
-            INilPointer nilable => nilable.IsNilPointer,
-            IMap m => m.IsNil,
-            _ => false
-        };
+        // The shared golib nilness — the SAME rule the emitted `x == nil` comparisons and
+        // reflect's IsNil observe (structural pointer predicate, map representational nilness,
+        // the generated `== nil` operator for slices/channels/wrappers). The switch this
+        // replaces lacked the operator probe, so a nil slice/chan field answered NOT nil
+        // (TestIsNil's `struct{ x []string }` / `struct{ x chan int }` rows).
+        return GoReflect.IsNilGoValue(cur);
     }
 
     // Set assigns x to the value v (Go's assignTo semantics; shared golib marshalling — see

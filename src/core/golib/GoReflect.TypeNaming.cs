@@ -119,7 +119,9 @@ public static partial class GoReflect
             if (gd == typeof(array<>)) return "[]" + GoTypeName(a[0]);   // length is not carried on the managed type
             if (gd == typeof(map<,>)) return "map[" + GoTypeName(a[0]) + "]" + GoTypeName(a[1]);
             if (gd == typeof(channel<>)) return "chan " + GoTypeName(a[0]);
-            if (gd == typeof(ж<>)) return "*" + GoTypeName(a[0]);
+            // A pointer descriptor's dims are the POINTEE's, unshifted (the same rule Elem()
+            // hands the cargo down by) — so `*[10]int` renders its array, not `*[]int`.
+            if (gd == typeof(ж<>)) return "*" + GoTypeName(a[0], arrayDims);
         }
 
         if (t.BaseType == typeof(ж<uintptr>)) return "unsafe.Pointer";
@@ -612,13 +614,22 @@ public static partial class GoReflect
     /// </remarks>
     public static string GoPackagePath(Type? t)
     {
-        if (t is null)
+        return t is null ? "" : GoPackageClassPath(t.DeclaringType);
+    }
+
+    /// <summary>
+    /// The Go IMPORT PATH a <c>&lt;pkg&gt;_package</c> CLASS itself stands for — the same answer
+    /// <see cref="GoPackagePath"/> gives for a type nested in it, reachable when what is in hand
+    /// is the package class (an extension METHOD's declaring type) rather than a nested type.
+    /// Empty for a class that is not a package class at all — a hand-written golib type has no
+    /// Go package identity.
+    /// </summary>
+    public static string GoPackageClassPath(Type? packageClass)
+    {
+        if (goPackageNameOf(packageClass) is not { Length: > 0 } pkg)
             return "";
 
-        if (goPackageNameOf(t.DeclaringType) is not { Length: > 0 } pkg)
-            return "";
-
-        string ns = t.Namespace ?? "";
+        string ns = packageClass!.Namespace ?? "";
 
         if (ns.Length > EmissionRootNamespace.Length + 1 && ns.StartsWith(EmissionRootNamespace + ".", StringComparison.Ordinal))
             return ns[(EmissionRootNamespace.Length + 1)..].Replace('.', '/') + "/" + pkg;

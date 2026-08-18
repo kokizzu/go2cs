@@ -98,6 +98,11 @@ public static partial class GoReflect
     /// </summary>
     public static Type GoDynamicTypeOf(object value)
     {
+        // The canonical nil func carries its delegate type — Go's eface type word for a nil
+        // func inside an interface (`%T` prints `func()`, never the carrier class).
+        if (value is NilFuncValue nilFunc)
+            return nilFunc.Type;
+
         while (value is IInterfaceAdapter { Value: not null } interfaceAdapter)
             value = interfaceAdapter.Value;
 
