@@ -810,11 +810,30 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// record owns; and GetFullPathName / NetUserGetInfo (plus internal/syscall/windows'
 		// CreateEnvironmentBlock / NetUserGetLocalGroups) are the same safe shape with no corpus
 		// consumer, hence no available proof.
-		"ConvertSidToStringSid":            goosWindows,
-		"ConvertStringSidToSid":            goosWindows,
-		"NetGetJoinInformation":            goosWindows,
+		"ConvertSidToStringSid": goosWindows,
+		"ConvertStringSidToSid": goosWindows,
+		"NetGetJoinInformation": goosWindows,
+		// The two crypt32 members live in zsyscall_windows_certchain_impl.cs rather than the ptrout
+		// file, together with the two CertFree* routines that pair with them — because for those two
+		// the out-cell is only HALF the answer and the halves are NOT separable.
+		// CertGetCertificateChain also hands crypt32 a CERT_CHAIN_PARA BY ADDRESS (the struct-passing
+		// class: 80 native bytes read off a managed record whose UsageIdentifiers and CacheResync are
+		// references, with dwUrlRetrievalTimeout — a blocking network budget — among the fields taken
+		// from the wrong offset), and its `additionalStore` argument is `storeCtx.Store`, a field the
+		// CALLER reads out of the CERT_CONTEXT the first of these produced. Fixing only the parameter
+		// was MEASURED to leave the identical SEHException in place. So both publish a managed VIEW
+		// that remembers its native identity in a syscall-local side table, and the two frees resolve
+		// through it — crypt32 reference-counts that memory, so a no-op free (the FreeAddrInfoW
+		// answer) would leak a chain per verification while a managed address would be handed to
+		// crypt32's own allocator.
+		//
+		// CertCreateCertificateContext and CertEnumCertificatesInStore deliberately stay generated:
+		// they produce plain native boxes nothing reads a field through, and the identity lookup falls
+		// back to the box's own address, so they keep working unchanged.
 		"CertAddCertificateContextToStore": goosWindows,
 		"CertGetCertificateChain":          goosWindows,
+		"CertFreeCertificateContext":       goosWindows,
+		"CertFreeCertificateChain":         goosWindows,
 	},
 	// The SECOND package holding the syscall struct-passing class, and the one member of it whose
 	// established remedy is measured UNREACHABLE — so this entry declares a CAPABILITY LIMIT rather
