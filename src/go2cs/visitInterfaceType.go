@@ -262,6 +262,18 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 					inheritedInterfaces = append(inheritedInterfaces, fmt.Sprintf("%s<%s>", v.convExpr(method.Type, nil), TypeT))
 				}
 			} else {
+				// Go's built-in `comparable` is not a C# base. It admits every ==-able type, a set no
+				// C# interface describes — golib's `comparable<T>` CRTP is implemented by NOTHING,
+				// which is exactly why the bare-constraint arm emits no C# constraint for it
+				// (constraintOperations.go). Embedded, it was appended to the inheritance list as a
+				// bare `comparable`, which is that unimplementable generic named with no type
+				// argument: CS0305 on net/netip's `type netipTypeCmp interface{ comparable; netipType }`.
+				// It contributes no methods, so dropping it leaves the interface's C# surface exact —
+				// and leaves it a method set, which is the form the constraint side can express.
+				if embedType := v.getType(method.Type, false); embedType != nil && isPredeclaredComparable(embedType) {
+					continue
+				}
+
 				isDynamicInterface := v.isDynamicInterface(method.Type)
 
 				if isDynamicInterface {

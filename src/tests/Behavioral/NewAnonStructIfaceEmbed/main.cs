@@ -27,18 +27,14 @@ internal static ж<reservedᴛ1> reserved = @new<reservedᴛ1>();
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object localˢ = (@string)"local:"u8;
 
-[GoType("dyn")] partial struct main_type {
-    internal badge badge;
-}
-
 internal static void Main() {
     badge b = new reservedᴛ1жbadge(reserved);
     fmt.Println(b != default!);
     reserved.Value.badge = new gold(nil);
     fmt.Println(b.label());
-    var local = @new<main_type>();
+    var local = @new<reservedᴛ1>();
     local.Value.badge = new gold(nil);
-    badge b2 = new main_typeжbadge(local);
+    badge b2 = new reservedᴛ1жbadge(local);
     fmt.Println(localˢ, b2.label());
 }
 

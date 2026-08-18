@@ -314,6 +314,22 @@ func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) str
 		}
 	}
 
+	// The MIRROR of that rule for the alias the arm above deliberately leaves alone. An alias a
+	// `_test.go` file DECLARES emits its own `global using` into this assembly — but the assembly has
+	// TWO variant classes, and the EXTERNAL one reaches the alias by package qualification, because
+	// Go says `netip.AddrDetail` (export_test.go is part of package netip during a test build). A
+	// `global using` is a member of no class, so that spelling is CS0426 — `AddrDetail` does not exist
+	// in `netip_package`, net/netip's last one-line wall.
+	//
+	// Render it BARE. The internal half's `global using AddrDetail = …` is compilation-scoped and
+	// this emission lands in the SAME compilation, so the bare name is exactly what resolves — and it
+	// is the same spelling the internal half's own files use, which keeps one Go name to one C# name
+	// across both halves. Rendering the TARGET instead would resolve too, but it would spell one
+	// alias two different ways depending on which half named it.
+	if name, bare := v.testDeclaredAliasSpelledBare(t); bare {
+		return name
+	}
+
 	if name, ok := v.liftedNameFor(t); ok {
 		return name
 	}

@@ -1430,6 +1430,186 @@ func seedProductionAliasLifts(pkg *packages.Package, productionInfoPath string) 
 	}
 }
 
+// seedProductionInterfaceAliases makes the production conversion's DEFINED-OVER-INTERFACE types
+// reachable from the test compilation — the second kind of package-level declaration that has a
+// `global using` and no class member, alongside the anonymous-RHS alias lifts above.
+//
+// `type Token any` (encoding/xml) and `type Reader io.Reader` are DEFINED types in Go: each has its
+// own identity and its own name. But each also has EXACTLY the right-hand interface's method set and
+// can carry no methods of its own, so visitTypeSpec emits it as a compilation-scoped
+// `global using ΔToken = object;` rather than as a member of the `<pkg>_package` class (see the
+// definedOverInterface arm — a struct wrapper over `any` admits no implicit conversion from a
+// concrete value, so the wrapper form was CS0029 at every assignment).
+//
+// A `-tests` conversion under a REFERENCE model is a SECOND compilation that declares no such alias,
+// and its renderers reach the type as an ordinary production named type:
+// `global::go.encoding.xml_package.ΔToken`, which qualifies an assembly-scoped alias as a type
+// member. That is CS0426 — 36 of them in encoding/xml, its ONLY build error, with all 386 of the
+// package's verdicts behind it. The production conversion never produces that spelling because it
+// references the alias BARE, which is why the defect is invisible outside a `-tests` run.
+//
+// Both halves are seeded, exactly as seedProductionAliasLifts seeds them: the NAME into
+// productionAliasLiftedTypes so every renderer spells the alias (liftedNameFor is consulted ahead of
+// the white-box class qualifiers), and the TARGET into importedTypeAliases so the `global using` is
+// re-emitted into the test metadata file and the name resolves there. Recording one without the
+// other would render a name the test compilation cannot bind.
+//
+// The production package_info.cs is the authority for both, and its TWO-HOP chain is followed to the
+// end — `GoTypeAlias("Token", "ΔToken")` then `GoTypeAlias("ΔToken", "object")`, because a type whose
+// name collides with a method name is Δ-renamed and the alias the production compilation actually
+// declares is the renamed one. This is the same chain a cross-package consumer already follows
+// (loadImportedTypeAliases' localAliases), so the two readers of one published record agree.
+//
+// Excluded: the RECOMPILE model, for the one reason that matters — there the production `.cs` ARE
+// compile items of the test assembly, so the alias is already declared in this compilation and
+// re-declaring it would be the defect rather than the fix. Gated on testProductionPath, which is set
+// only by the models that REFERENCE production.
+func seedProductionInterfaceAliases(pkg *packages.Package, productionInfoPath string, options Options) {
+	if pkg == nil || pkg.Types == nil || options.testProductionPath == "" {
+		return
+	}
+
+	names := definedOverInterfaceTypeNames(pkg)
+
+	if len(names) == 0 {
+		return
+	}
+
+	published, err := parseExportedTypeAliases(productionInfoPath)
+
+	if err != nil || len(published) == 0 {
+		return
+	}
+
+	targets := make(map[string]string, len(published))
+
+	for _, entry := range published {
+		targets[entry[0]] = entry[1]
+	}
+
+	scope := pkg.Types.Scope()
+
+	for _, name := range names {
+		typeName, ok := scope.Lookup(name).(*types.TypeName)
+
+		if !ok || typeName.IsAlias() {
+			continue
+		}
+
+		named, isNamed := typeName.Type().(*types.Named)
+
+		if !isNamed {
+			continue
+		}
+
+		aliasName, target, resolved := followPublishedAliasChain(targets, name)
+
+		if !resolved {
+			continue
+		}
+
+		packageLock.Lock()
+
+		if productionAliasLiftedTypes == nil {
+			productionAliasLiftedTypes = map[types.Type]string{}
+		}
+
+		productionAliasLiftedTypes[named] = aliasName
+		importedTypeAliases[aliasName] = target
+		packageLock.Unlock()
+	}
+}
+
+// definedOverInterfaceTypeNames returns the package-level type names the PRODUCTION files declare as
+// a defined type over a NAMED interface — visitTypeSpec's definedOverInterface predicate, read from
+// the same syntax that pass reads it from.
+//
+// The predicate needs the AST and cannot be recovered from go/types: `type X any` and
+// `type X interface{}` are the same *types.Named over the same empty *types.Interface, yet the first
+// emits a `global using` and the second emits a C# interface that IS a class member. Only the
+// right-hand SYNTAX separates them, and convertTestVariant's package carries every production file's
+// syntax because the whole variant feeds the package-wide analyses.
+//
+// `_test.go` declarations are excluded: a test file's own alias emits its `global using` into THIS
+// compilation and needs no seeding.
+func definedOverInterfaceTypeNames(pkg *packages.Package) []string {
+	if pkg == nil || pkg.Types == nil || pkg.Fset == nil {
+		return nil
+	}
+
+	scope := pkg.Types.Scope()
+	names := []string{}
+
+	for _, file := range pkg.Syntax {
+		if strings.HasSuffix(strings.ToLower(pkg.Fset.Position(file.Pos()).Filename), "_test.go") {
+			continue
+		}
+
+		for _, decl := range file.Decls {
+			genDecl, isGen := decl.(*ast.GenDecl)
+
+			if !isGen || genDecl.Tok != token.TYPE {
+				continue
+			}
+
+			for _, spec := range genDecl.Specs {
+				typeSpec, isType := spec.(*ast.TypeSpec)
+
+				if !isType || typeSpec.Assign.IsValid() {
+					continue
+				}
+
+				switch typeSpec.Type.(type) {
+				case *ast.Ident, *ast.SelectorExpr:
+				default:
+					continue
+				}
+
+				obj, isTypeName := scope.Lookup(typeSpec.Name.Name).(*types.TypeName)
+
+				if !isTypeName || obj.Type() == nil {
+					continue
+				}
+
+				if _, isInterface := obj.Type().Underlying().(*types.Interface); isInterface {
+					names = append(names, typeSpec.Name.Name)
+				}
+			}
+		}
+	}
+
+	return names
+}
+
+// followPublishedAliasChain resolves a Go type name through the production package_info.cs's
+// exported-alias records to the alias name that compilation DECLARES and that alias's target.
+//
+// A type whose name collides with a method name publishes TWO records — the rename
+// (`"Token"` → `"ΔToken"`) and the alias itself (`"ΔToken"` → `"object"`) — so the name to spell is
+// the last key in the chain, never the first. A type with no collision publishes one record and the
+// chain ends immediately. The visited set bounds a malformed or self-referential published set,
+// which is read from a file this run did not necessarily write.
+func followPublishedAliasChain(targets map[string]string, name string) (string, string, bool) {
+	target, published := targets[name]
+
+	if !published {
+		return "", "", false
+	}
+
+	visited := NewHashSet([]string{name})
+
+	for {
+		next, chained := targets[target]
+
+		if !chained || visited.Contains(target) {
+			return name, target, true
+		}
+
+		visited.Add(target)
+		name, target = target, next
+	}
+}
+
 // productionSeed carries the naming state the PRODUCTION conversion of this package left standing
 // when it finished, so a `-tests` variant that emits into the SAME `<pkg>_package` class can
 // continue from it rather than start over.
@@ -1547,6 +1727,7 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		productionInfoPath := platformPackageInfoPath(outputPath, goosOfTarget(options.targetPlatform))
 		loadPackageImplements(productionInfoPath, productionName)
 		seedProductionAliasLifts(pkg, productionInfoPath)
+		seedProductionInterfaceAliases(pkg, productionInfoPath, options)
 	}
 
 	allEntries := make([]FileEntry, 0, len(pkg.Syntax))

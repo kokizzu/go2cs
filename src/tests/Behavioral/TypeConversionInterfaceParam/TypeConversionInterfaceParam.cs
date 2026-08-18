@@ -17,26 +17,14 @@ public bool Valid;
 [GoType] partial struct Processor {
 }
 
-[GoType("dyn")] public partial struct Process_data {
-    public nint ID;
-    public @string Name;
-    public bool Valid;
-}
-
-public static void Process(this Processor p, Process_data data) {
+public static void Process(this Processor p, DataProcessor_data data) {
     fmt.Printf("Processing ID: %d, Name: %s, Valid: %t\n"u8, data.ID, data.Name, data.Valid);
-}
-
-[GoType("dyn")] partial struct main_data {
-    public nint ID;
-    public @string Name;
-    public bool Valid;
 }
 
 internal static void Main() {
     DataProcessor p = default!;
     p = new Processor(nil);
-    var data = new main_data(ID: 1, Name: "Alice"u8, Valid: true);
+    var data = new DataProcessor_data(ID: 1, Name: "Alice"u8, Valid: true);
     p.Process(data);
 }
 

@@ -552,3 +552,46 @@ func (v *Visitor) whiteboxBridgeMember(ident *ast.Ident) string {
 	}
 	return v.options.testInternalBridgeName + "." + name
 }
+
+// testDeclaredAliasSpelledBare reports the BARE C# name of a type alias that the package-under-test's
+// own `_test.go` files declare, when the EXTERNAL test variant is what is naming it.
+//
+// The internal half emits `global using AddrDetail = …` for such an alias, so the internal variant
+// needs nothing. But the assembly has TWO variant classes, and the external one reaches the alias by
+// PACKAGE QUALIFICATION — Go says `netip.AddrDetail`, because `export_test.go` is part of package
+// netip during a test build. A `global using` is a member of no class, so that spelling is CS0426:
+// "the type name AddrDetail does not exist in the type netip_package", net/netip's last one-line wall.
+//
+// The alias IS in scope where this emission lands — one compilation — so the fix is to stop
+// qualifying it, which also keeps one Go name spelled one way across both halves. Rendering the
+// alias's TARGET instead would resolve too, but it would spell one alias two different ways
+// depending on which half named it.
+//
+// Every clause is load-bearing: only under the white-box REFERENCE model does the production half
+// live in another assembly; only the EXTERNAL variant composes the qualified spelling; only an alias
+// declared by the package-under-test's own test files has its `global using` in THIS compilation
+// (a production-declared one is the sibling arm's business, and a FOREIGN package's alias is a real
+// member of a real referenced assembly).
+func (v *Visitor) testDeclaredAliasSpelledBare(t types.Type) (string, bool) {
+	if !v.options.testWhiteboxReference || !v.options.testExternalVariant {
+		return "", false
+	}
+
+	alias, isAlias := t.(*types.Alias)
+
+	if !isAlias {
+		return "", false
+	}
+
+	aliasObj := alias.Obj()
+
+	if aliasObj == nil || aliasObj.Pkg() == nil || aliasObj.Pkg().Path() != v.options.testProductionPath {
+		return "", false
+	}
+
+	if !v.declaredInTestFile(aliasObj) {
+		return "", false
+	}
+
+	return getSanitizedIdentifier(aliasObj.Name()), true
+}

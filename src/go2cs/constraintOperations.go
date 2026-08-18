@@ -1200,7 +1200,7 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 							constraintName = fmt.Sprintf("%s %s", originalConstraint, typeConstraint)
 						}
 					}
-				} else if iface.IsMethodSet() {
+				} else if isMethodSetBeyondComparable(iface) {
 					// A REGULAR method-set interface (a pure method set, no type-term unions —
 					// go/ast's `Node` in `walkList[N Node]`) is emitted arity-0 by
 					// visitInterfaceType, NOT as the generic CRTP form that union+method
@@ -1209,6 +1209,10 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 					// the phantom `Node<N>` was CS0308). NO `new()` either: the instantiation
 					// may itself be an INTERFACE (walkList takes N=Stmt/Expr/Spec/Decl), which
 					// cannot satisfy a constructor constraint.
+					//
+					// An embedded `comparable` is discounted for exactly the reason the bare-constraint
+					// arm above emits nothing for it: it is not expressible in C#, so it cannot be what
+					// makes an otherwise-method-set interface generic (see isMethodSetBeyondComparable).
 					constraintNames = append(constraintNames, fmt.Sprintf("%s%s    where %s : %s", v.newline, v.indent(v.indentLevel), typeParamNames[i], convertToCSTypeName(constraintName)))
 					continue
 				} else {
@@ -1541,4 +1545,63 @@ func (v *Visitor) callNeedsConstraintProxy(funIdent *ast.Ident, typeArgs *types.
 	}
 
 	return false
+}
+
+// isPredeclaredComparable reports whether t is Go's built-in `comparable` — the universe-scope
+// pseudo-interface, identified by having no package rather than by spelling alone, so a package's own
+// `type comparable interface{…}` is never mistaken for it.
+func isPredeclaredComparable(t types.Type) bool {
+	named, ok := types.Unalias(t).(*types.Named)
+
+	if !ok {
+		return false
+	}
+
+	obj := named.Obj()
+
+	return obj != nil && obj.Pkg() == nil && obj.Name() == "comparable"
+}
+
+// isMethodSetBeyondComparable reports whether iface is a pure METHOD SET once an embedded
+// `comparable` is discounted.
+//
+// Go's built-in `comparable` admits every ==-able type and no C# constraint can express that set, so
+// the bare-constraint arm above emits nothing for it beyond `new()` — golib's `comparable<T>` CRTP is
+// implemented by NOTHING. An interface that EMBEDS it inherits the same fact and must be treated the
+// same way, but it was not: `type netipTypeCmp interface { comparable; netipType }` (net/netip's
+// fuzz_test.go) made `IsMethodSet()` answer false, so the constraint took the generic CRTP form
+// `where P : netipTypeCmp<P>` while visitInterfaceType had emitted the interface arity-0 — CS0308,
+// the non-generic type cannot be used with type arguments. The two sides must agree, and the
+// method-set side is the one that is expressible.
+//
+// Every OTHER embedded type still has to be a method set: an interface mixing `comparable` with a
+// real type-term union (`comparable; ~int | ~string`) restricts its type set in a way the arity-0
+// form does not describe, and keeps the existing generic treatment.
+func isMethodSetBeyondComparable(iface *types.Interface) bool {
+	if iface == nil {
+		return false
+	}
+
+	if iface.IsMethodSet() {
+		return true
+	}
+
+	sawComparable := false
+
+	for i := range iface.NumEmbeddeds() {
+		embedded := iface.EmbeddedType(i)
+
+		if isPredeclaredComparable(embedded) {
+			sawComparable = true
+			continue
+		}
+
+		embeddedIface, ok := embedded.Underlying().(*types.Interface)
+
+		if !ok || !isMethodSetBeyondComparable(embeddedIface) {
+			return false
+		}
+	}
+
+	return sawComparable
 }
