@@ -4648,6 +4648,45 @@ but inner length 0, and so does every element the padding itself creates, so
 element factory described in the next section, but `convCompositeLit` does not yet use it, so the
 LITERAL path stays open — chipped separately.)
 
+### An array or slice literal may MIX positional and keyed elements
+
+Go's "all elements keyed, or none" rule is a **struct**-literal rule. An array or slice literal may
+mix the two freely, and the positional elements take the indices Go computes for them: the first
+element is index 0, a keyed element sets the index to its (constant) key, and each following
+positional element continues from there. So the literal below is **sixteen** bytes long, not three:
+
+```go
+ip := []byte{0xfe, 0x80, 15: 0x01}   // 0: 0xfe, 1: 0x80, 15: 0x01 — length 16
+a  := [8]int{1, 2, 5: 9, 10}         // 0: 1, 1: 2, 5: 9, 6: 10 — length 8, its declared one
+```
+
+The converter's keyed-literal detection read `Elts[0]` alone (its own comment cited the struct rule
+as the justification), so a mixed literal took the plain positional emission while its keyed
+elements still rendered through the key/value arm — whose sparse form wants an assignment target
+that does not exist in an expression position:
+
+```csharp
+// before — CS1525, invalid expression term '<'
+new byte[]{0xfe, 0x80, <nil>[15] = 0x01}.slice()
+```
+
+A mixed literal is now normalized to an all-keyed one carrying Go's own indices, which lets the
+existing sparse-array machinery render it unchanged — and recovers the LENGTH, which is the part a
+wrong emission gets silently wrong rather than loudly:
+
+```csharp
+new slice<byte>(16){[0] = 0xfe, [1] = 0x80, [15] = 0x01}
+new array<nint>(8){[0] = 1, [1] = 2, [5] = 9, [6] = 10}
+```
+
+An all-positional or already-all-keyed literal is untouched by construction, so the corpus is
+byte-identical across the change; a literal whose keys do not fold to constants is left exactly as
+it was, because an index the converter cannot compute is one it must not invent. Guarded by
+`mixedKeyedComposite_test.go`, which converts both mixed forms plus the two unmixed controls.
+(Found by the Phase-4 measurement of `net/netip`, whose `TestAddrFromSlice`/`TestAsSlice` write
+IPv4-in-IPv6 addresses this way — zero production sites in the converted standard library, which is
+why a shape this ordinary survived to be found by a test conversion.)
+
 ### A fixed-size array constructs its ELEMENTS when `default(T)` is not usable storage
 
 `new array<T>(N)` fills its backing with `default(T)`, which is the correct Go zero value only when
@@ -7372,6 +7411,20 @@ Four qualifiers are in play and they are not interchangeable: golib types root t
 This is a **user-code** defect rather than a corpus one, and the census says so precisely for the type-ARGUMENT arm: the whole converted standard library declares exactly four package-level aliases with type arguments (fiat's `p224`/`p256`/`p384`/`p521`, each `[4]uint64`), and all four take a C# keyword as their argument, so that arm moves nothing. An end-user package that aliases a slice, map, channel or func type — the ordinary `type Handlers = map[string]Handler` — hit it on the first build, and a `-recurse` module conversion hit it over a third-party type.
 
 The **substitution** arm is the one with corpus sites, and they were live **CS0234** nobody had seen. A csproj-alias name reaching the alias RHS as the WHOLE target was rooted rather than substituted — `go.int32`, which the compiler rejects with "the type or namespace name `int32` does not exist in the namespace `go`", since `int32` is a `<Using Alias=…>` for `System.Int32` and not a member of `go` at all. `getUsingAliasSafeTypeName` could not catch it because that sweep deliberately skips dot-qualified names, exactly so a package type sharing a builtin name is left alone. Six sites carried it, all cgo `_C_*` typedefs in **darwin-exclusive** files (`os/user/darwin/cgo_lookup_syscall.cs`, `net/darwin/cgo_unix_syscall.cs`), which is why they stayed latent: the default `$(GoTargetOS)` is `windows`, so nothing compiles them. `type _C_int = int32` now emits `global using _C_int = int;`, and the neighbours that were already right are unmoved — `_C_char = byte` (a C# keyword) and `_C_size_t = go.uintptr` (`uintptr` IS a real golib struct, so rooting it is correct). (Guarded by the `PackageAliasRootedTypeArgs` behavioral test — twenty-five package-level aliases covering golib element types, keyword element types that must NOT be rooted, same-package named types at one and two levels of nesting, a lifted anonymous struct and interface, a cross-package interface, both directional channel forms, both delegate spellings, and an alias to an alias, output-compared vs Go. Also pinned by `TestRecurseChannelOfHyphenatedModulePath`, whose assertion recorded the unrooted cross-package form until this landed.)
+
+**Rooting is IDEMPOTENT: an already-`global::`-rooted target is not rooted again.** The rooted mode
+above prefixes the root namespace onto every name it renders, and one caller hands it names that are
+already rooted — a **white-box test conversion**, whose test-alias qualifiers build a reference to a
+production declaration with an explicit `global::` (`global::go.net.netip_package.uint128`). Prefixed
+a second time that becomes `go.global::go.net.netip_package.uint128`, which is **CS7000** "unexpected
+use of an aliased name": `global::` is the root, so anything in front of it is by construction not a
+name. `net/netip`'s `export_test.go` re-exports two unexported production types this way
+(`type Uint128 = uint128`, `type AddrDetail = addrDetail`) and both of its alias lines failed to
+parse, taking all 266 of the package's verdicts with them. The renderer now returns a `global::`
+target unchanged, stated at the renderer rather than at the one caller, because every future caller
+wants the same answer. (Guarded by `mixedKeyedComposite_test.go`'s
+`TestRootedUsingAliasKeepsGlobalQualifier`, which asserts the rooted *and* unrooted renders both
+leave such a name alone.)
 
 ## Delegates to Value Receiver Instances
 

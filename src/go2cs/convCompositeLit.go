@@ -9,6 +9,8 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/constant"
+	"go/token"
 	"go/types"
 	"strconv"
 	"strings"
@@ -118,6 +120,15 @@ func (v *Visitor) recordStructFieldInterfaceCasts(compositeLit *ast.CompositeLit
 
 func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyValueContext) string {
 	result := &strings.Builder{}
+
+	// Go's all-or-nothing keying rule is a STRUCT-literal rule. An ARRAY or SLICE literal may MIX
+	// positional and keyed elements (`[]byte{0xfe, 0x80, 15: 0x01}`), and every keyed path below
+	// decides from Elts[0] alone. A mixed literal therefore took the plain positional emission
+	// while its keyed elements still rendered through the key/value arm, whose sparse form wants a
+	// target ident it does not have here: `new byte[]{0xfe, 0x80, <nil>[15] = 0x01}` — CS1525.
+	// Normalizing the positional elements to their Go indices makes the literal all-keyed, so the
+	// existing sparse-array machinery renders it and nothing else here needs a mixed-literal case.
+	v.normalizeMixedKeyedComposite(compositeLit)
 
 	if compositeLit.Type == nil {
 		// An untyped (type-inferred) composite literal — e.g. the inner `{lockRankSysmon, …}` of a
@@ -1023,8 +1034,10 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 }
 
 // compositeLitIsKeyed reports whether a composite literal's elements are index/key keyed
-// (KeyValueExpr). Go requires a composite literal to be all-keyed or all-positional, so the
-// first element is representative — matching the typed sparse-array detection below.
+// (KeyValueExpr). Reading Elts[0] is representative because normalizeMixedKeyedComposite has
+// already given every element of a MIXED array/slice literal an explicit index — Go's
+// all-or-nothing keying rule holds for struct literals only, and this check ran before that
+// normalization existed.
 func compositeLitIsKeyed(elts []ast.Expr) bool {
 	if len(elts) == 0 {
 		return false
@@ -1032,6 +1045,90 @@ func compositeLitIsKeyed(elts []ast.Expr) bool {
 
 	_, keyed := elts[0].(*ast.KeyValueExpr)
 	return keyed
+}
+
+// normalizeMixedKeyedComposite rewrites the POSITIONAL elements of a MIXED array/slice composite
+// literal into keyed ones carrying the index Go gives them, leaving an all-keyed element list for
+// the sparse-array paths. Go's rule: the first element is index 0, a keyed element sets the index
+// to its (constant) key, and each following positional element takes the next index — so
+// `[]byte{0xfe, 0x80, 15: 0x01}` is `{0: 0xfe, 1: 0x80, 15: 0x01}`, a SIXTEEN-byte value.
+//
+// Applies to array and slice literals only: a MAP literal is always fully keyed and a STRUCT
+// literal genuinely cannot mix. An all-positional or already-all-keyed literal is left untouched
+// (byte-identical output, which is why the whole corpus is unmoved by this), and so is one whose
+// keys this scan cannot fold to constants — an index it cannot compute is one it must not invent.
+func (v *Visitor) normalizeMixedKeyedComposite(compositeLit *ast.CompositeLit) {
+	if len(compositeLit.Elts) == 0 {
+		return
+	}
+
+	litType := v.info.TypeOf(compositeLit)
+
+	if litType == nil {
+		return
+	}
+
+	switch types.Unalias(litType).Underlying().(type) {
+	case *types.Array, *types.Slice:
+	default:
+		return
+	}
+
+	anyKeyed := false
+	anyPositional := false
+
+	for _, elt := range compositeLit.Elts {
+		if _, keyed := elt.(*ast.KeyValueExpr); keyed {
+			anyKeyed = true
+		} else {
+			anyPositional = true
+		}
+	}
+
+	if !anyKeyed || !anyPositional {
+		return
+	}
+
+	// Indices are computed for the WHOLE list before any element is replaced: a key that will not
+	// fold leaves every later index unknown, and a half-rewritten literal would be worse than the
+	// untouched one this bails out to.
+	indices := make([]int64, len(compositeLit.Elts))
+	next := int64(0)
+
+	for i, elt := range compositeLit.Elts {
+		if keyValue, keyed := elt.(*ast.KeyValueExpr); keyed {
+			typeAndValue, recorded := v.info.Types[keyValue.Key]
+
+			if !recorded || typeAndValue.Value == nil {
+				return
+			}
+
+			index, exact := constant.Int64Val(constant.ToInt(typeAndValue.Value))
+
+			if !exact {
+				return
+			}
+
+			next = index + 1
+
+			continue
+		}
+
+		indices[i] = next
+		next++
+	}
+
+	for i, elt := range compositeLit.Elts {
+		if _, keyed := elt.(*ast.KeyValueExpr); keyed {
+			continue
+		}
+
+		compositeLit.Elts[i] = &ast.KeyValueExpr{
+			Key:   &ast.BasicLit{ValuePos: elt.Pos(), Kind: token.INT, Value: strconv.FormatInt(indices[i], 10)},
+			Colon: elt.Pos(),
+			Value: elt,
+		}
+	}
 }
 
 // elidedPointerElemContext renders a bare pointer-typed IDENT element of an ELIDED (type-inferred)
