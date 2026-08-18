@@ -328,12 +328,6 @@ internal static readonly @string totalAllocAndConsistentˢ = "totalAlloc and con
 internal static readonly @string totalFreeAndConsistentˢ = "totalFree and consistent stats are not equal"u8;
 internal static readonly @string mappedReadyAndOtherˢ = "mappedReady and other memstats are not equal"u8;
 
-[GoType("dyn")] partial struct readmemstats_m_bySize {
-    public uint32 Size;
-    public uint64 Mallocs;
-    public uint64 Frees;
-}
-
 // readmemstats_m populates stats for internal runtime values.
 //
 // The world must be stopped.
@@ -360,7 +354,7 @@ internal static void readmemstats_m(ref MemStats stats) {
     var totalFree = consStats.largeFree;
     var nFree = consStats.largeFreeCount;
     // Collect per-sizeclass stats.
-    array<readmemstats_m_bySize> bySize = new(68); /* _NumSizeClasses */
+    array<MemStats_BySize> bySize = new(68); /* _NumSizeClasses */
     foreach (var (i, _) in bySize) {
         bySize[i].Size = (uint32)class_to_size[i];
         // Malloc stats.

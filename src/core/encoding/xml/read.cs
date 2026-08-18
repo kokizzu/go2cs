@@ -544,19 +544,20 @@ Loop:
             return errΔ10;
         }
         switch (tok.type()) {
-        case StartElement t: {
+        case StartElement tᴛ1: {
+            ref var t = ref heap(tᴛ1, out var Ꮡt);
             var consumed = false;
             if (sv.IsValid()) {
                 // unmarshalPath can call unmarshal, so we need to pass the depth through so that
                 // we can continue to enforce the maximum recursion limit.
-                (consumed, errΔ10) = Ꮡd.unmarshalPath(tinfo, sv, default!, Ꮡ(t), depth);
+                (consumed, errΔ10) = Ꮡd.unmarshalPath(tinfo, sv, default!, Ꮡt, depth);
                 if (errΔ10 != default!) {
                     return errΔ10;
                 }
                 if (!consumed && saveAny.IsValid()) {
                     consumed = true;
                     {
-                        var errΔ11 = Ꮡd.unmarshal(saveAny, Ꮡ(t), depth + 1); if (errΔ11 != default!) {
+                        var errΔ11 = Ꮡd.unmarshal(saveAny, Ꮡt, depth + 1); if (errΔ11 != default!) {
                             return errΔ11;
                         }
                     }
@@ -775,10 +776,11 @@ break_Loop:;
             return (true, err);
         }
         switch (tok.type()) {
-        case StartElement t: {
+        case StartElement tᴛ2: {
+            ref var t = ref heap(tᴛ2, out var Ꮡt);
             var (consumed2, errΔ1) = Ꮡd.unmarshalPath(Ꮡtinfo, // the recursion depth of unmarshalPath is limited to the path length specified
  // by the struct field tag, so we don't increment the depth here.
- sv, parents, Ꮡ(t), depth);
+ sv, parents, Ꮡt, depth);
             if (errΔ1 != default!) {
                 return (true, errΔ1);
             }

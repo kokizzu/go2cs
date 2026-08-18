@@ -303,7 +303,8 @@ internal static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
         }
     }
     switch (t.type()) {
-    case StartElement t1: {
+    case StartElement t1ᴛ1: {
+        ref var t1 = ref heap(t1ᴛ1, out var Ꮡt1);
         foreach (var (_, a) in t1.Attr) {
             // In XML name spaces, the translations listed in the
             // attributes apply to the element name and
@@ -322,15 +323,16 @@ internal static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
             }
         }
         d.pushElement(t1.Name);
-        d.translate(Ꮡ(t1).of(StartElement.ᏑName), true);
+        d.translate(Ꮡt1.of(StartElement.ᏑName), true);
         foreach (var (i, _) in t1.Attr) {
             d.translate(Ꮡ(t1.Attr, i).of(Attr.ᏑName), false);
         }
         t = t1;
         break;
     }
-    case EndElement t1: {
-        if (!d.popElement(Ꮡ(t1))) {
+    case EndElement t1ᴛ2: {
+        ref var t1 = ref heap(t1ᴛ2, out var Ꮡt1);
+        if (!d.popElement(Ꮡt1)) {
             return (default!, d.err);
         }
         t = t1;

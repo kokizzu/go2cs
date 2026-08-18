@@ -16331,6 +16331,14 @@ direction as descriptor cargo the way array dims are carried, which no measured 
 truthful, and one no consumer reads must not be invented). No package on the validated roster
 observes it; `text/template` is not on the roster, only `text/template/parse`.
 
+**A measured consumer now exists, and it is DISCLOSED rather than papered over (2026-08-18).**
+`internal/reflectlite`'s own suite reads the direction three ways — `TestAssignableTo`'s
+`<-chan int → chan int` row (want false, the bridge answers true), and `TestTypes`/`TestSetValue`
+stringifying a `chan<- string` slot (want `chan<- string`, the bridge renders `chan string`). All
+three are pinned in the package's `go2cs_test_disclosures.json` as class `chan-direction`, and the
+package validates 27+3/30 around them. Whoever takes the direction-as-descriptor-cargo arc this
+section names inherits three measured repros and retires the disclosure class with it.
+
 (Guarded by the `ReflectConvertAssignable` behavioral test, extended from the `ConvertibleTo`
 recursions to Go's full assignability rule: both gates of the unnamed↔named clause including the
 two-defined-types negative, the interface clause in both directions, the struct arm against a
@@ -16340,6 +16348,68 @@ can truthfully produce. 34 rows, compared line for line against `go run`, measur
 the struct and func arms reported `true` where Go reports `false`.
 `GolibTests.GoStructLayoutTests.EmbeddedField_IsDistinguishableFromADeclaredFieldOfTheSameNameAndType`
 pins the projection flag the struct arm stands on.)
+
+### The reflectlite MINI-BRIDGE mirrors reflect one layer down — and the closure that validated it landed five rules in SHARED machinery
+
+`internal/reflectlite` is Go's reflect one layer down, and its bridge follows one doctrine:
+**mirror `reflect`'s hand-owns over the SAME golib machinery, so the two layers cannot disagree**
+— `valueInterface` mirrors `packInterfaceValue`, `rtype.PkgPath` answers `GoReflect.GoPackagePath`,
+and the `AssignableTo` hand-own retired to Go's own literal body over bridged `implements` +
+`haveIdenticalUnderlyingType` exactly as `reflect`'s did (the identity walk's helpers are compact
+mirrors in `type_impl.cs`, reading the same `GoFields`/`TryFuncShape`/`GoImplements` projections).
+The suite validates **27 matched + 2 skip-parity + 3 disclosed (`chan-direction`) of 30**, and
+closing it surfaced five rules that belong to EVERY consumer of the bridge, not to reflectlite:
+
+- **Field order is Go DECLARATION order, not CLR metadata order.** go2cs-gen mints every embed's
+  `ʗ` backing field in a GENERATED partial, and partial parts concatenate — so a struct whose Go
+  declaration embeds first carries its embed LAST in metadata. `GoFields` (and therefore the
+  offsets table, `Field(i)`, fmt's `%v` walk, json's member order) reorders by the generator's
+  ALL-FIELDS constructor, whose parameters carry the declaration order — applied exactly when an
+  embed is present and the parameter names form a bijection with the projected field names.
+  (`GoStructLayoutTests.FieldOrder_IsGoDeclarationOrder_NotMetadataOrder`.)
+- **Go's UNEXPORTED-method rule joined the structural implements probe.** Two same-named
+  unexported methods from different packages are DIFFERENT methods, so `ast.Expr`'s `exprNode()`
+  marker is satisfiable only from `go/ast` — `StructurallyImplements` compares the interface
+  method's declaring package against the candidate extension method's declaring package class
+  (`GoReflect.GoPackageClassPath`; a `-tests` whitebox bridge class carries the production
+  [GoPackage] stamp and counts as the production package). Stated residual: a PROMOTED method's
+  candidate is the generator's wrapper in the embedding package, so a cross-package embed
+  satisfying a foreign marker interface answers false — the conservative direction.
+  (`GoUnexportedMethodPackageTests`.)
+- **A nil FUNC crossing into interface space keeps its type** — `GoReflect.CanonicalNilFunc`, the
+  delegate-shaped half of the one-nil-encoding rule. A delegate's nil IS `null`: right in every
+  func-typed slot, type-erasing inside an interface, where Go packs (type=func-type, value=nil).
+  The carrier is minted ONLY at the eface boundary (both packers) and resolved away by every
+  read-back path — dynamic type, type assertion (succeeds against exactly its own delegate type
+  with the null delegate), marshalling (stores as null), nilness.
+  (`PointerNilPredicateTests.CanonicalNilFuncCarriesItsTypeAndResolvesAwayOnEveryReadBack`.)
+- **One nilness, one home**: `GoReflect.IsNilGoValue` (moved from reflect's private
+  `isNilGoValue`) is the single boxed-value nilness — structural pointer predicate, map
+  representational nilness, the generated `== nil` operator probe — read by `reflect.Value.IsNil`,
+  reflectlite's mirror, and the interface arm of both.
+- **`GoTypeName` grew three arms** the suite measured: a generic INSTANTIATION renders Go's
+  bracket form with IMPORT-PATH-qualified arguments (`B[internal/reflectlite_test.A]` — what
+  `Name()`'s trim-at-the-last-dot-outside-brackets recovers), an anonymous-INTERFACE lift renders
+  structurally exactly as the struct lift does, and a pointer descriptor's dims thread to the
+  pointee (`*[10]int`, the same unshifted-cargo rule `Elem()` applies).
+  (`GoTypeDefinednessTests`.)
+
+**The `*_impl_test.cs` convention** is the piece that made the export_test surface hand-ownable:
+`export_test.go` hands the suite raw `Value{typ, ptr, flag}` construction over descriptor
+downcasts — unbridgeable literally — so `Field`/`TField`/`Zero` are registry hand-owns whose
+implementation lives in `export_impl_test.cs`, the first TEST-file companion. The `_test.cs`
+suffix keeps it under the production csproj's EXISTING test-artifact exclusion (no template
+change, no corpus churn); `testConversion` globs `*_impl_test.cs` into the tests project's
+compile items and the conversion digest. The companion mirrors `reflect`'s hand-owned
+`Value.Field`/`Zero` over `GoFields`/`FieldAliasBox`/`ZeroValueOf`, and `TField` hands the
+LITERAL `StructFieldType` the SYNTHESIZED `abi.StructType()` — the specialization section below —
+so the type-side and value-side walks read one projection.
+
+(Two converter emission rules landed with the closure, guarded by `structFieldEmission_test.go`:
+a PARENTHESIZED array field type — `x ([32]int32)` — keeps its `= new(N)` initializer through
+`ast.Unparen`, and the delegate lowering's parameter name-stripping shares
+`convertToCSResultList`'s rule — a leading token is a name only when it is a plain identifier
+that is not a type-leading keyword, so a bare `chan *T` parameter keeps its channel layer.)
 
 ### `abi.Type`'s SPECIALIZATIONS are synthesized, not downcast — `StructType()` / `ArrayType()`
 

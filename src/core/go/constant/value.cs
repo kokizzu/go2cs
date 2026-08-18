@@ -800,7 +800,8 @@ public static Value Make(any x) {
     case bool xΔ1: {
         return ((boolVal)xΔ1);
     }
-    case @string xΔ1: {
+    case @string xΔ1ᴛ1: {
+        ref var xΔ1 = ref heap(xΔ1ᴛ1, out var ᏑxΔ1);
         return new stringValжValue(Ꮡ(new stringVal(s: xΔ1)));
     }
     case int64 xΔ1: {
