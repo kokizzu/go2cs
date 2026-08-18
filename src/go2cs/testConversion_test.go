@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -2894,7 +2895,7 @@ func TestTestVariantPinsProductionTypeAgainstTestMethodCollision(t *testing.T) {
 	testMethodRenames = make(map[types.Object]bool)
 	t.Cleanup(func() { testMethodRenames = nil })
 
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", productionSeed{}, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2914,7 +2915,7 @@ func TestTestVariantPinsProductionTypeAgainstTestMethodCollision(t *testing.T) {
 		t.Fatalf("the production TYPE must keep its bare name in every reference:\n%s", exportCs)
 	}
 
-	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", nil, nil, options); err != nil {
+	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", productionSeed{}, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2959,7 +2960,7 @@ func TestTestVariantRenamesTestMethodShadowingDotImportedFunction(t *testing.T) 
 	t.Cleanup(func() { testMethodRenames = nil })
 
 	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
-	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", nil, nil, options); err != nil {
+	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", productionSeed{}, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3029,7 +3030,7 @@ func TestTestVariantRenamesTestFuncCollidingWithProductionMethodReceiver(t *test
 	t.Cleanup(func() { testMethodRenames = nil })
 
 	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", productionSeed{}, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3094,7 +3095,7 @@ func TestTestVariantPinsProductionLiftedTypeNames(t *testing.T) {
 	// Unseeded (what an EXTERNAL variant gets — its own `<pkg>_test_package` class is a separate
 	// scope): the lift takes the base name. This half is what makes the seeded half meaningful.
 	unseeded := t.TempDir()
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), unseeded, "go", nil, nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), unseeded, "go", productionSeed{}, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3109,7 +3110,7 @@ func TestTestVariantPinsProductionLiftedTypeNames(t *testing.T) {
 	seeded := t.TempDir()
 	seed := NewHashSet([]string{baseName})
 
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), seeded, "go", seed, nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), seeded, "go", productionSeed{liftedTypeNames: seed}, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3120,6 +3121,343 @@ func TestTestVariantPinsProductionLiftedTypeNames(t *testing.T) {
 	}
 	if !strings.Contains(seededCs, "partial struct "+steppedName+" {") {
 		t.Fatalf("the test-side lift must step to %q:\n%s", steppedName, seededCs)
+	}
+}
+
+// X1 guard (production-pinned BLANK-IMPORT FORCE hooks): a package blank-imported by BOTH a
+// production file and an internal `_test.go` gets ONE `[GoInit] initᴛᴛblankImportꓸ…` hook per
+// assembly, and under the recompile model the production file — which this run does not rewrite —
+// is the half that owns it. Before the seed the counter of "already forced" paths restarted for the
+// test emission pass, so `crypto/x509`'s x509.go and x509_test.go each emitted
+// `initᴛᴛblankImportꓸcryptoꓸsha256` and `…sha512` into the one `x509_package` partial class: CS0111
+// ×2, two of the five errors that stood between that package and any operational verdict.
+//
+// Both directions are pinned. UNSEEDED the test half legitimately emits its own hook (that is the
+// external variant, whose `<pkg>_test_package` is a separate class, and every reference-model
+// suite, where production is a separate ASSEMBLY whose hook cannot be reached); SEEDED it must
+// stay silent, because the production file already forces the import.
+func TestTestVariantPinsProductionBlankImportForces(t *testing.T) {
+	dir := t.TempDir()
+
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/blankimport\n\ngo 1.23\n",
+		// The x509 shape: a production file whose blank import exists purely for the imported
+		// package's init side effects.
+		"value.go": "package blankimport\n\nimport _ \"crypto/sha256\"\n\nfunc Use() int { return 1 }\n",
+		// …and an internal test file repeating it, which is what Go test files ordinarily do when
+		// they exercise the same registrations.
+		"value_test.go": "package blankimport\n\nimport _ \"crypto/sha256\"\n\nfunc probe() int { return Use() }\n",
+	})
+
+	internal, _ := loadBothTestVariantsForDir(t, dir)
+	if internal == nil {
+		t.Fatal("internal test variant was not loaded")
+	}
+
+	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
+	hook := blankImportInitName("crypto/sha256")
+
+	unseeded := t.TempDir()
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), unseeded, "go", productionSeed{}, options); err != nil {
+		t.Fatal(err)
+	}
+
+	if unseededCs := readConvertedTestFile(t, unseeded, "value_test.cs"); !strings.Contains(unseededCs, hook) {
+		t.Fatalf("an unseeded test emission must force the blank import itself (%s):\n%s", hook, unseededCs)
+	}
+
+	seeded := t.TempDir()
+	seed := productionSeed{blankImportForces: NewHashSet([]string{"crypto/sha256"})}
+
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), seeded, "go", seed, options); err != nil {
+		t.Fatal(err)
+	}
+
+	if seededCs := readConvertedTestFile(t, seeded, "value_test.cs"); strings.Contains(seededCs, hook) {
+		t.Fatalf("the production half already forces %q — a second hook in the same class is CS0111:\n%s", "crypto/sha256", seededCs)
+	}
+}
+
+// X2 guard (production-pinned BLANK-IDENTIFIER counter): C# has no package-scope discard, so every
+// blank package-level `_` declaration becomes a generated `_ᴛNʗ` field in the `<pkg>_package` class.
+// The counter behind N is package state, and it restarted for the test emission pass — so
+// `crypto/x509`'s pem_decrypt.cs (`_ᴛ1ʗ`, a blank const in an iota block) and oid_test.cs
+// (`var _ encoding.BinaryMarshaler = OID{}`) declared the same field name in the same class: CS0102,
+// the third of that package's compile roots.
+//
+// The scope that matters is the COMPILATION, not one emission pass. Pinned in both directions, as
+// X1: unseeded the test half takes the first ordinal; seeded it continues from the production one.
+func TestTestVariantContinuesProductionBlankIdentifierCounter(t *testing.T) {
+	dir := t.TempDir()
+
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/blankident\n\ngo 1.23\n",
+		// pem_decrypt.go's shape: a blank const heading an iota block.
+		"value.go": "package blankident\n\ntype Kind int\n\nconst (\n\t_ Kind = iota\n\tFirst\n)\n\n" +
+			"func Use() Kind { return First }\n",
+		// oid_test.go's shape: a blank package-level var asserting an interface satisfaction.
+		"value_test.go": "package blankident\n\nvar _ = Use\n\nfunc probe() Kind { return Use() }\n",
+	})
+
+	internal, _ := loadBothTestVariantsForDir(t, dir)
+	if internal == nil {
+		t.Fatal("internal test variant was not loaded")
+	}
+
+	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
+	firstName := "_" + TempVarMarker + "1" + CapturedVarMarker
+	steppedName := "_" + TempVarMarker + "2" + CapturedVarMarker
+
+	unseeded := t.TempDir()
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), unseeded, "go", productionSeed{}, options); err != nil {
+		t.Fatal(err)
+	}
+
+	if unseededCs := readConvertedTestFile(t, unseeded, "value_test.cs"); !strings.Contains(unseededCs, firstName) {
+		t.Fatalf("an unseeded blank declaration must take the first ordinal %q:\n%s", firstName, unseededCs)
+	}
+
+	// The production conversion claimed `_ᴛ1ʗ` for its own blank const; the test half must step past it.
+	seeded := t.TempDir()
+	seed := productionSeed{globalTempVarCounts: map[string]int{"_": 1}}
+
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), seeded, "go", seed, options); err != nil {
+		t.Fatal(err)
+	}
+
+	seededCs := readConvertedTestFile(t, seeded, "value_test.cs")
+
+	if strings.Contains(seededCs, firstName) {
+		t.Fatalf("a test-side blank declaration must not re-mint the production-pinned %q:\n%s", firstName, seededCs)
+	}
+	if !strings.Contains(seededCs, steppedName) {
+		t.Fatalf("the test-side blank declaration must step to %q:\n%s", steppedName, seededCs)
+	}
+}
+
+// X3 guard (the B2c alias scan covers what the TEST PROJECT COMPILES): the tests csproj sets
+// DisableTransitiveProjectReferences, so every assembly its compilation names must be a DIRECT
+// reference. The alias scan is what finds the ones no import list mentions — but it read only the
+// test-emitted files, and under the recompile model the PRODUCTION `.cs` are compile items too.
+//
+// `crypto/x509` is the measured case: x509.cs and pem_decrypt.cs emit `using hash = hash_package;`
+// because crypto.Hash.New() RETURNS hash.Hash, so `hash` appears in no import list of x509 and in
+// no reference of its own production csproj — which compiles anyway, since it does not disable
+// transitive references. The test build failed CS0246 ×2 inside those production files.
+//
+// The model gate is half the guard: under the reference model the production sources compile in
+// their own project, so scanning them would add references the test project does not need.
+func TestAliasScanCoversRecompiledProductionSources(t *testing.T) {
+	dir := t.TempDir()
+
+	// A production emission carrying the single-segment, UNROOTED alias form, which is exactly how
+	// a package reached only through another package's SIGNATURE is spelled.
+	if err := os.WriteFile(filepath.Join(dir, "value.cs"), []byte("using hash = hash_package;\r\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// The test emission names nothing beyond the package under test — the alias's only route into
+	// the reference set is the production file.
+	if err := os.WriteFile(filepath.Join(dir, "value_test.cs"), []byte("using static go.value_package;\r\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	infoPath := filepath.Join(dir, testPackageInfoFileName)
+	if err := os.WriteFile(infoPath, []byte("// <ExportedTypeAliases>\r\n// </ExportedTypeAliases>\r\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	previous := importPackageDirs
+	t.Cleanup(func() { importPackageDirs = previous })
+
+	// `hash` is in the package's transitive closure — reachable, and therefore resolvable as a
+	// project reference — but is not a direct dependency, which is the whole shape of the defect.
+	importPackageDirs = map[string]importedPackageMeta{
+		"hash": {Dir: filepath.Join(dir, "hash"), Name: "hash"},
+	}
+
+	productionFiles := []string{"value.cs"}
+	testFiles := []string{"value_test.cs"}
+
+	recompiled := aliasReferenceImports(
+		testProjectAliasScanFiles(testProjectRecompile, dir, infoPath, testFiles, productionFiles),
+		"example/value", []string{})
+
+	if !slices.Contains(recompiled, "hash") {
+		t.Fatalf("a recompiled production source's alias target must become a direct test reference, got %v", recompiled)
+	}
+
+	referenced := aliasReferenceImports(
+		testProjectAliasScanFiles(testProjectReference, dir, infoPath, testFiles, productionFiles),
+		"example/value", []string{})
+
+	if slices.Contains(referenced, "hash") {
+		t.Fatalf("the reference model binds production through its own project — its aliases are not the test project's references, got %v", referenced)
+	}
+}
+
+// X4 guard (an L3 package's PER-GOOS production sources are compile items of a recompile-model test
+// project): a package whose emitted C# varies by GOOS keeps the varying files in `<goos>/` and its
+// production csproj compiles one folder via `$(GoTargetOS)/*.cs`. The test project lists compile
+// items EXPLICITLY, so the same selection has to be made when enumerating them — and it was not, so
+// the recompiled half silently lost the whole platform folder.
+//
+// `crypto/x509` is the corpus's only L3 package on the recompile model, which is why nothing caught
+// this: every other L3 suite takes the reference model, where the production ASSEMBLY carries its
+// own per-GOOS half. The cost when it did bite was 187 errors — `Verify`, `VerifyOptions`' fields,
+// `loadSystemRoots`, `domainToReverseLabels`, every error type's `Error()` — all reported against
+// the TEST files rather than the missing folder.
+//
+// Three things are pinned: the target folder is taken, a NON-target folder is not (it is a
+// different build), and the per-GOOS `package_init.cs` is included — a `-tests` run rewrites it to
+// declare the `initᴛᴛtests()` partial the internal variant implements, and a declaration whose
+// implementation is in another compilation is no hook at all.
+func TestProductionCSFilesTakeTheTargetPlatformFolder(t *testing.T) {
+	dir := t.TempDir()
+
+	for name, contents := range map[string]string{
+		"value.cs":                "partial class value_package {}\r\n",
+		"value_test.cs":           "partial class value_package {}\r\n",
+		"package_info.cs":         "// metadata\r\n",
+		"package_test_info.cs":    "// metadata\r\n",
+		"windows/verify.cs":       "partial class value_package {}\r\n",
+		"windows/package_init.cs": "partial class value_package {}\r\n",
+		"windows/package_info.cs": "// metadata\r\n",
+		"linux/verify.cs":         "partial class value_package {}\r\n",
+	} {
+		path := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(contents), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	files, err := productionCSFiles(dir, "windows")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{"value.cs", "windows/verify.cs", "windows/package_init.cs"} {
+		if !slices.Contains(files, want) {
+			t.Fatalf("the target platform's production sources must be compile items, %q missing from %v", want, files)
+		}
+	}
+	for _, unwanted := range []string{"linux/verify.cs", "windows/package_info.cs", "package_info.cs", "value_test.cs", "package_test_info.cs"} {
+		if slices.Contains(files, unwanted) {
+			t.Fatalf("%q is not a recompiled production source, got %v", unwanted, files)
+		}
+	}
+
+	// A FLAT package is unchanged by the platform selection — the same enumeration with no folder
+	// to take, which is what keeps every non-L3 suite byte-identical.
+	flat := t.TempDir()
+	if err := os.WriteFile(filepath.Join(flat, "value.cs"), []byte("partial class value_package {}\r\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	flatFiles, err := productionCSFiles(flat, "windows")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(flatFiles) != 1 || flatFiles[0] != "value.cs" {
+		t.Fatalf("a flat package's production set must be its flat sources alone, got %v", flatFiles)
+	}
+}
+
+// X5 guard (production-pinned `func init()` ORDINALS): Go allows any number of `func init()` per
+// package and C# needs a distinct name for each, so the first takes `init` and the rest `initΔN`.
+// The ordinal counter is package state and it restarted for the test emission pass, so an internal
+// `_test.go`'s own `func init()` claimed the bare `init` a production file in the same class had
+// already declared — `crypto/x509`'s windows/root_windows.cs against x509_test.go, CS0111.
+//
+// Same shape as X2's blank-identifier counter, and pinned the same way in both directions.
+func TestTestVariantContinuesProductionInitOrdinals(t *testing.T) {
+	dir := t.TempDir()
+
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod":   "module example/initord\n\ngo 1.23\n",
+		"value.go": "package initord\n\nvar n int\n\nfunc init() { n = 1 }\n\nfunc Use() int { return n }\n",
+		// A test file's own init — ordinary in Go, and it lands in the production class.
+		"value_test.go": "package initord\n\nvar probed int\n\nfunc init() { probed = Use() }\n",
+	})
+
+	internal, _ := loadBothTestVariantsForDir(t, dir)
+	if internal == nil {
+		t.Fatal("internal test variant was not loaded")
+	}
+
+	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
+	bareName := "void init()"
+	steppedName := "void init" + ShadowVarMarker + "1()"
+
+	unseeded := t.TempDir()
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), unseeded, "go", productionSeed{}, options); err != nil {
+		t.Fatal(err)
+	}
+
+	if unseededCs := readConvertedTestFile(t, unseeded, "value_test.cs"); !strings.Contains(unseededCs, bareName) {
+		t.Fatalf("an unseeded test init must take the bare name:\n%s", unseededCs)
+	}
+
+	seeded := t.TempDir()
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), seeded, "go", productionSeed{initFuncs: 1}, options); err != nil {
+		t.Fatal(err)
+	}
+
+	seededCs := readConvertedTestFile(t, seeded, "value_test.cs")
+
+	if strings.Contains(seededCs, bareName) {
+		t.Fatalf("a production file in this class already declares `init` — a second is CS0111:\n%s", seededCs)
+	}
+	if !strings.Contains(seededCs, steppedName) {
+		t.Fatalf("the test-side init must step to %q:\n%s", steppedName, seededCs)
+	}
+}
+
+// X6 guard (the production static-ctor probe follows LAYOUT L3): the internal variant shares the
+// production `<pkg>_package` class, which has exactly one static-constructor slot. When the
+// production package_init.cs exists it owns that slot and the test side implements its erasable
+// `initᴛᴛtests()` partial hook instead of declaring a second ctor — and the probe deciding which
+// shape to emit is a file-exists check that looked FLAT only.
+//
+// L3 keeps package_init.cs in the package's per-GOOS folder (Go's InitOrder differs when the file
+// set does), so an L3 package answered "no production ctor" and got a SECOND
+// `static <pkg>_package()` emitted beside the real one. Invisible until crypto/x509's platform
+// folder began compiling into its test assembly at all (X4), then immediately CS0111.
+func TestProductionInitProbeFollowsPlatformLayout(t *testing.T) {
+	for _, layout := range []struct {
+		name    string
+		initDir string
+	}{
+		{name: "flat", initDir: ""},
+		{name: "L3", initDir: "windows"},
+	} {
+		t.Run(layout.name, func(t *testing.T) {
+			dir := t.TempDir()
+			target := filepath.Join(dir, layout.initDir)
+
+			if err := os.MkdirAll(target, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(target, PackageInitFileName), []byte("// ctor\r\n"), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			resolved := platformLayoutPath(dir, "windows", PackageInitFileName)
+
+			if _, err := os.Stat(resolved); err != nil {
+				t.Fatalf("the %s layout's production package_init.cs must be found, probed %q: %v", layout.name, resolved, err)
+			}
+		})
+	}
+
+	// A package with no production static ctor at all must still answer "absent" — the test side
+	// owns the slot there, and a probe answering "present" would emit a hook implementation with no
+	// declaration to implement.
+	empty := t.TempDir()
+	if _, err := os.Stat(platformLayoutPath(empty, "windows", PackageInitFileName)); err == nil {
+		t.Fatal("a package with no package_init.cs must probe as absent")
 	}
 }
 
@@ -3600,7 +3938,7 @@ func TestTestVariantBoxAccessorNamesBridgeDeclaringClass(t *testing.T) {
 	testMethodRenames = make(map[types.Object]bool)
 	t.Cleanup(func() { testMethodRenames = nil })
 
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", productionSeed{}, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3666,7 +4004,7 @@ func TestFunctionLocalTypesShareOneAccessibility(t *testing.T) {
 	testMethodRenames = make(map[types.Object]bool)
 	t.Cleanup(func() { testMethodRenames = nil })
 
-	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", nil, nil, options); err != nil {
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", productionSeed{}, options); err != nil {
 		t.Fatal(err)
 	}
 

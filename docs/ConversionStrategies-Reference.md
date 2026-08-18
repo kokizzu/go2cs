@@ -3604,6 +3604,82 @@ type, and the receiver restriction) converter unit tests. `go/scanner` **validat
 not bank — `TestAll` asserts the GO source file's own extension and line numbers, which the converted
 program does not carry; see *`runtime.Caller` works by severing the FUNNEL* below.
 
+### Under the RECOMPILE model the test half CONTINUES the production emission (the `productionSeed`)
+
+The `recompile` model is the only one where the converted `_test.go` files land in the **same C# class**
+as production sources this run does not rewrite. Everything the converter numbers or claims per package
+is therefore a shared, immutable name supply, and every counter that restarts for the test emission pass
+re-mints a name already on disk. Two such supplies were already pinned — lifted type names
+(`productionLiftedTypeNames`) and hoisted big-constant ordinals (`productionHoistedConstOrdinals`) — and
+the same rule turned out to be owed by three more. All five now travel in one `productionSeed` struct,
+captured in `convertTestVariants` from the production run's live state (it ran moments earlier in the
+same process) **before** the first variant's `resetPackageState`, and installed by `convertTestVariant`
+for the **INTERNAL** variant under the recompile model alone:
+
+| Supply | Emitted name | The collision |
+|:--|:--|:--|
+| lifted type names | `Δtypeᴛ1` | two lifts of differently-shaped anonymous structs (encoding/gob) |
+| hoisted big-constant ordinals | `maskᶜ1` | two `const mask = <big>` hoists |
+| blank-import force hooks | `initᴛᴛblankImportꓸcryptoꓸsha256` | production and test files repeating one blank import |
+| the blank-identifier counter | `_ᴛ1ʗ` | a blank package-level `_` in each half |
+| `func init()` ordinals | `init` / `initΔ1` | production and test files each declaring `func init()` |
+
+The last three are `crypto/x509`'s, and they are ordinary Go, not exotica. `x509.go` and `x509_test.go`
+both `import _ "crypto/sha256"` and `_ "crypto/sha512"` — a test repeating a production blank import is
+what a test that exercises those registrations does — and each half emitted the same
+`[GoInit] internal static void initᴛᴛblankImportꓸcryptoꓸsha256()` into `x509_package`: CS0111. The
+`x509_package` class likewise already held `_ᴛ1ʗ` for `pem_decrypt.go`'s blank const heading an iota
+block when `oid_test.go`'s `var _ encoding.BinaryMarshaler = OID{}` re-minted it (CS0102), and
+`root_windows.go`'s `func init()` when `x509_test.go`'s own `init` claimed the bare name again (CS0111).
+
+The blank-import hook is the one whose OWNERSHIP is worth stating rather than merely its uniqueness:
+exactly one hook per (assembly, imported package) — Go initializes an imported package once per program
+and a .NET module constructor runs once per assembly — and the **production** half owns it whenever its
+file is in the compilation, because that file is the one a `-tests` run cannot rewrite. The seed is
+skipped for the EXTERNAL variant and for both reference models for one reason, stated once: there the
+names land in a different class (`<pkg>_test_package`, the friend bridge) or a different assembly
+(production, referenced), so they may be reused freely and seeding would only churn banked emissions.
+
+Guarded by `TestTestVariantPinsProductionBlankImportForces`,
+`TestTestVariantContinuesProductionBlankIdentifierCounter` and
+`TestTestVariantContinuesProductionInitOrdinals`, each pinning both directions — unseeded the test half
+legitimately takes the first name, seeded it must step past the production one.
+
+### A recompile-model test project compiles the production sources — so it owes their references and their per-GOOS half
+
+Two more `crypto/x509` roots, both of the same shape: the recompile model makes the production `.cs`
+compile items of the test project (`writeTestProject`), and two places that enumerate or probe those
+files did not describe what actually compiles.
+
+**The B2c alias scan read only the test-emitted files.** The tests csproj sets
+`DisableTransitiveProjectReferences`, so every assembly the compilation names must be a DIRECT reference,
+and the alias scan is what finds the ones no import list mentions (see the reference-closure rule above).
+Under the recompile model a production file's `using` aliases are references the TEST project owns — and
+they were never scanned. The omission hides in the ordinary case, because a production file's aliases are
+usually its own package's direct imports, which the import-derived set already carries; it bites where the
+alias names a package reached only transitively. `x509.cs` and `pem_decrypt.cs` emit
+`using hash = hash_package;` because `crypto.Hash.New()` RETURNS `hash.Hash` — `hash` is in no import list
+of `crypto/x509` and in no reference of its own production csproj, which compiles anyway precisely because
+it does *not* disable transitive references. The test build failed **CS0246 ×2 inside the production
+files**. `testProjectAliasScanFiles` now names the scan set as "what the test project compiles", with the
+production half included under the recompile model and excluded under the reference models (there those
+sources compile in their own project and their aliases are that project's concern). Guarded by
+`TestAliasScanCoversRecompiledProductionSources`, which pins the model gate as well as the find.
+
+**The enumeration and the static-ctor probe were both flat-only, and layout L3 is not flat.** An L3
+package keeps its platform-varying sources in `<goos>/` and its production csproj compiles one folder via
+`$(GoTargetOS)/*.cs`; a test project lists compile items explicitly, so the same selection has to be made
+when enumerating them (`productionCSFiles`) and when asking whether a production `package_init.cs` exists
+(`platformLayoutPath`, the probe that decides whether the test side implements the erasable
+`initᴛᴛtests()` hook or declares a static constructor of its own). `crypto/x509` is the corpus's only L3
+package on the recompile model — every other L3 suite takes a reference model, where the production
+ASSEMBLY carries its per-GOOS half — so neither gap had ever been exercised. Together they cost 187
+errors reported against the TEST files rather than the missing folder (`Verify`, `VerifyOptions`' fields,
+`loadSystemRoots`, `domainToReverseLabels`, every error type's `Error()`), plus a second
+`static x509_package()` beside the real one. Guarded by
+`TestProductionCSFilesTakeTheTargetPlatformFolder` (target folder taken, non-target folder not, per-GOOS
+`package_init.cs` included, flat package unchanged) and `TestProductionInitProbeFollowsPlatformLayout`.
+
 ### An Example/Benchmark-ONLY test file is dropped from the compile set (Phase-4D file exclusion)
 
 `Example` and `Benchmark` declarations are uniformly **Phase-4D-deferred** — `discoverTestDeclarations` records them in the manifest with status `unsupported` ("… execution is deferred to Phase 4D") and the differential oracle filters them from both sides (`eligibleTerminalTestResults` admits only `included` `test`-kind declarations). The **option-a ruling** (2026-07-24) extends that deferral from the *declaration* to the *file*: a `_test.go` file is dropped from the `-tests` conversion/compile set (`selectCompileExcludedTestFiles`) iff **both**
