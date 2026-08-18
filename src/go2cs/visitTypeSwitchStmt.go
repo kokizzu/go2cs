@@ -46,6 +46,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 	}
 
 	var targetIdent, typeVar, guardExpr, operandExpr string
+	var guardIdent *ast.Ident
 	assign := typeSwitchStmt.Assign
 
 	// Check if the assignment statement is a ExprStmt
@@ -53,6 +54,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 		operandExpr = v.convExpr(exprStmt.X, nil)
 	} else {
 		assignStmt := assign.(*ast.AssignStmt)
+		guardIdent, _ = assignStmt.Lhs[0].(*ast.Ident)
 		targetIdent = v.convExpr(assignStmt.Lhs[0], nil)
 		typeVar = v.convExpr(assignStmt.Rhs[0], nil)
 
@@ -202,6 +204,30 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 
 			if multiTypeCase {
 				bindIdent = "_"
+			}
+
+			// A single-type binding whose PER-CASE object escapes to the heap (its address is
+			// taken into a position that cannot ref-lower — `d.translate(&t1.Name, …)` handed to
+			// a ж<Name> method parameter, the encoding/xml Token() lost write) cannot be declared
+			// by the C# pattern variable directly: a pattern variable is not a ref local, so the
+			// body's `&t1.…` emission would reference a box that was never declared. Bind the
+			// pattern to a uniquely-numbered temp and open the clause body with the entry-time
+			// box pattern proven by visitFuncDecl's escaping-parameter preamble and
+			// selectCommBinding: `ref var t1 = ref heap(t1ᴛN, out var Ꮡt1);`. The gate is
+			// identHasHeapBox — the exact predicate the body's `&name` emission uses — so the
+			// box is declared iff it is referenced. The alias/box names mirror selectCommBinding:
+			// the value alias takes the SANITIZED analyzed name, the box the raw analyzed name
+			// behind the Ꮡ prefix. Multi-type and default arms re-bind at the guard's INTERFACE
+			// type, which the escape-analysis narrowing never marks, so only this arm changes.
+			boxBindingDecl := ""
+
+			if !multiTypeCase && guardIdent != nil && len(bindIdent) > 0 && bindIdent != "_" {
+				if implicitVar, ok := v.info.Implicits[caseClause].(*types.Var); ok && v.identHasHeapBox(implicitVar, implicitVar.Type()) {
+					rawName := v.getIdentName(guardIdent)
+					tempName := getGlobalTempVarName(rawName)
+					bindIdent = tempName
+					boxBindingDecl = fmt.Sprintf("ref var %s = ref heap(%s, out var %s%s);", getSanitizedIdentifier(rawName), tempName, AddressPrefix, rawName)
+				}
 			}
 
 			for i, expr := range caseClause.List {
@@ -382,6 +408,13 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 					v.outputBuilder.WriteString(strings.TrimRight(caseExpr, " "))
 					v.outputBuilder.WriteString(": {")
 					v.indentLevel++
+
+					// The escaping binding's identity box (see boxBindingDecl above): the pattern
+					// bound a temp; alias it into the heap box the body's `&name` sites reference.
+					if boxBindingDecl != "" {
+						v.outputBuilder.WriteString(v.newline)
+						v.writeOutput("%s", boxBindingDecl)
+					}
 
 					// Reset per case: an EMPTY Go case body (`case *ActionNode:` with no statements,
 					// text/template/parse's IsEmptyTree) runs no visitStmt, so lastStatementWasReturn

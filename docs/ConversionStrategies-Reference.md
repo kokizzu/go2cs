@@ -3154,6 +3154,80 @@ method-body, value-embed-promoted, composite-literal, and return positions plus 
 pointer-hop negative control, all output-compared vs Go; the one churned golden
 `UnsafePointerParamPin` — `&h.v` under `unsafe.Pointer` — re-verified.)
 
+### A capture-mode method called on a FIELD CHAIN of a local is an address-of too
+The selector arm above sees the explicit `&x.field`; Go also takes that address **implicitly**
+when a pointer-receiver method is called on the field — `x.i.Add(delta)` is `(&x.i).Add(delta)`.
+For a method whose receiver binds `this ref T` the emission needs nothing: C# binds the extension
+on `x.i` itself, a genuine ref into the local. A **capture-mode** (direct-ж) method takes `ж<T>`
+instead, so the call site must materialize a real pointer — and the escape trigger that boxes the
+local recognized only the method called on the var ITSELF (`i.Store(10)`), never on a field chain
+rooted at it. Unboxed, emission fell to the `Ꮡ(x).of(…)` copy-box: every atomic write landed in a
+fresh copy per occurrence, and every read minted another (sync/atomic's entire 43-divergence
+Phase-4 residual — `x.i.Add(delta)` returned the right value while `x.i` read back zero).
+`bodyCallsCaptureModeMethodOnObject` now accepts a value-field chain rooted at the target
+(`selectorChainRootsAtIdent`, the same root walk the explicit-`&` arm uses, whose
+`Selection.Indirect()` gate keeps a pointer-crossing chain excluded), so the local heap-boxes and
+the call routes through its identity box:
+
+```go
+var x struct{ i atomic.Int32 }
+v := x.i.Add(5)                    // Go: v=5, and x.i reads 5
+```
+```csharp
+ref var x = ref heap(new struct_x(), out var Ꮡx);
+var v = Ꮡx.of(struct_x.Ꮡi).Add(5); // aliases x's box — x.i reads the write back
+```
+
+The analysis trigger and the emission-side re-verification (`paramBoxReasonHolds`) read the SAME
+predicate, so value parameters take the widening in the same motion (`func f(x holder)` calling
+`x.i.Store(3)` boxes `x` at entry, `ref var x = ref heap(xʗp, out var Ꮡx)`). A pointer-receiver
+method that is NOT capture-mode stays untouched — `w.c.inc()` binds `ref w.c` in place, and
+promoting for it would heap-box every local that calls any pointer-receiver method. (Guarded by
+`CaptureModeFieldAddress` — local, value parameter, type-switch binding and lifted anonymous
+struct, plus the non-capture-mode control, all output-compared vs Go.)
+
+### A TYPE-SWITCH BINDING is escape-analyzed like any other local
+Every rule above reached a variable through `info.Defs` — and a type-switch guard has no object
+there (go/types: *"symbolic variables t in t := x.(type) … the corresponding objects are nil"*;
+the real binding is one implicit `*types.Var` PER CASE CLAUSE, in `info.Implicits`). So no
+address form on a type-switch binding was ever seen: `d.translate(&t1.Name, true)` handed a
+ж<Name> **method** parameter (a position Phase A never ref-lowers — §10.1 of
+`phase4/DESIGN-zh-box-reduction.md`) the `Ꮡ(t1).of(StartElement.ᏑName)` copy-box, and
+encoding/xml's Token() namespace translation wrote into a heap copy that `t = t1` then discarded
+— a shipped lost write, invisible to every compile gate because the copy READS correctly.
+
+The per-case objects now join both analyses: `performEscapeAnalysisForObject` runs the standard
+walk for each case clause's implicit var (body uses resolve to it through `info.Uses`, so every
+arm matches by object identity), and the ref-lowering locals census tracks the same category, so
+a binding whose every address-connected use feeds a lowered position still REVERTS to a plain
+stack local — the fixture shapes that already aliased correctly through a lowered `ref Name`
+parameter emit byte-identically. The analysis is deliberately narrowed to non-inherently-heap
+bound types: a binding bound at an interface (multi-type and `default` arms always are) is
+already a reference, and its no-entry state is load-bearing for the capture analysis.
+
+On the emission side a C# pattern variable cannot be a ref local, so an escaping binding binds
+the pattern to a uniquely-numbered temp and opens the clause with the entry-time box pattern
+proven by the escaping-parameter preamble and the select comm-clause binding:
+
+```go
+switch t1 := tok.(type) {
+case StartElement:
+    d.translate(&t1.Name, true)    // write must land in t1
+    t = t1                          // …because Go reads it back out
+```
+```csharp
+case StartElement t1ᴛ1: {
+    ref var t1 = ref heap(t1ᴛ1, out var Ꮡt1);
+    d.translate(Ꮡt1.of(StartElement.ᏑName), true);
+    t = t1;
+```
+
+The gate is `identHasHeapBox` — the exact predicate the body's `&name` emission consults — so the
+box is declared iff it is referenced, and a binding with no escaping use keeps today's direct
+pattern binding byte for byte. (Guarded by `TypeSwitchBindingAddress` — the xml shape through a
+ж-parameter method, a held `p := &t1.n` pointer, the direct `&t1` form, and the already-correct
+slice-element control `&t1.attr[i]`, all output-compared vs Go.)
+
 ### A PACKAGE-LEVEL function literal's own locals are analyzed too
 Every heap-box rule above is decided by the escape-analysis pass, and that pass reached a variable
 only through its declaring **function declaration**: the driver walked `*ast.FuncDecl` bodies and ran

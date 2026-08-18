@@ -247,6 +247,27 @@ func (v *Visitor) analyzeBodyDeclaredVars(body *ast.BlockStmt) {
 						v.performEscapeAnalysis(ident, body)
 					}
 				}
+
+				// The guard ident above resolves to NO object (go/types: "symbolic variables t in
+				// t := x.(type) … the corresponding objects are nil"), so the call is a no-op. The
+				// real bindings are one implicit *types.Var PER CASE CLAUSE, in info.Implicits —
+				// analyze each so an address-taken binding is heap-boxed like any other local
+				// (`&t1.Name` handed to a ж<Name> parameter wrote into a `Ꮡ(t1)` COPY box, the
+				// encoding/xml Token() lost write). Narrowed to non-inherently-heap types: a
+				// binding bound at an interface/slice/map type is already a reference and today's
+				// no-entry state is load-bearing for it (identEscapesHeap is read raw by the
+				// capture analysis), while the write-loss class is exactly the value-typed
+				// bindings. The same category joins the ref-lowering locals census
+				// (censusFuncLocals), so a binding whose every address-connected use feeds a
+				// lowered position still reverts to a plain stack local.
+				for _, stmt := range n.Body.List {
+					if caseClause, ok := stmt.(*ast.CaseClause); ok {
+						if implicitVar, ok := v.info.Implicits[caseClause].(*types.Var); ok &&
+							!isInherentlyHeapAllocatedType(implicitVar.Type()) {
+							v.performEscapeAnalysisForObject(implicitVar, body)
+						}
+					}
+				}
 			}
 		}
 		return true
@@ -661,17 +682,26 @@ func refLoweringLocalReverts(obj types.Object) bool {
 
 // Perform escape analysis on the given identifier within the specified block
 func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.BlockStmt) {
-	if parentBlock == nil {
-		return
-	}
-
-	// If analysis has already been performed, return
 	identObj := v.info.ObjectOf(ident)
 
 	if identObj == nil {
 		return // Could not find the object of ident
 	}
 
+	v.performEscapeAnalysisForObject(identObj, parentBlock)
+}
+
+// performEscapeAnalysisForObject is performEscapeAnalysis keyed by the resolved object — the
+// form a type-switch case binding needs: its defining ident is the shared guard (`t1 := x.(type)`),
+// whose ObjectOf is nil, while the real per-case *types.Var lives in info.Implicits keyed by the
+// case clause. Body uses resolve to that object through info.Uses, so every arm of the walk below
+// matches by object identity exactly as it does for a Defs-declared local.
+func (v *Visitor) performEscapeAnalysisForObject(identObj types.Object, parentBlock *ast.BlockStmt) {
+	if parentBlock == nil || identObj == nil {
+		return
+	}
+
+	// If analysis has already been performed, return
 	if _, found := v.identEscapesHeap[identObj]; found {
 		return
 	}
@@ -689,7 +719,7 @@ func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.Block
 		// `Ꮡ(l)` copy-boxes the slice HEADER, so every `*l = append(*l, …)` the method value
 		// performs lands in the copy and the caller's `l` never grows.
 		if packageCaptureModeBoxIdents != nil &&
-			(v.bodyCallsCaptureModeMethodOn(ident, parentBlock) || v.pointerMethodValueAddressTaken(identObj, parentBlock)) {
+			(v.bodyCallsCaptureModeMethodOnObject(identObj, parentBlock) || v.pointerMethodValueAddressTaken(identObj, parentBlock)) {
 			packageCaptureModeBoxIdents[identObj] = true
 		}
 
@@ -1012,8 +1042,10 @@ func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.Block
 	// A value var on which a capture-mode pointer-receiver method is called (e.g.
 	// `var i atomic.Int32; i.Store(10)`, or `var frontier orderEventList; frontier.Push(…)`)
 	// must be heap-boxed so the call can be routed through the ж overload — the only path that
-	// sets up the receiver box the method needs for `&recv.field`.
-	if !escapes && v.bodyCallsCaptureModeMethodOn(ident, parentBlock) {
+	// sets up the receiver box the method needs for `&recv.field`. The receiver operand may be
+	// the var itself or a value-field chain rooted at it (`x.i.Add(delta)` — see
+	// bodyCallsCaptureModeMethodOnObject).
+	if !escapes && v.bodyCallsCaptureModeMethodOnObject(identObj, parentBlock) {
 		escapes = true
 	}
 

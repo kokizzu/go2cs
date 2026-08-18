@@ -297,6 +297,7 @@
     <Project Path="tests/Behavioral/AtomicFieldThroughPointer/AtomicFieldThroughPointer.csproj" />
     <Project Path="tests/Behavioral/AtomicPointerToNil/AtomicPointerToNil.csproj" />
     <Project Path="tests/Behavioral/AtomicValues/AtomicValues.csproj" />
+    <Project Path="tests/Behavioral/CaptureModeFieldAddress/CaptureModeFieldAddress.csproj" />
     <Project Path="tests/Behavioral/CaptureModeFuncLitParam/CaptureModeFuncLitParam.csproj" />
     <Project Path="tests/Behavioral/CaptureModeParamClosure/CaptureModeParamClosure.csproj" />
     <Project Path="tests/Behavioral/CaptureModeValueParam/CaptureModeValueParam.csproj" />
@@ -817,6 +818,7 @@
     <Project Path="tests/Behavioral/TypeConversionReturnType/TypeConversionReturnType.csproj" />
     <Project Path="tests/Behavioral/TypeInference/TypeInference.csproj" />
     <Project Path="tests/Behavioral/TypeSwitch/TypeSwitch.csproj" />
+    <Project Path="tests/Behavioral/TypeSwitchBindingAddress/TypeSwitchBindingAddress.csproj" />
     <Project Path="tests/Behavioral/TypeSwitchGuardShadow/TypeSwitchGuardShadow.csproj" />
     <Project Path="tests/Behavioral/TypeSwitchImpureTag/TypeSwitchImpureTag.csproj" />
     <Project Path="tests/Behavioral/TypeSwitchMultiCase/TypeSwitchMultiCase.csproj" />

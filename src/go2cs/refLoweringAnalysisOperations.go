@@ -1632,15 +1632,29 @@ func (a *refLoweringAnalysis) censusFuncLocals(funcDecl *ast.FuncDecl, funcName 
 
 	// Body-declared locals — := defines, var specs, range/if/switch defines.
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
-		ident, ok := n.(*ast.Ident)
+		switch node := n.(type) {
+		case *ast.Ident:
+			if obj, ok := a.info.Defs[node].(*types.Var); ok && !obj.IsField() {
+				if _, exists := origins[obj]; !exists {
+					origins[obj] = "local"
+				}
+			}
 
-		if !ok {
-			return true
-		}
-
-		if obj, ok := a.info.Defs[ident].(*types.Var); ok && !obj.IsField() {
-			if _, exists := origins[obj]; !exists {
-				origins[obj] = "local"
+		case *ast.TypeSwitchStmt:
+			// A type-switch binding is implicitly declared once PER CASE CLAUSE
+			// (info.Implicits, never Defs), so the Ident arm above cannot see it. It is the
+			// same box-candidate category as any body local — escape analysis now walks these
+			// objects (performEscapeAnalysisForObject), and tracking them here is what lets a
+			// binding whose every address-connected use feeds a lowered position REVERT to a
+			// plain stack local instead of gaining a box the reversion exists to remove.
+			for _, stmt := range node.Body.List {
+				if caseClause, ok := stmt.(*ast.CaseClause); ok {
+					if obj, ok := a.info.Implicits[caseClause].(*types.Var); ok {
+						if _, exists := origins[obj]; !exists {
+							origins[obj] = "local"
+						}
+					}
+				}
 			}
 		}
 
