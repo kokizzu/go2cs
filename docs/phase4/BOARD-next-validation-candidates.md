@@ -11521,4 +11521,124 @@ with the fix neutered every time. The arm's decision was extracted to
 measured `net/netip` run. A guard that passes while its fix is neutered guards nothing, and noticing
 that is the only reason this one exists in the shape it does.
 
+## ✅ THE ESCAPE/BOX-COPY ROOT IS CLOSED — an observed address always aliases; sync/atomic 65 → 99 of 108, encoding/xml 353 → 366 of 386, and the residuals belong to other owners (2026-08-18, lane `claude/escape-box-copy`)
+
+Three entries named this root from three sides: the one-diagnostic-remeasure entry measured
+sync/atomic's 43-divergence residual (`Ꮡ(x).of(…Ꮡi).Add(delta)` mutating a temporary), the
+xml-netip-alias entry measured the shipped Token() lost write (`Ꮡ(t1).of(StartElement.ᏑName)`,
+hand-boxed A/B +12) and censused the emitted shape at 6 sites in 4 files. The root is one
+principle with two blind spots. Go's answer to "when must a local's address alias its storage
+rather than copy" is ALWAYS — and go2cs already has both conforming mechanisms (Phase-A
+ref-lowering aliases in place when every consumer lowers; the identity box serves everything
+else), but two address-taking forms were invisible to the promotion analysis, so emission fell to
+the documented last-resort `Ꮡ(value)` copy-box, which reads right and drops writes.
+
+### The predicate the xml lane could not identify, identified
+
+That lane recorded three failed reductions and left "what forces the ж<Name> box form" open,
+warning "do not assume type switch is the whole predicate." It isn't — the answer is one line in
+the ref-lowering charter: **`Decoder.translate` is a METHOD, and Phase A never lowers a method's
+pointer parameters** (§10.1; refLoweringAnalysisOperations.go, "Methods do not lower in Phase A").
+Every reduction used a standalone `fix(n *Name)` — a Phase-A candidate, duly lowered to
+`ref Name`, which aliases without any box. Make the consumer a method and the parameter keeps
+`ж<Name>` forever. The type-switch half of the shape matters only because such bindings were
+never escape-analyzed at all: the guard ident's object is NIL (go/types: *"symbolic variables t
+in t := x.(type) … the corresponding objects are nil"*; the real per-case `*types.Var` lives in
+`info.Implicits`), so `performEscapeAnalysis` bailed at ObjectOf for every one — and the A2
+locals census (origins from `info.Defs`) never tracked them either.
+
+### The two blind spots, closed at the analysis
+
+1. **A capture-mode method called on a value-field CHAIN rooted at a local or value parameter** —
+   `x.i.Add(delta)` is Go's implicit `(&x.i).Add(delta)`, and the escape trigger recognized the
+   capture-mode call only on the var ITSELF (`i.Store(10)`). `bodyCallsCaptureModeMethodOnObject`
+   now accepts a chain via `selectorChainRootsAtIdent` — the explicit-`&` arm's root walk, whose
+   `Selection.Indirect()` gate keeps pointer-crossing chains excluded — with the pointer-typed-
+   operand exclusion mirrored from `selectsPointerMethodOn`, the method-VALUE analogue of this
+   call form. The analysis trigger and the emission-side re-verification (`paramBoxReasonHolds`)
+   read the SAME function, so value parameters take the widening in the same motion. A
+   non-capture-mode pointer-receiver call stays untouched: it binds `this ref` on the field in
+   place, and promoting for it would heap-box every local that calls any pointer-receiver method.
+
+2. **Type-switch bindings join both analyses** — the object-keyed
+   `performEscapeAnalysisForObject` (which `performEscapeAnalysis` now delegates to) runs the
+   standard walk for each case clause's implicit var, and `censusFuncLocals` tracks the same
+   category, so a binding whose every address-connected use feeds a lowered position still
+   REVERTS to a plain stack local — the lane's reduction shapes emit byte-identically. Narrowed
+   to non-inherently-heap bound types: the multi-type and `default` arms always bind at the
+   guard's interface type, already a reference, whose no-entry state is load-bearing for the
+   capture analysis. On the emission side a C# pattern variable cannot be a ref local, so an
+   escaping binding binds the pattern to a uniquely-numbered temp and opens the clause with the
+   entry-time box pattern proven by the escaping-parameter preamble and `selectCommBinding` —
+   `case StartElement t1ᴛ1: { ref var t1 = ref heap(t1ᴛ1, out var Ꮡt1);` — gated on
+   `identHasHeapBox`, the exact predicate the body's `&`-emission consults, so the box is
+   declared iff it is referenced.
+
+### Measured
+
+- **sync/atomic: 65 → 99 of 108** (+34 — every one a `*Method` box-copy row). The residual 9 sit
+  in THREE roots, none of them escape-family, which is a **correction to the
+  one-diagnostic-remeasure entry**: the 43 were not one root. (a) **unsafe.Pointer machinery ×6**
+  — the hammer `*Method` variants go through `Ꮡuaddr.Reinterpret<uint32, atomic.Int32>()` and the
+  view's writes are lost (`TestHammer32/64: AddInt32Method: val=0 want 400000`); Go's
+  pointer-IDENTITY compare `k != p` is emitted as `k.Value != p.Value`, a deref-compare that
+  nil-derefs on the nil probe (`TestLoad/Store/SwapPointer` — pre-fix it compared
+  pointers-into-copies and failed "orderly", so this fix EXPOSED it to full severity); and the
+  pointer-hammer's check now fires its `Fatalf` from a goroutine after the test window, killing
+  the host (`TestHammerStoreLoad`, "Log called after … completed"). Because of that death the
+  full-pipeline compare records only 36 C# verdicts; the 99 figure comes from running the host
+  directly with the hammer family excluded and diffing against the recorded go map — the direct-
+  host method the xml lane's wrong-turn note prescribes. (b) **atomic.Value CAS type-identity
+  ×2** — `TestValue_CompareAndSwap/7` + parent panic "inconsistently typed values" where Go
+  accepts. (c) **reflect-alignment ×1** — `TestAutoAligned64`. **No closure, no bank**: no roster
+  row, no proof page, artifacts removed.
+- **encoding/xml: 353 → 366 of 386** (+13 — the twelve namespace rows the hand-box A/B predicted,
+  plus one, because the fix also boxes the SIBLING case bindings the A/B did not patch:
+  EndElement's `d.popElement(Ꮡt1)` and marshal/read's whole-binding copy-boxes). The 20 residual
+  divergences are EXACTLY that lane's other four roots: `reflect.canonType` terminates the
+  process (15 verdicts EMPTY, not failed), `CopyToken` same-buffer ×2, `TestMarshal/47`
+  arity-mangled generic name, `TestMarshal/64` embedded-field order, plus the `TestMarshal`
+  parent. **No closure, no bank**; artifacts removed and the tracked `-tests` dirt restored (the
+  three production movers plus the `initᴛᴛtests` `package_init.cs` hook, the fourth
+  `-tests`-closure shape).
+- **Seeded full-corpus reconvert: 1,656 identical / 6 movers / 0 new**; marker gate **63 marked
+  files, 0 violations**; converter stderr 0 type-check failures. The movers:
+  `encoding/xml/{marshal,read,xml}.cs` + `go/constant/value.cs` are this fix — xml.cs:325 is THE
+  shipped lost write, now `case StartElement t1ᴛ1: { ref var t1 = ref heap(t1ᴛ1, out var Ꮡt1);
+  d.translate(Ꮡt1.of(StartElement.ᏑName), true);`; marshal/read move whole-binding
+  `Ꮡ(t)`/`Ꮡ(tΔ1)` copy-boxes to aliases (reads, now correct by construction); go/constant's
+  `case string: return &stringVal{s: x}` joins the composite-literal gray-area rule ordinary
+  locals already have (one extra box alloc, correctness unchanged) — and
+  `runtime/mstats.cs` + `runtime/windows/package_info.cs` are the xml-netip-alias lane's
+  pre-documented anon-struct-lift adoptions. All six verified compiling (`go2cs-stdlib.slnx`
+  **0 errors**, 6:35) and then RESTORED per corpus-regen policy; the next leveling regen picks
+  them up. **The 6-site census held exactly**: only xml's site was a write and only the
+  xml/go-constant sites move — `netip.cs:385/391` and `rpc/debug.cs:99` are VALUE-RECEIVER rooted
+  (the receiver path is deliberately untouched; Go itself reads a receiver copy there, so no
+  observable divergence), and `runtime/symtab.cs:1102/1146` cross a POINTER EMBED
+  (`Selection.Indirect()` exclusion — the address correctly lands in the shared pointee).
+
+### Guards
+
+`TypeSwitchBindingAddress` — the xml shape through a ж-parameter METHOD, a held `p := &t1.n`
+pointer, the direct `&t1` form, and the already-correct slice-element control `&t1.attr[i]` —
+and `CaptureModeFieldAddress` — local, value parameter, type-switch composition, lifted anonymous
+struct, and the non-capture-mode control `w.c.inc()`. Both proven failing-first against the
+pre-fix converter: `a x`/`z w` where Go says `urn:a x`/`reset w`; `local: 5 0 0 0` / `param: 0` /
+`switch: 0` / `anon: 1` where Go says `5 7 0 0` / `7` / `9` / `8`; controls identical on both
+sides. Doctrine recorded in ConversionStrategies-Reference as two new sections beside the
+explicit-`&` selector arm's.
+
+### Gates
+
+Converter `go test ./...` ok twice — 144.0 s pre-merge with the fix, 142.8 s after both feeder
+merges, all guards included · full CNR **byte-identical across all 624 behavioral packages except
+ONE intended mover**, `StructPointerPromotionWithInterface` — itself the param-arm of this fix
+catching a latent copy-box (`probeRig(r rig)` calling capture-mode `Tag()` on `r.dev`; reads
+only, so its output matched by luck) — re-baselined and re-verified on all four phases · seeded
+reconvert-and-build above · full behavioral suite **597/597 Transpile+Compile+Target, 571/571
+Output** (26 skipped, no `package main`), 0 failures, 4,070 s. No golib change, so
+`GolibTests`/`go2cs.slnx` are not owed. This branch carries both feeder lanes as merges
+(`8f63c1dde`, `dd11e1e35`) — their entries above land with it.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

@@ -1142,13 +1142,26 @@ func (v *Visitor) recvBoxReasonHolds(recv types.Object, body ast.Node) bool {
 // bodyCallsCaptureModeMethodOn reports whether the body calls a capture-mode method with
 // the given identifier as the (value) receiver — meaning that identifier must be boxed.
 func (v *Visitor) bodyCallsCaptureModeMethodOn(ident *ast.Ident, body ast.Node) bool {
-	if packageCaptureModeMethods == nil || ident == nil {
+	if ident == nil {
 		return false
 	}
 
-	target := v.info.ObjectOf(ident)
+	return v.bodyCallsCaptureModeMethodOnObject(v.info.ObjectOf(ident), body)
+}
 
-	if target == nil {
+// bodyCallsCaptureModeMethodOnObject is bodyCallsCaptureModeMethodOn keyed by the resolved
+// object — the form a type-switch case binding needs, whose defining ident carries no object
+// (go/types records the per-case *types.Var in Implicits, and ObjectOf on the guard ident
+// answers nil). The receiver operand may be the bare ident OR a value-field chain rooted at it
+// (`x.i.Add(delta)` — the sync/atomic shape): Go's implicit `&x.i` for the chain form addresses
+// the local's own storage exactly as `&x` does, so leaving the chain unrecognized let emission
+// fall to the `Ꮡ(x).of(…)` copy-box and silently dropped every write the capture-mode method
+// made. The chain walk is selectorChainRootsAtIdent — the same root walk the explicit-`&` arm
+// and selectsPointerMethodOn (the method-VALUE analogue of this call form) already use, whose
+// Selection.Indirect() gate excludes any chain that crosses a pointer (the address then lands
+// in the pointee, not in the local).
+func (v *Visitor) bodyCallsCaptureModeMethodOnObject(target types.Object, body ast.Node) bool {
+	if packageCaptureModeMethods == nil || target == nil {
 		return false
 	}
 
@@ -1167,15 +1180,29 @@ func (v *Visitor) bodyCallsCaptureModeMethodOn(ident *ast.Ident, body ast.Node) 
 			return true
 		}
 
-		recvIdent, ok := selectorExpr.X.(*ast.Ident)
+		recvExpr := ast.Unparen(selectorExpr.X)
 
-		if !ok || v.info.ObjectOf(recvIdent) != target {
-			return true
-		}
+		if recvIdent, ok := recvExpr.(*ast.Ident); ok {
+			if v.info.ObjectOf(recvIdent) != target {
+				return true
+			}
 
-		// Only a value receiver needs boxing; a pointer receiver already carries its box.
-		if _, isPointer := v.info.TypeOf(recvIdent).(*types.Pointer); isPointer {
-			return true
+			// Only a value receiver needs boxing; a pointer receiver already carries its box.
+			if _, isPointer := v.info.TypeOf(recvIdent).(*types.Pointer); isPointer {
+				return true
+			}
+		} else {
+			if !selectorChainRootsAtIdent(recvExpr, target, v.info) {
+				return true
+			}
+
+			// A pointer-typed chain result hands over the pointer VALUE — no address of the
+			// target is taken (mirrors selectsPointerMethodOn's receiver-operand rule).
+			if recvType := v.info.TypeOf(recvExpr); recvType == nil {
+				return true
+			} else if _, isPointer := recvType.Underlying().(*types.Pointer); isPointer {
+				return true
+			}
 		}
 
 		if v.isCaptureModeMethod(selectorExpr) {

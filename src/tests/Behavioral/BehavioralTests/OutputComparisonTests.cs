@@ -161,6 +161,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckByteTableStringVar() => CheckTarget("ByteTableStringVar");
 
     [TestMethod]
+    public void CheckCaptureModeFieldAddress() => CheckTarget("CaptureModeFieldAddress");
+
+    [TestMethod]
     public void CheckCaptureModeFuncLitParam() => CheckTarget("CaptureModeFuncLitParam");
 
     [TestMethod]
@@ -1587,6 +1590,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckTypeSwitch() => CheckTarget("TypeSwitch");
+
+    [TestMethod]
+    public void CheckTypeSwitchBindingAddress() => CheckTarget("TypeSwitchBindingAddress");
 
     [TestMethod]
     public void CheckTypeSwitchGuardShadow() => CheckTarget("TypeSwitchGuardShadow");

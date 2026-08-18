@@ -106,8 +106,10 @@ public static ж<nint> Tag(this ж<Device> Ꮡd) {
     internal Device dev;
 }
 
-internal static nint probeRig(rig r) {
-    return Ꮡ(r).of(rig.Ꮡdev).Tag().Value;
+internal static nint probeRig(rig rʗp) {
+    ref var r = ref heap(rʗp, out var Ꮡr);
+
+    return Ꮡr.of(rig.Ꮡdev).Tag().Value;
 }
 
 [GoType] partial struct deviceHandle {
