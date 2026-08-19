@@ -52,6 +52,30 @@ type holder struct {
 	T *Tag
 }
 
+// Stamp exists ONLY to reach the runtime duck-typing SHELL tier. Nothing in this program ever
+// converts a *Stamp to an interface, so no nominal adapter is recorded for the pair and the
+// assertion has to be resolved at run time from the method set — the tier that dereferenced the
+// receiver BEFORE choosing the overload and therefore threw on a nil pointer. Blob and Tag above
+// cannot guard it: `iface.(Encoder)` on them resolves through the recorded pair.
+type Stamp struct{ S string }
+
+func (s *Stamp) Error() string {
+	if s == nil {
+		return "nil stamp"
+	}
+	return s.S
+}
+
+// sink takes ...any, so every argument crosses into INTERFACE space — which is where a typed nil
+// that reflect.Value.Call passes must keep its type half. It reports what actually arrived.
+func sink(args ...any) string {
+	if len(args) == 0 {
+		return "none"
+	}
+	return fmt.Sprintf("argIsNil=%v valid=%v type=%v printed=%v",
+		args[0] == nil, reflect.ValueOf(args[0]).IsValid(), reflect.TypeOf(args[0]), fmt.Sprint(args[0]))
+}
+
 // report is the single probe every slot shape runs: what Interface() handed back, whether the
 // Value itself still reports nil, whether the assertion succeeded, and what the nil receiver
 // returned.
@@ -126,4 +150,34 @@ func main() {
 	sn := struct{ I any }{}
 	fn := reflect.ValueOf(sn).Field(0)
 	fmt.Printf("nilIfaceField: isNil=%v isZero=%v elemValid=%v\n", fn.IsNil(), fn.IsZero(), fn.Elem().IsValid())
+
+	// 9. reflect.Value.CALL passing a typed nil into an INTERFACE-typed parameter. Go assigns to
+	//    such a parameter by BUILDING an eface, and an eface keeps the type half — so the callee
+	//    sees a non-nil `any` whose reflect.ValueOf is a valid Pointer Value. Handing the slot's
+	//    raw null across instead erases it, and text/template's printableValue then reports
+	//    "<no value>" where Go prints "<nil>".
+	var np2 *Blob
+	sp := struct{ P *Blob }{P: np2}
+	pf := reflect.ValueOf(sp).Field(0)
+	fmt.Printf("call-into-any: %s\n", reflect.ValueOf(sink).Call([]reflect.Value{pf})[0].String())
+
+	//    The CONCRETE-parameter CONTROL: no eface is built there, so that path is untouched and
+	//    the callee still receives the plain typed nil.
+	concrete := reflect.ValueOf(func(b *Blob) string { return fmt.Sprintf("concrete nil=%v", b == nil) })
+	fmt.Printf("call-into-concrete: %s\n", concrete.Call([]reflect.Value{pf})[0].String())
+
+	// 10. A nil receiver dispatched through the RUNTIME SHELL tier. Go's method set belongs to the
+	//     TYPE, so (*Stamp)(nil) satisfies error, Error() runs, and the method decides what a nil
+	//     receiver means. The shell read the pointee BEFORE choosing the overload and threw —
+	//     invisibly, because fmt wraps every Error() call in Go's own catchPanic, which prints
+	//     <nil> for a nil-pointer argument. The symptom was a wrong RENDERING, not a crash.
+	var stamp *Stamp
+	sh := struct{ S *Stamp }{S: stamp}
+	si2 := reflect.ValueOf(sh).Field(0).Interface()
+	fmt.Printf("shell-tier: printed=%v type=%v\n", fmt.Sprint(si2), reflect.TypeOf(si2))
+	if e, ok := si2.(error); ok {
+		fmt.Printf("  assert error ok=true Error()=%q\n", e.Error())
+	} else {
+		fmt.Println("  assert error ok=false")
+	}
 }

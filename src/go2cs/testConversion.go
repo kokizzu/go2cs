@@ -1378,13 +1378,28 @@ func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bo
 // the `global using` into the test metadata file, and recording the TYPE in
 // productionAliasLiftedTypes makes every renderer spell the alias (see liftedNameFor).
 //
-// Deliberately NARROW on both axes. Only an alias whose right-hand side is an anonymous
-// struct/interface is seeded — that is exactly the set with no other spelling; a named RHS already
-// renders through its own qualified name, and adding aliases for it would put avoidable
-// `global using` names into the test compilation where a test-local type could collide. And only
-// an alias the production package_info PUBLISHES is seeded, so a type is never rendered under a
-// name the test compilation cannot resolve; an unexported alias to an anonymous struct publishes
-// nothing and keeps the pre-existing route.
+// Two kinds of alias are seeded, and they need DIFFERENT halves of "reachable":
+//
+//  1. An ANONYMOUS struct/interface RHS has no other spelling at all, so both halves are seeded —
+//     the `global using` AND the type→name record that makes every renderer spell the alias.
+//
+//  2. A NAMED RHS (`type FuncMap = template.FuncMap`, html/template) needs the NAME half only. The
+//     original narrowing skipped it entirely, on the reasoning that "a named RHS already renders
+//     through its own qualified name". Measured, that does not hold: the alias is declared as a
+//     `global using FuncMap = go.text.template_package.FuncMap;` in the PRODUCTION FILE that
+//     declares it (template.cs), the renderer spells the bare alias name in production and test
+//     alike, and a reference-model test project compiles `*_test.cs` only — so the declaring file
+//     is not in that compilation and the name resolves nowhere. CS0246 ×6 across clone_test,
+//     escape_test and exec_test, with all 243 of html/template's verdicts behind it. The type
+//     record is deliberately NOT seeded for this kind: the RHS has its own qualified spelling and
+//     is already rendered through it, so recording it would re-spell references that already
+//     compile.
+//
+// And only an alias the production package_info PUBLISHES is seeded, so a type is never rendered
+// under a name the test compilation cannot resolve; an unexported alias to an anonymous struct
+// publishes nothing and keeps the pre-existing route. That precondition is also what bounds the
+// named-RHS set to Go's EXPORTED type aliases — a Δ-renamed defined type is not an alias at all
+// (IsAlias is false) and never reaches here.
 func seedProductionAliasLifts(pkg *packages.Package, productionInfoPath string) {
 	if pkg == nil || pkg.Types == nil {
 		return
@@ -1425,6 +1440,10 @@ func seedProductionAliasLifts(pkg *packages.Package, productionInfoPath string) 
 
 		resolved := types.Unalias(typeName.Type())
 
+		// recordType distinguishes the two kinds above: an anonymous RHS needs every renderer
+		// redirected onto the alias name, a named one only needs that name to RESOLVE.
+		recordType := true
+
 		switch underlying := resolved.(type) {
 		case *types.Struct:
 			if isEmptyStructType(underlying) {
@@ -1434,17 +1453,22 @@ func seedProductionAliasLifts(pkg *packages.Package, productionInfoPath string) 
 			if underlying.Empty() {
 				continue
 			}
+		case *types.Named:
+			recordType = false
 		default:
 			continue
 		}
 
 		packageLock.Lock()
 
-		if productionAliasLiftedTypes == nil {
-			productionAliasLiftedTypes = map[types.Type]string{}
+		if recordType {
+			if productionAliasLiftedTypes == nil {
+				productionAliasLiftedTypes = map[types.Type]string{}
+			}
+
+			productionAliasLiftedTypes[resolved] = name
 		}
 
-		productionAliasLiftedTypes[resolved] = name
 		importedTypeAliases[name] = target
 		packageLock.Unlock()
 	}

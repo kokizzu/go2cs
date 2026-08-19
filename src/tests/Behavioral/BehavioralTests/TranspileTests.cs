@@ -1360,6 +1360,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckReflectMethodTableWalk() => CheckTarget("ReflectMethodTableWalk");
 
     [TestMethod]
+    public void CheckReflectStringWindow() => CheckTarget("ReflectStringWindow");
+
+    [TestMethod]
     public void CheckReflectStructTagCopy() => CheckTarget("ReflectStructTagCopy");
 
     [TestMethod]

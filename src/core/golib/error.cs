@@ -95,18 +95,33 @@ public class error<T> : error, IErrorTarget
     private static readonly ErrorByPtr? s_ErrorByPtr;
     private static readonly ErrorByVal? s_ErrorByVal;
 
+    // The overload is chosen BEFORE the pointee is read, and the order is load-bearing rather than
+    // a tidy-up: a NIL pointer receiver is legal in Go — a method set belongs to the TYPE, so
+    // `(*W)(nil).Error()` dispatches normally and the method itself decides what a nil receiver
+    // means (`if w == nil { return "nilW" }` is an idiom, not an edge case). Reading
+    // `m_target_ptr.Value` first threw on exactly that value, for a pointee the ж-receiver overload
+    // selected below never needed. The throw did not surface as a crash either: fmt's handleMethods
+    // wraps every Error() call in Go's own catchPanic, which prints <nil> for a nil-pointer arg, so
+    // a typed nil that Go renders through its method rendered as `<nil>` here — silently, and only
+    // where the pair resolved through this RUNTIME shell rather than through a generated nominal
+    // adapter, which never had the defect. text/template's `{{.W2}}` over a nil *W is the measured
+    // consumer (exec_test's "(*W)(nil).Error()" row).
+    //
+    // Dereferencing on the BY-VALUE path is kept, because there Go dereferences too: reaching a
+    // value-receiver method through a pointer is a real nil-pointer panic in Go when the pointer is
+    // nil, and that panic must still happen.
     [DebuggerNonUserCode, MethodImpl(MethodImplOptions.AggressiveInlining)]
     public @string Error()
     {
+        if (s_ErrorByPtr is not null && m_target_is_ptr)
+            return s_ErrorByPtr(m_target_ptr!);
+
         T target = m_target;
 
         if (m_target_is_ptr && m_target_ptr is not null)
             target = m_target_ptr.Value;
 
-        if (s_ErrorByPtr is null || !m_target_is_ptr)
-            return s_ErrorByVal!(target);
-
-        return s_ErrorByPtr(m_target_ptr!);
+        return s_ErrorByVal!(target);
     }
 
     public string ToString(string? format, IFormatProvider? _)

@@ -2,6 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using reflect = reflect_package;
+using ꓸꓸꓸany = Span<any>;
 
 partial class main_package {
 
@@ -46,6 +47,35 @@ public static (@string, error) Encode(this ж<Tag> Ꮡt) {
     public ж<Tag> T;
 }
 
+[GoType] partial struct Stamp {
+    public @string S;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilStampˢ = "nil stamp"u8;
+
+public static @string Error(this ж<Stamp> Ꮡs) {
+    ref var s = ref Ꮡs.DerefOrNull();
+
+    if (Ꮡs == nil) {
+        return nilStampˢ;
+    }
+    return s.S;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noneˢ = "none"u8;
+
+internal static @string sink(params ꓸꓸꓸany argsʗp) {
+    var args = argsʗp.sslice();
+
+    if (len(args) == 0) {
+        return noneˢ;
+    }
+    return fmt.Sprintf("argIsNil=%v valid=%v type=%v printed=%v"u8,
+        args[0] == default!, reflect.ValueOf(args[0]).IsValid(), reflect.TypeOf(args[0]), fmt.Sprint(args[0]));
+}
+
 internal static void report(@string label, reflectꓸValue v) {
     var iface = v.Interface();
     fmt.Printf("%s: kind=%v isNil=%v ifaceIsNil=%v type=%v\n"u8, label, v.Kind(), v.IsNil(), iface == default!, reflect.TypeOf(iface));
@@ -59,9 +89,18 @@ internal static void report(@string label, reflectꓸValue v) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string newBlobElemˢ = "new(*Blob).Elem()"u8;
+private static readonly object assertErrorOkFalseˢ = (@string)"  assert error ok=false"u8;
 
 [GoType("dyn")] partial struct main_si {
     public any I;
+}
+
+[GoType("dyn")] partial struct main_sp {
+    public ж<Blob> P;
+}
+
+[GoType("dyn")] partial struct main_sh {
+    public ж<Stamp> S;
 }
 
 internal static void Main() {
@@ -100,6 +139,23 @@ internal static void Main() {
     var sn = new main_si();
     var fn = reflect.ValueOf(sn).Field(0);
     fmt.Printf("nilIfaceField: isNil=%v isZero=%v elemValid=%v\n"u8, fn.IsNil(), fn.IsZero(), fn.Elem().IsValid());
+    ж<Blob> np2 = default!;
+    var sp = new main_sp(P: np2);
+    var pf = reflect.ValueOf(sp).Field(0);
+    fmt.Printf("call-into-any: %s\n"u8, reflect.ValueOf(sink).Call(new reflectꓸValue[]{pf}.slice())[0].String());
+    var concrete = reflect.ValueOf(@string (ж<Blob> b) => fmt.Sprintf("concrete nil=%v"u8, b == nil));
+    fmt.Printf("call-into-concrete: %s\n"u8, concrete.Call(new reflectꓸValue[]{pf}.slice())[0].String());
+    ж<Stamp> stamp = default!;
+    var sh = new main_sh(S: stamp);
+    var si2 = reflect.ValueOf(sh).Field(0).Interface();
+    fmt.Printf("shell-tier: printed=%v type=%v\n"u8, fmt.Sprint(si2), reflect.TypeOf(si2));
+    {
+        var (e, ok) = si2._<error>(ᐧ); if (ok){
+            fmt.Printf("  assert error ok=true Error()=%q\n"u8, e.Error());
+        } else {
+            fmt.Println(assertErrorOkFalseˢ);
+        }
+    }
 }
 
 } // end main_package

@@ -306,7 +306,33 @@ public static ΔValue Index(this ΔValue v, nint i) {
         }
         return makeTypedValue(arr[i], elemType, elemDims, ro);
     }
+    // A STRING indexes to its i'th BYTE as a uint8 Value — never addressable (Go's strings are
+    // immutable, so its own arm sets flagIndir but no flagAddr) and typed by the byte type rather
+    // than by the string's, which is why it cannot share the element-type route above: a string
+    // Value has no ElementType at all. text/template's `index` builtin is the measured consumer
+    // (`{{index `x` 0}}`), and it reached the ValueError below — "call of reflect.Value.Index on
+    // string Value" — for every string, which is Go's message for a kind that does NOT support
+    // indexing at all.
+    if (k == ΔString) {
+        @string s = goStringOf(v);
+        if ((nuint)i >= (nuint)s.Length) {
+            throw panic("reflect: string index out of range");
+        }
+        return makeTypedValue(s[i], typeof(uint8), null, ro);
+    }
     throw panic(Ꮡ(new ValueError("reflect.Value.Index", v.kind())));
+}
+
+// The @string behind a string-kinded Value, unwrapping a NAMED string wrapper the same way Len
+// does — a `type NS string` wrapper implements none of the golib container interfaces, so it has
+// to be unwrapped explicitly or it reads as the zero string. One helper, so Index, Slice and Len
+// can never disagree about what a named string's bytes are.
+internal static @string goStringOf(ΔValue v) {
+    object? cur = v.live;
+    if (cur is not null && cur is not @string && GoReflect.TryUnwrapWrapperValue(cur, out object? unwrapped)) {
+        cur = unwrapped;
+    }
+    return cur is @string s ? s : default;
 }
 
 // Slice returns v[i:j] (v must be an Array, Slice, or String; an array must be addressable).
@@ -379,6 +405,21 @@ public static ΔValue Slice(this ΔValue v, nint i, nint j) {
     ΔKind k = v.kind();
     System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
     System.Type? elemType = GoReflect.ElementType(st);
+    // A STRING slices to a string of v's OWN type — Go returns `Value{v.typ(), ...}`, so a named
+    // string stays named — and needs no addressability, since the result copies no storage the
+    // caller could write through. text/template's `slice` builtin is the measured consumer.
+    if (k == ΔString) {
+        @string s = goStringOf(v);
+        if (i < 0 || j < i || j > s.Length) {
+            throw panic("reflect.Value.Slice: string slice index out of bounds");
+        }
+        @string sub = s[((int)i)..((int)j)];
+        object boxedWindow = sub;
+        if (st is not null && st != typeof(@string) && GoReflect.TryConvertTo(sub, st, out object? named)) {
+            boxedWindow = named;
+        }
+        return makeTypedValue(boxedWindow, st ?? typeof(@string), null, (flag)(v.flag & flagRO));
+    }
     if (elemType is null || (k != Array && k != ΔSlice)) {
         throw panic(Ꮡ(new ValueError("reflect.Value.Slice", v.kind())));
     }
@@ -390,6 +431,46 @@ public static ΔValue Slice(this ΔValue v, nint i, nint j) {
         throw panic("reflect.Value.Slice: slice of nil container");
     }
     object window = GoReflect.SliceWindow(liveContainer, elemType, i, j);
+    return makeTypedValue(window, typeof(slice<>).MakeGenericType(elemType), null, (flag)(v.flag & flagRO));
+}
+
+// Slice3 is the 3-index form of the slice operation — v[i:j:k] — where k bounds the result's
+// CAPACITY. Array and Slice only; Go's own Slice3 has no String arm, because a string has no
+// capacity to bound.
+//
+// The auto form is the same raw-header walk Slice's was: it reinterprets v.ptr as an
+// unsafeheader.Slice and edits Data/Len/Cap in place. The bridge never populates ptr, so
+// `(ж<unsafeheader.Slice>)(uintptr)(v.ptr)` dereferenced nil outright — which is why this
+// surfaced as "invalid memory address or nil pointer dereference" rather than as a missing
+// feature. text/template's `slice` builtin with three indexes is the measured consumer
+// (`{{slice .SICap 6 10 10}}`); it is bridged here over the SAME golib window machinery Slice
+// uses, so the two-index and three-index forms cannot disagree about what a window is.
+public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
+    ΔKind kind = v.kind();
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elemType = GoReflect.ElementType(st);
+    if (elemType is null || (kind != Array && kind != ΔSlice)) {
+        throw panic(Ꮡ(new ValueError("reflect.Value.Slice3", v.kind())));
+    }
+    if (kind == Array && (flag)(v.flag & flagAddr) == 0) {
+        throw panic("reflect.Value.Slice3: slice of unaddressable array");
+    }
+    object? liveContainer = v.live;
+    if (liveContainer is null) {
+        throw panic("reflect.Value.Slice3: slice of nil container");
+    }
+    // Go bounds Slice3 by the source's CAPACITY (an array's is its length), and reports its own
+    // message — checked here rather than left to the golib window, whose bounds panic is the
+    // backstop and carries golib's wording.
+    nint cap = liveContainer switch {
+        ISlice s => s.Capacity,
+        IArray a => a.Length,
+        _ => 0
+    };
+    if (i < 0 || j < i || k < j || k > cap) {
+        throw panic("reflect.Value.Slice3: slice index out of bounds");
+    }
+    object window = GoReflect.SliceWindow(liveContainer, elemType, i, j, k);
     return makeTypedValue(window, typeof(slice<>).MakeGenericType(elemType), null, (flag)(v.flag & flagRO));
 }
 
@@ -1164,11 +1245,24 @@ private static slice<ΔValue> callVariadic(Delegate del, slice<ΔValue> @in, Sys
 }
 
 // One argument, marshalled under the assignability rule emitted asserts use.
+//
+// Into INTERFACE space the argument packs exactly the way Value.Interface() packs it, because Go's
+// assignment to an interface-typed parameter BUILDS an eface and an eface keeps the type half of a
+// nil pointer. Reading arg.live straight out handed a bare C# null across that boundary and erased
+// it — the very loss packInterfaceValue exists to prevent one call away, reached through a third
+// path that had not joined the one-nil-encoding rule. Downstream the erasure is total: the callee's
+// `reflect.ValueOf(arg)` answers the INVALID zero Value, so text/template's printableValue reported
+// "<no value>" for a nil *int where Go prints "<nil>" (exec_test's "html typed nil" row), and any
+// callee asserting the parameter to an interface takes the failure arm.
+//
+// A CONCRETE parameter type is untouched: no eface is built there, so the box/null the slot already
+// holds is what Go assigns.
 private static object? marshalCallArg(ΔValue arg, System.Type want) {
     if (arg.flag == 0) {
         throw panic("reflect: " + "Call" + " using zero Value argument");
     }
-    if (!GoReflect.TryMarshalAssignable(arg.live, want, out object? marshalled)) {
+    object? source = want.IsInterface || want == typeof(object) ? packInterfaceValue(arg) : arg.live;
+    if (!GoReflect.TryMarshalAssignable(source, want, out object? marshalled)) {
         throw panic("reflect: Call using " + GoReflect.GoTypeName(arg.live?.GetType()) +
                     " as type " + GoReflect.GoTypeName(want));
     }
@@ -1529,11 +1623,23 @@ private static bool isExportedGoName(string name) {
 // now read exportedness from that one projection, so a probe of the type and a write through the
 // value can never disagree about a field.
 //
-// Offset stays unpopulated on the r39d rule — a descriptor field whose read cannot be honored
-// must not be populated to look truthful. A Go byte offset exists only to be added to a data
-// pointer, and managed storage has no such pointer to add it to; abi.StructType populates
-// Offset because its consumers (unique's clone sequencer, reflectlite) read it as layout
-// METADATA, never as an address to walk.
+// Offset is a real READ, over the SAME memoized Go layout walk abi.StructType already publishes
+// (GoReflect.GoFieldOffsets — Go amd64 rules, so a Go zero-size field such as sync/atomic's
+// `noCopy` occupies nothing and an align64-bearing field lands on its 8-byte boundary), so a
+// probe of the reflect descriptor and a probe of the abi one can never disagree about one struct.
+//
+// It had stayed unpopulated on the r39d rule — "a descriptor field whose read cannot be honored
+// must not be populated to look truthful" — reasoning that a Go byte offset exists only to be
+// added to a data pointer, and managed storage has no such pointer. That reasoning applies to
+// Offset as an ADDRESS and not to Offset as layout METADATA, which is the only way abi's
+// consumers (unique's clone sequencer, reflectlite) have ever read it, and the only way the
+// measured consumer here reads it: sync/atomic's TestAutoAligned64 asserts
+// `TypeOf(&struct{_ uint32; i Int64}{}).Elem().Field(1).Offset == 8` and got 0 — which is a real
+// answer for a field at the front of a struct, so it read as a LAYOUT failure rather than as an
+// unpopulated descriptor. The r39d rule is still honored where it bites: a struct holding a field
+// whose Go size is unknowable makes every later offset a guess, and GoFieldOffsets answers null
+// for the whole struct there, so every field keeps the zero rather than a plausible-looking
+// number.
 //
 // Anonymous IS populated, and its measured consumer is the whole Go EMBEDDING contract:
 // encoding/json's typeFields (and encoding/xml's, encoding/gob's, text/template's) flattens a
@@ -1563,6 +1669,11 @@ internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
 // PROMOTED field (whose index is a PATH through one or more embeds) is described by the same rule
 // as a direct one — everything but Index is the deepest field's own property.
 private static StructField structFieldOf(System.Type st, GoReflect.GoFieldInfo f, nint[] index) {
+    // The field's position WITHIN st is index's LAST hop, whether this is a direct field or the
+    // deepest field of a promotion path — Go's promoted StructField.Offset is likewise relative to
+    // the field's own declaring struct, never to the outer one.
+    nint[]? offsets = GoReflect.GoFieldOffsets(st);
+    nint at = index.Length == 0 ? -1 : index[^1];
     return new StructField(
         Name: (@string)f.Name,
         // ⚠ GoReflect.GoPackagePath DIRECTLY, never "tidied" to route through rtype.PkgPath():
@@ -1573,6 +1684,7 @@ private static StructField structFieldOf(System.Type st, GoReflect.GoFieldInfo f
         PkgPath: f.Exported ? "" : (@string)GoReflect.GoPackagePath(st),
         Type: toType(abi.synthType(f.Type, f.ArrayDims)),
         Tag: ((StructTag)(@string)f.Tag),
+        Offset: offsets is not null && (nuint)at < (nuint)offsets.Length ? (uintptr)(nuint)offsets[at] : 0,
         Index: new slice<nint>(index),
         Anonymous: f.Embedded
     );

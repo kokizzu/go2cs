@@ -163,14 +163,15 @@ func insertFriendAssemblyAccess(projectFileContents string) string {
 // and the version properties from src\version.props, which that same props file imports — so the
 // sheet a package packs is always the one for the version it is being published as.
 //
-// A -tests run re-emits the production .csproj of the package under test (the test-artifact
-// <Compile Remove> exclusion), and that rewrite must KEEP the block a -stdlib conversion put there:
-// gating on convertStdLib alone stripped it on every pipeline run, silently un-shipping the
-// package's proof sheet from the next NuGet pack (the standing "0 8" restore family). The -tests
-// arm is scoped to output under the runtime root's core\ tree, so a behavioral fixture or an
-// end-user module keeps its historical .csproj bytes.
+// A run that re-emits the production .csproj of an ALREADY-CONVERTED core package must KEEP the
+// block a -stdlib conversion put there: gating on convertStdLib alone stripped it on every -tests
+// pipeline run, silently un-shipping the package's proof sheet from the next NuGet pack (the
+// standing "0 8" restore family). The second arm is therefore scoped to the OUTPUT LOCATION —
+// under the runtime root's core\ tree — and not to the invocation mode, so a behavioral fixture or
+// an end-user module keeps its historical .csproj bytes while every regeneration of a corpus
+// package keeps its proof sheet.
 func validationPackBlock(projectFileName string, options Options) string {
-	if !options.convertStdLib && !testsRewriteOfCorePackage(projectFileName, options) {
+	if !options.convertStdLib && !rewriteOfCorePackage(projectFileName, options) {
 		return ""
 	}
 
@@ -186,13 +187,19 @@ func validationPackBlock(projectFileName string, options Options) string {
 		"  </ItemGroup>\r\n"
 }
 
-// testsRewriteOfCorePackage reports whether a -tests conversion is re-emitting the production
-// .csproj of a converted STDLIB package — the one case outside -stdlib where the validation pack
-// block belongs. The runtime root is authoritative (self-located by the -tests entry point walking
-// the output dir up to core\golib), so "under <go2csPath>\core\" is a structural test no fixture or
-// end-user output path satisfies.
-func testsRewriteOfCorePackage(projectFileName string, options Options) bool {
-	if !options.convertTests || len(options.go2csPath) == 0 {
+// rewriteOfCorePackage reports whether this conversion is re-emitting the production .csproj of a
+// converted STDLIB package — the one case outside -stdlib where the validation pack block belongs.
+// The runtime root is authoritative (self-located by the -tests and single-package entry points
+// walking the output dir up to core\golib), so "under <go2csPath>\core\" is a structural test no
+// fixture, -recurse output or end-user output path satisfies.
+//
+// The test is on the OUTPUT LOCATION alone, deliberately. It was scoped to -tests when it was
+// first written, which left the plain SINGLE-PACKAGE form (`go2cs <goroot-pkg> <core-pkg>`, how a
+// lane regenerates one corpus package after a converter change) stripping the block from that
+// package's .csproj — the same silent un-shipping, reached by a different door, and one that reads
+// as ordinary reconvert drift because only the .csproj moves.
+func rewriteOfCorePackage(projectFileName string, options Options) bool {
+	if len(options.go2csPath) == 0 {
 		return false
 	}
 

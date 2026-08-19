@@ -1077,10 +1077,24 @@ func TestSeedProductionAliasLiftsCarriesLiftAndAliasTogether(t *testing.T) {
 		t.Fatalf("the anonymous struct must resolve to its alias name, got %q", got)
 	}
 
-	// A NAMED right-hand side already renders through its own qualified name, so seeding an
-	// alias for it would put an avoidable global-using name into the test compilation.
-	if _, seeded := importedTypeAliases["Named"]; seeded {
-		t.Fatal("an alias over a NAMED type must not be seeded — it has its own spelling")
+	// A NAMED right-hand side needs the NAME half and ONLY the name half. It was seeded neither
+	// way until 2026-08-19, on the reasoning that such an alias "already renders through its own
+	// qualified name" — which is false where the production conversion declares the alias as a
+	// `global using` in the FILE that declares it and the renderer then spells the bare alias name
+	// in production and test alike. html/template's `type FuncMap = template.FuncMap` is that shape,
+	// and a reference-model test project compiles `*_test.cs` only, so the declaring file is absent
+	// and the name resolves nowhere: CS0246 ×6, with all 243 of its verdicts behind it.
+	if got := importedTypeAliases["Named"]; got != "go.example.aliaslift_package.Concrete" {
+		t.Fatalf("a named-RHS alias must be re-emitted into the test compilation, got %q", got)
+	}
+
+	// ...but its TYPE must NOT be recorded. The RHS has its own qualified spelling and is already
+	// rendered through it, so redirecting every renderer onto the alias name would re-spell
+	// references that already compile. This is the half that stays anonymous-RHS-only.
+	if named := internal.Types.Scope().Lookup("Named"); named != nil {
+		if got, seeded := productionAliasLiftedTypes[types.Unalias(named.Type())]; seeded {
+			t.Fatalf("a named-RHS alias must not redirect its type's rendering, got %q", got)
+		}
 	}
 
 	// An UNEXPORTED alias publishes nothing, so seeding its type would render a name the test
