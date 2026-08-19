@@ -22,6 +22,16 @@ partial class main_package {
 
 [GoType("map[@string, slice<nint>]")] partial struct namedSlices;
 
+[GoType("[]byte")] partial struct charData;
+
+[GoType("num:byte")] partial struct myByte;
+
+[GoType("[]myByte")] partial struct myBytes;
+
+[GoType("[]@string")] partial struct names;
+
+[GoType("[]any")] partial struct recur;
+
 [GoType] partial struct wrap {
     internal named m;
 }
@@ -157,6 +167,41 @@ internal static void Main() {
     g3.of(guarded.Ꮡonce).Do(() => {
     });
     fmt.Println(reflect.DeepEqual(g3.OrTypedNil(), g2.OrTypedNil()));
+    var data = slice<byte>("same data"u8);
+    var c1 = ((charData)data);
+    var c2 = ((charData)append(slice<byte>(default!), data.ꓸꓸꓸ));
+    fmt.Println(reflect.DeepEqual(c1, c2));
+    data[1] = (rune)'o';
+    fmt.Println(reflect.DeepEqual(c1, c2));
+    fmt.Println(reflect.DeepEqual(c1, c1));
+    fmt.Println(reflect.DeepEqual(((charData)slice<byte>((@string)"ab"u8)), ((charData)slice<byte>((@string)"ab"u8))));
+    fmt.Println(reflect.DeepEqual(((charData)slice<byte>((@string)"ab"u8)), ((charData)slice<byte>((@string)"ac"u8))));
+    fmt.Println(reflect.DeepEqual(((charData)slice<byte>((@string)"ab"u8)), ((charData)slice<byte>((@string)"abc"u8))));
+    any tok1 = ((charData)data);
+    any tok2 = ((charData)append(slice<byte>(default!), data.ꓸꓸꓸ));
+    fmt.Println(reflect.DeepEqual(tok1, tok2));
+    tok2 = ((any)((charData)data));
+    fmt.Println(reflect.DeepEqual(tok1, tok2));
+    fmt.Println(reflect.DeepEqual(new charData[]{((charData)slice<byte>((@string)"ab"u8))}.slice(), new charData[]{((charData)slice<byte>((@string)"ac"u8))}.slice()));
+    fmt.Println(reflect.DeepEqual(new map<@string, charData>{["k"u8] = ((charData)slice<byte>((@string)"ab"u8))}, new map<@string, charData>{["k"u8] = ((charData)slice<byte>((@string)"ac"u8))}));
+    charData nilCD = default!;
+    fmt.Println(reflect.DeepEqual(nilCD, nilCD));
+    fmt.Println(reflect.DeepEqual(nilCD, new charData(new byte[]{}.slice())));
+    fmt.Println(reflect.DeepEqual(new charData(new byte[]{}.slice()), new charData(new byte[]{}.slice())));
+    fmt.Println(reflect.DeepEqual(new myBytes(new myByte[]{1, 2}.slice()), new myBytes(new myByte[]{1, 2}.slice())));
+    fmt.Println(reflect.DeepEqual(new myBytes(new myByte[]{1, 2}.slice()), new myBytes(new myByte[]{1, 3}.slice())));
+    fmt.Println(reflect.DeepEqual(new names(new @string[]{"a"u8, "b"u8}.slice()), new names(new @string[]{"a"u8, "b"u8}.slice())));
+    fmt.Println(reflect.DeepEqual(new names(new @string[]{"a"u8, "b"u8}.slice()), new names(new @string[]{"a"u8, "c"u8}.slice())));
+    var nanCD = new names(new @string[]{"a"u8}.slice());
+    fmt.Println(reflect.DeepEqual(nanCD, nanCD));
+    var r1 = new recur(1);
+    r1[0] = r1;
+    var r2 = new recur(1);
+    r2[0] = r2;
+    fmt.Println(reflect.DeepEqual(r1, r2));
+    var r3 = new recur(1);
+    r3[0] = (@string)"x"u8;
+    fmt.Println(reflect.DeepEqual(r1, r3));
 }
 
 } // end main_package

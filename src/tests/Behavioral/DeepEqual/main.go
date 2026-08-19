@@ -22,6 +22,21 @@ type namedAny map[any]int
 
 type namedSlices map[string][]int
 
+// A named byte-slice type -- encoding/xml's CharData/Comment shape. The generated wrapper is a
+// struct holding a slice<byte>, not a slice<byte> itself.
+type charData []byte
+
+// A named slice over a DEFINED byte element, and one over a non-byte element: the same wrapper
+// shape reached through two element types the []byte fast path treats differently.
+type myByte byte
+
+type myBytes []myByte
+
+type names []string
+
+// A named slice that can hold ITSELF -- the only way a slice heads a reference cycle in Go.
+type recur []any
+
 type wrap struct{ m named }
 
 type hooks struct {
@@ -193,4 +208,65 @@ func main() {
 	g3 := &guarded{n: 1, name: "a"}
 	g3.once.Do(func() {})
 	fmt.Println(reflect.DeepEqual(g3, g2))
+
+	// NAMED SLICE types, the slice half of the named-map defect above and with the same signature:
+	// the wrapper holds its slice<T> one level down, so the backing-ARRAY probe resolved both sides
+	// to null, the "same initial entry of the same underlying array" short-circuit matched them,
+	// and two named slices of equal length were reported deeply equal REGARDLESS of content. That
+	// is what made encoding/xml's TestCopyTokenCharData/TestCopyTokenComment fail their SECOND
+	// assertion: CopyToken really does clone its buffer, but mutating the original still compared
+	// equal to the clone, which reads as "uses same buffer".
+	data := []byte("same data")
+	c1 := charData(data)
+	c2 := charData(append([]byte(nil), data...))
+	fmt.Println(reflect.DeepEqual(c1, c2))
+	data[1] = 'o'
+	fmt.Println(reflect.DeepEqual(c1, c2))
+	fmt.Println(reflect.DeepEqual(c1, c1))
+	fmt.Println(reflect.DeepEqual(charData("ab"), charData("ab")))
+	fmt.Println(reflect.DeepEqual(charData("ab"), charData("ac")))
+	fmt.Println(reflect.DeepEqual(charData("ab"), charData("abc")))
+
+	// The xml shape verbatim: a named byte slice reached through an INTERFACE, as a map value, and
+	// as a slice element -- the wrapper is unwrapped at each of them or at none.
+	var tok1 any = charData(data)
+	var tok2 any = charData(append([]byte(nil), data...))
+	fmt.Println(reflect.DeepEqual(tok1, tok2))
+	tok2 = any(charData(data))
+	fmt.Println(reflect.DeepEqual(tok1, tok2))
+	fmt.Println(reflect.DeepEqual([]charData{charData("ab")}, []charData{charData("ac")}))
+	fmt.Println(reflect.DeepEqual(map[string]charData{"k": charData("ab")}, map[string]charData{"k": charData("ac")}))
+
+	// Nil vs empty vs same-identity, on the named type: a nil named slice has a null backing, so
+	// the nil/empty rule has to survive the unwrap rather than be short-circuited by it.
+	var nilCD charData
+	fmt.Println(reflect.DeepEqual(nilCD, nilCD))
+	fmt.Println(reflect.DeepEqual(nilCD, charData{}))
+	fmt.Println(reflect.DeepEqual(charData{}, charData{}))
+
+	// A named slice over a DEFINED byte element (the []byte fast path reaches it only by aliasing
+	// the element storage) and one over a non-byte element (which the fast path never covers) --
+	// so the fix cannot be byte-specific.
+	fmt.Println(reflect.DeepEqual(myBytes{1, 2}, myBytes{1, 2}))
+	fmt.Println(reflect.DeepEqual(myBytes{1, 2}, myBytes{1, 3}))
+	fmt.Println(reflect.DeepEqual(names{"a", "b"}, names{"a", "b"}))
+	fmt.Println(reflect.DeepEqual(names{"a", "b"}, names{"a", "c"}))
+
+	// The same named slice compared to itself IS deeply equal by the &s[0] identity rule, even
+	// when it holds a NaN that is not equal to itself elementwise -- the short-circuit the null
+	// backing was firing accidentally has to keep firing where it is genuinely true.
+	nanCD := names{"a"}
+	fmt.Println(reflect.DeepEqual(nanCD, nanCD))
+
+	// A named slice heading a reference CYCLE. Cycle detection keys on the backing array, so the
+	// same null backing left every named slice out of the visited set; this terminates only if the
+	// unwrap reaches the real array.
+	r1 := make(recur, 1)
+	r1[0] = r1
+	r2 := make(recur, 1)
+	r2[0] = r2
+	fmt.Println(reflect.DeepEqual(r1, r2))
+	r3 := make(recur, 1)
+	r3[0] = "x"
+	fmt.Println(reflect.DeepEqual(r1, r3))
 }

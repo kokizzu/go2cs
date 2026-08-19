@@ -13197,4 +13197,159 @@ log's `EXITCODE=` being EMPTY rather than `0` — `$LASTEXITCODE` was never set 
 Read the `.err` file before banking any gate that finished implausibly fast; a `sawRunning` flag in the
 poll makes the distinction mechanical.
 
+## ✅ `encoding/xml` BANKS at 386/386 — the last root was `reflect.DeepEqual` unable to see a NAMED slice's backing array, and it is the named-MAP defect with one word substituted (2026-08-19, lane `claude/xml-bank`)
+
+Row 155. The largest bank since `encoding/json` (491), and the whole of what stood between the
+heavy-pair lane's 384 and a row was **two verdicts** — `TestCopyTokenCharData` and
+`TestCopyTokenComment`.
+
+### A correction to the handoff, and it is the finding
+
+The heavy-pair entry narrowed the residual precisely and named the wrong line for it:
+
+> deepValueEqualBoxed's []byte fast path is `live1 is slice<byte>`, which a NAMED byte-slice wrapper
+> never satisfies, so comparison falls to the element-wise `Value.Index` loop.
+
+Both halves of that sentence are true, and neither is why the values compared equal. The fast path is
+**never reached**: `sliceData` — the probe that answers a Value's backing array and window offset —
+reads `m_array`/`m_low` off the boxed object's own type, and a generated named-slice wrapper has
+neither (it holds a `slice<E>` STRUCT one level down). Both sides therefore resolve to `(null, 0)`,
+and the `ReferenceEquals(data1, data2) && low1 == low2` identity short-circuit — Go's
+`&x[0] == &y[0]` rule — fires **two lines above** the fast path and returns `true`.
+
+**Measured, not argued.** A/B over a twenty-row guard, each half neutered alone:
+
+| | rows wrong |
+|:--|:--:|
+| master (both halves absent) | 8 of 20 |
+| fast path fixed, `sliceData` untouched | **8 of 20** — unchanged |
+| `sliceData` fixed, fast path untouched | **0 of 20** |
+| both | 0 of 20 |
+
+So `sliceData` is the root and the fast path is an independent, real, *silent* gap. Both ship; only
+the first is load-bearing, and a lane told "fix the fast path" would have measured no movement at all
+and gone looking for a second defect that does not exist.
+
+### It is the named-MAP defect with SLICE substituted throughout
+
+The fix is a few lines and it was already written, one function away, for maps — `mapBacking`'s own
+comment describes this failure verbatim:
+
+> without it BOTH sides of a named-map comparison resolved to null, the `ReferenceEquals(m1, m2)`
+> short-circuit above matched them as "the same map object", and two named maps of equal length were
+> reported deeply equal REGARDLESS of their contents (`identityRoot` was blind the same way, so a
+> named-map cycle was never detected either).
+
+Every clause holds for slices with the nouns swapped, plus one the map arm does not have: a **nil**
+named slice compared equal to an **empty** one, because the nil/empty rule (`data1 is null != data2 is
+null`) tests the same two nulls. `sliceData` now takes the same second step, gated on the type being
+slice-KINDED so a struct that merely HAS a slice field can never be mistaken for one, and terminating
+because the nested value is a strictly smaller struct that carries the pair itself.
+
+**The transferable rule: a container probe that reads golib's private backing fields must be written
+for the WRAPPER as well as the raw container, in the same change.** Two of these have now been found
+separately, with identical symptoms. The probes of this shape are `mapBacking` (fixed 2026-07-26),
+`sliceData` (fixed here) and `identityRoot`'s `default:` arm; anything new that reaches for
+`m_array`/`m_low`/a backing `Dictionary` inherits the obligation.
+
+### The symptom named the wrong package, which is why it survived a green compile
+
+`TestCopyTokenCharData` clones a token's buffer, mutates the ORIGINAL, and asserts the two are no
+longer deeply equal. Its failure text is **`CopyToken(CharData) uses same buffer.`** — which reads as
+a copy that failed to copy, and sends a reader into `encoding/xml`'s `CopyToken`, `bytes.Clone`, and
+the `slice<byte>`→`CharData` conversion. All three are correct: `Clone` allocates a fresh backing
+array and the generated conversion aliases exactly as it should. The values were wrongly **EQUAL**,
+never wrongly **SHARING**. (The heavy-pair lane had already made this correction once, against the
+board's earlier "the copy is not copying its backing bytes" framing; it is recorded again because the
+test's own message will keep asserting the wrong thing.)
+
+The first assertion in each of those tests — the *un*mutated clone compares equal — **passed
+throughout**, which is what kept the defect invisible: half of every such test agrees with a probe
+that answers "same buffer" for everything.
+
+### The `[]byte` fast path, since it ships too
+
+Go selects the `bytealg.Equal` special case by the element **KIND**, never by the slice's or the
+element's name: a raw `[]byte`, a defined slice type over `byte` (`xml.CharData`, `net.IP`,
+`net.HardwareAddr`, `tar`'s format types) and a slice over a defined byte element all qualify. The
+managed arm tested `live is slice<byte>`, which only the first satisfies, so the other two took the
+elementwise `Value.Index` walk — correct answers, silently off the fast path. It now asks
+`GoReflect.TryByteSliceView`, the element-kind alias `Value.Bytes`/`SetBytes` are already built on
+(`AliasOfElement` and its `ByteAliasableElement<E>` gate), so all three shapes take one route in both
+APIs. Both sides are the same Go type by the `AreEqual` check above it, so one view test settles both.
+
+### Guard
+
+The existing `DeepEqual` behavioral project is extended by twenty rows rather than forked — its
+named-MAP block is the direct precedent and now sits beside its named-SLICE twin. **Eight of the
+twenty printed the wrong answer against the pre-fix binary, every one of them wrongly `true`**; all
+63 pre-existing rows agreed before and after. The rows: the `CopyToken` shape verbatim (clone, mutate
+the original, re-compare); a named byte slice through an interface, as a slice element, as a map
+value; nil vs empty vs self; length mismatch; a named slice over a DEFINED byte element and one over
+`string`, so the fix cannot be byte-specific; the identity short-circuit where it is genuinely true;
+and a self-referential `type recur []any` cycle, which is accidentally `true` before the fix (the
+short-circuit fires) and terminates after it only because the unwrap reaches the real backing array.
+
+### `encoding/xml` — 386 of 386
+
+`386 matched · 0 disclosed · 0 skipped · 0 empty · 0 errors`, 8 Example/Benchmark declarations
+excluded as everywhere. No disclosure manifest: the package needs none. The suite is one long
+reflection walk checked against Go's own answer — decoder tokenization over the whole grammar,
+namespace resolution in both directions, the `Marshal`/`Unmarshal` struct-tag grammar,
+`Marshaler`/`Unmarshaler` at every depth, `EncodeToken`'s well-formedness rules, and the CVE set —
+which is why its last roots were all `reflect` and none was `xml`.
+
+Pipeline: 114 s wall for convert + build + run + compare, so no `$longTimeouts` floor is warranted.
+
+### Two emission moves that are NOT this lane's — ADOPTED rather than restored, and that is a change of practice
+
+The canary sweeps flagged two content movers. Neither can be this lane's: a hand-owned C# corpus file
+is skipped by the converter and cannot influence emission at all. Both belong to converter changes
+already on master whose corpus regen is pending:
+
+| File | Owner | Sweep that proves it |
+|:--|:--|:--|
+| `internal/fmtsort/sort_test.cs` — `ptr.Value ==` → `ptr ==` | `a8a0b1827`, row-harvest-3's "two `unsafe.Pointer`s compare as BOXES" | `internal/fmtsort` **PASS 3** |
+| `encoding/json/package_test_info.cs` — `+global using ΔToken = object;` | the alias-seeding chain — `dd11e1e35` (2026-08-18) seeds an anonymous-interface RHS, which `type Token any` is; `b3a5f56e1` later widened the same seed to named RHSs | `encoding/json` **PASS 491** |
+
+**The heavy-pair entry above RESTORED the `ΔToken` line, having rooted it correctly and identically.
+This lane adopts it instead, and the disagreement is worth resolving rather than alternating.** The
+case for adopting is the one the near-miss lane made when it took `internal/reflectlite`'s
+`global using Kind = …abi_package.ΔKind;`: a banked package's committed test sources exist so the
+suite is *reproducible from a clone*, and json's are not — regenerate them today and you get a line
+the repository does not have. Restoring keeps the commit tidy at the cost of a permanent
+re-flag on every future sweep and a bank that no longer reproduces. Both movers are proven by this
+lane's own green sweeps of the exact packages they land in, which is the near-miss standard, so they
+are adopted here and the practice is stated rather than left to the next lane to re-derive.
+
+`internal/fmtsort` additionally shows the box-compare change reaches committed TEST sources, not only
+the seven `runtime` production sites row-harvest-3 flagged for the next leveling regen.
+
+### Gates
+
+Canaries first, because a bridge regression surfaces there before anywhere else: **`fmt` 63/63**
+unmoved, **`internal/fmtsort` 3/3**, **`encoding/json` 491/491** unmoved. Full behavioral suite **PASS at 601 projects, 3,240.9 s** — Transpile 601/601, Compile 601/601, **Target 601/601 byte-identical**, Output 575 compared / 0 failed (26 skipped, no `package main`), 0 timeouts / 0 NOT MEASURED. Guard
+counter-proven failing-first by the A/B table above (both halves neutered separately, then together).
+
+No converter, generator or `golib` source changed — the fix is one hand-owned corpus file
+(`reflect/deepequal_impl.cs`, `[module: GoManualConversion]`) whose two changed functions are both
+`private static`, so no public surface moved: no seeded-reconvert marker gate and no converter
+`go test`/CNR are owed, and the compile risk is bounded to the one assembly the behavioral suite
+builds 601 projects against.
+
+The `-tests` tree churn classified per the standing rule: `encoding/xml/package_init.cs` gained the
+`initᴛᴛtests()` hook (+7 real lines, the fourth `-tests`-closure shape) and was **restored** —
+**zero** committed `package_init.cs` in the corpus carry it, and the tests project compiles
+`*_test.cs` only (`EnableDefaultCompileItems=false`, explicit items), so the hook is inert to the
+bank either way.
+
+### The queue, unchanged except for xml leaving it
+
+1. **Channel direction as descriptor cargo** — still the prerequisite for the written-and-measured
+   `reflect.Value.Recv` bridge (`text/template` 50 → 51 of 52).
+2. **`html/template`'s Root C** — `defer` of a variadic func literal, ONE site in the corpus, sole
+   wall on 243 verdicts.
+3. **`encoding/gob` (106)** — 103 of 106, now the closest unbanked package.
+4. **`sync/atomic`'s zero-size-field layout**, 5. **`%#x` of a `uintptr`** — unchanged.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

@@ -15600,6 +15600,45 @@ identically. The full rule, and why the container's verdict disagreed with every
 is *A map ENTRY is a SLOT* below. Guarded by `ReflectBridgeClosure`'s *map nil element* rows;
 counter-proven by reverting the arm, which reports `false false` where Go reports `true true`.
 
+**A fifth defect, and it is the named-map one with SLICE substituted throughout (2026-08-19).**
+`sliceData` — the probe that answers a Value's backing array and window offset, which is both the
+`&x[0] == &y[0]` short-circuit's input and `identityRoot`'s cycle key — read `m_array`/`m_low` off the
+boxed object's own type. A generated NAMED-slice wrapper (`type S []E`, e.g. `xml.CharData`,
+`xml.Comment`, `net.IP`) has neither: it holds a `slice<E>` **struct** one level down, exactly as the
+named-MAP wrapper holds its `map<K,V>`. So both sides resolved to `(null, 0)`, `ReferenceEquals(data1,
+data2)` matched them as "the same initial entry of the same underlying array", and two named slices of
+equal length were deeply equal **regardless of contents**; a nil named slice compared equal to an empty
+one (the nil/empty rule tests the same two nulls); and `identityRoot` was blind the same way, so a
+named-slice cycle was never detected. The probe now takes the same second step `mapBacking` takes,
+gated on the type being slice-KINDED so a struct that merely HAS a slice field can never be mistaken
+for one, and terminating because the nested value is a strictly smaller struct that carries the pair
+itself.
+
+The observable form is worth recording because it points at the wrong package. `encoding/xml`'s
+`TestCopyTokenCharData`/`TestCopyTokenComment` clone a token's buffer, mutate the ORIGINAL, and assert
+the two are no longer deeply equal; the failure message is *"CopyToken(CharData) uses same buffer"*,
+which reads as a copy that failed to copy. It is not — `bytes.Clone` allocates a fresh backing array
+and the `slice<byte>`→`CharData` conversion aliases correctly. The values were wrongly EQUAL, never
+wrongly SHARING, and the owner was `reflect`.
+
+**And the `[]byte` fast path was a second, independent gap in the same arm** — real, but NOT what made
+the values compare equal (measured by A/B: fixing only the fast path leaves all eight wrong rows wrong;
+fixing only `sliceData` makes all of them right, because the identity short-circuit fires FIRST and the
+fast path is never reached). Go's `[]byte` special case is selected by the element **KIND**, never by
+the slice's or the element's name — a raw `[]byte`, a defined slice type over `byte`, and a slice over
+a defined byte element all route through `bytealg.Equal` — while the managed arm tested `live is
+slice<byte>`, which only the first satisfies. It now asks `GoReflect.TryByteSliceView`, the same
+element-kind alias `Value.Bytes`/`SetBytes` are built on (see *the `[]byte` VIEW of any Uint8-element
+slice*), so all three shapes take one route in both APIs; both sides are the same Go type by the
+`AreEqual` check above, so one view test settles both.
+
+Guarded by the `DeepEqual` project's twenty new named-slice rows — the `CopyToken` shape verbatim
+(clone, mutate the original, re-compare) plus a named byte slice through an interface, as a slice
+element and as a map value; nil vs empty vs self; a named slice over a DEFINED byte element and one
+over `string` so the fix cannot be byte-specific; and a self-referential `type recur []any` cycle,
+which terminates only once the unwrap reaches the real backing array. Counter-proven failing-first:
+**eight** of the twenty printed the wrong answer, every one of them wrongly `true`.
+
 **The Windows directory-entry walk (`os/dir_windows_impl.cs`, Phase-4 — os operational).** Go's
 `(*File).readdir` walks the buffer `GetFileInformationByHandleEx` fills by REINTERPRETING it as a Go
 struct — `info := (*windows.FILE_ID_BOTH_DIR_INFO)(entry)`, then

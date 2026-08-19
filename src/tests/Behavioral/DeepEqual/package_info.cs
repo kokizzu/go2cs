@@ -59,13 +59,18 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct charData {}
     internal partial struct guarded {}
     internal partial struct hooks {}
+    internal partial struct myByte {}
+    internal partial struct myBytes {}
     internal partial struct named {}
     internal partial struct namedAny {}
     internal partial struct namedSlices {}
+    internal partial struct names {}
     internal partial struct node {}
     internal partial struct point {}
+    internal partial struct recur {}
     internal partial struct wrap {}
     // </TypeAccessibility>
 }

@@ -92,8 +92,16 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
             // Same initial entry of the same underlying array (&x[0] == &y[0]).
             return true;
         }
-        if (live1 is slice<byte> b1 && live2 is slice<byte> b2) {
-            // Special case for []byte, which is common (Go routes this through bytealg.Equal).
+        if (GoReflect.TryByteSliceView(live1, out slice<byte> b1) &&
+            GoReflect.TryByteSliceView(live2, out slice<byte> b2)) {
+            // Special case for []byte, which is common (Go routes this through bytealg.Equal). Go
+            // reaches it by the element KIND, never by the slice's or the element's NAME — a raw
+            // []byte, a defined slice type over byte (xml.CharData, net.IP) and a slice over a
+            // defined byte element all qualify — and that is exactly the set TryByteSliceView
+            // aliases, so all three take one route here as they already do in Value.Bytes. The
+            // `is slice<byte>` test this replaces covered only the first, silently sending the
+            // other two around the elementwise Value.Index walk (both sides are the SAME Go type
+            // by the AreEqual check above, so one view test settling both is sound).
             return b1.ToSpan().SequenceEqual(b2.ToSpan());
         }
         for (nint i = 0; i < v1.Len(); i++) {
@@ -280,19 +288,44 @@ private static (object? root, nint offset) identityRoot(object? boxed) {
 // public Source materializes a detached copy, so identity (and nil-ness — a nil slice is the golib
 // `default`, null m_array) must come from the actual m_array/m_low fields; map<K,V> likewise only
 // exposes its Dictionary internally. Field reads are cached per type.
-private static readonly ConcurrentDictionary<System.Type, (FieldInfo? array, FieldInfo? low)> s_sliceFields = new();
+private static readonly ConcurrentDictionary<System.Type, (FieldInfo? array, FieldInfo? low, FieldInfo? nested)> s_sliceFields = new();
 private static readonly ConcurrentDictionary<System.Type, FieldInfo?> s_mapField = new();
 
 // sliceData returns a boxed slice's backing array and window offset — (null, 0) for the nil slice.
+//
+// A generated NAMED-slice wrapper (`type S []E`) holds a slice<E> STRUCT, not the m_array/m_low pair
+// this probe reads, so — exactly as for the named-MAP wrapper mapBacking handles below, and with the
+// same signature — the probe takes a second step through such a field. Without it BOTH sides of a
+// named-slice comparison resolved to null and the "same initial entry of the same underlying array"
+// short-circuit above matched them, so two named slices of equal length were reported deeply equal
+// REGARDLESS of their contents; a nil named slice compared equal to an empty one (both backings read
+// null, so the nil/empty rule never fired); and identityRoot was blind the same way, so a named-slice
+// cycle was never detected either. encoding/xml's TestCopyTokenCharData/TestCopyTokenComment are
+// exactly that shape: CopyToken really does clone its buffer, yet mutating the ORIGINAL still
+// compared equal to the clone — which the test reports as "uses same buffer", pointing at a copy that
+// was never the defect. The second step is taken only for a slice-KINDED type, so a struct that
+// merely HAS a slice field can never be mistaken for one, and the recursion terminates because the
+// nested value is a strictly smaller struct — slice<E> carries the m_array/m_low pair itself.
 private static (object? data, nint low) sliceData(object? boxed) {
     if (boxed is null) {
         return (null, 0);
     }
-    (FieldInfo? array, FieldInfo? low) = s_sliceFields.GetOrAdd(boxed.GetType(), static t =>
-        (t.GetField("m_array", BindingFlags.Instance | BindingFlags.NonPublic),
-         t.GetField("m_low", BindingFlags.Instance | BindingFlags.NonPublic)));
+    (FieldInfo? array, FieldInfo? low, FieldInfo? nested) = s_sliceFields.GetOrAdd(boxed.GetType(), static t => {
+        FieldInfo? array = t.GetField("m_array", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (array is not null) {
+            return (array, t.GetField("m_low", BindingFlags.Instance | BindingFlags.NonPublic), null);
+        }
+        if (typeof(ISlice).IsAssignableFrom(t)) {
+            foreach (FieldInfo f in t.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)) {
+                if (typeof(ISlice).IsAssignableFrom(f.FieldType)) {
+                    return (null, null, f);
+                }
+            }
+        }
+        return (null, null, null);
+    });
     if (array is null) {
-        return (null, 0);
+        return nested is null ? (null, 0) : sliceData(nested.GetValue(boxed));
     }
     object? data = array.GetValue(boxed);
     return data is null ? (null, 0) : (data, low is null ? 0 : (nint)low.GetValue(boxed)!);
