@@ -1117,6 +1117,9 @@ exactly as a return would.
 
 An unrecovered panic — even in a goroutine — crashes the process exactly as in Go: golib's
 `AppDomain.UnhandledException` backstop writes the `panic: …` report to stderr and exits with code 2.
+The VALUE in that report follows Go's `preprintpanics` rule, so an `error` prints its `Error()` and a
+`Stringer` its `String()` — `panic: open final.txt: code 13`, never the pointer's address — and the
+substitution runs only on the printing path, so a recovered panic never calls either.
 
 `recover()` is a static call reading the one thread-local slot the emitted `catch` parked the panic
 in — which is what lets a deferred closure recover without holding any handle on the frame that

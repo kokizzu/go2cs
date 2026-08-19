@@ -1150,6 +1150,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckPanicRecover() => CheckTarget("PanicRecover");
 
     [TestMethod]
+    public void CheckPanicValueRendering() => CheckTarget("PanicValueRendering");
+
+    [TestMethod]
     public void CheckParallelAssignmentHazard() => CheckTarget("ParallelAssignmentHazard");
 
     [TestMethod]
@@ -1364,6 +1367,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckReflectUnexportedFieldFlags() => CheckTarget("ReflectUnexportedFieldFlags");
+
+    [TestMethod]
+    public void CheckReflectVariadicCall() => CheckTarget("ReflectVariadicCall");
 
     [TestMethod]
     public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");

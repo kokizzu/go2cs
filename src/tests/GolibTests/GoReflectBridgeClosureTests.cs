@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Numerics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
@@ -97,6 +98,198 @@ public class GoReflectBridgeClosureTests
     }
 
     private delegate void SpanTail(@string s, params Span<nint> rest);
+
+    // ---- InvokeVariadic: the typed dispatch a `params Span<T>` tail forces ------------------------
+    //
+    // These live here rather than in the behavioral tier for the reason this file's header states:
+    // the shapes are ones only golib can construct. A Go program reaches Value.Call through the
+    // reflect package and observes only the RESULT; what is asserted below is that the dispatch
+    // reaches the callee at all for each of the two delegate identities a converted variadic takes,
+    // and that the tail arrives as a real Span over the array handed in — neither of which a printed
+    // value can distinguish from an accidental pass.
+
+    [TestMethod]
+    public void AVariadicFamilyDelegateIsCalledWithItsTailIntact()
+    {
+        // The FAMILY identity: what a declared variadic func TYPE (a parameter, a field, a defined
+        // func type) lowers to. It is already the family type, so no rebind is involved.
+        Funcꓸꓸꓸ<@string, nint, @string> join = (prefix, parts) =>
+        {
+            @string result = prefix;
+
+            foreach (nint part in parts)
+                result += (@string)("/" + part);
+
+            return result;
+        };
+
+        Assert.AreEqual((@string)"go/1/2/3", (@string)GoReflect.InvokeVariadic(join, [(@string)"go"], new nint[] { 1, 2, 3 })!);
+
+        // An EMPTY tail is Go's `f(prefix)` — the slice is empty, not absent, and not nil-hostile.
+        Assert.AreEqual((@string)"go", (@string)GoReflect.InvokeVariadic(join, [(@string)"go"], Array.Empty<nint>())!);
+    }
+
+    [TestMethod]
+    public void ANaturalTypedVariadicDelegateRebindsOntoItsFamily()
+    {
+        // The NATURAL identity: a variadic func literal in an `any` slot, or a declared variadic
+        // used as a method group there, gets a compiler-synthesized delegate type instead of the
+        // family one — the same shape difference TryFuncShape had to stop reading off the type NAME.
+        // A family cast would throw InvalidCastException on it; the rebind is what makes it callable.
+        SpanTail record = (s, rest) =>
+        {
+            s_spanTailLog = s;
+
+            foreach (nint value in rest)
+                s_spanTailLog += (@string)("," + value);
+        };
+
+        Assert.AreNotEqual(typeof(Actionꓸꓸꓸ<@string, nint>), record.GetType());
+        Assert.IsNull(GoReflect.InvokeVariadic(record, [(@string)"n"], new nint[] { 7, 8 }));
+        Assert.AreEqual((@string)"n,7,8", s_spanTailLog);
+    }
+
+    private static @string s_spanTailLog;
+
+    [TestMethod]
+    public void AnExpressionCompiledVariadicDelegateRebindsToo()
+    {
+        // The third identity, and the one that has no Go source at all: a delegate the BRIDGE built.
+        // Value.Method binds a receiver by compiling an expression lambda, so a variadic method value
+        // arrives here as a compiled `Func<Span<T>, R>` whose Method is NOT a runtime MethodInfo —
+        // Delegate.CreateDelegate refuses to re-bind that method at all. Retargeting through Invoke
+        // is what makes the rebind total; binding target-and-method would throw here.
+        ParameterExpression args = Expression.Parameter(typeof(Span<nint>), "args");
+        Delegate compiled = Expression.Lambda<Func<Span<nint>, nint>>(
+            Expression.Convert(Expression.Property(args, nameof(Span<nint>.Length)), typeof(nint)), args).Compile();
+
+        Assert.IsFalse(compiled.Method is { } m && m.GetType().Name.Contains("Runtime"));
+        Assert.AreEqual((nint)3, (nint)GoReflect.InvokeVariadic(compiled, [], new nint[] { 4, 5, 6 })!);
+    }
+
+    [TestMethod]
+    public void AVariadicTailAliasesTheArrayItWasHandedRatherThanACopy()
+    {
+        // The tail is a Span OVER the array, so the callee sees the caller's storage. Asserting it
+        // through a write is the only way to tell that apart from a defensive copy, and a copy is
+        // exactly what any object?[]-based invoke path would have been forced into.
+        Actionꓸꓸꓸ<nint> bump = args =>
+        {
+            for (int i = 0; i < args.Length; i++)
+                args[i] *= 10;
+        };
+
+        nint[] tail = [1, 2, 3];
+        GoReflect.InvokeVariadic(bump, [], tail);
+
+        CollectionAssert.AreEqual(new nint[] { 10, 20, 30 }, tail);
+    }
+
+    [TestMethod]
+    public void AVariadicMultiReturnArrivesAsItsValueTuple()
+    {
+        // Go's multi-return is a ValueTuple result, and the family's TResult carries it whole — the
+        // same shape Value.Call destructures positionally on the non-variadic path.
+        Funcꓸꓸꓸ<nint, (nint sum, bool any)> total = args =>
+        {
+            nint sum = 0;
+
+            foreach (nint value in args)
+                sum += value;
+
+            return (sum, args.Length > 0);
+        };
+
+        Assert.AreEqual((4, true), ((nint, bool))GoReflect.InvokeVariadic(total, [], new nint[] { 1, 3 })!);
+    }
+
+    [TestMethod]
+    public void EveryFamilyArityDispatchesToTheRightTrampoline()
+    {
+        // The dispatch tables are indexed BY FIXED-PARAMETER COUNT, and the two families count their
+        // type arguments differently (Action: n+1, Func: n+2). A mis-indexed entry fails loudly —
+        // MakeGenericType rejects the arity, or the cast throws — but only for the arity that is
+        // wrong, and only when some package finally uses it. The behavioral test reaches 0, 1 and 2
+        // through real Go source; 3 through 8 have no consumer in the corpus yet, so they are
+        // exercised here rather than left to be discovered.
+        //
+        // `call` passes 1 << i as fixed argument i and a tail summing to 100, so arity n answers
+        // 100 + (2^n - 1): the fixed half is a bit set, and a trampoline that dropped an argument,
+        // passed one twice, or lost the tail lands on a different number rather than a plausible
+        // one. (Two arguments TRANSPOSED still sums the same — addition is commutative — so that is
+        // deliberately not claimed.)
+        Assert.AreEqual((nint)100, call(new Funcꓸꓸꓸ<nint, nint>(t => sum(t))));
+        Assert.AreEqual((nint)101, call(new Funcꓸꓸꓸ<nint, nint, nint>((a, t) => a + sum(t))));
+        Assert.AreEqual((nint)103, call(new Funcꓸꓸꓸ<nint, nint, nint, nint>((a, b, t) => a + b + sum(t))));
+        Assert.AreEqual((nint)107, call(new Funcꓸꓸꓸ<nint, nint, nint, nint, nint>((a, b, c, t) => a + b + c + sum(t))));
+        Assert.AreEqual((nint)115, call(new Funcꓸꓸꓸ<nint, nint, nint, nint, nint, nint>((a, b, c, d, t) => a + b + c + d + sum(t))));
+        Assert.AreEqual((nint)131, call(new Funcꓸꓸꓸ<nint, nint, nint, nint, nint, nint, nint>((a, b, c, d, e, t) => a + b + c + d + e + sum(t))));
+        Assert.AreEqual((nint)163, call(new Funcꓸꓸꓸ<nint, nint, nint, nint, nint, nint, nint, nint>((a, b, c, d, e, f, t) => a + b + c + d + e + f + sum(t))));
+        Assert.AreEqual((nint)227, call(new Funcꓸꓸꓸ<nint, nint, nint, nint, nint, nint, nint, nint, nint>((a, b, c, d, e, f, g, t) => a + b + c + d + e + f + g + sum(t))));
+        Assert.AreEqual((nint)355, call(new Funcꓸꓸꓸ<nint, nint, nint, nint, nint, nint, nint, nint, nint, nint>((a, b, c, d, e, f, g, h, t) => a + b + c + d + e + f + g + h + sum(t))));
+
+        assertAction(100, new Actionꓸꓸꓸ<nint>(t => s_arityLog = sum(t)));
+        assertAction(101, new Actionꓸꓸꓸ<nint, nint>((a, t) => s_arityLog = a + sum(t)));
+        assertAction(103, new Actionꓸꓸꓸ<nint, nint, nint>((a, b, t) => s_arityLog = a + b + sum(t)));
+        assertAction(107, new Actionꓸꓸꓸ<nint, nint, nint, nint>((a, b, c, t) => s_arityLog = a + b + c + sum(t)));
+        assertAction(115, new Actionꓸꓸꓸ<nint, nint, nint, nint, nint>((a, b, c, d, t) => s_arityLog = a + b + c + d + sum(t)));
+        assertAction(131, new Actionꓸꓸꓸ<nint, nint, nint, nint, nint, nint>((a, b, c, d, e, t) => s_arityLog = a + b + c + d + e + sum(t)));
+        assertAction(163, new Actionꓸꓸꓸ<nint, nint, nint, nint, nint, nint, nint>((a, b, c, d, e, f, t) => s_arityLog = a + b + c + d + e + f + sum(t)));
+        assertAction(227, new Actionꓸꓸꓸ<nint, nint, nint, nint, nint, nint, nint, nint>((a, b, c, d, e, f, g, t) => s_arityLog = a + b + c + d + e + f + g + sum(t)));
+        assertAction(355, new Actionꓸꓸꓸ<nint, nint, nint, nint, nint, nint, nint, nint, nint>((a, b, c, d, e, f, g, h, t) => s_arityLog = a + b + c + d + e + f + g + h + sum(t)));
+
+        // A fixed prefix beyond the family's last arity has no delegate to bind, and says so.
+        NineFixed tooManyFixed = (a, b, c, d, e, f, g, h, i, rest) => { };
+        NotImplementedException tooWide = Assert.ThrowsException<NotImplementedException>(
+            () => GoReflect.InvokeVariadic(tooManyFixed, new object?[9], Array.Empty<nint>()));
+
+        StringAssert.Contains(tooWide.Message, "9 fixed parameters");
+    }
+
+    // Fixed argument i is 1 << i and the tail sums to 100, so arity n answers 100 + (2^n - 1).
+    private static object? call(Delegate d)
+    {
+        int fixedCount = d.GetType().GetMethod("Invoke")!.GetParameters().Length - 1;
+        object?[] args = new object?[fixedCount];
+
+        for (int i = 0; i < fixedCount; i++)
+            args[i] = (nint)(1 << i);
+
+        return GoReflect.InvokeVariadic(d, args, new nint[] { 40, 60 });
+    }
+
+    // An Action family member returns nothing, so its arrival is observed through the side effect.
+    private static void assertAction(nint expected, Delegate d)
+    {
+        s_arityLog = -1;
+        Assert.IsNull(call(d), "an Action family member has no result");
+        Assert.AreEqual(expected, s_arityLog);
+    }
+
+    private static nint sum(Span<nint> values)
+    {
+        nint total = 0;
+
+        foreach (nint value in values)
+            total += value;
+
+        return total;
+    }
+
+    private static nint s_arityLog;
+
+    private delegate void NineFixed(nint a, nint b, nint c, nint d, nint e, nint f, nint g, nint h, nint i, params Span<nint> rest);
+
+    [TestMethod]
+    public void ANonVariadicDelegateIsRefusedByName()
+    {
+        // The dispatch is only ever reached behind TryFuncShape's variadic verdict, so a plain
+        // delegate arriving here is a bridge defect — it must say so rather than mis-index.
+        NotImplementedException ex = Assert.ThrowsException<NotImplementedException>(
+            () => GoReflect.InvokeVariadic(new Action<nint>(_ => { }), [(nint)1], Array.Empty<nint>()));
+
+        StringAssert.Contains(ex.Message, "no Span<T> tail");
+    }
 
     // ---- Value.Bytes / SetBytes ALIAS, they never copy -------------------------------------------
 

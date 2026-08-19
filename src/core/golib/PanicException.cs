@@ -6,6 +6,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
+using go.golib;
 
 namespace go;
 
@@ -14,10 +16,99 @@ namespace go;
 /// </summary>
 [DebuggerNonUserCode]
 public class PanicException(object? state, Exception? innerException = null) :
-    Exception(state?.ToString() ?? "nil", innerException)
+    Exception(null, innerException)
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public object? State { get; } = state;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private string? m_message;
+
+    /// <summary>
+    /// The panic value as Go's runtime reports it — <see cref="PanicText"/> of <see cref="State"/>.
+    /// </summary>
+    /// <remarks>
+    /// Computed on FIRST READ, not at construction, because that is when Go computes it: Go runs
+    /// <c>preprintpanics</c> only once a panic has gone unrecovered and is about to be printed. A
+    /// recovered panic — <c>fmt</c>'s catchPanic, <c>text/template</c>'s errRecover, and every
+    /// <c>defer func(){ recover() }()</c> in the corpus — therefore never calls a user
+    /// <c>Error()</c>/<c>String()</c> at all, exactly as in Go, and pays nothing for the rule.
+    /// </remarks>
+    public override string Message => m_message ??= PanicText(State);
+
+    /// <summary>
+    /// Renders a panic VALUE the way Go's runtime prints it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Go's <c>preprintpanics</c> (runtime/panic.go) substitutes before anything is printed: an
+    /// <c>error</c> panic value becomes its <c>Error()</c>, a <c>Stringer</c> its <c>String()</c>.
+    /// Without that rule a converted <c>panic(err)</c> renders the managed value itself — for a
+    /// pointer-held error, its ADDRESS (<c>panic: 0x211163e3340</c>) — which is not merely
+    /// unlike Go, it destroys the one piece of information a panic report exists to carry. It cost
+    /// the row-harvest-2 lane a diagnostic round-trip on the only defect it was chasing.
+    /// </para>
+    /// <para>
+    /// The <c>Stringer</c> arm is not redundant with <c>ToString()</c>. A Go named type's generated
+    /// <c>ToString()</c> forwards to its UNDERLYING value (go2cs-gen's InheritedTypeTemplate), so
+    /// <c>panic(2 * time.Second)</c> would print <c>2000000000</c> where Go prints <c>2s</c>. The
+    /// method is found the way golib's <c>error&lt;T&gt;</c> finds <c>Error</c> — through the
+    /// extension-method registry, which is where a converted Go method lives.
+    /// </para>
+    /// <para>
+    /// Go throws a fatal <c>"panic while printing panic value"</c> if that substitution itself
+    /// panics. Reproducing the FATALITY from a <see cref="Exception.Message"/> getter would be
+    /// worse than the divergence it reports, so the text is returned instead of thrown.
+    /// </para>
+    /// </remarks>
+    public static string PanicText(object? state)
+    {
+        switch (state)
+        {
+            case null:
+                return "nil";
+            // Ahead of the method probes: this is the commonest panic value by far, and its own
+            // ToString is already the Go rendering.
+            case @string text:
+                return text.ToString();
+        }
+
+        try
+        {
+            if (state is error goError)
+                return goError.Error().ToString();
+
+            if (TryGoStringMethod(state, out string stringer))
+                return stringer;
+        }
+        catch (Exception ex) when (ex is not GoexitException)
+        {
+            return "panic while printing panic value";
+        }
+
+        return state.ToString() ?? "nil";
+    }
+
+    // Go's `stringer` is the structural `interface{ String() string }`, so this asks the same
+    // question of the managed value: does its Go method set carry `String`? A converted Go method is
+    // an extension method over its receiver, and the registry's precedence comparer can hand back
+    // one declared for a DIFFERENT receiver shape (the ж<T> form for a value, or the reverse), so
+    // the receiver is re-checked before the call rather than trusted.
+    private static bool TryGoStringMethod(object state, out string text)
+    {
+        text = "";
+
+        if (state.GetType().GetExtensionMethod("String") is not { } method ||
+            method.ReturnType != typeof(@string) ||
+            method.GetParameters() is not { Length: 1 } parameters ||
+            !parameters[0].ParameterType.IsInstanceOfType(state))
+        {
+            return false;
+        }
+
+        text = ((@string)method.Invoke(null, [state])!).ToString();
+        return true;
+    }
 
     /// <summary>
     /// Gets the stack trace of the site where this panic ORIGINALLY started, as

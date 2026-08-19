@@ -12138,4 +12138,163 @@ No golib change, so `GolibTests`/behavioral/`go2cs.slnx` are not owed. No roster
 no disclosures, no converted test sources committed: two measurements, one converter fix, zero
 validations.
 
+
+## SHIPPED — the variadic `reflect.Value.Call` stub is GONE; `text/template` goes 38 → **49 of 52**, and a panic value stops printing its address (2026-08-19, lane `claude/variadic-call`)
+
+The queue's #1 and #3 rows, taken together because they are the same layer and share one gate set.
+Both landed with failing-first guards; neither package banks, and the reasons are measured rather
+than assumed. **Zero converter changes in this lane** — `git status src/go2cs` is empty — so no
+emission moved, no CNR or converter `go test` is owed, and every diagnostic quoted below is master's
+own behavior.
+
+### Row 1 — `reflect.Value.Call`'s variadic path, via typed dispatch
+
+The board priced this as "a feature arc, not a member fix", and that reading held: the obstacle is
+structural, not a missing descriptor read. A converted Go variadic lowers its tail to
+`params Span<TArg>`; `Span<T>` is a ref struct; `Delegate.DynamicInvoke` and `MethodBase.Invoke`
+both marshal through an `object?[]` a ref struct cannot enter. **The third exclusion is the one the
+board's plan did not name and it removes the obvious fallback:** `System.Linq.Expressions` rejects a
+byref-like type outright, so increment 3's `Expression.Lambda` receiver binder — the machinery that
+already builds arbitrary delegates in this bridge — cannot serve here either.
+
+So the call is made in TYPED code (`GoReflect.InvokeVariadic`, golib GoReflect.TypeLayout.cs, beside
+`TryFuncShape` whose header already claimed `Value.Call`'s marshalling): eighteen small generic
+trampolines, one per family arity, closed over the delegate's own parameter types by
+`MakeGenericMethod` and cached as ordinary delegates — the `elementBoxViaAt` idiom
+GoReflect.FieldAccess.cs already uses, so this EXTENDS the bridge's existing machinery rather than
+forking a second dispatch tier. Inside a trampoline the tail is a `TArg[]` and its conversion to
+`Span<TArg>` is ordinary, so nothing is boxed and the tail ALIASES the caller's array.
+
+**The rebind is where the plan needed correcting, and the correction is what makes it total.** The
+board's design said to rebind a natural-typed variadic onto its family with
+`Delegate.CreateDelegate`. That is right, but binding the delegate's own `Target`/`Method` — the
+obvious form — throws `ArgumentException: MethodInfo must be a runtime MethodInfo object` for a
+delegate the BRIDGE ITSELF built: `Value.Method` binds a receiver by compiling an expression lambda,
+and a compiled lambda's `Method` is not a runtime `MethodInfo`. A variadic method value is exactly
+that shape, and it is in the corpus. Retargeting through `Invoke`
+(`Delegate.CreateDelegate(familyType, del, "Invoke")`) has no such blind spot, needs no special case,
+and carries a multicast invocation list intact — so it is the ONLY rebind, not a fallback.
+
+Three delegate identities therefore all work: the golib family type (a declared variadic func type),
+C#'s natural type (a variadic literal in an `any` slot — the `FuncMap` shape), and an
+expression-compiled one (a bridge-built method value). A fixed prefix beyond the family's eight
+throws a named `NotImplementedException` rather than mis-indexing; a non-variadic delegate arriving
+here is refused by name.
+
+**`text/template`: 38 of 52 → 49 of 52.** The stub owned 13 verdicts; eleven now match, and the
+other two (`TestComparison`, `TestExecute`) advanced to roots that were standing behind it. The
+residual three verdicts census to four roots, none of them this arc's:
+
+| Root | Where | State |
+|:--|:--|:--|
+| `Value.Index` / `Value.Slice` over a Kind-**STRING** Value | `TestComparison`, part of `TestExecute` | Go supports both on a string; the bridge answers `reflect: call of reflect.Value.Index on string Value`. Bounded and unowned |
+| chan DIRECTION lost in the descriptor | `TestIssue43065`, part of `TestExecute` | surfaces as `panic: reflect: recv on send-only channel` in `walkRange` — the board's already-**RATIFIED fourth disclosure class**, self-retiring on descriptor cargo |
+| typed-nil method dispatch | part of `TestExecute` | `(*W)(nil).Error()` renders `-<nil>-` where Go renders `-nilW-`; `html typed nil` renders `&lt;no value&gt;` for `&lt;nil&gt;` |
+| three-index `Value.Slice3` | part of `TestExecute` | `<slice .SICap 6 10 10>` → `invalid memory address or nil pointer dereference` |
+
+`TestIssue43065` is no longer "a different panic, unexamined" — it is the chan-direction class, which
+means the board's own disclosure ruling already owns it.
+
+**`CallSlice`'s named next consumer is retired as measured WRONG.** Its stub named `text/template`;
+`text/template`'s `safeCall` reaches Go through `fun.Call(args)` (funcs.go:375) and never
+`CallSlice`, and a GOROOT-wide census finds no other caller at all. The machinery it would need now
+exists; it stays a stub for want of a consumer, not for want of a way.
+
+### Row 2 — a panic value renders through Go's `preprintpanics` rule
+
+Recorded by row-harvest-2, fixed here. `PanicException` rendered `state?.ToString()`, so a converted
+`panic(err)` holding a pointer-held error printed its ADDRESS. The guard reproduces the defect
+exactly as that lane reported it — neutered, the behavioral test's first stderr line is
+`panic: 0x25bf089bd28` against Go's `panic: open final.txt: code 13`.
+
+Go's rule substitutes BEFORE printing: an `error` panic value becomes its `Error()`, a `Stringer`
+its `String()`. Both arms are implemented; the `Stringer` arm is **not** redundant with `ToString()`,
+because a Go named type's generated `ToString()` forwards to its UNDERLYING value (go2cs-gen's
+`InheritedTypeTemplate`), so `panic(2 * time.Second)` would print `2000000000` where Go prints `2s`.
+The method is found through the extension-method registry — where a converted Go method lives —
+the way golib's `error<T>` already finds `Error`.
+
+Computed on FIRST READ, not at construction, because that is when Go computes it: `preprintpanics`
+runs only once a panic has gone unrecovered and is about to print. Eager substitution would call
+user `Error()`/`String()` on every recovered panic in the corpus (`fmt`'s catchPanic,
+`text/template`'s errRecover, every `defer func(){ recover() }()`), which Go does not do.
+`recover()` still hands back the value itself — the substitution is a printing rule, not a value
+rewrite. Both readers of a panic value now go through it: the unhandled-exception backstop, and
+`debug.Stack`'s panic line in `runtime/managed_impl.cs`, which carried its own copy of the old
+rendering.
+
+### `html/template` — still build-blocked, and the wall is 7 errors in 2 roots, not 6 in 1
+
+Re-measured on this tree: 243 Go verdicts, 36 excluded, **0 C# verdicts** — `conversion-blocked`.
+Root A is unchanged and was not taken here (it is the board's own "real choice", and this lane had
+banked its two rows). Root C is NEW, and it is a genuine census finding rather than a regression:
+
+| Root | Diagnostics | Owner |
+|:--|:--|:--|
+| **A.** `FuncMap` could not be found | CS0246 ×6 | unchanged — the named-RHS assembly-scoped alias across the reference-model test boundary. `[assembly: GoTypeAlias("FuncMap", "go.text.template_package.FuncMap")]` IS published, so `seedProductionAliasLifts`'s "published" precondition is already met; only its anonymous-RHS filter blocks it. Widening that filter vs. making the renderer qualify is still the open choice |
+| **C.** `defer` of a VARIADIC func literal | CS0411 ×1 | `examplefiles_test.cs:113`. `defer func(dirs ...string){…}(dir1, dir2)` emits `defer((params ꓸꓸꓸstring dirsʗp) => {…}, dir1, dir2, ref ᒐ)`, which cannot infer against `builtin.defer<T1,T2>(Action<T1,T2>, T1, T2, ref GoFrame)` |
+
+Root C is **the first demonstrated consumer of a residue ConversionStrategies-Reference already
+recorded** — "`defer`/`goǃ` of a call through a variadic func value would need to capture the `Span`
+tail, which a ref struct cannot be — no stdlib occurrence". A census of the whole Go 1.23 tree finds
+**exactly one** such site, `html/template/examplefiles_test.go:90`. The "no stdlib occurrence" claim
+was true and is now retired: the original A/B was over PRODUCTION sources, and the shape lives only
+in a `_test.go`, so nothing before the Phase-4 `-tests` pipeline could see it. The doc is corrected
+in place. Remedy (not taken): pack the arguments into a slice at the defer site and defer a
+zero-argument closure over it — a `visitDeferStmt` change, bounded, one site in the entire corpus.
+
+### Gates
+
+`GolibTests` **168/168** · full behavioral suite **PASS at 600 projects, 3,877.8 s** — Transpile
+600/600, Compile 600/600, **Target 600/600 byte-identical**, Output 574 compared / 0 failed (26
+skipped, no `package main`) · `go2cs.slnx` Debug `--no-incremental` **0 errors** (282 warnings,
+672 s) · canaries all green and unmoved: **fmt 63/63**,
+**internal/fmtsort 3/3**, **encoding/json 491/491**, **internal/reflectlite 27/27** · marker census
+**63 marked files / 51 `*_impl.cs` companions** (line-anchored via `git grep`; the UNANCHORED count
+is 101, the false-alarm number the ritual warns about) · a seeded reconvert is **not owed** — zero
+converter changes means zero emission movement, and both corpus files touched
+(`reflect/value_impl.cs`, `runtime/managed_impl.cs`) are `*_impl.cs` companions the converter never
+re-emits · converter `go test` and CNR **not owed** for the same reason. The Target phase is the
+independent confirmation of that "zero emission movement" claim: 600 goldens byte-identical, so
+nothing the converter writes moved.
+
+Guards proven failing-first by **seven** separate neuterings, each reproducing its own defect and
+nothing else: removing the family rebind (only the natural-typed row fails), defensively copying the
+tail (only the aliasing row), throwing from `InvokeVariadic` (the four call rows, the refusal
+control staying green), rebinding via target+method instead of `Invoke` (only the
+expression-compiled row), transposing two entries of the Func family table (only the arity row),
+disabling the `error` arm (the behavioral panic test reproduces `panic: 0x25bf089bd28` verbatim,
+the exact shape row-harvest-2 reported), and disabling the `Stringer` arm and the memoization in
+turn.
+
+⚠ **Arities 3–8 have no consumer in the corpus and are guarded rather than asserted.** The
+behavioral test reaches 0, 1 and 2 fixed parameters through real Go source; the remaining six
+family arities are driven directly through `InvokeVariadic` in `GoReflectBridgeClosureTests`, with
+fixed argument *i* set to `1 << i` so a dropped or duplicated argument lands on a different sum.
+(Two arguments TRANSPOSED still sums the same — addition is commutative — so that is deliberately
+not claimed.) A mis-indexed table entry fails loudly whenever it is first used, never silently; the
+row exists so "first used" is now, not in some later package.
+
+`-tests` tree churn classified and RESTORED per the standing rule, nothing unclassified: CRLF
+phantoms (`text/template/doc.cs`, `html/template/doc.cs`, `fmt/doc.cs`, five `encoding/json`
+`*_test.cs`), the `initᴛᴛtests` hook (`html/template/package_init.cs`, +7 real lines), the
+`global::go.*` root escape (three `internal/reflectlite` files) and a seeded `ΔToken` alias
+(`encoding/json/package_test_info.cs`).
+
+### The ranked queue, updated
+
+1. **`html/template`'s two roots** — 243 verdicts behind 7 errors. Root A (the named-RHS alias) is
+   unchanged and coordinator-adjacent; Root C (defer of a variadic func literal) is newly located,
+   one site in the whole corpus, and bounded.
+2. **`reflect.Value.Index` / `Value.Slice` over a Kind-STRING Value** — 2 of `text/template`'s 3
+   residual verdicts, and the only unowned root among the four. Go indexes and slices a string;
+   the bridge refuses both.
+3. **`encoding/gob` (106)** — unchanged at 103 of 106; still the closest unbanked package.
+4. **typed-nil method dispatch** — `(*W)(nil).Error()`; part of `text/template`'s `TestExecute`,
+   and a shape with reach well beyond templates.
+
+No roster row, no proof page, no disclosures, no converted test sources committed: one golib feature,
+one golib fix, two behavioral guards, thirteen GolibTests rows (seven variadic-dispatch, six
+panic-text), two measurements, zero validations.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
