@@ -420,7 +420,23 @@ function Get-HostConditionalVerdict {
 # measured 417.3 s of the package's 434.7 s total (2026-08-16, i7-5820K, solo). That clears the 10m
 # default by only 1.4x -- inside the run-to-run spread a loaded sweep produces -- so the package
 # would report NOT MEASURED on a bad day without a floor. 30m gives the measured figure 4x headroom.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '30m'; 'go/parser' = '40m'; 'crypto/internal/mlkem768' = '30m' }
+#
+# crypto/tls's floor is owed by ONE row that always spends its budget: the disclosed (host-limit)
+# TestBogoSuite burns exactly 600 s — its child BoGo runner's own `go test` deadline, which fires
+# before the converted shims can finish the 5,481-case matrix — before failing with the pinned
+# signature, and the other 183 tests measure ~45 s around it. The whole C# suite measured 644.8 s
+# solo (2026-08-18, laptop R, Ryzen 7 PRO 6850U), which the 10m default kills mid-BoGo and reports
+# as NOT MEASURED. 30m clears the measured figure with ~2.8x headroom for a loaded sweep.
+#
+# archive/zip and go/parser carry FULL-SWEEP-LOAD multipliers their earlier floors did not: on the
+# 151-row sweep of 2026-08-19 (laptop R, 340 min) zip blew 30m and parser blew 40m — both as
+# one-sided-row truncations reading like divergences — while the SAME DAY, SOLO on the same
+# machine, zip measured 850 s and parser 836 s (~14 min each, comfortably inside those floors).
+# The sweep's accumulated disk/cache pressure is a ~2.5-3x multiplier on exactly the two suites
+# that hammer storage (zip streams 4 GiB; parser walks hundreds of thousands of converted frames),
+# so their floors are sized to the LOADED case: 60m and 90m clear the observed loaded shortfalls
+# with ~2x headroom.
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'crypto/tls' = '30m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package

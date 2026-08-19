@@ -72,7 +72,7 @@ func addProofPage(t *testing.T, root string, dotID string, matched int, disclose
 		platform:   "windows/amd64",
 		date:       "2026-08-02",
 		commit:     "abcdef012",
-	}, comparison, map[string]testDisclosure{})
+	}, comparison, map[string]testDisclosure{}, nil)
 
 	mustWriteFile(t, filepath.Join(currentPath, dotID+".md"), strings.ReplaceAll(page, "\n", "\r\n"))
 }
@@ -778,7 +778,7 @@ func TestPackageDeclaresGoTests(t *testing.T) {
 // keeps them honest.
 func TestParseProofTotalsRoundTripsTheRenderer(t *testing.T) {
 	comparison, disclosures := loadProofFixture(t)
-	page := renderValidationProofPage(fixtureProvenance(), comparison, disclosures)
+	page := renderValidationProofPage(fixtureProvenance(), comparison, disclosures, nil)
 
 	names := proofVerdictNames(comparison)
 	expectedDisclosed := len(proofDisclosedNames(comparison, names))

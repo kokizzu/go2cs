@@ -88,7 +88,7 @@ func TestSkipParityCountsAsMatched(t *testing.T) {
 	}
 
 	names := []string{"TestDiverge", "TestGoOnly", "TestPass", "TestSkip"}
-	mismatches, skipped, disclosed := matchTerminalStatuses(names, goResults, csResults, nil, nil)
+	mismatches, skipped, disclosed, _ := matchTerminalStatuses(names, goResults, csResults, nil, nil)
 
 	if !reflect.DeepEqual(skipped, []string{"TestSkip"}) {
 		t.Fatalf("skipped = %#v, want [TestSkip]", skipped)
@@ -163,32 +163,32 @@ func TestDisclosedDivergenceOracle(t *testing.T) {
 		"TestBuilderAllocs": {Name: "TestBuilderAllocs", Class: "alloc-count-semantics", Signature: "Builder allocs = ", Reason: "AllocsPerRun shim is byte-derived"},
 	}
 
-	mismatches, _, disclosed := matchTerminalStatuses(names, goResults, csResults, disclosures,
+	mismatches, _, disclosed, _ := matchTerminalStatuses(names, goResults, csResults, disclosures,
 		map[string]string{"TestBuilderAllocs": "builder_test.go:196: Builder allocs = 648; want 1"})
 	if len(mismatches) != 0 || !reflect.DeepEqual(disclosed, []string{"TestBuilderAllocs"}) {
 		t.Fatalf("matching signature must disclose, not mismatch: mismatches=%#v disclosed=%#v", mismatches, disclosed)
 	}
 
-	mismatches, _, disclosed = matchTerminalStatuses(names, goResults, csResults, disclosures,
+	mismatches, _, disclosed, _ = matchTerminalStatuses(names, goResults, csResults, disclosures,
 		map[string]string{"TestBuilderAllocs": "builder_test.go:189: IndexRune('x') = 3; want 2"})
 	if len(disclosed) != 0 || len(mismatches) != 1 || !strings.Contains(mismatches[0], "does not match the disclosed") {
 		t.Fatalf("a different failure signature is a regression, not the disclosed divergence: mismatches=%#v disclosed=%#v", mismatches, disclosed)
 	}
 
-	mismatches, _, disclosed = matchTerminalStatuses(names, goResults, csResults, nil, nil)
+	mismatches, _, disclosed, _ = matchTerminalStatuses(names, goResults, csResults, nil, nil)
 	if len(disclosed) != 0 || len(mismatches) != 1 {
 		t.Fatalf("no manifest must mean strict comparison: mismatches=%#v disclosed=%#v", mismatches, disclosed)
 	}
 
 	// Direction guard: a disclosure only ever covers Go=pass/C#=fail — never the reverse pair,
 	// and never a status other than fail (an infrastructure-error is not the documented shape).
-	mismatches, _, disclosed = matchTerminalStatuses([]string{"TestBuilderAllocs"},
+	mismatches, _, disclosed, _ = matchTerminalStatuses([]string{"TestBuilderAllocs"},
 		map[string]string{"TestBuilderAllocs": "fail"}, map[string]string{"TestBuilderAllocs": "pass"},
 		disclosures, map[string]string{"TestBuilderAllocs": "Builder allocs = 648"})
 	if len(disclosed) != 0 || len(mismatches) != 1 {
 		t.Fatalf("Go=fail/C#=pass must never be disclosed: mismatches=%#v disclosed=%#v", mismatches, disclosed)
 	}
-	mismatches, _, disclosed = matchTerminalStatuses([]string{"TestBuilderAllocs"},
+	mismatches, _, disclosed, _ = matchTerminalStatuses([]string{"TestBuilderAllocs"},
 		map[string]string{"TestBuilderAllocs": "pass"}, map[string]string{"TestBuilderAllocs": "infrastructure-error"},
 		disclosures, map[string]string{"TestBuilderAllocs": "Builder allocs = 648"})
 	if len(disclosed) != 0 || len(mismatches) != 1 {
@@ -196,7 +196,7 @@ func TestDisclosedDivergenceOracle(t *testing.T) {
 	}
 
 	// A disclosed test that agrees (pass==pass) is plain agreement — the stale disclosure is inert.
-	mismatches, _, disclosed = matchTerminalStatuses([]string{"TestBuilderAllocs"},
+	mismatches, _, disclosed, _ = matchTerminalStatuses([]string{"TestBuilderAllocs"},
 		map[string]string{"TestBuilderAllocs": "pass"}, map[string]string{"TestBuilderAllocs": "pass"},
 		disclosures, nil)
 	if len(disclosed) != 0 || len(mismatches) != 0 {
@@ -210,7 +210,7 @@ func TestDisclosedDivergenceOracle(t *testing.T) {
 func TestDisclosureManifestLoading(t *testing.T) {
 	dir := t.TempDir()
 
-	disclosures, err := loadTestDisclosures(dir)
+	disclosures, _, err := loadTestDisclosures(dir)
 	if err != nil || disclosures != nil {
 		t.Fatalf("absent manifest should load as nil, nil — got %#v, %v", disclosures, err)
 	}
@@ -223,21 +223,21 @@ func TestDisclosureManifestLoading(t *testing.T) {
 
 	writeManifest(`{"schemaVersion": 1, "disclosures": [
 		{"name": "TestBuilderAllocs", "class": "alloc-count-semantics", "signature": "Builder allocs = ", "reason": "shim is byte-derived"}]}`)
-	disclosures, err = loadTestDisclosures(dir)
+	disclosures, _, err = loadTestDisclosures(dir)
 	if err != nil || len(disclosures) != 1 || disclosures["TestBuilderAllocs"].Signature != "Builder allocs = " {
 		t.Fatalf("valid manifest should parse — got %#v, %v", disclosures, err)
 	}
 
 	writeManifest(`{"schemaVersion": 1, "disclosures": [
 		{"name": "TestBuilderAllocs", "class": "alloc-count-semantics", "signature": "", "reason": "shim is byte-derived"}]}`)
-	if _, err = loadTestDisclosures(dir); err == nil {
+	if _, _, err = loadTestDisclosures(dir); err == nil {
 		t.Fatal("an empty signature must be rejected — it would match any failure")
 	}
 
 	writeManifest(`{"schemaVersion": 1, "disclosures": [
 		{"name": "TestX", "class": "alloc-profile", "signature": "a", "reason": "r"},
 		{"name": "TestX", "class": "alloc-profile", "signature": "b", "reason": "r"}]}`)
-	if _, err = loadTestDisclosures(dir); err == nil {
+	if _, _, err = loadTestDisclosures(dir); err == nil {
 		t.Fatal("duplicate disclosure names must be rejected")
 	}
 }

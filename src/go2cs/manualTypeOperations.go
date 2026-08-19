@@ -873,6 +873,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"CertGetCertificateChain":          goosWindows,
 		"CertFreeCertificateContext":       goosWindows,
 		"CertFreeCertificateChain":         goosWindows,
+		// The LAST crypt32 member on the system-verifier path, and the certchain file's third
+		// concern in one wrapper: CERT_CHAIN_POLICY_PARA and CERT_CHAIN_POLICY_STATUS are the
+		// struct-passing class in both directions at once (one read, one written, both
+		// reference-bearing under conversion), pChainContext needs the native identity the view
+		// remembers, and pvExtraPolicyPara is the OPAQUE-POINTER MINT — an unsafe.Pointer over an
+		// SSL_EXTRA_CERT_CHAIN_POLICY_PARA whose ServerName is itself a pointer, carried across
+		// the field by golib's ManagedPointerTokens (convCallExpr's opaquePointerMintEmission is
+		// the minter; this wrapper is the resolver — the same round trip GetAddrInfoW's sockaddrs
+		// take). Reached only when a chain is trusted AND the caller supplied a DNS name; the
+		// SystemCertVerify behavioral test's policy rows are the offline guard.
+		"CertVerifyCertificateChainPolicy": goosWindows,
 	},
 	// The SECOND package holding the syscall struct-passing class, and the one member of it whose
 	// established remedy is measured UNREACHABLE — so this entry declares a CAPABILITY LIMIT rather

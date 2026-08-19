@@ -158,6 +158,67 @@ func walkChain(der []byte) {
 	leaf := elements[0].CertContext
 	encoded := unsafe.Slice(leaf.EncodedCert, leaf.Length)
 	fmt.Println("leaf der round-trips:", bytes.Equal(encoded, der))
+
+	checkSSLPolicy(chainCtx)
+}
+
+// checkSSLPolicy drives CertVerifyCertificateChainPolicy -- the second CryptoAPI
+// call systemVerify makes, and the one whose CERT_CHAIN_POLICY_PARA carries
+// pvExtraPolicyPara as an opaque unsafe.Pointer over an
+// SSL_EXTRA_CERT_CHAIN_POLICY_PARA whose ServerName is itself a pointer: the
+// MINT-SITE round trip, built here exactly the way crypto/x509's
+// checkChainSSLServerPolicy builds it. The evidence is the VALUE of
+// status.Error under three parameterizations: with unknown-CA errors waived, a
+// MATCHING server name answers 0 and a MISMATCHED one answers
+// CERT_E_CN_NO_MATCH -- an answer crypt32 can only give if the name crossed the
+// boundary intact -- and with nothing waived the same chain answers
+// CERT_E_UNTRUSTEDROOT, which pins that the chain context reached the call as
+// itself and that the status wrote back from the right offsets.
+func checkSSLPolicy(chainCtx *syscall.CertChainContext) {
+	// CERT_CHAIN_POLICY_ALLOW_UNKNOWN_CA_FLAG: waive the untrusted root this
+	// program's certificate has BY DESIGN, so the name check's own verdict
+	// shows through. Package syscall does not carry it; the value is
+	// wincrypt.h's.
+	const allowUnknownCA = 0x00000010
+
+	fmt.Println("policy match:", sslPolicyError(chainCtx, "go2cs.example", allowUnknownCA))
+	fmt.Println("policy mismatch:", sslPolicyError(chainCtx, "other.example", allowUnknownCA))
+	fmt.Println("policy untrusted:", sslPolicyError(chainCtx, "go2cs.example", 0))
+}
+
+func sslPolicyError(chainCtx *syscall.CertChainContext, serverName string, flags uint32) string {
+	servernamep, err := syscall.UTF16PtrFromString(serverName)
+	if err != nil {
+		return "utf16 error"
+	}
+
+	sslPara := &syscall.SSLExtraCertChainPolicyPara{
+		AuthType:   syscall.AUTHTYPE_SERVER,
+		ServerName: servernamep,
+	}
+	sslPara.Size = uint32(unsafe.Sizeof(*sslPara))
+
+	para := &syscall.CertChainPolicyPara{
+		Flags:           flags,
+		ExtraPolicyPara: (syscall.Pointer)(unsafe.Pointer(sslPara)),
+	}
+	para.Size = uint32(unsafe.Sizeof(*para))
+
+	status := syscall.CertChainPolicyStatus{}
+	if err := syscall.CertVerifyCertificateChainPolicy(syscall.CERT_CHAIN_POLICY_SSL, chainCtx, para, &status); err != nil {
+		return "call error: " + err.Error()
+	}
+
+	switch status.Error {
+	case 0:
+		return "ok"
+	case syscall.CERT_E_CN_NO_MATCH:
+		return "cn mismatch"
+	case syscall.CERT_E_UNTRUSTEDROOT:
+		return "untrusted root"
+	default:
+		return fmt.Sprintf("0x%08x", status.Error)
+	}
 }
 
 func isUnknownAuthority(err error) bool {

@@ -1,11 +1,20 @@
 {
   "schemaVersion": 1,
+  "notes": [
+    "⚠ Four tests fail AGREEING on both runtimes — `TestResumption`, `TestResumptionKeepsOCSPAndSCT`, `TestVerifyConnection`, `TestCrossVersionResume` — because the suite's test certificates expired 2025-01-01, and both languages report the same `x509: certificate has expired` text. The expired-fixture ceiling is re-confirmed rather than carried: **180 of 184 is the most this host can score in either language, it worsens with time, and a Go patch release or regenerated fixtures changes the shape.**"
+  ],
   "disclosures": [
     {
       "name": "TestCertCache",
       "class": "codegen-liveness",
       "signature": "timed out waiting for expected ref count",
       "reason": "The test nils its own local and then asserts, from inside the same still-running frame, that the object it dropped has become collectible: `certA = nil; runtime.GC()`, then a four-second poll for the cache entry's reference count to fall from 2 to 1, ending in this t.Fatal. The finalizer that would decrement it works — runtime.SetFinalizer is the hand-owned ConditionalWeakTable-and-sentinel bridge, runtime.GC() is Collect then WaitForPendingFinalizers then Collect, and sync's banked TestPoolGC measures 98 of 100 objects finalizing on the first try — but `certA, err := cc.newCert(p.Bytes)` is a two-result call whose results materialize an address-exposed frame temp, and an address-exposed slot is not lifetime-tracked: the CLR reports it live for the whole method, so the activeCert stays reachable until TestCertCache RETURNS and the count cannot fall while the test is looking. Measured to fail at the FIRST check identically in a separately built optimized Release host, so it is the CLR's GC-info conservatism rather than the non-optimizing JIT's frame-wide liveness. Same mechanism, and the same non-satisfiable-at-any-layer-go2cs-owns conclusion, as sync's TestOnceXGC and TestPoolGC disclosures."
+    },
+    {
+      "name": "TestBogoSuite",
+      "class": "host-limit",
+      "signature": "bogo failed: exit status 1",
+      "reason": "The test delegates to BoringSSL's own test runner, spawned as `go test .` in the boringssl module — a child that carries Go's default 10-minute test-binary deadline, which neither the package's code nor the host controls (the test passes no -timeout, in either language). Inside that wall the runner spawns the shim once per case — 5,481 spawns in this configuration — and the shim IS the converted test host: a framework-dependent apphost whose process start (hostfxr resolution, CLR startup, JIT over the converted-stdlib closure) measures 3.30 s where Go's statically linked test binary starts in 0.038 s. That ~87x is structural to the deployment shape — it is what the artifact IS, not how far an implementation has got. Measured 2026-08-18: the runner reaches ~267 of 5,481 cases at its wall even with 16 parallel shim workers — a ~20x shortfall no deadline the test can express would close — then exits without writing its results JSON, which selects exactly the failure arm this signature pins. The TLS interop capability itself is not in question and is proven by value in the same suite: with `-bogo-filter Client-Verify-ECDSA-TLS1` the converted host completes a TLS handshake with certificate verification against BoringSSL as the peer, PASS in 14 s end to end including the module download and runner build. Same self-retiring texture as os/exec's relocatable-single-file entries: publish the host with fast startup (ReadyToRun/AOT) and this row starts passing, the disclosed count stops matching, and the sweep fails until the entry is removed."
     }
   ]
 }

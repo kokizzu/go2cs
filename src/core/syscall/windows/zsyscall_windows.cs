@@ -414,15 +414,7 @@ public static (ΔHandle store, error err) CertOpenSystemStore(ΔHandle hprov, ж
     return (store, err);
 }
 
-public static error /*err*/ CertVerifyCertificateChainPolicy(uintptr policyOID, ж<CertChainContext> Ꮡchain, ж<CertChainPolicyPara> Ꮡpara, ж<CertChainPolicyStatus> Ꮡstatus) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall6(procCertVerifyCertificateChainPolicy.Addr(), 4, (uintptr)policyOID, (uintptr)Ꮡchain, (uintptr)Ꮡpara, (uintptr)Ꮡstatus, 0, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func CertVerifyCertificateChainPolicy is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static bool /*same*/ DnsNameCompare(ж<uint16> Ꮡname1, ж<uint16> Ꮡname2) {
     bool same = default!;

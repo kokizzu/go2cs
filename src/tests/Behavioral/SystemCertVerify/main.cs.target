@@ -134,9 +134,66 @@ internal static void walkChain(slice<byte> der) {
         var leaf = elements[0].Value.CertContext;
         var encoded = @unsafe.Slice((~leaf).EncodedCert, (~leaf).Length);
         fmt.Println(leafDerRoundTripsˢ, bytes.Equal(encoded, der));
+        checkSSLPolicy(chainCtx);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object policyMatchˢ = (@string)"policy match:"u8;
+private static readonly @string go2csExampleˢ = "go2cs.example"u8;
+private static readonly object policyMismatchˢ = (@string)"policy mismatch:"u8;
+private static readonly object policyUntrustedˢ = (@string)"policy untrusted:"u8;
+
+internal static void checkSSLPolicy(ж<syscall.CertChainContext> ᏑchainCtx) {
+    const uint32 allowUnknownCA = 0x00000010;
+    fmt.Println(policyMatchˢ, sslPolicyError(ᏑchainCtx, go2csExampleˢ, allowUnknownCA));
+    fmt.Println(policyMismatchˢ, sslPolicyError(ᏑchainCtx, otherExampleˢ, allowUnknownCA));
+    fmt.Println(policyUntrustedˢ, sslPolicyError(ᏑchainCtx, go2csExampleˢ, 0));
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string utf16Errorˢ = "utf16 error"u8;
+private static readonly @string cnMismatchˢ = "cn mismatch"u8;
+private static readonly @string untrustedRootˢ = "untrusted root"u8;
+
+internal static @string sslPolicyError(ж<syscall.CertChainContext> ᏑchainCtx, @string serverName, uint32 flags) {
+    var (servernamep, err) = syscall.UTF16PtrFromString(serverName);
+    if (err != default!) {
+        return utf16Errorˢ;
+    }
+    var sslPara = Ꮡ(new syscall.SSLExtraCertChainPolicyPara(
+        AuthType: syscall.AUTHTYPE_SERVER,
+        ServerName: servernamep
+    ));
+    sslPara.Value.Size = (uint32)/* unsafe.Sizeof(*sslPara) */ (uintptr)24;
+    var para = Ꮡ(new syscall.CertChainPolicyPara(
+        Flags: flags,
+        ExtraPolicyPara: ((syscall.Pointer)ManagedPointerTokens.MintOpaque(sslPara))
+    ));
+    para.Value.Size = (uint32)/* unsafe.Sizeof(*para) */ (uintptr)16;
+    ref var status = ref heap<syscall.CertChainPolicyStatus>(out var Ꮡstatus);
+    status = new syscall.CertChainPolicyStatus(nil);
+    {
+        var errΔ1 = syscall.CertVerifyCertificateChainPolicy(syscall.CERT_CHAIN_POLICY_SSL, ᏑchainCtx, para, Ꮡstatus); if (errΔ1 != default!) {
+            return "call error: "u8 + errΔ1.Error();
+        }
+    }
+    var exprᴛ1 = status.Error;
+    if (exprᴛ1 is 0) {
+        return "ok"u8;
+    }
+    if (exprᴛ1 == syscall.CERT_E_CN_NO_MATCH) {
+        return cnMismatchˢ;
+    }
+    if (exprᴛ1 == syscall.CERT_E_UNTRUSTEDROOT) {
+        return untrustedRootˢ;
+    }
+    { /* default: */
+        return fmt.Sprintf("0x%08x"u8, status.Error);
+    }
+
 }
 
 internal static bool isUnknownAuthority(error err) {

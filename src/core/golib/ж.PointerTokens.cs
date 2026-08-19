@@ -65,6 +65,16 @@ namespace go;
 // a runtime seam, not part of any Go surface.
 public static class ManagedPointerTokens
 {
+    // minted opaque box → the referent box it stands for. What makes a MINTED opaque pointer behave
+    // like the Go pointer it converts: holding the scalar-valued box keeps the referent reachable,
+    // exactly as holding the real pointer would, so a boundary wrapper that resolves the token
+    // mid-call can never lose a race against the collector — the emitted mint's referent is
+    // otherwise reachable only through a local the JIT is free to retire before the call it feeds.
+    // ConditionalWeakTable so the tie is exactly the minted box's own lifetime: when nothing holds
+    // the mint, the referent is again governed by its own reachability alone, and the weak Register
+    // entry beside it dies with the referent as designed.
+    private static readonly ConditionalWeakTable<object, object> s_mintedReferents = new();
+
     // token → the box that token named. WeakReference so a remembered pointer is still collectable.
     //
     // CONCURRENT, and read WITHOUT a lock, because Resolve sits on the `uintptr → ж<T>` conversion
@@ -126,6 +136,58 @@ public static class ManagedPointerTokens
 
         if (s_count >= s_sweepAt)
             Sweep();
+    }
+
+    /// <summary>
+    /// Converts a Go pointer to the opaque pointer-to-empty-struct form (Go's
+    /// <c>type Pointer *struct{}</c>, e.g. <c>syscall.Pointer</c>) that Windows type definitions
+    /// use for a "pointer to one of many types" field — preserving the REFERENT when the pointee
+    /// has no native address to give.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The converter emits this for the conversion <c>T(unsafe.Pointer(p))</c> where <c>T</c>'s
+    /// underlying type is <c>*struct{}</c> and <c>p</c> is a Go pointer. The numeric route that
+    /// emission previously took — <c>(T)(ж&lt;EmptyStruct&gt;)(uintptr)(new @unsafe.Pointer(p))</c> —
+    /// projects the box to a scalar at the <c>@unsafe.Pointer</c> constructor, and for a pointee
+    /// CARRYING MANAGED REFERENCES that scalar is a transient GC-heap address with no recoverable
+    /// box behind it (golib's uintptr operator pins only reference-free storage). crypto/x509's
+    /// <c>checkChainSSLServerPolicy</c> is the measured victim: its
+    /// <c>SSL_EXTRA_CERT_CHAIN_POLICY_PARA</c> — whose ServerName is itself a pointer — crossed
+    /// into <c>CertVerifyCertificateChainPolicy</c> as exactly such an address, and crypt32
+    /// reading 24 native bytes off it was an ACCESS_VIOLATION or a garbage verdict depending on
+    /// the day's heap layout. This is the mint-site problem named in
+    /// docs/phase4/BOARD-next-validation-candidates.md.
+    /// </para>
+    /// <para>
+    /// The classes the numeric route already answers exactly keep it byte for byte: a nil pointer
+    /// is address 0, a native-backed box aliases its real address, and a reference-free pointee
+    /// pins and reports stable storage. Only the reference-bearing class diverges — its scalar
+    /// becomes the box's own <see cref="INilPointer.PointerOrderToken"/>, registered here so the
+    /// consuming boundary wrapper recovers the box with <see cref="Resolve"/> (the same round trip
+    /// the ADDRINFOW hand-own mints for its sockaddr fields — this is the third minter). The
+    /// returned box additionally holds the referent reachable for its own lifetime, so the minted
+    /// pointer keeps its pointee alive exactly as the Go pointer it stands for would.
+    /// </para>
+    /// </remarks>
+    public static ж<EmptyStruct> MintOpaque<T>(ж<T>? box)
+    {
+        if (box is null || box.IsNative || !RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            return new ж<EmptyStruct>((nuint)(uintptr)box!);
+
+        nuint token = box.PointerOrderToken;
+
+        // A nil-constructed box tokens 0, which is the nil form on the numeric route too.
+        if (token == 0)
+            return new ж<EmptyStruct>((nuint)0);
+
+        Register(token, box);
+
+        ж<EmptyStruct> minted = new(token);
+
+        s_mintedReferents.Add(minted, box);
+
+        return minted;
     }
 
     /// <summary>

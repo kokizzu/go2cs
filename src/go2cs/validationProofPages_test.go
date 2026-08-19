@@ -33,7 +33,7 @@ func loadProofFixture(t *testing.T) (testComparison, map[string]testDisclosure) 
 
 	// Read through the production loader so the fixture manifest exercises the same validation the
 	// pipeline applies (every field required, no duplicates).
-	disclosures, err := loadTestDisclosures(proofFixtureDir)
+	disclosures, _, err := loadTestDisclosures(proofFixtureDir)
 
 	if err != nil {
 		t.Fatalf("load fixture disclosures: %v", err)
@@ -64,7 +64,7 @@ func TestValidationProofPageGolden(t *testing.T) {
 	}
 
 	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
-	actual := renderValidationProofPage(fixtureProvenance(), comparison, disclosures)
+	actual := renderValidationProofPage(fixtureProvenance(), comparison, disclosures, nil)
 
 	if actual != expected {
 		expectedLines := strings.Split(expected, "\n")
@@ -96,10 +96,10 @@ func TestValidationProofPageGolden(t *testing.T) {
 func TestValidationProofPageDeterministic(t *testing.T) {
 	comparison, disclosures := loadProofFixture(t)
 
-	first := renderValidationProofPage(fixtureProvenance(), comparison, disclosures)
+	first := renderValidationProofPage(fixtureProvenance(), comparison, disclosures, nil)
 
 	for i := 0; i < 500; i++ {
-		if again := renderValidationProofPage(fixtureProvenance(), comparison, disclosures); again != first {
+		if again := renderValidationProofPage(fixtureProvenance(), comparison, disclosures, nil); again != first {
 			t.Fatalf("render %d is not byte-identical to the first render", i+1)
 		}
 	}
@@ -135,7 +135,7 @@ func TestValidationProofPageContentStability(t *testing.T) {
 	docsPath := t.TempDir()
 	pagePath := filepath.Join(docsPath, "validation", "current", "fixture.pkg.md")
 
-	if err := writeValidationProofPage(docsPath, fixtureProvenance(), comparison, disclosures); err != nil {
+	if err := writeValidationProofPage(docsPath, fixtureProvenance(), comparison, disclosures, nil); err != nil {
 		t.Fatalf("first write: %v", err)
 	}
 
@@ -158,7 +158,7 @@ func TestValidationProofPageContentStability(t *testing.T) {
 	moved := fixtureProvenance()
 	moved.date, moved.commit = "2026-09-15", "deadbeef1"
 
-	if err := writeValidationProofPage(docsPath, moved, comparison, disclosures); err != nil {
+	if err := writeValidationProofPage(docsPath, moved, comparison, disclosures, nil); err != nil {
 		t.Fatalf("second write: %v", err)
 	}
 
@@ -176,7 +176,7 @@ func TestValidationProofPageContentStability(t *testing.T) {
 	comparison.Go["TestDelta"] = "pass"
 	comparison.CSharp["TestDelta"] = "pass"
 
-	if err := writeValidationProofPage(docsPath, moved, comparison, disclosures); err != nil {
+	if err := writeValidationProofPage(docsPath, moved, comparison, disclosures, nil); err != nil {
 		t.Fatalf("third write: %v", err)
 	}
 
@@ -229,7 +229,7 @@ func TestValidationProofPageSkipsWithoutTreeRoot(t *testing.T) {
 	outputPath := t.TempDir()
 	manifest := testManifest{PackageImportPath: "fixture/pkg", GoVersion: "go1.23.1"}
 
-	if err := emitValidationProofPage(outputPath, comparison, manifest, disclosures, Options{targetPlatform: "windows/amd64"}); err != nil {
+	if err := emitValidationProofPage(outputPath, comparison, manifest, disclosures, nil, Options{targetPlatform: "windows/amd64"}); err != nil {
 		t.Fatalf("emit without a tree root: %v", err)
 	}
 
@@ -270,7 +270,7 @@ func TestValidationProofPageLocatesDocsTree(t *testing.T) {
 
 	manifest := testManifest{PackageImportPath: "fixture/pkg", GoVersion: "go1.23.1"}
 
-	if err := emitValidationProofPage(outputPath, comparison, manifest, disclosures, Options{targetPlatform: "windows/amd64"}); err != nil {
+	if err := emitValidationProofPage(outputPath, comparison, manifest, disclosures, nil, Options{targetPlatform: "windows/amd64"}); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
 

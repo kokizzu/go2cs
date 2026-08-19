@@ -1346,7 +1346,7 @@ public static (nint, nint, nint, syscallꓸSockaddr, error) ReadMsg(this ж<FD> 
         if ((~o).rsa == nil) {
             o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
-        o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
+        o.Value.msg.Name = ((Δsyscall.Pointer)ManagedPointerTokens.MintOpaque((~o).rsa));
         o.Value.msg.Namelen = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
         o.Value.msg.Flags = (uint32)flags;
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSARecvMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
@@ -1381,7 +1381,7 @@ public static (nint, nint, nint, error) ReadMsgInet4(this ж<FD> Ꮡfd, slice<by
         if ((~o).rsa == nil) {
             o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
-        o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
+        o.Value.msg.Name = ((Δsyscall.Pointer)ManagedPointerTokens.MintOpaque((~o).rsa));
         o.Value.msg.Namelen = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
         o.Value.msg.Flags = (uint32)flags;
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSARecvMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
@@ -1415,7 +1415,7 @@ public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<by
         if ((~o).rsa == nil) {
             o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
-        o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
+        o.Value.msg.Name = ((Δsyscall.Pointer)ManagedPointerTokens.MintOpaque((~o).rsa));
         o.Value.msg.Namelen = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
         o.Value.msg.Flags = (uint32)flags;
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSARecvMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
@@ -1457,7 +1457,7 @@ public static (nint, nint, error) WriteMsg(this ж<FD> Ꮡfd, slice<byte> p, sli
             if (errΔ2 != default!) {
                 return (0, 0, errΔ2);
             }
-            o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
+            o.Value.msg.Name = ((Δsyscall.Pointer)ManagedPointerTokens.MintOpaque((~o).rsa));
             o.Value.msg.Namelen = lenΔ1;
         }
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSASendMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), 0, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
@@ -1488,7 +1488,7 @@ public static (nint, nint, error) WriteMsgInet4(this ж<FD> Ꮡfd, slice<byte> p
             o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
         var lenΔ1 = sockaddrInet4ToRaw((~o).rsa, ref (Ꮡsa).DerefOrNull());
-        o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
+        o.Value.msg.Name = ((Δsyscall.Pointer)ManagedPointerTokens.MintOpaque((~o).rsa));
         o.Value.msg.Namelen = lenΔ1;
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSASendMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), 0, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
         return (n, (nint)(~o).msg.Control.Len, err);
@@ -1518,7 +1518,7 @@ public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p
             o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
         var lenΔ1 = sockaddrInet6ToRaw((~o).rsa, ref (Ꮡsa).DerefOrNull());
-        o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
+        o.Value.msg.Name = ((Δsyscall.Pointer)ManagedPointerTokens.MintOpaque((~o).rsa));
         o.Value.msg.Namelen = lenΔ1;
         var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSASendMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), 0, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
         return (n, (nint)(~o).msg.Control.Len, err);

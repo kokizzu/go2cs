@@ -11159,6 +11159,145 @@ Converter `go test ./...` ok (185 s) · full CNR · seeded reconvert with the pa
 · `run-validated-sweep.ps1 -Filter syscall` canary · `go2cs-stdlib.slnx` windows build ·
 `SystemCertVerify` PASS on all four phases, proven failing-first · solution integrity 625/625.
 
+## ✅ `crypto/tls` BANKS at 400 + 2 — the mint-site closes at the EMISSION, not at either priced remedy, and the flagship row is one suite over the whole Windows networking stack (2026-08-18, lane `claude/tls-mint-site`)
+
+The entry above left one named, priced question between `crypto/tls` and a roster row:
+`pvExtraPolicyPara`, minted in crypto/x509 as `unsafe.Pointer(sslPara)` over a record whose
+ServerName is itself a managed reference. This lane took that question by MEASUREMENT, and the
+measurement rejected BOTH priced remedies for a third shape cheaper to prove than either — after
+which the package validated on the first full pipeline run that could hold it.
+
+### The remedy decision — why both table rows lost
+
+* **Remedy 1 (the operator mints when it cannot pin)** is defeated by the token table's own
+  integrity check: `Resolve` verifies `CurrentToken(box) == token`, and the operator hands out
+  transient ADDRESSES for unpinnable storage, not order tokens — so registering what it hands out
+  today can never resolve, and making it hand out tokens instead changes what every unpinnable
+  `ж→uintptr` site observes. That is the corpus-wide model change the entry above already said
+  wants its own ruling, and nothing here needed it.
+* **Remedy 2 (hand-own `checkChainSSLServerPolicy`) cannot satisfy its own guard.** The
+  coordinator's brief asked for a hermetic trusted-chain + DNS-name policy check whose evidence is
+  a value — and a behavioral test's own Go source mints through the SAME lossy emission, so under
+  a one-function hand-own the guard program's mint stays broken and no such test is writable. A
+  hand-own also leaves every other author of the Go shape — `internal/poll`'s six `WSAMsg.Name`
+  mints, converted `_test.go` suites, user code — minting the same lost pointer.
+* **The census that settled it:** the lossy chain
+  `(T)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer(p))` exists at SEVEN corpus sites in TWO
+  files, all in the already-broken reference-bearing class. Small enough to fix at the source.
+
+### What landed (commit `e4d4aeb9b`)
+
+The converter's `opaquePointerMintEmission` (convCallExpr.go): `T(unsafe.Pointer(p))` where T's
+underlying type is `*struct{}` — an opaque pointer BY CONSTRUCTION, nothing to dereference — now
+emits golib's `ManagedPointerTokens.MintOpaque(p)`. The mint keeps the numeric route byte for byte
+for every pointee that route already answered exactly (nil → 0, native → its address,
+reference-free → pinned stable storage) and diverges only for the reference-bearing class: the
+scalar becomes the box's own pointer-order token, Registered so the boundary wrapper recovers the
+box with `Resolve` — the table's THIRD minter, the round trip its design doc names — and the
+minted box holds the referent reachable for its own lifetime through a ConditionalWeakTable,
+because the referent is otherwise reachable only through a local the JIT may retire before the
+syscall that consumes the token. `CertVerifyCertificateChainPolicy` joins the certchain hand-own
+as the RESOLVER (native mirrors both directions, `nativeIdentityOf` for the chain, the server name
+transcribed for exactly the call's duration). **crypto/x509 itself is untouched beyond the
+regenerated mint line — no new hand-own anywhere**, and `ж.cs` is untouched again.
+
+Guarded failing-first by `SystemCertVerify`'s three policy rows, all values: with
+`CERT_CHAIN_POLICY_ALLOW_UNKNOWN_CA_FLAG` waiving the fixture's untrusted root, a MATCHING server
+name answers 0 and a MISMATCHED one answers `CERT_E_CN_NO_MATCH` — an answer crypt32 can only give
+if the name crossed the boundary intact — and with nothing waived the same chain answers
+`CERT_E_UNTRUSTEDROOT`. Pre-fix, the first policy call dies `0xC0000005` inside `Syscall9`'s
+successor frame after all 14 existing rows pass. The golib liveness contract is separately pinned
+by `ManagedPointerTokenMintTests` (referent survives a forced collection with only the mint held).
+
+### The census, and the two predicted flips — confirmed
+
+Same documented method (one process per top-level `Test*`, 25 s cap, `TestBogoSuite` separate):
+**178 of 183 exit 0**, and the five failures are exactly the four expired-fixture rows (same
+`x509: certificate has expired` text as Go) plus `TestCertCache`'s pinned disclosure signature.
+Zero hangs, zero timeouts, zero infrastructure errors. **`TestVerifyHostname` PASSES** — a real
+server's TRUSTED chain with a DNS name, i.e. the mint and the resolver working end to end against
+live traffic — and **`TestQUICHandshakeError` PASSES** (the hang is gone). Go re-measured on this
+host: 184 top-level, 180 pass, 4 fail. Cross-tab closes with no remainder:
+**178 agree-pass + 4 agree-fail + 1 disclosed + TestBogoSuite = 184.**
+
+### TestBogoSuite — the serial estimate was wrong, and the truth is a different wall
+
+The tls-finish entry priced full BoGo at "~3 hours of process startup", a SERIAL estimate. Measured:
+the runner parallelizes 16 shim workers — and the run still dies at **exactly 600 s, twice**,
+because the runner is itself a `go test` package carrying Go's DEFAULT 10-MINUTE test-binary
+deadline, which neither crypto/tls's code nor the host controls (the test passes no `-timeout` in
+either language). At its wall the runner had reached ~267 of 5,481 cases (~3.4 h projected — the
+serial estimate was accidentally about right for the wrong reason), then exits without writing its
+results JSON, selecting the "bogo failed" arm whose text the disclosure now pins. Go passes inside
+the same wall in 32 s. **Disclosed `host-limit`**: the ~87x managed shim startup (3.30 s vs
+0.038 s) is what a framework-dependent apphost IS — the same self-retiring texture as os/exec's
+single-file entries (publish fast-startup hosts and the row starts passing until the entry is
+removed). The interop CAPABILITY is proven by value in the same suite: the filtered
+`Client-Verify-ECDSA-TLS1` case completes a full handshake with certificate verification against
+BoringSSL as the peer, 14 s end to end. Also observed on the way: the host printed a
+`*strings.Builder` `%s` operand as a raw pointer (`0x…`) where Go prints its contents — a real
+fmt/Stringer-dispatch divergence on the diagnostic path, named here for whoever takes it; it does
+not affect any verdict.
+
+### Two oracle duals the bank required — both arms that already existed, mirrored
+
+1. **Go-side exit forgiveness on AGREED failures.** `crypto/tls` is the first package whose honest
+   `go test` baseline is red (fixtures expired 2025-01-01), and the compare treated any nonzero Go
+   exit as fatal — so the package could never validate however perfectly the rows matched. The
+   mirror of the existing C#-side arm: both exits forgiven only when BOTH sides exited nonzero,
+   zero mismatches, both runs produced results, and at least one agree-fail row exists to attribute
+   the exits to. A red Go baseline beside a green converted run stays fatal.
+2. **Downward disclosure withdrawal.** The oracle aggregated disclosed LEAVES up to their parent but
+   had no arm for a disclosed ROOT's Go-side children — `TestBogoSuite`'s 3,242 case rows exist
+   only on Go's side because the disclosed failure precedes the case fan-out, and every one read as
+   `Go="skip" C#=""`. The dual rule: a Go-only row under a signature-matched disclosure root is
+   WITHDRAWN — published in the comparison record and on the proof page (count by root), subtracted
+   from the matched count, never silently dropped. It never widens: a root failing with the wrong
+   signature withdraws nothing, and a two-sided divergent child under a disclosed root is still a
+   strict mismatch. Both rules unit-tested beside the existing aggregation guard.
+
+The proof-page generator also gained hand-owned **manifest notes** (`go2cs_test_disclosures.json`
+`"notes"`), because the brief requires the expired-fixture ceiling note VERBATIM on the page and
+the page is regenerated on every re-validation — a hand edit would not survive one. The note rides
+the same hand-owned manifest as the disclosures.
+
+### What the flagship row proves
+
+**`crypto/tls` banks at 400 matched + 2 disclosed** — and the row is one suite over everything the
+Windows arcs built: the managed netpoller and the WSA submit family (every handshake is real
+loopback sockets), name resolution (`GetAddrInfoW` + `adapterAddresses`), the CryptoAPI chain
+verifier end to end (`CertGetCertificateChain`, the SSL policy check, the opaque-pointer mint),
+sha3 key schedules, session tickets/resumption/QUIC/ECH, and BoringSSL interop by value. The four
+agree-fail rows carry the expired-fixture ceiling note on the proof page; the sweep floor is 30m
+(TestBogoSuite deterministically burns its child runner's 600 s deadline every run — evidence
+comment in `$longTimeouts`).
+
+### Also measured, not taken
+
+The full-reconvert control surfaced SIX files of accumulated intended drift inherited from
+master's escape/box-copy and dyn-struct arcs (`encoding/xml` ×3, `go/constant/value.cs`,
+`runtime/mstats.cs` + its windows `package_info.cs`) — the committed corpus is stale relative to
+master's converter for exactly those files (last regen `489a32e19`, converter moved at
+`0428c3161`). Left for the owning arc or the next leveling regen; named so the next full regen
+does not read them as its own.
+
+### Gates
+
+Converter `go test ./...` ok twice (211.9 s / 212.4 s, including the new oracle guards proven in
+both directions) · full CNR twice — ONE changed file, the intended SystemCertVerify golden ·
+full seeded reconvert 304/304, path-precise marker gate 63/63 marked files 0 violations, corpus
+footprint exactly syscall + crypto/x509 + internal/poll · `go2cs-stdlib.slnx` 0 errors ·
+`go2cs.slnx` 0 errors · GolibTests 152/152 · full behavioral 597/597 transpile+compile+target,
+571/571 output (2,162 s) · `SystemCertVerify` 4/4 phases, failing-first · pipeline
+`-test-action all -test-timeout 60m`: **Validated 400 tests (2 disclosed-divergent:
+codegen-liveness, host-limit)**, twice, consistent · **full validated sweep: 149 of 151 rows PASS
+at their exact banked counts in 340 min** (laptop R, solo), `crypto/tls` PASSing at 400 through
+the sweep machinery itself — the two not-green rows are `archive/zip` and `go/parser`, BOTH
+proven full-sweep-load floor shortfalls, not regressions: each timed out at its floor+grace with
+one-sided-row truncation signatures under the 151-row sweep's disk pressure, and each PASSES solo
+the same day on the same machine well inside its old floor (zip 100 verdicts in 850 s, parser 173
+in 836 s). Floors raised to the loaded case (60m / 90m) with the evidence in `$longTimeouts`.
+
 ## ⛔ The assembly-scoped-alias CS0426 was ONE root in name only — `encoding/xml` goes 0 → 353 of 386, `net/netip` sheds three of four roots, and the lost write behind xml's last dozen is MEASURED (2026-08-18, lane `claude/xml-netip-alias`)
 
 The harvest entry handed on `encoding/xml` (386) and `net/netip` (266) as one shared root — "the

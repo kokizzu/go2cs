@@ -81,15 +81,25 @@
 // crypt32, and the sync point ("the moment a raw word becomes a pointer box") is again something
 // only the wrapper knows.
 //
-// ⚠ STILL OPEN, and named rather than papered over: CertVerifyCertificateChainPolicy. Its
+// CertVerifyCertificateChainPolicy -- the file's third concern, and the LAST crypt32 member on the
+// system-verifier path -- closed the mint-site problem its earlier header named as still open. Its
 // CERT_CHAIN_POLICY_PARA carries `pvExtraPolicyPara` as Go's opaque `syscall.Pointer`, minted in
 // crypto/x509 as `unsafe.Pointer(sslPara)` over an SSLExtraCertChainPolicyPara whose ServerName is
-// itself a managed reference -- so what arrives at this boundary is a transient managed address with
-// no recoverable box behind it, and nothing the wrapper can do recovers the server name. That is a
-// MINT-SITE problem (a ManagedPointerTokens registration at the conversion, or a hand-own of
-// checkChainSSLServerPolicy), not a boundary one. It is reached only when a chain is TRUSTED and the
-// caller supplied a DNS name -- crypto/tls's TestVerifyHostname, not the offline verifier. See
-// docs/phase4/BOARD-next-validation-candidates.md.
+// itself a managed reference. What used to arrive here was a transient managed address with no
+// recoverable box behind it -- a MINT-SITE problem, not a boundary one, and it is fixed at the
+// mint: the converter's opaquePointerMintEmission (convCallExpr.go) emits golib's
+// ManagedPointerTokens.MintOpaque for `T(unsafe.Pointer(p))` over a `*struct{}` target, so the
+// scalar this wrapper receives for a reference-bearing pointee is the referent's own pointer-order
+// token, resolvable back to the box -- the same round trip the ADDRINFOW hand-own mints for its
+// sockaddr fields, minted at the emission so every author of the Go shape (crypto/x509, converted
+// test suites, user code) is covered rather than one hand-owned function. The wrapper below is the
+// RESOLVER: it recovers the SSLExtraCertChainPolicyPara, transcribes it and the server name into
+// native mirrors for exactly the duration of the call, hands crypt32 the chain's remembered native
+// identity, and copies the policy status back. Reached only when a chain is TRUSTED and the caller
+// supplied a DNS name; the SystemCertVerify behavioral test's policy rows are the offline guard
+// (ALLOW_UNKNOWN_CA waives this test fixture's untrusted root so the name check's own verdict
+// shows through -- match answers 0, mismatch answers CERT_E_CN_NO_MATCH, an answer crypt32 can
+// only give if the name crossed the boundary intact).
 
 using System;
 using System.Runtime.CompilerServices;
@@ -147,6 +157,43 @@ partial class syscall_package
         public uint32 RevocationFreshnessTime;
         public uint32 TrailingAlignment;
         public nuint CacheResync;
+    }
+
+    // ---- the POLICY-CALL mirrors -----------------------------------------------------------------
+    //
+    // CERT_CHAIN_POLICY_PARA: 16 bytes, which is what root_windows.go's `unsafe.Sizeof(*para)`
+    // computes -- but the mirror states it from its own layout, exactly as the chain para above.
+    // The converted record is reference-bearing (ExtraPolicyPara is a managed Pointer), so it can
+    // no more cross by address than CERT_CHAIN_PARA could.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeCertChainPolicyPara
+    {
+        public uint32 Size;
+        public uint32 Flags;
+        public nuint ExtraPolicyPara;
+    }
+
+    // SSL_EXTRA_CERT_CHAIN_POLICY_PARA: 24 bytes. The pointer's 8-byte alignment introduces the
+    // stated padding word, as in NativeCertEnhKeyUsage above.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeSslExtraCertChainPolicyPara
+    {
+        public uint32 Size;
+        public uint32 AuthType;
+        public uint32 Checks;
+        public uint32 Alignment;
+        public nuint ServerName;
+    }
+
+    // CERT_CHAIN_POLICY_STATUS: 24 bytes, the one record of this trio crypt32 WRITES.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeCertChainPolicyStatus
+    {
+        public uint32 Size;
+        public uint32 Error;
+        public uint32 ChainIndex;
+        public uint32 ElementIndex;
+        public nuint ExtraPolicyStatus;
     }
 
     // ---- the READ-BACK mirrors -------------------------------------------------------------------
@@ -373,6 +420,93 @@ partial class syscall_package
         Syscall(procCertFreeCertificateChain.Addr(), 1, nativeIdentityOf(Ꮡctx), 0, 0);
     }
 
+    // CertVerifyCertificateChainPolicy(policyOID, chainContext, para, &status). All three concerns
+    // this file exists for meet in one call: the chain is a VIEW whose native identity the side
+    // table remembers; the para is the struct-passing class with an OPAQUE pointer inside it; the
+    // status is the same class written backward. The extra-policy pointer is where the opaque MINT
+    // resolves (see the file header): a scalar that ManagedPointerTokens recognizes recovers the
+    // SSLExtraCertChainPolicyPara box the converted x509 code built, and its fields -- the server
+    // name especially -- are transcribed into one native block for exactly the duration of the
+    // call, the mirror-is-a-LOCAL doctrine throughout. A scalar the table does NOT recognize
+    // passes through unchanged: that is the nil pointer, and it is also a genuinely native (or
+    // pinned reference-free) address, for which pass-through is the correct native call.
+    //
+    // `Size` on both mirrors is stated from the mirror's own layout, per this file's doctrine --
+    // with one asymmetry worth recording: Go leaves the STATUS record's cbSize zero
+    // (root_windows.go constructs `syscall.CertChainPolicyStatus{}` and crypt32 tolerates it),
+    // and nothing is written back into the managed Size field, so a program that prints
+    // status.Size observes exactly what it observes under Go.
+    public static unsafe error /*err*/ CertVerifyCertificateChainPolicy(uintptr policyOID, ж<CertChainContext> Ꮡchain, ж<CertChainPolicyPara> Ꮡpara, ж<CertChainPolicyStatus> Ꮡstatus) {
+        NativeCertChainPolicyPara para = default;
+        NativeCertChainPolicyPara* paraPtr = null;
+        NativeSslExtraCertChainPolicyPara sslPara = default;
+        NativeCertChainPolicyStatus status = default;
+        NativeCertChainPolicyStatus* statusPtr = null;
+        void* serverName = null;
+
+        try {
+            if (Ꮡpara != nil) {
+                ref CertChainPolicyPara managedPara = ref Ꮡpara.Value;
+
+                para.Size = (uint32)sizeof(NativeCertChainPolicyPara);
+                para.Flags = managedPara.Flags;
+
+                if (managedPara.ExtraPolicyPara != nil) {
+                    nuint scalar = (uintptr)managedPara.ExtraPolicyPara;
+
+                    if (ManagedPointerTokens.Resolve(scalar) is ж<SSLExtraCertChainPolicyPara> Ꮡssl) {
+                        ref SSLExtraCertChainPolicyPara managedSsl = ref Ꮡssl.Value;
+
+                        sslPara.Size = (uint32)sizeof(NativeSslExtraCertChainPolicyPara);
+                        sslPara.AuthType = managedSsl.AuthType;
+                        sslPara.Checks = managedSsl.Checks;
+
+                        if (managedSsl.ServerName != nil) {
+                            serverName = allocUtf16z(managedSsl.ServerName);
+                            sslPara.ServerName = (nuint)serverName;
+                        }
+
+                        para.ExtraPolicyPara = (nuint)(&sslPara);
+                    } else {
+                        para.ExtraPolicyPara = scalar;
+                    }
+                }
+
+                paraPtr = &para;
+            }
+
+            if (Ꮡstatus != nil) {
+                status.Size = (uint32)sizeof(NativeCertChainPolicyStatus);
+                statusPtr = &status;
+            }
+
+            var (r1, _, e1) = Syscall6(procCertVerifyCertificateChainPolicy.Addr(), 4, policyOID, nativeIdentityOf(Ꮡchain), (uintptr)(void*)paraPtr, (uintptr)(void*)statusPtr, 0, 0);
+
+            if (r1 == 0) {
+                return errnoErr(e1);
+            }
+        }
+        finally {
+            // Freed here, always: the policy parameters are input-only, so nothing native escapes.
+            if (serverName != null) {
+                NativeMemory.Free(serverName);
+            }
+        }
+
+        if (Ꮡstatus != nil) {
+            ref CertChainPolicyStatus view = ref Ꮡstatus.Value;
+
+            view.Error = status.Error;
+            view.ChainIndex = status.ChainIndex;
+            view.ElementIndex = status.ElementIndex;
+            // ExtraPolicyStatus is left as the caller set it: the SSL policy writes nothing there,
+            // and a native address fabricated into a managed Pointer would be the exact defect
+            // class this file exists to keep out.
+        }
+
+        return default!;
+    }
+
     // ---- the transcriptions ----------------------------------------------------------------------
 
     // A CERT_CONTEXT as a managed record. `EncodedCert` is COPIED rather than aliased: the field is a
@@ -530,6 +664,29 @@ partial class syscall_package
 
         block = allocUsageIdentifiers(managed.Usage.UsageIdentifiers, (nint)managed.Usage.Length);
         native.Usage.UsageIdentifiers = (nuint)block;
+    }
+
+    // Copies a NUL-terminated managed UTF-16 run (syscall.UTF16PtrFromString's `*uint16`, an
+    // element pointer into a managed []uint16) into one native WCHAR block, terminator included.
+    // The terminator is part of the data, so the length is found by walking to it -- through a
+    // `fixed`, which holds the backing array still for exactly the copy, the same pattern
+    // allocUsageIdentifiers uses one element size down.
+    private static unsafe void* allocUtf16z(ж<uint16> text) {
+        fixed (uint16* source = &text.Value) {
+            nint length = 0;
+
+            while (source[length] != 0) {
+                length++;
+            }
+
+            uint16* allocation = (uint16*)NativeMemory.Alloc((nuint)(length + 1) * sizeof(uint16));
+
+            for (nint i = 0; i <= length; i++) {
+                allocation[i] = source[i];
+            }
+
+            return allocation;
+        }
     }
 
     // Builds the native `LPSTR[count]` crypt32 reads the requested EKUs from: one allocation holding
