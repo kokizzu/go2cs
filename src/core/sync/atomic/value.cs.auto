@@ -35,7 +35,7 @@ public static any /*val*/ Load(this ж<Value> Ꮡv) {
 
     var vp = Ꮡv.Reinterpret<Value, efaceWords>();
     @unsafe.Pointer typ = (uintptr)LoadPointer(vp.of(efaceWords.Ꮡtyp));
-    if (typ == nil || typ.Value == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
+    if (typ == nil || typ == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
         // First store not yet completed.
         return default!;
     }
@@ -77,14 +77,14 @@ public static void Store(this ж<Value> Ꮡv, any valʗp) {
             runtime_procUnpin();
             return;
         }
-        if (typ.Value == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
+        if (typ == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
             // First store in progress. Wait.
             // Since we disable preemption around the first store,
             // we can wait with active spinning.
             continue;
         }
         // First store completed. Check type and overwrite data.
-        if (typ.Value != (~vlp).typ) {
+        if (typ != (~vlp).typ) {
             throw panic("sync/atomic: store of inconsistently typed value into Value");
         }
         StorePointer(vp.of(efaceWords.Ꮡdata), (~vlp).data);
@@ -124,14 +124,14 @@ public static any /*old*/ Swap(this ж<Value> Ꮡv, any @newʗp) {
             runtime_procUnpin();
             return default!;
         }
-        if (typ.Value == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
+        if (typ == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
             // First store in progress. Wait.
             // Since we disable preemption around the first store,
             // we can wait with active spinning.
             continue;
         }
         // First store completed. Check type and overwrite data.
-        if (typ.Value != (~np).typ) {
+        if (typ != (~np).typ) {
             throw panic("sync/atomic: swap of inconsistently typed value into Value");
         }
         var op = Ꮡold.Reinterpret<any, efaceWords>();
@@ -179,14 +179,14 @@ public static bool /*swapped*/ CompareAndSwap(this ж<Value> Ꮡv, any oldʗp, a
             runtime_procUnpin();
             return true;
         }
-        if (typ.Value == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
+        if (typ == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
             // First store in progress. Wait.
             // Since we disable preemption around the first store,
             // we can wait with active spinning.
             continue;
         }
         // First store completed. Check type and overwrite data.
-        if (typ.Value != (~np).typ) {
+        if (typ != (~np).typ) {
             throw panic("sync/atomic: compare and swap of inconsistently typed value into Value");
         }
         // Compare old and current via runtime equality check.

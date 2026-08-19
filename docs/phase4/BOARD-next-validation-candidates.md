@@ -12370,4 +12370,110 @@ Converter `go test ./...` **ok, 240.5 s, zero failures** · full `check-no-regre
 no golib and no `go2cs-gen` change. No roster row, no proof page, no disclosures, no converted test
 sources committed: one structural non-bank, one converter fix.
 
+
+## 📉 NARROWED — `sync/atomic` 99 → 104 of 108: two `unsafe.Pointer`s now compare as BOXES, which is what golib was already built for. The residual is three roots and none of them is the pointer family (2026-08-19, lane `claude/row-harvest-3`)
+
+The escape/box-copy entry left this row at 99 of 108 with three named residual roots, the second of
+which was *"Go's pointer-IDENTITY compare `k != p` is emitted as `k.Value != p.Value`, a deref-compare
+that nil-derefs on the nil probe … pre-fix it compared pointers-into-copies and failed 'orderly', so
+that fix EXPOSED it to full severity."* That root is now closed, and closing it did more than its own
+three tests: **the test host survives the run.**
+
+### The measurement, before and after, on one tree
+
+| | pre-fix | post-fix |
+|:--|:--|:--|
+| C# verdicts RECORDED | **35** of 108 | **108** of 108 |
+| agreeing with `go test` | not computable | **104** |
+| how the run ended | host died inside `TestHammerStoreLoad` — `OutOfMemoryException` in `RecordGoroutinePanic`'s `String.Join`, then a nil-deref panic | clean exit; `TestHammerStoreLoad` contained as a per-test `infrastructure-error` |
+
+The escape/box-copy entry's 99 was obtained by running the host DIRECTLY with the hammer family
+excluded and diffing against the recorded go map, because the host death made a full-pipeline
+compare impossible. **104 is a full-pipeline number** — every verdict recorded by the differential
+harness itself — so the two are not composed the same way, and the honest statement of this lane's
+own yield is the table above: from 35 recorded verdicts to 108.
+
+### The defect: `unsafe.Pointer` is the one pointer that CARRIES an address rather than being one
+
+golib already models that exactly. `Pointer : ж<uintptr>` holds the address as its `Value`, and it
+overrides `ж<T>.Equals` to compare `PointerOrderToken` (`IsNull ? 0 : Value.Value`) so that equality,
+hashing and ordering are one fact about the address — the override exists because the converter mints
+a fresh box on every `uintptr → unsafe.Pointer` conversion (875 call sites), so two boxes over one
+address are ONE Go pointer. The base `==`/`!=` operators route through it and it is nil-safe by
+construction.
+
+The emission never reached it. `convIdent`'s pointer-context arm renders an `unsafe.Pointer` ident as
+`x.Value` — correct where an *address* is genuinely wanted — and `convBinaryExpr` sets that context
+for both operands of a comparison, since `isPointer()` counts `unsafe.Pointer` (a go/types **Basic**
+of kind UnsafePointer, not a `*types.Pointer`). So `k != p` emitted `k.Value != p.Value`: right by
+accident for two non-nil pointers, and a **NullReferenceException** on a nil one, because a nil
+`unsafe.Pointer` local is `default!` — a C# null. `TestLoadPointer`, `TestStorePointer` and
+`TestSwapPointer` each walk `testPointers()`, whose first element is nil.
+
+The fix suppresses the pointer context for an equality comparison with `unsafe.Pointer` on **both**
+sides. The scope is exact rather than conservative: Go admits no other pairing without a conversion
+(`unsafe.Pointer == *T` and `== uintptr` are type errors), and comparison against untyped `nil` has
+its own arm above and is untouched. It also repairs a shape nobody had filed — a MIXED comparison,
+where a selector operand rendered as the box and an ident operand rendered as its address
+(`x.i != p.Value`, `(~e).tag != tag.Value`); both sides are boxes now.
+
+### Corpus reach: seven shipped `runtime` sites, all verified compiling
+
+`runtime/{alg,map,map_fast32,map_fast64,mbarrier,traceback}.cs` and `runtime/pprof/map.cs` — every
+one a deref-compare collapsing to a box compare (`return x == y;`, `if (dst == src)`,
+`cgoTraceback != traceback`). Built clean (`runtime.pprof` closure, 0 errors, 123 s) and then
+RESTORED per corpus-regen policy. **Worth flagging for the next leveling regen: these seven are a
+CORRECTNESS fix, not cosmetics** — each is a latent nil-deref on the shipped path.
+`sync/atomic/value.cs.auto` is adopted here, since it is a review sibling this fix directly re-emits.
+
+### The residual: 4 divergences, 3 roots, and a correction to the recorded list
+
+| Root | Verdicts | State |
+|:--|:--:|:--|
+| **`unsafe.Pointer` Reinterpret write-back** — `Ꮡuaddr.Reinterpret<uint32, atomic.Int32>()` and the view's writes are lost (`AddInt32Method: val=0 want 400000`) | 2 (`TestHammer32`, `TestHammer64`) | unchanged, and now the largest residual |
+| **late-goroutine host death** — the pointer hammer fires `Fatalf` from a goroutine after the test window | 1 (`TestHammerStoreLoad`) | **contained**: was a process kill that cost 73 verdicts, is now one `infrastructure-error` |
+| **reflect alignment** | 1 (`TestAutoAligned64`) | unchanged |
+
+`TestUnaligned64` skips identically on both sides. **Correction to the escape/box-copy entry's
+residual list: `atomic.Value` CAS type-identity is NOT among the divergences** — `TestValue_CompareAndSwap`
+and its parent both agree. This lane does not claim the credit: `sync/atomic/value.cs` is a
+`[module: GoManualConversion]` NATIVE reimplementation on `Volatile.Read`/`Interlocked.CompareExchange`
+and `GetType()` that never touches `unsafe.Pointer`, so nothing in this fix can reach it. It is
+recorded as measured, cause unattributed.
+
+**No bank**: 4 divergences stand, so no roster row, no proof page, and the converted test sources are
+removed.
+
+### The fix made an existing guard VACUOUS, which CNR caught and is worth recording
+
+CNR reported a second intended mover this lane did not predict: `UnsafePointerKeywordParam`. That
+project's whole premise was the arm this fix retires — *"an identifier of type `unsafe.Pointer` used
+in a pointer context (e.g. a comparison operand) emits `name.Value`; built from the RAW Go name, a
+parameter named `new` came out as `new.Value`, which C# parses as the `new` operator (CS1526)"*. With
+comparisons rendering boxes, its emission holds no `.Value` at all, so it no longer exercised the
+keyword sanitization it exists to guard — a live guard quietly reduced to a compile check.
+
+Five candidate shapes were probed for one that still reaches the arm — `uintptr(new)`, `*(*int32)(new)`,
+a struct-field store, pointer arithmetic, and a call argument — and **none** emits `<name>.Value`; each
+takes a `(uintptr)` cast or the bare box. So rather than guess at a trigger, the project was widened to
+those seven arms, every one of which builds its text from the Go name and so carries the identical
+sanitization risk (`(uintptr)@new`, `~(ж<int32>)(uintptr)(@new)`, `h.p = @new`, `asUintptr(@new)`), with
+the comparison arm kept as the control that it renders `@new` and not `new`. All four phases green, and
+the guard is stronger than before.
+
+Left flagged rather than claimed: convIdent's `unsafe.Pointer` `.Value` arm may now be unreachable from
+converter output entirely — every `<keyword>.Value` site in the corpus is in a hand-written `_impl.cs`,
+not an emission. That is an indirect measurement, not a proof, and the arm is harmless where it stands;
+confirming it needs converter instrumentation over a corpus run, which is its own small task.
+
+### Gates
+
+Converter `go test ./...` **ok, 205.2 s, zero failures** · full `check-no-regression.ps1`
+**byte-identical across all 625 behavioral packages** except the guard's own intended artifacts,
+0 NOT MEASURED · seeded whole-stdlib reconvert **63 marked / 0 clobbered**, 1,655 identical / **8
+movers** / 0 new — the seven above plus `go/internal/gcimporter/gcimporter.cs`, row-harvest-2's
+pre-documented carry · guard `ManagedAtomicPointer` proven failing-first on **both Target and
+Output** (exit code 2 — the pre-fix binary crashes on the nil operand), green on all four phases
+with the fix in. No golib change: the golib side was already correct, which is the point.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
