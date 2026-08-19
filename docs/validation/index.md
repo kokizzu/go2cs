@@ -47,6 +47,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `crypto/sha256` | [`crypto.sha256.md`](current/crypto.sha256.md) | [`src/core/crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha256) |
 | `crypto/sha512` | [`crypto.sha512.md`](current/crypto.sha512.md) | [`src/core/crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha512) |
 | `crypto/subtle` | [`crypto.subtle.md`](current/crypto.subtle.md) | [`src/core/crypto/subtle`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/subtle) |
+| `crypto/tls` | [`crypto.tls.md`](current/crypto.tls.md) | [`src/core/crypto/tls`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/tls) |
 | `database/sql` | [`database.sql.md`](current/database.sql.md) | [`src/core/database/sql`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql) |
 | `database/sql/driver` | [`database.sql.driver.md`](current/database.sql.driver.md) | [`src/core/database/sql/driver`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql/driver) |
 | `debug/buildinfo` | [`debug.buildinfo.md`](current/debug.buildinfo.md) | [`src/core/debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo) |

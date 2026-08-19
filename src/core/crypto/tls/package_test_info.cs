@@ -1,0 +1,316 @@
+// go2cs code converter defines `global using` statements here for imported type
+// aliases as package references are encountered via `import' statements. Exported
+// type aliases that need a `global using` declaration will be loaded from the
+// referenced package by parsing its 'package_info.cs' source file and reading its
+// defined `GoTypeAlias` attributes.
+
+// Package name separator "dot" used in imported type aliases is extended Unicode
+// character '\uA4F8' which is a valid character in a C# identifier name. This is
+// used to simulate Go's package level type aliases since C# does not yet support
+// importing type aliases at a namespace level.
+
+// <ImportedTypeAliases>
+global using bigꓸInt = go.math.big_package.ΔInt;
+global using bigꓸRat = go.math.big_package.ΔRat;
+global using cryptoꓸDecrypterOpts = object;
+global using cryptoꓸPrivateKey = object;
+global using cryptoꓸPublicKey = object;
+global using ecdhꓸCurve = go.crypto.ecdh_package.ΔCurve;
+global using ecdhꓸPublicKey = go.crypto.ecdh_package.ΔPublicKey;
+global using execꓸError = go.os.exec_package.ΔError;
+global using flagꓸErrorHandling = go.flag_package.ΔErrorHandling;
+global using jsonꓸToken = object;
+global using jsonꓸΔToken = object;
+global using netꓸAddr = go.net_package.ΔAddr;
+global using netꓸError = go.net_package.ΔError;
+global using osꓸDirEntry = go.io.fs_package.DirEntry;
+global using osꓸFileInfo = go.io.fs_package.FileInfo;
+global using osꓸFileMode = go.io.fs_package.FileMode;
+global using osꓸPathError = go.io.fs_package.PathError;
+global using osꓸSignal = go.os_package.ΔSignal;
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
+global using runtimeꓸError = go.runtime_package.ΔError;
+global using timeꓸLocation = go.time_package.ΔLocation;
+global using timeꓸMonth = go.time_package.ΔMonth;
+global using timeꓸWeekday = go.time_package.ΔWeekday;
+using net = go.net_package;
+using testing = go.testing_package;
+using Δx509 = go.crypto.x509_package;
+// </ImportedTypeAliases>
+
+using go;
+using static go.crypto.tls_package;
+using static go.crypto.tls_test_package;
+
+// For encountered type alias declarations, e.g., `type Table = map[string]int`,
+// go2cs code converter will generate a `global using` statement for the alias in
+// the converted source, e.g.: `global using Table = go.map<go.@string, nint>;`.
+// Although scope of `global using` is available to all files in the project, all
+// converted Go code for the project targets the same package, so `global using`
+// statements will effectively have package level scope.
+
+// Additionally, `GoTypeAlias` attributes will be generated here for exported type
+// aliases. This allows the type alias to be imported and used from other packages
+// when referenced.
+
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("ConnectionState", "ΔConnectionState")]
+// </ExportedTypeAliases>
+
+// As types are cast to interfaces in Go source code, the go2cs code converter
+// will generate an assembly level `GoImplement` attribute for each unique cast.
+// This allows the interface to be implemented in the C# source code using source
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
+
+// <InterfaceImplementations>
+[assembly: GoImplement<AlertError, error>]
+[assembly: GoImplement<CertificateVerificationError, error>(Pointer = true)]
+[assembly: GoImplement<Conn, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<Conn, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<Conn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<ECHRejectionError, error>(Pointer = true)]
+[assembly: GoImplement<RecordHeaderError, error>]
+[assembly: GoImplement<SessionState, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<alert, error>]
+[assembly: GoImplement<atLeastReader, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<brokenConn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<brokenConn, net_package.Conn>(Promoted = true)]
+[assembly: GoImplement<brokenSigner, crypto_package.Signer>(Promoted = true)]
+[assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<certificateMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<certificateMsgTLS13, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<certificateRequestMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<certificateRequestMsgTLS13, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<certificateStatusMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<certificateVerifyMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<changeImplConn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<changeImplConn, net_package.Conn>(Promoted = true)]
+[assembly: GoImplement<clientHelloMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<clientKeyExchangeMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<cthWrapper, hash_package.Hash>(Pointer = true)]
+[assembly: GoImplement<discardConn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<discardConn, net_package.Conn>(Promoted = true)]
+[assembly: GoImplement<ecdheKeyAgreement, keyAgreement>(Pointer = true)]
+[assembly: GoImplement<encryptedExtensionsMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<endOfEarlyDataMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<finishedMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<go.crypto.rsa_package.PSSOptions, crypto_package.SignerOpts>(Pointer = true)]
+[assembly: GoImplement<go.crypto.rsa_package.PrivateKey, crypto_package.Signer>(Pointer = true)]
+[assembly: GoImplement<go.crypto.tls_package.zeroSource, io_package.Reader>]
+[assembly: GoImplement<hairpinConn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<hairpinConn, net_package.Conn>(Promoted = true)]
+[assembly: GoImplement<hash_package.Hash, transcriptHash>]
+[assembly: GoImplement<helloRequestMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<keyUpdateMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<listener, net_package.Listener>(Pointer = true)]
+[assembly: GoImplement<listener, net_package.Listener>(Promoted = true)]
+[assembly: GoImplement<lruSessionCache, ClientSessionCache>(Pointer = true)]
+[assembly: GoImplement<marshalingFunction, go.vendor.golang.org.x.crypto.cryptobyte_package.MarshalingValue>]
+[assembly: GoImplement<net_package.Conn, io_package.Reader>]
+[assembly: GoImplement<net_package.ΔError, error>]
+[assembly: GoImplement<newSessionTicketMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<newSessionTicketMsgTLS13, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<opensslInput, io_package.Reader>]
+[assembly: GoImplement<opensslOutputSink, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<permanentError, error>(Pointer = true)]
+[assembly: GoImplement<prefixNonceAEAD, aead>(Pointer = true)]
+[assembly: GoImplement<readerFunc, io_package.Reader>]
+[assembly: GoImplement<recordingConn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<recordingConn, net_package.Conn>(Promoted = true)]
+[assembly: GoImplement<replayingConn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<rsaKeyAgreement, keyAgreement>]
+[assembly: GoImplement<serializingClientCache, ClientSessionCache>(Pointer = true)]
+[assembly: GoImplement<serverHelloDoneMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<serverHelloMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<serverKeyExchangeMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<slowConn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<slowConn, net_package.Conn>(Promoted = true)]
+[assembly: GoImplement<stringSlice, flag_package.Value>(Pointer = true)]
+[assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<testing_package.B, testing_package.TB>(Pointer = true)]
+[assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]
+[assembly: GoImplement<writeCountingConn, net_package.Conn>(Pointer = true)]
+[assembly: GoImplement<writeCountingConn, net_package.Conn>(Promoted = true)]
+[assembly: GoImplement<xorNonceAEAD, aead>(Pointer = true)]
+[assembly: GoImplement<ΔfinishedHash, transcriptHash>(Pointer = true)]
+// </InterfaceImplementations>
+
+// <ImplicitConversions>
+[assembly: GoImplicitConv<AlertError, alert>(Inverted = true, ValueType = "uint8")]
+[assembly: GoImplicitConv<Certificate, ж<Certificate>>(Indirect = true)]
+[assembly: GoImplicitConv<Config, ж<Config>>(Indirect = true)]
+[assembly: GoImplicitConv<QUICConfig, ж<QUICConfig>>(Indirect = true)]
+[assembly: GoImplicitConv<SessionState, ж<SessionState>>]
+[assembly: GoImplicitConv<alert, AlertError>(Inverted = true, ValueType = "uint8")]
+[assembly: GoImplicitConv<clientHelloMsg, ж<clientHelloMsg>>(Indirect = true)]
+[assembly: GoImplicitConv<clientKeyExchangeMsg, ж<clientKeyExchangeMsg>>(Indirect = true)]
+[assembly: GoImplicitConv<clientTest, ж<clientTest>>(Indirect = true)]
+[assembly: GoImplicitConv<echContext, ж<echContext>>(Indirect = true)]
+[assembly: GoImplicitConv<serverHelloDoneMsg, ж<serverHelloDoneMsg>>(Indirect = true)]
+[assembly: GoImplicitConv<serverHelloMsg, ж<serverHelloMsg>>(Indirect = true)]
+[assembly: GoImplicitConv<serverKeyExchangeMsg, ж<serverKeyExchangeMsg>>(Indirect = true)]
+[assembly: GoImplicitConv<serverTest, ж<serverTest>>(Indirect = true)]
+[assembly: GoImplicitConv<testQUICConn, ж<testQUICConn>>]
+[assembly: GoImplicitConv<ΔConnectionState, ж<ΔConnectionState>>(Indirect = true)]
+[assembly: GoImplicitConv<Δx509.Certificate, ж<Δx509.Certificate>>(Indirect = true)]
+// </ImplicitConversions>
+
+namespace go.crypto;
+
+[GoPackage("tls")]
+public static partial class tls_package
+{
+    // C# nested types declared with no access modifier are always private, and the
+    // `[GoType]` declarations in this package's converted sources are deliberately
+    // bare so they read more like the original Go code. The real accessibility for
+    // the types - public for a Go-exported name, internal otherwise - are defined
+    // via declarations below.
+
+    // <TypeAccessibility>
+    internal partial interface aead {}
+    internal partial interface cbcMode {}
+    internal partial interface cloneHash_binaryMarshaler {}
+    internal partial interface constantTimeHash {}
+    internal partial interface handshakeMessage {}
+    internal partial interface handshakeMessageWithOriginalBytes {}
+    internal partial interface keyAgreement {}
+    internal partial interface transcriptHash {}
+    internal partial struct activeCert {}
+    internal partial struct alert {}
+    internal partial struct atLeastReader {}
+    internal partial struct bogoResults {}
+    internal partial struct bogoResults_Testsᴛ1 {}
+    internal partial struct brokenConn {}
+    internal partial struct brokenSigner {}
+    internal partial struct cacheEntry {}
+    internal partial struct certCache {}
+    internal partial struct certificateMsg {}
+    internal partial struct certificateMsgTLS13 {}
+    internal partial struct certificateRequestMsg {}
+    internal partial struct certificateRequestMsgTLS13 {}
+    internal partial struct certificateStatusMsg {}
+    internal partial struct certificateVerifyMsg {}
+    internal partial struct changeImplConn {}
+    internal partial struct cipherSuite {}
+    internal partial struct cipherSuiteTLS13 {}
+    internal partial struct clientHandshakeState {}
+    internal partial struct clientHandshakeStateTLS13 {}
+    internal partial struct clientHelloMsg {}
+    internal partial struct clientKeyExchangeMsg {}
+    internal partial struct clientTest {}
+    internal partial struct cthWrapper {}
+    internal partial struct discardConn {}
+    internal partial struct ecdheKeyAgreement {}
+    internal partial struct echConfig {}
+    internal partial struct echContext {}
+    internal partial struct encryptedExtensionsMsg {}
+    internal partial struct endOfEarlyDataMsg {}
+    internal partial struct finishedMsg {}
+    internal partial struct getClientCertificateTestsᴛ2 {}
+    internal partial struct getConfigForClientTestsᴛ2 {}
+    internal partial struct hairpinConn {}
+    [GoValueClone("seq", "scratchBuf")] internal partial struct halfConn {}
+    internal partial struct helloRequestMsg {}
+    internal partial struct hostnameInSNITestsᴛ2 {}
+    internal partial struct keyPairTestsᴛ2 {}
+    internal partial struct keyShare {}
+    internal partial struct keySharePrivateKeys {}
+    internal partial struct keyUpdateMsg {}
+    internal partial struct listener {}
+    internal partial struct localListenerᴛ2 {}
+    internal partial struct lruSessionCache {}
+    internal partial struct lruSessionCacheEntry {}
+    internal partial struct newSessionTicketMsg {}
+    internal partial struct newSessionTicketMsgTLS13 {}
+    internal partial struct opensslInput {}
+    internal partial struct opensslInputEvent {}
+    internal partial struct opensslOutputSink {}
+    internal partial struct paddingTestsᴛ2 {}
+    internal partial struct permanentError {}
+    [GoValueClone("nonce")] internal partial struct prefixNonceAEAD {}
+    internal partial struct pskIdentity {}
+    [GoValueClone("eventArr")] internal partial struct quicState {}
+    internal partial struct recordType {}
+    internal partial struct recordingConn {}
+    internal partial struct replayingConn {}
+    internal partial struct rsaKeyAgreement {}
+    internal partial struct rsaSignatureSchemesᴛ1 {}
+    internal partial struct serializingClientCache {}
+    internal partial struct serverHandshakeState {}
+    internal partial struct serverHandshakeStateTLS13 {}
+    internal partial struct serverHelloDoneMsg {}
+    internal partial struct serverHelloMsg {}
+    internal partial struct serverKeyExchangeMsg {}
+    internal partial struct serverTest {}
+    internal partial struct slowConn {}
+    internal partial struct stringSlice {}
+    internal partial struct suiteSecret {}
+    [GoLocalName("serverResult")] internal partial struct testGetClientCertificate_serverResultᴛ1 {}
+    internal partial struct testKeysFromTest {}
+    internal partial struct testQUICConn {}
+    internal partial struct testSplitPreMasterSecretTest {}
+    internal partial struct testVerifyCertificates_testsᴛ1 {}
+    internal partial struct testVerifyConnection_testsᴛ1 {}
+    internal partial struct testVerifyPeerCertificate_testsᴛ1 {}
+    [GoValueClone("aesKey", "hmacKey")] internal partial struct ticketKey {}
+    internal partial struct timeoutError {}
+    internal partial struct writeCountingConn {}
+    [GoValueClone("nonceMask")] internal partial struct xorNonceAEAD {}
+    internal partial struct zeroSource {}
+    public partial interface ClientSessionCache {}
+    public partial struct AlertError {}
+    public partial struct Certificate {}
+    public partial struct CertificateRequestInfo {}
+    public partial struct CertificateVerificationError {}
+    public partial struct CipherSuite {}
+    public partial struct ClientAuthType {}
+    public partial struct ClientHelloInfo {}
+    public partial struct ClientSessionState {}
+    [GoValueClone("SessionTicketKey")] public partial struct Config {}
+    [GoValueClone("clientFinished", "serverFinished", "@in", "@out", "tmp")] public partial struct Conn {}
+    public partial struct CurveID {}
+    public partial struct Dialer {}
+    public partial struct ECHRejectionError {}
+    public partial struct QUICConfig {}
+    public partial struct QUICConn {}
+    public partial struct QUICEncryptionLevel {}
+    public partial struct QUICEvent {}
+    public partial struct QUICEventKind {}
+    public partial struct QUICSessionTicketOptions {}
+    [GoValueClone("RecordHeader")] public partial struct RecordHeaderError {}
+    public partial struct RenegotiationSupport {}
+    public partial struct SessionState {}
+    public partial struct SignatureScheme {}
+    public partial struct TestAESCipherReorderingTLS13_testsᴛ1 {}
+    public partial struct TestAESCipherReordering_testsᴛ1 {}
+    public partial struct TestBogoSuite_jᴛ1 {}
+    public partial struct TestClientHelloInfo_SupportsCertificate_testsᴛ1 {}
+    public partial struct TestDecodeECHConfigLists_typeᴛ1 {}
+    [GoLocalName("args")] public partial struct TestDeriveSecret_argsᴛ1 {}
+    public partial struct TestDeriveSecret_testsᴛ1 {}
+    [GoLocalName("args")] public partial struct TestExtract_argsᴛ1 {}
+    public partial struct TestExtract_testsᴛ1 {}
+    public partial struct TestHandshakeKyber_typeᴛ1 {}
+    public partial struct TestLinkerGC_testsᴛ1 {}
+    public partial struct TestSignatureSelection_badTestsᴛ1 {}
+    public partial struct TestSignatureSelection_testsᴛ1 {}
+    public partial struct TestTLS13ECHRejectionCallbacks_typeᴛ1 {}
+    public partial struct TestTLS13OnlyClientHelloCipherSuite_tls13Testsᴛ1 {}
+    public partial struct TestTLSPointFormats_testsᴛ1 {}
+    public partial struct echCipher {}
+    public partial struct echExtension {}
+    public partial struct ΔConnectionState {}
+    public partial struct ΔfinishedHash {}
+    // </TypeAccessibility>
+}
+
+[GoPackage("tls_test")]
+public static partial class tls_test_package
+{
+}
