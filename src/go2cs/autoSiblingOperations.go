@@ -79,37 +79,18 @@ func emitAutoConversionSiblings(markedFiles []FileEntry, fset *token.FileSet, pa
 				}
 			}()
 
-			visitor := &Visitor{
-				fset:                      fset,
-				pkg:                       packageTypes,
-				info:                      info,
-				outputBuilder:             &strings.Builder{},
-				liftedTypeNames:           HashSet[string]{},
-				liftedTypeMap:             map[types.Type]string{},
-				liftedAnonStructNames:     map[string]string{},
-				subStructTypes:            map[types.Type][]types.Type{},
-				packageImports:            &strings.Builder{},
-				requiredUsings:            HashSet[string]{},
-				importQueue:               HashSet[string]{},
-				referencedForeignPackages: HashSet[string]{},
-				canonicalAliasImported:    HashSet[string]{},
-				importAliasesEmitted:      HashSet[string]{},
-				importAliasTargets:        map[string]string{},
-				importPathAliases:         map[string]string{},
-				typeAliasDeclarations:     &strings.Builder{},
-				standAloneComments:        map[token.Pos]string{},
-				sortedCommentPos:          []token.Pos{},
-				processedComments:         HashSet[token.Pos]{},
-				newline:                   "\r\n",
-				options:                   options,
-				globalIdentNames:          globalIdentNames,
-				globalScope:               globalScope,
-				blocks:                    Stack[*strings.Builder]{},
-				identEscapesHeap:          fileEntry.identEscapesHeap,
-				sstringEligible:           fileEntry.sstringEligible,
-				ssliceEligible:            fileEntry.ssliceEligible,
-				sstringConvExprs:          fileEntry.sstringConvExprs,
-			}
+			// The SAME constructor the normal per-file path uses. This was a hand-rolled copy of
+			// newFileVisitor's literal until 2026-08-19, and it had drifted by two fields — which
+			// is precisely the failure mode a duplicated struct literal has. `blankImportInits`
+			// was nil, so visitFile's `v.blankImportInits.String()` nil-dereferenced and the
+			// recover above reported "visit file error … (auto-conversion sibling skipped)" for
+			// every fully-hand-owned package: internal/concurrent, internal/godebug and
+			// internal/weak, the three whose single Go file is marked, so no sibling was EVER
+			// produced for them. `manualConversion` was false, though the field's whole meaning is
+			// "this file's destination .cs is hand-owned and the text lands in the .cs.auto review
+			// sibling" — exactly this pass. Constructing through newFileVisitor keeps both correct
+			// by construction and cannot drift again.
+			visitor := newFileVisitor(fset, packageTypes, info, options, globalIdentNames, globalScope, fileEntry)
 
 			visitor.visitFile(fileEntry.file)
 

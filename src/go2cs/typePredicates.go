@@ -310,6 +310,19 @@ func (v *Visitor) isPointer(ident *ast.Ident) bool {
 	return isPointer(obj.Type())
 }
 
+// isUnsafePointer reports whether t is `unsafe.Pointer` — a go/types BASIC of kind UnsafePointer,
+// not a *types.Pointer, which is why isPointer below has to name it separately. Its C# form is
+// golib's `Pointer : ж<uintptr>`, a box whose VALUE is the address it carries.
+func isUnsafePointer(t types.Type) bool {
+	if t == nil {
+		return false
+	}
+
+	basic, ok := t.Underlying().(*types.Basic)
+
+	return ok && basic.Kind() == types.UnsafePointer
+}
+
 func isPointer(t types.Type) bool {
 	exprType := t.Underlying()
 

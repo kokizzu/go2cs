@@ -54,5 +54,6 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct holder {}
     // </TypeAccessibility>
 }

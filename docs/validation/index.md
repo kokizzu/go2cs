@@ -53,6 +53,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `database/sql/driver` | [`database.sql.driver.md`](current/database.sql.driver.md) | [`src/core/database/sql/driver`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql/driver) |
 | `debug/buildinfo` | [`debug.buildinfo.md`](current/debug.buildinfo.md) | [`src/core/debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo) |
 | `debug/dwarf` | [`debug.dwarf.md`](current/debug.dwarf.md) | [`src/core/debug/dwarf`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/dwarf) |
+| `debug/elf` | [`debug.elf.md`](current/debug.elf.md) | [`src/core/debug/elf`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/elf) |
 | `debug/gosym` | [`debug.gosym.md`](current/debug.gosym.md) | [`src/core/debug/gosym`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/gosym) |
 | `debug/macho` | [`debug.macho.md`](current/debug.macho.md) | [`src/core/debug/macho`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/macho) |
 | `debug/plan9obj` | [`debug.plan9obj.md`](current/debug.plan9obj.md) | [`src/core/debug/plan9obj`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/plan9obj) |

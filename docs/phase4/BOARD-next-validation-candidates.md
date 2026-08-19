@@ -12297,4 +12297,402 @@ No roster row, no proof page, no disclosures, no converted test sources committe
 one golib fix, two behavioral guards, thirteen GolibTests rows (seven variadic-dispatch, six
 panic-text), two measurements, zero validations.
 
+## ✅ BANKED — `debug/elf` validates 31/31; the wall was a DISCARDED method group, and the same fix's other half was a discard that had been emitting a DECLARATION (2026-08-19, lane `claude/row-harvest-3`)
+
+The harvest entry's queue item 3 — *"`debug/elf` (31) — CS8183 ×1, unmoved, still the next bounded
+one-diagnostic item"* — closes. The diagnostic reproduced exactly as the one-diagnostic-remeasure
+entry recorded it, the remedy is one general converter rule, and the package validates on the FIRST
+run behind it: **31 matched, 0 disclosed**, one skip-parity, two benchmarks excluded. Roster
+**154/215 (71.6%)**, header recomputed from the table.
+
+### The wall is one line, and it is only ever a COMPILE wall
+
+`file_test.go:1159` is `_ = net.ResolveIPAddr // force dynamic linkage`, inside
+`TestNoSectionOverlaps` — a test that `t.Skipf`s on Windows four lines earlier and never reaches it.
+Go writes the shape to make the linker keep a symbol. C# infers a discard's type FROM its
+right-hand side, and a method group has no type to give: **CS8183**, *"cannot infer the type of
+implicitly-typed discard"*. Nothing executes the line; it merely has to compile, and until it did,
+the whole test assembly did not.
+
+Worth stating plainly, because it prices the row honestly: closing a 31-verdict package here bought
+no behavioral change whatsoever in the package's own code. Everything else in `debug/elf` — the
+section and program-header walk, symbol tables, `DynValue`, compressed sections in both the GCC
+`.zdebug` and gABI `SHF_COMPRESSED` spellings, the `>65280`-section overflow path, and DWARF
+relocation application across twenty compiler/architecture objects — already worked.
+
+### The fix is two rules, and the second was the worse defect
+
+**1. A discarded func value takes a CAST.** The two C# forms with no type of their own are the
+method group and the lambda (a func literal, or the method VALUE that converts to one). Both are
+CS8183 in a discard, and `discardTargetTypeName` supplies the target: a package named func type
+whose underlying signature matches, else the structural `Func<…>`/`Action<…>` render
+`iifeDelegateType` already provides. A variadic signature takes the golib family
+(`Funcꓸꓸꓸ<@string, any, @string>` for `fmt.Sprintf`). The parentheses around the RHS are
+load-bearing for the lambda form — `(Func<…>)(nint p1) => …` does not parse as a cast. A func-typed
+VARIABLE is left alone: it already has a C# type.
+
+**2. A blank LHS is a discard, never a declaration.** The `:=` path one statement form over faces
+the same typeless RHS and answers it by DECLARING the local with the matching package named delegate
+(`stateFn state = lexText;`, the self-referential state machine). A blank LHS reached that branch too
+and emitted `stateFn _ = lexText;` — a local literally named `_`. Everything downstream then
+degrades: every other `_ = x` in the scope becomes an ASSIGNMENT to that local (CS0841 before it,
+CS0123/CS0029 after), and a second named-func-type discard collides outright (CS0128). The blank
+test is now decided ONCE, above every declaration arm, rather than inside the `var` arm where it lived.
+
+### The asymmetry that makes this a separate rule rather than the `:=` rule again
+
+C# 10 gives a method group a natural type, so `var f = pair;` compiles and needs nothing. A
+**discard** is specifically excluded from that inference. So two statement forms one line apart in
+the same emission block, both facing an untyped func RHS, need OPPOSITE treatments: the declaration
+gets a TYPE on the left, the discard gets a CAST on the right. Recorded in
+ConversionStrategies-Reference beside the `:=` section it mirrors.
+
+### Corpus footprint: zero, measured rather than assumed
+
+Both arms move emission only for a blank LHS. A census of the committed corpus for a declaration
+literally named `_` returns three hits, all of them Go source inside `go/types`' test string
+literals (`api_test.cs`, `resolver_test.cs`), never an emitted declaration; and a bare
+`_ = <method group>` cannot exist in the compiling corpus, because it would be CS8183. The seeded
+whole-stdlib reconvert confirms it: **zero movers from this fix**.
+
+### Guard
+
+`BlankIdentifierCollision` already owned this family — it guards the `_, _, _, _ = a, b, c, d`
+split-discard CS0128 and the blank-`func _()` rename — so the shapes were added there rather than in
+a new project. `blankFuncValues` covers all seven RHS forms (unnamed signature, no-results,
+no-params, named func type **twice in one scope**, variadic, cross-package variadic, method value,
+func literal) plus two controls: a func-typed VARIABLE discard, which must stay uncast, and
+`state := lexText; state = lexNumber`, which must still declare the named delegate. Proven
+failing-first against the neutered converter at **11 diagnostics in 7 classes** — CS0841 ×3,
+CS0029 ×2, CS0123 ×2, CS0128, CS1661, CS1662, CS1678 — and green on all four phases with the fix in.
+
+### The measurement hazard this lane paid for
+
+**`$ErrorActionPreference = 'Continue'` at SCRIPT scope let a failed SEED proceed into a
+conversion.** The reconvert ritual prescribes `'Continue'` around the converter CALL (under
+`'Stop'`, the converter's stderr WARNINGs become a terminating NativeCommandError). Setting it for
+the whole script is the easy over-application, and it is not safe: seeded under the session
+scratchpad, `Copy-Item` died mid-tree on MAX_PATH — the source-generator output names under
+`Generated\` are long enough to exceed it from a deep root — every failure was non-terminating, and
+the script converted into a HALF-SEEDED root, which is exactly the state whose false clobber report
+the marker gate exists to catch. Two lessons: scope `'Continue'` to the converter invocation and
+leave seeding under `'Stop'`; and seed into a SHORT root with `bin`/`obj`/`Generated` excluded,
+which is both immune and far faster (5,297 files). The abandoned run was killed by verified PID, not
+by name.
+
+### A banking trap nobody had hit yet: `.gitignore` ate twenty testdata fixtures
+
+`TestDWARFRelocations` reads twenty compiler/architecture objects from `testdata`, and Go names a
+fixture for what it CONTAINS — so they are `*.obj`. The root `.gitignore`'s "Files built by Visual
+Studio" block matches by EXTENSION across the whole tree, and `*.obj` is in it. `git add` staged
+seven of the twenty-seven fixtures and reported nothing wrong; the row would have banked with a
+suite that cannot reproduce from a clone, which is the one promise the roster makes.
+
+`debug/elf` is the first banked package to hit this — `debug/dwarf`'s equivalents are `.elf`/`.elf4`
+and were never matched — and the census closes at exactly these twenty (`git status
+--ignored=matching -- src/core` now reports **0** ignored testdata files, was 20). The fix is a
+trailing `!src/core/**/testdata/**` negation, whole-tree rather than per-extension, matching the
+scope `.gitattributes` already gives the same trees with `src/core/**/testdata/** -text`; a deeper
+`.gitignore` still wins, so `src/core/.gitignore`'s `*.go` rule keeps staged Go source copies out.
+**Check `git add`'s staged COUNT against the on-disk count when banking a package with testdata** —
+an ignore rule is silent, and this one had been waiting for the first fixture corpus named after a
+build artifact.
+
+### A second bank's badge, corrected in passing
+
+The reconvert's three movers were `debug/elf/README.md` (this lane's — the Tests badge flipping to
+`31/31 validated`), `go/internal/gcimporter/gcimporter.cs` (row-harvest-2's pre-documented mover,
+still pending for the next leveling regen, left untouched), and **`crypto/tls/README.md`**, whose
+badge still read `not_yet_validated` for a package master banked at 400/402 hours earlier. Badge
+regeneration is part of banking — `debug/dwarf`, `debug/gosym` and `crypto/sha256` all carry theirs
+— so that one is a missed step, not drift. Adopted here with the fix's own README, since it is the
+converter's own output for a fact the roster already states.
+
+### Gates
+
+Converter `go test ./...` **ok, 240.2 s, zero failures** · full `check-no-regression.ps1`
+**byte-identical across all 625 behavioral packages** except this lane's own guard artifacts
+(`BlankIdentifierCollision/main.cs` + `package_info.cs`, both re-baselined and re-verified on all
+four phases), **0 NOT MEASURED**, 0 advisory warnings, 1,102 s; preflight solution integrity
+**627/627** and path casing **4,506/4,506** · seeded whole-stdlib reconvert **63 marked / 0
+clobbered**, 1,665 emitted, **1,662 identical / 3 movers / 0 new**, all three classified above ·
+sweep closure `run-validated-sweep.ps1 -Filter debug/elf` **PASS 31 in 28 s**, comfortably inside
+the 10-minute default, so **no `$longTimeouts` floor is owed**. No golib and no `go2cs-gen` change,
+so `GolibTests`/full-behavioral/both-`slnx` are not owed. Proof page converter-generated at
+`685aa2170` — the commit that carries the fix, not its parent.
+
+### The ranked queue, updated
+
+1. **`reflect.Value.Call` variadic dispatch** — unchanged at the top; the named owner of 13 of
+   `text/template`'s 14 residual verdicts and predicted behind `html/template`'s 243.
+2. **`html/template`'s Root A** — the named-RHS type alias across the reference-model test boundary.
+3. **`panic(err)` renders an address, not the message** — golib `PanicException`.
+4. **`encoding/gob` (106)** — unchanged at 103 of 106; still the closest unbanked package.
+
+
+## ⛔ MEASURED — `internal/concurrent` does not bank and the reason is STRUCTURAL: its test file is a whitebox consumer of an implementation the hand-own deliberately replaced. The crash behind it is rooted and fixed (2026-08-19, lane `claude/row-harvest-3`)
+
+The one-diagnostic-remeasure entry left this row with two open items — *"CS0426 ×1, unmoved. Plus a
+finding the board did not have: the converter CRASHES on this package's hand-owned file."* Both are
+now resolved, in opposite directions: **the crash is a bounded converter defect, fixed and gated;
+the CS0426 is not a converter defect at all and no converter change can close it.**
+
+### The CS0426 reproduces exactly, and it is the hand-own's own consequence
+
+`hashtriemap_test.cs(406,145): error CS0426: The type name 'node<,>' does not exist in the type
+'concurrent_package'` — still the only diagnostic. Line 406 is `dumpNode`'s signature:
+
+```go
+func dumpMap[K, V comparable](ht *HashTrieMap[K, V])                        { dumpNode(ht, &ht.root.node, 0) }
+func dumpNode[K, V comparable](ht *HashTrieMap[K, V], n *node[K, V], depth int) { … }
+```
+
+Two facts settle it. First, **`dumpMap` is never called by any `Test`** — `dumpNode` is reached only
+from `dumpMap` and from itself, so this is dead interactive-debugging code that Go nonetheless
+compiles as part of the package. Second, `src/core/internal/concurrent/hashtriemap.cs` is a
+`[module: GoManualConversion]` **native replacement**: a `ConcurrentDictionary`-backed `mapStore`,
+with no `node`, no `indirect`, no `entry`, and no trie at all. `dumpNode`'s body reads `n.isEntry`,
+`n.entry()`, `n.indirect()`, `i.parent`, `i.dead`, `i.children`, `e.key`, `e.value`, `e.overflow`
+and `ht.keyHash(…, ht.seed)` — the complete private structure of the implementation the hand-own
+exists to *not* be.
+
+So this is a **new shape**, and worth naming for the packages behind it: a hand-owned native
+replacement is invisible to production consumers, which only ever touch the public API — but a
+package's own `_test.go` is a **WHITEBOX** consumer and may reference the replaced implementation's
+internals. Satisfying it means either reimplementing the hash-trie (abandoning the replacement, and
+with it the reason it exists) or declaring dead scaffolding for dead code, which is the
+fake-but-plausible move `hashtriemap.cs`'s own header comment forbids. Neither is taken. **20
+verdicts stay unmeasured**, and this row should be read as closed-by-design rather than pending.
+
+The class is likely small but is not measured: the other two fully-hand-owned packages
+(`internal/godebug`, `internal/weak`) and the partial hand-owns each carry the same exposure iff
+their suites reach past the public API.
+
+### The crash: one missing struct field in a duplicated literal
+
+`-debug` (which suppresses the recover) turns the warning into a stack in four seconds:
+
+```
+panic: runtime error: invalid memory address or nil pointer dereference
+strings.(*Builder).String(...)
+main.(*Visitor).visitFile(…) visitFile.go:106
+main.emitAutoConversionSiblings.func1(…) autoSiblingOperations.go:114
+```
+
+`emitAutoConversionSiblings` hand-rolled a copy of `newFileVisitor`'s literal — the constructor
+documented as *"constructs the per-file Visitor with every eagerly-required field initialized"* — and
+the copy had drifted by two fields: `blankImportInits` (nil, so `visitFile`'s
+`v.blankImportInits.String()` dereferences nil — the panic) and `manualConversion` (false, though
+the field's whole meaning is "this file's destination `.cs` is hand-owned and the emitted text lands
+in the `.cs.auto` review sibling", which is precisely this pass). It calls the constructor now.
+
+**Why it hid for so long, twice over.** The emitter runs ONLY in `conversionDriver`'s
+`unmarkedFileCount == 0` branch — a FULLY hand-owned package — so exactly the class of three reach
+it, and all three are the files the warning names. A PARTIAL hand-own takes the normal per-file loop
+with its write target redirected, which is why the `ManualConversionSiblingState` behavioral guard
+never caught this: it is a partial package and has always worked. And the recover phrases the panic
+as `visit file error … in "hashtriemap.go"`, which reads as a defect in that file — the hand-owned
+file's own header comment had duly recorded the wrong cause (*"panics visiting this generic file"*,
+*"runs only six of the whole-package pre-passes"*). Genericity and the pre-pass set had nothing to do
+with it; both comments are corrected in place.
+
+### Measured by A/B of two seeded whole-stdlib reconverts
+
+| | pre-fix | post-fix |
+|:--|:--|:--|
+| `visit file error` warnings | 3 (hashtriemap.go, godebug.go, pointer.go) | **0** |
+| `.cs.auto` present | 20 | 22 (+`internal/concurrent`, +`internal/weak` — neither had EVER been produced) |
+| freshly emitted | — | 21 of 22 (`math/unsafe.cs.auto` is seeded-only) |
+| differing among the 20 common | — | **1** — `internal/godebug/godebug.cs.auto`, and only because it went from not-emitted to emitted |
+| marker gate | 63 / 0 | 63 / 0 |
+| corpus movers | 3 (both classified, adopted) | 1 (`gcimporter.cs`, row-harvest-2's carry) |
+
+The 19 byte-identical siblings are the evidence that the `manualConversion` switch is output-neutral
+for everything that was already being produced, and `ManualConversionSiblingState` regenerating
+`state.cs.auto` byte-identically is the positive control that the guard still exercises the path.
+
+### Two backlog corrections this measurement produced
+
+- **CleanupBacklog item 18 is much smaller than recorded.** Of 20 tracked corpus `.cs.auto` files,
+  **19 were already byte-fresh** against today's converter; the single stale one
+  (`internal/godebug`) was stale *because* of this crash and is adopted here. The recorded "11 of 16
+  were stale at r40" no longer describes the tree.
+- **`math/unsafe.cs.auto` is a tracked ORPHAN.** Its principal shed its `GoManualConversion` marker
+  at r41, so no sibling is emitted for it any more, but the file is still tracked. Nothing reads it;
+  it should be deleted when item 18 is levelled.
+
+### Gates
+
+Converter `go test ./...` **ok, 240.5 s, zero failures** · full `check-no-regression.ps1`
+**byte-identical across all 625 behavioral packages**, 0 NOT MEASURED · both seeded reconverts above ·
+no golib and no `go2cs-gen` change. No roster row, no proof page, no disclosures, no converted test
+sources committed: one structural non-bank, one converter fix.
+
+
+## 📉 NARROWED — `sync/atomic` 99 → 104 of 108: two `unsafe.Pointer`s now compare as BOXES, which is what golib was already built for. The residual is three roots and none of them is the pointer family (2026-08-19, lane `claude/row-harvest-3`)
+
+The escape/box-copy entry left this row at 99 of 108 with three named residual roots, the second of
+which was *"Go's pointer-IDENTITY compare `k != p` is emitted as `k.Value != p.Value`, a deref-compare
+that nil-derefs on the nil probe … pre-fix it compared pointers-into-copies and failed 'orderly', so
+that fix EXPOSED it to full severity."* That root is now closed, and closing it did more than its own
+three tests: **the test host survives the run.**
+
+### The measurement, before and after, on one tree
+
+| | pre-fix | post-fix |
+|:--|:--|:--|
+| C# verdicts RECORDED | **35** of 108 | **108** of 108 |
+| agreeing with `go test` | not computable | **104** |
+| how the run ended | host died inside `TestHammerStoreLoad` — `OutOfMemoryException` in `RecordGoroutinePanic`'s `String.Join`, then a nil-deref panic | clean exit; `TestHammerStoreLoad` contained as a per-test `infrastructure-error` |
+
+The escape/box-copy entry's 99 was obtained by running the host DIRECTLY with the hammer family
+excluded and diffing against the recorded go map, because the host death made a full-pipeline
+compare impossible. **104 is a full-pipeline number** — every verdict recorded by the differential
+harness itself — so the two are not composed the same way, and the honest statement of this lane's
+own yield is the table above: from 35 recorded verdicts to 108.
+
+### The defect: `unsafe.Pointer` is the one pointer that CARRIES an address rather than being one
+
+golib already models that exactly. `Pointer : ж<uintptr>` holds the address as its `Value`, and it
+overrides `ж<T>.Equals` to compare `PointerOrderToken` (`IsNull ? 0 : Value.Value`) so that equality,
+hashing and ordering are one fact about the address — the override exists because the converter mints
+a fresh box on every `uintptr → unsafe.Pointer` conversion (875 call sites), so two boxes over one
+address are ONE Go pointer. The base `==`/`!=` operators route through it and it is nil-safe by
+construction.
+
+The emission never reached it. `convIdent`'s pointer-context arm renders an `unsafe.Pointer` ident as
+`x.Value` — correct where an *address* is genuinely wanted — and `convBinaryExpr` sets that context
+for both operands of a comparison, since `isPointer()` counts `unsafe.Pointer` (a go/types **Basic**
+of kind UnsafePointer, not a `*types.Pointer`). So `k != p` emitted `k.Value != p.Value`: right by
+accident for two non-nil pointers, and a **NullReferenceException** on a nil one, because a nil
+`unsafe.Pointer` local is `default!` — a C# null. `TestLoadPointer`, `TestStorePointer` and
+`TestSwapPointer` each walk `testPointers()`, whose first element is nil.
+
+The fix suppresses the pointer context for an equality comparison with `unsafe.Pointer` on **both**
+sides. The scope is exact rather than conservative: Go admits no other pairing without a conversion
+(`unsafe.Pointer == *T` and `== uintptr` are type errors), and comparison against untyped `nil` has
+its own arm above and is untouched. It also repairs a shape nobody had filed — a MIXED comparison,
+where a selector operand rendered as the box and an ident operand rendered as its address
+(`x.i != p.Value`, `(~e).tag != tag.Value`); both sides are boxes now.
+
+### Corpus reach: seven shipped `runtime` sites, all verified compiling
+
+`runtime/{alg,map,map_fast32,map_fast64,mbarrier,traceback}.cs` and `runtime/pprof/map.cs` — every
+one a deref-compare collapsing to a box compare (`return x == y;`, `if (dst == src)`,
+`cgoTraceback != traceback`). Built clean (`runtime.pprof` closure, 0 errors, 123 s) and then
+RESTORED per corpus-regen policy. **Worth flagging for the next leveling regen: these seven are a
+CORRECTNESS fix, not cosmetics** — each is a latent nil-deref on the shipped path.
+`sync/atomic/value.cs.auto` is adopted here, since it is a review sibling this fix directly re-emits.
+
+### The residual: 4 divergences, 3 roots, and a correction to the recorded list
+
+| Root | Verdicts | State |
+|:--|:--:|:--|
+| **`unsafe.Pointer` Reinterpret write-back** — `Ꮡuaddr.Reinterpret<uint32, atomic.Int32>()` and the view's writes are lost (`AddInt32Method: val=0 want 400000`) | 2 (`TestHammer32`, `TestHammer64`) | unchanged, and now the largest residual |
+| **late-goroutine host death** — the pointer hammer fires `Fatalf` from a goroutine after the test window | 1 (`TestHammerStoreLoad`) | **contained**: was a process kill that cost 73 verdicts, is now one `infrastructure-error` |
+| **reflect alignment** | 1 (`TestAutoAligned64`) | unchanged |
+
+`TestUnaligned64` skips identically on both sides. **Correction to the escape/box-copy entry's
+residual list: `atomic.Value` CAS type-identity is NOT among the divergences** — `TestValue_CompareAndSwap`
+and its parent both agree. This lane does not claim the credit: `sync/atomic/value.cs` is a
+`[module: GoManualConversion]` NATIVE reimplementation on `Volatile.Read`/`Interlocked.CompareExchange`
+and `GetType()` that never touches `unsafe.Pointer`, so nothing in this fix can reach it. It is
+recorded as measured, cause unattributed.
+
+**No bank**: 4 divergences stand, so no roster row, no proof page, and the converted test sources are
+removed.
+
+### The fix made an existing guard VACUOUS, which CNR caught and is worth recording
+
+CNR reported a second intended mover this lane did not predict: `UnsafePointerKeywordParam`. That
+project's whole premise was the arm this fix retires — *"an identifier of type `unsafe.Pointer` used
+in a pointer context (e.g. a comparison operand) emits `name.Value`; built from the RAW Go name, a
+parameter named `new` came out as `new.Value`, which C# parses as the `new` operator (CS1526)"*. With
+comparisons rendering boxes, its emission holds no `.Value` at all, so it no longer exercised the
+keyword sanitization it exists to guard — a live guard quietly reduced to a compile check.
+
+Five candidate shapes were probed for one that still reaches the arm — `uintptr(new)`, `*(*int32)(new)`,
+a struct-field store, pointer arithmetic, and a call argument — and **none** emits `<name>.Value`; each
+takes a `(uintptr)` cast or the bare box. So rather than guess at a trigger, the project was widened to
+those seven arms, every one of which builds its text from the Go name and so carries the identical
+sanitization risk (`(uintptr)@new`, `~(ж<int32>)(uintptr)(@new)`, `h.p = @new`, `asUintptr(@new)`), with
+the comparison arm kept as the control that it renders `@new` and not `new`. All four phases green, and
+the guard is stronger than before.
+
+Left flagged rather than claimed: convIdent's `unsafe.Pointer` `.Value` arm may now be unreachable from
+converter output entirely — every `<keyword>.Value` site in the corpus is in a hand-written `_impl.cs`,
+not an emission. That is an indirect measurement, not a proof, and the arm is harmless where it stands;
+confirming it needs converter instrumentation over a corpus run, which is its own small task.
+
+### Gates
+
+Converter `go test ./...` **ok, 205.2 s, zero failures** · full `check-no-regression.ps1`
+**byte-identical across all 625 behavioral packages** except the guard's own intended artifacts,
+0 NOT MEASURED · seeded whole-stdlib reconvert **63 marked / 0 clobbered**, 1,655 identical / **8
+movers** / 0 new — the seven above plus `go/internal/gcimporter/gcimporter.cs`, row-harvest-2's
+pre-documented carry · guard `ManagedAtomicPointer` proven failing-first on **both Target and
+Output** (exit code 2 — the pre-fix binary crashes on the nil operand), green on all four phases
+with the fix in. No golib change: the golib side was already correct, which is the point.
+
+
+## 🔎 ROOTED, NOT TAKEN — `flag`'s CS1929 ×10 is the Δ-RENAME and the adapter disagreeing about one method name; the owner is `ImplementGenerator` (2026-08-19, lane `claude/row-harvest-3`)
+
+Re-measured on current master with this lane's three converter fixes in: **CS1929 ×10, unmoved** —
+five test-package types (`boolFlagVar`, `flagVar`, `interval`, `URLValue`, `zeroPanicker`) × two
+sites each, every one inside a generated `ImplementGenerator` adapter. The one-diagnostic-remeasure
+entry correctly named the owner as the generator rather than the converter; this narrows it to the
+exact disagreement, which is one name.
+
+### The disagreement
+
+`flag_test.go`'s types implement `flag.Value` with pointer-receiver `String`/`Set`. In the whitebox
+test compilation those names COLLIDE with the production `flag` package's own members (the test
+variant carries `using static` of production), so the converter's name-collision pass Δ-renames
+them, and everything downstream follows it correctly:
+
+```csharp
+// flag_test.cs — the converter's emission
+[GoRecv] internal static @string ΔString(this ref boolFlagVar b) { … }
+[GoRecv] internal static error  ΔSet(this ref boolFlagVar b, @string value) { … }
+```
+```csharp
+// RecvGenerator's ж-overload — faithfully renamed too
+internal static @string ΔString(this ж<boolFlagVar> Ꮡb) { … }
+```
+
+`ImplementGenerator`'s adapter does not. It forwards using the **Go** method name:
+
+```csharp
+global::go.@string global::go.fmt_package.Stringer.String() => m_box.String();   // CS1929
+global::go.error  global::go.flag_package.Value.Set(@string _) => m_box.Set(_);  // CS1929
+```
+
+The interface members it implements are named correctly — `Stringer.String`, `Value.Set` are the
+INTERFACE's names and must never be renamed. Only the **forwarding target** is wrong: it should be
+`m_box.ΔString()` / `m_box.ΔSet(_)`. With no `String` extension on `ж<boolFlagVar>`, C# reports the
+nearest candidate it can see, which is why the board previously recorded it as "binds
+`bytes_package.String`" — that is the diagnostic's suggestion, not a real binding.
+
+This is also why the class is test-package-shaped rather than general: production packages rarely
+produce the collision that triggers the rename, so the adapter's use of the Go name is normally
+indistinguishable from the emitted name.
+
+### Why it was not taken here, and what the next lane faces
+
+A `go2cs-gen` change owes the FULL behavioral suite plus BOTH `slnx` builds, and this lane had no
+room for that ledger. The remedy is also a real design choice rather than a one-liner, because the
+rename is not currently recorded anywhere the generator can read it:
+
+- `[GoLocalName]` is **not** the answer — it targets `Struct | Class | Interface` and carries the Go
+  name of a lifted local TYPE, not a member.
+- So the options are (a) have the converter record the member rename (a new attribute, or extra
+  cargo on the existing `[assembly: GoImplement<T, Iface>]` record, which the adapter already reads),
+  or (b) have the generator apply the same Δ-rule as a fallback when the plain name does not resolve
+  to a member on the box. (a) is the durable direction — it makes the emitted name a FACT the
+  generator consults rather than a rule it re-derives and can drift from, which is precisely how this
+  defect exists.
+
+24 verdicts sit behind it, unmeasured — the wall is a build block, so nothing about `flag`'s
+runtime behavior is known yet.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

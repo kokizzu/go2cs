@@ -392,3 +392,16 @@ src/.github/copilot-instructions.md
 
 # AI/working scratch (build logs, reconvert overlays) — never commit
 scratchpad/
+
+# A converted package's testdata is SOURCE — the fixture corpus its Go test suite reads — and a
+# banked row promises it reproduces from a clone. But the "Files built by Visual Studio" block
+# above matches by EXTENSION across the whole tree, and Go names fixtures for what they contain,
+# not for how they were built: `debug/elf`'s twenty DWARF-relocation objects are `*.obj`, so
+# `*.obj` silently swallowed every one of them at banking time (found 2026-08-19 — `debug/elf` is
+# the first banked package whose testdata collides with a build-output pattern; `debug/dwarf`'s
+# equivalents are `.elf`/`.elf4` and were never touched). Last matching pattern wins, so this
+# un-ignores the corpus testdata trees wholesale rather than chasing one extension at a time —
+# the same whole-tree scope `.gitattributes` already gives them with `src/core/**/testdata/** -text`.
+# `src/core/.gitignore`'s `*.go` rule still applies: a deeper .gitignore takes precedence, so
+# staged Go source copies stay ignored.
+!src/core/**/testdata/**

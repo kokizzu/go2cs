@@ -1297,16 +1297,33 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 		}
 	}
 
+	// An `unsafe.Pointer` compared to another `unsafe.Pointer` renders as its BOX, not as its
+	// address. Go compares unsafe.Pointer by IDENTITY, and golib's `Pointer : ж<uintptr>` already
+	// answers exactly that: its overridden Equals compares PointerOrderToken, which the base
+	// `==`/`!=` operators route through and which is nil-safe by construction (`IsNull ? 0`).
+	// convIdent's pointer-context arm instead emits `x.Value`, the raw uintptr — right by accident
+	// for two non-nil pointers, and a NullReferenceException on a nil one, because a nil
+	// unsafe.Pointer local is `default!`, a C# null reference. sync/atomic's TestLoadPointer /
+	// TestStorePointer / TestSwapPointer each walk `testPointers()`, whose first element is nil,
+	// and died there. Suppressing the pointer context is the whole fix: an unsafe.Pointer ident
+	// then renders bare and the operator binds to the box.
+	//
+	// Scoped to equality with unsafe.Pointer on BOTH sides. Go admits no other pairing without a
+	// conversion — a mixed `unsafe.Pointer == *T` or `== uintptr` is a type error — except against
+	// untyped nil, which the dedicated nil arms above already handle and which never reaches here.
+	unsafePointerIdentityCompare := (binaryExpr.Op == token.EQL || binaryExpr.Op == token.NEQ) &&
+		isUnsafePointer(lhsType) && isUnsafePointer(rhsType)
+
 	// An erased pointer-core operand counts as a pointer comparand too (a P-typed LOCAL holds
 	// the box directly, so the other operand takes the box form exactly as against a `*T`).
 	rhsIsPointer := isPointer(rhsType) || v.typeIsErasedPointerCore(rhsType)
-	identContext.isPointer = (rhsIsPointer || leftIsDerefdPtrParam) && !lhsIsInterfaceType
+	identContext.isPointer = (rhsIsPointer || leftIsDerefdPtrParam) && !lhsIsInterfaceType && !unsafePointerIdentityCompare
 	leftOperand := v.convExpr(binaryExpr.X, []ExprContext{identContext, basicLitContext})
 
 	binaryOp := binaryExpr.Op.String()
 
 	lhsIsPointer := isPointer(lhsType) || v.typeIsErasedPointerCore(lhsType)
-	identContext.isPointer = (lhsIsPointer || rightIsDerefdPtrParam) && !rhsIsInterfaceType
+	identContext.isPointer = (lhsIsPointer || rightIsDerefdPtrParam) && !rhsIsInterfaceType && !unsafePointerIdentityCompare
 	rightOperand := v.convExpr(binaryExpr.Y, []ExprContext{identContext, basicLitContext})
 
 	// A binary op between an integer-constrained TYPE PARAMETER and an untyped CONSTANT —
