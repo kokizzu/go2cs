@@ -13352,4 +13352,101 @@ bank either way.
 3. **`encoding/gob` (106)** — 103 of 106, now the closest unbanked package.
 4. **`sync/atomic`'s zero-size-field layout**, 5. **`%#x` of a `uintptr`** — unchanged.
 
+## 📉 `html/template`'s LAST wall falls — the package RUNS for the first time at **240 of 243**, and the variadic-literal cast closes a second door nobody had opened (2026-08-19, lane `claude/xml-bank`)
+
+Root C, taken as scoped. `html/template` goes from **build-blocked with 0 measured** to **240 of 243
+matching**, 0 empty verdicts, 0 terminations. It does not bank; the three residuals are named below
+and none of them is this arc.
+
+### The wall was one diagnostic and the board had priced it correctly
+
+Re-measured on this lane's branch before changing anything: **exactly one** error, exactly where the
+near-miss entry left it.
+
+```
+examplefiles_test.cs(113,9): error CS0411: The type arguments for method
+'builtin.defer<T1, T2>(Action<T1, T2>, T1, T2, ref GoFrame)' cannot be inferred from the usage.
+```
+
+The board offered two remedies. **Remedy 1 was taken** — keep the eager-argument rung, force the
+temp-parameter form, and make the callee invocable by casting it — and its "mechanical obstacle" is
+real but small: the cast goes around `funcName` immediately after `convCallExpr` builds it, which is
+four lines and needs no new type-naming machinery, because `iifeDelegateType` has rendered
+`Actionꓸꓸꓸ<@string>` from a variadic signature all along.
+
+```csharp
+defer((ᴛ1, ᴛ2) => ((Actionꓸꓸꓸ<@string>)((params ꓸꓸꓸstring dirsʗp) => { … }))(ᴛ1, ᴛ2), dir1, dir2, ref ᒐ);
+```
+
+Go's defer-TIME argument evaluation is untouched: `dir1`/`dir2` remain the rung's eager arguments,
+`ᴛ1`/`ᴛ2` are what the thunk receives at unwind. The guard asserts exactly that by reassigning both
+arguments after the `defer` and checking the thunk still prints the originals.
+
+### Three things the shape needed that the two priced remedies did not mention
+
+1. **`go` has the identical hole.** `visitGoStmt`'s func-literal arm leaves `renderLambdaParams`
+   false for the same reason `visitDeferStmt`'s did, so `go func(x ...T){…}(a, b)` fails the same
+   way. Both take the same arm, in the same change — the corpus has no such site today, and a fix
+   that covers one and not its twin is the kind of asymmetry that gets rediscovered.
+2. **The NULLARY rung fights the fix.** `defer f()` normally trims the invocation to hand golib a
+   method group, and a variadic literal has none: trimming `((Actionꓸꓸꓸ<nint>)(<lit>))()` leaves the
+   family delegate in an `Action` slot (**CS1503**). The trim is now suppressed for this callee shape
+   and the invocation is wrapped instead. Found by the guard, not by reasoning.
+3. **The IIFE interception's own restriction was stale.** `convCallExpr` phase 1a excludes a variadic
+   literal with the comment *"delegate type would need a params array"* — untrue since
+   `iifeDelegateType` learned the family form. Falling through to the normal path now lands on the
+   same cast, so `func(parts ...int) int { … }(1, 2, 3)` (previously **CS0149**) compiles as a side
+   effect rather than as separate work.
+
+### Two adjacent walls MEASURED here, deliberately not closed, neither caused by this change
+
+The guard was written wider than the fix on purpose, and it paid twice.
+
+| Wall | Repro that proves it independent | Why not here |
+|:--|:--|:--|
+| **A SPREAD argument to any deferred variadic call** — `defer f(nums...)` emits `nums.ꓸꓸꓸ`, a `Span<T>`, as the type argument of `defer<T>`; C# forbids a ref struct there (**CS9244**) | a NAMED variadic callee, no func literal anywhere, emits the identical `defer(ᴛ1 => f(ᴛ1), nums.ꓸꓸꓸ, ref ᒐ)` and fails the same way — compiled and observed | closing it means passing the SLICE and spreading inside the thunk, at every variadic deferred call in the corpus |
+| **An empty variadic call passes an empty slice where Go passes NIL** — `f()` on `func f(parts ...int)` answers `parts == nil` `true` in Go, `false` here | a plain DIRECT call, no defer and no literal: Go prints `0 true`, the conversion prints `0 false` — compiled and observed | argument CONSTRUCTION, corpus-wide reach, unrelated to delegate conversion |
+
+Both are recorded rather than absorbed, and the guard carries a comment at each excluded row saying
+which wall it would otherwise be testing — so the next lane inherits the measurement, not the gap.
+
+### `html/template` — 240 of 243, and the residual is three DIFFERENT owners
+
+| Test | Panic | Owner |
+|:--|:--|:--|
+| `TestExecute` | `reflect: recv on send-only channel`, from `walkRange` | **queue #1, chan-direction as descriptor cargo** — the identical root behind `text/template`'s last verdict. One arc retires both. |
+| `TestErrors` | nil dereference in `ж<T>.op_OnesComplement`, from `text/template/parse.ErrorContext` | a `~`-deref defect in the shared parse package, unrooted here |
+| `TestRedundantFuncs` | `interface conversion: interface {} is <>f__AnonymousDelegate0, not go.Funcꓸꓸꓸ<object, @string>` | **the same missing conversion as Root C, one boundary over**: a variadic func in an `any` slot keeps C#'s SYNTHESIZED anonymous delegate type, so Go's `funcMap[n].(func(...any) string)` assertion cannot match. Root C fixed the CALL-callee boundary; this is the assignment/composite-literal one. |
+
+That third row is the useful one: it says the variadic-literal conversion gap is a *family* with at
+least two members, and that the second member is now the cheapest thing standing between
+`html/template` and a two-verdict residual. Whoever takes it should reuse `variadicFuncLitCallee` and
+`iifeDelegateType` — the seam is already there.
+
+### Gates
+
+Converter `go test ./...` **ok, 375.3 s**, zero failures (`projitemsIntegrity_test` included — no new
+`.go` file, so nothing to register). Full `check-no-regression.ps1` **byte-identical across all 628
+behavioral packages** except this lane's own guard artifact (`DeferLambdaParam.cs`, the intended new
+golden), **0 NOT MEASURED**, 0 advisory warnings, 1,255 s; preflight solution integrity **630/630**,
+path casing **4,527/4,527**. Full behavioral suite **PASS at 601 projects, 1,887.0 s** — Transpile 601/601, Compile 601/601, **Target 601/601 byte-identical**, Output 575 compared / 0 failed (26 skipped), 0 timeouts / 0 NOT MEASURED. `go2cs-stdlib.slnx` Debug `--no-incremental` **0 errors**, 446.9 s; `go2cs.slnx` Debug `--no-incremental` **0 errors**, 873.0 s. Canaries re-run AFTER the converter change: **`fmt` 63/63**, **`internal/fmtsort` 3/3**, **`encoding/json` 491/491**, **`encoding/xml` 386/386** — the row this lane banked, still reproducing from the committed roster.
+
+Guard counter-proven failing-first by neutering each half separately: the temp-parameter force alone
+leaves **CS0411 ×4**, the delegate cast alone leaves **CS0149/CS1503 ×6**.
+
+`html/template`'s `-tests` artifacts removed and its `-tests`-closure production dirt restored
+(`doc.cs`, a CRLF phantom; `package_init.cs`'s `initᴛᴛtests` hook, +7 real lines) — the package does
+not validate, so no roster row, no proof page, no committed test sources.
+
+### The queue
+
+1. **Channel direction as descriptor cargo** — unchanged at the top, and now gating THREE things:
+   the written-and-measured `reflect.Value.Recv` bridge, `text/template`'s last verdict, and
+   `html/template`'s `TestExecute`.
+2. **A variadic func in an `any` slot** — new, and the cheapest of `html/template`'s three; reuses
+   this arc's seam.
+3. **`encoding/gob` (106)** — 103 of 106, the closest unbanked package.
+4. **`sync/atomic`'s zero-size-field layout**, 5. **`%#x` of a `uintptr`** — unchanged; joined by the
+   two variadic-argument walls above, which are cheap to state and corpus-wide in reach.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

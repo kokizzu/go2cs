@@ -41,6 +41,13 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 			// Delete captures from GoStmt to avoid double processing
 			delete(v.lambdaCapture.stmtCaptures, goStmt)
 		}
+
+		// Same as the deferred form: a VARIADIC literal converts to no `Action<T1, T2>`, so the
+		// arity-N `go` overload cannot infer its type arguments. Take the temp-parameter form,
+		// which invokes the literal through the delegate cast convCallExpr applies.
+		if paramCount > 0 && v.variadicFuncLitCallee(goStmt.Call) != nil {
+			renderLambdaParams = true
+		}
 	} else {
 		v.prepareStmtCaptures(goStmt)
 
@@ -163,11 +170,16 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 		}
 
 		// C# `go` method implementation expects an Action (or WaitCallback delegate)
+		// A VARIADIC func literal has no method group to expose — convCallExpr produced
+		// `((Actionꓸꓸꓸ<T>)(<literal>))()` and the trim would leave the family delegate, which is
+		// not an `Action` (CS1503). Keep the invocation and take the wrapping arm below.
+		variadicLit := v.variadicFuncLitCallee(goStmt.Call) != nil
+
 		if boxGroup != "" {
 			callExpr = boxGroup
-		} else if !hasResults && !namedFuncType && !valueRecvMethodGroup && strings.HasSuffix(callExpr, "()") {
+		} else if !hasResults && !namedFuncType && !valueRecvMethodGroup && !variadicLit && strings.HasSuffix(callExpr, "()") {
 			callExpr = strings.TrimSuffix(callExpr, "()") // Action delegate
-		} else if (hasResults || namedFuncType || valueRecvMethodGroup) && strings.HasSuffix(callExpr, "()") {
+		} else if (hasResults || namedFuncType || valueRecvMethodGroup || variadicLit) && strings.HasSuffix(callExpr, "()") {
 			// A NAMED func-type callee (context.CancelFunc) is a DISTINCT C# delegate with no
 			// conversion to Action, and a value-returning callee's bare method group is a
 			// Func<...> (CS0407); keep the invocation and wrap it in an Action lambda that

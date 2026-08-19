@@ -48,6 +48,16 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		}
 
 		renderLambdaParams = false
+
+		// A VARIADIC literal is the one callee shape the arity-N `defer` overload cannot take
+		// directly — `params ꓸꓸꓸ@string` converts to no `Action<T1, T2>`, so its type arguments do
+		// not infer (CS0411). Force the temp-parameter form, whose thunk INVOKES the literal
+		// instead of handing it over; convCallExpr casts it to its golib family delegate so that
+		// invocation binds. Go's defer-TIME argument evaluation is unaffected — the arguments are
+		// still the eager ones, and `ᴛ1`/`ᴛ2` are what the thunk receives back at unwind.
+		if paramCount > 0 && v.variadicFuncLitCallee(deferStmt.Call) != nil {
+			renderLambdaParams = true
+		}
 	} else {
 		v.prepareStmtCaptures(deferStmt)
 
@@ -146,9 +156,16 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 			boxGroup = v.pointerReceiverBoxMethodGroup(deferStmt.Call.Fun)
 		}
 
+		// The trim turns an invocation back into a method group, which golib's arity-0 `defer`
+		// takes as its `Action`. A VARIADIC func literal has no method group to expose: what
+		// convCallExpr produced is `((Actionꓸꓸꓸ<T>)(<literal>))()`, and trimming leaves the family
+		// delegate itself, which is not an `Action` (CS1503). Keep the invocation and let the
+		// lambda arm below wrap it.
+		variadicLit := v.variadicFuncLitCallee(deferStmt.Call) != nil
+
 		if boxGroup != "" {
 			callExpr = boxGroup
-		} else if !hasResults && !namedFuncType && strings.HasSuffix(callExpr, "()") {
+		} else if !hasResults && !namedFuncType && !variadicLit && strings.HasSuffix(callExpr, "()") {
 			callExpr = strings.TrimSuffix(callExpr, "()")
 		} else {
 			callExpr = "() => " + callExpr

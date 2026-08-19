@@ -157,6 +157,30 @@ func (v *Visitor) iifeParamName(param *types.Var) string {
 // tail via C# params expansion, and a spread slice binds its `.ꓸꓸꓸ` Span in normal form —
 // go/types' `reportf Action<@string, slice<any>>` took a `params ꓸꓸꓸany` literal (CS1661/CS1678)
 // and loose-arg calls (CS1503/CS7036) before this.
+// variadicFuncLitCallee returns the signature of a call whose callee is a func LITERAL with a
+// VARIADIC signature and at least one parameter, and nil for every other call. That one shape has no
+// delegate conversion in C#: a non-variadic literal emits explicitly-typed parameters
+// (`(@string p, @string q) => …`) which convert to `Action<T1, T2>` and infer fine, while a variadic
+// one emits `params ꓸꓸꓸ@string` and converts to nothing — so it can neither be invoked directly
+// (CS0149) nor infer the type arguments of golib's arity-N `defer`/`go` overloads (CS0411,
+// html/template's examplefiles_test.go:90, the only site in the Go 1.23 tree). Callers pair it with
+// iifeDelegateType, which already renders the matching `Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` family type.
+func (v *Visitor) variadicFuncLitCallee(callExpr *ast.CallExpr) *types.Signature {
+	funcLit, ok := callExpr.Fun.(*ast.FuncLit)
+
+	if !ok {
+		return nil
+	}
+
+	sig, ok := v.info.TypeOf(funcLit).(*types.Signature)
+
+	if !ok || !sig.Variadic() || sig.Params().Len() == 0 {
+		return nil
+	}
+
+	return sig
+}
+
 func (v *Visitor) iifeDelegateType(sig *types.Signature) string {
 	params := sig.Params()
 	results := sig.Results()
