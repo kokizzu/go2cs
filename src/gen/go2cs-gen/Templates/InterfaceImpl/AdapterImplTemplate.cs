@@ -120,6 +120,15 @@ internal class AdapterImplTemplate : TemplateBase
             {
                 string simpleMethodName = GetSimpleName(method.Name);
 
+                // The member is IMPLEMENTED under the interface's name and FORWARDS under the emitted
+                // one, which differ when the collision pass Δ-renamed the implementation. Both lookups
+                // below are keyed by the DECLARED name — ForwardReceivers is built from the struct's
+                // own method list — so the resolved name drives the receiver choice as well as the call
+                // target: a value-receiver `ΔString(this URLValue)` needs `m_box.Value`, and the Go-name
+                // miss used to fall through to the `m_box` default and strand it (CS1929) even once the
+                // call target was right. Inert for every member the collision pass left alone.
+                string forwardName = method.ForwardMemberName(simpleMethodName);
+
                 if (result.Length > 0)
                     result.Append("\r\n\r\n        ");
 
@@ -132,17 +141,17 @@ internal class AdapterImplTemplate : TemplateBase
                     continue;
                 }
 
-                if (!ForwardReceivers.TryGetValue(simpleMethodName, out string? receiver))
+                if (!ForwardReceivers.TryGetValue(forwardName, out string? receiver))
                     receiver = "m_box";
 
-                if (ForwardStaticCalls is not null && ForwardStaticCalls.TryGetValue(simpleMethodName, out string? staticCall))
+                if (ForwardStaticCalls is not null && ForwardStaticCalls.TryGetValue(forwardName, out string? staticCall))
                 {
                     string staticArgs = string.IsNullOrEmpty(method.CallParameters) ? receiver : $"{receiver}, {method.CallParameters}";
                     result.Append($"{method.ReturnType} {method.GetSignature()} => {staticCall}{method.GetGenericSignature()}({staticArgs});");
                 }
                 else
                 {
-                    result.Append($"{method.ReturnType} {method.GetSignature()} => {receiver}.{simpleMethodName}{method.GetGenericSignature()}({method.CallParameters});");
+                    result.Append($"{method.ReturnType} {method.GetSignature()} => {receiver}.{forwardName}{method.GetGenericSignature()}({method.CallParameters});");
                 }
             }
 

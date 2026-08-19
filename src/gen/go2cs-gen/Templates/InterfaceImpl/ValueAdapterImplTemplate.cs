@@ -108,6 +108,10 @@ internal class ValueAdapterImplTemplate : TemplateBase
             {
                 string simpleMethodName = GetSimpleName(method.Name);
 
+                // Implemented under the interface's name, forwarded under the EMITTED one — see
+                // MethodInfo.ForwardName. Inert unless the collision pass renamed the implementation.
+                string forwardName = method.ForwardMemberName(simpleMethodName);
+
                 if (result.Length > 0)
                     result.Append("\r\n\r\n        ");
 
@@ -125,11 +129,11 @@ internal class ValueAdapterImplTemplate : TemplateBase
                     string callParameters = method.CallParameters;
                     string forwardedParameters = callParameters.Length > 0 ? $"m_value, {callParameters}" : "m_value";
 
-                    result.Append($"{method.ReturnType} {method.GetSignature()} => {container}.{simpleMethodName}{method.GetGenericSignature()}({forwardedParameters});");
+                    result.Append($"{method.ReturnType} {method.GetSignature()} => {container}.{forwardName}{method.GetGenericSignature()}({forwardedParameters});");
                 }
                 else
                 {
-                    result.Append($"{method.ReturnType} {method.GetSignature()} => m_value.{simpleMethodName}{method.GetGenericSignature()}({method.CallParameters});");
+                    result.Append($"{method.ReturnType} {method.GetSignature()} => m_value.{forwardName}{method.GetGenericSignature()}({method.CallParameters});");
                 }
             }
 

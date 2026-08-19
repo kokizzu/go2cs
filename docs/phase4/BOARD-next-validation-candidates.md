@@ -12966,4 +12966,235 @@ and was root-caused instead.
    Two `sync/atomic` verdicts today; the SHAPE is corpus-wide and currently silent.
 5. **`%#x` of a `uintptr`** — renders `%!x(uintptr=…)`; unrooted, corpus-wide reach.
 
+## 📉 NARROWED — `flag`'s CS1929 ×10 build wall is CLOSED and the package runs at 23 of 24; the generator now reads the EMITTED name, and the remedy the board priced as "durable" turned out to record a fact it could already observe (2026-08-19, lane `claude/heavy-pair`)
+
+The row-harvest-3 entry rooted this precisely — the converter Δ-renames the test types' `String`/`Set`,
+`RecvGenerator` follows, and `ImplementGenerator`'s adapter forwards to the GO name — and priced two
+remedies: (a) have the converter RECORD the member rename for the generator to consult, or (b) have
+the generator apply the Δ-rule as a fallback. It called (a) the durable direction, on the reasoning
+that it makes the emitted name *a fact the generator consults rather than a rule it re-derives*.
+
+That reasoning is right and it selects a THIRD option, which is what this lane took. The generator does
+not need the rename recorded, because **it already enumerates the fact**: `localImplNames` is built
+before the member list and holds every method the struct declares in either receiver form. (a) would
+have recorded, in a new attribute surface, a fact already sitting in a local variable — and the
+generator would STILL have had to consult the declared set for the receiver. Strictly larger footprint
+(a golib attribute change, a converter emission, a fourth spelling of the rename to keep in step), same
+result.
+
+### What was actually wrong — two positions, one name
+
+An interface member is IMPLEMENTED under the interface's name and FORWARDS under the emitted one. The
+adapter spelled the interface's name at both:
+
+```csharp
+global::go.@string global::go.fmt_package.Stringer.String() => m_box.String();   // CS1929
+global::go.error  global::go.flag_package.Value.Set(@string _) => m_box.Set(_);  // CS1929
+```
+
+The left-hand side is correct and must never be renamed. Only the forwarding target was wrong. With no
+`String` extension on `ж<boolFlagVar>`, C# reported the nearest candidate it could see —
+`bytes_package.String(ж<bytes_package.Buffer>)` — which is why the one-diagnostic re-measure recorded
+it as "binds `bytes_package.String`". That was the diagnostic's *suggestion*, never a real binding.
+
+`Common.ResolveForwardMemberName` matches the interface member against the declared set, **exact name
+first and the `ShadowVarMarker` projection only as a second pass** — the identical two-pass shape
+`TypeExtensions.GoMethodNameMatches` and `AdapterBinder.ResolveReceiverMethods` already run at run
+time. So the compile-time adapter, the shell binder and the structural probe now agree by construction
+instead of by coincidence; the generator disagreeing with a rule golib had already banked WAS the
+defect. Exact-first is load-bearing, not stylistic: `Δ` is a Unicode letter and so a legal Go
+identifier character, and a genuinely `ΔX`-named Go method must never be displaced by a projection
+of `X`.
+
+### The half the diagnosis did not name: the RECEIVER
+
+`ForwardReceivers` is keyed by DECLARED names too, so fixing only the call target leaves a value
+receiver stranded. `URLValue`'s `ΔString(this URLValue v)` has no `[GoRecv]` and therefore no
+RecvGenerator ж-twin, so it needs `m_box.Value.ΔString()`; the Go-name lookup missed and fell through
+to the `m_box` default, which is CS1929 again. Both positions read the resolved name. Emission now:
+
+```csharp
+// boolFlagVar — [GoRecv] ref primary, binds the ж-twin
+=> m_box.ΔString();
+// URLValue — value receiver, needs the deref'd value
+=> m_box.Value.ΔString();
+```
+
+The same resolution is wired into `ValueAdapterImplTemplate` and `InterfaceImplTemplate`, which consume
+the SAME member list — in the latter it also decides `methodOverriden`, since a Go-name miss read a
+renamed declaration as absent and sent the member down the promotion path. Non-null only when the
+struct itself declares the Δ name, which is exactly when the embed hops are skipped, so the hop lookups
+keep reading the interface member's own name — what the EMBEDDED type declares it under.
+
+### `flag`: 0 → 23 of 24, and the residual is not a defect
+
+24 verdicts, 23 agree. The one divergence is `TestDefineAfterSet`, and it is **not** a bug in the
+conversion:
+
+```
+expected panic("flag myFlag set at .*/flag_test.go:.* before being defined"),
+but got panic("flag myFlag set at C:\…\src\core\flag\flag_test.cs:1112 before being defined")
+```
+
+`flag.go` records the caller with `runtime.Caller(2)`, and the managed traceback picks the **correct
+logical frame** — `flag_test.cs:1112` is `flags.Set(myFlagˢ, valueˢ)`, exactly Go's `flag_test.go:852`.
+What differs is the SOURCE-FILE IDENTITY: the executing source really is the `.cs`, so `runtime.Caller`
+reports it, and Go's assertion is a regex over `.*/flag_test.go:.*` — which the emission misses twice
+over, on the extension and on the path separator. Reporting `.go` would be a lie about what ran.
+
+**No disclosure was taken, deliberately.** It fits none of the four classes: it is not an allocation
+count, not a liveness assertion, not a channel direction, and — the one worth stating — not
+`host-limit`, whose bar is *a structural property of the deployment shape* that retires itself when the
+shape changes. This would not. The durable remedy is a converter one and is priced here rather than
+taken: emit `#line` directives mapping each statement back to its `.go` origin, which would make BOTH
+the file and the line Go's, natively through the PDB, and would also land debugger stepping in Go
+source. It changes every golden in the corpus and is its own arc. **So `flag` does not bank** — one
+suite, one honest residual, no roster row, no proof page, no committed test sources.
+
+### Gates — the full generator ledger
+
+A `go2cs-gen` change owes all of it, and all of it is green:
+
+| Gate | Result |
+|:--|:--|
+| converter `go test ./...` | **ok, 146.5 s**, zero failures |
+| `go2cs.slnx` (`--no-incremental`) | **0 errors**, 725.8 s |
+| `go2cs-stdlib.slnx` (`--no-incremental`) | **0 errors**, 411.2 s |
+| full behavioral suite | **PASS — 600 projects, 2,285 s**; Transpile 600, Compile 600/0/0, Target 600, Output 574 + 26 skip |
+| full `check-no-regression.ps1` | **byte-identical across all 627 packages**, 728.9 s, 2 advisory warnings; preflight 629/629 registered, 4,520/4,520 path casing |
+| `GenTests` | **24/24** |
+
+Inertness is the claim the corpus gates are testing, and they confirm it: `ForwardName` is null for
+every member the collision pass left alone, so nothing outside a Δ-renamed adapter moves.
+
+**Guards, both proven failing-first** (`src/tests/GenTests/CollisionRenamedForwardTests.cs`, 6 tests):
+neutering `ResolveForwardMemberName` to return null fails exactly 3 (the resolution and both template
+forward assertions); reverting the RECEIVER lookup alone to the Go name fails exactly 1 — the
+value-receiver case — which is what proves that half is independently load-bearing rather than
+incidental.
+
+### For the next lane
+
+The measurement hazard row-harvest-3 recorded held: every result here is from SEQUENTIAL runs, and the
+`flag` build was purged (`bin`/`obj`/`Generated`) before each measurement, since a generator change is
+invisible to an incremental build whose `obj/` already holds the previous emission.
+
+## 📉 NARROWED — `encoding/xml` 366 → 384 of 386: the `canonType` process-kill is CLOSED, its root was a reinterpret to a LARGER struct, and the last root is not what the board recorded (2026-08-19, lane `claude/heavy-pair`)
+
+Re-measured on current master BEFORE changing anything, which is what the handoff asked for and what
+paid: the bridge work landed since the census (`variadic Call`, the reflectlite mini-bridge,
+interface-nilness + Go-name-survives-lifting) had already retired three of the five recorded roots.
+**366 → 369 of 386 for free** — `TestMarshal/47` (arity-mangled generic name), `TestMarshal/64`
+(embedded-field order) and the `TestMarshal` parent all agree now. Two roots were left, not five.
+
+Then one fix takes it to **384 of 386**.
+
+### The `canonType` kill: the board named the symptom, and the root is one level up
+
+Recorded remedy: *"Route the feeding path through `abi.synthType`."* That treats the missing stamp as
+the defect. The stamp is missing because the FEEDER cannot exist in the managed model at all.
+
+`rtype.FieldByIndex` does Go's `(*structType)(unsafe.Pointer(t))`. `ReinterpretAliasesStorage` takes
+the aliasing arm only when the destination FITS in the source, and `structType` is strictly LARGER
+than `rtype` — it carries `PkgPath` and `Fields` past the embedded `Type`. So the pair falls to the
+raw-address route, the derived box names storage that is not a `structType`, and
+`Ꮡt.of(structType.ᏑType)` hands back an `abi.Type` whose `sysType` is null. The auto body's FIRST
+statement, `toType(&t.Type)`, is what trips the assert. Stack, verbatim:
+
+```
+canonType ← toType ← structType.FieldByIndex ← rtype.FieldByIndex
+          ← xml.addFieldInfo ← getTypeInfo ← unmarshal ← DecodeElement ← Decode
+```
+
+**And the assert is a `Debug.Assert`, so the process DIES (`0x80131623`) rather than failing a test.**
+That is why 15 verdicts came back EMPTY. An empty verdict reads like a suite that did not run — the
+same silent under-reporting `findFirstFile1` and `readReparseLink` produced — so the cost of this root
+was never 15 failures anyone could see; it was 15 absences.
+
+A comment in `value_impl.cs` claimed the branch was dead: *"synthType always stamps sysType after its
+own nil guard, and every canonType caller feeds a synthType/abi.TypeOf box or nil."* It is not, and
+it has not been for as long as anything called `FieldByIndex`. **An assert that documents itself as
+unreachable is the one to distrust**; this one has been killing xml's suite since the package first
+ran.
+
+### The fix, and why it is smaller than the rest of its family
+
+Nothing native is involved and no layout is transcribed. The reinterpret exists ONLY to reach a
+descriptor the receiver already holds, so the hand-own reaches it directly: `manualConversionFuncs`
+gains `rtype.FieldByIndex`, and `value_impl.cs` seeds `f.Type = toType(Ꮡt.common())` — `common()` IS
+the `abi.Type` Go's `&t.Type` names after the reinterpret, synthType-stamped, reached by a route the
+managed model can express. No `structType` is ever synthesized. Go's index walk is verbatim, and each
+hop goes through the already-hand-owned `rtype.Field`, so the promoted-field projection stays
+`GoReflect`'s.
+
+The transferable rule, added to the reinterpret family in the reference: **when a reinterpret's target
+is a struct-kind SPECIALIZATION that only EXTENDS the source, reach the shared prefix directly rather
+than re-viewing the whole record** — the extra fields are exactly what makes the alias unrepresentable,
+and they are usually not what the code wanted. `structType.FieldByIndex` is left auto and is now
+unreachable from `rtype`.
+
+### The last root is NOT "the copy is not copying its backing bytes"
+
+That description is wrong in both halves, and a lane taking it at face value would go looking in the
+wrong package. Measured:
+
+* `bytes.Clone` allocates a fresh backing array — `append(new byte[]{}.slice(), b.ꓸꓸꓸ)`. The copy
+  copies.
+* The `slice<byte>` → `CharData` conversion ALIASES — the generated `CharData(slice<byte> value) =>
+  m_value = value`, and the implicit operator is that ctor. The original is not detached either.
+
+The assertion that actually fires is the SECOND one, `"CopyToken(CharData) uses same buffer."`: after
+`data[1] = 'o'`, `reflect.DeepEqual(tok1, tok2)` is still **true**. The two are wrongly EQUAL, not
+wrongly SHARING — the opposite of the recorded reading.
+
+Narrowed as far as this lane's budget allowed, and it is a `reflect` root rather than an `xml` one:
+`deepValueEqualBoxed`'s `[]byte` fast path is `live1 is slice<byte>`, which a NAMED byte-slice type
+does not satisfy — `CharData` is a wrapper struct, not a `slice<byte>` — so the comparison falls to
+the element-wise loop over `Value.Index`. That loop is where the next lane should start. Worth 2
+verdicts, and it is the whole of what stands between `encoding/xml` and a bank.
+
+### Measured
+
+| | Verdicts |
+|:--|:--|
+| Census (escape-box-copy lane) | 366 of 386, 20 divergences in 5 roots |
+| Current master, before this lane | **369** of 386, 17 divergences in 2 roots |
+| With the `FieldByIndex` hand-own | **384** of 386, 2 divergences in 1 root |
+
+Zero process terminations, zero asserts, zero EMPTY verdicts. **No bank** — one root short of a row:
+no roster row, no proof page, no committed test sources, `-tests` artifacts removed and the tracked
+`-tests`-closure dirt restored (`xml/package_init.cs`'s `initᴛᴛtests` hook, the CRLF phantoms in
+`fmt`/`json`, and `json/package_test_info.cs`'s one added `global using ΔToken = object;` — that last
+one rooted rather than waved through: json's artifact was banked 2026-08-17 and the xml alias-seeding
+chain landed 2026-08-18, so a regeneration picks it up; nothing to do with this change).
+
+### Gates
+
+A `reflect` hand-own plus a converter registry entry owes the full ledger, and the canaries first
+because a bridge regression would surface there before anywhere else:
+
+| Gate | Result |
+|:--|:--|
+| canary `fmt` | **63/63** — unmoved |
+| canary `encoding/json` | **491/491** — unmoved |
+| converter `go test ./...` | **ok, 143.7 s**, zero failures |
+| `go2cs-stdlib.slnx` (`--no-incremental`) | **0 errors**, 358.0 s |
+| `go2cs.slnx` (`--no-incremental`) | **0 errors**, 633.6 s |
+
+### Two instrument notes this lane paid for
+
+**A single-package `go2cs <pkg>` is the WRONG instrument for refreshing a core package's `.csproj`.**
+It strips the validation-pack block — the standing "0 8" restore family — and that is correct
+behavior, not drift: `validationPackBlock` is gated on `-stdlib` or a `-tests` rewrite of a core
+package, and a bare single-package run is neither. Restore the `.csproj`, or use the filtered
+`-stdlib` form. The rule in CLAUDE.md ("any change to a production `.csproj` is real drift, stop and
+root-cause it") caught this immediately and is worth keeping exactly as written.
+
+**A watchdog that reports "EXITED after 0s" is reporting a LAUNCH FAILURE, not a fast gate.** A CNR
+run in this lane died in 0.16 s on a bad flag (`-SkipBuild` belongs to `run-validated-sweep.ps1`, not
+`check-no-regression.ps1`) and the poll dutifully reported completion with exit 0. The tell is the
+log's `EXITCODE=` being EMPTY rather than `0` — `$LASTEXITCODE` was never set because the script threw.
+Read the `.err` file before banking any gate that finished implausibly fast; a `sawRunning` flag in the
+poll makes the distinction mechanical.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

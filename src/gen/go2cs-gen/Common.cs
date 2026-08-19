@@ -150,6 +150,37 @@ public static class Common
         return simpleName;
     }
 
+    /// <summary>
+    /// Resolves the name a forwarding call must spell on the receiver for an interface member named
+    /// <paramref name="interfaceMemberName"/>, against the methods the implementing struct actually
+    /// DECLARES.
+    /// </summary>
+    /// <param name="interfaceMemberName">Interface member's simple, C#-escaped name.</param>
+    /// <param name="declaredNames">Every method name the struct declares, in any receiver form.</param>
+    /// <returns>The declared name to forward to, or <c>null</c> when it is the interface member's own.</returns>
+    /// <remarks>
+    /// A member is IMPLEMENTED under the interface's name and FORWARDS under the emitted one, and the
+    /// two part company when the converter's collision pass Δ-renames the implementation — which a
+    /// `-tests` whitebox compilation does to a test-file declarator whose bare name would hijack a
+    /// same-named member the file carries via `using static` (flag_test.go's five `flag.Value` types
+    /// each declare `String`/`Set` against the production `flag` package the test variant dot-imports,
+    /// emitted `ΔString`/`ΔSet`). The exact name is matched FIRST so a genuinely Δ-named Go method can
+    /// never be displaced by a projection, and the marker strip runs only as a second pass — the same
+    /// two-pass rule golib's shell binder and method-set probe apply at run time
+    /// (<c>TypeExtensions.GoMethodNameMatches</c>), so the compile-time adapter cannot disagree with
+    /// them about one name. Null for every member the collision pass left alone, which is the whole
+    /// production corpus.
+    /// </remarks>
+    public static string? ResolveForwardMemberName(string interfaceMemberName, ICollection<string> declaredNames)
+    {
+        if (declaredNames.Contains(interfaceMemberName))
+            return null;
+
+        string projected = $"{ShadowVarMarker}{interfaceMemberName}";
+
+        return declaredNames.Contains(projected) ? projected : null;
+    }
+
     // A generated reference that BEGINS with the root namespace must be global::-qualified:
     // inside a package whose namespace nests a same-named segment (go/build/constraint →
     // namespace go.go.build), C# binds the leading `go` RELATIVELY to go.go, so every

@@ -80,6 +80,25 @@ public record MethodInfo
     // does not compile. Defaults true so a MethodInfo built without semantic info keeps prior behavior.
     public bool IsSignatureRenderable { get; init; } = true;
 
+    // The name a FORWARDING call must spell on the receiver, when that differs from the interface
+    // member's own name. The member being IMPLEMENTED always carries the interface's name — an
+    // explicit implementation of `Stringer.String` is spelled `String` and may never be renamed —
+    // but the implementation it forwards TO carries whatever name the converter emitted for it, and
+    // a `-tests` whitebox compilation Δ-renames a test-file method declarator whose bare name would
+    // hijack a same-named member the file carries via `using static` (flag_test.go's five
+    // `flag.Value` types each declare `String`/`Set`, colliding with the production `flag` package
+    // the test variant dot-imports, so all ten emit as `ΔString`/`ΔSet`). Resolved against the
+    // methods the struct actually DECLARES — exact name first, the Δ-projection only as a second
+    // pass — which is the same two-pass rule golib's shell binder and method-set probe already
+    // apply, so the compile-time adapter, the binder and the structural probe cannot disagree about
+    // one name (see TypeExtensions.GoMethodNameMatches). Null whenever the emitted name IS the
+    // interface member's name, which is every member the collision pass left alone.
+    public string? ForwardName { get; init; }
+
+    // The name to spell on the receiver of a forwarding call: the emitted name when the
+    // implementation was collision-renamed, otherwise the interface member's own simple name.
+    public string ForwardMemberName(string simpleMethodName) => ForwardName ?? simpleMethodName;
+
     public bool IsGeneric => GenericTypes.Length > 0;
 
     public string CallParameters => GetCallParameters(true);

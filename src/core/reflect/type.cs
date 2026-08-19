@@ -596,15 +596,7 @@ internal static ж<abi.Type> elem(ж<abi.Type> Ꮡt) {
 
 // go2cs generated this placeholder — func Field is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static StructField FieldByIndex(this ж<rtype> Ꮡt, slice<nint> index) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    if (t.Kind() != Struct) {
-        throw panic("reflect: FieldByIndex of non-struct type " + Ꮡt.String());
-    }
-    var tt = Ꮡt.Reinterpret<rtype, structType>();
-    return tt.FieldByIndex(index);
-}
+// go2cs generated this placeholder — func FieldByIndex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func FieldByName is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
