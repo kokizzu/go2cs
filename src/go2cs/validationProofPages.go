@@ -170,7 +170,7 @@ func proofVerdict(results map[string]string, name string) string {
 // renderValidationProofPage renders the whole page. It is a pure function of its arguments — no
 // clock, no filesystem, no git — so the golden test compares text, and so re-rendering the same
 // comparison twice is byte-identical by construction.
-func renderValidationProofPage(provenance proofPageProvenance, comparison testComparison, disclosures map[string]testDisclosure) string {
+func renderValidationProofPage(provenance proofPageProvenance, comparison testComparison, disclosures map[string]testDisclosure, notes []string) string {
 	names := proofVerdictNames(comparison)
 	disclosed := proofDisclosedNames(comparison, names)
 
@@ -204,6 +204,13 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 
 	if skipped > 0 {
 		fmt.Fprintf(&page, "\nBoth runtimes skip %d of the matched tests identically.\n", skipped)
+	}
+
+	// Package-level notes from the hand-owned disclosure manifest: caveats about the
+	// comparison's MEANING no verdict row can express (crypto/tls's expired-fixture ceiling),
+	// carried verbatim so a regeneration never loses them.
+	for _, note := range notes {
+		fmt.Fprintf(&page, "\n> %s\n", strings.TrimSpace(note))
 	}
 
 	page.WriteString("\n## Verdicts\n\n")
@@ -248,6 +255,37 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 			}
 
 			fmt.Fprintf(&page, "| `%s` | `%s` | %s |\n", escapeProofCell(name), escapeProofCell(class), escapeProofCell(reason))
+		}
+
+		if len(comparison.Withdrawn) > 0 {
+			// Count-by-root rather than 3,000 names: the withdrawn set under one root is the
+			// root's own case fan-out, so the root plus a count says everything the list would.
+			counts := make(map[string]int)
+			for _, name := range comparison.Withdrawn {
+				root, _, _ := strings.Cut(name, "/")
+				counts[root]++
+			}
+
+			roots := make([]string, 0, len(counts))
+			for root := range counts {
+				roots = append(roots, root)
+			}
+			sort.Strings(roots)
+
+			page.WriteString("\nA disclosed test that fails at its root never reaches its own case fan-out, so the\n")
+			page.WriteString("subtest verdict rows `go test` reports underneath it have no converted counterpart to\n")
+			page.WriteString("compare. Those rows are withdrawn with their disclosed root — none is claimed by the\n")
+			page.WriteString("matched count above:\n\n")
+
+			for _, root := range roots {
+				suffix := "s"
+
+				if counts[root] == 1 {
+					suffix = ""
+				}
+
+				fmt.Fprintf(&page, "- `%s` — %d verdict row%s withdrawn\n", escapeProofCell(root), counts[root], suffix)
+			}
 		}
 	}
 
@@ -381,7 +419,7 @@ func writeStableDocFile(fileName string, page string) (bool, error) {
 // writeValidationProofPage renders and writes one package's proof page under docsPath, then
 // regenerates the roster index from whatever pages now exist. Both writes are stability-gated, so
 // a re-validation reproducing the same verdicts leaves the whole directory untouched.
-func writeValidationProofPage(docsPath string, provenance proofPageProvenance, comparison testComparison, disclosures map[string]testDisclosure) error {
+func writeValidationProofPage(docsPath string, provenance proofPageProvenance, comparison testComparison, disclosures map[string]testDisclosure, notes []string) error {
 	currentPath := filepath.Join(docsPath, validationDocsDirName, validationCurrentDirName)
 
 	if err := os.MkdirAll(currentPath, 0755); err != nil {
@@ -389,7 +427,7 @@ func writeValidationProofPage(docsPath string, provenance proofPageProvenance, c
 	}
 
 	dotID := validationProofDotID(provenance.importPath)
-	page := renderValidationProofPage(provenance, comparison, disclosures)
+	page := renderValidationProofPage(provenance, comparison, disclosures, notes)
 
 	if _, err := writeStableDocFile(filepath.Join(currentPath, dotID+".md"), page); err != nil {
 		return err
@@ -430,7 +468,7 @@ func writeValidationIndex(docsPath string) error {
 // found by the same upward walk the test pipeline uses to self-locate $(go2csPath) (the root
 // holding core/golib), and docs/ is that root's sibling; a bare temp -go2cspath conversion, or a
 // deployed GOPATH runtime root, has no docs tree to publish into and simply skips.
-func emitValidationProofPage(outputPath string, comparison testComparison, manifest testManifest, disclosures map[string]testDisclosure, options Options) error {
+func emitValidationProofPage(outputPath string, comparison testComparison, manifest testManifest, disclosures map[string]testDisclosure, notes []string, options Options) error {
 	if manifest.PackageImportPath == "" {
 		return nil
 	}
@@ -461,7 +499,7 @@ func emitValidationProofPage(outputPath string, comparison testComparison, manif
 		commit:     shortGitRevision(filepath.Dir(root)),
 	}
 
-	return writeValidationProofPage(docsPath, provenance, comparison, disclosures)
+	return writeValidationProofPage(docsPath, provenance, comparison, disclosures, notes)
 }
 
 // goVersionFromToolchain is the fallback when the test manifest recorded no Go version.

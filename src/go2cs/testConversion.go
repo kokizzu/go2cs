@@ -4871,6 +4871,14 @@ type testComparison struct {
 	// dishonest, so the rows are enumerated from the UNFILTERED `go test` results and published on the
 	// proof page. Empty for every package with no gated declaration, which is nearly all of them.
 	Gated []capabilityGatedDeclaration `json:"gated,omitempty"`
+
+	// Withdrawn is the same honesty for the DOWNWARD disclosure dual (matchTerminalStatuses'
+	// withdrawal rule): the Go-side verdict rows underneath a signature-matched disclosed root,
+	// which the converted host never reached because the disclosed failure precedes its case
+	// fan-out. Removed from the Go map so every count self-corrects, published here and on the
+	// proof page so the omission is stated rather than absorbed. Empty for every package whose
+	// disclosed tests have no subtests, which is all of them before crypto/tls's TestBogoSuite.
+	Withdrawn []string `json:"withdrawn,omitempty"`
 }
 
 // capabilityGatedDeclaration records one test declaration the converted host provably cannot run,
@@ -4900,38 +4908,47 @@ type testDisclosure struct {
 type testDisclosureManifest struct {
 	SchemaVersion int              `json:"schemaVersion"`
 	Disclosures   []testDisclosure `json:"disclosures"`
+
+	// Notes are optional package-level caveats the generated proof page must carry — facts about
+	// the comparison's MEANING that no verdict row can express, rendered verbatim above the
+	// verdicts. First consumer: crypto/tls's expired-fixture ceiling, where four tests fail
+	// AGREEING on both runtimes because the suite's test certificates expired 2025-01-01 — the
+	// agreement is honest, but a reader must know the ceiling moves with the calendar. Hand-owned
+	// here rather than hand-edited into the page, because the page is regenerated on every
+	// re-validation and a hand edit would not survive one.
+	Notes []string `json:"notes,omitempty"`
 }
 
 // loadTestDisclosures reads the package's hand-owned disclosure manifest. A missing file is the
 // normal case (no disclosures — strict comparison); a malformed or incomplete manifest is an
 // error, never a silent no-op, because a broken disclosure must not widen the oracle. Every
 // field is required: an empty signature would substring-match ANY failure, defeating the pin.
-func loadTestDisclosures(outputPath string) (map[string]testDisclosure, error) {
+func loadTestDisclosures(outputPath string) (map[string]testDisclosure, []string, error) {
 	data, err := os.ReadFile(filepath.Join(outputPath, testDisclosureFileName))
 	if os.IsNotExist(err) {
-		return nil, nil
+		return nil, nil, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var manifest testDisclosureManifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	disclosures := make(map[string]testDisclosure, len(manifest.Disclosures))
 	for _, disclosure := range manifest.Disclosures {
 		if disclosure.Name == "" || disclosure.Class == "" || disclosure.Signature == "" || disclosure.Reason == "" {
-			return nil, fmt.Errorf("disclosure entries require name, class, signature, and reason: %+v", disclosure)
+			return nil, nil, fmt.Errorf("disclosure entries require name, class, signature, and reason: %+v", disclosure)
 		}
 		if _, exists := disclosures[disclosure.Name]; exists {
-			return nil, fmt.Errorf("duplicate disclosure for %s", disclosure.Name)
+			return nil, nil, fmt.Errorf("duplicate disclosure for %s", disclosure.Name)
 		}
 		disclosures[disclosure.Name] = disclosure
 	}
 
-	return disclosures, nil
+	return disclosures, manifest.Notes, nil
 }
 
 // matchTerminalStatuses compares the two sides' terminal statuses per test. A test matches when
@@ -5000,7 +5017,7 @@ func pairAddressVariantNames(goResults, csResults, csOutputs map[string]string) 
 	}
 }
 
-func matchTerminalStatuses(names []string, goResults, csResults map[string]string, disclosures map[string]testDisclosure, csOutputs map[string]string) (mismatches, skipped, disclosed []string) {
+func matchTerminalStatuses(names []string, goResults, csResults map[string]string, disclosures map[string]testDisclosure, csOutputs map[string]string) (mismatches, skipped, disclosed, withdrawn []string) {
 	// Deepest names classify FIRST: a subtest failure rolls up to its ancestors in BOTH
 	// runtimes, so an ancestor whose Go=pass/C#=fail divergence is PURELY the aggregation of
 	// disclosed descendants — no failure output of its own, no own disclosure entry, at least
@@ -5014,6 +5031,24 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 		return strings.Count(ordered[i], "/") > strings.Count(ordered[j], "/")
 	})
 
+	// The DOWNWARD dual of that ancestor aggregation, resolvable UP FRONT because it depends
+	// only on the manifest and the two top-level rows: a disclosure ROOT is a pinned test whose
+	// own Go=pass/C#=fail divergence matches its signature, and a Go-side row UNDERNEATH one —
+	// a subtest `go test` ran that the converted host never reached, because the disclosed test
+	// failed at its root before its case fan-out — is the disclosed failure's mechanical
+	// consequence, not an independent divergence. Those rows are WITHDRAWN: returned by name so
+	// the caller reports and subtracts them, never silently dropped (req §2.7), and never
+	// widened — a C#-side row that EXISTS under a disclosed root still compares strictly, and a
+	// Go-only row under anything that is not a signature-matched disclosure root stays a
+	// mismatch. First consumer: crypto/tls's TestBogoSuite, whose Go run fans out 3,242 BoGo
+	// case rows the disclosed (host-limit) root failure precedes.
+	disclosureRoots := HashSet[string]{}
+	for name, disclosure := range disclosures {
+		if goResults[name] == "pass" && csResults[name] == "fail" && strings.Contains(csOutputs[name], disclosure.Signature) {
+			disclosureRoots.Add(name)
+		}
+	}
+
 	mismatchNames := HashSet[string]{}
 	disclosedNames := HashSet[string]{}
 
@@ -5022,6 +5057,11 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 		csStatus, csOK := csResults[name]
 
 		if !goOK || !csOK || goStatus != csStatus {
+			if goOK && !csOK && underDisclosureRoot(name, disclosureRoots) {
+				withdrawn = append(withdrawn, name)
+				continue
+			}
+
 			if disclosure, ok := disclosures[name]; ok && goStatus == "pass" && csStatus == "fail" {
 				if strings.Contains(csOutputs[name], disclosure.Signature) {
 					disclosed = append(disclosed, name)
@@ -5070,7 +5110,27 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 		}
 	}
 
-	return mismatches, skipped, disclosed
+	sort.Strings(withdrawn)
+
+	return mismatches, skipped, disclosed, withdrawn
+}
+
+// underDisclosureRoot reports whether name is a strict descendant of a signature-matched
+// disclosure root (see the withdrawal rule in matchTerminalStatuses).
+func underDisclosureRoot(name string, roots HashSet[string]) bool {
+	for {
+		idx := strings.LastIndex(name, "/")
+
+		if idx < 0 {
+			return false
+		}
+
+		name = name[:idx]
+
+		if roots.Contains(name) {
+			return true
+		}
+	}
 }
 
 // manifestCensusGaps returns the top-level test names present in the RAW `go test -json` results
@@ -5152,7 +5212,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	goResults := terminalTestResults(goOutput)
 	csResults := terminalTestResults(csOutput)
 	csOutputs := terminalTestOutputs(csOutput)
-	disclosures, disclosureErr := loadTestDisclosures(outputPath)
+	disclosures, disclosureNotes, disclosureErr := loadTestDisclosures(outputPath)
 	var manifest testManifest
 	var censusGaps []string
 	var gated []capabilityGatedDeclaration
@@ -5195,7 +5255,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	result := testComparison{
 		Package: filepath.Base(inputPath), Status: status, Go: goResults, CSharp: csResults,
 		Matched: true, Skipped: []string{}, Disclosed: []string{}, Excluded: excludedDeclarations(manifest), Errors: []string{},
-		Gated: gated,
+		Gated: gated, Withdrawn: []string{},
 	}
 	if disclosureErr != nil {
 		result.Matched = false
@@ -5219,7 +5279,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		result.Errors = append(result.Errors, "census: go test reported tests the manifest does not declare: "+strings.Join(censusGaps, ", "))
 	}
 
-	mismatches, skipped, disclosed := matchTerminalStatuses(names, goResults, csResults, disclosures, csOutputs)
+	mismatches, skipped, disclosed, withdrawn := matchTerminalStatuses(names, goResults, csResults, disclosures, csOutputs)
 	if len(mismatches) > 0 {
 		result.Matched = false
 		result.Errors = append(result.Errors, mismatches...)
@@ -5230,12 +5290,49 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		result.Disclosed = append(result.Disclosed, fmt.Sprintf("%s (%s): %s", name, disclosure.Class, disclosure.Reason))
 	}
 
-	if csErr != nil && goErr == nil && len(disclosed) > 0 && len(mismatches) == 0 && len(csResults) > 0 {
+	// Withdrawn rows leave the comparison record the way capability-gated rows do: removed from
+	// the Go map (they are Go-only by construction, so nothing exists on the C# side) and
+	// PUBLISHED in their own field, so the matched count below and every proof-page derivation
+	// self-correct while the omission stays visible — silent absorption is the channel §2.7
+	// forbids.
+	for _, name := range withdrawn {
+		delete(goResults, name)
+	}
+	result.Withdrawn = append(result.Withdrawn, withdrawn...)
+
+	// Whether at least one failure is AGREED — both runtimes reporting "fail" for the same row.
+	// An agreed failure is a matched verdict, and it is the one legitimate reason a side's exit
+	// code goes nonzero without any divergence existing.
+	agreedFailure := false
+	for name, goStatus := range goResults {
+		if goStatus == "fail" && csResults[name] == "fail" {
+			agreedFailure = true
+			break
+		}
+	}
+
+	if goErr != nil && csErr != nil && agreedFailure && len(mismatches) == 0 && len(goResults) > 0 && len(csResults) > 0 {
+		// The MIRROR of the C# forgiveness below: go test's nonzero exit is the agreed outcome
+		// of failures BOTH runtimes report identically, so the exit codes carry no information
+		// the per-test rows have not already matched. First consumer: crypto/tls, whose test
+		// fixtures expired 2025-01-01 and fail four resumption/verification tests with the same
+		// `x509: certificate has expired` text on either runtime — the most that suite can
+		// score in either language, worsening with the calendar. Narrow on the same terms as
+		// the arm below: zero mismatches (a truncated or divergent run stays fatal), both runs
+		// produced results, at least one agree-fail row exists to attribute the exits to, and
+		// BOTH sides exited nonzero — a red Go baseline beside a green converted run is a
+		// divergence, never a forgiveness.
+		goErr = nil
+	}
+
+	if csErr != nil && goErr == nil && (len(disclosed) > 0 || agreedFailure) && len(mismatches) == 0 && len(csResults) > 0 {
 		// The converted host exits nonzero BECAUSE the disclosed-divergent tests fail — that
 		// exit code is part of the disclosed outcome, not an additional failure signal.
-		// Forgiveness is deliberately narrow: go test itself was clean, the host produced
-		// results, and every divergence matched its pinned signature (zero mismatches — a
-		// truncated run surfaces as one-sided rows, which are mismatches, and stays fatal).
+		// Forgiveness is deliberately narrow: go test itself was clean (or its own exit was
+		// just forgiven on agreed failures, which carry a C# exit exactly as disclosed rows
+		// do), the host produced results, and every divergence matched its pinned signature
+		// (zero mismatches — a truncated run surfaces as one-sided rows, which are mismatches,
+		// and stays fatal).
 		csErr = nil
 	}
 
@@ -5270,7 +5367,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	// The differential that just proved the package is the proof: publish it as a committed page
 	// under docs/validation (no-op outside a repository checkout). See validationProofPages.go.
 	if result.Status == "validated" {
-		if err := emitValidationProofPage(outputPath, result, manifest, disclosures, options); err != nil {
+		if err := emitValidationProofPage(outputPath, result, manifest, disclosures, disclosureNotes, options); err != nil {
 			return fmt.Errorf("write validation proof page: %w", err)
 		}
 	}
