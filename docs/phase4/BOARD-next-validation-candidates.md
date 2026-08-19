@@ -12476,4 +12476,65 @@ pre-documented carry · guard `ManagedAtomicPointer` proven failing-first on **b
 Output** (exit code 2 — the pre-fix binary crashes on the nil operand), green on all four phases
 with the fix in. No golib change: the golib side was already correct, which is the point.
 
+
+## 🔎 ROOTED, NOT TAKEN — `flag`'s CS1929 ×10 is the Δ-RENAME and the adapter disagreeing about one method name; the owner is `ImplementGenerator` (2026-08-19, lane `claude/row-harvest-3`)
+
+Re-measured on current master with this lane's three converter fixes in: **CS1929 ×10, unmoved** —
+five test-package types (`boolFlagVar`, `flagVar`, `interval`, `URLValue`, `zeroPanicker`) × two
+sites each, every one inside a generated `ImplementGenerator` adapter. The one-diagnostic-remeasure
+entry correctly named the owner as the generator rather than the converter; this narrows it to the
+exact disagreement, which is one name.
+
+### The disagreement
+
+`flag_test.go`'s types implement `flag.Value` with pointer-receiver `String`/`Set`. In the whitebox
+test compilation those names COLLIDE with the production `flag` package's own members (the test
+variant carries `using static` of production), so the converter's name-collision pass Δ-renames
+them, and everything downstream follows it correctly:
+
+```csharp
+// flag_test.cs — the converter's emission
+[GoRecv] internal static @string ΔString(this ref boolFlagVar b) { … }
+[GoRecv] internal static error  ΔSet(this ref boolFlagVar b, @string value) { … }
+```
+```csharp
+// RecvGenerator's ж-overload — faithfully renamed too
+internal static @string ΔString(this ж<boolFlagVar> Ꮡb) { … }
+```
+
+`ImplementGenerator`'s adapter does not. It forwards using the **Go** method name:
+
+```csharp
+global::go.@string global::go.fmt_package.Stringer.String() => m_box.String();   // CS1929
+global::go.error  global::go.flag_package.Value.Set(@string _) => m_box.Set(_);  // CS1929
+```
+
+The interface members it implements are named correctly — `Stringer.String`, `Value.Set` are the
+INTERFACE's names and must never be renamed. Only the **forwarding target** is wrong: it should be
+`m_box.ΔString()` / `m_box.ΔSet(_)`. With no `String` extension on `ж<boolFlagVar>`, C# reports the
+nearest candidate it can see, which is why the board previously recorded it as "binds
+`bytes_package.String`" — that is the diagnostic's suggestion, not a real binding.
+
+This is also why the class is test-package-shaped rather than general: production packages rarely
+produce the collision that triggers the rename, so the adapter's use of the Go name is normally
+indistinguishable from the emitted name.
+
+### Why it was not taken here, and what the next lane faces
+
+A `go2cs-gen` change owes the FULL behavioral suite plus BOTH `slnx` builds, and this lane had no
+room for that ledger. The remedy is also a real design choice rather than a one-liner, because the
+rename is not currently recorded anywhere the generator can read it:
+
+- `[GoLocalName]` is **not** the answer — it targets `Struct | Class | Interface` and carries the Go
+  name of a lifted local TYPE, not a member.
+- So the options are (a) have the converter record the member rename (a new attribute, or extra
+  cargo on the existing `[assembly: GoImplement<T, Iface>]` record, which the adapter already reads),
+  or (b) have the generator apply the same Δ-rule as a fallback when the plain name does not resolve
+  to a member on the box. (a) is the durable direction — it makes the emitted name a FACT the
+  generator consults rather than a rule it re-derives and can drift from, which is precisely how this
+  defect exists.
+
+24 verdicts sit behind it, unmeasured — the wall is a build block, so nothing about `flag`'s
+runtime behavior is known yet.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
