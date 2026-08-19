@@ -65,7 +65,17 @@ internal class InterfaceImplTemplate : TemplateBase
             {
                 string simpleInterfaceName = GetSimpleName(InterfaceName);
                 string simpleMethodName = GetSimpleName(method.Name);
-                bool methodOverriden = Overrides.Contains(simpleMethodName);
+
+                // Implemented under the interface's name, forwarded under the EMITTED one when the
+                // collision pass renamed the implementation — see MethodInfo.ForwardName. `Overrides`
+                // is keyed by the DECLARED names, so the resolved name is what decides whether this
+                // member has a direct struct method at all; a Go-name miss read a renamed declaration
+                // as absent and sent the member down the promotion path instead. Non-null only when
+                // the struct itself declares the Δ name, which is exactly when `methodOverriden`
+                // becomes true and every embed hop below is skipped — so the hop lookups keep reading
+                // the interface member's own name, which is what the EMBEDDED type declares it under.
+                string forwardName = method.ForwardMemberName(simpleMethodName);
+                bool methodOverriden = Overrides.Contains(forwardName);
 
                 if (result.Length > 0)
                     result.Append("\r\n\r\n        ");
@@ -116,7 +126,7 @@ internal class InterfaceImplTemplate : TemplateBase
                         receiver = $"this.{ValueEmbedHop}";
                     }
 
-                    result.Append($"{method.ReturnType} {method.GetSignature()} => {receiver}.{simpleMethodName}{method.GetGenericSignature()}({method.CallParameters});");
+                    result.Append($"{method.ReturnType} {method.GetSignature()} => {receiver}.{forwardName}{method.GetGenericSignature()}({method.CallParameters});");
                 }
             }
 
