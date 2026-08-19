@@ -264,6 +264,14 @@ public class ImplementGenerator : ISourceGenerator
             if (structDecl is not null)
                 localImplNames.UnionWith(structDecl.GetBoxReceiverMethodNames(compilation!));
 
+            // The adapter had no notion that a member's IMPLEMENTED name and its FORWARDED name can
+            // differ, and spelled the interface's name at both positions — so once the collision pass
+            // Δ-renamed a test-file declarator the forward bound nothing on the box (CS1929 ×10 in
+            // `flag`, the compiler naming whatever unrelated extension it could see,
+            // `bytes_package.String`, as its nearest candidate). `localImplNames` is already the set
+            // of methods this struct DECLARES in either receiver form, so the emitted name is a fact
+            // in hand rather than a rule to re-derive — see Common.ResolveForwardMemberName.
+
             // GetAllBaseInterfaces (not AllInterfaces) recovers a base declared in ANOTHER package
             // class, which is still PRIVATE until this generator emits its access modifier and would
             // otherwise bind to an empty error symbol — see Common.GetAllBaseInterfaces.
@@ -280,6 +288,9 @@ public class ImplementGenerator : ISourceGenerator
                     // UNescaped; escape it so both the explicit-interface signature and the
                     // forwarding call emit `@string` (bare `string` is a parse error, CS1525/0539).
                     Name = promoted && !pointer && !overrides.Contains(GetSimpleName(EscapeCsKeyword(info.method.Name))) ? EscapeCsKeyword(info.method.Name) : $"{GlobalQualify(info.name)}.{EscapeCsKeyword(info.method.Name)}",
+                    // The DECLARED name to forward to, when the collision pass renamed it away from
+                    // the interface member's own name — see the note above.
+                    ForwardName = ResolveForwardMemberName(GetSimpleName(EscapeCsKeyword(info.method.Name)), localImplNames),
                     ReturnType = GlobalQualify(info.method.ReturnType.ToDisplayString()),
                     // Carry the parameter REF KIND: an interface member declared with an `in`
                     // param (the hand-finished io stub's Reader.Read(in slice<byte>)) is a

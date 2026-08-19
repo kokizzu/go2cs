@@ -12695,4 +12695,117 @@ rename is not currently recorded anywhere the generator can read it:
 24 verdicts sit behind it, unmeasured — the wall is a build block, so nothing about `flag`'s
 runtime behavior is known yet.
 
+## 📉 NARROWED — `flag`'s CS1929 ×10 build wall is CLOSED and the package runs at 23 of 24; the generator now reads the EMITTED name, and the remedy the board priced as "durable" turned out to record a fact it could already observe (2026-08-19, lane `claude/heavy-pair`)
+
+The row-harvest-3 entry rooted this precisely — the converter Δ-renames the test types' `String`/`Set`,
+`RecvGenerator` follows, and `ImplementGenerator`'s adapter forwards to the GO name — and priced two
+remedies: (a) have the converter RECORD the member rename for the generator to consult, or (b) have
+the generator apply the Δ-rule as a fallback. It called (a) the durable direction, on the reasoning
+that it makes the emitted name *a fact the generator consults rather than a rule it re-derives*.
+
+That reasoning is right and it selects a THIRD option, which is what this lane took. The generator does
+not need the rename recorded, because **it already enumerates the fact**: `localImplNames` is built
+before the member list and holds every method the struct declares in either receiver form. (a) would
+have recorded, in a new attribute surface, a fact already sitting in a local variable — and the
+generator would STILL have had to consult the declared set for the receiver. Strictly larger footprint
+(a golib attribute change, a converter emission, a fourth spelling of the rename to keep in step), same
+result.
+
+### What was actually wrong — two positions, one name
+
+An interface member is IMPLEMENTED under the interface's name and FORWARDS under the emitted one. The
+adapter spelled the interface's name at both:
+
+```csharp
+global::go.@string global::go.fmt_package.Stringer.String() => m_box.String();   // CS1929
+global::go.error  global::go.flag_package.Value.Set(@string _) => m_box.Set(_);  // CS1929
+```
+
+The left-hand side is correct and must never be renamed. Only the forwarding target was wrong. With no
+`String` extension on `ж<boolFlagVar>`, C# reported the nearest candidate it could see —
+`bytes_package.String(ж<bytes_package.Buffer>)` — which is why the one-diagnostic re-measure recorded
+it as "binds `bytes_package.String`". That was the diagnostic's *suggestion*, never a real binding.
+
+`Common.ResolveForwardMemberName` matches the interface member against the declared set, **exact name
+first and the `ShadowVarMarker` projection only as a second pass** — the identical two-pass shape
+`TypeExtensions.GoMethodNameMatches` and `AdapterBinder.ResolveReceiverMethods` already run at run
+time. So the compile-time adapter, the shell binder and the structural probe now agree by construction
+instead of by coincidence; the generator disagreeing with a rule golib had already banked WAS the
+defect. Exact-first is load-bearing, not stylistic: `Δ` is a Unicode letter and so a legal Go
+identifier character, and a genuinely `ΔX`-named Go method must never be displaced by a projection
+of `X`.
+
+### The half the diagnosis did not name: the RECEIVER
+
+`ForwardReceivers` is keyed by DECLARED names too, so fixing only the call target leaves a value
+receiver stranded. `URLValue`'s `ΔString(this URLValue v)` has no `[GoRecv]` and therefore no
+RecvGenerator ж-twin, so it needs `m_box.Value.ΔString()`; the Go-name lookup missed and fell through
+to the `m_box` default, which is CS1929 again. Both positions read the resolved name. Emission now:
+
+```csharp
+// boolFlagVar — [GoRecv] ref primary, binds the ж-twin
+=> m_box.ΔString();
+// URLValue — value receiver, needs the deref'd value
+=> m_box.Value.ΔString();
+```
+
+The same resolution is wired into `ValueAdapterImplTemplate` and `InterfaceImplTemplate`, which consume
+the SAME member list — in the latter it also decides `methodOverriden`, since a Go-name miss read a
+renamed declaration as absent and sent the member down the promotion path. Non-null only when the
+struct itself declares the Δ name, which is exactly when the embed hops are skipped, so the hop lookups
+keep reading the interface member's own name — what the EMBEDDED type declares it under.
+
+### `flag`: 0 → 23 of 24, and the residual is not a defect
+
+24 verdicts, 23 agree. The one divergence is `TestDefineAfterSet`, and it is **not** a bug in the
+conversion:
+
+```
+expected panic("flag myFlag set at .*/flag_test.go:.* before being defined"),
+but got panic("flag myFlag set at C:\…\src\core\flag\flag_test.cs:1112 before being defined")
+```
+
+`flag.go` records the caller with `runtime.Caller(2)`, and the managed traceback picks the **correct
+logical frame** — `flag_test.cs:1112` is `flags.Set(myFlagˢ, valueˢ)`, exactly Go's `flag_test.go:852`.
+What differs is the SOURCE-FILE IDENTITY: the executing source really is the `.cs`, so `runtime.Caller`
+reports it, and Go's assertion is a regex over `.*/flag_test.go:.*` — which the emission misses twice
+over, on the extension and on the path separator. Reporting `.go` would be a lie about what ran.
+
+**No disclosure was taken, deliberately.** It fits none of the four classes: it is not an allocation
+count, not a liveness assertion, not a channel direction, and — the one worth stating — not
+`host-limit`, whose bar is *a structural property of the deployment shape* that retires itself when the
+shape changes. This would not. The durable remedy is a converter one and is priced here rather than
+taken: emit `#line` directives mapping each statement back to its `.go` origin, which would make BOTH
+the file and the line Go's, natively through the PDB, and would also land debugger stepping in Go
+source. It changes every golden in the corpus and is its own arc. **So `flag` does not bank** — one
+suite, one honest residual, no roster row, no proof page, no committed test sources.
+
+### Gates — the full generator ledger
+
+A `go2cs-gen` change owes all of it, and all of it is green:
+
+| Gate | Result |
+|:--|:--|
+| converter `go test ./...` | **ok, 146.5 s**, zero failures |
+| `go2cs.slnx` (`--no-incremental`) | **0 errors**, 725.8 s |
+| `go2cs-stdlib.slnx` (`--no-incremental`) | **0 errors**, 411.2 s |
+| full behavioral suite | **PASS — 600 projects, 2,285 s**; Transpile 600, Compile 600/0/0, Target 600, Output 574 + 26 skip |
+| full `check-no-regression.ps1` | **byte-identical across all 627 packages**, 728.9 s, 2 advisory warnings; preflight 629/629 registered, 4,520/4,520 path casing |
+| `GenTests` | **24/24** |
+
+Inertness is the claim the corpus gates are testing, and they confirm it: `ForwardName` is null for
+every member the collision pass left alone, so nothing outside a Δ-renamed adapter moves.
+
+**Guards, both proven failing-first** (`src/tests/GenTests/CollisionRenamedForwardTests.cs`, 6 tests):
+neutering `ResolveForwardMemberName` to return null fails exactly 3 (the resolution and both template
+forward assertions); reverting the RECEIVER lookup alone to the Go name fails exactly 1 — the
+value-receiver case — which is what proves that half is independently load-bearing rather than
+incidental.
+
+### For the next lane
+
+The measurement hazard row-harvest-3 recorded held: every result here is from SEQUENTIAL runs, and the
+`flag` build was purged (`bin`/`obj`/`Generated`) before each measurement, since a generator change is
+invisible to an incremental build whose `obj/` already holds the previous emission.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
