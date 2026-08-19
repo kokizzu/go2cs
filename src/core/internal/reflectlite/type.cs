@@ -242,16 +242,7 @@ internal static nint NumMethod(this rtype t) {
     return len(t.exportedMethods());
 }
 
-internal static @string PkgPath(this rtype t) {
-    if ((abi.TFlag)(t.TFlag & abi.TFlagNamed) == 0) {
-        return ""u8;
-    }
-    var ut = t.uncommon();
-    if (ut == nil) {
-        return ""u8;
-    }
-    return t.nameOff((~ut).PkgPath).Name();
-}
+// go2cs generated this placeholder — func PkgPath is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static @string Name(this rtype t) {
     if (!t.Type.Value.HasName()) {
@@ -365,103 +356,33 @@ public static ΔType TypeOf(any i) {
 
 // go2cs generated this placeholder — func Implements is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// go2cs generated this placeholder — func AssignableTo is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+internal static bool AssignableTo(this rtype t, ΔType u) {
+    if (u == default!) {
+        throw panic("reflect: nil type passed to Type.AssignableTo");
+    }
+    var uu = u.common();
+    var tt = t.common();
+    return directlyAssignable(uu, tt) || implements(uu, tt);
+}
 
 internal static bool Comparable(this rtype t) {
     return t.Equal != default!;
 }
 
-// implements reports whether the type V implements the interface type T.
-internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
-    ref var T = ref ᏑT.DerefOrNull();
-    ref var V = ref ᏑV.DerefOrNull();
+// go2cs generated this placeholder — func implements is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var t = ᏑT.InterfaceType();
-    if (t == nil) {
-        return false;
-    }
-    if (len((~t).Methods) == 0) {
-        return true;
-    }
-    var rT = toRType(ᏑT);
-    var rV = toRType(ᏑV);
-    // The same algorithm applies in both cases, but the
-    // method tables for an interface type and a concrete type
-    // are different, so the code is duplicated.
-    // In both cases the algorithm is a linear scan over the two
-    // lists - T's methods and V's methods - simultaneously.
-    // Since method tables are stored in a unique sorted order
-    // (alphabetical, with no duplicate method names), the scan
-    // through V's methods must hit a match for each of T's
-    // methods along the way, or else V does not implement T.
-    // This lets us run the scan in overall linear time instead of
-    // the quadratic time  a naive search would require.
-    // See also ../runtime/iface.go.
-    if (V.Kind() == Interface) {
-        var vΔ1 = ᏑV.Reinterpret<abi.Type, interfaceType>();
-        nint iΔ1 = 0;
-        for (nint j = 0; j < len((~vΔ1).Methods); j++) {
-            var tm = Ꮡ((~t).Methods, iΔ1);
-            var tmName = rT.nameOff((~tm).Name);
-            var vm = Ꮡ((~vΔ1).Methods, j);
-            var vmName = rV.nameOff((~vm).Name);
-            if (vmName.Name() == tmName.Name() && rV.typeOff((~vm).Typ) == rT.typeOff((~tm).Typ)) {
-                if (!tmName.IsExported()) {
-                    @string tmPkgPath = pkgPath(tmName);
-                    if (tmPkgPath == ""u8) {
-                        tmPkgPath = (~t).PkgPath.Name();
-                    }
-                    @string vmPkgPath = pkgPath(vmName);
-                    if (vmPkgPath == ""u8) {
-                        vmPkgPath = (~vΔ1).PkgPath.Name();
-                    }
-                    if (tmPkgPath != vmPkgPath) {
-                        continue;
-                    }
-                }
-                {
-                    iΔ1++; if (iΔ1 >= len((~t).Methods)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-    var v = ᏑV.Uncommon();
-    if (v == nil) {
-        return false;
-    }
-    nint i = 0;
-    var vmethods = v.Methods();
-    for (nint j = 0; j < (nint)(~v).Mcount; j++) {
-        var tm = Ꮡ((~t).Methods, i);
-        var tmName = rT.nameOff((~tm).Name);
-        var vm = vmethods[j];
-        var vmName = rV.nameOff(vm.Name);
-        if (vmName.Name() == tmName.Name() && rV.typeOff(vm.Mtyp) == rT.typeOff((~tm).Typ)) {
-            if (!tmName.IsExported()) {
-                @string tmPkgPath = pkgPath(tmName);
-                if (tmPkgPath == ""u8) {
-                    tmPkgPath = (~t).PkgPath.Name();
-                }
-                @string vmPkgPath = pkgPath(vmName);
-                if (vmPkgPath == ""u8) {
-                    vmPkgPath = rV.nameOff((~v).PkgPath).Name();
-                }
-                if (tmPkgPath != vmPkgPath) {
-                    continue;
-                }
-            }
-            {
-                i++; if (i >= len((~t).Methods)) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
+// The same algorithm applies in both cases, but the
+// method tables for an interface type and a concrete type
+// are different, so the code is duplicated.
+// In both cases the algorithm is a linear scan over the two
+// lists - T's methods and V's methods - simultaneously.
+// Since method tables are stored in a unique sorted order
+// (alphabetical, with no duplicate method names), the scan
+// through V's methods must hit a match for each of T's
+// methods along the way, or else V does not implement T.
+// This lets us run the scan in overall linear time instead of
+// the quadratic time  a naive search would require.
+// See also ../runtime/iface.go.
 
 // directlyAssignable reports whether a value x of type V can be directly
 // assigned (using memmove) to a value of type T.
@@ -498,104 +419,17 @@ internal static bool haveIdenticalType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, boo
     return haveIdenticalUnderlyingType(ᏑT, ᏑV, false);
 }
 
-internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, bool cmpTags) {
-    ref var T = ref ᏑT.DerefOrNull();
-    ref var V = ref ᏑV.DerefOrNull();
+// go2cs generated this placeholder — func haveIdenticalUnderlyingType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    if (ᏑT == ᏑV) {
-        return true;
-    }
-    var kind = T.Kind();
-    if (kind != V.Kind()) {
-        return false;
-    }
-    // Non-composite types of equal kind have same underlying type
-    // (the predefined instance of the type).
-    if (abi.Bool <= kind && kind <= abi.Complex128 || kind == abi.ΔString || kind == abi.UnsafePointer) {
-        return true;
-    }
-    // Composite types.
-    var exprᴛ1 = kind;
-    if (exprᴛ1 == abi.Array) {
-        return ᏑT.Len() == ᏑV.Len() && haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
-    }
-    if (exprᴛ1 == abi.Chan) {
-        if (ᏑV.ChanDir() == abi.BothDir && haveIdenticalType(ᏑT.Elem(), // Special case:
- // x is a bidirectional channel value, T is a channel type,
- // and x's type V and T have identical element types.
- ᏑV.Elem(), cmpTags)) {
-            return true;
-        }
-        return ᏑV.ChanDir() == ᏑT.ChanDir() && haveIdenticalType(ᏑT.Elem(), // Otherwise continue test for identical underlying type.
- ᏑV.Elem(), cmpTags);
-    }
-    if (exprᴛ1 == abi.Func) {
-        var t = ᏑT.Reinterpret<abi.Type, funcType>();
-        var v = ᏑV.Reinterpret<abi.Type, funcType>();
-        if ((~t).OutCount != (~v).OutCount || (~t).InCount != (~v).InCount) {
-            return false;
-        }
-        for (nint i = 0; i < t.NumIn(); i++) {
-            if (!haveIdenticalType(t.In(i), v.In(i), cmpTags)) {
-                return false;
-            }
-        }
-        for (nint i = 0; i < t.NumOut(); i++) {
-            if (!haveIdenticalType(t.Out(i), v.Out(i), cmpTags)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    if (exprᴛ1 == Interface) {
-        var t = ᏑT.Reinterpret<abi.Type, interfaceType>();
-        var v = ᏑV.Reinterpret<abi.Type, interfaceType>();
-        if (len((~t).Methods) == 0 && len((~v).Methods) == 0) {
-            return true;
-        }
-        return false;
-    }
-    if (exprᴛ1 == abi.Map) {
-        return haveIdenticalType(ᏑT.Key(), // Might have the same methods but still
- // need a run time conversion.
- ᏑV.Key(), cmpTags) && haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
-    }
-    if (exprᴛ1 == Ptr || exprᴛ1 == abi.Slice) {
-        return haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
-    }
-    if (exprᴛ1 == abi.Struct) {
-        var t = ᏑT.Reinterpret<abi.Type, structType>();
-        var v = ᏑV.Reinterpret<abi.Type, structType>();
-        if (len((~t).Fields) != len((~v).Fields)) {
-            return false;
-        }
-        if ((~t).PkgPath.Name() != (~v).PkgPath.Name()) {
-            return false;
-        }
-        foreach (var (i, _) in (~t).Fields) {
-            var tf = Ꮡ((~t).Fields, i);
-            var vf = Ꮡ((~v).Fields, i);
-            if ((~tf).Name.Name() != (~vf).Name.Name()) {
-                return false;
-            }
-            if (!haveIdenticalType((~tf).Typ, (~vf).Typ, cmpTags)) {
-                return false;
-            }
-            if (cmpTags && (~tf).Name.Tag() != (~vf).Name.Tag()) {
-                return false;
-            }
-            if ((~tf).Offset != (~vf).Offset) {
-                return false;
-            }
-            if (tf.Embedded() != vf.Embedded()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    return false;
-}
+// Non-composite types of equal kind have same underlying type
+// (the predefined instance of the type).
+// Composite types.
+// Special case:
+// x is a bidirectional channel value, T is a channel type,
+// and x's type V and T have identical element types.
+// Otherwise continue test for identical underlying type.
+// Might have the same methods but still
+// need a run time conversion.
 
 // toType converts from a *rtype to a Type that can be returned
 // to the client of package reflect. In gc, the only concern is that

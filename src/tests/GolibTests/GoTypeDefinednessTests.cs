@@ -59,6 +59,23 @@ public class GoTypeDefinednessTests
         [GoType("dyn")]
         [GoLocalName("Person")]
         public struct Lifted;
+
+        // An anonymous INTERFACE the converter lifted -- `interface{ F() }` written inline. The
+        // same [GoType("dyn")] stamp as the struct lift, one type category over: Go renders it
+        // structurally and it has no name (internal/reflectlite's TestNames asserts "" exactly).
+        [GoType("dyn")]
+        public interface AnonymousIface
+        {
+            void F();
+        }
+
+        // `type A struct{}` and `type B[T any] struct{}` -- the generic-instantiation naming
+        // shapes internal/reflectlite's TestNames asserts (B[A], B[B[A]]).
+        [GoType]
+        public struct A;
+
+        [GoType]
+        public struct B<T>;
     }
 
     // The ordinary named cases, which must keep answering as they always did.
@@ -112,5 +129,31 @@ public class GoTypeDefinednessTests
     public void ANullTypeIsNotNamed()
     {
         Assert.IsFalse(GoReflect.HasGoName(null));
+    }
+
+    // An anonymous-interface LIFT is the struct lift's rule one type category over: the
+    // [GoType("dyn")] stamp marks it structural, so it has no Go name and renders as Go's
+    // `interface { F() }` -- never as the lifted C# identifier. Before this arm the C# name
+    // escaped both methods (internal/reflectlite's TestNames measured `typeᴛ30` where Go
+    // answers "").
+    [TestMethod]
+    public void AnAnonymousLiftedInterfaceIsUnnamedAndRendersStructurally()
+    {
+        Assert.IsFalse(GoReflect.HasGoName(typeof(nametest_package.AnonymousIface)), "a lifted anonymous interface is unnamed");
+        Assert.AreEqual("interface { F() }", GoReflect.GoTypeName(typeof(nametest_package.AnonymousIface)));
+    }
+
+    // A generic INSTANTIATION is a named Go type spelled `B[<args>]`, with each type ARGUMENT
+    // qualified by its IMPORT PATH (Go: `B[internal/reflectlite_test.A]`; here the test package
+    // is not under the `go.` emission root, so the path collapses to the bare package name).
+    // Before this arm the CLR arity spelling escaped (`nametest.B`1`). Predeclared arguments
+    // keep their Go spelling, and nesting recurses.
+    [TestMethod]
+    public void AGenericInstantiationRendersGoStyle()
+    {
+        Assert.IsTrue(GoReflect.HasGoName(typeof(nametest_package.B<nametest_package.A>)), "an instantiated generic is a named type");
+        Assert.AreEqual("nametest.B[nametest.A]", GoReflect.GoTypeName(typeof(nametest_package.B<nametest_package.A>)));
+        Assert.AreEqual("nametest.B[nametest.B[nametest.A]]", GoReflect.GoTypeName(typeof(nametest_package.B<nametest_package.B<nametest_package.A>>)));
+        Assert.AreEqual("nametest.B[int]", GoReflect.GoTypeName(typeof(nametest_package.B<nint>)));
     }
 }

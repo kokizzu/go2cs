@@ -286,7 +286,6 @@ public static partial class runtime_package
     internal partial struct ptabEntry {}
     internal partial struct randomEnum {}
     internal partial struct randomOrder {}
-    internal partial struct readmemstats_m_bySize {}
     internal partial struct reflectMethodValue {}
     internal partial struct reflectOffsᴛ1 {}
     internal partial struct runtimeSelect {}

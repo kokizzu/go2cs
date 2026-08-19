@@ -353,7 +353,11 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 		var arrayInitializer string
 
-		if arrayType, ok := field.Type.(*ast.ArrayType); ok {
+		// Unparen: `x ([32]int32)` declares the same fixed-size array field as `x [32]int32`
+		// (Go's grammar admits the parentheses; reflectlite's typeTests writes every entry that
+		// way), and missing the wrapper silently dropped the `= new(N)` initializer — the zero
+		// instance then carried a backing-less array and every dims read answered [0]N.
+		if arrayType, ok := ast.Unparen(field.Type).(*ast.ArrayType); ok {
 			if arrayType.Len != nil {
 				arrayInitializer = fmt.Sprintf(" = new(%s)", v.arrayZeroValueArgs(v.convExpr(arrayType.Len, nil), fieldType))
 			}

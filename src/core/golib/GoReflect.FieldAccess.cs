@@ -322,6 +322,8 @@ public static partial class GoReflect
             return;
         }
 
+        int first = result.Count;
+
         foreach (FieldInfo field in fields)
         {
             string name = field.Name;
@@ -360,6 +362,87 @@ public static partial class GoReflect
 
             nint[]? dims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
             result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field)));
+        }
+
+        reorderToGoDeclarationOrder(t, result, first);
+    }
+
+    // Field order is Go DECLARATION order, and CLR metadata order stops being that the moment a
+    // struct EMBEDS: go2cs-gen mints every embed's ʗ backing field in a GENERATED partial, and
+    // partial parts concatenate, so a Go declaration that embeds first carries its embed LAST in
+    // metadata. Everything indexed (Field(i)/rtype.Field(i)/GoFieldOffsets — which pairs with this
+    // projection BY INDEX) and everything ordered (fmt's %v walk, json's member order) reads this
+    // walk, so the wrong order sent reflectlite's TestCanSetField index chains into an int field
+    // and printed Talias2's embeds reversed under %#v.
+    //
+    // The surviving record of the declaration order is the generator's ALL-FIELDS constructor —
+    // emitted from the declaration syntax, its parameters named exactly by the Go field names, in
+    // Go order. The reorder applies exactly when an embedded field is present and a constructor
+    // whose parameter names form a BIJECTION with the projected field names exists; an embed-free
+    // struct's metadata order IS declaration order (the converter declares every field inline),
+    // and a struct with no matching constructor keeps metadata order — today's behavior, never a
+    // half-applied guess.
+    private static void reorderToGoDeclarationOrder(Type t, List<GoFieldInfo> result, int first)
+    {
+        int count = result.Count - first;
+
+        if (count < 2)
+            return;
+
+        bool hasEmbed = false;
+
+        for (int i = first; i < result.Count; i++)
+        {
+            if (result[i].Embedded)
+            {
+                hasEmbed = true;
+                break;
+            }
+        }
+
+        if (!hasEmbed)
+            return;
+
+        Dictionary<string, int> byName = new(count, StringComparer.Ordinal);
+
+        for (int i = first; i < result.Count; i++)
+        {
+            // Duplicate projected names (a blank-field struct projects several "_") cannot form a
+            // bijection with parameter names; keep metadata order.
+            if (!byName.TryAdd(result[i].Name, i))
+                return;
+        }
+
+        foreach (ConstructorInfo ctor in t.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            ParameterInfo[] parameters = ctor.GetParameters();
+
+            if (parameters.Length != count)
+                continue;
+
+            GoFieldInfo[] ordered = new GoFieldInfo[count];
+            bool matched = true;
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].Name is { } name && byName.TryGetValue(name, out int index))
+                {
+                    ordered[i] = result[index];
+                }
+                else
+                {
+                    matched = false;
+                    break;
+                }
+            }
+
+            if (!matched)
+                continue;
+
+            for (int i = 0; i < count; i++)
+                result[first + i] = ordered[i];
+
+            return;
         }
     }
 

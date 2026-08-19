@@ -68,7 +68,6 @@ public static partial class reflectlite_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface valueInterface_type {}
     internal partial struct dummyᴛ1 {}
     internal partial struct flag {}
     internal partial struct rtype {}

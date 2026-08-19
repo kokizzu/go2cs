@@ -11733,4 +11733,104 @@ marked / 0 clobbered both, every real mover named · `reflect` single-package bu
 solution integrity 625/625, path casing 4,485→4,492. Banked: `0f3495688` (cast fix + guards),
 ed25519 bank, `e61758549` (reflectlite's two remaining roots + reflect adoption).
 
+## ✅ `internal/reflectlite` VALIDATES 27+3/30 — the mini-bridge was seven roots, five of them SHARED machinery; `encoding/gob` 100 → 103 of 106 and its census halves (2026-08-18, lane `claude/reflect-minibridge`)
+
+The reflect mini-bridge pair, taken as one lane so no parallel work touched the bridge. Both
+prompt targets measured; one banks.
+
+### Base note — the lane merged its own dependency
+
+The prompt expected master > `d1ed1f7c1` (the local-iface-cast merge). That commit was never
+pushed: remote master stood at `b5a82df19` and the reflectlite unlock lived only on
+`origin/claude/local-iface-cast-747795`. This lane merged that branch onto master itself
+(`36d06ab20`) — and the merge surfaced a REAL two-lane conflict: the local-iface-cast lane's
+anon-struct scope-dedup ("scopes never unify") and the xml-netip-alias lane's package-registry
+ADOPTION path compose in git but contradict in one case, the function-local literal of a
+package-lifted anonymous struct. The composed behavior (adoption wins) is the more Go-faithful
+one — anonymous-struct identity is scopeless — so the guard's scope-separation assertion was
+amended to assert adoption (`d8f71750e`). Coordinator: when merging local-iface-cast, take this
+lane's reconciliation with it (or merge this lane, which contains it).
+
+### `internal/reflectlite` — banked, 152/215 (70.7%)
+
+5 of 30 at handoff; **27 matched + 2 skip-parity + 3 disclosed (`chan-direction`) = 30**, status
+`validated`, proof page converter-generated. Roster header recomputed from the table:
+**152/215, 17,299 matching, 80 disclosed**. The 23 mini-bridge failures decomposed into SEVEN
+roots — five landed in shared machinery both reflection layers (and every bridge consumer)
+inherit:
+
+| Root | Fix home | Guard |
+|:--|:--|:--|
+| `GoFields` walked CLR METADATA order — an embed's generated backing field lands LAST where Go declared it first; offsets pair by index and reorder with it | golib `GoReflect.FieldAccess` (reorder by the generator's all-fields ctor, exactly when an embed is present) | `GoStructLayoutTests.FieldOrder_IsGoDeclarationOrder_NotMetadataOrder`, failing-first |
+| The structural implements probe lacked Go's UNEXPORTED-METHOD package rule — `*reflectlite_test.notAnExpr` "implemented" `ast.Expr` through its own private `exprNode` | golib `TypeExtensions.GoMethodSets` + new `GoReflect.GoPackageClassPath` | `GoUnexportedMethodPackageTests` (3 rows), failing-first |
+| A nil FUNC into interface space erased its type (delegate nil IS null) | golib `CanonicalNilFunc`/`NilFuncValue`, minted only at the eface boundary, resolved away on every read-back | `PointerNilPredicateTests.CanonicalNilFuncCarriesItsTypeAndResolvesAwayOnEveryReadBack` |
+| reflectlite's IsNil lacked the generated `== nil` operator probe (nil slice/chan fields answered NOT nil) | `isNilGoValue` moved to golib as `GoReflect.IsNilGoValue`; one nilness, three readers | reflectlite TestIsNil (operational) |
+| TryTypeAssert's dynamic-struct copy arm: public-only GetField NRE'd on unexported fields, and SetValue on the unboxed struct wrote into a transient box (zeros) | golib `builtin.cs` | reflectlite TestBigUnnamedStruct (operational) |
+| Two converter emission defects: a PARENTHESIZED array field type dropped `= new(N)` (missing `ast.Unparen`), and the delegate lowering ate a bare `chan` parameter as a NAME (`func(chan *integer, *int8)` → `Action<ж<integer>, ж<int8>>`) | converter `visitStructType.go` / `typeSignatureParsing.go` (the leading token is a name only when it is a plain identifier that is not a type-leading keyword — now shared with `convertToCSResultList`) | `structFieldEmission_test.go` |
+| The reflectlite MIRRORS: `valueInterface` (mirrors `packInterfaceValue`), `rtype.PkgPath` (over `GoPackagePath`), the `AssignableTo` retirement to Go's literal body over bridged `implements`+`haveIdenticalUnderlyingType`, and the export_test surface `Field`/`TField`/`Zero` | reflectlite `type_impl.cs`/`value_impl.cs` + **`export_impl_test.cs` — the first TEST-file hand-own**, carried by the new `*_impl_test.cs` convention (`_test.cs` suffix rides the existing production exclusion; `testConversion` globs it into the tests project and digest) | the banked suite itself |
+
+Naming gains shared by both layers (GoTypeDefinednessTests rows, failing-first): generic
+instantiations render Go's bracket form with IMPORT-PATH-qualified args
+(`B[internal/reflectlite_test.A]`), an anonymous-INTERFACE lift renders structurally, and a
+pointer descriptor's dims thread to the pointee (`*[10]int`).
+
+**The gob IsNil root closed on the way** (it is the same bridge): `reflect.Value.IsNil` on an
+INTERFACE-kind value answered about the POINTEE — IsZero for an interface IS IsNil, so gob's
+`!sendZero && v.IsZero()` skipped the field and its "nil pointer inside interface" error path
+was unreachable (carried since r39). The interface arm now answers the interface itself; guarded
+by the ReflectTypedNilInterface behavioral shape (both directions + nil-interface control),
+proven failing-first.
+
+### The three disclosed rows are ONE representational limit, and it now has measured repros
+
+Chan DIRECTION is not in the managed type (`channel<T>` whatever the direction — the reference
+doc's standing ruling). TestAssignableTo's `<-chan int → chan int` row and
+TestTypes/TestSetValue's `chan<- string` stringification are pinned as class `chan-direction`.
+Whoever takes the direction-as-descriptor-cargo arc the doctrine names inherits three measured
+repros and retires the class.
+
+### `encoding/gob` — 100 → 103 of 106; the census HALVES, and it does not bank
+
+Re-measured with everything above in (`-test-timeout 12m`; the first attempt's default-deadline
+run timed out under concurrent load and reported the tail as mass-empty verdicts — reread the
+CLAUDE.md hazard before believing one). Of the four recorded roots, TWO closed:
+`TestNilPointerInsideInterface` (the IsNil arm) and — unowned on the board, closed by this arc's
+shared fixes — BOTH decoder-IGNORE rows (`TestBadData` #8, `TestIgnoreRecursiveType`). The two
+that survive are the already-recorded owners:
+
+| Root | Tests | State |
+|:--|:--|:--|
+| the `array<T>` LENGTH class ("gob: length mismatch in decodeArray"; "wrong type ([3]int) for received field Indirect.A") | `TestEndToEnd`, `TestIndirectSliceMapArray` | reflect bridge — chip, standing |
+| `reflect.ArrayOf` → the `typelinks` stub | `TestIgnoreDepthLimit` | infrastructure-error, standing |
+
+No gob artifact is committed (100→103 is measurement, not a bank).
+
+### Gates
+
+Converter `go test ./...` **ok, 145.9 s, zero failures** (post-merge guard subset re-proven
+against the coordinator's reconciliation) · full `check-no-regression.ps1` **byte-identical
+across all 625 behavioral packages**, 0 NOT MEASURED, 2 advisory warnings, exit 0 · seeded
+whole-stdlib reconvert: **63 marked / 0 clobbered**, SIX movers — all intended consequences of
+the two merged converter arcs composing (xml ×3 + go/constant take the escape-box heap form at
+case-var addresses the cast recorder now observes; runtime retires `readmemstats_m_bySize` for
+the package-level `MemStats_BySize` under the reconciled adoption rule), zero movers from this
+lane's own emission fixes, all three packages build clean · `GolibTests` **155/155** ·
+stdlib-metadata in sync · solution integrity 627/627, path casing 4,506 · full behavioral suite
+**598/598 Transpile+Compile+Target, 572/572 Output** (26 skipped, no `package main`), 0
+failures, 4,473 s — run AFTER the master merge, so it re-proves the union tree · `go2cs.slnx`
+**Build succeeded, 0 errors** (the golib-change gate) · sweeps, all `-SkipBuild` against the
+merged tree's binary: **`internal/reflectlite` PASS 27 (37 s — the bank's closure), `fmt` PASS
+63 + `internal/fmtsort` PASS 3, `encoding/json` PASS 491, `go/types` PASS 557** — every banked
+bridge consumer named as a canary re-validates. Guards proven failing-first
+where stated (field order, unexported-method rule, both naming arms, the behavioral IsNil shape,
+both emission guards).
+
+### The ranked queue, updated
+
+1. **`encoding/gob` (106)** — 103 of 106 behind the `array<T>`-length class (2 tests) + the
+   `typelinks` stub (1); the closest unbanked package on this board.
+2. **The chan-direction cargo arc** — three pinned repros in reflectlite's disclosure manifest;
+   retires a disclosure class.
+3. **`debug/elf` (31)** — CS8183 ×1, unmoved, still the next bounded one-diagnostic item.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

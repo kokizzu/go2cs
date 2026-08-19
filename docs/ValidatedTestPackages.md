@@ -12,8 +12,9 @@ every listed package on demand, reading its own roster straight from the table b
 from a clone with one command.
 
 A disclosure is a specific Go assertion the converted suite provably cannot satisfy — not a skipped
-test, not a tolerance. Three classes exist: two name something the managed runtime cannot *measure*,
-the third something the test host cannot *be*.
+test, not a tolerance. Four classes exist: two name something the managed runtime cannot *measure*,
+one something the test host cannot *be*, and one something the managed representation cannot
+*distinguish*.
 
 - **`alloc-profile`** — a test asserts an exact allocation count; Go's compiler stack-allocates the
   value where .NET must heap-allocate it.
@@ -30,14 +31,21 @@ the third something the test host cannot *be*.
   retire itself, because the tests keep running and keep being compared — publish the host
   self-contained and single-file and those rows begin passing, which breaks the arithmetic below
   until the entry is removed.
+- **`chan-direction`** — a test reads a channel type's DIRECTION, which the managed representation
+  does not carry: a Go channel emits as golib's `channel<T>` whatever its direction, so the bridge
+  can only describe the bidirectional type — `<-chan int` is not distinguishable from `chan int`
+  in assignability, and `chan<- string` stringifies as `chan string`. The recorded remedy is
+  carrying direction as descriptor cargo the way array dims are carried
+  ([reference](ConversionStrategies-Reference.md)); landing it retires this class, and the pinned
+  rows begin passing exactly as `host-limit` describes.
 
 Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **151 / 215 testable packages validated — 70.2%**
+> ### Phase 4 progress: **152 / 215 testable packages validated — 70.7%**
 >
-> **17,272 matching test verdicts · 77 disclosed** *(updated 2026-08-18 — maintained as part of the
+> **17,299 matching test verdicts · 80 disclosed** *(updated 2026-08-18 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -155,6 +163,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/gover) | 5 | | Toolchain version ordering. · [proof](validation/current/internal.gover.md) |
 | [`internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) | 3 | | Minimal integer formatting. · [proof](validation/current/internal.itoa.md) |
 | [`internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) | 1 |  | The pprof protobuf codec's packed varint encoding — round-tripped through the white-box test's own `message` implementation, which is what proved a Go package split across two assemblies still binds its unexported interface methods. · [proof](validation/current/internal.profile.md) |
+| [`internal/reflectlite`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/reflectlite) | 27 | 3 | The reflection mini-bridge end to end — field walks in Go declaration order, the canonical nil func, Go's unexported-method and assignability rules one layer down; chan-direction disclosures. · [proof](validation/current/internal.reflectlite.md) |
 | [`internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) | 17 | | Allocation-capped I/O helpers. · [proof](validation/current/internal.saferio.md) |
 | [`internal/singleflight`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/singleflight) | 5 | | Duplicate-call suppression — and, in `TestDoAndForgetUnsharedRace`, **1000 goroutines that must all park inside one `Do` before it returns**. That row was the cooperative scheduler's whole bill: under the old ThreadPool executor a parked goroutine held shared capacity, so the test climbed a doubling ladder for 28.7 minutes; on a dedicated thread per goroutine it converges at iteration 8 in **1.2 s**. · [proof](validation/current/internal.singleflight.md) |
 | [`internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) | 1 |  | The CPU brand string the runtime reports, read through the converted `internal/cpu` name tables. · [proof](validation/current/internal.sysinfo.md) |

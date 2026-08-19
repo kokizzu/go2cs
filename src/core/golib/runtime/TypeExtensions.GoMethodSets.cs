@@ -204,6 +204,9 @@ public static partial class TypeExtensions
             if (!GoMethodNameMatches(candidate, interfaceMethod.Name, projectGoName))
                 continue;
 
+            if (!UnexportedMethodPackageMatches(interfaceMethod, candidate))
+                continue;
+
             // An open-generic receiver method (a method generic over its receiver's type parameter)
             // carries type parameters in its signature that cannot be compared structurally against the
             // interface's concrete signature — keep the prior name-only match for those.
@@ -215,6 +218,40 @@ public static partial class TypeExtensions
         }
 
         return false;
+    }
+
+    // Go's UNEXPORTED-method rule: two same-named unexported methods from DIFFERENT packages are
+    // DIFFERENT methods, so an interface carrying one (go/ast's `Expr { exprNode() }` marker
+    // pattern) is satisfiable only by a method declared in the INTERFACE's own package. A
+    // name+signature probe cannot see that — reflectlite's TestImplements measured
+    // `*reflectlite_test.notAnExpr` "implementing" ast.Expr through its own private exprNode —
+    // and a false positive in an implements relation is read by every caller as permission.
+    //
+    // The package identities are the managed nesting's: the interface method's declaring
+    // interface sits in its `<pkg>_package` class, and a candidate extension method's declaring
+    // type IS its package class (GoReflect.GoPackageClassPath; a `-tests` whitebox bridge class
+    // carries the production package's [GoPackage] stamp, so an internal-test method rightly
+    // counts as the production package's). An exported method carries no constraint; a
+    // hand-written golib interface has no Go package identity and keeps the pure structural
+    // answer. The stated residual: a PROMOTED method's candidate is the generator's wrapper in
+    // the EMBEDDING package, so a cross-package embed satisfying a foreign marker interface
+    // answers false — the conservative direction, with no measured consumer.
+    private static bool UnexportedMethodPackageMatches(MethodInfo interfaceMethod, MethodInfo candidate)
+    {
+        string goName = interfaceMethod.Name;
+
+        if (goName.StartsWith(ShadowVarMarker, StringComparison.Ordinal))
+            goName = goName[ShadowVarMarker.Length..];
+
+        if (goName.Length == 0 || char.IsUpper(goName[0]))
+            return true;
+
+        string interfacePackage = GoReflect.GoPackageClassPath(interfaceMethod.DeclaringType?.DeclaringType);
+
+        if (interfacePackage.Length == 0)
+            return true;
+
+        return string.Equals(interfacePackage, GoReflect.GoPackageClassPath(candidate.DeclaringType), StringComparison.Ordinal);
     }
 
     /// <summary>

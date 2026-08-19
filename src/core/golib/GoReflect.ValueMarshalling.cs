@@ -94,6 +94,26 @@ public static partial class GoReflect
     private static readonly ConcurrentDictionary<Type, object?> s_canonicalNils = new();
 
     /// <summary>
+    /// The canonical typed nil for a FUNC type — the second shape of the one-nil-encoding rule
+    /// <see cref="CanonicalNilPointer"/> established for pointers. A Go func emits as a managed
+    /// delegate, whose nil IS <c>null</c>: correct in every func-typed slot, and type-erasing the
+    /// moment it crosses into INTERFACE space, where Go packs (type=func-type, value=nil) — a
+    /// NON-nil interface `%T` prints and a type assertion succeeds against with a nil result
+    /// (reflectlite's TestFunctionValue/TestTypes measured `&lt;nil&gt;` where Go prints
+    /// <c>func()</c>). The carrier exists ONLY at that boundary: the eface packers
+    /// (reflect's packInterfaceValue / reflectlite's valueInterface) mint it for a null read out
+    /// of a FUNC-kinded slot, and every read-back path — <c>GoDynamicTypeOf</c>, the type
+    /// assertion, <c>TryMarshalAssignable</c>, <c>IsNilGoValue</c> — resolves it back to the nil
+    /// delegate, so it can never be stored into a func-typed slot or observed as itself.
+    /// </summary>
+    public static object CanonicalNilFunc(Type delegateType)
+    {
+        return s_canonicalNilFuncs.GetOrAdd(delegateType, static t => new NilFuncValue(t));
+    }
+
+    private static readonly ConcurrentDictionary<Type, NilFuncValue> s_canonicalNilFuncs = new();
+
+    /// <summary>
     /// Go's <c>implements</c> relation over managed types: <paramref name="ifaceType"/> is an
     /// interface that <paramref name="valueType"/> satisfies nominally OR structurally by Go
     /// method-set rules — the SAME probe the emitted <c>_&lt;T&gt;</c> asserts use, so reflection
@@ -118,6 +138,41 @@ public static partial class GoReflect
             return false;
 
         return ifaceType.IsAssignableFrom(valueType) || valueType.StructurallyImplements(ifaceType);
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Func<object, bool>?> s_nilOperators = new();
+
+    /// <summary>
+    /// Go nilness of a boxed container/pointer/func value, through the SAME machinery the
+    /// emitted <c>x == nil</c> comparisons use: the structural pointer predicate
+    /// (<see cref="INilPointer"/>), the map's representational nilness, or the type's
+    /// generated/golib <c>== nil</c> operator (slices raw and named, channels, wrappers) — one
+    /// rule, never a second nilness implementation. Home here (moved from reflect's
+    /// value_impl.cs, 2026-08-18) so <c>reflect.Value.IsNil</c> and internal/reflectlite's
+    /// mirror read one answer: reflectlite's own switch lacked the operator probe, so a nil
+    /// slice/chan read out of a struct field answered NOT nil (its TestIsNil rows).
+    /// </summary>
+    public static bool IsNilGoValue(object? cur)
+    {
+        switch (cur)
+        {
+            case null:
+                return true;
+            case INilPointer nilable:
+                return nilable.IsNilPointer;
+            case IMap m:
+                return m.IsNil;
+            case NilFuncValue:
+                return true;
+        }
+
+        Func<object, bool>? probe = s_nilOperators.GetOrAdd(cur.GetType(), static t =>
+        {
+            MethodInfo? op = t.GetMethod("op_Equality", BindingFlags.Public | BindingFlags.Static, [t, typeof(NilType)]);
+            return op is null ? null : v => (bool)op.Invoke(null, [v, default(NilType)])!;
+        });
+
+        return probe is not null && probe(cur);
     }
 
     /// <summary>
@@ -154,6 +209,15 @@ public static partial class GoReflect
 
             marshalled = null;
             return !dstType.IsValueType;
+        }
+
+        // The CANONICAL NIL FUNC resolves back to the nil delegate at every store: into its own
+        // delegate type as null (the slot representation of a nil func), never into a different
+        // func type — Go's identity rule, since two distinct func types are never assignable.
+        if (src is NilFuncValue nilFunc)
+        {
+            marshalled = null;
+            return dstType == nilFunc.Type;
         }
 
         // Identity — including a pointer-sourced interface value unwrapping to its receiver box

@@ -60,6 +60,10 @@ internal static void report(@string label, reflectꓸValue v) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string newBlobElemˢ = "new(*Blob).Elem()"u8;
 
+[GoType("dyn")] partial struct main_si {
+    public any I;
+}
+
 internal static void Main() {
     var s = new slice<ж<Blob>>(2);
     s[1] = Ꮡ(new Blob(Data: "second"u8));
@@ -88,6 +92,14 @@ internal static void Main() {
     var iface = rs.Index(0).Interface();
     fmt.Printf("roundtrip: ==(*Blob)(nil) %v, ==nil %v\n"u8, iface == ((ж<Blob>)nil), iface == default!);
     fmt.Printf("elem-of-typed-nil valid=%v\n"u8, rs.Index(0).Elem().IsValid());
+    ж<Blob> np = default!;
+    var si = new main_si(I: np.OrTypedNil());
+    var f = reflect.ValueOf(si).Field(0);
+    fmt.Printf("ifaceField: kind=%v isNil=%v isZero=%v elemKind=%v elemIsNil=%v\n"u8,
+        f.Kind(), f.IsNil(), f.IsZero(), f.Elem().Kind(), f.Elem().IsNil());
+    var sn = new main_si();
+    var fn = reflect.ValueOf(sn).Field(0);
+    fmt.Printf("nilIfaceField: isNil=%v isZero=%v elemValid=%v\n"u8, fn.IsNil(), fn.IsZero(), fn.Elem().IsValid());
 }
 
 } // end main_package

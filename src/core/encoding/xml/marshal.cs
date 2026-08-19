@@ -215,9 +215,10 @@ internal static slice<byte> endProcInst = slice<byte>("?>"u8);
 public static error EncodeToken(this ж<Encoder> Ꮡenc, ΔToken t) {
     var p = Ꮡenc.of(Encoder.Ꮡp);
     switch (t.type()) {
-    case StartElement tΔ1: {
+    case StartElement tΔ1ᴛ1: {
+        ref var tΔ1 = ref heap(tΔ1ᴛ1, out var ᏑtΔ1);
         {
-            var err = p.writeStart(Ꮡ(tΔ1)); if (err != default!) {
+            var err = p.writeStart(ᏑtΔ1); if (err != default!) {
                 return err;
             }
         }
