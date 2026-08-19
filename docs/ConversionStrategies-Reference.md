@@ -9387,8 +9387,46 @@ Scoped to single-result literals in `any` slots (`CallExprContext.emptyInterface
 `LambdaContext.untypedInterfaceTarget` → convFuncLit's explicit-return-type mechanism);
 target-typed positions are untouched — their delegate supplies the type, and an explicit return
 type there could only add identity-match constraints against hand-written stub delegate types.
-Multi-result `any`-slot literals keep natural tuple typing (no demonstrated consumer). Guarded
+Multi-result `any`-slot literals kept natural tuple typing until html/template supplied the
+consumer that caveat was waiting for (see below). Guarded
 by the `LiftedLocalTypes` behavioral test; operationally by testing/quick's banked suite.
+
+**The same slot is reached through a KEYED COMPOSITE, and there the loss is total rather than
+merely imprecise.** The argument position above was the first consumer; a `map[K]any` value, an
+`any` struct field and a sparse-`[N]any` element are the same empty-interface slot arrived at
+through `convKeyValueExpr` instead of `convExprList`, and they were not marked. For a literal
+with a reachable `return` the natural type is at least a func type of the right arity, so the
+defect only narrowed a result type. For a literal whose body **never completes normally** there
+is no return statement to infer from at all, so C# infers `Action` and the Go result type is
+gone outright:
+```go
+FuncMap{"die": func() bool { panic("die") }}   // text/template exec_test
+```
+```csharp
+["die"u8] = bool () => { throw panic("die"); }  // was: () => { throw panic("die"); }
+```
+The reflection bridge then reports `NumOut() == 0` — truthfully, because the datum is missing
+from the emission, not from the bridge — and `text/template`'s own `goodFunc` rejects a function
+Go accepts ("function die has 0 return values; should be 1 or 2"), panicking as the FuncMap is
+registered and taking **16 of that package's 52 verdicts** with it. The mark is applied where the
+value's declared slot is already resolved, so all three keyed forms are covered by one predicate;
+a slot with a CONCRETE func type (`map[string]func() bool`) has a delegate target and is
+deliberately left exactly as it was. Guarded by `untypedInterfaceFuncLit_test.go`
+(`TestUntypedInterfaceFuncLitResultType` — the panic-only literal, a normal-return literal, an
+`any` struct field, the MULTI-result arm, and the concrete-slot control), each arm proven
+failing-first independently.
+
+**The MULTI-result arm has the same owner from the opposite end.** The single-result rule above
+was scoped for want of a demonstrated consumer; `html/template`'s escape_test is one. Its
+`FuncMap{"pred": func(a ...any) (any, error) {…}}` renders every arm as a C# tuple carrying a
+typeless element — `return (i - 1, default!)` and `return (default!, fmt.Errorf(…))` — so where
+the panic-only literal has NO arm to infer from, this has arms that contribute nothing. Neither
+fixes a delegate type, and inference fails outright (CS8917, then CS1662/CS8716 on each return).
+The declared result tuple is stated explicitly through `generateResultSignature`, the same helper
+the generic-inference arm already used:
+```csharp
+["pred"u8] = (any, error) (params ꓸꓸꓸany aʗp) => { … }
+```
 
 ### Lifted function-local types: anonymous structs dedupe, named types carry [GoLocalName]
 C# forbids type declarations in method bodies, so the converter lifts function-local types to

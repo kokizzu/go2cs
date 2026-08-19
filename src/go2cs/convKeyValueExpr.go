@@ -126,15 +126,6 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 		}
 	}
 
-	// Thread the enclosing statement's hoist target so a func-literal VALUE's capture
-	// snapshot decls hoist instead of dumping inline in the argument list (elf file.go's
-	// readSeekerFromReader{reset: func() {…}}, CS1003 cascade ×6).
-	if context.deferredDecls != nil {
-		hoistLambdaContext := DefaultLambdaContext()
-		hoistLambdaContext.deferredDecls = context.deferredDecls
-		valueContexts = append(valueContexts, hoistLambdaContext)
-	}
-
 	// The value's declared SLOT — a struct field, or the map/array/slice element the keyed
 	// composite stores into. Resolved before the value is rendered because an EMPTY-interface
 	// slot changes the rendering of a POINTER value (it crosses as its BOX, not as a deref
@@ -153,6 +144,34 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 		case *types.Slice:
 			valueSlotType = u.Elem()
 		}
+	}
+
+	// A func LITERAL in an EMPTY-interface value slot is NATURAL-typed by C# for exactly the
+	// reason one in an `any` ARGUMENT slot is: there is no delegate target, so C# derives the
+	// delegate type from the body. A literal whose body never completes normally has NO return
+	// statement to derive from, so C# infers `Action` and the Go RESULT TYPE IS LOST —
+	// `FuncMap{"die": func() bool { panic("die") }}` (text/template's exec_test funcs) emitted
+	// `["die"u8] = () => { throw panic("die"); }`, which the reflection bridge then describes
+	// truthfully as a ZERO-result func, so text/template's own goodFunc rejects a function Go
+	// accepts and every FuncMap holding one panics at registration (16 of 52 verdicts).
+	// Marking the slot makes convFuncLit state the declared Go result type explicitly — the same
+	// treatment CallExprContext.emptyInterfaceArgs already gives the argument position, reached
+	// here through the KEYED composite forms (map value, `any` struct field, sparse-array
+	// element) that never route through convExprList's argument plumbing.
+	untypedInterfaceLambda := false
+
+	if _, valueIsFuncLit := keyValueExpr.Value.(*ast.FuncLit); valueIsFuncLit {
+		untypedInterfaceLambda = isEmptyInterfaceTarget(valueSlotType)
+	}
+
+	// Thread the enclosing statement's hoist target so a func-literal VALUE's capture
+	// snapshot decls hoist instead of dumping inline in the argument list (elf file.go's
+	// readSeekerFromReader{reset: func() {…}}, CS1003 cascade ×6).
+	if context.deferredDecls != nil || untypedInterfaceLambda {
+		hoistLambdaContext := DefaultLambdaContext()
+		hoistLambdaContext.deferredDecls = context.deferredDecls
+		hoistLambdaContext.untypedInterfaceTarget = untypedInterfaceLambda
+		valueContexts = append(valueContexts, hoistLambdaContext)
 	}
 
 	valueContexts = v.emptyInterfacePointerContexts(valueSlotType, keyValueExpr.Value, valueContexts)
