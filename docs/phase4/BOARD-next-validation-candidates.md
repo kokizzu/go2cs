@@ -12271,4 +12271,103 @@ so `GolibTests`/full-behavioral/both-`slnx` are not owed. Proof page converter-g
 3. **`panic(err)` renders an address, not the message** — golib `PanicException`.
 4. **`encoding/gob` (106)** — unchanged at 103 of 106; still the closest unbanked package.
 
+
+## ⛔ MEASURED — `internal/concurrent` does not bank and the reason is STRUCTURAL: its test file is a whitebox consumer of an implementation the hand-own deliberately replaced. The crash behind it is rooted and fixed (2026-08-19, lane `claude/row-harvest-3`)
+
+The one-diagnostic-remeasure entry left this row with two open items — *"CS0426 ×1, unmoved. Plus a
+finding the board did not have: the converter CRASHES on this package's hand-owned file."* Both are
+now resolved, in opposite directions: **the crash is a bounded converter defect, fixed and gated;
+the CS0426 is not a converter defect at all and no converter change can close it.**
+
+### The CS0426 reproduces exactly, and it is the hand-own's own consequence
+
+`hashtriemap_test.cs(406,145): error CS0426: The type name 'node<,>' does not exist in the type
+'concurrent_package'` — still the only diagnostic. Line 406 is `dumpNode`'s signature:
+
+```go
+func dumpMap[K, V comparable](ht *HashTrieMap[K, V])                        { dumpNode(ht, &ht.root.node, 0) }
+func dumpNode[K, V comparable](ht *HashTrieMap[K, V], n *node[K, V], depth int) { … }
+```
+
+Two facts settle it. First, **`dumpMap` is never called by any `Test`** — `dumpNode` is reached only
+from `dumpMap` and from itself, so this is dead interactive-debugging code that Go nonetheless
+compiles as part of the package. Second, `src/core/internal/concurrent/hashtriemap.cs` is a
+`[module: GoManualConversion]` **native replacement**: a `ConcurrentDictionary`-backed `mapStore`,
+with no `node`, no `indirect`, no `entry`, and no trie at all. `dumpNode`'s body reads `n.isEntry`,
+`n.entry()`, `n.indirect()`, `i.parent`, `i.dead`, `i.children`, `e.key`, `e.value`, `e.overflow`
+and `ht.keyHash(…, ht.seed)` — the complete private structure of the implementation the hand-own
+exists to *not* be.
+
+So this is a **new shape**, and worth naming for the packages behind it: a hand-owned native
+replacement is invisible to production consumers, which only ever touch the public API — but a
+package's own `_test.go` is a **WHITEBOX** consumer and may reference the replaced implementation's
+internals. Satisfying it means either reimplementing the hash-trie (abandoning the replacement, and
+with it the reason it exists) or declaring dead scaffolding for dead code, which is the
+fake-but-plausible move `hashtriemap.cs`'s own header comment forbids. Neither is taken. **20
+verdicts stay unmeasured**, and this row should be read as closed-by-design rather than pending.
+
+The class is likely small but is not measured: the other two fully-hand-owned packages
+(`internal/godebug`, `internal/weak`) and the partial hand-owns each carry the same exposure iff
+their suites reach past the public API.
+
+### The crash: one missing struct field in a duplicated literal
+
+`-debug` (which suppresses the recover) turns the warning into a stack in four seconds:
+
+```
+panic: runtime error: invalid memory address or nil pointer dereference
+strings.(*Builder).String(...)
+main.(*Visitor).visitFile(…) visitFile.go:106
+main.emitAutoConversionSiblings.func1(…) autoSiblingOperations.go:114
+```
+
+`emitAutoConversionSiblings` hand-rolled a copy of `newFileVisitor`'s literal — the constructor
+documented as *"constructs the per-file Visitor with every eagerly-required field initialized"* — and
+the copy had drifted by two fields: `blankImportInits` (nil, so `visitFile`'s
+`v.blankImportInits.String()` dereferences nil — the panic) and `manualConversion` (false, though
+the field's whole meaning is "this file's destination `.cs` is hand-owned and the emitted text lands
+in the `.cs.auto` review sibling", which is precisely this pass). It calls the constructor now.
+
+**Why it hid for so long, twice over.** The emitter runs ONLY in `conversionDriver`'s
+`unmarkedFileCount == 0` branch — a FULLY hand-owned package — so exactly the class of three reach
+it, and all three are the files the warning names. A PARTIAL hand-own takes the normal per-file loop
+with its write target redirected, which is why the `ManualConversionSiblingState` behavioral guard
+never caught this: it is a partial package and has always worked. And the recover phrases the panic
+as `visit file error … in "hashtriemap.go"`, which reads as a defect in that file — the hand-owned
+file's own header comment had duly recorded the wrong cause (*"panics visiting this generic file"*,
+*"runs only six of the whole-package pre-passes"*). Genericity and the pre-pass set had nothing to do
+with it; both comments are corrected in place.
+
+### Measured by A/B of two seeded whole-stdlib reconverts
+
+| | pre-fix | post-fix |
+|:--|:--|:--|
+| `visit file error` warnings | 3 (hashtriemap.go, godebug.go, pointer.go) | **0** |
+| `.cs.auto` present | 20 | 22 (+`internal/concurrent`, +`internal/weak` — neither had EVER been produced) |
+| freshly emitted | — | 21 of 22 (`math/unsafe.cs.auto` is seeded-only) |
+| differing among the 20 common | — | **1** — `internal/godebug/godebug.cs.auto`, and only because it went from not-emitted to emitted |
+| marker gate | 63 / 0 | 63 / 0 |
+| corpus movers | 3 (both classified, adopted) | 1 (`gcimporter.cs`, row-harvest-2's carry) |
+
+The 19 byte-identical siblings are the evidence that the `manualConversion` switch is output-neutral
+for everything that was already being produced, and `ManualConversionSiblingState` regenerating
+`state.cs.auto` byte-identically is the positive control that the guard still exercises the path.
+
+### Two backlog corrections this measurement produced
+
+- **CleanupBacklog item 18 is much smaller than recorded.** Of 20 tracked corpus `.cs.auto` files,
+  **19 were already byte-fresh** against today's converter; the single stale one
+  (`internal/godebug`) was stale *because* of this crash and is adopted here. The recorded "11 of 16
+  were stale at r40" no longer describes the tree.
+- **`math/unsafe.cs.auto` is a tracked ORPHAN.** Its principal shed its `GoManualConversion` marker
+  at r41, so no sibling is emitted for it any more, but the file is still tracked. Nothing reads it;
+  it should be deleted when item 18 is levelled.
+
+### Gates
+
+Converter `go test ./...` **ok, 240.5 s, zero failures** · full `check-no-regression.ps1`
+**byte-identical across all 625 behavioral packages**, 0 NOT MEASURED · both seeded reconverts above ·
+no golib and no `go2cs-gen` change. No roster row, no proof page, no disclosures, no converted test
+sources committed: one structural non-bank, one converter fix.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

@@ -52,9 +52,12 @@ using go.golib;
 // containsManualConversionMarker). hashtriemap.go is this package's ONLY Go file, so marking it makes
 // the whole package hand-owned: the driver `continue`s on unmarkedFileCount == 0 and stops re-emitting
 // internal.concurrent.csproj, package_info.cs and README.md as well (the position internal/godebug is
-// in). No hashtriemap.cs.auto review sibling is produced either — the fully-hand-owned branch runs only
-// six of the whole-package pre-passes and panics visiting this generic file. Board-rowed; the marker's
-// protection is unaffected and is proven in both directions by a seeded reconvert.
+// in). A hashtriemap.cs.auto review sibling IS produced, since 2026-08-19: the fully-hand-owned
+// branch used to panic here, and the cause was neither this file's genericity nor its reduced set of
+// whole-package pre-passes — emitAutoConversionSiblings hand-rolled a copy of newFileVisitor that had
+// drifted, leaving `blankImportInits` nil for visitFile to dereference. It builds through the real
+// constructor now. The marker's protection is unaffected and is proven in both directions by a seeded
+// reconvert.
 [module: go.GoManualConversion]
 
 namespace go.@internal;

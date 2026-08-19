@@ -112,8 +112,10 @@ using System.Runtime.CompilerServices;
 // containsManualConversionMarker). pointer.go is this package's ONLY Go file, so marking it makes the
 // whole package hand-owned: the driver `continue`s on unmarkedFileCount == 0 and stops re-emitting
 // internal.weak.csproj, package_info.cs and README.md as well (the position internal/godebug and
-// internal/concurrent are in). No pointer.cs.auto review sibling is produced either. Board-rowed; the
-// marker's protection is proven in both directions by a seeded reconvert.
+// internal/concurrent are in). A pointer.cs.auto review sibling IS produced, since 2026-08-19 — the
+// fully-hand-owned branch's sibling emitter nil-dereferenced until it was built through the real
+// per-file Visitor constructor. The marker's protection is proven in both directions by a seeded
+// reconvert.
 [module: go.GoManualConversion]
 
 namespace go.@internal;

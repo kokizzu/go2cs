@@ -122,7 +122,7 @@ public static ж<Setting> New(@string name) {
 
 // String returns a printable form for the setting: name=value.
 public static @string String(this ж<Setting> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     return s.Name() + "="u8 + Ꮡs.Value();
 }
@@ -139,7 +139,7 @@ public static void IncNonDefault(this ж<Setting> Ꮡs) {
 }
 
 internal static void register(this ж<Setting> Ꮡs) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (s.info == nil || (~s.info).Opaque) {
         throw panic("godebug: unexpected IncNonDefault of " + s.name);
@@ -181,7 +181,7 @@ public static @string Value(this ж<Setting> Ꮡs) {
         }
     });
     var v = Ꮡs.of(Setting.Ꮡvalue).Load().Value;
-    if (v.bisect != nil && !v.bisect.Stack(new runtimeStderrжWriter(Ꮡstderr))) {
+    if (v.bisect != nil && !v.bisect.Stack(new «ADAPTER:72756e74696d655374646572727c40696e7465726e616c2e6269736563745f7061636b6167652e577269746572:ADAPTER»(Ꮡstderr))) {
         return ""u8;
     }
     return v.text;
@@ -198,7 +198,7 @@ internal static ж<setting> lookup(@string name) {
     s.Value.info = godebugs.Lookup(name);
     s.of(setting.Ꮡvalue).Store(Ꮡempty);
     {
-        var (v, loaded) = Ꮡcache.LoadOrStore(name, s); if (loaded) {
+        var (v, loaded) = Ꮡcache.LoadOrStore(name, s.OrTypedNil()); if (loaded) {
             // Lost race: someone else created it. Use theirs.
             return v._<ж<setting>>();
         }
@@ -253,25 +253,30 @@ internal static ref sync.Mutex updateMu => ref ᏑupdateMu.Value;
 // update records an updated GODEBUG setting.
 // def is the default GODEBUG setting for the running binary,
 // and env is the current value of the $GODEBUG environment variable.
-internal static void update(@string def, @string env) => func((defer, recover) => {
-    ᏑupdateMu.Lock();
-    defer(ᏑupdateMu.Unlock);
-    // Update all the cached values, creating new ones as needed.
-    // We parse the environment variable first, so that any settings it has
-    // are already locked in place (did[name] = true) before we consider
-    // the defaults.
-    var did = new map<@string, bool>();
-    parse(did, env);
-    parse(did, def);
-    // Clear any cached values that are no longer present.
-    var didʗ1 = did;
-    Ꮡcache.Range((any name, any s) => {
-        if (!didʗ1[name._<@string>()]) {
-            Ꮡ((~s._<ж<setting>>()).value).Store(Ꮡempty);
-        }
-        return true;
-    });
-});
+internal static void update(@string def, @string env) {
+    GoFrame ᒐ = default;
+    try {
+        ᏑupdateMu.Lock();
+        defer(ᏑupdateMu.Unlock, ref ᒐ);
+        // Update all the cached values, creating new ones as needed.
+        // We parse the environment variable first, so that any settings it has
+        // are already locked in place (did[name] = true) before we consider
+        // the defaults.
+        var did = new map<@string, bool>();
+        parse(did, env);
+        parse(did, def);
+        // Clear any cached values that are no longer present.
+        var didʗ1 = did;
+        Ꮡcache.Range((any name, any s) => {
+            if (!didʗ1[name._<@string>()]) {
+                s._<ж<setting>>().of(setting.Ꮡvalue).Store(Ꮡempty);
+            }
+            return true;
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
 
 // parse parses the GODEBUG setting string s,
 // which has the form k=v,k2=v2,k3=v3.
