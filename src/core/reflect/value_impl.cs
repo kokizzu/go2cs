@@ -1559,6 +1559,42 @@ internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
     return structFieldOf(st, GoReflect.GoFields(st)[(int)i], [i]);
 }
 
+// FieldByIndex walks an index PATH, one hop per element, and is Go's own loop verbatim — the only
+// thing hand-owned is where the walk STARTS.
+//
+// Go seeds it by reinterpreting the rtype as a *structType and taking `&t.Type`. That reinterpret has
+// no managed form: structType is LARGER than rtype (it carries PkgPath and Fields past the embedded
+// Type), and ж.Reinterpret aliases storage only when the destination FITS in the source, so the pair
+// falls to the raw-address route and the derived box's embedded descriptor carries no managed cargo.
+// Its sysType is null, so the seeding statement alone tripped canonType's synthType-was-bypassed
+// assertion — a Debug.Assert, which KILLS THE PROCESS (0x80131623) rather than failing a test.
+// encoding/xml reaches it from getTypeInfo → addFieldInfo whenever it unmarshals a struct with a
+// promoted field, and 15 of its verdicts came back EMPTY rather than failed, which reads like a
+// missing suite instead of one dead call.
+//
+// `common()` IS the descriptor Go's `&t.Type` names after that reinterpret — the rtype's own,
+// synthType-stamped abi.Type — so seeding from it is the same Go value by a route the managed model
+// can express, and no structType is ever synthesized. Every subsequent hop goes through the
+// hand-owned rtype.Field above, so the promoted-field projection stays the one GoReflect provides.
+internal static StructField FieldByIndex(this ж<rtype> Ꮡt, slice<nint> index) {
+    if (Ꮡt.Kind() != Struct) {
+        throw panic("reflect: FieldByIndex of non-struct type " + Ꮡt.String());
+    }
+    StructField f = default!;
+    f.Type = toType(Ꮡt.common());
+    foreach (var (i, x) in index) {
+        if (i > 0) {
+            var ft = f.Type;
+            if (ft.Kind() == ΔPointer && ft.Elem().Kind() == Struct) {
+                ft = ft.Elem();
+            }
+            f.Type = ft;
+        }
+        f = f.Type.Field(x);
+    }
+    return f;
+}
+
 // The descriptor for one projected field of `st`, reached by `index`. Split out of Field so a
 // PROMOTED field (whose index is a PATH through one or more embeds) is described by the same rule
 // as a direct one — everything but Index is the deepest field's own property.

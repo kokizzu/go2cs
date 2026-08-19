@@ -323,6 +323,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"rtype.Elem":     goosAny,
 		"rtype.Field":    goosAny,
 		"rtype.NumField": goosAny,
+		// rtype.FieldByIndex reinterprets the rtype as a *structType — and that one is not
+		// representable in the managed model, because structType is LARGER than rtype (it carries
+		// PkgPath and Fields beyond the embedded Type). ж.Reinterpret takes the aliasing path only
+		// when the destination FITS in the source, so this pair falls to the raw-address route and
+		// the derived box's embedded abi.Type carries no managed cargo — its sysType is null, and
+		// the very first statement, toType(&t.Type), trips canonType's synthType-was-bypassed
+		// assertion. That is a Debug.Assert, so the PROCESS DIES (0x80131623): encoding/xml reaches
+		// it through getTypeInfo → addFieldInfo on every Unmarshal of a struct with a promoted
+		// field, and 15 of its verdicts came back EMPTY rather than failed. Hand-owned to seed from
+		// the rtype's OWN descriptor via common() — which is the same abi.Type Go's &t.Type names
+		// after the reinterpret — so no structType is ever synthesized. The walk itself is Go's,
+		// unchanged, and each hop goes through the already-hand-owned rtype.Field.
+		"rtype.FieldByIndex": goosAny,
 		// rtype.NumMethod reads uncommon() method tables a synthesized descriptor never
 		// populates, so it answered 0 for every concrete type — and encoding/json's indirect()
 		// gates its Unmarshaler/TextUnmarshaler discovery on NumMethod() > 0, so no custom
