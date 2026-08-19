@@ -46,6 +46,28 @@ type intPtr *int
 
 type counter int
 
+// layout exercises the two Go rules a C# struct layout does NOT share: `pad` is a ZERO-SIZE Go
+// struct and occupies nothing (its C# surrogate is one byte), and `big` carries an int64 so it
+// lands on an 8-byte boundary.
+type empty struct{}
+
+type layout struct {
+	pad   empty
+	small uint32
+	big   int64
+	tail  uint8
+}
+
+type inner struct {
+	X uint32
+	Y int64
+}
+
+type outer struct {
+	Head uint16
+	inner
+}
+
 func main() {
 	t := reflect.TypeOf(record{})
 
@@ -106,4 +128,23 @@ func main() {
 	// asn1's getUniversalType picks TagSet over TagSequence with exactly this probe.
 	nm := reflect.TypeOf(intSET{}).Name()
 	fmt.Println("SET suffix:", len(nm) >= 3 && nm[len(nm)-3:] == "SET")
+
+	// StructField.OFFSET, from the same descriptor projection as Tag/PkgPath/Anonymous above and
+	// over the same memoized Go (amd64) layout walk internal/abi's StructType already publishes —
+	// so a probe of the reflect descriptor and a probe of the abi one cannot disagree about one
+	// struct. Two properties Go's own layout rules decide and a naive C# `Marshal.OffsetOf` would
+	// not: a Go ZERO-SIZE field occupies nothing, and an 8-aligned field is padded to its boundary.
+	// sync/atomic's TestAutoAligned64 is the measured consumer (`Field(1).Offset == 8`), and it read
+	// 0 — a real answer for a field at the front of a struct, so the unpopulated descriptor looked
+	// like a LAYOUT failure rather than a missing read.
+	lt := reflect.TypeOf(layout{})
+	for i := 0; i < lt.NumField(); i++ {
+		f := lt.Field(i)
+		fmt.Printf("offset %-6s %d\n", f.Name, f.Offset)
+	}
+
+	// A PROMOTED field's offset is relative to its OWN declaring struct, never to the outer one —
+	// Go's rule, and the reason the index PATH's last hop is what selects the offset.
+	of, _ := reflect.TypeOf(outer{}).FieldByName("Y")
+	fmt.Printf("promoted Y offset=%d index=%v\n", of.Offset, of.Index)
 }

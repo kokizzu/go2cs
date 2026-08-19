@@ -8,6 +8,7 @@ global using static global::go.@internal.reflectlite_package;
 global using static global::go.@internal.reflectlite_internal_test_package;
 
 // <ImportedTypeAliases>
+global using Kind = go.@internal.abi_package.ΔKind;
 global using abiꓸArrayType = go.@internal.abi_package.ΔArrayType;
 global using abiꓸChanDir = go.@internal.abi_package.ΔChanDir;
 global using abiꓸFuncType = go.@internal.abi_package.ΔFuncType;

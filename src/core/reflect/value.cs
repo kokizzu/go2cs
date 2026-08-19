@@ -1878,67 +1878,17 @@ public static void SetPointer(this ΔValue v, @unsafe.Pointer x) {
 
 // go2cs generated this placeholder — func Slice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string iKCapˢ = "i < k <= cap"u8;
-
-// Reinterpret as *unsafeheader.Slice to edit.
-// do not advance pointer, to avoid pointing beyond end of slice
-
-// Slice3 is the 3-index form of the slice operation: it returns v[i:j:k].
-// It panics if v's Kind is not [Array] or [Slice], or if v is an unaddressable array,
-// or if the indexes are out of bounds.
-public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
-    nint cap = default!;
-    ж<sliceType> typ = default!;
-    @unsafe.Pointer @base = default!;
-    {
-        ΔKind kind = v.kind();
-        var exprᴛ1 = kind;
-        if (exprᴛ1 == Array) {
-            if ((flag)(v.flag & flagAddr) == 0) {
-                throw panic("reflect.Value.Slice3: slice of unaddressable array");
-            }
-            var tt = v.typ().Reinterpret<abi.Type, arrayType>();
-            cap = (nint)(~tt).Len;
-            typ = (~tt).Slice.Reinterpret<abi.Type, sliceType>();
-            @base = v.ptr;
-        }
-        else if (exprᴛ1 == ΔSlice) {
-            typ = v.typ().Reinterpret<abi.Type, sliceType>();
-            var sΔ2 = (ж<unsafeheader.Slice>)(uintptr)(v.ptr);
-            @base = sΔ2.Value.Data;
-            cap = sΔ2.Value.Cap;
-        }
-        else { /* default: */
-            throw panic(Ꮡ(new ValueError("reflect.Value.Slice3"u8, v.kind())));
-        }
-    }
-
-    if (i < 0 || j < i || k < j || k > cap) {
-        throw panic("reflect.Value.Slice3: slice index out of bounds");
-    }
-    // Declare slice so that the garbage collector
-    // can see the base pointer in it.
-    ref var x = ref heap<slice<@unsafe.Pointer>>(out var Ꮡx);
-    // Reinterpret as *unsafeheader.Slice to edit.
-    var s = Ꮡx.Reinterpret<slice<@unsafe.Pointer>, unsafeheader.Slice>();
-    s.Value.Len = j - i;
-    s.Value.Cap = k - i;
-    if (k - i > 0){
-        s.Value.Data = (uintptr)arrayAt(@base, i, (~typ).Elem.Size(), iKCapˢ);
-    } else {
-        // do not advance pointer, to avoid pointing beyond end of slice
-        s.Value.Data = @base;
-    }
-    var fl = (flag)((flag)(v.flag.ro() | flagIndir) | ((flag)(uintptr)(nuint)ΔSlice));
-    return new ΔValue(typ.of(sliceType.ᏑSliceType).of(abi.SliceType.ᏑType).Common(), new @unsafe.Pointer(Ꮡx), fl);
-}
+// go2cs generated this placeholder — func Slice3 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func String is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string invalidValueˢ = "<invalid Value>"u8;
 
+// Reinterpret as *unsafeheader.Slice to edit.
+// do not advance pointer, to avoid pointing beyond end of slice
+// Reinterpret as *unsafeheader.Slice to edit.
+// do not advance pointer, to avoid pointing beyond end of slice
 // stringNonString is split out to keep String inlineable for string kinds.
 internal static @string stringNonString(this ΔValue v) {
     if (v.kind() == Invalid) {

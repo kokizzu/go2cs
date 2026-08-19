@@ -632,6 +632,39 @@ public static partial class GoReflect
         };
     }
 
+    private static readonly ConcurrentDictionary<Type, Func<object, nint, nint, nint, object>> s_sliceWindow3Makers = new();
+
+    /// <summary>
+    /// The FULL slice expression's window — <c>[low:high:max]</c>, Go's
+    /// <c>reflect.Value.Slice3</c>. Identical to <see cref="SliceWindow(object,Type,nint,nint)"/>
+    /// except that <paramref name="max"/> bounds the result's CAPACITY, which may end before the
+    /// shared backing store does.
+    /// </summary>
+    /// <remarks>
+    /// Bounds are RELATIVE to the source container, exactly as Go's <c>s[i:j:k]</c> is — so a
+    /// window of a window composes without the caller tracking absolute offsets. The caller has
+    /// already applied Go's <c>0 &lt;= i &lt;= j &lt;= k &lt;= cap</c> test and its panic text;
+    /// the golib bounds check behind this is the backstop, not the contract.
+    /// </remarks>
+    public static object SliceWindow(object container, Type elemType, nint low, nint high, nint max)
+    {
+        return s_sliceWindow3Makers.GetOrAdd(elemType, static et =>
+            typeof(GoReflect).GetMethod(nameof(sliceWindow3), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(et).CreateDelegate<Func<object, nint, nint, nint, object>>())(container, low, high, max);
+    }
+
+    private static object sliceWindow3<E>(object container, nint low, nint high, nint max)
+    {
+        return container switch
+        {
+            slice<E> s => s.Reslice(low, high, max),
+            array<E> a => new slice<E>((E[])a, low, high, max),
+            ISlice<E> view => new slice<E>(view).Reslice(low, high, max),
+            _ => throw new InvalidOperationException($"SliceWindow: unsupported container {container.GetType()}")
+        };
+    }
+
+
     private static readonly ConcurrentDictionary<Type, Func<object?, nint, object?>> s_sliceGrowers = new();
 
     /// <summary>

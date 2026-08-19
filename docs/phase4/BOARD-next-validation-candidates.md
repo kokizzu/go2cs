@@ -12695,4 +12695,275 @@ rename is not currently recorded anywhere the generator can read it:
 24 verdicts sit behind it, unmeasured — the wall is a build block, so nothing about `flag`'s
 runtime behavior is known yet.
 
+## 📉 NARROWED ×3, banked 0 — `text/template` 49 → 50 of 52, `html/template`'s wall falls from 7 errors to 1, and `sync/atomic`'s alignment row is rooted as structurally unsatisfiable (2026-08-19, lane `claude/near-miss-finish`)
+
+The near-miss batch: three packages the harvest queue put within a few verdicts of banking. **None banks**, and
+the honest summary is six bridge/converter defects rooted and fixed, one written-and-measured fix deliberately
+REVERTED because shipping it would have cost more verdicts than it bought, and two residuals priced as
+structural rather than pending.
+
+### A correction to the batch's own premise, before anything else
+
+The brief listed `sync/atomic`'s residual as *"the atomic.Value CAS type-identity pair, the reflect-alignment
+row, and one more"*. That is the escape/box-copy entry's list, which row-harvest-3 had already corrected in
+place: **`TestValue_CompareAndSwap` and its parent AGREE** — `sync/atomic/value.cs` is a `[module:
+GoManualConversion]` native reimplementation on `Volatile.Read`/`Interlocked.CompareExchange`/`GetType()` and
+nothing about the pointer work could reach it. Re-measured here on current master, unchanged. The real four are
+`TestHammer32`, `TestHammer64` (one root), `TestHammerStoreLoad` and `TestAutoAligned64`.
+
+### `text/template` — 49 → 50 of 52, and the residual is now ONE arc, not four roots
+
+Four of the variadic-call entry's residual roots were bridge defects; all four are fixed, and `TestComparison`
+banks outright.
+
+| Root | Verdicts | State |
+|:--|:--:|:--|
+| `Value.Index` / `Value.Slice` over a Kind-**STRING** Value | `TestComparison` + 4 rows of `TestExecute` | **fixed** — Go's own arms; a string indexes to its i'th BYTE, and slices to its OWN type so a named string stays named |
+| three-index `Value.Slice3` | 1 row of `TestExecute` | **fixed** — it was never bridged at all, and the auto form nil-dereferenced rather than degrading |
+| typed-nil rendering (`(*W)(nil).Error()`, `html typed nil`) | 2 rows of `TestExecute` | **fixed** — two separate defects, both on the one-nil-encoding rule (below) |
+| chan direction / chan receive | `TestIssue43065` + 1 row of `TestExecute` | **open, and the whole residual** |
+
+`TestExecute` still fails, so the package sits at 50. But its remaining failure is the SAME arc as
+`TestIssue43065`, which is a real narrowing of the picture: text/template's entire residual is channels.
+
+### The four bridge fixes, and why each was invisible
+
+Each degraded to a value that reads as a real answer — which is what kept them unnoticed under a green compile.
+
+1. **`Value.Index` / `Value.Slice` on a string** panicked `reflect: call of reflect.Value.Index on string
+   Value` — Go's message for a kind that does not support indexing AT ALL, so it read as "strings aren't
+   indexable" rather than "this arm is missing". A string Value has no element type, so it could not share the
+   container route; both arms are Go's own (a non-addressable `uint8` byte; a window of the receiver's own
+   type).
+2. **`Value.Slice3`** was not in the hand-owned set, so it kept the auto conversion, which reinterprets the
+   never-populated `ptr` slot as a raw `unsafeheader.Slice` and edits `Data`/`Len`/`Cap` in place. That
+   dereferences nil outright — surfacing as `invalid memory address or nil pointer dereference`, which reads
+   like a corpus bug, not a missing member. Bridged over the SAME golib window machinery `Slice` uses (a new
+   3-index `GoReflect.SliceWindow` overload), so the two- and three-index forms cannot disagree.
+3. **`Value.Call` erased a typed nil crossing into INTERFACE space.** Go's assignment to an interface-typed
+   parameter BUILDS an eface and an eface keeps the type half; `marshalCallArg` read the slot's raw `null` and
+   handed that across, so the callee's `reflect.ValueOf(arg)` answered the INVALID zero Value and
+   text/template's `printableValue` reported `<no value>` where Go prints `<nil>`. It packs through
+   `packInterfaceValue` — the same rule `Value.Interface()` already used one call away — when and only when
+   the destination is interface space. A concrete parameter type builds no eface and is untouched (asserted as
+   a control).
+4. **A nil RECEIVER threw in the runtime duck-typing SHELL tier.** golib's `error<T>.Error()` read
+   `m_target_ptr.Value` BEFORE choosing between its `ж`-receiver and by-value overloads, so a nil pointer threw
+   — for a pointee the `ж` overload it then selected never needed. Go's method set belongs to the TYPE, so
+   `(*W)(nil).Error()` dispatches normally and the method decides what nil means.
+
+   **This one is worth reading twice, because both its invisibility mechanisms are reusable.** First, the throw
+   never surfaced: `fmt`'s `handleMethods` wraps every `Error()` call in Go's own `catchPanic`, which prints
+   `<nil>` for a nil-pointer argument — so the symptom was a wrong RENDERING, not a crash. Second, it
+   reproduced ONLY where the `(type, interface)` pair resolved through the runtime shell rather than through a
+   generated nominal adapter, i.e. only when nothing in the program converts that type to that interface
+   explicitly. A probe that *added* `var e error = ptr` to make the failure clearer made it disappear. The
+   guard therefore carries a type reached exclusively through the shell tier; `Blob`/`Tag` beside it cannot
+   guard this, because their pairs are recorded.
+
+### ⛔ The one that was written, measured, and REVERTED — and it inverts the queue's #1 ranking
+
+`text/template`'s last non-disclosure root is `walkRange` ranging a channel, and the bridge refused it:
+`reflect`'s auto `recv`/`send` open with the very downcast `Type.ChanDir` retired — reinterpreting the
+descriptor onto the linker's `chanType` record and reading `.Dir` out of the memory that follows the value
+slot. Behind a synthesized descriptor that reads **zero**, zero is `InvalidDir`, and `Dir & RecvDir == 0` holds
+for EVERY channel — so a plain **bidirectional** `chan string` was refused as send-only. (Past that test
+neither could have worked either: `chanrecv`/`chansend0` are external stubs the PartialStubGenerator emits as
+`NotImplementedException`.)
+
+Both were hand-owned over golib's `channel<E>` with direction asked of `abi.ChanDir` — the one authority — and
+**measured**: `TestExecute` and `TestComparison` both PASS, taking the package to 51 of 52.
+
+Then `TestIssue43065` **hangs**. Its channel is `make(chan<- int)`; the bridge cannot know the direction, so
+`walkRange`'s `ChanDir() == SendDir` guard does not fire, and the now-working `Recv()` blocks forever on a
+channel nobody will send to. The package deadline expires, 67 of 118 events are recorded, and **51 verdicts are
+lost** — against the 1 the fix was worth.
+
+**So the ranking is wrong, and this is the lane's most useful finding.** The board has carried
+`reflect.Value.Recv` and chan-direction cargo as independent items, with direction ranked as a self-retiring
+disclosure class. They are not independent, and the dependency runs the other way:
+
+> The chan-direction disclosure class is currently **self-limiting only because `recv` is broken.** Bridging
+> `recv` converts a fast, attributable failure into an unbounded hang. Direction cargo is therefore a
+> PREREQUISITE for the recv bridge, not a later improvement on it.
+
+Reverted for that reason, and because the hang risk is not confined to this package: any banked row that
+reflectively ranges a channel it believes bidirectional would acquire the same failure mode, and proving
+otherwise needs a full sweep this lane could not afford. The two ~25-line implementations and their reasoning
+are in this entry's commit message; a lane taking the direction arc can reproduce them in an hour, and should
+land them together.
+
+Recorded plainly so nobody re-derives it: `abi.ChanDir` answering `BothDir` is still the honest answer, and no
+descriptor answer helps here. `BothDir` lets the receive proceed (hang); `InvalidDir` fails the same guard;
+`SendDir` would reject every range-over-channel in the corpus. The direction has to be carried by the VALUE —
+`make(chan<- int)` is where it is born and where the converter can still see it — which is a `channel<T>` field
+plus every `make`/narrowing-conversion site plus an `abi` read. A feature arc, unchanged in size, but now with
+a second package waiting behind it.
+
+### `html/template` — Root A is CLOSED; the wall is 7 errors → **1**
+
+243 verdicts, still build-blocked, but on a single diagnostic.
+
+**Root A (CS0246 ×6, `FuncMap` could not be found) is fixed.** The board had it as "widening the seed vs
+making the renderer qualify — a real choice, NOT taken". Measured, the choice resolves itself, because the
+alias is not where the recorded reasoning assumed:
+
+```csharp
+// src/core/html/template/template.cs, line 4 — the PRODUCTION conversion's own declaration
+global using FuncMap = go.text.template_package.FuncMap;
+```
+
+`seedProductionAliasLifts`'s narrowness rests on "a named RHS already renders through its own qualified name".
+That is false for exactly this shape: the alias is declared as a compilation-scoped `global using` in the FILE
+that declares it, the renderer spells the BARE name in production and test alike, and a reference-model test
+project compiles `*_test.cs` only — so the declaring file is absent and the name resolves nowhere. (The test
+metadata file *does* already declare the cross-package two-hop `templateꓸFuncMap`, which is what makes this a
+name-resolution gap rather than a missing import.)
+
+So a named RHS is seeded too — and **only the name half**. The type half stays anonymous-RHS-only: a named RHS
+has its own qualified spelling and is already rendered through it, so recording it in
+`productionAliasLiftedTypes` would re-spell references that already compile. The recorded collision worry is
+answered by measurement rather than by argument: across the converted stdlib an EXPORTED `type X = <named>`
+exists in **four packages only** — `html/template` (`FuncMap`), `os` (`DirEntry`/`PathError`/`FileInfo`/
+`FileMode`), `internal/reflectlite` (`Kind`), `debug/buildinfo` (`BuildInfo`) — and a `_test.go` cannot
+redeclare such a name in the package's own scope. The two banked packages in that set (`debug/buildinfo` 197,
+`internal/reflectlite` 27) are swept as a gate below.
+
+**Root C is now the SOLE wall**, and it is one site in the entire Go 1.23 tree
+(`examplefiles_test.go:90`) — `defer` of a VARIADIC func literal:
+
+```csharp
+defer((params ꓸꓸꓸstring dirsʗp) => { … }, dir1, dir2, ref ᒐ);   // CS0411
+```
+
+A NON-variadic literal emits explicitly-typed parameters (`(@string p, @string q) => …`) which convert to
+`Action<T1,T2>` and infer fine; a variadic one has no such conversion. Not taken here — it needs a real
+`visitDeferStmt` transform and this lane had no gate budget left — but it is now scoped rather than sketched.
+The two candidate shapes, both preserving Go's defer-TIME argument evaluation:
+
+1. **Keep the eager-argument rung** (`defer<T1,T2>` snapshots the arguments, which IS Go's rule) and make the
+   callee invocable: force `renderLambdaParams` for a variadic literal and wrap the callee in its golib family
+   delegate type, so the emission is `defer((ᴛ1, ᴛ2) => ((Actionꓸꓸꓸ<@string>)(<literal>))(ᴛ1, ᴛ2), dir1, dir2,
+   ref ᒐ)`. `T1`/`T2` infer from the eager arguments, not from the lambda. The obstacle is mechanical: the cast
+   has to be placed around the callee INSIDE `convCallExpr`'s rendering, not by surgery on the returned text.
+2. **Hoist to the arity-0 rung**: a typed local for the literal plus one per argument, then
+   `defer(() => ᴛ1(ᴛ2, ᴛ3), ref ᒐ)`. More emitted lines, no inference question at all, and
+   `lambdaContext.deferredDecls` is already the hoist sink.
+
+`iifeDelegateType(sig)` already renders `Actionꓸꓸꓸ<@string>` for the signature, so neither shape needs new
+type-naming machinery.
+
+### `sync/atomic` — the alignment row's OFFSET half is closed; its POINTER half cannot be
+
+`TestAutoAligned64` asserted two things and failed on the first:
+
+```go
+if o := reflect.TypeOf(&signed).Elem().Field(1).Offset; o != 8 { … }              // now PASSES
+if p := reflect.ValueOf(&signed).Elem().Field(1).Addr().Pointer(); p&7 != 0 { … } // structurally unsatisfiable
+```
+
+`StructField.Offset` had stayed unpopulated on the r39d rule, reasoning that *a Go byte offset exists only to
+be added to a data pointer, and managed storage has no such pointer*. True of `Offset` as an ADDRESS, false of
+`Offset` as layout METADATA — the only way anything has ever read it, including `abi.StructType`, which
+populates it from `GoReflect.GoFieldOffsets` and has all along. Reading it from that same memoized walk is what
+makes the two Go-specific rules come out right where a naive `Marshal.OffsetOf` would not: a Go **zero-size**
+field occupies nothing (its C# surrogate is one byte) and an `align64`-bearing field is padded to its 8-byte
+boundary. It answered **0** before, which is a real answer for a field at the front of a struct — so an
+unpopulated descriptor read as a LAYOUT failure. The r39d rule still bites where it should: one unknowable
+field size makes `GoFieldOffsets` answer null for the whole struct, and every field keeps the zero.
+
+The SECOND assertion reads a pointer's low bits as a memory-alignment fact. `Value.Pointer()` is
+`reflectPointerToken` — a deliberate, stable IDENTITY token, explicitly not an address (the whole
+`FINDING-managed-box-uintptr-lifetime` position). Making the token 8-aligned would fabricate a memory property
+the model does not have, so this is a **structural** residual, not a pending fix. It is also a disclosure SHAPE
+none of the four ratified classes covers — a test asserting a property of a real machine address — and opening
+a fifth class was outside this lane's brief. Recorded for the coordinator to rule on.
+
+**The hammer roots are NOT bounded, and the reason is a layout mismatch worth naming.** `TestHammer32`/
+`TestHammer64` fail on `AddInt32Method: val=0 want 400000`, from
+`addr := (*Int32)(unsafe.Pointer(uaddr))` over a `*uint32`. In Go that reinterpret is exact: `noCopy` is a
+zero-size struct, so `atomic.Int32{_ noCopy; v int32}` is 4 bytes. In C# an empty struct is **1 byte** and
+forces padding, so the surrogate is **8** — and `ReinterpretAliasesStorage`'s `SizeOf<TDst>() <= SizeOf<T>()`
+test correctly refuses the alias and drops to the raw-address route, where the writes are lost. The size test
+is not the defect and must not be relaxed: aliasing an 8-byte view over a 4-byte slot would read and write past
+the box's value slot. Closing it means making the C# struct actually 4 bytes — explicit layout with Go-computed
+field offsets, corpus-wide — which is a converter emission arc, not a member fix. `TestHammerStoreLoad` is the
+same family one level out.
+
+⚠ **On this machine the host does not merely fail `TestHammerStoreLoad`, it DIES in it** — the late-goroutine
+`Fatalf` storm reaches `RecordGoroutinePanic`, which tries to serialize a **693 MB** JSON string
+(`The JSON value of length 693174514 is too large`) and then nil-derefs, losing 72 of 108 verdicts. row-harvest-3
+measured containment on its own machine; the containment is timing-dependent and does not hold here. So
+`sync/atomic` reads as **104 of 108** or **35 recorded of 108** depending on the host, and the difference is
+not a regression either way.
+
+### A side finding, recorded and NOT rooted
+
+`%#x` of a `uintptr` renders `%!x(uintptr=252987927579865330)` where Go prints `0x…`. `fmt`'s `printArg` DOES
+carry a `case uintptr f:` arm and it is ordered after `case nuint f:`, so the arm exists and something upstream
+of it is not matching; this lane saw it only as the text of `TestAutoAligned64`'s failure message and did not
+chase it. Every `%x`/`%d` of a `uintptr` in the corpus is affected.
+
+### Gates
+
+Converter `go test ./...` **ok, 201.0 s, zero failures** · `GolibTests` **172/172** · full
+`check-no-regression.ps1` **byte-identical across all 628 behavioral packages** except this lane's own guard
+artifacts (`ReflectStructTagCopy`, `ReflectTypedNilInterface`, the new `ReflectStringWindow`), **0 NOT
+MEASURED**, 0 advisory warnings; preflight solution integrity **630/630** and path casing **4,520/4,520** ·
+full behavioral suite **PASS at 601 projects, 2,148.0 s** — Transpile 601/601, Compile 601/601, **Target
+601/601 byte-identical**, Output 575 compared / 0 failed (26 skipped, no `package main`) · `go2cs.slnx` Debug
+`--no-incremental` **0 errors** (287 warnings, 983 s) · seeded whole-stdlib reconvert **63 marked / 0
+clobbered** (line-anchored via `git grep`, path-precise), **1,624 emitted identical / 65 differing / 0 new**,
+and the 65 classify **56 CRLF phantoms + 9 real movers, none of them this lane's**: `gcimporter.cs`
+(row-harvest-2's documented carry), the seven `runtime` `unsafe.Pointer` box-compare sites row-harvest-3
+flagged for the next leveling regen, and `runtime/mfinal.cs.auto` (a review sibling on its own staleness
+schedule) · sweep spot-check of the two banked packages the alias widening can reach: **`debug/buildinfo`
+PASS 197 in 33 s** and **`internal/reflectlite` 1 pass / 0 fail in 124 s**, the latter carrying the widening's
+one intended emission move (`package_test_info.cs` gains `global using Kind = …abi_package.ΔKind;`, adopted
+here because a banked package's committed test sources exist to reproduce byte-identically from a clone).
+
+⚠ **A byte-for-byte reconvert comparison reports CRLF phantoms AS MOVERS** — 56 of the 65 here. The converter
+emits LF inside a multi-line string literal while `.gitattributes` pins the working tree to CRLF, so any
+emitted file holding one differs in bytes and matches CR-stripped. Classify with a CR-insensitive compare
+before reading a mover count as drift; the raw number is not the finding.
+
+Guards proven failing-first by **seven** separate neuterings, each reproducing its own defect and nothing else:
+the string `Index` arm (exit 2 — the pre-fix binary panics), the `Slice3` capacity bound (stdout), the
+`Call`-into-interface packing (stdout, the `call-into-any` row alone), the `error<T>` overload order (exit 2 —
+here the assertion succeeds and the throw is unrecovered, unlike the fmt path that swallowed it),
+`StructField.Offset` (stdout), the named-RHS alias seed, and the validation-pack gating. One new behavioral
+project (`ReflectStringWindow`) and two extended (`ReflectTypedNilInterface`, `ReflectStructTagCopy`).
+
+`-tests` tree churn classified and RESTORED per the standing rule, nothing unclassified: two CRLF phantoms
+(`html/template/doc.cs`, `text/template/doc.cs` — modified with an empty numstat) and the `initᴛᴛtests` hook
+(`html/template/package_init.cs`, +7 real lines). No converted test sources committed: no package validates.
+
+### A banking-hazard fix nobody asked for, found by paying it
+
+Regenerating ONE corpus package after a converter change — `go2cs <goroot-pkg-dir> <core-pkg-dir>`, the normal
+lane move — **strips that package's validation-proof block from its `.csproj`**, silently un-shipping its proof
+sheet at the next `push-nuget`. The block was gated on the invocation MODE (`-stdlib`, later widened to
+`-stdlib` or `-tests`), and the single-package form is neither. It is the same defect `ce82093b0` fixed for
+`-tests`, reached through a different door, and it is the harder one to catch: only the `.csproj` moves, and a
+lone `.csproj` diff in a reconvert reads as ordinary emission drift.
+
+Fixed by keying on the OUTPUT LOCATION instead — "under `<go2csPath>/core/`" — which closes both doors at once
+and cannot be re-opened by adding a mode. `-recurse`, behavioral fixtures and end-user modules all write
+elsewhere and keep their historical bytes. **CLAUDE.md's reconvert rule that "any change to a production
+`.csproj` is real drift" is exactly right, and it is what caught this** — the diff appeared, was not restored,
+and was root-caused instead.
+
+### The ranked queue, updated
+
+1. **Channel direction as descriptor cargo — now a PREREQUISITE, not an improvement.** It gates
+   `reflect.Value.Recv` (whose bridge is written and measured: `text/template` 50 → 51 of 52) and it retires
+   its own disclosure class. Landing the recv bridge WITHOUT it converts a fast failure into a hang.
+2. **`html/template`'s Root C** — `defer` of a variadic func literal, ONE site in the corpus, sole wall on 243
+   verdicts, with two scoped remedies above.
+3. **`encoding/gob` (106)** — unchanged at 103 of 106; still the closest unbanked package.
+4. **`sync/atomic`'s zero-size-field layout** — a Go empty struct is 0 bytes and its C# surrogate is 1, so
+   every `(*Named)(unsafe.Pointer(p))` over a struct with a `noCopy`/`align64` field falls off the alias route.
+   Two `sync/atomic` verdicts today; the SHAPE is corpus-wide and currently silent.
+5. **`%#x` of a `uintptr`** — renders `%!x(uintptr=…)`; unrooted, corpus-wide reach.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

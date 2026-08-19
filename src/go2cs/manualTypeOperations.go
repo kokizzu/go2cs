@@ -372,6 +372,10 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.Call":        goosAny,
 		"Value.CallSlice":   goosAny,
 		"Value.Slice":       goosAny,
+		// Value.Slice3 joined the set on 2026-08-19 (text/template's three-index `slice` builtin):
+		// the auto form is the same raw unsafeheader.Slice walk Slice's was, over the ptr slot the
+		// bridge never populates, so it nil-dereferenced rather than degrading.
+		"Value.Slice3":      goosAny,
 		"Value.SetBool":     goosAny,
 		"Value.SetInt":      goosAny,
 		"Value.SetUint":     goosAny,

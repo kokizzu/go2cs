@@ -146,6 +146,20 @@ func TestValidationPackBlockSurvivesTestsRewriteOfCorePackage(t *testing.T) {
 	if block := validationPackBlock(corePackage, Options{convertTests: true}); block != "" {
 		t.Fatalf("a -tests conversion with no resolved runtime root emitted a validation pack block: %q", block)
 	}
+
+	// The SINGLE-PACKAGE form — `go2cs <goroot-pkg> <core-pkg>`, how a lane regenerates one corpus
+	// package after a converter change — is neither -stdlib nor -tests, and it stripped the block
+	// exactly as the -tests path once did. The predicate is on the output LOCATION, so it holds
+	// whatever the invocation mode.
+	singlePackage := Options{go2csPath: root}
+
+	if block := validationPackBlock(corePackage, singlePackage); !strings.Contains(block, `time.md`) {
+		t.Fatalf("a single-package reconvert of a core package's .csproj lost the validation pack block: %q", block)
+	}
+
+	if block := validationPackBlock(outsideCore, singlePackage); block != "" {
+		t.Fatalf("a single-package conversion outside the core tree emitted a validation pack block: %q", block)
+	}
 }
 
 // The friend-assembly grant is inserted AFTER template rendering — never as a template verb, so a

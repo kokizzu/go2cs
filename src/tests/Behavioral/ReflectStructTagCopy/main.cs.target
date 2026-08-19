@@ -26,6 +26,26 @@ partial class main_package {
 
 [GoType("num:nint")] partial struct counter;
 
+[GoType] partial struct empty {
+}
+
+[GoType] partial struct layout {
+    internal empty pad;
+    internal uint32 small;
+    internal int64 big;
+    internal uint8 tail;
+}
+
+[GoType] partial struct inner {
+    public uint32 X;
+    public int64 Y;
+}
+
+[GoType] partial struct outer {
+    public uint16 Head;
+    internal partial ref inner inner { get; }
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string jsonˢ = "json"u8;
 private static readonly @string asn1ˢ = "asn1"u8;
@@ -81,6 +101,13 @@ internal static void Main() {
     }
     @string nm = reflect.TypeOf(new intSET(new nint[]{}.slice())).Name();
     fmt.Println(setSuffixˢ, len(nm) >= 3 && nm[(int)(len(nm) - 3)..] == "SET");
+    var lt = reflect.TypeOf(new layout(nil));
+    for (nint i = 0; i < lt.NumField(); i++) {
+        var fΔ2 = lt.Field(i);
+        fmt.Printf("offset %-6s %d\n"u8, fΔ2.Name, fΔ2.Offset);
+    }
+    var (of, _) = reflect.TypeOf(new outer(nil)).FieldByName("Y"u8);
+    fmt.Printf("promoted Y offset=%d index=%v\n"u8, of.Offset, of.Index);
 }
 
 } // end main_package

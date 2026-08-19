@@ -62,9 +62,12 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial struct holder {}
+    internal partial struct main_sh {}
     internal partial struct main_si {}
+    internal partial struct main_sp {}
     public partial interface Encoder {}
     public partial struct Blob {}
+    public partial struct Stamp {}
     public partial struct Tag {}
     // </TypeAccessibility>
 }
