@@ -1743,6 +1743,22 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 						result.WriteRune(';')
 					}
 				} else {
+					// A blank-identifier LHS is a C# DISCARD, never a declaration, so no arm below may
+					// name a type for it: `stateFn _ = lexText;` declares a local literally named `_`,
+					// which makes every OTHER `_ = x` in the same scope an assignment to that local
+					// (CS0841 before it, CS0123/CS0029 after) and collides outright with a second one
+					// (CS0128). Deciding it here rather than inside one arm also keeps each `_` in a
+					// split multi-assign like `_, _, _, _ = a, b, c, d` a discard.
+					isDiscarded := ident.Name == "_"
+
+					// A discard infers its type FROM its RHS, so a func-typed RHS with no C# type of
+					// its own needs one supplied (CS8183) — see discardTargetTypeName.
+					discardCastType := ""
+
+					if isDiscarded {
+						discardCastType = v.discardTargetTypeName(rhs)
+					}
+
 					// Check if the variable needs to be allocated on the heap
 					heapTypeDecl := v.convertToHeapTypeDecl(ident, false)
 
@@ -1766,7 +1782,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 						// reassignments stay interconvertible. See namedFuncTypeNameForSignature.
 						methodGroupDelegateType := ""
 
-						if !v.isReassignment(ident) && v.exprIsMethodGroup(rhs) {
+						if !isDiscarded && !v.isReassignment(ident) && v.exprIsMethodGroup(rhs) {
 							if sig, ok := v.getExprType(rhs).(*types.Signature); ok {
 								methodGroupDelegateType = v.namedFuncTypeNameForSignature(sig)
 							}
@@ -1780,25 +1796,17 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 						if methodGroupDelegateType != "" {
 							result.WriteString(methodGroupDelegateType)
 							result.WriteRune(' ')
+						} else if isDiscarded {
+							// `_ = x;` — no declaration of any kind (see isDiscarded above).
 						} else if v.options.preferVarDecl && !(lhsTypeIsString[i] || lhsTypeIsInt[i] || lhsTypeIsUnsafePointer[i]) {
-							// A blank-identifier LHS is a C# discard, never a declaration — emit `_ = x;`
-							// with no `var`. Testing the current per-element `ident` (not just the
-							// single-LHS case) keeps each `_` in a split multi-assign like
-							// `_, _, _, _ = a, b, c, d` a discard, so they don't collide (CS0128).
-							isDiscarded := ident.Name == "_"
-
 							// Same untyped-const materialization as the all-declared path (see
 							// untypedConstDeclTypeName) for a define routed through this mixed branch.
-							untypedConstDeclType := ""
-
-							if !isDiscarded {
-								untypedConstDeclType = v.untypedConstDeclTypeName(ident, rhs)
-							}
+							untypedConstDeclType := v.untypedConstDeclTypeName(ident, rhs)
 
 							if untypedConstDeclType != "" {
 								result.WriteString(untypedConstDeclType)
 								result.WriteRune(' ')
-							} else if !isDiscarded {
+							} else {
 								result.WriteString("var ")
 							}
 						} else if elemIsSString {
@@ -1831,6 +1839,13 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					// A `:=`-declared local initialized from an existing array value takes golib's
 					// `.Clone()` for independent backing storage (see cloneValueCopy).
 					rhsExpr = v.cloneValueCopy(lhs, rhs, rhsExpr)
+
+					// Give a discarded method group or lambda the target type C# cannot infer. The
+					// parentheses are load-bearing for the lambda form: `(Func<…>)(nint p1) => …`
+					// does not parse as a cast.
+					if discardCastType != "" {
+						rhsExpr = fmt.Sprintf("(%s)(%s)", discardCastType, rhsExpr)
+					}
 
 					_, rhsIsTypeAssert := rhs.(*ast.TypeAssertExpr)
 

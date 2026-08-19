@@ -7708,6 +7708,28 @@ while (state != default!) {
 
 A `:=` from a method group whose signature matches no package named func type keeps the existing path. (Guarded by the `NamedFuncTypeStateMachine` behavioral test.)
 
+### A DISCARDED function value is cast, never declared
+One statement form over, the same typeless right-hand side needs the opposite treatment. Go writes `_ = someFunc` to force a symbol to be referenced — `debug/elf`'s `file_test.go` does exactly `_ = net.ResolveIPAddr // force dynamic linkage`. A C# discard infers its type **from its RHS**, and the two func-value forms cannot supply one: a method group, and a lambda (a func literal, or the method **value** that converts to one). Both are CS8183, *"cannot infer the type of implicitly-typed discard"* — the discard analogue of the `var` problem above, and notably NOT the same answer, because C# 10 does give a method group a natural type for `var f = pair;` while still refusing it for a discard.
+
+A blank LHS is a discard, never a declaration, so the type goes on the **RHS** as a cast:
+
+```go
+_ = pair          // func(string, int) (string, error)
+_ = sink          // func(int)
+_ = lexText       // matches the named func type stateFn
+_ = c.bump        // method value
+```
+```csharp
+_ = (Func<@string, nint, (@string, error)>)(pair);
+_ = (Action<nint>)(sink);
+_ = (stateFn)(lexText);
+_ = (Func<nint, nint>)((nint p1) => cʗ1.bump(p1));
+```
+
+A package named func type whose underlying signature matches is preferred over the structural `Func<…>`/`Action<…>` render so the reader sees the Go type's own name; for a discard either is sound, since nothing observes the value. The parentheses around the RHS are load-bearing for the lambda form — `(Func<…>)(nint p1) => …` does not parse as a cast. A variadic signature takes the golib delegate family (`Funcꓸꓸꓸ<@string, any, @string>` for `fmt.Sprintf`), and a func-typed **variable** is left alone: it already has a C# type.
+
+Routing the named-type case through the *declaration* branch instead was the pre-fix behavior and is worse than the missing cast it fixed: `stateFn _ = lexText;` declares a local literally named `_`, which turns every other discard in the same scope into an assignment to it (CS0841 before it, CS0123/CS0029 after) and collides outright with a second one (CS0128). The blank test therefore short-circuits every declaration arm, not just the `var` one. (Guarded by the `BlankIdentifierCollision` extension — all seven RHS shapes plus the func-typed-variable and `:=`-named-delegate controls, proven failing-first at 11 diagnostics in 7 classes.)
+
 ## Defer / Panic / Recover
 
 ### A function that defers or recovers emits its body INLINE, inside a frame

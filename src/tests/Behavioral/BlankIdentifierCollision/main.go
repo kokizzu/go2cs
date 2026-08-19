@@ -41,7 +41,68 @@ func multiBlank() {
 	fmt.Println("multiBlank ok")
 }
 
+// A named func type, so a discarded method group can match one. Go writes `_ = someFunc` to
+// force a symbol to be linked — debug/elf's file_test.go does exactly `_ = net.ResolveIPAddr`.
+type stateFn func(int) stateFn
+
+func lexText(i int) stateFn { return lexNumber }
+
+func lexNumber(i int) stateFn { return nil }
+
+func pair(a string, b int) (string, error) { return a, nil }
+
+func sink(a int) {}
+
+func count() int { return 7 }
+
+func total(a ...int) int {
+	n := 0
+	for _, v := range a {
+		n += v
+	}
+	return n
+}
+
+type counter struct{ n int }
+
+func (c *counter) bump(d int) int { c.n += d; return c.n }
+
+// A discard whose RHS is a METHOD GROUP or a LAMBDA has no C# type of its own, so C# cannot
+// infer the discard's type (CS8183) — it must be given a target type. The fix that supplies one
+// must not turn the discard into a DECLARATION: when the signature matched a package named func
+// type the emission was `stateFn _ = lexText;`, a local literally named `_`, which makes every
+// other `_ = x` in the same scope an assignment to it (CS0841 before it, CS0123/CS0029 after)
+// and collides outright with a second one (CS0128).
+func blankFuncValues() {
+	_ = pair        // unnamed signature, params and results
+	_ = sink        // no results — Action
+	_ = count       // no params — Func<T>
+	_ = lexText     // named func type…
+	_ = lexNumber   // …twice in one scope: the collision the declaration form caused
+	_ = total       // variadic family
+	_ = fmt.Sprintf // cross-package, also variadic
+
+	c := &counter{}
+	_ = c.bump                               // method VALUE — emits a lambda, not a method group
+	_ = func(s string) int { return len(s) } // func literal — a lambda too
+
+	// Controls. A func-typed VARIABLE already has a C# type and takes no cast, and a `:=` from a
+	// method group must still DECLARE with the named delegate, so a later same-type assignment
+	// stays interconvertible.
+	f := pair
+	_ = f
+
+	state := lexText
+	state = lexNumber
+	_ = state
+
+	// The discarded functions still work when actually called.
+	s, _ := f("pair", 1)
+	fmt.Println(s, count(), total(1, 2, 3), c.bump(5))
+}
+
 func main() {
 	fmt.Println(A, B, C)
 	multiBlank()
+	blankFuncValues()
 }

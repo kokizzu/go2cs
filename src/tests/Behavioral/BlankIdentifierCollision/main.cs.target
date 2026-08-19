@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using ꓸꓸꓸnint = Span<nint>;
 
 partial class main_package {
 
@@ -35,9 +36,75 @@ internal static void multiBlank() {
     fmt.Println(multiBlankOkˢ);
 }
 
+internal delegate stateFn stateFn(nint _Δp0);
+
+internal static stateFn lexText(nint i) {
+    return lexNumber;
+}
+
+internal static stateFn lexNumber(nint i) {
+    return default!;
+}
+
+internal static (@string, error) pair(@string a, nint b) {
+    return (a, default!);
+}
+
+internal static void sink(nint a) {
+}
+
+internal static nint count() {
+    return 7;
+}
+
+internal static nint total(params ꓸꓸꓸnint aʗp) {
+    var a = aʗp.sslice();
+
+    nint n = 0;
+    foreach (var (_, v) in a) {
+        n += v;
+    }
+    return n;
+}
+
+[GoType] partial struct counter {
+    internal nint n;
+}
+
+[GoRecv] internal static nint bump(this ref counter c, nint d) {
+    c.n += d;
+    return c.n;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pairˢ = "pair"u8;
+
+internal static void blankFuncValues() {
+    _ = (Func<@string, nint, (@string, error)>)(pair);
+    _ = (Action<nint>)(sink);
+    _ = (Func<nint>)(count);
+    _ = (stateFn)(lexText);
+    _ = (stateFn)(lexNumber);
+    _ = (Funcꓸꓸꓸ<nint, nint>)(total);
+    _ = (Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintf);
+    var c = Ꮡ(new counter(nil));
+    
+    var cʗ1 = c;
+    _ = (Func<nint, nint>)((nint p1) => cʗ1.bump(p1));
+    _ = (Func<@string, nint>)((@string sΔ1) => len(sΔ1));
+    var f = pair;
+    _ = f;
+    stateFn state = lexText;
+    state = lexNumber;
+    _ = state;
+    var (s, _) = f(pairˢ, 1);
+    fmt.Println(s, count(), total(1, 2, 3), c.bump(5));
+}
+
 internal static void Main() {
     fmt.Println(A, B, C);
     multiBlank();
+    blankFuncValues();
 }
 
 } // end main_package

@@ -1066,6 +1066,44 @@ func (v *Visitor) exprIsMethodGroup(expr ast.Expr) bool {
 	return isFunc
 }
 
+// discardTargetTypeName returns the C# delegate type a blank-identifier DISCARD must name for a
+// func-typed right-hand side that has no C# type of its own, or "" when the RHS types itself. A
+// discard infers its type from its RHS, and two forms cannot supply one: a METHOD GROUP
+// (`_ = net.ResolveIPAddr`, debug/elf's file_test.go, which Go writes to force dynamic linkage)
+// and a LAMBDA — a func literal, or the method VALUE that converts to one. Both are CS8183.
+//
+// A package named func type whose underlying signature matches is preferred over the structural
+// `Func<…>`/`Action<…>` render, so the reader sees the Go type's own name; for a discard either is
+// sound, since nothing downstream observes the value. This is the discard analogue of the `:=`
+// path's namedFuncTypeNameForSignature branch, which faces the same typeless RHS one statement
+// form over — but there the type must be DECLARED, and here it must not be (see visitAssignStmt's
+// isDiscarded).
+func (v *Visitor) discardTargetTypeName(expr ast.Expr) string {
+	switch expr.(type) {
+	case *ast.Ident, *ast.SelectorExpr:
+		// A bare func/method reference. A func-typed VARIABLE reaching here is already a
+		// delegate-typed C# expression and needs no cast.
+		if !v.exprIsMethodGroup(expr) {
+			return ""
+		}
+	case *ast.FuncLit:
+	default:
+		return ""
+	}
+
+	sig, ok := v.getExprType(expr).(*types.Signature)
+
+	if !ok {
+		return ""
+	}
+
+	if namedType := v.namedFuncTypeNameForSignature(sig); namedType != "" {
+		return namedType
+	}
+
+	return v.iifeDelegateType(sig)
+}
+
 func convertToCSTypeName(typeName string) string {
 	return renderCSTypeName(typeName, false)
 }
