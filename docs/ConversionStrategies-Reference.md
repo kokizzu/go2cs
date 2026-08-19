@@ -8001,6 +8001,45 @@ machine-specific goroutine stack trace, so only the first line is compared. (Gua
 channel receive; both binaries must exit 2 with `panic: goroutine boom` as the first stderr line and a
 clean stdout.)
 
+### A panic VALUE renders through Go's `preprintpanics` rule — an `error` prints its message, not its address
+
+The report above is only as useful as the value in it, and rendering that value is a rule of its own.
+Go's runtime does not print the panic value directly: `preprintpanics` (runtime/panic.go) SUBSTITUTES
+first — an `error` panic value becomes its `Error()`, a `Stringer` its `String()` — and only then is
+the result printed. `PanicException` rendered `state?.ToString()`, so a converted `panic(err)` whose
+value is a pointer-held error printed its ADDRESS:
+
+```
+panic: 0x211163e3340          // was
+panic: open final.txt: code 13 // Go, and now
+```
+
+That is not a cosmetic divergence: a traceback exists to carry exactly the information the address
+destroys, and it cost the row-harvest-2 lane a diagnostic round-trip on the only defect it was
+chasing (`text/template`'s `goodFunc` rejection, whose message had to be recovered by instrumenting
+the callee). The rule now lives in `PanicException.PanicText` and both readers of a panic value go
+through it — the unhandled-exception backstop above, and `debug.Stack`'s panic line in
+`runtime/managed_impl.cs`, which had its own copy of the old rendering.
+
+**The `Stringer` arm is not redundant with `ToString()`.** A Go named type's generated `ToString()`
+forwards to its UNDERLYING value (go2cs-gen's `InheritedTypeTemplate`), so `panic(2 * time.Second)`
+would print `2000000000` where Go prints `2s`. The method is found the way golib's `error<T>` finds
+`Error` — through the extension-method registry, which is where a converted Go method lives — and
+the receiver shape is re-checked before the call, since the registry's precedence comparer can hand
+back a `ж<T>`-declared method for a value receiver.
+
+**Computed on first READ, not at construction**, because that is when Go computes it: `preprintpanics`
+runs only once a panic has gone unrecovered and is about to print. A RECOVERED panic — `fmt`'s
+catchPanic, `text/template`'s errRecover, every `defer func(){ recover() }()` in the corpus — must
+therefore never call a user `Error()`/`String()` at all, which an eager render would do on every
+panic in the corpus. `recover()` still hands back the value itself: the substitution is a PRINTING
+rule, not a value rewrite. Go throws a fatal `"panic while printing panic value"` when the
+substitution itself panics; reproducing the FATALITY from a `Message` getter would be worse than the
+divergence it reports, so the text is returned instead. (Guarded by the `PanicValueRendering`
+behavioral test — an unrecovered `panic(err)` whose first stderr line is compared against `go run`,
+over a stdout half proving the recovered path is unchanged — plus `PanicValueTextTests` for the arms
+one process cannot reach: Stringer, the failure text, and the laziness rule.)
+
 ### An IMPLICIT divide-by-zero panics with the runtime's OWN value, so it satisfies `runtime.Error`
 
 Go's compiler lowers an integer division to a zero check plus `runtime.panicdivide()`, which panics
@@ -9876,7 +9915,15 @@ passes the variadic **element** type as the last type argument. Everything else 
 A `:=`-declared variadic func literal is untouched: it keeps C#'s natural (params-capable) lambda
 type under `var` (the `VariadicClosureSpread` shape). One deliberate residue: `defer`/`goǃ` of a
 call **through a variadic func value** would need to capture the `Span` tail, which a ref struct
-cannot be — no stdlib occurrence; pack into a slice at such a site if one ever appears. Full-stdlib
+cannot be — pack into a slice at such a site. ⚠ **That residue now has its one demonstrated
+consumer, and it is a TEST file** (found 2026-08-19, lane `claude/variadic-call`): the census of
+the whole Go 1.23 tree finds exactly ONE `defer`/`go` of a variadic func literal —
+`html/template/examplefiles_test.go:90`, `defer func(dirs ...string){…}(dir1, dir2)` — which emits
+`defer((params ꓸꓸꓸstring dirsʗp) => {…}, dir1, dir2, ref ᒐ)` and fails inference against
+`builtin.defer<T1,T2>(Action<T1,T2>, T1, T2, ref GoFrame)`: **CS0411**. That is why the claim used
+to read "no stdlib occurrence" — the original A/B was over PRODUCTION sources, and the shape lives
+only in a `_test.go`, so nothing before the Phase-4 `-tests` pipeline could see it. It is one of the
+two roots now blocking `html/template`'s 243 verdicts. Full-stdlib
 A/B footprint: go/types predicates.cs/expr.cs plus every file that renders a variadic func type
 structurally (inspected file-by-file at introduction). (Guarded by `VariadicFuncValues` — a named
 func AND a func literal satisfying a variadic func-typed param, loose/empty/spread calls through
@@ -9892,6 +9939,56 @@ did: `._<Actionꓸꓸꓸ<@string, any>>(ᐧ)`. Non-variadic signatures render id
 only full-stdlib delta is the transport.cs site. (Guarded by `VariadicFuncTypeAssert` — a positive
 variadic assert invoked through the asserted value, a negative assert on a non-func value, and a
 non-variadic anonymous func assert, output-compared vs Go.)
+
+### `reflect.Value.Call` over a variadic func value is TYPED dispatch — no reflective invoke can carry the tail
+
+The `params Span<T>` tail above is what makes a converted variadic callable and readable from Go
+AND from C#. It also puts the value permanently out of reach of every reflective invoke path:
+`Span<T>` is a **ref struct**, and `Delegate.DynamicInvoke` and `MethodInfo.Invoke` both marshal
+their arguments through an `object?[]` a ref struct cannot enter. `System.Linq.Expressions`
+refuses one outright as well, so the method-value binder's `Expression.Lambda` approach
+(GoReflect.MethodSets.cs) does not generalize either. `reflect.Value.Call` therefore threw
+`NotImplementedException` for every variadic func value — which is 13 of `text/template`'s 52
+verdicts, since its whole `FuncMap` feature calls user functions exactly that way.
+
+The call is made in **typed code** instead (`GoReflect.InvokeVariadic`, GoReflect.TypeLayout.cs).
+One small generic trampoline per family arity — eighteen, the closed set golib's variadic.cs
+declares — is closed over the delegate's own parameter types by `MakeGenericMethod` and cached as
+an ordinary delegate, the `elementBoxViaAt` idiom GoReflect.FieldAccess.cs already uses:
+
+```csharp
+private static object? callVariadicFunc1<T1, TArg, TResult>(Delegate d, object?[] a, Array t)
+{ return ((Funcꓸꓸꓸ<T1, TArg, TResult>)d)((T1)a[0]!, new Span<TArg>((TArg[])t)); }
+```
+
+Inside the trampoline the tail is a `TArg[]` and its conversion to `Span<TArg>` is ordinary, so
+nothing is boxed and the tail ALIASES the array rather than copying it. Two consequences worth
+stating: a panic inside the callee propagates natively (a direct call wraps nothing in a
+`TargetInvocationException`, unlike the fixed-arity `DynamicInvoke` path beside it), and a fixed
+prefix beyond the family's eight throws a named `NotImplementedException` rather than mis-indexing.
+
+**The delegate being called is not always the family type, and the rebind is what makes that
+total.** A variadic func literal in an `any` slot — a `map[string]any` FuncMap value, the exact
+`text/template` shape — takes C#'s NATURAL delegate type instead, the same identity difference
+`TryFuncShape` had to stop reading off the type NAME. Those rebind onto the family by RETARGETING
+through `Invoke` (`Delegate.CreateDelegate(familyType, del, "Invoke")`), never by re-binding the
+original's own target and method: a delegate the BRIDGE itself built is expression-compiled — a
+variadic method value from `Value.Method` is exactly that — and a compiled lambda's `Method` is not
+a runtime `MethodInfo`, which `CreateDelegate` rejects with "MethodInfo must be a runtime MethodInfo
+object". Retargeting also carries a multicast invocation list intact. The family's type arguments
+are built FROM the delegate's own `Invoke` signature, so the two agree by construction.
+
+Go's `Call` contract shapes the arity rule too: `Call` itself builds the tail slice (`CallSlice` is
+the form that takes it pre-built), so the last `In()` is the tail SLICE, every argument from that
+position on is assignable to its ELEMENT, and there is no upper bound — only a lower one of
+`NumIn()-1`. (Guarded two ways: behavioral `ReflectVariadicCall` output-compares eleven shapes
+against `go run` — declared func, empty tail, no fixed params, `...any`, multi-return, no-result,
+two fixed params, a variadic METHOD value, and three `map[string]any` literals — while
+`GoReflectBridgeClosureTests` pins the three delegate identities, the tail's aliasing, the refusal
+of a non-variadic delegate, and every family arity of both families, which are golib-only shapes no
+Go program can construct. The arity row matters because only 0, 1 and 2 fixed parameters have a
+consumer in the corpus today: 3 through 8 would otherwise be discovered by whichever package
+reached them first.)
 
 ### Major-version import directories
 A `/vN` import path segment (math/rand/v2) hosts a package named for the PARENT segment, so the

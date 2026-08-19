@@ -301,7 +301,10 @@ partial class runtime_package
 
         if (inFlight?.PanicTrace is StackTrace panicSite && panicSite.FrameCount > 0)
         {
-            trace.Append("panic: ").Append(inFlight.State?.ToString() ?? "nil").Append('\n');
+            // `Message`, not `State.ToString()`: a panic value renders ONE way in this runtime, and
+            // that way is Go's preprintpanics rule (an error prints its Error(), a Stringer its
+            // String()). Reading the state directly here printed an address for every error panic.
+            trace.Append("panic: ").Append(inFlight.Message).Append('\n');
             appendGoFrames(trace, panicSite);
         }
 

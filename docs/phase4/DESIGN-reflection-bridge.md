@@ -333,8 +333,38 @@
 >   `tests/Behavioral/ReflectFuncArrayParamDims`. Corpus footprint over all 557 behavioral packages:
 >   3 files, 6 declarations.
 >
-> **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
-> (text/template); `SetMapIndex` delete-on-invalid (encoding/json); the Go
+> **Phase-3 increment 9 (SHIPPED 2026-08-19) — VARIADIC `Value.Call`, the one member no reflective
+> invoke could ever reach.** The variadic arm of `Call` was not a missing descriptor read like every
+> increment above it; it was a shape the whole reflective invoke API excludes by construction. A
+> converted Go variadic lowers its tail to `params Span<TArg>` (golib variadic.cs), `Span<T>` is a
+> ref struct, and `Delegate.DynamicInvoke`, `MethodBase.Invoke` and `System.Linq.Expressions` all
+> refuse one — the last of those being why increment 3's `Expression.Lambda` receiver binder does not
+> generalize here. So the call is made in TYPED code: eighteen small generic trampolines, one per
+> family arity, closed over the delegate's own parameter types by `MakeGenericMethod` and cached as
+> ordinary delegates (`GoReflect.InvokeVariadic`, the `elementBoxViaAt` idiom). Inside a trampoline
+> the tail is a `TArg[]` whose conversion to `Span<TArg>` is ordinary, so nothing is boxed and the
+> tail ALIASES the caller's array. A non-family delegate — a variadic literal in an `any` slot, which
+> IS the `FuncMap` shape — rebinds onto the family by RETARGETING through `Invoke`, never by
+> re-binding its own target and method: a bridge-built method value is expression-compiled and a
+> compiled lambda's `Method` is not a runtime `MethodInfo`, which `Delegate.CreateDelegate` rejects
+> outright. `text/template`: 38/52 → **49 of 52**, the stub's own 13 verdicts cleared, with the three
+> residual verdicts on four roots that are NOT this arc's (`Value.Index`/`Value.Slice` over a
+> Kind-STRING Value, which Go supports and the bridge rejects; the ratified chan-direction
+> disclosure class, surfacing as `reflect: recv on send-only channel` in `walkRange`; typed-nil
+> method dispatch, `(*W)(nil).Error()` rendering `-<nil>-` where Go renders `-nilW-`; and a
+> three-index `Value.Slice3` nil deref). Canaries held: fmt 63/63,
+> internal/fmtsort 3/3, encoding/json 491/491, internal/reflectlite 27/27. Guards:
+> `tests/Behavioral/ReflectVariadicCall` (eleven shapes vs `go run`) plus seven
+> `GoReflectBridgeClosureTests` rows for the golib-only shapes — the three delegate identities, the
+> tail's aliasing, the multi-return, the refusal of a non-variadic delegate, and all nine family
+> arities of both families, since only 0/1/2 have a consumer in the corpus today — proven
+> failing-first by five separate neuterings. Full design: ConversionStrategies-Reference
+> *`reflect.Value.Call` over a variadic func value is TYPED dispatch*.
+>
+> **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; `CallSlice` (no demonstrated
+> consumer — `text/template` calls `Call`, not `CallSlice`, so the stub's named next consumer is
+> retired as measured-wrong); `Value.Index`/`Value.Slice` over a Kind-String Value
+> (text/template, measured); `SetMapIndex` delete-on-invalid (encoding/json); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases
 > if they surface); `FieldByName`'s embedded-field depth search (a promoted name currently answers
 > the not-found path); open question 3 (field-name/tag fidelity — `[GoTag]` is carried but not yet

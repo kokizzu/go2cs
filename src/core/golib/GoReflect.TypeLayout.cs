@@ -384,6 +384,210 @@ public static partial class GoReflect
         return true;
     }
 
+    // -------- variadic invocation (Value.Call over a `params Span<T>` tail) --------
+
+    /// <summary>
+    /// The most fixed parameters a variadic func value can carry ahead of its tail — golib's
+    /// <c>Actionꓸꓸꓸ</c>/<c>Funcꓸꓸꓸ</c> families stop there, mirroring the BCL Action/Func arities.
+    /// </summary>
+    public const int MaxVariadicFixedParameters = 8;
+
+    // The two families, indexed BY FIXED-PARAMETER COUNT: entry `n` takes n fixed parameters plus
+    // the tail (and, for Func, the result). See golib variadic.cs for the declarations.
+    private static readonly Type[] s_variadicActionFamily =
+    [
+        typeof(Actionꓸꓸꓸ<>), typeof(Actionꓸꓸꓸ<,>), typeof(Actionꓸꓸꓸ<,,>), typeof(Actionꓸꓸꓸ<,,,>),
+        typeof(Actionꓸꓸꓸ<,,,,>), typeof(Actionꓸꓸꓸ<,,,,,>), typeof(Actionꓸꓸꓸ<,,,,,,>),
+        typeof(Actionꓸꓸꓸ<,,,,,,,>), typeof(Actionꓸꓸꓸ<,,,,,,,,>)
+    ];
+
+    private static readonly Type[] s_variadicFuncFamily =
+    [
+        typeof(Funcꓸꓸꓸ<,>), typeof(Funcꓸꓸꓸ<,,>), typeof(Funcꓸꓸꓸ<,,,>), typeof(Funcꓸꓸꓸ<,,,,>),
+        typeof(Funcꓸꓸꓸ<,,,,,>), typeof(Funcꓸꓸꓸ<,,,,,,>), typeof(Funcꓸꓸꓸ<,,,,,,,>),
+        typeof(Funcꓸꓸꓸ<,,,,,,,,>), typeof(Funcꓸꓸꓸ<,,,,,,,,,>)
+    ];
+
+    // One per delegate TYPE: the family type its instances rebind onto, and the closed trampoline
+    // that performs the typed call. Both are functions of the type alone, so they cache together.
+    private sealed record VariadicInvoker(Type FamilyType, Func<Delegate, object?[], Array, object?> Call);
+
+    private static readonly ConcurrentDictionary<Type, VariadicInvoker> s_variadicInvokers = new();
+
+    /// <summary>
+    /// Calls a converted Go VARIADIC func value whose tail is already packed into
+    /// <paramref name="tail"/> (a <c>TArg[]</c> of the tail's element type), and returns the raw
+    /// delegate result — <c>null</c> for a no-result func, a <c>ValueTuple</c> for a Go
+    /// multi-return, exactly the shape the non-variadic path receives.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This exists because NO reflective invoke path can call one. A converted Go variadic lowers
+    /// its tail to <c>params Span&lt;TArg&gt;</c> (see golib variadic.cs), <c>Span&lt;T&gt;</c> is a
+    /// ref struct, and both <see cref="Delegate.DynamicInvoke"/> and <see cref="MethodBase.Invoke"/>
+    /// marshal their arguments through <c>object?[]</c> — which a ref struct cannot enter. Nor can
+    /// an expression tree stand in: <c>System.Linq.Expressions</c> rejects a byref-like type
+    /// outright, so the sibling method-value binder's <c>Expression.Lambda</c> approach
+    /// (GoReflect.MethodSets.cs) does not generalize here.
+    /// </para>
+    /// <para>
+    /// So the call is made in TYPED code — one small generic trampoline per family arity, closed
+    /// over the delegate's own parameter types by <c>MakeGenericMethod</c> and cached as an ordinary
+    /// delegate (the <c>elementBoxViaAt</c> idiom in GoReflect.FieldAccess.cs). Inside a trampoline
+    /// the tail is a <c>TArg[]</c> and its conversion to <c>Span&lt;TArg&gt;</c> is an ordinary
+    /// one, so nothing is ever boxed.
+    /// </para>
+    /// <para>
+    /// The trampoline casts to the golib FAMILY delegate, and the value being called is not always
+    /// one: a variadic func literal in an <c>any</c> slot, or a declared variadic used as a method
+    /// group there, acquires C#'s NATURAL delegate type instead — the same shape difference
+    /// <see cref="TryFuncShape"/> had to stop reading off the type NAME. Those rebind onto the
+    /// family, which is exact rather than a best-effort match: the family's type arguments are
+    /// constructed FROM this delegate's own <c>Invoke</c> signature, so the two agree by
+    /// construction and only the nominal type differs. A delegate that already IS its family type
+    /// skips the rebind.
+    /// </para>
+    /// <para>
+    /// The rebind RETARGETS through <c>Invoke</c> — the family delegate closes over the original
+    /// delegate as its receiver — rather than re-binding the original's own target and method. That
+    /// is what makes it total. A delegate the BRIDGE ITSELF built is expression-compiled
+    /// (<c>Value.Method</c> binds a receiver that way, and a variadic method value lands here), and
+    /// a compiled lambda's <c>Method</c> is not a runtime <see cref="MethodInfo"/>, which
+    /// <see cref="Delegate.CreateDelegate(Type, object, MethodInfo)"/> rejects outright
+    /// ("MethodInfo must be a runtime MethodInfo object"). <c>Invoke</c> is always a real method on
+    /// a real delegate type, so this form has no such blind spot — and it carries a multicast
+    /// invocation list intact, which re-binding a single target and method silently would not.
+    /// </para>
+    /// <para>
+    /// A direct typed call also means a panic inside the callee propagates natively, rather than
+    /// arriving wrapped in a <see cref="TargetInvocationException"/> the caller must unwrap.
+    /// </para>
+    /// </remarks>
+    public static object? InvokeVariadic(Delegate del, object?[] fixedArgs, Array tail)
+    {
+        Type delegateType = del.GetType();
+        VariadicInvoker invoker = s_variadicInvokers.GetOrAdd(delegateType, static t => buildVariadicInvoker(t));
+        Delegate bound = delegateType == invoker.FamilyType ? del : rebindToVariadicFamily(del, invoker.FamilyType);
+
+        return invoker.Call(bound, fixedArgs, tail);
+    }
+
+    private static VariadicInvoker buildVariadicInvoker(Type delegateType)
+    {
+        MethodInfo? invoke = delegateType.GetMethod("Invoke");
+        ParameterInfo[] parameters = invoke?.GetParameters() ?? [];
+
+        if (invoke is null || parameters.Length == 0 ||
+            parameters[^1].ParameterType is not { IsGenericType: true } tailParameter ||
+            tailParameter.GetGenericTypeDefinition() != typeof(Span<>))
+        {
+            throw new NotImplementedException(
+                $"reflect: '{GoTypeName(delegateType)}' is not a variadic func value (its Invoke has no Span<T> tail)");
+        }
+
+        int fixedCount = parameters.Length - 1;
+        bool hasResult = invoke.ReturnType != typeof(void);
+
+        if (fixedCount > MaxVariadicFixedParameters)
+        {
+            throw new NotImplementedException(
+                $"reflect: calling a variadic func value with {fixedCount} fixed parameters is not implemented — golib's " +
+                $"Actionꓸꓸꓸ/Funcꓸꓸꓸ families stop at {MaxVariadicFixedParameters} (no demonstrated consumer beyond that)");
+        }
+
+        // <T1..Tn, TArg[, TResult]> — the family's type arguments ARE this delegate's own parameter
+        // types, which is what makes the rebind above exact rather than a signature search.
+        Type[] typeArguments = new Type[fixedCount + (hasResult ? 2 : 1)];
+
+        for (int i = 0; i < fixedCount; i++)
+            typeArguments[i] = parameters[i].ParameterType;
+
+        typeArguments[fixedCount] = tailParameter.GetGenericArguments()[0];
+
+        if (hasResult)
+            typeArguments[^1] = invoke.ReturnType;
+
+        Type familyType = (hasResult ? s_variadicFuncFamily : s_variadicActionFamily)[fixedCount].MakeGenericType(typeArguments);
+
+        MethodInfo trampoline = typeof(GoReflect)
+            .GetMethod($"{(hasResult ? "callVariadicFunc" : "callVariadicAction")}{fixedCount}", BindingFlags.NonPublic | BindingFlags.Static)!
+            .MakeGenericMethod(typeArguments);
+
+        return new VariadicInvoker(familyType, trampoline.CreateDelegate<Func<Delegate, object?[], Array, object?>>());
+    }
+
+    private static Delegate rebindToVariadicFamily(Delegate del, Type familyType)
+    {
+        try
+        {
+            return Delegate.CreateDelegate(familyType, del, "Invoke");
+        }
+        catch (Exception ex) when (ex is ArgumentException or MethodAccessException or MissingMethodException)
+        {
+            throw new NotImplementedException(
+                $"reflect: the variadic func value '{GoTypeName(del.GetType())}' could not be rebound onto golib's " +
+                $"'{familyType.Name}' family delegate", ex);
+        }
+    }
+
+    // The eighteen trampolines. Each makes the same three moves — cast to the family type, unbox the
+    // fixed arguments, hand the tail array over as a Span — and differs only in arity, so they are
+    // written out rather than generated: the closed set IS golib's variadic family (variadic.cs).
+
+    private static object? callVariadicAction0<TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<TArg>)d)(new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicAction1<T1, TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<T1, TArg>)d)((T1)a[0]!, new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicAction2<T1, T2, TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<T1, T2, TArg>)d)((T1)a[0]!, (T2)a[1]!, new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicAction3<T1, T2, T3, TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<T1, T2, T3, TArg>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicAction4<T1, T2, T3, T4, TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<T1, T2, T3, T4, TArg>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicAction5<T1, T2, T3, T4, T5, TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<T1, T2, T3, T4, T5, TArg>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, (T5)a[4]!, new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicAction6<T1, T2, T3, T4, T5, T6, TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<T1, T2, T3, T4, T5, T6, TArg>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, (T5)a[4]!, (T6)a[5]!, new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicAction7<T1, T2, T3, T4, T5, T6, T7, TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<T1, T2, T3, T4, T5, T6, T7, TArg>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, (T5)a[4]!, (T6)a[5]!, (T7)a[6]!, new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicAction8<T1, T2, T3, T4, T5, T6, T7, T8, TArg>(Delegate d, object?[] a, Array t)
+    { ((Actionꓸꓸꓸ<T1, T2, T3, T4, T5, T6, T7, T8, TArg>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, (T5)a[4]!, (T6)a[5]!, (T7)a[6]!, (T8)a[7]!, new Span<TArg>((TArg[])t)); return null; }
+
+    private static object? callVariadicFunc0<TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<TArg, TResult>)d)(new Span<TArg>((TArg[])t)); }
+
+    private static object? callVariadicFunc1<T1, TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<T1, TArg, TResult>)d)((T1)a[0]!, new Span<TArg>((TArg[])t)); }
+
+    private static object? callVariadicFunc2<T1, T2, TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<T1, T2, TArg, TResult>)d)((T1)a[0]!, (T2)a[1]!, new Span<TArg>((TArg[])t)); }
+
+    private static object? callVariadicFunc3<T1, T2, T3, TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<T1, T2, T3, TArg, TResult>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, new Span<TArg>((TArg[])t)); }
+
+    private static object? callVariadicFunc4<T1, T2, T3, T4, TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<T1, T2, T3, T4, TArg, TResult>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, new Span<TArg>((TArg[])t)); }
+
+    private static object? callVariadicFunc5<T1, T2, T3, T4, T5, TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<T1, T2, T3, T4, T5, TArg, TResult>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, (T5)a[4]!, new Span<TArg>((TArg[])t)); }
+
+    private static object? callVariadicFunc6<T1, T2, T3, T4, T5, T6, TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<T1, T2, T3, T4, T5, T6, TArg, TResult>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, (T5)a[4]!, (T6)a[5]!, new Span<TArg>((TArg[])t)); }
+
+    private static object? callVariadicFunc7<T1, T2, T3, T4, T5, T6, T7, TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<T1, T2, T3, T4, T5, T6, T7, TArg, TResult>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, (T5)a[4]!, (T6)a[5]!, (T7)a[6]!, new Span<TArg>((TArg[])t)); }
+
+    private static object? callVariadicFunc8<T1, T2, T3, T4, T5, T6, T7, T8, TArg, TResult>(Delegate d, object?[] a, Array t)
+    { return ((Funcꓸꓸꓸ<T1, T2, T3, T4, T5, T6, T7, T8, TArg, TResult>)d)((T1)a[0]!, (T2)a[1]!, (T3)a[2]!, (T4)a[3]!, (T5)a[4]!, (T6)a[5]!, (T7)a[6]!, (T8)a[7]!, new Span<TArg>((TArg[])t)); }
+
     /// <summary>
     /// The per-parameter Go array dimensions of a converted func VALUE — one entry per parameter,
     /// null where that parameter is not a fixed-size array — or null when nothing is carried.

@@ -648,6 +648,7 @@
     <Project Path="tests/Behavioral/PackageVarInitOrder/PackageVarInitOrder.csproj" />
     <Project Path="tests/Behavioral/PanicDeferCalleeFrame/PanicDeferCalleeFrame.csproj" />
     <Project Path="tests/Behavioral/PanicRecover/PanicRecover.csproj" />
+    <Project Path="tests/Behavioral/PanicValueRendering/PanicValueRendering.csproj" />
     <Project Path="tests/Behavioral/ParallelAssignmentHazard/ParallelAssignmentHazard.csproj" />
     <Project Path="tests/Behavioral/ParenthesizedConcatContext/ParenthesizedConcatContext.csproj" />
     <Project Path="tests/Behavioral/PartialRedeclaration/PartialRedeclaration.csproj" />
@@ -717,6 +718,7 @@
     <Project Path="tests/Behavioral/ReflectStructTagCopy/ReflectStructTagCopy.csproj" />
     <Project Path="tests/Behavioral/ReflectTypedNilInterface/ReflectTypedNilInterface.csproj" />
     <Project Path="tests/Behavioral/ReflectUnexportedFieldFlags/ReflectUnexportedFieldFlags.csproj" />
+    <Project Path="tests/Behavioral/ReflectVariadicCall/ReflectVariadicCall.csproj" />
     <Project Path="tests/Behavioral/ReflectZeroAndGrow/ReflectZeroAndGrow.csproj" />
     <Project Path="tests/Behavioral/ReflectliteTypeName/ReflectliteTypeName.csproj" />
     <Project Path="tests/Behavioral/RefLoweredNilTiming/RefLoweredNilTiming.csproj" />

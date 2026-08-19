@@ -1097,6 +1097,14 @@ public static void SetZero(this ΔValue v) {
 // func's STATIC out types (a nil result is a VALID nil Value of the out type). A converted Go
 // multi-return is a ValueTuple, destructured positionally. A panic inside the callee is
 // unwrapped from TargetInvocationException and rethrown untouched.
+//
+// A VARIADIC func takes the other path. Go's contract is that Call itself builds the tail slice
+// from the trailing arguments (CallSlice is the form that takes it pre-built), so the arity rule
+// changes shape — the last In() is the tail SLICE, every argument from that position on is
+// assignable to its ELEMENT, and there is no upper bound. The invocation changes too: the tail
+// lowers to `params Span<T>`, which no reflective invoke can carry, so it goes through
+// GoReflect.InvokeVariadic's typed dispatch (see that method for why). Everything else — the
+// marshalling rule, the zero-Value guard, the result unpacking — is shared with the fixed path.
 public static slice<ΔValue> Call(this ΔValue v, slice<ΔValue> @in) {
     v.flag.mustBe(Func);
     v.flag.mustBeExported();
@@ -1109,7 +1117,7 @@ public static slice<ΔValue> Call(this ΔValue v, slice<ΔValue> @in) {
         throw panic("reflect.Value.Call: not a func value");
     }
     if (isVariadic) {
-        throw new NotImplementedException("reflect.Value.Call: variadic func values are not implemented (next consumer: text/template)");
+        return callVariadic(del, @in, ins, outs);
     }
     if (len(@in) < ins.Length) {
         throw panic("reflect: Call with too few input arguments");
@@ -1119,15 +1127,7 @@ public static slice<ΔValue> Call(this ΔValue v, slice<ΔValue> @in) {
     }
     object?[] args = new object?[ins.Length];
     for (nint i = 0; i < ins.Length; i++) {
-        ΔValue arg = @in[i];
-        if (arg.flag == 0) {
-            throw panic("reflect: " + "Call" + " using zero Value argument");
-        }
-        if (!GoReflect.TryMarshalAssignable(arg.live, ins[i], out object? marshalled)) {
-            throw panic("reflect: Call using " + GoReflect.GoTypeName(arg.live?.GetType()) +
-                        " as type " + GoReflect.GoTypeName(ins[i]));
-        }
-        args[i] = marshalled;
+        args[i] = marshalCallArg(@in[i], ins[i]);
     }
     object? result;
     try {
@@ -1136,6 +1136,48 @@ public static slice<ΔValue> Call(this ΔValue v, slice<ΔValue> @in) {
         System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
         throw;
     }
+    return callResults(result, outs);
+}
+
+// The variadic arm of Call. `ins` counts the tail as ONE parameter (TryFuncShape reports it as
+// Go does, `[]T` rather than the emitted Span<T>), so `ins.Length - 1` fixed arguments are
+// marshalled positionally and everything after them packs into a fresh T[] the typed dispatch
+// hands over as the Span. A panic inside the callee needs no unwrapping here: the trampoline
+// calls the delegate directly, so nothing wraps it in a TargetInvocationException.
+private static slice<ΔValue> callVariadic(Delegate del, slice<ΔValue> @in, System.Type[] ins, System.Type[] outs) {
+    nint fixedCount = ins.Length - 1;
+    if (len(@in) < fixedCount) {
+        throw panic("reflect: Call with too few input arguments");
+    }
+    object?[] args = new object?[fixedCount];
+    for (nint i = 0; i < fixedCount; i++) {
+        args[i] = marshalCallArg(@in[i], ins[i]);
+    }
+    // ins[^1] is the Go tail type `[]T`; its element is what each trailing argument marshals to.
+    System.Type tailElem = ins[^1].GetGenericArguments()[0];
+    // `Array` alone is reflect.Array (a Kind constant is in scope here), so this one is qualified.
+    System.Array tail = System.Array.CreateInstance(tailElem, (int)(len(@in) - fixedCount));
+    for (nint i = fixedCount; i < len(@in); i++) {
+        tail.SetValue(marshalCallArg(@in[i], tailElem), (int)(i - fixedCount));
+    }
+    return callResults(GoReflect.InvokeVariadic(del, args, tail), outs);
+}
+
+// One argument, marshalled under the assignability rule emitted asserts use.
+private static object? marshalCallArg(ΔValue arg, System.Type want) {
+    if (arg.flag == 0) {
+        throw panic("reflect: " + "Call" + " using zero Value argument");
+    }
+    if (!GoReflect.TryMarshalAssignable(arg.live, want, out object? marshalled)) {
+        throw panic("reflect: Call using " + GoReflect.GoTypeName(arg.live?.GetType()) +
+                    " as type " + GoReflect.GoTypeName(want));
+    }
+    return marshalled;
+}
+
+// The delegate's raw result as Values typed by the func's STATIC out types — a Go multi-return
+// arrives as a ValueTuple and destructures positionally.
+private static slice<ΔValue> callResults(object? result, System.Type[] outs) {
     var ret = new slice<ΔValue>(outs.Length);
     if (outs.Length == 1) {
         ret[0] = makeTypedValue(result, outs[0], null, default);
@@ -1176,9 +1218,14 @@ public static ΔValue Method(this ΔValue v, nint i) {
     return makeTypedValue(bound, bound.GetType(), null, (flag)(v.flag & flagRO));
 }
 
-// CallSlice is unimplemented on the bridge (no demonstrated consumer).
+// CallSlice is unimplemented on the bridge, and its named next consumer is RETIRED as measured
+// wrong: text/template's safeCall reaches Go through `fun.Call(args)` and never CallSlice
+// (funcs.go:375), so implementing Call's variadic arm cleared it with nothing left here to serve.
+// A GOROOT-wide census finds no other caller either. The machinery it would need now exists
+// (GoReflect.InvokeVariadic) — the tail Value would be unpacked into the array instead of built
+// from the trailing arguments — so this stays a stub for want of a consumer, not for want of a way.
 public static slice<ΔValue> CallSlice(this ΔValue v, slice<ΔValue> @in) {
-    throw new NotImplementedException("reflect.Value.CallSlice is not implemented (next consumer: text/template)");
+    throw new NotImplementedException("reflect.Value.CallSlice is not implemented (no demonstrated consumer)");
 }
 
 // sysTypeOfReflectType recovers the managed System.Type a canonical reflect.Type wrapper
