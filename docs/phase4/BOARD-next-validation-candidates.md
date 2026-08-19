@@ -11807,7 +11807,23 @@ No gob artifact is committed (100→103 is measurement, not a bank).
 
 ### Gates
 
-GATES_PLACEHOLDER
+Converter `go test ./...` **ok, 145.9 s, zero failures** (post-merge guard subset re-proven
+against the coordinator's reconciliation) · full `check-no-regression.ps1` **byte-identical
+across all 625 behavioral packages**, 0 NOT MEASURED, 2 advisory warnings, exit 0 · seeded
+whole-stdlib reconvert: **63 marked / 0 clobbered**, SIX movers — all intended consequences of
+the two merged converter arcs composing (xml ×3 + go/constant take the escape-box heap form at
+case-var addresses the cast recorder now observes; runtime retires `readmemstats_m_bySize` for
+the package-level `MemStats_BySize` under the reconciled adoption rule), zero movers from this
+lane's own emission fixes, all three packages build clean · `GolibTests` **155/155** ·
+stdlib-metadata in sync · solution integrity 627/627, path casing 4,506 · full behavioral suite
+**598/598 Transpile+Compile+Target, 572/572 Output** (26 skipped, no `package main`), 0
+failures, 4,473 s — run AFTER the master merge, so it re-proves the union tree · `go2cs.slnx`
+**Build succeeded, 0 errors** (the golib-change gate) · sweeps, all `-SkipBuild` against the
+merged tree's binary: **`internal/reflectlite` PASS 27 (37 s — the bank's closure), `fmt` PASS
+63 + `internal/fmtsort` PASS 3, `encoding/json` PASS 491, `go/types` PASS 557** — every banked
+bridge consumer named as a canary re-validates. Guards proven failing-first
+where stated (field order, unexported-method rule, both naming arms, the behavioral IsNil shape,
+both emission guards).
 
 ### The ranked queue, updated
 
