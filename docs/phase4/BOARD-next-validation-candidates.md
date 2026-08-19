@@ -11833,4 +11833,170 @@ both emission guards).
    retires a disclosure class.
 3. **`debug/elf` (31)** — CS8183 ×1, unmoved, still the next bounded one-diagnostic item.
 
+
+## MEASURED — both template packages' CS0030 wall is GONE; `text/template` RUNS at 38 of 52 behind ONE named bridge stub, `html/template`'s new wall is two roots and this lane closes one (2026-08-19, lane `claude/row-harvest-2`)
+
+The harvest entry's queue listed `html/template` (243) and `text/template` (52) behind "a CS0030 that
+may or may not be the same family" as `encoding/xml`'s. It was the same family: the local-iface-cast
+merge closed it in both, unmeasured, exactly as this lane's brief predicted. Both are re-measured on
+current master (`e01780c28`). **Neither banks**, and the honest summary is one compile wall gone in
+two packages, one general converter defect found and fixed with a failing-first guard, and the
+residual in each priced with its owner named.
+
+### `text/template` — the wall fell, and what was behind it was a ONE-LINE datum loss
+
+52 verdicts. CS0030 is gone entirely; the package compiles and RUNS. First measurement:
+**36 of 52 matching, 16 divergent** — and all 16 were ONE panic, at `funcs.cs:95`:
+
+```
+panic: 0x211163e3340
+   at go.text.template_package.addValueFuncs(map`2 out, FuncMap in)
+```
+
+That is `addValueFuncs`'s `throw panic(err)` — `goodFunc` REJECTING a function Go accepts. The
+message could not be read because the panic value rendered as an ADDRESS (see the second finding
+below); instrumented, it says:
+
+```
+GOODFUNC-DIAG name=die     msg=function die has 0 return values; should be 1 or 2
+GOODFUNC-DIAG name=doPanic msg=function doPanic has 0 return values; should be 1 or 2
+```
+
+Go's `die` is `func() bool { panic("die") }` — one result. The emission was
+`["die"u8] = () => { throw panic("die"); }`, and a parameterless C# lambda with no reachable
+`return` NATURAL-TYPES to `Action`. The Go result type was gone, so the reflection bridge answered
+`NumOut() == 0` — truthfully; the datum was missing from the emission, not from the bridge — and
+text/template's own `goodFunc` rejected every FuncMap holding such a literal, panicking as the map
+was registered.
+
+### The defect is general, and the argument position had already been fixed
+
+A func literal in an empty-interface slot has no delegate target, so C# derives the delegate from
+the body. `CallExprContext.emptyInterfaceArgs` → `LambdaContext.untypedInterfaceTarget` already
+stated the declared Go result type explicitly for the ARGUMENT position (testing/quick's
+TestFailure #3). The KEYED COMPOSITE forms — a `map[K]any` value, an `any` struct field, a
+sparse-`[N]any` element — are the same slot reached through `convKeyValueExpr` instead of
+`convExprList`, and were never marked. Two arms, both fixed:
+
+| Arm | Symptom | Fix |
+|:--|:--|:--|
+| SINGLE result, body never completes normally | no `return` to infer from → C# infers `Action`, result type lost outright | `convKeyValueExpr.go` marks the slot once `valueSlotType` is resolved, so all three keyed forms are covered by one predicate |
+| MULTI result | every arm a C# tuple with a typeless element (`(i - 1, default!)`, `(default!, fmt.Errorf(…))`) → no arm fixes the delegate, CS8917 + CS1662/CS8716 per return | `convFuncLit.go` states the declared result tuple through `generateResultSignature`, the helper the generic-inference arm already used |
+
+The multi-result arm retires the reference doc's standing "no demonstrated consumer" caveat —
+`html/template`'s escape_test is the consumer it was waiting for.
+
+A slot with a CONCRETE func type (`map[string]func() bool`) HAS a delegate target and is
+deliberately untouched; that control is asserted in the guard and stayed green under both
+neuterings.
+
+### `text/template` after the fix: 38 of 52, and the residual is ONE stub
+
+**36 → 38 of 52.** The fix's own yield is only TWO verdicts, and that is worth stating plainly:
+the registration panic blocked all 16, but a SECOND wall stands immediately behind it, so thirteen
+of the sixteen simply advanced from one root to the next. The 14 remaining divergences census to
+two owners, and thirteen of them are one:
+
+| Root | Verdicts | State |
+|:--|:--:|:--|
+| `reflect.Value.Call`: variadic func values are not implemented | **13** | the stub's own message names `text/template` as its "next consumer" — that is now this measurement |
+| `TestIssue43065` | 1 | a different panic, unexamined |
+
+The variadic stub is NOT a bounded member fix and this lane deliberately did not take it. The
+obstacle is structural: a converted Go variadic lowers to a `params Span<TArg>` delegate
+(golib `variadic.cs`, 18 closed shapes across the `Funcꓸꓸꓸ`/`Actionꓸꓸꓸ` families), `Span<T>` is a
+ref struct, and a ref struct cannot be boxed into the `object?[]` that `Delegate.DynamicInvoke` and
+`MethodInfo.Invoke` both require. Implementing it means typed dispatch — one trampoline per
+family arity, plus rebinding a natural-typed variadic delegate onto its family type via
+`Delegate.CreateDelegate` — which is a feature arc with golib gates, not a member fix.
+
+### Second finding, recorded and NOT fixed: `panic(err)` prints an ADDRESS where Go prints the message
+
+`PanicException` renders its state as `state?.ToString()`, so a panic carrying a converted Go
+`error` prints `panic: 0x211163e3340`. Go's runtime does not: `preprintpanics` replaces an `error`
+panic value with `v.Error()` and a `Stringer` with `v.String()` BEFORE printing. This cost this
+lane a diagnostic round-trip on the only defect it was chasing, and it degrades every panic
+traceback in the corpus that carries an error. The remedy is small and has an exact Go precedent,
+but it is a golib change (GolibTests + full behavioral + `go2cs.slnx`) with corpus-wide output
+reach, so it is recorded here rather than taken alongside a converter fix.
+
+### `html/template` — CS0030 also gone; the new wall is TWO roots and this lane closes one
+
+243 verdicts, still BUILD-BLOCKED, but on a different and much shorter wall: 9 errors in 2 roots.
+
+| Root | Diagnostics | Owner |
+|:--|:--|:--|
+| **A.** `FuncMap` could not be found | CS0246 ×6 | the board's ASSEMBLY-SCOPED-ALIAS class. `type FuncMap = template.FuncMap` emits as a production-file `global using FuncMap = go.text.template_package.FuncMap;`, which is scoped to ONE compilation; the tests project is reference-model (its `<Compile>` set is `*_test.cs` only), so the name does not cross. `seedProductionAliasLifts` exists for exactly this and is deliberately NARROW — it seeds only aliases whose RHS is an ANONYMOUS struct/interface, on the stated reasoning that "a named RHS already renders through its own qualified name". This alias has a NAMED RHS and that reasoning does not hold for it: the test half renders the bare `FuncMap`, not the qualified `templateꓸFuncMap` the test's own metadata file does declare. Whether the fix is widening the seed (the doc warns of test-local collisions) or making the renderer honor the stated invariant is a real choice, NOT taken here |
+| **B.** the multi-result `any`-slot literal | CS8917 ×1, CS1662 ×2, CS8716 ×2 | **closed by this lane** (the arm above) |
+
+Root A is unrelated to Root B, so html/template stays build-blocked — but the wall is now ONE root
+instead of two, and that is re-measured rather than argued: with the fix in, the build reports
+**6 errors, all of them CS0246 `FuncMap`** (clone_test 277, escape_test 938, exec_test 799/1491/
+1519/1949). Root B's five are gone. The residual behind Root A is unmeasured — but html/template
+wraps text/template, so the variadic-`Call` stub is predicted to stand behind it as well.
+
+### `encoding/gob`'s `array<T>`-length root, READ but NOT RUN — the zero-value ladder does not reach it
+
+This lane did not get a gob pipeline run in, so nothing below is a measurement. What it is is a
+located shape, and it corrects the standing assumption that the root is a map-index miss the
+zero-value ladder can close.
+
+The array-valued map in `TestEndToEnd` is `T1.Marr map[[2]string][2]*float64` — key AND value
+are arrays. But gob never INDEXES that map on the decode path: `decodeMap` calls
+`allocValue(mtyp.Elem())`, i.e. `reflect.New` over the ELEMENT DESCRIPTOR, and `decodeArray`
+then takes its length from `t.Len()` (decode.go:856). So the loss is in the descriptor, not in
+`map<K,V>`'s `default!` miss:
+
+```csharp
+// abi type_impl.cs, Elem() — a MAP descriptor carries no arrayDims, so its element gets none
+nint[]? dims = Ꮡt.Value.arrayDims;
+nint[]? elemDims = kind == Pointer ? dims : dims is { Length: > 1 } ? dims[1..] : null;
+```
+
+A map descriptor has no dims cargo of its own, so `Key()`/`Elem()` hand down `null` and the
+array descriptor answers `Len() == 0` — hence "length mismatch in decodeArray". The
+zero-value ladder (`GoZero<T>(T template)`, `IGoZeroShaped`) cannot help because it recovers
+shape FROM a live value, and at decode time the target map is empty: there is no template
+anywhere. The durable remedy is the one the func-parameter case already established — carry
+the dimension as descriptor CARGO (`[GoArrayDims]`/`funcParamDims`'s map twin: key and elem
+dims stamped by the converter), which is a converter + golib + abi arc, not a member fix.
+
+### The ranked queue, updated
+
+1. **`reflect.Value.Call` variadic dispatch** — now the single named owner of 13 of `text/template`'s
+   14 residual verdicts, and predicted to stand behind `html/template`'s 243 as well. A feature arc,
+   not a member fix: the tail is `params Span<TArg>`, `Span<T>` is a ref struct, and no reflective
+   invoke path (`DynamicInvoke`, `MethodInfo.Invoke`) can box one. Needs typed dispatch across the
+   18 `Funcꓸꓸꓸ`/`Actionꓸꓸꓸ` shapes plus `Delegate.CreateDelegate` rebinding for natural-typed
+   variadics. Two packages, ~295 verdicts, one owner.
+2. **`html/template`'s Root A** — the named-RHS type alias across the reference-model test boundary;
+   `seedProductionAliasLifts`'s narrowness is the decision to revisit, and it is 6 errors from a
+   243-verdict measurement.
+3. **`panic(err)` renders an address, not the message** — golib `PanicException`; Go's
+   `preprintpanics` is the exact precedent. Small, with corpus-wide traceback reach.
+4. **`encoding/gob` (106)** — unchanged at 103 of 106; still the closest unbanked package.
+
+### Gates
+
+Converter `go test ./...` **ok, 155.2 s, exit 0, zero failures** (includes the new
+`projitemsIntegrity` registration and both guard arms) · full `check-no-regression.ps1`
+**byte-identical across all 625 behavioral packages**, nothing NOT MEASURED, 2 advisory converter
+warnings, exit 0, 720 s; preflight solution integrity **627/627** and path casing **4,506/4,506** ·
+seeded whole-stdlib reconvert **63 marked / 0 clobbered**, 1,661 emitted artifacts identical,
+**ONE mover** — `go/internal/gcimporter/gcimporter.cs`, the multi-result arm firing on
+`sync.Map.LoadOrStore(pkgDir, func() (string, error){…})`, an `any` ARGUMENT slot rendering
+`(@string, error) () => …`; verified **compiling, 0 errors 0 warnings**, then RESTORED per
+corpus-regen policy for the next leveling regen. A second reported difference,
+`html/template/package_init.cs`, was an artifact of seeding from this lane's own `-tests`-dirty
+tree (the `initᴛᴛtests` hook), not a mover · guards proven failing-first by neutering
+each arm in turn — the single-result arm reproduces `["die"u8] = () =>` and the multi-result arm
+reproduces the untyped `(params ꓸꓸꓸany aʗp) =>`, with the concrete-slot CONTROL staying green under
+both · **operational** proof beyond emission: the converted probe prints `1 1` / `2 1 1`, identical
+to `go run`, so `NumOut()` agrees with Go for the panic-only literal, the normal-return literal, the
+multi-result variadic, the `any` struct field and the concrete-slot control alike.
+
+No golib change, so `GolibTests`/behavioral/`go2cs.slnx` are not owed. No roster row, no proof page,
+no disclosures, no converted test sources committed: two measurements, one converter fix, zero
+validations.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

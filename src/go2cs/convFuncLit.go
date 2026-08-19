@@ -833,6 +833,16 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 			} else {
 				returnTypePrefix = v.generateResultSignature(litSig) + " "
 			}
+		} else if results := litSig.Results(); context.untypedInterfaceTarget && results != nil && results.Len() > 1 {
+			// The MULTI-result twin of the `any`-slot rule below, which was scoped to single
+			// results for want of a demonstrated consumer. html/template's escape_test supplies
+			// one: `FuncMap{"pred": func(a ...any) (any, error) {…}}` renders its arms as C#
+			// tuples whose elements are `default!` on the error arm and `(i - 1, default!)` on
+			// the success arm — neither carries a natural type, so NO arm can fix the delegate
+			// and inference fails outright (CS8917, then CS1662/CS8716 on each return). Stating
+			// the declared Go result tuple explicitly is the same remedy the single-result arm
+			// and the generic-inference arm above already apply, through the same helper.
+			returnTypePrefix = v.generateResultSignature(litSig) + " "
 		} else if results := litSig.Results(); results != nil && results.Len() == 1 {
 			if context.untypedInterfaceTarget {
 				// A literal converted into a real `any` parameter slot is NATURAL-typed by C# —
