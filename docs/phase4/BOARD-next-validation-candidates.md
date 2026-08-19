@@ -12138,4 +12138,137 @@ No golib change, so `GolibTests`/behavioral/`go2cs.slnx` are not owed. No roster
 no disclosures, no converted test sources committed: two measurements, one converter fix, zero
 validations.
 
+
+## ✅ BANKED — `debug/elf` validates 31/31; the wall was a DISCARDED method group, and the same fix's other half was a discard that had been emitting a DECLARATION (2026-08-19, lane `claude/row-harvest-3`)
+
+The harvest entry's queue item 3 — *"`debug/elf` (31) — CS8183 ×1, unmoved, still the next bounded
+one-diagnostic item"* — closes. The diagnostic reproduced exactly as the one-diagnostic-remeasure
+entry recorded it, the remedy is one general converter rule, and the package validates on the FIRST
+run behind it: **31 matched, 0 disclosed**, one skip-parity, two benchmarks excluded. Roster
+**154/215 (71.6%)**, header recomputed from the table.
+
+### The wall is one line, and it is only ever a COMPILE wall
+
+`file_test.go:1159` is `_ = net.ResolveIPAddr // force dynamic linkage`, inside
+`TestNoSectionOverlaps` — a test that `t.Skipf`s on Windows four lines earlier and never reaches it.
+Go writes the shape to make the linker keep a symbol. C# infers a discard's type FROM its
+right-hand side, and a method group has no type to give: **CS8183**, *"cannot infer the type of
+implicitly-typed discard"*. Nothing executes the line; it merely has to compile, and until it did,
+the whole test assembly did not.
+
+Worth stating plainly, because it prices the row honestly: closing a 31-verdict package here bought
+no behavioral change whatsoever in the package's own code. Everything else in `debug/elf` — the
+section and program-header walk, symbol tables, `DynValue`, compressed sections in both the GCC
+`.zdebug` and gABI `SHF_COMPRESSED` spellings, the `>65280`-section overflow path, and DWARF
+relocation application across twenty compiler/architecture objects — already worked.
+
+### The fix is two rules, and the second was the worse defect
+
+**1. A discarded func value takes a CAST.** The two C# forms with no type of their own are the
+method group and the lambda (a func literal, or the method VALUE that converts to one). Both are
+CS8183 in a discard, and `discardTargetTypeName` supplies the target: a package named func type
+whose underlying signature matches, else the structural `Func<…>`/`Action<…>` render
+`iifeDelegateType` already provides. A variadic signature takes the golib family
+(`Funcꓸꓸꓸ<@string, any, @string>` for `fmt.Sprintf`). The parentheses around the RHS are
+load-bearing for the lambda form — `(Func<…>)(nint p1) => …` does not parse as a cast. A func-typed
+VARIABLE is left alone: it already has a C# type.
+
+**2. A blank LHS is a discard, never a declaration.** The `:=` path one statement form over faces
+the same typeless RHS and answers it by DECLARING the local with the matching package named delegate
+(`stateFn state = lexText;`, the self-referential state machine). A blank LHS reached that branch too
+and emitted `stateFn _ = lexText;` — a local literally named `_`. Everything downstream then
+degrades: every other `_ = x` in the scope becomes an ASSIGNMENT to that local (CS0841 before it,
+CS0123/CS0029 after), and a second named-func-type discard collides outright (CS0128). The blank
+test is now decided ONCE, above every declaration arm, rather than inside the `var` arm where it lived.
+
+### The asymmetry that makes this a separate rule rather than the `:=` rule again
+
+C# 10 gives a method group a natural type, so `var f = pair;` compiles and needs nothing. A
+**discard** is specifically excluded from that inference. So two statement forms one line apart in
+the same emission block, both facing an untyped func RHS, need OPPOSITE treatments: the declaration
+gets a TYPE on the left, the discard gets a CAST on the right. Recorded in
+ConversionStrategies-Reference beside the `:=` section it mirrors.
+
+### Corpus footprint: zero, measured rather than assumed
+
+Both arms move emission only for a blank LHS. A census of the committed corpus for a declaration
+literally named `_` returns three hits, all of them Go source inside `go/types`' test string
+literals (`api_test.cs`, `resolver_test.cs`), never an emitted declaration; and a bare
+`_ = <method group>` cannot exist in the compiling corpus, because it would be CS8183. The seeded
+whole-stdlib reconvert confirms it: **zero movers from this fix**.
+
+### Guard
+
+`BlankIdentifierCollision` already owned this family — it guards the `_, _, _, _ = a, b, c, d`
+split-discard CS0128 and the blank-`func _()` rename — so the shapes were added there rather than in
+a new project. `blankFuncValues` covers all seven RHS forms (unnamed signature, no-results,
+no-params, named func type **twice in one scope**, variadic, cross-package variadic, method value,
+func literal) plus two controls: a func-typed VARIABLE discard, which must stay uncast, and
+`state := lexText; state = lexNumber`, which must still declare the named delegate. Proven
+failing-first against the neutered converter at **11 diagnostics in 7 classes** — CS0841 ×3,
+CS0029 ×2, CS0123 ×2, CS0128, CS1661, CS1662, CS1678 — and green on all four phases with the fix in.
+
+### The measurement hazard this lane paid for
+
+**`$ErrorActionPreference = 'Continue'` at SCRIPT scope let a failed SEED proceed into a
+conversion.** The reconvert ritual prescribes `'Continue'` around the converter CALL (under
+`'Stop'`, the converter's stderr WARNINGs become a terminating NativeCommandError). Setting it for
+the whole script is the easy over-application, and it is not safe: seeded under the session
+scratchpad, `Copy-Item` died mid-tree on MAX_PATH — the source-generator output names under
+`Generated\` are long enough to exceed it from a deep root — every failure was non-terminating, and
+the script converted into a HALF-SEEDED root, which is exactly the state whose false clobber report
+the marker gate exists to catch. Two lessons: scope `'Continue'` to the converter invocation and
+leave seeding under `'Stop'`; and seed into a SHORT root with `bin`/`obj`/`Generated` excluded,
+which is both immune and far faster (5,297 files). The abandoned run was killed by verified PID, not
+by name.
+
+### A banking trap nobody had hit yet: `.gitignore` ate twenty testdata fixtures
+
+`TestDWARFRelocations` reads twenty compiler/architecture objects from `testdata`, and Go names a
+fixture for what it CONTAINS — so they are `*.obj`. The root `.gitignore`'s "Files built by Visual
+Studio" block matches by EXTENSION across the whole tree, and `*.obj` is in it. `git add` staged
+seven of the twenty-seven fixtures and reported nothing wrong; the row would have banked with a
+suite that cannot reproduce from a clone, which is the one promise the roster makes.
+
+`debug/elf` is the first banked package to hit this — `debug/dwarf`'s equivalents are `.elf`/`.elf4`
+and were never matched — and the census closes at exactly these twenty (`git status
+--ignored=matching -- src/core` now reports **0** ignored testdata files, was 20). The fix is a
+trailing `!src/core/**/testdata/**` negation, whole-tree rather than per-extension, matching the
+scope `.gitattributes` already gives the same trees with `src/core/**/testdata/** -text`; a deeper
+`.gitignore` still wins, so `src/core/.gitignore`'s `*.go` rule keeps staged Go source copies out.
+**Check `git add`'s staged COUNT against the on-disk count when banking a package with testdata** —
+an ignore rule is silent, and this one had been waiting for the first fixture corpus named after a
+build artifact.
+
+### A second bank's badge, corrected in passing
+
+The reconvert's three movers were `debug/elf/README.md` (this lane's — the Tests badge flipping to
+`31/31 validated`), `go/internal/gcimporter/gcimporter.cs` (row-harvest-2's pre-documented mover,
+still pending for the next leveling regen, left untouched), and **`crypto/tls/README.md`**, whose
+badge still read `not_yet_validated` for a package master banked at 400/402 hours earlier. Badge
+regeneration is part of banking — `debug/dwarf`, `debug/gosym` and `crypto/sha256` all carry theirs
+— so that one is a missed step, not drift. Adopted here with the fix's own README, since it is the
+converter's own output for a fact the roster already states.
+
+### Gates
+
+Converter `go test ./...` **ok, 240.2 s, zero failures** · full `check-no-regression.ps1`
+**byte-identical across all 625 behavioral packages** except this lane's own guard artifacts
+(`BlankIdentifierCollision/main.cs` + `package_info.cs`, both re-baselined and re-verified on all
+four phases), **0 NOT MEASURED**, 0 advisory warnings, 1,102 s; preflight solution integrity
+**627/627** and path casing **4,506/4,506** · seeded whole-stdlib reconvert **63 marked / 0
+clobbered**, 1,665 emitted, **1,662 identical / 3 movers / 0 new**, all three classified above ·
+sweep closure `run-validated-sweep.ps1 -Filter debug/elf` **PASS 31 in 28 s**, comfortably inside
+the 10-minute default, so **no `$longTimeouts` floor is owed**. No golib and no `go2cs-gen` change,
+so `GolibTests`/full-behavioral/both-`slnx` are not owed. Proof page converter-generated at
+`685aa2170` — the commit that carries the fix, not its parent.
+
+### The ranked queue, updated
+
+1. **`reflect.Value.Call` variadic dispatch** — unchanged at the top; the named owner of 13 of
+   `text/template`'s 14 residual verdicts and predicted behind `html/template`'s 243.
+2. **`html/template`'s Root A** — the named-RHS type alias across the reference-model test boundary.
+3. **`panic(err)` renders an address, not the message** — golib `PanicException`.
+4. **`encoding/gob` (106)** — unchanged at 103 of 106; still the closest unbanked package.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
