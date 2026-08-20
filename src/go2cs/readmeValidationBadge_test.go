@@ -781,7 +781,7 @@ func TestParseProofTotalsRoundTripsTheRenderer(t *testing.T) {
 	page := renderValidationProofPage(fixtureProvenance(), comparison, disclosures, nil)
 
 	names := proofVerdictNames(comparison)
-	expectedDisclosed := len(proofDisclosedNames(comparison, names))
+	expectedDisclosed := len(proofDisclosedNames(comparison, names, disclosures))
 	expectedMatched := len(names) - expectedDisclosed
 
 	matched, disclosed, ok := parseProofTotals(page)

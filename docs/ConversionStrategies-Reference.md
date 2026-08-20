@@ -15376,6 +15376,45 @@ and which the managed runtime provably cannot, since a returned `slice<rune>` is
 It discloses one `alloc-profile` row (signature `"Decode allocated "`) while `TestDecode` independently
 proves the decoded output is correct — the disclosure covers exactly the allocation profile, nothing else.
 
+**A pin whose GO side is not deterministic — the `hostConditional` annotation (2026-08-20 coordinator
+ruling — implemented).** A disclosure asserts *Go passes, C# provably cannot*, so it is only stable
+while the **Go** side is stable. `crypto/tls`'s `TestBogoSuite` is the first pinned row whose Go side
+is not: `go test` downloads the pinned boringssl module, builds BoringSSL's own runner from it, and
+whether that runner passes, expands into its 3,243-row case matrix, or fails is decided per host and
+per run by network reachability and by the 10-minute deadline Go's test binary carries by default.
+That makes the pin brittle in **both** directions — the sweep goes red when Go starts failing (Go
+fail / C# fail reads as an ordinary *agreed failure*, so the row leaves the disclosed set and
+`crypto/tls` reports 401 + 1 where the roster banks 400 + 2), and red again when Go goes back to
+passing on a quieter host. Nothing in a go2cs branch can move either reading: the baseline is
+`go test -json` over GOROOT's own sources, where the BoGo shim is Go's own test binary.
+
+The ruling **refused** the broad remedy — accepting agreement-on-failure as satisfying a disclosure
+*in general*, which would make every pin self-satisfying the moment its baseline broke for any
+environmental reason, quietly decaying *Go passes, C# provably cannot* into *C# fails* — and adopted
+a per-row annotation instead. A manifest entry may carry `hostConditional`, whose non-empty value IS
+the marker **and** the one sentence naming the environmental dependency (so a row can never be marked
+without saying what it depends on; a blank one is a load-time error, like an empty signature). An
+annotated row is accepted in **exactly two shapes** and accounts as **disclosed — never as matching**
+in both: Go pass / C# fail (the pinned divergence) and Go fail / C# fail (agreement, where the Go
+premise itself fails). The roster arithmetic is therefore host-stable — `crypto/tls` reads 400 + 2 on
+every machine. Go-side subtest children of an annotated row ride the existing withdrawal rule in the
+second shape too, because shape (b) is precisely the shape in which Go DID reach its fan-out;
+without that, `TestBogoSuite`'s 3,243 case rows land as one-sided mismatches on a run where the
+converted side never moved. **The tolerance is confined to the half that was never deterministic:**
+the signature pin governs both shapes, so a C# failure that moved is a strict mismatch under the same
+wording the first shape uses, a C# side that starts passing leaves the disclosed set and the sweep's
+`disclosed count moved` check fires, and an *unannotated* row gains no second shape at all. Only a
+row with coordinator-accepted rooting evidence is annotated; `TestBogoSuite` is the first and only
+member. The generated proof page renders the row's own note from the manifest — naming the
+dependency and both accepted shapes, the model the roster's `internal/zstd` row sets — rather than
+carrying a hand edit a regeneration would drop. Guards:
+`TestHostConditionalDisclosureAccountsInBothShapes` (both shapes disclose; a moved C# signature is a
+mismatch; a C# side that starts passing leaves the set; an unannotated row stays an ordinary
+agreement), `TestHostConditionalRootWithdrawsGoOnlyDescendantsWhenGoFails` (the flood exclusion, with
+the un-annotated control that floods), `TestHostConditionalRowRendersDisclosedWhenBothSidesFail` (the
+page's totals, its disclosed marker and the note) and `TestHostConditionalMarkerMustNameItsDependency`.
+Shape (b) cannot be forced on a host whose Go BoGo run passes, so those fixtures ARE its proof.
+
 **The reflect TYPE-RELATION mirrors + Convert (Phase-3 continuation, 2026-07-26).** Go's descriptor
 model reaches its type relations by **descriptor specialization**: when `Kind() == Interface` the
 `*abi.Type` IS an `interfaceType` allocation, so `implements()` does

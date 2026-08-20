@@ -145,11 +145,24 @@ func proofVerdictNames(comparison testComparison) []string {
 // is derived from the verdicts rather than parsed back out of the comparison's formatted
 // `name (class): reason` strings, so a disclosed ancestor rolled up from disclosed subtests (which
 // has no manifest entry of its own, and therefore an empty class and reason) is still counted.
-func proofDisclosedNames(comparison testComparison, names []string) []string {
+//
+// A HOST-CONDITIONAL row is the one disclosed shape whose two verdicts can AGREE (Go fail / C#
+// fail — see testDisclosure.HostConditional), so verdict disagreement alone would drop it from the
+// page on exactly the hosts the annotation exists for, and the totals line would read 401 + 1 where
+// the roster banks 400 + 2. It is added back from the manifest, which is safe because the oracle
+// reached this renderer at all: a fail/fail annotated row whose C# output missed the pinned
+// signature is a mismatch, and a mismatch never validates, so no page is written.
+func proofDisclosedNames(comparison testComparison, names []string, disclosures map[string]testDisclosure) []string {
 	disclosed := make([]string, 0, len(comparison.Disclosed))
 
 	for _, name := range names {
 		if comparison.Go[name] != comparison.CSharp[name] {
+			disclosed = append(disclosed, name)
+			continue
+		}
+
+		if disclosure, pinned := disclosures[name]; pinned && disclosure.HostConditional != "" &&
+			comparison.Go[name] == "fail" && comparison.CSharp[name] == "fail" {
 			disclosed = append(disclosed, name)
 		}
 	}
@@ -172,7 +185,7 @@ func proofVerdict(results map[string]string, name string) string {
 // comparison twice is byte-identical by construction.
 func renderValidationProofPage(provenance proofPageProvenance, comparison testComparison, disclosures map[string]testDisclosure, notes []string) string {
 	names := proofVerdictNames(comparison)
-	disclosed := proofDisclosedNames(comparison, names)
+	disclosed := proofDisclosedNames(comparison, names, disclosures)
 
 	skipped := 0
 	for _, name := range names {
@@ -255,6 +268,25 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 			}
 
 			fmt.Fprintf(&page, "| `%s` | `%s` | %s |\n", escapeProofCell(name), escapeProofCell(class), escapeProofCell(reason))
+		}
+
+		// A host-conditional row's own note, modeled on the roster's internal/zstd row: name the
+		// environmental dependency, then name BOTH accepted shapes. It is rendered from the
+		// manifest rather than hand-written into the page, so it survives every regeneration and
+		// cannot drift from the annotation the compare oracle actually applies.
+		for _, name := range disclosed {
+			disclosure, pinned := disclosures[name]
+
+			if !pinned || disclosure.HostConditional == "" {
+				continue
+			}
+
+			fmt.Fprintf(&page, "\n`%s` is **host-conditional**: %s\n",
+				escapeProofCell(name), strings.TrimSpace(disclosure.HostConditional))
+			page.WriteString("The row is therefore accepted — and counted as disclosed — in two shapes: `go test` **pass**\n")
+			page.WriteString("with go2cs **fail**, the pinned divergence above; or **both sides failing**, agreement on a host\n")
+			page.WriteString("where the Go premise itself fails. Any movement on the go2cs side still fails the comparison, in\n")
+			page.WriteString("either direction — the pin stays strict on the half that is deterministic.\n")
 		}
 
 		if len(comparison.Withdrawn) > 0 {
