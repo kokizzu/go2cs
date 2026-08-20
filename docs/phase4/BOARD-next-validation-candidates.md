@@ -14742,4 +14742,20 @@ page + a run proving both shapes account as disclosed). Until it lands, a `crypt
 host whose Go BoGo run fails is a KNOWN false red with this section as its rooting -- re-read the
 verdict maps before believing any other explanation.
 
+
+## NOTE -- the hand-leveled `.tests.csproj` files level themselves at their next sweep; BANK that drift, don't chase it (coordinator, 2026-08-20)
+
+The preflight-trio metadata wave hand-leveled every banked `.tests.csproj` because only a `-tests`
+run regenerates them -- and the hand-leveling approximated the emission short by five properties
+(the conditioned `TargetFramework` fallback, `Authors`, the `Company` chain, `Copyright`,
+`RepositoryType`, `ApplicationIcon`). The union gate's banking sweeps proved it: `text/template`
+and `html/template` regenerated theirs to the full ratified shape, the sweep reported CONTENT
+drift, and both banked at the gate after the sweep itself had built and passed with them.
+
+Standing classification: a `.tests.csproj` drift of exactly this shape at any future sweep of a
+banked package is the SAME catch-up -- bank the regenerated file (the converter's emission is the
+authoritative shape), one per package as sweeps touch them. A single scripted leveling pass over
+the remaining hand-leveled files is queued as a bounded item for whoever wants the drift gone in
+one commit; until then this note is the classification, not a mystery.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
