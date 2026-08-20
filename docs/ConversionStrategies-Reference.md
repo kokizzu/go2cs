@@ -17722,6 +17722,50 @@ at any layer go2cs owns — a Go-source position map (emitted `#line` directives
 consulted by `internCallerFrame`) would satisfy it exactly. It is a deferred capability, and `log`
 stays unbanked until one lands rather than being disclosed around.
 
+**The path is SPELLED Go's way even while it names the `.cs`.** Which source a frame's path points
+at and how that path is written are separate questions, and only the first is deferred. Go records
+source paths with **forward slashes on every platform**: measured on Windows,
+`runtime.Caller`/`CallersFrames` there answer `C:/Program Files/Go/src/runtime/proc.go`, never the
+host's native separator. The CLR hands back whatever the PDB holds, which on Windows is
+backslash-separated, so until 2026-08-19 every converted program answered `C:\…\log_test.cs` where
+Go would have answered `C:/…/log_test.go` — a divergence in the *spelling* on top of the deferred
+one in the *target*. `goSourcePath` (`runtime/managed_impl.cs`) now applies Go's rule at the two
+places a frame's file reaches a program — `internCallerFrame`, which every `Caller`/`Callers`/
+`CallersFrames` answer is interned through, and `appendGoFrames`, which renders `runtime.Stack`'s
+traceback. This is a fidelity fix, not a cosmetic one: the string is observable, Go's own suites
+match patterns against it (`flag`'s `TestDefineAfterSet` asserts `` `.*/flag_test.go:.*` ``), and
+converted `path/filepath` accepts either separator on Windows exactly as Go's does, so no consumer
+pays for the normalization. It also makes `log`'s `Lshortfile` trim work, since that trim looks for
+the last `/`. Guarded by `RuntimeCallerFrames` (five assertions across `Caller`, a
+`Callers`/`CallersFrames` walk, and a rendered traceback; trivially true on a forward-slash host, so
+the guard bites on Windows, where the two spellings differ).
+
+Worth carrying into whichever lane takes the position-map arc: **`#line` by itself does not close it.**
+Measured — a `#line 852 "C:/Program Files/Go/src/flag/flag_test.go"` region does make
+`StackFrame.GetFileName()`/`GetFileLineNumber()` answer with that file and line, so the PDB route
+needs no golib change; but Roslyn **resolves and normalizes the directive's path**, and no spelling
+of it survives with forward slashes on Windows (absolute, unix-rooted and relative forms all came
+back backslash-separated). `#line` therefore supplies the `.go` extension and the Go line, and the
+separator normalization above supplies the rest — the two halves compose, and `#line` does not close
+`.*/flag_test.go:.*` on its own. One qualifier measured in the same probe, so the claim is about the
+directive and not about Roslyn generally: the **`PathMap` compiler option** *does* emit a
+forward-slash path (`-p:PathMap=C:\Program Files\Go\src\=/goroot/` yielded
+`/goroot/flag/flag_test.go`), so a `#line` emission could in principle carry the separator itself.
+It is the worse instrument for this even so — it is a whole-compilation option that rewrites every
+source path in the PDB, the emitted `.cs` positions included; it needs the GOROOT prefix as a
+per-package build property; and it does nothing for `runtime.Stack` or for any frame reached without
+a directive. `goSourcePath` covers all of those with no build-time configuration, which is why the
+separator half is settled at the runtime rather than at the compiler.
+
+Two further costs the arc should be priced with, both measured rather than argued: a CS diagnostic
+inside a `#line` region reports its position in the **Go** file
+(`C:\…\flag_test.go(854,17): error CS0029`), which relocates every compile diagnostic in the corpus
+away from the emitted C# the census workflow reads; and a per-statement emission adds roughly
+**28–47%** more lines to a converted file (measured on `flag/flag.cs`, `strings/strings.cs` and
+`edwards25519/edwards25519.cs`), interleaved between every statement, against the project's
+reads-like-Go goal. The side-car alternative pays neither of those but adds a file and a csproj item
+per package.
+
 A second disclosed-divergence class alongside `alloc-profile`, first pinned by `sync` (packages
 `TestOnceXGC` ×3 subtests and `TestPoolGC`). Go's GC consults **per-safepoint liveness maps**: a
 local dies at its last use, even in the middle of a running function. The CLR's GC info is

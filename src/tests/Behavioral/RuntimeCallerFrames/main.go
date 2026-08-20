@@ -97,4 +97,64 @@ func main() {
 	fmt.Println("ok past the stack:", okAt(1000))
 
 	fmt.Println("callers depth delta:", depthPlus2()-depth())
+
+	callerFwd, callerBack := callerSeparators()
+	fmt.Println("caller file uses forward slash:", callerFwd)
+	fmt.Println("caller file uses host separator:", callerBack)
+
+	framesFwd, framesBack := framesSeparators()
+	fmt.Println("frames files use forward slash:", framesFwd)
+	fmt.Println("frames files use host separator:", framesBack)
+
+	fmt.Println("traceback uses host separator:", stackHasBackslash())
+}
+
+// hasByte reports whether s contains b. Hand-rolled rather than strings.Contains so this guard
+// adds no package reference of its own — the project's reference set is converter-emitted.
+func hasByte(s string, b byte) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] == b {
+			return true
+		}
+	}
+	return false
+}
+
+// callerSeparators reports how runtime.Caller SPELLS the file path it answers with. Go records
+// source paths with forward slashes on every platform, Windows included: runtime.Caller there
+// answers `C:/Program Files/Go/src/runtime/proc.go`, never the host's native spelling. That is
+// observable, not cosmetic — flag's TestDefineAfterSet matches `.*/flag_test.go:.*` against
+// exactly this string — so a converted program handing back the host separator diverges from Go
+// on a value the program can read. On a forward-slash host both answers are trivially true; the
+// guard bites on Windows, which is where the two spellings differ.
+func callerSeparators() (fwd bool, back bool) {
+	_, file, _, _ := runtime.Caller(0)
+	return hasByte(file, '/'), hasByte(file, '\\')
+}
+
+// framesSeparators asks the same question of every frame a Callers/CallersFrames walk yields —
+// the other surface the file string reaches a program through.
+func framesSeparators() (fwd bool, back bool) {
+	pc := make([]uintptr, 64)
+	n := runtime.Callers(0, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	for {
+		frame, more := frames.Next()
+		if len(frame.File) > 0 {
+			fwd = fwd || hasByte(frame.File, '/')
+			back = back || hasByte(frame.File, '\\')
+		}
+		if !more {
+			break
+		}
+	}
+	return fwd, back
+}
+
+// stackHasBackslash reports whether a rendered traceback spells any path the host's way. Go's
+// traceback prints the same forward-slash file strings, so the answer is false on every platform.
+func stackHasBackslash() bool {
+	buf := make([]byte, 8192)
+	n := runtime.Stack(buf, false)
+	return hasByte(string(buf[:n]), '\\')
 }
