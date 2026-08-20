@@ -272,7 +272,9 @@ var usesUnsafeCode bool
 // by resetPackageState; written under packageLock.
 var packageBlankImportForces HashSet[string]
 
-// packageDoc holds the current package's Go doc comment rendered to Markdown, for the NuGet README.
+// packageDoc holds the current package's Go doc comment as godoc-markup TEXT, for the NuGet README.
+// It is rendered to Markdown at emission time by renderPackageDoc, which is where the source
+// directory and options a doc link needs to resolve to a fully-qualified URL are in scope.
 var packageDoc string
 
 // packageSourceDir holds the directory the current package's Go sources were loaded from — the

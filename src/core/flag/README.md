@@ -9,7 +9,7 @@ Package flag implements command-line flag parsing.
 
 ### Usage
 
-Define flags using [flag.String](/flag#String), \[Bool], \[Int], etc.
+Define flags using [flag.String](https://pkg.go.dev/flag@go1.23.1#String), \[Bool], \[Int], etc.
 
 This declares an integer flag, -n, stored in the pointer nFlag, with type \*int:
 
@@ -40,7 +40,7 @@ Flags may then be used directly. If you're using the flags themselves, they are 
 	fmt.Println("ip has value ", *ip)
 	fmt.Println("flagvar has value ", flagvar)
 
-After parsing, the arguments following the flags are available as the slice [flag.Args](/flag#Args) or individually as [flag.Arg](/flag#Arg)(i). The arguments are indexed from 0 through [flag.NArg](/flag#NArg)-1.
+After parsing, the arguments following the flags are available as the slice [flag.Args](https://pkg.go.dev/flag@go1.23.1#Args) or individually as [flag.Arg](https://pkg.go.dev/flag@go1.23.1#Arg)(i). The arguments are indexed from 0 through [flag.NArg](https://pkg.go.dev/flag@go1.23.1#NArg)-1.
 
 ### Command line flag syntax
 

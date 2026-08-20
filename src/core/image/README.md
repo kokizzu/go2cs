@@ -9,7 +9,7 @@ Package image implements a basic 2-D image library.
 
 The fundamental interface is called \[Image]. An \[Image] contains colors, which are described in the image/color package.
 
-Values of the \[Image] interface are created either by calling functions such as \[NewRGBA] and \[NewPaletted], or by calling \[Decode] on an [io.Reader](/io#Reader) containing image data in a format such as GIF, JPEG or PNG. Decoding any particular image format requires the prior registration of a decoder function. Registration is typically automatic as a side effect of initializing that format's package so that, to decode a PNG image, it suffices to have
+Values of the \[Image] interface are created either by calling functions such as \[NewRGBA] and \[NewPaletted], or by calling \[Decode] on an [io.Reader](https://pkg.go.dev/io@go1.23.1#Reader) containing image data in a format such as GIF, JPEG or PNG. Decoding any particular image format requires the prior registration of a decoder function. Registration is typically automatic as a side effect of initializing that format's package so that, to decode a PNG image, it suffices to have
 
 	import _ "image/png"
 

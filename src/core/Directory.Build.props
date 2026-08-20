@@ -1,5 +1,9 @@
 <Project>
 
+  <!-- MSBuild stops at the first Directory.Build.props walking up, so the repository-wide
+       settings (src/Directory.Build.props, which owns $(TargetFramework)) must be imported
+       explicitly or this file silently shadows them for everything beneath it. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
   <!--
     Pins $(go2csPath) for every project in the converted standard library (src/core/) to the
     repository's src root — this file's parent directory.

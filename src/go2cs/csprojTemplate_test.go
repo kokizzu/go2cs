@@ -15,7 +15,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 )
 
 // fixtureSrcRoot is an absolute go2cs `src` root spelled the way the HOST spells one. The fixtures
@@ -59,7 +58,6 @@ func renderCsprojTemplate(outputType string, reference string, validationPack st
 		outputType,
 		"go",
 		"TestProject",
-		time.Now().Year(),
 		"false",
 		reference,
 	)
@@ -367,10 +365,14 @@ func TestPublishPropertiesAreScopedOffLibrariesButAllowUnsafeBlocksIsNot(t *test
 	}
 }
 
-// msbuildProperty is one element inside a <PropertyGroup>: its name and its text.
+// msbuildProperty is one element inside a <PropertyGroup>: its name, its own Condition and
+// its text. The element-level Condition matters independently of the enclosing group's: it is
+// how ONE property is made overridable (TargetFramework defers to src/Directory.Build.props
+// that way) without splitting it into a conditioned group of its own.
 type msbuildProperty struct {
-	XMLName xml.Name
-	Value   string `xml:",chardata"`
+	XMLName   xml.Name
+	Condition string `xml:"Condition,attr"`
+	Value     string `xml:",chardata"`
 }
 
 // propertyGroup is a rendered project's <PropertyGroup>, paired with its Condition — enough to

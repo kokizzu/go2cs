@@ -7,7 +7,7 @@
 
 Package driver defines interfaces to be implemented by database drivers as used by package sql.
 
-Most code should use the [database/sql](/database/sql) package.
+Most code should use the [database/sql](https://pkg.go.dev/database/sql@go1.23.1) package.
 
 The driver interface has evolved over time. Drivers should implement \[Connector] and \[DriverContext] interfaces. The Connector.Connect and Driver.Open methods should never return \[ErrBadConn]. \[ErrBadConn] should only be returned from \[Validator], \[SessionResetter], or a query method if the connection is already in an invalid (e.g. closed) state.
 

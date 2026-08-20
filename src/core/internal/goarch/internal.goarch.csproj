@@ -2,16 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
     <RootNamespace>go.@internal</RootNamespace>
     <AssemblyName>internal.goarch</AssemblyName>
     <Product>go2cs</Product>
     <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
-    <Copyright>Copyright © 2026 The go2cs Authors</Copyright>
     <Authors>$(Product) Authors</Authors>
-    <Company>The go2cs Authors</Company>
+    <Company>The $(Authors)</Company>
+    <Copyright>Copyright © 2018-2026 $(Company)</Copyright>
     <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <ApplicationIcon>go2cs.ico</ApplicationIcon>
     <!-- `annotations`, not `enable`: Go has no non-nullable pointer, interface, map, slice, channel
          or func, so nullable flow analysis asks a question the source language cannot pose, and

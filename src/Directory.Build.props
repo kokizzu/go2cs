@@ -1,0 +1,30 @@
+<Project>
+
+  <!--
+    The repository-wide TARGET FRAMEWORK, and the one line a .NET hop edits.
+
+    Every csproj family in this tree - the converter-emitted standard library and behavioral
+    tests, the emitted Phase-4 test hosts, the hand-written runtime and tooling projects - used
+    to carry its own hardcoded <TargetFramework>. A framework hop therefore meant rewriting the
+    two converter templates, every hand-written project, and then regenerating the whole corpus
+    to level the emitted copies. Hoisting the value here makes the hop a single edit.
+
+    Why the projects keep a CONDITIONED fallback rather than dropping the property outright:
+    an emitted project does not always have this file above it. deploy-core.ps1 stages the
+    corpus under %GOPATH%\src\go2cs and writes its OWN root props (which pins $(go2csPath) and
+    deliberately excludes core's), a -recurse conversion writes generated code under an
+    arbitrary output root, and a single-package conversion can land anywhere at all. In those
+    trees nothing would define the property and the build would fail outright. Directory.Build
+    .props is imported ABOVE the project body, so where this file IS in scope it wins and the
+    project's own line is inert; where it is not, the project still names a framework and still
+    builds. The hop is one line here, and the emitted copies level on the next regeneration.
+
+    Discovery note: MSBuild stops at the FIRST Directory.Build.props found walking up, so the
+    two nested ones (src/core, src/tests/Performance) explicitly import this file. Any new
+    nested props file owes the same import or it silently shadows this one.
+  -->
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+  </PropertyGroup>
+
+</Project>

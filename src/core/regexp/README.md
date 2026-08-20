@@ -7,7 +7,7 @@
 
 Package regexp implements regular expression search.
 
-The syntax of the regular expressions accepted is the same general syntax used by Perl, Python, and other languages. More precisely, it is the syntax accepted by RE2 and described at [https://golang.org/s/re2syntax](https://golang.org/s/re2syntax), except for \\C. For an overview of the syntax, see the [regexp/syntax](/regexp/syntax) package.
+The syntax of the regular expressions accepted is the same general syntax used by Perl, Python, and other languages. More precisely, it is the syntax accepted by RE2 and described at [https://golang.org/s/re2syntax](https://golang.org/s/re2syntax), except for \\C. For an overview of the syntax, see the [regexp/syntax](https://pkg.go.dev/regexp/syntax@go1.23.1) package.
 
 The regexp implementation provided by this package is guaranteed to run in time linear in the size of the input. (This is a property not guaranteed by most open source implementations of regular expressions.) For more information about this property, see [https://swtch.com/~rsc/regexp/regexp1.html](https://swtch.com/~rsc/regexp/regexp1.html) or any book about automata theory.
 
@@ -25,9 +25,9 @@ If 'Submatch' is present, the return value is a slice identifying the successive
 
 If 'Index' is present, matches and submatches are identified by byte index pairs within the input string: result\[2\*n:2\*n+2] identifies the indexes of the nth submatch. The pair for n==0 identifies the match of the entire expression. If 'Index' is not present, the match is identified by the text of the match/submatch. If an index is negative or text is nil, it means that subexpression did not match any string in the input. For 'String' versions an empty string means either no match or an empty match.
 
-There is also a subset of the methods that can be applied to text read from an [io.RuneReader](/io#RuneReader): \[Regexp.MatchReader], \[Regexp.FindReaderIndex], \[Regexp.FindReaderSubmatchIndex].
+There is also a subset of the methods that can be applied to text read from an [io.RuneReader](https://pkg.go.dev/io@go1.23.1#RuneReader): \[Regexp.MatchReader], \[Regexp.FindReaderIndex], \[Regexp.FindReaderSubmatchIndex].
 
-This set may grow. Note that regular expression matches may need to examine text beyond the text returned by a match, so the methods that match text from an [io.RuneReader](/io#RuneReader) may read arbitrarily far into the input before returning.
+This set may grow. Note that regular expression matches may need to examine text beyond the text returned by a match, so the methods that match text from an [io.RuneReader](https://pkg.go.dev/io@go1.23.1#RuneReader) may read arbitrarily far into the input before returning.
 
 (There are a few other methods that do not match this pattern.)
 

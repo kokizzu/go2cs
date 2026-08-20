@@ -7,7 +7,7 @@
 
 Package template implements data-driven templates for generating textual output.
 
-To generate HTML output, see [html/template](/html/template), which has the same interface as this package but automatically secures HTML output against certain attacks.
+To generate HTML output, see [html/template](https://pkg.go.dev/html/template@go1.23.1), which has the same interface as this package but automatically secures HTML output against certain attacks.
 
 Templates are executed by applying them to a data structure. Annotations in the template refer to elements of the data structure (typically a field of a struct or a key in a map) to control execution and derive values to be displayed. Execution of the template walks the structure and sets the cursor, represented by a period '.' and called "dot", to the value at the current location in the structure as execution proceeds.
 

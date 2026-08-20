@@ -28,7 +28,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func getGoEnv(name string) (string, error) {
@@ -90,7 +89,6 @@ func prepareProjectFiles(projectName string, packageNamespace string, projectPat
 		OutputTypeMarker,
 		packageNamespace,
 		projectName,
-		time.Now().Year(),
 		UnsafeMarker,
 		ProjectReferenceMarker,
 	)

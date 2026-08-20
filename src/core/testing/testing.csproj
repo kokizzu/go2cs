@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
     <RootNamespace>go</RootNamespace>
     <AssemblyName>testing_package</AssemblyName>
     <Product>go2cs</Product>
-    <Copyright>Copyright © 2026 The go2cs Authors</Copyright>
     <Authors>$(Product) Authors</Authors>
-    <Company>The go2cs Authors</Company>
+    <Company>The $(Authors)</Company>
+    <Copyright>Copyright © 2018-2026 $(Company)</Copyright>
     <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
     <!-- Hand-owned, but Go-SHAPED: this host declares the same lower-cased type names, Go zero
          values and nil-able references the converted corpus does, so it carries the same suppression

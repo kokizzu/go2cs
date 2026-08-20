@@ -13,7 +13,7 @@ Signals are primarily used on Unix-like systems. For the use of this package on 
 
 The signals SIGKILL and SIGSTOP may not be caught by a program, and therefore cannot be affected by this package.
 
-Synchronous signals are signals triggered by errors in program execution: SIGBUS, SIGFPE, and SIGSEGV. These are only considered synchronous when caused by program execution, not when sent using [os.Process.Kill](/os#Process.Kill) or the kill program or some similar mechanism. In general, except as discussed below, Go programs will convert a synchronous signal into a run-time panic.
+Synchronous signals are signals triggered by errors in program execution: SIGBUS, SIGFPE, and SIGSEGV. These are only considered synchronous when caused by program execution, not when sent using [os.Process.Kill](https://pkg.go.dev/os@go1.23.1#Process.Kill) or the kill program or some similar mechanism. In general, except as discussed below, Go programs will convert a synchronous signal into a run-time panic.
 
 The remaining signals are asynchronous signals. They are not triggered by program errors, but are instead sent from the kernel or from some other program.
 
@@ -25,7 +25,7 @@ By default, a synchronous signal is converted into a run-time panic. A SIGHUP, S
 
 If the Go program is started with either SIGHUP or SIGINT ignored (signal handler set to SIG\_IGN), they will remain ignored.
 
-If the Go program is started with a non-empty signal mask, that will generally be honored. However, some signals are explicitly unblocked: the synchronous signals, SIGILL, SIGTRAP, SIGSTKFLT, SIGCHLD, SIGPROF, and, on Linux, signals 32 (SIGCANCEL) and 33 (SIGSETXID) (SIGCANCEL and SIGSETXID are used internally by glibc). Subprocesses started by [os.Exec](/os#Exec), or by [os/exec](/os/exec), will inherit the modified signal mask.
+If the Go program is started with a non-empty signal mask, that will generally be honored. However, some signals are explicitly unblocked: the synchronous signals, SIGILL, SIGTRAP, SIGSTKFLT, SIGCHLD, SIGPROF, and, on Linux, signals 32 (SIGCANCEL) and 33 (SIGSETXID) (SIGCANCEL and SIGSETXID are used internally by glibc). Subprocesses started by [os.Exec](https://pkg.go.dev/os@go1.23.1#Exec), or by [os/exec](https://pkg.go.dev/os/exec@go1.23.1), will inherit the modified signal mask.
 
 ### Changing the behavior of signals in Go programs
 
@@ -81,7 +81,7 @@ Go code built without -buildmode=c-archive or -buildmode=c-shared will install a
 
 ### Windows
 
-On Windows a ^C (Control-C) or ^BREAK (Control-Break) normally cause the program to exit. If Notify is called for [os.Interrupt](/os#Interrupt), ^C or ^BREAK will cause [os.Interrupt](/os#Interrupt) to be sent on the channel, and the program will not exit. If Reset is called, or Stop is called on all channels passed to Notify, then the default behavior will be restored.
+On Windows a ^C (Control-C) or ^BREAK (Control-Break) normally cause the program to exit. If Notify is called for [os.Interrupt](https://pkg.go.dev/os@go1.23.1#Interrupt), ^C or ^BREAK will cause [os.Interrupt](https://pkg.go.dev/os@go1.23.1#Interrupt) to be sent on the channel, and the program will not exit. If Reset is called, or Stop is called on all channels passed to Notify, then the default behavior will be restored.
 
 Additionally, if Notify is called, and Windows sends CTRL\_CLOSE\_EVENT, CTRL\_LOGOFF\_EVENT or CTRL\_SHUTDOWN\_EVENT to the process, Notify will return syscall.SIGTERM. Unlike Control-C and Control-Break, Notify does not change process behavior when either CTRL\_CLOSE\_EVENT, CTRL\_LOGOFF\_EVENT or CTRL\_SHUTDOWN\_EVENT is received - the process will still get terminated unless it exits. But receiving syscall.SIGTERM will give the process an opportunity to clean up before termination.
 

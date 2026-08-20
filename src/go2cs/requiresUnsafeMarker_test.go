@@ -56,7 +56,7 @@ func renderedAllowUnsafeBlocks(t *testing.T, packageDir string) string {
 	// The template's unsafe verb is filled with the MARKER, exactly as prepareProjectFiles fills it,
 	// so that the second stage below is the same substitution writeProjectFile performs. (The shared
 	// renderCsprojTemplate helper hardcodes "false" there, which would make this guard vacuous.)
-	contents := fmt.Sprintf(string(csprojTemplate), "Library", "go", "TestProject", 2026, UnsafeMarker, "")
+	contents := fmt.Sprintf(string(csprojTemplate), "Library", "go", "TestProject", UnsafeMarker, "")
 	contents = strings.ReplaceAll(contents, ValidationPackMarker, "")
 
 	if !strings.Contains(contents, UnsafeMarker) {

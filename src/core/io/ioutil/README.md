@@ -7,7 +7,7 @@
 
 Package ioutil implements some I/O utility functions.
 
-Deprecated: As of Go 1.16, the same functionality is now provided by package [io](/io) or package [os](/os), and those implementations should be preferred in new code. See the specific function documentation for details.
+Deprecated: As of Go 1.16, the same functionality is now provided by package [io](https://pkg.go.dev/io@go1.23.1) or package [os](https://pkg.go.dev/os@go1.23.1), and those implementations should be preferred in new code. See the specific function documentation for details.
 
 ---
 

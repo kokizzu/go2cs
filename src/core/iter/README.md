@@ -112,7 +112,7 @@ If clients do not consume the sequence to completion, they must call stop, which
 
 ### Standard Library Usage
 
-A few packages in the standard library provide iterator-based APIs, most notably the [maps](/maps) and [slices](/slices) packages. For example, [maps.Keys](/maps#Keys) returns an iterator over the keys of a map, while [slices.Sorted](/slices#Sorted) collects the values of an iterator into a slice, sorts them, and returns the slice, so to iterate over the sorted keys of a map:
+A few packages in the standard library provide iterator-based APIs, most notably the [maps](https://pkg.go.dev/maps@go1.23.1) and [slices](https://pkg.go.dev/slices@go1.23.1) packages. For example, [maps.Keys](https://pkg.go.dev/maps@go1.23.1#Keys) returns an iterator over the keys of a map, while [slices.Sorted](https://pkg.go.dev/slices@go1.23.1#Sorted) collects the values of an iterator into a slice, sorts them, and returns the slice, so to iterate over the sorted keys of a map:
 
 	for _, key := range slices.Sorted(maps.Keys(m)) {
 		...

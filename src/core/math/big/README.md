@@ -63,7 +63,7 @@ Methods which don't require a result value to be passed in (for instance, \[Int.
 
 Various methods support conversions between strings and corresponding numeric values, and vice versa: \*\[Int], \*\[Rat], and \*\[Float] values implement the Stringer interface for a (default) string representation of the value, but also provide SetString methods to initialize a value from a string in a variety of supported formats (see the respective SetString documentation).
 
-Finally, \*\[Int], \*\[Rat], and \*\[Float] satisfy [fmt.Scanner](/fmt#Scanner) for scanning and (except for \*\[Rat]) the Formatter interface for formatted printing.
+Finally, \*\[Int], \*\[Rat], and \*\[Float] satisfy [fmt.Scanner](https://pkg.go.dev/fmt@go1.23.1#Scanner) for scanning and (except for \*\[Rat]) the Formatter interface for formatted printing.
 
 ---
 

@@ -7,7 +7,7 @@
 
 Package fs defines basic interfaces to a file system. A file system can be provided by the host operating system but also by other packages.
 
-See the [testing/fstest](/testing/fstest) package for support with testing implementations of file systems.
+See the [testing/fstest](https://pkg.go.dev/testing/fstest@go1.23.1) package for support with testing implementations of file systems.
 
 ---
 

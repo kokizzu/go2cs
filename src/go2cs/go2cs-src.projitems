@@ -50,6 +50,7 @@
     <None Include="$(MSBuildThisFileDirectory)convStructType.go" />
     <None Include="$(MSBuildThisFileDirectory)convTypeAssertExpr.go" />
     <None Include="$(MSBuildThisFileDirectory)convUnaryExpr.go" />
+    <None Include="$(MSBuildThisFileDirectory)csprojMetadata_test.go" />
     <None Include="$(MSBuildThisFileDirectory)csprojTemplate_test.go" />
     <None Include="$(MSBuildThisFileDirectory)deadPointerParamAlias_test.go" />
     <None Include="$(MSBuildThisFileDirectory)deferredMarkerOperations.go" />
@@ -136,6 +137,8 @@
     <None Include="$(MSBuildThisFileDirectory)projectFileWriter.go" />
     <None Include="$(MSBuildThisFileDirectory)projitemsIntegrity_test.go" />
     <None Include="$(MSBuildThisFileDirectory)readme.go" />
+    <None Include="$(MSBuildThisFileDirectory)readmeDocLinks.go" />
+    <None Include="$(MSBuildThisFileDirectory)readmeDocLinks_test.go" />
     <None Include="$(MSBuildThisFileDirectory)readmeValidationBadge.go" />
     <None Include="$(MSBuildThisFileDirectory)readmeValidationBadge_test.go" />
     <None Include="$(MSBuildThisFileDirectory)refLoweringAnalysisOperations.go" />

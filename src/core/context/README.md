@@ -21,7 +21,7 @@ Do not store Contexts inside a struct type; instead, pass a Context explicitly t
 		// ... use ctx ...
 	}
 
-Do not pass a nil \[Context], even if a function permits it. Pass [context.TODO](/context#TODO) if you are unsure about which Context to use.
+Do not pass a nil \[Context], even if a function permits it. Pass [context.TODO](https://pkg.go.dev/context@go1.23.1#TODO) if you are unsure about which Context to use.
 
 Use context Values only for request-scoped data that transits processes and APIs, not for passing optional parameters to functions.
 

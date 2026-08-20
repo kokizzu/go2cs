@@ -1,5 +1,9 @@
 <Project>
 
+  <!-- MSBuild stops at the first Directory.Build.props walking up, so the repository-wide
+       settings (src/Directory.Build.props, which owns $(TargetFramework)) must be imported
+       explicitly or this file silently shadows them for everything beneath it. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
   <!-- Shared settings for the performance benchmark projects. The go2cs converter regenerates each
        benchmark's .csproj on every transpile, so settings that must survive a re-transpile live here
        (this file is never converter-owned). Native AOT publish support is in Directory.Build.targets. -->
