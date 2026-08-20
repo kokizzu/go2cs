@@ -4957,6 +4957,22 @@ type testDisclosure struct {
 	Class     string `json:"class"`
 	Signature string `json:"signature"`
 	Reason    string `json:"reason"`
+
+	// HostConditional annotates a pinned row whose GO side is not deterministic, and its
+	// non-empty value IS the marker — one sentence naming the environmental dependency, so a
+	// row can never be marked without saying what it depends on (coordinator ruling,
+	// 2026-08-20). A disclosure asserts *Go passes, C# provably cannot*, which is only stable
+	// while the Go side is stable; where the baseline itself is load- or network-dependent the
+	// pin goes red in BOTH directions — when Go starts failing, and again when it goes back to
+	// passing on a quieter host. An annotated row is therefore accepted in EXACTLY two shapes,
+	// and accounts as DISCLOSED — never as matching — in both: Go pass / C# fail (the pinned
+	// divergence) and Go fail / C# fail (agreement, on a host where the Go premise fails). The
+	// signature pin still governs both, so any movement on the C# side fails the comparison;
+	// the tolerance is confined to the half that was never deterministic. Ruled IN only for a
+	// row with coordinator-accepted rooting evidence — crypto/tls's TestBogoSuite, whose Go
+	// side is decided by network reachability of the boringssl module and the runner's own
+	// 10-minute child deadline, is the first and only member.
+	HostConditional string `json:"hostConditional,omitempty"`
 }
 
 type testDisclosureManifest struct {
@@ -4999,6 +5015,14 @@ func loadTestDisclosures(outputPath string) (map[string]testDisclosure, []string
 		if _, exists := disclosures[disclosure.Name]; exists {
 			return nil, nil, fmt.Errorf("duplicate disclosure for %s", disclosure.Name)
 		}
+
+		// The host-conditional marker IS its sentence, so a blank one would widen the oracle
+		// (a second accepted status pair) while naming nothing — the one thing the ruling
+		// requires of an annotated row. Same reasoning as the required fields above: a broken
+		// disclosure must fail loudly rather than quietly tolerate more.
+		if disclosure.HostConditional != "" && strings.TrimSpace(disclosure.HostConditional) == "" {
+			return nil, nil, fmt.Errorf("host-conditional disclosure %s must name its environmental dependency", disclosure.Name)
+		}
 		disclosures[disclosure.Name] = disclosure
 	}
 
@@ -5011,7 +5035,10 @@ func loadTestDisclosures(outputPath string) (map[string]testDisclosure, []string
 // Go=pass/C#=fail divergence pinned by the package's hand-owned disclosure manifest — exact
 // test name AND the pinned signature present in the captured C# failure output — is returned
 // as disclosed-divergent instead of a mismatch; any other failure shape of a disclosed test
-// (different signature, different status pair, a subtest) remains a strict mismatch.
+// (different signature, different status pair, a subtest) remains a strict mismatch. The one
+// exception is a HOST-CONDITIONAL disclosure (see testDisclosure.HostConditional), which adds a
+// SECOND accepted status pair — Go fail / C# fail, still signature-pinned — and accounts as
+// disclosed there too rather than as an agreed failure.
 // addressTokenPattern matches a 0x-hex token in a subtest name — a pointer ADDRESS embedded via
 // %v/%p, run-varying on BOTH sides by construction (Go's own reruns disagree with themselves).
 var addressTokenPattern = regexp.MustCompile(`0x[0-9a-fA-F]+`)
@@ -5096,9 +5123,22 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 	// Go-only row under anything that is not a signature-matched disclosure root stays a
 	// mismatch. First consumer: crypto/tls's TestBogoSuite, whose Go run fans out 3,242 BoGo
 	// case rows the disclosed (host-limit) root failure precedes.
+	//
+	// A HOST-CONDITIONAL row roots on its second accepted shape too (Go fail / C# fail): there
+	// the Go side is the half that broke, and its fan-out is the annotated row's own baseline
+	// flapping — TestBogoSuite's 3,243 BoGo case rows appear on a host whose `go test` actually
+	// reached the matrix and failed it. Those children are the same mechanical consequence and
+	// withdraw the same way; counting them as one-sided rows would flood the comparison with
+	// 3,243 mismatches that say nothing about the converted code. The C# side is pinned by
+	// signature in BOTH shapes, so the root admission never widens on the half that can be
+	// strict.
 	disclosureRoots := HashSet[string]{}
 	for name, disclosure := range disclosures {
-		if goResults[name] == "pass" && csResults[name] == "fail" && strings.Contains(csOutputs[name], disclosure.Signature) {
+		if csResults[name] != "fail" || !strings.Contains(csOutputs[name], disclosure.Signature) {
+			continue
+		}
+
+		if goResults[name] == "pass" || (goResults[name] == "fail" && disclosure.HostConditional != "") {
 			disclosureRoots.Add(name)
 		}
 	}
@@ -5109,6 +5149,29 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 	for _, name := range ordered {
 		goStatus, goOK := goResults[name]
 		csStatus, csOK := csResults[name]
+
+		// The SECOND accepted shape of a host-conditional row, intercepted before the
+		// equal-status arm below would silently count it as an agreed failure. Go fail /
+		// C# fail is agreement, but agreement reached because the annotated row's own Go
+		// premise failed for an environmental reason — so the row accounts as DISCLOSED, never
+		// as matching, and the roster arithmetic stays host-stable (crypto/tls reads 400 + 2 on
+		// every machine rather than 401 + 1 on a host whose BoGo baseline broke). The signature
+		// still governs: a C# side that fails some OTHER way has MOVED, and moving is exactly
+		// what this pin exists to catch, so it is a strict mismatch under the same wording the
+		// first shape uses.
+		if disclosure, ok := disclosures[name]; ok && disclosure.HostConditional != "" &&
+			goOK && csOK && goStatus == "fail" && csStatus == "fail" {
+			if strings.Contains(csOutputs[name], disclosure.Signature) {
+				disclosed = append(disclosed, name)
+				disclosedNames.Add(name)
+				continue
+			}
+
+			mismatches = append(mismatches, fmt.Sprintf("%s: Go=%q C#=%q (failure does not match the disclosed %s signature %q)",
+				name, goStatus, csStatus, disclosure.Class, disclosure.Signature))
+			mismatchNames.Add(name)
+			continue
+		}
 
 		if !goOK || !csOK || goStatus != csStatus {
 			if goOK && !csOK && underDisclosureRoot(name, disclosureRoots) {
