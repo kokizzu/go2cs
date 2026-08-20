@@ -14881,4 +14881,18 @@ This lane's own change cannot reach the emission path at all — `loadTestDisclo
 
 The ruling's closing caveat — *"until it lands, a `crypto/tls` sweep on a host whose Go BoGo run
 fails is a KNOWN false red"* — is now historical. Such a host reads 400 + 2 like every other.
+
+## CORRECTION -- the `.tests.csproj` leveling-pass queue item retires EMPTY: the census is zero (coordinator, 2026-08-20)
+
+The note two sections up predicted the remaining hand-leveled `.tests.csproj` would drift one sweep
+at a time and queued a scripted leveling pass. Measured, the population does not exist:
+`git grep -l "<Company>The go2cs Authors</Company>" -- 'src/core/**/*.tests.csproj'` returns **0 of
+157** at master -- independently measured on laptop R at the same base, which is what caught the
+over-prediction. The preflight-trio hand-leveling was complete and exact across every file it
+touched; the only two short-form files in the corpus were the template pair, created along the
+cargo-recv fork line BEFORE the template change existed, and both banked at the union gate. The
+standing classification stays (a `.tests.csproj` emitted by a pre-template fork catches up at its
+sweep -- the shape to expect from any lane that forked early), but the queued pass is withdrawn:
+there is nothing to level.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
