@@ -163,7 +163,7 @@ internal static (CrossPkgLib.Reporter, error) getReporter() {
 
 internal static CrossPkgLib.Emitter leafEmitter = new CrossPkgLib.LeafжEmitter(CrossPkgLib.NewLeaf("leaf"u8));
 
-internal static CrossPkgLib.Emitter branchEmitter = new CrossPkgLib_BranchжEmitter(CrossPkgLib.NewBranch("branch"u8, 3));
+internal static CrossPkgLib.Emitter branchEmitter = new CrossPkgLib.BranchжEmitter(CrossPkgLib.NewBranch("branch"u8, 3));
 
 internal static Func<@string, (@string, slice<byte>, error)> makeScanner(@string @base) {
     return (@string @file) => {
@@ -190,6 +190,8 @@ private static readonly object tokenˢ = (@string)"token:"u8;
 private static readonly @string abcdeˢ = "abcde"u8;
 private static readonly object leafˢ = (@string)"leaf:"u8;
 private static readonly object branchˢ = (@string)"branch:"u8;
+private static readonly object describedLeafˢ = (@string)"described leaf:"u8;
+private static readonly object describedBranchˢ = (@string)"described branch:"u8;
 private static readonly @string helloˢ = "hello"u8;
 private static readonly object verdictScoreˢ = (@string)"verdict score:"u8;
 private static readonly object talliesScoreˢ = (@string)"tallies score:"u8;
@@ -324,6 +326,8 @@ internal static void Main() {
         fmt.Println((~sbx.Holder.item).Name, sbx.tag);
         fmt.Println(leafˢ, leafEmitter.Emit());
         fmt.Println(branchˢ, branchEmitter.Emit());
+        fmt.Println(describedLeafˢ, CrossPkgLib.DescribeEmitter(leafEmitter));
+        fmt.Println(describedBranchˢ, CrossPkgLib.DescribeEmitter(branchEmitter));
         var scan = makeScanner("p:"u8);
         var (scanName, scanData, scanErr) = scan(helloˢ);
         fmt.Println(scanName, ((@string)scanData), scanErr == default!);

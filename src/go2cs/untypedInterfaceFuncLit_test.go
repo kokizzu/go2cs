@@ -128,10 +128,18 @@ func main() {
 	}
 
 	// Each any slot states the DECLARED Go result type, whatever the body's shape and arity.
+	//
+	// `pred` is the VARIADIC one, and it carries a second thing its nullary siblings do not: the
+	// empty-interface boxing CAST to its Go func type (typedNilInterfaceBoxing.go). Without it the
+	// box's dynamic type is C#'s synthesized `<>f__AnonymousDelegate0` — a `params` signature has
+	// no BCL delegate for C#'s natural function type to be — and no Go-spelled assertion or
+	// `reflect.TypeOf` can ever match it. The two properties are pinned in ONE string here because
+	// they are emitted at the same site and a change to either would otherwise be invisible: the
+	// result type must still be stated INSIDE the cast, not replaced by it.
 	for _, want := range []string{
 		"[\"die\"u8] = bool () =>",
 		"[\"live\"u8] = @string () =>",
-		"[\"pred\"u8] = (any, error) (params ",
+		"[\"pred\"u8] = ((Funcꓸꓸꓸ<any, (any, error)>)((any, error) (params ",
 		"fn: nint () =>",
 	} {
 		if !strings.Contains(mainCs, want) {

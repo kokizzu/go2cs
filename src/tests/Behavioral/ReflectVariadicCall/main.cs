@@ -143,7 +143,7 @@ internal static void Main() {
     var m = reflect.ValueOf(new counter(@base: 100)).MethodByName(totalˢ);
     fmt.Println(methodˢ, callString(m.Interface(), (nint)(1), (nint)(2)));
     var funcs = new map<@string, any>{
-        ["cat"u8] = @string (@string sep, params ꓸꓸꓸstring partsʗp) => {
+        ["cat"u8] = ((Funcꓸꓸꓸ<@string, @string, @string>)(@string (@string sep, params ꓸꓸꓸstring partsʗp) => {
             var parts = partsʗp.sslice();
             @string @out = ""u8;
             foreach (var (i, p) in parts) {
@@ -153,19 +153,19 @@ internal static void Main() {
                 @out += p;
             }
             return @out;
-        },
-        ["count"u8] = nint (params ꓸꓸꓸany valsʗp) => {
+        })),
+        ["count"u8] = ((Funcꓸꓸꓸ<any, nint>)(nint (params ꓸꓸꓸany valsʗp) => {
             var vals = valsʗp.sslice();
             return len(vals);
-        },
-        ["pair"u8] = (nint, nint) (nint a, params ꓸꓸꓸnint restʗp) => {
+        })),
+        ["pair"u8] = ((Funcꓸꓸꓸ<nint, nint, (nint, nint)>)((nint, nint) (nint a, params ꓸꓸꓸnint restʗp) => {
             var rest = restʗp.sslice();
             nint t = 0;
             foreach (var (_, r) in rest) {
                 t += r;
             }
             return (a, t);
-        }
+        }))
     };
     var names = new slice<@string>(0, len(funcs));
     foreach (var (name, _) in funcs) {
