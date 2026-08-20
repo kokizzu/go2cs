@@ -14895,4 +14895,57 @@ standing classification stays (a `.tests.csproj` emitted by a pre-template fork 
 sweep -- the shape to expect from any lane that forked early), but the queued pass is withdrawn:
 there is nothing to level.
 
+## CLOSED (2026-08-20, lane `claude/tests-csproj-stale-badge`) -- the stale-validation-badge PIPELINE gap, and the residual the gate does not close
+
+The class named above ("The stale-validation-badge class is a PIPELINE gap, not four accidents") is
+closed at the gate half. `writeReadmeFile`'s `options.convertStdLib` gate is now the named predicate
+**`emitsPackageReadme`** = `options.convertStdLib || rewriteOfCorePackage(projectFileName, options)`
+-- the SAME widening `validationPackBlock`'s gate already took, against the same predicate, for the
+same reason. Because `rewriteOfCorePackage` tests the OUTPUT LOCATION (under the runtime root's
+`core\` tree) rather than the invocation mode, a corpus package levels its README on ANY
+regeneration -- `-tests`, single-package, `-stdlib` alike -- while the litter rule the gate exists
+for is preserved structurally: no fixture, example, `-recurse` output or end-user output path can
+satisfy it. Guarded by `TestPackageReadmeEmissionFollowsPackageProvenanceNotRunMode`, both arms
+proven failing-first by neutering each separately.
+
+**The measurement that matters most is a byte-identity, not a refresh.** Three banked packages
+(`hash/adler32`, `crypto/rc4`, `unicode/utf8`) had their badges deliberately staled, then were run
+through `-tests -test-action convert`: with the pre-fix binary all three stayed stale (the defect
+reproduces); with the fix all three returned to their **committed bytes exactly**. The committed
+READMEs were emitted by `-stdlib`, so byte-identity is the proof that the `-tests` emission AGREES
+with the `-stdlib` emission -- this opens **no new standing-restore family**, which was the live risk
+in widening the gate at all. A full `-test-action all` on `hash/adler32` then validated 2 of 2 with
+`git status` clean across `src/core` AND `docs` -- zero dirt, zero `.tests.csproj` drift -- and a
+filtered `-stdlib` over the same three moved nothing but the six root attribution files at an EMPTY
+numstat (the documented CRLF phantoms).
+
+### The residual: the board's two formulations are NOT equivalent
+
+The item offered them as alternatives -- "let a `-tests` conversion that WROTE a proof page also
+refresh that package's README, **or equivalently** drop the `convertStdLib` gate to 'stdlib package'
+rather than 'stdlib run'". They are not equivalent, and the difference is an ordering the gate cannot
+reach. The README is composed during **CONVERSION**; the proof page it reads is written at the **END
+of the COMPARE** (`emitValidationProofPage`, `testConversion.go`). So within one `-test-action all`
+the README is always built from the proof page as it stood BEFORE that run.
+
+Consequence, measured by moving `docs/validation/current/hash.adler32.md` aside to simulate a fresh
+bank and running one full `all`: the run validates 2 of 2 and writes a green page, and the README it
+emitted in the same run reads `Tests-not_yet_validated-orange` **beside its own green proof page**.
+The next conversion of that package levels it (verified: back to green, byte-identical to committed).
+
+So: a package whose counts are UNCHANGED is now self-leveling, which is the common case and the one
+that was silently rotting. A package whose counts CHANGE -- **every fresh bank, and every rebank that
+moves a number** -- is still one run behind, and now visibly self-contradictory rather than merely
+stale. A bank still owes one extra conversion of its own package after the pipeline; that is cheaper
+than the whole-stdlib reconvert it replaces, but it is not nothing.
+
+Closing it needs the OTHER formulation -- re-emit the README after the compare has written the page.
+That is a second emission point, not a gate change, and it carries a real hazard that is why this
+lane did not take it uninstructed: `-test-action compare` does NOT convert, so the converter's
+package globals (`packageDoc`, `packageSourceDir`) are empty on that path, and naively re-calling
+`writeReadmeFile` there would emit a README with no doc body -- a destructive, corpus-wide rewrite
+that would read as ordinary reconvert drift. Whoever takes it should either restrict the re-emission
+to actions that actually converted (`convert`/`all`), or refresh only the badge LINE in the existing
+file rather than re-rendering the document.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
