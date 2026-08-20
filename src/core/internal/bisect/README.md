@@ -5,7 +5,7 @@
 [![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/internal/bisect@go1.23.1)\
 [![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/internal/bisect) [![Source](https://img.shields.io/badge/Source-@1.23.1.6-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.6/src/core/internal/bisect)
 
-Package bisect can be used by compilers and other programs to serve as a target for the bisect debugging tool. See [golang.org/x/tools/cmd/bisect](/golang.org/x/tools/cmd/bisect) for details about using the tool.
+Package bisect can be used by compilers and other programs to serve as a target for the bisect debugging tool. See [golang.org/x/tools/cmd/bisect](https://pkg.go.dev/golang.org/x/tools/cmd/bisect) for details about using the tool.
 
 To be a bisect target, allowing bisect to help determine which of a set of independent changes provokes a failure, a program needs to:
 

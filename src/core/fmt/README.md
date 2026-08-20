@@ -102,7 +102,7 @@ For floating-point values, width sets the minimum width of the field and precisi
 
 For complex numbers, the width and precision apply to the two components independently and the result is parenthesized, so %f applied to 1.2+3.4i produces (1.200000+3.400000i).
 
-When formatting a single integer code point or a rune string (type \[]rune) with %q, invalid Unicode code points are changed to the Unicode replacement character, U+FFFD, as in [strconv.QuoteRune](/strconv#QuoteRune).
+When formatting a single integer code point or a rune string (type \[]rune) with %q, invalid Unicode code points are changed to the Unicode replacement character, U+FFFD, as in [strconv.QuoteRune](https://pkg.go.dev/strconv@go1.23.1#QuoteRune).
 
 Other flags:
 
@@ -134,7 +134,7 @@ will print 23.
 
 Except when printed using the verbs %T and %p, special formatting considerations apply for operands that implement certain interfaces. In order of application:
 
-1\. If the operand is a [reflect.Value](/reflect#Value), the operand is replaced by the concrete value that it holds, and printing continues with the next rule.
+1\. If the operand is a [reflect.Value](https://pkg.go.dev/reflect@go1.23.1#Value), the operand is replaced by the concrete value that it holds, and printing continues with the next rule.
 
 2\. If an operand implements the \[Formatter] interface, it will be invoked. In this case the interpretation of verbs and flags is controlled by that implementation.
 
@@ -212,7 +212,7 @@ The %!s just shows the print verb in use when the failure occurred. If the panic
 
 ### Scanning
 
-An analogous set of functions scans formatted text to yield values.  \[Scan], \[Scanf] and \[Scanln] read from [os.Stdin](/os#Stdin); \[Fscan], \[Fscanf] and \[Fscanln] read from a specified [io.Reader](/io#Reader); \[Sscan], \[Sscanf] and \[Sscanln] read from an argument string.
+An analogous set of functions scans formatted text to yield values.  \[Scan], \[Scanf] and \[Scanln] read from [os.Stdin](https://pkg.go.dev/os@go1.23.1#Stdin); \[Fscan], \[Fscanf] and \[Fscanln] read from a specified [io.Reader](https://pkg.go.dev/io@go1.23.1#Reader); \[Sscan], \[Sscanf] and \[Sscanln] read from an argument string.
 
 \[Scan], \[Fscan], \[Sscan] treat newlines in the input as spaces.
 
@@ -248,7 +248,7 @@ All arguments to be scanned must be either pointers to basic types or implementa
 
 Like \[Scanf] and \[Fscanf], \[Sscanf] need not consume its entire input. There is no way to recover how much of the input string \[Sscanf] used.
 
-Note: \[Fscan] etc. can read one character (rune) past the input they return, which means that a loop calling a scan routine may skip some of the input.  This is usually a problem only when there is no space between input values.  If the reader provided to \[Fscan] implements ReadRune, that method will be used to read characters.  If the reader also implements UnreadRune, that method will be used to save the character and successive calls will not lose data.  To attach ReadRune and UnreadRune methods to a reader without that capability, use [bufio.NewReader](/bufio#NewReader).
+Note: \[Fscan] etc. can read one character (rune) past the input they return, which means that a loop calling a scan routine may skip some of the input.  This is usually a problem only when there is no space between input values.  If the reader provided to \[Fscan] implements ReadRune, that method will be used to read characters.  If the reader also implements UnreadRune, that method will be used to save the character and successive calls will not lose data.  To attach ReadRune and UnreadRune methods to a reader without that capability, use [bufio.NewReader](https://pkg.go.dev/bufio@go1.23.1#NewReader).
 
 ---
 

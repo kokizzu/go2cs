@@ -11,7 +11,7 @@ Numbers are translated by reading and writing fixed-size values. A fixed-size va
 
 The varint functions encode and decode single integer values using a variable-length encoding; smaller values require fewer bytes. For a specification, see [https://developers.google.com/protocol-buffers/docs/encoding](https://developers.google.com/protocol-buffers/docs/encoding).
 
-This package favors simplicity over efficiency. Clients that require high-performance serialization, especially for large data structures, should look at more advanced solutions such as the [encoding/gob](/encoding/gob) package or [google.golang.org/protobuf](/google.golang.org/protobuf) for protocol buffers.
+This package favors simplicity over efficiency. Clients that require high-performance serialization, especially for large data structures, should look at more advanced solutions such as the [encoding/gob](https://pkg.go.dev/encoding/gob@go1.23.1) package or [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) for protocol buffers.
 
 ---
 

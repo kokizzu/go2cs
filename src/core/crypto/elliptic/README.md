@@ -7,7 +7,7 @@
 
 Package elliptic implements the standard NIST P-224, P-256, P-384, and P-521 elliptic curves over prime fields.
 
-Direct use of this package is deprecated, beyond the \[P224], \[P256], \[P384], and \[P521] values necessary to use [crypto/ecdsa](/crypto/ecdsa). Most other uses should migrate to the more efficient and safer [crypto/ecdh](/crypto/ecdh), or to third-party modules for lower-level functionality.
+Direct use of this package is deprecated, beyond the \[P224], \[P256], \[P384], and \[P521] values necessary to use [crypto/ecdsa](https://pkg.go.dev/crypto/ecdsa@go1.23.1). Most other uses should migrate to the more efficient and safer [crypto/ecdh](https://pkg.go.dev/crypto/ecdh@go1.23.1), or to third-party modules for lower-level functionality.
 
 ---
 

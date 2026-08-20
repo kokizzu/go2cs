@@ -21,7 +21,7 @@ There is also a standard HTTP interface to trace data. Adding the following line
 
 	import _ "net/http/pprof"
 
-See the [net/http/pprof](/net/http/pprof) package for more details about all of the debug endpoints installed by this import.
+See the [net/http/pprof](https://pkg.go.dev/net/http/pprof@go1.23.1) package for more details about all of the debug endpoints installed by this import.
 
 ### User annotation
 
@@ -44,7 +44,7 @@ A region is for logging a time interval during a goroutine's execution. By defin
 	   trace.WithRegion(ctx, "mixMilkCoffee", mixMilkCoffee)
 	})
 
-A task is a higher-level component that aids tracing of logical operations such as an RPC request, an HTTP request, or an interesting local operation which may require multiple goroutines working together. Since tasks can involve multiple goroutines, they are tracked via a [context.Context](/context#Context) object. \[NewTask] creates a new task and embeds it in the returned [context.Context](/context#Context) object. Log messages and regions are attached to the task, if any, in the Context passed to \[Log] and \[WithRegion].
+A task is a higher-level component that aids tracing of logical operations such as an RPC request, an HTTP request, or an interesting local operation which may require multiple goroutines working together. Since tasks can involve multiple goroutines, they are tracked via a [context.Context](https://pkg.go.dev/context@go1.23.1#Context) object. \[NewTask] creates a new task and embeds it in the returned [context.Context](https://pkg.go.dev/context@go1.23.1#Context) object. Log messages and regions are attached to the task, if any, in the Context passed to \[Log] and \[WithRegion].
 
 For example, assume that we decided to froth milk, extract coffee, and mix milk and coffee in separate goroutines. With a task, the trace tool can identify the goroutines involved in a specific cappuccino order.
 

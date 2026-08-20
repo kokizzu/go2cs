@@ -5,13 +5,13 @@
 [![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/html/template@go1.23.1)\
 [![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/html/template) [![Source](https://img.shields.io/badge/Source-@1.23.1.6-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.6/src/core/html/template)
 
-Package template (html/template) implements data-driven templates for generating HTML output safe against code injection. It provides the same interface as [text/template](/text/template) and should be used instead of [text/template](/text/template) whenever the output is HTML.
+Package template (html/template) implements data-driven templates for generating HTML output safe against code injection. It provides the same interface as [text/template](https://pkg.go.dev/text/template@go1.23.1) and should be used instead of [text/template](https://pkg.go.dev/text/template@go1.23.1) whenever the output is HTML.
 
-The documentation here focuses on the security features of the package. For information about how to program the templates themselves, see the documentation for [text/template](/text/template).
+The documentation here focuses on the security features of the package. For information about how to program the templates themselves, see the documentation for [text/template](https://pkg.go.dev/text/template@go1.23.1).
 
 ### Introduction
 
-This package wraps [text/template](/text/template) so you can share its template API to parse and execute HTML templates safely.
+This package wraps [text/template](https://pkg.go.dev/text/template@go1.23.1) so you can share its template API to parse and execute HTML templates safely.
 
 	tmpl, err := template.New("name").Parse(...)
 	// Error checking elided

@@ -79,13 +79,13 @@ If any patterns are invalid or have invalid matches, the build will fail.
 
 The //go:embed line for a variable of type string or \[]byte can have only a single pattern, and that pattern can match only a single file. The string or \[]byte is initialized with the contents of that file.
 
-The //go:embed directive requires importing "embed", even when using a string or \[]byte. In source files that don't refer to [embed.FS](/embed#FS), use a blank import (import \_ "embed").
+The //go:embed directive requires importing "embed", even when using a string or \[]byte. In source files that don't refer to [embed.FS](https://pkg.go.dev/embed@go1.23.1#FS), use a blank import (import \_ "embed").
 
 ### File Systems
 
 For embedding a single file, a variable of type string or \[]byte is often best. The \[FS] type enables embedding a tree of files, such as a directory of static web server content, as in the example above.
 
-FS implements the [io/fs](/io/fs) package's \[FS] interface, so it can be used with any package that understands file systems, including [net/http](/net/http), [text/template](/text/template), and [html/template](/html/template).
+FS implements the [io/fs](https://pkg.go.dev/io/fs@go1.23.1) package's \[FS] interface, so it can be used with any package that understands file systems, including [net/http](https://pkg.go.dev/net/http@go1.23.1), [text/template](https://pkg.go.dev/text/template@go1.23.1), and [html/template](https://pkg.go.dev/html/template@go1.23.1).
 
 For example, given the content variable in the example above, we can write:
 

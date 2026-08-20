@@ -21,7 +21,7 @@ In effect, the method must look schematically like
 
 where T1 and T2 can be marshaled by encoding/gob. These requirements apply even if a different codec is used. (In the future, these requirements may soften for custom codecs.)
 
-The method's first argument represents the arguments provided by the caller; the second argument represents the result parameters to be returned to the caller. The method's return value, if non-nil, is passed back as a string that the client sees as if created by [errors.New](/errors#New).  If an error is returned, the reply parameter will not be sent back to the client.
+The method's first argument represents the arguments provided by the caller; the second argument represents the result parameters to be returned to the caller. The method's return value, if non-nil, is passed back as a string that the client sees as if created by [errors.New](https://pkg.go.dev/errors@go1.23.1#New).  If an error is returned, the reply parameter will not be sent back to the client.
 
 The server may handle requests on a single connection by calling \[ServeConn].  More typically it will create a network listener and call \[Accept] or, for an HTTP listener, \[HandleHTTP] and \[http.Serve].
 
@@ -29,7 +29,7 @@ A client wishing to use the service establishes a connection and then invokes \[
 
 The Call method waits for the remote call to complete while the Go method launches the call asynchronously and signals completion using the Call structure's Done channel.
 
-Unless an explicit codec is set up, package [encoding/gob](/encoding/gob) is used to transport the data.
+Unless an explicit codec is set up, package [encoding/gob](https://pkg.go.dev/encoding/gob@go1.23.1) is used to transport the data.
 
 Here is a simple example.  A server wishes to export an object of type Arith:
 
