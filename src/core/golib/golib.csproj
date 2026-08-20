@@ -5,16 +5,16 @@
        and never pack, so golib needs no version stamp there. -->
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>go</RootNamespace>
     <AssemblyName>golib</AssemblyName>
     <Product>go2cs</Product>
     <Description>Go core library functions in .NET for use with go2cs: $(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
-    <Copyright>Copyright © 2026 The go2cs Authors</Copyright>
     <Authors>$(Product) Authors</Authors>
-    <Company>The go2cs Authors</Company>
+    <Company>The $(Authors)</Company>
+    <Copyright>Copyright © 2018-2026 $(Company)</Copyright>
     <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <ApplicationIcon>../go2cs.ico</ApplicationIcon>

@@ -8,11 +8,10 @@
     <RootNamespace>go2cs</RootNamespace>
     <Product>go2cs</Product>
     <Description>go2cs Roslyn source generator/analyzer emitting the C# glue (interface satisfaction, implicit conversions, receiver overloads, init ordering) for go2cs converted projects: $(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
-    <Description></Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
-    <Copyright>Copyright © 2026 The go2cs Authors</Copyright>
     <Authors>$(Product) Authors</Authors>
-    <Company>The go2cs Authors</Company>
+    <Company>The $(Authors)</Company>
+    <Copyright>Copyright © 2018-2026 $(Company)</Copyright>
     <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Title>go2cs source generator</Title>

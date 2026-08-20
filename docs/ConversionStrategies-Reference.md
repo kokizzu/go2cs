@@ -517,6 +517,133 @@ the `NoWarn` set *exactly* (so adding a code forces the design-doc update, and d
 both halves of the publish-group split — a regression that moved `AllowUnsafeBlocks` under the condition
 would break the corpus in a way no warning count would reveal.
 
+### A doc-comment link resolves to a fully-qualified, version-pinned URL
+
+A converted package's `README.md` is its package-level Go doc comment rendered to Markdown, and a Go doc
+comment can link. Left to `go/doc/comment`'s defaults, those links come out **site-root-relative**:
+`[io.Reader]` renders as `[io.Reader](/io#Reader)`, because `Printer.DocLinkBaseURL` defaults to empty and
+`DocLink.DefaultURL` then composes a path from the site root. That is exactly right for pkg.go.dev, which
+serves the documentation at its own root, and exactly wrong everywhere this README is actually read:
+GitHub resolves `/io#Reader` against `github.com`, Pages/Jekyll against the site root, and nuget.org
+against `nuget.org`. The link is dead in all three.
+
+The emitter therefore installs its own `Printer.DocLinkURL` (`renderPackageDoc` in `readme.go`, resolver in
+`readmeDocLinks.go`). A standard-library target pins the Go release that produced the conversion —
+`https://pkg.go.dev/io@go1.23.1#Reader` — which is the same rule, and the same honesty doctrine, the Docs
+badge beside it already follows.
+
+**Completeness is structural here, not a judgement call, because the grammar is closed.**
+`go/doc/comment`'s `Text` interface has exactly four implementations — `Plain`, `Italic`, `*Link`,
+`*DocLink` — and only two carry a URL:
+
+* **`*Link` URLs are absolute by construction.** Both of the parser's two link sources require a scheme:
+  `parseLink` rejects a `[text]: url` definition whose url has no `isScheme(...)://`, and `autoURL` rejects
+  inline text on the same test (the accepted schemes are `file`, `ftp`, `gopher`, `http`, `https`,
+  `mailto`, `nntp`). A `*Link` therefore *cannot* reach the emitter with a relative URL, and passes through
+  untouched — which is also what the "already-absolute URLs are left alone" rule asks for.
+* **`*DocLink` is the sole relative-URL producer**, and its own documentation enumerates the exhaustive set
+  of five field combinations. `resolveDocLinkURL` answers all five.
+
+| `DocLink` fields | Emitted URL |
+|---|---|
+| `ImportPath` | `https://pkg.go.dev/io@go1.23.1` |
+| `ImportPath`, `Name` | `https://pkg.go.dev/io@go1.23.1#Reader` |
+| `ImportPath`, `Recv`, `Name` | `https://pkg.go.dev/io@go1.23.1#Writer.Write` |
+| `Name` | `https://pkg.go.dev/<current>@go1.23.1#Name` |
+| `Recv`, `Name` | `https://pkg.go.dev/<current>@go1.23.1#Recv.Name` |
+
+The two same-package forms cannot occur today — the converter leaves `Parser.LookupSym` nil, so `[NewInt]`
+stays literal text rather than becoming a link (which is why the corpus is full of escaped `\[Int]`,
+`\[Encoder]`, `\[Decode]`: those are not dead links, they are not links at all, and pkg.go.dev shows an
+unresolvable name the same way). Answering them anyway is what makes the resolver total against the
+*grammar* rather than against today's census, so enabling `LookupSym` later needs no second pass here.
+
+**An external module path is pinned only when the distribution actually pinned it.** A path whose first
+element carries a dot is a module, not a std package, and cannot be pinned to a Go release — it is not a Go
+release artifact. When GOROOT vendors that exact package, `src/vendor/modules.txt` records the snapshot the
+conversion read and the URL states it (`golang.org/x/sys@v0.22.0/cpu#X86`). When it does not —
+`golang.org/x/sys/windows` is referenced by std doc comments but is **not** among the x/sys packages GOROOT
+vendors — the URL is emitted fully qualified but **unversioned** rather than borrowing the pin from the
+module's other vendored packages. A fabricated pin is worse than an unpinned link: the unpinned one still
+resolves on all three surfaces, which is the entire defect being fixed. Same degradation the Source·Go
+badge makes for the same reason — an unresolvable pin costs precision, never correctness.
+
+Corpus census at the change: **99 relative link occurrences across 38 of 307 emitted READMEs** (40
+package-only `/pkg`, 57 `/pkg#Name`, 2 `/pkg#Recv.Name`, 0 bare-fragment `#Name` — exactly the distribution
+the grammar predicts with `LookupSym` nil), against 1,899 already-absolute targets that pass through
+unchanged.
+
+Guarded by `readmeDocLinks_test.go`, which enumerates the five combinations rather than sampling them and
+fails on any target that still begins at the site root, plus an end-to-end case over real godoc markup that
+asserts both halves of the contract — every doc link qualified, every absolute link untouched.
+
+**One thing that looks like this defect and is not.** `src/core/image/README.md` renders
+`\[Go Security Policy]([https://go.dev/security/policy](https://go.dev/security/policy))`. That is upstream
+Go writing **Markdown** link syntax inside a doc comment (`image/image.go:37`), which `go/doc/comment` does
+not support; pkg.go.dev renders it identically. Faithful conversion of an upstream quirk, not an emitter
+defect.
+
+### Assembly metadata is one derivation chain, and the framework is hoisted to props
+
+Every project in the tree — the two converter templates and the hand-written `golib` and `go2cs-gen` —
+carries the same metadata block, in the same order, derived from the same two roots:
+
+```xml
+<Product>go2cs</Product>
+<Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
+<AssemblyTitle>$(Description)</AssemblyTitle>
+<Authors>$(Product) Authors</Authors>
+<Company>The $(Authors)</Company>
+<Copyright>Copyright © 2018-2026 $(Company)</Copyright>
+<RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
+<RepositoryType>git</RepositoryType>
+<ApplicationIcon>go2cs.ico</ApplicationIcon>
+```
+
+The order *is* the contract: the block reads top-down as a chain, so `Product` names the project, the two
+description properties fall out of it, `Authors` falls out of `Product`, `Company` out of `Authors`, and
+`Copyright` out of `Company`. There is exactly one place to edit a name, and no way for two projects to
+disagree about one. A literal that happens to expand to the same string is still a defect — it is the copy
+that goes stale.
+
+The block had drifted in three directions at once before the guards existed. The two hand projects spelled
+`Company` and `Copyright` as literals while the template spelled the year with a **printf verb** over
+`time.Now().Year()`; the test-host template omitted `Authors` and `Copyright` entirely; and
+`go2cs-gen.csproj` carried a **second, empty `<Description>`** below its real one — MSBuild keeps the last,
+so the published `go.gen` package shipped with an empty description *and* an empty `AssemblyTitle`, with
+nothing warning and nothing failing to build.
+
+The `Copyright` year is now a **literal range**, not a verb. The verb made every emitted `.csproj` a
+function of the wall clock: the same converter over the same sources with the same flags produced different
+bytes on either side of New Year's Eve, so the first regeneration of each year reported the whole corpus as
+drifted. Determinism is worth more here than an automatically-current year, which is a once-a-year edit.
+
+`<TargetFramework>` is owned by **`src/Directory.Build.props`**, so a framework hop is one edit rather than
+one per csproj family plus a whole-corpus regeneration. It survives in each project only as a **conditioned
+fallback**:
+
+```xml
+<TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+```
+
+Both halves are load-bearing. `Directory.Build.props` is imported *above* the project body, so where the
+file is in scope it wins and the project's own line is inert; where it is not, the project still names a
+framework and still builds. And it is genuinely not always in scope: `deploy-core.ps1` stages the corpus
+under a root that **deliberately excludes** `core`'s props and writes its own, a `-recurse` conversion
+writes generated code under an arbitrary output root, and a single-package conversion can land anywhere.
+Unconditional in the project would mean the hop silently skips every emitted project; absent entirely would
+mean those trees do not build at all. `go2cs-gen` keeps its `netstandard2.0` **unconditional** on purpose —
+a Roslyn analyzer must not follow the hop — and its own value therefore wins over the props default.
+
+MSBuild stops at the **first** `Directory.Build.props` found walking up, so the two nested ones
+(`src/core`, `src/tests/Performance`) explicitly import the root via `GetPathOfFileAbove`. Any new nested
+props file owes the same import or it silently shadows the root for everything beneath it.
+
+Guarded by `csprojMetadata_test.go`, which states the contract over all four projects at once — the two
+rendered templates and the two hand-written files read from disk — pinning the order as a subsequence, the
+derived values exactly, the absence of a format verb, the conditioned framework, and (the regression guard
+for the shipped defect) that no metadata property is set twice unconditionally.
+
 ### Cross-package imports (importing another package / assembly)
 
 When a package imports another and uses its exported surface, the converter must agree, on both the **producer** side (converting the imported package) and the **consumer** side (resolving the `import`), on the imported package's C# `(namespace, class)` and emit a `ProjectReference` to its generated `.csproj`. The package class is `<packageName>_package` and the namespace is the root `go` plus the import path's leading segments, so the two sides line up when the Go package name equals the import path's last segment (the usual layout: `import "x/y/barlib"` → package `barlib` → `go.x.y.barlib_package`). The consumer emits `using barlib = …barlib_package;` and references members as `barlib.Thing`.

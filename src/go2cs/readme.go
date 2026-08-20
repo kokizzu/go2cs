@@ -17,12 +17,17 @@ import (
 )
 
 // extractPackageDoc returns the package-level Go doc comment (the comment group attached to the
-// `package` clause) rendered to GitHub-flavored Markdown, for use as a NuGet package README.
+// `package` clause) as godoc-markup TEXT, for use as a NuGet package README.
 //
 // It reads ast.File.Doc directly — a pure read — rather than go/doc.NewFromFiles, which takes
 // ownership of and may mutate the AST that the converter subsequently visits. The per-file BSD
 // license header is a separate comment group (blank-line-separated from the package clause), so it
 // is naturally excluded; only the package documentation is returned.
+//
+// Rendering to Markdown is deliberately NOT done here. This runs during package-state capture, where
+// the only thing in scope is the AST; renderPackageDoc runs at emission time, where the package's
+// source directory and the conversion options are — and those are exactly what resolving a doc
+// link to a fully-qualified URL needs. Capture reads, emission renders.
 func extractPackageDoc(files []*ast.File) string {
 	var docs []string
 
@@ -41,14 +46,38 @@ func extractPackageDoc(files []*ast.File) string {
 		return ""
 	}
 
-	// Parse the godoc markup (headings, code blocks, lists, doc links) and render it to Markdown.
+	return strings.Join(docs, "\n\n")
+}
+
+// renderPackageDoc renders a package's godoc markup to the GitHub-flavored Markdown the README
+// carries, resolving every doc link to a fully-qualified URL on the way out.
+//
+// sourceDir is the package's own Go source directory, which is what names the package being
+// converted: stdLibImportPath recovers its import path from where the sources sit under GOROOT/src,
+// for the same reason the Docs badge does it that way rather than trusting the loader's PkgPath.
+// That import path is what the two same-package doc-link forms resolve against.
+func renderPackageDoc(packageDoc string, sourceDir string, options Options) string {
+	if strings.TrimSpace(packageDoc) == "" {
+		return ""
+	}
+
+	importPath := stdLibImportPath(sourceDir, options.goRoot)
+	version := goVersion()
+
 	var parser comment.Parser
 	var printer comment.Printer
 
 	// Suppress the "{#hdr-...}" heading-anchor suffix — NuGet's Markdown renderer shows it literally.
 	printer.HeadingID = func(*comment.Heading) string { return "" }
 
-	return strings.TrimSpace(string(printer.Markdown(parser.Parse(strings.Join(docs, "\n\n")))))
+	// Resolve doc links to fully-qualified, version-pinned URLs. Without this the printer falls
+	// back to DocLink.DefaultURL against an empty base and emits site-root-relative links that are
+	// dead on GitHub, on Pages and on nuget.org alike — see readmeDocLinks.go.
+	printer.DocLinkURL = func(link *comment.DocLink) string {
+		return resolveDocLinkURL(link, importPath, version, options.goRoot)
+	}
+
+	return strings.TrimSpace(string(printer.Markdown(parser.Parse(packageDoc))))
 }
 
 var goVersionOnce sync.Once
@@ -91,7 +120,7 @@ func pinGoVersion(resolved string) {
 }
 
 // writeReadmeFile emits a README.md into a converted library package directory, wrapping the
-// package's Go doc (already rendered to Markdown) so the NuGet package carries readable docs. It is
+// package's Go doc (rendered here, by renderPackageDoc) so the NuGet package carries readable docs. It is
 // idempotent via needToWriteFile, mirroring how the icon and .csproj files are written, and uses
 // CRLF line endings to match the converter's other generated text output (and avoid autocrlf churn).
 //
@@ -117,8 +146,8 @@ func writeReadmeFile(projectPath string, projectName string, packageDoc string, 
 		builder.WriteString("\n\n")
 	}
 
-	if trimmed := strings.TrimSpace(packageDoc); trimmed != "" {
-		builder.WriteString(trimmed)
+	if rendered := renderPackageDoc(packageDoc, sourceDir, options); rendered != "" {
+		builder.WriteString(rendered)
 		builder.WriteString("\n\n")
 	}
 
