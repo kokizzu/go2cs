@@ -3,10 +3,12 @@
 // license that can be found in the LICENSE file.
 namespace go.crypto;
 
-partial class tls_package {
+using static go.crypto.tls_package;
 
-internal static ж<Config> _ᴛ31ʗ = Ꮡ(new Config(WrapSession: (Ꮡ(new Config(nil))).EncryptTicket));
+partial class tls_internal_test_package {
 
-internal static ж<Config> _ᴛ32ʗ = Ꮡ(new Config(UnwrapSession: (Ꮡ(new Config(nil))).DecryptTicket));
+internal static ж<global::go.crypto.tls_package.Config> _ᴛ15ʗ = Ꮡ(new Config(WrapSession: (Ꮡ(new Config(nil))).EncryptTicket));
 
-} // end tls_package
+internal static ж<global::go.crypto.tls_package.Config> _ᴛ16ʗ = Ꮡ(new Config(UnwrapSession: (Ꮡ(new Config(nil))).DecryptTicket));
+
+} // end tls_internal_test_package

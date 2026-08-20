@@ -40,10 +40,11 @@ using go.math;
 using go.os;
 using list = container.list_package;
 using path;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
-[GoType("num:nint")] partial struct opensslInputEvent;
+[GoType("num:nint")] internal partial struct opensslInputEvent;
 
 // Note: see comment in handshake_test.go for details of how the reference
 // tests work.
@@ -53,7 +54,7 @@ internal static opensslInputEvent opensslKeyUpdate => 2;
 
 internal static readonly @string opensslSentinel = "SENTINEL\n"u8;
 
-[GoType("chan opensslInputEvent")] partial struct opensslInput;
+[GoType("chan opensslInputEvent")] internal partial struct opensslInput;
 
 internal static (nint n, error err) Read(this opensslInput i, slice<byte> buf) {
     foreach (var @event in i) {
@@ -78,7 +79,7 @@ internal static (nint n, error err) Read(this opensslInput i, slice<byte> buf) {
 // opensslOutputSink is an io.Writer that receives the stdout and stderr from an
 // `openssl` process and sends a value to handshakeComplete or readKeyUpdate
 // when certain messages are seen.
-[GoType] partial struct opensslOutputSink {
+[GoType] internal partial struct opensslOutputSink {
     internal channel<EmptyStruct> handshakeComplete;
     internal channel<EmptyStruct> readKeyUpdate;
     internal slice<byte> all;
@@ -122,7 +123,7 @@ internal static readonly @string opensslReadKeyUpdate = "SSL_accept:TLSv1.3 read
 
 // clientTest represents a test of the TLS client handshake against a reference
 // implementation.
-[GoType] partial struct clientTest {
+[GoType] internal partial struct clientTest {
     // name is a freeform string identifying the test and the file in which
     // the expected results will be stored.
     internal @string name;
@@ -130,7 +131,7 @@ internal static readonly @string opensslReadKeyUpdate = "SSL_accept:TLSv1.3 read
     // command to run for the reference server.
     internal slice<@string> args;
     // config, if not nil, contains a custom Config to use for this test.
-    internal ж<Config> config;
+    internal ж<global::go.crypto.tls_package.Config> config;
     // cert, if not empty, contains a DER-encoded certificate for the
     // reference server.
     internal slice<byte> cert;
@@ -144,7 +145,7 @@ internal static readonly @string opensslReadKeyUpdate = "SSL_accept:TLSv1.3 read
     // validate, if not nil, is a function that will be called with the
     // ConnectionState of the resulting connection. It returns a non-nil
     // error if the ConnectionState is unacceptable.
-    internal Func<ΔConnectionState, error> validate;
+    internal Func<global::go.crypto.tls_package.ΔConnectionState, error> validate;
     // numRenegotiations is the number of times that the connection will be
     // renegotiated.
     internal nint numRenegotiations;
@@ -190,7 +191,7 @@ internal static (ж<recordingConn> conn, ж<exec.Cmd> child, opensslInput stdin,
             throw panic(err);
         }
         ref var pemOut = ref heap(new bytes.Buffer(), out var ᏑpemOut);
-        pem.Encode(new bytes_BufferжWriter(ᏑpemOut), Ꮡ(new pem.Block(Type: "PRIVATE KEY"u8, Bytes: derBytes)));
+        pem.Encode(new tls_test_package.bytes_BufferжWriter(ᏑpemOut), Ꮡ(new pem.Block(Type: "PRIVATE KEY"u8, Bytes: derBytes)));
         @string keyPath = tempFile(ᏑpemOut.String());
         defer(os.Remove, keyPath, ref ᒐ);
         slice<@string> command = default!;
@@ -207,7 +208,7 @@ internal static (ж<recordingConn> conn, ж<exec.Cmd> child, opensslInput stdin,
         if (len(test.extensions) > 0) {
             ref var serverInfo = ref heap(new bytes.Buffer(), out var ᏑserverInfo);
             foreach (var (_, ext) in test.extensions) {
-                pem.Encode(new bytes_BufferжWriter(ᏑserverInfo), Ꮡ(new pem.Block(
+                pem.Encode(new tls_test_package.bytes_BufferжWriter(ᏑserverInfo), Ꮡ(new pem.Block(
                     Type: fmt.Sprintf("SERVERINFO FOR EXTENSION %d"u8, byteorder.BeUint16(ext)),
                     Bytes: ext
                 )));
@@ -232,8 +233,8 @@ internal static (ж<recordingConn> conn, ж<exec.Cmd> child, opensslInput stdin,
         stdin = ((opensslInput)new channel<opensslInputEvent>(0));
         cmd.Value.Stdin = stdin;
         var @out = newOpensslOutputSink();
-        cmd.Value.Stdout = new opensslOutputSinkжWriter(@out);
-        cmd.Value.Stderr = new opensslOutputSinkжWriter(@out);
+        cmd.Value.Stdout = new tls_internal_test_package.opensslOutputSinkжWriter(@out);
+        cmd.Value.Stderr = new tls_internal_test_package.opensslOutputSinkжWriter(@out);
         {
             var errΔ1 = cmd.Start(); if (errΔ1 != default!) {
                 (conn, child, stdin, stdout, err) = (default!, default!, default!, default!, errΔ1); goto ᒐdone;
@@ -291,7 +292,7 @@ internal static (slice<slice<byte>> flows, error err) loadData(this ж<clientTes
         }
         var inʗ1 = @in;
         defer(() => inʗ1.Close(), ref ᒐ);
-        (flows, err) = parseTestData(new os_FileжReader(@in));
+        (flows, err) = parseTestData(new tls_test_package.os_FileжReader(@in));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
@@ -315,7 +316,7 @@ internal static void run(this ж<clientTest> Ꮡtest, ж<testing.T> Ꮡt, bool w
             if (err != default!) {
                 Ꮡt.Fatalf("Failed to start subcommand: %s"u8, err);
             }
-            clientConn = new recordingConnжConn(recordingConn);
+            clientConn = new tls_internal_test_package.recordingConnжConn(recordingConn);
             var stdoutʗ1 = stdout;
             defer(() => {
                 if (Ꮡt.Failed()) {
@@ -327,7 +328,7 @@ internal static void run(this ж<clientTest> Ꮡtest, ж<testing.T> Ꮡt, bool w
             if (err != default!) {
                 Ꮡt.Fatalf("failed to load data from %s: %v"u8, test.dataPath(), err);
             }
-            clientConn = new replayingConnжConn(Ꮡ(new replayingConn(t: new testing_TжTB(Ꮡt), flows: flows, reading: false)));
+            clientConn = new tls_internal_test_package.replayingConnжConn(Ꮡ(new replayingConn(t: new tls_test_package.testing_TжTB(Ꮡt), flows: flows, reading: false)));
         }
         var config = test.config;
         if (config == nil) {
@@ -451,7 +452,7 @@ internal static void run(this ж<clientTest> Ꮡtest, ж<testing.T> Ꮡt, bool w
         // chance to arrive.
         if (write && test.renegotiationExpectedToFail == 0) {
             {
-                var err = peekError(new ConnжConn(client)); if (err != default!) {
+                var err = peekError(new global::go.crypto.tls_package.ConnжConn(client)); if (err != default!) {
                     Ꮡt.Errorf("final Read returned an error: %s"u8, err);
                 }
             }
@@ -644,7 +645,7 @@ public static void TestHandshakeClientECDHEECDSAAES128CBCSHA256(ж<testing.T> �
 
 public static void TestHandshakeClientX25519(ж<testing.T> Ꮡt) {
     var config = testConfig.Clone();
-    config.Value.CurvePreferences = new CurveID[]{X25519}.slice();
+    config.Value.CurvePreferences = new global::go.crypto.tls_package.CurveID[]{X25519}.slice();
     var test = Ꮡ(new clientTest(
         name: "X25519-ECDHE"u8,
         args: new @string[]{"-cipher"u8, "ECDHE-RSA-AES128-GCM-SHA256"u8, "-curves"u8, "X25519"u8}.slice(),
@@ -656,7 +657,7 @@ public static void TestHandshakeClientX25519(ж<testing.T> Ꮡt) {
 
 public static void TestHandshakeClientP256(ж<testing.T> Ꮡt) {
     var config = testConfig.Clone();
-    config.Value.CurvePreferences = new CurveID[]{CurveP256}.slice();
+    config.Value.CurvePreferences = new global::go.crypto.tls_package.CurveID[]{CurveP256}.slice();
     var test = Ꮡ(new clientTest(
         name: "P256-ECDHE"u8,
         args: new @string[]{"-cipher"u8, "ECDHE-RSA-AES128-GCM-SHA256"u8, "-curves"u8, "P-256"u8}.slice(),
@@ -671,12 +672,12 @@ internal static readonly @string expectedˢ = "expected HelloRetryRequest"u8;
 
 public static void TestHandshakeClientHelloRetryRequest(ж<testing.T> Ꮡt) {
     var config = testConfig.Clone();
-    config.Value.CurvePreferences = new CurveID[]{X25519, CurveP256}.slice();
+    config.Value.CurvePreferences = new global::go.crypto.tls_package.CurveID[]{X25519, CurveP256}.slice();
     var test = Ꮡ(new clientTest(
         name: "HelloRetryRequest"u8,
         args: new @string[]{"-cipher"u8, "ECDHE-RSA-AES128-GCM-SHA256"u8, "-curves"u8, "P-256"u8}.slice(),
         config: config,
-        validate: error (ΔConnectionState cs) => {
+        validate: error (global::go.crypto.tls_package.ΔConnectionState cs) => {
             if (!cs.testingOnlyDidHRR) {
                 return errors.New(expectedˢ);
             }
@@ -753,7 +754,7 @@ public static void TestHandshakeClientEd25519(ж<testing.T> Ꮡt) {
     runClientTestTLS13(Ꮡt, test);
     var config = testConfig.Clone();
     var (cert, _) = X509KeyPair(slice<byte>(clientEd25519CertificatePEM), slice<byte>(clientEd25519KeyPEM));
-    config.Value.Certificates = new Certificate[]{cert}.slice();
+    config.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{cert}.slice();
     test = Ꮡ(new clientTest(
         name: "ClientCert-Ed25519"u8,
         args: new @string[]{"-Verify"u8, "1"u8}.slice(),
@@ -766,7 +767,7 @@ public static void TestHandshakeClientEd25519(ж<testing.T> Ꮡt) {
 public static void TestHandshakeClientCertRSA(ж<testing.T> Ꮡt) {
     var config = testConfig.Clone();
     var (cert, _) = X509KeyPair(slice<byte>(clientCertificatePEM), slice<byte>(clientKeyPEM));
-    config.Value.Certificates = new Certificate[]{cert}.slice();
+    config.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{cert}.slice();
     var test = Ꮡ(new clientTest(
         name: "ClientCert-RSA-RSA"u8,
         args: new @string[]{"-cipher"u8, "AES128"u8, "-Verify"u8, "1"u8}.slice(),
@@ -797,7 +798,7 @@ public static void TestHandshakeClientCertRSA(ж<testing.T> Ꮡt) {
 public static void TestHandshakeClientCertECDSA(ж<testing.T> Ꮡt) {
     var config = testConfig.Clone();
     var (cert, _) = X509KeyPair(slice<byte>(clientECDSACertificatePEM), slice<byte>(clientECDSAKeyPEM));
-    config.Value.Certificates = new Certificate[]{cert}.slice();
+    config.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{cert}.slice();
     var test = Ꮡ(new clientTest(
         name: "ClientCert-ECDSA-RSA"u8,
         args: new @string[]{"-cipher"u8, "AES128"u8, "-Verify"u8, "1"u8}.slice(),
@@ -830,7 +831,7 @@ public static void TestHandshakeClientCertRSAPSS(ж<testing.T> Ꮡt) {
     rootCAs.AddCert(cert);
     var config = testConfig.Clone();
     // Use GetClientCertificate to bypass the client certificate selection logic.
-    config.Value.GetClientCertificate = (ж<Certificate>, error) (ж<CertificateRequestInfo> _) => (Ꮡ(new Certificate(
+    config.Value.GetClientCertificate = (ж<global::go.crypto.tls_package.Certificate>, error) (ж<global::go.crypto.tls_package.CertificateRequestInfo> _) => (Ꮡ(new Certificate(
             ΔCertificate: new slice<byte>[]{testRSAPSSCertificate}.slice(),
             PrivateKey: testRSAPrivateKey.OrTypedNil()
         )), default!);
@@ -850,7 +851,7 @@ public static void TestHandshakeClientCertRSAPSS(ж<testing.T> Ꮡt) {
 public static void TestHandshakeClientCertRSAPKCS1v15(ж<testing.T> Ꮡt) {
     var config = testConfig.Clone();
     var (cert, _) = X509KeyPair(slice<byte>(clientCertificatePEM), slice<byte>(clientKeyPEM));
-    config.Value.Certificates = new Certificate[]{cert}.slice();
+    config.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{cert}.slice();
     var test = Ꮡ(new clientTest(
         name: "ClientCert-RSA-RSAPKCS1v15"u8,
         args: new @string[]{"-cipher"u8, "AES128"u8, "-Verify"u8, "1"u8, "-client_sigalgs"u8,
@@ -912,7 +913,7 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     if (testing.Short()) {
         Ꮡt.Skip(skippingInShortModeˢ2);
     }
-    ref var serverConfig = ref heap<ж<Config>>(out var ᏑserverConfig);
+    ref var serverConfig = ref heap<ж<global::go.crypto.tls_package.Config>>(out var ᏑserverConfig);
     serverConfig = Ꮡ(new Config(
         MaxVersion: version,
         CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_RC4_128_SHA}.slice(),
@@ -952,15 +953,15 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
         }
     }
     var clientConfigʗ2 = clientConfig;
-    slice<byte> getTicket() => (~(~(~(~(~(~clientConfigʗ2).ClientSessionCache._<ж<lruSessionCache>>()).q.Front()).Value._<ж<lruSessionCacheEntry>>()).state).session).ticket;
+    slice<byte> getTicket() => (~(~(~(~(~(~clientConfigʗ2).ClientSessionCache._<ж<global::go.crypto.tls_package.lruSessionCache>>()).q.Front()).Value._<ж<global::go.crypto.tls_package.lruSessionCacheEntry>>()).state).session).ticket;
     var clientConfigʗ3 = clientConfig;
     void deleteTicket() {
-        @string ticketKey = (~(~(~clientConfigʗ3).ClientSessionCache._<ж<lruSessionCache>>()).q.Front()).Value._<ж<lruSessionCacheEntry>>().Value.sessionKey;
+        @string ticketKey = (~(~(~clientConfigʗ3).ClientSessionCache._<ж<global::go.crypto.tls_package.lruSessionCache>>()).q.Front()).Value._<ж<global::go.crypto.tls_package.lruSessionCacheEntry>>().Value.sessionKey;
         (~clientConfigʗ3).ClientSessionCache.Put(ticketKey, nil);
     }
     var clientConfigʗ4 = clientConfig;
     void corruptTicket() {
-        (~(~(~clientConfigʗ4).ClientSessionCache._<ж<lruSessionCache>>()).q.Front()).Value._<ж<lruSessionCacheEntry>>().Value.state.Value.session.Value.secret[0] ^= (byte)(0xff);
+        (~(~(~clientConfigʗ4).ClientSessionCache._<ж<global::go.crypto.tls_package.lruSessionCache>>()).q.Front()).Value._<ж<global::go.crypto.tls_package.lruSessionCacheEntry>>().Value.state.Value.session.Value.secret[0] ^= (byte)(0xff);
     }
     array<byte> randomKey() {
         array<byte> k = new(32);
@@ -1060,7 +1061,7 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
         deleteTicket();
         serverConfig = Ꮡ(new Config( // Use a different curve than the client to force a HelloRetryRequest.
 
-            CurvePreferences: new CurveID[]{CurveP521, CurveP384, CurveP256}.slice(),
+            CurvePreferences: new global::go.crypto.tls_package.CurveID[]{CurveP521, CurveP384, CurveP256}.slice(),
             MaxVersion: version,
             Certificates: (~testConfig).Certificates
         ));
@@ -1092,17 +1093,17 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     testResumeState(afterHandshakeFailureˢ, false);
     clientConfig.Value.ClientSessionCache = default!;
     testResumeState(withoutSessionCacheˢ, false);
-    clientConfig.Value.ClientSessionCache = new serializingClientCacheжClientSessionCache(Ꮡ(new serializingClientCache(t: Ꮡt)));
+    clientConfig.Value.ClientSessionCache = new tls_internal_test_package.serializingClientCacheжClientSessionCache(Ꮡ(new serializingClientCache(t: Ꮡt)));
     testResumeState(beforeSerializingCacheˢ, false);
     testResumeState(withSerializingCacheˢ, true);
 }
 
-[GoType] partial struct serializingClientCache {
+[GoType] internal partial struct serializingClientCache {
     internal ж<testing.T> t;
     internal slice<byte> ticket, state;
 }
 
-[GoRecv] internal static (ж<ClientSessionState> session, bool ok) Get(this ref serializingClientCache c, @string sessionKey) {
+[GoRecv] internal static (ж<global::go.crypto.tls_package.ClientSessionState> session, bool ok) Get(this ref serializingClientCache c, @string sessionKey) {
     if (c.ticket == default!) {
         return (default!, false);
     }
@@ -1119,7 +1120,7 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     return (cs, true);
 }
 
-[GoRecv] internal static void Put(this ref serializingClientCache c, @string sessionKey, ж<ClientSessionState> Ꮡcs) {
+[GoRecv] internal static void Put(this ref serializingClientCache c, @string sessionKey, ж<global::go.crypto.tls_package.ClientSessionState> Ꮡcs) {
     if (Ꮡcs == nil) {
         (c.ticket, c.state) = (default!, default!);
         return;
@@ -1140,7 +1141,7 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
 public static void TestLRUClientSessionCache(ж<testing.T> Ꮡt) {
     // Initialize cache of capacity 4.
     var cache = NewLRUClientSessionCache(4);
-    var cs = new slice<ClientSessionState>(6);
+    var cs = new slice<global::go.crypto.tls_package.ClientSessionState>(6);
     var keys = new @string[]{"0"u8, "1"u8, "2"u8, "3"u8, "4"u8, "5"u8, "6"u8}.slice();
     // Add 4 entries to the cache and look them up.
     for (nint i = 0; i < 4; i++) {
@@ -1210,12 +1211,12 @@ public static void TestKeyLogTLS12(ж<testing.T> Ꮡt) {
     ref var serverBuf = ref heap(new bytes.Buffer(), out var ᏑserverBuf);
     ref var clientBuf = ref heap(new bytes.Buffer(), out var ᏑclientBuf);
     var clientConfig = testConfig.Clone();
-    clientConfig.Value.KeyLogWriter = new bytes_BufferжWriter(ᏑclientBuf);
+    clientConfig.Value.KeyLogWriter = new tls_test_package.bytes_BufferжWriter(ᏑclientBuf);
     clientConfig.Value.MaxVersion = VersionTLS12;
     var serverConfig = testConfig.Clone();
-    serverConfig.Value.KeyLogWriter = new bytes_BufferжWriter(ᏑserverBuf);
+    serverConfig.Value.KeyLogWriter = new tls_test_package.bytes_BufferжWriter(ᏑserverBuf);
     serverConfig.Value.MaxVersion = VersionTLS12;
-    var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
     var done = new channel<bool>(0);
     var doneʗ1 = done;
     var sʗ1 = s;
@@ -1272,10 +1273,10 @@ public static void TestKeyLogTLS13(ж<testing.T> Ꮡt) {
     ref var serverBuf = ref heap(new bytes.Buffer(), out var ᏑserverBuf);
     ref var clientBuf = ref heap(new bytes.Buffer(), out var ᏑclientBuf);
     var clientConfig = testConfig.Clone();
-    clientConfig.Value.KeyLogWriter = new bytes_BufferжWriter(ᏑclientBuf);
+    clientConfig.Value.KeyLogWriter = new tls_test_package.bytes_BufferжWriter(ᏑclientBuf);
     var serverConfig = testConfig.Clone();
-    serverConfig.Value.KeyLogWriter = new bytes_BufferжWriter(ᏑserverBuf);
-    var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+    serverConfig.Value.KeyLogWriter = new tls_test_package.bytes_BufferжWriter(ᏑserverBuf);
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
     var done = new channel<bool>(0);
     var doneʗ1 = done;
     var sʗ1 = s;
@@ -1322,7 +1323,7 @@ public static void TestHandshakeClientALPNMatch(ж<testing.T> Ꮡt) {
 
         args: new @string[]{"-alpn"u8, "proto1,proto2"u8}.slice(),
         config: config,
-        validate: error (ΔConnectionState state) => {
+        validate: error (global::go.crypto.tls_package.ΔConnectionState state) => {
             // The server's preferences should override the client.
             if (state.NegotiatedProtocol != "proto1"u8) {
                 return fmt.Errorf("Got protocol %q, wanted proto1"u8, state.NegotiatedProtocol);
@@ -1342,7 +1343,7 @@ public static void TestServerSelectingUnconfiguredApplicationProtocol(ж<testing
 
     // This checks that the server can't select an application protocol that the
     // client didn't offer.
-    var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
     var errChan = new channel<error>(1);
     var cʗ1 = c;
     var errChanʗ1 = errChan;
@@ -1356,14 +1357,14 @@ public static void TestServerSelectingUnconfiguredApplicationProtocol(ж<testing
     });
     array<byte> header = new(5);
     {
-        var (_, err) = io.ReadFull(new net_ConnᴠReader(s), header[..]); if (err != default!) {
+        var (_, err) = io.ReadFull(new tls_test_package.net_ConnᴠReader(s), header[..]); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
     nint recordLen = (nint)(((nint)header[3] << (int)(8)) | (nint)header[4]);
     var record = new slice<byte>(recordLen);
     {
-        var (_, err) = io.ReadFull(new net_ConnᴠReader(s), record); if (err != default!) {
+        var (_, err) = io.ReadFull(new tls_test_package.net_ConnᴠReader(s), record); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
@@ -1373,7 +1374,7 @@ public static void TestServerSelectingUnconfiguredApplicationProtocol(ж<testing
         cipherSuite: TLS_RSA_WITH_AES_128_GCM_SHA256,
         alpnProtocol: "how-about-this"u8
     ));
-    var serverHelloBytes = mustMarshal(Ꮡt, new serverHelloMsgжhandshakeMessage(serverHello));
+    var serverHelloBytes = mustMarshal(Ꮡt, new global::go.crypto.tls_package.serverHelloMsgжhandshakeMessage(serverHello));
     s.Write(new byte[]{
         (byte)recordTypeHandshake,
         (byte)(((byte)VersionTLS12).Rsh((uint64)(8))),
@@ -1406,7 +1407,7 @@ public static void TestHandshakClientSCTs(ж<testing.T> Ꮡt) {
         name: "SCT"u8,
         config: config,
         extensions: new slice<byte>[]{scts}.slice(),
-        validate: error (ΔConnectionState state) => {
+        validate: error (global::go.crypto.tls_package.ΔConnectionState state) => {
             var expectedSCTs = new slice<byte>[]{
                 sctsʗ1[8..125],
                 sctsʗ1[127..245],
@@ -1513,7 +1514,7 @@ public static void TestHandshakeClientExportKeyingMaterial(ж<testing.T> Ꮡt) {
     var test = Ꮡ(new clientTest(
         name: "ExportKeyingMaterial"u8,
         config: testConfig.Clone(),
-        validate: error (ΔConnectionState state) => {
+        validate: error (global::go.crypto.tls_package.ΔConnectionState state) => {
             {
                 var (km, err) = state.ExportKeyingMaterial(testˢ, default!, 42); if (err != default!){
                     return fmt.Errorf("ExportKeyingMaterial failed: %v"u8, err);
@@ -1537,10 +1538,10 @@ public static void TestHandshakeClientExportKeyingMaterial(ж<testing.T> Ꮡt) {
 // with zone identifier
 // as per RFC 5952 we allow the [] style as IPv6 literal
 
-[GoType("dyn")] partial struct hostnameInSNITestsᴛ2 {
+[GoType("dyn")] partial struct hostnameInSNITestsᴛ1 {
     internal @string @in, @out;
 }
-internal static slice<hostnameInSNITestsᴛ2> hostnameInSNITests = new hostnameInSNITestsᴛ2[]{
+internal static slice<hostnameInSNITestsᴛ1> hostnameInSNITests = new hostnameInSNITestsᴛ1[]{
     new(""u8, ""u8),
     new("localhost"u8, "localhost"u8),
     new("foo, bar, baz and qux"u8, "foo, bar, baz and qux"u8),
@@ -1555,30 +1556,30 @@ internal static slice<hostnameInSNITestsᴛ2> hostnameInSNITests = new hostnameI
 
 public static void TestHostnameInSNI(ж<testing.T> Ꮡt) {
     foreach (var (_, vᴛ1) in hostnameInSNITests) {
-        ref var tt = ref heap(new hostnameInSNITestsᴛ2(), out var Ꮡtt);
+        ref var tt = ref heap(new hostnameInSNITestsᴛ1(), out var Ꮡtt);
         tt = vᴛ1;
 
-        var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+        var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var cʗ1 = c;
         goǃ((@string host) => {
             Client(cʗ1, Ꮡ(new Config(ServerName: host, InsecureSkipVerify: true))).Handshake();
         }, tt.@in);
         array<byte> header = new(5);
         {
-            var (_, err) = io.ReadFull(new net_ConnᴠReader(s), header[..]); if (err != default!) {
+            var (_, err) = io.ReadFull(new tls_test_package.net_ConnᴠReader(s), header[..]); if (err != default!) {
                 Ꮡt.Fatal(err);
             }
         }
         nint recordLen = (nint)(((nint)header[3] << (int)(8)) | (nint)header[4]);
         var record = new slice<byte>(recordLen);
         {
-            var (_, err) = io.ReadFull(new net_ConnᴠReader(s), record[..]); if (err != default!) {
+            var (_, err) = io.ReadFull(new tls_test_package.net_ConnᴠReader(s), record[..]); if (err != default!) {
                 Ꮡt.Fatal(err);
             }
         }
         c.Close();
         s.Close();
-        ref var m = ref heap(new clientHelloMsg(), out var Ꮡm);
+        ref var m = ref heap(new global::go.crypto.tls_package.clientHelloMsg(), out var Ꮡm);
         if (!Ꮡm.unmarshal(record)) {
             Ꮡt.Errorf("unmarshaling ClientHello for %q failed"u8, tt.@in);
             continue;
@@ -1600,7 +1601,7 @@ public static void TestServerSelectingUnconfiguredCipherSuite(ж<testing.T> Ꮡt
 
     // This checks that the server can't select a cipher suite that the
     // client didn't offer. See #13174.
-    var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
     var errChan = new channel<error>(1);
     var cʗ1 = c;
     var errChanʗ1 = errChan;
@@ -1613,14 +1614,14 @@ public static void TestServerSelectingUnconfiguredCipherSuite(ж<testing.T> Ꮡt
     });
     array<byte> header = new(5);
     {
-        var (_, err) = io.ReadFull(new net_ConnᴠReader(s), header[..]); if (err != default!) {
+        var (_, err) = io.ReadFull(new tls_test_package.net_ConnᴠReader(s), header[..]); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
     nint recordLen = (nint)(((nint)header[3] << (int)(8)) | (nint)header[4]);
     var record = new slice<byte>(recordLen);
     {
-        var (_, err) = io.ReadFull(new net_ConnᴠReader(s), record); if (err != default!) {
+        var (_, err) = io.ReadFull(new tls_test_package.net_ConnᴠReader(s), record); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
@@ -1631,7 +1632,7 @@ public static void TestServerSelectingUnconfiguredCipherSuite(ж<testing.T> Ꮡt
         random: new slice<byte>(32),
         cipherSuite: TLS_RSA_WITH_AES_256_GCM_SHA384
     ));
-    var serverHelloBytes = mustMarshal(Ꮡt, new serverHelloMsgжhandshakeMessage(serverHello));
+    var serverHelloBytes = mustMarshal(Ꮡt, new global::go.crypto.tls_package.serverHelloMsgжhandshakeMessage(serverHello));
     s.Write(new byte[]{
         (byte)recordTypeHandshake,
         (byte)(((byte)VersionTLS12).Rsh((uint64)(8))),
@@ -1661,16 +1662,16 @@ public static void TestVerifyConnection(ж<testing.T> Ꮡt) {
 internal static readonly @string exampleGolangˢ = "example.golang"u8;
 internal static readonly object protocol1ˢ = (@string)"protocol1"u8;
 
-[GoType("dyn")] partial struct testVerifyConnection_testsᴛ1 {
+[GoType("dyn")] internal partial struct testVerifyConnection_tests {
     internal @string name;
-    internal Action<ж<Config>, ж<nint>> configureServer;
-    internal Action<ж<Config>, ж<nint>> configureClient;
+    internal Action<ж<global::go.crypto.tls_package.Config>, ж<nint>> configureServer;
+    internal Action<ж<global::go.crypto.tls_package.Config>, ж<nint>> configureClient;
 }
 
 internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    error checkFields(ΔConnectionState c, ж<nint> called, @string errorType) {
+    error checkFields(global::go.crypto.tls_package.ΔConnectionState c, ж<nint> called, @string errorType) {
         if (c.Version != version) {
             return fmt.Errorf("%s: got Version %v, want %v"u8, errorType, c.Version, version);
         }
@@ -1711,13 +1712,13 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
             var checkFieldsʗ13 = checkFields;
 
             var checkFieldsʗ15 = checkFields;
-    var tests = new testVerifyConnection_testsᴛ1[]{
+    var tests = new testVerifyConnection_tests[]{
         new(
             name: "RequireAndVerifyClientCert"u8,
-            configureServer: (ж<Config> config, ж<nint> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<nint> called) => {
                 config.Value.ClientAuth = RequireAndVerifyClientCert;
                 var checkFieldsʗ2 = checkFieldsʗ1;
-                config.Value.VerifyConnection = (ΔConnectionState c) => {
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => {
                     called.Value++;
                     {
                         nint l = len(c.PeerCertificates); if (l != 1) {
@@ -1730,9 +1731,9 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
                     return checkFieldsʗ2(c, called, serverˢ);
                 };
             },
-            configureClient: (ж<Config> config, ж<nint> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<nint> called) => {
                 var checkFieldsʗ4 = checkFieldsʗ3;
-                config.Value.VerifyConnection = error (ΔConnectionState c) => {
+                config.Value.VerifyConnection = error (global::go.crypto.tls_package.ΔConnectionState c) => {
                     called.Value++;
                     {
                         nint l = len(c.PeerCertificates); if (l != 1) {
@@ -1759,11 +1760,11 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
         ),
         new(
             name: "InsecureSkipVerify"u8,
-            configureServer: (ж<Config> config, ж<nint> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<nint> called) => {
                 config.Value.ClientAuth = RequireAnyClientCert;
                 config.Value.InsecureSkipVerify = true;
                 var checkFieldsʗ6 = checkFieldsʗ5;
-                config.Value.VerifyConnection = (ΔConnectionState c) => {
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => {
                     called.Value++;
                     {
                         nint l = len(c.PeerCertificates); if (l != 1) {
@@ -1776,10 +1777,10 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
                     return checkFieldsʗ6(c, called, serverˢ);
                 };
             },
-            configureClient: (ж<Config> config, ж<nint> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<nint> called) => {
                 config.Value.InsecureSkipVerify = true;
                 var checkFieldsʗ8 = checkFieldsʗ7;
-                config.Value.VerifyConnection = error (ΔConnectionState c) => {
+                config.Value.VerifyConnection = error (global::go.crypto.tls_package.ΔConnectionState c) => {
                     called.Value++;
                     {
                         nint l = len(c.PeerCertificates); if (l != 1) {
@@ -1806,17 +1807,17 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
         ),
         new(
             name: "NoClientCert"u8,
-            configureServer: (ж<Config> config, ж<nint> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<nint> called) => {
                 config.Value.ClientAuth = NoClientCert;
                 var checkFieldsʗ10 = checkFieldsʗ9;
-                config.Value.VerifyConnection = (ΔConnectionState c) => {
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => {
                     called.Value++;
                     return checkFieldsʗ10(c, called, serverˢ);
                 };
             },
-            configureClient: (ж<Config> config, ж<nint> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<nint> called) => {
                 var checkFieldsʗ12 = checkFieldsʗ11;
-                config.Value.VerifyConnection = (ΔConnectionState c) => {
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => {
                     called.Value++;
                     return checkFieldsʗ12(c, called, clientˢ);
                 };
@@ -1824,18 +1825,18 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
         ),
         new(
             name: "RequestClientCert"u8,
-            configureServer: (ж<Config> config, ж<nint> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<nint> called) => {
                 config.Value.ClientAuth = RequestClientCert;
                 var checkFieldsʗ14 = checkFieldsʗ13;
-                config.Value.VerifyConnection = (ΔConnectionState c) => {
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => {
                     called.Value++;
                     return checkFieldsʗ14(c, called, serverˢ);
                 };
             },
-            configureClient: (ж<Config> config, ж<nint> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<nint> called) => {
                 config.Value.Certificates = default!; // clear the client cert
                 var checkFieldsʗ16 = checkFieldsʗ15;
-                config.Value.VerifyConnection = error (ΔConnectionState c) => {
+                config.Value.VerifyConnection = error (global::go.crypto.tls_package.ΔConnectionState c) => {
                     called.Value++;
                     {
                         nint l = len(c.PeerCertificates); if (l != 1) {
@@ -1872,7 +1873,7 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
         ref var clientCalled = ref heap(new nint(), out var ᏑclientCalled);
         var serverConfig = Ꮡ(new Config(
             MaxVersion: version,
-            Certificates: new Certificate[]{(~testConfig).Certificates[0]}.slice(),
+            Certificates: new global::go.crypto.tls_package.Certificate[]{(~testConfig).Certificates[0]}.slice(),
             ClientCAs: rootCAs,
             NextProtos: new @string[]{"protocol1"u8}.slice()
         ));
@@ -1884,7 +1885,7 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
             ClientSessionCache: NewLRUClientSessionCache(32),
             RootCAs: rootCAs,
             ServerName: "example.golang"u8,
-            Certificates: new Certificate[]{(~testConfig).Certificates[0]}.slice(),
+            Certificates: new global::go.crypto.tls_package.Certificate[]{(~testConfig).Certificates[0]}.slice(),
             NextProtos: new @string[]{"protocol1"u8}.slice()
         ));
         test.configureClient(clientConfig, ᏑclientCalled);
@@ -1926,9 +1927,9 @@ public static void TestVerifyPeerCertificate(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string gotLenValidatedChains0ˢ = "got len(validatedChains) = 0, wanted non-zero"u8;
 
-[GoType("dyn")] partial struct testVerifyPeerCertificate_testsᴛ1 {
-    internal Action<ж<Config>, ж<bool>> configureServer;
-    internal Action<ж<Config>, ж<bool>> configureClient;
+[GoType("dyn")] internal partial struct testVerifyPeerCertificate_tests {
+    internal Action<ж<global::go.crypto.tls_package.Config>, ж<bool>> configureServer;
+    internal Action<ж<global::go.crypto.tls_package.Config>, ж<bool>> configureClient;
     internal Action<ж<testing.T>, nint, bool, bool, error, error> validate;
 }
 
@@ -1954,7 +1955,7 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
         called.Value = true;
         return default!;
     }
-    error verifyConnectionCallback(ж<bool> called, bool isClient, ΔConnectionState c) {
+    error verifyConnectionCallback(ж<bool> called, bool isClient, global::go.crypto.tls_package.ΔConnectionState c) {
         {
             nint l = len(c.PeerCertificates); if (l != 1) {
                 return fmt.Errorf("got len(PeerCertificates) = %d, wanted 1"u8, l);
@@ -2013,14 +2014,14 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             var verifyPeerCertificateCallbackʗ7 = verifyPeerCertificateCallback;
 
             var sentinelErrʗ18 = sentinelErr;
-    var tests = new testVerifyPeerCertificate_testsᴛ1[]{
+    var tests = new testVerifyPeerCertificate_tests[]{
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var verifyPeerCertificateCallbackʗ2 = verifyPeerCertificateCallbackʗ1;
                 config.Value.VerifyPeerCertificate = (slice<slice<byte>> rawCerts, slice<slice<ж<Δx509.Certificate>>> validatedChains) => verifyPeerCertificateCallbackʗ2(called, rawCerts, validatedChains);
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var verifyPeerCertificateCallbackʗ4 = verifyPeerCertificateCallbackʗ3;
                 config.Value.VerifyPeerCertificate = (slice<slice<byte>> rawCerts, slice<slice<ж<Δx509.Certificate>>> validatedChains) => verifyPeerCertificateCallbackʗ4(called, rawCerts, validatedChains);
@@ -2041,12 +2042,12 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             }
         ),
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var sentinelErrʗ2 = sentinelErrʗ1;
                 config.Value.VerifyPeerCertificate = (slice<slice<byte>> rawCerts, slice<slice<ж<Δx509.Certificate>>> validatedChains) => sentinelErrʗ2;
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.VerifyPeerCertificate = default!;
             },
             validate: (ж<testing.T> tΔ2, nint testNo, bool clientCalled, bool serverCalled, error clientErr, error serverErr) => {
@@ -2056,10 +2057,10 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             }
         ),
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 var sentinelErrʗ5 = sentinelErrʗ4;
                 config.Value.VerifyPeerCertificate = (slice<slice<byte>> rawCerts, slice<slice<ж<Δx509.Certificate>>> validatedChains) => sentinelErrʗ5;
             },
@@ -2070,10 +2071,10 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             }
         ),
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = true;
                 config.Value.VerifyPeerCertificate = error (slice<slice<byte>> rawCerts, slice<slice<ж<Δx509.Certificate>>> validatedChains) => {
                     {
@@ -2106,15 +2107,15 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             }
         ),
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var verifyConnectionCallbackʗ2 = verifyConnectionCallbackʗ1;
-                config.Value.VerifyConnection = (ΔConnectionState c) => verifyConnectionCallbackʗ2(called, false, c);
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => verifyConnectionCallbackʗ2(called, false, c);
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var verifyConnectionCallbackʗ4 = verifyConnectionCallbackʗ3;
-                config.Value.VerifyConnection = (ΔConnectionState c) => verifyConnectionCallbackʗ4(called, true, c);
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => verifyConnectionCallbackʗ4(called, true, c);
             },
             validate: (ж<testing.T> tΔ5, nint testNo, bool clientCalled, bool serverCalled, error clientErr, error serverErr) => {
                 if (clientErr != default!) {
@@ -2132,12 +2133,12 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             }
         ),
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var sentinelErrʗ8 = sentinelErrʗ7;
-                config.Value.VerifyConnection = (ΔConnectionState c) => sentinelErrʗ8;
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => sentinelErrʗ8;
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 config.Value.VerifyConnection = default!;
             },
@@ -2148,14 +2149,14 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             }
         ),
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 config.Value.VerifyConnection = default!;
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var sentinelErrʗ11 = sentinelErrʗ10;
-                config.Value.VerifyConnection = (ΔConnectionState c) => sentinelErrʗ11;
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => sentinelErrʗ11;
             },
             validate: (ж<testing.T> tΔ7, nint testNo, bool clientCalled, bool serverCalled, error clientErr, error serverErr) => {
                 if (!AreEqual(clientErr, sentinelErrʗ12)) {
@@ -2164,14 +2165,14 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             }
         ),
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var verifyPeerCertificateCallbackʗ6 = verifyPeerCertificateCallbackʗ5;
                 config.Value.VerifyPeerCertificate = (slice<slice<byte>> rawCerts, slice<slice<ж<Δx509.Certificate>>> validatedChains) => verifyPeerCertificateCallbackʗ6(called, rawCerts, validatedChains);
                 var sentinelErrʗ14 = sentinelErrʗ13;
-                config.Value.VerifyConnection = (ΔConnectionState c) => sentinelErrʗ14;
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => sentinelErrʗ14;
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 config.Value.VerifyPeerCertificate = default!;
                 config.Value.VerifyConnection = default!;
@@ -2186,17 +2187,17 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             }
         ),
         new(
-            configureServer: (ж<Config> config, ж<bool> called) => {
+            configureServer: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 config.Value.VerifyPeerCertificate = default!;
                 config.Value.VerifyConnection = default!;
             },
-            configureClient: (ж<Config> config, ж<bool> called) => {
+            configureClient: (ж<global::go.crypto.tls_package.Config> config, ж<bool> called) => {
                 config.Value.InsecureSkipVerify = false;
                 var verifyPeerCertificateCallbackʗ8 = verifyPeerCertificateCallbackʗ7;
                 config.Value.VerifyPeerCertificate = (slice<slice<byte>> rawCerts, slice<slice<ж<Δx509.Certificate>>> validatedChains) => verifyPeerCertificateCallbackʗ8(called, rawCerts, validatedChains);
                 var sentinelErrʗ17 = sentinelErrʗ16;
-                config.Value.VerifyConnection = (ΔConnectionState c) => sentinelErrʗ17;
+                config.Value.VerifyConnection = (global::go.crypto.tls_package.ΔConnectionState c) => sentinelErrʗ17;
             },
             validate: (ж<testing.T> tΔ9, nint testNo, bool clientCalled, bool serverCalled, error clientErr, error serverErr) => {
                 if (!AreEqual(clientErr, sentinelErrʗ18)) {
@@ -2209,10 +2210,10 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
         )
     }.slice();
     foreach (var (i, vᴛ1) in tests) {
-        ref var test = ref heap(new testVerifyPeerCertificate_testsᴛ1(), out var Ꮡtest);
+        ref var test = ref heap(new testVerifyPeerCertificate_tests(), out var Ꮡtest);
         test = vᴛ1;
 
-        var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+        var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var done = new channel<error>(0);
         ref var clientCalled = ref heap(new bool(), out var ᏑclientCalled);
         ref var serverCalled = ref heap(new bool(), out var ᏑserverCalled);
@@ -2228,7 +2229,7 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             configΔ1.Value.ClientCAs = rootCAsʗ1;
             configΔ1.Value.Time = nowʗ1;
             configΔ1.Value.MaxVersion = version;
-            configΔ1.Value.Certificates = new slice<Certificate>(1);
+            configΔ1.Value.Certificates = new slice<global::go.crypto.tls_package.Certificate>(1);
             (~configΔ1).Certificates[0].ΔCertificate = new slice<byte>[]{testRSACertificate}.slice();
             (~configΔ1).Certificates[0].PrivateKey = testRSAPrivateKey.OrTypedNil();
             (~configΔ1).Certificates[0].SignedCertificateTimestamps = new slice<byte>[]{slice<byte>("dummy sct 1"u8), slice<byte>("dummy sct 2"u8)}.slice();
@@ -2253,7 +2254,7 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
 
 // brokenConn wraps a net.Conn and causes all Writes after a certain number to
 // fail with brokenConnErr.
-[GoType] partial struct brokenConn {
+[GoType] internal partial struct brokenConn {
     public net_package.Conn Conn;
     // breakAfter is the number of successful writes that will be allowed
     // before all subsequent writes fail.
@@ -2279,7 +2280,7 @@ public static void TestFailedWrite(ж<testing.T> Ꮡt) {
         ref var breakAfter = ref heap(new nint(), out var ᏑbreakAfter);
         breakAfter = vᴛ1;
 
-        var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+        var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var done = new channel<bool>(0);
         var doneʗ1 = done;
         var sʗ1 = s;
@@ -2289,7 +2290,7 @@ public static void TestFailedWrite(ж<testing.T> Ꮡt) {
             doneʗ1.ᐸꟷ(true);
         });
         var brokenC = Ꮡ(new brokenConn(Conn: c, breakAfter: breakAfter));
-        var err = Client(new brokenConnжConn(brokenC), testConfig).Handshake();
+        var err = Client(new tls_internal_test_package.brokenConnжConn(brokenC), testConfig).Handshake();
         if (!AreEqual(err, brokenConnErr)) {
             Ꮡt.Errorf("#%d: expected error from brokenConn but got %q"u8, breakAfter, err);
         }
@@ -2299,7 +2300,7 @@ public static void TestFailedWrite(ж<testing.T> Ꮡt) {
 }
 
 // writeCountingConn wraps a net.Conn and counts the number of Write calls.
-[GoType] partial struct writeCountingConn {
+[GoType] internal partial struct writeCountingConn {
     public net_package.Conn Conn;
     // numWrites is the number of writes that have been done.
     internal nint numWrites;
@@ -2320,7 +2321,7 @@ public static void TestBuffering(ж<testing.T> Ꮡt) {
 }
 
 internal static void testBuffering(ж<testing.T> Ꮡt, uint16 version) {
-    var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
     var done = new channel<bool>(0);
     var clientWCC = Ꮡ(new writeCountingConn(Conn: c));
     var serverWCC = Ꮡ(new writeCountingConn(Conn: s));
@@ -2329,11 +2330,11 @@ internal static void testBuffering(ж<testing.T> Ꮡt, uint16 version) {
     goǃ(() => {
         var config = testConfig.Clone();
         config.Value.MaxVersion = version;
-        Server(new writeCountingConnжConn(serverWCCʗ1), config).Handshake();
+        Server(new tls_internal_test_package.writeCountingConnжConn(serverWCCʗ1), config).Handshake();
         (~serverWCCʗ1).Conn.Close();
         doneʗ1.ᐸꟷ(true);
     });
-    var err = Client(new writeCountingConnжConn(clientWCC), testConfig).Handshake();
+    var err = Client(new tls_internal_test_package.writeCountingConnжConn(clientWCC), testConfig).Handshake();
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
@@ -2364,7 +2365,7 @@ internal static void testBuffering(ж<testing.T> Ꮡt, uint16 version) {
 internal static readonly object clientUnexpectedlyˢ = (@string)"client unexpectedly returned no error"u8;
 
 public static void TestAlertFlushing(ж<testing.T> Ꮡt) {
-    var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
     var done = new channel<bool>(0);
     var clientWCC = Ꮡ(new writeCountingConn(Conn: c));
     var serverWCC = Ꮡ(new writeCountingConn(Conn: s));
@@ -2373,7 +2374,7 @@ public static void TestAlertFlushing(ж<testing.T> Ꮡt) {
     ref var brokenKey = ref heap<rsa.PrivateKey>(out var ᏑbrokenKey);
     brokenKey = new rsa.PrivateKey(PublicKey: (~testRSAPrivateKey).PublicKey);
     brokenKey.D = big.NewInt(42);
-    serverConfig.Value.Certificates = new Certificate[]{new(
+    serverConfig.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{new(
         ΔCertificate: new slice<byte>[]{testRSACertificate}.slice(),
         PrivateKey: ᏑbrokenKey
     )
@@ -2382,11 +2383,11 @@ public static void TestAlertFlushing(ж<testing.T> Ꮡt) {
     var serverConfigʗ1 = serverConfig;
     var serverWCCʗ1 = serverWCC;
     goǃ(() => {
-        Server(new writeCountingConnжConn(serverWCCʗ1), serverConfigʗ1).Handshake();
+        Server(new tls_internal_test_package.writeCountingConnжConn(serverWCCʗ1), serverConfigʗ1).Handshake();
         (~serverWCCʗ1).Conn.Close();
         doneʗ1.ᐸꟷ(true);
     });
-    var err = Client(new writeCountingConnжConn(clientWCC), testConfig).Handshake();
+    var err = Client(new tls_internal_test_package.writeCountingConnжConn(clientWCC), testConfig).Handshake();
     if (err == default!) {
         Ꮡt.Fatal(clientUnexpectedlyˢ);
     }
@@ -2414,7 +2415,7 @@ public static void TestHandshakeRace(ж<testing.T> Ꮡt) {
     // order to provide some evidence that there are no races or deadlocks
     // in the handshake locking.
     for (nint i = 0; i < 32; i++) {
-        var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+        var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var sʗ1 = s;
         goǃ(() => {
             var server = Server(sʗ1, testConfig);
@@ -2451,7 +2452,7 @@ public static void TestHandshakeRace(ж<testing.T> Ꮡt) {
             ᐸꟷ(startReadʗ1);
             ref var reply = ref heap(new array<byte>(1), out var Ꮡreply);
             {
-                var (_, err) = io.ReadFull(new ConnжReader(clientʗ2), reply[..]); if (err != default!) {
+                var (_, err) = io.ReadFull(new tls_test_package.tls_ConnжReader(clientʗ2), reply[..]); if (err != default!) {
                     throw panic(err);
                 }
             }
@@ -2477,28 +2478,28 @@ public static void TestHandshakeRace(ж<testing.T> Ꮡt) {
 // Returning an error should abort the handshake with
 // that error.
 
-[GoType("dyn")] partial struct getClientCertificateTestsᴛ2 {
-    internal Action<ж<Config>, ж<Config>> setup;
+[GoType("dyn")] partial struct getClientCertificateTestsᴛ1 {
+    internal Action<ж<global::go.crypto.tls_package.Config>, ж<global::go.crypto.tls_package.Config>> setup;
     internal @string expectedClientError;
-    internal Action<ж<testing.T>, nint, ж<ΔConnectionState>> verify;
+    internal Action<ж<testing.T>, nint, ж<global::go.crypto.tls_package.ΔConnectionState>> verify;
 }
-internal static slice<getClientCertificateTestsᴛ2> getClientCertificateTests;
-internal static void initᴛgetClientCertificateTests() { getClientCertificateTests = new getClientCertificateTestsᴛ2[]{
+internal static slice<getClientCertificateTestsᴛ1> getClientCertificateTests;
+internal static void initᴛgetClientCertificateTests() { getClientCertificateTests = new getClientCertificateTestsᴛ1[]{
     new(
-        (ж<Config> clientConfig, ж<Config> serverConfig) => {
+        (ж<global::go.crypto.tls_package.Config> clientConfig, ж<global::go.crypto.tls_package.Config> serverConfig) => {
             serverConfig.Value.ClientCAs = default!;
-            clientConfig.Value.GetClientCertificate = (ж<Certificate>, error) (ж<CertificateRequestInfo> cri) => {
+            clientConfig.Value.GetClientCertificate = (ж<global::go.crypto.tls_package.Certificate>, error) (ж<global::go.crypto.tls_package.CertificateRequestInfo> cri) => {
                 if (len((~cri).SignatureSchemes) == 0) {
                     throw panic("empty SignatureSchemes");
                 }
                 if (len((~cri).AcceptableCAs) != 0) {
                     throw panic("AcceptableCAs should have been empty");
                 }
-                return (@new<Certificate>(), default!);
+                return (@new<global::go.crypto.tls_package.Certificate>(), default!);
             };
         },
         ""u8,
-        (ж<testing.T> t, nint testNum, ж<ΔConnectionState> cs) => {
+        (ж<testing.T> t, nint testNum, ж<global::go.crypto.tls_package.ΔConnectionState> cs) => {
             {
                 nint l = len((~cs).PeerCertificates); if (l != 0) {
                     t.Errorf("#%d: expected no certificates but got %d"u8, testNum, l);
@@ -2507,17 +2508,17 @@ internal static void initᴛgetClientCertificateTests() { getClientCertificateTe
         }
     ),
     new(
-        (ж<Config> clientConfig, ж<Config> serverConfig) => {
+        (ж<global::go.crypto.tls_package.Config> clientConfig, ж<global::go.crypto.tls_package.Config> serverConfig) => {
             clientConfig.Value.MaxVersion = VersionTLS11;
-            clientConfig.Value.GetClientCertificate = (ж<Certificate>, error) (ж<CertificateRequestInfo> cri) => {
+            clientConfig.Value.GetClientCertificate = (ж<global::go.crypto.tls_package.Certificate>, error) (ж<global::go.crypto.tls_package.CertificateRequestInfo> cri) => {
                 if (len((~cri).SignatureSchemes) == 0) {
                     throw panic("empty SignatureSchemes");
                 }
-                return (@new<Certificate>(), default!);
+                return (@new<global::go.crypto.tls_package.Certificate>(), default!);
             };
         },
         ""u8,
-        (ж<testing.T> t, nint testNum, ж<ΔConnectionState> cs) => {
+        (ж<testing.T> t, nint testNum, ж<global::go.crypto.tls_package.ΔConnectionState> cs) => {
             {
                 nint l = len((~cs).PeerCertificates); if (l != 0) {
                     t.Errorf("#%d: expected no certificates but got %d"u8, testNum, l);
@@ -2526,16 +2527,16 @@ internal static void initᴛgetClientCertificateTests() { getClientCertificateTe
         }
     ),
     new(
-        (ж<Config> clientConfig, ж<Config> serverConfig) => {
-            clientConfig.Value.GetClientCertificate = (ж<Certificate>, error) (ж<CertificateRequestInfo> cri) => (default!, errors.New("GetClientCertificate"u8));
+        (ж<global::go.crypto.tls_package.Config> clientConfig, ж<global::go.crypto.tls_package.Config> serverConfig) => {
+            clientConfig.Value.GetClientCertificate = (ж<global::go.crypto.tls_package.Certificate>, error) (ж<global::go.crypto.tls_package.CertificateRequestInfo> cri) => (default!, errors.New("GetClientCertificate"u8));
         },
         "GetClientCertificate"u8,
-        (ж<testing.T> t, nint testNum, ж<ΔConnectionState> cs) => {
+        (ж<testing.T> t, nint testNum, ж<global::go.crypto.tls_package.ΔConnectionState> cs) => {
         }
     ),
     new(
-        (ж<Config> clientConfig, ж<Config> serverConfig) => {
-            clientConfig.Value.GetClientCertificate = (ж<Certificate>, error) (ж<CertificateRequestInfo> cri) => {
+        (ж<global::go.crypto.tls_package.Config> clientConfig, ж<global::go.crypto.tls_package.Config> serverConfig) => {
+            clientConfig.Value.GetClientCertificate = (ж<global::go.crypto.tls_package.Certificate>, error) (ж<global::go.crypto.tls_package.CertificateRequestInfo> cri) => {
                 if (len((~cri).AcceptableCAs) == 0) {
                     throw panic("empty AcceptableCAs");
                 }
@@ -2547,7 +2548,7 @@ internal static void initᴛgetClientCertificateTests() { getClientCertificateTe
             };
         },
         ""u8,
-        (ж<testing.T> t, nint testNum, ж<ΔConnectionState> cs) => {
+        (ж<testing.T> t, nint testNum, ж<global::go.crypto.tls_package.ΔConnectionState> cs) => {
             if (len((~cs).VerifiedChains) == 0) {
                 t.Errorf("#%d: expected some verified chains, but found none"u8, testNum);
             }
@@ -2564,8 +2565,8 @@ public static void TestGetClientCertificate(ж<testing.T> Ꮡt) {
     });
 }
 
-[GoType("dyn")] partial struct testGetClientCertificate_serverResultᴛ1 {
-    internal ΔConnectionState cs;
+[GoType("dyn")] [GoLocalName("serverResult")] internal partial struct testGetClientCertificate_serverResult {
+    internal global::go.crypto.tls_package.ΔConnectionState cs;
     internal error err;
 }
 
@@ -2585,8 +2586,8 @@ internal static void testGetClientCertificate(ж<testing.T> Ꮡt, uint16 version
         var clientConfig = testConfig.Clone();
         clientConfig.Value.MaxVersion = version;
         test.setup(clientConfig, serverConfig);
-        var (c, s) = localPipe(new testing_TжTB(Ꮡt));
-        var done = new channel<testGetClientCertificate_serverResultᴛ1>(0);
+        var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
+        var done = new channel<testGetClientCertificate_serverResult>(0);
         var doneʗ1 = done;
         var sʗ1 = s;
         var serverConfigʗ1 = serverConfig;
@@ -2597,18 +2598,18 @@ internal static void testGetClientCertificate(ж<testing.T> Ꮡt, uint16 version
                 defer(() => sʗ2.Close(), ref ᒐ);
                 var server = Server(sʗ1, serverConfigʗ1);
                 var errΔ1 = server.Handshake();
-                ref var cs = ref heap(new ΔConnectionState(), out var Ꮡcs);
+                ref var cs = ref heap(new global::go.crypto.tls_package.ΔConnectionState(), out var Ꮡcs);
                 if (errΔ1 == default!) {
                     cs = server.ConnectionState();
                 }
-                doneʗ1.ᐸꟷ(new testGetClientCertificate_serverResultᴛ1(cs, errΔ1));
+                doneʗ1.ᐸꟷ(new testGetClientCertificate_serverResult(cs, errΔ1));
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
         });
         var clientErr = Client(c, clientConfig).Handshake();
         c.Close();
-        ref var result = ref heap<testGetClientCertificate_serverResultᴛ1>(out var Ꮡresult);
+        ref var result = ref heap<testGetClientCertificate_serverResult>(out var Ꮡresult);
         result = ᐸꟷ(done);
         if (clientErr != default!){
             if (len(test.expectedClientError) == 0){
@@ -2618,7 +2619,7 @@ internal static void testGetClientCertificate(ж<testing.T> Ꮡt, uint16 version
                 @string got = clientErr.Error(); if (got != test.expectedClientError){
                     Ꮡt.Errorf("#%d: expected client error %q, but got %q"u8, i, test.expectedClientError, got);
                 } else {
-                    test.verify(Ꮡt, i, Ꮡresult.of(testGetClientCertificate_serverResultᴛ1.Ꮡcs));
+                    test.verify(Ꮡt, i, Ꮡresult.of(testGetClientCertificate_serverResult.Ꮡcs));
                 }
             }
         } else 
@@ -2629,7 +2630,7 @@ internal static void testGetClientCertificate(ж<testing.T> Ꮡt, uint16 version
             var errΔ2 = result.err; if (errΔ2 != default!){
                 Ꮡt.Errorf("#%d: server error: %v"u8, i, errΔ2);
             } else {
-                test.verify(Ꮡt, i, Ꮡresult.of(testGetClientCertificate_serverResultᴛ1.Ꮡcs));
+                test.verify(Ꮡt, i, Ꮡresult.of(testGetClientCertificate_serverResult.Ꮡcs));
             }
         }
     }
@@ -2684,7 +2685,7 @@ RwBA9Xk1KBNF
 }
 
 public static void TestCloseClientConnectionOnIdleServer(ж<testing.T> Ꮡt) {
-    var (clientConn, serverConn) = localPipe(new testing_TжTB(Ꮡt));
+    var (clientConn, serverConn) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
     var client = Client(clientConn, testConfig.Clone());
     var clientʗ1 = client;
     var serverConnʗ1 = serverConn;
@@ -2873,7 +2874,7 @@ internal static readonly object clientConnectionWasNotˢ = (@string)"Client conn
 public static void TestClientHandshakeContextCancellation(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+        var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var (ctx, cancel) = context.WithCancel(context.Background());
         var unblockServer = new channel<EmptyStruct>(0);
         defer(ᴛ1 => close(ᴛ1), unblockServer, ref ᒐ);
@@ -2907,7 +2908,7 @@ public static void TestClientHandshakeContextCancellation(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestTLS13OnlyClientHelloCipherSuite_tls13Testsᴛ1 {
+[GoType("dyn")] internal partial struct TestTLS13OnlyClientHelloCipherSuite_tls13Tests {
     internal @string name;
     internal slice<uint16> ciphers;
 }
@@ -2915,7 +2916,7 @@ public static void TestClientHandshakeContextCancellation(ж<testing.T> Ꮡt) {
 // TestTLS13OnlyClientHelloCipherSuite tests that when a client states that
 // it only supports TLS 1.3, it correctly advertises only TLS 1.3 ciphers.
 public static void TestTLS13OnlyClientHelloCipherSuite(ж<testing.T> Ꮡt) {
-    var tls13Tests = new TestTLS13OnlyClientHelloCipherSuite_tls13Testsᴛ1[]{
+    var tls13Tests = new TestTLS13OnlyClientHelloCipherSuite_tls13Tests[]{
         new(
             name: "nil"u8,
             ciphers: default!
@@ -2938,7 +2939,7 @@ public static void TestTLS13OnlyClientHelloCipherSuite(ж<testing.T> Ꮡt) {
         )
     }.slice();
     foreach (var (_, tt) in tls13Tests) {
-        ref var ttΔ1 = ref heap<TestTLS13OnlyClientHelloCipherSuite_tls13Testsᴛ1>(out var ᏑttΔ1);
+        ref var ttΔ1 = ref heap<TestTLS13OnlyClientHelloCipherSuite_tls13Tests>(out var ᏑttΔ1);
         ttΔ1 = tt;
         var ttʗ1 = ttΔ1;
         Ꮡt.Run(ttΔ1.name, (ж<testing.T> tΔ1) => {
@@ -2951,7 +2952,7 @@ public static void TestTLS13OnlyClientHelloCipherSuite(ж<testing.T> Ꮡt) {
 internal static void testTLS13OnlyClientHelloCipherSuite(ж<testing.T> Ꮡt, slice<uint16> ciphers) {
     var serverConfig = Ꮡ(new Config(
         Certificates: (~testConfig).Certificates,
-        GetConfigForClient: (ж<ClientHelloInfo> chi) => {
+        GetConfigForClient: (ж<global::go.crypto.tls_package.ClientHelloInfo> chi) => {
             if (len((~chi).CipherSuites) != len(defaultCipherSuitesTLS13NoAES)){
                 Ꮡt.Errorf("only TLS 1.3 suites should be advertised, got=%x"u8, (~chi).CipherSuites);
             } else {
@@ -2980,7 +2981,7 @@ internal static void testTLS13OnlyClientHelloCipherSuite(ж<testing.T> Ꮡt, sli
 }
 
 // discardConn wraps a net.Conn but discards all writes, but reports that they happened.
-[GoType] partial struct discardConn {
+[GoType] internal partial struct discardConn {
     public net_package.Conn Conn;
 }
 
@@ -3047,7 +3048,7 @@ internal static readonly @string tlsClientSentCertificateˢ = "tls: client sent 
 
 public static void TestHandshakeRSATooBig(ж<testing.T> Ꮡt) {
     var (testCert, _) = pem.Decode(slice<byte>(largeRSAKeyCertPEM));
-    var c = Ꮡ(new Conn(conn: new discardConnжConn(Ꮡ(new discardConn(nil))), config: testConfig.Clone()));
+    var c = Ꮡ(new Conn(conn: new tls_internal_test_package.discardConnжConn(Ꮡ(new discardConn(nil))), config: testConfig.Clone()));
     @string expectedErr = tlsServerSentCertificateˢ;
     var err = c.verifyServerCertificate(new slice<byte>[]{(~testCert).Bytes}.slice());
     if (err == default! || err.Error() != expectedErr) {
@@ -3063,12 +3064,12 @@ public static void TestHandshakeRSATooBig(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string callbackErrˢ = "callback err"u8;
 
-[GoType("dyn")] partial struct TestTLS13ECHRejectionCallbacks_typeᴛ1 {
+[GoType("dyn")] internal partial struct TestTLS13ECHRejectionCallbacks_type {
     internal @string name;
     internal @string expectedErr;
-    internal Func<ΔConnectionState, error> verifyConnection;
+    internal Func<global::go.crypto.tls_package.ΔConnectionState, error> verifyConnection;
     internal Func<slice<slice<byte>>, slice<slice<ж<Δx509.Certificate>>>, error> verifyPeerCertificate;
-    internal Func<ΔConnectionState, error> encryptedClientHelloRejectionVerify;
+    internal Func<global::go.crypto.tls_package.ΔConnectionState, error> encryptedClientHelloRejectionVerify;
 }
 
 public static void TestTLS13ECHRejectionCallbacks(ж<testing.T> Ꮡt) {
@@ -3092,7 +3093,7 @@ public static void TestTLS13ECHRejectionCallbacks(ж<testing.T> Ꮡt) {
         Ꮡt.Fatal(err);
     }
     var (clientConfig, serverConfig) = (testConfig.Clone(), testConfig.Clone());
-    serverConfig.Value.Certificates = new Certificate[]{
+    serverConfig.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{
         new(
             ΔCertificate: new slice<byte>[]{certDER}.slice(),
             PrivateKey: k.OrTypedNil()
@@ -3104,26 +3105,26 @@ public static void TestTLS13ECHRejectionCallbacks(ж<testing.T> Ꮡt) {
     clientConfig.Value.MinVersion = VersionTLS13;
     (clientConfig.Value.EncryptedClientHelloConfigList, _) = hex.DecodeString("0041fe0d003d0100200020204bed0a11fc0dde595a9b78d966b0011128eb83f65d3c91c1cc5ac786cd246f000400010001ff0e6578616d706c652e676f6c616e670000"u8);
     clientConfig.Value.ServerName = exampleGolangˢ;
-    foreach (var (_, vᴛ1) in new TestTLS13ECHRejectionCallbacks_typeᴛ1[]{
+    foreach (var (_, vᴛ1) in new TestTLS13ECHRejectionCallbacks_type[]{
         new(
             name: "no callbacks"u8,
             expectedErr: "tls: server rejected ECH"u8
         ),
         new(
             name: "EncryptedClientHelloRejectionVerify, no err"u8,
-            encryptedClientHelloRejectionVerify: (ΔConnectionState _Δp0) => default!,
+            encryptedClientHelloRejectionVerify: (global::go.crypto.tls_package.ΔConnectionState _Δp0) => default!,
             expectedErr: "tls: server rejected ECH"u8
         ),
         new(
             name: "EncryptedClientHelloRejectionVerify, err"u8,
-            encryptedClientHelloRejectionVerify: (ΔConnectionState _Δp0) => errors.New(callbackErrˢ), // testHandshake returns the server side error, so we just need to
+            encryptedClientHelloRejectionVerify: (global::go.crypto.tls_package.ΔConnectionState _Δp0) => errors.New(callbackErrˢ), // testHandshake returns the server side error, so we just need to
  // check alertBadCertificate was sent
 
             expectedErr: "callback err"u8
         ),
         new(
             name: "VerifyConnection, err"u8,
-            verifyConnection: (ΔConnectionState _Δp0) => errors.New(callbackErrˢ),
+            verifyConnection: (global::go.crypto.tls_package.ΔConnectionState _Δp0) => errors.New(callbackErrˢ),
             expectedErr: "tls: server rejected ECH"u8
         ),
         new(
@@ -3132,14 +3133,14 @@ public static void TestTLS13ECHRejectionCallbacks(ж<testing.T> Ꮡt) {
             expectedErr: "tls: server rejected ECH"u8
         )
     }.slice()) {
-        ref var tc = ref heap(new TestTLS13ECHRejectionCallbacks_typeᴛ1(), out var Ꮡtc);
+        ref var tc = ref heap(new TestTLS13ECHRejectionCallbacks_type(), out var Ꮡtc);
         tc = vᴛ1;
 
         var clientConfigʗ1 = clientConfig;
         var serverConfigʗ1 = serverConfig;
         var tcʗ1 = tc;
         Ꮡt.Run(tc.name, (ж<testing.T> tΔ1) => {
-            var (c, s) = localPipe(new testing_TжTB(tΔ1));
+            var (c, s) = localPipe(new tls_test_package.testing_TжTB(tΔ1));
             var done = new channel<error>(0);
             var doneʗ1 = done;
             var sʗ1 = s;
@@ -3180,4 +3181,4 @@ public static void TestECHTLS12Server(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end tls_package
+} // end tls_internal_test_package

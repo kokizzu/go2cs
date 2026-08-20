@@ -6,16 +6,17 @@ namespace go.crypto;
 using hex = encoding.hex_package;
 using testing = testing_package;
 using encoding;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
-[GoType("dyn")] partial struct TestDecodeECHConfigLists_typeᴛ1 {
+[GoType("dyn")] internal partial struct TestDecodeECHConfigLists_type {
     internal @string list;
     internal nint numConfigs;
 }
 
 public static void TestDecodeECHConfigLists(ж<testing.T> Ꮡt) {
-    foreach (var (_, tc) in new TestDecodeECHConfigLists_typeᴛ1[]{
+    foreach (var (_, tc) in new TestDecodeECHConfigLists_type[]{
         new("0045fe0d0041590020002092a01233db2218518ccbbbbc24df20686af417b37388de6460e94011974777090004000100010012636c6f7564666c6172652d6563682e636f6d0000"u8, 1),
         new("0105badd00050504030201fe0d0066000010004104e62b69e2bf659f97be2f1e0d948a4cd5976bb7a91e0d46fbdda9a91e9ddcba5a01e7d697a80a18f9c3c4a31e56e27c8348db161a1cf51d7ef1942d4bcf7222c1000c000100010001000200010003400e7075626c69632e6578616d706c650000fe0d003d00002000207d661615730214aeee70533366f36a609ead65c0c208e62322346ab5bcd8de1c000411112222400e7075626c69632e6578616d706c650000fe0d004d000020002085bd6a03277c25427b52e269e0c77a8eb524ba1eb3d2f132662d4b0ac6cb7357000c000100010001000200010003400e7075626c69632e6578616d706c650008aaaa000474657374"u8, 3)
     }.slice()) {
@@ -51,4 +52,4 @@ public static void TestSkipBadConfigs(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end tls_package
+} // end tls_internal_test_package

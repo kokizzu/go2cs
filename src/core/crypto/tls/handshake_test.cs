@@ -27,8 +27,9 @@ using fs = go.io.fs_package;
 using go.crypto;
 using go.os;
 using rsa = go.crypto.rsa_package;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
 // TLS reference tests run a connection against a reference implementation
 // (OpenSSL) of TLS and record the bytes of the resulting connection. The Go
@@ -101,7 +102,7 @@ internal static error checkOpenSSLVersion() {
 // recordingConn is a net.Conn that records the traffic that passes through it.
 // WriteTo can be used to produce output that can be later be loaded with
 // ParseTestData.
-[GoType] partial struct recordingConn {
+[GoType] internal partial struct recordingConn {
     public net_package.Conn Conn;
     public partial ref sync_package.Mutex Mutex { get; }
     internal slice<slice<byte>> flows;
@@ -249,14 +250,14 @@ internal static (slice<slice<byte>> flows, error err) parseTestData(io.Reader r)
 }
 
 // replayingConn is a net.Conn that replays flows recorded by recordingConn.
-[GoType] partial struct replayingConn {
+[GoType] internal partial struct replayingConn {
     internal testing.TB t;
     public partial ref sync_package.Mutex Mutex { get; }
     internal slice<slice<byte>> flows;
     internal bool reading;
 }
 
-internal static net.Conn _ᴛ27ʗ = new replayingConnжConn(((ж<replayingConn>)nil));
+internal static net.Conn _ᴛ11ʗ = new tls_internal_test_package.replayingConnжConn(((ж<replayingConn>)nil));
 
 internal static (nint n, error err) Read(this ж<replayingConn> Ꮡr, slice<byte> b) {
     nint n = default!;
@@ -372,13 +373,13 @@ internal static @string tempFile(@string contents) {
 // localListener is set up by TestMain and used by localPipe to create Conn
 // pairs like net.Pipe, but connected by an actual buffered TCP connection.
 
-[GoType("dyn")] partial struct localListenerᴛ2 {
+[GoType("dyn")] partial struct localListenerᴛ1 {
     internal sync.Mutex mu;
     internal netꓸAddr addr;
     internal channel<net.Conn> ch;
 }
-internal static ж<localListenerᴛ2> ᏑlocalListener = new(default(localListenerᴛ2));
-internal static ref localListenerᴛ2 localListener => ref ᏑlocalListener.Value;
+internal static ж<localListenerᴛ1> ᏑlocalListener = new(default(localListenerᴛ1));
+internal static ref localListenerᴛ1 localListener => ref ᏑlocalListener.Value;
 
 internal static UntypedInt localFlakes => 0; // change to 1 or 2 to exercise localServer/localPipe handling of mismatches
 
@@ -401,8 +402,8 @@ internal static Func<error, bool> isConnRefused = (error err) => false;
 internal static (net.Conn, net.Conn) localPipe(testing.TB t) {
     GoFrame ᒐ = default;
     try {
-        ᏑlocalListener.of(localListenerᴛ2.Ꮡmu).Lock();
-        defer(ᏑlocalListener.of(localListenerᴛ2.Ꮡmu).Unlock, ref ᒐ);
+        ᏑlocalListener.of(localListenerᴛ1.Ꮡmu).Lock();
+        defer(ᏑlocalListener.of(localListenerᴛ1.Ꮡmu).Unlock, ref ᒐ);
         var addr = localListener.addr;
         error err = default!;
 Dialing:
@@ -427,16 +428,16 @@ Dialing:
                 continue;
             }
             while (ᐧ) {
-                var selᴛ21 = (~tooSlow).C;
-                var selᴛ22 = localListener.ch;
-                switch (select(ᐸꟷ(selᴛ21, ꓸꓸꓸ), ᐸꟷ(selᴛ22, ꓸꓸꓸ))) {
-                case 0 when selᴛ21.ꟷᐳ(out _): {
+                var selᴛ6 = (~tooSlow).C;
+                var selᴛ7 = localListener.ch;
+                switch (select(ᐸꟷ(selᴛ6, ꓸꓸꓸ), ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
+                case 0 when selᴛ6.ꟷᐳ(out _): {
                     t.Logf("localPipe: timeout waiting for %v"u8, c1.LocalAddr());
                     c1.Close();
                     goto continue_Dialing;
                     break;
                 }
-                case 1 when selᴛ22.ꟷᐳ(out var c2): {
+                case 1 when selᴛ7.ꟷᐳ(out var c2): {
                     if (c2.RemoteAddr().String() == c1.LocalAddr().String()) {
                         t.Cleanup(() => {
                             Ꮡc1.ValueSlot.Close();
@@ -463,7 +464,7 @@ break_Dialing:;
 }
 
 // zeroSource is an io.Reader that returns an unlimited number of zero bytes.
-[GoType] partial struct zeroSource {
+[GoType] internal partial struct zeroSource {
 }
 
 internal static (nint n, error err) Read(this zeroSource _, slice<byte> b) {
@@ -479,7 +480,7 @@ internal static slice<uint16> allCipherSuites() {
     return ids;
 }
 
-internal static ж<Config> testConfig;
+internal static ж<global::go.crypto.tls_package.Config> testConfig;
 
 public static void TestMain(ж<testing.M> Ꮡm) {
     flag.Usage = () => {
@@ -529,10 +530,10 @@ internal static nint runMain(ж<testing.M> Ꮡm) {
         testConfig = Ꮡ(new Config(
             Time: () => time_package.Unix(0, 0),
             Rand: new zeroSource(nil),
-            Certificates: new slice<Certificate>(2),
+            Certificates: new slice<global::go.crypto.tls_package.Certificate>(2),
             InsecureSkipVerify: true,
             CipherSuites: allCipherSuites(),
-            CurvePreferences: new CurveID[]{X25519, CurveP256, CurveP384, CurveP521}.slice(),
+            CurvePreferences: new global::go.crypto.tls_package.CurveID[]{X25519, CurveP256, CurveP384, CurveP521}.slice(),
             MinVersion: VersionTLS10,
             MaxVersion: VersionTLS13
         ));
@@ -556,13 +557,13 @@ internal static nint runMain(ж<testing.M> Ꮡm) {
     finally { ᒐ.Run(); }
 }
 
-internal static (ΔConnectionState serverState, ΔConnectionState clientState, error err) testHandshake(ж<testing.T> Ꮡt, ж<Config> ᏑclientConfig, ж<Config> ᏑserverConfig) {
-    ΔConnectionState serverState = default!;
-    ΔConnectionState clientState = default!;
+internal static (global::go.crypto.tls_package.ΔConnectionState serverState, global::go.crypto.tls_package.ΔConnectionState clientState, error err) testHandshake(ж<testing.T> Ꮡt, ж<global::go.crypto.tls_package.Config> ᏑclientConfig, ж<global::go.crypto.tls_package.Config> ᏑserverConfig) {
+    global::go.crypto.tls_package.ΔConnectionState serverState = default!;
+    global::go.crypto.tls_package.ΔConnectionState clientState = default!;
     error err = default!;
 
     @string sentinel = "SENTINEL\n"u8;
-    var (c, s) = localPipe(new testing_TжTB(Ꮡt));
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
     var errChan = new channel<error>(1);
     var cʗ1 = c;
     var errChanʗ1 = errChan;
@@ -581,7 +582,7 @@ internal static (ΔConnectionState serverState, ΔConnectionState clientState, e
                 errChanʗ2.ᐸꟷ(default!);
             }, ref ᒐ);
             clientState = cli.ConnectionState();
-            (var buf, errΔ1) = io.ReadAll(new ConnжReader(cli));
+            (var buf, errΔ1) = io.ReadAll(new tls_test_package.tls_ConnжReader(cli));
             if (errΔ1 != default!) {
                 Ꮡt.Errorf("failed to call cli.Read: %v"u8, errΔ1);
             }
@@ -603,7 +604,7 @@ internal static (ΔConnectionState serverState, ΔConnectionState clientState, e
     if (err == default!){
         serverState = server.ConnectionState();
         {
-            var (_, errΔ2) = io.WriteString(new ConnжWriter(server), sentinel); if (errΔ2 != default!) {
+            var (_, errΔ2) = io.WriteString(new tls_test_package.tls_ConnжWriter(server), sentinel); if (errΔ2 != default!) {
                 Ꮡt.Errorf("failed to call server.Write: %v"u8, errΔ2);
             }
         }
@@ -643,13 +644,13 @@ internal static slice<byte> testSNICertificate = fromHex("0441883421114c81480804
 internal static slice<byte> testP256Certificate = fromHex("308201693082010ea00302010202105012dc24e1124ade4f3e153326ff27bf300a06082a8648ce3d04030230123110300e060355040a130741636d6520436f301e170d3137303533313232343934375a170d3138303533313232343934375a30123110300e060355040a130741636d6520436f3059301306072a8648ce3d020106082a8648ce3d03010703420004c02c61c9b16283bbcc14956d886d79b358aa614596975f78cece787146abf74c2d5dc578c0992b4f3c631373479ebf3892efe53d21c4f4f1cc9a11c3536b7f75a3463044300e0603551d0f0101ff0404030205a030130603551d25040c300a06082b06010505070301300c0603551d130101ff04023000300f0603551d1104083006820474657374300a06082a8648ce3d0403020349003046022100963712d6226c7b2bef41512d47e1434131aaca3ba585d666c924df71ac0448b3022100f4d05c725064741aef125f243cdbccaa2a5d485927831f221c43023bd5ae471a"u8);
 
 internal static ж<rsa.PrivateKey> testRSAPrivateKey = Δx509.ParsePKCS1PrivateKey(fromHex("3082025b02010002818100db467d932e12270648bc062821ab7ec4b6a25dfe1e5245887a3647a5080d92425bc281c0be97799840fb4f6d14fd2b138bc2a52e67d8d4099ed62238b74a0b74732bc234f1d193e596d9747bf3589f6c613cc0b041d4d92b2b2423775b1c3bbd755dce2054cfa163871d1e24c4f31d1a508baab61443ed97a77562f414c852d702030100010281800b07fbcf48b50f1388db34b016298b8217f2092a7c9a04f77db6775a3d1279b62ee9951f7e371e9de33f015aea80660760b3951dc589a9f925ed7de13e8f520e1ccbc7498ce78e7fab6d59582c2386cc07ed688212a576ff37833bd5943483b5554d15a0b9b4010ed9bf09f207e7e9805f649240ed6c1256ed75ab7cd56d9671024100fded810da442775f5923debae4ac758390a032a16598d62f059bb2e781a9c2f41bfa015c209f966513fe3bf5a58717cbdb385100de914f88d649b7d15309fa49024100dd10978c623463a1802c52f012cfa72ff5d901f25a2292446552c2568b1840e49a312e127217c2186615aae4fb6602a4f6ebf3f3d160f3b3ad04c592f65ae41f02400c69062ca781841a09de41ed7a6d9f54adc5d693a2c6847949d9e1358555c9ac6a8d9e71653ac77beb2d3abaf7bb1183aa14278956575dbebf525d0482fd72d90240560fe1900ba36dae3022115fd952f2399fb28e2975a1c3e3d0b679660bdcb356cc189d611cfdd6d87cd5aea45aa30a2082e8b51e94c2f3dd5d5c6036a8a615ed0240143993d80ece56f877cb80048335701eb0e608cc0c1ca8c2227b52edf8f1ac99c562f2541b5ce81f0515af1c5b4770dba53383964b4b725ff46fdec3d08907df"u8)).Item1;
-internal static error _ᴛ28ʗ;
+internal static error _ᴛ12ʗ;
 
 internal static ж<ecdsa.PrivateKey> testECDSAPrivateKey = Δx509.ParseECPrivateKey(fromHex("3081dc0201010442019883e909ad0ac9ea3d33f9eae661f1785206970f8ca9a91672f1eedca7a8ef12bd6561bb246dda5df4b4d5e7e3a92649bc5d83a0bf92972e00e62067d0c7bd99d7a00706052b81040023a18189038186000400c4a1edbe98f90b4873367ec316561122f23d53c33b4d213dcd6b75e6f6b0dc9adf26c1bcb287f072327cb3642f1c90bcea6823107efee325c0483a69e0286dd33700ef0462dd0da09c706283d881d36431aa9e9731bd96b068c09b23de76643f1a5c7fe9120e5858b65f70dd9bd8ead5d7f5d5ccb9b69f30665b669a20e227e5bffe3b"u8)).Item1;
-internal static error _ᴛ29ʗ;
+internal static error _ᴛ13ʗ;
 
 internal static ж<ecdsa.PrivateKey> testP256PrivateKey = Δx509.ParseECPrivateKey(fromHex("30770201010420012f3b52bc54c36ba3577ad45034e2e8efe1e6999851284cb848725cfe029991a00a06082a8648ce3d030107a14403420004c02c61c9b16283bbcc14956d886d79b358aa614596975f78cece787146abf74c2d5dc578c0992b4f3c631373479ebf3892efe53d21c4f4f1cc9a11c3536b7f75"u8)).Item1;
-internal static error _ᴛ30ʗ;
+internal static error _ᴛ14ʗ;
 
 internal static ed25519.PrivateKey testEd25519PrivateKey = ((ed25519.PrivateKey)fromHex("3a884965e76b3f55e5faf9615458a92354894234de3ec9f684d46d55cebf3dc63fe2152ee6e3ef3f4e854a7577a3649eede0bf842ccc92268ffa6f3483aaec8f"u8));
 
@@ -740,4 +741,4 @@ MC4CAQAwBQYDK2VwBCIEINifzf07d9qx3d44e0FSbV4mC/xQxT644RRbpgNpin7I
 -----END TESTING KEY-----
 """u8);
 
-} // end tls_package
+} // end tls_internal_test_package

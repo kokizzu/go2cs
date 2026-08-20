@@ -13,8 +13,9 @@ using fs = go.io.fs_package;
 using go.@internal;
 using go.os;
 using path;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string xGoˢ = "x.go"u8;
@@ -22,7 +23,7 @@ internal static readonly @string xExeˢ = "x.exe"u8;
 internal static readonly @string buildˢ = "build"u8;
 internal static readonly @string toolˢ = "tool"u8;
 
-[GoType("dyn")] partial struct TestLinkerGC_testsᴛ1 {
+[GoType("dyn")] internal partial struct TestLinkerGC_tests {
     internal @string name;
     internal @string program;
     internal slice<@string> want;
@@ -35,9 +36,9 @@ public static void TestLinkerGC(ж<testing.T> Ꮡt) {
         Ꮡt.Skip(skippingInShortModeˢ);
     }
     Ꮡt.Parallel();
-    @string goBin = testenv.GoToolPath(new testing_TжTB(Ꮡt));
-    testenv.MustHaveGoBuild(new testing_TжTB(Ꮡt));
-    var tests = new TestLinkerGC_testsᴛ1[]{
+    @string goBin = testenv.GoToolPath(new tls_test_package.testing_TжTB(Ꮡt));
+    testenv.MustHaveGoBuild(new tls_test_package.testing_TжTB(Ꮡt));
+    var tests = new TestLinkerGC_tests[]{
         new(
             name: "empty_import"u8,
             program: """
@@ -90,7 +91,7 @@ func main() { tls.Dial("", "", nil) }
     @string goFile = filepath.Join(tmpDir, xGoˢ);
     @string exeFile = filepath.Join(tmpDir, xExeˢ);
     foreach (var (_, vᴛ1) in tests) {
-        ref var tt = ref heap(new TestLinkerGC_testsᴛ1(), out var Ꮡtt);
+        ref var tt = ref heap(new TestLinkerGC_tests(), out var Ꮡtt);
         tt = vᴛ1;
 
         var ttʗ1 = tt;
@@ -128,4 +129,4 @@ func main() { tls.Dial("", "", nil) }
     }
 }
 
-} // end tls_package
+} // end tls_internal_test_package

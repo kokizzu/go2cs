@@ -12,8 +12,9 @@ using testing = testing_package;
 using unicode = unicode_package;
 using encoding;
 using go.crypto.@internal;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
 // This file contains tests derived from draft-ietf-tls-tls13-vectors-07.
 internal static slice<byte> parseVector(@string v) {
@@ -78,25 +79,25 @@ expanded (32 octets):  3f bb e6 a6 0d eb 66 c3 0a 32 79 5a ba 0e
 			ff 7e aa 10 10 55 86 e7 be 5c 09 67 8d 63 b6 ca ab 62
 """u8;
 
-[GoType("dyn")] partial struct TestDeriveSecret_argsᴛ1 {
+[GoType("dyn")] [GoLocalName("args")] internal partial struct TestDeriveSecret_args {
     internal slice<byte> secret;
     internal @string label;
     internal hash.Hash transcript;
 }
 
-[GoType("dyn")] partial struct TestDeriveSecret_testsᴛ1 {
+[GoType("dyn")] internal partial struct TestDeriveSecret_tests {
     internal @string name;
-    internal TestDeriveSecret_argsᴛ1 args;
+    internal TestDeriveSecret_args args;
     internal slice<byte> want;
 }
 
 public static void TestDeriveSecret(ж<testing.T> Ꮡt) {
     var chTranscript = (~cipherSuitesTLS13[0]).hash.New();
     chTranscript.Write(parseVector(payload512Octets010001Fcˢ));
-    var tests = new TestDeriveSecret_testsᴛ1[]{
+    var tests = new TestDeriveSecret_tests[]{
         new(
             @"derive secret for handshake ""tls13 derived"""u8,
-            new TestDeriveSecret_argsᴛ1(
+            new TestDeriveSecret_args(
                 parseVector(prk32Octets33Ad0a1c607eˢ),
                 "derived"u8,
                 default!
@@ -105,7 +106,7 @@ public static void TestDeriveSecret(ж<testing.T> Ꮡt) {
         ),
         new(
             @"derive secret ""tls13 c e traffic"""u8,
-            new TestDeriveSecret_argsᴛ1(
+            new TestDeriveSecret_args(
                 parseVector(prk32Octets9b2188E9B2Fcˢ),
                 "c e traffic"u8,
                 chTranscript
@@ -114,7 +115,7 @@ public static void TestDeriveSecret(ж<testing.T> Ꮡt) {
         )
     }.slice();
     foreach (var (_, vᴛ1) in tests) {
-        ref var tt = ref heap(new TestDeriveSecret_testsᴛ1(), out var Ꮡtt);
+        ref var tt = ref heap(new TestDeriveSecret_tests(), out var Ꮡtt);
         tt = vᴛ1;
 
         var ttʗ1 = tt;
@@ -183,22 +184,22 @@ secret (32 octets):  1d c8 26 e9 36 06 aa 6f dc 0a ad c1 2f 74 1b
 			01 04 6a a6 b9 9f 69 1e d2 21 a9 f0 ca 04 3f be ac
 """u8;
 
-[GoType("dyn")] partial struct TestExtract_argsᴛ1 {
+[GoType("dyn")] [GoLocalName("args")] internal partial struct TestExtract_args {
     internal slice<byte> newSecret;
     internal slice<byte> currentSecret;
 }
 
-[GoType("dyn")] partial struct TestExtract_testsᴛ1 {
+[GoType("dyn")] internal partial struct TestExtract_tests {
     internal @string name;
-    internal TestExtract_argsᴛ1 args;
+    internal TestExtract_args args;
     internal slice<byte> want;
 }
 
 public static void TestExtract(ж<testing.T> Ꮡt) {
-    var tests = new TestExtract_testsᴛ1[]{
+    var tests = new TestExtract_tests[]{
         new(
             @"extract secret ""early"""u8,
-            new TestExtract_argsᴛ1(
+            new TestExtract_args(
                 default!,
                 default!
             ),
@@ -206,7 +207,7 @@ public static void TestExtract(ж<testing.T> Ꮡt) {
         ),
         new(
             @"extract secret ""master"""u8,
-            new TestExtract_argsᴛ1(
+            new TestExtract_args(
                 default!,
                 parseVector(salt32Octets43De77E0C777ˢ)
             ),
@@ -214,7 +215,7 @@ public static void TestExtract(ж<testing.T> Ꮡt) {
         ),
         new(
             @"extract secret ""handshake"""u8,
-            new TestExtract_argsᴛ1(
+            new TestExtract_args(
                 parseVector(ikm32Octets8bD4054fB55bˢ),
                 parseVector(salt32Octets6f2615A108C7ˢ)
             ),
@@ -222,7 +223,7 @@ public static void TestExtract(ж<testing.T> Ꮡt) {
         )
     }.slice();
     foreach (var (_, vᴛ1) in tests) {
-        ref var tt = ref heap(new TestExtract_testsᴛ1(), out var Ꮡtt);
+        ref var tt = ref heap(new TestExtract_tests(), out var Ꮡtt);
         tt = vᴛ1;
 
         var ttʗ1 = tt;
@@ -273,4 +274,4 @@ public static void TestKyberEncapsulate(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end tls_package
+} // end tls_internal_test_package

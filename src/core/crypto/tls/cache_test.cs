@@ -10,8 +10,9 @@ using testing = testing_package;
 using time = time_package;
 using encoding;
 using go.sync;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object failedToDecodeˢ = (@string)"Failed to decode certificate"u8;
@@ -21,7 +22,7 @@ internal static readonly object timedOutWaitingForˢ = (@string)"timed out waiti
 internal static readonly object cacheDoesNotContainˢ2 = (@string)"cache does not contain expected key"u8;
 
 public static void TestCertCache(ж<testing.T> Ꮡt) {
-    ref var cc = ref heap<certCache>(out var Ꮡcc);
+    ref var cc = ref heap<global::go.crypto.tls_package.certCache>(out var Ꮡcc);
     cc = new certCache(nil);
     var (p, _) = pem.Decode(slice<byte>(rsaCertPEM));
     if (p == nil) {
@@ -39,11 +40,11 @@ public static void TestCertCache(ж<testing.T> Ꮡt) {
         Ꮡt.Fatal(newCertReturnedAUniqueˢ);
     }
     {
-        var (entry, ok) = Ꮡcc.of(certCache.ᏑMap).Load(((@string)(~p).Bytes)); if (!ok){
+        var (entry, ok) = Ꮡcc.of(global::go.crypto.tls_package.certCache.ᏑMap).Load(((@string)(~p).Bytes)); if (!ok){
             Ꮡt.Fatal(cacheDoesNotContainˢ);
         } else {
             {
-                var refs = entry._<ж<cacheEntry>>().of(cacheEntry.Ꮡrefs).Load(); if (refs != 2) {
+                var refs = entry._<ж<global::go.crypto.tls_package.cacheEntry>>().of(global::go.crypto.tls_package.cacheEntry.Ꮡrefs).Load(); if (refs != 2) {
                     Ꮡt.Fatalf("unexpected number of references: got %d, want 2"u8, refs);
                 }
             }
@@ -53,21 +54,21 @@ public static void TestCertCache(ж<testing.T> Ꮡt) {
         tΔ1.Helper();
         var c = time_package.After((time.Duration)(4000000000L));
         while (ᐧ) {
-            var selᴛ16 = c;
-            switch (trySelect(ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
-            case 0 when selᴛ16.ꟷᐳ(out _): {
+            var selᴛ1 = c;
+            switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
+            case 0 when selᴛ1.ꟷᐳ(out _): {
                 tΔ1.Fatal(timedOutWaitingForˢ);
                 break;
             }
             default: {
-                var (e, ok) = Ꮡcc.of(certCache.ᏑMap).Load(key);
+                var (e, ok) = Ꮡcc.of(global::go.crypto.tls_package.certCache.ᏑMap).Load(key);
                 if (!ok && count != 0){
                     tΔ1.Fatal(cacheDoesNotContainˢ2);
                 } else 
                 if (count == 0 && !ok) {
                     return;
                 }
-                if (e._<ж<cacheEntry>>().of(cacheEntry.Ꮡrefs).Load() == count) {
+                if (e._<ж<global::go.crypto.tls_package.cacheEntry>>().of(global::go.crypto.tls_package.cacheEntry.Ꮡrefs).Load() == count) {
                     return;
                 }
                 break;
@@ -97,7 +98,7 @@ public static void BenchmarkCertCache(ж<testing.B> Ꮡb) {
     if (p == nil) {
         Ꮡb.Fatal(failedToDecodeˢ);
     }
-    ref var cc = ref heap<certCache>(out var Ꮡcc);
+    ref var cc = ref heap<global::go.crypto.tls_package.certCache>(out var Ꮡcc);
     cc = new certCache(nil);
     b.ReportAllocs();
     b.ResetTimer();
@@ -107,7 +108,7 @@ public static void BenchmarkCertCache(ж<testing.B> Ꮡb) {
         var extra = extraᴛ1;
         var pʗ1 = p;
         Ꮡb.Run(fmt.Sprint(extra), (ж<testing.B> bΔ1) => {
-            var actives = new slice<ж<activeCert>>(extra + 1);
+            var actives = new slice<ж<global::go.crypto.tls_package.activeCert>>(extra + 1);
             bΔ1.ResetTimer();
             for (nint i = 0; i < (~bΔ1).N; i++) {
                 error err = default!;
@@ -130,4 +131,4 @@ public static void BenchmarkCertCache(ж<testing.B> Ꮡb) {
     }
 }
 
-} // end tls_package
+} // end tls_internal_test_package

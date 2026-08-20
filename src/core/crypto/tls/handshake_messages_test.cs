@@ -17,15 +17,16 @@ using encoding;
 using go.crypto;
 using go.math;
 using go.testing;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
-internal static slice<handshakeMessage> tests = new handshakeMessage[]{new clientHelloMsgжhandshakeMessage(Ꮡ(new clientHelloMsg(nil))), new serverHelloMsgжhandshakeMessage(Ꮡ(new serverHelloMsg(nil))), new finishedMsgжhandshakeMessage(Ꮡ(new finishedMsg(nil))), new certificateMsgжhandshakeMessage(Ꮡ(new certificateMsg(nil))), new certificateRequestMsgжhandshakeMessage(Ꮡ(new certificateRequestMsg(nil))), new certificateVerifyMsgжhandshakeMessage(Ꮡ(new certificateVerifyMsg(
+internal static slice<global::go.crypto.tls_package.handshakeMessage> tests = new global::go.crypto.tls_package.handshakeMessage[]{new global::go.crypto.tls_package.clientHelloMsgжhandshakeMessage(Ꮡ(new clientHelloMsg(nil))), new global::go.crypto.tls_package.serverHelloMsgжhandshakeMessage(Ꮡ(new serverHelloMsg(nil))), new global::go.crypto.tls_package.finishedMsgжhandshakeMessage(Ꮡ(new finishedMsg(nil))), new global::go.crypto.tls_package.certificateMsgжhandshakeMessage(Ꮡ(new certificateMsg(nil))), new global::go.crypto.tls_package.certificateRequestMsgжhandshakeMessage(Ꮡ(new certificateRequestMsg(nil))), new global::go.crypto.tls_package.certificateVerifyMsgжhandshakeMessage(Ꮡ(new certificateVerifyMsg(
     hasSignatureAlgorithm: true
-))), new certificateStatusMsgжhandshakeMessage(Ꮡ(new certificateStatusMsg(nil))), new clientKeyExchangeMsgжhandshakeMessage(Ꮡ(new clientKeyExchangeMsg(nil))), new newSessionTicketMsgжhandshakeMessage(Ꮡ(new newSessionTicketMsg(nil))), new encryptedExtensionsMsgжhandshakeMessage(Ꮡ(new encryptedExtensionsMsg(nil))), new endOfEarlyDataMsgжhandshakeMessage(Ꮡ(new endOfEarlyDataMsg(nil))), new keyUpdateMsgжhandshakeMessage(Ꮡ(new keyUpdateMsg(nil))), new newSessionTicketMsgTLS13жhandshakeMessage(Ꮡ(new newSessionTicketMsgTLS13(nil))), new certificateRequestMsgTLS13жhandshakeMessage(Ꮡ(new certificateRequestMsgTLS13(nil))), new certificateMsgTLS13жhandshakeMessage(Ꮡ(new certificateMsgTLS13(nil))), new SessionStateжhandshakeMessage(Ꮡ(new SessionState(nil)))
+))), new global::go.crypto.tls_package.certificateStatusMsgжhandshakeMessage(Ꮡ(new certificateStatusMsg(nil))), new global::go.crypto.tls_package.clientKeyExchangeMsgжhandshakeMessage(Ꮡ(new clientKeyExchangeMsg(nil))), new global::go.crypto.tls_package.newSessionTicketMsgжhandshakeMessage(Ꮡ(new newSessionTicketMsg(nil))), new global::go.crypto.tls_package.encryptedExtensionsMsgжhandshakeMessage(Ꮡ(new encryptedExtensionsMsg(nil))), new global::go.crypto.tls_package.endOfEarlyDataMsgжhandshakeMessage(Ꮡ(new endOfEarlyDataMsg(nil))), new global::go.crypto.tls_package.keyUpdateMsgжhandshakeMessage(Ꮡ(new keyUpdateMsg(nil))), new global::go.crypto.tls_package.newSessionTicketMsgTLS13жhandshakeMessage(Ꮡ(new newSessionTicketMsgTLS13(nil))), new global::go.crypto.tls_package.certificateRequestMsgTLS13жhandshakeMessage(Ꮡ(new certificateRequestMsgTLS13(nil))), new global::go.crypto.tls_package.certificateMsgTLS13жhandshakeMessage(Ꮡ(new certificateMsgTLS13(nil))), new tls_test_package.tls_SessionStateжhandshakeMessage(Ꮡ(new SessionState(nil)))
 }.slice();
 
-internal static slice<byte> mustMarshal(ж<testing.T> Ꮡt, handshakeMessage msg) {
+internal static slice<byte> mustMarshal(ж<testing.T> Ꮡt, global::go.crypto.tls_package.handshakeMessage msg) {
     Ꮡt.Helper();
     var (b, err) = msg.marshal();
     if (err != default!) {
@@ -61,7 +62,7 @@ public static void TestMarshalUnmarshal(ж<testing.T> Ꮡt) {
                     break;
                 }
                 {
-                    var (mΔ1, okΔ1) = mʗ1._<ж<SessionState>>(ᐧ); if (okΔ1) {
+                    var (mΔ1, okΔ1) = mʗ1._<ж<global::go.crypto.tls_package.SessionState>>(ᐧ); if (okΔ1) {
                         mΔ1.Value.activeCertHandles = default!;
                     }
                 }
@@ -71,11 +72,11 @@ public static void TestMarshalUnmarshal(ж<testing.T> Ꮡt) {
                 // we didn't create the original message via unmarshalling, nil
                 // the field.
                 switch (mʗ1.type()) {
-                case ж<clientHelloMsg> tΔ2: {
+                case ж<global::go.crypto.tls_package.clientHelloMsg> tΔ2: {
                     tΔ2.Value.original = default!;
                     break;
                 }
-                case ж<serverHelloMsg> tΔ2: {
+                case ж<global::go.crypto.tls_package.serverHelloMsg> tΔ2: {
                     tΔ2.Value.original = default!;
                     break;
                 }}
@@ -128,7 +129,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     return ((@string)b);
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref clientHelloMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.clientHelloMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new clientHelloMsg(nil));
@@ -152,9 +153,9 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     }
     m.Value.ocspStapling = randΔ1.Intn(10) > 5;
     m.Value.supportedPoints = randomBytes(randΔ1.Intn(5) + 1, Ꮡrand);
-    m.Value.supportedCurves = new slice<CurveID>(randΔ1.Intn(5) + 1);
+    m.Value.supportedCurves = new slice<global::go.crypto.tls_package.CurveID>(randΔ1.Intn(5) + 1);
     foreach (var (i, _) in (~m).supportedCurves) {
-        m.Value.supportedCurves[i] = ((CurveID)(uint16)(randΔ1.Intn(30000) + 1));
+        m.Value.supportedCurves[i] = ((global::go.crypto.tls_package.CurveID)(uint16)(randΔ1.Intn(30000) + 1));
     }
     if (randΔ1.Intn(10) > 5) {
         m.Value.ticketSupported = true;
@@ -190,8 +191,8 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
         m.Value.cookie = randomBytes(randΔ1.Intn(500) + 1, Ꮡrand);
     }
     for (nint i = 0; i < randΔ1.Intn(5); i++) {
-        keyShare ks = default!;
-        ks.group = ((CurveID)(uint16)(randΔ1.Intn(30000) + 1));
+        global::go.crypto.tls_package.keyShare ks = default!;
+        ks.group = ((global::go.crypto.tls_package.CurveID)(uint16)(randΔ1.Intn(30000) + 1));
         ks.data = randomBytes(randΔ1.Intn(200) + 1, Ꮡrand);
         m.Value.keyShares = append((~m).keyShares, ks);
     }
@@ -206,7 +207,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     }}
 
     for (nint i = 0; i < randΔ1.Intn(5); i++) {
-        pskIdentity psk = default!;
+        global::go.crypto.tls_package.pskIdentity psk = default!;
         psk.obfuscatedTicketAge = (uint32)randΔ1.Intn(500000);
         psk.label = randomBytes(randΔ1.Intn(500) + 1, Ꮡrand);
         m.Value.pskIdentities = append((~m).pskIdentities, psk);
@@ -221,7 +222,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref serverHelloMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.serverHelloMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new serverHelloMsg(nil));
@@ -258,12 +259,12 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     }
     if (randΔ1.Intn(10) > 5){
         for (nint i = 0; i < randΔ1.Intn(5); i++) {
-            m.Value.serverShare.group = ((CurveID)(uint16)(randΔ1.Intn(30000) + 1));
+            m.Value.serverShare.group = ((global::go.crypto.tls_package.CurveID)(uint16)(randΔ1.Intn(30000) + 1));
             m.Value.serverShare.data = randomBytes(randΔ1.Intn(200) + 1, Ꮡrand);
         }
     } else 
     if (randΔ1.Intn(10) > 5) {
-        m.Value.selectedGroup = ((CurveID)(uint16)(randΔ1.Intn(30000) + 1));
+        m.Value.selectedGroup = ((global::go.crypto.tls_package.CurveID)(uint16)(randΔ1.Intn(30000) + 1));
     }
     if (randΔ1.Intn(10) > 5) {
         m.Value.selectedIdentityPresent = true;
@@ -278,7 +279,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref encryptedExtensionsMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.encryptedExtensionsMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new encryptedExtensionsMsg(nil));
@@ -291,7 +292,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref certificateMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.certificateMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new certificateMsg(nil));
@@ -303,7 +304,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref certificateRequestMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.certificateRequestMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new certificateRequestMsg(nil));
@@ -314,17 +315,17 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref certificateVerifyMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.certificateVerifyMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new certificateVerifyMsg(nil));
     m.Value.hasSignatureAlgorithm = true;
-    m.Value.signatureAlgorithm = ((SignatureScheme)(uint16)randΔ1.Intn(30000));
+    m.Value.signatureAlgorithm = ((global::go.crypto.tls_package.SignatureScheme)(uint16)randΔ1.Intn(30000));
     m.Value.signature = randomBytes(randΔ1.Intn(15) + 1, Ꮡrand);
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref certificateStatusMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.certificateStatusMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new certificateStatusMsg(nil));
@@ -332,7 +333,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref clientKeyExchangeMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.clientKeyExchangeMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new clientKeyExchangeMsg(nil));
@@ -340,13 +341,13 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref finishedMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.finishedMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     var m = Ꮡ(new finishedMsg(nil));
     m.Value.verifyData = randomBytes(12, Ꮡrand);
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref newSessionTicketMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.newSessionTicketMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new newSessionTicketMsg(nil));
@@ -356,7 +357,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
 
 internal static slice<ж<Δx509.Certificate>> sessionTestCerts;
 
-[GoInit] internal static void initΔ1() {
+[GoInit] internal static void init() {
     var (cert, err) = Δx509.ParseCertificate(testRSACertificate);
     if (err != default!) {
         throw panic(err);
@@ -369,7 +370,7 @@ internal static slice<ж<Δx509.Certificate>> sessionTestCerts;
     sessionTestCerts = append(sessionTestCerts, cert);
 }
 
-[GoRecv] public static reflectꓸValue Generate(this ref SessionState _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.SessionState _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var s = Ꮡ(new SessionState(nil));
@@ -428,11 +429,11 @@ internal static slice<ж<Δx509.Certificate>> sessionTestCerts;
     return reflect.ValueOf(s.OrTypedNil());
 }
 
-internal static (slice<byte>, error) marshal(this ж<SessionState> Ꮡs) {
+internal static (slice<byte>, error) marshal(this ж<global::go.crypto.tls_package.SessionState> Ꮡs) {
     return Ꮡs.Bytes();
 }
 
-[GoRecv] internal static bool unmarshal(this ref SessionState s, slice<byte> b) {
+[GoRecv] internal static bool unmarshal(this ref global::go.crypto.tls_package.SessionState s, slice<byte> b) {
     var (ss, err) = ParseSessionState(b);
     if (err != default!) {
         return false;
@@ -441,12 +442,12 @@ internal static (slice<byte>, error) marshal(this ж<SessionState> Ꮡs) {
     return true;
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref endOfEarlyDataMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.endOfEarlyDataMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     var m = Ꮡ(new endOfEarlyDataMsg(nil));
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref keyUpdateMsg _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.keyUpdateMsg _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new keyUpdateMsg(nil));
@@ -454,7 +455,7 @@ internal static (slice<byte>, error) marshal(this ж<SessionState> Ꮡs) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref newSessionTicketMsgTLS13 _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.newSessionTicketMsgTLS13 _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new newSessionTicketMsgTLS13(nil));
@@ -468,7 +469,7 @@ internal static (slice<byte>, error) marshal(this ж<SessionState> Ꮡs) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref certificateRequestMsgTLS13 _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.certificateRequestMsgTLS13 _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new certificateRequestMsgTLS13(nil));
@@ -493,7 +494,7 @@ internal static (slice<byte>, error) marshal(this ж<SessionState> Ꮡs) {
     return reflect.ValueOf(m.OrTypedNil());
 }
 
-[GoRecv] internal static reflectꓸValue Generate(this ref certificateMsgTLS13 _, ж<rand.Rand> Ꮡrand, nint size) {
+[GoRecv] internal static reflectꓸValue Generate(this ref global::go.crypto.tls_package.certificateMsgTLS13 _, ж<rand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var m = Ꮡ(new certificateMsgTLS13(nil));
@@ -529,8 +530,8 @@ public static void TestRejectEmptySCTList(ж<testing.T> Ꮡt) {
         random: random[..],
         scts: new slice<byte>[]{sct}.slice()
     ));
-    var serverHelloBytes = mustMarshal(Ꮡt, new serverHelloMsgжhandshakeMessage(serverHello));
-    ref var serverHelloCopy = ref heap(new serverHelloMsg(), out var ᏑserverHelloCopy);
+    var serverHelloBytes = mustMarshal(Ꮡt, new global::go.crypto.tls_package.serverHelloMsgжhandshakeMessage(serverHello));
+    ref var serverHelloCopy = ref heap(new global::go.crypto.tls_package.serverHelloMsg(), out var ᏑserverHelloCopy);
     if (!ᏑserverHelloCopy.unmarshal(serverHelloBytes)) {
         Ꮡt.Fatal(failedToUnmarshalInitialˢ);
     }
@@ -568,8 +569,8 @@ public static void TestRejectEmptySCT(ж<testing.T> Ꮡt) {
         random: random[..],
         scts: new slice<byte>[]{default!}.slice()
     ));
-    var serverHelloBytes = mustMarshal(Ꮡt, new serverHelloMsgжhandshakeMessage(serverHello));
-    ref var serverHelloCopy = ref heap(new serverHelloMsg(), out var ᏑserverHelloCopy);
+    var serverHelloBytes = mustMarshal(Ꮡt, new global::go.crypto.tls_package.serverHelloMsgжhandshakeMessage(serverHello));
+    ref var serverHelloCopy = ref heap(new global::go.crypto.tls_package.serverHelloMsg(), out var ᏑserverHelloCopy);
     if (ᏑserverHelloCopy.unmarshal(serverHelloBytes)) {
         Ꮡt.Fatal(unmarshaledServerHelloˢ2);
     }
@@ -584,7 +585,7 @@ public static void TestRejectDuplicateExtensions(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatalf("failed to decode test ClientHello: %s"u8, err);
     }
-    ref var clientHelloCopy = ref heap(new clientHelloMsg(), out var ᏑclientHelloCopy);
+    ref var clientHelloCopy = ref heap(new global::go.crypto.tls_package.clientHelloMsg(), out var ᏑclientHelloCopy);
     if (ᏑclientHelloCopy.unmarshal(clientHelloBytes)) {
         Ꮡt.Error(unmarshaledClientHelloˢ);
     }
@@ -592,10 +593,10 @@ public static void TestRejectDuplicateExtensions(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatalf("failed to decode test ServerHello: %s"u8, err);
     }
-    ref var serverHelloCopy = ref heap(new serverHelloMsg(), out var ᏑserverHelloCopy);
+    ref var serverHelloCopy = ref heap(new global::go.crypto.tls_package.serverHelloMsg(), out var ᏑserverHelloCopy);
     if (ᏑserverHelloCopy.unmarshal(serverHelloBytes)) {
         Ꮡt.Fatal(unmarshaledServerHelloˢ3);
     }
 }
 
-} // end tls_package
+} // end tls_internal_test_package

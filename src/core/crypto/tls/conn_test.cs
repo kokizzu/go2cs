@@ -7,9 +7,10 @@ using bytes = bytes_package;
 using io = io_package;
 using net = net_package;
 using testing = testing_package;
+using static go.crypto.tls_package;
 using time = time_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object roundUpBrokenˢ = (@string)"roundUp broken"u8;
@@ -27,12 +28,12 @@ internal static array<byte> padding255Bad = new byte[]{}.array(256);
 internal static array<byte> padding255Good = new byte[]{255}.array(256);
 
 
-[GoType("dyn")] partial struct paddingTestsᴛ2 {
+[GoType("dyn")] partial struct paddingTestsᴛ1 {
     internal slice<byte> @in;
     internal bool good;
     internal nint expectedLen;
 }
-internal static slice<paddingTestsᴛ2> paddingTests = new paddingTestsᴛ2[]{
+internal static slice<paddingTestsᴛ1> paddingTests = new paddingTestsᴛ1[]{
     new(new byte[]{1, 2, 3, 4, 0}.slice(), true, 4),
     new(new byte[]{1, 2, 3, 4, 0, 1}.slice(), false, 0),
     new(new byte[]{1, 2, 3, 4, 99, 99}.slice(), false, 0),
@@ -80,9 +81,9 @@ internal static readonly @string fooExampleComˢ = "foo.example.com"u8;
 internal static readonly @string fooBarExampleComˢ = "foo.bar.example.com"u8;
 
 public static void TestCertificateSelection(ж<testing.T> Ꮡt) {
-    ref var config = ref heap<Config>(out var Ꮡconfig);
+    ref var config = ref heap<global::go.crypto.tls_package.Config>(out var Ꮡconfig);
     config = new Config(
-        Certificates: new Certificate[]{
+        Certificates: new global::go.crypto.tls_package.Certificate[]{
             new(
                 ΔCertificate: new slice<byte>[]{fromHex(certExampleCom)}.slice()
             ),
@@ -95,7 +96,7 @@ public static void TestCertificateSelection(ж<testing.T> Ꮡt) {
         }.slice()
     );
     config.BuildNameToCertificate();
-    nint pointerToIndex(ж<Certificate> c) {
+    nint pointerToIndex(ж<global::go.crypto.tls_package.Certificate> c) {
         foreach (var (i, _) in Ꮡconfig.Value.Certificates) {
             if (c == Ꮡ(Ꮡconfig.Value.Certificates, i)) {
                 return i;
@@ -103,7 +104,7 @@ public static void TestCertificateSelection(ж<testing.T> Ꮡt) {
         }
         return -1;
     }
-    ж<Certificate> certificateForName(@string name) {
+    ж<global::go.crypto.tls_package.Certificate> certificateForName(@string name) {
         var clientHello = Ꮡ(new ClientHelloInfo(
             ServerName: name
         ));
@@ -139,10 +140,10 @@ public static void TestCertificateSelection(ж<testing.T> Ꮡt) {
 }
 
 // Run with multiple crypto configs to test the logic for computing TLS record overheads.
-internal static void runDynamicRecordSizingTest(ж<testing.T> Ꮡt, ж<Config> Ꮡconfig) {
+internal static void runDynamicRecordSizingTest(ж<testing.T> Ꮡt, ж<global::go.crypto.tls_package.Config> Ꮡconfig) {
     GoFrame ᒐ = default;
     try {
-        var (clientConn, serverConn) = localPipe(new testing_TжTB(Ꮡt));
+        var (clientConn, serverConn) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var serverConfig = Ꮡconfig.Clone();
         serverConfig.Value.DynamicRecordSizingDisabled = false;
         var tlsConn = Server(serverConn, serverConfig);
@@ -176,7 +177,7 @@ internal static void runDynamicRecordSizingTest(ж<testing.T> Ꮡt, ж<Config> �
                 slice<byte> record = default!;
                 slice<nint> recordSizesΔ1 = default!;
                 while (ᐧ) {
-                    var (n, err) = io.ReadFull(new net_ConnᴠReader(clientConnʗ1), recordHeader[..]);
+                    var (n, err) = io.ReadFull(new tls_test_package.net_ConnᴠReader(clientConnʗ1), recordHeader[..]);
                     if (AreEqual(err, io.EOF)) {
                         break;
                     }
@@ -188,7 +189,7 @@ internal static void runDynamicRecordSizingTest(ж<testing.T> Ꮡt, ж<Config> �
                     if (len(record) < length) {
                         record = new slice<byte>(length);
                     }
-                    (n, err) = io.ReadFull(new net_ConnᴠReader(clientConnʗ1), record[..(int)(length)]);
+                    (n, err) = io.ReadFull(new tls_test_package.net_ConnᴠReader(clientConnʗ1), record[..(int)(length)]);
                     if (err != default! || n != length) {
                         Ꮡt.Errorf("io.ReadFull = %d, %v"u8, n, err);
                         return;
@@ -281,9 +282,9 @@ public static void TestDynamicRecordSizingWithTLSv13(ж<testing.T> Ꮡt) {
 
 // hairpinConn is a net.Conn that makes a “hairpin” call when closed, back into
 // the tls.Conn which is calling it.
-[GoType] partial struct hairpinConn {
+[GoType] internal partial struct hairpinConn {
     public net_package.Conn Conn;
-    internal ж<Conn> tlsConn;
+    internal ж<global::go.crypto.tls_package.Conn> tlsConn;
 }
 
 [GoRecv] internal static error Close(this ref hairpinConn conn) {
@@ -296,14 +297,14 @@ public static void TestHairpinInClose(ж<testing.T> Ꮡt) {
     try {
         // This tests that the underlying net.Conn can call back into the
         // tls.Conn when being closed without deadlocking.
-        var (client, server) = localPipe(new testing_TжTB(Ꮡt));
+        var (client, server) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var serverʗ1 = server;
         defer(() => serverʗ1.Close(), ref ᒐ);
         var clientʗ1 = client;
         defer(() => clientʗ1.Close(), ref ᒐ);
         var conn = Ꮡ(new hairpinConn(client, nil));
-        var tlsConn = Server(new hairpinConnжConn(conn), Ꮡ(new Config(
-            GetCertificate: (ж<ClientHelloInfo> _) => {
+        var tlsConn = Server(new tls_internal_test_package.hairpinConnжConn(conn), Ꮡ(new Config(
+            GetCertificate: (ж<global::go.crypto.tls_package.ClientHelloInfo> _) => {
                 throw panic("unreachable");
             }
         )));
@@ -321,7 +322,7 @@ internal static readonly @string tlsReceivedRecordWithˢ = "tls: received record
 public static void TestRecordBadVersionTLS13(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        var (client, server) = localPipe(new testing_TжTB(Ꮡt));
+        var (client, server) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var serverʗ1 = server;
         defer(() => serverʗ1.Close(), ref ᒐ);
         var clientʗ1 = client;
@@ -358,4 +359,4 @@ public static void TestRecordBadVersionTLS13(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-} // end tls_package
+} // end tls_internal_test_package

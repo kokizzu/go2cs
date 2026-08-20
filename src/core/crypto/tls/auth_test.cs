@@ -6,21 +6,22 @@ namespace go.crypto;
 using crypto = crypto_package;
 using testing = testing_package;
 using go.crypto;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
-[GoType("dyn")] partial struct TestSignatureSelection_testsᴛ1 {
-    internal ж<Certificate> cert;
-    internal slice<SignatureScheme> peerSigAlgs;
+[GoType("dyn")] internal partial struct TestSignatureSelection_tests {
+    internal ж<global::go.crypto.tls_package.Certificate> cert;
+    internal slice<global::go.crypto.tls_package.SignatureScheme> peerSigAlgs;
     internal uint16 tlsVersion;
-    internal SignatureScheme expectedSigAlg;
+    internal global::go.crypto.tls_package.SignatureScheme expectedSigAlg;
     internal uint8 expectedSigType;
     internal crypto.Hash expectedHash;
 }
 
-[GoType("dyn")] partial struct TestSignatureSelection_badTestsᴛ1 {
-    internal ж<Certificate> cert;
-    internal slice<SignatureScheme> peerSigAlgs;
+[GoType("dyn")] internal partial struct TestSignatureSelection_badTests {
+    internal ж<global::go.crypto.tls_package.Certificate> cert;
+    internal slice<global::go.crypto.tls_package.SignatureScheme> peerSigAlgs;
     internal uint16 tlsVersion;
 }
 
@@ -32,7 +33,7 @@ public static void TestSignatureSelection(ж<testing.T> Ꮡt) {
     var pkcs1Cert = Ꮡ(new Certificate(
         ΔCertificate: new slice<byte>[]{testRSACertificate}.slice(),
         PrivateKey: testRSAPrivateKey.OrTypedNil(),
-        SupportedSignatureAlgorithms: new SignatureScheme[]{PKCS1WithSHA1, PKCS1WithSHA256}.slice()
+        SupportedSignatureAlgorithms: new global::go.crypto.tls_package.SignatureScheme[]{PKCS1WithSHA1, PKCS1WithSHA256}.slice()
     ));
     var ecdsaCert = Ꮡ(new Certificate(
         ΔCertificate: new slice<byte>[]{testP256Certificate}.slice(),
@@ -42,22 +43,22 @@ public static void TestSignatureSelection(ж<testing.T> Ꮡt) {
         ΔCertificate: new slice<byte>[]{testEd25519Certificate}.slice(),
         PrivateKey: testEd25519PrivateKey
     ));
-    var tests = new TestSignatureSelection_testsᴛ1[]{
-        new(rsaCert, new SignatureScheme[]{PKCS1WithSHA1, PKCS1WithSHA256}.slice(), VersionTLS12, PKCS1WithSHA1, signaturePKCS1v15, crypto.SHA1),
-        new(rsaCert, new SignatureScheme[]{PKCS1WithSHA512, PKCS1WithSHA1}.slice(), VersionTLS12, PKCS1WithSHA512, signaturePKCS1v15, crypto.SHA512),
-        new(rsaCert, new SignatureScheme[]{PSSWithSHA256, PKCS1WithSHA256}.slice(), VersionTLS12, PSSWithSHA256, signatureRSAPSS, crypto.SHA256),
-        new(pkcs1Cert, new SignatureScheme[]{PSSWithSHA256, PKCS1WithSHA256}.slice(), VersionTLS12, PKCS1WithSHA256, signaturePKCS1v15, crypto.SHA256),
-        new(rsaCert, new SignatureScheme[]{PSSWithSHA384, PKCS1WithSHA1}.slice(), VersionTLS13, PSSWithSHA384, signatureRSAPSS, crypto.SHA384),
-        new(ecdsaCert, new SignatureScheme[]{ECDSAWithSHA1}.slice(), VersionTLS12, ECDSAWithSHA1, signatureECDSA, crypto.SHA1),
-        new(ecdsaCert, new SignatureScheme[]{ECDSAWithP256AndSHA256}.slice(), VersionTLS12, ECDSAWithP256AndSHA256, signatureECDSA, crypto.SHA256),
-        new(ecdsaCert, new SignatureScheme[]{ECDSAWithP256AndSHA256}.slice(), VersionTLS13, ECDSAWithP256AndSHA256, signatureECDSA, crypto.SHA256),
-        new(ed25519Cert, new SignatureScheme[]{Ed25519}.slice(), VersionTLS12, Ed25519, signatureEd25519, directSigning),
-        new(ed25519Cert, new SignatureScheme[]{Ed25519}.slice(), VersionTLS13, Ed25519, signatureEd25519, directSigning), // TLS 1.2 without signature_algorithms extension
+    var tests = new TestSignatureSelection_tests[]{
+        new(rsaCert, new global::go.crypto.tls_package.SignatureScheme[]{PKCS1WithSHA1, PKCS1WithSHA256}.slice(), VersionTLS12, PKCS1WithSHA1, signaturePKCS1v15, crypto.SHA1),
+        new(rsaCert, new global::go.crypto.tls_package.SignatureScheme[]{PKCS1WithSHA512, PKCS1WithSHA1}.slice(), VersionTLS12, PKCS1WithSHA512, signaturePKCS1v15, crypto.SHA512),
+        new(rsaCert, new global::go.crypto.tls_package.SignatureScheme[]{PSSWithSHA256, PKCS1WithSHA256}.slice(), VersionTLS12, PSSWithSHA256, signatureRSAPSS, crypto.SHA256),
+        new(pkcs1Cert, new global::go.crypto.tls_package.SignatureScheme[]{PSSWithSHA256, PKCS1WithSHA256}.slice(), VersionTLS12, PKCS1WithSHA256, signaturePKCS1v15, crypto.SHA256),
+        new(rsaCert, new global::go.crypto.tls_package.SignatureScheme[]{PSSWithSHA384, PKCS1WithSHA1}.slice(), VersionTLS13, PSSWithSHA384, signatureRSAPSS, crypto.SHA384),
+        new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithSHA1}.slice(), VersionTLS12, ECDSAWithSHA1, signatureECDSA, crypto.SHA1),
+        new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithP256AndSHA256}.slice(), VersionTLS12, ECDSAWithP256AndSHA256, signatureECDSA, crypto.SHA256),
+        new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithP256AndSHA256}.slice(), VersionTLS13, ECDSAWithP256AndSHA256, signatureECDSA, crypto.SHA256),
+        new(ed25519Cert, new global::go.crypto.tls_package.SignatureScheme[]{Ed25519}.slice(), VersionTLS12, Ed25519, signatureEd25519, directSigning),
+        new(ed25519Cert, new global::go.crypto.tls_package.SignatureScheme[]{Ed25519}.slice(), VersionTLS13, Ed25519, signatureEd25519, directSigning), // TLS 1.2 without signature_algorithms extension
 
         new(rsaCert, default!, VersionTLS12, PKCS1WithSHA1, signaturePKCS1v15, crypto.SHA1),
         new(ecdsaCert, default!, VersionTLS12, ECDSAWithSHA1, signatureECDSA, crypto.SHA1), // TLS 1.2 does not restrict the ECDSA curve (our ecdsaCert is P-256)
 
-        new(ecdsaCert, new SignatureScheme[]{ECDSAWithP384AndSHA384}.slice(), VersionTLS12, ECDSAWithP384AndSHA384, signatureECDSA, crypto.SHA384)
+        new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithP384AndSHA384}.slice(), VersionTLS12, ECDSAWithP384AndSHA384, signatureECDSA, crypto.SHA384)
     }.slice();
     foreach (var (testNo, test) in tests) {
         var (sigAlg, err) = selectSignatureScheme(test.tlsVersion, ref (test.cert).DerefOrNull(), test.peerSigAlgs);
@@ -81,16 +82,16 @@ public static void TestSignatureSelection(ж<testing.T> Ꮡt) {
     var brokenCert = Ꮡ(new Certificate(
         ΔCertificate: new slice<byte>[]{testRSACertificate}.slice(),
         PrivateKey: testRSAPrivateKey.OrTypedNil(),
-        SupportedSignatureAlgorithms: new SignatureScheme[]{Ed25519}.slice()
+        SupportedSignatureAlgorithms: new global::go.crypto.tls_package.SignatureScheme[]{Ed25519}.slice()
     ));
-    var badTests = new TestSignatureSelection_badTestsᴛ1[]{
-        new(rsaCert, new SignatureScheme[]{ECDSAWithP256AndSHA256, ECDSAWithSHA1}.slice(), VersionTLS12),
-        new(ecdsaCert, new SignatureScheme[]{PKCS1WithSHA256, PKCS1WithSHA1}.slice(), VersionTLS12),
-        new(rsaCert, new SignatureScheme[]{0}.slice(), VersionTLS12),
-        new(ed25519Cert, new SignatureScheme[]{ECDSAWithP256AndSHA256, ECDSAWithSHA1}.slice(), VersionTLS12),
-        new(ecdsaCert, new SignatureScheme[]{Ed25519}.slice(), VersionTLS12),
-        new(brokenCert, new SignatureScheme[]{Ed25519}.slice(), VersionTLS12),
-        new(brokenCert, new SignatureScheme[]{PKCS1WithSHA256}.slice(), VersionTLS12), // RFC 5246, Section 7.4.1.4.1, says to only consider {sha1,ecdsa} as
+    var badTests = new TestSignatureSelection_badTests[]{
+        new(rsaCert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithP256AndSHA256, ECDSAWithSHA1}.slice(), VersionTLS12),
+        new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{PKCS1WithSHA256, PKCS1WithSHA1}.slice(), VersionTLS12),
+        new(rsaCert, new global::go.crypto.tls_package.SignatureScheme[]{0}.slice(), VersionTLS12),
+        new(ed25519Cert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithP256AndSHA256, ECDSAWithSHA1}.slice(), VersionTLS12),
+        new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{Ed25519}.slice(), VersionTLS12),
+        new(brokenCert, new global::go.crypto.tls_package.SignatureScheme[]{Ed25519}.slice(), VersionTLS12),
+        new(brokenCert, new global::go.crypto.tls_package.SignatureScheme[]{PKCS1WithSHA256}.slice(), VersionTLS12), // RFC 5246, Section 7.4.1.4.1, says to only consider {sha1,ecdsa} as
  // default when the extension is missing, and RFC 8422 does not update
  // it. Anyway, if a stack supports Ed25519 it better support sigalgs.
 
@@ -100,13 +101,13 @@ public static void TestSignatureSelection(ж<testing.T> Ꮡt) {
         new(ecdsaCert, default!, VersionTLS13),
         new(ed25519Cert, default!, VersionTLS13), // Wrong curve, which TLS 1.3 checks
 
-        new(ecdsaCert, new SignatureScheme[]{ECDSAWithP384AndSHA384}.slice(), VersionTLS13), // TLS 1.3 does not support PKCS1v1.5 or SHA-1.
+        new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithP384AndSHA384}.slice(), VersionTLS13), // TLS 1.3 does not support PKCS1v1.5 or SHA-1.
 
-        new(rsaCert, new SignatureScheme[]{PKCS1WithSHA256}.slice(), VersionTLS13),
-        new(pkcs1Cert, new SignatureScheme[]{PSSWithSHA256, PKCS1WithSHA256}.slice(), VersionTLS13),
-        new(ecdsaCert, new SignatureScheme[]{ECDSAWithSHA1}.slice(), VersionTLS13), // The key can be too small for the hash.
+        new(rsaCert, new global::go.crypto.tls_package.SignatureScheme[]{PKCS1WithSHA256}.slice(), VersionTLS13),
+        new(pkcs1Cert, new global::go.crypto.tls_package.SignatureScheme[]{PSSWithSHA256, PKCS1WithSHA256}.slice(), VersionTLS13),
+        new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithSHA1}.slice(), VersionTLS13), // The key can be too small for the hash.
 
-        new(rsaCert, new SignatureScheme[]{PSSWithSHA512}.slice(), VersionTLS12)
+        new(rsaCert, new global::go.crypto.tls_package.SignatureScheme[]{PSSWithSHA512}.slice(), VersionTLS12)
     }.slice();
     foreach (var (testNo, test) in badTests) {
         var (sigAlg, err) = selectSignatureScheme(test.tlsVersion, ref (test.cert).DerefOrNull(), test.peerSigAlgs);
@@ -169,4 +170,4 @@ public static void TestSupportedSignatureAlgorithms(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end tls_package
+} // end tls_internal_test_package
