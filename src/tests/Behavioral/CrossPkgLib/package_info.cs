@@ -43,6 +43,7 @@ using static go.CrossPkgLib_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<Alarm, error>(Pointer = true)]
+[assembly: GoImplement<Branch, Emitter>(Pointer = true)]
 [assembly: GoImplement<Device, Labeled>]
 [assembly: GoImplement<Leaf, Emitter>(Pointer = true)]
 [assembly: GoImplement<Meter, Reporter>(Pointer = true)]

@@ -4,7 +4,7 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// This file owns ONE property, applied at ONE kind of place:
+// This file owns TWO properties, applied at ONE kind of place. The first:
 //
 //	A Go POINTER entering INTERFACE space is represented by its pointer BOX, carrying its static
 //	pointee type — however the pointer was produced.
@@ -33,10 +33,33 @@
 // The scope is a genuine `*T` (a `types.Pointer`). `unsafe.Pointer` is a Basic and renders as a
 // struct, and a NAMED pointer type renders as its generated wrapper struct — neither can be a null
 // reference, so neither has anything to carry.
+//
+// A SECOND value shape loses its Go type at this same boundary, for a different reason, so it is
+// owned here too:
+//
+//	A Go VARIADIC FUNC entering EMPTY-INTERFACE space is represented by its Go func type.
+//
+// C# gives a method group or lambda at an untyped destination a NATURAL function type. For a
+// non-variadic signature that is `Func<…>`/`Action<…>` — exactly go2cs's own lowering, so the two
+// already agree and nothing is emitted. A `params` signature has no BCL delegate, so C# SYNTHESIZES
+// one (`<>f__AnonymousDelegate0`) and the box carries that compiler artifact as its dynamic type,
+// while every Go-visible spelling of the same func — a type assertion, a type switch,
+// `reflect.TypeOf` — names golib's `Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` family. html/template's `funcMap`
+// (`map[string]any` of `func(...any) string` escapers) is the corpus instance: its own test's
+// `funcMap[n].(func(...any) string)` threw `interface conversion: interface {} is
+// <>f__AnonymousDelegate0, not go.Funcꓸꓸꓸ<object, @string>`. The cast is a no-op wherever the value
+// already has that type, so it widens nothing; it pins the dynamic type at the one place that
+// records it. A NON-empty interface target needs nothing here either — no Go interface but the
+// empty one can be satisfied by a bare func type (a func type has no methods), so the adapter
+// route never sees this shape.
+//
+// The two treatments are MUTUALLY EXCLUSIVE — a value is a pointer or a func, never both — which is
+// why they share the boundary's entry points rather than needing a second set.
 
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -55,12 +78,14 @@ func (v *Visitor) pointerBoxesIntoEmptyInterface(target types.Type, value ast.Ex
 	return isPointer
 }
 
-// boxPointerIntoEmptyInterface wraps an already-rendered POINTER expression in the typed-nil
-// accessor when it is being boxed into an empty interface, so a null reference crosses as the
-// canonical typed nil instance instead of as an untyped C# null. A no-op for every other slot, for
-// a non-pointer value, and for a pointer whose rendering provably cannot be null.
+// boxPointerIntoEmptyInterface applies this file's boundary treatment to an already-rendered value
+// bound for an EMPTY-interface slot: a POINTER gains the typed-nil accessor, so a null reference
+// crosses as the canonical typed nil instance instead of as an untyped C# null; a VARIADIC FUNC
+// gains the cast to its Go func type. A no-op for every other slot, for every other value shape, and
+// for a pointer whose rendering provably cannot be null. (The name predates the second treatment and
+// is kept so the ten call sites stay untouched; see the file header for both properties.)
 func (v *Visitor) boxPointerIntoEmptyInterface(target types.Type, value ast.Expr, rendered string) string {
-	if !v.pointerBoxesIntoEmptyInterface(target, value) {
+	if !isEmptyInterfaceTarget(target) || value == nil {
 		return rendered
 	}
 
@@ -69,17 +94,63 @@ func (v *Visitor) boxPointerIntoEmptyInterface(target types.Type, value ast.Expr
 
 // applyTypedNilPointerBox is boxPointerIntoEmptyInterface for a caller that has already established
 // its slot is an empty interface (the twin of applyUntypedConstBoxCast / boxUntypedConstAsDefaultType).
-// A non-pointer value, and a pointer whose rendering provably cannot be null, pass through unchanged.
+// A pointer whose rendering provably cannot be null passes through unchanged; a non-pointer value
+// takes the variadic-func arm, which is itself a no-op for every value shape but that one.
 func (v *Visitor) applyTypedNilPointerBox(value ast.Expr, rendered string) string {
-	if rendered == "" || value == nil || v.pointerExprNeverRendersNull(value) {
+	if rendered == "" || value == nil {
 		return rendered
 	}
 
-	if _, isPointer := v.getType(value, false).(*types.Pointer); !isPointer {
+	valueType := v.getType(value, false)
+
+	if _, isPointer := valueType.(*types.Pointer); !isPointer {
+		// The sibling treatment this file owns, at the same boundary and mutually exclusive
+		// with the pointer one: a VARIADIC func value must carry its Go func type, or C#'s
+		// synthesized natural delegate becomes the box's dynamic type. See the file header.
+		return v.applyVariadicFuncBoxCast(valueType, rendered)
+	}
+
+	if v.pointerExprNeverRendersNull(value) {
 		return rendered
 	}
 
 	return rendered + "." + TypedNilBoxAccessor
+}
+
+// applyVariadicFuncBoxCast casts an already-rendered VARIADIC func value to its Go func type's C#
+// delegate so the empty-interface box carries the type Go names rather than the anonymous delegate
+// C# synthesizes for a `params` method group or literal. A no-op for every other value shape, and
+// for a value that already has the type (the cast is then redundant, never wrong).
+//
+// getCSharpTypeName renders a func type STRUCTURALLY through iifeDelegateType — the same function
+// convTypeAssertExpr renders the assertion's target type with — so the boxing side and the reading
+// side of a `x.(func(…))` are composed by one renderer and cannot drift.
+func (v *Visitor) applyVariadicFuncBoxCast(valueType types.Type, rendered string) string {
+	castType := v.variadicFuncBoxCastType(valueType)
+
+	if castType == "" {
+		return rendered
+	}
+
+	return fmt.Sprintf("((%s)(%s))", castType, rendered)
+}
+
+// variadicFuncBoxCastType names the delegate a value of valueType must be cast to when boxed into an
+// EMPTY-interface slot, or "" when the value is not a variadic func. It is the answer for callers
+// that carry a per-element CAST (composite literals' castArgToType) rather than a rendered string,
+// so both consumers ask one function and the two slots cannot disagree.
+func (v *Visitor) variadicFuncBoxCastType(valueType types.Type) string {
+	if valueType == nil {
+		return ""
+	}
+
+	sig, ok := valueType.Underlying().(*types.Signature)
+
+	if !ok || !sig.Variadic() || sig.Params().Len() == 0 {
+		return ""
+	}
+
+	return v.getCSharpTypeName(valueType)
 }
 
 // emptyInterfacePointerContexts returns `contexts` with the ident context's isPointer set when

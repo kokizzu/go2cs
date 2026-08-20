@@ -252,16 +252,29 @@ func (s Sensor) Marker() string { return s.Name }
 // MakeMarker returns a Marker so a consumer reads its field via an inferred-type value.
 func MakeMarker(s string) Marker { return Marker{Marker: s} }
 
-// Emitter is an exported interface SEALED to this package by the UNEXPORTED marker method emitNode()
-// (Go's ast.Expr.exprNode() / text/template/parse.Node.tree()/writeTo() shape). A consumer in ANOTHER
-// assembly can HOLD an Emitter and call the exported Emit(), but cannot see or forward the unexported
-// emitNode — its C# implementation is an INTERNAL extension here, so the pointer adapter generated at
-// the consumer's cast site cannot bind `m_box.Value.emitNode()` (CS1061). Go bars calling a sealing
-// marker from outside its package, so that adapter must STUB the (still-required) member instead.
+// Emitter is an exported interface SEALED to this package by the UNEXPORTED members emitNode() and
+// nodeTag() (Go's ast.Expr.exprNode() / text/template/parse.Node.tree()/writeTo() shape). A consumer
+// in ANOTHER assembly can HOLD an Emitter and call the exported Emit(), but cannot see or forward the
+// unexported members — their C# implementations are INTERNAL extensions here, so a pointer adapter
+// generated at the CONSUMER's cast site cannot bind `m_box.Value.nodeTag()` (CS1061) and stubs it
+// instead, silently.
+//
+// That stub is why the DECLARING assembly must own the adapter for every type satisfying such an
+// interface, whether or not this package ever performs the cast itself. Go's sealing rule says only
+// this package's types can implement Emitter — so a consumer's local adapter is not a fallback, it is
+// an adapter that cannot work. DescribeEmitter below is the reader that proves it: a consumer boxes the
+// value, this package calls the sealed member on it, and a stubbed nodeTag answers "" forever.
 type Emitter interface {
 	Emit() string
 	emitNode()
+	nodeTag() string
 }
+
+// DescribeEmitter is the SEALED-MEMBER READER — the shape text/template/parse.ErrorContext has, where the
+// declaring package calls `n.tree()` on a Node its CONSUMER boxed. Nothing the consumer writes can
+// call nodeTag; this is the only way the stub becomes observable, and html/template's TestErrors is
+// what it looks like in the corpus when it is not (a null tree, then a nil dereference).
+func DescribeEmitter(e Emitter) string { return e.Emit() + "/" + e.nodeTag() }
 
 // Leaf implements Emitter DIRECTLY in this package (both the exported Emit and the sealing marker).
 type Leaf struct {
@@ -271,6 +284,8 @@ type Leaf struct {
 func (l *Leaf) Emit() string { return l.Text }
 
 func (l *Leaf) emitNode() {}
+
+func (l *Leaf) nodeTag() string { return "lf" }
 
 // NewLeaf returns the CONCRETE *Leaf, so a consumer assigning it to an Emitter casts across the
 // assembly boundary — the adapter is generated in the CONSUMER assembly, where emitNode is inaccessible.
@@ -294,6 +309,8 @@ type Branch struct {
 }
 
 func (b *Branch) emitNode() {}
+
+func (b *Branch) nodeTag() string { return "brn" }
 
 // NewBranch returns the CONCRETE *Branch, so a consumer casting it to Emitter both stubs the marker
 // (the seal) and forwards the promoted Emit through the embed.

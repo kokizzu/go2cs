@@ -190,7 +190,34 @@ func recordSamePackageImplements(fset *token.FileSet, packageTypes *types.Packag
 				continue
 			}
 
-			if !generatorCanForwardPointerMethodSet(pointerTarget, iface, packageTypes) {
+			// The pointer depth gate's whole justification is that withholding a speculative
+			// record is SAFE — "the consumer keeps the local adapter it had before". That is
+			// true of an all-exported interface and FALSE of one carrying an unexported method,
+			// which is why this arm exists. Go scopes such an interface's implementations to its
+			// declaring package, so a consuming assembly cannot even NAME the unexported member
+			// to forward it: ImplementGenerator emits that arm as `=> default!` (or an empty
+			// body) and the adapter answers a plausible zero forever. The declaring package is
+			// the ONLY place the pair can be realized, so here the record is not an optimization
+			// and withholding it is not conservative — it is the defect.
+			//
+			// text/template/parse is the corpus instance. `*BranchNode` implements `Node`, but
+			// `Type`/`Position` are promoted from its embedded `NodeType`/`Pos`, so the strict
+			// gate withheld the record; `parse` itself never casts a `*BranchNode` (it casts the
+			// If/Range/With wrappers), so nothing demanded it either. html/template's escaper
+			// takes `&n.BranchNode` and hands it to `join` as a `Node`, minting a local adapter
+			// whose `tree()` returns null — and `parse.ErrorContext`'s `if tree == nil` then
+			// substitutes its own receiver, which at html/template's `(*parse.Tree)(nil)` call
+			// site is also nil, so `~tree` nil-dereferences. One withheld record, one silent
+			// stub, one crash three packages away.
+			//
+			// The relaxation is bounded, not removed: the VALUE form's depth-2 bound still
+			// applies, so a promotion deeper than one embed hop is withheld exactly as before.
+			// The shape the strict gate was written for — a speculative record whose promoted
+			// member resolves through the wrong embedded POINTER hop
+			// (StructPointerPromotionWithInterface's `MyCustomError`) — is an all-exported
+			// interface and never reaches this arm.
+			if !generatorCanForwardPointerMethodSet(pointerTarget, iface, packageTypes) &&
+				!(interfaceHasUnexportedMethod(iface) && generatorCanForwardMethodSet(pointerTarget, iface, packageTypes)) {
 				continue
 			}
 
@@ -280,4 +307,19 @@ func generatorCanForwardMethodSet(target types.Type, iface *types.Interface, pkg
 	}
 
 	return true
+}
+
+// interfaceHasUnexportedMethod reports whether iface carries a method Go scopes to its declaring
+// package. Such an interface can only ever be implemented THERE (the language rule), which is what
+// makes a consumer's locally minted ж adapter unrealizable rather than merely redundant: the member
+// is `internal` in the declaring assembly, so ImplementGenerator has nothing to forward to and emits
+// a default-answering arm. See the pointer-record gate above for the consequence.
+func interfaceHasUnexportedMethod(iface *types.Interface) bool {
+	for i := range iface.NumMethods() {
+		if !iface.Method(i).Exported() {
+			return true
+		}
+	}
+
+	return false
 }
