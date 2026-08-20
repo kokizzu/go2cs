@@ -14580,6 +14580,27 @@ or equivalently drop the `convertStdLib` gate to "stdlib package" rather than "s
 takes it should keep the litter rule the gate exists for — the test is the PACKAGE's provenance, not
 the run's mode.
 
+### Two measurement hazards this lane paid for
+
+Both are variants of traps CLAUDE.md already names, and both cost a wasted cycle.
+
+**A poll that waits for a process to DISAPPEAR fires instantly if it has not yet APPEARED.**
+`until ! tasklist | grep -qi go2cs.exe; do sleep 20; done` looks like "wait for the converter to
+finish" and is actually "wait for the converter to not be running" — which is TRUE for the seconds
+between launching a command and its converter starting (here, a 1.6 GB seeding copy). The waiter
+exited immediately and its `tail` then failed on a log that did not exist yet, which reads exactly
+like a crashed run. This is the same class as the recorded `exit $true` inversion: the poll must be
+written on a POSITIVE condition the target actually produces — wait for the log to contain the
+completion marker, not for a process table to be empty.
+
+**Two conversions raced into ONE temp root, and it was self-inflicted.** The r41 rule ("never
+convert twice into the same root") was honored in intent and broken in fact: a `nohup … &` launch
+was replaced with a harness-tracked background launch without killing the first, and both wrote the
+same `-go2cspath`. Caught by `tasklist` showing two `go2cs.exe`, not by any output — the r41
+corruption is silent until a build fails. The rule needs a companion habit: **census the process
+table before launching a conversion**, because "I meant to replace that run" is not the same as
+having replaced it.
+
 ### The queue, after this
 
 1. **`encoding/gob` (106)** — 103 of 106, now the closest unbanked package and the queue top. Its
