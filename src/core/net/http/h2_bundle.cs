@@ -7876,6 +7876,7 @@ internal static void initConnPool(this ж<http2Transport> Ꮡt) {
     internal nint streamsReserved;                          // incr by ReserveNewRequest; decr on RoundTrip
     internal uint32 nextStreamID;
     internal nint pendingRequests;                      // requests blocked and waiting to be sent because len(streams) == maxConcurrentStreams
+    [GoMapKeyDims(8)]
     internal map<array<byte>, channel<EmptyStruct>> pings; // in flight ping data to notification channel
     internal ж<bufio.Reader> br;
     internal time.Time lastActive;

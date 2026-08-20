@@ -17034,6 +17034,107 @@ the struct and func arms reported `true` where Go reports `false`.
 `GolibTests.GoStructLayoutTests.EmbeddedField_IsDistinguishableFromADeclaredFieldOfTheSameNameAndType`
 pins the projection flag the struct arm stands on.)
 
+#### A struct FIELD's TYPE-ONLY array dims — `[GoArrayDims]` / `[GoMapKeyDims]` (2026-08-20)
+
+The array-length cargo had a hole, and it was in the position that decodes: a field's dims came from
+the declaring type's **zero instance**, which reaches an array the field IS and nothing an array is
+BEHIND.
+
+```go
+type T1 struct {                              // encoding/gob's TestEndToEnd
+    Marr map[[2]string][2]*float64
+    N    *[3]float64
+}
+type Indirect struct{ A ***[3]int }           // encoding/gob's TestIndirectSliceMapArray
+```
+
+`FieldArrayDims` reads `= new(N)` back off `Activator.CreateInstance(declaringType)`. On `Marr` that
+instance holds a **nil map**, and a populated one would help no more — a map entry is a value, while
+`Key()`/`Elem()` answer for the TYPE. On `N` and `A` it holds a **nil pointer**, with no pointee to
+measure. Both hops are ordinary at a **decode target**, which is exactly a struct nothing has
+populated yet, so the datum has to be in the emitted C#. That is the same conclusion the func
+PARAMETER position reached, and it takes the same carrier — an attribute:
+
+```csharp
+[GoType] partial struct T1 {
+    [GoArrayDims(2), GoMapKeyDims(2)]
+    public map<array<@string>, array<ж<float64>>> Marr;
+    [GoArrayDims(3)]
+    public ж<array<float64>> N;
+}
+[GoType] partial struct Indirect {
+    [GoArrayDims(3)]
+    public ж<ж<ж<array<nint>>>> A;            // ONE stamp, any pointer depth
+}
+```
+
+The two attributes are named for **the accessor each feeds**, which is also what the descriptor's own
+slots have always meant:
+
+| Cargo slot | Attribute | What it is | Handed down by |
+|:--|:--|:--|:--|
+| `abi.Type.arrayDims` | `[GoArrayDims]` | an ARRAY's own dims (head consumed), a POINTER's pointee's, a MAP's element's | `Elem()` — tail for an array, **unshifted** for a pointer and a map |
+| `abi.Type.keyDims` | `[GoMapKeyDims]` | a MAP's key's dims | `Key()` |
+
+So nothing about `arrayDims` changed meaning; a MAP simply joined the POINTER in the unshifted arm it
+already had, and `Key()` — a map type's second accessor, which had no slot at all — got one.
+`keyDims` joins **both** interning keys (`abi.descriptorDimsKey`, shared with reflect's `canonType`)
+for the third time and the third instance of one reason: `map[[2]string]V` and `map[[3]string]V` are
+distinct Go types over one managed `map<array<@string>, V>`, so interning them together would let
+whichever arrived first answer `Key().Len()` for both. `Type.String()` renders from the same pair
+(`GoTypeName(t, dims, chanDir, keyDims)`), which is what turns `map[[]string][]*float64` back into
+`map[[2]string][2]*float64` and `***[]int` back into `***[3]int`.
+
+**Unstamped is not a failure state**, exactly as with the chan direction: a field nothing stamped
+carries null and every accessor answers the dimension-less array it answered before, so only the
+shapes above move.
+
+**The pointer hop had to land on the VALUE side too, and that was found by measurement.** With the
+stamps in, `encoding/gob`'s `TestEndToEnd` passed and `TestIndirectSliceMapArray`'s root moved one
+frame — out of the type-compatibility rejection and into
+`panic: reflect: reflect.Set using unaddressable value`, inside `growSlice`. The cause is that
+`reflect.Value.Elem()` recovered a pointee's dims from the LIVE value alone
+(`ArrayDimsOfValue(ReadPointerSlot(box))`), while `rtype.Elem` hands the descriptor's cargo down
+unshifted. gob's `decIndirect` walks a `***[3]int` target by allocating each level from
+`value.Type().Elem()`, so a hop reading the live value reads the nil pointer it is standing on,
+allocates a **zero-length** array from the dimension-less descriptor, and the next hop measures that
+zero as the truth. `Value.Elem()` now prefers the carried dims and falls back to the live
+measurement — and it descends them through EVERY pointer hop, not only the one whose pointee is the
+array, because `***[3]int`'s intermediate pointees are pointers. The live route still answers where
+the descriptor is silent (`ValueOf(&[100]T{}).Elem().Type()` carries 100). This is the same lesson
+the chan-direction cargo's fourth position taught, one layer over: **a value the bridge hands out
+must describe itself the way the descriptor does.**
+
+Four boundaries are deliberate:
+
+- **A field that IS an array is NOT stamped.** Its `= new(N)` initializer already carries the length,
+  through a route that also survives a value copy; stamping it would duplicate the datum and churn
+  every array-bearing struct in the corpus for nothing.
+- **A DEFINED array or map type is not stamped** (`type Row [3]int` behind a pointer,
+  `type Set map[[2]string]bool`) — the same one-sentence boundary the chan direction draws, for the
+  same reason: its managed form is a go2cs-gen wrapper rather than `array<T>`/`map<K,V>`. An ALIAS
+  for one IS its target and is stamped (`types.Unalias` resolves it).
+- **A SECOND nesting level is not carried** — `[][2]int`, `map[K]map[[2]string]V`, a func field's
+  parameters. The cargo has exactly one `Elem()` slot and one `Key()` slot, so a second level has
+  nowhere to live and no measured consumer asks (the r39d rule). `reflect.Type.String()` still
+  renders `[][2]int` as `[][]int`, unchanged.
+- **A func PARAMETER of map type is not stamped.** `[GoArrayDims]` reaches parameters already, but
+  nothing measured reads `reflect.TypeOf(f).In(i).Key().Len()`.
+
+(Guarded by the `FieldDimsCargo` behavioral test, byte-identical to `go run`: gob's own field shapes
+read back through `Field(i).Type`, both map accessors, `reflect.New(mtyp.Key())` and
+`reflect.New(mtyp.Elem())` — the exact pair `decodeMap` performs before it fills an entry — a
+three-hop pointer chain on the type side, gob's `decIndirect` walk verbatim on the value side, each
+map accessor exercised alone, the untouched initializer route, and the defined-type and
+slice-element boundaries. Converter unit guard: `TestFieldDimsCargo`, 20 rows including every
+boundary above. Proven failing-first by neutering each of the three halves separately: with the
+converter stamp neutered every carried length reads 0 and every type string loses its dims — which is
+`length mismatch in decodeArray` one frame down — while the initializer route is untouched; with the
+bridge's `Key()` and map-`Elem()` arms neutered the field type strings still render correctly, off
+the descriptor's own cargo, and only the accessor answers collapse; with `Value.Elem()`'s descriptor
+precedence neutered ONLY the `decIndirect` line moves, landing on `[0]int 0` — the zero-length array
+`growSlice` panics on.)
+
 ### The reflectlite MINI-BRIDGE mirrors reflect one layer down — and the closure that validated it landed five rules in SHARED machinery
 
 `internal/reflectlite` is Go's reflect one layer down, and its bridge follows one doctrine:

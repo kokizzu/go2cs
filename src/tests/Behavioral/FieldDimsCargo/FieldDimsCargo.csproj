@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
     <RootNamespace>go</RootNamespace>
-    <AssemblyName>ReflectChanDirection</AssemblyName>
+    <AssemblyName>FieldDimsCargo</AssemblyName>
     <Product>go2cs</Product>
     <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
@@ -134,8 +134,6 @@
 
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
-    <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
-    <ProjectReference Include="$(go2csPath)core/time/time.csproj" />
   </ItemGroup>
 
 </Project>

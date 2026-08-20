@@ -195,6 +195,60 @@ public class GoStructLayoutTests
         CollectionAssert.AreEqual(new nint[] { 0, 8, 16 }, offsets);
     }
 
+    // The two hops a field's ZERO INSTANCE cannot measure — a nil pointer has no pointee, and a nil
+    // map has no entry whose key or element could reveal a length — so the converter stamps them and
+    // the projection reads them back. The dims mean what they mean on the descriptor: [GoArrayDims]
+    // is what Elem() hands down (a POINTEE's, unshifted at any depth; a map ELEMENT's) and
+    // [GoMapKeyDims] is what Key() does. An array field is deliberately NOT stamped — its
+    // `= new(N)` initializer already carries the length, through a route that survives a copy —
+    // which is why the last assertion here reads a stamp-free field and still gets its dims.
+#pragma warning disable CS0649
+    private struct TestFieldDimsStruct
+    {
+        [GoArrayDims(2), GoMapKeyDims(2)]
+        public map<array<@string>, array<ж<float64>>> Marr;   // Go: map[[2]string][2]*float64
+
+        [GoArrayDims(3)]
+        public ж<ж<ж<array<nint>>>> Deep;                     // Go: ***[3]int
+
+        public map<@string, nint> Plain;                      // Go: map[string]int — nothing to carry
+
+        public array<byte> Sized = new(4);                    // Go: [4]byte — the initializer route
+
+        public TestFieldDimsStruct() { }
+    }
+#pragma warning restore CS0649
+
+    [TestMethod]
+    public void FieldDims_ComeFromTheConverterStamp_WhereNoZeroInstanceCanMeasureThem()
+    {
+        GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(typeof(TestFieldDimsStruct));
+
+        Assert.AreEqual(4, fields.Length);
+
+        // A map field: each accessor's dims arrive on its own slot, independently.
+        Assert.AreEqual("Marr", fields[0].Name);
+        CollectionAssert.AreEqual(new nint[] { 2 }, fields[0].ArrayDims, "the map ELEMENT's dims — what Elem() hands down");
+        CollectionAssert.AreEqual(new nint[] { 2 }, fields[0].KeyDims, "the map KEY's dims — what Key() hands down");
+
+        // A pointer field: ONE stamp answers at any depth, because the cargo passes down unshifted.
+        Assert.AreEqual("Deep", fields[1].Name);
+        CollectionAssert.AreEqual(new nint[] { 3 }, fields[1].ArrayDims);
+        Assert.IsNull(fields[1].KeyDims);
+
+        // An unstamped field carries null on both slots, which is the state every field was in
+        // before the stamp existed and remains the honest answer for a type with no array in it.
+        Assert.AreEqual("Plain", fields[2].Name);
+        Assert.IsNull(fields[2].ArrayDims);
+        Assert.IsNull(fields[2].KeyDims);
+
+        // An ARRAY field is not stamped and does not need to be: the value route still reads its
+        // length off the declaring type's zero instance.
+        Assert.AreEqual("Sized", fields[3].Name);
+        CollectionAssert.AreEqual(new nint[] { 4 }, fields[3].ArrayDims);
+        Assert.IsNull(fields[3].KeyDims);
+    }
+
     [TestMethod]
     public void FieldOffsets_SingleString_IsZero()
     {

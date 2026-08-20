@@ -632,6 +632,35 @@ var f1 = ([GoArrayDims(32)] array<byte> @in, Scalar sc) => { … };
 See [the reference](ConversionStrategies-Reference.md) (*A func PARAMETER is the one position an
 array's LENGTH cannot be recovered from*) for the delegate-instance read behind it.
 
+A struct field takes the same attribute wherever its initializer cannot reach — that route recovers
+an array the field IS, and nothing an array is BEHIND. The zero instance of a field declared
+`*[3]float64` holds a nil pointer with no pointee to measure, and one declared
+`map[[2]string][2]*float64` holds a nil map whose key and element types no entry could reveal. Both
+are ordinary shapes at a **decode target**, which is exactly a struct nothing has populated yet, so
+the two accessors get their cargo from the declaration:
+
+```go
+type T1 struct {                              // encoding/gob's TestEndToEnd
+    Marr map[[2]string][2]*float64
+    N    *[3]float64
+}
+```
+```csharp
+[GoType] partial struct T1 {
+    [GoArrayDims(2), GoMapKeyDims(2)]
+    public map<array<@string>, array<ж<float64>>> Marr;
+    [GoArrayDims(3)]
+    public ж<array<float64>> N;
+}
+```
+
+`[GoArrayDims]` is what `Elem()` hands down and `[GoMapKeyDims]` what `Key()` does, so one stamp
+covers any pointer depth (`***[3]int` carries the same `[GoArrayDims(3)]`, the cargo passing down
+unshifted at every hop). A field that IS an array keeps its initializer, and a DEFINED array or map
+type is not stamped — its managed form is a generated wrapper with no slot to carry cargo. See the
+[field dims cargo](ConversionStrategies-Reference.md#a-struct-fields-type-only-array-dims--goarraydims--gomapkeydims-2026-08-20)
+section of the reference.
+
 `append`, `len`, `make`, and sub-slicing map to golib builtins/methods. A variadic `...T` parameter arrives
 as `params ꓸꓸꓸT`, where `ꓸꓸꓸT` is a using alias for `Span<T>` whose identifier mirrors the Go name
 (`...*RangeTable` → `ꓸꓸꓸжRangeTable`, `...unsafe.Pointer` → `ꓸꓸꓸunsafeꓸPointer`), falling back to an inline

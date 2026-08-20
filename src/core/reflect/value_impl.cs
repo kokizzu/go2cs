@@ -59,8 +59,8 @@ internal static ΔValue makeReflectValue(object? boxed) {
 // interface-typed slot reports Kind Interface regardless of the dynamic value, and a nil-valued
 // slot is a VALID nil Value of the slot's kind (never the invalid zero Value). inheritRO carries
 // the parent's read-only bits (Go's flagRO stickiness).
-internal static ΔValue makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO, GoChanDir chanDir = GoChanDir.Unstamped) {
-    var t = abi.synthType(staticType, arrayDims, null, chanDir);
+internal static ΔValue makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO, GoChanDir chanDir = GoChanDir.Unstamped, nint[]? keyDims = null) {
+    var t = abi.synthType(staticType, arrayDims, null, chanDir, keyDims);
     var v = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(staticType)) | ((flag)(inheritRO & flagRO)));
     v.boxed = boxed;
     return v;
@@ -649,12 +649,32 @@ public static ΔValue Elem(this ΔValue v) {
             return new ΔValue(nil);
         }
         // An array pointee reveals its real dims through the live value behind the box (the
-        // TestSliceRoundTrip path: ValueOf(&[100]T{}).Elem().Type() must carry 100).
-        nint[]? dims = GoReflect.KindOf(pointee) == GoReflect.Array ? GoReflect.ArrayDimsOfValue(GoReflect.ReadPointerSlot(cur)) : null;
+        // TestSliceRoundTrip path: ValueOf(&[100]T{}).Elem().Type() must carry 100) — but the
+        // DESCRIPTOR wins wherever it carries them, because a pointer's cargo IS its pointee's, and
+        // in Go a `*[3]int` has element type `[3]int` whatever its backing currently holds.
+        //
+        // The ordering is load-bearing at exactly one place, and it is a decode target:
+        // encoding/gob's `decIndirect` walks a `***[3]int` field by allocating each level from
+        // `value.Type().Elem()`, so a hop that answered from the live value alone would read the nil
+        // pointer it is standing on, drop the cargo, allocate a ZERO-length array from the
+        // dimension-less descriptor — and the NEXT hop would then measure that zero as the truth.
+        // This is the same rule rtype.Elem and abi.Elem apply on the type side (a pointer hands its
+        // cargo down UNSHIFTED); a value the bridge hands out must describe itself the same way.
+        // Carried dims descend through EVERY pointer hop, not only the one whose pointee is the
+        // array: `***[3]int`'s intermediate pointees are pointers, and a hop that answered null for
+        // them would lose the cargo two levels before the array it describes. That is precisely
+        // rtype.Elem's `throughPointer ? dims : …`.
+        nint[]? carriedDims = v.typ_ == nil ? null : v.typ_.Value.arrayDims;
+        nint[]? dims = carriedDims is { Length: > 0 } ? carriedDims
+                     : GoReflect.KindOf(pointee) == GoReflect.Array ? GoReflect.ArrayDimsOfValue(GoReflect.ReadPointerSlot(cur))
+                     : null;
         // A CHANNEL pointee reveals its direction the same way — off the value behind the box,
         // which for `new(chan<- string)` is the direction-carrying nil the converter seeded.
         GoChanDir pointeeDir = GoReflect.KindOf(pointee) == GoReflect.Chan ? GoReflect.ChanDirOfValue(GoReflect.ReadPointerSlot(cur)) : GoChanDir.Unstamped;
-        var t = abi.synthType(pointee, dims, null, pointeeDir);
+        // A MAP pointee's KEY dims have no live source at all — a map value cannot carry them — so
+        // they descend from the descriptor or not at all.
+        nint[]? pointeeKeyDims = v.typ_ == nil ? null : v.typ_.Value.keyDims;
+        var t = abi.synthType(pointee, dims, null, pointeeDir, pointeeKeyDims);
         var elem = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(pointee)) | flagAddr | flagIndir | ((flag)(v.flag & flagRO)));
         elem.addrBox = cur;
         return elem;
@@ -790,7 +810,7 @@ public static ΔValue Field(this ΔValue v, nint i) {
     // indistinguishable through this projection.
     flag ro = (flag)((flag)(v.flag & flagStickyRO) | (f.Exported ? default : f.Embedded ? flagEmbedRO : flagStickyRO));
     if (v.addrBox is not null) {
-        var elem = makeTypedValue(null, f.Type, f.ArrayDims, ro, f.ChanDir);
+        var elem = makeTypedValue(null, f.Type, f.ArrayDims, ro, f.ChanDir, f.KeyDims);
         elem.flag |= flagAddr | flagIndir;
         elem.addrBox = GoReflect.FieldAliasBox(v.addrBox, f);
         return elem;
@@ -799,7 +819,7 @@ public static ΔValue Field(this ΔValue v, nint i) {
     if (cur is null) {
         throw panic(Ꮡ(new ValueError("reflect.Value.Field", v.kind())));
     }
-    return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims, ro, f.ChanDir);
+    return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims, ro, f.ChanDir, f.KeyDims);
 }
 
 // UnsafePointer returns v's value as an unsafe.Pointer (v must be a Chan, Func, Map, Pointer, or
@@ -1468,7 +1488,7 @@ internal static ΔType canonType(ж<abi.Type> Ꮡt) {
     // type's per-parameter dims, without which `func([32]byte) bool` and `func([64]byte) bool`
     // (ONE managed delegate type, no arrayDims of their own) would share a wrapper and the first to
     // intern would answer In(0).Len() for both.
-    string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims, Ꮡt.Value.chanDir);
+    string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims, Ꮡt.Value.chanDir, Ꮡt.Value.keyDims);
     return s_canonTypeCache.GetOrAdd((st, dimsKey), _ => new rtypeжΔType(toRType(Ꮡt)));
 }
 
@@ -1499,7 +1519,7 @@ internal static ΔType toType(ж<abi.Type> Ꮡt) {
 
 // String returns the Go source type string (`main.Point`, `[]int`, `*T`) — the value of %T.
 internal static @string String(this ж<rtype> Ꮡt) {
-    return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims, Ꮡt.Value.t.chanDir);
+    return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims, Ꮡt.Value.t.chanDir, Ꮡt.Value.t.keyDims);
 }
 
 // Name returns the type's name within its package (empty for an unnamed composite). The gate is
@@ -1540,17 +1560,22 @@ internal static ΔType Elem(this ж<rtype> Ꮡt) {
     nint[]? dims = Ꮡt.Value.t.arrayDims;
     nint kind = st is null ? -1 : GoReflect.KindOf(st);
     bool throughPointer = kind == GoReflect.Pointer || kind == GoReflect.UnsafePointer;
-    nint[]? elemDims = throughPointer ? dims : dims is { Length: > 1 } ? dims[1..] : null;
+    // A MAP's carried dims are its ELEMENT's, so they pass unshifted exactly as a pointer's do —
+    // the slot means "what Elem() hands down" for every kind but an array, which consumes its head.
+    nint[]? elemDims = throughPointer || kind == GoReflect.Map ? dims : dims is { Length: > 1 } ? dims[1..] : null;
     // A pointer hands its POINTEE's channel direction down the same unshifted way — the hop
     // `new(chan<- string)` takes to reach Elem().String(). A channel's own direction describes the
-    // channel and stops here.
+    // channel and stops here. A map's KEY dims describe the key, so they stop at a map and descend
+    // only through a pointer, whose cargo is its pointee's whole type.
     GoChanDir elemChanDir = throughPointer ? Ꮡt.Value.t.chanDir : GoChanDir.Unstamped;
-    return toType(abi.synthType(GoReflect.ElementType(st), elemDims, null, elemChanDir));
+    nint[]? elemKeyDims = throughPointer ? Ꮡt.Value.t.keyDims : null;
+    return toType(abi.synthType(GoReflect.ElementType(st), elemDims, null, elemChanDir, elemKeyDims));
 }
 
-// Key returns a map type's key type.
+// Key returns a map type's key type — dimensioned from the descriptor's keyDims cargo, the one
+// accessor arrayDims cannot feed (see abi.Type.Key).
 internal static ΔType Key(this ж<rtype> Ꮡt) {
-    return toType(abi.synthType(GoReflect.KeyType(Ꮡt.Value.t.sysType)));
+    return toType(abi.synthType(GoReflect.KeyType(Ꮡt.Value.t.sysType), Ꮡt.Value.t.keyDims));
 }
 
 // Len returns an array type's length — the descriptor's carried dims (non-identity cargo; 0
@@ -2087,11 +2112,17 @@ private static @string structTypePkgPath(System.Type st, GoReflect.GoFieldInfo[]
 // structFieldDescriptor mints a field's descriptor exactly as abi's synthesizeStructType does, so
 // the identity walk and the abi.StructType a caller can read are built from one rule.
 private static ж<abi.Type> structFieldDescriptor(GoReflect.GoFieldInfo f) {
-    nint[]? dims = GoReflect.KindOf(f.Type) == GoReflect.Array ? f.ArrayDims : null;
+    nint kind = GoReflect.KindOf(f.Type);
+    // An ARRAY field's dims come off the initializer the converter emitted, read from the declaring
+    // struct's zero instance; a POINTER's and a MAP's come off the [GoArrayDims] stamp, because a
+    // nil pointee and an absent map entry reveal nothing — and both hops are ordinary at a DECODE
+    // target, which is a struct nothing has populated yet.
+    nint[]? dims = kind == GoReflect.Array || kind == GoReflect.Pointer || kind == GoReflect.Map ? f.ArrayDims : null;
+    nint[]? keyDims = kind == GoReflect.Map || kind == GoReflect.Pointer ? f.KeyDims : null;
     // A channel field carries its DIRECTION the same way an array field carries its length: off
     // the initializer the converter emitted, read from the declaring struct's zero instance.
-    GoChanDir fieldDir = GoReflect.KindOf(f.Type) == GoReflect.Chan ? f.ChanDir : GoChanDir.Unstamped;
-    return abi.synthType(f.Type, dims, null, fieldDir);
+    GoChanDir fieldDir = kind == GoReflect.Chan ? f.ChanDir : GoChanDir.Unstamped;
+    return abi.synthType(f.Type, dims, null, fieldDir, keyDims);
 }
 
 // PointerTo returns the pointer type with element t — the managed ж<T> pointer form,

@@ -322,6 +322,47 @@ public static partial class GoReflect
         return zero is null ? null : ArrayDimsOfValue(field.GetValue(zero));
     }
 
+    /// <summary>
+    /// The array dims a STRUCT FIELD carries as a converter STAMP — <c>[GoArrayDims]</c>, the dims
+    /// the field's descriptor hands down through <c>Elem()</c> — or null when the field carries none.
+    /// </summary>
+    /// <remarks>
+    /// The stamp exists for the two hops <see cref="FieldArrayDims"/>' zero-instance route cannot
+    /// see: a nil <c>ж&lt;array&lt;T&gt;&gt;</c> has no pointee to measure, and a nil map has no
+    /// entry whose element could reveal a length. Both are ordinary shapes at a DECODE target —
+    /// encoding/gob reaches <c>*[3]float64</c> and <c>map[[2]string][2]*float64</c> fields through
+    /// <c>reflect.Type.Field(i)</c> on a struct nothing has populated yet — so the datum has to be in
+    /// the emitted C#, exactly as it is for a func parameter.
+    /// </remarks>
+    public static nint[]? FieldStampedDims(FieldInfo field)
+    {
+        return field.GetCustomAttributes(typeof(GoArrayDimsAttribute), false) is [GoArrayDimsAttribute { Dims.Length: > 0 } stamped]
+            ? toNintDims(stamped.Dims)
+            : null;
+    }
+
+    /// <summary>
+    /// The array dims of a map-typed STRUCT FIELD's KEY, from the converter's
+    /// <c>[GoMapKeyDims]</c> stamp — what <c>reflect.Type.Key()</c> hands down — or null when the
+    /// field carries none.
+    /// </summary>
+    public static nint[]? FieldMapKeyDims(FieldInfo field)
+    {
+        return field.GetCustomAttributes(typeof(GoMapKeyDimsAttribute), false) is [GoMapKeyDimsAttribute { Dims.Length: > 0 } stamped]
+            ? toNintDims(stamped.Dims)
+            : null;
+    }
+
+    private static nint[] toNintDims(int[] dims)
+    {
+        nint[] result = new nint[dims.Length];
+
+        for (int i = 0; i < dims.Length; i++)
+            result[i] = dims[i];
+
+        return result;
+    }
+
     // -------- channel direction (abi.Type.ChanDir; rtype.String; assignability's chan arm) --------
     //
     // The same cargo shape as the array dims above, at the same finite set of positions, and for
@@ -724,12 +765,7 @@ public static partial class GoReflect
                 continue;
 
             dims ??= new nint[]?[declared.Length];
-            nint[] parsed = new nint[stamped.Dims.Length];
-
-            for (int j = 0; j < parsed.Length; j++)
-                parsed[j] = stamped.Dims[j];
-
-            dims[i] = parsed;
+            dims[i] = toNintDims(stamped.Dims);
         }
 
         return dims;

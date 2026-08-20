@@ -398,6 +398,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFieldChainBoxReceiver() => CheckTarget("FieldChainBoxReceiver");
 
     [TestMethod]
+    public void CheckFieldDimsCargo() => CheckTarget("FieldDimsCargo");
+
+    [TestMethod]
     public void CheckFieldNamedAsType() => CheckTarget("FieldNamedAsType");
 
     [TestMethod]

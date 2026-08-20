@@ -421,6 +421,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckFieldChainBoxReceiver() => CheckTarget("FieldChainBoxReceiver");
 
     [TestMethod]
+    public void CheckFieldDimsCargo() => CheckTarget("FieldDimsCargo");
+
+    [TestMethod]
     public void CheckFieldNamedAsType() => CheckTarget("FieldNamedAsType");
 
     [TestMethod]

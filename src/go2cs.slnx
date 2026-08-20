@@ -1,4 +1,4 @@
-﻿<Solution>
+<Solution>
   <Configurations>
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
@@ -390,6 +390,7 @@
     <Project Path="tests/Behavioral/EscapedLoopVarSiblingIndex/EscapedLoopVarSiblingIndex.csproj" />
     <Project Path="tests/Behavioral/ExprSwitch/ExprSwitch.csproj" />
     <Project Path="tests/Behavioral/FieldChainBoxReceiver/FieldChainBoxReceiver.csproj" />
+    <Project Path="tests/Behavioral/FieldDimsCargo/FieldDimsCargo.csproj" />
     <Project Path="tests/Behavioral/FieldNameShadowsLoopVar/FieldNameShadowsLoopVar.csproj" />
     <Project Path="tests/Behavioral/FieldNameTypeMethodCollision/FieldNameTypeMethodCollision.csproj" />
     <Project Path="tests/Behavioral/FieldNamedAsType/FieldNamedAsType.csproj" />
