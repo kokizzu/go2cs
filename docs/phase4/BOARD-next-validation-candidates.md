@@ -13849,4 +13849,114 @@ would drift the same way. It is benign (base64 validates **17/17** with the bloc
 which reproduced `0 2` and `0 6` on the same two files with an identical 17/17. Recorded so the next
 sweep reader restores it instead of chasing it — or levels all three at a rebank.
 
+## ✅ `net/netip`'s CS0019 pair CLOSES, and the churn the deferral was waiting on measures **ZERO** (2026-08-20, lane `claude/runtime-debug`)
+
+The board deferred this one explicitly: *"Bounded: the shape is a complement of a BasicLit whose
+go/types type is a basic other than `int` … Deliberately NOT taken here — it is a production-reachable
+emission change and belongs in an arc with room to measure its corpus churn."* The measurement is the
+deliverable, so it was taken first and the fix shaped around it.
+
+### The defect, and why exactly ONE width has it
+
+Go's `&^` renders `& ~`, and C# applies `~` to a **promoted** operand — so a bare literal complements
+as `int`. Whether that binds is a property of the enclosing result type, and it binds everywhere but
+one place:
+
+| result | `x &^ 1` emits | binds? |
+|:--|:--|:--|
+| narrower than `int` (`byte`, `ushort`) | `(byte)(x & ~1)` | yes — promotes to `int`, truncates under the result cast |
+| `uint32` | `(uint32)(u & ~1)` | yes — `uint & int` promotes **both** to `long` (`debug/macho`'s `Magic32 &^ 1` is the corpus instance) |
+| `int64` | `(int64)(x & ~1)` | yes — the `int` widens |
+| **`uint64`** | `(uint64)(x & ~1)` | **no** — `ulong` and `int` share no type C# converts to → **CS0019** |
+| `nuint` / `uintptr` | already cast | yes — this file's native-int block has imposed the type since `NativeIntConstMask` |
+
+So the rule is not "cast constants under `&^`"; it is **"`uint64` completes the unsigned-64 group
+`uint64`/`nuint`/`uintptr` that `convBinaryExpr.go` already treats together"** (the constant-fold arm
+groups the same three, for the same reason). The other two carry the cast already; this adds the third.
+
+### The predicate is a BasicLit, and that is what makes the churn zero
+
+`tv.Value != nil` would have been the obvious predicate and would have been wrong. A **BasicLit is the
+only operand shape that reaches `~` untyped**:
+
+* a named untyped-const ref is cast by the `isUntypedNamedConstRef` block directly above;
+* a Go conversion (`uint64(1)`) already renders typed;
+* a **computed** constant subtree carries the width cast from the shift-retype path —
+  `hi &^ (1 << 63)` emits `~(((uint64)1 << 63))` today, and re-casting it would be pure churn.
+
+That distinction is why the corpus number below is 0 and not "a few dozen".
+
+### The churn, measured twice under identical seeding
+
+Two seeded whole-stdlib reconverts, each into a FRESH wiped root (6,004 files seeded; `bin`/`obj`/
+`Generated` excluded — the converter reads none of them, and the analyzer's generated filenames blow
+past MAX_PATH under any temp root), classified emitted-vs-seeded by sentinel mtime:
+
+| Seeded full-corpus reconvert | emitted | identical | differing | new | marked | clobbered |
+|:--|--:|--:|--:|--:|--:|--:|
+| **this branch** (549 s) | 1,664 | 1,606 | **58** | 0 | 63 | **0** |
+| **CONTROL**, master's converter (548 s) | 1,664 | 1,606 | **58** | 0 | 63 | **0** |
+
+The differing **sets** are identical file for file — `diff` of the two lists is empty — so the set
+difference is **∅ and the fix moves ZERO corpus files.** The 58 are master's own standing pre-regen
+drift (the known `core/README.md` attribution phantom, `encoding/xml/README.md`, and a spread of
+`doc.cs`), unchanged by this lane and outside its scope. Full CNR agrees from the other side: 628
+behavioral packages re-transpiled unconditionally, **one** mover — the guard itself — 0 NOT MEASURED.
+
+**So the deferral's premise is now answered: the churn is nil, and the fix stands.**
+
+### Guard, proven failing-first — including the negative half
+
+`BitwiseUntypedConst` already guards this exact family for a NAMED untyped const
+(`Float64bits(f) &^ signBit`); the bare literal is its sibling and now lives beside it. Before the fix
+the project failed to COMPILE with exactly one diagnostic, and it is netip's verbatim:
+
+```
+main.cs(13,21): error CS0019: Operator '&' cannot be applied to operands of type 'ulong' and 'int'
+```
+
+`clearLow32` (`uint32`) is the negative control and it is the load-bearing half: it compiled **before**
+the fix and emits `(uint32)(u & ~1)` **unchanged after** it, which is what demonstrates the change is
+exactly as wide as the defect rather than a blanket cast.
+
+### Gates
+
+| Gate | Result |
+|:--|:--|
+| converter `go test ./...` | **ok**, 469 s |
+| full CNR (628 behavioral packages, unconditional re-transpile) | **1 mover** — the guard's own `main.cs` — 0 NOT MEASURED, 0 WARNING, 1,080 s |
+| seeded whole-stdlib reconvert, branch **and** control | 63 marked / 0 clobbered both; differing sets **identical**; 549 s / 548 s |
+| `BitwiseUntypedConst` | Transpile/Compile/Target/Output all pass; failing-first proven |
+
+### The measurement hazard this half paid for
+
+**A seeded reconvert cannot run under the scratchpad path.** At 161 characters it leaves too little
+headroom under Windows MAX_PATH, and the seed copy dies part-way through `archive/tar` on an
+`ImplementGenerator` output whose filename alone is ~140 characters — reported as
+`Could not find a part of the path`, which reads like a missing source and is not one. Use a SHORT
+lane-prefixed root and exclude the build-output directories; the ritual's inputs (committed
+`.cs`/`.csproj`/`README.md`, `version.props`, `docs/validation`) are all that is actually seeded for.
+
+### `net/netip` re-censused: 7 build errors → **5**, and the residual is ONE root
+
+The pipeline was re-run against the fixed converter. The CS0019 pair is gone and nothing replaced it;
+`net/netip` now stops on **five diagnostics in a single family**, all `fuzz_test.cs`:
+
+```
+CS0315 ×5 — 'ΔAddr' / 'AddrPort' ×2 / 'ΔPrefix' ×2 cannot be used as type parameter 'P' in
+           checkStringParseRoundTrip<P>: no boxing conversion to 'netip_test_package.netipTypeCmp'
+```
+
+That is the board's recorded structural root, unchanged and unmoved: *a generic function constrained by
+a TEST-declared interface cannot be instantiated with a PRODUCTION type under the white-box REFERENCE
+model.* C# enforces `where P : netipTypeCmp` **nominally**, and `go2cs-gen` can only make a production
+type satisfy a test-declared interface with an ADAPTER class, never the partial declaration a nominal
+constraint needs — `crypto/x509`'s identity split seen from the other side. **No bank was expected and
+none was taken**: the package still produces zero verdicts. What changed is that its build wall is now
+a single named question with a coordinator-level answer (reference vs recompile model), rather than a
+structural root plus a bounded emission defect sitting in front of it.
+
+The other three roots the previous lane closed (the exported-over-unexported accessibility clamp, the
+same-package CS0426, the embedded `comparable` constraint) stayed closed across this reconvert.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
