@@ -107,6 +107,19 @@ func main() {
 	fmt.Println("frames files use host separator:", framesBack)
 
 	fmt.Println("traceback uses host separator:", stackHasBackslash())
+
+	methodTrace := recvT(0).valueFrame()
+	fmt.Println("traceback names pointer receiver:", hasSub(methodTrace, "main.(*recvT).ptrFrame"))
+	fmt.Println("traceback names value receiver:", hasSub(methodTrace, "main.recvT.valueFrame"))
+	fmt.Println("traceback drops pointer receiver:", hasSub(methodTrace, "main.ptrFrame"))
+	fmt.Println("traceback drops value receiver:", hasSub(methodTrace, "main.valueFrame"))
+
+	genTrace := genRecv[int]{}.genFrame()
+	fmt.Println("traceback names generic receiver:", hasSub(genTrace, "main.genRecv[...].genFrame"))
+
+	plainTrace := plainFrame()
+	fmt.Println("traceback names plain func:", hasSub(plainTrace, "main.plainFrame"))
+	fmt.Println("traceback parenthesizes plain func:", hasSub(plainTrace, "(*"))
 }
 
 // hasByte reports whether s contains b. Hand-rolled rather than strings.Contains so this guard
@@ -158,3 +171,49 @@ func stackHasBackslash() bool {
 	n := runtime.Stack(buf, false)
 	return hasByte(string(buf[:n]), '\\')
 }
+
+// hasSub reports whether s contains sub. Hand-rolled for the same reason hasByte is: the
+// project's reference set is converter-emitted, so the guard adds no package of its own.
+func hasSub(s, sub string) bool {
+	if len(sub) > len(s) {
+		return false
+	}
+	for i := 0; i+len(sub) <= len(s); i++ {
+		j := 0
+		for j < len(sub) && s[i+j] == sub[j] {
+			j++
+		}
+		if j == len(sub) {
+			return true
+		}
+	}
+	return false
+}
+
+// stackText renders the current goroutine's traceback the way a program reads it.
+func stackText() string {
+	buf := make([]byte, 8192)
+	n := runtime.Stack(buf, false)
+	return string(buf[:n])
+}
+
+// The receiver-naming guard. Go's traceback names a METHOD frame with its receiver TYPE between
+// the package and the method — `main.(*recvT).ptrFrame` for a pointer receiver, `main.recvT.valueFrame`
+// for a value one, `main.genRecv[...].genFrame` for a generic one (measured against a Go control,
+// which prints the literal `[...]` rather than the instantiated argument). A converted Go method is
+// a C# EXTENSION method on the package class with the receiver as its first parameter, so the flat
+// `<pkg>.<name>` form drops the receiver entirely and answers `main.ptrFrame`. That is observable:
+// runtime/debug's own TestStack greps a traceback for `runtime/debug_test.(*T).ptrmethod`.
+type recvT int
+
+type genRecv[X any] struct{ v X }
+
+func (t *recvT) ptrFrame() string { return stackText() }
+
+func (t recvT) valueFrame() string { return t.ptrFrame() }
+
+func (g genRecv[X]) genFrame() string { return stackText() }
+
+// plainFrame is the negative control: a package-level func has no receiver, so its frame must stay
+// exactly `main.plainFrame` and must NOT grow a parenthesized qualifier.
+func plainFrame() string { return stackText() }

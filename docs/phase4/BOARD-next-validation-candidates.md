@@ -13655,4 +13655,198 @@ to root them rather than left as sweep noise.
    sweep regenerated (`docs/validation/current/archive.tar.md`, which flipped
    `TestFileInfoHeaderSymlink` to `skip`/`skip` — both runtimes agreeing, on an unprivileged host) was
    **restored**, not banked: it encodes this machine's symlink privilege, not a validation change.
+
+## ⚠ `runtime/debug`'s COMPILE WALL IS CLOSED — 0 of 9 → **2 of 9**, and the traceback's RECEIVER half lands; the residual is three capability roots and the deferred position map (2026-08-19, lane `claude/runtime-debug`)
+
+The board carried this package at **0 of 9 behind CS0264 + CS0715**, "the same static-class-operator
+defect as `internal/reflectlite`. Two packages, one root" — and then recorded, when reflectlite's
+CS0715 retired, that `runtime/debug` was "still unmeasured since the CS0715 retirement". It is
+measured now, and the recorded wall is entirely gone: the host **builds with zero CS errors** (warnings only, all
+pre-existing corpus classes) and every one of the nine verdicts is real.
+
+### The re-measure
+
+**2 of 9 match** — `TestSetGCPercent` skip-parity (Go skips it on Windows: `testenv.SkipFlaky`,
+issue 20076) and `TestSetMaxThreadsOvf` pass. Go's own baseline for the package is 8 pass + 1 skip,
+so the denominator is right. The seven failures decompose into **four roots, none of them a
+converter defect**:
+
+| Test(s) | Root | Class |
+|:--|:--|:--|
+| `TestWriteHeapDumpNonempty`, `TestWriteHeapDumpFinalizers`, `TestWriteHeapDumpTypeName` | `WriteHeapDump` throws — Go's heap-dump format is a serialization of the Go heap through Go's own type descriptors, which do not exist under the CLR | capability, **outside the four disclosure classes** |
+| `TestReadGCStats` | no per-GC pause HISTORY. `ReadMemStats` reports a real `NumGC` (6) and `PauseTotalNs` but leaves `PauseNs`/`PauseEnd`/`LastGC` zero; the hand-owned `readGCStats` reports the same aggregates and an empty history. The test is a **self-consistency** check between the two surfaces (`len(stats.Pause) == min(NumGC, 256)`), so it needs no *real* pause values — it needs the two to agree, which today they do not | capability, **outside the four classes** |
+| `TestFreeOSMemory` | `MemStats.HeapReleased` is deliberately zero, so `after.HeapReleased <= before.HeapReleased` fires as `no memory released: 0 -> 0` | capability, **outside the four classes** |
+| `TestStack` | the traceback's file paths point at the emitted `.cs`, where Go names the `.go` — the **deferred Go-source position map** the board already carries | deferred arc |
+
+Three of the four would need a disclosure class that does not exist — "a runtime capability the
+managed runtime does not provide", which none of the classes actually in use reaches
+(`alloc-profile`, `alloc-count-semantics`, `codegen-liveness`, `host-limit`, `chan-direction`; see
+the class-count note below) — and the fourth is coordinator-deferred. **The lane therefore did not
+bank, did not disclose, and did not fake any of the three** — a one-byte write would satisfy all
+three heapdump assertions (none of them parses the dump), and that is exactly the kind of
+technicality the four-class bar exists to refuse. Boarded for a ruling, not taken.
+
+### What DID land: a traceback frame is SPELLED Go's way on the receiver, too
+
+Chasing `TestStack` surfaced the second half of the fidelity gap `35c806679` opened. That commit
+separated *which source a frame's path points at* (the deferred position map) from *how the path is
+written* (an ordinary fidelity gap, closed). The same separation applies one field over: **which
+function a frame names, versus how the NAME is written.**
+
+**Go names a method frame with its receiver type between the package and the method.** Measured on
+this box with a Go control, on both surfaces a program can read:
+
+| shape | Go's traceback / `Frame.Function` |
+|:--|:--|
+| pointer receiver | `main.(*T).ptrmethod` |
+| value receiver | `main.T.method` |
+| generic receiver | `main.G[...].gmethod` — the LITERAL `[...]`, never the instantiated argument |
+| package-level func | `main.plain` — no qualifier |
+
+`goFrameName` (`runtime/managed_impl.cs`) emitted the flat `<pkg>.<name>` for all of them, so a
+method frame answered `runtime/debug_test.ptrmethod` where Go answers
+`runtime/debug_test.(*T).ptrmethod`. A converted Go method is a C# **extension** method on the
+package class whose first parameter is the receiver — `this ref T` for a pointer receiver (the
+`[GoRecv]` form), `this T` for a value one, RecvGenerator's boxed `this ж<T>` overload for the
+pointer form reached through a pointer value — and that `this` is the whole discriminator: a
+package-level func is a plain static method and keeps its bare name, exactly as Go renders one. The
+boxed form is detected through `IPointer<T>` rather than `ж<T>` itself, so a generated named-pointer
+wrapper answers the same way.
+
+Both call sites of `goFrameName` gain it, which is what Go does: `appendGoFrames` (the rendered
+traceback) and `internCallerFrame` (every `Caller`/`Callers`/`CallersFrames` answer's
+`Frame.Function`) — the Go control confirms the two spellings are identical upstream.
+
+**Proven against Go's own test, not only against a guard.** `TestStack`'s assertion failures went
+**7 → 5** on the same pipeline run: the two function-name assertions
+(`runtime/debug_test.(*T).ptrmethod`, `runtime/debug_test.T.method`) now agree with Go, and the five
+that remain are all the file-path half — four `expected prefix "\truntime/debug/stack_test.go"` and
+one `"\ttesting/testing.go"`. That is the position-map arc and nothing else, so `runtime/debug` is
+now a **named consumer** of it: closing the position map is worth one more verdict here.
+
+**Guard, proven failing-first** (`RuntimeCallerFrames`, the project that already guards `Caller`'s
+frame accounting and the separator): five assertions across the three shapes plus two negative
+controls, output-compared against `go run`. Before the fix exactly those five diverged, all
+inverted, and all sixteen pre-existing assertions still matched:
+
+| assertion | Go | C# before | C# after |
+|:--|:--:|:--:|:--:|
+| traceback names pointer receiver | true | **false** | true |
+| traceback names value receiver | true | **false** | true |
+| traceback drops pointer receiver | false | **true** | false |
+| traceback drops value receiver | false | **true** | false |
+| traceback names generic receiver | true | **false** | true |
+| traceback names plain func (control) | true | true | true |
+| traceback parenthesizes plain func (control) | false | false | false |
+
+The two controls are the point of the negative half: a package-level func must NOT grow a
+qualifier, and the guard fails in both directions.
+
+### The measurement hazard this lane paid for
+
+**`BehavioralRunner` builds `Release`; a worktree's stale `bin/Debug` is a FALSE reading.** The
+first failing-first diff was taken against `bin\Debug\net9.0\<proj>.exe`, which in a reused worktree
+was eleven days old — from before `35c806679` landed — so it printed 11 of 23 lines and the diff
+read as "the C# side crashes at the separator assertions", a defect that does not exist. The
+runner's artifact is `bin\Release\net9.0`; against it the failing-first state was the clean
+five-line inversion above. A direct `dotnet build <behavioral>.csproj` is also NOT a substitute for
+reading the runner's artifact: outside solution context `$(go2csPath)` does not resolve and the
+build dies in CS0234/CS0246 on `golib` itself, which reads like a corpus break and is not one.
+
+### What this lane did NOT do
+
+No roster row, no proof page, no disclosures, no committed test sources: `runtime/debug` does not
+validate at 2 of 9. The package's `-tests` artifacts are removed and the corpus restored, so the
+tracked changes are the one runtime hand-own, the guard's Go source, and its three regenerated
+emission files.
+
+### A doc drift found while ruling the disclosures — the roster says FOUR classes, the manifests use FIVE
+
+`docs/ValidatedTestPackages.md` states "Four classes exist" and names `alloc-profile`,
+`codegen-liveness`, `host-limit`, `chan-direction`. The 21 committed manifests use **five** class
+strings: those four (41 / 5 / 26 / 3 uses) plus **`alloc-count-semantics`** (6 uses, in `context`,
+`io`, `os`, `strings`), which the board itself calls "the established `alloc-count-semantics` class
+(io, strings, bytes)" and `ConversionStrategies-Reference.md` records as `strings`' first use. It is
+a real, ruled class — `AllocsPerRun` counts mallocs in Go and BYTES on the CLR, so a count assert
+can never agree — and it is simply missing from the roster's prose. Not fixed here (it changes
+published roster text and the framing its arithmetic hangs off); flagged for a coordinator pass.
+
+It changes nothing about this package: none of the five reaches "a runtime capability the managed
+runtime does not provide", which is what all three of `runtime/debug`'s capability roots need.
+
+### What `runtime/debug` needs, ranked — three rulings and one arc
+
+1. **A ruling on the capability class.** `WriteHeapDump` (3 verdicts), the per-GC pause history
+   (1), and `HeapReleased` (1) are five of the seven, and all three are the same question: *may a
+   package disclose a runtime capability the CLR does not provide?* The `host-limit` bar is written
+   narrowly and deliberately — "a structural property of the deployment shape, never an
+   unimplemented-but-fixable defect" — and none of these is a deployment-shape property. Two of the
+   three are also arguably fixable at real cost, which is what makes it a ruling rather than a
+   reading:
+   * **`HeapReleased`** has a managed analogue (the cumulative decrease in
+     `GCMemoryInfo.TotalCommittedBytes`, i.e. memory this process handed back), but it is a NEW
+     measurement surface every `ReadMemStats` consumer inherits, `runtime/metrics` included.
+   * **The pause history** is reachable — a gen2 GC callback or an EventPipe listener can record
+     real `PauseNs`/`PauseEnd`, and `NumGC` already counts gen2 collections, so the ring would line
+     up by construction — but it is an always-on recorder every converted program pays for, and
+     finalizer-timing skew would make the count assert flaky. A design, not a defect fix.
+   * **`WriteHeapDump`** is the one with no honest managed form at all: Go's format is defined over
+     Go's type descriptors. Note the trap for whoever takes it — **none of the three tests parses
+     the dump** (they check `size >= 1` and "does not crash"), so a one-byte write banks all three
+     and proves nothing.
+2. **The position map** — `TestStack`'s remaining five assertions, and this package is now a named
+   consumer alongside `log`, `log/slog` and `flag`. The frame-SPELLING half is fully paid on both
+   axes now (separator `35c806679`, receiver here); what is left is purely the `.go` identity. Two
+   details for whoever takes it, both measured here: the test's `frame()` helper checks a code
+   string AND a file prefix per frame, and **all five code checks now pass** — the five failures are
+   one file-prefix miss each. And the expected prefix is the bare `-trimpath` form
+   (`runtime/debug/stack.go`, no GOROOT), because the test spawns a child to read the binary's
+   BAKED-IN GOROOT and the converted `runtime.GOROOT()` answers empty. Incidentally that child
+   round trip — `os.Executable()` + `exec.Command` on the converted host — WORKS; it is only the
+   path identity that is missing.
+3. **Nothing else.** There is no converter defect in this package. Whoever returns after a ruling
+   inherits a package that builds clean, produces nine honest verdicts, and has each of them rooted.
+
+### Gates
+
+A `src/core/runtime` hand-own change plus one behavioral guard; **no converter change**, so no CNR is
+owed — and the behavioral suite's Transpile+Target phases are the stronger form of the same check.
+
+| Gate | Result |
+|:--|:--|
+| GolibTests | **172/172**, 16 s |
+| `go2cs.slnx` Debug `--no-incremental` | **0 errors**, 617 s |
+| Full behavioral suite | **PASS** — 601 projects: Transpile 601, Compile 601/0/0, **Target 601/601 byte-identical**, Output 575 + 26 skip, 0 fail, 2,838 s |
+| Targeted validated sweep, the traceback blast radius | **20 packages / 1,702 verdicts / 0 fail**, 839 s |
+| `runtime/debug` pipeline, before and after | 2 of 9 both runs; `TestStack` 7 assertion misses → **5** |
+
+The blast radius was re-derived against the CURRENT roster rather than reused: the board's census for
+the separator fix named 11 packages, and it is **12** now — `internal/reflectlite` joined the roster on
+2026-08-18, after that census was taken. Six roster packages' own `_test.go` read a traceback
+(`context`, `encoding/base64`, `encoding/json`, `io`, `log/slog/internal/benchmarks`, `sync`) and six
+more read one from converted PRODUCTION code (`database/sql`, `go/types`, `internal/fuzz`,
+`internal/reflectlite`, `os/exec`, `testing/slogtest`); substring filters pulled in eight more for free.
+Two facts narrow the risk further, both measured: **only `RuntimeCallerFrames`** in the whole 601-project
+behavioral corpus reads a traceback at all, and every Go test that pins `Frame.Function` (`log/slog`'s
+two) pins a **package-level** name, which this change leaves untouched by construction.
+
+### Standing post-sweep dirt, classified — and one PRE-EXISTING staleness worth recording
+
+Every tracked file the sweep moved was restored, not banked. All of it is the documented classes:
+CRLF phantoms (`base64_test.cs`, five `encoding/json` `*_test.cs`), the `global::go.*` root escape
+(`bufio/{bufio,scan}.cs`, `internal/reflectlite/{swapper,type,value}.cs`), and the `initᴛᴛtests()`
+`package_init.cs` hook at +7 real lines (`go/types`, `internal/fuzz`).
+
+One is NOT on the board and should be: **`encoding/base64`'s committed test-info files are stale
+against the current converter.** A `-tests` re-run emits them SMALLER — `package_test_info.cs` loses
+six lines and `package_info_internal_test.cs` two, all of it the `<ImportedTypeAliases>` block's
+`bytes`/`strings` aliases and four `GoImplicitConv<…, ж<…>>(Indirect = true)` records. Root: the
+converter mints that block from each imported package's **production** `package_info.cs`, and
+`bytes`/`strings` no longer carry those records there — they live in `bytes/package_info_internal_test.cs`
+now — so the committed files predate that move. `encoding/base32` and `fmt` hold the same records and
+would drift the same way. It is benign (base64 validates **17/17** with the block empty) and it is
+**pre-existing, not this lane's**: A/B'd by stashing the runtime change and re-running the same filter,
+which reproduced `0 2` and `0 6` on the same two files with an identical 17/17. Recorded so the next
+sweep reader restores it instead of chasing it — or levels all three at a rebank.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

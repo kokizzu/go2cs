@@ -80,6 +80,19 @@ private static readonly object callerFileUsesHostˢ = (@string)"caller file uses
 private static readonly object framesFilesUseForwardˢ = (@string)"frames files use forward slash:"u8;
 private static readonly object framesFilesUseHostˢ = (@string)"frames files use host separator:"u8;
 private static readonly object tracebackUsesHostˢ = (@string)"traceback uses host separator:"u8;
+private static readonly object tracebackNamesPointerˢ = (@string)"traceback names pointer receiver:"u8;
+private static readonly @string mainRecvTPtrFrameˢ = "main.(*recvT).ptrFrame"u8;
+private static readonly object tracebackNamesValueˢ = (@string)"traceback names value receiver:"u8;
+private static readonly @string mainRecvTValueFrameˢ = "main.recvT.valueFrame"u8;
+private static readonly object tracebackDropsPointerˢ = (@string)"traceback drops pointer receiver:"u8;
+private static readonly @string mainPtrFrameˢ = "main.ptrFrame"u8;
+private static readonly object tracebackDropsValueˢ = (@string)"traceback drops value receiver:"u8;
+private static readonly @string mainValueFrameˢ = "main.valueFrame"u8;
+private static readonly object tracebackNamesGenericˢ = (@string)"traceback names generic receiver:"u8;
+private static readonly @string mainGenRecvGenFrameˢ = "main.genRecv[...].genFrame"u8;
+private static readonly object tracebackNamesPlainFuncˢ = (@string)"traceback names plain func:"u8;
+private static readonly @string mainPlainFrameˢ = "main.plainFrame"u8;
+private static readonly object tracebackParenthesizesˢ = (@string)"traceback parenthesizes plain func:"u8;
 
 internal static void Main() {
     var (x, y) = sameSite();
@@ -102,6 +115,16 @@ internal static void Main() {
     fmt.Println(framesFilesUseForwardˢ, framesFwd);
     fmt.Println(framesFilesUseHostˢ, framesBack);
     fmt.Println(tracebackUsesHostˢ, stackHasBackslash());
+    @string methodTrace = ((recvT)0).valueFrame();
+    fmt.Println(tracebackNamesPointerˢ, hasSub(methodTrace, mainRecvTPtrFrameˢ));
+    fmt.Println(tracebackNamesValueˢ, hasSub(methodTrace, mainRecvTValueFrameˢ));
+    fmt.Println(tracebackDropsPointerˢ, hasSub(methodTrace, mainPtrFrameˢ));
+    fmt.Println(tracebackDropsValueˢ, hasSub(methodTrace, mainValueFrameˢ));
+    @string genTrace = new genRecv<nint>(nil).genFrame();
+    fmt.Println(tracebackNamesGenericˢ, hasSub(genTrace, mainGenRecvGenFrameˢ));
+    @string plainTrace = plainFrame();
+    fmt.Println(tracebackNamesPlainFuncˢ, hasSub(plainTrace, mainPlainFrameˢ));
+    fmt.Println(tracebackParenthesizesˢ, hasSub(plainTrace, "(*"u8));
 }
 
 internal static bool hasByte(@string s, byte b) {
@@ -142,6 +165,50 @@ internal static bool stackHasBackslash() {
     var buf = new slice<byte>(8192);
     nint n = Δruntime.Stack(buf, false);
     return hasByte(((@string)(buf[..(int)(n)])), (rune)'\\');
+}
+
+internal static bool hasSub(@string s, @string sub) {
+    if (len(sub) > len(s)) {
+        return false;
+    }
+    for (nint i = 0; i + len(sub) <= len(s); i++) {
+        nint j = 0;
+        while (j < len(sub) && s[i + j] == sub[j]) {
+            j++;
+        }
+        if (j == len(sub)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+internal static @string stackText() {
+    var buf = new slice<byte>(8192);
+    nint n = Δruntime.Stack(buf, false);
+    return ((@string)(buf[..(int)(n)]));
+}
+
+[GoType("num:nint")] partial struct recvT;
+
+[GoType] partial struct genRecv<X> {
+    internal X v;
+}
+
+[GoRecv] internal static @string ptrFrame(this ref recvT t) {
+    return stackText();
+}
+
+internal static @string valueFrame(this recvT t) {
+    return t.ptrFrame();
+}
+
+internal static @string genFrame<X>(this genRecv<X> g) {
+    return stackText();
+}
+
+internal static @string plainFrame() {
+    return stackText();
 }
 
 } // end main_package
