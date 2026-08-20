@@ -333,7 +333,7 @@ partial class runtime_package
 
             trace.Append(goFrameName(method)).Append("()\n");
 
-            string? file = frame.GetFileName();
+            string file = goSourcePath(frame.GetFileName());
 
             if (!string.IsNullOrEmpty(file))
                 trace.Append('\t').Append(file).Append(':').Append(frame.GetFileLineNumber()).Append('\n');
@@ -382,6 +382,20 @@ partial class runtime_package
         }
 
         return $"{importPath}.{name}";
+    }
+
+    // Spells a frame's source path the way Go spells one. Go records source paths with FORWARD
+    // slashes on every platform — on Windows `runtime.Caller` answers
+    // `C:/Program Files/Go/src/runtime/proc.go`, never the host's native separator — while the
+    // CLR hands back whatever the PDB holds, which on Windows is backslash-separated. The
+    // difference is observable, not cosmetic: a Go program can read the string, and Go's own
+    // suites match patterns against it (`flag`'s TestDefineAfterSet asserts
+    // `.*/flag_test.go:.*`), so reporting the host separator diverges from Go on a value the
+    // program under test inspects. Converted `path/filepath` accepts either separator on
+    // Windows, exactly as Go's does, so normalizing costs no consumer anything.
+    private static string goSourcePath(string? file)
+    {
+        return string.IsNullOrEmpty(file) ? string.Empty : file.Replace('\\', '/');
     }
 
     // ReadMemStats populates m with memory allocator statistics.
@@ -638,7 +652,7 @@ partial class runtime_package
             CallerFrameRecord record = new()
             {
                 Function = goFrameName(method),
-                File = frame.GetFileName() ?? string.Empty,
+                File = goSourcePath(frame.GetFileName()),
                 Line = frame.GetFileLineNumber()
             };
 

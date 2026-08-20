@@ -12966,4 +12966,209 @@ and was root-caused instead.
    Two `sync/atomic` verdicts today; the SHAPE is corpus-wide and currently silent.
 5. **`%#x` of a `uintptr`** — renders `%!x(uintptr=…)`; unrooted, corpus-wide reach.
 
+
+## 📐 The `Caller` path is SPELLED Go's way — this lane opened on two stale premises, and the one live defect it found is the half of `flag`'s `#line` remedy nobody priced (2026-08-19, lane `claude/edwards25519-a`, laptop G)
+
+This lane was briefed to implement `crypto/internal/edwards25519`'s ratified Option A and, as a stretch,
+`flag`'s `#line` arc. It re-measured first, per the standing never-trust-a-census-older-than-three-merges
+rule, and **both premises were stale — in opposite directions**. What follows is the re-measurement, the
+one live defect it surfaced, and the arc it re-prices with evidence.
+
+### Premise 1 — Option A is DONE, and the board still says it is not
+
+`81a08a15a` (2026-08-11, lane L4) landed the tuple-spec init-order relocation exactly as the ratified
+[`FINDING-init-order-tuple-specs.md`](FINDING-init-order-tuple-specs.md) §5A specified: both emission
+sub-shapes, the refusal warning retired, `TestPackageTupleVarSpecInitOrderRelocation` and the
+`InitOrderTupleSpecs` behavioral test as guards. `3907a064c` banked the production emission
+(`crypto/internal/edwards25519/package_init.cs`, calling `initᴛidentity(); initᴛgenerator();`), so the
+r60 harvest note that it is *"deliberately UNCOMMITTED"* is spent too.
+
+**The ranked queue handed on by row-harvest-3 still reads _"the ratified Option A tuple-spec init-order
+fix is still unimplemented"_ as its queue item 5.** That sentence is what produced this lane. Two board
+statements about one package disagreed, the older one was right, and nothing in the file said which was
+which. Recorded here as the correction.
+
+**Re-measured on master today** (`98bff3efc`; the converter was rebuilt from HEAD first — the binary in
+the worktree was a day stale and 20 KB different, which is route #1 waiting to happen):
+
+| | |
+|:--|:--|
+| verdicts | **55** |
+| matching | **54** |
+| divergent | **1** — `TestAllocations` |
+| excluded | 4 benchmarks (Phase-4D) |
+| skipped / disclosed | 0 / 0 |
+
+That reproduces r60's 54/55 exactly. The residual's **number has moved**: `TestAllocations` now reports
+**98 objects per run** (9,800 over 100 runs, 1,324,800 bytes) where r60 measured 109 — the week's arcs
+took eleven off it without anyone claiming them. It stays undisclosed on the standing ruling (a
+near-budget lower-bound count is an optimization target, not an impossibility) and the package stays
+unbanked, held by that one row. **No converter or corpus change was needed or made for edwards25519.**
+
+### Premise 2 — `flag`'s 23 of 24 is NOT on master
+
+The stretch was briefed against `flag` at 23 of 24 with `TestDefineAfterSet` as the sole residual. That
+measurement is real, but it belongs to **`claude/heavy-pair-7be2d2`**, which is pushed and unmerged:
+`7eeeda893` (the `ImplementGenerator` forward-name fix) and `db3bb4b9c` (the `reflect` reinterpret fix)
+are **not ancestors of master**. Measured on master, `flag` still sits behind its **CS1929 ×10** build
+wall — this lane re-ran the pipeline and got the same ten diagnostics against the same five test-file
+`flag.Value` implementors, with every verdict empty. So from master there is no 23-of-24 to finish, and
+`flag`'s `#line` consumer is not reachable until that branch merges.
+
+⚠ Worth generalizing: `git log --all` lists commits on branches HEAD does not contain, so a brief quoting
+a merged-sounding result is not evidence that the result is on master. `git merge-base --is-ancestor <sha>
+HEAD` is the check. It cost this lane one pipeline run to learn.
+
+### What DID land: `runtime.Caller` spells its path Go's way
+
+Chasing the `#line` remedy surfaced a live, previously unnamed defect one layer beneath it.
+
+**Go records source paths with forward slashes on every platform.** Measured directly on this Windows box
+with a Go control program: `runtime.Caller` and `runtime.CallersFrames` both answer
+`C:/Program Files/Go/src/runtime/proc.go` — forward slashes, drive letter and all. The CLR hands back
+whatever the PDB holds, which on Windows is backslash-separated, and `internCallerFrame` recorded it
+verbatim. Every converted program therefore answered `C:\…\log_test.cs` where Go answers
+`C:/…/log_test.go`: a divergence in the **spelling** of the path, sitting on top of the already-recorded,
+deliberately deferred divergence in what the path **points at**.
+
+The two are independent, and only the second is the position-map arc. The first is an ordinary fidelity
+gap, and it is now closed: `goSourcePath` (`runtime/managed_impl.cs`) applies Go's rule at the two places
+a frame's file reaches a program — `internCallerFrame`, which every `Caller` / `Callers` / `CallersFrames`
+answer is interned through, and `appendGoFrames`, which renders `runtime.Stack`'s traceback. Converted
+`path/filepath` accepts either separator on Windows exactly as Go's does, so no consumer pays for the
+normalization, and `log`'s `Lshortfile` trim — which looks for the last `/` — starts working as a side
+effect.
+
+**Guard, proven failing-first** (`RuntimeCallerFrames`, the project that already guards `Caller`'s frame
+accounting): five assertions across the three surfaces, output-compared against `go run`. Before the fix
+exactly those five lines diverged, and all eleven pre-existing assertions still matched:
+
+| assertion | Go | C# before | C# after |
+|:--|:--:|:--:|:--:|
+| caller file uses forward slash | true | **false** | true |
+| caller file uses host separator | false | **true** | false |
+| frames files use forward slash | true | **false** | true |
+| frames files use host separator | false | **true** | false |
+| traceback uses host separator | false | **true** | false |
+
+On a forward-slash host all five are trivially true on both sides, so the guard bites on Windows, which is
+where the two spellings differ — said in the test's own comment, so a Linux run's silence is not mistaken
+for coverage.
+
+### The `#line` arc, re-priced with four measurements
+
+The board prices the remedy for the source-file-identity class as *"emit `#line` directives … which would
+make BOTH the file and the line Go's, natively through the PDB."* Most of that holds; one load-bearing
+part does not. Measured in a probe project rather than argued:
+
+1. **`#line` does reach `StackFrame`.** A `#line 852 "…/flag_test.go"` region makes
+   `GetFileName()`/`GetFileLineNumber()` answer with that file and that line. The PDB route needs **no
+   golib change** — that part of the pricing is confirmed.
+2. **The `#line` DIRECTIVE cannot supply the separator.** Roslyn *resolves and normalizes* the
+   directive's path. Absolute forward-slash (`C:/Program Files/Go/…`), unix-rooted (`/go/src/…`) and
+   relative (`go/src/…`) forms all came back **backslash-separated** —
+   `C:\Program Files\Go\src\flag\flag_test.go`. No spelling of the directive survives. So `#line` alone
+   leaves `TestDefineAfterSet` failing, because `` `.*/flag_test.go:.*` `` needs a literal `/` before the
+   filename. **The remedy is two halves** — `#line` supplies the `.go` extension and the Go line,
+   `goSourcePath` supplies the separator — and they compose, because the normalizer runs over whatever
+   the PDB hands back. With the separator half landed, the arc's remaining distance on `flag` is **one
+   miss, not two**.
+   ⚠ One qualifier, measured in the same probe rather than left as a stronger claim than the evidence
+   supports: the **`PathMap` compiler option** *does* produce a forward-slash path
+   (`-p:PathMap=C:\Program Files\Go\src\=/goroot/` yielded `/goroot/flag/flag_test.go`). So the
+   separator is reachable at the compiler as well — just worse there. `PathMap` is a whole-compilation
+   option that rewrites **every** source path in the PDB including the emitted `.cs` positions, it needs
+   the GOROOT prefix as a per-package build property, and it does nothing for `runtime.Stack` or for any
+   frame reached without a directive. That is why this lane settled the separator at the runtime.
+3. **A CS diagnostic inside a `#line` region reports the GO position** — measured:
+   `C:\Program Files\Go\src\flag\flag_test.go(854,17): error CS0029`. This cost is not on the board and it
+   is not small: every census this board carries is of the shape `<file>.cs(NNN): CS####`, and the whole
+   compile-wall workflow reads diagnostics against emitted C# line numbers. A corpus-wide `#line` emission
+   relocates all of them onto `.go` files that are not in the project.
+4. **Per-statement `#line` adds ~28–47% more lines** to a converted file — measured on `flag/flag.cs`
+   (+28%), `strings/strings.cs` (+42%) and `edwards25519/edwards25519.cs` (+47%) — interleaved between
+   every statement, across ~3,200 corpus `.cs` files and ~600 behavioral goldens.
+
+Costs 3 and 4 are exactly the two the side-car alternative does **not** pay; it pays a file and a csproj
+item per package instead. That trade now has numbers on both sides, which it did not before. **This lane
+did not take either half of the emission arc**: it changes every golden in the corpus and cuts against a
+stated project goal, which is coordinator territory, and from master it would not have closed `flag`
+anyway (premise 2).
+
+### Blast-radius census for the separator fix
+
+A verdict can only move if something reads the file string. Measured over the 154-row roster:
+
+- **6 roster packages whose own `_test.go` call `runtime.Caller`/`Callers`/`Stack`/`debug.Stack`** —
+  `context`, `encoding/base64`, `encoding/json`, `io`, `log/slog/internal/benchmarks`, `sync`.
+- **5 more whose converted PRODUCTION code calls them** — `database/sql`, `go/types`, `internal/fuzz`,
+  `os/exec`, `testing/slogtest`. (The full production-consumer set is 14 packages; those five are the
+  ones on the roster.)
+- **The hand-owned `testing` host does NOT use `runtime.Caller`** — it reports panics through .NET's own
+  `ex.StackTrace` — so no verdict can move through the host itself.
+
+### Gates
+
+A `src/core/runtime` hand-own change plus one behavioral guard; no converter change, so no CNR is owed
+(CNR gates converter emission, and the one golden that moved here moved because its `.go` source did).
+
+| Gate | Result |
+|:--|:--|
+| `go2cs-stdlib.slnx` (`--no-incremental`) | **0 errors**, 157 warnings, 369 s |
+| `go2cs.slnx` (`--no-incremental`) | **0 errors**, 287 warnings, 728 s |
+| full behavioral suite | **PASS — 601 projects, 1,862.8 s**; Transpile 601, Compile 601/0/0, **Target 601/601 byte-identical**, Output 575 compared + 26 skip |
+| full `run-validated-sweep.ps1` (154 packages, 17,730 expected verdicts) | **152 pass / 2 fail**, 14,729 s (4 h 05 m) — both failures proven pre-existing, below |
+| `RuntimeCallerFrames` filtered | PASS all four phases; **failing-first proven** by the table above |
+
+CNR is not separately owed: it gates converter emission, there is no converter change, and the behavioral
+suite's Transpile + **Target** phases re-transpiled all 601 packages and byte-compared every golden —
+which is the stronger form of the same check. The one golden that moved moved because its `.go` source
+did, and it was re-baselined through `UpdateTestTargets --createTargetFiles` (which touched nothing else:
+no other `.cs.target`, no `*Tests.cs` test-class block).
+
+### Both sweep failures are PRE-EXISTING — and one of them is a banked row that has regressed on master
+
+Neither package's tests call `runtime.Caller`/`Callers`/`Stack` at all, and both were re-run individually
+to root them rather than left as sweep noise.
+
+- **`debug/dwarf` — a FLAKE.** Re-run alone it validates **40 of 40, 0 divergent, status `validated`**.
+  The sweep's failure was the Go oracle's own package-level `fail` at 0.97 s with every named test
+  passing. Nothing to chase; recorded so the next sweep reader does not chase it either.
+- **`crypto/tls` — a REAL, PRE-EXISTING regression against its own banked row.** ⚠ It banked at
+  **400 + 2 = 402** on 2026-08-18 (`154d5b5ce`). Measured today it is **397 of 402**, with five real
+  divergences, all Go=pass / C#=fail:
+
+  ```
+  TestBogoSuite   TestCertCache   TestMarshalUnmarshal   TestMarshalUnmarshal/*tls.SessionState   TestQUICHandshakeError
+  ```
+
+  **A/B'd against master with this lane's change reverted and the build purged: the same failures, so
+  they are not this lane's.** They arrived with something merged after the tls bank — the two candidates
+  are `c961112ad` (row-harvest-3) and `98bff3efc` (near-miss-finish-batch). `TestMarshalUnmarshal` is a
+  `quick.Check` over `*tls.SessionState`, i.e. reflection-bridge territory, and the near-miss batch is
+  six bridge fixes plus a recv-bridge revert — the most likely place to look first, stated as a lead and
+  not as a root. **The flagship row is red at master and no gate was watching**, which is the finding
+  worth acting on regardless of who takes it.
+  One incidental measurement from the same pair of runs: the Go oracle expanded `TestBogoSuite` into
+  **3,243 subtests** on one run (3,644 Go verdicts) and did not on the next (402), same machine, same
+  command — so BoGo expansion is nondeterministic here, and a sweep that catches the expanded form
+  compares 402 C# verdicts against 3,644 Go ones. That asymmetry is cosmetic for rooting: the five real
+  divergences are identical in both shapes.
+
+### For the next lane
+
+1. **The position-map arc now has a named first half that is already paid.** Whoever takes it inherits
+   `goSourcePath` and needs only the `.go` identity — and should choose between `#line` and the side-car
+   on measurements 3 and 4 above, not on the older two-line pricing.
+2. **`flag` cannot be finished from master.** `claude/heavy-pair-7be2d2` merges first; the residual after
+   it is one miss, not two.
+3. **`edwards25519` is one row from banking and the row is moving on its own** — 109 objects at r60, 98
+   today. The ж-box arc owns it; nothing else in the package is open.
+4. **`crypto/tls` needs an owner now.** Five verdicts against a banked 402, pre-existing, bisectable
+   across two merges. Nothing banks or re-banks while the flagship row is red.
+5. **Nothing banked here.** No roster row moved, no proof page was written, no test sources were
+   committed: `edwards25519` stays at 54/55 and `flag` is not reachable from master. The proof page the
+   sweep regenerated (`docs/validation/current/archive.tar.md`, which flipped
+   `TestFileInfoHeaderSymlink` to `skip`/`skip` — both runtimes agreeing, on an unprivileged host) was
+   **restored**, not banked: it encodes this machine's symlink privilege, not a validation change.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

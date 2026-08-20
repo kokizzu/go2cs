@@ -75,6 +75,11 @@ private static readonly object okAt1ˢ = (@string)"ok at 1:"u8;
 private static readonly object okTwoLevelsUpˢ = (@string)"ok two levels up:"u8;
 private static readonly object okPastTheStackˢ = (@string)"ok past the stack:"u8;
 private static readonly object callersDepthDeltaˢ = (@string)"callers depth delta:"u8;
+private static readonly object callerFileUsesForwardˢ = (@string)"caller file uses forward slash:"u8;
+private static readonly object callerFileUsesHostˢ = (@string)"caller file uses host separator:"u8;
+private static readonly object framesFilesUseForwardˢ = (@string)"frames files use forward slash:"u8;
+private static readonly object framesFilesUseHostˢ = (@string)"frames files use host separator:"u8;
+private static readonly object tracebackUsesHostˢ = (@string)"traceback uses host separator:"u8;
 
 internal static void Main() {
     var (x, y) = sameSite();
@@ -90,6 +95,53 @@ internal static void Main() {
     fmt.Println(okTwoLevelsUpˢ, deepOK());
     fmt.Println(okPastTheStackˢ, okAt(1000));
     fmt.Println(callersDepthDeltaˢ, depthPlus2() - depth());
+    var (callerFwd, callerBack) = callerSeparators();
+    fmt.Println(callerFileUsesForwardˢ, callerFwd);
+    fmt.Println(callerFileUsesHostˢ, callerBack);
+    var (framesFwd, framesBack) = framesSeparators();
+    fmt.Println(framesFilesUseForwardˢ, framesFwd);
+    fmt.Println(framesFilesUseHostˢ, framesBack);
+    fmt.Println(tracebackUsesHostˢ, stackHasBackslash());
+}
+
+internal static bool hasByte(@string s, byte b) {
+    for (nint i = 0; i < len(s); i++) {
+        if (s[i] == b) {
+            return true;
+        }
+    }
+    return false;
+}
+
+internal static (bool fwd, bool back) callerSeparators() {
+    var (_, @file, _, _) = Δruntime.Caller(0);
+    return (hasByte(@file, (rune)'/'), hasByte(@file, (rune)'\\'));
+}
+
+internal static (bool fwd, bool back) framesSeparators() {
+    bool fwd = default!;
+    bool back = default!;
+
+    var pc = new slice<uintptr>(64);
+    nint n = Δruntime.Callers(0, pc);
+    var frames = Δruntime.CallersFrames(pc[..(int)(n)]);
+    while (ᐧ) {
+        var (frame, more) = frames.Next();
+        if (len(frame.File) > 0) {
+            fwd = fwd || hasByte(frame.File, (rune)'/');
+            back = back || hasByte(frame.File, (rune)'\\');
+        }
+        if (!more) {
+            break;
+        }
+    }
+    return (fwd, back);
+}
+
+internal static bool stackHasBackslash() {
+    var buf = new slice<byte>(8192);
+    nint n = Δruntime.Stack(buf, false);
+    return hasByte(((@string)(buf[..(int)(n)])), (rune)'\\');
 }
 
 } // end main_package
