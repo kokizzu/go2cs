@@ -14704,4 +14704,42 @@ canary).
    item drops off, landed with template-banks.
 
 The `chan-direction` class leaves the disclosure roster, taking the count from five back to four.
+
+## RULING -- `TestBogoSuite`'s pin gains a HOST-CONDITIONAL annotation; agreement-on-failure never satisfies an unannotated disclosure (coordinator, 2026-08-20)
+
+The cargo-recv gate put the choice cleanly (above): a disclosure pins a divergence, and this row's
+divergence has a nondeterministic GO side -- network reachability of the boringssl module and the
+runner's own 10-minute child deadline decide whether Go's `TestBogoSuite` passes, expands into its
+3,243-row matrix, or fails, per host and per run. The C# side was proven unmoved (zero verdict
+differences against the committed proof page), so the red is entirely the baseline's.
+
+Of the two honest options, the narrow one is ruled IN and the broad one is ruled OUT:
+
+1. **REFUSED -- accepting agreement-on-failure as satisfying a disclosure in general.** That would
+   make every pin self-satisfying the moment its Go baseline breaks for any environmental reason,
+   which is exactly the staleness the sweep's `disclosed count moved` check exists to catch. A
+   disclosure asserts *Go passes, C# provably cannot*; if the sweep stops noticing when the first
+   half fails, the assertion quietly decays into *C# fails*.
+
+2. **ADOPTED -- the per-row annotation, keyed the way host-conditional verdict-COUNT annotations
+   already are.** Mechanics, binding on the implementer:
+   - The signature-pinned manifest entry for a NAMED row may carry a host-conditional marker plus
+     one sentence naming the environmental dependency. Only rows with coordinator-accepted rooting
+     evidence receive it; `TestBogoSuite` (the rooting above) is the first and only member today.
+   - An annotated row satisfies the sweep in EXACTLY two shapes: Go pass / C# fail (the pinned
+     divergence) or Go fail / C# fail (agreement, on a host where the Go premise fails). EITHER
+     shape accounts the row as DISCLOSED -- never as matching -- so the roster arithmetic is
+     host-stable: `crypto/tls` reads 400 + 2 on every machine.
+   - Go-side subtest children of an annotated row (the BoGo expansion) are excluded from one-sided
+     accounting; they are the annotated row's own baseline flapping, not new rows.
+   - Any movement on the C# side still fires, in both directions. The pin stays strict where it
+     can be strict; the tolerance is confined to the half that was never deterministic.
+   - The proof page carries the same note the roster's `internal/zstd` row models: name the
+     dependency, name both accepted shapes.
+
+Queued as a bounded lane item (compare machinery + manifest schema + the `crypto/tls` entry + proof
+page + a run proving both shapes account as disclosed). Until it lands, a `crypto/tls` sweep on a
+host whose Go BoGo run fails is a KNOWN false red with this section as its rooting -- re-read the
+verdict maps before believing any other explanation.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
