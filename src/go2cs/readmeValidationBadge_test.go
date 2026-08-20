@@ -818,3 +818,57 @@ func TestValidationProofDotIDRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// The README is what CARRIES the badge, so the gate deciding when it gets written decides when the
+// badge can ever refresh. Gated on convertStdLib alone, only a whole-stdlib reconvert could level a
+// badge — so every bank shipped its package advertising a stale Tests badge until some later,
+// unrelated run happened to catch it (the board's "stale-validation-badge class is a PIPELINE gap").
+// The gate is now the same structural OUTPUT-LOCATION test validationPackBlock's uses, and this
+// guard holds BOTH halves of it: a corpus package regenerates its README whatever the invocation
+// mode, and nothing outside the runtime root's core\ tree ever gets one.
+//
+// Fixture paths are composed with filepath.Join rather than written as Windows literals, for the
+// reason recorded on TestValidationPackBlockSurvivesTestsRewriteOfCorePackage: the predicate is a
+// real path-prefix comparison, and a backslash literal is ONE filename on Linux and macOS.
+func TestPackageReadmeEmissionFollowsPackageProvenanceNotRunMode(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "src")
+	corePackage := filepath.Join(root, "core", "time", "time.csproj")
+	outsideCore := filepath.Join(root, "tests", "Behavioral", "Arrays", "Arrays.csproj")
+
+	// A -stdlib run writes every package's README, as it always has.
+	if !emitsPackageReadme(corePackage, Options{convertStdLib: true}) {
+		t.Fatal("a -stdlib conversion of a core package did not emit its README")
+	}
+
+	// The regression this closes: a -tests run re-emits the package under test, and that rewrite is
+	// the one which follows the compare that just refreshed the package's proof page.
+	if !emitsPackageReadme(corePackage, Options{convertTests: true, go2csPath: root}) {
+		t.Fatal("a -tests rewrite of a core package did not emit its README, so its badge could not refresh")
+	}
+
+	// The SINGLE-PACKAGE form — `go2cs <goroot-pkg> <core-pkg>`, how a lane regenerates one corpus
+	// package after a converter change — is neither -stdlib nor -tests and must level the badge too.
+	if !emitsPackageReadme(corePackage, Options{go2csPath: root}) {
+		t.Fatal("a single-package reconvert of a core package did not emit its README")
+	}
+
+	// The litter rule the gate exists for, in all three modes that reach non-corpus output.
+	for _, mode := range []struct {
+		name    string
+		options Options
+	}{
+		{"-tests", Options{convertTests: true, go2csPath: root}},
+		{"single-package", Options{go2csPath: root}},
+		{"-recurse", Options{recurse: true, go2csPath: root}},
+	} {
+		if emitsPackageReadme(outsideCore, mode.options) {
+			t.Fatalf("a %s conversion outside the core tree littered a README", mode.name)
+		}
+	}
+
+	// With no resolved runtime root there is no core tree to be under, so nothing outside -stdlib
+	// may emit — this is what keeps a bare conversion with no deployed root from writing READMEs.
+	if emitsPackageReadme(corePackage, Options{convertTests: true}) {
+		t.Fatal("a -tests conversion with no resolved runtime root emitted a README")
+	}
+}

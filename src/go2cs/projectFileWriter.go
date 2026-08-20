@@ -491,10 +491,8 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 			return fmt.Errorf("failed to write package files for project \"%s\": %s", outputFilePath, err)
 		}
 
-		// Emit the per-package NuGet README from the package's Go doc. Gated to stdlib conversions:
-		// the README is a NuGet-packaging artifact for the published stdlib, and emitting it for
-		// behavioral-test / example / single-project conversions would only litter their dirs.
-		if options.convertStdLib {
+		// Emit the per-package NuGet README from the package's Go doc.
+		if emitsPackageReadme(projectFileName, options) {
 			projectName := strings.TrimSuffix(filepath.Base(projectFileName), ".csproj")
 
 			if err := writeReadmeFile(outputFilePath, projectName, packageDoc, packageSourceDir, options); err != nil {
@@ -504,6 +502,37 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 	}
 
 	return nil
+}
+
+// emitsPackageReadme reports whether this conversion should write the package's NuGet README — the
+// file that carries the four-badge line, including the Tests validation badge.
+//
+// The gate is the PACKAGE's provenance, NOT the run's mode. Every regeneration of a corpus package
+// keeps its README current whatever the invocation, while a behavioral-test, example or -recurse
+// conversion still writes none — the litter rule the gate was introduced for, preserved.
+//
+// It was `options.convertStdLib` alone until 2026-08-20, which made the Tests badge refreshable
+// ONLY by a whole-stdlib reconvert. The badge is composed at CONVERSION time from
+// docs/validation/current/<dot-id>.md and src/version.props, and the run that WRITES that proof
+// page is a `-tests` compare — which then did not write the README. So every bank left its own
+// package advertising a stale badge until some later, unrelated -stdlib run happened to level it,
+// and re-leveling it by hand was a standing step every bank owed
+// (BOARD-next-validation-candidates.md, "The stale-validation-badge class is a PIPELINE gap").
+//
+// The widening is exactly the one validationPackBlock's gate already took, for exactly the same
+// reason and against the same predicate: rewriteOfCorePackage tests the OUTPUT LOCATION — under the
+// runtime root's core\ tree — which is structural, so no fixture, example, -recurse output or
+// end-user output path satisfies it whatever mode the converter was invoked in.
+//
+// ⚠ RESIDUAL, measured 2026-08-20 and NOT closed by this gate: within one `-test-action all` run
+// the README is composed during CONVERSION, while the proof page it reads is written at the END of
+// the COMPARE (emitValidationProofPage, testConversion.go). A package whose counts CHANGE — every
+// FRESH bank — therefore still emits one run behind, and a fresh bank's README reads
+// `not_yet_validated` beside its own green proof page until the next conversion of that package.
+// Closing that needs the board's OTHER formulation (re-emit the README after the compare wrote the
+// page), which is a second emission point rather than a gate change; see the board write-up.
+func emitsPackageReadme(projectFileName string, options Options) bool {
+	return options.convertStdLib || rewriteOfCorePackage(projectFileName, options)
 }
 
 func writePackageFiles(projectPath string) error {
