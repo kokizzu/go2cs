@@ -6,10 +6,11 @@ namespace go.crypto;
 using hex = encoding.hex_package;
 using testing = testing_package;
 using encoding;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
-[GoType] partial struct testSplitPreMasterSecretTest {
+[GoType] internal partial struct testSplitPreMasterSecretTest {
     internal @string @in, out1, out2;
 }
 
@@ -33,9 +34,9 @@ public static void TestSplitPreMasterSecret(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct testKeysFromTest {
+[GoType] internal partial struct testKeysFromTest {
     internal uint16 version;
-    internal ж<cipherSuite> suite;
+    internal ж<global::go.crypto.tls_package.cipherSuite> suite;
     internal @string preMasterSecret;
     internal @string clientRandom, serverRandom;
     internal @string masterSecret;
@@ -136,4 +137,4 @@ internal static void initᴛtestKeysFromTests() { testKeysFromTests = new testKe
     )
 }.slice(); }
 
-} // end tls_package
+} // end tls_internal_test_package

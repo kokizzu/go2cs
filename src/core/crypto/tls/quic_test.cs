@@ -8,22 +8,23 @@ using context = context_package;
 using errors = errors_package;
 using reflect = reflect_package;
 using testing = testing_package;
+using static go.crypto.tls_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
-[GoType] partial struct testQUICConn {
+[GoType] internal partial struct testQUICConn {
     internal ж<testing.T> t;
-    internal ж<QUICConn> conn;
-    internal map<QUICEncryptionLevel, suiteSecret> readSecret;
-    internal map<QUICEncryptionLevel, suiteSecret> writeSecret;
-    internal QUICSessionTicketOptions ticketOpts;
-    internal Action<ж<SessionState>> onResumeSession;
+    internal ж<global::go.crypto.tls_package.QUICConn> conn;
+    internal map<global::go.crypto.tls_package.QUICEncryptionLevel, suiteSecret> readSecret;
+    internal map<global::go.crypto.tls_package.QUICEncryptionLevel, suiteSecret> writeSecret;
+    internal global::go.crypto.tls_package.QUICSessionTicketOptions ticketOpts;
+    internal Action<ж<global::go.crypto.tls_package.SessionState>> onResumeSession;
     internal slice<byte> gotParams;
     internal bool earlyDataRejected;
     internal bool complete;
 }
 
-internal static ж<testQUICConn> newTestQUICClient(ж<testing.T> Ꮡt, ж<QUICConfig> Ꮡconfig) {
+internal static ж<testQUICConn> newTestQUICClient(ж<testing.T> Ꮡt, ж<global::go.crypto.tls_package.QUICConfig> Ꮡconfig) {
     var q = Ꮡ(new testQUICConn(
         t: Ꮡt,
         conn: QUICClient(Ꮡconfig)
@@ -35,7 +36,7 @@ internal static ж<testQUICConn> newTestQUICClient(ж<testing.T> Ꮡt, ж<QUICCo
     return q;
 }
 
-internal static ж<testQUICConn> newTestQUICServer(ж<testing.T> Ꮡt, ж<QUICConfig> Ꮡconfig) {
+internal static ж<testQUICConn> newTestQUICServer(ж<testing.T> Ꮡt, ж<global::go.crypto.tls_package.QUICConfig> Ꮡconfig) {
     var q = Ꮡ(new testQUICConn(
         t: Ꮡt,
         conn: QUICServer(Ꮡconfig)
@@ -47,12 +48,12 @@ internal static ж<testQUICConn> newTestQUICServer(ж<testing.T> Ꮡt, ж<QUICCo
     return q;
 }
 
-[GoType] partial struct suiteSecret {
+[GoType] internal partial struct suiteSecret {
     internal uint16 suite;
     internal slice<byte> secret;
 }
 
-[GoRecv] internal static void setReadSecret(this ref testQUICConn q, QUICEncryptionLevel level, uint16 suite, slice<byte> secret) {
+[GoRecv] internal static void setReadSecret(this ref testQUICConn q, global::go.crypto.tls_package.QUICEncryptionLevel level, uint16 suite, slice<byte> secret) {
     {
         var (_, ok) = q.writeSecret[level, ꟷ]; if (!ok && level != QUICEncryptionLevelEarly) {
             q.t.Errorf("SetReadSecret for level %v called before SetWriteSecret"u8, level);
@@ -67,7 +68,7 @@ internal static ж<testQUICConn> newTestQUICServer(ж<testing.T> Ꮡt, ж<QUICCo
         }
     }
     if (q.readSecret == default!) {
-        q.readSecret = new map<QUICEncryptionLevel, suiteSecret>{};
+        q.readSecret = new map<global::go.crypto.tls_package.QUICEncryptionLevel, suiteSecret>{};
     }
     var exprᴛ1 = level;
     if (exprᴛ1 == QUICEncryptionLevelHandshake || exprᴛ1 == QUICEncryptionLevelEarly || exprᴛ1 == QUICEncryptionLevelApplication) {
@@ -79,14 +80,14 @@ internal static ж<testQUICConn> newTestQUICServer(ж<testing.T> Ꮡt, ж<QUICCo
 
 }
 
-[GoRecv] internal static void setWriteSecret(this ref testQUICConn q, QUICEncryptionLevel level, uint16 suite, slice<byte> secret) {
+[GoRecv] internal static void setWriteSecret(this ref testQUICConn q, global::go.crypto.tls_package.QUICEncryptionLevel level, uint16 suite, slice<byte> secret) {
     {
         var (_, ok) = q.writeSecret[level, ꟷ]; if (ok) {
             q.t.Errorf("SetWriteSecret for level %v called twice"u8, level);
         }
     }
     if (q.writeSecret == default!) {
-        q.writeSecret = new map<QUICEncryptionLevel, suiteSecret>{};
+        q.writeSecret = new map<global::go.crypto.tls_package.QUICEncryptionLevel, suiteSecret>{};
     }
     var exprᴛ1 = level;
     if (exprᴛ1 == QUICEncryptionLevelHandshake || exprᴛ1 == QUICEncryptionLevelEarly || exprᴛ1 == QUICEncryptionLevelApplication) {
@@ -104,7 +105,7 @@ internal static error errTransportParametersRequired = errors.New("transport par
 internal static readonly @string handshakeIncompleteˢ = "handshake incomplete"u8;
 internal static readonly @string unexpectedˢ2 = "unexpected QUICStoreSession event received by server"u8;
 
-internal static error runTestQUICConnection(context.Context ctx, ж<testQUICConn> Ꮡcli, ж<testQUICConn> Ꮡsrv, Func<QUICEvent, ж<testQUICConn>, ж<testQUICConn>, bool> onEvent) {
+internal static error runTestQUICConnection(context.Context ctx, ж<testQUICConn> Ꮡcli, ж<testQUICConn> Ꮡsrv, Func<global::go.crypto.tls_package.QUICEvent, ж<testQUICConn>, ж<testQUICConn>, bool> onEvent) {
     ref var srv = ref Ꮡsrv.DerefOrNull();
 
     var (a, b) = (Ꮡcli, Ꮡsrv);
@@ -219,7 +220,7 @@ public static void TestQUICConnection(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("server has no Application secret"u8);
         }
     }
-    foreach (var (_, level) in new QUICEncryptionLevel[]{QUICEncryptionLevelHandshake, QUICEncryptionLevelApplication}.slice()) {
+    foreach (var (_, level) in new global::go.crypto.tls_package.QUICEncryptionLevel[]{QUICEncryptionLevelHandshake, QUICEncryptionLevelApplication}.slice()) {
         {
             var (_, ok) = (~cli).readSecret[level, ꟷ]; if (!ok) {
                 Ꮡt.Errorf("client has no %v read secret"u8, level);
@@ -286,7 +287,7 @@ public static void TestQUICFragmentaryData(ж<testing.T> Ꮡt) {
     (~cli).conn.SetTransportParameters(default!);
     var srv = newTestQUICServer(Ꮡt, serverConfig);
     (~srv).conn.SetTransportParameters(default!);
-    var onEvent = (QUICEvent e, ж<testQUICConn> src, ж<testQUICConn> dst) => {
+    var onEvent = (global::go.crypto.tls_package.QUICEvent e, ж<testQUICConn> src, ж<testQUICConn> dst) => {
         if (e.Kind == QUICWriteData) {
             // Provide the data one byte at a time.
             foreach (var (i, _) in e.Data) {
@@ -321,7 +322,7 @@ public static void TestQUICPostHandshakeClientAuthentication(ж<testing.T> Ꮡt)
             Ꮡt.Fatalf("error during connection handshake: %v"u8, errΔ1);
         }
     }
-    var certReq = @new<certificateRequestMsgTLS13>();
+    var certReq = @new<global::go.crypto.tls_package.certificateRequestMsgTLS13>();
     certReq.Value.ocspStapling = true;
     certReq.Value.scts = true;
     certReq.Value.supportedSignatureAlgorithms = supportedSignatureAlgorithms();
@@ -352,7 +353,7 @@ public static void TestQUICPostHandshakeKeyUpdate(ж<testing.T> Ꮡt) {
             Ꮡt.Fatalf("error during connection handshake: %v"u8, errΔ1);
         }
     }
-    var keyUpdate = @new<keyUpdateMsg>();
+    var keyUpdate = @new<global::go.crypto.tls_package.keyUpdateMsg>();
     var (keyUpdateBytes, err) = keyUpdate.marshal();
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -407,10 +408,10 @@ public static void TestQUICHandshakeError(ж<testing.T> Ꮡt) {
     var srv = newTestQUICServer(Ꮡt, serverConfig);
     (~srv).conn.SetTransportParameters(default!);
     var err = runTestQUICConnection(context.Background(), cli, srv, default!);
-    if (!errors.Is(err, ((AlertError)(uint8)alertBadCertificate))) {
+    if (!errors.Is(err, new tls_test_package.tls_AlertErrorᴠerror(((global::go.crypto.tls_package.AlertError)(uint8)alertBadCertificate)))) {
         Ꮡt.Errorf("connection handshake terminated with error %q, want alertBadCertificate"u8, err);
     }
-    ref var e = ref heap<ж<CertificateVerificationError>>(out var Ꮡe);
+    ref var e = ref heap<ж<global::go.crypto.tls_package.CertificateVerificationError>>(out var Ꮡe);
     if (!errors.As(err, Ꮡe)) {
         Ꮡt.Errorf("connection handshake terminated with error %q, want CertificateVerificationError"u8, err);
     }
@@ -429,7 +430,7 @@ public static void TestQUICConnectionState(ж<testing.T> Ꮡt) {
     (~srv).conn.SetTransportParameters(default!);
     var cliʗ1 = cli;
     var srvʗ1 = srv;
-    var onEvent = (QUICEvent e, ж<testQUICConn> src, ж<testQUICConn> dst) => {
+    var onEvent = (global::go.crypto.tls_package.QUICEvent e, ж<testQUICConn> src, ж<testQUICConn> dst) => {
         var cliCS = (~cliʗ1).conn.ConnectionState();
         {
             var (_, ok) = (~cliʗ1).readSecret[QUICEncryptionLevelApplication, ꟷ]; if (ok) {
@@ -468,7 +469,7 @@ public static void TestQUICStartContextPropagation(ж<testing.T> Ꮡt) {
     var config = Ꮡ(new QUICConfig(TLSConfig: testConfig.Clone()));
     config.Value.TLSConfig.Value.MinVersion = VersionTLS13;
     nint calls = 0;
-    config.Value.TLSConfig.Value.GetConfigForClient = (ж<Config>, error) (ж<ClientHelloInfo> info) => {
+    config.Value.TLSConfig.Value.GetConfigForClient = (ж<global::go.crypto.tls_package.Config>, error) (ж<global::go.crypto.tls_package.ClientHelloInfo> info) => {
         calls++;
         var (got, _) = info.Context().Value(key)._<@string>(ᐧ);
         if (got != value) {
@@ -615,7 +616,7 @@ public static void TestQUICEarlyData(ж<testing.T> Ꮡt) {
     (~cli2).conn.SetTransportParameters(default!);
     var srv2 = newTestQUICServer(Ꮡt, serverConfig);
     (~srv2).conn.SetTransportParameters(default!);
-    var onEvent = (QUICEvent e, ж<testQUICConn> src, ж<testQUICConn> dst) => {
+    var onEvent = (global::go.crypto.tls_package.QUICEvent e, ж<testQUICConn> src, ж<testQUICConn> dst) => {
         var exprᴛ1 = e.Kind;
         if (exprᴛ1 == QUICStoreSession || exprᴛ1 == QUICResumeSession) {
             Ꮡt.Errorf("with EnableSessionEvents=false, got unexpected event %v"u8, e.Kind);
@@ -681,7 +682,7 @@ internal static void testQUICEarlyDataDeclined(ж<testing.T> Ꮡt, bool server) 
     (~cli2).conn.SetTransportParameters(default!);
     var srv2 = newTestQUICServer(Ꮡt, serverConfig);
     (~srv2).conn.SetTransportParameters(default!);
-    var declineEarlyData = (ж<SessionState> state) => {
+    var declineEarlyData = (ж<global::go.crypto.tls_package.SessionState> state) => {
         state.Value.EarlyData = false;
     };
     if (server){
@@ -713,4 +714,4 @@ internal static void testQUICEarlyDataDeclined(ж<testing.T> Ꮡt, bool server) 
     }
 }
 
-} // end tls_package
+} // end tls_internal_test_package

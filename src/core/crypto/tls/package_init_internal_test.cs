@@ -4,10 +4,10 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.crypto;
 
-partial class tls_package {
-    static tls_package() {
+partial class tls_internal_test_package {
+    static tls_internal_test_package() {
         initᴛgetConfigForClientTests();
         initᴛgetClientCertificateTests();
         initᴛtestKeysFromTests();
     }
-} // end tls_package
+} // end tls_internal_test_package

@@ -25,9 +25,10 @@ using go.@internal;
 using go.crypto;
 using go.os;
 using path;
+using static go.crypto.tls_package;
 using time = time_package;
 
-partial class tls_package {
+partial class tls_internal_test_package {
 
 internal static ж<@string> port = flag.String("port"u8, ""u8, ""u8);
 internal static ж<bool> server = flag.Bool("server"u8, false, ""u8);
@@ -48,7 +49,7 @@ internal static ж<nint> resumeCount = flag.Int("resume-count"u8, 0, ""u8);
 internal static ж<stringSlice> curves = flagStringSlice("curves"u8, ""u8);
 internal static ж<@string> expectedCurve = flag.String("expect-curve-id"u8, ""u8, ""u8);
 internal static ж<uint64> shimID = flag.Uint64("shim-id"u8, 0, ""u8);
-internal static ж<bool> _ᴛ17ʗ = flag.Bool("ipv6"u8, false, ""u8);
+internal static ж<bool> _ᴛ1ʗ = flag.Bool("ipv6"u8, false, ""u8);
 internal static ж<@string> echConfigListB64 = flag.String("ech-config-list"u8, ""u8, ""u8);
 internal static ж<bool> expectECHAccepted = flag.Bool("expect-ech-accept"u8, false, ""u8);
 internal static ж<bool> expectHRR = flag.Bool("expect-hrr"u8, false, ""u8);
@@ -56,18 +57,18 @@ internal static ж<bool> expectNoHRR = flag.Bool("expect-no-hrr"u8, false, ""u8)
 internal static ж<@string> expectedECHRetryConfigs = flag.String("expect-ech-retry-configs"u8, ""u8, ""u8);
 internal static ж<bool> expectNoECHRetryConfigs = flag.Bool("expect-no-ech-retry-configs"u8, false, ""u8);
 internal static ж<bool> onInitialExpectECHAccepted = flag.Bool("on-initial-expect-ech-accept"u8, false, ""u8);
-internal static ж<bool> _ᴛ18ʗ = flag.Bool("expect-no-ech-name-override"u8, false, ""u8);
-internal static ж<@string> _ᴛ19ʗ = flag.String("expect-ech-name-override"u8, ""u8, ""u8);
-internal static ж<bool> _ᴛ20ʗ = flag.Bool("reverify-on-resume"u8, false, ""u8);
+internal static ж<bool> _ᴛ2ʗ = flag.Bool("expect-no-ech-name-override"u8, false, ""u8);
+internal static ж<@string> _ᴛ3ʗ = flag.String("expect-ech-name-override"u8, ""u8, ""u8);
+internal static ж<bool> _ᴛ4ʗ = flag.Bool("reverify-on-resume"u8, false, ""u8);
 internal static ж<@string> onResumeECHConfigListB64 = flag.String("on-resume-ech-config-list"u8, ""u8, ""u8);
-internal static ж<bool> _ᴛ21ʗ = flag.Bool("on-resume-expect-reject-early-data"u8, false, ""u8);
+internal static ж<bool> _ᴛ5ʗ = flag.Bool("on-resume-expect-reject-early-data"u8, false, ""u8);
 internal static ж<bool> onResumeExpectECHAccepted = flag.Bool("on-resume-expect-ech-accept"u8, false, ""u8);
-internal static ж<bool> _ᴛ22ʗ = flag.Bool("on-resume-expect-no-ech-name-override"u8, false, ""u8);
+internal static ж<bool> _ᴛ6ʗ = flag.Bool("on-resume-expect-no-ech-name-override"u8, false, ""u8);
 internal static ж<@string> expectedServerName = flag.String("expect-server-name"u8, ""u8, ""u8);
 internal static ж<bool> expectSessionMiss = flag.Bool("expect-session-miss"u8, false, ""u8);
-internal static ж<bool> _ᴛ23ʗ = flag.Bool("enable-early-data"u8, false, ""u8);
-internal static ж<bool> _ᴛ24ʗ = flag.Bool("on-resume-expect-accept-early-data"u8, false, ""u8);
-internal static ж<bool> _ᴛ25ʗ = flag.Bool("expect-ticket-supports-early-data"u8, false, ""u8);
+internal static ж<bool> _ᴛ7ʗ = flag.Bool("enable-early-data"u8, false, ""u8);
+internal static ж<bool> _ᴛ8ʗ = flag.Bool("on-resume-expect-accept-early-data"u8, false, ""u8);
+internal static ж<bool> _ᴛ9ʗ = flag.Bool("expect-ticket-supports-early-data"u8, false, ""u8);
 internal static ж<bool> onResumeShimWritesFirst = flag.Bool("on-resume-shim-writes-first"u8, false, ""u8);
 internal static ж<@string> advertiseALPN = flag.String("advertise-alpn"u8, ""u8, ""u8);
 internal static ж<@string> expectALPN = flag.String("expect-alpn"u8, ""u8, ""u8);
@@ -75,13 +76,13 @@ internal static ж<bool> rejectALPN = flag.Bool("reject-alpn"u8, false, ""u8);
 internal static ж<bool> declineALPN = flag.Bool("decline-alpn"u8, false, ""u8);
 internal static ж<@string> hostName = flag.String("host-name"u8, ""u8, ""u8);
 internal static ж<bool> verifyPeer = flag.Bool("verify-peer"u8, false, ""u8);
-internal static ж<bool> _ᴛ26ʗ = flag.Bool("use-custom-verify-callback"u8, false, ""u8);
+internal static ж<bool> _ᴛ10ʗ = flag.Bool("use-custom-verify-callback"u8, false, ""u8);
 
-[GoType("[]@string")] partial struct stringSlice;
+[GoType("[]@string")] internal partial struct stringSlice;
 
 internal static ж<stringSlice> flagStringSlice(@string name, @string usage) {
     var f = Ꮡ(new stringSlice(new @string[]{}.slice()));
-    flag.Var(new stringSliceжValue(f), name, usage);
+    flag.Var(new tls_internal_test_package.stringSliceжValue(f), name, usage);
     return f;
 }
 
@@ -164,7 +165,7 @@ internal static void bogoShim() {
             if (err != default!) {
                 log.Fatalf("load key-file err: %s"u8, err);
             }
-            cfg.Value.Certificates = new Certificate[]{pair}.slice();
+            cfg.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{pair}.slice();
         }
         if (trustCert.Value != ""u8) {
             var pool = Δx509.NewCertPool();
@@ -200,7 +201,7 @@ internal static void bogoShim() {
                 if (err != default!) {
                     log.Fatalf("failed to parse curve id %q: %s"u8, curveStr, err);
                 }
-                cfg.Value.CurvePreferences = append((~cfg).CurvePreferences, ((CurveID)(uint16)id));
+                cfg.Value.CurvePreferences = append((~cfg).CurvePreferences, ((global::go.crypto.tls_package.CurveID)(uint16)id));
             }
         }
         for (nint i = 0; i < resumeCount.Value + 1; i++) {
@@ -225,7 +226,7 @@ internal static void bogoShim() {
                     log.Fatalf("failed to write shim id: %s"u8, errΔ1);
                 }
             }
-            ж<Conn> tlsConn = default!;
+            ж<global::go.crypto.tls_package.Conn> tlsConn = default!;
             if (server.Value){
                 tlsConn = Server(conn, cfg);
             } else {
@@ -256,7 +257,7 @@ internal static void bogoShim() {
                 }
             }
             if (err != default! && !AreEqual(err, io.EOF)) {
-                var (retryErr, ok) = err._<ж<ECHRejectionError>>(ᐧ);
+                var (retryErr, ok) = err._<ж<global::go.crypto.tls_package.ECHRejectionError>>(ᐧ);
                 if (!ok) {
                     log.Fatalf("unexpected error type returned: %v"u8, err);
                 }
@@ -315,7 +316,7 @@ internal static void bogoShim() {
                 if (errΔ4 != default!) {
                     log.Fatalf("failed to parse -expect-curve-id: %s"u8, errΔ4);
                 }
-                if ((~tlsConn).curveID != ((CurveID)(uint16)expectedCurveID)) {
+                if ((~tlsConn).curveID != ((global::go.crypto.tls_package.CurveID)(uint16)expectedCurveID)) {
                     log.Fatalf("unexpected curve id: want %d, got %d"u8, expectedCurveID, (~tlsConn).curveID);
                 }
             }
@@ -335,17 +336,17 @@ internal static readonly @string jsonˢ = "-json"u8;
 internal static readonly @string resultsJsonˢ = "results.json"u8;
 internal static readonly @string sslTestRunnerˢ = "ssl/test/runner"u8;
 
-[GoType("dyn")] partial struct TestBogoSuite_jᴛ1 {
+[GoType("dyn")] internal partial struct TestBogoSuite_j {
     public @string Dir;
 }
 
 public static void TestBogoSuite(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    testenv.SkipIfShortAndSlow(new testing_TжTB(Ꮡt));
-    testenv.MustHaveExternalNetwork(new testing_TжTB(Ꮡt));
-    testenv.MustHaveGoRun(new testing_TжTB(Ꮡt));
-    testenv.MustHaveExec(new testing_TжTB(Ꮡt));
+    testenv.SkipIfShortAndSlow(new tls_test_package.testing_TжTB(Ꮡt));
+    testenv.MustHaveExternalNetwork(new tls_test_package.testing_TжTB(Ꮡt));
+    testenv.MustHaveGoRun(new tls_test_package.testing_TжTB(Ꮡt));
+    testenv.MustHaveExec(new tls_test_package.testing_TжTB(Ꮡt));
     if (testing.Short()) {
         Ꮡt.Skip(skippingInShortModeˢ);
     }
@@ -370,7 +371,7 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
         if (errΔ2 != default!) {
             Ꮡt.Fatalf("failed to download boringssl: %s"u8, errΔ2);
         }
-        ref var j = ref heap(new TestBogoSuite_jᴛ1(), out var Ꮡj);
+        ref var j = ref heap(new TestBogoSuite_j(), out var Ꮡj);
         {
             var errΔ3 = json.Unmarshal(output, Ꮡj); if (errΔ3 != default!) {
                 Ꮡt.Fatalf("failed to parse 'go mod download' output: %s"u8, errΔ3);
@@ -403,7 +404,7 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
     }
     var cmd = exec.Command(goCmd, args.ꓸꓸꓸ);
     var @out = Ꮡ(new strings.Builder(nil));
-    cmd.Value.Stderr = new strings_BuilderжWriter(@out);
+    cmd.Value.Stderr = new tls_test_package.strings_BuilderжWriter(@out);
     cmd.Value.Dir = filepath.Join(bogoDir, sslTestRunnerˢ);
     err = cmd.Run();
     // NOTE: we don't immediately check the error, because the failure could be either because
@@ -432,7 +433,7 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
         ["CurveTest-Server-Kyber-TLS13"u8] = "PASS"u8
     };
     foreach (var (name, vᴛ1) in results.Tests) {
-        ref var result = ref heap(new bogoResults_Testsᴛ1(), out var Ꮡresult);
+        ref var result = ref heap(new bogoResults_Tests(), out var Ꮡresult);
         result = vᴛ1;
 
         // This is not really the intended way to do this... but... it works?
@@ -463,7 +464,7 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct bogoResults_Testsᴛ1 {
+[GoType("dyn")] partial struct bogoResults_Tests {
     [GoTag(@"json:""actual""")]
     public @string Actual;
     [GoTag(@"json:""expected""")]
@@ -475,7 +476,7 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
 }
 
 // bogoResults is a copy of boringssl.googlesource.com/boringssl/testresults.Results
-[GoType] partial struct bogoResults {
+[GoType] internal partial struct bogoResults {
     [GoTag(@"json:""version""")]
     public nint Version;
     [GoTag(@"json:""interrupted""")]
@@ -487,7 +488,7 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
     [GoTag(@"json:""num_failures_by_type""")]
     public map<@string, nint> NumFailuresByType;
     [GoTag(@"json:""tests""")]
-    public map<@string, bogoResults_Testsᴛ1> Tests;
+    public map<@string, bogoResults_Tests> Tests;
 }
 
-} // end tls_package
+} // end tls_internal_test_package
