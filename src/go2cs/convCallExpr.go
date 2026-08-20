@@ -1983,6 +1983,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					return fmt.Sprintf("make<%s>(%s)", typeName, remainingArgs)
 				}
 
+				// `make(chan<- T[, n])` is where a DIRECTIONAL channel value is born, and the one
+				// place the converter can still see a direction the managed type cannot hold — so
+				// it rides along as the channel constructor's second argument, descriptor cargo the
+				// reflection bridge reads back (see chanDirectionCargo.go). A bidirectional or
+				// defined channel type stamps nothing and emits byte-identically.
+				if dir := chanDirCargoName(typeParam); dir != "" {
+					remainingArgs += ", " + dir
+				}
+
 				if v.options.preferVarDecl {
 					return fmt.Sprintf("new %s(%s)", typeName, remainingArgs)
 				}
@@ -2017,6 +2026,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					return fmt.Sprintf("%s(new %s(%s))", AddressPrefix, typeName,
 						v.arrayZeroValueArgs(strconv.FormatInt(arrayType.Len(), 10), arrayType))
 				}
+			}
+
+			// `new(chan<- T)` — the same shape one level down: `@new<channel<T>>()` builds the zero
+			// value, which for a channel is the NIL one, and nothing in a bare `default` carries the
+			// direction the pointee's Go type has. Box the direction-carrying nil instead, which is
+			// the position reflectlite's `TypeOf(new(<-chan int)).Elem()` reads (a pointer descriptor
+			// hands its pointee's direction down unshifted, exactly as it does array dims).
+			if nilChan := v.chanDirNilValue(newType); nilChan != "" {
+				return fmt.Sprintf("%s(%s)", AddressPrefix, nilChan)
 			}
 
 			return fmt.Sprintf("@new<%s>()", typeName)

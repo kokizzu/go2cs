@@ -16679,11 +16679,12 @@ func type has no managed identity at all**: the converter renders it inline as i
 `type myFunc func(int) bool` and `func(int) bool` are one managed type, and the named/unnamed pairs
 every other kind can assert cannot be produced for funcs.
 
-#### The CHAN direction is a representational limit, and it sits one layer ABOVE this walk
+#### The CHAN direction is carried by the VALUE — descriptor cargo, exactly like an array's length (2026-08-20)
 
-`ChanDir()` is the fourth member of the downcast family and the only one with no synthesis waiting
-for it, because the direction is not merely unpopulated — it is **not in the managed type at all**.
-A Go channel type emits as golib's `channel<T>` whatever its direction:
+`ChanDir()` is the fourth member of the downcast family, and the one whose datum is not merely
+unpopulated but **not in the managed type at all**. A Go channel type emits as golib's `channel<T>`
+whatever its direction, distinguished only by the `/*<-*/` marker comment the type renderer places
+for the reader:
 
 ```go
 var recv <-chan int
@@ -16691,34 +16692,126 @@ var send chan<- int
 var both chan int
 ```
 ```csharp
-channel<nint> recv;   // all three land on ONE managed type
-channel<nint> send;
+/*<-*/channel<nint> recv;   // all three land on ONE managed type
+channel/*<-*/<nint> send;
 channel<nint> both;
 ```
 
-So the bridge can only ever DESCRIBE the bidirectional channel type, and `BothDir` is that type's
-real direction — which `Type.String()` has always agreed with, rendering every `channel<T>` as
-`chan T`. The downcast instead read a direction out of the memory following the descriptor's value
-slot, **non-deterministically**, so `reflect.MakeChan`'s `ChanDir() != BothDir` guard and the identity
-walk's chan arm each answered differently run to run. Both `internal/abi`'s `Type.ChanDir` and
-`reflect`'s `rtype.ChanDir` now answer `BothDir` for a chan-kind descriptor, which makes the
-descriptor's kind, name and direction consistent where the downcast made one of the three disagree.
+That is the same shape a fixed-size array's LENGTH has, and it is now solved the same way: the
+direction rides on the **value** and reaches `reflect` as non-identity descriptor cargo. The datum
+sits on the `channel<T>` struct rather than on its heap core — direction belongs to the Go TYPE, not
+to the channel object, so two values of different directions may share one core, and the NIL channel
+of a directional type has no core at all yet still has a direction (`channel<T>.SendOnly` /
+`.RecvOnly`, the direction-carrying nil).
 
-The residual is upstream of `reflect` entirely: **`reflect.TypeOf` over a `<-chan int` reports
-`chan int`**, so a consumer that branches on direction — `text/template`'s `walkRange` rejecting a
-range over a send-only channel — sees the bidirectional answer. Recovering it would mean carrying
-direction as descriptor cargo the way array dims are carried, which no measured consumer asks for
-(the r39d rule: a descriptor field whose read cannot be honored must not be populated to look
-truthful, and one no consumer reads must not be invented). No package on the validated roster
-observes it; `text/template` is not on the roster, only `text/template/parse`.
+Three converter emission sites stamp it, and they are the three places a directional channel value is
+BORN — the same finite set the array dims occupy, position for position:
 
-**A measured consumer now exists, and it is DISCLOSED rather than papered over (2026-08-18).**
-`internal/reflectlite`'s own suite reads the direction three ways — `TestAssignableTo`'s
-`<-chan int → chan int` row (want false, the bridge answers true), and `TestTypes`/`TestSetValue`
-stringifying a `chan<- string` slot (want `chan<- string`, the bridge renders `chan string`). All
-three are pinned in the package's `go2cs_test_disclosures.json` as class `chan-direction`, and the
-package validates 27+3/30 around them. Whoever takes the direction-as-descriptor-cargo arc this
-section names inherits three measured repros and retires the disclosure class with it.
+| Position | Array length | Channel direction |
+|:--|:--|:--|
+| the made/constructed value | `new(32)` | `new channel<nint>(0, GoChanDir.Send)` |
+| a struct FIELD's zero | `= new(4)` field initializer | `= channel<@string>.SendOnly` field initializer |
+| behind a POINTER | `GoReflect.PointeeArrayDims` | `GoReflect.PointeeChanDir` |
+| a func PARAMETER | `[GoArrayDims(32)]` | *not carried — see the boundaries* |
+
+```go
+ch := make(chan<- int)                       // text/template's TestIssue43065
+p  := new(chan<- string)                     // reflectlite's TestSetValue row
+type holder struct{ x chan<- string }        // reflectlite's TestTypes row
+```
+```csharp
+var ch = new channel/*<-*/<nint>(0, GoChanDir.Send);
+var p = Ꮡ(channel/*<-*/<@string>.SendOnly);
+[GoType] partial struct holder {
+    internal channel/*<-*/<@string> x = channel/*<-*/<@string>.SendOnly;
+}
+```
+
+`GoReflect.ChanDirOfValue` / `PointeeChanDir` / `FieldChanDir` read it back — the field route off a
+cached zero instance of the declaring struct, exactly as `FieldArrayDims` does — and `abi.TypeOf`
+stamps it on the descriptor. The cargo joins BOTH interning keys (`abi.descriptorDimsKey`, shared
+with reflect's `canonType`) for the reason the array dims are in them: `chan<- int` and `chan int`
+are distinct Go types over one managed `channel<int>`, so interning them together would let whichever
+arrived first answer `ChanDir()` and `String()` for both. `Type.String()` renders the arrow from the
+same cargo (`GoTypeName(t, dims, chanDir)`), and a POINTER hands its pointee's direction down
+**unshifted** through `Elem()` — a pointer has no direction of its own — which is the hop
+`new(chan<- string)` takes.
+
+**Unstamped is not a failure state.** A channel nothing stamped answers `BothDir`, which is what this
+accessor reported for every channel before the cargo existed and remains the honest answer for a type
+nothing narrowed. That is what keeps the change additive: only directional sites move.
+
+Four boundaries are deliberate, and each is the same shape as one the array dims already draw:
+
+- **A NARROWING conversion is not carried.** `var s chan<- int = ch` makes a value of a new Go type,
+  but the narrowing is a plain struct copy with no construction to hook; stamping it would mean an
+  explicit call at every assignment, argument and return of a directional channel in the corpus (89
+  such positions, measured) for a datum no consumer reads. `reflect.TypeOf(s)` therefore still
+  reports `chan int` there — the r39d rule, and the same boundary the func-param dims draw at
+  results.
+- **A DEFINED channel type is not stamped** (`type closeWaiter chan struct{}`), for the reason a
+  defined ARRAY type carries no dims: its managed form is a go2cs-gen wrapper struct rather than
+  `channel<T>`, so there is no field to carry the cargo. An ALIAS for a channel type IS its target
+  and is stamped.
+- **A func PARAMETER is not stamped.** The `[GoArrayDims]` position exists for arrays because
+  `testing/quick` and `net/rpc` allocate from a parameter type; nothing measured reads
+  `reflect.TypeOf(f).In(i).ChanDir()`.
+- **A type PARAMETER instantiated at a channel type** routes through `ISupportMake`, which has no
+  direction-taking form.
+
+The downcast this replaced read a direction out of the memory following the descriptor's value slot,
+**non-deterministically**, so `reflect.MakeChan`'s `ChanDir() != BothDir` guard and the identity
+walk's chan arm each answered differently run to run.
+
+**Landing it retired the `chan-direction` disclosure class.** `internal/reflectlite`'s suite read the
+direction three ways — `TestAssignableTo`'s `<-chan int → chan int` row (want false), and
+`TestTypes`/`TestSetValue` stringifying a `chan<- string` slot (want `chan<- string`) — and all three
+are birth positions, which is why a value-carried direction reaches them: two go through
+`new(<directional chan>)` and one through a struct field's zero. All three pass, the manifest is
+gone, and the class's own self-retirement text is spent.
+
+**Two latent defects the cargo exposed, both fixed here.** `internal/reflectlite`'s hand-owned
+`haveIdenticalUnderlyingType` chan arm had dropped Go's FIRST rule — *"x is a bidirectional channel
+value, T is a channel type, and V and T have identical element types"* — keeping only the
+strict-equality rule. It was invisible while every `ChanDir()` answered `BothDir`, because both rules
+then agreed for every pair; with real directions it makes `var r <-chan int = make(chan int)` report
+unassignable. And `reflect.Value.Len()` had no `IChannel` arm at all, so every channel Value reported
+length 0 while `Cap()` answered correctly one method away — silent for the same reason the
+named-string arm was, 0 being a real length.
+
+#### `reflect.Value.Recv` / `Send` over golib's channel, and why they could not land alone
+
+Both auto forms open with the same downcast one layer down, and behind a synthesized descriptor the
+reinterpreted `.Dir` reads **zero** — so `0 & RecvDir == 0` held for every channel and a plain
+bidirectional `chan string` was refused as send-only. Past that test neither could have worked
+either: both hand a `uintptr` channel address and an `unsafe.Pointer` element slot to `chanrecv` /
+`chansend0`, external stubs the `PartialStubGenerator` fills with `NotImplementedException`. Both are
+hand-owned over golib's `channel<T>`, reached through `IChannel`'s type-erased `ChanRecv`/`ChanSend`
+(the bridge holds a BOXED channel, never a `channel<T>`), and bridging them removes the last live
+caller of both stubs.
+
+**The direction guard must fire BEFORE the receive, and that ordering is the whole reason the two
+halves are one change.** A working `recv` behind a direction that always reads bidirectional converts
+`text/template`'s `range` over a send-only channel from a fast, attributable error into an unbounded
+hang — measured by the near-miss-finish lane at **51 verdicts lost** to a package deadline against
+the 1 the bridge buys, which is why that lane wrote the bridge, measured it, and reverted it.
+
+`send` assigns its argument through `marshalIntoSlot`, the rule `Value.Call` already used for a call
+argument — Go's `assignTo` cannot serve here, because its managed form returns a Value carrying only
+the never-populated raw `ptr` slot and drops the boxed companion the bridge actually reads, so the
+channel received a bare null. Keeping both boundaries on one renderer is what makes a channel send
+and a call argument box a typed nil the same way.
+
+(Guarded by the `ReflectChanDirection` behavioral test, byte-identical to `go run`: all three birth
+positions read back through `TypeOf`/`Elem`/`Field`, Go's four assignability answers, the recv bridge
+over `text/template`'s own `count(5)` helper, blocking and non-blocking `Send`/`Recv`/`TrySend`/
+`TryRecv`, a closed channel's drain-then-zero comma-ok, both direction panics by their Go messages,
+a defined-channel-type control, and — timeout-bounded so a regression prints a named line instead of
+wedging the suite — the `walkRange` shape itself. Proven failing-first by neutering each half
+separately: with the cargo neutered every `dir=` reads `chan`, all four assignability answers flip to
+`true`, and the send-only range prints `HUNG -- the direction guard did not fire before Recv`; with
+the recv bridge's guard neutered to the auto form's zero, `range count(5)` panics
+`reflect: recv on send-only channel`.)
 
 (Guarded by the `ReflectConvertAssignable` behavioral test, extended from the `ConvertibleTo`
 recursions to Go's full assignability rule: both gates of the unnamed↔named clause including the
@@ -16738,8 +16831,9 @@ pins the projection flag the struct arm stands on.)
 and the `AssignableTo` hand-own retired to Go's own literal body over bridged `implements` +
 `haveIdenticalUnderlyingType` exactly as `reflect`'s did (the identity walk's helpers are compact
 mirrors in `type_impl.cs`, reading the same `GoFields`/`TryFuncShape`/`GoImplements` projections).
-The suite validates **27 matched + 2 skip-parity + 3 disclosed (`chan-direction`) of 30**, and
-closing it surfaced five rules that belong to EVERY consumer of the bridge, not to reflectlite:
+The suite validates **30 of 30 matched, 0 disclosed** (plus 2 skip-parity rows) since the
+chan-direction cargo landed on 2026-08-20 and retired the three it had, and closing it surfaced
+five rules that belong to EVERY consumer of the bridge, not to reflectlite:
 
 - **Field order is Go DECLARATION order, not CLR metadata order.** go2cs-gen mints every embed's
   `ʗ` backing field in a GENERATED partial, and partial parts concatenate — so a struct whose Go

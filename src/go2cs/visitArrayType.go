@@ -208,6 +208,13 @@ func (v *Visitor) zeroValueInitializer(t types.Type) string {
 		}
 	}
 
+	// A DIRECTIONAL channel's zero value is the nil channel OF THAT TYPE, and its direction is the
+	// one part `default(channel<T>)` cannot express — the same shape as the array length above, and
+	// carried the same way (see chanDirectionCargo.go). Every other channel keeps `default!`.
+	if nilChan := v.chanDirNilValue(t); nilChan != "" {
+		return nilChan
+	}
+
 	if v.structHasPromotedEmbeds(t) {
 		return "new(nil)"
 	}

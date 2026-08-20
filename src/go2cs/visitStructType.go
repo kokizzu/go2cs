@@ -363,6 +363,15 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			}
 		}
 
+		// A DIRECTIONAL channel FIELD carries its direction the same way an array field carries its
+		// length — as an initializer the generated parameterless constructor runs, which is where
+		// GoReflect.FieldChanDir reads it back off a cached zero instance. This is the position
+		// reflectlite's `struct{ x chan<- string }` row reads through Field(0).Type(): there is no
+		// channel VALUE to measure and no attribute to consult, only the zero the field declares.
+		if chanInitializer := v.chanDirNilValue(fieldType); chanInitializer != "" {
+			arrayInitializer = " = " + chanInitializer
+		}
+
 		if field.Names == nil {
 			// Check for promoted fields
 			var ident *ast.Ident

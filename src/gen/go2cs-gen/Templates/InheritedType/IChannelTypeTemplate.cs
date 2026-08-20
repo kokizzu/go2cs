@@ -61,6 +61,10 @@ internal static class IChannelTypeTemplate
 
                 bool IChannel.Received(out object value) => ((IChannel)m_value).Received(out value);
 
+                bool IChannel.ChanRecv(out object value, out bool ok, bool block) => ((IChannel)m_value).ChanRecv(out value, out ok, block);
+
+                bool IChannel.ChanSend(object value, bool block) => ((IChannel)m_value).ChanSend(value, block);
+
                 public global::System.Collections.Generic.IEnumerator<{{targetTypeName}}> GetEnumerator() => m_value.GetEnumerator();
 
                 global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => ((global::System.Collections.IEnumerable)m_value).GetEnumerator();

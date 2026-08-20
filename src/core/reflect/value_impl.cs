@@ -59,8 +59,8 @@ internal static ΔValue makeReflectValue(object? boxed) {
 // interface-typed slot reports Kind Interface regardless of the dynamic value, and a nil-valued
 // slot is a VALID nil Value of the slot's kind (never the invalid zero Value). inheritRO carries
 // the parent's read-only bits (Go's flagRO stickiness).
-internal static ΔValue makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO) {
-    var t = abi.synthType(staticType, arrayDims);
+internal static ΔValue makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO, GoChanDir chanDir = GoChanDir.Unstamped) {
+    var t = abi.synthType(staticType, arrayDims, null, chanDir);
     var v = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(staticType)) | ((flag)(inheritRO & flagRO)));
     v.boxed = boxed;
     return v;
@@ -267,6 +267,12 @@ public static nint Len(this ΔValue v) {
         @string s => s.Length,
         IArray a => a.Length,
         IMap m => m.Length,
+        // Go's Len covers Chan too — `len(ch)` is the count of buffered elements — and this arm was
+        // simply missing, so every channel Value reported 0 while Cap answered correctly one method
+        // away. Silent for the same reason the named-string arm above was: 0 is a real length. It
+        // surfaced when Value.Recv started working and a test could finally ask what a channel it
+        // had just drained still held.
+        IChannel c => c.Length,
         _ => 0
     };
 }
@@ -645,7 +651,10 @@ public static ΔValue Elem(this ΔValue v) {
         // An array pointee reveals its real dims through the live value behind the box (the
         // TestSliceRoundTrip path: ValueOf(&[100]T{}).Elem().Type() must carry 100).
         nint[]? dims = GoReflect.KindOf(pointee) == GoReflect.Array ? GoReflect.ArrayDimsOfValue(GoReflect.ReadPointerSlot(cur)) : null;
-        var t = abi.synthType(pointee, dims);
+        // A CHANNEL pointee reveals its direction the same way — off the value behind the box,
+        // which for `new(chan<- string)` is the direction-carrying nil the converter seeded.
+        GoChanDir pointeeDir = GoReflect.KindOf(pointee) == GoReflect.Chan ? GoReflect.ChanDirOfValue(GoReflect.ReadPointerSlot(cur)) : GoChanDir.Unstamped;
+        var t = abi.synthType(pointee, dims, null, pointeeDir);
         var elem = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(pointee)) | flagAddr | flagIndir | ((flag)(v.flag & flagRO)));
         elem.addrBox = cur;
         return elem;
@@ -781,7 +790,7 @@ public static ΔValue Field(this ΔValue v, nint i) {
     // indistinguishable through this projection.
     flag ro = (flag)((flag)(v.flag & flagStickyRO) | (f.Exported ? default : f.Embedded ? flagEmbedRO : flagStickyRO));
     if (v.addrBox is not null) {
-        var elem = makeTypedValue(null, f.Type, f.ArrayDims, ro);
+        var elem = makeTypedValue(null, f.Type, f.ArrayDims, ro, f.ChanDir);
         elem.flag |= flagAddr | flagIndir;
         elem.addrBox = GoReflect.FieldAliasBox(v.addrBox, f);
         return elem;
@@ -790,7 +799,7 @@ public static ΔValue Field(this ΔValue v, nint i) {
     if (cur is null) {
         throw panic(Ꮡ(new ValueError("reflect.Value.Field", v.kind())));
     }
-    return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims, ro);
+    return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims, ro, f.ChanDir);
 }
 
 // UnsafePointer returns v's value as an unsafe.Pointer (v must be a Chan, Func, Map, Pointer, or
@@ -1261,12 +1270,21 @@ private static object? marshalCallArg(ΔValue arg, System.Type want) {
     if (arg.flag == 0) {
         throw panic("reflect: " + "Call" + " using zero Value argument");
     }
-    object? source = want.IsInterface || want == typeof(object) ? packInterfaceValue(arg) : arg.live;
-    if (!GoReflect.TryMarshalAssignable(source, want, out object? marshalled)) {
+    if (!marshalIntoSlot(arg, want, out object? marshalled)) {
         throw panic("reflect: Call using " + GoReflect.GoTypeName(arg.live?.GetType()) +
                     " as type " + GoReflect.GoTypeName(want));
     }
     return marshalled;
+}
+
+// The rule above with the message left to the caller — shared with Value.send, the OTHER boundary
+// that assigns a Value into a typed slot. Both would otherwise reach Go's assignTo, whose managed
+// form returns a Value carrying only the never-populated raw `ptr` slot: the boxed companion the
+// bridge actually reads is dropped, so the receiving side gets null. Keeping the two on one
+// renderer is what makes a channel send and a call argument box a typed nil the same way.
+private static bool marshalIntoSlot(ΔValue arg, System.Type want, out object? marshalled) {
+    object? source = want.IsInterface || want == typeof(object) ? packInterfaceValue(arg) : arg.live;
+    return GoReflect.TryMarshalAssignable(source, want, out marshalled);
 }
 
 // The delegate's raw result as Values typed by the func's STATIC out types — a Go multi-return
@@ -1438,7 +1456,7 @@ internal static ΔType canonType(ж<abi.Type> Ꮡt) {
     // type's per-parameter dims, without which `func([32]byte) bool` and `func([64]byte) bool`
     // (ONE managed delegate type, no arrayDims of their own) would share a wrapper and the first to
     // intern would answer In(0).Len() for both.
-    string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims);
+    string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims, Ꮡt.Value.chanDir);
     return s_canonTypeCache.GetOrAdd((st, dimsKey), _ => new rtypeжΔType(toRType(Ꮡt)));
 }
 
@@ -1469,7 +1487,7 @@ internal static ΔType toType(ж<abi.Type> Ꮡt) {
 
 // String returns the Go source type string (`main.Point`, `[]int`, `*T`) — the value of %T.
 internal static @string String(this ж<rtype> Ꮡt) {
-    return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims);
+    return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims, Ꮡt.Value.t.chanDir);
 }
 
 // Name returns the type's name within its package (empty for an unnamed composite). The gate is
@@ -1511,7 +1529,11 @@ internal static ΔType Elem(this ж<rtype> Ꮡt) {
     nint kind = st is null ? -1 : GoReflect.KindOf(st);
     bool throughPointer = kind == GoReflect.Pointer || kind == GoReflect.UnsafePointer;
     nint[]? elemDims = throughPointer ? dims : dims is { Length: > 1 } ? dims[1..] : null;
-    return toType(abi.synthType(GoReflect.ElementType(st), elemDims));
+    // A pointer hands its POINTEE's channel direction down the same unshifted way — the hop
+    // `new(chan<- string)` takes to reach Elem().String(). A channel's own direction describes the
+    // channel and stops here.
+    GoChanDir elemChanDir = throughPointer ? Ꮡt.Value.t.chanDir : GoChanDir.Unstamped;
+    return toType(abi.synthType(GoReflect.ElementType(st), elemDims, null, elemChanDir));
 }
 
 // Key returns a map type's key type.
@@ -1718,7 +1740,7 @@ private static StructField structFieldOf(System.Type st, GoReflect.GoFieldInfo f
         // field's StructField.PkgPath is still the declaring package (e.g. "main"). Routing
         // through the defined-type gate would silently blank exactly the case this exists for.
         PkgPath: f.Exported ? "" : (@string)GoReflect.GoPackagePath(st),
-        Type: toType(abi.synthType(f.Type, f.ArrayDims)),
+        Type: toType(structFieldDescriptor(f)),
         Tag: ((StructTag)(@string)f.Tag),
         Offset: offsets is not null && (nuint)at < (nuint)offsets.Length ? (uintptr)(nuint)offsets[at] : 0,
         Index: new slice<nint>(index),
@@ -1784,11 +1806,10 @@ internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
     return GoReflect.GoImplements(ᏑT.Value.sysType, ᏑV == nil ? null : ᏑV.Value.sysType);
 }
 
-// ChanDir returns a channel type's direction. See internal/abi's ChanDir for why the answer is
-// always BothDir: a Go channel type emits as golib's `channel<T>` whatever its direction, so the
-// bridge can only ever describe the bidirectional type, and BothDir is that type's real
-// direction. The auto form downcast the descriptor onto the chanType record Go's linker allocates
-// behind it and read a direction out of the memory that follows the value slot instead —
+// ChanDir returns a channel type's direction — the direction the descriptor CARRIES as cargo, and
+// BothDir when nothing stamped one. See internal/abi's ChanDir for the sources and the boundaries.
+// The auto form downcast the descriptor onto the chanType record Go's linker allocates behind it
+// and read a direction out of the memory that follows the value slot instead —
 // non-deterministically, so reflect.MakeChan's `ChanDir() != BothDir` guard and the identity
 // walk's chan arm each answered differently run to run.
 internal static ΔChanDir ChanDir(this ж<rtype> Ꮡt) {
@@ -1797,6 +1818,65 @@ internal static ΔChanDir ChanDir(this ж<rtype> Ꮡt) {
         throw panic("reflect: ChanDir of non-chan type " + Ꮡt.String());
     }
     return ((ΔChanDir)(nint)abi.ChanDir(Ꮡt.common()));
+}
+
+// ==== the channel OPERATIONS: recv / send ====
+//
+// Both auto forms opened with the same `(*chanType)(unsafe.Pointer(t))` downcast ChanDir above
+// retired, one layer down: behind a synthesized descriptor the reinterpreted `.Dir` reads zero, and
+// `0 & RecvDir == 0` holds for EVERY channel — so a plain bidirectional `chan string` was refused
+// as send-only. Past that test neither could have worked either, because both then hand a uintptr
+// channel address and an unsafe.Pointer element slot to `chanrecv`/`chansend0`, external stubs the
+// PartialStubGenerator fills with NotImplementedException. Bridging them removes the last live
+// caller of both stubs.
+//
+// The direction guard is asked of the DESCRIPTOR's cargo, which is the one authority, and it is why
+// these two could not land before the direction did: a working recv behind a direction that always
+// reads bidirectional converts text/template's `range` over a send-only channel from a fast,
+// attributable error into an unbounded hang (measured — 51 verdicts lost to a package deadline
+// against the 1 the bridge buys). Guard first, receive second, in that order and for that reason.
+
+// recv receives from a channel Value, blocking unless nb. It reports Go's (value, ok) pair, where
+// a not-selected non-blocking receive answers the INVALID zero Value, exactly as the auto form did.
+internal static (ΔValue val, bool ok) recv(this ΔValue v, bool nb) {
+    if (((ΔChanDir)(((ΔChanDir)(nint)abi.ChanDir(v.typ_)) & RecvDir)) == 0) {
+        throw panic("reflect: recv on send-only channel");
+    }
+    System.Type? elem = GoReflect.ElementType(v.typ_ == nil ? null : v.typ_.Value.sysType);
+    if (v.live is not IChannel ch || elem is null) {
+        throw panic(Ꮡ(new ValueError("reflect.Value.Recv", v.kind())));
+    }
+    if (!ch.ChanRecv(out object received, out bool ok, !nb)) {
+        return (new ΔValue(nil), false);
+    }
+    // A closed-and-drained receive yields the ELEMENT's zero, which the channel reports as its own
+    // default — null for a reference element, where Go's zero is a typed nil. Fabricating it here
+    // through the one zero-builder the bridge uses everywhere keeps `x.IsZero()`/`x.Interface()` on
+    // a closed channel's value agreeing with reflect.Zero of the same type.
+    object? boxed = ok ? received : GoReflect.ZeroValueOf(elem, null);
+    return (makeTypedValue(boxed, elem, null, (flag)0), ok);
+}
+
+// send sends x on a channel Value, blocking unless nb. x is assigned to the channel's element type
+// first (Go's assignability rule, same context string Go uses), so a named element or an interface
+// element boxes exactly as an ordinary send would.
+internal static bool /*selected*/ send(this ΔValue v, ΔValue xʗp, bool nb) {
+    if (((ΔChanDir)(((ΔChanDir)(nint)abi.ChanDir(v.typ_)) & SendDir)) == 0) {
+        throw panic("reflect: send on recv-only channel");
+    }
+    ΔValue x = xʗp;
+    x.mustBeExported();
+    System.Type? elem = GoReflect.ElementType(v.typ_ == nil ? null : v.typ_.Value.sysType);
+    if (v.live is not IChannel ch || elem is null) {
+        throw panic(Ꮡ(new ValueError("reflect.Value.Send", v.kind())));
+    }
+    // Go's assignTo, with its message and without its Value: the sent element is the MANAGED value
+    // the channel's element slot holds, marshalled by the one rule Value.Call's arguments use.
+    if (!marshalIntoSlot(x, elem, out object? sent)) {
+        throw panic("reflect.Value.Send: value of type " + GoReflect.GoTypeName(x.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(elem));
+    }
+    return ch.ChanSend(sent!, !nb);
 }
 
 // ==== type IDENTITY: haveIdenticalUnderlyingType, arm for arm over answerable accessors ====
@@ -1996,7 +2076,10 @@ private static @string structTypePkgPath(System.Type st, GoReflect.GoFieldInfo[]
 // the identity walk and the abi.StructType a caller can read are built from one rule.
 private static ж<abi.Type> structFieldDescriptor(GoReflect.GoFieldInfo f) {
     nint[]? dims = GoReflect.KindOf(f.Type) == GoReflect.Array ? f.ArrayDims : null;
-    return abi.synthType(f.Type, dims);
+    // A channel field carries its DIRECTION the same way an array field carries its length: off
+    // the initializer the converter emitted, read from the declaring struct's zero instance.
+    GoChanDir fieldDir = GoReflect.KindOf(f.Type) == GoReflect.Chan ? f.ChanDir : GoChanDir.Unstamped;
+    return abi.synthType(f.Type, dims, null, fieldDir);
 }
 
 // PointerTo returns the pointer type with element t — the managed ж<T> pointer form,

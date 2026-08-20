@@ -455,10 +455,23 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// rtype.ChanDir downcasts onto the chanType record and reads a direction out of the
 		// memory following the value slot — NON-DETERMINISTICALLY, so MakeChan's
 		// `ChanDir() != BothDir` guard and the identity walk's chan arm each answered differently
-		// run to run. The bridge answers BothDir because that is the only channel type it can
-		// describe: a Go channel emits as golib's `channel<T>` whatever its direction, which
-		// Type.String() has always reported as `chan T`. See internal/abi's Type.ChanDir.
+		// run to run. The bridge answers the direction the descriptor CARRIES (2026-08-20) and
+		// BothDir when nothing stamped one, which is the honest answer for a type nothing
+		// narrowed. See internal/abi's Type.ChanDir.
 		"rtype.ChanDir": goosAny,
+		// Value.recv/Value.send open with the SAME downcast one layer down — reinterpreting the
+		// descriptor onto the linker's chanType record and reading `.Dir` out of the memory after
+		// the value slot — so behind a synthesized descriptor that reads zero, `0 & RecvDir == 0`
+		// refused EVERY receive as send-only. Past that test neither could have worked either:
+		// they hand a uintptr channel address and an unsafe.Pointer element slot to chanrecv /
+		// chansend0, external stubs the PartialStubGenerator fills with NotImplementedException.
+		// Bridged over golib's channel<T> through IChannel's type-erased ChanRecv/ChanSend, with
+		// the direction asked of the descriptor's cargo — the ONE authority, and the reason these
+		// two had to land WITH the direction arc: a working recv behind a direction that always
+		// reads bidirectional turns text/template's `range` over a send-only channel from a fast,
+		// attributable error into an unbounded hang.
+		"Value.recv": goosAny,
+		"Value.send": goosAny,
 		"PointerTo":     goosAny,
 		"Value.Convert": goosAny,
 		// rtype.FieldByName Reinterprets the descriptor as a structType and reads .Fields off

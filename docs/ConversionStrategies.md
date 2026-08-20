@@ -905,6 +905,31 @@ it — so `time.Timer.C` reports `len` and `cap` of 0 even while it holds a tick
 "drain the channel if `Stop` returned false" idiom is unnecessary. golib models it with Go's own
 `hchan.timer` hook rather than a `time` special case.
 
+A channel's **DIRECTION** is part of its Go type and is the one part `channel<T>` cannot express —
+`chan T`, `chan<- T` and `<-chan T` all emit as one managed type, distinguished for the reader only
+by a `/*<-*/` marker comment. So it rides on the VALUE and reaches `reflect` as descriptor cargo,
+exactly the way a fixed-size array's length does, stamped at the three places a directional channel
+value is born (a `make`, a struct field's zero, and `new`):
+
+```go
+ch := make(chan<- int)                       // text/template's TestIssue43065
+type holder struct{ x chan<- string }
+```
+```csharp
+var ch = new channel/*<-*/<nint>(0, GoChanDir.Send);
+[GoType] partial struct holder {
+    internal channel/*<-*/<@string> x = channel/*<-*/<@string>.SendOnly;
+}
+```
+
+`reflect.Type.ChanDir()` and `String()` then answer `chan<- int` rather than the bidirectional type,
+which is what lets `text/template`'s `walkRange` refuse a range over a send-only channel — and that
+guard is why `reflect.Value.Recv`/`Send` are bridged in the same change: a working receive behind a
+direction that always read bidirectional turns that refusal into an unbounded hang. A NARROWING
+conversion (`var s chan<- int = ch`) and a DEFINED channel type are deliberately not stamped. See the
+[chan direction cargo](ConversionStrategies-Reference.md#the-chan-direction-is-carried-by-the-value--descriptor-cargo-exactly-like-an-arrays-length-2026-08-20)
+section of the reference.
+
 A goroutine over a `select` — the concurrency core — lowers to `goǃ(...)` and a `switch` over `select(...)`,
 with `ᐸꟷ` marking a receive-case and `ꟷᐳ` performing the receive. Every case's operands are hoisted
 into select-scoped temps (`selᴛN`) emitted in strict source order and evaluated exactly once at

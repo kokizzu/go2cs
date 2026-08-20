@@ -33,6 +33,15 @@ public interface IChannel : IEnumerable
     /// </summary>
     nuint PointerOrderToken => (nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
 
+    /// <summary>
+    /// Gets the Go DIRECTION of the channel type this value was born with, or
+    /// <see cref="GoChanDir.Unstamped"/> when no source stamped one — the type-erased route the
+    /// reflection bridge reads, since it holds a boxed channel and not a <c>channel&lt;T&gt;</c>.
+    /// A generated named-channel wrapper keeps the default (a defined channel type is not stamped;
+    /// see <see cref="GoChanDir"/>).
+    /// </summary>
+    GoChanDir Direction => GoChanDir.Unstamped;
+
     void Send(object value);
 
     object Receive();
@@ -42,6 +51,53 @@ public interface IChannel : IEnumerable
     bool Received(out object value);
 
     void Close();
+
+    /// <summary>
+    /// Go's runtime <c>chanrecv</c>, type-erased: receives from the channel, optionally blocking.
+    /// </summary>
+    /// <param name="value">The received value, boxed; <c>null</c> when nothing was received.</param>
+    /// <param name="ok">
+    /// <c>true</c> when the value was delivered by a send, <c>false</c> for the zero value of a
+    /// closed and drained channel — Go's comma-ok bit.
+    /// </param>
+    /// <param name="block">Whether to wait for a value.</param>
+    /// <returns>Whether a receive committed — Go's <c>selected</c>.</returns>
+    /// <remarks>
+    /// This is the shape <c>reflect.Value.Recv</c> and <c>TryRecv</c> need and the typed surface
+    /// cannot give them: the bridge holds a BOXED channel, so it reaches the operation through this
+    /// interface and never through <c>channel&lt;T&gt;</c>. The default implementation composes the
+    /// members every implementer already has; <see cref="channel{T}"/> overrides it to report the
+    /// comma-ok bit exactly.
+    /// </remarks>
+    bool ChanRecv(out object value, out bool ok, bool block)
+    {
+        if (block)
+        {
+            value = Receive();
+            ok = true;
+            return true;
+        }
+
+        bool selected = Received(out object received);
+        value = selected ? received : null!;
+        ok = selected;
+        return selected;
+    }
+
+    /// <summary>
+    /// Go's runtime <c>chansend</c>, type-erased: sends a boxed value, optionally blocking.
+    /// </summary>
+    /// <param name="value">The value to send, boxed.</param>
+    /// <param name="block">Whether to wait for a receiver.</param>
+    /// <returns>Whether the send committed — Go's <c>selected</c>.</returns>
+    bool ChanSend(object value, bool block)
+    {
+        if (!block)
+            return Sent(value!);
+
+        Send(value!);
+        return true;
+    }
 }
 
 public interface IChannel<T> : IChannel
@@ -974,6 +1030,15 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     // channel values are references) and the zero value (all-null) is the NIL channel.
     private readonly ChanCore<T>? m_core;
 
+    // The Go DIRECTION of the type this value was born with, when a source stamped one — cargo the
+    // managed type cannot hold, since `chan T`, `chan<- T` and `<-chan T` all emit as one
+    // channel<T>. It rides on the STRUCT and not on the core because direction belongs to the Go
+    // TYPE rather than to the channel object: two values of different directions may share one
+    // core, and the NIL channel of a directional type has no core at all yet still has a direction.
+    // Deliberately OUTSIDE equality — Go compares channels by identity, so ==, Equals and the hash
+    // all read the core alone (see the operators at the end of this type).
+    private readonly GoChanDir m_direction;
+
     /// <summary>
     /// Creates a new channel.
     /// </summary>
@@ -986,6 +1051,54 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
         ArgumentOutOfRangeException.ThrowIfNegative(size);
         m_core = new ChanCore<T>(size);
     }
+
+    /// <summary>
+    /// Creates a new channel of a DIRECTIONAL Go channel type — <c>make(chan&lt;- T[, size])</c>
+    /// or <c>make(&lt;-chan T[, size])</c>.
+    /// </summary>
+    /// <param name="size">Buffer capacity, exactly as <see cref="channel{T}(nint)"/>.</param>
+    /// <param name="direction">The Go direction of the type being made.</param>
+    /// <remarks>
+    /// The direction is carried for the reflection bridge only; every channel OPERATION stays
+    /// unrestricted here, because Go's own type checker already refused the illegal ones in the
+    /// source the converter read. Taking it as a SECOND parameter is load-bearing: a
+    /// single-parameter enum overload would make the corpus-wide <c>new channel&lt;T&gt;(0)</c>
+    /// ambiguous, since C# converts the literal 0 to any enum type — so the make form always
+    /// spells both.
+    /// </remarks>
+    public channel(nint size, GoChanDir direction)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(size);
+        m_core = new ChanCore<T>(size);
+        m_direction = direction;
+    }
+
+    // The NIL channel of a directional type: the zero VALUE of `chan<- T` / `<-chan T`, which is
+    // still a value whose Go type has a direction. It is what a struct field's initializer and a
+    // `new(chan<- T)` take, and it is the reason the direction cannot live on the core.
+    private channel(GoChanDir direction, NilType _)
+    {
+        m_core = null;
+        m_direction = direction;
+    }
+
+    /// <summary>
+    /// Gets the NIL send-only channel — the zero value of Go's <c>chan&lt;- T</c>, carrying the
+    /// direction its type has.
+    /// </summary>
+    public static channel<T> SendOnly => new(GoChanDir.Send, nil);
+
+    /// <summary>
+    /// Gets the NIL receive-only channel — the zero value of Go's <c>&lt;-chan T</c>, carrying the
+    /// direction its type has.
+    /// </summary>
+    public static channel<T> RecvOnly => new(GoChanDir.Recv, nil);
+
+    /// <summary>
+    /// Gets the Go direction of this value's channel type, or <see cref="GoChanDir.Unstamped"/>
+    /// when no source stamped one — which the reflection bridge reports as bidirectional.
+    /// </summary>
+    public GoChanDir Direction => m_direction;
 
     /// <summary>
     /// Gets the capacity of the channel (0 for an unbuffered or nil channel) — Go's <c>cap()</c>.
@@ -1420,6 +1533,42 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
         return false;
     }
 
+    // The typed-channel forms of Go's runtime chanrecv/chansend, which is what makes the comma-ok
+    // bit exact for the reflection bridge: the interface's default implementation has to compose
+    // Receive()/Received() and cannot tell a closed channel's zero value from a delivered one.
+    // Blocking on a NIL channel is Go's "blocks forever", which Receive(bool) already honors
+    // (golib's deadlock detector is the managed answer to Go's fatal all-goroutines-asleep); a
+    // NON-blocking receive on one is simply never ready.
+    bool IChannel.ChanRecv(out object value, out bool ok, bool block)
+    {
+        if (block)
+        {
+            (T received, ok) = Receive(true);
+            value = received!;
+            return true;
+        }
+
+        if (m_core is null)
+        {
+            value = null!;
+            ok = false;
+            return false;
+        }
+
+        bool selected = m_core.Recv(out T v, out ok, block: false);
+        value = selected ? v! : null!;
+        return selected;
+    }
+
+    bool IChannel.ChanSend(object value, bool block)
+    {
+        if (!block)
+            return TrySend((T)value!);
+
+        Send((T)value!);
+        return true;
+    }
+
     /// <summary>
     /// Returns an enumerator that iterates through the collection — Go's <c>for range ch</c>:
     /// blocks for each value and terminates when the channel is closed and drained.
@@ -1459,6 +1608,21 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     public static bool operator ==(channel<T> left, channel<T> right)
     {
         return ReferenceEquals(left.m_core, right.m_core);
+    }
+
+    // Equals/GetHashCode restate that spec rule for the boxed and dictionary-keyed routes
+    // (GoEqualityComparer, reflect.DeepEqual, a channel used as a map key), which reach a struct
+    // through ValueType and would otherwise compare every FIELD — sweeping in m_direction, which is
+    // type cargo and not identity. Two nil channels of different Go directions are still the same
+    // channel value, and a narrowed view is still the channel it narrowed.
+    public override bool Equals(object? obj)
+    {
+        return obj is channel<T> other && this == other;
+    }
+
+    public override int GetHashCode()
+    {
+        return m_core is null ? 0 : System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(m_core);
     }
 
     public static bool operator !=(channel<T> left, channel<T> right)
