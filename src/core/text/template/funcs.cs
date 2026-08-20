@@ -27,21 +27,21 @@ partial class template_package {
 // TODO: revert this back to a global map once golang.org/issue/2559 is fixed.
 internal static FuncMap builtins() {
     return new FuncMap(new map<@string, any>{
-        ["and"u8] = and,
-        ["call"u8] = emptyCall,
-        ["html"u8] = HTMLEscaper,
-        ["index"u8] = index,
-        ["slice"u8] = Δslice,
-        ["js"u8] = JSEscaper,
+        ["and"u8] = ((Funcꓸꓸꓸ<reflectꓸValue, reflectꓸValue, reflectꓸValue>)(and)),
+        ["call"u8] = ((Funcꓸꓸꓸ<reflectꓸValue, reflectꓸValue, reflectꓸValue>)(emptyCall)),
+        ["html"u8] = ((Funcꓸꓸꓸ<any, @string>)(HTMLEscaper)),
+        ["index"u8] = ((Funcꓸꓸꓸ<reflectꓸValue, reflectꓸValue, (reflectꓸValue, error)>)(index)),
+        ["slice"u8] = ((Funcꓸꓸꓸ<reflectꓸValue, reflectꓸValue, (reflectꓸValue, error)>)(Δslice)),
+        ["js"u8] = ((Funcꓸꓸꓸ<any, @string>)(JSEscaper)),
         ["len"u8] = length,
         ["not"u8] = not,
-        ["or"u8] = or,
-        ["print"u8] = fmt.Sprint,
-        ["printf"u8] = fmt.Sprintf,
-        ["println"u8] = fmt.Sprintln,
-        ["urlquery"u8] = URLQueryEscaper, // Comparisons
+        ["or"u8] = ((Funcꓸꓸꓸ<reflectꓸValue, reflectꓸValue, reflectꓸValue>)(or)),
+        ["print"u8] = ((Funcꓸꓸꓸ<any, @string>)(fmt.Sprint)),
+        ["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintf)),
+        ["println"u8] = ((Funcꓸꓸꓸ<any, @string>)(fmt.Sprintln)),
+        ["urlquery"u8] = ((Funcꓸꓸꓸ<any, @string>)(URLQueryEscaper)), // Comparisons
 
-        ["eq"u8] = eq, // ==
+        ["eq"u8] = ((Funcꓸꓸꓸ<reflectꓸValue, reflectꓸValue, (bool, error)>)(eq)), // ==
 
         ["ge"u8] = ge, // >=
 

@@ -51,7 +51,7 @@ partial class reflectlite_internal_test_package
 
         if (v.addrBox is not null)
         {
-            global::go.@internal.reflectlite_package.Value elem = makeTypedValue(null, f.Type, f.ArrayDims, ro);
+            global::go.@internal.reflectlite_package.Value elem = makeTypedValue(null, f.Type, f.ArrayDims, ro, f.ChanDir);
 
             elem.flag |= (global::go.@internal.reflectlite_package.flag)(flagAddr | flagIndir);
             elem.addrBox = GoReflect.FieldAliasBox(v.addrBox, f);
@@ -64,7 +64,7 @@ partial class reflectlite_internal_test_package
         if (cur is null)
             throw panic(Ꮡ(new ValueError("reflect.Value.Field"u8, v.kind())));
 
-        return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims, ro);
+        return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims, ro, f.ChanDir);
     }
 
     // TField returns the i'th field's TYPE — the type-side twin of Field. The literal form
@@ -98,7 +98,11 @@ partial class reflectlite_internal_test_package
             throw panic("reflect: Zero of non-synthesized type");
 
         nint[]? dims = t.Value.arrayDims;
+        // The fabricated zero carries the descriptor's CHANNEL DIRECTION as well as its array
+        // dims -- this is the mini-bridge's half of the same rule, and the one TypeString reads
+        // (`%T` of ToInterface(Zero(typ))).
+        GoChanDir chanDir = t.Value.chanDir;
 
-        return makeTypedValue(GoReflect.ZeroValueOf(st, dims), st, dims, default);
+        return makeTypedValue(GoReflect.ZeroValueOf(st, dims, chanDir), st, dims, default, chanDir);
     }
 }

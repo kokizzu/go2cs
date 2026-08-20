@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/reflectlite` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-18 · converter `a15c63268`*
+*Validated 2026-08-20 · converter `86bc16510`*
 
-**27 matched · 3 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**30 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/internal/reflectlite`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/reflectlite).
 
 Both runtimes skip 2 of the matched tests identically.
@@ -20,7 +20,7 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestAliasNames` | pass | pass |
 | `TestAll` | pass | pass |
 | `TestAllocations` | skip | skip |
-| `TestAssignableTo` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestAssignableTo` | pass | pass |
 | `TestBigStruct` | pass | pass |
 | `TestBigUnnamedStruct` | pass | pass |
 | `TestBigZero` | pass | pass |
@@ -42,21 +42,8 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestNilPtrValueSub` | pass | pass |
 | `TestPtrSetNil` | pass | pass |
 | `TestSetPanic` | pass | pass |
-| `TestSetValue` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestSetValue` | pass | pass |
 | `TestTypeOf` | pass | pass |
-| `TestTypes` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestTypes` | pass | pass |
 | `TestUnaddressableField` | pass | pass |
 | `TestValueToString` | pass | pass |
-
-## Disclosed divergences
-
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
-a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
-hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/internal/reflectlite/go2cs_test_disclosures.json);
-a disclosed test that fails any *other* way is still a hard mismatch.
-
-| Test | Class | Pinned reason |
-|:--|:--|:--|
-| `TestAssignableTo` | `chan-direction` | channel DIRECTION is a representational limit: a Go channel type emits as golib's channel<T> whatever its direction, so the bridge can only describe the bidirectional type and `<-chan int` is not distinguishable from `chan int` -- row 1 asserts that a bidirectional destination REJECTS a receive-only source, which needs the direction the managed type does not carry (ConversionStrategies-Reference, 'The CHAN direction is a representational limit'); recovering it means carrying direction as descriptor cargo the way array dims are |
-| `TestSetValue` | `chan-direction` | row #21 stringifies a `chan<- string` slot: the managed channel<T> carries no direction, so Type.String() renders the bidirectional `chan string` -- the same representational limit as TestAssignableTo, on the naming side |
-| `TestTypes` | `chan-direction` | row #18 reads a struct field's `chan<- string` type: the managed channel<T> carries no direction, so Type.String() renders the bidirectional `chan string` -- the same representational limit as TestAssignableTo, on the naming side |

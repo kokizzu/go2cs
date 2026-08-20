@@ -349,8 +349,9 @@
 > compiled lambda's `Method` is not a runtime `MethodInfo`, which `Delegate.CreateDelegate` rejects
 > outright. `text/template`: 38/52 → **49 of 52**, the stub's own 13 verdicts cleared, with the three
 > residual verdicts on four roots that are NOT this arc's (`Value.Index`/`Value.Slice` over a
-> Kind-STRING Value, which Go supports and the bridge rejects; the ratified chan-direction
-> disclosure class, surfacing as `reflect: recv on send-only channel` in `walkRange`; typed-nil
+> Kind-STRING Value, which Go supports and the bridge rejects; the then-ratified chan-direction
+> disclosure class, surfacing as `reflect: recv on send-only channel` in `walkRange` — RETIRED
+> 2026-08-20 when direction became descriptor cargo and Recv/Send were bridged with it; typed-nil
 > method dispatch, `(*W)(nil).Error()` rendering `-<nil>-` where Go renders `-nilW-`; and a
 > three-index `Value.Slice3` nil deref). Canaries held: fmt 63/63,
 > internal/fmtsort 3/3, encoding/json 491/491, internal/reflectlite 27/27. Guards:

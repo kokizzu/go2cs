@@ -21,6 +21,7 @@
     <None Include="$(MSBuildThisFileDirectory)buildConstraints_test.go" />
     <None Include="$(MSBuildThisFileDirectory)captureModeOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)chainedCallScaling_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)chanDirectionCargo.go" />
     <None Include="$(MSBuildThisFileDirectory)commandLineOptions.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintProxyGenericCall_test.go" />

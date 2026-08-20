@@ -82,9 +82,9 @@ partial class reflectlite_package
     // slot is a VALID nil Value of the slot's kind, never the invalid zero Value. inheritRO
     // carries the parent's read-only bits (Go's flagRO stickiness). Mirrors reflect's
     // makeTypedValue one layer down.
-    internal static Value makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO)
+    internal static Value makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO, GoChanDir chanDir = GoChanDir.Unstamped)
     {
-        ж<abi_package.Type> t = abi_package.synthType(staticType, arrayDims);
+        ж<abi_package.Type> t = abi_package.synthType(staticType, arrayDims, null, chanDir);
         Value v = new Value(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(staticType)) | ((flag)(inheritRO & flagRO)));
 
         v.boxed = boxed;

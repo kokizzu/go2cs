@@ -12,10 +12,20 @@ every listed package on demand, reading its own roster straight from the table b
 from a clone with one command.
 
 A disclosure is a specific Go assertion the converted suite provably cannot satisfy — not a skipped
-test, not a tolerance. Five classes exist: three name something the managed runtime cannot
-*measure*, one something the test host cannot *be*, and one something the managed representation
-cannot *distinguish*. (This sentence once said "four" while the committed manifests used five —
-`alloc-count-semantics` predates the newer classes and had lost its prose spot; restored 2026-08-20.)
+test, not a tolerance. Four classes exist: three name something the managed runtime cannot
+*measure*, and one something the test host cannot *be*. (This sentence read "four" while the
+committed manifests used five — `alloc-count-semantics` predates the newer classes and had lost its
+prose spot; restored 2026-08-20. It read "five" for the rest of that day, until `chan-direction`
+retired the same evening and took the count back down.)
+
+A **fifth** class, `chan-direction`, named the one thing the managed *representation* could not
+*distinguish*: a Go channel emitted as golib's `channel<T>` whatever its direction, so `<-chan int`
+was indistinguishable from `chan int` in assignability and `chan<- string` stringified as
+`chan string`. It was written to retire itself on its own recorded remedy — carrying direction as
+descriptor cargo the way array dims are — and **it did, on 2026-08-20**: the direction now rides on
+the channel VALUE, the three `internal/reflectlite` rows it pinned pass, and its manifest is gone.
+The entry is removed rather than kept, exactly as `host-limit`'s text says such an entry must be
+once its remedy lands, because the arithmetic below moves when it goes.
 
 - **`alloc-profile`** — a test asserts an exact allocation count; Go's compiler stack-allocates the
   value where .NET must heap-allocate it.
@@ -37,21 +47,14 @@ cannot *distinguish*. (This sentence once said "four" while the committed manife
   retire itself, because the tests keep running and keep being compared — publish the host
   self-contained and single-file and those rows begin passing, which breaks the arithmetic below
   until the entry is removed.
-- **`chan-direction`** — a test reads a channel type's DIRECTION, which the managed representation
-  does not carry: a Go channel emits as golib's `channel<T>` whatever its direction, so the bridge
-  can only describe the bidirectional type — `<-chan int` is not distinguishable from `chan int`
-  in assignability, and `chan<- string` stringifies as `chan string`. The recorded remedy is
-  carrying direction as descriptor cargo the way array dims are carried
-  ([reference](ConversionStrategies-Reference.md)); landing it retires this class, and the pinned
-  rows begin passing exactly as `host-limit` describes.
 
 Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **155 / 215 testable packages validated — 72.1%**
+> ### Phase 4 progress: **157 / 215 testable packages validated — 73.0%**
 >
-> **18,116 matching test verdicts · 82 disclosed** *(updated 2026-08-19 — maintained as part of the
+> **18,414 matching test verdicts · 79 disclosed** *(updated 2026-08-20 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -149,6 +152,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`hash/crc64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/crc64) | 5 | | CRC-64 checksum tables. · [proof](validation/current/hash.crc64.md) |
 | [`hash/fnv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/fnv) | 19 | | FNV-1/FNV-1a across widths. · [proof](validation/current/hash.fnv.md) |
 | [`hash/maphash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/maphash) | 22 | | Seeded and unseeded hash streams plus SMHasher avalanche/BIC quality checks; the 100,000-sample bounds exercise a computed float constant derived from a named untyped integer constant. · [proof](validation/current/hash.maphash.md) |
+| [`html/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html/template) | 243 | | Contextual auto-escaping, the security property `html/template` exists for: the escaper's state machine driven across HTML text, attributes, comments, `<script>`, `<style>`, URLs and JS string/regexp contexts, each with its own escaper and filter; the `Content` typed-string exemptions; template cloning, redefinition and `{{block}}` composition through the escaper; and the error matrix. Its verdicts ride the whole `text/template` engine underneath, so it is the largest single consumer of the reflection bridge's value plumbing on the roster. · [proof](validation/current/html.template.md) |
 | [`image`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image) | 8 | | The image model — `Rectangle` algebra, the `At`/`Set`/`SubImage`/`Opaque` contract over every concrete image type, `RGBA64Image` 16-bit access, YCbCr plane geometry and non-overlap, and `image.Decode` through the registered-format table. · [proof](validation/current/image.md) |
 | [`image/color`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image/color) | 10 | | The color models — RGBA/CMYK/YCbCr conversion round-trips and cross-model consistency, alpha-premultiplied NYCbCrA, and the palette's nearest-color search. · [proof](validation/current/image.color.md) |
 | [`image/draw`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image/draw) | 9 | | Porter-Duff compositing over every image model — clip narrowing through address-taken value parameters, Floyd-Steinberg dithering, and paletted quantization. · [proof](validation/current/image.draw.md) |
@@ -172,7 +176,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/gover) | 5 | | Toolchain version ordering. · [proof](validation/current/internal.gover.md) |
 | [`internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) | 3 | | Minimal integer formatting. · [proof](validation/current/internal.itoa.md) |
 | [`internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) | 1 |  | The pprof protobuf codec's packed varint encoding — round-tripped through the white-box test's own `message` implementation, which is what proved a Go package split across two assemblies still binds its unexported interface methods. · [proof](validation/current/internal.profile.md) |
-| [`internal/reflectlite`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/reflectlite) | 27 | 3 | The reflection mini-bridge end to end — field walks in Go declaration order, the canonical nil func, Go's unexported-method and assignability rules one layer down; chan-direction disclosures. · [proof](validation/current/internal.reflectlite.md) |
+| [`internal/reflectlite`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/reflectlite) | 30 | | The reflection mini-bridge end to end — field walks in Go declaration order, the canonical nil func, Go's unexported-method and assignability rules one layer down, and channel DIRECTION at every position it is read: through `new(<-chan int)`, off a struct field's zero, and out of the zero value `Zero(typ)` fabricates. Its three `chan-direction` disclosures retired 2026-08-20 with the class. · [proof](validation/current/internal.reflectlite.md) |
 | [`internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) | 17 | | Allocation-capped I/O helpers. · [proof](validation/current/internal.saferio.md) |
 | [`internal/singleflight`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/singleflight) | 5 | | Duplicate-call suppression — and, in `TestDoAndForgetUnsharedRace`, **1000 goroutines that must all park inside one `Do` before it returns**. That row was the cooperative scheduler's whole bill: under the old ThreadPool executor a parked goroutine held shared capacity, so the test climbed a doubling ladder for 28.7 minutes; on a dedicated thread per goroutine it converges at iteration 8 in **1.2 s**. · [proof](validation/current/internal.singleflight.md) |
 | [`internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) | 1 |  | The CPU brand string the runtime reports, read through the converted `internal/cpu` name tables. · [proof](validation/current/internal.sysinfo.md) |
@@ -219,6 +223,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`testing/slogtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/slogtest) | 17 | | The `slog.Handler` conformance harness Go ships for third-party handlers, run against the real `TextHandler`/`JSONHandler` — the whole 17-case matrix of groups, inline and empty groups, `WithAttrs`/`WithGroup` composition, and `LogValuer` resolution. · [proof](validation/current/testing.slogtest.md) |
 | [`text/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/scanner) | 18 | | Rune-level source scanning. · [proof](validation/current/text.scanner.md) |
 | [`text/tabwriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/tabwriter) | 3 | | Elastic-tab column formatting; panic-during-write recovery. · [proof](validation/current/text.tabwriter.md) |
+| [`text/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/template) | 52 | | Go's template engine end to end — the exec matrix over structs, maps, methods, pipelines and variables; `text/template`'s own reflection-heavy value plumbing (`Value.Call` including variadic and method values, `Index`/`Slice`/`Slice3` over strings and containers, typed-nil rendering); template composition, `{{block}}` redefinition, `html`/`js`/`urlquery` builtins, and the error and recovery matrix. The last two verdicts were channels: `TestExecute` ranges a bidirectional `chan string` through `reflect.Value.Recv`, and `TestIssue43065` ranges a `make(chan<- int)` and needs Go's `range over send-only channel` — one needs the recv bridge, the other the direction that had to land with it. · [proof](validation/current/text.template.md) |
 | [`text/template/parse`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/template/parse) | 52 | | Template lexing and parse-tree construction — the item stream, custom and alphanumeric delimiters, actions/pipelines/variables, `{{block}}` and tree copying, and the full parse-error matrix. · [proof](validation/current/text.template.parse.md) |
 | [`time`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/time) | 159 | | Monotonic and wall clocks, timer/ticker delivery including Go 1.23's synchronous timer channel, RFC 3339 and layout parse/format, zone loading. · [proof](validation/current/time.md) |
 | [`unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode) | 28 | | Category tables, case mapping (`SpecialCase`), script ranges. · [proof](validation/current/unicode.md) |

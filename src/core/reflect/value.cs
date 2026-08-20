@@ -1762,32 +1762,7 @@ public static (ΔValue x, bool ok) Recv(this ΔValue v) {
     return v.recv(false);
 }
 
-// internal recv, possibly non-blocking (nb).
-// v is known to be a channel.
-internal static (ΔValue val, bool ok) recv(this ΔValue v, bool nb) {
-    ref var val = ref heap(new ΔValue(), out var Ꮡval);
-    bool ok = default!;
-
-    var tt = v.typ().Reinterpret<abi.Type, chanType>();
-    if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & RecvDir) == 0) {
-        throw panic("reflect: recv on send-only channel");
-    }
-    var t = tt.Value.Elem;
-    val = new ΔValue(t, nil, ((flag)(uintptr)(uint8)t.Kind()));
-    @unsafe.Pointer p = default!;
-    if (t.IfaceIndir()){
-        p = (uintptr)unsafe_New(t);
-        val.ptr = p;
-        val.flag |= (flag)(flagIndir);
-    } else {
-        p = @unsafe.Pointer.FromRef(ref (Ꮡval.of(reflect_package.ΔValue.Ꮡptr)).Value);
-    }
-    (var selected, ok) = chanrecv((uintptr)v.pointer(), nb, p);
-    if (!selected) {
-        val = new ΔValue(nil);
-    }
-    return (val, ok);
-}
+// go2cs generated this placeholder — func recv is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Send sends x on the channel v.
 // It panics if v's kind is not [Chan] or if x's type is not the same type as v's element type.
@@ -1798,28 +1773,7 @@ public static void Send(this ΔValue v, ΔValue x) {
     v.send(x, false);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string reflectValueSendˢ = "reflect.Value.Send"u8;
-
-// internal send, possibly non-blocking.
-// v is known to be a channel.
-internal static bool /*selected*/ send(this ΔValue v, ΔValue xʗp, bool nb) {
-    ref var x = ref heap(xʗp, out var Ꮡx);
-
-    var tt = v.typ().Reinterpret<abi.Type, chanType>();
-    if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & SendDir) == 0) {
-        throw panic("reflect: send on recv-only channel");
-    }
-    x.mustBeExported();
-    x = x.assignTo(reflectValueSendˢ, (~tt).Elem, nil);
-    @unsafe.Pointer p = default!;
-    if ((flag)(x.flag & flagIndir) != 0){
-        p = x.ptr;
-    } else {
-        p = @unsafe.Pointer.FromRef(ref (Ꮡx.of(reflect_package.ΔValue.Ꮡptr)).Value);
-    }
-    return chansend((uintptr)v.pointer(), p, nb);
-}
+// go2cs generated this placeholder — func send is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Set is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

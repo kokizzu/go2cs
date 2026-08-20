@@ -39,10 +39,17 @@ partial class abi_package {
 // it back off the delegate INSTANCE here. RESULT dims are deliberately not carried: a multi-result
 // Go func returns a ValueTuple, which has no per-element attribute position, and no measured
 // consumer reads Out(i).Len().
+// chanDir is the same NON-IDENTITY cargo for the one part of a CHANNEL type the managed emission
+// cannot hold: its direction. `chan T`, `chan<- T` and `<-chan T` are three distinct Go types over
+// one golib channel<T>, so the direction reaches the descriptor from whichever source knew it — a
+// live value (the converter seeds it at the make site), the value behind a pointer (`new(chan<- T)`),
+// or a struct field's initializer-borne zero. Unstamped is the honest "nothing narrowed this",
+// answered as BothDir, which is what ChanDir() reported for every channel before the cargo existed.
 partial struct Type {
     [GoReflectCompanion] public System.Type? sysType;
     [GoReflectCompanion] public nint[]? arrayDims;
     [GoReflectCompanion] public nint[]?[]? funcParamDims;
+    [GoReflectCompanion] public GoChanDir chanDir;
 }
 
 // synthType builds a managed-backed abi.Type from a System.Type: Kind_ classified from it (GoReflect),
@@ -66,18 +73,32 @@ public static ж<Type> synthType(System.Type? st, nint[]? arrayDims) {
 private static readonly System.Collections.Concurrent.ConcurrentDictionary<(System.Type, string), ж<Type>> s_descriptors = new();
 
 public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? funcParamDims) {
+    return synthType(st, arrayDims, funcParamDims, GoChanDir.Unstamped);
+}
+
+public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir) {
     if (st is null) {
         return default!;
     }
-    string dimsKey = descriptorDimsKey(arrayDims, funcParamDims);
-    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims));
+    string dimsKey = descriptorDimsKey(arrayDims, funcParamDims, chanDir);
+    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims, chanDir));
 }
 
 // descriptorDimsKey renders the descriptor's dims cargo as the interning key's second component —
 // shared with reflect's canonType so a Type wrapper and the descriptor it wraps are interned under
 // the same knowledge classes.
 public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDims) {
+    return descriptorDimsKey(arrayDims, funcParamDims, GoChanDir.Unstamped);
+}
+
+// The channel DIRECTION joins the key for exactly the reason the array and func-param dims are in
+// it: `chan<- int` and `chan int` are DISTINCT Go types over ONE managed channel<int>, so interning
+// them together would let whichever arrived first answer ChanDir() and String() for both.
+public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir) {
     string key = arrayDims is null ? "" : string.Join(',', arrayDims);
+    if (chanDir != GoChanDir.Unstamped) {
+        key += "@" + ((byte)chanDir).ToString();
+    }
     if (funcParamDims is null) {
         return key;
     }
@@ -92,6 +113,10 @@ public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDi
 }
 
 private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims) {
+    return synthesizeDescriptor(st, arrayDims, funcParamDims, GoChanDir.Unstamped);
+}
+
+private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir) {
     ref var t = ref heap<Type>(out var Ꮡt);
     t.Kind_ = (ΔKind)((uint8)GoReflect.KindOf(st));
     // TFlagNamed — the descriptor bit that says "this is a DEFINED type", carried because three
@@ -120,6 +145,7 @@ private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, 
     t.sysType = st;
     t.arrayDims = arrayDims;
     t.funcParamDims = funcParamDims;
+    t.chanDir = chanDir;
     nint size = GoReflect.GoSizeOf(st, arrayDims);
     if (size >= 0) {
         t.Size_ = (uintptr)(nuint)size;
@@ -159,7 +185,12 @@ public static ж<Type> TypeOf(any a) {
                  : kind == GoReflect.Pointer ? GoReflect.PointeeArrayDims(a)
                  : null;
     nint[]?[]? paramDims = kind == GoReflect.Func ? GoReflect.FuncParamDims(a) : null;
-    return synthType(dyn, dims, paramDims);
+    // A CHANNEL value carries the direction of the type it was made with, and a POINTER carries its
+    // pointee's unshifted — the same two positions the array dims occupy, for the same reason.
+    GoChanDir chanDir = kind == GoReflect.Chan ? GoReflect.ChanDirOfValue(a)
+                      : kind == GoReflect.Pointer ? GoReflect.PointeeChanDir(a)
+                      : GoChanDir.Unstamped;
+    return synthType(dyn, dims, paramDims, chanDir);
 }
 
 // ==== the descriptor SPECIALIZATIONS: StructType() / ArrayType() ====
@@ -218,9 +249,10 @@ private static ж<ΔStructType> synthesizeStructType(ж<Type> Ꮡt) {
     for (int i = 0; i < infos.Length; i++) {
         GoReflect.GoFieldInfo info = infos[i];
         nint[]? dims = GoReflect.KindOf(info.Type) == GoReflect.Array ? info.ArrayDims : null;
+        GoChanDir fieldDir = GoReflect.KindOf(info.Type) == GoReflect.Chan ? info.ChanDir : GoChanDir.Unstamped;
         fields[i] = new StructField(
             Name: default!,
-            Typ: synthType(info.Type, dims),
+            Typ: synthType(info.Type, dims, null, fieldDir),
             Offset: (uintptr)(nuint)offsets[i]
         );
     }
@@ -278,38 +310,44 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
     // own. The same rule rtype.Elem applies to the same cargo one layer up.
     nint[]? dims = Ꮡt.Value.arrayDims;
     nint[]? elemDims = kind == Pointer ? dims : dims is { Length: > 1 } ? dims[1..] : null;
-    return synthType(elem, elemDims);
+    // A POINTER's channel-direction cargo is its POINTEE's, so it descends here and nowhere else —
+    // this is the hop `new(chan<- string)` takes to reach `Elem().String()`. A CHANNEL's own
+    // direction describes the channel, never its element, so it stops.
+    GoChanDir elemChanDir = kind == Pointer ? Ꮡt.Value.chanDir : GoChanDir.Unstamped;
+    return synthType(elem, elemDims, null, elemChanDir);
 }
 
 // ChanDir returns the direction of t if t is a channel type, otherwise InvalidDir.
 //
 // The FOURTH accessor of the same downcast family — `(*chanType)(unsafe.Pointer(t))` reaching the
-// record's Dir field — and the ONE member with no synthesis waiting for it, because the direction
-// is not merely unpopulated: it is not IN the managed type at all. A Go channel type emits as
-// golib's `channel<T>` whatever its direction, so `<-chan int`, `chan<- int` and `chan int` are
-// ONE managed type, and no descriptor built from a value can tell them apart.
+// record's Dir field — and the one that had no synthesis for longest, because the direction is not
+// merely unpopulated: it is not IN the managed type at all. A Go channel type emits as golib's
+// `channel<T>` whatever its direction, so `<-chan int`, `chan<- int` and `chan int` are ONE managed
+// type and no descriptor built from the TYPE alone can tell them apart.
 //
-// That makes the honest answer BothDir rather than a guess, and the distinction matters. The
-// bridge is not failing to recover a direction it holds; it can only ever DESCRIBE the
-// bidirectional channel type, and BothDir is that type's true direction. Type.String() has always
-// said the same thing — GoTypeName renders every `channel<T>` as `chan T` — so this makes the
-// descriptor's three answers (kind, name, direction) consistent where the downcast made ChanDir
-// alone disagree by reading a direction out of the memory following the value slot. That read was
-// the worst kind of wrong: NON-DETERMINISTIC, so reflect.MakeChan's `ChanDir() != BothDir` guard
-// and haveIdenticalUnderlyingType's chan arm both answered differently run to run.
+// So the direction is carried as descriptor CARGO the way an array's length is (2026-08-20), from
+// whichever source knew it: a live channel VALUE, whose direction the converter seeds at the make
+// site; the value behind a POINTER, which is the `new(chan<- string)` position; and a struct
+// FIELD's initializer-borne zero. Each is a position no other reaches, exactly as with the dims —
+// and the reason a NIL channel must be able to carry a direction at all is that two of the three
+// have nothing but a zero value to read.
 //
-// The residual is stated rather than hidden: a DIRECTIONAL Go channel type cannot be described by
-// this bridge, so reflect.TypeOf over a `<-chan int` reports `chan int` and any consumer that
-// branches on direction (text/template's walkRange rejecting a send-only channel) sees the
-// bidirectional answer. It is a limit of the converter's channel EMISSION, one layer above this
-// accessor, and it is recorded in ConversionStrategies-Reference.md; no roster package observes
-// it. Recovering it would mean carrying direction as descriptor cargo the way array dims are
-// carried, and no measured consumer asks (the r39d rule).
+// Unstamped cargo still answers BothDir, and that is not a fallback but the same honest answer this
+// accessor gave before the cargo existed: a channel nothing narrowed IS bidirectional. What is
+// deliberately NOT carried is a NARROWING conversion — `var s chan<- int = ch` still describes the
+// bidirectional type, because the narrowing has no emission position to stamp and no measured
+// consumer asks (the r39d rule, and the same boundary the func-param dims draw at results).
+//
+// The read this replaced was the worst kind of wrong: NON-DETERMINISTIC, reinterpreting the
+// descriptor onto the linker's chanType record and reading `.Dir` out of the memory after the value
+// slot, so reflect.MakeChan's `ChanDir() != BothDir` guard and haveIdenticalUnderlyingType's chan
+// arm each answered differently run to run.
 public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
     if (Ꮡt == nil || Ꮡt.Value.Kind() != Chan) {
         return InvalidDir;
     }
-    return BothDir;
+    GoChanDir carried = Ꮡt.Value.chanDir;
+    return carried == GoChanDir.Unstamped ? BothDir : (ΔChanDir)(nint)(byte)carried;
 }
 
 // Key returns the key type for t if t is a map, otherwise nil.

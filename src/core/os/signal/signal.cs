@@ -28,7 +28,7 @@ internal static ж<handlersᴛ1> Ꮡhandlers = new(new handlersᴛ1(nil));
 internal static ref handlersᴛ1 handlers => ref Ꮡhandlers.Value;
 
 [GoType] partial struct stopping {
-    internal channel/*<-*/<osꓸSignal> c;
+    internal channel/*<-*/<osꓸSignal> c = channel/*<-*/<osꓸSignal>.SendOnly;
     internal ж<handler> h;
 }
 

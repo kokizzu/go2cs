@@ -248,6 +248,13 @@ public static partial class GoReflect
         public readonly nint[]? ArrayDims;
 
         /// <summary>
+        /// The Go channel DIRECTION when <see cref="Type"/> is a channel kind and the declaring
+        /// zero instance reveals it — the converter emits a directional field as an initializer
+        /// (<c>= channel&lt;@string&gt;.SendOnly</c>), which is the same route the array dims take.
+        /// </summary>
+        public readonly GoChanDir ChanDir;
+
+        /// <summary>
         /// The field's raw Go struct TAG, verbatim — <c>asn1:"optional,explicit,tag:0"</c> — or the
         /// empty string when the field carries none. The converter emits every tagged field's tag as
         /// <c>[GoTag]</c> at the declaration, so this is the declared text, not a reconstruction.
@@ -259,12 +266,13 @@ public static partial class GoReflect
         internal readonly FieldInfo[] Path;
         internal readonly bool[] BoxHop;
 
-        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false)
+        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false, GoChanDir chanDir = GoChanDir.Unstamped)
         {
             Name = name;
             Type = type;
             Exported = name.Length > 0 && name != "_" && char.IsUpper(name[0]);
             ArrayDims = arrayDims;
+            ChanDir = chanDir;
             Tag = tag;
             Embedded = embedded;
             Path = path;
@@ -348,7 +356,8 @@ public static partial class GoReflect
             {
                 string goName = name[CapturedVarMarker.Length..];
                 nint[]? embedDims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
-                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true));
+                GoChanDir embedDir = KindOf(field.FieldType) == Chan ? FieldChanDir(t, field) : GoChanDir.Unstamped;
+                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true, chanDir: embedDir));
                 continue;
             }
 
@@ -361,7 +370,8 @@ public static partial class GoReflect
                 projected = "_";
 
             nint[]? dims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
-            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field)));
+            GoChanDir fieldDir = KindOf(field.FieldType) == Chan ? FieldChanDir(t, field) : GoChanDir.Unstamped;
+            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), chanDir: fieldDir));
         }
 
         reorderToGoDeclarationOrder(t, result, first);

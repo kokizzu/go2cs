@@ -1345,6 +1345,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckReflectBridgeClosure() => CheckTarget("ReflectBridgeClosure");
 
     [TestMethod]
+    public void CheckReflectChanDirection() => CheckTarget("ReflectChanDirection");
+
+    [TestMethod]
     public void CheckReflectConvertAssignable() => CheckTarget("ReflectConvertAssignable");
 
     [TestMethod]

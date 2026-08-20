@@ -322,6 +322,76 @@ public static partial class GoReflect
         return zero is null ? null : ArrayDimsOfValue(field.GetValue(zero));
     }
 
+    // -------- channel direction (abi.Type.ChanDir; rtype.String; assignability's chan arm) --------
+    //
+    // The same cargo shape as the array dims above, at the same finite set of positions, and for
+    // the same reason: a Go channel's DIRECTION is part of its type, and `chan T`, `chan<- T` and
+    // `<-chan T` all emit as one `channel<T>`. Each source below answers for the one position the
+    // others cannot reach — a live value, the value behind a pointer, and a struct field's
+    // initializer-borne zero. Unstamped is not a failure: it is a channel nothing narrowed, and
+    // the bridge reports it as bidirectional, which is what it has always reported.
+
+    /// <summary>
+    /// The Go channel direction carried by a LIVE channel value, or
+    /// <see cref="GoChanDir.Unstamped"/> when the value is not a channel or no source stamped one.
+    /// </summary>
+    public static GoChanDir ChanDirOfValue(object? value)
+    {
+        object? box = value;
+
+        while (box is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            box = interfaceAdapter.Value;
+
+        return box is IChannel channel ? channel.Direction : GoChanDir.Unstamped;
+    }
+
+    /// <summary>
+    /// The Go channel direction of the value BEHIND a live pointer — <c>*chan&lt;- string</c>
+    /// reports <see cref="GoChanDir.Send"/> — or <see cref="GoChanDir.Unstamped"/> when there is
+    /// no such pointee.
+    /// </summary>
+    /// <remarks>
+    /// A POINTER descriptor carries its pointee's direction unshifted, exactly as it carries the
+    /// pointee's array dims (a pointer has no direction of its own), so <c>Elem()</c> hands the
+    /// cargo straight down. This is the position <c>new(chan&lt;- string)</c> occupies, and the
+    /// reason a NIL channel has to be able to carry a direction at all: the pointee is the zero
+    /// value of a directional type, so there is no core to read and no length to measure — only
+    /// the direction the converter seeded into the value.
+    /// </remarks>
+    public static GoChanDir PointeeChanDir(object? value)
+    {
+        object? box = value;
+
+        while (box is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            box = interfaceAdapter.Value;
+
+        if (box is IжAdapter { Box: not null } pointerAdapter)
+            box = pointerAdapter.Box;
+
+        if (box is null || box is INilPointer { IsNilPointer: true } ||
+            !TryPointerBoxElement(box.GetType(), out Type? pointee) || KindOf(pointee) != Chan)
+        {
+            return GoChanDir.Unstamped;
+        }
+
+        return ChanDirOfValue(ReadPointerSlot(box));
+    }
+
+    /// <summary>
+    /// The Go channel direction of a channel-typed STRUCT FIELD, recovered from a cached zero
+    /// instance of the declaring struct — the converter emits the direction as a field initializer
+    /// (<c>= channel&lt;@string&gt;.SendOnly</c>) that the generated parameterless constructor runs,
+    /// which is the same route <see cref="FieldArrayDims"/> takes for an array field's length.
+    /// </summary>
+    public static GoChanDir FieldChanDir(Type declaringType, FieldInfo field)
+    {
+        if (!declaringType.IsValueType)
+            return GoChanDir.Unstamped;
+
+        object? zero = s_zeroInstances.GetOrAdd(declaringType, static t => Activator.CreateInstance(t));
+        return zero is null ? GoChanDir.Unstamped : ChanDirOfValue(field.GetValue(zero));
+    }
+
     // -------- func shape (rtype.NumIn/In/NumOut/Out/IsVariadic; Value.Call) --------
 
     /// <summary>

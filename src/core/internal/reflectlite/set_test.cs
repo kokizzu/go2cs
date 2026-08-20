@@ -97,12 +97,12 @@ public static void TestImplements(ж<testing.T> Ꮡt) {
 
 // test runs implementsTests too
 internal static slice<implementsTestsᴛ1> assignableTests = new implementsTestsᴛ1[]{
-    new(@new<channel<nint>>(), @new</*<-*/channel<nint>>(), true),
-    new(@new</*<-*/channel<nint>>(), @new<channel<nint>>(), false),
+    new(@new<channel<nint>>(), Ꮡ(/*<-*/channel<nint>.RecvOnly), true),
+    new(Ꮡ(/*<-*/channel<nint>.RecvOnly), @new<channel<nint>>(), false),
     new(@new<ж<nint>>(), @new<IntPtr>(), true),
     new(@new<IntPtr>(), @new<ж<nint>>(), true),
     new(@new<IntPtr>(), @new<IntPtr1>(), false),
-    new(@new<Ch>(), @new</*<-*/channel<any>>(), true)
+    new(@new<Ch>(), Ꮡ(/*<-*/channel<any>.RecvOnly), true)
 }.slice();
 
 [GoType("ж<nint>")] partial class IntPtr;

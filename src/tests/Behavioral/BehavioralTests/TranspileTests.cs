@@ -1342,6 +1342,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckReflectBridgeClosure() => CheckTarget("ReflectBridgeClosure");
 
     [TestMethod]
+    public void CheckReflectChanDirection() => CheckTarget("ReflectChanDirection");
+
+    [TestMethod]
     public void CheckReflectConvertAssignable() => CheckTarget("ReflectConvertAssignable");
 
     [TestMethod]

@@ -14419,4 +14419,289 @@ The sealed-interface stub's residual leaves the queue: censused after the fix, t
 adapter that silently stubs a member (1,307 generated, zero stubbed). The shape stays worth
 suspecting, not tracking.
 
+
+
+## ✅ CHANNEL DIRECTION IS DESCRIPTOR CARGO and `reflect.Value.Recv`/`Send` land WITH it — the `chan-direction` class RETIRES, and both template packages bank as rows 156-157 (2026-08-20, lane `claude/cargo-recv`, laptop G)
+
+The arc the last three entries kept pointing at. `internal/reflectlite` goes **27+3 → 30+0**,
+`text/template` **50 → 52 of 52 with NO disclosure**, `html/template` **242 → 243 of 243**. The
+roster reaches **157 / 215 (73.0%), 18,414 matching verdicts, 79 disclosed**.
+
+### Two corrections to the brief's premises
+
+1. **`claude/template-banks` was NOT in master** — it existed only as a local branch, and
+   `html/template` cannot reach 243 without its two fixes. It is MERGED into this lane rather than
+   waited on, which also makes every measurement below bind the UNION of both changes, per the
+   banking-merge doctrine the crypto/tls regression established. Both conflicts were docs and both
+   resolved by keeping both sides.
+2. **`text/template`'s `TestIssue43065` needs no disclosure at all.** The template-banks entry wrote
+   its manifest out ready to paste; it is not pasted, because the row PASSES. That entry's
+   discrimination was exactly right — one of the three channel rows was chan-direction and two were a
+   missing `chanrecv` — and the consequence of landing both halves is that all three pass.
+
+### The design question the brief gated on: does the cargo fit the `GoArrayDims` precedent?
+
+**Yes — but only because a NIL channel can carry a direction, and that is the whole design.**
+
+All three `internal/reflectlite` rows read the direction at a **type position**, where there is no
+live channel to measure: `new(<-chan int)` and `new(chan<- string)` describe the zero value behind a
+pointer, and `struct{ x chan<- string }` describes a field nothing ever assigned. A direction that
+rode only on a *made* channel would have retired none of them. Putting it on the `channel<T>` STRUCT
+rather than on its heap `ChanCore` is what reaches them: direction belongs to the Go TYPE, so two
+values of different directions may share one core, and the zero value of a directional type has no
+core at all yet still has a direction (`channel<T>.SendOnly` / `.RecvOnly`).
+
+With that, the positions map one-for-one onto the array dims', and the plumbing is the same plumbing:
+
+| Position | Array length | Channel direction |
+|:--|:--|:--|
+| the constructed value | `new(32)` | `new channel<nint>(0, GoChanDir.Send)` |
+| a struct FIELD's zero | `= new(4)` initializer | `= channel<@string>.SendOnly` initializer |
+| behind a POINTER | `PointeeArrayDims` | `PointeeChanDir` |
+| the FABRICATED zero | `ZeroValueOf(st, dims)` | `ZeroValueOf(st, dims, chanDir)` |
+| a func PARAMETER | `[GoArrayDims(32)]` | not carried — no measured consumer |
+
+`abi.Type.chanDir` joins BOTH interning keys (shared with reflect's `canonType`), `Type.String()`
+renders the arrow from the same cargo, and a POINTER hands its pointee's direction down UNSHIFTED
+through `Elem()`. Unstamped answers `BothDir` — what the accessor already reported, and the honest
+answer for a type nothing narrowed — so only directional sites move.
+
+### The fourth position was found by MEASUREMENT, not by reasoning, and it is the useful lesson
+
+The first pipeline run came back **29 + 1 disclosed**, not 30. `TestAssignableTo` and `TestSetValue`
+flipped; `TestTypes` did not. The guard had already proven the struct-field route working through
+`reflect`, so the shape looked covered — and the discriminator is that reflectlite's helper does not
+ask the TYPE at all:
+
+```go
+func TypeString(t Type) string { return fmt.Sprintf("%T", ToInterface(Zero(t))) }
+```
+
+It fabricates a zero FROM the descriptor, boxes it, and re-describes it. The direction survived
+`Type.String()` and died at the box, because `GoReflect.ZeroValueOf` handed back
+`default(channel<T>)`. So the fabricated zero carries the cargo now, for exactly the reason
+`reflect.Zero` of an array type is already sized from the descriptor's dims: **a value the bridge
+invents must describe itself the way the descriptor does**, or the cargo is lost the first time
+anything boxes it. The guard was extended with that shape rather than left as the thing that missed
+it.
+
+### Three latent defects the cargo exposed, all fixed here
+
+None is this arc's own work; each was invisible because every `ChanDir()` answered `BothDir`.
+
+| Defect | Why it was silent | Consequence once directions are real |
+|:--|:--|:--|
+| `internal/reflectlite`'s hand-owned `haveIdenticalUnderlyingType` chan arm dropped Go's FIRST rule (*"x is a bidirectional channel value, T is a channel type, and V and T have identical element types"*) | with one direction, both of Go's two rules agree for every pair | `var r <-chan int = make(chan int)` reports unassignable |
+| `reflect.Value.Len()` had no `IChannel` arm at all | 0 is a real length — the same silence the named-string arm had | every channel Value reported `len` 0 while `Cap()` answered correctly one method away |
+| `Value.send` cannot use Go's `assignTo` | nothing reached `send` — `recv`'s guard refused first | `assignTo`'s managed form returns a Value carrying only the never-populated raw `ptr` slot and drops the boxed companion, so the channel received a bare null |
+
+The third is worth carrying: `send` now marshals through `marshalIntoSlot`, the rule `Value.Call`
+already used for a call argument, so a channel send and a call argument box a typed nil identically.
+That is the third boundary to join the one-nil-encoding rule.
+
+### The hang, reproduced and bounded
+
+near-miss-finish measured that bridging `recv` ALONE turns `TestIssue43065` into an unbounded hang
+costing 51 verdicts. That coupling is this lane's acceptance test, and the guard carries it as a
+timeout-bounded reproduction: `walkRangeShape` is `text/template`'s channel arm in miniature, run in
+a goroutine against `time.After`, so a regression prints a named line instead of wedging the suite.
+
+Proven failing-first by neutering each half SEPARATELY:
+
+- **cargo neutered** → every `dir=` reads `chan`, all four assignability answers flip to `true`, and
+  the send-only range prints `HUNG -- the direction guard did not fire before Recv`;
+- **recv guard neutered** to the auto form's zero → `range count(5)` panics
+  `reflect: recv on send-only channel`.
+
+### Boundaries, stated rather than discovered later
+
+- **A NARROWING conversion is not carried.** `var s chan<- int = ch` is a plain struct copy with no
+  construction to hook; stamping it means an explicit call at every assignment, argument and return
+  of a directional channel in the corpus — **89 such positions, measured** — for a datum no consumer
+  reads. `reflect.TypeOf(s)` still reports `chan int` there.
+- **A DEFINED channel type is not stamped** (`type closeWaiter chan struct{}`), for the reason a
+  defined ARRAY type carries no dims: its managed form is a go2cs-gen wrapper, not `channel<T>`. An
+  ALIAS for a channel IS its target and is stamped. The generated wrapper still forwards the two new
+  `IChannel` operations natively, so a named channel reflects and receives correctly — only its
+  direction reads bidirectional.
+- **A func PARAMETER is not stamped**, and **a type PARAMETER** routes through `ISupportMake`, which
+  has no direction-taking form.
+
+### The corpus footprint, and the four movers that had to be PROVEN pre-existing
+
+Three-target seeded emission (`windows,linux,darwin`; fresh root, single run, per the r41 rule):
+**63 marked / 0 clobbered** on every target, path-precise and line-anchored via `git grep`. The L3
+merge wrote 90 artifacts; **33 differ** CR-insensitively and every one is classified —
+
+| Class | Count | What |
+|:--|:--:|:--|
+| this arc | 16 | a directional channel FIELD gaining its initializer, in `crypto/tls`, `net/http` ×3, `net/{windows,linux,darwin}` ×6, `os/exec`, `os/signal`, `runtime/{windows,linux,darwin}/trace` ×3, `time` — 32 field declarations, zero off-shape lines |
+| template-banks | 4 | its two fixes' own emission (`parse/package_info.cs` +1 record, `html/template/package_info.cs` −1, `escape.cs`, `funcs.cs`) |
+| pre-existing carries | 13 | `gcimporter`; the runtime box-compare family, **re-measured at 9 rather than the recorded 7** (`alg`, `map`, `map_fast32`, `map_fast64`, `mbarrier`, `traceback`, `pprof/map`, plus `linux/mem_linux` and `darwin/mem_darwin` — the two per-GOOS members no windows-only reconvert can see); two per-GOOS `package_info.cs` losing a `readmemstats_m_bySize` lift record; `encoding/xml`'s stale README badge |
+
+Zero unclassified. The four that were not obviously pre-existing were **proven** so rather than
+assumed: master's converter was rebuilt from `git archive` and re-emitted `runtime` for linux, and it
+reproduces both shapes exactly — while `linux/trace.cs` is byte-identical under it, which is what
+proves that file's change IS this arc's. ⚠ Worth keeping as a technique: a single-target reconvert
+on the host GOOS cannot see a per-GOOS carry at all, so the runtime box-compare family has been
+under-counted at 7 since it was recorded.
+
+**Only this arc's 16 are banked, plus template-banks' 4** — the latter because they are no longer
+optional: `html/template` validates *through* them, and restoring `parse/package_info.cs` is what
+made `TestErrors` fail again on the first html/template run, a measured self-inflicted repro of
+exactly the defect that lane rooted. The 13 pre-existing carries are RESTORED and belong to a
+leveling regen.
+
+`src/core` dirt from the five `-tests` runs classified and restored per the standing rule:
+`{html,text}/template/doc.cs` and reflectlite's `{swapper,type,value}.cs` (the `global::go.*` root
+escape), plus `html/template/package_init.cs`'s `initᴛᴛtests` hook (+7 real lines).
+
+### The stale-validation-badge class is a PIPELINE gap, not four accidents
+
+template-banks censused `encoding/xml`'s README as the only package advertising
+`Tests-not_yet_validated` while its row was banked, and left it as "a one-line correction, or the
+next regen". It is neither an accident nor a one-off: **every bank leaves a stale badge**, and the
+mechanism is exactly locatable.
+
+The badge is composed at CONVERSION time from `docs/validation/current/<dot-id>.md` and
+`src/version.props` (`readmeBadgeLine`), but `writeReadmeFile` is **gated to `options.convertStdLib`**
+(`projectFileWriter.go`) — deliberately, so a behavioral-test or single-package conversion does not
+litter its directory. A `-tests` run writes the proof page and does not write the README; a
+single-package conversion does not write the README either. So the badge only ever catches up on the
+next whole-stdlib reconvert, which is not part of banking.
+
+This lane hit it three more times at once (`internal/reflectlite` frozen at `27/30`,
+`{html,text}/template` at `not_yet_validated`) and closed all four by the authoritative route —
+a seeded single-target `-stdlib` reconvert taken AFTER the proof pages updated, overlaying only the
+README movers. That is a repeat of the same manual step every future bank will owe.
+
+**The durable fix is one line of gating**, deliberately NOT taken here because it wants its own
+emission gate: let a `-tests` conversion that WROTE a proof page also refresh that package's README,
+or equivalently drop the `convertStdLib` gate to "stdlib package" rather than "stdlib run". Whoever
+takes it should keep the litter rule the gate exists for — the test is the PACKAGE's provenance, not
+the run's mode.
+
+### Two measurement hazards this lane paid for
+
+Both are variants of traps CLAUDE.md already names, and both cost a wasted cycle.
+
+**A poll that waits for a process to DISAPPEAR fires instantly if it has not yet APPEARED.**
+`until ! tasklist | grep -qi go2cs.exe; do sleep 20; done` looks like "wait for the converter to
+finish" and is actually "wait for the converter to not be running" — which is TRUE for the seconds
+between launching a command and its converter starting (here, a 1.6 GB seeding copy). The waiter
+exited immediately and its `tail` then failed on a log that did not exist yet, which reads exactly
+like a crashed run. This is the same class as the recorded `exit $true` inversion: the poll must be
+written on a POSITIVE condition the target actually produces — wait for the log to contain the
+completion marker, not for a process table to be empty.
+
+**Two conversions raced into ONE temp root, and it was self-inflicted.** The r41 rule ("never
+convert twice into the same root") was honored in intent and broken in fact: a `nohup … &` launch
+was replaced with a harness-tracked background launch without killing the first, and both wrote the
+same `-go2cspath`. Caught by `tasklist` showing two `go2cs.exe`, not by any output — the r41
+corruption is silent until a build fails. The rule needs a companion habit: **census the process
+table before launching a conversion**, because "I meant to replace that run" is not the same as
+having replaced it.
+
+### Gates
+
+Converter `go test ./...` **ok, 174.1 s, exit 0** (`projitemsIntegrity_test` included — the one new
+`.go` file is registered; `TestStdLibMetadataInSync` passes, and no `package_info.cs` record moved
+for this arc, so `go generate` is not owed).
+
+Full `check-no-regression.ps1`: **byte-identical generated `.cs` and `.csproj` across all 629
+behavioral packages**, 0 NOT MEASURED, 2 advisory converter warnings, **673 s**; preflight solution
+integrity **631/631**, path casing **4,534/4,534**. Re-run from scratch after the one late converter
+edit (a local-variable rename) so the gate binds the source at HEAD rather than the source it was
+launched against.
+
+Full behavioral suite **PASS at 602 projects, 1,671.6 s** — Transpile 602/602, Compile 602/602,
+**Target 602/602 byte-identical**, Output 576 compared / 0 failed (26 skipped, no `package main`),
+**0 timeouts / 0 NOT MEASURED**.
+
+Solution builds, all `--no-incremental`: `go2cs.slnx` Debug **0 errors, 715 s** (the gate no other
+harness covers, and this arc changes golib's `IChannel`/`channel<T>` surface);
+`go2cs-stdlib.slnx` `-p:GoTargetOS=windows` **0 errors, 381 s**; `-p:GoTargetOS=linux` **0 errors,
+364 s**. The linux build is not optional here — six of this arc's sixteen corpus movers live in
+`net/linux/` and `runtime/linux/`, which the default windows build never compiles. `bin`/`obj` purged
+between the target switch (916 of 935 directories; the 19 that resisted are long-path `Generated`
+folders in vendor/coverage packages, none platform-varying, and `--no-incremental` covers them).
+
+Row sweeps, from the committed roster: **`html/template` 243, `text/template` 52,
+`text/template/parse` 52 — 3 pass / 0 fail, 284 s.** `internal/reflectlite` **PASS at its NEW count,
+30** — which is the proof the class retirement is real rather than locally observed.
+
+Canaries — the five largest banked reflect consumers BY VERDICT COUNT, **recomputed from the roster at
+gate time** per the doctrine (`go/internal/gcimporter` 583, `go/types` 557, `encoding/json` 491,
+`crypto/tls` 400, `encoding/xml` 386; the two rows this lane banks are reflect consumers too but at
+243 and 52 they do not enter the set):
+
+| Canary | Expected | Result |
+|:--|:--:|:--|
+| `go/internal/gcimporter` | 583 | **PASS** (492 s) |
+| `go/types` | 557 | **PASS** (256 s) |
+| `encoding/json` | 491 | **PASS** (98 s) |
+| `encoding/xml` | 386 | **PASS** (103 s) |
+| `crypto/tls` | 400 | **FAIL — rooted to the GO baseline, see below** |
+
+Guards proven failing-first by neutering each half separately (both transcripts above).
+
+`src/core` dirt from the five `-tests` runs and the sweeps classified and RESTORED per the standing
+rule, with ONE exception banked deliberately: `text/template/parse/parse_test.cs` (2/2), which is
+template-banks' variadic-boxing fix reaching a BANKED row's committed test sources. It is banked
+rather than restored because the package re-validates at its full 52 with the new emission, so
+restoring it would leave every future sweep reporting the same drift forever.
+
+### ⚠ The `crypto/tls` canary reports FAIL, and the cause is the GO baseline on this host
+
+Recorded in full because a red flagship row is exactly what the banking-merge doctrine exists to
+catch, and this one is a FALSE red that will recur.
+
+The sweep's verdict maps say it precisely. The C# side ran its banked 402 rows and **every verdict is
+identical to the committed proof page — zero differences**. Exactly one row diverges between the two
+languages, `TestCertCache` (Go pass, C# fail), and that row is itself a banked `codegen-liveness`
+disclosure. The count still moved:
+
+| Row | Banked model | This run |
+|:--|:--|:--|
+| `TestBogoSuite` | Go **pass**, C# fail → a `host-limit` DIVERGENCE, counted as disclosed | Go **FAIL**, C# fail → the row AGREES, so it is not a divergence at all |
+| `TestCertCache` | Go pass, C# fail → disclosed | unchanged |
+
+Live disclosed = 1 where the roster banks 2, and the sweep's own `disclosed count moved` check fires.
+The C# side did not move; the GO side did. On this host `go test` actually executed the BoGo matrix —
+3,243 `TestBogoSuite/...` subtest rows appear on the Go side against the banked model's absence — and
+failed it, which is unsurprising given what that row's own disclosure documents about the runner's
+10-minute child deadline and 5,481-case matrix.
+
+**Nothing in a go2cs branch can influence this.** The Go baseline is `go test -json` over GOROOT's own
+`crypto/tls` sources with the Go toolchain, and on the Go side the BoGo shim is Go's own test binary,
+not the converted host. The row is environmental — network reachability of the boringssl module, and
+how far the runner gets before its own deadline — and it would reproduce at master on this machine.
+
+**The finding worth carrying is about the PIN, not about tls.** A disclosure pins a divergence, so it
+is only stable while the GO side is stable. `TestBogoSuite`'s Go side is itself load- and
+network-dependent, which makes this row brittle in BOTH directions: the sweep goes red when Go starts
+failing (here) and would go red again when Go goes back to passing on a quieter host. That is a
+property of disclosing a row whose baseline is not deterministic, and it is worth a coordinator ruling
+rather than a lane's patch — the honest options are to annotate the row the way `host-conditional`
+annotates verdict COUNTS, or to accept agreement-on-failure as satisfying a disclosure.
+
+This lane changed nothing here and banked nothing here: the regenerated `crypto/tls` test sources were
+RESTORED, including the pre-existing staleness they exposed (the committed sources still emit
+`tls_package` where the converter now emits `tls_internal_test_package`, the form **132** other
+packages already use — a stale bank, unrelated to this arc, and not something to level inside a red
+canary).
+
+### The queue, after this
+
+1. **`encoding/gob` (106)** — 103 of 106, now the closest unbanked package and the queue top. Its
+   recorded need is the **map key/elem dims cargo**, which shares this arc's plumbing: `synthType`
+   already takes cargo, `descriptorDimsKey` already renders it, and `Key()`/`Elem()` are the two
+   accessors that would consume it. Whoever takes it should read `chanDirectionCargo.go` first — the
+   converter-side shape is a third of a page, and the four-position table above is the map for it.
+2. **`sync/atomic`'s zero-size-field layout**, 3. **`%#x` of a `uintptr`**, 4. the two
+   variadic-argument walls (a SPREAD argument to a deferred variadic call; an empty variadic call
+   passing an empty slice where Go passes nil) — all unchanged. The variadic-func-in-an-`any`-slot
+   item drops off, landed with template-banks.
+
+The `chan-direction` class leaves the disclosure roster, taking the count from five back to four.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

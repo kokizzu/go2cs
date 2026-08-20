@@ -110,15 +110,15 @@ internal static @string String(this pipeAddr _) {
     internal Δsync.Mutex wrMu; // Serialize Write operations
     // Used by local Read to interact with remote Write.
     // Successful receive on rdRx is always followed by send on rdTx.
-    internal /*<-*/channel<slice<byte>> rdRx;
-    internal channel/*<-*/<nint> rdTx;
+    internal /*<-*/channel<slice<byte>> rdRx = /*<-*/channel<slice<byte>>.RecvOnly;
+    internal channel/*<-*/<nint> rdTx = channel/*<-*/<nint>.SendOnly;
     // Used by local Write to interact with remote Read.
     // Successful send on wrTx is always followed by receive on wrRx.
-    internal channel/*<-*/<slice<byte>> wrTx;
-    internal /*<-*/channel<nint> wrRx;
+    internal channel/*<-*/<slice<byte>> wrTx = channel/*<-*/<slice<byte>>.SendOnly;
+    internal /*<-*/channel<nint> wrRx = /*<-*/channel<nint>.RecvOnly;
     internal Δsync.Once once; // Protects closing localDone
     internal channel<EmptyStruct> localDone;
-    internal /*<-*/channel<EmptyStruct> remoteDone;
+    internal /*<-*/channel<EmptyStruct> remoteDone = /*<-*/channel<EmptyStruct>.RecvOnly;
     internal pipeDeadline readDeadline;
     internal pipeDeadline writeDeadline;
 }

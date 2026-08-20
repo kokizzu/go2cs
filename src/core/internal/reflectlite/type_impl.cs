@@ -30,7 +30,12 @@ partial class reflectlite_package
     // Elem returns the element type of a pointer/slice/array/map/chan type.
     internal static ΔType Elem(this rtype t)
     {
-        return toType(abi_package.synthType(GoReflect.ElementType(t.Type == nil ? null : t.Type.Value.sysType)));
+        ж<abi_package.Type> self = t.Type;
+        System.Type? st = self == nil ? null : self.Value.sysType;
+        // A POINTER hands its pointee's channel direction down unshifted, the hop `new(chan<- T)`
+        // takes to reach Elem().String(); nothing else carries the cargo through.
+        GoChanDir elemChanDir = st is not null && GoReflect.KindOf(st) == GoReflect.Pointer ? self.Value.chanDir : GoChanDir.Unstamped;
+        return toType(abi_package.synthType(GoReflect.ElementType(st), null, null, elemChanDir));
     }
 
     // Implements reports whether the type implements the interface type u (Go method-set rules:
@@ -99,8 +104,17 @@ partial class reflectlite_package
         if (kind == abi_package.Array)
             return ᏑT.Len() == ᏑV.Len() && haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
 
-        if (kind == abi_package.Chan)
-            return ᏑT.ChanDir() == ᏑV.ChanDir() && haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
+        // Go's chan arm is TWO rules, and the first one had been dropped here: a BIDIRECTIONAL x is
+        // assignable to any channel type with the same element, which is what makes
+        // `var r <-chan int = make(chan int)` legal. It was invisible while every ChanDir() answered
+        // BothDir — both rules then agreed for every pair — and became load-bearing the moment the
+        // direction became real cargo (2026-08-20).
+        if (kind == abi_package.Chan) {
+            if (ᏑV.ChanDir() == abi_package.BothDir && haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags))
+                return true;
+
+            return ᏑV.ChanDir() == ᏑT.ChanDir() && haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
+        }
 
         if (kind == abi_package.Func)
             return haveIdenticalFuncShape(ᏑT, ᏑV, cmpTags);
@@ -224,7 +238,8 @@ partial class reflectlite_package
     private static ж<abi_package.Type> structFieldDescriptor(GoReflect.GoFieldInfo f)
     {
         nint[]? dims = GoReflect.KindOf(f.Type) == GoReflect.Array ? f.ArrayDims : null;
-        return abi_package.synthType(f.Type, dims);
+        GoChanDir fieldDir = GoReflect.KindOf(f.Type) == GoReflect.Chan ? f.ChanDir : GoChanDir.Unstamped;
+        return abi_package.synthType(f.Type, dims, null, fieldDir);
     }
 
     // PkgPath answers a DEFINED type's import path over the same GoReflect machinery reflect's
@@ -260,7 +275,7 @@ partial class reflectlite_package
         if (t.Type == nil)
             return (@string)GoReflect.GoTypeName(null);
 
-        return (@string)GoReflect.GoTypeName(t.Type.Value.sysType, t.Type.Value.arrayDims);
+        return (@string)GoReflect.GoTypeName(t.Type.Value.sysType, t.Type.Value.arrayDims, t.Type.Value.chanDir);
     }
 
     // sysTypeOfLiteType recovers the managed System.Type a reflectlite Type wrapper describes

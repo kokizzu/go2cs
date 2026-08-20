@@ -83,7 +83,26 @@ public static partial class GoReflect
     /// </summary>
     public static string GoTypeName(Type? t, nint[]? arrayDims)
     {
+        return GoTypeName(t, arrayDims, GoChanDir.Unstamped);
+    }
+
+    /// <summary>
+    /// The Go source type string with the CHANNEL DIRECTION threaded as well — a direction-carrying
+    /// channel descriptor renders Go's <c>chan&lt;- string</c> / <c>&lt;-chan int</c>, where the
+    /// managed <c>channel&lt;T&gt;</c> alone can only say <c>chan T</c>. The same shape as the array
+    /// dims above and for the same reason: the datum is part of the Go type and not of the managed
+    /// one, so it arrives as descriptor cargo from whichever source knew it.
+    /// </summary>
+    public static string GoTypeName(Type? t, nint[]? arrayDims, GoChanDir chanDir)
+    {
         if (t is null) return "<nil>";
+
+        if (chanDir is GoChanDir.Recv or GoChanDir.Send && t.IsGenericType &&
+            t.GetGenericTypeDefinition() == typeof(channel<>))
+        {
+            string elem = GoTypeName(t.GetGenericArguments()[0]);
+            return chanDir == GoChanDir.Recv ? "<-chan " + elem : "chan<- " + elem;
+        }
 
         if (arrayDims is { Length: > 0 } && t.IsGenericType && t.GetGenericTypeDefinition() == typeof(array<>))
         {
@@ -120,8 +139,9 @@ public static partial class GoReflect
             if (gd == typeof(map<,>)) return "map[" + GoTypeName(a[0]) + "]" + GoTypeName(a[1]);
             if (gd == typeof(channel<>)) return "chan " + GoTypeName(a[0]);
             // A pointer descriptor's dims are the POINTEE's, unshifted (the same rule Elem()
-            // hands the cargo down by) — so `*[10]int` renders its array, not `*[]int`.
-            if (gd == typeof(ж<>)) return "*" + GoTypeName(a[0], arrayDims);
+            // hands the cargo down by) — so `*[10]int` renders its array, not `*[]int`. The
+            // channel direction rides down the same way, so `*chan<- string` keeps its arrow.
+            if (gd == typeof(ж<>)) return "*" + GoTypeName(a[0], arrayDims, chanDir);
         }
 
         if (t.BaseType == typeof(ж<uintptr>)) return "unsafe.Pointer";
