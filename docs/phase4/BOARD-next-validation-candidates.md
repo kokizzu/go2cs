@@ -13655,4 +13655,106 @@ to root them rather than left as sweep noise.
    sweep regenerated (`docs/validation/current/archive.tar.md`, which flipped
    `TestFileInfoHeaderSymlink` to `skip`/`skip` — both runtimes agreeing, on an unprivileged host) was
    **restored**, not banked: it encodes this machine's symlink privilege, not a validation change.
+## ✅ The crypto/tls regression is ROOTED and FIXED — the guilty merge predates the bank's own merge, the mechanism is the whitebox test model's two latent defects, and the fix reverts nothing (2026-08-19, lane `claude/tls-regression`, laptop G)
+
+The edwards25519-a entry above found the flagship row red at master (397 of 402, five divergences)
+and named two candidate merges. Both candidates were innocent — and so was every merge in the
+briefed window. The bisection had to walk PAST the bank itself to converge, and where it landed is
+the finding that matters beyond this row.
+
+### The bisection — seven probes, and the window was wrong
+
+The reproduce (filtered sweep at master, this host) confirmed three REAL divergent tests —
+`TestMarshalUnmarshal` (+ its `*tls.SessionState` child) and `TestQUICHandshakeError` — plus
+`TestBogoSuite`'s 3,242 Go-side children flooding as one-sided rows (below), with `TestCertCache`
+matching its pinned disclosure normally. A fast probe replaced the 11-minute sweep for bisection:
+convert + build the tls tests closure at each commit (scoped purge first) and run the two failing
+tests directly in the built host, ~4 minutes per probe. Verdicts, newest first:
+
+| probe | MarshalUnmarshal / QUIC | emitted test-source shape |
+|---|---|---|
+| `98bff3efc` (near-miss batch) | RED | whitebox-reference |
+| `c961112ad` (row-harvest-3) | RED | whitebox-reference |
+| `0390fece4` (variadic-call) | RED | whitebox-reference |
+| `5a16458ad` (**the tls bank's own merge**) | RED | whitebox-reference |
+| `837fd3a01` (reflect-minibridge) | RED | whitebox-reference |
+| `d1ed1f7c1` (**local-iface-cast — GUILTY**) | RED | whitebox-reference |
+| `b5a82df19` (its first-parent) | **GREEN** | **recompile** |
+
+So the regression entered with `d1ed1f7c1` — which merged BEFORE the bank. The tls-mint-site lane
+forked at `b5a82df19`, proved 400+2 on its own tip (whose converter still emitted the RECOMPILE
+test model for tls), and merged at `5a16458ad` — into a master that already carried local-iface-cast.
+Each side green alone; the union red; nothing swept the union. **A lane's sweep proof binds its own
+tree, never the merge result** — the process rule this adds to CLAUDE.md's gate doctrine, alongside
+the derived-never-carried reflect-canary set.
+
+### The mechanism — a model FLIP exposing two latent whitebox defects
+
+`d1ed1f7c1`'s converter change ("a local named value source in call syntax records its pair") moved
+records off the production-anchored partition, so `recordsRequireProductionAnchor` stopped firing
+for crypto/tls and the test conversion stopped FALLING BACK to the recompile model: tls converts
+under **whitebox-reference** from that commit on (production types stay in the referenced
+crypto.tls.dll; test sources compile alone against a friend bridge). That flip is INTENDED — it is
+the model encoding/xml banked 386/386 under — but tls's suite exercises two whitebox shapes xml's
+does not, and both had latent defects:
+
+1. **ImplementGenerator stubbed bridge-implemented interface members** (`TestMarshalUnmarshal`).
+   `*SessionState` satisfies the internal `handshakeMessage` interface ONLY through test-declared
+   methods (`marshal`/`unmarshal` live in handshake_messages_test.go — Go lets test files add
+   methods to production types). The sealing-marker classification ("a cross-assembly unexported
+   interface method with nothing to forward to is a stub") gathers its no-local-implementation
+   evidence from the struct's own declaration syntax — which a PRODUCTION type referenced from a
+   test compilation does not have — so both members classified as markers and the adapter compiled
+   with `=> default!` bodies: marshal answered an EMPTY buffer with nil error, unmarshal answered
+   false, and the test reported "#15 failed to unmarshal 0x…" with no diagnostic anywhere (the
+   trailing `%x` printing nothing was the tell). Fix: the evidence scan now covers the friend
+   bridge's extensions by receiver simple name in BOTH forms — direct-ж, and `[GoRecv] ref` (which
+   forwards through its RecvGenerator ж-twin, exactly as `IsRefRecv` already routes the local
+   form). Guarded failing-first by `GenTests.WhiteboxBridgeAdapterTests` (the REAL generator run
+   over a two-assembly model of this shape) and the ref-scan unit rows in
+   `FriendBridgeBoxReceiverTests`.
+
+2. **golib's `error<T>` shell never joined the carrier-unwrap protocol** (`TestQUICHandshakeError`).
+   Go interface equality is decided on the dynamic (type, value), never on which CARRIER holds it —
+   and under whitebox the same AlertError value legitimately rides two different carriers:
+   production has no `GoImplement<AlertError, error>` record (it only ever boxes the value into
+   `any`), so fmt's `%w` assert minted golib's runtime shell `error<AlertError>`, while the test's
+   `errors.Is` target arrived as the test assembly's generated `ᴠ` value adapter. Every
+   go2cs-gen-generated shell implements `IInterfaceAdapter` so `AreEqual` can unwrap it;
+   `error<T>` — the ONE hand-written shell — did not, so it fell to reference equality and the same
+   alert value never matched itself (`quicError` then failed to find the chain's `alert` the same
+   way, wrapping `alertInternalError`). Fix: `error<T>` implements `IInterfaceAdapter` with the
+   identical member every generated shell carries — the ж box when pointer-backed (Go pointer
+   identity), the value otherwise. Guarded failing-first by
+   `GolibTests.ErrorShellCarrierEqualityTests` (both flavors, plus the protocol membership itself).
+   Under recompile neither defect could fire: production sources recompiled INTO the test assembly,
+   so the struct declaration was local (evidence present) and `AlertError` implemented `error`
+   nominally (no carrier on either side).
+
+### What this run could and could not verify on this host
+
+Post-fix, the filtered sweep's real divergence set is **empty** — `TestMarshalUnmarshal`,
+`TestMarshalUnmarshal/*tls.SessionState` and `TestQUICHandshakeError` all pass THROUGH the sweep
+machinery, and `TestCertCache` matches its pinned disclosure. What laptop G cannot reproduce is the
+banked run's `TestBogoSuite` shape: here the GO ORACLE's own BoGo run expands to 3,243 subtests and
+fails at its child runner's 600 s deadline (642 s, package-level fail), so its passing Go-side
+children flood the comparison as one-sided rows and no disclosure arm can withdraw them — the same
+host asymmetry the edwards25519-a entry measured pre-fix, present in every probe including the
+GREEN one, and unreachable from any go2cs layer. The row's 400+2 confirmation on a host whose Go
+BoGo behaves as banked (laptop R ran it in 32 s) is owed at merge, per the new post-merge-bank rule.
+The banked test sources were deliberately NOT refreshed: the committed tree still carries the
+recompile-shape emission from the bank, the reconvert now produces the whitebox shape, and that
+refresh belongs to the next milestone rebank, not to a regression fix.
+
+### Corrections to the record
+
+- The edwards25519-a entry's suspect window (`c961112ad`/`98bff3efc`) was wrong in both directions:
+  the guilty merge is EARLIER than the window's start, and every merge inside the window is clean.
+- That entry listed five divergences including `TestBogoSuite` and `TestCertCache`; re-measured
+  here, `TestCertCache` matches its disclosure every run (its "divergence" reading was the
+  BoGo-flood arithmetic), and `TestBogoSuite`'s is the host-environmental Go-oracle shape above,
+  not a code regression. The REAL regression was exactly three verdict rows, all fixed.
+- `98bff3efc`'s near-miss entry can keep its wins: nothing here reverts the recv-bridge revert, the
+  six bridge fixes, or the discard/alias work — the fix is additive at both layers.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

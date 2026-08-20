@@ -6421,6 +6421,20 @@ definition of Go equality, and a second copy per shell class is exactly the drif
 an `Object` that is not a `dependency`, lookup after narrowing, lookup after re-widening, and the
 `Object(d) != obj` identity probe that pinned the equal-but-unfindable split.)
 
+The same relation gained its last carrier on 2026-08-19 (the crypto/tls regression): golib's own
+`error<T>` — the hand-written generic shell for `error`, the one shell go2cs-gen does not emit — had
+never joined the `IInterfaceAdapter` unwrap protocol its generated siblings define, so `AreEqual`
+could see through every carrier EXCEPT it and two independently minted carriers of the same error
+value compared by reference. The shape needs two minters for one value, which the white-box test
+model makes routine: crypto/tls's production code never casts `AlertError` to `error` (it only boxes
+it into `any`), so fmt's `%w` assert resolved the runtime shell, while the test assembly's
+`errors.Is` target arrived as its own generated `ᴠ` value adapter — and
+`errors.Is(err, AlertError(alertBadCertificate))` answered false for the very alert `quicError` had
+wrapped (`TestQUICHandshakeError`). `error<T>` now carries the identical member every generated
+shell does: the `ж` box when pointer-backed (Go pointer-identity equality), the wrapped value
+otherwise. (Guarded by `GolibTests.ErrorShellCarrierEqualityTests` — two shells over one value, the
+pointer-identity flavor, and the protocol membership itself.)
+
 ### Named map types and constrained map access
 
 A defined map type — `type Grades map[string]int` — emits the `[GoType("map[K, V]")] partial struct` forward declaration (completing the long-standing `visitMapType` stub), implemented by go2cs-gen's Map template: full forwarding of `IMap<K, V>` (including the two-value comma-ok indexer), `IDictionary<K, V>`, enumeration, and the `ISupportMake` factory through the wrapped `map<K, V>`. Its composite literal wraps the concrete map literal in the named constructor — `new Grades(new map<@string, nint>{["a"u8] = 1})` — mirroring named arrays/slices (a direct indexer-initializer would target a default wrapper with no backing dictionary; the old emission produced Go-style `key: value` inside C# braces — CS1513). Comma-ok indexing works through a **constrained map type parameter** too: `v, ok := m[k]` where `M ~map[K]V` detects the map CORE of the constraint (both at the assignment's tuple gate and in the index emission) and routes the same `m[k, ꟷ]` two-value indexer, which lives on `IMap<K, V>` itself. The **nil comparison** `m == nil` — Go's only legal map comparison, maps.Clone's nil-preserve guard — emits the `IMap.IsNil` property (`if (m.IsNil)`; backing-store null, distinct from an allocated empty map — no operator exists on a type parameter, CS8761), and `delete(m, k)` on a constrained map binds a golib `delete(IMap<K, V>, K)` overload (key/value types infer from the interface conversion). (Guarded by the `GenericTypeInference` extension `EqualMaps` — a maps.Equal clone over a named map type through the constraint, comma-ok + comparable-erased equality, values vs Go.)
@@ -10945,6 +10959,24 @@ forbids implementing another package's unexported method at all, so a `[GoImplem
 an unexported interface method can only come from a struct in that same Go package). The guard is
 `internal/profile`'s own banked suite: the shape needs a white-box test package, which the behavioral
 corpus has no way to express.
+
+The white-box model then forced a SECOND correction to the same clause (2026-08-19, the crypto/tls
+regression). `internal/profile`'s shape declares the STRUCT in the test compilation, so the
+local-implementation evidence — gathered from the struct's own declaration syntax — was findable
+there. crypto/tls's `TestMarshalUnmarshal` is the mirror shape: the struct is a PRODUCTION type
+(`*SessionState`, metadata-only in the test compilation) and only its METHODS are test-declared
+(handshake_messages_test.go's `marshal`/`unmarshal`, the sole source of its `handshakeMessage`
+satisfaction — Go lets a package's test files add methods to its production types). With no local
+declaration syntax the evidence set was EMPTY, both members classified as markers, and the identical
+silent-stub failure recurred: marshal answered an empty buffer with nil error and the test reported
+"failed to unmarshal" with no diagnostic. The evidence now also covers the friend bridge's
+extensions by receiver simple name, in BOTH receiver forms — direct-`ж`, and `[GoRecv] ref` (which
+forwards through its RecvGenerator `ж`-twin, the same routing `IsRefRecv` applies to a local
+declaration). Genuine markers still stub: a foreign struct with no bridge has no such extensions
+anywhere in the compilation. (Guarded by `GenTests.WhiteboxBridgeAdapterTests`, which runs the real
+generator over a two-assembly model of the shape, and the ref-scan rows in
+`GenTests.FriendBridgeBoxReceiverTests` — the behavioral corpus still cannot express a white-box
+test package.)
 
 ### A dynamic interface's runtime conversion class re-escapes a keyword method name
 An anonymous or type-asserted interface is lifted to a `[GoType("dyn")]` partial interface (see

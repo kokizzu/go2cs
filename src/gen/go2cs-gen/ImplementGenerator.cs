@@ -264,6 +264,29 @@ public class ImplementGenerator : ISourceGenerator
             if (structDecl is not null)
                 localImplNames.UnionWith(structDecl.GetBoxReceiverMethodNames(compilation!));
 
+            // A referenced PRODUCTION struct can gain methods from the current compilation's friend
+            // bridge — an internal white-box test package declaring `marshal(this ж<T>)` or
+            // `[GoRecv] unmarshal(this ref T, …)` for a production T reachable through the test
+            // model's InternalsVisibleTo grant. The declaration discovery above hands back
+            // (null, null) for exactly that shape, so the local-implementation EVIDENCE must come
+            // from a compilation-wide scan, in EVERY receiver form the local path counts (the ref
+            // form forwards through its RecvGenerator ж-twin, exactly as IsRefRecv does below).
+            // Without this the package-sealing stub reads a bridge-implemented member as an
+            // inaccessible marker, and the adapter COMPILES while silently answering defaults —
+            // crypto/tls's *SessionState is the measured consumer: its test-declared
+            // marshal/unmarshal stubbed to `default!`, so TestMarshalUnmarshal saw an empty marshal
+            // and reported "failed to unmarshal" with no diagnostic anywhere.
+            HashSet<string> bridgeBoxMethods = [];
+            HashSet<string> bridgeRefMethods = [];
+
+            if (structDecl is null)
+            {
+                bridgeBoxMethods = StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNamesBySimpleName(structType.Name, syntaxContext.SemanticModel.Compilation);
+                bridgeRefMethods = StructDeclarationSyntaxExtensions.GetRefReceiverMethodNamesBySimpleName(structType.Name, syntaxContext.SemanticModel.Compilation);
+                localImplNames.UnionWith(bridgeBoxMethods);
+                localImplNames.UnionWith(bridgeRefMethods);
+            }
+
             // The adapter had no notion that a member's IMPLEMENTED name and its FORWARDED name can
             // differ, and spelled the interface's name at both positions — so once the collision pass
             // Δ-renamed a test-file declarator the forward bound nothing on the box (CS1929 ×10 in
@@ -426,19 +449,21 @@ public class ImplementGenerator : ISourceGenerator
                 // A referenced production struct can gain pointer-receiver methods from the current
                 // test compilation's friend bridge. Those extensions are syntax-local even though the
                 // struct declaration is metadata-only — which is exactly when the discovery above
-                // hands back (null, null), so this scan must use the CURRENT compilation, and must
-                // key on the SIMPLE name: the bridge spells its box parameter through whatever
-                // qualification its own file needs (`this ж<Replacer>` via an imported alias, but
-                // `this ж<global::go.sync_package.poolChain>` once a `go/*` package in the closure
-                // shadows the root namespace), never one fixed display form.
-                HashSet<string> bridgeBoxMethods = [];
-
+                // hands back (null, null), so the scan (hoisted beside localImplNames, which needs
+                // the same evidence for the sealing-marker classification) uses the CURRENT
+                // compilation, keyed on the SIMPLE name: the bridge spells its box parameter through
+                // whatever qualification its own file needs (`this ж<Replacer>` via an imported
+                // alias, but `this ж<global::go.sync_package.poolChain>` once a `go/*` package in
+                // the closure shadows the root namespace), never one fixed display form. A bridge
+                // [GoRecv] ref extension binds the box through its RecvGenerator ж-twin, exactly as
+                // IsRefRecv routes the local form above.
                 if (structDecl is null)
                 {
-                    bridgeBoxMethods = StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNamesBySimpleName(structType.Name, syntaxContext.SemanticModel.Compilation);
-
                     foreach (string boxReceiverName in bridgeBoxMethods)
                         forwardReceivers[boxReceiverName] = "m_box";
+
+                    foreach (string refReceiverName in bridgeRefMethods)
+                        forwardReceivers[refReceiverName] = "m_box";
                 }
 
                 // A FOREIGN struct (no local declaration — the pair is recorded locally because
@@ -502,8 +527,10 @@ public class ImplementGenerator : ISourceGenerator
                         // this member back to `m_box.Value` — stranding the direct-ж extension
                         // receiver (CS1929). The bridge scan already bound it to the box; keep that.
                         // sync's export_test.go declares PushHead/PopTail on the production
-                        // `*poolDequeue`/`*poolChain`, which is exactly this shape.
-                        if (bridgeBoxMethods.Contains(simpleName))
+                        // `*poolDequeue`/`*poolChain`, which is exactly this shape — and the ref
+                        // form (crypto/tls's `[GoRecv] unmarshal(this ref SessionState, …)`) binds
+                        // the box through its RecvGenerator ж-twin the same way.
+                        if (bridgeBoxMethods.Contains(simpleName) || bridgeRefMethods.Contains(simpleName))
                             continue;
 
                         bool viaBox = boxBound.Contains(simpleName);

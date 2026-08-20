@@ -512,8 +512,22 @@ ONE stdlib in a build; there is now only one on disk.
   Redirect long runs to a file and read the file. And never inject non-ASCII C# source (`Ꮡ`, `ж`,
   `Δ`) through a PowerShell command STRING — the argument pass mojibakes it even when file I/O is
   correct; write such content with the Edit/Write tools.
-
-### Performance comparison suite (`src/tests/Performance`, 2026-07-02)
+- **⚠ Banked-row protection at MERGE time — two rules, both paid for by the crypto/tls regression
+  (found 2026-08-19; rooted and fixed by lane `claude/tls-regression`).** The flagship row banked
+  green on its lane tip and was RED at master the moment its merge landed, because the guilty change
+  (`d1ed1f7c1`, local-iface-cast) had merged to master AFTER the lane forked — each side green
+  alone, the union never swept. A lane's sweep proof binds its OWN tree, never the merge result.
+  (1) **A BANKING merge owes a post-merge filtered sweep of its own row at the merge RESULT** —
+  `run-validated-sweep.ps1 -Filter <pkg>` on the merged master, not the lane tip; the lane-tip proof
+  is necessary but not sufficient. (2) **Any reflect-bridge-touching change's canary set is the FIVE
+  largest banked reflect consumers BY VERDICT COUNT — recomputed from
+  `docs/ValidatedTestPackages.md` at gate time, never carried forward** (as of 2026-08-19 that
+  derivation yields: `go/internal/gcimporter` 583, `go/types` 557, `encoding/json` 491, `crypto/tls`
+  402, `encoding/xml` 386 — order by count; the point is the list is derived, never remembered, so
+  the newest banks are always in it — the escape happened precisely because merge canary sets
+  predated the newest bank). "Reflect-bridge-touching" reads broadly: `src/core/reflect/*_impl.cs`,
+  `src/core/internal/reflectlite`, golib's `GoReflect.*`/adapter/equality machinery, and the
+  go2cs-gen adapter/shell templates all qualify.
 - **Purpose:** answer "how fast is the transpiled C# vs the original Go?" — 14 small `Perf*` benchmark
   projects (Startup, Fib, Sieve, MatMul, String, StringView, StringMatch, Map, Sort, Channel, IfaceCall,
   Iface, IfaceShell, RefLower), each a behavioral-test-shaped folder,
