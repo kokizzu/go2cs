@@ -1103,7 +1103,6 @@
 [assembly: GoTypeAlias("Error", "ΔError")]
 [assembly: GoTypeAlias("FuncMap", "go.text.template_package.FuncMap")]
 // </ExportedTypeAliases>
-[assembly: GoImplement<go.text.template.parse_package.BranchNode, go.text.template.parse_package.Node>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<ΔError, error>(Pointer = true)]
 
@@ -2504,6 +2503,7 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<ActionNode, Node>(Pointer = true)]
 [assembly: GoImplement<BoolNode, Node>(Pointer = true)]
+[assembly: GoImplement<BranchNode, Node>(Pointer = true)]
 [assembly: GoImplement<BreakNode, Node>(Pointer = true)]
 [assembly: GoImplement<ChainNode, Node>(Pointer = true)]
 [assembly: GoImplement<CommandNode, Node>(Pointer = true)]
