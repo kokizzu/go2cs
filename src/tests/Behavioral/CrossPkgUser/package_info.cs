@@ -45,7 +45,6 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<CrossPkgLib_package.Branch, CrossPkgLib_package.Emitter>(Pointer = true)]
 [assembly: GoImplement<CrossPkgLib_package.Sensor, Labeled>(Pointer = true)]
 [assembly: GoImplement<badge, CrossPkgLib_package.Labeled>]
 [assembly: GoImplement<badge, Labeled>]

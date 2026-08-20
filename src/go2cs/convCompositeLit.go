@@ -652,6 +652,17 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 					}
 
 					callContext.castArgToType[i] = castType
+				} else if castType := v.variadicFuncBoxCastType(v.getType(elt, false)); castType != "" {
+					// A VARIADIC func element boxes as C#'s SYNTHESIZED anonymous delegate
+					// unless it is cast to its Go func type — the third member of this same
+					// carry-your-Go-type family, applied through the same plumbing (see
+					// typedNilInterfaceBoxing.go). `[]any{escaper}` read back as
+					// `slots[0].(func(...any) string)` cannot match without it.
+					if callContext.castArgToType == nil {
+						callContext.castArgToType = make(map[int]string)
+					}
+
+					callContext.castArgToType[i] = castType
 				}
 
 				// A POINTER element crosses into interface space as its BOX, carrying its Go
@@ -1235,6 +1246,14 @@ func (v *Visitor) markAnyFieldLits(structType *types.Struct, elts []ast.Expr, co
 			context.u8StringArgOK[i] = true
 			context.useGoStringArg[i] = true
 		} else if castType := v.untypedConstBoxCast(elt); castType != "" {
+			if context.castArgToType == nil {
+				context.castArgToType = make(map[int]string)
+			}
+
+			context.castArgToType[i] = castType
+		} else if castType := v.variadicFuncBoxCastType(v.getType(elt, false)); castType != "" {
+			// The struct-field twin of the slice-element arm above: a VARIADIC func in an
+			// `any` field slot must carry its Go func type, not C#'s synthesized delegate.
 			if context.castArgToType == nil {
 				context.castArgToType = make(map[int]string)
 			}

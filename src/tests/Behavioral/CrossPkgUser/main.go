@@ -173,16 +173,19 @@ func makeRelay() (*relay, error) { return &relay{tag: "live"}, nil }
 
 func getReporter() (CrossPkgLib.Reporter, error) { return makeRelay() }
 
-// Root 1: a CONCRETE *Leaf (from the lib) cast to the SEALED Emitter interface HERE — the adapter is
-// generated in THIS assembly, where the unexported emitNode marker's INTERNAL extension is
-// inaccessible; forwarding `m_box.Value.emitNode()` is CS1061 (go/internal/typeparams casting go/ast's
-// *IndexExpr to ast.Expr), so the adapter must STUB the sealing marker.
+// Root 1: a CONCRETE *Leaf (from the lib) cast to the SEALED Emitter interface HERE. An adapter
+// generated in THIS assembly could not bind the unexported markers' INTERNAL extensions
+// (`m_box.Value.emitNode()` is CS1061 — go/internal/typeparams casting go/ast's *IndexExpr to
+// ast.Expr) and would stub them; the declaring package exports the adapter instead, and this cast
+// references it. *Leaf earns that by declaring its whole method set directly.
 var leafEmitter CrossPkgLib.Emitter = CrossPkgLib.NewLeaf("leaf")
 
 // Root 2b: a CONCRETE *Branch (which PROMOTES Emit through its EmitBase VALUE embed) cast to Emitter —
-// the foreign-struct adapter must forward the promoted, exported Emit THROUGH the embed
+// the adapter must forward the promoted, exported Emit THROUGH the embed
 // (`parse_package.Emit(ref m_box.Value.EmitBase)`), not the CS1929 `m_box.Value.Emit()`
-// (text/template's parse.RangeNode{BranchNode} String shape).
+// (text/template's parse.RangeNode{BranchNode} String shape). The promotion is also what withheld
+// the declaring package's speculative pointer record until the sealed-interface carve-out, which is
+// what Root 2c below reads back.
 var branchEmitter CrossPkgLib.Emitter = CrossPkgLib.NewBranch("branch", 3)
 
 // Root 2a: a closure that CAPTURES an outer variable (base) AND returns NAMED results, one written via a
@@ -450,12 +453,24 @@ func main() {
 	sbx.Holder.item = &CrossPkgLib.Sensor{Name: "shed", Temp: 40}
 	fmt.Println(sbx.Holder.item.Name, sbx.tag) // shed b
 
-	// Root 1: a cross-assembly cast of *Leaf to the sealed Emitter — the adapter stubs the unexported
-	// emitNode marker (inaccessible here) and forwards the exported Emit.
+	// Root 1: a cross-assembly cast of *Leaf to the sealed Emitter. *Leaf's whole method set is
+	// declared DIRECTLY on it, so the declaring assembly already exports its adapter and this cast
+	// references it — the CONTROL for the pair below.
 	fmt.Println("leaf:", leafEmitter.Emit()) // leaf: leaf
 
 	// Root 2b: *Branch promotes Emit through its EmitBase embed — the adapter forwards through the embed.
 	fmt.Println("branch:", branchEmitter.Emit()) // branch: branch
+
+	// Root 2c: the SEALED members read back by the DECLARING package, on values boxed HERE — the
+	// text/template/parse.ErrorContext(n Node) → n.tree() shape. Nothing in this file can call
+	// nodeTag; only the lib can, which is exactly why an adapter minted HERE could stub it unnoticed.
+	// *Branch is the shape that used to: its Emit is PROMOTED through EmitBase, so the declaring
+	// package's speculative pointer record was withheld on promotion depth and this assembly minted a
+	// local adapter whose nodeTag() answered "" — silently, forever. An interface Go SEALS to its own
+	// package can only ever be realized there, so the record is not an optimization and withholding it
+	// is not conservative. html/template's TestErrors is what the silence costs in the corpus.
+	fmt.Println("described leaf:", CrossPkgLib.DescribeEmitter(leafEmitter))     // described leaf: leaf/lf
+	fmt.Println("described branch:", CrossPkgLib.DescribeEmitter(branchEmitter)) // described branch: branch/brn
 
 	// Root 2a: a captured closure with named results — the named result is declared in the closure's
 	// own scope, not hoisted as an undefined outer capture.

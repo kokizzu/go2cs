@@ -206,6 +206,11 @@ public static ΔMarker MakeMarker(@string s) {
 [GoType] partial interface Emitter {
     @string Emit();
     void emitNode();
+    @string nodeTag();
+}
+
+public static @string DescribeEmitter(Emitter e) {
+    return e.Emit() + "/"u8 + e.nodeTag();
 }
 
 [GoType] partial struct Leaf {
@@ -217,6 +222,10 @@ public static ΔMarker MakeMarker(@string s) {
 }
 
 [GoRecv] internal static void emitNode(this ref Leaf l) {
+}
+
+[GoRecv] internal static @string nodeTag(this ref Leaf l) {
+    return "lf"u8;
 }
 
 public static ж<Leaf> NewLeaf(@string text) {
@@ -237,6 +246,13 @@ public static ж<Leaf> NewLeaf(@string text) {
 }
 
 [GoRecv] internal static void emitNode(this ref Branch b) {
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string brnˢ = "brn"u8;
+
+[GoRecv] internal static @string nodeTag(this ref Branch b) {
+    return brnˢ;
 }
 
 public static ж<Branch> NewBranch(@string label, nint kind) {

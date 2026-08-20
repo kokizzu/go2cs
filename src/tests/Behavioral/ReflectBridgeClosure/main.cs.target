@@ -115,7 +115,7 @@ internal static void Main() {
         fmt.Printf("field %s found=%v anonymous=%v tag=%q exported=%v type=%s\n"u8, name, ok, f.Anonymous, ((@string)f.Tag), f.IsExported(), f.Type);
     }
     handler named = (nint _Δp0) => default!;
-    foreach (var (_, f) in new any[]{noArgs, oneIn, oneOut, twoOut, variadic, mixed, named}.slice()) {
+    foreach (var (_, f) in new any[]{noArgs, oneIn, oneOut, twoOut, (Actionꓸꓸꓸ<@string, nint>)(variadic), mixed, named}.slice()) {
         var t = reflect.TypeOf(f);
         fmt.Printf("func %-34s name=%q variadic=%v\n"u8, t.String(), t.Name(), t.IsVariadic());
     }

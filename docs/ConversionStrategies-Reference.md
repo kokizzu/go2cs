@@ -10070,6 +10070,30 @@ only full-stdlib delta is the transport.cs site. (Guarded by `VariadicFuncTypeAs
 variadic assert invoked through the asserted value, a negative assert on a non-func value, and a
 non-variadic anonymous func assert, output-compared vs Go.)
 
+**…and the BOXING side needs the matching cast, or the two can never meet (2026-08-20).** Rendering
+the assert target through `iifeDelegateType` fixes the *reading* half; the *writing* half is where the
+value acquires a dynamic type, and for a variadic func that type is C#'s, not Go's. C# gives a method
+group or lambda at an untyped destination a **natural function type**: for a non-variadic signature
+that is `Func<…>`/`Action<…>` — go2cs's own lowering, so the two already agree and nothing is emitted
+— but a `params` signature has no BCL delegate, so C# **synthesizes** one and the box carries
+`<>f__AnonymousDelegate0` forever. html/template's `funcMap` is `map[string]any` of `func(...any)
+string` escapers assigned as method groups, and its own `TestRedundantFuncs` reads them back with
+`funcMap[n].(func(...any) string)`: `interface conversion: interface {} is <>f__AnonymousDelegate0,
+not go.Funcꓸꓸꓸ<object, @string>`. The assert was right, the box was wrong, and both were emitted by
+the same converter.
+
+So a variadic func entering EMPTY-INTERFACE space is cast to its Go func type at the boundary —
+`((Funcꓸꓸꓸ<any, @string>)(attrEscaper))` — which is the same carry-your-Go-type rule the pointer box
+and the untyped-constant box already apply at that same finite set of slots, and it lives with them in
+`typedNilInterfaceBoxing.go`. Both sides now name the type through `getCSharpTypeName` →
+`iifeDelegateType`, one renderer, so they cannot drift. The cast is a no-op wherever the value already
+has that type (a typed var, a call result), so it widens nothing; a NON-empty interface target needs
+nothing either, since a bare func type has no methods and satisfies no other Go interface. (Guarded by
+the extension to `VariadicFuncTypeAssert` — a variadic func literal direct to `any`, a variadic method
+group as a `map[string]any` element, through a plain assignment, and as an `[]any{…}` element, each
+asserted back; plus a NON-variadic literal direct to `any` as the control that must keep matching
+without a cast. Neutering the cast prints `no match` on all four and leaves the control passing.)
+
 ### `reflect.Value.Call` over a variadic func value is TYPED dispatch — no reflective invoke can carry the tail
 
 The `params Span<T>` tail above is what makes a converted variadic callable and readable from Go
@@ -10977,6 +11001,58 @@ anywhere in the compilation. (Guarded by `GenTests.WhiteboxBridgeAdapterTests`, 
 generator over a two-assembly model of the shape, and the ref-scan rows in
 `GenTests.FriendBridgeBoxReceiverTests` — the behavioral corpus still cannot express a white-box
 test package.)
+
+#### …so the DECLARING package must own the adapter, and its speculative record carves out for it
+The stub above rests on one sentence — *"Go never lets a sealing marker be called from outside its
+package"* — which is true and is not the whole rule. The marker cannot be called from outside; it is
+called **inside**, on a value the consumer boxed, which is the entire reason a sealing interface has
+unexported members in the first place. `text/template/parse.ErrorContext(n Node)` opens with
+`tree := n.tree()`; `html/template` boxes an `&n.BranchNode` into that `Node`. Nothing in
+html/template can call `tree()` — and nothing has to, because `parse` does it for them. A stubbed
+`tree()` answers `default!` there, `ErrorContext` then substitutes its own receiver, and at
+html/template's `(*parse.Tree)(nil).ErrorContext(e.Node)` call site that receiver is also nil, so
+`~tree` nil-dereferences. `TestErrors` was the symptom, three packages from the record that was never
+written (2026-08-20).
+
+So the stub is a **last resort, not a design**, and it must be unreachable for any pair that can be
+realized properly. It can always be realized in ONE assembly: Go scopes an interface with an
+unexported method to its declaring package, so every type that will ever implement it is declared
+there, and the declaring assembly's own adapter forwards the marker natively (its extension is
+`internal`, and that is the assembly it is internal to). A consumer then references the exported
+`pkg.TжIface` through the existing foreign-adapter-exists arm and mints nothing. That is what
+[`recordSamePackageImplements`](#a-package-records-the-pairs-it-satisfies-not-only-the-ones-it-witnesses) already
+does for the pairs a package satisfies but never witnesses — it simply withheld this one.
+
+The gate it withheld on is `generatorCanForwardPointerMethodSet`, which demands every interface method
+resolve DIRECTLY on the type (no promotion at all), on the stated reasoning that *"withholding a
+speculative record is always safe, because the consumer keeps the local adapter it had before"*. That
+sentence is true of an all-exported interface and **false of a sealed one**, where the local adapter
+is not a fallback but an adapter that cannot work. `*parse.BranchNode` is exactly the shape: it
+implements `Node`, but `Type()` and `Position()` are promoted from its embedded `NodeType`/`Pos`, so
+the strict gate refused — and `parse` never casts a `*BranchNode` itself (it casts the
+`If`/`Range`/`With` wrappers), so nothing demanded the record either.
+
+The carve-out is therefore keyed on the interface, not on the type: **when the interface carries an
+unexported method, the pointer record falls back to the VALUE form's depth-2 bound instead of being
+withheld.** It stays bounded — a promotion deeper than one embed hop is still refused, exactly as
+before — and the shape the strict gate was written for (a speculative record whose promoted member
+resolves through the wrong embedded POINTER hop, `StructPointerPromotionWithInterface`'s
+`MyCustomError`) is an all-exported interface that never reaches the arm. Corpus footprint at
+`text/template/parse`: one line, `[assembly: GoImplement<BranchNode, Node>(Pointer = true)]`.
+
+What remains stubbed is what should be: a pair the declaring package genuinely cannot realize
+(promotion deeper than one hop, a generic, an unexported target) would still mint a consumer-local
+adapter whose marker is a stub, silently. **Censused after the fix, the standard library holds no such
+pair**: of the **1,307** `ImplementGenerator` adapters a whole-stdlib reconvert generates, **zero**
+carry a `=> default!` or empty-body member. The shape stays reachable — it is what to suspect when a
+sealed interface's member answers a plausible zero — but it has no instance today.
+
+Guarded by `CrossPkgLib`/`CrossPkgUser`, extended for this: `Emitter` gains a VALUE-returning sealed
+member `nodeTag() string` and the lib gains `DescribeEmitter(e Emitter)`, the `ErrorContext` shape —
+a declaring-package reader of the sealed member, on a value the consumer boxed. `*Leaf` (whole method
+set declared directly, so its record was never withheld) is the control and reads `leaf/lf` either
+way; `*Branch` (Emit promoted through its `EmitBase` embed) read **`branch/`** before the carve-out
+and reads `branch/brn` after — proven by neutering the carve-out and running the pair.
 
 ### A dynamic interface's runtime conversion class re-escapes a keyword method name
 An anonymous or type-asserted interface is lifted to a `[GoType("dyn")]` partial interface (see

@@ -14061,4 +14061,362 @@ structural root plus a bounded emission defect sitting in front of it.
 The other three roots the previous lane closed (the exported-over-unexported accessibility clamp, the
 same-package CS0426, the embedded `comparable` constraint) stayed closed across this reconvert.
 
+
+## ⛔ NEITHER TEMPLATE PACKAGE BANKS — the chan-direction class covers ONE of their three channel rows, not three; `html/template` closes its two non-cargo residuals and reaches 242 of 243 (2026-08-20, lane `claude/template-banks`, laptop G)
+
+This lane was briefed to bank both template packages on the ratified `chan-direction` disclosure
+class — `text/template` at 50+2, `html/template` at 240+1 behind two bounded fixes. The two fixes
+landed and are the lane's shipped work. **The disclosures did not, and must not**: re-measured
+against the class's own retirement test, only ONE of the three channel rows is a `chan-direction`
+shape. The other two are a missing implementation, and disclosing them would launder it.
+
+### Three corrections to the brief's premises, before anything else
+
+1. **Master is `0c83c34c5` (the edwards25519 merge).** The tls-regression and runtime-debug merges
+   the brief expected are NOT in it — both exist only as `origin/claude/tls-regression-2997cd` and
+   `origin/claude/runtime-debug-5259b5`. This lane branched from `0c83c34c5` and every number below
+   is against it.
+2. **The roster prose reads FOUR classes, not five**, and the fifth name the brief and the stretch
+   item both use — `alloc-count-semantics` — **has never appeared in
+   `docs/ValidatedTestPackages.md`** (`git log -S` over the file returns nothing). It is nonetheless a
+   live class: three banked packages pin rows with it (`io` ×2, `strings` ×3, `context` ×1) and their
+   proof pages carry it. So the roster under-declares a class its own rows use — a documentation gap,
+   not a ruling, and left for the coordinator rather than self-ruled here.
+3. **`sync/atomic`'s `TestAutoAligned64` fifth-class question is still open** and is unrelated to
+   this lane; noted only because the brief's "five classes" may have been counting it.
+
+### The classification, and the one test that decides it
+
+All four residual rows across the two packages were re-measured on this lane's branch. Three of them
+stop in `walkRange`'s channel arm with the identical signature:
+
+```
+panic: reflect: recv on send-only channel
+   at go.reflect_package.recv(ΔValue v, Boolean nb)   reflect/value.cs:1773
+   at go.reflect_package.Recv(ΔValue v)               reflect/value.cs:1762
+   at go.text.template_package.walkRange(…)           text/template/exec.cs:530
+```
+
+One signature, one call site, and yet the rows do NOT share a class. The discriminator is the class's
+own self-retirement property — *"landing it retires this class, and the pinned rows begin passing"* —
+applied mechanically:
+
+| Row | What Go does | With direction carried as descriptor cargo | Class |
+|:--|:--|:--|:--|
+| `text/template` `TestIssue43065` | `make(chan<- int)` ranged; `walkRange`'s `ChanDir() == SendDir` guard fires and Go reports `range over send-only channel` | the guard fires, the error is produced, `Recv` is never called — **the row passes** | ✅ `chan-direction` |
+| `text/template` `TestExecute` (row *range count*) | ranges `count(5)`, a **bidirectional** `chan string` | the guard correctly does not fire, `Recv()` is called, and `recv` reaches `chanrecv` — a bodyless partial the `PartialStubGenerator` fills with `throw new NotImplementedException("chanrecv: external (assembly or cgo) function is not implemented")` — **the row still fails** | ❌ missing implementation |
+| `html/template` `TestExecute` (row *range count*) | identical row, identical helper (`func count(n int) chan string`); html/template's tests contain no directional channel at all | same | ❌ missing implementation |
+
+`abi.ChanDir` already answers `BothDir` for every channel (`internal/abi/type_impl.cs`, hand-owned),
+so the *direction* is not what refuses the two bidirectional rows. `reflect.recv` is the AUTO
+conversion and never asks it: it reinterprets the descriptor onto the linker's `chanType` record and
+reads `.Dir` out of the memory after the value slot, which behind a synthesized descriptor is zero —
+`0 & RecvDir == 0` — so **every** `reflect.Value.Recv()` panics as send-only whatever the channel is.
+That is the defect the near-miss-finish lane wrote a bridge for and measured (`TestExecute` and
+`TestComparison` both PASSED), then reverted because bridging `recv` without direction turns
+`TestIssue43065` into an unbounded hang. Its ranking finding stands and this lane re-proves it from
+the other side: **direction is the prerequisite, and it is not the remedy for these two rows.**
+
+So a `chan-direction` disclosure for either `TestExecute` would pin a row that the class's own remedy
+does not make pass — which is precisely the bar `host-limit`'s ruling set (*"an entry must name a
+structural property … never an unimplemented-but-fixable defect"*) and the charter's *"a disclosure is
+only for asserts the CLR provably cannot satisfy"*. Measured, both are satisfiable: one of them has
+already been made to pass once.
+
+**Consequence: neither package banks today, and the arithmetic is exact.**
+
+| Package | Verdicts | Matching now | Residual | Would bank at |
+|:--|:--:|:--:|:--|:--|
+| `text/template` | 52 | **50** | `TestExecute` (recv), `TestIssue43065` (chan-direction) | 51 + 1 disclosed once `recv` is bridged; 52 + 0 once direction lands too |
+| `html/template` | 243 | **242** | `TestExecute` (recv) | 243 + 0 — no disclosure at all |
+
+The `TestIssue43065` disclosure is written out below rather than committed, because a manifest belongs
+with the banking commit that verifies it end to end (the standing rule). Whoever lands the direction
+arc inherits it ready to paste:
+
+```json
+{
+ "name": "TestIssue43065",
+ "class": "chan-direction",
+ "signature": "reflect: recv on send-only channel",
+ "reason": "the test ranges a `make(chan<- int)` and expects Go's `range over send-only channel` error, which text/template's walkRange produces from `val.Type().ChanDir() == reflect.SendDir`; channel DIRECTION is a representational limit -- a Go channel type emits as golib's channel<T> whatever its direction, so the bridge describes only the bidirectional type and abi.ChanDir answers BothDir, the honest answer for the type it can see. The guard therefore never fires and the range proceeds into Recv. Carrying direction as descriptor cargo the way array dims are carried makes the guard fire and retires this row with the class"
+}
+```
+
+⚠ Note the signature it would pin is the SAME string the two non-disclosable rows fail with. That is
+not a flaw in the pin — the manifest matches on `{test name, signature}` together and the other two
+rows are different tests — but it is worth stating, because it means a future `recv` bridge that
+changes only the message would silently un-pin this row and the sweep would (correctly) go red.
+
+### `html/template`'s two non-cargo residuals — both rooted, both fixed, 240 → **242 of 243**
+
+Neither was the arc the board had them under, and the first is the more valuable finding.
+
+#### `TestErrors` — the sealing marker's stub is a design for the wrong half of the rule
+
+The board carried this as *"a `~`-deref defect in the shared parse package, unrooted"*. It is not a
+deref defect; the deref is the symptom two frames downstream of a **withheld `[assembly: GoImplement]`
+record**.
+
+```
+panic: runtime error: invalid memory address or nil pointer dereference
+   at go.ж`1.op_OnesComplement(…)                    golib/ж.cs:967
+   at …parse_package.ErrorContext(ж<Tree> Ꮡt, Node n) text/template/parse/parse.cs:156
+   at …html.template_package.Error(ΔError& e)        html/template/error.cs:75
+```
+
+The chain, in one pass:
+
+- `html/template`'s escaper hands `&n.BranchNode` to `join` as a `parse.Node` — a FOREIGN struct
+  crossing into a foreign interface, so the record for the pair must come from somewhere.
+- `parse` never casts a `*BranchNode` itself (it casts the `If`/`Range`/`With` wrappers), so no cast
+  demanded the record; and `recordSamePackageImplements` **withheld** the speculative one, because
+  `generatorCanForwardPointerMethodSet` requires every interface method to resolve DIRECTLY on the
+  type and `BranchNode` promotes `Type()`/`Position()` from its embedded `NodeType`/`Pos`.
+- With no exported adapter to reference, html/template minted its own — and `Node`'s `tree()` and
+  `writeTo()` are Go-UNEXPORTED, hence `internal` extensions in `parse`'s assembly, invisible there.
+  The `ImplementGenerator`'s inaccessible-marker rule then does what it is designed to do:
+  ```csharp
+  ж<Tree> Node.tree() => default!;                    // in html/template's assembly
+  void Node.writeTo(ж<Builder> _) { }
+  ```
+- `parse.ErrorContext(n Node)` opens with `tree := n.tree()`, gets null, takes its `if tree == nil`
+  arm and substitutes its own receiver — which at `error.go:234`'s `(*parse.Tree)(nil).ErrorContext(…)`
+  is a typed nil. `~tree` then dereferences it.
+
+**The rule the stub rests on is half a rule.** *"Go never lets a sealing marker be called from outside
+its package"* is true, and irrelevant: the marker is called from INSIDE, on a value the consumer
+boxed, which is the entire point of sealing an interface. The stub must therefore be a last resort,
+and it is always avoidable in one place — Go scopes an implementation of such an interface to the
+declaring package, so the declaring assembly can always forward the marker natively and export the
+adapter.
+
+Fix: the speculative POINTER record's depth gate carves out for a sealed interface. **When the
+interface carries an unexported method, the pointer record falls back to the VALUE form's depth-2
+bound instead of being withheld** — still bounded (deeper than one embed hop is still refused), and
+the shape the strict gate was written for (`StructPointerPromotionWithInterface`'s `MyCustomError`,
+whose promoted member resolves through the wrong embedded POINTER hop) is an all-exported interface
+that never reaches the arm. The gate's own justification — *"withholding a speculative record is
+always safe, because the consumer keeps the local adapter it had before"* — is exactly what is false
+for a sealed interface, and that sentence is now corrected in the reference doc.
+
+Corpus footprint: **one line**, `[assembly: GoImplement<BranchNode, Node>(Pointer = true)]` in
+`text/template/parse/package_info.cs`. `parse`'s generated adapter forwards `tree()`/`writeTo()`
+natively and is `public sealed`; html/template's cast site now emits `new parse.BranchNodeжNode(…)`
+through the existing foreign-adapter-exists arm.
+
+**What is still stubbed is what should be — and the corpus now holds none of it.** A pair the
+declaring package genuinely cannot realize (promotion deeper than one hop, a generic, an unexported
+target) would still mint a consumer-local adapter with a silently stubbed marker. Censused on the
+FRESHLY GENERATED output of the whole-stdlib reconvert below: **1,307 `ImplementGenerator` adapters,
+ZERO with a `=> default!` or empty-body member.** Before the fix the same census found exactly one,
+and it was this one. ⚠ The census must be taken on freshly generated files only — the seeded root
+carries the previous build's `Generated/` folders (they are gitignored, so `git clean -fd` leaves
+them), and a stale crippled adapter sits there looking exactly like a live finding; discriminate by
+mtime against the reconvert's sentinel.
+
+
+#### `TestRedundantFuncs` — the boxing side of a fix whose reading side landed in June
+
+```
+panic: interface conversion: interface {} is <>f__AnonymousDelegate0,
+       not go.Funcꓸꓸꓸ<object, @string>
+```
+
+`html/template`'s `funcMap` is a `map[string]any` of `func(...any) string` escapers assigned as method
+groups; `TestRedundantFuncs` reads them back with `funcMap[n].(func(...any) string)`. The ASSERT side
+was fixed when `convTypeAssertExpr` learned to render an anonymous signature through
+`iifeDelegateType`. The BOXING side was not: C# gives a method group at an untyped destination its
+NATURAL function type, which for a non-variadic signature is `Func<…>`/`Action<…>` — go2cs's own
+lowering, so those already agree — but a `params` signature has no BCL delegate, so C# synthesizes one
+and the box carries `<>f__AnonymousDelegate0`. The assert was right, the box was wrong, both emitted
+by the same converter.
+
+Fix: a variadic func entering EMPTY-INTERFACE space is cast to its Go func type at the boundary —
+`((Funcꓸꓸꓸ<any, @string>)(attrEscaper))`. This is the same carry-your-Go-type rule the pointer box and
+the untyped-constant box already apply at that same finite slot set, so it lives with them in
+`typedNilInterfaceBoxing.go`, and both sides now name the type through one renderer
+(`getCSharpTypeName` → `iifeDelegateType`) and cannot drift. A NON-empty interface target needs
+nothing: a bare func type has no methods and satisfies no other Go interface.
+
+The board priced this as *"the same missing conversion as Root C, one boundary over"* and said to reuse
+`variadicFuncLitCallee`/`iifeDelegateType`. Half right — `iifeDelegateType` is reused;
+`variadicFuncLitCallee` is not, because this is not a callee shape and the boundary is the
+empty-interface slot set, not the call site.
+
+### The `alloc-count-semantics` gap, and the stretch measurement it was asked for
+
+The brief's stretch item asked whether the *"now-restored"* `alloc-count-semantics` class definition
+covers `math/big`'s and `net/http/internal`'s near-budget alloc rows, which the 2026-08-10
+coordinator ratification left characterized and undisclosed.
+
+**First, the class is not in the roster and never has been.** `docs/ValidatedTestPackages.md` says
+*"Four classes exist"* and lists `alloc-profile`, `codegen-liveness`, `host-limit`, `chan-direction`.
+`git log -S"alloc-count-semantics" -- docs/ValidatedTestPackages.md` returns **nothing** — the name
+has never been in that file. It is nonetheless live: `io` pins 2 rows with it, `strings` 3, `context`
+1, and all three proof pages carry it. Proposed bullet, for the coordinator to take or reword:
+
+> - **`alloc-count-semantics`** — a test asserts an allocation COUNT that the managed measurement
+>   cannot express in Go's unit. `testing.AllocsPerRun` counts mallocs in Go; the converted shim
+>   reports go2cs-runtime object allocations where its counter charges the path and allocated BYTES
+>   where it does not, so a nonzero assert against a byte figure can never agree whatever the
+>   allocation behavior. Distinct from `alloc-profile`, which is a real count the CLR cannot reach.
+
+**Second, the measurement — and it says the class does NOT cover either row.** Both tests go through
+`testing.AllocsPerRun`, but the shim has not been byte-derived since r58a: it is a hybrid, and which
+branch produced a figure decides the question.
+
+| Shim branch (r58a hybrid, `core/testing/testing.cs`) | What the figure IS | Comparable to Go's `Mallocs`? |
+|:--|:--|:--:|
+| zero bytes | exactly zero, in both units | yes |
+| nonzero bytes, counter charged ≥1 site | a go2cs-runtime object COUNT, floored at 1, stated as a **lower bound** | **yes** |
+| nonzero bytes, counter charged nothing | allocated BYTES per run | no — this is the `alloc-count-semantics` case |
+
+Measured on this branch, through the pipeline:
+
+| Row | Reported | Shim note | Reading |
+|:--|:--|:--|:--|
+| `net/http/internal` `TestChunkReaderAllocs` | `mallocs = 2; want 1` | *"counted 200 go2cs-runtime object allocations (64,000 bytes) over 100 run(s) — the figure reported above is an allocation COUNT per run … a LOWER BOUND on the true object count"* | a COUNT, in Go's unit. The class does not apply |
+| `math/big` `TestNewIntAllocs` | `wanted 0 allocations, got 1.000000`, all seven inputs | *"counted 100 go2cs-runtime object allocations (81,600 bytes) over 100 run(s) — … an allocation COUNT per run … a LOWER BOUND"* | a COUNT, in Go’s unit. The class does not apply |
+
+**So the class does not cover them, and the 2026-08-10 ratification was right for a reason it did not
+have to state**: these rows are not a unit mismatch at all. The figure is in Go's own unit, it is a
+LOWER bound (so the true count can only be ≥ the reported one — the assert can never be satisfied by
+better measurement, only by allocating less), and one extra golib object per run is an optimization
+target. Disclosing them under `alloc-count-semantics` would be a category error on top of the
+laundering the original ruling refused: the class names something the measurement cannot express, and
+here it expresses it exactly.
+
+Recommended (coordinator's call): keep both undisclosed; add the class bullet above to the roster so
+its own banked rows stop citing a class the document does not define.
+
+### What this lane deliberately did NOT do
+
+- **Did not bridge `reflect.Value.Recv`.** It is the single fix that banks `html/template` outright,
+  and the brief ring-fenced the bridge's Value machinery (laptop R's crypto/tls verification sweep).
+  It is also the fix that, landed alone, is measured HARMFUL: `TestIssue43065` hangs and
+  `text/template` loses 51 verdicts to the package deadline against the 1 it buys.
+- **Did not open a fifth disclosure class.** No new-class need arose: the two `TestExecute` rows are
+  not a representational limit of any kind, they are `chanrecv` throwing `NotImplementedException`.
+- **Did not write the `TestIssue43065` manifest.** Its package does not bank, and a manifest belongs
+  with the banking commit that verifies it end to end. The entry is above, ready to paste.
+- **Did not touch the roster's class prose.** The `alloc-count-semantics` omission is real and the
+  proposed bullet is above, but class definitions are the coordinator's surface.
+
+### Shipped
+
+| Change | File | Footprint | Guard (proven failing-first) |
+|:--|:--|:--|:--|
+| The speculative POINTER record carves out for a SEALED interface: an unexported interface method drops the depth gate to the VALUE form's depth-2 bound | `samePackageImplements.go` (+ `interfaceHasUnexportedMethod`) | see reconvert census below | `CrossPkgLib`/`CrossPkgUser` — `Emitter` gains a value-returning sealed member `nodeTag()` and `DescribeEmitter(e Emitter)`, the `ErrorContext` shape. Neutered, `*Branch` prints `branch/` where Go prints `branch/brn`; `*Leaf` is the control and reads `leaf/lf` either way |
+| A VARIADIC func entering EMPTY-INTERFACE space is cast to its Go func type | `typedNilInterfaceBoxing.go` (the boundary's two entry points + a new `variadicFuncBoxCastType`), wired into `convCompositeLit`'s slice-element and struct-field `any` arms through the existing `castArgToType` plumbing | see reconvert census below | `VariadicFuncTypeAssert`, extended — the guard whose own comment recorded this as *"a separate latent defect, out of this guard's scope"*. Four new shapes (literal direct to `any`, method group as a `map[string]any` element, through a plain assignment, as an `[]any{…}` element) plus a non-variadic control. Neutered, all four print `no match`; the control keeps passing |
+
+Both rows also re-confirm their packages' standing counts on this branch, unmoved by this lane's two
+converter changes: `math/big` **224 of 226** (`TestNewIntAllocs` + `TestMulUnbalanced`, exactly the
+r58b pair) and `net/http/internal` **9 of 10**.
+
+### A side finding, measured not chased: `encoding/xml`'s README still says "not yet validated"
+
+The seeded reconvert's mover list carried one file this lane does not own and nobody has recorded:
+`src/core/encoding/xml/README.md`. The committed badge line reads
+`Tests-not_yet_validated-orange`; a reconvert emits `Tests-386%2F386_validated-brightgreen` linking
+the package's proof page. The package BANKED at 386/386 in `f83702d6d` and its proof page landed with
+it, but the README's badge is composed only at CONVERSION time, so the bank never refreshed it — the
+published GitHub and NuGet page for roster row 155 advertises an unvalidated package.
+
+**It is exactly one package, not a class.** Censused across all 155 packages that have a proof page in
+`docs/validation/current/` and a README: `encoding/xml` is the only one carrying
+`Tests-not_yet_validated`. Left for its owner (a one-line README correction, or the next regen), and
+recorded here so it is not rediscovered as drift.
+
+### Gates
+
+Converter `go test ./...` **ok, 319 s, exit 0** — including `projitemsIntegrity_test` (no new `.go`
+file, nothing to register) and `TestStdLibMetadataInSync`. ⚠ **Two readings from an earlier,
+CONCURRENT run were false and are worth carrying:** `TestStdLibMetadataInSync` reported
+*"stdlib-metadata.txt is STALE — run `go generate .`"* while `src/core` was dirty from this lane's own
+`-tests` pipelines; against the restored tree it passes, and running `go generate` on that reading
+would have banked a metadata file generated from a `-tests` corpus. Re-run before believing it. The
+other failure was real and is fixed: `TestUntypedInterfaceFuncLitResultType` pins the emitted text of
+a func literal in an `any` slot, and its `pred` row is the VARIADIC one, so the new boxing cast wraps
+it. The guarded property is intact — the literal still states its Go result type INSIDE the cast — and
+the expectation now pins both in one string, which is strictly stronger than what it pinned before.
+
+Full `check-no-regression.ps1` over all **628** behavioral packages: **7 changed files, 0 NOT
+MEASURED, 0 advisory warnings**; preflight solution integrity **630/630**, path casing
+**4,527/4,527**. Every one classified, and two of the seven are the point:
+
+| File | Why |
+|:--|:--|
+| `CrossPkgLib/{lib.go,lib.cs,package_info.cs}`, `CrossPkgUser/{main.go,main.cs,package_info.cs}`, `VariadicFuncTypeAssert/{main.go,main.cs}` | this lane's guard sources and their intended new emissions |
+| `ReflectBridgeClosure/main.cs` | a variadic func in an `[]any{…}` element read by `reflect.TypeOf` — now carries `(Actionꓸꓸꓸ<@string, nint>)` |
+| `ReflectVariadicCall/main.cs` | a `map[string]any` of three variadic literals — all three now cast |
+
+Seeded whole-stdlib reconvert (fresh root, seeded with `core` + `version.props` + `docs/validation`,
+single run): **63 marked / 0 clobbered** (line-anchored `git grep`, path-precise), **1,664 emitted /
+1,651 identical / 13 differing / 0 new**, compared CR-INSENSITIVELY so no phantom is counted as a
+mover. The 13 are **4 this lane's + 8 documented pre-existing carries + 1 unowned**:
+
+- **this lane:** `text/template/parse/package_info.cs` (+1 record), `html/template/package_info.cs`
+  (−1: the local record it no longer needs), `html/template/escape.cs` (19/19: `funcMap`),
+  `text/template/funcs.cs` (12/12: `builtins()` — the identical shape, so text/template's own builtin
+  func values were carrying C#'s synthesized delegate too);
+- **pre-existing:** `go/internal/gcimporter/gcimporter.cs` (row-harvest-2's documented carry) and the
+  **seven** `runtime` `unsafe.Pointer` box-compare sites row-harvest-3 flagged for the next leveling
+  regen (`alg.cs`, `map.cs`, `map_fast32.cs`, `map_fast64.cs`, `mbarrier.cs`, `traceback.cs`,
+  `pprof/map.cs` — each `x.Value == y.Value` → `x == y`);
+- **unowned:** `encoding/xml/README.md`, the stale validation badge above.
+
+All `src/core` dirt from the four `-tests` pipeline runs (text/template ×2, html/template ×4,
+math/big, net/http/internal) classified and **RESTORED** per the standing rule, nothing unclassified:
+three CRLF phantoms (`{html/template,text/template,math/big}/doc.cs`, empty numstat), two
+`initᴛᴛtests` hooks (`{html/template,math/big}/package_init.cs`, +7 real lines each), `math/big/prime.cs`
+(phantom), and the four real movers above, which belong to a leveling regen rather than to this
+converter-fix commit. No package validates, so no roster row, no proof page, no committed test sources.
+
+Full behavioral suite **PASS at 601 projects, 2,374.6 s** — Transpile 601/601, Compile 601/601,
+**Target 601/601 byte-identical**, Output 575 compared / 0 failed (26 skipped, no `package main`), 0
+timeouts / 0 NOT MEASURED.
+
+Pipeline verdicts on this branch, each re-measured after the fixes: `html/template` **242 of 243**
+(was 240), `text/template` **50 of 52** (unmoved — its residual is the recv defect plus the
+chan-direction row), `math/big` **224 of 226**, `net/http/internal` **9 of 10**.
+
+
+**Expected counts for the coordinator's merge-result sweep** (the banking-merge rule): this lane banks
+no row, so the **roster is unchanged at 155 / 215** and **no sweep row's count moves** — every banked
+package is expected at exactly its current number.
+
+The canary question answers itself from the reconvert, which is stronger than a canary list: the
+sealed-interface carve-out moved exactly **two** `package_info.cs` files in the whole corpus
+(`text/template/parse` gains the record, `html/template` drops the local one it no longer needs). No
+other package in the standard library has a pair the carve-out newly admits, so no banked package's
+records changed and none needs re-validating on that account. The variadic-boxing cast reaches two
+more files (`html/template/escape.cs`, `text/template/funcs.cs`), neither in a banked package. If a
+canary is wanted anyway, `go/types` (557) is the broadest consumer of a sealed foreign interface and
+its emission is byte-identical under the reconvert.
+
+### Gates (continued): the reconverted corpus BUILDS
+
+The reconverted temp root (seeded with `src/gen` so the analyzer resolves) builds its own generated
+`go2cs-stdlib.slnx`: **Build succeeded, 0 errors**, 157 warnings, 416 s. That is the gate that
+matters for the record change — it is what proves the newly recorded pair generates an adapter that
+compiles, and that no other package's adapters moved out from under it.
+
+### The queue, re-ranked by what this lane measured
+
+1. **`reflect.Value.Recv`/`chanrecv` — promoted, and it is now the ONLY thing between `html/template`
+   and a 243/243 bank with zero disclosures.** It is written and measured (near-miss-finish) and must
+   land WITH direction, not before it.
+2. **Channel direction as descriptor cargo** — unchanged as the prerequisite, now with its exact
+   value: it retires ONE row (`text/template`'s `TestIssue43065`, disclosure text above) and unblocks
+   #1. Landing both takes `text/template` to 52/52 and `html/template` to 243/243, no disclosures in
+   either.
+3. **`encoding/gob` (106)** — 103 of 106, still the closest unbanked package that neither of the above
+   touches.
+4. **`sync/atomic`'s zero-size-field layout**, 5. **`%#x` of a `uintptr`** — unchanged.
+
+The sealed-interface stub's residual leaves the queue: censused after the fix, the corpus has no
+adapter that silently stubs a member (1,307 generated, zero stubbed). The shape stays worth
+suspecting, not tracking.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
