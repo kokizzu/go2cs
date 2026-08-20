@@ -1569,6 +1569,33 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 				}
 			}
 
+			// The right operand of `&^` is complemented (the operator was rendered `& ~`), and C#
+			// applies `~` to a PROMOTED operand, so a BARE LITERAL complements as `int`. Whether
+			// that binds depends on the enclosing result type, and exactly one concrete width has
+			// no answer: `uint64`. A narrower-than-int result promotes to `int` and truncates
+			// correctly under the enclosing result cast; `uint32 & int` promotes BOTH to `long` and
+			// truncates the same way (debug/macho's `Magic32 &^ 1` is that shape and compiles);
+			// `int64 & int` widens the int. But `ulong` and `int` share no type C# converts to, so
+			// `^uint64(0) &^ 1` emits `~((uint64)0) & ~1` -> CS0019 (net/netip uint128_test.go:76,79).
+			// Impose the result type so the complement happens in Go's width.
+			//
+			// A BasicLit is the ONLY operand shape that reaches `~` untyped, which is why the
+			// predicate is the literal and not merely constness: a named untyped-const ref is cast
+			// by the block above, a Go conversion (`uint64(1)`) already renders typed, and a
+			// computed constant subtree carries the width cast from the shift-retype path
+			// (`hi &^ (1 << 63)` emits `~(((uint64)1 << 63))` today). Casting those again would be
+			// pure churn -- measured zero corpus movers with this predicate, and the whole point of
+			// the deferral this closes was to know that number.
+			//
+			// `uint64`/`nuint`/`uintptr` are the three unsigned 64-bit results this file already
+			// groups (see the constant-fold arm); the other two carry the same cast in the
+			// native-int block below, and this completes the set.
+			if binaryTypeName == "uint64" && binaryExpr.Op == token.AND_NOT {
+				if _, isLit := binaryExpr.Y.(*ast.BasicLit); isLit {
+					rightOperand = fmt.Sprintf("(%s)%s", binaryTypeName, rightOperand)
+				}
+			}
+
 			// The same for a NAMED-numeric result — `tp & (1<<taggedPointerBits - 1)` (runtime
 			// tagptr_64bit.go, taggedPointer over uint64): the computed mask renders as an
 			// UntypedInt-typed C# expression, and `taggedPointer & int` has no operator (CS0019).

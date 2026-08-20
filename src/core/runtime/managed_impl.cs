@@ -381,7 +381,79 @@ partial class runtime_package
             }
         }
 
+        // Go's traceback names a METHOD frame with its receiver TYPE between the package and the
+        // method, which the flat `<pkg>.<name>` form drops.
+        if (goReceiverName(method) is string receiver)
+            name = $"{receiver}.{name}";
+
         return $"{importPath}.{name}";
+    }
+
+    // Spells the receiver qualifier of a converted Go method frame, or null when the frame is not a
+    // method. Measured against a Go control on this box: a pointer receiver renders
+    // `main.(*T).ptrmethod`, a value receiver `main.T.method`, and a generic receiver
+    // `main.G[...].gmethod` — Go prints the LITERAL `[...]`, never the instantiated argument.
+    //
+    // Observable, not cosmetic, for the same reason the path separator is: runtime/debug's own
+    // TestStack greps a rendered traceback for `runtime/debug_test.(*T).ptrmethod`, and the flat
+    // form answers `runtime/debug_test.ptrmethod`.
+    //
+    // A converted Go method is a C# EXTENSION method on the package class whose FIRST parameter is
+    // the receiver — `this ref T` for a pointer receiver (the [GoRecv] form), `this T` for a value
+    // one, and RecvGenerator's boxed `this ж<T>` overload for the pointer form reached through a
+    // pointer value. That `this` is the whole discriminator: a package-level Go func is a plain
+    // static method and keeps its bare `<pkg>.<name>`, exactly as Go renders one.
+    private static string? goReceiverName(System.Reflection.MethodBase method)
+    {
+        if (!method.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), inherit: false))
+            return null;
+
+        System.Reflection.ParameterInfo[] parameters = method.GetParameters();
+
+        if (parameters.Length == 0)
+            return null;
+
+        Type receiver = parameters[0].ParameterType;
+        bool pointer = false;
+
+        if (receiver.IsByRef)
+        {
+            // `this ref T` — Go's pointer receiver, lowered to a by-reference parameter.
+            pointer = true;
+            receiver = receiver.GetElementType() ?? receiver;
+        }
+        else if (pointerReferent(receiver) is Type referent)
+        {
+            // `this ж<T>` — the same Go pointer receiver reached through a heap box. IPointer<T>
+            // rather than ж<T> itself so a generated named-pointer wrapper answers the same way.
+            pointer = true;
+            receiver = referent;
+        }
+
+        string name = receiver.Name;
+
+        // A generic type's CLR name carries its arity after a backtick (G`1); Go writes G[...].
+        int arity = name.IndexOf('`');
+
+        if (arity >= 0)
+            name = string.Concat(name.AsSpan(0, arity), "[...]");
+
+        return pointer ? $"(*{name})" : name;
+    }
+
+    // The T of an IPointer<T>, or null when the type is not a pointer box.
+    private static Type? pointerReferent(Type type)
+    {
+        if (!type.IsGenericType)
+            return null;
+
+        foreach (Type contract in type.GetInterfaces())
+        {
+            if (contract.IsGenericType && contract.GetGenericTypeDefinition() == typeof(IPointer<>))
+                return contract.GetGenericArguments()[0];
+        }
+
+        return null;
     }
 
     // Spells a frame's source path the way Go spells one. Go records source paths with FORWARD
