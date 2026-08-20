@@ -528,6 +528,8 @@ ONE stdlib in a build; there is now only one on disk.
   predated the newest bank). "Reflect-bridge-touching" reads broadly: `src/core/reflect/*_impl.cs`,
   `src/core/internal/reflectlite`, golib's `GoReflect.*`/adapter/equality machinery, and the
   go2cs-gen adapter/shell templates all qualify.
+
+### Performance comparison suite (`src/tests/Performance`, 2026-07-02)
 - **Purpose:** answer "how fast is the transpiled C# vs the original Go?" — 14 small `Perf*` benchmark
   projects (Startup, Fib, Sieve, MatMul, String, StringView, StringMatch, Map, Sort, Channel, IfaceCall,
   Iface, IfaceShell, RefLower), each a behavioral-test-shaped folder,
