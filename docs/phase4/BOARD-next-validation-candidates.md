@@ -14742,4 +14742,129 @@ page + a run proving both shapes account as disclosed). Until it lands, a `crypt
 host whose Go BoGo run fails is a KNOWN false red with this section as its rooting -- re-read the
 verdict maps before believing any other explanation.
 
+## ✅ SHIPPED — `TestBogoSuite`'s pin is host-conditional; the second accepted shape is DISCLOSED, and the guard is proven on fixtures because the host cannot be made to produce it (2026-08-20, lane `claude/bogo-host-conditional`)
+
+Implements the ruling immediately above, nothing broader. The annotation is one optional manifest
+field, the oracle gains one accepted status pair, and the proof page learns to say so.
+
+### The schema: the marker IS the sentence
+
+`testDisclosure` gains `hostConditional` — a string whose **non-empty value is simultaneously the
+marker and the one sentence naming the environmental dependency**. Two fields would have allowed a
+row marked without saying what it depends on, which is the one thing the ruling requires of an
+annotated row; one field makes that unrepresentable. A blank-but-present value is a **load-time
+error**, on the same footing `loadTestDisclosures` already puts an empty signature: marking a row
+widens the oracle by a whole status pair, and a manifest that widens it while naming nothing is
+exactly the "a broken disclosure must not widen the oracle" case. `schemaVersion` stays at 1 — the
+field is optional and no reader validates the version.
+
+`crypto/tls`'s `TestBogoSuite` is the first and only member.
+
+### The oracle: one more accepted pair, and the flood exclusion it drags with it
+
+Two edits in `matchTerminalStatuses`, and the second is the one nobody would predict from the
+ruling's text.
+
+| Site | Before | After |
+|:--|:--|:--|
+| the classification loop | Go fail / C# fail never reaches the divergence arm at all — the statuses are EQUAL, so the row falls through to the bottom and counts as an ordinary **agreed failure** | intercepted BEFORE the equal-status arm: disclosed when the signature still matches, a strict mismatch under the first shape's own wording when it does not |
+| `disclosureRoots` | admits a root only on Go **pass** / C# fail | also admits an ANNOTATED root on Go **fail** / C# fail — the C# signature pin is hoisted out and applies to both |
+
+The second is load-bearing and easy to miss: shape (b) is *precisely* the shape in which the Go side
+DID reach its case fan-out, so an annotated root that does not root leaves `TestBogoSuite`'s 3,243
+Go-only case rows to land as one-sided mismatches — a comparison drowned in rows that say nothing
+about the converted code, on a run where the C# side never moved. The existing withdrawal rule
+already does the right thing once the root is admitted; nothing else in it changed, and a C#-side row
+that EXISTS under an annotated root still compares strictly.
+
+**What still fires, both directions.** The C# side is pinned by signature in BOTH shapes, so a
+failure that moved is a named mismatch, not a quiet reclassification. A converted side that starts
+PASSING leaves the disclosed set, the count moves, and the sweep's `disclosed count moved` check
+fires — which is the self-retirement path this row's own disclosure text already promises. An
+UNANNOTATED row gains no second shape at all.
+
+### The proof page: the totals line would have broken at the evidence layer
+
+`proofDisclosedNames` derives its set from verdict **disagreement** — which is exactly what shape (b)
+does not produce. Left alone, a page regenerated on a shape-(b) host reads `401 matched · 1
+disclosed` where the roster banks 400 + 2, and renders the row as a plain matched `fail | fail`: the
+host-stable arithmetic the ruling asks for, broken one layer below the sweep. The renderer now reads
+the annotation back from the manifest, which is safe precisely because it was reached: a fail/fail
+annotated row whose C# output missed the pin is a mismatch, and a mismatch never validates, so no
+page is written.
+
+The row's note is **rendered from the manifest**, not hand-written into the page — a hand edit does
+not survive a regeneration, and the note must never drift from the annotation the oracle actually
+applies. It follows the `internal/zstd` model: name the dependency, then name both accepted shapes.
+
+### Proof — and why three of the four guards can only be fixtures
+
+Shape (b) cannot be forced on a host whose Go BoGo run passes, and this host's does. The fixtures ARE
+the proof for it, and each was proven failing-first by neutering the half it guards:
+
+| Guard | Neutered | What fired |
+|:--|:--|:--|
+| `TestHostConditionalDisclosureAccountsInBothShapes` | the classification arm | `disclosed: [TestPinned]` — 1 where the row banks 2, the 401 + 1 arithmetic in fixture form |
+| `TestHostConditionalRootWithdrawsGoOnlyDescendantsWhenGoFails` | the root admission | the flood, verbatim: three Go-only children as one-sided mismatches |
+| `TestHostConditionalRowRendersDisclosedWhenBothSidesFail` | the page's manifest read-back | the totals line lost the disclosed row |
+| `TestHostConditionalMarkerMustNameItsDependency` | the loader's blank check | a marker naming nothing loaded silently |
+
+Each also carries its own controls, so the tolerance cannot spread: an unannotated agree-fail row
+stays an ordinary matched agreement, an unannotated root floods (that IS the control), a moved C#
+signature is a mismatch, a C# side that starts passing leaves the set, and an unannotated disclosure
+renders no note.
+
+### Gates
+
+Converter `go test ./...` **ok, 285.086 s, exit 0** — 387 tests, zero failures, including
+`projitemsIntegrity_test` (the four new guards extend the existing
+`disclosedParentAggregation_test.go`, so there is no new `.go` file to register) and
+`TestStdLibMetadataInSync`.
+
+Live `crypto/tls` sweep on this host (laptop R, Ryzen 7 PRO 6850U): **PASS 400**, 1 pass / 0 fail,
+991 s. This host produced **shape (a)** — `TestBogoSuite` Go `pass` / C# `fail` — which is the
+regression half of the proof: the pinned divergence still accounts exactly as banked with the new
+arm in the loop. The comparison record reads **402 Go rows / 402 C# rows, 2 disclosed, 3,242
+withdrawn, 0 errors**, so `402 − 2 = 400` matched, unmoved.
+
+The regenerated proof page's diff is **the provenance line and the note, nothing else** — no verdict
+row moved, the totals line still reads `400 matched · 2 disclosed`, and the withdrawal line still
+reads 3,242. Corpus dirt from the sweep classified per the standing rule and **restored**: six
+`*_test.cs` CRLF phantoms (`handshake_client`, `handshake_server`, `handshake`, `key_schedule`,
+`link`, `tls`), each proven CR-stripped-equal to `HEAD` byte for byte rather than trusted to an
+empty `--numstat`. No production `.cs` mover, no `.csproj` change, no `initᴛᴛtests` hook. The
+sweep's own drift report named exactly one content change, this lane's manifest edit.
+
+`check-no-regression.ps1` over all **629** behavioral packages: **1 changed file, 0 NOT MEASURED,
+0 advisory warnings**; preflight solution integrity **631/631**, path casing **4,534/4,534**. The one
+changed file is **not this lane's and not a converter change** — it is
+`ReflectChanDirection/ReflectChanDirection.csproj`, a UNION CARRY: `claude/cargo-recv` added that
+guard from a fork that predates `claude/preflight-trio`'s csproj-metadata leveling, so the committed
+file still spells `<TargetFramework>net9.0</TargetFramework>` unconditioned, a literal `<Company>`
+and `<Copyright>`, and no `<RepositoryType>`. Censused at HEAD, that is **exactly one file of 629** —
+the other 628 already carry the leveled form — so it is a stale bank, not an emission change, and it
+reproduces at the union base untouched by anything here. **RESTORED** per the foreign-mover rule and
+left for its owner: one re-transpile of that package levels it and takes CNR green.
+
+This lane's own change cannot reach the emission path at all — `loadTestDisclosures`,
+`matchTerminalStatuses`, `proofDisclosedNames` and
+`renderValidationProofPage` are compare/proof-only and no caller of any of them writes a `.cs` or
+`.csproj` — but the gate is run rather than argued.
+
+### What this lane deliberately did NOT do
+
+- **Did not touch the roster.** `crypto/tls` still banks `400 | 2`, which is the whole point: the
+  annotation exists so that number never has to move. The roster's `host-conditional` phrase stays
+  reserved for its verdict-COUNT annotation, and the ruling above is the canonical text.
+- **Did not touch `run-validated-sweep.ps1`.** Its `disclosed count moved` check reads
+  `$Comparison.disclosed`, which the oracle now holds at 2 in both shapes; the primary path compares
+  400 against 400. Nothing in the sweep needed to learn a new concept.
+- **Did not annotate a second row.** The marker is ruled IN only for a row with coordinator-accepted
+  rooting evidence, and the loader now makes an un-named marker impossible rather than merely
+  discouraged.
+- **Did not fix the stale `encoding/xml` README badge.** Coordinator queue, unchanged.
+
+The ruling's closing caveat — *"until it lands, a `crypto/tls` sweep on a host whose Go BoGo run
+fails is a KNOWN false red"* — is now historical. Such a host reads 400 + 2 like every other.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
