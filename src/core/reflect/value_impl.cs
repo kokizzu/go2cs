@@ -1045,7 +1045,11 @@ public static ΔValue Zero(ΔType typ) {
         throw panic("reflect: Zero of non-synthesized type");
     }
     nint[]? dims = arrayDimsOfReflectType(typ);
-    return makeTypedValue(GoReflect.ZeroValueOf(st, dims), st, dims, default);
+    // The fabricated zero carries the descriptor's CHANNEL DIRECTION for the same reason it is
+    // sized from its array dims: the value must describe itself the way the type does, or the
+    // cargo dies the moment it is boxed and re-described.
+    GoChanDir chanDir = chanDirOfReflectType(typ);
+    return makeTypedValue(GoReflect.ZeroValueOf(st, dims, chanDir), st, dims, default, chanDir);
 }
 
 // New returns a Value representing a pointer to a new zero value for the specified type —
@@ -1061,8 +1065,10 @@ public static ΔValue New(ΔType typ) {
         throw panic("reflect: New of non-synthesized type");
     }
     nint[]? dims = arrayDimsOfReflectType(typ);
-    object box = GoReflect.NewPointerBox(st, GoReflect.ZeroValueOf(st, dims));
-    return makeTypedValue(box, typeof(ж<>).MakeGenericType(st), null, default);
+    GoChanDir chanDir = chanDirOfReflectType(typ);
+    object box = GoReflect.NewPointerBox(st, GoReflect.ZeroValueOf(st, dims, chanDir));
+    // The POINTER descriptor carries its pointee's direction unshifted, so Elem() hands it back.
+    return makeTypedValue(box, typeof(ж<>).MakeGenericType(st), null, default, chanDir);
 }
 
 // MakeSlice creates a new zero-initialized slice value for the specified slice type, length,
@@ -1351,6 +1357,12 @@ private static System.Type? sysTypeOfReflectType(ΔType typ) {
 private static nint[]? arrayDimsOfReflectType(ΔType typ) {
     var (rt, ok) = typ._<ж<rtype>>(ᐧ);
     return ok && rt != nil ? rt.Value.t.arrayDims : null;
+}
+
+// chanDirOfReflectType recovers the descriptor's carried channel direction (non-identity cargo).
+private static GoChanDir chanDirOfReflectType(ΔType typ) {
+    var (rt, ok) = typ._<ж<rtype>>(ᐧ);
+    return ok && rt != nil ? rt.Value.t.chanDir : GoChanDir.Unstamped;
 }
 
 private static nint[]? arrayDimsOfDescriptor(ж<abi.Type> Ꮡt) {

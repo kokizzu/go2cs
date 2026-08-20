@@ -91,6 +91,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `hash/crc64` | [`hash.crc64.md`](current/hash.crc64.md) | [`src/core/hash/crc64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/crc64) |
 | `hash/fnv` | [`hash.fnv.md`](current/hash.fnv.md) | [`src/core/hash/fnv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/fnv) |
 | `hash/maphash` | [`hash.maphash.md`](current/hash.maphash.md) | [`src/core/hash/maphash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/maphash) |
+| `html/template` | [`html.template.md`](current/html.template.md) | [`src/core/html/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html/template) |
 | `image` | [`image.md`](current/image.md) | [`src/core/image`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image) |
 | `image/color` | [`image.color.md`](current/image.color.md) | [`src/core/image/color`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image/color) |
 | `image/draw` | [`image.draw.md`](current/image.draw.md) | [`src/core/image/draw`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image/draw) |
@@ -161,6 +162,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `testing/slogtest` | [`testing.slogtest.md`](current/testing.slogtest.md) | [`src/core/testing/slogtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/slogtest) |
 | `text/scanner` | [`text.scanner.md`](current/text.scanner.md) | [`src/core/text/scanner`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/scanner) |
 | `text/tabwriter` | [`text.tabwriter.md`](current/text.tabwriter.md) | [`src/core/text/tabwriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/tabwriter) |
+| `text/template` | [`text.template.md`](current/text.template.md) | [`src/core/text/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/template) |
 | `text/template/parse` | [`text.template.parse.md`](current/text.template.parse.md) | [`src/core/text/template/parse`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/template/parse) |
 | `time` | [`time.md`](current/time.md) | [`src/core/time`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/time) |
 | `unicode` | [`unicode.md`](current/unicode.md) | [`src/core/unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode) |

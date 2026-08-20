@@ -81,7 +81,7 @@ partial class runtime_package {
     internal atomic.Uint32 signalLock;              // protects use of the following member, only usable in signal handlers
     internal array<atomic.Pointer<profBuf>> cpuLogWrite = new(2); // copy of cpuLogRead for use in signal handlers, set without signalLock
     internal ж<wakeableSleep> cpuSleep;
-    internal /*<-*/channel<EmptyStruct> cpuLogDone;
+    internal /*<-*/channel<EmptyStruct> cpuLogDone = /*<-*/channel<EmptyStruct>.RecvOnly;
     internal array<ж<traceBuf>> cpuBuf = new(2);
     internal atomic.Pointer<g> reader; // goroutine that called ReadTrace, or nil
     // Fast mappings from enumerations to string IDs that are prepopulated

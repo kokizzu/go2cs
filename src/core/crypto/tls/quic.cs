@@ -105,7 +105,7 @@ public static QUICEventKind QUICStoreSession => 9;
     internal bool started;
     internal channel<EmptyStruct> signalc; // handshake data is available to be read
     internal channel<EmptyStruct> blockedc; // handshake is waiting for data, closed when done
-    internal /*<-*/channel<EmptyStruct> cancelc; // handshake has been canceled
+    internal /*<-*/channel<EmptyStruct> cancelc = /*<-*/channel<EmptyStruct>.RecvOnly; // handshake has been canceled
     internal Action cancel;
     internal bool waitingForDrain;
     // readbuf is shared between HandleData and the handshake goroutine.

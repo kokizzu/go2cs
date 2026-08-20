@@ -299,9 +299,9 @@ internal static error Unwrap(this wrappedError w) {
     // If goroutineErr is non-nil, it receives the first error from a copying
     // goroutine once all such goroutines have completed.
     // goroutineErr is set to nil once its error has been received.
-    internal /*<-*/channel<error> goroutineErr;
+    internal /*<-*/channel<error> goroutineErr = /*<-*/channel<error>.RecvOnly;
     // If ctxResult is non-nil, it receives the result of watchCtx exactly once.
-    internal /*<-*/channel<ctxResult> ctxResult;
+    internal /*<-*/channel<ctxResult> ctxResult = /*<-*/channel<ctxResult>.RecvOnly;
     // The stack saved when the Command was created, if GODEBUG contains
     // execwait=2. Used for debugging leaks.
     internal slice<byte> createdByStack;

@@ -2933,8 +2933,8 @@ internal static bool wroteRequest(this ж<persistConn> Ꮡpc) {
     // If the request has an "Expect: 100-continue" header and
     // the server responds 100 Continue, readLoop send a value
     // to writeLoop via this chan.
-    internal channel/*<-*/<EmptyStruct> continueCh;
-    internal /*<-*/channel<EmptyStruct> callerGone; // closed when roundTrip caller has returned
+    internal channel/*<-*/<EmptyStruct> continueCh = channel/*<-*/<EmptyStruct>.SendOnly;
+    internal /*<-*/channel<EmptyStruct> callerGone = /*<-*/channel<EmptyStruct>.RecvOnly; // closed when roundTrip caller has returned
 }
 
 // A writeRequest is sent by the caller's goroutine to the
@@ -2943,11 +2943,11 @@ internal static bool wroteRequest(this ж<persistConn> Ꮡpc) {
 // reply.
 [GoType] partial struct ΔwriteRequest {
     internal ж<transportRequest> req;
-    internal channel/*<-*/<error> ch;
+    internal channel/*<-*/<error> ch = channel/*<-*/<error>.SendOnly;
     // Optional blocking chan for Expect: 100-continue (for receive).
     // If not nil, writeLoop blocks sending request body until
     // it receives from this chan.
-    internal /*<-*/channel<EmptyStruct> continueCh;
+    internal /*<-*/channel<EmptyStruct> continueCh = /*<-*/channel<EmptyStruct>.RecvOnly;
 }
 
 // httpTimeoutError represents a timeout.

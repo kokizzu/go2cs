@@ -125,7 +125,7 @@ internal static mptcpStatus mptcpDisabled => 2;
     // cancellation.
     //
     // Deprecated: Use DialContext instead.
-    public /*<-*/channel<EmptyStruct> Cancel;
+    public /*<-*/channel<EmptyStruct> Cancel = /*<-*/channel<EmptyStruct>.RecvOnly;
     // If Control is not nil, it is called after creating the network
     // connection but before actually dialing.
     //

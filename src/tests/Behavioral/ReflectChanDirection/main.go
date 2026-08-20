@@ -110,6 +110,15 @@ func main() {
 		fmt.Printf("field %s: %v | dir=%v\n", f.Name, f.Type, f.Type.ChanDir())
 	}
 
+	// ---- the FABRICATED zero must describe itself the way the descriptor does ----
+	// internal/reflectlite's TypeString reads exactly this shape -- `%T` of ToInterface(Zero(typ)) --
+	// so a direction that survives Type.String() but dies when the zero is boxed and re-described is
+	// still lost. reflect.Zero of an array type is sized from the descriptor's dims for the same reason.
+	st := reflect.TypeOf(send)
+	rt := reflect.TypeOf(recv)
+	fmt.Printf("zero: %T | %T\n", reflect.Zero(st).Interface(), reflect.Zero(rt).Interface())
+	fmt.Printf("new elem: %T | %v\n", reflect.New(st).Elem().Interface(), reflect.New(rt).Type())
+
 	// ---- assignability: Go's two chan rules, which only differ once directions are real ----
 	ci := reflect.TypeOf(new(chan int)).Elem()
 	ri := reflect.TypeOf(new(<-chan int)).Elem()

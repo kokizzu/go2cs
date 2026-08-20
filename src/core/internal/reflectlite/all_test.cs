@@ -130,7 +130,7 @@ internal static void assert(ж<testing.T> Ꮡt, @string s, @string want) {
     }
 
     [GoType("dyn")] partial struct Δtypeᴛ17 {
-        internal channel/*<-*/<@string> x;
+        internal channel/*<-*/<@string> x = channel/*<-*/<@string>.SendOnly;
     }
 
     [GoType("dyn")] partial struct typeᴛ18_x {
@@ -321,7 +321,7 @@ internal static slice<pair> valueTests = new pair[]{
     new(Ꮡ(new array<int32>(5)), "[5]int32{0, 0, 0, 0, 0}"u8),
     new(@new<ж<ж<integer>>>(), "**reflectlite_test.integer(0)"u8),
     new(@new<map<@string, int32>>(), "map[string]int32{<can't iterate on maps>}"u8),
-    new(@new<channel/*<-*/<@string>>(), "chan<- string"u8),
+    new(Ꮡ(channel/*<-*/<@string>.SendOnly), "chan<- string"u8),
     new(@new<Action<int8, int32>>(), "func(int8, int32)(arg)"u8),
     new(@new<typeᴛ18_x>(),
         "struct { c chan *int32; d float32 }{chan *int32, 0}"u8

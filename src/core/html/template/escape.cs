@@ -77,23 +77,23 @@ internal static @string evalArgs(params ꓸꓸꓸany argsʗp) {
 // funcMap maps command names to functions that render their inputs safe.
 internal static template.FuncMap funcMap;
 internal static void initᴛfuncMap() { funcMap = new text.template_package.FuncMap(new map<@string, any>{
-    ["_html_template_attrescaper"u8] = attrEscaper,
-    ["_html_template_commentescaper"u8] = commentEscaper,
-    ["_html_template_cssescaper"u8] = cssEscaper,
-    ["_html_template_cssvaluefilter"u8] = cssValueFilter,
-    ["_html_template_htmlnamefilter"u8] = htmlNameFilter,
-    ["_html_template_htmlescaper"u8] = htmlEscaper,
-    ["_html_template_jsregexpescaper"u8] = jsRegexpEscaper,
-    ["_html_template_jsstrescaper"u8] = jsStrEscaper,
-    ["_html_template_jstmpllitescaper"u8] = jsTmplLitEscaper,
-    ["_html_template_jsvalescaper"u8] = jsValEscaper,
-    ["_html_template_nospaceescaper"u8] = htmlNospaceEscaper,
-    ["_html_template_rcdataescaper"u8] = rcdataEscaper,
-    ["_html_template_srcsetescaper"u8] = srcsetFilterAndEscaper,
-    ["_html_template_urlescaper"u8] = urlEscaper,
-    ["_html_template_urlfilter"u8] = urlFilter,
-    ["_html_template_urlnormalizer"u8] = urlNormalizer,
-    ["_eval_args_"u8] = evalArgs
+    ["_html_template_attrescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(attrEscaper)),
+    ["_html_template_commentescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(commentEscaper)),
+    ["_html_template_cssescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(cssEscaper)),
+    ["_html_template_cssvaluefilter"u8] = ((Funcꓸꓸꓸ<any, @string>)(cssValueFilter)),
+    ["_html_template_htmlnamefilter"u8] = ((Funcꓸꓸꓸ<any, @string>)(htmlNameFilter)),
+    ["_html_template_htmlescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(htmlEscaper)),
+    ["_html_template_jsregexpescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(jsRegexpEscaper)),
+    ["_html_template_jsstrescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(jsStrEscaper)),
+    ["_html_template_jstmpllitescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(jsTmplLitEscaper)),
+    ["_html_template_jsvalescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(jsValEscaper)),
+    ["_html_template_nospaceescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(htmlNospaceEscaper)),
+    ["_html_template_rcdataescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(rcdataEscaper)),
+    ["_html_template_srcsetescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(srcsetFilterAndEscaper)),
+    ["_html_template_urlescaper"u8] = ((Funcꓸꓸꓸ<any, @string>)(urlEscaper)),
+    ["_html_template_urlfilter"u8] = ((Funcꓸꓸꓸ<any, @string>)(urlFilter)),
+    ["_html_template_urlnormalizer"u8] = ((Funcꓸꓸꓸ<any, @string>)(urlNormalizer)),
+    ["_eval_args_"u8] = ((Funcꓸꓸꓸ<any, @string>)(evalArgs))
 }); }
 
 // escaper collects type inferences about templates and changes needed to make
@@ -595,7 +595,7 @@ internal static context join(context a, context b, parse.Node node, @string node
         // as executing n.List twice.
         e.rangeContext = Ꮡ(new rangeContext(outer: e.rangeContext));
         var (c1Δ1, _) = e.escapeListConditionally(c0, n.List, default!);
-        c0 = join(c0, c1Δ1, new parse_BranchNodeжNode(Ꮡn), nodeName);
+        c0 = join(c0, c1Δ1, new parse.BranchNodeжNode(Ꮡn), nodeName);
         if (c0.state == stateError) {
             e.rangeContext = e.rangeContext.Value.outer;
             // Make clear that this is a problem on loop re-entry
@@ -612,7 +612,7 @@ internal static context join(context a, context b, parse.Node node, @string node
         }
     }
     var c1 = e.escapeList(c, n.ElseList);
-    return join(c0, c1, new parse_BranchNodeжNode(Ꮡn), nodeName);
+    return join(c0, c1, new parse.BranchNodeжNode(Ꮡn), nodeName);
 }
 
 internal static context joinRange(context c0, ref rangeContext rc) {

@@ -88,7 +88,7 @@ internal static partial bool resetTimer(ж<Timer> t, int64 when, int64 period);
 // unless the Timer was created by [AfterFunc].
 // A Timer must be created with [NewTimer] or AfterFunc.
 [GoType] partial struct Timer {
-    public /*<-*/channel<Time> C;
+    public /*<-*/channel<Time> C = /*<-*/channel<Time>.RecvOnly;
     internal bool initTimer;
 }
 

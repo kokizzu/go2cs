@@ -275,7 +275,7 @@ internal static map<@string, bool> reqWriteExcludeHeader = new map<@string, bool
     // Deprecated: Set the Request's context with NewRequestWithContext
     // instead. If a Request's Cancel field and context are both
     // set, it is undefined whether Cancel is respected.
-    public /*<-*/channel<EmptyStruct> Cancel;
+    public /*<-*/channel<EmptyStruct> Cancel = /*<-*/channel<EmptyStruct>.RecvOnly;
     // Response is the redirect response which caused this request
     // to be created. This field is only populated during client
     // redirects.

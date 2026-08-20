@@ -98,7 +98,11 @@ partial class reflectlite_internal_test_package
             throw panic("reflect: Zero of non-synthesized type");
 
         nint[]? dims = t.Value.arrayDims;
+        // The fabricated zero carries the descriptor's CHANNEL DIRECTION as well as its array
+        // dims -- this is the mini-bridge's half of the same rule, and the one TypeString reads
+        // (`%T` of ToInterface(Zero(typ))).
+        GoChanDir chanDir = t.Value.chanDir;
 
-        return makeTypedValue(GoReflect.ZeroValueOf(st, dims), st, dims, default);
+        return makeTypedValue(GoReflect.ZeroValueOf(st, dims, chanDir), st, dims, default, chanDir);
     }
 }

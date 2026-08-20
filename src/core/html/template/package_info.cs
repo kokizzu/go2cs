@@ -52,7 +52,6 @@ using static go.html.template_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.text.template.parse_package.BranchNode, go.text.template.parse_package.Node>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<ΔError, error>(Pointer = true)]
 // </InterfaceImplementations>

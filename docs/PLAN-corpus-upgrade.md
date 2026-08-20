@@ -54,12 +54,14 @@ should also expect real codegen gains (the exploration's one anomalous CPU row r
 
 **Disclosure-class retirement schedule (ruled 2026-08-19, user + coordinator):** `host-limit`
 retires BY the .NET 10 hop (single-file host publish is hop scope — its retirement is a hop
-deliverable). `chan-direction` retires in the EARLY 1.23.12 era as the opening item of the
-reflection-parity arc — it has no technical coupling to either hop, buys no rows toward the
-1.23.1 terminal, and its remedy (direction as descriptor cargo) is the same plumbing the
-reflect-suite work will demand for several absent properties at once; pay for it once, there.
-Both classes are hop-stable and self-retiring, so early landings force themselves out loudly
-rather than lingering.
+deliverable). `chan-direction` was scheduled for the EARLY 1.23.12 era as the opening item of the
+reflection-parity arc, on the reasoning that it buys no rows toward the 1.23.1 terminal — and it
+**RETIRED EARLY, on 2026-08-20** (lane `claude/cargo-recv`), because that premise expired twice: the
+class turned out to GATE the `text/template` and `html/template` rows, and its remedy was the
+prerequisite for the `reflect.Value.Recv` bridge rather than a later improvement on it. The plumbing
+prediction held exactly — direction is carried the way array dims are, at the same finite set of
+positions. Both classes are hop-stable and self-retiring, so early landings force themselves out
+loudly rather than lingering, which is what happened here.
 
 ---
 

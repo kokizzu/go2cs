@@ -297,7 +297,7 @@ public static partial class GoReflect
     /// <paramref name="arrayDims"/> when known; everything else a default instance (whose field
     /// initializers ARE the Go zero — a blank `_ [4]byte` field materializes its length).
     /// </summary>
-    public static object? ZeroValueOf(Type t, nint[]? arrayDims = null)
+    public static object? ZeroValueOf(Type t, nint[]? arrayDims = null, GoChanDir chanDir = GoChanDir.Unstamped)
     {
         switch (KindOf(t))
         {
@@ -311,15 +311,45 @@ public static partial class GoReflect
                 // A NAMED string type's zero is the zero WRAPPER, not a raw @string (the slot
                 // is wrapper-typed); raw @string keeps the explicit empty-string form.
                 return t == typeof(@string) || t == typeof(string) ? (@string)"" : Activator.CreateInstance(t);
+            case Chan:
+                // A CHANNEL's zero is the NIL channel of its own Go type, and for a directional
+                // type that includes the DIRECTION — the same reason an array's zero is sized from
+                // the descriptor's dims below. Without it, reflect.Zero of a `chan<- string`
+                // descriptor answers a value whose own dynamic type reads back bidirectional, so
+                // the direction survives Type.String() but dies the moment the value is boxed and
+                // re-described (internal/reflectlite's TypeString does exactly that: `%T` of
+                // ToInterface(Zero(typ))).
+                return chanDir is GoChanDir.Recv or GoChanDir.Send ? MakeDirectionalNilChannel(t, chanDir) : DefaultValueOf(t);
             case Slice:
             case Map:
-            case Chan:
                 return DefaultValueOf(t);
             case Array:
                 return arrayDims is { Length: > 0 } && t.IsGenericType ? MakeSizedArray(t, arrayDims, 0) : DefaultValueOf(t);
             default:
                 return Activator.CreateInstance(t);
         }
+    }
+
+    // The NIL channel of a DIRECTIONAL Go channel type, boxed — channel<T>.SendOnly/.RecvOnly,
+    // reached generically off the closed type. A generated named-channel wrapper is refused (its
+    // managed form is not channel<T>, the same carve-out the whole cargo draws) and falls back to
+    // the plain default, which is what it carried before.
+    private static readonly ConcurrentDictionary<(Type, GoChanDir), object?> s_directionalNilChannels = new();
+
+    private static object? MakeDirectionalNilChannel(Type t, GoChanDir chanDir)
+    {
+        return s_directionalNilChannels.GetOrAdd((t, chanDir), static key =>
+        {
+            (Type type, GoChanDir dir) = key;
+
+            if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(channel<>))
+                return DefaultValueOf(type);
+
+            PropertyInfo? factory = type.GetProperty(dir == GoChanDir.Recv ? nameof(channel<int>.RecvOnly) : nameof(channel<int>.SendOnly),
+                BindingFlags.Public | BindingFlags.Static);
+
+            return factory is null ? DefaultValueOf(type) : factory.GetValue(null);
+        });
     }
 
     // Cached boxed default(T) — the nil form of the golib container STRUCTS (a null reference is

@@ -7907,7 +7907,7 @@ internal static void initConnPool(this ж<http2Transport> Ꮡt) {
     internal ж<http2ClientConn> cc;
     // Fields of Request that we may access even after the response body is closed.
     internal context.Context ctx;
-    internal /*<-*/channel<EmptyStruct> reqCancel;
+    internal /*<-*/channel<EmptyStruct> reqCancel = /*<-*/channel<EmptyStruct>.RecvOnly;
     internal ж<httptrace.ClientTrace> trace; // or nil
     public uint32 ID;
     internal http2pipe bufPipe; // buffered pipe with the flow-controlled response payload

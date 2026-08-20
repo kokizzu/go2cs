@@ -117,6 +117,10 @@ internal static void Main() {
         var f = ht.Field(i);
         fmt.Printf("field %s: %v | dir=%v\n"u8, f.Name, f.Type, f.Type.ChanDir());
     }
+    var st = reflect.TypeOf(send);
+    var rt = reflect.TypeOf(recv);
+    fmt.Printf("zero: %T | %T\n"u8, reflect.Zero(st).Interface(), reflect.Zero(rt).Interface());
+    fmt.Printf("new elem: %T | %v\n"u8, reflect.New(st).Elem().Interface(), reflect.New(rt).Type());
     var ci = reflect.TypeOf(@new<channel<nint>>()).Elem();
     var ri = reflect.TypeOf(Ꮡ(/*<-*/channel<nint>.RecvOnly)).Elem();
     var si = reflect.TypeOf(Ꮡ(channel/*<-*/<nint>.SendOnly)).Elem();
