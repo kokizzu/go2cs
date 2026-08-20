@@ -56,7 +56,7 @@ internal interface IErrorTarget
     object? TargetObject { get; }
 }
 
-public class error<T> : error, IErrorTarget
+public class error<T> : error, IErrorTarget, IInterfaceAdapter
 {
     private T m_target = default!;
     private readonly ж<T>? m_target_ptr;
@@ -74,6 +74,19 @@ public class error<T> : error, IErrorTarget
     }
 
     object? IErrorTarget.TargetObject => Target;
+
+    // The BOX when pointer-backed, the wrapped value otherwise — the identical member every
+    // go2cs-gen generic shell carries (InterfaceShellEmitter), because this class IS the shell
+    // for `error` and must obey the same carrier protocol. Interface equality and type identity
+    // are decided on the Go dynamic (type, value), never on which carrier class holds it: two
+    // independently minted carriers of AlertError(42) — this shell from fmt's `%w` assert, a
+    // generated ᴠ value adapter from a test-assembly cast — must compare equal, and before this
+    // member AreEqual could unwrap every carrier EXCEPT this one, so `errors.Is` answered false
+    // for equal errors whenever a shell met any other carrier (crypto/tls's
+    // TestQUICHandshakeError is the measured consumer: quicError's wrapped AlertError never
+    // matched the test's target). Pointer-backed exposes the ж box so pointer-sourced errors
+    // keep Go's pointer-identity equality.
+    object? IInterfaceAdapter.Value => m_target_is_ptr ? m_target_ptr : (object?)m_target;
 
     // Declared BY VALUE, not `in T`: an `in` parameter is `T&` in metadata, and AdapterBinder locates
     // a shell's constructor by exact parameter type (GetConstructor([valueType])) — a by-ref

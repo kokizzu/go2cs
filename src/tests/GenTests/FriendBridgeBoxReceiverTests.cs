@@ -80,4 +80,30 @@ public class FriendBridgeBoxReceiverTests
 
         Assert.AreEqual(0, found.Count, "neither a ref nor a value receiver is a direct-ж primary");
     }
+
+    [TestMethod]
+    public void RefReceiverScanFindsTheGoRecvForm()
+    {
+        // crypto/tls's shape: the bridge declares `[GoRecv] unmarshal(this ref SessionState, …)`
+        // for a production type whose declaration is metadata-only, and the sealing-marker
+        // classification needs that as local-implementation EVIDENCE (the forward binds through
+        // the RecvGenerator ж-twin). Box and value receivers belong to the other scans.
+        Compilation compilation = Compile(
+            """
+            partial class tls_internal_test_package
+            {
+                internal static bool unmarshal(this ref global::go.crypto.tls_package.SessionState s, slice<byte> b) => true;
+                internal static void marshal(this ж<global::go.crypto.tls_package.SessionState> Ꮡs) { }
+                internal static void copy(this global::go.crypto.tls_package.SessionState s) { }
+                internal static bool other(this ref global::go.crypto.tls_package.ticketKey k) => true;
+            }
+            """);
+
+        HashSet<string> found = StructDeclarationSyntaxExtensions.GetRefReceiverMethodNamesBySimpleName("SessionState", compilation);
+
+        Assert.IsTrue(found.Contains("unmarshal"), "the qualified ref parameter names SessionState");
+        Assert.IsFalse(found.Contains("marshal"), "a direct-ж receiver is the box scan's, not the ref scan's");
+        Assert.IsFalse(found.Contains("copy"), "a value receiver is not a ref receiver");
+        Assert.IsFalse(found.Contains("other"), "a different receiver type must not match");
+    }
 }

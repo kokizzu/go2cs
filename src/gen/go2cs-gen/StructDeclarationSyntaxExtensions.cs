@@ -596,6 +596,48 @@ public static class StructDeclarationSyntaxExtensions
     }
 
     /// <summary>
+    /// Ref-receiver counterpart to <see cref="GetBoxReceiverMethodNamesBySimpleName"/>: gets the
+    /// names of <c>[GoRecv]</c>-style ref extension methods (<c>static M(this ref T, …)</c>)
+    /// declared anywhere in the CURRENT compilation whose receiver's simple type name matches
+    /// <paramref name="simpleTypeName"/>.
+    /// </summary>
+    /// <remarks>
+    /// Needed for the same friend-bridge shape as the box scan, in the other receiver form: an
+    /// internal white-box test package declares a ref-receiver method for a PRODUCTION type
+    /// (crypto/tls's <c>unmarshal(this ref SessionState, …)</c>), whose declaration discovery hands
+    /// back no syntax because the struct itself lives in the referenced assembly. The method still
+    /// binds on the receiver box through its RecvGenerator ж-twin — generator output this generator
+    /// cannot observe, so the SOURCE form is the evidence, exactly the assumption
+    /// <c>MethodInfo.IsRefRecv</c> already encodes for a locally-declared struct. Matching is by the
+    /// receiver's SIMPLE name for the same reason the box scan's is: the bridge spells the type
+    /// through whatever qualification its own file needs.
+    /// </remarks>
+    public static HashSet<string> GetRefReceiverMethodNamesBySimpleName(string simpleTypeName, Compilation compilation)
+    {
+        return new HashSet<string>(compilation.SyntaxTrees
+            .SelectMany(tree => tree.GetRoot()
+                .DescendantNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .Where(method =>
+                    method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) &&
+                    method.ParameterList.Parameters.Count > 0))
+            .Where(method =>
+            {
+                ParameterSyntax? firstParam = method.ParameterList.Parameters.FirstOrDefault();
+
+                if (firstParam is null ||
+                    !firstParam.Modifiers.Any(m => m.IsKind(SyntaxKind.ThisKeyword)) ||
+                    !firstParam.Modifiers.Any(m => m.IsKind(SyntaxKind.RefKeyword)))
+                    return false;
+
+                string paramType = firstParam.Type?.ToString() ?? "";
+
+                return paramType.Length > 0 && Common.GetSimpleName(paramType) == simpleTypeName;
+            })
+            .Select(method => method.Identifier.Text), StringComparer.Ordinal);
+    }
+
+    /// <summary>
     /// METADATA counterpart to <see cref="GetBoxReceiverMethodNames(string, Compilation)"/>: gets the
     /// names of PUBLIC direct-ж extension methods (<c>static M(this ж&lt;T&gt;)</c>) declared on a
     /// FOREIGN type's containing package class, visible only through compiled metadata — a syntax-tree
