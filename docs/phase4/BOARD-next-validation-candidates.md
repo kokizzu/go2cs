@@ -14601,6 +14601,95 @@ corruption is silent until a build fails. The rule needs a companion habit: **ce
 table before launching a conversion**, because "I meant to replace that run" is not the same as
 having replaced it.
 
+### Gates
+
+Converter `go test ./...` **ok, 174.1 s, exit 0** (`projitemsIntegrity_test` included — the one new
+`.go` file is registered; `TestStdLibMetadataInSync` passes, and no `package_info.cs` record moved
+for this arc, so `go generate` is not owed).
+
+Full `check-no-regression.ps1`: **byte-identical generated `.cs` and `.csproj` across all 629
+behavioral packages**, 0 NOT MEASURED, 2 advisory converter warnings, **673 s**; preflight solution
+integrity **631/631**, path casing **4,534/4,534**. Re-run from scratch after the one late converter
+edit (a local-variable rename) so the gate binds the source at HEAD rather than the source it was
+launched against.
+
+Full behavioral suite **PASS at 602 projects, 1,671.6 s** — Transpile 602/602, Compile 602/602,
+**Target 602/602 byte-identical**, Output 576 compared / 0 failed (26 skipped, no `package main`),
+**0 timeouts / 0 NOT MEASURED**.
+
+Solution builds, all `--no-incremental`: `go2cs.slnx` Debug **0 errors, 715 s** (the gate no other
+harness covers, and this arc changes golib's `IChannel`/`channel<T>` surface);
+`go2cs-stdlib.slnx` `-p:GoTargetOS=windows` **0 errors, 381 s**; `-p:GoTargetOS=linux` **0 errors,
+364 s**. The linux build is not optional here — six of this arc's sixteen corpus movers live in
+`net/linux/` and `runtime/linux/`, which the default windows build never compiles. `bin`/`obj` purged
+between the target switch (916 of 935 directories; the 19 that resisted are long-path `Generated`
+folders in vendor/coverage packages, none platform-varying, and `--no-incremental` covers them).
+
+Row sweeps, from the committed roster: **`html/template` 243, `text/template` 52,
+`text/template/parse` 52 — 3 pass / 0 fail, 284 s.** `internal/reflectlite` **PASS at its NEW count,
+30** — which is the proof the class retirement is real rather than locally observed.
+
+Canaries — the five largest banked reflect consumers BY VERDICT COUNT, **recomputed from the roster at
+gate time** per the doctrine (`go/internal/gcimporter` 583, `go/types` 557, `encoding/json` 491,
+`crypto/tls` 400, `encoding/xml` 386; the two rows this lane banks are reflect consumers too but at
+243 and 52 they do not enter the set):
+
+| Canary | Expected | Result |
+|:--|:--:|:--|
+| `go/internal/gcimporter` | 583 | **PASS** (492 s) |
+| `go/types` | 557 | **PASS** (256 s) |
+| `encoding/json` | 491 | **PASS** (98 s) |
+| `encoding/xml` | 386 | **PASS** (103 s) |
+| `crypto/tls` | 400 | **FAIL — rooted to the GO baseline, see below** |
+
+Guards proven failing-first by neutering each half separately (both transcripts above).
+
+`src/core` dirt from the five `-tests` runs and the sweeps classified and RESTORED per the standing
+rule, with ONE exception banked deliberately: `text/template/parse/parse_test.cs` (2/2), which is
+template-banks' variadic-boxing fix reaching a BANKED row's committed test sources. It is banked
+rather than restored because the package re-validates at its full 52 with the new emission, so
+restoring it would leave every future sweep reporting the same drift forever.
+
+### ⚠ The `crypto/tls` canary reports FAIL, and the cause is the GO baseline on this host
+
+Recorded in full because a red flagship row is exactly what the banking-merge doctrine exists to
+catch, and this one is a FALSE red that will recur.
+
+The sweep's verdict maps say it precisely. The C# side ran its banked 402 rows and **every verdict is
+identical to the committed proof page — zero differences**. Exactly one row diverges between the two
+languages, `TestCertCache` (Go pass, C# fail), and that row is itself a banked `codegen-liveness`
+disclosure. The count still moved:
+
+| Row | Banked model | This run |
+|:--|:--|:--|
+| `TestBogoSuite` | Go **pass**, C# fail → a `host-limit` DIVERGENCE, counted as disclosed | Go **FAIL**, C# fail → the row AGREES, so it is not a divergence at all |
+| `TestCertCache` | Go pass, C# fail → disclosed | unchanged |
+
+Live disclosed = 1 where the roster banks 2, and the sweep's own `disclosed count moved` check fires.
+The C# side did not move; the GO side did. On this host `go test` actually executed the BoGo matrix —
+3,243 `TestBogoSuite/...` subtest rows appear on the Go side against the banked model's absence — and
+failed it, which is unsurprising given what that row's own disclosure documents about the runner's
+10-minute child deadline and 5,481-case matrix.
+
+**Nothing in a go2cs branch can influence this.** The Go baseline is `go test -json` over GOROOT's own
+`crypto/tls` sources with the Go toolchain, and on the Go side the BoGo shim is Go's own test binary,
+not the converted host. The row is environmental — network reachability of the boringssl module, and
+how far the runner gets before its own deadline — and it would reproduce at master on this machine.
+
+**The finding worth carrying is about the PIN, not about tls.** A disclosure pins a divergence, so it
+is only stable while the GO side is stable. `TestBogoSuite`'s Go side is itself load- and
+network-dependent, which makes this row brittle in BOTH directions: the sweep goes red when Go starts
+failing (here) and would go red again when Go goes back to passing on a quieter host. That is a
+property of disclosing a row whose baseline is not deterministic, and it is worth a coordinator ruling
+rather than a lane's patch — the honest options are to annotate the row the way `host-conditional`
+annotates verdict COUNTS, or to accept agreement-on-failure as satisfying a disclosure.
+
+This lane changed nothing here and banked nothing here: the regenerated `crypto/tls` test sources were
+RESTORED, including the pre-existing staleness they exposed (the committed sources still emit
+`tls_package` where the converter now emits `tls_internal_test_package`, the form **132** other
+packages already use — a stale bank, unrelated to this arc, and not something to level inside a red
+canary).
+
 ### The queue, after this
 
 1. **`encoding/gob` (106)** — 103 of 106, now the closest unbanked package and the queue top. Its

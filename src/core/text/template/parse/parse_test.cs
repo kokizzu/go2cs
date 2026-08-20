@@ -338,7 +338,7 @@ internal static slice<parseTest> parseTests = new parseTest[]{
 }.slice();
 
 internal static map<@string, any> builtins = new map<@string, any>{
-    ["printf"u8] = fmt.Sprintf,
+    ["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintf)),
     ["contains"u8] = strings.Contains
 };
 
@@ -456,7 +456,7 @@ public static void TestKeywordsAndFuncs(ж<testing.T> Ꮡt) {
             // 'break' is a defined function, don't treat it as a keyword: it should
             // accept an argument successfully.
             map<@string, any> funcsWithKeywordFunc = new map<@string, any>{
-                ["break"u8] = (any @in) => @in
+                ["break"u8] = any (any @in) => @in
             };
             var (tmpl, err) = New(""u8).Parse(inp, ""u8, ""u8, new map<@string, ж<global::go.text.template.parse_package.Tree>>(), funcsWithKeywordFunc);
             if (err != default! || tmpl == nil) {
