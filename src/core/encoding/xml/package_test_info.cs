@@ -4,20 +4,10 @@
 // production types and no production class partial may be declared here. The first —
 // and only — class is the test metadata class the go2cs-gen generators anchor
 // generated adapters and partials to.
-global using static global::go.encoding.json_package;
-global using static global::go.encoding.json_internal_test_package;
+global using static global::go.encoding.xml_package;
+global using static global::go.encoding.xml_internal_test_package;
 
 // <ImportedTypeAliases>
-global using bigꓸInt = go.math.big_package.ΔInt;
-global using bigꓸRat = go.math.big_package.ΔRat;
-global using httpꓸCookie = go.net.http_package.ΔCookie;
-global using httpꓸHandler = go.net.http_package.ΔHandler;
-global using httpꓸHeader = go.net.http_package.ΔHeader;
-global using imageꓸRGBA = go.image_package.ΔRGBA;
-global using jsonꓸToken = object;
-global using jsonꓸΔToken = object;
-global using netꓸAddr = go.net_package.ΔAddr;
-global using netꓸError = go.net_package.ΔError;
 global using osꓸDirEntry = go.io.fs_package.DirEntry;
 global using osꓸFileInfo = go.io.fs_package.FileInfo;
 global using osꓸFileMode = go.io.fs_package.FileMode;
@@ -32,11 +22,13 @@ global using runtimeꓸError = go.runtime_package.ΔError;
 global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
+global using xmlꓸToken = object;
+global using xmlꓸΔToken = object;
 global using ΔToken = object;
 // </ImportedTypeAliases>
 
 using go;
-using static global::go.encoding.json_test_package;
+using static global::go.encoding.xml_test_package;
 
 // <ExportedTypeAliases>
 [assembly: GoTypeAlias("Token", "ΔToken")]
@@ -45,12 +37,7 @@ using static global::go.encoding.json_test_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<bytes_package.Buffer, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.compress.gzip_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<go.net.http_package.HandlerFunc, go.net.http_package.ΔHandler>]
-[assembly: GoImplement<io_package.ReadCloser, io_package.Reader>]
-[assembly: GoImplement<net_package.Conn, io_package.Reader>]
-[assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<global::go.encoding.xml_package.UnmarshalError, error>]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
@@ -60,8 +47,8 @@ using static global::go.encoding.json_test_package;
 
 namespace go.encoding;
 
-[GoPackage("json_test")]
-public static partial class json_test_package
+[GoPackage("xml_test")]
+public static partial class xml_test_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -71,6 +58,8 @@ public static partial class json_test_package
 
     // <TypeAccessibility>
     public partial struct Animal {}
+    public partial struct Example_customMarshalXML_zoo {}
+    public partial struct Example_textMarshalXML_inventory {}
     public partial struct Size {}
     // </TypeAccessibility>
 }

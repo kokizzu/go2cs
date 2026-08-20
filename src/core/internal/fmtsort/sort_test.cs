@@ -192,7 +192,7 @@ internal static @string sprintKey(reflectꓸValue key) {
         if (exprᴛ1 == "unsafe.Pointer"u8) {
             @unsafe.Pointer ptr = key.Interface()._<@unsafe.Pointer>();
             foreach (var (i, _) in ints) {
-                if (ptr.Value == new @unsafe.Pointer(Ꮡints.at<nint>(i))) {
+                if (ptr == new @unsafe.Pointer(Ꮡints.at<nint>(i))) {
                     return fmt.Sprintf("UNSAFEPTR%d"u8, i);
                 }
             }

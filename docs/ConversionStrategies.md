@@ -1154,8 +1154,9 @@ as Go's interface dispatch adds no frame). The one honest difference is `file`/`
 **Full detail:** [Reference → Defer / Panic / Recover](ConversionStrategies-Reference.md#defer--panic--recover) —
 the frame's emitted forms and why the body is not a lambda, the named-result `goto` exit, the
 registration ladder, unrecovered-panic process exit (stderr + code 2), named-delegate/builtin callees,
-value-returning goroutine wrapping, func-literal argument capture hoisting, and box-bound deferred
-pointer-receiver methods; plus
+value-returning goroutine wrapping, func-literal argument capture hoisting, the golib family-delegate
+cast a VARIADIC deferred literal needs (a `params` lambda converts to no `Action<…>`), and box-bound
+deferred pointer-receiver methods; plus
 [Reference → `runtime.Stack` renders a GO-shaped traceback](ConversionStrategies-Reference.md#runtimestack-renders-a-go-shaped-traceback-and-recovers-the-panic-site).
 
 ---

@@ -43,9 +43,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **154 / 215 testable packages validated — 71.6%**
+> ### Phase 4 progress: **155 / 215 testable packages validated — 72.1%**
 >
-> **17,730 matching test verdicts · 82 disclosed** *(updated 2026-08-19 — maintained as part of the
+> **18,116 matching test verdicts · 82 disclosed** *(updated 2026-08-19 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -117,6 +117,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`encoding/csv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/csv) | 71 | | CSV parsing; wrapped-error `errors.Is` through the reflection bridge. · [proof](validation/current/encoding.csv.md) |
 | [`encoding/hex`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/hex) | 12 | | Hex encode/decode and error paths. · [proof](validation/current/encoding.hex.md) |
 | [`encoding/json`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/json) | 491 | | JSON end to end — the `Marshal`/`Unmarshal` tables over the 40-field `All` fixture, struct-tag naming and options including `,string` and `omitempty`, embedding with Go's full dominance rules, `Marshaler`/`Unmarshaler`/`TextMarshaler` dispatch at every depth, `RawMessage`, `Number`, the streaming `Encoder`/`Decoder` with `Token`/`More`, `Compact`/`Indent`/`HTMLEscape`, and the cycle, depth and malformed-input error sets. Nearly every row is a reflection walk checked against Go's own answer, so this suite is the reflection bridge's broadest proof: ten of its roots were found here, and the last of them was a map entry read without its element type. · [proof](validation/current/encoding.json.md) |
+| [`encoding/xml`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/xml) | 386 | | XML end to end — the `Decoder`'s tokenizer over the whole grammar (nested elements, CDATA, directives, comments, processing instructions, character and HTML entities, `CharsetReader`, `RawToken`/`Skip`/`InputOffset`, and the syntax-error line/column set), namespace resolution and prefix scoping in both directions, `Marshal`/`Unmarshal` over the struct-tag grammar (`XMLName`, `attr`, `chardata`, `cdata`, `innerxml`, `comment`, `omitempty`, `a>b>c` nesting, `any`), `Marshaler`/`Unmarshaler` and their Attr/Text variants at every depth, `EncodeToken` streaming with its well-formedness rules, and the CVE and disallowed-character regression sets. The row is one long reflection walk checked against Go's own answer, which is why its last root was a `reflect.DeepEqual` that could not see a NAMED byte slice's backing array — `CopyToken` really did clone its buffer, and the comparison said otherwise. · [proof](validation/current/encoding.xml.md) |
 | [`encoding/pem`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/pem) | 8 | | PEM block parsing and round-trips. · [proof](validation/current/encoding.pem.md) |
 | [`errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/errors) | 61 | | `errors.Is`/`As`/`Join` — reflection-bridge write-back (`Value.Set`, addressability). · [proof](validation/current/errors.md) |
 | [`expvar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/expvar) | 11 |  | The exported-variable registry — `Int`/`Float`/`String`/`Map`/`Func` publication and atomic update, `Map` key ordering with delete/init, JSON quoting across every rune class, and the `/debug/vars` handler. · [proof](validation/current/expvar.md) |

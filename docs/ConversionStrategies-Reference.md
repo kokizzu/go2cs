@@ -7912,6 +7912,64 @@ siblings carry a `ǃ` (U+01C3, a legal C# identifier character where `!` is not)
 own: `goǃ` cannot be `go`, which is the root namespace every converted file sits in, and `makeǃ`
 cannot be `make`, which is a predeclared Go identifier a package may shadow.
 
+### A VARIADIC deferred/spawned func literal is cast to its golib family delegate
+
+A deferred func LITERAL is normally handed to the arity rung directly — `defer((nint cnt) => { … },
+count, ref ᒐ)` — because a non-variadic literal emits explicitly-typed parameters that convert to
+`Action<T1, …>`, from which the rung's type arguments infer. A **variadic** literal emits
+`params ꓸꓸꓸ@string dirsʗp` and converts to *nothing*: it is neither an `Action<…>` (so `defer<T1, T2>`
+cannot infer — **CS0411**) nor a method group (so the nullary rung's `Action` slot rejects it), and it
+cannot even be invoked where it stands (**CS0149**). C# 13 does give it a natural type, but that is a
+compiler-synthesized `<>f__AnonymousDelegate<N>`, unrelated to anything golib declares.
+
+golib already has the right type — the `Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` family whose tail is a
+`params Span<TArg>` — and `iifeDelegateType` already renders it from a signature, because the
+immediately-invoked-literal path needs the same thing. So a variadic literal callee is CAST to its
+family delegate and then invoked, exactly the `((<delegate>)(<lambda>))(<args>)` shape a non-variadic
+IIFE already uses, and the registration takes the temp-parameter form so there is something to invoke:
+
+```csharp
+//  Go: defer func(dirs ...string) { for _, dir := range dirs { os.RemoveAll(dir) } }(dir1, dir2)
+defer((ᴛ1, ᴛ2) => ((Actionꓸꓸꓸ<@string>)((params ꓸꓸꓸstring dirsʗp) => {
+    var dirs = dirsʗp.slice();
+    foreach (var (_, dir) in dirs) {
+        os.RemoveAll(dir);
+    }
+}))(ᴛ1, ᴛ2), dir1, dir2, ref ᒐ);
+```
+
+Go's defer-TIME argument evaluation is untouched: `dir1`/`dir2` are still the eager arguments the rung
+snapshots, and `ᴛ1`/`ᴛ2` are what the thunk receives back at unwind. A **result**-returning literal
+takes the `Funcꓸꓸꓸ` half and the rung discards the result, as every value-returning deferred callee
+does. The **nullary** form additionally suppresses the method-group trim: `defer f()` normally emits
+the callee alone (`defer(Ꮡfd.writeUnlock, ref ᒐ)`), but trimming `((Actionꓸꓸꓸ<nint>)(<literal>))()`
+back to the cast delegate hands the `Action` rung a family delegate (**CS1503**), so the invocation is
+kept and wrapped — `defer(() => ((Actionꓸꓸꓸ<nint>)(<literal>))(), ref ᒐ)`. `go` takes all of the same
+arms for the same reasons.
+
+**Reach.** ONE site in the entire Go 1.23 tree — `html/template`'s `examplefiles_test.go:90` — and it
+was that package's SOLE remaining build wall, standing in front of **243** verdicts. The same cast
+also closes the immediately-invoked variadic literal (`func(parts ...int) int { … }(1, 2, 3)`), which
+`convCallExpr`'s IIFE interception had explicitly excluded on the stale reasoning that "delegate type
+would need a params array" — `iifeDelegateType` has rendered the family form for a variadic signature
+all along. (Guarded by `DeferLambdaParam`, extended from its one non-variadic row to cover the
+variadic literal at every arity around the shape: no fixed parameter with one argument, a fixed
+parameter ahead of the tail, none at all, a result-returning literal, and the immediately-invoked
+form — plus the defer-time snapshot itself, whose arguments are reassigned after the `defer` and must
+not change what the thunk prints. Counter-proven failing-first by neutering each half separately: the
+temp-parameter force alone gives CS0411 ×4, the delegate cast alone gives CS0149/CS1503 ×6.)
+
+**Two adjacent walls this deliberately does NOT close, both measured here and neither caused by it:**
+
+1. **A SPREAD argument to any deferred variadic call.** `defer f(nums...)` emits `nums.ꓸꓸꓸ`, a
+   `Span<T>`, as the type argument of `defer<T>` — and C# forbids a ref struct there (**CS9244**).
+   Proven independent: a NAMED variadic callee with no func literal anywhere emits the identical
+   `defer(ᴛ1 => f(ᴛ1), nums.ꓸꓸꓸ, ref ᒐ)` and fails the same way. Closing it means passing the SLICE
+   and spreading inside the thunk, at every variadic deferred call in the corpus.
+2. **An empty variadic call passes an empty slice where Go passes NIL.** `f()` on `func f(parts
+   ...int)` answers `parts == nil` as `true` in Go and `false` here. Visible from a plain direct call
+   — no defer, no literal — so it is an argument-CONSTRUCTION difference with corpus-wide reach.
+
 ### `defer panic(v)` captures its value at the defer, and the sequence survives it
 
 `panic` is the one built-in emitted as a `throw` **statement** rather than as a call, and that made it
@@ -15599,6 +15657,45 @@ always done — so a lookup, a range and a `DeepEqual` over one map finally desc
 identically. The full rule, and why the container's verdict disagreed with every one of its elements,
 is *A map ENTRY is a SLOT* below. Guarded by `ReflectBridgeClosure`'s *map nil element* rows;
 counter-proven by reverting the arm, which reports `false false` where Go reports `true true`.
+
+**A fifth defect, and it is the named-map one with SLICE substituted throughout (2026-08-19).**
+`sliceData` — the probe that answers a Value's backing array and window offset, which is both the
+`&x[0] == &y[0]` short-circuit's input and `identityRoot`'s cycle key — read `m_array`/`m_low` off the
+boxed object's own type. A generated NAMED-slice wrapper (`type S []E`, e.g. `xml.CharData`,
+`xml.Comment`, `net.IP`) has neither: it holds a `slice<E>` **struct** one level down, exactly as the
+named-MAP wrapper holds its `map<K,V>`. So both sides resolved to `(null, 0)`, `ReferenceEquals(data1,
+data2)` matched them as "the same initial entry of the same underlying array", and two named slices of
+equal length were deeply equal **regardless of contents**; a nil named slice compared equal to an empty
+one (the nil/empty rule tests the same two nulls); and `identityRoot` was blind the same way, so a
+named-slice cycle was never detected. The probe now takes the same second step `mapBacking` takes,
+gated on the type being slice-KINDED so a struct that merely HAS a slice field can never be mistaken
+for one, and terminating because the nested value is a strictly smaller struct that carries the pair
+itself.
+
+The observable form is worth recording because it points at the wrong package. `encoding/xml`'s
+`TestCopyTokenCharData`/`TestCopyTokenComment` clone a token's buffer, mutate the ORIGINAL, and assert
+the two are no longer deeply equal; the failure message is *"CopyToken(CharData) uses same buffer"*,
+which reads as a copy that failed to copy. It is not — `bytes.Clone` allocates a fresh backing array
+and the `slice<byte>`→`CharData` conversion aliases correctly. The values were wrongly EQUAL, never
+wrongly SHARING, and the owner was `reflect`.
+
+**And the `[]byte` fast path was a second, independent gap in the same arm** — real, but NOT what made
+the values compare equal (measured by A/B: fixing only the fast path leaves all eight wrong rows wrong;
+fixing only `sliceData` makes all of them right, because the identity short-circuit fires FIRST and the
+fast path is never reached). Go's `[]byte` special case is selected by the element **KIND**, never by
+the slice's or the element's name — a raw `[]byte`, a defined slice type over `byte`, and a slice over
+a defined byte element all route through `bytealg.Equal` — while the managed arm tested `live is
+slice<byte>`, which only the first satisfies. It now asks `GoReflect.TryByteSliceView`, the same
+element-kind alias `Value.Bytes`/`SetBytes` are built on (see *the `[]byte` VIEW of any Uint8-element
+slice*), so all three shapes take one route in both APIs; both sides are the same Go type by the
+`AreEqual` check above, so one view test settles both.
+
+Guarded by the `DeepEqual` project's twenty new named-slice rows — the `CopyToken` shape verbatim
+(clone, mutate the original, re-compare) plus a named byte slice through an interface, as a slice
+element and as a map value; nil vs empty vs self; a named slice over a DEFINED byte element and one
+over `string` so the fix cannot be byte-specific; and a self-referential `type recur []any` cycle,
+which terminates only once the unwrap reaches the real backing array. Counter-proven failing-first:
+**eight** of the twenty printed the wrong answer, every one of them wrongly `true`.
 
 **The Windows directory-entry walk (`os/dir_windows_impl.cs`, Phase-4 — os operational).** Go's
 `(*File).readdir` walks the buffer `GetFileInformationByHandleEx` fills by REINTERPRETING it as a Go

@@ -2534,6 +2534,20 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		funcName = v.convExpr(callExpr.Fun, []ExprContext{lambdaContext})
 	}
 
+	// A VARIADIC func-literal callee renders as `(params ꓸꓸꓸ@string dirsʗp) => …`, which C# can
+	// neither invoke directly (CS0149) nor convert to any `Action`/`Func` — cast it to its golib
+	// family delegate, the same `((<delegate>)(<lambda>))(<args>)` shape phase 1a already uses for
+	// a non-variadic IIFE, so the invocation binds. Skipped for the BARE-callee `defer`/`go` form
+	// below, which emits the literal with no argument list at all; `visitDeferStmt`/`visitGoStmt`
+	// force the temp-parameter form for exactly this shape, so a variadic literal never lands
+	// there. Phase 1a's own `!sig.Variadic()` restriction is what routes an immediately-invoked
+	// variadic literal here, and this is the cast it was waiting for.
+	if context.renderParams || context.callArgs == nil {
+		if sig := v.variadicFuncLitCallee(callExpr); sig != nil {
+			funcName = fmt.Sprintf("((%s)(%s))", v.iifeDelegateType(sig), funcName)
+		}
+	}
+
 	// ---- Phase 7a: built-in name shadowing, and min/max argument typing ----
 
 	// A Go built-in call (`clear(s)`, `len(s)`, …) whose name the package ALSO declares as a method
