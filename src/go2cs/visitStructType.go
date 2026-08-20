@@ -351,7 +351,11 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		displayLenDeviation := token.Pos(len(csDisplayTypeName) - len(goDisplayTypeName))
 		typeLenDeviation := token.Pos(len(csFullTypeName) - len(goFullTypeName))
 
-		var arrayInitializer string
+		// The Go ZERO of a field whose managed default is not already it: a fixed-size array's
+		// length and a directional channel's direction are both parts of the Go TYPE that the
+		// emitted C# type cannot hold, so both are carried as an initializer the generated
+		// parameterless constructor runs. At most one applies to any field.
+		var fieldInitializer string
 
 		// Unparen: `x ([32]int32)` declares the same fixed-size array field as `x [32]int32`
 		// (Go's grammar admits the parentheses; reflectlite's typeTests writes every entry that
@@ -359,7 +363,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// instance then carried a backing-less array and every dims read answered [0]N.
 		if arrayType, ok := ast.Unparen(field.Type).(*ast.ArrayType); ok {
 			if arrayType.Len != nil {
-				arrayInitializer = fmt.Sprintf(" = new(%s)", v.arrayZeroValueArgs(v.convExpr(arrayType.Len, nil), fieldType))
+				fieldInitializer = fmt.Sprintf(" = new(%s)", v.arrayZeroValueArgs(v.convExpr(arrayType.Len, nil), fieldType))
 			}
 		}
 
@@ -369,7 +373,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// reflectlite's `struct{ x chan<- string }` row reads through Field(0).Type(): there is no
 		// channel VALUE to measure and no attribute to consult, only the zero the field declares.
 		if chanInitializer := v.chanDirNilValue(fieldType); chanInitializer != "" {
-			arrayInitializer = " = " + chanInitializer
+			fieldInitializer = " = " + chanInitializer
 		}
 
 		if field.Names == nil {
@@ -555,7 +559,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			// (Δ-marker rename), or a per-field array initializer (` = new(N)`). The names in
 			// one field group already share field.Type/Tag/Comment, so only access and the
 			// per-name renames can diverge. When any apply, fall back to one line per name.
-			canCombine := len(field.Names) > 1 && arrayInitializer == ""
+			canCombine := len(field.Names) > 1 && fieldInitializer == ""
 
 			if canCombine {
 				groupAccess := getAccess(field.Names[0].Name)
@@ -601,7 +605,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 						fieldName = typeCollidingFieldName(fieldName)
 					}
 
-					v.writeString(target, "%s %s %s%s;", getAccess(ident.Name), csDisplayTypeName, fieldName, arrayInitializer)
+					v.writeString(target, "%s %s %s%s;", getAccess(ident.Name), csDisplayTypeName, fieldName, fieldInitializer)
 					v.writeCommentString(target, field.Comment, field.Type.End()+displayLenDeviation)
 					target.WriteString(v.newline)
 				}

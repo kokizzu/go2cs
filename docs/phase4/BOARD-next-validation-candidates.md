@@ -14555,6 +14555,31 @@ leveling regen.
 `{html,text}/template/doc.cs` and reflectlite's `{swapper,type,value}.cs` (the `global::go.*` root
 escape), plus `html/template/package_init.cs`'s `initᴛᴛtests` hook (+7 real lines).
 
+### The stale-validation-badge class is a PIPELINE gap, not four accidents
+
+template-banks censused `encoding/xml`'s README as the only package advertising
+`Tests-not_yet_validated` while its row was banked, and left it as "a one-line correction, or the
+next regen". It is neither an accident nor a one-off: **every bank leaves a stale badge**, and the
+mechanism is exactly locatable.
+
+The badge is composed at CONVERSION time from `docs/validation/current/<dot-id>.md` and
+`src/version.props` (`readmeBadgeLine`), but `writeReadmeFile` is **gated to `options.convertStdLib`**
+(`projectFileWriter.go`) — deliberately, so a behavioral-test or single-package conversion does not
+litter its directory. A `-tests` run writes the proof page and does not write the README; a
+single-package conversion does not write the README either. So the badge only ever catches up on the
+next whole-stdlib reconvert, which is not part of banking.
+
+This lane hit it three more times at once (`internal/reflectlite` frozen at `27/30`,
+`{html,text}/template` at `not_yet_validated`) and closed all four by the authoritative route —
+a seeded single-target `-stdlib` reconvert taken AFTER the proof pages updated, overlaying only the
+README movers. That is a repeat of the same manual step every future bank will owe.
+
+**The durable fix is one line of gating**, deliberately NOT taken here because it wants its own
+emission gate: let a `-tests` conversion that WROTE a proof page also refresh that package's README,
+or equivalently drop the `convertStdLib` gate to "stdlib package" rather than "stdlib run". Whoever
+takes it should keep the litter rule the gate exists for — the test is the PACKAGE's provenance, not
+the run's mode.
+
 ### The queue, after this
 
 1. **`encoding/gob` (106)** — 103 of 106, now the closest unbanked package and the queue top. Its

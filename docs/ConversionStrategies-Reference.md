@@ -16836,6 +16836,12 @@ Four boundaries are deliberate, and each is the same shape as one the array dims
   `reflect.TypeOf(f).In(i).ChanDir()`.
 - **A type PARAMETER instantiated at a channel type** routes through `ISupportMake`, which has no
   direction-taking form.
+- **`reflect.ChanOf(dir, elem)` is untouched and still answers `BothDir`.** It is the auto
+  conversion, and it fabricates a descriptor with no value behind it by reinterpreting a boxed
+  `channel<unsafe.Pointer>` as Go's linker-allocated `chanType` record — a path the managed bridge
+  cannot honor at all, of which the direction is the smallest part. Its behavior is unchanged by the
+  cargo (it answered `BothDir` before and after), and no measured consumer reaches it; a lane that
+  needs it owes the whole descriptor, not just the arrow.
 
 The downcast this replaced read a direction out of the memory following the descriptor's value slot,
 **non-deterministically**, so `reflect.MakeChan`'s `ChanDir() != BothDir` guard and the identity
