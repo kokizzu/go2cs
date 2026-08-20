@@ -24,14 +24,22 @@ import (
 // determine if a variable needs to be heap allocated. The map that is created as a
 // result of this analysis is called `identEscapesHeap`.
 
-// Implementation of the escape analysis is currently very basic and only covers cases
-// within a single function considering options where a variable "may" escape. It does
-// not consider cases where a variable is passed to another function and may not need
-// to be heap allocated and could be handled by using C# ref structure operations.
+// The analysis works per function, marking variables that "may" escape, and it feeds two
+// cooperating mechanisms rather than a single heap decision. Where every consumer of an
+// address permits it, Phase-A REF-LOWERING keeps the variable on the stack and passes it
+// as a C# `ref` — the "ref structure operations" an earlier version of this comment
+// predicted as future work — with the A2 reversion census walking candidates back to
+// stack form when a lowering proves total (see docs/phase4/EXEMPLARS-a2-ref-lowering.md).
+// Everything else takes the ж<T> identity box, whose invariant is that an OBSERVED
+// address always aliases its storage: capture-mode method calls on value-field chains and
+// type-switch bindings (which live in Implicits) are marked here precisely so writes
+// through their addresses land in the real storage, never a copy.
 
-// Future implementations could consider functions that (a) are within the same package
-// and (b) have private scope, that could look ahead for parameter uses that could use
-// a C# ref structure instead of using a heap allocation with a ж<T> (pointer type).
+// Headroom that remains genuinely future: Phase A never lowers a METHOD's pointer
+// parameters (the §10.1 boundary in the ref-lowering doc), and no cross-function
+// lookahead exists yet — the same lowering logic could extend to same-package,
+// private-scope callees whose parameter uses would tolerate `ref`, widening the
+// stack-kept set beyond what a single function's view can prove.
 
 func performEscapeAnalysis(files []FileEntry, fset *token.FileSet, pkg *types.Package, info *types.Info) {
 	var concurrentTasks sync.WaitGroup
