@@ -12,12 +12,18 @@ every listed package on demand, reading its own roster straight from the table b
 from a clone with one command.
 
 A disclosure is a specific Go assertion the converted suite provably cannot satisfy — not a skipped
-test, not a tolerance. Four classes exist: two name something the managed runtime cannot *measure*,
-one something the test host cannot *be*, and one something the managed representation cannot
-*distinguish*.
+test, not a tolerance. Five classes exist: three name something the managed runtime cannot
+*measure*, one something the test host cannot *be*, and one something the managed representation
+cannot *distinguish*. (This sentence once said "four" while the committed manifests used five —
+`alloc-count-semantics` predates the newer classes and had lost its prose spot; restored 2026-08-20.)
 
 - **`alloc-profile`** — a test asserts an exact allocation count; Go's compiler stack-allocates the
   value where .NET must heap-allocate it.
+- **`alloc-count-semantics`** — a test asserts an allocation *budget* whose unit the managed runtime
+  cannot honor: `testing.AllocsPerRun`'s numbers under the CLR come back in a different regime
+  entirely (measured: `want 0` reading 128, `want 3` reading 754), so no allocation behavior can
+  satisfy the count assert. Sibling of `alloc-profile` — that class is *where* an allocation lives,
+  this one is *how counting itself denominates*. Established by the `io`/`strings`/`bytes` banks.
 - **`codegen-liveness`** — a test asserts, from inside its own frame, that an object it just stopped
   using is now collectible. Go's GC drops a local at its last use via per-safepoint liveness maps;
   the CLR reports a frame's slots live for the frame's whole lifetime.[^codegen-liveness]
