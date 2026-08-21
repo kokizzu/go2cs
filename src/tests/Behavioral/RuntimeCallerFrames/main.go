@@ -4,8 +4,16 @@
 // walks the CLR stack and projects it to Go-logical frames; every hop between the public API
 // and the walker is itself a Go-source frame that has to be skipped. An off-by-one in either
 // direction still returns plausible-looking file/line values, so the guard has to be a
-// RELATION between frames rather than an absolute position: the converted program's source is
-// C#, so no absolute file name or line number is comparable against Go in the first place.
+// RELATION between frames rather than an absolute position.
+//
+// It also asserts the file and line THEMSELVES, and that half is not optional. Until the position
+// map landed, every file assertion here was a separator boolean or an equality between two of the
+// program's own answers — every one of them invariant under a wholesale change of what the file
+// NAMES, which is how a change that made this program answer `main/main.go` where Go answers a
+// rooted path passed all four phases untouched (board, 2026-08-21). A guard over a string property
+// has to assert the property. The comparable parts are the ones the build shape does not vary: the
+// last two path segments (an absolute path's leading segments name the machine, not the runtime),
+// whether the path is rooted, and the line numbers, which are Go's own on both sides.
 package main
 
 import (
@@ -91,6 +99,14 @@ func main() {
 	fmt.Println("same file:", here == callerFile())
 	fmt.Println("file reported:", len(here) > 0)
 
+	// The identity assertions. These print the VALUES, so the stdout comparison against `go run .`
+	// is the assertion — no constant in this file has to be kept in step with the source it names.
+	fmt.Println("caller file tail:", callerFileTail())
+	fmt.Println("caller file rooted:", callerFileRooted())
+	fmt.Println("caller line:", selfLine())
+	fmt.Println("caller line two frames up:", wrapGrand())
+	fmt.Println("traceback names a go file:", hasSub(stackText(), "/main.go:"))
+
 	fmt.Println("ok at 0:", okAt(0))
 	fmt.Println("ok at 1:", okAt(1))
 	fmt.Println("ok two levels up:", deepOK())
@@ -162,6 +178,38 @@ func framesSeparators() (fwd bool, back bool) {
 		}
 	}
 	return fwd, back
+}
+
+// callerFileTail spells the LAST TWO segments of the file runtime.Caller answers with — the
+// directory the source lives in, and the source's own name. That is the whole comparable part of
+// an absolute path: its leading segments name the machine the program was built on, so printing
+// them would compare two machines rather than two runtimes. The tail is what a wholesale change of
+// file identity moves, and it is identical under Go and under a faithful conversion.
+func callerFileTail() string {
+	_, file, _, _ := runtime.Caller(0)
+	cut := 0
+	seen := 0
+	for i := len(file) - 1; i >= 0; i-- {
+		if file[i] == '/' {
+			seen++
+			if seen == 2 {
+				cut = i + 1
+				break
+			}
+		}
+	}
+	return file[cut:]
+}
+
+// callerFileRooted reports whether that file is an ABSOLUTE path. Go bakes one for an ordinary
+// build — only the standard library is built with -trimpath — so a converted program answering a
+// bare import-path-shaped name here would be diverging from Go on a value programs read.
+func callerFileRooted() bool {
+	_, file, _, _ := runtime.Caller(0)
+	if len(file) > 0 && file[0] == '/' {
+		return true
+	}
+	return len(file) > 1 && file[1] == ':'
 }
 
 // stackHasBackslash reports whether a rendered traceback spells any path the host's way. Go's

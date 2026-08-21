@@ -76,6 +76,11 @@ func (v *Visitor) visitFile(file *ast.File) {
 	packageLock.Unlock()
 
 	v.writeOutput(TypeAliasMarker)
+	// The position-map slot sits where a global attribute is legal — after every using
+	// directive, before the namespace declaration — and occupies exactly the one line its
+	// replacement does, so the C# line numbers the map records are the ones the file has.
+	v.writeOutputLn(PositionMapMarker)
+	v.outputBuilder.WriteString(v.newline)
 	v.writeOutputLn("namespace %s;", packageNamespace)
 	v.outputBuilder.WriteString(v.newline)
 

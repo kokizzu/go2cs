@@ -289,6 +289,10 @@ type Visitor struct {
 	// the non-compiled `.cs.auto` review sibling. Consulted by recordTypeAccessibility, which must
 	// not declare the accessibility of types the hand-written file owns.
 	manualConversion bool
+	// sourceFilePath is the ABSOLUTE-able path of the Go file this visitor is converting, kept so
+	// the position map can record the source identity Go itself would have baked for the same build
+	// (goSourceIdentity). Mirrors the file entry, which the driver does not hand back to the writer.
+	sourceFilePath string
 	// namedReturnDeferMode is set when the current function has named return values AND uses
 	// defer/recover. Such a function is emitted as a block body that declares the named returns
 	// *outside* the `func((defer, recover) => …)` wrapper (so deferred code, including recover,

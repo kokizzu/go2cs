@@ -685,8 +685,17 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	// namedReturnDefer literal always keeps a block (it returns its named results after the
 	// func() wrapper).
 	if v.firstStatementIsReturn && !context.isIIFE && !litNamedDefer && !litHasNamedResults && !useLitFrame {
+		// The position-map sentinels this block carries are invisible in the emitted text but NOT
+		// to this inspection, which reads the block as a string: an un-stripped sentinel makes the
+		// prefix test below see `{` plus a sentinel rather than `{`, and every single-return
+		// literal in the corpus (110 files, measured) refuses to collapse and emits a block body.
+		// A collapsed body has no emitted line of its own — it lands on the enclosing statement's
+		// line, which already carries that statement's sentinel — so the collapse DROPS them
+		// rather than relocating them, and the block-body path below keeps the original text.
+		collapsible := stripPositionSentinels(body)
+
 		// Find return statement in string and remove it
-		returnIndex := strings.Index(body, "return ")
+		returnIndex := strings.Index(collapsible, "return ")
 
 		// The visited block can carry HOISTED statements ahead of the return —
 		// visitReturnStmt's tuple-conversion arm writes `var (ᴛ1, ᴛ2) = call;` before
@@ -695,14 +704,14 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		// left the bare markers (CS0103 ×2). Collapse only when nothing but the block's
 		// opening brace precedes the return; otherwise keep the block body.
 		if returnIndex != -1 {
-			if prefix := strings.TrimSpace(body[:returnIndex]); prefix != "{" && prefix != "" {
+			if prefix := strings.TrimSpace(collapsible[:returnIndex]); prefix != "{" && prefix != "" {
 				returnIndex = -1
 				body = strings.TrimSpace(body)
 			}
 		}
 
 		if returnIndex != -1 {
-			body = body[returnIndex+7:]
+			body = collapsible[returnIndex+7:]
 
 			// Remove the BLOCK's closing brace — always the last non-whitespace rune of the
 			// visited block; the statement's `;` always separates it from the expression. The
