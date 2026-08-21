@@ -15827,6 +15827,556 @@ flaps within hours of each other: R's during the tls test-info re-validation (fa
 canary sweep (same shape, same arithmetic). R banked the irreproducible comparison artifact at
 `docs/phase4/evidence-crypto.tls-shape-b.json`. The opportunistic-capture standing instruction
 has paid out in full; nothing about the pin remains unproven.
+## MEASUREMENT PASS (2026-08-20, lane `claude/measure-queue-panic-cap`) -- six near-miss candidates repriced: `net/mail` VALIDATES at zero price, `math/big` is 224 verdicts behind one arc already commissioned
+
+Ruling x2 left a fallback clause without a source: *"if the recorder design overruns, the substitute
+comes from the ranked queue via the measurement pass, not from re-litigating the class."* This is that
+pass. **No fixes were made and nothing was banked** -- a fix inside a measurement lane un-controls the
+measurement, and taking a row is the coordinator's call, not a measurer's.
+
+### Why these six, and why the queue needed re-measuring at all
+
+The ranked near-miss census is dated **2026-08-16**, and it is stale by construction: three of its own
+"0 of N" rows have BANKED since (`text/template` 0 of 52, `html/template` 0 of 243, `encoding/xml` 0 of
+386 are now rows 155-157). Selection was therefore "closest in that census, and not re-measured since",
+which is the board's own standing lesson from the 23-package breadth bank -- *re-scout the tail after any
+capability lands, not only the packages that capability names.* Each was run `-tests -test-action all`,
+artifact kept, tree restored.
+
+### The priced ranking
+
+| package | rows | matched | divergent | residual root | class | price to bank |
+|:--|--:|--:|--:|:--|:--|:--|
+| **`net/mail`** | 11 | **11** | **0** | -- | -- | **ZERO** -- the banking commit itself |
+| **`math/big`** | 226 | 224 | 2 | `TestNewIntAllocs`; `TestMulUnbalanced` | `alloc-count-semantics`; **open** | 1 disclosure + the ReadMemStats arc (already commissioned) |
+| **`net/http/internal`** | 10 | 9 | 1 | `TestChunkReaderAllocs` 2/run vs 1 | `alloc-count-semantics` | **1 disclosure**, no converter work |
+| `crypto/cipher` | 14 | 13 | 1 | `TestGCMAsm` SKIPS where Go passes | **none of the five fits** | a RULING first; then 0 or an arc |
+| `debug/pe` | 10 | 9 | 1 | reinterpret cannot re-length a managed array | not disclosable | rides the LAYOUT arc (commissioned) |
+| `log` | 9 | 7 | 2 | `TestAll` source position; `TestDiscard` 3/run vs 0 | -- ; `alloc-count-semantics` | the position-map arc (commissioned) + 1 disclosure |
+
+Excluded declarations are the ordinary deferred Example/Benchmark set in every row (`math/big` 67
+benchmarks + 14 examples + 1 fuzz, `crypto/cipher` 9 + 10, `log` 5 + 2). One exclusion is NOT of that
+kind and is named for the record: `math/big`'s **`TestCalibrate`** is excluded-disclosed as requiring
+`B.ResetTimer`, a capability gap the harness already handles per-declaration.
+
+### The two that move the terminal path
+
+**`net/mail` validates 11 of 11, exit 0.** It stood at **7 of 11** in the 2026-08-16 census, the four
+`TestAddress*` rows infrastructure-erroring on `System.ArgumentException: Indices low, high and max
+represent a range outside bounds of the array reference` -- a three-index slice-bounds root. That root is
+GONE. It was dissolved by an intervening arc and this lane does **not** attribute which one (attributing
+it would need a bisect, and the measurement is the deliverable). Nothing is disclosed, nothing is owed:
+the price is the banking commit.
+
+**`math/big` reproduces 224 of 226 exactly** -- the r58b pair, unmoved, on a third independent
+measurement. It is by a wide margin the largest row available anywhere on the near-miss queue, and its
+two residuals are NOT equal in price:
+
+* `TestNewIntAllocs` -- 100 counted allocations over 100 runs = **1 object/run against Go's want-zero**.
+  Textbook `alloc-count-semantics`, the shim's own message verbatim. One manifest entry.
+* `TestMulUnbalanced` -- **`allocSize` ratio 51 against Go's bound of 10** (20,493,720 bytes over a
+  400,320-byte input). The test reads `runtime.MemStats.TotalAlloc` around one multiplication, and the
+  managed `ReadMemStats` answers that field TRUTHFULLY today --
+  `System.GC.GetTotalAllocatedBytes(precise: false)` (`runtime/managed_impl.cs`). So this is NOT a stub
+  row. Two candidate roots remain and this lane did not separate them:
+  1. the converted `nat.mul` genuinely allocates ~5x what Go's does (temporaries in the Karatsuba path);
+  2. `GetTotalAllocatedBytes(precise: false)` is PROCESS-WIDE and unsynchronized, so the window catches
+     other threads' allocations where Go's `GOMAXPROCS(1)` window catches almost none.
+
+  The discriminator is cheap and it sits **inside the ReadMemStats measurement-surface design Ruling B
+  already commissioned** for `runtime/debug`'s `HeapReleased` and pause history: make the read precise,
+  then see whether the row still fails. If it does not, `math/big` costs ONE disclosure -- **224 verdicts
+  for a manifest entry**, the best price-per-verdict on the board.
+
+### `crypto/cipher` is a CLASS question, not a defect -- recorded for a ruling, not self-ruled
+
+`TestGCMAsm` builds two AEADs, one via the assembly path and one generic, and **skips itself** when
+`reflect.TypeOf(asm) == reflect.TypeOf(generic)` -- Go's own designed behavior on a platform with no
+distinct assembly GCM. The converted corpus has exactly one GCM implementation, so the C# side takes the
+skip branch **the Go source defines**. Go on windows/amd64 has the asm path, runs the body and passes.
+The row is Go `pass` / C# `skip`: agreement with Go's INTENT, disagreement with Go's VERDICT.
+
+Against the five classes: not `host-limit` (the host can do it), not `alloc-count-semantics`, not
+`chan-direction` (retired), not `codegen-liveness`. **`runtime-capability` REFUSES it by its own
+admission test** -- a truthful managed second implementation exists at a cost, so it is an arc with a
+price. But naming that arc is naming "build a second GCM whose only consumer is a differential test",
+which is a strange thing to buy. The honest options a coordinator has are: rule the source-defined
+platform skip as skip-parity (price 0, row banks at 13 + 1 skip), or accept it as an arc. This lane
+declines to choose.
+
+### `debug/pe` is the layout arc wearing different clothes
+
+`TestReadCOFFSymbolAuxInfo` reads back `COFFSymbolAuxFormat5._` -- declared `[3]uint8` in Go and emitted
+correctly as `new(3)` -- with **8** elements. Eight is exactly the length of the SOURCE struct's
+`COFFSymbol.Name [8]uint8`, and the site is
+`Ꮡsym.Reinterpret<COFFSymbol, COFFSymbolAuxFormat5>()`. A managed `array<T>` is a REFERENCE carrying its
+own length, so a reinterpret cannot re-length it and the destination field ends up holding the source's
+array. Go's reinterpret is exact there (both structs are 18 bytes).
+
+Same family as `sync/atomic`'s hammer rows -- *the C# struct is not the Go struct's bytes* -- which
+Ruling A commissioned as the **zero-size-field LAYOUT EMISSION arc** (explicit layout with Go-computed
+offsets). Not disclosable: a truthful managed form exists, and it is that arc. `debug/pe` rides it, or
+takes a one-file hand-own of its symbol reader.
+
+### The ranking, as a selection
+
+If `runtime/debug` (#161) holds its slot at the price Ruling B set, nothing here displaces it. If it
+overruns, the substitutes in order are:
+
+1. **`net/mail`** -- 11 verdicts, price zero, bankable the day someone takes it.
+2. **`net/http/internal`** -- 9 + 1 disclosed, price one manifest entry in an existing class.
+3. **`math/big`** -- 224 verdicts, the largest row on the queue, priced at one disclosure IF the
+   ReadMemStats arc lands (which #161 is already buying). Taking #161 and `math/big` together is the
+   highest-verdict pairing available.
+
+`log` is the sleeper: at 7 of 9 its price is the position-map arc plus one disclosure, and that arc is
+ALREADY a prerequisite of both #161 (`runtime/debug`) and #162 (`flag`). Whoever lands it should expect
+`log` to fall out nearly free, and should re-measure `log/slog` (153 of 213 at last count) in the same
+pass for the same reason.
+
+### What this lane did NOT do, stated plainly
+
+* **Banked nothing.** `net/mail` validates and its proof page was written by the run; the page and every
+  test artifact were REMOVED, not committed. Banking is a row-taking act and the brief was the ranking.
+* **Fixed nothing.** Six packages measured against an unmodified converter, so every count above is
+  comparable to every other count on this board.
+* **Did not attribute `net/mail`'s recovery** to a specific arc, and did not separate
+  `TestMulUnbalanced`'s two candidate roots. Both are named above with their discriminators.
+* **Did not re-measure the queue's own rows** (`encoding/gob`, `net/netip`, `sync/atomic`,
+  `runtime/debug`, `flag`) -- three are in flight and two are freshly ruled.
+
+Standing dirt, classified and RESTORED, nothing unclassified: `math/big`'s `doc.cs`/`prime.cs` (CRLF
+phantoms, empty numstat) and its `package_init.cs` (+7 real lines, the `initᴛᴛtests()` hook -- the fourth
+`-tests`-closure shape CLAUDE.md names).
+
+## RULING -- the terminal path is SELECTED from the measured ranking: net/mail banks now, `log` is #161, position-map is the linchpin arc (coordinator, 2026-08-21)
+
+The measurement pass above is adopted as the selection instrument, and three of its judgments are
+ratified on the way: the cap's HEAD-KEEPING truncation (a disclosure signature pins the FIRST
+failure by Contains -- dropping the head would silently unpin disclosed rows roster-wide), the
+panic record's exemption from the aggregate cap, and the CNR skip (the branch carries zero
+converter changes; CNR binds to converter changes, and GolibTests + the full `go2cs.slnx` build
+are the gates a golib change owes).
+
+**The path to 162, selected:**
+
+| Row | Package | Price | Status |
+|:--|:--|:--|:--|
+| #158 | `net/mail` (11) | **ZERO** -- measured 11/11; a stale census said 7/11 and the root dissolved under an intervening arc | bank immediately |
+| #159 | `sync/atomic` (108) | token construction + zero-size layout arc (Ruling A) | lane in flight |
+| #160 | `runtime/debug` (9) | position-map + ReadMemStats design + 3-row `runtime-capability` disclosure (Ruling B) | priced |
+| #161 | `log` (9) | position-map + one disclosure -- the SLEEPER: its arc is already #160's prerequisite | priced |
+| #162 | `flag` | ImplementGenerator Delta-rename fix (+ position-map exposure per the runtime-debug census) | rooted |
+
+**The position-map arc is the linchpin**: its named consumer set (`runtime/debug`, `log`,
+`log/slog`, `flag`) covers three of the five remaining rows. It is the highest-leverage single
+arc left on the 1.23.1 campaign and should be staffed accordingly.
+
+**Reserves, ranked as measured**: `net/http/internal`, then `math/big` -- whose 2026-08-10
+off-the-table status is SUPERSEDED by the fresh 224/226: once #160's ReadMemStats arc lands, its
+`TestMulUnbalanced` discriminator resolves and the row may cost one manifest entry for 224
+verdicts -- then gob-via-StructOf and netip-via-allocation.
+
+**Held for a future ruling, off the terminal path**: `crypto/cipher`'s `TestGCMAsm` skip-parity
+shape (agreement with Go's intent, disagreement with its verdict, no class fits). Ruled when a
+lane reaches it, not before.
+
+## 🔁 `flag` RE-MEASURED at the MERGE RESULT — the Δ-rename root is LANDED, the row is 23 of 24, and its whole remaining price is the position-map arc at **ONE miss**, measured (2026-08-21, lane `worktree-agent-a54643a27ddfc865c`)
+
+Briefed against the `ROOTED, NOT TAKEN` entry above as a live root to fix. **It is not one any more**,
+and saying so precisely is most of this lane's product: `7eeeda893` is an ancestor of master,
+`ImplementGenerator` already carries `ResolveForwardMemberName`, and `CollisionRenamedForwardTests`
+already guards both halves of it. What was genuinely missing is the reading nobody had taken — `flag`
+**at the union**. `claude/heavy-pair-7be2d2` measured 23 of 24 on its OWN tip; `claude/edwards25519-a`
+measured master WITHOUT that tip and got the CS1929 ×10 wall back. Neither is a measurement of the
+merge result, which is exactly the gap CLAUDE.md's banked-row protection rule was written about.
+
+### The measurement
+
+`go2cs -tests -test-action all -test-timeout 10m "<GOROOT>/src/flag" src/core/flag`, converter
+rebuilt from HEAD first, in a worktree whose `bin`/`obj` came from no other tree.
+
+| | |
+|:--|:--|
+| build | **0 errors** — the CS1929 ×10 wall is gone at the UNION, not only on its lane tip |
+| verdicts | **24** |
+| matching | **23** |
+| divergent | **1** — `TestDefineAfterSet` |
+| skipped / disclosed | **0 / 0** |
+| excluded | 6 `Example`s (Phase-4D) |
+| status | `failing` — **does NOT bank** |
+
+All five Δ-renamed `flag.Value` implementors the wall named (`boolFlagVar`, `flagVar`, `interval`,
+`URLValue`, `zeroPanicker`) now compile and RUN: `TestUserDefined`, `TestUserDefinedBool`,
+`TestUserDefinedFunc`, `TestUserDefinedBoolFunc`, `TestUserDefinedBoolUsage` and
+`TestUserDefinedForCommandLine` all pass. That reproduces heavy-pair's 23 of 24 exactly, on a tree
+carrying every merge since — so the fix survived the union, which is the thing a lane-tip proof
+cannot say.
+
+### The new fact — the residual is ONE miss now, and it is MEASURED rather than predicted
+
+`claude/edwards25519-a` landed `goSourcePath` (Go spells source paths with forward slashes on every
+platform; the CLR hands back the PDB's backslashes) and predicted that with the separator half in,
+*"the arc's remaining distance on `flag` is one miss, not two."* Nobody re-ran `flag` after it, because
+from master `flag` did not build. The three strings side by side are the proof:
+
+| | string |
+|:--|:--|
+| Go's assertion | `flag myFlag set at .*/flag_test.go:.* before being defined` |
+| C# at `7eeeda893` (pre-`goSourcePath`, as recorded above) | `… set at C:\…\src\core\flag\flag_test.cs:1112 …` |
+| C# today | `… set at D:/…/src/core/flag/flag_test.cs:1112 …` |
+
+The backslash form misses `.*/` **outright** — it contains no `/` at all, so the regex fails before it
+ever reaches the filename. Today's form satisfies `.*/` and then misses on exactly one token: `.cs`
+where the assert wants `.go`. So the position-map arc's entire remaining job on `flag` is the source
+**IDENTITY**; the separator half of the two-half remedy is already paid, and the prediction is now a
+measurement.
+
+### The doctrine applied mechanically — and it refuses the row, again
+
+`TestDefineAfterSet` checked against all five ratified classes:
+
+| class | admits? | why not |
+|:--|:--:|:--|
+| `alloc-profile` | no | no allocation is asserted |
+| `alloc-count-semantics` | no | no count is asserted |
+| `codegen-liveness` | no | nothing about collectibility |
+| `host-limit` | no | its bar is a structural property of the DEPLOYMENT SHAPE that retires itself when the shape changes; a `.cs` file name does not retire that way |
+| `runtime-capability` | no | its admission test is *does a truthful managed implementation of the asserted behavior exist at any cost?* — **yes**, and it is priced: `#line` or a per-package side-car. A priced arc is never a disclosure |
+
+Same call heavy-pair made, re-derived rather than inherited. `flag` has **no disclosable row and one
+unfixed-here row**, so it does not bank: no roster row, no proof page, no committed test sources.
+
+### Repricing — `flag` is the position-map arc's CHEAPEST consumer and its cleanest acceptance test
+
+The RULING above prices row #162 as *"`ImplementGenerator` Delta-rename fix (+ position-map exposure)"*.
+**The first half is spent.** `flag`'s remaining price is the position-map arc and nothing else, which
+makes it the only one of the arc's four named consumers that banks on the arc ALONE:
+
+| consumer | verdicts the arc buys | what else that consumer still needs to bank |
+|:--|:--:|:--|
+| **`flag`** | **1** | **nothing** — 24/24, zero disclosures, zero other arcs |
+| `log` | 1 of its 2 | one disclosure |
+| `runtime/debug` | 5 of its 7 | the ReadMemStats measurement-surface design + the 3-row `runtime-capability` disclosure |
+| `log/slog` | 9 | 18 `alloc-profile` disclosures + the import-ordered-initialization arc |
+
+That is worth more than one row to whoever staffs the arc: **`flag` is its acceptance test.** It is a
+24-verdict suite whose single failing assertion is a bare regex over a file name, with every other
+verdict already green and no disclosure manifest in the way — so the arc lands green on `flag` or it
+does not land. The other three consumers cannot give that signal, because each of them would still be
+red for reasons the arc does not own.
+
+### Independent verification of the guard, since the lane was here anyway
+
+Charter §7, and cheap. Both failing-first claims in the `7eeeda893` entry above were re-derived on
+this tree rather than taken on trust (`GenTests` now totals 26, grown by other lanes since):
+
+| state | result |
+|:--|:--|
+| unmodified | **26/26 pass** |
+| `ResolveForwardMemberName` neutered to `return null` | **exactly 3 fail** — `RenamedDeclarationIsResolvedThroughTheMarker`, `PointerAdapterImplementsTheInterfaceNameAndForwardsTheEmittedOne`, `RenamedValueReceiverStillResolvesItsReceiverExpression` |
+| receiver lookup alone reverted to the Go name (`ForwardReceivers[simpleMethodName]`) | **exactly 1 fail** — `RenamedValueReceiverStillResolvesItsReceiverExpression` |
+
+Both neuters were reverted; the tree is byte-clean. The claim that the RECEIVER half is independently
+load-bearing holds — it is the half the original CS1929 diagnosis did not name.
+
+### For the next lane
+
+1. **Do not re-take `flag`'s root.** It is landed, guarded, and verified at the union. The `ROOTED, NOT
+   TAKEN` entry above and the RULING's `#162` price line are both SPENT as of this measurement.
+2. **`flag` is a 23-of-24 row parked on ONE arc**, and it is the arc's cheapest and cleanest consumer.
+   Whoever takes the position map should measure `flag` first and last.
+3. ⚠ **The generalizable trap this lane nearly re-paid**: a brief naming a root is not evidence the root
+   is live. `git merge-base --is-ancestor <sha> HEAD` costs nothing; edwards25519-a paid a pipeline run
+   to learn it in one direction, and this lane would have paid a generator arc to learn it in the other.
+   Read the OWNER of the named diagnosis (here `ImplementGenerator`) and grep it before designing.
+
+### Gates
+
+**None owed, and that is the honest accounting rather than a skip.** No converter, golib, go2cs-gen,
+corpus or test-source change was made — the diff is this board entry alone, and the two generator
+neuters were reverted with a clean `git status` proven after each. Gates bind to change classes
+(charter §5); a docs-only append changes none of them. The measurement's own instrument — the
+pipeline, run to completion, comparing against `go test -json -count=1` — is reported above.
+
+Standing dirt from the pipeline run, classified per CLAUDE.md and **RESTORED**, nothing unclassified:
+`src/core/flag/flag.cs` (7/7 numstat — the `-tests`-closure alias shape: the wider test closure
+collides `os`, so the alias emits `Δos` and the four references follow it; class 2) and
+`src/core/flag/package_init.cs` (+7 real lines — the `initᴛᴛtests()` hook, the FOURTH `-tests`-closure
+shape CLAUDE.md names). The nine untracked converted test artifacts were removed, not committed:
+`flag` did not bank. No `package_info.cs` record moved, so no `stdlib-metadata.txt` regenerate is owed.
+## ✅ BANKED -- `net/mail` is roster row **#158**, 11 of 11, and it is the first bank to carry its own badge (2026-08-21, lane `claude/net-mail-position-map`)
+
+The selection ruling put this row first at price ZERO. It banks at exactly that: **no converter change,
+no golib change, no disclosure, no manifest**. The pipeline run IS the whole change.
+
+```
+  roster  157 / 215 (73.0%), 18,414 matching, 79 disclosed
+       -> 158 / 215 (73.5%), 18,425 matching, 79 disclosed   (recomputed from the table itself)
+```
+
+The eleven verdicts are the RFC 5322 address-list grammar (quoted strings, comments, folding white
+space), RFC 2047 encoded-words in both `B` and `Q` form including a custom `WordDecoder`, group syntax,
+the obsolete and malformed matrix, `Address.String()` round-tripped back through the parser, and `Date`
+header parsing with its CFWS forms. Three declarations are excluded-disclosed as the ordinary deferred
+Example/Benchmark set.
+
+### What the stale census said, and what dissolved it
+
+The 2026-08-16 near-miss census recorded `net/mail` at **7 of 11**, the four `TestAddress*` rows
+infrastructure-erroring on `System.ArgumentException: Indices low, high and max represent a range
+outside bounds of the array reference` -- a three-index slice-bounds root. The measurement pass found
+all four passing, and this bank confirms it twice more (the run above, and the own-row sweep).
+
+**The root is not attributed, deliberately.** It dissolved under an intervening arc, and naming which
+one would need a bisect across five weeks of merges to add nothing to the row. What the episode is
+evidence FOR is already board doctrine and is now paid out twice in eight days: *re-scout the tail after
+any capability lands, not only the packages that capability names.* A row sat one measurement away from
+free for an unknown number of weeks.
+
+### The badge levelled in its OWN run -- the first bank that did
+
+Measured, and worth recording because it retires a standing step every previous bank owed. Before the
+pipeline: `Tests-not_yet_validated-orange`. After the SAME `-test-action all` invocation:
+`Tests-11%2F11_validated-brightgreen`, linking `validation/1.23.1.6/net.mail.html`. That is
+`refreshPackageReadmeAfterProof` (the badge lane's second emission point) doing the thing it was built
+for, on the first fresh bank to reach it. No hand-levelling, no follow-up reconvert, no board entry
+owed to a later reader.
+
+### Gates
+
+The bank carries zero code, so its gate is the pipeline plus the sweeps -- and the canary set is derived
+at gate time by DIRECT IMPORT DECLARATION per the 2026-08-20 ruling, not remembered:
+
+| Gate | Result |
+|:--|:--|
+| `-tests -test-action all` (the bank's own run) | **11 validated**, 0 divergent, 3 excluded, 118 s |
+| own-row sweep `-Filter net/mail` | **PASS 11** |
+| canary `go/types` (557) | **PASS 557** |
+| canary `encoding/json` (491) | **PASS 491** |
+| canary `crypto/tls` (400 + 2) | **PASS 400** -- and Go's own BoGo baseline went red again on this run, the THIRD live shape-(b) capture; the annotated pin absorbed it and the row did not move |
+| canary `encoding/xml` (386) | **PASS 386** |
+| canary `html/template` (243) | **PASS 243** |
+
+The derivation is worth showing once, because it reproduces the ruling's own worked example: over the
+158 banked rows, **62** declare a direct `reflect` import across Imports / TestImports / XTestImports,
+and the five largest by verdict are `go/types` 557, `encoding/json` 491, `crypto/tls` 400,
+`encoding/xml` 386, `html/template` 243. **`go/internal/gcimporter` (583) is absent** -- the largest
+banked row on the board, and correctly NOT a canary, exactly as the ruling predicted: it matches
+`"reflect.Value"` only inside expected-signature test DATA and imports reflect nowhere.
+
+Standing dirt classified and RESTORED, nothing unclassified: `net/mail`'s `message.cs` (CRLF phantom,
+empty numstat) from the bank's own run, and the canary packages' `*_test.cs` phantoms from the sweeps.
+
+## ⚠ THE POSITION-MAP ARC OPENS: the FILE half is written and measured -- `TestStack` goes 5 misses to 1 -- and it is NOT banked, because the same measurements produce THREE questions this lane will not self-rule (2026-08-21, lane `claude/net-mail-position-map`)
+
+The linchpin arc, taken to the point where the decisions are decidable on evidence rather than argued.
+Everything below was measured on this box against Go controls; the implementation is ~45 lines in one
+hand-own and is described precisely enough to re-write in minutes.
+
+### The identity source: there is nothing to record. It is already derived.
+
+The handoff priced this as needing a recorded Go-file identity. It does not. `goFrameName` ALREADY
+derives the import path at run time and has been shipping it since the receiver half:
+
+```csharp
+// "go.runtime.debug_package" -> "runtime/debug"
+string importPath = typeName[3..packageSuffix].Replace('.', '/');
+```
+
+So the file half is that same derivation applied one field over: `<importPath>/<stem>.go`, where the
+`.cs` stem IS the Go stem by construction (the converter emits `<name>.go` as `<name>.cs`, whole-file
+hand-owns included -- `crypto/subtle/xor_generic.cs`). **No converter change, no corpus change, no new
+artifact, no recorded attribute.** The derivation was EXTRACTED (`goImportPath`) so a frame's function
+and its file read the same one: Go's traceback pairs them, and two independent derivations could
+disagree about which package a frame belongs to while each looked right alone.
+
+Two shapes deliberately keep their .NET path, on the principle `goFrameName` already states -- a frame
+that is not converted Go code must not claim to be: a non-converted package class (golib, the BCL, the
+host), and a `*_impl.cs` hand-own COMPANION, which supplements a package rather than replacing a Go file
+(`runtime/managed_impl.go` does not exist, and answering it would fabricate a source rather than
+translate one).
+
+### Two derivation rules, both found BY measurement, neither in the handoff
+
+A TEST variant's files live in the package-under-test's DIRECTORY, so a test frame's file and its
+function name different things -- and Go's own TestStack asserts exactly that pairing:
+`frame("runtime/debug/stack_test.go", "runtime/debug_test.T.method")`. The function keeps `_test`; the
+file does not. Both variants carry a class suffix the directory does not, and the longer is stripped
+first because it ends with the shorter:
+
+| class | first measured | correct |
+|:--|:--|:--|
+| `go.runtime.debug_test_package` | `runtime/debug_test/stack_test.go` | `runtime/debug/stack_test.go` |
+| `go.log_internal_test_package` | `log_internal/log_test.go` | `log/log_test.go` |
+
+The first cost three of TestStack's four converted-frame assertions; the second, `log`'s long-file form.
+Both are now right.
+
+### The acceptance test: 5 misses to 1, and the 1 is a question
+
+`runtime/debug`'s `TestStack`, same pipeline, measured before and after:
+
+```
+  before  5 file-prefix misses (all five code checks already passed)
+  after   1 -- and it is the HOST frame:
+          in line "\tC:/…/src/core/testing/TestExecution.cs:593", expected prefix "\ttesting/testing.go"
+```
+
+Every converted frame now names Go's file exactly. The verdict does NOT move (2 of 9), because the test
+fails if any assertion fails -- so the acceptance test cannot close without ruling question 2 below.
+
+### The yield signal: the file lands exactly, and `log` still does not move
+
+`log`'s `TestAll`, measured after both derivation rules:
+
+```
+  want   ^.*/[A-Za-z0-9_\-]+\.go:(63|65): hello 23 world$
+  got    log/log_test.go:69: hello 23 world      (long form -- file EXACTLY Go's)
+  got    log_test.go:69: hello 23 world          (Lshortfile -- file EXACTLY Go's)
+```
+
+`log` stays 7 of 9. The file half is complete and it is not the yield; the LINE is.
+
+### Question 1 -- the file half is NOT independently shippable, because it makes a MIXED position
+
+The settled doctrine is written in the hand-own's own header: *"Frame.File/Line name the CONVERTED .cs
+source, the source that honestly exists"* and *"Its file/line are therefore the converted .cs position,
+NOT the .go one"*. Today `log_test.cs:69` is a real position in the tree the program was compiled from.
+With the file half alone, `log/log_test.go:69` is a position in **neither** tree: Go's file, C#'s line.
+
+The line was already not Go's, so the change does not introduce line dishonesty -- it trades internal
+consistency for Go shape. That trade is the doctrine call, and the honest options are: accept the mixed
+position as an interim; answer `:0` (Go's own unknown-line sentinel -- honest, but it discards a
+diagnostic that works today); or hold the file half until the line half lands, i.e. treat the position
+map as INDIVISIBLE. This lane recommends the third and did not act on it.
+
+### Question 2 -- may the hand-owned host claim `testing/testing.go`?
+
+The last TestStack assertion expects the `testing` frame to name `testing/testing.go`. Our host is
+hand-written C# in `go.testing_runtime`, and it deliberately declines Go identity -- `goFrameName`'s own
+text: *"A frame that is not converted Go code (golib, the BCL, the test host) keeps its .NET name --
+inventing a Go name for it would be a lie."*
+
+The counter-argument is real: the host IS the `testing` package, hand-implemented, and a Go program
+reading a traceback expects `testing/testing.go` there. That is the same shape as Ruling A's alignment
+token -- truth read from what the model genuinely is, versus a property fabricated. It is one line in
+the host to claim it, and it is the ONLY thing between the current state and the acceptance test.
+
+### Question 3 -- the trimpath form is a property of the CORPUS, not of the runtime (measured regression)
+
+The sharpest finding, and the reason nothing is banked. `TestStack` expects the bare `-trimpath` form
+because the converted `runtime.GOROOT()` answers empty. But applying that form uniformly makes a
+converted USER program diverge from Go where it currently agrees. Measured on the `RuntimeCallerFrames`
+behavioral program, both binaries, same box:
+
+| | Go | C# with the file half |
+|:--|:--|:--|
+| `runtime.Caller` file | `C:/…/RuntimeCallerFrames/main.go` | `main/main.go` |
+| file is rooted | **true** | **false** |
+
+Go answers an ABSOLUTE path for an ordinarily-built program; the trimpath form is a property of how
+GOROOT packages are built, which go2cs has no notion of. So the transform cannot be applied uniformly,
+and the runtime has no honest discriminator for "is this frame a GOROOT package" -- the candidates are a
+build-path convention (`…/core/…`, true for the corpus, silent for everything else) or a recorded marker
+(a real emission change, and the thing this design otherwise avoids entirely).
+
+### The guard gap this exposed, and the probe that closes it
+
+`RuntimeCallerFrames` **passed all four phases with the change in** -- Output included. Its five
+file-related assertions are separator BOOLEANS and an equality, every one of which is invariant under a
+wholesale change of what the file names. A guard over a string property must assert the property, not a
+predicate that survives it. The two-line probe that exposes the divergence is in the measurement above
+(print the file, and whether it is rooted); it belongs in the guard whichever way question 3 is ruled.
+
+### Blast radius, recomputed -- and the stdlib half of it is clean
+
+A verdict can only move if something READS a frame file. Recomputed over the 158-row roster (the board's
+census said 11; it predates `internal/reflectlite` joining):
+
+| reads a frame file | rows | verdicts |
+|:--|--:|--:|
+| own `_test.go` | 6 -- `encoding/json` 491, `io` 60, `context` 57, `sync` 44, `encoding/base64` 17, `log/slog/internal/benchmarks` 3 | 672 |
+| converted PRODUCTION code | 6 -- `go/types` 557, `database/sql` 137, `os/exec` 74, `internal/fuzz` 52, `internal/reflectlite` 30, `testing/slogtest` 17 | 867 |
+
+Swept with the file half IN: **20 distinct rows, 1,705 verdicts, zero failures** -- the 12 above plus 8
+the substring filters pulled in free (`bufio` 80, `io/ioutil` 28, `testing/iotest` 18, `io/fs` 18,
+`internal/saferio` 17, `go/version` 3, `database/sql/driver` 1, `os/exec/internal/fdtest` 1). **The
+stdlib blast radius is EMPTY.** Every row that reads a frame file reads it for "where am I", not for a
+Go-tree property -- which is what makes question 3 the whole decision: the change costs the corpus
+nothing and costs converted USER programs their agreement with Go.
+
+### What this lane did NOT do
+
+* **Did not bank the code.** Question 3 is a measured regression on the `-recurse` product path, so
+  shipping the file half uniformly would trade a stdlib row that does not move for user programs that do.
+  The tree is clean; the implementation is `goImportPath` + `goSourceFile` in `runtime/managed_impl.cs`,
+  both call sites (`appendGoFrames`, `internCallerFrame`), and it is re-writable from this entry.
+* **Did not touch the line half.** Its two routes are still the board's: `#line` (PDB transport, +28-47%
+  lines, CS diagnostics relocate onto `.go` files not in the project) and the side-car (a file and a
+  csproj item per package). Both are corpus-wide emission changes -- already flagged as coordinator
+  territory -- and question 1 says the file half should ride WITH whichever lands, not ahead of it.
+* **Did not re-rule the host.** Question 2 is one line and it is not this lane's line.
+
+### Standing dirt from the arc's measurement runs, classified and RESTORED
+
+Six pipeline runs and thirteen sweeps moved nothing that was not already a named family: the
+`-tests`-closure production re-emissions (`bufio/{bufio,scan}.cs`, `internal/reflectlite/{swapper,type,
+value}.cs` -- both in the sweep's own `$closureFiles`), the `initᴛᴛtests()` hook (+7, `go/types` and
+`internal/fuzz`), CRLF phantoms across every swept package, and `os/exec`'s proof page (date/commit plus
+`skip 8 -> 7`, which encodes this host's environment exactly as the `archive/tar` symlink precedent
+does; the row PASSED 74 either way).
+
+Two are one-line REAL movers and both are the born-stale class, restored rather than levelled per the
+standing rule: `encoding/base64/base64_test.cs` gains a directional channel field's `.RecvOnly`
+initializer (the `cargo-recv` emission, which postdates that bank), and
+`database/sql/driver/package_test_info.cs` gains `global using Value = object;` (the recorded
+`base64`/`base32`/`fmt` alias-block staleness). Both level at their own rebank, not here.
+
+## RULING -- the position map is INDIVISIBLE and build-shape-faithful; the host never claims `testing/testing.go`, and that premise becomes a host-limit entry (coordinator, 2026-08-21)
+
+The net-mail-position-map lane's three measured questions, ruled. The governing principle for all
+of them: **no fabricated positions** -- a reported file:line pair must exist in the tree the file
+names, and every identity a frame reports must be a conversion-time FACT, never a plausible
+composite.
+
+1. **Indivisible -- ratified as recommended.** The file half alone mints `log/log_test.go:69`, a
+   position in neither tree. File and line ship together or not at all. The line half's content is
+   fixed by the principle -- the reported line is the GO source line, derived from conversion-time
+   facts (the converter knows every emitted statement's Go position) -- and its MECHANISM (per-file
+   line table, frame-record side channel, or otherwise) is the arc's design to make, reviewed per
+   charter SS7 before implementation.
+
+2. **The host's doctrine stands: it never claims `testing/testing.go`.** A hand-own with no
+   conversion relationship to Go's source cannot honestly report a position in it -- the line
+   would be fabricated even where the file name is suggestive. `TestStack`'s fifth-frame assert
+   rests on the premise that the testing framework's frames come from `testing/testing.go`, which
+   is a property of the test BINARY that the converted deployment shape structurally is not (the
+   hand-owned host IS the design, per the ONE-testing-package ruling). That is `host-limit`'s own
+   text, and the assert becomes a signature-pinned host-limit entry when `runtime/debug` banks --
+   with its retirement path named honestly: **structural and permanent**, unlike the os/exec
+   relocatability entries, it does NOT retire at the .NET 10 single-file host, and the entry must
+   say so.
+
+3. **The identity form is BUILD-SHAPE-FAITHFUL -- the lane's measured `-recurse` regression is
+   ruled out of any landing shape.** Go bakes the path at compile time: GOROOT-relative under the
+   toolchain's trimming for published stdlib, absolute for an ordinary untrimmed user build. go2cs
+   reproduces exactly that, at CONVERSION time: the stdlib corpus reports the trimpath/import-path
+   form (`runtime/debug/stack.go` -- the truthful description of a package published without local
+   paths), and a `-recurse` user module reports what Go would have baked for the same build -- the
+   absolute source path as of conversion, recorded per file. `main/main.go` where Go answers
+   `C:/.../main.go` is a divergence and does not land.
+
+4. **The `RuntimeCallerFrames` guard is blind to file identity** (separator booleans pass under a
+   wholesale identity change -- the lane proved it by running the change through all four phases).
+   Queued: strengthen it to assert real file identity alongside the arc, so the arc's own guard is
+   the one that would have caught this.
+
+Consequences for the terminal path: `flag` (#162) banks under the indivisible pairing (its one
+miss is the file token; a Go-mapped line satisfies its regex); `log` (#161) needs the full pairing
+(its residual after the file half IS the line); `runtime/debug` (#160) takes the fifth-frame
+host-limit entry alongside its runtime-capability disclosures. The arc is now fully specified:
+one design increment, three consuming rows, acceptance measured on `flag` first and last.
 
 
 ## ⚠ RULING A LANDS BOTH HALVES — `TestAutoAligned64` + `TestHammer32`/`64` close; `sync/atomic` reads **107 of 108** and does NOT bank, and the layout arc's whole stdlib constituency turns out to be ONE struct (2026-08-21, lane `claude/atomic-align-layout`)

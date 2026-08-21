@@ -39,6 +39,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The host's own guards live in GolibTests (the MSTest tier that already binds converted
+         packages — see the sha3 note there). They exercise TestExecution's INTERNAL surface: the
+         constructor and the record/report entry points a converted test never calls, and the ones
+         a runaway suite reaches. Exposing them this way rather than widening the package's PUBLIC
+         API keeps `go.testing`'s published surface exactly the Go testing surface plus the host
+         types it already had to publish. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>GolibTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- `testing` is a HAND-OWNED package (like `unsafe`): the converter never queues it, so this
          project compiles only the files in THIS folder. The subdirectories are ordinary converted
          stdlib packages (testing/fstest, testing/iotest, testing/quick, testing/slogtest,

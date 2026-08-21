@@ -432,6 +432,12 @@ Hard-won during this campaign. Read these before touching the relevant area.
 - **Don't trust a stale "still-owed" memory.** Assess stale branches with `git cherry` (patch-id) THEN
   content/ground-truth — a fix may already be on master via a divergent commit. Verify branch existence
   with `git branch` (the memory's branch claims drift out of date).
+- **A brief naming a root is not evidence the root is live.** Before staffing an arc against a
+  recorded root, spend the seconds: `git merge-base --is-ancestor <fix-sha> HEAD` for any commit the
+  record names, plus a grep of the named owner for the rule the fix would have added. The flag lane
+  (2026-08-21) found its entire briefed root already landed and guarded (`7eeeda893`); its measured
+  fallback — re-measuring the package at the union — was the right lane shape, and the ancestor check
+  is what turns a wasted arc into a cheap measurement.
 
 **Campaign shape**
 - **The reflect `.Clone` mis-parenthesization** still blocks a fully-clean whole-corpus rebank — a
