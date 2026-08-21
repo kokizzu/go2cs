@@ -136,6 +136,32 @@ func selectTestProjectModel(internal, external *packages.Package) testProjectMod
 	return testProjectRecompile
 }
 
+// testVariantOptions derives the per-variant conversion options from the base options, the selected
+// model and which variant is about to convert.
+//
+// Which variant is under conversion is a fact about the SOURCES, not about the model: the external
+// half composes Go's package-qualified spelling of a package-under-test declaration under EVERY
+// model, and testDeclaredAliasSpelledBare has to unmake it under recompile as well as under
+// white-box reference. The flag was set only for the white-box model until net/netip took the
+// recompile fallback and landed on the CS0426 that spelling produces.
+//
+// Nothing else reads testExternalVariant outside the white-box path — whiteboxBridgeDeclaredType is
+// reachable only through testOwnedAdapterRef, which returns early unless the model is white-box
+// reference — so widening it moves exactly the one rule that needed it.
+//
+// The bridge overrides remain white-box-only: they name the friend-assembly class that owns internal
+// test declarations, which no other model has.
+func testVariantOptions(base Options, model testProjectModel, isExternal bool, internalBridgeName string) Options {
+	base.testExternalVariant = isExternal
+
+	if model == testProjectWhiteboxReference && !isExternal {
+		base.testClassNameOverride = internalBridgeName
+		base.testInlineTypeAccess = true
+	}
+
+	return base
+}
+
 // errProductionAnchoredRecords signals that a reference-model conversion attempt collected
 // GoImplement/GoImplicitConv records whose GENERATED code must anchor to the production
 // package class (a partial struct merged into a production type declaration, or conversion
@@ -260,6 +286,19 @@ func recordsRequireProductionMutation(productionClassName, productionPackageName
 	}
 
 	return false
+}
+
+// nominalConstraintsRequireProductionMutation reports whether this variant emitted a nominal C#
+// constraint (`where P : I`) binding a PRODUCTION type argument to a test-declared interface. Such
+// a constraint is checked against the type argument itself, so the only thing that can satisfy it
+// is the argument's own base list — a partial declaration on a closed referenced type, which is
+// precisely the production mutation the reference model exists to avoid. Unlike a conversion
+// record it cannot be relocated to an adapter, so the suite must take the recompile model.
+func nominalConstraintsRequireProductionMutation() bool {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	return !nominalProductionConstraints.IsEmpty()
 }
 
 // isGo2CSRoot reports whether dir is a go2cs project-reference root — the directory the
@@ -788,14 +827,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			seed = internalSeed
 		}
 
-		variantOptions := options
-		if model == testProjectWhiteboxReference {
-			variantOptions.testExternalVariant = variant == external
-			if variant == internal {
-				variantOptions.testClassNameOverride = internalBridgeName
-				variantOptions.testInlineTypeAccess = true
-			}
-		}
+		variantOptions := testVariantOptions(options, model, variant == external, internalBridgeName)
 
 		variantOutputs, imports, err := convertTestVariant(variant, emitEntries, outputPath, projectNamespace, seed, variantOptions)
 		if err != nil {
@@ -822,7 +854,11 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		// anchored records stay in package_test_info.cs. Under the REFERENCE model there is a
 		// single anchor — the test package class — and a record that would need the production
 		// anchor triggers the recompile fallback instead.
-		if model == testProjectWhiteboxReference && recordsRequireProductionMutation(getSanitizedImport(production.Name+PackageSuffix), production.Name) {
+		//
+		// A nominal generic CONSTRAINT over a production type is the second, non-record reason the
+		// reference model can fail to serve a suite — see nominalConstraintsRequireProductionMutation.
+		if model == testProjectWhiteboxReference && (recordsRequireProductionMutation(getSanitizedImport(production.Name+PackageSuffix), production.Name) ||
+			nominalConstraintsRequireProductionMutation()) {
 			return result, errProductionAnchoredRecords
 		}
 

@@ -68,6 +68,20 @@ type Options struct {
 	testFriendAssembly     bool          // production internals may be consumed by the separate test assembly
 }
 
+// packageUnderTestPath returns the import path of the package under test, whichever field the
+// current test-project model parks it in. The two reference models clear the self-import binding —
+// production binds as an ordinary imported package — and retain the path in testProductionPath; a
+// RECOMPILE conversion keeps the binding, so the path stays in testPackagePath and
+// testProductionPath is empty. Anything asking "is this declaration the package under test's?"
+// wants the answer under every model and must come through here.
+func (o Options) packageUnderTestPath() string {
+	if o.testProductionPath != "" {
+		return o.testProductionPath
+	}
+
+	return o.testPackagePath
+}
+
 // recurseMode backs the -recurse flag. It is an optional-value boolean-ish flag: it implements
 // IsBoolFlag so a bare `-recurse` (or `-recurse .`) sets the mode without consuming the next argument,
 // while an explicit `-recurse=<value>` selects the reference style and the conversion SCOPE. Values

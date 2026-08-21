@@ -135,6 +135,17 @@ var promotedInterfaceImplementations map[string]HashSet[string]
 // drives ImplementGenerator's EmitConstraintProxy. See constraintProxyArg.
 var constraintProxies map[string][2]string
 
+// nominalProductionConstraints collects the (production type argument, test-declared constraint
+// interface) pairs a WHITE-BOX REFERENCE test conversion has emitted a nominal C# `where` clause
+// for. C# enforces `where P : I` on the type ARGUMENT itself, and go2cs-gen can only make a type
+// satisfy an interface nominally by declaring a partial that adds it to the base list — which a
+// production type closed inside a referenced assembly forbids, so the generator emits an ADAPTER
+// class instead and the instantiation is CS0315. The relocatable-records claim behind the reference
+// model therefore has exactly this exception: an adapter serves interface BOXING, never a nominal
+// constraint. Entries are `typeArg|interface` for diagnostics; the model-selection gate reads only
+// whether the set is non-empty. See recordNominalProductionConstraint.
+var nominalProductionConstraints HashSet[string]
+
 var interfaceInheritances map[string]HashSet[string]
 
 // adapterClassImplementations marks recorded "iface|impl" GoImplement pairs whose implementation

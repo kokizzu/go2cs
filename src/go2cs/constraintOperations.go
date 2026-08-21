@@ -1279,6 +1279,69 @@ func (v *Visitor) constraintProxyArg(named *types.Named, i int) (string, bool) {
 	return v.constraintProxyFor(typeParams.At(i), named.TypeArgs().At(i))
 }
 
+// recordNominalProductionConstraint notes a generic instantiation whose type ARGUMENT is a
+// PRODUCTION type and whose type PARAMETER carries a constraint interface declared by the
+// package-under-test's own `_test.go` files — the one shape the white-box reference model cannot
+// serve.
+//
+// The reference model's premise is that interface-implementation records are RELOCATABLE: a
+// production struct is foreign to the test compilation, so go2cs-gen emits a value or pointer
+// ADAPTER class in the test anchor instead of a partial production struct. That holds wherever the
+// interface is reached by BOXING. It does not hold here: C# checks `where P : netipTypeCmp`
+// NOMINALLY, against the type argument itself, and no adapter stands in that position — the
+// argument's own base list must name the interface, which only a partial declaration can add, which
+// a closed referenced type forbids. `net/netip`'s `checkStringParseRoundTrip[P netipTypeCmp]`,
+// called with `Addr`, `AddrPort` and `Prefix`, is CS0315 five times for exactly this reason.
+//
+// The constraint side reuses isMethodSetBeyondComparable — the SAME predicate getGenericDefinition
+// uses to choose the nominal arm — so the gate and the emission can never disagree about which
+// constraints are nominal. The interface must be TEST-declared: that is the case where the
+// production compilation provably never recorded the implement, because the interface does not
+// exist in it at all. A foreign package's interface is a real member of a real referenced assembly
+// and a different question, deliberately not answered here.
+func (v *Visitor) recordNominalProductionConstraint(typeParam *types.TypeParam, typeArg types.Type) {
+	if !v.options.testWhiteboxReference || typeParam == nil || typeArg == nil {
+		return
+	}
+
+	// Only a VALUE type argument reaches C#'s nominal check as itself; a pointer arrives boxed as
+	// ж<T> and is the constraint-proxy machinery's business below.
+	argNamed, ok := types.Unalias(typeArg).(*types.Named)
+
+	if !ok {
+		return
+	}
+
+	argObj := argNamed.Obj()
+
+	if argObj == nil || argObj.Pkg() == nil || argObj.Pkg().Path() != v.options.packageUnderTestPath() ||
+		v.declaredInTestFile(argObj) {
+		return
+	}
+
+	constraintNamed, ok := types.Unalias(typeParam.Constraint()).(*types.Named)
+
+	if !ok {
+		return
+	}
+
+	constraintObj := constraintNamed.Obj()
+
+	if constraintObj == nil || !v.declaredInTestFile(constraintObj) {
+		return
+	}
+
+	iface, ok := constraintNamed.Underlying().(*types.Interface)
+
+	if !ok || iface.NumMethods() == 0 || !isMethodSetBeyondComparable(iface) {
+		return
+	}
+
+	packageLock.Lock()
+	nominalProductionConstraints.Add(argObj.Name() + "|" + constraintObj.Name())
+	packageLock.Unlock()
+}
+
 // constraintProxyFor is the (type parameter, type argument) core shared by every instantiation
 // form. A generic NAMED TYPE reaches it through constraintProxyArg; a generic FUNCTION reaches it
 // through constraintProxySigArg — Go's `benchmarkScalarMult[P nistPoint[P]]` called with
@@ -1289,8 +1352,15 @@ func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.T
 		return "", false
 	}
 
+	// The nominal-constraint gate shares this exact (type parameter, type argument) core: every
+	// instantiation form routes through here, so recording it here covers both.
+	v.recordNominalProductionConstraint(typeParam, typeArg)
+
 	// The argument must be a pointer to a named type — a value type arg satisfies its constraint
-	// nominally (or widens), only the boxed pointer needs the proxy.
+	// nominally (or widens), only the boxed pointer needs the proxy. The one case where a VALUE
+	// argument does not satisfy it nominally — a production type closed in a referenced assembly
+	// under the white-box reference model — has no proxy answer at all and is handled by the
+	// model-selection gate recorded just above.
 	ptr, ok := types.Unalias(typeArg).(*types.Pointer)
 
 	if !ok {

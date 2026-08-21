@@ -557,23 +557,36 @@ func (v *Visitor) whiteboxBridgeMember(ident *ast.Ident) string {
 // own `_test.go` files declare, when the EXTERNAL test variant is what is naming it.
 //
 // The internal half emits `global using AddrDetail = …` for such an alias, so the internal variant
-// needs nothing. But the assembly has TWO variant classes, and the external one reaches the alias by
-// PACKAGE QUALIFICATION — Go says `netip.AddrDetail`, because `export_test.go` is part of package
-// netip during a test build. A `global using` is a member of no class, so that spelling is CS0426:
-// "the type name AddrDetail does not exist in the type netip_package", net/netip's last one-line wall.
+// needs nothing. But the assembly has more than one variant class, and the external one reaches the
+// alias by PACKAGE QUALIFICATION — Go says `netip.AddrDetail`, because `export_test.go` is part of
+// package netip during a test build. A `global using` is a member of no class, so that spelling is
+// CS0426: "the type name AddrDetail does not exist in the type netip_package", net/netip's last
+// one-line wall.
 //
 // The alias IS in scope where this emission lands — one compilation — so the fix is to stop
 // qualifying it, which also keeps one Go name spelled one way across both halves. Rendering the
 // alias's TARGET instead would resolve too, but it would spell one alias two different ways
 // depending on which half named it.
 //
-// Every clause is load-bearing: only under the white-box REFERENCE model does the production half
-// live in another assembly; only the EXTERNAL variant composes the qualified spelling; only an alias
-// declared by the package-under-test's own test files has its `global using` in THIS compilation
-// (a production-declared one is the sibling arm's business, and a FOREIGN package's alias is a real
-// member of a real referenced assembly).
+// The rule is MODEL-INDEPENDENT, and the first version of it was not: it required the white-box
+// reference model, on the reasoning that only there does the production half live in another
+// assembly. That is true and beside the point — what makes the qualified spelling invalid is that a
+// `global using` is a member of no class, which holds just as firmly when production is RECOMPILED
+// into the test assembly. netip measured it: taking the recompile model to satisfy a nominal
+// constraint left this same CS0426 as the package's only remaining error. Under recompile the alias
+// is, if anything, more plainly in scope — production, internal and external are one compilation.
+//
+// The remaining clauses are each load-bearing: only the EXTERNAL variant composes the qualified
+// spelling; only an alias declared by the package-under-test's own test files has its `global using`
+// in THIS compilation (a production-declared one is the sibling arm's business, and a FOREIGN
+// package's alias is a real member of a real referenced assembly). The plain black-box REFERENCE
+// model cannot reach this arm at all — it has no internal variant, so no `_test.go` of the package
+// under test declares anything — which is why no model test is needed beyond being a test
+// conversion.
 func (v *Visitor) testDeclaredAliasSpelledBare(t types.Type) (string, bool) {
-	if !v.options.testWhiteboxReference || !v.options.testExternalVariant {
+	packagePath := v.options.packageUnderTestPath()
+
+	if !v.options.testExternalVariant || packagePath == "" {
 		return "", false
 	}
 
@@ -585,7 +598,7 @@ func (v *Visitor) testDeclaredAliasSpelledBare(t types.Type) (string, bool) {
 
 	aliasObj := alias.Obj()
 
-	if aliasObj == nil || aliasObj.Pkg() == nil || aliasObj.Pkg().Path() != v.options.testProductionPath {
+	if aliasObj == nil || aliasObj.Pkg() == nil || aliasObj.Pkg().Path() != packagePath {
 		return "", false
 	}
 
