@@ -40,6 +40,16 @@
          no _test.go anywhere and no behavioral test can reach it — a converted suite exercises it
          only by being run, which is exactly the path a robustness guard must not depend on. -->
     <ProjectReference Include="..\..\core\testing\testing.csproj" />
+
+    <!-- GcMeasurementSurfaceProbes: the ReadMemStats measurement surface itself
+         (docs/phase4/DESIGN-readmemstats-surface.md S1). The allocation guard has to call the real
+         runtime.ReadMemStats, not a model of it. -->
+    <ProjectReference Include="..\..\core\runtime\runtime.csproj" />
+
+    <!-- MulUnbalancedDiscriminatorTests: the §5.4 discriminator drives math/big's nat.mul through
+         Int.SetBits/Int.Mul. Same precedent as sha3 above — an MSTest tier binding a converted
+         package to reach a measurement no other harness can take. -->
+    <ProjectReference Include="..\..\core\math\big\math.big.csproj" />
   </ItemGroup>
 
 </Project>
