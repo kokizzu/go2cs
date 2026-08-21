@@ -15981,4 +15981,129 @@ verdicts -- then gob-via-StructOf and netip-via-allocation.
 shape (agreement with Go's intent, disagreement with its verdict, no class fits). Ruled when a
 lane reaches it, not before.
 
+## 🔁 `flag` RE-MEASURED at the MERGE RESULT — the Δ-rename root is LANDED, the row is 23 of 24, and its whole remaining price is the position-map arc at **ONE miss**, measured (2026-08-21, lane `worktree-agent-a54643a27ddfc865c`)
+
+Briefed against the `ROOTED, NOT TAKEN` entry above as a live root to fix. **It is not one any more**,
+and saying so precisely is most of this lane's product: `7eeeda893` is an ancestor of master,
+`ImplementGenerator` already carries `ResolveForwardMemberName`, and `CollisionRenamedForwardTests`
+already guards both halves of it. What was genuinely missing is the reading nobody had taken — `flag`
+**at the union**. `claude/heavy-pair-7be2d2` measured 23 of 24 on its OWN tip; `claude/edwards25519-a`
+measured master WITHOUT that tip and got the CS1929 ×10 wall back. Neither is a measurement of the
+merge result, which is exactly the gap CLAUDE.md's banked-row protection rule was written about.
+
+### The measurement
+
+`go2cs -tests -test-action all -test-timeout 10m "<GOROOT>/src/flag" src/core/flag`, converter
+rebuilt from HEAD first, in a worktree whose `bin`/`obj` came from no other tree.
+
+| | |
+|:--|:--|
+| build | **0 errors** — the CS1929 ×10 wall is gone at the UNION, not only on its lane tip |
+| verdicts | **24** |
+| matching | **23** |
+| divergent | **1** — `TestDefineAfterSet` |
+| skipped / disclosed | **0 / 0** |
+| excluded | 6 `Example`s (Phase-4D) |
+| status | `failing` — **does NOT bank** |
+
+All five Δ-renamed `flag.Value` implementors the wall named (`boolFlagVar`, `flagVar`, `interval`,
+`URLValue`, `zeroPanicker`) now compile and RUN: `TestUserDefined`, `TestUserDefinedBool`,
+`TestUserDefinedFunc`, `TestUserDefinedBoolFunc`, `TestUserDefinedBoolUsage` and
+`TestUserDefinedForCommandLine` all pass. That reproduces heavy-pair's 23 of 24 exactly, on a tree
+carrying every merge since — so the fix survived the union, which is the thing a lane-tip proof
+cannot say.
+
+### The new fact — the residual is ONE miss now, and it is MEASURED rather than predicted
+
+`claude/edwards25519-a` landed `goSourcePath` (Go spells source paths with forward slashes on every
+platform; the CLR hands back the PDB's backslashes) and predicted that with the separator half in,
+*"the arc's remaining distance on `flag` is one miss, not two."* Nobody re-ran `flag` after it, because
+from master `flag` did not build. The three strings side by side are the proof:
+
+| | string |
+|:--|:--|
+| Go's assertion | `flag myFlag set at .*/flag_test.go:.* before being defined` |
+| C# at `7eeeda893` (pre-`goSourcePath`, as recorded above) | `… set at C:\…\src\core\flag\flag_test.cs:1112 …` |
+| C# today | `… set at D:/…/src/core/flag/flag_test.cs:1112 …` |
+
+The backslash form misses `.*/` **outright** — it contains no `/` at all, so the regex fails before it
+ever reaches the filename. Today's form satisfies `.*/` and then misses on exactly one token: `.cs`
+where the assert wants `.go`. So the position-map arc's entire remaining job on `flag` is the source
+**IDENTITY**; the separator half of the two-half remedy is already paid, and the prediction is now a
+measurement.
+
+### The doctrine applied mechanically — and it refuses the row, again
+
+`TestDefineAfterSet` checked against all five ratified classes:
+
+| class | admits? | why not |
+|:--|:--:|:--|
+| `alloc-profile` | no | no allocation is asserted |
+| `alloc-count-semantics` | no | no count is asserted |
+| `codegen-liveness` | no | nothing about collectibility |
+| `host-limit` | no | its bar is a structural property of the DEPLOYMENT SHAPE that retires itself when the shape changes; a `.cs` file name does not retire that way |
+| `runtime-capability` | no | its admission test is *does a truthful managed implementation of the asserted behavior exist at any cost?* — **yes**, and it is priced: `#line` or a per-package side-car. A priced arc is never a disclosure |
+
+Same call heavy-pair made, re-derived rather than inherited. `flag` has **no disclosable row and one
+unfixed-here row**, so it does not bank: no roster row, no proof page, no committed test sources.
+
+### Repricing — `flag` is the position-map arc's CHEAPEST consumer and its cleanest acceptance test
+
+The RULING above prices row #162 as *"`ImplementGenerator` Delta-rename fix (+ position-map exposure)"*.
+**The first half is spent.** `flag`'s remaining price is the position-map arc and nothing else, which
+makes it the only one of the arc's four named consumers that banks on the arc ALONE:
+
+| consumer | verdicts the arc buys | what else that consumer still needs to bank |
+|:--|:--:|:--|
+| **`flag`** | **1** | **nothing** — 24/24, zero disclosures, zero other arcs |
+| `log` | 1 of its 2 | one disclosure |
+| `runtime/debug` | 5 of its 7 | the ReadMemStats measurement-surface design + the 3-row `runtime-capability` disclosure |
+| `log/slog` | 9 | 18 `alloc-profile` disclosures + the import-ordered-initialization arc |
+
+That is worth more than one row to whoever staffs the arc: **`flag` is its acceptance test.** It is a
+24-verdict suite whose single failing assertion is a bare regex over a file name, with every other
+verdict already green and no disclosure manifest in the way — so the arc lands green on `flag` or it
+does not land. The other three consumers cannot give that signal, because each of them would still be
+red for reasons the arc does not own.
+
+### Independent verification of the guard, since the lane was here anyway
+
+Charter §7, and cheap. Both failing-first claims in the `7eeeda893` entry above were re-derived on
+this tree rather than taken on trust (`GenTests` now totals 26, grown by other lanes since):
+
+| state | result |
+|:--|:--|
+| unmodified | **26/26 pass** |
+| `ResolveForwardMemberName` neutered to `return null` | **exactly 3 fail** — `RenamedDeclarationIsResolvedThroughTheMarker`, `PointerAdapterImplementsTheInterfaceNameAndForwardsTheEmittedOne`, `RenamedValueReceiverStillResolvesItsReceiverExpression` |
+| receiver lookup alone reverted to the Go name (`ForwardReceivers[simpleMethodName]`) | **exactly 1 fail** — `RenamedValueReceiverStillResolvesItsReceiverExpression` |
+
+Both neuters were reverted; the tree is byte-clean. The claim that the RECEIVER half is independently
+load-bearing holds — it is the half the original CS1929 diagnosis did not name.
+
+### For the next lane
+
+1. **Do not re-take `flag`'s root.** It is landed, guarded, and verified at the union. The `ROOTED, NOT
+   TAKEN` entry above and the RULING's `#162` price line are both SPENT as of this measurement.
+2. **`flag` is a 23-of-24 row parked on ONE arc**, and it is the arc's cheapest and cleanest consumer.
+   Whoever takes the position map should measure `flag` first and last.
+3. ⚠ **The generalizable trap this lane nearly re-paid**: a brief naming a root is not evidence the root
+   is live. `git merge-base --is-ancestor <sha> HEAD` costs nothing; edwards25519-a paid a pipeline run
+   to learn it in one direction, and this lane would have paid a generator arc to learn it in the other.
+   Read the OWNER of the named diagnosis (here `ImplementGenerator`) and grep it before designing.
+
+### Gates
+
+**None owed, and that is the honest accounting rather than a skip.** No converter, golib, go2cs-gen,
+corpus or test-source change was made — the diff is this board entry alone, and the two generator
+neuters were reverted with a clean `git status` proven after each. Gates bind to change classes
+(charter §5); a docs-only append changes none of them. The measurement's own instrument — the
+pipeline, run to completion, comparing against `go test -json -count=1` — is reported above.
+
+Standing dirt from the pipeline run, classified per CLAUDE.md and **RESTORED**, nothing unclassified:
+`src/core/flag/flag.cs` (7/7 numstat — the `-tests`-closure alias shape: the wider test closure
+collides `os`, so the alias emits `Δos` and the four references follow it; class 2) and
+`src/core/flag/package_init.cs` (+7 real lines — the `initᴛᴛtests()` hook, the FOURTH `-tests`-closure
+shape CLAUDE.md names). The nine untracked converted test artifacts were removed, not committed:
+`flag` did not bank. No `package_info.cs` record moved, so no `stdlib-metadata.txt` regenerate is owed.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
