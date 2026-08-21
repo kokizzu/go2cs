@@ -6096,6 +6096,37 @@ byte-identical. (Guarded by the `ForeignPairNumericConv` behavioral test — a s
 named numerics and never converting between them, converted across in `main`, with the
 foreign→local and local→foreign directions as the live controls for the records that are still needed.)
 
+#### ...but the POINTER-BOXING route needs none, and a whitebox-production operand still counts
+The rule above is about HOSTING, so it stops where hosting does. A record of the form `T` → `ж<T>` —
+the shared Go pointer-boxing route, and the corpus's dominant record family at **193 of the 268**
+`GoImplicitConv` records across the emitted `package_info.cs` files — hosts nothing at all:
+`ж<T>` is golib's generic box, no converted package declares it, and `ImplicitConvGenerator` looks the
+target up by struct declaration and `continue`s when it finds none. No host is ever chosen, so no phantom
+can be minted and no closed assembly can be mutated. `recordsRequireProductionMutation` already stated
+exactly this when deciding whether a white-box test project can keep the reference model; the predicate is
+now written once (`pointerBoxConversionRecord`) and both readers share it.
+
+That matters because of the second refinement. On the internal `-tests` variant go/packages merges the
+production files into the test package, so a production type's `obj.Pkg()` IS the converted package while
+its C# lives in the CLOSED referenced production assembly — which is why `typeDeclaredInConvertedPackage`
+subtracts such a declaration (`whiteboxProductionObject`; internal/reflectlite's `flag(typ.Kind())` minted
+a phantom `partial struct flag` in the test class, CS1061). Subtracting it for the pointer-boxing route as
+well was one notch too far: it silently shrank every white-box package's committed `package_test_info.cs`
+on regen. `crypto/rc4` lost its `Cipher` → `ж<Cipher>` record **and** the
+`using testing = go.testing_package;` qualifier alias that the same record site registers;
+`go/types` lost three (`Basic`, `Interface`, `Tuple`). Nothing catches it: CNR never runs
+`-tests`, and the records are inert in the generator, so the only symptom is a `-tests` regen that no
+longer reproduces committed bytes.
+
+`conversionRecordHasLocalOperand` therefore takes the record shape as an argument and readmits a
+WHITEBOX-PRODUCTION operand — and only that — when the record is the pointer-boxing route. A
+BOTH-FOREIGN pair stays declined exactly as the section above describes, which is what keeps the change a
+restoration rather than a widening: `go/types`' test conversion also reaches `types.Basic` → `ж<types.Basic>`
+and `ast.FuncType` → `ж<ast.FuncType>`, and those must not start recording. (Guarded by
+`TestWhiteboxProductionPointerBoxConvStillRecorded`, whose both-foreign arm is the boundary, and
+`TestPointerBoxConversionRecordShape` for the shared predicate; the numeric phantom keeps its own guard,
+`TestWhiteboxProductionNumericConvNotRecorded`.)
+
 ### Named-string wrapper surface (indexing, sub-slicing, span bridge)
 A named type over `string` is indexed and sub-sliced in Go (`tag[i]`, `tag[i:j]` -- reflect `StructTag.Get`), but C# indexing never applies user-defined conversions. The `InheritedType` template therefore forwards the `@string` surface on every named-string wrapper: `byte this[int]` / `byte this[nint]` indexers, a `Range` indexer returning the WRAPPER (a Go sub-slice of a named string keeps the named type), `nint Length` for `len()`, and an implicit `ReadOnlySpan<byte>` operator so `u8`-literal comparisons and assignments bind. Guarded by `NamedStringConversion`.
 

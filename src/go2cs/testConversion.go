@@ -238,9 +238,10 @@ func recordsRequireProductionMutation(productionClassName, productionPackageName
 
 	for sourceType, targetTypes := range indirectImplicitConversions {
 		for targetType := range targetTypes {
-			if inner, ok := strings.CutPrefix(targetType, PointerPrefix+"<"); ok && normalize(sourceType) == normalize(strings.TrimSuffix(inner, ">")) {
+			if pointerBoxConversionRecord(sourceType, targetType) {
 				// T -> ж<T> is the shared Go pointer-boxing route. The generator intentionally
 				// emits no type-owned operator for a foreign T, so it does not mutate production.
+				// Same predicate conversionRecordHasLocalOperand reads to admit the record at all.
 				continue
 			}
 			if isProductionType(sourceType) || isProductionType(targetType) {

@@ -24,6 +24,7 @@ global using reflectꓸType = go.reflect_package.ΔType;
 global using reflectꓸValue = go.reflect_package.ΔValue;
 global using templateꓸError = go.html.template_package.ΔError;
 global using templateꓸFuncMap = go.text.template_package.FuncMap;
+using parse = go.text.template.parse_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -42,6 +43,7 @@ using static global::go.html.template_test_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
+[assembly: GoImplicitConv<parse.TextNode, ж<parse.TextNode>>]
 // </ImplicitConversions>
 
 namespace go.html;
