@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAgUgKSAyoKCgpTMoA==")]
-
 namespace go.DefinedOverNamedComposite;
 
 partial class fslike_package {

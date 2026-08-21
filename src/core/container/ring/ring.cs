@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package ring implements operations on circular lists.
-[assembly: go.GoPositionMap("container/ring/ring.go", "ring.cs", "ABUkooKCqLKClKiygpSqwoKUlILGgsaokoKUgoKCgpSCggACJAASAoKCpoKCgpSssoKUqqKCgoKCpqrCgoKC")]
-
 namespace go.container;
 
 partial class ring_package {

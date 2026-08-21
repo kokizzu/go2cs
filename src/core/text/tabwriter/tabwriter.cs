@@ -9,8 +9,6 @@
 // http://nickgravgaard.com/elastictabstops/index.html.
 //
 // The text/tabwriter package is frozen and is not accepting new features.
-[assembly: go.GoPositionMap("text/tabwriter/tabwriter.go", "tabwriter.cs", "AG3eAeiAgoKUpsqAgoCC/pKCgoKCgoIAJoQBAA8CgpSCgoKCgpSUlISEqJKCgoKCgpSUAAgSgoKClIK4goKClAAFEIKUgqaCgoKUgqjKooKCloSClJaUgriCkoKCgraClIK6poKmpq7igoKChIIACBSCloKCgoKCppSAgraCzIK6goKCqKiSgqiSggAKGJKUpKQABBDClIKC2LSCqqKCgoKCptKAgpSUgIKCpAAHEMLaAAgCgoLsxIKUlKiCAAcQAAoCloKClJaCgoKCpILcgpTegoKCkpSopIKCgtyUgoKUgoLMgoLaog==")]
-
 namespace go.text;
 
 using fmt = fmt_package;

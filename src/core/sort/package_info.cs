@@ -52,6 +52,22 @@ using static go.sort_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("sort/search.go", "search.cs", "AAh0ADMGkoKUgpS4AAI2AB0IkoKUgpS4AAIS4r7CvsK4kKaQppA=")]
+[assembly: go.GoPositionMap("sort/slice.go", "slice.cs", "AAwwAAwCgoKCggACGAAJAoKCAAIQ0oKCgoKm")]
+[assembly: go.GoPositionMap("sort/sort.go", "sort.cs", "ACZa4oKClIIAChyCgoKCpoKCABAkkqiSrsKCgoKmAAQQkKKAooCmkMyAAAIQ4KKAppKokMqAooCigKaQrtCswKqwqrCswKqwAAJIACIC")]
+[assembly: go.GoPositionMap("sort/sort_impl_go121.go", "sort_impl_go121.cs", "AA4ggKKAooCkgKKAooA=")]
+[assembly: go.GoPositionMap("sort/zsortfunc.go", "zsortfunc.cs", "AAgUkoKCzqKCgoKClIKUgpSCuIKCgpaCqIKCAAMU4oSagoSCgqiCgqiCgpaCgriCqIKCzIKCgpaChJKCgoKClIKCAAQSwoKUgpSClIKClIKChIKClIKUgpSCgpSCqqKClIKClIKUgpSCgpSokpiCgoKWgpaClpaCgoKUuIKCgpS4qqKCgoKEgoKClAAEFNKahL6ClIKCppaUpKTKkoKClKiSgoKCqJKmgoKCgoKCuIKCuIKCkoKCgpSEgoKCgoKUgIKkAAMuABYIuIKCgoKClLiClMy4goKCgoKUuIKUloKCkoKClIKUhIKCgpSogoKUgpSCAAMQwoKEgoKClIK4")]
+[assembly: go.GoPositionMap("sort/zsortinterface.go", "zsortinterface.cs", "AAgUkoKCzqKCgoKClIKUgpSCuIKCgpaCqIKCAAMU4oSagoSCgqiCgqiCgpaCgriCqIKCzIKCgpaChJKCgoKClIKCAAQSwoKUgpSClIKClIKChIKClIKUgpSCgpSCqqKClIKClIKUgpSCgpSokpiCgoKWgpaClpaCgoKUuIKCgpS4qqKCgoKEgoKClAAEFNKahL6ClIKCppaUpKTKkoKClKiSgoKCqJKmgoKCgoKCuIKCuIKCkoKCgpSEgoKCgoKUgIKkAAMuABYIuIKCgoKClLiClMy4goKCgoKUuIKUloKCkoKClIKUhIKCgpSogoKUgpSCAAMQwoKEgoKClIK4")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("sort")]

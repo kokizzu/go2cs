@@ -14,8 +14,6 @@
 // Some external packages provide more functionality. See:
 //
 //	https://godoc.org/?q=syslog
-[assembly: go.GoPositionMap("log/syslog/doc.go", "doc.cs", "")]
-
 namespace go.log;
 
 partial class syslog_package {

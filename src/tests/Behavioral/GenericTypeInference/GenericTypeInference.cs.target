@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("GenericTypeInference.go", "GenericTypeInference.cs", "ABwqgqiygoKUqIKCrrKssoKCgoKssoKClIKosoKoooK+sgAEEMKClIKAgrYABhSCgoKC3IKCvMKClIKClKjCpoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKClJSCgpSCgoKCgoKCgoKCgoKUgqyigpQAAhCygoKCAAUQsoKSgoKClKauooKUqqI=")]
-
 namespace go;
 
 using fmt = fmt_package;

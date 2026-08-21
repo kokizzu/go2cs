@@ -4,8 +4,6 @@
 // This file implements Float-to-string conversion functions.
 // It is closely following the corresponding implementation
 // in strconv/ftoa.go, but modified and simplified for Float.
-[assembly: go.GoPositionMap("math/big/ftoa.go", "ftoa.cs", "ABFeAB4CgoKUqqKq1IKogoKUqJSkpAAGEpKUqIKCgpSUtLTYlra0opTalKSmgpKcwpSCgoKUlIKUuIKUprSCAAocgoKClLS0mJKChpK6qIKCuqiolIKkgqSC3KSCgpSWgoKCgoKClIK6goKClIKClJSWgpSopIKCgoKmqIKCgqgAAhTygpaCuoKApLTGgoKCgpQAAhIACAKCgoKCgqaCloKYkoKUppaCgKS0xISCgpSCgoKWgoKUgqaClAACEuKCloLMgoKClISCgoKClAAEHAALAoKClsqmgqSytoKkgoKCqIKUgraCkpS0tLaCgIKmlpKCtpKCtpKC")]
-
 namespace go.math;
 
 using bytes = bytes_package;

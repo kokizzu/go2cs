@@ -4,8 +4,6 @@
 
 // Package zstd provides a decompressor for zstd streams,
 // described in RFC 8878. It does not support dictionaries.
-[assembly: go.GoPositionMap("internal/zstd/zstd.go", "zstd.cs", "AEiwAZKCgqqiqIKCgoKCgoIAAiIAEQKAgqSCgqiygIKkgoKosoKAgqSUqLKCgIK2AAgIkoKWgJSClKaAgpSCgIKkgpamloCCpISEgoKWgoKUloKWgoKogoCCpoSEgIKqopSCgoKCgoKWgrqClIKCzIKCgpS0tLS0tOyCmJKCloSCgpaCgoKCgoKChKiShICCpoSCgoKWgIKmgoKUgoKUgoKogoKUgqaCgoKClICCpIKUgoKUgIKkloQACAiyloCCpoSEgoK6gqiUgoCCpIK0goCCpIKCgpS0goCCpLSmgoKUloKWgpSCpoKAgqaCgoKWlJaqooKClAAIEoKmgqaCpoKClKaCpoKClA==")]
-
 namespace go.@internal;
 
 using binary = encoding.binary_package;

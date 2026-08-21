@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/elliptic/p224_test.go", "p224_test.cs", "AJ0CtASCgoKCgpSCgpSCypSCgoKClIKClIL6lIKCgoI=")]
-
 namespace go.crypto;
 
 using hex = encoding.hex_package;

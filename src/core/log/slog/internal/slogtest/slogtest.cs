@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package slogtest contains support functions for testing slog.
-[assembly: go.GoPositionMap("log/slog/internal/slogtest/slogtest.go", "slogtest.cs", "AA4asoKU")]
-
 namespace go.log.slog.@internal;
 
 using slog = go.log.slog_package;

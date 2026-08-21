@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/symtabinl.go", "symtabinl.cs", "ADWGAQAQAoKClIKCpoIABxCCqJKCgpSCqJIAAhwACwKClIIABxIAAhAACAKC")]
-
 namespace go;
 
 using abi = @internal.abi_package;

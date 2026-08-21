@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("log/slog/text_handler.go", "text_handler.cs", "AB040oKUAAkYoqqipoIAAk4AJgKmopSkpICCgoKmgqSAlIKkpKSssoCCtoKClKaCgpSCgqaClIKUgoKUlA==")]
-
 namespace go.log;
 
 using context = context_package;

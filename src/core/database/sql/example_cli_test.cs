@@ -1,8 +1,6 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("database/sql/example_cli_test.go", "example_cli_test.cs", "ACAmooKChIKUgpSWgqaUhIKChIKUgoSigpaE2sKClICCAAwMwoKUgoKClA==")]
-
 namespace go.database;
 
 using context = context_package;

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("LocalShadowsEmbedHopType.go", "LocalShadowsEmbedHopType.cs", "AAwugoK4ooKCggATJoKogoKCgqqCgoKCgoKCuAACFIKCgqaCgoKChIKCgoKCgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

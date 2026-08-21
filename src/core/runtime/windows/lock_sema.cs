@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build aix || darwin || netbsd || openbsd || plan9 || solaris || windows
-[assembly: go.GoPositionMap("runtime/lock_sema.go", "lock_sema.cs", "ACRMggAEfgAJAgAESgAIAgALlAIAGgKCgpSCAAQigqY=")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

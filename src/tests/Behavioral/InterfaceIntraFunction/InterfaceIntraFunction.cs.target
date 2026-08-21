@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("InterfaceIntraFunction.go", "InterfaceIntraFunction.cs", "AAwUguaEjA==")]
-
 namespace go;
 
 using fmt = fmt_package;

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("renamedlib.go", "renamedlib.cs", "AA0uggAHFoKoggAGFIKogqiC")]
-
 namespace go.DotImportRenamedType;
 
 using fmt = fmt_package;

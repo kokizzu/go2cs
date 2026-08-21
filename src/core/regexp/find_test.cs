@@ -1,8 +1,6 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("regexp/find_test.go", "find_test.cs", "ABswggBo5AHCgoKCgoKCgoKmqpKCgoKUgsjEtIKClIL8goKCyMaSxoKC/KLIxLSCguqCsriCsriCsrySgoLIxLSCgpSCgoKUgoIACA6CgoLIxLSCgpSCgoIACA6iyMS0goKUgoL8grK4grK8soKClIKCgpSUgoKClIKCgsqCsoLIxLTqooKClIKCgpSUgoKCyoKygsjEtOqCgoKUgoLKosjEtNiCsriCsriCsrySsoLIxLS0gvyCsoLIxLS0gvyiyMS0tILqgrK4grI=")]
-
 namespace go;
 
 using fmt = fmt_package;

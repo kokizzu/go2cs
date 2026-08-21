@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("text/template/examplefiles_test.go", "examplefiles_test.cs", "ABsqooKClIKCgpSSgoKmAAgI6AAIEpa6lIKCAA4SAAsI7paopIKCpoKCuIKClIKCABASAAsI7paozIKCpoKCuoKCpoKCuoKClIKC")]
-
 namespace go.text;
 
 using io = io_package;

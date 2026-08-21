@@ -4,8 +4,6 @@
 
 // Package gzip implements reading and writing of gzip format compressed files,
 // as specified in RFC 1952.
-[assembly: go.GoPositionMap("compress/gzip/gunzip.go", "gunzip.cs", "ACVQkoKUAChg8oKAgqSssriAgpSkggACJgAQAq7CgoKCgpSCgpSClJSWgoKClJTO0oAABxCkgpSCgKa2goSCgIKkgoKAgqSCloKCgIKkloKAgqSWgoCCpIKCqIKClJSosoKWgoKCgpSogIKCpIKCgoKUloKUhICCuKyw")]
-
 namespace go.compress;
 
 using bufio = bufio_package;

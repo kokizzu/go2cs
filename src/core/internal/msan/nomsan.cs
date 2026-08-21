@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !msan
-[assembly: go.GoPositionMap("internal/msan/nomsan.go", "nomsan.cs", "AA4epqampg==")]
-
 namespace go.@internal;
 
 using @unsafe = unsafe_package;

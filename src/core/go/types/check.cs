@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements the Check function, which drives type-checking.
-[assembly: global::go.GoPositionMap("go/types/check.go", "check.cs", "AD1qgoKCgoKUABk2koIAGDbCggA9hgGSgoKUgIKkAAISAAgCgoKUgqiygoKokoKmgoKCgpQAAhLigoKokoKokoKCgoIABhKiqvSCqIIABxSEAA4c1IKChIKCgoKCloKCgLSClJSmpuyCgpSEgoK6uJaAAAoWuqa2uIKClOzSxsb6AAoCuM6CggAPDgAKBoKClJSClJaCgoKogoSChIKEgoSChIKEgoKWgoSUloKWgoKCgoKCggAIDAALDoKCgoKUpoKCpoKopIKUpqaigpSkpIKkpISmlOiigpaCgoKUuIKCgoKUgqaUgILIyoKCtKTE3qKCgoKUgoKAgoKCgoKolIKClAAFFuKCgoKAgviCgpS01KSUpJiSgoKmgoKAgsiCgoKAgsiCgoKAgsiigoKAgsiCgoKAgg==")]
-
 namespace go.go;
 
 using fmt = fmt_package;

@@ -4,8 +4,6 @@
 //go:build !plan9
 global using syscallErrorType = go.syscall_package.Errno;
 
-[assembly: go.GoPositionMap("os/error_errno.go", "error_errno.cs", "")]
-
 namespace go;
 
 using syscall = syscall_package;

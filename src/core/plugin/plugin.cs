@@ -65,8 +65,6 @@
 // operations may be more suitable despite the performance overheads.
 global using Symbol = object;
 
-[assembly: go.GoPositionMap("plugin/plugin.go", "plugin.cs", "AFGeAbKuwg==")]
-
 namespace go;
 
 partial class plugin_package {

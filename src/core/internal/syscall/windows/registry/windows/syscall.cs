@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build windows
-[assembly: go.GoPositionMap("internal/syscall/windows/registry/syscall.go", "syscall.cs", "")]
-
 namespace go.@internal.syscall.windows;
 
 using syscall = syscall_package;

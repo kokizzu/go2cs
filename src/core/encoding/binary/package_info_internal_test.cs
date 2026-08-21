@@ -25,6 +25,18 @@ using static go.encoding.binary_internal_test_package;
 [assembly: GoImplicitConv<Struct, ж<Struct>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("encoding/binary/binary_test.go", "binary_test.cs", "AGzqAYKCgpSCAA0WgoLchIKCloKClAAVLoKClMqCsqKCgsqCsqKCyoCigKKApICigKKA9IKCgoKWgoKCuIKmgrKSgoKCgoKCgoKCzIKykoKCABAigrKyooKSsoKUpIKClKaCgoKUgoKCgpSCggALEoKykoKAgqaCgoKClICCpAAjPoKykpKCgpiSgIK4gqiCgpiSgIKkggAYDLSEgoKCgpSWgpKCgpYACjKCgpaAgtqCABcwgoCCAA8agoKSgIKmsrKCgqaC/IKykpKCgoKClICCtoKSgpIACgqChKKMgoKUpKSmgIKkgILasoKUgoLmsoKUgoIADAaCioKCAAgSgoKAgqSCgIKkgpaCgoCCpIKAgqSCloKCgIKkgoCCpILcooKUgriCgqaCAAocgoKCggAKCoIABRiykoKClIKCAAgMgoKCkpSClIIAGDKCgsiSlIIACRSCgoKmooKCgoKCgoK4ooKCgoKSgoKClIKCuKKCgoK4ooKChIK4ooKCgoKCgoKUpqKCgoKCgpSmooKCgoKCgoK4ooKCgoKCgoKCgoKCgoKClIKCgoKCgoKCgoK4ooKCgoKCgoKCgoKCgoKUgoK4ooKCgoKCgoKCgoKCgpSCgriigoKCgoKCgpSmooKCgoKClKaigoK4ooKCuKKCgriigoK4ooKCuKKCgriigoK4ooKCuKKCgriigoK4ooKCuKKCgriigoKCgoKCgoKUgoKCgoKCgoKCgoKCgoKCgriigoKCgoKCgpSCgriigoKCgoKCgriigoKCgoKCgpSmooKCgoKCgoK4ooKCgoKCgoK4goKSgtyCgpKCgII=")]
+[assembly: go.GoPositionMap("encoding/binary/varint_test.go", "varint_test.cs", "AA0cgoKCgriCgoKmgoKCgoKUgpaCgoKWgoKUgriCgoKCgpSCloKCgpaCgpSCABgygoKClIKCuIKClIK4goKCgoKCloKCgpSCAAsOogADEoKClIIAFzKCkpKCgJKkgILsgoKCloKCgoKUgILIgoKCpoKCgoK6ooKCgoLKooKCgoI=")]
+// </GoSourcePositionMaps>
+
 namespace go.encoding;
 
 [GoPackage("binary")]

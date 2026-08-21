@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("a_first.go", "a_first.cs", "AAgUgqaC")]
-
 namespace go;
 
 partial class main_package {

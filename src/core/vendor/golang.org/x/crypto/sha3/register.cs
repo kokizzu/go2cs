@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build go1.4
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/register.go", "register.cs", "AA0agoKCgg==")]
-
 namespace go.vendor.golang.org.x.crypto;
 
 using crypto = crypto_package;

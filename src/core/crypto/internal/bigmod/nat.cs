@@ -1,8 +1,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/internal/bigmod/nat.go", "nat.cs", "ABU0gOyQqLSCggATLLKCqLKClIKCgoKUgoKCqLKCgpSCgqjCgoKu8oKCgpSu4oKCooKCgoKUlIKm3vKAgqSClAAFEAAIAoCCpIKClIKqooKUpqKCkoKCgpSCgpSClKzkgoKEgoKUqKSChIKClKzkgoKEgoK4rPSCgoSCgpSs9IKChIKUrPSCgoSClAATKrKCgoKolIIACBaogoKUgrqCgoKCqK4ACg6CgpTu4oCCpKSCgoKCgqyypoKClKiSqJKokqziloKCggAHEoKCgoKCgoKCypQAAhAACQLcpoKClIKCpoKClKzSrNIAAhgADAKCpoKu8pSCgoKu4oKCAAIUAAsGrviCggACEAAKAoKCgoQAAYYBACcCgoKCgoKCgpSCpoKCgoKCgoKClIKmgoKCgoKCgoKUggACzQGCgpSMwoIAACaCioyCAAEYggACYqzSgoKCpoKCgoKUrgAKBoKuAAsM7IKCloKCgoKCpoKCgpaCgqiCqK74goKCgoCCtg==")]
-
 namespace go.crypto.@internal;
 
 using errors = errors_package;

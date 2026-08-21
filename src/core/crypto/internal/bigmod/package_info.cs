@@ -45,6 +45,18 @@ using static go.crypto.@internal.bigmod_package;
 [assembly: GoImplicitConv<Modulus, ж<Modulus>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("crypto/internal/bigmod/nat.go", "nat.cs", "ABM0gOyQqLSCggATLLKCqLKClIKCgoKUgoKCqLKCgpSCgqjCgoKu8oKCgpSu4oKCooKCgoKUlIKm3vKAgqSClAAFEAAIAoCCpIKClIKqooKUpqKCkoKCgpSCgpSClKzkgoKEgoKUqKSChIKClKzkgoKEgoK4rPSCgoSCgpSs9IKChIKUrPSCgoSClAATKrKCgoKolIIACBaogoKUgrqCgoKCqK4ACg6CgpTu4oCCpKSCgoKCgqyypoKClKiSqJKokqziloKCggAHEoKCgoKCgoKCypQAAhAACQLcpoKClIKCpoKClKzSrNIAAhgADAKCpoKu8pSCgoKu4oKCAAIUAAsGrviCggACEAAKAoKCgoQAAYYBACcCgoKCgoKCgpSCpoKCgoKCgoKClIKmgoKCgoKCgoKUggACzQGCgpSMwoIAACaCioyCAAEYggACYqzSgoKCpoKCgoKUrgAKBoKuAAsM7IKCloKCgoKCpoKCgpaCgqiCqK74goKCgoCCtg==")]
+[assembly: go.GoPositionMap("crypto/internal/bigmod/nat_noasm.go", "nat_noasm.cs", "AAoWgqaCpoI=")]
+// </GoSourcePositionMaps>
+
 namespace go.crypto.@internal;
 
 [GoPackage("bigmod")]

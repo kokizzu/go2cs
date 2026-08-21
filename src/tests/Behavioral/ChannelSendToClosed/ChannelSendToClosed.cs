@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("ChannelSendToClosed.go", "ChannelSendToClosed.cs", "AAgKgoKCkoKUpoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("os/signal/signal_windows_test.go", "signal_windows_test.cs", "ABoigoKClIKClIKC+KQAAzCWgoKCgpSSloKCgoKogoKCgqaCgpSSgpSCgg==")]
-
 namespace go.os;
 
 using testenv = @internal.testenv_package;

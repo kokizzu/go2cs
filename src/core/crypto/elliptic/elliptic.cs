@@ -9,8 +9,6 @@
 // and [P521] values necessary to use [crypto/ecdsa]. Most other uses
 // should migrate to the more efficient and safer [crypto/ecdh], or to
 // third-party modules for lower-level functionality.
-[assembly: go.GoPositionMap("crypto/elliptic/elliptic.go", "elliptic.cs", "AEOWAQAKAoKCgoSCgoK4ppaClpQAAhIACQKEhIKEgoSs4oKCgoKCAA4qAAkCgIKmgoKUkpSCgoKClIKUrOKAgqaCgpSSlIKCgqaCgoKUgpSClKbWgpaC7IKCgoIAAhTyggACFgAIAoIAAhTyggACFPKC")]
-
 namespace go.crypto;
 
 using io = io_package;

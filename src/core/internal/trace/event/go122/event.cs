@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/trace/event/go122/event.go", "event.cs", "AFngAZKClKaCAOACvAWClKSkpKQADRqClKSkpA==")]
-
 namespace go.@internal.trace.@event;
 
 using fmt = fmt_package;

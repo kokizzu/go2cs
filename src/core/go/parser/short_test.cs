@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file contains test cases for short valid and invalid programs.
-[assembly: global::go.GoPositionMap("go/parser/short_test.go", "short_test.cs", "AHbuAYKCupKCAEWiAYKC")]
-
 namespace go.go;
 
 using testing = testing_package;

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("consumer_blank.go", "consumer_blank.cs", "AAkWgpKCpoCsgoKCgg==")]
-
 namespace go;
 
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("main.go", "main.cs", "AB8+hIKGgoaChoKGgoKGgoaKhoKIgoiChIKmgoCCpA==")]
-
 namespace go;
 
 using json = encoding.json_package;

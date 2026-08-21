@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("vlib.go", "vlib.cs", "AA4ggqaCgoKCAAYQgqaC")]
-
 namespace go.vlib;
 
 partial class vlib_package {

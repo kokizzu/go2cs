@@ -4,8 +4,6 @@
 
 // Package byteorder provides functions for decoding and encoding
 // little and big endian integer types from/to byte slices.
-[assembly: go.GoPositionMap("internal/byteorder/byteorder.go", "byteorder.cs", "AAwSgoKmgoKCpoLMgoKmgoKCgoKmggAGEIKCqIKCgoKCgoKCgqaCAAoYgoKmgoKCpoLMgoKmgoKCgoKmggAGEIKCqIKCgoKCgoKCgqaC")]
-
 namespace go.@internal;
 
 partial class byteorder_package {

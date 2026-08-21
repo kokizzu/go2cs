@@ -1,8 +1,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/types/methodset_test.go", "methodset_test.cs", "ABkiogABEAAnYAAJGoKEgoKClIKCgpaCgJKCpIKCgJKkgIKkgILKgpaC6pIAAhyCgoKUgoCCpoLmgqyCgoKWgoKCqIKCpoKCgqaCgoI=")]
-
 namespace go.go;
 
 using strings = strings_package;

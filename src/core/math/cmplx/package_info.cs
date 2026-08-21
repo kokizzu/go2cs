@@ -41,6 +41,30 @@ using static go.math.cmplx_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("math/cmplx/abs.go", "abs.cs", "AA0akA==")]
+[assembly: go.GoPositionMap("math/cmplx/asin.go", "asin.cs", "AAlmACkCgKSkpJSkpNaUpKTWtIKCgoKCqJKApKSklKSk1pSkpNa0goIAAiIADgKCqJKClIKClAACSgAiAoCkpKSClKS0goKClIKEgoKClIKCqJKCgg==")]
+[assembly: go.GoPositionMap("math/cmplx/conj.go", "conj.cs", "AAcQkA==")]
+[assembly: go.GoPositionMap("math/cmplx/exp.go", "exp.cs", "AAlmACkCgKSUpIKU+ILWgoI=")]
+[assembly: go.GoPositionMap("math/cmplx/isinf.go", "isinf.cs", "AAkUkoKUqJKC")]
+[assembly: go.GoPositionMap("math/cmplx/isnan.go", "isnan.cs", "AAkWopSkpKiSgg==")]
+[assembly: go.GoPositionMap("math/cmplx/log.go", "log.cs", "AAlyAC8CqJKC")]
+[assembly: go.GoPositionMap("math/cmplx/phase.go", "phase.cs", "AAkWoA==")]
+[assembly: go.GoPositionMap("math/cmplx/polar.go", "polar.cs", "AAcUsg==")]
+[assembly: go.GoPositionMap("math/cmplx/pow.go", "pow.cs", "AAlkACgCkoKUgpSkgpSkpJSCgpSCgoKCgpSC")]
+[assembly: go.GoPositionMap("math/cmplx/rect.go", "rect.cs", "AAkUkoI=")]
+[assembly: go.GoPositionMap("math/cmplx/sin.go", "sin.cs", "AAlqACsCgKSklKTWtIKCAAIiAA4CgKSklKTWtIKCAAIsABMCgKSklKTWtIKCAAIgAA0CgKSklKTWtIKCqJKClIKCgg==")]
+[assembly: go.GoPositionMap("math/cmplx/sqrt.go", "sqrt.cs", "AAl0ADAClIKUgpSklIKCgpSClIKClIKCgpSCgpSCgoKCgpSCgpSClA==")]
+[assembly: go.GoPositionMap("math/cmplx/tan.go", "tan.cs", "AAt8ADECgKSUpKS0goKUgpQAAiAADQKApJSkpLSCgpQAAhYACBIACAKEAAUYgoKClgAJEIKCgowAHDKSgoKUgoKCgpSClIKUgpSClKiSgoKCgoKCgoKCgoKCgoKCgoKCgoKEgoKCgoKCgoKCpqYAAjoAGgKCgpSClA==")]
+// </GoSourcePositionMaps>
+
 namespace go.math;
 
 [GoPackage("cmplx")]

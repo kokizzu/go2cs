@@ -1,8 +1,6 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/xcoff/file_test.go", "file_test.cs", "ADpwgoKEgoKClIKCloKClIKCgqaCgoKUgoKClIL6ooKCgg==")]
-
 namespace go.@internal;
 
 using reflect = reflect_package;

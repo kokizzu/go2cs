@@ -9,8 +9,6 @@
 // individual pointer writes is gcWriteBarrier and is implemented in
 // assembly. This file contains write barrier entry points for bulk
 // operations. See also mwbbuf.go.
-[assembly: go.GoPositionMap("runtime/mbarrier.go", "mbarrier.cs", "ABfEAgCNAQKClLgACBKCggADFAALCAACEgAMCgACIAAPAoKClIKClIKClKiSAAIaAA0CuJSWgoIABB4ADAKCgpSC3oKCgoKUgoKUgoKWgpaC3oK4griCAAIgAA8CgpQAAhwADQK4lAACGAAJAqiyypSosoKmlAACJAAQBII=")]
-
 namespace go;
 
 using abi = @internal.abi_package;

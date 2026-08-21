@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/mgclimit.go", "mgclimit.cs", "AFG0AcIABhIACAKmlIKmgoIABRQACgKC3ICCpIKCAAYSoqqiqqLe4riUgpSC2LKClJSCloKCqIKClgAHEIKCgqSkgqSktLS2qIKCABYwhK7igt6WgoKCgoKUqJSmlIK6ktiSgoIACRbipqaChIKCgoKklAATQJKu5oKClKiSAAckAAoCgpSCAAIQAAkEgoKClJSCuJSCgqbssoKCgoKClIKmgu6mpKSCpKSk")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

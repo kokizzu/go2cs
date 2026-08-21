@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 // This file provides a simple framework to add benchmarks
 // based on generated input (source) files.
-[assembly: global::go.GoPositionMap("go/format/benchmark_test.go", "benchmark_test.cs", "ABhGABACgoKClIKCgpSUABAYgoKCgoKChIKCgoKokoKCgoKCgoI=")]
-
 namespace go.go;
 
 using bytes = bytes_package;

@@ -48,6 +48,20 @@ using static go.regexp_package;
 [assembly: GoImplicitConv<thread, ж<thread>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("regexp/backtrack.go", "backtrack.cs", "AC5igoKClKaigqqigpSqoqzShIKUloKClIKWgpSUgpaClJSCvKKCgpSCquaCusKEgoKUgoKCAAcSgoKClISEmAACFAAJBIKClIKCupaigoKmkoKmgoKUgoKmgoKUgoKmgoKUgoKmgoKUgoKmlIKUlIKUgriCgpSCpoKqopyylICCqJKYkpgAAoECAASKAqiygpKUlJaCgpaCgpSCggAIFIKClIKCgpSWgpSUlJSCloKCgg==")]
+[assembly: go.GoPositionMap("regexp/exec.go", "exec.cs", "ADZwooKmooKmooKCgqamgqSUuIKClIKUpoKClKqigoCCgpSCpIIABBSCpoKClIKCgpSUgoKUlIKUgoKClJSCgpSUgpSClJSs0oKSlIKClIKCkoKClIKClJSCgpSUlJSUgoKUgoKmgoKUlIKCgpSmlIKCgpSUgqiygoKmAAIQ8oKCgoKClIKClIKCmoKClJSCgqaUpqSkpAACMQACNoKUgqauAAgCgoKUgIKmgoKCgoKEgrySgqSCgraCpIKCgoKUgraClJSClIIAAkUAAkoAChSCgoKUpqKCqLKCkpaCgpSWgoKWhIKSgoKUgoKUlIKUloKUgoKCgpSCgoKYgoKClKSCtoLakriSpKSkgpSkgpQAAk0AAlKClIKCgoKogoKCloKCqJKu4pSWgpaClIKWgoSCgoKWgoI=")]
+[assembly: go.GoPositionMap("regexp/onepass.go", "onepass.cs", "ACRSAAkCgoKUgoKCgqaCmJKCgpSGlK7igoKUgpSmgoKUpAAJFIKmooKCpoKCpoKClKaCgriCgpSCgqaCAA8k0oKCgpSWkpKCgoKCqIKCgpSCgoKCloKUtLS0tIKm2JKCtqSC3JLKggAGEIKagoSCooKCgqaEpJiCgoKipIKUgpqiAANLAANUAAYWAAgEgpYABRLCgoKClIKkhIKCkoKWkoKUgoKYpIKCxoKEkoKCtoKCgoKCtrSCgpSCgoKClIKCgoKClJSUgoKClMSCgpSChJKCgoKUlJSCgoKUxIKClIKCxIKClIKCgoLGloKCgoKCgoKCpoKCpq7igqaEpoKCnIK2goKUAAMXggAGIpaEgpQ=")]
+[assembly: go.GoPositionMap("regexp/regexp.go", "regexp.cs", "AGbOAZIAAhYACAKSAAIaAAoCAAIsABMCAAIS4qaCgoKUkoSCgoKUkoKUAAoWgoKUlKaCloKCgpSEAA0i0oKClIKCgoKCzIKSlIKClKiygoKCqJKYpIKCgpSmpKSkgoKUpIKCgoKCpgACPwAETrKCgpSssoKClKaCgpSokgACENIAAhTygoKCuAATKIKCgoKUlKaCpqKmoqaClIKCgriCgoKmAAcQgoKCgpSUpoKmoqaipoKUgoKCuIKCgqYACRSCgpaCgoKUgqaCpoKmgqaCrLKqoqqiqqKs0oKClKzSgoKUrNKCgpSs0oKClIassgACEsKGpqKCgoKCgpSUgpaCgoKCqIKU3oKUhpKClJSCyJS6gpSWrNKCgpSCooKUlKyyAAMSwgAGEpKmgoK+tJKCgriCloKCgoKCgpSClAACENKUlIKClKzSgoKUloKCgpaClKaUgoKClIKUgpSmlISCgs6igoKClK7CgoKUAAIQ0oKCgpSuwoKClAACENKCgpQAAhDygoKClIKCgqYAAigAEQKssqaCgoKClIKClIKClIKUgpSCgoKClLiCgoKUlMqCrAAIAoKUgoKClIKCgoKUlJSUgoKUlKiCgoKClKaCloKCAAIQ8gACEPKCgoKUgoKCpgACEPIAAhDyAAQSwoKUgpKClJSuwoKUgoKClJSuwoKUgoKClJSuwoKUgoKClJSuwoKUgpKClIKCgqaUrsKClIKCgpSUrsKClIKCgpSCgoKmlAACENKClIKCgpSUAAImABIEgpaCloKEgoKCgpaCgpSWgpYAAhLiqqKCgpSC")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("regexp")]

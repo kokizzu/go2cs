@@ -5,8 +5,6 @@
 // Package obscuretestdata contains functionality used by tests to more easily
 // work with testdata that must be obscured primarily due to
 // golang.org/issue/34986.
-[assembly: go.GoPositionMap("internal/obscuretestdata/obscuretestdata.go", "obscuretestdata.cs", "ABIikoKCgpS0xtzygoKUlIKClICCgoKkgIKCpOiygoKUkg==")]
-
 namespace go.@internal;
 
 using base64 = encoding.base64_package;

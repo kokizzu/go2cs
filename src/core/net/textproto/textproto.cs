@@ -22,8 +22,6 @@
 //
 // [Conn], a convenient packaging of [Reader], [Writer], and [Pipeline] for use
 // with a single network connection.
-[assembly: go.GoPositionMap("net/textproto/textproto.go", "textproto.cs", "ACpQgs6CAA4gkgAGEJKqooKClAACNgAcAoKCgoKClKiSgpSClKiSgpSClKaCpoKC")]
-
 namespace go.net;
 
 using bufio = bufio_package;

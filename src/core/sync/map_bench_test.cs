@@ -1,8 +1,6 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("sync/map_bench_test.go", "map_bench_test.cs", "ABYogqKigoKWhIKigtyClJSCpoK6gtyClJSCpoK6ggAIDIKUlICCpIKmgrqCgoKAgraAggAIEIKUgILKgtyClKiC3IKUlICCpIKmgrqCgoKU7oKUgILKgtyClKiCgIL+goSUgrqCAAUW0pSSgoKAgoKCAAcY0oSUgrqChIKCgpTugpSogtyClKiC3IKUlIKmgrqCgoKUgu6ClJSCpoK6goKClILugpSogoLugpSCgu6ClKiC3IKUlICCpoKmgrqCgoKU3IKUlIKmgrqCgoKU3IKUqIKC7oKUlICCpoKmgrqCgoKUgu6ClJSCpoK6goKClILugpSCkoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

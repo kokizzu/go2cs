@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package gcimporter implements Import for gc-generated object files.
-[assembly: global::go.GoPositionMap("go/internal/gcimporter/gcimporter.go", "gcimporter.cs", "AC5M8oKCqoKCgoKCgoKCgIKkloKCgpaWqAAHEgAIAoKWgpiAsqSCgoKCgoKUgqaUlLiSvILmkoK6goKCgpSCqIKClKzygoKmgpSWgIKkgoKUlIKCgoKUqICCuJKClIKUppSUgoKClpSmgoCCpIyUwoKCgILEgqSChIK0tNim")]
-
 namespace go.go.@internal;
 
 // import "go/internal/gcimporter"

@@ -51,8 +51,6 @@
 //
 // See https://blog.golang.org/context for example code for a server that uses
 // Contexts.
-[assembly: go.GoPositionMap("context/context.go", "context.cs", "AK8B1gKAooCigPyypoKmgqaCAAkKggAJCoKuwq7CAAQe4oKQAAU0AAsCgpC2goKUgoIAAhIACAKAgoKS/gAFKgASAqaCkoKClIKUAA0cooKClIIAEzDigoKUgoKUgoKUqJKAgoKkgoKUgoKUAAwaggANHqKClKaigoKUgoKCgoKU1qKCgoKqwoSCgpamksiAlIKUlIKUlIKmgJSCgpS4gqaCgrQADBSCgIKkpoKs0oKUgpSCgoKUgoKCgpSUlJSChIK+soKU7rKmgqaCpoKmggACGAAJAqzSgpSAlKSmgoKCgpCkgpKCkqaQAA8agqaCqqKClJSCgoKUAAIaAAoCrLIAAiAADQKClIKUgpQADBqylKSklKaCqoKClKaCgpSClLSClLSmlLSClNS0")]
-
 namespace go;
 
 using errors = errors_package;

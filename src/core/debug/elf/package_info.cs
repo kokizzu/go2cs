@@ -63,6 +63,19 @@ using static go.debug.elf_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("debug/elf/elf.go", "elf.cs", "AFGgAYCigAAOIoCigAAOIoCigAAwZoCigAAaOoCigAD/AooGgKKAABg2gKKAAEOMAYCigAAgRoCigAAULoCigABBoAGAooAAECaAooAA1gHQA4CigAASOICigABG6gGAooAADiKAooAAFjKAooAAI1CAooAAECaAooAAYcoBgKKAAIwCngSAooAAQIYBgKKAAKgC1gSAooAAXL4BgKKAAGreAYCigADMAZ4DgKKAAKIB1AKAooAAygKkBYCigAB07gGAooAAggGKAoCigAB49gGAooAAT54BgKKAooAADhyAooCigqSAAFGiAYCigKKAABMmgoKCgpTMgoKCgoKUqKaCgoKCgpSClIKmgpSClA==")]
+[assembly: go.GoPositionMap("debug/elf/file.go", "file.cs", "AFzYAfLaooKUAAUSAAgCgpaChIKWgoKCloKCgqa4lKSqgpakggAeQpAAFzKCgoKUgqiSgoKUgoKClIKssoKCgpSqooKCpqqihJKAgqSCloKC2raCgpSkpKSEgoKWgoaSkoKilIKCgIKkgoKCgJKkgoKCgoKCpIKCgIKkgoKCgJKkgoKCgoKCpoKUgpaCloKWkpSCpIKkgqiCgoKUgoKClIIACxaCAAsWgpSClIKC3oKSgpSCgIKkgoKkgoCCpIKCpIKWggAGEIKCgrqCqIKClIKCgoKUgoKClIKCAAwYgoIADBiClIKUhIKCppSCgoCCpIKCgqSCgoCCpIKCgriWgqimlIKClIKClIKCgoKo2qKUpqYACg6CgoKWgoKUgpSCloKCqISEgoKCgoKCgoKCgoKCgoKCgoKW1oKCgpaCgpSCloKCqISEgoKCgoKCgoKCgoKCgoKCgoKWqJKCloKCpqqigoKm2qKUpKSkpKSkpKSkpKSkAAQU4taUgpaCgpaChIKCgoSClIKCzpSClIKkgpSCuNaUgpaCgpaChIKCgoSClISCgpSCgqimlIKWgoKWgoSCgoKEgpSElIKUgoK4ppSCloKCloKEgoKChIKUgoLOlIKUgqSClIK41pSCloKCloKEgoKChIKUgoKWlIKUgrimlIKWgoKWgoSCgoKEgpSCgpaUgpSCpIKUgrimlIKWgoKWgoSCgoKEgpSElIKUgoK4ppSCloKCloKEgoKCgoKClIKWgpSCgpaUgpSCpIKUgrimlIKWgoKWgoSCgoKCgoSClIKClpSClIKkgpSCuKaUgpaCgpaChIKCgoSClIKClpSClIKkgpSCuKaUgpaCgpaChIKCgoSClIKClpSClIKkgpSCuKaUgpaCgpaChIKCgoSClIKClpSClIKkgpSCuAALBqKClKSk3IKCgpa4loKClIKUgoKUgoKmmqKCgoKUgIKkgoKUloKCqIKCgpSAlKaCgpaCgIK2gILKAAIS4oIAAhgACQKCgpSCgqYACBrCgoKUgoKCgoKCpgAHFKKUqIKClISCgoKClIKClIKCgoKEgoKCgriCgoKCgoKCgpaCgpSWgpSogoKUhIKCquSCgpSCgpSCgpSCrLIABRDStqSClJSCgpaCgpSCloKClIKCgoKUgoKkgoKkgoKCuKqigoKUgoKWgoKUgpiSgoKClIKCpIKCpIKmAAgKgg==")]
+[assembly: go.GoPositionMap("debug/elf/reader.go", "reader.cs", "AA8igqaCpoKmggANHIKCgpSUprKClIKCpoKClKSkpKaUpqa2tpSWkoKCgpSAguiC")]
+// </GoSourcePositionMaps>
+
 namespace go.debug;
 
 [GoPackage("elf")]

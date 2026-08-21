@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package color implements a basic color library.
-[assembly: go.GoPositionMap("image/color/color.go", "color.cs", "ACE80oKCgoKCgoKCAAsYggAHENKCgoKCgoKCgoKCgoKCggAIEtKCgoKCgoKCgoKCAAcQooKCAAcQooIABxCCgoIABxCCggAIFOzuggATHoKAgqSCpoKAgqSCpoKAgqSCgpSCpoKCgqaCgIKkgoKUgqaCgoKmgoCCpIKmgoCCpIKmgoCCpAAIFISmgoCCpN6EzpKClKq2gpKCgoKCgpSmrgAaLoI=")]
-
 namespace go.image;
 
 partial class color_package {

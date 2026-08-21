@@ -12,8 +12,6 @@
 // For example, pre-submit checks that use this package directly would behave
 // differently depending on what Go version each developer uses, causing the
 // check to be inherently fragile.
-[assembly: global::go.GoPositionMap("go/format/format.go", "format.cs", "AClqAAoEkoKUtICCgtqGooKClIKUlJaCgqgAAhYACAKCgoKWppamgoKCppSmuA==")]
-
 namespace go.go;
 
 using bytes = bytes_package;

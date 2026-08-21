@@ -3,8 +3,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build go1.16
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/trie13.0.0.go", "trie13.0.0.cs", "AAsaooKCgpSClJSCgqY=")]
-
 namespace go.vendor.golang.org.x.net;
 
 partial class idna_package {

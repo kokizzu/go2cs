@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Process etc.
-[assembly: go.GoPositionMap("os/proc.go", "proc.cs", "ABIkgpSUprrQqrCqsKqw3MKCAAIQ0rgABhCEpg==")]
-
 namespace go;
 
 using testlog = @internal.testlog_package;

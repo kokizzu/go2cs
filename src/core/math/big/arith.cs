@@ -6,8 +6,6 @@
 // These are needed for platforms without assembly implementations of these routines.
 // This file also contains elementary operations that can be implemented
 // sufficiently efficiently in Go.
-[assembly: go.GoPositionMap("math/big/arith.go", "arith.cs", "ABlYABECgqiSgoKCqqKoxIKCgpSoxIKCgpSospSCgoKUAAIUAAkClIKCgpSCgpSmopSCgoKUqLKUgoKClIKClKaigoKUgpSCgoKCgpSCpqKCgpSClJSUgoKCgoKUgqailIKUprSCgoKClKyygoKCgpQADBqCgqaUgoIAESSCgqaCgpSokoKCgoI=")]
-
 namespace go.math;
 
 using bits = go.math.bits_package;

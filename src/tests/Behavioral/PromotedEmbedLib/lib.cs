@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA4+goKqgoIABxaC")]
-
 namespace go;
 
 partial class PromotedEmbedLib_package {

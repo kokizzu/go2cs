@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("stack.go", "stack.cs", "")]
-
 namespace go;
 
 partial class main_package {

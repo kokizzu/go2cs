@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("ReverseSortNaNOrder.go", "ReverseSortNaNOrder.cs", "ABEkgKKCpICmgAAGEIKmgqiCgoKCAAoYoKagpqCkgoaCgoaCgoaChoKCgoaCgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

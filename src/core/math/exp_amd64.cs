@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build amd64
-[assembly: go.GoPositionMap("math/exp_amd64.go", "exp_amd64.cs", "")]
-
 namespace go;
 
 using cpu = @internal.cpu_package;

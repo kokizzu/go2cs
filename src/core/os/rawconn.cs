@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !plan9
-[assembly: go.GoPositionMap("os/rawconn.go", "rawconn.cs", "ABUkgoCCpIKC1oKAgqSCgtaCgIKkgoKmgg==")]
-
 namespace go;
 
 using Δruntime = runtime_package;

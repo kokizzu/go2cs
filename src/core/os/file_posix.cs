@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || (js && wasm) || wasip1 || windows
-[assembly: go.GoPositionMap("os/file_posix.go", "file_posix.cs", "ABEm4oKUqtKCgqzigoKq0oKCqtKCgqiygoKUgpSCpqiSgoaClNiygIKkgIKkAAIU8oaClAACEuKGgpQABRDygIKkgIKk3NKAgqSAgqTc0oCCpICCpAACFPKCgoKUpoKCgIKkrNKAgqSAgqTYkoCCpNiSgIKk2JKAgqSqooKUAAIU8oKCgg==")]
-
 namespace go;
 
 using Δruntime = runtime_package;

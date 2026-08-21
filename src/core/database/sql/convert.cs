@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Type conversions for Scan.
-[assembly: go.GoPositionMap("database/sql/convert.go", "convert.cs", "ABkwgoKUpoKClIKClAAKFqKCyoKCzICCgoKUgpQAAhTygoKClIKUrOKCAAISAAgCuoSCgoKCgt6CgpSCggABENKCooKAgoCCpIKkggALGoKClILExoKClIKkgqSCgqSUpNyClgACHgAMAgAGEAAIBJSUgpSCpIKUgqSClILGlIKUgqSClIKkgpSCpIKUgsaUgqSCpIKUgqSClILGlNaUgpSCpIKUgqSClILIlJKUgpSC3ILGgoKmgriElIKagtaCgIKC1oKAgoLWgoKUpIKWgIKmgoKUgpaCloKClMSkloKCAAYQlIKClIKkgpSCgoKClIKkgpSCgoKClIKkgpSCgoKClIKkgpSUgqSCuKaCgIKkpoKUpJSClKSkpKSkprKUpKSkpKSCpAAEIAALAoCGpA==")]
-
 namespace go.database;
 
 using bytes = bytes_package;

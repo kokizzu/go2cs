@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // These tests are carried forward from the old go/doc implementation.
-[assembly: global::go.GoPositionMap("go/doc/comment/old_test.go", "old_test.cs", "ACZEgoKCACdIgoKCgg==")]
-
 namespace go.go.doc;
 
 using testing = testing_package;

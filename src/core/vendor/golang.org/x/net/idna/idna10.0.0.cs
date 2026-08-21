@@ -13,8 +13,6 @@
 // UTS #46 is defined in https://www.unicode.org/reports/tr46.
 // See https://unicode.org/cldr/utility/idna.jsp for a visualization of the
 // differences between these two standards.
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/idna10.0.0.go", "idna10.0.0.cs", "ACBcABACqJIABBbSgL7CgLqigAADENKmgpSCgoKClAAEFNKAvsKCggADHAAKAoAAAxTygLqigoKCgoIAAxgACAKCgoIAGj6CggADGAAKAoKCrsKuwpKC6qKCgpSUgpSClIKUgpQANnaAooLKgKKCqsKCgoKmgtyClIKCgqaClJSCgoKCppSCgoKUuLamgoKCgriCgpKCgoKUgpSCgriClIKClIKmpuiCgqbEgpSCgoKUlLqCxJSmgoK4gpSkpsIAARDCgoKCgoKCgpSUgoKClJSkgoKUpIKkppKklJSCpoKCppQACxiCgoKmgqaCgpSmgoKUgoKClKiSgoKCpoKCyoKClNyClIKUtoKUtoK4tKaigriCgoKUgIKklAA3hgGigoKUlIKClIKmgpSUgoKCpoKUgoKCgqSUgoKUgIKkgpSClKaCgoKm")]
-
 namespace go.vendor.golang.org.x.net;
 
 // import "golang.org/x/net/idna"

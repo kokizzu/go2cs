@@ -4,8 +4,6 @@
 
 // Package debug contains facilities for programs to debug themselves while
 // they are running.
-[assembly: go.GoPositionMap("runtime/debug/stack.go", "stack.cs", "ABIikqqigoKCgpQACCYADQKCABk0goKUgpSApqSo")]
-
 namespace go.runtime;
 
 using poll = go.@internal.poll_package;

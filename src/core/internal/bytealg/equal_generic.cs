@@ -1,8 +1,6 @@
 // Copyright 2019 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/bytealg/equal_generic.go", "equal_generic.cs", "AAkcAAkG")]
-
 namespace go.@internal;
 
 partial class bytealg_package {

@@ -1,8 +1,6 @@
 // Copyright (c) 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/internal/edwards25519/scalar.go", "scalar.cs", "AB1yAB0CquSCqOSCqOSCqNSCqOSCqMKCAAUS4oIACxyCgoKChAANGsKClIKCkpLs0oKUgpaSlAAFEKKCloKUpLYABRwADwqCmqKCgoKCqJaiprKCgpKowoKCgpKCgoKCgoKsAAgIgoKUgqSWgoSCloKEgoKCgoKClKaohO6CloKClIKWlKaCgoKWloKCqIKCgpY=")]
-
 namespace go.crypto.@internal;
 
 using errors = errors_package;

@@ -13,8 +13,6 @@ validation is done when parsing object files. As such, care should be taken when
 parsing untrusted inputs, as parsing malformed files may consume significant
 resources, or cause panics.
 */
-[assembly: go.GoPositionMap("debug/pe/file.go", "file.cs", "ACNWkoKClIKCgpSCrLKCgoKUrLKChIKAgqSCgoKCgoKUlJSCgIKkAAMWtpaCgqiCgpSCgqiCgqiCgqiCgoKAgqSCgpSCAAsYgpKUgoKUgoKCgqgACAqCqJKCloKCpqqigoKmAAsGgoKUpKTMgoKCloKWgoKCgoKUgIKkgIKklJyygoKClICCpoKClJaCgqiCgoKUgJSmgoKWgpSUgqgADCbCgpaGkoKUuoKYkoKUmJKCgoLKgoK6gpaCgqiGkoKCgoKCgoKCgpQABxCCgqKClIKCkoKCgpS2graCgoKUyILMrNYAChCCrtSClgACEoKYkoKCloKYlK6CmIIAATqWgoKWhKSugpiCAAE4loKCloSkzrKCgpaCgIKm")]
-
 namespace go.debug;
 
 using bytes = bytes_package;

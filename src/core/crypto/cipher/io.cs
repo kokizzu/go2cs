@@ -1,8 +1,6 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/cipher/io.go", "io.cs", "ABUmsoKCAA0csoKCgpKUqqKAgqQ=")]
-
 namespace go.crypto;
 
 using io = io_package;

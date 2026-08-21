@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements method sets.
-[assembly: global::go.GoPositionMap("go/types/methodset.go", "methodset.cs", "ABosgoKWgoKClIKokKaQprKCloKCgpSCgoKmAAYaAA8WgIKolJaCqI7mgoaShIKogIKA3KSEgriUgoKUzIK42tyigJSClIKU3IKAgoKUuJaCmJKCgoK4lgAEFrKClIKUpqKClJTKgIKCtoI=")]
-
 namespace go.go;
 
 using fmt = fmt_package;

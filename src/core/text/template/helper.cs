@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Helper functions to make constructing templates easier.
-[assembly: go.GoPositionMap("text/template/helper.go", "helper.cs", "ABMw8oKUAAIYAAsCAAIcAA4CgqrSlJSCgoKUjuKClIKUlIKCpgACGAAJAgACFgAKAoKokoKClIKUruKu8oKmgoKCgoKUgpSUpsKCgqaCsoKC")]
-
 namespace go.text;
 
 using fmt = fmt_package;

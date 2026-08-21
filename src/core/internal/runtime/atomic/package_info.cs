@@ -41,6 +41,21 @@ using static go.@internal.runtime.atomic_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/runtime/atomic/atomic_amd64.go", "atomic_amd64.cs", "AAkiAAoCqqKqwqrCqsKqwqimpqampqjCqKampqampqampqrGpqampqamrA==")]
+[assembly: go.GoPositionMap("internal/runtime/atomic/stubs.go", "stubs.cs", "AAoYpqampqampqamqsampqam")]
+[assembly: go.GoPositionMap("internal/runtime/atomic/types.go", "types.cs", "ABEosqyyAAIQ0q7CAAIU8gANIrKssgACENKuwgACFPIAChyyrLIAAhTyAAIU8gAKHLKssoKClAAKHLIAAhgACQKssgACGAAJAgACENIAAhoACgKuwgACFPIAAhTyAAIU8gANIrKssgACENKuwgACFPIAChyyAAIYAAkCrLIAAhgACQIAAhDSrsIAAhTyAAwgspKs0gAQKLIAAhgACQKokqwABBwADAKssqYABhSyAAIYAAkCrLIAAh4ADAKuwgAKFrI=")]
+[assembly: go.GoPositionMap("internal/runtime/atomic/types_64bit.go", "types_64bit.cs", "AAgkAAkCAAIYAAkC")]
+[assembly: go.GoPositionMap("internal/runtime/atomic/unaligned.go", "unaligned.cs", "/oI=")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal.runtime;
 
 [GoPackage("atomic")]

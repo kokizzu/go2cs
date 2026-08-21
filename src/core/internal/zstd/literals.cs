@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/zstd/literals.go", "literals.cs", "AAwc0oKogoSClAAIDKKEgpS0gpSCtIKUguyClpSClIKmgpSCgoKo6sKqlIKUgoKCgpTGgpSCgoK0gpSCgoLsgpaCgpaCqIKWgoKUhIKUgriCzoKClJaCltjWgoKWgoKEgoKWgoKCgpbq5oKUgtyCgpaCgoKEgoKUhIKChIKEgoSCqpKClpKClpKClpKCloKCgoSEhIKChIKEkoKUgpaCgpaCgpaCgpaCgoKUgoKWgoKEgoKEgoKW")]
-
 namespace go.@internal;
 
 using binary = encoding.binary_package;

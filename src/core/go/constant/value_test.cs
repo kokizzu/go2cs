@@ -1,8 +1,6 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/constant/value_test.go", "value_test.cs", "AHCKAoKCgoKCloKCgpSAgoKClKSCqIKCgoKWgpaCzqKCggB3mAKCgoKEksqCtKK2goKWhIKCgoKWgoKWgoLKgoKCgpQAOHSCgoKAgqSAggAFEKKClpSkpKaAlIKCpoKApIK0tLSC2AAXOMLYtMT44oSClpSkgqQAFiaigsqCgoKCAAsYgoKCloKWgIKmgILagoIAAhSCgoKClICCpICC7IKCAAsYgoKogoK6goKCggAJFICkggAKGoKCgtyCkoKCgoKCgoKUlIIAFCaCgoCC")]
-
 namespace go.go;
 
 using fmt = fmt_package;

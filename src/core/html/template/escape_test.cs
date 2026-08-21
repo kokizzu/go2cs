@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("html/template/escape_test.go", "escape_test.cs", "ABsolNqCABYGogAQMoQAjgXQCrKigqSClIKAgqSAkqSCgIKkgJKkggAJDKK4AA0gkoKAgoKkgJKCABIKogAJIgBYugGSgoCCtqaCgoKUgoKClISAgoKkgIIACgyiANYBugOCgoKCgpSCgoKUgoKUlIKCpoCCAAoMogDqBN4JgoKCgoKUgoIADAqiAFq8AYKSgoKClIKCgoKCgsqC3IKCgoKUgoL6goKCgoKk6KKCgoKUgoKk+KIACCaCgoKCgoKAggAKDqKSgpKSgpKCgoKklIKCgqQACAqSkoCC7ILewpKygoKCpoKCxIKCgoIACBCyhIKCpAAJCrKUlIKUgoKCgpSClLiCgriCgviikoKCgoIACgqykpSCgoCCooK0goCCpIKAgvqSvJKAgqSSgIKkgIKkkoKUgg==")]
-
 namespace go.html;
 
 using bytes = bytes_package;

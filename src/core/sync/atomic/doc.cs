@@ -46,8 +46,6 @@
 // C++'s sequentially consistent atomics and Java's volatile variables.
 //
 // [the Go memory model]: https://go.dev/ref/mem
-[assembly: go.GoPositionMap("sync/atomic/doc.go", "doc.cs", "ADiIAQAOCsi6yLi4usi6yLi4vNrO6LrKysrKysrKysrIusi6yLi4usi6yLg=")]
-
 namespace go.sync;
 
 using @unsafe = unsafe_package;

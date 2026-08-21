@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/poll/sendfile_windows.go", "sendfile_windows.cs", "AAwaAAgCgpSUlICCpoCCpISCloKClqSCgqaAgr60goKCloKChIaClrqAgqaClg==")]
-
 namespace go.@internal;
 
 using io = io_package;

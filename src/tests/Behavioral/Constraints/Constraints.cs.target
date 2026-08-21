@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("Constraints.go", "Constraints.cs", "")]
-
 namespace go;
 
 partial class constraints_package {

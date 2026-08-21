@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Memory statistics
-[assembly: go.GoPositionMap("runtime/mstats.go", "mstats.cs", "AKkCnAWCgIKCyICCggAWOrLMAAcWkpaCgoKGmoKWgoKCloKCggAHEoKYgoKEioQAESSCgoKCgpSCgoKUgoKCgoKUgoKClIKCgsqCgoKCgpSCqoKCgoKCggAQIoKCgoKmgoKCgoK4goKCgoKCgoKCgsyokoIABhDClIKohIKC3oKCgoKWgoKCggACENKEgoKClIIAAhDShIIABRzSAAUQ0oKCggAbRPKCgoKCgoSCgoKClIKCggAvgAEAEwKAgoKUgqakggACIgAQAoCCgpSCpgAEEOKEggADEMKEggAvtAHCgoIAAhDWAAgMpoKCgryCloKCgpaCgpaCAAgU")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

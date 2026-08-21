@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAwcgqaCAAcSog==")]
-
 namespace go.DefinedTypeOverForeignStruct;
 
 using ꓸꓸꓸnint = Span<nint>;

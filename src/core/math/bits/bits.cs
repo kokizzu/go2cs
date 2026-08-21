@@ -11,8 +11,6 @@
 // the code in this package will not be used. Which
 // functions are implemented by the compiler depends on the
 // architecture and the Go release.
-[assembly: go.GoPositionMap("math/bits/bits.go", "bits.cs", "ABgysKaQppCmkKaQABUskoKUqJKokoKmqJKCpqiSggAMGgANGJKClKiSqJKokqgAASgAEwKCgoKCgoIAAhLigpSuwoKCrsKCgq7CgoKuwoKCrLKClKiSqJKokoKCgoKokoKCgoIAAhDSgpSssqyygoKssoKCgqyygpSokqiygoKUqLKCgpSCgpSosoKClIKClIKClAACFPKCgpSCAAIQAAgCgoKCAAIQAAgCuIIAAhTygoKUggACEAAIAsqCAAIQAAgClIIAAhTygoKUggACEAAIAoKCAAIQAAgCgoKCgoKCgoKCgoKCAAIS4oKClIKu8oKUgoKuwoKUgqiCloKEmIKCgoKCgoKEgoKCgqiCgoSCgoKCqKyygpSssqwACQ6C")]
-
 namespace go.math;
 
 partial class bits_package {

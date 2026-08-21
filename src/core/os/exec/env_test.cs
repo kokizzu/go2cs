@@ -1,8 +1,6 @@
 // Copyright 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("os/exec/env_test.go", "env_test.cs", "ABUYgoQAJ1yCgoI=")]
-
 namespace go.os;
 
 using reflect = reflect_package;

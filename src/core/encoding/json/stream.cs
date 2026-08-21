@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 global using ΔToken = object;
 
-[assembly: go.GoPositionMap("encoding/json/stream.go", "stream.cs", "ABw+wqqgqrCu8oKWgIKmgqiCgpSCupaEqqKqwoSCgoa2goKCmoKq4oK2gtyCgoKUgqaCloKCtKamgoKCgpiSgoKCqIKEpoKCgqYADB6SAAISAAoCgpaChIKCAAcShIKCgoKUlICCpNyyggACFPIABBKSgpTYsoKUggAQOsiUgoKUgpSCpIKClIKUgqSmgpSkpoKUpO6CAAIcAA0CgoKClKSClIKCgqaClIKCgoKmgpSCgoKmgpSCgoKCpoKUgoKmgoKClIKCgpSmgoKCgoKCgpSClKaClIKAgqQADAqCgpSkpKSkpKSqooKmgoKCgoKClIKmgpS+sg==")]
-
 namespace go.encoding;
 
 using bytes = bytes_package;

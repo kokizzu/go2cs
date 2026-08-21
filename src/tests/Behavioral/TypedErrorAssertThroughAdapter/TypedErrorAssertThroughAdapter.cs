@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("TypedErrorAssertThroughAdapter.go", "TypedErrorAssertThroughAdapter.cs", "AAwkgu6CqoKmggASBoaCgoKGgoaAgpSkgIKUqKKCgIK2gsqAgpQ=")]
-
 namespace go;
 
 using fmt = fmt_package;

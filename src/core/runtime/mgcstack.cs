@@ -89,8 +89,6 @@
 // because there is no live pointer to it. If B is also statically
 // dead (meaning that foo() never accesses B again after it calls
 // bar()), then B's pointers into the heap are not considered live.
-[assembly: go.GoPositionMap("runtime/mgcstack.go", "mgcstack.cs", "AIoBkgKCgpSCAA4k1gAiTsKClIKClIKUgoKCpIKClJSCgpSCAAIQ8oKClJSClKaCgoKUpoKmgoKU2LKClIKCgpSClJSCgoKClIKCgoKUrLIAAhAACAKClJKCgoKCgpSCgoKqooKCgoKUgoKUgoKU")]
-
 namespace go;
 
 using goarch = @internal.goarch_package;

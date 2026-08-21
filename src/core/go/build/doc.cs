@@ -95,8 +95,6 @@
 // "go build" and other commands no longer support binary-only-packages.
 // [Import] and [ImportDir] will still set the BinaryOnly flag in packages
 // containing these comments for use in tools and error messages.
-[assembly: global::go.GoPositionMap("go/build/doc.go", "doc.cs", "")]
-
 namespace go.go;
 
 partial class build_package {

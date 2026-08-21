@@ -4,8 +4,6 @@
 // This package holds the race detector .syso for
 // amd64 architectures with GOAMD64<v3.
 //go:build amd64 && ((linux && !amd64.v3) || darwin || freebsd || netbsd || openbsd || windows)
-[assembly: go.GoPositionMap("runtime/race/internal/amd64v1/doc.go", "doc.cs", "")]
-
 namespace go.runtime.race.@internal;
 
 partial class amd64v1_package {

@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("html/template/transition.go", "transition.cs", "ADVmkoKCgoKklIKCgoKUlIKCgqaUAAsapIKClILKgoKUgoLMgoKUlKSkpLiClJSokoKCpJSopIKCtoKUlAALGpKCgqaClLS0gqiSgIKkAA4moqaClICCtqiSgoKUgoKUlIKUgpSUlKiSqJKCyJSokoKUgpSClLS0tJS0tLS0AAga8saCyJLKopS0gpyCwpSCtLSmgoKCgoKUlIKC/IKCgsiCtJaqooKUpKaSgoKClJSCgvy0urKkgsiSgsaWpszMkoKClJSkpKSokoKClKQAAhIACQaCgpTcqAAbOIKCgoKUlpKCgpS0tLTGgpSCpILogqSCpLqSgpSkqKTGgoKCgoKUgoKC3IKUgrqSrsKClKoACgoACRaSqJKokoKUgoKCgoKmgoKUlKiSgsjG")]
-
 namespace go.html;
 
 using bytes = bytes_package;

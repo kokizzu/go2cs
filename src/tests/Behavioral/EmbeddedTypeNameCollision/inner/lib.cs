@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA0egqiCqIKogoI=")]
-
 namespace go.EmbeddedTypeNameCollision;
 
 using fmt = fmt_package;

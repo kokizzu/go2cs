@@ -78,8 +78,6 @@
 //    (c) Any remaining partially-used chunk is placed on a reuse list.
 // (4) Once no more pointers are found into quarantined arena chunks, the sweeper
 //     takes these chunks out of quarantine and places them on the ready list.
-[assembly: go.GoPositionMap("runtime/arena.go", "arena.cs", "AGDMAQAIAgAFEgAIAoKClIKCgoKCgqyyrLKu4oKCgpSkpKSkgpSWkpSCgoKkgoKCgoKCpIKCgoKCpAAHJIKClIKUgoKmgqaq6gAaPpKCuJSCAAIQ0gACFAAJAoKUgoKClIKClJYABRIACQSCqIK6goKCgoKCgpSmzIKCppSCgriCrsKCgoKCgpSU6rSCgsqUgoKClJaClIKCgoKClIKUgoKmgoIAHzjSgoKUlJSClKaClMyCgpSClISClIKCpoKCppSCgpSCpoKClJSCgpSClAAIFISChNyygoKUggADEOKChIKClIKUhIKCggAHEAAHEIKElLqGkoIAChaiupaWgoSqwpSCgrqCgpaCgoLegoKokoKUgoKClKrCupaCgoKUgqiCloKCgpSCqN6UgoKCpIKUgpS8ooKClJT8soIABxKWgoKUgpSGkoKUgpTMgpaUlpSWlIKCgoKCgpaAgoKCpoKUtoKWgIKmgpQABhCClgACGgAKAgAGEPKClIIADR66uszMgoKCgoKWloKWlIKCupKCgpQABhQACQKClIK6gpSClILMloKCgoKEgoKogqaCgpQABRgACwKCloKCgoKmgriUgoKU3IKCgpSUgpSClJQABhCCloKCgoKCgpaChIKCloKClpaoAAkWgoSWqKiCgoKE")]
-
 namespace go;
 
 using abi = @internal.abi_package;

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // General environment variables.
-[assembly: go.GoPositionMap("os/env.go", "env.cs", "AA4gopSCgoKClIKC7JSUgqaClKyyqqKUpKiSrLKUgpaSgoKUpqSmkpSssoKCAAIQ0oLaooKClKiSqJKqog==")]
-
 namespace go;
 
 using testlog = @internal.testlog_package;

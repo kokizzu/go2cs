@@ -4,8 +4,6 @@
 
 // Package httptrace provides mechanisms to trace the events within
 // HTTP client requests.
-[assembly: go.GoPositionMap("net/http/httptrace/trace.go", "trace.cs", "ABswooIAAhDygpSChIKCuIKCpoKCgoKU7pQAWtgBooKUgoKCgoKCgpSSgpSCgrqmooKUABQuooKU")]
-
 namespace go.net.http;
 
 using context = context_package;

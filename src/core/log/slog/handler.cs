@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("log/slog/handler.go", "handler.cs", "AF2+AYLcgqwACAKCgoKCkoKC1oKmggBCmAGUAAscwoKClKbmgpSUkoKCgIKCgsiCgoKmppTWgoKCqvKSgoKmgoKUgoKCgoKUuIKCgoKUpoKUgoKCgpSUgoKEgoKC1sSAgoKCgoLsgoLKgoKCgoKClJSCgqaUgqa6koKUAA8ggsai7oKClKaCgpSAgoKkpoKCAAYSooKCgpSCpoK6koKUpIKCvKKCgoKmrNKCgIKCgqaUtoKmgIKAgoKU2IKUypSClIKClIK4gpSmgqaCgpSUlIKUlKaCgoKCpoKU+sKSgNyAkoK4uIKClJSC6KKClLiKwoKCgoI=")]
-
 namespace go.log;
 
 using context = context_package;

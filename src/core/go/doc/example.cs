@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Extract example functions from file ASTs.
-[assembly: global::go.GoPositionMap("go/doc/example.go", "example.cs", "AC1mABECgoKCgoKCgIKCpIKClIKCgoKUgpSAgqSSlIKClKIACxi4gpSmhsyygJSCgIKClJSCgpTGrLKClJKUguqihKaogoSClIKUgoKC2IKUtIIACBCWgoKusrqCkoKCppaCgoKUppSCgoKUgqbGlJKSgoKCzIKYkoKAgsqCgsyWgpSCxoLc6pbMgoKChIaaAAYcAAsMgoKChILClIKihIKCgraqsqqylJaCgoLMpoKWhIKGssaClIKCtIKUggAHHgAIAoKUtISSgpSCxoKe0oKUkoKCgoKCgriCyJSCppKClJTapoKCpoCCgqSUqqKCgoKUqKSClIqigoKClJSCptq0goKYkqKAlJKCgqSokoKCgqrUgoKoyoKCgqjSgpSSgoKUgpSUAAIcAA0CgqaCgoKClJSCgpSCgoKUlIKClLrugoKClIKClIKCuoIAAxbSgoKUgpSUAAISAAkCgpSClIKmgoI=")]
-
 namespace go.go;
 
 using cmp = cmp_package;

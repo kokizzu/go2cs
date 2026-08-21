@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/coverage/cfile/testsupport.go", "testsupport.cs", "ACA84pKCqILKgIKkgIIABxCCgpiSgoKCgoKUkoKCzAAIEoKCgoKUgIK4goCCgILagIK4goCCpIKAgrgADBbkgoKUkpSCgoKUgoKUgoCCuJaygoKUkoKCgpSCgoKClIKogoCUgILGgoKU2IKAgsqCgoKCgoKUgoKCgoKAgraCgoKmgpSCgpS4AAkOhqKCgpSAggAHEIKCgIKkgoKAgrYAAhLigpSWgoKCgoKUgqaChIKUgoKCpqaClA==")]
-
 namespace go.@internal.coverage;
 
 using json = encoding.json_package;

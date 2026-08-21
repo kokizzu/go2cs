@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("ChannelSendToNil.go", "ChannelSendToNil.cs", "AAkGgoI=")]
-
 namespace go;
 
 partial class main_package {

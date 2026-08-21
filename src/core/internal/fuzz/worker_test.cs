@@ -1,8 +1,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("internal/fuzz/worker_test.go", "worker_test.cs", "ABswgoKCgpTWwoKUgoCShLqCgpSSgIK4goKEhIKCgoKE7MKClIKCgoCCAAgOwoKUgoKCgoK4goKUgpSClAADEMKCuIKUgoKCgoKClJKAgraAgqSSgIK2pqKCkoKAggAKCKKClqiSgpSCgIK2hIKCgoKCgoKCgqKCgoKClJSCgg==")]
-
 namespace go.@internal;
 
 using context = context_package;

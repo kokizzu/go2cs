@@ -46,6 +46,22 @@ using static go.math.rand.rand_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("math/rand/v2/chacha8.go", "chacha8.cs", "ABUwsoKCqMKCgqiygoKClAADFAAKAoKCgpSCgoKUgoKClNiygoKCgoKUlKaCgpSmgoKUqLKCgoKClA==")]
+[assembly: go.GoPositionMap("math/rand/v2/exp.go", "exp.cs", "ABI88oKCgoKCgpSClII=")]
+[assembly: go.GoPositionMap("math/rand/v2/normal.go", "normal.cs", "ABIugoKUAAIU8oKCgoKClJaUgoKCgqaClJSC")]
+[assembly: go.GoPositionMap("math/rand/v2/pcg.go", "pcg.cs", "ABcwkqiSgqiSgoKCgsySgpSCgqYAAxIADxCCgoKCgoKokgAIGpKCgoKC")]
+[assembly: go.GoPositionMap("math/rand/v2/rand.go", "rand.cs", "ACZQoqiQppCmkKaQppCmkKiigpSqooKUqJKClJIAH0KCgoKCpqqikgAQIoKCgoKCgoKCgoKCgoKmqqKClKqigpTOooKUqqKClKikqKSqooKClJCSrLKCAAcSgoIACxrqgqqgqKCqsKqwqKCooKaQppCqsKqwqrCqsKrSgpQACBSgqKCooKqwAAIUAAgAAAIS8A==")]
+[assembly: go.GoPositionMap("math/rand/v2/zipf.go", "zipf.cs", "ABo2gqaCruKCgpSCgoKCgoKCgoKqwoKUhIKCgoKCgpSCpg==")]
+// </GoSourcePositionMaps>
+
 namespace go.math.rand;
 
 [GoPackage("rand")]

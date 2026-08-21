@@ -29,6 +29,18 @@ using static global::go.@internal.cpu_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/cpu/cpu_test.go", "cpu_test.cs", "ABEggoK4qJKEhISChIKC+oKC1oKEgpaCgoCC")]
+[assembly: go.GoPositionMap("internal/cpu/cpu_x86_test.go", "cpu_x86_test.cs", "AA4egoK4goK4goK4goIACAiCgpTWgoSCloKAgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal;
 
 [GoPackage("cpu_test")]

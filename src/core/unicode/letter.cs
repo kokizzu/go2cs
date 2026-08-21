@@ -4,8 +4,6 @@
 
 // Package unicode provides data and functions to test some properties of
 // Unicode code points.
-[assembly: go.GoPositionMap("unicode/letter.go", "letter.cs", "AFm2AZKCgoKClIKmqIKCgoKCgpSClKaokoKCgoKUgqaogoKCgoKClIKUpqiylIKUgoKUpoKUgIKkgoKUqKSClKikgpSokoKUqqKCpoKCgoKCgoIAChaUlIKUpqiSgqiSgoKUlKiSgoKUlKiSgpKUlKiSgoKUqJKCgpSokoKClAALPAASAoKWgqiCgoKCgpSmgsyAgqQ=")]
-
 namespace go;
 
 partial class unicode_package {

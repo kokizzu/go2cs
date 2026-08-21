@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Patterns for ServeMux routing.
-[assembly: go.GoPositionMap("net/http/pattern.go", "pattern.cs", "ACVKgKSCACVYABUCgpSCgoKosoCCpIKClIKUhIKUgoKUgoKAgoK2qIKWgpSCgpSClIKClIKCgJSCpoKUgpSCgoKUgpSCgpSClIKUgpSCtuaCgqaCgqamgoKUlAAKNgAPAriUgqaClIKUggACFAAJAoKUlJSClJSUgpSq5oKYooKCgoLcgsqClIKUqJKClIKUgpSClIKUlJSCgpSmgpQAAhYACAKUpKSClKSUpKTGzKKUpKTKkoKUqLKCgoKClIKUgsyClIKUqJKCuIKCgryigpKCgIKUtoKklKqihJKCgoKUgpbKgoKClKaUgsjsgpSCtriClKampJQ=")]
-
 namespace go.net;
 
 using errors = errors_package;

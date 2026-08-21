@@ -8,8 +8,6 @@
 // turns it into formatted profile data. If the reader does not keep up
 // with the log, those writes will be recorded as a count of lost records.
 // The actual profile buffer is in profbuf.go.
-[assembly: go.GoPositionMap("runtime/cpuprof.go", "cpuprof.cs", "ADOIAQAIBIKUgpaCgoKCgpaCgoKCpIKCgpQAAhQACASUlpKClMqWAAIaABAOlJaCgoKClJYAAhDkgoKClJaCgriCloKCuIIAAxwACQIAAhoACgIAAigAEQKCgoKCgpSCgoKClA==")]
-
 namespace go;
 
 using abi = @internal.abi_package;

@@ -65,6 +65,19 @@ using static go.vendor.golang.org.x.net.nettest_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/conntest.go", "conntest.cs", "ACI80oCSgJKAkoCSgJKAkoCSgJKAkoCSgAAICqKCgoKUgpCSkpKCppIACAiSgoSCkoKAgqSAgriSgoCCpICCpJaAgszCgoSigoKCgoCCgpSmgoKClIKCloCCgraAguiCkqaAgvzChIKEgoKCooSCgoKCgoKCAAwSwoSChIKCgqKEgoKCgoKCggAMEJKEgoKCgILKkoSCgoKAgsyihISCgoKUgoKClITqwoKChIKygoKCgsSygoKClIKC1rKCgoKUgoIACg6igoSCooKCxKKCgoKUxISCgqrChIKCloKigoLEooKCgoLWooKCgoIADQ6igpSIooKCooLEooLEooLEooLEooLEooLEooLWhIKqooKAgoKClLjMooKAgqaCgoCCpICCpIK+soKCgpKClIKCgoKUgoKmgIIADBDCgoI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest.go", "nettest.cs", "AClKgoCCpICCgqSAgqSAgoKkgpiikoKCtsiCgqqigqqigqqigq7CgpiUxpSkotiUpMaUxpSkpKqigKaSxgACENKClIKAgraCtoK2graCgpSk7sKClIKAgraCtoK2graCgpSk6qKCgpSCgpSCgoKu4rakgpSCgpSqooKClLKCpq7CtqSCgpSygpSAgqSUpoKCgpSClICC1oCC2KaCgpSUgILGkpSAgsaAgqSAgsY=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest_windows.go", "nettest_windows.cs", "AAkSAAcQgoKClIKU")]
+// </GoSourcePositionMaps>
+
 namespace go.vendor.golang.org.x.net;
 
 [GoPackage("nettest")]

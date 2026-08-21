@@ -62,6 +62,20 @@ using static go.mime.multipart_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("mime/multipart/formdata.go", "formdata.cs", "ABZAAAoCAA0Q4oKYgoKCpoKAgoCCgsaEkoKAgraCgoK4goKCABAkgoKUgoKClKaCgoKClIKUgpSEgoKUmrKCgqaWhJSCgpSCgpSCmJKCgoKClIKUuIKClIKCgoKmgoCCpIKWhIKUgoKCgoKAgqSmgoKClJbmooKCgoKCpgAMHJKCgoKCgoLKAA0gkoCCgqSCgoKUgpQAFSiCgpQ=")]
+[assembly: go.GoPositionMap("mime/multipart/multipart.go", "multipart.cs", "ADeYAcaClIKU3LKClIKCuNaCgoKCggADFOKCABImooKUgtaCuICCpJaCgoKCpqaCgoKCpoKUqqIACBKCgqiCgoKUgoLMgpSCgpSCgoKClAACGgAKApSClKSktoK6gIKUpKTGgt6CgpQAAh4ADAKCgpSUhIKogoKUlJSCqKaCggAZOIKAgoCCgsYAAhLiAAIQ0qaigpSClIKChNyUgpaCgoKClIKWlJaClpTegoKWvrKClIKCpu6ClIK6goKUrsKClA==")]
+[assembly: go.GoPositionMap("mime/multipart/readmimeheader.go", "readmimeheader.cs", "AAse")]
+[assembly: go.GoPositionMap("mime/multipart/writer.go", "writer.cs", "ABk2ot6SAAcS4oKmgpSCgoKUlLSCxpSCqqKmgpSmgoKCgpSu4oKAgraCgpSWgoKUgoKCpoKCgpSmgsqC6qKCpoKqooKUqJKCgpSCqqKCgIKklIIACBKCgtaygpSCgpQ=")]
+// </GoSourcePositionMaps>
+
 namespace go.mime;
 
 [GoPackage("multipart")]

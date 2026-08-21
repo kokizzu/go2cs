@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("ArrayPassByValue.go", "ArrayPassByValue.cs", "AAwKgoSChISCgoSCgoKEgoKChIKEgoKEAAgWhJKCgoaCgoaCgoaCgoaCgoKGgoKGgoKChoKCgoaCgoLWgtikgoKmgoKCpoKCgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

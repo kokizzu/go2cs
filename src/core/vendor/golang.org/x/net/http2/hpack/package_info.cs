@@ -43,6 +43,20 @@ using static go.vendor.golang.org.x.net.http2.hpack_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/encode.go", "encode.cs", "AB1GotyCgqzShIKCgpSCloKClIKCloKUpoKClAACFAAKAoKCloKClqyygpSClIKokgACFPKCgoK6kqqigoKCAAIU8oKCAAIU8oKCgpSUgoKqooKCggACENKCgpSCgoKUAAIQ0oKCgoKClIKUAAIQ0oKUgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/hpack.go", "hpack.cs", "ABUsgs6CAAsiwtaCgoKUqAAMGgAUOLLKgoKCAAYWwqyyAAIU8KigqqKssgAKFoKCpoKCgqiSgoKClKa4psSClIKUgsqCrgAIAoKCkJKAkoCCpICCpAAIDLKCgpSCprK4uIKUgoKWgoKM0oKUgpSCgqYADSCAooDcwoKaqgAICtra1qiSgoKClIKClIKokoKCgpaCgoKCgoKUlIKCpoKClIKCgoKmgoKmgoKUgqaCgoKmgpTotoKWgoKClIKUgoIABBoACgKClIKUgoKUgpaCgoKCgoKCgpSCkqau8oKUgoKClNyUgpSCggAHEIKClIKCgoKClIKC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/huffman.go", "huffman.cs", "ABEq0oKCgoCCpNiygoKCgIKkAAkU0oK4ooKCgoKCgoKClIKClIKCgpS4goKClIKUgpSCgoKUppSAlKYADiaCAAYQgoKmgoKUlISChIKCgoKClJSClIKCgs6myIKCgoKCgoKCuICCqoKCtpSkpIKkgraCqqKCgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/tables.go", "tables.cs", "AClagoKokqiSgoKCqJKClIKCgoKUgIK2goKUgoKUAAIgAA8CgoCCtoCCpKrCgpSCgpQ=")]
+// </GoSourcePositionMaps>
+
 namespace go.vendor.golang.org.x.net.http2;
 
 [GoPackage("hpack")]

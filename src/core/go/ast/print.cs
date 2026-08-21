@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file contains printing support for ASTs.
-[assembly: global::go.GoPositionMap("go/ast/print.go", "print.cs", "ABQsopSkAAIYAAkCpsQACRKCgILKgoKUgoTaogAOHrKClIKCgoKUpIKClIKCgriUgoKUAAgUsoCCAAQaAAoCgoKWlKaCgoKCgoKCgpSUpoiCgLKUgsiCgoKCgoKClJSmgIKCpIKCgoKCgoKUlKaCgoKCpoCCgoKCgpSCgsiCpoKWkqaSgrg=")]
-
 namespace go.go;
 
 using fmt = fmt_package;

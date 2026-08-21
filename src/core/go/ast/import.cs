@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/ast/import.go", "import.cs", "AA8gwoKCppaUqIKCgpSCpoKWgoKCgoKC3IKmgoKClKaCgoKUpoKCgpSokoKUAAwauIKogoKogoKCgoKCgpSUgoKCgqaUgpSCuoKCqIKCgoKUlIK2gpSCAAYQgoKCgoKUgoKCgpS6goKClIKmloKCgpSCgoKCgtzMiA==")]
-
 namespace go.go;
 
 using cmp = cmp_package;

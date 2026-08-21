@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Implements methods to filter samples from profiles.
-[assembly: go.GoPositionMap("internal/profile/filter.go", "filter.cs", "AAwe4oKCgoKCgqaCqtKCgoKClIK4goKClIK4")]
-
 namespace go.@internal;
 
 partial class profile_package {

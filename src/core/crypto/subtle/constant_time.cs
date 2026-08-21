@@ -4,8 +4,6 @@
 
 // Package subtle implements functions that are often useful in cryptographic
 // code but require careful thought to use correctly.
-[assembly: go.GoPositionMap("crypto/subtle/constant_time.go", "constant_time.cs", "AAwawoKWhIKWqqCmkqiSrLKCloKCgryigoI=")]
-
 namespace go.crypto;
 
 partial class subtle_package {

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("MultiPointerEmbedPromotion.go", "MultiPointerEmbedPromotion.cs", "AA5CooKClIKCpoKCAAcSgoKmgoKmggAHFoKAgqQAIT6CgoKIhIKChIKGhoiCgoaChIKCgoiCgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

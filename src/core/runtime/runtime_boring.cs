@@ -1,8 +1,6 @@
 // Copyright 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/runtime_boring.go", "runtime_boring.cs", "AAsUpIKUqJA=")]
-
 namespace go;
 
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for go:linkname

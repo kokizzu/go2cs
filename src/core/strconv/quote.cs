@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:generate go run makeisprint.go -output isprint.go
-[assembly: go.GoPositionMap("strconv/quote.go", "quote.cs", "ABAmkqaCpoKmpoKCgpSCgoKCgpSCgoKClJSCpoKCgpSCgqaCkoKClIKCgraUlLS0tLS0tLSUgoKkgqSCgraCguiuwqqirLKqoq7CqqIAAhDSqqIAAhLiqqIAAhLiqqKssoKCgoKClJSClIKmprKClKSkpAACIgAUBIKClICkgqSCpMiCgpSChJS0tLS0tLS0gpS0tLSCgoKUgoKCgpSUgpSClIKClIK0goKClJKCgoKUlIKCgpS0tIKClLSCpIKqooIAAhDSgoKUrvSClIKCgpSElJS0uIKCgqa+puKClLSCtIKCgpSqkoKCgpSmgoKUloKClLqCqpKUhIKUpMzSgpKCgoKUpgACGAAKBIKUlJSUAAYSgoKCgpSCloKCgpSClIKCrLKClKzEgpSC")]
-
 namespace go;
 
 using utf8 = unicode.utf8_package;

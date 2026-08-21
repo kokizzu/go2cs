@@ -1,8 +1,6 @@
 // Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/internal/socktest/switch_windows.go", "switch_windows.cs", "AA0YwoKCkoKU2sKCkoI=")]
-
 namespace go.net.@internal;
 
 using syscall = syscall_package;

@@ -8,8 +8,6 @@
 // It is an internal package because these details are specific
 // to the Go team's test setup (on build.golang.org) and not
 // fundamental to tests in general.
-[assembly: go.GoPositionMap("internal/testenv/testenv.go", "testenv.cs", "AC9SwgAICqLKltyCgoKCgpSCgoKUgIKCpgAIEoKCgoKCgpSCgoKUugAGFrKCgpSCgrqkqqKCvrKUpKqiggADEMKCgoLKgpQAChKCgoLcAAwegoKCloKCgpSCloCCgqaCgoKClIKUhIKCgoKUgswAAhTygoKClIKU2JKClIKUAAcUkpSkqqKssoKClIKC6pKCgoKUgoKCgpSCgqYABhKSgryirLKCgpS+soK+soK6koKqooKCusiqooLcgoKC+IKCgILKkpSkrsKCguqSgoIAChQACAKEgoKClpSCgoKCgpaCgpSCgpSCuoCCzKKssoKU")]
-
 namespace go.@internal;
 
 using bytes = bytes_package;

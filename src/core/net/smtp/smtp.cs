@@ -15,8 +15,6 @@
 // Some external packages provide more functionality. See:
 //
 //	https://godoc.org/?q=smtp
-[assembly: go.GoPositionMap("net/smtp/smtp.go", "smtp.cs", "ADxqooKClIKqooKCgoKUgoKokqiygoKCgqYABRDygIKkgpSCqOKCgpSCgoIACArCgoLqwoKClIKCgoKCgqaAgqSC2sKAgqSCgpSCgoKs4oKClN7CgIKkgIKkgqzSgIKkgoKCgpSCgqKCgpS2tMSClJSCgpSClIKClAAGEPKAgqSAgqSCgoCCpICCtoLcsoCCpIIABxCCgoLe4oKClAAHMgAWAoCCpIKAgraCgpSSgIKkgIKCgpSAgsaCgIKkgIK2gIKkgoCCtoKClIKClIKClN7igIKkgpSCgtqigIKkgtqigIKkgtiygIKkgoKU2JKClA==")]
-
 namespace go.net;
 
 using tls = crypto.tls_package;

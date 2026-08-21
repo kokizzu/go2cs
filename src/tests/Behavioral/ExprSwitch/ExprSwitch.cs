@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("ExprSwitch.go", "ExprSwitch.cs", "AAwagoKmgqaCpqKmgoIALwaEgoKGgoKUtLSCxrS2goSCgpaKlKSkrIKUtLiChICktLS0tLTGhISUuIaAtKSkgqSCgqS4hICkhKSkgqTGhICkpIKk1oSUtLS2pIKktqSCpKSqgpS0voKUtLQ=")]
-
 namespace go;
 
 using fmt = fmt_package;

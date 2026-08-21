@@ -4,8 +4,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file defines operands and associated operations.
-[assembly: global::go.GoPositionMap("go/types/operand.go", "operand.cs", "AEKKAbSClAAKTgAlBIKClKSk2IKohIKClJSkpMqCgqiCyqKCgoKU2paCgIKCyoKCgoKUlIKCgIKClILIuoKWpoKokoKUpKSkpKSmgoKCgpSCgqiSgqQABhQACgKCloKCloKWgoKCloKCpoKCyoKmgt6CzICCgriClILKgIKUgpTugIKAgtqClpKCgoKUzIKCgqKClIKCgpSUzIKSgoKygpSCgoKClJSW")]
-
 namespace go.go;
 
 using bytes = bytes_package;

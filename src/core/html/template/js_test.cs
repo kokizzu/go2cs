@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("html/template/js_test.go", "js_test.cs", "ABccogBGlAGCgIKkgIK4gpaCAAkMggAMBqIAL2iCgIKkgriCgoCCAAoKogApXIKCggAJCqIAHkaCgoIACgqiAAAUAAtKgoCCgqqigpaAgoIACgqCAAgagoLKooK4ooLoooIACAiivoIACAiivoK4ooK4ooK4ooK4ooI=")]
-
 namespace go.html;
 
 using errors = errors_package;

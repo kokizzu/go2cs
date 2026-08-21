@@ -43,8 +43,6 @@
 // larger heaps by simply adding levels to the radix tree, which mostly costs
 // additional virtual address space. The choice of managing large arrays also means
 // that a large amount of virtual address space may be reserved by the runtime.
-[assembly: go.GoPositionMap("runtime/mpagealloc.go", "mpagealloc.cs", "AEC+AQAJAAAEFqKokqqiqJKmlLqSgpS8oqqiAAIQABASgoKssoIAeIACwriCgpSWlpaWlpassoKClKyy3uKogqiWuoKSgpSCyrqAggAHEIKEkoKClLiClMqUzAACIAAUEIKCgpSCgoKC3oKmAAQaAAgCloKmpoKCgpTIlqiCgpSCuu6CgrqClKiClpaCgoKCgoIABRwACAKEgpKUgpSCgoKmgoKCgoKCgoKUgoKClIIAAhLiqIKCgoLKpgAKJgAQAgAZOAANHgANHoKmgsiCggAGEIKEgpSCqJbMgoCCAAIaAAsCgoKmgrqEgriCpoKUuIKCgpTKgoKmlKaClJTMgoKCgoKClAAKFIKCpoKCgqiogoIAAh4ADwKogrqClIKAgoKCgoKUgoLagoLclJSEyoKUAAIUAAkCloCCpIKmgoKCppKUlIKmgoKCgpSCpgAJMJKClKySgpSokoKUqJKClKiSgpSu6oKUuoLe3oKUpg==")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

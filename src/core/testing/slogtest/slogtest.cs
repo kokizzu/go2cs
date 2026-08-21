@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package slogtest implements support for testing implementations of log/slog.Handler.
-[assembly: go.GoPositionMap("testing/slogtest/slogtest.go", "slogtest.cs", "ACtSAAsYAAkUAAsYpAAJEgAKFgALGAALGAALGgANHAAOHgAOHgAHEAANHIIABxCmAAoWpAAHNAAUBIKCgpSCmJKCgJKkgoKCgILIrsKykoKClIKCgoKAggAJEoKCgIKkuIKCgIKkuIKCgIKkgoKUuIKCgoKUgoKUAAgSooKmgoKClO6ApII=")]
-
 namespace go.testing;
 
 using context = context_package;

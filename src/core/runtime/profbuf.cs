@@ -1,8 +1,6 @@
 // Copyright 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/profbuf.go", "profbuf.cs", "AG/oAYKmgqaCpoKmggACEOSokqiSrOKCgoKCgoKmgpSClKrCgqiUgoLcgpSC/qKAgu6ClIKUgpSEgoKCgoKqwoKWgqiCgoKmlAACEPKCloKoloKCpoKUgpaCpoKUAAUQAAgCgpSCloC4goKCgtqCgriCABAkgoLMgoKCgoKCgpSCgpSCgoKWpoKCgqaClOyigpSCrLKCgoKClIKUAA4cwoKW3oKCgoKCgoCCtpaCgoKCpoKUpoKCgoKClJSUyoK6lJSCpoKClIKClJSClIKCgqiCgpSCgt6CgoKClIKohAAJFJY=")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

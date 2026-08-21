@@ -8,8 +8,6 @@
 // adding a canonical prefix (10 zeros, 2 0xFFs).
 // This library accepts either size of byte slice but always
 // returns 16-byte addresses.
-[assembly: go.GoPositionMap("net/ip.go", "ip.cs", "ACZqooKCgoKCgs6igoKCgoKssoKUgpSCgoKCgoKClIKUABguoqiSgIKkqqKA7syokoCCpKqiqqKAgqSqooCCpAACFgAIAgACEpKCgqaqooKUiJSqooKUgpQACRqygIKklKSkyIKCgqaokoKUgpSCgpSCgpQABRLigpaCpoCCpKaCgoKUqqKClKyygpSClKqigoKUkoKClIKssoKUgpSClKaCqqKCsoKCuIKCpoKUgoKmlKzigoKUqJKClKaygIKCgraClIK2grakqJKCgIKkgoKUgoKm2JAAAhDigpSCgpSCgpQAAhLigIKkpoKCgpQAAhYACAKCgpaCgpaCgpSCgqaCgoI=")]
-
 namespace go;
 
 using bytealg = @internal.bytealg_package;

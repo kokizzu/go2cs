@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/x509/root_windows.go", "root_windows.cs", "ABAeggACFAALAoSCgpSEgoKUhIKCloKCgoKUgoKWgoKCugAICLKCloKCgpSCgoKCgpSWqqKCgpSkpsaqwoKClLiEpoSSgoLMgpSkpKS4/oKC6NKCgpaCgoKogoKUggAGEIKClICUtqoACAKCgpSEgoSCgpSCgoKClICCtoKCgpSCgpaCgpKctpKCgpSEgoKWgIKCgoKCypSW")]
-
 namespace go.crypto;
 
 using bytes = bytes_package;

@@ -4,8 +4,6 @@
 
 // Package ecdh implements Elliptic Curve Diffie-Hellman over
 // NIST curves and Curve25519.
-[assembly: go.GoPositionMap("crypto/ecdh/ecdh.go", "ecdh.cs", "AEmWAZaiAAIU8oKClKiCABQ2AAwCgpSolqIAAhTygoKUqIKmooLKgoKU3Kaqog==")]
-
 namespace go.crypto;
 
 using crypto = crypto_package;

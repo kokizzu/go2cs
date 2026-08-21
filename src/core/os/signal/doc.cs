@@ -229,8 +229,6 @@ On Plan 9, signals have type syscall.Note, which is a string. Calling
 Notify with a syscall.Note will cause that value to be sent on the
 channel when that string is posted as a note.
 */
-[assembly: go.GoPositionMap("os/signal/doc.go", "doc.cs", "")]
-
 namespace go.os;
 
 partial class signal_package {

@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // These examples demonstrate more intricate uses of the flag package.
-[assembly: go.GoPositionMap("flag/example_test.go", "example_test.cs", "ABswgpiCAAQQotwACAyClIKCgpSUAAgSpqY=")]
-
 namespace go;
 
 using errors = errors_package;

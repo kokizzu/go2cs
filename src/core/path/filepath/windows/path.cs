@@ -9,8 +9,6 @@
 // depending on the operating system. To process paths such as URLs
 // that always use forward slashes regardless of the operating
 // system, see the [path] package.
-[assembly: go.GoPositionMap("path/filepath/path.go", "path.cs", "AB5uABsCAAIiAA4CAAIWAAgCrLIAAhLirsIAAhDSAAIUAAkCrsIAAhDSqJIAAhDSpoKClIKClAACFgAIAoKCgoKClIKCgsaogoKCpoKCsoKClIKUgpSClIKUgpSClJSCgoKUgoKCgoKUgoKUlAARcJKAgpSUpoKUgoKClKiCgoCCgpS2qJKCloK4ypaCgoKCgIK2goKCygACJAAPAoKClJSClAACIgAOAoKClJSClKqigoKUgoKClIKuwgACEuKuwg==")]
-
 namespace go.path;
 
 using errors = errors_package;

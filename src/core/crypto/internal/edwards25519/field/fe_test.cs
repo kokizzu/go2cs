@@ -1,8 +1,6 @@
 // Copyright (c) 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_test.go", "fe_test.cs", "ABkogqqigoKUpqKCAClWogAIEqKClKrCroLEgoKWgoKCgoSWgILIgoKCgoKWgoKCgpaCgoKCgoKCggAJCIKiqISUgIKmorqCgpSAgqgACR6ygoKCyoKClKaCsoSCgoSCloKElICCyrKCloKigoKUgqiCpoKCgpSokoSCgoKClIKopoKCgIIABBL+0oKUgoKEgpaEgoKUhIKEgriCkpSCgpaCgriCkoKUgoKEgpaEgoKUhIKChIKWkoKAgqTIgpKUlIKEgpaEgpaEgriCkoKCloKEgoKWloCCAAsIhAAnXIKCgoKCgsqCkoKEgoSClpaAgqaCuIKCkpSChIKWloCCyIKCkpKSlIKEgoKWmICCyIKCgpQ=")]
-
 namespace go.crypto.@internal.edwards25519;
 
 using bytes = bytes_package;

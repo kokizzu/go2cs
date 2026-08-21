@@ -285,8 +285,6 @@ does only basic sanity checking on decoded input sizes, and its limits are not
 configurable. Care should be taken when decoding gob data from untrusted
 sources, which may consume significant resources.
 */
-[assembly: go.GoPositionMap("encoding/gob/doc.go", "doc.cs", "")]
-
 namespace go.encoding;
 
 partial class gob_package {

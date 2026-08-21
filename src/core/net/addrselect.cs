@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Minimal RFC 6724 address selection.
-[assembly: go.GoPositionMap("net/addrselect.go", "addrselect.cs", "AA4cgoKUpoKClIKCgoKClAAKFrKCkoKCgoKCgIKkpgAIEoKClIIADRyApIKCgoKuwoKCgoKCgoKEgsyClIKUgt6ClIIAECyElITMgpSCAAkagpSCAAoYgoKEgpSC3gBImAHEgpSCgqYACx6CgpSCgoK4gpQAAhoADAKAgqSCgqaCgpSCgoKCgpSCgoKCgoKCgrg=")]
-
 namespace go;
 
 using netip = net.netip_package;

@@ -12,8 +12,6 @@
 // printed does not end in a newline, the logger will add one.
 // The Fatal functions call [os.Exit](1) after writing the log message.
 // The Panic functions call panic after writing the log message.
-[assembly: go.GoPositionMap("log/log.go", "log.cs", "AEqOAdKCgoKCqNKCgoL8kKaUkoKCgoKCgqaCAAIQ0oKUgoKUgoKCgoKCgpSCgoKCgoKCgoKUpoKCgoKCgqaUgoKClILsgoKCpgAIDoKUAAIS4oKu4oKWqIKEgoKCgoKCgoKmgoKCgpSogoKCgoKWgoKC1oKCAAQQwr7CvsK8soKosoKosoKosoKCqLKCgqiygoKqoqqiqJKAgqSosqjSgoLYkqqiqqKokqiSqJKu4r7CvsK8soKosoKosoKosoKCqLKCgqiygoIAAhTy")]
-
 namespace go;
 
 using fmt = fmt_package;

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "ABEwgoKUrKKCuqKCgpQ=")]
-
 namespace go.CrossPackageArrayZeroValue;
 
 partial class bufpkg_package {

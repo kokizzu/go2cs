@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAoWgqiC")]
-
 namespace go.FormatTypeAdapters;
 
 partial class typelib_package {

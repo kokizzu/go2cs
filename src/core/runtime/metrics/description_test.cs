@@ -1,8 +1,6 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("runtime/metrics/description_test.go", "description_test.cs", "ACE8AAkElIKCgoKUgqiCgoKClISCgoKUgoKUgpS4goKCpqKCgoKUgpQADQqChIKClIKCgpSCgpSCgpSClIKCgoKClIKCxoKCgoKUgtyClIKCgoKCgoKCgoKUgILG")]
-
 namespace go.runtime;
 
 using bytes = bytes_package;

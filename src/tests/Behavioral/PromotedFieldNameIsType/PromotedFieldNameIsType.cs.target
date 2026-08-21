@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("PromotedFieldNameIsType.go", "PromotedFieldNameIsType.cs", "ABMygoKEgoiCgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

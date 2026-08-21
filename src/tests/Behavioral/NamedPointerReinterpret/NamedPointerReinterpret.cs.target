@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("NamedPointerReinterpret.go", "NamedPointerReinterpret.cs", "AA8ogpIABhyCgoKmooKCgq6CgoLmgoKU1oKCgoKEgoKSgoSEioI=")]
-
 namespace go;
 
 using fmt = fmt_package;

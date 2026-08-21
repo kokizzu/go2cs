@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/http/cgi/cgi_main.go", "cgi_main.cs", "ABgkgpSCpPqigoKWgoKWgoKCloKCgoSClpSCgpSWhIKClIKCloKCgpSCgpaCyoKClAAMCJKUlJSkgqSCpIKCgpSCgoKUgIKCpIKCgqaCgoKmgqY=")]
-
 namespace go.net.http;
 
 using fmt = fmt_package;

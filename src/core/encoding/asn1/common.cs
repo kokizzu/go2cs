@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("encoding/asn1/common.go", "common.cs", "AGu8AQAIAoKCgpS0goLGtLS0tLS0goKCxoKCgsa0goLGgoLGxtqilKSkpKSkpJSkpKSClIKUpKQ=")]
-
 namespace go.encoding;
 
 using reflect = reflect_package;

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // CFB (Cipher Feedback) Mode.
-[assembly: go.GoPositionMap("crypto/cipher/cfb.go", "cfb.cs", "ABcugoKUgpSCgoKWypSCgpSCgr6yrLKmgpKUlO6E")]
-
 namespace go.crypto;
 
 using alias = go.crypto.@internal.alias_package;

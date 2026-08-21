@@ -11,8 +11,6 @@
 // request, which is typically less efficient than using a
 // long-running server. This package is intended primarily for
 // compatibility with existing systems.
-[assembly: go.GoPositionMap("net/http/cgi/host.go", "host.cs", "ACxOlKSkpKSkpAAbPoKClAACFAAJAoKCgIKCgoKCyIKm9tKCgoKWgoSCgpSAgqYADByAgqamgIKUpoKWooKUlIKClJaClICCpoKClISCgIK4goCCuIKWhJKCgpSUgpaCgpbugpSCgoKWgoKClICCpJKUgoKCgoKCgoKCgpSClIKCgpSCgpSCgoKClIKClIKUgoKUgoKCgpS0xoKCgpaAgoKClIK4goKCloLMgoKohIKC7uiigpS4ooKCgoIAChYAChamgpSkquY=")]
-
 namespace go.net.http;
 
 using bufio = bufio_package;

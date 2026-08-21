@@ -6,8 +6,6 @@
 //
 // This package is under development. The API may change without notice and
 // without preserving backward compatibility.
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/secure/bidirule/bidirule.go", "bidirule.cs", "AHWOAgAJAoKCgpSCgpSUrLKCgoKClIKClJSokoKAgqSokoKAgqSokgAJGKKCqJCowoKCgpSCgoKUqMKClIKUtIKClLS07oKCgriigoKCgpSCgriUyoKCgoKUgKS0tIKC1pSmooKCgoKUgoKClMqCgoKClICktLSCgtaU")]
-
 namespace go.vendor.golang.org.x.text.secure;
 
 using errors = errors_package;

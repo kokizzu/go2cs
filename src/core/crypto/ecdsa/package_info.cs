@@ -59,6 +59,20 @@ using static go.crypto.ecdsa_package;
 [assembly: GoImplicitConv<PublicKey, ж<PublicKey>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa.go", "ecdsa.cs", "AD964oKClIKUAAIQ0oKClAAQIrKCgpSCgpSmgpSkpKTKkqyygoKUqtIAAhTyAAIQ0oSCgoKUlISUpKSkpMjCgoKWgoKCgoKUqgAIAoKCgoCC7oCmgpTugIKmgqiCAAomAAoChIKCgpSUhIKCloCCppSkpKSkAAgI1oKCqIKEgoKUgoLMgpaChIKClIKCloKWpoKCooKU2sKClIKClJKClLrSgpSCgoKUzKoACAqAgoKAgoKCgoLqgoIAAxAADxqCgIK4goKCgqiCgpqiAAoWkoIAAhDygoKClJSEgIKmlKSkpKTIwoKCloKCqoKClIKCloKWgpaCgqaCgqaCgpaCgpbWsoKCipQAGSrylIKUgqaCgoKCgtjigpSUgoKC/IKCppT8goKmlPyCgqaU/IKCppSmooKCgoKClA==")]
+[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_legacy.go", "ecdsa_legacy.cs", "ABIoooKCloKCgoKssoKCgpaCgoKUAAcUAAkCgoKWgoKCipSmopaCgpSygoKCgpaEgoKCqIKCgoKCgqgAAhIACQKClIKClKaCgoKUhIKEgpSCqIKEgoKChIKChIKUgs4ACAiCgoKAgqSAgqSCgg==")]
+[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_noasm.go", "ecdsa_noasm.cs", "AAoWgqaC")]
+[assembly: go.GoPositionMap("crypto/ecdsa/notboring.go", "notboring.cs", "AAsWgqSC")]
+// </GoSourcePositionMaps>
+
 namespace go.crypto;
 
 [GoPackage("ecdsa")]

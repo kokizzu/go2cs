@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("math/rand/v2/rand_test.go", "rand_test.cs", "AC5EgoKSlM7CgoKClIKCgpSmgoKSgoKUgoKmgoKCgoK4goKCgoKCgpSUAAMQsoKCgpSmloKClpaWqpKCuIKCgoKClIKCgoKCAAYWsoKCgpSmlpKUgoKWlpaqkoK4goKCgoIABRTygqyCgoSCgoKCgoKCgoKCgoKUpsKCrIKChIKCgoKCgoKCgoKCgpSssoKClJSCgqassoKClJSCgqamgoKAgqSAgqSAgsiCgoCCpICCpICC+IKUqtTWlLiCloKCgoLKlIKSgM7EgoKCgsqCgoKClPiSgoKClJKkgoKoggAKEIKUkJKostqCgpSChJKCgqaCgoKClIKokoKCgoIAChaCpqKCgoKUpqKCgpSmgoKCgpS4ooKClKaCgoKClLiigoKClMqigpSmooKCgpSmooKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgpSmooKCgpSmooKCgpSmooKCgpSmooKCgpSoooKCgpSmooKCgoKClJCSlKrCgoKCgtyCgoKCgqKCguimgoKCgg==")]
-
 namespace go.math.rand;
 
 using errors = errors_package;

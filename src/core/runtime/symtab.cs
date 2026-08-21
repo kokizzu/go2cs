@@ -1,8 +1,6 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/symtab.go", "symtab.cs", "AEeeAbKCggAE/AEALwIAAiAADQKClIKCAAIgAA8GgpSChIKUloKUzJaEgoKmlJasspKElJaCggAJFIKU3oKEAA0cgqaCptiCgoKClIKCgqYAavwBAAoCgoKUAAIqABICgoKClIKCgoKCggALGoKCgoKoABs6goIADB4ADASChKaogpSCgoKCgpSCgpSClKiCgoKCloKCggAHLgASAoKCgpSCgqaSgqYAAhLigoKClJSUgpSCgriokoKUAAImABACgoLcgoKUgpIACBCokoKUgpKClKiSgpKClK7ygpKCuIKqooKSgpQAAhLigoKmAAcQgqaCqJIAAhgACQKoAAIkABACgoKUhIKCloKChIKWgpaCAAwagoKUAAIU8oKUqAAPKML4lqSCnLKCgoKCyoKC3IKCgoKClIKC/pSCloKCgpSUgoKSgpKCgoKClO6CgoKmgoKCgoKCgu6ClpS6gpaEgoKCgoKCgpSWgqaCgpSmgoKCgoKmgoKmpoKCgqaAgrYAAhgADAKCgpSCgpSUgqaC1oKCgoKUqJKCgpKSgoKCgoKUuIKmgoKUgqaCgpSCAAIcAAsCgpSqooKUgoKGooKUgoIAAhwAEAaCgpSCgpSChIKCgpSCgqiSooKCgoKClJQACyYADwiClA==")]
-
 namespace go;
 
 using abi = @internal.abi_package;

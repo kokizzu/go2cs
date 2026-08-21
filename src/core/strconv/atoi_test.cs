@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("strconv/atoi_test.go", "atoi_test.cs", "AMYC/gSmgoKCpoKCgqaCgoKmgoKCpoKCgqaCgoLKgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgpSCgoKC2oKCgoL+gpSCgoKC2oKCgoL+gpSCgoKCgpSC2oKCgoKClIL+gqaCpoIAGTCCgpSClNaCgoKCgoIACAyCgoKCgoLcgoKCgoKC3IKCgoKCggAIDIKCyoCCAAgKgoKC+IKClIIACBKC7rKSgoKC3IKClIK4gsqCyrKSgoKC")]
-
 namespace go;
 
 using errors = errors_package;

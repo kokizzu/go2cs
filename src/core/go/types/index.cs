@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements typechecking of index/slice expressions.
-[assembly: global::go.GoPositionMap("go/types/index.go", "index.cs", "ABYm8paUgqiEgqKUpoCU2oKCqIKClIKCgsqCyIKCgpS2gIKCgoLYgoK2goKClIKChIKCgqaSlqKEkoKSlIKCxoKCgsaAgoLWtIKkgpSUgoK4gqaCpoKUpoKCgoKUgoKUgoKCqIKCuJSCgoKWgoKCzIKWgtbCgoKCloKClIKCpoKCgoKUgoKUgoK4gtqCgoKCgpS2gIKCgti4goKClpaCgoKYkoKCmoKylICC2LbUuoKCgoK4goIACBTSgoKUlJTe8oKEgoKCloKWgpaCgoKCqKaigqiCgqiCgpaUgoKogoKo3uKCkpSCgoCCgIKCgpS2pJS4goKUlIKCmJKClA==")]
-
 namespace go.go;
 
 using ast = global::go.go.ast_package;

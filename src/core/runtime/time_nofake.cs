@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !faketime
-[assembly: go.GoPositionMap("runtime/time_nofake.go", "time_nofake.cs", "ABJAAA8CABAosoKU")]
-
 namespace go;
 
 using @unsafe = unsafe_package;

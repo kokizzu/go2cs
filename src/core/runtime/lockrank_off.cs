@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !goexperiment.staticlockranking
-[assembly: go.GoPositionMap("runtime/lockrank_off.go", "lockrank_off.cs", "ABEgpoKmgqyypoKssqzYuLi4uLg=")]
-
 namespace go;
 
 partial class runtime_package {

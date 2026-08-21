@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("encoding/binary/varint_test.go", "varint_test.cs", "AA8cgoKCgriCgoKmgoKCgoKUgpaCgoKWgoKUgriCgoKCgpSCloKCgpaCgpSCABgygoKClIKCuIKClIK4goKCgoKCloKCgpSCAAsOogADEoKClIIAFzKCkpKCgJKkgILsgoKCloKCgoKUgILIgoKCpoKCgoK6ooKCgoLKooKCgoI=")]
-
 namespace go.encoding;
 
 using bytes = bytes_package;

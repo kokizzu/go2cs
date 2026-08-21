@@ -4,8 +4,6 @@
 /*
  * Line tables
  */
-[assembly: go.GoPositionMap("debug/gosym/pclntab.go", "pclntab.cs", "AEuiAQAMEoKCgoKUgoKUgoK0tLSCtJSmgpKs0oKUgq7igpSCgqYAAhYACAIAAh4ADgKCAAcYooKUqNKCgoIABhCEgpS6ppaCgoKUtLS0tLS0tLSkloKEhpiUgoKCgoKCgoKCgqSCgoKCgoKCgoKkgoKCgoKCgoKCgqT65IKCqIKCgoKCgoKCgoIABxCU2LKSgpSWgqiykoKCgoKCgqaCqJKAgqSCgoKokoCCpIKCgqiSqJKClKiyAAkWkqiSgoKUqJKokoKUAAgUsoKokqi2ppSmgKKAooCigKKAqrKCuIKClIKCqMKCgpSClJSCgoKCrLKUkpKCgqYAAhLigpaSkpKSkpKCgoKClMqClIKClIKmppSo4oKCqIKClIKC6OKCgqiCgpSCgoKCgpSmkpSCgIKk6OKCgqiCgoKcsoKCgoKCgpSUlIKCpujSgoSClISCgoKmgoKCgqbc8oKCqIKC")]
-
 namespace go.debug;
 
 using bytes = bytes_package;

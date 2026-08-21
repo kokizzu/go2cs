@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "ABQqgKSA6ICkgAAJDICkgoSClqaChIKW")]
-
 namespace go.ItabLateRegistration;
 
 using fmt = fmt_package;

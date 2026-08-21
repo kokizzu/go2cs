@@ -5,8 +5,6 @@
 // Package boring provides access to BoringCrypto implementation functions.
 // Check the constant Enabled to find out whether BoringCrypto is available.
 // If BoringCrypto is not available, the functions in this package all panic.
-[assembly: go.GoPositionMap("crypto/internal/boring/doc.go", "doc.cs", "")]
-
 namespace go.crypto.@internal;
 
 partial class boring_package {

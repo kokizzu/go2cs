@@ -4,8 +4,6 @@
 // SHA512 block step.
 // In its own file so that a faster assembly or C version
 // can be substituted easily.
-[assembly: go.GoPositionMap("crypto/sha512/sha512block.go", "sha512block.cs", "AGLAAYKCgoKCgpaCgoKChJaEgoSEgoKCgoKCgpaCgoKCgoKChJY=")]
-
 namespace go.crypto;
 
 using bits = math.bits_package;

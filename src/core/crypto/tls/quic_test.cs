@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/tls/quic_test.go", "quic_test.cs", "ABw2griSlKaCuJKUAAcQgoCCpIKUgIKkgpSYpMiCgIKkgpSYpAAKDKKCgoKAgsiCgoKClJSCgoKUlKSkpICCxoKCtqSCgoCC2IKUpIK2pILKgoKEgoSChICCpoCCpICCpICCpICCpIKAgqSAgqSClIL6goKCgoSChIKCgoKAgqSCloKCgoKAgqSCuIKCgoKEgoSCgoKCgpSCgIKCtpSUgILIlIKCgoKCgoCCpoKCgoKCgpSAuMiUgoKCgoKCgIKmgoKClIC4yIKCgoKCgoKAgqaCgNz4goKCgoSChIKCgoKCgpSCgr6ygoKCgoKCgqKCgIKAksaCgIKAksaUgILIgoKCgoKCgoKCgoKUlIKCgoKAgqSC+IKCgoKEgoSChIKCgIKkgoCCpIKAgqaAkqSAksiCgoSCgoKCgIKmgpSClIKUgriCgoKCgoKUgoK4goKCgoKUgoK4goKCgoKEgoKEgoKCgoKAgqSCloKCgoKClKSUgIKkgpSCgpSCgpSCuIKClIK4goKCgoKChIKCgoSCgoKCgoCCpIKWgoKCgoKUgpSUgIKkgpSCgoKUgqaAgg==")]
-
 namespace go.crypto;
 
 using bytes = bytes_package;

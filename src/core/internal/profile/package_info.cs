@@ -64,6 +64,23 @@ using static go.@internal.profile_package;
 [assembly: GoImplicitConv<go.@internal.profile_package.ValueType, ж<go.@internal.profile_package.ValueType>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/profile/encode.go", "encode.cs", "AAsagqyygoSCgpaCgoKClIKCgoIABhCCgpSCgoKCAAYQgoKogoKWgoKClKaClKaCgoKWgoSAgoKmgoK4goKUgpSClIKUgpSCgoKCgoCCpAAVDoKCgqiCgoKogoKCqIKCgqiCgoKogoKUgpQABhiCgoIABhrShIKCgoKWgoKCgoKWgoKCgoKAgoKClLaWgoKWgoKCopKCgoKUpoKUgpSCgpSWgoSAgqaAgoKkooKCloKCgqaCpoKCAAwWgqaCgoKUggANGIKCgriCpoKCggAOGoKmgoKCgoKCgoKCggAcIoKmgoKCgoIADxSCgoK4gqaCggAMFoKmgoKCgoIAEiKCgoKClKaCgpSCgpSC")]
+[assembly: go.GoPositionMap("internal/profile/filter.go", "filter.cs", "AAoe4oKCgoKCgqaCqtKCgoKClIK4goKClIK4")]
+[assembly: go.GoPositionMap("internal/profile/graph.go", "graph.cs", "ADyKAaKClKqigpSqoqrSgIKCgoKUgpSmgoIACRaSqJKCgpSAgqaW+tQACC6ygoCCuICCpqaCpoKmgoKCzIKCgqamgqaCgoKCggAQKKKClKjCgoKCgpKCgpSClIKUgpSUAAcSgoCCpIKCgoKCgoKmgoKCpoKCloKmlKimlIKCgpSClIKUlAAGEqKUpKQACRKCgpS4goKUvtKCgoKCgpSCgpSUpoKCgpSmsoKAgqaAgqSmgoKUyoKowoKClKaUgoKUgrqShISCloKClIKUgpSUrLKCgpaCqJKCgpTKgqaCgpaCgoKWgoSmgqaCgpQ=")]
+[assembly: go.GoPositionMap("internal/profile/merge.go", "merge.cs", "AAwq8oKUgoKWAAYQlIKChMqWgoK6gqaorNSAgqaCgoKogoKCqIKCgpSmgqaCgoKmABQuou6ClIKCgpSCgoKCgoKCyoKAgoKUpIKCgqiSgoKWgoKUhIKClIQADBqigpaAgoKmgu6CuIKAgoKkgoKCqJK4lIKUgoKClJSCAAgSooKWgIK4goCCgoKkAAsYloKCgqqmpIKCgrqUtAAJDAAHEIK4pqKClICCpIKAgoKk7oKCgqiSAAweooKAgriigoKCgoKUgoKUgoCCgraCqAAKHIKs0oKWgpaCgqaqog==")]
+[assembly: go.GoPositionMap("internal/profile/profile.go", "profile.cs", "AHH4AaKCgpaCgoKUgoKUloKCloCCpOyCgpaCgIKmgIKmqNKCgoKSgt7UgoKUgoLMgoKClIKUlIKCgpSClJSCgoKUgpSCgIKCtoKAgoLarLKCgoKCqIKCgoKUgsyCgoKUgoKmgrqqpIKAgqSCgpSCloKCgpSCgoKClIKClIKCgoKClJSCgoKUqIKCgoCCpIKUgoKAgsqCtpSogoKCgpSClIKUgpQABhCu4oCCppaCloSCgpSCgpSCgpaCgoK4gqzSgpaCloKCqKqigoKmqqKCgqamsoKUqLKChIKAgqSAgqYABBa0koKogoKUgoCCtqiSqJKClIKClKiSgpSCgoKCpoKUgoKCuA==")]
+[assembly: go.GoPositionMap("internal/profile/proto.go", "proto.cs", "AClYgoKCpoKCgpSmgoKmlIKmgpSCgpSCgoKCgoKUgriCgpSmgoKmgoKUpoKUgoKUgoKCgoKClIK4goKmgoK4goKUuIKClKaigoKCgoKCgqaCkqaCpoLWgoKCgoKUgoIACAqCgoKUgoKCgpSCgsaClIK0goKClIKUgrSClIK0ptaCgpSmooCCpIKChJKCgpSClICCtqaigIKkgqailIKCgoSAgqSUlIKAgqSCpqKAgqSCpqKClIKChICCpJSUgoCCpIKmgoCCpIKmooKAgqSCpqKAgqSClJQ=")]
+[assembly: go.GoPositionMap("internal/profile/prune.go", "prune.cs", "AAsisoKEgoKCgIKUgpSCgtyUlpSUzLiCgoKCgpSClIKClIKCAAUQopKEgoCCpIKAgraU")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal;
 
 [GoPackage("profile")]

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || windows
-[assembly: go.GoPositionMap("net/sock_posix.go", "sock_posix.cs", "ABAk0oKClICCgqSAgoIAFzKClICCgqSkgIKCpLaAgoKkpoKUpJSkgpSmooKCgoKCpJSAgriCgoKAgqSAgtiCgoKAgqSAgqSUgIIACRKCgqKClKSmooKAgqSCgIKmgoKAgriAgqSAgqSAgqSCgqaiAAES8oCCpJKUpKS2goKAgqaCgoCCtoCCpICCpIKC")]
-
 namespace go;
 
 using context = context_package;

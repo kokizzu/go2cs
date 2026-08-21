@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Simple not-in-heap bump-pointer traceRegion allocator.
-[assembly: go.GoPositionMap("runtime/traceregion.go", "traceregion.cs", "ADBWsoKClIKogoKCgrqogoKCgoKogqiCgrqCloKCruKCgoKClICCgqQ=")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

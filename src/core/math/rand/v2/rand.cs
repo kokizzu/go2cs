@@ -15,8 +15,6 @@
 // This package's outputs might be easily predictable regardless of how it's
 // seeded. For random numbers suitable for security-sensitive work, see the
 // [crypto/rand] package.
-[assembly: go.GoPositionMap("math/rand/v2/rand.go", "rand.cs", "AChQoqiQppCmkKaQppCmkKiigpSqooKUqJKClJIAH0KCgoKCpqqikgAQIoKCgoKCgoKCgoKCgoKmqqKClKqigpTOooKUqqKClKikqKSqooKClJCSrLKCAAcSgoIACxrqgqqgqKCqsKqwqKCooKaQppCqsKqwqrCqsKrSgpQACBSgqKCooKqwAAIUAAgAAAIS8A==")]
-
 namespace go.math.rand;
 
 using bits = go.math.bits_package;

@@ -8,8 +8,6 @@
 // The mcentral doesn't actually contain the list of free objects; the mspan does.
 // Each mcentral is two lists of mspans: those with free objects (c->nonempty)
 // and those that are completely allocated (c->empty).
-[assembly: go.GoPositionMap("runtime/mcentral.go", "mcentral.cs", "AC9gkoKCgoKqoqqiqqKqotikgoSCgoKCAA4ghIKWgoCCpoKUgoKClICUgoIACxaCgoKUgJSUgoKCgqbIlIKCgoKogoKogoKCgoKmgoKUgpSohN7igpaClu6mqAAHEIKUlLjMkoKEgoK6goKC")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

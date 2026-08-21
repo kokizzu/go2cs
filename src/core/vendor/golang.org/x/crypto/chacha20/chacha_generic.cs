@@ -4,8 +4,6 @@
 
 // Package chacha20 implements the ChaCha20 and XChaCha20 encryption algorithms
 // as specified in RFC 8439 and draft-irtf-cfrg-xchacha-01.
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20/chacha_generic.go", "chacha_generic.cs", "ADSQAQAMCILmooKUuIKCgqSWggAJFMoADSCygoKCgoKCgoKCgoKCAAIWAAwKgoLegpSCAAMcAAoCgpSClIKCqIKCgpSCgpSClILMgoKkzoKClIiigoKCgoKCgrqCgoKCuIKCAAEcACAUgoKCgrqUloKCgpaUgoKCloKCgrqCgoKCgoKCgoKCgoKCgoKEhL7oguaCgpSCloKCgoKCgoKCgoKCgoSUgoKCloKCgpaCgoKCgoKCgoI=")]
-
 namespace go.vendor.golang.org.x.crypto;
 
 using cipher = go.crypto.cipher_package;

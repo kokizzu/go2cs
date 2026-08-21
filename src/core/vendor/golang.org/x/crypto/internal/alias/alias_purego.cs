@@ -4,8 +4,6 @@
 //go:build purego
 
 // Package alias implements memory aliasing tests.
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/alias/alias_purego.go", "alias_purego.cs", "ABAiogACFuKClA==")]
-
 namespace go.vendor.golang.org.x.crypto.@internal;
 
 // This is the Google App Engine standard variant based on reflect

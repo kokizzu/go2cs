@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !s390x || purego
-[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_noasm.go", "ecdsa_noasm.cs", "AAwWgqaC")]
-
 namespace go.crypto;
 
 using io = io_package;

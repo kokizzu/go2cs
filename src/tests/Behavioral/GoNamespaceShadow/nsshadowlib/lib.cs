@@ -1,5 +1,3 @@
-[assembly: global::go.GoPositionMap("lib.go", "lib.cs", "AAoSgqqCqoI=")]
-
 namespace go.go;
 
 using math = math_package;

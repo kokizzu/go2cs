@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("zvars.go", "zvars.cs", "")]
-
 namespace go;
 
 partial class main_package {

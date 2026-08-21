@@ -50,6 +50,21 @@ using static go.path.filepath_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("path/filepath/match.go", "match.cs", "ABZYABgCgoKCgoKUpriCgpSClKaCgpSClIKUgri0qsKCgpSCgoKClJSC2LS0gvisAAgIgoKClKaSgoKClISCkoKWgoKSgoKUkoCCpIKCgIK2gpSUgriCgpSClKaCgoKmpoKClJS2gpSo0oKClIKCgoKmgoKUgoKUAAIWAAgCprSSgqiAgqSCgIKkloKCgpSWgqiCloKCgpSCgoKmqJKUpqTKsoKUpqSkspQABBAACAKCgoKUgpSCgpSUgoSCgoKUgqbaooKClA==")]
+[assembly: go.GoPositionMap("path/filepath/path.go", "path.cs", "ABxuABsCAAIiAA4CAAIWAAgCrLIAAhLirsIAAhDSAAIUAAkCrsIAAhDSqJIAAhDSpoKClIKClAACFgAIAoKCgoKClIKCgsaogoKCpoKCsoKClIKUgpSClIKUgpSClJSCgoKUgoKCgoKUgoKUlAARcJKAgpSUpoKUgoKClKiCgoCCgpS2qJKCloK4ypaCgoKCgIK2goKCygACJAAPAoKClJSClAACIgAOAoKClJSClKqigoKUgoKClIKuwgACEuKuwg==")]
+[assembly: go.GoPositionMap("path/filepath/path_windows.go", "path_windows.cs", "AAgawoKUpqiCqIKCgoKApLSC1paClqaCuJSCgpSmgoKCogAEFgAIApqyAAcWggAKBIKCpoKUpoI=")]
+[assembly: go.GoPositionMap("path/filepath/symlink.go", "symlink.cs", "ABMggoKEgpSCgoKCgpSCgsyWlLbOooKCpsqClKaUqoKWmIKCloKClKqCgpaCgpamloSClIKUgoK2goKCmKKCgqaClJSm")]
+[assembly: go.GoPositionMap("path/filepath/symlink_windows.go", "symlink_windows.cs", "AAoesoSSlqiSgoKWhIKClISqooIAAhwACwKCloKWgpaEgoKEloKCloSCgpSShJaWhKaCgoKUgoKU")]
+// </GoSourcePositionMaps>
+
 namespace go.path;
 
 [GoPackage("filepath")]

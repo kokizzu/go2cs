@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package hash provides interfaces for hash functions.
-[assembly: go.GoPositionMap("hash/hash.go", "hash.cs", "")]
-
 namespace go;
 
 using io = io_package;

@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("image/image_test.go", "image_test.cs", "ABgogoKCABUugoKCgoKUgoKUgoKClIKClIKCgpSCgpSCgpSCgoKmgoKCAAgItLKCgqaC1piioqKioqKioqKioqamgoK4gpSCloKCggAGEIKCgoK4gtyCnIKCgoKCppyCgoKCggAUCpSCgqiCAAEgggABILaCgoK2toKC/qK4goKClIKChKjKgrKSgoKCgtyCkrKigoKCgtyigoSCuKKCgoSCuKKChIK4ooKChIK4ooKEgriigoKEgriigoSCuKKCgoSCuKKChIK4ooKChIK4ooKEgriigoKEgriigoSCuKKCgoSCuKKChIK4ooKChII=")]
-
 namespace go;
 
 using color = image.color_package;

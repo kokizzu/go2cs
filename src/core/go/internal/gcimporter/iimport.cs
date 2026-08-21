@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 // Indexed package import.
 // See cmd/compile/internal/gc/iexport.go for the export data format.
-[assembly: global::go.GoPositionMap("go/internal/gcimporter/iimport.go", "iimport.cs", "ACI+goKClKaCgoKUACZUAAsCgoKCgIKClMqEgramgoSCloKClIKEABIqhIK4hIKCgoKChIKUgoKCpJaEgoKCloKWhIKClIKCAAYQgpaCqIKGloIAHDq0gIKmgoKWgoSmgoCCpoKClIKCgqaCgIKkgoKmooCCpoKWgoKEgpQAAhLigpSCgqYACxiigoSUhLaEtoKClIK6ooaCooKWgoSCgoKCuoKCgoKCpoQABRCymIKihqKEgoKUgoKCgpSc9oS22IKmwoKUloCkpqaCgqamgoKmgramwoKWlKSmgpSkpKSmpqKEgoKUgpaCgoKCgoKmgpaCgpSClIKCgoK4goKCgoKClKaCpoKCgqaigpSWgpSmooKCooKUgsiigoKCgoKCyqKmgoKmoKKgpKKArIKCpKSkgqSCpKSCpoSCgoKCgoKChIKUpoSCgoKWgoKCiKKCloKWgoKmgpSCgoCUppKmgpiCgoKilIiypoKUgoKUAALbAYIABeIBgqaCgoKCpoKCgpSCgpSmgoKClKaigoKCpoKmgoKClKaCgoKUpoKCgpSmlICCtoIABBDEgoKUgoKU")]
-
 namespace go.go.@internal;
 
 using bufio = bufio_package;

@@ -1,8 +1,6 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("encoding/json/tables.go", "tables.cs", "")]
-
 namespace go.encoding;
 
 using utf8 = go.unicode.utf8_package;

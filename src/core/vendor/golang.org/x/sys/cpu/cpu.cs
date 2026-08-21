@@ -4,8 +4,6 @@
 
 // Package cpu implements processor feature detection for
 // various CPU architectures.
-[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu.go", "cpu.cs", "ANoBlAOCgoIAFCSCgoKCgoKClJSClIKCgpSUgpSkpIKmgoKClJaCgoKCqLaCgpaCgpaCgpY=")]
-
 namespace go.vendor.golang.org.x.sys;
 
 using os = os_package;

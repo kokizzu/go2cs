@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Buffered reading and decoding of DWARF data streams.
-[assembly: go.GoPositionMap("debug/dwarf/buf.go", "buf.cs", "AClUgqaCpoKmotaCgoKUgoKCpoKCgpSCgoKmgKSCgoKCloKCgqaCgoKUpoKCgpSClLiCgoKUpoKCgpSq0oKCgoKCgoKmqJKCqJKCgoKU2JKUpKSkpILWsoKCgqSUpoKCggAJFII=")]
-
 namespace go.debug;
 
 using bytes = bytes_package;

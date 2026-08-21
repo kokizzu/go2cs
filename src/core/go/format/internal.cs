@@ -5,8 +5,6 @@
 // the same (but for this comment and the package name). Do not modify
 // one without the other. Determine if we can factor out functionality
 // in a public API. See also #11844 for context.
-[assembly: global::go.GoPositionMap("go/format/internal.go", "internal.cs", "ABouAAgOuILegoKCpoKUyoIABxKCgoKUgsqUgriorAAFEISSgoKUupKCgpSUgrqCgoKUtMaClIK6goKCgpS6gqiWgoKUqqI=")]
-
 namespace go.go;
 
 using bytes = bytes_package;

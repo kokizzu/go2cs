@@ -1,8 +1,6 @@
 // Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/cpuflags_amd64.go", "cpuflags_amd64.cs", "AA4alISM")]
-
 namespace go;
 
 using cpu = @internal.cpu_package;

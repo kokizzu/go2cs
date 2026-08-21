@@ -43,6 +43,19 @@ using static global::go.debug.elf_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("debug/elf/elf_test.go", "elf_test.cs", "ACtYgoKCgg==")]
+[assembly: go.GoPositionMap("debug/elf/file_test.go", "file_test.cs", "AMgDiAeigoSCgoKCgIK2lIKClJKCgpSCgpSCgqaCgpSCgqaCgoKUgoKClIKCgpSClIKCgpSCpoKUggAIEMKCgpSSgoKUgoIAxQOGB4KCkpKCgoKUgoKUgoKCgpSCgoKmgoKClIKUgoKUggAJDqaCgpSCgpSCgoKCgpSClJSC+KaCgpSCAA4ggoKUgqiigoCCpICCpIKUgoKClKSkpIKClIKogoKUgoKUgoKClKaCuLSUpIKCgoKUgoKCpoKCgpSCuoKogoKElIIACQ6igoKClJSChIKCloKCgoLsADZohIKEAAoWlqiCgqiCgpSCgqiCgoKCgoKClIKClIKCqJQABxAABxAABxCCAAcQpgAJFO4AChYACRQABxAABxKEgoKUlAAIEoKWgoKWAAgSguiCiIKCuKKCgoKUlIKCloLohJKCgpSEgoKWgoKEgoKUgpSCgoSChIKCloKCgrjCgoKClJKCgoKClIL6woKCgpSSgoKCgpSC")]
+[assembly: go.GoPositionMap("debug/elf/symbols_test.go", "symbols_test.cs", "AA0ekqKCgoKCgIK2lIKClJKCgoKklILWgpSC")]
+// </GoSourcePositionMaps>
+
 namespace go.debug;
 
 [GoPackage("elf")]

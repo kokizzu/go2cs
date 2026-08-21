@@ -11,8 +11,6 @@
 //	are done modulo 65521. s1 is initialized to 1, s2 to zero.  The
 //	Adler-32 checksum is stored as s2*65536 + s1 in most-
 //	significant-byte first (network) order.
-[assembly: go.GoPositionMap("hash/adler32/adler32.go", "adler32.cs", "ACBMgK7SgoKmgKSA3oKCgoLmgoKUgpSCqJKCgoKClIKCgoKCgoKCgpSCgpSCgpSmgoKmgKSCgqiQ")]
-
 namespace go.hash;
 
 using errors = errors_package;

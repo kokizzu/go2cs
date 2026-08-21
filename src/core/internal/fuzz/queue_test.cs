@@ -1,8 +1,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("internal/fuzz/queue_test.go", "queue_test.cs", "AAwSpJKAgqSAgriCgoKAgqSAgqTcgoKCgoCCpJSkgoCCtoKCgII=")]
-
 namespace go.@internal;
 
 using testing = testing_package;

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !linux
-[assembly: go.GoPositionMap("runtime/stubs_nonlinux.go", "stubs_nonlinux.cs", "AAoUkg==")]
-
 namespace go;
 
 partial class runtime_package {

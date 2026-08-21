@@ -1,8 +1,6 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/syscall/windows/syscall_windows.go", "syscall_windows.cs", "ABMqwoKUgoKCgpQA3AHcA6KigoKClIKC7oKUAAoQpoKCgpSCgoKUpqaCgoKUgoKClKYAEiyCgoKUgoKUACdkkgA4hgGygoKCgpSClJSszA==")]
-
 namespace go.@internal.syscall;
 
 using sync = sync_package;

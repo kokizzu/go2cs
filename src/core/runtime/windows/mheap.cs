@@ -4,8 +4,6 @@
 // Page heap.
 //
 // See malloc.go for overview.
-[assembly: go.GoPositionMap("runtime/mheap.go", "mheap.cs", "AKkC8AWyrsIAYtQBgqbCgoKClAACIAANAoKEhIKCgpSCgoKClIKCgpSCgoKmggAHIIKokqiSAAIeAAwCqqIABBbippQAAxTigpQAAxTiAAIQ0oKClJSkAAQeABAMgpSCuIKmgpKUgoKUAAIS4oIAAhLi3IKUquKCgoKCqLKChIKCgoKCgoIABxKYgpYAAhIADQ6CzISCgoKWgoKUgIKClJSClLiClIKWlIKogoKmgqaCloKCgpQAAhIADQyEgoKCgpSCgpaCgoKCgrqCgoKWgoKCgIKCgoKUyu6ClIKCgpSCgpaCAAkekgACEuiypoKUlAAFKAARAoKUqqKCgoKCgoKClAAGHAAMAoKChIKCAAgSAAcSgoK4goKUlLjMgpQAAh4ADAKmgqaCggACGgAMAoSClKaCgoKUpoKCAAIaAAwChJSCgoK4AAUoABUEgoK6uoKCloKCgqiCgoKCAAcShJQACBSCgoKCgoKUgoKmgpaUgoKCgoKClIKCuKaUhAAAFgAKAoKApqaCgraAAAgSgMqCgIKkgt6y3IKWiJaCgpSoloKmgqaCgqaCgoKUpKSkpJaCgoKCpqr2goKUgoKCgoK4goCCgoKUgpSUlLiCgoKCugAKGAAHFITcgpa6ruLehKaCgsiCgoKClqbKgLiUgoKmgraC3qiC3qiCgqiCgqiSlIKCgoKogpSCgpSUgoKUggADHgAOBIKCgoKogoKCAAgGsoSUgraClIKClIaCtNyCgoKmgpSkpKSklpaCAAIUAAoIgpaEhIK6koKAuMSCgoKCgoKCgoKCgoKCgoKCgqaCqJKC1rKClJSClJSClJSCgqaC1rKCgpSCpqaUgtaygoKUgpSmlIKq0oKogqiCpoKClgAPNLKCgoKosoKCggAFEgAIAoKCzIKEgoSWgpSCgoKWgoLcsoKCzIKEhIKEgoKCgpSClIKCrMSCgoKCgpSCgpSClJQADyLCgoKCgoKCgoLKgoKCpoK4gpSogoKCqJKCgpSCggAiSJKokpaCgoKCyoKUgqbMgoLYpICCpoKChIKCgoLKgoKmgpQABxKCgoSCgrqC1oKCgsyChISGkoKClIKEAAwWsoKCgoKCggAXMKKmgqaCgqqigoKC2sKUgoKCgqSCgoKCpIKCgoKkgqaCgqSCAAwWkqqiAB46woKmgoKmgtqigpaCgILKuICCgri4gKaCgoLKgoKogoSCAAIS4gACIgAOAoKCgqaClIKmgoKCqqKCgoKCgpSUgoKUpoKUlA==")]
-
 namespace go;
 
 using cpu = @internal.cpu_package;
@@ -15,6 +13,7 @@ using sys = runtime.@internal.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
+using System.Runtime.InteropServices;
 using runtime.@internal;
 
 partial class runtime_package {
@@ -2204,9 +2203,9 @@ internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr 
 // The creator frees these.
 
 // gcBits is an alloc/mark bitmap. This is always used as gcBits.x.
-[GoType] partial struct gcBits {
-    internal sys.NotInHeap _;
-    internal uint8 x;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 1)] partial struct gcBits {
+    [FieldOffset(0)] internal readonly sys.NotInHeap _;
+    [FieldOffset(0)] internal uint8 x;
 }
 
 // bytep returns a pointer to the n'th byte of b.

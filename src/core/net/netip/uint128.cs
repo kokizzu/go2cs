@@ -1,8 +1,6 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/netip/uint128.go", "uint128.cs", "ABUoogACENCmkqiSqJKokqiSgqiSgq7CqqKqog==")]
-
 namespace go.net;
 
 using bits = go.math.bits_package;

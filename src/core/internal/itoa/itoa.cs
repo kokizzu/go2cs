@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Simple conversions to avoid depending on strconv.
-[assembly: go.GoPositionMap("internal/itoa/itoa.go", "itoa.cs", "AAoUkoKUqJKSlIKCgoKCgqaCzJKSlIKCgoKCgqaCgoKCgg==")]
-
 namespace go.@internal;
 
 partial class itoa_package {

@@ -4,8 +4,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements commonly used type predicates.
-[assembly: global::go.GoPositionMap("go/types/predicates.go", "predicates.cs", "AA4akKywooCigKKAooCigKKAooCigKqyggACEtCigKKAooCigKKAooCswoCCpKyytKSssqSkrNaCqqKqxoKokoKokqiSgq7CgIKCpKzEgIKkgqiSqqKClIKUhKjEpKKCgpSmpIKClJSkgpSCgpTaqJKk9KSYqNSCpgAIEqIACBSygoSCloKWmoCy3IDG2oCSAAUQgMKCgoKIpuyAktyAooKCgoKCuOqCggABEtKagoTGgoSCgpSEgpaCgoKogpaqgKaCgoIABRaA8oKCgpSClIKCABYugoKClJSCgpSCgoKm7ICS3ICi3oDogoKClIKCpgAMFMaopKyygpaCgqis1oCClKSkpKSkxq7mgpSUgpSUqNKS")]
-
 namespace go.go;
 
 using token = global::go.go.token_package;

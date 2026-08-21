@@ -1,8 +1,6 @@
 // Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("mime/quotedprintable/writer.go", "writer.cs", "ABgwkqzSgpa0xoKAgqSWgIKkloKWgIKmqqKAgqaokoKUgoKWgpaAgqSAgqSWgoCCuIKClqaCgoCCuIKCgoTMkoKWgoKCgIK4poKChKaCgoKEpoKAgqaCpoI=")]
-
 namespace go.mime;
 
 using io = io_package;

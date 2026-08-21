@@ -3,8 +3,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/types/typeterm.go", "typeterm.cs", "ABYqopSkpKTK1JSkuKjUlKSkpKS4ggAGEIKUqNSUpKS4ggAGEIKUqMSUpLiCgpSo1JSkpKS4ggAGEKrCgpSCgpSCgpQ=")]
-
 namespace go.go;
 
 partial class types_package {

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements encoding/decoding of Ints.
-[assembly: go.GoPositionMap("math/big/intmarsh.go", "intmarsh.cs", "ABEksoKUgoKCgpSCqJKUgpSCgpSCgqiygpSokoCCpAACEPKClKikgpQ=")]
-
 namespace go.math;
 
 using bytes = bytes_package;

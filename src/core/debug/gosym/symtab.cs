@@ -5,8 +5,6 @@
 // Package gosym implements access to the Go symbol
 // and line number tables embedded in Go binaries generated
 // by the gc compilers.
-[assembly: go.GoPositionMap("debug/gosym/symtab.go", "symtab.cs", "ACNGkK7SgoKUgpSU6qLMgqiCloKCloCCpKyypoKCuJSClMqCqJKCgIKCgsqmpAA9hAGCkpSCgpqC5LSCtIKCgpSCgpSUgoKCgpSCgoKClJSCgoKCpoKClIK4goKCgoKUgpSClIKCpoKClILKgoKUgoKUgoKYkoKCgoKmlIKCgoLYgpSCgoSCgqaClJSs0oKCgpSCloKClIKCgoKCkoKCgoKCgoKWgoKSgoKUgpS0gpSCkoKClICCpMaUtLSClIKWgoSClIKClLqCgoKUpJaSlIaCgoaygoCCtoKGgpKCgpSClNqAkqSCmKKCgoKUtLTqgoKCgoKCgoKCuKSClIKClLSCgrSCgsbIgpSClKqigoKCgpS0pMaq4oCCpIKClJSs8oKCloKCgpSWgoKUgoKCgqaqtIKClILYqqKCgoKmqJKCgpSC2AAMHAAJAgAAEISCgpKUuMiSlIK4+IKUpoKClpSCqIKCgoKCgpSmgoKkyIKU5pQABBawAAoUggAKFoKCgpSC")]
-
 namespace go.debug;
 
 using bytes = bytes_package;

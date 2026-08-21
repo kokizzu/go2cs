@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package buffer provides a pool-allocated byte buffer.
-[assembly: go.GoPositionMap("log/slog/internal/buffer/buffer.go", "buffer.cs", "ABImgsiCpqSSgoK4gqaCgqaCgqaCgqaCpoKmgg==")]
-
 namespace go.log.slog.@internal;
 
 using sync = sync_package;

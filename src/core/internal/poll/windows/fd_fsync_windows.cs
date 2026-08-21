@@ -1,8 +1,6 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/poll/fd_fsync_windows.go", "fd_fsync_windows.cs", "AAsU0oCCpII=")]
-
 namespace go.@internal;
 
 using Δsyscall = syscall_package;

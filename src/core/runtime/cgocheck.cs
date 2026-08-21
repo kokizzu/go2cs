@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 // Code to check that pointer writes follow the cgo rules.
 // These functions are invoked when GOEXPERIMENT=cgocheck2 is enabled.
-[assembly: go.GoPositionMap("runtime/cgocheck.go", "cgocheck.cs", "ABI0AAoCuJSClIK6goK6grqCzIKWgoIAAxgACgIAAhYACgKClIKUgpQAAhYACgKClIKUgpSCgoIAAxQACQSClICCpoKCqIKCgoKUgoKCqIIABxCClKiCgoKAgqSCggAEFuKCgoKCgoKCgoKClJSClIKCggAGHgAKAoKogpSAgqaCgpSYgoKClIKCgpSCgoKUtoKCgpSCgoKUgoKClAADRQ==")]
-
 namespace go;
 
 using abi = @internal.abi_package;

@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/mail/message_test.go", "message_test.cs", "AE2qAYKCgoKClIKmgoKClIKC3IKClIKCgpSCpgAKBoIAHUKCpoKCpJaCgqQACgqiAJoBugKCpoKC6rSWgoL6pAAMCoIAGz6CgoKokoKCgoIACg6CAOwCsgaCgoKCgpSCqIKCgpSCAAkKggB8mgKUgoKWlKSmuIKCgoKClIKogoKClIIACQqCAEiQAYKCgoKogoKCgpSC3sYAHjyCgoKClIKCgoKWgoK8ABMqgoKCgs6CAAsagoKCgpSClIL6goKClIKClIKClIKC")]
-
 namespace go.net;
 
 using bytes = bytes_package;

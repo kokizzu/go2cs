@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("image/ycbcr_test.go", "ycbcr_test.cs", "AA4YggAVLAAHENyCgoKmgsqUgpaClLqCgoKCgoK6goKCgoKWgoKCgoKUAAkUgoKCyoKCgqaCgoKC")]
-
 namespace go;
 
 using color = image.color_package;

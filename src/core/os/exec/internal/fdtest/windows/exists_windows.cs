@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build windows
-[assembly: go.GoPositionMap("os/exec/internal/fdtest/exists_windows.go", "exists_windows.cs", "AAoUkg==")]
-
 namespace go.os.exec.@internal;
 
 partial class fdtest_package {

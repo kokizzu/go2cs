@@ -1,8 +1,6 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/encode.go", "encode.cs", "AB9GotyCgqzShIKCgpSCloKClIKCloKUpoKClAACFAAKAoKCloKClqyygpSClIKokgACFPKCgoK6kqqigoKCAAIU8oKCAAIU8oKCgpSUgoKqooKCggACENKCgpSCgoKUAAIQ0oKCgoKClIKUAAIQ0oKUgpQ=")]
-
 namespace go.vendor.golang.org.x.net.http2;
 
 using io = io_package;

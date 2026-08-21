@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/trace/traceviewer/emitter.go", "emitter.cs", "ACA2soKCgoKEggALBIKCpoKUlKKClKKClIKUgpSmpqaCggAKCoIABSCE9Ka4gpKClJKClJSCgraClIKUgqbcgoKCzgADEIKogoKCgpSCgpaCgrqCgu6CgoKUgoKWgIIAFCiCgqYAAB4AEBCEloKCloKUgoKoqJKCgoKUggAJHKKEACNGgoK4goKUpoKmgqaCpoKClKaCpoKClAAXMIKClIKUkoKUggAKFgAUKoKClIKUkgAWLoKClKaCpoKClIIACBIAEiaCpoKCpoKmgoKCgpSCAAsYpoKCgpSCAAsYpoiygpSCpoKClJKClIIABxCokoIABhCmgqqiAAkGgoSClIKWhIKCgoSCgpSUlqaC7gAIEoLcAAcUoqiSgpSCgoSCgoKCgoKUAAcQggB0vAGCgg==")]
-
 namespace go.@internal.trace;
 
 using json = encoding.json_package;

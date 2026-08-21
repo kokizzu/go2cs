@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("PointerToPointer.go", "PointerToPointer.cs", "ABEggoKCgoSGhoKGgoKCgoKEhIKCgoKChJKChKaigoKCloSmgqaigqaigpKCgoKmoqairIKygoKCpoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

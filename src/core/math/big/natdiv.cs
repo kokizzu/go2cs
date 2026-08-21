@@ -494,8 +494,6 @@ The proofs in the paper are remarkably complex, especially considering that
 the algorithm is at its core just long division on wide digits, so that the
 usual long division proofs apply essentially unaltered.
 */
-[assembly: go.GoPositionMap("math/big/natdiv.go", "natdiv.cs", "APkD8gfCgpSCgoKCqtKCloKCgpaGooKCloKs4oKUtIKkgraCgoKolJKCqsKCgoKClIKClK7ygsyCgoKCgqiClJaClJSEloKErLKChIKWgpamgoKCzIKCloKCgpKCgqaCuLqCgoLMgoKmgpS6gpSWrLIABhgACAiCgoSCloKCpgACEAAKCIKCgoKogoKCqIKCAAcSloKUAAcSggAKGJaWgoKCAAscgoKCgoKClIKCgpSUgpSCgpSCzoKCgoKCgoKUgoCCgoKClLaClIKClIKo")]
-
 namespace go.math;
 
 using bits = go.math.bits_package;

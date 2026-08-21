@@ -54,6 +54,19 @@ using static go.crypto.ecdh_package;
 [assembly: GoImplicitConv<ΔPublicKey, ж<ΔPublicKey>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("crypto/ecdh/ecdh.go", "ecdh.cs", "AEeWAZaiAAIU8oKClKiCABQ2AAwCgpSolqIAAhTygoKUqIKmooLKgoKU3Kaqog==")]
+[assembly: go.GoPositionMap("crypto/ecdh/nist.go", "nist.cs", "ACNAosrCgoKClJaCgoKAgu6CzISCgpTowoKUgpSCgoKUlLimgsqm0oKClIKmlIK4lN6SgoKUqqKCzIKUgoKYkoKCqNbUgpS4goKClKaAgramAAsQgpaCgoKUgIKkAAIQ0AAPJtAAESrQ")]
+[assembly: go.GoPositionMap("crypto/ecdh/x25519.go", "x25519.cs", "ABIy0AAKDIKmgoKCgIKkpoKClNyigpS4goKmgoKUAAgMsoKCgpSmgoSCgoKE4oKCgoSCgoKCgoKChIKCgoKCgoKCgoKCgoSCgoKCloKEgoI=")]
+// </GoSourcePositionMaps>
+
 namespace go.crypto;
 
 [GoPackage("ecdh")]

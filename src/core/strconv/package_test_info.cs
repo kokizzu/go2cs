@@ -34,6 +34,28 @@ using static global::go.strconv_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("strconv/atob_test.go", "atob_test.cs", "ACRIooKClIKmgriClIIAChaCgoCCABAggoKCgg==")]
+[assembly: go.GoPositionMap("strconv/atoc_test.go", "atoc_test.cs", "AB9CggCSAbYCgoKClIKClIKWgoKClIKC3pKChIKCgpSC")]
+[assembly: go.GoPositionMap("strconv/atof_test.go", "atof_test.cs", "AMwD+AaCpqaCgoKmgoKCuoKUlIKCgoKWgoKCloKCuIKCgoLKgoKCgpSC3IKCgoKCgoKCqIKCgoKClIKCyoKCgoKClIKCuKaApICkgoKCgpQACgoAEiKCgoKCgpSCgpSCgoKUgoKUupKCgpSCgoKClISCgpS0tLSUqqKChIKCgpSCyqKCuKKCuKKCuKKCuKKCgoK4ooKCgriigoKClIKCgoKCgsqigriigriigriigoKCgpSCgriigoKCgpSCgg==")]
+[assembly: go.GoPositionMap("strconv/atoi_test.go", "atoi_test.cs", "AMQC/gSmgoKCpoKCgqaCgoKmgoKCpoKCgqaCgoLKgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgpSCgoKC2oKCgoL+gpSCgoKC2oKCgoL+gpSCgoKCgpSC2oKCgoKClIL+gqaCpoIAGTCCgpSClNaCgoKCgoIACAyCgoKCgoLcgoKCgoKC3IKCgoKCggAIDIKCyoCCAAgKgoKC+IKClIIACBKC7rKSgoKC3IKClIK4gsqCyrKSgoKC")]
+[assembly: go.GoPositionMap("strconv/ctoa_test.go", "ctoa_test.cs", "ABMYggAOMIKCgtyigoCCtg==")]
+[assembly: go.GoPositionMap("strconv/decimal_test.go", "decimal_test.cs", "ACBAgoKCgoKCggAdPoKCgoKCgoKmgoKCgqaCgoKCABgygoKCgoKCgg==")]
+[assembly: go.GoPositionMap("strconv/fp_test.go", "fp_test.cs", "ABAggpSkpKSqooCCgoKUgoKClKaCgoKCgpSUgoKCgoKUlKSCgpSqooCCgoKClIKCgpSkgoKClAANBqKCgpSUhIKCgpSCgoKUgoKUgoKCgpSkgoKClIKkgriC")]
+[assembly: go.GoPositionMap("strconv/ftoa_test.go", "ftoa_test.cs", "ABUqgACPAbgCgoKCgoKUgoKUgoKClIKC3IKCgoKCgIK2goKCgILsgoKClIKCgoSCgoKCgpaCgoKCgoLKooKAgrYAMmSCspKC3IKCsqKC")]
+[assembly: go.GoPositionMap("strconv/ftoaryu_test.go", "ftoaryu_test.cs", "AAwagoKCgoLKgoKCgoI=")]
+[assembly: go.GoPositionMap("strconv/itoa_test.go", "itoa_test.cs", "ADx8ooKCgqaCgqiCgoKmgoK6goKC3oKAgrYAFCSCgoKCpoKCACFCgoKCgsqigoKCyqKCgoKCyqKCgoLKooKCgoLKgoKCgoKC3KKCgoKCuIKykoKCgg==")]
+[assembly: go.GoPositionMap("strconv/quote_test.go", "quote_test.cs", "AA0esoKCgoKCgt6ygoKCgoKCABgygoKAgqSAgtqCgoCCpICC2oKCgIKkgILaooK4ooLcooLcooIAGziCgoCCpICC2oKCgIKkgILagoKAgqSAggA5cIKCgIIAT6IBgoKUgpSCAAoKsgAGGoK4tIKCzIKUgoKUgoKCgpSC6KKC6KKC")]
+[assembly: go.GoPositionMap("strconv/strconv_test.go", "strconv_test.cs", "ABswgqSkgqSmoqKkpgAJDoKClIKmgoKUgoKAggAhIoKC7gAHEpKUkpSSlJKUkpSSlJKUkpSSlJIACwiCgoKCgoQABhaCgoKClICC")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("strconv_test")]

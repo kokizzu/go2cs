@@ -11,8 +11,6 @@
 //
 // It avoids doing any high-level Go operations so it's safe
 // to use even in sensitive contexts.
-[assembly: go.GoPositionMap("runtime/tracemap.go", "tracemap.cs", "ADhyogACEuKClISCgoKCggAPIIKUgsqUgoKmgriUypaCgoKCrsKCgg==")]
-
 namespace go;
 
 using cpu = @internal.cpu_package;

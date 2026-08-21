@@ -43,6 +43,19 @@ using static global::go.debug.dwarf_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("debug/dwarf/entry_test.go", "entry_test.cs", "ABUe6oKCgoKUgpiigoCCpIIAEBaCAAgQhMqEyoS41oIACBLWggAIEqaCgoKCgoKClIKUloKCgpSCABAKggAiVoKChIKCgoKWgpaAgqSCgoKUgpSWggALCtgAPGqCgoKWgoKUggAJCriCgpSCgoKCgoKCgpSClIKUgoKUuIKCgtyiAGDCAYKCAAYQgoKCgpSC3ILiqIKClII=")]
+[assembly: go.GoPositionMap("debug/dwarf/line_test.go", "line_test.cs", "ABMo3gARJoSmzIKClgARJrr2zIKSgoKUgoKWABEmhNbMAA8ihKaUggAOHoQADgaCloKClIKCmJKCgoKEgoKClJSogoCCpLiCgoKCgrakuoCCpIKCgIKkloKCgIKkAA0MtJKCgoKCpJaCgsyCloKCpJaCgoKCgpSmgpSogoKCgoKClLqCgoKCgriCgpSCgpSClJTWgoKCgpS4goKCgpaCuIKUgoKUgoKCgqamgoIAJlSCgoKCyojyppSCgoKUgoKClIKClII=")]
+[assembly: go.GoPositionMap("debug/dwarf/type_test.go", "type_test.cs", "ADBegoKCloKClKaCgoKWgoKUpoKCgpaCgpTmguaC1oLmgoKCgoKClIKUgoKClIKCgIKUpoCCgpSCgsiCqIKC+u6CgoKCgoKUgpSUyoKCgoIADRbKgoKCgoKClIKUgoKCgoKClIKCgpSCgpSEpoKCgoKmgoIADh6CgqaCgtaCgqaCgtaCgqaigoKCgpSCloKCgpaEgoKClIKUlpSClIKCgriCAAskAAkCgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.debug;
 
 [GoPackage("dwarf_test")]

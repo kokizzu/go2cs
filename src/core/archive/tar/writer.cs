@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("archive/tar/writer.go", "writer.cs", "ACJGkgAJHtKClICCpICCpIKu8oCCpKiCgpQABxKCgoKWgpSCpIKkgqTItJKAgqiSgoKCgpTmsgAjSJaChJKClIaSgoKClJiSgoKCgpSUgoKUgoKUgIK6koCSgoKAggAOHqa0koKCgIK2goKAgrqSgoKCgpSCACdQgoCCuJSAgqSUAAYcAAkChIKCloKCgoKCgoKChIKCgoKErNKWgoKUhIKCgoKCgoKCgoKCqICCpIKs0oCCpICCpIKUgoLcsqKClIKUgoKmgpSCgpSCgIKkgoKUkoLsooKCpKSWgoKCgpQAAhTygpSCgpQAAhoACgKClIKClKyygpSCqIKCqIIACBKygoKUgoKUlKSkAAgIgqiSqJIACRSygoKWgoKCgoKSgqSClIKCgqiClKSkpKTIwoKCgIK2gpaCgoKCgpKCgoKUpIKUgoLMgoKWgpSkpKSkyIKkguyCgoKmqJKClKSk")]
-
 namespace go.archive;
 
 using errors = errors_package;

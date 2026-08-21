@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("SubpackageFuncTypeParam.go", "SubpackageFuncTypeParam.cs", "AAwigqaCgoKCgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

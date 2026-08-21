@@ -16,8 +16,6 @@
 // to a Go string, and convert it back to the same original UTF-16 string.
 //
 // See go.dev/issues/59971 for more info.
-[assembly: go.GoPositionMap("syscall/wtf8_windows.go", "wtf8_windows.cs", "ACZYoqaClICCgoKCtoKUqqKCgoCmuKK6grKUgsSU")]
-
 namespace go;
 
 using utf16 = unicode.utf16_package;

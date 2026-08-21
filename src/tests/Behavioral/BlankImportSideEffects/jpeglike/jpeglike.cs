@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("jpeglike.go", "jpeglike.cs", "AAkQgg==")]
-
 namespace go.BlankImportSideEffects;
 
 using registry = go.BlankImportSideEffects.registry_package;

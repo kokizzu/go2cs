@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/sysinfo/export_test.go", "export_test.cs", "")]
-
 namespace go.@internal;
 
 using static go.@internal.sysinfo_package;

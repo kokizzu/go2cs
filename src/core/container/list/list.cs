@@ -9,8 +9,6 @@
 //	for e := l.Front(); e != nil; e = e.Next() {
 //		// do something with e.Value
 //	}
-[assembly: go.GoPositionMap("container/list/list.go", "list.cs", "AB8+koCCpKiSgIKkAAkWsoKCgqiQqKCmkoKUqJKClKiygrrSgoKCgoKCqJKosoKCgoKCqMKClIKEgoKCrOKmlKiSgqiygqzigqas4oKmrOKCpqzigqas8oKUrPKClKrSgoK8woKC")]
-
 namespace go.container;
 
 partial class list_package {

@@ -6,8 +6,6 @@
 // around low-level block cipher implementations.
 // See https://csrc.nist.gov/groups/ST/toolkit/BCM/current_modes.html
 // and NIST Special Publication 800-38A.
-[assembly: go.GoPositionMap("crypto/cipher/cipher.go", "cipher.cs", "")]
-
 namespace go.crypto;
 
 partial class cipher_package {

@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("regexp/all_test.go", "all_test.cs", "AEJwgoKClIKklKaCgriCgriygoKUgoKmgoK4grK4soKClIK4grK4soKClIKCgsqCsgB6hgKCgoKCgpSCgriCgtyUgoKUgoKClIKCuIKCzIKCgoKUgoK4goLcgrKCgoKUgoK4koIAKUiClIKClLqCgoKClIKCgoKC7qKUgoKClIIAIEKCgoKCgoKUgoKClIKCgriCgoIAJkqCgoKCgpaCgpaCgoIACg6ygoS+goKUgoKUgIIACAySgoKUgoKUgryigpaC1qKCgoKCgoKCgoLKooKCgoKCgoLKooKCgoKCgoKCggAICqKCgoKCgoKCgoKUgsqigoKCgoKCgoKClILKooKCgoKCgsqigoKCgoKCAAgKooKCgoKCgvqipoKCgoKC+qKCgoKCguiigoKCgoK4ooKCgpSCgoLoooKCgoKCuKKCgoKUgoKC6KKCgoKCguiigoKCgoLoooKCgoKC6KKCgoKCgriigoKCgoK4ooKCgoKC6KKCgoKigsqigoKCooKC7qKCgoKmgoKCgriigoKCggANFIKykoKCgIIACw6CgoKSloKCloKCloKCABcsgoKCgoIACAqCgoKCgoKClICCgqSCpoKCgoI=")]
-
 namespace go;
 
 using reflect = reflect_package;

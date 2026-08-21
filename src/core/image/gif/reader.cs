@@ -5,8 +5,6 @@
 // Package gif implements a GIF image decoder and encoder.
 //
 // The GIF specification is at https://www.w3.org/Graphics/GIF/spec-gif89a.txt.
-[assembly: go.GoPositionMap("image/gif/reader.go", "reader.cs", "AESEAYKCgpSmgoKClAApXoKClIKClIKWgoKCuIKCgoKogoKqooKUgoKCqIKCAAIWAAgClLaWpoKCpKTMgoKklqjEgIKUpoSCgpSCloKCgpSUgILIgIKmgriClKbagoKClIKClIKCgIKUgILYpoKCgoKUkoKClKaCgoKUgpSkyIKSlqS0goCC3IKCgpSClIKmgoKClILKgoCCpIKUgoKCgoKUgpTWwoKClIKCgoKmgpSUgpSUgILcgoKClLaCgpSCpoKCkoCCgpQADRqAgoKUyoCCpLiCgoLMgpaCgoLKgoIACAaCgIKkgoKCggAQJIKU3IKCgpSAgqQAEyKygoKCgoKCgoKCgqaqooKAgqQAIEaigoCCpAALGKqigoCCpO6C")]
-
 namespace go.image;
 
 using bufio = bufio_package;

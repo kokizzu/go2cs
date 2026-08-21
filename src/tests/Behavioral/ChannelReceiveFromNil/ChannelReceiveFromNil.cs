@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("ChannelReceiveFromNil.go", "ChannelReceiveFromNil.cs", "AAgKgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

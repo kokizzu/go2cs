@@ -1,8 +1,6 @@
 global using Temperature = go.CrossPkgLib_package.Celsius;
 global using ΔToken = object;
 
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA8wgKaApoAABxSApoCqgAAIHICsgAAGFIKCqIAACRCAAAYQgKaApoAABhKAgK6AqqAABBaAAAgsgAAGEICAABQ0gMyAAAIagKiAAAgYgAANKoCmgAAIMIDugKSkgKiAAAYQgAAHFtSAqIIABByA")]
-
 namespace go;
 
 partial class CrossPkgLib_package {

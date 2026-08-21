@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("GenericTypeAssertions.go", "GenericTypeAssertions.cs", "AAwWgsyClOaEhoCCqICClKiktLTE")]
-
 namespace go;
 
 using fmt = fmt_package;

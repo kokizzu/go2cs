@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("PointerEmbedBoxReceiver.go", "PointerEmbedBoxReceiver.cs", "AAwggoIABxCCgoKC")]
-
 namespace go;
 
 using fmt = fmt_package;

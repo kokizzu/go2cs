@@ -13,8 +13,6 @@ validation is done when parsing object files. As such, care should be taken when
 parsing untrusted inputs, as parsing malformed files may consume significant
 resources, or cause panics.
 */
-[assembly: go.GoPositionMap("debug/macho/file.go", "file.cs", "ACxqgAAfQpKokAApVpKokAA0aIKCgpSCqJKCgpSCgoKUgqyygoKClKqigoiigIKkgoKUgqSCpLiAgriSgpSCgpSCgpSCgpSClIKClIKCgoKagoKAgqSCgpSCgqaCgoCCpIKClIKCgoKCpoKCgIKkgoKUgoKUlIKClIKClIKmgoKAgqSCpMi4goKUgoCCpIKCgoKCpoKCgIKkgoKCgoKCgoKCgoKCgoKCgoCCpIKCgoKCgoKCgoKAgtqCgoCCpIKCgoKCgoKCgoKCgoKCgoKAgqSCgoKCgoKCgoKCgIIABc8CAALYAoKClIKUgqamooKCgpSCgoKCgoCCtoKAgqSCgoKClIKmgoKUAAcQgoKCAAcQooKChIKCgpSEhIKChIKAgqaSgoKCgoKUlIKCgoKCpIKCgoKCpNymgoKClKiSgoCCtqqigoKmAAsIkoKUpKS4goKCloKCgoKClICCpICCpJScsoKCgpSAgqSCgpSWgoKogoKClICUpoKCloKUlIKorLKCloKCgoKUrLKCgoCCtg==")]
-
 namespace go.debug;
 
 // High level access to low level data structures.

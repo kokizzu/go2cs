@@ -8,8 +8,6 @@
 //
 // See the [testing/fstest] package for support with testing
 // implementations of file systems.
-[assembly: go.GoPositionMap("io/fs/fs.go", "fs.cs", "ACxqAA0CgpaUqIKCgpSCgpSClABIlAGAooCigKKAooAAMV6CgoKCgoKCpoKClIKCgpSUlKqiqqKokqiSAAkUgKSA5pKC")]
-
 namespace go.io;
 
 using oserror = @internal.oserror_package;

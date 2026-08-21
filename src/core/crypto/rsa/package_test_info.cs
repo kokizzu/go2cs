@@ -40,6 +40,20 @@ using static global::go.crypto.rsa_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("crypto/rsa/equal_test.go", "equal_test.cs", "ABAegoKEgpSClIKWgoKUgoKUgpSCloKClII=")]
+[assembly: go.GoPositionMap("crypto/rsa/pkcs1v15_test.go", "pkcs1v15_test.cs", "ABwugoKCgpQAGjaClKaogoKCgpSCgtyCgoSSgpaCgoKWgoKUlIKCgpaCgpSWgoKUABYugoKCgoKUgoLKgoKCgpSCloLKgoSCgoKUgoKCAA8ggoKCgoSCgpaCgsqCgoKChISCgvqCgoKCuILuhIKClIKUgIL4xoKCloKAgqaCggAJHoKCgoKUAAgGgoiCgpaCgoI=")]
+[assembly: go.GoPositionMap("crypto/rsa/pss_test.go", "pss_test.cs", "AB4wlAANHLgADiCCgoSCgpSCloCC/OKCgpScwoSEwoKCgoSCgpSCgoKUtIK0grS0xoCC6IKCgoKogpSCgoKUgoSStoKChIKChICCxgAIDqKCgoKWAAgUgILIgoKCgoT2ogAKHoKCgoKEgoKCgoKWgoKCyriCgpSCuIKUgoK4goKClKaCgoKUpoKCgpTWooKClqaAuMqApg==")]
+[assembly: go.GoPositionMap("crypto/rsa/rsa_test.go", "rsa_test.cs", "ACE0goKCgpSAgqSCgsqCgoKWgoKUpoKCgpaCgpSmgoKCgoKmgoKClMrGgoKCggAICLiKpqKAgqSCloKCgoKWgoKClILogoKUhIKCgpaAooKClIKm7IKCgoKUgpSCgoKCgoKUgIKkAAsKgoCCpoKCgqSUgoKClIKClIKogoKCpJSCgoKUgqiCgoKklIKCgpSCgoKUgoKCgpSWgoKCpJSCgoKUgoKClIKCgoKUloKCgqSUgoKClIKCgpSCgoKClLqCgoKUgoKUgoKClIKCuICkgoKCgoKUlIKClAAP/AGCgJKAkoC2ooSCgoKWgoKCgoKUgpS4goKChIKCgoKUyoKChIKCgpaCgoKCgpSClMqCgoKEgoKCgpTKgoKEgoKCgoKUyoKCgoKCloKCgoLcgoKEgoKCgoKUyoKCgoKCloKCgoIAEiaCgoKCgpSCgoKClILcgoSCgoKCgoKCgoSCgoKkqIKCpKaCyoKEgoSCgoKCgoKCkpSEgqS4goKCgoKCgoKChIKCgoKClIKCgpSC")]
+// </GoSourcePositionMaps>
+
 namespace go.crypto;
 
 [GoPackage("rsa_test")]

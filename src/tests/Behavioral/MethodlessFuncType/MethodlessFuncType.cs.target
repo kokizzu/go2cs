@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("MethodlessFuncType.go", "MethodlessFuncType.cs", "AAw0goKClM6CAAcWggAIBoKGgoKGgoKGgoKIgoaChII=")]
-
 namespace go;
 
 using fmt = fmt_package;

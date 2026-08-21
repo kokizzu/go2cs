@@ -488,8 +488,6 @@ Below is the full list of supported metrics, ordered lexicographically.
 		Collect a mutex or block profile using the runtime/pprof package
 		for more detailed contention data.
 */
-[assembly: go.GoPositionMap("runtime/metrics/doc.go", "doc.cs", "")]
-
 namespace go.runtime;
 
 partial class metrics_package {

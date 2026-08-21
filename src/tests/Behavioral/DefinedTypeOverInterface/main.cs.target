@@ -1,8 +1,6 @@
 global using Token = object;
 global using Named = go.main_package.Stringer;
 
-[assembly: go.GoPositionMap("main.go", "main.cs", "ABMygKSClKCkpJSmgoKEgoKEhII=")]
-
 namespace go;
 
 using fmt = fmt_package;

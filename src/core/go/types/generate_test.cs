@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 // This file implements a custom generator to create various go/types
 // source files from the corresponding types2 files.
-[assembly: global::go.GoPositionMap("go/types/generate_test.go", "generate_test.cs", "ACVI1oKCgpSCqIK4lIKCgqiWgIKokoKCgoCCpJaCgoKogIKCgoCCtgAQFIKC3IKCgoKmgoL+xqKigLaAoqLIgoKkgKKAuoKCytqAtLSA6oAAChKAAAUU4oKCgoKUlKiygILMwoCCgoCCgoKUgu7CgpKUgpS6soKSlIKUvsKCkpSClLqygpKUgpSClLzCgoCCgraqooKSlpKUgqa2gKKCxrqSgpSCgIKC2L6ygpSUgoKCgtiAgpaSkoKCgriSgoKCuJKCgoL6vKKClICCgoCUgpKCggAIDPqSgpSAgoKWgJKSgoIACQy6koKUgIKCloCSkoKCAAkMvrKClpKCtrqSgpSSgra6koCCpKiSqJKCgqiSgoKC")]
-
 namespace go.go;
 
 using bytes = bytes_package;

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build purego || !(386 || amd64 || arm || arm64 || ppc64 || ppc64le || riscv64 || s390x)
-[assembly: go.GoPositionMap("crypto/internal/bigmod/nat_noasm.go", "nat_noasm.cs", "AAwWgqaCpoI=")]
-
 namespace go.crypto.@internal;
 
 using @unsafe = unsafe_package;

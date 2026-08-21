@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || (js && wasm) || wasip1 || windows
-[assembly: go.GoPositionMap("os/exec_posix.go", "exec_posix.cs", "AB406IKAgoKCuMqCgoKmgoKWloSCqIKCgoKopoIACRaSpoKmgqaCpoLmooKUgoKUgpKkxrSCgsa0gpSq1IKU")]
-
 namespace go;
 
 using itoa = @internal.itoa_package;

@@ -1,7 +1,5 @@
 global using feAlias = go.array<ulong>;
 
-[assembly: go.GoPositionMap("main.go", "main.cs", "ABI+gKSAooCmooK4hIKCgoKGgoKCgoaCgoiCgoKGgoKCgoKCgoKIgoKChoKCgoaCjIKCgoKCgoKKgoKGgpKSgoKSiJIAABCCAAYQoAAKGIKCuIKCAA0egIA=")]
-
 namespace go;
 
 using fmt = fmt_package;

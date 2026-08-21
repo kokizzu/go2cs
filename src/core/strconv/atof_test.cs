@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("strconv/atof_test.go", "atof_test.cs", "AM4D+AaCpqaCgoKmgoKCuoKUlIKCgoKWgoKCloKCuIKCgoLKgoKCgpSC3IKCgoKCgoKCqIKCgoKClIKCyoKCgoKClIKCuKaApICkgoKCgpQACgoAEiKCgoKCgpSCgpSCgoKUgoKUupKCgpSCgoKClISCgpS0tLSUqqKChIKCgpSCyqKCuKKCuKKCuKKCuKKCgoK4ooKCgriigoKClIKCgoKCgsqigriigriigriigoKCgpSCgriigoKCgpSCgg==")]
-
 namespace go;
 
 using Δmath = math_package;

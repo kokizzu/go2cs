@@ -5,8 +5,6 @@
 // different between go/types and types2. Factoring
 // out this code allows more of the rest of the code
 // to be shared.
-[assembly: global::go.GoPositionMap("go/types/util.go", "util.cs", "ABQ4AAgAppCmkKawppCmkKaS")]
-
 namespace go.go;
 
 using ast = global::go.go.ast_package;

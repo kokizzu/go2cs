@@ -10,8 +10,6 @@
 // runtime/debug.ReadBuildInfo.
 global using BuildInfo = go.runtime.debug_package.BuildInfo;
 
-[assembly: go.GoPositionMap("debug/buildinfo/buildinfo.go", "buildinfo.cs", "AECAAQAJAoKAkqS4goKUkuyygoKUgoKUggALIAAJBoKAgqaClIKClLSCgpS0goKUtIKClLSCgpS0goKUtAAHEIKClIKClJiCgoKUgoKUAAsagoKClIKCgpSUgoK0pJSClIKUppSWpoKCgpS2poKCgpSokoKClIKCgoKUAAcQgoKCgoKUpqaCgoKmgoKmAAcQgpSklKaCgoKCgoKUpqaEABEWgoSmAAcQgoKCgpSCgpSCgpSmppSCgqiSgoKCpgAKEIKCgoKClKamgoCCpAAKEIKAgqSmgoKCgoKUpg==")]
-
 namespace go.debug;
 
 using bytes = bytes_package;

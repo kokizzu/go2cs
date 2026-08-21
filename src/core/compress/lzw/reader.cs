@@ -13,8 +13,6 @@
 // The TIFF file format uses a similar but incompatible version of the LZW
 // algorithm. See the golang.org/x/image/tiff/lzw package for an
 // implementation.
-[assembly: go.GoPositionMap("compress/lzw/reader.go", "reader.cs", "AE60AZKCgoKUgpSCgoKokoKCgpSClIKCgqiygoKCgpSClO7kgoKCgoKUgpSWgoKkgsaCgoKCtIK0kriCgpSCgpaSgoKUgoKUgsaCtIKCgpSCuJSCpoLYgs6igqqiggACHgAMAqaCgoLWgpSkpIKkgoKWgoKUgoKCgoKC")]
-
 namespace go.compress;
 
 // TODO(nigeltao): check that PDF uses LZW in the same way as GIF,

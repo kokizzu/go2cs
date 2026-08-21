@@ -5,8 +5,6 @@
 // Package sig holds “code signatures” that can be called
 // and will result in certain code sequences being linked into
 // the final binary. The functions themselves are no-ops.
-[assembly: go.GoPositionMap("crypto/internal/boring/sig/sig.go", "sig.cs", "AA0WpqY=")]
-
 namespace go.crypto.@internal.boring;
 
 partial class sig_package {

@@ -26,6 +26,26 @@ using static go.html.template_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("html/template/clone_test.go", "clone_test.cs", "ABkiopKCgpSSgoKClICSABkIjNKWppKSpoKAgqSAkriSkqaCgIKkgJK4kpKmkqaSgIK2gIK2gIK4goCCpICSuICCuICCpICCuIKAgqSAkviChLiSgoKUgoKCgoKmggAIDJKCkgAIDNKSkpKCpoKC+pKqkqiSkoSC+pKYkrSCgoKygoKAggAICtbGkpKC+IKSkpKClIK6kqiElIKSkoKCAAsMkpKSkoKAgqSAkg==")]
+[assembly: go.GoPositionMap("html/template/content_test.go", "content_test.cs", "AB4cogAMHADdAsYFgpKCgoKCgoCCgqSAkoIACxaC7oLmgoKCkoCCpIKClIKCgIKkgoIACwqSlIKCloKChII=")]
+[assembly: go.GoPositionMap("html/template/css_test.go", "css_test.cs", "ABEaogAKHIKCggAJCqIAFTKCgoIACAqiABw+goKClIKAgtqCkoKAgqSCgIIACQqiAAwegoKCyqIAABQAABiCgpaCgviCADBmgoKC+qKC6KKCuKKCgoK4ooKCguiiguiigg==")]
+[assembly: go.GoPositionMap("html/template/escape_test.go", "escape_test.cs", "ABkolNqCABYGogAQMoQAjgXQCrKigqSClIKAgqSAkqSCgIKkgJKkggAJDKK4AA0gkoKAgoKkgJKCABIKogAJIgBYugGSgoCCtqaCgoKUgoKClISAgoKkgIIACgyiANYBugOCgoKCgpSCgoKUgoKUlIKCpoCCAAoMogDqBN4JgoKCgoKUgoIADAqiAFq8AYKSgoKClIKCgoKCgsqC3IKCgoKUgoL6goKCgoKk6KKCgoKUgoKk+KIACCaCgoKCgoKAggAKDqKSgpKSgpKCgoKklIKCgqQACAqSkoCC7ILewpKygoKCpoKCxIKCgoIACBCyhIKCpAAJCrKUlIKUgoKCgpSClLiCgriCgviikoKCgoIACgqykpSCgoCCooK0goCCpIKAgvqSvJKAgqSSgIKkgIKkkoKUgg==")]
+[assembly: go.GoPositionMap("html/template/exec_test.go", "exec_test.cs", "AGG+AYIADRaigpQACQ6igpQANV6yxgAOHLKmoqaigoKCqJKmgqaCpoKmgoKCpoKCgpTMkoKUqJLWgoKUpoIAnAPmBoKmgqaCpqKokoKUgpKClJTYktiSqJKmooKClKaCpqKClIKClKaCpoKmooIADyCCgoKClIKCgpSUgoKUgoKUgrSCtpLGgoLKggAVFIKCgoKCgoKCgpKUkpSUlJSCgpSCgoKUggAIDJKCgoKClIKCpIKUAAsakoKClIKCgpSCgoL4ggAJGIKCggAUOIIAI0iCgpSClIKClIKCpoKCgpSCguiUABEWlIKCgoKUgoKCqIKCgpSCgoKUgoKmgoLogoKClIKCggCXAYICgoIACiKCgoKClIKCgoKUgoKUggALCoKmgoKUlIKClIKCgqaCgoKClIKCpoKCgoKUgoKCpoKCgqaCgoL8ooKClIKCAAkUgva0goKUgoKUgqaCgpSCgpSCgpSCgriCpoLugrqCyoLKgriigoKU3gAIBoK8goKUkoKWgoCCpICCpoKAgqSAggAOCKIAKFqykpKCgoKUggAJDIKClJKCgoKUgoLo3LiCkoKCgpSCAAwK7gAfSIKSggAHFIKCgpSUgoKUggALDLKUpgAfSoKCgoKUgoKkgpQACQyShpKCgoKUgoKUgqiCgoKCmJKCgoKClIIADB6CgoKClIKCgoKogoKCsoKCgoCCAAgKAAgGgoSSgoCCpJaogoKUgoKUgIIAChSCgoCCpNaCgoKClIKClLiAggAICpKCgqyygoCCpICC")]
+[assembly: go.GoPositionMap("html/template/html_test.go", "html_test.cs", "AAwaogAAFgAAGoKCloKCgviCAA0igoCC2qKC6KKCuKKCuKKC")]
+[assembly: go.GoPositionMap("html/template/js_test.go", "js_test.cs", "ABUcogBGlAGCgIKkgIK4gpaCAAkMggAMBqIAL2iCgIKkgriCgoCCAAoKogApXIKCggAJCqIAHkaCgoIACgqiAAAUAAtKgoCCgqqigpaAgoIACgqCAAgagoLKooK4ooLoooIACAiivoIACAiivoK4ooK4ooK4ooK4ooI=")]
+[assembly: go.GoPositionMap("html/template/multi_test.go", "multi_test.cs", "ACxYlIKClIKClAAIBoKCgpSCgoKU5oKCgpSCgpSCgoKUAAgGgoSCgoKogoKCgpSWgoKCgpQADBSCgoKU1oKCgpTmgoKClIKClAALFpKCgoKClIIACAaCgoKAgqSAgqSAgvqSggAJCJKCgoKUgoKUgoL4poKAgqSAgqSAggAKCIIACBqChJiCgoKmgoCCgqSCAAkQ2viCgoKClIKCgqaCgoI=")]
+[assembly: go.GoPositionMap("html/template/transition_test.go", "transition_test.cs", "ABIaogARKoKAggANCqSIgoKEgoKSgIKk")]
+[assembly: go.GoPositionMap("html/template/url_test.go", "url_test.cs", "AA4WogANIIKAgqSCAAoKogAAFAALQoKAgoIACwqCAB9KgoCCAAgKooK4ooLoooK4ooLoooK4ooI=")]
+// </GoSourcePositionMaps>
+
 namespace go.html;
 
 [GoPackage("template")]

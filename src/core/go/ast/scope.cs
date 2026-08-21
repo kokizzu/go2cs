@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements scopes and the objects they contain.
-[assembly: global::go.GoPositionMap("go/ast/scope.go", "scope.cs", "ABo0koKssq7ygIKkqLKCgoKCgqaCACJIkqyygpSCgtiClKSCgtiCxoLGgsaCgIIACQwAHTaA")]
-
 namespace go.go;
 
 using fmt = fmt_package;

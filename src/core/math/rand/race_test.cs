@@ -1,8 +1,6 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("math/rand/race_test.go", "race_test.cs", "AA4ewpiCgoKCooKCgoKCgoKCgoKCgoKClIKClA==")]
-
 namespace go.math;
 
 using static go.math.rand_package;

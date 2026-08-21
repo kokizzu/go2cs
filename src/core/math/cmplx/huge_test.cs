@@ -4,8 +4,6 @@
 // Disabled for s390x because it uses assembly routines that are not
 // accurate for huge arguments.
 //go:build !s390x
-[assembly: go.GoPositionMap("math/cmplx/huge_test.go", "huge_test.cs", "AA8ggoKAgg==")]
-
 namespace go.math;
 
 using testing = testing_package;

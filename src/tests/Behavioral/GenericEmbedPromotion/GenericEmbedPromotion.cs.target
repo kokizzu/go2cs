@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("GenericEmbedPromotion.go", "GenericEmbedPromotion.cs", "ABU+gKKgooCkgAAKFKCkoKigpqKCggAMJoKIgoaCgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

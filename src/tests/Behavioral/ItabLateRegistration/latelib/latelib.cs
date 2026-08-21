@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("latelib.go", "latelib.cs", "AAkYgpKUgoQ=")]
-
 namespace go.ItabLateRegistration;
 
 using lib = go.ItabLateRegistration.lib_package;

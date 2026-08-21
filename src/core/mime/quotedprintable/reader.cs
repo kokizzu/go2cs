@@ -4,8 +4,6 @@
 
 // Package quotedprintable implements quoted-printable encoding as specified by
 // RFC 2045.
-[assembly: go.GoPositionMap("mime/quotedprintable/reader.go", "reader.cs", "ABgwksqClKSmtKaigpSSgIKkgIKkpoKUpAAGFAANFIKCgpSWgoKCgoKCgoS2gpSmlISUgoKUgpSUtLi0xIKCgpQ=")]
-
 namespace go.mime;
 
 using bufio = bufio_package;

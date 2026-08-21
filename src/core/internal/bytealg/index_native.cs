@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build amd64 || arm64 || s390x || ppc64le || ppc64
-[assembly: go.GoPositionMap("internal/bytealg/index_native.go", "index_native.cs", "AAoa3A==")]
-
 namespace go.@internal;
 
 partial class bytealg_package {

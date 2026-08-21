@@ -4,8 +4,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements Selections.
-[assembly: global::go.GoPositionMap("go/types/selection.go", "selection.cs", "AC2oAZCmkKigqKKYkpKCgq6SkoKC4oKUgrgAAhoACgAAAhLwpIAABxYACwKClKSkpKSCgoKCgoCCgpSk")]
-
 namespace go.go;
 
 using bytes = bytes_package;

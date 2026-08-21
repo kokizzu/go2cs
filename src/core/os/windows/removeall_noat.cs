@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !unix
-[assembly: go.GoPositionMap("os/removeall_noat.go", "removeall_noat.cs", "ABAegqbMgqiCgqiCgoCCpJSUqIKCgoKUlJaCgoSCgoSCgoKUgsyCAAcShIKmgpSC3oKCgpYABxDMgoKUgoCCgILYgpQ=")]
-
 namespace go;
 
 using Δio = io_package;

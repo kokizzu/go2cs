@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("log/log_test.go", "log_test.cs", "AD1ykoKCgoKClJSCgoKCgpSClKaCgILIgoKCuIKCgoKCgILIgoKCpoKCgoKCgrKCgtb2goKCgoKUgoKClIKClIKCgqaCgoKClIKogoKCgoCCyIKCgpSCgpSCgriClIKU9oKCgoKCgoCCpICCyIKCgpC2griikoKCgoKCgoKCuKKCgoKCgoK4ooKCgoKCggAIEILmgoKCgoKygpTW1qKCgoI=")]
-
 namespace go;
 
 // These tests are too simple.

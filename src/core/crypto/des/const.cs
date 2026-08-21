@@ -8,8 +8,6 @@
 //
 // DES is cryptographically broken and should not be used for secure
 // applications.
-[assembly: go.GoPositionMap("crypto/des/const.go", "const.cs", "")]
-
 namespace go.crypto;
 
 partial class des_package {

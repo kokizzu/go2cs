@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("consumer_composite.go", "consumer_composite.cs", "AAgSgpKS")]
-
 namespace go;
 
 using @unsafe = unsafe_package;

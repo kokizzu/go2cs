@@ -41,8 +41,6 @@
 // operations on a File may be limited by the OS or the system. The
 // number should be high, but exceeding it may degrade performance or
 // cause other issues.
-[assembly: go.GoPositionMap("os/file.go", "file.cs", "AD98sAA1XoKmgtzigIKkgt4ACAKAgqaCloKCgoKUgoKU2MKAgqSCgpQABxKiAAoWgqzygIKkgoKUgpaEgpYABBQACQKAgqSCloKWgoKCgpSCgpSowoCCpIKClAAHEqIAChaCAAUQ8oCCpIKClIKUqqKCrLKCiIKogoSCgqiokoKClKqigIKCpIKCgpSAgoKCtq7CAAIQ0gACEuKCgoKUhKyyggAHFtIAAhDSqqKClAAGFLKClIKklAACGAAJAgAMIAANAoSUgoK4goKUpoKClKaCkoKClLgACCAADQKElIKCuIKClKaCgpSmgpKCgpS4AAkWAAgCkpSkpICCtpSkpAACKgASAKigAAI0ABgCrsIAAhLi2qKAgqQAAyQADwLKgoKClILKgpSuwoKClIKCgJSklKqigoKUgoKAlKSUpoKCgpSClIKU2JKClIKClIKUruKCgpSUgoCCgoK2zIKWgoKCgoKClJaCggAHFNKCgpSCgIKk")]
-
 namespace go;
 
 using errors = errors_package;

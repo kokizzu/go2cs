@@ -1,8 +1,6 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("internal/fuzz/mem.go", "mem.cs", "ADN2tNr0goKUooKCuoKAgriC6JKqooKCqJKCrLKCgpSCAAIS4oKClA==")]
-
 namespace go.@internal;
 
 using bytes = bytes_package;

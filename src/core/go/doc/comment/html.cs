@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/doc/comment/html.go", "html.cs", "ABQqwoKCgpT4sqS2gpSCtoKCgoCCgoKkgoKCgraCgraCgpSCgoKCgoCCgoKCgpSkgoKClJSCzKKCgoKClJTYsoKUtIKCtIKCgoK0goKCgpSCggALEtKCgpSCgrSCgrSCgrSCgrSCgsY=")]
-
 namespace go.go.doc;
 
 using bytes = bytes_package;

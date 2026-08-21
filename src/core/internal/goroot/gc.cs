@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build gc
-[assembly: go.GoPositionMap("internal/goroot/gc.go", "gc.cs", "ABcmopSCgoKUgoKmpKQAFh6SgoKUgoKWgoKUgoKUgoKClISCgoKCgoKmgpaCgoKAgoKCgILGgIK2qNaCgpSClpSWgriWgoKAgrg=")]
-
 namespace go.@internal;
 
 using os = os_package;

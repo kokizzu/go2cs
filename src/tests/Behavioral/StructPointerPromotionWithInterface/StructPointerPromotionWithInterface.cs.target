@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("StructPointerPromotionWithInterface.go", "StructPointerPromotionWithInterface.cs", "ABg0gqaCAAkSgoIAGDCCpoIABxqCgqaCABg2ogAKEoDogAAaLIKShIKEgoKEkoaChoKIgoKCgoKGgoSIgoKCiIKC")]
-
 namespace go;
 
 using fmt = fmt_package;

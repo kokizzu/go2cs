@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("crypto/tls/bogo_shim_test.go", "bogo_shim_test.cs", "AFS6AYKCgqaCpoKCAA0GooKClgAFEoKCgoKCgoLagoKCgoKCzIKCgoKCqIKWgpaCloKCgpSUgoKCgpSCgoKUgpaClIKWgoKClIKWgoKCgpSogoKCgpSWgoKUpoKCgIKmgoKUloKAgriCgoKCgpSCgpSAgraCgoKUgpSCgoKUgqaWgoKClIKUgpSCpKSkloKWgpaCloKogoKClIIAFgyigoKChIKUgt6AgqaCgpSCgoKUhoCCpJaCgpaEAAoUgpaCgpSCgoKC3oKCgpSWgoCC3LrEooKUgIKkgoK4lIKC")]
-
 namespace go.crypto;
 
 using bytes = bytes_package;

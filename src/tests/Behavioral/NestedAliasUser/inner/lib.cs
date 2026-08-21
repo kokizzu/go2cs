@@ -1,7 +1,5 @@
 global using Entry = go.NestedAliasUser.inner_package.Entryᴛ1;
 
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA4ugqqCgoKU")]
-
 namespace go.NestedAliasUser;
 
 partial class inner_package {

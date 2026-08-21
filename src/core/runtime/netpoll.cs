@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || (js && wasm) || wasip1 || windows
-[assembly: go.GoPositionMap("runtime/netpoll.go", "netpoll.cs", "AH+QAoCigKKAooCmkgACFAAJAoKClIKUgpSWgoK+soKCgoKUgoKCggAXNsKmgoKCgoKCgpS4gq7C6JKCgoKClIKClIKUlIKCgoKCgoKCgoKEgoKClPiygpSCgpSCgpSCptaogoKEhISCgoIAAhDSgoKUgqSUAAIS4oKCpoKUgoKC3Ki2urKCgoKUgoKCgqamgpSClIKCgoKUgriCtoKClIKmgoKCtoKClILKgpKClIKUgoKUgpTYsoKClIKCgpKCgoKCgoKUgoKUgoKUgpQAAhwADQKCkoKUgpSClIKUpoKCgpSCyoKUpoKCuJSmgu7CgoKolIKUgrqAgu6CpoKClAACEuKCgpaCgoKUppSCgpSCgqSUAAgKoqaCgpSUgpSCgoKClIKClIKCgpSCgpSCgpSClKaCpoKmgqiSqJKCuKKCgoKCgriCgoKCgoKCpoKCggACEPKCgoI=")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("zgoarch_amd64.go", "zgoarch_amd64.cs", "")]
-
 namespace go;
 
 partial class main_package {

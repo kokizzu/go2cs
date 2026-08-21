@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/x509/pkcs8.go", "pkcs8.cs", "ACRGAAwCgoCCgIKkgIKkpJSCgpSmgoKAgqSCgpSmgIKkgoCCpICCpKaAgqSCgIKktgAHFvKElLi2goKUgoKU3ICC2KaCgpS2gqaCgIK2goKUgoKU3ICC+pY=")]
-
 namespace go.crypto;
 
 using ecdh = go.crypto.ecdh_package;

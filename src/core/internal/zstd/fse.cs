@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/zstd/fse.go", "fse.cs", "ABkwAAgCgoCCpoKCurqWlpaEhIKAgqa4goKCgoKAgraCgoKCgILehIKWgpaCloKClIKCpoKClIKWgoKUlIKUgoSEgoKogpaCloSAgqbssoKEhIKClIKCqIKCgoKCgoKCuIKWgoKChIKWhIKClgAuXJKCuIKClIKUgoKClJTYkoK4ggASKoKClIKUAB9EkoK4goKUgpSCgoKUlA==")]
-
 namespace go.@internal;
 
 using bits = math.bits_package;

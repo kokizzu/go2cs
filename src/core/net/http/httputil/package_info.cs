@@ -69,6 +69,20 @@ using static go.net.http.httputil_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("net/http/httputil/dump.go", "dump.cs", "ABMy8pSUgoCCpICCpAAIEoCigKKAooCigKKAyIKClKqigpSClOzygoKCgoKCpoKCggAGEIKCgoKCggABENKCkpKEysqUsoKmgpToyISCgoKCgpTegoCCtgANFoKCgoCCtqiSgpQADjIAEgKCgoKUgoKoAAYQgoKWloKCgoKUgqiCgpaCgpaEgoKClIKCgqiCgpQADRqAooDcsoKCgoSmgpS2lIKCpoKClIKCgpQ=")]
+[assembly: go.GoPositionMap("net/http/httputil/httputil.go", "httputil.cs", "AA4o4gACHAALAg==")]
+[assembly: go.GoPositionMap("net/http/httputil/persist.go", "persist.cs", "ACls8oKUrgAIAoKCgoKCgtiSgoKUrgAIAoKWgoKCgoKCpoKCqIKSgpSCgpSSgpSCgoKWuIKCgoKCqIKCgoK4gpSCpoKCgoKU2uKCggAIDAAJBoKCgoKClJaChIKCgpSSgpSCgoKUuJSEgoKCgoKUhAAWNPKClAAHGtKCgq4ACgKCgoKCgoLYkoKClAACEAAKApaCgoKCgoKmgoKogpKClIKClJKClIKmlISCgoKCgpSE2uKCgt4ACwSCgoKCgpSWgoSCgoKUkoKUgoKClriCgoKCgqiCgoKCgpSEhIKClNiSgoKU")]
+[assembly: go.GoPositionMap("net/http/httputil/reverseproxy.go", "reverseproxy.cs", "ACtsAAwCggAILAATAoKCgoKUlJSCgpQAbOgBgoKClKSkprKCuIKEgoSUpKQAAi4AFAKClKaigoKCgoKUuIKCggAYLIKCpqKClKrSgpSAgoKCpAALBtKCgpaCAAIWAAoCgoKSgrK0AAgMgoKU7qSCloKCloKCgqaEgoKClN6CuoKClriCgoKWhLiClIC4goKClILKgKammLSCgqaUgoKWgtaEgoKCgoKCqIKClIKWhIKWqIKCgoKUloSCgsiCgpSUhLiWgoKWooKCAAkY8pSUpriopIKigIL+guzCqICCuIKWpsKEgsqmgoSWgoKClILaooKUgoKCgpSCgoKUgpSCpoKClMqigpQADBzigoKCgoKUgpSClJSC1sKCgpKUgtbCgoKCguiCgpSm0oKCkpSCgpaCgoKWgoKCgpaCxgAICJSEgoKUlISCgoCCgqSAgoKkgpKSkgALEoKCpoKCpoKCgpSClKSClLTGpoKUpKSk")]
+// </GoSourcePositionMaps>
+
 namespace go.net.http;
 
 [GoPackage("httputil")]

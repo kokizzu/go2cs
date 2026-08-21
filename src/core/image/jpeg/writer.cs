@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("image/jpeg/writer.go", "writer.cs", "ABAgkoKUAI4BsgKigoKCpoKSgoKCgoKU/oKiABkygoKUpoKClKaCgpSqooKCgoKCgoKUgpSokoKqooKClIKClJSCgrqSgoKCgqiSgoKCgrqSgoKCgoKCgoKClIKUgpSCpqiSgoKUlKKUgqKCgr7SlIKUkoKCgpSCgpSCpoKUqqKCgoKCgoKCgoLMsoKCgoKCgoLMsoKCgoKCgpSCgoKClIKCgoLMsoKCgoKCgpSCgoKUgoKCgs6igoKCgoKCAB5AkpS0tAAFEIKWkoKCguiCgoKCgoKCgoKklJSUgoKC2gAOHMKCgpSCgIKUtoKCgoKkqJKClKaCgoKCgqSUuIKW1oKClJSUlJSCgoKC")]
-
 namespace go.image;
 
 using bufio = bufio_package;

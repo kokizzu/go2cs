@@ -23,8 +23,6 @@
 // That package has more system call support than this one,
 // and most new code should prefer that package where possible.
 // See https://golang.org/s/go1.4-syscall for more information.
-[assembly: go.GoPositionMap("syscall/syscall.go", "syscall.cs", "ACJK8oKClKyygpSCggACENCqsoKClAAGEJKokqiSqJKqopai")]
-
 namespace go;
 
 using bytealg = @internal.bytealg_package;

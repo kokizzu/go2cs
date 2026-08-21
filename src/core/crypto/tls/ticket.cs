@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/tls/ticket.go", "ticket.cs", "AGnYAQAIAoKCgpSUgoKClIKCkriClJSClJTKgoKkgoKUgpLcgoKmgoKCpqaCgoKU6JKCkqKCggAAFpSCgoKUlJS0tKSUtLSkgoKClIKUgoKCgpSCgoKUgoKUgoKCgpSCgpSClJSCgoKUlICCgpSkgoKUgoKUlIKUqqIADiLCgoKClNaCgpaCgoKChICCpIKCgpSEgoKEruKCgoKUgoKUpoKCloKCgoSigoKEgpaCgpSChJYACBzygpQAAhDygg==")]
-
 namespace go.crypto;
 
 using aes = go.crypto.aes_package;

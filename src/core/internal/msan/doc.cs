@@ -6,8 +6,6 @@
 // for the memory sanitizer.
 // This package exports the private msan routines in runtime unconditionally
 // but without the "msan" build tag they are no-ops.
-[assembly: go.GoPositionMap("internal/msan/doc.go", "doc.cs", "")]
-
 namespace go.@internal;
 
 partial class msan_package {

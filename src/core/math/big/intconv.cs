@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements int-to-string conversion functions.
-[assembly: go.GoPositionMap("math/big/intconv.go", "intconv.cs", "ABEqAAgCgpSqwoKUqqKokoKCggAGJAANBJKUtLS0tpKmgoKogpS0tNiCgpS0tLT2gpaClIKCvJKCloKClLTKgoCSgKa2tgAKCoKCgoKCAAIcAA4EgoKogoKUhKaygoCCpJToxAAIEoKCgpSmggAHELKCgpS0tLTotII=")]
-
 namespace go.math;
 
 using errors = errors_package;

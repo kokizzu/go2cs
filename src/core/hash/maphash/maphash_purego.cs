@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build purego
-[assembly: go.GoPositionMap("hash/maphash/maphash_purego.go", "maphash_purego.cs", "ABEegoKUpoKmgoKCAAocgoKCkoSCgoKCgoKCgpSUgoKmlKS0goK0poKmgqaCpoKS")]
-
 namespace go.hash;
 
 using rand = crypto.rand_package;

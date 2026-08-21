@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build gc
-[assembly: global::go.GoPositionMap("go/build/gc.go", "gc.cs", "AA4ekg==")]
-
 namespace go.go;
 
 using filepath = global::go.path.filepath_package;

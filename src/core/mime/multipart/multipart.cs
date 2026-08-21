@@ -25,8 +25,6 @@ Reader.ReadForm further limits the number of parts in a form to 1000.
 This limit may be adjusted with the GODEBUG=multipartmaxparts=<value>
 setting.
 */
-[assembly: go.GoPositionMap("mime/multipart/multipart.go", "multipart.cs", "ADmYAcaClIKU3LKClIKCuNaCgoKCggADFOKCABImooKUgtaCuICCpJaCgoKCpqaCgoKCpoKUqqIACBKCgqiCgoKUgoLMgpSCgpSCgoKClAACGgAKApSClKSktoK6gIKUpKTGgt6CgpQAAh4ADAKCgpSUhIKogoKUlJSCqKaCggAZOIKAgoCCgsYAAhLiAAIQ0qaigpSClIKChNyUgpaCgoKClIKWlJaClpTegoKWvrKClIKCpu6ClIK6goKUrsKClA==")]
-
 namespace go.mime;
 
 using bufio = bufio_package;

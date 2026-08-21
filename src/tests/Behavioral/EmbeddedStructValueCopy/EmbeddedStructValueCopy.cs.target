@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("EmbeddedStructValueCopy.go", "EmbeddedStructValueCopy.cs", "AB9IgoKCguaCgoKCggARBoSCgoKCgoKGgoKChoKCgoiCgoKCgoiCgoKGgoKCgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

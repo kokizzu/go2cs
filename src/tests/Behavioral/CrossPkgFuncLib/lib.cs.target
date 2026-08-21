@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAomgqqChIKCqA==")]
-
 namespace go;
 
 using CrossPkgLib = CrossPkgLib_package;

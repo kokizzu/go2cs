@@ -7,8 +7,6 @@
 // The runtime package intentionally exports these functions only in the
 // asan build; this package exports them unconditionally but without the
 // "asan" build tag they are no-ops.
-[assembly: go.GoPositionMap("internal/asan/doc.go", "doc.cs", "")]
-
 namespace go.@internal;
 
 partial class asan_package {

@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package fstest implements support for testing implementations and users of file systems.
-[assembly: go.GoPositionMap("testing/fstest/testfs.go", "testfs.cs", "ABpIABICgIKkgoCCkoKCgqaCgpSAgqS2pqKSgoKCgpSClIKCgoKCpoKClJSCgqaClAAKGLKmgoKCgpSCgoKClAAICvSCgoKUgoKCgpiSgpSUgoKUgrSCtIK0goKCgpS6goKCgqiCgoKCqICCypaAgqSSgoKClJaAgqSSgoKCgpSCgoKUgoKUgoKUgoKmloCCgoKClISCgtyCgoKUhIKCqNiSqJKokqiSgIKokoKCgoKCgoKUlLS0tLTGlLqAgriCgoKCgpSmgqaClISCgoKogoKClIKWgoKWgoKUtIK0gsaqooKCgpSCgoKClIKUgpaCgoKUgqaCgqaCgrqCgoKUgoKWgIKCgoKUgoLewoKCgoKUuoKCloKCgoKCgpSClJSCloKWgoKUlgAICNKWgoKCloKCgoKWgILKloCCgoKClKiClIKCgpSEooDIgoKClJaCgoKUkoCC+IKCguqygoKClLqSuIKUgILugIIABhCCgII=")]
-
 namespace go.testing;
 
 using errors = errors_package;

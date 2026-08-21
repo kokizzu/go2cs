@@ -12,8 +12,6 @@
 // Operations involving private keys are implemented using constant-time
 // algorithms, as long as an [elliptic.Curve] returned by [elliptic.P224],
 // [elliptic.P256], [elliptic.P384], or [elliptic.P521] is used.
-[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa.go", "ecdsa.cs", "AEF64oKClIKUAAIQ0oKClAAQIrKCgpSCgpSmgpSkpKTKkqyygoKUqtIAAhTyAAIQ0oSCgoKUlISUpKSkpMjCgoKWgoKCgoKUqgAIAoKCgoCC7oCmgpTugIKmgqiCAAomAAoChIKCgpSUhIKCloCCppSkpKSkAAgI1oKCqIKEgoKUgoLMgpaChIKClIKCloKWpoKCooKU2sKClIKClJKClLrSgpSCgoKUzKoACAqAgoKAgoKCgoLqgoIAAxAADxqCgIK4goKCgqiCgpqiAAoWkoIAAhDygoKClJSEgIKmlKSkpKTIwoKCloKCqoKClIKCloKWgpaCgqaCgqaCgpaCgpbWsoKCipQAGSrylIKUgqaCgoKCgtjigpSUgoKC/IKCppT8goKmlPyCgqaU/IKCppSmooKCgoKClA==")]
-
 namespace go.crypto;
 
 // [FIPS 186-4] references ANSI X9.62-2005 for the bulk of the ECDSA algorithm.

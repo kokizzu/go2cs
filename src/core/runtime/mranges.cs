@@ -5,8 +5,6 @@
 //
 // This file contains an implementation of a data structure which
 // manages ordered address ranges.
-[assembly: go.GoPositionMap("runtime/mranges.go", "mranges.cs", "ACJCsoKClKiSgriokt7CgqSkpJSssoKClIKssoKClIKqooKUgpQADjCSqJKqoqqiqqKotqiSAAoaooKCgpSCzqKCgoKClIIABBLCqqKqooKCgoKUABYysoKCgoKCqqKKspKCgqaUuO7cgoKmAAIQ0oKClIKUgpSokoKClNwADxiCgriCgoKmloLIyLjKgoKCgpaClIKUlKyygpSCgoKCgoKUgoKqooKUgoKUgoKUgIKCgoKUgraCqsKUgoKClIKC")]
-
 namespace go;
 
 using goarch = @internal.goarch_package;

@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/slice.go", "slice.cs", "ACE4gtaCqsKSgoKCgpTKgpaCgoKCuILuqIKCgpSClIKWhAACGAALAoLcgoKUlqaCgoKWgoKWAAVeAC4CgoKClIKUgpaClqaWhILqgpSCgoKCtIKCgoK0gpSUlIKCgoKCtIKCgoKCABAggpaCgsqmgu6mhKiSgoKCloKClLjMgsyClAACGAANBoLKgoKClIKmgqiSgpaCgpaCloKCgoKClIKClIKClqSUlKiSgpSC")]
-
 namespace go;
 
 using abi = @internal.abi_package;

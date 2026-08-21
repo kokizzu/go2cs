@@ -8,8 +8,6 @@
 //
 // The API is not subject to the Go 1 compatibility promise and may change at
 // any time.
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http/httpproxy/proxy.go", "proxy.cs", "AFiyAfIABxCigoCCtgACGgALBKaC1qKCgqSCgqaClIKWpoKCloK4gIK2gpSssoKUgoKUgpSCgoKohIKCgriCgqamgoCCpICCpqKCgpaCgoKogIKCuIKClJSCpqaAgoKmlN6ClIKCgpSAgqQACRaygoCCpIKClKqgpAAJFIKUpoKCgqYADRqC7oIABxCCgpQACBSCgpQ=")]
-
 namespace go.vendor.golang.org.x.net.http;
 
 using errors = errors_package;

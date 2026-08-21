@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || js || wasip1 || windows
-[assembly: go.GoPositionMap("net/udpsock_posix.go", "udpsock_posix.cs", "AA8egpSklKaigpSClKaigpSmgqaigoKUgoKCgraCgoKCtpSUpsKCgpSCgoKCtoKCgoK2gpSm4pSCgoKkgoKCpKaigpSClpSSgpSkkoKUpMiCgpSClpSSgpSkkoKUpMiigpSClIKClKaCgpSClpSSgpSkkoKUpMiigoKYgoKUpqKCgpiCgpSmsoKCmIKClIKAgoCCgraAgoLGpoKCgIK2gIKkgIKkpoKCgIK2gIKkgIKk")]
-
 namespace go;
 
 using context = context_package;

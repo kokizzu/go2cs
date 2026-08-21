@@ -44,6 +44,18 @@ using static go.debug.gosym_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("debug/gosym/pclntab.go", "pclntab.cs", "AEmiAQAMEoKCgoKUgoKUgoK0tLSCtJSmgpKs0oKUgq7igpSCgqYAAhYACAIAAh4ADgKCAAcYooKUqNKCgoIABhCEgpS6ppaCgoKUtLS0tLS0tLSkloKEhpiUgoKCgoKCgoKCgqSCgoKCgoKCgoKkgoKCgoKCgoKCgqT65IKCqIKCgoKCgoKCgoIABxCU2LKSgpSWgqiykoKCgoKCgqaCqJKAgqSCgoKokoCCpIKCgqiSqJKClKiyAAkWkqiSgoKUqJKokoKUAAgUsoKokqi2ppSmgKKAooCigKKAqrKCuIKClIKCqMKCgpSClJSCgoKCrLKUkpKCgqYAAhLigpaSkpKSkpKCgoKClMqClIKClIKmppSo4oKCqIKClIKC6OKCgqiCgpSCgoKCgpSmkpSCgIKk6OKCgqiCgoKcsoKCgoKCgpSUlIKCpujSgoSClISCgoKmgoKCgqbc8oKCqIKC")]
+[assembly: go.GoPositionMap("debug/gosym/symtab.go", "symtab.cs", "ACFGkK7SgoKUgpSU6qLMgqiCloKCloCCpKyypoKCuJSClMqCqJKCgIKCgsqmpAA9hAGCkpSCgpqC5LSCtIKCgpSCgpSUgoKCgpSCgoKClJSCgoKCpoKClIK4goKCgoKUgpSClIKCpoKClILKgoKUgoKUgoKYkoKCgoKmlIKCgoLYgpSCgoSCgqaClJSs0oKCgpSCloKClIKCgoKCkoKCgoKCgoKWgoKSgoKUgpS0gpSCkoKClICCpMaUtLSClIKWgoSClIKClLqCgoKUpJaSlIaCgoaygoCCtoKGgpKCgpSClNqAkqSCmKKCgoKUtLTqgoKCgoKCgoKCuKSClIKClLSCgrSCgsbIgpSClKqigoKCgpS0pMaq4oCCpIKClJSs8oKCloKCgpSWgoKUgoKCgqaqtIKClILYqqKCgoKmqJKCgpSC2AAMHAAJAgAAEISCgpKUuMiSlIK4+IKUpoKClpSCqIKCgoKCgpSmgoKkyIKU5pQABBawAAoUggAKFoKCgpSC")]
+// </GoSourcePositionMaps>
+
 namespace go.debug;
 
 [GoPackage("gosym")]

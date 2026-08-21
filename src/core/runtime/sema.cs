@@ -15,8 +15,6 @@
 //
 // See Mullender and Cox, ``Semaphores in Plan 9,''
 // https://swtch.com/semaphore.pdf
-[assembly: go.GoPositionMap("runtime/sema.go", "sema.cs", "AD1wggACGgAKAqiSAAIaAAoCqJKokqiSqJKmgoKUAAcWktaCgoKoggAHEoKCgoKCgoKClIKClJSClJSCgoK4goKCpoKUpoLWgoK6gqiCpoKUgoKUgpKCAA8ggoKCgpSUgpSClIIAECLKgoKCgpSCzNKCgoKChIKCgpSUgoKCgoKCgpSCpoKCgpSCgpSCgoKmgpSUgoKCppSCgpQADR6CgpaCgpSClAAEGAAMAoKCgoKUgpSmhIKCgpSAlIKCgoKClIKClIKUlIKCyoKCgoKmgoKUuIKClKaUpIKCgoKC2tSCgoSCgoKCloKCpJSClOzUgoKEgoKCgpaCgqSUgpQAGDqiAAIQ9q7iloKCqIKCgoKCgoKUgpSUgoKClKz2grqCgoLMgpaCgoKCvvaClpaCgoKoAA0egoKCgpSUgpSCgoKm2JKCgrqS")]
-
 namespace go;
 
 using cpu = @internal.cpu_package;

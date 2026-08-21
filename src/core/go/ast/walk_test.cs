@@ -1,8 +1,6 @@
 // Copyright 2024 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/ast/walk_test.go", "walk_test.cs", "ABQc3ISCgoKWgoCC")]
-
 namespace go.go;
 
 using ast = global::go.go.ast_package;

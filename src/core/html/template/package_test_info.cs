@@ -46,6 +46,18 @@ using static global::go.html.template_test_package;
 [assembly: GoImplicitConv<parse.TextNode, ж<parse.TextNode>>]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("html/template/examplefiles_test.go", "examplefiles_test.cs", "ABoqooKClIKCgpSSgoKmAAgMAAgIAAgSlrqUgoIACg4ACQi6zJKCzLiUgoIADhYADAjulqikgoKmgoK4goKUgoIAEBYADAjulqjMgoKmgoK6goKmgoK6goKUgoI=")]
+[assembly: go.GoPositionMap("html/template/template_test.go", "template_test.cs", "ABcgtIKCgpSCloKSgoKClICCAAkIgoKCgqaCgoKCgvaCgoKCgtaCgoKCgtaCgoKCgqaCgoKCgvaCgoK4guaCgoKCgvaCgoKCgIKkgIKkgIL4goKCAAkGtAALGKqSsqKCgIKkgoKAgqSCAAkMgoKCgoKClIKClAAHEILcgqaigoK4ooKCuKKCgoKUgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.html;
 
 [GoPackage("template_test")]

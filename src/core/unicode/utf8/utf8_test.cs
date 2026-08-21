@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("unicode/utf8/utf8_test.go", "utf8_test.cs", "AA8gkoKUgrqSgpSCAD10goKCgpSCgpSCgpSCgqaCgoKUgsqCgoKCgoKCyoKCgIKkgILagoKCgoKUgoKCqIKClIKCgqiCgpSCgpSCgoKogpSUgoKUgoKCzIKCgoKClIKCgs6igoKC3IKuwoKCgIKCpoKAgoKkgoKClAA2eoKClKaCgoKAgoKkgoCCgqSCgpSCgoIACQqCioKCgoKCgpSCgoKCgpSCgoKUgoKUlIKCgoKCgpSCgpSCgpSCgoKUlIK6koKCgoKCABEkgoKAgqSAggAXLoKCgIIAJj6CgoKUggAYMqKCgILaooKCuKKCgriigriigtyigoK4ooKCuKKCgraigoK4ooKCuKKCuKKCuKKCuKKCuKKC/oKCgoKClKaCpqKCgriigoK4ooKCuKKCgriigoK4ooKCAAwQggAEELKSgg==")]
-
 namespace go.unicode;
 
 using bytes = bytes_package;

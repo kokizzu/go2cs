@@ -6,8 +6,6 @@
 // repeatedly encrypting an incrementing counter and
 // xoring the resulting stream of data with the input.
 // See NIST SP 800-38A, pp 13-15
-[assembly: go.GoPositionMap("crypto/cipher/ctr.go", "ctr.cs", "ACROooCCpIKUgoKUAAcQgoKCgoKCgpaCgoK4gqaCgpSClIKClIKCgg==")]
-
 namespace go.crypto;
 
 using bytes = bytes_package;

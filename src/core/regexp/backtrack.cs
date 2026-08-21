@@ -10,8 +10,6 @@
 //
 // backtrack is a fast replacement for the NFA code on small
 // regexps when onepass cannot be used.
-[assembly: go.GoPositionMap("regexp/backtrack.go", "backtrack.cs", "ADBigoKClKaigqqigpSqoqzShIKUloKClIKWgpSUgpaClJSCvKKCgpSCquaCusKEgoKUgoKCAAcSgoKClISEmAACFAAJBIKClIKCupaigoKmkoKmgoKUgoKmgoKUgoKmgoKUgoKmgoKUgoKmlIKUlIKUgriCgpSCpoKqopyylICCqJKYkpgAAoECAASKAqiygpKUlJaCgpaCgpSCggAIFIKClIKCgpSWgpSUlJSCloKCgg==")]
-
 namespace go;
 
 using syntax = regexp.syntax_package;

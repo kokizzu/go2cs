@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !ppc64 && !ppc64le && !riscv64
-[assembly: go.GoPositionMap("reflect/float32reg_generic.go", "float32reg_generic.cs", "AAwgwpKmog==")]
-
 namespace go;
 
 using @unsafe = unsafe_package;

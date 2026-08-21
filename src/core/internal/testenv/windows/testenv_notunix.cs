@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build windows || plan9 || (js && wasm) || wasip1
-[assembly: go.GoPositionMap("internal/testenv/testenv_notunix.go", "testenv_notunix.cs", "ABMmgg==")]
-
 namespace go.@internal;
 
 using errors = errors_package;

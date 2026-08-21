@@ -2,8 +2,6 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/punycode.go", "punycode.cs", "ACI+gKaSgpSCgpSClIKCgqaCgoKCgoKUgoKUgoKClIKCpJSClIKCpoKUgoKCgoKUgoKClAACENKCgoKCgoKClKaCgpSCgoKCgqaCgpSCgoKCgpSUgpSCgoKCpJSClIKUgoKCgpSClKiSgoKUpoKUpKSkpoKUpKSokoKUlIKCgoKU")]
-
 namespace go.vendor.golang.org.x.net;
 
 // This file implements the Punycode algorithm from RFC 3492.

@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 // Simple file i/o and string manipulation, to avoid
 // depending on strconv and bufio and strings.
-[assembly: go.GoPositionMap("net/parse.go", "parse.cs", "ABkugKSygoKCgoKUgoKCgqaUgoKUprKAgqSCgoKClIKmgqaigoKUpoKCgpSmooKClKiSgoKCpqiSgoKCgoKCgpSmgoKUpoDe0oKCgoKmgpSq0oKCgoKkgqSClJSCpoKUrsKClIKokoKCpqiSgoLMkoKUqJKClIKUqJKqooCCpKqigoKCgpSAgoCCxpSqoqqigpSCgqY=")]
-
 namespace go;
 
 using bytealg = @internal.bytealg_package;

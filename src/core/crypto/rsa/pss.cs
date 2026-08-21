@@ -1,8 +1,6 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/rsa/pss.go", "pss.cs", "ABY+AA0GgoIABRCCqoKWgoKCAAoahIKChIIABRCCvKqWltaWgoKUgoIABhCCqIK6grqCirKCzKiWgoKClN6CgoKmgqgAABDigoKElpKUruKCgoKWgoKCuIKClAAIFICSgoKmABE0kqaigpQABBwAEQ6CgoKUlISCloKUgoK2qKK2goCCpAACGAALAoKCgpSAgqSUgsqCloKCgoIABhCCgpSW")]
-
 namespace go.crypto;
 
 // This file implements the RSASSA-PSS signature scheme according to RFC 8017.

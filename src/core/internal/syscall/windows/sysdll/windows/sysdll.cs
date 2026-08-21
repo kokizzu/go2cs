@@ -6,8 +6,6 @@
 // Package sysdll is an internal leaf package that records and reports
 // which Windows DLL names are used by Go itself. These DLLs are then
 // only loaded from the System32 directory. See Issue 14959.
-[assembly: go.GoPositionMap("internal/syscall/windows/sysdll/sysdll.go", "sysdll.cs", "ABo2soI=")]
-
 namespace go.@internal.syscall.windows;
 
 partial class sysdll_package {

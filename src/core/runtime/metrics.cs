@@ -1,8 +1,6 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/metrics.go", "metrics.cs", "ACV48oKWuIIACxiUhIKmgtyC3ILcgtyC3ILcgtyC3ILcgtyC3ILcgtyC3ILcgtyC3ILcgtyCpoLugtyC3IKmgu6C3ILcgsqCyoLcgtyC3ILKgtzKgtyCAAUQgtyC3ILcgtyC3ILcgtyC3ILcgtyC3ILcggAEEILKgsrKysrKyoK6goKopqKCyqKCqJKCgoKClIKCAAwqsoKClKjCgoKUqMKCgpSokoKCpqiSAB1KspaCgoKCgoKCgoKClIIAFzKygoKCgoKChIKCgoKCggAJFpIAESSSgoKCqqIADyTSgoKUgoKUlKSkpLYAGESygoKUgoKUgoKUABY0woKCgoSEgoKUhKyylpaCrtSSlpaCgpKCgriW")]
-
 namespace go;
 
 // Metrics implementation exported to runtime/metrics.

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("DeferEvalParamFunc.go", "DeferEvalParamFunc.cs", "AAwKooIACAaCgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

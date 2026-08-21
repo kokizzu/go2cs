@@ -6,8 +6,6 @@
 // records with deep stack traces.
 //
 // TODO: Consider moving this to internal/runtime, see golang.org/issue/65355.
-[assembly: go.GoPositionMap("internal/profilerecord/profilerecord.go", "profilerecord.cs", "ABgqgKKA")]
-
 namespace go.@internal;
 
 partial class profilerecord_package {

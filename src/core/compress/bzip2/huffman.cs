@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("compress/bzip2/huffman.go", "huffman.cs", "ACVO0oSChIKUgsq6hIKUlqaCgpSUzgAJEoKWqIKCgpaCgIKk3oKEgoKClIKCprqIgoIAEybyloKCgoKogoQACxqCzMqWgpSWgoKElIKUloKWlIKUlg==")]
-
 namespace go.compress;
 
 using cmp = cmp_package;

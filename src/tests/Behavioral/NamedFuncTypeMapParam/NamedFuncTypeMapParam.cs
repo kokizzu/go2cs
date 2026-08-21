@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("NamedFuncTypeMapParam.go", "NamedFuncTypeMapParam.cs", "ABEogoKogqaCgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

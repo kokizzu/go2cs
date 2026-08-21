@@ -5,8 +5,6 @@
 // Package flate implements the DEFLATE compressed data format, described in
 // RFC 1951.  The gzip and zlib packages implement access to DEFLATE-based file
 // formats.
-[assembly: go.GoPositionMap("compress/flate/inflate.go", "inflate.cs", "ACJGgsyAAAoUggAKFoIAKWbYtIKaopKCgpSClIKUAAgUgpaCgoKCggAGEIKWgoKCloKCgoKCgoKUgqiCgpSCgoKCgoLcgpSmgqaUgoKCgoKUuriCuIKUpoKCgswAK16igoCCtoKCgoKClLaCgraAoqSCgrbYsoKCgoKClJSClIKCyoKClAAJELSCgIK2goKUgoKClIKUgpaCgoCCtoKClIKUgrqCgoKUlIKClpKCgpSkgoKClLSCgrSCgrSCgIK2goKCgpSCgqiC3oKWrsKalKSmhJKCgoKUgoKUgoKCgoKUtIKmgrSCtIK0grSCtIK0grSCtIKCgIKCtoKCloKCgoCCgraCgpSAgoK4lLSEgpKAgoK2goKCtIK4goKWgpaEkoKClISCgoKClLq2gpaCgoKClIKCgoKWgoKCloKqooKCloKCgoKCgpaCgoKUpoKCgpSUqJKClKaCgoKUgoKCqPq4koKCgoKCgpSCgpSCgoKClIKCgoKClIKCyoKAgoKCtoKmlKaChJKClIKUgpSClLiC7oKCAAIWAAgChIKCgoKCggACFPKEgoKCgoKC")]
-
 namespace go.compress;
 
 using bufio = bufio_package;

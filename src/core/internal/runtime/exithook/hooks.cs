@@ -11,8 +11,6 @@
 // similar circumstances. That is the say, we are expecting that F
 // uses normal / high-level Go code as opposed to one of the more
 // restricted dialects used for the trickier parts of the runtime.
-[assembly: go.GoPositionMap("internal/runtime/exithook/hooks.go", "hooks.cs", "ACpWkoKUggAGEPKCgpSUgoKEgoCCuIKCgoKUAAgMgA==")]
-
 namespace go.@internal.runtime;
 
 using atomic = go.@internal.runtime.atomic_package;

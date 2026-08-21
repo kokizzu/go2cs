@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("strconv/quote_test.go", "quote_test.cs", "AA8esoKCgoKCgt6ygoKCgoKCABgygoKAgqSAgtqCgoCCpICC2oKCgIKkgILaooK4ooLcooLcooIAGziCgoCCpICC2oKCgIKkgILagoKAgqSAggA5cIKCgIIAT6IBgoKUgpSCAAoKsgAGGoK4tIKCzIKUgoKUgoKCgpSC6KKC6KKC")]
-
 namespace go;
 
 using static strconv_package;

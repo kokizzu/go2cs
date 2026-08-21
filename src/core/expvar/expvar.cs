@@ -20,8 +20,6 @@
 // this way, link this package into your program:
 //
 //	import _ "expvar"
-[assembly: go.GoPositionMap("expvar/expvar.go", "expvar.cs", "AEB0gqaCpoKmgqaCAAcQgqaCpoKokoKCgoKCgsySAA8ggqaCpoKCgoKCloKCgoKClIKCgpS0xLaCgoKo0oKCgoLY0oKUgoKU1oKCgqa4gIKAgoLIqJKCgoKCgrqAgsqSgoKCgoK6gILK0oKCgoKC7vKCgoKCggALEoKCqqKmgqaCzoKmgoIACRLSgIKkgoKC2qKqkoKCpoKCgqaCgoKmgoKCrLLmgoKssqaCpoKCgqaCgpSUgqiSgoKClJS0tLS05rTGgg==")]
-
 namespace go;
 
 using json = encoding.json_package;

@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/aes/aes_test.go", "aes_test.cs", "AA4ewoKCgpSCgsySgoKClpSCqIKCpqiSgpSCgoKCuICCAAYUwoKAgqSAgt6igoKCgoKCgoCCpM6igoKCgoKCgoKCgIKkAF/CAbKCgoKCgsqCgoKCpoKCggAtWpKCgoKClIKCgoKC3pKCgoKClIKCgoKCAAkSsoSEoJKgkqCSoJKgkqC2ooKCgqSmAAoGgoCSgJKA5qKCgpSCgoKCuIKAkoCSgLaigoKUgoKCgriCgJKAkoC2ooKCgriCgJKAkoC2ooKCgII=")]
-
 namespace go.crypto;
 
 using testing = testing_package;

@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("strconv/strconv_test.go", "strconv_test.cs", "AB0wgqSkgqSmoqKkpgAJDoKClIKmgoKUgoKAggAhIoKC7gAHEpKUkpSSlJKUkpSSlJKUkpSSlJIACwiCgoKCgoQABhaCgoKClICC")]
-
 namespace go;
 
 using Δruntime = runtime_package;

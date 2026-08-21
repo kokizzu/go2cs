@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("main.go", "main.cs", "AA8ugoIABxCCgoKCgtyw7IKGhIKYgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

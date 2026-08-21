@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("IfaceChainPointerAssert.go", "IfaceChainPointerAssert.cs", "ABUwgKKA6ICigAAUBISGhoCCgpSogoaUxKiChICClKaAgpSmlLTEqIKAgpQ=")]
-
 namespace go;
 
 using fmt = fmt_package;

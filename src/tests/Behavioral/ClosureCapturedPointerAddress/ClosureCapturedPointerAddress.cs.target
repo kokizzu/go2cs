@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("ClosureCapturedPointerAddress.go", "ClosureCapturedPointerAddress.cs", "AA0YguaGgpSEhoSGqoaCgpQ=")]
-
 namespace go;
 
 using fmt = fmt_package;

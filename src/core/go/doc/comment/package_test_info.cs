@@ -34,6 +34,21 @@ using static global::go.go.doc.comment_internal_test_package;
 [assembly: GoImplicitConv<global::go.go.doc.comment_package.ListItem, ж<global::go.go.doc.comment_package.ListItem>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/doc/comment/old_test.go", "old_test.cs", "ACREgoKCACdIgoKCgg==")]
+[assembly: global::go.GoPositionMap("go/doc/comment/parse_test.go", "parse_test.cs", "AAoUkg==")]
+[assembly: global::go.GoPositionMap("go/doc/comment/std_test.go", "std_test.cs", "ABcegoKCloKCgqaEgoKC")]
+[assembly: global::go.GoPositionMap("go/doc/comment/testdata_test.go", "testdata_test.cs", "ABskgoKClIK4goKUlIKGlJbKlIKSgoKClIKCgqaClIKCgoKUgpikpKSkAAITAAIYgu6CgoKmgqS2goKCgoKUtoKCyLaCgsiCtoK2goLIgraCtoK2goLIgpSCyIKUgsiCgoLagraCyKKCgg==")]
+[assembly: global::go.GoPositionMap("go/doc/comment/wrap_test.go", "wrap_test.cs", "ABckgoKUgpaCgoKCgoKUgpSWkpKCgpKSloKCgpSClIKClIKUgoKUtqSUlIKogoIABxgACgqCgoKClIKUgoKCgoKClIKClIKCgsyCgpSCgoKU")]
+// </GoSourcePositionMaps>
+
 namespace go.go.doc;
 
 [GoPackage("comment")]

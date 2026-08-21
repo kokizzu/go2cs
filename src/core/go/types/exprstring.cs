@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements printing of expressions.
-[assembly: global::go.GoPositionMap("go/types/exprstring.go", "exprstring.cs", "ABImsoKCAAsMAAkMpLa2goLItoKCtoKCgpS2goK2goLWgoKCgraCgoKUgoKUgoKCpraCgoK2goKCgpS2graCtoKCgoK2goKUgraCgraCtoKCtoKCgraClKSkpILIooKChIKClJaClIKogoKmooKCqJaAgoK4gpa8soKClLiigoKU")]
-
 namespace go.go;
 
 using bytes = bytes_package;

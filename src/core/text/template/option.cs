@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file contains the code to handle template options.
-[assembly: go.GoPositionMap("text/template/option.go", "option.cs", "ABdUABUCgoKUpoKCpoCClJSCpIKkgug=")]
-
 namespace go.text;
 
 using strings = strings_package;

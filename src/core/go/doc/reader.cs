@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/doc/reader.go", "reader.cs", "AB1A8pSkpraSgoKCgoKClIK21oKAgqSu4pKA3LaSgpSAgqSU7oK+0oKCgpSUAAYY0pSkpKSAptaklAAxcoKuwoKUgIK23IKu8oKClICCgoKkpsaCgoKUpoKClKaCgpSCpqgACAqCgoKCgoKClIKWgJLa1JSmgpSClIKogqiCgpSAgrjcgtyowoKUgrSkgpSowoKCupaClJSCgpSKsoKCgsySqMSCqJSmlIKmlICC/rqCgoKCgoCmpICCppSAgoKCggAIDoKCuqrCgpSCgoK4AAYWooKCgoKClIKCuICCpKiSgoDKkoKCAAoe0oKCgoKCgpSmgszUgoKCuoKUlpKAgoCCgoKCgoKmgoKUgoKkAAkQtvyAgqSUgoDKAAoWAAoQgoK4xIKCgoKCgqiCgoKUloKCgpSWgoK6goKAggAGEsKCqJKSgoKCgoKUlpKWkpaSgpSEqLKC3IKUgqaCpqiSlJQABxKCggAEEsKCgoTulKamgpSAguyCAAQQooKCgoKUgqiSgoCCtqaCgoKCgoKmhIKCgpSWpoKCgoIACBKWiKaCgpSmgoKClMyC9oKGqqKCgpSuwgA3drKOgoKAgoKCyIKAgqQ=")]
-
 namespace go.go;
 
 using cmp = cmp_package;

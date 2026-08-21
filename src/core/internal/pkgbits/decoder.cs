@@ -1,8 +1,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("internal/pkgbits/decoder.go", "decoder.cs", "ADl+sKaQrtLehISU6JKCtoSChIKEgoSokoKClKiSqJKCgqqigoKUgpSqooSCgpSEqJKqopKCrsKSgqaigqzS3IKCgoKClqai3IKCgoKClJSCgpYADB6CgriigoKs0oKCgoKCgpSUgoKUlIKUyoKWgoKUpoKCgq7igpaCgoKCloIAECaEgoKUgpaCgoKCzKiygoKCgqiSgqiSgqiQgICAppCAgICmkICAgAACEvKCqsKCqsKCqqKCgpSqooKCgoKUpoKAqqSkpKSCgqQAAh0ABSaCgoKUpoKCggACFAAIAoKCkoKUgpSqwoKCgoKSgoKCgoKWgoSE")]
-
 namespace go.@internal;
 
 using binary = encoding.binary_package;

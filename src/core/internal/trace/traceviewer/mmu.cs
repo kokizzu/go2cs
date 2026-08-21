@@ -20,8 +20,6 @@
 // points in time in the trace to build an empirical distribution. We
 // could potentially put confidence intervals on these estimates and
 // render this progressively as we refine the distributions.
-[assembly: go.GoPositionMap("internal/trace/traceviewer/mmu.go", "mmu.cs", "ADBWgsqSlIKkgqQADhiCgoKUABAiooKCgoKUhJKCgpSCpqiSgoKCloKCgoK6goKAgqSmlIKCgpSCpoCCtoKCgoKCgoKUgpSogoKCAAqQA7KCgoKWgoKCgpSGkoKWgoKCAAgShJKigqY=")]
-
 namespace go.@internal.trace;
 
 using json = encoding.json_package;

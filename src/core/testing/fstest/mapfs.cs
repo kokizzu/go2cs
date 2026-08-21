@@ -1,8 +1,6 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("testing/fstest/mapfs.go", "mapfs.cs", "AB9ekoKUgpSewoKCgoKCgoKCpriCgoKCgoKClO6CpoKUgpSIgpQADBaCpoKmgqaC7qSSAAgSgKKAooCigKKAooCigKKApIIACRSApICkgoKUgpSCgqaCyLTEgpSCpoKClIKClAAKFoCigKKCpoKCgpSClIKClII=")]
-
 namespace go.testing;
 
 using io = io_package;

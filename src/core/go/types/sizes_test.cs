@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file contains tests for sizes.
-[assembly: global::go.GoPositionMap("go/types/sizes_test.go", "sizes_test.cs", "ABMkkqaCgoKCgIK2gqiSAAIUgpKAgqSCgILKkgACEIKClIKUgoK4gq6SyIKCgrqShAACGIKCksiClIKWgoIAHGqCgoKSkoKS")]
-
 namespace go.go;
 
 using ast = global::go.go.ast_package;

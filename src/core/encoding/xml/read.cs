@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("encoding/xml/read.go", "read.cs", "ABOKAgBzAqqi7sKCgpaClMyAACFEkoKClKrkhIKCgoKCloKWrLKCgoKCgpSUgsa0tqiSgoKUlKaUgoKCuqaUgoKCqKaCgpaAgoKkloKClgAMJMKCpoKCgoKUgJKC7oKCgqiCgpSWppaCgoKogpaCgoKoAAocgAACELaCxIKagoKGgLKCpLa2goKCloKCgpiSgoKUgoKClJSUgoCCupKCgoKClIKCgIKkuILIgoKCgILMkoKUgriCuIK4goKCgpQACPUBAAWIAoKCgoKUgoKUpIKmgoKUgoKAgsiCgILqgoKCpraCyILqgoCCpJaCgoKAgqSogIKmgKSktoCkpILIpoKEgoKUqLySgpSCgpSkgoKUgoKUpIKClIKClKSCgpSCgpSkpJSUAAJfAAJkAAIQAAoCgoKCgoKUgoKmlJS4qILGlMqCgoKClKiigpSCgILoAAQU0oKCgoKUlLSClA==")]
-
 namespace go.encoding;
 
 using bytes = bytes_package;

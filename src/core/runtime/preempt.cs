@@ -48,8 +48,6 @@
 // would consume an M for every preempted G, and the scheduler itself
 // is not designed to run from a signal handler, as it tends to
 // allocate memory and start threads in the preemption path.)
-[assembly: go.GoPositionMap("runtime/preempt.go", "preempt.cs", "AFDSAQAfAoC4qJKWgoKCgoKAAAMoAA8U0piEgszCnIKCAAAcABMKopiSmIKChoKCgoKErgAKDIKCggAG1QGMloIAC9oBgpSClIL+opSWgoAAAhCrggADEJQAAxLSAAIWAAkGkoKCgpSU7oKCgoKUggAKFoK81AAHJgASArqCqIKogqiClJQACBKUgriUgAAHELaCggAKGpSYopSmtA==")]
-
 namespace go;
 
 using abi = @internal.abi_package;

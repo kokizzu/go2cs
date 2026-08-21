@@ -1,8 +1,6 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("archive/tar/strconv.go", "strconv.cs", "AA8gkqiSgoKmqqKClIKCgqYAChqigIKkqJKClIKCzIKCAAMW8oKs6IzSgpaCooKClIKClJSCgpSClKiqooKCloKCgpSCloKm3ISClIKClKaCgoKWlICCpKqigqyylpaCgpSCqIKUgpSUgoKUqqKSgqiCgoKClKz0goKogoKUgoKoooKogoKWgpSqooKWgoKCloKClAACGgAKAoKUlKQ=")]
-
 namespace go.archive;
 
 using bytes = bytes_package;

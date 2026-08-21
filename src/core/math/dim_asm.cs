@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build amd64 || arm64 || riscv64 || s390x
-[assembly: go.GoPositionMap("math/dim_asm.go", "dim_asm.cs", "AAwWuA==")]
-
 namespace go;
 
 partial class math_package {

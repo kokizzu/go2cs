@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "ABo+goCCpKaCgIKkpoKAgqSmgoCCpA==")]
-
 namespace go.NamedInterfaceLateAssert;
 
 partial class latelib_package {

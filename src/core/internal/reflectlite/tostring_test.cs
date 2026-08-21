@@ -4,8 +4,6 @@
 // Formatting of reflection types and values for debugging.
 // Not defined as methods so they do not need to be linked into most binaries;
 // the functions are not used by the library itself, only in tests.
-[assembly: global::go.GoPositionMap("internal/reflectlite/tostring_test.go", "tostring_test.cs", "ABImovaCgoKUgpSkpKSCpKSClLaCgoKUlIKkgoKCgoKUlIKkgoKCgqSCpIKCgoKCgpSUgqSkpA==")]
-
 namespace go.@internal;
 
 using static global::go.@internal.reflectlite_package;

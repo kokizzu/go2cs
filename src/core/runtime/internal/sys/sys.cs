@@ -4,8 +4,6 @@
 
 // package sys contains system- and configuration- and architecture-specific
 // constants used by the runtime.
-[assembly: go.GoPositionMap("runtime/internal/sys/sys.go", "sys.cs", "")]
-
 namespace go.runtime.@internal;
 
 partial class sys_package {

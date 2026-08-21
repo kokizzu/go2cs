@@ -27,8 +27,6 @@
 // some flexibility in efficiently seeking or re-reading data (e.g.,
 // inlining requires re-reading the function body for each inlined
 // call, without needing to re-read the object-level details).
-[assembly: global::go.GoPositionMap("internal/pkgbits/doc.go", "doc.cs", "")]
-
 namespace go.@internal;
 
 partial class pkgbits_package {

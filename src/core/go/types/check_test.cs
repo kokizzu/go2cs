@@ -25,8 +25,6 @@
 //	func f() {
 //		_ = x /* ERROR "undeclared" */ + 1
 //	}
-[assembly: global::go.GoPositionMap("go/types/check_test.go", "check_test.cs", "AER+goKCgoKClIKCgIKCpsimgpSklKiSgpSs1JKClIKAgqSCgoKWAAIcAA4EgoKCAA8I0oKokoKClIKCgoKqkoKCooKUgoK4guqCmKKCgoKCgoCCpoKClJKSlJaCqAALGIKCqIKCgIK6koKWgoKCgoKogoKCgoKCgqaCgoKUgoKmgoKClIKmlIKCuoKCgoCCupKCqICUgqa4grqCgoKCggAMDoKCqqKCqqKCAAYiAA4ChIKCloKCloKCgpSU6IKCgqaCgr6ygqaGotaigoKUhIIACASA0oDSgNKApIKChIKCgpaCloKUgtyChIKCgpaCgpaSuIKCgoKClJQ=")]
-
 namespace go.go;
 
 using bytes = bytes_package;

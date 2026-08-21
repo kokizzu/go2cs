@@ -1,8 +1,6 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/poll/fd_mutex.go", "fd_mutex.cs", "ADBqAA4CgoKClIKClILOooKCgqaCgqaCpoKClIKClM6igoKClIKCzqKigoKCgoKUgoKClIKCgpSClIKCuIKCpoKClAAEEMKigoKCgoKUgoKClIKCgqaCgpSCgpTMopjCgpSssoKUqsKClKyygrzCgpSssoI=")]
-
 namespace go.@internal;
 
 using atomic = go.sync.atomic_package;

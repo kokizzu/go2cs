@@ -1,7 +1,5 @@
 global using Alias = go.main_package.Network;
 
-[assembly: go.GoPositionMap("main.go", "main.cs", "ABEggoKUktiCgpTcgoKUAAsGgoKEgoSChIKGgoKE")]
-
 namespace go;
 
 using fmt = fmt_package;

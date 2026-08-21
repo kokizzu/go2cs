@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("iface.go", "iface.cs", "")]
-
 namespace go;
 
 using @unsafe = unsafe_package;

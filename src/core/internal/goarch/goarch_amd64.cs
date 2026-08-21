@@ -1,8 +1,6 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/goarch/goarch_amd64.go", "goarch_amd64.cs", "")]
-
 namespace go.@internal;
 
 partial class goarch_package {

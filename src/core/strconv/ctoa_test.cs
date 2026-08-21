@@ -1,8 +1,6 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("strconv/ctoa_test.go", "ctoa_test.cs", "ABUYggAOMIKCgtyigoCCtg==")]
-
 namespace go;
 
 using static strconv_package;

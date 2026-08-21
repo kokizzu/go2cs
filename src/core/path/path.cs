@@ -9,8 +9,6 @@
 // slashes, such as the paths in URLs. This package does not deal with
 // Windows paths with drive letters or backslashes; to manipulate
 // operating system paths, use the [path/filepath] package.
-[assembly: go.GoPositionMap("path/path.go", "path.cs", "AB80goKUpoKCgoKUgpSCpoKClAACLAATAoKWgt6CkoKCloKWtraCloLCyJKUgoLqopaS7IKWAAIQ0oIAAhDygoKUgpSCgoKClKauwoKCpq7CgqaCpoCCtoKUqJIAAhTygg==")]
-
 namespace go;
 
 using bytealg = @internal.bytealg_package;

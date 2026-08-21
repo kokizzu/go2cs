@@ -9,8 +9,6 @@
 //
 // NOTE: UNDER CONSTRUCTION. This API may change in backwards incompatible ways
 // and without notice.
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/bidi.go", "bidi.cs", "ACiKAQALAoIADzIACQKClIKChIKCgoKClIKCgsiClIKmAAIQ8oKCAAIQ8oKCrLKssgACENKCgoKCgqamgoSChKaCgpSUgoKCgpSCpoKCgqiygpaClIKClIKCloSCqqKCgoKUgoIACx6yqJKoksoAECSSqJIAAhLiqqKssoKChIKCgqiClISssoKCgoKCgpSm")]
-
 namespace go.vendor.golang.org.x.text.unicode;
 
 // import "golang.org/x/text/unicode/bidi"

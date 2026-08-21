@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !wasm
-[assembly: go.GoPositionMap("internal/runtime/atomic/stubs.go", "stubs.cs", "AAwYpqampqampqamqsampqam")]
-
 namespace go.@internal.runtime;
 
 using @unsafe = unsafe_package;

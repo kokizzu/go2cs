@@ -1,8 +1,6 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("encoding/json/example_marshaling_test.go", "example_marshaling_test.cs", "ABYsgoKAgqSYpKeu9oKCmKSnrtaCgoKAgqaCgpY=")]
-
 namespace go.encoding;
 
 using json = go.encoding.json_package;

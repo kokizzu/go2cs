@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Tests for multiple-template execution, copied from text/template.
-[assembly: go.GoPositionMap("html/template/multi_test.go", "multi_test.cs", "AC5YlIKClIKClAAIBoKCgpSCgoKU5oKCgpSCgpSCgoKUAAgGgoSCgoKogoKCgpSWgoKCgpQADBSCgoKU1oKCgpTmgoKClIKClAALFpKCgoKClIIACAaCgoKAgqSAgqSAgvqSggAJCJKCgoKUgoKUgoL4poKAgqSAgqSAggAKCIIACBqChJiCgoKmgoCCgqSCAAkQ2viCgoKClIKCgqaCgoI=")]
-
 namespace go.html;
 
 using zip = archive.zip_package;

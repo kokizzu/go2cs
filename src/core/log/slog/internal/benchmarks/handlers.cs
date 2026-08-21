@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers.go", "handlers.cs", "AB88gqaA9NKClIKCgpSCgoKCgpKCgoKClIKC1qKUpKSkpKSkpIKUxMbIoqaCpoIADyCCpoCkooKCpoKmguyAooCkgqaC")]
-
 namespace go.log.slog.@internal;
 
 // Handlers for benchmarking.

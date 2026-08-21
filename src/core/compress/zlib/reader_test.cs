@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("compress/zlib/reader_test.go", "reader_test.cs", "AJgBrgKigoKCgoKClJSmgoKCgpSUgoKogIKkgII=")]
-
 namespace go.compress;
 
 using bytes = bytes_package;

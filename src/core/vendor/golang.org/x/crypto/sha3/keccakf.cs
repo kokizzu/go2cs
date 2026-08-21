@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !amd64 || purego || !gc
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/keccakf.go", "keccakf.cs", "AClSpgAMBLqCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgg==")]
-
 namespace go.vendor.golang.org.x.crypto;
 
 using bits = math.bits_package;

@@ -27,8 +27,6 @@
 // type deduction.
 //
 // For a tutorial, see https://go.dev/s/types-tutorial.
-[assembly: global::go.GoPositionMap("go/types/api.go", "api.cs", "AECAAaIACBKAooAAaPgBwgBz+AGCqqKAgqSAgoCCxgACFPKAgqQAAhIACAKCgpSUggAKGqKokqqirLKUpKqiqqKqoqqiABMogoKCgpSUgoIAAhwACwKC")]
-
 namespace go.go;
 
 using bytes = bytes_package;

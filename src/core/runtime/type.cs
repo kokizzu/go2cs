@@ -17,8 +17,6 @@ global using ptrtype = go.@internal.abi_package.PtrType;
 global using name = go.@internal.abi_package.ΔName;
 global using structtype = go.@internal.abi_package.ΔStructType;
 
-[assembly: go.GoPositionMap("runtime/type.go", "type.cs", "ACIygoKClKaCpoKClIKCgoKUtLSUrsKAgqSUgqSCpAAZLoKCgriCgpQABhgACQKClIKCgoKCgpS6goKCgoKClJSmggAGGAAJAqaUgoKCgoKmgoKCgoKCgpSUlICCpIKCgpSmgtaCppSCgoKCgqaCgoKCgoKClJSUggACLoKClIKCgoKUgoKCqqKClISCgpSCgoKClKaCgoKmtriCgoKCgoKCgoKmqAAIEoIABR4ADwKCgILchIKUgoKUgoKUgoKCgpSCgoKmgpSUpIKCpIKCpIKCgpSCgoKmgoKCpqSCgoKUgpSCgqaCgoKUgpSCgoKmpIKCpIKCpIKCpIKCgpSClIKCgoKUgpSClIKUgqakgoI=")]
-
 namespace go;
 
 using abi = @internal.abi_package;

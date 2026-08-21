@@ -1,8 +1,6 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("internal/fuzz/mutator.go", "mutator.cs", "ABQmgqaCpoKClKqigKSkpNoACRCogpS0tLS0tLS0tLS0gsbExIKUgpSClIK0gpSClIKUgsTIgoKCgpaSlJSUgqaSlJSUgtqCgoKClpKUlJaCppKUlJSC2oKCgpaSlIKUlIKmkpSClJSCpoKSlIKUlIKmkpSCAB040pKCgpSWgoKAgoIADyCCgpSC")]
-
 namespace go.@internal;
 
 using binary = encoding.binary_package;

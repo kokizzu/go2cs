@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package nettest provides utilities for network testing.
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest.go", "nettest.cs", "ACtKgoCCpICCgqSAgqSAgoKkgpiikoKCtsiCgqqigqqigqqigq7CgpiUxpSkotiUpMaUxpSkpKqigKaSxgACENKClIKAgraCtoK2graCgpSk7sKClIKAgraCtoK2graCgpSk6qKCgpSCgpSCgoKu4rakgpSCgpSqooKClLKCpq7CtqSCgpSygpSAgqSUpoKCgpSClICC1oCC2KaCgpSUgILGkpSAgsaAgqSAgsY=")]
-
 namespace go.vendor.golang.org.x.net;
 
 using errors = errors_package;

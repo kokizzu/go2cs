@@ -4,8 +4,6 @@
 // Test that the hashes in the standard library implement
 // BinaryMarshaler, BinaryUnmarshaler,
 // and lock in the current representations.
-[assembly: go.GoPositionMap("hash/marshal_test.go", "marshal_test.cs", "AB02goKClAAcNoKykoKCloKChIKCgoKUgoKUgoKUgpSCgpSAgqSCgoKCgpSC")]
-
 namespace go;
 
 using bytes = bytes_package;

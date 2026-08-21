@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/coverage/cfile/hooks.go", "hooks.cs", "AAw4ABYIgoKU")]
-
 namespace go.@internal.coverage;
 
 using exithook = go.@internal.runtime.exithook_package;

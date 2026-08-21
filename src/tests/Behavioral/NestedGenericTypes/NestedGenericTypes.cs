@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("NestedGenericTypes.go", "NestedGenericTypes.cs", "ABEigoKChoKCgoSCgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

@@ -1,8 +1,6 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/textproto/reader.go", "reader.cs", "ACBK0qqigqiSgoKUrLKCgoKCgpSCpoKUgoKmAAIqABICgqqigoKUgoKUqqKCgpQAAhDSgqiCgpSSloCC7oKChMyEgpSWgoKClIKClJSokoKCgpSUgoKUlKbSgoKUptKCgpSCgoKClIKGlAACKAAVAoKClAACOgAeAoKCgoKCloKCgoKCgpSUlJQAAiYAEgKCggAHEtgADRCCgoKCgoKUlJSCgpSCgpSmgoKUgoKUpoKCmIKCtqKCloKCtpKClIK2gpSClIKUqqKClIKmvrKuyLKCgoKCgoKUqIKClJSUAAQwABMCAAIQ+LKCgoKUlrqCloCCgoKClKaCgoKogoKUgoKUgoKogoKohIKCgpSCgpTKgoKUloLOoKqygpTO1IKCgpSCgoKClJSUlJQAAhYACQSCgoKClIKClIKClJQABxoACAoABSYABSAADAwACAgAAhwACgKCqIKCgqa4gpSUgpaC6oKklIKUuICCpAAIEIKCAChS")]
-
 namespace go.net;
 
 using bufio = bufio_package;

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build 386 || amd64 || amd64p32 || alpha || arm || arm64 || loong64 || mipsle || mips64le || mips64p32le || nios2 || ppc64le || riscv || riscv64 || sh || wasm
-[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/endian_little.go", "endian_little.cs", "")]
-
 namespace go.vendor.golang.org.x.sys;
 
 partial class cpu_package {

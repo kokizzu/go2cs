@@ -468,8 +468,6 @@ or to invoke a particular template explicitly by name,
 	}
 
 */
-[assembly: go.GoPositionMap("text/template/doc.go", "doc.cs", "")]
-
 namespace go.text;
 
 partial class template_package {

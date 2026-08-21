@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("GlobalTupleVarDecl.go", "GlobalTupleVarDecl.cs", "AA4SgNSCggAJFoKCgoySjpIACg6ApII=")]
-
 namespace go;
 
 using fmt = fmt_package;

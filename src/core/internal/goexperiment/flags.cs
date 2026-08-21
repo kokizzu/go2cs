@@ -40,8 +40,6 @@
 // at run time based on the GOEXPERIMENT variable.
 // The code used in builds to interpret the GOEXPERIMENT variable
 // is in the separate package internal/buildcfg.
-[assembly: go.GoPositionMap("internal/goexperiment/flags.go", "flags.cs", "")]
-
 namespace go.@internal;
 
 partial class goexperiment_package {

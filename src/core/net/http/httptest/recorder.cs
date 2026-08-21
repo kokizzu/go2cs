@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/http/httptest/recorder.go", "recorder.cs", "AC9mkgAKHsKCgoKUAAYU8oKUgpaEgoKCgpSWqqKCgpSqooKClKYACxiCupKCloKCgoKUqqKClAAGJAAPAoKUgpTugoKUgoKUlISAgoKCooKUlIKClIKCyIKClIKUgqYAAhDSgoKUgoKU")]
-
 namespace go.net.http;
 
 using bytes = bytes_package;

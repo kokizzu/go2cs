@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("UntypedConstFloatContext.go", "UntypedConstFloatContext.cs", "AAwegoKCkoKCgoKCgoKEAAAQgoKIgoKCgoKCgoKCgoKC")]
-
 namespace go;
 
 using fmt = fmt_package;

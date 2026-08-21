@@ -1,8 +1,6 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found src the LICENSE file.
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20/xor.go", "xor.cs", "AA4kopLcgoKCgoKCgoKUgoKCgg==")]
-
 namespace go.vendor.golang.org.x.crypto;
 
 using runtime = runtime_package;

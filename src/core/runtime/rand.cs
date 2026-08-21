@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Random number generation
-[assembly: go.GoPositionMap("runtime/rand.go", "rand.cs", "ACtKooKCloKCgpSClLiCpoKCggACEAAJCoKCgoKCgpSClILqkoKClIKAgoKkvKKCgpSCrLIAAhAACQqCgsqCgpSCgrqygoKUgoIAAhDkAAIsABMCuIaCggAGEIKCgoKCAAIqABICAAImABEEAAIWAAgCqJKokg==")]
-
 namespace go;
 
 using chacha8rand = @internal.chacha8rand_package;

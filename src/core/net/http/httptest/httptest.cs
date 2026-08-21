@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package httptest provides utilities for HTTP testing.
-[assembly: go.GoPositionMap("net/http/httptest/httptest.go", "httptest.cs", "ABUmkgAINAAXAoKUgoKUloKChIKUtLTEpICClO6EgpaC3g==")]
-
 namespace go.net.http;
 
 using bufio = bufio_package;

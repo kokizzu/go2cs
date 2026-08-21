@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("debug/dwarf/entry_test.go", "entry_test.cs", "ABce6oKCgoKUgpiigoCCpIIAEBaCAAgQhMqEyoS41oIACBLWggAIEqaCgoKCgoKClIKUloKCgpSCABAKggAiVoKChIKCgoKWgpaAgqSCgoKUgpSWggALCtgAPGqCgoKWgoKUggAJCriCgpSCgoKCgoKCgpSClIKUgoKUuIKCgtyiAGDCAYKCAAYQgoKCgpSC3ILiqIKClII=")]
-
 namespace go.debug;
 
 using static go.debug.dwarf_package;

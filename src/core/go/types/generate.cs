@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 // This file exists only to drive go:generate.
 //go:generate go test -run=Generate -write=all
-[assembly: global::go.GoPositionMap("go/types/generate.go", "generate.cs", "")]
-
 namespace go.go;
 
 partial class types_package {

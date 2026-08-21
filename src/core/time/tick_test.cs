@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("time/tick_test.go", "tick_test.cs", "ABYeogAFEIKW3IKWgoKCqAAHFJKCgoKUgoKUgoKCgoKCgqaUpoKkgvyCgpaWgqiSgoKokoSCgpSCgoK6pICCyrKCgIK22LKCgIK2ggAJBqKClIKChpKCgqKC1oIABhCCkKaChISC0oKCgoKCgoKClMS0gpS06oKCgrSCxILGtAAJCoKCgoKUuIKCgoKUuIKCgoKClAALCIKCgoKCgoKCgoKChIKWgoKCgpaCgoSCgoKCuoCSgJKAkoCSgJKAAAgGgoKCgoKClIKCABEkgoKCgqaCgoKCpqKCigALFJKCpMbekqaoggALGKaSgqbmkoKmxIKCptaUkoKCgIKklIKAgqSCgoCCtqiCloKElIKCgMamgoKCgoKogoKogoKCgrqCgoKEgoKm6IKCgoKk2KiClpKCkoKUgpaCgpaCqIKUloKCloKCgoKCkqK01pSitNaUgoKCgoKCgoKCpgAICgAICpaCgoKStNamgoKCqIKCgoCCpISCgoCCpIKCgoKUlICCpLjYgoKmgtyCgoKCgoKUlKaClIKCgoKCgpSU")]
-
 namespace go;
 
 using fmt = fmt_package;

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("main.go", "main.cs", "AA4kooKClKiigoKUqKLYooKCpsyigoKUqKKCgoKmAAYSooKClKaigoKUgoKClAAaBoSChoKGhoKGpoaGgoqkgoKClJS0tIKClKaCgpSCgoKmgoKIgJKA5rKCgIK2gg==")]
-
 namespace go;
 
 using errors = errors_package;

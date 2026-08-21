@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("archive/tar/tar_test.go", "tar_test.cs", "ACxGgoKUgpSCgpaCgpSUgtaCgpSClIKCloKUgpSUgtaCgpSClIKCloKUgoKmggAKBoIATqwBgoKClIKUgoKUgoIACAqCgoKUgoKUgJKkgIKkgIKkgIK2gIIACAiCgoKUgoKUgJK2gIKkgIKkgIL4goSEgoKAgqSCgpaCgpSAkqSAkqSAgsiChIKCAAkSgIKkgIKkgIK4goKClIKUgoKUggAIEqIAdOoBgoKCgoKUgpSCgpSAkqSAgqSAkqSAkqSAkqSAkqSAkqSAgoKkgIKkgIKkgIKkgIKkgIKkgIIACwqCANsBwAOCgoKUgpSClIIAEgqCAB9KkrKSgqaCgoCCpICCtoCC7pKCgpaCgoKUgoKUgoKCgIKkgIIAEBqCpoKmgqaCpoKmgqaCpoKmgoKCgpSClII=")]
-
 namespace go.archive;
 
 using bytes = bytes_package;

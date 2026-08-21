@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("log/slog/value.go", "value.cs", "AEuWAYKClAAEEJKUpMSkpKS0vsKokqiSqJKokqiSgoKUAAYcosqUgoKUuKiSqviAgoKCgqakqJKCgoKmAAIkAA8ClKSkpKSkpKSkpKSkpKSkpKSkpKS0vrKUgIKkpKSkpKSkpKSkpM6ygIKkgqaCqqKAkqSqooCSpKqigJKkpoKqooCSpqaCqqKAkqamgqqigJKkqJKUgpSktMyiqqKAgqSmgqyygoKClJSkpKSkpKTKkoLKqqKUpKSkpKSkpKSkAA4qAAoCgoKAgriCgpSUggAJBoKCgoKUgoKCgoKCgpSCgoKm")]
-
 namespace go.log;
 
 using fmt = fmt_package;

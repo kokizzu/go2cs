@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build 386 || amd64 || amd64p32
-[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu_x86.go", "cpu_x86.cs", "AA4aggAuYISEhIKWgoSCgoKCgoKCgoKChKSClIS4pqiEgpaCgoKCgoKEgoKCgoKCgoKCgoKCgoKCgoKCgoSCloKCpoI=")]
-
 namespace go.vendor.golang.org.x.sys;
 
 using runtime = runtime_package;

@@ -5,8 +5,6 @@
 // license that can be found in the LICENSE file.
 // This is a copy of the file generated during the gccgo build process.
 // Last update 2019-01-22.
-[assembly: global::go.GoPositionMap("go/types/gccgosizes.go", "gccgosizes.cs", "")]
-
 namespace go.go;
 
 partial class types_package {

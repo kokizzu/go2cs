@@ -1,8 +1,6 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/chan.go", "chan.cs", "ADp6ktaCgpbmgpaClIKWgoKewpaUuLK2gsaCgoKEgpQAAhwADQKu5pSmrLIACB6ygoKUgpaCloIAESaCloKCloSCgpaApoCSppSCgpSCgoKUgoKWgoKogoKCgriCgoKCgoKCyoLKloKUgoKCgoKUgoKCgpSUAAISAAkCgoLKgoKCgpSmgoKUgoKCgoKUAAIQAAwMgpSCgoKCgoKClJSCAAIaAA8Mgqam2IKC5qKCloKCgpaCgoKWhJaCgoKUgoKUgpSCgoKClKiCgoKUgoKUgoKCgpSUloKCggADEPSCuIKUrLKosoIAAhIADAiCloKClIKWgqgACRTKypSClIKUqIKCloSCgoKUgoKUyoDKgJK4lIKClIKUgoKClIKCloKCqIKCgoK4goKEgoKCgoKC3oKWgpSClIKCgpSCgoKCAAIiABECgoKUlO6CgoKmgqaCgoKUlIKCgoKCgpSm/LjcggACJgAQAgACJgAQAqiSqJKmooKUgoKUuJSmooKUgoKCypSokqiSqJKokqaigoKCgoKClIKCpoKCgoKUgoKClIKCAAkWgpa43KaCgoKCrAANEO6CgoKUgqaClA==")]
-
 namespace go;
 
 // This file contains the implementation of Go channels.

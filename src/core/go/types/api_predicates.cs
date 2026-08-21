@@ -4,8 +4,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements exported type predicates.
-[assembly: global::go.GoPositionMap("go/types/api_predicates.go", "api_predicates.cs", "AA8mAAkGgpQAAhDSkoIAAhDSkq7ClLiClK7CAAIiAA4CgqqigoI=")]
-
 namespace go.go;
 
 using errors = global::go.@internal.types.errors_package;

@@ -14,8 +14,6 @@
 //     /a/{x}/c
 // we will first try to match the path "/a/b/c" with /a/b/z, and
 // when that fails we will try against /a/{x}/c.
-[assembly: go.GoPositionMap("net/http/routing_tree.go", "routing_tree.cs", "AChY1JSUrNKCgpSCgoKUgoKklLyigpSCqsKCgpSUgIKkgoKqwoKUgq7iuICCtqzSgpSAlKSUgILIruKC3IKClKbKgIIACBCCgILagKaClKSuwoKUgoKClKrCgpSCgriCgpSSgIKk")]
-
 namespace go.net;
 
 using strings = strings_package;

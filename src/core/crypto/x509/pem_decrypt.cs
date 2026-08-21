@@ -1,8 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/x509/pem_decrypt.go", "pem_decrypt.cs", "AFWkAbKCgoSCgoKCgoKUAAUSAAgCggANJAAOAoKCloKCloKClIKClIK6goKCloKWgoIABhCCgpSCgpSClIKCpgACFPKCgpSCgILIgoKClIKCuJSClIQACRSCgoKCpqaCgoKCpg==")]
-
 namespace go.crypto;
 
 // RFC 1423 describes the encryption of PEM blocks. The algorithm used to

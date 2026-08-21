@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("TypeSwitch.go", "TypeSwitch.cs", "ABUOioKWtPTEtoKCgoKCjoKUtLS0tMaCgoKCgoKCAAASgpSwtLS0xoKCgoKCgoSCgoKChISC/IKUgrSApKQACRSCgqyClLTOgpSCpIKU")]
-
 namespace go;
 
 using fmt = fmt_package;

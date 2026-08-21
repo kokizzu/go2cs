@@ -1,8 +1,6 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20poly1305/chacha20poly1305_generic.go", "chacha20poly1305_generic.cs", "ABEegoKAgoKCyIKCgqaCgoKCloKCgoKEgoKCgoKEpoKChIKCgoSCgoKChIKClIKClJaC")]
-
 namespace go.vendor.golang.org.x.crypto;
 
 using binary = encoding.binary_package;

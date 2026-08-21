@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/trace/internal/testgen/go122/trace.go", "trace.cs", "AB0utIKClKaWloCCABw2koIABhKigqiSrNKssq7i3IKolJKCgqiCqIKogoKoAAcQooKCgIK2ABtE0oKUyoKuwoKUgIKkgoKuwoKUgpSCgoKAgqSCgqjEgqiCgpaCgqKCgoKUloKCppaCgoKWgoKmpoIACx7SgoKUgoKCgpSUlIKAgqSClKaCgoKClIKUpKSkpKSkpKSkpKSs0paCgoKUgoKoqLLKgg==")]
-
 namespace go.@internal.trace.@internal.testgen;
 
 using bytes = bytes_package;

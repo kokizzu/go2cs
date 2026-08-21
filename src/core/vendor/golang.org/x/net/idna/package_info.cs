@@ -48,6 +48,22 @@ using static go.vendor.golang.org.x.net.idna_package;
 [assembly: GoImplicitConv<info, Δcategory>(Inverted = true, ValueType = "uint16")]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/idna10.0.0.go", "idna10.0.0.cs", "AB5cABACqJIABBbSgL7CgLqigAADENKmgpSCgoKClAAEFNKAvsKCggADHAAKAoAAAxTygLqigoKCgoIAAxgACAKCgoIAGj6CggADGAAKAoKCrsKuwpKC6qKCgpSUgpSClIKUgpQANnaAooLKgKKCqsKCgoKmgtyClIKCgqaClJSCgoKCppSCgoKUuLamgoKCgriCgpKCgoKUgpSCgriClIKClIKmpuiCgqbEgpSCgoKUlLqCxJSmgoK4gpSkpsIAARDCgoKCgoKCgpSUgoKClJSkgoKUpIKkppKklJSCpoKCppQACxiCgoKmgqaCgpSmgoKUgoKClKiSgoKCpoKCyoKClNyClIKUtoKUtoK4tKaigriCgoKUgIKklAA3hgGigoKUlIKClIKmgpSUgoKCpoKUgoKCgqSUgoKUgIKkgpSClKaCgoKm")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/punycode.go", "punycode.cs", "ACA+gKaSgpSCgpSClIKCgqaCgoKCgoKUgoKUgoKClIKCpJSClIKCpoKUgoKCgoKUgoKClAACENKCgoKCgoKClKaCgpSCgoKCgqaCgpSCgoKCgpSUgpSCgoKCpJSClIKUgoKCgpSClKiSgoKUpoKUpKSkpoKUpKSokoKUlIKCgoKU")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/tables15.0.0.go", "tables15.0.0.cs", "AIgCuAiygpSkpKKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqqigpKUgpKUgpKUgpKUrLKClKSkopSCgoKUpJKUgoKClIKCgoKUpJKUgoKClIKCgoKUgoKCgpS2qqKCkpSCkpSCkpSCkpTsgqiSlKSC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/trie.go", "trie.cs", "AB1CwoKCgoKCgoKClIKUpg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/trie13.0.0.go", "trie13.0.0.cs", "AAkaooKCgpSClJSCgqY=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/trieval.go", "trieval.cs", "ADe8AYKmgoKClKaCgpSmgqaC")]
+// </GoSourcePositionMaps>
+
 namespace go.vendor.golang.org.x.net;
 
 [GoPackage("idna")]

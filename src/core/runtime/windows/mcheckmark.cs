@@ -8,8 +8,6 @@
 // collector implementation. As a sanity check, the GC has a 'checkmark'
 // mode that retraverses the object graph with the world stopped, to make
 // sure that everything that should be marked is marked.
-[assembly: go.GoPositionMap("runtime/mcheckmark.go", "mcheckmark.cs", "AChMspaCgoSUgoKUprjYkoKU/LKCgoKWloSCloKCgoKElJaC")]
-
 namespace go;
 
 using goarch = @internal.goarch_package;

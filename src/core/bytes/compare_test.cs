@@ -1,8 +1,6 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("bytes/compare_test.go", "compare_test.cs", "AC1UgoKClIKCgoKCAAgMgoKClIK4goKClISCloKCgpSCgqaCgpSCgpSCgoKUgoKmgoKCgpSCgoKUyorCgpSCgpSCgoKCgoKUgoKCgpSC+qKCgoKC+qKCgoKCyqKCgoKCyqKCgoKC+qKCgoKCyqKCgoKCyqKCgoKUgoKCgqamgpKCyqKCgoKClIKCgoKCpqaCkoLKooKCgpSCgoKCpqaigoKClIKCgoKm")]
-
 namespace go;
 
 using static bytes_package;

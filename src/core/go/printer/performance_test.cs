@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 // This file implements a simple printer performance benchmark:
 // go test -bench=BenchmarkPrint
-[assembly: global::go.GoPositionMap("go/printer/performance_test.go", "performance_test.cs", "ABs6goCCypKEgoKWgoKWgoKCloKEuICCgoLcooKUgoKCuKKClIKCgg==")]
-
 namespace go.go;
 
 using bytes = bytes_package;

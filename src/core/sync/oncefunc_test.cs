@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("sync/oncefunc_test.go", "oncefunc_test.cs", "ABUokoKAkoKClIK4goKCgpSQkoKClIKUgriCgoKClJCSgoKUgpSCuIKCgsrGgoKCooKUgsSClJSCuIKSgoKUpoKSgoKUkLaCkoKClJC2gpKCgpSCpKS4xoKCgpSCgoKygoCSxJSC6MaEgoCCpIKCgqbWguaCpJC2kICSkLaQgJKQtoKSgoKClIKCgpSCgqaUzJKCqAAJEIIACAaCgoKUpoKCuKaCuJKCAAkYgoKUppSCgoKAksiCgoKAksiCgoKCgJI=")]
-
 namespace go;
 
 using bytes = bytes_package;

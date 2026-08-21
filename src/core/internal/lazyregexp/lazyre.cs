@@ -4,8 +4,6 @@
 
 // Package lazyregexp is a thin wrapper over regexp, allowing the use of global
 // regexp variables without forcing them to be compiled at init.
-[assembly: go.GoPositionMap("internal/lazyregexp/lazyre.go", "lazyre.cs", "ABkwooKmgoKmgqaCpoKmgqaCpoKmgqaCAAQQsoKUlA==")]
-
 namespace go.@internal;
 
 using os = os_package;

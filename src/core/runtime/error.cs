@@ -1,8 +1,6 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("runtime/error.go", "error.cs", "ACE+1IKCgpSCgpSCgoKUgpSmlAACEtKCgoKClILMpIIABxCkggACENIABBCkggA3eKSCgoKUgoKmgoKCuIKCgoKCgpSClLTGAAYeAAgClLS0tLS0tLS0tLS0tLS0tLS0xMqygoSUgoKkpKSkpKSkpKSkpKSkpKSkpMqSgoKClIKCgpSuwoK4goKUgoKUgoKClIKUgoI=")]
-
 namespace go;
 
 using abi = @internal.abi_package;

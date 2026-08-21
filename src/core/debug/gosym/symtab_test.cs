@@ -1,8 +1,6 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("debug/gosym/symtab_test.go", "symtab_test.cs", "AA0YgoLogoKCgoKC5oKCgoKCggAKBoKCgoKCgoKCgoKCgoKCgoLmgoKCgoKC9oIADiai")]
-
 namespace go.debug;
 
 using fmt = fmt_package;

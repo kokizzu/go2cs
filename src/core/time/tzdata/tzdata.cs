@@ -16,8 +16,6 @@
 //
 // This package will be automatically imported if you build with
 // -tags timetzdata.
-[assembly: go.GoPositionMap("time/tzdata/tzdata.go", "tzdata.cs", "AB1A5IKokoKUqJKClN7CAAYWhIKChJSClIKCgoKCgoKCgpSCqIKIlIKClg==")]
-
 namespace go.time;
 
 // The test for this package is time/tzdata_test.go.

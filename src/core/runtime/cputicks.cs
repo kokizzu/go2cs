@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !arm && !arm64 && !mips64 && !mips64le && !mips && !mipsle && !wasm
-[assembly: go.GoPositionMap("runtime/cputicks.go", "cputicks.cs", "AAoW")]
-
 namespace go;
 
 partial class runtime_package {

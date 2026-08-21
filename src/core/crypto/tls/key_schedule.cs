@@ -1,8 +1,6 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/tls/key_schedule.go", "key_schedule.cs", "ACNKkoKCgoKUkpSCAAwalIKCgpSosoKUqLKClKrC2NKCgtzSgoKC2qKCkoKCggAJFpKCgpSo0oKClKa4goKCgoKC/qKCgpamgpSkpKSkyIKUpKSkpA==")]
-
 namespace go.crypto;
 
 using ecdh = go.crypto.ecdh_package;

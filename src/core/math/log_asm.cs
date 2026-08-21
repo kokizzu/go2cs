@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build amd64 || s390x
-[assembly: go.GoPositionMap("math/log_asm.go", "log_asm.cs", "AAwW")]
-
 namespace go;
 
 partial class math_package {

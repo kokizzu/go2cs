@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("FieldChainBoxReceiver.go", "FieldChainBoxReceiver.cs", "AAwUgKKAAAoMgOqApoKCAAoWgKSCgoKChIKCgoKEgoKCgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

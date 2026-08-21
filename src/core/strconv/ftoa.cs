@@ -6,8 +6,6 @@
 //   1) store mantissa in multiprecision decimal
 //   2) shift decimal by exponent
 //   3) read digits out & format
-[assembly: go.GoPositionMap("strconv/ftoa.go", "ftoa.cs", "AB1eABYCqqL2goKClIK0grS2goKElpKUtLS0qKjEloKUgpaCloKUgoSSgoKUlLS06IKUtIKUtsSCgoKCpIKCpoKUqJKCgoKCgoKClJS0tNiUtLSClLSUpoKUpKaCkpqylIKCgpSUgpS4qtSCggAOIoKUzIKCAAAQ4oKCgpSClIKCugAAGgANCLiCgpSCgoKUgoKUgoLMhJq6ugAOCKiUgqSCpIIAChakgqiCgpSWgoKCgoKClIK6goKSlIKClJSWlLS0tqikgqiCgoKCpqiCgoKCgIKkqKikgqiWloKClISokoKogoKCqIKCgoKClIKUgqiCgqiClJaCgoKCgraCgoK6goKUgoKClJSWlLS0tg==")]
-
 namespace go;
 
 using Δmath = math_package;

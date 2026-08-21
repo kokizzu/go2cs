@@ -3,8 +3,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/types/named.go", "named.cs", "AIkBpgKygpQAAhQACwKSuoKEgpaCgoSCgoSCgoSCgpSUAAgUgoKEhIKCgoKWgtiSqqKowoKCpoKUAAISAAoChILegpSClIKUpqIACBKUgta0qqKClKrCgpSqoKjCgqiSgpSokgACHAAPAoSCloKEgoSCgpaCgoKogoKo2uaChJSCloIABxKClriCgoKClJamkpaCgpSWgqrCgoKUgpSCgr7igoKCgr6ygpSCgoK4goK4AAIQ5KaAAAI0ABoCirKYxqbmgrqChIKEgoKCgoKAlIKCpIKUgsS26MqClJamsoK4gJS2qJKClOrigoKCgpKCqIKCloKEppaUuoKChIKCgpS4gIKAuIKCgoKCgoKUgpaS2t7CgIKk")]
-
 namespace go.go;
 
 using token = global::go.go.token_package;

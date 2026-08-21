@@ -1,8 +1,6 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/types/resolver.go", "resolver.cs", "ACRIoqiSgoKClN4ACAKCgoKWgpaSxpSCuMiC6IKCgpSClIKCgqbq0qiCgrqCgpaCgqiSgoCCpNb8goKCqIKClIKClpKAgqKCgoKmgoLqgoKUgoKmgoCCpICCpKa6griClKgADQzSAAAQ4oKWjIKmupKAgqSCgrqEspaSlIKCgpaCgpiCkoKUgqiCgpyygpaClJSWlJiSlIKmzNyAgoKCgpSC/siShIKCloLIisK4mJKChIKEkoKUlsaCtIKCgpSCpoKCgpSCgpSAlLaUgpSUpgAHFLiClJSCioIACQyCooCCgoKAgoKUlKQACBKClIKClIKCggAHFAAJAojClLSCxOqkgoKCgoKU6NSkgpTsgIKmrgALDIKCppaAlIKUgqiSlLyAxqKCgsqAgpLYgta6goKogoKogrqCgqiCgpS6xIKCgoKUloKAgrgAECKCAAIQ0pSCgIKClKbIgqaCAAYQzICigKKApsSCzoKCygAIDoKCgIKkgpQAAxDCgIK2")]
-
 namespace go.go;
 
 using fmt = fmt_package;

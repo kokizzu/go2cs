@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("SelectEscapeBinding.go", "SelectEscapeBinding.cs", "ABIkgoKEhLSCgoKmAAYSgoKEgoS0goKCpvqCgoKEhMSCgrTIgoKC")]
-
 namespace go;
 
 using fmt = fmt_package;

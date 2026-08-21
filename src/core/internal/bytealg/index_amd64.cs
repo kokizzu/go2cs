@@ -1,8 +1,6 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/bytealg/index_amd64.go", "index_amd64.cs", "AA4WgoKUAAMQ1A==")]
-
 namespace go.@internal;
 
 using cpu = go.@internal.cpu_package;

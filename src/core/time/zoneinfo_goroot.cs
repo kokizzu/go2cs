@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !ios && !android
-[assembly: go.GoPositionMap("time/zoneinfo_goroot.go", "zoneinfo_goroot.cs", "AAoSgoKU")]
-
 namespace go;
 
 partial class time_package {

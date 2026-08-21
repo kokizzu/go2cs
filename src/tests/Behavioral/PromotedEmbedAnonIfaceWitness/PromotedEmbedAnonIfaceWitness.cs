@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("PromotedEmbedAnonIfaceWitness.go", "PromotedEmbedAnonIfaceWitness.cs", "AA0+gKSAAA0ggAAyKISCgoSChIiCgpaIgoKCgIKkhpTErIKChoKChIKChIaCiIKCgoKGgog=")]
-
 namespace go;
 
 using fmt = fmt_package;

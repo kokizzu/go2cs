@@ -6,8 +6,6 @@
 //
 // This package does not have any special handling for non-reflexive keys
 // (keys k where k != k), such as floating-point NaNs.
-[assembly: go.GoPositionMap("maps/maps.go", "maps.cs", "ABAi8oKUgoCCtqrigpSCgIK2rOjkgpSuAAgCgrrCgoI=")]
-
 namespace go;
 
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)

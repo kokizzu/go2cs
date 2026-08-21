@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("text/template/parse/parse_test.go", "parse_test.cs", "AF2yAaKGooKCgpSCgqaCgoKClIKClIKClJSClIKClIK2lIKClIK2lIKClIK2lIKClIK2AK4B4ALCgoCSgoKUgrSCtpKUtIKClJSC+oKokqbCgoCS3LKSgoKCgpSAggAMDPiCgJSChsaCgqimgoIACwrCgoKAkoKCgoKUgoCCABsqooKUgoKCgpSAggAICoKCgpSCgoKClIIAatYBgrKSgoKUggAKDIKqgoKClICSpIKClICSAAgIhJKCgoK4goKUgoKUgoLKooKCgoIACg6ipoKCgpSCAAgIogAAJIKClIKCgpSC")]
-
 namespace go.text.template;
 
 using flag = flag_package;

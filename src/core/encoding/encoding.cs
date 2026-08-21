@@ -15,8 +15,6 @@
 // written with different library versions.
 // The policy for packages maintained by the Go project is to only allow
 // the addition of marshaling functions if no existing, reasonable marshaling exists.
-[assembly: go.GoPositionMap("encoding/encoding.go", "encoding.cs", "")]
-
 namespace go;
 
 partial class encoding_package {

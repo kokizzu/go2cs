@@ -1,8 +1,6 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("internal/types/errors/codes_test.go", "codes_test.cs", "ABssgoSCgoKCgoKCgpSCgpSAggALDoKCgoKClJLKgoKUgoKClIKCgpSCgIKClIKCAAkMgoL2goKCgpSCgpTIgqamABs0AAcQgoKEsoKUgoKUgpSClIKCgqaCgqSUgoKCuoKSgoKUgoKCgg==")]
-
 namespace go.@internal.types;
 
 using fmt = fmt_package;

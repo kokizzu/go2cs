@@ -56,6 +56,18 @@ using static go.go.constant_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/constant/kind_string.go", "kind_string.cs", "/oaigoKCgoLugoKU")]
+[assembly: global::go.GoPositionMap("go/constant/value.go", "value.cs", "AGbOAYCigKKAooCigKKAooCigNSAooCmkoKCuIKCgpSUAAIQ8oKCgoKUgoSokoKClAACEuKCgoKChIKClIKUgoKUpoCigKKAppKWgrqAgoKmlK7CqIKWgpaAqoK0gvamgKSAooCigKKAooCkgoKClKaApIKmoqKioqKioqSAooCigKSAooCigKKAooCigKKApKKClKaCgoKUpsq0gpSCyqaCgpSmgoCClMqUgILIpAAGEsKqooKUgqrCgpSCrsCmkKaSgpTckKaSgpSssoKUgpQAAhDSgpaUgIKkgILIgILIgIKAguqAgoCC6oCCyKYAAhYACAKUpLTMopSktM6ylKSktM6ylKSktMqSlIKkgqSkgqS0AAQS0pSCpIKkpIKktAAEHgALApSkpKSkpLQAAx4ACwKUtKSkpKS0vrKUgoKUpKS0zrKUlKSkpKSkpKS0AAogooKUtMSmgoSCooKCgriClqqihIKCgoKCgIKCgoLIgoKmgpauwrSkpIKCxsSkrLK0pKSCgsbEpKyylNSk3KLkpLTMopTkpLQABBLStKaCzrKCgILegoKWgoKAgriCgoCC6oCCyKqilKSClMSkgraqotSklK7CgqiSgq7ClOTIlKSAgqSkpKSkgoK4gpSktMSqspSmlKS4gqaCmKS0pKSkpKQABBDygLS0xKrIlJTGlKTGlKSkxsoAAhgACQKElKaClKTYgoKClIKUpIKUpIKUpKSkpKSkpKSkpoKCgpS0pKSktKSkpKSkpKaCgoKUpKSkpKSmgoKClKSkpKSkpoKCgpKWkqaSppKCgoKCppKCgoKCgoKCgoKkpKaCuIKmgKKAooCigKqylKaClJSCpNiClIKUpMimgpSkpKSkpKSuwoSUpoKUpNiClKSkpKSk2KampoKCgpSk2IKClKSkpKSkyA==")]
+// </GoSourcePositionMaps>
+
 namespace go.go;
 
 [GoPackage("constant")]

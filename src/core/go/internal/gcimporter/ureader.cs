@@ -1,8 +1,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: global::go.GoPositionMap("go/internal/gcimporter/ureader.go", "ureader.cs", "ACdUkqriAAwehIKChKaCgoKWhIKWgpiSgoKmhoSCABs6gtyC3IKqsoKCqIKCgqaipqKAgqaCgs6ExoKClrSUgoKqsoKmxoCCpoKCpqKClKSkpoCCpoSChKqypoKCgpSmsoKCgoKUloCCpoKCgoSCgqaAgqaCpqKArKaCgoKClKamgqSCpKSkpKSkpAACSYIABVCCgoKCgoKCgoSCgoKUpqaCgoKUpqKCgoSCgoKCloKWgoIACBSEpoKEgoKEpoKEgoKWpoKEgoKEqrKEhIKEgoKWpqSCgoKChIKEgpaCgqiAgqaChIKEkpaagoKmgoKCpoKCgqaEgoKEhIqAsoKCgoSCloKCloKCpoSCuIKCAAJ7AAOEAaakhIKCgIKmgoKWgoKClqimos6CAAUQgoKChIKWgoIADR6CooKopoKCgoSChIKmgKKAooCkgoKuwoKU2LaUgoKk")]
-
 namespace go.go.@internal;
 
 using token = global::go.go.token_package;

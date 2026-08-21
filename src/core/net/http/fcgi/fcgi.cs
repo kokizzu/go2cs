@@ -8,8 +8,6 @@
 // original documentation.
 //
 // Currently only the responder role is supported.
-[assembly: go.GoPositionMap("net/http/fcgi/fcgi.go", "fcgi.cs", "AEmeAYKClIKC7oKCgoKCAA0egqjSgoKCgpQADRCygIKkgpSCgIKkpoKo0oKCgoKAgqSAgqSAgqSC1oKCgoKmgoKCgoKCgIKkgIKkgIK2gqaCgpSSgoKUgoKUpoKClKaCgoKClIIACRSCgIKCpKaCgoIAChaCgoKCgpSAgqSClKaU")]
-
 namespace go.net.http;
 
 // This file defines the raw protocol and some utilities used by the child and

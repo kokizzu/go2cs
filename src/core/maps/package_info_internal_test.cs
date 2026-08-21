@@ -20,6 +20,18 @@ using static go.maps_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("maps/iter_test.go", "iter_test.cs", "AAwYgoKCgpSCgoKClJSCyoKCgoKCgpaCgpSCgsqCgoKCgoKWgoKUgoLKgriCgoK6uO6WgriC7oKC")]
+[assembly: go.GoPositionMap("maps/maps_test.go", "maps_test.cs", "ABMggoKUgpSClIKUgIK4goK6sqiygqiS1oKClIKUgpSClICCuIKCpoKWgriCgoKUgoK4goKCgviCgoKClIKCgpaqgoKCgpSCgoLcooKClIKCuIKCgpSClIKClIKCyoKCgoKUgoKUgoIACAqEiISUgoKChM7SAAQS4tqWgoKClrKClII=")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("maps")]

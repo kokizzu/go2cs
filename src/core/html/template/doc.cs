@@ -237,8 +237,6 @@ enabled with the GODEBUG=jstmpllitinterp=1 environment variable. Template
 literals are now supported by default, and setting jstmpllitinterp has no
 effect.
 */
-[assembly: go.GoPositionMap("html/template/doc.go", "doc.cs", "")]
-
 namespace go.html;
 
 partial class template_package {

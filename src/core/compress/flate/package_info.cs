@@ -48,6 +48,23 @@ using static go.compress.flate_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("compress/flate/deflate.go", "deflate.cs", "AFv4AYKUgoKCgpSUgoKCgqiCgpSmgoKUyoKCpoKCgoKUgoKUrtSClIKogqaWgoKCgoKUgoSCloKCgoKmlLiCquKCgpaWgoKogoKCloKChIKChIKCgoKUlKaUlIKCpqaCgIKkggAEELKqooKUgoKCgoK+soKCgoKmrMSCgqiClKS0grSCgrqWgpSUgqaCgoKCgoKCgoKmgoKWhIKCgpSCgoKUgpSUlIKUgoCCpJSmlIKCgoKUgoKCgoKCloaAgoK2qIKU3IKCgpSUgoKCpoKUpoSCgsqUlICCpKaCgoKUgoKAgqSmgoL8goKCpoKCgr6ygpSCgqaygpSCgoKCgqamooKUgoKCgoKUgqaChJSCgqSCgqSCgoKCgqSCpIKCgqSkpoKCgoKUpIKCpIKClIKUgoKCgoKCyKKClIKUgoKClICCpIKClIIAAh4ADAKCgIKkAAIS4oKCgpSCgu6CAAscogACGAALBqiSrLKAlIKCpg==")]
+[assembly: go.GoPositionMap("compress/flate/deflatefast.go", "deflatefast.cs", "ABE0goKmgoKoggAXMoKqtIK6goKCzJaCgoKEAA8ghIKCgoKCgoKClIKCgoSClIKUzAAIFMyCgpaCgoKCAAcSgoKCgoKChIKCgoKCuoKClIKCgqaCgpSssoKCqIKCgpSCgqaogoKogoKClIKCgsyCgqiCgoKCpqqippaCAAMQwpSClIKogoLKlJQ=")]
+[assembly: go.GoPositionMap("compress/flate/dict_decoder.go", "dict_decoder.cs", "ACNOsoSClISClIKCgpSokoKUqJKokqyyrLKssoIAAhDSgoKCgoIACBSCgoIADyKCloIAAhLigoKClIKWgpaCrLKCgoKClA==")]
+[assembly: go.GoPositionMap("compress/flate/huffman_bit_writer.go", "huffman_bit_writer.cs", "AE28AYIAChaCgqaCgoKUgoKCgpKUlJSCgqaCgpSmgoKUgoKCgoKCgoKCgoKCgoKCgoKU6IKClIKCgpSCgoKClIKUggACHgAPAoLclIKCloKClISCgoKmgoKCpoKCgoKCgoKClIKCgoKCpoKCgpSCgoKCgpSUgoKCgoKmgoKCgqaCpqjigoKUioqokgACErKClIKUpoKClIKCgoKCgoKCgoKCgoKCgoKClAADEtKClIKClIKCgoSCgpaCgoKCgpSElIK0grSC6oKClIKClIKCgqaCgpaSgpQAAhDSgpaChIKCypSUlKyigoa4goKEgoKCqIKCgqiClKgAAhDSgpaCqIKCloCCgoK4lq7ygpSCloKCgpSCgoKogoKmgoKUpoKUgoKqooKUgoKCpoKCgoKCgqaCgoKCgoIACBKCgoKCrLKCqIKohISCgoSIyIKCloCCgoK4goKClIKCgoKmgoKCgoKCgoKCgoKClIKClJSCrLKCgg==")]
+[assembly: go.GoPositionMap("compress/flate/huffman_code.go", "huffman_code.cs", "AC5okoKmgKSCqJKCgoKCgoKWgraCtoK2gvSUpoKCgoKU7IKCgoKmAAQmAA4CgpSCgqiCnsrEptyCgrqEgoKCyoKCgpaClIKUgsqUgpaAypSUgqaC7oKWgoKCpoKUqsKCgoKC3ISCgoKUAAMQ4riUlJSCgoKUqIKmlJSUlpTKooKmgKSCpoDIooKmgKSCgpSmgKSC")]
+[assembly: go.GoPositionMap("compress/flate/inflate.go", "inflate.cs", "ACBGgsyAAAoUggAKFoIAKWbYtIKaopKCgpSClIKUAAgUgpaCgoKCggAGEIKWgoKCloKCgoKCgoKUgqiCgpSCgoKCgoLcgpSmgqaUgoKCgoKUuriCuIKUpoKCgswAK16igoCCtoKCgoKClLaCgraAoqSCgrbYsoKCgoKClJSClIKCyoKClAAJELSCgIK2goKUgoKClIKUgpaCgoCCtoKClIKUgrqCgoKUlIKClpKCgpSkgoKClLSCgrSCgrSCgIK2goKCgpSCgqiC3oKWrsKalKSmhJKCgoKUgoKUgoKCgoKUtIKmgrSCtIK0grSCtIK0grSCtIKCgIKCtoKCloKCgoCCgraCgpSAgoK4lLSEgpKAgoK2goKCtIK4goKWgpaEkoKClISCgoKClLq2gpaCgoKClIKCgoKWgoKCloKqooKCloKCgoKCgpaCgoKUpoKCgpSUqJKClKaCgoKUgoKCqPq4koKCgoKCgpSCgpSCgoKClIKCgoKClIKCyoKAgoKCtoKmlKaChJKClIKUgpSClLiC7oKCAAIWAAgChIKCgoKCggACFPKEgoKCgoKC")]
+[assembly: go.GoPositionMap("compress/flate/token.go", "token.cs", "AEGOAZCmkqiQppCkgKSAppKClIKU")]
+// </GoSourcePositionMaps>
+
 namespace go.compress;
 
 [GoPackage("flate")]

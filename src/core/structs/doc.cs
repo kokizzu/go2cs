@@ -7,8 +7,6 @@
 //
 // By convention, a marker type should be used as the type of a field
 // named "_", placed at the beginning of a struct type definition.
-[assembly: go.GoPositionMap("structs/doc.go", "doc.cs", "")]
-
 namespace go;
 
 partial class structs_package {

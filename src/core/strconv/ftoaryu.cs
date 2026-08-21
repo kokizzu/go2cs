@@ -1,8 +1,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("strconv/ftoaryu.go", "ftoaryu.cs", "AAwoAAkCgpSCpoKCpoKAgoIACBC6hIKC3IKCpoKEgoKmvJSCppSokoKmgoKmgoCCggALFrqEgoLcgoKmgoSCgqa8lIKmlAAHFrKCgoKCgoKCpMiUgqaClJSCpoKCgoKSgpSUgoKClIKClIKClIKClKiSgoK4goKClIKCgqaIwqKCooKCgpSCgpSCppSUpoKUgpSCyoKUgoLKgoKUgriCprrKgoKmlIIAAhDkAAIQ5KwACAKUgoKmgoK4hIKCgpS2gpSCgoKUlIKCgoKClIKUuIKmgoKCupSCgpSmgtyCgoKmAAoWgoKClJSCgqaCmIKmgoKCgoKCgoKUgpSCAAIaAAoClJSUlIKUlIKCAAIaAAoClJSUlIKUlJaCgoKCpoKClIKClJSqooKmgoI=")]
-
 namespace go;
 
 using bits = go.math.bits_package;

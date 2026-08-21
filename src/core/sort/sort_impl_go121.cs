@@ -6,8 +6,6 @@
 // slices package to implement some `sort` functions faster. However, until
 // the bootstrap compiler uses Go 1.21 or later, we keep a fallback version
 // in sort_impl_120.go that retains the old implementation.
-[assembly: go.GoPositionMap("sort/sort_impl_go121.go", "sort_impl_go121.cs", "ABAggKKAooCkgKKAooA=")]
-
 namespace go;
 
 using slices = slices_package;

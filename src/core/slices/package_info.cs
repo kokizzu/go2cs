@@ -41,6 +41,21 @@ using static go.slices_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("slices/iter.go", "iter.cs", "AAocwoKCggAFEMKCgoLesoKCggAFEMKClKiSqsKCgqqigoKuwoKCAAIQ8oKWgpSogg==")]
+[assembly: go.GoPositionMap("slices/slices.go", "slices.cs", "AA4oAAkCgpSCgqYAAhAACAKClIKCgqYAAhQACgKCgpSCgIK2gpQAAhAACAKCgpSCgIK2gpSq0oKCpqrCgoKmqMKqwgACFAALAoSCgpSCgpTKgoKClAANILoABRDe3s7eAAIQ8oSCloKCgqzSgoKmgoCCgraCrgAIAoSClIKCgpSWgpSCgoKWhJSCgoIACxyUgoIADR6EgoKCgpSCgoKCAAYQgoKCrOQAAhAACAKClIKCgoKCgqiCpqzSgpSCgoKCgoKogqau4oKUgIKkqLIAAhLigoKkgqiSgpSCgrisooKCgriosoK60oKCgoKmgoKUAAIQ8oKWgoCCpoKCgpQ=")]
+[assembly: go.GoPositionMap("slices/sort.go", "sort.cs", "AAwg0oIAAhgACwKCqsKowoKCpqrCgoKmrOKClIKClKzSgpSCgoKmrOKClIKClKzSgpSCgoKmrgAIBKaSgpSClLgAAhQACQKmkoKUgpS4AAocgoKCgqaCqsI=")]
+[assembly: go.GoPositionMap("slices/zsortanyfunc.go", "zsortanyfunc.cs", "AAgUkoKCzqKCgoKClIKUgpSCuIKCgpaCqIKCAAMU4oSagoSCgqiCgqiCgpaCgriCqIKCzIKCgpaChJKCgoKClIKCAAQSwoKUgpSClIKClIKChIKClIKUgpSCgpSCqqKClIKClIKUgpSCgpSokpiCgoKWgpaClpaCgoKUuIKCgpS4qqKCgoKEgoKClAAEFNKahL6ClIKCppaUpKTKkoKClKiSgoKCqJKmgoKCgoKCuIKCuIKCkoKCgpSEgoKCgoKUgIKkAAMuABYIuIKCgoKClLiClMy4goKCgoKUuIKUloKCkoKClIKUhIKCgpSogoKUgpSCAAMQwoKEgoKClIK4")]
+[assembly: go.GoPositionMap("slices/zsortordered.go", "zsortordered.cs", "AAoYsoKCzsKCgoKClIKUgpSCuKKCgpaCqIKCAAMUAAgChJqChIKCqIKCqIKCloKCuIKogoLMgoKCloKEkoKCgoKUgoIABBLigpSClIKUgoKUgoKEgoKUgpSClIKClIKqwoKUgoKUgpSClIKClKiymIKCgpaCloKWloKCgpS4goKClLiqwoKCgoSCgoKUAAQU8pqEvoKUgoKmlpSkpMqygoKUqLKCgoKosqaigoKCgoK4ooK4ooKSgoKClISCgoKCgpSAgqQAAy4AGAi4goKCgoKUuIKUzLiCgoKCgpS4gpSWgoKSgoKUgpSEgoKClKiCgpSClIIAAxDigoSCgoKUgrg=")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("slices")]

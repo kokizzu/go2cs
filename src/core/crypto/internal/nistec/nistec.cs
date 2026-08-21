@@ -10,8 +10,6 @@
 // safe complete addition formulas where possible. The point at infinity is
 // handled and encoded according to SEC 1, Version 2.0, and invalid curve points
 // can't be represented.
-[assembly: go.GoPositionMap("crypto/internal/nistec/nistec.go", "nistec.cs", "")]
-
 namespace go.crypto.@internal;
 
 partial class nistec_package {

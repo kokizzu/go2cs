@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("DeferTypelessReturns.go", "DeferTypelessReturns.cs", "ABQcgNqigoKCpgAICoKCqqKCyoCqooKClNaiiJKSgoKCgoKCgoKCgoIADAyCgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

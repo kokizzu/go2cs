@@ -34,6 +34,19 @@ using static global::go.net.textproto_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("net/textproto/header_test.go", "header_test.cs", "ACJIgoKAggAIDJKmgoKC")]
+[assembly: go.GoPositionMap("net/textproto/reader_test.go", "reader_test.cs", "ABImgtaCgoKClIKClIKCuIKCgoKClILogoKCgpSCgpSCgpSCguiCgoKClIKClIKClICCpIKC6IKCgoKCloKCguiCgoKCgpaCgoLogoKCuILogoKCgoIACAyiABYygoKC+oKCgoKC6IKCgpSCgoKClIKCvLSKgu6CuKIADRyCgoCC2qKCgoKClLS0tLa0xIKCpoKCgoKUtLS0tIKCzOiegoKUyoK6koKCgoKSgoKClIK4gIIAIlCSgoKCgoKUgpSCzJKMjIKClIKUgpSC6IKCgoKmgoKSgIK2gujMgqqCpJSWhIIAEDqigu6SgoKEgoKAggAMDqKCgoKCgoKCgpSAgg==")]
+[assembly: go.GoPositionMap("net/textproto/writer_test.go", "writer_test.cs", "ABAagoKCgoCC+IKCgoKCgpSCgoCCyIKCgoKCgpSCgoCCyIKCgoKCgoCC")]
+// </GoSourcePositionMaps>
+
 namespace go.net;
 
 [GoPackage("textproto")]

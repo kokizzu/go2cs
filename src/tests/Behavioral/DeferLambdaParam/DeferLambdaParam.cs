@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("DeferLambdaParam.go", "DeferLambdaParam.cs", "ABgKooKCAAEQkpKUipKUkgABHpKakoKakoKClJaC")]
-
 namespace go;
 
 using fmt = fmt_package;

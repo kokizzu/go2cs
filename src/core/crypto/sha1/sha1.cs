@@ -6,8 +6,6 @@
 //
 // SHA-1 is cryptographically broken and should not be used for secure
 // applications.
-[assembly: go.GoPositionMap("crypto/sha1/sha1.go", "sha1.cs", "ABYmggAaPoKCgoKCgoKCgoKC5oKClIKUgoKCgoKCgoKCpoKmgqaCgoKCgoKCrLKClIKCpoCkgKTCgoKCgoKCgoKUlIKCgpSClKaClJKCpqKEkoKCgpSogoKChIKWhIKCgoKEqJKSgqaigoKCloKChIKClpaElLqEgoKCgoKWlIKClLqEgoKCgpaokoKUgoKC")]
-
 namespace go.crypto;
 
 using crypto = crypto_package;

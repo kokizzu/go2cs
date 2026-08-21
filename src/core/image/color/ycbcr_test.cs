@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("image/color/ycbcr_test.go", "ycbcr_test.cs", "AA0YgoKUpoKCgoKmqqKCgoKCgoKCAAcWsoKCgoKCgoKCAAcSkoKCgoCC3JKCgoKAgtySgoKCgILeooKCgoKCgoIABxaygoKCgoKCgoKCAAgUkoKAgtqCAAMUgoKCyoKCgv64goKmgoKmgoLKuIKCpoKCpoKCyriCgoKmgoKCpoKCgsq4goKCpoKCgqaCgoI=")]
-
 namespace go.image;
 
 using fmt = fmt_package;

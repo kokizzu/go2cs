@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements multi-precision rational numbers.
-[assembly: go.GoPositionMap("math/big/rat.go", "rat.cs", "AB9CkqrCgoKCgpSkpILWloKCloKCgoKUlK7yAAgigoKUgoIABxKCkoKCgIKkrLKCgqiCgpSClIKolIKCgoKmgoKCgoCUgsiEgoKUrvIACCKCgpSCggAHEoKSgoKAgqSssoKCqIKClIKUgqiUgoKCgqaCgoKCgJSCyISCgpSu8oKClIKClK7ygoKUgoKUquKCgoKUgpSCgqrCgpSCgoKUgqiygoKosoKCqLKCgqiygoKUgpSosoKCqLKCgqrSgpSCgq7CqJKuwgACFAAKBLiUpqKWgqamgoKCgLKCpKSsspSkpKSq0oKClIKu8pKCgqjSkoKCgoKo0pKCgoKCqNKUgoKClJSUgoKq4oKUkoKCgoKC")]
-
 namespace go.math;
 
 using fmt = fmt_package;

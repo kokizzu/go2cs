@@ -6,8 +6,6 @@
 // Username/Password authentication for SOCKS version 5 is defined in
 // RFC 1929.
 //
-[assembly: go.GoPositionMap("net/http/socks_bundle.go", "socks_bundle.cs", "AB824oKClICCgqSCgoKigoKmorSCtMqCgoKUgoKUgoKmgIKmgIKkgpSCgpSCgIK4goKAgoCCgqKCgpTGgpSCgqSCgIKmgIKkgpSAgqSClIKClIKkgqSAgqSkpIKUlICCpIKUlILmgoKClIKClIKUAAgMgpSkpAATFIKUpKSkpKSkpKSkACQ8gNSigpSCgpQACBjCgpQAF0QADAKAgoKkgoKUgoKClIKUgoKUgoKCgpQAAhIACAKAgoKkgoKUgoKClAACEgAIAoCCgqSCgoKUlIKClICCgqTmgraktqSmwoKSgpSCgoKUgpSmqqIAESKilKSClIKCgoKGgKKkgIKkgpSClKQ=")]
-
 namespace go.net;
 
 using context = context_package;

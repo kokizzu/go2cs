@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAosggAGEoIABhSCqII=")]
-
 namespace go;
 
 partial class PromotedValueEmbedLib_package {

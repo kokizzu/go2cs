@@ -39,6 +39,17 @@ using static global::go.net.url_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("net/url/example_test.go", "example_test.cs", "ABMegoLcooKCgpSsooLcooKCgpQACgyigoKCgpSCggAIDsKCgoKCrKKCgoKChILusoKCgoLcooKCgoKCrrKCgoKCgq6ygoKCgoSCAAgOsoKClIKCgoKC2KSCgpSCgu7CgoKUgoKU2qKCgpQACAqigoKUgoIACA7CgoKUgoLuwoKClIKCgpTcsoKCgtyygoKClOqigoKUgoKUgoKAgvyigoKUgoKClNyygoKUgoKC7sIABxCCgqyygoKClPqi3IKC3LKCgpSokoKClA==")]
+// </GoSourcePositionMaps>
+
 namespace go.net;
 
 [GoPackage("url_test")]

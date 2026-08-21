@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // To avoid a cyclic dependency with go/parser, this file is in a separate package.
-[assembly: global::go.GoPositionMap("go/ast/commentmap_test.go", "commentmap_test.cs", "AC/AAYKCgpSmooKCgpSWgoKCgoK6gIKqooKCgpSCgsqCgoKClJaCgIKCgsqCgoKCgoI=")]
-
 namespace go.go;
 
 using fmt = fmt_package;

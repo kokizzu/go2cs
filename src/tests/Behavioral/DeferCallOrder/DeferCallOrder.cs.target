@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("DeferCallOrder.go", "DeferCallOrder.cs", "AAsYgpAAEgaigoKEgpSCgpKSioKSgpSEhIKCgoKEgoKEgoSEAA0QgoKmgu7CgoKCgoKCAAgQwoKCAAgKwoKCgpQACRDigoCCtoKClILWgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

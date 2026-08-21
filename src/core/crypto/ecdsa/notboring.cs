@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !boringcrypto
-[assembly: go.GoPositionMap("crypto/ecdsa/notboring.go", "notboring.cs", "AA0WgqSC")]
-
 namespace go.crypto;
 
 using boring = go.crypto.@internal.boring_package;

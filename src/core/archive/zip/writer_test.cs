@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("archive/zip/writer_test.go", "writer_test.cs", "AFeaAaKCgIKkgoKogoSyloCCuIKClLIACwqSAAUUlIKCgIKClJSCuICCpoKogqiCgpSCAAsKggAoXIKEgtyCgpSWgIK4goKUgoKCAAgKgoK4goCCpICCpoKClICCgsiigoCCpIKCqIKCgoKEspaAgriCgpSyAA4IgoKCgoKUgpSAgqSC+IKCgoKUgIKkgIIACAiCgoKA3KSAgqSEgoSCgpSEkpaSloKCuJSCgrKUgIK4goKUsqiCgoKAgraAgriCgpSyAA0IggANLoKEgoKCgoKEgoKCgoKUgoKUgoKUgpYABxCCgpSClJSCqICCuIKClIKCgpSClIKUgpSClIKWgoKCloKCgpaCyrK4gpSCgpSCgriygpSCgoKUgoKUgoKUgriihJKCgoK4lJa4goSSgoLKgoKCyqaCgoIACxiCgpaAgriCgpSyuIKCggANHIKC")]
-
 namespace go.archive;
 
 using bytes = bytes_package;

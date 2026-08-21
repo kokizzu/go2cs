@@ -69,6 +69,38 @@ using static global::go.go.types_test_package;
 [assembly: GoImplicitConv<global::go.go.types_package.Tuple, ж<global::go.go.types_package.Tuple>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/types/api_test.go", "api_test.cs", "ACA6goKClKaigoKC6qaCgoKUqJKCgIKCgoCCpKQACQaCAD6cAYK2hpKCgoKmgoKUloCCgriCgIK2ggALDKSUAMIBrgOCkoKCgoKClIKmmJKCgoKmgoKogIIAFAqCrgCXAdACsoKSgoKylIKUgpSChNSCgJK4goKClISCgIKkgpSCgIK2gILKgoKClIKClIIACxiigpSGAAgGggALJIK2hpKCgoKmgoKWgIIACwqiACBSgraGkoKCgpSmgoKWgIIACgqCAAAQgoLagoKClpaCgpiikoKCgpSClIKCgIKCgoKClIKUlKTGtriClIKUgpSCAA0IooQAGzyCtpaCgpiSgpS0tMSkqIIACQqChAACKAAGFoKCyIKCgoKogoKAgriCgoKUgoKUgrqAggAQCIKCgoKClKiCgoKCgoKCgoSClAALBoKEADOCAYKSloKUgoKoggAVCqKEAEKKAYKSloKogoKUtLS0tLS0tLS0yIKCgoKCpoIACgyiAEqQAoKSloKCqIKCgoIADwyCgoK6voKAgqSAgtqC3oKCgoKEgoCCupKCgqaAkuyCgIKk1qKogoKSsoKClJYAAhAAApoBAB5CgoSChIKChIKClLiCgpS6goKCgoK2uIK4ooKCorailq6ugqaigoKitqKWqqyCprSCgoKAgrYADAaMAChggoSCgoCCgriCgoKUpoKUggAIDJIAAiCCgoKAgqaCpoKClIKCpgAKCsKCgpKCsoKCgqi4AABWgoKCgoKClIKClJSmgoKUlIKAgoKkggAHFIKCgpTegpaChJKC3IKmhAAHEM6igvaiAA4kgIIACgqiAAwggIIADQq0ABU+goKCgoKUgIIACgq0AAUSgIIADQqigoLukoKCgoKClJSUAAgYgoKAgtregoS6poKCpoKCgqaCgoKC1qaCgoCCgpS27LIADxiCgoKAgqaigoKClIKClICCyoKWvKIAAiqChKaAgqaCpoKUuoKUgsaSuIKUtAAJDqKEAAIUgoKWgoK2gpS6poKCgpaCgoKUgoKCqIKCgIKCpv6EkpaCgILKgoKogILIggACGoTMgpiCgoKCsoSCguiEgoKUgoCSAAwMggAFFoKChISCgpaCgpaC+oK4goKUggAICIKCkpKCgoKCgpSUgoKCgoKCAAgKsgACQqaCgpKCgpaShAASNoKSgIKkloKSsoCCpIKCgpSAgqSClIKUgpSClIKUgt6SlKSUAA4GogACTIKCooSSAA0iABpAgoCCyoKCgoCCpICC2oIAAiqEgrqCgpaSgoK6lpaWAAgGgoKGuIKCmLqCguiUgtySgoIACgqCAFFggoKUhJKCgoKEgoKCgpSUggAPDqIABxSCgpSEgrSkgoKCgqqSgoKCpoKCAAgOkoIAAhCChJKCuIKCroKEkoLswoKCgoKCgqKCgoKAgvj+woKCgoKAggALDIKClA==")]
+[assembly: global::go.GoPositionMap("go/types/builtins_test.go", "builtins_test.cs", "AJoBygKihIKCgqiCgIK2goCC2oKEgoKWgoKCgIKCtoKCqJSCgoKUgIKCypSCgoKUgoKClIKClKa4tpI=")]
+[assembly: global::go.GoPositionMap("go/types/check_test.go", "check_test.cs", "AEJ+goKCgoKClIKCgIKCpsimgpSklKiSgpSs1JKClIKAgqSCgoKWAAIcAA4EgoKCAA8I0oKokoKClIKCgoKqkoKCooKUgoK4guqCmKKCgoKCgoCCpoKClJKSlJaCqAALGIKCqIKCgIK6koKWgoKCgoKogoKCgoKCgqaCgoKUgoKmgoKClIKmlIKCuoKCgoCCupKCqICUgqa4grqCgoKCggAMDoKCqqKCqqKCAAYiAA4ChIKCloKCloKCgpSU6IKCgqaCgr6ygqaGotaigoKUhIIACASA0oDSgNKApIKChIKCgpaCloKUgtyChIKCgpaCgpaSuIKCgoKClJQ=")]
+[assembly: global::go.GoPositionMap("go/types/commentMap_test.go", "commentMap_test.cs", "ABU+AAwCgoSCgoSCgqSkgpSCgoKCgpS4kpSkAAgKggACEoKCgoKCgqiCgoKClKiCgg==")]
+[assembly: global::go.GoPositionMap("go/types/errorcalls_test.go", "errorcalls_test.cs", "ABUssoKCgpaCkoKClIKClIK4gIKCpIKSgIKAgoK2pJTKgoCCpKaCgoKClIK0tLS0xoKClJQ=")]
+[assembly: global::go.GoPositionMap("go/types/eval_test.go", "eval_test.cs", "ABcwgoKCgpSCgqiUgoK4goKCuoKClIK4goKCuIKCguiCAAkUgoLoggAAEAATigGCgoKCgsyUgriWkoKCloKCgoKCgoIACRaSgtaCjAAGNoKCgpaSgoKWooKClriAgqSUgILWgIKkgILGloKCgoKCgoKCgpSCAAoQgqqChIKCgpaCgJSAgraAgg==")]
+[assembly: global::go.GoPositionMap("go/types/example_test.go", "example_test.cs", "ACNEtIKCAAcgzJKCgpqigoIABkoAIgQAAxSCgoLMkoKCqIKCgoKClKiCggAHIgAOBAAFHoK62oKCgqiogoKCgoKUgoKCuJSCgoSCgoKCgoKCpqaUggAHdgA3ApSkpKSkgpSkpMiCgoI=")]
+[assembly: global::go.GoPositionMap("go/types/exprstring_test.go", "exprstring_test.cs", "AGfyAYKCgoKClICC")]
+[assembly: global::go.GoPositionMap("go/types/generate_test.go", "generate_test.cs", "ACNI1oKCgpSCqIK4lIKCgqiWgIKokoKCgoCCpJaCgoKogIKCgoCCtgAQFIKC3IKCgoKmgoL+xqKigLaAoqLIgoKkgKKAuoKCytqAtLSA6oAAChKAAAUU4oKCgoKUlKiygILMwoCCgoCCgoKUgu7CgpKUgpS6soKSlIKUvsKCkpSClLqygpKUgpSClLzCgoCCgraqooKSlpKUgqa2gKKCxrqSgpSCgIKC2L6ygpSUgoKCgtiAgpaSkoKCgriSgoKCuJKCgoL6vKKClICCgoCUgpKCggAIDPqSgpSAgoKWgJKSgoIACQy6koKUgIKCloCSkoKCAAkMvrKClpKCtrqSgpSSgra6koCCpKiSqJKCgqiSgoKC")]
+[assembly: global::go.GoPositionMap("go/types/hilbert_test.go", "hilbert_test.cs", "ABgylIKCgpaCpoKEAAQmgoKCgoKChO6iAAkGgoaCgoKClJSCgoKClKaUAAgGgoaCgoKClKaUAAkGgoaCgoKCgpSUlJQACgaChoKCgpSUgoKUlJSWggAICIKCgoKCgpSUlAAIBoKGgoKUgqYACAaCioKU")]
+[assembly: global::go.GoPositionMap("go/types/instantiate_test.go", "instantiate_test.cs", "ABseooIATr4BsoSihIKCgpaCgoKWgILsgoKCpoKCgoKClIKClIKUggAICIKuAAgagoKCgoKCgpSAggAICoIAAhCCgoKCuoKAgsqSgpSSpoKU")]
+[assembly: global::go.GoPositionMap("go/types/issues_test.go", "issues_test.cs", "AB0wgoKCggAICIIAABaChIKClJSkpKSk1oK2ggAJCoIAABCChIKCgoCCgpS4ggAICIKKhIKCgoKWgoKEgu7SAAQWgoQAAxiQkoKCgoCCpoKCgoKmgoKUhIKCAAgU4oQAAhoAAyIABB6CgoSCgoKCgqaClIKogoKmgoSCkJKCjIK4gqYACBKEooKCgoCCuJKAgoCCgoCC6PqmzpKCqAAKEoKCmJKCgoKYkoKCgqaClKiCgoKCAAkMlIKClIKCgqaCgpSCgviCgpaCgoKAgrYABBCSgoKAgqSWgoKAgqSAgqSEgriCgoSEkgAHEIKClIKUAAISAAgCgoCCuLqCgpLoAAkUgoKCgoKCgoKWggAIBoKEgoKCloKClJSCgoK4tooAD1yClJKWgoIACwaCgoSClIKWgpSCloKUgriUgoKCupaWgoKogoKogoKCgoIACAiKABAkgoKChIKCgJSCgoKUgIK2gsqCAAsKpABDyAGCkoKCgpKCgqKCpLaC6IKGAAMoAANIguiCAAIUgoKCloKmgq6SlpLWggACHLaWgoKYkoKCgqaCqILogq6ChIKCloKCggAICKaiiKKEABtKlJKCgoKUlIKogpaCyoIABBiSpoIAAhyCxKSEhIK4ggACEoKCgoKCgg==")]
+[assembly: global::go.GoPositionMap("go/types/main_test.go", "main_test.cs", "ABEigoI=")]
+[assembly: global::go.GoPositionMap("go/types/methodset_test.go", "methodset_test.cs", "ABciogABEAAnYAAJGoKEgoKClIKCgpaCgJKCpIKCgJKkgIKkgILKgpaC6pIAAhyCgoKUgoCCpoLmgqyCgoKWgoKCqIKCpoKCgqaCgoI=")]
+[assembly: global::go.GoPositionMap("go/types/mono_test.go", "mono_test.cs", "ABEggoSCoraCgpSmgoKAgtqCgoCClA==")]
+[assembly: global::go.GoPositionMap("go/types/named_test.go", "named_test.cs", "ABoeggACJoS+AAUUkrKkgoKCzJKypIKCgu6igoKUqJIAAiSCgoKAgqaIgoKCgpSCvtIAAhSSlIKWgpKolIKCuICCgqSCgII=")]
+[assembly: global::go.GoPositionMap("go/types/object_test.go", "object_test.cs", "ABsggoKAgsqCgoCCyoKCgoKCABUevKKCloKCgqiCgoKoggAhQoKEspKCloKCgpaCgpSCgpSCgIKCgqa4gILsooKCgqY=")]
+[assembly: global::go.GoPositionMap("go/types/resolver_test.go", "resolver_test.cs", "ABkwgqaCgpSCgpSCgpSC5qKEABCGAcyCgoKogpKCgoKCqIKCuoKigIKAgoKCgpSAgoKkpKSogoKqkoKygIKCgIKCpICCgqSCpJSkuoKAkriClII=")]
+[assembly: global::go.GoPositionMap("go/types/self_test.go", "self_test.cs", "ABoqgoSCgoKWkoKCAAsIgoTugoKCgoKUgoKUggAKEKKCgoKmgoKCloKCgsiCggAIEoCCtoKmgoKCloKCgoKUlg==")]
+[assembly: global::go.GoPositionMap("go/types/sizes_test.go", "sizes_test.cs", "ABEkkqaCgoKCgIK2gqiSAAIUgpKAgqSCgILKkgACEIKClIKUgoK4gq6SyIKCgrqShAACGIKCksiClIKWgoIAHGqCgoKSkoKS")]
+[assembly: global::go.GoPositionMap("go/types/stdlib_test.go", "stdlib_test.cs", "ADNSooKWloKCkpa6AAYQgoSChIKCwpKCloKC6oSCABIogqaClJaCgpaCppSu4oKClKaCgoKCypSmgpQABhDygoKUlIKEgoKSgoKWkpSCgpSCugAMCsKCuICCgILGloKCloKUgqiCgoKAgoKUgpSkgoLKgpSCgv6CgsiWgoKmggAODKKEgpYAMRayhIKWADlIgoQAFSiShpKCgoKWloKCgoKUmJKkuJKCgoK8goKCgoKClLqokpKCgoKAgqSUgpSCgpSCgqamgoIABxCCgoKCvIKCgpSCqIKC")]
+[assembly: global::go.GoPositionMap("go/types/typestring_test.go", "typestring_test.cs", "ABUqkgBMtAGUhIKChIKCgoKClIKCgpSCgIIADwqCgoSCAAoYkoKUlICC")]
+// </GoSourcePositionMaps>
+
 namespace go.go;
 
 [GoPackage("types_test")]

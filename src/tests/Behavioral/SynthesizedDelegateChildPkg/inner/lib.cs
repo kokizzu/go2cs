@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "")]
-
 namespace go.SynthesizedDelegateChildPkg;
 
 partial class inner_package {

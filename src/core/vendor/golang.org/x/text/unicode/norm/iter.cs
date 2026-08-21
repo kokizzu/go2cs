@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/iter.go", "iter.cs", "AB9AkoKCgoKUgoKCgoKokoKCgoKUgoKCgoKssoKUtLS0pIKUgoKUgoKCgoKuwoKUqJKmgoKokgACEPKmooKCgoKUgoKClIKCpqKCgoKClIKCgpSCgqaigoKCpIKCgpSCpoKqwoKUlIKCgoKUpoKqwoKCgoKCgoKCgpSClIKCqLKCkoKAgoKCgoKCpIKUosqCgqaC2oKCgqaCgpSCgIKClKSkgqSCgpSkgoKCgpSigoKCgoKCpIKmgoKUgsSCgpSCgoCCpIKkgqaCpJSChqKCpqKCgoCCgqSCgpSAgoLIpqKCgoKCgqiykoKCgpSCgoKUgoKUgoKCgqSCgpSCgIKkgqSCpoKEkoKCgoKCgoKClIKCprSCgIKCpIKAgqSCpJSCgqaigoK4goI=")]
-
 namespace go.vendor.golang.org.x.text.unicode;
 
 using fmt = fmt_package;

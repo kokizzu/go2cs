@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || (js && wasm) || wasip1 || windows
-[assembly: go.GoPositionMap("os/signal/signal_unix.go", "signal_unix.cs", "AA0ewrKysrSCgriCzoKUgoKUtLiCpoKmgqaC")]
-
 namespace go.os;
 
 using os = os_package;

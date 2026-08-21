@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/http/routing_index.go", "routing_index.cs", "ACE+ooKUgpSCgoKUAAQcABEOgoKUgoKCprqAgqTKnuKCgoKClIKCgoKAgoKCyIKCgrqClA==")]
-
 namespace go.net;
 
 using math = math_package;

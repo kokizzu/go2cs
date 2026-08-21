@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:generate go run gen_const_ppc64le.go
-[assembly: go.GoPositionMap("hash/crc32/gen.go", "gen.cs", "")]
-
 namespace go.hash;
 
 partial class crc32_package {

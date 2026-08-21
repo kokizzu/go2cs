@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Windows architecture-independent definitions.
-[assembly: go.GoPositionMap("runtime/defs_windows.go", "defs_windows.cs", "")]
-
 namespace go;
 
 partial class runtime_package {

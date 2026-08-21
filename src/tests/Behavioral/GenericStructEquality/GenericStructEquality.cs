@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("GenericStructEquality.go", "GenericStructEquality.cs", "ACJEgrKChIKChIKEgoSChIKCgoI=")]
-
 namespace go;
 
 using fmt = fmt_package;

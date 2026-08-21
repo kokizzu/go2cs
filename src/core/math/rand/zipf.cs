@@ -5,8 +5,6 @@
 // "Rejection-Inversion to Generate Variates
 // from Monotone Discrete Distributions"
 // http://eeyore.wu-wien.ac.at/papers/96-04-04.wh-der.ps.gz
-[assembly: go.GoPositionMap("math/rand/zipf.go", "zipf.cs", "ABw2gqaCruKCgpSCgoKCgoKCgoKqwoKUhIKCgoKCgpSCpg==")]
-
 namespace go.math;
 
 using math = math_package;

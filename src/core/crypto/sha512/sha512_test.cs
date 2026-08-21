@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // SHA512 hash algorithm. See FIPS 180-4.
-[assembly: go.GoPositionMap("crypto/sha512/sha512_test.go", "sha512_test.cs", "AJcFqAqCgIKCpoKClIKCloCCpAAKCIIAAxCA/ID8gPyA2oKCggAKCoIABRaykoKChISCgoKWgoKWgIKCpoKEgIL+gt6CgoKWgoSCgoKWgILsgoKAgqSCgIKkgoCCpIKAgsiCgoCCAAgKkoKUgoKCgoKCABw6woKAgrjmgoSCgIKCpoKCgpaC+oKClIKSgqKCgpSCAAkIgoKUgpSClIIADA6CgpKCgoKCgqaCgoKCpoKCgoLKgqaCpoI=")]
-
 namespace go.crypto;
 
 using bytes = bytes_package;

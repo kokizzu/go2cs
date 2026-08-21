@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/sysinfo/sysinfo_test.go", "sysinfo_test.cs", "AA0YgoI=")]
-
 namespace go.@internal;
 
 using static go.@internal.sysinfo_package;

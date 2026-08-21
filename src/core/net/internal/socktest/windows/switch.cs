@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package socktest provides utilities for socket testing.
-[assembly: go.GoPositionMap("net/internal/socktest/switch.go", "switch.cs", "ABo0goKCqLKCgoKClIKosoKCgpSCAAQQkKaQppCkggAJFIIAEyyCyoKCgoKUAA00goKUAAQYgoKUqLKCgoI=")]
-
 namespace go.net.@internal;
 
 using fmt = fmt_package;

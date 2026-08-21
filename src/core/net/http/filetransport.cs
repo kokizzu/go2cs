@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/http/filetransport.go", "filetransport.cs", "ABM+AA0CAAIiAA4Cpu6CkoKUpoKCAAoWAA8ggoKUgpSmgoKUhIKUpoKmgoKUhIKmgoKUgoKU")]
-
 namespace go.net;
 
 using fmt = fmt_package;

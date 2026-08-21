@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("PointerCastSliceRange.go", "PointerCastSliceRange.cs", "AAkggpKEgoKWgoKWgoKWAAAQkoKKgoKUlIqC")]
-
 namespace go;
 
 using fmt = fmt_package;

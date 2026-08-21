@@ -15,8 +15,6 @@
 // - traceAdvance cannot return until the previous generation's buffers are all flushed.
 //
 // See https://go.dev/issue/60773 for a link to the full design.
-[assembly: go.GoPositionMap("runtime/trace.go", "trace.cs", "AIsBtALSgqaCqJbelpaCgpYAJlCWqJaCAA8igpSCgpQADR6CzIKCloKogqiWgpSEgoSChIKqogASGAAJArqClILehgAAFO6UgqaSgqYAChaCgoKClIKCgpSClIKolAAIFIKWgoLKgoKCqKYABxKCgoLegoKC3oIAESaCkoKUgoKUAAAQ4pSChIKCgpSCgtyCgoKClJaCgqaClqaCgoKCpgAHFIKClNyClJbegoKCloKCggAJFoKClISUlt6CggAJFIKCgoKUlKiCgrqCgoKUgoKUgqaCgoKmgpSWAAsYgoKCgoKUAAYQhLiCuIK4lKyygpSClIIABhLSgoKCgpSCgqaWgLikgoKmlJbeAAgClIKUpoDchLiCgqaAgoKCtoKCgqqClIKCgqiC7oKCzLiUqMqCzJSUloIAChaCgqaCgoIABhLigoKUrAARHoKUAAsYxIKCgpSWlLqSgoKCABIqkoKCgoKClIIAAhDygoKClIKClIKCrPaCgpTcAAgKgpQAAhQACgSCgpSCloSClII=")]
-
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

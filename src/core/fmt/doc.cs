@@ -381,8 +381,6 @@ calls will not lose data.  To attach ReadRune and UnreadRune
 methods to a reader without that capability, use
 [bufio.NewReader].
 */
-[assembly: go.GoPositionMap("fmt/doc.go", "doc.cs", "")]
-
 namespace go;
 
 partial class fmt_package {

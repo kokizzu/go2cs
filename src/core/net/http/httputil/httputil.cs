@@ -4,8 +4,6 @@
 
 // Package httputil provides HTTP utility functions, complementing the
 // more common ones in the net/http package.
-[assembly: go.GoPositionMap("net/http/httputil/httputil.go", "httputil.cs", "ABAo4gACHAALAg==")]
-
 namespace go.net.http;
 
 using io = io_package;

@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("path/filepath/path_windows.go", "path_windows.cs", "AAoawoKUpqiCqIKCgoKApLSC1paClqaCuJSCgpSmgoKCogAEFgAIApqyAAcWggAKBIKCpoKUpoI=")]
-
 namespace go.path;
 
 using os = os_package;

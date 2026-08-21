@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAwcgoL4goSEgpS0tg==")]
-
 namespace go.NamedInterfaceAdapterIdentity;
 
 using fmt = fmt_package;

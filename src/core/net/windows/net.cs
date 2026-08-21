@@ -89,8 +89,6 @@ On Plan 9, the resolver always accesses /net/cs and /net/dns.
 On Windows, in Go 1.18.x and earlier, the resolver always used C
 library functions, such as GetAddrInfo and DnsQuery.
 */
-[assembly: go.GoPositionMap("net/net.go", "net.cs", "AFDoAqCq0oKUgoKUqLKClIKClKiygpSCgpSs0oKUrNKClKiygpSAgqSosoKUgIKkqLKClICCpKrCgpSAgqSqwoKUgIKkAAIUAAoCgoKUAEOqAQANAoCSACpcgKSAqKKUpKQAHkSApKKClIKClIKUgoKUlJSCAAokgoCCgqSC7qaCloCCgqSCAAsagKSAooD+ooKUgoKUpoCigMiAooCigMiAooCigAAVIoCigKKApIIACBKAooCigKKAAA0YgAAIDICigKKAABAmoqyAgoLKgpaSAAoYkKSigpSCgpSCrLCqsAASJqIAChq0AAcSogAKGKQADBqCgpS0pMiCAA86AAkCgIKkgoKCgoKmggACEgAJAoKCgoKUgpSmgoKCgoKUgoI=")]
-
 namespace go;
 
 using context = context_package;

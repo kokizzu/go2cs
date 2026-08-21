@@ -1,8 +1,6 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("sort/example_multi_test.go", "example_multi_test.cs", "ABw4soKqwsySqJIAAhLihJKCgpa2/AAVJMSGhoaagpaChIKEgoSC")]
-
 namespace go;
 
 using fmt = fmt_package;

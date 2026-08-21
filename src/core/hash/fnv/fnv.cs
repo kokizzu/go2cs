@@ -10,8 +10,6 @@
 // All the hash.Hash implementations returned by this package also
 // implement encoding.BinaryMarshaler and encoding.BinaryUnmarshaler to
 // marshal and unmarshal the internal state of the hash.
-[assembly: go.GoPositionMap("hash/fnv/fnv.go", "fnv.cs", "AC5YopKqopKqopKqopKqooKCgqqigoKCpoCigKKAooCigICigICkgKKAooCigKSCgoKClIKmgoKCgpSCpoKCgoKUgqaCgoKClIKmgpSClIKClKaCgpSClIKUpoCigKKAooCigKKApICigKKAooCigKKApIKCpoKCpoKCpoKCpoKCpoKCAAwegoKCgqaCgoKCpoKCgoKmgoKCgqaCgoKCgqaCgoKCguaCgpSClIKmgoKUgpSCpoKClIKUgqaCgpSClIKmgoKUgpSCgqaCgpSClIKC")]
-
 namespace go.hash;
 
 using errors = errors_package;

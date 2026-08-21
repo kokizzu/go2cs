@@ -10,8 +10,6 @@
 //
 // Note: This can't be part of the parent traceviewer package as that would
 // throw. go_bootstrap cannot depend on the cgo version of package net in ./make.bash.
-[assembly: go.GoPositionMap("internal/trace/traceviewer/format/format.go", "format.cs", "")]
-
 namespace go.@internal.trace.traceviewer;
 
 partial class format_package {

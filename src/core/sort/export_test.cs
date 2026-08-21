@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("sort/export_test.go", "export_test.cs", "AAsOgqaC")]
-
 namespace go;
 
 using static go.sort_package;

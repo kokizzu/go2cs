@@ -8,8 +8,6 @@
 //
 // [Go versions]: https://go.dev/doc/toolchain#version
 // [Go toolchain name syntax]: https://go.dev/doc/toolchain#name
-[assembly: global::go.GoPositionMap("go/version/version.go", "version.cs", "ABUoooKClAACGgAKAoKClIKUAAMW8qiS")]
-
 namespace go.go;
 
 // import "go/version"

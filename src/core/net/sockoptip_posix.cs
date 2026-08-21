@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || windows
-[assembly: go.GoPositionMap("net/sockoptip_posix.go", "sockoptip_posix.cs", "AA4cgoKAgqSCgqaigoKUgoKmgoKCpqKCgoKUgoI=")]
-
 namespace go;
 
 using Δruntime = runtime_package;

@@ -1,8 +1,6 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/coverage/pods/pods.go", "pods.cs", "AC1oAA0CgoKCgoKUgoKUgqaqogARXgAhAoKCgoKAgriAgvyCgoKAgoKCgpSAgoKClIKClILqgoKUlIKCgoCCpJTcgoKClJSGpqKCgg==")]
-
 namespace go.@internal.coverage;
 
 using cmp = cmp_package;

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build (!amd64 && !ppc64le && !s390x) || !gc || purego
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/poly1305/mac_noasm.go", "mac_noasm.cs", "")]
-
 namespace go.vendor.golang.org.x.crypto.@internal;
 
 partial class poly1305_package {

@@ -1,8 +1,6 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("hash/fnv/fnv_test.go", "fnv_test.cs", "AEKAAYKmgqaCpoKmgqaCpoKCgoKClIKUgIIACwqCAAcYspKCgoSEgoKCloKCloCCgqaChICC/oKmgqaCpoKkgqaCpoKCgoSAgqaAgqaCgoCCpoKCgoCCppSCgsaCggAJDpKmgqaCpoKmgqaCpqKCgoKUhIKCgoI=")]
-
 namespace go.hash;
 
 using bytes = bytes_package;

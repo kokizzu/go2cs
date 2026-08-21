@@ -47,6 +47,22 @@ using static go.crypto.cipher_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("crypto/cipher/cbc.go", "cbc.cs", "ABg2ggARKrKClICCpK7CgpSmgKSCgpSClIKWhJSCloKCqKaCgpQADCCygpSAgqSuwoKUpoCkgoKUgpSClIK6goKWloKChIKCqIKWpoKClA==")]
+[assembly: go.GoPositionMap("crypto/cipher/cfb.go", "cfb.cs", "ABUugoKUgpSCgoKWypSCgpSCgr6yrLKmgpKUlO6E")]
+[assembly: go.GoPositionMap("crypto/cipher/ctr.go", "ctr.cs", "ACJOooCCpIKUgoKUAAcQgoKCgoKCgpaCgoK4gqaCgpSClIKClIKCgg==")]
+[assembly: go.GoPositionMap("crypto/cipher/gcm.go", "gcm.cs", "AE2qAeIAAhTyAAIWAAgC9oKCloKWgIKmgpaChN64hIKClgAHFIKmgqaCgpSCloKClpKEgoSEgoKEyoKCuIKWgpSCloKEkoSChIKEgoKWyoKWhKiSgoKopKiyloKCAAcSgpYABxKyhIKCgrqCgoKCgrqEgoKoqsKCgoKCvKKChIKCgrzCgq7ygIKUgqSCqLKEgoKEgoKWgoKCvgALDoKClIKCgoKCvMKCgoSChISChA==")]
+[assembly: go.GoPositionMap("crypto/cipher/io.go", "io.cs", "ABMmsoKCAA0csoKCgpKUqqKAgqQ=")]
+[assembly: go.GoPositionMap("crypto/cipher/ofb.go", "ofb.cs", "ABQwsoKClIKClN6CpoKCgoKUgoKCgoKUgqaCgpSClIKClIKCgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.crypto;
 
 [GoPackage("cipher")]

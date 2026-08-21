@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("net/lookup_windows.go", "lookup_windows.cs", "AB0+gpSk1qKCgpQACQiWirKAgoKkgoKCggAMCrSCgIKklKTIgoKClIKylAAKBoKAgrqClLS2ooCC7ILagoKCloKEgoKCgqaClIKCgoKUgqSCgqS2xoyCgqKCqLQAAhQADAiigqiAguyEhLaCpIKktpS0toKCgoCC7oKUlIKClIKUgqSCpAAIBqKAgriAguyCgpSAlKSClISCgtaigqaAguyCgoKUlIKCgpSEgoKClILWooKmgILsgoKCgpSEgoKClILWooKmgILsgoKCgpSEgoKClNaigqaAguyCgoKClISCgoKCgpSU1qKAgriAguyCgoKUgoKClISCgoKU/JKCgpSClIKUgpSClJSoxIKCgoKUgpSClIKUtKqi")]
-
 namespace go;
 
 using context = context_package;

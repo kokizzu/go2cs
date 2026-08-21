@@ -6,8 +6,6 @@
 // only using packages that may be imported by "os".
 //
 // Tests for these functions are in the strings package.
-[assembly: go.GoPositionMap("internal/stringslite/strings.go", "strings.cs", "ABIggqaCpoKmgoKUpKSClKSmkpSCgoKCgoKmgoKUlIKUgpSCgoKUpqSCgoKCgoKCgoKUlIKUgoKUgoKUpqaCgIKkpoKClKaCgpSmgoKUpoKClKaCgpSCgg==")]
-
 namespace go.@internal;
 
 using bytealg = go.@internal.bytealg_package;

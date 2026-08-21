@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build windows
-[assembly: go.GoPositionMap("internal/syscall/windows/registry/value.go", "value.cs", "ACFqAA0CgoKUgoKUkoKClKaigoKUgpKCgoKUgpSClAADEtKCgpS2pIKUgt7CgoKWgoKEggAGEoKCgpSCgpaWkoKUgpaClqyygpSCgpSCgoKClIKUAAMS8oKClIKUgpSCgpSClIKCgoKCpgAGENKCgpSUgpSkgpSkAAQS0oKClIKUpoKCgpSClKrCqsKmgoKClIKqoqqi3LKCgoKCppSCgqqiqJKokoKClIKCgoKSgoKClJSCgpSClJS0")]
-
 namespace go.@internal.syscall.windows;
 
 using errors = errors_package;

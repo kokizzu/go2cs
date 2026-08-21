@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 // Pipe adapter to connect code expecting an io.Reader
 // with code expecting an io.Writer.
-[assembly: go.GoPositionMap("io/pipe.go", "pipe.cs", "ABQqwoKCgpTUwoKCABMkoqTItIKCpMiCgpSCgJKm4qSkgqaCtIKCtKbmgoKUgoCSqJKCgIKkqJKCgIKkAAcW0qqiAAIQ0gAHFtKqogACEuIAAiQADwLq")]
-
 namespace go;
 
 using errors = errors_package;

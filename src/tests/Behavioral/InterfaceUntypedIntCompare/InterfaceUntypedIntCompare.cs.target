@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("InterfaceUntypedIntCompare.go", "InterfaceUntypedIntCompare.cs", "AAwcguaCjoKUloKCgoSCgoaCgg==")]
-
 namespace go;
 
 using fmt = fmt_package;

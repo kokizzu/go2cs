@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !libfuzzer
-[assembly: global::go.GoPositionMap("internal/fuzz/trace.go", "trace.cs", "AAwwAAwCoqKkoqKipKI=")]
-
 namespace go.@internal;
 
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for go:linkname

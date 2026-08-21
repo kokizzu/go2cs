@@ -138,8 +138,6 @@ ASCII character classes:
 
 Unicode character classes are those in [unicode.Categories] and [unicode.Scripts].
 */
-[assembly: go.GoPositionMap("regexp/syntax/doc.go", "doc.cs", "")]
-
 namespace go.regexp;
 
 partial class syntax_package {

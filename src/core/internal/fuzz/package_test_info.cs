@@ -48,6 +48,22 @@ using static global::go.@internal.fuzz_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("internal/fuzz/encoding_test.go", "encoding_test.cs", "AB0cggCKAfgClKioAAoUspKCgoKUlIKUgoKWgoKUgoKCAAUSsoKCloKCkoKCAAUSsoKCloKCgpKCgtyCgoKCgoKUgoLKgoKCgoKClIKCyqKCgoKCgoKChIKEgoSCgpSClIKCgsqigoKCgoKCgoKChIKChIKClIKUgoLKooKChIKChIKClIKUgoI=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/minimize_test.go", "minimize_test.cs", "AB4qggADFIKCgoKmgpQABxCCgpSClAAHEIKClIKUAAcQgoKUAAgQgoKCgqaClAAHEIKClAAHEIKCgpTegpKSgrqCgoKClIKUgIKkggAJErKWgoKCgoKUgpSAgg==")]
+[assembly: global::go.GoPositionMap("internal/fuzz/mutator_test.go", "mutator_test.cs", "AA4eooKAkoKEAAcQkoKElIKCAAgMooKAkoKEAAcQkoKElIKCAAgMooKAkoKEAA8igqKCggAIDIKCgoKCgoKClII=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/mutators_byteslice_test.go", "mutators_byteslice_test.cs", "ABEkgoKCpoKCgqaCgoKmgoKCpoKCgqaCpoIACgaCAHHqAZKCgpSCgoI=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/queue_test.go", "queue_test.cs", "AAoSpJKAgqSAgriCgoKAgqSAgqTcgoKCgoCCpJSkgoCCtoKCgII=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/worker_test.go", "worker_test.cs", "ABkwgoKCgpTWwoKUgoCShLqCgpSSgIK4goKEhIKCgoKE7MKClIKCgoCCAAgOwoKUgoKCgoK4goKUgpSClAADEMKCuIKUgoKCgoKClJKAgraAgqSSgIK2pqKCkoKAggAKCKKClqiSgpSCgIK2hIKCgoKCgoKCgqKCgoKClJSCgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal;
 
 [GoPackage("fuzz")]

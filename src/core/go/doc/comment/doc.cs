@@ -33,8 +33,6 @@ implement their own logic by inspecting the parsed syntax itself.
 See the documentation for [Doc], [Block], [Text] for an overview
 and links to additional types.
 */
-[assembly: global::go.GoPositionMap("go/doc/comment/doc.go", "doc.cs", "")]
-
 namespace go.go.doc;
 
 partial class comment_package {

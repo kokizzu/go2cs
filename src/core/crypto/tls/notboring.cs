@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !boringcrypto
-[assembly: go.GoPositionMap("crypto/tls/notboring.go", "notboring.cs", "AAoSgA==")]
-
 namespace go.crypto;
 
 partial class tls_package {

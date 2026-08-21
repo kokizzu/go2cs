@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("ComplexFormat.go", "ComplexFormat.cs", "AAwkgoKCgoKCgoKChIKCgoKCgoKCgoKChoKCgoKCgoaCgoSC")]
-
 namespace go;
 
 using fmt = fmt_package;

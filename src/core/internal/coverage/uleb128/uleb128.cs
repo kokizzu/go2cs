@@ -1,8 +1,6 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("internal/coverage/uleb128/uleb128.go", "uleb128.cs", "AAkOgoKCgoKUgoKm")]
-
 namespace go.@internal.coverage;
 
 partial class uleb128_package {

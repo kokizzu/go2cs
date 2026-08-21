@@ -1,8 +1,6 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("crypto/cipher/gcm.go", "gcm.cs", "AE+qAeIAAhTyAAIWAAgC9oKCloKWgIKmgpaChN64hIKClgAHFIKmgqaCgpSCloKClpKEgoSEgoKEyoKCuIKWgpSCloKEkoSChIKEgoKWyoKWhKiSgoKopKiyloKCAAcSgpYABxKyhIKCgrqCgoKCgrqEgoKoqsKCgoKCvKKChIKCgrzCgq7ygIKUgqSCqLKEgoKEgoKWgoKCvgALDoKClIKCgoKCvMKCgoSChISChA==")]
-
 namespace go.crypto;
 
 using alias = go.crypto.@internal.alias_package;

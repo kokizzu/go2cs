@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA4oggAGEIKC")]
-
 namespace go.ValueAdapterDynamicType;
 
 partial class colorlike_package {

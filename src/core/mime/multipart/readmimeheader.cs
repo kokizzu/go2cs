@@ -1,8 +1,6 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("mime/multipart/readmimeheader.go", "readmimeheader.cs", "AA0e")]
-
 namespace go.mime;
 
 using textproto = net.textproto_package;

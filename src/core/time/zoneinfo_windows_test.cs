@@ -1,8 +1,6 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("time/zoneinfo_windows_test.go", "zoneinfo_windows_test.cs", "ABAagpSEgoKUgriigoLWooKCAAsGooKCgpSEpIKClJKAgqSAgriCgpSC")]
-
 namespace go;
 
 using registry = @internal.syscall.windows.registry_package;

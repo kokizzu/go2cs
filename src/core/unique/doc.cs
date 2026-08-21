@@ -6,8 +6,6 @@
 The unique package provides facilities for canonicalizing ("interning")
 comparable values.
 */
-[assembly: go.GoPositionMap("unique/doc.go", "doc.cs", "")]
-
 namespace go;
 
 partial class unique_package {

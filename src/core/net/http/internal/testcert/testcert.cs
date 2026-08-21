@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package testcert contains a test-only localhost certificate.
-[assembly: go.GoPositionMap("net/http/internal/testcert/testcert.go", "testcert.cs", "AB+CAYA=")]
-
 namespace go.net.http.@internal;
 
 using strings = strings_package;

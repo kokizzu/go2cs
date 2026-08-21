@@ -11,8 +11,6 @@
 //
 // This facility can be enabled by passing -tags debuglog when
 // building. Without this tag, dlog calls compile to nothing.
-[assembly: go.GoPositionMap("runtime/debuglog.go", "debuglog.cs", "ACdmABECgqiWqIKCgoKCgsymgoKUgpaCgoKCggADELKCqIKWgoKCgpSWABkysoKogoKoloKoAA8osoKUgpSUqJKokqiSqJKosoKUgoKokqiSqJKokqiSqLKClIKCqLKClIKC2MKClIKClIKUpLaosoKWgoK4goKUhqKCgoKClIKCgoKmqLKClIKCqLKClIKCgpQAKmSSlO7MkoKCqJKCgoKCgoKokoKCgoKCgoKCgqiSgoKCqJKCgoKCgoK6koKClJSokoKCgoKUgoIACx6kgpSClIKClIKUgqiSqpKCgoKUrJSCgoKUgoKUgqaCgqiClIKCgoKCgoKmgpSm9oKCloKChKaCgoKCgoKCpqaCgoKClJSmgoKEnKampqamtoKCgoKUgoKClIKCyJKG6IKmpqaCgsoAA3+CAAKGAQAPCJKCvJaCloKClIKCmAABEIKCgoKUgoKCgoKCgoKCuoSYgoKCgqaCqIKCgoKUgpaCgoSCgoKUlIKChIKClJSCgqaWgoKWqqKCppaCgpSCgg==")]
-
 namespace go;
 
 using abi = @internal.abi_package;

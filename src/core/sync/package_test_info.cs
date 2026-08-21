@@ -41,6 +41,29 @@ using static global::go.sync_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("sync/cond_test.go", "cond_test.cs", "ABIcgoKCgoKCgrKCgoKCpoKUgqTWgoKCgqTWlKaCgoKCgoKCsoKCgoKUgoKCpoKCgviCgoKCgoKCgrKCgoKClKaCgpSCgoKUpNaCgoKCgoKClKak1uaCgoKCooKCgoKUgoKClKKCgoKCgpSCgpSClKKCgoKCgpSUgpSCgpSClIKCpqKCgpaCooKCgoSWgoIACRaCkpaSgoKUqKiCgoK4ooKCgqaSgoKC1oKmgqaCpoKmgqaCpoKCgoSCooKCgoKUgoKClJSUgoKCgqaC")]
+[assembly: go.GoPositionMap("sync/example_pool_test.go", "example_pool_test.cs", "ABYykqaCgpSCgoKCgoLmgg==")]
+[assembly: go.GoPositionMap("sync/example_test.go", "example_test.cs", "AA8ezKKCypSUtJTo1oKCgpSCgqKCpoIACBDSgoKClIKUgoKigoKClKaCAAgOwoKClIKCooKClIKmgg==")]
+[assembly: go.GoPositionMap("sync/map_bench_test.go", "map_bench_test.cs", "ABQogqKigoKWhIKigtyClJSCpoK6gtyClJSCpoK6ggAIDIKUlICCpIKmgrqCgoKAgraAggAIEIKUgILKgtyClKiC3IKUlICCpIKmgrqCgoKU7oKUgILKgtyClKiCgIL+goSUgrqCAAUW0pSSgoKAgoKCAAcY0oSUgrqChIKCgpTugpSogtyClKiC3IKUlIKmgrqCgoKUgu6ClJSCpoK6goKClILugpSogoLugpSCgu6ClKiC3IKUlICCpoKmgrqCgoKU3IKUlIKmgrqCgoKU3IKUqIKC7oKUlICCpoKmgrqCgoKUgu6ClJSCpoK6goKClILugpSCkoI=")]
+[assembly: go.GoPositionMap("sync/map_reference_test.go", "map_reference_test.cs", "ACVOwoKCgqaigoKUgqbCgoKCgoKUlIKmwoKCloKCgqbCgoKCgpSCgqaigoKm0oKCgpaCgoKU5tKCgoKWgoKClOaigoKClISCgoKUgsrCgoQADRaygoKmgoKCgoKmwoKCgpaUgoKCgoKClIKmsoKCgoKCgqaygoKCgoKCpoKCgoKCprKCgIKmgoKCgoKCgpTmsoKAgqaChIKCgoKClOaCgoKCyoKCgoKUpqKChA==")]
+[assembly: go.GoPositionMap("sync/map_test.go", "map_test.cs", "ADNkgpSkgqSkpIKkpIKClKSCgIK2pIKkAAkSooKClKaCgpSkprKCgpaCkoKWpoKmgqaCpoKAgsiCgILIooSCgpaCgpKClIKCgtKCgqTGgoKUAAgOgoKUgoSSgoKUgpSCloL6grqEqIKCgpSCgviygoKUgqaAgtyAgu6CgoCCpKiCuoKCgpaCuIKClLiSgoKCmIK8ooSSloKiguqCooKAgpQACAyCooLYhISChLiCgoKClII=")]
+[assembly: go.GoPositionMap("sync/mutex_test.go", "mutex_test.cs", "ABYqgoKClKaCgoKCgpSCuKKCgqbCgoKCgoKEgoKC1oKCgoKUlIKUpqKAgqSEhIKClIKClISCgpSCAA8WgtyCgoLcgtyCgtyCgoLcgtyCgtyCgoLKgoKygrKAksSCpoL4goKCgoLKwoKCgpKCgoKCpOqCkoKCgpSU5gAMCIKKgoKCyqKCgpSCgoKCgoKCgri4gqaCpoKmgqau4pKCgoKCgoKCgoKUgriSlNyKwpKCgoKCgoKCgg==")]
+[assembly: go.GoPositionMap("sync/once_test.go", "once_test.cs", "AA4cgqaygJKAgqSmgoKCgoKClIKUgriCgqKCgIK2gtiCuIKCkpKC")]
+[assembly: go.GoPositionMap("sync/oncefunc_test.go", "oncefunc_test.cs", "ABMokoKAkoKClIK4goKCgpSQkoKClIKUgriCgoKClJCSgoKUgpSCuIKCgsrGgoKCooKUgsSClJSCuIKSgoKUpoKSgoKUkLaCkoKClJC2gpKCgpSCpKS4xoKCgpSCgoKygoCSxJSC6MaEgoCCpIKCgqbWguaCpJC2kICSkLaQgJKQtoKSgoKClIKCgpSCgqaUzJKCqAAJEIIACAaCgoKUpoKCuKaCuJKCAAkYgoKUppSCgoKAksiCgoKAksiCgoKCgJI=")]
+[assembly: go.GoPositionMap("sync/pool_test.go", "pool_test.cs", "ABkq1IKCgrqCgoKAgqSAgqSAgqSogqaCgIK2goCC+NSEgqSCpoCCpICCyoKCgIKkhICC+pKokqaCgoKCgoKUkoKCgpSUgoKmgoKUgIK22IKCgoKUgoKCkoKCgpSCgoKCpqaCuIKmgqaCgoKClIKCgpKCgrqCgpKCgoKCgriAgsi6goKSgpSUgoKCgriUloKCAAcQggAJCIKigtiCwpKClMTCkoLogoKCgoLKgoKCgoKUggAFEKKCpoKCgoKUggAMENSEgoSChJKCgqaUgqiCgoKmgoIACQYACAyCgJaSgoKCgpSSgqaCgpSCppSCgqaUhII=")]
+[assembly: go.GoPositionMap("sync/runtime_sema_test.go", "runtime_sema_test.cs", "ABEagoqCgoLKwoKUkoKCkoKUlJKmgoKCgoKCgqaUguiCpoKmgqaC")]
+[assembly: go.GoPositionMap("sync/rwmutex_test.go", "rwmutex_test.cs", "ABEoooKCgoKmgoKCgoKCgqaClIKmgriigoKC1oKCgoKCgpSUgpSmgoKCgoKClJSClKaChJKCgoKCgpSCgqaCuKKEgoKUgpSEgpSEgpSClIKUgoSCgoKUgoKCgoKCgoKCAAkGgoKCgoKCgrKCgoKCgqaCgoKk1oKCpNYACAiCioKCgoKCgoLKgoKCgoKCgoKUgoKClKa4gqaCpoKmgg==")]
+[assembly: go.GoPositionMap("sync/waitgroup_test.go", "waitgroup_test.cs", "ABEagoKCgoKCkoKCpoKCpNaUgriCgpaC6KKCgoKmgoKCggAIBpSCgpSCooKmgqKCpoKCAAkKgoqCgpT2goqCgoKCyoKCgoKCgoKClJS4gqaCpoKCgoKCgoKCpriCpoKmooKCgoKCgpQ=")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("sync_test")]

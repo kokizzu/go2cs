@@ -1,8 +1,6 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("math/rand/rng.go", "rng.cs", "ALYB9gKSrIKCgoKUqJKChIKClIKWgoKCgoKCgoKCgoLMkqiSgoKWgoKWgoI=")]
-
 namespace go.math;
 
 partial class rand_package {

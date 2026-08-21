@@ -1,8 +1,6 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-[assembly: go.GoPositionMap("io/multi.go", "multi.cs", "AA8Sgu6ylIKAgoK2gqaClIKUlKamgqaygoKAkpSkgoKClJSCAAQS4oKC7rKCgoKUgoKmyrKCgoCClIKUpIKUgoKmAAISAAgCgoKAgpS2")]
-
 namespace go;
 
 using ꓸꓸꓸReader = Span<io_package.Reader>;

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // export access to strconv internals for tests
-[assembly: go.GoPositionMap("strconv/internal_test.go", "internal_test.cs", "AAwSgoKCpoKCgqaCpoKmgg==")]
-
 namespace go;
 
 using static go.strconv_package;

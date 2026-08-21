@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("RangeStatements.go", "RangeStatements.cs", "ABQSiIKEpLKClI6CgqiCloKWgoKUAAAogoKWgpaClpSyhIKWhIKEsqiilqKWgoKWjoKWhIKEspaEgpiEgpaEsgABFoSCloKCgqiCgoKClJSUnoKCgpSEgoKCgoKClKaCgoCC")]
-
 namespace go;
 
 using fmt = fmt_package;

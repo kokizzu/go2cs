@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("GenericStringTypeArg.go", "GenericStringTypeArg.cs", "ABUugoKCgoSCgoaCgoKEgoKC")]
-
 namespace go;
 
 using fmt = fmt_package;

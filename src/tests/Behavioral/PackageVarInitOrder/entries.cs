@@ -1,5 +1,3 @@
-[assembly: go.GoPositionMap("entries.go", "entries.cs", "ABEq")]
-
 namespace go;
 
 partial class main_package {

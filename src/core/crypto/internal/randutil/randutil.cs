@@ -4,8 +4,6 @@
 
 // Package randutil contains internal randomness utilities for various
 // crypto packages.
-[assembly: go.GoPositionMap("crypto/internal/randutil/randutil.go", "randutil.cs", "ABMy4oKClrSkgg==")]
-
 namespace go.crypto.@internal;
 
 using io = io_package;

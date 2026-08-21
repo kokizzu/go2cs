@@ -7,8 +7,6 @@
 //
 // This package parses both the original “// +build” syntax and the “//go:build” syntax that was added in Go 1.17.
 // See https://golang.org/design/draft-gobuild for details about the “//go:build” syntax.
-[assembly: global::go.GoPositionMap("go/build/constraint/expr.go", "expr.cs", "AC1apIKmgqaA/qSCpoKCpLSmgP6klIKCpoKmgoKAgqSmggAHEKSUgoKmgqaCgoCCpKaCAAgSgs6igIKkgIKkqqKC2rSClIKWgpaCzIKClgAMINKCgIKAgoKkuIKCgpTs0oKClKzSgoKUrNKCgpSCgoKClJTcAAgEgpKCgIKAgqS2goKUgpaCgpSUgoIABRLigoKUgoKClJSCgoKmgpSCgoKmgoKCgqaCgpaCgoKqooLatIKUgpaClJSEgpTMgoKW2JiyhIKCgqKCgoKUgoKUgpSUgqaClICCpKaClICCpKaClKyygpSCgqb+2IaSgoKCgoKktLaUzIKCgqaCgoKUmJKCgoKCgoKUlJSWrLKmpICSpKSClKSCgoKUgpSkgoKClIKUvKKAgoKCpKqigIKCgqQ=")]
-
 namespace go.go.build;
 
 using errors = errors_package;
