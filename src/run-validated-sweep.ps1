@@ -25,6 +25,11 @@ param(
     # red that costs an investigation every time someone hits it.
     [string] $TestTimeout = '10m',
     [switch] $SkipBuild,
+    # -Filter matches by EXACT package path instead of the default substring -like. A per-package
+    # campaign driver needs this: substring 'io' sweeps bufio, io/fs and every other 'io'-bearing
+    # row alongside io itself, so a driver iterating the roster one package at a time re-sweeps
+    # large rows repeatedly. Substring stays the interactive default, unchanged.
+    [switch] $Exact,
     [switch] $IgnoreDiskPreflight
 )
 
@@ -153,7 +158,10 @@ $rows = foreach ($line in Get-Content $table) {
     }
 }
 
-if ($Filter) { $rows = $rows | Where-Object { $_.Package -like "*$Filter*" } }
+if ($Filter) {
+    $rows = if ($Exact) { $rows | Where-Object { $_.Package -eq $Filter } }
+            else        { $rows | Where-Object { $_.Package -like "*$Filter*" } }
+}
 # @() so a single match stays an array -- PowerShell unwraps a one-element pipeline to a scalar,
 # which has no .Count and would print a blank package count.
 $rows = @($rows)
