@@ -15795,4 +15795,37 @@ and an import-based one does not. This lane did not resolve which reading was in
 UNION of both, since over-covering a canary set is free and under-covering it is what the rule exists
 to prevent. Whoever owns the rule should pin the derivation itself; a rule that says "derive, never
 remember" still has to say derive HOW.
+
+## RULING -- canary derivation is by DIRECT IMPORT DECLARATION, never text-grep; and the record-drop scope judgment is RATIFIED (coordinator, 2026-08-20)
+
+**The canary gap the netip lane surfaced, closed.** "The five largest banked reflect consumers BY
+VERDICT, recomputed at gate time" now derives membership mechanically: a package is a reflect
+consumer when `reflect` appears in the IMPORT DECLARATIONS of its production or test sources
+(`go list`-shaped -- Imports, TestImports, XTestImports), never by text search over file contents.
+The two rejected readings each fail measurably: whole-file grep over-matches string DATA
+(`go/internal/gcimporter` matches only `"reflect.Value"` inside expected-signature test fixtures
+and imports reflect nowhere -- data is not consumption); import-CLOSURE under-discriminates
+(`fmt` sits in essentially every closure and imports reflect, so the qualifier degenerates to
+"five largest rows, period" and loses the sensitivity it exists for). Direct-import is the middle
+that tracks actual bridge exposure and is computable without judgment. Consequences: gcimporter
+LEAVES the canary set unless a test of its own imports reflect; the set recomputes at gate time
+as always; and when two defensible readings disagree mid-lane, sweeping the UNION -- as the netip
+lane did -- is always acceptable. A superset canary sweep is never wrong; only a silently chosen
+subset is.
+
+**The `e61758549` scope judgment is ratified as delivered.** The readme-rc4 lane judged the
+whitebox-production exclusion one notch too wide (it reasons about hosting an operator, which the
+pointer-boxing route never does) and restored rather than widened, with the both-foreign boundary
+intact. The reasoning is adopted; nothing to overrule. Its three-package test-info bank
+(`crypto/tls`, `encoding/xml`, `html/template` -- born short inside the two-day window, each
+re-validated at its banked count) is the correct application of the born-stale exception to the
+restore rule, and `go/types` reproducing exactly is the control that makes it so.
+
+**The shape-(b) proof matrix is COMPLETE, twice over.** Both laptops caught live Go-side BoGo
+flaps within hours of each other: R's during the tls test-info re-validation (fan-out reached,
+3,242 children absorbed by the annotated root, zero one-sided, 400 + 2), G's during the netip
+canary sweep (same shape, same arithmetic). R banked the irreproducible comparison artifact at
+`docs/phase4/evidence-crypto.tls-shape-b.json`. The opportunistic-capture standing instruction
+has paid out in full; nothing about the pin remains unproven.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
