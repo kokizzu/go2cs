@@ -69,6 +69,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `encoding/xml` | [`encoding.xml.md`](current/encoding.xml.md) | [`src/core/encoding/xml`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/xml) |
 | `errors` | [`errors.md`](current/errors.md) | [`src/core/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/errors) |
 | `expvar` | [`expvar.md`](current/expvar.md) | [`src/core/expvar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/expvar) |
+| `flag` | [`flag.md`](current/flag.md) | [`src/core/flag`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/flag) |
 | `fmt` | [`fmt.md`](current/fmt.md) | [`src/core/fmt`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/fmt) |
 | `go/ast` | [`go.ast.md`](current/go.ast.md) | [`src/core/go/ast`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/ast) |
 | `go/build/constraint` | [`go.build.constraint.md`](current/go.build.constraint.md) | [`src/core/go/build/constraint`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/build/constraint) |
@@ -126,6 +127,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `io` | [`io.md`](current/io.md) | [`src/core/io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) |
 | `io/fs` | [`io.fs.md`](current/io.fs.md) | [`src/core/io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) |
 | `io/ioutil` | [`io.ioutil.md`](current/io.ioutil.md) | [`src/core/io/ioutil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/ioutil) |
+| `log` | [`log.md`](current/log.md) | [`src/core/log`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log) |
 | `log/slog/internal/benchmarks` | [`log.slog.internal.benchmarks.md`](current/log.slog.internal.benchmarks.md) | [`src/core/log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) |
 | `maps` | [`maps.md`](current/maps.md) | [`src/core/maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) |
 | `math` | [`math.md`](current/math.md) | [`src/core/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) |
