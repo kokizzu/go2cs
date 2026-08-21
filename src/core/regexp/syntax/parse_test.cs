@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("regexp/syntax/parse_test.go", "parse_test.cs", "ANEBuAOCAA4egu6CAAkUggAJFIKokoKCgoKUlJSCgs6igoIAGDjSgpSYgpSkgpSUgoKCggAFHwADLIKUgraCtoK2pIKkgoKUpIKCgoKCgpTIpoKCgoKCgqaCgriClKaCgpSCgoKUlKaCgoKClIKUlIK4isKCgpSCAFCQAYKCgIKkgIK2goCCpICCtoKAgqSAgtqigoKCgpSUlIKCgpaC3IKCgpSCgpaCggAdOIKCgoKClIKC")]
+
 namespace go.regexp;
 
 using fmt = fmt_package;

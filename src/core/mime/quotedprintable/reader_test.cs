@@ -1,6 +1,8 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("mime/quotedprintable/reader_test.go", "reader_test.cs", "ABwqggArYIKCgoCCpJSCxoCC1oLugoKClIIAFBCCgoKCqIKCgoKUkoKUgoKCgoKUgoKClIKUlKaClIKUgpSCgoKCgpSCsoKCgoKmuKKCgqa0gIKCpta2lIKClIKCiIKcgg==")]
+
 namespace go.mime;
 
 using bufio = bufio_package;

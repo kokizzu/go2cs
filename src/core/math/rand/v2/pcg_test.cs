@@ -1,6 +1,8 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("math/rand/v2/pcg_test.go", "pcg_test.cs", "AA8YooKCgpSmgoKqgoKCloKAgqSCloKCgriCggAVLoKAgg==")]
+
 namespace go.math.rand;
 
 using static global::go.math.rand.rand_package;

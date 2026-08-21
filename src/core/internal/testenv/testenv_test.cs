@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/testenv/testenv_test.go", "testenv_test.cs", "ABkigoSCggAFEIKCgpaCgpSEgoKUhIKClIIACgiigpaSpoKmAAcSlO6CtqaCuKaClpaEgoKCgpSCgpSClIKWgoKAgqSCgoK4ooKCgoKWlJS2gJTGgIIACwqUlKSCgoKEgoKCgpSm5tzmAAcQ")]
+
 namespace go.@internal;
 
 using platform = go.@internal.platform_package;

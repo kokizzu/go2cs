@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // This file checks invariants of token.Token ordering that we rely on
 // since package go/token doesn't provide any guarantees at the moment.
+[assembly: global::go.GoPositionMap("go/types/token_test.go", "token_test.cs", "AB46hJKCuJSCgoKCgg==")]
+
 namespace go.go;
 
 using token = global::go.go.token_package;

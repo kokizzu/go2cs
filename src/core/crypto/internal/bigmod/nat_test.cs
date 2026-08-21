@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/internal/bigmod/nat_test.go", "nat_test.cs", "ABUkgoKClKrCgoKUpqKCgoKCgqaCgoK4ooKCgoKmgoKCuIKCgoKCgoKCgoKCgoKUlIIACwiCgpQAFTKCgoKAgtrKppSC9oIAKVqCgoKCgpSUgoKUgIK4goKCgpSWgoIACQiCggANJIKCgsqCgoKCgoKCuIKCgoKCgoKUgoKCuIKCgoKCgoKUgoKCuIKCgoKCgoK4goKCgoKCgv7EgoKEgoKEgpaCgoKChIK4oqaUgqaCgoKokoKCgoKmgqaCgoKUpoKCgpSmooKChIKCuKKCgoSCgriigoSCgriigoKChIKCuKKCgoSCgriigoKCgoKChIKCuKKCgoKEgoK4goKCgpaCgoI=")]
+
 namespace go.crypto.@internal;
 
 using fmt = fmt_package;

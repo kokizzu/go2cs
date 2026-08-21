@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("net/rpc/jsonrpc/all_test.go", "all_test.cs", "AClGsoKmsoLWsoKUgqaC2qKCpqKCpqKCpoKCpqKCkoKEgoKAgqSC6KKCkoKEgoKAgqSC6KKCkoKWgoKCgoKUgpSClIIADgrGgoSCpoKCgoKUgpaCgoKClIKogoKCgoSCgpSCloKClIKogoKUgqQACwiigoSCpoKSgoKUgqiSgoKUgIK4koKClICC+IKCktaigpKEgpSCgoKCAA8IooIABBKCgIKkgoLKgpSClILogoKSqJKChAAMFIKmgqaCgoKClKaCpoLWgqaCpoI=")]
+
 namespace go.net.rpc;
 
 using json = encoding.json_package;

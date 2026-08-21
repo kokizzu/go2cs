@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/ast/print_test.go", "print_test.cs", "AE+QAaKCgqKCgoKmpoKCgoKAgqSAkg==")]
+
 namespace go.go;
 
 using strings = strings_package;

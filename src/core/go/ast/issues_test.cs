@@ -1,6 +1,8 @@
 // Copyright 2019 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/ast/issues_test.go", "issues_test.cs", "ABAcotyCgoKYkoKClISChIIACQyyADOiAYKCgpaCgg==")]
+
 namespace go.go;
 
 using ast = global::go.go.ast_package;

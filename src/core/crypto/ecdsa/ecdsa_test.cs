@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_test.go", "ecdsa_test.cs", "ACY0ggAGFIKUgoKSggAEEsKSpoKmgoKClIK4gqaChIKCgoKWgpaCgriCpoKEgoKCgpaCloKCuIKmgoSCgoKCloKCgoKWlJaCuIKmgoSCgoKCloKCgpaCloK4goKClPbegpaCgpaEgoKCgpKEgoKCgpSUlIKUhIKWgoKElKSkpKSmlKSkpKSkppaClpSAgta0tLS0goKCgoLG6oKmgoKCloKCkoSCuIKmgoSCgqiCgqiCAAkIgoCSgJKAkoAACgbCgJKCgLiCgIKkpKSClJaCgIKkpKSClMyClICCpKSkgriCgJKAkoCSgLaigoK4gqaCgoKWgriCpoKEgoKUgoKWgoK4gqaChIKClIKCloKCuIKmgoSCgpSCgpaCgriClIKkgqSCpIKkAAkIggAEEIKCksqCgoKCgpSEgoKCgoKm+oKCgoKClIKCgpaCgoKC3IKCgoKCgoCC")]
+
 namespace go.crypto;
 
 using bufio = bufio_package;

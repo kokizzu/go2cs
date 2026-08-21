@@ -4,6 +4,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/types/instantiate_test.go", "instantiate_test.cs", "AB0eooIATr4BsoSihIKCgpaCgoKWgILsgoKCpoKCgoKClIKClIKUggAICIKuAAgagoKCgoKCgpSAggAICoIAAhCCgoKCuoKAgsqSgpSSpoKU")]
+
 namespace go.go;
 
 using static global::go.go.types_package;

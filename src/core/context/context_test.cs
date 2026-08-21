@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("context/context_test.go", "context_test.cs", "AChMgoIACgbqgoKSgoKSkpTUtLS06oKCgoKCgoCCgraCpoSAgqSAgqSAgqaEgoKUloLWpICCtoKCgpaC1qSAgviigpKChLS02IKCgIKmgoKClJaEgoKClKjWpICCuKTWgIIAEQqCgoCCuIKCgoKChIKCgoKChIKCkoKCAAoWgoKkooKCgoKCpoKCgoKUloKChIKChIKUgpKEgoKShIKShIKShIKShIKEgpKWgoKCkg==")]
+
 namespace go;
 
 // Tests in package context cannot depend directly on package testing due to an import cycle.

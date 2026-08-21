@@ -1,6 +1,8 @@
 // Copyright 2019 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/token/token_test.go", "token_test.cs", "ABISogAKILKSgII=")]
+
 namespace go.go;
 
 using testing = testing_package;

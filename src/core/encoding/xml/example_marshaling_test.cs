@@ -1,6 +1,8 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("encoding/xml/example_marshaling_test.go", "example_marshaling_test.cs", "ABYsooKAgqSYpKeu9oKCmKSnrAAMBoIAABaGgIKmgoKW")]
+
 namespace go.encoding;
 
 using xml = go.encoding.xml_package;

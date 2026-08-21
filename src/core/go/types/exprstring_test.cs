@@ -1,6 +1,8 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/types/exprstring_test.go", "exprstring_test.cs", "AGnyAYKCgoKClICC")]
+
 namespace go.go;
 
 using parser = global::go.go.parser_package;

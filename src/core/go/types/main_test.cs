@@ -3,6 +3,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/types/main_test.go", "main_test.cs", "ABMigoI=")]
+
 namespace go.go;
 
 using Δbuild = global::go.go.build_package;

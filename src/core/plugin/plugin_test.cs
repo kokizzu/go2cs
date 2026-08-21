@@ -1,6 +1,8 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("plugin/plugin_test.go", "plugin_test.cs", "ABIY")]
+
 namespace go;
 
 // blank import: plugin_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)

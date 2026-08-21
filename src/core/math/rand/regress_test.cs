@@ -7,6 +7,8 @@
 // Do NOT make changes to the golden outputs. If bugs need to be fixed
 // in the underlying code, find ways to fix them that do not affect the
 // outputs.
+[assembly: go.GoPositionMap("math/rand/regress_test.go", "regress_test.cs", "AB0wooKCgoKEgoKCgpSCgoKCgpSCgoKCgoKqgoKUgoKCgpSClLampoKCAAM1AAI8gpaCgoKUgpSCgoKUpJSUlIKClIKmpoI=")]
+
 namespace go.math;
 
 using flag = flag_package;

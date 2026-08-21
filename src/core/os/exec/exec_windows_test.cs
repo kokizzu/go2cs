@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build windows
+[assembly: go.GoPositionMap("os/exec/exec_windows_test.go", "exec_windows_test.cs", "ABs0gqaigoKCgoKU1oKEgoKUgoKCgoKUgoKClIKClIKC+IKEgoKCgoKUgv6ygoaSgoKCpoSCgpSC")]
+
 namespace go.os;
 
 using fmt = fmt_package;

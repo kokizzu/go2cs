@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("index/suffixarray/suffixarray_test.go", "suffixarray_test.cs", "AHPkAZKClIKCgpSCpqaigpaCAAYSgoKCpJSCqJSCgoLcooKWggAGEoKCpKiUgoKC7qKCgoCCAAcQgKKAooKClLiCpqKCuLKClIKUgoKCpqjygoCCpIKCgIKkgpaCgqaCgoCCpIKogoKAgqSCltaCsoKCgoKCgoK4gqaigoKU1oKCgoKCgpS4goKCgoKClAAJDKK4goKUgoKUlgALGIKCgoKClIKCgoKClLiClqaCkoKClIKopoKSgoKUgs7CgoKUloKCgoLOwpKAgoK2goKClIKCgpSCgqgACBbSgoKCgoKCgriCgoLogoKUgoKCtoKCgoKUlJSCtqSCgramgoKUlIK4goKCgoKUgpSCgpSCgoKUkoKClLKClIKCggAMFIKCgoKUgoKUsoKUgoKCgoKCgoKCgIKkgoCC")]
+
 namespace go.index;
 
 using bytes = bytes_package;

@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("debug/macho/file_test.go", "file_test.cs", "AIwCxgOCgoKUpoKCgpSCgpSmgoKClIKClKaigsyCgoKUgoKUgoKmgoKCloKClpSCgsaCgoLGgoKC1raCgoKogoKClIKCgqaCgoKogoKCgoIACQ6igoKC6IKCgpaClIKWgoKEgpaC+oKCgIKmgoKClIL4goKUgviCgpSC+IKCgg==")]
+
 namespace go.debug;
 
 using bytes = bytes_package;

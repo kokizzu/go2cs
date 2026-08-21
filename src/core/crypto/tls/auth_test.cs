@@ -1,6 +1,8 @@
 // Copyright 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/tls/auth_test.go", "auth_test.cs", "AB0YgrjKuLoAEDiCgoKUgpSCgpSClIKozAAYPIKCgsqCgoKUgIKkgIKmgoKUgIKkgIK4goK8ooKCgpSClII=")]
+
 namespace go.crypto;
 
 using crypto = crypto_package;

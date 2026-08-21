@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("image/decode_test.go", "decode_test.cs", "ADtaooKClJLWooKClJLWgoKClKaCgoKCgoKCpoKCgpaCgoKCgoKCgoKUlIKCgpSCgoKUgoKClLi4lIKCgpSCgg==")]
+
 namespace go;
 
 using bufio = bufio_package;

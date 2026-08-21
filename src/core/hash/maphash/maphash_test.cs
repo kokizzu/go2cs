@@ -1,6 +1,8 @@
 // Copyright 2019 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("hash/maphash/maphash_test.go", "maphash_test.cs", "AA8cgoKCgpSCuIKCgoKCgpSCuIKCgoKUgpSChIKCgqaCgoKmgoKCqIKCgoKUlIKClKiCgoKogIKmgIL4goKCgoKCgoKUgoKUgriEkoKCgoKUguiCgoKEgoKEgpaCgoKEgriigoKCgoKCgoK4ooKCgoKCgoKCgriigoKCgoKCgoKCuKKCgoKCgoKCgoKCAA0QgoKChKKCgoKCqKKCgoKokoKCgsqCgoKC")]
+
 namespace go.hash;
 
 using bytes = bytes_package;

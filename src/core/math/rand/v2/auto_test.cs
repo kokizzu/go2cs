@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("math/rand/v2/auto_test.go", "auto_test.cs", "AA8g2LKC3oKCgoKCgoI=")]
+
 namespace go.math.rand;
 
 using static global::go.math.rand.rand_package;

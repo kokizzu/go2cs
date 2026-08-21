@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/rsa/rsa_test.go", "rsa_test.cs", "ACM0goKCgpSAgqSCgsqCgoKWgoKUpoKCgpaCgpSmgoKCgoKmgoKClMrGgoKCggAICLiKpqKAgqSCloKCgoKWgoKClILogoKUhIKCgpaAooKClIKm7IKCgoKUgpSCgoKCgoKUgIKkAAsKgoCCpoKCgqSUgoKClIKClIKogoKCpJSCgoKUgqiCgoKklIKCgpSCgoKUgoKCgpSWgoKCpJSCgoKUgoKClIKCgoKUloKCgqSUgoKClIKCgpSCgoKClLqCgoKUgoKUgoKClIKCuICkgoKCgoKUlIKClAAP/AGCgJKAkoC2ooSCgoKWgoKCgoKUgpS4goKChIKCgoKUyoKChIKCgpaCgoKCgpSClMqCgoKEgoKCgpTKgoKEgoKCgoKUyoKCgoKCloKCgoLcgoKEgoKCgoKUyoKCgoKCloKCgoIAEiaCgoKCgpSCgoKClILcgoSCgoKCgoKCgoSCgoKkqIKCpKaCyoKEgoSCgoKCgoKCkpSEgqS4goKCgoKCgoKChIKCgoKClIKCgpSC")]
+
 namespace go.crypto;
 
 using bufio = bufio_package;

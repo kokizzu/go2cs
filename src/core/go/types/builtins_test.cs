@@ -3,6 +3,8 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/types/builtins_test.go", "builtins_test.cs", "AJwBygKihIKCgqiCgIK2goCC2oKEgoKWgoKCgIKCtoKCqJSCgoKUgIKCypSCgoKUgoKClIKClKa4tpI=")]
+
 namespace go.go;
 
 using fmt = fmt_package;

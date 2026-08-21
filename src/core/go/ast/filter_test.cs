@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // To avoid a cyclic dependency with go/parser, this file is in a separate package.
+[assembly: global::go.GoPositionMap("go/ast/filter_test.go", "filter_test.cs", "ACFylIKCgqiCgoKohpKAgqSEgg==")]
+
 namespace go.go;
 
 using ast = global::go.go.ast_package;

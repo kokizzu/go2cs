@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("net/http/fcgi/fcgi_test.go", "fcgi_test.cs", "ACA4goKCgoKUgoKUggAkRoCkgoKCgoKCgoCCgqSUgoKUgoKUgoKUgoKCgIKCpICCgqSCAAoSgoLWgqaCpoKChIKCgoKWhoCCyIIACBSKgoSCgoIANWaCpoKs0rKCgoKCuoKCppSUAAgSgqiSAAcQgoIAK1qysoKCgoKogoCCtqSUggAMCIIAFDKykoKCgoKCqIKClIKCgIIACxaCpoKC2sKEgqK4gpSUooKWgoSYgpSEgoI=")]
+
 namespace go.net.http;
 
 using bytes = bytes_package;

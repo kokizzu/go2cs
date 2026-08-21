@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("os/exec/dot_test.go", "dot_test.cs", "ABkmgpQACAailoKAgqaCgpSAgqSCgoSogoKCgoKCgoCCpIKCgIK4goKCpKaCqIKCgqSUlILMgIKkABYugoKCgIKmgIKmgoKoyoKCgIKkAAgUgoKClICCpISCgoKCpoKC")]
+
 namespace go.os;
 
 using errors = errors_package;

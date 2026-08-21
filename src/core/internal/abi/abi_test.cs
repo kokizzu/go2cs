@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/abi/abi_test.go", "abi_test.cs", "ABQelJaCgqiCggAPCJSogoKCgpaCloKCgqiCgoKogoKClIKCpoKUgg==")]
+
 namespace go.@internal;
 
 using abi = go.@internal.abi_package;

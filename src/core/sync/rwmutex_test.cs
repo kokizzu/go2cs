@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // GOMAXPROCS=10 go test
+[assembly: go.GoPositionMap("sync/rwmutex_test.go", "rwmutex_test.cs", "ABMoooKCgoKmgoKCgoKCgqaClIKmgriigoKC1oKCgoKCgpSUgpSmgoKCgoKClJSClKaChJKCgoKCgpSCgqaCuKKEgoKUgpSEgpSEgpSClIKUgoSCgoKUgoKCgoKCgoKCAAkGgoKCgoKCgrKCgoKCgqaCgoKk1oKCpNYACAiCioKCgoKCgoLKgoKCgoKCgoKUgoKClKa4gqaCpoKmgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

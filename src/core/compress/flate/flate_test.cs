@@ -4,6 +4,8 @@
 // This test tests some internals of the flate package.
 // The tests in package compress/gzip serve as the
 // end-to-end test of the decompressor.
+[assembly: go.GoPositionMap("compress/flate/flate_test.go", "flate_test.cs", "ABQokqaCgrqSlIKCupKCgoKClIL4hJKCmJKEgoL4goKCgoKUggAJCAAGEABxrAKCgoKUgoKCpoKClICC7oKEgoKCggAEGPKCAAcUgoKCqIKCgpaCgpSChIKCgriClISCgoLKgpaClIKUlII=")]
+
 namespace go.compress;
 
 using bytes = bytes_package;

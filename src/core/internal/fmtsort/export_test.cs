@@ -1,6 +1,8 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/fmtsort/export_test.go", "export_test.cs", "AAwSgg==")]
+
 namespace go.@internal;
 
 using reflect = reflect_package;

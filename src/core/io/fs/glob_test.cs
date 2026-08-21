@@ -1,6 +1,8 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("io/fs/glob_test.go", "glob_test.cs", "AB42goKCgoKUgqaCgoKClILKgoKCgoLKpoKC/ID0goKCgrqCloI=")]
+
 namespace go.io;
 
 using static go.io.fs_package;

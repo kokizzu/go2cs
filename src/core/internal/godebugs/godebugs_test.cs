@@ -1,6 +1,8 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/godebugs/godebugs_test.go", "godebugs_test.cs", "ABsmgoSCgoKUlISEgoKClISClIKUgpSClIIADQ7KgoKWgoKClIKClIKCgpSCgpSCuA==")]
+
 namespace go.@internal;
 
 using godebugs = go.@internal.godebugs_package;

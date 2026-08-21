@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file contains tests for Eval.
+[assembly: global::go.GoPositionMap("go/types/eval_test.go", "eval_test.cs", "ABkwgoKCgpSCgqiUgoK4goKCuoKClIK4goKCuIKCguiCAAkUgoLoggAAEAATigGCgoKCgsyUgriWkoKCloKCgoKCgoIACRaSgtaCjAAGNoKCgpaSgoKWooKClriAgqSUgILWgIKkgILGloKCgoKCgoKCgpSCAAoQgqqChIKCgpaCgJSAgraAgg==")]
+
 namespace go.go;
 
 using fmt = fmt_package;

@@ -1,6 +1,8 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/ast/ast_test.go", "ast_test.cs", "ACpSgoKCspaCggAbNIKCgII=")]
+
 namespace go.go;
 
 using testing = testing_package;

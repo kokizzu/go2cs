@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // SHA-1 hash algorithm. See RFC 3174.
+[assembly: go.GoPositionMap("crypto/sha1/sha1_test.go", "sha1_test.cs", "AEB8goKCgoKUgoKClIK0goKCtIKUgoKCtIKClMqCgoKCgoSEgoKCloKCloCCgqaChICC2oKCgILIgoKAgvqSgpSSgoKCgoKCAB4+woKAgrjmgoSCgIKCpoKCgpaC+oKClIKSgqKCgpSCuIIACgyCgpKCgoKCgqaCgoKCyoKmgqaCpoI=")]
+
 namespace go.crypto;
 
 using bytes = bytes_package;

@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("sort/sort_test.go", "sort_test.cs", "AB4wgoKCgoKCuIKCgoKCgrqSgoSCloK4goKCgoKCuIKCgoKCuIKCgoKCuIKCgoKCuIKSlpKCuKKCgpSCgpSClIKCuKKCgoKCgoKCgpSCypSCgpSCgoKmooKCgoKogoKCgoIACBKCpIKClKSCgrjGgoCCuKiC6KKCgoKUhIKCgoK4ooKCgpSEgoKCkriigoKClISCgoKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKUgoKCgoK4ooKCgpSCgoKCkriigoKCgpSCgriigoKCgpSCkriigoKCgpSCggAaPoCigoKkgoKUgqaCgoKUpqKCgpSCgpKCgoKCgoKClKSkpKSCgpSCyoKClIK2graClIK2gpSCtoKYpKK4koIAChiCAAcQgqaCpoIADh6ApIKClISClIKmgqiCpJamgqaCkoKClKaCgoKClIKCyoKCgoIACRKQooCigKaSgrqSkoKCgoKUgpSUpqKSgpSWgpSClIKCgpSCqIKCgpSCqIKUgoKClIIACAyCgoKUgpSC7IKUguiA0oDkooKUgoKCgoKCgoKClJSCgoKCgpSCAAgMgKKAooCigKKAooA=")]
+
 namespace go;
 
 using cmp = cmp_package;

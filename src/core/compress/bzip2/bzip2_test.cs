@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("compress/bzip2/bzip2_test.go", "bzip2_test.cs", "ABIggoKClKaCgoKUpoKCgpQAEQaCAB94goKUABM6goKEgIKClLaCAAoKggAKIIKCgoKAgoKUtoIACQqCAAsWgoKCgoLKgoKCgIIACBS0goKWgoKEgoK4gKKAooA=")]
+
 namespace go.compress;
 
 using bytes = bytes_package;

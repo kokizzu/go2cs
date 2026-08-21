@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("strings/replace_test.go", "replace_test.cs", "ACQ+koKCgoKCAC4Msp6GloKClJYACBqCgoKClJSWAAkeAAgcAAsaAAYSurzeAAYSuszMqAAJHoKClIK6AAQQgoKCgoKCggAWQIQABhSCAAUSgr6CgIKkgoKCgpSCgoKUggATJpKCgoL+gqqigoKCAAgQ0gANWoKCgoKWlIKCgqaEgsqigoKCuKKCgoLoooKCuKKCgoKCuKKmouaCpqKCgriigoK4ooKC6KKCgriigoK4ooKCgoK4ooKCgoK6soKCurKCgpSkpJSCABASgoiSsqKCzIKClIKUlpKyooI=")]
+
 namespace go;
 
 using bytes = bytes_package;

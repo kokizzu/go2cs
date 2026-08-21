@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("encoding/xml/atom_test.go", "atom_test.cs", "ACBYgoKClKaC")]
+
 namespace go.encoding;
 
 using time = time_package;

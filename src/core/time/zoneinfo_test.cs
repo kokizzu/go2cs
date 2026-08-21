@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("time/zoneinfo_test.go", "zoneinfo_test.cs", "ABMigoLowoSChJaChICCAAoIgoKCgoKCuIKCgoTcgoKCyqKCkoKCAA0O0oKUggANKIKCgpSCgpSCgvqCgpSC6MKClIKCgpaCgpSCgpSCgpaCAAkKsoKUgoKCloKCgIKkgIIACwiUgoKCAC5agoKCgoKUgoKCloKCgpSCABAKogAKKoKCAAsKogAHGoKCAAsKogAKIIKCAAsKogAKIIKC")]
+
 namespace go;
 
 using errors = errors_package;

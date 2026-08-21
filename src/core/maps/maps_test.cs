@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("maps/maps_test.go", "maps_test.cs", "ABUggoKUgpSClIKUgIK4goK6sqiygqiS1oKClIKUgpSClICCuIKCpoKWgriCgoKUgoK4goKCgviCgoKClIKCgpaqgoKCgpSCgoLcooKClIKCuIKCgpSClIKClIKCyoKCgoKUgoKUgoIACAqEiISUgoKChM7SAAQS4tqWgoKClrKClII=")]
+
 namespace go;
 
 using Δmath = math_package;

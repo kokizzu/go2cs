@@ -1,6 +1,8 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("net/url/example_test.go", "example_test.cs", "ABUegoLcooKCgpSsooLcooKCgpQACgyigoKCgpSCggAIDsKCgoKCrKKCgoKChILusoKCgoLcooKCgoKCrrKCgoKCgq6ygoKCgoSCAAgOsoKClIKCgoKC2KSCgpSCgu7CgoKUgoKU2qKCgpQACAqigoKUgoIACA7CgoKUgoLuwoKClIKCgpTcsoKCgtyygoKClOqigoKUgoKUgoKAgvyigoKUgoKClNyygoKUgoKC7sIABxCCgqyygoKClPqi3IKC3LKCgpSokoKClA==")]
+
 namespace go.net;
 
 using json = encoding.json_package;

@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/coverage/slicewriter/slw_test.go", "slw_test.cs", "AA0YhIKCgpSCgrqCgoKClIKokoKCgoKUgpSWgoKCgpSWgpaUlJaClIKCloKCgoKCgoKWgoKCloKCgpaCgpSCgpaCgoKUgoKWgoKUgoKCqIKC")]
+
 namespace go.@internal.coverage;
 
 using io = io_package;

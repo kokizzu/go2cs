@@ -1,6 +1,8 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/fmtsort/sort_test.go", "sort_test.cs", "ADVgooKCgpKUlJSmgoKCgoKClLS0tIIAPnaCgoKUgoKClIKClP7CgKSCgoKmpIKCgqakgoKCpqQADBSClIKUhqaCgoKUpoKCgpSmgoKClAAHEIKCgoIACAq4ABEkggANEIKC")]
+
 namespace go.@internal;
 
 using cmp = cmp_package;

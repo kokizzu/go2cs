@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/printer/printer_test.go", "printer_test.cs", "ACtaxIKCqIKCqJKClIKYkoCCuIKAgqaokoKClKiSgpSmgoKCgpaCgoKogoCCpKiCgoKogIKCpriCgoKUgILalIKSgqi2AClKgoKCgoKCgoIABBTirIKCgpaCgoSCgoKogoKCupKCgoCCyICC+pKCgoKClIKCgrzSgoKCpoCCpICCyO6yggACIoKCloKSkpaCgoLKgoCCpKiSgpKClKiSgoKU7NIAAxyCgpiSgoK6goLOgoKClIKogoKEgqiCgoKoguyiAAIWAAMcgoKYkoKClJaCAAkUgoKCgpaCgoKWgoIAChaCgoKCloKCgpaCgsqiiLKCgpaCgpaCkqKCgpSCgoKUgoKUgqaCAAYSogAHFIKAgqSEqoLusgAJFIKAgqSAkgAJErKCgoKClILokoKCgoKUgoKUooKCgqaC3qKogoLoggAIKoKCgpaEgoKWgpaEgoKWgriigoKCgpaCgoKCgqiCgrykkoKCgpiSgoKUloKUgoKClISCAAkMoo6CgoKogoKEgoCCpIKAggAICP6CgoKCgpbIgoCCpIK+wrKCgoKCgg==")]
+
 namespace go.go;
 
 using bytes = bytes_package;

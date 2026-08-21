@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("unicode/utf16/utf16_test.go", "utf16_test.cs", "ABEgkoKUggAICIIACRqAggASJIKCgoLKgoKCgpSCyqKCgoKCgoKClIKUlIKClIKUgoKCuIIAESSChLKSgoKmgsqCgoKCABIggoKCggAjMIKCgoLKtIKCuLSCgriilIKWgoKCyqKCgriigoK4ooKCgoKUuKKCgoKClLiigoI=")]
+
 namespace go.unicode;
 
 using testenv = @internal.testenv_package;

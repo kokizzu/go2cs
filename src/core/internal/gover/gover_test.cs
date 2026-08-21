@@ -1,6 +1,8 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/gover/gover_test.go", "gover_test.cs", "ABAYgAAhPIAAFSSAAA0UgAAXHoAAJUqCgoKAgtqCgoKAgg==")]
+
 namespace go.@internal;
 
 using reflect = reflect_package;

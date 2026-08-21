@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/diff/diff_test.go", "diff_test.cs", "ABEcgoKC9oKCgpaCgoKClIKUgoKC")]
+
 namespace go.@internal;
 
 using bytes = bytes_package;

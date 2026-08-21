@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // This example demonstrates decoding a JPEG image and examining its pixels.
+[assembly: go.GoPositionMap("image/decode_example_test.go", "decode_example_test.cs", "ACIwgoKCgpQACQYABxCCgoKUjtKCgqaCgoK6gqI=")]
+
 namespace go;
 
 using base64 = encoding.base64_package;

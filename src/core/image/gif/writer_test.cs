@@ -1,6 +1,8 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("image/gif/writer_test.go", "writer_test.cs", "AB8qooKClJKC1qKCgpSS1oKCgpSqooKqopKCgoKCgoKCgoKmABEggoKCgoKUgoKCgpSCgoKUgoKmgoKCyoKCgpSCgoKClIKClIKUgryigoKUgoKmgoKCpoKCgqYAChCClMqCgoKUgoKm7oKClIKCgpTKloKAgqSCgoKUgoKWgpSClICSpoKUgpSClIKUgpaCgoKUkoKUgoKUgsqAooCigOSCgoKWuICCpsqClICC+IKAgsiCyoIACBKCgoKmgtyi7oK4goCCgqSCgoKUgILcgoK4goKCgoKEgoCCgqSCgoKUgIKCppKUuoCCpICC2gAJFIKmuIKCgqaC3IKSAA8mAA4ggoCCpIKClIKUgoCC2qKSgoKCgoKoAAsagoKCAAkMgoKCgILKgoSCgoKAgqSAgqSClIK4poIAChaCgoKAgoKkgIIAChSCpoKCgqiCgoKClIKClIKCqAAJFIKCgoKUgoKWAAkUgoK4ooKCgpaCgoKCuKKCgoKCggAHEoKCgoLoooKClIKChIKCgoK4ooKClMqChIKCgoI=")]
+
 namespace go.image;
 
 using bytes = bytes_package;

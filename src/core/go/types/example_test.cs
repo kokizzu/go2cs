@@ -5,6 +5,8 @@
 // access to compiled packages for import.
 //
 //go:build !android && !ios && !js && !wasip1
+[assembly: global::go.GoPositionMap("go/types/example_test.go", "example_test.cs", "ACVEtIKCAAcgzJKCgpqigoIABkoAIgQAAxSCgoLMkoKCqIKCgoKClKiCggAHIgAOBAAFHoK62oKCgqiogoKCgoKUgoKCuJSCgoSCgoKCgoKCpqaUggAHdgA3ApSkpKSkgpSkpMiCgoI=")]
+
 namespace go.go;
 
 // This file shows examples of basic usage of the go/types API.

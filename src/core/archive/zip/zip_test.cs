@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Tests that involve both reading and writing.
+[assembly: go.GoPositionMap("archive/zip/zip_test.go", "zip_test.cs", "AB4wgoKUgoKCgsiCpoCCpIKCgpSAgqSCgoLKooKCgoKCuLKCgoKUgJKkgIKkgIKkgIKkgIKmgILIgtymgtymgu6CgoKUgIKkgILIgtyCgoKUgIKkgIIAESKCgpSCpoKCgpSAgoKCyoKCgpSmpoKCuIKCuLKClIaCgoKCgoKCgpSmgpSokoKCgoKClIKWgoKCgoKUggAKFoCigNSCgpSCgoKmgoKUjNKCAAgKooKUgoIAGTCSgoKmkoKCAAgMsoKUggAQIpKCgriSgoIADh6AyLKCgpSCgoKUpoKClIKCgqaygoKCgoKClIKUgoKCgoKmqqKCgoIACBCCgoCCpoKCgpaCgpSCloKAgqaCgIKmgoKU+JKClIKUpgAgQpKCgqaSgoIADQqCgpSCgriClIKCgpSCgoKmgIKCgraCgoKUgIK4goKUgoKClIKCgoKmgIKCgraCgpSClIKClIKAgriAgqbYkoK4ooKEgoKUgIKkgIKmgoKClIKCupKEgoTqhKaC6gAIBoIADCSChIK4goKogILIouqqogAKEKrCgriCgoKCgu6CgoKCgIKkgoCCpICCpIKCgoKCgoKUlIKCggAIEoKC")]
+
 namespace go.archive;
 
 using bytes = bytes_package;

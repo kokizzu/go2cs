@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // SHA256 hash algorithm. See FIPS 180-2.
+[assembly: go.GoPositionMap("crypto/sha256/sha256_test.go", "sha256_test.cs", "AGG+AYKCgoKClIKCgpSCgpSCgpSmgoKCgpSCgoKUgoKUgoKUAAoKggADErKSgoKEhIKCgpaCgpaAgoKmgoSAgv6CgoSCgpaAgsiCgoCCpIKAgsiCgoCCAAgKkoKUgoKCgoKCACJKwoKAgrjkgoSCgIKCpoKCgpaC+oKClIKSgqKCgpSCAAgSpoKCgoLmgoKUggAMDoKCkoKCgoKCpoKCgoKmgoKCgsqCpoKmgg==")]
+
 namespace go.crypto;
 
 using bytes = bytes_package;

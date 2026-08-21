@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/coverage/pods/pods_test.go", "pods_test.cs", "AB0ktoKCgIKkloKCgIKklpKCgpaSgoKWgoKCgpaSgoKCgpSUqIKWgpaCgoKWloKCgt6CloKCqIKWgpYABxqCgoK6goKCgg==")]
+
 namespace go.@internal.coverage;
 
 using md5 = crypto.md5_package;

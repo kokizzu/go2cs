@@ -6,6 +6,8 @@
 // go, webkit, and chromium open source projects.
 // We benchmark converting between the JSON form
 // and in-memory data structures.
+[assembly: go.GoPositionMap("encoding/json/bench_test.go", "bench_test.cs", "AD5cooKClJKCgpSCgpaEgIKmgIKmgoKCgoKCgqboooKCgoKUgoKCgILIAAsGooKCgoKYmoSCgoKAgqSAgsimooKCgoKUgoKAgsgACAaigoKCgpiahIKCgIKkgILI5oKmqpKCgIIAEAyCpq6ahJKCgIKkgILsopSmlKailKaU1qKCypKCgILsooKCgoKUgoKCgoKUgoKCgILIpqKCgoKCgoKCgoCCpLiigoKCgoKCgIKkgoKCgpSCgKS0+qKCgoKClIKCgoCCyKaigoKCgpSCgoKAgsimooKCkoKCgILsooKCkoKCgILsooKCkoKCgILsooKCkpKCgILsooKCkoKCgIIACwyigrqCgoCC7KKCgpKCgoCC7KKCgoKogsiCgqiCuoKCooKCgoKCgpKClKbelIKClJKSggALDqKEmoKEgoCCAAoMooKIkoKAguyigoLoooKCguiigoKCgoCC")]
+
 namespace go.encoding;
 
 using bytes = bytes_package;

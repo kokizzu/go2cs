@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements tests for various issues.
+[assembly: global::go.GoPositionMap("go/types/issues_test.go", "issues_test.cs", "AB8wgoKCggAICIIAABaChIKClJSkpKSk1oK2ggAJCoIAABCChIKCgoCCgpS4ggAICIKKhIKCgoKWgoKEgu7SAAQWgoQAAxiQkoKCgoCCpoKCgoKmgoKUhIKCAAgU4oQAAhoAAyIABB6CgoSCgoKCgqaClIKogoKmgoSCkJKCjIK4gqYACBKEooKCgoCCuJKAgoCCgoCC6PqmzpKCqAAKEoKCmJKCgoKYkoKCgqaClKiCgoKCAAkMlIKClIKCgqaCgpSCgviCgpaCgoKAgrYABBCSgoKAgqSWgoKAgqSAgqSEgriCgoSEkgAHEIKClIKUAAISAAgCgoCCuLqCgpLoAAkUgoKCgoKCgoKWggAIBoKEgoKCloKClJSCgoK4tooAD1yClJKWgoIACwaCgoSClIKWgpSCloKUgriUgoKCupaWgoKogoKogoKCgoIACAiKABAkgoKChIKCgJSCgoKUgIK2gsqCAAsKpABDyAGCkoKCgpKCgqKCpLaC6IKGAAMoAANIguiCAAIUgoKCloKmgq6SlpLWggACHLaWgoKYkoKCgqaCqILogq6ChIKCloKCggAICKaiiKKEABtKlJKCgoKUlIKogpaCyoIABBiSpoIAAhyCxKSEhIK4ggACEoKCgoKCgg==")]
+
 namespace go.go;
 
 using fmt = fmt_package;

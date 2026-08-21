@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("database/sql/convert_test.go", "convert_test.cs", "AFyAAZQAa/QBgqaCpoKmgqaCpoKmorKCgoKUooKUgpSClIKUgpSClIKUgpSClICCpIKUgpSCgqSmgIKCgpSAgoKC2IKUgsqCgoKClIKUgoKUggAOHoKCgoKClIKmgpSCAA8OkgAPKoKCkoCCpIKCgoKCuIKosoKCAAYQgpSmgqiSlIIACAqShISCgtyC+qKClPaCgoKCAC5kgoKCgoKUggALGKKCgqaClKSCgtaCgqiClIQACBKigoKmgpSk1oKogpSEAAkGggAFGrKSkoKCgpSUgpSC")]
+
 namespace go.database;
 
 using driver = go.database.sql.driver_package;

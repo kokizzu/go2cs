@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("testing/quick/quick_test.go", "quick_test.cs", "AA8aoMigpIDIgKSAyICkgMiApIDIgKSAyICkgMiApIDIgKSAyICkgMiApIDIgKSAyICkooKUksqApIDIgKSAyID+gMiApIDIgKSAyICkgMiApIDIgKSAyICkgMiApIKCADEIgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCggAIEoKmgNSCpqKCgoKUgIKmgoKUgIKmooKUgIKmgoKUgIIADgyiAAAWpoKCAAoQgoL8so6CgriCkoKClIKUlIKCgg==")]
+
 namespace go.testing;
 
 using rand = go.math.rand_package;

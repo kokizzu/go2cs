@@ -4,6 +4,8 @@
 // Pool is no-op under race detector, so all these tests do not work.
 //
 //go:build !race
+[assembly: go.GoPositionMap("sync/pool_test.go", "pool_test.cs", "ABsq1IKCgrqCgoKAgqSAgqSAgqSogqaCgIK2goCC+NSEgqSCpoCCpICCyoKCgIKkhICC+pKokqaCgoKCgoKUkoKCgpSUgoKmgoKUgIK22IKCgoKUgoKCkoKCgpSCgoKCpqaCuIKmgqaCgoKClIKCgpKCgrqCgpKCgoKCgriAgsi6goKSgpSUgoKCgriUloKCAAcQggAJCIKigtiCwpKClMTCkoLogoKCgoLKgoKCgoKUggAFEKKCpoKCgoKUggAMENSEgoSChJKCgqaUgqiCgoKmgoIACQYACAyCgJaSgoKCgpSSgqaCgpSCppSCgqaUhII=")]
+
 namespace go;
 
 using Δruntime = runtime_package;

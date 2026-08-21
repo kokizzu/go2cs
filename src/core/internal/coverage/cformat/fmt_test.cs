@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/coverage/cformat/fmt_test.go", "fmt_test.cs", "ACgegoTOuMqmgoKUgoKUgoKWsoCCpAAAEIKCqIKAgqSIgoK6goCCpIaCgqiAgqSIgoKUgoKCgqiCgoKAgqSGgoIADQ6EgoKWgoKCgIKkiIKCzIKCgoCCpIaCgg==")]
+
 namespace go.@internal.coverage;
 
 using coverage = go.@internal.coverage_package;

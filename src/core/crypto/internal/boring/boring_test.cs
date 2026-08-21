@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // Most functionality in this package is tested by replacing existing code
 // and inheriting that code's tests.
+[assembly: go.GoPositionMap("crypto/internal/boring/boring_test.go", "boring_test.cs", "AA4a5rKCgoCCtoCCyNiS")]
+
 namespace go.crypto.@internal;
 
 using testing = testing_package;

@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("compress/flate/inflate_test.go", "inflate_test.cs", "ABAegrqCgoKCloSCgoKChIKCAAgKggALGoKCgoKClILKgoK6goKCgpaEgoKClISCggALCoKClJKCgoKUgoKmooKAgqSCgqaigoKClIKAgg==")]
+
 namespace go.compress;
 
 using bufio = bufio_package;

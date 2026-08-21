@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("net/http/internal/ascii/print_test.go", "print_test.cs", "ABISggAYOLKSgIIADAyCACRQspKAgg==")]
+
 namespace go.net.http.@internal;
 
 using testing = testing_package;

@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/ecdh/ecdh_test.go", "ecdh_test.cs", "ADdMgoKCgpSCgpaCgpSClIKWgoKUgpSCloKClIKCloIACRSCgoKmgoKCgoIABhCAkgAuXoKCgoKClIKUgoKUgoKUggAIDIKCgpSmgoKCggAICoKCgoKEoJKg5oKCgpSCgpSCgpSCADl0goKCgoKkpAAzaIKCgoKCpKQACwyCgJKAkoCSgLaCgoKClKiCgpSCgoSEgoKClIKCgpSCgpTKgoCSgJKAkoDskoIAFzSygpSEgoKCgpaSgoKCgpSWgoKAgqqigoKCgpSCpoIACwiCAAUUgoKClrKClKKCgpSCgoI=")]
+
 namespace go.crypto;
 
 using bytes = bytes_package;

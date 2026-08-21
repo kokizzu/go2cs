@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("regexp/syntax/prog_test.go", "prog_test.cs", "AETaAYKCgoKCgsqigoKCgpQACAyigoKCpoKU")]
+
 namespace go.regexp;
 
 using testing = testing_package;

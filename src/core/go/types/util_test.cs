@@ -5,6 +5,8 @@
 // license that can be found in the LICENSE file.
 // This file exports various functionality of util.go
 // so that it can be used in (package-external) tests.
+[assembly: global::go.GoPositionMap("go/types/util_test.go", "util_test.cs", "ABEigKSgooA=")]
+
 namespace go.go;
 
 using token = global::go.go.token_package;

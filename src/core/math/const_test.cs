@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("math/const_test.go", "const_test.cs", "AA0agoCCpICCpICCpICCpICCyIKAgqSAgqSAgqSAgqSAgg==")]
+
 namespace go;
 
 using testing = testing_package;

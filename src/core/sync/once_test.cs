@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("sync/once_test.go", "once_test.cs", "ABAcgqaygJKAgqSmgoKCgoKClIKUgriCgqKCgIK2gtiCuIKCkpKC")]
+
 namespace go;
 
 using static sync_package;

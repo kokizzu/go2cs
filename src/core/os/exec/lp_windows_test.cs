@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // Use an external test to avoid os/exec -> internal/testenv -> os/exec
 // circular dependency.
+[assembly: go.GoPositionMap("os/exec/lp_windows_test.go", "lp_windows_test.cs", "AB0wgqaigoKClAACENKCgpS0tMbaooKEgoCCpoKUgpQABBTygoKUlIKClJKAgriCguzCgoKUkoCCuICCAKMBtgLsuoKClrKSgpaChIKCloKCgoKCgqaUlIKEhKaCgoKCgoKUlLaAgqSogoKCgqaClIIAsQHkAuyEspKCloKEgoKEhIKCgoKUqIKCgIKUpIKUloKCgoKmgpaCgoKCpJSmggAIDIIABxSCgoSCgoKCloKC")]
+
 namespace go.os;
 
 using errors = errors_package;

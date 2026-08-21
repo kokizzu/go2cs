@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/parser/parser_test.go", "parser_test.cs", "ABougoKCgsqClKSkpoDUgoKCguiCgoKC6IKCgoKUgIKkgoKClICCpIKC+oKCgoL4poKCgqaAgriCgoKmgIK4goKClIKUgIK4goCCuIKAgqSCgIKokoKCgoCCyoLogoKCqIKCgoKmgoKC+oKCgqiCgoKCpoKCyqIAAhKCgpYADBaSgIKCgoKUlIKUgoK2AAgIggAALoKWABIqkoKClISCAAgIggAAJIKUAAcQgpSCgoKClIKCgtyigoKAgoKAgoCCgoKCAAsSqLKCgoKmpoKCgpSAgqSAggAaCIIAACSClIKCgoKCgoSCgoKC+pIACxiCgoKWkpKUtLaSloKAkoKClMYACQqCAAIWgoKCqICStoCS/rLYgoKCgpaCgpaCgoCCpJSCgpSCgoL6gqaCgoKUgoIAWYwBopKClNaCgpSygpKCgpTcloKCgpSUhIKCgoKmgoIAChCCsoKUgpKCgpTcloKCgpSUhIKCgoKmgoIAChKSAAYQgoKCgpaSlIKCtsySzIKCgvqCgoKCloKCgpSCggAIDIKCgoKCuqiCgoI=")]
+
 namespace go.go;
 
 using fmt = fmt_package;

@@ -1,6 +1,8 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/rsa/pss_test.go", "pss_test.cs", "ACAwlAANHLgADiCCgoSCgpSCloCC/OKCgpScwoSEwoKCgoSCgpSCgoKUtIK0grS0xoCC6IKCgoKogpSCgoKUgoSStoKChIKChICCxgAIDqKCgoKWAAgUgILIgoKCgoT2ogAKHoKCgoKEgoKCgoKWgoKCyriCgpSCuIKUgoK4goKClKaCgoKUpoKCgpTWooKClqaAuMqApg==")]
+
 namespace go.crypto;
 
 using bufio = bufio_package;

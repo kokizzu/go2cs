@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !race
+[assembly: go.GoPositionMap("hash/maphash/smhasher_test.go", "smhasher_test.cs", "AB5CsoKCgoKCgoKCgoKCgoKCgu6CgoKCpIKCgoLKggAHEIKkgqSCpIKkgoKCgqSCgoSCgoKmhIKCgoKCpqiSgoKCgpSokoKCgoKCgoKCgoKCgsqokoKCgpSCgoKU6JKClIKUgoKClKSilpaCgoKCuoKCgoKCgoKmzJKClIKCgoKCgoKCgoKCgoKClJS6koKUgpSCgoKCgoKCgoKkooKCqLKCgpSCgoK8ooKUgpSCgoKCgoKkooKCpKKCgpSCgoKCggAQIoKkgqSCpIKkgqSCqJKClIKUgoKCgoKCpKKCgqiElIKWgoKCloKCggAIFIKUlIKCgoKCgoKCgt6SgqSCgpSClISCgoKCgoKmlAAICpKClIKCgoKkooKCgoKCgoKCgoKCgoKCgsrokoKUgoKCgoKClA==")]
+
 namespace go.hash;
 
 using fmt = fmt_package;

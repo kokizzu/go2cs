@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("encoding/csv/reader_test.go", "reader_test.cs", "AI8DrAaCgoKEgpSCgpSUgoKClrKigoKAgoKUgqaClILKgoKCqIKCgoKCpJSCpoKClJSAgqSCgpSCgoCCAAgWsoKCpqaCgoKUgpSCgpSSgoKCAAIU8oKCgpKEgoKUgoK0gpS0grS0grSUAAkUsoKClIKCgoKCgpSCzsKCgoKUgoKClIIACCKCpoKAtoKAAAgGgq6CgLaCgIC2goCAtoKA")]
+
 namespace go.encoding;
 
 using errors = errors_package;

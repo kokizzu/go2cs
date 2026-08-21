@@ -7,6 +7,8 @@
 // Do NOT make changes to the golden outputs. If bugs need to be fixed
 // in the underlying code, find ways to fix them that do not affect the
 // outputs.
+[assembly: global::go.GoPositionMap("math/rand/v2/regress_test.go", "regress_test.cs", "ACU6ooKCgoKEgoKCgpSCgpSCgoKCgoKUgoKCgoKqgoKUgriCgpSClLaClIKCgoKUgpSmpqamAAJbAAJggpaCgoKUgpSCgoKUpJSUpJSCgpSClIKmpoL4woKWgpKWgoKUkpSigoKClIKCloKCgoKoloIABRoACgKCgoKClIKClIKClIKCgpSAgg==")]
+
 namespace go.math.rand;
 
 using bytes = bytes_package;

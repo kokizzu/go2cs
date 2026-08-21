@@ -1,6 +1,8 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("errors/wrap_test.go", "wrap_test.cs", "ABcggoKChIS4AB9IspKAggANGoCigKKClLS0xJQAEAaCgoKCgoKEAFvAAbKUkoKigoKUgpSAggAJDIKC3IKCwoKUgoKUAAoKooKEgoL6ooKCgoIACQqCgoQABhSCgIIACQ6A/oCigPiAooAACQyCpoKC")]
+
 namespace go;
 
 using errors = errors_package;

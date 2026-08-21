@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("html/template/css_test.go", "css_test.cs", "ABMaogAKHIKCggAJCqIAFTKCgoIACAqiABw+goKClIKAgtqCkoKAgqSCgIIACQqiAAwegoKCyqIAABQAABiCgpaCgviCADBmgoKC+qKC6KKCuKKCgoK4ooKCguiiguiigg==")]
+
 namespace go.html;
 
 using strconv = strconv_package;

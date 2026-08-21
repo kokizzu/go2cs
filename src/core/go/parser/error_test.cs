@@ -18,6 +18,8 @@
 //	func f() {
 //		_ = x /* ERROR "not declared" */ + 1
 //	}
+[assembly: global::go.GoPositionMap("go/parser/error_test.go", "error_test.cs", "AC1SsoKCgpSUlKaCgIKkAAoaooS4goKEgoKkpIKCgqSUlMiSlLSCgoKUlN6igqaCgJSCgoKUgIKCttzKgoKCyoKCgoKCloKCkoKClISCpqjmgoKClIKCkoKCgpQ=")]
+
 namespace go.go;
 
 using flag = flag_package;

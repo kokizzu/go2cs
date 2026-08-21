@@ -1,6 +1,8 @@
 // Copyright (c) 2019 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_alias_test.go", "fe_alias_test.cs", "AA4YgqK2gIK4gIK4uIKyxoCCuIKAgraCgIK4gIK4goCCtoKAgraCgIK4AAkcAAoCABAwggALIIKUtLSC")]
+
 namespace go.crypto.@internal.edwards25519;
 
 using testing = testing_package;

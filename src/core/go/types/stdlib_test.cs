@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // This file tests types.Check by using it to
 // typecheck the standard library and tests.
+[assembly: global::go.GoPositionMap("go/types/stdlib_test.go", "stdlib_test.cs", "ADVSooKWloKCkpa6AAYQgoSChIKCwpKCloKC6oSCABIogqaClJaCgpaCppSu4oKClKaCgoKCypSmgpQABhDygoKUlIKEgoKSgoKWkpSCgpSCugAMCsKCuICCgILGloKCloKUgqiCgoKAgoKUgpSkgoLKgpSCgv6CgsiWgoKmggAODKKEgpYAMRayhIKWADlIgoQAFSiShpKCgoKWloKCgoKUmJKkuJKCgoK8goKCgoKClLqokpKCgoKAgqSUgpSCgpSCgqamgoIABxCCgoKCvIKCgpSCqIKC")]
+
 namespace go.go;
 
 using errors = errors_package;

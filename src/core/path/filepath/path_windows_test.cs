@@ -1,6 +1,8 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("path/filepath/path_windows_test.go", "path_windows_test.cs", "ACAsgoKCloLohpqSgoKUgISCpIKAgoKkgIKCpJKAgoLKhIKClILcgpSCpIKmkoL8goSEgpSClJaCgoKCgpSUgqiEhIS6uqqigt6CgoKClIKCgpSCgqaCgoKClIKCpoKCgoKUgoIADS4AFAaUgpSCgriCgpSUgpTWgoKClLiSlIKClJSCpv7CgpSCgpaCgpSCgpSCgoKUgoKmgoKUABYGooKChIKWgpaCkpSClqgAECqCgoKUgoKkqIQAG0qCgIKmgoKUgoKCqIKCloSEgoKChIKCgoSmgoKEpoKUgoKk+uaCAAkGgoKClIKCgpS4goKmgoIACQaigoKCgoKmuLqCAAkWgoKUgpSUAA0MpoKUhIKCloKCgoSCgoKUgoKUgrjGgpSEgoKCgpaChIKClIL4goKCloSCgoKUhIKCgpaCgpSCgoKUppSCqISCgoKWhIKCgpaCgpaClJSCAAgIggAMIoKCggAJCoIACBiCgg==")]
+
 namespace go.path;
 
 using flag = flag_package;
