@@ -16044,4 +16044,170 @@ banked row on the board, and correctly NOT a canary, exactly as the ruling predi
 Standing dirt classified and RESTORED, nothing unclassified: `net/mail`'s `message.cs` (CRLF phantom,
 empty numstat) from the bank's own run, and the canary packages' `*_test.cs` phantoms from the sweeps.
 
+## ⚠ THE POSITION-MAP ARC OPENS: the FILE half is written and measured -- `TestStack` goes 5 misses to 1 -- and it is NOT banked, because the same measurements produce THREE questions this lane will not self-rule (2026-08-21, lane `claude/net-mail-position-map`)
+
+The linchpin arc, taken to the point where the decisions are decidable on evidence rather than argued.
+Everything below was measured on this box against Go controls; the implementation is ~45 lines in one
+hand-own and is described precisely enough to re-write in minutes.
+
+### The identity source: there is nothing to record. It is already derived.
+
+The handoff priced this as needing a recorded Go-file identity. It does not. `goFrameName` ALREADY
+derives the import path at run time and has been shipping it since the receiver half:
+
+```csharp
+// "go.runtime.debug_package" -> "runtime/debug"
+string importPath = typeName[3..packageSuffix].Replace('.', '/');
+```
+
+So the file half is that same derivation applied one field over: `<importPath>/<stem>.go`, where the
+`.cs` stem IS the Go stem by construction (the converter emits `<name>.go` as `<name>.cs`, whole-file
+hand-owns included -- `crypto/subtle/xor_generic.cs`). **No converter change, no corpus change, no new
+artifact, no recorded attribute.** The derivation was EXTRACTED (`goImportPath`) so a frame's function
+and its file read the same one: Go's traceback pairs them, and two independent derivations could
+disagree about which package a frame belongs to while each looked right alone.
+
+Two shapes deliberately keep their .NET path, on the principle `goFrameName` already states -- a frame
+that is not converted Go code must not claim to be: a non-converted package class (golib, the BCL, the
+host), and a `*_impl.cs` hand-own COMPANION, which supplements a package rather than replacing a Go file
+(`runtime/managed_impl.go` does not exist, and answering it would fabricate a source rather than
+translate one).
+
+### Two derivation rules, both found BY measurement, neither in the handoff
+
+A TEST variant's files live in the package-under-test's DIRECTORY, so a test frame's file and its
+function name different things -- and Go's own TestStack asserts exactly that pairing:
+`frame("runtime/debug/stack_test.go", "runtime/debug_test.T.method")`. The function keeps `_test`; the
+file does not. Both variants carry a class suffix the directory does not, and the longer is stripped
+first because it ends with the shorter:
+
+| class | first measured | correct |
+|:--|:--|:--|
+| `go.runtime.debug_test_package` | `runtime/debug_test/stack_test.go` | `runtime/debug/stack_test.go` |
+| `go.log_internal_test_package` | `log_internal/log_test.go` | `log/log_test.go` |
+
+The first cost three of TestStack's four converted-frame assertions; the second, `log`'s long-file form.
+Both are now right.
+
+### The acceptance test: 5 misses to 1, and the 1 is a question
+
+`runtime/debug`'s `TestStack`, same pipeline, measured before and after:
+
+```
+  before  5 file-prefix misses (all five code checks already passed)
+  after   1 -- and it is the HOST frame:
+          in line "\tC:/…/src/core/testing/TestExecution.cs:593", expected prefix "\ttesting/testing.go"
+```
+
+Every converted frame now names Go's file exactly. The verdict does NOT move (2 of 9), because the test
+fails if any assertion fails -- so the acceptance test cannot close without ruling question 2 below.
+
+### The yield signal: the file lands exactly, and `log` still does not move
+
+`log`'s `TestAll`, measured after both derivation rules:
+
+```
+  want   ^.*/[A-Za-z0-9_\-]+\.go:(63|65): hello 23 world$
+  got    log/log_test.go:69: hello 23 world      (long form -- file EXACTLY Go's)
+  got    log_test.go:69: hello 23 world          (Lshortfile -- file EXACTLY Go's)
+```
+
+`log` stays 7 of 9. The file half is complete and it is not the yield; the LINE is.
+
+### Question 1 -- the file half is NOT independently shippable, because it makes a MIXED position
+
+The settled doctrine is written in the hand-own's own header: *"Frame.File/Line name the CONVERTED .cs
+source, the source that honestly exists"* and *"Its file/line are therefore the converted .cs position,
+NOT the .go one"*. Today `log_test.cs:69` is a real position in the tree the program was compiled from.
+With the file half alone, `log/log_test.go:69` is a position in **neither** tree: Go's file, C#'s line.
+
+The line was already not Go's, so the change does not introduce line dishonesty -- it trades internal
+consistency for Go shape. That trade is the doctrine call, and the honest options are: accept the mixed
+position as an interim; answer `:0` (Go's own unknown-line sentinel -- honest, but it discards a
+diagnostic that works today); or hold the file half until the line half lands, i.e. treat the position
+map as INDIVISIBLE. This lane recommends the third and did not act on it.
+
+### Question 2 -- may the hand-owned host claim `testing/testing.go`?
+
+The last TestStack assertion expects the `testing` frame to name `testing/testing.go`. Our host is
+hand-written C# in `go.testing_runtime`, and it deliberately declines Go identity -- `goFrameName`'s own
+text: *"A frame that is not converted Go code (golib, the BCL, the test host) keeps its .NET name --
+inventing a Go name for it would be a lie."*
+
+The counter-argument is real: the host IS the `testing` package, hand-implemented, and a Go program
+reading a traceback expects `testing/testing.go` there. That is the same shape as Ruling A's alignment
+token -- truth read from what the model genuinely is, versus a property fabricated. It is one line in
+the host to claim it, and it is the ONLY thing between the current state and the acceptance test.
+
+### Question 3 -- the trimpath form is a property of the CORPUS, not of the runtime (measured regression)
+
+The sharpest finding, and the reason nothing is banked. `TestStack` expects the bare `-trimpath` form
+because the converted `runtime.GOROOT()` answers empty. But applying that form uniformly makes a
+converted USER program diverge from Go where it currently agrees. Measured on the `RuntimeCallerFrames`
+behavioral program, both binaries, same box:
+
+| | Go | C# with the file half |
+|:--|:--|:--|
+| `runtime.Caller` file | `C:/…/RuntimeCallerFrames/main.go` | `main/main.go` |
+| file is rooted | **true** | **false** |
+
+Go answers an ABSOLUTE path for an ordinarily-built program; the trimpath form is a property of how
+GOROOT packages are built, which go2cs has no notion of. So the transform cannot be applied uniformly,
+and the runtime has no honest discriminator for "is this frame a GOROOT package" -- the candidates are a
+build-path convention (`…/core/…`, true for the corpus, silent for everything else) or a recorded marker
+(a real emission change, and the thing this design otherwise avoids entirely).
+
+### The guard gap this exposed, and the probe that closes it
+
+`RuntimeCallerFrames` **passed all four phases with the change in** -- Output included. Its five
+file-related assertions are separator BOOLEANS and an equality, every one of which is invariant under a
+wholesale change of what the file names. A guard over a string property must assert the property, not a
+predicate that survives it. The two-line probe that exposes the divergence is in the measurement above
+(print the file, and whether it is rooted); it belongs in the guard whichever way question 3 is ruled.
+
+### Blast radius, recomputed -- and the stdlib half of it is clean
+
+A verdict can only move if something READS a frame file. Recomputed over the 158-row roster (the board's
+census said 11; it predates `internal/reflectlite` joining):
+
+| reads a frame file | rows | verdicts |
+|:--|--:|--:|
+| own `_test.go` | 6 -- `encoding/json` 491, `io` 60, `context` 57, `sync` 44, `encoding/base64` 17, `log/slog/internal/benchmarks` 3 | 672 |
+| converted PRODUCTION code | 6 -- `go/types` 557, `database/sql` 137, `os/exec` 74, `internal/fuzz` 52, `internal/reflectlite` 30, `testing/slogtest` 17 | 867 |
+
+Swept with the file half IN: **20 distinct rows, 1,705 verdicts, zero failures** -- the 12 above plus 8
+the substring filters pulled in free (`bufio` 80, `io/ioutil` 28, `testing/iotest` 18, `io/fs` 18,
+`internal/saferio` 17, `go/version` 3, `database/sql/driver` 1, `os/exec/internal/fdtest` 1). **The
+stdlib blast radius is EMPTY.** Every row that reads a frame file reads it for "where am I", not for a
+Go-tree property -- which is what makes question 3 the whole decision: the change costs the corpus
+nothing and costs converted USER programs their agreement with Go.
+
+### What this lane did NOT do
+
+* **Did not bank the code.** Question 3 is a measured regression on the `-recurse` product path, so
+  shipping the file half uniformly would trade a stdlib row that does not move for user programs that do.
+  The tree is clean; the implementation is `goImportPath` + `goSourceFile` in `runtime/managed_impl.cs`,
+  both call sites (`appendGoFrames`, `internCallerFrame`), and it is re-writable from this entry.
+* **Did not touch the line half.** Its two routes are still the board's: `#line` (PDB transport, +28-47%
+  lines, CS diagnostics relocate onto `.go` files not in the project) and the side-car (a file and a
+  csproj item per package). Both are corpus-wide emission changes -- already flagged as coordinator
+  territory -- and question 1 says the file half should ride WITH whichever lands, not ahead of it.
+* **Did not re-rule the host.** Question 2 is one line and it is not this lane's line.
+
+### Standing dirt from the arc's measurement runs, classified and RESTORED
+
+Six pipeline runs and thirteen sweeps moved nothing that was not already a named family: the
+`-tests`-closure production re-emissions (`bufio/{bufio,scan}.cs`, `internal/reflectlite/{swapper,type,
+value}.cs` -- both in the sweep's own `$closureFiles`), the `initᴛᴛtests()` hook (+7, `go/types` and
+`internal/fuzz`), CRLF phantoms across every swept package, and `os/exec`'s proof page (date/commit plus
+`skip 8 -> 7`, which encodes this host's environment exactly as the `archive/tar` symlink precedent
+does; the row PASSED 74 either way).
+
+Two are one-line REAL movers and both are the born-stale class, restored rather than levelled per the
+standing rule: `encoding/base64/base64_test.cs` gains a directional channel field's `.RecvOnly`
+initializer (the `cargo-recv` emission, which postdates that bank), and
+`database/sql/driver/package_test_info.cs` gains `global using Value = object;` (the recorded
+`base64`/`base32`/`fmt` alias-block staleness). Both level at their own rebank, not here.
+
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
