@@ -1819,6 +1819,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckWsaProtocolInfo() => CheckTarget("WsaProtocolInfo");
 
     [TestMethod]
+    public void CheckZeroSizeFieldLayout() => CheckTarget("ZeroSizeFieldLayout");
+
+    [TestMethod]
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]

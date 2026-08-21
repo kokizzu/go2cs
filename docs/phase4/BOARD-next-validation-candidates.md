@@ -16404,4 +16404,209 @@ allocates at **50.9x Go**, and the process-wide-counter hypothesis is dead. Cons
   now carries a live-bytes control that prints INVALID instead of a number) is the same family as
   the charter's verify-your-verification rule and is worth reading before writing any GC probe.
 
+## ⚠ RULING A LANDS BOTH HALVES — `TestAutoAligned64` + `TestHammer32`/`64` close; `sync/atomic` reads **107 of 108** and does NOT bank, and the layout arc's whole stdlib constituency turns out to be ONE struct (2026-08-21, lane `claude/atomic-align-layout`)
+
+Ruling A commissioned two halves against `sync/atomic`: the identity token gains alignment-truthful
+construction (1 row), and the zero-size-field layout emission arc closes the hammer family (3 rows).
+Both are implemented and gated. Three of the four rows close. The fourth,
+`TestHammerStoreLoad`, is the row the ruling itself queued to R.
+
+### Half 1 — the token becomes layout-truthful
+
+`ж<T>.PointerOrderToken` now mints every allocation base 8-ALIGNED (the identity hash lifted clear of
+the low 32 bits) and derives a field's token as **base + the field's Go offset**, read from the SAME
+memoized `GoFieldOffsets` walk that answers `StructField.Offset`. `TestAutoAligned64` asserts
+`Offset == 8` and `ptr&7 == 0` about one struct; those are now one answer from one source rather than
+two that happen to agree.
+
+Both construction paths reach it with the same (struct type, field name) pair, so they agree by
+derivation rather than coincidence: converted code arrives under go2cs-gen's generated `Ꮡ<field>`
+accessor, reflect's `FieldAliasBox` under a DynamicMethod named `goref_<field>`. The reflect prefix
+became a named constant so the pairing is a stated contract between siblings, not a coincidence of
+two string literals.
+
+**Two decisions on the record rather than left for the next reader.**
+
+* **`&s` and `&s.field@0` now token ALIKE.** The distinctness measurement the ruling required caught
+  this on its first run — as a FAILURE, of an assertion this lane had written wrong. Go says
+  `unsafe.Pointer(&s) == unsafe.Pointer(&s.a)` when `a` is at offset 0, so tokening alike is the
+  layout truth arriving, not a collision. The guard now pins that relation explicitly, with the
+  wrong version described in its own comment so nobody "restores" it.
+* **The ARRAY-ELEMENT arm keeps a raw element index** below its (8-aligned) base rather than the
+  index scaled by element size, so `&s[1]` of a `[]int64` does not answer 8-aligned. Knowing limit:
+  the ruling asks for field tokens, no test asserts element alignment, and scaling would reorder
+  every pointer-keyed map `internal/fmtsort` prints.
+
+### Half 2 — and the mechanism the ruling names has a sharp edge
+
+`Reinterpret`'s size guard admits an alias only when `SizeOf(TDst) <= SizeOf(T)`. Go's
+`atomic.Int32` is `struct{ _ noCopy; v int32 }` — four bytes, `v` at offset 0 — while the naive C#
+surrogate is eight, because a C# field always occupies at least one byte. So the hammer family's
+`(*Int32)(unsafe.Pointer(uaddr))` over a `*uint32` was refused at 8 > 4, the atomics acted on a
+DETACHED COPY, and loads answered zero. Explicit layout at Go's own offsets restores the size and
+with it the alias.
+
+**C# has no zero-size struct, and that is not a detail.** A zero-size field laid out at Go's offset
+SHARES bytes with the field Go puts there, and assigning it writes its one C# byte over the
+neighbour — measured, `42 -> 0`. Go's write writes nothing. The remedy is `readonly`: the field stays
+DECLARED, so reflect's walk, `NumField()` and `StructField.Offset` still match Go, while the one
+unfaithful operation becomes unexpressible rather than merely unlikely.
+
+That remedy exposed a latent go2cs-gen defect. `TypeGenerator` skipped the `Ꮡ_` accessor for a blank
+field but not for the converter's UNIQUIFIED repeats (`__`, `___`), so it emitted a writable-ref
+accessor for a field Go says has no address. Inert until the field went readonly, then CS8160. The
+skip now covers the whole all-underscores blank family — which is what the rule always meant, and
+what `GoReflect.FieldAccess`'s own header already documents as one Go concept.
+
+### The eligible population: 90 structs in, ONE struct out
+
+Every narrowing below is a measurement, and two of them are corrections to this lane's own first
+answer:
+
+| Census step | Count | Why |
+|:--|--:|:--|
+| stdlib structs with >=1 zero-size field | **90** | `go/types` over `std`, gc/amd64 sizes |
+| minus MANAGED | 63 excluded | .NET forbids overlapping a managed reference with anything — the overlap is a `TypeLoadException`, not a layout |
+| minus `array<T>`-bearing | — | golib's `array<T>` is a struct over a SHARED `T[]` backing, so it is managed whatever its element is (this lane's first census got this wrong and counted 31 eligible; the corrected number is 27) |
+| minus EMBEDDED fields | — | an embed's C# storage may be a `ж<T>` box, which a GO-type walk cannot see; the honest classification is "unknown", and unknown leaves the arc. Costs `runtime.mutex`, `sync.WaitGroup`, `internal/fuzz.pcgRand` |
+| minus NAMED zero-size fields | — | Go gives `&s.pad` an address, so go2cs-gen emits a writable accessor and `readonly` is CS8160 (found by CNR on `ReflectStructTagCopy`, whose `layout` carries `pad empty`). Blank fields have no address and no accessor, so only they take the readonly form |
+| minus Go-size 0 | 9 excluded | C# has no zero-byte struct; `Size = 0` means "natural size". Emitting nothing is truthful, faking 1 is not |
+
+What survives, measured by a seeded whole-corpus reconvert: **one struct, `runtime.gcBits`**
+(`runtime/windows/mheap.cs`, `Size = 1`). `sync/atomic`'s six are hand-owned, so the converter never
+emits them and the rows are closed by that hand edit. The converter emission is correct and general;
+its constituency today is one struct, and saying "corpus-wide emission arc" without that number
+would imply a sweep the corpus does not contain.
+
+### The arithmetic: 107 of 108, and the last row is R's
+
+Full-pipeline on this host, `sync/atomic` reads **35 recorded of 108** both before and after — the
+host dies inside `TestHammerStoreLoad` and the cap on what gets RECORDED is not something this arc
+can move. So the yield is stated by the row-harvest-3 containment method (host run directly, the
+killing row excluded, diffed against the recorded go map), which is how the historical 99 and 104
+were composed:
+
+| | pre-arc | post-arc |
+|:--|:--|:--|
+| `TestAutoAligned64` | fail | **pass** |
+| `TestHammer32` / `TestHammer64` | `C#="fail"` (the board's "largest residual": `unsafe.Pointer` Reinterpret write-back) | **pass both sides** |
+| containment, `TestHammerStoreLoad` excluded | — | **107 C# verdicts, 107 agree, 0 divergent** |
+| `TestHammerStoreLoad` | host death, 367 MB record | still fails; record 153 MB |
+
+**`sync/atomic` does NOT bank.** The roster bar is that every `Test` matches, and one does not. The
+residual is also NOT disclosable: `runtime-capability`'s admission test asks whether a truthful
+managed implementation exists at any cost, and for a serialization cap the answer is plainly yes —
+which is why the ruling queued it to R rather than admitting it.
+
+⚠ **This entry's containment number predates the merge of R's `RecordGoroutinePanic` cap**
+(`05133488c`), which this lane's base did not carry. With the cap bounding the serialization death
+AND the layout fix closing the lost writes the storm fed on, `TestHammerStoreLoad` may now record an
+honest verdict; that re-measure is this lane's immediate next step on the real union, and the row
+either reaches 108 and banks, or fails honestly at 107 and waits on its own root.
+
+### Gates
+
+Converter `go test ./...` **ok, 145.7 s** · `GolibTests` **185/185**, including nine new guards
+(four pinning the token construction and its distinctness, five the layout mechanism — the size, the
+alias admitting, the measured clobber, and the readonly remedy) · full **CNR** clean but for this
+lane's own two artifacts, each green on all four phases: the new `ZeroSizeFieldLayout` behavioral
+test and `UnexportedEmbeddedMarker`, whose golden was re-baselined for an intended change ·
+`go2cs.slnx` Debug `--no-incremental` **0 errors** (owed: golib changed) · seeded whole-corpus
+reconvert **exit 0, marker gate 63 marked / 0 violations, 1,662 emitted, 1,653 identical, 9 changed,
+0 new** — and 8 of the 9 are documented FOREIGN carries (`gcimporter.cs`, row-harvest-2's; the seven
+`runtime` `unsafe.Pointer` box-compare sites row-harvest-3 flagged for the next leveling regen),
+leaving `runtime/windows/mheap.cs` as the only mover of this lane's making · `runtime` built with
+that one stamp applied, **0 errors**, then restored. No corpus regen is banked here.
+
+⚠ **Three measurement failures this lane paid for, all its own, all recorded because each read
+exactly like a real finding.** (1) A corpus reconvert piped the converter through
+`Select-Object -First 10`, which terminates the pipeline and KILLS the child: `exit=-1` at ~71 of
+304, reading precisely like a converter crash. CLAUDE.md records this trap, and this lane had cited
+it hours earlier before using it anyway. (2) The replacement run seeded with PowerShell's
+`Copy-Item -Recurse`, which did NOT reproduce the corpus's L3 per-GOOS folders — so every
+platform-varying file emitted FLAT, producing 19 marker violations and 186 "NEW" files, which reads
+like a catastrophic converter regression and is in fact a failed seed. The marker gate is what
+caught it, which is the entire reason the ritual runs it before any conclusion. Seeding via `tar`
+and verifying the count exactly (3,238 = 3,238) fixed it. (3) The first draft of the token
+distinctness guard asserted something Go does not promise and failed correctly; the assertion was
+wrong, not the code.
+
+## 📉 RE-MEASURED on the union with R's cap — `sync/atomic` is **107 of 108 FULL-PIPELINE** (35 recorded → 108), and `TestHammerStoreLoad`'s residual is proven FOREIGN to the alignment arc by control (2026-08-21, lane `claude/atomic-align-layout`)
+
+The entry above closed three of Ruling A's four rows and stated its own gap: its containment number
+predated R's `RecordGoroutinePanic` cap (`05133488c`), so the fourth row could not be measured
+honestly. The cap is now merged, this lane merged onto `aaacb1e40`, and the re-measure resolves the
+fork the ruling left open.
+
+### The cap changes the measurement, not the verdict
+
+| | before the cap | with the cap |
+|:--|:--|:--|
+| C# verdicts RECORDED | **35** of 108 | **108** of 108 |
+| how the run ended | host died inside `TestHammerStoreLoad`; 367 MB record failed to serialize | clean; row contained as one per-test `infrastructure-error` |
+| comparison artifact | 69–367 MB | **1.1 MB** |
+| agreeing with `go test` | not computable full-pipeline (107 by containment) | **107 of 108, FULL-PIPELINE** |
+
+So the 107 is no longer a containment composition — it is every verdict the differential harness
+itself recorded, directly comparable to row-harvest-3's 104 rather than composed differently. The
+three rows this arc closed (`TestAutoAligned64`, `TestHammer32`, `TestHammer64`) hold on the union.
+
+⚠ A correction to this lane's own first reading of that file: an initial divergence count of ZERO was
+a bad regex — it matched `C#="[a-z]*"` and the one divergence is `C#="infrastructure-error"`, which
+carries a hyphen. The count is 1, not 0.
+
+### The fork resolves the second way: the storm was NOT a consequence of the lost writes
+
+The ruling's re-measure question was whether `TestHammerStoreLoad`'s `Fatalf` storm was downstream of
+the pre-fix detached-copy writes — in which case the layout fix would close it and the row would read
+108. It does not. With `TestHammer32`/`64` fixed and passing, the pointer hammer still fails, now
+bounded and legible:
+
+```
+Pointer: %!x(uintptr=0) != %!x(uintptr=7864)
+testing: FailNow called from a goroutine other than the test goroutine for TestHammerStoreLoad
+```
+
+`hammerStoreLoadPointer` treats the pointer VALUE as a packed pair and asserts
+`v & 0xFFFFFFFF == v >> 32`. The observed `v` is `N << 32` — low half zero, high half a small counter
+— so the `uintptr → unsafe.Pointer → uintptr` round-trip is not preserving the number the test
+stored.
+
+### That shape is NOT this arc's, and the cap is what finally allowed the control
+
+`N << 32` resembles this arc's new allocation-base format (`identityHash << 32`) closely enough that
+attribution could not be assumed. The control had been impossible: at master the record was 367 MB
+and never serialized, so the failure TEXT did not exist to compare. Under the cap it does.
+
+Control run: golib reverted to the union's version (no token change; the layout fix and the cap both
+retained), same single test, same host. Result — the **identical shape**:
+
+```
+Pointer: %!x(uintptr=0) != %!x(uintptr=12768)
+```
+
+Both sides also drop the same order of records (15.4M control vs 15.8M with the arc), so neither the
+token construction nor the layout fix feeds the storm. **The residual predates this arc entirely**
+and belongs to the `unsafe.Pointer` round-trip, not to the ж token or to zero-size layout.
+
+### Verdict: no roster row, and the residual is ROOTED not disclosed
+
+`sync/atomic` stays off the roster at 107 of 108 — the bar is that every `Test` matches. The residual
+is **not disclosable**: `runtime-capability`'s admission test asks whether a truthful managed
+implementation exists at any cost, and a faithful `uintptr ↔ unsafe.Pointer` round-trip plainly has
+one. It is an arc with a price, and the price is now much better specified than "host death": one
+named test, one named invariant (`v & 0xFFFFFFFF == v >> 32` after a round-trip through
+`unsafe.Pointer`), a bounded 1.1 MB artifact, and 107 of 108 sitting behind it.
+
+Roster arithmetic is therefore UNCHANGED at **158 / 215 · 18,425 · 79**. The row is one root away and
+the root is named; it waits on that root, not on ceremony.
+
+### Gates for the merge result
+
+The (b) commit's gates stand as recorded. On the merge result: golib and the capped
+`src/core/testing` host both build clean, and the full `sync/atomic` pipeline runs to completion —
+which is itself the merge-result evidence, since a banking merge owes its own row's re-proof and this
+lane's row declines to bank. The corpus is restored: the `-tests` artifacts are removed and
+`type.cs.auto` — the review sibling a `-tests` run refreshes and an overlay does not — is restored
+rather than banked, per CleanupBacklog item 18.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

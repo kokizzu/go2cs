@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.InteropServices;
 
 partial class main_package {
 
@@ -13,9 +14,9 @@ partial class main_package {
 [GoRecv] internal static void Unlock(this ref noCopy _) {
 }
 
-[GoType] partial struct Counter {
-    internal noCopy _;
-    internal int64 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 8)] partial struct Counter {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal int64 v;
 }
 
 [GoRecv] public static void Add(this ref Counter c, int64 n) {

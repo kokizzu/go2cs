@@ -18,20 +18,41 @@ using go;
 // net/textproto TestCommonHeaders want-zero assert, L11). Same primitives, same storage, same
 // memory ordering as the doc.cs package-level functions: Load=Volatile.Read,
 // Store/Swap=Interlocked.Exchange, CompareAndSwap=Interlocked.CompareExchange, Add/And/Or=Interlocked.
+// ZERO-SIZE FIELD LAYOUT (Ruling A, board 2026-08-20). Go's `noCopy` and `align64` are `struct{}` --
+// zero bytes -- so `Int32` is FOUR bytes in Go with `v` at offset 0. A C# field always occupies at
+// least one byte, so the naive surrogate is EIGHT (the empty struct's byte, then `v` pushed to
+// offset 4 by alignment), and `Reinterpret`'s size guard -- which is correct and stays untouched --
+// refuses the Go-legal `(*Int32)(unsafe.Pointer(uaddr))` alias the hammer family performs at 8 > 4.
+// The atomics then act on a DETACHED COPY and loads answer 0 (measured: `Pointer: 0 != 27809`).
+//
+// Explicit layout carrying Go's OWN offsets restores the size, and with it the alias. Two details
+// are load-bearing:
+//
+//   - The zero-size fields are `readonly`. C# has no zero-size struct, so a field laid out at the
+//     same offset as `v` SHARES bytes with it, and assigning it writes a real zero byte over its
+//     neighbour (measured, GolibTests.ZeroSizeFieldLayoutTests: 42 -> 0). Go's write writes nothing.
+//     `readonly` makes that one unfaithful operation unexpressible rather than merely unlikely, while
+//     the field stays DECLARED so reflect's field walk, NumField() and StructField.Offset still match
+//     Go. A whole-struct assignment still writes all Size bytes and stays correct.
+//   - It is applied only to the UNMANAGED types here. .NET forbids overlapping a managed reference
+//     with anything, so `Pointer<T>` (which holds a ж<T>) and `Value` (which holds an `any`) keep
+//     sequential layout; a corpus census puts 59 of the 90 stdlib structs with zero-size fields in
+//     that same category.
 [module: GoManualConversion]
 
 namespace go.sync;
 
 using @unsafe = unsafe_package;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 partial class atomic_package {
 
 // A Bool is an atomic boolean value.
 // The zero value is false.
-[GoType] partial struct Bool {
-    internal noCopy _;
-    internal uint32 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 4)] partial struct Bool {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal uint32 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -128,9 +149,9 @@ public static bool /*swapped*/ CompareAndSwap<T>(this ж<Pointer<T>> Ꮡx, ж<T>
 }
 
 // An Int32 is an atomic int32. The zero value is zero.
-[GoType] partial struct Int32 {
-    internal noCopy _;
-    internal int32 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 4)] partial struct Int32 {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal int32 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -171,10 +192,10 @@ public static bool /*swapped*/ CompareAndSwap<T>(this ж<Pointer<T>> Ꮡx, ж<T>
 }
 
 // An Int64 is an atomic int64. The zero value is zero.
-[GoType] partial struct Int64 {
-    internal noCopy _;
-    internal align64 __;
-    internal int64 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 8)] partial struct Int64 {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal readonly align64 __;
+    [FieldOffset(0)] internal int64 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -215,9 +236,9 @@ public static bool /*swapped*/ CompareAndSwap<T>(this ж<Pointer<T>> Ꮡx, ж<T>
 }
 
 // A Uint32 is an atomic uint32. The zero value is zero.
-[GoType] partial struct Uint32 {
-    internal noCopy _;
-    internal uint32 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 4)] partial struct Uint32 {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal uint32 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -258,10 +279,10 @@ public static bool /*swapped*/ CompareAndSwap<T>(this ж<Pointer<T>> Ꮡx, ж<T>
 }
 
 // A Uint64 is an atomic uint64. The zero value is zero.
-[GoType] partial struct Uint64 {
-    internal noCopy _;
-    internal align64 __;
-    internal uint64 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 8)] partial struct Uint64 {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal readonly align64 __;
+    [FieldOffset(0)] internal uint64 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -302,9 +323,9 @@ public static bool /*swapped*/ CompareAndSwap<T>(this ж<Pointer<T>> Ꮡx, ж<T>
 }
 
 // A Uintptr is an atomic uintptr. The zero value is zero.
-[GoType] partial struct Uintptr {
-    internal noCopy _;
-    internal uintptr v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 8)] partial struct Uintptr {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal uintptr v;
 }
 
 // Load atomically loads and returns the value stored in x.
