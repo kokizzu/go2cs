@@ -10,6 +10,16 @@
 > otherwise move. Implementation proceeds per §7's staged landing (S0/S1 measurement first); §8 is
 > the charter-§7 adversarial pass against this document's own first draft.
 >
+> **S0 and S1 are RUN and recorded in [§7.1](#71-measurements--s0-and-s1-run-2026-08-21)**
+> (2026-08-21, i7-5820K, .NET 9.0.19, `GolibTests` 191/191). Headlines: the §5.4 discriminator reads
+> **T = P**, so `math/big`'s 224-verdict row is **root (1)** and routes to the ж-box arc — ⟨OQ-3⟩
+> does not fire; the recorder's per-gen2 overhead is **below the noise floor**; `TestFreeOSMemory`'s
+> magnitude assertion **PASSES** under §4.1's formulation, so ⟨OQ-6⟩'s contingency does not arise;
+> and **`ReadMemStats` is not allocation-free today** (288 B/call), so §8.2's precondition is work
+> S2/S3 must do rather than a property to preserve. §7.1.9 lists the four places the measurements
+> refine this document's own text — including the `GetGCMemoryInfo` overload §3.2 leaves unnamed,
+> whose default is wrong.
+>
 > **Commissioned by Ruling B** (coordinator, 2026-08-20,
 > [`BOARD-next-validation-candidates.md`](BOARD-next-validation-candidates.md) — *"RULING x2 …
 > `runtime-capability` is minted"*): `HeapReleased` and the per-GC pause history were **REFUSED** as
@@ -598,6 +608,256 @@ is owed (charter §5 binds CNR to converter changes). The gate list:
 S0 and S1 are pure measurement and can land — or simply be run and reported — before any ruling on
 ⟨OQ-1⟩/⟨OQ-2⟩. That is deliberate: the two questions a coordinator has to rule are both cheaper to
 rule with S1's numbers in hand, and S0 is worth running whatever happens to the rest of this arc.
+
+---
+
+## 7.1 Measurements — S0 and S1, run 2026-08-21
+
+> **S0 and S1 are DONE.** Every figure below is measured on **the i7-5820K coordinator machine**
+> (6C/12T, 31.9 GB, Windows 11 10.0.26100), **.NET SDK 9.0.317 / runtime .NET 9.0.19**, workstation
+> **concurrent** GC (`IsServerGC=False`, `LatencyMode=Interactive`), `GolibTests` built **Debug**, on
+> the corpus at **`aaacb1e40`**, Go 1.23.1. Gate: **`GolibTests` 191/191** (34 s), the charter-§5 gate
+> for this change class. No production file changes; no CNR is owed (no converter change).
+>
+> Nothing here is self-ruled. Four readings **refine or contradict text in this document** and are
+> called out as such in §7.1.9.
+
+### 7.1.1 The instrument
+
+Two files, both `GolibTests` cases, both reproducible from a clone with
+`dotnet test src/tests/GolibTests/GolibTests.csproj -c Debug --filter <name> --logger "console;verbosity=detailed"`:
+
+| File | Stage | Contents |
+|:--|:--|:--|
+| `src/tests/GolibTests/MulUnbalancedDiscriminatorTests.cs` | S0 | the §5.4 discriminator and the window's wall-clock context |
+| `src/tests/GolibTests/GcMeasurementSurfaceProbes.cs` | S1 | §3.2's recorder transcribed as a test-local prototype, plus the four §3.6 probes, the natural-pressure and background-GC probes, and the §4.5 ⟨OQ-6⟩ probe |
+
+`GolibTests.csproj` gains two project references — `core/math/big` (S0's operand path) and
+`core/runtime` (the allocation guard calls the real `ReadMemStats`, not a model of it) — on the
+precedent the file already carries for `sha3` and `testing`.
+
+Every probe **reports**; the only assertions are the ones that would make a reading vacuous if they
+failed (an instrument that answered nothing, a mechanism that never fired), plus the one real guard
+of §7.1.4.
+
+### 7.1.2 S0 — the §5.4 discriminator: **root (1)**, decisively
+
+One `Int.Mul` of a 50,000-word by a 40-word operand (`inputSize` = 400,320 B, Go's own figure), six
+windows, three instruments:
+
+| round | **P** process-wide, exact | **T** this thread, exact | **C** golib objects | T/P | T / inputSize |
+|:--|--:|--:|--:|--:|--:|
+| 0 (cold) | 20,527,408 B | 20,527,368 B | 10,001 | 100.00 % | 51.3× |
+| 1 | 20,520,824 B | 20,520,824 B | 9,995 | 100.00 % | 51.3× |
+| 2 | 20,520,864 B | 20,520,824 B | 9,995 | 100.00 % | 51.3× |
+| 3 | 20,520,864 B | 20,520,824 B | 9,995 | 100.00 % | 51.3× |
+| 4 | 20,520,824 B | 20,520,824 B | 9,995 | 100.00 % | 51.3× |
+| 5 | 20,520,864 B | 20,520,824 B | 9,995 | 100.00 % | 51.3× |
+
+**The decision rule of §5.4, applied as written: `T ≈ P` — indeed `T = P` to within 40 bytes — so the
+root is (1).** The window's allocation is the code under test's own. `math/big`'s 224-verdict row is
+an **allocation-model** row and it routes to the **ж-box reduction arc**, which already names it
+(`DESIGN-zh-box-reduction.md` §3.6). It is **not** a `GOMAXPROCS`/pollution row, so ⟨OQ-3⟩ does not
+fire and scheduler OQ8 stays closed.
+
+Three things make that conclusion solid rather than merely arithmetic:
+
+* **The probe reproduces the row.** Cold `P` = 20,527,408 B against the row's banked `allocSize`
+  readings of 20,487,200 B (r57a) and 20,499,128 B (ж-box A3) — a 0.20 % spread across two machines,
+  three trees and a deterministic-vs-`rndNat` operand. The probe is measuring the row.
+* **The window is long.** 456–522 ms per `Mul` (Debug). Cross-thread pollution had half a second per
+  window to appear in `P` and did not.
+* **When pollution *did* appear, it appeared exactly where §5.1 predicted.** One window in twelve read
+  `P` = 22,443,168 B (+1.92 MB) while `T` held at 20,520,824 B — the stochastic signature moving the
+  process-wide instrument and never the per-thread one. That is the design's own argument, observed.
+
+**The multiplier against Go, measured on this machine** (`go1.23.1`, the same operand shape through
+`new(big.Int).Mul`, `TotalAlloc` bracket): Go allocates **403,488 B, ratio 1.01×**. The converted path
+allocates **50.9× what Go's does**, not the "~5×" §5.1 offers as the shape of root (1). Go does not sit
+near the 10× bound — it sits at 1× — so the row needs the converted path to shed **≈ 80 % of its
+allocation** to clear the bound, not a trim. `C` = 9,995 golib objects for 20.5 MB (≈ 2,053 B/object)
+localizes the residual to golib backing-store sites and is the number the ж-box arc starts from.
+
+### 7.1.3 §3.6 item 1 — recorder overhead per gen2 collection: **below the noise floor**
+
+3 rounds × 60 forced gen2 collections with real allocation churn between each, a freshly-armed
+recorder against a disarmed control, alternated so machine drift cancels. Four independent runs:
+
+| run | disarmed | armed | overhead |
+|:--|--:|--:|--:|
+| 1 | 1.284 ms/collection | 1.279 ms | **−0.005 ms (−0.4 %)** |
+| 2 | 1.254 ms | 1.262 ms | **+0.008 ms (+0.6 %)** |
+| 3 | 1.298 ms | 1.287 ms | **−0.011 ms (−0.9 %)** |
+| 4 | 1.637 ms | 1.581 ms | **−0.056 ms (−3.4 %)** |
+
+The sign changes run to run, so the recorder's per-collection cost is **not resolvable against a
+1.25–1.64 ms gen2 collection**. `GetTotalPauseDuration` per collection moves the same way and by the
+same margin. For scale, the precedent §3.3 cites — `AllocationCounter` at 11–15 % on the tightest
+allocation loops — is a per-*allocation* charge; this one is per-*gen2-collection* and is unmeasurable
+there. **Ruling B's "an always-on recorder every converted program pays for" is a real worry whose
+measured size is zero**, which is what ⟨OQ-1⟩'s always-on recommendation was ratified on the
+expectation of.
+
+### 7.1.4 §3.6 item 2 — the allocation guard: **`ReadMemStats` is NOT allocation-free today**
+
+| measurement | reading |
+|:--|:--|
+| `ReadMemStats` per call, `GetAllocatedBytesForCurrentThread` over 2,000 calls | **288.0 B/call**, exactly, every run |
+| 200 empty bracketed windows (two back-to-back `ReadMemStats`, nothing between), `TotalAlloc` delta | **244.7 / 285.7 / 326.7 B per window** (three runs), **8,200 B worst single window**, 6–8 of 200 windows non-zero |
+| the worst window as a share of `net/textproto`'s 32,768 B per-iteration budget | **25.02 %** |
+
+The root is one BCL object: `GCMemoryInfo` is a struct, but `GC.GetGCMemoryInfo()` allocates a fresh
+`GCMemoryInfoData` **class** behind it on every call. §3.6 item 2's parenthetical reads that surface
+as allocation-free and it is not.
+
+Two consequences, and the second is the sharp one:
+
+* **§8.2's landing precondition is already violated by the code as it stands.** S2/S3 do not
+  *preserve* an allocation-free read path, they have to *create* one — which the recorder makes easy,
+  since it already samples `TotalCommittedBytes` at every `Observe()` and can hand `ReadMemStats` the
+  figure instead of each read fetching its own.
+* **The cost is currently *masked*, not absent, and the mask is lumpy.** `TotalAlloc` reads
+  `GetTotalAllocatedBytes(precise: false)`, which does not move until a thread's allocation context is
+  exhausted, so most windows read 0 and roughly one in thirty absorbs a whole ~8 KB quantum. A
+  `net/textproto`-shaped measurement is therefore already charged **a quarter of its budget** in its
+  worst iteration, today, by the brackets alone. Anything the read path adds raises both the mean and
+  the lumpiness.
+
+**The guard lands with this stage**, `GcMeasurementSurfaceProbes.ReadMemStatsPerCallAllocation`,
+pinned at a **320 B ceiling** — today's 288 B plus headroom for a runtime that grows the struct. It is
+a ceiling, not the target: **zero stays the S2/S3 precondition and this constant is the instrument
+that gets tightened to it.** Until then the guard catches the regression §8.2 is actually afraid of —
+a ring copied into a fresh array per read (2 KiB) or a snapshot object per call. A failure reporting
+~288–320 B is a toolchain hop, not a go2cs regression; re-measure rather than re-diagnose.
+
+### 7.1.5 §3.6 item 3 — sentinel liveness: **the mechanism works, and the lag bound has a boundary**
+
+| regime | gen2 collections | sentinel firings | recorder `observed` | lag |
+|:--|--:|--:|--:|--:|
+| **negative control** — sentinel strongly referenced | 6 | **0** | 0 | — |
+| promotion | 1 forced collection to first firing | 4 in 4 | — | — |
+| **drained** — force, then `Drain()`, 40 cycles | 44 | 44 | **44** | **≤ 1 before the drain, 0 after** |
+| **natural pressure** — 4.0 s, 28,819,062,784 B allocated, nothing forced | 54 | 54 | **54 (100.0 %)** | **0** |
+| **artificial burst** — 8 forced collections back to back, no drain | 8 | — | **+2** | 8, and 6 after one drain |
+| **artificial burst, sustained** — 3 × 60 forced collections with churn, no drain | 180 | — | 32–46 | **observation rate 17.8–25.6 %** |
+
+The mechanism is sound: the resurrecting sentinel fires once per gen2 collection, promotion costs one
+collection, and a strongly-referenced sentinel never fires at all — so the live readings are evidence
+of the resurrection and not of some other wake-up.
+
+**§3.2/§3.4's "lag by at most one collection" holds in both regimes a program actually meets** — the
+drained one (which is what `runtime.GC()` and `debug.freeOSMemory()` produce, by §3.4's own
+mitigation) and the natural one (which is what a program under load produces; 54 collections in four
+seconds, every one seen). It fails only where gen2 collections are **forced back to back with no
+drain**, because the finalizer thread never gets between two of them and `Observe()` advances by at
+most one per call. That is a harness pattern, and the one harness pattern that matters —
+`runtime.GC()` in a loop — is drained by construction.
+
+So the boundary is: **`NumGC` is exact wherever the program either forces collections (drained) or
+lets the runtime pace them (kept up with); it understates only under externally-forced back-to-back
+gen2 collections.** Understating stays the safe direction, and no assert in §1.2's set is exposed
+either way, because all nine compare the two surfaces to each other.
+
+### 7.1.6 §3.6 item 4 — `GetGCMemoryInfo` fidelity: **confirmed, with one overload finding**
+
+* **Pause fidelity is exact.** Across one forced blocking gen2: `GetTotalPauseDuration` delta =
+  1,639,000 ns; `sum(FullBlocking.PauseDurations)` = 1,639,000 ns; **ratio 1.000**. Every run agrees to
+  the last nanosecond. What §3.2 assumes about this API is true.
+* **`PauseDurations.Length` is always 2.** For a blocking collection the second entry is 0; summing is
+  therefore right and costs nothing.
+* **§8.3's background-GC claim is CONFIRMED.** A background gen2, induced with allocation pressure:
+  `index=101, generation=2, concurrent=True, PauseDurations=[2,000 ns, 149,000 ns]` — **two non-zero
+  entries**, exactly as §8.3 states unverified. The ring's single number is their sum, and the header
+  must say so.
+* **`GC.Collect(2, Forced, blocking: false)` does NOT produce a background collection.** It advanced
+  the gen2 index with `Concurrent=False` while `GCKind.Background` stayed at index 0. Only real
+  allocation pressure produces one. (Recorded because it is the obvious way to try to induce one, and
+  it does not work.)
+* **⚠ THE OVERLOAD FINDING. §3.2 step 2 says "read the collection's facts from
+  `GC.GetGCMemoryInfo(…)`" without naming an overload, and the default — `GCKind.Any` — is WRONG.**
+  Measured: after a forced gen2 (`Any`: index 86, generation 2) followed by a single forced gen0
+  collection, `Any` reports **index 87, generation 0**, while `FullBlocking` still reports index 86,
+  generation 2. `Any` means "the latest collection of any kind", and ephemeral collections are
+  frequent — so a recorder reading `Any` would write an **ephemeral collection's pause into a gen2
+  ring slot** whenever one lands between the collection and the finalizer's `Observe()`. Neither
+  single overload covers both cases (`FullBlocking` misses a background gen2, `Background` misses a
+  blocking one). The rule the implementation needs: **read `Any` and accept it only when
+  `info.Generation == GC.MaxGeneration`; otherwise take whichever of `FullBlocking` / `Background`
+  carries the higher `Index`.** S2 owes that; this is a correction to §3.2, not a lane decision about
+  it.
+
+### 7.1.7 §4.5 / ⟨OQ-6⟩ — `TestFreeOSMemory`'s magnitude assertion: **it passes; the contingency is not needed**
+
+Go's sequence, step for step, four times (the fourth harsher: two aggressive passes plus an explicit
+LOH `CompactOnce`), with `HeapReleased` computed under §4.1's high-water formulation:
+
+| round | committed before → after | `HeapReleased` delta | assertion 1 (`after > before`) | assertion 2 (`≥ 16,777,216 B`) |
+|:--|:--|--:|:--|:--|
+| 0 | 36,048,896 → 2,359,296 B | **33,689,600 B** | PASSES | **PASSES** |
+| 1 | 35,987,456 → 2,359,296 B | **33,628,160 B** | PASSES | **PASSES** |
+| 2 | 36,052,992 → 2,363,392 B | **33,689,600 B** | PASSES | **PASSES** |
+| 3 (harsher) | 35,991,552 → 2,363,392 B | **33,628,160 B** | PASSES | **PASSES** |
+
+The CLR returns **100.4 % of the 32 MiB dropped** — committed falls back to the settled baseline
+(2.36 MB) every time — against a requirement of 16 MiB. Each round carries its own control: live bytes
+(`GetTotalMemory(forceFullCollection: true)`) return to baseline, so the reading is about decommit
+policy and not about a missed collection.
+
+**`TestFreeOSMemory` therefore closes on BOTH assertions once `HeapReleased` is real.** ⟨OQ-6⟩'s
+contingency does not arise, and the ruling's decision not to pre-rule it cost nothing.
+
+### 7.1.8 ⟨OQ-2⟩ — the two formulations, measured rather than argued
+
+After the four release/reacquire cycles above, with 32 MiB reacquired and live:
+
+| formulation | `HeapReleased` |
+|:--|--:|
+| **§4.1 high-water**, `max(0, committedHighWater − currentCommitted)` | **0 B** — falls back to zero exactly as Go's documented field does when the heap reacquires |
+| **Ruling B's literal** cumulative `TotalCommittedBytes` decrease | **134,635,520 B** — cannot fall, and now overstates by the entire amount |
+
+The literal form drifts by **≈ 33.6 MB per release cycle** and is already off by 134 MB after four
+cycles of a test that runs in 37 ms. §8.1's finding — "right exactly where it is tested and wrong
+everywhere else" — is not a rhetorical point; it is this table. The ratified departure is the correct
+one.
+
+### 7.1.9 What these measurements change
+
+Four readings refine or contradict text in this document. None contradicts a **ruling**; all four are
+recorded for the coordinator rather than acted on by the measuring lane.
+
+1. **§3.6 item 2's premise is wrong** — `ReadMemStats` allocates 288 B/call today (§7.1.4). §8.2's
+   precondition becomes *work S2/S3 must do*, not a property to preserve. The guard is landed and
+   pinned; the tightening to zero is future work.
+2. **§5.1's "~5×" understates by an order of magnitude** — the measured multiplier against Go on this
+   machine is **50.9×** (§7.1.2), because Go sits at 1.01× and not near the bound. The row needs ≈80 %
+   of the converted path's allocation removed, which is a materially bigger ask than the sentence
+   implies. Future work, owned by the ж-box arc.
+3. **§3.2/§3.4's "at most one collection" needs its boundary stated** — exact under drained and under
+   natural pacing, 17.8–25.6 % observation under externally-forced back-to-back collections (§7.1.5).
+   The design's conclusion survives; the claim needs the qualifier.
+4. **§3.2 step 2's unnamed `GetGCMemoryInfo` overload must be named** — the default is wrong and would
+   write ephemeral pauses into gen2 slots (§7.1.6). S2 owes the `Generation == MaxGeneration` check.
+
+Unchanged and now evidenced: ⟨OQ-1⟩ (overhead unmeasurable, §7.1.3), ⟨OQ-2⟩ (§7.1.8), ⟨OQ-3⟩ (does not
+fire — root is (1), §7.1.2), ⟨OQ-6⟩ (contingency not needed, §7.1.7).
+
+### 7.1.10 A measurement trap this stage paid for
+
+The §4.5 probe first reported that **nothing** was released — 65,536 B against 32 MiB, in every round,
+including the harsher variant — which reads exactly like a CLR decommit-policy finding and would have
+sent ⟨OQ-6⟩ to a contingency it does not need. It was an artifact of the harness, not of the runtime:
+**`GolibTests` builds Debug, and a Debug build reports every stack slot — including the temporary
+holding `new byte[32 MiB]` on its way into the field — as live for the whole enclosing method.**
+Clearing the field in the same frame therefore does not make the object unreachable, no collection
+reclaims it, and the probe measures its own lifetime bug. Live bytes did not move across a forced
+blocking compacting `Aggressive` collect (34,445,360 → 34,445,736 B); with the allocation moved behind
+a call that has returned, they fall by the full 32 MiB and both assertions pass.
+
+Go's own test has the shape the fix restores — `big = make(...)` then `big = nil` — because the Go
+compiler does not extend a temporary's lifetime that way. **Any managed probe that drops a reference
+and then measures must allocate in a frame that has already exited**, and should carry the
+live-bytes control the probe now carries, which turns the artifact into a printed "THE READING ABOVE
+IS INVALID" instead of a plausible number.
 
 ---
 
