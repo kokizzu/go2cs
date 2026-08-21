@@ -16813,4 +16813,24 @@ have now surfaced in THREE lanes -- the leveling commit is due. (3) Two CLAUDE.m
 re-measured this harvest (updated in the same commit): full `go2cs.slnx` ~3,546 s at 722
 projects; full behavioral suite ~6,552 s at 603 packages (i7-5820K, 2026-08-21).
 
+
+## FUTURE ERA -- step-through-GO debugging: the position-map tables are a source map, and .NET already has the player (user idea, recorded 2026-08-21)
+
+An idea banked for a later era, so it is not lost to churn. The `GoPositionMap` line tables carry
+exactly the data a debugger needs -- and .NET's native source-mapping machinery is `#line`
+pragmas compiled into PDB sequence points (the mechanism behind stepping through `.cshtml` in
+Razor). The committed corpus rightly refuses `#line` (+28-47% of lines against the reads-like-Go
+objective), but a future OPT-IN build mode could inject the pragmas TRANSIENTLY at build time,
+generated mechanically from the position-map tables -- never committed, full fidelity:
+breakpoints in `.go` files, stepping through Go source while the converted .NET assembly
+executes, TypeScript-over-JavaScript style.
+
+Composes further with **SourceLink**: PDB documents mapped to `github.com/golang/go` at the
+pinned release tag would let a consumer F11 from their own C# into Go's actual stdlib source,
+version-exact, from a published `go.<pkg>` NuGet package -- the same mechanism that steps into
+the .NET BCL today, and a natural sibling of the nugetgo self-describing-package convention.
+
+Era: post-terminal, .NET-10-or-later polish. Prerequisites already banked: the position-map arc
+(the data), the pinned-release publish convention (the SourceLink target). Nothing here is
+scheduled; this note exists so the right era finds it.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
