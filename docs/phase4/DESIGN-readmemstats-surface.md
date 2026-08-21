@@ -1,9 +1,14 @@
 # The ReadMemStats measurement surface — real pause facts, a truthful HeapReleased, and the discriminator that routes `math/big`
 
-> **STATUS: DESIGN — PROPOSED (2026-08-21, lane `worktree-agent-a27cc1cad3f341fcb`). Nothing below is
-> ratified.** Every decision is a proposal with a recommendation; §9 collects the six that need a
-> coordinator ruling before an implementation lane starts, and §8 is the charter-§7 adversarial pass
-> against this document's own first draft.
+> **STATUS: DESIGN — RATIFIED (coordinator, 2026-08-21). All six §9 open questions are ruled AS
+> RECOMMENDED**, including ⟨OQ-2⟩'s deliberate departure from Ruling B's literal "cumulative
+> decrease" wording — the adversarial pass (§8.1) proved that phrasing produces a monotone field
+> that is right exactly where it is tested and wrong everywhere else, and the commissioning text's
+> PRINCIPLE (a truthful managed form, never fabrication) is exactly what the high-water formulation
+> serves. §8.2's landing precondition is BINDING: `ReadMemStats` stays allocation-free, guarded by
+> the named GolibTests guard, because `net/textproto`'s banked allocation-bracket test would
+> otherwise move. Implementation proceeds per §7's staged landing (S0/S1 measurement first); §8 is
+> the charter-§7 adversarial pass against this document's own first draft.
 >
 > **Commissioned by Ruling B** (coordinator, 2026-08-20,
 > [`BOARD-next-validation-candidates.md`](BOARD-next-validation-candidates.md) — *"RULING x2 …
