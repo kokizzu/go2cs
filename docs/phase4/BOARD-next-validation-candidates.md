@@ -16332,4 +16332,50 @@ standing rule: `encoding/base64/base64_test.cs` gains a directional channel fiel
 initializer (the `cargo-recv` emission, which postdates that bank), and
 `database/sql/driver/package_test_info.cs` gains `global using Value = object;` (the recorded
 `base64`/`base32`/`fmt` alias-block staleness). Both level at their own rebank, not here.
+
+## RULING -- the position map is INDIVISIBLE and build-shape-faithful; the host never claims `testing/testing.go`, and that premise becomes a host-limit entry (coordinator, 2026-08-21)
+
+The net-mail-position-map lane's three measured questions, ruled. The governing principle for all
+of them: **no fabricated positions** -- a reported file:line pair must exist in the tree the file
+names, and every identity a frame reports must be a conversion-time FACT, never a plausible
+composite.
+
+1. **Indivisible -- ratified as recommended.** The file half alone mints `log/log_test.go:69`, a
+   position in neither tree. File and line ship together or not at all. The line half's content is
+   fixed by the principle -- the reported line is the GO source line, derived from conversion-time
+   facts (the converter knows every emitted statement's Go position) -- and its MECHANISM (per-file
+   line table, frame-record side channel, or otherwise) is the arc's design to make, reviewed per
+   charter SS7 before implementation.
+
+2. **The host's doctrine stands: it never claims `testing/testing.go`.** A hand-own with no
+   conversion relationship to Go's source cannot honestly report a position in it -- the line
+   would be fabricated even where the file name is suggestive. `TestStack`'s fifth-frame assert
+   rests on the premise that the testing framework's frames come from `testing/testing.go`, which
+   is a property of the test BINARY that the converted deployment shape structurally is not (the
+   hand-owned host IS the design, per the ONE-testing-package ruling). That is `host-limit`'s own
+   text, and the assert becomes a signature-pinned host-limit entry when `runtime/debug` banks --
+   with its retirement path named honestly: **structural and permanent**, unlike the os/exec
+   relocatability entries, it does NOT retire at the .NET 10 single-file host, and the entry must
+   say so.
+
+3. **The identity form is BUILD-SHAPE-FAITHFUL -- the lane's measured `-recurse` regression is
+   ruled out of any landing shape.** Go bakes the path at compile time: GOROOT-relative under the
+   toolchain's trimming for published stdlib, absolute for an ordinary untrimmed user build. go2cs
+   reproduces exactly that, at CONVERSION time: the stdlib corpus reports the trimpath/import-path
+   form (`runtime/debug/stack.go` -- the truthful description of a package published without local
+   paths), and a `-recurse` user module reports what Go would have baked for the same build -- the
+   absolute source path as of conversion, recorded per file. `main/main.go` where Go answers
+   `C:/.../main.go` is a divergence and does not land.
+
+4. **The `RuntimeCallerFrames` guard is blind to file identity** (separator booleans pass under a
+   wholesale identity change -- the lane proved it by running the change through all four phases).
+   Queued: strengthen it to assert real file identity alongside the arc, so the arc's own guard is
+   the one that would have caught this.
+
+Consequences for the terminal path: `flag` (#162) banks under the indivisible pairing (its one
+miss is the file token; a Go-mapped line satisfies its regex); `log` (#161) needs the full pairing
+(its residual after the file half IS the line); `runtime/debug` (#160) takes the fifth-frame
+host-limit entry alongside its runtime-capability disclosures. The arc is now fully specified:
+one design increment, three consuming rows, acceptance measured on `flag` first and last.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
