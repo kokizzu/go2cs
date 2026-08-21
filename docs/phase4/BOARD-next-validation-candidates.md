@@ -16378,4 +16378,30 @@ miss is the file token; a Go-mapped line satisfies its regex); `log` (#161) need
 host-limit entry alongside its runtime-capability disclosures. The arc is now fully specified:
 one design increment, three consuming rows, acceptance measured on `flag` first and last.
 
+
+## MEASURED + RULED -- the SS5.4 discriminator fires for ROOT (1): `math/big`'s TotalAlloc row is real over-allocation at 50.9x Go, and the row REROUTES to the zh-box arc (coordinator harvest of the S0/S1 lane, 2026-08-21)
+
+The ReadMemStats S0/S1 measurement stage is merged (design doc SS7.1, ten subsections; GolibTests
+191/191 on the lane's tree; probes committed). The decisive number: T = P to within 40 bytes
+across six windows, with Go's same-machine baseline at 1.01x its own bound -- the converted path
+allocates at **50.9x Go**, and the process-wide-counter hypothesis is dead. Consequences:
+
+- **`math/big` LEAVES the near-term reserves.** The measurement pass's "one manifest entry for
+  224 verdicts once #160 lands" is superseded: clearing the 10x bound needs ~80% of the converted
+  path's allocation removed, which is zh-box/B' constituency -- the 1.23.12-era arc, exactly
+  where `edwards25519` already routes. `net/http/internal` moves up one in the reserve ranking.
+- **All six ratified OQ recommendations SURVIVE with numbers** (OQ-2's literal cumulative form
+  measured drifting ~33.6 MB per release/reacquire cycle while the high-water form falls to 0 as
+  Go's field does; recorder overhead below the noise floor; the OQ-6 contingency does not arise
+  -- `TestFreeOSMemory` closes on both assertions under SS4.1).
+- **The four SS7.1.9 refinements are RATIFIED**, two of them binding on S2/S3: (1) `ReadMemStats`
+  allocates 288 B/call TODAY (the GCMemoryInfoData box), masked lumpily into 25% of
+  `net/textproto`'s bracket budget -- the allocation-free precondition is work S2/S3 must DO,
+  guard pinned at a 320 B ceiling with zero the target; (4) the recorder must verify
+  `Generation == MaxGeneration` on the memory-info read -- the default `GCKind.Any` was measured
+  moving off gen2 after one forced gen0.
+- The SS7.1.10 Debug-liveness measurement trap (a frame keeps its dead temporary live; the probe
+  now carries a live-bytes control that prints INVALID instead of a number) is the same family as
+  the charter's verify-your-verification rule and is worth reading before writing any GC probe.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
