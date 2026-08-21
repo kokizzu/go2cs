@@ -5,6 +5,8 @@
 // This is a fairly standard file format used on OS X, Linux, BSD, Sun, and others.
 // See tzfile(5), https://en.wikipedia.org/wiki/Zoneinfo,
 // and ftp://munnari.oz.au/pub/oldtz/
+[assembly: go.GoPositionMap("time/zoneinfo_read.go", "zoneinfo_read.cs", "ABQwwgAPIIIADyCCgoKClIKCpoKCgoKUpoKCgoKClKaCgoKClKiSgoKokoCCpAAEEsKWgIKokoKAgpSUtLS0AAQWABEQgoKCgpSClAAFEIKUAAEQgoSWgoKClIKUqIKCqJaWlpaoqISSloKCgsyCppSCgoKCgIKkgpSCgoCCpIKAgqSCppTMgoKCgoCClLaAgpS2goKUgoKUgqimqKiCgoKCgoKCyICygpSAgpQACRCopoKCgqaqooKUgpQAAhgACQKClKiSgpSqwoKClIQABBKCgIKkgoKEgoCCpgAXMIKUgoKCgoKCgoKClIIAESaCgIqkhIKAgqaWAAoYwoKUrvKCgoKAgraCpoKCgoCCtoKmgIKCgoCCtoK2gpSu4oKClIKqgoKClIKUgqY=")]
+
 namespace go;
 
 using errors = errors_package;

@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package startlinetest contains helpers for runtime_test.TestStartLineAsm.
+[assembly: go.GoPositionMap("runtime/internal/startlinetest/func_amd64.go", "func_amd64.cs", "AAsU")]
+
 namespace go.runtime.@internal;
 
 partial class startlinetest_package {

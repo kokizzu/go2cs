@@ -1,6 +1,8 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/x509/oid.go", "oid.cs", "ABs4koKmgoKWgriClIKoqJKCloKCloKCgpSmgoKUpoKCgoKClJSmooKUpoKCloKCgoKUlKiSqJKmuIKCgqiagoKClISagIKkgIKmgpaChISCgoKCgpSWgqiSqJKCgpSCqLamwoKCpoKClIKmgoKUgoKClIKUpoKssoKUgqaUgpKCppKCqIKCgqaUgqiokoKCqs6CgoKCgqaCgpSClIKCgoKClIKCgoKClJSCgoKCgoKClIKmlIKmpoKErISCgpaChIKCgoKUgpSClIKo")]
+
 namespace go.crypto;
 
 using bytes = bytes_package;

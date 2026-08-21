@@ -4,6 +4,8 @@
 
 // Package cmp provides types and functions related to comparing
 // ordered values.
+[assembly: go.GoPositionMap("cmp/cmp.go", "cmp.cs", "ABs40gACFgAKAoKCgoKUlIKUgpSClKrCquKCgoKm")]
+
 namespace go;
 
 partial class cmp_package {

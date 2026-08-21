@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build math_big_pure_go
+[assembly: go.GoPositionMap("math/big/arith_decl_pure.go", "arith_decl_pure.cs", "AAoSgqaCppSCgpSmlIKClKaCpoKmgqaC")]
+
 namespace go.math;
 
 partial class big_package {

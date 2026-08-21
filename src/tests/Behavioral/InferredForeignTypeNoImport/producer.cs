@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("producer.go", "producer.cs", "AAgegA==")]
+
 namespace go;
 
 using strings = strings_package;

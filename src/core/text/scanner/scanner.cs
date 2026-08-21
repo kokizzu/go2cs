@@ -12,6 +12,8 @@
 // literals as defined by the Go language specification. It may be
 // customized to recognize only a subset of those literals and to recognize
 // different identifier and white space characters.
+[assembly: go.GoPositionMap("text/scanner/scanner.go", "scanner.cs", "ACZIkNSCgoKUgpQAQHCSgIKkAD2WAdKogoKWgoKCgqiWloKCgoKE7uKUlKaCgriC3IKCgoKCgoKUgpSUgty4gpSClIKCgoLMgoKWlrSCgsYAAhIACAKCgoKClKzSlIKCpqaigoKCgpSCgpSmoqaCgpSmtIKClKaAooCigAACEAAKAoKCgoKCgqSUgqaCgoKUgqb2ooKCgpaSgoKCgoKUgrSCtIK0gsaCgoKCuoKCgpSCloKogIKUtLSCgoKUgoKCtqaCloKCgIK4AAgGgpSkpKTKkoKCloKCgoK6goKClILGtIKUxoKWpoKUpKTWgoKClIKUpoKClqS0pKSkpNaigoKCgpSClJSUpoKCgoKClOiCguiUlIKClKiCgoKClIKCgoKmAAIQ8paChISSyIKogpSCyoKogpSCgpTGgpTGpLSCgpSkgoKUpIKCtoKCgoKClIK2goKUpOqEgq7igoKWgraCtoLkqsKUlpSolLqCgg==")]
+
 namespace go.text;
 
 using bytes = bytes_package;

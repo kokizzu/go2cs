@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("GenericFuncDecl.go", "GenericFuncDecl.cs", "AAgMguaEkoKGkoI=")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -13,6 +13,8 @@
 // ordering for the Less method, so Push adds items while Pop removes the
 // highest-priority item from the queue. The Examples include such an
 // implementation; the file example_pq_test.go has the complete source.
+[assembly: go.GoPositionMap("container/heap/heap.go", "heap.cs", "AClS1IKCvKKCrLKCgoKqooKCgoKmrsKCuIKCgoKUgriCgoKCkpSCgIKkgpSClA==")]
+
 namespace go.container;
 
 using sort = sort_package;

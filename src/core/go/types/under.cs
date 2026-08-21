@@ -3,6 +3,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/types/under.go", "under.cs", "AAscwoCCpAACEuKCgoKWgoKClIKCgriClJSssoKCgpaCgoKClIKClIKCgriClIKUlAACEOSCqICCgKaUpPw=")]
+
 namespace go.go;
 
 partial class types_package {

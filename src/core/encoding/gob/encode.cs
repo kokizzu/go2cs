@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:generate go run encgen.go -output enc_helpers.go
+[assembly: go.GoPositionMap("encoding/gob/encode.go", "encode.cs", "AC9YgoLIgqaCgqaCpoKmgqaCgpS4soKCgpSUgoKCgpSmooIAAhLigoKWgoKErLKCgpSUAAwgwoKCAAMcAAoCgoKUlKiygoKCgpTMsoKCgrqygoKCAAMU4oKosoKCgoK80oKCgoKCgrzCgoKCgrzCgoKCgrzCAAweopSkpKjSgoKmgoKClILq0oKUgoKCgoKUgpSCgpSCpuqygoKCgoKClIKCgpSCpuqSgpSClKiygoKCgoKCgpQAAhAACgaCgpSCgoKCgpaCgoKUloKUlKaCgoKCgpSCgoKCgpSq9oKUlKSkpIKUgoKCggAWMqKUgriAgqSCgoKCgpSClIC0goKWkoKigpSCyJKCooK2goLGgpSCuJKCkpSCtoKClILYgpSosoKCpIKmgpKUgpSUgpSClKiSgoKCgoKUgoKCgpSCgpSClJSCgpSokoKClIKClKa0gpSCgoKCgpSCgpTWwoKCgoKUgpSClA==")]
+
 namespace go.encoding;
 
 using encoding = encoding_package;

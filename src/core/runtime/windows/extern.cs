@@ -285,6 +285,8 @@ things:
 
 [Race Detector article]: https://go.dev/doc/articles/race_detector
 */
+[assembly: go.GoPositionMap("runtime/extern.go", "extern.cs", "AA/aBAALAoKCgpSCAAw+soKClAAMILI=")]
+
 namespace go;
 
 using goarch = @internal.goarch_package;

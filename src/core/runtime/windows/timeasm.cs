@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // Declarations for operating systems implementing time.now directly in assembly.
 //go:build !faketime && (windows || (linux && amd64))
+[assembly: go.GoPositionMap("runtime/timeasm.go", "timeasm.cs", "AA0c")]
+
 namespace go;
 
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)

@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package gcimporter implements Import for gc-generated object files.
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/gcimporter.go", "gcimporter.cs", "AC5M8oKCqoKCgoKCgoKCgIKkloKCgpaWqAAHEgAIAoKWgpiAsqSCgoKCgoKUgqaUlLiSvILmkoK6goKCgpSCqIKClKzygoKmgpSWgIKkgoKUlIKCgoKUqICCuJKClIKUppSUgoKClpSmgoCCpIyUwoKCgILEgqSChIK0tNim")]
+
 namespace go.go.@internal;
 
 // import "go/internal/gcimporter"
@@ -55,7 +57,7 @@ internal static (@string, error) lookupGorootExport(@string pkgDir) {
         ref var listOnce = ref heap(new sync.Once(), out var ᏑlistOnce);
         @string exportPath = default!;
         ref var err = ref heap<error>(out var Ꮡerr);
-        (f, _) = ᏑexportMap.LoadOrStore(pkgDir, () => {
+        (f, _) = ᏑexportMap.LoadOrStore(pkgDir, (@string, error) () => {
             ᏑlistOnce.Do(() => {
                 var cmd = exec.Command(filepath.Join(build.Default.GOROOT, binˢ, "go"), listˢ, exportˢ, "-f", exportˢ2, pkgDir);
                 cmd.Value.Dir = build.Default.GOROOT;

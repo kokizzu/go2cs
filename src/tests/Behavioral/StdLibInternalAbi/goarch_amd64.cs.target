@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("goarch_amd64.go", "goarch_amd64.cs", "")]
+
 namespace go;
 
 partial class main_package {

@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("compress/flate/deflate.go", "deflate.cs", "AF34AYKUgoKCgpSUgoKCgqiCgpSmgoKUyoKCpoKCgoKUgoKUrtSClIKogqaWgoKCgoKUgoSCloKCgoKmlLiCquKCgpaWgoKogoKCloKChIKChIKCgoKUlKaUlIKCpqaCgIKkggAEELKqooKUgoKCgoK+soKCgoKmrMSCgqiClKS0grSCgrqWgpSUgqaCgoKCgoKCgoKmgoKWhIKCgpSCgoKUgpSUlIKUgoCCpJSmlIKCgoKUgoKCgoKCloaAgoK2qIKU3IKCgpSUgoKCpoKUpoSCgsqUlICCpKaCgoKUgoKAgqSmgoL8goKCpoKCgr6ygpSCgqaygpSCgoKCgqamooKUgoKCgoKUgqaChJSCgqSCgqSCgoKCgqSCpIKCgqSkpoKCgoKUpIKCpIKClIKUgoKCgoKCyKKClIKUgoKClICCpIKClIIAAh4ADAKCgIKkAAIS4oKCgpSCgu6CAAscogACGAALBqiSrLKAlIKCpg==")]
+
 namespace go.compress;
 
 using errors = errors_package;

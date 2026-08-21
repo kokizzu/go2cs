@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("InterfaceCasting.go", "InterfaceCasting.cs", "AAwSgqiCAAwUggAIDILcggAIDIIABhiC1qKCpoKmggALIoL+goKClIKCtIKCtIKCtKqAABAEgoSEhIKCloKCgoKEgoSCgoSChIKCloKCgoKCgoyCgoKCgoyigo6CkoKKgoKUlISMgoyCjIKC2IKClAAMHICigKSCAA4YgAAWIoDogKKApIAAChaAAAkSgoKCgoI=")]
+
 namespace go;
 
 using fmt = fmt_package;

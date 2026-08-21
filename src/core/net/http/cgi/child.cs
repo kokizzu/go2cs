@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // This file implements CGI from the perspective of a child
 // process.
+[assembly: go.GoPositionMap("net/http/cgi/child.go", "child.cs", "ABk4woKClIKUpoKCgoCCtgAQCqKCgoKWgoKCgpaCgoSEgIKCgpSmgIK4goKUgIK4gpSCgoLMgIKmlIKClJSCgpS4goKClLqChK7CgoKUgpSClMqCgoCCpAALGIKmgqaCgpSClKaClIKUgq7CgpSCgoCCpIKC")]
+
 namespace go.net.http;
 
 using bufio = bufio_package;

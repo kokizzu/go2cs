@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package cookiejar implements an in-memory RFC 6265-compliant http.CookieJar.
+[assembly: go.GoPositionMap("net/http/cookiejar/jar.go", "jar.cs", "AEqeAcKmgpQAGjqSrLKssoKUqJKClIKCpKaokqyyqPKClIKClISChIKCloKCgpaCgqKCgoKUgpSCgoKUgoKUzIKAgqSAgqSUgpbcsqjigpSClIKClIKEgoSEgoKCgpSCgoKAgoK2lIKWgIKClIKCpIKCloKClP6igoKCgriCgoKmgqqigoKUgpSokoKWgoKCgqaCgpSCptyCqJLKlKqigpaCgpQABxgADQKEgpSWgoKogqSClIKClIKUgqiCgoKElKSkpgAKHJKmlgAPIoIAChjMgpamloKUlu6ogoCCppTcgpY=")]
+
 namespace go.net.http;
 
 using cmp = cmp_package;

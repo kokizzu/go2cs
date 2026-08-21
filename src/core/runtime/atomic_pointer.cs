@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/atomic_pointer.go", "atomic_pointer.cs", "AA9AABUCgoKCrLKClIKUAAIQ0gACENKClIKUAAIQ6KKClIKUqKiigpSClIKoqKKClIKU")]
+
 namespace go;
 
 using goexperiment = @internal.goexperiment_package;

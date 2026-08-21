@@ -1,6 +1,8 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/runtime_auxv.go", "runtime_auxv.cs", "AA0WgoKU")]
+
 namespace go.vendor.golang.org.x.sys;
 
 partial class cpu_package {

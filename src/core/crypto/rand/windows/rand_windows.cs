@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // Windows cryptographically secure pseudorandom number
 // generator.
+[assembly: go.GoPositionMap("crypto/rand/rand_windows.go", "rand_windows.cs", "AA4cgNiCgIKk")]
+
 namespace go.crypto;
 
 using windows = go.@internal.syscall.windows_package;

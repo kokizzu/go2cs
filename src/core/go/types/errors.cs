@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements error reporting.
+[assembly: global::go.GoPositionMap("go/types/errors.go", "errors.cs", "ABgkgoKmgIKkABMqkoKUAAISAAgCqJKAuMiCpoKClNiSgpaCgoKCgoKmlPiSggAGEIKUgoKogsyCgoKCgrqCgoKmqKiShO6CgqiCqIKCgIKU7JaCAAgUyoKCgpaCloKClAAKGoKCgqaigoKmooKCgqaigoKCzIIACxiCrLKSgpSsspS0pIKkgoKUtII=")]
+
 namespace go.go;
 
 using fmt = fmt_package;

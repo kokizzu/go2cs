@@ -5,6 +5,8 @@
 // Package testlog provides a back-channel communication path
 // between tests and package os, so that cmd/go can see which
 // environment variables and files a test consults.
+[assembly: go.GoPositionMap("internal/testlog/log.go", "log.cs", "ACRCwoKUqqKCgpSokoCCypKAgsqSgII=")]
+
 namespace go.@internal;
 
 using atomic = go.sync.atomic_package;

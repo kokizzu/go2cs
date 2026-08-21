@@ -1,6 +1,8 @@
 // Copyright 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/trace/gc.go", "gc.cs", "ADNuAAgEAAAegoKCgoKCloaGipKCgpaUtIKClIKClIKmlJSCgoKUlILGuJa0uJyCpOaYAAQUAAoCmJKigoKUgoKUyrSCoqSkgoCC2IKCpKSCgILogoKUgoKClLamtIIABxCCgsqUgpSCgpSCgriopoKCgoKUzILegoKUpoKClJSUgpSmAAQQgqiSAB9GooKClO6UgoKCgoKCAAYQgqaUgoKCuIKSgoKCgoKCgpSWprKCggAOHoKmgqaCpoKmgoKCAAsYgqaCgpSmgqaCpoKCggAYPNgAAhDygpSEpqjcgoKUpoK6goKUlpSmloKUlIKAgsrIqK7CkoIAAhDSkoKCAAIaAAoCggANHoKCggACEuKCgoKmqJKCloKCggANHJSUpqKCgpaCgqKCgIKmgoKUurqCgoK43oKCgpSCgoKUgorogoKCuIKUgoKUtLS0uoKWlqrCAA8igoKCgIKkgpSCgpSC3rqAgpSkgpS4AA0isp7ilIK4koKCgpSmlIKCgpSqooKCptaCpoKmgg==")]
+
 namespace go.@internal;
 
 using heap = container.heap_package;

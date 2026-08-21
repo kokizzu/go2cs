@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("syscall/types_windows.go", "types_windows.cs", "AIMC+gSCpqKCggAcPrSUlIKmtJSUgoIAHk7ygoKCgoKCgpaC")]
+
 namespace go;
 
 partial class syscall_package {

@@ -1,6 +1,8 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("path/filepath/symlink_windows.go", "symlink_windows.cs", "AAwesoSSlqiSgoKWhIKClISqooIAAhwACwKCloKWgpaEgoKEloKCloSCgpSShJaWhKaCgoKUgoKU")]
+
 namespace go.path;
 
 using strings = strings_package;

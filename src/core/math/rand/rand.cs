@@ -15,6 +15,8 @@
 // This package's outputs might be easily predictable regardless of how it's
 // seeded. For random numbers suitable for security-sensitive work, see the
 // crypto/rand package.
+[assembly: go.GoPositionMap("math/rand/rand.go", "rand.cs", "ADNmwqaCgoIAECiigqrCgIKCpoKokKaQppKClKiQppKCqqKClJKUgoKClKqigpSSlIKCgpQAAhgACQKCgoKCgoKCgqaqooKUgpSoABEigoKClKjIgoKClKqi3IKCgpSssoIABxKCgoKUgoK+0pSklKaygoKCgoKClJSUgoKUgoIADyKigIKokoKCgpTM7paoAAkSgqaCpoKmsoKCggACJgAQApaCgIKCAAkWgoSUvKCooKigqKCmkKqwqrCqsKigqKCooKqwAAIQ4AACFAAIAAACEvD+soKCgqaygoKCpqKCgqjCgoKCqqKClLrSgoKC")]
+
 namespace go.math;
 
 using godebug = @internal.godebug_package;

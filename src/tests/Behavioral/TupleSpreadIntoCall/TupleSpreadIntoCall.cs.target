@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("TupleSpreadIntoCall.go", "TupleSpreadIntoCall.cs", "AAwggqaCpoKogpLeggAFFIKEkoSU")]
+
 namespace go;
 
 using fmt = fmt_package;

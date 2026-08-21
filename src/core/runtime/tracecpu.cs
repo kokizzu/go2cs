@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // CPU profile -> trace
+[assembly: go.GoPositionMap("runtime/tracecpu.go", "tracecpu.cs", "ABEYsoK4ggAHEILewoKmgoKSAAoWhJKUlIKCgqaU3LKCAAgUgoKCgpaWgoKCAAIgAA0ChIKCgpSClIKogoKCgIKkgoKolsqEpqiCgoKohpKSlKiWgoKCgoKElKq0gIKSgoKCAAUQ8qaUpgAGEIKCgpSCpoKUlorCppSUgpSWlJaAuKaWgg==")]
+
 namespace go;
 
 using @internal.runtime;

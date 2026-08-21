@@ -15,6 +15,8 @@
 // used with a fixed key in order to generate one-time keys from an nonce.
 // However, in this package AES isn't used and the one-time key is specified
 // directly.
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/poly1305/poly1305.go", "poly1305.cs", "AB040oKCqLKCggACGAAJAoKCAA4ikKzigpSqooKCgqqigoKC")]
+
 namespace go.vendor.golang.org.x.crypto.@internal;
 
 using subtle = go.crypto.subtle_package;

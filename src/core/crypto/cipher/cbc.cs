@@ -5,6 +5,8 @@
 // CBC provides confidentiality by xoring (chaining) each plaintext block
 // with the previous ciphertext block before applying the block cipher.
 // See NIST SP 800-38A, pp 10-11
+[assembly: go.GoPositionMap("crypto/cipher/cbc.go", "cbc.cs", "ABo2ggARKrKClICCpK7CgpSmgKSCgpSClIKWhJSCloKCqKaCgpQADCCygpSAgqSuwoKUpoCkgoKUgpSClIK6goKWloKChIKCqIKWpoKClA==")]
+
 namespace go.crypto;
 
 using bytes = bytes_package;

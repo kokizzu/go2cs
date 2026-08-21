@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("encoding/asn1/marshal.go", "marshal.cs", "ACFCgqaCyoKmgoLcgqaCgtyCgoKUpoKCgoLcgoKClKYACBKCgoIABxKEgoKCAAsYgqaCgsqChIKCloKClqaChIK4goKWgoKWpoKEgoKCgpaWpqKClsqCgoKClIKUtpSCppS4goSClqaigoKClKaCgoKUgoKClIKWgoKClJbKgqaCgoLcgoKClKaCgoK4goKWpoLugqimgoKCqKaCgoKopoKmgqaC7oKCpqKEgoKWpqKEgoKWpoKElLS0pqaCgoKWhKaChIKEhIKChISUpLS2goKWgoSmgoKClKailKSCgpSkpKSmgKSClKSkhIKCqISCgpqigoLKlpaApKSkgoKCgqjWgoKWhICkpKSEgoKCqIKU1pSkpKTY1qKCpoKWgpaCgoSC3oKCqIKCgpaEgoSWgoKWgpaClpS4goKClIK4toK4goKUAAYQgpaEgoKWhIKCgqSUloKEhITeqJaEAAIcAAsCqqKCgpSCgg==")]
+
 namespace go.encoding;
 
 using bytes = bytes_package;

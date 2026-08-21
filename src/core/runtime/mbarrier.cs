@@ -9,6 +9,8 @@
 // individual pointer writes is gcWriteBarrier and is implemented in
 // assembly. This file contains write barrier entry points for bulk
 // operations. See also mwbbuf.go.
+[assembly: go.GoPositionMap("runtime/mbarrier.go", "mbarrier.cs", "ABfEAgCNAQKClLgACBKCggADFAALCAACEgAMCgACIAAPAoKClIKClIKClKiSAAIaAA0CuJSWgoIABB4ADAKCgpSC3oKCgoKUgoKUgoKWgpaC3oK4griCAAIgAA8CgpQAAhwADQK4lAACGAAJAqiyypSosoKmlAACJAAQBII=")]
+
 namespace go;
 
 using abi = @internal.abi_package;
@@ -161,7 +163,7 @@ partial class runtime_package {
 internal static void typedmemmove(ж<abi.Type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src) {
     ref var typ = ref Ꮡtyp.DerefOrNull();
 
-    if (dst.Value == src.Value) {
+    if (dst == src) {
         return;
     }
     if (writeBarrier.enabled && typ.Pointers()) {
@@ -320,7 +322,7 @@ internal static nint typedslicecopy(ж<_type> Ꮡtyp, @unsafe.Pointer dstPtr, ni
     if (goexperiment.CgoCheck2) {
         cgoCheckSliceCopy(Ꮡtyp, dstPtr, srcPtr, n);
     }
-    if (dstPtr.Value == srcPtr.Value) {
+    if (dstPtr == srcPtr) {
         return n;
     }
     // Note: No point in checking typ.PtrBytes here:

@@ -21,6 +21,8 @@
 //
 // NOTE: This package is a copy of golang.org/x/sys/windows/registry
 // with KeyInfo.ModTime removed to prevent dependency cycles.
+[assembly: go.GoPositionMap("internal/syscall/windows/registry/key.go", "key.cs", "ADWKAZIAAhDSgoKUgoKClKjogoSmgoKCkoKCgpSUgoKUgpSUtAAFEPKCgpSClKiSAAwckoKmgpQ=")]
+
 namespace go.@internal.syscall.windows;
 
 using runtime = runtime_package;

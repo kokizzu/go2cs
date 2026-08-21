@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("text/template/funcs.go", "funcs.cs", "ABlOwgAlQKKClKiSgoKokoKClIKClICCpLyigrqkgKSkpKTakoKUgsaktqgACAKCgoKAgraAgqTqooKClJSClIKClKaClKSkqJKClKSkpKSClAACEPKCgpSigoKAgqSUgoKUpIKClICClMikxgACEgAIAoKClIKUgpSClKSktoKCgoKUpoKUgqaClKyygoKUlKSqsqrCgoKUgoKWgIKkgoKCgpSUgqaCopSCgpaCgIK2quKCgIKAgpTYgoKU6pKCqsKqwqiSABIygpSkpKSkpKSokoKUlKSqooKCgqaosoKClIKigoKClJS0tILYlKSkpKSkpIKUgpSClMiCpqikgqiSgoKClIKCgpSClJS0tLaUpKSkpKS2qKSCgpSopIKClKikgoKUAAoekoKCgpS0tLS0tLS0goKUqKSClIKCqsIADSaSgoKElJSEppS0tLS0tLS0goKC2IKClJSUlKikgpSCgqaClKSqwqrCAAIU8oKUgpSCgoKCppQ=")]
+
 namespace go.text;
 
 using errors = errors_package;

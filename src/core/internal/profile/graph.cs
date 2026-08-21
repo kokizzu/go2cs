@@ -15,6 +15,8 @@
 // Package profile represents a pprof profile as a directed graph.
 //
 // This package is a simplified fork of github.com/google/pprof/internal/graph.
+[assembly: go.GoPositionMap("internal/profile/graph.go", "graph.cs", "AD6KAaKClKqigpSqoqrSgIKCgoKUgpSmgoIACRaSqJKCgpSAgqaW+tQACC6ygoCCuICCpqaCpoKmgoKCzIKCgqamgqaCgoKCggAQKKKClKjCgoKCgpKCgpSClIKUgpSUAAcSgoCCpIKCgoKCgoKmgoKCpoKCloKmlKimlIKCgpSClIKUlAAGEqKUpKQACRKCgpS4goKUvtKCgoKCgpSCgpSUpoKCgpSmsoKAgqaAgqSmgoKUyoKowoKClKaUgoKUgrqShISCloKClIKUgpSUrLKCgpaCqJKCgpTKgqaCgpaCgoKWgoSmgqaCgpQ=")]
+
 namespace go.@internal;
 
 using fmt = fmt_package;

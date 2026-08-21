@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements type-checking of identifiers and type expressions.
+[assembly: global::go.GoPositionMap("go/types/typexpr.go", "typexpr.cs", "ABksAAgCgqiClLiAgoKUtpSkgtqCgqa6goKmgJKkAAkWgoKClMyAgqaUgqaCgpSCgoKUlJSCtoKClLyylIKClLaCtoK2xqaqoqyygoKq1ILMgoCCgoKClAAHFuKCgoKClIKs4oKCgoKUpoLaogAICvKCgoKCgoKmlIKUusqShJSCgsi02IKElIKCyLT4goKqxoKCgoKWgoaAooKUpIKCzrK2goKCpoKCgoKmgoKCpoKCgqaChIIAABDygoKClKimgoSCuKSkuIKCtpKmgoLmooKYopS0tMQACArigoKCgpSogpaCgoKUgqiCgpaAgqaCgqiWyISCgJSCgpSU7pYACgz6gIKCgoKUgIKCyIKCgoKUloKAgoKAguyCgpSUgqqigoKCgpSCpg==")]
+
 namespace go.go;
 
 using fmt = fmt_package;

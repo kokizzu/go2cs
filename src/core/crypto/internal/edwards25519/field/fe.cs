@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package field implements fast arithmetic modulo 2^255-19.
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe.go", "fe.cs", "ACtQsoLMsoKoss6CgoKCqISCgoKCgoKClISo0oKCgoLKqPaCgoKCgqiSrLYACgSCgoKCgoKEgoKUhIKClISCgpSEgoKUhIKClISCgpSEgoKUhIKCgoKEqMKCAAUWAAoCgqiClIKUgpSCpoKEqJaipqKShIKCgoKCgoKUqKiygqiQptKCgoKCgoKosoKCgoKCgoKCgoKCgoKCgqiSqLKokoKokoKowoKCgoKCgoKCgqaowoKCgqiypIKCgoKCgoKCkpSCgpKUgoKSlIKCkpSCgpKUgoKSlIKCkpSCgoIABhgACQKWgoKChISCgoKElISC")]
+
 namespace go.crypto.@internal.edwards25519;
 
 using subtle = go.crypto.subtle_package;

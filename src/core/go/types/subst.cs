@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements type parameter substitution.
+[assembly: global::go.GoPositionMap("go/types/subst.go", "subst.cs", "ABEoooKCgpSqooKCgpSmgqaCgIKkAAIU8oSCqJSkqO4AChaClgAGEIKCwpiSnoLCyIKCyIKCyICCgoLYgoLIAAIghIKCAA0CAA0agrjIgoKCgoKCgoIADRyWkpTIgoKCyIKCAAQSgoLSloKeggAICsi2pqyygpSmooKAgramopKCgqaigoCCtqaygoKAgqaCgoKUtqaigoCCtqaikoKCprKCgoCCpoKCgpS2prKCgoCCpoKCgpS2prKCgoCCpoKCgpS2AAISAAkCgoKCgriCgpSSgqY=")]
+
 namespace go.go;
 
 using token = global::go.go.token_package;

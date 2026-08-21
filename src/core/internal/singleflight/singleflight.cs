@@ -4,6 +4,8 @@
 
 // Package singleflight provides a duplicate function call suppression
 // mechanism.
+[assembly: go.GoPositionMap("internal/singleflight/singleflight.go", "singleflight.cs", "ACte8oKClICCgoKCpIKCgoSCqsKCgoKUgIKCgoKkgoKChISowoSCgoKUgpQAAhAACQKCgoKClIKClA==")]
+
 namespace go.@internal;
 
 using sync = sync_package;

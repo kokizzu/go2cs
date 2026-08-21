@@ -1,6 +1,8 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20poly1305/xchacha20poly1305.go", "xchacha20poly1305.cs", "ABMw4oKUgoKmgqaCpoKCAAYQgpaCgpaChKaCgpSClIKWgoKWgoQ=")]
+
 namespace go.vendor.golang.org.x.crypto;
 
 using cipher = go.crypto.cipher_package;

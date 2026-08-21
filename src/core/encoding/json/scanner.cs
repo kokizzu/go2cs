@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("encoding/json/scanner.go", "scanner.cs", "ABQssoKC3NKCgoKCpoKUAAkUgAAkUoKUgoKmtIKUAC9YooKCgqrCgpSClIKClIKU2qKCgpSqooKCgoKUuIKokoKUgpTYsoKUlIKkgqSCpIKkgqSCpIKkguSSgpSosoKUgoKClNiygpSCgpT6woKUgoKUgoKUgpSCgoKUpIKCgpSCgpSkgoKUgoKUpNzSlJTYsoKClIKClIKU2LKUgqSCpNiygoKmqLKCgqaosoKCpqiygoKm2LKCgpSCgpSqwoKClKiygoKUgoKU2sKCgpSqwoKUgoKUqsKCgpTawoKClKyygpTYsoKClNiygoKU2LKCgpTYsoKClNiygoKU2LKCgpTYsoKClNiygoKU2LKCgpSosoKClKqiqJKCgqikgpSCqII=")]
+
 namespace go.encoding;
 
 // JSON value parser state machine.

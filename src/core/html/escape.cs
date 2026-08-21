@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package html provides functions for escaping and unescaping HTML text.
+[assembly: go.GoPositionMap("html/escape.go", "escape.cs", "ADlw4qqUgoKWgpKClIKCgoKCloKCgoKCgoKkgqSCtoKUgpSWkoKWlLaWvIKClIKUgpSWgsiiooKCpIKClIKAguqCggALHsIAAhDSgoSCloKCgoKUlIKCloKUlA==")]
+
 namespace go;
 
 using strings = strings_package;

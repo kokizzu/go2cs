@@ -21,6 +21,8 @@
 //     slow handler implementation is skewing the results.
 //
 //   - We also test the built-in handlers, for comparison.
+[assembly: go.GoPositionMap("log/slog/internal/benchmarks/benchmarks.go", "benchmarks.cs", "")]
+
 namespace go.log.slog.@internal;
 
 using errors = errors_package;

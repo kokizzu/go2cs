@@ -6,6 +6,8 @@
 // signal_recv thread. This file holds the non-Darwin implementations of
 // those functions. These functions will never be called.
 //go:build !darwin && !plan9
+[assembly: go.GoPositionMap("runtime/sigqueue_note.go", "sigqueue_note.cs", "ABEcgtaC1oI=")]
+
 namespace go;
 
 partial class runtime_package {

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || (js && wasm) || wasip1 || windows
+[assembly: go.GoPositionMap("internal/poll/fd_posix.go", "fd_posix.cs", "AA0gooKUqNKAgqSC2LKAgqSC3LKAgqSC3uKAgqSCggAFFPKCgoI=")]
+
 namespace go.@internal;
 
 using io = io_package;

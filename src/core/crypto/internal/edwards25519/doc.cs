@@ -19,6 +19,8 @@
 //
 // (Note that filippo.io/edwards25519 and github.com/gtank/ristretto255 are not
 // maintained by the Go team and are not covered by the Go 1 Compatibility Promise.)
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/doc.go", "doc.cs", "")]
+
 namespace go.crypto.@internal;
 
 partial class edwards25519_package {

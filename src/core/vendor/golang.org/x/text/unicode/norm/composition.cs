@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/composition.go", "composition.cs", "ABpMoqqigpSCgIKCAAkSgoKUrsKClIKClIKClKaCABg2goKCgqaCgoKCpoKCqJKCpqKClIKCqLKCgoKUqJKCgoKUgqqigoKClIKssoKCgpSCgpSmgoKCggAIIuKAgoKkgpSCruKAgqSUlL7SuIKCgpSClKqigqiSqJKCgoKCqJKCgqiSgoKqooIALUCCgpSCgpSClKSkpKSmgoKUgoKUgpSkpKSkqKSmgoKCqqKCgoKCgoKCgpSssoKCgoKCgryigoKCgoKClJSClIKCmMzEgtis1t6CgpSCgoKmgpTKgoKCgoKUlIKCgoK4gpQ=")]
+
 namespace go.vendor.golang.org.x.text.unicode;
 
 using utf8 = go.unicode.utf8_package;

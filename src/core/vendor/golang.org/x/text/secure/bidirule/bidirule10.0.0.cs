@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build go1.10
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/secure/bidirule/bidirule10.0.0.go", "bidirule10.0.0.cs", "AAoSgg==")]
+
 namespace go.vendor.golang.org.x.text.secure;
 
 partial class bidirule_package {

@@ -13,6 +13,8 @@
 //
 // Operations involving private keys are implemented using constant-time
 // algorithms.
+[assembly: go.GoPositionMap("crypto/ed25519/ed25519.go", "ed25519.cs", "AClgwoKClM6SgoKokoKClKyyAAUYAAkCgoKAgqSUgJKkgIKkgoKkgJKkgoKktAAOIJCu0oKWgoCCpoKChK7UgoKmgoCCpoKCgpSEhIKqxoKCAAoggoCCpISCgoKUhIKCgoKUgoKCgoKCloSCgoKClIKCgoKCgoKWhIIAAhDSAAYcAA0ClICSpICCpIKUpICSpIKUpJKUpMiCgIKmgpaCgpaCgoKClIKCgoKCgoKWgoKogoQ=")]
+
 namespace go.crypto;
 
 using bytes = bytes_package;

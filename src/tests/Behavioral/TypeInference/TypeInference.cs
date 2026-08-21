@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("TypeInference.go", "TypeInference.cs", "AAoQguaCgpbGgoSUAAIQgoKChII=")]
+
 namespace go;
 
 using fmt = fmt_package;

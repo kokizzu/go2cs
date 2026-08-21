@@ -16,6 +16,8 @@ for a particular platform, cgo-based (libc-backed) code is used.
 This can be overridden by using osusergo build tag, which enforces
 the pure Go implementation.
 */
+[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "ADiKAYLOgs6CzoI=")]
+
 namespace go.os;
 
 using strconv = strconv_package;

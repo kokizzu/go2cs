@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("net/http/servemux121.go", "servemux121.cs", "AB0+ooKCABAk0oKEgpSClICCpoKUgoKCloLogoKWgqaCgoKokoKUqOa4gIKmuoK4gIKmgoKClqoACAKCloKUgpSClNq0goK6goKmrvKCgoKClIKCrLKEgoCCuIKClIKAgrg=")]
+
 namespace go.net;
 
 // This file implements ServeMux behavior as in Go 1.21.

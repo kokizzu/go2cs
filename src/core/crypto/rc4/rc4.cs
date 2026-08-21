@@ -7,6 +7,8 @@
 //
 // RC4 is cryptographically broken and should not be used for secure
 // applications.
+[assembly: go.GoPositionMap("crypto/rc4/rc4.go", "rc4.cs", "ABsygqqigoKUgoKUgoKClK7CgpSqooKUgpSCgoKCgoKCgoKU")]
+
 namespace go.crypto;
 
 using alias = go.crypto.@internal.alias_package;

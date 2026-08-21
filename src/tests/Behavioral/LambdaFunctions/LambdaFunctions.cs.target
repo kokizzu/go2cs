@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("LambdaFunctions.go", "LambdaFunctions.cs", "AA0OgqaC1oKCgriCgpT2hoKClIKClIKClISCgoKGgoKCggAFGoKClKaCgoKCgoKU")]
+
 namespace go;
 
 using fmt = fmt_package;

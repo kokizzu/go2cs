@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("DerefPointerToField.go", "DerefPointerToField.cs", "AA0YgoKClKiCpoKSkoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

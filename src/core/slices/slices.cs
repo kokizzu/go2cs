@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package slices defines various functions useful with slices of any type.
+[assembly: go.GoPositionMap("slices/slices.go", "slices.cs", "ABAoAAkCgpSCgqYAAhAACAKClIKCgqYAAhQACgKCgpSCgIK2gpQAAhAACAKCgpSCgIK2gpSq0oKCpqrCgoKmqMKqwgACFAALAoSCgpSCgpTKgoKClAANILoABRDe3s7eAAIQ8oSCloKCgqzSgoKmgoCCgraCrgAIAoSClIKCgpSWgpSCgoKWhJSCgoIACxyUgoIADR6EgoKCgpSCgoKCAAYQgoKCrOQAAhAACAKClIKCgoKCgqiCpqzSgpSCgoKCgoKogqau4oKUgIKkqLIAAhLigoKkgqiSgpSCgrisooKCgriosoK60oKCgoKmgoKUAAIQ8oKWgoCCpoKCgpQ=")]
+
 namespace go;
 
 using cmp = cmp_package;

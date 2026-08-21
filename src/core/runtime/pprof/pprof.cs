@@ -70,6 +70,8 @@
 //
 // For more information about pprof, see
 // https://github.com/google/pprof/blob/main/doc/README.md.
+[assembly: go.GoPositionMap("runtime/pprof/pprof.go", "pprof.cs", "AO4BwgOCgpQAChaCAAISAAgCgoKClIKUuILYsoKC2LKChIKClobYkqjSgoKClAAFKAAVAoKUgpaCgoKUloKCgpTa4oKCAAUkABECgpSCqIKCgpSWhMqAooCigAAMHrKCgoKmgoKCpu7UgoKCgoSEgoKCgoKmgoKUgtqkkoKCgoKUgoKUlIKCgoKCgoKClJaElIKCgoKUqIKCgoSCgoKmgoKCgpKCuJSCAAgSgKKAooKSkoKU2qKCgoKCgoKCyIKUgqamgpSuwqiSgqiS2qKmgoKmggABFPKCuIKCgoK6gpaIgoKEgoKCgoKCzAAGEIKCgpa6goKmgpSCuoKCgoKCgoKEgoKCgoKEgoKCgoKEgoKCgoKCgpaEgqiSgtjIgrqS2JKClKa4goKCgoKUlJSUgqaO4oKEuIKCgoKCugAHEICigKKAAAsmAA0UAAkEgoKCpoKUgoKCAAUQ5IKCgoKCgoCCpIKmppSCrNKChIKUgoLYkoKokoLYktiS6JKCgoKCgoKCqIiCloKChIKCgpSCgoKCgoKClIKCqIKUqKampqampqY=")]
+
 namespace go.runtime;
 
 using bufio = bufio_package;

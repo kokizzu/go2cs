@@ -4,6 +4,8 @@
 //go:generate go run gen.go
 
 // Package imageutil contains code shared by image-related packages.
+[assembly: go.GoPositionMap("image/internal/imageutil/imageutil.go", "imageutil.cs", "")]
+
 namespace go.image.@internal;
 
 partial class imageutil_package {

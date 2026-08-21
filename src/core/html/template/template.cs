@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 global using FuncMap = go.text.template_package.FuncMap;
 
+[assembly: go.GoPositionMap("html/template/template.go", "template.cs", "ADNc4oKCpIKClAAFKgAVAoKq4oKUgoKClNjSgoKCgoKUgILGlAAFFAAJAoCCpAACFPKCgpSsAAkCgoKCgoKUgpSClIKUgpTcsgACHAAPAoCCpoKCzIKCgoKCgpSClN4ACAKAgqaCgoKClNyCAAUWAAwCgoKClIKClIKC3IKCgoKClIIABxDYkoKC3IIAAhQACwKCgtiS3ICCgqSCqJIAAhTyggACEPKCquKCggAFENKClAACGAALAgACFgAKAqrSgIKmlJSCgoKUjuKClIKUlIKCpgACGAAJAgACGgAKAqiSgIKkgoKUgpSssq7iruKmgoKCgoKUgpSUpsKCgqaCsoKC")]
+
 namespace go.html;
 
 using fmt = fmt_package;

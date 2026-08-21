@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("AnonIfaceThroughPointerAdapter.go", "AnonIfaceThroughPointerAdapter.cs", "AAwagNKAABsIgoaAgpSogIiUqICClA==")]
+
 namespace go;
 
 using fmt = fmt_package;

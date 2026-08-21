@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/internal/sys/consts.go", "consts.cs", "")]
+
 namespace go.runtime.@internal;
 
 using goarch = go.@internal.goarch_package;

@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/syscall_windows.go", "syscall_windows.cs", "ABoqgsqCuIKClAAYOIKClIKClAASKqIACRSUgAAHEKaUggAIFoLKgriWzO6CproAAhIACAKApraStoKCtoKCgoKm2AACENKClNyCAAcQAAEWAAkCgpioqwAEEAAHGgAIApSWgpSGkoK4goSClIKUgLikuLqCgoKaooKWhJaAgoK4gpSCgoKUgoKChIIAFS6SgoaSgoKClKSCpNyCqN6ClLjewoKCgpQAAhAACAKCgoKUAAIQAAgCgoKClKqigqqigqqigqqigqqigqqiggAJGMKCzIKCgoKUuII=")]
+
 namespace go;
 
 using abi = @internal.abi_package;

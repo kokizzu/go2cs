@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build amd64 || arm64
+[assembly: go.GoPositionMap("crypto/elliptic/nistec_p256.go", "nistec_p256.cs", "AA8copSUlJSCgoKU")]
+
 namespace go.crypto;
 
 using nistec = go.crypto.@internal.nistec_package;

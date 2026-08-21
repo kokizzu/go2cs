@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("a_boxed.go", "a_boxed.cs", "AAgkgoKS")]
+
 namespace go;
 
 using CrossPkgBox = CrossPkgBox_package;

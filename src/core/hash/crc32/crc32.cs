@@ -10,6 +10,8 @@
 //
 // See https://en.wikipedia.org/wiki/Mathematics_of_cyclic_redundancy_checks#Reversed_representations_and_reciprocal_polynomials
 // for information.
+[assembly: go.GoPositionMap("hash/crc32/crc32.go", "crc32.cs", "AFKoAYKEgoKmgpoADRaCgoKmggADEKKUgqSCpAAKHtKClAACENCkgKSApIDegoKCgoL2goKUgpSClIKmgpSkgpSkyrampoKmgKSCgqqgqKKCqLKCgoKCpg==")]
+
 namespace go.hash;
 
 using errors = errors_package;

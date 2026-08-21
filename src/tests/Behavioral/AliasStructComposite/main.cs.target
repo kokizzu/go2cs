@@ -1,6 +1,8 @@
 global using alias = go.main_package.Inner;
 global using words = go.array<ulong>;
 
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABAggKKAooAAAhCigoKUqqKCgpTOgoKCgoKCiIKGgoKUhII=")]
+
 namespace go;
 
 using fmt = fmt_package;

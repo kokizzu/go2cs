@@ -5,6 +5,8 @@
 // Package crc64 implements the 64-bit cyclic redundancy check, or CRC-64,
 // checksum. See https://en.wikipedia.org/wiki/Cyclic_redundancy_check for
 // information.
+[assembly: go.GoPositionMap("hash/crc64/crc64.go", "crc64.cs", "ACRMgqaCgqqigpSkpMiCgoKCgoKUppSmgoKCgoKCgqYACBzQpICkgKSA3oKCgoKC9oKClIKUgpSCpoKClIKCgqTalKaCggAAELiClKiSpoKCpoCkgoKqoKaygoKCgqY=")]
+
 namespace go.hash;
 
 using errors = errors_package;

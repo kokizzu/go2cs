@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Implementation of Server
+[assembly: go.GoPositionMap("net/http/httptest/server.go", "server.cs", "ADx4goKCgpSUgoKAgrYADhyCgriCgoKmqqKCggACEuIACA6ygpSClIKCgoKCyrKClIKUgoKWgoKUlIKCgpSUgpSCgpSCgtyCgoKqooKCAAYS4oKCgoKCABImgriCpLqAgriCgIK4AAgGwoKCgoKClNjSgoKCgpQABhCCkoLo/sKuwqaCgqKC7MKCsoKElICCpIKYgoLqtoCCgpTGgIKClKSCuoCipsaC/qCoooKC")]
+
 namespace go.net.http;
 
 using tls = crypto.tls_package;

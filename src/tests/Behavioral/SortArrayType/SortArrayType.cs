@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("SortArrayType.go", "SortArrayType.cs", "ADGMAYIADyiCAAgSgAAGGIKmgqaCpqKCpoKmgqaC1rKEkoSEgoKCloKCgpaE5oKCgoSChIKChIaChgAaOISChIKKgoqCgoqCjJKChA==")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -13,6 +13,8 @@ validation is done when parsing object files. As such, care should be taken when
 parsing untrusted inputs, as parsing malformed files may consume significant
 resources, or cause panics.
 */
+[assembly: go.GoPositionMap("debug/plan9obj/file.go", "file.cs", "ADuIAZKokAAVKoKCgpSCqJKCgpSCgoKUgqyygoKClKaCgpSk+qKEkoCCpIKCloKAgqYACBKCgIKkgoKWAAYWhISCgsqCgoKWpoKCgoKUgqaCgpSCloKUgoKGkoKCgoKmlIKCgoLYgpSCgoSUqqKCgoKUgpaCkpKCgoKCgpS0gpKCgpSAgqTGlLSUgpYAChCSgoKWgoKWqqKCgqY=")]
+
 namespace go.debug;
 
 using binary = encoding.binary_package;

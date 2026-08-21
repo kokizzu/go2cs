@@ -1,5 +1,7 @@
 global using Int32 = go.sync.atomic_package.Int32;
 
+[assembly: go.GoPositionMap("alias.go", "alias.cs", "AAsmgA==")]
+
 namespace go;
 
 using atomic = sync.atomic_package;

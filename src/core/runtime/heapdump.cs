@@ -6,6 +6,8 @@
 // finalizers, etc.) to a file.
 // The format of the dumped file is described at
 // https://golang.org/s/go15heapdump.
+[assembly: go.GoPositionMap("runtime/heapdump.go", "heapdump.cs", "ABMqkgAAEOK4gpYAJk6CgpSCgoKWgoKClIK4oqaCggATKpKCgoKCgpSCgqaCgpS6koKmgoKCuIKosoK6goKUgpSClILMgpSWgoKCgoCClIKCgoKCpKiSgoKCpoKCgqaigoKCgoIADByygoKC+rKWgoKCgpS4lISCgpSogoKCgoKCgoKCgpSWgqaCgrqUgoLIgoKC2pSWgoKCgoKClJSmoqKCgoKUgoKWgoKCgoKCgoKCgoKCgoaSgoKCgoKCqIKCgoKCgoKClJSUlIKCgoKCgoKC6IKWgoIAAxKtggAFFrKCgoKCgqaUqIKCgpaCgoKWgpSCgpSCgswACQ6UhIKClIKCgoKWgoKogoKClMqCgpKClJSCkoKClIKClIKClIK4goKCgqaigoKCgqaCpoKCgoKCupK6goKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKUpoKCgoKCgoKCgoKCgoKCgoKUgoKCpoKCgoKCgoKClIKClIKCpoKmlISCgoKUgoKUgoKCgv6CloKCpoKCgoKCgoKCgoKCpoKEgpaWloKCgpaosoLWlIKCgpSCgoKUpoKCgoKCgIKkgpQ=")]
+
 namespace go;
 
 using abi = @internal.abi_package;

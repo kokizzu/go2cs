@@ -2,6 +2,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("slices/zsortordered.go", "zsortordered.cs", "AAwYsoKCzsKCgoKClIKUgpSCuKKCgpaCqIKCAAMUAAgChJqChIKCqIKCqIKCloKCuIKogoLMgoKCloKEkoKCgoKUgoIABBLigpSClIKUgoKUgoKEgoKUgpSClIKClIKqwoKUgoKUgpSClIKClKiymIKCgpaCloKWloKCgpS4goKClLiqwoKCgoSCgoKUAAQU8pqEvoKUgoKmlpSkpMqygoKUqLKCgoKosqaigoKCgoK4ooK4ooKSgoKClISCgoKCgpSAgqQAAy4AGAi4goKCgoKUuIKUzLiCgoKCgpS4gpSWgoKSgoKUgpSEgoKClKiCgpSClIIAAxDigoSCgoKUgrg=")]
+
 namespace go;
 
 using cmp = cmp_package;

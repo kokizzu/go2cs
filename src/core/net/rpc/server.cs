@@ -124,6 +124,8 @@ client.
 
 The net/rpc package is frozen and is not accepting new features.
 */
+[assembly: global::go.GoPositionMap("net/rpc/server.go", "server.cs", "AEuIA5LekoK4AAIcAAsCqqLugoKCgoKClIKCgpSCgoKUloSCloKClJSCloCCpKqigoKSgpSCpoKClKaCgoKUpoKCgpSmgoKUpoKClKaAgoKUpJQAChCilIKCgpSCgoKClIKmsoKCgqbSgpSCgoKUlIKCgpSCAA0WgqaC5qKAgqaClKSAgqaClKSmgpSUggACEuKC3NqigoKCooKClIKmgoKUlILIgqqigoKCgqaCgpSUgqaigoKClIKUgqaygoKCpqKCgoKUgpSCprKCgoKmAAgCgoKCpoKogoKUgqaAgqSCloSUpKSmAAgEgoKCgoKUgrqEgoKClIKWgoKClIKCgpTewoKCgoKUupCoogASNOKqoqqirLAACwyygoKCgpSCgoKUgqyygqyy")]
+
 namespace go.net;
 
 using bufio = bufio_package;

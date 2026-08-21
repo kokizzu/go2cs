@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Serving of pprof-like profiles.
+[assembly: go.GoPositionMap("internal/trace/traceviewer/pprof.go", "pprof.cs", "ACsykqKChJKCgpSCgoKUgIKCpJaCgoKUkoKUgoKUgoCCgqSAgoKkgIKCpIKAgoKkgoIADBSCAAcQgoKCgoKCgoKC3IKUAAkUgpSUyuaCgoKUgoCCpA==")]
+
 namespace go.@internal.trace;
 
 using bufio = bufio_package;

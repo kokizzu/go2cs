@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("compress/gzip/gzip.go", "gzip.cs", "AC5iAAgCggACEuKClIKCpoKCgpQAChzC2JKClIKCgpSC2tSCgoKUgqaCgoKUlJSCpoKCqqKClJSCgoKClIKUgpSmlIKklIKCgpSCgoKmgoKCpoKCgqaCpoKCggACFgAIAoKUgpSCgoKmgqyygpSClIKCgoKmgoKUgoKC")]
+
 namespace go.compress;
 
 using flate = go.compress.flate_package;

@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("TypeAssert.go", "TypeAssert.cs", "AA8OhIaGhOyChICCpoIACQaChoCClKiAgpQACQikgoCCuIaChoY=")]
+
 namespace go;
 
 using fmt = fmt_package;

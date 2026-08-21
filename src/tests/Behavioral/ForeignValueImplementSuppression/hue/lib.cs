@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA4sggAGEIKCAAQSgAAGFoA=")]
+
 namespace go.ForeignValueImplementSuppression;
 
 partial class hue_package {

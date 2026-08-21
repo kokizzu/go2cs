@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/mgcpacer.go", "mgcpacer.cs", "AKIC4gWigoKCggACFAAKAoKCgoKCgoKCgt6CgoKCypSUlKiCgqiCgpbKgtzKuoKEgoKCAAg+ABgCgqaUgoKoqMyCggAKFoIABxKCgpSUiLKWAAgUggAIEqiCpgAJFoKCgqz2lpaUgpYACBKUgoIAHTyCzoKCgoKmgoSCgoKCgoKCggADEgAOFoKmgpSCgpSCgoKClIKClIL+0oLegpSClsqoggALGJaCgoKCloK6praC3IKUgqaogoKCgoKUAAIQ8oKCgoKCloKCggAGFOKUgqSkgqTIgoKCgpSCpqaCuLiigoKUgoKCuIKokoKuAAkEloCCuoLK3AAAHAAMAoK2qLSygoKCgoIAPH6WhpKClsqouoKmlIKUpoKUAAk+AAkCzsrOggAIFIKCAAoYgoKUhpKCgpSUgoKCgoKUAAIoABMCgpamysyCgILIgpQAFzKu4oKWgoKUgoSoxIKCgoK6gpbWgoKClICCpK7igpaCgpaoxIKCgqaClIKU5oKCgpSCgoKUAAUaAAoCgoKCppSCgpSCggAEGgAIAoKCqJKCgoKCgpSCggAEFNKCgoKCgpSCggAEHAAJAoSWgrqCgoKWgoI=")]
+
 namespace go;
 
 using cpu = @internal.cpu_package;

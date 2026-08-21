@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // This file provides the generic implementation of Sum and MAC. Other files
 // might provide optimized assembly implementations of some of this code.
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/poly1305/sum_generic.go", "sum_generic.cs", "ABA+AA8CkoKmgoKCABQwwoKCgoKClIKClICCgqSClKyygoKUAAkYsoKCggAIEoKCpoKCgoKUpoKCggACFPKChIIABxKCgoKElIKChIKChAAWMoKCgoKC3oKUgpaCgoKEgoKCAA4igpiCgoSEgoLOAAUSkAAJGNLOgoKWggAGEIKEgg==")]
+
 namespace go.vendor.golang.org.x.crypto.@internal;
 
 using binary = encoding.binary_package;

@@ -9,6 +9,8 @@
 // Note that it does NOT provide access to the build configuration used to
 // build the currently-running binary. For that, use runtime.GOOS etc
 // as well as internal/goexperiment.
+[assembly: go.GoPositionMap("internal/buildcfg/cfg.go", "cfg.cs", "ADpYkoKCuIKAgqTWgoCkpKSktIIABxCCgoKUlNaimIKUlISCgoKClIKClpSkpKSCuIKUAA4egoKClIKUprKagpSCgoKCloKCgpaWlKaEpKSm1qKCqrSCloKWhpaChIK2lOiCgKS0gtaCgKS0gtaCgKSkpLSC1oKApKS0goKGggAHEIKCgpSClNaigpSkyMbWgqaCgoKmgtyClNqilKSkpKSkpKSkpoKUpIKClKSCgpSkgoKCgpaSgqakpKSCgpSkgoKUpIKClIKUpA==")]
+
 namespace go.@internal;
 
 using fmt = fmt_package;

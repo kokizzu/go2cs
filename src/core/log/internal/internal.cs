@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package internal contains definitions used by both log and log/slog.
+[assembly: go.GoPositionMap("log/internal/internal.go", "internal.cs", "")]
+
 namespace go.log;
 
 partial class internal_package {

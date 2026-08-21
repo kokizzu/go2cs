@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/traceback.go", "traceback.cs", "AEz0AQAKDubEgAANHKaSgoKCgqaCgoK6goKCgrqCgoKUggAGENyCloKCgoKUgpSClJYABhCCpoIABTAAFwKChIKmgqiCypS4utyCnoKCgoKCgoKCuAAOEIKUgoKCgsaClLqUABs2goKUlIKCgoKmgoK6gpQAEiiClgAJFoKCggAKFgAICqKCgpaCgpSCyoKCypSCgpSClIKClpSCgpaCgpSogoKCgoKogoKCgoKCpKjcsgAoVIKCgoIAAxwACgKUpq7CppaCgoKCgqYAAhgACwKCgoKCloKCtgAHEIKUuIKmqJKCgpaCgoKCloKClIKUgpaSlIKCgpSmgoKogoKCpoKCgoKCgpSkgoKCpKSCpIKkgoKCgoK23sSCgpSCgpSClKiSgqqigoKUgqa0goKCuIKCgoKUgoKClIKCgpSmggACFgAKApSClKa07oKCgoSWlIKClKaCggAtXoKCgoKCgpTKkoKCgoLIlLiClISClIIAAxIACwaClJSCgpSCpoKWgoKCgoKCgoKCgoKWgIKkpoLKgoKClIKUgoKCgpSCpqiAgoKCgoKCgIKktoKCgriUgpSCyKqigoKCgqaCpoKmAAMQwoKCgoKCgpQABDSCgoKqooKClKqigpSWgpbegpaqtIKClIKogoKUgoKUgrqqxgANHKKEhIKGkoKUqIKYkoKUgoKCgpSmgoKUgpSClKaCloKCgoIACBSSgpSCyoKClAAEENKClJSClIKmlIKUgqaClIKogoKUpKSkAAMYAAkEgoKUgpSmppSUAALIAgChAQKCloaWgoKoggAhQpKCgoKUlJaAkoKCgpSUgqzSgoKAgqSmgriUlIKClIKCzJKCppSClIKUqJKClIKmlNqClIKU")]
+
 namespace go;
 
 using abi = @internal.abi_package;
@@ -1477,7 +1479,7 @@ public static void SetCgoTraceback(nint version, @unsafe.Pointer traceback, @uns
     if (version != 0) {
         throw panic("unsupported version");
     }
-    if (cgoTraceback != nil && cgoTraceback.Value != traceback.Value || cgoContext != nil && cgoContext.Value != context.Value || cgoSymbolizer != nil && cgoSymbolizer.Value != symbolizer.Value) {
+    if (cgoTraceback != nil && cgoTraceback != traceback || cgoContext != nil && cgoContext != context || cgoSymbolizer != nil && cgoSymbolizer != symbolizer) {
         throw panic("call SetCgoTraceback only once");
     }
     cgoTraceback = traceback;

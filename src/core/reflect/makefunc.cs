@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // MakeFunc implementation.
+[assembly: go.GoPositionMap("reflect/makefunc.go", "makefunc.cs", "ABpcABUCgpaChJaEAAkWAAIQAA8k8oKogoKmhJaCAAwchKaCAAIQAA8sAA4CpoLK")]
+
 namespace go;
 
 using abi = @internal.abi_package;

@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package hex implements hexadecimal encoding and decoding.
+[assembly: go.GoPositionMap("encoding/hex/hex.go", "hex.cs", "ABROoKzCgoKCgpSqooKCggAJFoKqoAACEvKSgoKEgoKClIKUgpSmgpSUrLKCgoKokoKCAAIS4oKCqqKClriEgoKCAAsakqaigoKCloKCgoKUAAkYoqa0gpKCgoKEgIKU3ICCpIKCgpaClKyyAAsYgoKU1rKCzIKmgoKCgoKCgoKCpoKCgpSCyIKClIKClIKCgoKCgoKCgpSmprSClIKClIKCgoKCgoKCgqSUgoKUlIKCgg==")]
+
 namespace go.encoding;
 
 using errors = errors_package;

@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements initialization and assignment checks.
+[assembly: global::go.GoPositionMap("go/types/assignments.go", "assignments.cs", "ABUwAAgChJSkzsKCpoLcgoKCgoK2toKCgoKUpoKCgpSkpKSCgpSCgpSCgsyAgoKC3IKWkoCCgpSU+LKCgpSogoKClJSWgpaCgpau8oKClIKogoKUgoKCgpSUlq70loKCnLKCgoC4gIKC2oKEgpaCupTIgJKCgoKCtoKm3NKCgoKUlJaClIKAgraCloKUqLKClKiygpT+woKCgoS0pMq4tqSClJSmgoKU5oKCgoSCgIKCtuaCkoKCgqSUgoKCgv7igoKWuIKCuoKCgoKClIKUupSCgoKUuIKCppaCgoKCuIKUuoKClLiCgs7SuIKCuoKClLqUgoKClJaCgoKCuIKUuoKUqLKCloKCgoKCgoKUgoKWgoKCgoKU3oCClICClIKkuIKCgpSogoKoloSCggAGEIKC")]
+
 namespace go.go;
 
 using fmt = fmt_package;

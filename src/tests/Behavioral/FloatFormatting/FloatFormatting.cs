@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("FloatFormatting.go", "FloatFormatting.cs", "AAgahoKClIqCgoKCgoKGhoKIgoKCgoKChoiCgoKIgoKChoKCgoaIgoiChoKChg==")]
+
 namespace go;
 
 using fmt = fmt_package;

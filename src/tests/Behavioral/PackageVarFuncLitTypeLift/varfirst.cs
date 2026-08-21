@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("varfirst.go", "varfirst.cs", "AAsa")]
+
 namespace go;
 
 partial class main_package {

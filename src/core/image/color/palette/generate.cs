@@ -4,6 +4,8 @@
 //go:generate go run gen.go -output palette.go
 
 // Package palette provides standard color palettes.
+[assembly: go.GoPositionMap("image/color/palette/generate.go", "generate.cs", "")]
+
 namespace go.image.color;
 
 partial class palette_package {

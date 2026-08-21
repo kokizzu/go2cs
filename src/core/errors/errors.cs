@@ -54,6 +54,8 @@
 //	}
 //
 // because the former will succeed if err wraps an [*io/fs.PathError].
+[assembly: go.GoPositionMap("errors/errors.go", "errors.cs", "AD56ogAHEII=")]
+
 namespace go;
 
 partial class errors_package {

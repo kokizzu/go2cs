@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("FieldNameTypeMethodCollision.go", "FieldNameTypeMethodCollision.cs", "AA0kggAHFoKmgoKCgoaCgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -19,6 +19,8 @@ fields must be used instead.
 
 [ZIP specification]: https://support.pkware.com/pkzip/appnote
 */
+[assembly: go.GoPositionMap("archive/zip/struct.go", "struct.cs", "AHXIApIABxCAooKClKSAooKClKSAooCigKSApIIAAhTygriCgoKUlAANIKKqgoKUrLIADSbigoKuwq7CgoIAEC6ylKSkgpSokoKWgpSCupKmgqaigpSUgpSmgoKYpKSkpKQAAhcAAhyClIKUgpSmgoKUpKSkpMi0gpSClIKU")]
+
 namespace go.archive;
 
 using fs = go.io.fs_package;

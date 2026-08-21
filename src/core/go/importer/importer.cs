@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package importer provides access to export data importers.
+[assembly: global::go.GoPositionMap("go/importer/importer.go", "importer.cs", "ABtQABEClO6CgIKk7oKWuK7CqqIACRaCtoKClAAJFoK2goKU")]
+
 namespace go.go;
 
 using Δbuild = global::go.go.build_package;

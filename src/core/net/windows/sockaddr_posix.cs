@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || js || wasip1 || windows
+[assembly: go.GoPositionMap("net/sockaddr_posix.go", "sockaddr_posix.cs", "ACBIgpSUpKTGlKSkxg==")]
+
 namespace go;
 
 using syscall = syscall_package;

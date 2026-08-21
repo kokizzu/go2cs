@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements support functionality for iimport.go.
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/support.go", "support.cs", "ABMigoK4ogAUKt6CgoKWgpSCqKaCgoKCpoIABxKUlKSkpLIAFXSAooAADh6SgoKUgoKClA==")]
+
 namespace go.go.@internal;
 
 using fmt = fmt_package;

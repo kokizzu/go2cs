@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("PanicRecover.go", "PanicRecover.cs", "AAsKgoKC9qKCgIK2goIACgaigoKUgoIACRiCgqKCgpS0tLSwxLbExoSAlICUgICUgpSAkg==")]
+
 namespace go;
 
 using fmt = fmt_package;

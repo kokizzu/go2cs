@@ -4,6 +4,8 @@
 // DWARF type information structures.
 // The format is heavily biased toward C, but for simplicity
 // the String methods use a pseudo-Go syntax.
+[assembly: go.GoPositionMap("debug/dwarf/type.go", "type.cs", "ACA6gKSAAA8egKSCgpQAOHKApIAAChSCpoKClAAKEIAACBCAAF68AYKClKaCgpSmgoKClIKClIKCgpSCgoKCpoIAFCSCgoKUgoKClJSCAAwUgoKCgpSUgoKUAAcQgAAIEICkgAAJEoKClAAOILIABxCigpSCgriCgpSCABIQAAkCgIKkgpKClIKCAAYQgoKClJy0lpKC7oKCgoKUgoKUgoKClJSClIKUzJKCgpSAgtaAguiklgABFIKCgoAACAKkhpKmlIKUgoKkpqSCtpSWgoIAAx6CggALAoKUnKSkgriApLT4pKSkpAACOYIAAjyChoKCgoKCgoKCAAMmgoKClKSkpIKCgoKCgoKClIKAgqSYooKClIKCgsamgoKCgoKCgoKUgoSmlIKClIKClAAEEIKCgoCypJSkpAAEGIKCgoKCgoKCgoKCgoKClIIABRKCgoLCgpQAAxiCgoKAAAkCpIKCgpiAgsarAAIQAAMQgoKCgqyCgoKsgoKCggAMBoKWgoKCgprktpSEiLLWgoKCppKC")]
+
 namespace go.debug;
 
 using strconv = strconv_package;

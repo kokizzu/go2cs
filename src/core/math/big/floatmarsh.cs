@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements encoding/decoding of Floats.
+[assembly: go.GoPositionMap("math/big/floatmarsh.go", "floatmarsh.cs", "ABIq0oKogoKU3IKmlISCgoKUgoSCgpbu4pSClIKWgpaChIKCgoKChIKClIKWgoKWgIKmrLKClIKu1IKClA==")]
+
 namespace go.math;
 
 using errors = errors_package;

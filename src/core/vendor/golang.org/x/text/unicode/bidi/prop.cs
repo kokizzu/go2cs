@@ -1,6 +1,8 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/prop.go", "prop.cs", "ABQ4AAsCgoKUqJCooKaSABcgkoKCAAIqABICgpS0pJKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqyygpS0pJKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtg==")]
+
 namespace go.vendor.golang.org.x.text.unicode;
 
 using utf8 = go.unicode.utf8_package;

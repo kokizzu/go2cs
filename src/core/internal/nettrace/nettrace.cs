@@ -6,6 +6,8 @@
 // the net package. This package is purely internal for use by the
 // net/http/httptrace package and has no stable API exposed to end
 // users.
+[assembly: go.GoPositionMap("internal/nettrace/nettrace.go", "nettrace.cs", "")]
+
 namespace go.@internal;
 
 partial class nettrace_package {

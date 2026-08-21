@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/coverage/rtcov/rtcov.go", "rtcov.cs", "ADd+AAwCggAIEoKClICCyKg=")]
+
 namespace go.@internal.coverage;
 
 using @unsafe = unsafe_package;

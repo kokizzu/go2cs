@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/coverage/decodecounter/decodecounterfile.go", "decodecounterfile.cs", "AClOgtyAgqSClIKUgqiAgraCgIK2gIKkpqKCpqKCgIKkgIKkgpSClKrUgIKkgoK6gIKkgIK2gIKUgoKCgILYpoKCgoKUgpSSgoL2ooKCgpSClJKSgoKUlIKCgoKClIKClICCpJSAgoKClIKCgraAgqSAgqQAAhLirsKuwgAKGJKu4oKUgpSCgIK2gIKkqqIABBQACAKClIKCgoKCgoKCgpSCgoKUlLaCgoKClIKUpoKCgpSClLgAARDSgoKCgoKklIK4lIKogoKUgoKUgpSCgoKClJQ=")]
+
 namespace go.@internal.coverage;
 
 using binary = encoding.binary_package;

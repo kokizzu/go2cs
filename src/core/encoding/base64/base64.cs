@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package base64 implements base64 encoding as specified by RFC 4648.
+[assembly: go.GoPositionMap("encoding/base64/base64.go", "base64.cs", "ACeAAfKCloKCgoS4lLS0lAACFAAJApS0tIIAAhIACAKCABM8AAoCgsqEkoKUhIKCgoSCloKCpoKCloKElIKCxoKC7qKCgoKokoKCAAsYsoKogoKCgpSCgoKUgoCCpKiCgoKClIKAgqSCqIKCgqq0goKClAACENKqooKUAAQSsgACEPSSloSCgpSkpIKUgoSCgoKWgoKWgqiWqLKUlJSUlsiClJSUgqiCgqSCgqSCgpSCpIKCuKzEgoKUhIKCqJKCggANHLSCgoKWgryCgoKUgpSCloKEkoKCgoKCgpSCpoKClKiCgoKCgoKUlIKCAAIQAAgCgsyEgoKCgAAIFIKClIKCgoLKgoKAzIKClIKCgoLKgoKCgoKmrNaClAACFNaClAAGHoKCgoKCgoKUpoKmlKiSqqKmgpSm")]
+
 namespace go.encoding;
 
 using binary = go.encoding.binary_package;

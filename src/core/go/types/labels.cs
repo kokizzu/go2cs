@@ -1,6 +1,8 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/types/labels.go", "labels.cs", "ABQcxITMgoKCgoCCgoKUgqSoooKAggAMHNKCgpSCgoKUqqKCgIK2qqKCgIK2rNKEAAUQgoKWgoKCgriWtpaCwpSAgtqAkoKAgoKCgoKmgraCgpSCgoIACRaCpoKktoKYgpqCgMLU1oKCvIKAoqTWgoK4lIK4gqiCgsaCyLaCgsi2tra2tra4gpY=")]
+
 namespace go.go;
 
 using ast = global::go.go.ast_package;

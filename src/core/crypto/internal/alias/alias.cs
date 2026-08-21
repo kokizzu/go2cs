@@ -4,6 +4,8 @@
 
 // Package alias implements memory aliasing tests.
 // This code also exists as golang.org/x/crypto/internal/alias.
+[assembly: go.GoPositionMap("crypto/internal/alias/alias.go", "alias.cs", "AA4aogACFuKClA==")]
+
 namespace go.crypto.@internal;
 
 using @unsafe = unsafe_package;

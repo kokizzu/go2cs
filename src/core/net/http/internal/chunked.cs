@@ -5,6 +5,8 @@
 
 // Package internal contains HTTP internals shared by net/http and
 // net/http/httputil.
+[assembly: go.GoPositionMap("net/http/internal/chunked.go", "chunked.cs", "ABc64oKClAAOGISSgoKUgoKCgpSCggAQIoKCgpSCuIKCgoKU1qKCgriUgIKCgqaClKSUgqaUgpSClIKClIKCgoKmgqSmruKCpoKklJSClKaCgpSmggAEGPK4AAIcAAsCAAgY9oKWgIKkgIKkgoKUgIKkgIKkpoKCABAYsoKUopS0tLSkgpSClA==")]
+
 namespace go.net.http;
 
 using bufio = bufio_package;

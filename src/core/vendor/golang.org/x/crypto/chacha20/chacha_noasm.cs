@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build (!arm64 && !s390x && !ppc64le) || !gc || purego
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20/chacha_noasm.go", "chacha_noasm.cs", "AAwWgg==")]
+
 namespace go.vendor.golang.org.x.crypto;
 
 partial class chacha20_package {

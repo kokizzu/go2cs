@@ -17,6 +17,8 @@
 // See profile.go for examples of messages implementing this interface.
 //
 // There is no support for groups, message sets, or "has" bits.
+[assembly: go.GoPositionMap("internal/profile/proto.go", "proto.cs", "ACtYgoKCpoKCgpSmgoKmlIKmgpSCgpSCgoKCgoKUgriCgpSmgoKmgoKUpoKUgoKUgoKCgoKClIK4goKmgoK4goKUuIKClKaigoKCgoKCgqaCkqaCpoLWgoKCgoKUgoIACAqCgoKUgoKCgpSCgsaClIK0goKClIKUgrSClIK0ptaCgpSmooCCpIKChJKCgpSClICCtqaigIKkgqailIKCgoSAgqSUlIKAgqSCpqKAgqSCpqKClIKChICCpJSUgoCCpIKmgoCCpIKmooKAgqSCpqKAgqSClJQ=")]
+
 namespace go.@internal;
 
 using errors = errors_package;

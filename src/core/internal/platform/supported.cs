@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:generate go test . -run=^TestGenerated$ -fix
+[assembly: go.GoPositionMap("internal/platform/supported.go", "supported.cs", "AA8cggACENKUpKSkzKKUpKTMopSkzKKUpMyilrTMooKYpLS6oriUquiUgraCtqyygpaAgqaClKaUpJgAAhDGpKacpKampgABEqSmlKSmmqSmyAAIApqkrLKUpKaUpKSqopSkAAoYkqqiqqI=")]
+
 namespace go.@internal;
 
 partial class platform_package {

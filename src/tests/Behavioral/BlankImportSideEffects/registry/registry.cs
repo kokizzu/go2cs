@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("registry.go", "registry.cs", "AAgUgqiCgqiC")]
+
 namespace go.BlankImportSideEffects;
 
 partial class registry_package {

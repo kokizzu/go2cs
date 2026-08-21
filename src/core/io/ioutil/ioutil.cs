@@ -8,6 +8,8 @@
 // by package [io] or package [os], and those implementations
 // should be preferred in new code.
 // See the specific function documentation for details.
+[assembly: go.GoPositionMap("io/ioutil/ioutil.go", "ioutil.cs", "ABc24gACEuIAAhDSAAIuABQCgoKUgoKClIauwg==")]
+
 namespace go.io;
 
 using io = io_package;

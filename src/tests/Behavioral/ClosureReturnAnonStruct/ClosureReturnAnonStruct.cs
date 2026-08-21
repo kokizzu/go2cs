@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("ClosureReturnAnonStruct.go", "ClosureReturnAnonStruct.cs", "ABEcggAAFIKEpoI=")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -3,6 +3,8 @@
 // Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/types/object.go", "object.cs", "ADyIAYKCqsKC7qaClAAdNIKUpKTMooKUqqCmkKigppCmkKqwppCkgKKAooCigKSgooCigICigICigKS0gtyCpoKmAAIQAAgCgqiClIKogoKCqIKUgpYAChqiqqAACBSiqJCkAAkc8qqigoKospSqsgABEKSktAATHqKokqyyqqCmkKaQAAISAAkCgpSmAA0aooKC7qiSggAJFKqigoKssAACEgAJAoKUrsCm2oCCggAHEKYACxSSAAkUggAPEKKChJSCgIKkpraCgoLIgpTIgoKClKaCtoK2gramloKUhIKWgpikoraCgoCSxIK47oKCloKmooKUgoKUlIKUrLKCgqaAooCigKKAooCigKKAooCkooKCgIKCgMqUpIKktg==")]
+
 namespace go.go;
 
 using bytes = bytes_package;

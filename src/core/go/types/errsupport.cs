@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements support functions for error messages.
+[assembly: global::go.GoPositionMap("go/types/errsupport.go", "errsupport.cs", "ABEeAB42AAUSgoKCgoKCpIKktoK2qIKUpKSktoKUtLSUpKSkuKqigoKm")]
+
 namespace go.go;
 
 partial class types_package {

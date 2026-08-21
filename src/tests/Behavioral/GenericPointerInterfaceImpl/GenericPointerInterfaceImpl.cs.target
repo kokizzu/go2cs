@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("GenericPointerInterfaceImpl.go", "GenericPointerInterfaceImpl.cs", "ABU0gKKgooCkgAAJCICioKKApIAAESagpKCmoqiigoIAAhaiqqKCguaCgoiChIKEgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

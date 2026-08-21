@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/coverage/encodemeta/encode.go", "encode.cs", "ACdIgoKUuIKCgoKCgoKCpoKCgoIABhCSgoKCgoKCgoKCgoKUgoKUgoKCgqaCgoKCgpSmgoKAgqSkpoKCuIKCgoKAgqTMxqKCAAgSgpSAgqSWloKogIKkloKCgoK6goCCpIKClKqigoKCgoKokoKCgoKCgoKUgoKU")]
+
 namespace go.@internal.coverage;
 
 // This package contains APIs and helpers for encoding the meta-data

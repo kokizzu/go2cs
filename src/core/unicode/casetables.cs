@@ -5,6 +5,8 @@
 // It should encompass all the languages with special casing rules
 // and be generated automatically, but that requires some API
 // development first.
+[assembly: go.GoPositionMap("unicode/casetables.go", "casetables.cs", "")]
+
 namespace go;
 
 partial class unicode_package {

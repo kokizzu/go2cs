@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements various field and method lookup functions.
+[assembly: global::go.GoPositionMap("go/types/lookup.go", "lookup.cs", "ABBeAB4CgpSqAA0QgIKAgoKAgqTIjMKCgIKCgILYAAIiABQGgsyWgoCCyo7mgpaCqICCgNykloCmgoKUgoLIlpKCgoKClIKCAAoWgrjcgJKCgoKUgtrcgJSCtpaWAAocsoKWgoKCgIKmgoK2ppSAgqaCgqgACRSCgoKmgoKmpoKCgoKmgpSCAAIYAAkCAAIYAAwCgoKWAAcWgoKEgIKCooSCgpSCloKCuKKWgpS0tIKCgpKCptiogoKCqIKWgoLKgpaCpoKmlJS0tNaSpLSSppQABxCClLSkpKS4poKCqJKCgIKkqsKCgoKUgoKCggACEgALCIKmggACEAAKCIKUrLKAlIKClJSkqqKAgoCCxqqigoKqooKCgriqooKCgrg=")]
+
 namespace go.go;
 
 using bytes = bytes_package;

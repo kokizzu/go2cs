@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Trace time and clock.
+[assembly: go.GoPositionMap("runtime/tracetime.go", "tracetime.cs", "AC1wAAoCgpSqopS4rLKmpoKWkoKC")]
+
 namespace go;
 
 using goarch = @internal.goarch_package;

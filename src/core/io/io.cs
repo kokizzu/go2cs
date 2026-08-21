@@ -10,6 +10,8 @@
 // Because these interfaces and primitives wrap lower-level operations with
 // various implementations, unless otherwise informed clients should not
 // assume they are safe for parallel execution.
+[assembly: go.GoPositionMap("io/io.go", "io.cs", "AMIC9ASygIKkAAIWAAsCgpSCgoKUgqSUAAIU8gACEgAJAoKClJSUAAIeAAwCAAIU8oKUqvaAgraAgqSCgoCCgpS2lIKCgoKCgoKmgoKClIKCpoKClKassAALFrKClIKUgoKqooKCgriUAAwasoKUgIKkgoLsgpikpKsAAhCClIKmsoKUgoCCgoKClKSokKzCAAkYoqaygoKmgoKWgqaCmKSnrIKUggACENIABxCygoKAgrYADRqCpoLKgsiygoKCgoKCgoKUAAQSwoCCpO6A7ICkgq7CgoKCgoKClJaU")]
+
 namespace go;
 
 using errors = errors_package;

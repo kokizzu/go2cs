@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Trace stack table and acquisition.
+[assembly: go.GoPositionMap("runtime/tracestack.go", "tracestack.cs", "ABdMAAwChpKCgqiClMq0gpS0gsqmlILugoKkuIKCABIkgoKUgriClIKUggAIFqKClIKssoKCgIKkgqaiqIKojtKCgqiCgoKCgoKCqIKCgpSUqqKCgoKCgoIACxqSgoSCgoKUgoKCgpSCqqKu4pSUlKiSAAIYAAkCgsiW3oKkgpSYgoKCgqaAgqSWgoKCpJKkxqyygoKUgoKU")]
+
 namespace go;
 
 using abi = @internal.abi_package;

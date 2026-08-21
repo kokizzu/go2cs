@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAkSgg==")]
+
 namespace go;
 
 partial class IoLike_package {

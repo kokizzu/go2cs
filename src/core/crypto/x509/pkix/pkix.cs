@@ -4,6 +4,8 @@
 
 // Package pkix contains shared, low level structures used for ASN.1 parsing
 // and serialization of X.509 certificates, CRL and OCSP.
+[assembly: go.GoPositionMap("crypto/x509/pkix/pkix.go", "pkix.cs", "ACpQooKCgoKUgoKWgoKCgoKClpaChIKElLa2toKUqKgAMGjSgoKWgoKCgpaCgpS0tLS0tLS0tAASLsKCloKCgpYAAh4ADgKCgoKCgoKCgpSClIKWqqKmgoKCgpb6poKqooKCpgANHpI=")]
+
 namespace go.crypto.x509;
 
 using asn1 = encoding.asn1_package;

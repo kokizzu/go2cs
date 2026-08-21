@@ -8,6 +8,8 @@
 // An objset is similar to a Scope but objset elements
 // are identified by their unique id, instead of their
 // object name.
+[assembly: global::go.GoPositionMap("go/types/objset.go", "objset.cs", "ABIwwoKAgqSClII=")]
+
 namespace go.go;
 
 partial class types_package {

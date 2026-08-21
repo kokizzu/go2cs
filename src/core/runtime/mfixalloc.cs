@@ -4,6 +4,8 @@
 // Fixed-size object allocator. Returned memory is not zeroed.
 //
 // See malloc.go for overview.
+[assembly: go.GoPositionMap("runtime/mfixalloc.go", "mfixalloc.cs", "ADlwwoKUhIKCgoKCgoKCgtaCgoKWgoKCgoKUlIKCloKClIKCgqaCgoKC")]
+
 namespace go;
 
 using sys = runtime.@internal.sys_package;

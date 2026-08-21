@@ -5,6 +5,8 @@
 // ppc64, inserted ppc64 to avoid missing Go declaration error
 // for debugCallPanicked while building runtime.test
 //go:build amd64 || arm64 || ppc64le || ppc64
+[assembly: go.GoPositionMap("runtime/debugcall.go", "debugcall.cs", "ABYwks7kgpSAyqqigoKCgpaEAAEeAAkQgIKCuIKUgpSmAAUYAAkCgoIABhCoyJKCuKiCgtyChIKCzKiolIKWgriUgoKUzLyCgoKWhAAHFKKCgoKWloKCgqiCgsyCuJSCgpSCgoKEgoKCgpS4pJKShIKCgoKmgg==")]
+
 namespace go;
 
 using abi = @internal.abi_package;

@@ -107,6 +107,8 @@ functions. Manually configuring HTTP/2 via the golang.org/x/net/http2
 package takes precedence over the net/http package's built-in HTTP/2
 support.
 */
+[assembly: go.GoPositionMap("net/http/doc.go", "doc.cs", "")]
+
 namespace go.net;
 
 partial class http_package {

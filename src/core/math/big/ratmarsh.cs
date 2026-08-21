@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements encoding/decoding of Rats.
+[assembly: go.GoPositionMap("math/big/ratmarsh.go", "ratmarsh.cs", "ABYosoKUgoKCgpSUgoKCgpSC6JKUgpSClIKClIKCgpSCgpSCgoKosoKUqKSAgqQ=")]
+
 namespace go.math;
 
 using errors = errors_package;

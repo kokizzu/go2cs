@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build (!linux && !freebsd && !darwin) || !cgo
+[assembly: go.GoPositionMap("plugin/plugin_stubs.go", "plugin_stubs.cs", "AA8WgqaC")]
+
 namespace go;
 
 using errors = errors_package;

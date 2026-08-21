@@ -30,6 +30,8 @@
 // they may be in the type set of a constraint.
 // Whether they indeed are identical or assignable is determined
 // upon instantiation and function argument passing.
+[assembly: global::go.GoPositionMap("go/types/unify.go", "unify.cs", "AES2AcKCyoKCgpSUAA0qgpSkpKSkrLKmoqq0goKCgpSEgoKCgoKUgoKUgsqAooCigKrigpSA2qbuAAkEqqKAgoCCxqqigoKCgsySqqKCgpSokoKCgqauwoKClKrCgIKkrgAMAoKClIKClKiCqIKClIKU3oKClAASKICCgpSmlIIACRSAppKWuICklIKCgqa4ggAJFIL+ABUsgsrWgKTolKaSyN6mgqaCgoKCuIIAFzCCgoKUuIKUgriCgqaCgIK2qIKCzJSCgoKAgrYADB6CgpS6goKokpSagLLcgMbagJIABRCAwoKCgoim7ICS3ICigoKCgoK4AAYUgNLcjIDCgoKClIKUgoIAFi6CgoKUlIKClIKCgqbsgJLegLLcgNiCgoKUgoKm2pIAARwAEg6AgoLcAAoSxg==")]
+
 namespace go.go;
 
 using bytes = bytes_package;

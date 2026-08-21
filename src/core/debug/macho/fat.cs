@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("debug/macho/fat.go", "fat.cs", "AC1csoKogoKoooKCgpSmlpKCgpSEgrqEuIKClIKCgoKClISCgoKogoCCpJaClIKolqqigoKUgoKClIKmgoKCgpQ=")]
+
 namespace go.debug;
 
 using binary = encoding.binary_package;

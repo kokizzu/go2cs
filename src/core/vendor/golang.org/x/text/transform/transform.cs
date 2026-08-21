@@ -6,6 +6,8 @@
 // bytes passing through as well as various transformations. Example
 // transformations provided by other packages include normalization and
 // conversion between character sets.
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/transform/transform.go", "transform.cs", "AF7WAQAXNqKCAAcSkpKUgoKCgpSk3oKCgoSUgpiCtuiG4pTsgpSCABEqooIABxbSgqaCgpSCgoCCpIKCyIKCgoKmlpK2gqaClIIACBC2gra6koKCgoCCpIKU/KKCgpSmguqCABQ2goCCggAMGIKmgqiygpSCgqaCgpSokoKClL7kgoKCgu6CgoKCgoKUgqiilILKgpjUlIKa6IKWkrqygrbIgsyCgpSUqJLKptKEgIKUhJSCgtyCgoKUlIK4goKClJSUqqKCgqSUlIKCzsKCpoCC3IKCupIABxCCloKCgqiClIKUpJTIAAgUgoKClIKCuoSogoKCgoKogoK2gpSCts6iqqKCgoKUpoKCgoKCgoKCuoI=")]
+
 namespace go.vendor.golang.org.x.text;
 
 // import "golang.org/x/text/transform"

@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements Sizes.
+[assembly: global::go.GoPositionMap("go/types/sizes.go", "sizes.cs", "ADNq0oK6qKQACRCcgrKAgrbMgqbS5qSUgqaClIKU5oKCgpSCrIKCgoKUgqaCgoKAgpS2ABImoqSCgoKAgraCxoKCloKSlIKWgpKCloSygpSkpIKClIKCgoKUqILExAAYPuKUgILGgILG7IKCgpSAgqSmooKUgoKUlIKmAAIQ0oKCgoKClIKClJSqooKClKyygg==")]
+
 namespace go.go;
 
 partial class types_package {

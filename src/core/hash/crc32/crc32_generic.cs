@@ -8,6 +8,8 @@
 //
 // The slicing-by-8 algorithm is a faster implementation that uses a bigger
 // table (8*256*4 bytes).
+[assembly: go.GoPositionMap("hash/crc32/crc32_generic.go", "crc32_generic.cs", "ABMosoKCqqKCgoKClKa8ooKClAAHFqKCgoKCgoKmqsKCgoKChpSUgpQ=")]
+
 namespace go.hash;
 
 using byteorder = @internal.byteorder_package;

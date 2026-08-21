@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("StructWithDelegate.go", "StructWithDelegate.cs", "AA4WgoI=")]
+
 namespace go;
 
 using fmt = fmt_package;

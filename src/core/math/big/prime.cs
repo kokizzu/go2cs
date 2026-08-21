@@ -1,6 +1,8 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("math/big/prime.go", "prime.cs", "AAw0ABkUgpSCmJiCgpaCloKEkpSCpIKCpKaElgACENKUgoSChKKEgoKClIKUgoKUgoKCgpSCprYAAjYAGQSCuIIACBSCgoKCgoKmlIKCgpTclLiCgoIADyKCgoIAGzyCgoKCgqaCgoKUgoK4goKClIKCugAHEIKCgpSCgoKCgoK6gpK4kriCgpQ=")]
+
 namespace go.math;
 
 using rand = go.math.rand_package;

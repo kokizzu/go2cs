@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Trace goroutine and P status management.
+[assembly: go.GoPositionMap("runtime/tracestatus.go", "tracestatus.cs", "ACBipIKCqIKUqIKU3uKClIKUgqa2isK2pKSC3tSCgqiWgpTstJKUpKQAAhCC4rakpAAWMpKClIKokoKCqJKqoqiSgg==")]
+
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

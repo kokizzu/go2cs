@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // OFB (Output Feedback) Mode.
+[assembly: go.GoPositionMap("crypto/cipher/ofb.go", "ofb.cs", "ABYwsoKClIKClN6CpoKCgoKUgoKCgoKUgqaCgpSClIKClIKCgg==")]
+
 namespace go.crypto;
 
 using alias = go.crypto.@internal.alias_package;

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements string-to-Float conversion functions.
+[assembly: go.GoPositionMap("math/big/floatconv.go", "floatconv.cs", "ABEs0oCCpK4ACQKCgqiWgoKYkoKCmJKCgoKogoKCgoIADSCClriCpLakpKTcpLakyoKCgoKUgpaUgrqCgpSWACZSwoKCqIKohIKClIKWAAJgADIEgoKUgoKWgoCCuICCpKaqogAEFNKCgg==")]
+
 namespace go.math;
 
 using fmt = fmt_package;

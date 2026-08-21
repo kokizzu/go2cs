@@ -6,6 +6,8 @@
 // efficiently representing HTTP header fields in the context of HTTP/2.
 //
 // See http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-09
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/hpack.go", "hpack.cs", "ABcsgs6CAAsiwtaCgoKUqAAMGgAUOLLKgoKCAAYWwqyyAAIU8KigqqKssgAKFoKCpoKCgqiSgoKClKa4psSClIKUgsqCrgAIAoKCkJKAkoCCpICCpAAIDLKCgpSCprK4uIKUgoKWgoKM0oKUgpSCgqYADSCAooDcwoKaqgAICtra1qiSgoKClIKClIKokoKCgpaCgoKCgoKUlIKCpoKClIKCgoKmgoKmgoKUgqaCgoKmgpTotoKWgoKClIKUgoIABBoACgKClIKUgoKUgpaCgoKCgoKCgpSCkqau8oKUgoKClNyUgpSCggAHEIKClIKCgoKClIKC")]
+
 namespace go.vendor.golang.org.x.net.http2;
 
 using bytes = bytes_package;

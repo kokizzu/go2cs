@@ -86,6 +86,8 @@
 // "dense" packing heuristics are ignored (in other words, scavenging is "forced") because
 // in these scenarios returning memory to the OS is more important than keeping CPU
 // overheads low.
+[assembly: go.GoPositionMap("runtime/mgcscavenge.go", "mgcscavenge.cs", "AG6sApIAAiAADQLOqMyClAAGEoKCpoLKpgALGrqClABm+AHSgpSChIKClAAJFgAMFpaCgoKCgoKUgqaClKiC7rKCgpSCqJKs0oKUlgAAEOKClAAFFAAJAoKCltwABxKohILcgpaCloTcgpSCqKaCgpSUugAGEIaSgriClrzCgoIABhIACgKCgpSElIIAARoACwYAABLygtyUuoKmgqbKlAACENKEgoSCgoKClIIAAxoACQKCgoKClIKUgqYAAhTyhILMgqSClIIAAiAAEw6CggAGEIKCloKmlpTMgpaEpqiCgoSCgoK6goCCpIKWgoS4goQABRYACAIADyC4lKS0tLS0tMQACxYABi4AFAKCgqSC7oKUlpSUgoKmlMyCgpKmyoKCgoKU3oLe3oKolITKgrgAO4YB0oKCgoKs9oKAgqSqwoKClIKUqIKClJSCpoKmgu6mlKaCAAIWAAgCgtyu4oKCloKC7oKCAAMS8oKCgpQAAhDSgoIACBSSqqIAGj6SAAcSkgAKPJKokqiSqqKUlJSUuLjYkoKClIKClIKU6pKCgpSCgpSmAA48AAwEgpaCuIKClIKkqIKCuIKCpqiS")]
+
 namespace go;
 
 using goos = @internal.goos_package;

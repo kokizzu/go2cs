@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("rangefuncconsts.go", "rangefuncconsts.cs", "")]
+
 namespace go;
 
 partial class main_package {

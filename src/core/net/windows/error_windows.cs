@@ -1,6 +1,8 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("net/error_windows.go", "error_windows.cs", "AAsSgoCCpA==")]
+
 namespace go;
 
 using syscall = syscall_package;

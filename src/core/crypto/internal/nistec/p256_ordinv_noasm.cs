@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build (!amd64 && !arm64) || purego
+[assembly: go.GoPositionMap("crypto/internal/nistec/p256_ordinv_noasm.go", "p256_ordinv_noasm.cs", "AA8Wgg==")]
+
 namespace go.crypto.@internal;
 
 using errors = errors_package;

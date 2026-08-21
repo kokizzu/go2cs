@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("runtime.go", "runtime.cs", "")]
+
 namespace go;
 
 partial class main_package {

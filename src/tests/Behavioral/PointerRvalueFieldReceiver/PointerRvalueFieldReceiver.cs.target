@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("PointerRvalueFieldReceiver.go", "PointerRvalueFieldReceiver.cs", "AAwSgAAIGoDqgKSEgoaCgoKCgoaCggAAEIKC")]
+
 namespace go;
 
 using fmt = fmt_package;

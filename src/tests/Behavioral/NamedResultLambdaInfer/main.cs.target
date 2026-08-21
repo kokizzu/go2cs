@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAwegqKCgpSClKaWpoKC")]
+
 namespace go;
 
 using errors = errors_package;

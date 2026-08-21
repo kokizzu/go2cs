@@ -319,6 +319,8 @@ User-defined handlers are responsible for their own locking and sorting.
 
 For a guide to writing a custom handler, see https://golang.org/s/slog-handler-guide.
 */
+[assembly: go.GoPositionMap("log/slog/doc.go", "doc.cs", "")]
+
 namespace go.log;
 
 partial class slog_package {

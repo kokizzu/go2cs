@@ -38,6 +38,8 @@
 // ResetSession is called prior to reuse but IsValid is not called.
 global using Value = object;
 
+[assembly: go.GoPositionMap("database/sql/driver/driver.go", "driver.cs", "APoDpAiCpoIADxiC1oI=")]
+
 namespace go.database.sql;
 
 using context = context_package;

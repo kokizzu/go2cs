@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAoSgNSApIA=")]
+
 namespace go.ForeignPairNumericConv;
 
 partial class convlib_package {

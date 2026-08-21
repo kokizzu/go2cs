@@ -14,6 +14,8 @@
 //
 // [Kyber version 3.0]: https://pq-crystals.org/kyber/data/kyber-specification-round3-20210804.pdf
 // [NIST FIPS 203 ipd]: https://doi.org/10.6028/NIST.FIPS.203.ipd
+[assembly: go.GoPositionMap("crypto/internal/mlkem768/mlkem768.go", "mlkem768.cs", "AEaiAaKCgqqigoIADSC0gqaCgoCCpIKAgqSqtILWgoKUgoKqtILWooLMhIKAgqaCgIKmAAIQAAkCgpaChIKCuKiCgoKClIKCgpaCkoKCAAYQhIKWgpSEgoKEhIKWAAIQ1JLWgoKUgoCCpKwACAKCloKCgoKCkoKAgqSC3sKCloKCgoKUlISCpqiu4oKCgoKUgoKUhIKCgpSohIKClISCopSE3sKClIKs0oKEgoKCgoKCgoKCgoKChILewoKWgoKClIKWruKCgoKWgoSCgpSE/pKClKiSlIKmgoKmgoIABRSigqaCgqqigqqigoKq7IKCAAwcgoaSqsiCupYABRDSgpSo0oKUrNKCgoKCgoKUAAYWAAoCgpSCgoKCgoCCpICCpJSu8oCClIKkggACEPKCgpSClAACENKCgoKClAACEPKCgpQAAhDSgoKClAACEPKCgoKCgoKCgoKCgoKUAAIQ8oKCgoKCgoKClKyygoKCgqqCgoKCgoKUAAga4pSCgoKClAAFEtKCgoKClIKCgoK4rNKCgoKClIKCgoK4gpSssoKCABc0goKCgoKCgpSCgoKCgpSClIKClIKm")]
+
 namespace go.crypto.@internal;
 
 // This package targets security, correctness, simplicity, readability, and

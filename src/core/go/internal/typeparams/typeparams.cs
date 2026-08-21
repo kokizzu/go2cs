@@ -1,6 +1,8 @@
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/internal/typeparams/typeparams.go", "typeparams.cs", "AA0YgpS0/gAaNIKmgpQACBAABxA=")]
+
 namespace go.go.@internal;
 
 using ast = global::go.go.ast_package;

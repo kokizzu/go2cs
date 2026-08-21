@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 // This file contains data types that all implementations of the trace format
 // parser need to provide to the rest of the package.
+[assembly: go.GoPositionMap("internal/trace/base.go", "base.cs", "AChUopSkABQyooKUgpSAgqSCgoKCqqKClAALHvKClICCpIKs0pSmgoKCgpSCppSmgpSClIKCgoKClKrCgpSCgraAgraosoKClIKmgpSCgqas0oKClM6SAA8w9gAHEIIABxCCgoKU")]
+
 namespace go.@internal;
 
 using fmt = fmt_package;

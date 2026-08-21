@@ -21,6 +21,8 @@ and to read that data back:
 	io.Copy(os.Stdout, r)
 	r.Close()
 */
+[assembly: go.GoPositionMap("compress/zlib/reader.go", "reader.cs", "AC6UAfIAAhDSgoKClKaCgpaCgoKUqICCgpSCtoKCgpSssoKUgqaCgoCClLiCgoKUlIKCgpSCgoKCgpSUgoKCqIKClKaUgg==")]
+
 namespace go.compress;
 
 using bufio = bufio_package;

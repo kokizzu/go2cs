@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("encoding/xml/typeinfo.go", "typeinfo.cs", "AC9qooCCpoKCgoKCgqiCgoKUgoKClIKUooKAgraogoKWgoKogILKgqiSloKAgriCgpSCgpSkpKSkpKTKgoCkpIK4xIKUgpSCzIKouIKWuICClKSogoKUgpSCgoKUzIKCgoK4rLKClIKUgoKClIKCuJQAAhQACQKChJKCgpSClIKCgqaCgraCpoLqgoK6goK6goKCgoLMgoKClIIAChaCAAUa0oKCgoKCgpSUppQ=")]
+
 namespace go.encoding;
 
 using fmt = fmt_package;

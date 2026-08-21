@@ -5,6 +5,8 @@
 // Package jpeg implements a JPEG image decoder and encoder.
 //
 // JPEG is defined in ITU-T T.81: https://www.w3.org/Graphics/JPEG/itu-t81.pdf.
+[assembly: go.GoPositionMap("image/jpeg/reader.go", "reader.cs", "ABYogMqAAHP+AaKCuIKCgqaCgoKUgpQAAhDSgoKCgoK80oKAgraCgoIABhDUgoKCgoKUgpSCgpaEgoKUgoKWgoKUgoKUqrSCgpSWgoKCgoKUgIK2qKSCgpSWgoKClIKCgpSAgrYACwiSgpSUpKSk1ICCtoKUgoKCloKmgoKogoKWgpKClIKUAAEaAAMUmgAWAsaSxpIABxyUAAkCxoLGgvqClOiSgoKCgoKUgoKUlKSClIKAgqSCxoKUgoCCpIL4gpTYkoKUgIKkgqaCgpSAgqSEhIKUpoKClICCpISCgpaClAAICJKWgIKkgqiCgoKUABQqgoKCpoKUlKaCgqaSlO66gIKkgoKWlIKCgoK2gpS2gpS2gpSkgpS2pKSCtJS2gqiCgIK2gpSCgqSUlAAKFPKC3sqCgoKCgqYAChiChAAFEoKCgoKClIKCgpS4poKClKaUpoKCgoKCgoKCgoKCgqaokoLaooKAgqSU7IKClOzspoI=")]
+
 namespace go.image;
 
 using image = image_package;

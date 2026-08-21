@@ -1,6 +1,8 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/build/read.go", "read.cs", "ACZIgsqAgqQACRSCAAUSkoK8ooKCgoKmgoKklJSqooKCgoKUgoKogoKklJSCgoKUlKqigoCCpMyCgpSCppSCtoKCgraCgoKUppSCxpSCqJKCggAEEPqCgoKCgpS27IKSgpSCgoKCgpSUgoKmtoKCgpSCgoLagoKClIKCgoKClJSCgtqClIK2goKClJS2lIKCgqaClKaCgrQACAiqooKCgoKmgryigoKClIK8opSCgpSC2IKCgpSClILY3KKCgqSUAAIeAAwCgoKUlAAGFPKEgoKCgoKCgpSUqKiCuoKCgpSUgpaCqIKCloKCgoKUgoKClIKCgpSmgoKUgpaCgpS6goKUgoIACxqCgoKCgoKCgpTKgoK6rsKCgoKmrsKCgoKUkoKWgoKCgoKUgoKCgqaCtoKCgpS2goKCgpSCgoKUgoKmgtiCgoKmlA==")]
+
 namespace go.go;
 
 using bufio = bufio_package;

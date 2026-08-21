@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("GenericTypeInstantiation.go", "GenericTypeInstantiation.cs", "AA4UoqaigoKWgoKCqMKCgpQABBKCAAIQgoKCAAoGhIKCgoKGgoKCgoaChoo=")]
+
 namespace go;
 
 using fmt = fmt_package;

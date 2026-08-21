@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build (!amd64 && !s390x && !ppc64 && !ppc64le && !arm64) || purego
+[assembly: go.GoPositionMap("crypto/aes/cipher_generic.go", "cipher_generic.cs", "AA0k0qqi")]
+
 namespace go.crypto;
 
 using cipher = go.crypto.cipher_package;

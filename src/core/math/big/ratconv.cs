@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements rat-to-string conversion functions.
+[assembly: go.GoPositionMap("math/big/ratconv.go", "ratconv.cs", "ABAiggAMEKKCgpSClICCpAACKgAUAoK6gIKAgqSCgoCCtoCCpIKUuJaCgpiSgoKCmJKCgoKogIK4ggAMIKK4gqS2pKSk3KS2pNyCgoKCpqaClIKCgpSmqIKUgqSWhAACJgAVBIKCgpSopLSCgoTEgqiSgoKClMyCloKCgoKCpIKUlIKUloKUgpSCpoKWqJKosoKCgoKUlKrCgpSs0oSCgoKCgqaohIKCloKWgoKCgoKogpSEgoKCgpSWAAIoABkSirKCjtKCgpKCgIKkggABFPKCgIKCyoKAgqSClg==")]
+
 namespace go.math;
 
 using errors = errors_package;

@@ -4,6 +4,8 @@
 global using FileInfo = go.io.fs_package.FileInfo;
 global using FileMode = go.io.fs_package.FileMode;
 
+[assembly: go.GoPositionMap("os/types.go", "types.cs", "ABAakAAsXoCigAACEOKCgoKU")]
+
 namespace go;
 
 using fs = go.io.fs_package;

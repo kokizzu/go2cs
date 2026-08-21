@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("InterfaceInheritance.go", "InterfaceInheritance.cs", "AAwSoqKAooDsoqKAooAADhqCgoKCgoKEgoKCgoKCgoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

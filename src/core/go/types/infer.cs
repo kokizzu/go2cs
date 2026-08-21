@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements type parameter inference.
+[assembly: global::go.GoPositionMap("go/types/infer.go", "infer.cs", "ABxEABQKgpKogoKSuoKWloK6goLMgoKCABw+goLMhLSCuIKCgoKmgoKmlMqCgpSmqrqCgpaCypSCpoKCgrQAChbKgoK8ggAQJIKCgoKUloKCgoK6lAABGAANCILM9gAAFgAKAoKApILcgqiCgryCnLKCgoKCgpSCgpSCgoKUlMqCgoIACRiCgoIAGTaKsoKCqIKCyoKCgoKAAAwagIKkgoK23oKCgoKo2JKCgqYAAhQAJDiCloKCgoKWgoKW2rSClKSkqJKCgpSUgoKsssgABxDkgIKkgoKWyqampqYAAhAAAhSmggANAoKmqqamgoLatqbmgoKCpq7igoKCgoKClIKCgpSUgoKUlIDKpAACFPKSggAJFMKCuICCgJTqlIKEAAQQtra2vuKUgsiCyIKUgsiCtraCyICC6PiCgryigoKm")]
+
 namespace go.go;
 
 using fmt = fmt_package;

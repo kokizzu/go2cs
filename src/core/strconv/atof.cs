@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("strconv/atof.go", "atof.cs", "ABIosoKClIKCgpSCpgAGENKClIKCpIKUgoKkhqKUgraCtqaigoKWgpSUtILIgoKClrSSlIKCtoKSgpSCgqSUtJSClIIABhCCgoKUgoKkgpSClIKClJSCppaCloKuAAwCloKUlLSCyIKCgoKCgoKClIKCgoKCgoKApIK2gpSCgraCkoKUgoKCgqSUtoKCgoKClJTEtIKUgpaCggAGEIKCgpSCgqSClIKUgoKCgpSCpraWgpaCloLcwoKWgoKCzIKUlIKCqIKCgoKUlIKUgoKClJSCqLqCgoKWgqiCloKCgoK6gpSEhJKChISSgoKUAAsoAAwCgpSCgpSWrOKClJSUpLSq0oKUgoKUlKzSgpSUlKS0AAIQ8oKCAAYQgoKUgpSCgsyCgqiCgoKCgoKCgqiSlIKSgoKWgoKClIKUysKAgqaCgpaCgpamgoCCtoKCgsqCgrySgpSCgoKUpsKAgqaCgpaCgpamgoCCtoKCgsqCgrySgpSCgoKUAAI8ABsCgoKUpoKCgpQ=")]
+
 namespace go;
 
 // decimal to binary floating point conversion.

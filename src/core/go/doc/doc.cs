@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package doc extracts source code documentation from a Go AST.
+[assembly: global::go.GoPositionMap("go/doc/doc.go", "doc.cs", "AGfyAeKCgoKCAA4igoKChKaCgoLKgoKUlIKCgoK4goKCgoCCpJQABzQAGQSClILIgqKUtLi4goKClICktLQABxCCgoKuwoKUgoKUAAIU8oKUAAIU8oCCgpSkgpSuwgAFFOYAAhDyAAIQ8gACFAAJAg==")]
+
 namespace go.go;
 
 using fmt = fmt_package;

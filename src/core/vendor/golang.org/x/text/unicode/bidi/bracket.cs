@@ -1,6 +1,8 @@
 // Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/bracket.go", "bracket.cs", "ADBwgsyAooCigAACFAAIAtyCgpSCABxKogAEFPaWlJSWkoKWqIKigoKUlIKUpgAFfAA5ApakpAAEFgAJAoKCgoKUgpSmqqKCgILIqKS8gpaUgpQABhCmgoKEgoKClJaCgoKUupKC")]
+
 namespace go.vendor.golang.org.x.text.unicode;
 
 using list = container.list_package;

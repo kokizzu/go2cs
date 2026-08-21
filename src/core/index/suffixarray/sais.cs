@@ -115,6 +115,8 @@
 //
 // That line runs for 0.23s on the Go text and 2.02s on random text.
 //go:generate go run gen.go
+[assembly: go.GoPositionMap("index/suffixarray/sais.go", "sais.cs", "AHuAArKClAACFgAIAoKogpSCggABEOKCgpTegqaCgoKCgoKCAAgSlJSClgACFgAIAoKUgpaCgoKUqqKCgoKCgoIAAxDCgoKCgoKCAAMyABUChIKCABk2goKCgqSWgoKCggANHoKUAAIcAAwEggAWMoKCggAHEoKCgoSCgpSUlIKUzIKCgpaCgoKUggADIAANBIIAEyyChIKCgpSUgpSCgt6CgoKCloKCgpSCAAMwABQCABEmqIKCgoKCpKiCgoKUgpKmgoIABB4ACgKCgoKUgoKUlJSUgoKCgoKmlIKCgoKClAACHAALAoKCgoKCAAQSwgAnUoKClJSCgpTMggACFgAIAoKWgoKCgqSWgrqCggADEMKCzIKCgoKEgoKClJaCgoKCggAEFvSCAAkYgoKCqIKCgoSCgpQAChiCgoKAgriCgoKUgriUgoSChIKCpqiCAAcSgoKCgIK4goKClII=")]
+
 namespace go.index;
 
 partial class suffixarray_package {

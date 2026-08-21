@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("escape.go", "escape.cs", "AAgmgoLugoKU")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

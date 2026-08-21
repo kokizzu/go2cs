@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lookup_tables.go", "lookup_tables.cs", "")]
+
 namespace go;
 
 partial class main_package {

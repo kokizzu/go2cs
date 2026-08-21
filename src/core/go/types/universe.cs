@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file sets up the universe scope and the unsafe package.
+[assembly: global::go.GoPositionMap("go/types/universe.go", "universe.cs", "AE2aAYKClIIAESaCgqa6goKCqIKCgpaCgoKWgoSCqIKCgpaEggAPHIKCuIIASKIBgoKCgpTusoKUgqaCgoKEgoKChIKCgoKssoKCgqaAgraCgpSUtMS2gg==")]
+
 namespace go.go;
 
 using constant = global::go.go.constant_package;

@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements functions for untyped constant operands.
+[assembly: global::go.GoPositionMap("go/types/const.go", "const.cs", "ABcs0oS4gt6CgpiSgoKClIIAAyAAEAKCloKClpKClpSCgpSClICClIKkgqSCpIKkpICCpKSCpIKkgqSkyICkkqSk6IKClJSClIKCgraClIKCgrak2IKClJSClIKCgoK2gpSCgoKCtqTYpqamgoKCpoKCgoKUpoKCpoKCgpSqwoKCgoKUgq7ygpKCAAcQgpSmlPaCgpSkpKjCgoKCgpSCgpSCgpSCgg==")]
+
 namespace go.go;
 
 using constant = global::go.go.constant_package;

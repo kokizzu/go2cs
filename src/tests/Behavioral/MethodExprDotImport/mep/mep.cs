@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("mep.go", "mep.cs", "AAoWgqaC")]
+
 namespace go.MethodExprDotImport;
 
 partial class mep_package {

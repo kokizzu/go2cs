@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("NamedFuncResultPointerArg.go", "NamedFuncResultPointerArg.cs", "AA4kgoC2hKaCgoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

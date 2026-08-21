@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("DeferClosure.go", "DeferClosure.cs", "AAwKooKClII=")]
+
 namespace go;
 
 using fmt = fmt_package;

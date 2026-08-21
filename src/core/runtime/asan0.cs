@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 //go:build !asan
 // Dummy ASan support API, used when not built with -asan.
+[assembly: go.GoPositionMap("runtime/asan0.go", "asan0.cs", "ABImkKKAooCigKKA")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

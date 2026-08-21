@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA4wgoCCpKiCgIKk")]
+
 namespace go.NamedInterfacePointerMethodSet;
 
 partial class pmslib_package {

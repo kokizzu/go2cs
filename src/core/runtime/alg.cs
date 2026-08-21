@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/alg.go", "alg.cs", "ABImgqaCpoKmgqiSgoIACDoAFhgACxgACyAADwSCggACEMKClKSkyIKClKSkyIKCpoKCpoKCgoKUgsqUgpQAAxwACgKCgoKUlJSClAADMgAXApSUpKS2lKSkpKSkgoKUpIKClKSCgoKUlKjIwoKUpqKClJSkgoKCgoKCgpSUgoKUgpaCloKUtoKCgIK2pIKCgpSAgramyrKmgqSCpIKkgqSCpIKkgqSCpIKkgqSCpIKCgqSCgoKkooKUgoKUuJSkooKUgoKClJSUAAIcAA0CpqKCpqKmoqai5qYACxaUuIKUgoKUgriClIKCupKCgpSmgoKClg==")]
+
 namespace go;
 
 using abi = @internal.abi_package;
@@ -444,7 +446,7 @@ internal static bool efaceeq(ж<_type> Ꮡt, @unsafe.Pointer x, @unsafe.Pointer 
         // Direct interface types are ptr, chan, map, func, and single-element structs/arrays thereof.
         // Maps and funcs are not comparable, so they can't reach here.
         // Ptrs, chans, and single-element items can be compared directly using ==.
-        return x.Value == y.Value;
+        return x == y;
     }
     return eq(x, y);
 }
@@ -462,7 +464,7 @@ internal static bool ifaceeq(ж<itab> Ꮡtab, @unsafe.Pointer x, @unsafe.Pointer
     }
     if (isDirectIface(ref (t).DerefOrNull())) {
         // See comment in efaceeq.
-        return x.Value == y.Value;
+        return x == y;
     }
     return eq(x, y);
 }

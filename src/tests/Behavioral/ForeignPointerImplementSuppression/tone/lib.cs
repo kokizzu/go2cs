@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "ABAugNKAooDsgNKAooAABhSA0oCigAAFFoA=")]
+
 namespace go.ForeignPointerImplementSuppression;
 
 partial class tone_package {

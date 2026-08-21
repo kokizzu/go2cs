@@ -15,6 +15,8 @@
 //
 // See the documentation and examples for the Builder and String types to get
 // started.
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/string.go", "string.cs", "ABk0woKUgoKokqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqaigoKUgoKClIKmooKClIKCgpSCgpSCqqKssqyyqsKCgpSCqqKCgoKUqJI=")]
+
 namespace go.vendor.golang.org.x.crypto;
 
 partial class cryptobyte_package {

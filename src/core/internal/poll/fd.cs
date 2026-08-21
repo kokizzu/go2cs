@@ -7,6 +7,8 @@
 // This is used by the net and os packages.
 // It uses a poller built into the runtime, with support from the
 // runtime scheduler.
+[assembly: go.GoPositionMap("internal/poll/fd.go", "fd.cs", "ABkwwKSAooAADh6SgpQADRzAooCigO6SgoKCgpSCgg==")]
+
 namespace go.@internal;
 
 using errors = errors_package;

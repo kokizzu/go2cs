@@ -53,6 +53,8 @@
 // return quoted Go rune literals.
 //
 // [Unquote] and [UnquoteChar] unquote Go string and rune literals.
+[assembly: go.GoPositionMap("strconv/doc.go", "doc.cs", "")]
+
 namespace go;
 
 partial class strconv_package {

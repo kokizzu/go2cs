@@ -1,6 +1,8 @@
 global using P = go.ж<bool>;
 global using M = go.map<nint, nint>;
 
+[assembly: go.GoPositionMap("TypeConversionReturnType.go", "TypeConversionReturnType.cs", "ABIQgoyCgoKCpoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

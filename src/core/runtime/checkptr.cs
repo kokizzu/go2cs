@@ -1,6 +1,8 @@
 // Copyright 2019 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/checkptr.go", "checkptr.cs", "ABAStILegrqCvKKCuoKUquaCgsyCgpaCgqgAAigAEgSAAAgSuICCuIKClIKo")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

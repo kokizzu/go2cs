@@ -7,6 +7,8 @@
 //
 // MD5 is cryptographically broken and should not be used for secure
 // applications.
+[assembly: go.GoPositionMap("crypto/md5/md5.go", "md5.cs", "ABUoggAVMIKCgoKCggAFEIKCgoKCgoKCgoLmgoKUgpSCgoKCgoKCgqaCpoKssoKCpoCkgKT4goKCgoKCgpSUlJSCgoKUlJSClKaUkoKm/IKCgqiCloKCgoKCqJKCgoI=")]
+
 namespace go.crypto;
 
 using crypto = crypto_package;

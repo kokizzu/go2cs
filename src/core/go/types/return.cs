@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements isTerminating.
+[assembly: global::go.GoPositionMap("go/types/return.go", "return.cs", "AA4isqQADxC4gJLYpoLIpobIpqaCgoKopoK4ppSCgIK2pqKCgoKClIKmAAIU8qQAEBC2goKUgtqmhMimgsiCyKaCyILIgrimgoKCpg==")]
+
 namespace go.go;
 
 using ast = global::go.go.ast_package;

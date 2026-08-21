@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/profile/encode.go", "encode.cs", "AA0agqyygoSCgpaCgoKClIKCgoIABhCCgpSCgoKCAAYQgoKogoKWgoKClKaClKaCgoKWgoSAgoKmgoK4goKUgpSClIKUgpSCgoKCgoCCpAAVDoKCgqiCgoKogoKCqIKCgqiCgoKogoKUgpQABhiCgoIABhrShIKCgoKWgoKCgoKWgoKCgoKAgoKClLaWgoKWgoKCopKCgoKUpoKUgpSCgpSWgoSAgqaAgoKkooKCloKCgqaCpoKCAAwWgqaCgoKUggANGIKCgriCpoKCggAOGoKmgoKCgoKCgoKCggAcIoKmgoKCgoIADxSCgoK4gqaCggAMFoKmgoKCgoIAEiKCgoKClKaCgpSCgpSC")]
+
 namespace go.@internal;
 
 using errors = errors_package;

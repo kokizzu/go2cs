@@ -1,5 +1,7 @@
 global using entry = go.main_package.entryᴛ1;
 
+[assembly: go.GoPositionMap("PublicizedInterfaceAnonAlias.go", "PublicizedInterfaceAnonAlias.cs", "ABYsgoKCAAIQgqaCgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

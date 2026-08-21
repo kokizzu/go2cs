@@ -1,6 +1,8 @@
 // Copyright 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/trace/mud.go", "mud.cs", "ADR4woKWgqiClIKogoKCgpSClIKCgpSClIKCgoLMgIKClJSmAAUU0qiCgoKUgoKUlIIAAhDSgpQAAhTygqiCmIKClIKCkoKCgqSCpIKUgqaogoKCpsqUlIKUlIKU")]
+
 namespace go.@internal;
 
 using cmp = cmp_package;

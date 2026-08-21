@@ -2,6 +2,8 @@ global using secondWriteOps_testFnc = object;
 global using secondWriteOps_fileMaker = object;
 global using secondAliases_hdr = go.main_package.Header;
 
+[assembly: go.GoPositionMap("LocalTypeAliasScopeSecond.go", "LocalTypeAliasScopeSecond.cs", "ABMcggAAEoSEgoCCuICCptqCiA==")]
+
 namespace go;
 
 using fmt = fmt_package;

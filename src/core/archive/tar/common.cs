@@ -8,6 +8,8 @@
 // can be read and written in a streaming manner.
 // This package aims to cover most variations of the format,
 // including those produced by GNU and BSD tar tools.
+[assembly: go.GoPositionMap("archive/tar/common.go", "common.cs", "ADBagoKCgoKmgpQAnwG8AoAABlLGgpSCgpSkpKSklAACFPKCgoKCgpSCpgACFgAIAoKCgoKUgoKUlIIAHSgADAKChKKC2IKCgoKUgoKAgoKkgoKUpoCCtqKCgpSCgoKCgpSmgIK2ooKUgoKUgoKCgpSCgoKCgpSmgIK6koKCgoKCgoKCgoKCgoKCgoailpK2pIKClIKkgqiCgpSClIKCgKS0tNaClIKCABk4gIKClKSClKSkpLaokgAHEICigKKAooCmkoKUqMSWgpSClIKogKSkpKSkgqS2lKSCpKSkpqaCABNGAAsCgpSC2pSCtIK0grSClMa0pKSClIKUgriApoKCgoKCgoKCgqaUgoKUgoKCyIKAgoKCgoKUgoK2gpQADiCilKQ=")]
+
 namespace go.archive;
 
 using errors = errors_package;

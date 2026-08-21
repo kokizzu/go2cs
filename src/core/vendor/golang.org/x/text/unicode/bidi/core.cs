@@ -1,6 +1,8 @@
 // Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/core.go", "core.cs", "ADl6soKCpgAXSPKCgIKkgIKkgIKkgIKmAAYSgqaAqMLMgqiCqAAHFKaoqKiWzAACJAAPAoKEgpaChICCgoKAgqSAgoKC2IIACRbSloKAgoKkgoLalqSkABIegKKAooCkgoKCgqaCpoKmgqiSgraElJSChpKUgoKCqIKUppaCgtyUpKS2gsqCpILeksiCgpSClKqE1qQAAxCCgoKCpoLCAA8igKSCgpSqwoKCgqiCgpSCgpaCgoKmgpaCgqaSAAkc1qiCgoLKzIKCgoCCgpTugoIADiKCgoKCgoKkzKKUgpaCgpSCgoKmgqa6goK6opSCgoKSgqaC3qaEopaClqiilIKCpoKUgoKogpTKlobakoK4goK6poSChJKUtqTIlLYABRCigoK+0oKCgoKCprSqwoKCgoKmAAUU4oKChIKClJKCppS4gpSospaCgoKohISigoKUlISCgoKUpqauwoKCgt6ClIKCAAQiABYYhLqClJaCkpTegoKCkpSmlgACJAAPAoSqooSCgoKEgpSUrLKUgsyCgoKClIKogoKUgoKCloKmuqqilKSokpSkqJKClKaCgpSCgqamgoaUpoKCgoKUlIKUpoKClIK2tqaCgpSClA==")]
+
 namespace go.vendor.golang.org.x.text.unicode;
 
 using fmt = fmt_package;

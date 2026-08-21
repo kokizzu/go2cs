@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Runtime -> tracer API.
+[assembly: go.GoPositionMap("runtime/traceruntime.go", "traceruntime.cs", "ABMokgAbQLaCgoKCgoKCggACEuIAMooBsq7CqJIAES7SgpQAAhgACQKClAAFFAAKCJYABhCCggAJFoKCgoKUAAIUAAoIloKUAAIQ0gAFENKCgoKUrLKokqiSrLK4qLauwqauwqauwqaotqi2AAUUAAkGgoKUAAIWAAgCgoKCgpQABhLSgoKUgoKUqJKokqiygoKClKyygoKCgoKUrLKokqiSqJKuwqjEpoKq1KaCgoKUqsK4lKzEgoIAAhgACQKCgoKClJQAAhAACASCAAYQgoKCgpTeppSokqiSgpSUAAISAAoGggACEgAIBgACEuKClJSCrLKClJSCAAIS4oKUlIKUtLSkgqyygpSUggACEgAIAgAHEoKClIKCgqaCppSCgoI=")]
+
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

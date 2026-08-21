@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements export filtering of an AST.
+[assembly: global::go.GoPositionMap("go/doc/exports.go", "exports.cs", "AA4gooKCgoKmyoKCgoK4goKClLSAgqSAgsaClKrCgoKUpqiSgoKmqJKCgoKCgJSAgsaCgqaClK7ygpSCgoKCgJSCgoLaggAHEKaCgpSCtoKCgqaClIKosoKCAAQQssjExJLGkoLGtILGgoK0gsaCtMiClqSS7oKCpoKCgtyAooKkgpTGrLKUpICU/KaChqKCgpSUlJS6goKCgqamgpSCrNSosoKCgoKm")]
+
 namespace go.go;
 
 using ast = global::go.go.ast_package;

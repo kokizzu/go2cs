@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("main.go", "main.cs", "ACNIgoKCgpyCAAoYgoKClISCgoKUjIKCgoqCioQADxKigoKClISCgoKUioKAgoKkhIKCioKEgoKCgoSCgIKCpISChIKChIKCgoQACx6KhIKC9oKCgpa4hLiEkoCCppSkpKTIgoI=")]
+
 namespace go;
 
 using bytes = bytes_package;

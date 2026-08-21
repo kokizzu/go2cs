@@ -68,6 +68,8 @@
 //
 // For a study of the facility in action, visit
 // https://blog.golang.org/2011/06/profiling-go-programs.html.
+[assembly: go.GoPositionMap("net/http/pprof/pprof.go", "pprof.cs", "AGO+AYKCgpSCgoKCAAgMsoKCpqIACgyigoKEgviCgoKCgvyygoKClqiCgoCUlKSC3LKCgoKWqIKCgJSUpIKs0oKI2oSCgpSWgoKClIKCgoLMgoKUqKqiAAgKgoKCgoKUgIKCpIKClIKClIKUAAkGwoKCgqaCgpaEgoKClIKCgpaClLSCgqSUyIKCgpSChISCgoKWgoSCgtaCgoCCpIKCgpSCACJG4oCCgoK4goSCggAHEoLemICCAA8IgoIAACiCgpaOgpSKgg==")]
+
 namespace go.net.http;
 
 using bufio = bufio_package;

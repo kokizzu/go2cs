@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // package goos contains GOOS-specific constants.
+[assembly: go.GoPositionMap("internal/goos/goos.go", "goos.cs", "")]
+
 namespace go.@internal;
 
 partial class goos_package {

@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("abi.go", "abi.cs", "AA9cgoKClIKCgpSCgoKUAAIYgoKUgoKUAAUQggACEoI=")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

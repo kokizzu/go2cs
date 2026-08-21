@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("NamedTypeOverStruct.go", "NamedTypeOverStruct.cs", "ABMqooKCqKKCAAISgAAGEoIACyCCggAHGIKCgoSCgoKEgoKKgoKCgoSCgoKEkoKCjIKCgoSCgoSC")]
+
 namespace go;
 
 using fmt = fmt_package;

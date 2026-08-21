@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 //go:build !msan
 // Dummy MSan support API, used when not built with -msan.
+[assembly: go.GoPositionMap("runtime/msan0.go", "msan0.cs", "ABImkKKAooCigKKA")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

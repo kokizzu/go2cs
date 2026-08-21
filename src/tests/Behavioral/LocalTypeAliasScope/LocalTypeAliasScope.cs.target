@@ -4,6 +4,8 @@ global using fileOps_fileMaker = object;
 global using localAliases_hdr = go.main_package.Header;
 global using aliasedIfaceConv_S = go.fmt_package.Stringer;
 
+[assembly: go.GoPositionMap("LocalTypeAliasScope.go", "LocalTypeAliasScope.cs", "ABM8gAAPBoIAABiClLS4ABAMggAAGoSEgpS0uAAFHIKGhAAJKIKGhoKEpoKCgoKCgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

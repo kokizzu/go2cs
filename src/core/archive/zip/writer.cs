@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("archive/zip/writer.go", "writer.cs", "AC5akq7CgpSqotqigpSC2qKCgIKklIKUloKCgoKCgoKCgoKCgriChpKCgoKCgoKUgpaCgoKCgoKUlICCpICCpICCpICCtoSCgoSAgqaCgpaCgoKCgoKCgoKWgoKChICCyoKCmJKCgoKCgoKCgoCCpICCpgACGgAKAris0oKC7oKClKbaooKAgraUlAACFAAJAoCCABImgoKUtLaClgAIEgAAEOKCgoKCgoKWmLrKgpaCgoKElITKgoKUgoKClIKClIKAgraCpqKCgpSCloKCgoKCgoK4goKCuIKClIKCgIKkgIKkggACGgAMAoCCpoKEyoKAgqaCgpa4gqrCgoK4koKClIKssoKU3LKigpSClIKClIKUgoKUgoKCgpSCgpSSguiCgoKUAAgKgoKUAA8agoKUgpSC1oKClIKClICCuIKCgoSCgoKUgpamgoKe0oKUlIKCgoKClIKUggAHEIKCgu6CyoKCpoKCpoKCpoKC")]
+
 namespace go.archive;
 
 using bufio = bufio_package;

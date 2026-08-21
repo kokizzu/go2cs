@@ -4,6 +4,8 @@
 //go:generate go run gen_sort_variants.go
 
 // Package sort provides primitives for sorting slices and user-defined collections.
+[assembly: go.GoPositionMap("sort/sort.go", "sort.cs", "ACha4oKClIIAChyCgoKCpoKCABAkkqiSrsKCgoKmAAQQkKKAooCmkMyAAAIQ4KKAppKokMqAooCigKaQrtCswKqwqrCswKqwAAJIACIC")]
+
 namespace go;
 
 using bits = math.bits_package;

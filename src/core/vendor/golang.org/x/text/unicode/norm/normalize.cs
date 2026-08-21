@@ -6,6 +6,8 @@
 //go:generate go test -tags test
 
 // Package norm contains types and functions for normalizing Unicode strings.
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/normalize.go", "normalize.cs", "ABxakoKCgoKUgoKSqJKCgoKClIKCkqiSgoKCgpSSgoKCgIKklKaigoKCgpSCgoKClKaokoKCgoKUkoKCgoKUgoKCgpSmlIKAgqSUrNKCgpSCgqaCgoKCgoKUgoKCgIKCpIKCpIKmooKUgoKqwqaCgpSUgoKCgpSSlJKmooKSgoCUgoKkgoKCgoKCgpSmgpSUgqaCpqKCgpSqoqqigqrSgoKClKaq0oKCgpSmruKCgoKCgIKCgoKCpIKClJS4lKSkgraCgqaCpoKUgoKUlKqigqqipoKCgpSCuIKCgpSAgqSCgoKUzqKssqyypoKCgpSUgoKCgpSUgoSCgoKClLiAgraClKqipoKCgoKUkpKUgoKSppKUgpSCgoKCgIKkgpKUpqzkgoKUgJSCtoKkgIKkgoKCgpSUgoKClJSAgqSCpICCtoKClKqigpSClKrCgoKUlIKUgoKCgoKCgqaUgoKClIKCpoSSgoKCgoI=")]
+
 namespace go.vendor.golang.org.x.text.unicode;
 
 // import "golang.org/x/text/unicode/norm"

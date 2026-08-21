@@ -4,6 +4,8 @@
 // Software IEEE754 64-bit floating point.
 // Only referred to (and thus linked in) by softfloat targets
 // and by tests in this directory.
+[assembly: go.GoPositionMap("runtime/softfloat64.go", "softfloat64.cs", "ABk64oKChJSCgpSCqJKCgoLMgrSm4oKChJSCgpSCqJKCgoLMgrSmgqKClIKClIKCgpSCgoKCgqaClIKUgoKmgoKCgpSClIKCgqamgqKClIKClIKCgpSCgoKCgqaClIKUgoKmgoKCgpSClIKCgqamgoKWlKampqam4pSmuIKWgoKCgoKClIKCpoKUpoKmgqaCgpaUpqampgAICIKCgoKmgoKWlKampqb0xoKCpoKCgpSCgpSCpoKCgoKUgoKUpoKChJSmpqaspgAKCKaihJSmpsKUgpSmgoKUgoKUgoKUpoKCgoKUpIKCgoLKgoKCgoKWqqKYgoKCgoKCgoKCqqKEgqiCgoKWgoKCgoKCgoSCgoKCgqiCgoSCgoKCgqimgqaCppSmgoKmgoKmgoKmgoKmgoKmgoKmgqaCpoKmgqaCgqaCgqaCgqaCgqaCgoKUgoKmgoKClIKCpoKCpoKCgoKmgoKmgoKCgg==")]
+
 namespace go;
 
 partial class runtime_package {

@@ -46,6 +46,8 @@
 // of generating random numbers, the interlacing is fine.
 // We are simply locked in to preserving the 4-way interlacing
 // in any future optimizations.
+[assembly: go.GoPositionMap("internal/chacha8rand/chacha8_generic.go", "chacha8_generic.cs", "ADp2xJaChIKEgoSChpKEgoKChIKCgoSCgoKEgoKChIKCgoSCgoKEgoKChIKCgpaCgpSCqIKCgoSCppSCgq7ihISUgoKCgoKCgoKCgoKCgoKCloKCgoKEgoKCAAYQgoKCgoKCgoKCgoKCgoKClriCzJKCgoKCgoKCgoKCgoI=")]
+
 namespace go.@internal;
 
 using goarch = go.@internal.goarch_package;

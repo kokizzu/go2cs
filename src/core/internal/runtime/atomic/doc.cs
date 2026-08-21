@@ -15,6 +15,8 @@ consistent across threads with respect to the values they manipulate. More
 specifically, operations that happen in a specific order on one thread,
 will always be observed to happen in exactly that order by another thread.
 */
+[assembly: go.GoPositionMap("internal/runtime/atomic/doc.go", "doc.cs", "")]
+
 namespace go.@internal.runtime;
 
 partial class atomic_package {

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build unix || windows || wasip1
+[assembly: go.GoPositionMap("internal/poll/fd_poll_runtime.go", "fd_poll_runtime.cs", "ABAoxJKSkpKSkpKSAAgQooKCgpSCpoKClIKokoKUpoKClIKmgqaC1oKClIKmgqaCpoKClKaCAAwYgpSkpKSkgqiSqJKokqbCgoKCgqaAgqSCgpSCAAUeAAwC")]
+
 namespace go.@internal;
 
 using errors = errors_package;

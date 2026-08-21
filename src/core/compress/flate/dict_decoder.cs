@@ -1,6 +1,8 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("compress/flate/dict_decoder.go", "dict_decoder.cs", "ACVOsoSClISClIKCgpSokoKUqJKokqyyrLKssoIAAhDSgoKCgoIACBSCgoIADyKCloIAAhLigoKClIKWgpaCrLKCgoKClA==")]
+
 namespace go.compress;
 
 partial class flate_package {

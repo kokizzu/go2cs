@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file contains the exported entry points for invoking the parser.
+[assembly: global::go.GoPositionMap("go/parser/interface.go", "interface.cs", "ABowsoKUpKaSxpSUAA1WAB8CgqiCgpaCgoCUkoKkyrjMgqiChAAFHgAPAoKCloKCgpSCgoKUgqaCgIKSgoK4lKS4AAIaABECgqiCgpaCgoCUkoKktoKogqiClIQABRTy")]
+
 namespace go.go;
 
 using bytes = bytes_package;

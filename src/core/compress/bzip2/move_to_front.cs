@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("compress/bzip2/move_to_front.go", "move_to_front.cs", "AAskooKUqqKCloKClKbqgoKCqJI=")]
+
 namespace go.compress;
 
 partial class bzip2_package {

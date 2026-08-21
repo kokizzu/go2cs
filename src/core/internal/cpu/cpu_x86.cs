@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build 386 || amd64
+[assembly: go.GoPositionMap("internal/cpu/cpu_x86.go", "cpu_x86.cs", "AA4YpgAbRoIABxCCpu6m7qbOhIKWhISCgoKCgoK6zISClIKUzJaEgpaCgoKCgoKEgoKCloKEgpaCpoKssoKWhLKCgoKCgpaCqIKCgqimooLc")]
+
 namespace go.@internal;
 
 using ꓸꓸꓸuint32 = Span<uint32>;

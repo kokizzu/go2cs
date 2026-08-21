@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("compress/flate/huffman_code.go", "huffman_code.cs", "ADBokoKmgKSCqJKCgoKCgoKWgraCtoK2gvSUpoKCgoKU7IKCgoKmAAQmAA4CgpSCgqiCnsrEptyCgrqEgoKCyoKCgpaClIKUgsqUgpaAypSUgqaC7oKWgoKCpoKUqsKCgoKC3ISCgoKUAAMQ4riUlJSCgoKUqIKmlJSUlpTKooKmgKSCpoDIooKmgKSCgpSmgKSC")]
+
 namespace go.compress;
 
 using math = math_package;

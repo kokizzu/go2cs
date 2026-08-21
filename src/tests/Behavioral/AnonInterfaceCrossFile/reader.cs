@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("reader.go", "reader.cs", "ABYsiA==")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("GenericStructFields.go", "GenericStructFields.cs", "ABgwgAAKGIQAESiCgoKKgoKCioLqgoKClIKCAAgMgA==")]
+
 namespace go;
 
 using fmt = fmt_package;

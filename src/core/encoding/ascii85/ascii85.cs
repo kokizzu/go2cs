@@ -4,6 +4,8 @@
 
 // Package ascii85 implements the ascii85 data encoding
 // as used in the btoa tool and Adobe's PostScript and PDF document formats.
+[assembly: go.GoPositionMap("encoding/ascii85/ascii85.go", "ascii85.cs", "AA82AA0CgpaCgoKCgoKGkrSCpIKkgqS4goKCgoKogoKogoKClJSClKiQrtAAChSygqiCgoKClIKCgpSCgIKkqIKCgpSCgoKAgraCqIKCgqq0goKClAAEErIAAiAAEQKCgoKClJS0grSCtKSCgoKCgoKCgqaCgsqClLiUgoKCuKiQAAwYsoKUgpaUgoKCmLKCgoKCgpSmgoKCgqa6gpSCgqiC")]
+
 namespace go.encoding;
 
 using io = io_package;

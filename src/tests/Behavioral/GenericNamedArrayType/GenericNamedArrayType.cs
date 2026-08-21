@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("GenericNamedArrayType.go", "GenericNamedArrayType.cs", "ABAigoKCgoSCgoI=")]
+
 namespace go;
 
 using fmt = fmt_package;

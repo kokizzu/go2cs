@@ -1,6 +1,8 @@
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("strconv/eisel_lemire.go", "eisel_lemire.cs", "ABky2oKClJSCqIKCgpaWgoKCgpSClKiCgpaCqIKCgoLugpSCgpSmAAsWgoKUlIKogoKClpaCgoKClIKUqIKCloKogoKCgu6ClIKClA==")]
+
 namespace go;
 
 // This file implements the Eisel-Lemire ParseFloat algorithm, published in

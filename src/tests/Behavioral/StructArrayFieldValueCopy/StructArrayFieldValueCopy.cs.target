@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("StructArrayFieldValueCopy.go", "StructArrayFieldValueCopy.cs", "AA4ggoKUgqaiAAcUooKmoqaC2oKSgoKC1oKCgoLWgoKCgtaCgoKC1oKCgoKC1oKCgtaCgoKC5oKCgoKChIKCgtaCgoSiltaCgoKCgtaCgoSCpoKCgoKCgoKCgoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

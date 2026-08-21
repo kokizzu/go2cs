@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("b_second.go", "b_second.cs", "5oKmgg==")]
+
 namespace go;
 
 partial class main_package {

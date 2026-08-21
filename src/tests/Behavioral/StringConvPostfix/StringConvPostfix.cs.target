@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("StringConvPostfix.go", "StringConvPostfix.cs", "AAschIKClIaChoaCgoqCgoKMgoKKgoKKuA==")]
+
 namespace go;
 
 using fmt = fmt_package;

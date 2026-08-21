@@ -5,6 +5,8 @@
 //
 // See malloc.go for overview.
 // See also mksizeclasses.go for how we decide what size classes to use.
+[assembly: go.GoPositionMap("runtime/msize.go", "msize.cs", "AA0cwoKUkriClKaCgpQ=")]
+
 namespace go;
 
 partial class runtime_package {

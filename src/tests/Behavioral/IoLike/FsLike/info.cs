@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("info.go", "info.cs", "AAsagg==")]
+
 namespace go.IoLike;
 
 partial class FsLike_package {

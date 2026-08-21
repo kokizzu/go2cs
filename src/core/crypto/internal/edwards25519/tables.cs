@@ -1,6 +1,8 @@
 // Copyright (c) 2019 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/tables.go", "tables.cs", "ACBE1oKSkri6toKSkpS6toKSgpKSgrqSgpKCkpKCvuSChIKUgqaoxIKEgpSCpqiyqLI=")]
+
 namespace go.crypto.@internal;
 
 using subtle = go.crypto.subtle_package;

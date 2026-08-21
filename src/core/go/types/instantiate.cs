@@ -5,6 +5,8 @@
 // license that can be found in the LICENSE file.
 // This file implements instantiation of generic types
 // through substitution of type parameters by type arguments.
+[assembly: global::go.GoPositionMap("go/types/instantiate.go", "instantiate.cs", "ABxuAB4CgoKUhIKCgoKUgJK4ggACHAAPDNKClIKUqIKCzLKClLqCgIK4lLaCloSSlIKWpoSEkpSClIiykpiCyOissoKUtLSmgoKClqaCgpTKgoKCpgAGEgAJAoKCgpSAgqaCgpaCgoKCgpSUlKiCzIKCuoKClKiAkoKUuJKCuJK4pJKUgpSUgpS6gsyClIKUlJiSgriCkoKCppSUgoKUtLS0lJaqopSCgtiCguiCtg==")]
+
 namespace go.go;
 
 using errors = errors_package;

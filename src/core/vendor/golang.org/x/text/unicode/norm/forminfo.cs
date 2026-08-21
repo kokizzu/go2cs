@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/forminfo.go", "forminfo.cs", "AFO+AQAIAoLKqrQABByAooCkgKKAooCkgqaCpoKmgqq0gpSCgoKokqiSgpSqoqqipoKCgoKCgoIAAx4ACwKCgpSmgoKmgoKokoKkuJKCpLyygqTcgpSmgoKCgoKCgoKCgpSCgpSm")]
+
 namespace go.vendor.golang.org.x.text.unicode;
 
 using binary = encoding.binary_package;

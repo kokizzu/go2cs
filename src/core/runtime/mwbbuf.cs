@@ -18,6 +18,8 @@
 // registers and disallow any GC safe points that could observe the
 // stack frame (since we don't know the types of the spilled
 // registers).
+[assembly: go.GoPositionMap("runtime/mwbbuf.go", "mwbbuf.cs", "AEGcAZKCgriUloIAAxLSqJIAAjIAFgKClIKCqqKClIKCAAIkABEIuIK6ggADHAANBIKCqISUgpSCAA8igoKC7pSCgriCgpSWgoKWgoKUgqiE")]
+
 namespace go;
 
 using goarch = @internal.goarch_package;

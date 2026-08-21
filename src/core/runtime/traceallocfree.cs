@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Runtime -> tracer API for memory events.
+[assembly: go.GoPositionMap("runtime/traceallocfree.go", "traceallocfree.cs", "ABcwwoiigoKUqIKCgpaWkoKogoKmloKogoKCgpS6kpSmooKUqLKosqiSqLKssqyyqJKokqiSgqiSgqiSqJLYkoKU")]
+
 namespace go;
 
 using abi = @internal.abi_package;

@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("MethodlessFuncTypeAssert.go", "MethodlessFuncTypeAssert.cs", "AAoWhICCpKaCgoKGgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

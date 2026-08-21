@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements nat-to-string conversion functions.
+[assembly: go.GoPositionMap("math/big/natconv.go", "natconv.cs", "ABw+8oKUgqao6IKCgpSClAAHagAyBIaC3oKWlpKUgoKCgoKUlLS0tILGgoKCAAkWgoKCgoKCgoKCgpSCpIKUlpKUtLSClMa0goKUgpaCloKCgqiWgqiClpSmlKiClJaUlqqiqJKCqIK6goKUloCUgoKClpSCgoKCqJSCpoKCloK6goKCqKiWlrqCgriCgpYAAiQAEASEkoKUgoKClIKCgrqWgoK6goKUlIKCuIKCuJSCgoKCzJKCABgukqikgqiCgpiSgoKUqISSgoKCgpSCqIKCgpa6gpY=")]
+
 namespace go.math;
 
 using errors = errors_package;

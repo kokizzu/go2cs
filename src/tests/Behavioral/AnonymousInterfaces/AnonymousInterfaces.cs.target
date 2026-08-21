@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("AnonymousInterfaces.go", "AnonymousInterfaces.cs", "ABESgpTEAAwKgoCClAALCoKCggAJCIKCgoIADRCCgoKCAA4WgKKA1IKCgt6CggAICoCigKKA6IKCAAYQguqCgpSCgoKUgoKUAAgSgoKClKaCgoKCgoKEgoKEgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

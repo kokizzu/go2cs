@@ -24,6 +24,8 @@ global using anonI = go.main_package.anonIᴛ1;
 global using direct = go.main_package.Header;
 global using aliasOfAlias = go.slice<go.main_package.Header>;
 
+[assembly: go.GoPositionMap("main.go", "main.cs", "AChQgAASaoAAHQSCgoKCgoKCgoKCgoKCgoCSgoKCgoKCgoKIgoKCgoSChIKEgoKCgoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

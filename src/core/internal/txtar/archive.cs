@@ -29,6 +29,8 @@
 // parsers should consider a final newline to be present anyway.
 //
 // There are no possible syntax errors in a txtar archive.
+[assembly: go.GoPositionMap("internal/txtar/archive.go", "archive.cs", "ADdy4oKCgoKUqJKCgpSqooKCgoKCgpQABhrygoKAgqSCgpS+0oKUgIKkgpSqooKUgoKC")]
+
 namespace go.@internal;
 
 using bytes = bytes_package;

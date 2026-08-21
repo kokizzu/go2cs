@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Parse nodes.
+[assembly: go.GoPositionMap("text/template/parse/node.go", "node.cs", "ACdUgqqiACROgqaCpoKmgoKCpoKCuKKClIKClKaCAAoWgqaCpoKmgqaCAAoWgqaCgoKmgoKCpoKmggANHIKmgqaCgoKmgoKCgpSUgpSmgoKUuIKmooKUgoKUgoKClKaCAA0cgqaCgoKmgoKCpoKmggAKFoKmgqaCgoKmgoKClICCgoKCpLiCpqKClIKClAAKGJKs0oKs0oKmgqaCpoKmggALGIKmgoKCpoKCgpS4gqaCAAkUgqa4poKmgqaCpoIACRSCprjWgqaCpoKmggAMGoKmgoKCpoKCgriCpoIADRyCqJKClIKClKaCgoKmgoCCgoKUpIKCuIKmggAKFoLmgoKUpoKmgqaCABcqgoKUgoKUgpSCgoKCgoKmgJKkgoK2goKCgoKCuIKCgpSCgoKCgoK4goKkgpSCpoKUgpSCgpSCgriClKqigoKCgoKUgoLKgqaCpoKmgoKCAAsYgqaCpoKmgqaCAAoWgtaCpoKmgqaCAAoWgqaC1oKmgqaCpoIADRyCgoLmgoKUpKSkpIKCgoKCgoKClKaCpoKUpKSkAAkSgqaCAAoWgqaA0oCigKKAAAoUgqaA0oCigKKA/oKmggAHEIKmggAMGoKmgoKC1oKCgoKClKaCpoI=")]
+
 namespace go.text.template;
 
 using fmt = fmt_package;

@@ -19,6 +19,8 @@ timing side-channels:
 		return hmac.Equal(messageMAC, expectedMAC)
 	}
 */
+[assembly: go.GoPositionMap("crypto/hmac/hmac.go", "hmac.cs", "AClwgoKEgoCCtoKUgqaCpoCigKSCgoCCpJaCAAYQgoKUgoKWgoKWgoKCgqiCggACEuKCgoK4goKCgrKUlILWgpSCgoKUgpSCgoKUgpSEqMg=")]
+
 namespace go.crypto;
 
 using boring = go.crypto.@internal.boring_package;

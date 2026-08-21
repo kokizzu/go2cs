@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !unix
+[assembly: go.GoPositionMap("runtime/create_file_nounix.go", "create_file_nounix.cs", "AA8WgoI=")]
+
 namespace go;
 
 partial class runtime_package {

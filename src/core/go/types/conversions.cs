@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements typechecking of conversions.
+[assembly: global::go.GoPositionMap("go/types/conversions.go", "conversions.cs", "ABQowoSCgOikgoCCpIKUtJaCgpaYsoKCAAQQ9IKClIKUgpSUlJSUtoLGgoKUlILMggAIEraklJYABiIAEwSAgqaCgoKCgoKogsyAgoCCguyCqIKogqiCuoKmgrqAgpSCgqaUlMaAgoKCpoKUAAgOgpaSgoKClMyUkrKClIKygpSCgpTIkrKClIKCgpS2ooKUgoKUuKaCgqaCgqaCgqaCgIKCpA==")]
+
 namespace go.go;
 
 using constant = global::go.go.constant_package;

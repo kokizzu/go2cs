@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build windows
+[assembly: go.GoPositionMap("internal/poll/errno_windows.go", "errno_windows.cs", "ABAoopSk2g==")]
+
 namespace go.@internal;
 
 using Δsyscall = syscall_package;

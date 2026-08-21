@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build windows
+[assembly: go.GoPositionMap("internal/syscall/execenv/execenv_windows.go", "execenv_windows.cs", "AA8uAA4CgpSCgoKUhIKkgoKWgoKU")]
+
 namespace go.@internal.syscall;
 
 using Δwindows = go.@internal.syscall.windows_package;

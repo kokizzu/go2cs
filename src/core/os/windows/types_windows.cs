@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("os/types_windows.go", "types_windows.cs", "ACxcwoKCgpaCgoKCgpSWAA4o4gAJGAAICgAMHsIAChqiAAcQypQAAhDkpoLKgoKCgoKCpqaigpQAChiCgpaUpLiClKQABCAAEAau4oKUlISUgpSUpKSCgpSCprimgqiSAAkUwoKClJSCgpSUgoIADyKEgoKUgoKCgpSCgoKC2qKCgoKCgqaCprKCgpSCgpSokg==")]
+
 namespace go;
 
 using filepathlite = @internal.filepathlite_package;

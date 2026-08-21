@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("ReflectFieldAddrWrite.go", "ReflectFieldAddrWrite.cs", "ABE2goKmgoKqgoL2gpaCgoiIgoKCiA==")]
+
 namespace go;
 
 using fmt = fmt_package;

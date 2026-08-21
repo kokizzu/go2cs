@@ -188,6 +188,8 @@ And then a client could delete boring values from the tree using:
 		}
 	}
 */
+[assembly: go.GoPositionMap("iter/iter.go", "iter.cs", "ABesA6YAAjAAGQIABhKigoKClIKClIKUgoKCgoKmgoCCpKSClIKCgsSyhIKUgpSCgoKWgpSUppSShIKCgoKWgpSUygACMgAZAgAHFKKCgoKUgoKUgpSCgoKCgqaCgIKkpIKUgoKCgsTChIKUgpSCgoKWgpSUppSShIKCgoKWgpSUyg==")]
+
 namespace go;
 
 using race = @internal.race_package;

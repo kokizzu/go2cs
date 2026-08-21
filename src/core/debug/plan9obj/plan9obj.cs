@@ -4,6 +4,8 @@
 /*
  * Plan 9 a.out constants and data structures
  */
+[assembly: go.GoPositionMap("debug/plan9obj/plan9obj.go", "plan9obj.cs", "")]
+
 namespace go.debug;
 
 partial class plan9obj_package {

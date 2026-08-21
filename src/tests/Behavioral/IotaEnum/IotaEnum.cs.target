@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("IotaEnum.go", "IotaEnum.cs", "ADVugoKUADJqgoIABxCigqaCgoCCpKaApIKmopSCpIKkAA4eooKUAAkUooKUAA84gpqChJSkpKaCgoKCgoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

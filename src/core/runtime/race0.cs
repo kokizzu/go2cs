@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 //go:build !race
 // Dummy race detection API, used when not built with -race.
+[assembly: go.GoPositionMap("runtime/race0.go", "race0.cs", "ABImkKKAooCAooCigICigKKAooCigKKAooCigKKAooCigKKAooCigKKAooCigKKAooCigICigKKA")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

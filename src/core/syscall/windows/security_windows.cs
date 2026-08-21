@@ -1,6 +1,8 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("syscall/security_windows.go", "security_windows.cs", "ABxO8oKClJKCgoKClIKUggAqZsKCgoKUgoKUgtzigpSCgpSCgoKCppKSgoKCgoKClIKUgs7CgoKClILYkqiSgoKCgpSs4oKCgoKmkpKCgoKCgpSClIIAP8AB4oKClIKCgpSokqiSkoKCgoKUgpSCzJKCgpSssoKClKqikoKCgoKUgpSC")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

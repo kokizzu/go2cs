@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // package goarch contains GOARCH-specific constants.
+[assembly: go.GoPositionMap("internal/goarch/goarch.go", "goarch.cs", "")]
+
 namespace go.@internal;
 
 partial class goarch_package {

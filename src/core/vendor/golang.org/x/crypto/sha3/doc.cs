@@ -59,6 +59,8 @@
 // They produce output of the same length, with the same security strengths
 // against all attacks. This means, in particular, that SHA3-256 only has
 // 128-bit collision resistance, because its output length is 32 bytes.
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/doc.go", "doc.cs", "")]
+
 namespace go.vendor.golang.org.x.crypto;
 
 partial class sha3_package {

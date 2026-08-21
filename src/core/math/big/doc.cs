@@ -95,6 +95,8 @@ a variety of supported formats (see the respective SetString documentation).
 Finally, *[Int], *[Rat], and *[Float] satisfy [fmt.Scanner] for scanning
 and (except for *[Rat]) the Formatter interface for formatted printing.
 */
+[assembly: go.GoPositionMap("math/big/doc.go", "doc.cs", "")]
+
 namespace go.math;
 
 partial class big_package {

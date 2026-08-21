@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("switch.go", "switch.cs", "ABlAgoKYlKQ=")]
+
 namespace go;
 
 partial class main_package {

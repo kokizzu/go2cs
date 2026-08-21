@@ -5,6 +5,8 @@
 // Package cmplx provides basic constants and mathematical functions for
 // complex numbers. Special case handling conforms to the C99 standard
 // Annex G IEC 60559-compatible complex arithmetic.
+[assembly: go.GoPositionMap("math/cmplx/abs.go", "abs.cs", "AA8akA==")]
+
 namespace go.math;
 
 using math = math_package;

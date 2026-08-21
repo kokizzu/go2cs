@@ -4,6 +4,8 @@
 //     *.cs) and is regenerated on every conversion for upgrade-time diff review. Do not edit.
 // </auto-generated>
 
+[assembly: go.GoPositionMap("state.go", "state.cs", "")]
+
 namespace go;
 
 partial class main_package {

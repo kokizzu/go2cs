@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("Solitaire.go", "Solitaire.cs", "AA9OgoKCgoKCpoK4ggAEEIKCgoKCgpSogoKCAAIQgpKEhISGgoKClKaCqISClqaCgpQ=")]
+
 namespace go;
 
 partial class main_package {

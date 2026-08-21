@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("AnonIfaceMethodSetWidening.go", "AnonIfaceMethodSetWidening.cs", "AAwYgNKAABYIhIKAiJSogoCIlA==")]
+
 namespace go;
 
 using fmt = fmt_package;

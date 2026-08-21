@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package base32 implements base32 encoding as specified by RFC 4648.
+[assembly: go.GoPositionMap("encoding/base32/base32.go", "base32.cs", "ACN68oKWgoKChLiUtLSUAAkiAAkClLS0ggACGgAKAoLKhJKCpoKEgoKCgoKCgoSCqIKCqIKkgoKCpIKCpIKCgqSCgriCgoLOooKCgqiSgoIACxiygqiCgoKClIKCgpSCgIKkqIKCgoKUgoCCpIKogoKCqrSCgoKClAACENKqooKUAAQSsq4ACASEgoSEkoSEgpSmgpSCgpSUlIKUptyClJSCgpS6pIKCpIKCpIKCpIKCpIKklAACEAAIAoKCgqzEgoKUhIKCqJKCgoIADRyygoKCpoLKgpSmxIKCgoKUloKogoKUgpiSgoKClIKWgoKClIKYkoKUlISCgoKClJSCgpaClsqWAAYSooKCgpSClKaCgoKCgoKmlKiSqqKmgoKU")]
+
 namespace go.encoding;
 
 using io = io_package;

@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/types/decl.go", "decl.cs", "ABMg6oKAgoKCgoKklIK6koKCgpSU6uKCgpSCgoKCABw+goKWtIiCsriCqAACGpQACwLIgsjcyAAFFKSCAAgGgoKCqIKUAAcSlIK0graSttQADwwACASCgoKCgoK6goKCgoKCgoK0urKCAAEYAAkCgpSAgpS2ggAICuiCgoKUlIKClLq4gsyCqILo+oiClIKmgrqCgpSUloKClJSCgoKCgpSClIKqopKCgqYAHiqAooCigKKAooCkgoK4gsiSgpS0loKUgrSCtJKkgqTWxOjEyNKWgoKUgpaWgoKmgpSClJiSgu6UlAAIBrKWggAKGIKUlJaCgoKCgpaUgoKCgqaCAAYQgoKoqJKCgpSCAAgG4paEgoKAkraYkoKopoKUgpYACBKCloKCgpSCgpaCgoLuhIKCloKClKiCloKEgoKCqIKCqIIABhCCggAJCOK4goLMAAcSgoKCloKCpoKCyoKmlIKU6LiClLSkgoKUgIKklNYACA6CgoKCloKWpvqCgpSChriCgqiSzIKCgrqmgoCCgpSUpoLKgoCCgoKCgrqCgoCmqIKCggAIDsKWhIIABhCCgoKCqIKEgrqCosqihJKUhoKSgoSCgpaYjILSyISCgpiSgoKWpoKkoraC3IKCpqqIgsTIiIK0gpLE")]
+
 namespace go.go;
 
 using fmt = fmt_package;

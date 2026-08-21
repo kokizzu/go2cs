@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("PointerToNilPointerIdentity.go", "PointerToNilPointerIdentity.cs", "ABssgpKUgoaGhoKGgoaSgoaSkpKGgoiCgoKCgoiCgoKCgoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

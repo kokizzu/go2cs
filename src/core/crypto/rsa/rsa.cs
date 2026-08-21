@@ -22,6 +22,8 @@
 // Operations involving private keys are implemented using constant-time
 // algorithms, except for [GenerateKey], [PrivateKey.Precompute], and
 // [PrivateKey.Validate].
+[assembly: go.GoPositionMap("crypto/rsa/rsa.go", "rsa.cs", "ADt20qiSgoKUABM60oKUgpSClAANIJKqooKClIKUgpSCgqaq0gACFgAIAoCCptzSgpaUgpTIgIKCgIKkgIKklOgAHz7CgIK4gpSClJSCAAYQgoKCgoKCgqYAAhDSAAcsABMChISCgpSCgoKCgoKCgoKCloKClIKClIKClgARIpaChIKWgpSmpoKCqISCggALGIKUgoKCgpSogoKCuoKCgoKCgpS4loKChIKCgsiCqJKAgqSAgqSAgqSqooKEgoKCgoKEgoKUAAgSgoSCgpSCgpSEAAIqABkOgIKkgoKCloKCgpSUhIKChIKChIKChIKCloKEgoKCgpSWAAoaooaigoKUgpSClIKUgrqCloKEgoSEgoKCgoSChIKEAAcUsoKWzIKCgpSCgpSUgoKCgpSCgqiUlJSUlJaCgoKoAAIaAAoCpqKAgqSChJaCgoKUgoKUloKCloKChISChIKEzI7ygoSCgoKCgpaClg==")]
+
 namespace go.crypto;
 
 using crypto = crypto_package;

@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA4ggA==")]
+
 namespace go;
 
 partial class ShadowedImportConstLib_package {

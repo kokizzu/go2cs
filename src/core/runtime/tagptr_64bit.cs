@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build amd64 || arm64 || loong64 || mips64 || mips64le || ppc64 || ppc64le || riscv64 || s390x || wasm
+[assembly: go.GoPositionMap("runtime/tagptr_64bit.go", "tagptr_64bit.cs", "ABxyooKClJSClKiSppSClIKUqJI=")]
+
 namespace go;
 
 using goarch = @internal.goarch_package;

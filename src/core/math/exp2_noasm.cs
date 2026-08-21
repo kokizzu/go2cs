@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !arm64
+[assembly: go.GoPositionMap("math/exp2_noasm.go", "exp2_noasm.cs", "AAwWgg==")]
+
 namespace go;
 
 partial class math_package {

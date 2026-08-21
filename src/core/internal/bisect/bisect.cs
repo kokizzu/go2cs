@@ -174,6 +174,8 @@
 // When the textual description is expensive to compute,
 // checking [Matcher.Visible] can help the avoid that expense
 // in most runs.
+[assembly: go.GoPositionMap("internal/bisect/bisect.go", "bisect.cs", "ALwBggMACAKCloSmgoKCgriCgoKCgsyCgoKCgqiUgqiCgoKClIKClJKCgpS0pIKUpIKkgpSCpIKUpJSUgoKClIKUgpSCtpSCgoK2ABQywqiygpSosoKUqJKCgoKmqqKClKrCgoKClKaokoKCgoKCgqiSgoKCgoKUgoKCgoKUgqyygpSqwoKClIKWlIKWgoKCgoKClIKCqIKCppSClLgACBaigoKCgqqihIKEgoKCgoKCgoKCgoKmgoKCrLKokoKCgoKClIIABRAACQSCgoKClIK6goKUgqiClJKUgoKApLS06JKmgoKApKQACRCCgqSUgqrCgoKutAAIBLS0tLS0tLS0gsaCxoLGgsaCxoLGgsaCxoLIAAoSgAAIFoKCgqaCgoKUpoKCgoKUpoKCgoKUABEqwoKClIKCgq7CgoKCuoKClII=")]
+
 namespace go.@internal;
 
 using Δruntime = runtime_package;

@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAwoguiC3oKogoKClA==")]
+
 namespace go.NamedSliceChildPkg;
 
 using IoLike = IoLike_package;

@@ -4,6 +4,8 @@
 
 // Package rand implements a cryptographically secure
 // random number generator.
+[assembly: go.GoPositionMap("crypto/rand/rand.go", "rand.cs", "ABs0oqqigoKCgpSAgqSU")]
+
 namespace go.crypto;
 
 using io = io_package;

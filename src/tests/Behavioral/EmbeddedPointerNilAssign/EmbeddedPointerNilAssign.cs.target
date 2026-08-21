@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("EmbeddedPointerNilAssign.go", "EmbeddedPointerNilAssign.cs", "AA0UgoIABxCCrIIACAaChoaygpTIgoKGgoKGgoKCgoI=")]
+
 namespace go;
 
 using fmt = fmt_package;

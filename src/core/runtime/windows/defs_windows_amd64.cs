@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/defs_windows_amd64.go", "defs_windows_amd64.cs", "AEF+gKKAppCipICigKKApIKCpoKCgoKCgoKCgoKCgoKCgoKCgoKCggANHII=")]
+
 namespace go;
 
 partial class runtime_package {

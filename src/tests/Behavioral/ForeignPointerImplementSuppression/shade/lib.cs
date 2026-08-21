@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "")]
+
 namespace go.ForeignPointerImplementSuppression;
 
 partial class shade_package {

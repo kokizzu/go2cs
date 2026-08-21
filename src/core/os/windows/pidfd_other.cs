@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build (unix && !linux) || (js && wasm) || wasip1 || windows
+[assembly: go.GoPositionMap("os/pidfd_other.go", "pidfd_other.cs", "AAwWgqaCpoKmpIKmgg==")]
+
 namespace go;
 
 using syscall = syscall_package;

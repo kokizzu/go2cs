@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AA44gMyAAAQUgAAGHIAABhiApoAABhCAAAocgKaA")]
+
 namespace go.SamePackageImplementNoWitness;
 
 partial class ledger_package {

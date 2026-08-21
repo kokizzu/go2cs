@@ -5,6 +5,8 @@
 // Package godebugs provides a table of known GODEBUG settings,
 // for use by a variety of other packages, including internal/godebug,
 // runtime, runtime/metrics, and cmd/go/internal/load.
+[assembly: go.GoPositionMap("internal/godebugs/table.go", "table.cs", "AEiIAaSCgoKCgoKUgpSm")]
+
 namespace go.@internal;
 
 partial class godebugs_package {

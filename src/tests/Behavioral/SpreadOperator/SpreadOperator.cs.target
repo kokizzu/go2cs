@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("SpreadOperator.go", "SpreadOperator.cs", "AAkKooKClKaChoY=")]
+
 namespace go;
 
 using fmt = fmt_package;

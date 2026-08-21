@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("GenericInterfaceConstraint.go", "GenericInterfaceConstraint.cs", "ABc4gtaCpoLugtaCqKKCgpSqooK4gqaCgoKChIKCgoSCgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

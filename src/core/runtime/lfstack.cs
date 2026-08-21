@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Lock-free stack.
+[assembly: go.GoPositionMap("runtime/lfstack.go", "lfstack.cs", "ABMwooKCgIKCpIKCgoLKgoKCgpSCgoLKguqigIKkgoKCuIKmgg==")]
+
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;

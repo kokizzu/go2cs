@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("RangePointerArrayConversion.go", "RangePointerArrayConversion.cs", "AAkQgpKChIKU")]
+
 namespace go;
 
 using fmt = fmt_package;

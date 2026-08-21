@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("net/tcpsockopt_windows.go", "tcpsockopt_windows.cs", "ABgugoKWgqSmgoKCpoKCloKkpoKCgqaCgqSWgoLYAAgQmK62AA4KgpSCuoKC2pKCgoI=")]
+
 namespace go;
 
 using windows = @internal.syscall.windows_package;

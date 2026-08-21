@@ -7,6 +7,8 @@
 //
 // This package is shared by the standard library (which vendors it)
 // and x/net/http2. It comes with no API stability promise.
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http/httpguts/guts.go", "guts.cs", "ABMosoKClA==")]
+
 namespace go.vendor.golang.org.x.net.http;
 
 using textproto = go.net.textproto_package;

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Deep equality test via reflection
+[assembly: go.GoPositionMap("reflect/deepequal.go", "deepequal.cs", "ABrKAwBJAoKUgoKClA==")]
+
 namespace go;
 
 using bytealg = @internal.bytealg_package;

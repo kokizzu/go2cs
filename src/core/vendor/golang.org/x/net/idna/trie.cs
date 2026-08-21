@@ -2,6 +2,8 @@
 // Copyright 2016 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/trie.go", "trie.cs", "AB9CwoKCgoKCgoKClIKUpg==")]
+
 namespace go.vendor.golang.org.x.net;
 
 partial class idna_package {

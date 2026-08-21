@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("net/dial.go", "dial.cs", "AB5agpSkuIKElqaCgpQAZuQBgKSCgpSClAACEgAIApKUgIKkpoKClKqigpSCgqaEkoKClKamgoKUuLKCktiC2KSUgpSCgoKCgqakrLKCgpSClJSCgpSClKSCgpS8lIK0grSCpIKCgpSUgpS0gpS0gpS2gpSuwgACEuIAAmYAMAKCAAIaAAoCkgAJIvIABSoAFgKClIKCgoCCgpK2gIKCkrK06LiCgIKSgoKmgoKWzJKClJYADA7igpaChAAAEMKCgpSC5oLKpoKSpoKUgrSCksaClIKUlIKUygAJEOKEgqTIgoCCgpSClJSCgoLIgoKUgqiClNoACAKCgoKClIKQtoKUgoKk1oLEgsSC1JSClAAnVsIAAhLi3sKCgpTKgoKUgqTW1JSClK7CgoKUyoKClMTE1JSClAAIPAAVAoIAAjgAGQKC")]
+
 namespace go;
 
 using context = context_package;

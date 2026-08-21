@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAk0goKogoKogoKogoKogq6CpoCigKSCgqqCpoKCpoKmggAnBoKChIKEhIKCiIKCgoKEgoKChISCgoSCgoSEgoKCgoSChIKCqoKCgqYAAhSCgqqygoKCgoKCgpSCpgACEIKCgoKCgoKCgrisgoKClKqCgoKqgoKUgoKClIKmqIKCggAIHICkgKSAqIA=")]
+
 namespace go;
 
 using fmt = fmt_package;
@@ -70,6 +72,12 @@ private static readonly object selfLineDiffersFromCallˢ = (@string)"self line d
 private static readonly object distinctCallSitesˢ = (@string)"distinct call sites:"u8;
 private static readonly object sameFileˢ = (@string)"same file:"u8;
 private static readonly object fileReportedˢ = (@string)"file reported:"u8;
+private static readonly object callerFileTailˢ = (@string)"caller file tail:"u8;
+private static readonly object callerFileRootedˢ = (@string)"caller file rooted:"u8;
+private static readonly object callerLineˢ = (@string)"caller line:"u8;
+private static readonly object callerLineTwoFramesUpˢ = (@string)"caller line two frames up:"u8;
+private static readonly object tracebackNamesAGoFileˢ = (@string)"traceback names a go file:"u8;
+private static readonly @string mainGoˢ = "/main.go:"u8;
 private static readonly object okAt0ˢ = (@string)"ok at 0:"u8;
 private static readonly object okAt1ˢ = (@string)"ok at 1:"u8;
 private static readonly object okTwoLevelsUpˢ = (@string)"ok two levels up:"u8;
@@ -103,6 +111,11 @@ internal static void Main() {
     var (_, here, _, _) = Δruntime.Caller(0);
     fmt.Println(sameFileˢ, here == callerFile());
     fmt.Println(fileReportedˢ, len(here) > 0);
+    fmt.Println(callerFileTailˢ, callerFileTail());
+    fmt.Println(callerFileRootedˢ, callerFileRooted());
+    fmt.Println(callerLineˢ, selfLine());
+    fmt.Println(callerLineTwoFramesUpˢ, wrapGrand());
+    fmt.Println(tracebackNamesAGoFileˢ, hasSub(stackText(), mainGoˢ));
     fmt.Println(okAt0ˢ, okAt(0));
     fmt.Println(okAt1ˢ, okAt(1));
     fmt.Println(okTwoLevelsUpˢ, deepOK());
@@ -159,6 +172,30 @@ internal static (bool fwd, bool back) framesSeparators() {
         }
     }
     return (fwd, back);
+}
+
+internal static @string callerFileTail() {
+    var (_, @file, _, _) = Δruntime.Caller(0);
+    nint cut = 0;
+    nint seen = 0;
+    for (nint i = len(@file) - 1; i >= 0; i--) {
+        if (@file[i] == (rune)'/') {
+            seen++;
+            if (seen == 2) {
+                cut = i + 1;
+                break;
+            }
+        }
+    }
+    return @file[(int)(cut)..];
+}
+
+internal static bool callerFileRooted() {
+    var (_, @file, _, _) = Δruntime.Caller(0);
+    if (len(@file) > 0 && @file[0] == (rune)'/') {
+        return true;
+    }
+    return len(@file) > 1 && @file[1] == (rune)':';
 }
 
 internal static bool stackHasBackslash() {

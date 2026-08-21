@@ -23,6 +23,8 @@
 // are kept alive, as we free batches once we're done with them.
 //
 // The conversion process is lossless.
+[assembly: go.GoPositionMap("internal/trace/oldtrace.go", "oldtrace.cs", "AHe8AaKCgoKCgoKCgoKEhpKCgoKmqIKUgpKAgraCgoKUgpaClIKSgoKUgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSUlpaCuoLugoKCqsKCgoSCuIKUgpaCgpaEgqS6gpSCAAQYAAoCgoKElIKmgrgADh6CtoKAgoKUgoLGgIKClIKCxqSkgoKCpIKkpKSCgpSkgoKClLYADRoADhykgqSCpIKkgqSCpKSCpIKkgqSCpIKkgqSCqIKigsqClJSCgsoADBwACBSCuKSkgoKkiLKkpKSkpIKCgpSCgqSGgqKC7raUtLTEgqSM9KaCgIK4goKAgraClIKClAAMGqqigoI=")]
+
 namespace go.@internal;
 
 using errors = errors_package;

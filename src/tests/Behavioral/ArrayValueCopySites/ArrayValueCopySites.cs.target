@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("ArrayValueCopySites.go", "ArrayValueCopySites.cs", "ABIcgpKCpoKSgqaipqKmoqaipqL4goSiloSEopaEhKKW1oKEopbWgoSygpbWgoKChLKW1oKEopbogoKEgoKEgoLmgoSCgoSCguaCgoKChIKCguaCgoKChIKCgoL4goKChIKCgoSCggAICoKCgoSCgoSCgoSC1oKCkpSCAAgKgoKCgoSCgoSCgoKEgoKCgtiCgoKCgoLYgoKCgoKmgoKCgoKCgoKCgoKCgoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

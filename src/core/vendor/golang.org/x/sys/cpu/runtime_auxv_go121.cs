@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build go1.21
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/runtime_auxv_go121.go", "runtime_auxv_go121.cs", "AAwcpII=")]
+
 namespace go.vendor.golang.org.x.sys;
 
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname

@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 global using DirEntry = go.io.fs_package.DirEntry;
 
+[assembly: go.GoPositionMap("os/dir.go", "dir.cs", "ABlQABECgpSCuJQAAiQAEgKClIK4lAACIgAKAoKUgpSUAAcY8oKClJSChgAFKAARAqKCloKClJKCzIKWgoKUkoKClIKCloCCgqQ=")]
+
 namespace go;
 
 using bytealg = @internal.bytealg_package;

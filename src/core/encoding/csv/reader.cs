@@ -50,6 +50,8 @@
 //
 //	{`Multi-line
 //	field`, `comma is ,`}
+[assembly: go.GoPositionMap("encoding/csv/reader.go", "reader.cs", "AEyUAYKClIKUpoAADRyCAEKkAZIABR4ADAKCgpSUAAIS4oKUgqyyAAca8oKCgpSClAADEMKCgoKCgpSUgoKUgqaClICCgqSokoKUqJKCpoKCmJKCgoKCgpSCgpSUgpiSgoKSgoKCgoKCgoaCgpSClJSCgoKUpoKAgpKCtoKCgoKCgpSmgoKCgoKUgoKCgKaSgraCgpKCtpKCtsaS+IKClIKCgoKUgriCgpSCguqCuoKCgpSCgoKCqIKCAAgQlA==")]
+
 namespace go.encoding;
 
 using bufio = bufio_package;

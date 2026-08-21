@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements binary search.
+[assembly: go.GoPositionMap("sort/search.go", "search.cs", "AAp0ADMGkoKUgpS4AAI2AB0IkoKUgpS4AAIS4r7CvsK4kKaQppA=")]
+
 namespace go;
 
 partial class sort_package {

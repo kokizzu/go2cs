@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !goexperiment.staticlockranking
+[assembly: go.GoPositionMap("sync/runtime2.go", "runtime2.cs", "")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

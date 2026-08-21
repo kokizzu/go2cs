@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("regexp/syntax/regexp.go", "regexp.cs", "ADmAAcKClIKUlpK4pqaCuIK4grYACyLSgpSCAAIQ0gABELKCgpS4qqKCgoKCgsqmpqamwpSmrNKCgoKCgoKClIKCgpSCgoKClIKmlJSUlAACrwEACboB4oKUlIKCgpSClIKUgoKClIKmlIKUgoKWmKSkgsaCgpSCgsiCgoKCgoKUuIKCgoKClLi0pKSkpIKUtqSkgoKClJSClKSCgoKUhJSkpKSCgoKCgqakgraCgoKUtoKClAAD5wEAB/IBgoKCgoKClILKgoKClIKWlLS0tLS0tIKCgoKUgpSCgtqSgoKUgoCCtqiSgoKmgoKUgg==")]
+
 namespace go.regexp;
 
 // Note to implementers:

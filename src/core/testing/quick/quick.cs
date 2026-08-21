@@ -5,6 +5,8 @@
 // Package quick implements utility functions to help with black box testing.
 //
 // The testing/quick package is frozen and is not accepting new features.
+[assembly: go.GoPositionMap("testing/quick/quick.go", "quick.cs", "AB88soKClKiygoKUqLIABhSyrNKAgqaCgKSkpKSkpKSkpKSkpKSkpKSkgoKCgoKClLaClIKClIK2goKCgoKClLaCgoKUtoKCgpSkhIKSpJSCgoKUtrYAGTSSgpSqwoKCgpSozoAACBCCAAkUggAHJAARAoKWgoKWgpSCloKChIKCgpaCqP7igpaCgpSCgpaCloKChIKCgpaChIKoqsKCgpaCgoKCgqimwoKCgpSCpoKCgpSmgoKClA==")]
+
 namespace go.testing;
 
 using flag = flag_package;

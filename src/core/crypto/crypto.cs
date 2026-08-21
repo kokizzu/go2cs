@@ -7,6 +7,8 @@ global using PublicKey = object;
 global using PrivateKey = object;
 global using DecrypterOpts = object;
 
+[assembly: go.GoPositionMap("crypto/crypto.go", "crypto.cs", "ABUmkgAXBoKUpKSkpKSkpKSkpKSkpKSkpKSkpAAvaLKClM6igoKCpqiSrLKClA==")]
+
 namespace go;
 
 using hash = hash_package;

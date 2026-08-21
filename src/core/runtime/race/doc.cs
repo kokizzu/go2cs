@@ -6,6 +6,8 @@
 // No public interface is provided.
 // For details about the race detector see
 // https://golang.org/doc/articles/race_detector.html
+[assembly: go.GoPositionMap("runtime/race/doc.go", "doc.cs", "")]
+
 namespace go.runtime;
 
 partial class race_package {

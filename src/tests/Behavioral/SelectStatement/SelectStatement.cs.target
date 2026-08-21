@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("SelectStatement.go", "SelectStatement.cs", "AAoSgqaCpoKCgpTWgpKCtLSC+oKogpKCgt6CgryCgoLMgoKCgoKCgoKEgsqCAA0GgoSChIKEgoKCgoSCgoKEgtS0tLS8goTktLS0tKaEgoKCgpKCgoKCooKUlISGhIKCgpSEgoKCgoKCgoSCrIK0pAAIDIKkxgAHFoKCgoKiAAkKgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -4,6 +4,8 @@
 
 // Package sha256 implements the SHA224 and SHA256 hash algorithms as defined
 // in FIPS 180-4.
+[assembly: go.GoPositionMap("crypto/sha256/sha256.go", "sha256.cs", "ABQigoIAKl6CgoKUlIKCgoKCgoKCgoKC5oKClIKUgoKCgoKCgoKCgoKCpoKmgqaCgoKCgoKCgoKUgoKCgoKCgpSCrsKClIKCqJKClIKCgqaCgpSmgKTCgoKCgoKCgoKUlIKCgpSClKaClJKCgpSmooSSgoKClKiCgoKEgpaEgoKCgoKCgoKWqJKClIKCgqiSgpSCgoKCgoI=")]
+
 namespace go.crypto;
 
 using crypto = crypto_package;

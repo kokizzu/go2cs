@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Implements methods to remove frames from profiles.
+[assembly: go.GoPositionMap("internal/profile/prune.go", "prune.cs", "AA0isoKEgoKCgIKUgpSCgtyUlpSUzLiCgoKCgpSClIKClIKCAAUQopKEgoCCpIKAgraU")]
+
 namespace go.@internal;
 
 using fmt = fmt_package;

@@ -1,6 +1,8 @@
 // Copyright 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/asn1.go", "asn1.cs", "ABIswqqiqJKmgoKCgpaCgsySgoKCloKCzLKCloLKgoKCgpSClKSUgoKUzJKS3rKCgpSSupK2goKUvKKSgriCgoKUgqiCgoKClriCgpaCloKCqKaCkoKCloKCyoKCgpTKgqrYgpSCgoKUruKCuIKClIIAAhDygoKWlLS0pgACEuLkgoKUgvSCgpSCpKS0yIKUlIKUlJTKgoKClJSCgpSCgpSUpqKCgpSClIKUgqaCgoKUpoKCgpSCgqaCgqaCgoKUpoKClJSUlIKClKyygqrCgoKClIKUgqaigoKCuIKUgrqCloKCgqaqwoKCuozCgpSCgpSCloKCgpSUgqrCgoKUgoKClICCpILOwoKClISCgoK4gpSCloCCpriUgqrCgoSWgoKGloKCrNKCgpaCgpSCrLIAAhDSgoKUAAIQ0oKClAACENIAAhDyqsKClKqigq7igoKUgpSqooKUgq7CgoKClIIACwa0gIKU1rSUgpSu8oKCgpSClIKCgpSUlK7igoKCloKClqaygpSE3JaCntKUgriChIKWgoK6lJSUloKUlJaClIKW")]
+
 namespace go.vendor.golang.org.x.crypto;
 
 using encoding_asn1 = encoding.asn1_package;

@@ -13,6 +13,8 @@
 //	// lookup byte slice s
 //	offsets1 := index.Lookup(s, -1) // the list of all indices where s occurs in data
 //	offsets2 := index.Lookup(s, 3)  // the list of at most 3 indices where s occurs in data
+[assembly: go.GoPositionMap("index/suffixarray/suffixarray.go", "suffixarray.cs", "ADJggqaCgpSmgoKUuIKClKqigoKClIKUqJKCgqiSgoKq5IKCgqiWgs7UkoKClJSUloCCuIKCgpbMpJaCgpSClJamgoKCgpS4gqiAgriCgoKClJSopJaAgriAgriCgoKClJSqoqaCquakkgACEPKCgoKCpoKCgoKmgsoAAhIADAaCloK67pKCgpSCgoKCgoKCpoKCgoKCgqaCpqaClN6WkoKClIKCgoKClJSCgoKCpqamgpQ=")]
+
 namespace go.index;
 
 using bytes = bytes_package;

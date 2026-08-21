@@ -4,6 +4,8 @@
 
 // Package lazytemplate is a thin wrapper over text/template, allowing the use
 // of global template variables without forcing them to be parsed at init.
+[assembly: go.GoPositionMap("internal/lazytemplate/lazytemplate.go", "lazytemplate.cs", "ABs0ooKmgpKmggAEELKClJQ=")]
+
 namespace go.@internal;
 
 using io = io_package;

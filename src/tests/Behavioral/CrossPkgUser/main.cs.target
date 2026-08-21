@@ -1,6 +1,8 @@
 global using Tagged = go.CrossPkgLib_package.Labeled;
 global using tick = go.CrossPkgLib_package.Ticks;
 
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA4sggAHIqKCABQ4gAAGEoAADSqAooAAECyAooAABhaAABEegNKAooCigAALIoCkgKSAAAcqgrKCgriAABIEooSCgoKGgoKGgoaCgo6SgoKCjoKGgoKCjIKOgoKCgoKOgoKCgoKKgoKCiIqCipSkpKqEgoKCgoKMgoKIgoKCAAAUgoKCgoaCgoKCgoKChIKEgoKEgoyCgoKKgoSChIKCgoKKgoKEgoyCjIKMgoIAABCCAAAQgoqCgoKCioYAABSCiIKCAAAQgoKCggAAFIKCggAAEIKCgoKCgoIADSiCgpQAAhSCABNEgAAPKoA=")]
+
 namespace go;
 
 using fmt = fmt_package;

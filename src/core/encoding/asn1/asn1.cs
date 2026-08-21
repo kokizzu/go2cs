@@ -7,6 +7,8 @@
 //
 // See also “A Layman's Guide to a Subset of ASN.1, BER, and DER,”
 // http://luca.ntop.org/Teaching/Appunti/asn1.html.
+[assembly: go.GoPositionMap("encoding/asn1/asn1.go", "asn1.cs", "ACtSgP6ArNKCgsyUtLS2rsKClIKUgpSq0oKClJSClIKCqIKCqqKAgqSCgpSClM6igIKkgpSCgpSCgoKUggAMHqKClIKCqqKCgpaCgoKClqjCgoKUgoaClIKCAAwisoKUgoKopoKChIKCgpSWrOKCgrrMgoKUgoKUgpaCgoKClJSCAAYeAAkCgoKmgoKUgqaCgpSCgoKUgpSmgqrChIKCgoKUgpaAgoKmlJaq0oKEgIKmgIKmrsKCgqaokgACEPKCgoKmggALIrIAAjAADgKCgoKmgq7C3sKClN7CgqiAgqaCgoKWAA8sAAoCpoKClIKCgoKogoKCpoKCpoKClIKClKaCgoKUgoKCgpSCgqaClIKClIK4goKorOKCgoK6goKCgoKUmqbmgoKUgoKUgpSCgoKCgoKmAAsgotzigpaCgpSogIKCgoKUgoKUgoKClKSkpKSkpKSkpKSk6oKClIKUpoKClIKCgpSCgpSCtoKCpoKClIK4goKUlKiCgoLegoKUxsyCloKWgoKEgoKCloKCgpaCgoKoloKClJSUgoKUgpaUgqSCpIKkgoKUgqSCgpSCpIKkgoKUgpSApIKClIKkgoKClJSCgpSUpoSSgoKohIKWgoKCgpSCgqykgrKCgpSCgpSCpIKUpKSkpKykpuSClLSCqqKUpqzSgpSCgpSClAACkAEARQIACxKCgpaClKrCgoKUgoKU")]
+
 namespace go.encoding;
 
 // ASN.1 is a syntax for specifying abstract objects and BER, DER, PER, XER etc

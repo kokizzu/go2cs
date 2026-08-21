@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/coverage/cmerge/merge.go", "merge.cs", "ACBEgqqigpSCgoK4gqaCgqyygoKUqqKCgoKCgpQAAhDSlIKmgriCgriCuKaCgoKmgqaC")]
+
 namespace go.@internal.coverage;
 
 // package cmerge provides a few small utility APIs for helping

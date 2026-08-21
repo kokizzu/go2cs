@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("NamedIntSignednessConv.go", "NamedIntSignednessConv.cs", "AAwkgqaCpoKCgoSCiII=")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -5,6 +5,8 @@
 //
 // This is the high-level Client interface.
 // The low-level implementation is in transport.go.
+[assembly: go.GoPositionMap("net/http/client.go", "client.cs", "AJEBpgIACQqClIKWgu6ClKjigoKmgoKUgoCCtqaCgpSmgoKUAAsQ8pSCgpaCgpaCgrqCgoLegoKWgIKCgoKCpoKUhIKCgoKUgLiCtpSClAAKFoKUlILcrLKCgpQAAhDSlICCpMQABxCClAAIGAAMAoKUgoSmgpaCgqSEgoKWgoSkhoKCuIKCoqKCgrqChMLEgrSCtLgAAhDSggACOAAZAgAFNAAZAoKClKaAAAgUooKClKrylIKCjMLGgoKEysbaooKUgIKkAAJQACUCAAgK8oKApIKCyoQABhaUgpSCgpSU3KaCgriUgoKClJK4gIK2ggAIEoKCgoKU3qiAgqS6ggABENKClITKgoKogoKCgJSCgpSmgoKClgAKDubIgoKCqJIADRiCgoKCgIKCtoKCgoKCpoLMgoKo6IKClAACJgAQAgAGIgAQAoKClIIAAiYAEAIABSIADgIAAiIADgIABR4ADgKCgpQABhTyhoIADhyygoKUgpSClKaCgoKmogABHoKCAA4GrsKCyoLKgpSmooKClA==")]
+
 namespace go.net;
 
 using context = context_package;

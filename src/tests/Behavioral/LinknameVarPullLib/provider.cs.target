@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("provider.go", "provider.cs", "")]
+
 namespace go;
 
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)

@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/tls/cipher_suites.go", "cipher_suites.cs", "AC9s8gAQLvYADyaygoKmgoKmADGCAaKCgoKWgoK4ALkBlgOigoCCpICCtqaCgqaCgoKUpoKCgpSokqaClKqiABYygKKAooCkgoKmgoIACRSAooCigKSCgpSCgpamgoKUgoKWpoKClIKClIKClIKUgpaCggACGgAKAoKUgoKUgoKWgoKmgoKUgoKWgoIADhyAooCigKKAooCkgoKskoKCgoKCgpSmgqaC3IIABRCigoKmpoKCgqamgoKCpqaCgoKm")]
+
 namespace go.crypto;
 
 using crypto = crypto_package;

@@ -15,6 +15,8 @@ validation is done when parsing object files. As such, care should be taken when
 parsing untrusted inputs, as parsing malformed files may consume significant
 resources, or cause panics.
 */
+[assembly: go.GoPositionMap("debug/dwarf/open.go", "open.cs", "ACt+AAgCAA8igpSCgoKUpoKUpIK0grSmgoKUgq7CrsKClKSkpLY=")]
+
 namespace go.debug;
 
 using binary = encoding.binary_package;

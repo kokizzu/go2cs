@@ -1,6 +1,8 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("mime/multipart/writer.go", "writer.cs", "ABs2ot6SAAcS4oKmgpSCgoKUlLSCxpSCqqKmgpSmgoKCgpSu4oKAgraCgpSWgoKUgoKCpoKCgpSmgsqC6qKCpoKqooKUqJKCgpSCqqKCgIKklIIACBKCgtaygpSCgpQ=")]
+
 namespace go.mime;
 
 using bytes = bytes_package;

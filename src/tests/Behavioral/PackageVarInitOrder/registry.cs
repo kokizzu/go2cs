@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("registry.go", "registry.cs", "AAsQgqaCgoIAFDCC")]
+
 namespace go;
 
 partial class main_package {

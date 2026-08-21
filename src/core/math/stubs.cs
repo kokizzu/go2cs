@@ -4,6 +4,8 @@
 //go:build !s390x
 // This is a large group of functions that most architectures don't
 // implement in assembly.
+[assembly: go.GoPositionMap("math/stubs.go", "stubs.cs", "AA4cgsqCyoLKgsqCyoLKgsqCyoLKgsqCyoLKgsqCyoLKgsqCyoLKgsqCyoLKgsqCyoLKgg==")]
+
 namespace go;
 
 partial class math_package {

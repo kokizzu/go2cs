@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package bzip2 implements bzip2 decompression.
+[assembly: go.GoPositionMap("compress/bzip2/bzip2.go", "bzip2.cs", "AA8mwgAVNLKCggANELKEgoKCqIKCloKCloKCgpSmwoKWgoKCgpSClJaCgoKUpu6CAAcUgoKCgoKUloKCgoSCgoKWgpSUhIKWAAgGooKCgoKogoKogpyCkrqCkpSCgpyylIKCgoKUgoKUgoKClIKUgpSAggAEXwATbsKCgoKCgoKUuoKCgoKCgoKCgsyUqIKCuoKogoKCgoKClJSClLqCgoKCgqaEgpaClIKCgoKUgpSClKaUgoKogoKUgpSCyoKWhIKCgoKUgpSCgpaChJSClIKogpSWpoKUgoKCgpSWuAAHEoKClIKCloK6goKCgoKEAAIaAAoCgoKCloKCgpYABhCCgoKCgoKUpryigoKU")]
+
 namespace go.compress;
 
 using io = io_package;

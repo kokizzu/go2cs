@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("path/filepath/match.go", "match.cs", "ABhYABgCgoKCgoKUpriCgpSClKaCgpSClIKUgri0qsKCgpSCgoKClJSC2LS0gvisAAgIgoKClKaSgoKClISCkoKWgoKSgoKUkoCCpIKCgIK2gpSUgriCgpSClKaCgoKmpoKClJS2gpSo0oKClIKCgoKmgoKUgoKUAAIWAAgCprSSgqiAgqSCgIKkloKCgpSWgqiCloKCgpSCgoKmqJKUpqTKsoKUpqSkspQABBAACAKCgoKUgpSCgpSUgoSCgoKUgqbaooKClA==")]
+
 namespace go.path;
 
 using errors = errors_package;

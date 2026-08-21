@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements (error and trace) message formatting support.
+[assembly: global::go.GoPositionMap("go/types/format.go", "format.cs", "ABYkoqKUtLS0gsa0goKCgrS0goKCgrSCgoKCgoKUlIK0goKCgoKClJSCpJSowoKCgoKUprIABRDCprSCgoKCpoKUlKrCgpSEgoKClISCupKClJKmgpQ=")]
+
 namespace go.go;
 
 using bytes = bytes_package;

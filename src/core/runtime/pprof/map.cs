@@ -1,6 +1,8 @@
 // Copyright 2017 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/pprof/map.go", "map.cs", "AB44lIKCgpSChpKCgoKUgoK4goKClMiClIKCgoSCpoKEgpSClIKCgpSClA==")]
+
 namespace go.runtime;
 
 using @unsafe = unsafe_package;
@@ -39,7 +41,7 @@ partial class pprof_package {
     ж<profMapEntry> last = default!;
 Search:
     for (var eΔ1 = m.hash[h]; eΔ1 != nil; (last, eΔ1) = (eΔ1, eΔ1.Value.nextHash)) {
-        if (len((~eΔ1).stk) != len(stk) || (~eΔ1).tag != tag.Value) {
+        if (len((~eΔ1).stk) != len(stk) || (~eΔ1).tag != tag) {
             continue;
         }
         foreach (var (j, _) in stk) {

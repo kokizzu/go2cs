@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("IfStatements.go", "IfStatements.cs", "ABEKgoCCpoCCpoKEgIKCpoCCgqY=")]
+
 namespace go;
 
 using fmt = fmt_package;

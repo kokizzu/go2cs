@@ -4,6 +4,8 @@
 
 // Package token defines constants representing the lexical tokens of the Go
 // programming language and basic operations on tokens (printing, predicates).
+[assembly: global::go.GoPositionMap("go/token/token.go", "token.cs", "AJ0C4gPSgoKUgpQADSKylKSkpKSkyoKCgrqSgIKkrsCooqqgppKCqKSCrLKClIKCpg==")]
+
 namespace go.go;
 
 using strconv = strconv_package;

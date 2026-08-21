@@ -32,6 +32,8 @@
 // for implementation details.
 //	https://csrc.nist.gov/csrc/media/publications/fips/197/final/documents/fips-197.pdf
 //	https://csrc.nist.gov/archive/aes/rijndael/Rijndael-ammended.pdf
+[assembly: go.GoPositionMap("crypto/aes/block.go", "block.cs", "ACtUkoKCgoKWgoKCqIKCsoKCgoKCgqiCgoKEgoKChIKCgoKokoKCgoKWgoKCqIKCsoKCgoKCgqiCgoKEgoKChIKCgoKokq6QqKSSgoKUgoKCpJTMgpSCgoKCgoKU")]
+
 namespace go.crypto;
 
 using byteorder = go.@internal.byteorder_package;

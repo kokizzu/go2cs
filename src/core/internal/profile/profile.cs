@@ -5,6 +5,8 @@
 // Package profile provides a representation of
 // github.com/google/pprof/proto/profile.proto and
 // methods to encode/decode/merge profiles in this format.
+[assembly: go.GoPositionMap("internal/profile/profile.go", "profile.cs", "AHP4AaKCgpaCgoKUgoKUloKCloCCpOyCgpaCgIKmgIKmqNKCgoKSgt7UgoKUgoLMgoKClIKUlIKCgpSClJSCgoKUgpSCgIKCtoKAgoLarLKCgoKCqIKCgoKUgsyCgoKUgoKmgrqqpIKAgqSCgpSCloKCgpSCgoKClIKClIKCgoKClJSCgoKUqIKCgoCCpIKUgoKAgsqCtpSogoKCgpSClIKUgpQABhCu4oCCppaCloSCgpSCgpSCgpaCgoK4gqzSgpaCloKCqKqigoKmqqKCgqamsoKUqLKChIKAgqSAgqYABBa0koKogoKUgoCCtqiSqJKClIKClKiSgpSCgoKCpoKUgoKCuA==")]
+
 namespace go.@internal;
 
 using bytes = bytes_package;

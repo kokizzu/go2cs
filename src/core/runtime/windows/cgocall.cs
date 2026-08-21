@@ -80,6 +80,8 @@
 //
 // crosscall2 restores the callee-save registers for gcc and returns
 // to GoF, which unpacks any result values and returns to f.
+[assembly: go.GoPositionMap("runtime/cgocall.go", "cgocall.cs", "AGrcAfKSggAJKgAQAoKWgpaCloKWAA4g3oTuhKiChKiEhKiCAAsagoKEAAIS4oSCAAwegoKCgoKEgoKWuAASKoKCjNLcgoKmgtyygoKCloLehKgACRaCgoKCgoKWhIKWuoKEgpaClpaEpqKEgoKWggAGEIKCgoSUgqjKuoKCqJKEgpqikoKEgrrWgqaCgt6CgoIABxKE6pLYkgAISgAfAoKWgoSCgoKClIKUgqSUlIKCtoKqgoKk+AAGFvKUlpiCgoKUgpSCgrykspSClKSCgpqylIKClIKUpIKCgoKUgpSClIKCtoKClIK2goKClIKUgoKUtoKCgqiClIKWAALJAQAE2gHygoKCgpSCgoKAgqSCgqaWgqbMAAIS4oKWgpaCgqiuwqzSgpaCgg==")]
+
 namespace go;
 
 using abi = @internal.abi_package;

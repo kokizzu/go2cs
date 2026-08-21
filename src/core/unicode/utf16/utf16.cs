@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package utf16 implements encoding and decoding of UTF-16 sequences.
+[assembly: go.GoPositionMap("unicode/utf16/utf16.go", "utf16.cs", "ABY8oqyygpSssoKUgqqilKSkypKCgoKogoKClIK0goKCtILmrMSWtoK0qsaCqqKCgoCmuKK21JQ=")]
+
 namespace go.unicode;
 
 partial class utf16_package {

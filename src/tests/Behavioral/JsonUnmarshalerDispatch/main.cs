@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA0agoKAgqSC9oaCgoiChoKGgoKKiII=")]
+
 namespace go;
 
 using json = encoding.json_package;

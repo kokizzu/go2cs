@@ -10,6 +10,8 @@
 //
 // The hash functions are not cryptographically secure.
 // (See crypto/sha256 and crypto/sha512 for cryptographic use.)
+[assembly: go.GoPositionMap("hash/maphash/maphash.go", "maphash.cs", "ACFMAAgCgoKWgoKCgqYAAhYACAKCgpSCgpQAJ1rSgoKCvKKClIKCqqK4goKClJSCuIKCgoK4goKqtIKCgoKClIKUgoKCgqaCgqiSggACENKClIKCqqKCgqiSgpSCggACFPKCqJKCgqaCpqyyggAKGJCmkA==")]
+
 namespace go.hash;
 
 partial class maphash_package {

@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("NamedAnySliceType.go", "NamedAnySliceType.cs", "ABE0gKSGyoKWgoKCgoSClIiCgoSChoI=")]
+
 namespace go;
 
 using fmt = fmt_package;

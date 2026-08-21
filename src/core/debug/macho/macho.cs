@@ -8,6 +8,8 @@
 // https://web.archive.org/web/20090819232456/http://developer.apple.com/documentation/DeveloperTools/Conceptual/MachORuntime/index.html
 // For cloned PDF see:
 // https://github.com/aidansteele/osx-abi-macho-file-format-reference
+[assembly: go.GoPositionMap("debug/macho/macho.go", "macho.cs", "ADJwgKKAABYygKKAABc0gKKAANIBugOCgoKClKY=")]
+
 namespace go.debug;
 
 using strconv = strconv_package;

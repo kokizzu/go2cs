@@ -3,6 +3,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build go1.18
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/go118.go", "go118.cs", "")]
+
 namespace go.vendor.golang.org.x.net;
 
 partial class idna_package {

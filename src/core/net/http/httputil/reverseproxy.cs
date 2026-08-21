@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // HTTP reverse proxy handler
+[assembly: go.GoPositionMap("net/http/httputil/reverseproxy.go", "reverseproxy.cs", "AC1sAAwCggAILAATAoKCgoKUlJSCgpQAbOgBgoKClKSkprKCuIKEgoSUpKQAAi4AFAKClKaigoKCgoKUuIKCggAYLIKCpqKClKrSgpSAgoKCpAALBtKCgpaCAAIWAAoCgoKSgrK0AAgMgoKU7qSCloKCloKCgqaEgoKClN6CuoKClriCgoKWhLiClIC4goKClILKgKammLSCgqaUgoKWgtaEgoKCgoKCqIKClIKWhIKWqIKCgoKUloSCgsiCgpSUhLiWgoKWooKCAAkY8pSUpriopIKigIL+guzCqICCuIKWpsKEgsqmgoSWgoKClILaooKUgoKCgpSCgoKUgpSCpoKClMqigpQADBzigoKCgoKUgpSClJSC1sKCgpKUgtbCgoKCguiCgpSm0oKCkpSCgpaCgoKWgoKCgpaCxgAICJSEgoKUlISCgoCCgqSAgoKkgpKSkgALEoKCpoKCpoKCgpSClKSClLTGpoKUpKSk")]
+
 namespace go.net.http;
 
 using context = context_package;

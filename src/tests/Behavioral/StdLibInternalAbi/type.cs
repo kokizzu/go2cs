@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("type.go", "type.cs", "AEaIAoKClAAgRKKMqIKCgIKkpoCkgqiApoKogqaCABQuooKU1qKClAACFIIADiSigpSmggAUMqKCgpQAKgiigpSUpKysrKysrKwABBKilIKkgqSCpIKkgqSoooKUqKKClKiigpSoooKUqKKClKiApoCkgAAIEIKCgpSmooKClKiAAA4igqSCpIKkgqSCpqKClAANMoKmgqaCpoLWooKClIKU1KKCgpSCgpSmggANHIIADFKC2oKogqiCqILagoKCgoKCzIKClIKsgoKCgoKClOqCgpSCqIKClIKCpoKClIKUgoKChIKCgpSCgpSCloKCgoKCgoKW")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

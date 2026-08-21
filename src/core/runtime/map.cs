@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/map.go", "map.cs", "AFHQAZIARJABpKiSqJKCgpSmgoKmsqaypqIAAhQACgiCgsqmgriigqaClMqCppSCgoKUgqaCgpSCuIKClAACIAANAoKCAAImABMCgoKogpSogoKUuoKCgoKCqAACEgAKAoKmuIKCgoKogsqCgoKUqNyCgpQABRAACAKCgoKClIKUgpSCgIKklIKUgoKCgIKUlIKCtoKCgoKCgpSUgoKUgoKClNgAAhgADAKCgoKClIKUgpSCgIKklIKUgoKCgIKUlIKCtoKCgoKCgpSUgoKUgoKClNiowoKUgoKCgIKUlIKCtoKCgoKCgpSUgoKUgoKClNimgoKClKaCgoKUAAYkABICgpSCgoKClIKUgpSClKiEgpaCgoKUgoSCgoKCgoKCgoKClIKUlIKClIKmgpSClIKClO6CgpaUgoKCqIKCgpSCgpSCgoSCgpSCgpQAAhgADAKCgoKClIKUgpSCgIKklIKWqISCgpSCgoKCgoKCgpSUgoKClIKmgqSUgoKklJTKgoKmgqaCgoKCpoKUlJSCpoKmgpTIgpQABS4AGAKCgpaCgpaClJaCgsqCgqiCgpaogIKmAAUiABACgoKClIKUgoKCgoSCgpSCgpTKgoKClIKmgpSCgoKUlIKCppSCgpSCAAcQpoKCAAkUgrjMgoKUAAgSgoKUgpSCkpSCgpSCggACHgAOAoKCgpaCloKWloKCgoKCyoKAgqaCgoKCqJaCzIKmloKU1riCgoKUgoSCgqaCgoKCgoSUgpSClIKClAADEMKs+oKmqJKokqiSgoKUqJKmxpaCuIKCAA4WsoKCqpKCgoKEpoKCgpaCgoKCgoKClIKUgoKUgqaCAAsYgpSCuoKWgoSCgoKClIKClJSClJTKgriCpoKCqIK4gqaCgpSClKS4gpQADygAEwSClISUhJSClIKUgpSClIKUgpSClgACHAALAoKUlKiSgpSUAAIYAAsCgqiygqiSqJIAAh4ADAIAAiAADQIAAhoACgIAAhoACgIAAhoADAKClIKClKiSqLKClIKClAACEOrSgoKq8oKCloKCqIKCloKCgoSCgoKCgoLKlJSCgoKClJSClNaygoKWgpaClpSCgoKWgpSCgoKCgoKCgoK6gpaCgoKUhIKCgpaSgoKUgoKClLqUgoKWgpaCgpaCgpSClKas0oKChIKUgoKCgoKUgoKCgoKWgoKCgoKClKamsoKCgoKUgpSCgpSClIKUvtKCgoKClIKCgoKClIKCgoKCloKCgoKCgpSmprKCgoKCloKWgoKUgpSClA==")]
+
 namespace go;
 
 // This file contains the implementation of Go's map type.
@@ -600,7 +602,7 @@ break_bucketloop:;
 
 internal static @unsafe.Pointer mapaccess1_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key, @unsafe.Pointer zero) {
     @unsafe.Pointer e = (uintptr)mapaccess1(Ꮡt, Ꮡh, key);
-    if (e.Value == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
+    if (e == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
         return zero;
     }
     return e;
@@ -608,7 +610,7 @@ internal static @unsafe.Pointer mapaccess1_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, 
 
 internal static (@unsafe.Pointer, bool) mapaccess2_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key, @unsafe.Pointer zero) {
     @unsafe.Pointer e = (uintptr)mapaccess1(Ꮡt, Ꮡh, key);
-    if (e.Value == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
+    if (e == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
         return (zero, false);
     }
     return (e, true);

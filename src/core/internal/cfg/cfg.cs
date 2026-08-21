@@ -5,6 +5,8 @@
 // Package cfg holds configuration shared by the Go command and internal/testenv.
 // Definitions that don't need to be exposed outside of cmd/go should be in
 // cmd/go/internal/cfg instead of this package.
+[assembly: go.GoPositionMap("internal/cfg/cfg.go", "cfg.cs", "")]
+
 namespace go.@internal;
 
 partial class cfg_package {

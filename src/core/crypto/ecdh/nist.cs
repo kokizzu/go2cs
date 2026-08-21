@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("crypto/ecdh/nist.go", "nist.cs", "ACVAosrCgoKClJaCgoKAgu6CzISCgpTowoKUgpSCgoKUlLimgsqm0oKClIKmlIK4lN6SgoKUqqKCzIKUgoKYkoKCqNbUgpS4goKClKaAgramAAsQgpaCgoKUgIKkAAIQ0AAPJtAAESrQ")]
+
 namespace go.crypto;
 
 using boring = go.crypto.@internal.boring_package;

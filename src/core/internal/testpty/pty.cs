@@ -4,6 +4,8 @@
 
 // Package testpty is a simple pseudo-terminal package for Unix systems,
 // implemented by calling C functions via cgo.
+[assembly: go.GoPositionMap("internal/testpty/pty.go", "pty.cs", "ABYqgqaCpoDOsg==")]
+
 namespace go.@internal;
 
 using errors = errors_package;

@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package bcache implements a GC-friendly cache (see [Cache]) for BoringCrypto.
+[assembly: go.GoPositionMap("crypto/internal/boring/bcache/cache.go", "cache.cs", "ACpOmtIABxSigoKCgoKmvtas0oKCgoKmqMIAACgAEwKCgoKCgoKClJSCgpSCppSClA==")]
+
 namespace go.crypto.@internal.boring;
 
 using atomic = sync.atomic_package;

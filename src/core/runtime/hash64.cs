@@ -4,6 +4,8 @@
 // Hashing algorithm inspired by
 // wyhash: https://github.com/wangyi-fudan/wyhash
 //go:build amd64 || arm64 || loong64 || mips64 || mips64le || ppc64 || ppc64le || riscv64 || s390x || wasm
+[assembly: go.GoPositionMap("runtime/hash64.go", "hash64.cs", "ABIqgpKClKSCgrSCtIK0grSCtIKCgoKCgoKClJSCgpSCtqaCgqaCgqaCgqaCpoI=")]
+
 namespace go;
 
 using math = runtime.@internal.math_package;

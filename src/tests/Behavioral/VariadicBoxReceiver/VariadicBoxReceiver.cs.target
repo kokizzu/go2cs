@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("VariadicBoxReceiver.go", "VariadicBoxReceiver.cs", "AA0ioqqCpoKCgoKCgoKUhoKCgg==")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // HTTP Response reading and parsing.
+[assembly: go.GoPositionMap("net/http/response.go", "response.cs", "AHX6AZIABhbCgoKUgpQABhLigrqCgoKUlIKClIKEgoKUgoKUgIK4goKClJSEhIKClgAGFPKAgoCC7qIACigAEQSCgoKCypaAgriCgoSSgoKUppSCAAkagqiCgpSCgqiCgrqCgoCCyoCCuIKCqKaCggADFvKCqqKqoqqi")]
+
 namespace go.net;
 
 using bufio = bufio_package;

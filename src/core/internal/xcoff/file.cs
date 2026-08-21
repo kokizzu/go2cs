@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package xcoff implements access to XCOFF (Extended Common Object File Format) files.
+[assembly: go.GoPositionMap("internal/xcoff/file.go", "file.cs", "AFuyAZKCgpSCgoKUgqyygoKClK7CgoKmqqKCgqaqooKUqJKClKiShJKAgqSCloKWgIKkgoKCgoKUgoCCpIKCgoKkgoCCpIKCgoKmgqiCgIKmkoCCpIKCgpSogIKkgoKUgoKCgpSCgIKkgoKCgoKCpIKAgqSCgoKCgoKkgpKUgoKYpoCCpIKCgpKClIKAgqSCgoKCgoKClIKCgsiCgIKkgoKCgoKCgraCpoKWgpSClJbMgpSCgIKkpIKAgqTKgoCCtoKClIKAgqSCgqSCgIKkgoKkgoKCgILcgoKUgpSCgpSCgIKkgoKUgoCCpIKCgoSClIK4goCCpIKCgoKClIK4qAAICoKokoKCgpSokoKCgIKCgoKCgpS2pqaIsoKCgoKCgpSogqrUgIKkgoKClIKAgqSCgqSCgIKkgoK4gIKkgoCCppSCgoKCgoKCgoKCgoKClJSWrsKCgqaAgqSCgoKClIKAgqSCgoKkgoCCpIKCgriAgqSCgIK4goKogIKkgoKCgoKUgoCCpIKUgoKUgoKCpqSCgIKkgpSCgpSkgoKClJassoKClII=")]
+
 namespace go.@internal;
 
 using dwarf = debug.dwarf_package;

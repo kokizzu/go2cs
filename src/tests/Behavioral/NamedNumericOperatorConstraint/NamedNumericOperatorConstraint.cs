@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("NamedNumericOperatorConstraint.go", "NamedNumericOperatorConstraint.cs", "AAwiooKCgoKCpoKCgoSCgoY=")]
+
 namespace go;
 
 using fmt = fmt_package;

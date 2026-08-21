@@ -7,6 +7,8 @@
 // read data from an [io.Reader] where the size is part of the input
 // data but the input may be corrupt, or may be provided by an
 // untrustworthy attacker.
+[assembly: go.GoPositionMap("internal/saferio/io.go", "io.cs", "ABY48qaWgoKCgpSWgoKCgoKUgoKClJSClKyyppaCgoKmgqaWgoKCgoKUgoKUgoKUAAIS4oKUgpSCgoKmqJKCgg==")]
+
 namespace go.@internal;
 
 using io = io_package;

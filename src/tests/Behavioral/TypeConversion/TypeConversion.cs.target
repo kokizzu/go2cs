@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("TypeConversion.go", "TypeConversion.cs", "ACAaggAAEISEhIQ=")]
+
 namespace go;
 
 using fmt = fmt_package;

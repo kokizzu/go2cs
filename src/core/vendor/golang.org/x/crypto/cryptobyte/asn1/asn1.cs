@@ -4,6 +4,8 @@
 
 // Package asn1 contains supporting types for parsing and building ASN.1
 // messages with the cryptobyte package.
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/asn1/asn1.go", "asn1.cs", "ABIukKaQ")]
+
 namespace go.vendor.golang.org.x.crypto.cryptobyte;
 
 partial class asn1_package {

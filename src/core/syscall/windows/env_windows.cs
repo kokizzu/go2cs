@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Windows environment variables.
+[assembly: go.GoPositionMap("syscall/env_windows.go", "env_windows.cs", "AAwagoKClIKCgoKClILKgoKClIKClIKClIKmgoKClIKClIKmgriCgoLcooKClISCgqSCgpaCgpQ=")]
+
 namespace go;
 
 using @unsafe = unsafe_package;

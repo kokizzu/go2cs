@@ -1,6 +1,8 @@
 // Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("regexp/onepass.go", "onepass.cs", "ACZSAAkCgoKUgoKCgqaCmJKCgpSGlK7igoKUgpSmgoKUpAAJFIKmooKCpoKCpoKClKaCgriCgpSCgqaCAA8k0oKCgpSWkpKCgoKCqIKCgpSCgoKCloKUtLS0tIKm2JKCtqSC3JLKggAGEIKagoSCooKCgqaEpJiCgoKipIKUgpqiAANLAANUAAYWAAgEgpYABRLCgoKClIKkhIKCkoKWkoKUgoKYpIKCxoKEkoKCtoKCgoKCtrSCgpSCgoKClIKCgoKClJSUgoKClMSCgpSChJKCgoKUlJSCgoKUxIKClIKCxIKClIKCgoLGloKCgoKCgoKCpoKCpq7igqaEpoKCnIK2goKUAAMXggAGIpaEgpQ=")]
+
 namespace go;
 
 using syntax = regexp.syntax_package;

@@ -63,6 +63,8 @@ For example:
 		pc=1241251 func=3 file=6 line=124
 		pc=7534345 func=6 file=3 line=64
 */
+[assembly: go.GoPositionMap("internal/trace/raw/doc.go", "doc.cs", "")]
+
 namespace go.@internal.trace;
 
 partial class raw_package {

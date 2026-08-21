@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAokgoKCpoKCAAYSgqaCAAcYgqiC")]
+
 namespace go;
 
 partial class ForeignPtrEmbedIfaceLib_package {

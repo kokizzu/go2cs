@@ -106,6 +106,8 @@
 // The trace tool computes the latency of a task by measuring the
 // time between the task creation and the task end and provides
 // latency distributions for each task type found in the trace.
+[assembly: go.GoPositionMap("runtime/trace/trace.go", "trace.cs", "AHjyAdKChICCpIKCgoKUpoLawoKChA==")]
+
 namespace go.runtime;
 
 using io = io_package;

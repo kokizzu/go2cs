@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA8wgoSChIKEkoI=")]
+
 namespace go;
 
 using context = context_package;

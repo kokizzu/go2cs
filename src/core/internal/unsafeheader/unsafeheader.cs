@@ -7,6 +7,8 @@
 //
 // This package allows packages that cannot import "reflect" to use types that
 // are tested to be equivalent to reflect.SliceHeader and reflect.StringHeader.
+[assembly: go.GoPositionMap("internal/unsafeheader/unsafeheader.go", "unsafeheader.cs", "")]
+
 namespace go.@internal;
 
 using @unsafe = unsafe_package;

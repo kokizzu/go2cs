@@ -1,6 +1,8 @@
 // Copyright 2018 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("runtime/map_fast64.go", "map_fast64.cs", "AA4awoKClIKUgpSClJSCgoKAgpSUgoLIgoKCuAACGAANAoKClIKUgpSClJSCgoKAgpSUgoLIgoKCuAACHAAPAoKUgoKUgpSWhIKWgoKClISCgoSCgoKCgoKUgpSUgoKUgoKUgoKU7oKClpSClISUhISCgoKUggACHAAPAoKUgoKUgpSWhIKWgoKClISCgoSCgoKCgoKUgpSUgoKUgoKUgoKU7oKClpSClISUhISCgoKUgqbCgoKUgpSClpaEgoKUgoKCgoKCpoKCuKaCgpSUpoKCpoKmgoKCgqaClJSUgqaCpoKUyIKUpsaWgriygoKqkoKCgoSmgoKCloKCgoKCgoKUgpSCpoKCqIKEgoKCgpSWgpS4ppaCyoK4gqaCgqiC")]
+
 namespace go;
 
 using abi = @internal.abi_package;
@@ -262,7 +264,7 @@ bucketloop:
                 continue;
             }
             @unsafe.Pointer k = ((ж<@unsafe.Pointer>)(uintptr)((uintptr)add(new @unsafe.Pointer(b), dataOffset + i * 8))).Value;
-            if (k.Value != key.Value) {
+            if (k != key) {
                 continue;
             }
             insertb = b;

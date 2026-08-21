@@ -8,6 +8,8 @@
 // TestDeps into testing.Main. This allows tests to use packages at run time
 // without making those packages direct dependencies of package testing.
 // Direct dependencies of package testing are harder to write tests for.
+[assembly: global::go.GoPositionMap("testing/internal/testdeps/deps.go", "deps.cs", "AC1OsoKCgoKmpoKmgqaC3IIADBSC1oLWgtaCqNKCloKCgpSCgoIACwqCgoLKgoKUpqKCgoKC2JKmAAYagpIACxiClNYACA6CkoKClNaCpoKmgqaCABIiwoKU9qKCgoKClJSCgoCCpA==")]
+
 namespace go.testing.@internal;
 
 using bufio = bufio_package;

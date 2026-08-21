@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build !plan9
+[assembly: go.GoPositionMap("net/internal/socktest/switch_posix.go", "switch_posix.cs", "ABIcgpSkpKQACgiCgpSkpKSkpICCpPaClKSkpA==")]
+
 namespace go.net.@internal;
 
 using fmt = fmt_package;

@@ -17,6 +17,8 @@ global using ptrType = go.@internal.abi_package.PtrType;
 global using sliceType = go.@internal.abi_package.SliceType;
 global using structType = go.@internal.abi_package.ΔStructType;
 
+[assembly: go.GoPositionMap("internal/reflectlite/type.go", "type.cs", "AHesAoKmgqaCpoLaooKCgoKC+oKClIKmgoKUgoLmgoKUgoKCgpSmgoIAAhoACw7kgqaCpoIABBaApIKCgpSmgoKClAAEHIKClIKCgoKUtLSUpoKmgoKClM6CgoKUpoKCgpSmgoKClKaCgoKUpoKCgpSmgoKClKaCgoKUAAIU8qqiAAQagoKUgoKmggAEvgEAFgSCuoKoprKCloKWAATYAQAPAoKU")]
+
 namespace go.@internal;
 
 using abi = go.@internal.abi_package;

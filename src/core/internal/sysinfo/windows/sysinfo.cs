@@ -4,6 +4,8 @@
 
 // Package sysinfo implements high level hardware information gathering
 // that can be used for debugging or information purposes.
+[assembly: go.GoPositionMap("internal/sysinfo/sysinfo.go", "sysinfo.cs", "ABEegIKmgIKm")]
+
 namespace go.@internal;
 
 using cpu = go.@internal.cpu_package;

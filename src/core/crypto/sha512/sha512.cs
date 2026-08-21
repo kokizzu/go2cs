@@ -8,6 +8,8 @@
 // All the hash.Hash implementations returned by this package also
 // implement encoding.BinaryMarshaler and encoding.BinaryUnmarshaler to
 // marshal and unmarshal the internal state of the hash.
+[assembly: go.GoPositionMap("crypto/sha512/sha512.go", "sha512.cs", "ABgqgoKCggAzhAGClIKCgoKCgoKkgoKCgoKCgqSCgoKCgoKCpIKCgoKCgoKkggALFoKClKSkpKSkgoKCgoKCgoKCgoLmgoKUAA0MpIKUgoKCgoKCgoKCgoKCpoKokoKUgoKokoKCqJKCgqiSgpSCgqaClKSkpMiApMKClIKCgoKCgoKUlIKCgpSClKaCgqaCgoKUpKSkyLSCgoKCgpSogriChIKWgoKCgoKCgoKClqiSgpSSgoKokoKUkoKCgoKokpKCgoKCqJKSgoKCgg==")]
+
 namespace go.crypto;
 
 using crypto = crypto_package;

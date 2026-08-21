@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:generate go run $GOROOT/src/sort/gen_sort_variants.go -generic
+[assembly: go.GoPositionMap("slices/sort.go", "sort.cs", "AA4g0oIAAhgACwKCqsKowoKCpqrCgoKmrOKClIKClKzSgpSCgoKmrOKClIKClKzSgpSCgoKmrgAIBKaSgpSClLgAAhQACQKmkoKUgpS4AAocgoKCgqaCqsI=")]
+
 namespace go;
 
 using cmp = cmp_package;

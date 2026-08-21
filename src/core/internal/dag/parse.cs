@@ -39,6 +39,8 @@
 // even before i and j have been defined.
 //
 // Comments begin with #.
+[assembly: go.GoPositionMap("internal/dag/parse.go", "parse.cs", "ADtygqaCgIKkgoKCpoKmgqaCpqKCgpSGrLKChIKCmJKSlIKCgpSCgoKUgpSCgpSAgpTugoKCzIKCgoK4lN6CgoKCzIKWAAsYgujSgoKUpMS2hIKCgoKCgpSUgpSCgoKClIKUlgAMFpLYsoKCpIKUpKSEgoL+ooKClKSCgqaClIKmgoKUgqaCpIKmgoKUgoKC")]
+
 namespace go.@internal;
 
 using cmp = cmp_package;

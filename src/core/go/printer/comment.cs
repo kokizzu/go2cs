@@ -1,6 +1,8 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/printer/comment.go", "comment.cs", "AA8epKKCgoKCAAkUlKSCgoKCgqaCgpSClKaWgpiShIKWkoK4mJKCgoKCpJSUyoK4gtz8+oK6goKUgoKUgoKmqqKCgoKClIK4")]
+
 namespace go.go;
 
 using ast = global::go.go.ast_package;

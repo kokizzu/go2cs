@@ -4,6 +4,8 @@
 
 // Package srcimporter implements importing directly
 // from source files rather than installed packages.
+[assembly: global::go.GoPositionMap("go/internal/srcimporter/srcimporter.go", "srcimporter.cs", "ACdOAAgCAA0akgACEgAKAoKWgJKkgoKogqiCgoKUypSWgtqCqIKChIKCmJLIgtyCppSCgoKUqIK4goKUlJSWgta0goKAtoKEgoKC0oKCgoKUgtaWgoKoAAkG0oKClISCgpSCgpSktoKCgoKCgoKUlIKCgoSCgoCCptq2poKAgqSmooCCpKg=")]
+
 namespace go.go.@internal;
 
 // import "go/internal/srcimporter"

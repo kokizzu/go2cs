@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("paren.go", "paren.cs", "AAYQgpKCgoKClII=")]
+
 namespace go;
 
 partial class main_package {

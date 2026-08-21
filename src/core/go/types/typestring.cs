@@ -4,6 +4,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // This file implements printing of types.
+[assembly: global::go.GoPositionMap("go/types/typestring.go", "typestring.cs", "ABdGooKUgoKUvrKCgqyyrLIADRyCpoKCpoKCgpSClIKCuIKmgoKUAAwGwoKClIKElLqigIKCtraCgoK2graCgoK6gpSCzIKClIKCgoKUgIK4traCtraCuqKClIKClIKUyILKgpSCgqaCgoK4lIKCgpSCgpSCgpSCgpSCpraCgoK2goKUhICSxqSkpIKClIKCzKKUgpTGyIKClIC4lIKC3IKCuPyCgJSklNz68oKCgoKUgoKUyLSShJKClIKUgoKU2KKCgoKUlNaigoK4goKUgpSClJSClIKClKaigtaygoKCgqaCgpSCgoCCgriAgoKkgoK2pqbSgoKCgoKmloSClJaClIKo2JKCgoKCgoKCgqY=")]
+
 namespace go.go;
 
 using bytes = bytes_package;

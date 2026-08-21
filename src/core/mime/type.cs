@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package mime implements parts of the MIME spec.
+[assembly: go.GoPositionMap("mime/type.go", "type.cs", "ABk0soKChIKUgpaCgoKCgpSCgIKkAB82goCClIIABC4AEwKWgIKssoKCgoKUgoKUgpSmgoKuwoKCloKCgpSCgqyygpSC5qKCgpSCgpSEgoSCgoKAgqSCgqaC")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -6,6 +6,8 @@
 // It provides functionality exported in runtime/coverage as well as
 // additional functionality used directly by package testing
 // through testing/internal/testdeps.
+[assembly: go.GoPositionMap("internal/coverage/cfile/emit.go", "emit.cs", "ACVKAESgAbKClIKCgoKmgoKWgoKCloCCgoLagoKUgoKUpoKCgpSsxN6Clt6EgoKCooKClJSCgoK6goKigIKkgoKClIKCuoKWgoKChKqigoKUgpaE3oCCuIKAgrassoKUgIKCgtykgpSWgqiCAAYQgIKkgqiAgqSAgsqAgqaokoCCpAACEAAIBoKCgpSCgoKCpqzSgoKCgoKCgpQAAhwADQKCgpSCloKAgraCgIK2rNKAgqSAgsqAgqasstaihIKigpSmgoSCgoKUloKCgpSCgqiCgoKCuoKCgoKmlIKWgoKCpgAHEoKCgqSAgpSCAAgQloKAgriUgqYABxDSgoKClIKCqsKCgIKkAAIQ0qaCgoSClIKCgoKigoKUlIKC")]
+
 namespace go.@internal.coverage;
 
 using md5 = crypto.md5_package;

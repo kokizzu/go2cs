@@ -1,6 +1,8 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("internal/trace/generation.go", "generation.cs", "ACpeAAkC7oKCgIKkmKKCooKUgriClJSUlJSUkoKUAAcQlICCyoIABxKCloCCuIKCpoaospSAgtaAgtaCgpS0goKUgpS0gpSAgta0qsqCkoKCgoKUgoKClIKCgqaUrNKClIKCgpaClIKClIKogoKogoKUgqiCgpSCqIKCgIK2rNKClIKCgpaUgoKUgqiCgqiCgpSCqIKUgoKUgoKUgoKUgoKUhICCAAkUgIK2rLKClIKCgpaUgoKUgqiCgqiCgpSWgoKUloKClIKCqIKCqAAKFKiSgpSCloKCpqqigpSCgoKUuA==")]
+
 namespace go.@internal;
 
 using bufio = bufio_package;

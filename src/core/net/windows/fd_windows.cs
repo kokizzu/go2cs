@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("net/fd_windows.go", "fd_windows.cs", "ABs0gqqilLamggAJFKaigoKUAAgIAAgIgIKmyoSClICCpoK2gpSipsyCgqaClLS0tICCuIKUtMSkpuiUlKaogIKkpICCpMjWooKUgoKU1oKCgqaiiIKClKiCgoKUgIKCqKKSlIKEgqqk")]
+
 namespace go;
 
 using context = context_package;

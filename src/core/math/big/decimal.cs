@@ -15,6 +15,8 @@
 //
 // In contrast to strconv/decimal.go, only right shift is implemented in
 // decimal format - left shift can be done precisely in binary format.
+[assembly: go.GoPositionMap("math/big/decimal.go", "decimal.cs", "ACFCkoKUAAYkAA0EgoKCzIKCgoKUgqiCgqiCgqaClJaCgoKUuriCgoKCgpSUgpSCgpSWgoKCgoKCgoKCqIKCgoKClJaCgoKClqaCgpaCloKCgriCgoK4goK2qJKClKyylKas0oKWgpS4goK6gpaUgoKCqIKosoKUgqqigoKUgoI=")]
+
 namespace go.math;
 
 partial class big_package {

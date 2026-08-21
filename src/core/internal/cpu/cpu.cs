@@ -4,6 +4,8 @@
 
 // Package cpu implements processor feature detection
 // used by the Go standard library.
+[assembly: go.GoPositionMap("internal/cpu/cpu.go", "cpu.cs", "AJABlAIADAKCABAu4oKCgoKClJSClIKCgpSUgpSkpIKmgoKClJaCgoKCqLaCgpaCgpYAAxDCgoKm")]
+
 namespace go.@internal;
 
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname

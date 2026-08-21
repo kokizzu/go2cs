@@ -1,5 +1,7 @@
 global using aliased = go.array<byte>;
 
+[assembly: go.GoPositionMap("main.go", "main.cs", "ACEihIKEgoaChoKIgoSChoKChIKChoaChIKGhoKC")]
+
 namespace go;
 
 using fmt = fmt_package;

@@ -1,6 +1,8 @@
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: go.GoPositionMap("math/j1.go", "j1.cs", "AAyWAQBDAgAMHpSkpoKCgpSCgoKWgoKClM6CgpSCgpSClJSSlIKCgoKCgpQABRYACAIADR6UpKSmgoKCloKCgpQADByCgpSCgpSUkpSCgoIAhgGgAYKCgoKCpIKkgqSClIKCggCOAagBgpKCgqSCpIKkgpSCgoI=")]
+
 namespace go;
 
 partial class math_package {

@@ -6,6 +6,8 @@
 // only using packages which may be imported by "os".
 //
 // Tests for these functions are in path/filepath.
+[assembly: go.GoPositionMap("internal/filepathlite/path.go", "path.cs", "ACRAgoKUpoKCgoKUgpSCpqKCpoKClKiSgoKCgpSUlN6CkpKCgpaClra2gpaCwsiSlIKC6qKWkuyCloKokqaCgpSCgoKCgoKmgpSClKiSgpSokoKUqJKClKaCgpSCgoKmqJKCgoKUqJKCgqaokoKmgqaUgoKUgqaClKiSgoKClIKUlKiSqqI=")]
+
 namespace go.@internal;
 
 using errors = errors_package;

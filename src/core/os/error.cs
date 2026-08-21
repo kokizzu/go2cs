@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 global using PathError = go.io.fs_package.PathError;
 
+[assembly: go.GoPositionMap("os/error.go", "error.cs", "ACI8gAACEvAADB6ApICmkoKssoKUAAIS4gACEuIAAhLiAAIWAAgCgqa4goKmgqiSlKSklA==")]
+
 namespace go;
 
 using poll = @internal.poll_package;

@@ -1,3 +1,5 @@
+[assembly: go.GoPositionMap("StructWithPointer.go", "StructWithPointer.cs", "AA8YgoKUhII=")]
+
 namespace go;
 
 using fmt = fmt_package;

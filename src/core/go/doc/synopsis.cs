@@ -1,6 +1,8 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+[assembly: global::go.GoPositionMap("go/doc/synopsis.go", "synopsis.cs", "AA4gsqKigpSClIKUlK7CggANKAAIAoKCgoKmgoKCgpSAgqSC")]
+
 namespace go.go;
 
 using comment = global::go.go.doc.comment_package;

@@ -5,6 +5,8 @@
 // Package chacha8rand implements a pseudorandom generator
 // based on ChaCha8. It is used by both runtime and math/rand/v2
 // and must have minimal dependencies.
+[assembly: go.GoPositionMap("internal/chacha8rand/chacha8.go", "chacha8.cs", "ABUoAA8wAAkCgoKUgqiyAAcSwoKCgoKs0oIABxCCgoKClIKCgoIAAxDigoKCgoKClKYAAhDygoKCgoKUAAgKgqiygpSCgpSClIKCgoKClA==")]
+
 namespace go.@internal;
 
 using byteorder = go.@internal.byteorder_package;

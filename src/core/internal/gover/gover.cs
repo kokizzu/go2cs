@@ -8,6 +8,8 @@
 //
 // The go/version package should be imported instead of this one when possible.
 // Note that this package works on "1.21" while go/version works on "go1.21".
+[assembly: go.GoPositionMap("internal/gover/gover.go", "gover.cs", "ACBI0oKEgIKkgIKkgIKkgJKkgIKkrLKClAACGAAJAoKokoKClKiSqqKGkoKClJSCgqiCqIKClKaClKiCgu6UqIKCgpSUgpSCgpSCgpaqooKClJKUqqKClIKUgpSClL7EgoKClJSUgpSU")]
+
 namespace go.@internal;
 
 using cmp = cmp_package;

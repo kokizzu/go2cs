@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package iotest implements Readers and Writers useful mainly for testing.
+[assembly: go.GoPositionMap("testing/iotest/reader.go", "reader.cs", "ABAioOyCgpSqoOyCAAIQ0AAIENaCgoKClIKUgpQABRCg/oKCgpSoku6CAAgSgoKUgoKClIKClIIABhTygoKCqIKClIKUgoKWgJSAgsqCgoCCpICCpICCyoCCuIKClIKogIKkgIK4goKUgqiAgqSCgpSCuICCgoKUgoKUgpaCgpaClIKClIKWgpSCgoKCgpSUgsg=")]
+
 namespace go.testing;
 
 using bytes = bytes_package;
