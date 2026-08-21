@@ -39,8 +39,20 @@
 //     Go's `+0x<offset>` PC deltas are omitted. all=true reports only the calling thread — the CLR
 //     has no supported way to walk another thread's stack.
 //   - ReadMemStats fills the fields the CLR genuinely measures and leaves the allocator-internal
-//     ones (Mallocs/Frees/HeapObjects/BySize, the per-pause histories) zero rather than inventing
-//     numbers.
+//     ones (Mallocs/Frees/HeapObjects/BySize) zero rather than inventing numbers. The per-GC pause
+//     history, LastGC, PauseTotalNs and NumGC come from golib's GcPauseRecorder (one gen2 recorder,
+//     one ring, one snapshot shared with runtime/debug.readGCStats); HeapReleased is
+//     max(0, committedHighWater - currentCommitted). Both are docs/phase4/DESIGN-readmemstats-
+//     surface.md, ratified 2026-08-21 — read the recorder's own header for the mechanism, the
+//     measured boundaries and the GO2CS_GC_PAUSE_HISTORY=0 escape hatch. Two MemStats invariants
+//     stated here rather than repaired, because repairing either would mean inventing or clamping a
+//     measured number (§4.4): `Sys == StackSys + MSpanSys + ... + OtherSys` is FALSE (Sys is
+//     committed bytes while every breakdown term is an allocator arena the CLR does not partition),
+//     and `HeapIdle >= HeapReleased` can be false after a large release (HeapIdle is instantaneous,
+//     HeapReleased is a difference against a historical high-water mark). GCCPUFraction stays ZERO
+//     for the same rule: the adjacent CLR quantity, PauseTimePercentage, is pause time as a share of
+//     wall time since the last GC, where Go's field is GC's share of the program's available CPU
+//     since it started — a number in the right range and of the wrong kind.
 //   - Goexit is exact for the GOROUTINE case (defers run, recover() sees nil, no other goroutine is
 //     affected) and GATED for the main goroutine, whose "main ends but the program keeps running"
 //     shape has no managed counterpart yet — docs/phase4/DESIGN-goexit.md option C.
@@ -85,6 +97,23 @@ namespace go;
 
 partial class runtime_package
 {
+    // ⟨OQ-1⟩ as ratified: the GC pause recorder is ALWAYS ON, armed from this package's initializer.
+    // The two alternatives were rejected on correctness rather than cost — arming on the first
+    // ReadMemStats would make NumGC LESS true than it is today (either reporting 0 when the CLR has
+    // really collected N times, or claiming a ring it cannot fill), and arming only under the test
+    // host would make a measurement surface answer differently under test than in production, which
+    // is the one shape a measurement surface must never have. Its measured price is one finalizer
+    // run and one GetGCMemoryInfo call per gen2 collection, which is below the noise floor of a
+    // 1.25-1.64 ms collection (docs/phase4/DESIGN-readmemstats-surface.md §7.1.3).
+    //
+    // runtime/debug arms it from its own module initializer too: either assembly can be the first a
+    // program touches, and GcPauseRecorder.Arm is idempotent.
+    [ModuleInitializer]
+    internal static void ᴛArmGcPauseRecorder()
+    {
+        GcPauseRecorder.Arm();
+    }
+
     // GOMAXPROCS' remembered setting. Go's starts at NumCPU.
     private static nint s_gomaxprocs = Environment.ProcessorCount;
 
@@ -149,6 +178,18 @@ partial class runtime_package
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
         System.GC.WaitForPendingFinalizers();
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+        // §3.4's mitigation. The pause recorder's sentinel is woken by the FINALIZER thread, so a
+        // ReadMemStats landing in the gap between a collection completing and its finalizer running
+        // would see NumGC one short. Go's GC() is documented to complete a full cycle and its tests
+        // rely on the world being quiet when it returns, so this is exactly the boundary where the
+        // lag must be closed: wait the finalizer out and observe directly. Observe() is idempotent
+        // per collection, so the direct call cannot double-record what the finalizer already took,
+        // and vice versa. The counter is Go's NumForcedGC — "GC cycles that were forced by the
+        // application calling the GC function" — which is a fact about the PROGRAM, so it is counted
+        // whether or not the recorder is armed.
+        GcPauseRecorder.Drain();
+        GcPauseRecorder.NoteForcedGC();
     }
 
     // metricsLock/metricsUnlock protect the runtime metrics table (initMetrics' map and the agg
@@ -218,6 +259,18 @@ partial class runtime_package
     // histogram's address there). It crosses as the same opaque address the Go form would carry
     // and is exactly as (un)readable on the other side — Value.Float64Histogram()'s reinterpret
     // is a pre-existing limitation of the address model, not something this shim changes.
+    //
+    // ⚠ A STATED DIVERGENCE, deliberately not repaired here (⟨OQ-4⟩ of DESIGN-readmemstats-surface.md,
+    // ratified 2026-08-21): runtime/metrics does NOT read the ReadMemStats surface. Its compute
+    // closures stay auto-converted over Go's own memstats/gcController/consistentHeapStats — and
+    // consistentHeapStats.read is hand-owned above to return the ZERO delta, because nothing ever
+    // writes a heapStatsDelta. So after the pause recorder landed, go2cs answers "how many bytes did
+    // this process return to the OS" with a real number on MemStats.HeapReleased and with 0 on
+    // /memory/classes/heap/released:bytes, where Go documents the two as the same quantity;
+    // /gc/pauses:seconds and /gc/cycles/total:gc-cycles are likewise unwired. Rewiring them converts
+    // auto-converted closures into hand-owns on a banked package for no consuming test — the banked
+    // runtime/metrics row is TestNames + TestDocs, which asserts no VALUE — so the divergence is
+    // recorded rather than papered over, and the wiring waits for a consumer that demands it.
     public static void readMetricsManaged(slice<@string> names, slice<nint> kinds, slice<uint64> scalars, slice<unsafe_package.Pointer> pointers)
     {
         metricsLock();
@@ -475,10 +528,40 @@ partial class runtime_package
     {
         ref var m = ref Ꮡm.Value;
 
-        GCMemoryInfo info = System.GC.GetGCMemoryInfo();
+        // ⚠ THIS READ PATH MUST NOT ALLOCATE, and that is a landing precondition rather than a
+        // nicety (DESIGN-readmemstats-surface.md §8.2): net/textproto's banked
+        // TestReadMIMEHeaderAllocations brackets each header read between two ReadMemStats calls and
+        // asserts under 32,768 B per iteration, so anything allocated after the first call captures
+        // TotalAlloc — or before the second one does — lands INSIDE the measured window and is
+        // charged to ReadMIMEHeader. GolibTests.GcMeasurementSurfaceProbes.ReadMemStatsPerCallAllocation
+        // is the guard, and it is pinned at ZERO.
+        //
+        // The one allocation this body used to make was invisible: GCMemoryInfo is a struct, but
+        // GC.GetGCMemoryInfo() allocates a fresh GCMemoryInfoData CLASS behind it on EVERY call —
+        // 288 B on net9.0/9.0.19 x64, measured, which is 25 % of net/textproto's per-iteration budget
+        // in the worst bracketed window (§7.1.4). So the committed/heap-size figures now come from
+        // the recorder, which already samples them once per gen2 collection; the direct read below
+        // runs only when there is no recorder sample to reuse — before the first observed collection,
+        // or with GO2CS_GC_PAUSE_HISTORY=0, where it restores the pre-recorder behavior exactly.
+        //
+        // The cost of reusing the recorder's sample is freshness: TotalCommittedBytes is a snapshot
+        // as of the last GC in EITHER case, and is now as of the last observed GEN2 collection. It is
+        // therefore fresh at every point a Go test reads it — runtime.GC() and debug.FreeOSMemory()
+        // both drain the recorder before returning — and as stale as the last full cycle elsewhere.
+        if (!GcPauseRecorder.HasCommittedSample)
+        {
+            GCMemoryInfo info = System.GC.GetGCMemoryInfo();
+            GcPauseRecorder.SampleCommitted(info.TotalCommittedBytes, info.HeapSizeBytes);
+        }
+
+        // One snapshot under one lock, filling the caller's own PauseNs/PauseEnd backing storage
+        // in place. This is the SAME snapshot runtime/debug.readGCStats reads, which is what makes
+        // TestReadGCStats' nine cross-surface assertions hold by construction: there is no second
+        // source for them to disagree with.
+        GcPauseSnapshot gc = GcPauseRecorder.ReadInto(m.PauseNs, m.PauseEnd);
 
         uint64 live = (uint64)System.GC.GetTotalMemory(forceFullCollection: false);
-        uint64 committed = (uint64)Math.Max(info.TotalCommittedBytes, 0L);
+        uint64 committed = gc.CommittedBytes;
 
         m.Alloc = live;
         m.HeapAlloc = live;
@@ -487,14 +570,19 @@ partial class runtime_package
         m.HeapSys = committed;
         m.HeapInuse = live;
         m.HeapIdle = committed > live ? committed - live : 0;
-        m.NextGC = (uint64)Math.Max(info.HeapSizeBytes, 0L);
-        m.PauseTotalNs = (uint64)(System.GC.GetTotalPauseDuration().Ticks * 100L);
-        m.NumGC = (uint32)System.GC.CollectionCount(System.GC.MaxGeneration);
+        m.HeapReleased = gc.HeapReleased;
+        m.NextGC = gc.HeapSizeBytes;
+        m.LastGC = gc.LastGcEndUnixNs;
+        m.PauseTotalNs = gc.PauseTotalNs;
+        m.NumGC = (uint32)gc.NumGC;
+        m.NumForcedGC = gc.NumForcedGC;
         m.EnableGC = true;
 
-        // Deliberately left zero: Mallocs/Frees/Lookups/HeapObjects/HeapReleased, the Stack/MSpan/
-        // MCache/BuckHash/GC/OtherSys breakdown, LastGC, and the PauseNs/PauseEnd/BySize histories
-        // are Go-allocator bookkeeping the CLR does not expose (see the header).
+        // Deliberately left zero: Mallocs/Frees/Lookups/HeapObjects/BySize, the Stack/MSpan/MCache/
+        // BuckHash/GC/OtherSys breakdown, GCCPUFraction and DebugGC. A field is answered only when a
+        // managed measurement means the SAME THING the Go field means; where the CLR measures
+        // something adjacent-but-different, the field stays zero and the header names the adjacent
+        // quantity and why it was refused (§4.3).
     }
 
     // LockOSThread wires the calling goroutine to its current operating system thread.

@@ -600,30 +600,39 @@ public class GcMeasurementSurfaceProbes
     // ReadMemStats calls and asserts under 32,768 B per iteration.
     // ------------------------------------------------------------------------------------------
 
-    // The measured per-call cost of ReadMemStats TODAY, plus headroom.
+    // ⚠ TIGHTENED TO ZERO BY S2/S3 (2026-08-21). This constant was 320 for exactly one stage: S1
+    // measured that ReadMemStats was NOT allocation-free -- 288 B/call, because GCMemoryInfo is a
+    // struct wrapping a GCMemoryInfoData CLASS that GC.GetGCMemoryInfo allocates fresh on every call
+    // (§3.6 item 2's parenthetical read that surface as free and it is not) -- so the ceiling stood
+    // as the instrument that would be tightened once the read path stopped allocating, with zero
+    // always the stated target and §8.2's landing precondition.
     //
-    // ⚠ ReadMemStats is NOT allocation-free today, and §3.6 item 2's parenthetical ("GetGCMemoryInfo
-    // returns a struct") is why the design expected otherwise. GCMemoryInfo IS a struct, but it
-    // wraps a GCMemoryInfoData CLASS that GC.GetGCMemoryInfo allocates fresh on every call -- 288 B
-    // on net9.0/9.0.19 x64, measured 2026-08-21. So the precondition §8.2 makes binding is already
-    // violated by the current implementation, before this arc adds anything.
+    // S2/S3 did that: the committed/heap-size figures now come from GcPauseRecorder's own sample,
+    // taken once per gen2 collection, and the ring is copied into the caller's already-allocated
+    // array<T> backing store. GC.GetGCMemoryInfo is no longer on the read path at all once the
+    // recorder has observed a collection, which is why this test forces one first.
     //
-    // This is therefore a CEILING, not the target: zero remains S2/S3's landing precondition, and
-    // this constant is the instrument that gets tightened to 0 when the read path stops allocating
-    // (which needs the one GetGCMemoryInfo call to move off the per-read path -- the recorder can
-    // hand ReadMemStats the committed figure it already sampled at Observe()). Until then the guard
-    // does the job the design is actually afraid of: catching a KB-scale regression -- a recorder
-    // that copies its ring into a fresh array per read (2 KiB), or a snapshot object per call.
-    //
-    // Re-measure this on a runtime hop: it is one BCL object's size, so a .NET version that grows
-    // GCMemoryInfoData moves it. A failure here that reports ~288-320 B is a toolchain change, not
-    // a go2cs regression.
-    private const long ReadMemStatsPerCallCeilingBytes = 320;
+    // ZERO is the number that matters, not a small one: net/textproto's banked
+    // TestReadMIMEHeaderAllocations brackets each header read between two ReadMemStats calls and
+    // asserts under 32,768 B per iteration, and TotalAlloc's `precise: false` lag makes the old cost
+    // LUMPY rather than absent -- most windows read 0 while roughly one in thirty absorbed a whole
+    // ~8 KB allocation quantum, which put 25 % of that budget on the brackets alone in the worst
+    // iteration. A guard at a non-zero ceiling would let that come back.
+    private const long ReadMemStatsPerCallCeilingBytes = 0;
 
     [TestMethod]
     public void ReadMemStatsPerCallAllocation()
     {
         ж<Δruntime.MemStats> stats = @new<Δruntime.MemStats>();
+
+        // The recorder must have observed a gen2 collection before the measured loop, or ReadMemStats
+        // is legitimately on its FALLBACK path -- a direct GC.GetGCMemoryInfo per call, which is what
+        // an opted-out (GO2CS_GC_PAUSE_HISTORY=0) or not-yet-collected process gets and is exactly
+        // today's pre-recorder behavior. runtime.GC() drains the recorder before returning, so one
+        // call puts the surface in the steady state the guard is about. Making this explicit rather
+        // than relying on whatever the other tests in this assembly left behind is the difference
+        // between a guard and a coincidence.
+        Δruntime.GC();
 
         // Warm: the first call carries JIT and static initialization that no later call repeats.
         for (int i = 0; i < 64; i++)
@@ -671,12 +680,18 @@ public class GcMeasurementSurfaceProbes
         Console.WriteLine($"[S1 §3.6-2] EMPTY bracketed windows (two back-to-back ReadMemStats, nothing between), {windows} of them: " +
                           $"{charged:N0} B charged in total, {perWindow:F1} B/window mean, {maxWindow:N0} B worst, {nonZeroWindows} window(s) non-zero");
         Console.WriteLine($"[S1 §3.6-2] net/textproto's per-iteration budget is 32,768 B, so the bracket cost is {(perWindow * 100.0 / 32768):F3}% of it on average and {(maxWindow * 100.0 / 32768):F3}% at worst");
-        Console.WriteLine($"[S1 §3.6-2] the gap between the two instruments is TotalAlloc's `precise: false` lag: a {perCall:F0} B allocation does not move the process-wide counter until the thread's allocation context is exhausted");
+        Console.WriteLine(perCall == 0
+            ? "[S1 §3.6-2] both instruments read ZERO, which is what §8.2's landing precondition asks for: with nothing allocated per call there is no cost for TotalAlloc's `precise: false` lag to mask into an occasional ~8 KB window"
+            : $"[S1 §3.6-2] the gap between the two instruments is TotalAlloc's `precise: false` lag: a {perCall:F0} B allocation does not move the process-wide counter until the thread's allocation context is exhausted, so most windows read 0 and roughly one in thirty absorbs a whole quantum");
 
         Assert.IsTrue(perCall <= ReadMemStatsPerCallCeilingBytes,
             $"ReadMemStats allocated {perCall:F1} B/call, above the {ReadMemStatsPerCallCeilingBytes} B ceiling. " +
             "§8.2 of DESIGN-readmemstats-surface.md makes an allocation-free read path a LANDING PRECONDITION: " +
-            "net/textproto's banked TestReadMIMEHeaderAllocations measures across ReadMemStats itself.");
+            "net/textproto's banked TestReadMIMEHeaderAllocations measures across ReadMemStats itself. " +
+            "A reading near 288 B means the read path fell back to GC.GetGCMemoryInfo — check that the " +
+            "recorder is armed and has observed a collection (GO2CS_GC_PAUSE_HISTORY, GcPauseRecorder.Arm); " +
+            "a KB-scale reading means something on the path allocates per call, which is the regression " +
+            "this guard exists for.");
     }
 
     // ------------------------------------------------------------------------------------------

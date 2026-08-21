@@ -1753,7 +1753,14 @@ identity instead of a GC-unsound stored address),
 canonical per-address weak handle so two weak pointers to one object still compare equal), `time`'s runtime timers (one dedicated thread servicing
 a deadline-ordered heap on the Windows high-resolution timer), and the runtime's whole process-control
 surface (`GC`, `GOMAXPROCS`, `Gosched`, `LockOSThread`, `Goexit`) as its contracts rather than its
-scheduler-level mechanics. The same "realize, don't stub" instinct also ports an asm-backed architecture
+scheduler-level mechanics. The GC **measurement** surface belongs to the same family and shows what
+"realize, don't stub" costs and buys: `runtime.ReadMemStats` and `runtime/debug.ReadGCStats` now read
+one snapshot from
+[one gen2 pause recorder](ConversionStrategies-Reference.md#the-gc-measurement-surface--one-recorder-one-ring-one-snapshot),
+so the per-cycle pause history, `LastGC`, `NumGC` and `HeapReleased` are measured facts rather than
+zeros — while `Mallocs`/`Frees`/`HeapObjects` and `GCCPUFraction` stay zero, because the CLR's nearest
+quantity means something else and a plausible-looking invented number is worse than a stated gap. The
+same "realize, don't stub" instinct also ports an asm-backed architecture
 layer for real wherever .NET exposes the same instructions the `.s` file issues — `hash/crc32`'s SSE4.2
 `CRC32` and PCLMULQDQ folding.
 

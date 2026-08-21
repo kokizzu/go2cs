@@ -10,6 +10,19 @@
 > otherwise move. Implementation proceeds per §7's staged landing (S0/S1 measurement first); §8 is
 > the charter-§7 adversarial pass against this document's own first draft.
 >
+> **S2 and S3 are IMPLEMENTED and recorded in [§7.2](#72-s2s3--implemented-and-measured-2026-08-21)**
+> (2026-08-21, same machine). The recorder is `src/core/golib/runtime/GcPauseRecorder.cs`; the two
+> surfaces read one snapshot from it. Headlines: `TestReadGCStats` **CLOSES** — all nine assertions,
+> on mechanism — so `runtime/debug` moves **2 → 3 of 9**; `ReadMemStats` is **allocation-free at
+> ZERO** (288 B → 0.0 B/call, 0 B across all 200 bracketed windows), and the named guard is pinned
+> there; `HeapReleased`, `LastGC`, `PauseNs`/`PauseEnd`, `PauseTotalNs` and `NumForcedGC` are all
+> real. `TestFreeOSMemory` does **not** close, and §7.2.3 is the measurement that says why: its
+> assertion 1 passes, its assertion 2 fails because the 32 MiB object is never reclaimed while the
+> test method's own frame is live — reproduced in plain hand-written C#, with `HeapReleased`
+> exonerated by the same probe releasing the full 33,689,600 B for the same object allocated behind a
+> call that has returned. That is an object-lifetime divergence, not a measurement-surface one, and
+> §7.1.10's "a Debug build" attribution is narrower than the phenomenon.
+>
 > **S0 and S1 are RUN and recorded in [§7.1](#71-measurements--s0-and-s1-run-2026-08-21)**
 > (2026-08-21, i7-5820K, .NET 9.0.19, `GolibTests` 191/191). Headlines: the §5.4 discriminator reads
 > **T = P**, so `math/big`'s 224-verdict row is **root (1)** and routes to the ж-box arc — ⟨OQ-3⟩
@@ -541,6 +554,15 @@ this arc — they are Ruling B's `runtime-capability` disclosure, pinned AS FAIL
 anti-laundering clause. `TestStack` is the position-map arc. This arc buys **two** of the nine
 verdicts and no more; the package banks when the position map lands and the disclosure is written.
 
+> **MEASURED (S2/S3, 2026-08-21): it buys ONE, and the second is blocked outside this arc.**
+> `TestReadGCStats` closed exactly as predicted — all nine assertions, on mechanism (2 → **3 of 9**).
+> `TestFreeOSMemory` did not: its assertion 1 PASSES (`0 -> 3,039,232`) and its assertion 2 fails,
+> because the 32 MiB object is never reclaimed while the test's own frame is live (§7.2.3). Nothing in
+> this arc can move it — `HeapReleased` reports 33,689,600 B for the same object when it is genuinely
+> unreachable — so the row belongs to whichever arc owns converted-program object lifetime, and
+> `runtime/debug` now needs the position map, the `WriteHeapDump` disclosure, `TestSetCrashOutput`
+> **and** that lifetime question before it banks.
+
 ### 6.2 `math/big`
 
 No verdict is bought directly. What lands is the **discriminator** (§5.4) and therefore the routing:
@@ -858,6 +880,137 @@ compiler does not extend a temporary's lifetime that way. **Any managed probe th
 and then measures must allocate in a frame that has already exited**, and should carry the
 live-bytes control the probe now carries, which turns the artifact into a printed "THE READING ABOVE
 IS INVALID" instead of a plausible number.
+
+> **⚠ REFINED BY S2/S3 (2026-08-21): "a Debug build" is narrower than the phenomenon.** The same
+> three-way probe — allocate INLINE into a static field vs. allocate BEHIND a call that has returned —
+> was re-run under `-p:Optimize=true`, and again under `-p:Optimize=true` with
+> `DOTNET_TieredCompilation=0`. All three configurations read **identically**: the inline shape retains
+> the object (live 35,064,608 → 35,070,752 B; `HeapReleased` delta 5.48 MB against the 16 MiB the
+> assertion needs), the behind-a-call shape reclaims it (live 35,062,624 → 1,520,144 B;
+> `HeapReleased` delta **33,689,600 B**, §7.1.7's figure to the byte). Both a plain `byte[]` and a
+> `slice<byte>` behave the same way, so no go2cs machinery is involved. This is therefore a property
+> of the managed frame rather than of Debug codegen, and "build the test host Release" is not the
+> remedy anyone should reach for. It is what blocks `TestFreeOSMemory`'s second assertion in the
+> CONVERTED suite (§7.2.3), where the allocating frame IS the test's own and cannot be restructured.
+
+---
+
+## 7.2 S2/S3 — implemented and measured (2026-08-21)
+
+> Same machine, same toolchain as §7.1: **i7-5820K** (6C/12T, 31.9 GB, Windows 11 10.0.26100), **.NET
+> SDK 9.0.317 / runtime 9.0.19**, workstation concurrent GC, Go 1.23.1. Base commit `3659b9cdc`. No
+> converter change, so no CNR is owed (charter §5 binds CNR to converter changes).
+
+### 7.2.1 What landed, and where
+
+| Design section | Landed as |
+|:--|:--|
+| §3.1–§3.3 the recorder, the sentinel mechanism, the always-on activation model | **`src/core/golib/runtime/GcPauseRecorder.cs`** (new) — the ring, `Arm`/`Observe`/`Drain`, the `GO2CS_GC_PAUSE_HISTORY=0` escape hatch, and `GcPauseSnapshot` |
+| §3.2 write ordering, §7.1.6/refinement 4 the `Generation == MaxGeneration` overload rule | `GcPauseRecorder.Observe` / `TryReadGen2Info` |
+| §3.3(a) armed from the package initializer | `runtime/managed_impl.cs` `ᴛArmGcPauseRecorder` **and** `runtime/debug/stubs_impl.cs` `ᴛArmGcPauseRecorder` — either assembly can be the first a program touches, and `Arm` is idempotent |
+| §3.4 the `GC()` / `freeOSMemory()` drain | `runtime/managed_impl.cs` `GC()`; `runtime/debug/stubs_impl.cs` `freeOSMemory()` |
+| §2/⟨OQ-5⟩ `NumGC`, `LastGC`, `PauseNs`, `PauseEnd`, `PauseTotalNs` | `runtime/managed_impl.cs` `ReadMemStats` |
+| §3.2 `readGCStats` filling `2n+3`, most recent first | `runtime/debug/stubs_impl.cs` `readGCStats` |
+| §4.1/⟨OQ-2⟩ `HeapReleased` high-water, with the two honesty notes as code comments | `GcPauseRecorder.SnapshotLocked` / `SampleCommitted` |
+| §4.2 `NumForcedGC` | `GcPauseRecorder.NoteForcedGC`, called by both forced-cycle entry points |
+| §4.3 the zero-rule fields, §4.4 the two unsatisfied invariants | stated in `managed_impl.cs`'s header; asserted by `GcPauseHistorySurfaceTests.RefusedFieldsStayZero` |
+| §6.3/⟨OQ-4⟩ the `runtime/metrics` incoherence | recorded in `managed_impl.cs` above `readMetricsManaged`; **nothing in `runtime/metrics` was touched** |
+| §3.6 item 2 / §8.2 the allocation guard | `GolibTests.GcMeasurementSurfaceProbes.ReadMemStatsPerCallAllocation`, ceiling **tightened 320 → 0** |
+| §3.5's acceptance list, as a repo-local guard | `src/tests/GolibTests/GcPauseHistorySurfaceTests.cs` (new, 5 cases) + a `core/runtime/debug` project reference |
+
+### 7.2.2 `runtime/debug`: **2 → 3 of 9**, and `TestReadGCStats` closes on mechanism
+
+Measured through the pipeline (`go2cs -tests -test-action all -test-timeout 15m`) on the same tree,
+before and after:
+
+| Test | Go | C# before | C# after |
+|:--|:--|:--|:--|
+| `TestReadGCStats` | pass | **fail** | **PASS** |
+| `TestFreeOSMemory` | pass | fail | fail (§7.2.3) |
+| `TestSetGCPercent` | skip | skip | skip |
+| `TestSetMaxThreadsOvf` | pass | pass | pass |
+| `TestSetCrashOutput` | pass | fail | fail — not this arc |
+| `TestStack` | pass | fail | fail — the position-map arc |
+| `TestWriteHeapDump{Nonempty,Finalizers,TypeName}` | pass | fail | fail — Ruling B's `runtime-capability` disclosure, pinned AS FAILING |
+
+All nine of §1.2's assertions hold for `TestReadGCStats`, including the ones that were never reached
+before (5, 9) and the ones that passed vacuously (3, 6, 7). Nothing was tuned to make them: both
+surfaces read one snapshot under one lock, and the ring's write ordering is the inverse of
+`ReadGCStats`' backwards walk. §8.3's one genuine race — a gen2 collection landing between
+`ReadGCStats` and `ReadMemStats`, which Go's test closes with `SetGCPercent(-1)` and this tree cannot —
+did not fire in the measured runs; it is not claimed to be impossible.
+
+### 7.2.3 `TestFreeOSMemory`: assertion 1 closes, assertion 2 is blocked OUTSIDE this arc
+
+The converted row reports `less than 16777216 released: 0 -> 3039232`. Assertion 1 (`after > before`)
+**passes**. Assertion 2 fails, and the cause is not `HeapReleased`.
+
+A three-way probe in plain hand-written C# (GolibTests, i.e. no converted code and no go2cs machinery
+in the allocation path) settles it — same 32 MiB object, same `FreeOSMemory`, three frame shapes:
+
+| shape | live before → after | `HeapReleased` delta | verdict |
+|:--|:--|--:|:--|
+| allocate INLINE in the measuring frame, `slice<byte>` (the converted test's exact shape) | 35,064,608 → 35,070,752 B | 5,484,544 B | object **not reclaimed** |
+| allocate INLINE in the measuring frame, plain `byte[]` | 35,061,560 → 35,073,536 B | 61,440 B | object **not reclaimed** |
+| allocate BEHIND A CALL that has returned | 35,062,624 → **1,520,144 B** | **33,689,600 B** | object **reclaimed** |
+
+The third row is §7.1.7's figure to the byte, so `HeapReleased` is exactly right and the CLR does hand
+back 100 % of the 32 MiB — when the object is genuinely unreachable. It is not, in the converted test,
+because the test method's own frame keeps it alive. Re-running all three under `-p:Optimize=true`, and
+again under `-p:Optimize=true` with `DOTNET_TieredCompilation=0`, changes **nothing** — so §7.1.10's
+"a Debug build" attribution is narrower than the phenomenon, and building the test host Release is not
+the remedy.
+
+**This is a converted-program object-lifetime divergence, not a measurement-surface one**, and it is
+general: a Go program that drops its last reference to a large object and measures memory *in the same
+function* sees it retained under go2cs, where Go's compiler does not extend the temporary's lifetime.
+It is recorded here and routed out of this arc; nothing in §3 or §4 can move it.
+
+### 7.2.4 The allocation guard, at ZERO
+
+§8.2's landing precondition, which S1 measured as already violated (288 B/call), is now met:
+
+| measurement | S1 (2026-08-21, pre-implementation) | S2/S3 |
+|:--|--:|--:|
+| `ReadMemStats` per call, `GetAllocatedBytesForCurrentThread` over 2,000 calls | 288.0 B | **0.0 B** |
+| 200 empty bracketed windows, `TotalAlloc` delta, mean | 244.7 / 285.7 / 326.7 B | **0.0 B** |
+| worst single window | 8,200 B | **0 B** |
+| windows non-zero, of 200 | 6–8 | **0** |
+| worst window as a share of `net/textproto`'s 32,768 B budget | 25.02 % | **0.000 %** |
+
+The remedy is §7.1.4's own: `GC.GetGCMemoryInfo()` allocates a `GCMemoryInfoData` box per call, so it
+left the read path entirely — `ReadMemStats` reuses the committed/heap-size figures the recorder
+already samples once per gen2 collection, and the ring is copied into the caller's already-allocated
+`array<T>` backing. The direct read survives only as a fallback for the two cases that have no recorder
+sample: before the first observed collection, and under `GO2CS_GC_PAUSE_HISTORY=0` — where it restores
+the pre-recorder behavior exactly, which is the point of an escape hatch. The cost is freshness:
+`TotalCommittedBytes` was a snapshot as of the last GC of any kind and is now as of the last observed
+**gen2** collection. It is therefore fresh at every point a Go test reads it, because `runtime.GC()` and
+`debug.FreeOSMemory()` both drain the recorder before returning.
+
+### 7.2.5 Gates
+
+| Gate | Result |
+|:--|:--|
+| `GolibTests` (full) | **196/196** — 191 at S1 plus the five new `GcPauseHistorySurfaceTests` cases; the allocation guard passes at its new **0 B** ceiling |
+| `dotnet build src/go2cs.slnx -c Debug --no-incremental -m -p:UseSharedCompilation=false` | **0 errors**, 339 warnings, **3,546 s** (722 registered projects) |
+| Behavioral suite (`run-behavioral.ps1`, all four phases) | **PASS** — 603/603 Transpile, Compile and Target; 577/577 Output (26 skipped, no `package main`); **6,551.7 s**. Zero golden drift, as expected from a change that touches no converter code |
+| Validated sweep — the §1.3/§6.4 census re-derived at gate time by `git grep` over `src/core`, kept to the rows that are actually BANKED | `net/textproto` **26**, `image/gif` **28**, `expvar` **11**, `sync` **44**, `time` **159**, `runtime/metrics` **2** — every one at its exact banked count (plus `runtime/internal/math` 1 and `runtime/internal/sys` 4, swept incidentally by the `time` substring filter). `math/big`, `runtime/pprof` and `runtime/debug` are the census's other consumers and are **not on the roster**, so they carry no banked count to protect; `runtime/debug` is measured through the pipeline instead |
+| `runtime/debug` pipeline | 2 → **3 of 9**, run twice with the same verdicts (§8.3's race did not fire in either) |
+| CNR | **not owed** — no converter change |
+
+Two figures worth carrying: the full-solution build is now **~3,550 s** on this machine class, against
+CLAUDE.md's 2026-08-07 row of 1,432 s at 573 projects (the tree is at 722), and the behavioral suite is
+**~6,550 s** against a 2,820–4,131 s row at 555 packages (it is at 603). Both rows are stale rather
+than the runs being slow.
+
+Post-gate `git status` carried the four sweep dirt classes CLAUDE.md catalogues and nothing else:
+CRLF phantoms (`expvar_test.cs`, `net/textproto/reader{,_test}.cs`, `runtime/metrics/doc.cs`), the
+`-tests`-closure production re-flips (`runtime/metrics/description.cs`'s `global::go.*` root escape;
+`time/package_init.cs`'s `initᴛᴛtests()` hook), a `.cs.auto` review sibling (`time/tick.cs.auto`), and
+`time`'s banked test sources drifting against a converter improvement that predates this arc
+(anonymous-`dyn`-struct dedupe — `time_test.cs`, `package_test_info.cs`; no converter code was
+touched here, so it cannot be this arc's). All restored; nothing banked.
 
 ---
 
