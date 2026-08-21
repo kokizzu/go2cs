@@ -47,6 +47,11 @@
          runtime.ReadMemStats, not a model of it. -->
     <ProjectReference Include="..\..\core\runtime\runtime.csproj" />
 
+    <!-- GcPauseHistorySurfaceTests: the OTHER half of the same surface (S2/S3). The design's central
+         claim is that runtime.ReadMemStats and runtime/debug.ReadGCStats read ONE snapshot, so the
+         guard has to hold BOTH of them against each other — which needs both packages bound. -->
+    <ProjectReference Include="..\..\core\runtime\debug\runtime.debug.csproj" />
+
     <!-- MulUnbalancedDiscriminatorTests: the §5.4 discriminator drives math/big's nat.mul through
          Int.SetBits/Int.Mul. Same precedent as sha3 above — an MSTest tier binding a converted
          package to reach a measurement no other harness can take. -->
