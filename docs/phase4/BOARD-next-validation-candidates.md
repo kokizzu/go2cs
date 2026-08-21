@@ -15981,4 +15981,67 @@ verdicts -- then gob-via-StructOf and netip-via-allocation.
 shape (agreement with Go's intent, disagreement with its verdict, no class fits). Ruled when a
 lane reaches it, not before.
 
+## ✅ BANKED -- `net/mail` is roster row **#158**, 11 of 11, and it is the first bank to carry its own badge (2026-08-21, lane `claude/net-mail-position-map`)
+
+The selection ruling put this row first at price ZERO. It banks at exactly that: **no converter change,
+no golib change, no disclosure, no manifest**. The pipeline run IS the whole change.
+
+```
+  roster  157 / 215 (73.0%), 18,414 matching, 79 disclosed
+       -> 158 / 215 (73.5%), 18,425 matching, 79 disclosed   (recomputed from the table itself)
+```
+
+The eleven verdicts are the RFC 5322 address-list grammar (quoted strings, comments, folding white
+space), RFC 2047 encoded-words in both `B` and `Q` form including a custom `WordDecoder`, group syntax,
+the obsolete and malformed matrix, `Address.String()` round-tripped back through the parser, and `Date`
+header parsing with its CFWS forms. Three declarations are excluded-disclosed as the ordinary deferred
+Example/Benchmark set.
+
+### What the stale census said, and what dissolved it
+
+The 2026-08-16 near-miss census recorded `net/mail` at **7 of 11**, the four `TestAddress*` rows
+infrastructure-erroring on `System.ArgumentException: Indices low, high and max represent a range
+outside bounds of the array reference` -- a three-index slice-bounds root. The measurement pass found
+all four passing, and this bank confirms it twice more (the run above, and the own-row sweep).
+
+**The root is not attributed, deliberately.** It dissolved under an intervening arc, and naming which
+one would need a bisect across five weeks of merges to add nothing to the row. What the episode is
+evidence FOR is already board doctrine and is now paid out twice in eight days: *re-scout the tail after
+any capability lands, not only the packages that capability names.* A row sat one measurement away from
+free for an unknown number of weeks.
+
+### The badge levelled in its OWN run -- the first bank that did
+
+Measured, and worth recording because it retires a standing step every previous bank owed. Before the
+pipeline: `Tests-not_yet_validated-orange`. After the SAME `-test-action all` invocation:
+`Tests-11%2F11_validated-brightgreen`, linking `validation/1.23.1.6/net.mail.html`. That is
+`refreshPackageReadmeAfterProof` (the badge lane's second emission point) doing the thing it was built
+for, on the first fresh bank to reach it. No hand-levelling, no follow-up reconvert, no board entry
+owed to a later reader.
+
+### Gates
+
+The bank carries zero code, so its gate is the pipeline plus the sweeps -- and the canary set is derived
+at gate time by DIRECT IMPORT DECLARATION per the 2026-08-20 ruling, not remembered:
+
+| Gate | Result |
+|:--|:--|
+| `-tests -test-action all` (the bank's own run) | **11 validated**, 0 divergent, 3 excluded, 118 s |
+| own-row sweep `-Filter net/mail` | **PASS 11** |
+| canary `go/types` (557) | **PASS 557** |
+| canary `encoding/json` (491) | **PASS 491** |
+| canary `crypto/tls` (400 + 2) | **PASS 400** -- and Go's own BoGo baseline went red again on this run, the THIRD live shape-(b) capture; the annotated pin absorbed it and the row did not move |
+| canary `encoding/xml` (386) | **PASS 386** |
+| canary `html/template` (243) | **PASS 243** |
+
+The derivation is worth showing once, because it reproduces the ruling's own worked example: over the
+158 banked rows, **62** declare a direct `reflect` import across Imports / TestImports / XTestImports,
+and the five largest by verdict are `go/types` 557, `encoding/json` 491, `crypto/tls` 400,
+`encoding/xml` 386, `html/template` 243. **`go/internal/gcimporter` (583) is absent** -- the largest
+banked row on the board, and correctly NOT a canary, exactly as the ruling predicted: it matches
+`"reflect.Value"` only inside expected-signature test DATA and imports reflect nowhere.
+
+Standing dirt classified and RESTORED, nothing unclassified: `net/mail`'s `message.cs` (CRLF phantom,
+empty numstat) from the bank's own run, and the canary packages' `*_test.cs` phantoms from the sweeps.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
