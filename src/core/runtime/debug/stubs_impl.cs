@@ -30,17 +30,23 @@
 //   - setPanicOnFault is per-GOROUTINE in Go, so it is [ThreadStatic] here (a goroutine is a
 //     managed thread in go2cs). It has no effect: the CLR turns a bad access into an
 //     AccessViolationException the process cannot resume from.
-//   - readGCStats reports the aggregate counters the CLR really has (collection count, total
-//     pause) and an EMPTY per-pause history — the CLR keeps no comparable pause/end-time log, and
-//     fabricating one would be worse than reporting none. The packed layout ReadGCStats expects
-//     (n pauses, n ends, lastGC, numGC, totalPause) is honored exactly.
+//   - readGCStats reports a REAL per-pause history, read from the same golib GcPauseRecorder
+//     snapshot runtime.ReadMemStats reads (docs/phase4/DESIGN-readmemstats-surface.md, ratified
+//     2026-08-21). It used to report an empty one — "the CLR keeps no comparable pause/end-time log,
+//     and fabricating one would be worse than reporting none" — and that refusal was right for as
+//     long as there was nothing to report; the recorder supplies the missing half rather than
+//     laundering the assert, which is why NumGC is still the real gen2 count and not zeroed to make
+//     two lengths agree. The packed layout ReadGCStats expects (n pauses, n ends, lastGC, numGC,
+//     totalPause) is honored exactly, most-recent-first, at length 2n+3.
 //   - modinfo / WriteHeapDump / SetTraceback / runtime_setCrashFD have no managed form; they are
 //     inert, matching what a binary built without module info or heap-dump support reports.
 //
 // Hand-owned: there is no stubs_impl.go, so a -stdlib reconvert never regenerates this file.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
+using go.golib;
 
 [module: go.GoManualConversion]
 
@@ -50,6 +56,15 @@ using time = go.time_package;
 
 partial class debug_package
 {
+    // Either assembly can be the first one a program touches — ReadGCStats reaches readGCStats
+    // without going through runtime — so runtime/debug arms the recorder from its own initializer
+    // too. GcPauseRecorder.Arm is idempotent; whichever runs first wins and the other returns.
+    [ModuleInitializer]
+    internal static void ᴛArmGcPauseRecorder()
+    {
+        GcPauseRecorder.Arm();
+    }
+
     // Go's own defaults, so a first GET returns what Go would report.
     private static int32 s_gcPercent = 100;                 // GOGC=100
     private static int64 s_memoryLimit = int64.MaxValue;    // math.MaxInt64 — "no limit"
@@ -102,24 +117,50 @@ partial class debug_package
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
         GC.WaitForPendingFinalizers();
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+        // Same boundary runtime.GC() closes, for the same reason: the pause recorder is woken by the
+        // finalizer thread, and FreeOSMemory is documented to have completed a cycle when it returns.
+        // Draining here is also what makes HeapReleased fresh at the one point Go's TestFreeOSMemory
+        // reads it — the drain re-samples TotalCommittedBytes AFTER the memory has gone back.
+        GcPauseRecorder.Drain();
+        GcPauseRecorder.NoteForcedGC();
     }
+
+    // Scratch for readGCStats' most-recent-first transfer. Fixed storage allocated once, for the
+    // same reason the recorder's ring is: a fresh 2 x 256 array per call would be a KB-scale
+    // allocation on a measurement surface (DESIGN-readmemstats-surface.md §8.2). It doubles as the
+    // lock for its own reuse — readGCStats is a rare call and its cost is not on any measured path.
+    private static readonly ulong[] s_gcStatsScratch = new ulong[2 * GcPauseRecorder.RingLength];
 
     internal static partial void readGCStats(ж<slice<time.Duration>> Ꮡp)
     {
         // ReadGCStats' packed layout: [n pauses][n pause end times][lastGC unix-ns][numGC][total
-        // pause]. The CLR exposes the aggregate counters but no per-pause history, so n == 0.
-        const nint entries = 3;
-
+        // pause], with the pauses and end times MOST RECENT FIRST — which is what its own
+        // `n := len(stats.Pause) - 3; n /= 2` arithmetic expects, and what its backwards walk over
+        // MemStats.PauseNs then lines up against. Both halves come from one GcPauseRecorder snapshot
+        // under one lock, so the two surfaces read the same NumGC, the same total, the same ring.
         slice<time.Duration> buffer = Ꮡp.Value;
 
-        if (cap(buffer) < entries)
-            buffer = new slice<time.Duration>(entries);
+        lock (s_gcStatsScratch)
+        {
+            GcPauseSnapshot gc = GcPauseRecorder.ReadMostRecentFirst(s_gcStatsScratch, out int n);
+            nint entries = 2 * n + 3;
 
-        buffer = buffer[..(int)entries];
+            // Reslicing to `entries` may GROW the caller's slice back out toward its capacity: after
+            // a previous ReadGCStats call, stats.Pause has len n but still carries the full
+            // 2*256+3 capacity, exactly as Go's `p = p[:cap(p)]` accounts for.
+            if (cap(buffer) < entries)
+                buffer = new slice<time.Duration>(entries);
 
-        buffer[0] = 0;                                                          // lastGC: unknown
-        buffer[1] = (time.Duration)(int64)GC.CollectionCount(GC.MaxGeneration); // numGC: real
-        buffer[2] = (time.Duration)GC.GetTotalPauseDuration().Ticks * 100;      // total pause: real
+            buffer = buffer[..(int)entries];
+
+            for (int i = 0; i < 2 * n; i++)
+                buffer[i] = (time.Duration)(int64)s_gcStatsScratch[i];
+
+            buffer[2 * n] = (time.Duration)(int64)gc.LastGcEndUnixNs;       // lastGC, unix ns
+            buffer[2 * n + 1] = (time.Duration)(int64)gc.NumGC;             // numGC
+            buffer[2 * n + 2] = (time.Duration)(int64)gc.PauseTotalNs;      // total pause, ns
+        }
 
         Ꮡp.Value = buffer;
     }

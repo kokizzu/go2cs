@@ -52,9 +52,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **160 / 215 testable packages validated — 74.4%**
+> ### Phase 4 progress: **161 / 215 testable packages validated — 74.9%**
 >
-> **18,457 matching test verdicts · 80 disclosed** *(updated 2026-08-21 — maintained as part of the
+> **18,565 matching test verdicts · 80 disclosed** *(updated 2026-08-21 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -220,6 +220,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) | 55 | 11 | Number↔string conversion at full precision — Ryū/Grisu float formatting, arbitrary-precision decimal shifts, complex parsing; alloc-profile disclosures. · [proof](validation/current/strconv.md) |
 | [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strings) | 68 | 4 | String algorithms; alloc-count/alloc-profile disclosures. · [proof](validation/current/strings.md) |
 | [`sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) | 44 | 7 | The concurrency crown — `Mutex`/`RWMutex`/`WaitGroup`/`Once`/`Cond`/`Map`/`Pool` over real parked-thread semaphores, a hand-owned lock-free pool ring, and GC-integrated cleanup; `Cond`'s copy detector on root-allocation identity; alloc-profile and codegen-liveness disclosures. · [proof](validation/current/sync.md) |
+| [`sync/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync/atomic) | 108 | | The atomic-operations matrix end to end — Load/Store/Swap/CompareAndSwap/Add/And/Or across every width in both the function and method forms, the racing hammer suites (4–8 goroutines × 10⁶ iterations per op over one shared word), `atomic.Value`'s store/swap/CAS semantics with the inconsistent-type and nil panics, Go's align64 GUARANTEE asserted through reflect (`StructField.Offset` and `Pointer()&7` answering from ONE layout walk — the alignment-truthful token), and `TestHammerStoreLoad`'s reinterpret of a single uint64 as `*int32`/`*uintptr`/`*unsafe.Pointer`/`*atomic.Pointer[byte]` in turn — the row that made a native-backed pointer slot hold the pointer's VALUE rather than a managed reference, closing a GC-invisible dangling-reference hazard along with it. · [proof](validation/current/sync.atomic.md) |
 | [`syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall) | 62 | | The Windows system-call surface itself — WTF-8/UTF-16 round-trips across the whole surrogate matrix (lone highs, lone lows, paired, and the astral characters between them), `EscapeArg`'s command-line quoting rules, the environment block, `StartupInfo`/handle inheritance and permuted-fd process launch, `TOKEN_ALL_ACCESS`'s version-dependent value, and `Getwd` over a path far past `MAX_PATH` — the row that needed a converted process to be long-path aware the way every Go binary is. · [proof](validation/current/syscall.md) |
 | [`testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) | 18 | | The `io` testing helpers — the half/one-byte/timeout/error reader wrappers, `DataErrReader`'s final-read fusion, and the read/write loggers' `log` output. · [proof](validation/current/testing.iotest.md) |
 | [`testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) | 8 | | Property testing — `reflect` value generation and `Value.Call` dynamic invocation. · [proof](validation/current/testing.quick.md) |

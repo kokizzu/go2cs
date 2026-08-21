@@ -445,7 +445,11 @@ ONE stdlib in a build; there is now only one on disk.
   full behavioral suite **2,820–4,131s** solo (the 4,131s end was a cold-ish tree; **2,820s**
   re-measured 2026-08-10 — either end is well over the table's 1,575s ceiling), CNR **1,505s** solo / **~3,190s** with two
   sibling lanes, converter `go test ./...` **200s** solo / **332s** loaded, full `go2cs.slnx` Debug
-  build **1,432s** cold, `archive/zip`'s Debug test suite **774s** (vs 391s on the i9). Keep the i9
+  build **1,432s** cold, `archive/zip`'s Debug test suite **774s** (vs 391s on the i9). ⚠ Those
+  day-one figures are themselves STALE as the corpus grows — re-measured 2026-08-21 on the same
+  i7-5820K: full behavioral suite **~6,552s at 603 packages**, full `go2cs.slnx` Debug
+  `--no-incremental` **~3,546s at 722 projects** — so budget those two from the 2026-08-21
+  numbers and re-measure again at the next corpus jump. Keep the i9
   columns as the historical reference the ratios hang off; budget commands from the i7-5820K figures
   (or 3–4x a row's i9 ceiling when unmeasured), and treat HARD-CODED harness watchdogs as suspects on
   this class of machine — at the old sizes, `PerformanceRunner`'s 600s AOT-publish cap and

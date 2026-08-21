@@ -9,10 +9,12 @@
 // ReSharper disable UnusedParameter.Local
 
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using go.golib;
 
 [assembly:InternalsVisibleTo("unsafe")]
@@ -364,12 +366,63 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// Gets a flag indicating whether this pointer ALIASES a native address rather than managed
     /// storage — see the <c>m_nativeAddr</c> field.
     /// </summary>
-    internal bool IsNative => m_nativeAddr != 0;
+    /// <remarks>
+    /// PUBLIC because it is the discriminator for the one case a pointee type cannot express: a
+    /// native-backed <c>ж&lt;T&gt;</c> whose T is a MANAGED type (<c>unsafe.Pointer</c>,
+    /// <c>atomic.Pointer&lt;T&gt;</c>) aliases raw storage that cannot hold a managed reference, so
+    /// every access must convert number ↔ box at the boundary instead of dereferencing — see the
+    /// pointer-word accessors below and their consumers in <c>sync/atomic</c>'s hand-owned
+    /// implementation. Like <see cref="ManagedPointerTokens"/>, this is a runtime seam, not part of
+    /// any Go surface.
+    /// </remarks>
+    public bool IsNative => m_nativeAddr != 0;
 
     /// <summary>
     /// Gets the native address this pointer aliases, or zero when it is an ordinary managed box.
     /// </summary>
-    internal nuint NativeAddress => m_nativeAddr;
+    public nuint NativeAddress => m_nativeAddr;
+
+    // ---- POINTER-WORD ACCESS — the native slot as a Go pointer VALUE ------------------------------
+    //
+    // A native-backed ж<T> whose T is a MANAGED type is the reinterpret the hammer family performs:
+    // `(*unsafe.Pointer)(unsafe.Pointer(&val))` over a uint64. Go's semantics for that memory are
+    // unambiguous — the 8 bytes hold the POINTER'S VALUE (an address, possibly a fabricated number;
+    // Go's own test comments say "values that aren't real pointers"). The managed model has exactly
+    // one wrong alternative, and it is what `ref Value` produces for such a box: reinterpreting the
+    // slot as a CLR REFERENCE slot. That both loses the number (the slot then holds a box's identity,
+    // not the pointer's value) and plants a managed reference in memory the GC does not scan — the
+    // referenced box is collectible the moment the store returns, so the next load resurrects a
+    // dangling reference (measured: sync/atomic's TestHammerStoreLoad, `Pointer: 0 != N` at ~16k
+    // iterations — gen0 recycling under the loop's own allocation pressure).
+    //
+    // These three accessors are that boundary done right: the slot is read and written as the
+    // pointer-sized WORD it is, atomically (Go's LoadPointer/StorePointer contract), and the
+    // number ↔ box conversion happens in the caller, where the pointee type is known. They are
+    // meaningful ONLY for a native-backed box — callers branch on IsNative — and they live here
+    // rather than in the consumer because the converter-emitted csproj compiles converted packages
+    // with AllowUnsafeBlocks=false: the one unsafe seam stays in golib.
+    //
+    // The word is 64 bits by the same authority every layout answer in this runtime already rests
+    // on: the corpus is converted against `types.SizesFor("gc", "amd64")`, so a Go pointer is 8
+    // bytes wherever this runtime runs it.
+
+    /// <summary>Atomically reads the pointer-sized word a NATIVE-backed box aliases (acquire semantics).</summary>
+    public unsafe nuint ReadPointerWord()
+    {
+        return (nuint)Volatile.Read(ref *(ulong*)m_nativeAddr);
+    }
+
+    /// <summary>Atomically exchanges the pointer-sized word a NATIVE-backed box aliases, returning the previous word.</summary>
+    public unsafe nuint ExchangePointerWord(nuint value)
+    {
+        return (nuint)Interlocked.Exchange(ref *(ulong*)m_nativeAddr, value);
+    }
+
+    /// <summary>Atomically compare-and-swaps the pointer-sized word a NATIVE-backed box aliases.</summary>
+    public unsafe bool CompareExchangePointerWord(nuint old, nuint @new)
+    {
+        return Interlocked.CompareExchange(ref *(ulong*)m_nativeAddr, @new, old) == old;
+    }
 
     /// <summary>
     /// Gets a flag indicating whether this is a nil <em>standard</em> pointer — a plain heap pointer
@@ -761,6 +814,88 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         return source is INilPointer parent ? parent.GetHashCode() : RuntimeHelpers.GetHashCode(source);
     }
 
+    // The DISPLACEMENT a field reference adds to its allocation base — the field's Go byte offset
+    // within the struct the source box points at, read from the SAME memoized GoFieldOffsets walk
+    // that answers reflect's StructField.Offset. That shared source is the whole point: a test that
+    // asserts `Field(i).Offset == 8` and `Field(i).Addr().Pointer()&7 == 0` is asking one question
+    // twice, and two walks could answer it two ways.
+    //
+    // Both construction paths reach this with the SAME (struct type, field name) pair, so they agree
+    // by derivation rather than by coincidence: converted code hands in the generated `Ꮡ<field>`
+    // accessor (TypeGenerator emits `internal static ref F Ꮡv(ref S instance)`), while reflect's
+    // FieldAliasBox hands in a DynamicMethod named `goref_<field>`. Different delegates, one field,
+    // one offset.
+    //
+    // When the pair cannot be resolved — an anonymous accessor, a source whose pointee type is not
+    // recoverable, or a struct whose Go size is unknowable so GoFieldOffsets answers null — the
+    // fallback keeps the field's identity hash as the displacement instead. That costs alignment
+    // TRUTH for those fields (we only claim it where the layout is actually known) while preserving
+    // what the token is primarily for: distinct fields of one allocation staying distinct.
+    private static nuint GoFieldDisplacement(object source, Delegate fieldId)
+    {
+        Type? structType = PointeeTypeOf(source);
+        string? fieldName = FieldNameOf(fieldId);
+
+        if (structType is not null && fieldName is not null &&
+            s_goFieldDisplacements.GetOrAdd((structType, fieldName), static key => ResolveGoFieldOffset(key.Item1, key.Item2)) is { } offset && offset >= 0)
+        {
+            return (nuint)offset;
+        }
+
+        return unchecked((nuint)(uint)fieldId.GetHashCode());
+    }
+
+    private static readonly ConcurrentDictionary<(Type, string), nint> s_goFieldDisplacements = new();
+
+    private static nint ResolveGoFieldOffset(Type structType, string fieldName)
+    {
+        if (GoReflect.GoFieldOffsets(structType) is not { } offsets)
+            return -1;
+
+        GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(structType);
+
+        // A blank Go field can repeat within one struct (`sync/atomic.Int64` carries two), so the
+        // FIRST match is taken deliberately: every one of them is zero-size and they all share an
+        // offset, which makes the choice among them immaterial rather than arbitrary.
+        for (int i = 0; i < fields.Length && i < offsets.Length; i++)
+        {
+            if (fields[i].Name == fieldName)
+                return offsets[i];
+        }
+
+        return -1;
+    }
+
+    // The type a source box points AT: `ж<S>` → S. Written against the open generic rather than a
+    // cast so it answers for every constructed ж, including the generated pointer-type wrappers.
+    private static Type? PointeeTypeOf(object source)
+    {
+        for (Type? t = source.GetType(); t is not null; t = t.BaseType)
+        {
+            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ж<>))
+                return t.GetGenericArguments()[0];
+        }
+
+        return null;
+    }
+
+    // The Go field name behind an accessor delegate, in either spelling the two construction paths
+    // produce. Both prefixes are emitted by code in this repository (go2cs-gen's TypeGenerator and
+    // GoReflect.buildFieldAccessor), so this is a contract between siblings, not a guess about
+    // arbitrary delegates — anything else answers null and takes the identity-hash fallback.
+    private static string? FieldNameOf(Delegate fieldId)
+    {
+        string name = fieldId.Method.Name;
+
+        if (name.StartsWith(GoReflect.FieldAccessorPrefix, StringComparison.Ordinal))
+            return name[GoReflect.FieldAccessorPrefix.Length..];
+
+        return name.Length > 1 && name[0] == PointerFieldAccessorPrefix ? name[1..] : null;
+    }
+
+    // The generated field-accessor prefix: TypeGenerator emits `Ꮡ<field>` for every struct field.
+    private const char PointerFieldAccessorPrefix = 'Ꮡ';
+
     // Reduces an array-index referent to the identity of its ACTUAL storage plus the ABSOLUTE index
     // of the element within that storage. Used by Equals/GetHashCode above so two pointers to the
     // SAME element compare (and hash) as the same address no matter which view they were taken
@@ -823,12 +958,37 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// nil → 0; a native alias → its real address; an array/slice-element reference → the canonical
     /// backing storage's identity in the high bits with the ABSOLUTE element index below, so
     /// same-storage element pointers order by index exactly like Go addresses; a struct-field
-    /// reference → the source identity combined with the field identity token; a heap box → the
-    /// box's own identity (the box IS the storage). Consistent with
+    /// reference → the allocation base plus the field's GO OFFSET; a heap box → its own allocation
+    /// base (the box IS the storage, at offset 0). Consistent with
     /// <see cref="Equals(ж{T})"/>: equal pointers always produce equal tokens (the converse only
     /// holds within one backing storage — tokens are order keys, never an identity substitute).
     /// virtual so <c>unsafe.Pointer</c> (whose VALUE is the address) can answer with the address itself.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Every allocation base is 8-ALIGNED and a field's token is base + its Go offset</b>, so the
+    /// token's low bits mirror the layout the model actually keeps rather than carrying accidental
+    /// identity-hash noise. Go states an alignment GUARANTEE for 64-bit atomics — <c>sync/atomic</c>'s
+    /// <c>align64</c> — and the model honors it: the atomics ARE atomic, and <c>StructField.Offset</c>
+    /// already answers from the memoized <c>GoFieldOffsets</c> walk. Answering <c>p &amp; 7</c> from
+    /// that SAME walk is truth read out of layout metadata; it is not a memory property fabricated.
+    /// (<c>sync/atomic</c>'s <c>TestAutoAligned64</c> asserts exactly this pair — <c>Offset == 8</c>
+    /// and <c>ptr&amp;7 == 0</c> — and the two now come from one source.)
+    /// </para>
+    /// <para>
+    /// The token stays non-dereferenceable and lifetime-free, so this is compatible with
+    /// <c>docs/phase4/FINDING-managed-box-uintptr-lifetime.md</c> as written: what changes is only
+    /// WHICH bits the token carries, never what it means or how long it is valid.
+    /// </para>
+    /// <para>
+    /// The ARRAY-ELEMENT arm keeps the raw element INDEX below the base rather than the index scaled
+    /// by the element's Go size. Its base is 8-aligned like every other, but <c>&amp;s[1]</c> of an
+    /// <c>[]int64</c> therefore does not answer 8-aligned. That is a knowing limit, not an oversight:
+    /// the ruling asks for field tokens, no test asserts element alignment, and scaling would reorder
+    /// every pointer-keyed map <c>internal/fmtsort</c> prints. It is recorded here so the asymmetry
+    /// is a decision on the record rather than a discovery for the next reader.
+    /// </para>
+    /// </remarks>
     public virtual nuint PointerOrderToken
     {
         get
@@ -842,22 +1002,35 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             if (m_arrayIndexRef is not null)
             {
                 (object storage, nint element) = CanonicalElement(m_arrayIndexRef.Value.Item1, m_arrayIndexRef.Value.Item2);
-                return unchecked((nuint)(((ulong)(uint)RuntimeHelpers.GetHashCode(storage) << 32) | (uint)element));
+                return unchecked(AllocationBase(RuntimeHelpers.GetHashCode(storage)) + (nuint)(uint)element);
             }
 
             if (m_structFieldRef is not null)
             {
                 // The source identity is resolved through an `of()` chain (SameSource), so that the
                 // documented invariant holds at every depth: equal pointers produce equal tokens.
+                // The offset added is the field's within its IMMEDIATE parent, which is what keeps
+                // alignment composing correctly down a nested chain: a parent that contains an
+                // 8-aligned field is itself 8-aligned, so the field's offset within it is too.
                 (object source, FieldRefFunc<T> _, Delegate fieldId) = m_structFieldRef.Value;
-                return unchecked((nuint)(((ulong)(uint)SourceIdentityHash(source) << 32) | (uint)fieldId.GetHashCode()));
+                return unchecked(AllocationBase(SourceIdentityHash(source)) + GoFieldDisplacement(source, fieldId));
             }
 
             // A standard heap box IS the storage it addresses — its own identity, never the held
             // value's (see Equals: a token derived from the pointee changes when the pointee is
-            // assigned, which is not something an address does).
-            return (nuint)(uint)RuntimeHelpers.GetHashCode(this);
+            // assigned, which is not something an address does). Offset 0 within itself, which is
+            // also why `&s` and `&s.firstField` token alike — as Go's addresses do.
+            return AllocationBase(RuntimeHelpers.GetHashCode(this));
         }
+    }
+
+    /// <summary>
+    /// An allocation's token base: the identity hash lifted clear of the low 32 bits, so every base
+    /// is 8-aligned and the whole low half is available to carry a within-allocation displacement.
+    /// </summary>
+    private static nuint AllocationBase(int identityHash)
+    {
+        return unchecked((nuint)((ulong)(uint)identityHash << 32));
     }
 
     /// <summary>

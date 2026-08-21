@@ -263,11 +263,15 @@ line of its own, and the enclosing statement's line already carries that stateme
 ### 6.4 A MERGE of a mapped file invalidates its map — re-emission is owed, not optional
 
 The map is a DERIVED artifact of the emitted text, so anything that changes that text without
-re-deriving the map leaves a plausible-but-wrong one — the exact class the ruling forbids. A textual
-merge is such a thing, and it is not hypothetical: merging `claude/union-157` into this lane
-auto-merges `src/core/sync/atomic/type.cs`, whose other side is **+69/−20**, onto a record whose
-table was computed for the pre-merge text. Every frame in that file would then report a Go line
-shifted by the merge, and nothing would be red.
+re-deriving the map leaves a plausible-but-wrong one — the exact class the ruling forbids, and silent,
+because no gate reads a line number against its source.
+
+A textual merge is such a thing. The `claude/union-157` merge did NOT trigger it, and why not is
+worth recording: the one file it changes substantially, `src/core/sync/atomic/type.cs` (+69/−20), is
+a whole-file `[module: GoManualConversion]` hand-own and therefore carries no record to invalidate —
+§2.1's rule holding at the moment it would have mattered. What that merge leaves instead is the
+complementary state: converted files arriving from a side that predates this change are UNMAPPED
+rather than mis-mapped, which re-emission also fixes.
 
 **The rule: a merge that changes any converted `.cs` owes a re-emission of that file's package before
 the gates.** It is cheap — a filtered `-stdlib`, or the package's own `-tests -test-action all`,

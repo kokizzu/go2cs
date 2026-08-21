@@ -288,8 +288,9 @@ internal class StructTypeTemplate : TemplateBase
                 foreach ((string typeName, string memberName, int depth) in getStructMembers(promotedStructType))
                 {
                     // Blank `_` field — unaddressable in Go, and its `Ꮡ_` would collide with the
-                    // enclosing struct's own `Ꮡ_` (CS0111).
-                    if (GetSimpleName(memberName) == "_")
+                    // enclosing struct's own `Ꮡ_` (CS0111). Every uniquified spelling counts; see
+                    // IsGoBlankMemberName.
+                    if (IsGoBlankMemberName(GetSimpleName(memberName)))
                         continue;
 
                     // Own-field shadowing — see the accessor loop above (CS0111 on Ꮡfn).
@@ -947,6 +948,26 @@ internal class StructTypeTemplate : TemplateBase
         return result.ToString();
     }
 
+    /// <summary>
+    /// Whether a member name is the C# spelling of a Go BLANK field. Go allows a struct to repeat
+    /// `_`, and the converter uniquifies the repeats by appending underscores (`_`, `__`, `___`, …),
+    /// so the whole all-underscores family is one Go concept: a field with a name that names nothing
+    /// and, per the spec, no address to take.
+    /// </summary>
+    private static bool IsGoBlankMemberName(string simpleName)
+    {
+        if (simpleName.Length == 0)
+            return false;
+
+        foreach (char c in simpleName)
+        {
+            if (c != '_')
+                return false;
+        }
+
+        return true;
+    }
+
     private string FieldReferences
     {
         get
@@ -960,7 +981,15 @@ internal class StructTypeTemplate : TemplateBase
             {
                 // A blank `_` field is unaddressable in Go; a second `_` field (own + promoted, or
                 // multiple padding fields) would also make duplicate `Ꮡ_` accessors (CS0111).
-                if (GetSimpleName(memberName) == "_")
+                //
+                // EVERY uniquified spelling counts, not just the first. The converter renames repeated
+                // blanks `_`, `__`, `___`, … so a struct with two of them (sync/atomic's Int64 carries
+                // `_ noCopy` and `_ align64`) kept emitting `Ꮡ__` for the second — an accessor for a
+                // field Go says has no address. That was inert until the zero-size-field layout arc
+                // made such a field `readonly` to stop it clobbering the field it overlaps, at which
+                // point the writable ref stopped compiling (CS8160). Skipping the whole blank class is
+                // what the rule above always meant.
+                if (IsGoBlankMemberName(GetSimpleName(memberName)))
                     continue;
 
                 if (result.Length > 0)

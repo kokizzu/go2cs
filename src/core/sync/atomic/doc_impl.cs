@@ -38,8 +38,28 @@ partial class atomic_package
         return Interlocked.Exchange(ref addr.Value.Value, @new.Value);
     }
 
+    // ---- the NATIVE-backed *unsafe.Pointer arm, shared by all four Pointer atomics -------------
+    //
+    // `(*unsafe.Pointer)(unsafe.Pointer(&val))` over a uint64 — the hammer family's reinterpret —
+    // reaches these functions as a NATIVE-backed ж<@unsafe.Pointer>: a box aliasing raw pinned
+    // storage rather than holding a managed slot. Go's semantics for that memory are that the 8
+    // bytes hold the POINTER'S VALUE (possibly a fabricated number — Go's own test comment:
+    // "values that aren't real pointers"). Dereferencing such a box as a managed reference slot
+    // (`ref addr.Value`) both loses the number and plants an untraced CLR reference in memory the
+    // GC never scans — the stored box is collectible the moment the store returns, and the next
+    // load resurrects a dangling reference (measured: TestHammerStoreLoad, `Pointer: 0 != N`).
+    // So the native arm reads and writes the slot as the pointer-sized WORD it is (golib's
+    // pointer-word accessors — the one unsafe seam, kept in golib because this project compiles
+    // with AllowUnsafeBlocks=false), and converts number ↔ box here, where the type is known:
+    // `(uintptr)p` answers a Pointer's number nil-safely in one existing conversion, and
+    // `new @unsafe.Pointer(n)` marks the zero address nil, so a nil pointer round-trips exactly.
+    // The managed arm is unchanged.
+
     public static partial @unsafe.Pointer /*old*/ SwapPointer(ж<@unsafe.Pointer> addr, @unsafe.Pointer @new)
     {
+        if (addr.IsNative)
+            return new @unsafe.Pointer((uintptr)addr.ExchangePointerWord(((uintptr)@new).Value));
+
         return Interlocked.Exchange(ref addr.Value, @new);
     }
 
@@ -70,6 +90,11 @@ partial class atomic_package
 
     public static partial bool /*swapped*/ CompareAndSwapPointer(ж<@unsafe.Pointer> addr, @unsafe.Pointer old, @unsafe.Pointer @new)
     {
+        // Native arm: the slot holds the pointer's VALUE, so the CAS compares NUMBERS — which is
+        // Go's own comparison for unsafe.Pointer, and the same one Pointer.Equals already answers.
+        if (addr.IsNative)
+            return addr.CompareExchangePointerWord(((uintptr)old).Value, ((uintptr)@new).Value);
+
         return Interlocked.CompareExchange(ref addr.Value, @new, old) == old;
     }
 
@@ -206,6 +231,10 @@ partial class atomic_package
 
     public static partial @unsafe.Pointer /*val*/ LoadPointer(ж<@unsafe.Pointer> addr)
     {
+        // Native arm: see the banner above SwapPointer.
+        if (addr.IsNative)
+            return new @unsafe.Pointer((uintptr)addr.ReadPointerWord());
+
         return Volatile.Read(ref addr.Value);
     }
 
@@ -236,6 +265,13 @@ partial class atomic_package
 
     public static partial void StorePointer(ж<@unsafe.Pointer> addr, @unsafe.Pointer val)
     {
+        // Native arm: see the banner above SwapPointer.
+        if (addr.IsNative)
+        {
+            addr.ExchangePointerWord(((uintptr)val).Value);
+            return;
+        }
+
         Interlocked.Exchange(ref addr.Value, val);
     }
 

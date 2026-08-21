@@ -224,10 +224,27 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 	// record, out of the reader's way, and the `[GoType]` declaration keeps only what identifies it.
 	inlineAttrs := v.recordTypeAccessibility("struct", structTypeName, typeParams, access, localNameAttr+valueCloneAttr)
 
-	v.writeStringLn(target, "[GoType%s] %s%spartial struct %s%s%s{", dynamic, inlineAttrs, access, structTypeName, typeParams, constraints)
+	// A struct carrying a ZERO-SIZE Go field is LARGER in C# than in Go unless it is laid out
+	// explicitly at Go's own offsets — see zeroSizeFieldLayout.go for why that matters (Reinterpret's
+	// size guard) and for the two limits that bound it (unmanaged only; zero-size fields readonly).
+	// A struct that needs nothing, or cannot take it, is unstamped and emitted exactly as before.
+	zeroSizeLayout, hasZeroSizeLayout := v.structZeroSizeLayout(v.underlyingStruct(identType), identType)
+	var structLayoutAttr string
+
+	if hasZeroSizeLayout {
+		structLayoutAttr = zeroSizeLayout.structLayoutAttribute()
+		v.addRequiredUsing("System.Runtime.InteropServices")
+	}
+
+	v.writeStringLn(target, "[GoType%s] %s%s%spartial struct %s%s%s{", dynamic, inlineAttrs, structLayoutAttr, access, structTypeName, typeParams, constraints)
 	v.indentLevel++
 
 	var prevNameDiscardedCount int
+
+	// The FLAT go/types field index, which is what indexes the layout's offsets — the AST walks
+	// GROUPS (`a, b int` is one group, two fields), so the two orders only agree if this advances
+	// once per NAME rather than once per group.
+	var layoutFieldIndex int
 
 	for _, field := range structType.Fields.List {
 		v.writeDocString(target, field.Doc, field.Pos())
@@ -582,12 +599,20 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 				}
 			}
 
+			// Explicit layout stamps each field with its OWN offset, so a combined `a, b int`
+			// declaration — which can carry only one attribute list — cannot express it.
+			if hasZeroSizeLayout {
+				canCombine = false
+			}
+
 			if canCombine {
 				fieldNames := make([]string, len(field.Names))
 
 				for i, ident := range field.Names {
 					fieldNames[i] = getCoreSanitizedIdentifier(ident.Name)
 				}
+
+				layoutFieldIndex += len(field.Names)
 
 				v.writeString(target, "%s %s %s;", getAccess(field.Names[0].Name), csDisplayTypeName, strings.Join(fieldNames, ", "))
 				v.writeCommentString(target, field.Comment, field.Type.End()+displayLenDeviation)
@@ -613,7 +638,22 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 						fieldName = typeCollidingFieldName(fieldName)
 					}
 
-					v.writeString(target, "%s %s %s%s;", getAccess(ident.Name), csDisplayTypeName, fieldName, fieldInitializer)
+					// Under explicit layout the field carries its Go offset, and a ZERO-SIZE field is
+					// additionally readonly: it shares its offset with the field Go puts there, and a
+					// C# write to it would put its one byte over that neighbour (Go's writes nothing).
+					var offsetAttr, readOnly string
+
+					if hasZeroSizeLayout {
+						offsetAttr = zeroSizeLayout.fieldOffsetAttribute(layoutFieldIndex)
+
+						if zeroSizeLayout.fieldIsZeroSize(layoutFieldIndex) {
+							readOnly = "readonly "
+						}
+					}
+
+					layoutFieldIndex++
+
+					v.writeString(target, "%s%s %s%s %s%s;", offsetAttr, getAccess(ident.Name), readOnly, csDisplayTypeName, fieldName, fieldInitializer)
 					v.writeCommentString(target, field.Comment, field.Type.End()+displayLenDeviation)
 					target.WriteString(v.newline)
 				}

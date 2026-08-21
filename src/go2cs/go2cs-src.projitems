@@ -226,6 +226,7 @@
     <None Include="$(MSBuildThisFileDirectory)visitValueSpec.go" />
     <None Include="$(MSBuildThisFileDirectory)writeOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)writtenUnderlyingOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)zeroSizeFieldLayout.go" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)csproj-template.xml" />

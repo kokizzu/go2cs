@@ -1745,6 +1745,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckWsaProtocolInfo() => CheckTarget("WsaProtocolInfo");
 
     [TestMethod]
+    public void CheckZeroSizeFieldLayout() => CheckTarget("ZeroSizeFieldLayout");
+
+    [TestMethod]
     public void CheckZeroValueArrayField() => CheckTarget("ZeroValueArrayField");
 
     [TestMethod]
