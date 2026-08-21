@@ -16701,4 +16701,66 @@ validated-package policy · `type.cs.auto` RESTORED not banked (the review sibli
 
 **Roster: 158 → 159 of 215 (74.0%) · 18,425 → 18,533 matching · 79 disclosed.** Header recomputed
 from the table, not incremented.
+
+---
+
+## 2026-08-21 · Linux Phase-4 pipeline: the `$(go2csPath)` case-insensitive environment race — ROOT-CAUSED, harness-pinned, converter fix priced (lane G, `claude/linux-measure-1`)
+
+**Symptom (killed Linux measurement campaigns v1–v3):** intermittent, package-shuffling hard
+build failures inside `-tests -test-action all` — `warning MSB9008: The referenced project
+/root/go2csgen/go2cs-gen/go2cs-gen.csproj does not exist` followed by a CS0246 storm on every
+golib type (`GoType`, `slice<>`, `ж<>`, `string`…), reported by the sweep as `Go="pass" C#=""`
+for the whole suite. 2–27 s fast-fails, ~coin-flip rate per pipeline child, retries sometimes
+green (v3: 8 retry-passes vs 17 retry-fails), isolated purged re-runs always green (14/14),
+two-package alternation reproducing 3-for-3 within ≤2 cycles. Every plausible suspect A/B-eliminated
+along the way: shared compilation (`UseSharedCompilation=false` changed nothing), straggler
+children (settle-to-zero + pkill), emission drift (csproj md5 stable), `dotnet run` alone
+(14/14 clean), pwsh wrapper (bare-converter repro), `GoTargetOS` plumbing.
+
+**Root (binlog-proven):** four links.
+
+1. `main.go:91-93` — when env `GO2CSPATH` is unset, the converter defaults it to
+   `filepath.Join(homeDir, "go2cs")` **and `os.Setenv`s it into its own environment**. On the
+   Linux lane the value is `/root/go2cs` — no trailing separator, and the clone happens to LIVE
+   at `~/go2cs`, so the default names a real tree (on Windows `%USERPROFILE%\go2cs` is the
+   deploy-core root: valid or inert, never this repo's src).
+2. `testConversion.go:5663` — every pipeline child gets
+   `cmd.Env = append(os.Environ(), "go2csPath="+ensureTrailingSeparator(options.go2csPath))`.
+   `os.Environ()` now carries `GO2CSPATH=/root/go2cs`; the append adds
+   `go2csPath=/root/go2cs/src/`. Two POSIX-distinct variables, both in the child env block.
+3. MSBuild resolves environment-derived properties **case-insensitively**, so both entries map
+   to the ONE property `$(go2csPath)` — and which value wins is enumeration-order-dependent
+   inside the .NET/MSBuild env-table plumbing: a per-process coin flip. Diagnostic replay of the
+   failing build's binlog (`MSBUILDDEBUGENGINE=1`) states the losing draw verbatim:
+   `Property 'go2csPath' with value '/root/go2cs' expanded from the environment.`
+4. With `$(go2csPath)=/root/go2cs` (sans slash), `$(go2csPath)gen/...` concatenates to
+   `/root/go2csgen/...` and `$(go2csPath)core/...` to `/root/go2cscore/...`: the analyzer and
+   every stdlib ProjectReference dangle (restore graph confirms:
+   `_RestoreGraphAbsoluteProjectPaths=/root/go2cscore/...`), golib types vanish, storm follows.
+
+**Why Windows never saw it in five weeks of sweeps:** Windows environment blocks are
+case-insensitive at the OS level — `GO2CSPATH` and `go2csPath` are ONE slot, the converter's
+append lands last and wins deterministically. The race is structurally Linux/macOS-only
+(POSIX case-sensitive environ + MSBuild case-insensitive property lookup). F-series
+classification: **harness/converter platform gap**, not corpus, not CLR.
+
+**Neutralization (landed, sanctioned harness class):** pin `GO2CSPATH` to the correct
+slash-terminated src root so both names carry one value and either race winner is right —
+`_paths.ps1` now exports it on Linux hosts when unset (beside the existing `GoTargetOS`
+default), and the campaign driver exports it in its env. Validated under the exact reproducing
+conditions: the 3-for-3 alternation runs 8/8 clean; campaign v4 relaunched under the pin.
+
+**Converter fix (PRICED, not patched — converter code is out of the measurement lane's scope):**
+the complete fix is at the child-env construction (`testConversion.go:5663`): scrub every
+case-insensitive variant of `go2csPath` from `os.Environ()` before appending the canonical
+entry — that closes the WHOLE class, including the nastier variant where a user's ambient
+`GO2CSPATH` names a *different real tree* and the child build nondeterministically binds the
+wrong stdlib (a verdict that moves with the shell — exactly what the explicit `-go2cspath`
+doctrine exists to prevent). Optional hygiene on top: `main.go:93` need not `os.Setenv` at all —
+the defaulted value is consumed immediately as the flag default and nothing downstream reads the
+env var again. Guard shape: a converter unit test over the child-env builder asserting exactly
+one case-insensitive `go2csPath` entry survives. Small, mechanical, Windows-behavior-neutral.
+
+Full forensic trail (binlogs, replay, alternation logs): `/root/f4*` on the Linux lane distro;
+mechanism summary in the fleet mailbox entry of this date.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

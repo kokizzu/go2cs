@@ -53,6 +53,28 @@ if ($IsLinux -and [string]::IsNullOrEmpty($env:GoTargetOS)) {
     $env:GoTargetOS = 'linux'
 }
 
+# Pin GO2CSPATH on Linux so the converter's child-env `$(go2csPath)` race has one value on both
+# names. When the var is unset, the converter defaults it to `~/go2cs` AND os.Setenv()s it into
+# its own environment (main.go:93); every pipeline child then inherits that entry — clone-root,
+# no trailing separator — BESIDE the correct injected `go2csPath=<src>/` (testConversion.go:5663).
+# POSIX environs are case-sensitive so both entries coexist, but MSBuild maps environment
+# variables onto properties CASE-INSENSITIVELY, and which entry wins the one `$(go2csPath)` slot
+# is enumeration-order-dependent — a per-process coin flip. A losing draw resolves the analyzer
+# and every stdlib ProjectReference against `<clone>gen/...`/`<clone>core/...` (no separator, no
+# src) → MSB9008 + a CS0246 storm on every golib type, reported by the sweep as a total suite
+# failure (`Go="pass" C#=""`). That intermittency killed three Linux measurement campaigns before
+# the binlog named it: `Property 'go2csPath' with value '/root/go2cs' expanded from the
+# environment.` Pinning the var to the slash-terminated src root makes either race winner
+# correct. Windows is untouched twice over: the block is $IsLinux-scoped, and Windows env blocks
+# are case-insensitive at the OS level (one slot, injection wins deterministically) — the race is
+# structurally POSIX-only. An already-set GO2CSPATH still wins here (empty-guard), and every
+# instrument still passes -go2cspath explicitly; this pin only stops the converter's own default
+# from leaking a wrong root into its children. The complete converter-side fix (dedupe at the
+# child-env builder) is priced on the board (2026-08-21 entry).
+if ($IsLinux -and [string]::IsNullOrEmpty($env:GO2CSPATH)) {
+    $env:GO2CSPATH = $PSScriptRoot.TrimEnd('/', '\') + '/'
+}
+
 # Path separator regex CLASS, for patterns that must match a path boundary on either platform. Use
 # this instead of a literal '\\' in any -match/-split/-notmatch over a filesystem path: Windows
 # accepts both separators in practice and Linux only produces '/'.
