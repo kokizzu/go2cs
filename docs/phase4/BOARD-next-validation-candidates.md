@@ -14895,4 +14895,141 @@ standing classification stays (a `.tests.csproj` emitted by a pre-template fork 
 sweep -- the shape to expect from any lane that forked early), but the queued pass is withdrawn:
 there is nothing to level.
 
+## ⛔ `crypto/internal/edwards25519` CANNOT bank from any SIGNED-OFF stage of the ж-box design — its 98 objects are receiver-position and class-3b traffic, and Phase A's mechanism has no constituency on the row's path (2026-08-20, lane `claude/zh-box-reduction-impl`)
+
+Briefed as the ж-box arc's implementation lane with `crypto/internal/edwards25519` 54/55 → 55 as
+the banking target. It banks nothing, and the reason is not a shortfall in the mechanism's tuning:
+**the target row is not reachable by anything [`DESIGN-zh-box-reduction.md`](DESIGN-zh-box-reduction.md)
+has signed off**, and that is a structural property of the row's call path. The `crypto/tls`
+canary the brief asked for ran on BOTH sides of the bogo merge and is reported below as a pair.
+
+### The base — the hard check failed, then passed mid-lane
+
+`b4d999a9c` was absent when the lane opened: `origin/claude/union-157` was `dde5d53b5`, carrying
+`606e41abb` (the *ruling* half) but not `2e7fc3225` (the *machinery* half), which sat unmerged on
+`claude/bogo-host-conditional`. It landed during the lane; the branch is re-based to **`bd79cb16e`**
+and the hard check **passes**. The interval was not wasted — it bought the pre-machinery control
+arm that makes the canary record below a genuine A/B rather than a single reading.
+
+### The finding — the row's bill is B′ and class 3b, both outside this design's sign-off
+
+**Measured, this host, `bd79cb16e`** (`-tests -test-action all -test-timeout 15m`, explicit
+`-go2cspath`): `crypto/internal/edwards25519` is **54 matched / 1 divergent of 55**, the sole
+divergence `TestAllocations: Go="pass" C#="fail"`, reading **98 objects/run** (9,800 counted over
+100 runs; 1,324,800 B → 13,248 B/run) against `want 0`. That reproduces the 2026-08-19
+edwards25519-a figure **to the object**: the row has not moved, and it is stable, not drifting.
+
+The reason is visible in the emitted sources, not inferred. The test body is
+
+```go
+p := NewIdentityPoint(); p.Add(p, NewGeneratorPoint()); s := NewScalar()
+testAllocationsSink ^= s.Bytes()[0]; testAllocationsSink ^= p.Bytes()[0]
+```
+
+and **every allocation site on that path is one of three things, none of them Phase A's**:
+
+- **`@new<T>()` — class 3b.** `NewIdentityPoint`/`NewGeneratorPoint` emit `@new<Point>().Set(…)`;
+  `Point.Add` emits `@new<projCached>().FromP3(…)` + `@new<projP1xP1>().Add(…)`; `NewScalar` emits
+  `@new<Scalar>()`. Five per run before any arithmetic. Real Go allocations Go's compiler elides by
+  inlining + escape analysis — **Phase C, horizon, not scheduled** (§1 class 3b, §3.6).
+- **Field-ref boxes at METHOD-ARGUMENT positions — class 1 by shape, B′ by disposition.**
+  `field.Element.Multiply` emits as `Multiply(this ж<Element> Ꮡv, ж<Element> Ꮡx, ж<Element> Ꮡy)` —
+  the parameters are still **boxes**, so every caller mints (`Ꮡx.Multiply(Ꮡv.of(Point.Ꮡx), ᏑzInv)`).
+  Phase A's lowering *did* land underneath it — `feMul(ж<Element> Ꮡv, ref Element x, ref Element y)`,
+  14 lowered signatures in the package, the scalar-fiat family exactly as the A1 census priced — but
+  **a lowered leaf saves nothing at the caller of the boxed method that wraps it.**
+- **`heap()` locals that exist to be METHOD RECEIVERS.** `Element.Invert` alone declares ~15
+  `ref var zN = ref heap(new Element(), out var ᏑzN)` locals whose addresses are taken solely to
+  serve as receivers (`Ꮡz2.Square(Ꮡz)`). §3.2 **X3 excludes "a method call on `p`" by rule** —
+  receivers stay `ж` in Phase A.
+
+Allocation-site counts on the executed path, from the committed `.cs`: `projP1xP1.Add` 16,
+`Element.Invert` 9, `Point.bytes` 6, `projCached.FromP3` 4, `Point.fromP1xP1` 4, `Scalar.bytes` 2,
+plus the five `@new<T>()` and `checkInitialized`'s variadic params-array — the right magnitude for
+98, and **not one of them a lowerable unexported package-level function's pointer parameter.**
+
+This is the A3 measure's own fact read from the other side, and nobody had read it onto this row:
+**nistec fell −96.5 % because its bill is fiat leaf *functions*; edwards25519's bill is
+point-arithmetic *methods*.** §3.7 is explicit that B′'s constituency is receiver-chain traffic and
+that B′ "needs its own design increment and its own measurement, and it is **NOT** part of this
+sign-off"; §9's plan ends at B1, which §4 states is "count-neutral except one row" (the `&s[i]`
+element-ref) and byte-significant. **No signed-off stage moves this row**, which is why A2/A3 moved
+it 109 → 98 and then nothing.
+
+### What the row would actually take — stated so it can be ruled, not chased
+
+1. **B′ (method dual emission)** — a `ref`-receiver/`ref`-parameter overload beside the `ж` method
+   for direct calls on a statically-known receiver. The row's dominant term, and a design increment
+   rather than an implementation detail.
+2. **Class 3b** — the five `@new<T>()` per run. Phase C.
+3. Residue: `checkInitialized`'s variadic params-array; `Bytes`' `array<byte>(32)` backing.
+
+A **want-ZERO** row needs all three. The near-budget ruling's logic applies unchanged — 98-vs-0 is
+an optimization target, not an impossibility — so the row stays **undisclosed**; nothing here
+proposes otherwise.
+
+### The `crypto/tls` canary — run on BOTH sides of the merge, and the machinery is INERT on shape (a)
+
+The brief predicted this host needs the machinery to read 400 + 2, and that this lane's run would be
+the first LIVE shape-(b) proof. **Neither held — reported as asked, either way.**
+
+| | base | wall | sweep | `TestBogoSuite` Go / C# | children | `matched` |
+|:--|:--|--:|:--|:--|--:|:--|
+| pre-machinery | `dde5d53b5` (no `2e7fc3225`) | 795 s | **PASS 400** | **pass / fail** | 3,242 | `true` |
+| post-machinery | `bd79cb16e` | 902 s | **PASS 400** | **pass / fail** | 3,242 | `true` |
+
+Both runs are **shape (a)** — the ordinary pinned divergence, which the *unannotated* disclosure
+already satisfied and whose Go-only children `disclosureRoots` already absorbed. Go's BoGo baseline
+reached completion AND expanded (3,242 `TestBogoSuite/…` children) on both. The roster row is
+`crypto/tls | 400 | 2`, and the sweep's matched count plus its disclosed-count check read
+**400 + 2 on both sides of the merge** — host-stable, as the ruling requires.
+
+What that pair does and does not prove:
+
+- **Proved: the machinery is inert on shape (a).** Identical readings with and without
+  `2e7fc3225` — same 400, same `matched:true`, same 3,242 absorbed children. This is the
+  **non-regression half** of the proof matrix, and it is precisely the half a fixture cannot
+  supply: a fixture shows the new arm works, only a live run shows the old arm undisturbed.
+- **NOT obtained: the live shape-(b) proof.** It needs Go's baseline to FAIL, which is network
+  reachability plus the child's 10-minute deadline — environmental, and board-recorded as
+  nondeterministic on one machine across consecutive runs (3,243 subtests, then 402). Two
+  consecutive runs here both passed.
+- **Therefore shape (b) is an opportunistic capture, not a schedulable lane item.** Whoever next
+  meets a red `crypto/tls` whose C# side is unmoved should keep that run's
+  `go2cs_test_comparison.json` rather than restoring past it. That is where the proof will come
+  from; commissioning a lane to produce it would be commissioning a lane to wait.
+
+### Standing post-run dirt, classified and RESTORED (nothing banked from it)
+
+- `crypto/internal/edwards25519/package_init.cs` **+7 / −0** — the `initᴛᴛtests()` hook, the FOURTH
+  `-tests`-closure shape CLAUDE.md names (REAL lines; it survives a numstat phantom filter). From
+  this lane's own `-tests` runs. **Restored.**
+- Six `crypto/tls/*_test.cs`, after each sweep — pure CRLF phantoms (`--numstat` empty).
+  **Restored** both times.
+- Nine untracked `edwards25519` test artifacts — **removed, not committed**: the validated-package
+  commit policy binds test sources to a package that *validates*, and this one does not.
+
+### What this lane did NOT do, stated plainly
+
+- **Banked nothing.** No roster row moved, no proof page written, no test sources committed:
+  `crypto/internal/edwards25519` stays **54/55**, the roster stays **157/215 (73.0 %)**.
+- **Wrote no converter or golib code.** Both available directions — B′ and Phase C — are outside
+  the design's sign-off, and the brief's own discipline governs: anything deviating from settled
+  semantics comes back to the coordinator, not self-ruled. The tree is clean.
+- **Did not run the full combined gate.** It gates a bank; there is nothing to bank. The two
+  instruments that were run are reported above with their arithmetic.
+- **Did not start B1.** It is the one scheduled stage left, but §4 makes its own preconditions
+  design deliverables — the three-variant dispatch microbench decides the mechanism, and the
+  `unsafe.Pointer` representation must be *stated* before implementation. It is also count-neutral
+  except the `&s[i]` row, so it would not have reached this lane's target either.
+
+### For the coordinator — the decision this lane hands back
+
+**Rule the edwards25519 row's owner; it is not the signed-off ж-box arc.** Either commission **B′ as
+its own design increment** — the row's dominant term, and §3.7 already names a constituency far
+beyond it (runtime/proc 387 sites × 3 GOOS, h2_bundle 212, database/sql 154, os's `of()` chains), so
+the increment pays well past this one row — or move edwards25519 off the 75 %-terminal path and pick
+a fourth candidate whose residual is reachable from a signed-off stage. The 98-vs-0 count stays
+undisclosed either way.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
