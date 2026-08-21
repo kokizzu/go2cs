@@ -82,6 +82,12 @@ src/tests/Behavioral/StdLibInternalAbi/*.cs.target -text
 src/tests/Behavioral/UntypedConstWideMask/main.cs -text
 src/tests/Behavioral/UntypedConstWideMask/main.cs.target -text
 
+# A captured run artifact banked as EVIDENCE, not as generated output. The board keeps it
+# because the reading is not reproducible on demand (crypto/tls TestBogoSuite shape (b) needs
+# Go's own BoGo baseline to fail), so its exact bytes are the point: -text stops autocrlf from
+# rewriting the line endings of the file whose whole value is being the run that happened.
+docs/phase4/evidence-*.json -text
+
 # Phase-4 test DATA staged from GOROOT and read byte-for-byte by a converted test
 # suite. Go ships these with LF; autocrlf would smudge them on checkout and change
 # what the test reads (compress/gzip's TestIssue6550 base64-decodes this file).
