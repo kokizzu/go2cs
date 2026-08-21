@@ -34,6 +34,47 @@ $IsWindowsHost = if ($null -eq (Get-Variable -Name 'IsWindows' -ErrorAction Sile
 # Executable suffix for a built .NET apphost or Go binary.
 $ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
 
+# The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
+# `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
+# wrong everywhere else: a linux host then builds the windows flavor, whose `os_package` module
+# initializer faults on `DllImport("kernel32.dll")` the moment a program touches it (measured: the
+# 2026-08-21 Linux census — 10 of a 34-project behavioral shard, each self-diagnosed by the corpus's
+# own RID banner naming exactly this remedy). MSBuild maps environment variables to properties, and
+# the csproj default is condition-guarded on empty, so ONE inherited env var is the entire binding —
+# every child `dotnet` invocation of every instrument picks it up, with an explicit `-p:GoTargetOS`
+# or a pre-set env var still winning. Windows behavior is untouched by construction.
+#
+# Scoped to $IsLinux, not `-not $IsWindowsHost`: a macOS host must NOT inherit `linux` (its own
+# flavor is `darwin`, and that corpus does not build today — 19 pre-existing errors, censused), so
+# darwin keeps the status-quo windows default until its own lane earns a binding. $IsLinux is a
+# pwsh 6+ automatic variable; on Windows PowerShell 5.1 it does not exist, which resolves $null →
+# falsey → the block is inert exactly where it should be.
+if ($IsLinux -and [string]::IsNullOrEmpty($env:GoTargetOS)) {
+    $env:GoTargetOS = 'linux'
+}
+
+# Pin GO2CSPATH on Linux so the converter's child-env `$(go2csPath)` race has one value on both
+# names. When the var is unset, the converter defaults it to `~/go2cs` AND os.Setenv()s it into
+# its own environment (main.go:93); every pipeline child then inherits that entry — clone-root,
+# no trailing separator — BESIDE the correct injected `go2csPath=<src>/` (testConversion.go:5663).
+# POSIX environs are case-sensitive so both entries coexist, but MSBuild maps environment
+# variables onto properties CASE-INSENSITIVELY, and which entry wins the one `$(go2csPath)` slot
+# is enumeration-order-dependent — a per-process coin flip. A losing draw resolves the analyzer
+# and every stdlib ProjectReference against `<clone>gen/...`/`<clone>core/...` (no separator, no
+# src) → MSB9008 + a CS0246 storm on every golib type, reported by the sweep as a total suite
+# failure (`Go="pass" C#=""`). That intermittency killed three Linux measurement campaigns before
+# the binlog named it: `Property 'go2csPath' with value '/root/go2cs' expanded from the
+# environment.` Pinning the var to the slash-terminated src root makes either race winner
+# correct. Windows is untouched twice over: the block is $IsLinux-scoped, and Windows env blocks
+# are case-insensitive at the OS level (one slot, injection wins deterministically) — the race is
+# structurally POSIX-only. An already-set GO2CSPATH still wins here (empty-guard), and every
+# instrument still passes -go2cspath explicitly; this pin only stops the converter's own default
+# from leaking a wrong root into its children. The complete converter-side fix (dedupe at the
+# child-env builder) is priced on the board (2026-08-21 entry).
+if ($IsLinux -and [string]::IsNullOrEmpty($env:GO2CSPATH)) {
+    $env:GO2CSPATH = $PSScriptRoot.TrimEnd('/', '\') + '/'
+}
+
 # Path separator regex CLASS, for patterns that must match a path boundary on either platform. Use
 # this instead of a literal '\\' in any -match/-split/-notmatch over a filesystem path: Windows
 # accepts both separators in practice and Linux only produces '/'.
