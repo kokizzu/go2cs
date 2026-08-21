@@ -15948,4 +15948,37 @@ pass for the same reason.
 Standing dirt, classified and RESTORED, nothing unclassified: `math/big`'s `doc.cs`/`prime.cs` (CRLF
 phantoms, empty numstat) and its `package_init.cs` (+7 real lines, the `initᴛᴛtests()` hook -- the fourth
 `-tests`-closure shape CLAUDE.md names).
+
+## RULING -- the terminal path is SELECTED from the measured ranking: net/mail banks now, `log` is #161, position-map is the linchpin arc (coordinator, 2026-08-21)
+
+The measurement pass above is adopted as the selection instrument, and three of its judgments are
+ratified on the way: the cap's HEAD-KEEPING truncation (a disclosure signature pins the FIRST
+failure by Contains -- dropping the head would silently unpin disclosed rows roster-wide), the
+panic record's exemption from the aggregate cap, and the CNR skip (the branch carries zero
+converter changes; CNR binds to converter changes, and GolibTests + the full `go2cs.slnx` build
+are the gates a golib change owes).
+
+**The path to 162, selected:**
+
+| Row | Package | Price | Status |
+|:--|:--|:--|:--|
+| #158 | `net/mail` (11) | **ZERO** -- measured 11/11; a stale census said 7/11 and the root dissolved under an intervening arc | bank immediately |
+| #159 | `sync/atomic` (108) | token construction + zero-size layout arc (Ruling A) | lane in flight |
+| #160 | `runtime/debug` (9) | position-map + ReadMemStats design + 3-row `runtime-capability` disclosure (Ruling B) | priced |
+| #161 | `log` (9) | position-map + one disclosure -- the SLEEPER: its arc is already #160's prerequisite | priced |
+| #162 | `flag` | ImplementGenerator Delta-rename fix (+ position-map exposure per the runtime-debug census) | rooted |
+
+**The position-map arc is the linchpin**: its named consumer set (`runtime/debug`, `log`,
+`log/slog`, `flag`) covers three of the five remaining rows. It is the highest-leverage single
+arc left on the 1.23.1 campaign and should be staffed accordingly.
+
+**Reserves, ranked as measured**: `net/http/internal`, then `math/big` -- whose 2026-08-10
+off-the-table status is SUPERSEDED by the fresh 224/226: once #160's ReadMemStats arc lands, its
+`TestMulUnbalanced` discriminator resolves and the row may cost one manifest entry for 224
+verdicts -- then gob-via-StructOf and netip-via-allocation.
+
+**Held for a future ruling, off the terminal path**: `crypto/cipher`'s `TestGCMAsm` skip-parity
+shape (agreement with Go's intent, disagreement with its verdict, no class fits). Ruled when a
+lane reaches it, not before.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
