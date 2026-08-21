@@ -1,6 +1,12 @@
 # B′ — method dual emission: the `ref`-receiver primary beside the ж method
 
-> **STATUS: PROPOSED — for coordinator ratification.** The design increment
+> **STATUS: RATIFIED (coordinator, 2026-08-21) — all seven §9 open questions are ruled AS
+> RECOMMENDED**, with ONE binding addition on §4.2's no-silent-wrong-selection claim: S0 must
+> include a mechanical guard proving it — a compile-probe matrix over every must-not-select
+> receiver shape §4.2 names, asserting each either fails to compile (CS1510) or demonstrably
+> binds the twin. The claim is the design's boldest and it must be enforced by construction,
+> not carried by argument. Sequencing per OQ-6 as ruled: S0/S1 flag-gated and corpus-inert in
+> the terminal era; S2 rides the 1.23.12 regen. The design increment
 > [`DESIGN-zh-box-reduction.md`](DESIGN-zh-box-reduction.md) §3.7 explicitly excluded from its
 > sign-off ("dual emission doubles surface — it needs its own design increment and its own
 > measurement"), commissioned by the 2026-08-20 ruling for the **1.23.12 era**. This document is
