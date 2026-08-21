@@ -16378,4 +16378,204 @@ miss is the file token; a Go-mapped line satisfies its regex); `log` (#161) need
 host-limit entry alongside its runtime-capability disclosures. The arc is now fully specified:
 one design increment, three consuming rows, acceptance measured on `flag` first and last.
 
+## THE POSITION-MAP ARC LANDS: one record per converted file carries a WHOLE position, `log` and `flag` bank on it, and `runtime/debug`'s `TestStack` comes down to its one structural frame (2026-08-21, lane `claude/position-map-arc`)
+
+The ruling's three answers, implemented and measured. The design note is committed FIRST and on its
+own (`docs/phase4/DESIGN-position-map.md`) so a veto costs rework rather than archaeology; this entry
+records what the mechanism measured, what it forced that the ruling did not fix, and the two rows.
+
+### The mechanism, in one sentence
+
+One `[assembly: GoPositionMap("<go file>", "<cs file>", "<table>")]` per converted file, emitted INTO
+that file, carrying the Go file's identity AND its C#-line → Go-line table together.
+
+**Indivisibility is structural, not a rule.** Both halves come from the one record, so no code path
+exists that could report a Go file with a C# line. A frame either finds a record and reports a Go
+position that exists, or finds none and reports the converted `.cs` position it always did — which is
+what golib, the BCL, the hand-owned test host and every whole-file hand-own do, each for the reason
+`goFrameName` already declines to invent a Go name for them. `crypto/subtle/xor_generic.cs` will not
+name `crypto/subtle/xor_generic.go`: its C# was WRITTEN, and no line of it corresponds to a line of Go.
+
+### Priced against the alternatives, and measured
+
+`#line` (the board's PDB-transport route) is disqualified twice over: +28–47% of corpus LINES, and CS
+diagnostics relocate onto `.go` files that are not in the project — the repo's whole method is
+root-causing against the emitted `.cs`. A side-car resource and a per-package generated `.cs` price
+the same as the winner; what separates the winner is that two rules the others must STATE fall out of
+it for free — a hand-own carries no record because it is never re-emitted, and an L3 per-GOOS variant
+carries its own because the record is IN the variant.
+
+Measured on a seeded whole-corpus reconvert:
+
+| | |
+|:--|--:|
+| files carrying a record | 1,339 (all GOROOT-relative — the corpus is std, and std is what `cmd/go` trimpaths) |
+| attribute text, total | 370,644 bytes (0.35 MB) |
+| corpus `.cs`, total | 38.73 MB |
+| **share of the corpus** | **0.91%** |
+| largest single table | 7,168 chars, `crypto/internal/nistec/fiat/p521_fiat64.cs` |
+
+### The identity: three forms, and the middle one is FORCED
+
+Discriminated by the SOURCE's location, never by the conversion mode — which matters, because the
+`-tests` pipeline converts GOROOT packages through a single-package run, and a mode-keyed rule would
+hand `log`, `flag` and `runtime/debug` absolute GOROOT paths and fail `TestStack` outright.
+
+A source beside its emitted `.cs` records its BARE NAME, rooted at run time against the `.cs` file's
+own compile-time directory. Baking the absolute path instead is not an available option: it names a
+directory that does not exist on the next clone — a fabricated position on every other machine, and
+`check-no-regression` reporting the whole behavioral corpus as drifted in every sibling worktree on
+the first run. This is what lets the arc's own guard assert Go agreement at all.
+
+### The ruling's `main/main.go` regression is now structurally impossible
+
+Not avoided — impossible. No code path anywhere composes a file name from a package, namespace or
+class name; the runtime reads a recorded string and, in one case, prefixes it with a directory the
+PDB gave it. `positionMap_test.go` pins it directly.
+
+### The guard the ruling queued, strengthened — and what it now measures
+
+`RuntimeCallerFrames` passed all four phases under the file-half change because its five file
+assertions were separator booleans and an equality, every one invariant under a wholesale change of
+what the file names. It now asserts the property, printing VALUES so the stdout comparison against
+`go run .` IS the assertion and no constant in the guard has to be kept in step with the source it
+names:
+
+```
+                                   go run .                     converted C#
+  caller file tail:                RuntimeCallerFrames/main.go  RuntimeCallerFrames/main.go
+  caller file rooted:              true                         true
+  caller line:                     27                           27
+  caller line two frames up:       107                          107
+  traceback names a go file:       true                         true
+```
+
+The same five lines under the file half alone would have read `main/main.go` and `false`.
+
+### The rows
+
+**`flag` — 24 matched, 0 disclosed.** Exactly the ruling's prediction: its one miss was the file
+token, and a Go-mapped line satisfies `TestDefineAfterSet`'s `.*/flag_test.go:.*`.
+
+**`log` — 8 matched, 1 disclosed.** The yield signal the file half could not deliver: `TestAll`
+passes, because `log_test.go:63`/`:65` is now what the frame reports. Its residual is `TestDiscard`,
+an at-most-one `AllocsPerRun` assert — **`alloc-profile`**, on bufio's `TestReadStringAllocs`
+precedent: Go's one allocation is the variadic `[]any`, and its `func(b []byte) []byte` closure over
+`format`/`v` does not escape `Output`, so Go keeps it off the heap; the converted call must
+heap-allocate the params array, the display class the C# compiler emits for that same closure, and its
+delegate. Measured 3 golib-site allocations per run against Go's 1, and that is a LOWER BOUND. The
+count is comparable — it is WHERE the allocations live that differs, which is what separates this
+class from `alloc-count-semantics`.
+
+**`runtime/debug` — 2 of 9, unchanged, and its `TestStack` is down to ONE assertion.** Measured
+independently of the board's file-half run and agreeing with it exactly:
+
+```
+  in line "\tC:/…/src/core/testing/TestExecution.cs:593", expected prefix "\ttesting/testing.go"
+```
+
+All four converted frames now name Go's file. The fifth is `frame("testing/testing.go", "")` — the
+test framework's own frame — and it is the ruling's point 2 in mechanism form: it is not that the host
+DECLINES to claim `testing/testing.go`, it is that no conversion ever recorded a position for it. The
+row does not bank here (its `ReadMemStats` half is a separate arc mid-measurement); the entry it will
+take is ready to paste:
+
+```json
+{
+  "name": "TestStack",
+  "class": "host-limit",
+  "signature": "expected prefix \"\\ttesting/testing.go\"",
+  "reason": "the fifth frame() assert requires the testing framework's own frame to name GOROOT/src/testing/testing.go, which is a property of Go's test BINARY: its testing package is compiled from that source. The converted deployment's testing package is the hand-owned host (src/core/testing) — the ONE-testing-package ruling's design, not an unimplemented conversion — so no conversion recorded a position for it and it honestly reports its own .cs position, exactly as golib and the BCL do. STRUCTURAL AND PERMANENT: unlike the relocatable-single-file entries, this does NOT retire when the host publishes self-contained and single-file, because the host would still be hand-written C# with no line-for-line relationship to Go's testing.go. It retires only if the test host itself becomes a conversion of Go's testing package, which the ONE-testing-package ruling deliberately forecloses"
+}
+```
+
+### What the mechanism forced that the ruling did not fix — written up, not self-ruled
+
+The ruling says *"stdlib → trimpath form via your `goFrameName` derivation + the two suffix rules"*.
+This design RECORDS it instead. Three reasons, and the departure is flagged rather than assumed:
+the record has to exist for the line half regardless, so the derivation buys nothing; recording is
+strictly closer to the ruling's own principle (*"a conversion-time FACT, never a plausible
+composite"*); and it retires the lane's two measured suffix rules from the FILE half — a test
+variant's file is `runtime/debug/stack_test.go` because that is what the converter SAW, not because a
+class-name suffix was stripped. The rules stay, unchanged, for the FUNCTION half, where Go genuinely
+keeps `_test` (`runtime/debug_test.T.method`), and where `goFrameName` still derives from the package
+because a function name IS a property of the package. Reverting to the derivation for GOROOT sources
+is localized and priced in the design note's §11.1.
+
+### The measurement that no amount of reading the code would have found
+
+An in-text sentinel is invisible to consumers of the finished file but NOT to the converter's own
+reads of emitted text. On the first whole-corpus reconvert, **110 files emitted a block body where
+they had emitted an expression-bodied lambda**: `convFuncLit` decides that collapse by testing that
+nothing but the block's opening brace precedes the `return`, and it reads the block back as a string.
+Nothing was wrong with the map; the text simply was not neutral. The rule is now explicit and
+recorded in `positionMapOperations.go` — a site that INSPECTS or REWRITES captured block text reads it
+through `stripPositionSentinels`, a site that merely APPENDS it must not — and the standing guard is
+the corpus-wide byte-identity check below, which is why that check is a gate and not a formality.
+
+### Byte identity, and the 8 files that are LEVELLED rather than restored
+
+Seeded reconvert against the committed tree, with each file's own record removed: **3,234
+byte-identical, 8 differing**. All 8 were proven PRE-EXISTING by a control converter built from
+`HEAD` — its emission differs from the committed tree in exactly the same 8 files, and my emission is
+byte-identical to the control's modulo the record. They are the born-stale class (the value-alias
+emission in `runtime/{alg,map,map_fast32,map_fast64,mbarrier,traceback}.cs` and `runtime/pprof/map.cs`,
+the multi-result `any`-slot return-type prefix in `go/internal/gcimporter/gcimporter.cs`), 28 lines in
+total.
+
+They are **levelled, not restored**, and the mechanism forces it: a position map is computed from the
+text it describes, so restoring the text while keeping the record would produce wrong line numbers for
+those 8 files, and dropping the record would leave 8 converted files — `runtime/traceback.cs` among
+them — unmapped. Stated here because it is a change this bank carries that is not this arc's.
+
+### Gates
+
+| Gate | Result |
+|:--|:--|
+| design note committed FIRST, on its own | `a3e1d2229` |
+| converter `go test ./...` (incl. `projitemsIntegrity`, `TestStdLibMetadataInSync`) | **green**, 288 s -- so no `stdlib-metadata` drift owed |
+| seeded whole-corpus reconvert vs committed, record removed | **3,234 byte-identical / 8 pre-existing** (control-proven) |
+| `go2cs-stdlib.slnx` | **307 projects, 0 errors**, 409 s |
+| `go2cs.slnx` (owed after a golib/runtime API change) | **0 errors**, 357 s |
+| behavioral suite, all four phases | **PASS 603/603** transpile+compile+golden, **577 stdout comparisons vs `go run .`, 0 failures**, 1,775 s |
+| `check-no-regression.ps1` | **NO REGRESSION** -- byte-identical `.cs` and `.csproj` across all 630 behavioral packages, 0 NOT MEASURED |
+| `GolibTests` | **181/181** |
+| `-tests -test-action all` -- `flag` | **24 validated**, 0 divergent |
+| `-tests -test-action all` -- `log` | **8 validated**, 1 disclosed (`alloc-profile`) |
+| `-tests -test-action all` -- `runtime/debug` | 2 of 9, `TestStack` at ONE assertion (the host frame) |
+| full validated sweep, 160 packages / 18,457 verdicts | **160 pass / 0 fail**, 18,457 verdicts, 17,491 s (4 h 51 m) |
+
+The sweep is the whole roster rather than a derived canary set, deliberately: this is a
+corpus-wide EMISSION change -- every converted file in the tree gained a record -- so the
+direct-import derivation (`runtime`: 53 banked rows, largest `go/internal/gcimporter` 583,
+`crypto/rsa` 559, `go/types` 557, `encoding/json` 491, `crypto/tls` 400) and the board's own
+frame-file blast radius (12 rows / 1,539 verdicts) are both proper subsets of what ran.
+
+### A doctrine point the merge produced: a MERGE of a mapped file invalidates its map
+
+Worth its own line because it generalizes past this arc. The map is a DERIVED artifact of the
+emitted text, so anything that changes that text without re-deriving the map leaves a
+plausible-but-wrong one — the exact class the ruling forbids, and silent. A textual merge is such a
+thing, and it is not hypothetical: merging `claude/union-157` here auto-merges
+`src/core/sync/atomic/type.cs`, whose other side is **+69/−20**, onto a record whose table was
+computed for the pre-merge text. Every frame in that file would then report a Go line shifted by the
+merge, and no gate would be red.
+
+**The rule: a merge that changes any converted `.cs` owes a re-emission of that file's package
+before the gates.** It is cheap — a filtered `-stdlib`, or the package's own `-tests -test-action
+all`, which re-emits and re-validates in one step — and it is mechanical, because the affected set is
+exactly `git diff --name-only <base> <theirs> -- 'src/core/**/*.cs'` minus the files that carry no
+record anyway (golib, `*_impl.cs` hand-owns, `package_info.cs`/`package_init.cs`). Same shape as the
+standing "never convert twice into one root" rule: a step in the ritual, not a diagnosis to re-derive.
+
+### Standing dirt, classified and RESTORED
+
+The `-tests` closure re-emissions from `flag`'s own pipeline run: `flag/flag.cs`'s `using os` ->
+`using Δos` collision rename and `flag/package_init.cs`'s `initᴛᴛtests()` hook (+7). Both are the
+named standing class and both are line-count NEUTRAL, so neither disturbs the position map that
+now rides in those files -- restored to the `-stdlib` emission, where the tree rests. `log/log.cs`
+did not move at all. `src/core/README.md` came back as a CRLF phantom from the overlay (empty
+numstat) and was restored. `runtime/debug`'s converted test artifacts were removed rather than
+committed: the row does not bank here.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

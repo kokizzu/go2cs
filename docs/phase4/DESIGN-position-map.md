@@ -260,7 +260,25 @@ directly — so a future non-neutral site surfaces as drift rather than as a wro
 A collapsed body drops its sentinels rather than relocating them, which is correct: it has no emitted
 line of its own, and the enclosing statement's line already carries that statement's position.
 
-### 6.4 The one coupling this leaves
+### 6.4 A MERGE of a mapped file invalidates its map — re-emission is owed, not optional
+
+The map is a DERIVED artifact of the emitted text, so anything that changes that text without
+re-deriving the map leaves a plausible-but-wrong one — the exact class the ruling forbids. A textual
+merge is such a thing, and it is not hypothetical: merging `claude/union-157` into this lane
+auto-merges `src/core/sync/atomic/type.cs`, whose other side is **+69/−20**, onto a record whose
+table was computed for the pre-merge text. Every frame in that file would then report a Go line
+shifted by the merge, and nothing would be red.
+
+**The rule: a merge that changes any converted `.cs` owes a re-emission of that file's package before
+the gates.** It is cheap — a filtered `-stdlib`, or the package's own `-tests -test-action all`,
+which re-emits and re-validates in one step — and it is mechanical, because the affected set is
+exactly `git diff --name-only <base> <theirs> -- 'src/core/**/*.cs'` minus the files that carry no
+record anyway (golib, `*_impl.cs` hand-owns, `package_info.cs`/`package_init.cs`).
+
+Same shape as the standing "never convert twice into one root" rule: not a diagnosis to re-derive
+each time, a step in the ritual.
+
+### 6.5 The one coupling this leaves
 
 `rewriteDeferredMarkers` rewrites `«DYNTYPE:…»` / `«ADAPTER:…»` markers AFTER the file is written, so
 it is the one rewrite the map cannot see. Its replacements are type NAMES and cannot span lines, and
@@ -351,6 +369,20 @@ have read `main/main.go` and `false`.
 
 ---
 
+### 9.4 All three identity forms, measured
+
+| conversion | recorded identity | reported at run time | Go's answer |
+|:--|:--|:--|:--|
+| `-stdlib` / `-tests` over GOROOT | `runtime/debug/stack.go` | same | same — `cmd/go` trimpaths std |
+| single-package, source beside the `.cs` | `main.go` | `C:/…/RuntimeCallerFrames/main.go` | the same absolute path |
+| `-recurse` into a separate output root | `C:/…/mod/app/main.go` | same | the same absolute path |
+
+The third row is a probe module converted into its own output root: Go prints
+`C:/…/mod/app/main.go 9` for its `runtime.Caller(0)`, the recorded identity is that same absolute
+path, and the decoded table maps the emitted C# line to Go line 9.
+
+---
+
 ## 10. Adversarial review (charter §7)
 
 This section is the pass against this document's own first draft. Each item is an attempt to REFUTE
@@ -408,10 +440,10 @@ the PDB, and a file name the converter read off disk. The result names a file th
 machine that built it, exactly as Go's baked absolute path does. If the coordinator reads the ruling
 more strictly than that, §11.2 is the alternative and its price.
 
-**10.9 "`-recurse` is untested."** True. The absolute form is exercised by unit test only
-(`positionMap_test.go`); no `-recurse` conversion was run end to end on this lane. The form is the
-simplest of the three (record the path, report it verbatim) and the one with no runtime step, but it
-is measured by construction rather than by observation, and that is stated rather than glossed.
+**10.9 "`-recurse` is untested."** It was when this section was first written, and the objection is
+kept because it is what sent the lane to measure it rather than argue it. A `-recurse` conversion of a
+probe module into a separate output root now records the absolute conversion-time path and maps its
+lines exactly (§9.4).
 
 **10.10 "An in-text sentinel changes the converter's own behaviour, so the emission is no longer the
 emission."** The most damaging objection, and it was TRUE on the first whole-corpus reconvert: 110
