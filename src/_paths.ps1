@@ -34,6 +34,25 @@ $IsWindowsHost = if ($null -eq (Get-Variable -Name 'IsWindows' -ErrorAction Sile
 # Executable suffix for a built .NET apphost or Go binary.
 $ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
 
+# The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
+# `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
+# wrong everywhere else: a linux host then builds the windows flavor, whose `os_package` module
+# initializer faults on `DllImport("kernel32.dll")` the moment a program touches it (measured: the
+# 2026-08-21 Linux census — 10 of a 34-project behavioral shard, each self-diagnosed by the corpus's
+# own RID banner naming exactly this remedy). MSBuild maps environment variables to properties, and
+# the csproj default is condition-guarded on empty, so ONE inherited env var is the entire binding —
+# every child `dotnet` invocation of every instrument picks it up, with an explicit `-p:GoTargetOS`
+# or a pre-set env var still winning. Windows behavior is untouched by construction.
+#
+# Scoped to $IsLinux, not `-not $IsWindowsHost`: a macOS host must NOT inherit `linux` (its own
+# flavor is `darwin`, and that corpus does not build today — 19 pre-existing errors, censused), so
+# darwin keeps the status-quo windows default until its own lane earns a binding. $IsLinux is a
+# pwsh 6+ automatic variable; on Windows PowerShell 5.1 it does not exist, which resolves $null →
+# falsey → the block is inert exactly where it should be.
+if ($IsLinux -and [string]::IsNullOrEmpty($env:GoTargetOS)) {
+    $env:GoTargetOS = 'linux'
+}
+
 # Path separator regex CLASS, for patterns that must match a path boundary on either platform. Use
 # this instead of a literal '\\' in any -match/-split/-notmatch over a filesystem path: Windows
 # accepts both separators in practice and Linux only produces '/'.
