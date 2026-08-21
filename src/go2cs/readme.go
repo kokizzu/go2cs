@@ -119,6 +119,66 @@ func pinGoVersion(resolved string) {
 	})
 }
 
+// packageReadmeEmission records a README this RUN emitted FROM A CONVERSION — where it was written
+// and the inputs it was composed from. It exists so the `-tests` pipeline can re-emit that same
+// README once the compare has written the validation proof page its Tests badge reads.
+//
+// The record IS the safety property, and that is why the re-emission takes its inputs from here
+// rather than from the converter's package globals. `-test-action build|run|compare` do NOT
+// convert: packageDoc and packageSourceDir are empty on those paths, so a refresh that re-read them
+// would write a DOC-LESS README over a corpus package — a destructive, corpus-wide rewrite reading
+// as ordinary reconvert drift (the hazard named on BOARD-next-validation-candidates when the gate
+// half of this item landed). Sourcing the refresh from a record only a conversion can leave behind
+// makes that rewrite UNREPRESENTABLE rather than merely avoided: no conversion, no record, no write.
+type packageReadmeEmission struct {
+	projectPath string
+	projectName string
+	packageDoc  string
+	sourceDir   string
+}
+
+// convertedPackageReadme is the last README emission this process made from a conversion. A single
+// package conversion leaves exactly one; a -stdlib run leaves the last of many and never refreshes
+// (it runs no test action), and the refresh matches on the project path regardless.
+var convertedPackageReadme *packageReadmeEmission
+
+// recordPackageReadmeEmission is called by writeProjectFile immediately after it writes a package
+// README, capturing what it wrote it from. Recorded only when the README was actually emitted, so
+// the gate that decides whether a package gets a README at all (emitsPackageReadme) is the same gate
+// that decides whether one can be refreshed.
+func recordPackageReadmeEmission(projectPath string, projectName string, packageDoc string, sourceDir string) {
+	convertedPackageReadme = &packageReadmeEmission{
+		projectPath: projectPath,
+		projectName: projectName,
+		packageDoc:  packageDoc,
+		sourceDir:   sourceDir,
+	}
+}
+
+// refreshPackageReadmeAfterProof re-emits a converted package's README once the compare has written
+// its validation proof page, so a package whose matched/disclosed counts CHANGED — every fresh bank,
+// and every rebank that moves a number — carries its own green badge in the SAME run.
+//
+// The ordering this closes: the README is composed during CONVERSION, while the page its Tests badge
+// reads is written at the END of the compare (emitValidationProofPage). Until this second emission
+// point existed, a fresh bank's README read `not_yet_validated` beside its own green proof page and
+// only the NEXT conversion of that package levelled it — the residual the gate half of this item
+// measured and could not reach, since it is an ordering rather than a gate.
+//
+// A no-op unless THIS process converted the package at outputPath: see packageReadmeEmission for why
+// the record, not the converter globals, is what the refresh may read. writeReadmeFile is idempotent
+// (needToWriteFile), so a package whose counts did not move rewrites nothing and the run stays
+// byte-clean — which is what keeps this off the standing-restore families a sweep has to classify.
+func refreshPackageReadmeAfterProof(outputPath string, options Options) error {
+	emission := convertedPackageReadme
+
+	if emission == nil || filepath.Clean(emission.projectPath) != filepath.Clean(outputPath) {
+		return nil
+	}
+
+	return writeReadmeFile(emission.projectPath, emission.projectName, emission.packageDoc, emission.sourceDir, options)
+}
+
 // writeReadmeFile emits a README.md into a converted library package directory, wrapping the
 // package's Go doc (rendered here, by renderPackageDoc) so the NuGet package carries readable docs. It is
 // idempotent via needToWriteFile, mirroring how the icon and .csproj files are written, and uses

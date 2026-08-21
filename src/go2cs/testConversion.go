@@ -238,9 +238,10 @@ func recordsRequireProductionMutation(productionClassName, productionPackageName
 
 	for sourceType, targetTypes := range indirectImplicitConversions {
 		for targetType := range targetTypes {
-			if inner, ok := strings.CutPrefix(targetType, PointerPrefix+"<"); ok && normalize(sourceType) == normalize(strings.TrimSuffix(inner, ">")) {
+			if pointerBoxConversionRecord(sourceType, targetType) {
 				// T -> ж<T> is the shared Go pointer-boxing route. The generator intentionally
 				// emits no type-owned operator for a foreign T, so it does not mutate production.
+				// Same predicate conversionRecordHasLocalOperand reads to admit the record at all.
 				continue
 			}
 			if isProductionType(sourceType) || isProductionType(targetType) {
@@ -5486,6 +5487,14 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	if result.Status == "validated" {
 		if err := emitValidationProofPage(outputPath, result, manifest, disclosures, disclosureNotes, options); err != nil {
 			return fmt.Errorf("write validation proof page: %w", err)
+		}
+
+		// The page the package's README badge reads has just changed, and the README was composed
+		// BEFORE it — so level it here, in the same run, rather than one conversion later. Reaches a
+		// README only on a run that CONVERTED this package: `compare` alone left no record, so it
+		// cannot write one (see packageReadmeEmission).
+		if err := refreshPackageReadmeAfterProof(outputPath, options); err != nil {
+			return fmt.Errorf("refresh package README: %w", err)
 		}
 	}
 	if len(disclosed) > 0 {

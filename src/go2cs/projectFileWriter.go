@@ -498,6 +498,11 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 			if err := writeReadmeFile(outputFilePath, projectName, packageDoc, packageSourceDir, options); err != nil {
 				return fmt.Errorf("failed to write README file for project \"%s\": %s", outputFilePath, err)
 			}
+
+			// Capture what this README was composed from, so the -tests pipeline can re-emit it after
+			// the compare writes the proof page its Tests badge reads (refreshPackageReadmeAfterProof).
+			// Inside the gate on purpose: a package that gets no README here can get none there either.
+			recordPackageReadmeEmission(outputFilePath, projectName, packageDoc, packageSourceDir)
 		}
 	}
 
@@ -524,13 +529,13 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 // runtime root's core\ tree — which is structural, so no fixture, example, -recurse output or
 // end-user output path satisfies it whatever mode the converter was invoked in.
 //
-// ⚠ RESIDUAL, measured 2026-08-20 and NOT closed by this gate: within one `-test-action all` run
-// the README is composed during CONVERSION, while the proof page it reads is written at the END of
-// the COMPARE (emitValidationProofPage, testConversion.go). A package whose counts CHANGE — every
-// FRESH bank — therefore still emits one run behind, and a fresh bank's README reads
-// `not_yet_validated` beside its own green proof page until the next conversion of that package.
-// Closing that needs the board's OTHER formulation (re-emit the README after the compare wrote the
-// page), which is a second emission point rather than a gate change; see the board write-up.
+// This gate decides WHETHER a package gets a README, not WHEN its badge can be current, and the two
+// are different questions. Within one `-test-action all` the README is composed during CONVERSION
+// while the proof page it reads is written at the END of the COMPARE (emitValidationProofPage,
+// testConversion.go), so a package whose counts CHANGE — every FRESH bank — emitted one run behind
+// and read `not_yet_validated` beside its own green page. That ordering is closed by a SECOND
+// emission point rather than by this gate: refreshPackageReadmeAfterProof re-emits the README once
+// the page exists, from the record this write leaves behind (readme.go).
 func emitsPackageReadme(projectFileName string, options Options) bool {
 	return options.convertStdLib || rewriteOfCorePackage(projectFileName, options)
 }

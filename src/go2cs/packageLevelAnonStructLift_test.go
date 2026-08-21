@@ -232,3 +232,117 @@ func TestWhiteboxProductionNumericConvNotRecorded(t *testing.T) {
 		t.Errorf("a numeric pair with a TEST-LOCAL operand must still record (it relocates there); got %v", numericConversions)
 	}
 }
+// TestPointerBoxConversionRecordShape pins the ONE definition of the pointer-boxing route both
+// conversionRecordHasLocalOperand and recordsRequireProductionMutation read. The `global::` trim is
+// load-bearing: a whitebox-production operand renders class-qualified while the box wraps that same
+// qualified spelling, and an ordinary local operand renders bare.
+func TestPointerBoxConversionRecordShape(t *testing.T) {
+	box := func(inner string) string { return PointerPrefix + "<" + inner + ">" }
+
+	for _, pair := range []struct {
+		source, target string
+		want           bool
+	}{
+		{"Cipher", box("Cipher"), true},
+		{"global::go.crypto.rc4_package.Cipher", box("global::go.crypto.rc4_package.Cipher"), true},
+		{"Cipher", box("global::go.crypto.rc4_package.Cipher"), false},
+		{"global::go.crypto.rc4_package.Cipher", box("go.crypto.rc4_package.Cipher"), true},
+		{"Cipher", box("Other"), false},
+		{"Cipher", "Cipher", false},
+		{"Cipher", box("Cipher") + "extra", false},
+	} {
+		if got := pointerBoxConversionRecord(pair.source, pair.target); got != pair.want {
+			t.Errorf("pointerBoxConversionRecord(%q, %q) = %v, want %v", pair.source, pair.target, got, pair.want)
+		}
+	}
+}
+
+// TestWhiteboxProductionPointerBoxConvStillRecorded is the numeric guard's counterpart, and the two
+// together are the whole rule: a whitebox-production operand is declined when an operator WOULD be
+// hosted on it, and admitted when none can be.
+//
+// The pointer-boxing record `T` → `ж<T>` hosts nothing: `ж<T>` is golib's generic box and no
+// converted package declares it, so ImplicitConvGenerator finds no struct declaration and skips
+// the record before choosing a host — there is no phantom to mint and no closed production assembly
+// to extend. Excluding it anyway (2026-08-18, e61758549, whose rationale was the NUMERIC phantom)
+// silently shrank every whitebox package's committed package_test_info.cs on regen: crypto/rc4 lost
+// its Cipher record AND the `testing` qualifier alias that rides the same site, and go/types lost
+// three. Neither is caught by CNR, which never runs `-tests`.
+//
+// The BOTH-FOREIGN arm is the boundary this must not cross: those pairs were declined before the
+// whitebox exclusion existed (os's syscall.Handle precedent) and stay declined, so the fix restores
+// exactly what e61758549 removed and adds nothing.
+func TestWhiteboxProductionPointerBoxConvStillRecorded(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads and converts a test-variant fixture")
+	}
+
+	dir := t.TempDir()
+	files := map[string]string{
+		"go.mod": "module example/wbbox\n\ngo 1.23\n",
+		"value.go": "package wbbox\n\ntype Cipher struct{ s uint32 }\n\n" +
+			"func New() *Cipher { return &Cipher{} }\n",
+		"wbbox_test.go": "package wbbox\n\nimport (\n\t\"bytes\"\n\t\"testing\"\n)\n\n" +
+			"func check(t *testing.T, c *Cipher) {\n\tif c == nil {\n\t\tt.Fatal(\"nil\")\n\t}\n}\n\n" +
+			"func pair(t *testing.T, b *bytes.Buffer) {\n\tif b == nil {\n\t\tt.Fatal(\"nil\")\n\t}\n}\n\n" +
+			"func TestNew(t *testing.T) {\n\tcheck(t, New())\n\tpair(t, new(bytes.Buffer))\n}\n",
+	}
+
+	for name, contents := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(contents), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	internal, _ := loadBothTestVariantsForDir(t, dir)
+
+	if internal == nil {
+		t.Fatal("the internal test variant was not loaded")
+	}
+
+	outputPath := t.TempDir()
+	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
+
+	// What convertTestVariants sets for the internal variant under the white-box REFERENCE model —
+	// the arm where production C# is a closed referenced assembly.
+	options.testClassNameOverride = getSanitizedImport("wbbox_internal_test" + PackageSuffix)
+	options.testWhiteboxReference = true
+	options.testInlineTypeAccess = true
+	options.testProductionPath = "example/wbbox"
+
+	testMethodRenames = make(map[types.Object]bool)
+	t.Cleanup(func() { testMethodRenames = nil })
+
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", productionSeed{}, options); err != nil {
+		t.Fatal(err)
+	}
+
+	boxedRecord := func(simpleName string) bool {
+		for source, targets := range indirectImplicitConversions {
+			for target := range targets {
+				if pointerBoxConversionRecord(source, target) && strings.HasSuffix(source, simpleName) {
+					return true
+				}
+			}
+		}
+
+		return false
+	}
+
+	// The whitebox-production operand: recorded, exactly as a plain (non--tests) conversion of the
+	// same package records it.
+	if !boxedRecord("Cipher") {
+		t.Errorf("the whitebox-production pointer-box record was dropped; got %v", indirectImplicitConversions)
+	}
+
+	// ...and so is the import qualifier the same site registers, which is what carries the
+	// `using testing = …` line into package_test_info.cs.
+	if _, ok := conversionPackageUsings["testing"]; !ok {
+		t.Errorf("the record site's package qualifier was not registered; got %v", conversionPackageUsings)
+	}
+
+	// The boundary: NEITHER operand local (both live in other assemblies) stays declined.
+	if boxedRecord("Buffer") {
+		t.Errorf("a both-foreign pointer-box pair must stay declined; got %v", indirectImplicitConversions)
+	}
+}

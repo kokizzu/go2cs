@@ -61,6 +61,12 @@ using static global::go.crypto.tls_test_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
+[assembly: GoImplicitConv<global::go.crypto.tls_package.Config, ж<global::go.crypto.tls_package.Config>>(Indirect = true)]
+[assembly: GoImplicitConv<global::go.crypto.tls_package.QUICConfig, ж<global::go.crypto.tls_package.QUICConfig>>(Indirect = true)]
+[assembly: GoImplicitConv<global::go.crypto.tls_package.clientHelloMsg, ж<global::go.crypto.tls_package.clientHelloMsg>>(Indirect = true)]
+[assembly: GoImplicitConv<global::go.crypto.tls_package.serverHelloDoneMsg, ж<global::go.crypto.tls_package.serverHelloDoneMsg>>(Indirect = true)]
+[assembly: GoImplicitConv<global::go.crypto.tls_package.serverHelloMsg, ж<global::go.crypto.tls_package.serverHelloMsg>>(Indirect = true)]
+[assembly: GoImplicitConv<global::go.crypto.tls_package.ΔConnectionState, ж<global::go.crypto.tls_package.ΔConnectionState>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.crypto;

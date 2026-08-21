@@ -583,6 +583,43 @@ Go writing **Markdown** link syntax inside a doc comment (`image/image.go:37`), 
 not support; pkg.go.dev renders it identically. Faithful conversion of an upstream quirk, not an emitter
 defect.
 
+### The README has TWO emission points, because its Tests badge reads a page the run writes LAST
+
+A converted package's README carries the four-badge line, and the Tests badge is composed at CONVERSION
+time from `docs/validation/current/<dot-id>.md`. The run that WRITES that page is the compare at the END
+of a `-tests` pipeline (`emitValidationProofPage`). Those two facts are an ordering, and the ordering is
+the whole problem: within a single `-test-action all`, the README is always built from the proof page as
+it stood BEFORE the run. A package whose counts are unchanged is fine; a package whose counts CHANGE —
+every fresh bank, and every rebank that moves a number — emitted one run behind, so a fresh bank shipped
+a README reading `Tests-not_yet_validated-orange` **beside its own green proof page**, and a bank owed one
+extra conversion of its own package as paperwork.
+
+Two formulations were on the table and they are **not** equivalent. Widening the emission GATE (which
+package gets a README at all) is what `emitsPackageReadme` does, and it closes the unchanged-counts case;
+it cannot reach an ordering. Closing the ordering needs a SECOND emission point:
+`refreshPackageReadmeAfterProof` re-emits the README immediately after the compare writes the page.
+
+**The hazard, and why the refresh is sourced from a record.** `-test-action build|run|compare` do not
+convert: the converter's package globals (`packageDoc`, `packageSourceDir`) are empty on those paths. A
+refresh that re-read them would render a DOC-LESS README over a corpus package — a destructive,
+corpus-wide rewrite that reads as ordinary reconvert drift. So the refresh does not read them. The
+conversion-time write records what it composed the README from (`packageReadmeEmission`, `readme.go`),
+and the refresh runs from that record or not at all: **no conversion, no record, no write.** The hazard is
+unrepresentable rather than avoided, and the record is taken INSIDE the `emitsPackageReadme` gate, so the
+one decision about whether a package gets a README also decides whether one can be refreshed.
+
+`writeReadmeFile` is idempotent (`needToWriteFile`), so a package whose counts did not move rewrites
+nothing and a sweep stays byte-clean — this opens no standing-restore family. The corollary is worth
+carrying: **a `README.md` moving during an operational sweep now means that package's validation counts
+moved.** That is a finding to read, not dirt to classify.
+
+Measured on `hash/adler32` with its proof page moved aside to simulate a fresh bank: one
+`-test-action all` validates 2 of 2, writes the page, and emits the green `2/2` badge **in the same run**
+— byte-identical to the committed README. A `-test-action compare` over a deliberately staled README leaves it
+byte-for-byte untouched, and creates none where the conversion wrote none. (Guarded by
+`TestPackageReadmeRefreshFollowsInProcessConversionNotRunMode`, the sibling of
+`TestPackageReadmeEmissionFollowsPackageProvenanceNotRunMode` that pins the gate half.)
+
 ### Assembly metadata is one derivation chain, and the framework is hoisted to props
 
 Every project in the tree — the two converter templates and the hand-written `golib` and `go2cs-gen` —
@@ -6058,6 +6095,37 @@ foreign types could not be hosted in either of their assemblies from here in any
 byte-identical. (Guarded by the `ForeignPairNumericConv` behavioral test — a sibling library declaring two
 named numerics and never converting between them, converted across in `main`, with the
 foreign→local and local→foreign directions as the live controls for the records that are still needed.)
+
+#### ...but the POINTER-BOXING route needs none, and a whitebox-production operand still counts
+The rule above is about HOSTING, so it stops where hosting does. A record of the form `T` → `ж<T>` —
+the shared Go pointer-boxing route, and the corpus's dominant record family at **193 of the 268**
+`GoImplicitConv` records across the emitted `package_info.cs` files — hosts nothing at all:
+`ж<T>` is golib's generic box, no converted package declares it, and `ImplicitConvGenerator` looks the
+target up by struct declaration and `continue`s when it finds none. No host is ever chosen, so no phantom
+can be minted and no closed assembly can be mutated. `recordsRequireProductionMutation` already stated
+exactly this when deciding whether a white-box test project can keep the reference model; the predicate is
+now written once (`pointerBoxConversionRecord`) and both readers share it.
+
+That matters because of the second refinement. On the internal `-tests` variant go/packages merges the
+production files into the test package, so a production type's `obj.Pkg()` IS the converted package while
+its C# lives in the CLOSED referenced production assembly — which is why `typeDeclaredInConvertedPackage`
+subtracts such a declaration (`whiteboxProductionObject`; internal/reflectlite's `flag(typ.Kind())` minted
+a phantom `partial struct flag` in the test class, CS1061). Subtracting it for the pointer-boxing route as
+well was one notch too far: it silently shrank every white-box package's committed `package_test_info.cs`
+on regen. `crypto/rc4` lost its `Cipher` → `ж<Cipher>` record **and** the
+`using testing = go.testing_package;` qualifier alias that the same record site registers;
+`go/types` lost three (`Basic`, `Interface`, `Tuple`). Nothing catches it: CNR never runs
+`-tests`, and the records are inert in the generator, so the only symptom is a `-tests` regen that no
+longer reproduces committed bytes.
+
+`conversionRecordHasLocalOperand` therefore takes the record shape as an argument and readmits a
+WHITEBOX-PRODUCTION operand — and only that — when the record is the pointer-boxing route. A
+BOTH-FOREIGN pair stays declined exactly as the section above describes, which is what keeps the change a
+restoration rather than a widening: `go/types`' test conversion also reaches `types.Basic` → `ж<types.Basic>`
+and `ast.FuncType` → `ж<ast.FuncType>`, and those must not start recording. (Guarded by
+`TestWhiteboxProductionPointerBoxConvStillRecorded`, whose both-foreign arm is the boundary, and
+`TestPointerBoxConversionRecordShape` for the shared predicate; the numeric phantom keeps its own guard,
+`TestWhiteboxProductionNumericConvNotRecorded`.)
 
 ### Named-string wrapper surface (indexing, sub-slicing, span bridge)
 A named type over `string` is indexed and sub-sliced in Go (`tag[i]`, `tag[i:j]` -- reflect `StructTag.Get`), but C# indexing never applies user-defined conversions. The `InheritedType` template therefore forwards the `@string` surface on every named-string wrapper: `byte this[int]` / `byte this[nint]` indexers, a `Range` indexer returning the WRAPPER (a Go sub-slice of a named string keeps the named type), `nint Length` for `len()`, and an implicit `ReadOnlySpan<byte>` operator so `u8`-literal comparisons and assignments bind. Guarded by `NamedStringConversion`.

@@ -2924,7 +2924,7 @@ func (v *Visitor) applyImplicitConversion(funcType types.Type, arg ast.Expr, tar
 				// record emitted GoImplicitConv<Δindirect<K, V>, ж<Δindirect<K, V>>>, CS0246 x4
 				// - and one bad record kills the whole generator run).
 				if targetTypeName != argTypeName && !wrapperConversion && !typeContainsTypeParams(argType) && !typeContainsTypeParams(funcType) &&
-					v.conversionRecordHasLocalOperand(funcType, argType) {
+					v.conversionRecordHasLocalOperand(funcType, argType, pointerBoxConversionRecord(argTypeName, targetTypeName)) {
 					// The recorded conversion type names use cross-package import aliases (e.g.
 					// `abi.Type`); register them so package_info.cs can emit a resolving `global using`.
 					v.recordConversionPackageUsing(argType)
@@ -3001,7 +3001,7 @@ func (v *Visitor) applyImplicitConversion(funcType types.Type, arg ast.Expr, tar
 
 				argTypeName := v.getCSharpTypeName(argType)
 
-				if targetTypeName != argTypeName && v.conversionRecordHasLocalOperand(funcType, argType) {
+				if targetTypeName != argTypeName && v.conversionRecordHasLocalOperand(funcType, argType, false) {
 					// The recorded conversion type names use cross-package import aliases (e.g.
 					// `driver.IsolationLevel`); register them so package_info.cs emits a resolving
 					// `global using` — the STRUCT-conversion branch above already does this, but the
@@ -3060,8 +3060,72 @@ func (v *Visitor) applyImplicitConversion(funcType types.Type, arg ast.Expr, tar
 // just picks the other foreign one. Declining costs nothing — the call site emits the explicit
 // `(syscallꓸHandle)(uintptr)t` cast chain, which needs no generated operator, and an operator
 // between two foreign types could not be hosted in either of their assemblies from here anyway.
-func (v *Visitor) conversionRecordHasLocalOperand(funcType, argType types.Type) bool {
-	return v.typeDeclaredInConvertedPackage(funcType) || v.typeDeclaredInConvertedPackage(argType)
+//
+// The POINTER-BOXING route — `T` → `ж<T>` — is the one shape that needs no local operand, and it
+// takes the second arm. `ж<T>` is golib's generic box, which no converted package declares, so the
+// generator finds no struct declaration for the target and skips the record before it ever chooses a
+// host: it can neither mint a phantom nor extend the closed production assembly. That is the same
+// fact recordsRequireProductionMutation already states for the same shape, and
+// pointerBoxConversionRecord is now the one definition both read.
+//
+// Only a WHITEBOX-PRODUCTION operand is readmitted by that arm — a type this conversion genuinely
+// declares in Go, whose C# merely lives in the referenced production assembly. A both-FOREIGN pair
+// stays declined exactly as before: an operator between two foreign types has no home here whether
+// or not one would have been hosted.
+func (v *Visitor) conversionRecordHasLocalOperand(funcType, argType types.Type, pointerBoxRecord bool) bool {
+	if v.typeDeclaredInConvertedPackage(funcType) || v.typeDeclaredInConvertedPackage(argType) {
+		return true
+	}
+
+	// The pointer-BOXING route hosts nothing, so the phantom this predicate exists to prevent
+	// cannot arise and a whitebox-production operand still counts. See pointerBoxConversionRecord.
+	return pointerBoxRecord && (v.whiteboxProductionDeclaration(funcType) || v.whiteboxProductionDeclaration(argType))
+}
+
+// pointerBoxConversionRecord reports whether a recorded conversion pair is the shared Go
+// pointer-boxing route — a type to its own golib box, `T` → `ж<T>`. It is the ONE definition of that
+// shape:
+// conversionRecordHasLocalOperand reads it to know the record hosts no operator, and
+// recordsRequireProductionMutation reads it to know the record cannot mutate production.
+//
+// The `global::` root prefix is normalized off BOTH sides, preserving the normalization
+// recordsRequireProductionMutation already applied: the two names are composed at different points
+// (the source from the argument type, the box from the caller's own rendering of it), so the root
+// escape is a property of the spelling rather than of the pair.
+func pointerBoxConversionRecord(sourceTypeName, targetTypeName string) bool {
+	inner, boxed := strings.CutPrefix(targetTypeName, PointerPrefix+"<")
+
+	if !boxed {
+		return false
+	}
+
+	trimRoot := func(name string) string { return strings.TrimPrefix(name, "global::") }
+
+	return trimRoot(strings.TrimSuffix(inner, ">")) == trimRoot(sourceTypeName)
+}
+
+// whiteboxProductionDeclaration reports whether a named/aliased type is one the converted package
+// declares in GO but not in C# — a production declaration merged into the internal `-tests` variant
+// by go/packages, whose emitted type lives in the referenced production assembly. It is exactly the
+// case typeDeclaredInConvertedPackage subtracts, named separately so a caller that has established
+// no operator will be hosted can add it back rather than re-deriving the condition.
+func (v *Visitor) whiteboxProductionDeclaration(t types.Type) bool {
+	if t == nil || v.pkg == nil {
+		return false
+	}
+
+	var obj *types.TypeName
+
+	switch declared := t.(type) {
+	case *types.Named:
+		obj = declared.Obj()
+	case *types.Alias:
+		obj = declared.Obj()
+	default:
+		return false
+	}
+
+	return obj != nil && obj.Pkg() == v.pkg && v.whiteboxProductionObject(obj)
 }
 
 // typeDeclaredInConvertedPackage reports whether a named/aliased type is declared by the package

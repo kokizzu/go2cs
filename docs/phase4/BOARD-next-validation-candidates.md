@@ -15456,4 +15456,148 @@ design + the 3-row disclosure. It HOLDS its slot on the terminal path at that pr
 recorder design overruns, the substitute comes from the ranked queue via the measurement pass,
 not from re-litigating the class.
 
+## CLOSED (2026-08-20, lane `claude/readme-rc4-test-regen`) -- the badge residual takes the OTHER formulation, and the `-tests` record drop it surfaced is rooted
+
+Two items, both from the stale-badge lane's own findings.
+
+### 1. The one-run-behind residual closes at a SECOND emission point
+
+The gate half (`emitsPackageReadme`) could not reach this and said so: the README is composed during
+CONVERSION while the proof page its Tests badge reads is written at the END of the COMPARE, so a package
+whose counts CHANGE -- every fresh bank -- emitted one run behind. `refreshPackageReadmeAfterProof` now
+re-emits the README immediately after `emitValidationProofPage` writes the page.
+
+**The hazard the write-up named is closed by CONSTRUCTION, not by a mode check.** `-test-action
+build|run|compare` do not convert, so `packageDoc`/`packageSourceDir` are empty on those paths and a naive
+re-emission would write a doc-less README corpus-wide. The refresh therefore does not read those globals
+at all: the conversion-time write records what it composed the README from (`packageReadmeEmission`), and
+the refresh runs from that record or not at all -- **no conversion, no record, no write**. The record is
+taken INSIDE the `emitsPackageReadme` gate, so one decision governs both emission points, and the refresh
+additionally requires the record to name the package being compared (a record cannot level someone else's
+README).
+
+Measured, the gate half's own demonstration INVERTED. `docs/validation/current/hash.adler32.md` moved
+aside to simulate a fresh bank; ONE `-test-action all`:
+
+* validates 2 of 2, writes the page, and emits `Tests-2%2F2_validated-brightgreen` **in the same run** --
+  `git status` clean across `src/core`, i.e. byte-identical to the committed README (the previous
+  measurement left it reading `not_yet_validated` beside that same green page).
+* `-test-action compare` over a README replaced by a sentinel leaves it byte-for-byte identical
+  (md5 unchanged), and creates none after the file is deleted.
+
+Guards extend the gate half's family: `TestPackageReadmeRefreshFollowsInProcessConversionNotRunMode`
+beside `TestPackageReadmeEmissionFollowsPackageProvenanceNotRunMode`. Both arms proven failing-first --
+with the refresh removed the residual reproduces; with the NAIVE formulation (re-emit from the converter
+globals, no record) every hazard assertion fires at once, including the doc-less rewrite and the
+compare-only write.
+
+**Standing note for sweep readers.** `writeReadmeFile` is idempotent, so an unchanged package rewrites
+nothing and this opens no standing-restore family. The corollary: a `README.md` moving during a sweep now
+means that package's validation counts moved. Read it as a finding, not as dirt.
+
+### 2. The `-tests` `package_test_info.cs` regen drop is `e61758549`, one notch too wide
+
+Reproduced on both cases. A `-tests` regen of `crypto/rc4` dropped TWO records --
+`[assembly: GoImplicitConv<...rc4_package.Cipher, ж<...rc4_package.Cipher>>(Indirect = true)]` and
+`using testing = go.testing_package;` -- and of `go/types` dropped THREE (`Basic`, `Interface`, `Tuple`).
+One root explains both, and it explains why the two rc4 lines travel together: they are emitted by the
+SAME record site, which calls `recordConversionPackageUsing` on both operands as it records the pair.
+
+The site is `applyImplicitConversion`'s struct arm, reached because the argument loop applies the call's
+FIRST parameter type to every argument: `testEncrypt(t, desc, c, ...)` pairs `*testing.T` (param 0) with
+`*Cipher` (arg 2) and records the harmless pointer-boxing pair `Cipher` -> `ж<Cipher>`, registering
+`testing` as the qualifier alias on the way past.
+
+`e61758549` (2026-08-18) widened `typeDeclaredInConvertedPackage` to subtract a WHITEBOX-PRODUCTION
+declaration, to stop internal/reflectlite's `flag(typ.Kind())` minting a phantom `partial struct flag`
+in the test class (CS1061). That reasoning is about HOSTING an operator, and it is right for a numeric
+record. It is one notch too wide for the pointer-boxing route, which hosts nothing at all:
+`ImplicitConvGenerator` looks the target up by struct declaration, finds none for golib's `ж<T>`, and
+`continue`s before choosing a host. `recordsRequireProductionMutation` already stated exactly that for
+the same shape; the predicate is now written once (`pointerBoxConversionRecord`) and both read it.
+
+**Why this is a defect of scope and not settled semantics**, stated so it is cheap to overrule:
+
+* the record is INERT in the only consumer -- `ImplicitConvGenerator` is the sole reader of
+  `GoImplicitConv`, and it skips a `ж<T>` target -- so restoring it cannot re-open the phantom;
+* the phantom `e61758549` fixed is a NUMERIC record, untouched here and still guarded by
+  `TestWhiteboxProductionNumericConvNotRecorded`;
+* production conversions record the same shape everywhere in the corpus -- it is the DOMINANT family,
+  **193 of the 268** `GoImplicitConv` records across the emitted `package_info.cs` files -- so the
+  whitebox `-tests` path had become inconsistent with production for a shape inert in both;
+* nothing gates it. CNR never runs `-tests`, and `e61758549`'s own gates (CNR + a seeded whole-stdlib
+  reconvert) cannot see a `package_test_info.cs`. The only symptom is a `-tests` regen that stops
+  reproducing committed bytes -- which is how it was found.
+
+**The boundary the fix must not cross, and does not.** BOTH-FOREIGN pairs stay declined, exactly as the
+os `syscall.Handle` precedent had them before the whitebox exclusion existed. `go/types` alone reaches
+nine of those (`types.Basic`, `ast.FuncType`, `token.FileSet`, ...); admitting the pointer-box shape
+unconditionally would have ADDED records rather than restored them. Only a whitebox-production operand is
+readmitted, which is why the regen lands on the committed bytes exactly.
+
+Gate: `-tests -test-action convert` over `crypto/rc4` -- `package_test_info.cs` byte-identical to
+committed, whole-package `git status` clean. `go/types` likewise, its only remaining movers the documented
+families (`package_init.cs` `initᴛᴛtests()` at +7 real lines, twelve CRLF-phantom `*_test.cs`), restored.
+Guards `TestWhiteboxProductionPointerBoxConvStillRecorded` (three arms: the record, the qualifier alias it
+carries, and the both-foreign boundary) and `TestPointerBoxConversionRecordShape`, each proven
+failing-first by neutering the exemption away and then over-broad in turn.
+
+### Blast radius, MEASURED -- three of seven, and they are banked here
+
+Seven packages had a `package_test_info.cs` written between `e61758549` and this fix, so each could hold
+the shrunken form. Regenerated one by one: FOUR are unaffected (`debug/elf`, `encoding/json`,
+`internal/reflectlite`, `text/template` -- the site is not reached, or the package is not white-box
+reference), and THREE were **first banked inside that window**, so they were born short and now regen
+LARGER:
+
+| package | restored by the fix |
+|:--|:--|
+| `crypto/tls` | six pointer-box records (`Config`, `QUICConfig`, `clientHelloMsg`, `serverHelloDoneMsg`, `serverHelloMsg`, `ΔConnectionState`) |
+| `encoding/xml` | `Decoder`, plus the `testing` qualifier alias in BOTH anchor files |
+| `html/template` | `parse.TextNode` -- a DIRECT record, not Indirect -- plus the `parse` alias in both |
+
+Those five files are banked with the converter fix rather than left behind. Not banking them would make
+every future sweep of those three packages report drift that is neither a CRLF phantom, nor a closure
+re-emission, nor an init hook -- precisely the *stop and root-cause it* class, on three packages,
+indefinitely. Each re-validated at its banked count with the records in place: `encoding/xml` **386**,
+`html/template` **243**, `crypto/tls` **400 + 2 disclosed**. Every other mover was the documented family
+(CRLF phantoms, the `initᴛᴛtests()` hook at +7 real lines, the proof page's volatile date/commit line) and
+was restored, not banked.
+
+The positive control is the same census read the other way: `go/types` was banked BEFORE the window, and
+its `package_test_info.cs` reproduces committed bytes exactly under the fix.
+
+## ✅ CAPTURED (2026-08-20, lane `claude/readme-rc4-test-regen`) -- the LIVE shape-(b) proof for `TestBogoSuite`'s host-conditional pin, off the opportunistic standing instruction
+
+The bogo lane closed with this open: *"NOT obtained: the live shape-(b) proof ... Whoever next meets a red
+`crypto/tls` whose C# side is unmoved should keep that run's `go2cs_test_comparison.json` rather than
+restoring past it."* The `crypto/tls` re-validation this lane owed for the rebank above is that run, on a
+laptop (Ryzen 7 PRO 6850U) where Go's own BoGo baseline went red.
+
+Measured, `-tests -test-action all -test-timeout 20m`, exit 0:
+
+| | reading |
+|:--|:--|
+| `TestBogoSuite` | Go **fail** / C# **fail** -- agreement on FAILURE, which an UNANNOTATED disclosure never satisfies |
+| Go side fan-out | reached it: **3,242** `TestBogoSuite/…` children |
+| annotated root | ROOTED them -- all 3,242 `withdrawn`, **zero** left as one-sided mismatches |
+| rows | 402 Go / 402 C# |
+| verdict | `status: validated`, `matched: true`, `errors: 0`, disclosed = `TestBogoSuite` + `TestCertCache` |
+| roster row | **400 matched · 2 disclosed** -- unmoved |
+
+The fan-out line is the load-bearing one the ruling flagged: shape (b) is *precisely* the shape in which
+the Go side reaches its case expansion, so an annotated root that failed to root would have left 3,242
+one-sided rows and failed the package. It rooted. Together with the bogo lane's own shape-(a) canary (the
+machinery proved INERT there) the proof matrix is now complete on both arms, live.
+
+The run's comparison artifact is banked verbatim as
+[`evidence-crypto.tls-shape-b.json`](evidence-crypto.tls-shape-b.json) -- it is normally git-ignored under
+`src/core`, and it is not reproducible on demand (the board records the Go baseline as nondeterministic
+across consecutive runs on one machine), so keeping it was the instruction. Delete it if the record is
+wanted in prose only.
+
+The proof PAGE was restored, not banked: the committed `docs/validation/current/crypto.tls.md` states
+shape (a), and the annotation exists so the roster's number never has to move with the host that last ran
+it.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
