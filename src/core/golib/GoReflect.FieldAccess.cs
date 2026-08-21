@@ -559,12 +559,21 @@ public static partial class GoReflect
         return key;
     }
 
+    /// <summary>
+    /// The name prefix every reflect-built field accessor carries. It is a CONTRACT, not a label:
+    /// <c>ж&lt;T&gt;.PointerOrderToken</c> reads the field name back off the delegate to look up the
+    /// field's Go offset, so that a field pointer reached through reflect and the same field pointer
+    /// reached through converted code (which arrives under the generated <c>Ꮡ&lt;field&gt;</c>
+    /// spelling) resolve to ONE offset and therefore token alike.
+    /// </summary>
+    internal const string FieldAccessorPrefix = "goref_";
+
     // DynamicMethod: (object box) => ref ((ж<S>)box).ValueSlot.path... — each plain step is an
     // ldflda; a box-hop step loads the ж<E> reference and re-enters through ITS ValueSlot.
     private static Delegate buildFieldAccessor(Type boxType, GoFieldInfo field)
     {
         DynamicMethod method = new(
-            name: $"goref_{field.Name}",
+            name: $"{FieldAccessorPrefix}{field.Name}",
             returnType: field.Type.MakeByRefType(),
             parameterTypes: [typeof(object)],
             m: typeof(GoReflect).Module,
