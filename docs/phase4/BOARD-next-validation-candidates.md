@@ -15400,4 +15400,60 @@ it takes the same treatment: restored, recorded, and NOT levelled inside another
    passing an empty slice where Go passes nil) — all unchanged.
 
 The `array<T>` LENGTH class leaves the standing-chip census; nothing joins it.
+
+## RULING x2 -- sync/atomic's alignment row closes as a FIX (the token becomes layout-truthful), and `runtime-capability` is minted as the fifth class with WriteHeapDump as its only member (coordinator, 2026-08-20)
+
+Both held rulings, delivered together because they are the same charter question worked from
+opposite ends: *when a managed runtime cannot hand a test what it asks for, is that a disclosure
+or a defect?* The bar stays where host-limit put it -- a disclosure names what is provably
+unsatisfiable, never what is unimplemented -- and each ruling below is that bar applied once.
+
+### A. `TestAutoAligned64`'s pointer half: the identity token gains ALIGNMENT-TRUTHFUL construction. No fifth class; the row closes as a fix.
+
+The row-harvest-3 rooting is accepted: `Value.Pointer()` is `reflectPointerToken`, an identity
+token, not an address. But the assertion's semantic content is Go's align64 GUARANTEE -- a layout
+invariant the model genuinely honors (the atomics ARE atomic, and `StructField.Offset` already
+answers from the memoized `GoFieldOffsets` walk). A token whose LOW BITS mirror the Go-computed
+layout -- mint bases 8-aligned, derive a field's token as base plus its Go field offset -- answers
+`p & 7` from the SAME metadata that answers `Offset`: truth read from layout metadata, not a
+memory property fabricated. This is compatible with `FINDING-managed-box-uintptr-lifetime` as
+written: the token stays non-dereferenceable and lifetime-free; it merely stops carrying
+accidental low-bit noise that contradicts an invariant Go states and the model keeps. The lane
+that takes it owns the construction details and must measure token-distinctness is preserved.
+
+Ratified alongside, from the same rooting: the hammer family (`TestHammer32`/`64`,
+`TestHammerStoreLoad`) is the **zero-size-field LAYOUT EMISSION arc** -- explicit layout with
+Go-computed offsets for structs containing zero-size fields; `Reinterpret`'s size guard is correct
+and must not be relaxed. And `RecordGoroutinePanic`'s 693 MB serialization death is a bounded
+harness-robustness fix (cap the record), queued -- it costs 72 verdicts on hosts where containment
+loses the timing race, which is a false host-dependence the harness owes nobody.
+
+`sync/atomic`'s full price to bank: the token construction (1 row) + the layout arc (3 rows).
+
+### B. `runtime/debug`: the fifth class exists, and it admits ONE of the three capability roots.
+
+**`runtime-capability`** -- a test exercises a runtime facility whose output or behavior is
+DEFINED over the replaced runtime's own internals (type descriptors, heap layout, GC bookkeeping),
+such that any managed rendering would be fabrication rather than implementation. The admission
+test is one question: *does a truthful managed implementation of the asserted behavior exist at
+any cost?* If yes, it is an arc with a price, never a disclosure.
+
+Applied to the three roots the runtime-debug lane ranked:
+- **`WriteHeapDump` (3 verdicts) -- ADMITTED.** Go's dump format is defined over Go's type
+  descriptors describing a Go heap; the heap a managed build would describe is not one. No
+  truthful form exists at any cost. Anti-laundering clause, binding: the disclosure pins the rows
+  AS FAILING -- the tests assert only `size >= 1`, and writing a fake byte to pass that vacuous
+  assert is forbidden by this class's own text.
+- **`HeapReleased` (1) and the per-GC pause history (1) -- REFUSED.** Both have truthful managed
+  forms (the cumulative `TotalCommittedBytes` decrease; a gen2-callback recorder capturing real
+  pause facts). They are priced together as the **ReadMemStats measurement-surface design** -- one
+  arc, one recorder, both facts from it -- and queued, not disclosed.
+
+The class joins the roster preamble WITH the first banking commit that uses it (exactly as
+`chan-direction` did), not before. `runtime/debug`'s full price to bank: the position-map arc
+(multi-consumer -- `log`, `log/slog`, `flag` and this package all pin it) + the ReadMemStats
+design + the 3-row disclosure. It HOLDS its slot on the terminal path at that price; if the
+recorder design overruns, the substitute comes from the ranked queue via the measurement pass,
+not from re-litigating the class.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
