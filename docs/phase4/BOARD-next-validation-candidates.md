@@ -16985,6 +16985,36 @@ direct-import derivation (`runtime`: 53 banked rows, largest `go/internal/gcimpo
 `crypto/rsa` 559, `go/types` 557, `encoding/json` 491, `crypto/tls` 400) and the board's own
 frame-file blast radius (12 rows / 1,539 verdicts) are both proper subsets of what ran.
 
+### Post-merge gates, at the MERGE RESULT
+
+The lane-tip proof above is necessary and not sufficient — the tls-regression rule. `claude/union-157`
+(`42282b2aa`, row #159 `sync/atomic`) merged in; both conflicts resolved by UNION, and the roster
+arithmetic recomposed from the union rather than from either side: **161 / 215 = 74.9%, 18,565
+matching verdicts, 80 disclosed**, checked by summing the 161 rows rather than by trusting the header.
+
+| Gate (post-merge) | Result |
+|:--|:--|
+| `go2cs-stdlib.slnx`, merged corpus, `--no-incremental` | **0 errors**, 466 s |
+| own row `flag` | **PASS 24** |
+| own row `log` (filter also swept `log/slog/internal/benchmarks` 3, `testing/slogtest` 17) | **PASS 8 / 3 / 3 pass, 0 fail** |
+| the merge's own new row `sync/atomic` | **PASS 108** — and re-validated through the pipeline at 108 / 1 skipped-identically / 0 divergent |
+| reflect canary `go/types` | **PASS 557** |
+| reflect canary `encoding/json` | **PASS 491** |
+| reflect canary `crypto/tls` | **PASS 400** |
+| reflect canary `encoding/xml` | **PASS 386** |
+| reflect canary `html/template` | **PASS 243** |
+
+The canary set is DERIVED at gate time, not remembered: the merge touches
+`src/core/golib/GoReflect.FieldAccess.cs`, which is reflect-bridge-touching, so the set is the five
+largest banked `reflect` consumers by verdict count over THIS tree's 161-row roster (64 rows qualify).
+It differs from the list `CLAUDE.md` records — `go/internal/gcimporter` (583, the largest row overall)
+is absent because it imports `reflect` nowhere — which is exactly why the rule says derive rather than
+carry.
+
+⚠ `sync/atomic` needs a budget above the pipeline's 2-minute default: at the default its suite
+self-terminates and reports `Go="pass" C#=""` for eighteen tests, which reads precisely like total
+conversion failure and is not one. Validated at `-test-timeout 15m`, swept at `-TestTimeout 20m`.
+
 ### A doctrine point the merge produced: a MERGE of a mapped file invalidates its map
 
 Worth its own line because it generalizes past this arc. The map is a DERIVED artifact of the
