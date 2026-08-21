@@ -15827,5 +15827,125 @@ flaps within hours of each other: R's during the tls test-info re-validation (fa
 canary sweep (same shape, same arithmetic). R banked the irreproducible comparison artifact at
 `docs/phase4/evidence-crypto.tls-shape-b.json`. The opportunistic-capture standing instruction
 has paid out in full; nothing about the pin remains unproven.
+## MEASUREMENT PASS (2026-08-20, lane `claude/measure-queue-panic-cap`) -- six near-miss candidates repriced: `net/mail` VALIDATES at zero price, `math/big` is 224 verdicts behind one arc already commissioned
 
+Ruling x2 left a fallback clause without a source: *"if the recorder design overruns, the substitute
+comes from the ranked queue via the measurement pass, not from re-litigating the class."* This is that
+pass. **No fixes were made and nothing was banked** -- a fix inside a measurement lane un-controls the
+measurement, and taking a row is the coordinator's call, not a measurer's.
+
+### Why these six, and why the queue needed re-measuring at all
+
+The ranked near-miss census is dated **2026-08-16**, and it is stale by construction: three of its own
+"0 of N" rows have BANKED since (`text/template` 0 of 52, `html/template` 0 of 243, `encoding/xml` 0 of
+386 are now rows 155-157). Selection was therefore "closest in that census, and not re-measured since",
+which is the board's own standing lesson from the 23-package breadth bank -- *re-scout the tail after any
+capability lands, not only the packages that capability names.* Each was run `-tests -test-action all`,
+artifact kept, tree restored.
+
+### The priced ranking
+
+| package | rows | matched | divergent | residual root | class | price to bank |
+|:--|--:|--:|--:|:--|:--|:--|
+| **`net/mail`** | 11 | **11** | **0** | -- | -- | **ZERO** -- the banking commit itself |
+| **`math/big`** | 226 | 224 | 2 | `TestNewIntAllocs`; `TestMulUnbalanced` | `alloc-count-semantics`; **open** | 1 disclosure + the ReadMemStats arc (already commissioned) |
+| **`net/http/internal`** | 10 | 9 | 1 | `TestChunkReaderAllocs` 2/run vs 1 | `alloc-count-semantics` | **1 disclosure**, no converter work |
+| `crypto/cipher` | 14 | 13 | 1 | `TestGCMAsm` SKIPS where Go passes | **none of the five fits** | a RULING first; then 0 or an arc |
+| `debug/pe` | 10 | 9 | 1 | reinterpret cannot re-length a managed array | not disclosable | rides the LAYOUT arc (commissioned) |
+| `log` | 9 | 7 | 2 | `TestAll` source position; `TestDiscard` 3/run vs 0 | -- ; `alloc-count-semantics` | the position-map arc (commissioned) + 1 disclosure |
+
+Excluded declarations are the ordinary deferred Example/Benchmark set in every row (`math/big` 67
+benchmarks + 14 examples + 1 fuzz, `crypto/cipher` 9 + 10, `log` 5 + 2). One exclusion is NOT of that
+kind and is named for the record: `math/big`'s **`TestCalibrate`** is excluded-disclosed as requiring
+`B.ResetTimer`, a capability gap the harness already handles per-declaration.
+
+### The two that move the terminal path
+
+**`net/mail` validates 11 of 11, exit 0.** It stood at **7 of 11** in the 2026-08-16 census, the four
+`TestAddress*` rows infrastructure-erroring on `System.ArgumentException: Indices low, high and max
+represent a range outside bounds of the array reference` -- a three-index slice-bounds root. That root is
+GONE. It was dissolved by an intervening arc and this lane does **not** attribute which one (attributing
+it would need a bisect, and the measurement is the deliverable). Nothing is disclosed, nothing is owed:
+the price is the banking commit.
+
+**`math/big` reproduces 224 of 226 exactly** -- the r58b pair, unmoved, on a third independent
+measurement. It is by a wide margin the largest row available anywhere on the near-miss queue, and its
+two residuals are NOT equal in price:
+
+* `TestNewIntAllocs` -- 100 counted allocations over 100 runs = **1 object/run against Go's want-zero**.
+  Textbook `alloc-count-semantics`, the shim's own message verbatim. One manifest entry.
+* `TestMulUnbalanced` -- **`allocSize` ratio 51 against Go's bound of 10** (20,493,720 bytes over a
+  400,320-byte input). The test reads `runtime.MemStats.TotalAlloc` around one multiplication, and the
+  managed `ReadMemStats` answers that field TRUTHFULLY today --
+  `System.GC.GetTotalAllocatedBytes(precise: false)` (`runtime/managed_impl.cs`). So this is NOT a stub
+  row. Two candidate roots remain and this lane did not separate them:
+  1. the converted `nat.mul` genuinely allocates ~5x what Go's does (temporaries in the Karatsuba path);
+  2. `GetTotalAllocatedBytes(precise: false)` is PROCESS-WIDE and unsynchronized, so the window catches
+     other threads' allocations where Go's `GOMAXPROCS(1)` window catches almost none.
+
+  The discriminator is cheap and it sits **inside the ReadMemStats measurement-surface design Ruling B
+  already commissioned** for `runtime/debug`'s `HeapReleased` and pause history: make the read precise,
+  then see whether the row still fails. If it does not, `math/big` costs ONE disclosure -- **224 verdicts
+  for a manifest entry**, the best price-per-verdict on the board.
+
+### `crypto/cipher` is a CLASS question, not a defect -- recorded for a ruling, not self-ruled
+
+`TestGCMAsm` builds two AEADs, one via the assembly path and one generic, and **skips itself** when
+`reflect.TypeOf(asm) == reflect.TypeOf(generic)` -- Go's own designed behavior on a platform with no
+distinct assembly GCM. The converted corpus has exactly one GCM implementation, so the C# side takes the
+skip branch **the Go source defines**. Go on windows/amd64 has the asm path, runs the body and passes.
+The row is Go `pass` / C# `skip`: agreement with Go's INTENT, disagreement with Go's VERDICT.
+
+Against the five classes: not `host-limit` (the host can do it), not `alloc-count-semantics`, not
+`chan-direction` (retired), not `codegen-liveness`. **`runtime-capability` REFUSES it by its own
+admission test** -- a truthful managed second implementation exists at a cost, so it is an arc with a
+price. But naming that arc is naming "build a second GCM whose only consumer is a differential test",
+which is a strange thing to buy. The honest options a coordinator has are: rule the source-defined
+platform skip as skip-parity (price 0, row banks at 13 + 1 skip), or accept it as an arc. This lane
+declines to choose.
+
+### `debug/pe` is the layout arc wearing different clothes
+
+`TestReadCOFFSymbolAuxInfo` reads back `COFFSymbolAuxFormat5._` -- declared `[3]uint8` in Go and emitted
+correctly as `new(3)` -- with **8** elements. Eight is exactly the length of the SOURCE struct's
+`COFFSymbol.Name [8]uint8`, and the site is
+`Ꮡsym.Reinterpret<COFFSymbol, COFFSymbolAuxFormat5>()`. A managed `array<T>` is a REFERENCE carrying its
+own length, so a reinterpret cannot re-length it and the destination field ends up holding the source's
+array. Go's reinterpret is exact there (both structs are 18 bytes).
+
+Same family as `sync/atomic`'s hammer rows -- *the C# struct is not the Go struct's bytes* -- which
+Ruling A commissioned as the **zero-size-field LAYOUT EMISSION arc** (explicit layout with Go-computed
+offsets). Not disclosable: a truthful managed form exists, and it is that arc. `debug/pe` rides it, or
+takes a one-file hand-own of its symbol reader.
+
+### The ranking, as a selection
+
+If `runtime/debug` (#161) holds its slot at the price Ruling B set, nothing here displaces it. If it
+overruns, the substitutes in order are:
+
+1. **`net/mail`** -- 11 verdicts, price zero, bankable the day someone takes it.
+2. **`net/http/internal`** -- 9 + 1 disclosed, price one manifest entry in an existing class.
+3. **`math/big`** -- 224 verdicts, the largest row on the queue, priced at one disclosure IF the
+   ReadMemStats arc lands (which #161 is already buying). Taking #161 and `math/big` together is the
+   highest-verdict pairing available.
+
+`log` is the sleeper: at 7 of 9 its price is the position-map arc plus one disclosure, and that arc is
+ALREADY a prerequisite of both #161 (`runtime/debug`) and #162 (`flag`). Whoever lands it should expect
+`log` to fall out nearly free, and should re-measure `log/slog` (153 of 213 at last count) in the same
+pass for the same reason.
+
+### What this lane did NOT do, stated plainly
+
+* **Banked nothing.** `net/mail` validates and its proof page was written by the run; the page and every
+  test artifact were REMOVED, not committed. Banking is a row-taking act and the brief was the ranking.
+* **Fixed nothing.** Six packages measured against an unmodified converter, so every count above is
+  comparable to every other count on this board.
+* **Did not attribute `net/mail`'s recovery** to a specific arc, and did not separate
+  `TestMulUnbalanced`'s two candidate roots. Both are named above with their discriminators.
+* **Did not re-measure the queue's own rows** (`encoding/gob`, `net/netip`, `sync/atomic`,
+  `runtime/debug`, `flag`) -- three are in flight and two are freshly ruled.
+
+Standing dirt, classified and RESTORED, nothing unclassified: `math/big`'s `doc.cs`/`prime.cs` (CRLF
+phantoms, empty numstat) and its `package_init.cs` (+7 real lines, the `initᴛᴛtests()` hook -- the fourth
+`-tests`-closure shape CLAUDE.md names).
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

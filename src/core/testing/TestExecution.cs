@@ -70,6 +70,26 @@ public sealed class TestExecution
     // the same headroom the code was written against.
     private const int TestThreadStackSize = 1024 * 1024 * 1024;
 
+    // A test's log output is a diagnostic, and a diagnostic nobody can read is not one. These two
+    // bounds are what stop a runaway test from turning its own output into the thing that kills the
+    // host: MaxLogCharacters bounds what ONE execution accumulates, MaxRecordCharacters bounds any
+    // single record within it, so neither a storm of small records nor one pathological record can
+    // grow the report without limit.
+    //
+    // Both sit far above any real test's output (Go's own suites report bytes to kilobytes) and far
+    // below what breaks a consumer. That gap is not theoretical: System.Text.Json refuses a value
+    // near 700 MB, which is exactly how sync/atomic's TestHammerStoreLoad killed this host — a
+    // late-goroutine Fatalf storm drove m_logs to a 693 MB join, the join went OutOfMemory inside
+    // the fatal path, and the run lost 72 of 108 verdicts because the process died instead of
+    // reporting them. Whether the storm won that race was HOST-DEPENDENT, so the package read
+    // 104/108 on one machine and 35/108 on another — a false host-dependence the harness owes
+    // nobody (coordinator Ruling A, 2026-08-20, which queued this as a bounded robustness fix).
+    internal const int MaxLogCharacters = 1 << 20;
+
+    internal const int MaxRecordCharacters = 1 << 16;
+
+    internal const string RecordTruncatedSuffix = " [record truncated]";
+
     // The test a goroutine belongs to. Set on the test's own thread, it flows into every goroutine
     // that thread starts (and into theirs, transitively) because ThreadPool.QueueUserWorkItem —
     // golib's goroutine dispatch — captures the ExecutionContext an AsyncLocal lives in.
@@ -82,6 +102,8 @@ public sealed class TestExecution
     private readonly List<string> m_logs = [];
     private readonly Dictionary<string, int> m_subtestNames = new(StringComparer.Ordinal);
     private readonly ManualResetEventSlim m_parallelGate = new(false);
+    private int m_logCharacters;
+    private int m_logsDropped;
     private int m_ownerThread;
     private int m_tempDirSequence;
     private bool m_parallel;
@@ -202,7 +224,7 @@ public sealed class TestExecution
         {
             if (m_finished)
                 throw new InvalidOperationException($"Log called after {Name} completed");
-            m_logs.Add(text.TrimEnd('\r', '\n'));
+            AppendLog(text.TrimEnd('\r', '\n'));
         }
     }
 
@@ -231,7 +253,7 @@ public sealed class TestExecution
             if (m_finished || m_measurementUnitNoted)
                 return;
             m_measurementUnitNoted = true;
-            m_logs.Add(note);
+            AppendLog(note);
         }
     }
 
@@ -445,7 +467,7 @@ public sealed class TestExecution
             if (!completed)
             {
                 InfrastructureFailed = true;
-                m_logs.Add(message);
+                AppendLog(message);
             }
         }
 
@@ -487,10 +509,10 @@ public sealed class TestExecution
                 // killed mid-test, so nothing else will ever report this execution.
                 m_finished = true;
                 m_failed = true;
-                m_logs.Add(message);
+                AppendLog(message, terminal: true);
             }
 
-            output = string.Join(Environment.NewLine, m_logs);
+            output = LogOutput();
         }
 
         if (completed)
@@ -502,6 +524,60 @@ public sealed class TestExecution
         m_parent?.FailFromChild();
         m_runner.Report(new TestEvent(m_runner.Package, Name, "fail", 0.0D, output, Source, Line));
         m_runner.Completed(this);
+    }
+
+    /// <summary>
+    /// Appends one record to this execution's log, bounded. Callers must hold <c>m_syncRoot</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Truncation keeps the HEAD, deliberately. A disclosure is matched by a <c>Contains</c> over
+    /// this very text (testConversion.go's signature matching), and the message a signature pins is
+    /// the FIRST failure — so dropping the tail of a storm keeps every signature that could ever
+    /// have matched, while dropping the head would silently unpin disclosed rows.
+    /// </para>
+    /// <para>
+    /// <paramref name="terminal"/> marks the one record the head-keeping policy must not apply to:
+    /// the goroutine-panic report is appended LAST and is the whole reason the report is being
+    /// built at all. It still passes <see cref="MaxRecordCharacters"/>, so the worst case stays
+    /// bounded at the aggregate plus one record plus the notice.
+    /// </para>
+    /// </remarks>
+    private void AppendLog(string text, bool terminal = false)
+    {
+        if (text.Length > MaxRecordCharacters)
+            text = string.Concat(text.AsSpan(0, MaxRecordCharacters), RecordTruncatedSuffix);
+
+        if (!terminal && m_logCharacters >= MaxLogCharacters)
+        {
+            m_logsDropped++;
+            return;
+        }
+
+        m_logs.Add(text);
+        m_logCharacters += text.Length + Environment.NewLine.Length;
+    }
+
+    /// <summary>
+    /// This execution's log as one string — null when it logged nothing, and stating its own
+    /// truncation when the cap dropped anything. Callers must hold <c>m_syncRoot</c>.
+    /// </summary>
+    /// <remarks>
+    /// The notice is part of the output rather than a side channel because the output is what every
+    /// consumer sees: a reader diagnosing a failure, and results.json. A truncated report that does
+    /// not say so is worse than a long one.
+    /// </remarks>
+    private string? LogOutput()
+    {
+        if (m_logs.Count == 0)
+            return null;
+
+        string output = string.Join(Environment.NewLine, m_logs);
+
+        if (m_logsDropped == 0)
+            return output;
+
+        return $"{output}{Environment.NewLine}testing: {m_logsDropped} further log record(s) dropped after {MaxLogCharacters} characters";
     }
 
     private void Execute(Action<ж<testing_package.T>> action)
@@ -571,7 +647,7 @@ public sealed class TestExecution
             string terminal = InfrastructureFailed ? "infrastructure-error" : Failed ? "fail" : Skipped ? "skip" : "pass";
             string? output;
             lock (m_syncRoot)
-                output = m_logs.Count == 0 ? null : string.Join(Environment.NewLine, m_logs);
+                output = LogOutput();
 
             m_runner.Report(new TestEvent(m_runner.Package, Name, terminal, timer.Elapsed.TotalSeconds, output, Source, Line));
             m_runner.Completed(this);
@@ -600,14 +676,14 @@ public sealed class TestExecution
             catch (Exception ex) when (RuntimeErrorPanic.TryAsPanic(ex, out PanicException? panic))
             {
                 lock (m_syncRoot)
-                    m_logs.Add($"cleanup panic: {panic!.Message}\n{panic.StackTrace}");
+                    AppendLog($"cleanup panic: {panic!.Message}\n{panic.StackTrace}");
                 FailFromInfrastructure();
             }
             catch (Exception ex)
             {
                 InfrastructureFailed = true;
                 lock (m_syncRoot)
-                    m_logs.Add($"cleanup failed: {ex}");
+                    AppendLog($"cleanup failed: {ex}");
                 FailFromInfrastructure();
             }
         }
@@ -657,7 +733,7 @@ public sealed class TestExecution
             if (!completed)
             {
                 InfrastructureFailed = true;
-                m_logs.Add(message);
+                AppendLog(message);
             }
         }
 

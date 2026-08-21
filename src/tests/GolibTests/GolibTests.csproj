@@ -35,6 +35,11 @@
          GOROOT, not reachable from a behavioral test). Binding a converted package from an MSTest
          tier follows GenericTests, which references core/sort. -->
     <ProjectReference Include="..\..\core\vendor\golang.org\x\crypto\sha3\vendor.golang.org.x.crypto.sha3.csproj" />
+
+    <!-- TestExecutionOutputCapTests: same reason, one tier up. The hand-owned Phase-4 test HOST has
+         no _test.go anywhere and no behavioral test can reach it — a converted suite exercises it
+         only by being run, which is exactly the path a robustness guard must not depend on. -->
+    <ProjectReference Include="..\..\core\testing\testing.csproj" />
   </ItemGroup>
 
 </Project>
