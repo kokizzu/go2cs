@@ -16609,4 +16609,96 @@ which is itself the merge-result evidence, since a banking merge owes its own ro
 lane's row declines to bank. The corpus is restored: the `-tests` artifacts are removed and
 `type.cs.auto` — the review sibling a `-tests` run refreshes and an overlay does not — is restored
 rather than banked, per CleanupBacklog item 18.
+
+## ✅ BANKED — `sync/atomic` validates **108/108 + 0** as row #159; the residual was the `uintptr → unsafe.Pointer → uintptr` round-trip, and closing it closes a GC-invisible dangling-reference hazard with it (2026-08-21, lane `claude/unsafe-pointer-roundtrip`)
+
+The atomic-align-layout entries left this row at 107 of 108 full-pipeline with the residual rooted:
+`TestHammerStoreLoad` failing `Pointer: 0 != N` (`v = N << 32`), proven FOREIGN to the alignment arc
+by control, invariant named — `v & 0xFFFFFFFF == v >> 32` must survive the round-trip. This lane
+closed that root. The re-run validates: **108 go / 108 C# / 108 matched / 0 disclosed / 0 errors**,
+`status: validated`, with `TestAutoAligned64`, `TestHammer32`, `TestHammer64` and
+`TestHammerStoreLoad` all passing both sides in one run.
+
+### The mechanism, exactly
+
+`TestHammerStoreLoad` reinterprets one shared `uint64` as `*unsafe.Pointer` (and as
+`*atomic.Pointer[byte]`) and hammers fabricated pointer VALUES through the atomic entry points —
+Go's own comment: *"write barriers on values that aren't real pointers."* Emitted, the reinterpret
+is `(ж<@unsafe.Pointer>)(uintptr)(paddr)`: a **native-backed box whose pointee is a managed
+CLASS**. For such a box `ref addr.Value` is `Unsafe.AsRef<Pointer>((void*)A)` — the slot
+reinterpreted as a CLR **reference** slot. Two consequences, each sufficient alone:
+
+* **The number never enters the slot.** `StorePointer` wrote the Pointer BOX's reference; the
+  stored value lived one indirection away, in an object nothing traced.
+* **The reference is invisible to the GC.** The slot is pinned `uint64[]` storage — never scanned —
+  so the stored box is collectible the moment the store returns, and the next load resurrects a
+  dangling reference. Under the loop's own allocation pressure gen0 recycles within milliseconds;
+  the storm's orderly `vhi − vlo = D` arithmetic is one corrupt read seeding otherwise-healthy
+  increments. (Go's `debug.SetGCPercent(-1)` cannot protect a managed host, and now nothing needs
+  it to.)
+
+### The fix: the slot holds the pointer's VALUE
+
+Go's semantics for that memory are unambiguous — the 8 bytes hold the pointer's value. The managed
+model cannot express that through `ref Value` (no `ref Pointer` can alias a number slot), so every
+ACCESS converts number ↔ box at the entry point, where the pointee type is known:
+
+| Layer | Change |
+|:--|:--|
+| **golib `ж<T>`** | `IsNative`/`NativeAddress` go PUBLIC as the discriminator (the seam documented the same way `ManagedPointerTokens` is — a runtime seam, not a Go surface), plus three atomic pointer-word accessors (`ReadPointerWord`, `ExchangePointerWord`, `CompareExchangePointerWord`). The one `unsafe` seam stays in golib: converter-emitted csproj compiles with `AllowUnsafeBlocks=false`, so the consumers could not host it |
+| **`sync/atomic` non-generic** (`doc_impl.cs`) | `LoadPointer`/`StorePointer`/`SwapPointer`/`CompareAndSwapPointer` branch on `IsNative`: word ops on the slot, `(uintptr)p` reading a Pointer's number nil-safely, `new Pointer(n)` marking the zero address nil — so nil round-trips exactly |
+| **`sync/atomic` `Pointer<T>` methods** (`type.cs`, hand-owned) | `Load`/`Store`/`Swap`/`CompareAndSwap` branch identically; the mint `(ж<T>)(uintptr)n` is the same conversion the emitted reinterpret itself uses. Managed arms all unchanged |
+
+CAS on the native arm compares NUMBERS — which is Go's comparison for `unsafe.Pointer` and the
+answer `Pointer.Equals` already gives, so no comparison surface moved.
+
+### The Fable-class check the assignment demanded: none of the three settled things bends
+
+* **`FINDING-managed-box-uintptr-lifetime`** — untouched. No token is minted differently, no
+  lifetime rule changes; the fix is about SLOT CONTENT below the token layer. The uintptr → ж
+  conversion (token resolve, then native box) is exactly as documented; this arc consumes it.
+* **The alignment-truthful token construction** — untouched, and re-proven in the same run
+  (`TestAutoAligned64` green beside the hammer rows).
+* **`Pointer.PointerOrderToken` equality/hash/ordering across its ~875 mint sites** — untouched: no
+  member of `Pointer` changed at all.
+
+No doctrine amendment was needed; the fix lands BELOW the doctrine, at the boundary where raw
+memory meets the managed pointer model. **The write-up ratified in advance**: the entry stands on
+measurements only.
+
+### Guards, proven failing-first
+
+`GolibTests.NativePointerSlotAtomicsTests`, six tests: the slot-content assert (store, then read the
+aliased storage back through its own managed box — DETERMINISTIC, no collector timing), the
+across-a-collection round-trip, Swap/CAS by number, nil as the zero word, the `Pointer<T>` method
+arm, and a single-threaded mini-hammer with forced collections. Neutered (the eight entry-point
+arms stashed; golib accessors left in place), **4 of 6 fail** — the four deterministic ones. The two
+GC-shaped ones pass neutered because the test's own locals root the stored box — recorded here so
+nobody reads them as the failing-first proof; the slot-content assert is.
+
+### ROOTED, NOT TAKEN: the managed arm of `CompareAndSwapPointer` CASes by REFERENCE and reports by VALUE
+
+`Interlocked.CompareExchange(ref addr.Value, @new, old) == old` over a MANAGED `*unsafe.Pointer`
+slot: the CAS matches by reference, but the `==` verdict runs `Pointer.Equals` — by value. A
+re-minted box holding the current number therefore FAILS the exchange and REPORTS success: a silent
+lost CAS. Nothing banked reaches it (the managed arms are exercised and green through `sync`,
+`sync/atomic` and every `atomic.Value` consumer), it is plainly fixable (a value-compare CAS loop
+over the reference slot), so it is not disclosable — it is priced here for a follow-on and
+deliberately not smuggled into a banking commit at zero coverage.
+
+### Gates and arithmetic
+
+Full pipeline `-test-action all` **validated, exit 0** — proof page
+`docs/validation/current/sync.atomic.md`, the validation index, and the package README's Tests
+badge all emitted by the validating run itself · GolibTests full · `go2cs.slnx` Debug
+`--no-incremental` · full behavioral suite · own-row sweep at the merge-result discipline's lane
+half · six reflect-consumer canaries derived at gate time by DIRECT IMPORT against this tree's
+159-row roster (`go/types` 557, `encoding/json` 491, `crypto/tls` 400 + 2, `encoding/xml` 386,
+`html/template` 243, `time` 159; `gcimporter` absent by derivation) · committed test sources per the
+validated-package policy · `type.cs.auto` RESTORED not banked (the review sibling, CleanupBacklog
+18) · no converter change, no corpus regen, no `package_info.cs` record moved — no CNR and no
+`go generate` owed.
+
+**Roster: 158 → 159 of 215 (74.0%) · 18,425 → 18,533 matching · 79 disclosed.** Header recomputed
+from the table, not incremented.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

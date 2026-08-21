@@ -119,8 +119,23 @@ private static ж<T> nilCanon<T>(ж<T> p){
     return p is null || p.IsNilPointer ? default! : p;
 }
 
+// A NATIVE-backed ж<Pointer<T>> is the hammer family's `(*Pointer[byte])(unsafe.Pointer(&val))`
+// reinterpret over a uint64: the box aliases raw pinned storage, and Go's semantics for those 8
+// bytes are the POINTER'S VALUE (possibly a fabricated number — the test's own comment says
+// "values that aren't real pointers"). Dereferencing the box as a Pointer<T> struct would read
+// the word as a managed ж<T> REFERENCE — the number is lost and an untraced reference lands in
+// memory the GC never scans (measured: TestHammerStoreLoad's Method arm, the same
+// `Pointer: 0 != N` shape as the function arm). So each method's native arm goes through golib's
+// atomic pointer-word accessors and converts number ↔ box at the boundary: `(uintptr)Ꮡp` answers a
+// ж<T>'s number nil-safely (a native box answers its exact address, nil answers 0), and
+// `(ж<T>)(uintptr)n` minting is the same conversion the emitted reinterpret itself uses — a zero
+// word minting the nil-marked box, so nil round-trips exactly. The managed arms are unchanged.
+
 // Load atomically loads and returns the value stored in x.
 public static ж<T> Load<T>(this ж<Pointer<T>> Ꮡx){
+    if (Ꮡx.IsNative)
+        return (ж<T>)(uintptr)Ꮡx.ReadPointerWord();
+
     ref var x = ref Ꮡx.Value;
 
     return Volatile.Read(ref x.v);
@@ -128,6 +143,11 @@ public static ж<T> Load<T>(this ж<Pointer<T>> Ꮡx){
 
 // Store atomically stores val into x.
 public static void Store<T>(this ж<Pointer<T>> Ꮡx, ж<T> Ꮡval){
+    if (Ꮡx.IsNative) {
+        Ꮡx.ExchangePointerWord(((uintptr)Ꮡval).Value);
+        return;
+    }
+
     ref var x = ref Ꮡx.Value;
 
     Volatile.Write(ref x.v, nilCanon(Ꮡval));
@@ -135,6 +155,9 @@ public static void Store<T>(this ж<Pointer<T>> Ꮡx, ж<T> Ꮡval){
 
 // Swap atomically stores new into x and returns the previous value.
 public static ж<T> /*old*/ Swap<T>(this ж<Pointer<T>> Ꮡx, ж<T> Ꮡnew){
+    if (Ꮡx.IsNative)
+        return (ж<T>)(uintptr)Ꮡx.ExchangePointerWord(((uintptr)Ꮡnew).Value);
+
     ref var x = ref Ꮡx.Value;
 
     return Interlocked.Exchange(ref x.v, nilCanon(Ꮡnew));
@@ -142,6 +165,11 @@ public static ж<T> /*old*/ Swap<T>(this ж<Pointer<T>> Ꮡx, ж<T> Ꮡnew){
 
 // CompareAndSwap executes the compare-and-swap operation for x.
 public static bool /*swapped*/ CompareAndSwap<T>(this ж<Pointer<T>> Ꮡx, ж<T> Ꮡold, ж<T> Ꮡnew){
+    // Native arm: the slot holds the pointer's VALUE, so the CAS compares NUMBERS — Go's own
+    // pointer comparison, and nil (word 0) participates exactly.
+    if (Ꮡx.IsNative)
+        return Ꮡx.CompareExchangePointerWord(((uintptr)Ꮡold).Value, ((uintptr)Ꮡnew).Value);
+
     ref var x = ref Ꮡx.Value;
 
     ж<T> old = nilCanon(Ꮡold);

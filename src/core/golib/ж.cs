@@ -14,6 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using go.golib;
 
 [assembly:InternalsVisibleTo("unsafe")]
@@ -365,12 +366,63 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// Gets a flag indicating whether this pointer ALIASES a native address rather than managed
     /// storage — see the <c>m_nativeAddr</c> field.
     /// </summary>
-    internal bool IsNative => m_nativeAddr != 0;
+    /// <remarks>
+    /// PUBLIC because it is the discriminator for the one case a pointee type cannot express: a
+    /// native-backed <c>ж&lt;T&gt;</c> whose T is a MANAGED type (<c>unsafe.Pointer</c>,
+    /// <c>atomic.Pointer&lt;T&gt;</c>) aliases raw storage that cannot hold a managed reference, so
+    /// every access must convert number ↔ box at the boundary instead of dereferencing — see the
+    /// pointer-word accessors below and their consumers in <c>sync/atomic</c>'s hand-owned
+    /// implementation. Like <see cref="ManagedPointerTokens"/>, this is a runtime seam, not part of
+    /// any Go surface.
+    /// </remarks>
+    public bool IsNative => m_nativeAddr != 0;
 
     /// <summary>
     /// Gets the native address this pointer aliases, or zero when it is an ordinary managed box.
     /// </summary>
-    internal nuint NativeAddress => m_nativeAddr;
+    public nuint NativeAddress => m_nativeAddr;
+
+    // ---- POINTER-WORD ACCESS — the native slot as a Go pointer VALUE ------------------------------
+    //
+    // A native-backed ж<T> whose T is a MANAGED type is the reinterpret the hammer family performs:
+    // `(*unsafe.Pointer)(unsafe.Pointer(&val))` over a uint64. Go's semantics for that memory are
+    // unambiguous — the 8 bytes hold the POINTER'S VALUE (an address, possibly a fabricated number;
+    // Go's own test comments say "values that aren't real pointers"). The managed model has exactly
+    // one wrong alternative, and it is what `ref Value` produces for such a box: reinterpreting the
+    // slot as a CLR REFERENCE slot. That both loses the number (the slot then holds a box's identity,
+    // not the pointer's value) and plants a managed reference in memory the GC does not scan — the
+    // referenced box is collectible the moment the store returns, so the next load resurrects a
+    // dangling reference (measured: sync/atomic's TestHammerStoreLoad, `Pointer: 0 != N` at ~16k
+    // iterations — gen0 recycling under the loop's own allocation pressure).
+    //
+    // These three accessors are that boundary done right: the slot is read and written as the
+    // pointer-sized WORD it is, atomically (Go's LoadPointer/StorePointer contract), and the
+    // number ↔ box conversion happens in the caller, where the pointee type is known. They are
+    // meaningful ONLY for a native-backed box — callers branch on IsNative — and they live here
+    // rather than in the consumer because the converter-emitted csproj compiles converted packages
+    // with AllowUnsafeBlocks=false: the one unsafe seam stays in golib.
+    //
+    // The word is 64 bits by the same authority every layout answer in this runtime already rests
+    // on: the corpus is converted against `types.SizesFor("gc", "amd64")`, so a Go pointer is 8
+    // bytes wherever this runtime runs it.
+
+    /// <summary>Atomically reads the pointer-sized word a NATIVE-backed box aliases (acquire semantics).</summary>
+    public unsafe nuint ReadPointerWord()
+    {
+        return (nuint)Volatile.Read(ref *(ulong*)m_nativeAddr);
+    }
+
+    /// <summary>Atomically exchanges the pointer-sized word a NATIVE-backed box aliases, returning the previous word.</summary>
+    public unsafe nuint ExchangePointerWord(nuint value)
+    {
+        return (nuint)Interlocked.Exchange(ref *(ulong*)m_nativeAddr, value);
+    }
+
+    /// <summary>Atomically compare-and-swaps the pointer-sized word a NATIVE-backed box aliases.</summary>
+    public unsafe bool CompareExchangePointerWord(nuint old, nuint @new)
+    {
+        return Interlocked.CompareExchange(ref *(ulong*)m_nativeAddr, @new, old) == old;
+    }
 
     /// <summary>
     /// Gets a flag indicating whether this is a nil <em>standard</em> pointer — a plain heap pointer

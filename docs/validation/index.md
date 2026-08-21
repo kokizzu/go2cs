@@ -157,6 +157,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `strconv` | [`strconv.md`](current/strconv.md) | [`src/core/strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) |
 | `strings` | [`strings.md`](current/strings.md) | [`src/core/strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strings) |
 | `sync` | [`sync.md`](current/sync.md) | [`src/core/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) |
+| `sync/atomic` | [`sync.atomic.md`](current/sync.atomic.md) | [`src/core/sync/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync/atomic) |
 | `syscall` | [`syscall.md`](current/syscall.md) | [`src/core/syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall) |
 | `testing/iotest` | [`testing.iotest.md`](current/testing.iotest.md) | [`src/core/testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) |
 | `testing/quick` | [`testing.quick.md`](current/testing.quick.md) | [`src/core/testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) |
