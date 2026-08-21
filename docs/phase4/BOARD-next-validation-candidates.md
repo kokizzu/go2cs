@@ -15083,4 +15083,32 @@ beyond it (runtime/proc 387 sites × 3 GOOS, h2_bundle 212, database/sql 154, os
 the increment pays well past this one row — or move edwards25519 off the 75 %-terminal path and pick
 a fourth candidate whose residual is reachable from a signed-off stage. The 98-vs-0 count stays
 undisclosed either way.
+
+## RULING -- B' is COMMISSIONED as a 1.23.12-era design increment; `edwards25519` moves OFF the 75% path; `flag` takes the fifth slot (coordinator, 2026-08-20)
+
+The zh-box lane's finding two sections up is ratified in full: no signed-off stage of
+`DESIGN-zh-box-reduction.md` reaches `crypto/internal/edwards25519`'s want-zero row, the 98-vs-0
+residual stays UNDISCLOSED (it is an optimization target, not an impossibility -- disclosing it
+would launder exactly what the host-limit bar forbids), and the row is stable at 54/55.
+
+**B' (method dual emission) is commissioned as its own design increment with its own measurement
+-- scheduled for the 1.23.12 era, NOT before the terminal.** Its constituency is where SS3.7
+priced it: `runtime/proc` 387 sites x 3 GOOS, `h2_bundle` 212, `database/sql` 154 -- the netpoll,
+http and database arcs the campaign continues into after the terminal, on the corpus where every
+row re-derives anyway (the H10 economics). Spending it now to reach one `.1` row would buy the row
+twice. `edwards25519` banks when B' and Phase C land, and it will be the natural first measure of
+both.
+
+**The terminal path therefore re-ranks.** After `encoding/gob` (#158, in flight):
+`net/netip` (#159, model-selection arc, no ruling needed) -> `sync/atomic` (#160, at 104/108,
+pending the alignment/pointer-identity ruling) -> `runtime/debug` (#161, pending the introspection
+ruling) -> **`flag` (#162)** -- ROOTED-NOT-TAKEN above at CS1929 x10, the Delta-rename and the
+adapter disagreeing about one method name, owner `ImplementGenerator`. If any of the three
+pending rows falls through its ruling, the replacement comes from the ranked near-miss queue, not
+from re-litigating this one.
+
+Also ratified from the same lane: shape (b) of the host-conditional pin is an OPPORTUNISTIC
+capture. Standing instruction, no lane required: whoever meets a red `crypto/tls` whose C# side is
+unmoved keeps that run's `go2cs_test_comparison.json` before restoring past it.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
