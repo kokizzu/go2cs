@@ -16701,4 +16701,86 @@ validated-package policy · `type.cs.auto` RESTORED not banked (the review sibli
 
 **Roster: 158 → 159 of 215 (74.0%) · 18,425 → 18,533 matching · 79 disclosed.** Header recomputed
 from the table, not incremented.
+
+## 🐧 MEASURED — the Linux operational-parity census: the fleet has a Linux lane again, the FIRST TWO rows ever VALIDATE on Linux, the native stdlib build is 0 errors, and every failure roots to a KNOWN class (2026-08-21, lane `claude/linux-parity-census`, laptop G + WSL2)
+
+The assignment: stand up a Linux lane, run the instrument ladder, census what runs, what fails,
+and what each failure roots to — platform gap vs harness gap vs corpus gap — priced per
+`PLAN-linux-operation.md`'s F-series. All of that is below, and the headline outruns the
+assignment: **the Phase-4 differential pipeline, which F1 recorded as "structurally unavailable"
+on Linux, validated two banked rows end to end** — the L3 corpus quietly retired the premise.
+
+### The lane, and why it had to be rebuilt at all
+
+The plan's provisioned distro (F15 ✅, the r47a recipe; r48b's measured ladder) ran on a 24-CPU
+WSL2 host — the **i9-13900K's** signature, the machine that died 2026-08-09. Every Linux number in
+the plan was an orphaned baseline; nothing in the fleet could run the ladder. This lane rebuilt it
+on laptop G, collaboratively (the human ran the elevated `wsl --install -d Ubuntu-22.04` and one
+process unstick; everything after was scripted):
+
+- **WSL 2.7.12 / Ubuntu 22.04, NO reboot** — build 26200's MSIX path avoided the restart entirely
+  (virtualization was already on in firmware). One trap for the next installer: `wsl --install`'s
+  post-registration OOBE launches an INTERACTIVE console that, headless, sits invisibly at the
+  create-a-user prompt **holding the WSL service transaction** — every later `wsl` command,
+  `--terminate` included, queues behind it with no diagnostic. Kill the installer processes; the
+  distro is already registered, and `-u root` bypasses user creation permanently.
+- **F15 re-provisioning: ~4 minutes**, user-space per the recipe — Go **1.23.1** (pinned), .NET
+  SDK **9.0.317**, pwsh **7.5.4**, fresh clone onto ext4 at master `d3e7a61e9`.
+- **The F2 pin re-verified on the platform it was written for**: `core.autocrlf` unset (Linux git
+  default) and `src/core/fmt/print.cs` still materializes **CRLF** — the `.gitattributes eol=crlf`
+  pin governs the checkout exactly as designed. Zero false drift.
+
+### The ladder — five rungs, ~24 minutes total, every verdict classified
+
+| Rung | Result | Classification |
+|:--|:--|:--|
+| **1 · converter `go test ./...`** | **ok, 79.7 s, full suite** — natively | no gap; ~1.8× FASTER than the same suite on the Windows side of this laptop |
+| **2 · `check-no-regression.ps1`** | **byte-identical for 625 of 631**; 6 NOT MEASURED | 1 by design (`FindFirstFileData`, the plan's own note) + **5 new members of the same class** — see the F8 growth below. Platform gap, priced |
+| **3 · `go2cs-stdlib.slnx -p:GoTargetOS=linux`, NATIVE host** | **0 errors, 149 warnings, ~7.9 min** | no gap — **the first native-Linux compile of the full 307-project converted stdlib in the project's history.** The Windows-host control run the same day: 0 errors, **149 warnings** — the warning count matches exactly |
+| **4 · behavioral shard (34 `Array*` projects, all four phases)** | first attempt: apphost `libhostfxr` not found → **one-line harness gap** (`DOTNET_ROOT`); retry: **24 of 34 fully green including Output**, 10 fail `exit code C# 2 vs Go 0` | the 10 root to **F1, self-diagnosed**: `TypeInitializationException` → `os_package → internal/poll → syscall → DllNotFoundException("kernel32.dll")` — the windows-flavor corpus on a linux host, with the corpus's own RID-fallback WARNING banner printing the situation AND the remedy. The 24 passers print the same banner and survive: their init path never touches `os_package`. **F1's blast radius is program-init-reaches-os, not all-programs** — materially narrower than the plan's "all 515 stdout comparisons fault" |
+| **5 · validated-sweep shard** | **`unicode/utf8` PASS 14/14 (92 s) · `container/heap` PASS 7/7** | **the first Phase-4 rows ever validated on Linux.** The full differential pipeline — convert on a Linux host, build against the corpus, run under the Go-semantics test host, compare verdict-for-verdict with `go test` — end to end, twice. (`container/heap`'s first attempt failed CS0246 without `DOTNET_ROOT`; with it, clean — same one-line harness gap as rung 4, two instruments confirmed unblocked by one export) |
+
+### The one F-series repricing this census forces: F8's set is SIX, not two
+
+The five new conversion-time NOT MEASURED packages are all guards the **Windows syscall arcs**
+added after r48b's baseline, each dated to its creating commit: `PointerOutParameter`
+(`07d41538b`, the `**T` out-parameter cell), `SockaddrRoundTrip` (`1f641dade`, the L10 blittable
+seam), `SystemCertVerify` (`cac5455a7`, the CryptoAPI chain), `WsaProtocolInfo` (`0e9c34bf1`, the
+WSAPROTOCOL_INFOW mirror), plus `UnsafeStringEmpty` (same symptom; provenance traces only to the
+casing commit `d3223d252` — confirm its root when gating). This is the expected shape of the
+campaign's own progress: every new Windows-semantic guard is a new F8 member. The gating work F8
+priced should enumerate from CNR's NOT MEASURED list at gate time, not from a frozen list of two.
+
+### What the census says the parity rung actually costs
+
+Materially LESS than the plan priced, because two of its walls fell to other arcs in the interim:
+
+1. **F1 is half-retired by measurement.** The corpus compiles natively (rung 3), pure-compute
+   rows VALIDATE (rung 5), and the failing class self-diagnoses with its remedy. What remains of
+   F1 is plumbing, not architecture: the behavioral runner and the sweep need to bind the
+   `GoTargetOS=linux` corpus on a linux host (today a plain Debug build binds the windows
+   default — the banner's own instruction), and the syscall-backed rows need the netpoll-arc
+   Linux halves measured row by row. **Measure, don't assume** held: nobody predicted two rows
+   would validate today.
+2. **One harness line**: `DOTNET_ROOT` must be exported wherever the SDK lives outside the
+   default location — apphosts (BehavioralRunner, the built test programs, sweep children) do
+   not resolve the runtime from `PATH`. Two instruments proven unblocked by the one export.
+   Belongs beside `$IsWindowsHost` in `_paths.ps1`'s documentation or the lane-setup recipe.
+3. **The F15 recipe is current and fast** (~4 min user-space on a fresh distro), with the OOBE
+   transaction-lock trap above as its one new footnote.
+
+No fixes landed beyond the sanctioned one-line unblock (an env var in the lane's own scripts);
+the corpus, converter, golib and harness are all untouched by this lane — the deliverable is this
+census. The Windows-host `GoTargetOS=linux` control build (0 errors, 380 s, run before the distro
+existed) stands as the cross-host pair to rung 3.
+
+### The next rung, sized by this census
+
+A Linux lane that VALIDATES banked rows exists today at the cost of: one `DOTNET_ROOT` export +
+`-u root` + the F15 recipe. The ordered work to widen it: (a) teach the two runners the
+`GoTargetOS` host default (or a flag) so behavioral Output and syscall-adjacent sweeps bind the
+linux corpus; (b) re-enumerate F8's gating set from CNR at gate time (6 today); (c) sweep the
+banked roster's pure-compute rows on Linux wholesale — rung 5 suggests a large fraction validates
+as-is, which would make the eventual "Linux-validated" column a measurement campaign, not a
+porting one.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
