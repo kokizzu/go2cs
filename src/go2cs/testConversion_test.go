@@ -7,6 +7,7 @@
 package main
 
 import (
+	"go/ast"
 	"go/build"
 	"go/token"
 	"go/types"
@@ -685,6 +686,196 @@ func TestRecordsRequireProductionMutationGatesWhiteboxModel(t *testing.T) {
 	numericConversions["value_package.Source"]["value_package.Target"] = "int64"
 	if !recordsRequireProductionMutation("value_package", "value") {
 		t.Fatal("a numeric conversion between two closed production types must fall back")
+	}
+}
+
+// TestNominalProductionConstraintForcesRecompile pins the model-selection rule net/netip's
+// `fuzz_test.go` is the corpus's first instance of: a generic function whose type parameter is
+// constrained by a TEST-declared interface, instantiated with a PRODUCTION type, cannot be served by
+// the white-box reference model.
+//
+// The reference model's premise is that interface-implementation records RELOCATE — a production
+// struct is foreign to the test compilation, so go2cs-gen emits an adapter class in the test anchor
+// rather than a partial production struct. An adapter serves interface BOXING. It cannot serve a
+// nominal `where P : netipTypeCmp`, which C# checks against the type ARGUMENT itself: only the
+// argument's own base list can satisfy it, and only a partial declaration can add to that, and a
+// type closed inside a referenced assembly admits no partial. netip is CS0315 five times for exactly
+// this reason, and the answer is to take the recompile model, where production is local and the
+// partial is legal.
+//
+// The pair is fed through constraintProxySigArg — the real instantiation path, the same one
+// renderedTypeArgs drives at emission — so the guard pins that the recording happens where every
+// instantiation form actually routes, not merely that the predicate computes.
+func TestNominalProductionConstraintForcesRecompile(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads a module fixture through go/packages")
+	}
+
+	dir := t.TempDir()
+
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/nominal\n\ngo 1.23\n",
+		"value.go": "package nominal\n\n" +
+			"type Addr struct{ n int }\n\n" +
+			"func (a Addr) String() string { return \"addr\" }\n\n" +
+			"func (a Addr) IsValid() bool  { return a.n != 0 }\n\n" +
+			// A PRODUCTION-declared constraint interface: a real member of the referenced
+			// assembly, and the production compilation's own business.
+			"type Named interface{ String() string }\n",
+		"fuzz_test.go": "package nominal_test\n\n" +
+			"import . \"example/nominal\"\n\n" +
+			// netip's netipTypeCmp shape: comparable embedded beside a real method set.
+			"type cmp interface {\n\tcomparable\n\tString() string\n\tIsValid() bool\n}\n\n" +
+			// A TEST-declared struct satisfies the same constraint locally — nothing to relocate.
+			"type local struct{ n int }\n\n" +
+			"func (l local) String() string { return \"local\" }\n\n" +
+			"func (l local) IsValid() bool  { return l.n != 0 }\n\n" +
+			"func check[P cmp](x P) bool { return x.IsValid() }\n\n" +
+			"func checkNamed[P Named](x P) string { return x.String() }\n\n" +
+			"func use() {\n\t_ = check(Addr{})\n\t_ = check(local{})\n\t_ = checkNamed(Addr{})\n}\n",
+	})
+
+	_, external := loadTestVariantsForDir(t, dir)
+
+	if external == nil {
+		t.Fatal("fixture must load the external test variant")
+	}
+
+	// The generic call sites, by the name each instantiates.
+	calls := map[string]*ast.Ident{}
+
+	for _, file := range external.Syntax {
+		ast.Inspect(file, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+
+			if !ok {
+				return true
+			}
+
+			if ident, ok := call.Fun.(*ast.Ident); ok {
+				if _, instantiated := external.TypesInfo.Instances[ident]; instantiated {
+					calls[ident.Name+"|"+types.ExprString(call.Args[0])] = ident
+				}
+			}
+
+			return true
+		})
+	}
+
+	for _, want := range []string{"check|Addr{}", "check|local{}", "checkNamed|Addr{}"} {
+		if calls[want] == nil {
+			t.Fatalf("fixture is inert: no instantiated call %q was found", want)
+		}
+	}
+
+	whiteboxOptions := Options{
+		testWhiteboxReference: true,
+		testExternalVariant:   true,
+		testProductionPath:    "example/nominal",
+	}
+
+	record := func(t *testing.T, callKey string, options Options) bool {
+		t.Helper()
+
+		packageLock.Lock()
+		nominalProductionConstraints = HashSet[string]{}
+		packageLock.Unlock()
+
+		ident := calls[callKey]
+		v := &Visitor{fset: external.Fset, pkg: external.Types, info: external.TypesInfo, options: options}
+		v.constraintProxySigArg(ident, external.TypesInfo.Instances[ident].TypeArgs, 0)
+
+		return nominalConstraintsRequireProductionMutation()
+	}
+
+	// The rule: a production type argument under a test-declared method-set constraint.
+	if !record(t, "check|Addr{}", whiteboxOptions) {
+		t.Error("a production type argument bound to a test-declared constraint must force the recompile model")
+	}
+
+	// …and every clause that must hold it back. Each is a distinct reason the reference model
+	// still serves the suite, and a fallback taken for any of them would be a needless model
+	// downgrade — the recompile model is the one with the split-identity failure mode.
+	for _, tc := range []struct {
+		name    string
+		callKey string
+		options Options
+	}{
+		{
+			name:    "a TEST-declared type argument, whose partial is legal in this compilation",
+			callKey: "check|local{}",
+			options: whiteboxOptions,
+		},
+		{
+			name:    "a PRODUCTION-declared constraint, which the production compilation records itself",
+			callKey: "checkNamed|Addr{}",
+			options: whiteboxOptions,
+		},
+		{
+			name:    "the RECOMPILE model, which is already the fallback and has no reference to escape",
+			callKey: "check|Addr{}",
+			options: Options{testExternalVariant: true, testPackagePath: "example/nominal"},
+		},
+	} {
+		if record(t, tc.callKey, tc.options) {
+			t.Errorf("%s: must not force the recompile model", tc.name)
+		}
+	}
+}
+
+// TestVariantOptionsMarkExternalUnderEveryModel pins the flag that tells a converting variant it is
+// the EXTERNAL test half. It is a fact about the sources, not about the model, and it was set only
+// for the white-box reference model until net/netip took the recompile fallback: the external half
+// still composed Go's `netip.AddrDetail` package qualification, testDeclaredAliasSpelledBare could
+// not see it was the external variant, and the package's last error was the CS0426 that spelling
+// produces. Setting it under white-box alone reproduces exactly that.
+//
+// The bridge overrides move the other way and stay white-box-only — they name the friend-assembly
+// class that owns internal test declarations, which the other two models do not have.
+func TestVariantOptionsMarkExternalUnderEveryModel(t *testing.T) {
+	for _, model := range []testProjectModel{testProjectRecompile, testProjectWhiteboxReference, testProjectReference} {
+		external := testVariantOptions(Options{}, model, true, "bridge")
+
+		if !external.testExternalVariant {
+			t.Errorf("%s: the external variant must be marked under every model", model)
+		}
+
+		if external.testClassNameOverride != "" || external.testInlineTypeAccess {
+			t.Errorf("%s: the external variant never takes the internal bridge overrides", model)
+		}
+
+		internal := testVariantOptions(Options{}, model, false, "bridge")
+
+		if internal.testExternalVariant {
+			t.Errorf("%s: the internal variant must not be marked external", model)
+		}
+
+		wantBridge := model == testProjectWhiteboxReference
+
+		if (internal.testClassNameOverride == "bridge") != wantBridge || internal.testInlineTypeAccess != wantBridge {
+			t.Errorf("%s: internal bridge overrides = (%q, %v), want applied=%v",
+				model, internal.testClassNameOverride, internal.testInlineTypeAccess, wantBridge)
+		}
+	}
+}
+
+// TestPackageUnderTestPathFollowsTheModel pins the accessor the two rules above share. The reference
+// models clear the self-import binding and retain the path in testProductionPath; a recompile
+// conversion keeps the binding, so the path stays in testPackagePath. Reading either field alone
+// answers "" under the other model — which is how the netip fix first failed to fire.
+func TestPackageUnderTestPathFollowsTheModel(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		options Options
+		want    string
+	}{
+		{"reference models retain testProductionPath", Options{testProductionPath: "net/netip"}, "net/netip"},
+		{"recompile keeps the self-import binding", Options{testPackagePath: "net/netip"}, "net/netip"},
+		{"a production conversion has neither", Options{}, ""},
+	} {
+		if got := tc.options.packageUnderTestPath(); got != tc.want {
+			t.Errorf("%s: packageUnderTestPath() = %q, want %q", tc.name, got, tc.want)
+		}
 	}
 }
 

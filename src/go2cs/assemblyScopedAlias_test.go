@@ -515,10 +515,14 @@ func TestUnexportedProductionTypeReachedThroughWrappers(t *testing.T) {
 // arm beside it.
 //
 // An alias a `_test.go` file DECLARES emits its own `global using AddrDetail = …` into the test
-// assembly, so the internal half needs no seeding. But the assembly has TWO variant classes, and the
-// EXTERNAL one reaches the alias by PACKAGE QUALIFICATION, because Go says `netip.AddrDetail` —
-// `export_test.go` is part of package netip during a test build. A `global using` is a member of no
-// class, so that spelling is CS0426.
+// assembly, so the internal half needs no seeding. But the assembly has more than one variant class,
+// and the EXTERNAL one reaches the alias by PACKAGE QUALIFICATION, because Go says
+// `netip.AddrDetail` — `export_test.go` is part of package netip during a test build. A `global
+// using` is a member of no class, so that spelling is CS0426.
+//
+// The rule is MODEL-INDEPENDENT and this guard pins BOTH arms. Its first version required the
+// white-box reference model and listed recompile as a case that must NOT fire; netip disproved that
+// by taking recompile to satisfy a nominal constraint and landing on the identical CS0426.
 //
 // The predicate is guarded rather than the emitted text because the qualified spelling depends on
 // which file-local package aliases a real conversion happens to register, and no minimal fixture
@@ -571,9 +575,38 @@ func TestTestDeclaredAliasSpelledBare(t *testing.T) {
 
 	v := &Visitor{fset: internal.Fset, options: external}
 
-	// The rule itself: the test-declared alias is spelled bare.
-	if name, bare := v.testDeclaredAliasSpelledBare(lookup("AddrDetail")); !bare || name != "AddrDetail" {
-		t.Errorf("a test-declared alias must be spelled bare from the external variant, got (%q, %v)", name, bare)
+	// The rule itself: the test-declared alias is spelled bare — under BOTH models that reach this
+	// arm. The white-box reference model was the only one the rule's first version served; netip
+	// measured the recompile arm carrying the identical CS0426, because what makes the qualified
+	// spelling invalid is that a `global using` is a member of no class, not where production lives.
+	for _, tc := range []struct {
+		name    string
+		options Options
+	}{
+		{
+			name: "white-box reference: production is a referenced assembly",
+			options: Options{
+				testWhiteboxReference: true,
+				testExternalVariant:   true,
+				testProductionPath:    "example/extalias",
+			},
+		},
+		{
+			// A recompile conversion keeps the self-import binding, so the package under test
+			// lives in testPackagePath and testProductionPath is EMPTY — modelling it with the
+			// reference models' field would pass for the wrong reason and pin nothing.
+			name: "recompile: production, internal and external are ONE compilation",
+			options: Options{
+				testExternalVariant: true,
+				testPackagePath:     "example/extalias",
+			},
+		},
+	} {
+		vm := &Visitor{fset: internal.Fset, options: tc.options}
+
+		if name, bare := vm.testDeclaredAliasSpelledBare(lookup("AddrDetail")); !bare || name != "AddrDetail" {
+			t.Errorf("%s: a test-declared alias must be spelled bare from the external variant, got (%q, %v)", tc.name, name, bare)
+		}
 	}
 
 	// …and every clause that must hold it back.
@@ -598,8 +631,8 @@ func TestTestDeclaredAliasSpelledBare(t *testing.T) {
 			typ:     lookup("AddrDetail"),
 		},
 		{
-			name:    "the RECOMPILE model, where production is not a separate assembly",
-			visitor: &Visitor{fset: internal.Fset, options: Options{testExternalVariant: true, testProductionPath: "example/extalias"}},
+			name:    "a PRODUCTION conversion, which is no test variant at all",
+			visitor: &Visitor{fset: internal.Fset, options: Options{testExternalVariant: true}},
 			typ:     lookup("AddrDetail"),
 		},
 		{

@@ -15600,4 +15600,199 @@ The proof PAGE was restored, not banked: the committed `docs/validation/current/
 shape (a), and the annotation exists so the roster's number never has to move with the host that last ran
 it.
 
+
+## ⛔ `net/netip`'s STRUCTURAL WALL FALLS — 0 of 267 → **210 of 267** on a two-move model-selection arc — but the package does NOT bank: all 57 residuals are ONE root, allocation behavior, and **zero of them are disclosable** (2026-08-20, lane `claude/banking-net-netip`)
+
+The board handed this row on as "#159, model-selection arc, no ruling needed", with the wall named
+exactly right: *"x509 needs the REFERENCE model to avoid a split identity, and netip's `fuzz_test.go`
+needs the RECOMPILE model to satisfy a nominal constraint. One package, one model, and no model
+serves both files."* The first half of that is now closed — netip takes recompile, the suite builds
+and runs, and 210 of its 267 verdicts agree with `go test`. The second half is where the row stops,
+and it stops on a bar this campaign has already ruled twice.
+
+### The baseline is one root, not two — the recorded pair is already half closed
+
+Re-measured on this base before any change: **5 errors, all CS0315**, in `fuzz_test.cs` only. The
+xml-netip-alias entry recorded "7 in 2 roots"; its CS0019 half (`^uint64(0) &^ 1` keeping C#'s `int`)
+closed at `144c60d2b` — `uint128_test.cs` now emits `~(uint64)1` and the pair is gone. So the wall
+this lane met was the structural root alone.
+
+### The rule: an adapter serves interface BOXING, never a nominal CONSTRAINT
+
+`checkStringParseRoundTrip[P netipTypeCmp]` is called with `Addr`, `AddrPort` and `Prefix` — all
+declared in the referenced production assembly — while `netipTypeCmp` is declared in `fuzz_test.go`.
+The white-box reference model's whole premise is that interface-implementation records are
+RELOCATABLE: a production struct is foreign to the test compilation, so go2cs-gen emits a value or
+pointer adapter class in the test anchor instead of a partial production struct. That premise holds
+wherever the interface is reached by boxing. It has exactly one exception, and this is it: C# checks
+`where P : netipTypeCmp` NOMINALLY, against the type argument itself. The only thing that can satisfy
+it is the argument's own base list; the only thing that can add to that is a partial declaration; and
+a type closed inside a referenced assembly admits no partial. No adapter stands in that position.
+Hence CS0315 five times, and hence the answer is to stop needing the reference model for this suite.
+
+Two moves, both general:
+
+| Move | What it does |
+|:--|:--|
+| **The model-selection gate** | `constraintProxyFor` is the (type parameter, type argument) core every instantiation form already routes through — a generic NAMED type via `constraintProxyArg`, a generic FUNCTION via `constraintProxySigArg`. It now also records the pairs where the argument is a production type and the parameter's constraint is a TEST-declared method-set interface. A non-empty set joins `recordsRequireProductionMutation` at the fallback site, so the suite reconverts under recompile. The constraint side reuses **`isMethodSetBeyondComparable`** — the same predicate `getGenericDefinition` uses to choose the nominal arm — so the gate and the emission cannot disagree about which constraints are nominal |
+| **The bare-alias rule goes MODEL-INDEPENDENT** | Behind the CS0315 stood one more error, and it was the xml-netip-alias lane's own rule seen from the arm it had gated off: `netip_test.cs` spelling `netip.AddrDetail` for an alias `export_test.go` declares, CS0426. That fix required the white-box model, reasoning that only there does production live in another assembly. True, and beside the point — what makes the qualified spelling invalid is that a `global using` is a member of no class, which holds just as firmly when production is RECOMPILED in. Under recompile the alias is, if anything, more plainly in scope: production, internal and external are one compilation |
+
+The second move needed a third, smaller one. `testExternalVariant` — "current variant is the external
+`<name>_test` package" — was set only under the white-box model, so the recompile external half could
+not tell it was the external half and the rule could not fire. Which variant is converting is a fact
+about the SOURCES, not about the model; it is now set under every model. Nothing else reads it
+outside the white-box path (`whiteboxBridgeDeclaredType` is reachable only through
+`testOwnedAdapterRef`, which returns early unless the model is white-box reference), so widening it
+moves exactly the one rule that needed it. The derivation was extracted to `testVariantOptions` so
+the wiring itself is guardable — it is where this lane's own first attempt failed, silently, with the
+predicate correct and unreachable.
+
+And a fourth, which is the same lesson again: the two models park the package-under-test's path in
+DIFFERENT fields. The reference models clear the self-import binding and retain it in
+`testProductionPath`; a recompile conversion keeps the binding, so it stays in `testPackagePath` and
+`testProductionPath` is EMPTY. The first version of the alias fix read `testProductionPath` alone,
+answered empty under recompile, and did nothing — a fix that builds, ships, and is inert. The shared
+accessor `Options.packageUnderTestPath()` is the remedy.
+
+### Blast radius, censused before the change — and it is `net/netip` alone
+
+The model-selection gate can only fire where a `_test.go` file DECLARES an interface that is then
+used as a type-parameter constraint. A parse of every package in the Go 1.23.1 source tree finds
+that shape at **four sites, total**:
+
+| Site | Fires? |
+|:--|:--|
+| `net/netip` — `netipTypeCmp` (`fuzz_test.go`) | **yes** — value arguments (`Addr`, `AddrPort`, `Prefix`), production-declared |
+| `crypto/internal/nistec` — `nistPoint[P]` | no — POINTER arguments (`*P224Point`); the boxed form is the existing constraint-proxy machinery's business, and the gate takes value named types only |
+| `net/http` — `TBRun[T]` | no — pointer arguments, and `*testing.T`/`*testing.B` are FOREIGN types, not the package under test |
+| `cmd/compile/internal/test` — `fooer` | no — `cmd/` is not a converted package |
+
+The bare-alias widening has its own radius, and it is empty on the roster: only **two** banked
+packages are on the recompile model (`crypto/ecdh`, `text/tabwriter`) and NEITHER has an internal
+test file at all — both are external-only suites that fell back from plain reference — so no
+`_test.go` of the package under test declares anything for the rule to spell. The plain black-box
+reference model cannot reach the arm for the same structural reason.
+
+Both packages were re-converted as the control. The result is the interesting part: **every
+test-project artifact reproduces byte-identically** — `.tests.csproj`, `package_test_info.cs` and
+`package_info_external_test.cs`, which are exactly the files a moved model or a moved external-variant
+flag would rewrite. What DID move is three files, all two already-documented phantom classes and
+neither of them this lane's: `ecdh_test.cs` and `tabwriter_test.cs` are CR-stripped IDENTICAL to
+`HEAD` (the multi-line-literal CRLF phantom), and `crypto/ecdh/package_init.cs` gains the
+`initᴛᴛtests()` hook as +7 REAL lines — the fourth `-tests`-closure shape CLAUDE.md names precisely
+because it survives a numstat filter. All three restored.
+
+### 0 of 267 → 210 of 267, and the residual is ONE root
+
+267 Go verdicts, 21 excluded (20 benchmarks, 1 fuzz), **210 agree, 57 diverge**. Every one of the 57
+is an allocation assertion, and they collapse to three parents:
+
+| Test | Rows | Assert | Reported |
+|:--|:--:|:--|:--|
+| `TestNoAllocs/*` | 47 | `testing.AllocsPerRun(1000, f)`, **want 0** | 1–10 |
+| `TestAddrStringAllocs/*` | 5 | **want 1** | 2, 3, 106 |
+| `TestParsePrefixAllocs/*` | 2 | **want 0** | 2 |
+| (their three parent rows) | 3 | aggregate of the above | — |
+
+### Why NONE of it is disclosable — and the suite proves it against itself
+
+The tempting move is `alloc-count-semantics`, the class `io`/`strings`/`bytes` established: Go's
+`AllocsPerRun` counts mallocs, the managed shim reported BYTES, so no allocation behavior could
+satisfy a count assert. **That class does not cover a single row here**, for two independent reasons,
+both measured rather than argued.
+
+1. **Every one of the 54 leaf failures reports a COUNT, not bytes.** The shim is no longer
+   byte-only: it charges golib's own allocation sites — the structural mirror of Go's
+   `runtime.MemStats.Mallocs` — and falls back to the byte figure only when bytes are nonzero and the
+   count is zero. Zero rows here took that fallback. The unit mismatch the class names is simply not
+   present.
+2. **The measurement reaches exact zero on this very suite, twice.** `TestAddrStringAllocs/zero` and
+   `TestNoAllocs/IPv6Unspecified` are want-ZERO alloc asserts that the C# side **satisfies**. The
+   shim's own contract is that zero bytes implies zero allocations exactly; two passing rows on the
+   same code paths demonstrate the instrument can and does report the answer Go reports. A want-zero
+   row that then reads 3 is reading three real allocations.
+
+So the 49 want-zero rows are converted code allocating where Go does not, and the 5 want-one rows are
+converted code allocating at least twice where Go allocates once (the counter is a documented LOWER
+bound, so exceeding the want is one-directional evidence). That is an optimization target, not an
+impossibility — precisely what the `edwards25519` ruling this week refused to launder, and precisely
+the distinction `TestWriteStringAlloc` was already held to ("the byte-derived shim CAN report 0, so
+the unit-mismatch ruling does not cover it ... a real divergence, not a disclosure").
+
+**`net/netip` therefore does not bank.** No roster row, no proof page, no badges, no disclosure
+manifest, no committed test sources; the corpus is restored and this commit carries the converter
+change alone.
+
+### What the row is worth now, and what it costs
+
+It is one root away, and the root is named: netip's allocation profile under conversion. The 106
+readings for `Addr.String()` on IPv6 are the loud end and probably one shape (the expanded-form
+builder), while the `TestNoAllocs` band at 1–10 is the broad end — 47 rows across constructors,
+accessors and parsers. Nothing about it is structural: the suite builds, runs, and agrees on
+everything that is not counting allocations. Ranked against the terminal path this is a `.1`-era
+optimization arc, not a wall, and the row should be re-offered when one is commissioned.
+
+### Gates
+
+Converter `go test ./...` ok, with four guards, **each proven failing-first by neutering its own
+fix** — and the neuter of `packageUnderTestPath` fails the ALIAS guard too, which is the exact
+inertness this lane paid for once:
+
+| Guard | Pins |
+|:--|:--|
+| `TestNominalProductionConstraintForcesRecompile` | the gate, fed through `constraintProxySigArg` — the real instantiation path — with three negative controls: a test-declared argument, a production-declared constraint, and the recompile model itself |
+| `TestTestDeclaredAliasSpelledBare` | now BOTH arms of the bare-alias rule; its recompile case models the real option shape (`testPackagePath`, not `testProductionPath`), because the reference models' field would have passed for the wrong reason and pinned nothing |
+| `TestVariantOptionsMarkExternalUnderEveryModel` | the external-variant flag under all three models, and the bridge overrides staying white-box-only |
+| `TestPackageUnderTestPathFollowsTheModel` | the accessor, both fields and the production-conversion zero |
+
+Full CNR **byte-identical across all 629 behavioral packages**, 0 NOT MEASURED, 2 advisory converter
+warnings, solution-integrity and path-casing preflights OK · the two banked recompile-model packages
+re-converted with every test-project artifact byte-identical (above) · six reflect-consumer canaries
+re-swept green, recomputed from the roster at gate time (above). No golib change, no corpus regen, and
+`TestStdLibMetadataInSync` passes untouched, so no `go generate`, `go2cs.slnx` or behavioral-suite
+gate is owed.
+
+⚠ One measurement was thrown away and re-run rather than reported, because it would have been a
+false green of exactly the kind this repo catalogues: the first CNR built `go2cs.exe` at 21:53:42,
+which fell INSIDE the window in which this lane was neutering its own fixes to prove the guards
+failing-first. The binary under test was therefore not the binary being banked. The fixes are all
+`-tests`-only paths and could not have changed a production transpile either way — which is precisely
+why it would have passed, and precisely why it was not kept. Re-run from a rebuild at 21:58:02 with
+the source final.
+
+### The canary sweeps, and three foreign movers proven foreign by CONTROL
+
+All six pass at their exact banked counts: `go/internal/gcimporter` 583, `go/types` 557,
+`encoding/json` 491, **`crypto/tls` 400 + 2 disclosed**, `encoding/xml` 386, `html/template` 243.
+
+The tls row is worth naming: `TestBogoSuite`'s **Go** side flipped pass → fail on this host — shape
+(b), the host asymmetry the host-conditional pin was built for — and the pin absorbed it, leaving the
+row at 400 + 2 rather than red. That run's `go2cs_test_comparison.json` was kept per the standing
+opportunistic-capture instruction before the page was restored.
+
+The sweeps left **37** modified corpus files: 32 CRLF phantoms and 5 with real content. Three are the
+`initᴛᴛtests()` hook (`encoding/xml`, `go/types`, `html/template` `package_init.cs`). The other two
+are not phantoms and were NOT assumed foreign — they were controlled:
+
+| Mover | numstat | Verdict |
+|:--|:--:|:--|
+| `go/internal/gcimporter/gcimporter.cs` | 1/1 | a PRODUCTION lambda gaining an explicit `(@string, error)` return type |
+| `go/types/package_test_info.cs` | 0/3 | three `GoImplicitConv<T, ж<T>>(Indirect = true)` records dropped — the go/types test-info regen-drop, R's root |
+
+**Both reproduce byte-for-byte under the BASE converter** with this lane's changes stashed out, so
+both are pre-existing corpus staleness rather than this arc's. `go/types` also keeps its
+`package_info_internal_test.cs` and an untouched `.tests.csproj` through the sweep — it is still on
+the white-box model, which is the independent confirmation that the new gate never fired there, as
+the four-site census says it cannot. All 37 restored; this commit carries no corpus change.
+
+⚠ **Process note on the canary derivation.** CLAUDE.md says the five reflect-consumer canaries are
+"recomputed from `docs/ValidatedTestPackages.md` at gate time, never carried forward", and the
+2026-08-19 derivation is recorded as `go/internal/gcimporter` 583, `go/types` 557, `encoding/json`
+491, `crypto/tls` 402, `encoding/xml` 386. Recomputing it here, `go/internal/gcimporter` does **not**
+import `reflect` anywhere — production or test. What it contains is the STRING `"reflect.Value"`,
+inside an expected-signature literal in `gcimporter_test.go`, which a text-grep derivation matches
+and an import-based one does not. This lane did not resolve which reading was intended and swept the
+UNION of both, since over-covering a canary set is free and under-covering it is what the rule exists
+to prevent. Whoever owns the rule should pin the derivation itself; a rule that says "derive, never
+remember" still has to say derive HOW.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
