@@ -1,7 +1,8 @@
 # The position map — one record per converted file, carrying a whole position
 
-> **STATUS: DESIGN — IMPLEMENTED AND MEASURED on lane `claude/position-map-arc` (2026-08-21), for
-> coordinator review at merge per charter §7.** The design is written first and committed first, so a
+> **STATUS: DESIGN — IMPLEMENTED AND MEASURED on lane `claude/position-map-arc` (2026-08-21); §3.1
+> records the USER DESIGN DIRECTIVE (relayed via the mailbox the same day) that moved the records
+> from the converted files into the package-info files before the merge.** The design is written first and committed first, so a
 > veto costs rework rather than archaeology; §10 is this document's adversarial pass against its own
 > first draft, and §11 lists what the mechanism forced that the ruling did not fix — written up
 > rather than self-ruled.
@@ -50,7 +51,7 @@ a regen and a golden re-baseline whichever shape wins.
 | **A. `#line` directives (PDB transport)** | **+28–47% lines** — one directive per statement | **zero** — the PDB answers directly | **disqualifying:** CS diagnostics relocate onto `.go` files that are not in the project, and the debugger steps into sources that may not exist on the machine. The repo's whole method is root-causing against the emitted `.cs`; this takes that away |
 | **B. Side-car data file + `EmbeddedResource`** | one new data file per package, plus a `.csproj` item in every emitted project | one resource read per assembly | a new artifact TYPE, per-GOOS partitioning under layout L3, and an explicit exclusion rule for hand-owned files — three places for a rule to go wrong |
 | **C. Per-package generated `.cs` of records** | one new `.cs` per package (~306 core + ~570 behavioral + the test hosts) | one reflection read per assembly | picked up by the existing `<Compile Include="*.cs" />`, so no csproj change — but same hand-own and L3 partitioning rules as B |
-| **D. ⭐ One `[assembly: GoPositionMap]` per converted file, emitted INTO that file** | **+2 lines and one string per file** (measured: §4.2) | one reflection read per assembly, one lazy decode per file | **no new artifact, no csproj change, and the hand-own and L3 rules fall out for free** (§2.1) |
+| **D. ⭐ One `[assembly: GoPositionMap]` per converted file, emitted INTO that file** | **+2 lines and one string per file** (measured: §4.2) | one reflection read per assembly, one lazy decode per file | **no new artifact, no csproj change, and the hand-own and L3 rules fall out for free** (§2.1). ⚠ Superseded on PLACEMENT by the user directive — the records moved to the info files (§3.1), which kept D's record shape and cost while trading the hand-own free rule for one explicit line |
 
 **D wins on the third column, not the first two.** B and C are within noise of D on size, and all
 three are equivalent at run time. What separates D is that two rules other shapes have to STATE, it
@@ -81,8 +82,9 @@ that: the record is the side channel, it just lives in the file it describes.
 
 ## 3. The record
 
-One per converted file, emitted into that file, ahead of the namespace declaration where a global
-attribute is legal:
+One per converted file, emitted into the package-info file of the compilation that compiles it
+(§3.1 — the placement is a user directive; the record itself is unchanged from the shape priced
+here):
 
 ```csharp
 [assembly: go.GoPositionMap("log/log.go", "log.cs", "hYS4hLiEuIS4hLg…")]
@@ -103,6 +105,42 @@ position it always did.
 `AttributeTargets.Assembly` rather than `Module`: `GoManualConversionAttribute`'s own header records
 that module-scoped metadata serializes only one instance per assembly regardless of `AllowMultiple`,
 which is fine for a marker and fatal for a per-file record.
+
+### 3.1 Where the record LIVES — the user directive, and what it traded
+
+As first implemented, each record was emitted at the top of its own converted file. **The user ruled
+that placement against the project's primary objective** ("reads like Go; extra machinery hidden in
+generated files") — a per-file base64 attribute is visible plumbing in exactly the surface the
+project promises to keep clean, and `flag.cs`'s own file-top blob was the exhibit. The records now
+land in a delimited expository block — `// <GoSourcePositionMaps>` … `// </GoSourcePositionMaps>`,
+always emitted, one record per converted source file — in the package-info file of the COMPILATION
+that compiles the mapped source: `package_info.cs` for production files, and the test-info anchors
+(`package_test_info.cs` / `package_info_internal_test.cs`, per which anchor owns the file, exactly as
+the `GoImplement` records route) for the `-tests` variants. The same-compilation rule is what keeps
+the lookup working: an assembly attribute is visible only to its own assembly, and the tests assembly
+compiles the test sources, so `log_test.go:69` stays resolvable inside the test host.
+
+The relocation is semantics-free by construction — the record shape is unchanged, so indivisibility
+is untouched, and the runtime cannot tell where an assembly attribute was declared — but it did
+trade away two of §2.1's for-free properties, and honesty requires saying so:
+
+- **The hand-own rule needed one explicit line.** In-file, a hand-own's `.cs.auto` review sibling
+  carried its (meaningless) record harmlessly, because the sibling is never compiled. Centralized,
+  that record would have landed in the COMPILED `package_info.cs` — a table mapping lines of a
+  hand-written file that does not contain them, the exact fabrication the ruling forbids.
+  `finalizePositionMap` now strips the sibling's sentinels and records nothing for a
+  `manualConversion` visit.
+- **Merge semantics became load-bearing.** The section follows `writePackageInfoFile`'s
+  `mergeExisting` contract: whole-package conversions rebuild it, merging writes keep existing
+  records for files this conversion did not re-emit. That is not politeness — the recompile-model
+  test assembly excludes `package_info.cs` from its compile items in favor of the seeded
+  `package_test_info.cs`, so the seed is the only route production records have into that assembly.
+
+What it did NOT trade: layout L3 still works unchanged, because `package_info.cs` is itself a
+closure-derived, per-GOOS-routed artifact — the records land in whichever variant of it the target's
+emission owns. And the `stdlib-metadata` extractor was verified (not assumed) to ignore the new
+block: `TestStdLibMetadataExtractIgnoresPositionMaps` pins it against a synthetic info file carrying
+all three record families.
 
 ---
 
