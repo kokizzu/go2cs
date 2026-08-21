@@ -16783,4 +16783,34 @@ linux corpus; (b) re-enumerate F8's gating set from CNR at gate time (6 today); 
 banked roster's pure-compute rows on Linux wholesale — rung 5 suggests a large fraction validates
 as-is, which would make the eventual "Linux-validated" column a measurement campaign, not a
 porting one.
+
+## LANDED + ROUTED -- ReadMemStats S2/S3 merges: the recorder is always-on, `ReadMemStats` reads 0.0 B/call, `TestReadGCStats` passes all nine -- and `TestFreeOSMemory` routes to OBJECT LIFETIME as a codegen-liveness candidate (coordinator harvest, 2026-08-21)
+
+The implementation lane delivered the ratified design end to end (`GcPauseRecorder.cs`, the
+high-water `HeapReleased` with both honesty notes as code comments, `NumForcedGC`, the zero-rule
+fields asserted by guard, `runtime/metrics` untouched per OQ-4). The binding refinements closed
+hard: the 288 B/call `GCMemoryInfoData` box left the read path entirely -- **0 B across all 200
+bracketed windows, ceiling tightened 320 -> 0** -- and every recorder read enforces
+`Generation == MaxGeneration`. Union gates at the merge: GolibTests **211/211** (the GC surface
+and the #159 native-slot change coexisting), spot sweeps of the protected consumers.
+
+**`runtime/debug` is now 3 of 9, and its remaining bill is fully composed:**
+- `TestStack` -- the position-map arc (in flight) + the ruled fifth-frame host-limit entry.
+- `WriteHeapDump` x3 -- the ruled `runtime-capability` disclosure.
+- `TestFreeOSMemory` -- **ROUTED by measurement, and RULED a codegen-liveness CANDIDATE**: the
+  lane's three-way probe (inline allocation in the measuring frame is not reclaimed; the same
+  allocation behind a RETURNED call releases 33,689,600 B to the byte; invariant under Release
+  and under untiered JIT) is the class's own text -- a frame's dead slot held live for the
+  frame's lifetime. SS7.1.10's "Debug build" attribution is NARROWED accordingly. The banking
+  lane verifies the signature against the class at bank time; nothing is pinned today.
+The package banks when the position-map arc merges -- likely at 4-5 matching + 4-5 disclosed,
+measured then, not predicted here.
+
+Queue, small: (1) `core/math/big` and `core/runtime/debug` are in `go2cs.slnx`'s build closure
+via GolibTests but unregistered in the `.slnx` -- one line each, deferred twice now for lane
+conflict-avoidance; take at the next quiet point. (2) `time`'s born-stale banked test sources
+have now surfaced in THREE lanes -- the leveling commit is due. (3) Two CLAUDE.md budget rows
+re-measured this harvest (updated in the same commit): full `go2cs.slnx` ~3,546 s at 722
+projects; full behavioral suite ~6,552 s at 603 packages (i7-5820K, 2026-08-21).
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
