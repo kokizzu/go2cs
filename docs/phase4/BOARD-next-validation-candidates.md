@@ -16505,4 +16505,83 @@ caught it, which is the entire reason the ritual runs it before any conclusion. 
 and verifying the count exactly (3,238 = 3,238) fixed it. (3) The first draft of the token
 distinctness guard asserted something Go does not promise and failed correctly; the assertion was
 wrong, not the code.
+
+## 📉 RE-MEASURED on the union with R's cap — `sync/atomic` is **107 of 108 FULL-PIPELINE** (35 recorded → 108), and `TestHammerStoreLoad`'s residual is proven FOREIGN to the alignment arc by control (2026-08-21, lane `claude/atomic-align-layout`)
+
+The entry above closed three of Ruling A's four rows and stated its own gap: its containment number
+predated R's `RecordGoroutinePanic` cap (`05133488c`), so the fourth row could not be measured
+honestly. The cap is now merged, this lane merged onto `aaacb1e40`, and the re-measure resolves the
+fork the ruling left open.
+
+### The cap changes the measurement, not the verdict
+
+| | before the cap | with the cap |
+|:--|:--|:--|
+| C# verdicts RECORDED | **35** of 108 | **108** of 108 |
+| how the run ended | host died inside `TestHammerStoreLoad`; 367 MB record failed to serialize | clean; row contained as one per-test `infrastructure-error` |
+| comparison artifact | 69–367 MB | **1.1 MB** |
+| agreeing with `go test` | not computable full-pipeline (107 by containment) | **107 of 108, FULL-PIPELINE** |
+
+So the 107 is no longer a containment composition — it is every verdict the differential harness
+itself recorded, directly comparable to row-harvest-3's 104 rather than composed differently. The
+three rows this arc closed (`TestAutoAligned64`, `TestHammer32`, `TestHammer64`) hold on the union.
+
+⚠ A correction to this lane's own first reading of that file: an initial divergence count of ZERO was
+a bad regex — it matched `C#="[a-z]*"` and the one divergence is `C#="infrastructure-error"`, which
+carries a hyphen. The count is 1, not 0.
+
+### The fork resolves the second way: the storm was NOT a consequence of the lost writes
+
+The ruling's re-measure question was whether `TestHammerStoreLoad`'s `Fatalf` storm was downstream of
+the pre-fix detached-copy writes — in which case the layout fix would close it and the row would read
+108. It does not. With `TestHammer32`/`64` fixed and passing, the pointer hammer still fails, now
+bounded and legible:
+
+```
+Pointer: %!x(uintptr=0) != %!x(uintptr=7864)
+testing: FailNow called from a goroutine other than the test goroutine for TestHammerStoreLoad
+```
+
+`hammerStoreLoadPointer` treats the pointer VALUE as a packed pair and asserts
+`v & 0xFFFFFFFF == v >> 32`. The observed `v` is `N << 32` — low half zero, high half a small counter
+— so the `uintptr → unsafe.Pointer → uintptr` round-trip is not preserving the number the test
+stored.
+
+### That shape is NOT this arc's, and the cap is what finally allowed the control
+
+`N << 32` resembles this arc's new allocation-base format (`identityHash << 32`) closely enough that
+attribution could not be assumed. The control had been impossible: at master the record was 367 MB
+and never serialized, so the failure TEXT did not exist to compare. Under the cap it does.
+
+Control run: golib reverted to the union's version (no token change; the layout fix and the cap both
+retained), same single test, same host. Result — the **identical shape**:
+
+```
+Pointer: %!x(uintptr=0) != %!x(uintptr=12768)
+```
+
+Both sides also drop the same order of records (15.4M control vs 15.8M with the arc), so neither the
+token construction nor the layout fix feeds the storm. **The residual predates this arc entirely**
+and belongs to the `unsafe.Pointer` round-trip, not to the ж token or to zero-size layout.
+
+### Verdict: no roster row, and the residual is ROOTED not disclosed
+
+`sync/atomic` stays off the roster at 107 of 108 — the bar is that every `Test` matches. The residual
+is **not disclosable**: `runtime-capability`'s admission test asks whether a truthful managed
+implementation exists at any cost, and a faithful `uintptr ↔ unsafe.Pointer` round-trip plainly has
+one. It is an arc with a price, and the price is now much better specified than "host death": one
+named test, one named invariant (`v & 0xFFFFFFFF == v >> 32` after a round-trip through
+`unsafe.Pointer`), a bounded 1.1 MB artifact, and 107 of 108 sitting behind it.
+
+Roster arithmetic is therefore UNCHANGED at **158 / 215 · 18,425 · 79**. The row is one root away and
+the root is named; it waits on that root, not on ceremony.
+
+### Gates for the merge result
+
+The (b) commit's gates stand as recorded. On the merge result: golib and the capped
+`src/core/testing` host both build clean, and the full `sync/atomic` pipeline runs to completion —
+which is itself the merge-result evidence, since a banking merge owes its own row's re-proof and this
+lane's row declines to bank. The corpus is restored: the `-tests` artifacts are removed and
+`type.cs.auto` — the review sibling a `-tests` run refreshes and an overlay does not — is restored
+rather than banked, per CleanupBacklog item 18.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
