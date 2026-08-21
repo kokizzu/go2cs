@@ -1,7 +1,9 @@
 # PLAN — nugetgo.net: the Go → NuGet package mapping registry
 
-> **STATUS: PROPOSED (coordinator draft, 2026-08-21) — awaiting USER ratification.** The product
-> decisions here belong to the project owner (the domain, the repo, the launch shape); the
+> **STATUS: DIRECTION RATIFIED (user, 2026-08-21) — §8's five owner decisions remain open.** The
+> owner confirmed the plan's direction ("exactly where I was thinking"); implementation stages
+> proceed per §7 when scheduled, and §8's items are answered individually as they come due. The
+> product decisions here belong to the project owner (the domain, the repo, the launch shape); the
 > converter-integration sections are anchored to the real code seams (censused 2026-08-21) and are
 > coordinator-recommended. §8 collects the decisions only the owner can make. Implementation is
 > NOT scheduled before the 75% terminal; the converter half is small, the trust/CI half is where
