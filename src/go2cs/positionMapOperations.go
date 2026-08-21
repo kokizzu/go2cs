@@ -12,6 +12,7 @@ import (
 	"go/token"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -20,9 +21,10 @@ import (
 // on it — with the GO position its C# position was converted from, rather than with the converted
 // C# position alone.
 //
-// It is ONE record per converted file, emitted INTO that file as an `[assembly: GoPositionMap]`
-// attribute, carrying both halves of a position: the Go file's identity and the C#-line → Go-line
-// table. That is deliberate and is the design's central constraint — the coordinator ruling of
+// It is ONE record per converted file — an `[assembly: GoPositionMap]` attribute carrying both
+// halves of a position, the Go file's identity and the C#-line → Go-line table — emitted into the
+// package's INFO file rather than into the converted source, so the converted source keeps reading
+// like Go. One record cannot supply half a position, and that is the design's central constraint — the coordinator ruling of
 // 2026-08-21 makes the pair INDIVISIBLE, because a Go file paired with a C# line
 // (`log/log_test.go:69`) is a position in NEITHER tree. One record cannot supply half a position:
 // a frame either has one, and reports a Go position that exists, or has none, and reports the
@@ -53,16 +55,31 @@ import (
 //
 // So: any site that INSPECTS or REWRITES captured block text must read it through
 // stripPositionSentinels; any site that merely appends it must not, or the position is lost. The
-// standing guard is the corpus itself — a seeded reconvert must be byte-identical to the committed
-// tree except for each file's own attribute line, and the behavioral goldens pin the collapsed form
-// directly — so a future non-neutral site shows up as drift rather than as a wrong line number.
+// standing guard is the corpus itself — a seeded reconvert must leave every converted source
+// byte-identical, the records living in the info files alone, and the behavioral goldens pin the
+// collapsed form directly — so a future non-neutral site shows up as drift, not as a wrong line.
 //
 // Design note: docs/phase4/DESIGN-position-map.md.
 
-// PositionMapMarker reserves the file's one-line `[assembly: GoPositionMap]` slot. It is written
-// BEFORE the walk and replaced after it, and the replacement is one line exactly as the marker is,
-// so the line numbers the table records are the line numbers the emitted file has.
-const PositionMapMarker = ">>MARKER:POSITIONMAP<<"
+// positionMapRecords collects this package's emitted records, keyed by the package-info file each
+// one belongs in. The key is the info file of the COMPILATION that compiles the mapped source,
+// because an assembly attribute is only visible to its own assembly: production sources answer
+// through package_info.cs, and each test variant through its own test-info anchor. Reset per
+// package by resetPackageState.
+var positionMapRecords = map[string][]string{}
+
+// claimPositionMapTarget takes ownership of one target key for the conversion about to write it,
+// clearing whatever a previous same-process conversion left there (the recompile-model fallback
+// reconverts a variant's files into the same target, and without the claim each record would appear
+// twice). Returns the target so the claim can sit inline in an options assignment.
+func claimPositionMapTarget(target string) string {
+	packageLock.Lock()
+	delete(positionMapRecords, target)
+	packageLock.Unlock()
+
+	return target
+}
+
 
 // PositionSentinel delimits an in-text Go-line sentinel: SENTINEL <decimal Go line> SENTINEL. NUL
 // is the one byte that cannot occur in emitted C#, because the Go compiler disallows it in source
@@ -93,33 +110,136 @@ func (v *Visitor) writePositionSentinel(goPos token.Pos) {
 	v.outputBuilder.WriteString(PositionSentinel + strconv.Itoa(line) + PositionSentinel)
 }
 
-// finalizePositionMap converts the sentinels the walk left in the finished file text into this
-// file's position-map attribute, and strips them. Called once per emitted file, after every marker
-// substitution, with the path the file is about to be written to — the identity rules below need to
-// know where the C# lands relative to the Go it came from.
+// finalizePositionMap turns the sentinels the walk left in the finished file text into this file's
+// position-map record, and strips them. Called once per emitted file, after every marker
+// substitution, with the path the file is about to be written to.
+//
+// The record does NOT stay in the file. It is collected here and emitted into the package's info
+// file (writeGoSourcePositionMaps), because a per-file assembly attribute is visible plumbing in
+// exactly the surface go2cs promises to keep reading like Go, and package_info.cs is where every
+// other assembly-level record family already lives. The relocation is semantics-free: the record
+// shape is unchanged, so the file/line pair stays INDIVISIBLE as a property of the record rather
+// than of its declaring file, and an assembly attribute answers the same wherever it is declared.
 func (v *Visitor) finalizePositionMap(outputFileName string) {
 	text := v.outputBuilder.String()
 
-	if !strings.Contains(text, PositionSentinel) && !strings.Contains(text, PositionMapMarker) {
+	if !strings.Contains(text, PositionSentinel) {
 		return
 	}
 
 	stripped, entries := extractPositionSentinels(text, v.newline)
 
-	attribute := "[assembly: " + globalQualifyRooted("go.GoPositionMap") + "(" +
+	v.outputBuilder.Reset()
+	v.outputBuilder.WriteString(stripped)
+
+	// A hand-own's .cs.auto review sibling: strip the sentinels (the sibling is written to disk
+	// and read by people) but record NOTHING. The compiled file at that path is the HAND-OWN,
+	// whose C# was written rather than converted -- a record keyed to it with the auto
+	// conversion's table would map lines of a file that does not contain them, the exact
+	// fabrication the ruling forbids. Under the old in-file placement this was structurally
+	// impossible (the record lived in the never-compiled sibling); the centralized section has
+	// to say it.
+	if v.manualConversion {
+		return
+	}
+
+	target := strings.TrimSpace(v.options.positionMapTarget)
+
+	if target == "" {
+		// No info file owns this emission — a single-FILE conversion (`go2cs x.go x.cs`) writes no
+		// package info at all. Stated rather than silently skipped: such a file carries no record,
+		// so its frames report the converted .cs position, exactly as a hand-own's do.
+		return
+	}
+
+	record := "[assembly: " + globalQualifyRooted("go.GoPositionMap") + "(" +
 		csharpStringLiteral(v.goSourceIdentity(outputFileName)) + ", " +
 		csharpStringLiteral(positionMapCsName(outputFileName)) + ", " +
 		csharpStringLiteral(encodePositionTable(entries)) + ")]"
 
-	v.outputBuilder.Reset()
-	v.outputBuilder.WriteString(strings.ReplaceAll(stripped, PositionMapMarker, attribute))
+	packageLock.Lock()
+	positionMapRecords[target] = append(positionMapRecords[target], record)
+	packageLock.Unlock()
+}
+
+// goSourcePositionMapsProseLines returns the <GoSourcePositionMaps> section's explanatory comment.
+// Like every emitted-artifact comment it states what the section holds and the constraint that shape
+// serves, and nothing about how it came to be that way. package_info-template.txt carries the same
+// lines for a file created from scratch; the two must agree.
+func goSourcePositionMapsProseLines() []string {
+	return []string{
+		"// Go source positions are recorded here, one `GoPositionMap` attribute per converted",
+		"// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it",
+		"// can name the GO file and line a frame was converted from rather than the emitted C# one.",
+		"// Each record carries the Go file's identity and an encoded C#-line to Go-line table",
+		"// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,",
+		"// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.",
+	}
+}
+
+// positionMapSectionLines renders the delimited section for one info file: the opening tag, the
+// records, the closing tag. Always emitted, even when the compilation converted nothing, so the
+// section's absence never has to be told apart from its emptiness.
+//
+// existing carries the section lines already in the file. Under a merging write they are KEPT for
+// any source file this conversion did not re-record — the -tests flow seeds package_test_info.cs
+// from the production package_info.cs, and under the recompile model that seed is the only route
+// the production records have into the test assembly (productionCSFiles excludes package_info.cs
+// from its compile items). A record this conversion DID produce replaces its predecessor by csFile
+// key, so a stale table can never shadow a fresh one.
+func positionMapSectionLines(infoFileName string, existing []string, mergeExisting bool) []string {
+	packageLock.Lock()
+	records := append([]string(nil), positionMapRecords[infoFileName]...)
+	packageLock.Unlock()
+
+	if mergeExisting {
+		recorded := HashSet[string]{}
+
+		for _, record := range records {
+			recorded.Add(positionMapRecordKey(record))
+		}
+
+		for _, line := range existing {
+			trimmed := strings.TrimSpace(line)
+
+			if strings.HasPrefix(trimmed, "[assembly:") && !recorded.Contains(positionMapRecordKey(trimmed)) {
+				records = append(records, trimmed)
+			}
+		}
+	}
+
+	// The converter visits a package's files in directory order but the records are appended as each
+	// file finishes; sorting makes the emitted block reproducible regardless.
+	sort.Strings(records)
+
+	lines := make([]string, 0, len(records)+2)
+	lines = append(lines, "// <GoSourcePositionMaps>")
+	lines = append(lines, records...)
+	lines = append(lines, "// </GoSourcePositionMaps>")
+
+	return lines
+}
+
+// positionMapRecordKey is the csFile argument — the record's identity for merge dedup, since one
+// emitted file has exactly one record in its compilation.
+func positionMapRecordKey(record string) string {
+	// The record is [assembly: …GoPositionMap("<goFile>", "<csFile>", "<table>")] and none of the
+	// three strings can contain a quote (csharpStringLiteral escapes; the inputs cannot anyway),
+	// so the quoted fields split cleanly.
+	parts := strings.Split(record, "\"")
+
+	if len(parts) >= 4 {
+		return parts[3]
+	}
+
+	return record
 }
 
 // positionMapCsName is the emitted file's own name, the key the runtime matches a frame's PDB file
 // name against. The `.cs.auto` review sibling of a hand-own is named for the `.cs` it reviews, so
 // its record reads as the hand-own's would — the sibling is never compiled, so nothing binds it.
 func positionMapCsName(outputFileName string) string {
-	return strings.TrimSuffix(filepath.Base(outputFileName), ".auto")
+	return filepath.Base(outputFileName)
 }
 
 // extractPositionSentinels walks the finished text ONCE, binding each sentinel to the emitted line

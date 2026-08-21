@@ -16,8 +16,11 @@ namespace go;
 /// <param name="table">Encoded C#-line to Go-line table for <paramref name="csFile"/>.</param>
 /// <remarks>
 /// <para>
-/// The converter emits one of these per converted file, into that file, so a frame reported by
-/// <c>runtime.Caller</c> / <c>runtime.Stack</c> / <c>runtime.Callers</c> can name the GO position
+/// The converter emits one of these per converted file, into the <c>GoSourcePositionMaps</c>
+/// section of the package-info file of the compilation that compiles it (<c>package_info.cs</c>;
+/// a test variant's records land in its own test-info anchor) — never into the converted source
+/// itself, which stays reading like Go. The lookup is assembly-scoped either way: a frame reported
+/// by <c>runtime.Caller</c> / <c>runtime.Stack</c> / <c>runtime.Callers</c> names the GO position
 /// its C# position was converted from. Both halves — the file identity and the line — come from
 /// this single record, which is what makes the pair INDIVISIBLE: a frame either has a record and
 /// reports a Go position that exists, or has none and reports its honest converted C# position.

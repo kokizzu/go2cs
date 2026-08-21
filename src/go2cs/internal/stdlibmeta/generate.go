@@ -251,3 +251,10 @@ func extract(packageInfoFile string) ([]string, error) {
 
 	return lines, scanner.Err()
 }
+
+// ExtractForTest exposes extract to the converter's own test suite, which asserts that record
+// families sharing package_info.cs with the two this generator reads (today: GoSourcePositionMaps)
+// are not scooped into the metadata.
+func ExtractForTest(packageInfoFile string) ([]string, error) {
+	return extract(packageInfoFile)
+}

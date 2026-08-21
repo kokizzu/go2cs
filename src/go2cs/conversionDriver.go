@@ -380,6 +380,15 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// of conversion cost (dominated by go/packages type-graph loading), so sequential conversion
 		// buys byte-reproducible output for free: a full-stdlib conversion (305 packages) measured
 		// 3m42s with the concurrent per-file goroutines and 3m39s sequential — within noise.
+
+		// The position-map records of these files belong in THIS package's info file, which is the
+		// compilation that compiles them. Resolved before the loop because each visitor needs it;
+		// writePackageInfoFile below is handed the same expression. Claiming the key here rather
+		// than in resetPackageState is deliberate: the -tests flow resets per VARIANT while its
+		// info files accumulate records ACROSS variants, so ownership of a key belongs to the
+		// conversion that will write the file, not to the reset.
+		options.positionMapTarget = claimPositionMapTarget(packageInfoPath(packageOutputPath, isDir, options))
+
 		for _, fileEntry := range files {
 			func(fileEntry FileEntry) {
 				defer func() {
@@ -451,17 +460,7 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 			log.Fatalf("Error while writing project file \"%s\": %s\n", projectFileName, err)
 		}
 
-		var packageInfoFileName string
-
-		// Handle package information file
-		if isDir {
-			// package_info.cs is closure-derived, so it is one of the artifacts that can vary by
-			// platform (27 of them corpus-wide, design §4.3); it follows the same layout L3 routing
-			// a converted source file does.
-			packageInfoFileName = platformLayoutPath(packageOutputPath, goosOfTarget(options.targetPlatform), PackageInfoFileName)
-		} else {
-			packageInfoFileName = filepath.Join(filepath.Dir(packageOutputPath), PackageInfoFileName)
-		}
+		packageInfoFileName := packageInfoPath(packageOutputPath, isDir, options)
 
 		writePackageInfoFile(packageInfoFileName, !isDir)
 
@@ -523,4 +522,20 @@ func aliasCoveredImplementationKeys() HashSet[string] {
 	}
 
 	return covered
+}
+
+// packageInfoPath resolves a converted package's info file. Shared by the conversion driver's two
+// consumers -- the position-map target handed to each visitor before the file loop, and the
+// writePackageInfoFile call after it -- so the records and the file they land in can never be
+// resolved differently.
+//
+// package_info.cs is closure-derived, so it is one of the artifacts that can vary by platform (27 of
+// them corpus-wide, design section 4.3); it follows the same layout L3 routing a converted source
+// file does.
+func packageInfoPath(packageOutputPath string, isDir bool, options Options) string {
+	if isDir {
+		return platformLayoutPath(packageOutputPath, goosOfTarget(options.targetPlatform), PackageInfoFileName)
+	}
+
+	return filepath.Join(filepath.Dir(packageOutputPath), PackageInfoFileName)
 }

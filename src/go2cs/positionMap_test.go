@@ -9,10 +9,13 @@ package main
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+
+	"go2cs/internal/stdlibmeta"
 )
 
 // decodePositionTable is the Go mirror of the C# reader in runtime/managed_impl.cs. It exists so
@@ -307,5 +310,53 @@ func TestExtractPositionSentinelsPrefersTheOuterStatement(t *testing.T) {
 
 	if len(entries) != 1 || entries[0] != (positionEntry{csLine: 2, goLine: 128}) {
 		t.Fatalf("got %+v, want the `for` statement's own line bound once", entries)
+	}
+}
+
+func TestStdLibMetadataExtractIgnoresPositionMaps(t *testing.T) {
+	// The GoSourcePositionMaps section shares package_info.cs with the two record families
+	// stdlib-metadata.txt is generated from. The extractor keys on the ExportedTypeAliases block
+	// and the GoImplement prefix, so a position-map record cannot match either -- verified here
+	// rather than assumed, per the relocation directive, so a future extractor change that
+	// broadens the match fails THIS test instead of drifting the generated metadata.
+	dir := t.TempDir()
+	infoPath := filepath.Join(dir, "package_info.cs")
+
+	content := strings.Join([]string{
+		"// <ExportedTypeAliases>",
+		"[assembly: GoTypeAlias(\"Table\", \"go.map<go.@string, nint>\")]",
+		"// </ExportedTypeAliases>",
+		"",
+		"[assembly: GoImplement<log_package.Logger, io_package.Writer>]",
+		"",
+		"// <GoSourcePositionMaps>",
+		"[assembly: go.GoPositionMap(\"log/log.go\", \"log.cs\", \"hYS4hLg=\")]",
+		"// </GoSourcePositionMaps>",
+		"",
+		"namespace go;",
+		"",
+		"[GoPackage(\"log\")]",
+		"public static partial class log_package {}",
+	}, "\r\n")
+
+	if err := os.WriteFile(infoPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	records, err := stdlibmeta.ExtractForTest(infoPath)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, record := range records {
+		if strings.Contains(record, "GoPositionMap") {
+			t.Errorf("stdlib-metadata extract scooped a position-map record: %q", record)
+		}
+	}
+
+	// 4 lines: the alias section's two tags and its record, plus the GoImplement record.
+	if len(records) != 4 {
+		t.Errorf("got %d records %v, want exactly the 4 lines the two real families contribute", len(records), records)
 	}
 }
