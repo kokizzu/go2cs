@@ -443,6 +443,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
 
 [GoType] partial struct corpus {
     internal slice<CorpusEntry> entries;
+    [GoMapKeyDims(32)]
     internal map<array<byte>, bool> hashes;
 }
 

@@ -34,6 +34,7 @@ partial class runtime_package {
 // code.
 [GoType] partial struct inlineUnwinder {
     internal ΔfuncInfo f;
+    [GoArrayDims(1048576)]
     internal ж<array<inlinedCall>> inlTree;
 }
 

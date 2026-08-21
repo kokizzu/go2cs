@@ -262,7 +262,9 @@ internal static UntypedInt huffmanValueShift => 4;
     // Huffman decoders for literal/length, distance.
     internal huffmanDecoder h1, h2;
     // Length arrays used to define Huffman codes.
+    [GoArrayDims(316)]
     internal ж<array<nint>> bits;
+    [GoArrayDims(19)]
     internal ж<array<nint>> codebits;
     // Output history, buffer.
     internal dictDecoder dict;

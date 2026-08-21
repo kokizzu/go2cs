@@ -95,6 +95,17 @@ public static partial class GoReflect
     /// </summary>
     public static string GoTypeName(Type? t, nint[]? arrayDims, GoChanDir chanDir)
     {
+        return GoTypeName(t, arrayDims, chanDir, null);
+    }
+
+    /// <summary>
+    /// The Go source type string with a map KEY's dims threaded as well — the second half of the
+    /// cargo a <c>map[[2]string][2]*float64</c> descriptor carries, where the positional dims are
+    /// the ELEMENT's (what <c>Elem()</c> hands down) and these are the KEY's. Without them the
+    /// managed <c>map&lt;array&lt;@string&gt;, …&gt;</c> can only say <c>map[[]string][]*float64</c>.
+    /// </summary>
+    public static string GoTypeName(Type? t, nint[]? arrayDims, GoChanDir chanDir, nint[]? keyDims)
+    {
         if (t is null) return "<nil>";
 
         if (chanDir is GoChanDir.Recv or GoChanDir.Send && t.IsGenericType &&
@@ -136,12 +147,16 @@ public static partial class GoReflect
 
             if (gd == typeof(slice<>)) return "[]" + GoTypeName(a[0]);
             if (gd == typeof(array<>)) return "[]" + GoTypeName(a[0]);   // length is not carried on the managed type
-            if (gd == typeof(map<,>)) return "map[" + GoTypeName(a[0]) + "]" + GoTypeName(a[1]);
+            // A MAP descriptor's positional dims are its ELEMENT's and its key dims are its KEY's —
+            // the two accessors, each fed from the slot that reaches it, so
+            // `map[[2]string][2]*float64` renders both lengths instead of neither.
+            if (gd == typeof(map<,>)) return "map[" + GoTypeName(a[0], keyDims) + "]" + GoTypeName(a[1], arrayDims);
             if (gd == typeof(channel<>)) return "chan " + GoTypeName(a[0]);
             // A pointer descriptor's dims are the POINTEE's, unshifted (the same rule Elem()
             // hands the cargo down by) — so `*[10]int` renders its array, not `*[]int`. The
-            // channel direction rides down the same way, so `*chan<- string` keeps its arrow.
-            if (gd == typeof(ж<>)) return "*" + GoTypeName(a[0], arrayDims, chanDir);
+            // channel direction and the map key dims ride down the same way, so `*chan<- string`
+            // keeps its arrow and `*map[[2]string]V` keeps its key length.
+            if (gd == typeof(ж<>)) return "*" + GoTypeName(a[0], arrayDims, chanDir, keyDims);
         }
 
         if (t.BaseType == typeof(ж<uintptr>)) return "unsafe.Pointer";

@@ -421,6 +421,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckFieldChainBoxReceiver() => CheckTarget("FieldChainBoxReceiver");
 
     [TestMethod]
+    public void CheckFieldDimsCargo() => CheckTarget("FieldDimsCargo");
+
+    [TestMethod]
     public void CheckFieldNamedAsType() => CheckTarget("FieldNamedAsType");
 
     [TestMethod]

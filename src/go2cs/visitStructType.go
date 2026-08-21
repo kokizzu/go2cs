@@ -239,6 +239,14 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			target.WriteString(v.newline)
 		}
 
+		// The array dims this field's type reaches through a hop no zero instance can measure — a
+		// POINTER's pointee, a MAP's key or element. Every name in a Go field group shares
+		// field.Type, so one attribute line covers the whole group (see fieldDimsCargo.go).
+		if dimsAttributes := emitFieldDimsAttributes(v.getType(field.Type, false)); dimsAttributes != "" {
+			v.writeString(target, "%s", dimsAttributes)
+			target.WriteString(v.newline)
+		}
+
 		var indentOffset int
 
 		if v.inFunction {

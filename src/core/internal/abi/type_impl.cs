@@ -45,11 +45,18 @@ partial class abi_package {
 // live value (the converter seeds it at the make site), the value behind a pointer (`new(chan<- T)`),
 // or a struct field's initializer-borne zero. Unstamped is the honest "nothing narrowed this",
 // answered as BothDir, which is what ChanDir() reported for every channel before the cargo existed.
+// keyDims is the same cargo one accessor over. The carried arrayDims describe what Elem() hands
+// down — an array's tail, a pointer's pointee, a MAP's element — which leaves Key(), a map type's
+// second accessor, with no slot at all: `map[[2]string][2]*float64` could carry the element's 2 and
+// never the key's. So the key's dims ride here, stamped by the converter at the one position that
+// reads them (a struct FIELD, whose map is nil at a decode target and reveals nothing), and handed
+// down by Key() exactly as arrayDims are by Elem().
 partial struct Type {
     [GoReflectCompanion] public System.Type? sysType;
     [GoReflectCompanion] public nint[]? arrayDims;
     [GoReflectCompanion] public nint[]?[]? funcParamDims;
     [GoReflectCompanion] public GoChanDir chanDir;
+    [GoReflectCompanion] public nint[]? keyDims;
 }
 
 // synthType builds a managed-backed abi.Type from a System.Type: Kind_ classified from it (GoReflect),
@@ -77,11 +84,15 @@ public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? 
 }
 
 public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir) {
+    return synthType(st, arrayDims, funcParamDims, chanDir, null);
+}
+
+public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir, nint[]? keyDims) {
     if (st is null) {
         return default!;
     }
-    string dimsKey = descriptorDimsKey(arrayDims, funcParamDims, chanDir);
-    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims, chanDir));
+    string dimsKey = descriptorDimsKey(arrayDims, funcParamDims, chanDir, keyDims);
+    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims, chanDir, keyDims));
 }
 
 // descriptorDimsKey renders the descriptor's dims cargo as the interning key's second component —
@@ -95,9 +106,19 @@ public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDi
 // it: `chan<- int` and `chan int` are DISTINCT Go types over ONE managed channel<int>, so interning
 // them together would let whichever arrived first answer ChanDir() and String() for both.
 public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir) {
+    return descriptorDimsKey(arrayDims, funcParamDims, chanDir, null);
+}
+
+// The map KEY's dims join the key for the third time and the third reason, all the same reason:
+// `map[[2]string]V` and `map[[3]string]V` are DISTINCT Go types over ONE managed map<array<@string>,
+// V>, so interning them together would let whichever arrived first answer Key().Len() for both.
+public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir, nint[]? keyDims) {
     string key = arrayDims is null ? "" : string.Join(',', arrayDims);
     if (chanDir != GoChanDir.Unstamped) {
         key += "@" + ((byte)chanDir).ToString();
+    }
+    if (keyDims is not null) {
+        key += "#" + string.Join(',', keyDims);
     }
     if (funcParamDims is null) {
         return key;
@@ -112,11 +133,9 @@ public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDi
     return builder.ToString();
 }
 
-private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims) {
-    return synthesizeDescriptor(st, arrayDims, funcParamDims, GoChanDir.Unstamped);
-}
-
-private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir) {
+// The single builder — synthType is its only caller, and it always has every cargo slot in hand.
+// (The shorter private forwarders this replaced went dead when keyDims joined the chain.)
+private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir, nint[]? keyDims) {
     ref var t = ref heap<Type>(out var Ꮡt);
     t.Kind_ = (ΔKind)((uint8)GoReflect.KindOf(st));
     // TFlagNamed — the descriptor bit that says "this is a DEFINED type", carried because three
@@ -146,6 +165,7 @@ private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, 
     t.arrayDims = arrayDims;
     t.funcParamDims = funcParamDims;
     t.chanDir = chanDir;
+    t.keyDims = keyDims;
     nint size = GoReflect.GoSizeOf(st, arrayDims);
     if (size >= 0) {
         t.Size_ = (uintptr)(nuint)size;
@@ -248,11 +268,16 @@ private static ж<ΔStructType> synthesizeStructType(ж<Type> Ꮡt) {
 
     for (int i = 0; i < infos.Length; i++) {
         GoReflect.GoFieldInfo info = infos[i];
-        nint[]? dims = GoReflect.KindOf(info.Type) == GoReflect.Array ? info.ArrayDims : null;
-        GoChanDir fieldDir = GoReflect.KindOf(info.Type) == GoReflect.Chan ? info.ChanDir : GoChanDir.Unstamped;
+        nint fieldKind = GoReflect.KindOf(info.Type);
+        // An ARRAY field's dims are its own; a POINTER's and a MAP's are what their Elem() hands
+        // down, carried on the same slot and stamped by the converter because no zero instance can
+        // measure a nil pointee or an absent map entry.
+        nint[]? dims = fieldKind == GoReflect.Array || fieldKind == GoReflect.Pointer || fieldKind == GoReflect.Map ? info.ArrayDims : null;
+        nint[]? fieldKeyDims = fieldKind == GoReflect.Map || fieldKind == GoReflect.Pointer ? info.KeyDims : null;
+        GoChanDir fieldDir = fieldKind == GoReflect.Chan ? info.ChanDir : GoChanDir.Unstamped;
         fields[i] = new StructField(
             Name: default!,
-            Typ: synthType(info.Type, dims, null, fieldDir),
+            Typ: synthType(info.Type, dims, null, fieldDir, fieldKeyDims),
             Offset: (uintptr)(nuint)offsets[i]
         );
     }
@@ -306,15 +331,17 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
         return default!;
     }
     // An ARRAY descriptor's dims read [outer]…[inner], so its element takes the TAIL; a POINTER's
-    // dims are the pointee's already and pass through UNSHIFTED, a pointer having no length of its
-    // own. The same rule rtype.Elem applies to the same cargo one layer up.
+    // and a MAP's dims are the pointee's / the element's already and pass through UNSHIFTED, neither
+    // having a length of its own. The same rule rtype.Elem applies to the same cargo one layer up.
     nint[]? dims = Ꮡt.Value.arrayDims;
-    nint[]? elemDims = kind == Pointer ? dims : dims is { Length: > 1 } ? dims[1..] : null;
+    nint[]? elemDims = kind == Pointer || kind == Map ? dims : dims is { Length: > 1 } ? dims[1..] : null;
     // A POINTER's channel-direction cargo is its POINTEE's, so it descends here and nowhere else —
     // this is the hop `new(chan<- string)` takes to reach `Elem().String()`. A CHANNEL's own
-    // direction describes the channel, never its element, so it stops.
+    // direction describes the channel, never its element, so it stops. The map KEY dims descend the
+    // same one hop, for the same reason: `*map[[2]string]V` holds its pointee's whole type.
     GoChanDir elemChanDir = kind == Pointer ? Ꮡt.Value.chanDir : GoChanDir.Unstamped;
-    return synthType(elem, elemDims, null, elemChanDir);
+    nint[]? elemKeyDims = kind == Pointer ? Ꮡt.Value.keyDims : null;
+    return synthType(elem, elemDims, null, elemChanDir, elemKeyDims);
 }
 
 // ChanDir returns the direction of t if t is a channel type, otherwise InvalidDir.
@@ -351,12 +378,18 @@ public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
 }
 
 // Key returns the key type for t if t is a map, otherwise nil.
+//
+// The key's own array dims ride the descriptor's keyDims cargo, which is what makes
+// `map[[2]string]V`'s key a `[2]string` rather than a dimension-less one: `map<array<@string>, V>`
+// is ONE managed type for every key length, so the datum reaches here from the converter's stamp on
+// the declaring FIELD — the position a decode target reads, where the map itself is still nil and a
+// live entry could reveal nothing. Unstamped answers Go's dimension-less array, unchanged.
 public static ж<Type> Key(this ж<Type> Ꮡt) {
     if (Ꮡt == nil || Ꮡt.Value.Kind() != Map) {
         return default!;
     }
     System.Type? key = GoReflect.KeyType(Ꮡt.Value.sysType);
-    return key is null ? default! : synthType(key);
+    return key is null ? default! : synthType(key, Ꮡt.Value.keyDims);
 }
 
 // Len returns the length of t if t is an array type, otherwise 0 — the descriptor's carried dims,

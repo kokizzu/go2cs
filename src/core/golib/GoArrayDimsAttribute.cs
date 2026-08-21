@@ -9,8 +9,9 @@ using System;
 namespace go;
 
 /// <summary>
-/// Carries the Go DIMENSION of a fixed-size-array parameter, outermost first
-/// (<c>[4][8]byte</c> ⇒ <c>[GoArrayDims(4, 8)]</c>).
+/// Carries the Go DIMENSION a descriptor must hand down through <c>Elem()</c>, outermost first
+/// (<c>[4][8]byte</c> ⇒ <c>[GoArrayDims(4, 8)]</c>) — on a func PARAMETER, and on a struct FIELD
+/// that reaches an array through a hop with no value and no initializer to read.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,8 +32,18 @@ namespace go;
 /// display-class method, and a natural-typed lambda — and <c>abi.TypeOf</c> stamps it as descriptor
 /// cargo so <c>reflect.Type.In(i)</c> hands out an array type that knows its length.
 /// </para>
+/// <para>
+/// A struct FIELD is the same position wherever its initializer cannot reach. The initializer route
+/// above works for a field that IS an array, because the field's own zero value is the array; it
+/// reaches nothing behind a POINTER (a nil <c>ж&lt;array&lt;T&gt;&gt;</c> has no pointee to measure)
+/// and nothing inside a MAP (a nil map has no entry whose key or element could reveal a length). So
+/// those two hops are stamped here instead, and the dims mean on a field exactly what they mean on a
+/// descriptor: <b>what <c>Elem()</c> hands down</b> — the pointee's dims for a pointer of any depth,
+/// the element's for a map. A map's KEY is the one accessor with no slot in that rule and carries
+/// <see cref="GoMapKeyDimsAttribute"/> instead.
+/// </para>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
 public sealed class GoArrayDimsAttribute(params int[] dims) : Attribute
 {
     /// <summary>The Go array dimensions, outermost first.</summary>

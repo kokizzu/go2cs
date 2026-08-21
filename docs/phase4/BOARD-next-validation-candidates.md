@@ -15110,5 +15110,294 @@ from re-litigating this one.
 Also ratified from the same lane: shape (b) of the host-conditional pin is an OPPORTUNISTIC
 capture. Standing instruction, no lane required: whoever meets a red `crypto/tls` whose C# side is
 unmoved keeps that run's `go2cs_test_comparison.json` before restoring past it.
+## ⛔ MAP KEY/ELEM DIMS ARE DESCRIPTOR CARGO and both `array<T>`-length rows retire — but `encoding/gob` reaches **105 of 106** and does NOT bank, because `reflect.ArrayOf`/`StructOf` is not disclosable (2026-08-20, lane `claude/map-key-elem-cargo`, laptop G)
 
+The queue top, taken on the recipe the `cargo-recv` entry wrote for it. The cargo lands, the
+`array<T>` LENGTH class retires whole, and the retirement test applied mechanically says the row
+still does not bank: **103 → 105 of 106**, one residual the remedy does not clear and no class it
+belongs to.
+
+### The recorded need was half the shape, and MEASUREMENT supplied the other half
+
+The board recorded gob's need as *"map key/elem dims cargo"* and located it exactly —
+`T1.Marr map[[2]string][2]*float64`, `decodeMap` allocating from `mtyp.Key()`/`mtyp.Elem()`, a map
+descriptor carrying no dims. That was right, and it was **two of the four positions** the arc needed.
+The other two came from running the pipeline rather than from reading it:
+
+| Position | Found by | What it is |
+|:--|:--|:--|
+| a map field's KEY dims | the recorded need | `Key()` had no cargo slot at all |
+| a map field's ELEM dims | the recorded need | `Elem()` had a slot; a map never filled it |
+| a POINTER-chain field's dims | the FIRST run | `T1.N *[3]float64`, `Indirect.A ***[3]int` — same root, unrecorded |
+| the pointer hop on the **VALUE** side | the SECOND run | `Value.Elem()` read dims from the live value only |
+
+The unifying statement is one sentence, and it is what the arc actually is: **a struct FIELD's dims
+come from its zero instance, which reaches an array the field IS and nothing an array is BEHIND.**
+`FieldArrayDims` reads `= new(N)` back off `Activator.CreateInstance(declaringType)`; on a pointer
+field that instance holds a nil pointer with no pointee to measure, and on a map field a nil map
+whose key and element types no entry could reveal. Both hops are ordinary at a **decode target**,
+which is exactly a struct nothing has populated yet — so the datum has to be in the emitted C#, which
+is the conclusion the func-PARAMETER position reached and takes the same carrier.
+
+### The design fits the `GoArrayDims` precedent because the slots are named for ACCESSORS, not for kinds
+
+| Cargo slot | Attribute | Carries | Handed down by |
+|:--|:--|:--|:--|
+| `abi.Type.arrayDims` | `[GoArrayDims]` | an ARRAY's own dims, a POINTER's pointee's, a MAP's element's | `Elem()` — tail for an array, **unshifted** for a pointer and now a map |
+| `abi.Type.keyDims` | `[GoMapKeyDims]` | a MAP's key's dims | `Key()` |
+
+Nothing about `arrayDims` changed meaning. Its cross-kind meaning was already *"what `Elem()` hands
+down"* — that is why a POINTER carries its pointee's unshifted — so a MAP simply joined the arm it
+already had, and the one accessor with **no** slot got one. `keyDims` joins both interning keys
+(`abi.descriptorDimsKey`, shared with reflect's `canonType`) for the third time and the third
+instance of one reason: `map[[2]string]V` and `map[[3]string]V` are distinct Go types over one
+managed `map<array<@string>, V>`.
+
+```go
+type T1 struct {                              // TestEndToEnd
+    Marr map[[2]string][2]*float64
+    N    *[3]float64
+}
+type Indirect struct{ A ***[3]int }           // TestIndirectSliceMapArray
+```
+```csharp
+[GoArrayDims(2), GoMapKeyDims(2)] public map<array<@string>, array<ж<float64>>> Marr;
+[GoArrayDims(3)]                  public ж<array<float64>> N;
+[GoArrayDims(3)]                  public ж<ж<ж<array<nint>>>> A;   // ONE stamp, any depth
+```
+
+### The fourth position was found by MEASUREMENT again, and it is the same lesson one layer over
+
+With the stamps in, `TestEndToEnd` passed and `TestIndirectSliceMapArray`'s root **moved one frame** —
+out of `gob: wrong type (***[]int) for received field Direct.A` and into
+`panic: reflect: reflect.Set using unaddressable value`, inside `growSlice`. `reflect.Value.Elem()`
+recovered a pointee's dims from the LIVE value alone, while `rtype.Elem` hands the descriptor's cargo
+down unshifted. gob's `decIndirect` walks a `***[3]int` target by allocating each level from
+`value.Type().Elem()`, so a hop reading the live value reads the nil pointer it is standing on,
+allocates a **zero-length** array from the dimension-less descriptor, and the next hop measures that
+zero as the truth. `Value.Elem()` now prefers the carried dims, falls back to the live measurement
+(`ValueOf(&[100]T{}).Elem().Type()` still carries 100), and descends them through EVERY pointer hop —
+not only the one whose pointee is the array, because `***[3]int`'s intermediate pointees are pointers.
+
+That is `cargo-recv`'s fourth-position lesson restated at the Value layer: **a value the bridge hands
+out must describe itself the way the descriptor does.** Both arcs found their last position by running
+the pipeline, not by reasoning about it, and in both cases the shape "looked covered".
+
+### The retirement test, applied mechanically — and the row does NOT bank
+
+| Row | Before | After | Root |
+|:--|:--|:--|:--|
+| `TestEndToEnd` | `gob: length mismatch in decodeArray` | **PASS** | map key/elem dims |
+| `TestIndirectSliceMapArray` | `wrong type ([3]int) for received field Indirect.A` | **PASS** | pointer-chain field dims + the Value-side hop |
+| `TestIgnoreDepthLimit` | `typelinks: external … not implemented` | **unchanged** | `reflect.ArrayOf` → `typesByString` → the `typelinks()` stub |
+
+The `array<T>` LENGTH class retires: both of its rows pass, and the census the `reflect-minibridge`
+entry left has one line in it instead of two. **The third row is not disclosable, and the bar rules
+it out by name.** `TestIgnoreDepthLimit` builds a 101-deep nested array with `reflect.ArrayOf` and
+wraps it in `reflect.StructOf` — runtime TYPE CONSTRUCTION, which the managed runtime could in
+principle perform. `host-limit`'s text is explicit that an entry "must name a structural property of
+the deployment shape, **never an unimplemented-but-fixable defect**", and the three
+allocation/liveness classes do not reach it at all; the fifth, `chan-direction`, retired this morning
+and was the only representation class there has ever been. So there is no class to disclose under,
+the roster's own rule stands ("a package that almost passes never appears"), and `encoding/gob` stays
+off it at **105 of 106**.
+
+**What banks is the converter arc, not the row.** That is the honest split the brief asked for, and
+it is worth more than the row would have been: the cargo is corpus-wide machinery, the two rows it
+retired were the board's oldest standing reflect-bridge chip, and what remains is a single named
+feature rather than a class.
+
+### Boundaries, stated rather than discovered later
+
+- **A field that IS an array is NOT stamped.** Its `= new(N)` initializer already carries the length
+  through a route that survives a value copy; stamping it would duplicate the datum and churn every
+  array-bearing struct in the corpus for nothing. This is why the whole-corpus footprint is SIX
+  lines and not thousands.
+- **A DEFINED array or map type is not stamped** — `type Row [3]int` behind a pointer,
+  `type Set map[[2]string]bool`. The same one-sentence boundary the chan direction draws, for the
+  same reason: the managed form is a go2cs-gen wrapper rather than `array<T>`/`map<K,V>`. An ALIAS
+  for one IS its target and is stamped.
+- **A SECOND nesting level is not carried** — `[][2]int`, `map[K]map[[2]string]V`, a func field's
+  parameters. The cargo has exactly one `Elem()` slot and one `Key()` slot, so a second level has
+  nowhere to live and no measured consumer asks (the r39d rule). `reflect.Type.String()` still
+  renders `[][2]int` as `[][]int`; the behavioral guard carries that row as a KIND comparison rather
+  than asserting the divergence away, and says why in place.
+- **A func PARAMETER of map type is not stamped.** `[GoArrayDims]` reaches parameters already, but
+  nothing measured reads `In(i).Key().Len()`.
+- **`internal/reflectlite`'s mirror is untouched.** Its `Elem` already passes `null` dims by design
+  and its `structFieldDescriptor` gates on Array, so the new stamps are invisible there — which is
+  what keeps its banked 30 from moving. A lane that needs dims in reflectlite owes its own
+  measurement.
+
+### The corpus footprint is SIX LINES, and the boundary rules are why
+
+Seeded whole-stdlib reconvert — fresh root, single run, `-stdlib -comments`, 304 packages, **380 s**,
+converter exit 0 — with `version.props` and `docs/validation` seeded beside `core` so the README
+badges compose. Marker gate **63 marked / 0 clobbered**, path-precise and line-anchored (`git grep
+-lE '^\s*\[module:\s*(go\.)?GoManualConversion\]'`, whole files, re-measured not carried). Of 1,663
+emitted artifacts: **0 new, 0 absent, 13 differ** CR-insensitively, and the split is clean.
+
+| Class | Count | What |
+|:--|:--:|:--|
+| this arc | 5 files / **6 lines, every one a stamp, ZERO off-shape** | `compress/flate/inflate.cs` (`bits *[maxNumLit+maxNumDist]int` → 316; `codebits *[numCodes]int` → 19) · `internal/fuzz/fuzz.cs` (`hashes map[[sha256.Size]byte]bool` → key 32) · `net/http/h2_bundle.cs` (`pings map[[8]byte]chan struct{}` → key 8) · `runtime/symtabinl.cs` (`inlTree *[1 << 20]inlinedCall` → 1048576) · `hpack/huffman.cs` (`children *[256]*node` → 256) |
+| pre-existing carries | 8 | `gcimporter`'s multi-result `any`-slot arm, plus the runtime box-compare family (`alg`, `map`, `map_fast32`, `map_fast64`, `mbarrier`, `traceback`, `pprof/map`) — exactly the set `cargo-recv` named and RESTORED, minus the two per-GOOS members a windows-only reconvert cannot see |
+
+Zero unclassified. **Only this arc's five are banked**; the eight carries are restored and belong to a
+leveling regen. That the whole footprint is six lines is the boundary rules working rather than luck:
+an ARRAY field keeps its `= new(N)` initializer, so the thousands of ordinary array fields in the
+corpus do not move, and every Go constant behind a stamp (`maxNumLit + maxNumDist`, `sha256.Size`,
+`1 << 20`) is resolved by `go/types` at conversion time.
+
+**No `package_info.cs` record moved**, so no `go generate` is owed — and that is asserted by
+`TestStdLibMetadataInSync` passing, not inferred from the absence of a diff.
+
+### One UNION artifact, rooted rather than assumed — and it is the merge-time rule again
+
+CNR flagged `ReflectChanDirection.csproj` as a mover, which is not this arc's shape at all (the diff
+is csproj metadata: `TargetFramework` hoisted to a condition, `Company`/`Copyright` derived,
+`RepositoryType` added). It is the **union's own** artifact: `0efa5f79f` (preflight-trio, which
+levelled the csproj template) and `22940de2f` (cargo-recv, which ADDED that project) are SIBLING
+branches — neither is an ancestor of the other — so each lane's CNR was green on its own tree and the
+merged tree is the first place a project emitted by the OLD template meets the NEW one.
+
+Proven rather than argued: the union-base converter was rebuilt from `git archive
+origin/claude/union-157` and re-emitted that one package, reproducing a **byte-identical** mover with
+none of this change present. Levelled here, because it is one file and every future CNR sees it
+otherwise. Worth carrying as the golden-side twin of the banked-row merge rule: **a lane's CNR proof
+binds its own tree, and a merge can make a NEW project's committed emission stale without either
+side changing.**
+
+### The residual, decomposed — it is two items and only one of them is a wall
+
+`TestIgnoreDepthLimit` needs `reflect.ArrayOf` **and** `reflect.StructOf`, and this arc changed the
+price of the first:
+
+- **`reflect.ArrayOf(n, elem)`** is now nearly free. An array type's length is exactly what the dims
+  cargo carries, so the hand-own is `synthType(typeof(array<>).MakeGenericType(elem), [n, …elemDims])`
+  — no `typelinks`, no linker table. The auto form dies in `typesByString` only because it is
+  reconstructing Go's linker-allocated `arrayType` record, which the managed bridge never needs to.
+- **`reflect.StructOf(fields)`** is the wall: runtime STRUCT synthesis, which wants
+  `System.Reflection.Emit` (and is therefore also an AOT question). A real feature arc.
+
+Implementing `ArrayOf` alone does **not** flip the row — the test builds its 101-deep array and then
+wraps it in a `StructOf` — so the honest statement is that gob's last verdict is priced at one small
+hand-own plus one feature, not at "the typelinks stub".
+
+### Gates
+
+⚠ Every wall-clock figure below was measured with a **sibling lane active on the same machine**
+(a `zh-box` run out of the `go-netpoll-managed-poller` worktree, confirmed by parentage rather than
+assumed) — so they are loaded numbers, at the top of the CLAUDE.md ranges, and should not be used to
+re-baseline the budget table.
+
+Converter `go test ./...` **ok, 146.0 s, exit 0** — `projitemsIntegrity_test` included, so both new
+`.go` files are registered; `TestStdLibMetadataInSync` passes, which is what ASSERTS that no
+`package_info.cs` record moved rather than inferring it from a clean diff, so no `go generate` is owed.
+
+`GolibTests` **176 / 176 passed, 0 failed** — including the new
+`GoStructLayoutTests.FieldDims_ComeFromTheConverterStamp_WhereNoZeroInstanceCanMeasureThem`.
+
+Full `check-no-regression.ps1`: **generated `.cs` and `.csproj` byte-identical across all 630
+behavioral packages**, 0 NOT MEASURED, 2 advisory converter warnings, exit 0, **769 s**; preflight
+solution integrity **632 / 632** (631 + this arc's guard), path casing **4,541 / 4,541** (4,534 + the
+guard's 7 tracked files). Run at the COMMITTED tree, after the golden re-baseline — the first pass
+had caught a stale `main.cs.target`, because `UpdateTestTargets` had run before the guard gained its
+`decIndirect` walk.
+
+Solution builds, both `--no-incremental`: `go2cs-stdlib.slnx` `-p:GoTargetOS=windows` **0 errors,
+763 s** (307 projects — this is what compiles all five corpus movers plus the `abi`/`reflect`
+changes); `go2cs.slnx` Debug **0 errors, 1,130 s** — the gate no other harness covers, and this arc
+changes golib's attribute surface and `GoReflect.GoFieldInfo`.
+
+**No linux build is owed here, and that is checked rather than assumed:** every file this arc touches
+is FLAT — `compress/flate/inflate.cs`, `internal/fuzz/fuzz.cs`, `net/http/h2_bundle.cs`,
+`runtime/symtabinl.cs`, `hpack/huffman.cs`, `internal/abi/type_impl.cs`, `reflect/value_impl.cs`,
+golib — none sits in a per-GOOS folder, so the default windows build compiles every one of them.
+(The L3 lesson that a `net/linux/`-resident change needs its own target is real; it just does not
+apply to this footprint.)
+
+Full behavioral suite **PASS at 603 projects, 2,056.8 s** — Transpile 603/603, Compile 603/603,
+**Target 603/603 byte-identical**, Output 577 compared / **0 failed** (26 skipped, no `package main`),
+**0 timeouts / 0 NOT MEASURED**. Not optional for this arc, and CNR does not substitute for it: CNR
+is transpile-only, while what changed here is RUNTIME — `GoReflect.GoFields`, which every `%v` walk
+and every json/xml member order reads, plus three `reflect` accessors and `Value.Elem`.
+
+`encoding/gob` pipeline, `-tests -test-action all -test-timeout 20m`, three runs: **103 → 104 → 105
+of 106**, each root re-measured rather than predicted.
+
+Canaries — the five largest banked reflect consumers BY VERDICT COUNT, **recomputed from the roster
+at gate time** per the doctrine. The derivation is also CHECKED rather than pattern-matched: the
+three larger rows are skipped because they are not reflect consumers, and that is measured —
+`go/doc/comment` (10,059), `crypto/rsa` (559) and `internal/zstd` (536) use `reflect` in **zero** of
+their converted test files, against 1–5 for each row below.
+
+| Canary | Expected | Result |
+|:--|:--:|:--|
+| `go/internal/gcimporter` | 583 | **PASS** (564 s) |
+| `go/types` | 557 | **PASS** (193 s) |
+| `encoding/json` | 491 | **PASS** (84 s) |
+| `encoding/xml` | 386 | **PASS** (104 s) |
+| `crypto/tls` | 400 | **FAIL — the KNOWN false red; verified against the ruling, not assumed** |
+
+There is no own-row sweep, because there is no own row: the `encoding/gob` pipeline at 105 of 106 is
+this lane's measurement and it stands in that slot.
+
+#### `crypto/tls` — the host-conditional ruling's first live exercise, and it holds exactly
+
+The coordinator's ruling (same board, this morning) requires the C# verdict map to be verified
+unmoved against the committed proof page before a red here is dismissed. Done mechanically, parsing
+the proof page's Verdicts table and the run's own `go2cs_test_comparison.json`:
+
+| Check | Result |
+|:--|:--|
+| C#-side differences vs the committed proof page | **0** — all 402 banked rows present, every verdict identical |
+| banked rows absent from the live C# map | **0** |
+| Go-side differences | **1** — `TestBogoSuite`, banked `pass` → live `fail` |
+| `TestBogoSuite/…` subtest rows | go **3,242**, C# **0** — the annotated row's own baseline expansion, excluded from one-sided accounting by the ruling |
+| one-sided rows OUTSIDE that expansion | **0** |
+| language divergences outside that expansion | **1** — `TestCertCache` (go pass, C# fail), the banked `codegen-liveness` disclosure, unchanged |
+
+So the row's live shape is **Go fail / C# fail** — agreement on a host where the Go premise fails,
+the second of the two shapes the adopted annotation accepts — and the C# side is provably untouched
+by this arc. Nothing in a go2cs branch can move it: the Go side is `go test -json` over GOROOT's own
+sources with the Go toolchain. (`cargo-recv` measured 3,243 expansion rows this morning against this
+run's 3,242 — the count varying with how far the runner gets before its own deadline is exactly the
+nondeterminism the ruling names.) The annotation implementation is R's lane and is not taken here.
+
+#### Post-sweep drift: 32 files, every one classified, all RESTORED
+
+Twenty-eight are pure **CRLF phantoms** — modified with an EMPTY `--numstat`, the multi-line-literal
+class. The four with real hunks are all named classes and none is this arc's:
+
+| File | Hunks | Class |
+|:--|:--:|:--|
+| `encoding/xml/package_init.cs` | +7 | the `initᴛᴛtests` hook — the `-tests`-closure shape named 2026-08-17 |
+| `go/types/package_init.cs` | +7 | same |
+| `go/internal/gcimporter/gcimporter.cs` | 1/1 | the pre-existing multi-result `any`-slot carry, the same one the corpus census found |
+| `go/types/package_test_info.cs` | −3 | three `GoImplicitConv` records the converter no longer emits — a **stale banked test artifact**, PROVEN pre-existing by re-converting go/types' tests with the union-base converter, which drops the identical three |
+
+That last one is the same shape `cargo-recv` recorded for `crypto/tls`'s committed test sources, and
+it takes the same treatment: restored, recorded, and NOT levelled inside another lane's arc.
+
+### The queue, after this
+
+1. **`encoding/gob` (106) is still the closest unbanked package, but its price is now NAMED rather
+   than a class.** 105 of 106; the last verdict costs one small hand-own (`reflect.ArrayOf`, roughly
+   free over the dims cargo) **plus** `reflect.StructOf`, which is runtime struct synthesis over
+   `System.Reflection.Emit` and a feature arc in its own right. Whoever wants a bank sooner should
+   measure the next candidate rather than take this one — this lane did not, and no claim about
+   "the next closest" is made here on evidence it does not have.
+2. **`reflect.ArrayOf` as a standalone hand-own.** Worth doing on its own merits even though it does
+   not flip gob's row: `ArrayOf` is reachable from user code, the auto form dies in the `typelinks`
+   stub for a reason the managed bridge never needs (it is reconstructing the linker's `arrayType`
+   record), and the dims cargo now makes the honest implementation a one-liner.
+3. **The stale-validation-badge PIPELINE gap**, unchanged and unclaimed since `cargo-recv` recorded
+   it: `writeReadmeFile` is gated to `options.convertStdLib`, so a `-tests` run writes a proof page
+   and never refreshes the README beside it, and every bank owes the same manual reconvert. One line
+   of gating, wants its own emission gate.
+4. **`sync/atomic`'s zero-size-field layout**, 5. **`%#x` of a `uintptr`**, 6. the two
+   variadic-argument walls (a SPREAD argument to a deferred variadic call; an empty variadic call
+   passing an empty slice where Go passes nil) — all unchanged.
+
+The `array<T>` LENGTH class leaves the standing-chip census; nothing joins it.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

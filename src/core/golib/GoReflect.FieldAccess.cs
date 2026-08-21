@@ -244,8 +244,20 @@ public static partial class GoReflect
         /// </summary>
         public readonly bool Embedded;
 
-        /// <summary>Array dims when <see cref="Type"/> is an array kind and the declaring zero instance reveals them.</summary>
+        /// <summary>
+        /// The array dims this field's descriptor hands down through <c>Elem()</c>: its OWN when
+        /// <see cref="Type"/> is an array kind and the declaring zero instance reveals them, the
+        /// POINTEE's or the map ELEMENT's when the converter stamped <c>[GoArrayDims]</c> for a hop
+        /// no zero instance can measure.
+        /// </summary>
         public readonly nint[]? ArrayDims;
+
+        /// <summary>
+        /// The array dims of a map field's KEY, from the converter's <c>[GoMapKeyDims]</c> stamp —
+        /// what <c>reflect.Type.Key()</c> hands down. Null for every field that is not a map with a
+        /// fixed-size-array key.
+        /// </summary>
+        public readonly nint[]? KeyDims;
 
         /// <summary>
         /// The Go channel DIRECTION when <see cref="Type"/> is a channel kind and the declaring
@@ -266,12 +278,13 @@ public static partial class GoReflect
         internal readonly FieldInfo[] Path;
         internal readonly bool[] BoxHop;
 
-        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false, GoChanDir chanDir = GoChanDir.Unstamped)
+        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false, GoChanDir chanDir = GoChanDir.Unstamped, nint[]? keyDims = null)
         {
             Name = name;
             Type = type;
             Exported = name.Length > 0 && name != "_" && char.IsUpper(name[0]);
             ArrayDims = arrayDims;
+            KeyDims = keyDims;
             ChanDir = chanDir;
             Tag = tag;
             Embedded = embedded;
@@ -355,9 +368,9 @@ public static partial class GoReflect
             if (name.StartsWith(CapturedVarMarker, StringComparison.Ordinal))
             {
                 string goName = name[CapturedVarMarker.Length..];
-                nint[]? embedDims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
+                nint[]? embedDims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : FieldStampedDims(field);
                 GoChanDir embedDir = KindOf(field.FieldType) == Chan ? FieldChanDir(t, field) : GoChanDir.Unstamped;
-                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true, chanDir: embedDir));
+                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true, chanDir: embedDir, keyDims: FieldMapKeyDims(field)));
                 continue;
             }
 
@@ -369,9 +382,13 @@ public static partial class GoReflect
             if (projected.Length > 0 && isAllUnderscores(projected))
                 projected = "_";
 
-            nint[]? dims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
+            // An ARRAY field's dims come from the declaring type's zero instance, where the
+            // converter's `= new(N)` initializer put them; every OTHER field's come from the
+            // converter's [GoArrayDims] stamp, which is null unless the field reaches an array
+            // through a pointer or a map element — the two hops no zero instance can measure.
+            nint[]? dims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : FieldStampedDims(field);
             GoChanDir fieldDir = KindOf(field.FieldType) == Chan ? FieldChanDir(t, field) : GoChanDir.Unstamped;
-            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), chanDir: fieldDir));
+            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), chanDir: fieldDir, keyDims: FieldMapKeyDims(field)));
         }
 
         reorderToGoDeclarationOrder(t, result, first);
