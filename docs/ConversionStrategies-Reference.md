@@ -583,6 +583,43 @@ Go writing **Markdown** link syntax inside a doc comment (`image/image.go:37`), 
 not support; pkg.go.dev renders it identically. Faithful conversion of an upstream quirk, not an emitter
 defect.
 
+### The README has TWO emission points, because its Tests badge reads a page the run writes LAST
+
+A converted package's README carries the four-badge line, and the Tests badge is composed at CONVERSION
+time from `docs/validation/current/<dot-id>.md`. The run that WRITES that page is the compare at the END
+of a `-tests` pipeline (`emitValidationProofPage`). Those two facts are an ordering, and the ordering is
+the whole problem: within a single `-test-action all`, the README is always built from the proof page as
+it stood BEFORE the run. A package whose counts are unchanged is fine; a package whose counts CHANGE —
+every fresh bank, and every rebank that moves a number — emitted one run behind, so a fresh bank shipped
+a README reading `Tests-not_yet_validated-orange` **beside its own green proof page**, and a bank owed one
+extra conversion of its own package as paperwork.
+
+Two formulations were on the table and they are **not** equivalent. Widening the emission GATE (which
+package gets a README at all) is what `emitsPackageReadme` does, and it closes the unchanged-counts case;
+it cannot reach an ordering. Closing the ordering needs a SECOND emission point:
+`refreshPackageReadmeAfterProof` re-emits the README immediately after the compare writes the page.
+
+**The hazard, and why the refresh is sourced from a record.** `-test-action build|run|compare` do not
+convert: the converter's package globals (`packageDoc`, `packageSourceDir`) are empty on those paths. A
+refresh that re-read them would render a DOC-LESS README over a corpus package — a destructive,
+corpus-wide rewrite that reads as ordinary reconvert drift. So the refresh does not read them. The
+conversion-time write records what it composed the README from (`packageReadmeEmission`, `readme.go`),
+and the refresh runs from that record or not at all: **no conversion, no record, no write.** The hazard is
+unrepresentable rather than avoided, and the record is taken INSIDE the `emitsPackageReadme` gate, so the
+one decision about whether a package gets a README also decides whether one can be refreshed.
+
+`writeReadmeFile` is idempotent (`needToWriteFile`), so a package whose counts did not move rewrites
+nothing and a sweep stays byte-clean — this opens no standing-restore family. The corollary is worth
+carrying: **a `README.md` moving during an operational sweep now means that package's validation counts
+moved.** That is a finding to read, not dirt to classify.
+
+Measured on `hash/adler32` with its proof page moved aside to simulate a fresh bank: one
+`-test-action all` validates 2 of 2, writes the page, and emits the green `2/2` badge **in the same run**
+— byte-identical to the committed README. A `-test-action compare` over a deliberately staled README leaves it
+byte-for-byte untouched, and creates none where the conversion wrote none. (Guarded by
+`TestPackageReadmeRefreshFollowsInProcessConversionNotRunMode`, the sibling of
+`TestPackageReadmeEmissionFollowsPackageProvenanceNotRunMode` that pins the gate half.)
+
 ### Assembly metadata is one derivation chain, and the framework is hoisted to props
 
 Every project in the tree — the two converter templates and the hand-written `golib` and `go2cs-gen` —

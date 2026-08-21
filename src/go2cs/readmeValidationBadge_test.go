@@ -872,3 +872,133 @@ func TestPackageReadmeEmissionFollowsPackageProvenanceNotRunMode(t *testing.T) {
 		t.Fatal("a -tests conversion with no resolved runtime root emitted a README")
 	}
 }
+// The gate above decides WHETHER a corpus package gets a README; this decides WHEN its Tests badge
+// can be current, and they are different questions. The badge is composed during CONVERSION from
+// docs/validation/current/<dot-id>.md, while the run that WRITES that page is the compare at the END
+// of a `-test-action all` — so a package whose counts CHANGE (every fresh bank) emitted one run
+// behind and read `not_yet_validated` beside its own green proof page. refreshPackageReadmeAfterProof
+// is the second emission point that closes it.
+//
+// Both arms are pinned here because the hazard is the mirror of the fix. `-test-action
+// build|run|compare` do NOT convert, so packageDoc/packageSourceDir are empty on those paths and a
+// refresh that re-read them would write a DOC-LESS README over a corpus package — corpus-wide
+// destruction reading as ordinary reconvert drift. The refresh therefore runs from the record the
+// conversion-time write leaves behind, which is what makes that rewrite unrepresentable: the globals
+// are deliberately CLEARED below and the refreshed README still carries its doc.
+func TestPackageReadmeRefreshFollowsInProcessConversionNotRunMode(t *testing.T) {
+	const (
+		dotID    = "crypto.rc4"
+		doc      = "Package rc4 implements RC4 encryption, as defined in Bruce Schneier's Applied Cryptography."
+		sentinel = "# untouched by any refresh\r\n"
+	)
+
+	root, projectPath := badgeTree(t, dotID, "1.23.1.6")
+	readmePath := filepath.Join(projectPath, "README.md")
+	options := Options{go2csPath: root}
+
+	// Both green signals must agree, so the banked test project has to be there for the badge to
+	// ever leave orange — see readmeValidationBadgeLine.
+	mustWriteFile(t, filepath.Join(projectPath, dotID+testProjectFileSuffix), "<Project />")
+
+	sourceDir := addGoSources(t, map[string]string{
+		"rc4.go":      "package rc4\n",
+		"rc4_test.go": "package rc4\n\nimport \"testing\"\n\nfunc TestGolden(t *testing.T) {}\n",
+	})
+
+	// The proof directory itself exists in a real tree (it holds every OTHER package's page); only
+	// this package's page is missing before its first compare. Without it the Tests badge is omitted
+	// entirely rather than orange — the documented unseeded-root fallback, not a fresh bank.
+	mustMkdirAll(t, filepath.Join(filepath.Dir(root), "docs", validationDocsDirName, validationCurrentDirName))
+
+	t.Cleanup(func() {
+		convertedPackageReadme = nil
+		packageDoc = ""
+		packageSourceDir = ""
+	})
+
+	readme := func() string {
+		contents, err := os.ReadFile(readmePath)
+
+		if err != nil {
+			t.Fatalf("read README: %v", err)
+		}
+
+		return string(contents)
+	}
+
+	// ---- the state a FRESH bank is in: converted, no proof page yet ----
+
+	if err := writeReadmeFile(projectPath, dotID, doc, sourceDir, options); err != nil {
+		t.Fatalf("conversion-time README: %v", err)
+	}
+
+	recordPackageReadmeEmission(projectPath, dotID, doc, sourceDir)
+
+	if !strings.Contains(readme(), "Tests-not_yet_validated-orange") {
+		t.Fatalf("a package with tests and no proof page must read not_yet_validated:\n%s", readme())
+	}
+
+	// ---- the compare writes the page, and the SAME run levels the badge ----
+
+	addProofPage(t, root, dotID, 2, 0)
+
+	// The converter globals a `compare` path would have: empty. The refresh must not read them.
+	packageDoc = ""
+	packageSourceDir = ""
+
+	if err := refreshPackageReadmeAfterProof(projectPath, options); err != nil {
+		t.Fatalf("refresh after proof: %v", err)
+	}
+
+	refreshed := readme()
+
+	if !strings.Contains(refreshed, "Tests-2%2F2_validated-brightgreen") {
+		t.Errorf("the refresh did not level the badge in the same run:\n%s", refreshed)
+	}
+
+	if !strings.Contains(refreshed, "/"+validationDocsDirName+"/1.23.1.6/"+dotID+".html") {
+		t.Errorf("the levelled badge does not link its versioned proof page:\n%s", refreshed)
+	}
+
+	if !strings.Contains(refreshed, "Package rc4 implements RC4 encryption") {
+		t.Errorf("the refresh wrote a DOC-LESS README — it read the cleared globals, not the record:\n%s", refreshed)
+	}
+
+	// ---- the hazard arm: a run that did not convert cannot write a README at all ----
+
+	convertedPackageReadme = nil
+	mustWriteFile(t, readmePath, sentinel)
+
+	if err := refreshPackageReadmeAfterProof(projectPath, options); err != nil {
+		t.Fatalf("refresh with no conversion record: %v", err)
+	}
+
+	if got := readme(); got != sentinel {
+		t.Errorf("a build/run/compare-only run rewrote a README:\n%s", got)
+	}
+
+	// ...and it does not CREATE one either, which is the corpus-wide shape of the same hazard.
+	if err := os.Remove(readmePath); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := refreshPackageReadmeAfterProof(projectPath, options); err != nil {
+		t.Fatalf("refresh with no README present: %v", err)
+	}
+
+	if _, err := os.Stat(readmePath); !os.IsNotExist(err) {
+		t.Errorf("a build/run/compare-only run created a README where the conversion wrote none")
+	}
+
+	// ---- and a record belongs to the package that left it, not to whatever run reaches the page ----
+
+	recordPackageReadmeEmission(filepath.Join(filepath.Dir(projectPath), "des"), "crypto.des", doc, sourceDir)
+
+	if err := refreshPackageReadmeAfterProof(projectPath, options); err != nil {
+		t.Fatalf("refresh with a foreign record: %v", err)
+	}
+
+	if _, err := os.Stat(readmePath); !os.IsNotExist(err) {
+		t.Errorf("another package's emission record refreshed this package's README")
+	}
+}

@@ -5487,6 +5487,14 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		if err := emitValidationProofPage(outputPath, result, manifest, disclosures, disclosureNotes, options); err != nil {
 			return fmt.Errorf("write validation proof page: %w", err)
 		}
+
+		// The page the package's README badge reads has just changed, and the README was composed
+		// BEFORE it — so level it here, in the same run, rather than one conversion later. Reaches a
+		// README only on a run that CONVERTED this package: `compare` alone left no record, so it
+		// cannot write one (see packageReadmeEmission).
+		if err := refreshPackageReadmeAfterProof(outputPath, options); err != nil {
+			return fmt.Errorf("refresh package README: %w", err)
+		}
 	}
 	if len(disclosed) > 0 {
 		classes := HashSet[string]{}
