@@ -424,6 +424,193 @@ release from a healthy volume.
    what phase 5's count check exists to catch.
 4. **Only then** apply §4's README/NEWS text (still user-owned).
 
+### 3.6 REHEARSAL — the dry run, executed (2026-08-22)
+
+§3.3 names the pack-only run as the checklist's own dry-run-first step. This is that step, performed,
+so release morning has no first-time surprises. Machine: **i7-5820K** (6C/12T, 32 GB, Windows 11),
+.NET SDK 9.0.317, Go 1.23.1 windows/amd64, repository on `D:`, run solo. Tree: master `71a95c8ff`,
+`git status` clean, `GoBuildNumber` **6**.
+
+Everything below is measured. Two runs were made: the documented command exactly as §3.3 writes it,
+and — after that run proved unable to reach the build phases — an **instrumented copy** whose only
+delta is described in §3.6.3.
+
+#### 3.6.1 Preconditions, live state
+
+| # | Precondition | Live state |
+|:--|:--|:--|
+| 1 | slnx + version.props exist | **PASS** |
+| 2 | Go toolchain on PATH | **PASS** — `go1.23.1 windows/amd64`, `C:\Program Files\Go\bin\go.exe` |
+| 3 | `TestStdLibMetadataInSync` | **PASS** — `ok go2cs 0.161s`, **2.1 s** of wall clock including toolchain start. The "fails at second zero rather than after a full Release build" design works exactly as intended, and the gate is cheap enough to re-run at will |
+| 4 | `git` available | **PASS** — `C:\Program Files\Git\cmd\git.exe`. Its absence-is-a-warning path was not exercised; §3.2's "treat as fatal by hand" stands unmeasured |
+| 5 | gpg signing | `gpg.exe` present at `C:\Program Files (x86)\GnuPG\bin\gpg.exe`, but **NOT exercised — no dry run can exercise it**, because the tag mint is gated on the bump. See D6 |
+| 6 | `docs/validation/1.23.1.7` absent | **PASS** — verified absent. `docs/validation/` holds `1.23.1.2`…`1.23.1.6` + `current/`. Do not pre-create it |
+| 7 | `-SkipBuild` not passed | n/a |
+| 8 | `NUGET_API_KEY` | not reached (push gate only) |
+
+**Linux-runs-first: CONFIRMED by observation**, not by reading — the first `==>` build line names
+`[linux-x64]`. And the release's flagged risk is green **today**: the full `-p:GoTargetOS=linux`
+Release build of `go2cs-stdlib.slnx` completed with **0 errors in 511.5 s**.
+
+**Disk.** `C:` 97.9 GB free, `D:` 439.6 GB free. The run consumed **6.5 GB** of Release build output
+under `src/core/**/{bin,obj}` plus **0.16 GB** of packages — budget ~7 GB on the repository volume.
+
+#### 3.6.2 ⚠ THE DOCUMENTED DRY RUN CANNOT RUN — it dies at ~8 s, before it builds anything
+
+`.\push-nuget.ps1`, exactly as §3.3 writes it, **throws at line 300 after 7.9 s**:
+
+```
+==> Validation snapshot 1.23.1.6 already exists (write-once) -- keeping it
+==> Retargeted 0 README badge link(s) to 1.23.1.6
+Green badge in src\core\archive\tar\README.md links a proof page that was not snapshotted:
+docs\validation\1.23.1.6\archive.tar.md
+```
+
+The mechanism is entirely deterministic, and it is a property of the CALENDAR, not of the tree:
+
+1. a pack-only run does not bump, so `$fullVersion` is **1.23.1.6** — the LAST-PUBLISHED version;
+2. `$versionProofs` is therefore `docs/validation/1.23.1.6`, which **already exists**, so the freeze
+   takes the "keeping it" branch and the snapshot is never refreshed;
+3. the green-badge verifier then checks all **162** green badges against that **126-page** frozen
+   snapshot — and **36 packages have banked since the 1.23.1.6 release**, so 36 badges link a page
+   that directory will never contain. `archive/tar` is merely the alphabetically first.
+
+162 − 126 = 36. The 36 are correct badges: `archive/tar`, `crypto/tls`, `encoding/json`, `fmt`,
+`go/types`, `html/template`, `os/exec`, `text/template`, and — the five most recently banked —
+`runtime/debug`, `log`, `flag`, `net/mail`, `sync/atomic`, among the rest.
+
+**Nothing is broken, and the release run is unaffected**: with `-Push` the bump makes `$fullVersion`
+1.23.1.7, the freeze copies all 162 `current/*.md` into a directory that does not yet exist, and every
+badge then verifies against a page that is there. The *dry run* is the only casualty — and it is a
+casualty every time at least one row banks between a release and the next dry run, which is the normal
+state of this campaign.
+
+⚠ **Correction to §3.3.** Its closing claim — *"Both badge retargets are no-ops at the current
+version, and both verifiers still run, so a pack-only run **is** a real badge-consistency check"* — is
+true only while the roster has not moved since the last publication. Once it has, the green verifier is
+**guaranteed** to throw and the pack-only run measures nothing past its first eight seconds. The
+statement was reasoned from source and never executed; this is what executing it says.
+
+#### 3.6.3 The instrumented rehearsal — the release-morning shape
+
+To exercise phases 5–13 the run needs the FREEZE branch, which only a not-yet-existing version
+directory reaches. The rehearsal therefore used a copy of `push-nuget.ps1` with **exactly one changed
+line** — `$validationDir` pointed at a scratch root on `C:` seeded with `current/` alone (verified by
+diff: 1 file changed, 1 deletion). Nothing else differs, and the copy was deleted afterward. Consequence:
+the freeze, both retargets and both verifiers execute precisely as they will on release morning.
+
+Its one artifact is the sharpest result of the rehearsal, so it is stated plainly: the `.csproj`
+`Exists()` guard reads the **repository's** `docs/validation/<version>/`, which the redirect does not
+move — so the packed `VALIDATION.md` count reflects the real 126-page `1.23.1.6` directory. §3.6.5
+turns that into the demonstration.
+
+#### 3.6.4 The fifteen phases, measured
+
+| # | Phase | §3.4 expectation | Observed | |
+|:--|:--|:--|:--|:--|
+| 1 | metadata gate | passes | `ok go2cs 0.161s` — **2.1 s** | PASS |
+| 2 | bump | n/a for pack-only | correctly skipped | gated off |
+| 3 | version | `1.23.1.6 (solution: go2cs-stdlib.slnx)` | exact | PASS |
+| 4 | tag | minted pre-build | correctly skipped — ⚠ **wrong tag named**, see D2 | gated off |
+| 5 | `Froze N` | **N == roster rows** | **Froze 162**; roster is 162 | **PASS** |
+| 6 | green badges | **N == roster rows** | Retargeted **0** (no-op at current version), **Verified 162** | **PASS** |
+| 7 | C# Source badges | throws on any README lacking one | Retargeted **0**, **Verified 305** | **PASS** |
+| 8 | L3 derivation | from the corpus | **37** packages | PASS |
+| 9 | two Release builds, linux first | both clean | linux **511.5 s**, windows **508.1 s**, order reversed as documented | **PASS** |
+| 10 | per-RID counts | **must be equal** | **307 / 307**, id sets identical | **PASS** |
+| 11 | flavor comparison | **P must be 0** | 37 of 37 L3 differ; of 270 neutral **0 differ materially**, 216 identity-only | **PASS** |
+| 12 | merge | M == L3 count | **Merged 37**, copied **270** verbatim | **PASS** |
+| 13 | `Packed N` | == per-RID count | **307** | **PASS** |
+| 14 | push | n/a | gate reached: `Pack-only (default)` | correct |
+| 15 | done | n/a | **exit 0 at 1,095.2 s** | — |
+
+The 216-of-270 identity-only figure reproduces the design's own increment-4 measurement quoted in the
+script's comment, on the artifacts actually packed.
+
+**Timing table for this machine** — the number §3.3 most needs:
+
+| Segment | Wall |
+|:--|--:|
+| preflight, phases 1–8 (gate, freeze, both retargets, both verifiers, L3) | **5.5 s** |
+| `[linux-x64]` Release build (307 projects, `--no-incremental`) | **511.5 s** |
+| `[linux-x64]` pack | 32.0 s |
+| `[win-x64]` Release build | **508.1 s** |
+| `[win-x64]` pack | 32.7 s |
+| read flavors + compare + merge | 5.3 s |
+| **total** | **1,095.2 s — 18.3 min** |
+
+#### 3.6.5 Outputs verified
+
+* **307 merged `.nupkg`**, 307 per flavor under `_flavors/`, 0.16 GB total — matching the solution's
+  307 projects.
+* **Multi-RID shape**, `go.os`: `lib/net9.0/os.dll` **463,360 B** (the Windows reference flavor),
+  `runtimes/win-x64/lib/net9.0/os.dll` 463,360 B, `runtimes/linux-x64/lib/net9.0/os.dll` **464,896 B**.
+  The reference flavor is duplicated into its own RID folder rather than left to fall back, exactly as
+  the script's comment states.
+* **Neutral packages are byte-identical to the reference pack** — `go.sort` merged and `_flavors/win-x64`
+  hash to the same SHA-256. "The Windows lane cannot regress through the merge" is verified, not assumed.
+* **Dependency union is real and correct.** `go.os`: 19 (win) / 21 (linux) / **23 merged = 23 union**,
+  win-only `go.internal.godebug`, `go.internal.syscall.windows`; linux-only `go.internal.byteorder`,
+  `go.internal.goarch`, `go.internal.stringslite`, `go.internal.syscall.unix`. `go.syscall`: 15/15/**18**.
+  `go.net`: 25/25/**26**. Every merged set equals the union of its flavors.
+* **The tree is left holding the Windows flavor** (`os.dll` on disk = 463,360 B). The reversed build
+  order does what §3.4 phase 9 says it does.
+* **No side effects**: no tag created, `version.props` unchanged, zero READMEs modified.
+
+**⚠ The proof-snapshot silent failure, reproduced end to end.** Of the 307 merged packages, exactly
+**126 carry a `VALIDATION.md`** — precisely the 126 pages in `docs/validation/1.23.1.6`. The other
+**36 validated packages pack nothing at all**, with no warning, no error, and **exit 0**. That is the
+`Exists()`-guard silence §3.5 point 3 names, and it is why phase 5's count check exists. On release
+morning the freeze writes all 162 pages *before* the build, so all 162 guards are satisfied — but the
+arithmetic is worth checking rather than trusting:
+
+```powershell
+# after the run: the count that must equal the "Froze N" line
+(Get-ChildItem src\artifacts\nupkg -Filter *.nupkg | Where-Object {
+    $z=[IO.Compression.ZipFile]::OpenRead($_.FullName)
+    $hit=[bool]($z.Entries | Where-Object FullName -eq 'VALIDATION.md'); $z.Dispose(); $hit }).Count
+```
+
+Set arithmetic confirmed on this tree: roster rows == `current/*.md` == green-badge READMEs == **162**,
+with **zero** set difference in either direction. Release morning's freeze will satisfy every badge.
+
+#### 3.6.6 Deviations found (flagged, not fixed)
+
+* **D1 — §3.3's dry run is unrunnable whenever a row has banked since the last release.** §3.6.2. The
+  checklist's recommended inspection path is, today, an eight-second failure. A dry run that reaches the
+  build phases needs the script to be able to freeze a *proposed* version; no such affordance exists.
+* **D2 — the pack-only skip message names the wrong tag.** It prints `the run that bumps mints
+  nuget-1.23.1.6`, because `$releaseTag` (line 187) is composed from the **un-bumped** `$fullVersion`.
+  The run that bumps mints `nuget-1.23.1.7`. Cosmetic, but it misinforms at exactly the moment someone
+  is checking §3.1's version arithmetic.
+* **D3 — §3.3 over-budgets by ~6x.** "Budget hours on a slow host" measures **18.3 minutes** on the
+  fleet's slowest machine. Two Release builds dominate at ~510 s each; everything else is seconds.
+* **D4 — §3.3's `D:` disk warning does not reproduce.** Re-measured 2026-08-22: **0.65 ms per 4 KB file
+  on `D:`** against 0.82 ms on `C:` — no penalty at all, versus the 1,606 ms / 2,140× the census
+  recorded. That was a state of the disk, not a property of it; the release may run from the repository's
+  own volume. Keep the free-space check, which is a different concern.
+* **D5 — precondition 5 (gpg) cannot be rehearsed by any dry run**, since the mint is bump-gated. §6's
+  contradiction note is now confirmed by execution rather than by reading. Residue, not a defect.
+* **D6 — 303 of 306 library `.csproj` carry the `VALIDATION.md` pack block.** The three without are
+  `golib`, `testing` and `unsafe` — all hand-owned, none on the roster. Recorded so a future audit does
+  not chase the 303-vs-306 gap.
+* **D7 — phase 11's wording.** §3.4 frames the line as "P differ materially" with P required to be 0;
+  the emitted line reads `0 differ materially, 216 differ only in the deterministic-identity fields`.
+  No deviation — recorded as a confirmation that the expected reading is the observed one.
+
+#### 3.6.7 Go/no-go residue for release morning
+
+1. **Prove gpg signing before starting**, since nothing else can: `git tag -s rehearsal-gpg -m x` then
+   `git tag -d rehearsal-gpg`. Seconds, and it removes the one precondition this rehearsal could not touch.
+2. **Re-run the metadata gate after any corpus work** that lands between now and the release. It is 2 s,
+   and it is the only gate that fails before a build is spent.
+3. **Re-derive phase 5's count on the day.** It is 162/162/162 now and moves with every bank; the
+   invariant is roster rows == `current/*.md` == green-badge READMEs == the `Froze N` line.
+4. **Do not pre-create `docs/validation/1.23.1.7`** — precondition 6 throws on it, and it is absent today.
+5. **~7 GB free on the repository volume**, and expect ~20 minutes on a machine of this class.
+6. **Unassessed by this lane**: §3's timing ruling (all four parity-close triggers) and §5's consistency
+   preflight. Both remain owed before the tag flies.
+
 ---
 
 ## 4. DRAFT — the README/NEWS milestone text — USER-OWNED
