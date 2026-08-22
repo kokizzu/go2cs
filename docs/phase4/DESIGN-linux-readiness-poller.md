@@ -767,7 +767,7 @@ guessed.
 
 | | Before the poller | Poller only | Poller + `net.runtime_rand` |
 |:--|:--|:--|:--|
-| `crypto/tls` (linux) | package-level `operation not permitted` from `TestMain`'s listener — **0 of 3,646** | the suite RUNS; eats its 30 m deadline in `TestVerifyHostname` | completes in ~2 min: Go enumerates **3,646** (676 pass / 589 fail / 2,381 skip — the bulk is `TestBogoSuite`'s subtests, which the C# host does not enumerate), the C# host runs **402** (387 pass / 15 fail), and of the tests BOTH sides ran **400 agree, exactly 2 diverge** |
+| `crypto/tls` (linux) | package-level `operation not permitted` from `TestMain`'s listener — **0 of 3,646** | the suite RUNS; eats its 30 m deadline in `TestVerifyHostname` | completes: **402** verdicts on each side (Go 389 pass / 13 fail; C# 387 pass / 15 fail), **400 agree, exactly 2 diverge** — and 400 is the Windows banked count exactly. Thirteen tests fail on BOTH sides (the suite's network- and BoGo-dependent arms), so the claim is precisely "of the 402 verdicts both sides produce, 400 agree". Measured at the lane tip `a5429a611`. |
 
 Per the per-OS verdict ruling (coordinator, 2026-08-22) that is a fact about (`crypto/tls`, linux)
 and is reported, not blended with the Windows-authoritative columns; nothing is banked here.
