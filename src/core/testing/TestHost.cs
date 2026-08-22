@@ -182,6 +182,24 @@ public static class TestHost
             WriteJUnit(options.JUnitFile, registry.Package, reporter.Events);
             return exitCode;
         }
+        catch (Exception ex) when (CrashReport.TryUnwrapPanic(ex, out PanicException? panic, out Exception? thrown))
+        {
+            // A panic that escaped the run is NOT an infrastructure failure. Go's test binary dies
+            // on one with a crash report and status 2, and the oracle has to be able to observe
+            // exactly that: runtime/debug's TestSetCrashOutput re-executes this binary, panics
+            // inside TestMain, and reads the report back from BOTH the child's stderr and the file
+            // debug.SetCrashOutput configured. Reporting the CLR exception instead is what made it
+            // read `System.AggregateException: One or more errors occurred. (oops) --->
+            // go.PanicException: oops` over a frame list — docs/phase4/DESIGN-crash-report.md.
+            //
+            // TestMain's panic arrives WRAPPED, from Task.Wait above, which is why the filter
+            // unwraps rather than testing the exception's own type.
+            //
+            // `return 2` rather than Environment.Exit: Go's status for a panicking test binary is 2
+            // either way, and returning lets the finally below tear down the isolated run directory.
+            CrashReport.Report(panic, thrown);
+            return 2;
+        }
         catch (Exception ex)
         {
             TestEvent infrastructureError = new(registry.Package, "", "infrastructure-error", Output: ex.ToString());

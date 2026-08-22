@@ -38,8 +38,14 @@
 //     laundering the assert, which is why NumGC is still the real gen2 count and not zeroed to make
 //     two lengths agree. The packed layout ReadGCStats expects (n pauses, n ends, lastGC, numGC,
 //     totalPause) is honored exactly, most-recent-first, at length 2n+3.
-//   - modinfo / WriteHeapDump / SetTraceback / runtime_setCrashFD have no managed form; they are
-//     inert, matching what a binary built without module info or heap-dump support reports.
+//   - modinfo / WriteHeapDump / SetTraceback have no managed form; they are inert, matching what a
+//     binary built without module info or heap-dump support reports.
+//   - runtime_setCrashFD is a REAL operation as of 2026-08-21, and it no longer owns the slot: the
+//     descriptor lives in golib (go.golib.CrashReport), which is where Go keeps it —
+//     runtime.crashFD, the very symbol this func's //go:linkname names — and where the printer
+//     that writes to it lives. An unhandled panic now writes Go's crash report to this descriptor
+//     as well as to stderr, which is what runtime/debug's own TestSetCrashOutput measures
+//     (docs/phase4/DESIGN-crash-report.md).
 //
 // Hand-owned: there is no stubs_impl.go, so a -stdlib reconvert never regenerates this file.
 
@@ -70,7 +76,6 @@ partial class debug_package
     private static int64 s_memoryLimit = int64.MaxValue;    // math.MaxInt64 — "no limit"
     private static nint s_maxStack = 1_000_000_000;         // runtime.maxstacksize on 64-bit
     private static nint s_maxThreads = 10_000;              // runtime sched.maxmcount
-    private static uintptr s_crashFD = ~(uintptr)0;         // ^uintptr(0) — "unset"
 
     // paniconfault is a per-goroutine flag in Go; a goroutine is a managed thread here.
     [ThreadStatic]
@@ -187,10 +192,10 @@ partial class debug_package
     internal static partial uintptr runtime_setCrashFD(uintptr fd)
     {
         // Go redirects the runtime's fatal-error output to fd and returns the previous one
-        // (^uintptr(0) when unset, which tells SetCrashOutput not to close anything). The managed
-        // runtime writes crashes through its own handler, so the slot is remembered but inert.
-        uintptr previous = s_crashFD;
-        s_crashFD = fd;
-        return previous;
+        // (^uintptr(0) when unset, which tells SetCrashOutput not to close anything). Both halves
+        // of that contract are golib's now — the slot AND the writer — so this is the forwarding
+        // linkname it is in Go, and nothing about SetCrashOutput's own close-the-previous-fd logic
+        // changes.
+        return CrashReport.SetCrashOutputFd(fd);
     }
 }

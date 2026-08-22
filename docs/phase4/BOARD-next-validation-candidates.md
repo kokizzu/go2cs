@@ -17521,4 +17521,181 @@ Harness: the repo's own `run-validated-sweep.ps1 -Filter <pkg> -Exact -SkipBuild
 - R4's one body and R1's two bodies are priced here for routing; neither was taken in this lane so that the flip count measures the poll seam alone.
 
 ---
+## ✅ BANKED — the Go-format crash report lands and `runtime/debug` is roster row **#162** at **75.3%**: the ninth verdict closed as a FIX, which is what every class had already ruled it was (2026-08-22, lane `worktree-agent-aef2216c6bd01a654`)
+
+The previous entry measured `TestSetCrashOutput`, found it refused by all five classes and by the
+sixth minted for this very row, and priced the remedy in two halves. Both halves are built, the test
+passes all six of its assertions, and the row banks — **4 matched · 5 disclosed**, the terminal
+crossing of the 1.23.1 campaign.
+
+### The arc, in the order the mission required
+
+**The design note went first, in its own commit** (`docs/phase4/DESIGN-crash-report.md`,
+`48712b2a4`). Its whole content is that the target format is **Go's own and nothing is invented**:
+`panic: <value>`, a blank line, `goroutine N [running]:`, then the traceback — the shape recorded
+verbatim in Go's own `runtime/debug/stack_test.go` above `TestSetCrashOutput`'s read-back. Element 1
+is `PanicException.PanicText`, banked. Elements 3 and 4 are `appendGoFrames`, which `TestStack` banks
+against Go frame for frame. **The arc composes banked ingredients and renders nothing new.**
+
+**WHERE, per the trap this board named.** The `System.AggregateException … ---> go.PanicException`
+text is the *host's* framing, so the printer lands at the two places a host decides what an escaped
+panic prints — golib's `AppDomain.UnhandledException` backstop (every converted program) and
+`TestHost.Run`'s outer catch (the test host) — and never in `runtime/debug`, which owns only the
+destination. A recovered panic is untouched: nothing on the recover path, the `GoFrame`
+capture/claim protocol, or `TestExecution`'s per-test panic report moves.
+
+**The printer is golib's**, because golib is the only assembly the test host and every converted
+program share (`core/testing` references golib and `time`, and nothing else). golib cannot spell a
+Go frame name, so the dependency inverts exactly as `RuntimeErrorPanic.IntegerDivideByZeroValue`
+already inverts it for the divide-by-zero panic VALUE: golib declares the hook, `core/runtime` fills
+it from a module initializer, and with nothing registered the report falls back **byte-identically**
+to golib's old single line. That is the repository's own ruled idiom for this layering, and it makes
+an uninstalled renderer a strict non-regression rather than a wrong report. The alternative —
+relocating ~400 lines of traceback machinery into golib so no hook is needed — was considered and
+refused in the design: it rewrites machinery banked hours earlier (rows #160–#161) for no behavior a
+consumer can observe.
+
+**The tee.** `SetCrashOutput`'s descriptor slot moved from `runtime/debug`'s hand-own to golib, which
+is where Go keeps it (`runtime.crashFD`, the symbol `runtime_setCrashFD`'s own `//go:linkname`
+names); `runtime_setCrashFD` forwards. The asymmetry the test pins needs no rule — program output
+reaches stderr through `println`/`os.Stderr` and never through the printer, so the descriptor only
+ever receives the report. Exit code stays 2.
+
+### What the child now prints
+
+`TestSetCrashOutput` re-executes the test binary, panics inside `TestMain`, and reads back:
+
+```
+panic: oops
+
+goroutine 1 [running]:
+runtime/debug_test.TestMain()
+	runtime/debug/stack_test.go:37
+go.testing_runtime.TestHost.RunTests()
+	.../src/core/testing/TestHost.cs:271
+…
+```
+
+identically from **both** the crash file and stderr, with `hello` present in stderr and absent from
+the crash file, and the child exiting 2. All six assertions pass; before the arc all six failed.
+
+The mixed frame spelling is the position map's doctrine working as ruled, not a defect: `TestMain`
+is converted Go and reports a **Go** position — `runtime/debug/stack_test.go:37`, which exists in
+Go's tree — while the frames beneath it are the hand-owned host and the BCL, which have no
+conversion relationship to any Go source and honestly report their own. Go's own report has
+`main.main()` and `_testmain.go` there.
+
+### The arithmetic
+
+**4 matched · 5 divergent · 9 verdicts**, exactly the previous entry's table with its ninth row
+flipped: `TestReadGCStats`, `TestSetGCPercent` (skip parity, issue 20076), `TestSetMaxThreadsOvf` and
+now `TestSetCrashOutput` match; `TestStack`, three `WriteHeapDump` tests and `TestFreeOSMemory` are
+the composed disclosures. The converter's own verdict line: *"Validated 4 tests against go test
+(1 skipped identically on both sides, 5 disclosed-divergent (codegen-liveness, host-limit,
+runtime-capability), 2 disclosed-unsupported declarations excluded)."*
+
+Roster, recomputed by summing its own table: **162 rows, 18,569 matching verdicts, 85 disclosed —
+162 / 215 = 75.3%** (161 / 18,565 / 80 before). The terminal marker of the 1.23.1 campaign; the
+milestone ritual itself (`MILESTONE-75pct-prep.md`) is coordinator-owned and untouched here.
+
+### The five manifest entries, pinned as composed
+
+Pasted **verbatim** from the previous entry's block, and each signature re-verified against this
+lane's own failure output rather than trusted:
+
+| Test | Class | Signature, as pinned | Verified at this tip |
+|:--|:--|:--|:--|
+| `TestStack` | `host-limit` | `expected prefix "\ttesting/testing.go"` | ✓ — the fifth-frame assert, exactly one line, `TestExecution.cs:593` |
+| `TestWriteHeapDumpNonempty` | `runtime-capability` | `WriteHeapDump is not supported by the managed runtime` | ✓ |
+| `TestWriteHeapDumpFinalizers` | `runtime-capability` | (same) | ✓ |
+| `TestWriteHeapDumpTypeName` | `runtime-capability` | (same) | ✓ |
+| `TestFreeOSMemory` | `codegen-liveness` | `less than 16777216 released:` | ✓ — `less than 16777216 released: 0 -> 3031040`; the OLD `no memory released: 0 -> 0` text would NOT have matched |
+
+`runtime-capability` joins the roster preamble **with this commit**, per Ruling B — as
+`chan-direction` did, not before — and the preamble's count prose moves to five with its own history
+sentence. `host-limit`'s bullet gains the permanent-retirement paragraph the position-map ruling
+required: `TestStack` does NOT retire at a single-file host, and both the preamble and the pinned
+reason say so.
+
+### Gates
+
+| Gate | Result |
+|:--|:--|
+| `runtime/debug` pipeline, `-test-action all` | **VALIDATES 4 + 5**, exit 0 |
+| `GolibTests` (full) | **226/226 pass**; 15 new crash-report guards, **5 proven failing-first** |
+| behavioral suite (full) | **PASS 604/604** Transpile+Compile+Target, **578 Output compared, 0 failed**, 26 skipped (1,673.5 s), **zero tracked drift** after 604 re-transpiles |
+| `go2cs.slnx --no-incremental` | **Build succeeded, 0 errors** (31 m 17 s) |
+| converter `go test ./...` | **ok**, exit 0 (235.7 s) — owed because a manifest is being committed |
+| banking sweep (see below) | **8 pass / 0 fail**, 2,262 verdicts, no count drift |
+| `check-no-regression.ps1` | **not owed** — no converter `.go` file moved, so no emission can have changed. The behavioral suite's own Target phase byte-compared all 604 goldens (**ok**) and left zero tracked drift, which is the same evidence CNR produces |
+
+### The canary set, derived rather than remembered
+
+The five-largest-reflect-consumer sweep derives its set at gate time by DIRECT import declaration
+(`Imports`/`TestImports`/`XTestImports` from one `go list -json std`, never a text grep), per the
+2026-08-20 ruling. At this tip that yields `go/types` (557), `encoding/json` (491), `crypto/tls`
+(400), `encoding/xml` (386), `html/template` (243) out of **65** banked rows importing `reflect`
+directly. That reproduces the set the atomic-align lane and the position-map lane each derived
+independently, and the qualifying count tracks the roster as it should: 62 of 158 rows, then 64 of
+161, now 65 of 162. `go/internal/gcimporter` (583, the largest banked row) is absent again, for the
+already-recorded reason — it matches `"reflect.Value"` only inside expected-signature test DATA and
+imports `reflect` nowhere — so the stale list is still the one `CLAUDE.md` carries, and re-deriving
+is still what keeps it from being used.
+
+Swept, each `-Exact -TestTimeout 40m`, plus `database/sql` (the panic-frame-sensitive row) and
+`sync`, and the new row itself:
+
+| Package | Verdicts | Result | Time |
+|:--|--:|:--:|--:|
+| `sync` | 44 | PASS | 40 s |
+| `database/sql` | 137 | PASS | 123 s |
+| `html/template` | 243 | PASS | 116 s |
+| `encoding/xml` | 386 | PASS | 109 s |
+| `crypto/tls` | 400 | PASS | 724 s |
+| `encoding/json` | 491 | PASS | 87 s |
+| `go/types` | 557 | PASS | 364 s |
+| `runtime/debug` | 4 | PASS | 25 s |
+
+The set was **not dispatched to the i9**: a `TO i9 · JOB-C2` entry must name a tip the i9 can fetch,
+and this lane's brief says to push nothing, so no tip exists off this box to bind. It was swept here.
+
+### Dirt
+
+**This row's own dirt is empty**, exactly as the previous entry recorded: a full `-test-action all`
+produced no CRLF phantoms, no `-tests`-closure production re-flip, no `package_init.cs` hook and no
+production `.csproj` change. The committed test sources, the manifest, the proof page, the index row
+and the README badge are this bank's deliberate additions. `runtime/debug` is the first banked row to
+carry a **fuzz seed corpus** (`testdata/fuzz/FuzzParseBuildInfoRoundTrip`, three files, 118 bytes) —
+only two GOROOT packages have one and the other is not banked — and it is committed because the
+generated `.tests.csproj` references all three as `<None Include=…>`, so a committed csproj without
+them would be broken.
+
+**The SWEEP found dirt in four OTHER packages, and it is banked-artifact staleness from two earlier
+arcs, not this one.** Restored here rather than levelled, because levelling it would bury a bank
+under an unrelated regen — but recorded so it is not re-diagnosed:
+
+* `encoding/xml`, `go/types`, `html/template` — `package_init.cs` gains `initᴛᴛtests()` and its
+  `static partial` declaration. The `-tests` hook class; those three were banked before it was
+  emitted.
+* `crypto/tls` — `package_test_info.cs` gains an **empty** `<GoSourcePositionMaps>` section. Its test
+  artifacts were banked before yesterday's position-map arc emitted that block at all.
+
+No converter file moved in this lane, so neither can be attributable to it; all four packages passed
+at full expected count. This is precisely the banked *test-source* staleness charter §5 says the
+sweep is the only gate that can see.
+
+Two harness findings, both budget rather than corpus, and both worth not re-paying:
+
+* The behavioral suite's **first** attempt hit the stock **2,400 s batch-build budget at 604
+  projects** on this machine class and fell to per-project attribution — the exact false-red the
+  runner's own note warns about. Re-run at `--build-timeout 9000` it built clean in one shot.
+  CLAUDE.md's i7-5820K budget row wants raising; 2,400 s is no longer enough at this corpus size.
+* That same attempt's Transpile phase hit its 60 s budget on one project and left
+  `SubpackageFuncTypeParam.cs` **zero bytes on disk**. The next run's `UpToDate` check then SKIPPED
+  it — an empty file is still newer than `go2cs.exe` — and the batch build failed it with
+  `CSC : error CS5001: Program does not contain a static 'Main' method`, which reads exactly like a
+  converter regression. Deleting the truncated artifact and re-running that one project filtered
+  passes all four phases in 50 s. **A transpile timeout can leave a TRUNCATED `.cs` that the
+  up-to-date check then protects** — a new shape of the stale-output family. Here it surfaced as a
+  false RED; the same mechanism could hide a real one.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

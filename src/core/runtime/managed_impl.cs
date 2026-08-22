@@ -118,6 +118,39 @@ partial class runtime_package
         GcPauseRecorder.Arm();
     }
 
+    // The traceback half of Go's crash report for a panic nobody recovered. golib composes the
+    // report (go.golib.CrashReport) because it is the only assembly both the Phase-4 test host and
+    // every converted program share, but it cannot spell a Go frame name or map a converted .cs
+    // line back to its Go position — that is this file's machinery. So the dependency inverts
+    // exactly as the divide-by-zero panic VALUE does in panicvalues_impl.cs: golib declares the
+    // hook, the runtime package fills it here. See docs/phase4/DESIGN-crash-report.md.
+    [ModuleInitializer]
+    internal static void ᴛRegisterCrashTraceback()
+    {
+        CrashReport.TracebackRenderer = crashTraceback;
+    }
+
+    // Exactly the block debug.Stack() produces, from the same appendGoFrames: the header Go writes
+    // above a traceback, then one `<pkg>.<Func>()` line per frame with its tab-indented Go position
+    // beneath. A crash renders nothing new — runtime/debug's TestStack already compares these very
+    // frames against Go's own expectations, frame for frame.
+    private static string crashTraceback(PanicException panic, Exception thrown)
+    {
+        // PanicTrace is the ORIGIN, snapshotted at the first catch, and is the right answer
+        // whenever the panic passed through a deferred sequence: re-raising a stored instance
+        // resets Exception.StackTrace to the re-raise point, and a synthesized runtime-error panic
+        // was never thrown at all. A panic no frame ever caught — a panic() in a function with no
+        // defer, which is what runtime/debug_test.TestMain does — has no snapshot, and there the
+        // exception that actually travelled still carries the throw site.
+        StackTrace stack = panic.PanicTrace ?? new StackTrace(thrown, fNeedFileInfo: true);
+        StringBuilder trace = new();
+
+        trace.Append("goroutine 1 [running]:\n");
+        appendGoFrames(trace, stack);
+
+        return trace.ToString();
+    }
+
     // GOMAXPROCS' remembered setting. Go's starts at NumCPU.
     private static nint s_gomaxprocs = Environment.ProcessorCount;
 
