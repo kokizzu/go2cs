@@ -17128,4 +17128,77 @@ now rides in those files -- restored to the `-stdlib` emission, where the tree r
 did not move at all. `src/core/README.md` came back as a CRLF phantom from the overlay (empty
 numstat) and was restored. `runtime/debug`'s converted test artifacts were removed rather than
 committed: the row does not bank here.
+
+## THE RELOCATION ROUND: the records move to the info files by user directive, the migration is the diff, and the design's own SS6.4 doctrine caught the one defect before it banked (2026-08-21, lane `claude/position-map-arc`)
+
+The merge was HELD one round: two coordinator entries posted before the lane's final gates --
+the placement directive and its format addendum -- went unread until the hold named them. Both
+misses would have been caught by a pre-gate mailbox poll; the lane adopts that rhythm. The round
+itself, in the order it ran:
+
+### The relocation (`4c7fa5398`)
+
+Every `[assembly: GoPositionMap]` record leaves its converted file and lands in a delimited
+expository block -- `// <GoSourcePositionMaps>` ... `// </GoSourcePositionMaps>` -- in the
+package-info file of the COMPILATION that compiles the mapped source: `package_info.cs` for
+production, the test-info anchors for `-tests` variants, routed exactly as the GoImplement
+records are. Semantics-free by construction: the record shape is unchanged, indivisibility is a
+property of the record, and the assembly-scoped lookup cannot tell where an attribute was
+declared -- the runtime did not change by a byte. Verified per the directive: the
+stdlib-metadata `extract()` does not scoop the block (pinned by
+`TestStdLibMetadataExtractIgnoresPositionMaps` against a synthetic info file carrying all three
+record families).
+
+Two things the relocation surfaced that the in-file placement had made structurally free:
+
+* **The hand-own `.cs.auto` hazard.** In-file, a review sibling's (meaningless) record was
+  harmless -- the sibling is never compiled. Centralized, it would have landed in the COMPILED
+  `package_info.cs`: a table mapping lines of a hand-written file that does not contain them,
+  the exact fabrication the ruling forbids. `finalizePositionMap` records nothing for a
+  `manualConversion` visit.
+* **Merge semantics are load-bearing.** The section follows `writePackageInfoFile`'s
+  `mergeExisting` contract because the recompile-model test assembly excludes `package_info.cs`
+  from its compile items in favor of the seeded `package_test_info.cs` -- the seed is the only
+  route production records have into that assembly. Key ownership is claimed by the conversion
+  that writes the file (the `-tests` flow resets per VARIANT while its info files accumulate
+  across variants; the recompile fallback re-invokes the whole conversion and must not double).
+
+### The migration (`ea659f141`) -- and the defect the A/B caught
+
+The diff IS the move: 1,811 corpus sources and 1,308 behavioral sources/goldens lose exactly
+their two record lines; 490 corpus info files and 631 behavioral `package_info.cs` gain
+sections. One named mover: `runtime/windows/mheap.cs` levels the union's zero-size
+explicit-layout emission with a freshly derived table. The 148-record delta between old and new
+corpus counts closed exactly: declaration-only files (const tables, `doc.cs`) had EMPTY tables
+-- `GoLineFor` answers 0 for every line, behaviorally identical to no record -- and the
+relocated converter emits nothing for them.
+
+The 469 committed test artifacts `-stdlib` cannot reach were migrated by script -- and the
+script's first output was WRONG in a way nothing would have flagged red: it moved each table
+verbatim while deleting the record's two lines from the file top, leaving every C# line in
+every moved table skewed by exactly +2. That is SS6.4's doctrine -- the map is derived from the
+text it describes -- firing on the migration itself, and it was caught because the round's A/B
+ran one package through the real pipeline and compared bytes: `sort`'s script tables differed
+from the pipeline's in their first delta. The fix re-derives (decode, shift every line by -2,
+re-encode with the canonical encoder), validated closed-loop TWICE: `sort`'s 7 records and
+`log`'s 1, byte-exact against pipeline ground truth in both rounds.
+
+### Gates, proportionate to a placement move per the hold entry
+
+| Gate | Result |
+|:--|:--|
+| migration diff shape | **exactly the move** -- every non-info file -2/0, one named mover |
+| `check-no-regression.ps1` | **NO REGRESSION**, byte-identical across all 631 behavioral packages |
+| migrated `go2cs-stdlib.slnx`, `--no-incremental` | **0 errors**, 646 s |
+| `GolibTests` on the union | **211/211** -- the hold entry's predicted number |
+| converter `go test ./...` (incl. the new extract guard, `TestStdLibMetadataInSync`) | **green**, 227 s |
+| `RuntimeCallerFrames` filtered, all four phases | **PASS 4/4** |
+| pipeline re-validations | `flag` **24**, `log` **8 + 1**, `sort` A/B + own-row sweep **PASS 63** |
+| own-row + canary sweeps at the pushed tip | dispatched to the i9 worker as JOB-R1 (`flag`, `log`, `sync/atomic`, `go/internal/gcimporter` 583); results fold into the merge signal |
+
+The 160/0 full sweep from the first round stands as the mechanism's evidence per the hold entry
+and was not re-run. SS11.1 (recording over derivation) and the stricter no-composition reading
+are RATIFIED per the same entry; `log`'s alloc-profile disclosure and the 67-file
+unmapped-until-their-own-rebank discipline are accepted.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
