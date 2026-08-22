@@ -737,6 +737,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckLinknameVarPull() => CheckTarget("LinknameVarPull");
 
     [TestMethod]
+    public void CheckLinuxSpawnBasics() => CheckTarget("LinuxSpawnBasics");
+
+    [TestMethod]
     public void CheckLocalFunctionEmission() => CheckTarget("LocalFunctionEmission");
 
     [TestMethod]

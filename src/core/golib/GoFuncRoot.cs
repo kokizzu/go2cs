@@ -34,6 +34,24 @@ public class GoFuncRoot
     // sequence — see GoFrame.Run.
     protected static readonly ThreadLocal<PanicException?> UnclaimedPanic = new();
 
+    // The most recent FOREIGN (.NET, non-panic, non-Goexit) exception seen unwinding through an
+    // emitted frame's IsPanic filter on this thread, preserved with its stack. It exists for one
+    // consumer: GoFrame.Run's foreign-unwind correction (exec-wall design OQ-6, ratified
+    // 2026-08-22) — a deferred `panic(recover())` during a foreign unwind re-panics NIL, because
+    // recover() rightly sees no Go panic, and without this slot that nil panic REPLACES the
+    // original defect (sync.OnceFunc/OnceValue's guard is the canonical shape: every exec-wall
+    // residual behind a OnceValue-guarded probe reported `panic: nil` instead of naming the
+    // NotImplementedException underneath). Overwritten by each newer foreign exception, cleared
+    // when consumed and when a REAL panic is captured (GoFrame.Capture) — a genuine Go panic
+    // superseding the unwind is Go's own replacement rule.
+    protected static readonly ThreadLocal<System.Runtime.ExceptionServices.ExceptionDispatchInfo?> InFlightForeign = new();
+
+    internal static System.Runtime.ExceptionServices.ExceptionDispatchInfo? InFlightForeignException
+    {
+        get => InFlightForeign.Value;
+        set => InFlightForeign.Value = value;
+    }
+
     /// <summary>
     /// Gets the panic whose traceback a <c>runtime.Stack</c>/<c>debug.Stack</c> call on this thread
     /// should report — the one being handled by an enclosing deferred sequence, else one caught and
