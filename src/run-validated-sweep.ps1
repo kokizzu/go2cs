@@ -214,8 +214,19 @@ function ConvertTo-GoDuration([string] $value) {
     # misread as unparseable and demoted to the floor. The two micro signs Go accepts are spelled by
     # code point so this file needs no non-ASCII literal.
     $perUnit = @{
-        'ns' = 0.01; 'us' = 10.0; "$([char]0xB5)s" = 10.0; "$([char]0x3BC)s" = 10.0
+        'ns' = 0.01; 'us' = 10.0
         'ms' = 10000.0; 's' = 1e7; 'm' = 6e8; 'h' = 3.6e10
+    }
+
+    # The micro signs join OUTSIDE the literal, each behind a ContainsKey guard: hashtable keys
+    # fold case-insensitively per the host's casing tables, and U+00B5 (micro sign) vs U+03BC
+    # (Greek mu) are DISTINCT under Windows PowerShell's NLS but EQUAL under pwsh/ICU on Linux --
+    # a literal carrying both dies there at evaluation with "Duplicate keys", killing the sweep
+    # of any package whose deadline reaches this parser (measured 2026-08-21: crypto/tls on the
+    # Linux lane). The guard admits whichever spellings the host's comparer keeps distinct;
+    # lookups behave identically either way.
+    foreach ($microUnit in @("$([char]0xB5)s", "$([char]0x3BC)s")) {
+        if (-not $perUnit.ContainsKey($microUnit)) { $perUnit[$microUnit] = 10.0 }
     }
 
     $ticks = 0.0
