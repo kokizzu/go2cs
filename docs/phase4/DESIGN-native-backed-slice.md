@@ -1,6 +1,6 @@
 # DESIGN — the native-backed `slice<T>`: aliasing native memory instead of snapshotting it (W1b's commission)
 
-**STATUS: PROPOSED** — design-only, per the 2026-08-22 commission. No implementation, no golib
+**STATUS: RATIFIED (coordinator, 2026-08-22) -- SS2 shape, SS2.4 Span-over-MemoryManager, SS5 ladder, and all five SS6 OQs ruled AS RECOMMENDED; formerly PROPOSED** — design-only, per the 2026-08-22 commission. No implementation, no golib
 changes ship with this document. Template per `DESIGN-readmemstats-surface.md` /
 `DESIGN-zh-box-b-prime.md` / `DESIGN-linux-exec.md`: the measured bill first, the design second,
 the adversarial pass third, open questions with recommendations last. Inputs: R's mmap probe
