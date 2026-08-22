@@ -251,6 +251,48 @@ func TestLinuxOnlyEntriesAreScopedToLinux(t *testing.T) {
 	}
 }
 
+// TestSockaddrFamilyIsScopedToEachHandOwningFlavor pins the two-flavor shape the sockaddr family
+// took on 2026-08-22: the INET encoders and Bind/Connect/Getsockname/Getpeername are hand-owned on
+// BOTH windows (syscall_windows_impl.cs, L10) and linux (sockaddr_linux_impl.cs) — one entry, each
+// flavor's file the authority on its own body, the lock_sema/lock_futex precedent — while darwin
+// keeps its auto bodies until a darwin lane measures them. ConnectEx and RawSockaddrAny.Sockaddr
+// exist only in Go's Windows sources; Accept4 and anyToSockaddr only in its Linux sources.
+func TestSockaddrFamilyIsScopedToEachHandOwningFlavor(t *testing.T) {
+	both := []string{"SockaddrInet4.sockaddr", "SockaddrInet6.sockaddr", "Bind", "Connect", "Getsockname", "Getpeername"}
+	windowsOnly := []string{"ConnectEx", "RawSockaddrAny.Sockaddr"}
+	linuxOnly := []string{"Accept4", "anyToSockaddr"}
+
+	check := func(name string, wantWindows, wantLinux bool) {
+		scope, listed := manualConversionFuncs["syscall"][name]
+
+		if !listed {
+			t.Errorf("syscall.%s is no longer registered", name)
+			return
+		}
+
+		if scope.includes("windows") != wantWindows || scope.includes("linux") != wantLinux {
+			t.Errorf("syscall.%s: windows=%v linux=%v, want windows=%v linux=%v", name,
+				scope.includes("windows"), scope.includes("linux"), wantWindows, wantLinux)
+		}
+
+		if scope.includes("darwin") {
+			t.Errorf("syscall.%s must not apply on darwin: its libc-backed body is not the defective one and no darwin file hand-owns it", name)
+		}
+	}
+
+	for _, name := range both {
+		check(name, true, true)
+	}
+
+	for _, name := range windowsOnly {
+		check(name, true, false)
+	}
+
+	for _, name := range linuxOnly {
+		check(name, false, true)
+	}
+}
+
 // TestEveryManualConversionScopeNamesAKnownGOOS is the typo guard. A scope naming "win" or "macos"
 // matches no target at all, which silently turns the entry off everywhere — the auto body is emitted
 // and compiles, and the hand-own it was protecting is simply gone. Nothing else in the pipeline can

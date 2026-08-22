@@ -301,40 +301,11 @@ public static bool SocketDisableIPv6;
     internal RawSockaddrUnix raw;
 }
 
-public static error /*err*/ Bind(nint fd, Sockaddr sa) {
-    error err = default!;
+// go2cs generated this placeholder — func Bind is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    (var ptr, var n, err) = sa.sockaddr();
-    if (err != default!) {
-        return err;
-    }
-    return bind(fd, ptr, n);
-}
+// go2cs generated this placeholder — func Connect is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*err*/ Connect(nint fd, Sockaddr sa) {
-    error err = default!;
-
-    (var ptr, var n, err) = sa.sockaddr();
-    if (err != default!) {
-        return err;
-    }
-    return connect(fd, ptr, n);
-}
-
-public static (Sockaddr sa, error err) Getpeername(nint fd) {
-    Sockaddr sa = default!;
-    error err = default!;
-
-    ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
-    ref var len = ref heap(new _Socklen(), out var Ꮡlen);
-    len = SizeofSockaddrAny;
-    {
-        err = getpeername(fd, Ꮡrsa, Ꮡlen); if (err != default!) {
-            return (sa, err);
-        }
-    }
-    return anyToSockaddr(Ꮡrsa);
-}
+// go2cs generated this placeholder — func Getpeername is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static (nint value, error err) GetsockoptInt(nint fd, nint level, nint opt) {
     error err = default!;
