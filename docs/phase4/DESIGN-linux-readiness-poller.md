@@ -732,6 +732,30 @@ static class Probe
 }
 ```
 
+## 7.2 Measurements — S1's guards, run 2026-08-22 (lane `claude/linux-poller-impl`)
+
+The poller landed in `internal/poll/linux/runtime_netpoll_impl.cs` at `00cc122c9` — 674 lines, the ten
+contracts, `internal.poll.csproj` untouched (⟨OQ-9⟩'s safe `Marshal` form: **0 errors, 0 warnings**
+building `internal.poll.csproj -p:GoTargetOS=linux` natively in the distro).
+
+⟨OQ-6⟩'s guards were then run **by hand on the distro**, as ruled: each program converted with an
+explicit `-go2cspath`, built `-p:GoTargetOS=linux -p:go2csPath=<root>/src/`, and its stdout diffed
+against `go run .` in the same directory. **All four are byte-IDENTICAL to Go.**
+
+| Guard | Lines | Result |
+|:--|:--:|:--|
+| `PipeCloseUnblocksRead` | 1 | **IDENTICAL** — `read unblocked: read \|0: file already closed`. This is the flip the fallback's header promised: under the fallback this program printed `read did NOT unblock`. `os.Pipe` arms, `Close` → `evict` → `pollUnblock` wakes the reader parked on the gate, and `internal/poll` answers `errClosing(isFile)`. |
+| `NetListenSmoke` | 8 | **IDENTICAL** — two listeners bound, distinct ports, accept deadline set/cleared, close, rebind to the same port, close-is-sticky. Contracts 1–4, 7–9. |
+| `TcpLoopbackRoundTrip` | 14 | **IDENTICAL** — IPv4 **and** IPv6 round trips (server/client peer addresses, full-payload echo, byte equality), plus `CloseRead`/`CloseWrite` breaking a blocked read/write. The readiness path end to end: `Accept`, `Read`, `Write` all reach `EAGAIN` → `pollWait` → edge → retry. |
+| `NetDeadlineMatrix` | 12 | **IDENTICAL** — every assertion of §4.7's inherited semantics: a blocked read times out and *parks* (not spins); the timeout is **sticky**; a cleared deadline works again; a deadline in the past does not block; a replaced deadline is released by data and is **not** a timeout; read/write modes are independent and `'r'+'w'` sets both; **closing beats timeout**; and the two race arms — an expiry beats buffered data, data inside the deadline is delivered, and no stale expiry fires afterwards (the generation check). |
+
+That last row is the one the design flagged as where the iteration budget would go (§5 of the
+Windows design: "the hard part"). It cost none: the Windows flavor's state machine, copied under
+⟨OQ-7⟩ with the eventErr arm added, satisfies Go's deadline semantics on the readiness model
+unchanged — which is the strongest available evidence for the ⟨OQ-7⟩ copy being the right call, and
+for §4.7's claim that removing the cancel-and-harvest dimension leaves the remaining race surface
+tractable.
+
 ## 8. Non-goals — the boundary inherited from the Windows design's §8, and this design's own
 
 Inherited, restated for Linux:
