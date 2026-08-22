@@ -17368,4 +17368,14 @@ nothing else.
 | `go2cs-stdlib.slnx` / behavioral suite | **no** — zero tracked corpus drift | not run; accounting stated |
 | five-largest-reflect-consumer sweep (JOB-C1) | **no** — that gate protects a BANK; there is no bank, no corpus change and no converter change | not dispatched, deliberately — it would have spent an i9 hour proving a docs commit |
 
+
+## NIT, banked (user, 2026-08-21) -- `[assembly: go.GoPositionMap(...)]` drops its redundant `go.` prefix
+
+The emitted position-map records carry a `go.` namespace prefix the info files do not need -- the
+file's existing `using` covers it, and every sibling assembly-level record (`GoTypeAlias`,
+`GoImplement`, `GoImplicitConv`) is emitted unprefixed. One emission-string fix in the converter
+plus the corpus-wide info-file diff it implies. RIDES THE QUEUED LEVELING REBANK (the time-class
+born-stale leveling + map-coverage completion, due after the crossing) so one deliberate regen
+levels all three families at once. Not taken inline by any current lane; the train does not stop.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
