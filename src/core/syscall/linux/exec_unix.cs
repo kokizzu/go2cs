@@ -354,7 +354,7 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
         if (rc != 0) {
             System.Runtime.InteropServices.Marshal.FreeHGlobal(fileActions);
             fileActions = IntPtr.Zero;
-            return (0, (Errno)rc);
+            return (0, (Errno)(uintptr)rc);
         }
 
         spawnAttr = System.Runtime.InteropServices.Marshal.AllocHGlobal(512);
@@ -362,7 +362,7 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
         if (rc != 0) {
             System.Runtime.InteropServices.Marshal.FreeHGlobal(spawnAttr);
             spawnAttr = IntPtr.Zero;
-            return (0, (Errno)rc);
+            return (0, (Errno)(uintptr)rc);
         }
 
         // The child's working directory rides an action so it happens child-side, in order,
@@ -377,7 +377,7 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
                 return (0, errorspkg.New("posix_spawn seam: ProcAttr.Dir needs posix_spawn_file_actions_addchdir_np (glibc 2.29+)"u8));
             }
             if (rc != 0) {
-                return (0, (Errno)rc);
+                return (0, (Errno)(uintptr)rc);
             }
         }
 
@@ -408,7 +408,7 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
             if (sources[i] >= 0 && sources[i] < i) {
                 rc = posix_spawn_file_actions_adddup2(fileActions, (int)sources[i], (int)nextScratch);
                 if (rc != 0) {
-                    return (0, (Errno)rc);
+                    return (0, (Errno)(uintptr)rc);
                 }
                 sources[i] = nextScratch;
                 scratches.Add(nextScratch);
@@ -421,19 +421,19 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
             }
             rc = posix_spawn_file_actions_adddup2(fileActions, (int)sources[i], (int)i);
             if (rc != 0) {
-                return (0, (Errno)rc);
+                return (0, (Errno)(uintptr)rc);
             }
         }
         foreach (nint scratch in scratches) {
             rc = posix_spawn_file_actions_addclose(fileActions, (int)scratch);
             if (rc != 0) {
-                return (0, (Errno)rc);
+                return (0, (Errno)(uintptr)rc);
             }
         }
         for (nint i = childCount; i < 3; i++) {
             rc = posix_spawn_file_actions_addclose(fileActions, (int)i);
             if (rc != 0) {
-                return (0, (Errno)rc);
+                return (0, (Errno)(uintptr)rc);
             }
         }
 
@@ -445,13 +445,13 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
         short flags = POSIX_SPAWN_SETSIGMASK;
         rc = posix_spawnattr_setsigmask(spawnAttr, sigsetEmpty);
         if (rc != 0) {
-            return (0, (Errno)rc);
+            return (0, (Errno)(uintptr)rc);
         }
         if (sys.Setpgid) {
             flags |= POSIX_SPAWN_SETPGROUP;
             rc = posix_spawnattr_setpgroup(spawnAttr, (int)sys.Pgid);
             if (rc != 0) {
-                return (0, (Errno)rc);
+                return (0, (Errno)(uintptr)rc);
             }
         }
         if (sys.Setsid) {
@@ -459,7 +459,7 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
         }
         rc = posix_spawnattr_setflags(spawnAttr, flags);
         if (rc != 0) {
-            return (0, (Errno)rc);
+            return (0, (Errno)(uintptr)rc);
         }
 
         // The spawn window itself keeps Go's ForkLock discipline: fds created elsewhere stay
@@ -477,7 +477,7 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
         // implementation gate spawns a missing binary and asserts ENOENT arrives HERE) and reaps
         // any partially-created child itself — there is no zombie to wait for on this path.
         if (rc != 0) {
-            return (0, (Errno)rc);
+            return (0, (Errno)(uintptr)rc);
         }
 
         // OQ-4's door, opened early: os's pidfd path asks for a descriptor via SysProcAttr.PidFD.
