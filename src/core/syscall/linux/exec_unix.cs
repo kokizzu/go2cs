@@ -3,6 +3,36 @@
 // license that can be found in the LICENSE file.
 //go:build unix
 // Fork, exec, wait, etc.
+
+// go2cs NATIVE IMPLEMENTATION (hand-owned; replaces the converted exec_unix.go output).
+// Everything in this file except forkExec is the converted output verbatim — ForkLock and its
+// acquire/release discipline, the ProcAttr/SysProcAttr shapes, argument validation, Exec, and
+// StartProcess are pure Go logic that converts faithfully. forkExec alone cannot work as literally
+// converted: its child half (exec_linux.cs's forkAndExecInChild, now unreachable dead code) runs
+// MANAGED code between clone() and execve(), and no managed instruction is async-signal-safe in a
+// multithreaded CLR process — the impossibility is by rule, not by measurement
+// (docs/phase4/DESIGN-linux-exec.md §2, ratified 2026-08-22 with all seven OQs).
+//
+// The replacement maps the spawn onto posix_spawn(3), the one primitive whose child side is
+// someone else's sound native code: Go's child-side fd shuffle is computed PARENT-side as a
+// posix_spawn_file_actions list (the same shift-up-then-dup2 plan Go runs as code, expressed as
+// data), pgid/sid ride posix_spawnattr, the child signal mask is reset to empty (exec itself
+// resets caught handlers to default, so SETSIGDEF is not needed for the exec'd image), and
+// glibc's synchronous error reporting subsumes Go's status-pipe protocol — spawn and exec
+// failures return as errno from the call, so forkExecPipe/readlen and the child-status dance are
+// simply gone. SysProcAttr fields outside the mapped set fail with a NAMED error (§3's honest
+// wall), never a silent drop. SysProcAttr.PidFD is filled post-spawn via pidfd_open(pid) — sound
+// here because the child cannot be reaped before this process's own first wait, which is the only
+// reaper (OQ-4's v2 door, opened early because the r53a keystone made the syscall one line).
+// Every buffer handed to the native call (argv, envp, the file_actions and attr blocks, the
+// sigset) lives in UNMANAGED memory for the duration of the call and is freed in a finally —
+// the exec_windows.cs soundness rule verbatim.
+
+// Hand-owned native replacement of the converted exec_unix.go output — the converter skips
+// regenerating a file that carries this marker, so a -stdlib reconvert preserves it (see
+// containsManualConversionMarker).
+[module: go.GoManualConversion]
+
 namespace go;
 
 using errorspkg = errors_package;
@@ -152,14 +182,7 @@ internal static readonly @string bothSetcttyAndForegroundˢ = "both Setctty and 
 internal static readonly @string setcttySetButCttyNotˢ = "Setctty set but Ctty not valid in child"u8;
 
 internal static (nint pid, error err) forkExec(@string argv0, slice<@string> argv, ж<ProcAttr> Ꮡattr) {
-    nint pid = default!;
-    error err = default!;
-
     ref var attr = ref Ꮡattr.DerefOrNull();
-    array<nint> p = new(2);
-    nint n = default!;
-    ref var err1 = ref heap(new Errno(), out var Ꮡerr1);
-    ref var wstatus = ref heap(new WaitStatus(), out var Ꮡwstatus);
     if (Ꮡattr == nil) {
         Ꮡattr = ᏑzeroProcAttr; attr = ref Ꮡattr.DerefOrNull();
     }
@@ -167,87 +190,25 @@ internal static (nint pid, error err) forkExec(@string argv0, slice<@string> arg
     if (sys == nil) {
         sys = ᏑzeroSysProcAttr;
     }
-    // Convert args to C form.
-    (var argv0p, err) = BytePtrFromString(argv0);
-    if (err != default!) {
-        return (0, err);
-    }
-    (var argvp, err) = SlicePtrFromStrings(argv);
-    if (err != default!) {
-        return (0, err);
-    }
-    (var envvp, err) = SlicePtrFromStrings(attr.Env);
-    if (err != default!) {
-        return (0, err);
-    }
-    if ((Δruntime.GOOS == "freebsd"u8 || Δruntime.GOOS == "dragonfly"u8) && len(argv) > 0 && len(argv[0]) > len(argv0)) {
-        argvp[0] = argv0p;
-    }
-    ж<byte> chroot = default!;
-    if ((~sys).Chroot != ""u8) {
-        (chroot, err) = BytePtrFromString((~sys).Chroot);
-        if (err != default!) {
-            return (0, err);
-        }
-    }
-    ж<byte> dir = default!;
-    if (attr.Dir != ""u8) {
-        (dir, err) = BytePtrFromString(attr.Dir);
-        if (err != default!) {
-            return (0, err);
-        }
-    }
-    // Both Setctty and Foreground use the Ctty field,
-    // but they give it slightly different meanings.
+
+    // Go's own validation, preserved verbatim ahead of the spawn.
     if ((~sys).Setctty && (~sys).Foreground) {
         return (0, errorspkg.New(bothSetcttyAndForegroundˢ));
     }
     if ((~sys).Setctty && (~sys).Ctty >= len(attr.Files)) {
         return (0, errorspkg.New(setcttySetButCttyNotˢ));
     }
-    acquireForkLock();
-    // Allocate child status pipe close on exec.
+
+    // The honest wall (design §3): every SysProcAttr field posix_spawn cannot express fails by
+    // NAME before anything is spawned — never a silent drop of a requested semantic.
     {
-        err = forkExecPipe(p[..]); if (err != default!) {
-            releaseForkLock();
-            return (0, err);
+        @string unsupported = unsupportedSysProcAttrField(ref (sys).DerefOrNull());
+        if (unsupported != ""u8) {
+            return (0, errorspkg.New(unsupported));
         }
     }
-    // Kick off child.
-    (pid, err1) = forkAndExecInChild(argv0p, argvp, envvp, chroot, dir, ref (Ꮡattr).DerefOrNull(), ref (sys).DerefOrNull(), p[1]);
-    if (err1 != 0) {
-        Close(p[0]);
-        Close(p[1]);
-        releaseForkLock();
-        return (0, err1);
-    }
-    releaseForkLock();
-    // Read child error status from pipe.
-    Close(p[1]);
-    while (ᐧ) {
-        (n, err) = readlen(p[0], Ꮡerr1.Reinterpret<Errno, byte>(), (nint)/* unsafe.Sizeof(err1) */ (uintptr)8);
-        if (!AreEqual(err, EINTR)) {
-            break;
-        }
-    }
-    Close(p[0]);
-    if (err != default! || n != 0) {
-        if (n == (nint)/* unsafe.Sizeof(err1) */ (uintptr)8) {
-            err = err1;
-        }
-        if (err == default!) {
-            err = EPIPE;
-        }
-        // Child failed; wait for it to exit, to make sure
-        // the zombies don't accumulate.
-        var (_, err1Δ1) = Wait4(pid, Ꮡwstatus, 0, nil);
-        while (AreEqual(err1Δ1, EINTR)) {
-            (_, err1Δ1) = Wait4(pid, Ꮡwstatus, 0, nil);
-        }
-        return (0, err);
-    }
-    // Read got EOF, so pipe closed on exec, so exec succeeded.
-    return (pid, default!);
+
+    return posixSpawnForkExec(argv0, argv, ref attr, ref (sys).DerefOrNull());
 }
 
 // Combination of fork and exec, careful to be thread safe.
@@ -323,5 +284,315 @@ public static error /*err*/ Exec(@string argv0, slice<@string> argv, slice<@stri
     runtime_AfterExec();
     return err1;
 }
+
+// ============================== the posix_spawn seam ==============================
+// Everything below is the hand-own's native half: the spawn body, its named-wall triage, and the
+// libc surface it stands on. See the file header for the design pointer and the soundness rules.
+
+// unsupportedSysProcAttrField names the first SysProcAttr request posix_spawn cannot express, or
+// returns "" when the whole request is expressible. Each branch is a REQUESTED semantic — failing
+// it loudly is the design's honest wall; dropping it silently would be a wrong program.
+internal static @string unsupportedSysProcAttrField(ref SysProcAttr sys) {
+    if (sys.Chroot != ""u8) {
+        return "posix_spawn seam: SysProcAttr.Chroot is not supported"u8;
+    }
+    if (sys.Credential != nil) {
+        return "posix_spawn seam: SysProcAttr.Credential is not supported"u8;
+    }
+    if (sys.Ptrace) {
+        return "posix_spawn seam: SysProcAttr.Ptrace is not supported"u8;
+    }
+    if (sys.Setctty) {
+        return "posix_spawn seam: SysProcAttr.Setctty is not supported"u8;
+    }
+    if (sys.Noctty) {
+        return "posix_spawn seam: SysProcAttr.Noctty is not supported"u8;
+    }
+    if (sys.Foreground) {
+        return "posix_spawn seam: SysProcAttr.Foreground is not supported"u8;
+    }
+    if (sys.Pdeathsig != 0) {
+        return "posix_spawn seam: SysProcAttr.Pdeathsig is not supported"u8;
+    }
+    if (sys.Cloneflags != 0) {
+        return "posix_spawn seam: SysProcAttr.Cloneflags is not supported"u8;
+    }
+    if (sys.Unshareflags != 0) {
+        return "posix_spawn seam: SysProcAttr.Unshareflags is not supported"u8;
+    }
+    if (len(sys.UidMappings) > 0 || len(sys.GidMappings) > 0 || sys.GidMappingsEnableSetgroups) {
+        return "posix_spawn seam: SysProcAttr user-namespace ID mappings are not supported"u8;
+    }
+    if (len(sys.AmbientCaps) > 0) {
+        return "posix_spawn seam: SysProcAttr.AmbientCaps is not supported"u8;
+    }
+    if (sys.UseCgroupFD) {
+        return "posix_spawn seam: SysProcAttr.UseCgroupFD is not supported"u8;
+    }
+    return ""u8;
+}
+
+internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@string> argv, ref ProcAttr attr, ref SysProcAttr sys) {
+    // glibc's opaque control blocks, driven only through their init/destroy/add functions —
+    // never by layout knowledge. The allocations are generous over the real glibc sizes
+    // (file_actions 80, spawnattr 336, sigset_t 128 on linux-x64).
+    IntPtr fileActions = IntPtr.Zero;
+    IntPtr spawnAttr = IntPtr.Zero;
+    IntPtr sigsetEmpty = IntPtr.Zero;
+    IntPtr pathz = IntPtr.Zero;
+    IntPtr dirz = IntPtr.Zero;
+    IntPtr argvVec = IntPtr.Zero;
+    IntPtr envVec = IntPtr.Zero;
+
+    try {
+        pathz = MarshalStringZ(argv0);
+        argvVec = MarshalStringVector(argv);
+        envVec = MarshalStringVector(attr.Env);
+
+        fileActions = System.Runtime.InteropServices.Marshal.AllocHGlobal(128);
+        int rc = posix_spawn_file_actions_init(fileActions);
+        if (rc != 0) {
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(fileActions);
+            fileActions = IntPtr.Zero;
+            return (0, (Errno)rc);
+        }
+
+        spawnAttr = System.Runtime.InteropServices.Marshal.AllocHGlobal(512);
+        rc = posix_spawnattr_init(spawnAttr);
+        if (rc != 0) {
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(spawnAttr);
+            spawnAttr = IntPtr.Zero;
+            return (0, (Errno)rc);
+        }
+
+        // The child's working directory rides an action so it happens child-side, in order,
+        // before exec — glibc ≥ 2.29; probed by call per the design's OQ-5 (never by version
+        // string), with the miss surfacing as a NAMED error.
+        if (attr.Dir != ""u8) {
+            dirz = MarshalStringZ(attr.Dir);
+            try {
+                rc = posix_spawn_file_actions_addchdir_np(fileActions, dirz);
+            }
+            catch (EntryPointNotFoundException) {
+                return (0, errorspkg.New("posix_spawn seam: ProcAttr.Dir needs posix_spawn_file_actions_addchdir_np (glibc 2.29+)"u8));
+            }
+            if (rc != 0) {
+                return (0, (Errno)rc);
+            }
+        }
+
+        // Go's child-side fd shuffle, expressed as data (design §3): pass 1 lifts any source that
+        // sits inside the already-written target zone up to a scratch fd; pass 2 dup2s every
+        // source into its child slot — adddup2(i,i) is POSIX's defined way to CLEAR close-on-exec
+        // on an inherited fd; pass 3 closes the scratch fds. Everything else in the parent is
+        // close-on-exec by ForkLock discipline, exactly as in Go. Child fds the caller did NOT
+        // provide below the std triple are closed, matching Go's guarantee that a short Files
+        // list yields CLOSED std descriptors, not inherited ones.
+        nint childCount = len(attr.Files);
+        nint scratchBase = childCount;
+        for (nint fi = 0; fi < childCount; fi++) {
+            nint parentFd = ((nint)attr.Files[fi]);
+            if (parentFd >= scratchBase) {
+                scratchBase = parentFd + 1;
+            }
+        }
+
+        var sources = new nint[childCount];
+        for (nint i = 0; i < childCount; i++) {
+            sources[i] = ((nint)attr.Files[i]);
+        }
+
+        nint nextScratch = scratchBase;
+        var scratches = new System.Collections.Generic.List<nint>();
+        for (nint i = 0; i < childCount; i++) {
+            if (sources[i] >= 0 && sources[i] < i) {
+                rc = posix_spawn_file_actions_adddup2(fileActions, (int)sources[i], (int)nextScratch);
+                if (rc != 0) {
+                    return (0, (Errno)rc);
+                }
+                sources[i] = nextScratch;
+                scratches.Add(nextScratch);
+                nextScratch++;
+            }
+        }
+        for (nint i = 0; i < childCount; i++) {
+            if (sources[i] < 0) {
+                continue;
+            }
+            rc = posix_spawn_file_actions_adddup2(fileActions, (int)sources[i], (int)i);
+            if (rc != 0) {
+                return (0, (Errno)rc);
+            }
+        }
+        foreach (nint scratch in scratches) {
+            rc = posix_spawn_file_actions_addclose(fileActions, (int)scratch);
+            if (rc != 0) {
+                return (0, (Errno)rc);
+            }
+        }
+        for (nint i = childCount; i < 3; i++) {
+            rc = posix_spawn_file_actions_addclose(fileActions, (int)i);
+            if (rc != 0) {
+                return (0, (Errno)rc);
+            }
+        }
+
+        // Attributes: an EMPTY child signal mask (exec itself resets caught handlers to default,
+        // so the mask is the only signal state that survives into the new image — an inherited
+        // CLR mask must not leak into a Go child), plus the billed pgid/sid requests.
+        sigsetEmpty = System.Runtime.InteropServices.Marshal.AllocHGlobal(128);
+        sigemptyset(sigsetEmpty);
+        short flags = POSIX_SPAWN_SETSIGMASK;
+        rc = posix_spawnattr_setsigmask(spawnAttr, sigsetEmpty);
+        if (rc != 0) {
+            return (0, (Errno)rc);
+        }
+        if (sys.Setpgid) {
+            flags |= POSIX_SPAWN_SETPGROUP;
+            rc = posix_spawnattr_setpgroup(spawnAttr, (int)sys.Pgid);
+            if (rc != 0) {
+                return (0, (Errno)rc);
+            }
+        }
+        if (sys.Setsid) {
+            flags |= POSIX_SPAWN_SETSID;
+        }
+        rc = posix_spawnattr_setflags(spawnAttr, flags);
+        if (rc != 0) {
+            return (0, (Errno)rc);
+        }
+
+        // The spawn window itself keeps Go's ForkLock discipline: fds created elsewhere stay
+        // close-on-exec-atomic relative to the child's inheritance snapshot.
+        acquireForkLock();
+        int childPid;
+        try {
+            rc = posix_spawn(out childPid, pathz, fileActions, spawnAttr, argvVec, envVec);
+        }
+        finally {
+            releaseForkLock();
+        }
+
+        // glibc reports child-setup and exec failures synchronously in rc (design §5.1; the
+        // implementation gate spawns a missing binary and asserts ENOENT arrives HERE) and reaps
+        // any partially-created child itself — there is no zombie to wait for on this path.
+        if (rc != 0) {
+            return (0, (Errno)rc);
+        }
+
+        // OQ-4's door, opened early: os's pidfd path asks for a descriptor via SysProcAttr.PidFD.
+        // pidfd_open(pid) here is race-free because the child cannot be reaped before this
+        // process's own first wait — this process is its only reaper. -1 on any failure is Go's
+        // own "kernel does not support it" contract.
+        if (sys.PidFD != nil) {
+            long fdOrErr = syscallʟ(SYS_pidfd_open, childPid, 0, 0);
+            sys.PidFD.Value = fdOrErr >= 0 ? ((nint)fdOrErr) : -1;
+        }
+
+        return (childPid, default!);
+    }
+    finally {
+        if (sigsetEmpty != IntPtr.Zero) {
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(sigsetEmpty);
+        }
+        if (spawnAttr != IntPtr.Zero) {
+            posix_spawnattr_destroy(spawnAttr);
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(spawnAttr);
+        }
+        if (fileActions != IntPtr.Zero) {
+            posix_spawn_file_actions_destroy(fileActions);
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(fileActions);
+        }
+        FreeStringVector(argvVec);
+        FreeStringVector(envVec);
+        if (dirz != IntPtr.Zero) {
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(dirz);
+        }
+        if (pathz != IntPtr.Zero) {
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(pathz);
+        }
+    }
+}
+
+// MarshalStringZ copies a Go string into unmanaged memory as NUL-terminated UTF-8 bytes.
+internal static IntPtr MarshalStringZ(@string value) {
+    byte[] bytes = ((slice<byte>)value).ToArray();
+    IntPtr buffer = System.Runtime.InteropServices.Marshal.AllocHGlobal(bytes.Length + 1);
+    System.Runtime.InteropServices.Marshal.Copy(bytes, 0, buffer, bytes.Length);
+    System.Runtime.InteropServices.Marshal.WriteByte(buffer, bytes.Length, 0);
+    return buffer;
+}
+
+// MarshalStringVector builds a NULL-terminated char** in unmanaged memory. A nil slice yields an
+// empty vector — Go's own SlicePtrFromStrings semantics (an empty child environment, never an
+// inherited one).
+internal static IntPtr MarshalStringVector(slice<@string> values) {
+    nint count = len(values);
+    IntPtr vector = System.Runtime.InteropServices.Marshal.AllocHGlobal((int)((count + 1) * IntPtr.Size));
+    for (nint i = 0; i < count; i++) {
+        System.Runtime.InteropServices.Marshal.WriteIntPtr(vector, (int)(i * IntPtr.Size), MarshalStringZ(values[i]));
+    }
+    System.Runtime.InteropServices.Marshal.WriteIntPtr(vector, (int)(count * IntPtr.Size), IntPtr.Zero);
+    return vector;
+}
+
+internal static void FreeStringVector(IntPtr vector) {
+    if (vector == IntPtr.Zero) {
+        return;
+    }
+    for (int i = 0; ; i += IntPtr.Size) {
+        IntPtr entry = System.Runtime.InteropServices.Marshal.ReadIntPtr(vector, i);
+        if (entry == IntPtr.Zero) {
+            break;
+        }
+        System.Runtime.InteropServices.Marshal.FreeHGlobal(entry);
+    }
+    System.Runtime.InteropServices.Marshal.FreeHGlobal(vector);
+}
+
+// glibc flag values (spawn.h) and the pidfd_open syscall number (linux-x64).
+internal const short POSIX_SPAWN_SETSIGMASK = 0x08;
+internal const short POSIX_SPAWN_SETPGROUP = 0x02;
+internal const short POSIX_SPAWN_SETSID = 0x80;
+internal const long SYS_pidfd_open = 434;
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawn(out int pid, IntPtr path, IntPtr fileActions, IntPtr attrp, IntPtr argv, IntPtr envp);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawn_file_actions_init(IntPtr fileActions);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawn_file_actions_destroy(IntPtr fileActions);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawn_file_actions_adddup2(IntPtr fileActions, int fd, int newFd);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawn_file_actions_addclose(IntPtr fileActions, int fd);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawn_file_actions_addchdir_np(IntPtr fileActions, IntPtr path);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawnattr_init(IntPtr attrp);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawnattr_destroy(IntPtr attrp);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawnattr_setflags(IntPtr attrp, short flags);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawnattr_setpgroup(IntPtr attrp, int pgroup);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int posix_spawnattr_setsigmask(IntPtr attrp, IntPtr sigmask);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int sigemptyset(IntPtr set);
+
+[System.Runtime.InteropServices.DllImport("libc", EntryPoint = "syscall", SetLastError = false)]
+internal static extern long syscallʟ(long number, long a1, long a2, long a3);
 
 } // end syscall_package
