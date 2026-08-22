@@ -17430,4 +17430,23 @@ levels all three families at once. Not taken inline by any current lane; the tra
 - (c) Interim harness honesty if (a) waits: the row cannot bank on Linux and must not be disclosed away as CLR-impossible — it is a real, fixable gap; leave it FAIL with this finding as the named cause.
 
 **Verification set when (a) lands:** the four-cell matrix re-run (Linux full must complete), `sync/atomic` 108/108 on both OSes, and the standard reflect-consumer canaries derived at gate time — plus a Windows A/B on the i9 confirming no healthy-case regression (the suite's other hammer tests are the sensitive canaries for added Sleep latency).
+
+---
+
+## 2026-08-22 · The Gosched ring: the ratified inert-only backoff is landed and safe but does NOT close W7 — the local design space is measured out (four variants, each refuted or unresolved by a NAMED mechanism), and the class points at M:N (lane G, `claude/gosched-ring-finding`)
+
+**Status of the ratified remedy (a):** implemented per ratification and LANDED on the branch — `golib/runtime/GoschedBackoff.cs` (internal, IVT), `runtime.Gosched` delegates, failing-first guards green both OSes (GolibTests 213/213), Windows full ring unregressed (183 s → 84 s, the delta is scheduler variance — the backoff provably never fires under contention), Windows own-row sweep at tip: **PASS 108/108 in 240 s** (`.cs.auto` refresh drift restored per the documented class). **But the Linux acceptance cell FAILS — and the failure is mechanistic, not tuning.** The finding's own "sched_yield is near-inert" premise holds only for the IDLE case; the contended ring's yields context-switch (~6.5 µs measured) to other WRONG threads, so no local inertness predicate can ever fire. W7's row stays an honest FAIL per affirmed doctrine (c).
+
+**The prototype cartography (all measured on the reproducing distro, full ring = 1000 dedicated threads · 100,000 strictly-serial handoffs):**
+
+| variant | escalation signal | Linux full ring | refutation mechanism |
+|---|---|---|---|
+| A (ratified) | consecutive inert yields (`!switched \|\| <2 µs`) | ≥749 s, killed | never fires: contended yields are "effective" (6.5 µs switches to wrong threads) |
+| B | wall-gap burst count, sleep every 64th | ≥658 s, killed | sleep-every-64th keeps ~30% of 1000 threads runnable → woken owner waits a 25–100 ms CFS epoch per handoff |
+| C | B + full-drain past 4,096 | ≥662 s, killed | **self-defeating reset**: involuntary preemption under target contention inserts >500 µs wall gaps between consecutive calls — stack census caught the steady state (659 sleeping / 340 yielding, tier-2 capture, full-drain never reached) |
+| D | C with thread-CPU-TIME gaps (preemption-proof) | ≥660 s, killed | unresolved at prototype quality: `clock_gettime(CLOCK_THREAD_CPUTIME_ID)` path unverified, and the completion floor math no longer explains the miss |
+
+**Two measured constants that reshape any future design:** `Thread.Sleep(1)` actually costs **1.07 ms on Linux** and **15.9 ms on Windows** (granularity INVERTED from the naive assumption — any sleep-tier design taxes Windows 15× harder per escalation), and Go's own ring completes because its Gosched is a ~100 ns userspace runqueue rotation over GOMAXPROCS threads — a floor no 1:1-dedicated-thread design reaches, since every handoff there pays kernel-primitive costs (yield storms, sleep quanta, or wake syscalls) times CFS's ordering.
+
+**Recommendation:** keep landed-A (it demonstrably closes the idle-spin shape, harms nothing measured, and its guards pin the behavior); leave W7 an honest FAIL with this cartography as the named cause; price the ring's closure under the **M:N goroutine scheduling horizon** rather than further Gosched-local tuning — three refuted candidates with distinct mechanisms is the evidence the local space is exhausted, and this campaign now motivates M:N with hard numbers rather than architecture taste. Variant D's residual uncertainty (pinvoke verification, serial-floor accounting) is recorded for whoever takes that lane; the prototypes live in the session scratchpad and the raw logs in the distro's `/root/` (`ringB/C/D.log`, `stack1/2.txt`).
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
