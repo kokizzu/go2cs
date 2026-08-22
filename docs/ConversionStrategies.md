@@ -1827,15 +1827,23 @@ internal static partial nint runtime_pollWait(uintptr ctx, nint mode)
 including [the submit seam's operation records, the golib rendezvous and the accept
 handover](ConversionStrategies-Reference.md#the-overlapped-submit-seam--a-per-operation-record-owning-native-lifetime-and-a-golib-rendezvous).
 
-**The Linux flavor answers the same ten contracts the opposite way — and that is Go's own fallback.**
-Linux's `os` marks every opened file, pipe and socket pollable and asks the poller to arm it; Go's
-`epoll_ctl` refuses regular files and directories with `EPERM`, and `os.newFile` then drops the
-descriptor back to blocking mode and carries on. `internal/poll/linux/runtime_netpoll_impl.cs` gives
-that answer for *every* descriptor — `pollOpen` returns `(0, EPERM)`, nothing is ever armed — so files,
-the whole Phase-4 fixture surface, run on the blocking path exactly as they do in Go, while pipes and
-sockets take it too until a readiness poller exists (a read blocks its goroutine's thread, deadlines
-answer `ErrNoDeadline`, `Close` does not cancel an in-flight read).
-[Full detail](ConversionStrategies-Reference.md#the-linux-flavors-poller-is-the-fallback-alone--un-armable-descriptors-degrade-to-the-blocking-path).
+**The Linux flavor answers the same ten contracts on epoll — and got there in two steps.** Linux's
+`os` marks every opened file, pipe and socket pollable and asks the poller to arm it, so the file
+surface had to work before anything else could. Step one made
+`internal/poll/linux/runtime_netpoll_impl.cs` answer Go's own FALLBACK for every descriptor —
+`pollOpen` returns `(0, EPERM)`, exactly what `epoll_ctl` says about a regular file, and `os.newFile`
+drops back to blocking mode and carries on. Step two replaced that constant with the kernel: one
+`epoll_create1(EPOLL_CLOEXEC)`, one background thread in `epoll_wait(-1)`, and the Windows flavor's
+managed descriptor state machine copied verbatim, with `gopark`/`goready` becoming
+`Monitor.Wait`/`PulseAll` on a per-descriptor gate. Registration is Go's edge-triggered
+`EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET`, which is sound because the CONSUMER only ever waits after the
+kernel answered `EAGAIN`; `epoll_event.data` carries an opaque token rather than a pointer, so a
+reused descriptor number cannot resurrect a retired one; and the 12-byte packed kernel record is a
+native `Marshal` image through the keystone `syscall(2)` binding, never a `ж<T>` address. Files still
+take the blocking path — now because the kernel refuses them, which is precisely Go's behavior — while
+pipes, FIFOs, ttys and sockets are armed: deadlines are honored, `Close` unblocks a parked reader, and
+`net.Listen`/`Dial` work.
+[Full detail](ConversionStrategies-Reference.md#the-linux-flavors-poller--the-fallback-first-then-the-readiness-poller-epoll-one-drain-thread-and-the-windows-descriptor-state-machine).
 
 **And the struct-passing class has Linux members too.** The converted `syscall.Stat_t` ends in a golib
 `array<int64>` where the kernel's `struct stat` ends in three inline words, so it is not blittable and
@@ -1851,9 +1859,9 @@ registry scope), and the same measurement found `rawSyscallNoError` — the bare
 port alias and the same by-address `RawSockaddr*` structs that L10 retired on Windows live in
 `syscall_linux.go`; `syscall/linux/sockaddr_linux_impl.cs` is L10 arm for arm (stack mirrors, one
 encode and one decode, the generated address-taking `bind`/`connect` reused), under a shared
-windows+linux registry scope. What it buys is honest: a Linux socket is still un-armable, so
-`net.Listen`/`Dial` now reach `FD.Init` and return `operation not permitted` until a readiness poller
-exists — the wall moves, the gate waits. And `syscall.Mmap` on Linux returns a SNAPSHOT, because
+windows+linux registry scope. What it bought was honest and, at the time, small: a Linux socket was
+still un-armable, so `net.Listen`/`Dial` merely reached `FD.Init` and returned `operation not
+permitted` — the wall moved rather than fell, and the readiness poller above is what finished it. And `syscall.Mmap` on Linux returns a SNAPSHOT, because
 golib's `unsafe.Slice` over a native pointer copies rather than aliases — a slice-model item, rooted
 and routed.
 [Full detail](ConversionStrategies-Reference.md#the-sockaddr-family-on-linux--l10s-mirror-arm-for-arm-as-the-socket-pollers-prerequisite-and-mmaps-slice-is-a-snapshot).
