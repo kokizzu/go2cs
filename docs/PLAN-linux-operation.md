@@ -285,6 +285,7 @@ unavailable and `dotnet --list-sdks` printed "No SDKs were found". Installed:
 | Go 1.23.1 | official tarball → `$HOME/golang` | `go version go1.23.1 linux/amd64` |
 | .NET SDK | `dot.net/v1/dotnet-install.sh --channel 9.0 --install-dir $HOME/.dotnet` | `9.0.316` — the **same SDK version as the Windows lane** |
 | PowerShell | `dotnet tool install -g PowerShell --version 7.5.4` | `7.5.4` |
+| C toolchain (**added 2026-08-22**) | `apt-get install -y build-essential` (root; the one non-user-space line) | `go env CGO_ENABLED` must read **1** afterwards. The r47a distro happened to carry `gcc`; a bare `Ubuntu-22.04` image does not, and without it `CGO_ENABLED=0` makes every cgo-dependent **Go-side** baseline misreport — `go/internal/srcimporter`'s cgo-import subtests fail in `go test` itself, so the row reads red before any C# verdict is compared (measured on laptop R's distro and, the same day, on the rebuilt i9: JOB-005 in the mailbox) |
 
 Two notes for whoever repeats this. GOROOT is `$HOME/golang`, **not** `$HOME/go`: the go command
 refuses `GOPATH == GOROOT` and `$HOME/go` is the default GOPATH. And the PowerShell global tool must
