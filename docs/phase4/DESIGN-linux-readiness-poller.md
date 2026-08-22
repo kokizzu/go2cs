@@ -568,6 +568,170 @@ programs rather than a row; G's `os/exec` rows are re-measured after R2 lands (t
 entry, nothing emitted moves; the darwin build — that corpus does not build (pre-existing, censused);
 a perf comparison — §8.
 
+## 7.1 Measurements — S0, run 2026-08-22 (lane `claude/linux-poller-impl`)
+
+Run on the WSL2 lane (Ubuntu 22.04.5, .NET 9.0.19, x64, a real Linux kernel) as a plain-C# probe
+over libc — independent of go2cs, so it measures the kernel and the runtime, not the corpus. The
+probe's source is the listing at the end of this section; it is recorded here rather than as a
+repository project because a Linux-only console app would be an un-gated solution member of exactly
+the kind `CLAUDE.md` warns rots invisibly.
+
+| Probe | Measured | Consequence for the design |
+|:--|:--|:--|
+| (a) `epoll_ctl(EPOLL_CTL_ADD)` per descriptor kind | regular file → **errno 1 (EPERM)**; directory → **EPERM**; pipe read end → **0**; TCP socket → **0** | ⟨OQ-4⟩ holds as ruled: the kernel's EPERM is the regular-file refusal, no `fstat`; the 28 fallback-flipped rows keep their exact errno |
+| (b) the 12-byte packed stride | a 2-slot buffer written/read through `Marshal.WriteInt32/WriteInt64` at `{0,4}`+`{12,16}` round-trips exactly (`events=0x2005`, `data=0x1122334455667788` at slot 1; the 8-byte read at offset 16 is unaligned and fine) | ⟨OQ-9⟩'s safe form is sufficient; no `unsafe`, no csproj regen |
+| (c) `EINTR` rate of `epoll_wait` under load | **0** EINTR in 20 s of 1 s slices (20 returns) while the process spawned **22,819** `/bin/true` children (SIGCHLD each) and ran **7,758** gen0 collections | **The design's prose over-stated this** ("the normal case, not a corner"). Under the CLR it is RARE: the runtime routes signals away from arbitrary threads. The retry stays — `epoll_wait` is a never-restarted syscall and any signal that does land on the drain thread must not kill it — but it is a correctness guard, not a hot path. The implementation's comment says what was measured. |
+| (d) `EPOLL_CTL_ADD` during an in-progress `epoll_wait(-1)` on another thread | the waiter, blocked since t=0, received the new descriptor's edge **1 ms after** the ADD issued at t=300 ms (`token=5 events=0x1 at 301 ms`), with no break write; 0 EINTRs meanwhile | ⟨OQ-2⟩ holds as ruled: no eventfd; the drain thread never needs interrupting. (Incidentally measured: an unconnected TCP socket reports `EPOLLOUT|EPOLLHUP` = 0x14 immediately on registration — the mode mapping routes that to both modes, which is Go's behavior too.) |
+
+Everything the design assumed about the kernel held; the one correction is to its own rhetoric
+about `EINTR`, recorded above and in the file.
+
+```csharp
+// S0 probe for the Linux readiness poller (docs/phase4/DESIGN-linux-readiness-poller.md §7, S0).
+// Plain C# over libc, independent of go2cs: measures the four kernel facts the design rests on.
+//   (a) epoll_ctl(ADD) answers EPERM for a regular file and a directory, 0 for a pipe and a socket
+//   (b) the struct epoll_event image is the packed 12-byte amd64 layout (events @0, data @4)
+//   (c) how often a long epoll_wait returns EINTR under GC + child-process traffic
+//   (d) an EPOLL_CTL_ADD issued while another thread is inside epoll_wait(-1) delivers the new fd's edge
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
+
+static class Probe
+{
+    [DllImport("libc", SetLastError = true)] static extern int epoll_create1(int flags);
+    [DllImport("libc", SetLastError = true)] static extern int epoll_ctl(int epfd, int op, int fd, IntPtr ev);
+    [DllImport("libc", SetLastError = true)] static extern int epoll_wait(int epfd, IntPtr events, int maxevents, int timeout);
+    [DllImport("libc", SetLastError = true)] static extern int open([MarshalAs(UnmanagedType.LPStr)] string path, int flags);
+    [DllImport("libc", SetLastError = true)] static extern int pipe2(IntPtr fds, int flags);
+    [DllImport("libc", SetLastError = true)] static extern int socket(int domain, int type, int protocol);
+    [DllImport("libc", SetLastError = true)] static extern nint write(int fd, IntPtr buf, nint n);
+    [DllImport("libc", SetLastError = true)] static extern int close(int fd);
+
+    const int EPOLL_CLOEXEC = 0x80000, EPOLL_CTL_ADD = 1;
+    const uint EPOLLIN = 0x1, EPOLLOUT = 0x4, EPOLLRDHUP = 0x2000, EPOLLET = 0x80000000;
+    const int O_RDONLY = 0, O_CLOEXEC = 0x80000, O_NONBLOCK = 0x800;
+    const int EPERM = 1, EINTR = 4;
+    const int SZ = 12; // packed amd64 struct epoll_event
+
+    static IntPtr Ev(uint events, long data)
+    {
+        IntPtr p = Marshal.AllocHGlobal(SZ);
+        Marshal.WriteInt32(p, 0, unchecked((int)events));
+        Marshal.WriteInt64(p, 4, data);
+        return p;
+    }
+
+    static int Add(int epfd, int fd, long token)
+    {
+        IntPtr ev = Ev(EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLET, token);
+        int r = epoll_ctl(epfd, EPOLL_CTL_ADD, fd, ev);
+        int errno = r < 0 ? Marshal.GetLastPInvokeError() : 0;
+        Marshal.FreeHGlobal(ev);
+        return errno;
+    }
+
+    static void Main()
+    {
+        Console.WriteLine($"arch={RuntimeInformation.ProcessArchitecture} runtime={RuntimeInformation.FrameworkDescription} os={RuntimeInformation.OSDescription}");
+        int epfd = epoll_create1(EPOLL_CLOEXEC);
+        Console.WriteLine($"epoll_create1(EPOLL_CLOEXEC) -> {epfd}");
+
+        // (a)
+        int f = open("/etc/hostname", O_RDONLY | O_CLOEXEC);
+        Console.WriteLine($"(a) regular file  ADD -> errno {Add(epfd, f, 1)}  (expect {EPERM} = EPERM)");
+        close(f);
+        int d = open("/tmp", O_RDONLY | O_CLOEXEC);
+        Console.WriteLine($"(a) directory     ADD -> errno {Add(epfd, d, 2)}  (expect {EPERM} = EPERM)");
+        close(d);
+        IntPtr fds = Marshal.AllocHGlobal(8);
+        pipe2(fds, O_CLOEXEC | O_NONBLOCK);
+        int pr = Marshal.ReadInt32(fds, 0), pw = Marshal.ReadInt32(fds, 4);
+        Console.WriteLine($"(a) pipe read end ADD -> errno {Add(epfd, pr, 3)}  (expect 0)");
+        int s = socket(2 /*AF_INET*/, 1 | 0x80000 | 0x800 /*SOCK_STREAM|CLOEXEC|NONBLOCK*/, 0);
+        Console.WriteLine($"(a) TCP socket    ADD -> errno {Add(epfd, s, 4)}  (expect 0)");
+
+        // (b) stride: write an event at slot 1 of a 2-slot buffer through the 12-byte layout and read it back
+        IntPtr two = Marshal.AllocHGlobal(2 * SZ);
+        Marshal.WriteInt32(two, SZ + 0, 0x2005); Marshal.WriteInt64(two, SZ + 4, 0x1122334455667788L);
+        Console.WriteLine($"(b) stride 12: slot1 events=0x{Marshal.ReadInt32(two, SZ):x} data=0x{Marshal.ReadInt64(two, SZ + 4):x} (unaligned 8-byte read at offset 16 ok)");
+
+        // (d) ADD during an in-progress epoll_wait(-1) on another thread, then make the new fd readable
+        IntPtr fds2 = Marshal.AllocHGlobal(8);
+        pipe2(fds2, O_CLOEXEC | O_NONBLOCK);
+        int pr2 = Marshal.ReadInt32(fds2, 0), pw2 = Marshal.ReadInt32(fds2, 4);
+        IntPtr buf = Marshal.AllocHGlobal(128 * SZ);
+        long gotTok = -1; int waiterEintr = 0;
+        var sw = Stopwatch.StartNew();
+        var started = new ManualResetEventSlim();
+        var t = new Thread(() =>
+        {
+            started.Set();
+            while (true)
+            {
+                int n = epoll_wait(epfd, buf, 128, -1);
+                if (n < 0)
+                {
+                    if (Marshal.GetLastPInvokeError() == EINTR) { waiterEintr++; continue; }
+                    Console.WriteLine("(d) epoll_wait errno " + Marshal.GetLastPInvokeError());
+                    return;
+                }
+                for (int i = 0; i < n; i++)
+                {
+                    long tok = Marshal.ReadInt64(buf, i * SZ + 4);
+                    int ev = Marshal.ReadInt32(buf, i * SZ);
+                    Console.WriteLine($"(d) event: token={tok} events=0x{ev:x} at {sw.ElapsedMilliseconds} ms");
+                    if (tok == 5) { gotTok = tok; return; }
+                }
+            }
+        }) { IsBackground = true };
+        t.Start(); started.Wait(); Thread.Sleep(300);
+        Console.WriteLine($"(d) ADD during wait -> errno {Add(epfd, pr2, 5)} at {sw.ElapsedMilliseconds} ms");
+        IntPtr one = Marshal.AllocHGlobal(1); Marshal.WriteByte(one, 0, 1);
+        write(pw2, one, 1);
+        t.Join(5000);
+        Console.WriteLine($"(d) result: {(gotTok == 5 ? "DELIVERED without any break write" : "NOT delivered within 5 s")}  (waiter EINTRs meanwhile: {waiterEintr})");
+
+        // (c) EINTR rate: a waiter blocked in 1 s epoll_wait slices for 20 s while this thread allocates, collects and spawns children
+        int ep2 = epoll_create1(EPOLL_CLOEXEC);
+        IntPtr fds3 = Marshal.AllocHGlobal(8);
+        pipe2(fds3, O_CLOEXEC | O_NONBLOCK);
+        Add(ep2, Marshal.ReadInt32(fds3, 0), 9);
+        int eintr2 = 0, returns = 0;
+        var t2 = new Thread(() =>
+        {
+            IntPtr b2 = Marshal.AllocHGlobal(128 * SZ);
+            var sw2 = Stopwatch.StartNew();
+            while (sw2.ElapsedMilliseconds < 20000)
+            {
+                int n = epoll_wait(ep2, b2, 128, 1000);
+                returns++;
+                if (n < 0 && Marshal.GetLastPInvokeError() == EINTR) eintr2++;
+            }
+        }) { IsBackground = true };
+        t2.Start();
+        int spawned = 0; int gcs0 = GC.CollectionCount(0);
+        var sw3 = Stopwatch.StartNew();
+        while (sw3.ElapsedMilliseconds < 20000)
+        {
+            try
+            {
+                using var p = Process.Start(new ProcessStartInfo("/bin/true") { UseShellExecute = false });
+                p.WaitForExit();
+                spawned++;
+            }
+            catch (Exception ex) { Console.WriteLine("spawn failed: " + ex.Message); break; }
+            byte[] junk = new byte[1 << 20]; GC.KeepAlive(junk);
+            if (spawned % 50 == 0) GC.Collect();
+        }
+        t2.Join();
+        Console.WriteLine($"(c) 20 s: epoll_wait returns={returns} EINTR={eintr2} children spawned={spawned} gen0 GCs={GC.CollectionCount(0) - gcs0}");
+        Console.WriteLine("S0 DONE");
+    }
+}
+```
+
 ## 8. Non-goals — the boundary inherited from the Windows design's §8, and this design's own
 
 Inherited, restated for Linux:
