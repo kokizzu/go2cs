@@ -197,6 +197,17 @@ var linknamePushTargets = map[string]linknamePush{
 	// exec_windows.go) and goargs_impl.cs keeps goargs()'s own `if GOOS == "windows" { return }`
 	// guard, so argslice stays unset exactly as in Go.
 	"os.runtime_args": {source: "runtime.os_runtime_args", bareDecl: true},
+	// syscall's reader-starvation probe for the ForkLock upgrade dance, pushed by sync/rwmutex.go
+	// (`//go:linkname syscall_hasWaitingReaders syscall.hasWaitingReaders`). The consumer is the
+	// BARE shape — forkpipe2.go declares `func hasWaitingReaders(rw *sync.RWMutex) bool` with no
+	// directive of its own, "defined in the sync package" — and the pushed body is ORDINARY
+	// CONVERTED Go over RWMutex's own fields, so the forwarder calls something that genuinely
+	// works. No new project reference: syscall already imports sync for ForkLock itself.
+	//
+	// What the stub was costing on Linux (the first flavor whose exec seam makes acquireForkLock's
+	// slow path reachable): os/exec's TestPipes drove ForkLock contention into the probe and died
+	// on the announcing stub — the last named residual of the exec-wall arc's own row.
+	"syscall.hasWaitingReaders": {source: "sync.syscall_hasWaitingReaders", bareDecl: true},
 	// internal/syscall/windows's system-directory query, pushed by runtime/os_windows.go. Unlike the
 	// two rows above this is the HANDLE consumer shape — security_windows.go carries its own one-arg
 	// `//go:linkname GetSystemDirectory` above a bodyless `func GetSystemDirectory() string` — so
