@@ -40,7 +40,11 @@ public class LinuxSpawnSeamTests
 
         Assert.AreEqual((nint)0, pid, "a failed spawn must not report a pid");
         Assert.IsNotNull(err, "spawning a missing binary must fail synchronously");
-        Assert.IsTrue(err.ToString().Contains("no such file"),
+
+        // The corpus's own errno-comparison idiom: the error interface carries a boxed Errno, and
+        // AreEqual is what converted Go uses for `err == ENOENT`. Asserting the VALUE (not a
+        // rendered message) is both stronger and rendering-independent.
+        Assert.IsTrue(AreEqual(err, syscall.ENOENT),
             $"expected ENOENT from the spawn call itself, got: {err}");
     }
 
