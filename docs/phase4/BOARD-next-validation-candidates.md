@@ -17201,4 +17201,171 @@ and was not re-run. SS11.1 (recording over derivation) and the stricter no-compo
 are RATIFIED per the same entry; `log`'s alloc-profile disclosure and the 67-file
 unmapped-until-their-own-rebank discipline are accepted.
 
+## ⛔ MEASURED, DOES NOT BANK — `runtime/debug`'s NINTH verdict is `TestSetCrashOutput`, it was never in any inventory, and it is refused by every class including the one minted for this row (2026-08-21, lane `claude/runtime-debug-bank`)
+
+The terminal row of the 1.23.1 campaign was fully composed on this board — Ruling B's
+`runtime-capability` class for `WriteHeapDump`, the ruled fifth-frame `host-limit` entry with its
+drafted text, `TestFreeOSMemory` routed by measurement to `codegen-liveness`, and `TestReadGCStats`
+closed by S2/S3. Eight of nine verdicts had an answer. **The ninth did not, because no inventory
+ever named it.** Measured at `d4c3e579d` + a freshly built converter, `-test-action all`,
+`-test-timeout 15m`, explicit `-go2cspath`:
+
+| Test | `go test` | go2cs | State | Composed bill |
+|:--|:--:|:--:|:--|:--|
+| `TestReadGCStats` | pass | **pass** | MATCH | closed by the S2/S3 recorder ✓ |
+| `TestSetGCPercent` | skip | **skip** | MATCH (skip parity, issue 20076) | — |
+| `TestSetMaxThreadsOvf` | pass | **pass** | MATCH | — |
+| `TestStack` | pass | fail | ONE assertion, the fifth/host frame | `host-limit`, drafted ✓ |
+| `TestWriteHeapDumpNonempty` | pass | fail | `WriteHeapDump` throws | `runtime-capability` ✓ |
+| `TestWriteHeapDumpFinalizers` | pass | fail | `WriteHeapDump` throws | `runtime-capability` ✓ |
+| `TestWriteHeapDumpTypeName` | pass | fail | `WriteHeapDump` throws | `runtime-capability` ✓ |
+| `TestFreeOSMemory` | pass | fail | second assert, the frame's dead 32 MB | `codegen-liveness` ✓ |
+| **`TestSetCrashOutput`** | **pass** | **fail** | **six assertions** | **NOTHING — never rooted** |
+
+**3 matched · 6 divergent.** All four expectations the bill stated were met exactly, including
+`TestStack` at precisely one assertion (`in line "\tD:/…/src/core/testing/TestExecution.cs:593",
+expected prefix "\ttesting/testing.go"` — the line above it is a `testenv` `t.Log`, not a failure).
+The row does not bank on the ninth.
+
+### The census gap, stated plainly
+
+The 2026-08-19 compile-wall entry recorded "**2 of 9**" and "the seven failures decompose into
+**four roots**" — and its table names **six** tests. 9 − 2 = 7, so exactly one failure was carried
+in the arithmetic and never in the prose. S2/S3 then closed `TestReadGCStats`, moving the row to
+3 of 9 with six failures, five of them ruled. `TestSetCrashOutput` is the one that was counted but
+never named, and it appears nowhere else on this board. It is not a regression: the hand-own it
+lands on is unchanged since the 2026-08-01 consolidation (`2e8066da6`).
+
+### What `TestSetCrashOutput` actually measures, and why it is a defect
+
+The test re-executes the test binary through `exec.Command(os.Executable())` into `TestMain`'s
+`setcrashoutput` arm, which creates a file, calls `SetCrashOutput(f, CrashOptions{})`,
+`println("hello")`, then `panic("oops")`. The parent then requires **both** the crash file and the
+child's stderr to contain `panic: oops`, `goroutine 1` and `debug_test.TestMain`, and requires
+`hello` in stderr but **not** in the crash file.
+
+A great deal of that works. The child spawns, the env propagates, `hello` reaches stderr, the panic
+happens, the child exits 2, and the crash file is created and read back cleanly. Two things diverge:
+
+* **The crash file is empty** — `crash = <<>>`. `runtime_setCrashFD`
+  (`src/core/runtime/debug/stubs_impl.cs`) remembers the fd and is deliberately inert: *"the managed
+  runtime writes crashes through its own handler, so the slot is remembered but inert."*
+* **stderr carries a .NET dump, not a Go crash report** — `System.AggregateException: One or more
+  errors occurred. (oops) ---> go.PanicException: oops` over a CLR frame list, where Go writes
+  `panic: oops` / blank / `goroutine 1 [running]:` / the Go-spelled traceback.
+
+Against the five classes and the newly minted sixth:
+
+| class | admits it? | why not |
+|:--|:--:|:--|
+| `alloc-profile` / `alloc-count-semantics` / `codegen-liveness` | no | nothing is being measured or collected |
+| `host-limit` | **no** | its bar is a structural property of the DEPLOYMENT SHAPE, and the shape is demonstrably not the obstacle — unlike os/exec's relocated `installExe`, this child *started, ran, printed and panicked*. What is missing is output FORMAT. The bar's own text excludes "an unimplemented-but-fixable defect" |
+| `runtime-capability` | **no** | **it refuses this by its own admission test.** *Does a truthful managed implementation of the asserted behavior exist at any cost?* Yes — and cheaply, because every ingredient is already banked and proven **in this same package**: `debug.Stack()` produces the traceback, `goFrameName` spells `runtime/debug_test.TestMain` Go's way (the receiver half, 2026-08-19), and the position map now names the Go file and line — `TestStack`'s four converted frames all agree with Go on this very run. A priced arc is never a disclosure |
+
+So the honest outcome is the one the charter asks for: **the row declines.** Disclosing it would
+launder exactly what Ruling B's anti-laundering clause and `host-limit`'s bar were both written to
+refuse, and implementing the crash-report arc is not a banking lane's change — it rewrites what
+*every* converted program prints on an unhandled panic.
+
+### The roster does not move
+
+**161 / 215 = 74.9%**, 18,565 matching verdicts, 80 disclosed — recomputed by summing the table's
+161 rows, unchanged. 75% waits on the arc below.
+
+### The remedy, priced for whoever takes it
+
+One arc, two halves, both ordinary implementation work:
+
+1. **A Go-format crash report on an unhandled panic.** The test host's top-level handler prints
+   `panic: <value>`, a blank line, `goroutine N [running]:`, then the Go-spelled traceback it can
+   already produce. Blast radius is corpus-wide and *behavioral* — every converted program's
+   unhandled-panic stderr changes — so it wants a design note and charter §7 review, not a patch.
+   Note the trap: the .NET wrapper text (`System.AggregateException … ---> go.PanicException`) is
+   the *host's* framing, so the fix belongs where the host decides what an escaped panic prints,
+   not in `runtime/debug`.
+2. **`SetCrashOutput`'s fd must receive that report.** The slot already exists (`s_crashFD`); the
+   crash printer tees to it. Mind the asymmetry the test pins: stderr gets `println` output **and**
+   the report; the crash file gets **only** the report.
+
+Consumers beyond this row: `ExampleSetCrashOutput_monitor` (currently excluded as an Example,
+Phase 4D) is the same surface, and any package whose suite asserts on panic output inherits half 1.
+
+### Two findings the next lane should not re-pay
+
+* **`TestFreeOSMemory`'s failure signature MOVED, and a manifest pinned on this board's older text
+  would not have matched.** The compile-wall entry recorded `no memory released: 0 -> 0` — the
+  test's FIRST assert. S2/S3's high-water `HeapReleased` now makes that assert pass, and the failure
+  has moved to the SECOND: `less than 16777216 released: 0 -> 3031040`. The routed shape is
+  confirmed by that number — ~3 MB of unrelated memory really is released, while the 32 MB the test
+  allocated inline in its own frame is not. **Pin the stable prefix `less than 16777216 released:`
+  and nothing further**: the trailing `0 -> 3031040` is run-varying by construction.
+* **The dirt classification for this package is empty, which is itself worth recording.** A full
+  `-test-action all` left **zero tracked-file drift** — no CRLF phantoms, no `-tests`-closure
+  production re-flip, no `package_init.cs` `initᴛᴛtests()` hook, and no production `.csproj` change
+  (which would have been real drift). Everything the run produced was untracked pipeline output,
+  removed on restore. `git status` clean.
+
+### The four entries that ARE composed, ready to paste
+
+Banked here so the arc's closing lane pays nothing to re-derive them. Signatures verified against
+this run's captured output; `TestStack`'s is R's drafted text, confirmed verbatim against the live
+failure.
+
+```json
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestStack",
+      "class": "host-limit",
+      "signature": "expected prefix \"\\ttesting/testing.go\"",
+      "reason": "the fifth frame() assert requires the testing framework's own frame to name GOROOT/src/testing/testing.go, which is a property of Go's test BINARY: its testing package is compiled from that source. The converted deployment's testing package is the hand-owned host (src/core/testing) — the ONE-testing-package ruling's design, not an unimplemented conversion — so no conversion recorded a position for it and it honestly reports its own .cs position, exactly as golib and the BCL do. STRUCTURAL AND PERMANENT: unlike the relocatable-single-file entries, this does NOT retire when the host publishes self-contained and single-file, because the host would still be hand-written C# with no line-for-line relationship to Go's testing.go. It retires only if the test host itself becomes a conversion of Go's testing package, which the ONE-testing-package ruling deliberately forecloses"
+    },
+    {
+      "name": "TestWriteHeapDumpNonempty",
+      "class": "runtime-capability",
+      "signature": "WriteHeapDump is not supported by the managed runtime",
+      "reason": "Go's heap-dump format is a serialization of the Go heap through Go's own type descriptors; the heap a managed build would describe is not a Go heap and has no such descriptors, so any managed rendering would be fabrication rather than implementation and no truthful form exists at any cost. Pinned AS FAILING under the class's binding anti-laundering clause: this test checks only that the dump is non-empty (size >= 1) and never parses it, so a one-byte write would pass it while proving nothing — writing that byte is forbidden by this class's own text"
+    },
+    {
+      "name": "TestWriteHeapDumpFinalizers",
+      "class": "runtime-capability",
+      "signature": "WriteHeapDump is not supported by the managed runtime",
+      "reason": "Go's heap-dump format is a serialization of the Go heap through Go's own type descriptors; the heap a managed build would describe is not a Go heap and has no such descriptors, so any managed rendering would be fabrication rather than implementation and no truthful form exists at any cost. Pinned AS FAILING under the class's binding anti-laundering clause: this test checks only that the dump is non-empty and never parses it, so a one-byte write would pass it while proving nothing — writing that byte is forbidden by this class's own text"
+    },
+    {
+      "name": "TestWriteHeapDumpTypeName",
+      "class": "runtime-capability",
+      "signature": "WriteHeapDump is not supported by the managed runtime",
+      "reason": "Go's heap-dump format is a serialization of the Go heap through Go's own type descriptors; the heap a managed build would describe is not a Go heap and has no such descriptors, so any managed rendering would be fabrication rather than implementation and no truthful form exists at any cost. Pinned AS FAILING under the class's binding anti-laundering clause: this test checks only that the dump is non-empty and never parses it, so a one-byte write would pass it while proving nothing — writing that byte is forbidden by this class's own text"
+    },
+    {
+      "name": "TestFreeOSMemory",
+      "class": "codegen-liveness",
+      "signature": "less than 16777216 released:",
+      "reason": "the test allocates 32 MB inline in its own frame, clears the only named reference, and then asserts — from inside that same still-running frame — that FreeOSMemory has returned the memory to the OS. Go's per-safepoint liveness maps drop the allocation at its last use; the CLR reports a frame's slots live for the frame's whole lifetime, so the 32 MB is still rooted while the test is looking. Measured by the routing probe as a three-way control: the identical allocation behind a RETURNED call releases 33,689,600 B to the byte, and the inline form does not, invariant under Release and under untiered JIT. The first assert (HeapReleased must increase at all) PASSES on the S2/S3 high-water surface — 3,031,040 B of unrelated memory really is released — which is why the pin is the second assert's prefix and stops before its run-varying byte counts"
+    }
+  ]
+}
+```
+
+The `runtime-capability` class does NOT join the roster preamble here. Ruling B says it joins with
+the first banking commit that uses it, exactly as `chan-direction` did, and there is no banking
+commit — minting a class into published roster prose for a row that did not bank would leave the
+preamble describing a class no manifest uses.
+
+### Gates
+
+Stated as an accounting rather than a table of runs, because this commit changes one docs file and
+nothing else.
+
+| Gate | Owed? | Result |
+|:--|:--|:--|
+| own-row pipeline measurement | yes — it IS the finding | run above, 3 matched / 6 divergent, exit 1 |
+| corpus restored | yes | `git status` **clean**; 9 untracked artifact paths + ignored pipeline output removed |
+| converter `go test ./...` | **no** — no converter file moved, and no manifest entry is being committed for the loader to accept | not run; accounting stated |
+| `check-no-regression.ps1` | **no** — no converter file moved, so no emission can have changed | not run; accounting stated |
+| `go2cs-stdlib.slnx` / behavioral suite | **no** — zero tracked corpus drift | not run; accounting stated |
+| five-largest-reflect-consumer sweep (JOB-C1) | **no** — that gate protects a BANK; there is no bank, no corpus change and no converter change | not dispatched, deliberately — it would have spent an i9 hour proving a docs commit |
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
