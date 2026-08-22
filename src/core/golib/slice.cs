@@ -205,6 +205,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (source.m_array is null)
             return default;
 
+        // A native window is re-spelled by carrying the BASE across — the bytes are the same bytes
+        // under a different element name, which is exactly what this alias means (and the element
+        // types are one-byte-wide by the caller's own precondition).
+        if (source.m_nativeBase != 0)
+            return new slice<T>(source.m_nativeBase, source.m_low, source.m_low + source.m_length, source.m_low + source.m_capacity);
+
         T[] aliased = Unsafe.As<T[]>(source.m_array);
 
         return new slice<T>(aliased, source.m_low, source.m_low + source.m_length, source.m_low + source.m_capacity);
@@ -382,7 +388,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public Span<T> ꓸꓸꓸ => ToSpan(); // Spread operator
 
-    internal PinnedBuffer buffer => new(m_array, Length);
+    // Pinning is a MANAGED-storage concept: native memory does not move, so a native-backed slice
+    // has nothing to pin and no PinnedBuffer to offer. Callers that want its address use the
+    // element pointers (Ꮡ / SliceData), which answer the real one.
+    internal PinnedBuffer buffer => m_nativeBase != 0
+        ? throw new PanicException("native-backed slice: pinning is meaningless for native memory — take an element address instead")
+        : new(m_array, Length);
 
     public nint Low => m_low;
 
@@ -580,6 +591,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     public struct Enumerator : IEnumerator<(nint, T)>
     {
         private readonly T[] m_array;
+        private readonly nuint m_nativeBase; // 0 = managed backing; else the aliased memory's base
         private readonly nint m_start;
         private readonly nint m_end;
         private nint m_current;
@@ -589,12 +601,31 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             // A nil slice (null m_array) enumerates as zero elements — Go's `range nil` — via the
             // zero start/end window; the backing array is never indexed.
             m_array = slice.m_array;
+            m_nativeBase = slice.m_nativeBase;
             m_start = slice.m_low;
             m_end = m_start + slice.m_length;
             m_current = m_start - 1;
         }
 
-        public readonly (nint, T) Current => (m_current - m_start, m_array[m_current]);
+        // The window offsets are element indices against whichever backing the slice carries, so
+        // ranging a native-backed slice reads the mapping — the same discriminant the indexer uses
+        // (design §2.3's table row for range).
+        public readonly (nint, T) Current
+        {
+            get
+            {
+                if (m_nativeBase != 0)
+                {
+                    unsafe
+                    {
+                        return (m_current - m_start,
+                            Unsafe.Read<T>((void*)(m_nativeBase + (nuint)m_current * (nuint)Unsafe.SizeOf<T>())));
+                    }
+                }
+
+                return (m_current - m_start, m_array[m_current]);
+            }
+        }
 
         readonly object? IEnumerator.Current => Current;
 
@@ -624,7 +655,9 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public override int GetHashCode()
     {
-        return m_array.GetHashCode() ^ (int)m_low ^ (int)m_length;
+        // Backing identity: the managed array's, or the native base's — one or the other is always
+        // the thing two headers share when they name the same storage.
+        return (m_nativeBase != 0 ? m_nativeBase.GetHashCode() : m_array.GetHashCode()) ^ (int)m_low ^ (int)m_length;
     }
 
     public override bool Equals(object? obj)
@@ -725,7 +758,11 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     // on the Equals overloads for C#-side collection use.
     public static bool operator ==(slice<T> a, slice<T> b)
     {
-        return ReferenceEquals(a.m_array, b.m_array) && a.m_low == b.m_low && a.m_length == b.m_length && a.m_capacity == b.m_capacity;
+        // The native base joins the header comparison: two native windows are the same slice when
+        // they name the same base and window, and a native-backed slice is never == a managed one
+        // (nor == nil, whose base is 0 with an empty backing — the nil test stays exact).
+        return a.m_nativeBase == b.m_nativeBase && ReferenceEquals(a.m_array, b.m_array) &&
+               a.m_low == b.m_low && a.m_length == b.m_length && a.m_capacity == b.m_capacity;
     }
 
     public static bool operator !=(slice<T> a, slice<T> b)
@@ -837,7 +874,9 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             if (index < 0 || index >= m_length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            m_array[m_low + index] = value;
+            // The IList<T> setter reaches the same storage the Go indexer does — a native window
+            // writes the mapping (design §2.3).
+            this[(nint)index] = value;
         }
     }
 
@@ -907,6 +946,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     private sealed class SliceEnumerator : IEnumerator<T>
     {
         private readonly T[] m_array;
+        private readonly nuint m_nativeBase; // 0 = managed backing (see the struct Enumerator)
         private readonly nint m_start;
         private readonly nint m_end;
         private nint m_current;
@@ -917,6 +957,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             // zero start/end window; the backing array is never indexed. (Non-nil ⟺ m_array is
             // present, so the old corrupt-state guard here had no remaining reachable case.)
             m_array = slice.m_array;
+            m_nativeBase = slice.m_nativeBase;
             m_start = slice.m_low;
             m_end = m_start + slice.m_length;
             m_current = m_start - 1;
@@ -940,6 +981,14 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
                 if (m_current >= m_end)
                     throw new InvalidOperationException("slice enumeration has ended.");
+
+                if (m_nativeBase != 0)
+                {
+                    unsafe
+                    {
+                        return Unsafe.Read<T>((void*)(m_nativeBase + (nuint)m_current * (nuint)Unsafe.SizeOf<T>()));
+                    }
+                }
 
                 return m_array[m_current];
             }
