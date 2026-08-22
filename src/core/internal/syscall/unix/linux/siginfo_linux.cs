@@ -1,64 +1,95 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// siginfo_linux_impl.cs - Gbtc
+// Copyright © 2026 The go2cs Authors. All rights reserved.
+//
+// Use of this source code is governed by an MIT-style license
+// that can be found in the LICENSE file.
+
+// go2cs NATIVE IMPLEMENTATION (hand-owned; replaces the converted siginfo_linux.go output).
+//
+// SiginfoChild is an OUT-parameter the KERNEL writes: waitid(2) fills 128 bytes at the address
+// the caller passes, and both wait paths hand it a heap-boxed managed struct through the
+// transient-pin `(uintptr)Ꮡinfo` seam (os/linux/wait_waitid.cs and pidfd_linux.cs). The converted
+// form cannot be that struct: Go's two padding fields (`_ [is64bit]int32`, `__ [100]byte`) emit as
+// golib `array<T>` fields, which are MANAGED CLASS REFERENCES — eight-byte pointers, not inline
+// storage — so the C# layout is Signo(0) errno(4) code(8) pointer(16) Pid(24) Uid(28) Status(32)
+// against the kernel's Signo(0) errno(4) code(8) pad(12) Pid(16) Uid(20) Status(24). Measured on
+// the exec-wall lane (2026-08-22): Code reads correctly (CLD_EXITED, the offsets agree that far),
+// Status reads ZERO (offset 32 is past everything the kernel wrote) — flag's and os/exec's
+// TestExitCode saw every child exit as 0 — and the kernel's Pid word lands INSIDE the padding
+// field's object reference, overwriting a live GC pointer with raw pid bits. That last part makes
+// this more than a wrong answer: it is the same memory-corruption shape as the Windows
+// Timezoneinformation family (the non-blittable-out-param wall), and the remedy is that wall's
+// established one — a BLITTABLE mirror, hand-owned.
+//
+// The mirror below is linux-amd64's actual layout: sequential scalars with the one explicit pad,
+// `Size = 128` covering the tail padding the kernel may touch. The struct stays `partial` and
+// keeps the exported field names, so the package_info shell, the callers' field reads
+// (`info.Pid`, `info.WaitStatus()`), and TestSiginfoChildLayout's expectations all bind
+// unchanged. The MIPS errno/code swap Go's comment mentions is amd64-irrelevant and this corpus
+// is amd64-only per flavor.
+
+using System.Runtime.InteropServices;
+
+// Hand-owned native replacement of the converted siginfo_linux.go output — the converter skips
+// regenerating a file that carries this marker, so a -stdlib reconvert preserves it (see
+// containsManualConversionMarker).
+[module: go.GoManualConversion]
+
 namespace go.@internal.syscall;
 
-using syscall = syscall_package;
+public static partial class unix_package
+{
+    [StructLayout(LayoutKind.Sequential, Size = 128)]
+    public partial struct SiginfoChild
+    {
+        public int Signo;
+        public int Errno;
+        public int Code;
+        private int _pad0; // 64-bit alignment pad before the union, exactly Go's `_ [is64bit]int32`
+        public int Pid;
+        public uint Uid;
+        public int Status;
+        // Size = 128 supplies the tail Go pads with `__ [100]byte`; the kernel may write into it,
+        // and inline (not referenced) storage is the entire point of this mirror.
+    }
 
-partial class unix_package {
+    internal const int _CLD_EXITED = 1;
+    internal const int _CLD_KILLED = 2;
+    internal const int _CLD_DUMPED = 3;
+    internal const int _CLD_TRAPPED = 4;
+    internal const int _CLD_STOPPED = 5;
+    internal const int _CLD_CONTINUED = 6;
 
-internal const nuint is64bit = /* ^uint(0) >> 63 */ 1; // 0 for 32-bit hosts, 1 for 64-bit ones.
+    private const uint core = 0x80;
+    private const uint stopped = 0x7f;
+    private const uint continued = 0xffff;
 
-// SiginfoChild is a struct filled in by Linux waitid syscall.
-// In C, siginfo_t contains a union with multiple members;
-// this struct corresponds to one used when Signo is SIGCHLD.
-//
-// NOTE fields are exported to be used by TestSiginfoChildLayout.
-[GoType] partial struct SiginfoChild {
-    public int32 Signo;
-    internal partial ref siErrnoCode siErrnoCode { get; }                // Two int32 fields, swapped on MIPS.
-    internal array<int32> _ = new(is64bit); // Extra padding for 64-bit hosts only.
-// End of common part. Beginning of signal-specific part.
-    public int32 Pid;
-    public uint32 Uid;
-    public int32 Status;
-    // Pad to 128 bytes.
-    internal array<byte> __ = new(128 - (6 + is64bit) * 4);
+    // WaitStatus converts SiginfoChild, as filled in by the waitid syscall, to syscall.WaitStatus
+    // — the converted body verbatim over the mirror's fields.
+    public static syscall_package.WaitStatus WaitStatus(this ref SiginfoChild s)
+    {
+        uint ws = 0;
+
+        switch (s.Code)
+        {
+            case _CLD_EXITED:
+                ws = (uint)(s.Status << 8);
+                break;
+            case _CLD_DUMPED:
+                ws = (uint)s.Status | core;
+                break;
+            case _CLD_KILLED:
+                ws = (uint)s.Status;
+                break;
+            case _CLD_TRAPPED:
+            case _CLD_STOPPED:
+                ws = ((uint)(s.Status << 8)) | stopped;
+                break;
+            case _CLD_CONTINUED:
+                ws = continued;
+                break;
+        }
+
+        return (syscall_package.WaitStatus)ws;
+    }
 }
-
-internal const int32 _CLD_EXITED = 1;
-internal static UntypedInt _CLD_KILLED => 2;
-internal static UntypedInt _CLD_DUMPED => 3;
-internal static UntypedInt _CLD_TRAPPED => 4;
-internal static UntypedInt _CLD_STOPPED => 5;
-internal static UntypedInt _CLD_CONTINUED => 6;
-internal static UntypedInt core => 0x80;
-internal static UntypedInt stopped => 0x7f;
-internal static UntypedInt continued => 0xffff;
-
-// WaitStatus converts SiginfoChild, as filled in by the waitid syscall,
-// to syscall.WaitStatus.
-[GoRecv] public static syscall.WaitStatus /*ws*/ WaitStatus(this ref SiginfoChild s) {
-    syscall.WaitStatus ws = default!;
-
-    var exprᴛ1 = s.Code;
-    if (exprᴛ1 is _CLD_EXITED) {
-        ws = ((syscall.WaitStatus)(uint32)((s.Status << (int)(8))));
-    }
-    else if (exprᴛ1 == _CLD_DUMPED) {
-        ws = (syscall.WaitStatus)(((syscall.WaitStatus)(uint32)s.Status) | (uint32)core);
-    }
-    else if (exprᴛ1 == _CLD_KILLED) {
-        ws = ((syscall.WaitStatus)(uint32)s.Status);
-    }
-    else if (exprᴛ1 == _CLD_TRAPPED || exprᴛ1 == _CLD_STOPPED) {
-        ws = (syscall.WaitStatus)(((syscall.WaitStatus)(uint32)((s.Status << (int)(8)))) | (uint32)stopped);
-    }
-    else if (exprᴛ1 == _CLD_CONTINUED) {
-        ws = continued;
-    }
-
-    return ws;
-}
-
-} // end unix_package

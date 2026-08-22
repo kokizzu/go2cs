@@ -480,15 +480,20 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
             return (0, (Errno)(uintptr)rc);
         }
 
-        // OQ-4 stays DEFERRED, exactly as the ratified design said — and the first attempt to open
-        // it early is why this comment exists. Filling PidFD via pidfd_open(pid) routes os.Process
-        // onto its pidfd wait path, and MEASURED (flag's TestExitCode, 2026-08-22): every child
-        // exit code came back 0 through that path — children hand-verified exiting 2 and 123 read
-        // as 0 at the parent — while the classic wait4 road decodes them correctly (the GolibTests
-        // reaper gate). Until the pidfd waitid/status plumbing is itself measured, -1 is Go's own
-        // "kernel does not support it" answer and the classic path carries.
+        // The pidfd door, closed once and reopened by measurement — the full story, because both
+        // wrong turns were paid for. os's ensurePidfd plants this field whenever ITS OWN kernel
+        // probe passes, and getPidfd then uses the value UNCHECKED — Go's clone always delivers a
+        // real fd on that path, so -1 here is not "unsupported", it is a poisoned handle:
+        // strace showed `waitid(P_PIDFD, -1, …) = EINVAL` and every wait failing (exit codes -1).
+        // The first attempt DID fill a real pidfd and read every child exit as 0 — which
+        // implicated this fill, but the true root was SiginfoChild's converted layout (managed
+        // array-reference padding shifting every kernel offset; see
+        // internal/syscall/unix/linux/siginfo_linux.cs, now a blittable hand-own). With that
+        // mirror fixed the fill is correct AND race-free: the child cannot be reaped before this
+        // process's own first wait, which is the only reaper.
         if (sys.PidFD != nil) {
-            sys.PidFD.Value = -1;
+            long fdOrErr = syscallʟ(SYS_pidfd_open, childPid, 0, 0);
+            sys.PidFD.Value = fdOrErr >= 0 ? ((nint)fdOrErr) : -1;
         }
 
         return (childPid, default!);
