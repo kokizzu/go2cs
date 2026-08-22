@@ -17632,7 +17632,6 @@ reason say so.
 
 | Gate | Result |
 |:--|:--|
-<<<<<<< HEAD
 | `runtime/debug` pipeline, `-test-action all` | **VALIDATES 4 + 5**, exit 0 |
 | `GolibTests` (full) | **226/226 pass**; 15 new crash-report guards, **5 proven failing-first** |
 | behavioral suite (full) | **PASS 604/604** Transpile+Compile+Target, **578 Output compared, 0 failed**, 26 skipped (1,673.5 s), **zero tracked drift** after 604 re-transpiles |
@@ -17743,7 +17742,6 @@ Two harness findings, both budget rather than corpus, and both worth not re-payi
 **RC/toolchain friction for the hop plan:** none encountered on the JIT path — SDK 10.0.400 installed side-by-side cleanly (official dotnet-install, `-NoPath`), env-based runtime selection worked first try, `net9.0` IL runs on 10.0.11 under `LatestMajor` with zero NETSDK/analyzer noise, and the go2cs-gen analyzer (netstandard2.0) loaded unmodified. AOT-path friction, all measured: (1) **the ILC runtime-pack binding above** — the hop plan must not expect pre-hop AOT measurements; (2) the runner's up-to-date check REUSES a stale publish across SDK-env changes (a 51 s "10-AOT leg" re-measured the 9-ILC binary; purge the benchmark's bin/obj before any cross-SDK A/B); (3) Roslyn 10 newly warns CS7022 on PerformanceRunner's top-level-statements + Runner.Main shape (benign); (4) a net9.0 app under the 10 SDK still RUNS on the 9 runtime — JIT legs need `DOTNET_ROOT` + `DOTNET_ROLL_FORWARD=LatestMajor`, verified by a FrameworkDescription probe, or the "10 leg" silently measures 9.
 
 **Discipline notes:** no corpus changes, no version.props changes, no global.json committed — the worktree is byte-clean apart from the runner's own regenerated artifacts (restored). Numbers are THIS box's; the perf-canon README stays authoritative for its own host and was not touched (the runner's README mirror was left unstaged/restored).
-=======
 | converter `go test ./...` (Windows) | **ok, 294 s** (incl. `TestLinuxOnlyEntriesAreScopedToLinux` and the L3 corpus walk admitting the new `linux/` companion) |
 | `syscall.csproj` linux flavor, NATIVE in the distro (+ `os`, its first consumer) | **0 errors** (`syscall`), **0 errors** (`os`) at `9374cd61b` |
 | `syscall.csproj` windows flavor (untouched) | **0 errors** (the Windows compile set does not contain the two new files; the registry entries are linux-scoped) |
@@ -17777,5 +17775,4 @@ Harness as the poll-seam lane's: the repo's own `run-validated-sweep.ps1 -Filter
 
 ---
 
->>>>>>> origin/claude/three-bodies-r4r1
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
