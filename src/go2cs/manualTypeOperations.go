@@ -68,6 +68,12 @@ var goosAny goosScope
 // goosWindows scopes an entry to Windows alone.
 var goosWindows = goosScope{"windows"}
 
+// goosLinux scopes an entry to the Linux flavor alone. Its first members are syscall's Fstat and
+// fstatat: darwin declares BOTH names too (syscall_darwin.go, via libc) with a body that is not the
+// defective one, so an unscoped entry would turn darwin's working wrappers into placeholders with
+// nothing to link against — the exact os.(*File).readdir lesson, one package down.
+var goosLinux = goosScope{"linux"}
+
 // goosWindowsDarwin scopes an entry to the two targets whose Go flavor reinterprets or hands OS
 // memory to a Go struct — the raw-metal-on-non-native-types fork — where the third does not.
 var goosWindowsDarwin = goosScope{"windows", "darwin"}
@@ -677,6 +683,21 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// re-derived from Go's file set, and it is what keeps a future same-named unix declaration from
 	// silently inheriting a Windows hand-own the way os.(*File).readdir did.
 	"syscall": {
+		// The LINUX members of the same struct-passing class, measured by the 2026-08-22 Linux roster
+		// re-run (the poll-seam lane's R1): Stat_t on linux/amd64 carries `X__unused [3]int64`,
+		// which converts to an `array<int64>` MANAGED REFERENCE, so the converted struct is not
+		// blittable — the CLR lays it out itself (~128 bytes) — and the generated wrappers hand the
+		// kernel `uintptr(unsafe.Pointer(stat))`, the pinned MANAGED image. fstatat(2)/fstat(2) then
+		// write the 144-byte native `struct stat` over a field order that is not the kernel's and 16
+		// bytes past the object: `os.Stat(dir)` answered `IsDir() == false, Mode() == p---------`
+		// with a nil error (a quiet wrong answer, the class's worst shape), `Stat().Size()` read 0,
+		// and every Glob/Walk/ReadDir-with-Info on the Linux flavor followed — 8 roster rows plus
+		// partials. ONLY these two wrappers are hand-owned (zsyscall_linux_amd64_impl.cs): Stat and
+		// Lstat are pure Go over fstatat (syscall_linux_amd64.go) and convert faithfully, and every
+		// other wrapper in the generated file passes scalars or a byte pointer. Scoped to linux
+		// because darwin declares both names too, with working libc-backed bodies.
+		"Fstat":   goosLinux,
+		"fstatat": goosLinux,
 		"GetTimeZoneInformation": goosWindows,
 		// The same seam over a bigger record, and the first member of the class an actual suite
 		// reached: the kernel writes a 592-byte WIN32_FIND_DATAW, whose cFileName[260] and
