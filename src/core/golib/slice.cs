@@ -59,6 +59,58 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     private readonly nint m_length;
     private readonly nint m_capacity; // cap(s), relative to m_low — can end before the backing array does
 
+    // The NATIVE backing (DESIGN-native-backed-slice.md, ratified 2026-08-22): 0 = managed (every
+    // path that existed before), else the base address of native memory this slice ALIASES — the
+    // ж<T> dual-mode precedent applied to the slice header. m_low/m_length/m_capacity keep their
+    // exact meanings as ELEMENT offsets against the base; m_array stays a non-null empty array so
+    // `== nil` remains false and the nil checks are untouched. Only unmanaged T may carry a native
+    // base — enforced by OverNativeMemory, the single creation door — so a managed reference can
+    // never be read from or written to kernel-owned bytes (the SiginfoChild corruption class as a
+    // constructor precondition).
+    private readonly nuint m_nativeBase;
+
+    internal bool IsNativeBacked => m_nativeBase != 0;
+
+    private unsafe void* NativeElementPointer(nint index) =>
+        (void*)(m_nativeBase + (nuint)(m_low + index) * (nuint)System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+
+    // The address of element `index`, for the pointer builders (builtin.Ꮡ, unsafe.SliceData):
+    // bounds-checked with Go's own panic so a derived pointer can never name memory outside the
+    // window it was derived from.
+    internal unsafe nuint NativeElementAddress(nint index)
+    {
+        if (index < 0 || index >= m_length)
+            throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
+
+        return (nuint)NativeElementPointer(index);
+    }
+
+    private slice(nuint nativeBase, nint low, nint high, nint max)
+    {
+        m_array = [];
+        m_nativeBase = nativeBase;
+        m_low = low;
+        m_length = high - low;
+        m_capacity = max - low;
+    }
+
+    /// <summary>
+    /// The single creation door for a native-backed slice: a window ALIASING <paramref name="length"/>
+    /// elements of unmanaged memory at <paramref name="baseAddress"/>. Writes reach the memory, element
+    /// addresses are the real ones, and lifetime is the mapping's own — exactly Go's contract for a
+    /// slice built over native storage, hazards included.
+    /// </summary>
+    internal static slice<T> OverNativeMemory(nuint baseAddress, nint length)
+    {
+        if (System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            throw new PanicException($"native-backed slice: element type {typeof(T).Name} contains managed references and cannot alias native memory");
+
+        if (baseAddress == 0 || length < 0)
+            throw new PanicException("native-backed slice: nil base or negative length");
+
+        return new slice<T>(baseAddress, 0, length, length);
+    }
+
     public slice()
     {
         m_array = [];
@@ -352,6 +404,15 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             if (index < 0 || index >= m_length)
                 throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
+            // Native backing: the element IS the memory (see the nint overload below).
+            if (m_nativeBase != 0)
+            {
+                unsafe
+                {
+                    return ref Unsafe.AsRef<T>(NativeElementPointer(index));
+                }
+            }
+
             return ref m_array[m_low + index];
         }
     }
@@ -362,6 +423,17 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         {
             if (index < 0 || index >= m_length)
                 throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
+
+            // Native backing: the element IS the memory at the computed address — a ref into the
+            // mapping, so reads observe the kernel's writes and writes reach the kernel's pages
+            // (unmanaged T by construction; see OverNativeMemory).
+            if (m_nativeBase != 0)
+            {
+                unsafe
+                {
+                    return ref Unsafe.AsRef<T>(NativeElementPointer(index));
+                }
+            }
 
             return ref m_array[m_low + index];
         }
@@ -405,6 +477,11 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (low < 0 || high < low || max < high || max > m_capacity)
             throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, m_capacity);
 
+        // Native backing: same window arithmetic over the same base — reslicing never copies, so
+        // the result aliases the identical memory and Ꮡ over it names the offset addresses.
+        if (m_nativeBase != 0)
+            return new slice<T>(m_nativeBase, m_low + low, m_low + high, m_low + max);
+
         if (m_array is null)
             return default;
 
@@ -413,18 +490,32 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public nint IndexOf(in T item)
     {
+        if (m_nativeBase != 0)
+        {
+            Span<T> span = ToSpan();
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (comparer.Equals(span[i], item))
+                    return i;
+            }
+
+            return -1;
+        }
+
         int index = Array.IndexOf(m_array, item, (int)m_low, (int)m_length);
         return index >= 0 ? index - m_low : -1;
     }
 
     public bool Contains(in T item)
     {
-        return Array.IndexOf(m_array, item, (int)m_low, (int)m_length) >= 0;
+        return IndexOf(item) >= 0;
     }
 
     public void CopyTo(T[] array, int arrayIndex)
     {
-        Array.Copy(m_array, m_low, array, arrayIndex, m_length);
+        ToSpan().CopyTo(array.AsSpan(arrayIndex));
     }
 
     public T[] ToArray()
@@ -434,6 +525,16 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public Span<T> ToSpan()
     {
+        // The design's §2.4 unification point: pay the backing discriminant ONCE per bulk
+        // operation, then run flat. A native window's span is the mapping itself.
+        if (m_nativeBase != 0)
+        {
+            unsafe
+            {
+                return new Span<T>(NativeElementPointer(0), (int)m_length);
+            }
+        }
+
         return new Span<T>(m_array, (int)m_low, (int)m_length);
     }
 
@@ -911,8 +1012,20 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
         if (elems.Length <= slice.Available)
         {
-            // Within capacity: Go appends IN PLACE into the shared backing array — the writes are
+            // Within capacity: Go appends IN PLACE into the shared backing — the writes are
             // visible to every slice sharing it — and the result is the same view, one longer.
+            // A native backing appends into the mapping itself: the capacity window over native
+            // memory is storage like any other (design §2.3).
+            if (slice.m_nativeBase != 0)
+            {
+                unsafe
+                {
+                    elems.CopyTo(new Span<T>(slice.NativeElementPointer(slice.m_length), elems.Length));
+                }
+
+                return new slice<T>(slice.m_nativeBase, slice.m_low, slice.High + elems.Length, slice.m_low + slice.m_capacity);
+            }
+
             // Single-element append is the dominant Go idiom — store directly instead of span-copying.
             if (elems.Length == 1)
                 slice.m_array[slice.High] = elems[0];
@@ -922,11 +1035,14 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             return new slice<T>(slice.m_array, slice.m_low, slice.High + elems.Length, slice.m_low + slice.m_capacity);
         }
 
-        // Beyond capacity: reallocate and DETACH from the original backing array, like Go.
+        // Beyond capacity: reallocate and DETACH from the original backing, like Go — and for a
+        // native backing this is the design's §2.3 answer verbatim: the new backing is MANAGED,
+        // writes through the grown slice stop reaching the mapping, and the original slice still
+        // aliases it. The mapping plays the role of "the old array" in Go's own spec.
         nint newCapacity = CalculateNewCapacity(slice, slice.Length + elems.Length);
         newArray = AllocationCounter.NewArray<T>(newCapacity);
 
-        Array.Copy(slice.m_array, slice.m_low, newArray, 0, slice.Length);
+        slice.ToSpan().CopyTo(newArray);
         elems.CopyTo(newArray.AsSpan((int)slice.Length));
 
         return new slice<T>(newArray, 0, slice.Length + elems.Length);

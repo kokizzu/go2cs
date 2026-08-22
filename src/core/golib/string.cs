@@ -120,6 +120,11 @@ public readonly struct @string :
     /// </remarks>
     internal static @string TransientAliasOf(in slice<byte> value)
     {
+        // A native-backed window has no managed array — the string conversion COPIES by Go's own
+        // contract either way, so the span path serves both backings byte-exactly.
+        if (value.IsNativeBacked)
+            return new @string(value.ToSpan());
+
         return new @string(value.m_array ?? [], (int)value.Low, (int)value.Length);
     }
 
