@@ -756,6 +756,95 @@ unchanged — which is the strongest available evidence for the ⟨OQ-7⟩ copy 
 for §4.7's claim that removing the cancel-and-harvest dimension leaves the remaining race surface
 tractable.
 
+## 7.3 Measurements — S2: `crypto/tls`, and the two walls behind the poller (2026-08-22)
+
+S2's job per §7 was "the deadline matrix and `crypto/tls`'s residuals". The matrix closed in S1
+(§7.2). This section is the other half, and it is the most informative measurement of the arc: the
+poller works, and what it exposed is two *further* seams, each rooted with a stack rather than
+guessed.
+
+### 7.3.1 The row
+
+| | Before the poller | Poller only | Poller + `net.runtime_rand` |
+|:--|:--|:--|:--|
+| `crypto/tls` (linux) | package-level `operation not permitted` from `TestMain`'s listener — **0 of 3,646** | the suite RUNS; eats its 30 m deadline in `TestVerifyHostname` | completes in ~2 min: Go enumerates **3,646** (676 pass / 589 fail / 2,381 skip — the bulk is `TestBogoSuite`'s subtests, which the C# host does not enumerate), the C# host runs **402** (387 pass / 15 fail), and of the tests BOTH sides ran **400 agree, exactly 2 diverge** |
+
+Per the per-OS verdict ruling (coordinator, 2026-08-22) that is a fact about (`crypto/tls`, linux)
+and is reported, not blended with the Windows-authoritative columns; nothing is banked here.
+
+**The two divergences, both attributed, neither the poller:**
+
+- **`TestVerifyHostname`** dials `www.google.com` for real (`testenv.MustHaveExternalNetwork` then
+  `Dial`). It is blocked behind the UDP wall in §7.3.3. Note the SHAPE of its improvement: with the
+  DNS stub in place the lookup goroutine *threw* and its caller waited forever, so the package ate
+  its deadline and no verdict at all was produced; with the stub implemented the test FAILS, which is
+  what lets the remaining 400 verdicts be measured.
+- **`TestCertCache`** sets `runtime.SetFinalizer` on an `activeCert`, nils the reference, calls
+  `runtime.GC()` and waits up to 4 s for the finalizer to decrement a refcount (`cache.go:63`,
+  `cache_test.go:69/78`). That is the managed object-lifetime class — the same family as
+  `TestFreeOSMemory`'s assertion 2 in [`DESIGN-readmemstats-surface.md`](DESIGN-readmemstats-surface.md)
+  §7.2.3 — and has nothing to do with networking.
+
+### 7.3.2 Wall one: `net.runtime_rand` — fixed in this lane
+
+`net` reaches `runtime.rand` only through the pure-Go resolver: `randInt` picks the DNS query ID
+(`net/linux/dnsclient_unix.cs:54`) and `randIntn` weights SRV target selection and shuffles the
+address list (`net/dnsclient.cs:191`, `:237`). **Windows resolves through `GetAddrInfoW` and never
+gets there**, which is why the bodyless partial survived the entire Windows campaign as a
+PartialStubGenerator throwing stub. On Linux the pure-Go resolver IS the resolver, so the platform's
+first-ever name lookup died on it — on a lookup goroutine, whose caller then waited forever:
+
+```
+System.NotImplementedException: runtime_rand: external (assembly or cgo) function is not implemented
+  at net.runtime_rand (PartialStubGenerator stub)
+  at net.randInt        ... dnsclient.cs:23
+  at net.newRequest     ... linux/dnsclient_unix.cs:54
+  at net.exchange       ... linux/dnsclient_unix.cs:188
+  at net.tryOneName     ... linux/dnsclient_unix.cs:345
+  at net.goLookupIPCNAMEOrder (on a goroutine)
+```
+
+`src/core/net/dnsclient_impl.cs` implements it exactly as its three precedents do
+(`os/tempfile_impl.cs`, `math/rand/rand_impl.cs`, `math/rand/v2/rand_impl.cs`): `Random.Shared` over
+eight bytes, with the header stating why Go's own bar for a DNS query ID is a per-process PRNG rather
+than `crypto/rand`, and why matching that bar rather than exceeding it is the right call. The file is
+platform-neutral (`dnsclient.go` is flat), `net` builds 0 errors / 0 warnings, and Windows — which
+never calls it — is unchanged in behavior and in bytes.
+
+### 7.3.3 Wall two: the eight UDP/ancillary linkname stubs — measured, priced, NOT taken here
+
+With `runtime_rand` in, a decomposition probe on the distro (each step bounded, so a hang is
+attributed rather than guessed) reads:
+
+| Step | Native Go | Converted, poller + `runtime_rand` |
+|:--|:--|:--|
+| `net.LookupHost("www.google.com")` | ok, 16 addresses, 110 ms | i/o timeout |
+| `net.DialTimeout("tcp", "8.8.8.8:53")` | `connection refused`, 72 ms | **`connection refused`, 99 ms** — identical error, so the TCP path is faithful |
+| `net.DialTimeout("tcp", "www.google.com:443")` | connected, 104 ms | `lookup www.google.com: i/o timeout` |
+
+DNS runs over UDP, and a loopback UDP round-trip probe names the wall exactly: `ListenPacket` binds
+fine, then
+
+```
+System.NotImplementedException: RecvfromInet4: external (assembly or cgo) function is not implemented
+  at internal/syscall/unix.RecvfromInet4   ... internal/syscall/unix/linux/net.cs:14 (PartialStubGenerator stub)
+  at internal/poll.ReadFromInet4           ... internal/poll/linux/fd_unix.cs:278
+  at net.readFrom -> net.UDPConn.ReadFrom  ... net/linux/udpsock_posix.cs:58
+```
+
+It is one of **eight** `//go:linkname` stubs in that single file — `RecvfromInet4/6`,
+`SendtoInet4/6`, `SendmsgNInet4/6`, `RecvmsgInet4/6`, each linknamed into `syscall`'s unexported
+helpers. This is precisely the seam the sockaddr lane recorded as uncovered ("Not covered, named:
+`Recvfrom`/`Sendto`/`Recvmsg`/`Sendmsg` (UDP/ancillary; L10 drew the same line)"), so it is that
+family's next increment rather than the poller's, and its tools already exist:
+`syscall/linux/sockaddr_linux_impl.cs`'s `readNativeSockaddr`/`writeNativeSockaddr` over the keystone.
+Routed to the coordinator, not taken in this lane.
+
+**What this says about the poller, stated plainly.** Every socket operation the corpus can currently
+reach — listen, accept, connect, TCP read/write, deadlines, close-unblocks — behaves as Go's does,
+including a `connection refused` that matches to the error string. The residue is not readiness; it
+is two missing bodies, one of them now written.
+
 ## 8. Non-goals — the boundary inherited from the Windows design's §8, and this design's own
 
 Inherited, restated for Linux:
