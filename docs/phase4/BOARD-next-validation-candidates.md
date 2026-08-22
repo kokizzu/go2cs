@@ -17930,4 +17930,24 @@ hop. Era: post-v1-measure, opportunistic; each adoption carries its own micro-ga
 row it touches, no regression on the branch gate). These wins are individually small and
 collectively the point.
 
+
+## LANDED -- the per-OS annotation harness: the ruling's implementation half, four rows encoded, Windows byte-identical (coordinator harvest, 2026-08-22)
+
+Release-trigger condition (d)'s prerequisite is complete at `249b47b74`. The grammar
+(`goos: N [+ D]` as the row's final middle-dot segment, both anchors load-bearing so prose
+cannot false-parse; `windows` refused BY NAME since the columns are the Windows answer), the
+four constituency rows encoded from their board sources and round-tripped (`crypto/rand`
+linux: 302 · `mime` 18 + 1 · `path/filepath` 54 · `debug/buildinfo` 204), the header's one
+Linux progress line summed from annotations exactly as the Windows line sums from columns, a
+51-check standalone format guard with TWO failing-first proofs, and the honest third bucket:
+off-Windows rows without an annotation report comparison-validated-at-count (the NOT-MEASURED
+shape, still exit 1). Windows behavior proven byte-identical three ways at three tips.
+
+Two coordinator notes made durable: (1) the format guard stays STANDALONE until a quiet point
+decides its wiring -- hooking it into the sweep preflight would add a new Windows failure mode,
+which the lane's own gate correctly refused; (2) the one documented limit -- host-conditional
+ABSORPTION on an OS-annotated row still rejects, because its evidence (the committed proof
+page) is Windows-shaped. Proof pages gain the OS column AT THE ANCHOR RELEASE per the ruling,
+and the rejection is honest until then.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
