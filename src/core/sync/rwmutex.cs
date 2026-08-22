@@ -146,7 +146,11 @@ public static void Unlock(this ж<RWMutex> Ꮡrw) {
 // (syscall.ForkLock is an RWMutex and relies on this private linkname.)
 //
 //go:linkname syscall_hasWaitingReaders syscall.hasWaitingReaders
-internal static bool syscall_hasWaitingReaders(ж<RWMutex> Ꮡrw) {
+// PUBLIC, not internal: this is a linkname PUSH source (linknamePushSources — the registry row
+// syscall.hasWaitingReaders added 2026-08-22), and syscall's forkpipe2 forwarder calls it across
+// the assembly boundary. The converter emits push sources public automatically; this file is
+// hand-owned, so the access travels by hand — the regenerated form lives in rwmutex.cs.auto.
+public static bool syscall_hasWaitingReaders(ж<RWMutex> Ꮡrw) {
     RWState s = rwStateOf(Ꮡrw);
 
     lock (s.Gate) {
