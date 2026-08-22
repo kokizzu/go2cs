@@ -17884,4 +17884,36 @@ With the sockaddr mirror landed, the Linux socket path is `socket()` → `Bind`/
 **Limb 3 — the `ж→uintptr` transient-pin window: closed BY CONSTRUCTION, not by absence of evidence.** The dll_windows-era warning ("a compacting GC could invalidate a transient pinned address mid-call") predates the current operator: `implicit operator uintptr(ж<T>)` calls `EnsureStableAddress()`, which installs a PERSISTENT `PinnedBuffer.PinOnly` held by the box and released only at box death — and a syscall's argument-rooted box is reachable for the call's whole duration. `crypto/rand`'s entropy reads under ecdsa's big-int GC churn therefore have no movement window. (The exec_windows hand-own's unmanaged-copy rule remains belt-and-braces for structs, not a correction of the pin.)
 
 **Verdict: no mechanism candidate — the stop-and-root clause does not fire.** The watch-item's own evidence (the i9's three-point analysis: load-correlated, non-reproducible, a same-run phantom CS8983) stands as the best account: box-transient contention. **What stays LIVE from the family:** the SiginfoChild class is real and now has one Linux member fixed; the standing rule it adds — any struct the KERNEL writes whose converted form carries `array<T>` padding is corrupt-by-layout — applies to every FUTURE wrapper and to the Linux flavor's remaining kernel-writing structs, and belongs in the wrapper-census's preflight rather than in this watch-item.
+
+## RULING -- per-OS verdict arithmetic: a count is a fact about (package, OS), and the roster gains an OS-keyed annotation, never a blend (coordinator, 2026-08-22)
+
+The constituency that forced this: `crypto/rand` discovers 302 verdicts on Linux against 298
+banked, `path/filepath` 54 against 61, `debug/buildinfo` 204 gcc-ungated against 197, `mime` 18
+-- every one a case where Go ITSELF runs a different test set per GOOS (build-tagged tests,
+GOOS-keyed skips, capability gates). The principle follows directly:
+
+1. **A verdict count is a fact about (package, OS).** Differing counts across OSes are Go's own
+   design, not a divergence -- PROVIDED the difference attributes to Go's per-OS test sets,
+   which the differential already enforces row by row (the C# count must match GO'S OWN count
+   on the same OS, same as always). Counts are never averaged, blended, or footnoted away.
+2. **The roster's banked columns stay WINDOWS-authoritative** for the 1.23.1 era -- the header
+   arithmetic, the badges, and the proof pages as they stand are the Windows campaign's record.
+3. **Linux validation gains a formal home: an OS-keyed row annotation.** A row that validates
+   on a Linux leg records `linux: N + D` beside its Windows columns (the host-conditional
+   COUNT machinery generalized by one dimension -- path/filepath's floor-plus-named-set
+   precedent is the shape). The header gains ONE Linux progress line ("Linux: X of <rows>
+   validated at their Linux counts"), summed from the annotations exactly as the Windows header
+   sums from the table.
+4. **The sweep honors the dimension**: under GoTargetOS=linux it validates a row against its
+   linux annotation where one exists, and reports comparison-validated-at-count (today's honest
+   interim) where none does. Proof pages gain the OS column AT THE ANCHOR RELEASE, per the
+   release-trigger design -- not before, so the pages move once.
+5. **Implementation routes to a bounded harness lane** (roster parser + sweep check + the
+   annotation format), landing WITH or BEFORE trigger condition (d)'s dual-OS consolidation
+   sweep. The four constituency rows are its acceptance cases. Until it lands, Linux results
+   keep their census/board homes exactly as the last five lanes have recorded them.
+
+This is release-trigger condition (c) delivered as doctrine; its implementation is condition
+(d)'s prerequisite step, not a new gate.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
