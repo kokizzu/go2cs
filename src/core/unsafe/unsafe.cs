@@ -642,12 +642,15 @@ public static slice<T> Slice<T, TLen>(ж<T> ptr, TLen len) where TLen : System.N
         throw panic("ptr is nil and len is not zero");
     }
 
-    // A pointer that ALIASES a native address reads the n elements from that address. Note this
-    // SNAPSHOTS native memory into a managed slice rather than aliasing it the way Go's unsafe.Slice
-    // does — sufficient for reading a block a syscall returned (syscall.Environ), but writes through
-    // the resulting slice do not reach the native memory. See docs/ConversionStrategies-Reference.md.
+    // A pointer that ALIASES a native address yields a NATIVE-BACKED slice over that memory —
+    // Go's unsafe.Slice semantics exactly: writes reach the memory, element addresses are the
+    // real ones (Mprotect(b[:n]) hands the kernel the mapping), and lifetime is the mapping's
+    // own. This retires the documented snapshot limitation that made syscall.Mmap return twelve
+    // kilobytes that were not the mapping (DESIGN-native-backed-slice.md, the W1b commission);
+    // read-only consumers like syscall.Environ ride the same arm and simply never write.
+    // Unmanaged T is enforced at the creation door with a named panic.
     if (ptr.IsNative)
-        return new slice<T>(new ReadOnlySpan<T>((void*)ptr.NativeAddress, n));
+        return slice<T>.OverNativeMemory(ptr.NativeAddress, n);
 
     // A pointer INTO managed array/slice storage (`unsafe.Slice(&s[i], n)`) yields a window that
     // ALIASES that storage, exactly as Go's unsafe.Slice does: writes through the rebuilt slice must
