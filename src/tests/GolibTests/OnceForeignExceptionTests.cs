@@ -43,7 +43,7 @@ public class OnceForeignExceptionTests
 
         // A later, UNRELATED Go panic on the same thread must report its own value — not the
         // stale nil parked by the once guard, and not the once guard's foreign exception.
-        Exception? later = Capture(() => go.builtin.panic("unrelated-panic"));
+        Exception? later = Capture(() => throw go.builtin.panic("unrelated-panic"));
 
         Assert.IsNotNull(later);
         Assert.IsTrue(later.Message.Contains("unrelated-panic"),
