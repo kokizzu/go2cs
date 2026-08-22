@@ -17698,4 +17698,37 @@ Two harness findings, both budget rather than corpus, and both worth not re-payi
   passes all four phases in 50 s. **A transpile timeout can leave a TRUNCATED `.cs` that the
   up-to-date check then protects** — a new shape of the stale-output family. Here it surfaced as a
   false RED; the same mechanism could hide a real one.
+
+---
+
+## 2026-08-22 · The .NET 10 performance scout — same-silicon three-way: broad 10–20% JIT wins, String HALVES, three named regressions, and the bflat Fib anomaly attributed (lane G, `claude/dotnet10-perf-scout`)
+
+**Method.** SDK 10.0.400 (GA-line — "current .NET 10", not an RC) installed side-by-side to a user-local dir; the machine's 9.0 default untouched. Because the corpus targets `net9.0`, the 10 leg selects the runtime via env (`DOTNET_ROOT` + `DOTNET_ROLL_FORWARD=LatestMajor`), verified by a `FrameworkDescription` probe (ambient `.NET 9.0.18` → leg-B `.NET 10.0.11` → restored) — both legs execute IDENTICAL IL, so the delta is pure runtime/JIT codegen. All legs same-day, same silicon (Ryzen 7 PRO 6850U, GRETCHEN-LAPTOP — NOT the perf-canon 6650U host; ratios are internal to this box), quiet box, `run-performance.ps1 --no-aot`, median-of-5 discipline unchanged. Go columns reproduce across legs within noise (e.g. Fib 118.3 vs 119.0) — the same-day control the method demands.
+
+**Execution time, milliseconds (Go | 9-JIT | 10-JIT | 10Δ vs 9):**
+
+| Benchmark | Go | .NET 9.0.18 JIT | .NET 10.0.11 JIT | Δ |
+|---|---:|---:|---:|---|
+| Startup | 25.2/26.5 | 243.1 (9.66×) | 285.0 (10.75×) | **+17% REGRESSION** |
+| Fib | 118.3/119.0 | 180.6 (1.53×) | 161.5 (1.36×) | −11% |
+| Sieve | 67.7/77.0 | 110.5 (1.63×) | 98.4 (1.28×) | −11% |
+| MatMul | 109.2/109.3 | 181.9 (1.67×) | 144.7 (1.32×) | −20% |
+| String | 109.7/108.6 | 1,278.2 (11.66×) | 615.4 (5.67×) | **−52% — HALVED** |
+| StringView | 18.7/19.3 | 21.2 (1.13×) | 19.1 (0.99×) | −10%, now AT Go parity |
+| StringMatch | 197.4/196.9 | 1,005.6 (5.09×) | 873.6 (4.44×) | −13% |
+| Map | 635.7/630.4 | 559.6 (0.88×) | 429.5 (0.68×) | −23% (already sub-Go, now 0.68×) |
+| Sort | 144.9/145.0 | 429.9 (2.97×) | 366.9 (2.53×) | −15% |
+| Channel | 41.9/41.3 | 83.7 (2.00×) | 105.8 (2.56×) | **+26% REGRESSION** |
+| IfaceCall | 186.1/185.9 | 375.1 (2.02×) | 374.2 (2.01×) | ~0 |
+| Iface | 95.8/96.7 | 523.4 (5.46×) | 567.2 (5.87×) | +8% regression |
+| IfaceShell | 24.4/21.7 | 875.4 (35.86×) | 772.8 (35.59×) | −12% |
+| RefLower | 234.5/238.8 | 605.2 (2.58×) | 654.2 (2.74×) | +8% regression |
+
+**Reading for the hop:** the wins land exactly where the transpiled corpus hurts most — the String family (the 11.66× embarrassment halves to 5.67×; StringView reaches Go parity), dense compute (MatMul −20%), and Map (already beating Go, now 0.68×). The regressions are narrow and named: Startup +17% (JIT-path process start — AOT is the startup story anyway), Channel +26% (synchronization-heavy; worth a targeted look at the hop), Iface/RefLower +8% (interface dispatch shapes). Net: the hop's CPU expectation is a **solid single-digit-to-20% improvement across most of the corpus with a >2× win on string-heavy code**, financed by two narrow regressions to re-measure at hop time.
+
+**The bflat breadcrumb (PLAN-bflat-perf-exploration.md Finding 4) — attributed:** bflat's Fib 70.9 ms is NOT generic .NET-10 codegen: the 10-JIT Fib is 161.5 ms (−11%, nothing like halving). AOT controls (same-day, both SDKs' ILC, this box): 9-AOT Fib **178.2 ms** (ILC 9.0.19, 964 s publish), "10-AOT" Fib **177.1 ms — identical** (1,138 s publish) — and the identity is STRUCTURAL: SDK 10.0.400 publishing the `net9.0` TFM resolves `Microsoft.DotNet.ILCompiler/9.0.19` (runtime-pack-versioned), so no AOT leg reachable from this corpus runs ILC 10 at all. Attribution: the bflat halving requires the net10 ILC+framework PAIR bflat ships — nothing reachable from the net9.0 corpus reproduces it (10-JIT gives −11%, SDK-10 AOT is ILC-9-identical). It becomes measurable exactly AT the hop, and stands priced as a to-verify upside there, not as evidence for pre-hop action.
+
+**RC/toolchain friction for the hop plan:** none encountered on the JIT path — SDK 10.0.400 installed side-by-side cleanly (official dotnet-install, `-NoPath`), env-based runtime selection worked first try, `net9.0` IL runs on 10.0.11 under `LatestMajor` with zero NETSDK/analyzer noise, and the go2cs-gen analyzer (netstandard2.0) loaded unmodified. AOT-path friction, all measured: (1) **the ILC runtime-pack binding above** — the hop plan must not expect pre-hop AOT measurements; (2) the runner's up-to-date check REUSES a stale publish across SDK-env changes (a 51 s "10-AOT leg" re-measured the 9-ILC binary; purge the benchmark's bin/obj before any cross-SDK A/B); (3) Roslyn 10 newly warns CS7022 on PerformanceRunner's top-level-statements + Runner.Main shape (benign); (4) a net9.0 app under the 10 SDK still RUNS on the 9 runtime — JIT legs need `DOTNET_ROOT` + `DOTNET_ROLL_FORWARD=LatestMajor`, verified by a FrameworkDescription probe, or the "10 leg" silently measures 9.
+
+**Discipline notes:** no corpus changes, no version.props changes, no global.json committed — the worktree is byte-clean apart from the runner's own regenerated artifacts (restored). Numbers are THIS box's; the perf-canon README stays authoritative for its own host and was not touched (the runner's README mirror was left unstaged/restored).
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
