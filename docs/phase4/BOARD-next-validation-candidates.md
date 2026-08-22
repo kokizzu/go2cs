@@ -17916,4 +17916,18 @@ GOOS-keyed skips, capability gates). The principle follows directly:
 This is release-trigger condition (c) delivered as doctrine; its implementation is condition
 (d)'s prerequisite step, not a new gate.
 
+
+## FUTURE HARVEST (user, 2026-08-22) -- the Span-unification sweep beyond the native-slice v1 minimal set
+
+Banked so the little wins are not lost. The ratified native-backed slice design (OQ-1) lands
+with a MINIMAL span-unified set (`copy`, `bytealg`, the string conversions) -- deliberately,
+so the correctness model ships unblended with harvest. The remainder is this item: once v1's
+branch-cost gate measures clean, sweep golib's remaining bulk helpers onto the Span-over-either-
+backing shape, one adoption at a time, each its own small measured win (zero-copy +
+JIT-vectorization on the common managed path). The target surface is strings/bytes -- the same
+one the .NET 10 scout measured halving under the new JIT -- so the adoptions compound with the
+hop. Era: post-v1-measure, opportunistic; each adoption carries its own micro-gate (the Perf*
+row it touches, no regression on the branch gate). These wins are individually small and
+collectively the point.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
