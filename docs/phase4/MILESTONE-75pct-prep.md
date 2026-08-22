@@ -260,6 +260,16 @@ a green sweep** — is offered as a recommendation, not a ruling.
 
 ## 3. The anchor-release checklist — USER-EXECUTED
 
+> **TIMING (user + coordinator, 2026-08-22): the anchor release WAITS for parity-close.** The
+> anchor's hard constraint is only "before the .NET 10 hop", and Linux parity precedes the hop on
+> the ladder -- so the release ships ONE combined story ("over 75% validated, on Windows and
+> Linux") instead of two pushes. **Trigger, concretely:** (a) the readiness poller landed and
+> measured (it flips the socket family incl. crypto/tls's Linux leg); (b) the remaining Linux
+> seams closed or classified-final; (c) the per-OS verdict-arithmetic ruling delivered (its
+> constituency: crypto/rand, mime, path/filepath, debug/buildinfo); (d) one full dual-OS
+> consolidation sweep green (both legs on the sweeper). Until then: the tag flies, the site is
+> live, and nothing downstream blocks on the unpublished packages.
+
 > **⚠ USER-EXECUTED IN FULL.** Publishing to nuget.org is an irreversible act — a version can be
 > unlisted, never deleted — and no lane and no coordinator session runs `push-nuget.ps1 -Push`. The
 > checklist below is what the user reads while running it. Every mechanic is read out of
