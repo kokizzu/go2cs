@@ -308,6 +308,8 @@ internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Packa
 }
 
 //go:linkname setUsesCgo go/types.srcimporter_setUsesCgo
-internal static partial void setUsesCgo(ж<types.Config> conf);
+internal static void setUsesCgo(ж<types.Config> conf) {
+    types.srcimporter_setUsesCgo(conf);
+}
 
 } // end srcimporter_package

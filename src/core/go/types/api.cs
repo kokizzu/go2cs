@@ -184,7 +184,7 @@ public static @string Error(this ΔError err) {
 
 // Linkname for use from srcimporter.
 //go:linkname srcimporter_setUsesCgo
-internal static void srcimporter_setUsesCgo(ж<Config> Ꮡconf) {
+public static void srcimporter_setUsesCgo(ж<Config> Ꮡconf) {
     ref var conf = ref Ꮡconf.DerefOrNull();
 
     conf.go115UsesCgo = true;

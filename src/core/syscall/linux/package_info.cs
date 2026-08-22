@@ -51,6 +51,36 @@ using static go.syscall_package;
 [assembly: GoImplicitConv<_C_int, WaitStatus>(Inverted = true, ValueType = "int32")]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("syscall/dirent.go", "dirent.cs", "AA4ikoKUgpSmgpSkpKSkyIKUpKSkpAAEEOKCgoKCgpSCgoKCuJKUgoKClIKCgoK4gpSCgpQ=")]
+[assembly: go.GoPositionMap("syscall/env_unix.go", "env_unix.cs", "ABNAtJKCgoKCgoCC3KTcooSChICCgqSC1sKCgpaChIKClIKCgqbmooKClIKCuIKCgrqChIKCgpSClIKC1qKEgoSClILWooKCgoKCgqY=")]
+[assembly: go.GoPositionMap("syscall/exec_linux.go", "exec_linux.cs", "AIwB9AGikgABGgAQBoKClIKogoKWgoKmgoCCtoKWABQqkKaQABE4ABEEAAMmACwehISCgpaCgoSClJSouoKCgoKUlKiCgIKCuIKClIKmgriCgpSCzIKCgpSClJSm7ryCgoK6goCCpIKClIKClIKCuoKCgrqUgoKogoKChKiCgsyWgoKCloKCgIKkgoKUgIKmgIKkgoKUgIK4goKAgqSCgpSAggAKFoKCgsyCgoK6gIKCgoKUgoKCpoKClIKCuKaEgIKmxoKWgIKmooKCzIKCgrqCgoLMgoKCgoLegoKClIKUgoKSlIKClIK6goKClKaCgpS4goIABhCCqIKCgrqCgoK6gsyCgoK6uoSSgriCgoKUqJKCgpaAgoKmgIKmrsKCgoKWgoKUloCCgqaqooKCgIK4lICCpIKAgrg=")]
+[assembly: go.GoPositionMap("syscall/flock_linux.go", "flock_linux.cs", "AA0ckoKClA==")]
+[assembly: go.GoPositionMap("syscall/forkpipe2.go", "forkpipe2.cs", "AAoaogAGHAAFFgALAoKElIKCqgALGoSChJiCqNrCgoSCloSU")]
+[assembly: go.GoPositionMap("syscall/lsf_linux.go", "lsf_linux.cs", "AAockqiSqJKmgoKUgoKCgoKCgpQABxKygoKUgoKCgoKUgpSUgoKU2JKCgoKokoI=")]
+[assembly: go.GoPositionMap("syscall/netlink_linux.go", "netlink_linux.cs", "AAsekqqiAAkUgoKCgoKCgoKmgoKCgoKCgriCusKCgpSCgoCCpIKAgqSCgpSCgpSEgoKCgoKCgpSClIKCgoKUgoKUgpSC2AALFqKCgoKClIKClKaCgoKClAAIGNKClKSkpKSCgoKClIKClKaCgoKU")]
+[assembly: go.GoPositionMap("syscall/rlimit.go", "rlimit.cs", "AA88AA4CgoCCgpKCgsiCppQ=")]
+[assembly: go.GoPositionMap("syscall/rlimit_stub.go", "rlimit_stub.cs", "AAgU")]
+[assembly: go.GoPositionMap("syscall/sockcmsg_linux.go", "sockcmsg_linux.cs", "AAoc0oKCgoKCgqzSgpSClIKUkg==")]
+[assembly: go.GoPositionMap("syscall/sockcmsg_unix.go", "sockcmsg_unix.cs", "AAwioqqipqIACBaigoKCgoKUgoKUpoKCgpSqwoKCgoKCgoKUqsKClIKUgoKClA==")]
+[assembly: go.GoPositionMap("syscall/sockcmsg_unix_other.go", "sockcmsg_unix_other.cs", "AAockqiWqsK4kpaSuA==")]
+[assembly: go.GoPositionMap("syscall/syscall.go", "syscall.cs", "ACBK8oKClKyygpSCggACENCqsoKClAAHEJKokqiSqJKqopai")]
+[assembly: go.GoPositionMap("syscall/syscall_linux.go", "syscall_linux.cs", "ABU6AAkGAAIsABQCrgAIAoKCgqzyAAwagoKs8oKCgqaSnLKmgqaCpoKmgoKUpoKCgpaCgqamgoKChISsooIACBSCgIIACBSCloKAgqaCgpiSgoK4ppaClJSUlJaCgpSCgpSWgpSogpasxoKCpoKkppSqkqaCpoKmgqqSpoKqkoKUgoKCgpSqkqaCpoKqkqaCqpKmgoKUqpKClKaCgpSmps6ygoKCpoLKgpamsoKClIKogpaCgoKUgoKUyqKCgoKAgqSUgIKkloKClIKAgqSUgIKkABIsgKSApICkgKSApIKClKaCgpSmgoKUpoKClKrSgoKClKaCpqKClIKCgoKCpqKClIKCgoKCgqaigoKClIKUgoKmgoKUlJSWAAwaooKUgoKCgoKCggAKFqKCgoKCpqKUgoKCgoKCpoKCgoKCgoKCpoKC3AABEILSlIKmgoKCgoKmgoKCgoKCpKbCgpKCgpSClIKCgpSmsoKSgIKkprKSgqaCgpKCpoKCkoKmgoKSgqaCgpKCpoKCkoKmgoKSgqaiptKCgoKCgoKUgoKCgoKCpoKCpoKUgoKAgqSCgqaygoKCgoKClIKCgoKCgqaCgqaClIKCgIKkgpSokqwACA7egoKCgpSCqKaCgpSCgpamgqaCptqCgoKCgpSCgoKClKiCgoKClIKogoKCgpSCgoKClJamgqaCzqKCgoKmooKCgqaCprKCgoKmgqaCpoCkgKSAqJKmgqaCpoKmgoKClKrWgpSCgpQAAjwAGwKCAAJCAB8mABQCgpSCrvKClIKsAAgMooKAgsSCpMqigoCCxIKkyqKCgILEgqTKooKAgsSCpMqigoCCxIKkyqKCgILEgqTKooKAgsSCpMqigoCCxIKkABk2gqaCAAIiABACgoKU")]
+[assembly: go.GoPositionMap("syscall/syscall_linux_accept4.go", "syscall_linux_accept4.cs", "AAoYwoKSgoKUgoKClA==")]
+[assembly: go.GoPositionMap("syscall/syscall_linux_amd64.go", "syscall_linux_amd64.cs", "AA6EAQAvAqaCpoKsxIKCgpSmooKCgpSClK7CgqaCpoKmgKSApIKmgqaC")]
+[assembly: go.GoPositionMap("syscall/syscall_unix.go", "syscall_unix.cs", "ABtEkoCCpAAKGOKCqIKCqJaCgoKC5tKCqIKCgoKCqICCpIIACCaCgoKCpqaClKSkpKSmgqaCAAoaopSkpKSkzqSCgoKCpqaygoKClIKmgpSClKaygpSCgoKmlIKUgpSClKaygoKClIKmgpSClKaygpSCgpSClIKUABw6ooKClKaigoKUprKCkoCCpKaigpKCpsKCkoCCpIKUprKCkoCCpIKCgoKmsoKSgIKkgoKCgoKm0oKCgpSCgoKCptKCgoKUgoKCgoKm4oKUgpSmooKmooKCgoKCpqaigoKUpqKCgpSmooKClKaigoKUpqKYgoKCpqaipoKipqKmgqaCpoKmgqaCgoKUpqKmsoKUgqaygoKCgpSmgoKU")]
+[assembly: go.GoPositionMap("syscall/time_nofake.go", "time_nofake.cs", "AAoWlA==")]
+[assembly: go.GoPositionMap("syscall/timestruct.go", "timestruct.cs", "AAgUkKaSgoKCgpSokKaSgoKCgoKU")]
+[assembly: go.GoPositionMap("syscall/zsyscall_linux_amd64.go", "zsyscall_linux_amd64.cs", "AAkYsoKCgpSCgpSqsoKCgpSCgpSqsoKCgpSCgpSqsoKCgpSCgpSqsoKCgpSCgoKUgoKUqsKCgoKUgoKClKqygoKUqsKCgoKUgoKUlIKCgpSqsoKCgpSCgoKUgoKUqrKCgoKUgoKUqrKCgoKUgoKUqsKCgpSUgoKClKrCgoKClKqygoKUqrKCgpSqsoKCgpSCgpSqsoKCgpSCgoKUgoKClIKClKqygoKClIKClKrCgoKClKqygoKClIKClKqygoKClIKClKqygoKUqsKCgoKUqrKCgpSqwoKCgpSqsoKClKqygoKUqrKCgpSqsoKClKqygoKClIKClKrCgoKClKqygoKUqrKCgpSqsoKClKrCgoKUlIKCgpSqwoKCgpSqsoKCqrKCgqrCgoKClKqygoKUqrKCgqrCgoKClIKCgpSCgpSUgoKClKrCgoKClIKCgpSqwoKCgpSqwoKCgpSqsoKClKrCgoKUlIKCgpSqwoKCgpSCgpSUgoKClKqygoKClIKClKqygoKClIKClKqygoKUqrKCgoKUgoKClIKClKqygoKUqsKCgpSUgoKClKqygoKClIKCgpSCgpSqsoKClJSCgpSqsoKClJSCgpSqsoKClKrCgoKClKqygoKUqrKCgpSqsoKCgpSCgoKUgoKUlIKClKqSgqqygoKUqsKCgoKUqrKCgpSqwoKCgpSqsoKCqrKCgpSqsoKCgpSCgpSqsoKClKrCgoKUlIKCgpSqsoKClKrCgoKClKqygoKUqrKCgpSUgoKUqrKCgpSUgoKUqrKCgpSUgoKUqrKCgpSUgoKUqrKCgpSqsoKClKqygoKUqrKCgpQABB7CgoKUqrKCgpSqsoKCqrKCgqqygoKqsoKClKqygoKqwoKCgpSqsoKClKqygoKUqrKCgpSqsoKClKrCgoKUlIKCgpSqwoKClJSCgoKUqrKCgoKUgoKClIKClKrCgoKClKrCgoKClKrCgoKClKqygoKUqrKCgpSqsoKClKqygoKUqsKCgoKUqrKCgoKUgoKUqrKCgpSqsoKCgpSCgpSqsoKClKrCgoKClKqygoKUqrKCgpQABCjSgoKClKqygoKUqrKCgpSqwoKCgpSqsoKClKqygoKUqrKCgpSqwoKClJSCgoKUqrKCgpSUgoKUqsKCgoKUqsKCgoKUqsKCgoKUqsKCgpSUgoKClKqygoKClIKClKqygoKClIKClKqygoKClIKClA==")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("syscall")]
@@ -79,7 +109,6 @@ public static partial class syscall_package
     public partial interface RawConn {}
     public partial interface Sockaddr {}
     public partial struct Cmsghdr {}
-    public partial struct Credential {}
     [GoValueClone("Name", "Pad_cgo_0")] public partial struct Dirent {}
     public partial struct EpollEvent {}
     public partial struct Errno {}
@@ -105,7 +134,6 @@ public static partial class syscall_package
     public partial struct NlAttr {}
     public partial struct NlMsgerr {}
     public partial struct NlMsghdr {}
-    public partial struct ProcAttr {}
     public partial struct PtraceRegs {}
     [GoValueClone("Data")] public partial struct RawSockaddr {}
     [GoValueClone("Addr", "Pad")] public partial struct RawSockaddrAny {}

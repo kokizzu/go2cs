@@ -20,7 +20,9 @@ internal static nint forking;
 
 // hasWaitingReaders reports whether any goroutine is waiting
 // to acquire a read lock on rw. It is defined in the sync package.
-internal static partial bool hasWaitingReaders(ж<Δsync.RWMutex> rw);
+internal static bool hasWaitingReaders(ж<Δsync.RWMutex> rw) {
+    return Δsync.syscall_hasWaitingReaders(rw);
+}
 
 // acquireForkLock acquires a write lock on ForkLock.
 // ForkLock is exported and we've promised that during a fork
