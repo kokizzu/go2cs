@@ -137,10 +137,14 @@ partial class runtime_package
     // current goroutine, so execution resumes automatically.
     public static void Gosched()
     {
-        // Thread.Yield offers the rest of the time slice to another ready thread on the same
-        // processor and returns immediately either way — the same "give someone else a turn,
-        // then carry on" contract Gosched has.
-        Thread.Yield();
+        // A bare Thread.Yield honored the "give someone else a turn, then carry on" contract on
+        // Windows but not on Linux, where it lowers to sched_yield(2) and CFS leaves CPU-bound
+        // yielders effectively in place — a strict handoff ring (sync/atomic's CAS-concurrent
+        // test) starved for 45+ minutes there against 183 s on the same hardware under Windows.
+        // GoschedBackoff keeps the contract by measuring each yield and escalating consecutive
+        // provably-inert ones to a 1 ms sleep, which leaves the run queue so a starved goroutine's
+        // thread can actually run (board finding 2026-08-21, ratified).
+        golib.GoschedBackoff.Yield();
     }
 
     // registerPoolCleanup is where sync's //go:linkname runtime_registerPoolCleanup crosses into this

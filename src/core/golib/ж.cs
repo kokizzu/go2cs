@@ -19,6 +19,7 @@ using go.golib;
 
 [assembly:InternalsVisibleTo("unsafe")]
 [assembly:InternalsVisibleTo("GolibTests")]
+[assembly:InternalsVisibleTo("runtime")] // runtime.Gosched delegates to golib's GoschedBackoff escalation
 
 namespace go;
 
