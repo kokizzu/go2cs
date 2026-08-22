@@ -480,13 +480,15 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
             return (0, (Errno)(uintptr)rc);
         }
 
-        // OQ-4's door, opened early: os's pidfd path asks for a descriptor via SysProcAttr.PidFD.
-        // pidfd_open(pid) here is race-free because the child cannot be reaped before this
-        // process's own first wait — this process is its only reaper. -1 on any failure is Go's
-        // own "kernel does not support it" contract.
+        // OQ-4 stays DEFERRED, exactly as the ratified design said — and the first attempt to open
+        // it early is why this comment exists. Filling PidFD via pidfd_open(pid) routes os.Process
+        // onto its pidfd wait path, and MEASURED (flag's TestExitCode, 2026-08-22): every child
+        // exit code came back 0 through that path — children hand-verified exiting 2 and 123 read
+        // as 0 at the parent — while the classic wait4 road decodes them correctly (the GolibTests
+        // reaper gate). Until the pidfd waitid/status plumbing is itself measured, -1 is Go's own
+        // "kernel does not support it" answer and the classic path carries.
         if (sys.PidFD != nil) {
-            long fdOrErr = syscallʟ(SYS_pidfd_open, childPid, 0, 0);
-            sys.PidFD.Value = fdOrErr >= 0 ? ((nint)fdOrErr) : -1;
+            sys.PidFD.Value = -1;
         }
 
         return (childPid, default!);
