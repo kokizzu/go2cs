@@ -51,11 +51,19 @@
 // operations will be canceled" -- these do not). For os.Pipe that is the one VISIBLE change from
 // Go on Linux: Close on the read end does not unblock a Read blocked in read(2); the read returns
 // when the write end closes. (The PipeCloseUnblocksRead behavioral test names the shape; it faulted
-// on this flavor before this file, at the stub.) For a net socket FD.Init's error is NOT discarded:
-// net.netFD.init propagates it, so Dial/Listen return "operation not permitted" on this flavor
-// rather than a NotImplementedException -- an honest error, not a working socket. The socket half
-// of Linux is the readiness-poller design above, a separate arc; nothing here pre-empts it, and
-// when it lands pollOpen's errno arm becomes what it is in Go: the answer for files alone.
+// on this flavor before this file, at the stub. MEASURED 2026-08-22 on the linux flavor: Go prints
+// `read unblocked: read |0: file already closed`, the converted program prints `read did NOT
+// unblock` and exits cleanly once the writer closes -- the blocking contract, exactly as stated.)
+// For a net socket FD.Init's error is NOT discarded:
+// net.netFD.init propagates it, so Dial/Listen would return "operation not permitted" on this
+// flavor rather than a NotImplementedException -- an honest error, not a working socket. MEASURED
+// (2026-08-22, encoding/json's TestHTTPDecoding on the Linux roster re-run): today the socket path
+// never reaches this file at all -- syscall.Bind/Connect die earlier, in SockaddrInet4.sockaddr()'s
+// `(*[2]byte)(unsafe.Pointer(&sa.raw.Port))` uintptr round-trip (syscall_linux.cs:549; the L10
+// sockaddr seam, whose Windows remedy is syscall/windows/syscall_windows_impl.cs, not yet mirrored
+// into syscall/linux/). Once that seam closes, THIS errno is what surfaces from net. The socket
+// half of Linux is the readiness-poller design above, a separate arc; nothing here pre-empts it,
+// and when it lands pollOpen's errno arm becomes what it is in Go: the answer for files alone.
 //
 // THE ERRNO IS GO'S, NOT INVENTED. EPERM is what epoll_ctl(2) answers for "the target file fd does
 // not support epoll … for example, a regular file or a directory" -- the errno Go's netpoll produces
