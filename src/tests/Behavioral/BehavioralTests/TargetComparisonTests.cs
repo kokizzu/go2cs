@@ -1543,6 +1543,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSStringElision() => CheckTarget("SStringElision");
 
     [TestMethod]
+    public void CheckStatLayoutTruth() => CheckTarget("StatLayoutTruth");
+
+    [TestMethod]
     public void CheckStdLibInternalAbi() => CheckTarget("StdLibInternalAbi");
 
     [TestMethod]

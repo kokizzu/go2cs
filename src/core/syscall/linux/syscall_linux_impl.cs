@@ -38,12 +38,22 @@
 // managed model already satisfying the contract by a different mechanism, which is the same
 // judgment syscall_impl.cs records for runtimeSetenv/runtimeUnsetenv one folder up.
 //
-// SCOPE. This file deliberately covers only the pair the ordinary syscall path needs. The other
-// bodyless declarations in syscall_linux.cs — rawSyscallNoError, rawVforkSyscall,
-// runtime_doAllThreadsSyscall, cgocaller — are separate questions with separate answers (two are
-// further raw bottoms, one is a whole-process operation, one is the cgo boundary) and are left as
-// announcing stubs until something genuinely needs them. Catalogued in
-// docs/phase4/FINDING-linux-run-layer.md §5.
+// SCOPE. This file covers the pair the ordinary syscall path needs, and — since 2026-08-22 — the
+// one further raw bottom that something genuinely needed: rawSyscallNoError (below). The remaining
+// bodyless declarations in syscall_linux.cs — rawVforkSyscall, runtime_doAllThreadsSyscall,
+// cgocaller — are still separate questions with separate answers (a fork-time raw bottom, a
+// whole-process operation, the cgo boundary) and stay announcing stubs until something genuinely
+// needs them. Catalogued in docs/phase4/FINDING-linux-run-layer.md §5.
+//
+// rawSyscallNoError — WHY NOW. Go declares it in syscall_linux.go and implements it in
+// asm_linux_amd64.s as a bare SYSCALL that returns AX and DX with NO errno handling, for the
+// generated "NoError" family that cannot fail: Getpid, Getppid, Gettid, Getuid, Geteuid, Getgid,
+// Getegid, Umask (zsyscall_linux_amd64.go), plus forkExec's own getpid/getppid. The 2026-08-22
+// Linux roster re-run measured what the announcing stub costs once the poll seam is open:
+// os.Getuid → NotImplementedException at the top of os/user.Current (poisoning its sync.Once, so
+// every later call NREs — archive/tar's whole uid→name path), time.interrupt's Kill(Getpid()) in
+// TestSleep, and os/exec's test host dying in init before a single verdict. The body is the
+// keystone binding once more: RawSyscall6 minus the errno, which is exactly what the asm returns.
 //
 // This file has no `<name>.go` counterpart, so a -stdlib reconvert never emits over it; the module
 // marker states the ownership explicitly and matches the other hand-owned files in this package.
@@ -63,6 +73,15 @@ internal static partial void runtime_entersyscall() {
 
 // Reacquires one afterwards. Same reasoning, same shape.
 internal static partial void runtime_exitsyscall() {
+}
+
+// rawSyscallNoError: asm_linux_amd64.s's `SYSCALL; MOVQ AX, r1; MOVQ DX, r2` — the keystone
+// binding with the errno word dropped. The callers are the generated "NoError" family (getpid,
+// getuid, … — syscalls that cannot fail), so the dropped errno is not a swallowed error; it is the
+// contract. No enter/exitsyscall bracket, exactly as Go's raw path has none.
+internal static partial (uintptr r1, uintptr r2) rawSyscallNoError(uintptr trap, uintptr a1, uintptr a2, uintptr a3) {
+    var (r1, r2, _) = @internal.runtime.syscall_package.Syscall6(trap, a1, a2, a3, 0, 0, 0);
+    return (r1, r2);
 }
 
 } // end syscall_package

@@ -1837,6 +1837,16 @@ sockets take it too until a readiness poller exists (a read blocks its goroutine
 answer `ErrNoDeadline`, `Close` does not cancel an in-flight read).
 [Full detail](ConversionStrategies-Reference.md#the-linux-flavors-poller-is-the-fallback-alone--un-armable-descriptors-degrade-to-the-blocking-path).
 
+**And the struct-passing class has Linux members too.** The converted `syscall.Stat_t` ends in a golib
+`array<int64>` where the kernel's `struct stat` ends in three inline words, so it is not blittable and
+the generated `Fstat`/`fstatat` handed the kernel its managed image — `os.Stat` on the Linux flavor
+answered `IsDir() == false` for a real directory with a nil error, and every Glob/Walk built on it walked
+nothing. The remedy is the same mirror-and-copy the Windows wrappers use
+(`syscall/linux/zsyscall_linux_amd64_impl.cs`, displaced from the generated file under a linux-only
+registry scope), and the same measurement found `rawSyscallNoError` — the bare-`SYSCALL` bottom of
+`Getpid`/`Getuid`/… — still an announcing stub, now one body in `syscall_linux_impl.cs`.
+[Full detail](ConversionStrategies-Reference.md#the-linux-struct-stat-mirror-and-the-noerror-raw-bottom--the-first-linux-members-of-the-struct-passing-class).
+
 **On Linux the whole kernel boundary is one hand-own.** Go funnels every syscall through a single
 assembly function, `internal/runtime/syscall.Syscall6`, so the managed corpus needs exactly one native
 binding — glibc's `syscall(2)` — and the entire generated wrapper surface (open, read, write, stat,

@@ -1540,6 +1540,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSStringElision() => CheckTarget("SStringElision");
 
     [TestMethod]
+    public void CheckStatLayoutTruth() => CheckTarget("StatLayoutTruth");
+
+    [TestMethod]
     public void CheckStdLibInternalAbi() => CheckTarget("StdLibInternalAbi");
 
     [TestMethod]

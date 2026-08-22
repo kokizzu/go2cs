@@ -216,6 +216,41 @@ func TestWindowsOnlyEntriesAreScopedToWindows(t *testing.T) {
 	}
 }
 
+// TestLinuxOnlyEntriesAreScopedToLinux is the mirror of the Windows guard above for the first
+// Linux-scoped members: syscall's Fstat and fstatat are hand-owned on linux because the converted
+// Stat_t is not blittable and the generated wrappers hand the kernel its managed image — but darwin
+// declares BOTH names too (syscall_darwin.go), with libc-backed bodies that are not defective, so an
+// entry that also matched darwin would turn working wrappers into placeholders with nothing behind
+// them (os.(*File).readdir's lesson). Windows is named too: Go's Windows sources do not declare
+// either, and an entry that claimed them there would be inert today and a trap tomorrow.
+func TestLinuxOnlyEntriesAreScopedToLinux(t *testing.T) {
+	linuxOnly := map[string][]string{
+		"syscall": {"Fstat", "fstatat"},
+	}
+
+	for pkgPath, names := range linuxOnly {
+		for _, name := range names {
+			scope, listed := manualConversionFuncs[pkgPath][name]
+
+			if !listed {
+				t.Errorf("%s.%s is no longer registered", pkgPath, name)
+				continue
+			}
+
+			if !scope.includes("linux") {
+				t.Errorf("%s.%s must apply on linux — that is the flavor whose Stat_t mirror it names", pkgPath, name)
+			}
+
+			for _, goos := range []string{"windows", "darwin"} {
+				if scope.includes(goos) {
+					t.Errorf("%s.%s must not apply on %s: darwin's same-named libc wrapper is not the defective one and "+
+						"Windows declares neither, so a %s match would displace a working body or nothing at all", pkgPath, name, goos, goos)
+				}
+			}
+		}
+	}
+}
+
 // TestEveryManualConversionScopeNamesAKnownGOOS is the typo guard. A scope naming "win" or "macos"
 // matches no target at all, which silently turns the entry off everywhere — the auto body is emitted
 // and compiles, and the hand-own it was protecting is simply gone. Nothing else in the pipeline can
