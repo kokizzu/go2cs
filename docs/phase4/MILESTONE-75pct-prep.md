@@ -551,8 +551,11 @@ honors `src/core/.gitignore` and under-counts.
 
 ### 5.4 The endraw guard on both append-only docs
 
-The Jekyll/Liquid `{% raw %}` guard must remain the first line and `{% endraw %}` the **final** line
-of both the board and the roster. An append landing after the endraw takes the Pages build down —
+The Jekyll/Liquid raw guard must remain the first line and the endraw tag the **final** line
+of both the board and the roster. (The tags are deliberately NOT spelled with their brace syntax
+here: inside a raw-guarded doc, a quoted endraw tag TERMINATES the guard — the defect that took
+this very file's Pages build down on 2026-08-22.) An append landing after the closer takes the
+Pages build down —
 which has happened once, and the board's own last line says so.
 
 ```bash
