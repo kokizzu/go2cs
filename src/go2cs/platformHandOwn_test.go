@@ -219,6 +219,46 @@ func TestMergeRefusesDivergentHandOwnCopies(t *testing.T) {
 	}
 }
 
+// TestMergeLeavesPrincipalLessCompanionsWhereTheyAre: a companion with no Go counterpart AND no
+// converted principal — internal/poll's runtime_netpoll_impl.cs, which supplies bodies for the FLAT
+// fd_poll_runtime.cs's bodyless partials — carries a DIFFERENT implementation per flavor by design (a
+// Windows completion poller; a Linux no-poller fallback), so two per-GOOS copies that disagree are not
+// a divergence to reconcile. The merge must neither refuse them (the divergence rule above is about
+// ONE hand-own duplicated across folders) nor move them: with no emitted principal there is no
+// evidence of a platform set, and "no evidence, no rule" is the placement's own contract.
+func TestMergeLeavesPrincipalLessCompanionsWhereTheyAre(t *testing.T) {
+	coreDir := newHandOwnCorpus(t)
+	targets := []string{"windows/amd64", "linux/amd64", "darwin/amd64"}
+
+	writeTestFile(t, filepath.Join(coreDir, "runtime", "windows", "poller_impl.cs"), "a completion poller")
+	writeTestFile(t, filepath.Join(coreDir, "runtime", "linux", "poller_impl.cs"), "the no-poller fallback")
+
+	emissions := newHandOwnEmissions(coreDir, targets)
+
+	// Seeded, never emitted, on every target -- exactly how a staging root sees a hand-owned file.
+	for _, emission := range emissions {
+		for _, rawPath := range []string{"runtime/windows/poller_impl.cs", "runtime/linux/poller_impl.cs"} {
+			emission.artifacts[rawPath] = artifactState{hash: rawPath, logical: "runtime/poller_impl.cs"}
+		}
+	}
+
+	_, written, removed, err := mergeHandOwnedArtifacts(coreDir, targets, emissions)
+
+	if err != nil {
+		t.Fatalf("two flavors of a principal-less companion were refused as divergent: %v", err)
+	}
+
+	// Only lock_sema_impl.cs's placement moves anything; the companion contributes no write and no removal.
+	if written != 2 || removed != 1 {
+		t.Errorf("written/removed = %d/%d, want 2/1 (the companion must contribute nothing)", written, removed)
+	}
+
+	assertFileExists(t, filepath.Join(coreDir, "runtime", "windows", "poller_impl.cs"), true)
+	assertFileExists(t, filepath.Join(coreDir, "runtime", "linux", "poller_impl.cs"), true)
+	assertFileExists(t, filepath.Join(coreDir, "runtime", "poller_impl.cs"), false)
+	assertFileExists(t, filepath.Join(coreDir, "runtime", "darwin", "poller_impl.cs"), false)
+}
+
 // TestCorpusHandOwnsFollowTheirPrincipals walks the REAL src/core and asserts the invariant the merge
 // establishes, so a hand-owned file added or moved by hand cannot re-open the seam. Two rules, both
 // purely structural:
