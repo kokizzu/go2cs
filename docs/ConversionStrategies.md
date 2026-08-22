@@ -1847,6 +1847,17 @@ registry scope), and the same measurement found `rawSyscallNoError` — the bare
 `Getpid`/`Getuid`/… — still an announcing stub, now one body in `syscall_linux_impl.cs`.
 [Full detail](ConversionStrategies-Reference.md#the-linux-struct-stat-mirror-and-the-noerror-raw-bottom--the-first-linux-members-of-the-struct-passing-class).
 
+**The sockaddr family is mirrored on Linux too — as the socket poller's prerequisite.** The same
+port alias and the same by-address `RawSockaddr*` structs that L10 retired on Windows live in
+`syscall_linux.go`; `syscall/linux/sockaddr_linux_impl.cs` is L10 arm for arm (stack mirrors, one
+encode and one decode, the generated address-taking `bind`/`connect` reused), under a shared
+windows+linux registry scope. What it buys is honest: a Linux socket is still un-armable, so
+`net.Listen`/`Dial` now reach `FD.Init` and return `operation not permitted` until a readiness poller
+exists — the wall moves, the gate waits. And `syscall.Mmap` on Linux returns a SNAPSHOT, because
+golib's `unsafe.Slice` over a native pointer copies rather than aliases — a slice-model item, rooted
+and routed.
+[Full detail](ConversionStrategies-Reference.md#the-sockaddr-family-on-linux--l10s-mirror-arm-for-arm-as-the-socket-pollers-prerequisite-and-mmaps-slice-is-a-snapshot).
+
 **On Linux the whole kernel boundary is one hand-own.** Go funnels every syscall through a single
 assembly function, `internal/runtime/syscall.Syscall6`, so the managed corpus needs exactly one native
 binding — glibc's `syscall(2)` — and the entire generated wrapper surface (open, read, write, stat,
