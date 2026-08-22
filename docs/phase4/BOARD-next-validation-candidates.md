@@ -17870,4 +17870,18 @@ With the sockaddr mirror landed, the Linux socket path is `socket()` → `Bind`/
 **Nothing landed in `src/`.** The implementation lane starts on ratification, from the S0 probes.
 
 ---
+
+---
+
+## 2026-08-22 · The ecdsa-AV lead — PROBED AND RETIRED: three limbs, each closed by census or construction; the watch-item stays box-transient (lane G, `claude/av-lead`)
+
+**The assignment:** does `crypto/ecdsa`'s Windows execution path reach the SiginfoChild corruption family — any of the struct-passing census's latent wrappers, or any `array<T>`-padding-in-kernel-struct site — such that the `0xc0000005` watch-item gains a mechanism? Bounded and measured; three limbs.
+
+**Limb 1 — the latent-wrapper census, mechanically intersected: ∅.** `go list -deps crypto/ecdsa` + Test/XTest imports against the census's open rows (`GetIfEntry`/`net.Interfaces`, `getStartupInfo`/unreached, the `Cert*` trio/`crypto/x509` system verifier, the 13-member `**T` OUT-param class): the production closure reaches none; the TEST closure imports `crypto/x509` — the sharpest moment of the probe — but every x509 call in the suite is `MarshalPKCS8PrivateKey`/`ParsePKCS8PrivateKey`, pure-Go ASN.1 with no path to the system store. No `net`, no process-startup surface.
+
+**Limb 2 — `array<T>`-padding-in-kernel-struct sites: the same census, the same ∅.** On Windows that class IS the struct-passing census (an `array<T>` field is exactly what makes a struct non-blittable); no new members exist outside it (the census's own discipline), and ecdsa reaches none.
+
+**Limb 3 — the `ж→uintptr` transient-pin window: closed BY CONSTRUCTION, not by absence of evidence.** The dll_windows-era warning ("a compacting GC could invalidate a transient pinned address mid-call") predates the current operator: `implicit operator uintptr(ж<T>)` calls `EnsureStableAddress()`, which installs a PERSISTENT `PinnedBuffer.PinOnly` held by the box and released only at box death — and a syscall's argument-rooted box is reachable for the call's whole duration. `crypto/rand`'s entropy reads under ecdsa's big-int GC churn therefore have no movement window. (The exec_windows hand-own's unmanaged-copy rule remains belt-and-braces for structs, not a correction of the pin.)
+
+**Verdict: no mechanism candidate — the stop-and-root clause does not fire.** The watch-item's own evidence (the i9's three-point analysis: load-correlated, non-reproducible, a same-run phantom CS8983) stands as the best account: box-transient contention. **What stays LIVE from the family:** the SiginfoChild class is real and now has one Linux member fixed; the standing rule it adds — any struct the KERNEL writes whose converted form carries `array<T>` padding is corrupt-by-layout — applies to every FUTURE wrapper and to the Linux flavor's remaining kernel-writing structs, and belongs in the wrapper-census's preflight rather than in this watch-item.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
