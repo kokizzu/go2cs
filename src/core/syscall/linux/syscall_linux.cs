@@ -538,34 +538,9 @@ public static error /*err*/ Mkfifo(@string path, uint32 mode) {
     return Mknod(path, (uint32)(mode | (uint32)S_IFIFO), 0);
 }
 
-internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrInet4> Ꮡsa) {
-    ref var sa = ref Ꮡsa.DerefOrNull();
+// go2cs generated this placeholder — func sockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    if (sa.Port < 0 || sa.Port > 0xFFFF) {
-        return (default!, 0, EINVAL);
-    }
-    sa.raw.Family = AF_INET;
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw).of(RawSockaddrInet4.ᏑPort)));
-    p.Value[0] = (byte)((sa.Port >> (int)(8)));
-    p.Value[1] = (byte)sa.Port;
-    sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw)), SizeofSockaddrInet4, default!);
-}
-
-internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrInet6> Ꮡsa) {
-    ref var sa = ref Ꮡsa.DerefOrNull();
-
-    if (sa.Port < 0 || sa.Port > 0xFFFF) {
-        return (default!, 0, EINVAL);
-    }
-    sa.raw.Family = AF_INET6;
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw).of(RawSockaddrInet6.ᏑPort)));
-    p.Value[0] = (byte)((sa.Port >> (int)(8)));
-    p.Value[1] = (byte)sa.Port;
-    sa.raw.Scope_id = sa.ZoneId;
-    sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw)), SizeofSockaddrInet6, default!);
-}
+// go2cs generated this placeholder — func sockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrUnix> Ꮡsa) {
     ref var sa = ref Ꮡsa.DerefOrNull();
@@ -640,112 +615,22 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrNetl
     return (new @unsafe.Pointer(Ꮡsa.of(SockaddrNetlink.Ꮡraw)), SizeofSockaddrNetlink, default!);
 }
 
-internal static (Sockaddr, error) anyToSockaddr(ж<RawSockaddrAny> Ꮡrsa) {
-    ref var rsa = ref Ꮡrsa.DerefOrNull();
+// go2cs generated this placeholder — func anyToSockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var exprᴛ1 = rsa.Addr.Family;
-    if (exprᴛ1 == AF_NETLINK) {
-        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrNetlink>();
-        var sa = @new<SockaddrNetlink>();
-        sa.Value.Family = pp.Value.Family;
-        sa.Value.Pad = pp.Value.Pad;
-        sa.Value.Pid = pp.Value.Pid;
-        sa.Value.Groups = pp.Value.Groups;
-        return (new SockaddrNetlinkжSockaddr(sa), default!);
-    }
-    if (exprᴛ1 == AF_PACKET) {
-        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrLinklayer>();
-        var sa = @new<SockaddrLinklayer>();
-        sa.Value.Protocol = pp.Value.Protocol;
-        sa.Value.Ifindex = (nint)(~pp).Ifindex;
-        sa.Value.Hatype = pp.Value.Hatype;
-        sa.Value.Pkttype = pp.Value.Pkttype;
-        sa.Value.Halen = pp.Value.Halen;
-        sa.Value.Addr = pp.Value.Addr.Clone();
-        return (new SockaddrLinklayerжSockaddr(sa), default!);
-    }
-    if (exprᴛ1 == AF_UNIX) {
-        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrUnix>();
-        var sa = @new<SockaddrUnix>();
-        if ((~pp).Path[0] == 0) {
-            // "Abstract" Unix domain socket.
-            // Rewrite leading NUL as @ for textual display.
-            // (This is the standard convention.)
-            // Not friendly to overwrite in place,
-            // but the callers below don't care.
-            pp.Value.Path[0] = (rune)'@';
-        }
-        nint n = 0;
-        while (n < len((~pp).Path) && (~pp).Path[n] != 0) {
-            // Assume path ends at NUL.
-            // This is not technically the Linux semantics for
-            // abstract Unix domain sockets--they are supposed
-            // to be uninterpreted fixed-size binary blobs--but
-            // everyone uses this convention.
-            n++;
-        }
-        sa.Value.Name = ((@string)@unsafe.Slice(pp.at(RawSockaddrUnix.ᏑPath, 0).Reinterpret<int8, byte>(), n));
-        return (new SockaddrUnixжSockaddr(sa), default!);
-    }
-    if (exprᴛ1 == AF_INET) {
-        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet4>();
-        var sa = @new<SockaddrInet4>();
-        var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet4.ᏑPort)));
-        sa.Value.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
-        sa.Value.Addr = pp.Value.Addr.Clone();
-        return (new SockaddrInet4жSockaddr(sa), default!);
-    }
-    if (exprᴛ1 == AF_INET6) {
-        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet6>();
-        var sa = @new<SockaddrInet6>();
-        var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet6.ᏑPort)));
-        sa.Value.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
-        sa.Value.ZoneId = pp.Value.Scope_id;
-        sa.Value.Addr = pp.Value.Addr.Clone();
-        return (new SockaddrInet6жSockaddr(sa), default!);
-    }
+// go2cs generated this placeholder — func Accept4 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    return (default!, EAFNOSUPPORT);
-}
+// go2cs generated this placeholder — func Getsockname is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static (nint nfd, Sockaddr sa, error err) Accept4(nint fd, nint flags) {
-    nint nfd = default!;
-    Sockaddr sa = default!;
-    error err = default!;
-
-    ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
-    ref var len = ref heap(new _Socklen(), out var Ꮡlen);
-    len = SizeofSockaddrAny;
-    (nfd, err) = accept4(fd, Ꮡrsa, Ꮡlen, flags);
-    if (err != default!) {
-        return (nfd, sa, err);
-    }
-    if (len > SizeofSockaddrAny) {
-        throw panic("RawSockaddrAny too small");
-    }
-    (sa, err) = anyToSockaddr(Ꮡrsa);
-    if (err != default!) {
-        Close(nfd);
-        nfd = 0;
-    }
-    return (nfd, sa, err);
-}
-
-public static (Sockaddr sa, error err) Getsockname(nint fd) {
-    Sockaddr sa = default!;
-    error err = default!;
-
-    ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
-    ref var len = ref heap(new _Socklen(), out var Ꮡlen);
-    len = SizeofSockaddrAny;
-    {
-        err = getsockname(fd, Ꮡrsa, Ꮡlen); if (err != default!) {
-            return (sa, err);
-        }
-    }
-    return anyToSockaddr(Ꮡrsa);
-}
-
+// "Abstract" Unix domain socket.
+// Rewrite leading NUL as @ for textual display.
+// (This is the standard convention.)
+// Not friendly to overwrite in place,
+// but the callers below don't care.
+// Assume path ends at NUL.
+// This is not technically the Linux semantics for
+// abstract Unix domain sockets--they are supposed
+// to be uninterpreted fixed-size binary blobs--but
+// everyone uses this convention.
 public static (array<byte> value, error err) GetsockoptInet4Addr(nint fd, nint level, nint opt) {
     ref var value = ref heap(new array<byte>(4), out var Ꮡvalue);
     error err = default!;

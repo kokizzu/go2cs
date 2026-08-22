@@ -74,6 +74,13 @@ var goosWindows = goosScope{"windows"}
 // nothing to link against — the exact os.(*File).readdir lesson, one package down.
 var goosLinux = goosScope{"linux"}
 
+// goosWindowsLinux scopes an entry to the two flavors that each hand-own the SAME declaration in
+// their own per-GOOS file — the sockaddr family: Windows in syscall/windows/syscall_windows_impl.cs
+// (L10), Linux in syscall/linux/sockaddr_linux_impl.cs (the 2026-08-22 mirror). darwin declares the
+// same names and keeps its auto bodies until a darwin lane measures them (the lock_sema/lock_futex
+// precedent: one entry, each flavor's file the authority on its own body).
+var goosWindowsLinux = goosScope{"windows", "linux"}
+
 // goosWindowsDarwin scopes an entry to the two targets whose Go flavor reinterprets or hands OS
 // memory to a Go struct — the raw-metal-on-non-native-types fork — where the third does not.
 var goosWindowsDarwin = goosScope{"windows", "darwin"}
@@ -751,8 +758,16 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// Getsockname/Getpeername do not already cover — so no TCP round trip is reachable while it
 		// panics. The old note said this path was "walled independently"; that wall is this arc.
 		//
-		"SockaddrInet4.sockaddr":  goosWindows,
-		"SockaddrInet6.sockaddr":  goosWindows,
+		// Since 2026-08-22 the two INET encoders are hand-owned on LINUX as well: the Linux flavor
+		// has the identical port alias (syscall_linux.go writes `(*[2]byte)(unsafe.Pointer(&sa.raw.Port))`
+		// and anyToSockaddr reads it back the same way), and it was the 2026-08-22 Linux roster
+		// re-run's R5 — encoding/json's TestHTTPDecoding and crypto/tls's TestMain both died in
+		// SockaddrInet4.sockaddr at `index out of range [0] with length 0` before any socket call.
+		// sockaddr_linux_impl.cs carries the Linux bodies; the scope says BOTH flavors, each file its
+		// own authority. RawSockaddrAny.Sockaddr is Windows-only in Go; Linux's decode is the free
+		// function anyToSockaddr, registered separately below.
+		"SockaddrInet4.sockaddr":  goosWindowsLinux,
+		"SockaddrInet6.sockaddr":  goosWindowsLinux,
 		"RawSockaddrAny.Sockaddr": goosWindows,
 		// Then the seam itself. RawSockaddrInet4's `Addr [4]byte` / `Zero [8]uint8` are golib
 		// `array<byte>` MANAGED REFERENCES, so `unsafe.Pointer(&sa.raw)` names a ~24-byte object
@@ -768,11 +783,20 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// Inet6 variants) are deliberately NOT listed — nothing on the TCP listen/dial/accept
 		// path reaches them, and the board's ruling is to fix a censused wrapper when a suite
 		// reaches it rather than speculatively.
-		"Bind":        goosWindows,
-		"Connect":     goosWindows,
-		"ConnectEx":   goosWindows,
-		"Getsockname": goosWindows,
-		"Getpeername": goosWindows,
+		// Bind/Connect/Getsockname/Getpeername are hand-owned on Linux too (2026-08-22): the Linux
+		// generated `bind`/`connect` take an address (reused with a stack mirror exactly as here),
+		// and `getsockname`/`getpeername`/`accept4` take a typed `ж<RawSockaddrAny>` that the kernel
+		// would fill by address — so those go through the Syscall trampoline with a stack buffer and
+		// ONE native decode (readNativeSockaddr), which anyToSockaddr — Linux's decode, reached from
+		// Accept4/Getsockname/Getpeername and the UDP receive path — also becomes. ConnectEx is
+		// Windows-only in Go. Accept4 and anyToSockaddr are declared only in Go's Linux sources.
+		"Bind":          goosWindowsLinux,
+		"Connect":       goosWindowsLinux,
+		"ConnectEx":     goosWindows,
+		"Getsockname":   goosWindowsLinux,
+		"Getpeername":   goosWindowsLinux,
+		"Accept4":       goosLinux,
+		"anyToSockaddr": goosLinux,
 		// The OVERLAPPED family — the SUBMIT SEAM of the managed netpoller arc
 		// (docs/phase4/DESIGN-netpoll-managed-poller.md §4.3/§4.4/§4.5;
 		// syscall/windows/zsyscall_windows_wsa_impl.cs carries the full write-up). Same
