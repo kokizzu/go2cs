@@ -12,15 +12,17 @@ every listed package on demand, reading its own roster straight from the table b
 from a clone with one command.
 
 A disclosure is a specific Go assertion the converted suite provably cannot satisfy — not a skipped
-test, not a tolerance. Four classes exist: three name something the managed runtime cannot
-*measure*, and one something the test host cannot *be*. (This sentence read "four" while the
-committed manifests used five — `alloc-count-semantics` predates the newer classes and had lost its
-prose spot; restored 2026-08-20. It read "five" for the rest of that day, until `chan-direction`
-retired the same evening and took the count back down.)
+test, not a tolerance. Five classes exist: three name something the managed runtime cannot
+*measure*, one something the test host cannot *be*, and one something the managed runtime cannot
+truthfully *describe*. (The count has moved in both directions, and the committed manifests — never
+this prose — have always been the authority: it read "four" while five were in use, because
+`alloc-count-semantics` predates the newer classes and had lost its spot, restored 2026-08-20; then
+"five" for the rest of that day, until `chan-direction` retired that same evening; then "four"
+again, until `runtime-capability` joined with `runtime/debug`'s bank.)
 
-A **fifth** class, `chan-direction`, named the one thing the managed *representation* could not
-*distinguish*: a Go channel emitted as golib's `channel<T>` whatever its direction, so `<-chan int`
-was indistinguishable from `chan int` in assignability and `chan<- string` stringified as
+A class that RETIRED itself, `chan-direction`, named the one thing the managed *representation*
+could not *distinguish*: a Go channel emitted as golib's `channel<T>` whatever its direction, so
+`<-chan int` was indistinguishable from `chan int` in assignability and `chan<- string` stringified as
 `chan string`. It was written to retire itself on its own recorded remedy — carrying direction as
 descriptor cargo the way array dims are — and **it did, on 2026-08-20**: the direction now rides on
 the channel VALUE, the three `internal/reflectlite` rows it pinned pass, and its manifest is gone.
@@ -46,15 +48,31 @@ once its remedy lands, because the arithmetic below moves when it goes.
   property of the deployment shape, never an unimplemented-but-fixable defect. It is also written to
   retire itself, because the tests keep running and keep being compared — publish the host
   self-contained and single-file and those rows begin passing, which breaks the arithmetic below
-  until the entry is removed.
+  until the entry is removed. Not every entry retires that way, and one says so: `runtime/debug`'s
+  `TestStack` asserts that the testing framework's own frame names `testing/testing.go`, which is a
+  property of Go's test *binary*, whose testing package is compiled from that source. The converted
+  host is hand-written C# with no line-for-line relationship to it — the design, not a gap — so no
+  single-file publish makes that frame true. That entry is **structural and permanent**, and it
+  retires only if the host itself becomes a conversion of Go's `testing`, which the
+  one-testing-package rule forecloses.
+- **`runtime-capability`** — a test exercises a runtime facility whose output or behavior is
+  *defined over the replaced runtime's own internals*: Go's type descriptors, its heap layout, its
+  GC bookkeeping. Any managed rendering would be fabrication rather than implementation. The
+  admission test is one question — *does a truthful managed implementation of the asserted behavior
+  exist at any cost?* — and a yes makes the row an arc with a price, never a disclosure, which is
+  why this class admits `runtime/debug`'s three `WriteHeapDump` tests and refuses the rest of what
+  that package measures. It carries a binding **anti-laundering clause**: an entry pins its rows AS
+  FAILING. The three it names assert only that a heap dump is non-empty and never parse it, so
+  writing a single byte would pass them while proving nothing — and this class's own text forbids
+  writing it.
 
 Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **161 / 215 testable packages validated — 74.9%**
+> ### Phase 4 progress: **162 / 215 testable packages validated — 75.3%**
 >
-> **18,565 matching test verdicts · 80 disclosed** *(updated 2026-08-21 — maintained as part of the
+> **18,569 matching test verdicts · 85 disclosed** *(updated 2026-08-22 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -213,6 +231,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 | [`plugin`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/plugin) | 1 |  | That a program importing `plugin` links and starts at all — Go's own regression test for issue 28789 is an empty body asserting precisely that, and the converted binary runs it. · [proof](validation/current/plugin.md) |
 | [`regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp) | 45 | | The full RE2 engine — NFA/backtracker/one-pass executors, the RE2 exhaustive corpus, `TextMarshaler` round-trips. · [proof](validation/current/regexp.md) |
 | [`regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) | 12 | | Regexp parsing, simplification and program compilation; named-type constant tables. · [proof](validation/current/regexp.syntax.md) |
+| [`runtime/debug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/debug) | 4 | 5 | The runtime's own debugging surface — `ReadGCStats`' packed pause history (`n` pauses, `n` end times, `lastGC`, `numGC`, `totalPause`, most-recent-first) cross-checked against `ReadMemStats` in nine assertions that hold because both read one shared recorder, the `SetGCPercent`/`SetMaxThreads` get-set knobs including the overflow path, and `SetCrashOutput`, which re-executes the test binary, panics inside `TestMain`, and reads Go's crash report back from BOTH the child's stderr and the crash file. That last one is the row that made every converted program print `panic: <value>`, a blank line, `goroutine N [running]:` and a Go-spelled traceback where a .NET exception dump used to go. host-limit + runtime-capability + codegen-liveness disclosures. · [proof](validation/current/runtime.debug.md) |
 | [`runtime/internal/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/math) | 1 |  | The allocator's overflow-checked `MulUintptr` across its boundary table — the `uintptr`-typed constant shift whose width decides whether the fast path guards at 2³² or at 1. · [proof](validation/current/runtime.internal.math.md) |
 | [`runtime/internal/sys`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/sys) | 4 |  | The runtime's own bit intrinsics — `Bswap32`/`Bswap64` and `TrailingZeros32`/`TrailingZeros64` across their full input matrices. · [proof](validation/current/runtime.internal.sys.md) |
 | [`runtime/metrics`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/metrics) | 2 |  | The runtime metrics table end to end — `All()`'s sorted-name/regexp contract against `doc.go`, and a full `metrics.Read` round trip computing a kind for every published metric through the first linkname push into a `_test` package, the managed `metricsLock`, and every stat-aggregate compute closure. · [proof](validation/current/runtime.metrics.md) |
