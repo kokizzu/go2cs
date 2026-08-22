@@ -17949,5 +17949,76 @@ which the lane's own gate correctly refused; (2) the one documented limit -- hos
 ABSORPTION on an OS-annotated row still rejects, because its evidence (the committed proof
 page) is Windows-shaped. Proof pages gain the OS column AT THE ANCHOR RELEASE per the ruling,
 and the rejection is honest until then.
+## The `$(go2csPath)` case-insensitive environment race: FIXED AT THE CONVERTER — the export is gone, every child env carries one spelling (2026-08-22, lane `worktree-agent-a39a6070f9f4e34d9`)
 
+Closes the remedy PRICED in the 2026-08-21 rooting entry above. Both halves landed, not just the
+hygiene one — and the census is what forced that.
+
+**Census first (measure, don't assume).** `GO2CSPATH` is READ in exactly ONE place in the whole
+converter — the defaulting block in `main.go` — and the value is consumed immediately as the
+`-go2cspath` flag default; nothing reads it back afterward, and no MSBuild file in the tree
+references an uppercase `$(GO2CSPATH)` (every reference is `$(go2csPath)`). So the `os.Setenv` had no
+consumer and could simply go, which is what the coordinator's routing note preferred. But the same
+census settled the question the note left open: **stop-exporting ALONE does not satisfy the
+invariant.** A user may set `GO2CSPATH` — it is the documented way to choose a runtime root, and it
+is exactly what the Linux harness pin does — so honoring it as the flag default leaves it in
+`os.Environ()`, and a plain `append` still hands the child TWO case-distinct spellings. The pin makes
+both spellings carry the same value, which is why it neutralizes the failure; it does not close the
+class.
+
+Spawn census, for the record: the converter has THREE child-process sites — `go env`
+(`projectFileWriter.go`), `git rev-parse` (`testConversion.go`), and `runCommandWithTimeout` — and
+only the third reaches MSBuild, as the parent of every `dotnet build`/`dotnet run`/`go test` the
+pipeline spawns. The `packages.Config.Env` sites spawn the Go toolchain, which does not read
+`go2csPath`. One site to fix, not a family.
+
+**The fix (two functions, both in `src/go2cs`).**
+
+1. `resolveGo2CSPathDefault` (`main.go`) replaces the inline defaulting block and does NOT
+   `os.Setenv`. The contrast is preserved in its comment so a later tidy-up does not restore
+   symmetry by accident: `GOROOT`/`GOPATH` above are exported deliberately, because the `go`
+   children read them; `GO2CSPATH` has no such consumer.
+2. `childEnvWithGo2CSPath` (`testConversion.go`) replaces `append(os.Environ(), "go2csPath="+…)` at
+   `runCommandWithTimeout` — it drops every case-insensitive variant inherited from the parent, then
+   appends the canonical entry with the resolved, separator-terminated root.
+
+The invariant is stated in the source, once: **a user-set `GO2CSPATH` is honored (as the flag
+default); the converter never exports its own derived value; a child environment carries exactly one
+spelling.** The scrub is the clause that holds regardless of the invoking shell — including the
+nastier variant the rooting entry named, where an ambient `GO2CSPATH` points at a DIFFERENT real tree
+and the child build binds the wrong stdlib nondeterministically.
+
+**Guard, failing-first** — `src/go2cs/childEnvGo2CSPath_test.go`, five tests under the plain
+`go test ./...`, no new harness. The parent environment is constructed LITERALLY rather than read
+from the OS, because only a POSIX environ can hold two case-variants at once — so the guard measures
+the same shape on Windows, where the defect is unreproducible in vivo. Neuter proof, both halves:
+
+| Neuter | Result |
+|---|---|
+| `childEnvWithGo2CSPath` → plain `append` (the pre-fix shape) | **3 FAIL** — `child environment carries 4 go2csPath spellings, want exactly 1: [GO2CSPATH=/root/go2cs go2csPath=/stale/tree/ Go2CsPath=/another/tree go2csPath=\repo\src\]` |
+| `resolveGo2CSPathDefault` → re-add the `os.Setenv` | **1 FAIL** — `converter exported its derived root as GO2CSPATH="C:\Users\ritchie\go2cs"` |
+
+**Gates** (converter change class, this machine, solo):
+
+| Gate | Result |
+|---|---|
+| converter `go test ./...` | **ok — 222s** (carries the five new guards and `projitemsIntegrity`, which the new file is registered in) |
+| full CNR, 633 behavioral packages | **NO REGRESSION — byte-identical `.cs` + `.csproj`, 1,141s**; 2 advisory warnings, 0 NOT MEASURED. Emission-neutral as predicted: the change moves only child-process environments, never emitted text |
+| `-tests -test-action all` on `unicode/utf8` | **14/14 validated vs `go test`, 107s**, `git status -- src/core` clean — the pipeline runs with the export gone |
+
+**The Linux proof is NOT this lane's, and the harness pin STAYS.** There is no distro on this box, so
+what is proven here is that the fix is emission-neutral, that the pipeline still runs end to end, and
+that the child-env shape is right by construction. The race itself is structurally POSIX-only and can
+only be re-measured on Linux. **Pin-retirement condition:** a Linux lane runs the reproducing
+configuration — the two-package alternation that failed 3-for-3 within ≤2 cycles — with `GO2CSPATH`
+deliberately UNSET *and* `_paths.ps1`'s pin block removed, and gets a clean run; at that point the pin
+in `src/_paths.ps1` (and the campaign driver's export) retires as dead weight rather than as
+protection. Until then it stays and remains correct: it sets the variable the converter still honors
+as a default, and the scrub makes the value it sets unreachable by the child regardless. One note for
+whoever retires it — the pin's comment cites `main.go:93` and `testConversion.go:5663`, both stale
+after this change; retire the comment with the block rather than repairing the line numbers.
+
+The class trap (case-insensitive environment-variable races: Windows-immune, POSIX-live, MSBuild
+property resolution as the collision site) is recorded in `CLAUDE.md` beside the harness/false-green
+notes, stated generally enough to outlive this one variable.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

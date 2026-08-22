@@ -276,6 +276,24 @@ ONE stdlib in a build; there is now only one on disk.
   OQ-6, landing **before** hop A): stamp `runtime.Version()` into `go2cs.exe` and have each harness compare
   the stamp against the live `go env GOVERSION`, rebuilding on mismatch exactly as on an mtime change.
   Until then, a toolchain change owes an explicit `go build` of the converter before any gate runs.
+- **⚠ CASE-INSENSITIVE ENVIRONMENT-VARIABLE RACES — Windows-immune, POSIX-live, MSBuild is the
+  collision site (root-caused 2026-08-21, fixed at the converter 2026-08-22).** A POSIX environment
+  block is case-SENSITIVE, so `GO2CSPATH=/root/go2cs` and `go2csPath=/root/go2cs/src/` are two
+  entries; MSBuild materializes environment variables as properties and resolves property NAMES
+  case-INSENSITIVELY, so both fold into ONE `$(go2csPath)` and the winner is decided by enumeration
+  order inside the .NET env-table plumbing — a per-process coin flip. The losing draw concatenated
+  `$(go2csPath)gen/...` into `/root/go2csgen/...`, dangled the analyzer and every stdlib
+  ProjectReference, and the build died in a CS0246 storm on every golib type: intermittent,
+  package-shuffling Linux `-tests` failures that killed three measurement campaigns with every
+  plausible suspect A/B-eliminated first. **Windows environment blocks are case-insensitive at the OS
+  level — the two names are ONE slot — so five weeks of Windows sweeps could not see it.** The
+  converter now (a) never exports its own derived `GO2CSPATH` (`resolveGo2CSPathDefault`, `main.go`)
+  and (b) scrubs every case-variant from the inherited environment before appending the canonical
+  entry (`childEnvWithGo2CSPath`, `testConversion.go`), so a child carries exactly one spelling
+  whatever the invoking shell holds; guarded by `childEnvGo2CSPath_test.go`. The general rule outlives
+  this variable: **anything a child reads through a case-insensitive resolver must be injected ONCE —
+  scrub-then-append, never append-and-hope — and "Windows is fine" proves nothing about the class.**
+  The Linux harness pin (`_paths.ps1`) STAYS until a Linux lane re-measures without it.
 - **`TargetComparisonTests` compares goldens with line endings NORMALIZED** (CRLF→LF; see
   `TargetComparisonTests.FileMatch` / `BehavioralRunner.FilesEqual`, both strip CRs). It was a raw
   byte-for-byte compare until 2026-07-07. Content diffs are still caught exactly; a pure line-ending

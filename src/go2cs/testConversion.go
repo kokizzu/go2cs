@@ -5680,7 +5680,7 @@ func runCommandWithTimeout(timeout time.Duration, workingDir string, options Opt
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Dir = workingDir
 	target := strings.Split(options.targetPlatform, "/")
-	cmd.Env = append(os.Environ(), "go2csPath="+ensureTrailingSeparator(options.go2csPath))
+	cmd.Env = childEnvWithGo2CSPath(os.Environ(), options.go2csPath)
 	if len(target) == 2 {
 		cmd.Env = append(cmd.Env, "GOOS="+target[0], "GOARCH="+target[1])
 	}
@@ -5711,6 +5711,45 @@ func runCommandWithTimeout(timeout time.Duration, workingDir string, options Opt
 		return string(output), fmt.Errorf("%s %s failed: %w\n%s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
 	}
 	return string(output), nil
+}
+
+// childEnvWithGo2CSPath builds a pipeline child's environment carrying EXACTLY ONE spelling of the
+// go2csPath variable: every case-insensitive variant inherited from the parent is dropped, then the
+// canonical lowercase entry the emitted .csproj files reference is appended with the resolved root.
+//
+// Why the scrub rather than a plain append. MSBuild materializes environment variables as properties
+// and resolves property names CASE-INSENSITIVELY, while a POSIX environment block is case-SENSITIVE.
+// So `GO2CSPATH=/root/go2cs` and `go2csPath=/root/go2cs/src/` are two distinct entries to the OS and
+// ONE property to MSBuild, and which value wins is decided by enumeration order inside the .NET
+// env-table plumbing — a per-process coin flip. Losing the draw concatenates `$(go2csPath)gen/...`
+// into `/root/go2csgen/...`; the analyzer and every stdlib ProjectReference dangle, and the build dies
+// in a CS0246 storm on every golib type. That is the intermittent, package-shuffling Linux pipeline
+// failure root-caused on 2026-08-21 (binlog-proven: "Property 'go2csPath' with value '/root/go2cs'
+// expanded from the environment"). Windows never saw it in five weeks of sweeps because its
+// environment block is case-insensitive at the OS level — the two names are ONE slot there, so the
+// appended value always won.
+//
+// The converter no longer manufactures the colliding entry itself (see resolveGo2CSPathDefault), but
+// a USER may still set GO2CSPATH — the documented way to choose the runtime root, and what the Linux
+// harness pin does. That value is honored as the -go2cspath DEFAULT and nothing more: by the time a
+// child runs, options.go2csPath is the ONE resolved answer, so any ambient spelling is a second
+// opinion the child must not receive. Scrubbing here is what makes the guarantee hold regardless of
+// the invoking shell — including the nastier variant where an ambient GO2CSPATH names a DIFFERENT
+// real tree and the child would otherwise bind the wrong stdlib nondeterministically.
+func childEnvWithGo2CSPath(parentEnv []string, go2csPath string) []string {
+	const go2csPathVar = "go2csPath"
+
+	env := make([]string, 0, len(parentEnv)+1)
+
+	for _, entry := range parentEnv {
+		if name, _, found := strings.Cut(entry, "="); found && strings.EqualFold(name, go2csPathVar) {
+			continue
+		}
+
+		env = append(env, entry)
+	}
+
+	return append(env, go2csPathVar+"="+ensureTrailingSeparator(go2csPath))
 }
 
 func ensureTrailingSeparator(path string) string {
