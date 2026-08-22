@@ -335,3 +335,19 @@ build, and the validated sweep all apply, plus the allocation-counter instrument
 (`src/tests/GolibTests/AllocationCounterTests.cs`) measuring each stage against the design's named
 workloads. Nothing lands from the lane: the coordinator re-gates and merges. Commit per stage on
 your branch (subjects start "L3:"), push often, signal per stage.
+
+## The fleet roster — hardware anchored to names (probed 2026-08-22; the CANONICAL table)
+
+| Role | Machine | CPU | Cores | RAM | Notes |
+|:--|:--|:--|:--|:--|:--|
+| Coordinator | desktop (C: clone) | i7-5820K (2014 Haswell-E) | 6C/12T | 32 GB | slowest fleet box; budget tables key off it |
+| Sweeper / CPU worker | ritchie-desk2 | i9-13900K | -- | -- | fastest; random ~daily reboots pending RMA; Sonnet worker loop |
+| Lane R | RITCHIE-LAPTOP | Ryzen 7 PRO 6850U | 8C/16T | 31 GB | ⚠ probed at 34 GB free -- below the 60 GB preflight |
+| Lane G | GRETCHEN-LAPTOP | Ryzen 5 PRO 6650U | 6C/12T | 31 GB | 210 GB free |
+
+⚠ **Historical cross-machine speed comparisons are SUSPECT**: fleet records had drifted to
+"both laptops 6850U", and the recorded "G faster than R" readings contradict the now-anchored
+silicon (R carries the larger part). Same-machine A/Bs (the scout, the four-cell matrices) are
+unaffected -- only cross-machine ratios are. The hop shard map's speed factors come from FRESH
+same-workload calibration at campaign recon, never from pre-anchor history.
+
