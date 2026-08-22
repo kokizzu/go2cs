@@ -167,7 +167,9 @@ partial class syscall_package
         st.Mtim = new Timespec{ Sec = native.Mtim.Sec, Nsec = native.Mtim.Nsec };
         st.Ctim = new Timespec{ Sec = native.Ctim.Sec, Nsec = native.Ctim.Nsec };
 
-        if (st.X__unused is null || st.X__unused.Length != 3)
+        // array<T> is a golib VALUE type: a default Stat_t carries a zero-length one (Length 0, no
+        // backing store), the converted initializer a 3-long one. Reuse the latter, mint the former.
+        if (st.X__unused.Length != 3)
             st.X__unused = new array<int64>(3);
 
         for (int i = 0; i < 3; i++)
