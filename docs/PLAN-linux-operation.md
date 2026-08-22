@@ -1280,6 +1280,17 @@ Beyond the stdlib itself (§A2), five smaller runtime concerns:
    `Path` only. The only process launches in converted code are `os/exec`'s, which are Windows-syscall-based
    and carried by F1.
 
+6. **The `internal/poll` runtime seam (found by the 2026-08-21 Linux census as wall W1, closed for files on
+   2026-08-22).** Linux's `os.newFile` marks every opened file, pipe and socket pollable and asks the
+   runtime poller to arm it, so the first `os.Open` of every Linux test run reached `internal/poll`'s ten
+   bodyless `runtime_poll*` linknames — bodies existed only for the Windows flavor, and the generated
+   stubs threw. `internal/poll/linux/runtime_netpoll_impl.cs` now answers *un-armable* for every
+   descriptor (`pollOpen` → `(0, EPERM)`, Go's own epoll-rejects-regular-files fallback), so files run on
+   the blocking path exactly as in Go; pipes/FIFOs/ttys/sockets take it too until a Linux readiness
+   poller exists (a separate design — `DESIGN-netpoll-managed-poller.md` §8). Board entries of
+   2026-08-21 (the census) and 2026-08-22 (the hand-own + flip measurement) carry the numbers;
+   `ConversionStrategies-Reference.md` §"The Linux flavor's poller is the fallback alone" the mechanism.
+
 ---
 
 ### A8 — `docs/README.md` dual-platform plan

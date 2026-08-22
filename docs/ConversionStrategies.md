@@ -1827,6 +1827,16 @@ internal static partial nint runtime_pollWait(uintptr ctx, nint mode)
 including [the submit seam's operation records, the golib rendezvous and the accept
 handover](ConversionStrategies-Reference.md#the-overlapped-submit-seam--a-per-operation-record-owning-native-lifetime-and-a-golib-rendezvous).
 
+**The Linux flavor answers the same ten contracts the opposite way — and that is Go's own fallback.**
+Linux's `os` marks every opened file, pipe and socket pollable and asks the poller to arm it; Go's
+`epoll_ctl` refuses regular files and directories with `EPERM`, and `os.newFile` then drops the
+descriptor back to blocking mode and carries on. `internal/poll/linux/runtime_netpoll_impl.cs` gives
+that answer for *every* descriptor — `pollOpen` returns `(0, EPERM)`, nothing is ever armed — so files,
+the whole Phase-4 fixture surface, run on the blocking path exactly as they do in Go, while pipes and
+sockets take it too until a readiness poller exists (a read blocks its goroutine's thread, deadlines
+answer `ErrNoDeadline`, `Close` does not cancel an in-flight read).
+[Full detail](ConversionStrategies-Reference.md#the-linux-flavors-poller-is-the-fallback-alone--un-armable-descriptors-degrade-to-the-blocking-path).
+
 **On Linux the whole kernel boundary is one hand-own.** Go funnels every syscall through a single
 assembly function, `internal/runtime/syscall.Syscall6`, so the managed corpus needs exactly one native
 binding — glibc's `syscall(2)` — and the entire generated wrapper surface (open, read, write, stat,
