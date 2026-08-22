@@ -17481,11 +17481,13 @@ reason say so.
 The five-largest-reflect-consumer sweep derives its set at gate time by DIRECT import declaration
 (`Imports`/`TestImports`/`XTestImports` from one `go list -json std`, never a text grep), per the
 2026-08-20 ruling. At this tip that yields `go/types` (557), `encoding/json` (491), `crypto/tls`
-(400), `encoding/xml` (386), `html/template` (243) out of 65 banked rows importing `reflect`
-directly. Worth recording: **`go/internal/gcimporter` (583) — the largest row, and the head of the
-set as written down on 2026-08-19 — declares `reflect` in NONE of the three lists** and reaches it
-only transitively through `go/types`, so it is not a member and `html/template` takes the fifth slot.
-That is exactly the drift the ruling was written to prevent, caught by re-deriving.
+(400), `encoding/xml` (386), `html/template` (243) out of **65** banked rows importing `reflect`
+directly. That reproduces the set the atomic-align lane and the position-map lane each derived
+independently, and the qualifying count tracks the roster as it should: 62 of 158 rows, then 64 of
+161, now 65 of 162. `go/internal/gcimporter` (583, the largest banked row) is absent again, for the
+already-recorded reason — it matches `"reflect.Value"` only inside expected-signature test DATA and
+imports `reflect` nowhere — so the stale list is still the one `CLAUDE.md` carries, and re-deriving
+is still what keeps it from being used.
 
 Swept, each `-Exact -TestTimeout 40m`, plus `database/sql` (the panic-frame-sensitive row) and
 `sync`, and the new row itself:
