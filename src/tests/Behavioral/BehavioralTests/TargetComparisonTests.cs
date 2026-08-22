@@ -787,6 +787,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckLinknameVarPullLib() => CheckTarget("LinknameVarPullLib");
 
     [TestMethod]
+    public void CheckLinuxSpawnBasics() => CheckTarget("LinuxSpawnBasics");
+
+    [TestMethod]
     public void CheckLocalFunctionEmission() => CheckTarget("LocalFunctionEmission");
 
     [TestMethod]

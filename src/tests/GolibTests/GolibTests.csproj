@@ -14,6 +14,13 @@
     <PackageReference Include="coverlet.collector" Version="1.2.0" />
   </ItemGroup>
 
+  <!-- The spawn-seam gate file drives linux-flavor-only syscall surface (Wait4, the unix
+       ProcAttr); under any other $(GoTargetOS) it is excluded from compilation entirely,
+       mirroring the L3 corpus's own per-GOOS item mechanism. -->
+  <ItemGroup Condition="'$(GoTargetOS)' != 'linux'">
+    <Compile Remove="LinuxSpawnSeamTests.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Using Include="go.builtin" Static="True" />
     <Using Include="System.Byte" Alias="uint8" />
@@ -31,6 +38,14 @@
 
     <ProjectReference Include="..\..\core\golib\golib.csproj" />
     <ProjectReference Include="..\..\core\sync\atomic\sync.atomic.csproj" />
+
+    <!-- The Linux spawn-seam gates (LinuxSpawnSeamTests) drive syscall.StartProcess/Wait4 —
+         the converted surface over the posix_spawn hand-own, per the exec-wall design's §5.1
+         and OQ-2 measured gates. The gate FILE compiles only under the linux corpus flavor
+         (Wait4 and the unix ProcAttr surface do not exist in the windows flavor), the same
+         $(GoTargetOS) mechanism the L3 corpus itself uses; the reference stays unconditional
+         so the windows build proves the project graph. -->
+    <ProjectReference Include="..\..\core\syscall\syscall.csproj" />
 
     <!-- Sha3ReinterpretVectorTests: the ONLY guard the hand-owned sha3 xor.cs has (no _test.go in
          GOROOT, not reachable from a behavioral test). Binding a converted package from an MSTest

@@ -63,6 +63,7 @@ public ref struct GoFrame
     private Action? m_d0, m_d1, m_d2, m_d3;
     private List<Action>? m_overflow;
     private int m_count;
+    private System.Runtime.ExceptionServices.ExceptionDispatchInfo? m_foreignRethrow;
 
     /// <summary>
     /// Gets the number of deferred calls registered in this frame and not yet run.
@@ -181,6 +182,27 @@ public ref struct GoFrame
                         // runtime fault in a deferred call is recoverable here exactly as it is in
                         // the body. GoexitException deliberately FAILS that filter, so a
                         // runtime.Goexit still unwinds through this frame as before.
+                        //
+                        // The FOREIGN-UNWIND correction (exec-wall design OQ-6, ratified
+                        // 2026-08-22): when this frame is unwinding on a foreign (.NET) exception —
+                        // owned/handling are null, because IsPanic rightly refused to adopt it —
+                        // a deferred `panic(recover())` re-panics NIL, since recover() sees no Go
+                        // panic. Adopting that nil panic here would REPLACE the original defect at
+                        // the tail, which is exactly how every OnceValue-guarded probe reported
+                        // `panic: nil` instead of naming the NotImplementedException underneath.
+                        // The original is preserved (IsPanic's filter pass captured it with its
+                        // stack); consume it, let the remaining defers run per Go's sequence rules,
+                        // and the tail continues the ORIGINAL unwind. A later real panic from
+                        // another deferred call still supersedes it — Go's own replacement rule —
+                        // because the tail prefers `owned`.
+                        if (handling is null && raised.State is null &&
+                            GoFuncRoot.InFlightForeignException is { } preservedForeign)
+                        {
+                            GoFuncRoot.InFlightForeignException = null;
+                            m_foreignRethrow = preservedForeign;
+                            continue;
+                        }
+
                         if (handling is not null)
                         {
                             // Go's re-panic idiom (`defer func(){ panic(recover()) }()`, which is how
@@ -209,6 +231,15 @@ public ref struct GoFrame
 
         if (owned is not null && GoFuncRoot.CapturedPanicValue is not null)
             throw GoFuncRoot.CapturedPanicValue;
+
+        // The foreign-unwind correction's second half: no real panic superseded the sequence, so
+        // the ORIGINAL foreign exception continues unwinding with its stack intact — instead of
+        // the nil re-panic that used to replace it here.
+        if (m_foreignRethrow is { } foreignRethrow)
+        {
+            m_foreignRethrow = null;
+            foreignRethrow.Throw();
+        }
     }
 
     // LIFO removal. The slot is cleared on the way out so a frame that outlives its drain (it
@@ -268,7 +299,19 @@ public ref struct GoFrame
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPanic(Exception ex, [NotNullWhen(true)] out PanicException? panic)
     {
-        return RuntimeErrorPanic.TryAsPanic(ex, out panic);
+        if (RuntimeErrorPanic.TryAsPanic(ex, out panic))
+            return true;
+
+        // A non-panic exception fails the filter and propagates unchanged — but PRESERVE it first:
+        // the filter's first pass is the one reliable point every foreign exception crosses before
+        // any finally runs its defers, and a deferred `panic(recover())` in those defers would
+        // otherwise replace this original with `panic: nil` (Run's foreign-unwind correction,
+        // exec-wall design OQ-6). GoexitException is deliberate control flow, not a defect, and is
+        // excluded exactly as it is from panic adoption.
+        if (ex is not GoexitException)
+            GoFuncRoot.InFlightForeignException = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex);
+
+        return false;
     }
 
     /// <summary>
@@ -293,6 +336,7 @@ public ref struct GoFrame
     [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepperBoundary]
     public static void Capture(PanicException panic)
     {
+        GoFuncRoot.InFlightForeignException = null; // a REAL panic supersedes any preserved foreign unwind
         GoFuncRoot.CapturedPanicValue = panic;
         GoFuncRoot.ArmPanicClaim(panic);
     }
