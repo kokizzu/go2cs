@@ -1,5 +1,11 @@
 # DESIGN — the Go-format crash report for an unhandled panic
 
+> **Status: IMPLEMENTED (2026-08-21).** Built exactly as specified below; see
+> [§10 As built](#10-as-built) for the shape on disk, the measured result and the one thing the
+> measurement added to the picture. `runtime/debug`'s `TestSetCrashOutput` moved fail → **pass**,
+> all six assertions, taking the package to 4 matched / 5 divergent and banking it as roster
+> row #162.
+
 > **Scope.** What a converted program prints, and where, when a panic reaches the top with nobody
 > to recover it. The format is **Go's own**; nothing here is invented. The arc exists because
 > `runtime/debug`'s `TestSetCrashOutput` measures exactly this surface and found go2cs printing a
@@ -222,3 +228,44 @@ golib and test-host change class, so:
 | Full behavioral suite (`run-behavioral.ps1`) | golib is linked by everything; any Output-phase movement investigated by name |
 | `go2cs.slnx --no-incremental`, 0 errors | the only gate that compiles the non-generated solution members after a golib/runtime API change |
 | `runtime/debug` pipeline, `-test-action all` | the row this arc exists for: `TestSetCrashOutput` must pass all six assertions |
+
+## 10. As built
+
+Five files, no machinery relocated.
+
+| File | What it is |
+|:--|:--|
+| `src/core/golib/runtime/CrashReport.cs` | new — the printer: the renderer hook, the crash-output descriptor slot, `TryUnwrapPanic`, `Format` and `Report` |
+| `src/core/golib/builtin.cs` | the `AppDomain.UnhandledException` backstop reports through it; exit 2 unchanged |
+| `src/core/runtime/managed_impl.cs` | `ᴛRegisterCrashTraceback` fills the hook from a module initializer, with `crashTraceback` composing the header over the same `appendGoFrames` `runtime.Stack` uses |
+| `src/core/runtime/debug/stubs_impl.cs` | `runtime_setCrashFD` forwards to golib's slot; the local field is gone |
+| `src/core/testing/TestHost.cs` | an escaped panic is reported as Go's crash, not as an infrastructure error; still `return 2`, so the `finally` still tears the run directory down |
+
+Guarded by `src/tests/GolibTests/CrashReportTests.cs` — fifteen tests, of which **five fail against
+the pre-arc state**, proven by neutering all three halves at once (composition, tee, registration):
+format exactness including the blank line, the tee both directions, the composed stderr report with
+and without a tee failure, and the registration itself. The other ten pin behavior the arc must
+*preserve* — the fallback's byte-identical single line, Go's `preprintpanics` value rendering, the
+unwrap through `Task.Wait`, and that `Report` returns rather than throws when every one of its
+moving parts faults at once.
+
+**What the measurement added.** The child's report reads exactly as Go's does, and its `TestMain`
+frame names the **Go** file and line:
+
+```
+panic: oops
+
+goroutine 1 [running]:
+runtime/debug_test.TestMain()
+	runtime/debug/stack_test.go:37
+go.testing_runtime.TestHost.RunTests()
+	.../src/core/testing/TestHost.cs:271
+…
+```
+
+That mixture is the position map's doctrine working as ruled, not a defect: `TestMain` is converted
+Go and reports a Go position, while the frames beneath it are the hand-owned host and the BCL, which
+have no conversion relationship to any Go source and honestly report their own. Go's own report has
+`main.main()` and `_testmain.go` there. The three strings `TestSetCrashOutput` requires —
+`panic: oops`, `goroutine 1`, `debug_test.TestMain` — are present in both the crash file and stderr,
+`hello` is in stderr and not in the crash file, and the child exits 2.

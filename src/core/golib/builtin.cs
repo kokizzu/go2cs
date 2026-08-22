@@ -87,19 +87,22 @@ public static partial class builtin
         {
             Exception? ex = e.ExceptionObject as Exception;
 
-            // Report a .NET exception that maps to a Go runtime panic (e.g. an unrecovered integer
-            // divide by zero) with Go's "panic: runtime error: …" form rather than the raw .NET message.
-            if (ex is not null && RuntimeErrorPanic.TryAsPanic(ex, out PanicException? panic))
-                ex = panic;
-
             // Match Go: an unrecovered panic in any goroutine reports on stderr and terminates the
             // process with exit code 2 — never stdout / exit 0, which polluted compared output and
             // signaled false success to callers (shells, CI, the Phase-4 differential oracle).
-            if (ex is PanicException)
+            //
+            // The unwrap covers a .NET exception that MAPS to a Go runtime panic (an unrecovered
+            // integer divide by zero, a nil dereference) and one that arrives WRAPPED by machinery
+            // it travelled through — Task.Wait's AggregateException, reflection's
+            // TargetInvocationException. A Go panic is a Go panic whatever wrapped it in transit,
+            // and reporting the wrapper instead is what made an escaped panic print a CLR dump.
+            if (CrashReport.TryUnwrapPanic(ex, out PanicException? panic, out Exception? thrown))
             {
-                // A Go panic reports Go's way: the panic VALUE, nothing else (Go follows it with a
-                // goroutine dump, which is machine-specific and deliberately not reproduced).
-                Console.Error.WriteLine($"panic: {ex.Message}");
+                // Go's crash report, in Go's own format: the panic value, a blank line, the
+                // goroutine header, and the Go-spelled traceback — plus a copy to the descriptor
+                // debug.SetCrashOutput configured, if any. See CrashReport and
+                // docs/phase4/DESIGN-crash-report.md. This used to be the first line alone.
+                CrashReport.Report(panic, thrown);
             }
             else if (ex is not null)
             {
