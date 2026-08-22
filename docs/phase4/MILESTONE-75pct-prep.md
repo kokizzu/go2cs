@@ -433,7 +433,7 @@ The block is the file's `## 📰 NEWS — <headline>` section, ending with the s
 `**➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**` line, which stays.
 
 ```markdown
-## 📰 NEWS — Three quarters of Go's standard library validates in C#
+## 📰 NEWS — Over 75% of Go's standard library validates in C#
 
 **<ROWS> of the 215 testable standard-library packages pass their own Go test suites in C#** —
 <VERDICTS> matching verdicts against `go test -json`, compared verdict for verdict, with
@@ -454,7 +454,7 @@ more than one you can round up to. Full detail in the
 ### 4.2 `docs/NEWS.md` — new archive entry, newest first
 
 ```markdown
-## <Month D, YYYY> — Three quarters of the standard library's test suites pass in C#
+## <Month D, YYYY> — Over 75% of the standard library's test suites pass in C#
 
 **<ROWS> of the 215 testable standard-library packages (<PCT>%) validate their own Go 1.23.1 test
 suites in C#** — <VERDICTS> matching verdicts against a clean `go test -json` baseline, with
@@ -496,7 +496,7 @@ Append in date order, matching the existing columns
 (`| date | linked headline | commit · tag | one-sentence summary |`):
 
 ```markdown
-| <YYYY-MM-DD> | [**Three quarters of the standard library's test suites pass in C#**](NEWS.md#<anchor>) | [`stdlib-tests-75pct-<YYYY-MM-DD>`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-tests-75pct-<YYYY-MM-DD>) | **<ROWS>/215** packages, <VERDICTS> matching verdicts, <DISCLOSED> disclosed; converted frames report Go file:line positions; Go 1.23.1's terminal validation marker, with `release/go1.23` cut. |
+| <YYYY-MM-DD> | [**Over 75% of the standard library's test suites pass in C#**](NEWS.md#<anchor>) | [`stdlib-tests-75pct-<YYYY-MM-DD>`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-tests-75pct-<YYYY-MM-DD>) | **<ROWS>/215** packages, <VERDICTS> matching verdicts, <DISCLOSED> disclosed; converted frames report Go file:line positions; Go 1.23.1's terminal validation marker, with `release/go1.23` cut. |
 ```
 
 ---
