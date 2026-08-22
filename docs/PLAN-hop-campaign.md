@@ -1,6 +1,6 @@
 # PLAN — the hop campaign: the .NET 10 and Go 1.23.12 hops across this fleet
 
-> **STATUS: PROPOSED** — drafted 2026-08-22. This is the **instance plan** for the two hops the ladder
+> **STATUS: RATIFIED (coordinator, 2026-08-22) -- all six SS7 OQs ruled AS RECOMMENDED (H5 noted as an ANCHOR OBLIGATION: the consolidation sweep retains per-row wall times); formerly PROPOSED** — drafted 2026-08-22. This is the **instance plan** for the two hops the ladder
 > schedules after the anchor release. It supplies *this* fleet, *these* two releases, the concrete
 > shard map, the sequencing, the adversarial pass and the open questions. It supplies **no
 > procedure** — procedure lives in two runbooks and is referenced, never restated:
