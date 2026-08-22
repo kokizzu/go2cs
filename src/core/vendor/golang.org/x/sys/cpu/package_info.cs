@@ -49,6 +49,23 @@ using static go.vendor.golang.org.x.sys.cpu_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/byteorder.go", "byteorder.cs", "ABUogoKmgoKogoKmgoKsogABFAACEKQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu.go", "cpu.cs", "ANgBlAOCgoIAFCSCgoKCgoKClJSClIKCgpSUgpSkpIKmgoKClJaCgoKCqLaCgpaCgpaCgpY=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu_gc_x86.go", "cpu_gc_x86.cs", "AAgWuA==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu_x86.go", "cpu_x86.cs", "AAwaggAuYISEhIKWgoSCgoKCgoKCgoKChKSClIS4pqiEgpaCgoKCgoKEgoKCgoKCgoKCgoKCgoKCgoKCgoSCloKCpoI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/parse.go", "parse.cs", "AAkcAAsEgoKCqIKCgoKCpoKClICCpICCpII=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/runtime_auxv.go", "runtime_auxv.cs", "AAsWgoKU")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/runtime_auxv_go121.go", "runtime_auxv_go121.cs", "AAocpII=")]
+// </GoSourcePositionMaps>
+
 namespace go.vendor.golang.org.x.sys;
 
 [GoPackage("cpu")]

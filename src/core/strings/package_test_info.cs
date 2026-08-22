@@ -38,6 +38,22 @@ using static global::go.strings_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("strings/builder_test.go", "builder_test.cs", "AA8cooKCgoKUgIKkgIIACgiCgoKCgpSCgIKkgoKClAAJBqKCgoKCgoKCgoKWgIKkgIKkgIIACAiigoKCgoKCqIKCgILIooKCkoKCgpSCgqaCgpSAkriSgoKAgrYADAaCggAcPpKCgoKUgpSEgoKUgpTKgoKAgqSAgqTWxoKCgoKUggAJCIIABBKCgoLugoKC7oKCgu6CgpKC7oKCku6CgpLugoKS7oKCku6CgpK4soLCkJLEgILapoKCggAMEIKCgpSCgpSCgriCgoKCgpSClMqCgoKCgoKUgpTKgoKCgoKUgpTKgoKCgoKClII=")]
+[assembly: go.GoPositionMap("strings/clone_test.go", "clone_test.cs", "AA4egu6CgoKWgpaCyqKCgoI=")]
+[assembly: go.GoPositionMap("strings/compare_test.go", "compare_test.cs", "ACZKgoKCggAICoKCgpSCuKaIgoKUhIKWgoKCgpSCgqaCgpaSgoKUgoKClIKCpoKCgoKUgoKClJQ=")]
+[assembly: go.GoPositionMap("strings/reader_test.go", "reader_test.cs", "ABkggoIACiiCgoKClIKClIKUgoKCgpSCgsqCgoCCpICCAAsIgoIABxqCgoKCgpSCysaCgoKCsoKC1qbYgoKCgrKCgsSygtamgoKCgoKCgoCCpIKUgpSC/JKCgoKUgriCgoCCpoKCgIKkgoKUgILIgoCCpoCCpoCCpoCCpoCCpoCCpoCCpoKWgpaAgg==")]
+[assembly: go.GoPositionMap("strings/replace_test.go", "replace_test.cs", "ACI+koKCgoKCAC4Msp6GloKClJYACBqCgoKClJSWAAkeAAgcAAsaAAYSurzeAAYSuszMqAAJHoKClIK6AAQQgoKCgoKCggAWQIQABhSCAAUSgr6CgIKkgoKCgpSCgoKUggATJpKCgoL+gqqigoKCAAgQ0gANWoKCgoKWlIKCgqaEgsqigoKCuKKCgoLoooKCuKKCgoKCuKKmouaCpqKCgriigoK4ooKC6KKCgriigoK4ooKCgoK4ooKCgoK6soKCurKCgpSkpJSCABASgoiSsqKCzIKClIKUlpKyooI=")]
+[assembly: go.GoPositionMap("strings/search_test.go", "search_test.cs", "ABEaggAQKoKCgoIACgqCABY4ooSCgoKUgqiC")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("strings_test")]

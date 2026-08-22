@@ -29,6 +29,19 @@ using static go.image_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("image/geom_test.go", "geom_test.cs", "AAsYtIKClIKCgoK4lgAOIIKCgoKC3oKCgoCCpICCpICCtoKCgoKCgpSUggAHEoKCgoCCpICCpJSUgoKCgoKCgg==")]
+[assembly: go.GoPositionMap("image/image_test.go", "image_test.cs", "ABYogoKCABUugoKCgoKUgoKUgoKClIKClIKCgpSCgpSCgpSCgoKmgoKCAAgItLKCgqaC1piioqKioqKioqKioqamgoK4gpSCloKCggAGEIKCgoK4gtyCnIKCgoKCppyCgoKCggAUCpSCgqiCAAEgggABILaCgoK2toKC/qK4goKClIKChKjKgrKSgoKCgtyCkrKigoKCgtyigoSCuKKCgoSCuKKChIK4ooKChIK4ooKEgriigoKEgriigoSCuKKCgoSCuKKChIK4ooKChIK4ooKEgriigoKEgriigoSCuKKCgoSCuKKChIK4ooKChII=")]
+[assembly: go.GoPositionMap("image/ycbcr_test.go", "ycbcr_test.cs", "AAwYggAVLAAHENyCgoKmgsqUgpaClLqCgoKCgoK6goKCgoKWgoKCgoKUAAkUgoKCyoKCgqaCgoKC")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("image")]

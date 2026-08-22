@@ -32,6 +32,20 @@ using static go.encoding.xml_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("encoding/xml/atom_test.go", "atom_test.cs", "AB5YgoKClKaC")]
+[assembly: go.GoPositionMap("encoding/xml/marshal_test.go", "marshal_test.cs", "ALIDhAWCgoKCAAcQgqaCAEBmoqaiAJgJ5BOCsoKWkoKCgoKUgpSUgoKUgJKClABNjgGCgoKCgpSClIKAgu6SsoKUgIKkrJaCgoSylIKCuIKCgpSClJSAguyCgoKCgpSAkgANFLKCgpSCgoKClIKC1oKCgoKCgoKCgriCpoKUgpSC6IKEgoKC6IKCgoCCpIKUgIKkgriigoKCyqKCgpKCABAMkgAAFLqCgpSAgqSCgoIAiwPMBYKCsoKCgoKCgoKmopSUgrSCtIK0gIKCpICCgvqCgoSAgqaAgqaAggAJCIKSioKCgoKCAAwMkoqCgoKCpqaCAAcQAAoWgoKmgoL8koKCgIKkgIKkgIKkgIKkgIKkgIKkgpSCggAICpKChoIAExqCgoKAgqKCABcggoKCgoKUgoKCuoKClIIAHT6CgpKSgoKCgIK2gpS0tLSAgqSCgII=")]
+[assembly: go.GoPositionMap("encoding/xml/read_test.go", "read_test.cs", "ABEokoKAgqSCAKoBhASCgoKAgqSCADVYooKCggARHoKCgIKkggASCIIAAByCgIKkgqSWgoCCpIKWgoCCpIKkADKAAYKCgoKCgoKUlIKClIKC+oKSgoKUgoKCAEysAYKCgoKCgoKUlIKClIKC+oKSgoKUgoKCloKAgqaCAAcQooKCkpSClICCtsqC7oKCABIago6CgIKmggAQGpKCgoKCgpSCgpSSggAIEpLcgoKCgIIADBaSgoCCpIKUggAtjgGkgoCCpgAJAgASJoK6AAgCAAkC8gAYMoCCpgAUJoIAH26SkoCCpgAWLoIANHCSkoCCpgAWLoIACAqSioSCAAsKgoiCgqQACwiigpSCgoKmhg==")]
+[assembly: go.GoPositionMap("encoding/xml/xml_test.go", "xml_test.cs", "ABYsgoKUgoKClAANBoKCABIusrKCoriGgpSAggAMGIKCpoKUlIKC9qKCgoKCgriChoCCAJEBvgKCgoIAKmSCgoIABxCygoKUpoKCpoKCgoKUlKaCgoKClIKUgoKUgpSCgsqigoKCgoKClIKSgIKUpICClKSolLaSlLS0goLGABxIgoSCgoKUgsqCgoSCgoKUgsqCgoKClICCAAoKggAAFgAMGoKCgIKCpoKCADiUAYKChIKUggALEIKCgoSC6IKCgoKCgIKkgpSCgpSCuILcooKCgoCCpIKUgoKUggAICoKCgoKClIKC+IKCgoKClIKUgoL4goKCgoKUgoIACAiCgoKClIKClILogoKCgpSCuIKCgoKUguiCgoKClIIAFCaEgoKEgpSCgpSCyoL8goIAGC6CooCCpICCABUwgoSCgoKUggAIEICkgoKEguiCgoSCgIKkhILYgoSClIIAEQiEAAAYgoKAggAKCIIABRaCgIKAkrYADQqEjvaEigAIBoSeggAIBoSMpoLKgoKCgoKCpoCCAAoKggAFEoKCgoKCgoKUpoKClIIAFgqCAAAegoKCgoKWgpSCloKCgpSClIKUgoKClIKUggAMCISEAAwggoKAgoKkpAALDIIACBiCgoKCgoKClKaCgpSCyoIAChqCgoKU1oKCgoIADwiCgoKUgoLGgoK2loSagIKmguyC2oLWooKAgriC1oKCgoKCgoKClIKUgIKklICCpoKCgoKUgpSClIKClJSCuIK4goAAEwiihgAPLIKCgoKCgqaCgpSmgoKUgoIACB6CgoKCgoKCgoKCgpTuggAnUoKCgoKCgoKCgpSUlIKUgoKUgoI=")]
+// </GoSourcePositionMaps>
+
 namespace go.encoding;
 
 [GoPackage("xml")]

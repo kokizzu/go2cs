@@ -41,6 +41,25 @@ using static go.@internal.bytealg_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/bytealg/bytealg.go", "bytealg.cs", "AB1AwoKClJKCgpSUqsKCgpSSgoKUlKrUgoKCgpSClIKCgoKCgqaq1IKCgoKClIKUgoKCgoKmrg==")]
+[assembly: go.GoPositionMap("internal/bytealg/compare_native.go", "compare_native.cs", "AAoYpIIAAhA=")]
+[assembly: go.GoPositionMap("internal/bytealg/count_native.go", "count_native.cs", "AAgUpqaSgoKCpqSCgoKCpg==")]
+[assembly: go.GoPositionMap("internal/bytealg/equal_generic.go", "equal_generic.cs", "AAccAAkG")]
+[assembly: go.GoPositionMap("internal/bytealg/equal_native.go", "equal_native.cs", "AAkkAAkG")]
+[assembly: go.GoPositionMap("internal/bytealg/index_amd64.go", "index_amd64.cs", "AAwWgoKUAAMQ1A==")]
+[assembly: go.GoPositionMap("internal/bytealg/index_native.go", "index_native.cs", "AAga3A==")]
+[assembly: go.GoPositionMap("internal/bytealg/indexbyte_native.go", "indexbyte_native.cs", "AAgUpg==")]
+[assembly: go.GoPositionMap("internal/bytealg/lastindexbyte_generic.go", "lastindexbyte_generic.cs", "/oKCgqamgoKCpg==")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal;
 
 [GoPackage("bytealg")]

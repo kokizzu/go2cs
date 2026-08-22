@@ -63,6 +63,19 @@ using static go.encoding.asn1_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("encoding/asn1/asn1.go", "asn1.cs", "AClSgP6ArNKCgsyUtLS2rsKClIKUgpSq0oKClJSClIKCqIKCqqKAgqSCgpSClM6igIKkgpSCgpSCgoKUggAMHqKClIKCqqKCgpaCgoKClqjCgoKUgoaClIKCAAwisoKUgoKopoKChIKCgpSWrOKCgrrMgoKUgoKUgpaCgoKClJSCAAYeAAkCgoKmgoKUgqaCgpSCgoKUgpSmgqrChIKCgoKUgpaAgoKmlJaq0oKEgIKmgIKmrsKCgqaokgACEPKCgoKmggALIrIAAjAADgKCgoKmgq7C3sKClN7CgqiAgqaCgoKWAA8sAAoCpoKClIKCgoKogoKCpoKCpoKClIKClKaCgoKUgoKCgpSCgqaClIKClIK4goKorOKCgoK6goKCgoKUmqbmgoKUgoKUgpSCgoKCgoKmAAsgotzigpaCgpSogIKCgoKUgoKUgoKClKSkpKSkpKSkpKSk6oKClIKUpoKClIKCgpSCgpSCtoKCpoKClIK4goKUlKiCgoLegoKUxsyCloKWgoKEgoKCloKCgpaCgoKoloKClJSUgoKUgpaUgqSCpIKkgoKUgqSCgpSCpIKkgoKUgpSApIKClIKkgoKClJSCgpSUpoSSgoKohIKWgoKCgpSCgqykgrKCgpSCgpSCpIKUpKSkpKykpuSClLSCqqKUpqzSgpSCgpSClAACkAEARQIACxKCgpaClKrCgoKUgoKU")]
+[assembly: go.GoPositionMap("encoding/asn1/common.go", "common.cs", "AGm8AQAIAoKCgpS0goLGtLS0tLS0goKCxoKCgsa0goLGgoLGxtqilKSkpKSkpJSkpKSClIKUpKQ=")]
+[assembly: go.GoPositionMap("encoding/asn1/marshal.go", "marshal.cs", "AB9CgqaCyoKmgoLcgqaCgtyCgoKUpoKCgoLcgoKClKYACBKCgoIABxKEgoKCAAsYgqaCgsqChIKCloKClqaChIK4goKWgoKWpoKEgoKCgpaWpqKClsqCgoKClIKUtpSCppS4goSClqaigoKClKaCgoKUgoKClIKWgoKClJbKgqaCgoLcgoKClKaCgoK4goKWpoLugqimgoKCqKaCgoKopoKmgqaC7oKCpqKEgoKWpqKEgoKWpoKElLS0pqaCgoKWhKaChIKEhIKChISUpLS2goKWgoSmgoKClKailKSCgpSkpKSmgKSClKSkhIKCqISCgpqigoLKlpaApKSkgoKCgqjWgoKWhICkpKSEgoKCqIKU1pSkpKTY1qKCpoKWgpaCgoSC3oKCqIKCgpaEgoSWgoKWgpaClpS4goKClIK4toK4goKUAAYQgpaEgoKWhIKCgqSUloKEhITeqJaEAAIcAAsCqqKCgpSCgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.encoding;
 
 [GoPackage("asn1")]

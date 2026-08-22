@@ -64,6 +64,22 @@ using static go.@internal.pkgbits_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("internal/pkgbits/codes.go", "codes.cs", "ABQsgKKAAA0igKKAABMugKKA")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/decoder.go", "decoder.cs", "ADd+sKaQrtLehISU6JKCtoSChIKEgoSokoKClKiSqJKCgqqigoKUgpSqooSCgpSEqJKqopKCrsKSgqaigqzS3IKCgoKClqai3IKCgoKClJSCgpYADB6CgriigoKs0oKCgoKCgpSUgoKUlIKUyoKWgoKUpoKCgq7igpaCgoKCloIAECaEgoKUgpaCgoKCzKiygoKCgqiSgqiSgqiQgICAppCAgICmkICAgAACEvKCqsKCqsKCqqKCgpSqooKCgoKUpoKAqqSkpKSCgqQAAh0ABSaCgoKUpoKCggACFAAIAoKCkoKUgpSqwoKCgoKSgoKCgoKWgoSE")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/encoder.go", "encoder.cs", "AC5ckAACEvIABRDSgoSSloSCgpSGkoKCqIKCgoK6goKCuoKChKqigIKCpoKCgqyygoKu4oKEABIusoaSuoKUgoKCgoKCloKChKaCgriCgoKCppSCgpamgoKCgIK2loKCgqaCgp7CgoKCuoKCggADIgANAoKCgpSCgqiSgqiSgqiQgKaQppAAAhDigqiSggACEuKqooKqooKCvKKCgoKUuIK0tIK0grSCtIK0goK0gsiigoKmgoI=")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/support.go", "support.cs", "AAoSgoK4og==")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/sync.go", "sync.cs", "AA8cspKUhJQABBCygpaCgoKCgg==")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/syncmarker_string.go", "syncmarker_string.cs", "/oaigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoLugoKClA==")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal;
 
 [GoPackage("pkgbits")]

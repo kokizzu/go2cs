@@ -437,6 +437,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 	v.outputBuilder.WriteString(v.newline)
 	v.outputBuilder.WriteString(functionPrefixMarker)
+	v.writePositionSentinel(funcDecl.Pos())
 	v.writeDoc(funcDecl.Doc, funcDecl.Pos())
 
 	functionAccess := packageFuncAccess(goFunctionName, funcDecl.Recv == nil)

@@ -124,6 +124,66 @@ using static go.net_package;
 [assembly: GoImplicitConv<Interface, ж<Interface>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("net/addrselect.go", "addrselect.cs", "AAwcgoKUpoKClIKCgoKClAAKFrKCkoKCgoKCgIKkpgAIEoKClIIADRyApIKCgoKuwoKCgoKCgoKEgsyClIKUgt6ClIIAECyElITMgpSCAAkagpSCAAoYgoKEgpSC3gBImAHEgpSCgqYACx6CgpSCgoK4gpQAAhoADAKAgqSCgqaCgpSCgoKCgpSCgoKCgoKCgrg=")]
+[assembly: go.GoPositionMap("net/conf.go", "conf.cs", "AEeeAZKCAAgKwoKCgoSCgoKUlIKUxrS0AAgSloKogoKolO6CgoK6goLsogABEKqqps4AEAKClgAHEIKorAAJAoKCpuwACQKCgqYADQaklIK4gra2uqaogqiUAAcShJSWprq4gpaCypSUlJSCgqaUpIKCppSmAAcQhIKmgriWlKaWgoSSgoKClJSClIKClIKUloKYopSCgpS0ypyylIKUlKSkpIKUtsiCgoKCggAGEIKCgt6UgpTGpLgABCIADwKCgoKUgpSmgIKCgqSCAAgKotqi2qI=")]
+[assembly: go.GoPositionMap("net/dial.go", "dial.cs", "ABxagpSkuIKElqaCgpQAZuQBgKSCgpSClAACEgAIApKUgIKkpoKClKqigpSCgqaEkoKClKamgoKUuLKCktiC2KSUgpSCgoKCgqakrLKCgpSClJSCgpSClKSCgpS8lIK0grSCpIKCgpSUgpS0gpS0gpS2gpSuwgACEuIAAmYAMAKCAAIaAAoCkgAJIvIABSoAFgKClIKCgoCCgpK2gIKCkrK06LiCgIKSgoKmgoKWzJKClJYADA7igpaChAAAEMKCgpSC5oLKpoKSpoKUgrSCksaClIKUlIKUygAJEOKEgqTIgoCCgpSClJSCgoLIgoKUgqiClNoACAKCgoKClIKQtoKUgoKk1oLEgsSC1JSClAAnVsIAAhLi3sKCgpTKgoKUgqTW1JSClK7CgoKUyoKClMTE1JSClAAIPAAVAoIAAjgAGQKC")]
+[assembly: go.GoPositionMap("net/dnsclient.go", "dnsclient.cs", "ABAoxIKmgqyygoKUgqaUgoLcgqaygpSCgoKClIKUgqYAAiAADgSCAAkWgoKWgoKCgoKUpIK2tqKUgraSlIKUtJSClgACFgAIAoKUAAwgooKClIKCgoKCgoKUpoK6koKAgqSUgoKCgqYAChqSgoKU")]
+[assembly: go.GoPositionMap("net/dnsclient_unix.go", "dnsclient_unix.cs", "AC504oKCgIKkgIKmgqaAgqSCgIKkgIK4goKUgoKCgqaygpSClIKUpqKAgqaCgoKClLiCgpSCgpS4ooCCpoKAgqSCgpSCgpSCgoKUgoKUgpSo0oKCgpSCgpSUgoKUgoKUgIKkgoKAgpSkgoKUgIIACRKClJTYsoSCloKCuoKW3IKUlqaigoKClIKUgpSAggAFELKCgoKCgoKUgoKUgILewoKChIKClMyCgoSSgqaAgqSCloCCppSCpoCCppSCpqYAEiKCgqjWgqis8oSCqIKUhIKClIQAAxDSgIKkgriC1oKkpLiCpqLcloKWqoKCgpSApraClIC4pN7CgpSClKikgoKCqIKClJaCgpaUgqaCgoK4gpQAEjKCgIKkprKUgoKWgqaCgpSCspSowoKCgoCCgraCqtKCAAgGwoKChIKCgoKUloKolJSOloKCgpSUtLSCgoKSooKCgtaSgpKSgqaogoKClIKCgoKAlIK2pAAPJIKCgoLcgpSUgoLKlIKCuIKCypSCgriCgsqUgriAgsqk6LiClIKmgLikgoKCgoKCgoKClKaCptiSgqiSgoKCloKogoKUkoKCgoKCgriUgoKCgpSC3IKCgtyUgoLcmA==")]
+[assembly: go.GoPositionMap("net/dnsconfig.go", "dnsconfig.cs", "ADBq4oKU")]
+[assembly: go.GoPositionMap("net/dnsconfig_windows.go", "dnsconfig_windows.cs", "AAwassqCgqaCgpaUgqiCloKCgpSClLSCgtzYtKY=")]
+[assembly: go.GoPositionMap("net/error_posix.go", "error_posix.cs", "AAsgooCCpA==")]
+[assembly: go.GoPositionMap("net/error_windows.go", "error_windows.cs", "AAkSgoCCpA==")]
+[assembly: go.GoPositionMap("net/fd_posix.go", "fd_posix.cs", "ABo6ooKCpoKC1oKCgqaCpoKmsoKCpsKCgqSygoKmsoKCpuKCgqbSgoKm0oKCprKCgqaygoKmsoKCprKCgqbCgoKmwoKCpsKCgqaCpoKmgg==")]
+[assembly: go.GoPositionMap("net/fd_windows.go", "fd_windows.cs", "ABk0gqqilLamggAJFKaigoKUAAgIAAgIgIKmyoSClICCpoK2gpSipsyCgqaClLS0tICCuIKUtMSkpuiUlKaogIKkpICCpMjWooKUgoKU1oKCgqaiiIKClKiCgoKUgIKCqKKSlIKEgqqk")]
+[assembly: go.GoPositionMap("net/file.go", "file.cs", "AA4coKKArAAIAoKClK4ACAKCgpSuAAgCgoKU")]
+[assembly: go.GoPositionMap("net/file_windows.go", "file_windows.cs", "AAoYlKaUppQ=")]
+[assembly: go.GoPositionMap("net/hosts.go", "hosts.cs", "ABMkgoKClAAcOqKChIKUgoKCloKEgoKCqIKSgoCUpIKClIKCloKCgoKChIKWhICCuKYABxCCgoKCgtiygoKCgoKCgpSAgoKCttiygoKCgoKUgoCCgoK2")]
+[assembly: go.GoPositionMap("net/interface.go", "interface.cs", "AD6MAYKCgoKClKaClKqigpSCgpSqooKUgoKUqJKCgpSClAACENKCgpQAAhDSgpSCgpSCgpSmgrKCpqiSgpSCgpSClLKCpgAVMAAIAoKCgoKUgoKCgIK2goKCgoCCtuaCgpSCgoKCgoKCgpSSlKaCgpSCgoKCgoKCgpSSlA==")]
+[assembly: go.GoPositionMap("net/interface_windows.go", "interface_windows.cs", "AA9g0oKClIKCgpKUgriCgtyUpKSkpIKUlIKClIKCuNzSgoKUgoKCkpSCgoKClJS0goK2goKClJS0goLaqsKCgpSCgoKSlIKCgoKUlLSCgto=")]
+[assembly: go.GoPositionMap("net/ip.go", "ip.cs", "ACRqooKCgoKCgs6igoKCgoKssoKUgpSCgoKCgoKClIKUABguoqiSgIKkqqKA7syokoCCpKqiqqKAgqSqooCCpAACFgAIAgACEpKCgqaqooKUiJSqooKUgpQACRqygIKklKSkyIKCgqaokoKUgpSCgpSCgpQABRLigpaCpoCCpKaCgoKUqqKClKyygpSClKqigoKUkoKClIKssoKUgpSClKaCqqKCsoKCuIKCpoKUgoKmlKzigoKUqJKClKaygIKCgraClIK2grakqJKCgIKkgoKUgoKm2JAAAhDigpSCgpSCgpQAAhLigIKkpoKCgpQAAhYACAKCgpaCgpaCgpSCgqaCgoI=")]
+[assembly: go.GoPositionMap("net/iprawsock.go", "iprawsock.cs", "ACBKkKSigpSCgpSmooKUpoKClAACIAANApKUgoKUtqSCgpQACBbCgpSosoKUgoKUqLKClIKClIKUAAIUAA4CgpSCgpSosoKUgoKUqLKClIKClIKClAACEgALAoKUgoKUpoAAAhLygpSCgoKUAAIUAAkCgpSCgoKU")]
+[assembly: go.GoPositionMap("net/iprawsock_posix.go", "iprawsock_posix.cs", "AAscgpSklKaigpSClKaigpSmgqaGooKUgrSkpoKClIKClIKUgqbigoKUtKSmgoKUgpSCgpSmooKUgpSCgpSmooKClLakgoKYgoKUpqKCgpS2pIKCmIKClA==")]
+[assembly: go.GoPositionMap("net/ipsock.go", "ipsock.cs", "AB5CooKqooKs1pSmgs6SlKSklKiQqrKClra0gpSqooKCpgACEgAJAoKCgoKClKauwoKCgqaClKiSqJIABxgADAKYgpSmgoKWlIKClJbcspSkgpSCgqaClIKWgqbWgIKUpAACEPaClK7CupSCgIKkgILYgrakkpSkpKS2gqiCgtyCloKClIKUAAIcAAsCgpQ=")]
+[assembly: go.GoPositionMap("net/ipsock_posix.go", "ipsock_posix.cs", "ABY4AA4CloKCgraCtoKkAAUSmtSCgoKUgoKCgpSAgqSClAAHcAAzApSkpoKClIKUloSUpoKUgraCpoKClIKClIKCpgAKFoK4goKUgoIAAhwACwKUkoKUpJKClKSmpoKClLim7oKClMo=")]
+[assembly: go.GoPositionMap("net/lookup.go", "lookup.cs", "AESGAYKCgoKCgpQADBSClICSpKSkpKaCgIKCgoKAgqSkqqKClIKClAAqYMCioKSCgpQAAhDSqrSClICCpKqigoKUgoKUqqKuwoKClLamgpSCgpaCgpSuAAgKgoKUgoKAgrYACxqSpKQAAxDCqrSClICCpIKCyoKAggAHEISCgqKmgoKClAADEvKCtKSCgpSkgoKCgoCCtoKClMyigpSCgoKClKiSgoKUrsKs4oKCtqS0goKmgpQAAiYAEAIAAiAADQKCgpSClAACIgAOAgACIgAOAoKClIKUgoKClIKUlIKUAAIYAAkCAAIS4oKClIKCgpSClJSClAACGAAJAgACEuKCgpSCgoKUgpSUgpSuwqiSAAIeAAwCAAIS4oKClIKCgqaClAAHFtzSgoKUgpSClAACGAANAoKUlJKClIKCgoKUgtyCgILslIKUgoLclIKokpKClIKCgoKUgtyCgILslIKC3JaCqJKSgpSCgoKClILcgoCC7JSCgtyUqJKSgpSCgoKClILcgoCC7JSCggAIEoKClIKClIKUlOaCgpSCgpQ=")]
+[assembly: go.GoPositionMap("net/lookup_windows.go", "lookup_windows.cs", "ABs+gpSk1qKCgpQACQiWirKAgoKkgoKCggAMCrSCgIKklKTIgoKClIKylAAKBoKAgrqClLS2ooCC7ILagoKCloKEgoKCgqaClIKCgoKUgqSCgqS2xoyCgqKCqLQAAhQADAiigqiAguyEhLaCpIKktpS0toKCgoCC7oKUlIKClIKUgqSCpAAIBqKAgriAguyCgpSAlKSClISCgtaigqaAguyCgoKUlIKCgpSEgoKClILWooKmgILsgoKCgpSEgoKClILWooKmgILsgoKCgpSEgoKClNaigqaAguyCgoKClISCgoKCgpSU1qKAgriAguyCgoKUgoKClISCgoKU/JKCgpSClIKUgpSClJSoxIKCgoKUgpSClIKUtKqi")]
+[assembly: go.GoPositionMap("net/mac.go", "mac.cs", "AAsYgoKUgoKClIKUAAIeAA4CgpaCgpSCgpSCgoKAgqS2gpSCgpSCgoKAgqSAgqSmlISC")]
+[assembly: go.GoPositionMap("net/mptcpsock_stub.go", "mptcpsock_stub.cs", "AAoagqaCpoI=")]
+[assembly: go.GoPositionMap("net/net.go", "net.cs", "AE7oAqCq0oKUgoKUqLKClIKClKiygpSCgpSs0oKUrNKClKiygpSAgqSosoKUgIKkqLKClICCpKrCgpSAgqSqwoKUgIKkAAIUAAoCgoKUAEOqAQANAoCSACpcgKSAqKKUpKQAHkSApKKClIKClIKUgoKUlJSCAAokgoCCgqSC7qaCloCCgqSCAAsagKSAooD+ooKUgoKUpoCigMiAooCigMiAooCigAAVIoCigKKApIIACBKAooCigKKAAA0YgAAIDICigKKAABAmoqyAgoLKgpaSAAoYkKSigpSCgpSCrLCqsAASJqIAChq0AAcSogAKGKQADBqCgpS0pMiCAA86AAkCgIKkgoKCgoKmggACEgAJAoKCgoKUgpSmgoKCgoKUgoI=")]
+[assembly: go.GoPositionMap("net/nss.go", "nss.cs", "AB9CgoKCgoLYkoKCqNKWgpSEgoKUhIKAgqSCloKCgtaCpoKkpLiCAA4iooKCpgAOHLKClIKUpKa0gpSmooKClJKCgpaCggAJBqKCgoKClIKCgpSCgoKCgpSCgoKClIKUlIKCgoKUgoKCgpSUgpTc6MKCgoKClIKUgoKUgoKClMqU")]
+[assembly: go.GoPositionMap("net/parse.go", "parse.cs", "ABcugKSygoKCgoKUgoKCgqaUgoKUprKAgqSCgoKClIKmgqaigoKUpoKCgpSmooKClKiSgoKCpqiSgoKCgoKCgpSmgoKUpoDe0oKCgoKmgpSq0oKCgoKkgqSClJSCpoKUrsKClIKokoKCpqiSgoLMkoKUqJKClIKUqJKqooCCpKqigoKCgpSAgoCCxpSqoqqigpSCgqY=")]
+[assembly: go.GoPositionMap("net/pipe.go", "pipe.cs", "ABMqggACEgAKAoKEgpSWgoKClKiAgoKUgpS4gurSgoLWgqSkAAkMgKKAABM40oKCgoKChO7upoCigKSCgoKUpqKUpKSm1IKCpKSkyIKCgpSm4pSkpKaCgoLUgoK0pKSm5qKClIKCpqKClIKmooKUgqaCgJI=")]
+[assembly: go.GoPositionMap("net/port.go", "port.cs", "AAceAAoCppSYgoKkgpSCooKUlIKClIKCgoKUlIKklJSClA==")]
+[assembly: go.GoPositionMap("net/rawconn.go", "rawconn.cs", "ABc0oKSigpSCgoKUpqKClIKCgpSmooKUgoKClAACFAAJAoKUpoIAAhTy7oKmgqaC")]
+[assembly: go.GoPositionMap("net/sendfile_windows.go", "sendfile_windows.cs", "ABIuAAsChIKCgoKogoKWgoK6hA==")]
+[assembly: go.GoPositionMap("net/sock_posix.go", "sock_posix.cs", "AA4k0oKClICCgqSAgoIAFzKClICCgqSkgIKCpLaAgoKkpoKUpJSkgpSmooKCgoKCpJSAgriCgoKAgqSAgtiCgoKAgqSAgqSUgIIACRKCgqKClKSmooKAgqSCgIKmgoKAgriAgqSAgqSAgqSCgqaiAAES8oCCpJKUpKS2goKAgqaCgoCCtoCCpICCpIKC")]
+[assembly: go.GoPositionMap("net/sock_windows.go", "sock_windows.cs", "AAwauNaClIKU")]
+[assembly: go.GoPositionMap("net/sockaddr_posix.go", "sockaddr_posix.cs", "AB5IgpSUpKTGlKSkxg==")]
+[assembly: go.GoPositionMap("net/sockopt_posix.go", "sockopt_posix.cs", "AA0gkoKUpoKClIKClIKUgsaCyKaCgpSCgpSClICCgtaAgoLYgoKUpoKCgqaCgoKmgoKCpoKCgoKUgpSCgg==")]
+[assembly: go.GoPositionMap("net/sockopt_windows.go", "sockopt_windows.cs", "AAoYgriUlJSm7qam")]
+[assembly: go.GoPositionMap("net/sockoptip_posix.go", "sockoptip_posix.cs", "AAwcgoKAgqSCgqaigoKUgoKmgoKCpqKCgoKUgoI=")]
+[assembly: go.GoPositionMap("net/sockoptip_windows.go", "sockoptip_windows.cs", "AAwagoKClIKCgoKmgoKC")]
+[assembly: go.GoPositionMap("net/splice_stub.go", "splice_stub.cs", "AAoWgqaC")]
+[assembly: go.GoPositionMap("net/tcpsock.go", "tcpsock.cs", "ABtA8oKUgoKokKSigpSCgpSmooKUpoKClAACJAAPAraktIKClKyyACxkwoKUqLKClIKClKiygpSCgpSqwoKUgIKkqsKClICCpAACIgAQAoKUgIKkqsKClICCpAACEPKClICCpK7igpSAgqQAAhgACwKClKaCgoLKgoKClIKCpgACFPK2pIKUgoKClAAJHvKClKrCgpSCgpSqwoKUgoKUqsKClICCpKywqMKClAACFAALAoKUgoKUAAIYAAsCtqSClIKCgpSokg==")]
+[assembly: go.GoPositionMap("net/tcpsock_posix.go", "tcpsock_posix.cs", "AA4ggpSklKaigpSClKaigpSmgqaigIKkgIKkpqKAgqSmooCCpICCpKaCprKCgpgAGDSCgpSWgpSmlIIACRaClIKCpoKAgqSAgqSmoKSCgoKUpoKmgoKClKaCpqKCgpiCgpQ=")]
+[assembly: go.GoPositionMap("net/tcpsock_windows.go", "tcpsock_windows.cs", "AAwasoKWgIKkgoCCpICCxIKkgIKm")]
+[assembly: go.GoPositionMap("net/tcpsockopt_posix.go", "tcpsockopt_posix.cs", "AAwcgoKC")]
+[assembly: go.GoPositionMap("net/tcpsockopt_windows.go", "tcpsockopt_windows.cs", "ABYugoKWgqSmgoKCpoKCloKkpoKCgqaCgqSWgoLYAAgQmK62AA4KgpSCuoKC2pKCgoI=")]
+[assembly: go.GoPositionMap("net/udpsock.go", "udpsock.cs", "ABxG8oKUgoKokKSigpSCgpSmooKUpoKClAACJAAPAraktIKClKyyAAsYgAAIFMKClKjaqMKClIKClKiSgpSUAAIQAAoCgpSCgpQAAhQADQKCgoKUqAAIAoKUgoKUqLKClIKClKiygpSCgpSosoKUgoKUgoKUAAIWAA0CgpSCgpSo4oKUgoKUpoAAAhLytqSClIKCgpQAAhgACwK2pIKUgoKClAACLgAWArakgpSCgoKU")]
+[assembly: go.GoPositionMap("net/udpsock_posix.go", "udpsock_posix.cs", "AA0egpSklKaigpSClKaigpSmgqaigoKUgoKCgraCgoKCtpSUpsKCgpSCgoKCtoKCgoK2gpSm4pSCgoKkgoKCpKaigpSClpSSgpSkkoKUpMiCgpSClpSSgpSkkoKUpMiigpSClIKClKaCgpSClpSSgpSkkoKUpMiigoKYgoKUpqKCgpiCgpSmsoKCmIKClIKAgoCCgraAgoLGpoKCgIK2gIKkgIKkpoKCgIK2gIKkgIKk")]
+[assembly: go.GoPositionMap("net/unixsock.go", "unixsock.cs", "ABg6oqaigpSmoqaCgpQAAhLilKQAChjCgpSqwoKUgIKkqsKClICCpKiygpSCgpSosoKUgoKUgpQAAhQADgKClIKClKiygpSCgpSosoKUgoKUgoKUAAISAAsCgpSCgpSmgAACEOK2pIKCgpQADBqgrvKClKrCgpSCgpSqwoKUgoKUqsKClICCpKywqMKClAACFAALAoKUgoKUrLK2pIKUgoKClKyytqSClIKCgpQ=")]
+[assembly: go.GoPositionMap("net/unixsock_posix.go", "unixsock_posix.cs", "AA0ggoKUpKSkppSClIKUgtimgoKUpoKAgqSmgoCCpKaCgIKk9oKUpKSkyIKmooKUpoKmgoKClIK2puKCgoKWlIK2pqKClIKUgpSCpqKClIKCgpSUpqKCgpiCgpSmgoKClKYADRiCgqamgoKClAACFgAIAqaygoKYgoKUpqKCgpiCgpQ=")]
+[assembly: go.GoPositionMap("net/unixsock_readmsg_other.go", "unixsock_readmsg_other.cs", "AAoW")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("net")]

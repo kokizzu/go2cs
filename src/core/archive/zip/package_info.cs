@@ -71,6 +71,20 @@ using static go.archive.zip_package;
 [assembly: GoImplicitConv<io.SectionReader, ж<io.SectionReader>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("archive/zip/reader.go", "reader.cs", "AEOaAQAJAoKClIKCgpSCgIKCpIIABRoACgKClIKCgIKkpqKCgpSC7oKUgoKAgqTMgoKCgpSClIKUtpSCgpS4goK4rLKClKaCgoKUqJIAAhAACAKCgpSqwoKClAAJFIKUpoKCgoKUgoKClNyqooKClILugqaCAAsYgqaygpSCgoKClIKUgoKUgoCCgpS27IK4gqaAqKKCgIKkgoCCpIKCgqyygoCCpIKAgqSCgoKCgoKCgoKCgoKCgoKCgoKAgqSCgpaCgpa2vAAJBoKCirKCkoKCgpSElIzCgoKUlIKCgpSUgoKClLaClIKSgoKClIKCloKCgoKCtoKUgoKkgpSC2IKCggAIFIIAChiEgpamggAKFoCCpIKCppSAgqSCggAGEtakkoKigpSCgIKkgIKCgqSCuoIACBKCgpSWgoKCgpSCqIKClpaAggAHEIKCgpKorLKCgpSCgIKkgoCCpJKUgpKUqqKCgIKmgoCCpoKCgoKCgoSmgpSUgriUpsqCgoKmgoKCpoKCgqaCgoKmgoKCABEiooKUgpSokICigKKAooCigKKApIKClKaApIKokoKEhIKWpqK4gqiEgoKCgpaAgoKkgIKCpoKWgsqCgpSmgoCCgIKUytq8goKCgpSu4oSClIKClIKUgoKUpqKCgpSCgpSClMqCgpaCgoKCgpSUgoKCpqaCgoKCgqaUgoKCppQACBKAooDUgqaCgoKUgoKUlIKCgoKUlII=")]
+[assembly: go.GoPositionMap("archive/zip/register.go", "register.cs", "ABQ8goKClJQAChDigoKClObCgoKCgoKClAAICoKCgpSUAAoQ4oKCgpTmwoKCgoKCgpQAChCCgoSCqqKAgsyigILIgoKClKaCgoKU")]
+[assembly: go.GoPositionMap("archive/zip/struct.go", "struct.cs", "AHPIApIABxCAooKClKSAooKClKSAooCigKSApIIAAhTygriCgoKUlAANIKKqgoKUrLIADSbigoKuwq7CgoIAEC6ylKSkgpSokoKWgpSCupKmgqaigpSUgpSmgoKYpKSkpKQAAhcAAhyClIKUgpSmgoKUpKSkpMi0gpSClIKU")]
+[assembly: go.GoPositionMap("archive/zip/writer.go", "writer.cs", "ACxakq7CgpSqotqigpSC2qKCgIKklIKUloKCgoKCgoKCgoKCgriChpKCgoKCgoKUgpaCgoKCgoKUlICCpICCpICCpICCtoSCgoSAgqaCgpaCgoKCgoKCgoKWgoKChICCyoKCmJKCgoKCgoKCgoCCpICCpgACGgAKAris0oKC7oKClKbaooKAgraUlAACFAAJAoCCABImgoKUtLaClgAIEgAAEOKCgoKCgoKWmLrKgpaCgoKElITKgoKUgoKClIKClIKAgraCpqKCgpSCloKCgoKCgoK4goKCuIKClIKCgIKkgIKkggACGgAMAoCCpoKEyoKAgqaCgpa4gqrCgoK4koKClIKssoKU3LKigpSClIKClIKUgoKUgoKCgpSCgpSSguiCgoKUAAgKgoKUAA8agoKUgpSC1oKClIKClICCuIKCgoSCgoKUgpamgoKe0oKUlIKCgoKClIKUggAHEIKCgu6CyoKCpoKCpoKCpoKC")]
+// </GoSourcePositionMaps>
+
 namespace go.archive;
 
 [GoPackage("zip")]

@@ -42,6 +42,17 @@ using static global::go.go.@internal.gcimporter_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/gcimporter_test.go", "gcimporter_test.cs", "ACI8goIACAz0goKUgoSCgoKWgoKCgoKClKaCgoKCgoKUggAICoKCgpSAgoKk1rSCloS4yJaCgoSChIC4goKCAA8OwoKogsyCgIKAgsiEgqiCgoKWgpSWkoKCgpS4uoKCgoSCgoKUhIKChIKClIKEgqiCgpQACBKygoKClJSmgoKCgpS2goKUAAkGwpaCloKCgpaCgoKAgqaEgoKClIKUhIKogpSCmNqClMiCuoKCpoKCgqaCpoKCloKCooIADwqCgpSWgpiSgoKCgpSEgoKCgriCgpYAHjaCloKWgoKCgpSChIKCgpaCgoKWgoKWgILe1IKCloKCqIKCgoKClIK6lICCAAgKgpaCloSCgoKClICCgoKCggANEJKWgpaCgoKCloKCgoKAkgAKCMKWgpaCgrqCgpaClpaCggALCqKWgpaCgoSWAAsGgpaCqIKCgoKYkoKCgqaCqIKCgqiCgqiC+KKWgpaChAAMHIKCgoCCAAsKgpaCltaCloKogoKAgvaCloKW1oKWgpbWgpaClqaCgoKCgpSmooKCgoLWooCCpIKC")]
+// </GoSourcePositionMaps>
+
 namespace go.go.@internal;
 
 [GoPackage("gcimporter_test")]

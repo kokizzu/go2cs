@@ -705,6 +705,13 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		log.Fatalf("Failed to find '<%s>...</%s>' section for inserting type accessibility declarations into package info file \"%s\"\n", TypeAccessibilitySection, TypeAccessibilitySection, packageInfoFileName)
 	}
 
+	// Go source position maps. Same merge semantics as every other section: a whole-package
+	// conversion rebuilds the section from this run's records alone, while a merging write (the
+	// -tests flow, single-file conversions) keeps existing records for files this conversion did
+	// not re-emit -- which is the only route production records have into a recompile-model test
+	// assembly, whose compile set excludes package_info.cs in favor of the seeded test-info file.
+	packageInfoLines = applyGoSourcePositionMaps(packageInfoLines, packageInfoFileName, mergeExisting)
+
 	// Remove trailing empty lines
 	for i := len(packageInfoLines) - 1; i >= 0; i-- {
 		if strings.TrimSpace(packageInfoLines[i]) == "" {
@@ -730,4 +737,69 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 			log.Fatalf("Failed to write to package info file \"%s\": %s\n", packageInfoFileName, err)
 		}
 	}
+}
+
+// applyGoSourcePositionMaps rewrites the <GoSourcePositionMaps> section of a package info file with
+// the records this conversion produced for that file's compilation, creating the section when the
+// file predates it.
+//
+// The section is ALWAYS emitted, populated or not, so its absence never has to be told apart from
+// its emptiness -- a package that converted nothing still says so. It is created immediately above
+// the namespace declaration, the same place package_info-template.txt carries it, so a migrated file
+// and a fresh one are byte-identical.
+func applyGoSourcePositionMaps(packageInfoLines []string, packageInfoFileName string, mergeExisting bool) []string {
+	startLineIndex := -1
+	endLineIndex := -1
+
+	for i, line := range packageInfoLines {
+		if strings.Contains(line, "<GoSourcePositionMaps>") {
+			startLineIndex = i
+			continue
+		}
+
+		if strings.Contains(line, "</GoSourcePositionMaps>") {
+			endLineIndex = i
+			break
+		}
+	}
+
+	if startLineIndex >= 0 && endLineIndex >= 0 && startLineIndex < endLineIndex {
+		section := positionMapSectionLines(packageInfoFileName, packageInfoLines[startLineIndex+1:endLineIndex], mergeExisting)
+
+		updated := make([]string, 0, len(packageInfoLines)+len(section))
+		updated = append(updated, packageInfoLines[:startLineIndex]...)
+		updated = append(updated, section...)
+		updated = append(updated, packageInfoLines[endLineIndex+1:]...)
+
+		return updated
+	}
+
+	section := positionMapSectionLines(packageInfoFileName, nil, mergeExisting)
+
+	// Not present: create it above the namespace declaration, prose first.
+	namespaceIndex := -1
+
+	for i, line := range packageInfoLines {
+		if strings.HasPrefix(strings.TrimSpace(line), "namespace ") {
+			namespaceIndex = i
+			break
+		}
+	}
+
+	if namespaceIndex < 0 {
+		// No namespace declaration to anchor to. Better to leave the file alone than to guess a
+		// position for a section whose records are only meaningful where the compiler can see them.
+		showWarning("Package info file \"%s\" has no namespace declaration; its Go source position maps were not emitted", packageInfoFileName)
+		return packageInfoLines
+	}
+
+	updated := make([]string, 0, len(packageInfoLines)+len(section)+8)
+	updated = append(updated, packageInfoLines[:namespaceIndex]...)
+	updated = append(updated, goSourcePositionMapsProseLines()...)
+	updated = append(updated, "")
+	updated = append(updated, section...)
+	updated = append(updated, "")
+	updated = append(updated, packageInfoLines[namespaceIndex:]...)
+
+	return updated
 }

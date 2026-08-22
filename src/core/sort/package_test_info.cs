@@ -34,6 +34,22 @@ using static global::go.sort_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("sort/example_keys_test.go", "example_keys_test.cs", "ABg2ksgACBSSqJKokgAPFqSGhoaqgoSChIKEgg==")]
+[assembly: go.GoPositionMap("sort/example_multi_test.go", "example_multi_test.cs", "ABo4soKqwsySqJIAAhLihJKCgpa2/AAVJMSGhoaagpaChIKEgoSC")]
+[assembly: go.GoPositionMap("sort/example_wrapper_test.go", "example_wrapper_test.cs", "AA0cgAAJEoCigAAIDIAACAyA5IIABxKCgoSCggACJgAPAoI=")]
+[assembly: go.GoPositionMap("sort/search_test.go", "search_test.cs", "AA4cggAlSoKCgoIACwqCgoKClpaEACNgspKYgoIABRCigpSmpoKCgqaCkoKAgJKClIKmggAXLIKCgsqCgoKCgoLmgoKUgpSCgriigr6ygpKCgt7agpKChJSUhIKClIKUgg==")]
+[assembly: go.GoPositionMap("sort/sort_slices_benchmark_test.go", "sort_slices_benchmark_test.cs", "ABIosoKCgpSmgoKClKaCgoKUpoKCgpSCyqKCgoKCuKKCgoKCuKKCgoKCuKKCgoKCvKKCgoKCgoKClJSmooKCgoK4ooKCgoK4ooKEgriigoSCAAwagKKAooCkgoKCgpSmgoKCgpaChIKCyqKCgoKCuKKCgoKCgg==")]
+[assembly: go.GoPositionMap("sort/sort_test.go", "sort_test.cs", "ABwwgoKCgoKCuIKCgoKCgrqSgoSCloK4goKCgoKCuIKCgoKCuIKCgoKCuIKCgoKCuIKSlpKCuKKCgpSCgpSClIKCuKKCgoKCgoKCgpSCypSCgpSCgoKmooKCgoKogoKCgoIACBKCpIKClKSCgrjGgoCCuKiC6KKCgoKUhIKCgoK4ooKCgpSEgoKCkriigoKClISCgoKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKUgoKCgoK4ooKCgpSCgoKCkriigoKCgpSCgriigoKCgpSCkriigoKCgpSCggAaPoCigoKkgoKUgqaCgoKUpqKCgpSCgpKCgoKCgoKClKSkpKSCgpSCyoKClIK2graClIK2gpSCtoKYpKK4koIAChiCAAcQgqaCpoIADh6ApIKClISClIKmgqiCpJamgqaCkoKClKaCgoKClIKCyoKCgoIACRKQooCigKaSgrqSkoKCgoKUgpSUpqKSgpSWgpSClIKCgpSCqIKCgpSCqIKUgoKClIIACAyCgoKUgpSC7IKUguiA0oDkooKUgoKCgoKCgoKClJSCgoKCgpSCAAgMgKKAooCigKKAooA=")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("sort_test")]

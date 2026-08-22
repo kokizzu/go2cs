@@ -262,7 +262,7 @@ bucketloop:
                 continue;
             }
             @unsafe.Pointer k = ((ж<@unsafe.Pointer>)(uintptr)((uintptr)add(new @unsafe.Pointer(b), dataOffset + i * 8))).Value;
-            if (k.Value != key.Value) {
+            if (k != key) {
                 continue;
             }
             insertb = b;

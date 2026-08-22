@@ -47,6 +47,22 @@ using static go.image.jpeg_package;
 [assembly: GoImplicitConv<quantIndex, huffIndex>(Inverted = true, ValueType = "nint")]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("image/jpeg/fdct.go", "fdct.cs", "AFqsAdSCgoKCgoKCgoKChIKCgoSCgoKEgoKChIKCgoKChIKCgoKCgoKCgoKCgoKEgoKCgoK4goKCgoSCgoKEgoKChIKEgoKChIKCgoKCgoKCgoKCgoKEgoKCgoI=")]
+[assembly: go.GoPositionMap("image/jpeg/huffman.go", "huffman.cs", "ACtgsoKCgoKUlIKCgpSUgqaqooKAgraCgoKCgpQACQqigoKUgIKkgoKUlIKUuoKCgoKUgpSClIKClICCuIKSgoLcgoKClIKqooKCgoKUgoKCgpSm6sKCloKAgoLKgpS2gIKCgoKmgoKCgIK2gpSCgoKUtKaCgoCCtoKCgqaCgoCCtoKCgoI=")]
+[assembly: go.GoPositionMap("image/jpeg/idct.go", "idct.cs", "ADiQAQANBIKClISCgoKCgoKCgoKogoKCgoKCgpaCgoKCgpaCgoKCgoKCgpaCgoKCgpaCgoKCgoKCqLiWgoKCgoKCgpaCgoKCgpaCgoKCgoKCgpaCgoKCgpaCgoKCgoKC")]
+[assembly: go.GoPositionMap("image/jpeg/reader.go", "reader.cs", "ABQogMqAAHP+AaKCuIKCgqaCgoKUgpQAAhDSgoKCgoK80oKAgraCgoIABhDUgoKCgoKUgpSCgpaEgoKUgoKWgoKUgoKUqrSCgpSWgoKCgoKUgIK2qKSCgpSWgoKClIKCgpSAgrYACwiSgpSUpKSk1ICCtoKUgoKCloKmgoKogoKWgpKClIKUAAEaAAMUmgAWAsaSxpIABxyUAAkCxoLGgvqClOiSgoKCgoKUgoKUlKSClIKAgqSCxoKUgoCCpIL4gpTYkoKUgIKkgqaCgpSAgqSEhIKUpoKClICCpISCgpaClAAICJKWgIKkgqiCgoKUABQqgoKCpoKUlKaCgqaSlO66gIKkgoKWlIKCgoK2gpS2gpS2gpSkgpS2pKSCtJS2gqiCgIK2gpSCgqSUlAAKFPKC3sqCgoKCgqYAChiChAAFEoKCgoKClIKCgpS4poKClKaUpoKCgoKCgoKCgoKCgqaokoLaooKAgqSU7IKClOzspoI=")]
+[assembly: go.GoPositionMap("image/jpeg/scan.go", "scan.cs", "AAkYkoKCgpaCgoKCgpS0tLS0tLS0goSCkoIAFgqSgpSClICCpIKClIqCgoKCgoKmgpTcgoKmloKAgqSCgILaggASKIKCgoKCgoKUgpSCupKCgoKUgoKCgrqCkgAEEoKCgoKCggAZNIKClIKCgoKCuoKUloKAgraCgpSCgpSClIKClIKWgqaCgoKClIKCgoKClIKClJSCgoKCgpSUgpTMlAAHEJSAgsiCuICCpICCxoKCppSUuurUgoKUgoKUgpSogoKCgoKCgpSChJSCgoKCgpSUxoKCgpSCxqaCgpSClILYgoKAgraqwoKCgoKUgpSCgpSClIKUpqamgoKCgpSCgoKCgoCC2trCgoKUgpKClJS0tLS0yIKCgoKCgqSUlKYABRgACQLKhIKCpAAJEriCloCC")]
+[assembly: go.GoPositionMap("image/jpeg/writer.go", "writer.cs", "AA4gkoKUAI4BsgKigoKCpoKSgoKCgoKU/oKiABkygoKUpoKClKaCgpSqooKCgoKCgoKUgpSokoKqooKClIKClJSCgrqSgoKCgqiSgoKCgrqSgoKCgoKCgoKClIKUgpSCpqiSgoKUlKKUgqKCgr7SlIKUkoKCgpSCgpSCpoKUqqKCgoKCgoKCgoLMsoKCgoKCgoLMsoKCgoKCgpSCgoKClIKCgoLMsoKCgoKCgpSCgoKUgoKCgs6igoKCgoKCAB5AkpS0tAAFEIKWkoKCguiCgoKCgoKCgoKklJSUgoKC2gAOHMKCgpSCgIKUtoKCgoKkqJKClKaCgoKCgqSUuIKW1oKClJSUlJSCgoKC")]
+// </GoSourcePositionMaps>
+
 namespace go.image;
 
 [GoPackage("jpeg")]

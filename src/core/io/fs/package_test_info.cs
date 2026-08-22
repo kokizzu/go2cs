@@ -57,6 +57,24 @@ using static global::go.io.fs_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("io/fs/format_test.go", "format_test.cs", "ABcugqaCpoKmgqaCpoKmgqaCADdsgrKCgsqCsoKC")]
+[assembly: go.GoPositionMap("io/fs/fs_test.go", "fs_test.cs", "AClUgoKCgg==")]
+[assembly: go.GoPositionMap("io/fs/glob_test.go", "glob_test.cs", "ABw2goKCgoKUgqaCgoKClILKgoKCgoLKpoKC/ID0goKCgrqCloI=")]
+[assembly: go.GoPositionMap("io/fs/readdir_test.go", "readdir_test.cs", "ABUkgNSCgoKCgoKUuoKWgpaCgpSCAAgGggALHgADEoKSooKCloKAgqSAkqSAguyCgoKUAAkGgoKCgoCS")]
+[assembly: go.GoPositionMap("io/fs/readfile_test.go", "readfile_test.cs", "ACREgAAKCJSCgqiCgqiCgpSCgviCgoKCgJI=")]
+[assembly: go.GoPositionMap("io/fs/stat_test.go", "stat_test.cs", "ABEegOSCgoKCgoKUuoKWgg==")]
+[assembly: go.GoPositionMap("io/fs/sub_test.go", "sub_test.cs", "ABEegAAKBIKCgoKClIKCloKCgoKUuoKWgoSCgpSCgpSCloKC")]
+[assembly: go.GoPositionMap("io/fs/walk_test.go", "walk_test.cs", "ADFiooKCuIKCkoKUpqzSgoKCpoKCgpSU5qKEgoKUgIKkhIKSgpiCgpSClIKClAAKCKKCgoCCtoKAgqSCgoKClIKUlIKUgoI=")]
+// </GoSourcePositionMaps>
+
 namespace go.io;
 
 [GoPackage("fs_test")]

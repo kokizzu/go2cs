@@ -43,6 +43,23 @@ using static global::go.math.rand.rand_test_package;
 [assembly: GoImplicitConv<statsResults, ж<statsResults>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("math/rand/v2/auto_test.go", "auto_test.cs", "AA0g2LKC3oKCgoKCgoI=")]
+[assembly: global::go.GoPositionMap("math/rand/v2/chacha8_test.go", "chacha8_test.cs", "ABYigoKCgIK4goKAgtqCgoSCgIKkpIKAgqaChIKAgqSCgIKmgoSAgqSmgoKCgoKUgpSAgraCgpSCgoCCpKSUgILIgoKCgoKUgpSCgIKkgILagoKCgoKUgpSCgIKkuKKCgoKUpqKCgoKCgoKU")]
+[assembly: global::go.GoPositionMap("math/rand/v2/example_test.go", "example_test.cs", "ABUmogAVLAAPCviWgpKSqIKWlrqCgqiCgpYABR4ADAKCAAMQxJbWgoKSlKaCgpSigpSCuIKCgg==")]
+[assembly: global::go.GoPositionMap("math/rand/v2/pcg_test.go", "pcg_test.cs", "AA0YooKCgpSmgoKqgoKCloKAgqSCloKCgriCggAVLoKAgg==")]
+[assembly: global::go.GoPositionMap("math/rand/v2/race_test.go", "race_test.cs", "AAwewpiCgoKCooKCgoKCgoKCgoKCgoKm")]
+[assembly: global::go.GoPositionMap("math/rand/v2/rand_test.go", "rand_test.cs", "ACxEgoKSlM7CgoKClIKCgpSmgoKSgoKUgoKmgoKCgoK4goKCgoKCgpSUAAMQsoKCgpSmloKClpaWqpKCuIKCgoKClIKCgoKCAAYWsoKCgpSmlpKUgoKWlpaqkoK4goKCgoIABRTygqyCgoSCgoKCgoKCgoKCgoKUpsKCrIKChIKCgoKCgoKCgoKCgpSssoKClJSCgqassoKClJSCgqamgoKAgqSAgqSAgsiCgoCCpICCpICC+IKUqtTWlLiCloKCgoLKlIKSgM7EgoKCgsqCgoKClPiSgoKClJKkgoKoggAKEIKUkJKostqCgpSChJKCgqaCgoKClIKokoKCgoIAChaCpqKCgoKUpqKCgpSmgoKCgpS4ooKClKaCgoKClLiigoKClMqigpSmooKCgpSmooKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgpSmooKCgpSmooKCgpSmooKCgpSmooKCgpSoooKCgpSmooKCgoKClJCSlKrCgoKCgtyCgoKCgqKCguimgoKCgg==")]
+[assembly: global::go.GoPositionMap("math/rand/v2/regress_test.go", "regress_test.cs", "ACM6ooKCgoKEgoKCgpSCgpSCgoKCgoKUgoKCgoKqgoKUgriCgpSClLaClIKCgoKUgpSmpqamAAJbAAJggpaCgoKUgpSCgoKUpJSUpJSCgpSClIKmpoL4woKWgpKWgoKUkpSigoKClIKCloKCgoKoloIABRoACgKCgoKClIKClIKClIKCgpSAgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.math.rand;
 
 [GoPackage("rand_test")]

@@ -40,6 +40,20 @@ using static global::go.syscall_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("syscall/exec_windows_test.go", "exec_windows_test.cs", "ABgiggAWMoKAggALCqKogpaUgoKClIKCgpSqgoKCgpSSgqqCgoKkgpSEgqaCgoKUgoKUgJI=")]
+[assembly: go.GoPositionMap("syscall/syscall_test.go", "syscall_test.cs", "AA8egoKClIKClIL4gpSqooSCgoLogoKUgoCCpII=")]
+[assembly: go.GoPositionMap("syscall/syscall_windows_test.go", "syscall_windows_test.cs", "ABgkgoSCgpSCgoKUlIKClOiCgoKUggAMCIKEgoKClISOlIKCgpSCgpaCuIIACAaigoKUgoKClIKCgoLWgoIADAiCgoKEhgADHoKCgpSCgoKCmAADFoKCgoKClIKCloKCloKCgoK4AAgMgoSCgpSCgriE1oKCgpS4ooKCgoKCgoSCgoKClJSEgpSC")]
+[assembly: go.GoPositionMap("syscall/wtf8_windows_test.go", "wtf8_windows_test.cs", "AIUBjAKCspKCgoLcgrKSgoLcooKUlIKCuIKC3KKCgpSCgoK4goK4goI=")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("syscall_test")]

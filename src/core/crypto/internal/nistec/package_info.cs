@@ -41,6 +41,22 @@ using static go.crypto.@internal.nistec_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("crypto/internal/nistec/p224.go", "p224.cs", "ABo4kgAGELKCgoKowoKCgu7ilqiCopSCgpSAgqSCgoKogpKYkoKagqKChIKCgqYACQ6CgpSokoKEgoKE1sSCgoKUrLaipqKCloKChIKCgqqmotaigpaChKy2oqaigpaCgqiCgoKo+IKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSCgoKo6IKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSCgoKo0oKCggAEFKKClIKCgrrG2IKCgrqCgqaCgoKCloKChIKCgoSCgpYABxKygoKCgoKClIKCgqbawoKUAAYQgoKCgoKCgoSCgoKWqqKCgoKClII=")]
+[assembly: go.GoPositionMap("crypto/internal/nistec/p224_sqrt.go", "p224_sqrt.cs", "ABEgAAwWgoKCgsoABToAFQKEgoKCgoKClIKCgoKUgoKClIKCgpSCgpSCgoKUgoKUloKWAAUQloKCgpSCgg==")]
+[assembly: go.GoPositionMap("crypto/internal/nistec/p256.go", "p256.cs", "ABs8kgAGELKCgoKowoKCgu7ilqiCopSCgpSAgqSCgoKogpKYkoKagqKChIKCgqYACQ6CgpSokoKEgoKE1sSCgoKUrLaipqKCloKChIKCgqqmotaigpaChKy2oqaigpaCgqiCgoKo+IKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSCgoKo6IKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSCgoKo0oKCggAEFKKClIKCgrrG2IKCgrqCgqaCgoKCloKChIKCgoSCgpYABxKygoKCgoKClIKCgqaqwoKUAAYQgoKCgoKCgoSCgoKWqqKCgoKClIKoAAEgAA8EgoKCgpSCgoKUgoKClIKCgpSCgpSCgpSCgg==")]
+[assembly: go.GoPositionMap("crypto/internal/nistec/p256_ordinv_noasm.go", "p256_ordinv_noasm.cs", "AA0Wgg==")]
+[assembly: go.GoPositionMap("crypto/internal/nistec/p384.go", "p384.cs", "ABo4kgAGELKCgoKowoKCgu7ilqiCopSCgpSAgqSCgoKogpKYkoKagqKChIKCgqYACQ6CgpSokoKEgoKE1sSCgoKUrLaipqKCloKChIKCgqqmotaigpaChKy2oqaigpaCgqiCgoKo+IKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSCgoKo6IKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSCgoKo0oKCggAEFKKClIKCgrrG2IKCgrqCgqaCgoKCloKChIKCgoSCgpYABxKygoKCgoKClIKCgqaqwoKUAAYQgoKCgoKCgoSCgoKWqqKCgoKClIKoAAEwABcCgoSCgoKCgoKUgoKCgpSCgoKUgoKUgoKCgoKUgoKClIKCgpSCgpSCgpSCgpSCgg==")]
+[assembly: go.GoPositionMap("crypto/internal/nistec/p521.go", "p521.cs", "ABo4kgAGELKCgoKowoKCgu7ilqiCopSCgpSAgqSCgoKogpKYkoKagqKChIKCgqYACQ6CgpSokoKEgoKE1sSCgoKUrLaipqKCloKChIKCgqqmotaigpaChKy2oqaigpaCgqiCgoKo+IKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSCgoKo6IKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoSCgoKo0oKCggAEFKKClIKCgrrG2IKCgrqCgqaCgoKCloKChIKCgoSCgpYABxKygoKCgoKClIKCgqaqwoKUAAYQgoKCgoKCgoSCgoKWqqKCgoKClIKoAAgSgoI=")]
+// </GoSourcePositionMaps>
+
 namespace go.crypto.@internal;
 
 [GoPackage("nistec")]

@@ -54,6 +54,18 @@ using static global::go.database.sql_test_package;
 [assembly: GoImplicitConv<global::go.database.sql_package.Rows, ж<global::go.database.sql_package.Rows>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("database/sql/example_cli_test.go", "example_cli_test.cs", "AB4mooKChIKUgpSWgqaUhIKChIKUgoSigpaE2sKClICCAAwMwoKUgoKClA==")]
+[assembly: go.GoPositionMap("database/sql/example_test.go", "example_test.cs", "ABYqooKCgpSShIKCgKakyoKCqICCpAAIBoKCgoKClLS0AAgIgoKCgpSCgpSCAAgIooIAACqCgpSUgpiAgqSUgpTKgpiAgqSUgIIACggAChSClIKAgqQADgaiAAUUgoKUlIKAggANCqIABRSCgpSUgoKUlIKAgraAggALCIKCgpSCgoKClICC+MaCgpSSgoKClIKClIIACQiCgoKUgoKCgIKklICCAAkIgoKClIKCgoCCpJSCgoCCpJSAgvi0goKUpoKCgpS0tAAICLSCgpSmgoKClLS0AAgIooKCgpSUgoKCgIKkpoCCpA==")]
+// </GoSourcePositionMaps>
+
 namespace go.database;
 
 [GoPackage("sql_test")]

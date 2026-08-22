@@ -72,6 +72,27 @@ using static go.debug.dwarf_package;
 [assembly: GoImplicitConv<unit, ж<unit>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("debug/dwarf/attr_string.go", "attr_string.cs", "/oaigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCAIABggKCgIKk")]
+[assembly: go.GoPositionMap("debug/dwarf/buf.go", "buf.cs", "ACdUgqaCpoKmotaCgoKUgoKCpoKCgpSCgoKmgKSCgoKCloKCgqaCgoKUpoKCgpSClLiCgoKUpoKCgpSq0oKCgoKCgoKmqJKCqJKCgoKU2JKUpKSkpILWsoKCgqSUpoKCggAJFII=")]
+[assembly: go.GoPositionMap("debug/dwarf/class_string.go", "class_string.cs", "/oaigoKCgoKCgoKCgoKCgoKCgoKCgu6CgpQ=")]
+[assembly: go.GoPositionMap("debug/dwarf/const.go", "const.cs", "AIUBmgKCgIKkAHuWAoKClA==")]
+[assembly: go.GoPositionMap("debug/dwarf/entry.go", "entry.cs", "ACVOwoCCpoKClJS4gpSCgqiCgoKCgoKCgpSClJSCmJKCgoKCgoKCgqaChJSClIIANm7SnKYAAhLilAACEIDSpKampqasgLKkpqampqYAAoMBggBAqAOSAAIU8oCCpKqigoKmACES0pKCgpSCgoKUAAUUjoKCgpaCgoKClJSCgpSClIKCgoKUloKCgpSUgoKWgoKClJSCgpSClJaCgoKCgoKUgpy0kpSkpKSkpIKUgp7CgqSCloKCgoKUyqSkpKikpKSkpKSkqKqogvKklIKCpJTIpKSkpKikkoKCpJSUgpSClIKClIKClJSCgoKCxoKUpKSkpKSClIKClIKUgpSewoKkgpa2goKklL6CsqSUvKykpKi4jAAMAoKkgpYAA/EDAAL4A5SCloKUgoKCgpSkgoKCtoKCgsoAEiqigoKqoqiS6qKCgoKCgpSCgoKCloKCgpSClIKCqJKCupKCgoKu4oKUgoKUgoKCgpSCgoKClIKCppSs0oLegoKWgoKWgoKClILOoqqiAAIeAA4CgoKClIKCgoKCgoKClIKUgoKUooKmlKzihISCgoKClKSCgoLKgpaCgIKmlIKClJSCgpSCgpSmgoKUgoKUpsqCgoKClJYABRAACAKCgpSCgpSCkoKCqICCooK21rKClIKCgoSCloKUqKrSgpSCgpaCgoKClIKUpoKCgoK4goSCgpSCgpSmgoKCgpSmgoKmpoKCpoKCAAgMsoSCloKCgoKU")]
+[assembly: go.GoPositionMap("debug/dwarf/line.go", "line.cs", "AHyeAvKUqIKUlIK4loKUAAcQgIK4hKrCloKCgoKUgtyUgoKUgpSCgpSUgoKUgoKUlJSCgpaClIKUgqiCgoKogpSCgIK4lIKCgoKUgpSmlLqCgoCCpMiCgoKCgoKUlIKCgoKigpSohAAKGJKCgoKClKjSgoKCgpSkgoKUlIKUgoKUlIKCgriSlLikpKSkpKSkpKSkpLaUpIKUpKTsgpasspKClIKUgoKCgpSUku6CgpSCpoKqooKUAAMUAAgCgrqCgpSCgpSCABY00oSUgoKCgpaWgoKElIKCppS0tLS02ICSgqSCpKimhJK6pqamgqampqamqKamqsK2hIKCgoKCgqqigoIADiCSrsKCgoKCqrSClpaotgAMGoIAAh4ADAIABiYADgKAgqSUgoCCpJSCuoKCgoCCgpSkgpS4gpQAAxTigqqigsqClKaCgqa4goKClJSqooKAgraUlIKUgoK4")]
+[assembly: go.GoPositionMap("debug/dwarf/open.go", "open.cs", "ACl+AAgCAA8igpSCgoKUpoKUpIK0grSmgoKUgq7CrsKClKSkpLY=")]
+[assembly: go.GoPositionMap("debug/dwarf/tag_string.go", "tag_string.cs", "/oaigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoIADiaClIKkpIKkpIKkgqQ=")]
+[assembly: go.GoPositionMap("debug/dwarf/type.go", "type.cs", "AB46gKSAAA8egKSCgpQAOHKApIAAChSCpoKClAAKEIAACBCAAF68AYKClKaCgpSmgoKClIKClIKCgpSCgoKCpoIAFCSCgoKUgoKClJSCAAwUgoKCgpSUgoKUAAcQgAAIEICkgAAJEoKClAAOILIABxCigpSCgriCgpSCABIQAAkCgIKkgpKClIKCAAYQgoKClJy0lpKC7oKCgoKUgoKUgoKClJSClIKUzJKCgpSAgtaAguiklgABFIKCgoAACAKkhpKmlIKUgoKkpqSCtpSWgoIAAx6CggALAoKUnKSkgriApLT4pKSkpAACOYIAAjyChoKCgoKCgoKCAAMmgoKClKSkpIKCgoKCgoKClIKAgqSYooKClIKCgsamgoKCgoKCgoKUgoSmlIKClIKClAAEEIKCgoCypJSkpAAEGIKCgoKCgoKCgoKCgoKClIIABRKCgoLCgpQAAxiCgoKAAAkCpIKCgpiAgsarAAIQAAMQgoKCgqyCgoKsgoKCggAMBoKWgoKCgprktpSEiLLWgoKCppKC")]
+[assembly: go.GoPositionMap("debug/dwarf/typeunit.go", "typeunit.cs", "ABs0soKCgoKCgpSCgoKClIKClJSCgpSChIKClIKCgpSWggAMGoKmqLKCgpSClpKCgoKWggAKGJKCgoKClKiSqLKClIKUgoKClKiSAAYQkg==")]
+[assembly: go.GoPositionMap("debug/dwarf/unit.go", "unit.cs", "ABc4kqaCpoLWtIKCgoKCgpSCgqaCqIKCgoKCgoKUgpSCgoKClIKCgpSCgpSUgoKClJSCgpaUpIKSlLiClIKUqtSGgpSCgpQ=")]
+// </GoSourcePositionMaps>
+
 namespace go.debug;
 
 [GoPackage("dwarf")]

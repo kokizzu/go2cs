@@ -57,6 +57,19 @@ using static go.go.build_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/build/build.go", "build.cs", "AHDsAbKAgqSokoCCpKiSgIKkqJKAgqSCqtKAgriAgtyChICCpICCpKiSgoKClIKCgpSopICCgoKUgoKUpKiSgIKmgoKUrLKCgpSCqJKCgsqUAAwalJTcsoKCgoKmgoKCpgAOEpKCgqSUgIKCppSkABwygoSCgoCCpIKChAAHEoKWhIKClJSktpKClLamgoKClABRhgKyqqIACRSCAAoWlKaCgoKUABkoABECpoKWgoKCgoKUlKSmtJKUgqS2hIKCgoKUgsqGgoKAgoKCgoK2goKCgLiCgIKCtoKAgoLcgoKC7IKWgIKkpoaugqKCgpSCgoKCgoKCgoKClJSCgpSUlIKUgoLMyoKClIKCgoKCgoKCgqaUuIKCgqaCgoKCgoKClMyCgoKCgoKCgoKmmJKCgoKUgpSUgoKClIKUloKCgoKCppaCgpQACBSClKiWgpSClpSWgoKWgoKigpSCgqiCkoKCgoKCgoKCgoKUgpSogoSCgoKUgraklKi6oqSAgqSmlIK6goKCgoKogoKCgpaCgtrugpaCgoKCgqSCpMyCgoKCgpSCgoCC3IKSgpSCgoKCgqbGgoKCtIKCgrSCgoK0goKCpoKCpoKogpSEgoKEgoK6goKUgpaClIKUpoKUpKSkpKSkpKSkpoKClIKCgoKCgqYACh4ADwiEzILegpTqgoKCpJiigoLegILKgILKgpiCgpSmgqamgoCCgoKClLaCgpSogoSClpKChIKClAAFEICCpoKClIKCpsyCgoKCpoKClIKCpq7igoKCpqa0goKoqIKWgpS0goKUlILGloKCloIABxaSgpSCtIKCgpSClIKCgoKUgsaUrOKWgoKCgoKUloKClgACEgAIAoIAHFAADwKEloKClISUloKWgpSWgoKWgoKCpoKUgoKogoKUgpaClqaCgoKUgqiSqJIABhaCgpSCggAHMgAXCIKCupSCgpS2goKCgoCClKSCgpSCgpSAgoL8AAIYAAwCgoKChIKCgoCClKSCAAkSgpSSloKClJSCloKCgoCCgoKklIKUgoKCpuis4oKiuoKCqICCuIKCqIKClpKCgoKCgqaCqIKClKKAgqSWlraUpKSkpKSkttrYhIKClIKClIKCAAIcAAsCgoKCgpSkgpSCAA8ggoKUgoCCtgAGJAARAoKCgoKCgoKUtIK0goLGgoK0goKClLSClIKUgqSUAAIQ0oKUlIKClKaCAAYiAA4CgqiClIKUgpSClIKUgpSCqIKCpoKCpoKCqAACJAAPAgAHEoKClISCgIKkgoKUlJSClAAFEKIABRLS")]
+[assembly: global::go.GoPositionMap("go/build/gc.go", "gc.cs", "AAwekg==")]
+[assembly: global::go.GoPositionMap("go/build/read.go", "read.cs", "ACRIgsqAgqQACRSCAAUSkoK8ooKCgoKmgoKklJSqooKCgoKUgoKogoKklJSCgoKUlKqigoCCpMyCgpSCppSCtoKCgraCgoKUppSCxpSCqJKCggAEEPqCgoKCgpS27IKSgpSCgoKCgpSUgoKmtoKCgpSCgoLagoKClIKCgoKClJSCgtqClIK2goKClJS2lIKCgqaClKaCgrQACAiqooKCgoKmgryigoKClIK8opSCgpSC2IKCgpSClILY3KKCgqSUAAIeAAwCgoKUlAAGFPKEgoKCgoKCgpSUqKiCuoKCgpSUgpaCqIKCloKCgoKUgoKClIKCgpSmgoKUgpaCgpS6goKUgoIACxqCgoKCgoKCgpTKgoK6rsKCgoKmrsKCgoKUkoKWgoKCgoKUgoKCgqaCtoKCgpS2goKCgpSCgoKUgoKmgtiCgoKmlA==")]
+// </GoSourcePositionMaps>
+
 namespace go.go;
 
 [GoPackage("build")]

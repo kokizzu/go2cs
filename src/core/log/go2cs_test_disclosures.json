@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestDiscard",
+      "class": "alloc-profile",
+      "signature": " allocs, want at most 1",
+      "reason": "at-most-one AllocsPerRun assert over l.Printf(\"%s\", <102400-byte string>): Go's single allocation is the variadic []any, and its `func(b []byte) []byte` closure over format/v does not escape Output, so Go's escape analysis keeps the closure off the heap entirely. The converted call must heap-allocate what Go stack-allocates — the params array, the display class the C# compiler emits for the same closure, and its delegate — measured 3 golib-site allocations per run against Go's 1, and that figure is a LOWER BOUND (go2cs's counter covers golib's sites, not compiler-emitted or BCL allocations). Same shape as bufio's TestReadStringAllocs: the count is comparable, it is WHERE the allocations live that differs"
+    }
+  ]
+}

@@ -47,6 +47,23 @@ using static go.vendor.golang.org.x.crypto.sha3_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/hashes.go", "hashes.cs", "AAwksqyyrLKssqaCpoKmgqaCrsCswKaygoKCqLKCgoKosoKCgqiygoKC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/hashes_noasm.go", "hashes_noasm.cs", "AAgSgqaCpoKmgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/keccakf.go", "keccakf.cs", "ACdSpgAMBLqCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/register.go", "register.cs", "AAsagoKCgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/sha3.go", "sha3.cs", "ACZmkKaQqLSClIKmgpKqwpiigqiCguwACAqCgoKCypSCgoKq4oKUhIKUgoKmgoKUgpaCuqjkgpaWgoKCloKoqqKCuoKCgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/shake.go", "shake.cs", "ADd6lIKCgoKmgoKUgoKmgqaCpoKCgoKCgqiygqiSgoKokqyyrLKmgqaCAAIS4oKUAAIS4oKUqJKCgqiSgoI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/shake_noasm.go", "shake_noasm.cs", "AAgSgqaC")]
+// </GoSourcePositionMaps>
+
 namespace go.vendor.golang.org.x.crypto;
 
 [GoPackage("sha3")]

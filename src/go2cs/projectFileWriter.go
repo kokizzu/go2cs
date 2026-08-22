@@ -625,6 +625,11 @@ func needToWriteFile(fileName string, fileBytes []byte) bool {
 }
 
 func (v *Visitor) writeOutputFile(outputFileName string) error {
+	// Resolve this file's position map before anything reaches disk: the sentinels the walk left
+	// in the text are only readable as C# LINE numbers now, and they must not survive into the
+	// emitted source (positionMapOperations).
+	v.finalizePositionMap(outputFileName)
+
 	outputFile, err := os.Create(outputFileName)
 
 	if err != nil {

@@ -64,6 +64,11 @@ type Options struct {
 	testProductionPath     string        // original package path retained after reference-mode self-binding is cleared
 	testProductionName     string        // original package name retained for white-box object routing
 	testExternalVariant    bool          // current variant is the external <name>_test package
+	// positionMapTarget is the package-info file this conversion's GoSourcePositionMaps
+	// records land in. It must be the info file of the COMPILATION that compiles the mapped
+	// source, because the records are assembly-scoped: production sources answer through
+	// package_info.cs, and each test variant through its own test-info anchor.
+	positionMapTarget      string
 	testInlineTypeAccess   bool          // internal bridge types carry accessibility on their source declaration
 	testFriendAssembly     bool          // production internals may be consumed by the separate test assembly
 }

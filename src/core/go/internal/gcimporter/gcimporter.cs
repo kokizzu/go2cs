@@ -55,7 +55,7 @@ internal static (@string, error) lookupGorootExport(@string pkgDir) {
         ref var listOnce = ref heap(new sync.Once(), out var ᏑlistOnce);
         @string exportPath = default!;
         ref var err = ref heap<error>(out var Ꮡerr);
-        (f, _) = ᏑexportMap.LoadOrStore(pkgDir, () => {
+        (f, _) = ᏑexportMap.LoadOrStore(pkgDir, (@string, error) () => {
             ᏑlistOnce.Do(() => {
                 var cmd = exec.Command(filepath.Join(build.Default.GOROOT, binˢ, "go"), listˢ, exportˢ, "-f", exportˢ2, pkgDir);
                 cmd.Value.Dir = build.Default.GOROOT;

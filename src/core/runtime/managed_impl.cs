@@ -66,17 +66,21 @@
 //     match Go's logical model (io's multiReader flatten tests assert exactly this); ABSOLUTE
 //     depth reflects the managed host's own frames below main. PC values are opaque
 //     process-lifetime tokens, never addresses; Frame.Function is the Go spelling (goFrameName);
-//     Frame.File/Line name the CONVERTED .cs source, the source that honestly exists. FuncForPC
+//     Frame.File/Line name the GO position the conversion recorded for that frame, and the
+//     converted `.cs` position where it recorded none (goFramePosition). FuncForPC
 //     and Frame.Func stay unimplemented/nil — a *Func has no managed referent. getcallersp
 //     itself remains an honest stub: a caller's stack pointer has no managed answer, so the
 //     chain is severed HERE, at the API boundary that does (the methodName precedent).
 //     runtime.Caller stays AUTO-converted and works through the same walk, because the funnel it
-//     calls — the lower-case `callers` — is hand-owned here too. Its `file`/`line` are therefore
-//     the converted `.cs` position, NOT the .go one: the running program's source is C#, and no
-//     Go-position map is emitted today. A caller that only needs "where am I" (log's file:line
-//     prefix, slogtest's source labels) is fully served; a test asserting the Go file's own line
-//     numbers (log's TestAll pins `(63|65)` in log_test.go) is asserting a property of the Go
-//     source tree that the converted program does not carry.
+//     calls — the lower-case `callers` — is hand-owned here too, so it reads the same positions a
+//     traceback does. The POSITION MAP is what supplies them: one `[assembly: GoPositionMap]`
+//     record per converted file, emitted into that file, carrying the Go file's identity AND its
+//     C#-line → Go-line table together. The pair is INDIVISIBLE by construction (coordinator
+//     ruling, 2026-08-21) — a Go file paired with a C# line is a position in NEITHER tree — so a
+//     frame either has a record and reports a Go position that exists, or has none and reports the
+//     converted `.cs` position, which is what golib, the BCL, the hand-owned test host and every
+//     whole-file hand-own do. Nothing composes one half from the other. `log`'s TestAll pins
+//     `(63|65)` in log_test.go and now reads them, because the conversion recorded them.
 //
 // Hand-owned: there is no managed_impl.go, so a -stdlib reconvert never regenerates this file.
 
@@ -386,10 +390,10 @@ partial class runtime_package
 
             trace.Append(goFrameName(method)).Append("()\n");
 
-            string file = goSourcePath(frame.GetFileName());
+            (string file, int line) = goFramePosition(method, frame);
 
             if (!string.IsNullOrEmpty(file))
-                trace.Append('\t').Append(file).Append(':').Append(frame.GetFileLineNumber()).Append('\n');
+                trace.Append('\t').Append(file).Append(':').Append(line).Append('\n');
         }
     }
 
@@ -521,6 +525,252 @@ partial class runtime_package
     private static string goSourcePath(string? file)
     {
         return string.IsNullOrEmpty(file) ? string.Empty : file.Replace('\\', '/');
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The POSITION MAP: a frame's GO position, when the conversion recorded one.
+    //
+    // The converter emits one [assembly: GoPositionMap] record per converted file, carrying that
+    // file's Go identity AND its C#-line to Go-line table. Both halves come from the one record,
+    // which is what makes the pair INDIVISIBLE (coordinator ruling, 2026-08-21): a Go file paired
+    // with a C# line is a position in NEITHER tree, so a frame either has a record and reports a Go
+    // position that exists, or has none and reports the honest converted .cs position it always did.
+    // Nothing here composes a file from one source and a line from another.
+    //
+    // A frame with no record is not a failure and not a gap to be filled in: golib, the BCL and the
+    // hand-owned test host are not converted Go code, and a whole-file hand-own is C# that was
+    // WRITTEN rather than converted, so no line of it corresponds to a line of Go. Each keeps its
+    // .cs position for exactly the reason goFrameName keeps its .NET name for them.
+    // ---------------------------------------------------------------------------------------------
+
+    private static readonly object s_positionMapLock = new();
+    private static readonly Dictionary<System.Reflection.Assembly, Dictionary<string, GoPositionMapRecord>> s_positionMaps = new();
+
+    // goFramePosition spells one frame's source position: the Go one the conversion recorded, or the
+    // converted C# one when it recorded none. The single funnel both consumers read, so a traceback
+    // and a runtime.Caller on the same frame can never disagree about where it is.
+    private static (string file, int line) goFramePosition(System.Reflection.MethodBase method, StackFrame frame)
+    {
+        string csPath = goSourcePath(frame.GetFileName());
+        int csLine = frame.GetFileLineNumber();
+
+        if (csPath.Length == 0)
+            return (csPath, csLine);
+
+        GoPositionMapRecord? record = goPositionMapRecord(method, csPath);
+
+        if (record is null)
+            return (csPath, csLine);
+
+        int goLine = record.GoLineFor(csLine);
+
+        // Below the file's first mapped construct there is no Go line to name, and half a position
+        // is the one answer this design does not give.
+        if (goLine <= 0)
+            return (csPath, csLine);
+
+        return (record.ResolveGoFile(csPath), goLine);
+    }
+
+    // goPositionMapRecord finds the record describing the file a frame's PDB names, reading the
+    // frame's own assembly once and caching the result. Only a program that actually inspects frames
+    // ever pays for this, and it pays once per assembly.
+    private static GoPositionMapRecord? goPositionMapRecord(System.Reflection.MethodBase method, string csPath)
+    {
+        System.Reflection.Assembly? assembly = method.DeclaringType?.Assembly ?? method.Module.Assembly;
+
+        if (assembly is null)
+            return null;
+
+        Dictionary<string, GoPositionMapRecord>? records;
+
+        lock (s_positionMapLock)
+        {
+            if (!s_positionMaps.TryGetValue(assembly, out records))
+            {
+                records = readGoPositionMaps(assembly);
+                s_positionMaps[assembly] = records;
+            }
+        }
+
+        int separator = csPath.LastIndexOf('/');
+        string csFile = separator < 0 ? csPath : csPath[(separator + 1)..];
+
+        return records.TryGetValue(csFile, out GoPositionMapRecord? record) ? record : null;
+    }
+
+    // readGoPositionMaps materializes one assembly's records, keyed by the emitted file name the PDB
+    // will report. Reflection failure is answered with an empty map rather than an exception: a
+    // traceback is diagnostic output, and it must not be the thing that takes a program down.
+    private static Dictionary<string, GoPositionMapRecord> readGoPositionMaps(System.Reflection.Assembly assembly)
+    {
+        Dictionary<string, GoPositionMapRecord> records = new(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            foreach (object attribute in assembly.GetCustomAttributes(typeof(GoPositionMapAttribute), false))
+            {
+                if (attribute is GoPositionMapAttribute map && map.CsFile.Length > 0)
+                    records[map.CsFile] = new GoPositionMapRecord(map.GoFile, map.Table);
+            }
+        }
+        catch (Exception)
+        {
+            // An assembly whose attributes cannot be read simply has no Go positions.
+        }
+
+        return records;
+    }
+
+    // One converted file's recorded position map.
+    private sealed class GoPositionMapRecord(string goFile, string table)
+    {
+        private int[]? m_csLines;
+        private int[]? m_goLines;
+        private string? m_resolvedGoFile;
+
+        // ResolveGoFile spells the recorded identity as an absolute path where the record is a bare
+        // file name, which the converter writes when the Go source sits BESIDE the C# it emitted.
+        // Rooting it against the C# file's own compile-time directory is what lets a converted user
+        // program answer the rooted path Go answers, without a machine-specific path having been
+        // baked into a committed artifact. The two other recorded forms — the GOROOT-relative form,
+        // which always carries a separator, and an already-absolute path — are reported verbatim.
+        public string ResolveGoFile(string csPath)
+        {
+            if (m_resolvedGoFile is not null)
+                return m_resolvedGoFile;
+
+            string resolved = goFile;
+
+            if (goFile.Length > 0 && goFile.IndexOf('/') < 0 && !isRootedGoPath(goFile))
+            {
+                int separator = csPath.LastIndexOf('/');
+
+                if (separator > 0)
+                    resolved = string.Concat(csPath.AsSpan(0, separator + 1), goFile);
+            }
+
+            m_resolvedGoFile = resolved;
+            return resolved;
+        }
+
+        // GoLineFor answers the Go line the given emitted C# line was converted for — a PREDECESSOR
+        // search, so a line inside a multi-line emission answers the Go statement it was emitted for,
+        // which is the same model Go's own pclntab uses. A line above the file's first mapped
+        // construct has no Go line and answers 0.
+        public int GoLineFor(int csLine)
+        {
+            decode();
+
+            int[] csLines = m_csLines!;
+
+            if (csLines.Length == 0 || csLine < csLines[0])
+                return 0;
+
+            int low = 0;
+            int high = csLines.Length - 1;
+
+            while (low < high)
+            {
+                int middle = (low + high + 1) / 2;
+
+                if (csLines[middle] <= csLine)
+                    low = middle;
+                else
+                    high = middle - 1;
+            }
+
+            return m_goLines![low];
+        }
+
+        // decode reads the delta stream described by GoPositionMapAttribute. A byte with its high bit
+        // set packs one record; a 0x00 byte introduces the varint form; no other value below 0x80 is
+        // ever emitted, so anything else means the stream is corrupt and the rest of it is dropped
+        // rather than mis-read into plausible line numbers.
+        private void decode()
+        {
+            if (m_csLines is not null)
+                return;
+
+            List<int> csLines = new();
+            List<int> goLines = new();
+
+            try
+            {
+                byte[] buffer = Convert.FromBase64String(table);
+                int index = 0;
+                int csLine = 0;
+                int goLine = 0;
+
+                while (index < buffer.Length)
+                {
+                    byte marker = buffer[index++];
+                    ulong advance;
+                    ulong zigzag;
+
+                    if ((marker & 0x80) != 0)
+                    {
+                        advance = (ulong)((marker >> 4) & 0x07);
+                        zigzag = (ulong)(marker & 0x0F);
+                    }
+                    else if (marker == 0x00)
+                    {
+                        advance = readVarint(buffer, ref index);
+                        zigzag = readVarint(buffer, ref index);
+                    }
+                    else
+                    {
+                        break;
+                    }
+
+                    csLine += (int)advance + 1;
+                    goLine += (int)((long)(zigzag >> 1) ^ -(long)(zigzag & 1));
+
+                    csLines.Add(csLine);
+                    goLines.Add(goLine);
+                }
+            }
+            catch (Exception)
+            {
+                // A table that will not decode leaves the file unmapped — its frames report the .cs
+                // position, exactly as an unrecorded file does.
+                csLines.Clear();
+                goLines.Clear();
+            }
+
+            m_goLines = goLines.ToArray();
+            m_csLines = csLines.ToArray();
+        }
+
+        private static ulong readVarint(byte[] buffer, ref int index)
+        {
+            ulong value = 0;
+            int shift = 0;
+
+            while (index < buffer.Length)
+            {
+                byte current = buffer[index++];
+                value |= (ulong)(current & 0x7F) << shift;
+
+                if ((current & 0x80) == 0)
+                    return value;
+
+                shift += 7;
+            }
+
+            return value;
+        }
+
+        // isRootedGoPath recognizes the absolute recorded form on either platform shape: a leading
+        // slash, or a Windows drive letter. Go spells every recorded path with forward slashes, so
+        // there is only ever one separator to consider.
+        private static bool isRootedGoPath(string path)
+        {
+            if (path.Length > 0 && path[0] == '/')
+                return true;
+
+            return path.Length > 1 && path[1] == ':';
+        }
     }
 
     // ReadMemStats populates m with memory allocator statistics.
@@ -809,11 +1059,13 @@ partial class runtime_package
             if (s_callerTokens.TryGetValue(key, out nuint token))
                 return token;
 
+            (string file, int line) = goFramePosition(method, frame);
+
             CallerFrameRecord record = new()
             {
                 Function = goFrameName(method),
-                File = goSourcePath(frame.GetFileName()),
-                Line = frame.GetFileLineNumber()
+                File = file,
+                Line = line
             };
 
             s_callerRecords.Add(record);

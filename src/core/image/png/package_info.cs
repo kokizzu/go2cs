@@ -48,6 +48,19 @@ using static go.image.png_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("image/png/paeth.go", "paeth.cs", "AAoUlN6oAAgQgoKCgoKCgqSUqqLSgoKCgoKCgoKCtpSUgoKC")]
+[assembly: go.GoPositionMap("image/png/reader.go", "reader.cs", "AERkgqaCAE2WAYDugAAKBIKClICCpIKClIKUgpSEgoKClIKCgqaCloKClJSk1pSk1pSk1pSkpKSk1pSkpKTWgpSC5oKCgpSCgpSClIKClNyUysTmgpSClIKClISClKSkpKaClIKClISCpoKUgoKUhIKUgoK4pAAGGAAJAoKUlICCyICCpIKClIKUgpSCgoLY0oKClJKCgoKCyIKClIKCgpSCzIKCgpSUgpSClgAICJKCggAHFJKClIK4gqaUgoKClIK2goKkgoKClIK2goKkgoKkgoKClIK2goKkgoKClIK2goKkgpSWgoKmgoSUgoKClKiCgriStoK8spSCtqS4lIKCgoKCgoKClIK4goKCgtqCgoKCgoKCgpSCuIKCgoLagoKCgoKCgoKUgriCgoKC2oKCgoKCgpSmgraCgraCooKCgoKCgoKUgoKCgoKUlKKCgoKCgoKUtoKCgoKClILIgoKCgoKUgsiCgoKCgpSCyIKCgriCpIKkgoKCgoKClKaCgsiCgoK2goKCgoKCgoKCgpSmgoKCgsiCgoKCgsqWqJKCzpSCgrSCgrSCgrSCgrSCgrSCgrSCgoKCysaCgrSCgqSSgoKCgoLKsoKCgpTWgoKUprSAgqSCgpaUgpSCpIKUgqSCgraCtpSCtIL+lIKClLSClIKkgpaSgoKClIKU1oKAgqSClNaCgoKUgpSqoriAgoKUpIKAgoKUtqqiuICCgpSmgoCCgpSmgoKmgrqClKSkpKSkpKSkpO6C")]
+[assembly: go.GoPositionMap("image/png/writer.go", "writer.cs", "AESQAZKAgqSCgoKCgriokoKUpoKClIKCgpSCgoKCgoKCgoSCgpSCgpTWgoKClJSCpIKkgqSCpIKkgqSCpIKkgqSCpIKCguaCgoKUgoKCgoKCgpSUgoIABhTigoKUquqCgoKCgoKWgoKClIKWgoKClIKCgoKmgoKogoKCgqaCgqiCgoKUgoKCgqaCgqiCgoKUgoKCgqaClqbCgoKClIKUlISElKSkpKSkpKSkpAAHEIKCgoKUlJSCgpSClISCgoKElIKUgoKUgoKCyoKSkqSUgoKCgoKCgqaCgoKCgsiCgpSCgoLKhIKCgoKCgoKCgoKmgoKClLiCgqSCgoKCgoKCgoKkAAEUAAgCgoKCgsqCgoKCgoLIgoKCgriSgoKCgoKCgriSgoKCgoKCgoKCAAcQgqaCqICCuJTYsoKUgpSUgoKUqqKUpKSkpPiAqKKCqAAICIKCloKCgpaClIKWgoKElICCpIKCpKSUppSkpIKUtoKUyoKCgpSCgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.image;
 
 [GoPackage("png")]

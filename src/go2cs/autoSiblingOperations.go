@@ -97,6 +97,8 @@ func emitAutoConversionSiblings(markedFiles []FileEntry, fset *token.FileSet, pa
 			baseName := strings.TrimSuffix(filepath.Base(fileEntry.filePath), ".go")
 			autoFileName := filepath.Join(packageOutputPath, baseName+".cs.auto")
 
+			visitor.finalizePositionMap(autoFileName)
+
 			if err := writeAutoConversionSibling(autoFileName, baseName, visitor.outputBuilder.String()); err != nil {
 				showWarning("%s", err)
 				return

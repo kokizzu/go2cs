@@ -55,6 +55,23 @@ using static go.strings_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("strings/builder.go", "builder.cs", "ABk0otykupKokKqwppKCqqKCgqzSgoKUgrzCgoKqwoKCqsKCgoKqwoKC")]
+[assembly: go.GoPositionMap("strings/clone.go", "clone.cs", "AAoqAAoC")]
+[assembly: go.GoPositionMap("strings/compare.go", "compare.cs", "AAoe4g==")]
+[assembly: go.GoPositionMap("strings/reader.go", "reader.cs", "ABYyooKUrsCmwoKUgoKC2NSClIKUgoKUqJKCgpSCgtiSgpSCgqjSgoKUgoCCgqSCguiSgpSClIKC6JKCgpSkpKSkgpSCqMKCgpSCgoKUgoKClKiQqKA=")]
+[assembly: go.GoPositionMap("strings/replace.go", "replace.cs", "ABlAAAgCgpSmgoKmgoKCloKCgpSCqIKSgriCgoKUlraCgpS4lJaosoKosoIANG6igoKClJaEkoKCpoKqsoKUyoKCgoKCgqa4goLIgoKUlIKCuPaCgoKCgoKCgpaClIKCgpSCgqSCgpSmAA0cgpSCgoKogpaCgoKUgriEgpTMkoKokoLugqaCgoKUpoKSgqbCgpKClIKCgoK6goKCgoKClIKCgpSCgpSUgoKUAAoWgqaCgpKCgoKUgoKCgpSClIKmsoKSgoKClIKCgpSCgoKUlIKCAAQQgoKCgoKClKaClKaigoKCgoKUgoKCgqaCgoKCpoKCgoKmABcwgoKUgoKAlILKgoKUgriClIKCgoKClIKmprKCgoKCgpSCgoKCpoKCgoKmgoKClA==")]
+[assembly: go.GoPositionMap("strings/search.go", "search.cs", "AC5ggsqogsqCzIKCgqamgoKUqKaigoKmqqKClIKCgpSClJQ=")]
+[assembly: go.GoPositionMap("strings/strings.go", "strings.cs", "ABQssoKClIKCgoKUgpSqtIKUgpSCgoKClIK6kqiSqJKokqiSgpSkpIKUpLaCgoKClIKUgoKCgoKmqJKuwpSkgoKmpKTMopSUlIKClJSCgIKCgqa2goKmrLKUlIKCgpSClJSCgIKCgqa2goKClIKCgoKmlIKCgoKmqJKqooKUgpSCloKUgoKCgoKClIKClIIAAh4ADAAAAhgACgIAAh4ADAAAAhgACgIABBDWgpSCgoKCgoKWlKaCgoKUgpSCgoKClIKClIKUlJKUAAkS5gAEFIKCgoK4poLMgqiCgpaqopSkpoKCgpSUgoKUloKCgoKClKiSqJKs7qSigoKWgoKCgqaWgoKCloKokpaChLiCproAEDjClKTcgpSClISCqJSUpKSkpAAFHAAKAoKCgoKogoKCgoKClIKUlKiSgoKCgoKUlpKClJiCgoKCgoKUgqaClJSokoKCgoKClJaSgpSYgoKCgoKClIKmgpSUqqCooqqiqqKqooSCgpaCgoKCgrqSloKCgoKCgoKUgoKCgoKUlIKClqq0gpSkpKSkpoKmAAIQAAgIgpSCgpSCzqKCgpSqooKCgpSUqqKqoqqirLKCgqassoKCgoKmAAQewoKCgpSUqJKqooKUgpSAkqSuwoKUgpSAkqSmgoKUpqKCgpSUpoKCkoKUgpSUrsKClIKUgJKkpoKClKaigoKUlKaCgpKClIKUlKq0goKCppSCuoKCgpSUgt6qoqqiAAIS4oKogIKkqJKCgoKCgoKCppSCgpSCAAIQ0qzEgoKCgoKogqiCpoKUpoSCgoK0gpiSgpSCvIKogqaUgpS6goKUgpSoqJKuwq7CrsI=")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("strings")]

@@ -28,6 +28,18 @@ using static global::go.crypto.@internal.edwards25519.field_internal_test_packag
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_alias_test.go", "fe_alias_test.cs", "AAwYgqK2gIK4gIK4uIKyxoCCuIKAgraCgIK4gIK4goCCtoKAgraCgIK4AAkcAAoCABAwggALIIKUtLSC")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_test.go", "fe_test.cs", "ABcogqqigoKUpqKCAClWogAIEqKClKrCroLEgoKWgoKCgoSWgILIgoKCgoKWgoKCgpaCgoKCgoKCggAJCIKiqISUgIKmorqCgpSAgqgACR6ygoKCyoKClKaCsoSCgoSCloKElICCyrKCloKigoKUgqiCpoKCgpSokoSCgoKClIKopoKCgIIABBL+0oKUgoKEgpaEgoKUhIKEgriCkpSCgpaCgriCkoKUgoKEgpaEgoKUhIKChIKWkoKAgqTIgpKUlIKEgpaEgpaEgriCkoKCloKEgoKWloCCAAsIhAAnXIKCgoKCgsqCkoKEgoSClpaAgqaCuIKCkpSChIKWloCCyIKCkpKSlIKEgoKWmICCyIKCgpQ=")]
+// </GoSourcePositionMaps>
+
 namespace go.crypto.@internal.edwards25519;
 
 [GoPackage("field")]

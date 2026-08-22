@@ -20,6 +20,21 @@ using static go.go.parser_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/parser/error_test.go", "error_test.cs", "ACtSsoKCgpSUlKaCgIKkAAoaooS4goKEgoKkpIKCgqSUlMiSlLSCgoKUlN6igqaCgJSCgoKUgIKCttzKgoKCyoKCgoKCloKCkoKClISCpqjmgoKClIKCkoKCgpQ=")]
+[assembly: global::go.GoPositionMap("go/parser/parser_test.go", "parser_test.cs", "ABgugoKCgsqClKSkpoDUgoKCguiCgoKC6IKCgoKUgIKkgoKClICCpIKC+oKCgoL4poKCgqaAgriCgoKmgIK4goKClIKUgIK4goCCuIKAgqSCgIKokoKCgoCCyoLogoKCqIKCgoKmgoKC+oKCgqiCgoKCpoKCyqIAAhKCgpYADBaSgIKCgoKUlIKUgoK2AAgIggAALoKWABIqkoKClISCAAgIggAAJIKUAAcQgpSCgoKClIKCgtyigoKAgoKAgoCCgoKCAAsSqLKCgoKmpoKCgpSAgqSAggAaCIIAACSClIKCgoKCgoSCgoKC+pIACxiCgoKWkpKUtLaSloKAkoKClMYACQqCAAIWgoKCqICStoCS/rLYgoKCgpaCgpaCgoCCpJSCgpSCgoL6gqaCgoKUgoIAWYwBopKClNaCgpSygpKCgpTcloKCgpSUhIKCgoKmgoIAChCCsoKUgpKCgpTcloKCgpSUhIKCgoKmgoIAChKSAAYQgoKCgpaSlIKCtsySzIKCgvqCgoKCloKCgpSCggAIDIKCgoKCuqiCgoI=")]
+[assembly: global::go.GoPositionMap("go/parser/performance_test.go", "performance_test.cs", "ABAegoKClKaigoKAgtqigoKAgtqigoKCgoKClIKC")]
+[assembly: global::go.GoPositionMap("go/parser/resolver_test.go", "resolver_test.cs", "ABk8AAwCgoKCloKSgoKCgoKCvIKChJKmgpSCgIKkpoIABRCigqSAgqSUrLKElIKCgpSCpq7ygoKCgoSCgoKkpIKCgoCCpJSCypKUpNamwoKUhIKClLS0guY=")]
+[assembly: global::go.GoPositionMap("go/parser/short_test.go", "short_test.cs", "AHTuAYKCupKCAEWiAYKC")]
+// </GoSourcePositionMaps>
+
 namespace go.go;
 
 [GoPackage("parser")]

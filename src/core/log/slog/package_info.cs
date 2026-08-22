@@ -65,6 +65,24 @@ using static go.log.slog_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("log/slog/attr.go", "attr.cs", "ABAkkqiSqqKokqiSqJKqoqiSAAIUAAkCpoKYgoKUqqKokqaCqqI=")]
+[assembly: go.GoPositionMap("log/slog/handler.go", "handler.cs", "AFu+AYLcgqwACAKCgoKCkoKC1oKmggBCmAGUAAscwoKClKbmgpSUkoKCgIKCgsiCgoKmppTWgoKCqvKSgoKmgoKUgoKCgoKUuIKCgoKUpoKUgoKCgpSUgoKEgoKC1sSAgoKCgoLsgoLKgoKCgoKClJSCgqaUgqa6koKUAA8ggsai7oKClKaCgpSAgoKkpoKCAAYSooKCgpSCpoK6koKUpIKCvKKCgoKmrNKCgIKCgqaUtoKmgIKAgoKU2IKUypSClIKClIK4gpSmgqaCgpSUlIKUlKaCgoKCpoKU+sKSgNyAkoK4uIKClJSC6KKClLiKwoKCgoI=")]
+[assembly: go.GoPositionMap("log/slog/json_handler.go", "json_handler.cs", "ABw80oKUAAkYoqqipoIAAkIAIALYsoCmpIKCpqKUpKSqgLLGprSkgoKAgpTGpKakkoKCgIKkgoIABxDSgJKAlIKCgIKCgpSClIKUtLS0toKCxIKCpIKCgpSCgoIACBKCgpSCgoKClJSClA==")]
+[assembly: go.GoPositionMap("log/slog/level.go", "level.cs", "ADZ2AAkCgoKUlpSkpKTM2AACENKCgpSqogACENLW0oKCqIKCgIKCgoK2lKSkpKSkguqgAAsYkqiSpoKqoqqigoCCpII=")]
+[assembly: go.GoPositionMap("log/slog/logger.go", "logger.cs", "ABpWABgCgoKmgqiQrvLugIKSggAMGIKCgpSChJKCqIKClIIADBqCkqiQquKClIKCAAISAAgCgpSCgqiSgpSosqiSgpSssgACGgAMAqiyqLKosqiyqLKosqiyqLKosqzSgpSCgpSClIKCgpSosoKUgoKUgpSCgoKUqLKosqiyqLKosqiyqLKosqiyqLI=")]
+[assembly: go.GoPositionMap("log/slog/record.go", "record.cs", "AC900gAHFtKCqLKqwoKCpoKCAAgOwoKCgoKUgriCgpSCpoKCgoIABBDSgoKCgpSCgpSClMySgoKCgIK2AAQW4pSClKa2ABcowoKClIKUgpSu4oKC")]
+[assembly: go.GoPositionMap("log/slog/text_handler.go", "text_handler.cs", "ABs40oKUAAkYoqqipoIAAk4AJgKmopSkpICCgoKmgqSAlIKkpKSssoCCtoKClKaCgpSCgqaClIKUgoKUlA==")]
+[assembly: go.GoPositionMap("log/slog/value.go", "value.cs", "AEmWAYKClAAEEJKUpMSkpKS0vsKokqiSqJKokqiSgoKUAAYcosqUgoKUuKiSqviAgoKCgqakqJKCgoKmAAIkAA8ClKSkpKSkpKSkpKSkpKSkpKSkpKS0vrKUgIKkpKSkpKSkpKSkpM6ygIKkgqaCqqKAkqSqooCSpKqigJKkpoKqooCSpqaCqqKAkqamgqqigJKkqJKUgpSktMyiqqKAgqSmgqyygoKClJSkpKSkpKTKkoLKqqKUpKSkpKSkpKSkAA4qAAoCgoKAgriCgpSUggAJBoKCgoKUgoKCgoKCgpSCgoKm")]
+// </GoSourcePositionMaps>
+
 namespace go.log;
 
 [GoPackage("slog")]

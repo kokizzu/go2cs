@@ -161,7 +161,7 @@ partial class runtime_package {
 internal static void typedmemmove(ж<abi.Type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src) {
     ref var typ = ref Ꮡtyp.DerefOrNull();
 
-    if (dst.Value == src.Value) {
+    if (dst == src) {
         return;
     }
     if (writeBarrier.enabled && typ.Pointers()) {
@@ -320,7 +320,7 @@ internal static nint typedslicecopy(ж<_type> Ꮡtyp, @unsafe.Pointer dstPtr, ni
     if (goexperiment.CgoCheck2) {
         cgoCheckSliceCopy(Ꮡtyp, dstPtr, srcPtr, n);
     }
-    if (dstPtr.Value == srcPtr.Value) {
+    if (dstPtr == srcPtr) {
         return n;
     }
     // Note: No point in checking typ.PtrBytes here:

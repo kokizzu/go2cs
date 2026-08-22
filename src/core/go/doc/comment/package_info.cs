@@ -53,6 +53,21 @@ using static go.go.doc.comment_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/doc/comment/html.go", "html.cs", "ABIqwoKCgpT4sqS2gpSCtoKCgoCCgoKkgoKCgraCgraCgpSCgoKCgoCCgoKCgpSkgoKClJSCzKKCgoKClJTYsoKUtIKCtIKCgoK0goKCgpSCggALEtKCgpSCgrSCgrSCgrSCgrSCgsY=")]
+[assembly: global::go.GoPositionMap("go/doc/comment/markdown.go", "markdown.cs", "ABMs0rqCgoKUlKjCpLaCtoKCgIKCgqS2goKCgoKClMiCgoKUgIKCgpSkgoKClILuwoKCgoKUlrSCkpSUgoLGrNKClLSCgrSCgoKCtIKClIKCgoKCggAGEtKCgp6CgoIAAxCCgoIADwY=")]
+[assembly: global::go.GoPositionMap("go/doc/comment/parse.go", "parse.cs", "ACdSABs6AAIS8gACEuKClILKpgASKAAKFAAKFsoACRIAEiYAOYwBAAsCkoKUlJSAgramgoIAAhYACAKClKrCgu6CmqKCgpikpKSkAAITAAIYgpSogpS0goKC3AATLoIABxKEgoKClIKUgpSAgqaCgoLugoKCgpSogoIADiCCloKUuIKClAAJFoKcgoLCAAQQgvaCgrqCpJSograqoq7UgpSClIKogoKCqIKigoKUlIKUgpSokqiSgoKUqJKCgpSqooKWloKCqIKCqIKogoKAgqSCuoKCgIKkgqiokqiSrpKokoKCqqSSgoKClJSCgoKmgoQAAhDSgpSCgpaSkoKC3qqigqqCgoCCtpaigKSEgoKkgoKCgpSUgq7ygoKogIKkgoKUgpSUpoKWrLKCAAIaAAwCgoKCgoKogoKCgoKUlLSCgIKCgriigoKCgsaCtIKoggACEgAJAoKCgqaCgoKmgqKCgpSCgIK2gIK2yqzigoKClIKUAAIS4oKCgoKUkoKCgqaCgoKAktyCgoKkgIKSgoKUgoKUlIKCtpSUgoKUlIKCgrSCgoK0xoIAAhDYspSktLS0tKSCqIK6goKUgoKCgpSUAAcSgoKCgoKUgpSUtLS0gpS0gsissgABEKTaqgAFGKyqAAQQ2poABTCqkoKClIIAAhDkgoKAgoKClKSCgoKUlNia3KyigpSClIKUgpSClIKCgoKUpqaCgpSCgqbWigAFFA==")]
+[assembly: global::go.GoPositionMap("go/doc/comment/print.go", "print.cs", "ADN0goKUpqKClKaigpQAAioAEgKCgoKUlJSkpLaClAAFFPaigoKCgpSCgoKClKYABhLCgoKCgpQABhCCgoKCgoKClIKCgoK6qqKAgqSosqS2graCgraCgoKCgoKUyIKCgpSCgpSClIKCgpSC7rKClLS0gpSCgsaCgt7CgoKCgoKU")]
+[assembly: global::go.GoPositionMap("go/doc/comment/text.go", "text.cs", "ABg00tyClIKWgoKCgpSUgoKCgqaCgoKCuKrUgoKClIKUqMKktoK2goK2goKCgoKClMiCgoKClIKCgpSClIKCgoKClO7CgoKEgoKUlIKCgpSCgpSUvrKClLS0tAAMKAAsPoqClKSkpKS6goKCqLSCgt6CgoKUzJKksqKClIKUqIKCgoKCgoKClIKUgriCuJaCgpSCgoKUqJKUpA==")]
+// </GoSourcePositionMaps>
+
 namespace go.go.doc;
 
 [GoPackage("comment")]

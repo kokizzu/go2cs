@@ -68,6 +68,21 @@ using static go.go.@internal.gcimporter_package;
 [assembly: GoImplicitConv<readerDict, ж<readerDict>>]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/exportdata.go", "exportdata.cs", "AA4i1IKCgqaClIKCgoKUggAFEAALBIKCgpaEkoCCuIKCuoCCgtyCgpSogoCCgqSUhA==")]
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/gcimporter.go", "gcimporter.cs", "ACxM8oKCqoKCgoKCgoKCgIKkloKCgpaWqAAHEgAIAoKWgpiAsqSCgoKCgoKUgqaUlLiSvILmkoK6goKCgpSCqIKClKzygoKmgpSWgIKkgoKUlIKCgoKUqICCuJKClIKUppSUgoKClpSmgoCCpIyUwoKCgILEgqSChIK0tNim")]
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/iimport.go", "iimport.cs", "ACA+goKClKaCgoKUACZUAAsCgoKCgIKClMqEgramgoSCloKClIKEABIqhIK4hIKCgoKChIKUgoKCpJaEgoKCloKWhIKClIKCAAYQgpaCqIKGloIAHDq0gIKmgoKWgoSmgoCCpoKClIKCgqaCgIKkgoKmooCCpoKWgoKEgpQAAhLigpSCgqYACxiigoSUhLaEtoKClIK6ooaCooKWgoSCgoKCuoKCgoKCpoQABRCymIKihqKEgoKUgoKCgpSc9oS22IKmwoKUloCkpqaCgqamgoKmgramwoKWlKSmgpSkpKSmpqKEgoKUgpaCgoKCgoKmgpaCgpSClIKCgoK4goKCgoKClKaCpoKCgqaigpSWgpSmooKCooKUgsiigoKCgoKCyqKmgoKmoKKgpKKArIKCpKSkgqSCpKSCpoSCgoKCgoKChIKUpoSCgoKWgoKCiKKCloKWgoKmgpSCgoCUppKmgpiCgoKilIiypoKUgoKUAALbAYIABeIBgqaCgoKCpoKCgpSCgpSmgoKClKaigoKCpoKmgoKClKaCgoKUpoKCgpSmlICCtoIABBDEgoKUgoKU")]
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/support.go", "support.cs", "ABEigoK4ogAUKt6CgoKWgpSCqKaCgoKCpoIABxKUlKSkpLIAFXSAooAADh6SgoKUgoKClA==")]
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/ureader.go", "ureader.cs", "ACVUkqriAAwehIKChKaCgoKWhIKWgpiSgoKmhoSCABs6gtyC3IKqsoKCqIKCgqaipqKAgqaCgs6ExoKClrSUgoKqsoKmxoCCpoKCpqKClKSkpoCCpoSChKqypoKCgpSmsoKCgoKUloCCpoKCgoSCgqaAgqaCpqKArKaCgoKClKamgqSCpKSkpKSkpAACSYIABVCCgoKCgoKCgoSCgoKUpqaCgoKUpqKCgoSCgoKCloKWgoIACBSEpoKEgoKEpoKEgoKWpoKEgoKEqrKEhIKEgoKWpqSCgoKChIKEgpaCgqiAgqaChIKEkpaagoKmgoKCpoKCgqaEgoKEhIqAsoKCgoSCloKCloKCpoSCuIKCAAJ7AAOEAaakhIKCgIKmgoKWgoKClqimos6CAAUQgoKChIKWgoIADR6CooKopoKCgoSChIKmgKKAooCkgoKuwoKU2LaUgoKk")]
+// </GoSourcePositionMaps>
+
 namespace go.go.@internal;
 
 [GoPackage("gcimporter")]

@@ -74,6 +74,19 @@ using static global::go.io_test_package;
 [assembly: GoImplicitConv<dataAndErrorBuffer, ж<dataAndErrorBuffer>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("io/io_test.go", "io_test.cs", "AB44koKCgoKC6IKCgoKCgpaCgriCgoKCgoK4goKCgoKCuIKCgoKCgriCgoKCgoIACRSCgqyygoKCgoKkAAcQgu6C7LKCgoKCuIKCgoKCgriCgoKCgoK4goKCgoKCuKKCgoKEgoK4ooKCgoSCggAHEIIACAqC1qiEgoKWgoKWgoKWgoKWgoKWgoK4goIACRSygoKUpoKCgqaCgoKmgoKCgoKUgpSCgpSClIKClIKUgoKUgpSCgoKAgqSClIK4goKCgoKCgIKkgpSClICCpIKCgoKAggARCIKCAA0sgoKCgoCCpICC2pSChIKCgoKC3oKCloKCAAgIggADEIKCgoCCAAgKgoKCgoKClIKClICCAAoUgtaCgoKCgoCCpoKCgoKAggAOCKIAAxSEgoKCABAKooKCgpSSlpKCgoKC3pKCgoKCAAYQkgAIGoKCggAMDoKCgoKClqKCgoKUlIKUgoKihIKCgpTWloKCgpSCguiCgsqigoKCgpSmlIKCgoIACwiCgoKEgoKCgpSUlIKCgpSCgrqCguaCkoKCgqaogoKSguqCwoKSgg==")]
+[assembly: go.GoPositionMap("io/multi_test.go", "multi_test.cs", "ABkmgoKCgoKCgoKCgpSCgoKCpoKCpoKmlJKCgoKUkoKCgpSSuILegoKUgoKClIKUgIIACQiClKyC+qKSiJKUgvyCgqaC1oKCgoKCAA0IiIKEgoKEgpaCloKCloLegqiygoKCgqKCgpaUgpaChJLKgoaCgpSCgoLqkoKCgoKCupKCgoKCgoKUgt6CqLKCgoKClNiygoKCgqKCgqiCloSSAAYSgqaUgqiSgoKUgoK+soKCgoLoooK4koKCgpKogoCCpoLmpoCCyIKChIKEqIKAgsqCgII=")]
+[assembly: go.GoPositionMap("io/pipe_test.go", "pipe_test.cs", "ABEigoKClIKUqJKCgoKCgoKklIKCpoKCgoKCgpSClLqSgoKCgoKCgoKUgpSCgqaCgoIACBSSgoKmgoKCgoKUgoKCgoKCqIKCpIKCpoKUlIKClIKUgoIAESSCAAsYgoKCgpSUgpSmgrKCgoKUlIKCgoKClIKUgpSAgtySgoKCgoKC7JKygoKClJSCgoKClIKUgpSAgtySgoKCgoKCuIKCkoKUgoKmgoKSgpSCgqaigpKCgqKCgpSCgpaCgoKClIKEgpSCAA4IgoiCgIKkgoCCpoKCgIKkgoCC+IKsgoSCkoKAgsqCgoCC3IKCgqiChIKCooKCgIKkqIKAgtyCgpSCgoKCyoKCgoKUggAFEIKCuoKC")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("io_test")]

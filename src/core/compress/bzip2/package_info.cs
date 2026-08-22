@@ -44,6 +44,20 @@ using static go.compress.bzip2_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("compress/bzip2/bit_reader.go", "bit_reader.cs", "ABUyooKClKzSgoKClIKClIKCAA8igoKmgoKmgoKmgg==")]
+[assembly: go.GoPositionMap("compress/bzip2/bzip2.go", "bzip2.cs", "AA0mwgAVNLKCggANELKEgoKCqIKCloKCloKCgpSmwoKWgoKCgpSClJaCgoKUpu6CAAcUgoKCgoKUloKCgoSCgoKWgpSUhIKWAAgGooKCgoKogoKogpyCkrqCkpSCgpyylIKCgoKUgoKUgoKClIKUgpSAggAEXwATbsKCgoKCgoKUuoKCgoKCgoKCgsyUqIKCuoKogoKCgoKClJSClLqCgoKCgqaEgpaClIKCgoKUgpSClKaUgoKogoKUgpSCyoKWhIKCgoKUgpSCgpaChJSClIKogpSWpoKUgoKCgpSWuAAHEoKClIKCloK6goKCgoKEAAIaAAoCgoKCloKCgpYABhCCgoKCgoKUpryigoKU")]
+[assembly: go.GoPositionMap("compress/bzip2/huffman.go", "huffman.cs", "ACNO0oSChIKUgsq6hIKUlqaCgpSUzgAJEoKWqIKCgpaCgIKk3oKEgoKClIKCprqIgoIAEybyloKCgoKogoQACxqCzMqWgpSWgoKElIKUloKWlIKUlg==")]
+[assembly: go.GoPositionMap("compress/bzip2/move_to_front.go", "move_to_front.cs", "AAkkooKUqqKCloKClKbqgoKCqJI=")]
+// </GoSourcePositionMaps>
+
 namespace go.compress;
 
 [GoPackage("bzip2")]

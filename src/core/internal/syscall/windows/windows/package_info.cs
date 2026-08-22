@@ -45,6 +45,22 @@ using static go.@internal.syscall.windows_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/syscall/windows/net_windows.go", "net_windows.cs", "AAocuA==")]
+[assembly: go.GoPositionMap("internal/syscall/windows/reparse_windows.go", "reparse_windows.cs", "AD+EAZKCggATKpKCgg==")]
+[assembly: go.GoPositionMap("internal/syscall/windows/security_windows.go", "security_windows.cs", "ACNcsoKUppSUAA0eggAxeg==")]
+[assembly: go.GoPositionMap("internal/syscall/windows/syscall_windows.go", "syscall_windows.cs", "ABEqwoKUgoKCgpQA3AHcA6KigoKClIKC7oKUAAoQpoKCgpSCgoKUpqaCgoKUgoKClKYAEiyCgoKUgoKUACdkkgA4hgGygoKCgpSClJSszA==")]
+[assembly: go.GoPositionMap("internal/syscall/windows/version_windows.go", "version_windows.cs", "ABY60pKCggALFIKEgoKCgpSCgoKUgoLaooKqooKssoL+ggAJDoaChIKCgpSCgqY=")]
+[assembly: go.GoPositionMap("internal/syscall/windows/zsyscall_windows.go", "zsyscall_windows.cs", "ABM0opSk2gA3drKCgpSCgoKUpqKCgpSmooKClKaigoKUprKCgoKUprKCgoKUpqKCgpSCgpSmooKClKaigoKUpqKCgpSmooKClIKClKaigoKUprKCgoKUpqKCgqaigoKUpqKCgqaygoKClKaigoKUprKCgoKUprKCgoKUprKCgoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUprKCgoKUpqKCgqaigoKmooKClKaigoKUpqKCgpQABBaigoKUpqKCgpSmgoKmooKClKaigoKUgoKUpqKCgpSmooKClAAEHrKCgoKU")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal.syscall;
 
 [GoPackage("windows")]

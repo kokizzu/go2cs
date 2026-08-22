@@ -600,7 +600,7 @@ break_bucketloop:;
 
 internal static @unsafe.Pointer mapaccess1_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key, @unsafe.Pointer zero) {
     @unsafe.Pointer e = (uintptr)mapaccess1(Ꮡt, Ꮡh, key);
-    if (e.Value == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
+    if (e == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
         return zero;
     }
     return e;
@@ -608,7 +608,7 @@ internal static @unsafe.Pointer mapaccess1_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, 
 
 internal static (@unsafe.Pointer, bool) mapaccess2_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key, @unsafe.Pointer zero) {
     @unsafe.Pointer e = (uintptr)mapaccess1(Ꮡt, Ꮡh, key);
-    if (e.Value == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
+    if (e == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
         return (zero, false);
     }
     return (e, true);

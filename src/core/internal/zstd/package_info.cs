@@ -42,6 +42,24 @@ using static go.@internal.zstd_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/zstd/bits.go", "bits.cs", "ABU0kgAGEqKCgpSCgoKUqJKCgoKokoKCupIADyDSgoKUAAcQqJKCloKCrLKCgpSCgoKClKiS")]
+[assembly: go.GoPositionMap("internal/zstd/block.go", "block.cs", "AA8i0oK4gpaAgqaCgoSCgpSEhIKClpSCloSWADFo0oKWgoKCloKCpIKUgpSClIKqgpSCgpSYgoKCloKCloKCltzSgpaCgqiilIKI/oKUgoCCpoKCqJKUhIKClISClISAgqaCgqiSlKT4xpKCloKCloKCloKCqoKCgpaCgoSCgpSEgoKUhIKClKiCgoKUgpSUtIKCtIKCgrSCgoLIgpSCgpSEgoKUhIKClKqCqIKUgoKWgoCCyoSCluiyggAGEIKCgoKCgpSCgpSClLqCgoKUgpQ=")]
+[assembly: go.GoPositionMap("internal/zstd/fse.go", "fse.cs", "ABcwAAgCgoCCpoKCurqWlpaEhIKAgqa4goKCgoKAgraCgoKCgILehIKWgpaCloKClIKCpoKClIKWgoKUlIKUgoSEgoKogpaCloSAgqbssoKEhIKClIKCqIKCgoKCgoKCuIKWgoKChIKWhIKClgAuXJKCuIKClIKUgoKClJTYkoK4ggASKoKClIKUAB9EkoK4goKUgpSCgoKUlA==")]
+[assembly: go.GoPositionMap("internal/zstd/huff.go", "huff.cs", "ABQuAAsCgpaChIKClIKUgoKUhIKWgoKWgoKWgoK8goKCgpSCgoKWgoKUhIKWgoSEgoKUgoKCloKClISCloKWqIKClIKCgoK8goKCgpSCgqaCloKCloK6goKUgoKUgpSCgoSCzIKCgoKWgoKUgoKCgpSW")]
+[assembly: go.GoPositionMap("internal/zstd/literals.go", "literals.cs", "AAoc0oKogoSClAAIDKKEgpS0gpSCtIKUguyClpSClIKmgpSCgoKo6sKqlIKUgoKCgpTGgpSCgoK0gpSCgoLsgpaCgpaCqIKWgoKUhIKUgriCzoKClJaCltjWgoKWgoKEgoKWgoKCgpbq5oKUgtyCgpaCgoKEgoKUhIKChIKEgoSCqpKClpKClpKClpKCloKCgoSEhIKChIKEkoKUgpaCgpaCgpaCgpaCgoKUgoKWgoKEgoKEgoKW")]
+[assembly: go.GoPositionMap("internal/zstd/window.go", "window.cs", "ABQqkoKClIKCqJKokoKUgpaCgoKCqIKCgoKUpoKUgs6igoKEgoKClIKCloKClA==")]
+[assembly: go.GoPositionMap("internal/zstd/xxhash.go", "xxhash.cs", "ABo8opaChIKWgoSClKiShIKCgpaCgoKCgoKCloKCgoKCloKCupKCgpSIgoKCloSCgoKCgoKCgpSCgoKClIKCgoKWgoKCgoSokoKCgqiSgoKC")]
+[assembly: go.GoPositionMap("internal/zstd/zstd.go", "zstd.cs", "AEawAZKCgqqiqIKCgoKCgoIAAiIAEQKAgqSCgqiygIKkgoKosoKAgqSUqLKCgIK2AAgIkoKWgJSClKaAgpSCgIKkgpamloCCpISEgoKWgoKUloKWgoKogoCCpoSEgIKqopSCgoKCgoKWgrqClIKCzIKCgpS0tLS0tOyCmJKCloSCgpaCgoKCgoKChKiShICCpoSCgoKWgIKmgoKUgoKUgoKogoKUgqaCgoKClICCpIKUgoKUgIKkloQACAiyloCCpoSEgoK6gqiUgoCCpIK0goCCpIKCgpS0goCCpLSmgoKUloKWgpSCpoKAgqaCgoKWlJaqooKClAAIEoKmgqaCpoKClKaCpoKClA==")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal;
 
 [GoPackage("zstd")]

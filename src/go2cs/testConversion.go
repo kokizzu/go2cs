@@ -715,6 +715,13 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 
 	testInfoPath := filepath.Join(outputPath, testPackageInfoFileName)
 
+	// Claim the test-info position-map keys for THIS convertTestVariants call: the recompile-model
+	// fallback re-invokes the whole function over the same output path, and without the claim every
+	// record from the abandoned reference-model attempt would still be standing. Claimed here, once,
+	// rather than per variant, because the two variants accumulate into these same files.
+	claimPositionMapTarget(testInfoPath)
+	claimPositionMapTarget(filepath.Join(outputPath, internalTestPackageInfoFileName))
+
 	if model.referencesProduction() {
 		// The reference model must NOT declare the production package class: the production
 		// types' single identity is the referenced production assembly, and a local partial
@@ -829,6 +836,17 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		}
 
 		variantOptions := testVariantOptions(options, model, variant == external, internalBridgeName)
+
+		// This variant's position-map records go to the info file of the compilation that compiles
+		// its emissions. Every test emission lands in the ONE tests assembly, so any of its info
+		// files would satisfy the assembly-scoped lookup; the records follow their ANCHOR, exactly
+		// as the GoImplement records do -- the mixed white-box model's internal variant into the
+		// bridge unit, everything else into package_test_info.cs.
+		variantOptions.positionMapTarget = testInfoPath
+
+		if model == testProjectWhiteboxReference && variant == internal && external != nil {
+			variantOptions.positionMapTarget = filepath.Join(outputPath, internalTestPackageInfoFileName)
+		}
 
 		variantOutputs, imports, err := convertTestVariant(variant, emitEntries, outputPath, projectNamespace, seed, variantOptions)
 		if err != nil {
@@ -1973,6 +1991,8 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 			// emit the auto conversion to the `.cs.auto` review sibling, leaving the marked `.cs`
 			// untouched. The HAND-OWNED `.cs` is the compile item; the `.cs.auto` sibling never is.
 			outputName := filepath.Join(outputPath, baseName+".cs.auto")
+			visitor.finalizePositionMap(outputName)
+
 			if writeErr := writeAutoConversionSibling(outputName, baseName, visitor.outputBuilder.String()); writeErr != nil {
 				showWarning("%s", writeErr)
 			}

@@ -20,6 +20,19 @@ using static go.mime_internal_test_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("mime/encodedword_test.go", "encodedword_test.cs", "ABccopIADyqCgIIACgqCAAcYgoKCgoKCloKCAAsOggAOJoKCgoKClIKClIIACAqiABxAgoKCgpSCAAsKggAMJrKCpIKUgoKUgoKUhKaCgpSCAAkKgqyAgviiguiihIK4ooSC")]
+[assembly: go.GoPositionMap("mime/mediatype_test.go", "mediatype_test.cs", "AA0agtyigoKCgrbcggALGKKCgoKCttyCAAwaooKCgoKCtrYAORi0koKClJaCAKAC4gSCgoKCgpSUgJKUpIKUggAfRIKCgoKClIKUgpSClIIAIUKCgoKClIKUgoKUgpSigoI=")]
+[assembly: go.GoPositionMap("mime/type_test.go", "type_test.cs", "AA0cgoKCgoK4gqaCgpSAgsiC7oSCgoIADArCgoKCgpSUAAcQgoKCAAwKooKEgoKClKaAgqSAgriAggAUCKKCgoKCgoKUlAAGFoKCgpSCgpSCgpSCAAsKgoKClIK4ooKEyoKCgu6igoTKgoKCgIIADRCigpSUlK6CgoKClII=")]
+// </GoSourcePositionMaps>
+
 namespace go;
 
 [GoPackage("mime")]

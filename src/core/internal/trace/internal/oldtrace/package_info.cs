@@ -46,6 +46,18 @@ using static go.@internal.trace.@internal.oldtrace_package;
 [assembly: GoImplicitConv<Event, ж<Event>>]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/trace/internal/oldtrace/order.go", "order.cs", "AB5G9pSCgoKkgoKCpIKCggACEILigqiCgoKkgoKCpIKCgqSCgoKkgoKCpoLIktaCgpSCppSUtLSCyoKmsoKmooKCgoKCpqKCgoKUgriigoKCkpSCgIKkgpSClA==")]
+[assembly: go.GoPositionMap("internal/trace/internal/oldtrace/parser.go", "parser.cs", "AGvqAYKClICClKSmgoKApoKClIKClIKCloKCgqaCgoK2AAIUAAkGgoKU2NKCABAmgoKCgoKEgIKmgoKWgpaUlIKCgpSClIK6gIKmAAcQACVOooKClIKCqLKCgqaCgqa4poKmgqaCtoKClIKCgqaUpoKCgoKCggAFHgAODKKWgoKUhKYAABD0goKUgoKChJSCgpSCgqaCpJSoggAKGIKUgoKCqLaCgoKmlMyWlKSkpISAgqTMggAKGIKCgpSkgoKUgoKUgpS2hKiUkoKCgoKUgpSCloKCgpaCgqaEgoSCgoKUgoKUqIKCggANHqgABRCCgoKClLiCypSCgurIxoKClAAMGoKClpSUgIKkgoKUgriCgpSClIKUgoKClIKUgpSCgpSWgqSAgqiEgpKUgpaCgpSWgoKW3IKkgoKCgoKClKaCgIL+goKWgKamgoKClIKCgoKUuIKmlJSCgpSmgoKUgsyCypKCgpSCgoKEhIKWgoKCgoKClIKUgpSCgpSogoKUgqimooKClIKUgpSCgpSq0oKClIKClJSCgpSClJSCpIK4tqSClIKClIKClIKCgoKCgoKChICCttyigoKCgoKClKaUgqqkAAYSgMKUgoKCyKaCABQW4rwAAByCgoKClIKCgpSClIKUloKElIKClISkgoKUgpSEpIKUhKSSlKSCgpSkgoKUpIKClISkgoKUhKiCopakgoKUhKSCgpSChKSCgpSChKSCgoCCpICCpKaCgoKUgpSCgoKCgpaCloKkgoKAgqSCgoSSloKkgoKAgqSCgoKEgqSCgoKUgpSCgpSClIKCpoKCgIKkhKSCgoCCpIKChIKkgoKUgoSmgoKAgqSCgoKEgqSCgIKkpoKmgoKStIKSgpKWgpS4uLq8zJKCgpSCpqKCgpSmgoKCgoKUqqKCgpSCgpSUpIIAsAHuAZKC3oKClIKmgoKClLaClKY=")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal.trace.@internal;
 
 [GoPackage("oldtrace")]

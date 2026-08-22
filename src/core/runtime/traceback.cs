@@ -1477,7 +1477,7 @@ public static void SetCgoTraceback(nint version, @unsafe.Pointer traceback, @uns
     if (version != 0) {
         throw panic("unsupported version");
     }
-    if (cgoTraceback != nil && cgoTraceback.Value != traceback.Value || cgoContext != nil && cgoContext.Value != context.Value || cgoSymbolizer != nil && cgoSymbolizer.Value != symbolizer.Value) {
+    if (cgoTraceback != nil && cgoTraceback != traceback || cgoContext != nil && cgoContext != context || cgoSymbolizer != nil && cgoSymbolizer != symbolizer) {
         throw panic("call SetCgoTraceback only once");
     }
     cgoTraceback = traceback;

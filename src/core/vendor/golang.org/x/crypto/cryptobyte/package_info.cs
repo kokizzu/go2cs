@@ -51,6 +51,19 @@ using static go.vendor.golang.org.x.crypto.cryptobyte_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/asn1.go", "asn1.cs", "ABAswqqiqJKmgoKCgpaCgsySgoKCloKCzLKCloLKgoKCgpSClKSUgoKUzJKS3rKCgpSSupK2goKUvKKSgriCgoKUgqiCgoKClriCgpaCloKCqKaCkoKCloKCyoKCgpTKgqrYgpSCgoKUruKCuIKClIIAAhDygoKWlLS0pgACEuLkgoKUgvSCgpSCpKS0yIKUlIKUlJTKgoKClJSCgpSCgpSUpqKCgpSClIKUgqaCgoKUpoKCgpSCgqaCgqaCgoKUpoKClJSUlIKClKyygqrCgoKClIKUgqaigoKCuIKUgrqCloKCgqaqwoKCuozCgpSCgpSCloKCgpSUgqrCgoKUgoKClICCpILOwoKClISCgoK4gpSCloCCpriUgqrCgoSWgoKGloKCrNKCgpaCgpSCrLIAAhDSgoKUAAIQ0oKClAACENIAAhDyqsKClKqigq7igoKUgpSqooKUgq7CgoKClIIACwa0gIKU1rSUgpSu8oKCgpSClIKCgpSUlK7igoKCloKClqaygpSE3JaCntKUgriChIKWgoK6lJSUloKUlJaClIKW")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/builder.go", "builder.cs", "ACFKsgAEELIABRCiqqKClKqigpSokqiSqqKokqiSqJKokgALRpKokqiSqJKmwoKEgoSCgpaAkpTK1rSClpKEgpYABxKCgoLogoKUgoKEgoKWhIKWuIKUkoKCpIKkgqSCpIKUgoK6goKCgoKUgpaCgoKUgoKWgpbmooKUgpSClIKClKyygpSClIKClIKUgpQAChzSgoI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/string.go", "string.cs", "ABc0woKUgoKokqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqaigoKUgoKClIKmooKClIKCgpSCgpSCqqKssqyyqsKCgpSCqqKCgoKUqJI=")]
+// </GoSourcePositionMaps>
+
 namespace go.vendor.golang.org.x.crypto;
 
 [GoPackage("cryptobyte")]
