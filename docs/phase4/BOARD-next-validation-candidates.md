@@ -17402,4 +17402,32 @@ levels all three families at once. Not taken inline by any current lane; the tra
 **Campaign infrastructure (what later Linux campaigns inherit):** the GO2CSPATH case-insensitive env race (rooted + pinned, see the 2026-08-21 board entry; converter dedupe queued coordinator-side), `_paths.ps1`'s Linux pins (GoTargetOS + GO2CSPATH), the sweep's `-Exact` filter, the ICU-safe duration table, per-package log retention with an idempotent resume ledger, and the two-monitor watch pattern. Roster snapshot: 159 rows at `d3e7a61e9`; `flag` and `log` banked mid-campaign in R's arc and are NOT in this census — a two-row follow-up shard is owed once R's merge lands, after pulling the distro clone forward.
 
 **What "Linux parity" requires, by the numbers:** 92 rows already hold. One nine-member seam (W1) prices most of the remaining distance (~58 rows). Two converter emission defects (W2), one converter crash (W3), one roster-design item (W4), one capability arc (W6), and per-host budget calibration (W7) close the rest. The harness half (W5 + the race + the pins) is already landed on this branch.
+
+---
+
+## 2026-08-21 · FINDING for ratification — the W7 "hang" is Gosched ring starvation under the dedicated-thread goroutine model, Linux-amplified ≥15×; correctness NOT implicated, row #159 exonerated (lane G, `claude/gosched-ring-finding`)
+
+**Answers the census's W7 row and the assigned reproduce-and-root.** `TestValueCompareAndSwapConcurrent` (value_test.go:249) is not hung and not a latent #159 defect — it is a measured scheduling pathology, four-cell matrix on one machine plus the i9 control:
+
+| host | short (100 goroutines · 10k handoffs) | full (1000 goroutines · 100k handoffs) |
+|---|---|---|
+| Windows, laptop (16T) | — | **PASS, 183 s wall** |
+| Linux WSL2, same silicon | **PASS, 13 s** | **≥45 min, package timeout** |
+| Windows, i9 (24T) | — | PASS inside normal suite time |
+
+**Mechanism (each link measured or read from source, none theorized):**
+
+1. The test is a strict token-passing ring: after warmup, value `k` can be advanced ONLY by goroutine `k mod m` — all 100,000 CAS advances are sequential cross-goroutine handoffs, and every miss spins through `runtime.Gosched()`.
+2. Converted goroutines are DEDICATED OS THREADS by design (`golib/builtin.cs` records the doctrine: "goroutines get dedicated threads (Goroutine.Start)"), so the full test is 1000 CPU-bound kernel threads.
+3. `Gosched()` converts to `Thread.Yield()` (`runtime/managed_impl.cs:105`). On Windows the scheduler rotates equal-priority ready threads on yield, so the ring advances (183 s at 16T, faster at 24T — still ~200× Go's sub-second, the scale factor). On Linux, `Thread.Yield()` is `sched_yield(2)`, which CFS makes near-inert for CPU-bound threads: the yielder is commonly re-selected and the ONE runnable thread that can advance the ring waits out a fair-share epoch — per-handoff latency ∝ runnable threads, total ≥45 min, presenting as a hang (the OS factor, ≥15× at fixed hardware).
+4. Correctness is untouched: Linux short-mode passes in 13 s; `Value.CompareAndSwap`'s converted loop (value-equality gate + identity CAS + retry) is faithful; the suite's other 107 verdicts pass on Linux, and nothing in the mechanism reaches the ж-box native-slot/token machinery of row #159.
+
+**Classification:** a semantic-fidelity cost gap of the dedicated-thread goroutine model under mass-`Gosched` spin workloads, Linux-amplified by `sched_yield` semantics — the same class as the maphash "performance gap, not correctness" precedent, but with an OS multiplier that turns slow into effectively-hung on exactly the platform the Linux campaign measures.
+
+**Remedy options, priced (ratification required — `Gosched`'s contract and the dedicated-thread doctrine are settled surface):**
+- **(a) RECOMMENDED — adaptive yield backoff inside `Gosched()`:** after `k` consecutive yields by one thread without rescheduling progress, escalate `Thread.Yield()` → `Thread.Sleep(1)` (leaves the runqueue, letting the starved owner run), resetting on work. `Gosched` promises "yields the processor, allowing other goroutines to run" and nothing about mechanism, so an adaptive escalation is contract-clean; it collapses the CFS pathology for every mass-spin workload at once, and the healthy-case cost is bounded by choosing `k` (small-N rings never reach the sleep tier). Measured acceptance target: Linux full ring within ~2× same-hardware Windows (i.e. minutes, not 45+).
+- (b) M:N cooperative goroutine scheduling — the architectural fix; out of scope as a priced item here, recorded as the horizon this class keeps pointing at.
+- (c) Interim harness honesty if (a) waits: the row cannot bank on Linux and must not be disclosed away as CLR-impossible — it is a real, fixable gap; leave it FAIL with this finding as the named cause.
+
+**Verification set when (a) lands:** the four-cell matrix re-run (Linux full must complete), `sync/atomic` 108/108 on both OSes, and the standard reflect-consumer canaries derived at gate time — plus a Windows A/B on the i9 confirming no healthy-case regression (the suite's other hammer tests are the sensitive canaries for added Sleep latency).
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
