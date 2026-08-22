@@ -17449,4 +17449,20 @@ levels all three families at once. Not taken inline by any current lane; the tra
 **Two measured constants that reshape any future design:** `Thread.Sleep(1)` actually costs **1.07 ms on Linux** and **15.9 ms on Windows** (granularity INVERTED from the naive assumption — any sleep-tier design taxes Windows 15× harder per escalation), and Go's own ring completes because its Gosched is a ~100 ns userspace runqueue rotation over GOMAXPROCS threads — a floor no 1:1-dedicated-thread design reaches, since every handoff there pays kernel-primitive costs (yield storms, sleep quanta, or wake syscalls) times CFS's ordering.
 
 **Recommendation:** keep landed-A (it demonstrably closes the idle-spin shape, harms nothing measured, and its guards pin the behavior); leave W7 an honest FAIL with this cartography as the named cause; price the ring's closure under the **M:N goroutine scheduling horizon** rather than further Gosched-local tuning — three refuted candidates with distinct mechanisms is the evidence the local space is exhausted, and this campaign now motivates M:N with hard numbers rather than architecture taste. Variant D's residual uncertainty (pinvoke verification, serial-floor accounting) is recorded for whoever takes that lane; the prototypes live in the session scratchpad and the raw logs in the distro's `/root/` (`ringB/C/D.log`, `stack1/2.txt`).
+
+## RULING -- W7's disposition: honest FAIL, ring closure priced to the M:N horizon; Gosched tuning is CLOSED as an avenue (coordinator, 2026-08-22)
+
+The backoff cartography's recommendation is ratified as delivered. The landed inert-only backoff
+STAYS (it closes the idle-spin shape class-wide, improved the Windows ring 183 -> 84 s, and its
+guards pin it); the Linux ring row stays an HONEST FAIL, never disclosed -- and further
+Gosched-local tuning is closed by measurement, not by fatigue: four designs refuted with named
+mechanisms, and the floor argument is structural (Go's Gosched is a ~100 ns userspace runqueue
+rotation; a 1:1 dedicated-thread design pays a context switch, ~6.5 us measured, to a thread that
+is usually the wrong one). Ring closure is priced to the M:N scheduling horizon, where it joins
+the recorded constituency. Variant D is DEFERRED by this pricing -- driving it to resolution
+would spend against an avenue this ruling closes; it reopens only if the M:N horizon slips far
+enough to re-price nearer-term relief. The two portable constants (Thread.Sleep(1) = 1.07 ms
+Linux / 15.9 ms Windows, inverted) are noted as the kind of measured fact every future scheduler
+design should start from.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
