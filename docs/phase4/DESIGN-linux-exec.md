@@ -1,6 +1,6 @@
 # DESIGN — the Linux exec wall (R2): process launch for the converted corpus
 
-**STATUS: PROPOSED** — design-only, per the 2026-08-22 assignment. No implementation ships with
+**STATUS: RATIFIED (coordinator, 2026-08-22) -- all seven SS6 open questions ruled AS RECOMMENDED; OQ-6 (the sync.OnceValue foreign-exception preservation) is RATIFIED ON ITS OWN LINE as a strictly-more-faithful-to-Go fix on settled sync surface, lands FIRST in the implementation lane with a failing-first guard; formerly PROPOSED** — design-only, per the 2026-08-22 assignment. No implementation ships with
 this document. Written against the three-bodies lane's measured state (`184308a04`: 129/161 Linux
 rows PASS, R2 the dominant remaining seam) and the banked Windows `os/exec` precedent (74 matched ·
 27 disclosed `host-limit`). Template per `DESIGN-readmemstats-surface.md` / `DESIGN-zh-box-b-prime.md`:
