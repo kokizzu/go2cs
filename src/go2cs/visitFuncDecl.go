@@ -1774,6 +1774,19 @@ var linknameForwardTargets = map[string]bool{
 	// the package's 52 verdicts as infrastructure-error and four more as parent-test shadows —
 	// the package measured 7 of 52 with this single symbol as the whole differential.
 	"net/textproto.readMIMEHeader": true,
+	// go/types' cgo-mode switch, pulled by go/internal/srcimporter's srcimporter.go
+	// (`//go:linkname setUsesCgo go/types.srcimporter_setUsesCgo` over a bodyless declaration) and
+	// authorized by the matching one-arg handle in go/types/api.go, whose own comment says
+	// "Linkname for use from srcimporter." The implementation is ORDINARY CONVERTED Go — one field
+	// assignment (`conf.go115UsesCgo = true`) — so the forwarder is an ordinary cross-assembly
+	// call. The pull needs no new project reference: srcimporter already imports go/types for the
+	// `*types.Config` parameter itself.
+	//
+	// What the stub was costing on Linux (the first flavor whose exec seam lets srcimporter run at
+	// all): Importer.ImportFrom calls setUsesCgo unconditionally before type-checking, so every
+	// import bottomed out in the announcing stub — three of the package's seven verdicts, and
+	// go/types' TestStdFixed through the same path.
+	"go/types.srcimporter_setUsesCgo": true,
 }
 
 // linknameForwardBuiltins is the whitelist of cross-package //go:linkname PULL targets whose

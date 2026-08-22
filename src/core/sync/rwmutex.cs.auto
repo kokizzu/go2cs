@@ -248,7 +248,7 @@ public static void Unlock(this ж<RWMutex> Ꮡrw) {
 // For more details see the syscall package.
 //
 //go:linkname syscall_hasWaitingReaders syscall.hasWaitingReaders
-internal static bool syscall_hasWaitingReaders(ж<RWMutex> Ꮡrw) {
+public static bool syscall_hasWaitingReaders(ж<RWMutex> Ꮡrw) {
     var r = Ꮡrw.of(RWMutex.ᏑreaderCount).Load();
     return r < 0 && r + (int32)rwmutexMaxReaders > 0;
 }

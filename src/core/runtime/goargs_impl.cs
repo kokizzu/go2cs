@@ -67,6 +67,28 @@ partial class runtime_package
             snapshot[i] = args[i];
         }
 
+        // The [0] note above documents GetCommandLineArgs as argv's managed mirror — MEASURED
+        // under `dotnet hello.dll`, and TRUE there. Re-measured 2026-08-22 under an APPHOST
+        // launch on Linux: element zero is STILL the managed assembly path
+        // (".../argvprobe.dll") while the kernel's argv[0] — Environment.ProcessPath — is the
+        // apphost (".../argvprobe"). Go's os.Args[0] is the program as invoked, and every
+        // self-re-exec idiom in Go's own suites (`exec.Command(os.Args[0], ...)` — sync's
+        // TestMutexMisuse, flag's TestExitCode) depends on it naming something EXECUTABLE; the
+        // .dll answer sent each of them into `fork/exec ...dll: permission denied`. So in
+        // apphost mode argv[0] is ProcessPath — the kernel's own argv[0], faithful AND
+        // re-execable. Under the `dotnet hello.dll` muxer, ProcessPath names the HOST
+        // (".../dotnet"), where the mirror's {program, args...} shape remains the better of two
+        // imperfect answers — that mode keeps the documented behavior, unchanged.
+        string? processPath = Environment.ProcessPath;
+
+        if (args.Length > 0 && !string.IsNullOrEmpty(processPath))
+        {
+            string processName = System.IO.Path.GetFileNameWithoutExtension(processPath);
+
+            if (!string.Equals(processName, "dotnet", StringComparison.OrdinalIgnoreCase))
+                snapshot[0] = processPath;
+        }
+
         argslice = snapshot;
     }
 }

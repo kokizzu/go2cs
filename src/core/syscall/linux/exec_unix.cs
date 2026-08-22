@@ -480,10 +480,17 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
             return (0, (Errno)(uintptr)rc);
         }
 
-        // OQ-4's door, opened early: os's pidfd path asks for a descriptor via SysProcAttr.PidFD.
-        // pidfd_open(pid) here is race-free because the child cannot be reaped before this
-        // process's own first wait — this process is its only reaper. -1 on any failure is Go's
-        // own "kernel does not support it" contract.
+        // The pidfd door, closed once and reopened by measurement — the full story, because both
+        // wrong turns were paid for. os's ensurePidfd plants this field whenever ITS OWN kernel
+        // probe passes, and getPidfd then uses the value UNCHECKED — Go's clone always delivers a
+        // real fd on that path, so -1 here is not "unsupported", it is a poisoned handle:
+        // strace showed `waitid(P_PIDFD, -1, …) = EINVAL` and every wait failing (exit codes -1).
+        // The first attempt DID fill a real pidfd and read every child exit as 0 — which
+        // implicated this fill, but the true root was SiginfoChild's converted layout (managed
+        // array-reference padding shifting every kernel offset; see
+        // internal/syscall/unix/linux/siginfo_linux.cs, now a blittable hand-own). With that
+        // mirror fixed the fill is correct AND race-free: the child cannot be reaped before this
+        // process's own first wait, which is the only reaper.
         if (sys.PidFD != nil) {
             long fdOrErr = syscallʟ(SYS_pidfd_open, childPid, 0, 0);
             sys.PidFD.Value = fdOrErr >= 0 ? ((nint)fdOrErr) : -1;
