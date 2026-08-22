@@ -8,7 +8,16 @@
 #
 # The roster is READ FROM docs/ValidatedTestPackages.md rather than hardcoded, so it can never
 # drift from the table a banking commit just updated: the table is the single source of truth for
-# which packages are banked and what counts they carry.
+# which packages are banked and what counts they carry. (The parsing lives in _roster.ps1, guarded
+# by check-roster-format.ps1.)
+#
+# A banked count is a fact about (package, OS): Go runs a different test set per GOOS, so a row's
+# count on Linux need not be its count on Windows and neither number is wrong. The columns are the
+# WINDOWS record; a row that has validated elsewhere carries that OS's arithmetic as an annotation,
+# and this script validates against whichever expectation its target OS puts in force. Where a
+# non-Windows run has no annotation to bank against it reports comparison-validated-at-count --
+# neither a pass nor a drift failure. On Windows none of that machinery moves: the columns answer
+# for every row, exactly as before.
 #
 #   ./run-validated-sweep.ps1                       # every banked package
 #   ./run-validated-sweep.ps1 -Filter compress      # just the ones whose path contains "compress"
@@ -59,6 +68,10 @@ if ($freeGB -lt 25) {
 # argument: PowerShell 5.1 and 7+ both normalize that to the host separator, so the strings handed to
 # the converter are byte-identical to the ones the backslash literals produced on Windows.
 . (Join-Path $PSScriptRoot '_paths.ps1')
+# The roster reader (columns, host-conditional names, per-OS expectations). Dot-sourced AFTER
+# _paths.ps1, which is what pins $env:GoTargetOS on a Linux host -- the variable Get-SweepTargetGoos
+# reads to decide which OS's expectation this run is measuring against.
+. (Join-Path $PSScriptRoot '_roster.ps1')
 
 $src = $SrcRoot
 $repo = $RepoRoot
@@ -125,38 +138,14 @@ if ($pinnedRelease -and $goversion) {
 
 # ---- roster: parse the table's rows -------------------------------------------------------------
 # Row shape:  | [`net/http/internal/ascii`](https://...) | 13 | 1 | What it exercises. |
-# Column 2 is the matching-verdict count, column 3 the disclosed count (blank when none).
-# A row may additionally declare HOST-CONDITIONAL verdicts inside its What-it-exercises cell:
+# Column 2 is the matching-verdict count, column 3 the disclosed count (blank when none), and the
+# What-it-exercises cell may carry two annotations: HOST-CONDITIONAL verdicts (acceptance rules on
+# Test-HostConditionalDelta below) and the PER-OS expectation this script honors below that.
 #
-#   host-conditional (<why, colon-free>): `Name`, `Name`, ...
-#
-# naming verdict rows that exist only on a host with some capability (path/filepath's six
-# TestWalkSymlinkRoot subtests exist only where symlink creation is permitted -- the parent test
-# skips before spawning them otherwise). Column 2 stays the FLOOR every host produces; the names
-# bound what a more-capable host may legitimately add. The phrase "host-conditional" is reserved
-# for this annotation. Acceptance rules live on Test-HostConditionalDelta below.
-$rows = foreach ($line in Get-Content $table) {
-    if ($line -match '^\|\s*\[`([^`]+)`\]\([^)]*\)\s*\|\s*(\d+)\s*\|\s*(\d*)\s*\|') {
-        # Row fields FIRST: the annotation -match below overwrites $Matches.
-        $rowPackage = $Matches[1]
-        $rowExpected = [int]$Matches[2]
-        $rowDisclosed = if ($Matches[3]) { [int]$Matches[3] } else { 0 }
-
-        # The capture takes the run of backticked, comma-separated names right after the colon and
-        # stops at the first text that is not one -- the cell's next " * [proof]" segment ends it.
-        $rowConditional = @()
-        if ($line -match 'host-conditional\s*(?:\([^)]*\))?\s*:\s*((?:`[^`]+`\s*,\s*)*`[^`]+`)') {
-            $rowConditional = @([regex]::Matches($Matches[1], '`([^`]+)`') | ForEach-Object { $_.Groups[1].Value })
-        }
-
-        [PSCustomObject]@{
-            Package     = $rowPackage
-            Expected    = $rowExpected
-            Disclosed   = $rowDisclosed
-            Conditional = $rowConditional
-        }
-    }
-}
+# The parsing itself lives in src\_roster.ps1, dot-sourced above, for one reason: the per-OS
+# annotation is a rule with an arithmetic consequence, and a rule with a consequence needs a guard
+# that can exercise it without running this multi-hour gate. That guard is src\check-roster-format.ps1.
+$rows = Get-ValidatedRosterRows -Path $table
 
 if ($Filter) {
     $rows = if ($Exact) { $rows | Where-Object { $_.Package -eq $Filter } }
@@ -167,8 +156,31 @@ if ($Filter) {
 $rows = @($rows)
 if (-not $rows) { throw "No banked packages matched$(if ($Filter) { " filter '$Filter'" })." }
 
-$expectedTotal = ($rows | Measure-Object -Property Expected -Sum).Sum
+# ---- the OS dimension ----------------------------------------------------------------------------
+# A verdict count is a fact about (package, OS): Go itself runs a different test set per GOOS, so
+# crypto/rand offers 302 eligible verdicts on Linux against the banked Windows 298. Each row's
+# EFFECTIVE expectation is therefore resolved once, here: its annotation for this run's target OS
+# where one exists, the Windows columns otherwise.
+#
+# On Windows this is a no-op by construction -- Get-RosterRowExpectation returns the columns for
+# every row, Source 'columns', and every line printed below is the line that was printed before the
+# dimension existed. That is the invariant the Windows-unchanged proof rests on.
+$targetGoos = Get-SweepTargetGoos
+
+foreach ($row in $rows) {
+    Add-Member -InputObject $row -NotePropertyName 'Effective' -Force `
+        -NotePropertyValue (Get-RosterRowExpectation -Row $row -Goos $targetGoos)
+}
+
+$expectedTotal = ($rows | ForEach-Object { $_.Effective.Expected } | Measure-Object -Sum).Sum
 Write-Host "validated sweep: $($rows.Count) package(s), $expectedTotal expected verdicts, timeout $TestTimeout" -ForegroundColor Cyan
+
+if ($targetGoos -ne 'windows') {
+    $annotatedCount = @($rows | Where-Object { $_.Effective.Source -ne 'columns' }).Count
+    Write-Host ("  target OS $targetGoos -- $annotatedCount row(s) carry a $targetGoos expectation; " +
+        "$($rows.Count - $annotatedCount) fall back to the windows columns and report " +
+        'comparison-validated-at-count when their count differs') -ForegroundColor Cyan
+}
 
 if (-not $SkipBuild) {
     Write-Host '==> building the converter' -ForegroundColor Cyan
@@ -188,6 +200,11 @@ if (-not (Test-Path $exe)) { throw "Converter not built: $exe" }
 # (CS2012, "the process cannot access the file"), which reads as a package failure but is not one.
 $env:MSBUILDDISABLENODEREUSE = '1'
 $pass = 0; $fail = 0; $failed = @(); $started = Get-Date
+# The third bucket, and it exists only off Windows: a row whose comparison VALIDATED at a count this
+# OS has no annotation for. Neither a pass (nothing is banked for it here) nor a silent failure --
+# reported by name and summarized apart, the same shape BehavioralRunner's NOT MEASURED takes, and
+# it still exits non-zero for the same reason: an unbanked count must never read as a green gate.
+$cvac = 0; $cvacRows = @()
 
 # 'Continue' for the sweep itself: merging a native command's stderr with 2>&1 wraps each line in
 # an ErrorRecord in PS 5.1, so under 'Stop' one benign converter warning (e.g. the unsafe.Sizeof
@@ -344,6 +361,20 @@ function Test-HostConditionalDelta {
     return New-HostConditionalVerdictResult $true $extras $null
 }
 
+# ---- per-OS expectations -------------------------------------------------------------------------
+# The disclosed count this run produced. The converter's "Validated N tests against go test" line
+# carries it -- "(..., K disclosed-divergent (class), ...)" -- and omits the clause entirely when K
+# is zero, exactly as the roster's Disclosed column is blank then. Read from the same output the
+# matching count is read from, so the two numbers can never come from different runs.
+function Get-DisclosedCount {
+    param($Output)
+
+    $match = ($Output | Select-String '(\d+) disclosed-divergent' | Select-Object -First 1)
+    if ($match) { return [int]$match.Matches[0].Groups[1].Value }
+
+    return 0
+}
+
 # Reads the two evidence artifacts the delta check needs -- the run's own comparison record and
 # the committed proof page -- and applies Test-HostConditionalDelta. Every unreadable input is a
 # rejection with its reason, never an acceptance: the mechanism only absorbs what it can prove.
@@ -379,7 +410,13 @@ function Get-HostConditionalVerdict {
         if ($inVerdicts -and $pageLine -match '^\|\s*`([^`]+)`\s*\|') { [void]$bankedNames.Add($Matches[1]) }
     }
 
-    return Test-HostConditionalDelta -Expected $Row.Expected -Disclosed $Row.Disclosed -Conditional $Row.Conditional `
+    # The floor is the expectation IN FORCE for this run's OS, not unconditionally the columns.
+    # Note the evidence this absorption rests on is still Windows-shaped: the committed proof page
+    # records the banking host's verdict names, so on an OS-annotated row the page-vs-roster
+    # cross-check rejects rather than absorbs -- honestly, and by design. Proof pages gain the OS
+    # dimension at the anchor release, per the per-OS ruling; until then a non-Windows host
+    # exceeding an annotation is reported, never waved through.
+    return Test-HostConditionalDelta -Expected $Row.Effective.Expected -Disclosed $Row.Effective.Disclosed -Conditional $Row.Conditional `
         -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray()
 }
 
@@ -487,28 +524,61 @@ foreach ($row in $rows) {
 
     if ($verdict) {
         $got = [int]$verdict.Matches[0].Groups[1].Value
-        if ($got -eq $row.Expected) {
-            $pass++
-            Write-Host "  PASS  $label $got" -ForegroundColor Green
-        }
-        else {
-            # Validated, but NOT at its banked count -- normally a silent change in what the suite
-            # asserts, and a failure: the table and reality must agree, one of them is now wrong.
-            # A row that declares host-conditional verdicts gets one chance to PROVE the surplus is
-            # exactly those named rows materializing on a more-capable host; anything unprovable
-            # falls through to the same failure as before, with the rejection reason attached.
-            $hostConditional = $null
-            if ($row.Conditional.Count -gt 0) {
-                $hostConditional = Get-HostConditionalVerdict -Row $row -Got $got -OutDir $outDir
-            }
+        $gotDisclosed = Get-DisclosedCount -Output $out
+        # 'columns' on Windows for every row, so the suffix is empty and the string is unchanged;
+        # off Windows an annotated row says which OS's expectation it just met.
+        $osSuffix = if ($row.Effective.Source -eq 'columns') { '' } else { " ($($row.Effective.Source))" }
 
-            if ($null -ne $hostConditional -and $hostConditional.Accepted) {
-                $pass++
-                Write-Host "  PASS  $label $got = $($row.Expected) banked + $($hostConditional.Extras.Count) host-conditional" -ForegroundColor Green
+        # The rule itself is a pure function in _roster.ps1, guarded by check-roster-format.ps1;
+        # what stays here is the evidence-gathering and the reporting. A row that declares
+        # host-conditional verdicts gets one chance to PROVE a surplus is exactly those named rows
+        # materializing on a more-capable host -- consulted only when the plain classification is
+        # not already a pass, since it costs a comparison-record read and a git show. Anything
+        # unprovable falls through to the same failure as before, with the rejection reason attached.
+        $class = Get-SweepRowClassification -Expectation $row.Effective -Got $got -GotDisclosed $gotDisclosed -TargetGoos $targetGoos
+        $hostConditional = $null
+
+        if ($class -ne 'pass' -and $row.Conditional.Count -gt 0) {
+            $hostConditional = Get-HostConditionalVerdict -Row $row -Got $got -OutDir $outDir
+
+            if ($hostConditional.Accepted) {
+                $class = Get-SweepRowClassification -Expectation $row.Effective -Got $got -GotDisclosed $gotDisclosed `
+                    -TargetGoos $targetGoos -HostConditionalAccepted
             }
-            else {
-                $fail++; $failed += "$pkg (count $got, banked $($row.Expected))"
-                Write-Host "  COUNT $label $got, banked $($row.Expected)" -ForegroundColor Yellow
+        }
+
+        switch ($class) {
+            'pass' {
+                $pass++
+                Write-Host "  PASS  $label $got$osSuffix" -ForegroundColor Green
+            }
+            'host-conditional' {
+                $pass++
+                Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked + $($hostConditional.Extras.Count) host-conditional" -ForegroundColor Green
+            }
+            'unbanked-count' {
+                # COMPARISON-VALIDATED-AT-COUNT, the honest interim the per-OS ruling names. The
+                # comparison reached "Validated N" -- the converter prints that line only after
+                # matching every verdict -- but N was measured against the WINDOWS columns, and this
+                # is not Windows. Nothing is banked for this OS, so it is not a pass; nothing is
+                # wrong either, so it is not the silent-drift failure below. It is its own report,
+                # and it retires row by row as annotations land.
+                $cvac++; $cvacRows += "$pkg (count $got, windows column $($row.Expected))"
+                Write-Host "  CVAC  $label $got (validated; no $targetGoos expectation, windows column $($row.Expected))" -ForegroundColor Cyan
+            }
+            'disclosed-moved' {
+                # An annotated row whose matching count agreed and whose DISCLOSED count did not.
+                # Named as itself rather than mis-reported as a count failure.
+                $fail++
+                $failed += "$pkg (disclosed $gotDisclosed, $($row.Effective.Source) expectation $($row.Effective.Disclosed))"
+                Write-Host "  DISC  $label $got, disclosed $gotDisclosed vs the $($row.Effective.Source) expectation $($row.Effective.Disclosed)" -ForegroundColor Yellow
+            }
+            default {
+                # Validated, but NOT at the expectation in force -- normally a silent change in what
+                # the suite asserts, and a failure: the table and reality must agree, one of them is
+                # now wrong.
+                $fail++; $failed += "$pkg (count $got, banked $($row.Effective.Expected))"
+                Write-Host "  COUNT $label $got, banked $($row.Effective.Expected)" -ForegroundColor Yellow
                 if ($null -ne $hostConditional -and $hostConditional.Reason) {
                     Write-Host "        host-conditional check: $($hostConditional.Reason)" -ForegroundColor Yellow
                 }
@@ -524,7 +594,12 @@ foreach ($row in $rows) {
 
 $elapsed = [int]((Get-Date) - $started).TotalSeconds
 Write-Host ''
-Write-Host "sweep: $pass pass / $fail fail  (${elapsed}s)" -ForegroundColor $(if ($fail) { 'Red' } else { 'Green' })
+# The comparison-validated-at-count segment appears only when there is one to report -- which on
+# Windows is never, so the summary line is byte-for-byte the line it has always printed there.
+$summary = "sweep: $pass pass / $fail fail"
+if ($cvac) { $summary += " / $cvac comparison-validated-at-count" }
+$summary += "  (${elapsed}s)"
+Write-Host $summary -ForegroundColor $(if ($fail -or $cvac) { 'Red' } else { 'Green' })
 
 # The pipeline regenerates each package's committed test artifacts in place. Content drift is a
 # real signal; CRLF-only churn is not (autocrlf smudges LF fixtures on checkout) -- so report by
@@ -711,11 +786,22 @@ if ($drift) {
 
 $ErrorActionPreference = $prevEap
 
+if ($cvac) {
+    Write-Host ''
+    Write-Host "comparison-validated-at-count -- validated, with no $targetGoos expectation in the roster to bank against:" -ForegroundColor Cyan
+    $cvacRows | ForEach-Object { Write-Host "  $_" -ForegroundColor Cyan }
+    Write-Host "  (record a row's measured count as a '${targetGoos}: N + D' annotation in docs/ValidatedTestPackages.md to bank it)" -ForegroundColor DarkGray
+}
+
 if ($fail) {
     Write-Host ''
     Write-Host 'failed:' -ForegroundColor Red
     $failed | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     exit 1
 }
+
+# An unbanked count is not a green gate: it exits non-zero exactly as it did before this dimension
+# existed, only now it is reported as itself rather than as a count failure.
+if ($cvac) { exit 1 }
 
 exit 0
