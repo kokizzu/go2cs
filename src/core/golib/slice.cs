@@ -415,18 +415,23 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             if (index < 0 || index >= m_length)
                 throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            // Native backing: the element IS the memory (see the nint overload below).
-            if (m_nativeBase != 0)
-            {
-                unsafe
-                {
-                    return ref Unsafe.AsRef<T>(NativeElementPointer(index));
-                }
-            }
+            // The managed path is the FIRST and only inline statement — measured: putting the
+            // native branch (and its `unsafe` block) inline here cost PerfSieve +30% (110.5 →
+            // 145.9/144.2 ms, two runs), because the method stopped being an inlinable array
+            // access. The rare branch moves behind a NoInlining helper so the hot path JITs
+            // exactly as it did before this arc.
+            if (m_nativeBase == 0)
+                return ref m_array[m_low + index];
 
-            return ref m_array[m_low + index];
+            return ref NativeElementRef(index);
         }
     }
+
+    // The native element access, kept OUT of the indexers' inlinable bodies (see the measurement
+    // above). Native-backed slices are rare by construction — one creation door, reached only
+    // through unsafe.Slice over a native pointer — so the call costs nothing that matters.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private unsafe ref T NativeElementRef(nint index) => ref Unsafe.AsRef<T>(NativeElementPointer(index));
 
     public ref T this[nint index]
     {
@@ -435,18 +440,13 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             if (index < 0 || index >= m_length)
                 throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            // Native backing: the element IS the memory at the computed address — a ref into the
-            // mapping, so reads observe the kernel's writes and writes reach the kernel's pages
-            // (unmanaged T by construction; see OverNativeMemory).
-            if (m_nativeBase != 0)
-            {
-                unsafe
-                {
-                    return ref Unsafe.AsRef<T>(NativeElementPointer(index));
-                }
-            }
+            // Managed path first and inline (the int overload documents the measurement); the
+            // native element IS the memory at the computed address, so reads observe the kernel's
+            // writes and writes reach its pages (unmanaged T by construction, see OverNativeMemory).
+            if (m_nativeBase == 0)
+                return ref m_array[m_low + index];
 
-            return ref m_array[m_low + index];
+            return ref NativeElementRef(index);
         }
     }
 
