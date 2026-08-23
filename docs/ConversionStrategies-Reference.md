@@ -285,6 +285,41 @@ Two consequences beyond the file name, because `PackageName` is not only a file 
 
 Guarded by `TestGorootVendoredReferenceNamesTheVendoredProject` (the vendored spelling, the metadata key, and the leaf package name), `TestStdLibImportPathFromTargetDir` (the recovery, including the non-core-rooted no-match that leaves the caller on the import path) and `TestStdLibReferenceUnchangedForUnvendoredPackage` (the no-op half — the whole corpus bar the `vendor/` tree, which is what makes a zero-movement [CNR](Glossary.md#cnr) verdict meaningful rather than lucky), all in `importOperations_test.go`.
 
+### An importer spells the package class from the package NAME — the standard library included
+
+**The emitted class is `<packageName>_package`, so an importer's spelling has to come from the Go package name, never from the last segment of the import path.** The two agree for nearly every package, because a Go package is conventionally named for its directory — which is exactly why the places they disagree are so easy to miss.
+
+```go
+// crypto/x509/internal/macos/security.go
+package macOS                                    // directory `macos`, package `macOS`
+```
+
+```csharp
+// the declaration side has always followed the package name
+namespace go.crypto.x509.@internal;
+public static partial class macOS_package { … }
+
+// so the importer must too — crypto/x509/darwin/root_darwin.cs
+using macOS = go.crypto.x509.@internal.macOS_package;
+```
+
+`convertImportPathToNamespace` substitutes the import graph's authoritative package name for the path's last segment. It used to do that only for **non-stdlib** imports, reasoning that a stdlib package is named for its directory so stdlib references would stay byte-identical. That premise is true for every standard-library package but one, and the exception could not surface until darwin was built at all: `crypto/x509/internal/macos` is darwin-exclusive, so its importers emitted `macos_package` against a declared `macOS_package` for as long as the corpus was Windows-only. C# is case-sensitive, so the result is **CS0234** — and it reads like a missing project reference or an empty assembly, because the symbol genuinely exists nowhere.
+
+Censused across `windows`, `linux` and `darwin`, the standard-library paths whose package name differs from their tail are exactly four:
+
+| Import path | Package | Targets | Disposition |
+|---|---|---|---|
+| `crypto/x509/internal/macos` | `macOS` | darwin | the one that moves |
+| `math/rand/v2` | `rand` | all | already correct via the `/vN` branch |
+| `internal/trace/internal/testgen/go122` | `testkit` | all | nothing in the corpus imports it |
+| `runtime/internal/wasitest` | `wasi` | all | nothing in the corpus imports it |
+
+So trusting the import graph *everywhere* **keeps** the byte-identity the stdlib exclusion was asserting rather than merely asserting it — and [CNR](Glossary.md#cnr) is what proves the claim instead of the comment.
+
+The fix restructures rather than special-cases: **when the graph knows a package's name, that name is the class segment; the `/vN` directory convention remains the fallback for when it does not.** A narrower "substitute only when the two differ" test would have looked equivalent and quietly broken the exotic case the convention branch was written for — a package literally *named* `vN`, which would then be rewritten to its parent. Preferring the authoritative name over the convention wherever both are available is what keeps the two rules from fighting.
+
+This is the same family as [the GOROOT-vendored reference](#a-goroot-vendored-reference-is-named-for-the-packages-on-disk-path) above: several independent derivations name one package, and they are correct only when they agree *structurally*. Guarded by `TestImportedPackageClassFollowsPackageName` (the rule, over a stdlib name/directory mismatch, an ordinary stdlib package, a `/vN` directory and a module dependency) and `TestMajorVersionFallbackAppliesWithoutGraphMetadata` (the fallback half), in `packageClassNaming_test.go`.
+
 ### Generated output path: `$(OutDir)` defers to `$(BaseOutputPath)`
 
 Both project templates (`src/go2cs/csproj-template.xml` and the `-tests` host's `test-csproj-template.xml`) give the generated project a stable default output path:
