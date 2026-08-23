@@ -18279,4 +18279,21 @@ arithmetic: appends reconstruct the tail explicitly.
 
 ---
 
+
+---
+
+## 2026-08-23 · LANDED — the second darwin wall falls: four emission classes closed, and a fold narrowed six times by the corpus itself (lane G, `claude/darwin-cgo-flavor-emission`)
+
+**Wall #2's 10 errors are gone; both cgo-flavor leaves build 0 errors at `-p:GoTargetOS=darwin`.** Four converter/generator classes, each rooted rather than pattern-matched:
+
+1. **CS0266 `long`→`uint` (2).** The constant fold's unsigned arm declined every target narrower than uint64, so Go's own negative-test constant `1<<32 - 2` fell to the literal path, widened to `long`, and met a `uint32` slot (`_C_uid_t`). Fold-then-cast — with five conditions and a story of its own, below.
+2. **CS1729 phantom hosts (4).** NOT "ImplicitConvGenerator assumes a 1-arg ctor", as the census read it: these records should never have been EMITTED. `os/user` and `net` declare their C-type mirrors as Go ALIASES TO PRIMITIVES (`type _C_gid_t = uint32` → `global using _C_gid_t = uint`), and the locality predicate counted an alias as a local declaration — so the generator hosted `partial struct UInt32` on a BCL primitive. That is the phantom the predicate's own comment exists to prevent, arriving through the alias door; the name RESOLVES (to the CLR spelling), so it fails on a missing constructor rather than a missing type.
+3. **CS0246 primitive sources (2).** The same door from the other side: one genuinely-local operand admitted a record whose other side was `_C_int = int`, and the generated operator dereferenced `.Value` on a primitive. One shared predicate (`typeIsPrimitiveAlias`) closes both.
+4. **CS0246 unbound `T` (2).** A local named type inside a generic function closes over the function's type parameters (`doBlockingWithCtx[T any]`'s `type result struct{ res T; err error }`), but the lift to package scope dropped them. The fix threads only the parameters the type ACTUALLY references — per the coordinator's scoping directive — so a lift using none stays byte-identical; the declaration carries the binding, and `liftedTypeMap` carries the constructed spelling so every use site agrees.
+
+**The fold's six narrowings, because the method is the finding.** The fix was correct at its motivating site from the first attempt and wrong everywhere else, and the local darwin build was GREEN at every step — only three-target corpus regenerations exposed it. Sites touched: **754 across 157 files → 46 → 12 → 10 → 2**. What each pass taught is recorded in `ConversionStrategies-Reference.md` ("A NARROW-UNSIGNED target folds a constant only when nothing else can make it compile"): named-type identity loss, underlying-vs-named targets, named-constant readability, untyped-vs-typed operands, and target-width vs uint32 thresholds. The generalizable rule: **a converter change is measured against the corpus, not against the file that motivated it.**
+
+**Gates.** `os/user` + `net` at darwin **0 errors** · `go2cs-stdlib.slnx` windows **0** / linux **0** · converter `go test ./...` green (after every narrowing) · CNR **byte-identical ×633** after one intended golden re-baseline (`ConstSubexprOverflow`, the test written for this exact construct; Output phase passed unchanged) · behavioral suite **PASS 606** · marker census unchanged. Corpus staged narrowly: the darwin per-GOOS folders plus the two `image/*` files where the fold legitimately applies; an unrelated linux-flavor regen delta (a rename, a `StructLayout` import, an array-dims attribute) was left for whoever regenerates next rather than smuggled in.
+
+**Proof gate outstanding:** the mac legs. My local darwin build succeeding is corroboration, not substitution — if CI disagrees, believe CI.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
