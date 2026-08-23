@@ -837,7 +837,25 @@ public static partial class builtin
 
         if (min > 0)
         {
-            if (typeof(T1).IsAssignableFrom(typeof(T2)))
+            if (typeof(T1) == typeof(T2))
+            {
+                // The identical-element case, which is the ONLY one converted Go emits — Go's
+                // `copy` requires the element types to match. The test folds at JIT time, so this
+                // arm compiles to exactly one span copy and the fork below disappears from the
+                // dominant path: native-to-native and native-to-managed transfers vectorize
+                // instead of walking element by element, and the managed case reaches the same
+                // Buffer.Memmove Array.Copy would have. Overlap stays correct either way (Go
+                // permits it in copy, and CopyTo has memmove semantics).
+                //
+                // The Span<T2>→Span<T1> re-spelling is a reinterpret of the span header, not of
+                // the data: the two are the same runtime type here, which is exactly what the
+                // guard establishes and what MemoryMarshal.Cast cannot express on unconstrained
+                // type parameters.
+                Span<T2> source = src.ToSpan();
+
+                Unsafe.As<Span<T2>, Span<T1>>(ref source)[..(int)min].CopyTo(dst.ToSpan());
+            }
+            else if (typeof(T1).IsAssignableFrom(typeof(T2)))
             {
                 if (dst.IsNativeBacked || src.IsNativeBacked)
                 {
