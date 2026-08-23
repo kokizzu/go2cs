@@ -40,8 +40,9 @@ work rather than discovering later that it was never owed:
 | Release-tag emission (`releaseTagsForVersion`, `src/go2cs/directiveOperations.go`) | Derives the `go1.1 … go1.N` build-tag set from the **Go** version. No `//go:build` constraint flips |
 | False-green route #4 (the stale-`go2cs.exe`-after-a-toolchain-hop trap) | Its mechanism is that no harness's rebuild predicate observes the **Go** toolchain. A .NET migration installs no Go toolchain |
 
-**One route it DOES open, and it is new**: §5.2's embedded-asset stale binary. Read it before
-editing any converter template or publish profile.
+**One route it DOES touch**: §5.2's embedded-asset stale binary — the TFM stage edits files compiled
+into `go2cs.exe`. The predicates cover it since 2026-08-22; read §5.2 for what that means for the
+stage's gate accounting.
 
 ---
 
@@ -198,34 +199,41 @@ around:
     `<TargetFramework>` and a TFM-bearing `<PublishDir>`.
   - **The two converter csproj templates'** conditioned fallbacks.
 
-### 5.2 ⚠ The embedded-asset false-green route
+### 5.2 The embedded-asset false-green route — closed
 
-**An embedded-asset edit changes what `go2cs.exe` emits and invalidates the binary in no harness.**
+**The TFM stage edits files that are compiled INTO `go2cs.exe`, and the harnesses now know it.**
 
 - `src/go2cs/embeddedTemplates.go` `//go:embed`s the csproj templates, the `package_info.cs`
   skeleton, the icons and the whole `profiles/` directory into the converter binary — *"Embedding
-  them makes `go2cs.exe` a single self-contained executable."*
-- **Every rebuild predicate filters on `*.go` only**, at the converter source directory's top level:
-  `BehavioralRunner`, `BehavioralTests`' `BehavioralTestBase`, and `PerformanceRunner` all ask
-  whether any `*.go` file is newer than the binary.
-- **`check-no-regression.ps1` has no rebuild predicate at all** — it re-transpiles unconditionally
-  *with whatever binary it finds*. That is what made it immune to the stale-output and stale-toolchain
-  routes, and it is exactly what makes it blind here.
+  them makes `go2cs.exe` a single self-contained executable."* `stdlibMetadata.go` embeds
+  `stdlib-metadata.txt` the same way.
+- Editing one changes what the converter emits **without touching any `.go` file**. Until 2026-08-22
+  every rebuild predicate asked whether a **top-level** `*.go` was newer than the binary, so the whole
+  embedded set — plus the converter's `internal/` packages and `go.mod`/`go.sum` — invalidated the
+  binary nowhere: 204 files seen against 224 real inputs. A template edit reported "up to date", the
+  old template stayed embedded, and every runner gate validated the previous emission and printed
+  PASS. A `runtime.Version()` toolchain stamp (§ route #4) does not cover this — a stamp says nothing
+  about a template's modification time.
 
-So editing a template touches no `*.go`, every predicate reports "up to date", the **old** template
-stays embedded, and every gate — CNR included — validates the previous emission and goes **green**.
-The edit reads as a no-op, which is indistinguishable from *"the change was already correct."*
+**What covers it now.** `src/tests/ConverterBuildInputs.cs` is the single definition of the
+converter's build-input set, linked into `BehavioralRunner`, `BehavioralTestBase` and
+`PerformanceRunner`; the embedded half is **derived from the `//go:embed` directives themselves**, so
+a directive this stage adds is covered without anyone widening a list. Two guards ride the converter's
+plain `go test ./...` (`src/go2cs/embeddedAssets_test.go`): the directive forms stay inside the subset
+the resolver understands, and the three predicates still delegate to the shared helper. Editing a
+template or a profile now rebuilds `go2cs.exe` on the next runner invocation, with nothing to remember.
 
-This is the stale-binary route with a trigger its existing mitigation does not cover, and a
-`runtime.Version()` toolchain stamp does not cover it either — a stamp says nothing about a
-template's modification time. **A .NET migration's TFM stage edits these files**, which makes it the
-most likely step in the project to meet this route.
+**`check-no-regression.ps1` was never exposed**, and the reason is worth carrying into the stage's
+accounting: it has no rebuild predicate at all — it runs `go build` unconditionally before
+transpiling, and `go build`'s cache is content-addressed over embedded assets. Verified by
+measurement: editing `csproj-template.xml` changes the linked binary's SHA-256, and reverting
+reproduces the baseline byte-for-byte. So CNR's verdict on a TFM-stage template edit is trustworthy
+on its own, exactly as it is for the stale-output and stale-toolchain routes.
 
-**Remedy:** widen the three rebuild predicates from `*.go` to the converter's **embedded-asset set**
-(the `.go` files plus every `//go:embed` target, `profiles/*` included). Three one-line changes,
-landing most cheaply alongside any other work already touching those predicates. **Interim, until it
-lands: any template or profile edit ends with an explicit `go build` of the converter, and no gate
-runs before it.**
+**One residual, and it is narrow.** cmd/go's test cache drops files resolving outside the module root,
+and the three predicate sources live under `src/tests`. A change that touches **only** harness C# can
+therefore be served a cached PASS by the second guard; run `go test -count=1 ./...` from `src/go2cs`
+after such a change. The first guard reads only in-module files and has no such gap.
 
 ### 5.3 The TFM stage's gate
 

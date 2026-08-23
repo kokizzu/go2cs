@@ -276,6 +276,38 @@ ONE stdlib in a build; there is now only one on disk.
   OQ-6, landing **before** hop A): stamp `runtime.Version()` into `go2cs.exe` and have each harness compare
   the stamp against the live `go env GOVERSION`, rebuilding on mismatch exactly as on an mtime change.
   Until then, a toolchain change owes an explicit `go build` of the converter before any gate runs.
+- **FALSE-GREEN route #5 — a converter build INPUT that is not a top-level `*.go` file invalidated
+  `go2cs.exe` NOWHERE (found 2026-08-21 by the hop-campaign planning read; fixed 2026-08-22).** The
+  third instance of route #1's stale-binary trap, and the one with the widest trigger. All three
+  rebuild predicates — `BehavioralRunner` (`Program.cs`), MSTest `BehavioralTestBase`,
+  `PerformanceRunner` (`Program.cs`) — asked whether any **top-level** `*.go` in `src\go2cs` was newer
+  than the binary. The converter is built from more than that, and each omission changes what it
+  **emits** while touching no top-level `.go` file at all: (a) the `//go:embed` assets —
+  `embeddedTemplates.go` embeds both csproj templates, the `package_info.cs` skeleton, the icons and
+  `profiles/*`, and `stdlibMetadata.go` embeds `stdlib-metadata.txt`; (b) the `internal\` packages the
+  converter imports (`internal\stdlibmeta` and siblings), which a top-level walk never saw either; (c)
+  `go.mod`/`go.sum`. Measured at the fix: **204 top-level `*.go` seen, 224 real inputs — 20 invisible.**
+  Edit one and every predicate reports "up to date", the OLD binary keeps running, and every runner gate
+  validates the PREVIOUS emission and prints PASS. The edit reads as a no-op, which is
+  indistinguishable from "the change was already correct" — and a **.NET migration's TFM stage edits
+  exactly those templates and profiles** (`docs/DotNetMigration.md` §5.2), which makes it the step in
+  the project most likely to meet this route. Route #4's `runtime.Version()` stamp does not cover it: a
+  stamp says nothing about a template's modification time. **Remedy (landed):**
+  `src\tests\ConverterBuildInputs.cs` — one definition of the converter's build-input set, LINKED into
+  all three projects (the two runners take no assembly dependency, so a shared assembly is not
+  available), with the embedded half **DERIVED from the `//go:embed` directives themselves** rather
+  than listed, so a directive added tomorrow is covered the day it is written. Two guards under the
+  plain converter `go test ./...` (`embeddedAssets_test.go`): the directive **forms** stay inside the
+  subset the C# resolver understands, and the three predicates still delegate to the shared helper.
+  **`check-no-regression.ps1` was never exposed** — it has no rebuild predicate at all, it runs
+  `go build` unconditionally, and `go build`'s cache is content-addressed over embedded assets
+  (A/B-verified: editing `csproj-template.xml` changes the linked binary's hash, reverting reproduces
+  it byte-for-byte). That is the same asymmetry that made CNR immune to routes #2 and #4 — preserve it.
+  ⚠ One caveat on the second guard: cmd/go's test cache **drops files that resolve outside the module
+  root** (`computeTestInputsID`, "Do not recheck files outside the module, GOPATH, or GOROOT root"), and
+  the three predicate sources live under `src\tests`, outside `src\go2cs`. A narrowed predicate therefore
+  reports `ok (cached)` and only fails under **`-count=1`** — so a change touching ONLY harness C# owes
+  `go test -count=1 ./...`. The first guard has no such gap (every input it reads is inside the module).
 - **⚠ CASE-INSENSITIVE ENVIRONMENT-VARIABLE RACES — Windows-immune, POSIX-live, MSBuild is the
   collision site (root-caused 2026-08-21, fixed at the converter 2026-08-22).** A POSIX environment
   block is case-SENSITIVE, so `GO2CSPATH=/root/go2cs` and `go2csPath=/root/go2cs/src/` are two

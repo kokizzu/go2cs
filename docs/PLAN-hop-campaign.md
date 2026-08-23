@@ -175,15 +175,21 @@ H10 needs up to six workers running the same one. ⟨OQ-H1⟩.
 | `checkNuGetStdLibCompatibility` — `version.Lang` only | **inert** | **inert** — `1.23.1` and `1.23.12` share a `Lang` of `1.23` |
 | False-green route #4 (stale `go2cs.exe` after a **Go** toolchain hop) | **inert** — hop N installs no Go toolchain | **FIRES.** OQ-6's stamp remedy lands **before** hop A, not inside it |
 | Release-tag emission | inert | **inert** — §0.2, source-verified |
-| **The embedded-asset stale binary** ([`DotNetMigration.md`](DotNetMigration.md) §5.2) | **FIRES** — hop N's TFM stage edits both csproj templates and eight publish profiles | fires only if the hop edits an embedded asset |
+| **The embedded-asset stale binary** ([`DotNetMigration.md`](DotNetMigration.md) §5.2) | **COVERED** — hop N's TFM stage still edits both csproj templates and eight publish profiles, but the predicates now see them | covered; fires nowhere |
 
 **The embedded-asset route is new and this plan is where it was found**, so it is stated once, here,
 and in full in the runbook: `src/go2cs/embeddedTemplates.go` `//go:embed`s the csproj templates, the
-`package_info.cs` skeleton, the icons and `profiles/*`; all three rebuild predicates filter on `*.go`
-only (`BehavioralRunner/Program.cs:332`, `BehavioralTests/BehavioralTestBase.cs:145`,
-`PerformanceRunner/Program.cs:275`); and CNR has no rebuild predicate at all. **Remedy: widen the
-three predicates to the embedded-asset set, landing with OQ-6's toolchain stamp, which is already
-touching all three and is already scheduled before hop A.**
+`package_info.cs` skeleton, the icons and `profiles/*` (and `stdlibMetadata.go` embeds
+`stdlib-metadata.txt`); all three rebuild predicates filtered on top-level `*.go` only
+(`BehavioralRunner/Program.cs:332`, `BehavioralTests/BehavioralTestBase.cs:145`,
+`PerformanceRunner/Program.cs:275`) — 204 files seen against 224 real inputs. **The remedy landed
+2026-08-22, ahead of and independent of OQ-6's toolchain stamp**: `src/tests/ConverterBuildInputs.cs`,
+one build-input set linked into all three predicates, with the embedded half derived from the
+`//go:embed` directives and guarded under the converter's `go test ./...`
+(`src/go2cs/embeddedAssets_test.go`). CNR turned out **never to have been exposed** — it has no
+rebuild predicate because it runs `go build` unconditionally, and `go build`'s cache is
+content-addressed over embedded assets (A/B-verified on the linked binary's hash). Route #5 in
+`CLAUDE.md` carries the standing record.
 
 ---
 
@@ -355,7 +361,7 @@ assignment, this hop's opening regen bundle, and the shard map.
 | Step | Owner / machine | Parallel? | Instance notes |
 |:--|:--|:--:|:--|
 | **H0** baseline capture | coordinator, desktop | no | Fresh `.cs.auto` baselines from a seeded 1.23.1 regen (ruled). CleanupBacklog item 18 levels separately |
-| **H1** toolchain | every machine; coordinator verifies | **yes** | Go 1.23.12 side-by-side, `GOROOT/VERSION` confirmed. **OQ-6's stamp lands BEFORE this hop** — and with it, the embedded-asset predicate widening (§2) |
+| **H1** toolchain | every machine; coordinator verifies | **yes** | Go 1.23.12 side-by-side, `GOROOT/VERSION` confirmed. **OQ-6's stamp lands BEFORE this hop.** The embedded-asset predicate widening (§2) already landed 2026-08-22 and is no longer coupled to it |
 | **H2** pin bump | coordinator, desktop | no | `<GoStdLibVersion>` → `1.23.12`; build number **resets** → the hop publishes `1.23.12.1`. **One reviewable pair with H1** |
 | **H3** census | one lane | no | Expect **∅** (§0.2). Deliverable `docs/phase4/CENSUS-go1.23.12-packages.md` |
 | **H4** converter work | — | — | **Expected empty.** H4a is this hop's converter work instead |
@@ -485,7 +491,8 @@ the known escape happened precisely because a canary set predated the newest ban
 
 | Work | Before the anchor ships? | Gated by | Blocks |
 |:--|:--|:--|:--|
-| **Route-#4 toolchain stamp** (OQ-6) **+ the embedded-asset predicate widening** (§2) | **○ yes** — converter change with its own CNR; the stamp must land **before hop A** by ruling | nothing | **■ hop A's H1**; ■ hop N's N3 safety |
+| **Route-#4 toolchain stamp** (OQ-6) | **○ yes** — converter change with its own CNR; the stamp must land **before hop A** by ruling | nothing | **■ hop A's H1** |
+| ~~**The embedded-asset predicate widening** (§2)~~ | **LANDED 2026-08-22** — separated from the stamp and shipped first; nothing waits on it | — | — |
 | **`.cs.auto` staleness** (CleanupBacklog 18) | ○ yes, on its own merits (OQ-7) | nothing | nothing — H0 generates fresh baselines regardless |
 | **`.slnx` registrations** (`core/math/big`, `core/runtime/debug`) | ○ yes, one line each | nothing | nothing (an unregistered member breaks only the VS build) |
 | **SDK provisioning (N0)** | **○ yes** — side-by-side disturbs nothing | nothing | ■ N1 |
@@ -554,12 +561,14 @@ shapes deserve naming before they are met:
    a false RED that time. *"The same mechanism could hide a real one."* On six workers with three
    worktrees each under budget pressure, transpile timeouts are **more** likely, not less. **A shard
    reporting zero timeouts on a slow box deserves a second look, not a congratulation.**
-5. **The embedded-asset stale binary reaching hop A** (§2). Its worst form *is* a shard campaign: a
-   worker whose `go2cs.exe` predates a template edit re-derives against the old emission and reports
-   green, while a worker that happened to rebuild reports drift — and the disagreement reads as a
-   *machine* difference. **The ledger's converter-commit field is not enough**; a commit does not say
-   whether the binary was rebuilt after it. Record the binary's modification time beside it, or have
-   each ACK confirm an explicit `go build`.
+5. **A stale `go2cs.exe` reaching hop A.** The embedded-asset half of this is closed (§2, landed
+   2026-08-22), but the shape survives for any input no predicate observes — route #4's Go toolchain
+   being the live one. Its worst form *is* a shard campaign: a worker whose binary predates the change
+   re-derives against the old emission and reports green, while a worker that happened to rebuild
+   reports drift — and the disagreement reads as a *machine* difference. **The ledger's
+   converter-commit field is not enough**; a commit does not say whether the binary was rebuilt after
+   it. Record the binary's modification time beside it, or have each ACK confirm an explicit
+   `go build`.
 
 **And the structural one:** `run-validated-sweep.ps1` collapses build errors into bare `FAIL <pkg>`
 rows *with zero diagnostics* — the harness-honesty item priced 2026-08-22, where `CS0117` hid behind

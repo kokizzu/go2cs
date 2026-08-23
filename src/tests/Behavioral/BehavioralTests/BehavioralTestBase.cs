@@ -137,14 +137,15 @@ public abstract class BehavioralTestBase
 
         go2cs = Path.Combine(go2csBin, $"go2cs{s_exeSuffix}");
 
-        if (File.Exists(go2cs))
-        {
-            FileInfo go2csExeInfo = new(go2cs);
-
-            // If exe is newer than all .go source files, can skip build
-            if (Directory.GetFiles(go2csSrc, "*.go").Select(fileName => new FileInfo(fileName)).All(info => go2csExeInfo.LastWriteTimeUtc > info.LastWriteTimeUtc))
-                return;
-        }
+        // If the exe is newer than every one of the converter's build inputs, the build can be
+        // skipped. That set is the SHARED ConverterBuildInputs (src/tests), not a top-level *.go
+        // enumeration: an embedded template (csproj scaffolding, the package_info skeleton,
+        // profiles/*) or a converter internal/ package changes what go2cs.exe emits while touching no
+        // top-level .go file, so the narrower predicate reported "up to date" and every phase below
+        // then validated the PREVIOUS emission green -- false-green route #5 in CLAUDE.md. The same
+        // call is made by BehavioralRunner and PerformanceRunner.
+        if (!ConverterBuildInputs.IsConverterStale(go2csSrc, go2cs))
+            return;
 
         int exitCode = Exec(context, "go", $"build -o \"{go2cs}\"", go2csSrc);
 
