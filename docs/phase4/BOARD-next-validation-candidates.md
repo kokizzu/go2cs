@@ -18445,6 +18445,40 @@ in (`**T` out-params are a stacked second defect; `[StructLayout(Sequential, Siz
 explicit tail padding). Post-release, R's queue after F3/the Windows wrappers/F1; per-wrapper
 evidence (a probe per fix, no blind batch) still applies — it is the SCHEDULING that changed,
 not the proof standard.
+
+## 2026-08-23 · Census #3 (wall #3 pre-rooted from the coordinator seat) + two fleet-ledger traps + the Windows-UDP seam ruling
+
+**Wall #3 (run 32639211594 at `d550cdc08`): 9 errors, two leaves, both rooted before
+dispatch.** (1) `vendor/golang.org/x/sys/cpu` compiles BOTH a flat and a `darwin/`
+`package_info.cs` — the L3 partial-routing question for a package_info that varies by GOOS.
+(2) `crypto/x509`'s CS0234 on `macos_package` with the ProjectReference PRESENT and correct:
+the darwin-exclusive `internal/macos` package holds sources only in `darwin/` but its csproj
+has NO `GoTargetOS` compile-selection block, so it builds a "successful" EMPTY assembly and
+the dependent fails — the bookkeeping-artifact class through a new door; the fix belongs in
+csproj emission for platform-exclusive packages. Dispatched to G; the next mac verdict proves
+walls #2 and #3 together.
+
+**Windows UDP wrappers — ruled a SUBMIT-SEAM extension, not a wrapper fix** (R, halted at the
+design line): a Windows UDP send needs the operation record, a native OVERLAPPED and native
+WSABUFs — all private to `syscall`'s WSA hand-own. A public Go-shaped seam on `syscall` is
+rejected on that file's own header doctrine; the ratified path is an amendment to
+`DESIGN-netpoll-managed-poller.md` §4.3–4.5 extending the `GoAsyncIO` rendezvous, then
+implementation under it. Not urgent (no roster row sends UDP on Windows); queued behind F1's
+resolver fork-split.
+
+**Fleet-ledger trap 1 — bash glob eats a PowerShell gate invocation:**
+`powershell.exe -File <script> *>&1` from a BASH shell glob-expands the `*` into a positional
+argument; the script rejects it, the wrapper exits 0, and an eight-second "pass" never ran the
+gate. The `*>&1` idiom is PowerShell-side only — from bash, quote it or omit it. (R, caught on
+its own CNR run and re-run properly.)
+
+**Fleet-ledger trap 2 — partial-class FIELD-INITIALIZER ordering:** a hand-own file of a
+partial class must never initialize a field (e.g. `= modws2_32.NewProc("WSASendTo")`) from a
+GENERATED sibling file's static field — C# orders static field initializers within a type but
+NOT across the files of a partial class, so the sibling can still be null and the first use
+dies in a nil dereference far from the cause. Defer the lookup to first use (`??=`); any
+hand-own reaching a generated `mod*`/`proc*` needs this. (R, found by crash while filling
+`WSASendtoInet4`.)
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
