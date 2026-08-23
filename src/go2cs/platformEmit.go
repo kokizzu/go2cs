@@ -453,8 +453,7 @@ func reconcileLayoutDuplicates(coreDir string, targets []string) (int, error) {
 		}
 
 		// Build outputs hold copies of everything and are not part of the layout.
-		switch entry.Name() {
-		case "bin", "obj", "Generated":
+		if isBuildOutputDirectory(entry.Name()) {
 			return filepath.SkipDir
 		}
 
