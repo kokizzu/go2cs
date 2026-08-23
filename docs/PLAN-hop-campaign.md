@@ -54,6 +54,21 @@ Both are source-verified on this checkout, and both narrow the migration runbook
    package set. H4 should be ~empty and H3's census should come back **∅** — a non-empty census here
    is a finding.
 
+> **Both facts EVIDENCED against the actual upstream range (recon, 2026-08-23,
+> [`phase4/RECON-go12312-diff.md`](phase4/RECON-go12312-diff.md)):** 83 commits, 161 files, ~59
+> stdlib-visible across ~20 packages; every "added" file is testdata or a `_test.go` in an
+> existing package, so H3 = ∅ is now measured, not predicted. The recon also pre-loads the hop's
+> attention list: **9 of 162 validated rows intersect the range, 4 HIGH** (`syscall` — CVE fix +
+> two direct hand-own file overlaps for H6's differential; `os/exec` — LookPath security fix +
+> 27 host-limit disclosures to re-derive; `database/sql` — a real Rows/Scan race fix; `time` —
+> test-only upstream, but the new Stop/Reset tests probe the hand-owned managed timers). The
+> other 153 rows re-run at banked counts; the 7 Linux-annotated rows intersect nowhere. Seven
+> CVE-class fixes ride the hop (a security-posture argument for shipping it), `crypto/tls`'s
+> banked suite stands on certificates upstream fixed for wall-clock expiry (a future sweep
+> false-red with a ready explanation — the hop levels it), and `reflect`'s Seq/Seq2 fixes are
+> the most converter-relevant behavior change: the corpus currently reproduces the 1.23.1 bug
+> faithfully.
+
 What hop A buys is the **machinery**: the pin bump exercised for real, the hand-own `.auto`
 differential's first run, the badge churn, the release ritual, and H10 executed as a parallel fleet
 campaign rather than a single serial run.
