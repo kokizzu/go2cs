@@ -9,6 +9,9 @@
     <Project Path="core/go2cs/go2cs.shproj" />
     <Project Path="core/golib/golib.csproj" />
   </Folder>
+  <Folder Name="/core/bytes/">
+    <Project Path="core/bytes/bytes.csproj" />
+  </Folder>
   <Folder Name="/core/cmp/">
     <Project Path="core/cmp/cmp.csproj" />
   </Folder>
@@ -143,6 +146,9 @@
   <Folder Name="/core/iter/">
     <Project Path="core/iter/iter.csproj" />
   </Folder>
+  <Folder Name="/core/math/big/">
+    <Project Path="core/math/big/math.big.csproj" />
+  </Folder>
   <Folder Name="/core/math/bits/">
     <Project Path="core/math/bits/math.bits.csproj" />
   </Folder>
@@ -160,6 +166,9 @@
   </Folder>
   <Folder Name="/core/reflect/">
     <Project Path="core/reflect/reflect.csproj" />
+  </Folder>
+  <Folder Name="/core/runtime/debug/">
+    <Project Path="core/runtime/debug/runtime.debug.csproj" />
   </Folder>
   <Folder Name="/core/runtime/internal/" />
   <Folder Name="/core/runtime/internal/math/">

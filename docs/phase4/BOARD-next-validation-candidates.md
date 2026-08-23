@@ -18379,6 +18379,29 @@ driving the WSL VHD to ENOSPC remounts the distro read-only AND writes enormous 
 `%TEMP%\wsl-crashes` on the HOST (136 GB observed, C: to 0 bytes). Check that directory first
 when a box mysteriously reads 0 free; the ext4 inside was undamaged. R recovered to 136 GB
 free; lane healthy.
+
+## 2026-08-23 · The .slnx registrations item CLOSES — and the investigation re-scopes it correctly first
+
+The queue item read ".slnx registrations (math/big, runtime/debug)". Investigated before
+editing, three facts established: (1) **`*.tests.csproj` files are registered in NO solution BY
+DESIGN** — `solutionGenerator.go:175-195` documents why (pipeline-staged, git-ignored inputs
+mean a converted test project cannot build from a clean tree); the item was never about them.
+(2) The REAL gap: `core/math/big` and `core/runtime/debug` sit in `go2cs.slnx`'s build closure
+via `GolibTests` ProjectReferences but were unregistered — and the minimal CLOSED addition is
+THREE entries, because `core/bytes` is math/big's own direct dependency and was unregistered
+too (BFS-verified; adding two would have broken the registered set's transitive closure).
+Landed as a hand edit to the hand-maintained solution, `check-solution-integrity.ps1` green.
+(3) The generated `go2cs-stdlib.slnx` needed nothing — both production csproj were already in
+it.
+
+**Follow-up item minted (not taken now): the closure convention has drifted wide** — the full
+member closure of `go2cs.slnx` reaches 124 core projects and **55 are unregistered**, dominated
+by `SystemCertVerify`'s crypto/x509 closure plus net/context/json/flag/os.exec/os.signal/
+path.filepath/time.tzdata. Same VS-only failure mode as ever (harnesses build by path), so it
+rots invisibly; a leveling pass plus a gate that polices core registrations the way
+`check-solution-integrity.ps1` polices behavioral ones would retire the class. Itemized in the
+investigation report. Also fixed in passing: CLAUDE.md's stale mention of a
+`src/go2cs-examples.sln` that no longer exists.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

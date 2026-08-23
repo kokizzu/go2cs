@@ -47,8 +47,9 @@ the last build scripts that referenced it (`convert-gosrc.*`) were removed 2026-
 tests/examples/utilities + the ~61 `core/` packages their closure reaches) — **builds green**.
 `src/go2cs-stdlib.slnx` = every `core/` package (**307** projects since layout L3 — the three platform-exclusive
 adopted verbatim; it is what `push-nuget.ps1` packs. They overlap deliberately — same tree, same paths,
-different scope — so a project can be opened from either. (A third, classic-format
-`src/go2cs-examples.sln` covers the samples; the old hand-maintained classic `.sln` files are retired.)
+different scope — so a project can be opened from either. (The old hand-maintained classic `.sln` files
+are all retired -- `src/go2cs-examples.sln` included, removed before the 75% anchor; only the two
+`.slnx` remain.)
 
 ⚠ **NOTHING routinely builds `go2cs.slnx` end to end, so a broken solution member rots invisibly.**
 Every harness — `BehavioralRunner`, MSTest, `check-no-regression.ps1`, `run-validated-sweep.ps1` —
