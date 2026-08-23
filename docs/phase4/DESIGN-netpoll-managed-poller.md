@@ -682,7 +682,7 @@ nothing at all. It signals a descriptor and a mode, and the harvest asks Windows
 cross-package contract at one property (the native address) and keeps WSA-vs-Win32 error namespaces
 from ever being confused.
 
-### 4.7 The DATAGRAM submit, and how the golib seam extends to reach it — PROPOSED (2026-08-23, lane R)
+### 4.7 The DATAGRAM submit, and how the golib seam extends to reach it — RATIFIED (coordinator, 2026-08-23) — all five ⟨OQ⟩s RULED per their §4.7.5 recommendations. On ⟨OQ-B⟩, the second opinion asked for: the duplication is accepted on PRINCIPLE, not tolerance — an ABI-pinned LAYOUT cannot drift between copies while remaining correct, because the OS is the single source of truth for its shape; duplicated logic drifts, duplicated ABI mirrors are re-derivations of the same external fact. Implementation may bind: primitives + their GolibTests first (⟨OQ-D⟩), send-only with the WSARecvFrom measurement taken not assumed (⟨OQ-C⟩), guard registered in the same change (⟨OQ-E⟩); parks merged-ready under the release-eve freeze in the wrappers’ merge-order slot
 
 > **STATUS: PROPOSED. Nothing in this section is ratified**; §4.7.5 collects the questions that need
 > a ruling before implementation. Commissioned by the coordinator (mailbox, 2026-08-23) after this
