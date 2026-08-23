@@ -18479,6 +18479,40 @@ NOT across the files of a partial class, so the sibling can still be null and th
 dies in a nil dereference far from the cause. Defer the lookup to first use (`??=`); any
 hand-own reaching a generated `mod*`/`proc*` needs this. (R, found by crash while filling
 `WSASendtoInet4`.)
+
+## 2026-08-23 · The nested-field-pointer finding, CENSUSED and COMMISSIONED — 4 hazard sites, 1 function, 1 package: the family's sixth sighting, smallest yet
+
+**The finding (lane R, F1's fork-split):** taking a pointer to a field of a NESTED struct
+field and writing through it is silently lost — `p := &b.header.questions; *p++` emits
+`count = Ꮡ(b.header).of(Δheader.Ꮡquestions)`, boxing a COPY of the intermediate field, so
+the write lands in the copy. Rooted with a 40-line no-DNS repro (via-field-pointer and
+slice-elem-field both lost; direct mutation fine). Surfaced as `dnsmessage.Builder` emitting
+QDCOUNT=0 — which is BOTH real-world symptoms at once (nameservers ignore the malformed query;
+the resolver waits out its deadline).
+
+**The census ([`CENSUS-nested-field-pointer.md`](CENSUS-nested-field-pointer.md), exhaustive
+balanced-paren parse over all 5,565 Ꮡ(...) sites):** the hazard shape appears at exactly
+**4 sites, all write-context, all in `incrementSectionCount`**
+(`vendor/golang.org/x/net/dns/dnsmessage/message.cs:1349–1361`) — not on the roster, but 13
+files under `src/core/net` reference dnsmessage, so `net`'s future validation walks into it.
+All lookalikes classified per-site: the two-arg element form is the PROVEN-correct aliasing
+(guarded by `SliceElementFieldAddress`), the 6 one-arg `.of` lookalikes are read-context, and
+the no-`.of` family is benign — with one watch item: **9 unix-only
+`Ꮡ(syscall.ForkLock).RLock/RUnlock` write-context package-var sites activate with the Linux
+campaign.** Behavioral coverage of the hazard shape: ZERO — nothing contradicts the finding,
+nothing guards the fix yet. Reproducibility note: the corpus address-of glyph is **U+13D1**
+(a U+13E1 grep returns a false all-clear).
+
+**Family placement:** the SIXTH sighting of the address-of-copy-boxing family (element
+aliasing, xml's binding box, sync/atomic's local box, gob = fifth), and the smallest. The
+ж-box arc is the PERFORMANCE axis over the same neighborhood and does not touch this
+correctness gap.
+
+**COMMISSIONED (to R, after the §4.7 implementation lands):** direct fix with guard per the
+family's one-base-shape-per-fix precedent — the emission chains the address from the receiver
+root (`.of(...).of(...)`, a form already routine at 309 sites) instead of boxing the
+intermediate field; one new behavioral guard for the write-through shape; dnsmessage regen;
+CNR pass. Corpus churn today: one file, four lines. Parks under the freeze like the rest.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
