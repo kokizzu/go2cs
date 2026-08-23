@@ -18236,4 +18236,17 @@ classify from the VERDICT line, test CVAC first, and carry a `cvac=` column in a
 green class is never silently absent. All five of G's drivers and R's leg driver are patched;
 this entry exists for the next harness author.
 
----<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+## 2026-08-23 · FIRST native-Linux control (CI run 32613375229 at `43280f0bb`) — GREEN, 208 s
+
+The user dispatched `os-matrix.yml -f goos=linux -f stage=behavioral-smoke` on a hosted
+ubuntu runner: converter build + filtered behavioral run, all green in 208 s. Why it matters:
+every prior Linux datum in the campaign came through WSL on Windows hosts — this is the first
+validation on NATIVE Linux, no WSL layer, no Windows host, and it corroborates the WSL evidence
+independently at the smoke level. It also ran at the current master tip, four commits past the
+consolidation SHA, so post-merge master is freshly proven on a second OS. Calibration figure
+banked: 208 s smoke on a standard 4-core hosted runner (the CI-overflow shard sizing in
+PLAN-hop-campaign.md can hang off it). The matrix has now proven BOTH of its stated purposes on
+its first two dispatches: darwin census (found the readdir wall) and native-Linux control
+(green). Stage-gating verified too - census and sweep-shard steps correctly skipped.
+
+---!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
