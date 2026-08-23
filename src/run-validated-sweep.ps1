@@ -519,7 +519,13 @@ foreach ($row in $rows) {
     # INVALID does that recovery run: a GO2CSPATH pointing at some other real go2cs tree (a
     # deploy-core staging root, say) would be honored instead, and the suite would be built against
     # one tree's metadata while compiling the other's sources.
+    $rowStarted = Get-Date
     $out = & $exe -tests -test-action all -test-timeout $pkgTimeout -go2cspath $src $goDir $outDir 2>&1
+    # Per-row wall time, printed on every verdict line. This is the SWEEP's wall clock for the row
+    # (convert + build + both test hosts + compare), which is the number shard planning needs --
+    # the go test -json stream's own "Time" fields measure only the Go side and invert exactly the
+    # rows that dominate a shard (hash/maphash: 7.6s in Go, ~40min in C#).
+    $rowSecs = [int]((Get-Date) - $rowStarted).TotalSeconds
     $verdict = ($out | Select-String 'Validated (\d+) tests against go test' | Select-Object -First 1)
 
     if ($verdict) {
@@ -550,11 +556,11 @@ foreach ($row in $rows) {
         switch ($class) {
             'pass' {
                 $pass++
-                Write-Host "  PASS  $label $got$osSuffix" -ForegroundColor Green
+                Write-Host "  PASS  $label $got$osSuffix [${rowSecs}s]" -ForegroundColor Green
             }
             'host-conditional' {
                 $pass++
-                Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked + $($hostConditional.Extras.Count) host-conditional" -ForegroundColor Green
+                Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked + $($hostConditional.Extras.Count) host-conditional [${rowSecs}s]" -ForegroundColor Green
             }
             'unbanked-count' {
                 # COMPARISON-VALIDATED-AT-COUNT, the honest interim the per-OS ruling names. The
@@ -564,21 +570,21 @@ foreach ($row in $rows) {
                 # wrong either, so it is not the silent-drift failure below. It is its own report,
                 # and it retires row by row as annotations land.
                 $cvac++; $cvacRows += "$pkg (count $got, windows column $($row.Expected))"
-                Write-Host "  CVAC  $label $got (validated; no $targetGoos expectation, windows column $($row.Expected))" -ForegroundColor Cyan
+                Write-Host "  CVAC  $label $got (validated; no $targetGoos expectation, windows column $($row.Expected)) [${rowSecs}s]" -ForegroundColor Cyan
             }
             'disclosed-moved' {
                 # An annotated row whose matching count agreed and whose DISCLOSED count did not.
                 # Named as itself rather than mis-reported as a count failure.
                 $fail++
                 $failed += "$pkg (disclosed $gotDisclosed, $($row.Effective.Source) expectation $($row.Effective.Disclosed))"
-                Write-Host "  DISC  $label $got, disclosed $gotDisclosed vs the $($row.Effective.Source) expectation $($row.Effective.Disclosed)" -ForegroundColor Yellow
+                Write-Host "  DISC  $label $got, disclosed $gotDisclosed vs the $($row.Effective.Source) expectation $($row.Effective.Disclosed) [${rowSecs}s]" -ForegroundColor Yellow
             }
             default {
                 # Validated, but NOT at the expectation in force -- normally a silent change in what
                 # the suite asserts, and a failure: the table and reality must agree, one of them is
                 # now wrong.
                 $fail++; $failed += "$pkg (count $got, banked $($row.Effective.Expected))"
-                Write-Host "  COUNT $label $got, banked $($row.Effective.Expected)" -ForegroundColor Yellow
+                Write-Host "  COUNT $label $got, banked $($row.Effective.Expected) [${rowSecs}s]" -ForegroundColor Yellow
                 if ($null -ne $hostConditional -and $hostConditional.Reason) {
                     Write-Host "        host-conditional check: $($hostConditional.Reason)" -ForegroundColor Yellow
                 }
@@ -587,7 +593,7 @@ foreach ($row in $rows) {
     }
     else {
         $fail++; $failed += $pkg
-        Write-Host "  FAIL  $label" -ForegroundColor Red
+        Write-Host "  FAIL  $label [${rowSecs}s]" -ForegroundColor Red
         $out | Select-Object -Last 3 | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkGray }
     }
 }
