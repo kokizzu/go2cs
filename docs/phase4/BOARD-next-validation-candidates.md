@@ -18794,4 +18794,56 @@ killed at 300/304 leaves a root the ritual says to throw away.
 **Gates.** Behavioral suite **PASS 607** (Transpile/Compile/Target 607 each; Output 581 pass / 26 skip; 0 fail) · Target byte-identical and a full 607-project re-transpile left the tree clean, so no converter output moved · CNR byte-identical · guard **neuter-tested** (with the emission disabled its Output phase fails). Accessibility was *measured* before emitting: `ExtensionMethodRegistry` discovers with `BindingFlags.NonPublic`, so an unexported type's twin is still found by a FOREIGN assembly's assert — exactly where F2 bites.
 
 **The guard's third row is the one to keep.** `EmbeddedInterfaceWitness` prints `NumMethod` per row (2/2/1) so the method set cannot gain an entry it should not, and `holder` — whose C# field is **identical** to `wrapper`'s — is what stops any future fix from resting on the name heuristic that once made `dwarf` forward `Common()` through a named field and return a silently wrong answer.
+## `(ж<array<T>>)(uintptr)` is MEMORY-UNSAFE by construction — 61 sites, 35 in `runtime` (R, 2026-08-23)
+
+`array<T>` is a MANAGED struct whose first field is a `T[]` reference (`array.cs:47`,
+`Backing => m_array ?? []`), and a native-backed `ж<T>` materialises its value with
+`Unsafe.AsRef<T>((void*)m_nativeAddr)` (`ж.cs:250`). Together those mean
+`(ж<array<byte>>)(uintptr)(…)` **reinterprets whatever bytes live at that address as a managed
+array reference and then dereferences it.**
+
+Measured in GolibTests against golib directly — no kernel, no socket, no async:
+
+| memory at the address | result |
+|:--|:--|
+| zeroed | `Length=0` (the reference reads null, `?? []` gives the empty array) — a SILENT WRONG ANSWER |
+| filled `0xAB` | `Length=-1414812757`, i.e. `0xABABABAB` — it fabricated a managed reference out of the filler bytes and dereferenced it, returning a number instead of faulting BY LUCK |
+
+The second row is the finding: this is a type-safety hole, not a wrong result. Any real data — a
+filled sockaddr, a `siginfo`, a register block — takes that path.
+
+**Census: 61 sites.** `runtime` (+ per-GOOS) **35**, `syscall` darwin/linux 14, `internal/poll/windows`
+4, `reflect` 2, and 6 across `net/darwin`, the registry wrapper, `vendor/…/route`, `vendor/…/sha3`.
+Not yet audited for liveness — the `ManagedPointerTokens.Resolve` arm rescues reflect-originated
+pointers, and many sites are simply unreached on the current roster.
+
+**The source shape is unrepresentable, not mis-emitted.** Go's
+`p := (*[2]byte)(unsafe.Pointer(&pp.Port))` carries the length IN THE TYPE; the emission erases it,
+and `array<T>` has nowhere to put an address anyway (it holds a `T[]`, not pointer+length). No
+converter-side spelling of the current types can be correct — the representation has to change.
+Three remedies priced on the mailbox (native-backed `array<T>`; a distinct `NativeArray<T>` view;
+pointer arithmetic per site); placement is the coordinator's.
+
+## ⚠ CORRECTION to the three entries above it: the Windows UDP read is NOT the struct-passing class (R, 2026-08-23)
+
+I banked the recv panic as *"the sixth struct-passing sighting, decode side"* in the §4.7 board
+entry, in netpoll §4.7.6 and §4.8.1, and in ConversionStrategies-Reference. **That attribution is
+wrong and it was mine.** The panic is the byte-view defect above: a golib representation hole with
+no kernel anywhere near it.
+
+**The argument I used was itself false, and the way it was false is the lesson.** I wrote that the
+identical round-trip *"runs in the WRITE direction at `fd_windows.cs:1277` and works today — TCP
+exercises it"*, and concluded the round-trip was innocent and the managed box guilty. TCP does not
+exercise it: `sockaddrInet4ToRaw` has exactly three callers — `WriteMsg`, `WriteMsgInet4`,
+`WriteMsgInet6` (`:1456/1490/1520`), the `WSASendMsg` path — and nothing on the roster reaches them.
+The write direction was **unexercised, not working**, and it carries the same expression writing
+`p.Value[0] = …`, so it fails identically the moment anything calls it.
+
+**"A passes, therefore the code A shares with B is sound" requires checking that A actually runs
+B's code.** I inferred it from a suite being green and did not check the call graph — the same
+species of unmeasured inference the AV-vs-panic rule exists to replace, applied to my own claim
+instead of someone else's. The probe that settled it took two minutes and should have come first.
+
+---
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

@@ -841,8 +841,11 @@ this section removes.
 
 ### 4.8 The DECODE side — operation-owned native staging, decoded at HARVEST — RATIFIED (coordinator, 2026-08-23) — ⟨OQ-F⟩ callback, ⟨OQ-H⟩ demand order, ⟨OQ-I⟩ both-platform-in-one-change, all per recommendation. **⟨OQ-G⟩ AMENDED to FIX-BY-DEFAULT in this increment**: a use-after-return handed to the kernel is the struct-passing family’s LIFETIME sibling, and that class does not get empirical exoneration — the lane’s own words ("has not misbehaved, which proves nothing about a race") are the ruling’s grounds. The measurement that stands is the documented contract (the overlapped parameter-lifetime remarks), cited in the fix’s header; no race-hunt is owed, and the three-line staging lands with this increment unconditionally
 
-> **STATUS: PROPOSED. Nothing in this section is ratified**; §4.8.7 collects the questions that need
-> a ruling before implementation. **This section AMENDS §4.3**, whose sub-wall (1) already named this
+> **STATUS: RATIFIED** (coordinator, mailbox 2026-08-23, at master `dba036de0`). ⟨OQ-F⟩, ⟨OQ-H⟩ and
+> ⟨OQ-I⟩ were ruled as recommended; **⟨OQ-G⟩ was AMENDED to FIX-BY-DEFAULT** — *"a use-after-return
+> handed to the kernel is the struct-passing family's LIFETIME sibling, and that class does not get
+> empirical exoneration"* — so the staging lands unconditionally, citing the documented contract,
+> with no race-hunt. §4.8.7 records each question with its ruling. **This section AMENDS §4.3**, whose sub-wall (1) already named this
 > shape — *"`AcceptEx`'s output buffer is the class's decode-side… the mirror must be a NATIVE
 > staging buffer, decoded at harvest"* — and left it unspecified. Commissioned by the coordinator
 > (mailbox, 2026-08-23) on landing §4.7: *"the recv increment is YOURS, queued AFTER F1,
@@ -852,17 +855,16 @@ this section removes.
 
 #### 4.8.1 What reached it, and what it measured
 
+> **⚠ CORRECTED 2026-08-23 — §4.8.1's attribution is wrong; see the note in §4.7.6.** The recv panic
+> is NOT the struct-passing class: it is `(ж<array<T>>)(uintptr)` reinterpreting native bytes as a
+> managed array reference (61 corpus sites, 35 in `runtime`). **What this does NOT invalidate:** the
+> §4.8.3 hook census, the §4.8.5 coverage table, and ⟨OQ-G⟩, which rests on the documented
+> `WSASendTo` contract rather than on this attribution. **What it leaves open:** whether the receive
+> needs this section's seam AT ALL — the panic fired before anything could observe whether the kernel
+> filled the managed box, so there is no evidence either way until the byte-view defect is fixed.
+
 §4.7 made Windows SEND datagrams. `UdpLoopbackRoundTrip` therefore stopped dying at the submit and
 started dying at the READ:
-#### 4.7.6 What the implementation measured — LANDED send-side, and the answer to ⟨OQ-C⟩
-
-Implemented under the five rulings (lane R, 2026-08-23). The seam works: **Windows now sends
-datagrams**, through exactly the five steps §4.7.3 specified, with no public surface added to
-`syscall`. Four things the implementation learned that the proposal could not:
-
-**1. ⟨OQ-C⟩ is answered, and the answer is YES — the recv path carries the class too.** With the
-send fixed, `UdpLoopbackRoundTrip` on Windows no longer throws the stub; it reaches the READ and
-dies there:
 
 ```
 panic: runtime error: index out of range [0] with length 0
@@ -948,7 +950,17 @@ that should not be re-derived when accept arrives:
 |:--|:--|:--|
 | `WSARecvFrom` | `ReadFrom` (:617), `ReadFromInet4` (:655), `ReadFromInet6` (:693) | one sockaddr into `o.rsa`, length into `o.rsan` |
 | `WSARecvMsg` | `ReadMsg` (:1330), `ReadMsgInet4` (:1364), `ReadMsgInet6` (:1399) | a sockaddr **and** a control buffer, through a `WSAMsg` that itself embeds a `ж<WSABuf>` |
-| `AcceptEx` | `acceptOne` (:1033) | a single output block holding TWO sockaddrs, split by `GetAcceptExSockaddrs` |
+| `AcceptEx` | `acceptOne` (:1033) | a single output block holding TWO sockaddrs, split by `GetAcceptExSockaddrs` — ⚠ **ALREADY DONE**, see below |
+
+**⚠ CORRECTION (2026-08-23, at implementation): `AcceptEx` was ALREADY FIXED when this table was
+written, and it is the TEMPLATE rather than a member of the backlog.** `AcceptEx` stages into the
+record's own native block and `GetAcceptExSockaddrs` transcribes it into managed `RawSockaddrAny`
+values field for field, precisely so `RawSockaddrAny.Sockaddr` — which flattens the managed struct
+back to its 116-byte native image — has a faithful thing to read. Those two are documented in their
+own headers as *"a pair; neither is meaningful alone"*. I listed accept as unfixed because I
+censused the SHAPE (`rsan = 116` over a `slice<RawSockaddrAny>`) without checking whether the
+wrappers around it were already hand-owned. The implementation is the third member of that pair, not
+a new mechanism — which is also why §4.8's proposed flat-sockaddr follow-on dissolved.
 
 All three are the same mechanism with a different decode closure: stage native at submit, copy back
 at harvest. `AcceptEx` differs only in that its staged block is larger and its decode calls
@@ -983,12 +995,37 @@ at harvest. `AcceptEx` differs only in that its staged block is larger and its d
 * **⟨OQ-G⟩ — ⚠ does §4.7's LANDED send have a latent lifetime bug I should fix in this increment?**
   Raised against my own work rather than found by a gate. `WSASendtoInet4` writes the sockaddr into a
   `stackalloc` buffer and hands its address to an OVERLAPPED `WSASendTo`. If the kernel retains
-  `lpTo` until completion — as it does for the buffer pointers, and as §4.3's lifetime wall describes
-  — then that address dies at wrapper return and the send is handing the kernel a
-  use-after-return. It has not misbehaved in testing, which proves nothing about a race.
-  *Recommendation:* **MEASURE it first** (the pattern this arc keeps being right to follow), and if
-  confirmed, move the send's sockaddr onto `StageOperationBuffer` in this same increment — the
-  primitive already exists and the fix is three lines.
+  `lpTo` until completion — as §4.3's lifetime wall describes for the buffer pointers — then that
+  address dies at wrapper return and the send is handing the kernel a use-after-return. It has not
+  misbehaved in testing, which proves nothing about a race.
+
+  **MEASURED against the contract (2026-08-23), and the finding is an ASYMMETRY rather than a
+  verdict.** `WSASendTo`'s documentation is explicit about lifetime in two places and silent in the
+  third:
+
+  | parameter | what the contract says |
+  |:--|:--|
+  | `lpBuffers` (the WSABUF ARRAY) | *"it is the Winsock service provider's responsibility to capture the WSABUF structures before returning from this call. This enables applications to build stack-based WSABUF arrays"* — captured, so a stack image is explicitly ALLOWED |
+  | `lpOverlapped` | *"must be valid for the duration of the overlapped operation"* — persistence explicitly REQUIRED |
+  | `lpTo` | **nothing.** No capture promise, no persistence requirement |
+
+  So `lpTo`'s lifetime is **undefined by the contract**, which is materially worse than either
+  answer would be: an implementation may capture it today and not tomorrow, and the failure mode is
+  a silent wrong-destination or a read of freed stack. Depending on undefined lifetime at the kernel
+  boundary is precisely the hazard §4.3's sub-wall (2) exists to refuse. *Recommendation, now
+  evidence-backed rather than cautious:* **stage it** — move the send's sockaddr onto
+  `StageOperationBuffer` in this increment. Three lines, the primitive already exists, and it turns
+  an unprovable risk into a proven-safe one.
+
+  **The same source corrects §4.3 on a point worth fixing while we are here.** §4.3's sub-wall (2)
+  states flatly that *"the kernel retains the OVERLAPPED pointer and the buffer pointers until
+  COMPLETION"*, and §4.7 reasoned from it that a stack image for the WSABUF array is *"wrong by
+  construction"*. That is right about the DATA buffers and **not** established for the WSABUF ARRAY,
+  which the Remarks say is captured before return precisely so that stack-based arrays are legal.
+  Nothing shipped is unsafe — §4.7 staged the array anyway, which is the conservative reading and
+  the one the corpus keeps — but the design's stated *reason* is stronger than the contract
+  supports, and a future author trusting it would over-build. (The parameter list and the Remarks
+  disagree with each other on this point; that disagreement is itself the argument for staging.)
 * **⟨OQ-H⟩ — scope: all seven sites, or `WSARecvFrom` alone first?** *Recommendation:* **`WSARecvFrom`
   first (three sites), then `AcceptEx`, then `WSARecvMsg`.** `WSARecvFrom` is what ⟨OQ-E⟩'s guard
   needs, `AcceptEx` is what `net.Listen`'s accept path needs and has no guard yet, and `WSARecvMsg`

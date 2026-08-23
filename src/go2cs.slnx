@@ -848,6 +848,7 @@
     <Project Path="tests/Behavioral/TypedErrorAssertThroughAdapter/TypedErrorAssertThroughAdapter.csproj" />
     <Project Path="tests/Behavioral/TypedNilInterface/TypedNilInterface.csproj" />
     <Project Path="tests/Behavioral/TypedPointerCastDeref/TypedPointerCastDeref.csproj" />
+    <Project Path="tests/Behavioral/UdpLoopbackRoundTrip/UdpLoopbackRoundTrip.csproj" />
     <Project Path="tests/Behavioral/UintptrUnsafePointerIdiom/UintptrUnsafePointerIdiom.csproj" />
     <Project Path="tests/Behavioral/UnexportedEmbeddedMarker/UnexportedEmbeddedMarker.csproj" />
     <Project Path="tests/Behavioral/UnicodeConsoleOutput/UnicodeConsoleOutput.csproj" />

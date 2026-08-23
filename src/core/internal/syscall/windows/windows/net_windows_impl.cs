@@ -98,26 +98,26 @@ partial class windows_package
     private const nint wsaModeWrite = 'w';
 
     // Go: wsaSendtoInet4 encodes `to` and calls WSASendTo (syscall_windows.go). Here the encode goes
-    // through the mirror's seam into a STACK image, and the SUBMIT goes through golib's seam so this
-    // package and `syscall` share ONE operation record (netpoll design §4.7, RATIFIED).
+    // through the mirror's seam into OPERATION-OWNED memory, and the SUBMIT goes through golib's
+    // seam so this package and `syscall` share ONE operation record (netpoll design §4.7/§4.8).
     public static unsafe error /*err*/ WSASendtoInet4(syscallꓸHandle s, ж<syscall.WSABuf> bufs, uint32 bufcnt, ж<uint32> sent, uint32 flags, ж<syscall.SockaddrInet4> to, ж<syscall.Overlapped> overlapped, ж<byte> croutine) {
-        byte* buffer = stackalloc byte[syscall.GoNativeSockaddrLen];
-        var (addrlen, err) = syscall.GoWriteNativeSockaddrInet4(to, buffer);
+        nuint native = prepareSendto(s, bufs, bufcnt, overlapped, out NativeWSABuf* staged, out byte* addr);
+        var (addrlen, err) = syscall.GoWriteNativeSockaddrInet4(to, addr);
 
         if (err != default!) {
             return err;
         }
-        return wsaSendtoNative(s, bufs, bufcnt, sent, flags, buffer, addrlen, overlapped, croutine);
+        return submitSendto(s, staged, bufcnt, sent, flags, addr, addrlen, native, croutine);
     }
 
     public static unsafe error /*err*/ WSASendtoInet6(syscallꓸHandle s, ж<syscall.WSABuf> bufs, uint32 bufcnt, ж<uint32> sent, uint32 flags, ж<syscall.SockaddrInet6> to, ж<syscall.Overlapped> overlapped, ж<byte> croutine) {
-        byte* buffer = stackalloc byte[syscall.GoNativeSockaddrLen];
-        var (addrlen, err) = syscall.GoWriteNativeSockaddrInet6(to, buffer);
+        nuint native = prepareSendto(s, bufs, bufcnt, overlapped, out NativeWSABuf* staged, out byte* addr);
+        var (addrlen, err) = syscall.GoWriteNativeSockaddrInet6(to, addr);
 
         if (err != default!) {
             return err;
         }
-        return wsaSendtoNative(s, bufs, bufcnt, sent, flags, buffer, addrlen, overlapped, croutine);
+        return submitSendto(s, staged, bufcnt, sent, flags, addr, addrlen, native, croutine);
     }
 
     // WSABUF, native layout. DUPLICATED from syscall's mirror deliberately, and ⟨OQ-B⟩ ruled it so on
@@ -132,19 +132,40 @@ partial class windows_package
         internal byte* Buf;
     }
 
-    // The one submit path both families share, so the kernel contract lives in exactly one place.
-    private static unsafe error wsaSendtoNative(syscallꓸHandle s, ж<syscall.WSABuf> bufs, uint32 bufcnt, ж<uint32> sent, uint32 flags, byte* addr, int32 addrlen, ж<syscall.Overlapped> overlapped, ж<byte> croutine) {
+    // Re-arms the operation and hands back its native control block plus TWO regions carved out of
+    // the operation's own staging: the WSABUF array, and the address image after it.
+    //
+    // ⚠ THE ADDRESS IMAGE IS OPERATION-OWNED, NOT `stackalloc`, AND THAT IS ⟨OQ-G⟩'s RULING.
+    // The first cut of this file wrote the sockaddr into a `stackalloc` buffer, which is correct only
+    // if Winsock captures `lpTo` during the call. It does not say that it does. The contract is
+    // explicit about lifetime in two places and silent in the third: `lpBuffers` is captured before
+    // return (*"the Winsock service provider's responsibility to capture the WSABUF structures before
+    // returning from this call… enables applications to build stack-based WSABUF arrays"*),
+    // `lpOverlapped` *"must be valid for the duration of the overlapped operation"*, and `lpTo`
+    // carries no statement at all. Undefined is worse than either answer: an implementation may
+    // capture it today and not tomorrow, and the failure is a silent wrong destination or a read of
+    // freed stack. The coordinator ruled this FIX-BY-DEFAULT rather than measure-then-fix, on the
+    // grounds that a use-after-return handed to the kernel is the struct-passing family's lifetime
+    // sibling and that class does not get empirical exoneration -- "has not misbehaved" proves
+    // nothing about a race.
+    //
+    // ONE staged block carved into two regions rather than two staged blocks: golib's seam owns the
+    // ALLOCATION and never the layout ("what the bytes MEAN is the caller's business"), so carving is
+    // within the ratified contract and needs no further primitive.
+    // Pointers cannot be tuple elements in C#, so the two carved regions come back through `out`.
+    private static unsafe nuint prepareSendto(syscallꓸHandle s, ж<syscall.WSABuf> bufs, uint32 bufcnt, ж<syscall.Overlapped> overlapped, out NativeWSABuf* staged, out byte* addr) {
         // The record is keyed by the WAITER -- the same `Ꮡoverlapped` execIO will later harvest by --
         // so a submit issued here and a harvest issued from `syscall` name one operation. Creating it
         // is `syscall`'s job (only it can bind the socket to the completion port); this call reaches
         // that factory through golib without either package learning the other's internals.
         nuint native = golib.GoAsyncIO.RearmOperation((nuint)(uintptr)s, overlapped, wsaModeWrite);
 
-        // The kernel retains the buffer pointers until completion, so the WSABUF array cannot be a
-        // stack image: it must belong to the operation. golib owns the allocation; the layout below
-        // is ours.
-        int stagedBytes = checked((int)bufcnt * sizeof(NativeWSABuf));
-        NativeWSABuf* staged = (NativeWSABuf*)golib.GoAsyncIO.StageOperationBuffer(overlapped, stagedBytes == 0 ? sizeof(NativeWSABuf) : stagedBytes);
+        // A zero-buffer submit is legal (a zero-length datagram), and still needs its address image,
+        // so the WSABUF region is sized for at least one entry rather than collapsing to nothing.
+        uint32 slots = bufcnt == 0 ? 1 : bufcnt;
+        int bufBytes = checked((int)slots * sizeof(NativeWSABuf));
+        byte* block = (byte*)golib.GoAsyncIO.StageOperationBuffer(overlapped, checked(bufBytes + syscall.GoNativeSockaddrLen));
+        staged = (NativeWSABuf*)block;
 
         for (uint32 i = 0; i < bufcnt; i++) {
             // Index 0 is the common case and the only one a struct-FIELD reference can answer; a
@@ -155,7 +176,12 @@ partial class windows_package
             staged[i].Len = buf.Len;
             staged[i].Buf = buf.Buf == nil ? null : (byte*)(void*)buf.Buf;
         }
+        addr = block + bufBytes;
+        return native;
+    }
 
+    // The one submit path both families share, so the kernel contract lives in exactly one place.
+    private static unsafe error submitSendto(syscallꓸHandle s, NativeWSABuf* staged, uint32 bufcnt, ж<uint32> sent, uint32 flags, byte* addr, int32 addrlen, nuint native, ж<byte> croutine) {
         uint32 sentBytes = 0;
         var (r1, _, e1) = syscall.Syscall9(procWSASendTo.Addr(), 9, (uintptr)s, (uintptr)(void*)staged, (uintptr)bufcnt,
                                            (uintptr)(void*)(&sentBytes), (uintptr)flags, (uintptr)(void*)addr, (uintptr)addrlen,

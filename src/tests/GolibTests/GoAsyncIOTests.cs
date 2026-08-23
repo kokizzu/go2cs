@@ -380,4 +380,109 @@ public class GoAsyncIOTests
         Assert.ThrowsException<InvalidOperationException>(() => GoAsyncIO.RearmOperation(1, key, 'w'));
         GoAsyncIO.RemoveOperationState(key);
     }
+
+    // ---- the DECODE seam (netpoll design §4.8) ----------------------------------------------
+    //
+    // These gate the two primitives the receive direction needs. The leak/duplicate modes here are
+    // the same ones S2b found for the submit side, which is why they are tested before any wrapper
+    // consumes them.
+
+    [TestMethod]
+    public void SetOperationCompletion_RunsOnceAtCompletion_WithTheTransferCount()
+    {
+        object key = new();
+        nint seen = -1;
+        int runs = 0;
+
+        GoAsyncIO.SetOperationCompletion(key, n => { seen = n; runs++; });
+
+        Assert.IsTrue(GoAsyncIO.CompleteOperation(key, 42), "pending work should report that it ran");
+        Assert.AreEqual(1, runs);
+        Assert.AreEqual((nint)42, seen, "the completion must receive the transfer count, not a default");
+    }
+
+    [TestMethod]
+    public void CompleteOperation_RunsAtMostOnce()
+    {
+        // execIO can genuinely harvest the SAME operation twice -- its cancellation path harvests
+        // what its normal path would have -- so decoding twice is a real risk, not a theoretical
+        // one. The delegate is removed BEFORE it is invoked, which makes once-only structural.
+        object key = new();
+        int runs = 0;
+
+        GoAsyncIO.SetOperationCompletion(key, _ => runs++);
+
+        Assert.IsTrue(GoAsyncIO.CompleteOperation(key, 8));
+        Assert.IsFalse(GoAsyncIO.CompleteOperation(key, 8), "a second harvest must find nothing pending");
+        Assert.AreEqual(1, runs);
+    }
+
+    [TestMethod]
+    public void CompleteOperation_WithNothingPending_IsNotAnError()
+    {
+        // The COMMON case: every send and every TCP read completes with no decode owed. The harvest
+        // calls this unconditionally, so it must be cheap and silent rather than exceptional.
+        Assert.IsFalse(GoAsyncIO.CompleteOperation(new object(), 0));
+    }
+
+    [TestMethod]
+    public void RemoveOperationState_DropsPendingCompletionWork()
+    {
+        // An operation torn down before it completes owes nothing. Leaving the delegate behind would
+        // leak what it captured AND let a later operation reusing the key inherit a decode meant for
+        // the dead one -- which on the real seam would write a stale address into a live socket.
+        object key = new();
+        int runs = 0;
+
+        GoAsyncIO.GetOrCreateOperationState(key, () => new object());
+        GoAsyncIO.SetOperationCompletion(key, _ => runs++);
+        GoAsyncIO.RemoveOperationState(key);
+
+        Assert.IsFalse(GoAsyncIO.CompleteOperation(key, 1), "torn-down operations owe nothing");
+        Assert.AreEqual(0, runs);
+    }
+
+    [TestMethod]
+    public void SetOperationCompletion_SupersedesAnUnconsumedRegistration()
+    {
+        // Each SUBMISSION registers its own decode against a record that outlives many submissions.
+        // A new submission's decode must win, or a re-armed operation would decode into the previous
+        // submission's destination.
+        object key = new();
+        int first = 0, second = 0;
+
+        GoAsyncIO.SetOperationCompletion(key, _ => first++);
+        GoAsyncIO.SetOperationCompletion(key, _ => second++);
+
+        Assert.IsTrue(GoAsyncIO.CompleteOperation(key, 3));
+        Assert.AreEqual(0, first, "the superseded decode must not run");
+        Assert.AreEqual(1, second);
+    }
+
+    [TestMethod]
+    public void CompletionSeam_RejectsNullArguments()
+    {
+        Assert.ThrowsException<ArgumentNullException>(() => GoAsyncIO.SetOperationCompletion(null!, _ => { }));
+        Assert.ThrowsException<ArgumentNullException>(() => GoAsyncIO.SetOperationCompletion(new object(), null!));
+        Assert.ThrowsException<ArgumentNullException>(() => GoAsyncIO.CompleteOperation(null!, 0));
+    }
+
+    [TestMethod]
+    public void CompletionsAreIndependentPerOperation()
+    {
+        // Two FDs in flight at once is the normal state of a server; completing one must not consume
+        // the other's decode.
+        object a = new(), b = new();
+        int ran = 0;
+
+        GoAsyncIO.SetOperationCompletion(a, _ => ran += 1);
+        GoAsyncIO.SetOperationCompletion(b, _ => ran += 10);
+
+        GoAsyncIO.CompleteOperation(a, 0);
+        Assert.AreEqual(1, ran, "completing a must not run b's work");
+
+        GoAsyncIO.CompleteOperation(b, 0);
+        Assert.AreEqual(11, ran);
+    }
+
 }

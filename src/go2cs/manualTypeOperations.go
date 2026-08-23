@@ -287,21 +287,21 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// hand-owned; Kind/Type/IsValid/CanAddr work from the flag/typ_ the entry sets. Increment 1
 	// (scalars, slices, arrays, pointers); struct Field/NumField + map MapRange land next.
 	"reflect": {
-		"ValueOf":             goosAny,
-		"unpackEface":         goosAny,
-		"valueInterface":      goosAny, // a free function `valueInterface(v Value, safe bool)`, not a method
-		"Value.Interface":     goosAny,
-		"Value.Bool":          goosAny,
-		"Value.Int":           goosAny,
-		"Value.Uint":          goosAny,
-		"Value.Float":         goosAny,
-		"Value.Complex":       goosAny,
-		"Value.String":        goosAny,
-		"Value.IsNil":         goosAny,
-		"Value.Len":           goosAny,
-		"Value.Index":         goosAny,
-		"Value.Elem":          goosAny,
-		"Value.Bytes":         goosAny,
+		"ValueOf":         goosAny,
+		"unpackEface":     goosAny,
+		"valueInterface":  goosAny, // a free function `valueInterface(v Value, safe bool)`, not a method
+		"Value.Interface": goosAny,
+		"Value.Bool":      goosAny,
+		"Value.Int":       goosAny,
+		"Value.Uint":      goosAny,
+		"Value.Float":     goosAny,
+		"Value.Complex":   goosAny,
+		"Value.String":    goosAny,
+		"Value.IsNil":     goosAny,
+		"Value.Len":       goosAny,
+		"Value.Index":     goosAny,
+		"Value.Elem":      goosAny,
+		"Value.Bytes":     goosAny,
 		// The WRITE half of Bytes, hand-owned for the same reason one layer down: the auto body is
 		// `*(*[]byte)(v.ptr) = x`, a store through the Go data word this bridge never populates, so
 		// it wrote nowhere for EVERY byte slice — silently. See reflect/value_impl.cs.
@@ -395,9 +395,9 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// ISupportMake); Slice windows the shared backing; the rtype func-introspection methods
 		// derive from the delegate Invoke signature; Key/Len read GoReflect/descriptor cargo.
 		// See docs/phase4/DESIGN-reflection-bridge-phase3-plan.md (INCREMENT 2).
-		"Value.Call":        goosAny,
-		"Value.CallSlice":   goosAny,
-		"Value.Slice":       goosAny,
+		"Value.Call":      goosAny,
+		"Value.CallSlice": goosAny,
+		"Value.Slice":     goosAny,
 		// Value.Slice3 joined the set on 2026-08-19 (text/template's three-index `slice` builtin):
 		// the auto form is the same raw unsafeheader.Slice walk Slice's was, over the ptr slot the
 		// bridge never populates, so it nil-dereferenced rather than degrading.
@@ -483,8 +483,8 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// two had to land WITH the direction arc: a working recv behind a direction that always
 		// reads bidirectional turns text/template's `range` over a send-only channel from a fast,
 		// attributable error into an unbounded hang.
-		"Value.recv": goosAny,
-		"Value.send": goosAny,
+		"Value.recv":    goosAny,
+		"Value.send":    goosAny,
 		"PointerTo":     goosAny,
 		"Value.Convert": goosAny,
 		// rtype.FieldByName Reinterprets the descriptor as a structType and reads .Fields off
@@ -662,6 +662,21 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	"net": {
 		"adapterAddresses": goosWindows,
 	},
+	// internal/poll's two raw-sockaddr DECODERS. Go reads the address by pointer arithmetic over
+	// flat bytes -- `(*RawSockaddrInet4)(unsafe.Pointer(rsa))` then `(*[2]byte)(unsafe.Pointer(
+	// &pp.Port))` -- and neither line survives the managed representation, in two DIFFERENT ways.
+	// The reinterpret asks golib to alias one reference-bearing struct as another, and the two
+	// managed layouts share no field offsets at all (RawSockaddrAny holds int8[14] and int8[100]
+	// object references where sockaddr_in has four inline octets), so `pp.Addr` reads the WRONG
+	// FIELD -- measured at Length=14, which is RawSockaddr.Data. The byte view reinterprets the
+	// pointed-at bytes as an `array<byte>` STRUCT and fabricates a managed reference out of them.
+	// The hand-owns route through syscall's already-hand-owned RawSockaddrAny.Sockaddr, which
+	// flattens the managed struct back to its 116-byte native image, so the sockaddr layout is
+	// spelled in exactly ONE place in the corpus. Windows-only: the decoders are fd_windows.go's.
+	"internal/poll": {
+		"rawToSockaddrInet4": goosWindows,
+		"rawToSockaddrInet6": goosWindows,
+	},
 	// sync's copyChecker detects a copied Cond by storing its OWN ADDRESS in itself and comparing:
 	// `uintptr(*c) != uintptr(unsafe.Pointer(c))`. Both halves are raw-metal on a managed referent.
 	// The stored word cannot be an address at all (the GC moves boxes, so a compaction between two
@@ -709,8 +724,8 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// Lstat are pure Go over fstatat (syscall_linux_amd64.go) and convert faithfully, and every
 		// other wrapper in the generated file passes scalars or a byte pointer. Scoped to linux
 		// because darwin declares both names too, with working libc-backed bodies.
-		"Fstat":   goosLinux,
-		"fstatat": goosLinux,
+		"Fstat":                  goosLinux,
+		"fstatat":                goosLinux,
 		"GetTimeZoneInformation": goosWindows,
 		// The same seam over a bigger record, and the first member of the class an actual suite
 		// reached: the kernel writes a 592-byte WIN32_FIND_DATAW, whose cFileName[260] and
@@ -829,10 +844,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"AcceptEx":             goosWindows,
 		"GetAcceptExSockaddrs": goosWindows,
 		"CancelIoEx":           goosWindows,
-		// The UDP family (WSARecvFrom, WSASendto and its Inet4/Inet6 variants) and TransmitFile are
-		// the same machinery with more staging and are deliberately absent: nothing on the TCP
+		// WSARecvFrom joined on 2026-08-23, by exactly the rule the note below states: a suite
+		// REACHED it. UdpLoopbackRoundTrip's read is the arrival, and the defect it exposed is the
+		// same one AcceptEx already solves -- the kernel writing 116 bytes into a MANAGED
+		// RawSockaddrAny that is forty bytes of object references. It is the third member of the
+		// GetAcceptExSockaddrs/RawSockaddrAny.Sockaddr pair: stage native, transcribe at harvest
+		// (netpoll design SS4.8, RATIFIED).
+		"WSARecvFrom": goosWindows,
+		// WSASendto and its Inet4/Inet6 variants and TransmitFile are the same machinery with more
+		// staging and remain absent for the reason WSARecvFrom no longer is: nothing on the TCP
 		// listen/dial/accept/read/write path reaches them, and the board's ruling is to fix a
-		// censused wrapper when a suite REACHES it.
+		// censused wrapper when a suite REACHES it. (The Inet4/Inet6 SENDERS are hand-owned in
+		// internal/syscall/windows, where their linkname declarations live.)
 		//
 		// LoadConnectEx is NOT overlapped at all, and is here because the netpoll design recorded the
 		// extension-pointer lookup as "synchronous and already working" and the crypto/tls census

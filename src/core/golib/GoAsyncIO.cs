@@ -54,6 +54,12 @@ public static class GoAsyncIO
     // mints of `&o.o` at three call sites resolve to ONE record.
     private static readonly ConcurrentDictionary<object, Lazy<object>> s_operationState = new();
 
+    // Completion work an operation owes, keyed the same way its state is (netpoll design SS4.8).
+    // Separate from s_operationState because it is per-SUBMISSION and transient, while the state is
+    // per-operation and long-lived: a record outlives many submissions, each of which may or may not
+    // owe a decode.
+    private static readonly ConcurrentDictionary<object, Action<nint>> s_operationCompletions = new();
+
     /// <summary>
     /// Registers (or replaces, or with <c>null</c> removes) the readiness sink for
     /// <paramref name="descriptor"/>.
@@ -178,8 +184,15 @@ public static class GoAsyncIO
     /// </summary>
     /// <param name="key">Pointer the operation is named by.</param>
     /// <returns>The removed state, or <c>null</c> when there was none.</returns>
-    public static object? RemoveOperationState(object key) =>
-        s_operationState.TryRemove(key, out Lazy<object>? lazy) && lazy.IsValueCreated ? lazy.Value : null;
+    public static object? RemoveOperationState(object key)
+    {
+        // Drop any pending completion work first: the operation is going away, so work it owes will
+        // never run, and leaving the delegate behind would both leak whatever it captured and let a
+        // LATER operation that reuses this key inherit a decode meant for the dead one.
+        s_operationCompletions.TryRemove(key, out _);
+
+        return s_operationState.TryRemove(key, out Lazy<object>? lazy) && lazy.IsValueCreated ? lazy.Value : null;
+    }
 
     /// <summary>
     /// Reports the native address of the operation named by <paramref name="key"/>, when its state
@@ -300,6 +313,65 @@ public static class GoAsyncIO
         return TryGetOperationState(key, out object? state) && state is IGoAsyncOperation operation
             ? operation.StageBytes(byteCount)
             : throw new InvalidOperationException("GoAsyncIO: no operation state to stage against; rearm first");
+    }
+
+    /// <summary>
+    /// Work the operation named by <paramref name="key"/> owes when it completes.
+    /// </summary>
+    /// <param name="key">Pointer the operation is named by.</param>
+    /// <param name="onComplete">Work to run once, given the completed transfer count.</param>
+    /// <remarks>
+    /// <para>
+    /// The DECODE-side counterpart of <see cref="StageOperationBuffer"/> (netpoll design §4.8,
+    /// RATIFIED). Staging alone solves the submit direction, where the caller writes and the OS
+    /// reads; it cannot solve the receive direction, where the OS writes and the caller reads, and
+    /// for an overlapped operation the OS writes AFTER the submitting wrapper has returned. There is
+    /// no moment inside that wrapper at which a decode could run, so the decode has to be carried by
+    /// the operation and run when it completes.
+    /// </para>
+    /// <para>
+    /// Deliberately NOT a member of <see cref="IGoAsyncOperation"/>. That interface describes what a
+    /// record can do with NATIVE resources, and every widening of it is a breaking change for every
+    /// implementer — §4.7 widened it by two members and immediately broke a test double. Pending
+    /// completion work is per-SUBMISSION transient state rather than a record capability, so it
+    /// lives here and no implementer has to learn about it.
+    /// </para>
+    /// <para>
+    /// What the work IS remains entirely the caller's business: this seam stores an opaque delegate
+    /// and never inspects it, which is the same neutrality rule that keeps one platform's IO
+    /// structures out of the shared runtime.
+    /// </para>
+    /// </remarks>
+    public static void SetOperationCompletion(object key, Action<nint> onComplete)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(onComplete);
+
+        s_operationCompletions[key] = onComplete;
+    }
+
+    /// <summary>
+    /// Runs whatever the operation named by <paramref name="key"/> owes on completion, if anything.
+    /// </summary>
+    /// <param name="key">Pointer the operation is named by.</param>
+    /// <param name="bytesTransferred">Transfer count the completion reported.</param>
+    /// <returns><c>true</c> when work was pending and ran; otherwise <c>false</c>.</returns>
+    /// <remarks>
+    /// Runs AT MOST ONCE per registration, and that is structural rather than a convention: the
+    /// delegate is REMOVED before it is invoked, so a harvest that races another harvest for the
+    /// same operation — which `execIO` can genuinely do, since its cancellation path harvests the
+    /// same operation its normal path does — decodes exactly once. An operation with nothing pending
+    /// is the common case (every send, every TCP read) and is not an error.
+    /// </remarks>
+    public static bool CompleteOperation(object key, nint bytesTransferred)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (!s_operationCompletions.TryRemove(key, out Action<nint>? onComplete))
+            return false;
+
+        onComplete(bytesTransferred);
+        return true;
     }
 }
 
