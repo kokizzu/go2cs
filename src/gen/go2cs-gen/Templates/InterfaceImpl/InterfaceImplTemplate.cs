@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using System.Text;
 using static go2cs.Common;
+using static go2cs.Symbols;
 
 namespace go2cs.Templates.InterfaceImpl;
 
@@ -47,13 +48,75 @@ internal class InterfaceImplTemplate : TemplateBase
     // directly: `global::go.net.netip_package.String(this.AddrPort)`.
     public string? ValueEmbedHopStaticClass;
 
+    // The struct's own accessibility, so a promoted method's EXTENSION twin below is declared
+    // exactly as the converter declares that type's own Go methods.
+    public string StructAccessibility = "internal";
+
     public override string TemplateBody =>
         $$"""
              partial struct {{StructName}} : {{InterfaceName}}
              {
                  {{MethodsImplementation}}{{Comparisions}}
-             }
+             }{{PromotedExtensionMethods}}
          """;
+
+    // A PROMOTED interface method is a Go method of the struct, and it is the ONE kind of Go method
+    // that never became an extension method — the member above satisfies the C# interface, but
+    // go2cs's runtime method set is built from EXTENSION methods alone
+    // (TypeExtensions.GetGoMethodSetCandidates), so a promoted method was invisible to every
+    // structural question asked about the type.
+    //
+    // That is not a cosmetic gap. `builtin.Implements<T>` answers a direct assert with C# `is T`,
+    // which succeeds for the embedded interface itself; ANY OTHER interface falls to the structural
+    // probe, which counted only the directly-declared methods. A type embedding `net.Conn` and
+    // adding ReadFrom/WriteTo therefore failed `c.(net.PacketConn)` — Go takes the UDP arm, the
+    // conversion took TCP framing (F2). The twin below closes it by making the promoted method an
+    // ordinary Go method: the probe finds it, AdapterBinder binds it through the same candidate
+    // source, and reflect's NumMethod counts it, which is what Go does too.
+    //
+    // Emitting a member AND an extension of one name is legal and deliberate: C# prefers the member
+    // at every direct call site, so behavior is unchanged there, while the extension exists for the
+    // reflection-sourced registry. Accessibility follows the STRUCT, matching the converter's own
+    // rule for that type's methods; the registry admits non-public extensions
+    // (BindingFlags.NonPublic in ExtensionMethodRegistry), so an unexported type's twin is still
+    // discovered by a foreign assembly's assert — which is precisely where F2 bites.
+    //
+    // Shadowing is Go's rule and is already decided: `Overrides` holds the struct's own declared
+    // methods, and a member it declares itself needs no twin (it has one — the converter emitted
+    // it). Only the !methodOverriden arm — the one that actually promotes — gets a twin.
+    private string PromotedExtensionMethods
+    {
+        get
+        {
+            if (!Promoted)
+                return "";
+
+            StringBuilder result = new();
+
+            foreach (MethodInfo method in Methods)
+            {
+                string simpleMethodName = GetSimpleName(method.Name);
+
+                if (Overrides.Contains(method.ForwardMemberName(simpleMethodName)))
+                    continue;
+
+                string receiver = $"recv{TempVarMarker}";
+                string typedParameters = method.GetTypedParameters(false);
+                string parameterList = string.IsNullOrEmpty(typedParameters) ?
+                    $"this {StructName} {receiver}" :
+                    $"this {StructName} {receiver}, {typedParameters}";
+
+                string callParameters = method.GetCallParameters(false);
+                string embedField = GetSimpleName(InterfaceName, dropCollisionPrefix: true);
+
+                result.Append($"\r\n\r\n    // Go method set entry for the promoted '{GetSimpleName(InterfaceName)}.{simpleMethodName}()':\r\n");
+                result.Append($"    {StructAccessibility} static {method.ReturnType} {EscapeCsKeyword(simpleMethodName)}{method.GetGenericSignature()}({parameterList}){method.GetWhereConstraints()} => ");
+                result.Append($"{receiver}.{embedField}.{simpleMethodName}{method.GetGenericSignature()}({callParameters});");
+            }
+
+            return result.ToString();
+        }
+    }
 
     private string MethodsImplementation
     {

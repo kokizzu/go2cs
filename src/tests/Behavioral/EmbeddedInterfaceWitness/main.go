@@ -1,0 +1,75 @@
+// A type satisfies an interface partly by PROMOTION from an embedded interface and partly by its
+// own declared methods. Go accepts the assertion; the conversion did not.
+//
+// A promoted interface method is realized by go2cs-gen as a real C# MEMBER (the struct is declared
+// to implement the embedded interface), but go2cs's runtime method set is built from EXTENSION
+// methods alone, so the promoted method was invisible to every structural question asked about the
+// type. `builtin.Implements<T>` answers a DIRECT assert with C# `is T` — which is why asserting to
+// the embedded interface itself always worked — while any OTHER interface falls to the structural
+// probe and saw only the directly-declared half. A type embedding net.Conn and adding
+// ReadFrom/WriteTo therefore failed `c.(net.PacketConn)`: Go took the UDP arm, the conversion took
+// TCP framing. ImplementGenerator now emits the promoted method as an extension method too, so it
+// is an ordinary Go method — probe, binder and reflect all agree.
+//
+// Three rows, and the last two are the controls that keep the fix honest:
+//
+//   - wrapper  — embedded interface + own method. The defect.
+//   - plain    — both methods declared directly. Worked before and must keep working; it is what
+//                proved the runtime resolves satisfaction structurally when the methods exist.
+//   - holder   — an ORDINARY field whose name equals its type's simple name. Go promotes nothing,
+//                so it must NOT satisfy ReadWriter. Both shapes emit the IDENTICAL C# field, so
+//                this is what stops any fix from resting on a name heuristic (the same ambiguity
+//                that once made dwarf forward Common() through a named field).
+//
+// NumMethod is printed for each because the fix adds entries to the Go method set: it must add
+// exactly the promoted ones and nothing else (a stray BCL interface method would inflate the count
+// that reflect.Type.NumMethod reports, and encoding/json gates its Unmarshaler assert on it).
+package main
+
+import (
+	"fmt"
+	"reflect"
+
+	"EmbeddedInterfaceWitness/iolike"
+)
+
+type wrapper struct {
+	iolike.Reader
+	prefix string
+}
+
+func (w wrapper) Write(s string) string { return w.prefix + s }
+
+type plain struct{ tag string }
+
+func (p plain) Read() string          { return "read:" + p.tag }
+func (p plain) Write(s string) string { return "p:" + s }
+
+type holder struct {
+	Reader iolike.Reader
+	prefix string
+}
+
+func (h holder) Write(s string) string { return h.prefix + s }
+
+func check(label string, value any) {
+	if rw, ok := value.(iolike.ReadWriter); ok {
+		fmt.Println(label, "ReadWriter: yes", rw.Read(), rw.Write("x"))
+	} else {
+		fmt.Println(label, "ReadWriter: no")
+	}
+
+	if r, ok := value.(iolike.Reader); ok {
+		fmt.Println(label, "Reader: yes", r.Read())
+	} else {
+		fmt.Println(label, "Reader: no")
+	}
+
+	fmt.Println(label, "NumMethod:", reflect.TypeOf(value).NumMethod())
+}
+
+func main() {
+	check("wrapper", wrapper{Reader: iolike.Base{Tag: "base"}, prefix: "w:"})
+	check("plain", plain{tag: "p"})
+	check("holder", holder{Reader: iolike.Base{Tag: "held"}, prefix: "h:"})
+}

@@ -1028,6 +1028,12 @@ public class ImplementGenerator : ISourceGenerator
                 // generic struct arrives here in its OPEN form.
                 StructName = implStructName,
                 InterfaceName = interfaceName,
+                // Scopes the promoted methods' extension twins exactly as the converter scopes that
+                // type's own Go methods — an unexported Go type's methods are internal. The Go
+                // method set is read reflectively (ExtensionMethodRegistry admits NonPublic), so
+                // this decides declaration form, not discoverability.
+                StructAccessibility = structType.DeclaredAccessibility == Accessibility.Public ||
+                                      GetScope(GetSimpleName(structName)) == "public" ? "public" : "internal",
                 Promoted = promoted || promotedPairs.Contains($"{structType.ToDisplayString()}|{interfaceType.ToDisplayString()}"),
                 Overrides = overrides,
                 Methods = partialMethods,

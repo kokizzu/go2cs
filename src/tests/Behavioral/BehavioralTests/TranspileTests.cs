@@ -391,6 +391,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckElidedStructInterfaceField() => CheckTarget("ElidedStructInterfaceField");
 
     [TestMethod]
+    public void CheckEmbeddedInterfaceWitness() => CheckTarget("EmbeddedInterfaceWitness");
+
+    [TestMethod]
     public void CheckEmbeddedPointerFieldIdentity() => CheckTarget("EmbeddedPointerFieldIdentity");
 
     [TestMethod]

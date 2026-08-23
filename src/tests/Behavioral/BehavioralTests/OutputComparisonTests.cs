@@ -368,6 +368,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckElidedStructInterfaceField() => CheckTarget("ElidedStructInterfaceField");
 
     [TestMethod]
+    public void CheckEmbeddedInterfaceWitness() => CheckTarget("EmbeddedInterfaceWitness");
+
+    [TestMethod]
     public void CheckEmbeddedPointerFieldIdentity() => CheckTarget("EmbeddedPointerFieldIdentity");
 
     [TestMethod]

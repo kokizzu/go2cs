@@ -394,6 +394,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckElidedStructInterfaceField() => CheckTarget("ElidedStructInterfaceField");
 
     [TestMethod]
+    public void CheckEmbeddedInterfaceWitness() => CheckTarget("EmbeddedInterfaceWitness");
+
+    [TestMethod]
     public void CheckEmbeddedPointerFieldIdentity() => CheckTarget("EmbeddedPointerFieldIdentity");
 
     [TestMethod]
