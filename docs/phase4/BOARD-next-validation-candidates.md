@@ -18273,7 +18273,7 @@ remains unmeasured until these leaves fall.
 
 Board-mechanics note, recorded because it bit twice: the append that landed the native-Linux
 entry used offset arithmetic against the guard line and ATE the `<` of the closing comment,
-leaving `---!-- {% endraw %} ... -->` — Liquid still parsed (endraw terminates raw even there)
+leaving `---!--` + the endraw tag + `... -->` (the tag deliberately not spelled with its brace syntax here: quoted inside a raw guard it TERMINATES the guard -- the exact defect that took Pages down at f37ba28ef, and then AGAIN via this very line before it was reworded) — Liquid still parsed (endraw terminates raw even there)
 so Pages stayed up, but the junk rendered. This append repairs the guard and retires the
 arithmetic: appends reconstruct the tail explicitly.
 
@@ -18479,6 +18479,91 @@ NOT across the files of a partial class, so the sibling can still be null and th
 dies in a nil dereference far from the cause. Defer the lookup to first use (`??=`); any
 hand-own reaching a generated `mod*`/`proc*` needs this. (R, found by crash while filling
 `WSASendtoInet4`.)
+
+## 2026-08-23 · The nested-field-pointer finding, CENSUSED and COMMISSIONED — 4 hazard sites, 1 function, 1 package: the family's sixth sighting, smallest yet
+
+**The finding (lane R, F1's fork-split):** taking a pointer to a field of a NESTED struct
+field and writing through it is silently lost — `p := &b.header.questions; *p++` emits
+`count = Ꮡ(b.header).of(Δheader.Ꮡquestions)`, boxing a COPY of the intermediate field, so
+the write lands in the copy. Rooted with a 40-line no-DNS repro (via-field-pointer and
+slice-elem-field both lost; direct mutation fine). Surfaced as `dnsmessage.Builder` emitting
+QDCOUNT=0 — which is BOTH real-world symptoms at once (nameservers ignore the malformed query;
+the resolver waits out its deadline).
+
+**The census ([`CENSUS-nested-field-pointer.md`](CENSUS-nested-field-pointer.md), exhaustive
+balanced-paren parse over all 5,565 Ꮡ(...) sites):** the hazard shape appears at exactly
+**4 sites, all write-context, all in `incrementSectionCount`**
+(`vendor/golang.org/x/net/dns/dnsmessage/message.cs:1349–1361`) — not on the roster, but 13
+files under `src/core/net` reference dnsmessage, so `net`'s future validation walks into it.
+All lookalikes classified per-site: the two-arg element form is the PROVEN-correct aliasing
+(guarded by `SliceElementFieldAddress`), the 6 one-arg `.of` lookalikes are read-context, and
+the no-`.of` family is benign — with one watch item: **9 unix-only
+`Ꮡ(syscall.ForkLock).RLock/RUnlock` write-context package-var sites activate with the Linux
+campaign.** Behavioral coverage of the hazard shape: ZERO — nothing contradicts the finding,
+nothing guards the fix yet. Reproducibility note: the corpus address-of glyph is **U+13D1**
+(a U+13E1 grep returns a false all-clear).
+
+**Family placement:** the SIXTH sighting of the address-of-copy-boxing family (element
+aliasing, xml's binding box, sync/atomic's local box, gob = fifth), and the smallest. The
+ж-box arc is the PERFORMANCE axis over the same neighborhood and does not touch this
+correctness gap.
+
+**COMMISSIONED (to R, after the §4.7 implementation lands):** direct fix with guard per the
+family's one-base-shape-per-fix precedent — the emission chains the address from the receiver
+root (`.of(...).of(...)`, a form already routine at 309 sites) instead of boxing the
+intermediate field; one new behavioral guard for the write-through shape; dnsmessage regen;
+CNR pass. Corpus churn today: one file, four lines. Parks under the freeze like the rest.
+
+## 2026-08-23 · THE DARWIN CORPUS COMPILES — census run 32649840220 at `c003d32af`: ZERO errors on osx-x64 AND osx-arm64; there is no wall #4
+
+The third GOOS reaches its Phase-3 moment. Census history, all four runs on real Apple
+hardware within ~24 hours of the FIRST darwin build ever attempted: **19 errors (os.readdir
+hand-own gap) → 10 (cgo-flavor emission classes) → 9 (the case defect + the
+selector-less csproj) → 0.** Both architectures byte-agree at every step. Wall #1 was a
+missing platform companion; walls #2–3 were converter/emission classes rooted one layer
+deeper than each census read — and every root now carries a guard.
+
+Credits where the record should hold them: lane G fixed all three walls (with two
+corrections of the coordinator''s pre-roots and one of its own correction — the measured
+form won every time); lane R''s readdir companion opened the door; the CI matrix was the
+only darwin compile surface the project has, and the coordinator-driven dispatch loop turned
+each fix-to-verdict round trip into minutes.
+
+**The branch (`claude/darwin-cgo-flavor-emission` @ `c003d32af`) PARKS merged-ready despite
+the green** — its corpus stage includes linux-flavor content (cpu''s new
+`linux/package_info.cs`), which is inside the release-eve freeze class; it merges in the
+fixed post-release order (after the netlink fix). What darwin-COMPILES unlocks, priced but
+not scheduled: the darwin census stage on CI flips from wall-finding to REGRESSION-GUARDING
+(cheap, dispatchable at any branch tip); darwin behavioral-smoke becomes possible on the mac
+runners; and operational validation (a darwin `-tests` lane) remains UNCOMMITTED —
+evidence-ruled, per the ladder, not a rung by default.
+
+## 2026-08-23 · F1 BANKED (`e44bed59f`, parked) — the sixth family sighting closes; two instrument-discipline traps join the ledger
+
+The nested-field-pointer fix landed as commissioned: the emission chains one `.of(…)` per hop
+from the receiver root, marking walks the same chain, single-hop stays byte-identical, pointer
+hops excluded by type (already their own box). Guard `ReceiverNestedFieldAddress` is A/B-proven
+in the direction that matters: against the UN-fixed converter it compiles clean and prints 0
+for every value-chain write — the defect''s exact scope, and why the guard had to be behavioral
+rather than a golden. Seeded full-stdlib reconvert: zero corpus differences beyond the six-file
+footprint; CNR clean across all 634. Two first-cut defects were caught by GATES, not by
+reading: an IMPLICIT address (poly1305''s promoted `Sum(&mac)` — no `ast.UnaryExpr` exists for
+the marker scan to see) produced CS0103 that only the reconvert-and-BUILD caught — CNR could
+not, no behavioral test has that shape; and name-matching the chain root over-marked a
+shadowing local, caught by a golden churning with no behavior change. Object-identity matching
+and the direct-ж requirement close both.
+
+**Ledger trap 3 — a per-package `go2cs <pkg>` reconvert into `src/core` is NOT a regen
+instrument.** Its closure differs from the `-stdlib` driver''s; applying one as a regen emitted
+csproj/`.cs.auto`/extra-file drift across three packages (recovered by checkout). The family
+rule now has three members: single-package emits no csproj (OQ-3 amendment), single-TARGET
+destroys L3 groups (same), and per-package-into-corpus drifts the closure. **The only regen
+instruments are the seeded `-stdlib` run (single flavor) and the three-target emission (L3).**
+
+**Ledger trap 4 — the 10-minute foreground cap vs corpus-scale operations:** a 2.5 GB seed copy
+and a full `-stdlib` run each exceed a harness foreground budget on laptop-class machines —
+seed in one call, launch the converter DETACHED in the next, per the established
+Start-Process pattern.
 ---
 
 ## Windows UDP: the send seam LANDED, and the read is the sixth struct-passing sighting (R, 2026-08-23)
