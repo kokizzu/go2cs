@@ -332,7 +332,16 @@ with the L10 mirror helpers (`syscall/windows/syscall_windows_impl.cs` already o
 a mirror that is *"a LOCAL at the call site… trivially stable for exactly that long"*
 (`syscall_windows_impl.cs` header). An overlapped operation breaks that premise twice over:
 
-- The kernel retains the OVERLAPPED pointer and the buffer pointers until COMPLETION — seconds,
+- The kernel retains the OVERLAPPED pointer and the buffer pointers until COMPLETION
+  — **precision note (2026-08-23, measured against the documented contract by lane R while
+  drafting §4.8's ⟨OQ-G⟩):** that retention is EXPLICIT for `lpOverlapped` ("must remain valid
+  for the duration") and holds for the DATA buffers the WSABUF entries point at, but the WSABUF
+  ARRAY itself is the opposite — the provider must "capture the WSABUF structures before
+  returning", stack arrays expressly allowed — and `lpTo` is SILENT (no capture promise, no
+  persistence requirement; undefined is worse than either answer). The corpus stages all three
+  anyway — for the array that is conservative-by-CHOICE, not wrong-by-construction as §4.7's
+  table overstates from this line; a future author should not over-build from the stronger
+  reading — seconds,
   minutes, unbounded. golib's address model is explicit about what it can hold still
   (`ж.cs`, `EnsureStableAddress` remarks): a standard box of unmanaged `T` pins its value slot; an
   array/slice-element box pins the CANONICAL BACKING ARRAY (aliasing — the kernel writes the real
