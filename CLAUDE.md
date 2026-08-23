@@ -276,6 +276,56 @@ ONE stdlib in a build; there is now only one on disk.
   OQ-6, landing **before** hop A): stamp `runtime.Version()` into `go2cs.exe` and have each harness compare
   the stamp against the live `go env GOVERSION`, rebuilding on mismatch exactly as on an mtime change.
   Until then, a toolchain change owes an explicit `go build` of the converter before any gate runs.
+- **FALSE-GREEN route #5 — a converter build INPUT that is not a top-level `*.go` file invalidated
+  `go2cs.exe` NOWHERE (found 2026-08-21 by the hop-campaign planning read; fixed 2026-08-22).** The
+  third instance of route #1's stale-binary trap, and the one with the widest trigger. All three
+  rebuild predicates — `BehavioralRunner` (`Program.cs`), MSTest `BehavioralTestBase`,
+  `PerformanceRunner` (`Program.cs`) — asked whether any **top-level** `*.go` in `src\go2cs` was newer
+  than the binary. The converter is built from more than that, and each omission changes what it
+  **emits** while touching no top-level `.go` file at all: (a) the `//go:embed` assets —
+  `embeddedTemplates.go` embeds both csproj templates, the `package_info.cs` skeleton, the icons and
+  `profiles/*`, and `stdlibMetadata.go` embeds `stdlib-metadata.txt`; (b) the `internal\` packages the
+  converter imports (`internal\stdlibmeta` and siblings), which a top-level walk never saw either; (c)
+  `go.mod`/`go.sum`. Measured at the fix: **204 top-level `*.go` seen, 224 real inputs — 20 invisible.**
+  Edit one and every predicate reports "up to date", the OLD binary keeps running, and every runner gate
+  validates the PREVIOUS emission and prints PASS. The edit reads as a no-op, which is
+  indistinguishable from "the change was already correct" — and a **.NET migration's TFM stage edits
+  exactly those templates and profiles** (`docs/DotNetMigration.md` §5.2), which makes it the step in
+  the project most likely to meet this route. Route #4's `runtime.Version()` stamp does not cover it: a
+  stamp says nothing about a template's modification time. **Remedy (landed):**
+  `src\tests\ConverterBuildInputs.cs` — one definition of the converter's build-input set, LINKED into
+  all three projects (the two runners take no assembly dependency, so a shared assembly is not
+  available), with the embedded half **DERIVED from the `//go:embed` directives themselves** rather
+  than listed, so a directive added tomorrow is covered the day it is written. Two guards under the
+  plain converter `go test ./...` (`embeddedAssets_test.go`): the directive **forms** stay inside the
+  subset the C# resolver understands, and the three predicates still delegate to the shared helper.
+  **`check-no-regression.ps1` was never exposed** — it has no rebuild predicate at all, it runs
+  `go build` unconditionally, and `go build`'s cache is content-addressed over embedded assets
+  (A/B-verified: editing `csproj-template.xml` changes the linked binary's hash, reverting reproduces
+  it byte-for-byte). That is the same asymmetry that made CNR immune to routes #2 and #4 — preserve it.
+  ⚠ One caveat on the second guard: cmd/go's test cache **drops files that resolve outside the module
+  root** (`computeTestInputsID`, "Do not recheck files outside the module, GOPATH, or GOROOT root"), and
+  the three predicate sources live under `src\tests`, outside `src\go2cs`. A narrowed predicate therefore
+  reports `ok (cached)` and only fails under **`-count=1`** — so a change touching ONLY harness C# owes
+  `go test -count=1 ./...`. The first guard has no such gap (every input it reads is inside the module).
+- **⚠ CASE-INSENSITIVE ENVIRONMENT-VARIABLE RACES — Windows-immune, POSIX-live, MSBuild is the
+  collision site (root-caused 2026-08-21, fixed at the converter 2026-08-22).** A POSIX environment
+  block is case-SENSITIVE, so `GO2CSPATH=/root/go2cs` and `go2csPath=/root/go2cs/src/` are two
+  entries; MSBuild materializes environment variables as properties and resolves property NAMES
+  case-INSENSITIVELY, so both fold into ONE `$(go2csPath)` and the winner is decided by enumeration
+  order inside the .NET env-table plumbing — a per-process coin flip. The losing draw concatenated
+  `$(go2csPath)gen/...` into `/root/go2csgen/...`, dangled the analyzer and every stdlib
+  ProjectReference, and the build died in a CS0246 storm on every golib type: intermittent,
+  package-shuffling Linux `-tests` failures that killed three measurement campaigns with every
+  plausible suspect A/B-eliminated first. **Windows environment blocks are case-insensitive at the OS
+  level — the two names are ONE slot — so five weeks of Windows sweeps could not see it.** The
+  converter now (a) never exports its own derived `GO2CSPATH` (`resolveGo2CSPathDefault`, `main.go`)
+  and (b) scrubs every case-variant from the inherited environment before appending the canonical
+  entry (`childEnvWithGo2CSPath`, `testConversion.go`), so a child carries exactly one spelling
+  whatever the invoking shell holds; guarded by `childEnvGo2CSPath_test.go`. The general rule outlives
+  this variable: **anything a child reads through a case-insensitive resolver must be injected ONCE —
+  scrub-then-append, never append-and-hope — and "Windows is fine" proves nothing about the class.**
+  The Linux harness pin (`_paths.ps1`) STAYS until a Linux lane re-measures without it.
 - **`TargetComparisonTests` compares goldens with line endings NORMALIZED** (CRLF→LF; see
   `TargetComparisonTests.FileMatch` / `BehavioralRunner.FilesEqual`, both strip CRs). It was a raw
   byte-for-byte compare until 2026-07-07. Content diffs are still caught exactly; a pure line-ending
@@ -447,8 +497,8 @@ ONE stdlib in a build; there is now only one on disk.
   sibling lanes, converter `go test ./...` **200s** solo / **332s** loaded, full `go2cs.slnx` Debug
   build **1,432s** cold, `archive/zip`'s Debug test suite **774s** (vs 391s on the i9). ⚠ Those
   day-one figures are themselves STALE as the corpus grows — re-measured 2026-08-21 on the same
-  i7-5820K: full behavioral suite **~6,552s at 603 packages**, full `go2cs.slnx` Debug
-  `--no-incremental` **~3,546s at 722 projects** — so budget those two from the 2026-08-21
+  i7-5820K: full behavioral suite **~6,552s at 603 packages** (and the runner batch-build default needed **9,000s** at 604 projects -- the stock 2,400s false-redded a healthy run, 2026-08-22), full `go2cs.slnx` Debug
+  `--no-incremental` **~3,546s at 722 projects** — so budget those two from the 2026-08-21/22
   numbers and re-measure again at the next corpus jump. Keep the i9
   columns as the historical reference the ratios hang off; budget commands from the i7-5820K figures
   (or 3–4x a row's i9 ceiling when unmeasured), and treat HARD-CODED harness watchdogs as suspects on
@@ -470,7 +520,7 @@ ONE stdlib in a build; there is now only one on disk.
   | single `core` pkg build | **~6s** (log/slog) – **~60s** cold (go/types) | 180–400s | cold includes the dependency chain |
   | full `go2cs-stdlib.slnx` build | **~92–188s** warm (307 projects; 149s measured r50a at `-p:GoTargetOS=windows`, 188s at r41 and 158s at r40, all with `-p:UseSharedCompilation=false`, the isolation flag a lane uses instead of `build-server shutdown`). ⚠ **i7-5820K on a healthy disk: 516s** `--no-incremental` (2026-08-14) | 600s (900s on the i7 class) | cold restore adds a few minutes. `-p:GoTargetOS=linux` is a DIFFERENT build and **completes clean: 307/307, 0 errors, 475s** (2026-08-14, after the three-target regen wave — `docs/phase4/CENSUS-linux-compile-wall.md` §10). It must be run `--no-incremental`: what differs between targets is the `<Compile>` ITEM SET, not any source timestamp |
   | full `go2cs.slnx` build | **~87s** `--no-incremental` / **~39s** incremental (573 projects; measured 2026-08-07) | 900s | the ONLY gate that compiles the non-generated solution members (utilities, examples) — run it after any golib/runtime API change. ⚠ Under concurrent-lane load a `go2cs-gen` run can die with `AccessViolationException` inside `TypeGenerator`'s recursive `PromotedStructDeclarations`, reported as an `error` against the package (seen once on `core/runtime`, NOT reproducible in two immediate retries with identical flags): re-run before believing it, exactly as with the Go-toolchain crash above |
-  | `run-validated-sweep.ps1` (full roster) | **~46–53 min solo (3,138s measured 2026-08-07 at 109 packages / 13,611 verdicts; the roster is 131 packages / 14,769 matching verdicts / 47 disclosed, re-measured 2026-08-14 — so budget well ABOVE the 3,138s figure, and re-measure; ~90+ min under two concurrent lane loads — both r47 attempts were killed externally before finishing, so no clean loaded figure exists)** | run it BACKGROUNDED from the COORDINATOR session only — ⚠ a LANE parking a detached sweep and ending its turn gets it KILLED (the lane's process tree is reaped; happened twice on 2026-08-08 at 106/110 and 98/110, log ends between packages with no summary — recovery: re-run `roster − logged` inline and check the verdict arithmetic closes) | ~29 s for a typical package; use `-Filter` for anything but a final gate. ⚠ Four packages carry per-package deadline FLOORS in the script's `$longTimeouts` (`hash/maphash` 60m, `index/suffixarray` 120m, `crypto/dsa` 60m, `archive/zip` 30m), **slow-host-calibrated** since 2026-08-10 — the original i9-sized values false-red every bare sweep on this machine class (hash/maphash and crypto/dsa both reported `FAIL … package timeout after 00:30:00` here; maphash then validated **22/22 in 2,406 s / 40.1 min** given room). The table is also a **floor, not an override** since the same date: a LARGER `-TestTimeout` raises it for a still-slower box (a smaller one still loses, since under-budgeting these four is the false red the table exists to prevent) — before that fix the flag was silently ignored for exactly the four packages that need it |
+  | `run-validated-sweep.ps1` (full roster) | **~46–53 min solo (3,138s measured 2026-08-07 at 109 packages / 13,611 verdicts; the roster is 131 packages / 14,769 matching verdicts / 47 disclosed, re-measured 2026-08-14 — so budget well ABOVE the 3,138s figure, and re-measure; ~90+ min under two concurrent lane loads — both r47 attempts were killed externally before finishing, so no clean loaded figure exists)** | run it BACKGROUNDED from the COORDINATOR session only — ⚠ a LANE parking a detached sweep and ending its turn gets it KILLED (the lane's process tree is reaped; happened twice on 2026-08-08 at 106/110 and 98/110, log ends between packages with no summary — recovery: re-run `roster − logged` inline and check the verdict arithmetic closes) | ~29 s for a typical package; i9 full roster measured **7,059-7,705s** at 159-162 rows (2026-08-22) -- the 46-53 min row is the dead i9-13900K era and stands only as the ratio anchor; use `-Filter` for anything but a final gate. ⚠ Four packages carry per-package deadline FLOORS in the script's `$longTimeouts` (`hash/maphash` 60m, `index/suffixarray` 120m, `crypto/dsa` 60m, `archive/zip` 30m), **slow-host-calibrated** since 2026-08-10 — the original i9-sized values false-red every bare sweep on this machine class (hash/maphash and crypto/dsa both reported `FAIL … package timeout after 00:30:00` here; maphash then validated **22/22 in 2,406 s / 40.1 min** given room). The table is also a **floor, not an override** since the same date: a LARGER `-TestTimeout` raises it for a still-slower box (a smaller one still loses, since under-budgeting these four is the false red the table exists to prevent) — before that fix the flag was silently ignored for exactly the four packages that need it |
 
   Materially *past* these means the test host has hung under lock contention, not real work — stop and
   clear it rather than waiting 10–20 min. **Re-measure and update this table when the corpus grows again**;

@@ -1,0 +1,617 @@
+# Migrating the go2cs corpus to a new Go version
+
+> The standing runbook for moving the converted standard library — and everything derived from it:
+> the goldens, the validation roster, the proof pages, the disclosure manifests, the published
+> packages — from one Go release to the next. It is **version-agnostic by design**: it names
+> instruments, gates and traps, never a particular release.
+>
+> The **strategy** lives in [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — which releases, in
+> which order, under which ruled frame, with its H0–H12 step inventory and its ruled open questions.
+> **This document is the procedure**, generalized from that inventory so it can be run again without
+> re-reading a plan written for one rung of the ladder. Where the two disagree about *what* to do,
+> the plan governs; where they disagree about *how*, this document is the one being maintained.
+>
+> Companion: [`DotNetMigration.md`](DotNetMigration.md), the same for a new **.NET** release. The two
+> are separate documents because they are separate hops — **one variable at a time** is the rule that
+> makes either measurable.
+
+**No frozen figures.** Roster rows, verdict totals, package counts, marker-census counts and wall
+times are **named by instrument and re-measured at the migration**. Two classes are re-measured *by
+standing rule and never carried at all*: the hand-own marker census, and the per-release standard
+library delta. Where a budget matters, this document names the row in CLAUDE.md's measured budget
+table rather than copying a number that goes stale.
+
+---
+
+## 1. Shape of a corpus migration
+
+A corpus migration moves **the Go release the corpus is converted from**. It moves nothing about the
+.NET runtime, and it changes the converter only where the new release's *language* requires it.
+
+Two properties determine almost everything about how expensive a given migration is:
+
+| Property | Cheap end | Expensive end |
+|:--|:--|:--|
+| **Language delta** | none — a patch-level move within one minor | new syntax or new type-system surface, which is converter work with its own design |
+| **Package delta** | none | packages added, removed, promoted, or reorganized wholesale |
+
+A **patch-level migration within one minor** is the cheap end on both axes and is the right rehearsal
+for the machinery: the pin guard fires for real, the hand-own differential runs for the first time,
+the badges churn, the release ritual is exercised — all without a language change to confound them.
+
+### 1.1 What moves emitted C# even when the Go source did not
+
+Three channels, and knowing which are live for a given migration is the difference between reading a
+diff and drowning in one:
+
+1. **Release-tag expansion.** The converter derives the `go1.1 … go1.N` build-tag set from the Go
+   version and evaluates build constraints with it, so a **minor** bump flips every `//go:build go1.N`
+   guard in the Go tree and changes which files each package includes. **The derivation is
+   minor-keyed** (`releaseTagsForVersion`, `src/go2cs/directiveOperations.go`, trims any patch
+   suffix), so a **patch-level migration has zero release-tag delta** — verify this against the
+   source for the migration at hand rather than assuming either way.
+2. **Imported type aliases.** An emitted project reads each imported package's `package_info.cs` to
+   mint its `<ImportedTypeAliases>` block, so a moved dependency moves its dependents' emission —
+   including the behavioral goldens', whose own Go sources never change.
+3. **Upstream source.** The ordinary channel, and the one the migration is *for*.
+
+### 1.2 The toolchain rule, and why it is step one
+
+The converter type-checks from source using the `go/ast` + `go/parser` + `go/types` **compiled into
+`go2cs.exe`**. Therefore:
+
+> **To convert Go 1.N sources, `go2cs.exe` must be BUILT with a Go toolchain ≥ 1.N.**
+
+This is why the toolchain move is the first step of every migration and not a housekeeping item.
+
+**And it opens a false-green route the harnesses do not close.** Every rebuild predicate rebuilds the
+converter when a converter **`*.go` file** is newer than the binary. Installing a new Go toolchain
+touches none of them, so every predicate still says "up to date" and every gate keeps running a
+binary whose front end is the **old** release's, against the **new** release's sources. It does not
+fail cleanly — the old parser mis-parses or rejects new constructs and the run degrades into the
+converter's best-effort *"did not fully type-check"* path, which `check-no-regression.ps1` reports as
+`NOT MEASURED` (good) and the runners do not.
+
+**The ruled remedy** is to stamp the building toolchain's release into `go2cs.exe` and have each
+harness compare it against the live toolchain, rebuilding on mismatch exactly as on a timestamp
+change. **Until it lands, a toolchain change owes an explicit `go build` of the converter, and no
+gate may run before it.**
+
+⚠ **A sibling route the stamp does not cover**: the converter `//go:embed`s its csproj templates,
+`package_info.cs` skeleton, icons and publish profiles, and the rebuild predicates filter on `*.go`
+only — so an embedded-asset edit changes emission and invalidates the binary in no harness.
+[`DotNetMigration.md`](DotNetMigration.md) §5.2 carries the full statement; the remedy is the same
+predicate widening and lands most cheaply with the stamp.
+
+---
+
+## 2. The step ladder
+
+[`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) §2 defines the canonical H0–H12 inventory. This
+section is the procedure for each, generalized. **Steps marked GATE are pass/fail and block the next;
+steps marked ⟲ are re-measured at every migration and never carried forward.**
+
+**Three orderings are not negotiable**, and each has a mechanical reason rather than a preference:
+
+- **The toolchain step and the pin bump land as ONE reviewable pair.** Between them the binary claims
+  the new release (its embedded runtime version is what the NuGet compatibility guard reads) while
+  `version.props` still names the old one — so a NuGet-referencing conversion in that window refuses
+  legitimate old-pin modules and accepts new-pin ones for a corpus that does not exist yet. Silent,
+  and it only bites a user.
+- **The pin bump precedes the reconvert.** `checkCorpusToolchainPin` refuses `-stdlib` and `-tests`
+  otherwise — and the guard's own error text prescribes the remedy verbatim: *"if the corpus is
+  deliberately moving to X, bump `<GoStdLibVersion>` to X first."* The ordering is sanctioned by the
+  code, not invented.
+- **The baseline capture precedes replacing the old Go tree.** With side-by-side installs — which
+  every migration should use — this relaxes to "precedes the reconvert".
+
+Everything else may be reordered by the executing lane.
+
+### H0 — Baseline capture ⟲
+
+Capture, on the **outgoing** toolchain and the **new** converter build, everything the migration will
+diff against: the hand-own `.cs.auto` baseline, the package census, the roster snapshot, the
+disclosure manifests.
+
+⚠ **Generate the `.cs.auto` baseline fresh, from a seeded old-release regen — never from the committed
+siblings.** The overlay rule excludes `*.cs.auto` in order to protect the hand-owned `.cs` beside it,
+so the tracked siblings are **frozen on their own schedule** and a materially stale baseline poisons
+the differential. This is a ruled decision, not a preference.
+
+### H1 — Toolchain provisioning **GATE**
+
+1. Install the target release **side-by-side**; confirm `GOROOT/VERSION` reads the exact target.
+2. Move the converter module's `go` directive to the target (ruled: it moves each migration).
+3. Bump the `golang.org/x/tools` and `golang.org/x/mod` requirements to releases contemporary with
+   the target. The export-data policy bounds how far they may lag. **This is a separate commit with
+   its own CNR** (ruled) — a dependency bump that can move emitted bytes must be visible on its own.
+4. `go build` the converter **on the new toolchain**; converter `go test ./...` green.
+5. **Close the stale-binary hole** (§1.2) before any harness runs.
+
+**Gate:** converter unit tests green **and** `go2cs.exe` demonstrably built by the new toolchain.
+
+### H2 — The pin bump **GATE**
+
+Bump `<GoStdLibVersion>` in `src/version.props` to the exact target release, and settle the build
+number's policy at the same moment (ruled: it **resets** per release). **Nothing else changes in this
+commit** — deliberately a one-line, reviewable, revertible move, landing as one pair with H1.
+
+**Gate:** a single-package `-stdlib` smoke conversion no longer refuses.
+
+### H3 — Package census ⟲
+
+Diff the conversion queue's package set against the outgoing corpus: **added**, **removed**,
+**renamed or promoted**, and **experiment-gated and therefore deliberately absent**. The last category
+matters as much as the others: experiment-gated packages stay out until they graduate to the default
+package set (ruled), and naming them explicitly is what stops a later reader re-diagnosing a
+"missing package".
+
+Deliverable: a census document under `docs/phase4/`, in the shape of the existing census docs. **A
+patch-level migration should produce an empty census; a non-empty one is a finding.**
+
+### H4 — Converter feature work **GATE**
+
+Whatever the release's language delta requires, plus whatever the census surfaced. Each item follows
+the standing repository discipline: root-cause against emitted `.cs`, land a behavioral regression
+test, update the conversion-strategy reference (and the summary only if the headline mapping moved),
+and prove `check-no-regression` clean **on the outgoing corpus** where the change is meant to be
+neutral.
+
+**Two recurring work items belong here by ruling rather than being discovered as audit findings:**
+
+- **The hand-owned test host.** `src/core/testing` is skip-listed and never converted, so it follows
+  **nothing** automatically while upstream keeps adding to `testing`'s API. It is a named work item of
+  every migration that adds one.
+- **The `go.mod` readers.** New `go.mod` verbs are silently dropped by lax parsing, so any new
+  directive in the target release owes a re-check of the converter's `go.mod` handling rather than an
+  assumption of safety.
+
+**Gate:** CNR byte-identical over the full behavioral corpus, zero `NOT MEASURED`. Budget from
+CLAUDE.md's `check-no-regression.ps1` row, from the top of its range.
+
+### H4a — The opening deliberate-regen slot
+
+**A standing slot, not a step with fixed contents.** The repository accumulates *queued leveling
+items*: converter emission changes that landed without their corpus regen, born-stale banked
+artifacts, and cosmetic emission nits explicitly deferred to "the next deliberate regen". Each is
+individually too small to justify a full reconvert, and the standing rule is **restore rather than
+level** until one regen can carry them all.
+
+**A corpus migration is that regen.** Schedule the bundle **before H5**, for one reason: H5's overlay
+diff is the migration's primary signal, and every un-levelled artifact is noise inside it. Levelling
+first is what makes the upstream delta readable.
+
+**The bundle owes, in one commit series:**
+
+1. every queued converter emission fix, each with its own CNR;
+2. a seeded full reconvert;
+3. **`go generate .` in `src/go2cs`** — `stdlib-metadata.txt` is generated FROM the corpus and gated
+   by `TestStdLibMetadataInSync` under the plain converter `go test`, so a regen banked without it
+   leaves the converter gate red at master **for whoever runs it next**, not for the lane that caused
+   it;
+4. the born-stale rows re-swept **at their banked counts** — the whole point of the class is that the
+   staleness is emission drift, not a verdict change, so the sweep is unaffected.
+
+Any small deferred housekeeping that needs a quiet point (unregistered solution members, and the
+like) rides here too.
+
+### H5 — Seeded full reconvert **GATE**
+
+**CLAUDE.md's reconvert ritual, unchanged and unabridged.** A migration is the *most* likely moment to
+skip a step of it, so the non-negotiables are restated rather than referenced:
+
+- **Seed first.** Copy `src/core`, `src/version.props` and `docs/validation` into the staging root,
+  mirroring the `src/` layout, and convert with `-go2cspath <staging>/src`. An unseeded root gives the
+  hand-own marker nothing to detect, so every whole-file hand-own is emitted as a plain `.cs` and the
+  overlay rule protects **nothing** — the auto conversions compile and are operationally broken. Since
+  the per-GOOS corpus layout landed, an unseeded root also breaks layout adoption: there is no
+  per-GOOS folder to route into, so every platform-varying file lands flat and the next build compiles
+  two copies.
+- **Never convert twice into one staging root**, and never let two conversions overlap in one. Delete
+  and re-seed per run, and confirm no converter process is alive before starting. The recorded failure
+  is a single corrupted file with unresolved lift markers that reads exactly like a converter
+  regression and is not one.
+- **Wrap the converter call so its stderr warnings do not abort the wrapper** — a terminating
+  error-action policy turns a native stderr line into a fatal, which is how the overlapping-run
+  corruption happened in the first place.
+- **The marker gate is PATH-PRECISE, line-anchored, whole-file, and re-measured** ⟲. Per marked path,
+  the staging root must not hold a freshly-**emitted** plain `.cs` — either a `.cs.auto` sits beside
+  it, or nothing was emitted there. Counts intentionally differ from the census, in both directions,
+  so **a same-count assertion is wrong**. Three census traps, each paid for: a head-window scan
+  under-counts badly (markers sit below long license blocks); an unanchored match over-counts
+  (placeholder comments *mention* the marker); and a default ripgrep honors `src/core/.gitignore` and
+  under-counts — census with `git grep` or a raw filesystem walk.
+- **Classify emitted-vs-seeded by a sentinel modification time**, not by content: seeding puts every
+  repository file in the staging root, so an overlay can never reveal a file the converter has
+  *stopped* emitting unless the classification is time-based.
+- **Overlay `.cs`, `.csproj` and `README.md`, excluding `*.cs.auto`.** Two knowns that are not drift:
+  the root attribution files the converter re-copies (modified with an **empty** numstat — pure
+  line-ending phantoms, restore them), and the **hand-owned-by-consequence** packages, whose single Go
+  file is entirely hand-owned so the driver never reaches project-file emission and their `.csproj`,
+  `package_info.cs` and `README.md` are never re-emitted. **A migration that adds a package to that
+  class must notice.**
+
+**Gate:** overlay completes with the marker gate at zero violations and **every diff classified**
+(§4).
+
+### H6 — The hand-own re-audit ⟲ **GATE**
+
+The step that distinguishes a corpus *upgrade* from a corpus *regeneration*, and the one a migration
+is most likely to skip **because everything compiles without it**.
+
+**The failure mode.** A hand-owned file is frozen at the semantics of the release it was written
+against. When upstream **adds** code inside that file — a new branch, a new field, a hardening fix —
+the hand-own does not receive it. Nothing fails: the file is excluded from the convert set, the corpus
+compiles, the suites are green, and the package's own tests may not cover the added path. **The defect
+is silent and operational, and it surfaces later as an inexplicable divergence in a package nobody was
+working on.** *Newly-added* upstream code is the dangerous class; a *changed* line often shows up as a
+behavioral divergence, an added branch shows up as nothing.
+
+**The instrument** is `.cs.auto` — the converter's answer to *"what would the automatic conversion of
+this file be, today, from this Go tree?"*
+
+**The diff is `.auto`(old release) vs `.auto`(new release), per hand-own — never `.auto` against the
+hand-owned `.cs`.** The latter is dominated by the hand-own's *intended* divergence and is unreadable;
+the former isolates the upstream delta. **Both `.auto` files must be produced by the SAME converter
+binary**, or converter drift contaminates the release axis and the classification is worthless. Each
+staging root carries its **own** `version.props` pinned to its own release, so the pin guard passes on
+both sides.
+
+*Named blind spot:* if the new converter build cannot parse the OLD tree cleanly, run A degrades and
+the baseline is suspect. **Assert run A's package count and marker gate against the outgoing corpus's
+before trusting it.**
+
+**Classification — every delta, explicitly, one of three:**
+
+| Class | Meaning | Required record |
+|:--|:--|:--|
+| **(a) ABSORBED** | the upstream change is real and has been carried into the hand-own | the commit that carried it; a test or gate that observes it |
+| **(b) N/A** | the upstream change does not apply to the managed implementation | **the reason, written out** — never the bare letters |
+| **(c) REWRITE OWED** | the hand-own must change and has not yet | a named work item, gating the migration or explicitly deferred with owner and reason |
+
+An **empty** diff still gets a record (`unchanged`, with both hashes). A hand-own the run emitted
+**no** `.auto` for gets a record too, and that record is **a defect in the audit, not a pass**: either
+the seed did not take at that path, or the marker predicate could not see the marker.
+
+⚠ **Two populations, and conflating them makes the gate either a false alarm or a rubber stamp**
+(ruled): the **audit** covers *all* hand-owns; the **`.auto` differential** reaches only the ones the
+converter re-emits. A supplemental `*_impl.cs` companion has no Go counterpart and therefore no
+`.auto` — it is audited **against its principal's `.auto` diff**. A hand-owned *package* is audited by
+**manual upstream diff**. **Every record names its evidence class.**
+
+**The completeness gate:**
+
+> No migration's corpus is adopted until every hand-own in the **re-measured** census has a classified
+> delta record in that migration's audit file, and every (c) is either closed or explicitly deferred
+> with an owner.
+
+Mechanically: re-measure the line-anchored census over `src/core`; assert every marked path appears
+exactly once in the audit file; assert every row's class is one of `unchanged`/`a`/`b`/`c`; assert
+every `b` carries a non-empty reason and every `c` a work-item reference; assert **zero** rows in the
+"no `.auto` emitted" state. Exit non-zero on any violation — the same shape as the repository's other
+preflights: cheap, by-path, and impossible to pass vacuously.
+
+Deliverable: one audit file per migration under `docs/phase4/` (ruled), rather than per-package notes,
+because the completeness gate must be checkable in one place.
+
+### H7 — Compile parity **GATE**
+
+Full `go2cs-stdlib.slnx` build with shared compilation disabled, zero errors, **skipped-dependents
+enumerated and zero** (a dependent of a failed project is skipped, not errored — count them). Run
+**every** buildable `$(GoTargetOS)` flavor, purging `bin`/`obj`/`Generated` between switches.
+
+**Gate: 100 % of the migration's package set compiles.** Not "as many as before" — 100 %, per the
+frame.
+
+### H8 — Multi-platform re-emission **GATE** ⟲
+
+Re-run the multi-target emission and the platform census, and diff the manifest against the outgoing
+one. A migration changes the platform axis in **two** directions at once: new packages may be
+platform-varying, and existing ones may stop being so. The per-GOOS package count is a measurement,
+not a constant.
+
+**Gate:** the platform manifest's marker gate is zero per target, and the default-flavor build
+reproduces the single-target build byte-for-byte.
+
+### H9 — Behavioral golden rebank **GATE**
+
+Behavioral goldens are conversions of go2cs's *own* Go programs, so a corpus migration reaches them
+through §1.1's three channels — and which are live is knowable in advance. **Predict the diff's size
+before running the rebank**; a diff that materially exceeds the prediction is a finding, not a rebank.
+
+Procedure: re-transpile everything **first** (the golden-update utility copies on-disk `.cs`; it does
+**not** re-run the converter, so a copy over stale output silently re-baselines it), then update the
+goldens, then **classify every moved golden before banking**. A migration is not a licence to rebank
+unexamined diffs.
+
+**Gate:** the full behavioral suite green across all four phases. Note the runner's **own** internal
+budgets are independent of the caller's, and a budget that expires reports `NOT MEASURED`, which fails
+the run and must **never** be read as a corpus regression.
+
+### H10 — Roster, proof-page and disclosure re-derivation ⟲ **GATE**
+
+**The migration's largest step, and the one §3 makes a campaign.** Every banked test suite is derived
+from the release's own test sources, so **every roster row re-validates from scratch**: numerator,
+denominator and disclosure set alike. There is no carry-forward path.
+
+Per banked package:
+
+1. Re-run the converted-test pipeline against the new GOROOT package.
+2. **Re-derive the verdict count.** The denominator moves — tests are added and removed.
+3. **Re-derive the disclosure manifest.** Disclosures are pinned by **exact failure signature**, so a
+   renamed or reworded test invalidates its pin and the manifest is **re-signed, never edited** (§4,
+   class T5's sibling hazard).
+4. Regenerate the proof page and let the README validation badge recompose from it.
+5. **Re-check the per-package deadline floors** in the sweep's long-timeout table — a migration can
+   change a suite's cost.
+
+**Gate:** the roster's **absolute row count** ≥ the prior migration's (ruled), with rows lost to an
+**upstream-deleted package** admitted as **recorded exceptions**. **Both** numbers — absolute and
+percentage — are reported every migration, because they can move in opposite directions when a release
+adds testable packages faster than validation adds rows.
+
+**One arithmetic cross-check, free and worth running here:** the count of banked test project files
+must equal the roster's row count. It is the committed-evidence half of the green-badge rule, and if
+a migration ends with the two unequal the badge census miscounts — loudly, by design.
+
+### H11 — Publication and compatibility guards **GATE**
+
+- The published version is the pinned Go release plus the build counter, already set at H2.
+- **Verify version monotonicity with a scripted comparison before the first publish**, never believe
+  it. A non-monotonic sequence on a public feed is not correctable.
+- The NuGet compatibility guard follows the migration for free, because it reads the converter
+  binary's own runtime version — which H1 rebuilt. That coupling is exactly the H1↔H2 window §2 warns
+  about.
+- **New packages need new package IDs; removed packages need a disposition** — ruled: **deprecate,
+  with a pointer to the last release that carried it. Never unlist.**
+- The published-release stamp is a **repository-recorded fact** written by the publish ritual; a feed
+  query is advisory only, never the gate.
+
+### H12 — Docs, badges, READMEs **GATE**
+
+- **Every validation badge on every package README moves** as a matter of course: two of them read the
+  toolchain and follow H1, two read `version.props` and follow H2. **State the expected diff size
+  before the overlay** so it is not mistaken for drift.
+- **The hand-owned READMEs do not follow.** They are hand-edited, and their edits are *derived and
+  proved against the converter's own output*, never typed. **Re-run that derivation as a control** at
+  every migration.
+- **The GOROOT-vendored `golang.org/x/*` packages re-pin** from the new GOROOT's own vendor manifest —
+  on a patch-level migration this is the badge family most likely to actually move.
+- The Go version appears in prose in the top-level docs, the roadmap, the roster and CLAUDE.md's
+  architecture row.
+- **Release-ritual rehearsal**: a dry run exercising the pre-pack signed tag, the write-once proof
+  snapshot, both badge retargets, and the recomputed re-verification pass. The frame requires the
+  ritual *rehearsed* at the parity gate; whether a given migration also **publishes** is the frame's
+  decision, not this document's.
+
+---
+
+## 3. The roster re-derivation as a shardable campaign
+
+H10 is embarrassingly parallel and should be run that way whenever more than one machine is available.
+This section is the standing procedure; a given migration's plan supplies the fleet and the map.
+
+### 3.1 Why it shards, and what the unit of isolation is
+
+Each row is an independent conversion-build-run-compare against one GOROOT package and one corpus
+package. **No row reads another row's output.** What rows share is one corpus tree and one converter
+binary — so **the unit of isolation is a clone or worktree, not a directory**. Two lanes on one
+machine need separate checkouts, because the gates re-transpile the tree they run in.
+
+⚠ **The validated sweep is SERIAL BY DESIGN** and says so in its own source: concurrent converted-test
+runs share freshly-built dependency assemblies and collide on them, *which reads as a package failure
+and is not one*. It exposes no jobs, throttle, shard or resume parameter. **Every unit of fleet
+concurrency therefore lives outside the instrument** and is a worktree running its own internally
+serial sweep. The per-row driver invokes the sweep one row at a time with its **exact-match filter** —
+a parameter that exists in the sweep for precisely this purpose, because a substring filter re-sweeps
+large rows repeatedly.
+
+### 3.2 Cost proxy and ordering
+
+**Verdict count is a bad cost proxy.** Suites with few verdicts can dominate a campaign (large fixture
+streaming, spawned child toolchains), and suites with enormous verdict counts can be quick. **The
+honest proxy is the previous full sweep's per-row wall time** — which means **per-row log retention on
+the preceding consolidation sweep is a prerequisite of the next migration's shard map**, and is
+unrecoverable afterward. Make it an obligation of that sweep, not of this step.
+
+**Smallest-first is the established ordering, and its reason is banking**: partial results bank as the
+campaign goes, and the coordinator merges incrementally rather than waiting for the whole run. Its one
+cost is makespan — a long row landing last idles every other worker.
+
+Where a migration has several dominant rows, a **two-phase** ordering resolves the tension without
+giving up incremental banking:
+
+- **recon, smallest-first** — every worker takes a stratified slice of the cheapest rows. Deliverable:
+  partial banks *and* the migration's **drift families**, named, before any expensive row runs.
+- **bulk, largest-first** — greedy longest-processing-time-first assignment onto bins weighted by
+  measured worker speed, which is the standard makespan heuristic and exactly right when a few rows
+  dominate. Rows still bank as they land; only the order changes.
+
+**Smallest-first throughout is the safe fallback** — it costs makespan, not correctness.
+
+**Reserve the known giants and pin them to the fastest worker.** The sweep's long-timeout table names
+the packages that carry per-package deadline **floors**; those plus any row with an unusually large
+suite are the reserved set. ⚠ **The floors are floors, not overrides** — a larger timeout raises them
+for a slower box; a smaller one still loses. Under-budgeting exactly those rows is the false red the
+table exists to prevent.
+
+### 3.3 Preconditions a shard must confirm before its first row
+
+- **The worker's Go toolchain is the target release and its clone is at the migration branch tip.**
+  The sweep **throws** when `version.props` disagrees with GOROOT's `VERSION` file — so a worker on
+  the old toolchain gets a loud refusal rather than a wrong answer, but it should be caught in the
+  shard's acknowledgement rather than at row 1.
+- **The whole-solution build has been run once**, so the per-package builds go incremental.
+- **The converter binary was rebuilt after the toolchain move** (§1.2) — and after any embedded-asset
+  edit.
+- **The worker's C-toolchain capability is recorded.** On platforms where cgo availability changes
+  which tests the **Go side** runs, a worker with a C toolchain and one without are **not measuring
+  the same thing**, and the difference presents as a verdict-count discrepancy attributable to nothing
+  in the corpus.
+
+### 3.4 The ledger
+
+Per-row log retention plus an **idempotent resume ledger** is what makes a multi-hour shard survivable
+on any machine, and what makes a killed or rebooted worker cost minutes rather than hours.
+
+- **One line per row, append-only**, keyed by package path. Fields: package, shard, worker, start and
+  end timestamps, timeout used, verdict, matched count, disclosed count, **log path**, corpus commit,
+  converter commit **and the converter binary's modification time** (a commit does not say whether the
+  binary was rebuilt after it), and the worker's C-toolchain capability.
+- **Idempotent**: a row already carrying a terminal verdict at the current corpus commit is skipped on
+  restart; a row at a different commit re-runs.
+- **`NOT MEASURED` is a first-class verdict, never a failure.** An unmeasured row must never read as a
+  pass, and must never read as a corpus regression either — the repository has already paid for both
+  mistakes. A shard reports unmeasured rows **by name** and the coordinator re-dispatches them with a
+  raised budget.
+- **Per-row logs are retained and their paths recorded**, because the sweep collapses build errors
+  into bare failure rows *with zero diagnostics* — the by-hand doctrine is what exposes a compile
+  error hiding behind batches of silence. **A ledger row without its log is not evidence**, and across
+  many workers nobody reads every log unless the report points at one.
+- **The ledger is committed to the shard's branch** as the shard's own artifact, so the coordinator
+  merges evidence rather than claims.
+
+### 3.5 Signals and incremental merging
+
+**Branch shape:** the migration lives on a long-lived version branch; each shard branches from *that*,
+never from master.
+
+**The merge hotspot, and how to remove it.** Every shard's natural deliverable includes a roster edit,
+and the roster's header arithmetic is a **single line every shard would touch**. The rule:
+
+> **A shard edits only its own rows. The coordinator recomputes the header.** The header is already
+> recomputed from its own table, the row grammar has its own format guard, and both the sweep and the
+> guard read one shared parser. A shard that touches the header has broken protocol, and the format
+> guard is the place to notice.
+
+Row edits themselves conflict rarely — one row per line, alphabetical, with shards scattered across
+the alphabet. Proof pages, manifests and committed test sources are per-package files and cannot
+conflict at all.
+
+**Merge incrementally, not in one batch**, for three reasons each with a precedent:
+
+1. **A lane's proof binds its own tree, never the merge result.** A flagship row has already banked
+   green on a lane tip and been red at master the moment its merge landed, because the guilty change
+   merged after the lane forked — each side green alone, the union never swept. **A shard merge
+   therefore owes a post-merge filtered re-sweep of a sample of its own rows at the merge result.**
+2. **The reflection-consumer canary set is derived at gate time, never carried** — the largest banked
+   reflection-consuming rows by verdict count, recomputed from the roster at the moment of the gate.
+   The known escape happened *precisely because* a merge canary set predated the newest bank.
+3. **Incremental merging bounds the blast radius**: many shards merged at once and one red row is a
+   many-way bisect; merged one at a time, the red row names its shard.
+
+**Re-assert the checksum after every merge**: every roster row appears exactly once, the header
+recomputes, and the roster format guard is green. **A row that is in the shard map and in no shard's
+ledger is the campaign's one unrecoverable failure mode** — make it a gate, not a hope.
+
+### 3.6 What a worker owes, and what it must not do
+
+The fleet's established worker contract, generalized: a worker **runs named instruments at stated
+budgets and reports raw output** — exit code, the arithmetic lines verbatim, a bounded log tail, and
+sweep dirt classified **only** against the documented classes, with anything else posted raw as
+**UNCLASSIFIED** for the coordinator to rule on. A worker **makes no rulings and never commits to
+master**. A run that exceeds its stated budget is **killed and reported as a timeout with the log
+tail** — a worker does **not** extend a budget on its own.
+
+Two operational rules that are not optional:
+
+- **Long runs are launched detached**, or the session's turn boundary reaps them; and the wait is
+  written as a **positive** poll on the log or the process, because the naive inverted form reports
+  "exited" instantly while the process still runs.
+- **A worker's own outer wrapper must clear the instrument's internal budget.** A wrapper tighter than
+  the instrument's own budget is a false-red generator, and at the sweep's long-timeout floors the
+  mismatch is easy to make.
+
+---
+
+## 4. Golden-drift triage
+
+**The instrument is the upstream history.** The authoritative list of what changed between two Go
+releases is that project's own log between the two tags, per package directory. **Every moved golden
+and every moved verdict count maps to one of those commits by name, or it is a defect** — in the
+converter, in the corpus, or in the measurement. This is the migration's central discipline and it is
+cheap: a bounded, enumerable set of upstream changes.
+
+Test each diff against the classes **in this order**:
+
+| Class | Test | Disposition |
+|:--|:--|:--|
+| **T0 · known non-diff** | the file shows modified with an **empty** numstat | line-ending phantom. **Restore.** ⚠ the empty-numstat rule is **false for verbatim-copied paths** marked as binary-ish in `.gitattributes` — git does not normalize them, so a pure line-ending flip shows a *real* numstat. Test line-ending-stripped equality against `HEAD` directly there |
+| **T1 · upstream, attributed** | the file maps to an upstream commit touching its Go source | **Bank**, naming the upstream commit in the classification record |
+| **T2 · test-closure re-emission** | one of the named shapes an `-stdlib` and a `-tests` emission differ by — an import alias, a namespace root escape, the using-block reorder an alias causes, or the test-init hook a `-tests` run adds as **real lines** an `-stdlib` run omits | **Restore.** A standing restore, not a cleanup, until the two emissions agree. ⚠ the hook shape survives a numstat filter |
+| **T3 · born-stale** | the artifact predates an emission that has since landed | **Levelled in H4a's opening bundle.** Anything still in this class afterward is a defect in the bundle |
+| **T4 · hand-own consequence** | H6's differential classified the hunk (a)/(b)/(c) | H6 owns it; H10 must not silently absorb it |
+| **T5 · UNATTRIBUTED** | none of the above | **Stop.** The migration's real signal, and the only class that blocks. Root-cause before the branch merges |
+
+**The movement class to expect and welcome**, and its trap: a disclosure pinned by exact failure
+signature **breaks when its test is reworded**, and the fast fix — editing the signature to match the
+new text — converts a real, re-derivable divergence into a rubber stamp. **Re-derive and re-sign;
+never edit.** Every re-signed entry names the upstream commit that moved the test.
+
+**And classify closures as carefully as breaks.** A row that *matched* because both runtimes were
+wrong the same way can newly diverge, and a **disclosed divergence can silently close**. A closure is
+a good outcome and must still be **retired with evidence** — the arithmetic must move, visibly, or
+nothing was proven.
+
+---
+
+## 5. Parity gates — the arithmetic that lets master cut over
+
+The version branch may carry a red roster gate for a long time; **that is what the branch is for**.
+Master merges only when all five hold, each stated so it can be **checked, not felt**:
+
+| Gate | Arithmetic |
+|:--|:--|
+| **Compile parity** | errors zero **and** skipped-dependents zero, at **100 %** of the migration's package set, under the default target OS |
+| **Roster parity** | every roster row appears in exactly one shard ledger (nothing lost) **and** the absolute row count ≥ prior, with upstream-deleted-package losses as **recorded** exceptions. Both absolute and percentage reported. Every row backed by a regenerated proof page and a re-derived, re-signed manifest |
+| **Behavioral parity** | all four phases green, **zero** `NOT MEASURED`, every moved golden classified T0–T4 with **zero T5** |
+| **Hand-own audit** | §H6's completeness gate passes: every marked path in the **re-measured** census appears exactly once; every (b) carries a written reason; every (c) a work item; **zero** "no `.auto` emitted" rows |
+| **Release ritual rehearsed** | tag mint, write-once snapshot, every badge retarget, recomputed re-verification — exercised on the migration's own tree |
+
+**Performance is deliberately NOT a parity gate.** A full AOT pass is hours and must run solo; the
+frame schedules it **once per ladder** plus coordinator discretion, not once per migration.
+
+---
+
+## 6. Gate accounting — what a corpus migration owes
+
+| Gate | Owed? |
+|:--|:--|
+| converter `go test ./...` | **yes**, at H1 and after every converter change. Carries the shared-project registration guard, the metadata-sync guard, the capability-gate guard and the platform hand-own guard |
+| `check-no-regression.ps1` | **yes**, at H4 and per converter-touching commit. It re-transpiles **unconditionally** and is the authoritative drift instrument — **never add an up-to-date skip to it** |
+| `go2cs-stdlib.slnx`, every buildable target-OS flavor | **yes**, at H7 |
+| `go2cs.slnx` | **yes** after any golib/runtime API change; it is the only gate compiling the non-generated members |
+| full behavioral suite (four phases) | **yes**, at H9 and at the parity gate |
+| seeded full reconvert | **once** per phase — H4a's bundle and H5. Never twice into one staging root |
+| multi-target emission + platform census | **yes**, at H8 |
+| full validated-roster sweep | **once**, at the parity gate: coordinator-owned, backgrounded, on the fastest available machine, **never parked by a lane** — a lane's process tree is reaped at its turn boundary, and sweeps have been lost to exactly that. Recovery is `roster − logged`, re-run inline, with the verdict arithmetic checked to close |
+| release-ritual dry run | **yes**, at H12 |
+
+Budget every one from CLAUDE.md's measured budget table, **from the top of each range**, and
+**re-measure and update the table** when a healthy run exceeds a row. A stale baseline is what makes a
+healthy run look hung — and, in the other direction, what lets a hung one look healthy.
+
+---
+
+## Sources
+
+- [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — the ruling frame, the canonical H0–H12
+  inventory this document generalizes, the parity-gate definitions, the risk register, and the ruled
+  open questions (toolchain stamp, fresh baselines, module directive, build-number reset, roster
+  gate on absolute count, version monotonicity, removed-package disposition, audit home, audit
+  population, experiment-gated packages, test-host ownership)
+- `CLAUDE.md` — the reconvert ritual and its marker-gate traps; the false-green route catalogue; the
+  post-sweep dirt classification; the measured budget table; the concurrent-session and detachment
+  rules; the banked-row merge protection
+- [`ValidatedTestPackages.md`](ValidatedTestPackages.md) — the roster grammar its parser and format
+  guard enforce, the disclosure classes, and the signature-pinning rule §4 depends on
+- [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md) — hand-own detail and the
+  disclosure classes' full definitions
+- [`DotNetMigration.md`](DotNetMigration.md) — the companion runbook, and §5.2 of it for the
+  embedded-asset false-green route §1.2 references
+- Source read directly: `src/go2cs/toolchainResolution.go` (the pin guard and its prescriptive error
+  text); `src/go2cs/directiveOperations.go` (`releaseTagsForVersion`, minor-keyed);
+  `src/go2cs/conversionDriver.go` (source type-checking, the rule in §1.2);
+  `src/go2cs/embeddedTemplates.go`; `src/run-validated-sweep.ps1` (serial by design, the exact-match
+  filter, the toolchain pin, the disk preflight, the long-timeout floors); `src/_roster.ps1` and
+  `src/check-roster-format.ps1`

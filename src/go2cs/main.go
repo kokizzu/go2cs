@@ -38,6 +38,42 @@ import (
 	"time"
 )
 
+// resolveGo2CSPathDefault answers the DEFAULT for the -go2cspath flag: a user-set GO2CSPATH when the
+// environment carries one, otherwise ~/go2cs (falling back to the GOPATH parent when the home
+// directory cannot be resolved). An explicit -go2cspath still overrides it, as flags override
+// everything here.
+//
+// The semantic invariant, stated once because two halves of the converter depend on it:
+//
+//   - A user-set GO2CSPATH IS honored — it is the documented way to choose the runtime/stdlib root
+//     without passing a flag, and the Linux harness pin relies on it.
+//   - The converter NEVER exports its own derived value. GOROOT and GOPATH above are os.Setenv'd
+//     deliberately, because the `go` toolchain children the converter spawns read them; GO2CSPATH has
+//     no such consumer — this call site is its only reader, and the value is consumed immediately as
+//     the flag default.
+//   - Consequently a child environment carries exactly ONE spelling of the root (see
+//     childEnvWithGo2CSPath), never a fabricated second opinion.
+//
+// The export this function replaced was the root of the Linux Phase-4 pipeline race (2026-08-21): it
+// put an un-slashed `GO2CSPATH=<home>/go2cs` into the converter's own environment, every pipeline
+// child inherited it BESIDE the injected canonical `go2csPath=<root>/`, and MSBuild — which resolves
+// environment-derived properties case-insensitively — saw two entries for ONE property and picked a
+// winner by enumeration order. Windows was structurally immune (one case-insensitive OS slot), so the
+// defect was invisible for five weeks of Windows sweeps.
+func resolveGo2CSPathDefault(goPath string) string {
+	if fromEnv := os.Getenv("GO2CSPATH"); len(fromEnv) > 0 {
+		return fromEnv
+	}
+
+	homeDir, err := os.UserHomeDir()
+
+	if err != nil {
+		homeDir = strings.TrimSuffix(strings.TrimSuffix(goPath, "go"), string(os.PathSeparator))
+	}
+
+	return filepath.Join(homeDir, "go2cs")
+}
+
 func main() {
 	// No-op unless GO2CS_PPROF is set; see diagnosticProfiling.go. First thing in main so a run that
 	// stalls during option resolution or package loading is still reachable by a profiler.
@@ -80,18 +116,9 @@ func main() {
 		os.Setenv("GOPATH", goPath)
 	}
 
-	// Resolve GO2CSPATH environment variable
-	if go2csPath = os.Getenv("GO2CSPATH"); len(go2csPath) == 0 {
-		homeDir, err := os.UserHomeDir()
-
-		if err != nil {
-			homeDir = strings.TrimSuffix(strings.TrimSuffix(goPath, "go"), string(os.PathSeparator))
-		}
-
-		go2csPath = filepath.Join(homeDir, "go2cs")
-
-		os.Setenv("GO2CSPATH", go2csPath)
-	}
+	// Resolve the -go2cspath flag's default. Unlike GOROOT/GOPATH above this is NOT exported back
+	// into the converter's environment — see resolveGo2CSPathDefault for why that mattered.
+	go2csPath = resolveGo2CSPathDefault(goPath)
 
 	// Define command line flags for options
 	commandLine := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)

@@ -839,7 +839,24 @@ public static partial class builtin
         {
             if (typeof(T1).IsAssignableFrom(typeof(T2)))
             {
-                Array.Copy(src.m_array, src.Low, dst.m_array, dst.Low, min);
+                if (dst.IsNativeBacked || src.IsNativeBacked)
+                {
+                    // A native window exists only for unmanaged elements (the creation door
+                    // enforces it), and assignability between distinct value types means identical
+                    // representation — Unsafe.As re-spells each element without a copy-through-
+                    // object, and the spans read/write the mapping itself (slice.ToSpan is the
+                    // design's discriminant-once point). The generic parameters are unconstrained,
+                    // which is what rules out the single AsBytes block copy here.
+                    Span<T2> source = src.ToSpan();
+                    Span<T1> destination = dst.ToSpan();
+
+                    for (int i = 0; i < (int)min; i++)
+                        destination[i] = Unsafe.As<T2, T1>(ref source[i]);
+                }
+                else
+                {
+                    Array.Copy(src.m_array, src.Low, dst.m_array, dst.Low, min);
+                }
             }
             else
             {
@@ -1624,6 +1641,16 @@ public static partial class builtin
         // overload is the only thing it can be handed to, so charging it here attributes it exactly.
         // (A caller already holding an IArray<T> reference would be overcharged by one; the
         // converter never emits that shape, and overstating is the safe direction for a budget.)
+        //
+        // Native-backed slices route to the address box — see the nint overload below.
+        if (target is slice<T> view && view.IsNativeBacked)
+        {
+            unsafe
+            {
+                return new ж<T>(view.NativeElementAddress(index));
+            }
+        }
+
         AllocationCounter.Count();
         return new ж<T>(target, index);
     }
@@ -1638,6 +1665,19 @@ public static partial class builtin
     /// <remarks>By value, for the lifetime reason the <see cref="int"/> overload documents.</remarks>
     public static ж<T> Ꮡ<T>(IArray<T> target, nint index)
     {
+        // A NATIVE-backed slice element has a real address, and the pointer to it is the
+        // address-model box over exactly that address (the design table: (uintptr)Ꮡ(s,i) yields
+        // the mapping, which is what Mprotect(b[:n]) hands the kernel). The managed identity
+        // machinery (array-index refs, order tokens) exists for storage the GC can move; native
+        // memory needs none of it.
+        if (target is slice<T> view && view.IsNativeBacked)
+        {
+            unsafe
+            {
+                return new ж<T>(view.NativeElementAddress(index));
+            }
+        }
+
         // The caller's boxing temp, exactly as in the int overload above.
         AllocationCounter.Count();
         return new ж<T>(target, (int)index);

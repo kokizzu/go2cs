@@ -21,4 +21,14 @@
     <!-- Not part of any solution build; invoked directly via run-behavioral.ps1 / dotnet run. -->
   </PropertyGroup>
 
+  <!--
+    The converter-staleness predicate, shared by this runner, BehavioralTestBase and
+    PerformanceRunner. Linked rather than referenced: this project takes no assembly dependency, and
+    all three predicates must answer the same question the same way or false-green route #5 reopens
+    in whichever one drifts.
+  -->
+  <ItemGroup>
+    <Compile Include="../../ConverterBuildInputs.cs" Link="ConverterBuildInputs.cs" />
+  </ItemGroup>
+
 </Project>

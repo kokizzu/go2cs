@@ -1,0 +1,549 @@
+# On-demand OS matrix — the fleet's missing platforms, and a native-Linux control.
+#
+# This workflow is NEVER a merge gate. The repository's authoritative instruments
+# (check-no-regression.ps1, run-behavioral.ps1, run-validated-sweep.ps1) run on the fleet's own
+# machines against measured budgets; this is a supplement that reaches hardware the fleet does not
+# own — both macOS legs above all — and a native-Linux control for readings the WSL lane produced.
+# It runs on workflow_dispatch ONLY: no push trigger, no pull_request trigger, no schedule.
+#
+# Guide: docs/CIMatrix.md. Corpus mechanics, GoTargetOS flavors and the measured budget rows the
+# timeouts below are scaled from: CLAUDE.md.
+
+name: OS matrix (on demand)
+
+on:
+  workflow_dispatch:
+    inputs:
+      goos:
+        description: 'Corpus flavor to measure (darwin fans out to BOTH mac runners)'
+        type: choice
+        required: true
+        default: linux
+        options:
+          - windows
+          - linux
+          - darwin
+      stage:
+        description: 'What to run: census (compile the corpus flavor), behavioral-smoke (harness proof), sweep-shard (filtered validated sweep)'
+        type: choice
+        required: true
+        default: census
+        options:
+          - census
+          - behavioral-smoke
+          - sweep-shard
+      filter:
+        description: 'Shard filter — package substring for sweep-shard, project substring for behavioral-smoke. Blank takes the stage default.'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+# Different flavors and different stages may run at once; two dispatches of the SAME pair queue
+# rather than cancel, because a half-measured census is worth nothing and a killed sweep leaves
+# regenerated artifacts behind.
+concurrency:
+  # github.event.inputs rather than the inputs context: this expression is evaluated before the
+  # workflow's own contexts are in play, and the github context is the spelling guaranteed there.
+  group: os-matrix-${{ github.ref }}-${{ github.event.inputs.goos }}-${{ github.event.inputs.stage }}
+  cancel-in-progress: false
+
+env:
+  # Back-to-back MSBuild invocations must not leave lock-holding worker nodes behind (CLAUDE.md's
+  # MSB4166 / MSB3027 notes). Never `dotnet build-server shutdown` — machine-global, even here.
+  MSBUILDDISABLENODEREUSE: '1'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+
+jobs:
+  # ---------------------------------------------------------------------------------------------
+  # plan — derive everything that must not be hardcoded, and fan darwin out to two runners.
+  # ---------------------------------------------------------------------------------------------
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.derive.outputs.matrix }}
+      go-version: ${{ steps.derive.outputs.go-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive toolchain pin and target matrix
+        id: derive
+        shell: pwsh
+        env:
+          INPUT_GOOS: ${{ inputs.goos }}
+          INPUT_STAGE: ${{ inputs.stage }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # The Go release is READ FROM version.props, never written here. run-validated-sweep.ps1
+          # and the converter both refuse a toolchain whose release differs from <GoStdLibVersion>
+          # (NOT MEASURED, never a verdict), so a hardcoded version in CI would either duplicate
+          # that pin or silently contradict it.
+          $props = [System.IO.File]::ReadAllText((Join-Path $PWD 'src/version.props'))
+
+          if ($props -notmatch '<GoStdLibVersion>\s*([^<\s]+)\s*</GoStdLibVersion>') {
+              throw 'Could not read <GoStdLibVersion> from src/version.props -- the toolchain pin has no source.'
+          }
+
+          $goVersion = $Matches[1]
+          Write-Host "corpus release pin: go$goVersion (from src/version.props)"
+
+          # Runner + RID pairs. darwin is TWO legs on purpose: the corpus flavor has never been
+          # built on Apple hardware at all, and arm64 vs x64 are different compilations of it.
+          $targets = switch ($env:INPUT_GOOS) {
+              'windows' { @(@{ goos = 'windows'; runner = 'windows-latest';  rid = 'win-x64'   }) }
+              'linux'   { @(@{ goos = 'linux';   runner = 'ubuntu-latest';   rid = 'linux-x64' }) }
+              'darwin'  { @(@{ goos = 'darwin';  runner = 'macos-15';        rid = 'osx-arm64' },
+                            @{ goos = 'darwin';  runner = 'macos-15-intel';  rid = 'osx-x64'   }) }
+              default   { throw "Unknown goos '$($env:INPUT_GOOS)'." }
+          }
+
+          # Job budgets, in MINUTES, scaled from CLAUDE.md's measured rows for a ~4-core runner.
+          # A timeout is a safety net against a hung child, never a performance assumption, so
+          # these sit well ABOVE the top of each measured range. GitHub's own hard ceiling for a
+          # hosted job is 360 minutes; every value below stays under it after the mac multiplier.
+          $baseTimeout = @{
+              'census'           = 150   # go2cs-stdlib.slnx --no-incremental: 516s on the i7-5820K
+                                         # (healthy disk) + a COLD 307-project NuGet restore.
+              'behavioral-smoke' = 90    # converter `go build` + a filtered 4-phase run whose
+                                         # shared core closure is built from cold.
+              'sweep-shard'      = 210   # one -tests convert/build/run/compare cycle per matched
+                                         # row; the sweep's own per-package floors reach 120m.
+          }
+
+          $entries = foreach ($t in $targets) {
+              $minutes = $baseTimeout[$env:INPUT_STAGE]
+
+              if (-not $minutes) { throw "Unknown stage '$($env:INPUT_STAGE)'." }
+
+              # The mac legs get 1.5x: macos-15 (arm64) is a 3-core runner, and every phase here
+              # is parallel-MSBuild bound. Rounded to whole minutes; still under the 360 ceiling.
+              if ($t.runner -like 'macos-*') { $minutes = [int][math]::Ceiling($minutes * 1.5) }
+
+              [pscustomobject]@{
+                  goos    = $t.goos
+                  runner  = $t.runner
+                  rid     = $t.rid
+                  timeout = $minutes
+              }
+          }
+
+          # -AsArray so a single-target dispatch still emits a JSON ARRAY: PowerShell unwraps a
+          # one-element pipeline to a scalar, and fromJson() would then hand the matrix an object.
+          $json = @($entries) | ConvertTo-Json -Compress -Depth 4 -AsArray
+
+          Write-Host "matrix: $json"
+
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "matrix=$json" -Encoding utf8
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "go-version=$goVersion" -Encoding utf8
+
+  # ---------------------------------------------------------------------------------------------
+  # run — one leg per (goos, runner, rid).
+  # ---------------------------------------------------------------------------------------------
+  run:
+    needs: plan
+    name: ${{ inputs.stage }} (${{ matrix.goos }} / ${{ matrix.rid }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      # A darwin leg that walls must not cancel its sibling: the whole point is to see BOTH
+      # architectures' walls in one dispatch.
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.plan.outputs.matrix) }}
+    env:
+      # The corpus flavor this leg binds, stated explicitly rather than inherited. Every L3 csproj
+      # defaults $(GoTargetOS) to `windows` when the property is EMPTY, and MSBuild maps
+      # environment variables onto properties -- so ONE variable is the entire binding for every
+      # child `dotnet` invocation of every instrument (the mechanism src/_paths.ps1 documents).
+      # On Windows this is the identity; on Linux it agrees with _paths.ps1's own pin; on macOS it
+      # is new, and it is what makes a darwin run a DARWIN run instead of a windows-flavor one.
+      GoTargetOS: ${{ matrix.goos }}
+      GOOS_TARGET: ${{ matrix.goos }}
+      RID: ${{ matrix.rid }}
+      STAGE: ${{ inputs.stage }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go (pinned to the corpus release)
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ needs.plan.outputs.go-version }}
+          check-latest: false
+          cache-dependency-path: src/go2cs/go.sum
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Environment report
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+
+          New-Item -ItemType Directory -Force -Path 'artifacts' | Out-Null
+          $report = Join-Path $PWD "artifacts/environment-$($env:GOOS_TARGET)-$($env:RID).txt"
+
+          # A calibration record, not decoration: every budget in CLAUDE.md's table is anchored to
+          # named hardware, and the first dispatches of this workflow are what anchor the runners.
+          $lines = @(
+              "stage           : $($env:STAGE)"
+              "goos / rid      : $($env:GOOS_TARGET) / $($env:RID)"
+              "GoTargetOS env  : $($env:GoTargetOS)"
+              "runner os       : $([System.Runtime.InteropServices.RuntimeInformation]::OSDescription.Trim())"
+              "runner arch     : $([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
+              "logical cores   : $([Environment]::ProcessorCount)"
+              "pwsh            : $($PSVersionTable.PSVersion)"
+              "go              : $(& go version)"
+              "go env GOVERSION: $(& go env GOVERSION)"
+              "go env GOROOT   : $(& go env GOROOT)"
+              "dotnet sdk      : $(& dotnet --version)"
+          )
+
+          # Free space on the repo drive. The harness scripts refuse below a 25 GB floor because a
+          # mid-run write failure surfaces as a corpus FAILURE (three such incidents, 2026-08-13);
+          # hosted runner images sit near or below that floor, which is why the stages below pass
+          # -IgnoreDiskPreflight -- and why this number is recorded before anything else runs.
+          $drive = [System.IO.DriveInfo]::new([System.IO.Path]::GetPathRoot($PWD.Path))
+          $lines += "free space      : $([math]::Round($drive.AvailableFreeSpace / 1GB, 1)) GB on $($drive.Name)"
+
+          $lines | Tee-Object -FilePath $report
+          $lines | ForEach-Object { "    $_" } | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      # -------------------------------------------------------------------------------------
+      # census — compile the corpus flavor and bucket the errors by CS code.
+      # -------------------------------------------------------------------------------------
+      - name: Census — build the corpus flavor
+        if: inputs.stage == 'census'
+        shell: pwsh
+        run: |
+          # 'Continue': the build's own diagnostics are the measurement, and a native command's
+          # stderr under 'Stop' would abort the run before anything is bucketed.
+          $ErrorActionPreference = 'Continue'
+
+          $goos = $env:GOOS_TARGET
+          $rid = $env:RID
+          $art = Join-Path $PWD 'artifacts'
+          New-Item -ItemType Directory -Force -Path $art | Out-Null
+          $log = Join-Path $art "census-$goos-$rid.log"
+
+          # --no-incremental is REQUIRED for any pass that changes target: what differs between
+          # GoTargetOS values is the <Compile> ITEM SET, not any source timestamp, so an
+          # incremental build silently validates the other target's assemblies (CLAUDE.md, L3 gate
+          # lesson 2). A fresh checkout has no obj/ anyway; the flag makes the intent explicit.
+          $buildArgs = @(
+              'build', 'src/go2cs-stdlib.slnx',
+              '-c', 'Debug', '-m', '--no-incremental',
+              "-p:GoTargetOS=$goos",
+              '-p:UseSharedCompilation=false',
+              '-clp:ErrorsOnly'
+          )
+
+          Write-Host "==> dotnet $($buildArgs -join ' ')"
+
+          $sw = [System.Diagnostics.Stopwatch]::StartNew()
+          & dotnet @buildArgs | Tee-Object -FilePath $log
+          $buildExit = $LASTEXITCODE
+          $sw.Stop()
+
+          $elapsed = [int]$sw.Elapsed.TotalSeconds
+          Write-Host "==> build exit $buildExit after ${elapsed}s"
+
+          # ---- bucket by diagnostic code ------------------------------------------------------
+          # MSBuild error shape: `path(l,c): error CS0246: text [project.csproj]`. The code class
+          # is deliberately broad (CS, MSB, NETSDK, ...) -- a platform census must not silently
+          # drop an infrastructure error just because it is not a compiler one.
+          $lines = @(Get-Content -LiteralPath $log -ErrorAction SilentlyContinue)
+          $errorRegex = [regex]'(?:^|\s)error\s+([A-Za-z]+[0-9]+)\s*:'
+          $projectRegex = [regex]'\[([^\]]+\.(?:csproj|slnx))\]\s*$'
+
+          $records = foreach ($line in $lines) {
+              $m = $errorRegex.Match($line)
+
+              if (-not $m.Success) { continue }
+
+              $pm = $projectRegex.Match($line.TrimEnd())
+
+              [pscustomobject]@{
+                  Code    = $m.Groups[1].Value
+                  Project = if ($pm.Success) { Split-Path -Leaf $pm.Groups[1].Value } else { '(no project)' }
+                  Text    = $line.Trim()
+              }
+          }
+
+          $records = @($records)
+          # MSBuild reprints one error once per referencing project, so both numbers are reported:
+          # the raw count is what the build emitted, the distinct count is how many defects it is.
+          $distinct = @($records | Sort-Object Text -Unique)
+
+          # ---- assemblies produced ------------------------------------------------------------
+          # The census metric that matters is packages-COMPILING, not raw error count: fixing a
+          # file-inclusion defect RAISES the error count by surfacing latent ones behind it.
+          $projects = @(Get-ChildItem -Path 'src/core' -Recurse -File -Filter '*.csproj' |
+              Where-Object { $_.Name -notmatch '\.tests\.csproj$' })
+
+          $built = New-Object System.Collections.Generic.List[string]
+          $unbuilt = New-Object System.Collections.Generic.List[string]
+
+          foreach ($project in $projects) {
+              $text = [System.IO.File]::ReadAllText($project.FullName)
+
+              $assembly = if ($text -match '<AssemblyName>\s*([^<]+?)\s*</AssemblyName>') {
+                  $Matches[1]
+              }
+              else {
+                  [System.IO.Path]::GetFileNameWithoutExtension($project.Name)
+              }
+
+              # OutDir is bin/$(Configuration)/$(TargetFramework)/ relative to the project.
+              $dll = Join-Path $project.DirectoryName "bin/Debug/net9.0/$assembly.dll"
+              $relative = $project.FullName.Substring($PWD.Path.Length).TrimStart('\', '/').Replace('\', '/')
+
+              if (Test-Path -LiteralPath $dll) { $built.Add($relative) } else { $unbuilt.Add($relative) }
+          }
+
+          # ---- summary ------------------------------------------------------------------------
+          $summary = New-Object System.Collections.Generic.List[string]
+          $summary.Add("## Compile census -- GOOS=$goos ($rid)")
+          $summary.Add('')
+          $summary.Add("Command: ``dotnet $($buildArgs -join ' ')``")
+          $summary.Add('')
+          $summary.Add('| | |')
+          $summary.Add('|:--|--:|')
+          $summary.Add("| Projects under ``src/core`` | $($projects.Count) |")
+          $summary.Add("| **Assemblies produced** | **$($built.Count)** |")
+          $summary.Add("| Projects with no assembly | $($unbuilt.Count) |")
+          $summary.Add("| Error lines (raw) | $($records.Count) |")
+          $summary.Add("| Error lines (distinct) | $($distinct.Count) |")
+          $summary.Add("| Build exit code | $buildExit |")
+          $summary.Add("| Wall time | ${elapsed}s |")
+          $summary.Add('')
+          $summary.Add('A platform-exclusive package legitimately produces no assembly on the other')
+          $summary.Add('flavors (``crypto/x509/internal/macos`` is darwin-exclusive), so "no assembly" is')
+          $summary.Add('a starting point for reading the wall, never a defect count on its own.')
+          $summary.Add('')
+
+          if ($distinct.Count -gt 0) {
+              $summary.Add('### Errors by code')
+              $summary.Add('')
+              $summary.Add('| Code | Distinct | Raw |')
+              $summary.Add('|:--|--:|--:|')
+
+              foreach ($group in ($distinct | Group-Object Code | Sort-Object Count -Descending)) {
+                  $raw = @($records | Where-Object { $_.Code -eq $group.Name }).Count
+                  $summary.Add("| ``$($group.Name)`` | $($group.Count) | $raw |")
+              }
+
+              $summary.Add('')
+              $summary.Add('### Errors by project')
+              $summary.Add('')
+              $summary.Add('| Project | Distinct errors |')
+              $summary.Add('|:--|--:|')
+
+              foreach ($group in ($distinct | Group-Object Project | Sort-Object Count -Descending)) {
+                  $summary.Add("| ``$($group.Name)`` | $($group.Count) |")
+              }
+
+              $summary.Add('')
+              $summary.Add('### First 40 distinct errors')
+              $summary.Add('')
+              $summary.Add('```')
+              foreach ($record in ($distinct | Select-Object -First 40)) { $summary.Add($record.Text) }
+              $summary.Add('```')
+          }
+          else {
+              $summary.Add('### No errors reported')
+          }
+
+          $summaryPath = Join-Path $art "census-$goos-$rid-summary.md"
+          Set-Content -LiteralPath $summaryPath -Value $summary -Encoding utf8
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
+
+          $built | Set-Content -LiteralPath (Join-Path $art "census-$goos-$rid-assemblies.txt") -Encoding utf8
+          $unbuilt | Set-Content -LiteralPath (Join-Path $art "census-$goos-$rid-no-assembly.txt") -Encoding utf8
+          $distinct | ForEach-Object { $_.Text } |
+              Set-Content -LiteralPath (Join-Path $art "census-$goos-$rid-errors.txt") -Encoding utf8
+
+          # The step carries the BUILD's verdict. For darwin a red run with a bucketed census IS
+          # the successful outcome of the exercise -- read the summary, not the checkmark.
+          exit $buildExit
+
+      # -------------------------------------------------------------------------------------
+      # behavioral-smoke — prove the harness itself runs on this runner.
+      # -------------------------------------------------------------------------------------
+      - name: Behavioral smoke — converter build + filtered run
+        if: inputs.stage == 'behavioral-smoke'
+        shell: pwsh
+        env:
+          SMOKE_FILTER: ${{ inputs.filter }}
+          # BehavioralRunner's OWN budgets, in seconds: no timeout the caller sets can influence
+          # them, so a generous job budget alone would be worthless if the runner killed its child
+          # first. Sized for a cold 4-core hosted runner, where the shared core closure is built
+          # from nothing and the Transpile phase rewrites every .cs immediately before Compile (so
+          # warm state can never make the batch an incremental no-op).
+          GO2CS_BUILD_TIMEOUT: '5400'
+          GO2CS_BUILD_ONE_TIMEOUT: '1800'
+          GO2CS_TRANSPILE_TIMEOUT: '300'
+          GO2CS_RUN_TIMEOUT: '120'
+        run: |
+          $ErrorActionPreference = 'Continue'
+
+          $goos = $env:GOOS_TARGET
+          $rid = $env:RID
+          $art = Join-Path $PWD 'artifacts'
+          New-Item -ItemType Directory -Force -Path $art | Out-Null
+
+          # Pure-compute projects: `Defer` is a family of ~13 behavioral packages that exercise
+          # defer/panic/recover ordering and print through fmt -- no clock, no filesystem, no
+          # sockets, so a failure is the HARNESS or the corpus flavor, never platform semantics.
+          $filter = $env:SMOKE_FILTER
+
+          if ([string]::IsNullOrWhiteSpace($filter)) { $filter = 'Defer' }
+
+          Write-Host "==> behavioral smoke: filter '$filter', GoTargetOS=$($env:GoTargetOS)"
+
+          # Build the converter explicitly. A hosted runner has no go2cs binary at all, and every
+          # harness rebuild predicate keys on a converter *.go being NEWER than the binary -- which
+          # a toolchain change never touches (FALSE-GREEN route #4). Building it here first also
+          # separates a Go-toolchain failure from a harness failure in the log.
+          $exeName = if ($IsWindows) { 'go2cs.exe' } else { 'go2cs' }
+
+          Push-Location 'src/go2cs'
+          try {
+              & go build -o "bin/$exeName" .
+              $goExit = $LASTEXITCODE
+          }
+          finally { Pop-Location }
+
+          if ($goExit -ne 0) {
+              Write-Host "::error::converter go build failed with exit $goExit"
+              exit $goExit
+          }
+
+          Write-Host '==> converter built'
+
+          # *>&1 merges the INFORMATION stream: the repo scripts report through Write-Host, so a
+          # bare 2>&1 would drop every `==>` status line and the log would read as a hung run.
+          # -IgnoreDiskPreflight: hosted images sit near or under the harness's 25 GB floor; the
+          # free-space number is recorded in the environment report above so a genuine
+          # disk-exhaustion failure can still be recognized rather than guessed at.
+          $log = Join-Path $art "behavioral-smoke-$goos-$rid.log"
+
+          & ./src/tests/Behavioral/run-behavioral.ps1 -IgnoreDiskPreflight --filter $filter *>&1 |
+              Tee-Object -FilePath $log
+
+          $runExit = $LASTEXITCODE
+
+          $summary = @(
+              "## Behavioral smoke -- GOOS=$goos ($rid)"
+              ''
+              "Filter ``$filter`` -- exit ``$runExit``"
+              ''
+              'Tail of the run:'
+              ''
+              '```'
+          ) + @(Get-Content -LiteralPath $log -Tail 40 -ErrorAction SilentlyContinue) + @('```')
+
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
+          Set-Content -LiteralPath (Join-Path $art "behavioral-smoke-$goos-$rid-summary.md") -Value $summary -Encoding utf8
+
+          exit $runExit
+
+      # -------------------------------------------------------------------------------------
+      # sweep-shard — a filtered validated sweep against `go test -json` on this platform.
+      # -------------------------------------------------------------------------------------
+      - name: Sweep shard — filtered validated sweep
+        if: inputs.stage == 'sweep-shard'
+        shell: pwsh
+        env:
+          SWEEP_FILTER: ${{ inputs.filter }}
+          # Raises the sweep's 10m default for a 4-core hosted runner. The script's per-package
+          # $longTimeouts entries are FLOORS, not overrides: a larger -TestTimeout raises them, a
+          # smaller one still loses, so this value cannot under-budget the four long rows.
+          SWEEP_TEST_TIMEOUT: '45m'
+        run: |
+          $ErrorActionPreference = 'Continue'
+
+          $goos = $env:GOOS_TARGET
+          $rid = $env:RID
+          $art = Join-Path $PWD 'artifacts'
+          New-Item -ItemType Directory -Force -Path $art | Out-Null
+
+          # container/heap is the fleet's calibration row (LANES.md's provisioning baseline): small,
+          # pure-compute, and already banked -- the right default for "does a sweep run here at all".
+          $filter = $env:SWEEP_FILTER
+
+          if ([string]::IsNullOrWhiteSpace($filter)) { $filter = 'container/heap' }
+
+          Write-Host "==> sweep shard: filter '$filter', GoTargetOS=$($env:GoTargetOS), timeout $($env:SWEEP_TEST_TIMEOUT)"
+
+          # The sweep builds the converter itself and refuses a toolchain whose release differs
+          # from version.props' pin -- which is exactly the version setup-go installed above.
+          $log = Join-Path $art "sweep-$goos-$rid.log"
+
+          & ./src/run-validated-sweep.ps1 -Filter $filter -TestTimeout $env:SWEEP_TEST_TIMEOUT -IgnoreDiskPreflight *>&1 |
+              Tee-Object -FilePath $log
+
+          $sweepExit = $LASTEXITCODE
+
+          # ---- per-row evidence ---------------------------------------------------------------
+          # The pipeline writes each swept package's comparison record beside its converted code.
+          # Those are the rows: verdict-for-verdict maps of `go test -json` against the C# host.
+          $rowsRoot = Join-Path $art 'rows'
+          $rowFiles = @('go2cs_test_comparison.json', 'results.json', 'results.xml')
+          $evidence = @(Get-ChildItem -Path 'src/core' -Recurse -File -Include $rowFiles -ErrorAction SilentlyContinue)
+
+          foreach ($file in $evidence) {
+              $relative = $file.FullName.Substring($PWD.Path.Length).TrimStart('\', '/').Replace('\', '/')
+              $destination = Join-Path $rowsRoot $relative
+
+              New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
+              Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+          }
+
+          Write-Host "==> collected $($evidence.Count) per-row evidence file(s)"
+
+          # A sweep regenerates committed test artifacts in place, so the tree is dirty afterwards
+          # and it is (almost always) nothing -- CRLF phantoms and the -tests-closure class. The
+          # sweep itself classifies them; this records the raw state alongside for the reader.
+          & git -C $PWD status --porcelain -- src/core |
+              Set-Content -LiteralPath (Join-Path $art "sweep-$goos-$rid-git-status.txt") -Encoding utf8
+
+          $summary = @(
+              "## Validated sweep shard -- GOOS=$goos ($rid)"
+              ''
+              "Filter ``$filter`` -- -TestTimeout ``$($env:SWEEP_TEST_TIMEOUT)`` -- exit ``$sweepExit``"
+              ''
+              'A non-Windows leg reports rows with no per-OS annotation as'
+              '**comparison-validated-at-count** and exits non-zero by design: validated, but with'
+              'nothing banked for this OS to bank against. That is a reading, not a regression.'
+              ''
+              'Tail of the run:'
+              ''
+              '```'
+          ) + @(Get-Content -LiteralPath $log -Tail 60 -ErrorAction SilentlyContinue) + @('```')
+
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
+          Set-Content -LiteralPath (Join-Path $art "sweep-$goos-$rid-summary.md") -Value $summary -Encoding utf8
+
+          exit $sweepExit
+
+      # -------------------------------------------------------------------------------------
+      # Artifacts — always, because a failed leg is the reading this workflow exists to produce.
+      # -------------------------------------------------------------------------------------
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: os-matrix-${{ inputs.stage }}-${{ matrix.goos }}-${{ matrix.rid }}
+          path: artifacts/
+          retention-days: 7
+          if-no-files-found: warn

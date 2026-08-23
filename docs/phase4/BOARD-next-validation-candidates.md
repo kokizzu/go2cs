@@ -17930,4 +17930,134 @@ hop. Era: post-v1-measure, opportunistic; each adoption carries its own micro-ga
 row it touches, no regression on the branch gate). These wins are individually small and
 collectively the point.
 
+
+## LANDED -- the per-OS annotation harness: the ruling's implementation half, four rows encoded, Windows byte-identical (coordinator harvest, 2026-08-22)
+
+Release-trigger condition (d)'s prerequisite is complete at `249b47b74`. The grammar
+(`goos: N [+ D]` as the row's final middle-dot segment, both anchors load-bearing so prose
+cannot false-parse; `windows` refused BY NAME since the columns are the Windows answer), the
+four constituency rows encoded from their board sources and round-tripped (`crypto/rand`
+linux: 302 · `mime` 18 + 1 · `path/filepath` 54 · `debug/buildinfo` 204), the header's one
+Linux progress line summed from annotations exactly as the Windows line sums from columns, a
+51-check standalone format guard with TWO failing-first proofs, and the honest third bucket:
+off-Windows rows without an annotation report comparison-validated-at-count (the NOT-MEASURED
+shape, still exit 1). Windows behavior proven byte-identical three ways at three tips.
+
+Two coordinator notes made durable: (1) the format guard stays STANDALONE until a quiet point
+decides its wiring -- hooking it into the sweep preflight would add a new Windows failure mode,
+which the lane's own gate correctly refused; (2) the one documented limit -- host-conditional
+ABSORPTION on an OS-annotated row still rejects, because its evidence (the committed proof
+page) is Windows-shaped. Proof pages gain the OS column AT THE ANCHOR RELEASE per the ruling,
+and the rejection is honest until then.
+## The `$(go2csPath)` case-insensitive environment race: FIXED AT THE CONVERTER — the export is gone, every child env carries one spelling (2026-08-22, lane `worktree-agent-a39a6070f9f4e34d9`)
+
+Closes the remedy PRICED in the 2026-08-21 rooting entry above. Both halves landed, not just the
+hygiene one — and the census is what forced that.
+
+**Census first (measure, don't assume).** `GO2CSPATH` is READ in exactly ONE place in the whole
+converter — the defaulting block in `main.go` — and the value is consumed immediately as the
+`-go2cspath` flag default; nothing reads it back afterward, and no MSBuild file in the tree
+references an uppercase `$(GO2CSPATH)` (every reference is `$(go2csPath)`). So the `os.Setenv` had no
+consumer and could simply go, which is what the coordinator's routing note preferred. But the same
+census settled the question the note left open: **stop-exporting ALONE does not satisfy the
+invariant.** A user may set `GO2CSPATH` — it is the documented way to choose a runtime root, and it
+is exactly what the Linux harness pin does — so honoring it as the flag default leaves it in
+`os.Environ()`, and a plain `append` still hands the child TWO case-distinct spellings. The pin makes
+both spellings carry the same value, which is why it neutralizes the failure; it does not close the
+class.
+
+Spawn census, for the record: the converter has THREE child-process sites — `go env`
+(`projectFileWriter.go`), `git rev-parse` (`testConversion.go`), and `runCommandWithTimeout` — and
+only the third reaches MSBuild, as the parent of every `dotnet build`/`dotnet run`/`go test` the
+pipeline spawns. The `packages.Config.Env` sites spawn the Go toolchain, which does not read
+`go2csPath`. One site to fix, not a family.
+
+**The fix (two functions, both in `src/go2cs`).**
+
+1. `resolveGo2CSPathDefault` (`main.go`) replaces the inline defaulting block and does NOT
+   `os.Setenv`. The contrast is preserved in its comment so a later tidy-up does not restore
+   symmetry by accident: `GOROOT`/`GOPATH` above are exported deliberately, because the `go`
+   children read them; `GO2CSPATH` has no such consumer.
+2. `childEnvWithGo2CSPath` (`testConversion.go`) replaces `append(os.Environ(), "go2csPath="+…)` at
+   `runCommandWithTimeout` — it drops every case-insensitive variant inherited from the parent, then
+   appends the canonical entry with the resolved, separator-terminated root.
+
+The invariant is stated in the source, once: **a user-set `GO2CSPATH` is honored (as the flag
+default); the converter never exports its own derived value; a child environment carries exactly one
+spelling.** The scrub is the clause that holds regardless of the invoking shell — including the
+nastier variant the rooting entry named, where an ambient `GO2CSPATH` points at a DIFFERENT real tree
+and the child build binds the wrong stdlib nondeterministically.
+
+**Guard, failing-first** — `src/go2cs/childEnvGo2CSPath_test.go`, five tests under the plain
+`go test ./...`, no new harness. The parent environment is constructed LITERALLY rather than read
+from the OS, because only a POSIX environ can hold two case-variants at once — so the guard measures
+the same shape on Windows, where the defect is unreproducible in vivo. Neuter proof, both halves:
+
+| Neuter | Result |
+|---|---|
+| `childEnvWithGo2CSPath` → plain `append` (the pre-fix shape) | **3 FAIL** — `child environment carries 4 go2csPath spellings, want exactly 1: [GO2CSPATH=/root/go2cs go2csPath=/stale/tree/ Go2CsPath=/another/tree go2csPath=\repo\src\]` |
+| `resolveGo2CSPathDefault` → re-add the `os.Setenv` | **1 FAIL** — `converter exported its derived root as GO2CSPATH="C:\Users\ritchie\go2cs"` |
+
+**Gates** (converter change class, this machine, solo):
+
+| Gate | Result |
+|---|---|
+| converter `go test ./...` | **ok — 222s** (carries the five new guards and `projitemsIntegrity`, which the new file is registered in) |
+| full CNR, 633 behavioral packages | **NO REGRESSION — byte-identical `.cs` + `.csproj`, 1,141s**; 2 advisory warnings, 0 NOT MEASURED. Emission-neutral as predicted: the change moves only child-process environments, never emitted text |
+| `-tests -test-action all` on `unicode/utf8` | **14/14 validated vs `go test`, 107s**, `git status -- src/core` clean — the pipeline runs with the export gone |
+
+**The Linux proof is NOT this lane's, and the harness pin STAYS.** There is no distro on this box, so
+what is proven here is that the fix is emission-neutral, that the pipeline still runs end to end, and
+that the child-env shape is right by construction. The race itself is structurally POSIX-only and can
+only be re-measured on Linux. **Pin-retirement condition:** a Linux lane runs the reproducing
+configuration — the two-package alternation that failed 3-for-3 within ≤2 cycles — with `GO2CSPATH`
+deliberately UNSET *and* `_paths.ps1`'s pin block removed, and gets a clean run; at that point the pin
+in `src/_paths.ps1` (and the campaign driver's export) retires as dead weight rather than as
+protection. Until then it stays and remains correct: it sets the variable the converter still honors
+as a default, and the scrub makes the value it sets unreachable by the child regardless. One note for
+whoever retires it — the pin's comment cites `main.go:93` and `testConversion.go:5663`, both stale
+after this change; retire the comment with the block rather than repairing the line numbers.
+
+The class trap (case-insensitive environment-variable races: Windows-immune, POSIX-live, MSBuild
+property resolution as the collision site) is recorded in `CLAUDE.md` beside the harness/false-green
+notes, stated generally enough to outlive this one variable.
+---
+
+## 2026-08-22 · LANDED + MEASURED — the native-backed `slice<T>`: W1b closes, both rows validate on Linux, and golib's hottest type grows one word (lane G, `claude/native-slice-impl`)
+
+**The ratified design implemented as written** (`DESIGN-native-backed-slice.md`, all five OQs). Three commits: the failing-first guard family, the model, and the census sweep the design demanded as its first commit — which is the entry's most transferable lesson, below.
+
+**The change.** `slice<T>` carries `m_nativeBase` beside its managed backing — the `ж<T>` dual-mode precedent (#159's native-slot doctrine) applied to the slice header, `0` meaning "managed" so every pre-existing path is untouched but for a predicted branch. ONE creation door (`slice<T>.OverNativeMemory`, reached only from `unsafe.Slice`'s `IsNative` arm) enforces unmanaged-`T` with a named panic: **the SiginfoChild corruption class made unrepresentable rather than discoverable**. Both indexers return refs into the mapping; `Reslice` carries the base with identical window arithmetic; `ToSpan` is the discriminant-once unification point that `copy`, `CopyTo`, `IndexOf` and the string conversion now ride; `append` within capacity writes the mapping and past capacity **DETACHES to managed — Go's own spec, not an invention**; `builtin.Ꮡ`'s two overloads mint address boxes, so `(uintptr)Ꮡ(s,i)` is the real address and `Mprotect(b[:pagesize])` finally hands the kernel the mapping.
+
+**The acceptance case, measured on Linux — W1b is CLOSED:**
+
+| row | before (three lanes' standing residual) | at the tip |
+|---|---|---|
+| `crypto/sha1` | FAIL — `TestOutOfBoundsRead` `panic: invalid argument` | **comparison-VALIDATED**, COUNT 13 vs banked 12 (per-OS); sole divergence `TestAllocations` — the CLR-impossible disclosure class |
+| `bytes` | FAIL — four page-boundary tests as infrastructure-errors | **comparison-VALIDATED**, COUNT 86 vs banked 82 (per-OS); every page-boundary and mmap test PASSES; six residuals, all allocation-count |
+
+Both rows join the per-OS-count constituency (`crypto/rand` 302, `debug/buildinfo` 204, `mime` 18, `path/filepath` 54) now before the coordinator's arithmetic ruling.
+
+**The lesson worth carrying: the census is the work, not the epilogue.** The design spec'd an `m_array` touch census as the implementation's FIRST commit; the first pass shipped the obvious members and let `bytes`' page-boundary tests find the struct `Enumerator`. The sweep that followed — done properly, every touch dispositioned — then found FOUR more the failure had not: a SECOND enumerator class (`SliceEnumerator`, unreached by the first fix), the `IList<T>` setter, `buffer` (now a named panic: pinning is a managed concept, and a native window's answer is an element address), the byte-reinterpret alias, and header identity in `GetHashCode`/`operator==`. **A defect that reveals one member is not a census; it is one member.**
+
+**Gates:** GolibTests **235/235 Windows · 237/237 Linux** (the five-guard family: aliasing, real addresses, append-detach, cross-backing copy, and the `crypto/subtle` managed-aliasing regression arm) · behavioral full suite **PASS 606 projects** — the slice is under every converted line in the corpus · golib + `unsafe` builds 0 errors both flavors · perf trio A/B (§5.3's measured branch-cost gate): `String` 1,223.0 and `StringView` 20.8 within noise; **`Sieve` produced the arc's methodological lesson** — it read 145.9/144.2 ms against a 110.5 ms morning baseline (+30%), the inline `unsafe` block was found to cost inlinability and fixed (144.2 → 126.1 ms behind a `NoInlining` helper), and then a **PAIRED same-session A/B exonerated the arc entirely**: pre-change golib **142.3 ms** vs with-fix **145.0 ms**, both far above the morning figure. The regression was MACHINE DRIFT; the inlining fix is kept because it is right on its own merits. **Doctrine: on a laptop, a perf comparison against an earlier-session baseline is not evidence — only a paired same-session A/B is** · CNR: **byte-identical across all 633** behavioral packages · **Windows full-roster control (JOB-G2, i9): **162/162 PASS, 0 FAIL, exactly 18,569 verdicts** — the full banked roster, clean on the first pass (no transient reds this time)** — breadth maximal by construction, and the native path is unreachable on Windows (no row mints a native pointer), so managed behavior must be identical.
+
+**What this retires:** `unsafe.cs`'s documented snapshot limitation, and with it the class the board named "sufficient for reading a block a syscall returned" — every `unsafe.Slice` over native memory now ALIASES, so `syscall.Environ` rides the same arm (OQ-3's ride-along, no behavior change: it reads once and never writes) and the snapshot arm is deleted rather than maintained beside its replacement.
+
+---
+
+## 2026-08-22 · MEASURED — R3's Linux leg closes: `debug/elf` validates at 31, and `debug/gosym`'s last row is Go's OWN skip reaching us honestly (lane G, `claude/linux-smallitems`)
+
+**The board's "gosym MZ-magic mystery" was R3, and the argv[0] fix already dissolved it.** R3 was recorded as: `os.Args[0]` is the managed PE image, so `elf.Open(os.Args[0])` fails `bad magic number '[77 90 144 0]'` — the ASCII of `MZ\x90\0`. The summary-seam lane's argv[0] correction (apphost mode reports the PROCESS image, not the managed `.dll`) changed what that call sees on Linux; nobody had re-measured the rows since. Measured now at master `71a95c8ff`:
+
+| row | recorded (R3) | measured at master |
+|---|---|---|
+| `debug/elf` | FAIL — `elf.Open(os.Args[0])` on PE magic, 1 row + 3 gosym tests | **PASS 31 · comparison-VALIDATED, ZERO divergences** |
+| `debug/gosym` | FAIL, R3-attributed | **one divergence: `TestSymVersion`, Go=pass C#=skip** |
+
+**And that one divergence is not a defect — it is Go's own skip, reached correctly.** `TestSymVersion` → `getTable` → `crack(os.Args[0])` → `parse`, whose FIRST act is `if f.Section(".gosymtab") == nil { t.Skip("no .gosymtab section") }`. The C# host reports exactly `no .gosymtab section`: `elf.Open` now SUCCEEDS on the apphost (the ELF parse works — that is the argv[0] fix delivering), the binary genuinely has no Go symbol table because it is a .NET apphost, and the converted run takes Go's own documented skip path. Go's Linux run doesn't skip only because ITS test binary is a Go binary with a `.gosymtab`.
+
+**Classification: a `host-limit` disclosure of the relocatable/self-binary family** — the same class as `os/exec`'s 27 banked Windows disclosures (a .NET apphost is not the thing Go's self-inspecting tests assume), and NOT the R3 wall, which is closed. The row needs no code: it needs a signature-pinned disclosure at its formal Linux bank, alongside the per-OS-count annotation work the coordinator deferred for `crypto/sha1`/`bytes`.
+
+**What this leaves of R3:** nothing on Linux. The board's R3 row (`debug/elf` + 3 gosym tests) is retired by measurement; the residual is one honest disclosure line awaiting its bank.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
