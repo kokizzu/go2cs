@@ -965,12 +965,37 @@ at harvest. `AcceptEx` differs only in that its staged block is larger and its d
 * **⟨OQ-G⟩ — ⚠ does §4.7's LANDED send have a latent lifetime bug I should fix in this increment?**
   Raised against my own work rather than found by a gate. `WSASendtoInet4` writes the sockaddr into a
   `stackalloc` buffer and hands its address to an OVERLAPPED `WSASendTo`. If the kernel retains
-  `lpTo` until completion — as it does for the buffer pointers, and as §4.3's lifetime wall describes
-  — then that address dies at wrapper return and the send is handing the kernel a
-  use-after-return. It has not misbehaved in testing, which proves nothing about a race.
-  *Recommendation:* **MEASURE it first** (the pattern this arc keeps being right to follow), and if
-  confirmed, move the send's sockaddr onto `StageOperationBuffer` in this same increment — the
-  primitive already exists and the fix is three lines.
+  `lpTo` until completion — as §4.3's lifetime wall describes for the buffer pointers — then that
+  address dies at wrapper return and the send is handing the kernel a use-after-return. It has not
+  misbehaved in testing, which proves nothing about a race.
+
+  **MEASURED against the contract (2026-08-23), and the finding is an ASYMMETRY rather than a
+  verdict.** `WSASendTo`'s documentation is explicit about lifetime in two places and silent in the
+  third:
+
+  | parameter | what the contract says |
+  |:--|:--|
+  | `lpBuffers` (the WSABUF ARRAY) | *"it is the Winsock service provider's responsibility to capture the WSABUF structures before returning from this call. This enables applications to build stack-based WSABUF arrays"* — captured, so a stack image is explicitly ALLOWED |
+  | `lpOverlapped` | *"must be valid for the duration of the overlapped operation"* — persistence explicitly REQUIRED |
+  | `lpTo` | **nothing.** No capture promise, no persistence requirement |
+
+  So `lpTo`'s lifetime is **undefined by the contract**, which is materially worse than either
+  answer would be: an implementation may capture it today and not tomorrow, and the failure mode is
+  a silent wrong-destination or a read of freed stack. Depending on undefined lifetime at the kernel
+  boundary is precisely the hazard §4.3's sub-wall (2) exists to refuse. *Recommendation, now
+  evidence-backed rather than cautious:* **stage it** — move the send's sockaddr onto
+  `StageOperationBuffer` in this increment. Three lines, the primitive already exists, and it turns
+  an unprovable risk into a proven-safe one.
+
+  **The same source corrects §4.3 on a point worth fixing while we are here.** §4.3's sub-wall (2)
+  states flatly that *"the kernel retains the OVERLAPPED pointer and the buffer pointers until
+  COMPLETION"*, and §4.7 reasoned from it that a stack image for the WSABUF array is *"wrong by
+  construction"*. That is right about the DATA buffers and **not** established for the WSABUF ARRAY,
+  which the Remarks say is captured before return precisely so that stack-based arrays are legal.
+  Nothing shipped is unsafe — §4.7 staged the array anyway, which is the conservative reading and
+  the one the corpus keeps — but the design's stated *reason* is stronger than the contract
+  supports, and a future author trusting it would over-build. (The parameter list and the Remarks
+  disagree with each other on this point; that disagreement is itself the argument for staging.)
 * **⟨OQ-H⟩ — scope: all seven sites, or `WSARecvFrom` alone first?** *Recommendation:* **`WSARecvFrom`
   first (three sites), then `AcceptEx`, then `WSARecvMsg`.** `WSARecvFrom` is what ⟨OQ-E⟩'s guard
   needs, `AcceptEx` is what `net.Listen`'s accept path needs and has no guard yet, and `WSARecvMsg`
