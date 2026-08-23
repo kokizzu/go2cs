@@ -18513,6 +18513,30 @@ family's one-base-shape-per-fix precedent — the emission chains the address fr
 root (`.of(...).of(...)`, a form already routine at 309 sites) instead of boxing the
 intermediate field; one new behavioral guard for the write-through shape; dnsmessage regen;
 CNR pass. Corpus churn today: one file, four lines. Parks under the freeze like the rest.
+
+## 2026-08-23 · THE DARWIN CORPUS COMPILES — census run 32649840220 at `c003d32af`: ZERO errors on osx-x64 AND osx-arm64; there is no wall #4
+
+The third GOOS reaches its Phase-3 moment. Census history, all four runs on real Apple
+hardware within ~24 hours of the FIRST darwin build ever attempted: **19 errors (os.readdir
+hand-own gap) → 10 (cgo-flavor emission classes) → 9 (the case defect + the
+selector-less csproj) → 0.** Both architectures byte-agree at every step. Wall #1 was a
+missing platform companion; walls #2–3 were converter/emission classes rooted one layer
+deeper than each census read — and every root now carries a guard.
+
+Credits where the record should hold them: lane G fixed all three walls (with two
+corrections of the coordinator''s pre-roots and one of its own correction — the measured
+form won every time); lane R''s readdir companion opened the door; the CI matrix was the
+only darwin compile surface the project has, and the coordinator-driven dispatch loop turned
+each fix-to-verdict round trip into minutes.
+
+**The branch (`claude/darwin-cgo-flavor-emission` @ `c003d32af`) PARKS merged-ready despite
+the green** — its corpus stage includes linux-flavor content (cpu''s new
+`linux/package_info.cs`), which is inside the release-eve freeze class; it merges in the
+fixed post-release order (after the netlink fix). What darwin-COMPILES unlocks, priced but
+not scheduled: the darwin census stage on CI flips from wall-finding to REGRESSION-GUARDING
+(cheap, dispatchable at any branch tip); darwin behavioral-smoke becomes possible on the mac
+runners; and operational validation (a darwin `-tests` lane) remains UNCOMMITTED —
+evidence-ruled, per the ladder, not a rung by default.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
