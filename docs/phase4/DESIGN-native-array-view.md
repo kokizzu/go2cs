@@ -279,6 +279,19 @@ site.
 4. **Perf, measured not asserted** — the sibling arc's objection applies to `array<T>` too.
    `PerfSieve`/`PerfString`/`PerfMatMul` A/B at the merge tip within noise, plus a GolibTests
    microbench bound on the managed-path indexer.
+   **Precision, from the slice arc's own author (G, mailbox concurrence, 2026-08-23), amending
+   what the cited 30% means:** (a) the figure measured an INLINE-BUDGET failure, not a branch
+   budget — the native branch and its `unsafe` block placed INLINE cost PerfSieve +30% because
+   the indexer stopped being inlinable; the remedy was `[MethodImpl(NoInlining)]` on the
+   out-of-line slow path. **The transferable lesson is the SHAPE, not the affordability** — if
+   `array<T>`'s indexer takes the branch inline, expect the same 30% and this gate will find
+   it. (b) "Within noise" requires a NAMED CONTROL ROW reported beside the treatment rows (the
+   control-row-first doctrine): this laptop class measured a +5.0% control / +17% same-binary
+   drift floor on 2026-08-23, and an indexer change reaches EVERY benchmark, so the control
+   must be a row the change provably does not touch. (c) The 30% was measured on the dead
+   perf-canon i9 — it is a RATIO ANCHOR, never a threshold for another host; re-measure paired,
+   same session. (d) Where the claim is "no allocation was added", gate by COUNT
+   (`AllocationCounter`, deterministic) — a count cannot be swallowed by a 17% noise floor.
 5. **The standing envelope**: GolibTests full, behavioral suite full, CNR (a converter emission
    change IS expected here — CNR measures its footprint), Windows stdlib build, `-p:GoTargetOS=linux`
    build, and the i9 control per the usual dispatch.
