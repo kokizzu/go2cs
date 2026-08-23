@@ -616,7 +616,7 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 			// bare `unchecked((uint32)(69206016UL))`, losing the FileMode). Measured, reverted, and
 			// narrowed to the shape that actually fails — the coordinator's "stop rather than widen
 			// silently" clause, applied to my own fix.
-			if !v.constExprHasBeyondInt32Operand(expr) {
+			if !v.constExprOperandExceeds(expr, narrowUnsignedMax(csType)) {
 				return ""
 			}
 
@@ -1865,7 +1865,7 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 // readable operator forms and, worse, erases named types whose identity is the emission's point
 // (os's `ModeDevice | ModeCharDevice`); measured at 754 sites across 157 files before this bound
 // was added. With it, the fold reaches exactly the constants that would otherwise not compile.
-func (v *Visitor) constExprHasBeyondInt32Operand(expr ast.Expr) bool {
+func (v *Visitor) constExprOperandExceeds(expr ast.Expr, limit uint64) bool {
 	found := false
 
 	ast.Inspect(expr, func(n ast.Node) bool {
@@ -1899,7 +1899,7 @@ func (v *Visitor) constExprHasBeyondInt32Operand(expr ast.Expr) bool {
 			return true
 		}
 
-		if u, exact := constant.Uint64Val(constant.ToInt(tv.Value)); exact && u > math.MaxInt32 {
+		if u, exact := constant.Uint64Val(constant.ToInt(tv.Value)); exact && u > limit {
 			found = true
 			return false
 		}
@@ -1908,4 +1908,20 @@ func (v *Visitor) constExprHasBeyondInt32Operand(expr ast.Expr) bool {
 	})
 
 	return found
+}
+
+// narrowUnsignedMax is the largest value a narrow unsigned C# target holds. The fold arm asks
+// whether an operand EXCEEDS it, because that — not the int32 boundary — is what forces the
+// literal path to widen past what the target can accept: `1<<31` fits a uint32 exactly, so
+// math/rand's `(1<<31) - 1 - (1<<31)%uint32(n)` and http2's `& (1<<31 - 1)` compile as written and
+// read better that way, while `1<<32` does not fit and must fold.
+func narrowUnsignedMax(csType string) uint64 {
+	switch csType {
+	case "uint8":
+		return math.MaxUint8
+	case "uint16":
+		return math.MaxUint16
+	default:
+		return math.MaxUint32
+	}
 }
