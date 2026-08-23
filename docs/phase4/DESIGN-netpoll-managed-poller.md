@@ -830,6 +830,156 @@ this section removes.
   on both platforms. *Recommendation:* **land it in the same change**, since its whole point is to be
   the two-platform gate for this seam, and it is written and Linux-proven already.
 
+### 4.8 The DECODE side — operation-owned native staging, decoded at HARVEST — PROPOSED (2026-08-23, lane R)
+
+> **STATUS: PROPOSED. Nothing in this section is ratified**; §4.8.7 collects the questions that need
+> a ruling before implementation. **This section AMENDS §4.3**, whose sub-wall (1) already named this
+> shape — *"`AcceptEx`'s output buffer is the class's decode-side… the mirror must be a NATIVE
+> staging buffer, decoded at harvest"* — and left it unspecified. Commissioned by the coordinator
+> (mailbox, 2026-08-23) on landing §4.7: *"the recv increment is YOURS, queued AFTER F1,
+> amendment-first… stated so it covers `AcceptEx`'s output buffer too (the shape is shared; the
+> amendment should say so once, not be re-derived when accept arrives)."* Companion: §4.7, whose two
+> golib primitives this reuses rather than duplicates.
+
+#### 4.8.1 What reached it, and what it measured
+
+§4.7 made Windows SEND datagrams. `UdpLoopbackRoundTrip` therefore stopped dying at the submit and
+started dying at the READ:
+
+```
+panic: runtime error: index out of range [0] with length 0
+  at internal/poll.rawToSockaddrInet4        fd_windows.cs:1300
+  at internal/poll.(*FD).ReadFromInet4       fd_windows.cs:621
+```
+
+**The attribution is the load-bearing part, because the shape it panics in is innocent.**
+`sockaddrInet4ToRaw` (`fd_windows.cs:1277`) performs the *identical*
+`(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(raw.of(…ᏑPort)))` round-trip in the WRITE direction
+and works today — every TCP connect exercises it. What differs is the BOX: the read hands
+`@new<syscall.RawSockaddrAny>()` — a managed struct whose `Addr`/`Zero`/`Pad` are managed arrays —
+to `WSARecvFrom` by address, and decodes it after the fact. Per this project's AV-vs-panic triage
+rule (golib's `array<T>` indexer is bounds-checked, so a clean panic means an EMPTY array and an
+AccessViolation means a CORRUPTED one), an empty array says nothing was ever materialised there.
+
+Sixth confirmed member of the struct-passing class, and it is **pre-existing, not introduced**: it
+was simply unreachable, because the send stub threw first and no Windows program ever completed a
+UDP read. Same pattern as `LocalTimeZone` — binding a real implementation exposes what the stub hid.
+
+#### 4.8.2 Why §4.7's remedy does not transfer
+
+The send's remedy is a `stackalloc` image written BEFORE the call. It cannot work here for a reason
+that is structural rather than incidental: **on the send the wrapper writes and the kernel reads; on
+the receive the KERNEL writes and the wrapper reads — and for an overlapped operation the kernel
+writes AFTER the wrapper has returned.** There is no moment inside the wrapper at which a decode
+could run. This is §4.3's sub-wall (2), the lifetime wall, applied to the output direction: the
+staging must belong to the OPERATION, and the decode must happen when the operation completes.
+
+#### 4.8.3 Where the decode hook goes — measured, not chosen
+
+`execIO` (`fd_windows.cs:150–232`) has exactly three exits after a submit:
+
+| exit | line | harvests? |
+|:--|:--|:--|
+| submit returned success AND `fd.skipSyncNotif` | ~173 | **no** — returns `o.qty` immediately |
+| normal completion after `pd.wait` | ~190 | yes — `windows.WSAGetOverlappedResult` |
+| cancellation path after `waitCanceled` | ~220 | yes — `windows.WSAGetOverlappedResult` |
+
+So **every asynchronous completion funnels through one call**, `windows.WSAGetOverlappedResult`,
+which is already hand-owned as the netpoll harvest seam. That is the hook, and it is a measured
+property of the generated code rather than a design preference. The synchronous-completion exit
+needs its own handling: there the data is already present when the submit wrapper returns, so the
+decode runs inline at the end of the submit.
+
+#### 4.8.4 The cross-package problem, stated neutrally
+
+The same split §4.7 hit, mirrored. The LAYOUT knowledge lives in `syscall` (the L10 mirror owns
+`RawSockaddrInet4/6` ↔ native translation in both directions, and `readNativeSockaddr` is already
+written); the HARVEST lives in `internal/syscall/windows`. Neither may reach into the other, and
+golib must not learn what a sockaddr is.
+
+Stated without naming Winsock, the receive needs one thing it cannot obtain today: **an operation
+must be able to carry work it owes when it completes.** Proposed as a third primitive in
+`GoAsyncIO`'s existing vocabulary — the staging primitive it pairs with already exists from §4.7:
+
+```csharp
+// Work this operation owes on completion. Stored opaquely; run at most once per submission.
+public static void SetOperationCompletion(object key, Action<nint> onComplete);
+
+// Runs whatever the operation owes, with the completed byte count. Idempotent per submission.
+public static void CompleteOperation(object key, nint bytesTransferred);
+```
+
+`syscall`'s hand-owned `WSARecvFrom` then reads, in full:
+
+1. `StageOperationBuffer(overlapped, GoNativeSockaddrLen)` — native, operation-owned (§4.7's primitive).
+2. `SetOperationCompletion(overlapped, n => …)` — the closure holds the staged pointer and the
+   managed `ж<RawSockaddrAny>` destination, and does the field-for-field copy through the mirror's
+   own decode. **The layout never leaves `syscall`.**
+3. `RearmOperation` + the `WSARecvFrom` submit with the staged address (§4.7's other primitive).
+4. On synchronous completion, call `CompleteOperation` inline before returning.
+
+`internal/syscall/windows`' `WSAGetOverlappedResult` calls `CompleteOperation(overlapped, qty)`
+after a successful harvest, and knows nothing about what that work is.
+
+#### 4.8.5 Coverage — the whole class, said ONCE
+
+The census over `fd_windows.cs`. **Three shapes, seven sites, one mechanism** — this is the section
+that should not be re-derived when accept arrives:
+
+| shape | sites | what the kernel writes |
+|:--|:--|:--|
+| `WSARecvFrom` | `ReadFrom` (:617), `ReadFromInet4` (:655), `ReadFromInet6` (:693) | one sockaddr into `o.rsa`, length into `o.rsan` |
+| `WSARecvMsg` | `ReadMsg` (:1330), `ReadMsgInet4` (:1364), `ReadMsgInet6` (:1399) | a sockaddr **and** a control buffer, through a `WSAMsg` that itself embeds a `ж<WSABuf>` |
+| `AcceptEx` | `acceptOne` (:1033) | a single output block holding TWO sockaddrs, split by `GetAcceptExSockaddrs` |
+
+All three are the same mechanism with a different decode closure: stage native at submit, copy back
+at harvest. `AcceptEx` differs only in that its staged block is larger and its decode calls
+`GetAcceptExSockaddrs` before translating; `WSARecvMsg` differs only in that it stages two blocks.
+**Nothing in §4.8.3 or §4.8.4 changes for any of them.**
+
+#### 4.8.6 Alternatives, priced
+
+- **Hand-own `internal/poll`'s `ReadFromInet4/6` (and the other five) instead.** The managed
+  destination is right there, so no cross-package seam is needed at all. Rejected on cost and drift:
+  each of the seven carries lock/deadline/`execIO` logic that would be duplicated and would then
+  diverge from Go's source at every upstream change, for seven functions rather than one primitive.
+  Worth restating because it is the obvious first idea.
+- **Decode lazily, at the point of use.** `rawToSockaddrInet4` is generated in `internal/poll` and
+  has no idea an operation exists; making it aware means hand-owning it and every peer. Rejected.
+- **Make `RawSockaddrAny` blittable so the kernel can write it directly.** This is the remedy that
+  would delete the whole class, and it is out of scope here by orders of magnitude — it is a change
+  to how golib lays out Go fixed arrays inside structs. Named so it is on the record, not proposed.
+- **Do nothing; leave Windows UDP receive unimplemented.** Its cost is now concrete rather than
+  hypothetical: ⟨OQ-E⟩ cannot close, so `UdpLoopbackRoundTrip` — written, Linux-proven, and the only
+  two-platform gate this seam has — stays out of tree indefinitely.
+
+#### 4.8.7 Open questions
+
+* **⟨OQ-F⟩ — is the completion callback the right cut, or too big a concept for the seam?** §4.7's
+  ⟨OQ-A⟩ ruled that the narrowest property wins. A delegate is wider than *"N bytes of native
+  memory"*. The alternative is for golib to hand the harvest the staged POINTER and let
+  `internal/syscall/windows` do the decode through a public `Go…ReadNativeSockaddr…` on the mirror —
+  but that spreads the layout across two packages, which ⟨OQ-2⟩'s reasoning argues against.
+  *Recommendation:* **the callback**, precisely because it keeps the layout in one package; the
+  delegate is opaque to golib, which is the neutrality test that matters.
+* **⟨OQ-G⟩ — ⚠ does §4.7's LANDED send have a latent lifetime bug I should fix in this increment?**
+  Raised against my own work rather than found by a gate. `WSASendtoInet4` writes the sockaddr into a
+  `stackalloc` buffer and hands its address to an OVERLAPPED `WSASendTo`. If the kernel retains
+  `lpTo` until completion — as it does for the buffer pointers, and as §4.3's lifetime wall describes
+  — then that address dies at wrapper return and the send is handing the kernel a
+  use-after-return. It has not misbehaved in testing, which proves nothing about a race.
+  *Recommendation:* **MEASURE it first** (the pattern this arc keeps being right to follow), and if
+  confirmed, move the send's sockaddr onto `StageOperationBuffer` in this same increment — the
+  primitive already exists and the fix is three lines.
+* **⟨OQ-H⟩ — scope: all seven sites, or `WSARecvFrom` alone first?** *Recommendation:* **`WSARecvFrom`
+  first (three sites), then `AcceptEx`, then `WSARecvMsg`.** `WSARecvFrom` is what ⟨OQ-E⟩'s guard
+  needs, `AcceptEx` is what `net.Listen`'s accept path needs and has no guard yet, and `WSARecvMsg`
+  has no consumer on the roster at all. The mechanism lands once; the sites follow demand, which is
+  the board's standing rule (*fix a censused wrapper when a suite REACHES it, never speculatively*).
+* **⟨OQ-I⟩ — what closes ⟨OQ-E⟩ exactly?** *Recommendation:* `UdpLoopbackRoundTrip` registers in the
+  `WSARecvFrom` increment and must pass on **both** platforms in the same change, since a
+  Linux-only pass is what it already had.
+
 ## 5. The deadline/unblock story — the hard part, priced honestly
 
 This section is the reason the board said "a deadline/unblock story to settle, not a wrapper
