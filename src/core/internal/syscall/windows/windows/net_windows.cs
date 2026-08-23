@@ -8,13 +8,9 @@ using syscall = syscall_package;
 
 partial class windows_package {
 
-//go:linkname WSASendtoInet4 syscall.wsaSendtoInet4
-//go:noescape
-public static partial error /*err*/ WSASendtoInet4(syscallꓸHandle s, ж<syscall.WSABuf> bufs, uint32 bufcnt, ж<uint32> sent, uint32 flags, ж<syscall.SockaddrInet4> to, ж<syscall.Overlapped> overlapped, ж<byte> croutine);
+// go2cs generated this placeholder — func WSASendtoInet4 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-//go:linkname WSASendtoInet6 syscall.wsaSendtoInet6
-//go:noescape
-public static partial error /*err*/ WSASendtoInet6(syscallꓸHandle s, ж<syscall.WSABuf> bufs, uint32 bufcnt, ж<uint32> sent, uint32 flags, ж<syscall.SockaddrInet6> to, ж<syscall.Overlapped> overlapped, ж<byte> croutine);
+// go2cs generated this placeholder — func WSASendtoInet6 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static UntypedInt SIO_TCP_INITIAL_RTO => /* syscall.IOC_IN | syscall.IOC_VENDOR | 17 */ 2550136849;
 public const uint16 TCP_INITIAL_RTO_UNSPECIFIED_RTT = /* ^uint16(0) */ 65535;

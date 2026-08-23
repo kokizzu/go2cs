@@ -41,6 +41,13 @@ public class GoAsyncIOTests
     private sealed class addressedState : IGoAsyncOperation
     {
         public nuint NativeAddress { get; init; }
+
+        // §4.7 widened this interface with the submit side. This double models a HARVEST-only
+        // participant, so both members throw: that is the honest shape, and RearmOperation's own
+        // guard test relies on a state object that genuinely cannot submit.
+        public nuint RearmForSubmit() => throw new NotSupportedException("harvest-only test double");
+
+        public nuint StageBytes(int byteCount) => throw new NotSupportedException("harvest-only test double");
     }
 
     [TestMethod]
@@ -236,5 +243,141 @@ public class GoAsyncIOTests
         GoAsyncIO.RemoveDescriptor(descriptor);
 
         Assert.IsFalse(GoAsyncIO.TryGetDescriptorState(descriptor, out _));
+    }
+
+    // ---- the SUBMIT side (netpoll design §4.7, RATIFIED 2026-08-23) ------------------------------
+    //
+    // The harvest primitives above needed one property, an address, because the operation already
+    // existed. A submit may be an operation's FIRST touch, so the seam gained a registered factory
+    // plus two interface members. These guard the properties that make it safe to have TWO packages
+    // sharing one record store: exactly one record per waiter, staging that belongs to the record,
+    // and loud failure when the contract is used out of order.
+    //
+    // §4.7 ⟨OQ-D⟩ ruled these tests land BEFORE the wrappers that consume them, because the S2b
+    // prototype's own leak (10 records where the contract wants 1, each owning native resources)
+    // was found this way and the failure mode here is identical.
+
+    private sealed class FakeOperation : IGoAsyncOperation
+    {
+        internal int RearmCount;
+        internal int LastStageRequest = -1;
+        internal static int Created;
+
+        public nuint NativeAddress => 0x5000;
+
+        public nuint RearmForSubmit()
+        {
+            RearmCount++;
+            return 0x6000;
+        }
+
+        public nuint StageBytes(int byteCount)
+        {
+            LastStageRequest = byteCount;
+            return 0x7000;
+        }
+    }
+
+    private static void useFakeFactory()
+    {
+        // NOT SetOperationFactory: this test assembly references core/syscall, whose module
+        // initializer claims the factory at ASSEMBLY LOAD, so the public registration always loses
+        // here no matter how the tests are ordered. The internal swap is the seam's test hook (golib
+        // already grants GolibTests its internals); it also clears the record store, which is what
+        // makes each test below independent of the ones before it.
+        GoAsyncIO.ReplaceOperationFactoryForTesting(s_fakeFactory);
+    }
+
+    private static readonly Func<nuint, object, nint, object> s_fakeFactory = (_, _, _) => {
+        FakeOperation.Created++;
+        return new FakeOperation();
+    };
+
+    [TestMethod]
+    public void RearmOperation_CreatesOnceThenRearmsTheSameRecord()
+    {
+        useFakeFactory();
+        object key = new();
+        int before = FakeOperation.Created;
+
+        nuint first = GoAsyncIO.RearmOperation(7, key, 'w');
+        nuint second = GoAsyncIO.RearmOperation(7, key, 'w');
+
+        Assert.AreEqual((nuint)0x6000, first, "rearm must report the native control block");
+        Assert.AreEqual((nuint)0x6000, second);
+        Assert.AreEqual(before + 1, FakeOperation.Created, "a second submit on one waiter must REUSE its record");
+
+        Assert.IsTrue(GoAsyncIO.TryGetOperationState(key, out object? state));
+        Assert.AreEqual(2, ((FakeOperation)state!).RearmCount, "each submit re-arms");
+
+        GoAsyncIO.RemoveOperationState(key);
+    }
+
+    [TestMethod]
+    public void RearmOperation_UnderContention_CreatesExactlyOneRecord()
+    {
+        // The S2b leak, pinned: a bare GetOrAdd runs its factory more than once under contention and
+        // every discarded record here owns native resources with no owner to free them.
+        useFakeFactory();
+        object key = new();
+        int before = FakeOperation.Created;
+
+        System.Threading.Tasks.Parallel.For(0, 32, _ => GoAsyncIO.RearmOperation(9, key, 'r'));
+
+        Assert.AreEqual(before + 1, FakeOperation.Created, "exactly one record per waiter, under contention");
+        GoAsyncIO.RemoveOperationState(key);
+    }
+
+    [TestMethod]
+    public void StageOperationBuffer_ReachesTheRecordAndCarriesTheByteCount()
+    {
+        useFakeFactory();
+        object key = new();
+        GoAsyncIO.RearmOperation(3, key, 'w');
+
+        nuint staged = GoAsyncIO.StageOperationBuffer(key, 64);
+
+        Assert.AreEqual((nuint)0x7000, staged);
+        Assert.IsTrue(GoAsyncIO.TryGetOperationState(key, out object? state));
+        Assert.AreEqual(64, ((FakeOperation)state!).LastStageRequest, "the byte count crosses the seam verbatim");
+
+        GoAsyncIO.RemoveOperationState(key);
+    }
+
+    [TestMethod]
+    public void StageOperationBuffer_WithoutARecord_ThrowsRatherThanReturningZero()
+    {
+        // Staging against an operation that was never re-armed is a contract violation, and the seam
+        // must say so: a 0 address would be handed to the OS as a buffer pointer.
+        useFakeFactory();
+
+        Assert.ThrowsException<InvalidOperationException>(() => GoAsyncIO.StageOperationBuffer(new object(), 16));
+    }
+
+    [TestMethod]
+    public void SetOperationFactory_RejectsADifferentSecondFactory()
+    {
+        // Two factories would mean two owners for in-flight operations; the seam refuses rather than
+        // silently changing which package owns them. The SAME delegate re-registers freely.
+        useFakeFactory();
+
+        // The public entry still accepts a repeat registration of the SAME delegate...
+        GoAsyncIO.SetOperationFactory(s_fakeFactory);
+
+        // ...and still refuses a different one, which is the property that matters.
+        Assert.ThrowsException<InvalidOperationException>(
+            () => GoAsyncIO.SetOperationFactory((_, _, _) => new FakeOperation()));
+    }
+
+    [TestMethod]
+    public void RearmOperation_RejectsStateThatDoesNotSupportSubmission()
+    {
+        // A record from a package that only ever harvested does not implement the submit side; the
+        // seam must not silently answer 0.
+        object key = new();
+        GoAsyncIO.GetOrCreateOperationState(key, () => new object());
+
+        Assert.ThrowsException<InvalidOperationException>(() => GoAsyncIO.RearmOperation(1, key, 'w'));
+        GoAsyncIO.RemoveOperationState(key);
     }
 }

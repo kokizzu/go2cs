@@ -253,6 +253,15 @@ partial class syscall_package
 
         internal void Pin(object box) => m_pins.Add(box);
 
+        // ---- IGoAsyncOperation's SUBMIT side (netpoll design §4.7) -------------------------------
+        // The same Rearm and Staging this package calls in-process, exposed through golib's neutral
+        // interface so a submit from ANOTHER package uses ONE record store rather than a parallel
+        // one. Nothing about Winsock crosses the seam: an address out, a byte count in.
+        nuint golib.IGoAsyncOperation.RearmForSubmit() => (nuint)Rearm();
+
+        nuint golib.IGoAsyncOperation.StageBytes(int byteCount) =>
+            (nuint)Staging(byteCount <= 0 ? 1 : (nuint)byteCount);
+
         // Native staging of at least `length` bytes, reused across submits when it already fits.
         internal void* Staging(nuint length)
         {
@@ -314,20 +323,35 @@ partial class syscall_package
     // Resolves (creating exactly once) the record for one operation. `Ꮡoverlapped` is the key: see
     // the file header on why it resolves across execIO's three call sites and across separate calls
     // on one FD.
+    // The factory golib calls when a submit from ANOTHER package is the first touch of an operation
+    // (netpoll design §4.7). Registered once, from this package, because only this package can build
+    // the record -- it needs the socket's completion-port binding. operationFor now goes through the
+    // SAME delegate, deliberately: two code paths that must agree about record identity are two code
+    // paths that eventually will not.
+    private static readonly Func<nuint, object, nint, object> s_operationFactory = (descriptor, key, mode) => {
+        SocketBinding binding = bindingFor(descriptor);
+        OverlappedOp created = new(binding, mode, (ж<Overlapped>)key);
+
+        binding.Track(created);
+
+        return created;
+    };
+
+    // Registered at ASSEMBLY LOAD, not on first use, and the difference is load-bearing: a program
+    // that only ever sends DATAGRAMS never calls anything in this file, so a lazy registration
+    // leaves internal/syscall/windows' submit with no factory and it fails with "no operation
+    // factory registered" (measured -- the UDP guard's first run on this seam). A module
+    // initializer is what the corpus already uses to run Go's package init(), so this needs no new
+    // mechanism; registration is idempotent and touches nothing else.
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterAsyncOperationFactory() => GoAsyncIO.SetOperationFactory(s_operationFactory);
+
     private static OverlappedOp operationFor(ΔHandle handle, ж<Overlapped> Ꮡoverlapped, nint mode)
     {
         nuint descriptor = (nuint)(uintptr)handle;
 
-        OverlappedOp operation = (OverlappedOp)GoAsyncIO.GetOrCreateOperationState(Ꮡoverlapped, () => {
-            SocketBinding binding = bindingFor(descriptor);
-            OverlappedOp created = new(binding, mode, Ꮡoverlapped);
-
-            binding.Track(created);
-
-            return created;
-        });
-
-        return operation;
+        return (OverlappedOp)GoAsyncIO.GetOrCreateOperationState(Ꮡoverlapped,
+            () => s_operationFactory(descriptor, Ꮡoverlapped, mode));
     }
 
     // ---- WSARecv / WSASend -----------------------------------------------------------------------

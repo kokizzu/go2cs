@@ -53,7 +53,6 @@ using static go.@internal.syscall.windows_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/windows/net_windows.go", "net_windows.cs", "AAocuA==")]
 [assembly: go.GoPositionMap("internal/syscall/windows/reparse_windows.go", "reparse_windows.cs", "AD+EAZKCggATKpKCgg==")]
 [assembly: go.GoPositionMap("internal/syscall/windows/security_windows.go", "security_windows.cs", "ACNcsoKUppSUAA0eggAxeg==")]
 [assembly: go.GoPositionMap("internal/syscall/windows/syscall_windows.go", "syscall_windows.cs", "ABEqwoKUgoKCgpQA3AHcA6KigoKClIKC7oKUAAoQpoKCgpSCgoKUpqaCgoKUgoKClKYAEiyCgoKUgoKUACdkkgA4hgGygoKCgpSClJSszA==")]

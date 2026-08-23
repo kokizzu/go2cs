@@ -203,6 +203,104 @@ public static class GoAsyncIO
 
         return address != 0;
     }
+
+    // ---- the SUBMIT side (DESIGN-netpoll-managed-poller.md §4.7, RATIFIED 2026-08-23) ------------
+    //
+    // The harvest needed one property, an address, because the operation already existed. A SUBMIT
+    // may be the FIRST touch of an operation, so it needs the record CREATED — and only the package
+    // that owns the platform's IO machinery can create one. That package registers its factory here
+    // once; this seam holds it as an opaque delegate and never learns what it makes. Everything
+    // crossing this boundary is a descriptor, a waiter key, a mode, and a byte count.
+
+    private static Func<nuint, object, nint, object>? s_operationFactory;
+
+    /// <summary>
+    /// Registers the factory that creates one operation's state, for use when a submit is the first
+    /// touch of that operation.
+    /// </summary>
+    /// <param name="factory">Receives the descriptor, the waiter key and the mode; returns the state.</param>
+    /// <remarks>
+    /// Called once by the package that owns the platform's IO machinery. Registering a SECOND,
+    /// different factory throws rather than silently changing which package owns in-flight
+    /// operations; re-registering the same delegate is idempotent.
+    /// </remarks>
+    public static void SetOperationFactory(Func<nuint, object, nint, object> factory)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+
+        Func<nuint, object, nint, object>? existing = Interlocked.CompareExchange(ref s_operationFactory, factory, null);
+
+        if (existing is not null && !ReferenceEquals(existing, factory))
+            throw new InvalidOperationException("GoAsyncIO: an operation factory is already registered");
+    }
+
+    /// <summary>
+    /// Test-only: installs <paramref name="factory"/> as the operation factory, discarding any
+    /// previous registration and every operation record created under it.
+    /// </summary>
+    /// <param name="factory">Factory to install, or <c>null</c> to leave the seam unregistered.</param>
+    /// <remarks>
+    /// <para>
+    /// The PUBLIC rule is deliberately one-factory-per-process and <see cref="SetOperationFactory"/>
+    /// enforces it strictly -- two owners for in-flight operations is the failure this seam exists to
+    /// refuse. A TEST process is the one legitimate place that rule cannot hold: GolibTests references
+    /// <c>core/syscall</c>, whose module initializer claims the factory at ASSEMBLY LOAD, so a test
+    /// wanting a fake cannot win by ordering. Measured, not anticipated -- five tests failed in the
+    /// full suite while passing filtered, which is precisely the order-dependence shape.
+    /// </para>
+    /// <para>
+    /// Granting the swap to GolibTests -- which golib already trusts with its internals -- keeps the
+    /// public contract strict rather than relaxing it for testability. This is NOT public, nothing in
+    /// the corpus calls it, and it clears the record store because records outliving their factory
+    /// would be owned by nobody.
+    /// </para>
+    /// </remarks>
+    internal static void ReplaceOperationFactoryForTesting(Func<nuint, object, nint, object>? factory)
+    {
+        s_operationState.Clear();
+        Interlocked.Exchange(ref s_operationFactory, factory);
+    }
+
+    /// <summary>
+    /// Prepares the operation named by <paramref name="key"/> for a new submission, creating its
+    /// state through the registered factory when this is its first touch.
+    /// </summary>
+    /// <param name="descriptor">Descriptor the operation belongs to.</param>
+    /// <param name="key">Pointer the operation is named by.</param>
+    /// <param name="mode">Submitting package's own mode value.</param>
+    /// <returns>Address of the native control block for this submission.</returns>
+    public static nuint RearmOperation(nuint descriptor, object key, nint mode)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        Func<nuint, object, nint, object> factory = s_operationFactory
+            ?? throw new InvalidOperationException("GoAsyncIO: no operation factory registered");
+
+        // GetOrCreateOperationState's Lazy(ExecutionAndPublication) is what holds this to ONE record
+        // per waiter: a bare GetOrAdd runs its factory more than once under contention, and each
+        // discarded record here owns native resources nothing would ever free (measured at S2b).
+        object state = GetOrCreateOperationState(key, () => factory(descriptor, key, mode));
+
+        return state is IGoAsyncOperation operation
+            ? operation.RearmForSubmit()
+            : throw new InvalidOperationException("GoAsyncIO: operation state does not support submission");
+    }
+
+    /// <summary>
+    /// Reports native memory owned by the operation named by <paramref name="key"/>.
+    /// </summary>
+    /// <param name="key">Pointer the operation is named by.</param>
+    /// <param name="byteCount">Bytes required.</param>
+    /// <returns>Address of the staged memory.</returns>
+    public static nuint StageOperationBuffer(object key, int byteCount)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
+
+        return TryGetOperationState(key, out object? state) && state is IGoAsyncOperation operation
+            ? operation.StageBytes(byteCount)
+            : throw new InvalidOperationException("GoAsyncIO: no operation state to stage against; rearm first");
+    }
 }
 
 /// <summary>
@@ -215,4 +313,29 @@ public interface IGoAsyncOperation
     /// Address of the operation's native control block, or 0 when none is currently allocated.
     /// </summary>
     nuint NativeAddress { get; }
+
+    /// <summary>
+    /// Prepares this operation for a NEW submission and reports its native control block.
+    /// </summary>
+    /// <returns>Address of the control block the next submit must hand the OS.</returns>
+    /// <remarks>
+    /// The submit-side counterpart of <see cref="NativeAddress"/>, which reports an EXISTING
+    /// operation's block for a harvest. Splitting them is deliberate: a harvest must never re-arm,
+    /// and a submit must never reuse a block the OS may still own.
+    /// </remarks>
+    nuint RearmForSubmit();
+
+    /// <summary>
+    /// Reports native memory whose lifetime is this operation's, for data the OS retains until
+    /// completion.
+    /// </summary>
+    /// <param name="byteCount">Bytes required.</param>
+    /// <returns>Address of the staged memory.</returns>
+    /// <remarks>
+    /// A submitting package cannot stage such memory itself: a stack image is wrong by construction
+    /// when the OS keeps the pointer past the call, and only the operation record has the right
+    /// lifetime. What the bytes MEAN is the caller's business — this seam owns the allocation, never
+    /// the layout, which is what keeps one platform's IO structures out of the shared runtime.
+    /// </remarks>
+    nuint StageBytes(int byteCount);
 }

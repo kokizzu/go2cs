@@ -992,6 +992,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// remainder. Failing BY NAME converts a whole-suite process death into ONE loud row.
 	"internal/syscall/windows": {
 		"NetShareAdd": goosWindows,
+		// The UDP SEND half of the datagram seam. Their generated bodies pass the kernel the address
+		// `sockaddr()` returns -- a pointer into a MANAGED box -- which is the struct-passing class;
+		// internal/syscall/windows/windows/net_windows_impl.cs writes a native stack image through the
+		// mirror's seam instead. Registered when a suite REACHED them (the UdpLoopbackRoundTrip guard),
+		// which is the board's own trigger for fixing a censused wrapper.
+		"WSASendtoInet4": goosWindows,
+		"WSASendtoInet6": goosWindows,
 		// The HARVEST half of the netpoll submit seam, and the only member of it outside `syscall`.
 		// execIO harvests by naming the SAME `&o.o` it submitted, but the operation's real control
 		// block is the native OVERLAPPED syscall's record allocated — so this wrapper must call the
