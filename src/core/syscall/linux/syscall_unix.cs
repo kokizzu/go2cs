@@ -317,24 +317,7 @@ public static (nint value, error err) GetsockoptInt(nint fd, nint level, nint op
     return ((nint)n, err);
 }
 
-public static (nint n, Sockaddr from, error err) Recvfrom(nint fd, slice<byte> p, nint flags) {
-    nint n = default!;
-    Sockaddr from = default!;
-    error err = default!;
-
-    ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
-    ref var len = ref heap(new _Socklen(), out var Ꮡlen);
-    len = SizeofSockaddrAny;
-    {
-        (n, err) = recvfrom(fd, p, flags, Ꮡrsa, Ꮡlen); if (err != default!) {
-            return (n, from, err);
-        }
-    }
-    if (rsa.Addr.Family != AF_UNSPEC) {
-        (from, err) = anyToSockaddr(Ꮡrsa);
-    }
-    return (n, from, err);
-}
+// go2cs generated this placeholder — func Recvfrom is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (nint n, error err) recvfromInet4(nint fd, slice<byte> p, nint flags, ref SockaddrInet4 from) {
     nint n = default!;
