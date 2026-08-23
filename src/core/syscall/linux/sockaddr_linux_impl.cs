@@ -517,4 +517,66 @@ partial class syscall_package
 
         return readNativeSockaddr(buffer, SizeofSockaddrAny);
     }
+
+    // ---- the datagram seam: what internal/syscall/unix's hand-own consumes ------------------------
+    //
+    // DESIGN-linux-udp.md ⟨OQ-2⟩, RULED: the eight //go:linkname datagram helpers
+    // (internal/syscall/unix/linux/net_impl.cs) need this file's native encode/decode, and they live
+    // in a DIFFERENT assembly. The ruling is to expose them here rather than duplicate the layout
+    // there, for the reason the mirror exists at all: there must be ONE definition of what a Go
+    // Sockaddr looks like to the kernel. These four wrappers are that seam and nothing else --
+    // deliberately spelled `Go…` so they read as go2cs machinery rather than as Go API (Go's syscall
+    // package has no such functions), and typed to the two INET families so the caller carries no
+    // layout knowledge at all: it hands over a box and a buffer.
+    //
+    // Keep in step with net_impl.cs; if a family is added there, add its pair here rather than
+    // reaching into the private helpers from outside.
+
+    // The size every caller's stack buffer must be: sockaddr_storage, which fits every family below.
+    public const int GoNativeSockaddrLen = nativeSockaddrLen;
+
+    // IN direction (sendto/sendmsg): managed box -> native image, returning the addrlen to pass.
+    public static unsafe (_Socklen len, error err) GoWriteNativeSockaddrInet4(ж<SockaddrInet4> sa, byte* buffer) =>
+        writeNativeSockaddr(new SockaddrInet4жSockaddr(sa), buffer);
+
+    public static unsafe (_Socklen len, error err) GoWriteNativeSockaddrInet6(ж<SockaddrInet6> sa, byte* buffer) =>
+        writeNativeSockaddr(new SockaddrInet6жSockaddr(sa), buffer);
+
+    // OUT direction (recvfrom/recvmsg): native image -> the caller's OWN box, filled by assignment.
+    // Go's recvfromInet4 assigns Port and Addr into the caller's struct and leaves everything else
+    // alone; these do the same, so a caller that reused a box sees exactly Go's fields change. A
+    // datagram that decodes to another family is a kernel contract violation on an AF_INET socket,
+    // and is reported rather than silently ignored.
+    public static unsafe error GoReadNativeSockaddrInet4(byte* buffer, _Socklen len, ж<SockaddrInet4> into) {
+        var (sa, err) = readNativeSockaddr(buffer, len);
+
+        if (err != default!) {
+            return err;
+        }
+
+        if ((sa as IжAdapter)?.Box is not ж<SockaddrInet4> box) {
+            return EAFNOSUPPORT;
+        }
+
+        into.Value.Port = box.Value.Port;
+        into.Value.Addr = box.Value.Addr;
+        return default!;
+    }
+
+    public static unsafe error GoReadNativeSockaddrInet6(byte* buffer, _Socklen len, ж<SockaddrInet6> into) {
+        var (sa, err) = readNativeSockaddr(buffer, len);
+
+        if (err != default!) {
+            return err;
+        }
+
+        if ((sa as IжAdapter)?.Box is not ж<SockaddrInet6> box) {
+            return EAFNOSUPPORT;
+        }
+
+        into.Value.Port = box.Value.Port;
+        into.Value.ZoneId = box.Value.ZoneId;
+        into.Value.Addr = box.Value.Addr;
+        return default!;
+    }
 }
