@@ -616,7 +616,7 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 			// bare `unchecked((uint32)(69206016UL))`, losing the FileMode). Measured, reverted, and
 			// narrowed to the shape that actually fails — the coordinator's "stop rather than widen
 			// silently" clause, applied to my own fix.
-			if !v.constExprOperandExceeds(expr, narrowUnsignedMax(csType)) {
+			if !v.constExprOperandExceeds(expr, math.MaxUint32) {
 				return ""
 			}
 
@@ -1908,20 +1908,4 @@ func (v *Visitor) constExprOperandExceeds(expr ast.Expr, limit uint64) bool {
 	})
 
 	return found
-}
-
-// narrowUnsignedMax is the largest value a narrow unsigned C# target holds. The fold arm asks
-// whether an operand EXCEEDS it, because that — not the int32 boundary — is what forces the
-// literal path to widen past what the target can accept: `1<<31` fits a uint32 exactly, so
-// math/rand's `(1<<31) - 1 - (1<<31)%uint32(n)` and http2's `& (1<<31 - 1)` compile as written and
-// read better that way, while `1<<32` does not fit and must fold.
-func narrowUnsignedMax(csType string) uint64 {
-	switch csType {
-	case "uint8":
-		return math.MaxUint8
-	case "uint16":
-		return math.MaxUint16
-	default:
-		return math.MaxUint32
-	}
 }
