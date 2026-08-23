@@ -1416,15 +1416,7 @@ public static error /*err*/ WSAIoctl(ΔHandle s, uint32 iocc, ж<byte> Ꮡinbuf,
 
 // go2cs generated this placeholder — func WSARecv is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*err*/ WSARecvFrom(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 bufcnt, ж<uint32> Ꮡrecvd, ж<uint32> Ꮡflags, ж<RawSockaddrAny> Ꮡfrom, ж<int32> Ꮡfromlen, ж<Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall9(procWSARecvFrom.Addr(), 9, (uintptr)s, (uintptr)Ꮡbufs, (uintptr)bufcnt, (uintptr)Ꮡrecvd, (uintptr)Ꮡflags, (uintptr)Ꮡfrom, (uintptr)Ꮡfromlen, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine);
-    if (r1 == socket_error) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func WSARecvFrom is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func WSASend is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

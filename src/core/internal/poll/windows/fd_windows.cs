@@ -1295,20 +1295,9 @@ internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, re
     return (int32)/* unsafe.Sizeof(*raw) */ (uintptr)28;
 }
 
-internal static void rawToSockaddrInet4(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ref Δsyscall.SockaddrInet4 sa) {
-    var pp = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet4>();
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(Δsyscall.RawSockaddrInet4.ᏑPort)));
-    sa.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
-    sa.Addr = pp.Value.Addr.Clone();
-}
+// go2cs generated this placeholder — func rawToSockaddrInet4 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static void rawToSockaddrInet6(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ref Δsyscall.SockaddrInet6 sa) {
-    var pp = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet6>();
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(Δsyscall.RawSockaddrInet6.ᏑPort)));
-    sa.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
-    sa.ZoneId = pp.Value.Scope_id;
-    sa.Addr = pp.Value.Addr.Clone();
-}
+// go2cs generated this placeholder — func rawToSockaddrInet6 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (int32, error) sockaddrToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, syscallꓸSockaddr sa) {
     switch (sa.type()) {

@@ -77,6 +77,18 @@ partial class windows_package
             return errnoErr(e1);
         }
 
+        // THE DECODE HOOK (netpoll design §4.8, RATIFIED). This call is the one place every
+        // ASYNCHRONOUS completion funnels through -- execIO has exactly three exits after a submit,
+        // and the two that observe a completion both land here (the third, skipSyncNotif, never
+        // harvests and is transcribed inline by the submitting wrapper). An operation that owes
+        // work -- today, WSARecvFrom transcribing the kernel's native sockaddr into the managed
+        // RawSockaddrAny internal/poll will read back -- runs it now, with the transfer count.
+        //
+        // Most operations owe NOTHING: every send, every TCP read. That is not an error and costs a
+        // dictionary miss. What the work IS stays entirely unknown here; this package owns the
+        // harvest, not the layout.
+        GoAsyncIO.CompleteOperation(Ꮡo, (nint)bytes);
+
         return default!;
     }
 }

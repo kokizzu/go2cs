@@ -519,6 +519,14 @@ partial class syscall_package
     // Family at 0, Addr.Data covering bytes 2..15, Pad covering 16..115.
     private static unsafe ж<RawSockaddrAny> toRawSockaddrAny(byte* native, nint available) {
         var Ꮡany = @new<RawSockaddrAny>();
+        fillRawSockaddrAny(Ꮡany, native, available);
+        return Ꮡany;
+    }
+
+    // The transcription itself, against a CALLER-SUPPLIED box. WSARecvFrom fills the box internal/poll
+    // already allocated and will read back from, so it cannot use the allocating shim above; accept
+    // mints its own. One body either way, so the two paths cannot drift.
+    private static unsafe void fillRawSockaddrAny(ж<RawSockaddrAny> Ꮡany, byte* native, nint available) {
         ref RawSockaddrAny any = ref Ꮡany.Value;
 
         if (available >= 2) {
@@ -532,8 +540,6 @@ partial class syscall_package
         for (nint i = 0; i < 100 && 16 + i < available; i++) {
             any.Pad[i] = unchecked((int8)native[16 + i]);
         }
-
-        return Ꮡany;
     }
 
     public static unsafe void GetAcceptExSockaddrs(ж<byte> Ꮡbuf, uint32 rxdatalen, uint32 laddrlen, uint32 raddrlen, ж<ж<RawSockaddrAny>> Ꮡlrsa, ж<int32> Ꮡlrsalen, ж<ж<RawSockaddrAny>> Ꮡrrsa, ж<int32> Ꮡrrsalen) {
@@ -955,4 +961,112 @@ partial class syscall_package
             destination[i] = source[i];
         }
     }
+
+    // ---- WSARecvFrom: the DATAGRAM receive, and the decode side of the class ----------------------
+
+    // Go's RawSockaddrAny is 2 + 14 + 100 bytes flat; internal/poll hard-codes that 116 as the
+    // buffer length it declares to the kernel, and RawSockaddrAny.Sockaddr flattens back to it.
+    private const int32 rawSockaddrAnyLen = 116;
+
+    // Go: WSARecvFrom(s, bufs, bufcnt, recvd, flags, from, fromlen, overlapped, croutine).
+    //
+    // WHY HAND-OWNED. The generated body hands the kernel `(uintptr)Ꮡfrom` -- the pinned address of a
+    // MANAGED RawSockaddrAny -- and internal/poll tells it that buffer is 116 bytes
+    // (`o.rsan = unsafe.Sizeof(*o.rsa)`). The managed struct is FORTY bytes and contains references:
+    // `Addr.Data` and `Pad` are `array<int8>` object references where Go has inline octets. So the
+    // kernel's write overflows the managed object by 76 bytes into the GC heap, and the bytes that do
+    // land inside it land ON reference fields. Measured, not inferred: RawSockaddrAny reports
+    // containsReferences=true and Unsafe.SizeOf 40 against Go's 128.
+    //
+    // THE REMEDY IS THE ACCEPT PAIR, ONE FUNCTION OVER (netpoll design §4.8, RATIFIED). AcceptEx
+    // already solves the identical problem: the kernel writes into the RECORD's native staging and
+    // `toRawSockaddrAny` transcribes that native image into a managed RawSockaddrAny field for field,
+    // so `RawSockaddrAny.Sockaddr` -- which flattens the managed struct back to its 116-byte native
+    // image -- has a faithful thing to read. Those two are documented as "a pair; neither is
+    // meaningful alone"; this is the third member.
+    //
+    // WHY AT HARVEST. An overlapped receive fills its buffers AFTER this call returns, so there is no
+    // moment inside the wrapper at which a decode could run. golib's completion seam carries the
+    // transcription to where `internal/syscall/windows.WSAGetOverlappedResult` observes the
+    // completion -- the one call every asynchronous exit of `execIO` funnels through. A SYNCHRONOUS
+    // completion never reaches that harvest, so it is transcribed inline at the end.
+    public static unsafe error /*err*/ WSARecvFrom(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 bufcnt, ж<uint32> Ꮡrecvd, ж<uint32> Ꮡflags, ж<RawSockaddrAny> Ꮡfrom, ж<int32> Ꮡfromlen, ж<Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
+        OverlappedOp operation = operationFor(s, Ꮡoverlapped, wsaModeRead);
+        NativeOverlapped* native = operation.Rearm();
+
+        // ONE staging block carved into three regions, because Staging() owns a SINGLE allocation and
+        // a later call with a larger size reallocates -- which would dangle every pointer carved from
+        // the earlier one. Carving is the caller's business by design: the seam owns the allocation,
+        // never the layout.
+        //
+        // ⚠ ORDER IS LOAD-BEARING. This oversized request runs BEFORE stageBuffers, whose own
+        // Staging(bufBytes) call is smaller and therefore returns this same block untouched
+        // (Staging reuses when m_stagingLength >= length). Reversing the two would reallocate under
+        // the address and length pointers.
+        nuint bufBytes = (nuint)(bufcnt == 0 ? 1 : bufcnt) * (nuint)sizeof(NativeWSABuf);
+        nuint addrOffset = bufBytes;
+        nuint lenOffset = addrOffset + (nuint)nativeSockaddrLen;
+        byte* block = (byte*)operation.Staging(lenOffset + (nuint)sizeof(int32));
+
+        NativeWSABuf* buffers = stageBuffers(operation, Ꮡbufs, bufcnt);
+        byte* addr = block + addrOffset;
+        int32* addrlen = (int32*)(block + lenOffset);
+
+        *addrlen = nativeSockaddrLen;
+
+        uint32 recvd = 0;
+        uint32 flags = Ꮡflags == nil ? 0 : Ꮡflags.Value;
+
+        // The transcription this receive owes on completion. The staged addresses are captured as
+        // INTEGERS, not pointers: a C# closure cannot capture a pointer local, and the staging
+        // outlives the operation by construction, so an address is the honest thing to carry.
+        nuint addrAddress = (nuint)addr;
+        nuint lenAddress = (nuint)addrlen;
+        ж<RawSockaddrAny> Ꮡdst = Ꮡfrom;
+        ж<int32> Ꮡdstlen = Ꮡfromlen;
+
+        golib.GoAsyncIO.SetOperationCompletion(Ꮡoverlapped, _ => {
+            int32 wrote = *(int32*)lenAddress;
+
+            if (Ꮡdst != nil) {
+                fillRawSockaddrAny(Ꮡdst, (byte*)addrAddress, wrote < 0 ? 0 : wrote);
+            }
+            if (Ꮡdstlen != nil) {
+                // internal/poll measures this against Go's 116-byte RawSockaddrAny, so report what
+                // the kernel wrote, clamped to what a Go caller can mean by it.
+                Ꮡdstlen.Value = wrote > rawSockaddrAnyLen ? rawSockaddrAnyLen : wrote;
+            }
+        });
+
+        var (r1, _, e1) = Syscall9(procWSARecvFrom.Addr(), 9, (uintptr)s, (uintptr)(void*)buffers, (uintptr)bufcnt,
+                                   (uintptr)(void*)(&recvd), (uintptr)(void*)(&flags), (uintptr)(void*)addr,
+                                   (uintptr)(void*)addrlen, (uintptr)native, (uintptr)Ꮡcroutine);
+
+        if (Ꮡrecvd != nil) {
+            Ꮡrecvd.Value = recvd;
+        }
+
+        if (Ꮡflags != nil) {
+            Ꮡflags.Value = flags;
+        }
+
+        if (r1 == socket_error) {
+            error err = errnoErr(e1);
+
+            // ERROR_IO_PENDING is the normal overlapped path: the harvest runs the transcription. Any
+            // OTHER error means no completion will arrive, so the operation owes nothing -- drop the
+            // pending work rather than leave it for the next submit on this waiter to inherit.
+            if (!AreEqual(err, ERROR_IO_PENDING)) {
+                golib.GoAsyncIO.CompleteOperation(Ꮡoverlapped, 0);
+            }
+            return err;
+        }
+
+        // Completed SYNCHRONOUSLY: the data is already staged, and an FD carrying skipSyncNotif never
+        // harvests, so transcribe now. CompleteOperation removes before it runs, so a later harvest
+        // of the same operation cannot decode twice.
+        golib.GoAsyncIO.CompleteOperation(Ꮡoverlapped, (nint)recvd);
+        return default!;
+    }
+
 }

@@ -1637,6 +1637,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckTypeSwitchTagShadowRename() => CheckTarget("TypeSwitchTagShadowRename");
 
     [TestMethod]
+    public void CheckUdpLoopbackRoundTrip() => CheckTarget("UdpLoopbackRoundTrip");
+
+    [TestMethod]
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
 
     [TestMethod]
