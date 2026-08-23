@@ -250,6 +250,24 @@ site.
    `m_array` via `internal`, enumerated and dispositioned span-path / arithmetic-safe / named-panic
    **before the first commit**. The sibling arc made this its first commit; the SiginfoChild lesson
    applied preventively.
+
+   **Run already, because it sizes the whole proposal** (2026-08-23): **31 `m_array` touches in
+   `array.cs`**, and the blast radius is much smaller than the slice arc's — the great majority are
+   CONSTRUCTORS (`m_array = …`, `m_length = m_array.Length`), which are the managed path and change
+   not at all. Only four places need a real disposition:
+
+   | member | line | disposition |
+   |:--|--:|:--|
+   | `private T[] Backing => m_array ?? []` | 271 | **THE hot read path** — every indexer, enumerator and bulk helper funnels through it. Becomes the span/discriminant seam; this is where §3.3's "pay the discriminant once per operation" lives. |
+   | `public T[] Source => m_array` | 257 | ⚠ **the one member whose contract cannot be honored natively** — it hands out the backing `T[]`, and a native-backed array has none. See ⟨OQ-6⟩. |
+   | `Array IArray.Source => m_array` | 604 | the interface form of the same problem, same ruling. |
+   | `builtin.GoZero` fill | 419 | writes a fresh managed array but READS `Backing[m_low + i]`, so it rides on `Backing`'s disposition. |
+
+   `Alias(slice<T>, length)` (166) reads `source.m_array` and stays managed-only by construction.
+   That is the entire census: **one hot path, one escape hatch (twice), one rider.** For comparison
+   the sibling arc's equivalent census drove its whole first commit — `array<T>` is the cheaper
+   member of the family to convert, which is itself an argument for (1)-as-symmetry over any new
+   type.
 2. **A GolibTests family** (`NativeArrayViewTests`): both regimes from §1.1 as explicit assertions
    (zeroed → correct length and contents, not `0`; `0xAB`-filled → real bytes, not a fabricated
    reference); index read/write reaching real memory verified through a second view; the
@@ -294,6 +312,15 @@ site.
   here after all and §4.8 proceeds as ratified. *Recommendation:* **run it in this arc's gate pass
   and report the answer to the §4.8 owner** — it is one run and it retires or confirms a ratified
   design.
+* **⟨OQ-6⟩ — what does `Source` do on a native-backed array?** The census (§6(1)) makes this the one
+  member whose contract is unsatisfiable: it returns the backing `T[]`, and there is none. Options:
+  **materialize a copy** (safe, silent, and wrong for any caller expecting aliasing — the exact
+  snapshot bug the slice arc existed to kill), or **panic by name** (loud, honest, and it may fire
+  on a path that only wanted to read). *Recommendation:* **panic by name**, on the same reasoning as
+  §4 — a native array reaching a `T[]`-shaped consumer is a real mismatch, and silently copying it
+  is how the snapshot class got its foothold in the first place. The unfiltered `.Source` reference
+  count outside golib is large (582, receiver-type unseparated), so the implementation census owes
+  the array-typed subset before this fires.
 * **⟨OQ-5⟩ — who implements.** *Recommendation:* **a golib lane with the full envelope**, sized like
   the sibling arc, with §6(1)'s census as the first commit. This lane (R) holds the netpoll context
   and the measurements; either is defensible, and I have no preference beyond not splitting the
