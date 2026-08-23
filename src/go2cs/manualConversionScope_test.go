@@ -347,3 +347,27 @@ func (c *copyChecker) check() {}
 		}
 	}
 }
+
+// The UDP send helpers are hand-owned on WINDOWS only: their bodies live in
+// internal/syscall/windows/windows/net_windows_impl.cs, and the linux/darwin flavors of this package
+// do not compile that folder at all -- displacing them there would leave the declaration unfilled.
+func TestWSASendtoIsScopedToWindowsOnly(t *testing.T) {
+	for _, name := range []string{"WSASendtoInet4", "WSASendtoInet6"} {
+		entry, ok := manualConversionFuncs["internal/syscall/windows"][name]
+
+		if !ok {
+			t.Fatalf("internal/syscall/windows.%s is not registered; the hand-own would be shadowed "+
+				"by the generated body that hands the kernel a managed sockaddr", name)
+		}
+
+		if !entry.includes("windows") {
+			t.Errorf("%s must be displaced on windows -- that is where the hand-own lives", name)
+		}
+
+		for _, goos := range []string{"linux", "darwin"} {
+			if entry.includes(goos) {
+				t.Errorf("%s must NOT be displaced on %s: no hand-own exists there", name, goos)
+			}
+		}
+	}
+}

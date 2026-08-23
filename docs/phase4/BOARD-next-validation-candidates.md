@@ -18481,4 +18481,46 @@ hand-own reaching a generated `mod*`/`proc*` needs this. (R, found by crash whil
 `WSASendtoInet4`.)
 ---
 
+## Windows UDP: the send seam LANDED, and the read is the sixth struct-passing sighting (R, 2026-08-23)
+
+`internal/syscall/windows`' two `WSASendtoInet4/6` linkname declarations were
+PartialStubGenerator stubs, so every datagram send on Windows threw. They are hand-owned now
+(`windows/net_windows_impl.cs`), submitting through the golib seam ratified as netpoll design
+§4.7 — so `syscall` and `internal/syscall/windows` share ONE operation record without `syscall`
+growing a Go-shaped public seam. **Windows sends datagrams.**
+
+**The read does not, and the measurement is the point.** With the send fixed,
+`UdpLoopbackRoundTrip` reaches `ReadFromInet4` and panics `index out of range [0] with length 0`
+in `rawToSockaddrInet4`. Attribution, because it is easy to get wrong: the SAME
+`(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(...))` round-trip runs in the WRITE direction at
+`fd_windows.cs:1277` and works (TCP exercises it), so the round-trip is innocent. The difference
+is the box — `@new<syscall.RawSockaddrAny>()`, managed arrays inside, handed to the kernel by
+address. Per the AV-vs-panic rule, a clean bounds panic means the array is EMPTY, i.e. nothing was
+materialised there. **Sixth confirmed instance of the struct-passing class**, on the DECODE side.
+Pre-existing and previously unreachable (the send stub threw first) — the `LocalTimeZone` pattern
+again: a real implementation exposes what the stub hid.
+
+Its remedy is NOT this change's shape. The received address arrives asynchronously, so a native
+staging buffer must be decoded at HARVEST — §4.3's decode-side problem, shared with `AcceptEx`'s
+output buffer. `UdpLoopbackRoundTrip` therefore stays OUT of tree (registered it fails Windows,
+unregistered it fails solution-integrity) and registers with the recv increment; it is
+Linux-proven and parked.
+
+## Process-global registration and fake-based tests are in tension — resolve it INTERNALLY (R, 2026-08-23)
+
+`syscall` registered its async operation factory lazily, from a TCP-shaped code path. A
+datagram-only program touches none of it, so the first UDP send died with `no operation factory
+registered`. Registering in a `[ModuleInitializer]` fixes it (the corpus already uses module
+initializers for Go's `init()`), but it means `syscall` claims the process-global factory in any
+process that LOADS it — including GolibTests, which references `core/syscall`.
+
+Signature to recognise: **tests that pass filtered and fail in the full suite.** Five of six new
+primitive tests did exactly that; they could not win a registration race against a module
+initializer no matter how they were ordered. The wrong fix is relaxing the public one-factory rule
+so the tests pass — that rule is the property the seam exists to enforce (two owners for in-flight
+operations is the failure it refuses). The right fix is an `internal` swap granted to GolibTests
+through the `InternalsVisibleTo` golib already carries. Generalises beyond this seam.
+
+---
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

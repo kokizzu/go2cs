@@ -830,6 +830,69 @@ this section removes.
   on both platforms. *Recommendation:* **land it in the same change**, since its whole point is to be
   the two-platform gate for this seam, and it is written and Linux-proven already.
 
+#### 4.7.6 What the implementation measured — LANDED send-side, and the answer to ⟨OQ-C⟩
+
+Implemented under the five rulings (lane R, 2026-08-23). The seam works: **Windows now sends
+datagrams**, through exactly the five steps §4.7.3 specified, with no public surface added to
+`syscall`. Four things the implementation learned that the proposal could not:
+
+**1. ⟨OQ-C⟩ is answered, and the answer is YES — the recv path carries the class too.** With the
+send fixed, `UdpLoopbackRoundTrip` on Windows no longer throws the stub; it reaches the READ and
+dies there:
+
+```
+panic: runtime error: index out of range [0] with length 0
+  at internal/poll.rawToSockaddrInet4        fd_windows.cs:1300
+  at internal/poll.(*FD).ReadFromInet4       fd_windows.cs:621
+```
+
+The attribution matters, because the shape at fault is used on BOTH directions and only one fails.
+`sockaddrInet4ToRaw` (fd_windows.cs:1277) performs the *identical*
+`(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(raw.of(…ᏑPort)))` round-trip in the WRITE direction
+and works today — TCP exercises it. So the round-trip is NOT the defect. What differs is the BOX:
+the read hands `@new<syscall.RawSockaddrAny>()` — a managed struct whose `Addr`/`Zero`/`Pad` are
+managed arrays — straight to the kernel through `WSARecvFrom`, and decodes it afterwards. By this
+project's own AV-vs-panic triage rule (golib's `array<T>` indexer is bounds-checked, so a clean panic
+means an EMPTY array and an AccessViolation means a CORRUPTED one), an empty array says nothing was
+ever materialised at that address. That is the struct-passing class, sixth confirmed instance, on the
+DECODE side.
+
+**It is pre-existing, not introduced.** It was simply unreachable: the send stub threw first, so no
+Windows program ever completed a UDP read. This is the `LocalTimeZone` pattern exactly — binding a
+real implementation exposes the defect the stub was hiding.
+
+**2. ⟨OQ-E⟩ therefore cannot be satisfied yet, and the guard stays out of tree.** Its whole purpose
+is to pass on both platforms; with the read broken it cannot. §4.7.4 priced this exact position as
+the cost of doing nothing, and the send fix has now moved the guard from *"blocked on the submit"* to
+*"blocked on the decode"* — one wall, not two. The source stays parked, Linux-proven, and registers
+with the recv increment. **The remedy is NOT a same-lines extension of this change:** the received
+address arrives asynchronously, so a native staging buffer must be decoded at HARVEST time, which is
+§4.3's decode-side problem (the one `AcceptEx`'s output buffer also has) rather than this section's
+submit-side one.
+
+**3. The factory must be registered at ASSEMBLY LOAD, not on first use — measured by failure.**
+`syscall` registered its operation factory lazily, from `operationFor`, which only a TCP-shaped
+submit reaches. A program that only ever sends datagrams calls nothing in that file, so the first UDP
+send failed with `GoAsyncIO: no operation factory registered`. A `[ModuleInitializer]` fixes it and
+needs no new mechanism — the corpus already uses module initializers to run Go's package `init()`.
+
+**4. That fix has a cost, and it is paid in the TESTS, not in production.** Registering at assembly
+load means `syscall` claims the process-global factory in any process that loads it — including
+GolibTests, which references `core/syscall`. Five of the six new primitive tests passed filtered and
+failed in the full suite, which is the order-dependence signature: the tests could never win the
+registration race against a module initializer. Relaxing the public one-factory rule to make them
+pass would have destroyed the property the seam exists to enforce, so the rule stayed strict and the
+swap became `internal`, granted to GolibTests through the `InternalsVisibleTo` golib already had.
+That is the S2b *replaceable sink* lesson arriving a second time, and it generalises past this seam:
+**process-global registration and fake-based tests are in tension, and the honest resolution is an
+internal test seam, never a weakened public contract.**
+
+A fifth, cheap and easy to lose (also on the board): a hand-own must not initialise a `LazyProc` in a
+**field initializer** that reads a generated sibling's field. C# orders static field initializers
+within a type but **not across the files of a partial class**, so `= modws2_32.NewProc("WSASendTo")`
+ran while the generated `modws2_32` was still null and the first send died inside `LazyDLL.Load()`.
+Defer with `??=`.
+
 ## 5. The deadline/unblock story — the hard part, priced honestly
 
 This section is the reason the board said "a deadline/unblock story to settle, not a wrapper

@@ -487,4 +487,24 @@ partial class syscall_package
 
         return readNativeSockaddr(buffer, addrlen);
     }
+
+    // ---- the datagram seam: what internal/syscall/windows's UDP hand-own consumes ----------------
+    //
+    // The header above named this exact need and left it: "WSASendto / wsaSendtoInet4 /
+    // wsaSendtoInet6 -- the UDP send path -- still pass the address returned by `sockaddr()`, which
+    // is not a native image... writeNativeSockaddr is what they would need." A suite has now REACHED
+    // them (the UdpLoopbackRoundTrip guard), which is the board's own trigger for fixing a censused
+    // wrapper, so this exposes the encode rather than duplicating it.
+    //
+    // Symmetric with syscall/linux/sockaddr_linux_impl.cs's seam and ruled the same way
+    // (DESIGN-linux-udp.md ⟨OQ-2⟩): ONE definition of what a Go Sockaddr looks like to the kernel,
+    // reachable across the assembly boundary, spelled `Go…` so it reads as go2cs machinery rather
+    // than Go API. Typed to the two INET families so the caller carries no layout knowledge.
+    public const int GoNativeSockaddrLen = nativeSockaddrLen;
+
+    public static unsafe (int32 len, error err) GoWriteNativeSockaddrInet4(ж<SockaddrInet4> sa, byte* buffer) =>
+        writeNativeSockaddr(new SockaddrInet4жΔSockaddr(sa), buffer);
+
+    public static unsafe (int32 len, error err) GoWriteNativeSockaddrInet6(ж<SockaddrInet6> sa, byte* buffer) =>
+        writeNativeSockaddr(new SockaddrInet6жΔSockaddr(sa), buffer);
 }
