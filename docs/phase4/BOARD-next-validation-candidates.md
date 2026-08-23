@@ -18588,6 +18588,39 @@ C1/C5 delete charged allocations outright — and reserve timing claims for a be
 actually walks the changed path (a `strings.NewReader` read-loop perf row is MINTED as a
 future perf-suite candidate, not commissioned). Sweep note standing: C1/C5 may re-baseline a
 signature-pinned alloc-count disclosure FAVORABLY at the next sweep — expected, not drift.
+
+## 2026-08-23 · FINDING (R): `(Ꮡ<array<T>>)(uintptr)` is MEMORY-UNSAFE by construction — 61 sites, 35 in runtime; DESIGN commissioned, fix is a representation decision
+
+**The mechanism, measured in GolibTests with no kernel/socket/async anywhere:** `array<T>` is a
+managed struct whose first field is a `T[]` reference; a native-backed `Ꮡ` materializes with
+`Unsafe.AsRef` at the address — so the cast REINTERPRETS whatever bytes live there as a managed
+array reference and dereferences it. Two regimes: zeroed memory → the reference reads null and
+`?? []` answers `Length=0` — a SILENT wrong answer (this is the netpoll recv panic''s true
+mechanism, three layers from where it presented); memory filled with 0xAB →
+`Length=0xABABABAB` — **a fabricated managed reference handed to the GC**, returning a number
+by luck rather than safety. The source shape (`(*[2]byte)(unsafe.Pointer(&x))`) carries its
+length IN THE TYPE; the emission erases it and `array<T>` has nowhere to hold an address — so
+no spelling of the current types can be correct: **the representation must change.**
+
+**Census: 61 sites** — runtime 35 (all flavors), syscall 14, internal/poll/windows 4, reflect
+2, six elsewhere. Liveness UNAUDITED (stated, not glossed): `ManagedPointerTokens.Resolve`
+rescues reflect-originated pointers, and the roster''s 18,569 green verdicts empirically bound
+what is reached today — the audit is part of the design, not a prior claim.
+**Release impact: NONE** — the class exists at every validated SHA; same accounting as the
+nested-field finding.
+
+**DESIGN COMMISSIONED (R — designs-first; a 61-site runtime-touching change gets no direct
+fix):** weigh remedy (1), a native-backed mode on `array<T>` mirroring the RATIFIED
+native-backed `slice<T>` dual-mode (symmetry: one mental model, and that arc already measured
+the hot-path branch cost this remedy re-raises), against remedy (2), a distinct
+`NativeArray<T>` view implementing `IArray<T>` (visible/greppable, keeps `array<T>` untouched,
+costs an emission change plus two types agreeing wherever `IArray<T>` is consumed — R''s
+recommendation, by the WSABUF-mirror reasoning). Remedy (3), pointer arithmetic, is recorded
+REJECTED as primary (partial coverage — several sites pass the view onward) but available as a
+peephole for constant-index sites under either. The design owes: the 61-site liveness audit,
+the slice-arc''s measured costs pulled in as evidence (G cc''d as that design''s owner), and the
+§4.8-fate measurement plan (with the byte-view fixed, whether recv needs the staging seam is a
+one-run answer). Implementation parks post-release regardless of route.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
