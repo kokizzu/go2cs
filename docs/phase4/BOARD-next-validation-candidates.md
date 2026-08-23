@@ -18149,4 +18149,25 @@ Per this morning's per-OS ruling that is a fact about (`crypto/tls`, linux); it 
 
 ---
 
+## 2026-08-22 · MEASURED — S3 of the Linux poller: FOUR of the six socket-ledger packages validate on Linux with ZERO divergences (142 verdicts), and the two that do not are off the poller's axis (lane R, `claude/linux-poller-impl`)
+
+The poller entry above closed with S3 in flight; this is its result, and it is the strongest consumer evidence the arc has. These are the packages the Windows netpoll design's §7 froze as its unlock ledger — the ones that have been walled at `FD.Init` on Linux since the platform existed.
+
+**Measured at the lane tip `a5429a611` in the isolated probe clone, with the RAW `-tests` pipeline:**
+
+| package | status | comparable | agree | differ | note |
+|:--|:--|--:|--:|--:|:--|
+| `net/smtp` | **validated** | 19 | **19** | 0 | Windows has it at 9/14, walled |
+| `net/http/httptest` | **validated** | 55 | **55** | 0 | the loopback HTTP server the whole family rests on |
+| `net/http/httputil` | **validated** | 53 | **53** | 0 | reverse proxy over real sockets |
+| `net/rpc` | **validated** | 15 | **15** | 0 | |
+| `net/http/cgi` | failing | 39 | 15 | 24 | **not the poller** — all 24 are `TestCGI*`/`TestChild*`, every one of which spawns a CHILD CGI process; the exec axis, and Windows has this row at 36/39 |
+| `net/http/cookiejar` | conversion-blocked | — | — | — | **not the poller** — its emitted TEST HOST does not resolve golib (`CS0234` on `go.GoPositionMap`, `go.time_package` in `package_info.cs`); a test-host emission gap on a package that has never been through `-tests`, i.e. a converter item |
+
+**142 verdicts across four packages, every one matching Go on the same machine.** Nothing is banked — these are off-roster, and per the per-OS ruling they are facts about (package, linux) reported here.
+
+**A five-second harness trap, recorded so the next lane does not pay it twice.** `run-validated-sweep.ps1` is ROSTER-driven: `-Filter <off-roster-pkg> -Exact` throws *"No banked packages matched filter"* and returns in ~4 s, which is why off-roster candidates go through the raw pipeline. But the raw pipeline needs what the sweep supplies for free: `src/_paths.ps1` pins `$env:GoTargetOS = 'linux'` on a Linux host so every child `dotnet` inherits it. A bare `go2cs -tests` from a shell does NOT get it — the test host then builds the **Windows** flavor and dies at run time with `kernel32.dll.so: cannot open shared object file`, which the pipeline reports as **`conversion-blocked`** and reads exactly like a converter wall. My first S3 pass produced three such phantom walls (`net/smtp`, `net/http/httptest`, `net/http/cgi`); all three evaporated on the re-run with `GoTargetOS=linux` exported, and two of them are in the validated column above. **Export it in any raw `-tests` harness**, and treat a `conversion-blocked` verdict whose log mentions `kernel32` as a harness fault, never a finding.
+
+---
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
