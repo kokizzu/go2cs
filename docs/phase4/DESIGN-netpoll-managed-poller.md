@@ -832,6 +832,17 @@ this section removes.
 
 #### 4.7.6 What the implementation measured — LANDED send-side, and the answer to ⟨OQ-C⟩
 
+> **⚠ CORRECTED 2026-08-23, same lane, after measuring what this section asserted.** Point 1 below
+> attributes the read panic to the struct-passing class on the grounds that the write direction
+> "works today — TCP exercises it". **Both halves are wrong.** TCP does not exercise it
+> (`sockaddrInet4ToRaw`'s only callers are `WriteMsg`/`WriteMsgInet4`/`WriteMsgInet6`, which nothing
+> on the roster reaches), and the real defect is `(ж<array<T>>)(uintptr)` reinterpreting native bytes
+> as a managed array reference — measured in GolibTests with no kernel involved, and memory-unsafe
+> rather than merely wrong. See the board entry *"`(ж<array<T>>)(uintptr)` is MEMORY-UNSAFE by
+> construction"*. The rest of this section — the stub, the seam, the module-initializer and
+> test-seam lessons — stands. Left in place rather than rewritten: the reasoning error is the more
+> useful record.
+
 Implemented under the five rulings (lane R, 2026-08-23). The seam works: **Windows now sends
 datagrams**, through exactly the five steps §4.7.3 specified, with no public surface added to
 `syscall`. Four things the implementation learned that the proposal could not:
@@ -908,6 +919,14 @@ Defer with `??=`.
 > golib primitives this reuses rather than duplicates.
 
 #### 4.8.1 What reached it, and what it measured
+
+> **⚠ CORRECTED 2026-08-23 — §4.8.1's attribution is wrong; see the note in §4.7.6.** The recv panic
+> is NOT the struct-passing class: it is `(ж<array<T>>)(uintptr)` reinterpreting native bytes as a
+> managed array reference (61 corpus sites, 35 in `runtime`). **What this does NOT invalidate:** the
+> §4.8.3 hook census, the §4.8.5 coverage table, and ⟨OQ-G⟩, which rests on the documented
+> `WSASendTo` contract rather than on this attribution. **What it leaves open:** whether the receive
+> needs this section's seam AT ALL — the panic fired before anything could observe whether the kernel
+> filled the managed box, so there is no evidence either way until the byte-view defect is fixed.
 
 §4.7 made Windows SEND datagrams. `UdpLoopbackRoundTrip` therefore stopped dying at the submit and
 started dying at the READ:
