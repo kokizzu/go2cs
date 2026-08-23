@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
 [![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@v0.25.1--0.20240603202750--6249541f2a6c-00ADD8?logo=go)](https://pkg.go.dev/golang.org/x/net@v0.25.1-0.20240603202750-6249541f2a6c/dns/dnsmessage)\
-[![Source](https://img.shields.io/badge/Source-@v0.25.1--0.20240603202750--6249541f2a6c-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/net/dns/dnsmessage) [![Source](https://img.shields.io/badge/Source-@1.23.1.6-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.6/src/core/vendor/golang.org/x/net/dns/dnsmessage)
+[![Source](https://img.shields.io/badge/Source-@v0.25.1--0.20240603202750--6249541f2a6c-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/vendor/golang.org/x/net/dns/dnsmessage) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/vendor/golang.org/x/net/dns/dnsmessage)
 
 Package dnsmessage provides a mostly RFC 1035 compliant implementation of DNS message packing and unpacking.
 
