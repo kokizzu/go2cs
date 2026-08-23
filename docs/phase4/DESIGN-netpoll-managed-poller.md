@@ -830,7 +830,7 @@ this section removes.
   on both platforms. *Recommendation:* **land it in the same change**, since its whole point is to be
   the two-platform gate for this seam, and it is written and Linux-proven already.
 
-### 4.8 The DECODE side — operation-owned native staging, decoded at HARVEST — PROPOSED (2026-08-23, lane R)
+### 4.8 The DECODE side — operation-owned native staging, decoded at HARVEST — RATIFIED (coordinator, 2026-08-23) — ⟨OQ-F⟩ callback, ⟨OQ-H⟩ demand order, ⟨OQ-I⟩ both-platform-in-one-change, all per recommendation. **⟨OQ-G⟩ AMENDED to FIX-BY-DEFAULT in this increment**: a use-after-return handed to the kernel is the struct-passing family’s LIFETIME sibling, and that class does not get empirical exoneration — the lane’s own words ("has not misbehaved, which proves nothing about a race") are the ruling’s grounds. The measurement that stands is the documented contract (the overlapped parameter-lifetime remarks), cited in the fix’s header; no race-hunt is owed, and the three-line staging lands with this increment unconditionally
 
 > **STATUS: PROPOSED. Nothing in this section is ratified**; §4.8.7 collects the questions that need
 > a ruling before implementation. **This section AMENDS §4.3**, whose sub-wall (1) already named this
