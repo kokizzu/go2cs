@@ -351,3 +351,4 @@ silicon (R carries the larger part). Same-machine A/Bs (the scout, the four-cell
 unaffected -- only cross-machine ratios are. The hop shard map's speed factors come from FRESH
 same-workload calibration at campaign recon, never from pre-anchor history.
 
+**CI overflow capacity**: the dispatch-only OS matrix (`.github/workflows/os-matrix.yml`, guide: [`docs/CIMatrix.md`](../CIMatrix.md)) supplies the fleet's missing platforms -- both darwin legs, a native-Linux control, and hop-shard overflow. Never a merge gate; the triggerer relays results to the board/mailbox.
