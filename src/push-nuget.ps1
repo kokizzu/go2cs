@@ -733,6 +733,20 @@ foreach ($rid in $buildOrder) {
     & dotnet build $slnx -c $Configuration -p:GoTargetOS=$goos -p:GeneratePackageOnBuild=false --no-incremental -p:UseSharedCompilation=false --nologo -v m
     if ($LASTEXITCODE -ne 0) { throw "[$rid] dotnet build failed ($LASTEXITCODE) at -p:GoTargetOS=$goos -- fix build errors before packing" }
 
+    # go2cs-gen is GoTargetOS-neutral, yet under the FULL script's solution build its output copy has
+    # been observed missing at pack time (3 of 3 release runs, R 2026-08-23) while the identical build
+    # invoked in isolation produces it (3 of 3 probes) -- an unrooted solution-build race. Assert and
+    # repair deterministically before the --no-build pack: the direct build is a cheap no-op when the
+    # output already exists, and pack cannot proceed without it. Root-cause is boarded (the
+    # release-machinery hardening item); this is its assert half landed on the release's critical path.
+    $genOut = Join-Path $PSScriptRoot 'gen/go2cs-gen/bin' | Join-Path -ChildPath $Configuration | Join-Path -ChildPath 'netstandard2.0'
+    if (-not (Test-Path (Join-Path $genOut 'go2cs-gen.dll'))) {
+        Write-Step "[$rid] go2cs-gen output missing after the solution build -- repairing with a direct project build"
+        & dotnet build (Join-Path $PSScriptRoot 'gen/go2cs-gen/go2cs-gen.csproj') -c $Configuration -p:UseSharedCompilation=false --nologo -v m
+        if ($LASTEXITCODE -ne 0) { throw "[$rid] go2cs-gen repair build failed ($LASTEXITCODE)" }
+        if (-not (Test-Path (Join-Path $genOut 'go2cs-gen.dll'))) { throw "[$rid] go2cs-gen output still missing after a direct build -- investigate before packing" }
+    }
+
     # --no-build packs exactly what the pass above produced; the same -p:GoTargetOS is required here
     # too, because it selects the conditioned <ProjectReference> groups the .nuspec is derived from.
     Write-Step "[$rid] Packing -> $flavorOut"
