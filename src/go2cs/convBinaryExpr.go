@@ -1884,9 +1884,18 @@ func (v *Visitor) constExprHasBeyondInt32Operand(expr ast.Expr) bool {
 			return true
 		}
 
+		// Only an UNTYPED subexpression counts. A typed conversion carries its own width and emits
+		// correctly on its own — `^uint32(0)` is 4294967295 but renders as a uint32 expression, so
+		// runtime's `^uint32(0)/8 + 1` never needed a fold; counting it flattened the whole
+		// class_to_divmagic table into 68 unchecked casts (regen 4). The shapes that genuinely
+		// force the `long` widening are untyped: `1<<32 - 1`, `1<<32 - 2`.
 		tv, recorded := v.info.Types[inner]
 
 		if !recorded || tv.Value == nil {
+			return true
+		}
+
+		if basicInner, isBasic := tv.Type.(*types.Basic); !isBasic || basicInner.Info()&types.IsUntyped == 0 {
 			return true
 		}
 
