@@ -240,7 +240,7 @@ files. Cleanly extractable; the PoC makes go2cs the registry's first producer AN
 
 | Stage | Content | Gate |
 |:--|:--|:--|
-| S0 | Registry repo: schema, CONTRIBUTING/trust policy, Pages site over the raw file, domain wiring | site renders from file; raw URL serves text/plain |
+| S0 | Registry repo: schema, CONTRIBUTING/trust policy, PR template (the §3 checks stated as the contributor's own checklist — owner ruling 2026-08-23), Pages site over the raw file, domain wiring | site renders from file; raw URL serves text/plain |
 | S1 | PoC steps 1–2: extraction + go2cs consumes the module | full converter gates (the 29-file update is converter surface) |
 | S2 | §5 packing convention + PoC step 3 publish | pack round-trip; surface validation passes against the published package |
 | S3 | Converter integration §4 (map fetch, resolution arm, lock, provenance, CLI) | new integration tests per seam; CNR byte-identical outside `-recurse=nuget`; existing `TestRecurseNuGetReferences` extended |
@@ -253,18 +253,28 @@ the .NET 10 hop decides the deployment shape it would emit references for. ⟨OQ
 
 ---
 
-## 8. Owner decisions ⟨OQ⟩
+## 8. Owner decisions ⟨OQ⟩ — all five RULED or in motion (owner, 2026-08-23)
 
-1. **Registry repo name and org** (e.g. `ritchiecarroll/nugetgo`), and whether the mapping file's
-   license is CC0/public-domain (recommended — mapping facts should be maximally reusable).
-2. **Default-on vs default-prompt** for community-status mappings: recommendation — canonical
-   mappings apply by default; `community` mappings apply by default BUT the provenance table
-   makes them unmissable, and a `-nuget-map-canonical-only` switch exists for the cautious.
-3. **Reserve the `go.` NuGet ID prefix** with NuGet.org's prefix-reservation program, if not
-   already held — it protects the stdlib's namespace and the recommended third-party convention.
-4. **Multi-package Go modules**: one nupkg with one root ID (v1 recommendation) vs per-package
-   IDs; decide when the first real multi-package module shows up, not before.
-5. **S3 timing** relative to the .NET 10 hop (recommendation above: after).
+1. **Registry repo name and org** — **RULED: accepted as recommended** (`ritchiecarroll/nugetgo`,
+   mapping file CC0/public-domain), **amended**: the repo ships a PR template stating the §3
+   checks as the contributor's own checklist, and the owner's expectation is explicit that
+   §3's pipeline — validate everything, URLs resolve, the NuGet package is visible, surface
+   meets expectations, then auto-merge **only** when canonical *by validation, never by the
+   contributor's claim* — is the whole of the merge policy. (§3 already specifies exactly this;
+   the ruling confirms it as intent, and S0 gains the template.)
+2. **Default-on vs default-prompt** — **RULED: as recommended.** Canonical and community
+   mappings both apply by default; the provenance table makes community rows unmissable;
+   `-nuget-map-canonical-only` exists for the cautious.
+3. **Reserve the `go.` NuGet ID prefix** — **IN MOTION.** The reservation request is submitted
+   to NuGet.org's prefix-reservation program; they have acknowledged receipt, no response yet.
+   Remains open until the program answers either way.
+4. **Multi-package Go modules** — **RULED: deferred as recommended.** One nupkg with one root ID
+   is the v1 posture; the real decision waits for the first real multi-package module.
+5. **S3 timing** — **RULED: as recommended, AFTER the .NET 10 hop** (the hop decides the
+   deployment shape S3's emitted references bind to). Note for readers: "S3" is §7's staged
+   landing, stage 3 — the converter-integration stage (map fetch, resolution arm, lock file,
+   provenance, CLI), the only stage that touches emission. Stage ladders are per-document:
+   this S3 is unrelated to any other design doc's S-numbered ladder.
 
 ---
 
