@@ -566,6 +566,25 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 		// Go uint render under different names for the same native width; both are in scope.
 		csType := v.getCSharpTypeName(basic)
 
+		// A NARROWER unsigned target (uint8/16/32) is folded too, and for a reason the wider
+		// arms never meet: the operator form's own OPERAND overflows. `1<<32 - 2` against a
+		// `uint32` slot emitted `4294967296L - 2` — the literal path widens the beyond-int32
+		// operand to `long` (correctly, in isolation), and C# has no implicit `long`→`uint`
+		// conversion, so the assignment fails with CS0266 even though the FOLDED value fits the
+		// target exactly. The second darwin census surfaced it in os/user's
+		// `*_C_pw_uidp(&sp) = 1<<32 - 2` (`_C_uid_t = uint32`), which is Go's own negative-test
+		// constant. Folding first and casting the RESULT is what makes it representable, in the
+		// same parenthesized form the other arms use.
+		if csType == "uint8" || csType == "uint16" || csType == "uint32" {
+			u, exact := constant.Uint64Val(val)
+
+			if !exact {
+				return ""
+			}
+
+			return "unchecked((" + csType + ")(" + strconv.FormatUint(u, 10) + "UL))"
+		}
+
 		if csType != "uint64" && csType != "nuint" && csType != "uintptr" {
 			return ""
 		}

@@ -2923,7 +2923,18 @@ func (v *Visitor) applyImplicitConversion(funcType types.Type, arg ast.Expr, tar
 				// attribute cannot name K/V (internal/concurrent's indirect[K,V] GoImplicitConv
 				// record emitted GoImplicitConv<Δindirect<K, V>, ж<Δindirect<K, V>>>, CS0246 x4
 				// - and one bad record kills the whole generator run).
+				// An operand that is an ALIAS TO A PRIMITIVE cannot take part either, for the
+				// same "one bad record kills the generator run" reason. `type _C_int = int`
+				// emits as `global using _C_int = int` — a name for a BCL primitive, with no
+				// wrapper struct and no `.Value`. As the record's HOST it mints a phantom
+				// (`partial struct UInt32`, CS1729 on a constructor the primitive lacks); as the
+				// record's SOURCE it renders as a type name the operator body dereferences
+				// (`new addrinfoErrno((nint)src.Value)` over `@int`, CS0246). Both shapes came
+				// from the second darwin census's cgo-flavor leaves, whose C-type mirrors are
+				// declared entirely as such aliases. Nothing is lost by declining: a conversion
+				// involving a primitive is what C#'s own numeric conversions already express.
 				if targetTypeName != argTypeName && !wrapperConversion && !typeContainsTypeParams(argType) && !typeContainsTypeParams(funcType) &&
+					!typeIsPrimitiveAlias(argType) && !typeIsPrimitiveAlias(funcType) &&
 					v.conversionRecordHasLocalOperand(funcType, argType, pointerBoxConversionRecord(argTypeName, targetTypeName)) {
 					// The recorded conversion type names use cross-package import aliases (e.g.
 					// `abi.Type`); register them so package_info.cs can emit a resolving `global using`.
@@ -3001,7 +3012,14 @@ func (v *Visitor) applyImplicitConversion(funcType types.Type, arg ast.Expr, tar
 
 				argTypeName := v.getCSharpTypeName(argType)
 
-				if targetTypeName != argTypeName && v.conversionRecordHasLocalOperand(funcType, argType, false) {
+				// A primitive-alias operand is excluded here for the same reason as in the struct
+				// branch below, and this is the arm that reaches it as the record's SOURCE: one
+				// LOCAL operand satisfies the locality test on its own, so `addrinfoErrno` (a real
+				// wrapper) admitted a record whose other side is `_C_int = int`, and the generated
+				// operator dereferenced `.Value` on a BCL primitive (`new addrinfoErrno((nint)
+				// src.Value)` over `@int`, CS0246 — net's darwin leaf, second darwin census).
+				if targetTypeName != argTypeName && !typeIsPrimitiveAlias(argType) && !typeIsPrimitiveAlias(funcType) &&
+					v.conversionRecordHasLocalOperand(funcType, argType, false) {
 					// The recorded conversion type names use cross-package import aliases (e.g.
 					// `driver.IsolationLevel`); register them so package_info.cs emits a resolving
 					// `global using` — the STRUCT-conversion branch above already does this, but the
@@ -3155,6 +3173,12 @@ func (v *Visitor) typeDeclaredInConvertedPackage(t types.Type) bool {
 	case *types.Named:
 		obj = declared.Obj()
 	case *types.Alias:
+		// An alias to a PRIMITIVE declares no C# type to host an operator on — see
+		// typeIsPrimitiveAlias, which both this predicate and the record-emission gate read.
+		if typeIsPrimitiveAlias(declared) {
+			return false
+		}
+
 		obj = declared.Obj()
 	default:
 		return false
@@ -5268,4 +5292,29 @@ func unparenthesize(expr ast.Expr) ast.Expr {
 
 		expr = parenExpr.X
 	}
+}
+
+// typeIsPrimitiveAlias reports whether a type is a Go ALIAS whose right-hand side is a primitive —
+// `type _C_int = int`, `type _C_gid_t = uint32`. Such an alias emits as `global using _C_int = int`:
+// a compile-time name for a BCL primitive, with no wrapper struct, no constructor and no `.Value`.
+//
+// It is the ONE definition of that shape, read by both places a GoImplicitConv record can go wrong
+// over one — conversionRecordHasLocalOperand (as the record's HOST: `partial struct UInt32` on a
+// primitive, CS1729) and the record-emission gate (as the record's SOURCE: `src.Value` on a
+// primitive-named operand, CS0246). The second darwin census surfaced both shapes at once, because
+// the cgo-flavor leaves declare their whole C-type mirror this way.
+//
+// A non-alias NAMED type over a primitive (`type Errno uintptr`) is deliberately NOT this shape: it
+// emits as a real [GoType] wrapper with a constructor and a Value, which is precisely what the
+// generator needs.
+func typeIsPrimitiveAlias(t types.Type) bool {
+	alias, isAlias := t.(*types.Alias)
+
+	if !isAlias {
+		return false
+	}
+
+	_, primitive := alias.Rhs().Underlying().(*types.Basic)
+
+	return primitive
 }
