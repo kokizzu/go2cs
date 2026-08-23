@@ -323,18 +323,15 @@ namespace BehavioralRunner
             return Report(results.Values, total.Elapsed);
         }
 
+        // The staleness question is answered by the SHARED ConverterBuildInputs (src/tests), not by a
+        // local *.go enumeration: an embedded template or a converter internal/ package changes what
+        // go2cs.exe emits while touching no top-level .go file, and a predicate that cannot see them
+        // reports "up to date" while every phase below validates the PREVIOUS emission -- false-green
+        // route #5 in CLAUDE.md. The same call is made by BehavioralTestBase and PerformanceRunner.
         private static bool EnsureConverterBuilt()
         {
-            if (File.Exists(s_go2csExe))
-            {
-                DateTime exe = File.GetLastWriteTimeUtc(s_go2csExe);
-
-                bool stale = Directory.GetFiles(s_converterSrc, "*.go")
-                    .Any(go => File.GetLastWriteTimeUtc(go) > exe);
-
-                if (!stale)
-                    return true;
-            }
+            if (!ConverterBuildInputs.IsConverterStale(s_converterSrc, s_go2csExe))
+                return true;
 
             Console.WriteLine("Building go2cs.exe (converter sources changed)...");
             ProcResult r = Exec("go", $"build -o \"{s_go2csExe}\"", s_converterSrc, s_buildOneTimeoutMs);
