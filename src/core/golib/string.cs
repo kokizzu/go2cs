@@ -141,10 +141,8 @@ public readonly struct @string :
     // A concrete slice<byte>/@string argument still prefers its own more-specific constructor.
     public @string(IByteSeq<byte> value)
     {
-        byte[] bytes = AllocationCounter.NewArray<byte>(value.Length);
-
-        for (nint i = 0; i < value.Length; i++)
-            bytes[i] = value[i];
+        // One interface call and one vectorized copy — see the matching slice<T> constructor.
+        byte[] bytes = AllocationCounter.CopyOf<byte>(value.ꓸꓸꓸ);
 
         m_value = bytes;
         m_offset = 0;
@@ -478,9 +476,16 @@ public readonly struct @string :
 
     public static implicit operator slice<rune>(@string value)
     {
-        AllocationCounter.Count();
-
-        return new slice<rune>(((IEnumerable<rune>)value).ToArray());
+        // ToRunes decodes straight into an exactly-sized array, and that array is freshly built
+        // and exclusively owned here, so the slice WRAPS it rather than copying it again.
+        //
+        // This used to go `((IEnumerable<rune>)value).ToArray()`, which decoded the string into an
+        // array (inside the rune enumerator, which calls ToRunes itself), yielded that array back
+        // one element at a time through an iterator, and let LINQ re-materialize it through its
+        // growth buffers — three passes and several allocations for a conversion Go performs with
+        // one. The explicit Count() went with it: ToRunes charges the copy it makes, so charging
+        // again here would report an object that is no longer allocated.
+        return new slice<rune>(value.ToRunes());
     }
 
     public static implicit operator @string(rune value)
@@ -490,7 +495,22 @@ public readonly struct @string :
 
     public static explicit operator rune(@string value)
     {
-        return value.ToRunes().FirstOrDefault();
+        // Only the FIRST rune is wanted, so decode only the first rune — this used to decode the
+        // whole string into an array and take element zero, which is unbounded work and an
+        // allocation for a fixed-size answer.
+        //
+        // The two branches mirror DecodeRunes exactly, because they have to agree: an empty string
+        // yields the zero rune (what FirstOrDefault returned over the empty array), and an invalid
+        // leading sequence yields U+FFFD — Go's own answer, and the reason .NET's maximal-subpart
+        // consumption is not consulted here either.
+        ReadOnlySpan<byte> bytes = value.Bytes;
+
+        if (bytes.IsEmpty)
+            return 0;
+
+        return Rune.DecodeFromUtf8(bytes, out Rune rune, out _) == OperationStatus.Done ?
+            rune.Value :
+            RuneReplacementChar;
     }
 
     public static implicit operator @string(slice<char> value)

@@ -207,3 +207,66 @@ change can invalidate a pinned disclosure in the right direction. The sweep afte
 should expect and re-baseline those, not read them as drift.
 
 *Census by read-only analysis lane, 2026-08-22. No files in the repo were modified.*
+
+---
+
+## Tranche 1 (C1–C5) — landed, and what the perf micro-gate could and could not say
+
+*Implementing lane G, 2026-08-23, branch `claude/span-tranche-c1c5`.*
+
+All five items landed as separate commits, plus C2b riding inside C2 as the census directed.
+
+**Gates:** GolibTests **276/276** (42 new guards) · CNR **byte-identical ×633** (which is what
+proves the tranche really was golib-only) · behavioral suite **PASS 606** (Output 580 pass / 26
+skip, 0 fail).
+
+**Two items were bigger than the census scoped them, both discovered by writing the guard:**
+
+- **C2b was two defects.** The double-offset was the banked finding. Writing its guard exposed a
+  second one in the same arm: `TypeExtensions.ConvertToType` answers the Go representation of what
+  a value *already is* — its own header says so — so the `(T1)` unbox threw `InvalidCastException`
+  for every genuinely different element pair. `int` → `long` crashed rather than converting. The
+  two are **inseparable for testing**: no plain-primitive pair both reaches that arm and survives
+  the cast, so a guard for the offset alone would have had to be built on a wrapper type chosen to
+  dodge the crash — a test written to pass. Both fixed together; all three `copy` fallbacks now
+  route through one `ConvertElement<T>`.
+- **C4 was solved by *narrowing*, not by adding.** The census proposed adding a `ReadOnlySpan`
+  overload beside the `Span` one, flagging "the corpus must not grow a CS0121". Adding it is what
+  would have *caused* that — two params-span candidates put an ambiguity in front of every
+  collection-expression call site. The existing overload was **widened** instead: its body only
+  ever read `elems`, a `Span` argument converts implicitly, and one span overload is strictly less
+  ambiguous than two.
+
+**The perf micro-gate: NO REGRESSION, and no demonstrable win either — the noise floor beat the
+effect size.** Measured as a paired same-session A/B (tip vs `39b651997`, back to back, `--no-aot`,
+5 runs), because on this laptop class an unpaired number is not evidence:
+
+| Benchmark | base | tip | Δ |
+|---|---:|---:|---:|
+| String | 1,209.6 | 1,225.9 | +1.3% |
+| StringView | 20.7 / 20.8 | 21.3 / 21.0 | +1.4% / +1.0% |
+| StringMatch | 984.6 | 991.8 | +0.7% |
+| **Sieve (control)** | 120.1 | 126.1 | **+5.0%** |
+
+**Read the control row and the Go column before reading anything else.** Sieve touches no string or
+byte-sequence path and moved *more* than every string row; and the **Go binaries moved too** —
+identical Go source, `String` +6.0% and `Sieve` +17% between legs. That is host drift, and it is
+several times the effect being looked for. The honest verdict is therefore: **no regression is
+detectable on the nearest rows, and no improvement is demonstrable from them.**
+
+That is not a disappointing result so much as a **mis-scoped instrument**, worth recording for
+whoever gates tranche 2. These items delete *allocations and passes*, not instructions in these
+benchmarks' hot loops, and the corpus witness the census itself named for C1 — `strings.Reader.Read`
+paying a full-tail allocation per read — is exercised by **none** of `PerfString`,
+`PerfStringView`, `PerfStringMatch` or `PerfSieve`. Where a win is claimable it is claimed by
+*counting*, not timing: C3's guard asserts the conversion costs **exactly one** charged allocation,
+and C1/C5 delete charged allocations outright.
+
+**For tranche 2:** either gate allocation-reducing items by allocation COUNT (the
+`AllocationCounter` pattern `ByteSeqAllocationTests` already uses, which is deterministic and
+host-independent), or add a benchmark that actually walks the changed path — a `strings.NewReader`
+read loop would cover C1 honestly. Timing these rows on a laptop mostly measures the laptop.
+
+**Also carried forward, for the next Phase-4 sweep:** C1 and C5 both delete charged allocations, so
+a signature-pinned alloc-count disclosure may re-baseline in the FAVORABLE direction. Expected, per
+this census's own process note — not drift.

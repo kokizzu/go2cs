@@ -815,7 +815,7 @@ public static partial class builtin
             else
             {
                 for (nint i = 0; i < min; i++)
-                    dst[i] = (T1)TypeExtensions.ConvertToType((IConvertible)src[i]!);
+                    dst[i] = ConvertElement<T1>(src[i]!);
             }
         }
 
@@ -837,7 +837,25 @@ public static partial class builtin
 
         if (min > 0)
         {
-            if (typeof(T1).IsAssignableFrom(typeof(T2)))
+            if (typeof(T1) == typeof(T2))
+            {
+                // The identical-element case, which is the ONLY one converted Go emits — Go's
+                // `copy` requires the element types to match. The test folds at JIT time, so this
+                // arm compiles to exactly one span copy and the fork below disappears from the
+                // dominant path: native-to-native and native-to-managed transfers vectorize
+                // instead of walking element by element, and the managed case reaches the same
+                // Buffer.Memmove Array.Copy would have. Overlap stays correct either way (Go
+                // permits it in copy, and CopyTo has memmove semantics).
+                //
+                // The Span<T2>→Span<T1> re-spelling is a reinterpret of the span header, not of
+                // the data: the two are the same runtime type here, which is exactly what the
+                // guard establishes and what MemoryMarshal.Cast cannot express on unconstrained
+                // type parameters.
+                Span<T2> source = src.ToSpan();
+
+                Unsafe.As<Span<T2>, Span<T1>>(ref source)[..(int)min].CopyTo(dst.ToSpan());
+            }
+            else if (typeof(T1).IsAssignableFrom(typeof(T2)))
             {
                 if (dst.IsNativeBacked || src.IsNativeBacked)
                 {
@@ -860,8 +878,11 @@ public static partial class builtin
             }
             else
             {
+                // Both indexers are window-relative (each adds its own Low and bounds-checks
+                // against Length), so adding Low here double-offsets — the rule the ISlice
+                // overload above states. Guarded by GolibTests.SliceCopyWindowTests.
                 for (nint i = 0; i < min; i++)
-                    dst[dst.Low + i] = (T1)TypeExtensions.ConvertToType((IConvertible)src[src.Low + i]!);
+                    dst[i] = ConvertElement<T1>(src[i]!);
             }
         }
 
@@ -931,8 +952,23 @@ public static partial class builtin
     /// </remarks>
     public static nint copy(in slice<byte> dst, in @string src)
     {
-        slice<byte> bytes = src;
-        return copy(dst, bytes);
+        // Go's `copy(b, s)` is ONE copy and no allocation. Binding the implicit
+        // `slice<byte>(@string)` operator here cost two of each: that operator materializes a
+        // charged full-LENGTH copy of the string's bytes — it must, since a slice is writable and
+        // a string backing must never become so — and the slice/slice copy then copied a second
+        // time into dst, even when dst was far shorter than the string. `strings.Reader.Read`
+        // binds this overload once per Read with the whole remaining tail, so every
+        // `strings.NewReader` consumer paid a full-tail allocation per read.
+        //
+        // The string is immutable and dst's window span already serves both backings, so the
+        // bytes go straight across. CopyTo's memmove semantics cover the one case where the two
+        // could share storage (a transient alias), which is the same guarantee Go's copy gives.
+        nint min = Min(dst.Length, (nint)src.Length);
+
+        if (min > 0)
+            src.Bytes[..(int)min].CopyTo(dst.ToSpan());
+
+        return min;
     }
 
     /// <summary>
@@ -958,11 +994,31 @@ public static partial class builtin
             else
             {
                 for (nint i = 0; i < min; i++)
-                    dst[i] = (T1)TypeExtensions.ConvertToType((IConvertible)src[i]!);
+                    dst[i] = ConvertElement<T1>(src[i]!);
             }
         }
 
         return min;
+    }
+
+    // The element conversion behind every `copy` fallback arm. Those arms run only when the source
+    // element type is NOT assignable to the destination's, which converted Go never produces (Go's
+    // `copy` requires identical element types) — they serve hand-written and interop callers, and
+    // that is why the defect below survived: no corpus gate reaches them.
+    //
+    // TypeExtensions.ConvertToType answers the Go representation of what the value ALREADY is, so
+    // its boxed result unboxes to T only when the two element types agreed to begin with (a named
+    // numeric wrapper and its underlying, say — the case the arms were written against). A
+    // genuinely different element type, which is the only way to arrive here, needs a conversion
+    // TOWARD T, or the unbox throws InvalidCastException. The `is T` test keeps the original
+    // no-conversion path exact and pays for ChangeType only where the direct unbox could not have
+    // worked at all; the arm already boxes per element, so this is not the per-element allocation
+    // the NumericConversions header warns against introducing.
+    private static T ConvertElement<T>(object element)
+    {
+        object converted = TypeExtensions.ConvertToType((IConvertible)element);
+
+        return converted is T value ? value : (T)Convert.ChangeType(converted, typeof(T));
     }
 
     /// <summary>
@@ -974,8 +1030,14 @@ public static partial class builtin
     /// <returns>The number of bytes copied.</returns>
     public static nint copy(ISlice<byte> dst, in @string src)
     {
-        slice<byte> bytes = src;
-        return copy(dst, bytes);
+        // Same de-allocation as the slice<byte> overload above; the interface box wraps the
+        // caller's own backing, so its window span is the destination.
+        nint min = Min(dst.Length, (nint)src.Length);
+
+        if (min > 0)
+            src.Bytes[..(int)min].CopyTo(dst.ToSpan());
+
+        return min;
     }
 
     /// <summary>
@@ -1087,9 +1149,13 @@ public static partial class builtin
     public static S append<S, T>(S s, params ReadOnlySpan<T> items) where S : ISlice<T>, ISliceWrap<S, T>
     {
         // Route to the core slice Append directly — a recursive `append(...)` call would resolve
-        // back to THIS overload (slice<T> itself satisfies the constraints, and the concrete
-        // overloads take Span, not ReadOnlySpan): infinite recursion.
-        slice<T> result = go.slice<T>.Append(new slice<T>(s), items.ToArray());
+        // back to THIS overload (slice<T> itself satisfies the constraints), so it would be
+        // infinite recursion.
+        //
+        // The items go across as the span they already are. This used to call items.ToArray(),
+        // allocating and copying a whole array per constrained append purely because the core
+        // Append took Span; it takes ReadOnlySpan now, and its body never wanted the wider access.
+        slice<T> result = go.slice<T>.Append(new slice<T>(s), items);
         return S.Wrap(result);
     }
 

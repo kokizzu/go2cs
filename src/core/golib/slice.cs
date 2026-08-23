@@ -264,10 +264,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             return;
         }
 
-        T[] copy = AllocationCounter.NewArray<T>(seq.Length);
-
-        for (nint i = 0; i < copy.Length; i++)
-            copy[i] = seq[i];
+        // `ꓸꓸꓸ` is the sequence's own window as a span, so this is ONE interface call and one
+        // vectorized copy — the same shape ByteSeqExtensions.ToSlice already uses for the
+        // constrained-generic route; these constructors are the boxed-interface route to the same
+        // conversion. The element loop it replaces paid an interface dispatch and a bounds check
+        // per element. The allocation count is unchanged: still exactly one charged copy.
+        T[] copy = AllocationCounter.CopyOf<T>(seq.ꓸꓸꓸ);
 
         m_array = copy;
         m_low = 0;
@@ -1041,7 +1043,13 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         return baseTypeArray;
     }
 
-    public static slice<T> Append(in slice<T> slice, params Span<T> elems)
+    // ReadOnlySpan, not Span: this body only READS elems (Length, CopyTo, elems[0]), and the wider
+    // parameter is what lets the constrained `append` over a ReadOnlySpan reach it directly instead
+    // of materializing an array to get here. A Span argument converts implicitly, so every existing
+    // caller binds unchanged — and widening the EXISTING overload rather than adding one beside it
+    // is deliberate: two params-span overloads would put an ambiguity (CS0121) in front of every
+    // collection-expression call site in the corpus, which is a bad trade for a parameter type.
+    public static slice<T> Append(in slice<T> slice, params ReadOnlySpan<T> elems)
     {
         // Go's append with nothing to add returns s ITSELF (no growth is needed, so the same
         // header comes back): nil stays nil and a non-nil empty stays that same non-nil empty —
