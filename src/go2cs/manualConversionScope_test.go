@@ -368,6 +368,10 @@ func TestRecvfromIsScopedToLinuxOnly(t *testing.T) {
 		if entry.includes(goos) {
 			t.Errorf("syscall.Recvfrom must NOT be displaced on %s: no hand-own exists there, so the "+
 				"placeholder would leave the function unimplemented", goos)
+		}
+	}
+}
+
 // The UDP send helpers are hand-owned on WINDOWS only: their bodies live in
 // internal/syscall/windows/windows/net_windows_impl.cs, and the linux/darwin flavors of this package
 // do not compile that folder at all -- displacing them there would leave the declaration unfilled.
