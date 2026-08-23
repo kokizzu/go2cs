@@ -582,6 +582,19 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 				return ""
 			}
 
+			// ONLY when an OPERAND overflows int32. That is what forces the literal path to widen
+			// it to `long`, which is what C# then refuses to convert to a narrower unsigned target
+			// (CS0266) — `1<<32 - 2` against `_C_uid_t = uint32`. Every other narrow-unsigned
+			// constant keeps the readable operator form it has today, and MUST: folding them all
+			// flattened 754 sites across 157 files in a three-target regen, including named-type
+			// expressions whose identity is the point (os's `ModeDevice | ModeCharDevice` became a
+			// bare `unchecked((uint32)(69206016UL))`, losing the FileMode). Measured, reverted, and
+			// narrowed to the shape that actually fails — the coordinator's "stop rather than widen
+			// silently" clause, applied to my own fix.
+			if !v.constExprHasBeyondInt32Operand(expr) {
+				return ""
+			}
+
 			return "unchecked((" + csType + ")(" + strconv.FormatUint(u, 10) + "UL))"
 		}
 
@@ -1817,4 +1830,48 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 	}
 
 	return fmt.Sprintf("%s%s", binaryOp, rightOperand)
+}
+
+// constExprHasBeyondInt32Operand reports whether any operand inside a constant expression exceeds
+// int32 range — the condition that makes the literal path emit a `long` (`4294967296L`) and so the
+// only shape a narrow-unsigned target cannot accept without a fold.
+//
+// It exists to keep that fold NARROW. Folding every narrow-unsigned constant expression flattens
+// readable operator forms and, worse, erases named types whose identity is the emission's point
+// (os's `ModeDevice | ModeCharDevice`); measured at 754 sites across 157 files before this bound
+// was added. With it, the fold reaches exactly the constants that would otherwise not compile.
+func (v *Visitor) constExprHasBeyondInt32Operand(expr ast.Expr) bool {
+	found := false
+
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		inner, ok := n.(ast.Expr)
+
+		// The whole expression is the FOLD ITSELF — its own value is what the target must accept,
+		// never evidence that an OPERAND overflowed. Only proper subexpressions count, and they
+		// are read by VALUE rather than by literal text: the operand that forces the widening is
+		// usually computed (`1<<32` inside `1<<32 - 2`), so a text scan misses exactly the shape
+		// this bound exists to admit.
+		if !ok || inner == expr {
+			return true
+		}
+
+		tv, recorded := v.info.Types[inner]
+
+		if !recorded || tv.Value == nil {
+			return true
+		}
+
+		if u, exact := constant.Uint64Val(constant.ToInt(tv.Value)); exact && u > math.MaxInt32 {
+			found = true
+			return false
+		}
+
+		return true
+	})
+
+	return found
 }
