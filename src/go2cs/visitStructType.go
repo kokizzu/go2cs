@@ -111,8 +111,16 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		}
 
 		structTypeName = v.getUniqueLiftedTypeName(name)
-		v.liftedTypeMap[identType] = structTypeName
-		v.liftedTypeMap[structSignatureType] = structTypeName
+
+		// A lift out of a GENERIC function registers the CONSTRUCTED spelling — every use site
+		// resolves through liftedTypeMap and must name a bound type (`doBlockingWithCtx_result<T>`),
+		// while the DECLARATION below keeps the bare identifier and carries the parameter list
+		// separately. The two spellings are the same type; only the declaration may write the
+		// parameters as a binding. See localTypeUsedTypeParams for the used-only scoping.
+		liftedUseName := structTypeName + liftedTypeParamList(v.localTypeUsedTypeParams(identType))
+
+		v.liftedTypeMap[identType] = liftedUseName
+		v.liftedTypeMap[structSignatureType] = liftedUseName
 
 		if anonLiftKey != "" {
 			v.liftedAnonStructNames[anonLiftKey] = structTypeName
@@ -145,6 +153,23 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 	structTypeName = getSanitizedIdentifier(structTypeName)
 	typeParams, constraints := v.getGenericDefinition(identType)
+
+	// A LIFTED function-local type declares no type parameters of its own — they belong to the
+	// enclosing function — so getGenericDefinition returns empty for it and the lift emitted a
+	// struct whose fields name unbound parameters: net's `doBlockingWithCtx[T any]` declares
+	// `type result struct { res T; err error }`, which became `partial struct
+	// doBlockingWithCtx_result` with a `T` field and no `<T>` (CS0246 on the declaration and in
+	// every go2cs-gen record over it — the second darwin census's remaining errors).
+	//
+	// Only the parameters the local type ACTUALLY REFERENCES are threaded (coordinator scoping
+	// directive, 2026-08-23): a local type using none lifts exactly as before, which is every
+	// existing lift site in the corpus — one that had needed a parameter could not have compiled —
+	// so emission stays byte-identical wherever this bug does not bite. Constraints stay empty:
+	// the enclosing function's own constraint clause governs the call, and a lifted struct binding
+	// `<T>` needs no independent bound to be legal C#.
+	if lifted && typeParams == "" {
+		typeParams = liftedTypeParamList(v.localTypeUsedTypeParams(identType))
+	}
 
 	if len(constraints) == 0 {
 		constraints = " "

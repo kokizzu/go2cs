@@ -94,6 +94,7 @@
     <None Include="$(MSBuildThisFileDirectory)internal\genstdlibmeta\main.go" />
     <None Include="$(MSBuildThisFileDirectory)internal\gensymbols\main.go" />
     <None Include="$(MSBuildThisFileDirectory)internal\stdlibmeta\generate.go" />
+    <None Include="$(MSBuildThisFileDirectory)layoutDuplicates_test.go" />
     <None Include="$(MSBuildThisFileDirectory)liftedTypeNames.go" />
     <None Include="$(MSBuildThisFileDirectory)lineEndingSeams_test.go" />
     <None Include="$(MSBuildThisFileDirectory)linknameForward_test.go" />
@@ -115,6 +116,7 @@
     <None Include="$(MSBuildThisFileDirectory)namedResultLiveness_test.go" />
     <None Include="$(MSBuildThisFileDirectory)nativeIntConstWidth_test.go" />
     <None Include="$(MSBuildThisFileDirectory)nestedArgScaling_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)packageClassNaming_test.go" />
     <None Include="$(MSBuildThisFileDirectory)packageLevelAnonStructLift_test.go" />
     <None Include="$(MSBuildThisFileDirectory)packageGlobalState.go" />
     <None Include="$(MSBuildThisFileDirectory)packageInfoWriter.go" />

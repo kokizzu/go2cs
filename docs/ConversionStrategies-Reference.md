@@ -285,6 +285,41 @@ Two consequences beyond the file name, because `PackageName` is not only a file 
 
 Guarded by `TestGorootVendoredReferenceNamesTheVendoredProject` (the vendored spelling, the metadata key, and the leaf package name), `TestStdLibImportPathFromTargetDir` (the recovery, including the non-core-rooted no-match that leaves the caller on the import path) and `TestStdLibReferenceUnchangedForUnvendoredPackage` (the no-op half — the whole corpus bar the `vendor/` tree, which is what makes a zero-movement [CNR](Glossary.md#cnr) verdict meaningful rather than lucky), all in `importOperations_test.go`.
 
+### An importer spells the package class from the package NAME — the standard library included
+
+**The emitted class is `<packageName>_package`, so an importer's spelling has to come from the Go package name, never from the last segment of the import path.** The two agree for nearly every package, because a Go package is conventionally named for its directory — which is exactly why the places they disagree are so easy to miss.
+
+```go
+// crypto/x509/internal/macos/security.go
+package macOS                                    // directory `macos`, package `macOS`
+```
+
+```csharp
+// the declaration side has always followed the package name
+namespace go.crypto.x509.@internal;
+public static partial class macOS_package { … }
+
+// so the importer must too — crypto/x509/darwin/root_darwin.cs
+using macOS = go.crypto.x509.@internal.macOS_package;
+```
+
+`convertImportPathToNamespace` substitutes the import graph's authoritative package name for the path's last segment. It used to do that only for **non-stdlib** imports, reasoning that a stdlib package is named for its directory so stdlib references would stay byte-identical. That premise is true for every standard-library package but one, and the exception could not surface until darwin was built at all: `crypto/x509/internal/macos` is darwin-exclusive, so its importers emitted `macos_package` against a declared `macOS_package` for as long as the corpus was Windows-only. C# is case-sensitive, so the result is **CS0234** — and it reads like a missing project reference or an empty assembly, because the symbol genuinely exists nowhere.
+
+Censused across `windows`, `linux` and `darwin`, the standard-library paths whose package name differs from their tail are exactly four:
+
+| Import path | Package | Targets | Disposition |
+|---|---|---|---|
+| `crypto/x509/internal/macos` | `macOS` | darwin | the one that moves |
+| `math/rand/v2` | `rand` | all | already correct via the `/vN` branch |
+| `internal/trace/internal/testgen/go122` | `testkit` | all | nothing in the corpus imports it |
+| `runtime/internal/wasitest` | `wasi` | all | nothing in the corpus imports it |
+
+So trusting the import graph *everywhere* **keeps** the byte-identity the stdlib exclusion was asserting rather than merely asserting it — and [CNR](Glossary.md#cnr) is what proves the claim instead of the comment.
+
+The fix restructures rather than special-cases: **when the graph knows a package's name, that name is the class segment; the `/vN` directory convention remains the fallback for when it does not.** A narrower "substitute only when the two differ" test would have looked equivalent and quietly broken the exotic case the convention branch was written for — a package literally *named* `vN`, which would then be rewritten to its parent. Preferring the authoritative name over the convention wherever both are available is what keeps the two rules from fighting.
+
+This is the same family as [the GOROOT-vendored reference](#a-goroot-vendored-reference-is-named-for-the-packages-on-disk-path) above: several independent derivations name one package, and they are correct only when they agree *structurally*. Guarded by `TestImportedPackageClassFollowsPackageName` (the rule, over a stdlib name/directory mismatch, an ordinary stdlib package, a `/vN` directory and a module dependency) and `TestMajorVersionFallbackAppliesWithoutGraphMetadata` (the fallback half), in `packageClassNaming_test.go`.
+
 ### Generated output path: `$(OutDir)` defers to `$(BaseOutputPath)`
 
 Both project templates (`src/go2cs/csproj-template.xml` and the `-tests` host's `test-csproj-template.xml`) give the generated project a stable default output path:
@@ -2360,6 +2395,52 @@ test, case 4.)
 In Go, `nil` is the equivalent of C# `null`. Where possible, converted code uses the golib [`NilType`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/NilType.cs) with a default instance called `nil` (defined in [`go.builtin`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs)). `NilType` provides comparison operators so `x == nil` / `x != nil` work across the runtime types (slices, maps, channels, pointers, interfaces), each of which defines what "nil" means for it (e.g. a `map<K,V>` whose backing dictionary is null is the nil map: reads return the zero value, `len` is 0, ranging yields nothing, and a write panics — matching Go).
 
 The same null-safe-zero-value principle applies to value types whose backing store is a reference. A zero-value `string` converts to `@string s = default!`, which runs no constructor, so the backing `byte[]` is null. Rather than [NRE](Glossary.md#nre) on the first read, `@string` treats a null backing as Go's empty string `""` for every read — length 0, no bytes to index/range, `== ""` is true, prints empty, and concatenation yields the other operand (`var s string; s += "x"` → `"x"`). Constructors still allocate, so only the `default(@string)` zero value relies on this. (Guarded by the `StringZeroValueConcat` behavioral test.)
+
+### A NARROW-UNSIGNED target folds a constant only when nothing else can make it compile
+
+`uint32(1<<32 - 1)`, `*_C_pw_uidp(&sp) = 1<<32 - 2`. Go evaluates an untyped constant expression
+at arbitrary precision and requires only the RESULT to fit the target; C# evaluates the operands
+themselves, and an operand past `uint32` forces the literal path to emit a bare `long` — which has
+no implicit conversion to `uint`/`ushort`/`byte`, so the assignment fails **CS0266** even though
+the value fits exactly. The fix folds the whole expression and casts the result:
+
+```csharp
+//  Go:   *_C_pw_uidp(&sp) = 1<<32 - 2          (_C_uid_t = uint32)
+_C_pw_uidp(Ꮡsp).Value = unchecked((uint32)(4294967294UL));
+```
+
+**The FIVE conditions, and why each exists.** This arm is deliberately the narrowest in the fold
+family, because every widening of it damaged readable emission somewhere else in the corpus. It
+applies only when ALL of:
+
+1. **the target is unsigned and narrower than `uint64`** — the wider arms already handle their own;
+2. **the target is a plain basic type or an ALIAS to one**, never a NAMED type — `basic` at that
+   point is the UNDERLYING type, so `io/fs.FileMode` (a named `uint32`) arrives looking plain, and
+   folding it erased the type on every mode expression in the corpus
+   (`(fs.FileMode)(ModeDevice | ModeCharDevice)` → a bare `unchecked((uint32)(69206016UL))`). A
+   named target keeps the arm below, which carries its type in the fold; an alias has no distinct
+   C# type to lose;
+3. **no NAMED CONSTANT is referenced** — those render through their `Untyped*` wrappers, which is
+   how every wider arm preserves them, and folding replaced `math/bits`' `x>>1 & (m0 & m)` with
+   `unchecked((uint32)(1431655765UL))`: arithmetic no reader can trace back to `m0`;
+4. **an UNTYPED subexpression exceeds `uint32`** — a typed conversion carries its own width and
+   emits correctly unaided, so `runtime`'s `^uint32(0)/8 + 1` never needed the fold, and counting
+   it flattened the entire `class_to_divmagic` table into 68 casts;
+5. **the threshold is `uint32`, not the target's own width** — `(1<<16) - 1` exceeds a `uint16` but
+   the emission already carries an explicit `(ushort)` cast and compiles (measured), so
+   `regexp/syntax`'s `Range16` keeps its source form; only a bare `long` has nothing to rescue it.
+
+**How the conditions were found — the method, not just the result.** Each was exposed by a
+three-target corpus regeneration, never by the two packages the fix was aimed at: the local darwin
+build was green at every step. The site count fell **754 → 46 → 12 → 10 → 2** across six
+regenerations, and the two survivors are exactly the expressions that cannot compile otherwise.
+The lesson generalizes past this arm: *a converter change is measured against the corpus, not
+against the file that motivated it* — a fold that looks obviously correct at its motivating site
+can rewrite hundreds of unrelated ones, and only a full regeneration shows it.
+
+Guarded by the `ConstSubexprOverflow` behavioral test, which already covered the construct
+(`u32 := []uint32{1<<32 - 1}`); its golden re-baselined to the folded form with the Output phase
+passing unchanged — the value never moved, only the spelling.
 
 ### The THREE deref accessors of `ж<T>` — when each is needed, and how the converter picks
 

@@ -522,6 +522,22 @@ func copyDirTree(src, dst string) (int, error) {
 		targetPath := filepath.Join(dst, relPath)
 
 		if entry.IsDir() {
+			// BUILD OUTPUTS are not part of the seed. A seeded staging root exists so the converter
+			// can read the tree it is about to rewrite — the hand-own markers it must not clobber,
+			// the `package_info.cs` files it mints `<ImportedTypeAliases>` from, and the existing
+			// bytes `needToWriteFile` compares against to decide whether a file changed. None of
+			// that lives in bin/obj/Generated, and nothing downstream reads them: the emitted-vs-
+			// seeded classification only considers files a target WROTE, and a staging root is
+			// never built in.
+			//
+			// Measured before excluding them: a seed of a worked-in clone copied 60,931 files
+			// against a tracked corpus of roughly 4,000 — about 57k build artifacts, copied once
+			// per target, three times per multi-platform regen. It was the single largest cost in
+			// the run and bought nothing.
+			if isBuildOutputDirectory(entry.Name()) {
+				return filepath.SkipDir
+			}
+
 			return os.MkdirAll(targetPath, 0755)
 		}
 
@@ -545,6 +561,20 @@ func copyDirTree(src, dst string) (int, error) {
 	})
 
 	return copied, err
+}
+
+// isBuildOutputDirectory reports whether a directory name is one MSBuild owns rather than the
+// conversion: `bin` and `obj` are its outputs, and `Generated` is where every converted project
+// routes the source generators' emissions (CompilerGeneratedFilesOutputPath, excluded from the
+// compilation by the csproj's own `<Compile Remove>`). No converted Go package is named for any of
+// them, so the test is safe as a plain name match.
+func isBuildOutputDirectory(name string) bool {
+	switch name {
+	case "bin", "obj", "Generated":
+		return true
+	}
+
+	return false
 }
 
 // copyFileIfPresent copies one file when it exists, creating the destination directory, and reports

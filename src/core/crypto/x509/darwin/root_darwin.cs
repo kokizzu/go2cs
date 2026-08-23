@@ -3,10 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go.crypto;
 
-using macOS = go.crypto.x509.@internal.macos_package;
+using macOS = go.crypto.x509.@internal.macOS_package;
 using errors = errors_package;
 using fmt = fmt_package;
-using macos = go.crypto.x509.@internal.macos_package;
 using time = time_package;
 
 partial class x509_package {

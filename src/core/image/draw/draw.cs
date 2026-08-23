@@ -1097,7 +1097,7 @@ internal static void drawPaletted(Image dst, image.Rectangle r, image.Image src,
                 // the one that minimizes sum-squared-difference.
                 // TODO(nigeltao): consider smarter algorithms.
                 nint bestIndex = 0;
-                var bestSum = (uint32)(4294967296L - 1);
+                var bestSum = unchecked((uint32)(4294967295UL));
                 foreach (var (index, vᴛ1) in palette) {
                     var p = vᴛ1.Clone();
 

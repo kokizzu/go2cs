@@ -190,8 +190,8 @@ internal static bool isSizeReasonable(int64 sz) {
 internal static _C_struct_passwd structPasswdForNegativeTest() {
     ref var sp = ref heap<_C_struct_passwd>(out var Ꮡsp);
     sp = new _C_struct_passwd();
-    _C_pw_uidp(Ꮡsp).Value = 4294967296L - 2;
-    _C_pw_gidp(Ꮡsp).Value = 4294967296L - 3;
+    _C_pw_uidp(Ꮡsp).Value = unchecked((uint32)(4294967294UL));
+    _C_pw_gidp(Ꮡsp).Value = unchecked((uint32)(4294967293UL));
     return sp;
 }
 

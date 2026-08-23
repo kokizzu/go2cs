@@ -632,14 +632,25 @@ func convertImportPathToNamespace(importPath string, packageSuffix string) strin
 	// Split import path by "/"
 	importPathParts := strings.Split(importPath, "/")
 
-	// The emitted class is <packageName>_package, and a MODULE dependency's Go package name often
-	// differs from its import-path's last segment — github.com/mattn/go-isatty is `package isatty`,
-	// and a hyphen in the segment (`go-isatty`) is not even a valid C# identifier. Use the actual
-	// package name (from the module-aware import graph, which is populated with valid Go identifiers)
-	// for the last (class) segment of a NON-stdlib import; the standard library keeps its path segment
-	// (which equals the package name there), so its references stay byte-identical.
-	if meta, ok := importPackageDirs[importPath]; ok && meta.Name != "" && len(importPathParts) > 0 &&
-		!isPathUnder(meta.Dir, filepath.Join(build.Default.GOROOT, "src")) {
+	// The emitted class is <packageName>_package, and a Go package name can differ from its
+	// import-path's last segment — github.com/mattn/go-isatty is `package isatty`, and a hyphen in
+	// the segment (`go-isatty`) is not even a valid C# identifier. Use the actual package name
+	// (from the module-aware import graph, which is populated with valid Go identifiers) for the
+	// last (class) segment whenever the graph knows it.
+	//
+	// This used to exclude the standard library, on the reasoning that a stdlib package is named
+	// for its directory so its references would stay byte-identical. The premise holds for every
+	// stdlib package but one, and the exception was invisible until darwin was built at all:
+	// crypto/x509/internal/macos is `package macOS`, so the DECLARATION side emitted macOS_package
+	// while every importer emitted macos_package, and C# is case-sensitive — CS0234 on
+	// go.crypto.x509.@internal.macos_package, from crypto/x509's own root_darwin.cs. Censused
+	// across all three targets, the stdlib paths whose name differs from their tail are exactly
+	// four: crypto/x509/internal/macos (darwin only), math/rand/v2 and
+	// internal/trace/internal/testgen/go122 and runtime/internal/wasitest (every target). The
+	// second reaches the identical answer through the /vN branch below, and nothing in the corpus
+	// imports the last two — so trusting the graph everywhere keeps the promise the exclusion was
+	// making, instead of asserting it.
+	if meta, ok := importPackageDirs[importPath]; ok && meta.Name != "" && len(importPathParts) > 0 {
 		importPathParts[len(importPathParts)-1] = meta.Name
 	} else if len(importPathParts) > 1 {
 		// A MAJOR-VERSION directory (`math/rand/v2`): the Go package is named for the PARENT

@@ -63,6 +63,27 @@ using static go.vendor.golang.org.x.net.route_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/address.go", "address.cs", "ABg4kKSCgqaCgoKUkoKUgoKClIKCgoKUgoKClKaCgpSCgpSCqgARIKKClIKUgpSCgpSCgoKCgpSCgpQABxKQpIKmgoKClIKCggAIFJCkgqaCgoKUgoKCgpSokpSClIKCpIKUgoLKgoKCpqTMABUogqaCppSCmMiUgoKkgoKUlKSCgqSCkpSUAAsYkKSCgqaCgoKUgpSCgqaCgpSCpoKCgpSCtIK0grSCtqqigoKUgoKUgrSCgpSCtIKClIK0goKUgramgoKCgoKUgpSCgpSCgoKUpIKCgpSCgoKUpIKClIKCgpTIgoKUgoKClO4=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/binary.go", "binary.cs", "ABs8goKmgoKCpoKCpoKCgoKCpoKC3IKCpoKCgqaCgqaCgoKCgqaCgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/interface.go", "interface.cs", "AB5EkAANHpAADR6Q")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/interface_classic.go", "interface_classic.cs", "AAscgoKUgoKUgoKUAAgSgoKUgoKmgoKUgoKU3IKUlIKCgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/interface_multicast.go", "interface_multicast.cs", "AAgSgoKUgoKU7oKCgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/message.go", "message.cs", "ABpCooKUgpKCgoKClIKUgoKUgIKUgoKUgpS2poKU")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/route.go", "route.cs", "AFGuAZIACioACgKCgoKCkoCCpIKUgoCIsoKUpA==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/route_classic.go", "route_classic.cs", "AAscgoKClIKmlIKCgpSUgoKCgoKCgpSClKaCgpSCgpQACRSCgpSCgoKU")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/sys.go", "sys.cs", "ABAqgpKCgpSmgqaCgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/sys_darwin.go", "sys_darwin.cs", "AAkSgpSkAAkUkKaSAAsckKaSAAYQgoKSgpKCkoKSgpKCkoKk")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/syscall.go", "syscall.cs", "AAoY")]
+// </GoSourcePositionMaps>
+
 namespace go.vendor.golang.org.x.net;
 
 [GoPackage("route")]

@@ -566,6 +566,63 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 		// Go uint render under different names for the same native width; both are in scope.
 		csType := v.getCSharpTypeName(basic)
 
+		// A NARROWER unsigned target (uint8/16/32) is folded too, and for a reason the wider
+		// arms never meet: the operator form's own OPERAND overflows. `1<<32 - 2` against a
+		// `uint32` slot emitted `4294967296L - 2` — the literal path widens the beyond-int32
+		// operand to `long` (correctly, in isolation), and C# has no implicit `long`→`uint`
+		// conversion, so the assignment fails with CS0266 even though the FOLDED value fits the
+		// target exactly. The second darwin census surfaced it in os/user's
+		// `*_C_pw_uidp(&sp) = 1<<32 - 2` (`_C_uid_t = uint32`), which is Go's own negative-test
+		// constant. Folding first and casting the RESULT is what makes it representable, in the
+		// same parenthesized form the other arms use.
+		// The target must be a PLAIN basic type, not a named/aliased one over the same underlying:
+		// `basic` here is the UNDERLYING, so `fs.FileMode` (a named uint32) reaches this arm looking
+		// exactly like `uint32`, and folding it erased the type on every mode expression in the
+		// corpus (`(fs.FileMode)(fs.ModeDir | 365)` → `unchecked((uint32)(2147484013UL))`). A named
+		// target already has its own arm below, which carries the type in the fold — that is where
+		// it belongs, and the operand-overflow condition is not a reason to steal it.
+		// An ALIAS to a basic type counts as plain: `type _C_uid_t = uint32` has no distinct C#
+		// type to erase (it emits as the primitive itself), which is exactly the target shape the
+		// darwin census failed on. A NAMED type does have one, and keeps its own arm.
+		targetIsPlainBasic := false
+
+		switch target := tv.Type.(type) {
+		case *types.Basic:
+			targetIsPlainBasic = true
+		case *types.Alias:
+			_, targetIsPlainBasic = target.Rhs().Underlying().(*types.Basic)
+		}
+
+		// A tree referencing NAMED constants is left alone: those render through their Untyped*
+		// wrappers, which is how every wider arm already preserves them, and folding erases the
+		// names the Go source is written in — math/bits' `x>>1 & (m0 & m)` became
+		// `unchecked((uint32)(1431655765UL))`, arithmetic no reader can follow back to `m0`. The
+		// shape that genuinely needs the fold is a LITERAL expression whose operand overflows
+		// int32 (image/color's `uint32(1<<32 - 1)`), and it has no names to lose.
+		if targetIsPlainBasic && !v.containsUntypedNamedConstRef(expr) &&
+			(csType == "uint8" || csType == "uint16" || csType == "uint32") {
+			u, exact := constant.Uint64Val(val)
+
+			if !exact {
+				return ""
+			}
+
+			// ONLY when an OPERAND overflows int32. That is what forces the literal path to widen
+			// it to `long`, which is what C# then refuses to convert to a narrower unsigned target
+			// (CS0266) — `1<<32 - 2` against `_C_uid_t = uint32`. Every other narrow-unsigned
+			// constant keeps the readable operator form it has today, and MUST: folding them all
+			// flattened 754 sites across 157 files in a three-target regen, including named-type
+			// expressions whose identity is the point (os's `ModeDevice | ModeCharDevice` became a
+			// bare `unchecked((uint32)(69206016UL))`, losing the FileMode). Measured, reverted, and
+			// narrowed to the shape that actually fails — the coordinator's "stop rather than widen
+			// silently" clause, applied to my own fix.
+			if !v.constExprOperandExceeds(expr, math.MaxUint32) {
+				return ""
+			}
+
+			return "unchecked((" + csType + ")(" + strconv.FormatUint(u, 10) + "UL))"
+		}
+
 		if csType != "uint64" && csType != "nuint" && csType != "uintptr" {
 			return ""
 		}
@@ -1798,4 +1855,57 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 	}
 
 	return fmt.Sprintf("%s%s", binaryOp, rightOperand)
+}
+
+// constExprHasBeyondInt32Operand reports whether any operand inside a constant expression exceeds
+// int32 range — the condition that makes the literal path emit a `long` (`4294967296L`) and so the
+// only shape a narrow-unsigned target cannot accept without a fold.
+//
+// It exists to keep that fold NARROW. Folding every narrow-unsigned constant expression flattens
+// readable operator forms and, worse, erases named types whose identity is the emission's point
+// (os's `ModeDevice | ModeCharDevice`); measured at 754 sites across 157 files before this bound
+// was added. With it, the fold reaches exactly the constants that would otherwise not compile.
+func (v *Visitor) constExprOperandExceeds(expr ast.Expr, limit uint64) bool {
+	found := false
+
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		inner, ok := n.(ast.Expr)
+
+		// The whole expression is the FOLD ITSELF — its own value is what the target must accept,
+		// never evidence that an OPERAND overflowed. Only proper subexpressions count, and they
+		// are read by VALUE rather than by literal text: the operand that forces the widening is
+		// usually computed (`1<<32` inside `1<<32 - 2`), so a text scan misses exactly the shape
+		// this bound exists to admit.
+		if !ok || inner == expr {
+			return true
+		}
+
+		// Only an UNTYPED subexpression counts. A typed conversion carries its own width and emits
+		// correctly on its own — `^uint32(0)` is 4294967295 but renders as a uint32 expression, so
+		// runtime's `^uint32(0)/8 + 1` never needed a fold; counting it flattened the whole
+		// class_to_divmagic table into 68 unchecked casts (regen 4). The shapes that genuinely
+		// force the `long` widening are untyped: `1<<32 - 1`, `1<<32 - 2`.
+		tv, recorded := v.info.Types[inner]
+
+		if !recorded || tv.Value == nil {
+			return true
+		}
+
+		if basicInner, isBasic := tv.Type.(*types.Basic); !isBasic || basicInner.Info()&types.IsUntyped == 0 {
+			return true
+		}
+
+		if u, exact := constant.Uint64Val(constant.ToInt(tv.Value)); exact && u > limit {
+			found = true
+			return false
+		}
+
+		return true
+	})
+
+	return found
 }

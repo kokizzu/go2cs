@@ -667,3 +667,50 @@ func TestSeedCensusRootMirrorsRepositoryLayout(t *testing.T) {
 		t.Error("seeded staging root is not recognized as a go2cs root")
 	}
 }
+
+// A seeded staging root exists so the converter can read the tree it is about to rewrite: the
+// hand-own markers it must not clobber, the package_info.cs files it mints <ImportedTypeAliases>
+// from, and the bytes needToWriteFile compares against. None of that lives in a build-output
+// directory, and copying them was measured at ~57k files per target on a worked-in clone — three
+// times that per multi-platform regen, the single largest cost in the run.
+func TestCopyDirTreeSkipsBuildOutputs(t *testing.T) {
+	source := t.TempDir()
+	destination := filepath.Join(t.TempDir(), "seeded")
+
+	writeTestFile(t, filepath.Join(source, "pkg", "thing.cs"), "// a converted source\n")
+	writeTestFile(t, filepath.Join(source, "pkg", "package_info.cs"), "// metadata the converter READS\n")
+	writeTestFile(t, filepath.Join(source, "pkg", "pkg.csproj"), "<Project />")
+	writeTestFile(t, filepath.Join(source, "pkg", "bin", "Debug", "pkg.dll"), "binary")
+	writeTestFile(t, filepath.Join(source, "pkg", "obj", "project.assets.json"), "{}")
+	writeTestFile(t, filepath.Join(source, "pkg", "Generated", "go2cs-gen", "thing.g.cs"), "// generator output\n")
+
+	copied, err := copyDirTree(source, destination)
+
+	if err != nil {
+		t.Fatalf("copyDirTree returned an error: %v", err)
+	}
+
+	if copied != 3 {
+		t.Errorf("copied = %d, want 3 (the sources and the project file, none of the build outputs)", copied)
+	}
+
+	for _, seeded := range []string{
+		filepath.Join(destination, "pkg", "thing.cs"),
+		filepath.Join(destination, "pkg", "package_info.cs"),
+		filepath.Join(destination, "pkg", "pkg.csproj"),
+	} {
+		if _, err := os.Stat(seeded); err != nil {
+			t.Errorf("%s was not seeded, but the converter reads it: %v", seeded, err)
+		}
+	}
+
+	for _, skipped := range []string{
+		filepath.Join(destination, "pkg", "bin"),
+		filepath.Join(destination, "pkg", "obj"),
+		filepath.Join(destination, "pkg", "Generated"),
+	} {
+		if _, err := os.Stat(skipped); !os.IsNotExist(err) {
+			t.Errorf("%s was seeded; build outputs are not conversion inputs and cost ~57k files per target", skipped)
+		}
+	}
+}
