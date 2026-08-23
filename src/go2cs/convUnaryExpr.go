@@ -215,6 +215,105 @@ func (v *Visitor) boxBaseName(ident *ast.Ident) string {
 // through the box `Ꮡm` — a capturable reference — rather than the uncapturable ref-local alias.
 // Returns ("", false) when the operand is not rooted at a box-ref var, so the caller falls through
 // to the normal address handling.
+// receiverValueFieldChain unwraps a `&recv.f1.f2...fn` selector chain rooted at the current pointer
+// receiver, returning the hops OUTERMOST-LAST so emission can fold `.of(...)` left to right.
+//
+// The one-hop form `&recv.field` is the common case and was the only one the converter recognised
+// until 2026-08-23. A DEEPER chain matched no arm and fell through to the `Ꮡ(value)` copy-box,
+// which boxes a COPY -- golib's `Ꮡ(in T)` ctor is documented as doing exactly that -- so every
+// write through the returned pointer was silently dropped. Measured in
+// `vendor/golang.org/x/net/dns/dnsmessage`'s `incrementSectionCount`, whose four
+// `count = &b.header.<section>` sites made `*count++` increment a temporary: the DNS header's
+// QDCOUNT stayed 0, so every message the Builder produced was rejected by any conformant parser and
+// the failure surfaced three levels away as an unexplained lookup timeout. Corpus census at the fix:
+// 4 write-context sites, all in that one function.
+//
+// EVERY INTERMEDIATE HOP MUST BE A VALUE STRUCT FIELD. A pointer-typed intermediate is already its
+// own box and the pointer-variable arm field-refs through it correctly; routing it here would
+// address the pointer's own storage instead of the pointee's field -- the mirror-image defect. The
+// receiver is exempt from that test: it is a pointer by construction and the direct-ж box IS it.
+func (v *Visitor) receiverValueFieldChain(selectorExpr *ast.SelectorExpr, recvName string) ([]*ast.SelectorExpr, bool) {
+	hops := []*ast.SelectorExpr{selectorExpr}
+	current := selectorExpr
+
+	for {
+		switch base := current.X.(type) {
+		case *ast.Ident:
+			// Receiver match is by OBJECT identity: a pointer LOCAL shadowing the receiver name must
+			// not take this arm -- it would emit `Ꮡ`+raw, a box that does not exist for a
+			// non-direct-ж method (CS0103). The rendered==raw check stays as the fallback defense
+			// for an unresolvable ident.
+			if !v.identResolvesToReceiver(base, recvName) || v.getIdentName(base) != base.Name {
+				return nil, false
+			}
+
+			// A DEEP chain additionally requires the enclosing method to actually BE direct-ж, and
+			// this guard is load-bearing: the box `Ꮡrecv` only exists when the method was marked,
+			// and marking happens by scanning for an explicit `&recv.f1.f2` (bodyTakesReceiverFieldAddress).
+			// An IMPLICIT address is invisible to that scan -- Go's `h.mac.Sum(&mac)`, where `Sum` is
+			// promoted from an embedded field, takes `&h.mac.macGeneric` with no ast.UnaryExpr
+			// anywhere -- so emitting the box form there names a receiver that does not exist
+			// (CS0103, measured in vendor/golang.org/x/crypto/internal/poly1305). Declining leaves
+			// those sites on their previous value-chain form, which is already correct for them: the
+			// receiver is a `ref`, so `h.mac.macGeneric` reaches the real storage and writes land.
+			//
+			// The one-hop case deliberately skips this test, exactly as it always has: an explicit
+			// `&recv.field` is always seen by the marking scan, so the box is always there.
+			if len(hops) > 1 && !isDirectBoxReceiverMethod(v.currentFuncDecl, v.info) {
+				return nil, false
+			}
+
+			return hops, true
+		case *ast.SelectorExpr:
+			selection, ok := v.info.Selections[base]
+
+			if !ok || selection.Kind() != types.FieldVal {
+				return nil, false
+			}
+
+			if _, isStruct := v.getType(base, true).(*types.Struct); !isStruct {
+				return nil, false
+			}
+
+			hops = append([]*ast.SelectorExpr{base}, hops...)
+			current = base
+		default:
+			return nil, false
+		}
+	}
+}
+
+// receiverFieldChainAddressForm renders receiverValueFieldChain's hops as
+// `Ꮡrecv.of(T1.Ꮡf1).of(T2.Ꮡf2)...` -- the same `.of()` chaining the corpus already uses at
+// hundreds of pointer-rooted sites, here rooted at the direct-ж receiver box. Declines when a hop's
+// owner is not a named type, so a site never loses its previous emission to a half-built chain.
+func (v *Visitor) receiverFieldChainAddressForm(recv *types.Var, recvName string, hops []*ast.SelectorExpr) (string, bool) {
+	form := AddressPrefix + recvName
+
+	for i, hop := range hops {
+		var ownerType types.Type
+
+		if i == 0 {
+			ownerType = recv.Type()
+		} else {
+			ownerType = v.info.TypeOf(hop.X)
+		}
+
+		if pointer, ok := ownerType.(*types.Pointer); ok {
+			ownerType = pointer.Elem()
+		}
+
+		if _, ok := ownerType.(*types.Named); !ok {
+			return "", false
+		}
+
+		fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(convertToCSTypeName(v.getAliasQualifiedTypeName(ownerType, false)), "", ownerType), AddressPrefix, v.structFieldBoxName(hop.Sel, hop.X))
+		form = fmt.Sprintf("%s.of(%s)", form, fieldRef)
+	}
+
+	return form, true
+}
+
 func (v *Visitor) lambdaBoxRefAddressForm(unaryExpr *ast.UnaryExpr) (string, bool) {
 	if v.lambdaCapture == nil || !v.lambdaCapture.conversionInLambda {
 		return "", false
@@ -337,23 +436,19 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 				// itself (`cΔ1.of(…)`). The rendered==raw check stays as the fallback defense for
 				// an unresolvable ident (the shadow pass Δ-renames an inner same-named binding,
 				// while the receiver always renders under its raw name).
-				if ident, ok := selectorExpr.X.(*ast.Ident); ok && v.identResolvesToReceiver(ident, recvName) && v.getIdentName(ident) == ident.Name {
-					recvType := recv.Type()
-
-					if pointer, ok := recvType.(*types.Pointer); ok {
-						recvType = pointer.Elem()
-					}
-
-					if _, ok := recvType.(*types.Named); ok {
-						fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(convertToCSTypeName(v.getAliasQualifiedTypeName(recvType, false)), "", recvType), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
-
+				// The chain may be DEEPER than one hop -- `&b.header.questions`, where `header` is a
+				// VALUE struct field of the receiver. Each hop gets its own `.of(...)`; a single-hop
+				// chain reproduces the original form byte for byte, so no existing site moves.
+				if hops, ok := v.receiverValueFieldChain(selectorExpr, recvName); ok {
+					if form, ok := v.receiverFieldChainAddressForm(recv, recvName, hops); ok {
 						// Direct-ж: the receiver box is the parameter `Ꮡx` (see
 						// packageDirectBoxReceiverMethods), so field-ref through it directly. No
-						// static ThreadLocal — that form races across threads for distinct
+						// static ThreadLocal -- that form races across threads for distinct
 						// receivers (broken for concurrent types like sync/atomic).
-						return fmt.Sprintf("%s%s.of(%s)", AddressPrefix, recvName, fieldRef)
+						return form
 					}
 				}
+
 			}
 		}
 

@@ -144,7 +144,9 @@ func scanFileForCaptureModeMethods(file *ast.File, info *types.Info) {
 			info:     info,
 		})
 
-		if bodyTakesReceiverFieldAddress(funcDecl.Body, recvName) || bodyReturnsReceiver(funcDecl.Body, recvName) || bodyReassignsReceiver(funcDecl.Body, recvName, signature.Recv(), info) || bodyUsesReceiverAsPointerValue(funcDecl.Body, recvName, info) || bodyCapturesReceiverInClosure(funcDecl.Body, recvName, signature.Recv(), info) || bodyHasPointerMethodValueOnReceiver(funcDecl.Body, recvName, info) || bodyCapturesReceiverInValueMethodValue(funcDecl.Body, recvName, info) || bodyHasGoStmtLambdaCapturingReceiver(funcDecl.Body, recvName, signature.Recv(), info) || bodyPassesReceiverAsPointerArg(funcDecl.Body, recvName, info) || bodyWrappedInDeferContext(funcDecl.Body, recvName, info) {
+		recvObj := recvObjectOf(funcDecl, info)
+
+		if bodyTakesReceiverFieldAddress(funcDecl.Body, recvName, recvObj, info) || bodyReturnsReceiver(funcDecl.Body, recvName) || bodyReassignsReceiver(funcDecl.Body, recvName, signature.Recv(), info) || bodyUsesReceiverAsPointerValue(funcDecl.Body, recvName, info) || bodyCapturesReceiverInClosure(funcDecl.Body, recvName, signature.Recv(), info) || bodyHasPointerMethodValueOnReceiver(funcDecl.Body, recvName, info) || bodyCapturesReceiverInValueMethodValue(funcDecl.Body, recvName, info) || bodyHasGoStmtLambdaCapturingReceiver(funcDecl.Body, recvName, signature.Recv(), info) || bodyPassesReceiverAsPointerArg(funcDecl.Body, recvName, info) || bodyWrappedInDeferContext(funcDecl.Body, recvName, info) {
 			// Key by the generic origin so instantiated call sites (Set[int]) match.
 			origin := funcObj.Origin()
 			packageCaptureModeMethods[origin] = true
@@ -902,7 +904,26 @@ func bodyCapturesReceiverInClosure(body *ast.BlockStmt, recvName string, recv *t
 }
 
 // bodyTakesReceiverFieldAddress reports whether the body contains `&recvName.field`.
-func bodyTakesReceiverFieldAddress(body *ast.BlockStmt, recvName string) bool {
+// The DEEP form -- `&recv.f1.f2`, a value-field chain rooted at the receiver -- was unrecognized
+// until 2026-08-23, and the consequence was silent: the method was never marked direct-ж, so
+// convUnaryExpr's receiver arm had no box to chain from, emission fell through to the
+// Ꮡ(value) copy-box, and every write through the resulting pointer was dropped. See
+// receiverValueFieldChain for the measured case (dnsmessage's incrementSectionCount, 4 sites).
+//
+// The walk is TYPE-AWARE rather than purely syntactic, and that matters in the CONSERVATIVE
+// direction: a hop through a POINTER field is a different address (the pointee's, reached through
+// a box that already exists), so marking a method direct-ж for it would be over-marking -- it
+// would change that method's whole receiver form to serve an arm that will not fire.
+// recvObjectOf resolves a method's receiver to its types.Object, or nil for an unnamed receiver.
+func recvObjectOf(funcDecl *ast.FuncDecl, info *types.Info) types.Object {
+	if funcDecl == nil || funcDecl.Recv == nil || len(funcDecl.Recv.List) == 0 || len(funcDecl.Recv.List[0].Names) == 0 {
+		return nil
+	}
+
+	return info.ObjectOf(funcDecl.Recv.List[0].Names[0])
+}
+
+func bodyTakesReceiverFieldAddress(body *ast.BlockStmt, recvName string, recvObj types.Object, info *types.Info) bool {
 	found := false
 
 	ast.Inspect(body, func(node ast.Node) bool {
@@ -913,7 +934,51 @@ func bodyTakesReceiverFieldAddress(body *ast.BlockStmt, recvName string) bool {
 		}
 
 		if selectorExpr, ok := unaryExpr.X.(*ast.SelectorExpr); ok {
-			if ident, ok := selectorExpr.X.(*ast.Ident); ok && ident.Name == recvName {
+			base := selectorExpr.X
+			depth := 0
+
+			// Walk down VALUE-struct hops to the chain root; anything else stops the walk.
+			for {
+				inner, ok := base.(*ast.SelectorExpr)
+
+				if !ok {
+					break
+				}
+
+				selection, ok := info.Selections[inner]
+
+				if !ok || selection.Kind() != types.FieldVal {
+					return true
+				}
+
+				innerType := info.TypeOf(inner)
+
+				if innerType == nil {
+					return true
+				}
+
+				if _, isStruct := innerType.Underlying().(*types.Struct); !isStruct {
+					return true
+				}
+
+				base = inner.X
+				depth++
+			}
+
+			if ident, ok := base.(*ast.Ident); ok && ident.Name == recvName {
+				// A DEEP chain must additionally match the receiver by OBJECT, because a LOCAL
+				// shadowing the receiver name reaches a different variable entirely and marking
+				// for it is pure over-marking -- it rewrites an unrelated method's whole receiver
+				// form to serve an arm that will decline (convUnaryExpr matches by object too).
+				// Measured: `t := other; q := &t.inner.n` inside a `func (t *Thing)` churned
+				// ShadowLocalOverRecvName's golden with no behavior change at all.
+				//
+				// The ONE-hop case deliberately keeps the historical name-only match, so this
+				// change cannot move any site that was already being marked.
+				if depth > 0 && recvObj != nil && info.ObjectOf(ident) != recvObj {
+					return true
+				}
+
 				found = true
 				return false
 			}

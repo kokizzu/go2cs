@@ -1341,24 +1341,26 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     return default!;
 }
 
-[GoRecv] internal static error incrementSectionCount(this ref Builder b) {
+internal static error incrementSectionCount(this ж<Builder> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
     ж<uint16> count = default!;
     error err = default!;
     var exprᴛ1 = b.section;
     if (exprᴛ1 == sectionQuestions) {
-        count = Ꮡ(b.header).of(dnsmessage_package.Δheader.Ꮡquestions);
+        count = Ꮡb.of(Builder.Ꮡheader).of(dnsmessage_package.Δheader.Ꮡquestions);
         err = errTooManyQuestions;
     }
     else if (exprᴛ1 == sectionAnswers) {
-        count = Ꮡ(b.header).of(dnsmessage_package.Δheader.Ꮡanswers);
+        count = Ꮡb.of(Builder.Ꮡheader).of(dnsmessage_package.Δheader.Ꮡanswers);
         err = errTooManyAnswers;
     }
     else if (exprᴛ1 == sectionAuthorities) {
-        count = Ꮡ(b.header).of(dnsmessage_package.Δheader.Ꮡauthorities);
+        count = Ꮡb.of(Builder.Ꮡheader).of(dnsmessage_package.Δheader.Ꮡauthorities);
         err = errTooManyAuthorities;
     }
     else if (exprᴛ1 == sectionAdditionals) {
-        count = Ꮡ(b.header).of(dnsmessage_package.Δheader.Ꮡadditionals);
+        count = Ꮡb.of(Builder.Ꮡheader).of(dnsmessage_package.Δheader.Ꮡadditionals);
         err = errTooManyAdditionals;
     }
 
@@ -1370,9 +1372,10 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // Question adds a single Question.
-[GoRecv] public static error Question(this ref Builder b, ΔQuestion q) {
+public static error Question(this ж<Builder> Ꮡb, ΔQuestion q) {
     q = q.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     if (b.section < sectionQuestions) {
         return ErrNotStarted;
     }
@@ -1384,7 +1387,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         return err;
     }
     {
-        var errΔ1 = b.incrementSectionCount(); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡb.incrementSectionCount(); if (errΔ1 != default!) {
             return errΔ1;
         }
     }
@@ -1403,10 +1406,11 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // CNAMEResource adds a single CNAMEResource.
-[GoRecv] public static error CNAMEResource(this ref Builder b, ResourceHeader h, ΔCNAMEResource r) {
+public static error CNAMEResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔCNAMEResource r) {
     h = h.ΔClone();
     r = r.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1429,7 +1433,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1438,10 +1442,11 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // MXResource adds a single MXResource.
-[GoRecv] public static error MXResource(this ref Builder b, ResourceHeader h, ΔMXResource r) {
+public static error MXResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔMXResource r) {
     h = h.ΔClone();
     r = r.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1464,7 +1469,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1473,10 +1478,11 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // NSResource adds a single NSResource.
-[GoRecv] public static error NSResource(this ref Builder b, ResourceHeader h, ΔNSResource r) {
+public static error NSResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔNSResource r) {
     h = h.ΔClone();
     r = r.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1499,7 +1505,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1508,10 +1514,11 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // PTRResource adds a single PTRResource.
-[GoRecv] public static error PTRResource(this ref Builder b, ResourceHeader h, ΔPTRResource r) {
+public static error PTRResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔPTRResource r) {
     h = h.ΔClone();
     r = r.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1534,7 +1541,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1543,10 +1550,11 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // SOAResource adds a single SOAResource.
-[GoRecv] public static error SOAResource(this ref Builder b, ResourceHeader h, ΔSOAResource r) {
+public static error SOAResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔSOAResource r) {
     h = h.ΔClone();
     r = r.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1569,7 +1577,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1578,9 +1586,10 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // TXTResource adds a single TXTResource.
-[GoRecv] public static error TXTResource(this ref Builder b, ResourceHeader h, ΔTXTResource r) {
+public static error TXTResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔTXTResource r) {
     h = h.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1603,7 +1612,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1612,10 +1621,11 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // SRVResource adds a single SRVResource.
-[GoRecv] public static error SRVResource(this ref Builder b, ResourceHeader h, ΔSRVResource r) {
+public static error SRVResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔSRVResource r) {
     h = h.ΔClone();
     r = r.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1638,7 +1648,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1647,10 +1657,11 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // AResource adds a single AResource.
-[GoRecv] public static error AResource(this ref Builder b, ResourceHeader h, ΔAResource r) {
+public static error AResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔAResource r) {
     h = h.ΔClone();
     r = r.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1673,7 +1684,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1682,10 +1693,11 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // AAAAResource adds a single AAAAResource.
-[GoRecv] public static error AAAAResource(this ref Builder b, ResourceHeader h, ΔAAAAResource r) {
+public static error AAAAResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔAAAAResource r) {
     h = h.ΔClone();
     r = r.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1708,7 +1720,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1717,9 +1729,10 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // OPTResource adds a single OPTResource.
-[GoRecv] public static error OPTResource(this ref Builder b, ResourceHeader h, ΔOPTResource r) {
+public static error OPTResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔOPTResource r) {
     h = h.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1742,7 +1755,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
@@ -1751,9 +1764,10 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // UnknownResource adds a single UnknownResource.
-[GoRecv] public static error UnknownResource(this ref Builder b, ResourceHeader h, ΔUnknownResource r) {
+public static error UnknownResource(this ж<Builder> Ꮡb, ResourceHeader h, ΔUnknownResource r) {
     h = h.ΔClone();
 
+    ref var b = ref Ꮡb.DerefOrNull();
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1776,7 +1790,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         }
     }
     {
-        var errΔ3 = b.incrementSectionCount(); if (errΔ3 != default!) {
+        var errΔ3 = Ꮡb.incrementSectionCount(); if (errΔ3 != default!) {
             return errΔ3;
         }
     }
