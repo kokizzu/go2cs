@@ -19,6 +19,11 @@ started lying.
 
 ## 1. The invariant: one variable at a time
 
+> **Schedule fact (recon, 2026-08-23): .NET 9 reaches end of support 2026-11-10** — the STS
+> window was extended to 24 months, landing .NET 8 and 9 on the same EOL day. The .NET 10 hop is
+> therefore mandatory-by-November, not discretionary; .NET 10 has been GA since 2025-11-11 and is
+> LTS through 2028-11-14. Full survey: [`phase4/RECON-dotnet10.md`](phase4/RECON-dotnet10.md).
+
 A .NET migration moves the runtime and the target framework moniker. **It moves nothing else.** In
 particular it does not move the Go toolchain, the corpus's Go release, or the converter's language
 level — those belong to a Go corpus migration, which is a separate hop with separate gates.
@@ -133,6 +138,18 @@ afterward with a third probe.
 ## 4. Stage 1 — the SDK alone
 
 **Changes:** the SDK on `PATH`. **Not** the TFM.
+
+> **⚠ Stage 1 changes more than it looks like it does (recon finding, 2026-08-23,
+> [`phase4/RECON-dotnet10.md`](phase4/RECON-dotnet10.md)):** every converted csproj pins
+> `LangVersion=latest`, so the SDK hop alone recompiles the whole corpus as **C# 14** while still
+> targeting net9.0 — and C# 14's first-class span conversions (`T[]` → `ReadOnlySpan<T>` as a
+> built-in conversion) land squarely on golib's `slice<T>`/`@string`/`array<T>`
+> implicit-conversion and overload surface. The one-variable invariant holds — the SDK IS the one
+> variable — but the stage's record must state that the language version rode with it, and the
+> behavioral suite is the detection net for any overload-resolution shift. Also from the same
+> recon: the .NET 10 CLI writes informational output to **stderr**, a fresh surface for the
+> repository's documented PS 5.1 `$ErrorActionPreference='Stop'`/NativeCommandError trap — audit
+> harness call sites before trusting a Stage-1 red.
 
 **Gate — the full compile-and-run ladder, by instrument:**
 
