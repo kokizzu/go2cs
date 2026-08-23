@@ -141,10 +141,8 @@ public readonly struct @string :
     // A concrete slice<byte>/@string argument still prefers its own more-specific constructor.
     public @string(IByteSeq<byte> value)
     {
-        byte[] bytes = AllocationCounter.NewArray<byte>(value.Length);
-
-        for (nint i = 0; i < value.Length; i++)
-            bytes[i] = value[i];
+        // One interface call and one vectorized copy — see the matching slice<T> constructor.
+        byte[] bytes = AllocationCounter.CopyOf<byte>(value.ꓸꓸꓸ);
 
         m_value = bytes;
         m_offset = 0;

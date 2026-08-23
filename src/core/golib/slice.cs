@@ -264,10 +264,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             return;
         }
 
-        T[] copy = AllocationCounter.NewArray<T>(seq.Length);
-
-        for (nint i = 0; i < copy.Length; i++)
-            copy[i] = seq[i];
+        // `ꓸꓸꓸ` is the sequence's own window as a span, so this is ONE interface call and one
+        // vectorized copy — the same shape ByteSeqExtensions.ToSlice already uses for the
+        // constrained-generic route; these constructors are the boxed-interface route to the same
+        // conversion. The element loop it replaces paid an interface dispatch and a bounds check
+        // per element. The allocation count is unchanged: still exactly one charged copy.
+        T[] copy = AllocationCounter.CopyOf<T>(seq.ꓸꓸꓸ);
 
         m_array = copy;
         m_low = 0;
