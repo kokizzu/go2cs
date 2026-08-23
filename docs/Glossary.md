@@ -144,6 +144,16 @@ A **wave** is a coordinated group of chips spawned from one diagnosis round. The
 **red set**) is the current list of red census packages; the campaign advances by collapsing the
 frontier's leaf failures wave by wave.
 
+**OQ (open question) / RULED / owner OQ.**
+A design doc names its unresolved decisions as numbered **OQs** (`⟨OQ-3⟩`) *before* the design is
+ratified, so what is still open is explicit rather than latent in the prose. Each OQ is closed by
+a **ruling** — a recorded decision with its rationale, usually by the coordinator against
+evidence — after which the doc marks it RULED and implementation may bind to it (an
+implementation entry citing `⟨OQ-3⟩` means "this code does what that ruling chose"). An
+**owner OQ** is one only the human project owner can rule — naming, licensing, external
+registrations, spend — and is parked in the plan's owner-decisions section until the owner
+answers; nothing machine-blocked ever waits on one.
+
 <a id="banked"></a>**Banked / bank.** Two senses, disambiguated by object:
 1. *(a finding is banked)* A verified-but-not-fixed item recorded durably (memory log + a
    banked-follow-ups note) instead of fixed now — typically a latent sibling with zero occurrences
