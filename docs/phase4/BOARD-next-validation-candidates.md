@@ -18273,7 +18273,7 @@ remains unmeasured until these leaves fall.
 
 Board-mechanics note, recorded because it bit twice: the append that landed the native-Linux
 entry used offset arithmetic against the guard line and ATE the `<` of the closing comment,
-leaving `---!-- {% endraw %} ... -->` — Liquid still parsed (endraw terminates raw even there)
+leaving `---!--` + the endraw tag + `... -->` (the tag deliberately not spelled with its brace syntax here: quoted inside a raw guard it TERMINATES the guard -- the exact defect that took Pages down at f37ba28ef, and then AGAIN via this very line before it was reworded) — Liquid still parsed (endraw terminates raw even there)
 so Pages stayed up, but the junk rendered. This append repairs the guard and retires the
 arithmetic: appends reconstruct the tail explicitly.
 
