@@ -1149,9 +1149,13 @@ public static partial class builtin
     public static S append<S, T>(S s, params ReadOnlySpan<T> items) where S : ISlice<T>, ISliceWrap<S, T>
     {
         // Route to the core slice Append directly — a recursive `append(...)` call would resolve
-        // back to THIS overload (slice<T> itself satisfies the constraints, and the concrete
-        // overloads take Span, not ReadOnlySpan): infinite recursion.
-        slice<T> result = go.slice<T>.Append(new slice<T>(s), items.ToArray());
+        // back to THIS overload (slice<T> itself satisfies the constraints), so it would be
+        // infinite recursion.
+        //
+        // The items go across as the span they already are. This used to call items.ToArray(),
+        // allocating and copying a whole array per constrained append purely because the core
+        // Append took Span; it takes ReadOnlySpan now, and its body never wanted the wider access.
+        slice<T> result = go.slice<T>.Append(new slice<T>(s), items);
         return S.Wrap(result);
     }
 
