@@ -629,7 +629,7 @@ with **zero** set difference in either direction. Release morning's freeze will 
   nuget-1.23.1.6`, because `$releaseTag` (line 187) is composed from the **un-bumped** `$fullVersion`.
   The run that bumps mints `nuget-1.23.1.7`. Cosmetic, but it misinforms at exactly the moment someone
   is checking §3.1's version arithmetic. **FIXED** — a dry run names the would-be tag. The
-  `-Push -BumpBuild:$false` branch keeps the old wording deliberately (release path, left byte-identical);
+  `-Push -BumpBuild:$false` branch keeps the old wording deliberately (release path, left byte-identical) -- RULED CORRECT AS-IS (coordinator, 2026-08-22): a no-bump re-push re-publishes the existing version, so the existing tag is precisely the right name;
   it carries the same imprecision and is flagged in §3.6.8 as an open, cosmetic residue.
 * **D3 — §3.3 over-budgets by ~6x.** "Budget hours on a slow host" measures **18.3 minutes** on the
   fleet's slowest machine. Two Release builds dominate at ~510 s each; everything else is seconds.
