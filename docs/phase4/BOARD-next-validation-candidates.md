@@ -18168,6 +18168,28 @@ The poller entry above closed with S3 in flight; this is its result, and it is t
 
 **A five-second harness trap, recorded so the next lane does not pay it twice.** `run-validated-sweep.ps1` is ROSTER-driven: `-Filter <off-roster-pkg> -Exact` throws *"No banked packages matched filter"* and returns in ~4 s, which is why off-roster candidates go through the raw pipeline. But the raw pipeline needs what the sweep supplies for free: `src/_paths.ps1` pins `$env:GoTargetOS = 'linux'` on a Linux host so every child `dotnet` inherits it. A bare `go2cs -tests` from a shell does NOT get it — the test host then builds the **Windows** flavor and dies at run time with `kernel32.dll.so: cannot open shared object file`, which the pipeline reports as **`conversion-blocked`** and reads exactly like a converter wall. My first S3 pass produced three such phantom walls (`net/smtp`, `net/http/httptest`, `net/http/cgi`); all three evaporated on the re-run with `GoTargetOS=linux` exported, and two of them are in the validated column above. **Export it in any raw `-tests` harness**, and treat a `conversion-blocked` verdict whose log mentions `kernel32` as a harness fault, never a finding.
 
----
+## 2026-08-23 · Condition (d) verdict arithmetic — how the dual-OS consolidation legs are judged (coordinator ruling, relayed on the mailbox in flight)
 
+The Linux leg reports the QUADRUPLE — PASS / FAIL / COUNT / CVAC — and three readings are fixed
+before its verdict composes. (1) **An attributed CVAC row is GREEN for (d)**: the comparison
+validated at a count on this OS; the row is merely unbanked, which is a roster gap, not a
+regression. (2) **A FAIL row is within green iff attributable to an already-classified seam**
+(UDP wall, exec-adjacent residue, object-lifetime, and kin) — `crypto/tls` on Linux is the
+worked example: FAIL with exactly the classified pair (`TestVerifyHostname` = UDP wall,
+`TestCertCache` = object-lifetime), completing in 711 s where it previously ate a deadline
+(the `runtime_rand` fix paying for itself). (3) **The sweep's exit code is NOT the leg's
+verdict**: the script exits 1 whenever CVAC > 0 — its honest not-banked-for-banking posture —
+so an exit-1 leg whose non-PASS rows are all attributed is a green leg. Judge by the quadruple
+plus the attribution table, never the exit code alone.
+
+Post-leg obligations minted by the same run: `crypto/sha1` (linux: 13) and `bytes` (linux: 86)
+annotations bank on master against the leg's record, retiring their CVAC rows; `crypto/tls`
+owes its own small per-OS item (a `linux:` annotation plus the per-OS disclosure shape for its
+two classified divergences). Fleet trap recorded in flight: any harness that greps the sweep's
+verdict lines must include `CVAC` in its verdict class set — a pre-ruling regex records CVAC
+rows as no-verdict, which reads exactly like a dead leg (R hit this at row 4 and lost ~14 min).
+Per-row wall times are native as of `4e91a03e2` (`[NNNs]` on every verdict line, the H5 number);
+the in-flight legs predate it and carry their own ledgers/mtime derivations instead.
+
+---
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
