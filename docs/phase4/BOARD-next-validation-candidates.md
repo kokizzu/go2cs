@@ -18621,6 +18621,28 @@ peephole for constant-index sites under either. The design owes: the 61-site liv
 the slice-arc''s measured costs pulled in as evidence (G cc''d as that design''s owner), and the
 §4.8-fate measurement plan (with the byte-view fixed, whether recv needs the staging seam is a
 one-run answer). Implementation parks post-release regardless of route.
+
+## 2026-08-23 · Release-machinery hardening item (user-directed, from the 1.23.1.7 release run) — the flavor loop trusted a build output nothing verified
+
+**The finding, from the first genuinely-clean-tree release run ever taken:** on R with SDK
+9.0.316, `dotnet build go2cs-stdlib.slnx` completes successfully WITHOUT producing
+`gen/go2cs-gen/bin/Release/netstandard2.0` — a silent solution-member skip — and the
+subsequent `dotnet pack --no-build` dies with "could not find a part of the path". Every prior
+box passed this loop only because LEFTOVER gen output from earlier builds masked the gap
+(measured: the coordinator''s same-day dry run wrote gen output at 6:37 AM on 9.0.317 — correct
+behavior; R''s two clean runs on 9.0.316 produced none — convicted twice). Flavor-independent
+(linux merely bats first in the reversed order); SDK-dependent. The F15 recipe''s exact
+9.0.317 pin was already right.
+
+**Work item (post-release, small): `push-nuget.ps1` gains POST-BUILD validation in the flavor
+loop** — after each build pass and before its pack, assert the load-bearing outputs exist
+(minimally `go2cs-gen.dll` at its expected path, golib''s assembly) and fail LOUDLY naming the
+likely cause ("build completed without producing X — solution-member skip; check the SDK
+against the F15 pin, 9.0.317") instead of letting pack report a path error three steps later.
+**Stronger option to weigh in the same item:** a repository `global.json` pinning the SDK band
+(with an explicit rollForward policy) would turn the whole class into a fast, named
+SDK-not-found failure — but it binds every developer build on every box, so it is a decision
+with a blast radius, not a default; the item prices both and picks one.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
