@@ -9,7 +9,17 @@
 > work, no handoff). The commissioning scope is AMENDED per §1.3's measurement: the bill is
 > DNS/name-resolution and `crypto/tls` `TestVerifyHostname` — cgi (exec axis) and cookiejar
 > (test-host gap) were never behind this wall. Implementation parks merged-ready under the
-> release-eve freeze per §7. Commissioned in the overnight standing orders
+> release-eve freeze per §7.
+>
+> **⟨OQ-3⟩ AMENDED (coordinator, 2026-08-23, on the implementation's own measurements).** The
+> ruled procedure named the wrong instrument, twice: a seeded SINGLE-PACKAGE reconvert emits
+> **no csproj at all** (sources only — the csproj regenerator is the stdlib driver), and a
+> single-TARGET stdlib run with a package filter regenerates the csproj **knowing only its one
+> target, silently deleting the other GOOS ItemGroups** — landing that diff would have broken
+> the darwin and windows builds of the package. **The correct instrument for an L3 package's
+> csproj regen is the THREE-target emission** (`-platforms windows/amd64,linux/amd64,darwin/amd64
+> -platform-stage <dir>`), under which the diff is exactly the one-line
+> `<AllowUnsafeBlocks>` flip the ruling asked to prove. Measured, not assumed — lane R, S1. Commissioned in the overnight standing orders
 > (2026-08-23, to R): *"The UDP wall arc — the big one, yours by domain: DESIGN doc first
 > (`DESIGN-linux-udp.md`, OQs named per house style), post 'ratify?' … Scope: the UDP seam of the
 > sockaddr/syscall family so the net UDP tests, `net/http/cgi` and `cookiejar` open and the

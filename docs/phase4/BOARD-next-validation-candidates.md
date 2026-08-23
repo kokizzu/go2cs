@@ -18348,6 +18348,37 @@ Against my pre-merge 161-row measurement: **7 flips, ZERO regressions, 1 newly-m
 
 My per-row driver's verdict regex was `^\s+(PASS|FAIL|COUNT)\s`, written before the per-OS ruling, so the first two CVAC rows recorded as **NOVERDICT** — which reads exactly like "the sweep produced nothing", i.e. like a broken leg. Caught at row 4 by reading the row logs, patched to include `CVAC`, the two bad ledger rows dropped, and the run resumed (the gate had already passed, so the resume skipped it; ~14 min lost). **Any harness that greps the sweep's verdict lines needs the same one-word patch.**
 
+## 2026-08-23 · UDP S1 DONE AND MEASURED (lane R, parked under the freeze) — the datagram seam closes; three findings outlive the arc
+
+**S1 works, measured on the distro:** `internal.syscall.unix` + `net` build linux-native 0/0
+with the REAL csproj; loopback UDP round trip AND a connected-UDP DNS exchange against the
+resolv.conf nameserver are **byte-identical to `go run`** (32 out, 160 back, id and answer
+count matching). Branch parked merged-ready (GPG park + emission-visible csproj change), first
+in line after the release. The `UdpLoopbackRoundTrip` guard follows, parked the same way.
+
+**Finding 1 — the DNS residual is NOT a syscall wall.** `net.LookupHost` still times out in
+converted code while the transport underneath provably answers — the residual is in `net`'s own
+resolver machinery, ABOVE the socket layer. Routed as a diagnosis-first item (root it, no blind
+fix); S2's msghdr pair is NOT implicated (connected UDP reads via plain read(2)).
+
+**Finding 2 — the L3 csproj-regen trap (⟨OQ-3⟩ amended in the design doc):** a seeded
+single-package reconvert emits NO csproj; a single-TARGET stdlib filtered run regenerates one
+that silently DELETES the other GOOS ItemGroups. The instrument for an L3 package's csproj
+regen is the THREE-target emission, full stop. Would have shipped a broken corpus if landed
+unmeasured.
+
+**Finding 3 — platform-specific hand-own companions need PRINCIPAL-LESS names.** The L3 merge
+routes `X_impl.cs` into every folder its principal `X.cs` occupies — `net.cs` is `//go:build
+unix`, so a companion named `net_impl.cs` was copied into `darwin/` carrying LINUX syscall
+numbers (measured). Named `net_linux_impl.cs` it is principal-less and stays put; re-measured:
+`linux/` present, `darwin/` absent. Rule: a companion whose BODY is platform-specific takes a
+name with no principal, and says why in its header.
+
+**Fleet ledger — the WSL crash-dump disk shape:** a three-target regen is a ~20 GB operation;
+driving the WSL VHD to ENOSPC remounts the distro read-only AND writes enormous crash dumps to
+`%TEMP%\wsl-crashes` on the HOST (136 GB observed, C: to 0 bytes). Check that directory first
+when a box mysteriously reads 0 free; the ext4 inside was undamaged. R recovered to 136 GB
+free; lane healthy.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
