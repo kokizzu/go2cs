@@ -269,6 +269,17 @@ a green sweep** — is offered as a recommendation, not a ruling.
 > constituency: crypto/rand, mime, path/filepath, debug/buildinfo); (d) one full dual-OS
 > consolidation sweep green (both legs on the sweeper). Until then: the tag flies, the site is
 > live, and nothing downstream blocks on the unpublished packages.
+>
+> **✅ ALL FOUR CONDITIONS CLOSED (coordinator, 2026-08-23) — the release is GO.** (a) the poller
+> merged at `18770d083` measured through S3 (crypto/tls 400/402 on Linux, the Windows banked
+> count); (b) seams classified-final (every Linux FAIL row attributed, nothing unexplained);
+> (c) the ruling delivered and LIVE (the consolidation sweep validated all four constituency
+> rows against their annotations; the COUNT class is empty); (d) the dual-OS consolidation
+> sweep at `18770d083`: **Windows leg 162/162 PASS (JOB-007, 18,569 verdicts, the exact roster
+> total)** and **Linux leg 152/162 GREEN (149 PASS / 10 FAIL / 3 CVAC, zero regressions, all
+> ten FAILs attributed to classified seams)** — the quadruple + attribution reading per the
+> board's condition-(d) arithmetic entry. Per-row wall tables for both legs are banked in
+> [`DATA-sweep-row-walltimes.md`](DATA-sweep-row-walltimes.md).
 
 > **⚠ USER-EXECUTED IN FULL.** Publishing to nuget.org is an irreversible act — a version can be
 > unlisted, never deleted — and no lane and no coordinator session runs `push-nuget.ps1 -Push`. The
