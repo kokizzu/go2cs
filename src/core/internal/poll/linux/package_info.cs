@@ -48,6 +48,35 @@ using static go.@internal.poll_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/poll/copy_file_range_linux.go", "copy_file_range_linux.cs", "ABAciM7igpaCgoKUggABFAACLqQAIQqCuJSCpLaoABMYgIKkgoCCpIKCgoKCpg==")]
+[assembly: go.GoPositionMap("internal/poll/errno_unix.go", "errno_unix.cs", "ABIqopSkpKSk")]
+[assembly: go.GoPositionMap("internal/poll/fd.go", "fd.cs", "ABcwwKSAooAADh6SgpQADRzAooCigO6SgoKCgpSCgg==")]
+[assembly: go.GoPositionMap("internal/poll/fd_fsync_posix.go", "fd_fsync_posix.cs", "AAoYsoCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/fd_mutex.go", "fd_mutex.cs", "AC5qAA4CgoKClIKClILOooKCgqaCgqaCpoKClIKClM6igoKClIKCzqKigoKCgoKUgoKClIKCgpSClIKCuIKCpoKClAAEEMKigoKCgoKUgoKClIKCgqaCgpSCgpTMopjCgpSssoKUqsKClKyygrzCgpSssoI=")]
+[assembly: go.GoPositionMap("internal/poll/fd_poll_runtime.go", "fd_poll_runtime.cs", "AA4oxJKSkpKSkpKSAAgQooKCgpSCpoKClIKokoKUpoKClIKmgqaC1oKClIKmgqaCpoKClKaCAAwYgpSkpKSkgqiSqJKokqbCgoKCgqaAgqSCgpSCAAUeAAwC")]
+[assembly: go.GoPositionMap("internal/poll/fd_posix.go", "fd_posix.cs", "AAsgooKUqNKAgqSC2LKAgqSC3LKAgqSC3uKAgqSCggAFFPKCgoI=")]
+[assembly: go.GoPositionMap("internal/poll/fd_unix.go", "fd_unix.cs", "ACpu8paClIKClIKmlKrmhISCgqrCggAGEKgABhCClqjSgIKkuIIADBbSgIKkgtyUgIKkgpSCgoKCgoCCyILq6ICCpIKUmIKCgqaClIKCqNKAgqSCgIKkgoKCgpSCgoCCyILq0oCCpIKAgqSCgoKClIKCgILIgurSgIKkgoCCpIKCgoKUgoKAgsiC6tKAgqSCgIKkgoKCgqaCgILIgurSgIKkgoCCpIKCgoKmgoCCyILq0oCCpIKAgqSCgoKCpoKAgsiC6tKAgqSCgIKkgoKCgpSCgtyUlIKUgoCCtoKUgvwACAiAgqSCgoKCgpSCgpSClIKUgpSC/NKAgqSCgIKkgoKClIKAgraClOrSgIKkgoCCpIKCgpSCgIK2gpTq0oCCpIKAgqSCgoKUgoCCtoKU6tKAgqSCgIKkgoKClIKAgraClOrSgIKkgoCCpIKCgpSCgIK2gpTq0oCCpIKAgqSCgoKUgoCCtoKU6tKAgqSEgIKkgoKClJSkgoCC3tTqsoCCpILcsoCCpIIADBKSgoKClJqk5qjSgIKkgtyyqNKAgqSC2NKAgqSCgIKkgoKUgIIACAzSgIKkgoCCpIKClICCAAgMkoKCgg==")]
+[assembly: go.GoPositionMap("internal/poll/fd_unixjs.go", "fd_unixjs.cs", "AA8gpNzawoKCgoKUgtjSgIKkgtzygIKkgoKCgoKCgILa6tKAgqSC")]
+[assembly: go.GoPositionMap("internal/poll/fd_writev_unix.go", "fd_writev_unix.cs", "AAscgpiCgoKmgpQ=")]
+[assembly: go.GoPositionMap("internal/poll/iovec_unix.go", "iovec_unix.cs", "AAoWgg==")]
+[assembly: go.GoPositionMap("internal/poll/sendfile_linux.go", "sendfile_linux.cs", "AA0cAAgCgpSAgqSEgIKmgoKCgpSCgoKC/pSClICCtoI=")]
+[assembly: go.GoPositionMap("internal/poll/sock_cloexec.go", "sock_cloexec.cs", "AA8gooKClA==")]
+[assembly: go.GoPositionMap("internal/poll/sockopt.go", "sockopt.cs", "AAoY0oCCpILY4oCCpILY0oCCpILY0oCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/sockopt_linux.go", "sockopt_linux.cs", "AAkU0oCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/sockopt_unix.go", "sockopt_unix.cs", "AAoY0oCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/sockoptip.go", "sockoptip.cs", "AAoY0oCCpILY0oCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/splice_linux.go", "splice_linux.cs", "ABFEAAwCgoKUgpKCgoKUAAsYgoKUhIKCgoKmgpQABhoADgKAgqSCgIKkyoKClIKUgoCCAAkmABECgIKkgoCCpILKgoK4goKClIKUgoCCyN7CggAWLKaCgpSCqJKCgpSmxoKCgpSokoKAggAHEISosoI=")]
+[assembly: go.GoPositionMap("internal/poll/writev.go", "writev.cs", "AAwg4oCCpIKAgqaCgsqClJaCgoKCgoKUgoKClIKCpoKUgpSEgoKClIKCgoKCgpSCgIK2lIKCpg==")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal;
 
 [GoPackage("poll")]
