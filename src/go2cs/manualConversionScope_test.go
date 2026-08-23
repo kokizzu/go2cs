@@ -347,3 +347,27 @@ func (c *copyChecker) check() {}
 		}
 	}
 }
+
+// Recvfrom is hand-owned on LINUX only, and the scope matters more than most: its generated body
+// hands the kernel a managed RawSockaddrAny by address, which the kernel overwrites -- the class
+// that kills net.Interfaces() with an AccessViolation. Windows has its own Recvfrom surface and is
+// NOT displaced by the linux hand-own; darwin has no measured corpus and keeps its converted body.
+func TestRecvfromIsScopedToLinuxOnly(t *testing.T) {
+	entry, ok := manualConversionFuncs["syscall"]["Recvfrom"]
+
+	if !ok {
+		t.Fatal("syscall.Recvfrom is not registered as a manual conversion; the linux hand-own in " +
+			"sockaddr_linux_impl.cs would be shadowed by the generated body that causes the AV")
+	}
+
+	if !entry.includes("linux") {
+		t.Error("syscall.Recvfrom must be displaced on linux -- that is where the hand-own lives")
+	}
+
+	for _, goos := range []string{"windows", "darwin"} {
+		if entry.includes(goos) {
+			t.Errorf("syscall.Recvfrom must NOT be displaced on %s: no hand-own exists there, so the "+
+				"placeholder would leave the function unimplemented", goos)
+		}
+	}
+}

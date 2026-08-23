@@ -803,6 +803,11 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Getpeername":   goosWindowsLinux,
 		"Accept4":       goosLinux,
 		"anyToSockaddr": goosLinux,
+		// Recvfrom hands the kernel a MANAGED RawSockaddrAny by address in its generated form, which
+		// the kernel overwrites -- the fifth instance of the kernel-writes-over-managed-array class,
+		// and the first that kills the process (net.Interfaces() -> NetlinkRIB -> AccessViolation).
+		// syscall/linux/sockaddr_linux_impl.cs answers it with the mirror's native image + typed decode.
+		"Recvfrom": goosLinux,
 		// The OVERLAPPED family — the SUBMIT SEAM of the managed netpoller arc
 		// (docs/phase4/DESIGN-netpoll-managed-poller.md §4.3/§4.4/§4.5;
 		// syscall/windows/zsyscall_windows_wsa_impl.cs carries the full write-up). Same

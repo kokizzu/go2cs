@@ -458,6 +458,67 @@ partial class syscall_package
         return readNativeSockaddr(buffer, addrlen);
     }
 
+    // Recvfrom is the FIFTH confirmed instance of the kernel-writes-over-a-managed-array class
+    // (Timezoneinformation, win32finddata1, ProcessEntry32, SiginfoChild, and this), and the first
+    // one measured as a process KILL rather than a wrong value:
+    //
+    //   System.AccessViolationException: Attempted to read or write protected memory...
+    //     at go.array<SByte>.get_Item(IntPtr)
+    //     at syscall.anyToSockaddr(ж<RawSockaddrAny>)
+    //     at syscall.Recvfrom  ->  syscall.NetlinkRIB  ->  net.interfaceTable  ->  net.Interfaces()
+    //
+    // MECHANISM, and the tell that distinguishes it from an ordinary empty-array bug. The generated
+    // body did `ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa)` and passed `Ꮡrsa` to
+    // recvfrom(2) -- so the kernel wrote a native sockaddr over MANAGED memory whose `array<int8>`
+    // fields are eight-byte OBJECT REFERENCES where the OS expects inline storage. The reference
+    // itself becomes raw sockaddr bytes, and the next index follows it into unmapped memory. golib's
+    // array<T> indexer is bounds-CHECKED and would panic cleanly on a merely-empty array, so an
+    // AccessViolation specifically means corrupted state -- that is the diagnostic tell, and it is
+    // why this presents as a crash rather than as garbage.
+    //
+    // net.Interfaces() reaches it through NetlinkRIB on every call, so the public API killed the
+    // process on Linux at master until this body replaced it.
+    //
+    // THE REMEDY IS THE MIRROR'S, for the fourth time: a native image this file owns, plus a typed
+    // decode. Go's own shape is reproduced exactly (syscall_unix.go): recvfrom, then decode ONLY when
+    // the kernel actually wrote an address family -- `if rsa.Addr.Family != AF_UNSPEC`. The buffer's
+    // family word is cleared first so "the kernel wrote nothing" reads as AF_UNSPEC rather than as
+    // whatever the stack happened to hold, which is the same question Go's zero-valued struct answers.
+    // Syscall6, not RawSyscall, because Go's generated recvfrom uses the bracketed form: this call
+    // can block.
+    //
+    // SCOPE, per the commissioning ruling: Recvfrom ALONE closes the AV. Recvmsg/Sendmsg are NOT the
+    // same lines -- they need a native msghdr plus an iovec array and two-way control-message
+    // handling -- so they stay behind DESIGN-linux-udp.md's S2 evidence gate rather than riding along.
+    public static unsafe (nint n, Sockaddr from, error err) Recvfrom(nint fd, slice<byte> p, nint flags) {
+        byte* buffer = stackalloc byte[nativeSockaddrLen];
+        _Socklen addrlen = nativeSockaddrLen;
+        byte zero = 0;
+
+        // "No address written" must be distinguishable from a stale stack value; Go gets that from a
+        // zero-valued RawSockaddrAny, this gets it by clearing the family word the check reads.
+        *(uint16*)buffer = AF_UNSPEC;
+
+        // The payload travels by pinned slice-element address -- the one managed storage the runtime
+        // can be asked to hold still -- exactly as every generated zsyscall wrapper does. An empty
+        // slice has no element to take, so it passes a valid address of a zero-length region.
+        uintptr payload = len(p) > 0 ? (uintptr)Ꮡ(p, 0) : (uintptr)(void*)(&zero);
+
+        var (r1, _, e1) = Syscall6(SYS_RECVFROM, (uintptr)fd, payload, (uintptr)len(p),
+                                   (uintptr)flags, (uintptr)(void*)buffer, (uintptr)(void*)(&addrlen));
+
+        if (e1 != 0) {
+            return ((nint)r1, default!, errnoErr(e1));
+        }
+
+        if (*(uint16*)buffer == AF_UNSPEC) {
+            return ((nint)r1, default!, default!);
+        }
+
+        var (sa, err) = readNativeSockaddr(buffer, addrlen);
+        return ((nint)r1, sa, err);
+    }
+
     // Accept4 is Go's own body (syscall_linux.go) over the trampoline instead of the typed generated
     // wrapper: the kernel fills the stack buffer, the "RawSockaddrAny too small" panic and the
     // close-on-decode-failure are kept verbatim. Accept (syscall_linux_accept4.go) is pure Go over
