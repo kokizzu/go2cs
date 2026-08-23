@@ -600,8 +600,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// readdir hands libc's readdir_r the ADDRESS of a Go `syscall.Dirent` (`readdir_r(d.dir,
 	// &dirent, &entptr)`), whose converted form carries a managed `array<uint8>` reference where the
 	// C struct has inline storage — the same non-blittable-struct-by-address seam as syscall's
-	// wrappers below. Its hand-own is owed with macOS (increment 5); until then darwin emits a
-	// placeholder, exactly as it did before this entry carried a scope.
+	// wrappers below. Its hand-own LANDED 2026-08-23 (os/darwin/dir_darwin_impl.cs), dispatched by
+	// the FIRST darwin CI census, which found the suppression standing with no companion beside it:
+	// 19 errors on both mac legs, all three dir.cs call sites. The companion keeps Go's protocol and
+	// replaces only the unrepresentable buffer — ONE unmanaged block per call holding libc's entry
+	// record and the `dirent *` out-slot, decoded at darwin's documented offsets — because BOTH
+	// native arguments are unrepresentable: the entry is the non-blittable-struct-by-address seam,
+	// and `**Dirent` is the OUT-parameter class beside it (`ж<T> → uintptr` answers 0 for a nil box,
+	// so libc would receive a NULL slot and the EOF test could never observe anything else).
 	//
 	// LINUX is scoped OUT, and that is what the scope bought: dir_unix.go's readdir is pure Go over
 	// internal/poll's ReadDirent and the dirent_linux.go accessors, so it converts faithfully and
