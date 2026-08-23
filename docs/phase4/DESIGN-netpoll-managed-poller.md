@@ -1015,7 +1015,17 @@ that should not be re-derived when accept arrives:
 |:--|:--|:--|
 | `WSARecvFrom` | `ReadFrom` (:617), `ReadFromInet4` (:655), `ReadFromInet6` (:693) | one sockaddr into `o.rsa`, length into `o.rsan` |
 | `WSARecvMsg` | `ReadMsg` (:1330), `ReadMsgInet4` (:1364), `ReadMsgInet6` (:1399) | a sockaddr **and** a control buffer, through a `WSAMsg` that itself embeds a `ж<WSABuf>` |
-| `AcceptEx` | `acceptOne` (:1033) | a single output block holding TWO sockaddrs, split by `GetAcceptExSockaddrs` |
+| `AcceptEx` | `acceptOne` (:1033) | a single output block holding TWO sockaddrs, split by `GetAcceptExSockaddrs` — ⚠ **ALREADY DONE**, see below |
+
+**⚠ CORRECTION (2026-08-23, at implementation): `AcceptEx` was ALREADY FIXED when this table was
+written, and it is the TEMPLATE rather than a member of the backlog.** `AcceptEx` stages into the
+record's own native block and `GetAcceptExSockaddrs` transcribes it into managed `RawSockaddrAny`
+values field for field, precisely so `RawSockaddrAny.Sockaddr` — which flattens the managed struct
+back to its 116-byte native image — has a faithful thing to read. Those two are documented in their
+own headers as *"a pair; neither is meaningful alone"*. I listed accept as unfixed because I
+censused the SHAPE (`rsan = 116` over a `slice<RawSockaddrAny>`) without checking whether the
+wrappers around it were already hand-owned. The implementation is the third member of that pair, not
+a new mechanism — which is also why §4.8's proposed flat-sockaddr follow-on dissolved.
 
 All three are the same mechanism with a different decode closure: stage native at submit, copy back
 at harvest. `AcceptEx` differs only in that its staged block is larger and its decode calls
