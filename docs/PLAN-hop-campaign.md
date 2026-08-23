@@ -434,17 +434,60 @@ known to dominate:
 | `R` | the reserved set | the table above |
 | `C` | target shard wall time | one session's worth; propose **~90 min** so a shard fits a turn with margin |
 
-**Illustrative widths over 162 rows** — arithmetic, not a measurement:
+### 4.3.1 The computed map at the JOB-007 reading — DRAFT, pending recon calibration
 
-| `W` | rows per bin (even split, before LPT and reserves) | Fleet shape |
-|:--:|:--:|:--|
-| 3 | 54 | desktop + i9 + one laptop |
-| 4 | 40–41 | + second laptop |
-| 5 | 32–33 | + one engaged machine |
-| 6 | 27 | + two engaged machines |
+> **DRAFT (2026-08-23) — pending hop-recon factor calibration.** The construction above,
+> executed against the anchor's per-row wall times
+> ([`phase4/DATA-sweep-row-walltimes.md`](phase4/DATA-sweep-row-walltimes.md), windows · corpus
+> `18770d083` · i9-13900K, JOB-007: 162 rows, 18,569 verdicts, **7,701 i9-s total**). ⚠ **Every
+> `s_w` below is a provisional placeholder** — LANES.md's roster marks historical cross-machine
+> ratios SUSPECT, so the factors here are class-level readings (i9 = 1.00 by definition,
+> R 6850U = 0.45, i7-5820K = 0.35, G 6650U = 0.35, any fifth worker = 0.35 assumed), to be
+> replaced by the calibration pair's fresh numbers at recon and the map re-emitted. `k` is
+> assumed 1 pending its recon measurement. The full per-row deal (every row named exactly once,
+> checksum 162 = 7 reserved + 155 bulk) is emitted to `SHARDMAP-go1.23.12.md` at dispatch.
 
-⚠ **The map's only measured cost input is the anchor's consolidation sweep**, and per-row wall times
-are unrecoverable afterward. ⟨OQ-H5⟩.
+**The reserved set is the makespan from W = 4 up.** R's seven rows sum to **3,956 s (65.9 min)**
+serial on the i9 — and at W ≥ 4 the remaining 155 rows (3,745 i9-s) fit on the other workers
+~18 % under that floor, so LPT hands the i9 zero bulk rows and the campaign finishes when the
+reserved set does:
+
+| `W` | Fleet | Makespan (local wall) | Binding bin | Bulk bins finish |
+|:--:|:--|--:|:--|--:|
+| 3 | i9 + R + coordinator | **~4,289 s (71.5 min)** | all three balanced | — |
+| 4 | + G | **~3,956 s (65.9 min)** | i9's reserved set alone | ~54 min |
+| 5 | + one engaged machine | **~3,956 s (65.9 min)** | i9's reserved set alone | ~42 min |
+
+Findings the numbers force, stated before dispatch:
+
+1. **C = 90 min holds at every W at k = 1 — no bin splits.** The split thresholds: a bin first
+   exceeds C at k ≥ 1.26 (W=3) / k ≥ 1.37 (W≥4). If recon's k lands above that, step 5 splits
+   mechanically; the map re-emits, it does not redesign.
+2. **At W ≥ 4 the makespan is only mildly sensitive to the suspect factors** (±0.10 on every
+   non-i9 factor moves it 0–6 %) because the bulk bins are not the critical path;
+   mis-calibration costs projection accuracy and single-digit finish slip, never the 90-min
+   target. **At W = 3 it is capacity-bound and every factor
+   error passes through** — a W=3 dispatch waits for real calibration; W≥4 tolerates
+   placeholders. The one live sensitivity is the i9 itself: 20 % degradation → +25 % makespan.
+3. **W = 5 buys margin, not makespan** (bulk bins 54 → 42 min). Engage a fifth machine for
+   re-deal resilience against the i9's ~daily reboots, not for speed.
+4. **Six rows carry 53 % of the wall**, five of them already reserved; `crypto/dsa` alone on a
+   0.35 box would be 62.7 min. The pin is arithmetic, not caution. Two reserves are pinned for
+   reasons this table cannot show: `go/doc/comment` (18 s here, but 10,059 verdicts and spawns
+   `go build` throughout `TestStd` — the row most exposed to k) and `go/types` (137 s here vs
+   364 s at its prior reading — it moves between readings).
+5. **Reserved-set fallback (OQ-H6): R**, the largest non-i9 factor — at raised budgets only
+   (~2.1 h local for the top four rows; never re-dealt at the i9's budgets, per §6 lens 3).
+6. If ~66 min must shrink: the i9's 3-worktree capacity packs the reserved set to ~1,369 s
+   (~23 min) in 3 parallel worktrees — at the cost of running exactly the `$longTimeouts` rows
+   under concurrent load (crypto/dsa measured 2,444 s under concurrent gates). A coordinator
+   trade, not a default.
+
+⚠ **The map's measured cost input is the anchor's consolidation sweep** ⟨OQ-H5⟩ — the Windows
+leg's per-row walls are **banked** (`phase4/DATA-sweep-row-walltimes.md`, JOB-007, the reading
+above); the Linux leg's ledger joins the same file when it posts. Future sweeps carry per-row
+`[NNNs]` natively (`run-validated-sweep.ps1` since `4e91a03e2`), so this input is no longer
+unrecoverable.
 
 ⚠ **A worker cannot sweep before H2 reaches its clone**, and will say so loudly:
 `run-validated-sweep.ps1:85-133` throws when `version.props` disagrees with GOROOT's `VERSION`. Confirm
