@@ -163,6 +163,50 @@ if ($propsText -match '<GoStdLibVersion>([^<]+)</GoStdLibVersion>') { $baseVersi
 $fullVersion = "$baseVersion.$build"
 Write-Step "Package version: $fullVersion   (solution: go2cs-stdlib.slnx)"
 
+# The version a BUMPING run would publish. Only meaningful when this run did not bump: $build is then
+# still the last-published number, so +1 names the next release. After a bump $build already IS that
+# number, so the value would be one release too far ahead -- it is set to $null rather than computed
+# wrongly, and every consumer below sits on a -not $doBump path where that cannot happen.
+if ($doBump) { $wouldBeVersion = $null } else { $wouldBeVersion = "$baseVersion.$($build + 1)" }
+
+# A pack-only INSPECTION run -- the dry run docs\phase4\MILESTONE-75pct-prep.md section 3.3 recommends, and the
+# only shape in which the dry-run affordances below engage. Deliberately NARROWER than -not $doBump:
+#
+#   .\push-nuget.ps1                     $dryRun = $true    the section 3.3 dry run
+#   .\push-nuget.ps1 -BumpBuild:$false   $dryRun = $true    same shape, bump explicitly declined
+#   .\push-nuget.ps1 -Push               $dryRun = $false   the release
+#   .\push-nuget.ps1 -Push -BumpBuild:$false
+#                                        $dryRun = $false   a RELEASE (re-push of the current version
+#                                                           finishing a partially-failed publish); it
+#                                                           does not bump, but it publishes, so it must
+#                                                           freeze and verify against the REAL tree
+#   .\push-nuget.ps1 -BumpBuild          $dryRun = $false   prepare-the-release-commit; it bumps, so it
+#                                                           writes the real write-once snapshot
+#
+# Excluding -Push whatever its bump setting is what keeps the release path untouched by everything
+# below: with -Push, $dryRun is $false by construction and every branch guarded on it is dead code.
+#
+# CODE-PATH PROOF that -Push behaves exactly as it did before this affordance existed. The dry-run fix
+# touches six executable sites, and with -Push every one of them resolves to its pre-existing form:
+#
+#   1. $wouldBeVersion  -- a new variable. $null when $doBump; read ONLY inside `if ($dryRun)` branches,
+#                          so on any -Push run it is either $null or computed-and-never-read.
+#   2. $dryRun          -- $false whenever $Push, regardless of $doBump. This is the keystone: it makes
+#                          sites 3-6 unreachable on every release path.
+#   3. the tag skip message, 4. the "Froze N" message, 6. the "Verified N" message
+#                       -- each `if ($dryRun) { new } else { original }`; the else branch reproduces the
+#                          previous string literal verbatim, so console output is byte-identical too.
+#   5. the snapshot redirect and the ShouldProcess short-circuit
+#                       -- `if ($dryRun)` is not taken, so $versionProofs keeps docs\validation\<version>,
+#                          and `$dryRun -or $PSCmdlet.ShouldProcess(...)` evaluates ShouldProcess exactly
+#                          as the bare call did ($false -or X is X, including its -WhatIf side effect).
+#   + the try/finally  -- adds no catch, so exceptions propagate unchanged, and the finally is a no-op
+#                          because $dryRunProofRoot is $null on every release path. No `exit` is enclosed.
+#
+# Net effect with -Push: two variable assignments that nothing reads. Nothing else in the script's
+# behaviour, output or side effects moves.
+$dryRun = (-not $Push) -and (-not $doBump)
+
 $repoRoot = Split-Path $src -Parent
 
 # --- Release tag ----------------------------------------------------------------------------------
@@ -187,7 +231,17 @@ $repoRoot = Split-Path $src -Parent
 $releaseTag = "nuget-$fullVersion"
 
 if (-not $doBump) {
-    Write-Step "No build-number bump this run -- not tagging (the run that bumps mints $releaseTag)"
+    # $releaseTag is composed from the UN-bumped $fullVersion, so on a non-bumping run it names the tag
+    # of the release already published -- not the one "the run that bumps" would mint. Naming it here
+    # misinforms at exactly the moment someone is checking the version arithmetic. A dry run therefore
+    # names the would-be tag instead. The -Push -BumpBuild:$false branch keeps today's wording verbatim:
+    # it is a release path, and this fix is scoped to leave every release path byte-identical.
+    if ($dryRun) {
+        Write-Step "No build-number bump this run -- not tagging (the run that bumps mints nuget-$wouldBeVersion)"
+    }
+    else {
+        Write-Step "No build-number bump this run -- not tagging (the run that bumps mints $releaseTag)"
+    }
 }
 elseif (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Warning ("git is not available, so release tag $releaseTag was NOT created. Every package README's C# " +
@@ -222,6 +276,39 @@ elseif ($PSCmdlet.ShouldProcess($releaseTag, 'create signed release tag at HEAD'
 $validationDir = Join-Path $repoRoot 'docs\validation'
 $currentProofs = Join-Path $validationDir 'current'
 $versionProofs = Join-Path $validationDir $fullVersion
+$dryRunProofRoot = $null
+
+# WHY A DRY RUN NEEDS ITS OWN SNAPSHOT DIRECTORY (found by the section 3.6 rehearsal, defect D1).
+#
+# A pack-only run does not bump, so $fullVersion is the LAST-PUBLISHED version and $versionProofs is a
+# directory that already exists. The freeze then takes the "keeping it" branch and is never exercised,
+# and -- the real damage -- the green-badge verifier below checks TODAY's badges against a snapshot
+# frozen at the last release. Every package validated since then links a page that frozen directory
+# will never contain, so the verifier throws on the alphabetically first one and the run dies in eight
+# seconds having measured nothing. That is not a defect in the tree: it is guaranteed the moment one
+# row banks after a release, which is the normal state of this campaign (at the rehearsal: 162 green
+# badges against a 126-page snapshot). The documented dry run was simply unrunnable.
+#
+# The fix mirrors what release morning actually does, without writing to the tree. A dry run freezes
+# docs\validation\current into a TEMPORARY directory named for the version a bumping run would publish,
+# and the verifier checks the corpus's badges against those pages -- which is a coherent check, because
+# current\ is exactly the set the next release will freeze. The freeze branch runs for real (phase 5's
+# "Froze N" count is measured, not skipped), and the directory is removed in the finally below.
+#
+# It is NOT written to docs\validation\<would-be>\ in the tree: that path is write-once and belongs to
+# the release that bumps. Pre-creating it would make the release's own precondition check throw.
+#
+# $fullVersion is deliberately NOT moved to the would-be version. It is the version this run packs, and
+# it is what the README badge retarget and verification below compare against; moving it would rewrite
+# every README in the tree to advertise a version that was never published, and bake that wrong version
+# into the packed READMEs. Only the PROOF-PAGE location moves.
+if ($dryRun) {
+    $dryRunProofRoot = Join-Path ([System.IO.Path]::GetTempPath()) "go2cs-dryrun-proofs-$PID-$([System.IO.Path]::GetRandomFileName())"
+    $versionProofs = Join-Path $dryRunProofRoot $wouldBeVersion
+    Write-Step "Dry run -- freezing the would-be $wouldBeVersion snapshot to a temporary directory (the tree is not written)"
+}
+
+try {
 
 if (-not (Test-Path $currentProofs)) {
     Write-Warning "No validation proof pages at $currentProofs -- skipping the snapshot and badge retarget."
@@ -234,10 +321,24 @@ if (-not (Test-Path $currentProofs)) {
         if ($bumped) { throw "Validation snapshot $versionProofs already exists for the newly bumped version $fullVersion. Frozen snapshots are write-once -- reconcile src\version.props with docs\validation before publishing." }
         Write-Step "Validation snapshot $fullVersion already exists (write-once) -- keeping it"
     }
-    elseif ($PSCmdlet.ShouldProcess($versionProofs, "snapshot docs\validation\current")) {
+    # ShouldProcess gates writes the USER's tree keeps; a dry run's snapshot is a temporary directory
+    # this script deletes itself, so there is nothing to approve or to decline. Short-circuiting on
+    # $dryRun therefore also lets a pack-only -WhatIf reach the phases past this block instead of
+    # declining the freeze and then failing verification against a directory it just refused to fill.
+    # On every release path $dryRun is $false and ShouldProcess is consulted exactly as before.
+    elseif ($dryRun -or $PSCmdlet.ShouldProcess($versionProofs, "snapshot docs\validation\current")) {
         New-Item -ItemType Directory -Force $versionProofs | Out-Null
         Copy-Item (Join-Path $currentProofs '*.md') $versionProofs -Force
-        Write-Step "Froze $((Get-ChildItem $versionProofs -Filter *.md).Count) validation proof page(s) at docs\validation\$fullVersion"
+        $frozenCount = (Get-ChildItem $versionProofs -Filter *.md).Count
+        # The count is the phase-5 invariant: it must equal the roster's row count, which must equal the
+        # number of green-badge READMEs. A dry run names the would-be version and the temporary location
+        # so the line cannot be misread as a write into the tree; the release wording is unchanged.
+        if ($dryRun) {
+            Write-Step "Froze $frozenCount validation proof page(s) for would-be version $wouldBeVersion at $versionProofs (temporary)"
+        }
+        else {
+            Write-Step "Froze $frozenCount validation proof page(s) at docs\validation\$fullVersion"
+        }
     }
 
     # Retarget the version segment of every green badge link in the converted stdlib's READMEs. Read
@@ -309,7 +410,25 @@ if (-not (Test-Path $currentProofs)) {
         $verified++
     }
 
-    Write-Step "Verified $verified green badge(s) against the frozen $fullVersion proof pages"
+    if ($dryRun) {
+        Write-Step "Verified $verified green badge(s) against the would-be $wouldBeVersion proof pages"
+    }
+    else {
+        Write-Step "Verified $verified green badge(s) against the frozen $fullVersion proof pages"
+    }
+}
+
+}
+finally {
+    # Only ever removes a directory this run created under the system temp path; $dryRunProofRoot is
+    # $null on every release path, so this is a no-op there. In the finally so a throw anywhere in the
+    # snapshot/verify block above still cleans up. (The try's body is left at its original indentation
+    # to keep this fix's diff readable -- PowerShell does not care, and `git diff` shows the change
+    # rather than a re-indent of ninety unchanged lines.)
+    if ($dryRunProofRoot -and (Test-Path $dryRunProofRoot)) {
+        Remove-Item $dryRunProofRoot -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Step "Removed the dry run's temporary proof snapshot"
+    }
 }
 
 # --- C# Source badge retarget ---------------------------------------------------------------------

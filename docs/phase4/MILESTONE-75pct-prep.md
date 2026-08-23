@@ -321,24 +321,55 @@ damage of publishing anyway lands in end users' builds, not here.
 
 The script's own documented inspection path is the **default pack-only run** (`.EXAMPLE`, lines
 68–70): *"Pack every package to `src\artifacts\nupkg` (no push, no bump). Inspect the output, then
-push."* It ends at the push gate with `Pack-only (default)` and `exit 0` (lines 811–815).
+push."* It ends at the push gate with `Pack-only (default)` and `exit 0` (lines 910–914).
 
 ```powershell
-# From src\ — USER, on the release machine, solo (two full Release builds; budget hours on a slow host)
+# From src\ — USER, on the release machine, solo. Two full Release builds dominate; budget ~20 min
+# warm and ~50 min on a cold tree, both measured on the fleet's slowest box (§3.6.4, §3.6.8).
 .\push-nuget.ps1
 ```
+
+**Budget: tens of minutes, not hours — but budget from the top of the range.** Two measurements exist,
+both on the i7-5820K, the slowest machine on the fleet:
+
+| Tree state | Whole fifteen-phase run | |
+|:--|--:|:--|
+| Warm (`bin`/`obj` already populated) | **1,095 s — 18.3 min** | §3.6.4 |
+| **Cold** (a fresh worktree, nothing built) | **2,811 s — 46.8 min** | §3.6.8 |
+
+The two Release builds are the whole story — ~510 s each warm, roughly 2.5× that cold — while the
+metadata gate, the freeze, both retargets, both verifiers, the flavor comparison, the merge and both
+packs total well under two minutes either way. **Budget ~50 minutes** unless the release machine has
+already built this tree; a release machine usually has not. (This paragraph read *"budget hours on a
+slow host"* before the rehearsal executed it — an over-estimate, but only by ~2× against the cold
+number, not the ~6× §3.6.6 D3 inferred from the warm run alone.)
 
 What a pack-only run does and does not do, verified:
 
 - **Does not bump** `GoBuildNumber` (line 143: `$doBump = [bool]$Push`).
 - **Does not mint the release tag** — the mint is gated on the bump, and prints
-  `No build-number bump this run -- not tagging` (lines 189–191).
+  `No build-number bump this run -- not tagging (the run that bumps mints nuget-1.23.1.7)`, naming
+  the **would-be** tag (lines 213–225).
 - **Does** run the full metadata gate, both RID build+pack passes, the flavor comparison, and the
   merge — i.e. it exercises everything that can fail on build or packaging grounds.
-- **Does** touch `docs/validation/<current-version>/` if it is missing — the snapshot block is *not*
-  gated on the bump (lines 226–241). For `1.23.1.6` that directory already exists, so it reports
-  `already exists (write-once) -- keeping it`. Both badge retargets are no-ops at the current
-  version, and both verifiers still run, so a pack-only run **is** a real badge-consistency check.
+- **Does** exercise the freeze, both badge retargets and both verifiers, against a **would-be**
+  snapshot: a pack-only run freezes `docs/validation/current/` into a *temporary* directory named
+  for the version a bumping run would publish, verifies every green badge against those pages, and
+  deletes it (lines 256–330). So a pack-only run **is** a real badge-consistency check, and phase 5's
+  `Froze N` count is measured rather than skipped. It writes **nothing** into `docs/validation/`.
+
+⚠ **This is the fixed behavior; the original could not run at all.** Until 2026-08-22 a pack-only run
+reused the LAST-PUBLISHED version for the snapshot path, found that directory already frozen, skipped
+the freeze, and then verified today's badges against a stale snapshot — so it threw within eight
+seconds on the first package validated since the last release, which is the normal state of this
+campaign. §3.6.2 has the mechanism and §3.6.6 D1 the defect; the fix moves only the proof-page
+*location* for a pack-only run and leaves every `-Push` path byte-identical.
+
+- **Does not** pack a `VALIDATION.md` for packages validated since the last release. The `.csproj`
+  `Exists()` guard reads the repository's `docs/validation/<packed-version>/`, which the dry run's
+  temporary snapshot deliberately does not move — so a dry run packs the last release's page count,
+  silently and with `exit 0` (§3.6.5). That gap is a **property of the dry run only**: on release
+  morning the freeze writes every page into the tree before the build and every guard is satisfied.
 
 ⚠ **`-WhatIf` is not a whole-script rehearsal, and should not be used as one.** The script declares
 `SupportsShouldProcess`, and its writes and pushes are individually gated — but the two
@@ -400,12 +431,17 @@ dotnet build src\go2cs-stdlib.slnx -c Debug -p:GoTargetOS=linux --no-incremental
 `Generated` between target switches.)
 
 ⚠ **Disk, before either of the two Release builds.** A release run writes two full builds, two pack
-trees and a merge. Two recorded hazards: a nearly-full repo drive makes writes fail *mid-run* and
-surface as false build failures or a truncated tracked file (which is why `run-validated-sweep.ps1`
-refuses below a 25 GB floor), and the census above measured this repository's `D:` at **1,606 ms per
-4 KB file** against 0.75 ms on `C:` — a 2,140× penalty that turns a minutes-long phase into an
-apparently-hung one. Check free space and, if the release machine shows that penalty, run the
-release from a healthy volume.
+trees and a merge, and consumes **~7 GB** on the repository volume (§3.6.1, measured). A nearly-full
+repo drive makes writes fail *mid-run* and surface as false build failures or a truncated tracked
+file — which is why `run-validated-sweep.ps1` refuses below a 25 GB floor. **Check free space.**
+
+The slow-`D:` warning this paragraph used to carry — the census's **1,606 ms per 4 KB file**, a
+2,140× penalty over `C:` — **was a measured state of the disk at the census, not a property of it**,
+and it does not reproduce: re-measured 2026-08-22 at **0.65 ms per 4 KB file on `D:`** against
+0.82 ms on `C:`, i.e. no penalty at all, and the rehearsal ran the whole release path from `D:` in
+18.3 minutes (§3.6.4, §3.6.6 D4). Do not route the release off the repository's own volume on the
+strength of the old number. If a phase looks hung, **re-measure** the volume rather than assuming
+either reading.
 
 ### 3.5 After the push
 
@@ -491,6 +527,12 @@ true only while the roster has not moved since the last publication. Once it has
 **guaranteed** to throw and the pack-only run measures nothing past its first eight seconds. The
 statement was reasoned from source and never executed; this is what executing it says.
 
+> **RESOLVED 2026-08-22.** The script now gives a pack-only run its own would-be snapshot (a temporary
+> directory, never the tree), so the freeze branch executes and the verifier checks today's badges
+> against today's pages. §3.3 has been rewritten to the fixed behavior; the claim it makes is now true
+> by construction rather than by calendar luck. The eight-second failure above is the **pre-fix**
+> record and is kept as the mechanism it documents.
+
 #### 3.6.3 The instrumented rehearsal — the release-morning shape
 
 To exercise phases 5–13 the run needs the FREEZE branch, which only a not-yet-existing version
@@ -574,21 +616,31 @@ arithmetic is worth checking rather than trusting:
 Set arithmetic confirmed on this tree: roster rows == `current/*.md` == green-badge READMEs == **162**,
 with **zero** set difference in either direction. Release morning's freeze will satisfy every badge.
 
-#### 3.6.6 Deviations found (flagged, not fixed)
+#### 3.6.6 Deviations found
+
+**D1–D4 were fixed on 2026-08-22** (§3.6.8); D5–D7 are residue and confirmations, not defects.
 
 * **D1 — §3.3's dry run is unrunnable whenever a row has banked since the last release.** §3.6.2. The
   checklist's recommended inspection path is, today, an eight-second failure. A dry run that reaches the
   build phases needs the script to be able to freeze a *proposed* version; no such affordance exists.
+  **FIXED** — the affordance now exists: a pack-only run freezes the would-be version into a temporary
+  directory and verifies against it.
 * **D2 — the pack-only skip message names the wrong tag.** It prints `the run that bumps mints
   nuget-1.23.1.6`, because `$releaseTag` (line 187) is composed from the **un-bumped** `$fullVersion`.
   The run that bumps mints `nuget-1.23.1.7`. Cosmetic, but it misinforms at exactly the moment someone
-  is checking §3.1's version arithmetic.
+  is checking §3.1's version arithmetic. **FIXED** — a dry run names the would-be tag. The
+  `-Push -BumpBuild:$false` branch keeps the old wording deliberately (release path, left byte-identical);
+  it carries the same imprecision and is flagged in §3.6.8 as an open, cosmetic residue.
 * **D3 — §3.3 over-budgets by ~6x.** "Budget hours on a slow host" measures **18.3 minutes** on the
   fleet's slowest machine. Two Release builds dominate at ~510 s each; everything else is seconds.
+  **FIXED, and then re-scoped** — §3.3 now carries BOTH measurements and budgets from the top: this
+  section's 18.3 min is the *warm* figure, and §3.6.8 measures **46.8 min** on a cold tree. Against the
+  cold number the original "hours" was an over-estimate by ~2×, not ~6×.
 * **D4 — §3.3's `D:` disk warning does not reproduce.** Re-measured 2026-08-22: **0.65 ms per 4 KB file
   on `D:`** against 0.82 ms on `C:` — no penalty at all, versus the 1,606 ms / 2,140× the census
   recorded. That was a state of the disk, not a property of it; the release may run from the repository's
-  own volume. Keep the free-space check, which is a different concern.
+  own volume. Keep the free-space check, which is a different concern. **FIXED** — §3.4's disk paragraph
+  now states it as a measured state rather than a property, and says to re-measure.
 * **D5 — precondition 5 (gpg) cannot be rehearsed by any dry run**, since the mint is bump-gated. §6's
   contradiction note is now confirmed by execution rather than by reading. Residue, not a defect.
 * **D6 — 303 of 306 library `.csproj` carry the `VALIDATION.md` pack block.** The three without are
@@ -607,9 +659,73 @@ with **zero** set difference in either direction. Release morning's freeze will 
 3. **Re-derive phase 5's count on the day.** It is 162/162/162 now and moves with every bank; the
    invariant is roster rows == `current/*.md` == green-badge READMEs == the `Froze N` line.
 4. **Do not pre-create `docs/validation/1.23.1.7`** — precondition 6 throws on it, and it is absent today.
-5. **~7 GB free on the repository volume**, and expect ~20 minutes on a machine of this class.
+5. **~7 GB free on the repository volume**, and expect ~20 minutes on a machine of this class if the
+   tree is already built — **~50 minutes if it is not** (§3.6.8 measured 46.8 min cold). Budget cold.
 6. **Unassessed by this lane**: §3's timing ruling (all four parity-close triggers) and §5's consistency
    preflight. Both remain owed before the tag flies.
+
+#### 3.6.8 D1–D4 fixed, and the dry run re-executed green (2026-08-22)
+
+D1 and D2 were script defects and D3/D4 were prose defects; all four are fixed. The dry run was then
+executed again, **unmodified and uninstrumented**, on the same tree state that broke it (162 roster
+rows, a 126-page last-published snapshot) — the exact condition §3.6.2 says is guaranteed to throw.
+
+**What changed in `push-nuget.ps1`.** A pack-only run now computes the version a bumping run *would*
+publish and freezes `docs/validation/current/` into a **temporary** directory named for it, verifies
+every green badge against those pages, and deletes the directory. `$fullVersion` is unchanged — it is
+still the version the run packs and still what the README retargets compare against — so **only the
+proof-page location moves**, and nothing is written into the tree. The would-be version also corrects
+the tag the skip message names (D2).
+
+**The release path is untouched, by construction.** The affordance is gated on
+`$dryRun = (-not $Push) -and (-not $doBump)`, which is `$false` on every `-Push` run whatever its bump
+setting — so a re-push of the current version (`-Push -BumpBuild:$false`) still freezes and verifies
+against the real tree, and a `-BumpBuild`-without-push still writes the real write-once snapshot. Each
+of the six touched sites resolves to its pre-existing form when `$dryRun` is `$false`, including the
+console strings; the script carries the site-by-site proof as a comment beside the predicate.
+
+**Failing-first, then green.** The unfixed script was re-run first to reproduce the defect: it threw at
+**7.3 s** on `archive/tar`, exactly as §3.6.2 records. The fixed script then ran all fifteen phases to
+`exit 0`.
+
+| # | Phase | Observed on the fixed run | |
+|:--|:--|:--|:--|
+| 1 | metadata gate | `ok go2cs` | PASS |
+| 2 | bump | correctly skipped | gated off |
+| 3 | version | `1.23.1.6` — the version packed, unchanged by the fix | PASS |
+| 4 | tag | correctly skipped, naming **`nuget-1.23.1.7`** (D2 fixed) | gated off |
+| 5 | `Froze N` | **162** into the temporary would-be `1.23.1.7` directory; roster is 162 | **PASS** |
+| 6 | green badges | Retargeted 0, **Verified 162** — was an 8-second throw before the fix | **PASS** |
+| 7 | C# Source badges | Retargeted 0, **Verified 305** | **PASS** |
+| 8 | L3 derivation | **37** packages | PASS |
+| 9 | two Release builds, linux first | both **0 errors**; order reversed as documented | **PASS** |
+| 10 | per-RID counts | **307 / 307** | **PASS** |
+| 11 | flavor comparison | 37 of 37 L3 differ; of 270 neutral **0 differ materially**, 216 identity-only | **PASS** |
+| 12 | merge | **Merged 37**, copied **270** verbatim | **PASS** |
+| 13 | `Packed N` | **307** | **PASS** |
+| 14 | push | gate reached: `Pack-only (default)` | correct |
+| 15 | done | **exit 0 at 2,810.8 s** | — |
+
+Every count reproduces §3.6.4's instrumented rehearsal exactly — 162/305/37/307/307/37/270/216 — which
+is the point: the fix changed *where* a dry run's proof pages live and nothing else. The wall time did
+not reproduce (2,811 s against 1,095 s) because this run was made in a **fresh worktree with nothing
+built**; that cold number is now the one §3.3 budgets from.
+
+**Side effects, checked after the run:** `docs/validation/1.23.1.7` **absent**; `GoBuildNumber` still
+**6**; zero READMEs and zero `version.props` modifications; no `go2cs-dryrun-proofs-*` directory left
+under the system temp path.
+
+**Residue, deliberately not fixed.**
+
+* The `-Push -BumpBuild:$false` branch still prints the old skip wording, which carries D2's same
+  imprecision. It is a release path and this fix was scoped to leave every release path byte-identical,
+  so correcting it is a separate, cosmetic change for the user to rule on.
+* A dry run still packs only the last release's `VALIDATION.md` count (§3.6.5). Closing that would mean
+  writing the would-be snapshot into the tree, which is exactly what the write-once rule forbids —
+  §3.3 states it as a dry-run-only property instead.
+* The `-WhatIf` improvement noted in the script's comment (a pack-only `-WhatIf` no longer declines the
+  temporary freeze and then fails verification) is **reasoned from source, not executed** — the same
+  caveat §3.3 attaches to its other `-WhatIf` claims.
 
 ---
 
