@@ -330,7 +330,7 @@ public static nint Index(this Palette p, Color c) {
     // A batch version of this computation is in image/draw/draw.go.
     var (cr, cg, cb, ca) = c.RGBA();
     nint ret = 0;
-    var bestSum = (uint32)(4294967296L - 1);
+    var bestSum = unchecked((uint32)(4294967295UL));
     foreach (var (i, v) in p) {
         var (vr, vg, vb, va) = v.RGBA();
         var sum = sqDiff(cr, vr) + sqDiff(cg, vg) + sqDiff(cb, vb) + sqDiff(ca, va);

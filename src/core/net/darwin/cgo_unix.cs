@@ -43,7 +43,7 @@ internal static bool Timeout(this addrinfoErrno eai) {
 internal static void isAddrinfoErrno(this addrinfoErrno eai) {
 }
 
-[GoType("dyn")] partial struct doBlockingWithCtx_result {
+[GoType("dyn")] partial struct doBlockingWithCtx_result<T> {
     internal T res;
     internal error err;
 }
@@ -70,13 +70,13 @@ internal static (T, error) doBlockingWithCtx<T>(context.Context ctx, @string loo
             defer(releaseThread, ref ᒐ);
             return blocking();
         }
-        var res = new channel<doBlockingWithCtx_result>(1);
+        var res = new channel<doBlockingWithCtx_result<T>>(1);
         var resʗ1 = res;
         goǃ(() => {
             GoFrame ᒐ = default;
             try {
                 defer(releaseThread, ref ᒐ);
-                ref var r = ref heap(new doBlockingWithCtx_result(), out var Ꮡr);
+                ref var r = ref heap(new doBlockingWithCtx_result<T>(), out var Ꮡr);
                 (r.res, r.err) = blocking();
                 resʗ1.ᐸꟷ(r);
             }

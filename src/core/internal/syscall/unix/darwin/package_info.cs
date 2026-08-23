@@ -51,6 +51,27 @@ using static go.@internal.syscall.unix_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/syscall/unix/arc4random_darwin.go", "arc4random_darwin.cs", "AAwcpqSClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/at_libc2.go", "at_libc2.cs", "AAscgqaCpoKopqY=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/eaccess_darwin.go", "eaccess_darwin.cs", "AAwamJKCgpSCgpSmgg==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/fcntl_unix.go", "fcntl_unix.cs", "AAsi9IKCgpQ=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/kernel_version_other.go", "kernel_version_other.cs", "AAgSgg==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/net.go", "net.cs", "AAsguLi4uLi4uA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/net_darwin.go", "net_darwin.cs", "ACNWxILugoKUqKSCzKSCAAkUgoKUqKSCpqikgqimpqam7qSCpoKUqKSCzKSC7oKU")]
+[assembly: go.GoPositionMap("internal/syscall/unix/nonblocking_unix.go", "nonblocking_unix.cs", "AAoWgoKClKaC")]
+[assembly: go.GoPositionMap("internal/syscall/unix/pty_darwin.go", "pty_darwin.cs", "AAwapIKCgpSopIKCgpSopIKCyoKUgoKCpqikgoKClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/tcsetpgrp_bsd.go", "tcsetpgrp_bsd.cs", "AAseqsI=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/user_darwin.go", "user_darwin.cs", "AAwcpIKmgpQAGTqktO6opLTuqKS07qiktO6opIKUgpQ=")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal.syscall;
 
 [GoPackage("unix")]

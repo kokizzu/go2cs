@@ -69,6 +69,23 @@ using static go.archive.tar_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("archive/tar/common.go", "common.cs", "AC5agoKCgoKmgpQAnwG8AoAABlLGgpSCgpSkpKSklAACFPKCgoKCgpSCpgACFgAIAoKCgoKUgoKUlIIAHSgADAKChKKC2IKCgoKUgoKAgoKkgoKUpoCCtqKCgpSCgoKCgpSmgIK2ooKUgoKUgoKCgpSCgoKCgpSmgIK6koKCgoKCgoKCgoKCgoKCgoailpK2pIKClIKkgqiCgpSClIKCgKS0tNaClIKCABk4gIKClKSClKSkpLaokgAHEICigKKAooCmkoKUqMSWgpSClIKogKSkpKSkgqS2lKSCpKSkpqaCABNGAAsCgpSC2pSCtIK0grSClMa0pKSClIKUgriApoKCgoKCgoKCgqaUgoKUgoKCyIKAgoKCgoKUgoK2gpQADiCilKQ=")]
+[assembly: go.GoPositionMap("archive/tar/format.go", "format.cs", "ABzYAYCigKKAooAACQyCgoKCppSkpAAWMKIABxCwoqCioKKgooCq1JKCgoKogoKClKSkpMzUyJK0goK0grS6ooKCgq7yooKUgpSoktqAooCigKKAooCigKKAooCigNigooCigKKAooCigKKAooCigKKAooDYoKKAooCigKKAooCigKKAooCigKKA2KCigKKAooCigKKAooCigMiAooCigMiAooA=")]
+[assembly: go.GoPositionMap("archive/tar/reader.go", "reader.cs", "ACVOkgACHAANAoKUgoKCgoKmpqKC7pKUgIKkgIKkhIKClICCpJaUgoKClIKCAAcQpIKCgpaClKSkqoCipIKUgpSCgpSsgKKqgKKokpSCAAUQ0pKClIKWgoKqwoKCgpS6goKUgpSu5JKSlLS0pLSkloCCpIKClIKCgpSogpSosoKClIKUpKSkpIKkgqSkpKSkgoKUtoKmgqqigoKUirSCgoKClISWlpSktoKUAAIWAAsEgIKkgoCCpIKUqIKCloKWgoKCgoKCgoKWgoKCgoKEgpSCgoigkoKUgoTGgoKCtIKCgoCCpICCAAIwABUCgoKAgqTGgqYAAhYADgiClISCgoKUgoKClIKUgoKClJaUgIKkgpQAAxwACgIABBCSgoCCpIKCgri6goKCuoCCpIKCzICCpIKCgoKClJSqxoKCgqiCgpSCuoKCgoKClIKUAAIaAAoCgpSCgpQAAhoACgKClIKClAAIErKClIKClJSkpAAICIKokqiSAAkUsoKCloKCgoKCkoKkgpSCgoKogpSkpKSkyMKCgoCCtoKWgoKCgoKSgqSCgoKUlIKCzIKCloKUpKSkyIKkgtqCgqqigoKUqtKCgoKUgpSqooKClKiawoDKgpSCgpS4goKU")]
+[assembly: go.GoPositionMap("archive/tar/stat_actime2.go", "stat_actime2.cs", "AAscorai")]
+[assembly: go.GoPositionMap("archive/tar/stat_unix.go", "stat_unix.cs", "ABIkggAJDqKCgpSCgriAgqKCgrSAgqKCgsaCloKClJKCgqaCgoKCpoKCpoKCpoKCpoKCgqaCgoIADAo=")]
+[assembly: go.GoPositionMap("archive/tar/strconv.go", "strconv.cs", "AA0gkqiSgoKmqqKClIKCgqYAChqigIKkqJKClIKCzIKCAAMW8oKs6IzSgpaCooKClIKClJSCgpSClKiqooKCloKCgpSCloKm3ISClIKClKaCgoKWlICCpKqigqyylpaCgpSCqIKUgpSUgoKUqqKSgqiCgoKClKz0goKogoKUgoKoooKogoKWgpSqooKWgoKCloKClAACGgAKAoKUlKQ=")]
+[assembly: go.GoPositionMap("archive/tar/writer.go", "writer.cs", "ACBGkgAJHtKClICCpICCpIKu8oCCpKiCgpQABxKCgoKWgpSCpIKkgqTItJKAgqiSgoKCgpTmsgAjSJaChJKClIaSgoKClJiSgoKCgpSUgoKUgoKUgIK6koCSgoKAggAOHqa0koKCgIK2goKAgrqSgoKCgpSCACdQgoCCuJSAgqSUAAYcAAkChIKCloKCgoKCgoKChIKCgoKErNKWgoKUhIKCgoKCgoKCgoKCqICCpIKs0oCCpICCpIKUgoLcsqKClIKUgoKmgpSCgpSCgIKkgoKUkoLsooKCpKSWgoKCgpQAAhTygpSCgpQAAhoACgKClIKClKyygpSCqIKCqIIACBKygoKUgoKUlKSkAAgIgqiSqJIACRSygoKWgoKCgoKSgqSClIKCgqiClKSkpKTIwoKCgIK2gpaCgoKCgpKCgoKUpIKUgoLMgoKWgpSkpKSkyIKkguyCgoKmqJKClKSk")]
+// </GoSourcePositionMaps>
+
 namespace go.archive;
 
 [GoPackage("tar")]
