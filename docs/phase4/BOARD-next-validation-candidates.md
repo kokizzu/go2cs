@@ -18564,6 +18564,30 @@ instruments are the seeded `-stdlib` run (single flavor) and the three-target em
 and a full `-stdlib` run each exceed a harness foreground budget on laptop-class machines —
 seed in one call, launch the converter DETACHED in the next, per the established
 Start-Process pattern.
+
+## 2026-08-23 · Span tranche 1 (C1–C5) PARKED at `c6e098926` — and a RULING: allocation-class golib changes gate by COUNTING, not timing
+
+Tranche complete: GolibTests 276/276 (42 new guards), CNR byte-identical ×633 (the proof it
+was golib-only), behavioral 606 green. Two scope corrections worth the record: **C2b was TWO
+inseparable defects** — the banked double-offset plus an `InvalidCastException` in the same
+heterogeneous-copy arm (`int`→`long` crashed rather than converting); no plain-primitive pair
+reaches the arm AND survives the cast, so a guard for the offset alone would have been a test
+written to pass — fixed together through one `ConvertElement<T>`. **C4 was solved by
+NARROWING**: widening the existing span overload instead of adding a second, which would have
+put a CS0121 ambiguity in front of every collection-expression call site — the exact hazard
+the census flagged, avoided by subtraction.
+
+**The instrument ruling (coordinator, ratifying G''s recommendation):** the paired same-session
+timing A/B returned +0.7–1.4% on treatment rows while the UNTOUCHED control (Sieve) moved
++5.0% and the identical-source Go binaries moved up to +17% between legs — host drift several
+times the effect size. **Read the control row first; when it moves more than the treatment,
+the timing gate has said nothing.** Standing rule for allocation-class golib work from
+tranche 2 on: gate with `AllocationCounter` COUNTS (deterministic, host-independent, the
+`ByteSeqAllocationTests` pattern) — C3''s guard already asserts exactly-one-charged-allocation,
+C1/C5 delete charged allocations outright — and reserve timing claims for a benchmark that
+actually walks the changed path (a `strings.NewReader` read-loop perf row is MINTED as a
+future perf-suite candidate, not commissioned). Sweep note standing: C1/C5 may re-baseline a
+signature-pinned alloc-count disclosure FAVORABLY at the next sweep — expected, not drift.
 ---
 
 ## Windows UDP: the send seam LANDED, and the read is the sixth struct-passing sighting (R, 2026-08-23)

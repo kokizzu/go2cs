@@ -893,10 +893,13 @@ within a type but **not across the files of a partial class**, so `= modws2_32.N
 ran while the generated `modws2_32` was still null and the first send died inside `LazyDLL.Load()`.
 Defer with `??=`.
 
-### 4.8 The DECODE side — operation-owned native staging, decoded at HARVEST — PROPOSED (2026-08-23, lane R)
+### 4.8 The DECODE side — operation-owned native staging, decoded at HARVEST — RATIFIED (coordinator, 2026-08-23) — ⟨OQ-F⟩ callback, ⟨OQ-H⟩ demand order, ⟨OQ-I⟩ both-platform-in-one-change, all per recommendation. **⟨OQ-G⟩ AMENDED to FIX-BY-DEFAULT in this increment**: a use-after-return handed to the kernel is the struct-passing family’s LIFETIME sibling, and that class does not get empirical exoneration — the lane’s own words ("has not misbehaved, which proves nothing about a race") are the ruling’s grounds. The measurement that stands is the documented contract (the overlapped parameter-lifetime remarks), cited in the fix’s header; no race-hunt is owed, and the three-line staging lands with this increment unconditionally
 
-> **STATUS: PROPOSED. Nothing in this section is ratified**; §4.8.7 collects the questions that need
-> a ruling before implementation. **This section AMENDS §4.3**, whose sub-wall (1) already named this
+> **STATUS: RATIFIED** (coordinator, mailbox 2026-08-23, at master `dba036de0`). ⟨OQ-F⟩, ⟨OQ-H⟩ and
+> ⟨OQ-I⟩ were ruled as recommended; **⟨OQ-G⟩ was AMENDED to FIX-BY-DEFAULT** — *"a use-after-return
+> handed to the kernel is the struct-passing family's LIFETIME sibling, and that class does not get
+> empirical exoneration"* — so the staging lands unconditionally, citing the documented contract,
+> with no race-hunt. §4.8.7 records each question with its ruling. **This section AMENDS §4.3**, whose sub-wall (1) already named this
 > shape — *"`AcceptEx`'s output buffer is the class's decode-side… the mirror must be a NATIVE
 > staging buffer, decoded at harvest"* — and left it unspecified. Commissioned by the coordinator
 > (mailbox, 2026-08-23) on landing §4.7: *"the recv increment is YOURS, queued AFTER F1,
