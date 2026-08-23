@@ -18402,6 +18402,49 @@ rots invisibly; a leveling pass plus a gate that polices core registrations the 
 `check-solution-integrity.ps1` polices behavioral ones would retire the class. Itemized in the
 investigation report. Also fixed in passing: CLAUDE.md's stale mention of a
 `src/go2cs-examples.sln` that no longer exists.
+
+## 2026-08-23 · R's resolver rooting: three findings, one severe — and the struct-passing census RE-PRICES to a leveling arc
+
+**Finding 1 — the `LookupHost` residual is RESPONSE HANDLING, not transport.** An in-process
+fake nameserver (echoes every query as a well-formed zero-answer response, same ID, same
+question) splits it cleanly: Go accepts in 1 ms and reports "no such host"; the conversion
+retries four identical, correctly-formed 42-byte queries and rejects every response, timing
+out at ~10 s. Exonerated by individual probes: the S1 datagram transport, query
+construction/randInt/runtime_rand, golib reslicing (the earlier 45-byte reading was the
+probe's own fault — finding 2), and the address decode. Remaining fork: the connected read
+never delivers, or `dnsmessage.Parser.Start`/the ID compare rejects — fork-split by
+instrumented scratch-clone build sanctioned, diagnosis-only past it.
+
+**Finding 2 — GENERATOR-CLASS: the converted type assertion misses interface satisfaction via
+an EMBEDDED interface plus directly-added methods** (`c.(PacketConn)` on a user type embedding
+`net.Conn` with `ReadFrom`/`WriteTo` added — Go takes the UDP arm, the conversion takes TCP
+framing). ImplementGenerator witness territory; ~40-line repro in R's scratch; the live
+resolver path is NOT affected (`*UDPConn`'s assertion works — proven by the fake-test's own
+42-byte queries). Queued for the generator lane (G) when its queue reaches it. Method note:
+Go's-own-baseline caught the first wrapper hiding the interface from BOTH runtimes — the only
+reason a phantom defect was not reported.
+
+**Finding 3 — SEVERE, at master: `net.Interfaces()` kills the process on Linux**
+(`AccessViolationException` in `anyToSockaddr` ← `Recvfrom` ← `NetlinkRIB`): the generated
+wrapper hands the kernel the address of a MANAGED `RawSockaddrAny`, and the kernel's write
+corrupts the embedded `array<int8>` reference — the AV-not-panic is the tell (a bounds-checked
+indexer would panic on empty; only corrupted state AVs). Fix commissioned to R ahead of
+everything: the mirror pattern (native image + typed decode), `Recvfrom` minimally,
+`Recvmsg`/`Sendmsg` staying with S2's evidence gate unless literally the same lines.
+
+**The re-pricing (coordinator ruling).** G corroborated lane-to-lane within minutes: this is
+the FIFTH confirmed instance of the kernel-writes-over-managed-array class
+(`Timezoneinformation`, `win32finddata1`, `ProcessEntry32`, `SiginfoChild`, `RawSockaddrAny`)
+— three platforms, one root, one remedy proven four times, and the class has escalated from
+wrong values to memory corruption on a public API. The standing census's
+"deliberately not fixed speculatively" doctrine has EXPIRED on its own evidence bar: each new
+instance now costs a diagnosis night that the proven mechanical remedy would have pre-empted.
+**Minted: the struct-passing leveling arc** — sweep the censused wrappers (the board's 9-row
+census plus the instances named since) with the mirror pattern, G's two darwin notes carried
+in (`**T` out-params are a stacked second defect; `[StructLayout(Sequential, Size=N)]` with
+explicit tail padding). Post-release, R's queue after F3/the Windows wrappers/F1; per-wrapper
+evidence (a probe per fix, no blind batch) still applies — it is the SCHEDULING that changed,
+not the proof standard.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
