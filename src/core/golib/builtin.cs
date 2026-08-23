@@ -934,8 +934,23 @@ public static partial class builtin
     /// </remarks>
     public static nint copy(in slice<byte> dst, in @string src)
     {
-        slice<byte> bytes = src;
-        return copy(dst, bytes);
+        // Go's `copy(b, s)` is ONE copy and no allocation. Binding the implicit
+        // `slice<byte>(@string)` operator here cost two of each: that operator materializes a
+        // charged full-LENGTH copy of the string's bytes — it must, since a slice is writable and
+        // a string backing must never become so — and the slice/slice copy then copied a second
+        // time into dst, even when dst was far shorter than the string. `strings.Reader.Read`
+        // binds this overload once per Read with the whole remaining tail, so every
+        // `strings.NewReader` consumer paid a full-tail allocation per read.
+        //
+        // The string is immutable and dst's window span already serves both backings, so the
+        // bytes go straight across. CopyTo's memmove semantics cover the one case where the two
+        // could share storage (a transient alias), which is the same guarantee Go's copy gives.
+        nint min = Min(dst.Length, (nint)src.Length);
+
+        if (min > 0)
+            src.Bytes[..(int)min].CopyTo(dst.ToSpan());
+
+        return min;
     }
 
     /// <summary>
@@ -997,8 +1012,14 @@ public static partial class builtin
     /// <returns>The number of bytes copied.</returns>
     public static nint copy(ISlice<byte> dst, in @string src)
     {
-        slice<byte> bytes = src;
-        return copy(dst, bytes);
+        // Same de-allocation as the slice<byte> overload above; the interface box wraps the
+        // caller's own backing, so its window span is the destination.
+        nint min = Min(dst.Length, (nint)src.Length);
+
+        if (min > 0)
+            src.Bytes[..(int)min].CopyTo(dst.ToSpan());
+
+        return min;
     }
 
     /// <summary>
