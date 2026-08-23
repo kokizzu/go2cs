@@ -18195,29 +18195,29 @@ the in-flight legs predate it and carry their own ledgers/mtime derivations inst
 
 The user dispatched `os-matrix.yml -f goos=darwin -f stage=census` — the first time the darwin
 corpus flavor has been BUILT anywhere. Both mac legs (osx-x64, osx-arm64) failed IDENTICALLY:
-**19 errors, all in `os`, all from one root** — `dir.cs`''s three call sites of `readdir`
+**19 errors, all in `os`, all from one root** — `dir.cs`'s three call sites of `readdir`
 (lines 45/77/101, CS1061 + the CS8130/CS8183 deconstruction cascade). Root:
-`darwin/dir_darwin.cs` carries the converter''s bodyless-placeholder comment for `readdir`
-("hand-converted with managed semantics in the package''s `*_impl.cs`") — the suppression fired
+`darwin/dir_darwin.cs` carries the converter's bodyless-placeholder comment for `readdir`
+("hand-converted with managed semantics in the package's `*_impl.cs`") — the suppression fired
 for darwin exactly as for windows — but the companion exists ONLY as
-`windows/dir_windows_impl.cs` (266 lines; Go''s windows readdir reinterprets a raw
-GetFileInformationByHandleEx buffer). Go''s `dir_darwin.go` is the same raw-metal class (libc
+`windows/dir_windows_impl.cs` (266 lines; Go's windows readdir reinterprets a raw
+GetFileInformationByHandleEx buffer). Go's `dir_darwin.go` is the same raw-metal class (libc
 `DIR*` walking via `opendir`/`readdir_r`), so suppression is CORRECT there too — what is missing
 is the darwin companion that was never authored, because darwin never built. Linux needs
-neither: `dir_unix.go`''s readdir auto-converts (it reads through `f.pfd.ReadDirent`), which is
+neither: `dir_unix.go`'s readdir auto-converts (it reads through `f.pfd.ReadDirent`), which is
 why the linux flavor never surfaced this.
 
 Two findings beyond the fix itself. (1) **The dependency closure BELOW `os` compiles clean on
 darwin** — errors are own-errors of leaf-most failures, so `syscall`/`internal/poll`/runtime
 darwin flavors all built; packages above `os` were skipped, so unknown walls MAY remain behind
-it, but the measured state echoes the Linux wall''s shape (one package, one class). (2) A
+it, but the measured state echoes the Linux wall's shape (one package, one class). (2) A
 converter/L3 invariant worth guarding: **hand-own SUPPRESSION is platform-blind while the
 IMPLEMENTATION is platform-scoped** — the L3 routing should assert that every GOOS whose
 emission suppresses a member also receives an impl companion providing it (a
 marker-gate-shaped check, natural home `platformHandOwn_test.go`); today the gap is only
 discoverable by building the flavor.
 
-Work item minted: author `darwin/dir_darwin_impl.cs` (same signature as the windows companion''s
+Work item minted: author `darwin/dir_darwin_impl.cs` (same signature as the windows companion's
 `readdir(this ж<File>, nint n, readdirMode mode)`; the faithful path is libc
 `opendir`/`readdir_r` through the darwin syscall flavor that now provably compiles, with the
 windows companion as the structural model). Opus-class lane work, small and precedented; then
@@ -18227,13 +18227,13 @@ skip-of-later-stages-on-failure all behaved exactly as designed on first dispatc
 
 ## 2026-08-23 · CVAC amendment (G) — the summary-line classifier is the sharper trap
 
-Amendment to the condition-(d) arithmetic entry above, from G''s harness audit: the verdict-line
+Amendment to the condition-(d) arithmetic entry above, from G's harness audit: the verdict-line
 grep is the EASY half of the CVAC hazard. The dangerous half is any harness that decides
-PASS/FAIL from the sweep''s SUMMARY line (`if ''1 pass'' → PASS; else FAIL`): a CVAC row''s summary
-is not "1 pass", so it falls through to FAIL — a FALSE RED with the row''s own green CVAC line
-sitting in the log contradicting it, which is harder to notice than R''s NOVERDICT blank. Rule:
+PASS/FAIL from the sweep's SUMMARY line (`if '1 pass' → PASS; else FAIL`): a CVAC row's summary
+is not "1 pass", so it falls through to FAIL — a FALSE RED with the row's own green CVAC line
+sitting in the log contradicting it, which is harder to notice than R's NOVERDICT blank. Rule:
 classify from the VERDICT line, test CVAC first, and carry a `cvac=` column in any totals so a
-green class is never silently absent. All five of G''s drivers and R''s leg driver are patched;
+green class is never silently absent. All five of G's drivers and R's leg driver are patched;
 this entry exists for the next harness author.
 
 ---<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
