@@ -18566,4 +18566,31 @@ seed in one call, launch the converter DETACHED in the next, per the established
 Start-Process pattern.
 ---
 
+
+---
+
+## 2026-08-23 · LANDED — F2: a promoted interface method was not in the type's GO METHOD SET, and the root was two layers below where it was reported (lane G, `claude/implgen-embedded-witness`)
+
+**The defect.** A type satisfying an interface via an **embedded interface plus directly-added methods** was not recognized by a converted type assertion — a user type embedding `net.Conn` with `ReadFrom`/`WriteTo` added failed `c.(net.PacketConn)`, so Go took the UDP arm and the conversion took TCP framing. Reported as `ImplementGenerator` witness territory.
+
+**Four controls, each of which killed a candidate root.** Reproduced from scratch without `net`, in a two-package module:
+
+| Variant | Result | What it kills |
+|---|---|---|
+| Same-package interfaces | **works** | "embedding is the defect" — the axis is that the interface is FOREIGN |
+| `plain`, both methods declared directly, **no record** | **works** | "the `GoImplement` record is the mechanism" |
+| Direct call `w.Read()` | **works**, emits `w.Reader.Read()` | "the promotion is missing" — the *converter* resolves the hop at call sites |
+| `holder`, ordinary field whose name equals its type's simple name | Go says **no**, converter emits **no** record | "a name heuristic can drive the fix" — it cannot; the record can |
+
+**The root, two layers below the report.** `ImplementGenerator` is exonerated: it already emits the promoted method as a real MEMBER, from the `Promoted = true` record it already writes. golib builds a type's Go method set **exclusively from EXTENSION methods** (`GetGoMethodSetCandidates`), and a promoted method is the one kind of Go method that never becomes one. `builtin.Implements<T>` answers a DIRECT assert with C# `is T` — which is why asserting to the embedded interface itself always worked — while any other interface falls to the structural probe, which saw only the directly-declared half.
+
+**Fixed where the method is created, not where it is missed:** the promoted method is now emitted as an extension method too, so it is an ordinary Go method — probe finds it, `AdapterBinder` binds it through the same candidate source, `reflect.NumMethod` counts it, as Go does.
+
+**Why not golib, having been sanctioned to fix it there — the invariant was working.** Two refusals, both in golib's own words: every method-set candidate is assumed to be an extension method whose FIRST PARAMETER is the receiver (`PrefersBindableShape` indexes `GetParameters()[0]`), so a no-argument member throws; and `GetGoMethodSetEntries`' header states that probe, count and binder resolve through ONE source *precisely so they cannot disagree* — teaching only the probe would make `Implements` answer yes for a shell that then fails to bind. **A design that refuses you for a stated reason is evidence, not an obstacle.**
+
+**Method note — the root moved three times, and each move was a measurement, not a guess.** Reported at `ImplementGenerator`; I placed it at "the members are never realized" (wrong — they are); then at "the record is the mechanism" (wrong — `plain` works without one); then at golib's method set (right); then the *remedy* moved to the generator when golib refused it. Every step was one cheap control away, and the pattern that made it converge is the same one wall #3 produced: **a pre-rooted report is a hypothesis with evidence attached, and so is your own last answer.** Corrected before spending, twice.
+
+**Gates.** Behavioral suite **PASS 607** (Transpile/Compile/Target 607 each; Output 581 pass / 26 skip; 0 fail) · Target byte-identical and a full 607-project re-transpile left the tree clean, so no converter output moved · CNR byte-identical · guard **neuter-tested** (with the emission disabled its Output phase fails). Accessibility was *measured* before emitting: `ExtensionMethodRegistry` discovers with `BindingFlags.NonPublic`, so an unexported type's twin is still found by a FOREIGN assembly's assert — exactly where F2 bites.
+
+**The guard's third row is the one to keep.** `EmbeddedInterfaceWitness` prints `NumMethod` per row (2/2/1) so the method set cannot gain an entry it should not, and `holder` — whose C# field is **identical** to `wrapper`'s — is what stops any future fix from resting on the name heuristic that once made `dwarf` forward `Common()` through a named field and return a silently wrong answer.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
