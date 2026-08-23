@@ -1,8 +1,15 @@
 # The Linux UDP seam — the eight `//go:linkname` datagram helpers, and the last wall between the poller and name resolution
 
-> **STATUS: DESIGN — PROPOSED (2026-08-23, lane R, `claude/linux-udp-design`). Nothing here is
-> ratified.** Every decision is a proposal with a recommendation; §9 collects the ones needing a
-> coordinator ruling before implementation starts. Commissioned in the overnight standing orders
+> **STATUS: RATIFIED (coordinator, 2026-08-23, at the docs merge to master).** All six ⟨OQ⟩s
+> RULED per their §9 recommendations, with two refinements: ⟨OQ-4⟩ — **S1 is COMMISSIONED
+> now; S2 (the msghdr pair) stays PROPOSED until a consuming row materializes** (evidence-ruled,
+> not scheduled — no row exercises it today, and review surface is spent where a bill exists);
+> ⟨OQ-5⟩ — R owns BOTH halves of the guard ritual (the lane's host is a Windows machine with
+> WSL, so the solution registration + `UpdateTestTargets` pass and the Linux run are one lane's
+> work, no handoff). The commissioning scope is AMENDED per §1.3's measurement: the bill is
+> DNS/name-resolution and `crypto/tls` `TestVerifyHostname` — cgi (exec axis) and cookiejar
+> (test-host gap) were never behind this wall. Implementation parks merged-ready under the
+> release-eve freeze per §7. Commissioned in the overnight standing orders
 > (2026-08-23, to R): *"The UDP wall arc — the big one, yours by domain: DESIGN doc first
 > (`DESIGN-linux-udp.md`, OQs named per house style), post 'ratify?' … Scope: the UDP seam of the
 > sockaddr/syscall family so the net UDP tests, `net/http/cgi` and `cookiejar` open and the
