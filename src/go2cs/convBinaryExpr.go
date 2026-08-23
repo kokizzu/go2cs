@@ -593,7 +593,14 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 			_, targetIsPlainBasic = target.Rhs().Underlying().(*types.Basic)
 		}
 
-		if targetIsPlainBasic && (csType == "uint8" || csType == "uint16" || csType == "uint32") {
+		// A tree referencing NAMED constants is left alone: those render through their Untyped*
+		// wrappers, which is how every wider arm already preserves them, and folding erases the
+		// names the Go source is written in — math/bits' `x>>1 & (m0 & m)` became
+		// `unchecked((uint32)(1431655765UL))`, arithmetic no reader can follow back to `m0`. The
+		// shape that genuinely needs the fold is a LITERAL expression whose operand overflows
+		// int32 (image/color's `uint32(1<<32 - 1)`), and it has no names to lose.
+		if targetIsPlainBasic && !v.containsUntypedNamedConstRef(expr) &&
+			(csType == "uint8" || csType == "uint16" || csType == "uint32") {
 			u, exact := constant.Uint64Val(val)
 
 			if !exact {
