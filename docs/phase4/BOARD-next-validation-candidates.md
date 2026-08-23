@@ -18317,4 +18317,37 @@ favorable direction after the tranche — expect it, do not read it as drift.
 
 ---
 
+## 2026-08-23 · MEASURED — JOB-007's Linux leg: the formal dual-OS consolidation sweep at `18770d083` is **152 green of 162** with **ZERO regressions**, and every one of the ten FAILs is an already-classified seam (lane R)
+
+Release-trigger condition (d), Linux half. Run at merged master `18770d083` on RITCHIE-LAPTOP (Ryzen 7 PRO 6850U, WSL2 Ubuntu 22.04), gate first: `go2cs-stdlib.slnx -p:GoTargetOS=linux` native `--no-incremental` **0 errors / 149 warnings in 465 s** — the same warning count as before the poller merged, so the union added none. Sweep aggregate **19,113 s (5.3 h)**; per-row wall times banked in [`DATA-sweep-row-walltimes.md`](DATA-sweep-row-walltimes.md) beside the i9's Windows table (H5).
+
+### The arithmetic — a QUADRUPLE, because the per-OS ruling added a verdict class
+
+**149 PASS · 10 FAIL · 3 CVAC of 162 → 152 green.** `CVAC` ("comparison-validated-at-count") is the class the ruling's item 4 introduced and it went live in this sweep: a row whose C# side matched **Go's own count on this OS** but which has no `linux:` annotation to bank against. **A CVAC row is validated**, so it counts green. The three: `crypto/sha1` **13**, `bytes` **86**, `go/internal/gcimporter` **582**.
+
+Against my pre-merge 161-row measurement: **7 flips, ZERO regressions, 1 newly-measured row.** The seven flips are the per-OS machinery landing rather than new code — `path/filepath`, `debug/buildinfo`, `mime`, `crypto/rand` gained `linux:` annotations and so validate instead of reporting COUNT; `crypto/sha1` and `bytes` are G's W1b closing; `go/internal/gcimporter` reports CVAC. **The COUNT class is now empty.**
+
+### The ten FAILs, each attributed — this is the green bar, so it is itemised rather than summarised
+
+| row | wall | attribution |
+|:--|--:|:--|
+| `crypto/tls` | 711 s | **2 divergences of 402 comparable** — `TestVerifyHostname` (behind the UDP wall, [`DESIGN-linux-udp.md`](DESIGN-linux-udp.md)) and `TestCertCache` (object-lifetime: `SetFinalizer` + forced GC + a 4 s refcount wait). 400 agree — the Windows banked count exactly |
+| `time` | 857 s | R6 — the `ZONEINFO` / `TestEnvVarUsage` row, unchanged since the census |
+| `os/exec` | 740 s | G's named exec residue (mid-suite host death, `TestLookPath` dot-semantics) |
+| `debug/gosym` | 27 s | G's `host-limit` disclosure — `TestSymVersion` is **Go's own skip** (`no .gosymtab section`: the apphost is a .NET binary) |
+| `internal/cpu` | 26 s | W6 — capability-detection divergence |
+| `os/signal` | 36 s | W2 — test-variant emission defect (converter) |
+| `syscall` | 35 s | W2 — same class |
+| `sync/atomic` | 1,258 s | W7 — the Gosched ring, RULED as an honest FAIL pending the M:N horizon |
+| `plugin` | 6 s | W3 — the converter panic gcc re-exposed (`conversionDriver.go:228` indexes `GoFiles[i]` by `Syntax`'s index under `CGO_ENABLED=1`) |
+| `runtime/debug` | 32 s | **newly measured** — row #162 did not exist in my earlier 161-row runs. TWO already-classified classes stacked: `TestFreeOSMemory` fails (the object-lifetime class `DESIGN-readmemstats-surface.md` §7.2.3 documents) and the host then dies mid-suite, leaving the other nine as `cs=None` — the shape G named in the exec residue |
+
+**Nothing unexplained, and nothing new.** The one row that had never been measured on Linux resolves to two existing classes rather than a finding.
+
+### A harness note worth carrying
+
+My per-row driver's verdict regex was `^\s+(PASS|FAIL|COUNT)\s`, written before the per-OS ruling, so the first two CVAC rows recorded as **NOVERDICT** — which reads exactly like "the sweep produced nothing", i.e. like a broken leg. Caught at row 4 by reading the row logs, patched to include `CVAC`, the two bad ledger rows dropped, and the run resumed (the gate had already passed, so the resume skipped it; ~14 min lost). **Any harness that greps the sweep's verdict lines needs the same one-word patch.**
+
+---
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
