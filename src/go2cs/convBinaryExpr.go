@@ -575,7 +575,25 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 		// `*_C_pw_uidp(&sp) = 1<<32 - 2` (`_C_uid_t = uint32`), which is Go's own negative-test
 		// constant. Folding first and casting the RESULT is what makes it representable, in the
 		// same parenthesized form the other arms use.
-		if csType == "uint8" || csType == "uint16" || csType == "uint32" {
+		// The target must be a PLAIN basic type, not a named/aliased one over the same underlying:
+		// `basic` here is the UNDERLYING, so `fs.FileMode` (a named uint32) reaches this arm looking
+		// exactly like `uint32`, and folding it erased the type on every mode expression in the
+		// corpus (`(fs.FileMode)(fs.ModeDir | 365)` → `unchecked((uint32)(2147484013UL))`). A named
+		// target already has its own arm below, which carries the type in the fold — that is where
+		// it belongs, and the operand-overflow condition is not a reason to steal it.
+		// An ALIAS to a basic type counts as plain: `type _C_uid_t = uint32` has no distinct C#
+		// type to erase (it emits as the primitive itself), which is exactly the target shape the
+		// darwin census failed on. A NAMED type does have one, and keeps its own arm.
+		targetIsPlainBasic := false
+
+		switch target := tv.Type.(type) {
+		case *types.Basic:
+			targetIsPlainBasic = true
+		case *types.Alias:
+			_, targetIsPlainBasic = target.Rhs().Underlying().(*types.Basic)
+		}
+
+		if targetIsPlainBasic && (csType == "uint8" || csType == "uint16" || csType == "uint32") {
 			u, exact := constant.Uint64Val(val)
 
 			if !exact {
