@@ -18060,4 +18060,114 @@ Both rows join the per-OS-count constituency (`crypto/rand` 302, `debug/buildinf
 **Classification: a `host-limit` disclosure of the relocatable/self-binary family** — the same class as `os/exec`'s 27 banked Windows disclosures (a .NET apphost is not the thing Go's self-inspecting tests assume), and NOT the R3 wall, which is closed. The row needs no code: it needs a signature-pinned disclosure at its formal Linux bank, alongside the per-OS-count annotation work the coordinator deferred for `crypto/sha1`/`bytes`.
 
 **What this leaves of R3:** nothing on Linux. The board's R3 row (`debug/elf` + 3 gosym tests) is retired by measurement; the residual is one honest disclosure line awaiting its bank.
+
+## 2026-08-22 · LANDED + MEASURED — the Linux readiness poller: epoll + one drain thread + the Windows descriptor state machine; the socket family opens on Linux (`encoding/json` flips, `crypto/tls` goes 0 -> 400 matching), and two further walls are rooted behind it — one fixed, one routed (lane R, `claude/linux-poller-impl`)
+
+**The design was ratified this morning with all nine OQs as recommended; this is its S0 + S1, landed and measured the same day.** One file — `src/core/internal/poll/linux/runtime_netpoll_impl.cs`, 674 lines — replaces the fallback poller in place: `epoll_create1(EPOLL_CLOEXEC)`, ONE background drain thread in `epoll_wait(-1)`, and the Windows flavor's managed descriptor state machine (`Ready`/`Expired`/generations/`Timer`, `pollBlock`/`pollReset`/`pollSetDeadline`/`pollUnblock`) copied verbatim per ⟨OQ-7⟩ with Go's `eventErr` arm added. Edge-triggered `EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET` exactly as `runtime/linux/netpoll_epoll.cs` arms it; `epoll_event.data` carries an opaque token (table insert BEFORE `EPOLL_CTL_ADD`, `EPOLL_CTL_DEL` BEFORE `close(2)` — `FD.destroy`'s own ordering); every kernel byte a native `Marshal` image through the keystone `syscall(2)` binding, so **no ж address ever reaches the kernel** and `internal.poll.csproj`'s shared `<AllowUnsafeBlocks>` stays `false` (⟨OQ-9⟩ — no regen owed, and the Windows build of `internal/poll` is byte-untouched). No break eventfd (⟨OQ-2⟩); `EINTR` retried (⟨OQ-3⟩ fail-loud otherwise); regular files refused by the kernel's own EPERM (⟨OQ-4⟩). **Nothing else in `src/` changed** — not `os`, `net`, `syscall`, golib, the converter, the keystone, or the Windows flavor.
+
+### S0 — the four kernel probes, and the one place the design was wrong about itself
+
+Run in the distro as plain C# over libc (independent of go2cs), recorded in the design's new §7.1 with its source:
+
+| Probe | Measured | Consequence |
+|:--|:--|:--|
+| (a) `epoll_ctl(ADD)` by descriptor kind | regular file **EPERM**, directory **EPERM**, pipe **0**, TCP socket **0** | ⟨OQ-4⟩ holds: the kernel IS the regular-file refusal; no `fstat`, and the 28 fallback-flipped rows keep their exact errno |
+| (b) the packed 12-byte `struct epoll_event` | round-trips through `Marshal.WriteInt32/WriteInt64` at `{0,4}`, unaligned 8-byte read at offset 16 included | ⟨OQ-9⟩'s safe form suffices |
+| (c) `EINTR` rate under load | **0** in 20 s of 1 s slices while spawning **22,819** children (a SIGCHLD each) and running **7,758** gen0 GCs | **The design's own prose was wrong** — it called `EINTR` "the normal case, not a corner". Under the CLR it is rare: the runtime routes signals away from arbitrary threads. The retry stays (a never-restarted syscall is owed it), but as a correctness guard, not a hot path. Corrected in the doc and in the file. |
+| (d) `EPOLL_CTL_ADD` during an in-progress `epoll_wait(-1)` | the blocked waiter got the new descriptor's edge **1 ms later**, no break write | ⟨OQ-2⟩ holds: the drain thread never needs interrupting |
+
+### S1 — the guards, by hand on the distro (⟨OQ-6⟩): all four byte-IDENTICAL to `go run`
+
+| Guard | Result |
+|:--|:--|
+| `PipeCloseUnblocksRead` | **IDENTICAL** — prints Go's `read unblocked: read \|0: file already closed`. Under the fallback this printed `read did NOT unblock`: the visible flip. `os.Pipe` arms; `Close` → `evict` wakes the parked reader. |
+| `NetListenSmoke` (8 lines) | **IDENTICAL** — bind, distinct ports, accept deadline set/cleared, close, rebind, close-is-sticky |
+| `TcpLoopbackRoundTrip` (14) | **IDENTICAL** — IPv4 **and** IPv6 round trips end to end, plus `CloseRead`/`CloseWrite` breaking blocked operations |
+| `NetDeadlineMatrix` (12) | **IDENTICAL** — every assertion: blocked read times out and PARKS, expiry is STICKY, cleared/past/replaced deadlines, per-mode independence and `'r'+'w'`, **closing beats timeout**, and both race arms (expiry beats buffered data; data inside the deadline is delivered; no stale expiry afterwards — the generation check) |
+
+That last row is what the Windows design called "the hard part" and priced its iteration budget for. **It cost none**: the copied state machine satisfies Go's deadline semantics on the READINESS model unchanged — the strongest evidence available both for ⟨OQ-7⟩'s copy and for §4.7's claim that dropping the cancel-and-harvest dimension leaves the race surface tractable.
+
+### Gates
+
+| Gate | Result |
+|:--|:--|
+| `internal.poll.csproj` linux flavor, NATIVE | **0 errors, 0 warnings** |
+| `go2cs-stdlib.slnx -p:GoTargetOS=linux` (NATIVE, `--no-incremental`) | **0 errors, 149 warnings, 418 s** — warning count unchanged from the sockaddr lane's gate, so the poller adds none |
+| `go2cs-stdlib.slnx -p:GoTargetOS=windows` | **0 errors** (`--no-incremental`, 6 m 52 s) — the control: the poller is under `linux/` and the Windows build never compiles it |
+| GolibTests (golib untouched) | **230/230** (golib untouched; run as the standing gate) |
+| `check-no-regression.ps1` | **not owed** — no converter change, no registry entry, nothing emitted moves |
+| Windows control (JOB-R5, i9, the 8 JOB-R4 rows) | **8/8 PASS, 0 FAIL, 1,010 verdicts, 815 s** at `00cc122c9` — identical to JOB-R4 row for row (`encoding/json` 491, `crypto/tls` 400, the six banked `net/*`), and its corpus drift is JOB-R4's too. The poller change has zero Windows-visible footprint, as the per-GOOS file placement promised. |
+
+### The measurement — Linux roster re-run at `00cc122c9` against the sockaddr lane's 128/30/3
+
+**`crypto/tls` — the flagship row, from 0 verdicts to 400 matching, which is the Windows banked count exactly.** It was a package-level `operation not permitted` (0 of 3,646 Go-enumerated). With the poller alone the suite RAN but ate its 30 m deadline in `TestVerifyHostname`; with `net.runtime_rand` implemented (below) it completes, and the comparison at the lane tip `a5429a611` reads:
+
+| | verdicts | pass | fail |
+|:--|--:|--:|--:|
+| Go (linux, same machine) | 402 | 389 | 13 |
+| C# host | 402 | 387 | 15 |
+| **comparable / agreeing / differing** | **402** | **400** | **2** |
+
+Thirteen tests fail on BOTH sides (environment-driven — the suite's network- and BoGo-dependent arms), so the honest statement is: of the 402 verdicts both sides produce, **400 agree**, and exactly two diverge. Both are attributed, and neither is the poller:
+
+- **`TestVerifyHostname`** — dials `www.google.com` for real (`testenv.MustHaveExternalNetwork`, then `Dial`). Blocked behind the UDP wall below. Note the SHAPE of its improvement: with the DNS stub in place the lookup goroutine *threw* and its caller waited forever, so the package ate its deadline and produced no verdicts at all; with the stub implemented the test simply FAILS, which is what lets the other 400 be measured.
+- **`TestCertCache`** — sets `runtime.SetFinalizer` on an `activeCert`, nils the reference, calls `runtime.GC()` and waits up to 4 s for the finalizer to decrement a refcount (`cache.go:63`, `cache_test.go:69/78`). The managed object-lifetime class — the same family as `TestFreeOSMemory`'s assertion 2 in `DESIGN-readmemstats-surface.md` §7.2.3 — and nothing to do with networking.
+
+Per this morning's per-OS ruling that is a fact about (`crypto/tls`, linux); it is reported, not blended with the Windows-authoritative columns, and nothing is banked.
+
+**Two walls behind the poller, both rooted with stacks rather than guessed:**
+
+1. **`net.runtime_rand` — an unimplemented `//go:linkname` stub, FIXED here** (`src/core/net/dnsclient_impl.cs`, one body, the shape of its three precedents `os/tempfile_impl.cs` and `math/rand`'s two). `net` reaches it only through the pure-Go resolver — `randInt` picks the DNS query ID (`linux/dnsclient_unix.cs:54`) and weights SRV selection and address shuffling — so Windows, which resolves via `GetAddrInfoW`, never touched it and the stub survived the whole Windows campaign. On Linux the pure-Go resolver IS the resolver, so the platform's FIRST name lookup died there, on a lookup goroutine, leaving its caller waiting forever: that is why `crypto/tls` ate a 30-minute deadline instead of failing. Platform-neutral file; `net` builds 0 errors / 0 warnings; Windows behavior unchanged.
+2. **The UDP wall — measured, priced, NOT taken here.** With (1) in, the TCP path matches Go exactly (`8.8.8.8:53` -> `connection refused` in 99 ms vs Go's 72 ms) but DNS still times out, and a loopback UDP probe names it: bind works, then `System.NotImplementedException: RecvfromInet4` — `internal/syscall/unix.RecvfromInet4` (`internal/syscall/unix/linux/net.cs:14`) reached via `internal/poll.ReadFromInet4` -> `net.readFrom` -> `UDPConn.ReadFrom`. It is one of **eight** `//go:linkname` stubs in that one file (`Recvfrom`/`Sendto`/`SendmsgN`/`Recvmsg` × Inet4/Inet6). This is precisely the seam the sockaddr lane recorded as uncovered, so it is that family's next increment and its tools already exist (`syscall/linux/sockaddr_linux_impl.cs`'s `readNativeSockaddr`/`writeNativeSockaddr` plus the keystone). Routed, not taken: this lane is the poller.
+
+**The 161-row roster re-run** (at `00cc122c9`, without the DNS fix — no other roster row resolves a name): **145 PASS / 11 FAIL / 5 COUNT of 161** (baseline, the sockaddr lane: 128 / 30 / 3) — **17 flips, ZERO regressions**, plus two rows improving FAIL to a validated per-OS COUNT (`debug/buildinfo` 204, `go/internal/gcimporter` 582).
+
+**The attribution matters more than the total, and this entry will not claim what it did not do.** My branch point is master `662b1595f`, which already carried G's exec-wall arc AND G's summary-seam arc; the 128/30/3 baseline predates both. So of the 17 flips, **ONE is the poller's** — `encoding/json` **PASS 491**, `TestHTTPDecoding`'s `httptest` loopback round trip, exactly the row the design's bill named first — and the other sixteen (`sync`, `math/rand`, `flag`, `crypto`, `crypto/ecdh`, `crypto/ed25519`, `go/types` 557, `go/importer`, `go/doc/comment`, `go/internal/srcimporter`, `text/template`, `debug/elf`, `internal/abi`, `internal/testenv`, `internal/types/errors`, `internal/godebugs`) are G's, already reported on their own board entries. `crypto/tls` reads FAIL in this ledger because the run predates the `runtime_rand` commit; its real Linux number is the 400-of-402 measured at the lane tip above.
+
+**Zero regressions is the number this lane is actually accountable for.** The poller changes what `os.Pipe`, FIFOs, ttys and sockets DO — every one of them goes from blocking to armed — and nothing that passed before stopped passing, including the pipe-adjacent rows (`bufio` 80, `io` 60, `io/fs` 18, `io/ioutil` 28, `os/exec/internal/fdtest` 1, `mime/multipart` 52).
+
+**The 16 residuals are all known, attributed classes — nothing unexplained:** `crypto/tls` (the UDP wall; 400/402 at tip), `crypto/sha1` + `bytes` (W1b — **closed upstream by G's native-backed slice while this run was in flight**, so those two are stale here rather than residuals of this lane), the per-OS COUNT constituency (`path/filepath` 54, `mime` 18, `debug/buildinfo` 204, `go/internal/gcimporter` 582, `crypto/rand` 302 — the ruling's own acceptance cases), `time` (R6 ZONEINFO), `os/exec` (G's exec residue), `debug/gosym` (G's, now classified as a `host-limit` disclosure), `internal/cpu` (W6), `os/signal` + `syscall` (W2 test-variant emission), `sync/atomic` (W7, ruled), `plugin` (W3 — the converter panic gcc re-exposed, rooted in the sockaddr lane; FAIL in the baseline too, so unchanged).
+
+### What this closes, and what it does not
+
+**Closed.** The Linux socket family is OPEN: listen, accept, connect, TCP read/write, deadlines and close-unblocks all behave as Go's, down to a `connection refused` that matches to the error string. `internal/poll`'s ten contracts have real bodies on both shipping platforms now, and the fallback poller's documented degradations are retired — `os.Pipe`'s `Close` unblocks a parked reader, `SetDeadline` on a pipe is honored, and a blocked read no longer holds its thread in `read(2)` where nothing can reach it. W1's last remnant (the socket half the fallback could not serve) is gone; `crypto/tls`'s Linux leg exists at all for the first time.
+
+**Not closed, and named rather than implied:**
+
+- **UDP** — the eight `internal/syscall/unix` linkname stubs (§ the wall above). Everything datagram is blocked behind them, which today means DNS, which means anything that resolves a name. The sockaddr family's next increment.
+- **`net` itself** stays a FUTURE arc on both platforms, exactly as the Windows design has it: its Linux census is worth taking now that sockets work, but it is not this lane's claim and the DNS half of it is behind the UDP wall anyway.
+- **darwin** — the pre-poller fallback remains its remedy when that corpus builds; kqueue is its own design.
+- **The S3 socket ledger** (`net/smtp`, `net/http/{httptest,cgi,httputil,cookiejar}`, `net/rpc`) — reachable now, unmeasured here; the order file is staged and the measurement is a follow-on, not a claim.
+- **No roster changes.** Per the per-OS ruling that landed this morning, the Linux numbers above are facts about (package, linux) and live on this board until the annotation harness lands.
+
+**One process note worth carrying.** Three detached sweep launches died before this lane's run stuck, all with the same signature (log stops, distro alive, no diagnostic): `setsid bash …` still sits in the launching turn's reapable process tree, and a `git fetch` from the `/mnt/c` local remote inside a no-tty session compounds it. `setsid --fork nohup` with stdio detached, plus pre-positioning the tree so the chain does no git work of its own, is what made it survive — the same class as CLAUDE.md's existing background-reaping caveat, one layer deeper.
+
+### S3 — the off-roster socket ledger (in flight at the time of this entry)
+
+`net/smtp`, `net/http/{httptest,cgi,httputil,cookiejar}` and `net/rpc` are reachable now in principle, and are being measured with the RAW `-tests` pipeline rather than the sweep — `run-validated-sweep.ps1` is roster-driven and answers "No banked packages matched filter" for an off-roster package, which is worth recording because it is a five-second trap for the next lane that tries. First result: **`net/smtp` is `conversion-blocked`** (Go enumerates 19 verdicts, the C# host 0) — a test-CONVERSION wall, not a poller one, and therefore a converter item rather than something this lane's file can reach. The remainder follow in the merge signal.
+
+
+---
+
+## 2026-08-22 · MEASURED — S3 of the Linux poller: FOUR of the six socket-ledger packages validate on Linux with ZERO divergences (142 verdicts), and the two that do not are off the poller's axis (lane R, `claude/linux-poller-impl`)
+
+The poller entry above closed with S3 in flight; this is its result, and it is the strongest consumer evidence the arc has. These are the packages the Windows netpoll design's §7 froze as its unlock ledger — the ones that have been walled at `FD.Init` on Linux since the platform existed.
+
+**Measured at the lane tip `a5429a611` in the isolated probe clone, with the RAW `-tests` pipeline:**
+
+| package | status | comparable | agree | differ | note |
+|:--|:--|--:|--:|--:|:--|
+| `net/smtp` | **validated** | 19 | **19** | 0 | Windows has it at 9/14, walled |
+| `net/http/httptest` | **validated** | 55 | **55** | 0 | the loopback HTTP server the whole family rests on |
+| `net/http/httputil` | **validated** | 53 | **53** | 0 | reverse proxy over real sockets |
+| `net/rpc` | **validated** | 15 | **15** | 0 | |
+| `net/http/cgi` | failing | 39 | 15 | 24 | **not the poller** — all 24 are `TestCGI*`/`TestChild*`, every one of which spawns a CHILD CGI process; the exec axis, and Windows has this row at 36/39 |
+| `net/http/cookiejar` | conversion-blocked | — | — | — | **not the poller** — its emitted TEST HOST does not resolve golib (`CS0234` on `go.GoPositionMap`, `go.time_package` in `package_info.cs`); a test-host emission gap on a package that has never been through `-tests`, i.e. a converter item |
+
+**142 verdicts across four packages, every one matching Go on the same machine.** Nothing is banked — these are off-roster, and per the per-OS ruling they are facts about (package, linux) reported here.
+
+**A five-second harness trap, recorded so the next lane does not pay it twice.** `run-validated-sweep.ps1` is ROSTER-driven: `-Filter <off-roster-pkg> -Exact` throws *"No banked packages matched filter"* and returns in ~4 s, which is why off-roster candidates go through the raw pipeline. But the raw pipeline needs what the sweep supplies for free: `src/_paths.ps1` pins `$env:GoTargetOS = 'linux'` on a Linux host so every child `dotnet` inherits it. A bare `go2cs -tests` from a shell does NOT get it — the test host then builds the **Windows** flavor and dies at run time with `kernel32.dll.so: cannot open shared object file`, which the pipeline reports as **`conversion-blocked`** and reads exactly like a converter wall. My first S3 pass produced three such phantom walls (`net/smtp`, `net/http/httptest`, `net/http/cgi`); all three evaporated on the re-run with `GoTargetOS=linux` exported, and two of them are in the validated column above. **Export it in any raw `-tests` harness**, and treat a `conversion-blocked` verdict whose log mentions `kernel32` as a harness fault, never a finding.
+
+---
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
