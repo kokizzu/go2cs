@@ -43,10 +43,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -311,6 +314,16 @@ func mergePlatformEmissions(rootPath string, targets []string, emissions []*plat
 	written += handOwnWritten
 	removed += handOwnRemoved
 
+	// With every artifact landed, assert the one-location invariant over the whole corpus — the
+	// paths NO target rewrote included, which is the only place it can already be broken.
+	duplicatesRemoved, err := reconcileLayoutDuplicates(coreDir, targets)
+
+	removed += duplicatesRemoved
+
+	if err != nil {
+		return err
+	}
+
 	// Every package that ended up with per-GOOS sources needs the conditioned <Compile Include>.
 	// A single-target conversion adds it from the tree's own shape (projectFileWriter), but this
 	// run is what CREATES that shape, so the first time a package becomes L3 the block is applied
@@ -396,6 +409,157 @@ func mergePlatformEmissions(rootPath string, targets []string, emissions []*plat
 	}
 
 	return nil
+}
+
+// reconcileLayoutDuplicates asserts layout L3's one-location invariant across the WHOLE corpus,
+// not merely the artifacts this run re-emitted.
+//
+// The plan loop resolves every logical path some target REWROTE: shared artifacts land flat and
+// their per-GOOS copies are removed, varying ones land per-GOOS and the flat copy is removed. But
+// "emitted" means "the bytes changed" — needToWriteFile skips an identical write, which is what
+// keeps a reconvert's timestamps meaningful and what the sentinel comparison rests on — so a file
+// every target reproduces exactly appears in NO plan, and nothing above ever looks at it. If the
+// corpus already holds that file in both places, the violation simply survives every run.
+//
+// That state is reachable without anyone doing anything wrong: an earlier regen routes a file
+// per-GOOS, later work restores the flat copy (the standing restore rituals around closure files
+// and CRLF phantoms do exactly that), and from then on both persist. It stays invisible until the
+// affected target is built, because the emitted csproj carries BOTH `<Compile Include="*.cs" />`
+// and `<Compile Include="$(GoTargetOS)/*.cs" />` — so the duplicate joins its own compilation:
+// duplicate [assembly: GoPackage] (CS0579) and duplicate global usings (CS1537). Found on darwin
+// at vendor/golang.org/x/sys/cpu, whose package_info.cs sat in both places with identical bytes.
+//
+// Identical copies are unambiguous: the artifact is shared, so the per-GOOS copies retire and the
+// flat one stays. Copies that DIFFER are not, and are deliberately NOT guessed at — the merge has
+// no emission data for a path no target rewrote, so it cannot tell which target owns the flat copy,
+// and either choice silently breaks a platform. Those are named and fail the run.
+func reconcileLayoutDuplicates(coreDir string, targets []string) (int, error) {
+	platformFolders := map[string]bool{}
+
+	for _, target := range targets {
+		platformFolders[goosOfTarget(target)] = true
+	}
+
+	removed := 0
+	var conflicts []string
+
+	err := filepath.WalkDir(coreDir, func(dirPath string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+
+		if !entry.IsDir() {
+			return nil
+		}
+
+		// Build outputs hold copies of everything and are not part of the layout.
+		switch entry.Name() {
+		case "bin", "obj", "Generated":
+			return filepath.SkipDir
+		}
+
+		for _, goos := range sortedKeys(platformFolders) {
+			// isPlatformSourceFolder, not a bare directory-name test: `internal/syscall/windows` is
+			// a real PACKAGE whose directory happens to be named for a GOOS, and its sources are
+			// not a platform variant of its parent's.
+			if !isPlatformSourceFolder(dirPath, goos) {
+				continue
+			}
+
+			platformDir := filepath.Join(dirPath, goos)
+			platformEntries, err := os.ReadDir(platformDir)
+
+			if err != nil {
+				return err
+			}
+
+			for _, platformEntry := range platformEntries {
+				if platformEntry.IsDir() {
+					continue
+				}
+
+				flatPath := filepath.Join(dirPath, platformEntry.Name())
+				flatInfo, err := os.Stat(flatPath)
+
+				if err != nil || !flatInfo.Mode().IsRegular() {
+					continue
+				}
+
+				platformPath := filepath.Join(platformDir, platformEntry.Name())
+				identical, err := filesHaveIdenticalBytes(platformPath, flatPath)
+
+				if err != nil {
+					return err
+				}
+
+				if !identical {
+					conflicts = append(conflicts, fmt.Sprintf("  %s\n  %s",
+						corpusRelativePath(coreDir, flatPath), corpusRelativePath(coreDir, platformPath)))
+
+					continue
+				}
+
+				gone, err := removeIfPresent(platformPath)
+
+				if err != nil {
+					return err
+				}
+
+				if gone {
+					removed++
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return removed, err
+	}
+
+	if len(conflicts) > 0 {
+		sort.Strings(conflicts)
+
+		return removed, fmt.Errorf("layout L3: %d artifact(s) exist BOTH flat and under a per-GOOS "+
+			"folder with DIFFERING contents, so the affected target would compile both copies "+
+			"(CS0579/CS1537). No target re-emitted them, so the merge cannot tell which platform "+
+			"owns the flat copy — resolve by hand, or delete both and reconvert:\n%s",
+			len(conflicts), strings.Join(conflicts, "\n\n"))
+	}
+
+	return removed, nil
+}
+
+// filesHaveIdenticalBytes compares two files byte for byte. Deliberately exact rather than
+// line-ending-insensitive: these are two copies of ONE emitted artifact, and the converter emits
+// CRLF unconditionally, so any difference at all is a real one.
+func filesHaveIdenticalBytes(first string, second string) (bool, error) {
+	firstBytes, err := os.ReadFile(first)
+
+	if err != nil {
+		return false, err
+	}
+
+	secondBytes, err := os.ReadFile(second)
+
+	if err != nil {
+		return false, err
+	}
+
+	return bytes.Equal(firstBytes, secondBytes), nil
+}
+
+// corpusRelativePath renders a path for a message as `core/<pkg>/<file>`, falling back to the
+// absolute path when it does not lie under the corpus.
+func corpusRelativePath(coreDir string, filePath string) string {
+	relPath, err := filepath.Rel(coreDir, filePath)
+
+	if err != nil {
+		return filePath
+	}
+
+	return path.Join("core", filepath.ToSlash(relPath))
 }
 
 // countWrite tallies one merge write as changed or already-current.
