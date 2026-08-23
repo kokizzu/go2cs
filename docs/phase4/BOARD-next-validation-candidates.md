@@ -18537,6 +18537,33 @@ not scheduled: the darwin census stage on CI flips from wall-finding to REGRESSI
 (cheap, dispatchable at any branch tip); darwin behavioral-smoke becomes possible on the mac
 runners; and operational validation (a darwin `-tests` lane) remains UNCOMMITTED —
 evidence-ruled, per the ladder, not a rung by default.
+
+## 2026-08-23 · F1 BANKED (`e44bed59f`, parked) — the sixth family sighting closes; two instrument-discipline traps join the ledger
+
+The nested-field-pointer fix landed as commissioned: the emission chains one `.of(…)` per hop
+from the receiver root, marking walks the same chain, single-hop stays byte-identical, pointer
+hops excluded by type (already their own box). Guard `ReceiverNestedFieldAddress` is A/B-proven
+in the direction that matters: against the UN-fixed converter it compiles clean and prints 0
+for every value-chain write — the defect''s exact scope, and why the guard had to be behavioral
+rather than a golden. Seeded full-stdlib reconvert: zero corpus differences beyond the six-file
+footprint; CNR clean across all 634. Two first-cut defects were caught by GATES, not by
+reading: an IMPLICIT address (poly1305''s promoted `Sum(&mac)` — no `ast.UnaryExpr` exists for
+the marker scan to see) produced CS0103 that only the reconvert-and-BUILD caught — CNR could
+not, no behavioral test has that shape; and name-matching the chain root over-marked a
+shadowing local, caught by a golden churning with no behavior change. Object-identity matching
+and the direct-ж requirement close both.
+
+**Ledger trap 3 — a per-package `go2cs <pkg>` reconvert into `src/core` is NOT a regen
+instrument.** Its closure differs from the `-stdlib` driver''s; applying one as a regen emitted
+csproj/`.cs.auto`/extra-file drift across three packages (recovered by checkout). The family
+rule now has three members: single-package emits no csproj (OQ-3 amendment), single-TARGET
+destroys L3 groups (same), and per-package-into-corpus drifts the closure. **The only regen
+instruments are the seeded `-stdlib` run (single flavor) and the three-target emission (L3).**
+
+**Ledger trap 4 — the 10-minute foreground cap vs corpus-scale operations:** a 2.5 GB seed copy
+and a full `-stdlib` run each exceed a harness foreground budget on laptop-class machines —
+seed in one call, launch the converter DETACHED in the next, per the established
+Start-Process pattern.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
