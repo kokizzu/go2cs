@@ -18225,5 +18225,15 @@ re-dispatch the census to find what stands behind `os`. The CI matrix itself is 
 run: checkout, pinned toolchains, env report, ~10 min census build, artifact upload and the
 skip-of-later-stages-on-failure all behaved exactly as designed on first dispatch.
 
----
-<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+## 2026-08-23 · CVAC amendment (G) — the summary-line classifier is the sharper trap
+
+Amendment to the condition-(d) arithmetic entry above, from G''s harness audit: the verdict-line
+grep is the EASY half of the CVAC hazard. The dangerous half is any harness that decides
+PASS/FAIL from the sweep''s SUMMARY line (`if ''1 pass'' → PASS; else FAIL`): a CVAC row''s summary
+is not "1 pass", so it falls through to FAIL — a FALSE RED with the row''s own green CVAC line
+sitting in the log contradicting it, which is harder to notice than R''s NOVERDICT blank. Rule:
+classify from the VERDICT line, test CVAC first, and carry a `cvac=` column in any totals so a
+green class is never silently absent. All five of G''s drivers and R''s leg driver are patched;
+this entry exists for the next harness author.
+
+---<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
