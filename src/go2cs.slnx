@@ -719,6 +719,7 @@
     <Project Path="tests/Behavioral/ReceiverCapturedInClosure/ReceiverCapturedInClosure.csproj" />
     <Project Path="tests/Behavioral/ReceiverFieldAddress/ReceiverFieldAddress.csproj" />
     <Project Path="tests/Behavioral/ReceiverFieldMethodCall/ReceiverFieldMethodCall.csproj" />
+    <Project Path="tests/Behavioral/ReceiverNestedFieldAddress/ReceiverNestedFieldAddress.csproj" />
     <Project Path="tests/Behavioral/ReceiverPointerValue/ReceiverPointerValue.csproj" />
     <Project Path="tests/Behavioral/ReflectBridgeClosure/ReflectBridgeClosure.csproj" />
     <Project Path="tests/Behavioral/ReflectChanDirection/ReflectChanDirection.csproj" />

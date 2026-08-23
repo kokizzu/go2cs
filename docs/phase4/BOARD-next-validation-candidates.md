@@ -18515,4 +18515,41 @@ intermediate field; one new behavioral guard for the write-through shape; dnsmes
 CNR pass. Corpus churn today: one file, four lines. Parks under the freeze like the rest.
 ---
 
+## F1 fixed: `&recv.f1.f2` copy-boxed, and the two halves of an address-of fix must move together (R, 2026-08-23)
+
+The converter recognised `&recv.field` but not `&recv.f1.f2`. The deeper chain fell through to
+the `Ꮡ(value)` copy-box, so every write through the pointer went into a temporary -- compiled
+clean, ran clean, printed wrong numbers. Corpus census: **4 write-context sites, all in
+dnsmessage's `incrementSectionCount`**, where it left the DNS header's QDCOUNT at 0 and surfaced
+three levels away as an unexplained resolver timeout. Fixed by walking the chain in BOTH the
+emission (`convUnaryExpr`) and the scan that marks a method direct-ж
+(`bodyTakesReceiverFieldAddress`); one-hop emission is byte-identical, so nothing else moved.
+
+**The lesson that generalises, and it cost a full-corpus build to learn: an address-of fix has
+TWO halves -- where the address is EMITTED and where the box is MARKED -- and shipping one
+without the other is a compile error, not a no-op.** Marking is driven by scanning for an
+*explicit* `&recv.f1.f2`. An **implicit** address is invisible to that scan because there is no
+`ast.UnaryExpr` in the tree at all: `h.mac.Sum(&mac)` in poly1305, where `Sum` is promoted from
+an embedded field, takes `&h.mac.macGeneric` implicitly. The first cut of the fix emitted the box
+form there and produced `CS0103: The name 'Ꮡh' does not exist` -- in a method whose receiver is
+`this ref MAC h`. A deep chain now additionally requires the enclosing method to actually BE
+direct-ж; implicit sites decline and keep their value-chain form, which is already correct for
+them (a `ref` receiver reaches real storage).
+
+**CNR would NOT have caught it** -- no behavioral test has poly1305's shape. It was caught by the
+seeded reconvert-and-BUILD that CLAUDE.md already requires for Ꮡ-machinery changes, which is the
+second time that rule has paid for itself. Corpus footprint after the fix: **6 files** (dnsmessage
++ its `net` caller, which now boxes the Builder, + a transitive `runtime` promotion), full
+`go2cs-stdlib.slnx` build succeeded.
+
+**Two process notes worth banking.** (1) A per-package `go2cs <pkg>` reconvert into `src/core` is
+NOT equivalent to a `-stdlib` run and must never be used to apply a regen: the closures differ, and
+mine emitted csproj/`.cs.auto`/extra-file drift across `runtime`, `net` and poly1305 that took a
+`git checkout -- src/core` to undo. Apply regens from ONE seeded full reconvert. (2) On this
+machine a 2.5 GB seed copy plus a full `-stdlib` run both exceed the 10-minute foreground cap --
+seed in one call, launch the converter DETACHED in the next, and poll; a foreground converter
+killed at 300/304 leaves a root the ritual says to throw away.
+
+---
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

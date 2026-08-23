@@ -3360,6 +3360,76 @@ promoting for it would heap-box every local that calls any pointer-receiver meth
 `CaptureModeFieldAddress` — local, value parameter, type-switch binding and lifted anonymous
 struct, plus the non-capture-mode control, all output-compared vs Go.)
 
+### The same chain one level up: `&recv.f1.f2` on a POINTER RECEIVER
+The two sections above fix the LOCAL. The identical shape rooted at a **pointer receiver** went
+unfixed until 2026-08-23, and it is the more dangerous of the two because the receiver is already a
+pointer in Go, so the address is unambiguously real and a lost write is unambiguously a bug.
+
+The converter recognised only the ONE-hop form `&recv.field`, which emits the field box
+`Ꮡrecv.of(T.Ꮡfield)` and marks the method direct-ж so that box exists. A DEEPER chain matched no arm
+and fell through to `Ꮡ(recv.f1).of(T.Ꮡf2)` — the `Ꮡ(value)` **copy**-box — so every write through the
+returned pointer went into a temporary. It compiled, it ran, and it printed wrong numbers.
+
+```go
+func (b *Builder) incrementSectionCount() error {          // vendor/golang.org/x/net/dns/dnsmessage
+	var count *uint16
+	switch b.section {
+	case sectionQuestions:
+		count = &b.header.questions                        // header is a VALUE struct field
+	...
+	}
+	*count++                                               // ... and this increment was LOST
+}
+```
+
+```csharp
+// before — count points into a heap copy of b.header; b.header.questions never moves
+count = Ꮡ(b.header).of(dnsmessage_package.Δheader.Ꮡquestions);
+
+// after — chained from the receiver box, so the write lands in the real field
+count = Ꮡb.of(Builder.Ꮡheader).of(dnsmessage_package.Δheader.Ꮡquestions);
+```
+
+Consequence in the corpus: the DNS message Builder's header counts stayed at zero, so every message
+it produced carried a question section with `QDCOUNT=0`. Any conformant parser answers
+`ErrSectionDone` to that, which is why the symptom surfaced three levels away as an unexplained
+resolver timeout rather than as anything resembling a lost write. The census over all 5,565
+address-of sites found the hazard at exactly **four write-context sites, all in that one function**.
+
+Both halves moved together, and that is the part worth remembering:
+
+- `convUnaryExpr`'s receiver arm walks the chain (`receiverValueFieldChain`) and folds one `.of(…)`
+  per hop. A single-hop chain reproduces the previous string byte for byte, so no existing site moved.
+- `bodyTakesReceiverFieldAddress` — the scan that MARKS a method direct-ж — walks the same chain, so
+  the box the emission reaches for actually exists.
+
+**Every intermediate hop must be a VALUE struct field**, and the walk is type-aware to enforce it. A
+pointer-typed hop is already its own box and the pointer-variable arm field-refs through it
+correctly (`o.ptr.of(inner.Ꮡb)`); routing it through the receiver would address the pointer's own
+storage instead of the pointee's field — the mirror-image defect.
+
+**A deep chain additionally requires the enclosing method to actually BE direct-ж, and skipping that
+test is a compile error waiting to happen.** Marking is driven by scanning for an *explicit*
+`&recv.f1.f2`; an **implicit** address is invisible to that scan, because there is no `ast.UnaryExpr`
+in the tree at all:
+
+```go
+func (h *MAC) Sum(b []byte) []byte {   // vendor/golang.org/x/crypto/internal/poly1305
+	h.mac.Sum(&mac)                    // Sum is promoted from an embedded field:
+}                                      // Go takes &h.mac.macGeneric implicitly
+```
+
+Emitting the box form there names a receiver the method does not have — `CS0103: The name 'Ꮡh' does
+not exist in the current context`, measured on the full-corpus build. Those sites decline and keep
+their value-chain form, which is already correct for them: the receiver binds `this ref T`, so
+`h.mac.macGeneric` reaches the real storage and the write lands. Guarded by
+`ReceiverNestedFieldAddress` (one hop, two hops, switch-selected pointer written after the switch,
+read-back, and the pointer-hop negative control, all output-compared vs Go). Against the un-fixed
+converter that guard compiles clean and prints `0` for every value-chain write while the pointer-hop
+control still prints `3` — the defect's exact scope, and the reason a guard here had to be behavioral
+rather than a golden.
+
+
 ### A TYPE-SWITCH BINDING is escape-analyzed like any other local
 Every rule above reached a variable through `info.Defs` — and a type-switch guard has no object
 there (go/types: *"symbolic variables t in t := x.(type) … the corresponding objects are nil"*;

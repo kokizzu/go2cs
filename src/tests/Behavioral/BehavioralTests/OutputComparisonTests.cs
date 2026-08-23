@@ -1277,6 +1277,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReceiverFieldMethodCall() => CheckTarget("ReceiverFieldMethodCall");
 
     [TestMethod]
+    public void CheckReceiverNestedFieldAddress() => CheckTarget("ReceiverNestedFieldAddress");
+
+    [TestMethod]
     public void CheckReceiverPointerValue() => CheckTarget("ReceiverPointerValue");
 
     [TestMethod]
