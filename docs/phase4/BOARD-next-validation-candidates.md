@@ -18249,4 +18249,34 @@ PLAN-hop-campaign.md can hang off it). The matrix has now proven BOTH of its sta
 its first two dispatches: darwin census (found the readdir wall) and native-Linux control
 (green). Stage-gating verified too - census and sweep-shard steps correctly skipped.
 
----!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+## 2026-08-23 · SECOND darwin census (run 32615001128 at `fdaeae154`) — wall #1 CLOSED on real hardware; wall #2 is two cgo-flavor leaves, and it is CONVERTER work
+
+The re-dispatch against G's branch, both mac legs byte-identical fingerprints: **the 19 `os`
+errors are GONE** — the readdir companion compiles on real darwin, arm64 and x64 alike — and the
+build marched deeper to the next leaves. The branch merged on that round-trip
+(master `73f84546b`, branch retired): companion + the red-then-green L3
+suppression-companion guard + the projitems registration.
+
+**Wall #2: 10 errors, two leaf packages, all in darwin's CGO-FLAVOR files** — paths no other
+GOOS compiles: `os/user/darwin/cgo_lookup_unix.cs` and `net/darwin/cgo_unix.cs`. The telling
+fact: **7 of the 10 errors are in go2cs-gen GENERATED output**, so this wall is
+converter/generator emission, not a missing hand-own — a different species from wall #1.
+Classes: (1) CS1729 x4 — ImplicitConvGenerator mints inverse conversions for the C-type mirror
+wrappers (`Byte`/`Int32`/`Int64`/`UInt32`) assuming a 1-arg constructor those declarations do
+not carry; (2) CS0246 x2 — TypeGenerator emits `doBlockingWithCtx_result.g.cs` for a GENERIC
+function's result struct without the type parameter in scope (a generics gap in the
+struct-lift); (3) CS0266 x2 — long→uint numeric emission in `cgo_lookup_unix.cs`; (4) CS0246 x2
+— `addrinfoErrno`→int inverse + a type-name slip in `cgo_unix.cs`. All four are reproducible on
+Windows via `-p:GoTargetOS=darwin` local builds (G proved the flavor builds locally), so the mac
+runners are the proof, not the dev loop. Work item minted; everything behind `os/user` and `net`
+remains unmeasured until these leaves fall.
+
+Board-mechanics note, recorded because it bit twice: the append that landed the native-Linux
+entry used offset arithmetic against the guard line and ATE the `<` of the closing comment,
+leaving `---!-- {% endraw %} ... -->` — Liquid still parsed (endraw terminates raw even there)
+so Pages stayed up, but the junk rendered. This append repairs the guard and retires the
+arithmetic: appends reconstruct the tail explicitly.
+
+---
+
+<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
