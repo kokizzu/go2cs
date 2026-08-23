@@ -815,7 +815,7 @@ public static partial class builtin
             else
             {
                 for (nint i = 0; i < min; i++)
-                    dst[i] = (T1)TypeExtensions.ConvertToType((IConvertible)src[i]!);
+                    dst[i] = ConvertElement<T1>(src[i]!);
             }
         }
 
@@ -860,8 +860,11 @@ public static partial class builtin
             }
             else
             {
+                // Both indexers are window-relative (each adds its own Low and bounds-checks
+                // against Length), so adding Low here double-offsets — the rule the ISlice
+                // overload above states. Guarded by GolibTests.SliceCopyWindowTests.
                 for (nint i = 0; i < min; i++)
-                    dst[dst.Low + i] = (T1)TypeExtensions.ConvertToType((IConvertible)src[src.Low + i]!);
+                    dst[i] = ConvertElement<T1>(src[i]!);
             }
         }
 
@@ -958,11 +961,31 @@ public static partial class builtin
             else
             {
                 for (nint i = 0; i < min; i++)
-                    dst[i] = (T1)TypeExtensions.ConvertToType((IConvertible)src[i]!);
+                    dst[i] = ConvertElement<T1>(src[i]!);
             }
         }
 
         return min;
+    }
+
+    // The element conversion behind every `copy` fallback arm. Those arms run only when the source
+    // element type is NOT assignable to the destination's, which converted Go never produces (Go's
+    // `copy` requires identical element types) — they serve hand-written and interop callers, and
+    // that is why the defect below survived: no corpus gate reaches them.
+    //
+    // TypeExtensions.ConvertToType answers the Go representation of what the value ALREADY is, so
+    // its boxed result unboxes to T only when the two element types agreed to begin with (a named
+    // numeric wrapper and its underlying, say — the case the arms were written against). A
+    // genuinely different element type, which is the only way to arrive here, needs a conversion
+    // TOWARD T, or the unbox throws InvalidCastException. The `is T` test keeps the original
+    // no-conversion path exact and pays for ChangeType only where the direct unbox could not have
+    // worked at all; the arm already boxes per element, so this is not the per-element allocation
+    // the NumericConversions header warns against introducing.
+    private static T ConvertElement<T>(object element)
+    {
+        object converted = TypeExtensions.ConvertToType((IConvertible)element);
+
+        return converted is T value ? value : (T)Convert.ChangeType(converted, typeof(T));
     }
 
     /// <summary>
