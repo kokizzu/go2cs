@@ -18277,6 +18277,31 @@ leaving `---!-- {% endraw %} ... -->` — Liquid still parsed (endraw terminates
 so Pages stayed up, but the junk rendered. This append repairs the guard and retires the
 arithmetic: appends reconstruct the tail explicitly.
 
+## 2026-08-23 · Span-unification census DONE — the harvest is nine discrete adoptions, not a sweep; one LATENT golib bug banked in passing
+
+The future-harvest item is now scoped from evidence: full census at
+[`CENSUS-span-unification.md`](CENSUS-span-unification.md) (DRAFT, read-only, master
+`d03f086c1`). Headline: golib is more span-clean than the hypothesis assumed — `ToSpan()` is
+already the discriminant-once unification point, `@string.Bytes` already feeds the
+comparison/hash/concat paths — so the win is **nine discrete adoptions** with ~10 further sites
+dispositioned honest-no. First tranche by win×low-risk: C1 `builtin.copy(slice<byte>, @string)`
+routes through the COPYING implicit conversion (a full string-length allocation + second copy
+per call; every `strings.Reader.Read` pays it — fix is a two-line span copy); C2 same-type copy
+unification over `ToSpan` (merges the managed/native fork); C3 the `IByteSeq` copy-constructor
+element loops; C4 a `ReadOnlySpan` `Append` overload; C5 `[]rune(s)` bypassing LINQ. All
+golib-only, converter untouched, CNR as the verifier.
+
+**BANKED FINDING (latent correctness, found in passing): `builtin.cs:863–864`** — the
+heterogeneous `copy` fallback indexes `dst[dst.Low + i]` / `src[src.Low + i]`, but the slice
+indexers are already window-relative, so any nonzero-Low operand DOUBLE-OFFSETS. Unreachable
+from converted Go (Go's `copy` is same-type — which is why no gate ever caught it); live for
+hand-written/interop code only. The sibling overload's own comment (builtin.cs:807–810) states
+the rule the line breaks. Fix rides tranche C2.
+
+Scheduling: ALL of it is golib, therefore inside the release-eve freeze — first post-release
+golib work, sized lane-scale. Process note from the census: several candidates delete CHARGED
+allocations, so the bytes/strings signature-pinned disclosure manifests may re-baseline in the
+favorable direction after the tranche — expect it, do not read it as drift.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
