@@ -682,6 +682,154 @@ nothing at all. It signals a descriptor and a mode, and the harvest asks Windows
 cross-package contract at one property (the native address) and keeps WSA-vs-Win32 error namespaces
 from ever being confused.
 
+### 4.7 The DATAGRAM submit, and how the golib seam extends to reach it — PROPOSED (2026-08-23, lane R)
+
+> **STATUS: PROPOSED. Nothing in this section is ratified**; §4.7.5 collects the questions that need
+> a ruling before implementation. Commissioned by the coordinator (mailbox, 2026-08-23) after this
+> lane HALTED an attempted implementation at the design line rather than force it through: *"Shape 1
+> is REJECTED for the reason the file itself states — a Go-shaped public seam on `syscall`'s
+> published surface is the thing its header exists to prevent… Shapes (3)-then-(2) are RATIFIED as
+> the path: draft the amendment… post RATIFY?, and implement under it."* Companion:
+> [`DESIGN-linux-udp.md`](DESIGN-linux-udp.md), whose S1 landed the Linux half of the same seam.
+
+#### 4.7.1 What reached the wrappers, and what it measured
+
+§7's S3 said the UDP wrappers *"land here gated by whichever suite reaches them first."* A suite has
+now reached them: `UdpLoopbackRoundTrip`, written for the Linux datagram seam, runs **byte-identical
+to `go run` on Linux** and on Windows dies at
+
+```
+System.NotImplementedException: WSASendtoInet4: external (assembly or cgo) function is not implemented
+  at internal/syscall/windows.WSASendtoInet4        (PartialStubGenerator stub)
+  at internal/poll.WriteToInet4                     fd_windows.cs:964
+  at net.writeToInet4 -> net.UDPConn.WriteTo
+```
+
+An attempted implementation established three facts worth keeping, each measured rather than
+reasoned:
+
+1. **The stub side is trivial and the registry displaces it cleanly.** With bodies present,
+   `internal.syscall.windows` builds 0 errors and a scope guard pins the two names to windows.
+2. **The address side is already solved.** `syscall/windows/syscall_windows_impl.cs` predicted this
+   arrival in its own header — *"WSASendto / wsaSendtoInet4 / wsaSendtoInet6 … writeNativeSockaddr is
+   what they would need"* — and exposing it as `GoWriteNativeSockaddrInet4/6`, symmetrically with the
+   Linux mirror's seam under `DESIGN-linux-udp.md` ⟨OQ-2⟩, works.
+3. **The submit side is the wall, and it is THIS design's, not a wrapper's.** A UDP send is an
+   overlapped submit. The ratified template is `WSASend` in
+   `syscall/windows/zsyscall_windows_wsa_impl.cs`:
+
+   ```csharp
+   OverlappedOp operation = operationFor(s, Ꮡoverlapped, wsaModeWrite);
+   NativeOverlapped* native  = operation.Rearm();
+   NativeWSABuf*     buffers = stageBuffers(operation, Ꮡbufs, bufcnt);
+   Syscall9(procWSASend.Addr(), 7, s, buffers, bufcnt, &sent, flags, (uintptr)native, …);
+   ```
+
+   All three helpers are **private to `syscall`'s WSA hand-own**, while the declarations they would
+   serve live in `internal/syscall/windows`. §4.5's harvest narrowed the cross-package contract to
+   *"one property, the operation's native address"*; a SUBMIT needs more than that, and this section
+   is about exactly how much more.
+
+A fourth fact, cheap and easy to lose: a hand-own must not initialise a `LazyProc` in a **field
+initializer** that reads a generated sibling's field. C# orders static field initializers within a
+type but **not across the files of a partial class**, so `= modws2_32.NewProc("WSASendTo")` ran while
+`modws2_32` was still null and the first send died in `LazyDLL.Load()` with a nil dereference. Defer
+with `??=`. (Measured by crash; on the board with the bash-glob gate trap.)
+
+#### 4.7.2 The constraint that decides the shape
+
+Two rules already ruled, which any answer must respect:
+
+- **golib's seam is deliberately neutral.** `GoAsyncIO` is *"PLATFORM-NEUTRAL and mechanism-neutral: a
+  descriptor, a mode, an address, and two opaque state slots. Naming Windows' completion machinery
+  here would drag one platform's IO model into the shared runtime."* So golib must not learn what a
+  `WSABUF` is, nor what a sockaddr is.
+- **`syscall` must not grow a Go-shaped public seam.** Its own header states it, and the coordinator's
+  rejection of shape 1 restated it: the record must not be exposed, and a published package does not
+  gain non-Go symbols to serve another package's convenience. (The `Go…NativeSockaddr…` helpers are
+  the boundary case that IS permitted, ruled under ⟨OQ-2⟩: they translate a LAYOUT, they expose no
+  state, and both mirrors carry them symmetrically.)
+
+Between those, the datagram submit needs exactly two things it cannot obtain today, and neither is
+Windows-shaped when stated properly:
+
+| need | why the caller cannot do it itself | neutral statement |
+|:--|:--|:--|
+| the operation's **native OVERLAPPED**, rearmed for a new submit | the record owns it (`PreAllocatedOverlapped`), it must survive until completion, and creating a second one for the same waiter is a native leak the S2b prototype measured | *"the native address associated with this (descriptor, waiter-address, mode), prepared for a new operation"* |
+| **native staging memory owned by the operation** for the WSABUF array | §4.3(2)'s lifetime wall: the kernel retains buffer pointers until completion, so a stack image is wrong by construction; the record is the only thing with the right lifetime | *"N bytes of native memory whose lifetime is this operation's"* |
+
+Neither mentions Winsock. The CALLER writes the `WSABUF` bytes into the staged memory itself, exactly
+as it already writes the sockaddr image through the mirror's seam.
+
+#### 4.7.3 The proposal
+
+**Extend `GoAsyncIO` by two primitives, in its existing vocabulary, and leave everything else where it
+is.** Names illustrative:
+
+```csharp
+// The submit-side counterpart of TryGetOperationAddress, which the harvest already uses.
+// Creates the record on first use -- with Lazy<T>(ExecutionAndPublication), never bare GetOrAdd
+// (S2b measured 10 records where the contract wants 1, each owning native resources) -- and
+// returns the native control block prepared for a new operation.
+public static nuint RearmOperation(nuint descriptor, object waiterKey, nint mode);
+
+// N bytes of native memory whose lifetime is the operation's, released when the record is.
+// The caller decides what the bytes mean; golib only owns the allocation.
+public static nuint StageOperationBuffer(object waiterKey, int byteCount);
+```
+
+`syscall`'s existing `operationFor`/`Rearm`/`stageBuffers` become the in-package callers of the same
+two primitives, so there is ONE record store and ONE staging owner rather than two that must agree.
+That is the property that makes this an extension rather than a parallel mechanism: today
+`internal/syscall/windows` harvests from the same store it cannot submit into, which is the asymmetry
+this section removes.
+
+`WSASendtoInet4` then reads, in full:
+
+1. `GoWriteNativeSockaddrInet4(to, stackBuffer)` — the address image (already ratified, already works).
+2. `RearmOperation(s, overlapped, modeWrite)` — the native OVERLAPPED.
+3. `StageOperationBuffer(overlapped, sizeof(NativeWSABuf) * bufcnt)` — then write the WSABUFs into it.
+4. `Syscall9(procWSASendTo.Addr(), 9, …)` with those three addresses.
+5. The dead generated body's error mapping, verbatim: `socket_error` → `errnoErr(e1)`, and a
+   `socket_error` with no errno → `EINVAL`, never success.
+
+#### 4.7.4 Alternatives, priced
+
+- **Move the whole submit machinery into golib** (records, staging, and the WSABUF mirror). Rejected
+  on the neutrality rule: golib would learn Winsock's structures, which §4.4's ruling exists to
+  prevent, and the mirror family would split across two assemblies.
+- **Expose `syscall`'s record**, or a Go-shaped `WSASendtoNative` on `syscall`. Rejected by the
+  coordinator and by the file's own header; recorded here so the next author does not re-propose it.
+- **Duplicate the record store in `internal/syscall/windows`.** Two stores keyed by the same waiter
+  pointer, one harvesting what the other submitted: the failure mode is a harvest that finds no record
+  and answers `ERROR_NOT_FOUND` for a live operation. Rejected as the worst of the three.
+- **Do nothing; leave Windows UDP unimplemented.** Defensible today — no roster row sends UDP on
+  Windows — and it is what the arc has done so far. Its cost is that `UdpLoopbackRoundTrip` cannot be
+  REGISTERED: registered it fails the Windows suite, unregistered it fails
+  `check-solution-integrity.ps1` (both measured), so the Linux seam keeps its guard out of tree.
+
+#### 4.7.5 Open questions
+
+* **⟨OQ-A⟩ — the two primitives' shape.** Is `RearmOperation` + `StageOperationBuffer` the right cut,
+  or should the seam expose a single "prepare a submit" call returning both? *Recommendation:* **two
+  primitives.** They are separately meaningful (a submit with no staged buffers is legitimate), and
+  the harvest's precedent is that the narrowest property wins.
+* **⟨OQ-B⟩ — who owns the WSABUF mirror type.** The caller writes WSABUF bytes into staged memory, so
+  the `NativeWSABuf` layout would exist in BOTH `syscall` and `internal/syscall/windows`.
+  *Recommendation:* **accept the duplication of a 2-field layout**, documented in both, rather than
+  publish a type from `syscall`. It is 8 bytes of shape, not behavior; the alternative re-opens the
+  public-seam question for less.
+* **⟨OQ-C⟩ — scope of the first landing.** `WSASendtoInet4/6` alone, or also the `WSARecvFrom` path?
+  *Recommendation:* **send only.** `WSARecvFrom` already has a generated body that the guard's read
+  path exercises; whether it carries the same struct-passing defect is a MEASUREMENT this arc should
+  take before assuming, exactly as the Linux half did.
+* **⟨OQ-D⟩ — does this want golib tests before the wrappers?** *Recommendation:* **yes** — the S2b
+  prototype's two lessons (single-execution factory; replaceable sink) came from GolibTests, and the
+  leak mode here is identical. Gate the primitives with their own tests first.
+* **⟨OQ-E⟩ — the guard's registration.** Once Windows sends, `UdpLoopbackRoundTrip` registers and runs
+  on both platforms. *Recommendation:* **land it in the same change**, since its whole point is to be
+  the two-platform gate for this seam, and it is written and Linux-proven already.
+
 ## 5. The deadline/unblock story — the hard part, priced honestly
 
 This section is the reason the board said "a deadline/unblock story to settle, not a wrapper
