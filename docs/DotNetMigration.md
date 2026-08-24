@@ -191,6 +191,36 @@ from a forgotten one.
 
 ### 5.1 The bump is one line, and the inert copies are the interesting part
 
+> **⚠ AMENDMENT (first-execution census, 2026-08-24 —
+> [`phase4/CENSUS-tfm-inventory.md`](phase4/CENSUS-tfm-inventory.md)). The one-line claim is
+> exactly right about csproj and INCOMPLETE about the harness.** Verified: all 1,127 tracked
+> `.csproj` spelling the old TFM carry the identical conditioned form — no unconditional spelling
+> exists — so the props edit really is the single project-side change and the emitted copies
+> really are inert. **But the OUTPUT PATH moves with the property**, and nine sites across six
+> files hardcode `bin/<config>/<tfm>/`: both runners' `NetVersion` constants
+> (`BehavioralRunner`, `PerformanceRunner`), three PowerShell instruments, and the CI census
+> step. Each is a FALSE-RED GENERATOR of the catalogued shape — the build succeeds, the probe
+> misses, and the instrument reports a corpus failure (the behavioral runner would report
+> hundreds of failures; the CI census would report "0 assemblies produced" on a green build).
+>
+> **Sequencing ruling: Class D (the path-deriving sites) is fixed FIRST, on the OLD TFM, and
+> verified green there** — before the property moves. A ladder run through false-red generators
+> produces a verdict that means nothing. **And the durable fix is already in the tree**:
+> `BehavioralTestBase.cs` DERIVES its TFM from its own bin tail, which is exactly why it is the
+> one C# harness a hop does not touch. The runners adopt that derivation and the PowerShell
+> sites read one hoisted value from `src/_paths.ps1`; nine hand-edits become one, and the NEXT
+> hop is free. A Stage 2 that only search-and-replaces leaves the same landmines for hop N+1.
+>
+> Three corrections the census also settled: **`push-nuget.ps1` is already TFM-agnostic** (its
+> merge globs `lib/*`, unions dependencies by the nuspec's own `targetFramework` attribute, and
+> every TFM spelling in it is a comment — its one code literal is `netstandard2.0`, a
+> must-not-change); **publish profiles never self-heal** (the writer skips any profile that
+> already exists and they are gitignored, so the template edit is an invisible no-op on every
+> existing tree — delete them by hand); and **a deployed GOPATH tree does not receive the hop**
+> (`deploy-core.ps1` writes its own props pinning only `$(go2csPath)`, so a deployed corpus
+> builds at the emitted fallback until a regen reaches it).
+
+
 `src/Directory.Build.props` owns the repository-wide TFM and says so in its own comment: *"The
 repository-wide TARGET FRAMEWORK, and the one line a .NET hop edits."* The hoist is deliberate —
 before it, a framework hop meant rewriting both converter templates, every hand-written project, and
