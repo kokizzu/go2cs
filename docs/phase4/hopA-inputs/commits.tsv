@@ -1,0 +1,83 @@
+dd8b7ad9268c2fbde675132a41b4e4da02eef94d	2025-08-06	[release-branch.go1.23] go1.23.12
+8a924caaf348fdc366bab906424616b2974ad4e9	2025-07-23	[release-branch.go1.23] database/sql: avoid closing Rows while scan is in progress
+8fa31a2d7d9e60c50a3a94080c097b6e65773f4b	2025-06-30	[release-branch.go1.23] os/exec: fix incorrect expansion of "", "." and ".." in LookPath
+e8794e650e05fad07a33fb6e3266a9e677d13fa8	2025-07-21	[release-branch.go1.23] cmd/compile: for arm64 epilog, do SP increment with a single instruction
+6c9c80b61198430eedfd02c98d4f5baf8abd085e	2025-07-23	[release-branch.go1.23] cmd/go: skip known TestScript/build_trimpath_cgo failure on darwin/arm64
+cea5be7739cb572204e4f41dd19f8bbbfc634034	2024-10-31	[release-branch.go1.23] cmd/cgo/internal/testsanitizers: disable ASLR for TSAN tests
+317a3c130e3b59171b3bd90e7a469fba76582444	2025-06-27	[release-branch.go1.23] runtime: stash allpSnapshot on the M
+0a75dd7c2dcf7057ef200290d8f5c4c1514dba80	2025-07-08	[release-branch.go1.23] go1.23.11
+e9d2c032b14c17083be0f8f0c822565199d2994f	2025-06-09	[release-branch.go1.23] cmd/go: disable support for multiple vcs in one module
+e919b332534b520da300ecc84330dfaeede7669d	2025-06-26	[release-branch.go1.23] cmd/link: permit a larger size BSS reference to a smaller DATA symbol
+c46a0e690de1b964be1999d1769177f159938226	2025-06-18	[release-branch.go1.23] runtime: set mspan limit field early and eagerly
+136ea1ab7ed1509e38b4c61fc302b6cda8edf356	2025-06-14	[release-branch.go1.23] runtime: prevent mutual deadlock between GC stopTheWorld and suspendG
+dac4567503215483ce47f82fa8d15463f6da2d1f	2025-06-10	[release-branch.go1.23] runtime: handle system goroutines later in goroutine profiling
+3eedbde2376a9f394f748029061ab4f884d3f243	2025-05-28	[release-branch.go1.23] cmd/compile: do nil check before calling duff functions, on arm64 and amd64
+d375ae50633cdf1cd8536f2a199c382f9053b638	2025-06-05	[release-branch.go1.23] go1.23.10
+b897e97c36cb62629a458bc681723ca733404e32	2025-05-21	[release-branch.go1.23] net/http: strip sensitive proxy headers from redirect requests
+c2c89d95516d2a6b51aa1766ed5f76e542ab282c	2025-05-13	[release-branch.go1.23] os: don't follow symlinks on Windows when O_CREATE|O_EXCL
+8eeb1340b230321dc3b797e4b9836cc5ef8f316d	2025-05-21	[release-branch.go1.23] cmd/link: allow linkname reference to a TEXT symbol regardless of size
+4ca7c01706ad6da07aed882528e595a39edd085b	2024-07-12	[release-branch.go1.23] runtime/debug: document DefaultGODEBUG as a BuildSetting
+f77084d15d53e6aa09d2e7f867e69cc9766da2c5	2025-05-06	[release-branch.go1.23] go1.23.9
+8ff45d1aa09d77d708a0ec4921817c6e6ee7ca85	2025-04-14	[release-branch.go1.23] runtime: fix 9-arg syscall on darwin/amd64
+96537d504423f332bfa2e8335a936a041c46206c	2025-03-25	[release-branch.go1.23] cmd/link: choose one with larger size for duplicated BSS symbols
+7a2cfb70b01f069c2125adcf7126d7f3376cb8b7	2025-04-01	[release-branch.go1.23] go1.23.8
+c72a2bad6833ba62dd8c875b9c8960bf833b3b59	2025-03-05	[release-branch.go1.23] runtime: explicitly disable async preempt for internal/runtime
+2c0a0fc6b92eff337a8eb8ff79d7a0e47ada2e46	2025-03-17	[release-branch.go1.23] runtime: skip TestCgoCallbackPprof on platforms with broken profiling
+c855149768c70eb349c2e9a42b03a8a30b99672e	2025-03-14	[release-branch.go1.23] runtime: only set isExtraInC if there are no Go frames left
+ec6e84df74912de47701091332a1d4eb78e93d08	2025-03-18	[release-branch.go1.23] internal/godebugs: fix changed version for winsymlink and winreadlinkvolume to 1.23
+15e01a2e43ecb8c7e15ff7e9d62fe3f10dcac931	2025-02-26	[release-branch.go1.23] net/http: reject newlines in chunk-size lines
+45aade7f1edd77409b967dafc58dc537f5ac34f6	2025-03-04	[release-branch.go1.23] all: updates vendored x/net
+c01c4d41d6b49bc6317f8cfb3a33a92f25681b34	2025-03-04	[release-branch.go1.23] go1.23.7
+25177ecde0922c50753c043579d17828b7ee88e7	2025-02-26	[release-branch.go1.23] all: updated vendored x/net with security fix
+e4772831d315866deee0ea6a23ca82e39bd7725c	2025-02-26	[release-branch.go1.23] runtime/cgo: avoid errors from -Wdeclaration-after-statement
+9facf1f2c25dbd3da63c394e9f7f46b56a53f7ae	2025-02-25	[release-branch.go1.23] runtime/cgo: avoid errors from -Wdeclaration-after-statement
+0fa31cb69f693cadb96535b67c166b7bd65d73b0	2025-02-23	[release-branch.go1.23] reflect: let Value.Seq return the iteration value correct type
+d89fda21d5fca4f19a3f70f4c0131dde63157a3e	2025-02-21	[release-branch.go1.23] reflect: correctly handle method values in Seq
+acde84cf1b7b90bb7b3eb03b62efdda643a78f97	2025-02-21	[release-branch.go1.23] runtime: use WCLONE when waiting on pidfd test child
+c57e2bd22c2ca4537987b696ec7ad141b8d8e5ed	2025-02-19	[release-branch.go1.23] syscall: don't send child signal when testing pidfd
+2aaa3889710327925937e4bdfb0392d68a1e1afe	2025-02-18	[release-branch.go1.23] cmd/compile, runtime: use deferreturn as target PC for recover from deferrangefunc
+22fdd35c242b6bdc822483a03557a58291174673	2025-02-12	[release-branch.go1.23] runtime: fix usleep on s390x/linux
+a991f9c34d454d3d844f21dc08f2d05df35a8c60	2025-02-04	[release-branch.go1.23] go1.23.6
+6644ed63b1e6ccc129647ef6b0d4647fdbe14056	2025-01-21	[release-branch.go1.23] crypto/internal/fips140/nistec: make p256NegCond constant time on ppc64le
+ab44565bcd9ad975b87ffd78c36c1fae1644d0bf	2025-01-13	[release-branch.go1.23] cmd/go/internal/modfetch: do not trust server to send all tags in shallow fetch
+9cbbf5e0f4fe5231a5ad425638800618839de0a5	2025-01-10	[release-branch.go1.23] cmd/compile: fix write barrier coalescing
+d04e3cbc9240e25de449dcae2ec33d03062f347b	2025-01-16	[release-branch.go1.23] go1.23.5
+bb8230f80535945648e8b56739ad450cf433eba9	2024-11-22	[release-branch.go1.23] net/http: persist header stripping across repeated redirects
+fdb8413fe588ec6dc31f1deaf43eb7202a76bb79	2024-12-09	[release-branch.go1.23] crypto/x509: properly check for IPv6 hosts in URIs
+1dde0b484489653136a54df9932cc8d1c0fb6d1b	2024-12-23	[release-branch.go1.23] runtime: hold traceAcquire across casgstatus in injectglist
+3417000c69bc89c173cfafcf3f2a06a408b32880	2025-01-02	[release-branch.go1.23] crypto/tls: fix Config.Time in tests using expired certificates
+1576793c513c5cd8396d1a5b004b546e82efc033	2024-12-11	[release-branch.go1.23] net: don't use sendfile for irregular files; handle EOPNOTSUPP/ENOTSUP
+59b7d40774b29bd1da1aa624f13233111aff4ad2	2024-07-22	[release-branch.go1.23] runtime: update and restore g0 stack bounds at cgocallback
+69c8cfe29bb677614c01f8dae3901d6954411af8	2024-08-09	[release-branch.go1.23] cmd/compile/internal/importer: enable aliases
+194de8fbfaf4c3ed54e1a3c1b14fc67a830b8d95	2024-12-03	[release-branch.go1.23] go1.23.4
+5164a865e3de723f07976edac234c4d6a814128e	2024-11-26	[release-branch.go1.23] cmd/trace: also show end stack traces
+25f042daecda1058baa25b213f1692d22ff5fb73	2024-11-12	[release-branch.go1.23] runtime: reserve 4kB for system stack on windows-386
+be062b7f61486db3c93741e794bd51eda5cc6fce	2024-11-20	[release-branch.go1.23] runtime: explicitly keep handle alive during getOrAddWeakHandle
+d8adc6c4c7cc21d607a97aeaa6b7ffc4c2d76e65	2024-11-01	[release-branch.go1.23] runtime: prevent weak->strong conversions during mark termination
+847cb6f9ca43da48cb10e98808a74a40b41242fa	2024-11-05	[release-branch.go1.23] syscall: mark SyscallN as noescape
+777f43ab27bde4c662cd0a663f807f74f3fbab0f	2024-11-04	[release-branch.go1.23]time: accept "+01" in TestLoadFixed on OpenBSD
+3726f07c4650d266b58b828432b3f8dab6d553d7	2024-10-25	[release-branch.go1.23] cmd/compile: use a non-fragile test for "does f contain closure c?"
+c390a1c22e8951263e6c01346a4281d604b25062	2024-11-06	[release-branch.go1.23] go1.23.3
+1207de4f6c3739eb4339ff9eb5a794e9bdd7c4d2	2024-10-08	[release-branch.go1.23] runtime: reduce syscall.SyscallX stack usage
+a0d15cb9c8f3c35c96129857984d25446041f29e	2024-09-07	[release-branch.go1.23] runtime: fix MutexProfile missing root frames
+958f3a0309855bc2e362e2951c70849ebec76f30	2024-10-24	[release-branch.go1.23] internal/poll: handle the special case of sendfile(2) sending the full chunk
+6ba3a8a6ba5214ec88b83e39148de8cd540a6e94	2024-10-23	[release-branch.go1.23] internal/poll: keep copying after successful Sendfile return on BSD
+5472853843bd9ae72ddc107a556558d13e39b035	2024-10-07	[release-branch.go1.23] cmd/link: generate Mach-O UUID when -B flag is specified
+cfe0ae0b7070048ceda021988b01fbc6a8589a1b	2024-10-23	[release-branch.go1.23] runtime: uphold goroutine profile invariants in coroswitch
+58babf6e0bf58cd81bb5a71744a1c195fba2d6c8	2024-10-21	[release-branch.go1.23] runtime,time: use atomic.Int32 for isSending
+8d79bf799b46875b52bef6a47f89b73ead824160	2024-10-14	[release-branch.go1.23] runtime: don't frob isSending for tickers
+35c010ad6db5113f51e1867ab3d0108754a3264c	2024-08-30	[release-branch.go1.23] runtime: fix GoroutineProfile stacks not getting null terminated
+6495ce0495041ba28fdbad8ae8b0e0996481e6f4	2024-10-02	[release-branch.go1.23] syscall: use SYS_EXIT_GROUP in CLONE_PIDFD feature check child
+7fc83126731de12449f7b38c32e2e318c439a6d4	2024-06-11	[release-branch.go1.23] os: add clone(CLONE_PIDFD) check to pidfd feature check
+cc16cdf48f228caebc55c982ed5b1b187ff39fcc	2024-10-02	[release-branch.go1.23] runtime: clear isSending bit earlier
+9563300f6e262589ae25c71d778bfcd646d4a750	2024-09-24	[release-branch.go1.23] os: ignore SIGSYS in checkPidfd
+f8080edefd60c8740915f922cf8a4352e6658174	2024-07-13	[release-branch.go1.23] runtime: fix TestGdbAutotmpTypes on gdb version 15
+ed07b321aef7632f956ce991dd10fdd7e1abd827	2024-10-01	[release-branch.go1.23] go1.23.2
+3b2e846e11d0c31a556b198f6c700745de5c9780	2024-09-06	[release-branch.go1.23] runtime: if stop/reset races with running timer, return correct result
+fbddfae62f19b5f04555aa593970ac4c6f5a38e5	2024-09-18	[release-branch.go1.23] cmd/compile: fix wrong esacpe analysis for rangefunc
+c8c6f9abfbbd2f949285a527036a3d0dbd991e74	2024-09-06	[release-branch.go1.23] syscall: on exec failure, close pidfd
+a74951c5af5498db5d4be0c14dcaa45fb452e23a	2024-09-04	[release-branch.go1.23] unique: don't retain uncloned input as key
+e6598e7baafa5650f82b9575c053a52c2601bf8f	2024-08-22	[release-branch.go1.23] os: dup pidfd if caller sets PidFD manually
+82575f76b8473effd6aff0a8690582820380d4d4	2024-09-04	[release-branch.go1.23] internal/weak: shade pointer in weak-to-strong conversion
+a886959aa2fb1115096a937d3d8a2e921388752f	2024-08-29	[release-branch.go1.23] runtime: size maps.Clone destination bucket array safely
+80ff7cd35ad35e6518b539f4eb2517928c2f8945	2024-08-27	[release-branch.go1.23] cmd/cgo: correct padding required by alignment
