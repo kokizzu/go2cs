@@ -38,7 +38,7 @@ on:
         required: false
         default: ''
       dotnet:
-        description: 'SDK channel for setup-dotnet. 9.0.x is the corpus TFM'''s own runtime; 10.0.x runs a migration Stage-1 leg (SDK alone, TFM unmoved) on hardware the fleet does not own.'
+        description: 'SDK channel for setup-dotnet. 9.0.x is the corpus TFM''s own runtime; 10.0.x runs a migration Stage-1 leg (SDK alone, TFM unmoved) on hardware the fleet does not own.'
         type: choice
         required: false
         default: 9.0.x
