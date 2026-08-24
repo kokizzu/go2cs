@@ -18,6 +18,11 @@ const StructPrefixMarker = ">>MARKER:STRUCT_%s_PREFIX<<"
 
 // Handles struct types in the context of a TypeSpec, ValueSpec, or FieldList
 func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Type, name string, doc *ast.CommentGroup, lifted bool, target *strings.Builder) (structTypeName string) {
+	// The struct's OWN type, captured before the embed loop shadows `identType` with each field's —
+	// the promoted-pair guard below asks go/types whether the STRUCT implements the embedded
+	// interface, and it must ask about the right side.
+	declaredStructType := identType
+
 	var preLiftIndentLevel int
 	var structPrefix *strings.Builder
 	var liftedIsPublicized bool
@@ -562,17 +567,37 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 				embedName = typeCollidingFieldName(embedName)
 			}
 
-			if _, ok := identType.(*types.Interface); ok {
-				// Add to promoted interface implementations
-				packageLock.Lock()
+			if ifaceType, ok := identType.(*types.Interface); ok {
+				// Record the promoted pair ONLY when Go itself says the struct implements the
+				// embedded interface — the samePackageImplements doctrine ("record what Go already
+				// says is true") applied at the embed. An embedded interface CONTRIBUTES its
+				// methods, but Go's promotion rule REMOVES a method with more than one equal-depth
+				// provider, and a Go program can lean on that removal deliberately: io_test.go's
+				// `Buffer` embeds `bytes.Buffer` AND the `ReaderFrom`/`WriterTo` interfaces
+				// precisely so ReadFrom/WriteTo drop out of the method set and `io.Copy` cannot
+				// take its fast paths — the interface fields stay nil by design. The unconditional
+				// record re-asserted the pair anyway; go2cs-gen then faithfully amplified it into
+				// a conformance member and a method-set twin, and the method Go had DELETED came
+				// back at runtime, forwarding to the nil field (JOB-010 Shape C: eight io tests
+				// nil-panicking inside a shell that should not exist).
+				//
+				// The VALUE form is what the record claims (the generated `partial struct T :
+				// iface` makes the value satisfy in C#), so the value method set is what is
+				// checked; a pair only *T satisfies is samePackageImplements' business, whose
+				// pointer-form records carry their own realizability gates. Type-parameter-carrying
+				// structs keep the old unconditional behavior — types.Implements is undefined over
+				// uninstantiated generics, the same exclusion convertToInterfaceType makes.
+				if typeContainsTypeParams(declaredStructType) || types.Implements(declaredStructType, ifaceType) {
+					packageLock.Lock()
 
-				if promotions, exists := promotedInterfaceImplementations[csFullTypeName]; exists {
-					promotions.Add(structTypeName)
-				} else {
-					promotedInterfaceImplementations[csFullTypeName] = NewHashSet([]string{structTypeName})
+					if promotions, exists := promotedInterfaceImplementations[csFullTypeName]; exists {
+						promotions.Add(structTypeName)
+					} else {
+						promotedInterfaceImplementations[csFullTypeName] = NewHashSet([]string{structTypeName})
+					}
+
+					packageLock.Unlock()
 				}
-
-				packageLock.Unlock()
 
 				v.writeString(target, "%s %s %s;", getAccess(goTypeName), csEmitTypeName, embedName)
 			} else {

@@ -72,6 +72,7 @@ internal static void Main() {
     check(plainˢ, new plain(tag: "p"u8));
     check(holderˢ, new holder(Reader: new iolike.Base(Tag: "held"u8), prefix: "h:"u8));
     LocalPromotion();
+    checkConflicted();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -94,6 +95,28 @@ public static void LocalPromotion() {
             fmt.Println(localAssertNoˢ);
         }
     }
+}
+
+[GoType] partial struct conflicted {
+    public partial ref EmbeddedInterfaceWitness.iolike_package.Base Base { get; }
+    public EmbeddedInterfaceWitness.iolike_package.Reader Reader;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object conflictedReaderYesˢ = (@string)"conflicted Reader: yes"u8;
+private static readonly object conflictedReaderNoˢ = (@string)"conflicted Reader: no"u8;
+private static readonly object conflictedNumMethodˢ = (@string)"conflicted NumMethod:"u8;
+
+internal static void checkConflicted() {
+    any v = new conflicted(Base: new iolike.Base(Tag: "conf"u8));
+    {
+        var (_, ok) = v._<iolike.Reader>(ᐧ); if (ok){
+            fmt.Println(conflictedReaderYesˢ);
+        } else {
+            fmt.Println(conflictedReaderNoˢ);
+        }
+    }
+    fmt.Println(conflictedNumMethodˢ, reflect.TypeOf(v).NumMethod());
 }
 
 } // end main_package
