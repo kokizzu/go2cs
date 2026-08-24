@@ -67,6 +67,26 @@ stage's gate accounting.
    > untouched — is authorized for the duration of a hop, on any fleet machine, without re-asking per
    > box. The grant does **not** extend to changing a machine default (§9's review, still a user
    > decision), uninstalling anything, or software the runbook does not name. Those still park.
+
+   > **The install root is USER-RELATIVE, and the first invocation is a state change.** Two
+   > mechanics the "side-by-side, user-local, default untouched" formula does not cover on its own:
+   >
+   > - **Derive the install directory from the running account** (`$env:USERPROFILE` / `$HOME`),
+   >   never from another box's row. Fleet accounts differ, and a literal path copied from a
+   >   sibling's provisioning row either provisions the wrong account's directory or fails
+   >   outright. The provisioning note records each box's **resolved** root for exactly this
+   >   reason — it is a record, not a template.
+   > - **The SDK's first-run experience writes user-level state on the first `dotnet` call**, not
+   >   at install time: a telemetry sentinel, and an ASP.NET Core HTTPS development certificate
+   >   that **replaces** the account's existing one. Neither touches the machine default and
+   >   neither is destructive to a build, but a box whose dev certificate is trusted for other
+   >   work has had that trust invalidated by a provisioning step that claimed to change nothing.
+   >   Set `DOTNET_NOLOGO=1`, `DOTNET_CLI_TELEMETRY_OPTOUT=1` and
+   >   `DOTNET_GENERATE_ASPNET_CERTIFICATE=false` for the first invocation where that matters, and
+   >   say in the row which way it went.
+   >
+   > The canonical per-OS command block lives with the rows it produced, in
+   > [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md).
 2. **Record both inventories per machine** — `dotnet --list-sdks` and `dotnet --list-runtimes` — in
    the machine's provisioning note, which lives in
    [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md) (one section per machine;
@@ -91,10 +111,45 @@ stage's gate accounting.
    **proved by a `FrameworkDescription` probe** whose output is recorded — probe before, probe after,
    probe again on restore. **A leg without a probe is not a leg**; it is the old runtime wearing the
    new one's name.
+
+   > **The recipe, concretely** (trap 5 refers to this block as the one that "already spells the
+   > fix", so it is written out rather than implied). A leg is **three** environment variables and
+   > they are set together or not at all:
+   >
+   > | variable | value | why the leg breaks without it |
+   > |:--|:--|:--|
+   > | `DOTNET_ROOT` | the side-by-side root | without it an apphost-launched instrument silently uses the **machine-registered** install — trap 4, wearing the new runtime's name |
+   > | `DOTNET_ROLL_FORWARD` | `LatestMajor` | without it every OLD-TFM binary in the leg fails to launch — trap 5 |
+   > | `PATH` | the side-by-side root prepended | so a bare `dotnet` in a harness resolves to the leg's muxer rather than the default one |
+   >
+   > The probe itself is a program, not a CLI flag: a one-file console app printing
+   > `RuntimeInformation.FrameworkDescription` **and**
+   > `RuntimeEnvironment.GetRuntimeDirectory()`. Print both — the description alone cannot
+   > distinguish two identically-versioned runtimes in different hives, which is exactly the
+   > confusion a box carrying the new runtime under its machine default invites. The directory
+   > names the hive; the description names the version.
+   >
+   > **Probe through the same launch path the instrument uses.** A probe run through the muxer
+   > proves nothing about an apphost-launched harness in the same shell, and vice versa — trap 5's
+   > measured matrix is why.
 4. **Pin the SDK with `global.json`** once the TFM moves (§5), not before. During the SDK-only and
    baseline stages both SDKs must remain selectable by environment, which is precisely what a pin
    fights. Choose the roll-forward policy deliberately — a pin to a *major* with tolerance inside it
    keeps a contributor on a different patch level working; a pin to an exact patch does not.
+
+5. **Gate the stage on BOTH lanes, with built artifacts.** An inventory listing proves a directory
+   exists, not that the box can use it, and the stage's whole purpose is a machine that can build the
+   new TFM *without* having lost the old one. The bar is two builds and two probes, on throwaway
+   projects outside the repository:
+
+   | leg | built by | bar |
+   |:--|:--|:--|
+   | a console app at the **new** TFM | the side-by-side SDK | builds; runs; probe reports the new runtime **from the side-by-side hive** |
+   | a console app at the **old** TFM | the **machine-default** SDK | builds; runs; probe reports the old runtime from the default hive |
+   | one **real repository project** at the old TFM (`golib` is the cheap one) | the machine-default SDK | zero errors — the old lane is load-bearing for the release ritual and is not proven by a scratch project |
+
+   Scratch projects go outside the tree. The repository is not touched by this stage, and
+   `git status` at the end of it says so.
 
 **Fleet note.** Provisioning is per machine and can proceed in parallel with anything, because it
 changes nothing in the repository. It is the one stage of a migration with no dependencies.
@@ -175,7 +230,44 @@ harness invocation in the same shell dies: *the probe accidentally pre-documents
 instrument run on a new-runtime leg inherits the same requirement — probe and harness must share
 one environment, or they are measuring two different runtimes.
 
-**Which instruments are exposed — the discriminant is APPHOST-vs-MUXER launch, not universal** (windows leg, same execution): an instrument launched through its own compiled apphost `.exe` is IMMUNE — the apphost's embedded hostfxr resolves frameworks via the machine-registered global install location, independent of PATH or the side-by-side root, which is why the behavioral suite's Output phase ran clean in the very shell where a test host died. An instrument with NO apphost (a pure test library, `dotnet test`-only) is launched by the side-by-side SDK's own muxer directly on its `.dll`, and that muxer searches only its own install tree. **Predict a leg's exposure from how each instrument launches, not from whether it is a test** — and the fix is the same one line of environment either way.
+**Which instruments are exposed — the discriminant is whether the launch RESOLVES THROUGH the
+side-by-side root, and apphost launch is not by itself a defence** (measured on the i7-5820K leg,
+2026-08-24, a ten-cell matrix over an old-TFM console app and a new-TFM one; it **corrects** an
+earlier reading of this trap that called apphost launch immune). Two independent mechanisms route a
+launch into that root, and an instrument is exposed if **either** applies:
+
+| launch path | what selects the framework search root | exposed when |
+|:--|:--|:--|
+| **muxer** — the side-by-side `dotnet.exe` invoked on a `.dll` (a pure test library, `dotnet test`-only) | the muxer **is** its own root; it searches its own install tree and nothing else | **always** — `DOTNET_ROOT` neither helps nor hurts, because the muxer ignores it |
+| **apphost** — the instrument's own compiled `.exe` | `DOTNET_ROOT` if set, otherwise the machine-registered global install | **whenever `DOTNET_ROOT` points at the side-by-side root** — which §2(3) *requires* of a leg |
+
+Measured, old-TFM app, side-by-side root carrying only the new runtime: muxer launch fails with
+`DOTNET_ROOT` unset **and** set (`.NET location: <sxs root>` in both); apphost launch **succeeds** with
+`DOTNET_ROOT` unset even with the side-by-side root first on `PATH` (`.NET location:` the global
+install, running the old runtime), and **fails identically to the muxer** with `DOTNET_ROOT` set.
+Adding `DOTNET_ROLL_FORWARD=LatestMajor` recovers both.
+
+So the apphost's independence is from **`PATH`**, not from the side-by-side root — and that is the whole
+of it. A shell with `PATH` pointed at the new root but no `DOTNET_ROOT` is a **half-constituted leg**:
+its apphost instruments quietly keep running the OLD runtime while its muxer-launched ones die, which
+reads as "apphost instruments are immune" and is really "those instruments were never on the leg."
+That shape is what an apphost-immunity reading is built on, and it is the more dangerous half of the
+trap, because a green apphost instrument in a half-constituted leg is a **trap-4 false measurement**
+wearing a passing result. **Constitute the leg completely (§2(3)) and every instrument is exposed
+equally** — which is the simpler rule, and the fix is the same one line of environment for all of them.
+
+**The exposure INVERTS at the TFM stage, and its symptom is identical** (same matrix, new-TFM cells).
+Once §5 moves the property, the binaries are new-TFM and the machine default is the root that lacks a
+matching runtime: a new-TFM apphost launched with `DOTNET_ROOT` **unset** fails —
+`.NET location: <global install>`, newest framework found the old one — while the same binary under
+`DOTNET_ROOT=<sxs root>` runs. The failure text is the *same* `app-launch-failed` /
+"You must install or update .NET" wall trap 5 catalogs, so at the TFM stage it invites the trap-5
+reflex, and **`DOTNET_ROLL_FORWARD` cannot fix it**: roll-forward rolls forward, and there is no newer
+runtime in that hive to roll to. `DOTNET_ROOT` is the fix, and it is now owed by **every apphost
+instrument on the box** — the behavioral and performance runners, and every converted `package main`
+the Output phase executes. A machine whose default hive already carries the new runtime (a VS or
+servicing install) hides this by succeeding on the *wrong* hive, which is §2(3)'s hazard once more:
+the two hives are then distinguishable only by the probe's runtime-directory line.
 
 **Corollary trap, same family, found in the same hour:** a test run at the DEFAULT `$(GoTargetOS)`
 on a non-Windows box fabricates failures that read exactly like runtime deltas — the Windows
@@ -613,6 +705,7 @@ habit of writing *"not run; accounting stated"*.
 
 | Gate | Owed? |
 |:--|:--|
+| the Stage-0 two-lane provisioning gate (§2(5)) | **yes**, once **per fleet machine**, and re-owed on any box that later changes its default hive. It is the only gate that is not repository-wide, and the only one a machine can fail alone |
 | `go2cs-stdlib.slnx`, every buildable `$(GoTargetOS)` flavor | **yes**, at the SDK stage and again at the TFM stage |
 | `go2cs.slnx` | **yes** at both, and again after any golib API change |
 | full behavioral suite (four phases) | **yes** at both |
