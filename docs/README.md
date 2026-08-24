@@ -9,19 +9,20 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — Go programs now run on Linux
+## 📰 NEWS — Over 75% of Go's standard library validates in C#
 
-**Converted Go programs run on Linux, byte-identical to `go run`** — `fmt.Println("hello, 世界")`, a
-program crossing `os.Args`/`os.Getenv`/`time.Now()`, and this README's own
-[real-world walkthrough](#converting-a-real-world-module) (`fatih/color`, true ANSI colour under a real
-PTY, the `isatty` branch agreeing with Go in both directions). Behind it: the standard library compiles
-for **windows, linux and darwin from one tree** (per-GOOS source folders selected by `$(GoTargetOS)`;
-141 of 141 shared-source packages measured IL-identical across flavors), each Go package ships as **one
-NuGet package** with RID-specific assemblies only where source genuinely varies, and Linux's entire
-syscall surface crosses the kernel through a single measured `libc syscall(2)` keystone. The Windows
-lane did not move a byte — every gate, including the **110-package / 13,628-verdict** validated sweep,
-held throughout. The Linux experience ships with the next package release; full detail in the
-[news archive entry](NEWS.md#august-8-2026--go-programs-run-on-linux).
+**162 of the 215 testable standard-library packages pass their own Go test suites in C#** —
+18,569 matching verdicts against `go test -json`, compared verdict for verdict, with
+85 divergences disclosed by exact failure signature and nothing else waived. A package
+appears on the [roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and
+every row links a [proof page](validation/index.md) listing Go's verdict beside go2cs's, test by
+test. Converted frames now report **Go file and line positions** — `runtime/debug.Stack()`,
+`log`'s file prefixes and `flag`'s error output name the Go source they came from, not the
+generated C#. Channel direction and array dimensions ride the type descriptor, so `reflect`
+answers about them the way Go does. And the numbers are the honest ones: packages that come
+close and do not fully agree are not on the roster, because a milestone you can trust is worth
+more than one you can round up to. Full detail in the
+[news archive entry](NEWS.md#august-22-2026--over-75-of-the-standard-librarys-test-suites-pass-in-c).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
@@ -529,6 +530,7 @@ High level timeline of the project's major turning points.
 | 2026-08-01 | One tree — the converted standard library comes home to `src/core` | `2e8066da6` | Baseline and full conversion consolidate into a single tree with one `$(go2csPath)core/<pkg>` path scheme; no reference rewriting anywhere. |
 | 2026-08-08 | [**Over half the stdlib's test suites validate in C#**](NEWS.md#august-8-2026--over-half-the-standard-library-validates-defers-reach-zero-allocation) | [`stdlib-half-validated-2026-08-08`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-half-validated-2026-08-08) | **110/215** packages, 13,628 matching verdicts; zero-allocation `defer` frames; Docs+Tests badge trust chain in every package. |
 | 2026-08-08 | [**Go programs run on Linux**](NEWS.md#august-8-2026--go-programs-run-on-linux) | [`linux-first-run-2026-08-08`](https://github.com/ritchiecarroll/go2cs/releases/tag/linux-first-run-2026-08-08) | `hello, 世界`, an `os`/`time` program, and the real-world walkthrough (`fatih/color`, true ANSI colour) all byte-identical to `go run`; one L3 tree compiles windows+linux+darwin; one nupkg per package; one measured `libc syscall(2)` keystone. |
+| 2026-08-22 | [**Over 75% of the standard library's test suites pass in C#**](NEWS.md#august-22-2026--over-75-of-the-standard-librarys-test-suites-pass-in-c) | [`stdlib-tests-75pct-2026-08-22`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-tests-75pct-2026-08-22) | **162/215** packages, 18,569 matching verdicts, 85 disclosed; converted frames report Go file:line positions; Go 1.23.1's terminal validation marker, with `release/go1.23` cut. |
 
 ## C# to Go?
 

@@ -8,6 +8,41 @@ their full text.
 
 ---
 
+## August 22, 2026 — Over 75% of the standard library's test suites pass in C#
+
+**162 of the 215 testable standard-library packages (75.3%) validate their own Go 1.23.1 test
+suites in C#** — 18,569 matching verdicts against a clean `go test -json` baseline, with
+85 signature-pinned disclosed divergences. Each suite is converted from Go's own
+`_test.go` sources, built against the converted standard library, run under the Go-semantics test
+host, and compared verdict for verdict; a package joins the roster only when every eligible test
+agrees.
+
+The milestone is tagged because something genuinely hard landed with it. **A converted stack frame
+now reports a Go file and line.** The position is derived from conversion-time facts rather than
+composed — file and line ship together, because either alone names a position that exists in
+neither tree — and the identity is build-shape-faithful: the published standard library reports
+the same trimpath form Go bakes into a published binary, while a converted user module reports the
+source path Go would have baked for that build. `runtime/debug`, `log`, `log/slog` and `flag` all
+rest on it.
+
+Three more capabilities landed alongside. **Channel direction and map key/element dimensions ride
+the type descriptor**, so `reflect` distinguishes `<-chan int` from `chan int` and a decode target
+can measure an array it has never populated — which retired an entire disclosure class on its own
+recorded remedy and banked both template packages. **A native pointer slot holds the pointer's
+value**, not a managed reference, closing a round-trip that had also hidden a GC-invisible
+dangling-reference hazard. And **an always-on GC recorder** supplies real pause and release facts
+to `runtime/debug`'s statistics surface at zero cost per read.
+
+What the campaign declined is part of the record. A disclosure names something the managed runtime
+provably cannot satisfy — never something merely unimplemented — so packages that reach 105 of 106
+or 210 of 267 stay off the roster with their remaining root named and priced. Four disclosure
+classes carry the campaign's divergences today; a fifth retired itself the day its remedy landed,
+exactly as it was written to.
+
+This is Go 1.23.1's terminal validation marker. Every roster row re-derives from a release's own
+test sources at a version hop, so the campaign continues on Go 1.23.12 — the release users would
+actually choose — with the 1.23 story living on its own branch.
+
 ## August 8, 2026 — Go programs run on Linux
 
 Converted Go programs now **run on Linux, byte-identical to `go run`**: `fmt.Println("hello, 世界")`,
