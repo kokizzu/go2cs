@@ -288,6 +288,13 @@ if ($phases -contains 'publish') {
         if ($spec.Contains('Bflat')) {
             if (-not $BflatExe) { throw "Variant $variant needs -BflatExe <path to bflat.exe>" }
 
+            # Existence, not just non-emptiness. This script runs at 'Continue', so an unresolvable
+            # compiler would not stop the pipeline below: `& $BflatExe` would write a command-not-found
+            # record into $log and leave $LASTEXITCODE at whatever the previous native command set --
+            # 0, on a healthy run -- and the arm would report "ok" for a benchmark it never compiled
+            # (false-green route #6, CLAUDE.md).
+            if (-not (Test-Path -LiteralPath $BflatExe)) { throw "-BflatExe does not exist: $BflatExe" }
+
             foreach ($bench in $benchList) {
                 $outDir = Get-VariantDir $bench $variant
                 if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }

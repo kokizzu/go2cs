@@ -34,15 +34,6 @@ $IsWindowsHost = if ($null -eq (Get-Variable -Name 'IsWindows' -ErrorAction Sile
 # Executable suffix for a built .NET apphost or Go binary.
 $ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
 
-# The corpus's target framework, spelled ONCE. Every instrument that touches a build output path
-# (bin/<config>/<tfm>/) reads this instead of embedding the string: the TFM census
-# (docs/phase4/CENSUS-tfm-inventory.md, Class D) found nine hardcoded sites across six files, each
-# a FALSE-RED generator at a TFM hop -- build succeeds, probe misses, instrument reports a corpus
-# failure. The C# harnesses DERIVE theirs from their own bin tail (BehavioralTestBase's pattern);
-# PowerShell has no bin tail to derive from at source time, so this is the one hand-edit a hop
-# owes on the script side -- one line here instead of five spread across three instruments.
-$NetVersion = 'net9.0'
-
 # The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
 # `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
 # wrong everywhere else: a linux host then builds the windows flavor, whose `os_package` module
@@ -108,6 +99,46 @@ $SrcRoot      = $PSScriptRoot
 $RepoRoot     = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $ConverterSrc = Join-Path $SrcRoot 'go2cs'
 $Go2csExe     = Join-Path $ConverterSrc "bin/go2cs$ExeSuffix"
+
+# The corpus's target framework, DERIVED from the property of record -- never restated. Every
+# instrument that touches a build output path (bin/<config>/<tfm>/) reads $NetVersion, and
+# src\Directory.Build.props owns <TargetFramework> for the whole tree, so that file is what this
+# reads.
+#
+# It used to be a literal here. The TFM census (docs/phase4/CENSUS-tfm-inventory.md, Class D) had
+# hoisted nine hardcoded sites out of six files into this one line, which fixed the SPREAD but not
+# the KIND: a hoisted literal is still a literal, and it went stale on the very next hop. With the
+# tree on net10.0 and this line still saying net9.0 every probe pointed at a bin\Debug\net9.0 that
+# does not exist -- the build succeeds, the instrument finds nothing, and a wrapper that had nothing
+# to run could report success (false-green route #6, CLAUDE.md). The C# harnesses derive theirs from
+# their own bin tail (BehavioralTestBase's pattern); a script has no bin tail at source time, but it
+# does have the props file, so it reads that rather than trusting a hand-edit a hop can forget. A
+# hop is now ONE edit, in Directory.Build.props, with nothing on the script side to level.
+#
+# Cheap by construction -- one file read and one regex, no MSBuild and no `dotnet` -- because this
+# module is dot-sourced by every instrument on every invocation. Comments are stripped before the
+# match so the props file's own prose (which names <TargetFramework> while explaining it) cannot be
+# read as the property, and the pattern tolerates the attribute the real element carries (it is
+# Condition-guarded; the element's INNER TEXT is the framework). [regex]::Match rather than -match
+# keeps this file's no-side-effects promise: -match publishes $Matches into the caller's scope.
+#
+# There is deliberately NO fallback to a literal. A silent fallback is precisely how this class of
+# defect hides -- an instrument that cannot know its own TFM must say so, not guess.
+$TargetFrameworkProps = Join-Path $SrcRoot 'Directory.Build.props'
+
+if (-not (Test-Path -LiteralPath $TargetFrameworkProps)) {
+    throw "Cannot derive `$NetVersion: the target framework's property of record is missing at $TargetFrameworkProps"
+}
+
+$NetVersionMatch = [regex]::Match(
+    ([System.IO.File]::ReadAllText($TargetFrameworkProps) -replace '(?s)<!--.*?-->', ''),
+    '<TargetFramework(?:\s[^>]*)?>\s*([^<\s]+)\s*</TargetFramework>')
+
+if (-not $NetVersionMatch.Success) {
+    throw "Cannot derive `$NetVersion from $TargetFrameworkProps -- expected a <TargetFramework>...</TargetFramework> element (a Condition attribute is fine; the element's inner text is the framework)"
+}
+
+$NetVersion = $NetVersionMatch.Groups[1].Value
 
 # PathDepth counts a path's segments independently of which separator produced them. The behavioral
 # walk sorts by this DESCENDING so a nested sub-library package is transpiled before the parent that
