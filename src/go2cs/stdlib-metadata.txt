@@ -124,7 +124,6 @@
 [assembly: GoImplement<afterFuncCtx, canceler>(Pointer = true)]
 [assembly: GoImplement<backgroundCtx, Context>]
 [assembly: GoImplement<cancelCtx, Context>(Pointer = true)]
-[assembly: GoImplement<cancelCtx, Context>(Promoted = true)]
 [assembly: GoImplement<cancelCtx, canceler>(Pointer = true)]
 [assembly: GoImplement<deadlineExceededError, error>]
 [assembly: GoImplement<emptyCtx, Context>]
@@ -134,7 +133,6 @@
 [assembly: GoImplement<timerCtx, canceler>(Pointer = true)]
 [assembly: GoImplement<todoCtx, Context>]
 [assembly: GoImplement<valueCtx, Context>(Pointer = true)]
-[assembly: GoImplement<valueCtx, Context>(Promoted = true)]
 [assembly: GoImplement<withoutCancelCtx, Context>]
 
 ##crypto
@@ -358,7 +356,6 @@
 [assembly: GoImplement<helloRequestMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<keyUpdateMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<listener, net_package.Listener>(Pointer = true)]
-[assembly: GoImplement<listener, net_package.Listener>(Promoted = true)]
 [assembly: GoImplement<lruSessionCache, ClientSessionCache>(Pointer = true)]
 [assembly: GoImplement<marshalingFunction, go.vendor.golang.org.x.crypto.cryptobyte_package.MarshalingValue>]
 [assembly: GoImplement<net_package.Conn, io_package.Reader>]
@@ -2481,7 +2478,6 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<wrapper, go.log.slog_package.ΔHandler>(Pointer = true)]
-[assembly: GoImplement<wrapper, go.log.slog_package.ΔHandler>(Promoted = true)]
 
 ##text.scanner
 // <ExportedTypeAliases>

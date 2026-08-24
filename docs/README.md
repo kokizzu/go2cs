@@ -340,7 +340,7 @@ dotnet build example.com.colordemo.slnx -c Debug
 
 **4 — C#: run the converted app.** Navigate into the default .NET 9.0 debug build folder, and run demo:
 ```shell
-cd bin/Debug/net9.0
+cd bin/Debug/net10.0
 dotnet colordemo.dll
 ```
 

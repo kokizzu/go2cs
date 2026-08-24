@@ -5,7 +5,7 @@
        and never pack, so golib needs no version stamp there. -->
 
   <PropertyGroup>
-    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>go</RootNamespace>
     <AssemblyName>golib</AssemblyName>
@@ -32,7 +32,7 @@
          the reflection/unsafe core, so its trim (IL####) and nullable warnings are a real to-do list
          with an owner, not emission noise. Only CS8500 is a policy entry — the unsafe machinery lives
          here on purpose — and the corpus must not inherit it. 1701/1702 were .NET Framework
-         assembly-binding redirects that cannot fire on net9.0; 660/661 were bare numbers. -->
+         assembly-binding redirects that cannot fire on net10.0; 660/661 were bare numbers. -->
     <NoWarn>CS0660;CS0661;CS8500;CS8981;IDE1006;CA2255</NoWarn>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>

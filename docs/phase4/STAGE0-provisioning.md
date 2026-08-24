@@ -156,3 +156,65 @@ hives' inventories here.
    (`PATH` moved, `DOTNET_ROOT` not), whose apphost instruments are still running the old runtime:
    a trap-4 false measurement that looks like a pass. The same matrix found the inverse exposure
    waiting at the TFM stage, where `DOTNET_ROLL_FORWARD` cannot help and only `DOTNET_ROOT` can.
+
+---
+
+# HOP A — Go 1.23.12 toolchain provisioning (the CORPUS hop's Stage 0)
+
+Executed per [`../GoCorpusMigration.md`](../GoCorpusMigration.md) **H1 step 1 only** — install
+side-by-side and confirm the target. **The pin is deliberately NOT bumped** (H2 is a separate,
+one-line, revertible commit and the corpus is still on 1.23.1 through Stage 2). Same three grant
+conditions as the .NET hop: user-local, side-by-side, machine default untouched.
+
+## ⚠ H1 step 1's stated verification is INSUFFICIENT — verify by RUNNING, not by reading `VERSION`
+
+H1 step 1 says *"confirm `GOROOT/VERSION` reads the exact target."* On R's Windows box that check
+**passes while every invocation runs the old toolchain**, because Go 1.21+ toolchain switching
+obeys a `GOTOOLCHAIN` pin ahead of whatever binary you invoke:
+
+```
+C:\Users\rcarroll\AppData\Roaming\go\env  contains  GOTOOLCHAIN=go1.23.1
+
+sdk\go1.23.12\VERSION              -> go1.23.12      (the file H1 asks about: CORRECT)
+sdk\go1.23.12\bin\go.exe version   -> go1.23.1       (what actually runs: THE OLD TOOLCHAIN)
+go1.23.12 version   (dl shim)      -> go1.23.1       (the shim is redirected too)
+```
+
+The redirect is **silent** — nothing warns, and `go1.23.12 version` cheerfully prints `go1.23.1`.
+A hop leg that provisioned, checked the file, and started converting would emit with **1.23.1**
+while believing it ran 1.23.12: false-green route #4's shape (a stale toolchain behind a current
+name), arriving through configuration rather than a stale binary. **Verify with `go version`, which
+reports what executed.** Remedy per-invocation, never by editing the pin:
+`GOTOOLCHAIN=go1.23.12` (works from any `go`) or `GOTOOLCHAIN=local` with the target's `GOROOT`.
+
+**The pin STAYS.** It is a machine default (outside the install grant), and it is currently
+*protective*: it guarantees every other process on this box — including Stage 2's gates — keeps
+building with 1.23.1 until the hop deliberately moves. Hop A's own legs set `GOTOOLCHAIN` in their
+environment, exactly as the .NET legs set `DOTNET_ROOT`.
+
+**The two fleet boxes are configured OPPOSITELY, so neither lane's experience predicts the other's:**
+Windows is *pinned* (silently switches DOWN, ignoring a newly installed SDK); Linux is `auto`
+(silently switches UP, downloading a toolchain when a `go.mod` asks for one). Both make "the SDK is
+installed" insufficient as provisioning evidence, in opposite directions.
+
+## Machine: R's box (win-x64)
+
+| | value |
+|:--|:--|
+| Side-by-side root | `C:\Users\rcarroll\sdk\go1.23.12` (via `golang.org/dl/go1.23.12`, user-local `GOBIN` shim) |
+| `VERSION` file | `go1.23.12` |
+| **Actually runs** | `go1.23.1` **unless `GOTOOLCHAIN` is set** — see above; with `GOTOOLCHAIN=go1.23.12`, `go version` → `go1.23.12` |
+| Machine default AFTER (untouched) | `go version` → **go1.23.1**, `GOROOT` → `C:\Users\rcarroll\sdk\go1.23.1` |
+| Pre-existing SDKs (before) | `sdk\go1.23.1` only |
+| `GOTOOLCHAIN` | `go1.23.1`, pinned in `%APPDATA%\go\env` — **left in place** |
+
+## Machine: WSL Ubuntu-22.04 (linux-x64)
+
+| | value |
+|:--|:--|
+| Side-by-side root | `/root/go1.23.12/go` (official tarball, user-local; `/usr/local/go` untouched) |
+| `VERSION` file | `go1.23.12` |
+| **Actually runs** | `go version` → **go1.23.12** ✓ (no pin to redirect it) |
+| Machine default AFTER (untouched) | `go version` → **go1.23.1**, `GOROOT` → `/usr/local/go` |
+| `GOTOOLCHAIN` | `auto` (no `~/.config/go/env` file exists) — **left in place** |
+| Disk headroom | 925 G free |

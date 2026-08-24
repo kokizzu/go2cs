@@ -250,6 +250,54 @@ func isEmptyInterfaceTarget(t types.Type) bool {
 	return isIface && isEmpty
 }
 
+// variadicArgBindsParamsCollection reports whether the SOLE argument of a non-spread VARIADIC slot
+// would bind the callee's `params Span<E>` collection WHOLE — the call's NORMAL form — instead of
+// contributing ONE element, which is what Go's semantics require (spreading needs an explicit
+// `a...`, and a bare `a` is a single value).
+//
+// The shape is a Go slice or array whose ELEMENT type IS the variadic element type: `f(a)` with
+// `a []any` against `func f(args ...any)` — html/template's jsValEscaper, and its
+// `jsValEscaper([]any{x})` nesting cases. It emits `slice<any>` / `array<any>` against
+// `params ꓸꓸꓸany argsʗp`, where `using ꓸꓸꓸany = Span<any>`.
+//
+// Why it is a C# 14 REGRESSION and not a standing defect: golib gives `slice<T>` and `array<T>` an
+// `implicit operator T[]` (slice.cs, array.cs), and C# 14 promotes array→span from a user-defined
+// conversion to a STANDARD one. A user-defined conversion admits one standard conversion on each
+// side, so `slice<any>` → `any[]` → `Span<any>` becomes an implicit conversion that did NOT exist
+// in C# 13 (where the second hop was itself user-defined, and C# never composes two). That makes
+// the callee applicable in its normal form, and C# prefers the normal form over the expanded one —
+// so the slice silently becomes the entire argument list and exactly one level of nesting
+// disappears. It is a SILENT divergence, not a compile error: the same trap the untyped-`nil`
+// variadic cast in convCallExpr.go already guards, reached by a different conversion.
+//
+// A NAMED slice/array type is excluded deliberately: it renders as its own generated wrapper whose
+// only route to a span is wrapper→`slice<T>`→`T[]`→span, i.e. TWO user-defined conversions, which
+// C# 14 still does not compose. Only the unnamed slice/array shapes can reach the params collection.
+//
+// The cast this gates is always legal where the call already compiled: binding the expanded form at
+// all required an implicit conversion from the argument to the element type, so making that
+// conversion explicit cannot fail where the implicit one succeeded. (In practice the rule can only
+// fire for an INTERFACE element type — Go assignability of `[]E` to `E` demands it — which is why
+// the emitted cast is `(any)`.)
+func variadicArgBindsParamsCollection(argType types.Type, elemType types.Type) bool {
+	if argType == nil || elemType == nil {
+		return false
+	}
+
+	var argElem types.Type
+
+	switch argKind := types.Unalias(argType).(type) {
+	case *types.Slice:
+		argElem = argKind.Elem()
+	case *types.Array:
+		argElem = argKind.Elem()
+	default:
+		return false
+	}
+
+	return types.Identical(types.Unalias(argElem), types.Unalias(elemType))
+}
+
 func isEmptyInterface(interfaceType *ast.InterfaceType) bool {
 	if interfaceType == nil {
 		return false

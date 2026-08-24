@@ -56,6 +56,17 @@ internal static nint describe(params ꓸꓸꓸShape shapesʗp) {
     return len(shapes);
 }
 
+[GoType("[]any")] partial struct anyList;
+
+internal static @string nest(params ꓸꓸꓸany argsʗp) {
+    var args = argsʗp.slice();
+
+    if (len(args) == 1) {
+        return fmt.Sprintf("[%v]"u8, args[0]);
+    }
+    return fmt.Sprintf("<%d>%v"u8, len(args), args);
+}
+
 internal static void Main() {
     fmt.Println(totalArea(2, new RectжShape(newRect(3, 4)), new CircleжShape(Ꮡ(new Circle(r: 2))), new RectжShape(newRect(1, 5))));
     var r = Ꮡ(new Rect(w: 4, h: 2));
@@ -80,6 +91,29 @@ internal static void Main() {
     fmt.Println(describe((Shape)(default!), (Shape)(default!)));
     slice<Shape> none = default!;
     fmt.Println(describe(none.ꓸꓸꓸ));
+    var anys = new any[]{(nint)(1), (@string)"two"u8, default!}.slice();
+    var (ᴛ13, ᴛ14) = countArgs((any)(anys));
+    fmt.Println(ᴛ13, ᴛ14);
+    fmt.Println(nest((any)(anys)));
+    var (ᴛ15, ᴛ16) = countArgs(anys.ꓸꓸꓸ);
+    fmt.Println(ᴛ15, ᴛ16);
+    fmt.Println(nest(anys.ꓸꓸꓸ));
+    slice<any> noAnys = default!;
+    var (ᴛ17, ᴛ18) = countArgs((any)(noAnys));
+    fmt.Println(ᴛ17, ᴛ18);
+    var (ᴛ19, ᴛ20) = countArgs(noAnys.ꓸꓸꓸ);
+    fmt.Println(ᴛ19, ᴛ20);
+    var (ᴛ21, ᴛ22) = countArgs((nint)(1), anys);
+    fmt.Println(ᴛ21, ᴛ22);
+    fmt.Println(nest((nint)(1), anys));
+    var arr = new any[]{(nint)(7), (nint)(8)}.array();
+    var (ᴛ23, ᴛ24) = countArgs((any)(arr));
+    fmt.Println(ᴛ23, ᴛ24);
+    fmt.Println(nest((any)(arr)));
+    var named = new anyList(new any[]{(nint)(1), (@string)"two"u8}.slice());
+    var (ᴛ25, ᴛ26) = countArgs(named);
+    fmt.Println(ᴛ25, ᴛ26);
+    fmt.Println(nest(named));
 }
 
 } // end main_package
