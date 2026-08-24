@@ -1046,6 +1046,33 @@ reads backwards on the one platform 5.1 runs on).
 - Generated C# intentionally targets Go-like *behavior first* (no implicit async), and Go-like *appearance*
   second (extra machinery hidden in partial classes / generated files).
 
+### Integrating concurrent lanes (the hazards that do NOT show up as conflicts)
+
+When several machines work the same tree, the dangerous merges are the ones git reports as clean.
+Each rule below was paid for.
+
+- **⚠ Two lanes solving the same problem produce a SILENT DUPLICATION, not a conflict.** Independently
+  added blocks land at different offsets under different names, so git merges both as ordinary
+  additions and marks nothing. Measured 2026-08-24: two independently written 17-element apply-set
+  arrays in `migrate-tfm.ps1` auto-merged *cleanly*, and the result would have appended every site to
+  `$applySites` **twice**. The mirror case bites from the other side — a symbol introduced OUTSIDE the
+  markers (`$shadowed`) is left undefined at its use site if you take one side of a marked hunk. Neither
+  is visible from the conflict markers. **Resolving the marked hunks is not resolving the merge: read
+  the merged file whole, and run the thing.**
+- **A branch behind master shows master's newer files as DELETIONS.** This is the stale-base illusion,
+  not data loss, and it has been mis-read as a lane destroying work more than once. Diff from the
+  **merge base** (`git merge-base A B`), never from a moving tip.
+- **Check the diffstat against the claim BEFORE the push, never after.** A merge whose file list does
+  not match what the commit says it does is stopped at that point, not explained afterwards.
+- **A separated stack must be verified from BOTH branches** — `git log --oneline master..<branch>` on
+  each shows what a merge would really carry.
+- **Re-fetch immediately before any merge in a live campaign.** Refs move under you; arithmetic against
+  a SHA you read ten minutes ago is arithmetic against a tree nobody has.
+- **A gate that has never been made to fail proves nothing.** Before trusting a census/self-verify that
+  reports zero, regress one site deliberately, confirm it reports exactly that site, then fix and
+  re-verify — and confirm the restore is byte-identical. The same principle as the positive controls
+  the corpus loop uses: a green that cannot go red is not a measurement.
+
 ## Git anchors
 
 | Commit | Date | Meaning |
