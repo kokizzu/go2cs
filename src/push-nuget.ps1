@@ -12,8 +12,8 @@
     MULTIPLATFORM (docs\phase4\DESIGN-multiplatform-corpus.md section 9(a), increment 4). The converted corpus
     is one tree whose platform-varying packages keep per-GOOS sources selected by $(GoTargetOS), so the
     solution is built and packed ONCE PER RID and the flavors are merged into a single nupkg per
-    package: lib\net9.0 carries the reference (Windows) flavor as the compile-time asset, and
-    runtimes\<rid>\lib\net9.0 carries each shipped RID's runtime assembly. Package IDs, and everything a
+    package: lib\<tfm> carries the reference (Windows) flavor as the compile-time asset, and
+    runtimes\<rid>\lib\<tfm> carries each shipped RID's runtime assembly. Package IDs, and everything a
     consumer writes, are unchanged. Platform-neutral packages -- the large majority -- are copied
     verbatim from the reference pass and are byte-for-byte what a single-pass release produced.
 
@@ -515,9 +515,9 @@ Write-Step "Verified $sourceVerified C# Source badge(s) pin $fullVersion and its
 # single nupkg per package:
 #
 #   go.os/
-#     lib/net9.0/os.dll                       compile-time asset + RID-agnostic runtime fallback
-#     runtimes/win-x64/lib/net9.0/os.dll      runtime asset, selected on win-x64
-#     runtimes/linux-x64/lib/net9.0/os.dll    runtime asset, selected on linux-x64
+#     lib/<tfm>/os.dll                        compile-time asset + RID-agnostic runtime fallback
+#     runtimes/win-x64/lib/<tfm>/os.dll       runtime asset, selected on win-x64
+#     runtimes/linux-x64/lib/<tfm>/os.dll     runtime asset, selected on linux-x64
 #
 # WHY lib/ RATHER THAN ref/, against NuGet's documented asset selection. NuGet gives `lib/{tfm}/` both
 # the `compile` and the `runtime` asset roles; `ref/{tfm}/` gives only `compile`; and
@@ -542,7 +542,7 @@ Write-Step "Verified $sourceVerified C# Source badge(s) pin $fullVersion and its
 #
 # The reference flavor is the FIRST entry below, and it is Windows: that keeps the compile surface a
 # consumer binds against exactly the one today's single-platform packages present, and it matches section 11's
-# "let lib/net9.0/syscall.dll carry the host-of-record flavor".
+# "let lib/<tfm>/syscall.dll carry the host-of-record flavor".
 #
 # DEPENDENCIES ARE PER TARGET FRAMEWORK, NEVER PER RID (section 9). A package whose imports differ by GOOS --
 # 21 of them carry conditioned <ProjectReference> groups -- therefore declares the UNION of its
