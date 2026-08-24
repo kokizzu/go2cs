@@ -44,17 +44,26 @@ user-local per §2(1).
 | Pre-existing SDKs (before) | 9.0.317 (`/usr/share/dotnet/sdk`) |
 | `global.json` | none, per §2(4) |
 
-## Machine: i9 (win-x64, the sweeper) — PENDING, owner: i9's session
+## Machine: i9 (win-x64, the sweeper)
 
-Not reachable from lane R. The commands, verbatim (PowerShell, per §2):
+Provisioned 2026-08-24 (i9's session). Official `dotnet-install.ps1`, `-Channel 10.0.4xx -NoPath`,
+user-local per §2(1). Commands run verbatim from the pending row above, PowerShell native (not
+bash-wrapped, so neither of R's two invocation traps applied here).
 
-```powershell
-Invoke-WebRequest https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
-.\dotnet-install.ps1 -Channel 10.0.4xx -InstallDir "$env:USERPROFILE\dotnet10" -NoPath
-& "$env:USERPROFILE\dotnet10\dotnet.exe" --list-sdks     # record here
-dotnet --list-sdks; dotnet --list-runtimes               # record BOTH pre-existing inventories here
-dotnet --version                                          # must be unchanged
-```
+| | value |
+|:--|:--|
+| Side-by-side root | `C:\Users\rcarroll\dotnet10` |
+| SDK installed | **10.0.400** |
+| Host it carries | 10.0.11 x64 (NETCore.App + AspNetCore.App + WindowsDesktop.App 10.0.11) |
+| Machine default AFTER (untouched, §2(1)) | `dotnet --version` → **9.0.317** |
+| Pre-existing SDKs (`--list-sdks` before) | 9.0.317 (`C:\Program Files\dotnet\sdk`) |
+| Pre-existing runtimes (before) | AspNetCore/NETCore/WindowsDesktop.App 6.0.36, 7.0.20, 8.0.30, 9.0.19 (`C:\Program Files\dotnet`) — no 10.x present |
+| `global.json` | none, per §2(4) — not before the TFM moves |
+
+No repeat of R's box hazard here: this machine carried **no** pre-existing 10.x runtime under the
+machine default before Stage 0, so unlike R's box, an unproven "new-runtime leg" here would not
+silently collide with an identically-versioned default — still probing per §2(3) regardless, since
+that discipline is the fleet's standing rule, not a per-box exception.
 
 ## Machine: G's laptop (win-x64) — PENDING, owner: G's session
 
