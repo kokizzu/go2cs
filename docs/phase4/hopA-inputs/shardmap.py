@@ -68,8 +68,25 @@ FLEETS = {
         "6650U G (GRETCHEN-LAPTOP)", "X (5th engaged machine)"],
 }
 
-RESERVED = ["index/suffixarray", "hash/maphash", "crypto/dsa", "archive/zip",
-            "crypto/tls", "go/doc/comment", "go/types"]
+# The reserved set is TWO ideas, and only one of them is this script's to decide:
+#   1. The $longTimeouts floor packages -- DERIVED from run-validated-sweep.ps1 AT GENERATION
+#      TIME, never copied. A copied list drifted twice in the map's short life (crypto/tls
+#      joined the table, two floors moved) before this derivation replaced it; whatever the
+#      sweep script floors when the map is emitted is what gets pinned.
+#   2. BIG_ROWS -- rows pinned for raw wall time rather than a timeout floor. An explicit,
+#      visible editorial choice, kept separate so nobody mistakes it for the derived half.
+import re as _re, os as _os
+_sweep = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                       "..", "..", "..", "src", "run-validated-sweep.ps1")
+_m = _re.search(r"\$longTimeouts\s*=\s*@\{(.*?)\}",
+                open(_sweep, encoding="utf-8").read(), _re.S)
+assert _m, f"cannot derive the reserved set: no $longTimeouts table in {_sweep}"
+_floors = _re.findall(r"'([^']+)'\s*=\s*'[^']+'", _m.group(1))
+assert _floors, f"$longTimeouts parsed empty from {_sweep} -- the pattern is stale, fix it here"
+BIG_ROWS = ["go/doc/comment", "go/types"]
+RESERVED = _floors + [b for b in BIG_ROWS if b not in _floors]
+print(f"reserved set derived at generation time: {len(_floors)} floor rows "
+      f"({', '.join(_floors)}) + {len(BIG_ROWS)} big rows")
 byname = {n: (v, t) for n, v, t in rows}
 for r in RESERVED:
     assert r in byname, f"reserved row {r} not in dataset"
