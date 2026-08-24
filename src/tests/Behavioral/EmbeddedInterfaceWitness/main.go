@@ -72,4 +72,31 @@ func main() {
 	check("wrapper", wrapper{Reader: iolike.Base{Tag: "base"}, prefix: "w:"})
 	check("plain", plain{tag: "p"})
 	check("holder", holder{Reader: iolike.Base{Tag: "held"}, prefix: "h:"})
+	LocalPromotion()
+}
+
+// LocalPromotion is Shape A's guard -- EXPORTED-case deliberately, because the defect needs the
+// hoisted name to lead uppercase (a lowercase enclosing func hoists a name the heuristic already
+// read as internal, and the guard would pass vacuously against the unfixed generator): a FUNCTION-LOCAL type embedding a foreign interface. The
+// converter hoists it to package scope under this function's name, and the hoisted declaration is
+// internal — but the name now leads with this function's exported-case letter, which is exactly
+// the surface a name-heuristic accessibility reads wrong. The promoted twin the generator emits
+// over the hoisted type must not out-rank the type itself (CS0051, the -tests-host Shape A:
+// encoding/hex's TestEncoderDecoder_r et al.), which no package-scope test type can check --
+// only a local one hoists.
+func LocalPromotion() {
+	type inner struct {
+		iolike.Reader
+	}
+
+	w := inner{Reader: iolike.Base{Tag: "local"}}
+	fmt.Println("local direct:", w.Read())
+
+	var v any = w
+
+	if r, ok := v.(iolike.Reader); ok {
+		fmt.Println("local assert:", r.Read())
+	} else {
+		fmt.Println("local assert: no")
+	}
 }

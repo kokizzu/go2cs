@@ -48,9 +48,23 @@ internal class InterfaceImplTemplate : TemplateBase
     // directly: `global::go.net.netip_package.String(this.AddrPort)`.
     public string? ValueEmbedHopStaticClass;
 
-    // The struct's own accessibility, so a promoted method's EXTENSION twin below is declared
-    // exactly as the converter declares that type's own Go methods.
-    public string StructAccessibility = "internal";
+    // The promoted-method extension twins below are ALWAYS `internal`, and that is a decision,
+    // not a default. The twin is reflective cargo only: the registry that builds the Go method
+    // set discovers with BindingFlags.NonPublic, and no source-level call ever binds it — a
+    // direct call always prefers the MEMBER the partial struct declares. So accessibility here
+    // decides declaration form, never discoverability — and `internal` is the one form that can
+    // never out-rank its own parameter type.
+    //
+    // The first cut scoped the twin to the struct via `DeclaredAccessibility == Public ||
+    // GetScope(name) == "public"` — the adapterScope shape — and the name half is a trap this
+    // repo has already paid for once (StructTypeTemplate's scope-follows-the-MEMBER note): a
+    // FUNCTION-LOCAL type hoists to `<Func>_<name>`, whose leading case belongs to the enclosing
+    // function. A test's local witness struct (`TestEncoderDecoder_r`, hoisted from `func
+    // TestEncoderDecoder`) is declared `internal`, but the heuristic read the `T` and emitted a
+    // `public` twin over it — CS0051, in every -tests host whose table-driven suite wraps an
+    // embedded interface in a local type (encoding/hex, archive/zip, compress/flate,
+    // net/rpc/jsonrpc). The behavioral corpus never produces that combination in a production
+    // program, which is why 607 projects and the reflect canary compiled clean around it.
 
     public override string TemplateBody =>
         $$"""
@@ -110,7 +124,7 @@ internal class InterfaceImplTemplate : TemplateBase
                 string embedField = GetSimpleName(InterfaceName, dropCollisionPrefix: true);
 
                 result.Append($"\r\n\r\n    // Go method set entry for the promoted '{GetSimpleName(InterfaceName)}.{simpleMethodName}()':\r\n");
-                result.Append($"    {StructAccessibility} static {method.ReturnType} {EscapeCsKeyword(simpleMethodName)}{method.GetGenericSignature()}({parameterList}){method.GetWhereConstraints()} => ");
+                result.Append($"    internal static {method.ReturnType} {EscapeCsKeyword(simpleMethodName)}{method.GetGenericSignature()}({parameterList}){method.GetWhereConstraints()} => ");
                 result.Append($"{receiver}.{embedField}.{simpleMethodName}{method.GetGenericSignature()}({callParameters});");
             }
 

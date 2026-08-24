@@ -41,6 +41,7 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<LocalPromotion_inner, go.EmbeddedInterfaceWitness.iolike_package.Reader>(Promoted = true)]
 [assembly: GoImplement<wrapper, go.EmbeddedInterfaceWitness.iolike_package.Reader>(Promoted = true)]
 // </InterfaceImplementations>
 
@@ -55,7 +56,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AA5SgOiAooD+gAAJBIKAgpSmgIKUpvaCgoI=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA5SgOiAooD+gAAJBIKAgpSmgIKUpvaCgoKCAAsYgoqEhICClA==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -74,5 +75,6 @@ public static partial class main_package
     internal partial struct holder {}
     internal partial struct plain {}
     internal partial struct wrapper {}
+    [GoLocalName("inner")] public partial struct LocalPromotion_inner {}
     // </TypeAccessibility>
 }
