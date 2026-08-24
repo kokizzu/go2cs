@@ -1432,6 +1432,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// A SLICE or ARRAY of the variadic ELEMENT type, passed as the SOLE argument of the
+			// variadic slot, needs the identical cast for the identical reason — C# binding the
+			// NORMAL form where Go means one element — but reached through a conversion rather
+			// than through typelessness. `jsValEscaper(a)` with `a []any` against
+			// `params ꓸꓸꓸany argsʗp` (html/template js_test's nesting cases) bound the EXPANDED
+			// form under C# 13 and binds the NORMAL form under C# 14, which spreads the slice and
+			// loses exactly one level of nesting: `[42]` renders as ` 42 `, `[[42,"foo",null]]` as
+			// `[42,"foo",null]`. See variadicArgBindsParamsCollection for the conversion chain
+			// C# 14 newly admits (`slice<any>` → `any[]` → `Span<any>`) and why a NAMED slice type
+			// is not affected. Gated on the tail holding EXACTLY ONE argument, because that is the
+			// only arity at which the normal form is applicable at all.
+			if funcSignature.Variadic() && i == params.Len()-1 && !callExprContext.hasSpreadOperator && len(callExpr.Args) == params.Len() {
+				if variadicArgBindsParamsCollection(v.info.TypeOf(callExpr.Args[i]), paramType) {
+					if callExprContext.castArgToType == nil {
+						callExprContext.castArgToType = make(map[int]string)
+					}
+
+					if _, exists := callExprContext.castArgToType[i]; !exists {
+						callExprContext.castArgToType[i] = convertToCSTypeName(v.getAliasQualifiedTypeName(paramType, false))
+					}
+				}
+			}
+
 			// A Go string passed to a generic type-parameter parameter must be cast to
 			// golib's `@string` (a struct). Without a target type, a bare string literal
 			// converts to a .NET `System.String`, so C# infers the type argument as

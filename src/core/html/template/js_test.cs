@@ -198,7 +198,7 @@ public static void TestJSValEscaper(ж<testing.T> Ꮡt) {
         var a = new any[]{test.x}.slice();
         @string want = "["u8 + strings.TrimSpace(test.js) + "]"u8;
         {
-            @string js = jsValEscaper(a); if (js != want) {
+            @string js = jsValEscaper((any)(a)); if (js != want) {
                 Ꮡt.Errorf("%+v: want\n\t%q\ngot\n\t%q"u8, a, want, js);
             }
         }
