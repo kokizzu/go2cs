@@ -13,6 +13,13 @@
     process that unlocked it, so the whole package set signs inside ONE `dotnet nuget sign`
     invocation and the card is unlocked exactly once (measured: 6 packages, one prompt, 9 s).
 
+    SIGNING IS MANDATORY, NOT OPTIONAL. The owner's code-signing certificate is REGISTERED with
+    nuget.org (2026-08-24), and registration is an enforcement switch: nuget.org rejects any
+    package pushed under that account which is not signed by a registered certificate. An
+    unsigned push does not publish-with-a-warning -- it fails. That is why Phase 0 proves the
+    certificate is reachable before anything is bumped, and why -OfflineSigning still signs
+    rather than skipping.
+
     WHAT IS IRREVERSIBLE, AND WHERE. Phase 3 publishes to nuget.org, and a published version can
     be unlisted but never deleted. Everything before it is recoverable: -WhatIf stops after the
     census, a failed pack leaves only a bumped version.props (restore with
