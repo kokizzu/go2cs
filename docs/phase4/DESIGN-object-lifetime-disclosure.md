@@ -1,7 +1,7 @@
 # DESIGN — the `object-lifetime` disclosure class: when a test asserts WHEN the collector acts
 
 *Lane G, 2026-08-23. Commissioned by the coordinator (mailbox, queue-deepening directive; reassigned
-G 2026-08-23). Docs-only; merges under any freeze. Status: **PROPOSED** — §7 collects the OQs.*
+G 2026-08-23). Docs-only; merges under any freeze. Status: **RATIFIED (coordinator, 2026-08-23) — all five OQs per recommendation. ⟨OQ-L1⟩ SIBLING: the structural-vs-temporal boundary is real and the existing name’s mechanism-precision is worth keeping; the admission test’s middle clause is the fence. ⟨OQ-L2⟩ the class MINTS EMPTY on the runtime-capability precedent — §3b’s by-name refusals are what keep it empty honestly. ⟨OQ-L3⟩ remedy (b) RATIFIED as the direction, with its IMPLEMENTATION commissioned as its own increment (a hand-owned test-host change with its own gates, not this docs merge): the per-test watchdog converts a hang into a signature-pinnable failure and pays for itself on every future hang, disclosure-bound or not — internal/weak’s bank waits on it, not on this class. ⟨OQ-L4⟩ the entry-level goos field: absent-means-all preserves every existing manifest byte-for-byte and the oracle never widens where divergence was not shown. ⟨OQ-L5⟩ recorded as written
 
 The managed object-lifetime divergence recurs across rows — `crypto/tls` `TestCertCache`,
 `runtime/debug` `TestFreeOSMemory`, the finalizer-dependent family — and this document gives it the
