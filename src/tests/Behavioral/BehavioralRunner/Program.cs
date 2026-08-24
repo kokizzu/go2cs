@@ -93,7 +93,14 @@ namespace BehavioralRunner
         private const int ConsecutiveTimeoutBailout = 3;
 
         private const string Config = "Release";
-        private const string NetVersion = "net9.0";
+        // DERIVED from this runner's own bin tail, never spelled: the executable lives at
+        // .../bin/<config>/<tfm>/, so the last segment of its base directory IS the TFM it was
+        // built for -- the BehavioralTestBase pattern (CENSUS-tfm-inventory.md Class D), which is
+        // what makes this the harness a TFM hop does not touch. A hardcoded "net9.0" here was a
+        // FALSE-RED generator: after a hop the build succeeds, this probe misses the new folder,
+        // and the runner reports hundreds of corpus failures on a green tree.
+        private static readonly string NetVersion =
+            AppContext.BaseDirectory.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries)[^1];
 
         // Executable suffix for a built .NET apphost or Go binary. Windows only; empty everywhere else.
         // Hard-coding ".exe" made every File.Exists probe below fail on Linux, which the Output phase

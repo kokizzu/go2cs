@@ -314,11 +314,16 @@ jobs:
                   [System.IO.Path]::GetFileNameWithoutExtension($project.Name)
               }
 
-              # OutDir is bin/$(Configuration)/$(TargetFramework)/ relative to the project.
-              $dll = Join-Path $project.DirectoryName "bin/Debug/net9.0/$assembly.dll"
+              # OutDir is bin/$(Configuration)/$(TargetFramework)/ relative to the project. The TFM
+              # folder is DERIVED, never spelled (CENSUS-tfm-inventory.md Class D): a hardcoded
+              # name here reported "0 assemblies produced" on a green build after a TFM hop.
+              $dll = Get-ChildItem -Path (Join-Path $project.DirectoryName 'bin/Debug') -Directory -ErrorAction SilentlyContinue |
+                  ForEach-Object { Join-Path $_.FullName "$assembly.dll" } |
+                  Where-Object { Test-Path -LiteralPath $_ } |
+                  Select-Object -First 1
               $relative = $project.FullName.Substring($PWD.Path.Length).TrimStart('\', '/').Replace('\', '/')
 
-              if (Test-Path -LiteralPath $dll) { $built.Add($relative) } else { $unbuilt.Add($relative) }
+              if ($dll) { $built.Add($relative) } else { $unbuilt.Add($relative) }
           }
 
           # ---- summary ------------------------------------------------------------------------
