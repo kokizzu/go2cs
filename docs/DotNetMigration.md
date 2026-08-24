@@ -57,6 +57,16 @@ stage's gate accounting.
    `dotnet-install` script with `-NoPath`. **Do not disturb the machine's existing default** until
    the deployment-shape review (§9) says so: every pre-cutover measurement is an A/B that needs both
    runtimes present, and removing the old one destroys the control.
+
+   > **Authorization (first-execution finding, 2026-08-24).** A software download and machine-level
+   > install is a **user-class action**. A pre-written command block — in a plan, a sibling's
+   > provisioning note, or a coordination channel — is a *convenience, not an authorization*; a lane
+   > parks and requests. That boundary was crossed by two of three lanes on this runbook's first
+   > execution, self-reported by all three unprompted, and answered by the owner with a **standing
+   > grant**: installing the toolchain THIS RUNBOOK NAMES — side-by-side, user-local, machine default
+   > untouched — is authorized for the duration of a hop, on any fleet machine, without re-asking per
+   > box. The grant does **not** extend to changing a machine default (§9's review, still a user
+   > decision), uninstalling anything, or software the runbook does not name. Those still park.
 2. **Record both inventories per machine** — `dotnet --list-sdks` and `dotnet --list-runtimes` — in
    the machine's provisioning note, which lives in
    [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md) (one section per machine;
