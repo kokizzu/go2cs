@@ -163,6 +163,8 @@ harness invocation in the same shell dies: *the probe accidentally pre-documents
 instrument run on a new-runtime leg inherits the same requirement — probe and harness must share
 one environment, or they are measuring two different runtimes.
 
+**Which instruments are exposed — the discriminant is APPHOST-vs-MUXER launch, not universal** (windows leg, same execution): an instrument launched through its own compiled apphost `.exe` is IMMUNE — the apphost's embedded hostfxr resolves frameworks via the machine-registered global install location, independent of PATH or the side-by-side root, which is why the behavioral suite's Output phase ran clean in the very shell where a test host died. An instrument with NO apphost (a pure test library, `dotnet test`-only) is launched by the side-by-side SDK's own muxer directly on its `.dll`, and that muxer searches only its own install tree. **Predict a leg's exposure from how each instrument launches, not from whether it is a test** — and the fix is the same one line of environment either way.
+
 **Corollary trap, same family, found in the same hour:** a test run at the DEFAULT `$(GoTargetOS)`
 on a non-Windows box fabricates failures that read exactly like runtime deltas — the Windows
 flavor's P/Invoke surface loads `kernel32.dll.so` and dies in type initializers. **A leg's
