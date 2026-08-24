@@ -68,7 +68,7 @@ if ($freeGB -lt 25) {
 . (Join-Path $PSScriptRoot '_paths.ps1')
 
 $runnerProj = Join-Path $PSScriptRoot 'BehavioralRunner/BehavioralRunner.csproj'
-$runnerExe  = Join-Path $PSScriptRoot "BehavioralRunner/bin/Debug/net9.0/BehavioralRunner$ExeSuffix"
+$runnerExe  = Join-Path $PSScriptRoot "BehavioralRunner/bin/Debug/$NetVersion/BehavioralRunner$ExeSuffix"
 
 Write-Host "==> building BehavioralRunner..." -ForegroundColor Cyan
 & dotnet build $runnerProj -c Debug -clp:ErrorsOnly --nologo | Out-Null

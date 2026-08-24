@@ -34,6 +34,15 @@ $IsWindowsHost = if ($null -eq (Get-Variable -Name 'IsWindows' -ErrorAction Sile
 # Executable suffix for a built .NET apphost or Go binary.
 $ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
 
+# The corpus's target framework, spelled ONCE. Every instrument that touches a build output path
+# (bin/<config>/<tfm>/) reads this instead of embedding the string: the TFM census
+# (docs/phase4/CENSUS-tfm-inventory.md, Class D) found nine hardcoded sites across six files, each
+# a FALSE-RED generator at a TFM hop -- build succeeds, probe misses, instrument reports a corpus
+# failure. The C# harnesses DERIVE theirs from their own bin tail (BehavioralTestBase's pattern);
+# PowerShell has no bin tail to derive from at source time, so this is the one hand-edit a hop
+# owes on the script side -- one line here instead of five spread across three instruments.
+$NetVersion = 'net9.0'
+
 # The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
 # `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
 # wrong everywhere else: a linux host then builds the windows flavor, whose `os_package` module

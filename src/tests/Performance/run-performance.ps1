@@ -40,7 +40,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot '../../_paths.ps1')
 
 $runnerProj = Join-Path $PSScriptRoot 'PerformanceRunner/PerformanceRunner.csproj'
-$runnerExe  = Join-Path $PSScriptRoot "PerformanceRunner/bin/Debug/net9.0/PerformanceRunner$ExeSuffix"
+$runnerExe  = Join-Path $PSScriptRoot "PerformanceRunner/bin/Debug/$NetVersion/PerformanceRunner$ExeSuffix"
 
 Write-Host "==> building PerformanceRunner..." -ForegroundColor Cyan
 & dotnet build $runnerProj -c Debug -clp:ErrorsOnly --nologo | Out-Null

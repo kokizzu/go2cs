@@ -53,6 +53,9 @@ param(
     [string]$OutFile,
     [string]$BflatExe
 )
+# $NetVersion (and the platform primitives) come from the shared definition -- the TFM census's
+# Class D hoist: one spelled TFM for every instrument, never a per-script literal.
+. (Join-Path $PSScriptRoot '../../_paths.ps1')
 
 Set-StrictMode -Version Latest
 
@@ -260,7 +263,7 @@ function Get-TreeSize([string]$Dir) {
 function Get-VariantExe([string]$Bench, [string]$Variant) {
     switch ($Variant) {
         'go'    { return Join-Path $PerfDir "$Bench\bin\Release\Go\$Bench.exe" }
-        'jit'   { return Join-Path $PerfDir "$Bench\bin\Release\net9.0\$Bench.exe" }
+        'jit'   { return Join-Path $PerfDir "$Bench\bin\Release\$NetVersion\$Bench.exe" }
         default { return Join-Path $PerfDir "$Bench\bin\Release\expl-$Variant\$Bench.exe" }
     }
 }
@@ -294,14 +297,14 @@ if ($phases -contains 'publish') {
                 # SDK-generated global-usings file the converted C# depends on (the <Using> items
                 # in the csproj template become PerfX.GlobalUsings.g.cs under obj\). bflat never
                 # reads a csproj, so that file must be passed explicitly or nothing compiles.
-                $jitDir = Join-Path $PerfDir "$bench\bin\Release\net9.0"
+                $jitDir = Join-Path $PerfDir "$bench\bin\Release\$NetVersion"
                 $refs = @(Get-ChildItem $jitDir -Filter *.dll -File | Where-Object { $_.BaseName -ne $bench })
 
                 $srcs = @(Get-ChildItem (Join-Path $PerfDir $bench) -Filter *.cs -File |
                             Where-Object { $_.Name -notlike '*_test.cs' -and $_.Name -ne 'package_test_info.cs' } |
                             ForEach-Object { $_.FullName })
 
-                $globalUsings = Join-Path $PerfDir "$bench\obj\Release\net9.0\$bench.GlobalUsings.g.cs"
+                $globalUsings = Join-Path $PerfDir "$bench\obj\Release\$NetVersion\$bench.GlobalUsings.g.cs"
                 if (Test-Path $globalUsings) { $srcs += $globalUsings }
 
                 # go2cs-gen output for the benchmark itself, if any. Measured 2026-08-16: all five
