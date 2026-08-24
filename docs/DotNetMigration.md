@@ -73,6 +73,18 @@ stage's gate accounting.
    append, never rewrite — the note is the stage's record). *This location was the first
    execution's shakedown finding: the step named a note without naming its home.* Patch levels differ across a fleet, and a cross-machine
    comparison that does not name both SDK and runtime patch is not a measurement.
+
+   > **Probe BOTH hives before declaring a box's state (first-execution finding, 2026-08-24 —
+   > and the exact INVERSE of §2(3)'s hazard).** `dotnet --list-sdks` reads the MACHINE store; a
+   > side-by-side install lives in a user-local directory it never reports. One fleet box was
+   > declared "clean, no new runtime present" on that reading and in fact already carried the
+   > full new SDK and runtime from an earlier scouting run — the probe was true of the default
+   > hive and false of the machine. So the two hazards bracket each other: §2(3)'s is a
+   > machine-default runtime that MASQUERADES as the side-by-side leg, this one is a
+   > side-by-side install the probe cannot SEE. **A `Test-Path` on the runbook's own install
+   > target, beside the two inventory commands, is one line and closes it.** Record both hives
+   > in the row: default (SDKs, runtimes, and that it is untouched) and user-local (SDK,
+   > runtime, and whether it pre-existed this stage).
 3. **Verify the leg; never assume it.** A project targeting the *old* TFM continues to run on the
    *old* runtime even under the new SDK. Selecting the new runtime for a measurement leg takes an
    explicit environment (`DOTNET_ROOT` plus a roll-forward policy), and the selection must be
