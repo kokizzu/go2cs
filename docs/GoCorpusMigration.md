@@ -123,7 +123,19 @@ the differential. This is a ruled decision, not a preference.
 
 ### H1 — Toolchain provisioning **GATE**
 
-1. Install the target release **side-by-side**; confirm `GOROOT/VERSION` reads the exact target.
+1. Install the target release **side-by-side**; confirm the target actually **executes** — run
+   `<target-root>/bin/go version` and require its OUTPUT to name the exact target. Reading
+   `GOROOT/VERSION` is **not** a verification (measured 2026-08-24, hop-A provisioning): Go 1.21+
+   toolchain switching obeys a `GOTOOLCHAIN` pin (`go env GOTOOLCHAIN`, persisted in the user's
+   `go/env`) **ahead of whichever binary is invoked**, and the redirect is **silent** — on a pinned
+   box `sdk/go1.23.12/VERSION` read `go1.23.12` while `sdk/go1.23.12/bin/go version` printed
+   `go1.23.1`, and even the official `go1.23.12` download shim was redirected. A leg that trusted
+   the file would emit the whole corpus with the OLD toolchain while believing otherwise — §1.2's
+   false-green shape arriving through **configuration**, which the stale-binary remedy (stamping the
+   binary) cannot catch, because the stamp truthfully names the toolchain that built the exe, not
+   the one the pin substitutes at conversion time. Check `go env GOTOOLCHAIN` explicitly; a pin
+   naming another release must be resolved (or overridden per-invocation with `GOTOOLCHAIN=local`)
+   before any step below runs.
 2. Move the converter module's `go` directive to the target (ruled: it moves each migration).
 3. Bump the `golang.org/x/tools` and `golang.org/x/mod` requirements to releases contemporary with
    the target. The export-data policy bounds how far they may lag. **This is a separate commit with
