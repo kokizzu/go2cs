@@ -71,8 +71,46 @@ internal class InterfaceImplTemplate : TemplateBase
              partial struct {{StructName}} : {{InterfaceName}}
              {
                  {{MethodsImplementation}}{{Comparisions}}
-             }{{PromotedExtensionMethods}}
+             }
          """;
+
+    // The twins land in a SIBLING top-level static class, never inside the package class — and
+    // that placement is load-bearing (Shape B of the JOB-010 consolidation, io/fs). A static
+    // method in the package class participates in BARE-name lookup for every call in that class,
+    // and enclosing-class members out-rank `using static` imports: io/fs's dot-imported test
+    // calls `Sub(fsys, dir)` bare, `subOnly` embeds `SubFS` whose method is named `Sub`, and the
+    // twin `Sub(subOnly, @string)` INTERCEPTED the package function — CS1503 on the call whose
+    // argument was a different type, and a silent WRONG BINDING on the call whose argument
+    // matched (the twin forwards to the embedded interface's method, skipping whatever the
+    // package function does around it — fs.Sub validates the path before dispatching). The
+    // compiling half was wronger than the failing half. A sibling class is invisible to bare
+    // lookup, and costs the twins nothing: no source-level call ever binds them (the MEMBER
+    // wins), and the registry scans every non-nested sealed static class in the assembly.
+    public override string TemplateFooter =>
+        $$"""
+
+        }{{PromotedTwinsClass}}
+        {{PackageFooter ?? ""}}
+        """;
+
+    private string PromotedTwinsClass
+    {
+        get
+        {
+            string twins = PromotedExtensionMethods;
+
+            if (twins.Length == 0)
+                return "";
+
+            // Named for the pair so two generated files can never collide; generic arity and
+            // keyword escapes cannot appear in a class name, so they are stripped — the name only
+            // has to be unique and legal, never resolvable back to anything.
+            string structPart = StructName.Split('<')[0].Replace("@", "");
+            string interfacePart = GetSimpleName(InterfaceName).Replace("@", "");
+
+            return $"\r\n\r\ninternal static class {structPart}{TempVarMarker}{interfacePart}{TempVarMarker}promoted\r\n{{{twins}\r\n}}";
+        }
+    }
 
     // A PROMOTED interface method is a Go method of the struct, and it is the ONE kind of Go method
     // that never became an extension method — the member above satisfies the C# interface, but
@@ -115,10 +153,15 @@ internal class InterfaceImplTemplate : TemplateBase
                     continue;
 
                 string receiver = $"recv{TempVarMarker}";
+
+                // The twins live in a SIBLING class (see PromotedTwinsClass), so the struct —
+                // nested in the package class — must be named through it.
+                string qualifiedStruct = $"{PackageName}_package.{StructName}";
+
                 string typedParameters = method.GetTypedParameters(false);
                 string parameterList = string.IsNullOrEmpty(typedParameters) ?
-                    $"this {StructName} {receiver}" :
-                    $"this {StructName} {receiver}, {typedParameters}";
+                    $"this {qualifiedStruct} {receiver}" :
+                    $"this {qualifiedStruct} {receiver}, {typedParameters}";
 
                 string callParameters = method.GetCallParameters(false);
                 string embedField = GetSimpleName(InterfaceName, dropCollisionPrefix: true);
