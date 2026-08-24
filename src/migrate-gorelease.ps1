@@ -769,8 +769,10 @@ function Write-Handoff {
     Write-Host '  1. The toolchain (H1). Install Go ' -NoNewline
     Write-Host $target -ForegroundColor White -NoNewline
     Write-Host ' side-by-side, bump x/tools and x/mod as their OWN'
-    Write-Host '     commit with its own CNR, then rebuild the converter -- a toolchain hop invalidates'
-    Write-Host '     go2cs.exe in NO harness predicate, so the build is owed explicitly:'
+    Write-Host '     commit with its own CNR. The converter rebuild is now AUTOMATIC -- every harness'
+    Write-Host '     predicate compares go2cs.exe''s embedded toolchain against the live one and rebuilds'
+    Write-Host '     on mismatch (false-green route #4, closed 2026-08-24). Build explicitly only to see it'
+    Write-Host '     happen before a gate does:'
     Write-Host '        cd src/go2cs && go build -o bin/go2cs' -ForegroundColor White
     Write-Host '        go test ./...' -ForegroundColor White
     Write-Host ''

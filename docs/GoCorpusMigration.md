@@ -72,16 +72,19 @@ fail cleanly — the old parser mis-parses or rejects new constructs and the run
 converter's best-effort *"did not fully type-check"* path, which `check-no-regression.ps1` reports as
 `NOT MEASURED` (good) and the runners do not.
 
-**The ruled remedy** is to stamp the building toolchain's release into `go2cs.exe` and have each
-harness compare it against the live toolchain, rebuilding on mismatch exactly as on a timestamp
-change. **Until it lands, a toolchain change owes an explicit `go build` of the converter, and no
-gate may run before it.**
+**CLOSED (2026-08-24, H1.4).** Every Go binary already embeds its toolchain release, so nothing
+needed stamping: `src/tests/ConverterBuildInputs.cs` reads it back and compares it against the live
+`go env GOVERSION` in the ONE shared helper all three rebuild predicates delegate to, failing
+stale-wards (an unreadable stamp or unanswerable GOVERSION forces the rebuild). **A toolchain hop
+now invalidates `go2cs.exe` automatically; no explicit `go build` is owed, and no gate can run
+against a stale converter.**
 
-⚠ **A sibling route the stamp does not cover**: the converter `//go:embed`s its csproj templates,
-`package_info.cs` skeleton, icons and publish profiles, and the rebuild predicates filter on `*.go`
-only — so an embedded-asset edit changes emission and invalidates the binary in no harness.
-[`DotNetMigration.md`](DotNetMigration.md) §5.2 carries the full statement; the remedy is the same
-predicate widening and lands most cheaply with the stamp.
+✅ **The sibling route closed with it**: the converter `//go:embed`s its csproj templates,
+`package_info.cs` skeleton, icons and publish profiles, and the predicates once filtered on `*.go`
+alone — so an embedded-asset edit changed emission while invalidating the binary in no harness
+(route #5). The same shared helper derives its input set from the embed directives, which is why
+the toolchain compare landed in one place rather than three.
+[`DotNetMigration.md`](DotNetMigration.md) §5.2 carries the full statement.
 
 ---
 

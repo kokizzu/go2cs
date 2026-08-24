@@ -1,46 +1,17 @@
 @echo off
-setlocal
 rem ============================================================================
-rem  sign-nupkgs.bat -- author-sign every *.nupkg in a folder. Run this on the
-rem  signing machine (the buildbot), where the code-signing certificate and
-rem  nuget.exe live.
+rem  sign-nupkgs.bat -- launcher for sign-nupkgs.ps1 (author-sign the packed
+rem  *.nupkg with the code-signing certificate in this machine's store).
 rem
-rem  Requires environment variable NuGetCertFingerprint = the SHA-256 fingerprint
-rem  of the code-signing certificate in this machine's certificate store.
+rem  CENSUS BY DEFAULT: a bare run reports what it would sign and proves the
+rem  certificate is reachable. Pass -Apply to actually sign.
 rem
-rem  Usage:  sign-nupkgs.bat [folder]
-rem            folder - directory containing the *.nupkg (default: this .bat's folder,
-rem                     so you can drop this file alongside the packages and run it).
+rem    sign-nupkgs.bat                     census the default artifacts folder
+rem    sign-nupkgs.bat -Apply              sign them
+rem    sign-nupkgs.bat -PackageDir D:\pkgs -Apply
+rem
+rem  The fingerprint comes from %NuGetCertFingerprint% (SHA-256, NOT the SHA-1
+rem  value the Windows certificate dialog labels "Thumbprint" -- the script
+rem  detects that mistake and prints the right value).
 rem ============================================================================
-
-if "%NuGetCertFingerprint%"=="" (
-    echo ERROR: environment variable NuGetCertFingerprint is not set.
-    exit /b 1
-)
-
-if "%~1"=="" ( set "PkgDir=%~dp0" ) else ( set "PkgDir=%~1" )
-
-pushd "%PkgDir%" 2>nul
-if errorlevel 1 (
-    echo ERROR: cannot open folder "%PkgDir%".
-    exit /b 1
-)
-
-set /a Signed=0
-set /a Failed=0
-for %%F in (*.nupkg) do (
-    echo Signing "%%~nxF" ...
-    nuget sign "%%~fF" -CertificateFingerprint %NuGetCertFingerprint% -Timestamper http://timestamp.digicert.com
-    if errorlevel 1 (
-        echo   *** FAILED: %%~nxF
-        set /a Failed+=1
-    ) else (
-        set /a Signed+=1
-    )
-)
-popd
-
-echo.
-echo Done. Signed %Signed% package(s), %Failed% failure(s).
-if %Failed% gtr 0 exit /b 1
-exit /b 0
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0sign-nupkgs.ps1" %*
