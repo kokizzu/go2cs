@@ -1,6 +1,6 @@
 # DESIGN — pointer PROVENANCE: teaching `ж<T>` which kind of address it holds
 
-**STATUS: PROPOSED (lane R, 2026-08-23).** Commissioned after the native-array-view SAFETY FLOOR was
+**STATUS: RATIFIED (coordinator, 2026-08-23). ⟨OQ-P1⟩ the table, ⟨OQ-P3⟩ its own increment sequenced next, ⟨OQ-P4⟩ census-first chooses — all per recommendation. **⟨OQ-P2⟩ RATIFIED WITH A REFINEMENT that closes the ABA window structurally**: weak entries dying with their box (your CWT tie), OVERWRITE-on-register (the latest pin owns the address, so same-type reuse is benign — every pin re-registers), and read = the recovered box is ALIVE and its CURRENT pinned address equals the queried one, else MISS. With validate-on-read in place the (address, type) key adds nothing — key by address alone. The residual window closes on liveness itself: a live box whose pinned address still matches genuinely occupies that storage, so no native allocation can coexist there. Gate #2 (the slice liveness audit) and gate #1 (the census, already probing) precede the mechanism as §5 orders-view SAFETY FLOOR was
 withdrawn on measurement: *"the PROVENANCE amendment is the arc's next increment, yours,
 design-first: extend the `ManagedPointerTokens` record to pinned-managed addresses; the per-pin
 registration cost is MEASURED … and the amendment must also state how the slice dual-mode handles
