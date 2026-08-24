@@ -135,6 +135,19 @@ ONE stdlib in a build; there is now only one on disk.
     conversions are derivative works), resolves the output path absolute, and self-locates `$(go2csPath)` by
     walking the output dir up to the first root containing `core/golib` — so the canonical two-argument form
     `go2cs -tests -test-action all <goroot-pkg-dir> <converted-pkg-dir>` needs no flags or env from a clone.
+    ⚠ **Pass GOROOT EXACTLY as `go env GOROOT` spells it — a forward-slash path silently misroutes the
+    whole emission into `namespace go.std.*`** (found 2026-08-24). `getProjectName`
+    (`importOperations.go:48`) decides the namespace with `strings.HasPrefix(importPath, options.goRoot)`;
+    on Windows a `C:/Users/.../go1.23.1/src/unicode/utf8` argument fails that prefix test against the
+    backslash form `go env` returns, so the walk-up branch runs instead and finds **`$GOROOT/src/go.mod`,
+    which declares `module std`**. Every file is then emitted into `go.std.unicode` rather than
+    `go.unicode`, the conversion **exits reporting success**, and the damage surfaces as
+    `error CS0117: 'utf8_package' does not contain a definition for …` in the CONSUMER packages
+    (`strings`, `syscall/windows`) — pointing away from the cause and reading exactly like a converter
+    regression that dropped public members. Same family as the `-go2cspath` empty-`<ImportedTypeAliases>`
+    trap below: **a path the converter half-recognizes is worse than one it rejects.** Native paths convert
+    clean first time. (Durable fix if ever wanted: compare with `filepath.Clean` so the two spellings of
+    one path cannot diverge.)
   - `-test-action convert|build|run|compare|all` (default `convert`) — `convert`/`all` convert-and-hook
     (production sources then tests); `build`/`run`/`compare` act on EXISTING digest-validated artifacts
     without reconverting; `compare` (and `all`) diffs the C# host's terminal results vs `go test -json -count=1`.
@@ -147,6 +160,16 @@ ONE stdlib in a build; there is now only one on disk.
     still-running `TestSmhasherAvalanche` as an empty verdict that reads like a real failure. A suite
     whose C# run legitimately exceeds 10 min needs an explicit value (maphash: `-test-timeout 30m`,
     ~15 min in C# vs 7.6 s in Go — a performance gap, not a correctness one).
+    ⚠ **The 2m default is FIVE TIMES SMALLER than the sweep's, so a hand-invoked `-tests` run fails
+    where `run-validated-sweep.ps1` passes — on nothing but which default applied** (measured
+    2026-08-24: `bytes` reported `Go="pass" C#=""` on 38 tests with ZERO reported, which is the exact
+    signature the orphaned-`dotnet run` file lock produces and reads as total conversion failure; the
+    sweep's `-TestTimeout` default is `10m`, and at that value the same tree validated 82/82, exit 0).
+    **The tell is the SHAPE of the empty set, and it generalizes to any mass-empty comparison:** a
+    contiguous **alphabetical tail** is a run that died partway (deadline or crash) because the host
+    reports in sorted order; **scattered** empties are genuine divergence; **ALL** empty is the
+    documented file-lock case. Check the ordering before believing the diagnosis — and pass an
+    explicit `-test-timeout 10m` on any hand-invoked row so the default is never the variable.
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
     while `$(go2csPath)` references continue to resolve against this runtime root. **It is also the root the
