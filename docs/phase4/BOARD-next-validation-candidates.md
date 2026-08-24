@@ -18859,6 +18859,35 @@ the dry run already computes), and links into `docs/validation/<version>/` resol
 site regardless of which tree the visitor browses. Add the step to the release checklist
 (MILESTONE-prep §3-style docs) alongside the existing hardening item #1 (the post-build
 gen-output assertion, landed) and the pack-race root-cause (in forensics).
+
+## 2026-08-24 · THE COMPLETION LEDGER CLOSES — JOB-013 green at `8922d453a`; the .NET 10 HOP ERA OPENS
+
+The user''s sequencing rule — *complete the arc, then the hop* — is satisfied by measurement.
+**JOB-013: sweep 162/162 (18,569 = 18,569, verdict arithmetic closed by hand), behavioral
+609/609**, drift matching the documented shapes. Every ledger item closed on its own evidence:
+the three JOB-010 regression shapes (each a SUBTRACTION — the twin is always internal, the
+twins leave bare-name lookup, and the promoted pair registers only when `types.Implements`
+holds), the leveling bank (which proved itself complete by regenerating to nothing), the
+provenance increment end to end (mechanism → closed-form audit → consumer, with the suite that
+killed the safety floor passing the mechanism 609/609), and the pack-race forensics
+(measured-and-hardened: node reuse defused, the repair kept as an alternation instrument).
+H1.4 rode alongside and **closed the false-green catalogue''s last route** — all five are shut,
+so the corpus hop cannot be lied to by its own gates.
+
+**One rider, non-gating:** JOB-013 reported 8 files of unclassified drift, all pure deletions of
+erroneous `Promoted = true` records — verified against master: Shape C''s fix is correct and the
+COMMITTED corpus test-info for five packages simply predates it. That is intended emission
+drift, banked by the proper instrument (a per-package `-tests` regen, never a hand edit), and it
+gates nothing: the sweep that measured it was itself 162/162 green.
+
+**Era transition.** The initial era closed with a signed, published, validated anchor
+(1.23.1.7, over 75% of the testable standard library, on Windows and Linux). The new era opens
+on the ladder''s next rung: **.NET 10 first** (mandatory before .NET 9''s 2026-11-10 EOL;
+`DotNetMigration.md` executed AS WRITTEN, its first run doubling as its shakedown, deviations
+fixing the runbook in-stage), **then Go 1.23.12** (recon banked, the W=4 shard map computed
+from real per-row wall times). Seats: G owns the .NET 10 before/after performance report —
+fresh baselines with the bflat exploration''s lessons folded in and prediction N5 closed on the
+AOT leg; R owns Stage-0 fleet provisioning; the i9 owns the stage gates it has owned all along.
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
