@@ -63,6 +63,19 @@ function Write-Phase([string] $Message) {
 }
 function Die([string] $Message) { Write-Host $Message -ForegroundColor Red; exit 1 }
 
+# The sibling instruments end with `exit`, and an `exit` inside a script invoked with `&` in the
+# SAME runspace terminates the HOST -- so this orchestrator died mid-preflight rather than read
+# the signer's verdict, the first time Phase 0 ran. Every sibling call therefore goes through a
+# CHILD PROCESS, whose exit code is a value rather than a fate. (The card PIN cache is
+# unaffected: it lives in the `dotnet nuget sign` process, not in PowerShell.)
+function Invoke-Sibling {
+    param([string] $Script, [string[]] $Arguments, [switch] $Passthru)
+    $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $Script @Arguments 2>&1
+    $code = $LASTEXITCODE
+    if ($Passthru) { $out | ForEach-Object { Write-Host $_ } }
+    [pscustomobject]@{ Output = $out; ExitCode = $code }
+}
+
 # ---- Phase 0: the preconditions, all of them, before anything moves --------------------------
 # Every check here is one a later phase would have hit anyway -- the point is to hit them while
 # nothing has been bumped, tagged, packed or published. A release that discovers a missing API
@@ -95,10 +108,10 @@ Write-Host '  NUGET_API_KEY    : set'
 # signer's own census against whatever is currently in the artifacts folder (or an empty one --
 # the certificate half of its checks runs regardless).
 if (-not $OfflineSigning) {
-    $certReport = & $sign -PackageDir $OutDir 2>&1
-    $certLine = $certReport | Where-Object { $_ -match 'Certificate:' } | Select-Object -First 1
+    $probe = Invoke-Sibling -Script $sign -Arguments @('-PackageDir', $OutDir)
+    $certLine = $probe.Output | Where-Object { $_ -match 'Certificate:' } | Select-Object -First 1
     if (-not $certLine) {
-        $certReport | Select-Object -First 6 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+        $probe.Output | Select-Object -First 6 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
         Die 'The signing certificate is not reachable. Is the card inserted?'
     }
     Write-Host "  signing cert     : $($certLine -replace '.*Certificate: ','')"
@@ -115,8 +128,8 @@ if ($WhatIfPreference) {
 Write-Phase 'Phase 1: bump version and pack Release packages'
 Write-Host '  (the build number bumps UP FRONT so packed, signed and pushed packages carry ONE version)'
 
-& $push -BumpBuild -OutDir $OutDir
-if ($LASTEXITCODE -ne 0) {
+$pack = Invoke-Sibling -Script $push -Arguments @('-BumpBuild', '-OutDir', $OutDir) -Passthru
+if ($pack.ExitCode -ne 0) {
     Write-Host ''
     Die "Phase 1 (pack) FAILED. version.props was already bumped -- either re-run (it advances again) or restore it: git checkout src/version.props, and delete the tag if one was minted."
 }
@@ -140,8 +153,8 @@ if ($OfflineSigning) {
 }
 else {
     Write-Phase 'Phase 2: sign (ONE PIN prompt for the whole set)'
-    & $sign -PackageDir $OutDir -Apply
-    if ($LASTEXITCODE -ne 0) {
+    $signRun = Invoke-Sibling -Script $sign -Arguments @('-PackageDir', $OutDir, '-Apply') -Passthru
+    if ($signRun.ExitCode -ne 0) {
         Write-Host ''
         Die "Phase 2 (sign) FAILED. Nothing was published. The packages in $OutDir are unsigned or partly signed; fix the card session and re-run the signer, or restore version.props to abandon this release."
     }
