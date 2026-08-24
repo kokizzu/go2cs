@@ -58,7 +58,10 @@ stage's gate accounting.
    the deployment-shape review (§9) says so: every pre-cutover measurement is an A/B that needs both
    runtimes present, and removing the old one destroys the control.
 2. **Record both inventories per machine** — `dotnet --list-sdks` and `dotnet --list-runtimes` — in
-   the machine's provisioning note. Patch levels differ across a fleet, and a cross-machine
+   the machine's provisioning note, which lives in
+   [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md) (one section per machine;
+   append, never rewrite — the note is the stage's record). *This location was the first
+   execution's shakedown finding: the step named a note without naming its home.* Patch levels differ across a fleet, and a cross-machine
    comparison that does not name both SDK and runtime patch is not a measurement.
 3. **Verify the leg; never assume it.** A project targeting the *old* TFM continues to run on the
    *old* runtime even under the new SDK. Selecting the new runtime for a measurement leg takes an
