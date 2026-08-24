@@ -10,14 +10,15 @@
 namespace go.sync;
 
 using @unsafe = unsafe_package;
+using System.Runtime.InteropServices;
 
 partial class atomic_package {
 
 // A Bool is an atomic boolean value.
 // The zero value is false.
-[GoType] partial struct Bool {
-    internal noCopy _;
-    internal uint32 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 4)] partial struct Bool {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal uint32 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -83,9 +84,9 @@ public static bool /*swapped*/ CompareAndSwap<T>(this ж<Pointer<T>> Ꮡx, ж<T>
 }
 
 // An Int32 is an atomic int32. The zero value is zero.
-[GoType] partial struct Int32 {
-    internal noCopy _;
-    internal int32 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 4)] partial struct Int32 {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal int32 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -126,10 +127,10 @@ public static int32 /*old*/ Or(this ж<Int32> Ꮡx, int32 mask) {
 }
 
 // An Int64 is an atomic int64. The zero value is zero.
-[GoType] partial struct Int64 {
-    internal noCopy _;
-    internal align64 __;
-    internal int64 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 8)] partial struct Int64 {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal readonly align64 __;
+    [FieldOffset(0)] internal int64 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -170,9 +171,9 @@ public static int64 /*old*/ Or(this ж<Int64> Ꮡx, int64 mask) {
 }
 
 // A Uint32 is an atomic uint32. The zero value is zero.
-[GoType] partial struct Uint32 {
-    internal noCopy _;
-    internal uint32 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 4)] partial struct Uint32 {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal uint32 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -213,10 +214,10 @@ public static uint32 /*old*/ Or(this ж<Uint32> Ꮡx, uint32 mask) {
 }
 
 // A Uint64 is an atomic uint64. The zero value is zero.
-[GoType] partial struct Uint64 {
-    internal noCopy _;
-    internal align64 __;
-    internal uint64 v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 8)] partial struct Uint64 {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal readonly align64 __;
+    [FieldOffset(0)] internal uint64 v;
 }
 
 // Load atomically loads and returns the value stored in x.
@@ -257,9 +258,9 @@ public static uint64 /*old*/ Or(this ж<Uint64> Ꮡx, uint64 mask) {
 }
 
 // A Uintptr is an atomic uintptr. The zero value is zero.
-[GoType] partial struct Uintptr {
-    internal noCopy _;
-    internal uintptr v;
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 8)] partial struct Uintptr {
+    [FieldOffset(0)] internal readonly noCopy _;
+    [FieldOffset(0)] internal uintptr v;
 }
 
 // Load atomically loads and returns the value stored in x.
