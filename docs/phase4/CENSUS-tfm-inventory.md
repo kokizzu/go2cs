@@ -95,13 +95,35 @@ scope. They level on the next `-stdlib` / behavioral regen, which a .NET migrati
 | `src/tests/Performance/Perf*/Perf*.csproj` | 14 | `csproj-template.xml` |
 | **Total Class A** | **1,119** | |
 
-Six of the 306 core production csproj are **hand-owned by consequence** and will *never* level on a
-regen — the converter does not re-emit them: `src/core/golib/golib.csproj` (hand-written runtime),
+**NINE** of the 306 core production csproj are **hand-owned by consequence** and will *never* level on
+a regen — the converter does not re-emit them: `src/core/golib/golib.csproj` (hand-written runtime),
 `src/core/unsafe/unsafe.csproj` and `src/core/testing/testing.csproj` (skip-listed,
-`isNonConvertedStdLibPackage`), and `src/core/internal/{concurrent,godebug,weak}/*.csproj` (whole-file
-hand-owns ⇒ `unmarkedFileCount == 0` ⇒ the driver `continue`s before `writeProjectFile`). Their
-`net9.0` line is still inert, so nothing breaks — but it is permanent staleness unless hand-edited.
-Recommend folding those six into Class B if the coordinator wants the tree to read true.
+`isNonConvertedStdLibPackage`), `src/core/internal/{concurrent,godebug,weak}/*.csproj` (whole-file
+hand-owns ⇒ `unmarkedFileCount == 0` ⇒ the driver `continue`s before `writeProjectFile`), and the
+**platform-exclusive trio** — `src/core/internal/runtime/syscall`, `src/core/crypto/x509/internal/macos`,
+`src/core/vendor/golang.org/x/net/route` — which are absent from the reference (Windows) target, so the
+`-platforms` merge never writes their project files either. This paragraph said "six" until the Stage-2
+hop measured it: the trio was missed here, though `067c95b6f` had already audited it as unreachable
+(that commit's "seven" is this nine minus `golib` and `testing`, which are hand-written rather than
+template-derived and so had no template comments to level).
+
+**Corrected 2026-08-24, and no longer merely a recommendation:** all nine are now folded into Class B
+and carried by `src/migrate-tfm.ps1`'s apply set, together with the eight repo-only harness/tooling
+projects below — seventeen project files in total, each with its reason. The test of Class A is
+**reachability, not location**: twelve of the seventeen sit *inside* the Class-A directories, and
+counting them there is what let them read as "a regen levels them" while no regen could. The script
+now subtracts them so the Class-A count reads true.
+
+Their `net9.0` line is inert **in-repo** — `src/Directory.Build.props` is imported above the project
+body and wins — but that inertness is exactly why this sat unnoticed. It does **not** hold in a
+DEPLOYED tree: `deploy-core.ps1` copies `src/core` while excluding core's `Directory.Build.props`, and
+the root props it writes pins only `$(go2csPath)`, never the framework. There each project's own line
+becomes authoritative, and a holdout at `net9.0` referencing a moved package is a real **NU1201**
+(`net10.0` → `net9.0` is legal; `net9.0` → `net10.0` is not). Measured on a scratch deploy under SDK
+10.0.400: `testing` reverted to `net9.0` produces `NU1201` against `go.time` and `go.lib`;
+`internal/godebug` produces six. Post-fix the full 307-project deployed solution restores clean and
+`core/testing` builds with 0 errors. **The shape is: every in-repo gate green, the deployed and
+published artifact broken.**
 
 ### How a version change flows (emission sites)
 
@@ -125,11 +147,18 @@ There is **no TFM literal in any converter `.go` file.** `grep -rn 'net9\.0\|net
 
 ---
 
-## 3. Class B — hand-maintained project files (change by edit; **all inert today**)
+## 3. Class B — hand-maintained project files (change by edit; **inert in-repo, authoritative deployed**)
 
-Every one already carries the conditioned fallback, so **none requires a Stage-2 edit for the build
-to work**. Listed because they are the files a coordinator would expect to touch, and because a
-future maintainer adding one must copy the conditioned shape.
+Every one already carries the conditioned fallback, so none requires a Stage-2 edit for an **in-repo**
+build to work — `src/Directory.Build.props` wins wherever it is in scope. Listed because they are the
+files a coordinator would expect to touch, because a future maintainer adding one must copy the
+conditioned shape, and — the point this section originally understated — because in a **deployed**
+tree that props file is deliberately absent and these lines become the operative ones. See section 2's
+correction for the measured NU1201 evidence.
+
+The table below is the ORIGINAL nine. It is incomplete: the five core packages folded in from section
+2, plus the platform-exclusive trio, bring the class to **seventeen** project files. All seventeen are
+carried by `src/migrate-tfm.ps1`, which is the maintained list; this table is the historical snapshot.
 
 | File | TFM line | Note |
 |:--|:--|:--|
@@ -143,9 +172,15 @@ future maintainer adding one must copy the conditioned shape.
 | `src/tests/ChannelTests/ChannelTests.csproj` | `:4` | |
 | `src/tests/GenericTests/GenericTests.csproj` | `:5` | |
 | `src/utilities/UpdateTestTargets/UpdateTestTargets.csproj` | `:5` | |
-| **Total Class B** | **9 `.csproj` + 1 `.props`** | |
+| **Total Class B** | **9 `.csproj` + 1 `.props`** (snapshot; the true class is **17 `.csproj` + 1 `.props`**) | |
 
-Class A + Class B = 1,128 files spelling `net9.0` in a build file (1,127 csproj + the props).
+Class A + Class B = 1,128 files spelling `net9.0` in a build file (1,127 csproj + the props). The
+split between them moves by 8 once section 2's fold is applied — the total does not.
+
+One further site the snapshot missed, now carried: `src/core/golib/golib.csproj:35` states in prose
+that warnings 1701/1702 "cannot fire on net9.0". That is a present-tense fact about the framework the
+project TARGETS, not dated measurement provenance, so it moves with the TFM rather than staying as
+Class C.
 
 ---
 

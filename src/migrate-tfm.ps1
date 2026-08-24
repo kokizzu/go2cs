@@ -6,15 +6,19 @@
 .DESCRIPTION
     Commissioned by user directive (mailbox, 2026-08-24) as a first-class runbook instrument. A bare
     run REPORTS every site class and changes nothing. -Apply edits exactly the SOURCE set (Class B's
-    property line, the converter's two csproj templates, the nine embedded publish profiles, the
-    CI SDK channel, and the present-tense Class-E doc lines) and then SELF-VERIFIES: a re-census
-    must find zero remaining apply-set sites, and that property is the gate.
+    property line AND the seventeen project files no emitter reaches, the converter's two csproj
+    templates, the nine embedded publish profiles, the CI SDK channel, and the present-tense Class-E
+    doc lines) and then SELF-VERIFIES: a re-census must find zero remaining apply-set sites, and that
+    property is the gate.
 
     WHAT THIS SCRIPT NEVER DOES, by design (the census's own rules):
-      - It never edits GENERATED files. The ~1,119 Class-A csproj are emission output; after -Apply
+      - It never edits GENERATED files. The Class-A csproj are emission output; after -Apply
         this script NAMES the regens the operator owes (the three-target -platforms merge,
         UpdateTestTargets --createTargetFiles, `go generate .` in src\go2cs) and the section 8 gates. A
         script that edits generated files is the fourth trap wearing a helpful face.
+        The test of Class A is REACHABILITY, not location: seventeen project files sit in those same
+        trees (or beside them) that no emitter emits, so no regen can level them. Those are Class B,
+        they are edited here, and they are subtracted from the Class-A count so it reads true.
       - It never touches Class C (must-not-change): go2cs-gen stays netstandard2.0 (Roslyn analyzer
         contract), push-nuget's matching path stays, and dated measurement provenance keeps saying
         the version it measured. These are ENFORCED refusals with reasons, not omissions.
@@ -53,7 +57,9 @@ function Read-Text([string]$Path) { [System.IO.File]::ReadAllText($Path) }
 # rewriting them without one is a content change BEYOND the TFM line -- caught in execution
 # 2026-08-24, when the shape check showed '<Project Sdk=...>' as a changed line. The no-BOM rule
 # exists to dodge the PS 5.1 read-as-ANSI mojibake trap, and PRESERVING the file's own BOM state
-# satisfies it just as well: we never re-encode, we round-trip.
+# satisfies it just as well: we never re-encode, we round-trip. (Both branches of the 2026-08-24
+# collision found this defect independently and fixed it the same way; this is the single surviving
+# implementation of that fix.)
 function Test-Bom([string]$Path) {
     $b = New-Object byte[] 3
     $fs = [System.IO.File]::OpenRead($Path)
@@ -75,6 +81,7 @@ $applySites = @(
        Why  = 'Class B: the property of record' },
 
     # D': the converter's two embedded csproj templates (their conditioned FALLBACKS).
+    #     (Class B's project files are appended below, after this literal array.)
     @{ File = "$src\go2cs\csproj-template.xml";
        Old  = "<TargetFramework Condition=`"'`$(TargetFramework)'==''`">$From</TargetFramework>";
        Why  = "D': emission fallback -- editing it self-invalidates go2cs.exe via route #5's predicate" },
@@ -117,7 +124,7 @@ $applySites += @(
 )
 
 # --- The HAND-OWNED csproj class (found in execution, 2026-08-24) --------------------------------
-# 16 project files NO emitter rewrites, so NO regen can ever level them. MEASURED, not theorized:
+# 17 project files NO emitter rewrites, so NO regen can ever level them. MEASURED, not theorized:
 # after a full three-target regen every one still read the old TFM in the staging root, because the
 # driver either skips the package (skip-listed hand-owns; unmarkedFileCount == 0 makes it 'continue'
 # before writeProjectFile) or the file is hand-written and was never emitted at all.
@@ -156,6 +163,15 @@ foreach ($h in $handOwnedCsproj) {
                       Why  = "hand-owned csproj (no regen reaches it): $($h.Why)" }
 }
 
+# golib's NoWarn rationale states the live TFM as present-tense FACT, not as dated provenance -- it
+# explains which warnings cannot fire on the framework the project TARGETS, so it moves with it. This
+# is the one prose site inside a hand-owned csproj: Class C keeps a mention that RECORDS what was
+# measured on a given date, and this sentence does not. Carrying it here is what stops a naive
+# grep-based census from reading one site higher than the truth at the NEXT hop.
+$applySites += @{ File = "$repo\src\core\golib\golib.csproj";
+                  Old  = "cannot fire on $From";
+                  Why  = 'hand-owned csproj prose stating the live TFM as present-tense fact' }
+
 # --- MUST NOT CHANGE (Class C), enforced with reasons --------------------------------------------
 $mustNotChange = @(
     @{ File = "$src\gen\go2cs-gen\go2cs-gen.csproj"; Text = '<TargetFramework>netstandard2.0</TargetFramework>';
@@ -192,12 +208,20 @@ if ($moved.Count -gt 0) {
     foreach ($m in $moved) { Write-Warning "  $m" }
 }
 
-# Generated corpus (Class A): counted, never edited.
-$classA = @(Get-ChildItem "$src\core", "$src\tests\Behavioral", "$src\tests\Performance" -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue |
+# Generated corpus (Class A): counted, never edited. The hand-owned project files above live INSIDE
+# these same directories, so they must be subtracted -- counted as Class A they read as "a regen
+# levels them" when no regen can reach them, which is how they stayed at $From through a full
+# three-target merge and a behavioral re-transpile. The subtraction is REPORTED rather than silent:
+# a whole-directory rule is what hid PerformanceRunner in the first census, so the count of files
+# this enumeration steps over is stated, not assumed.
+$classARoots = @("$src\core", "$src\tests\Behavioral", "$src\tests\Performance")
+$classA = @(Get-ChildItem $classARoots -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue |
     Where-Object { (Read-Text $_.FullName).Contains(">$From<") -and
                    $handOwnedCsproj.Path -notcontains $_.FullName.Substring($repo.Length + 1) })
+$shadowed = @($handOwnedCsproj | Where-Object { $p = "$repo\$($_.Path)"; @($classARoots | Where-Object { $p.StartsWith("$_\") }).Count -gt 0 })
 Write-Host ''
 Write-Host "Class A (generated; regen levels them, this script never touches them): $($classA.Count) csproj at $From"
+Write-Host "  (excludes $($shadowed.Count) Class-B project files sitting inside those trees that no emitter reaches)"
 
 # Class C verification: the protected values must still be present (their ABSENCE is the alarm).
 Write-Host ''
