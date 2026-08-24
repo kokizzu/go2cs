@@ -38,10 +38,26 @@ $ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
 # (bin/<config>/<tfm>/) reads this instead of embedding the string: the TFM census
 # (docs/phase4/CENSUS-tfm-inventory.md, Class D) found nine hardcoded sites across six files, each
 # a FALSE-RED generator at a TFM hop -- build succeeds, probe misses, instrument reports a corpus
-# failure. The C# harnesses DERIVE theirs from their own bin tail (BehavioralTestBase's pattern);
-# PowerShell has no bin tail to derive from at source time, so this is the one hand-edit a hop
-# owes on the script side -- one line here instead of five spread across three instruments.
-$NetVersion = 'net9.0'
+# failure. The C# harnesses DERIVE theirs from their own bin tail (BehavioralTestBase's pattern).
+#
+# This DERIVES too, and the 2026-08-24 hop is why. Class D hoisted five hand-edits into one literal
+# here and called it "the one hand-edit a hop owes on the script side" -- then the TFM moved, the
+# literal was NOT in migrate-tfm's apply set, and two lanes lost time to exactly the false-red the
+# hoist existed to prevent (one LOUD -- run-behavioral.ps1 threw CommandNotFoundException on a
+# net9.0 path; one SILENT -- run-performance.ps1 exited 0 having measured nothing; same root cause,
+# two symptoms, so neither symptom alone is a sufficient check). A hoist still needs an editor; a
+# DERIVATION needs nobody. Directory.Build.props sits beside this file and IS the property of
+# record, so the script side can read the same single source the projects do -- which the original
+# comment missed by asking only whether a *bin tail* existed.
+$NetVersionPropsPath = Join-Path $PSScriptRoot 'Directory.Build.props'
+$NetVersion = [regex]::Match(
+    [System.IO.File]::ReadAllText($NetVersionPropsPath),
+    '<TargetFramework[^>]*>(net[0-9]+\.[0-9]+)</TargetFramework>').Groups[1].Value
+if (-not $NetVersion) {
+    # Fail LOUD rather than hand every instrument an empty path segment -- an empty $NetVersion is
+    # precisely the false-red this block exists to kill, and a silent one is the worse half.
+    throw "_paths.ps1: could not derive the target framework from $NetVersionPropsPath"
+}
 
 # The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
 # `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
