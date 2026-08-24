@@ -264,7 +264,7 @@ ONE stdlib in a build; there is now only one on disk.
   (545 top-level + 25 nested; it was 543 = 521 + 22 when this note was written), not 521. Note goldens remain top-level-only: nested packages have no
   `.cs.target` (`UpdateTestTargets` is deliberately unchanged), so nested drift is caught by CNR's
   `git status`, while the *cross-package* effect is caught by the parent's golden.
-- **FALSE-GREEN route #4 — a TOOLCHAIN hop does not invalidate `go2cs.exe` (open; remedy planned).** A
+- **FALSE-GREEN route #4 — a TOOLCHAIN hop did not invalidate `go2cs.exe` (CLOSED 2026-08-24, H1.4).** A
   fresh instance of route #1's stale-binary trap that route #1's mitigation does not cover. Every rebuild
   predicate — `BehavioralTestBase`, `BehavioralRunner`, `PerformanceRunner` — rebuilds the converter when
   a converter **`*.go` file** is newer than the binary. Installing a new Go toolchain touches **none** of
@@ -273,10 +273,13 @@ ONE stdlib in a build; there is now only one on disk.
   `packages.LoadAllSyntax`, i.e. the converter's OWN compiled-in type-checker) against the NEW release's
   sources. It does not fail cleanly: the old parser mis-parses or rejects the new constructs and the run
   degrades into the converter's best-effort "did not fully type-check" path — which CNR reports as **NOT
-  MEASURED** (good) but the runners do not. Planned remedy (`docs/PLAN-corpus-upgrade.md` H1.4, ruled at
-  OQ-6, landing **before** hop A): stamp `runtime.Version()` into `go2cs.exe` and have each harness compare
-  the stamp against the live `go env GOVERSION`, rebuilding on mismatch exactly as on an mtime change.
-  Until then, a toolchain change owes an explicit `go build` of the converter before any gate runs.
+  MEASURED** (good) but the runners do not. **The remedy landed (H1.4, 2026-08-24) and came out smaller
+  than planned: nothing needed stamping, because every Go binary ALREADY embeds its toolchain release and
+  `go version <exe>` reads it back.** So the whole fix is one compare, in the ONE shared helper all three
+  predicates already delegate to since route #5 — `src/tests/ConverterBuildInputs.IsConverterStale` — which
+  fails stale-wards (unreadable stamp or unanswerable GOVERSION forces the rebuild) and is guarded by
+  `TestConverterStalenessConsultsTheToolchain`. **No explicit `go build` is owed after a toolchain change
+  any more; the predicates rebuild on mismatch exactly as on an mtime change.**
 - **FALSE-GREEN route #5 — a converter build INPUT that is not a top-level `*.go` file invalidated
   `go2cs.exe` NOWHERE (found 2026-08-21 by the hop-campaign planning read; fixed 2026-08-22).** The
   third instance of route #1's stale-binary trap, and the one with the widest trigger. All three
