@@ -55,7 +55,7 @@ silently tests the *old* generator.
 
 <a id="census"></a>**Census** (`dotnet build src/go2cs-stdlib.slnx` + an own-DLL count script).
 The Phase-3 progress metric: how many of the ~302 auto-converted stdlib projects **emit their own
-assembly** (`bin/Debug/net9.0/<AssemblyName>.dll` exists after a full solution build). Reported as
+assembly** (`bin/Debug/net10.0/<AssemblyName>.dll` exists after a full solution build). Reported as
 `N / 302`. The metric is **packages-compiling, not error count** — clearing an error family can
 *raise* the raw error count by unmasking latent errors behind it, and that is progress.
 Each census diff reports **GREENED** (was red, now green) and **REGRESSED** (must be empty —
@@ -328,7 +328,7 @@ generation's codegen, presenting as a plausible "the new runtime changed nothing
 exists before the TFM moves.
 
 <a id="tfm"></a>**TFM — Target Framework Moniker.**
-The identifier a `.csproj` uses to declare which framework a project builds against: `<TargetFramework>net9.0</TargetFramework>`
+The identifier a `.csproj` uses to declare which framework a project builds against: `<TargetFramework>net10.0</TargetFramework>`
 — the go2cs corpus's own value today. It selects the reference assemblies compiled against, the runtime the
 output binds to, and (per the migration runbook's trap 1) the **Native-AOT compiler**, since ILC arrives as a
 runtime pack chosen by the TFM rather than by the SDK performing the publish. That is why a .NET migration

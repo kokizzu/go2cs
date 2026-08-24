@@ -24,7 +24,7 @@
     nested props file owes the same import or it silently shadows this one.
   -->
   <PropertyGroup>
-    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
   </PropertyGroup>
 
 </Project>

@@ -192,7 +192,7 @@ ONE stdlib in a build; there is now only one on disk.
     preserved** (license requirement), and the Go doc-comments are what make the output readable. Without
     it the header and all comments are stripped. (Behavioral-test goldens were captured *without* comments,
     so don't flip the default — pass the flag on stdlib `-stdlib` runs.)
-- **Converted C# projects:** standard `dotnet build` (target **net9.0**, C# latest). Each converted
+- **Converted C# projects:** standard `dotnet build` (target **net10.0**, C# latest). Each converted
   `.csproj` references `golib`, the `go2cs-gen` analyzer, and the stdlib packages it imports. The
   `$(go2csPath)` MSBuild property resolves to `$(SolutionDir)` in Debug builds (so refs point at
   `src/core/...`); it is **distinct** from the converter's `-go2cspath` output flag.
@@ -651,7 +651,7 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
    them) to generate the `.cs` + `package_info.cs`. For output comparison, add `[GoTestMatchingConsoleOutput]`
    to the generated `package_info.cs` class (a hand-added attribute the converter preserves).
 5. **Generate tests + goldens:** run the **`UpdateTestTargets`** utility **with `--createTargetFiles`** (from
-   its `bin/Debug/net9.0`). It scans every `tests/Behavioral/*` folder, rewrites the `// <TestMethods>`
+   its `bin/Debug/net10.0`). It scans every `tests/Behavioral/*` folder, rewrites the `// <TestMethods>`
    blocks in all four `*Tests.cs` classes (adding `Check<Name>()`), and copies each transpiled `.cs` to a
    `.cs.target` golden. It only emits an `OutputComparison` test for projects whose `package_info.cs` has
    `[GoTestMatchingConsoleOutput]`. Afterward, `git status` should show only your new project + four

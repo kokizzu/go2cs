@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>%s</OutputType>
-    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
     <RootNamespace>%s</RootNamespace>
     <AssemblyName>%s</AssemblyName>
     <Product>go2cs</Product>

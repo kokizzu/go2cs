@@ -695,7 +695,7 @@ one per csproj family plus a whole-corpus regeneration. It survives in each proj
 fallback**:
 
 ```xml
-<TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+<TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
 ```
 
 Both halves are load-bearing. `Directory.Build.props` is imported *above* the project body, so where the
