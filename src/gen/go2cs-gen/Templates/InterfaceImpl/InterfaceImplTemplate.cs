@@ -48,17 +48,69 @@ internal class InterfaceImplTemplate : TemplateBase
     // directly: `global::go.net.netip_package.String(this.AddrPort)`.
     public string? ValueEmbedHopStaticClass;
 
-    // The struct's own accessibility, so a promoted method's EXTENSION twin below is declared
-    // exactly as the converter declares that type's own Go methods.
-    public string StructAccessibility = "internal";
+    // The promoted-method extension twins below are ALWAYS `internal`, and that is a decision,
+    // not a default. The twin is reflective cargo only: the registry that builds the Go method
+    // set discovers with BindingFlags.NonPublic, and no source-level call ever binds it — a
+    // direct call always prefers the MEMBER the partial struct declares. So accessibility here
+    // decides declaration form, never discoverability — and `internal` is the one form that can
+    // never out-rank its own parameter type.
+    //
+    // The first cut scoped the twin to the struct via `DeclaredAccessibility == Public ||
+    // GetScope(name) == "public"` — the adapterScope shape — and the name half is a trap this
+    // repo has already paid for once (StructTypeTemplate's scope-follows-the-MEMBER note): a
+    // FUNCTION-LOCAL type hoists to `<Func>_<name>`, whose leading case belongs to the enclosing
+    // function. A test's local witness struct (`TestEncoderDecoder_r`, hoisted from `func
+    // TestEncoderDecoder`) is declared `internal`, but the heuristic read the `T` and emitted a
+    // `public` twin over it — CS0051, in every -tests host whose table-driven suite wraps an
+    // embedded interface in a local type (encoding/hex, archive/zip, compress/flate,
+    // net/rpc/jsonrpc). The behavioral corpus never produces that combination in a production
+    // program, which is why 607 projects and the reflect canary compiled clean around it.
 
     public override string TemplateBody =>
         $$"""
              partial struct {{StructName}} : {{InterfaceName}}
              {
                  {{MethodsImplementation}}{{Comparisions}}
-             }{{PromotedExtensionMethods}}
+             }
          """;
+
+    // The twins land in a SIBLING top-level static class, never inside the package class — and
+    // that placement is load-bearing (Shape B of the JOB-010 consolidation, io/fs). A static
+    // method in the package class participates in BARE-name lookup for every call in that class,
+    // and enclosing-class members out-rank `using static` imports: io/fs's dot-imported test
+    // calls `Sub(fsys, dir)` bare, `subOnly` embeds `SubFS` whose method is named `Sub`, and the
+    // twin `Sub(subOnly, @string)` INTERCEPTED the package function — CS1503 on the call whose
+    // argument was a different type, and a silent WRONG BINDING on the call whose argument
+    // matched (the twin forwards to the embedded interface's method, skipping whatever the
+    // package function does around it — fs.Sub validates the path before dispatching). The
+    // compiling half was wronger than the failing half. A sibling class is invisible to bare
+    // lookup, and costs the twins nothing: no source-level call ever binds them (the MEMBER
+    // wins), and the registry scans every non-nested sealed static class in the assembly.
+    public override string TemplateFooter =>
+        $$"""
+
+        }{{PromotedTwinsClass}}
+        {{PackageFooter ?? ""}}
+        """;
+
+    private string PromotedTwinsClass
+    {
+        get
+        {
+            string twins = PromotedExtensionMethods;
+
+            if (twins.Length == 0)
+                return "";
+
+            // Named for the pair so two generated files can never collide; generic arity and
+            // keyword escapes cannot appear in a class name, so they are stripped — the name only
+            // has to be unique and legal, never resolvable back to anything.
+            string structPart = StructName.Split('<')[0].Replace("@", "");
+            string interfacePart = GetSimpleName(InterfaceName).Replace("@", "");
+
+            return $"\r\n\r\ninternal static class {structPart}{TempVarMarker}{interfacePart}{TempVarMarker}promoted\r\n{{{twins}\r\n}}";
+        }
+    }
 
     // A PROMOTED interface method is a Go method of the struct, and it is the ONE kind of Go method
     // that never became an extension method — the member above satisfies the C# interface, but
@@ -101,16 +153,21 @@ internal class InterfaceImplTemplate : TemplateBase
                     continue;
 
                 string receiver = $"recv{TempVarMarker}";
+
+                // The twins live in a SIBLING class (see PromotedTwinsClass), so the struct —
+                // nested in the package class — must be named through it.
+                string qualifiedStruct = $"{PackageName}_package.{StructName}";
+
                 string typedParameters = method.GetTypedParameters(false);
                 string parameterList = string.IsNullOrEmpty(typedParameters) ?
-                    $"this {StructName} {receiver}" :
-                    $"this {StructName} {receiver}, {typedParameters}";
+                    $"this {qualifiedStruct} {receiver}" :
+                    $"this {qualifiedStruct} {receiver}, {typedParameters}";
 
                 string callParameters = method.GetCallParameters(false);
                 string embedField = GetSimpleName(InterfaceName, dropCollisionPrefix: true);
 
                 result.Append($"\r\n\r\n    // Go method set entry for the promoted '{GetSimpleName(InterfaceName)}.{simpleMethodName}()':\r\n");
-                result.Append($"    {StructAccessibility} static {method.ReturnType} {EscapeCsKeyword(simpleMethodName)}{method.GetGenericSignature()}({parameterList}){method.GetWhereConstraints()} => ");
+                result.Append($"    internal static {method.ReturnType} {EscapeCsKeyword(simpleMethodName)}{method.GetGenericSignature()}({parameterList}){method.GetWhereConstraints()} => ");
                 result.Append($"{receiver}.{embedField}.{simpleMethodName}{method.GetGenericSignature()}({callParameters});");
             }
 

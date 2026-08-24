@@ -71,6 +71,29 @@ internal static void Main() {
     check(wrapperˢ, new wrapper(Reader: new iolike.Base(Tag: "base"u8), prefix: "w:"u8));
     check(plainˢ, new plain(tag: "p"u8));
     check(holderˢ, new holder(Reader: new iolike.Base(Tag: "held"u8), prefix: "h:"u8));
+    LocalPromotion();
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object localDirectˢ = (@string)"local direct:"u8;
+private static readonly object localAssertˢ = (@string)"local assert:"u8;
+private static readonly object localAssertNoˢ = (@string)"local assert: no"u8;
+
+[GoType("dyn")] partial struct LocalPromotion_inner {
+    public EmbeddedInterfaceWitness.iolike_package.Reader Reader;
+}
+
+public static void LocalPromotion() {
+    var w = new LocalPromotion_inner(Reader: new iolike.Base(Tag: "local"u8));
+    fmt.Println(localDirectˢ, w.Reader.Read());
+    any v = w;
+    {
+        var (r, ok) = v._<iolike.Reader>(ᐧ); if (ok){
+            fmt.Println(localAssertˢ, r.Read());
+        } else {
+            fmt.Println(localAssertNoˢ);
+        }
+    }
 }
 
 } // end main_package
