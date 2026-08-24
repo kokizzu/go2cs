@@ -148,6 +148,27 @@ afterward with a third probe.
 
 ---
 
+### Trap 5 — a side-by-side root runs no old-TFM app without a roll-forward policy
+
+**Confirmed cross-platform on the first execution (2026-08-24, both fleet legs, same mechanism and
+same fix).** A side-by-side install carries only the NEW runtime. An old-TFM app — including
+`dotnet test`'s **test host** — asks the muxer for the old `Microsoft.NETCore.App`, does not find
+it under that root, and aborts (`app-launch-failed`, "you must install ... to run this
+application"). It presents as a harness failure at exactly the moment a stage's ladder is being
+run, which is the worst moment to misread it.
+
+**Remedy:** the LEG'S ENVIRONMENT carries the policy — `DOTNET_ROLL_FORWARD=LatestMajor` beside
+`DOTNET_ROOT`. §2(3)'s probe recipe already spells it, which is why the probe succeeds while a bare
+harness invocation in the same shell dies: *the probe accidentally pre-documents the fix.* Any
+instrument run on a new-runtime leg inherits the same requirement — probe and harness must share
+one environment, or they are measuring two different runtimes.
+
+**Corollary trap, same family, found in the same hour:** a test run at the DEFAULT `$(GoTargetOS)`
+on a non-Windows box fabricates failures that read exactly like runtime deltas — the Windows
+flavor's P/Invoke surface loads `kernel32.dll.so` and dies in type initializers. **A leg's
+instruments must name the flavor**, not inherit it.
+
+
 ## 4. Stage 1 — the SDK alone
 
 **Changes:** the SDK on `PATH`. **Not** the TFM.
