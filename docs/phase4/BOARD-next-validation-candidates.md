@@ -18844,6 +18844,21 @@ B's code.** I inferred it from a suite being green and did not check the call gr
 species of unmeasured inference the AV-vs-panic rule exists to replace, applied to my own claim
 instead of someone else's. The probe that settled it took two minutes and should have come first.
 
+## 2026-08-23 · Release-machinery item #2 (user-directed): the NEWS lands BEFORE the tag mints, so the tag''s tree carries the announcement
+
+From 1.23.1.7''s ritual: the `nuget-<version>` tag deliberately mints at Phase 1''s pre-build
+point (provenance — the READMEs frozen inside the published packages link `tree/nuget-<ver>`),
+but the NEWS/milestone text was applied AFTER the release — so a visitor browsing the repo AT
+the tag sees a NEWS block that predates the announcement. The tag cannot move (it anchors the
+shipped binaries'' exact tree; the post-release master contains merged work the binaries do not).
+
+**Rule for the next release**: the §4-style announcement text — NEWS block, NEWS.md entry,
+milestone table rows — is applied to master BEFORE `release-nuget.bat` runs, so Phase 1''s tag
+contains it. The version placeholder is deterministic pre-bump (build+1, the would-be version
+the dry run already computes), and links into `docs/validation/<version>/` resolve on the live
+site regardless of which tree the visitor browses. Add the step to the release checklist
+(MILESTONE-prep §3-style docs) alongside the existing hardening item #1 (the post-build
+gen-output assertion, landed) and the pack-race root-cause (in forensics).
 ---
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
