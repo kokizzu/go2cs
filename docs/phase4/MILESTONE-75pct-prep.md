@@ -281,7 +281,19 @@ a green sweep** — is offered as a recommendation, not a ruling.
 > board's condition-(d) arithmetic entry. Per-row wall tables for both legs are banked in
 > [`DATA-sweep-row-walltimes.md`](DATA-sweep-row-walltimes.md).
 
-> **⚠ USER-EXECUTED IN FULL.** Publishing to nuget.org is an irreversible act — a version can be
+> **⚠ SUPERSEDED FOR FUTURE RELEASES (2026-08-24) — the ritual is now ONE MACHINE, and the only
+> human act is the card PIN.** The owner's code-signing certificate now lives on the release
+> machine, so `release-nuget.bat` runs pack → sign → push → record as four phases of one
+> command: Phase 0 proves every precondition (clean tree, API key, certificate reachable) before
+> anything moves, Phase 2 signs the whole set in ONE process so the card is unlocked ONCE, and
+> Phase 3 gates the irreversible push behind an explicit confirmation. The owner delegated the
+> ritual on that basis. Two facts make the delegation safe, and both are enforced in the script
+> rather than remembered: a published version can be unlisted but never deleted (hence the
+> gate), and **signing is now MANDATORY** — the certificate is registered with nuget.org, which
+> rejects any unsigned package pushed under the account. The text below records the two-machine
+> flow this supersedes; `-OfflineSigning` still executes it.
+>
+> **⚠ USER-EXECUTED IN FULL** (the superseded flow). Publishing to nuget.org is an irreversible act — a version can be
 > unlisted, never deleted — and no lane and no coordinator session runs `push-nuget.ps1 -Push`. The
 > checklist below is what the user reads while running it. Every mechanic is read out of
 > [`../../src/push-nuget.ps1`](../../src/push-nuget.ps1) at the line noted; nothing is inferred from
