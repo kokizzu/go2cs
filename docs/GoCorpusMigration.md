@@ -136,6 +136,26 @@ Bump `<GoStdLibVersion>` in `src/version.props` to the exact target release, and
 number's policy at the same moment (ruled: it **resets** per release). **Nothing else changes in this
 commit** — deliberately a one-line, reviewable, revertible move, landing as one pair with H1.
 
+**The instrument is [`src/migrate-gorelease.ps1`](../src/migrate-gorelease.ps1)** (`.bat` launcher
+beside it). A bare run is a **census**: it classifies every place in the tree that spells or derives
+the Go release into five classes — source-of-truth, doc-statement, derived-by-regen,
+derived-at-runtime, must-not-change — and changes nothing. With `-To <release> -Apply` it performs
+exactly two of those classes: the pin itself (`<GoStdLibVersion>`, the build-number reset, and H1.2's
+`go` directive in `src/go2cs/go.mod`, which `-SkipGoMod` leaves alone) and the prose that states the
+release as present-tense fact, each by a **named anchor** whose match count is asserted rather than
+substituted blindly. It supports `-WhatIf`, refuses to run when the working tree is dirty in the
+files it would touch, and re-reads its own output afterwards to prove zero sites remain — so it is
+idempotent, and re-running it is the verification. Its discovery sweep reports anything it cannot
+classify as **UNCLASSIFIED** rather than guessing, which is how a newly-introduced site announces
+itself at the next migration instead of being missed.
+
+**What it does not do, and will not pretend to:** it does not reconvert (it *prints* the seeded
+reconvert and the layout-L3 multi-target emission for H5/H8), it runs no gate, it does not touch the
+roster's rows or arithmetic, and it makes none of the migration's judgements — H3's package census,
+H6's hand-own differential, §4's golden-drift triage and H10's per-row re-derivation are all
+readings a person makes. It also leaves the **converter tool** version alone: that is
+`set-version.ps1`'s Windows PE resource and is independent of `version.props`.
+
 **Gate:** a single-package `-stdlib` smoke conversion no longer refuses.
 
 ### H3 — Package census ⟲
