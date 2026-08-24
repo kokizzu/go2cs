@@ -642,14 +642,28 @@ public static slice<T> Slice<T, TLen>(ж<T> ptr, TLen len) where TLen : System.N
         throw panic("ptr is nil and len is not zero");
     }
 
-    // A pointer that ALIASES a native address yields a NATIVE-BACKED slice over that memory —
-    // Go's unsafe.Slice semantics exactly: writes reach the memory, element addresses are the
-    // real ones (Mprotect(b[:n]) hands the kernel the mapping), and lifetime is the mapping's
-    // own. This retires the documented snapshot limitation that made syscall.Mmap return twelve
-    // kilobytes that were not the mapping (DESIGN-native-backed-slice.md, the W1b commission);
-    // read-only consumers like syscall.Environ ride the same arm and simply never write.
-    // Unmanaged T is enforced at the creation door with a named panic.
-    if (ptr.IsNative)
+    // A pointer that ALIASES a GENUINELY NATIVE address yields a NATIVE-BACKED slice over that
+    // memory — Go's unsafe.Slice semantics exactly: writes reach the memory, element addresses
+    // are the real ones (Mprotect(b[:n]) hands the kernel the mapping), and lifetime is the
+    // mapping's own — a claim that is TRUE only because of the provenance consult below. This
+    // retires the documented snapshot limitation that made syscall.Mmap return twelve kilobytes
+    // that were not the mapping (DESIGN-native-backed-slice.md, the W1b commission); read-only
+    // consumers like syscall.Environ ride the same arm and simply never write. Unmanaged T is
+    // enforced at the creation door with a named panic.
+    //
+    // The provenance consult (DESIGN-pointer-provenance §3; AUDIT-unsafe-slice-provenance is the
+    // 53-site census behind it): IsNative answers "does this box CARRY an address", not "is that
+    // address native" — an EnsureStableAddress round trip stamps a PINNED MANAGED object's
+    // address into the same field, and a native-backed slice over managed storage retains
+    // nothing that holds the object still, so the pin can release and the GC can move what the
+    // slice keeps addressing. Resolve is the discriminator the mechanism ratified: a HIT means a
+    // live, still-pinned-there managed registration (validate-on-read), so the pointer falls
+    // through to the MANAGED arms below — the element-window arm aliases the pinned box's own
+    // storage, which stays correct whether or not the pin ever releases. A MISS means genuinely
+    // native (every pin registers; the audit's five uintptr-shaped watch sites never do, so they
+    // surface at first read, named, rather than as corruption), and the mapping arm proceeds
+    // exactly as before for the audit's 13 native sites, mmap first among them.
+    if (ptr.IsNative && ManagedPointerTokens.Resolve(ptr.NativeAddress) is null)
         return slice<T>.OverNativeMemory(ptr.NativeAddress, n);
 
     // A pointer INTO managed array/slice storage (`unsafe.Slice(&s[i], n)`) yields a window that
