@@ -71,29 +71,6 @@ using static go.@internal.fuzz_package;
 [assembly: GoImplicitConv<mutator, ж<mutator>>]
 // </ImplicitConversions>
 
-// Go source positions are recorded here, one `GoPositionMap` attribute per converted
-// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
-// can name the GO file and line a frame was converted from rather than the emitted C# one.
-// Each record carries the Go file's identity and an encoded C#-line to Go-line table
-// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
-// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
-
-// <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("internal/fuzz/counters_supported.go", "counters_supported.cs", "AAoiwoKC")]
-[assembly: global::go.GoPositionMap("internal/fuzz/coverage.go", "coverage.cs", "AAscooKuwoKigoKCgryigpSCgoKCpoKUgoKUqqKCgpSqooKCpqqigoKmpoKCgpQ=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/encoding.go", "encoding.cs", "ABgwwoKUpoIACgS0AAwaAAoWxoKUxgADHAANApTK5NS2qJKClIKClIKClIKigoKUgoKUlAAKBoKCgoKUgoKUgpSEgIKClIKClIKClIKClKaCgIKCgpSUpKS2goKUgoKClIKklMqYgIKUgpaCtJKUgpSUxKaUtIKUxLiApIKUtIKUpLaClIKClIKClIKUgpSkgpSkgpSkgpSCpIKUtIKUgoKUpIKUgoKUpNqSntKkgqSCpIKktMqSlIKkgqSCpIKktA==")]
-[assembly: global::go.GoPositionMap("internal/fuzz/fuzz.go", "fuzz.cs", "AEyqAQAOAoCCpIKUgpSUloKCloKCgriCkpaSgrKCgoKUqLiUgpSClIKCuoKigpSCgoKUggAHEoKCgoSCgoKCgoKmgoKygoKUgoKU3oKCkpSClIKWgoKCloKCgpb4uIKCstqSlISCgoKCgpSCpoKUyoKCyIKCgsqCAAcStoKCAAYQgoKCgoL+AAgSpqaCgoKClIKCupSCgoKCAAsaggALFoKCgoIACBS4tgAWIIKmgqaCAAgY4oKygoKUgoKClIKAgtqUgpQAGUKigpYAgQHGApSCgqYACBKAgqSCgoKCuoKCuIKCpoKCppSEgoKCgpSCgoKWpoKCgqaCgoKCgpS2lIKCgpSmggACGgAKAqaUgqaUloKClMqClKaCloKCgpSCgqaokoKqooK8ooIABhCClsqqoqaUgoKUhIKUgqSClIKCuIKCgqaqooIAAiAADQKssoKUgoKCgpSqoqiCAAIQ0oCCpIKCgKbsgIKkAAkUgoKClK7CgoKklIKC3IKUgoKClIKCgoKUlIKUpoKCgpSAgqSqooKUgoKUgoKmruKCgoCCpICCgqSmgqaCgoKmABgygqaigg==")]
-[assembly: global::go.GoPositionMap("internal/fuzz/mem.go", "mem.cs", "ADF2tNr0goKUooKCuoKAgriC6JKqooKCqJKCrLKCgpSCAAIS4oKClA==")]
-[assembly: global::go.GoPositionMap("internal/fuzz/minimize.go", "minimize.cs", "AAkWgqai3JaCgoKUgoKmuoKClIKCgoKmgqaogoKCgpSCgoKmgoLMgoKCloKClKY=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/mutator.go", "mutator.cs", "ABImgqaCpoKClKqigKSkpNoACRCogpS0tLS0tLS0tLS0gsbExIKUgpSClIK0gpSClIKUgsTIgoKCgpaSlJSUgqaSlJSUgtqCgoKClpKUlJaCppKUlJSC2oKCgpaSlIKUlIKmkpSClJSCpoKSlIKUlIKmkpSCAB040pKCgpSWgoKAgoIADyCCgpSC")]
-[assembly: global::go.GoPositionMap("internal/fuzz/mutators_byteslice.go", "mutators_byteslice.cs", "AAoQsoKUgoKCgqrCgoKClIKCgpSqwoKUgoKClLiClKamppSCgqiygpSCgoKUgoKosoKUgoKosoKUuIKosoKUgoKClIKosoKUgoKClJSosoKUgoKUgoKCqLKClIKClIKCgqiygpSCgpSCgoKqwoKUgoKqwoKUgoKCqsKClIKCgqiygpQACBKCgpSCgoKClKiygpSCgoKClKiygpSCgoLKgoKUqLKClIKCgsqCgpSmgsqClIKCgoKCgg==")]
-[assembly: global::go.GoPositionMap("internal/fuzz/pcg.go", "pcg.cs", "ADBagoKCgpKClKaokoKCgIKkgoKCgoKCpoKCprKCpoKCqJKCgqqigpQAAhDSgoKCgoKCgoKmqJKokgAKFrI=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/queue.go", "queue.cs", "ABcugqaCgoKClIKCgpSCpoKClIKCpoKClIKCgoKmgoKUpoI=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/sys_posix.go", "sys_posix.cs", "ABMkgoKCgoKWqqiypoKUgoKmqqKCgoL4soKCgoKClIKClIKCgpSCgqqigoKUgqyygoKUggACHAALAgABEqQ=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/trace.go", "trace.cs", "AAowAAwCoqKkoqKipKI=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/worker.go", "worker.cs", "AC9+goKClIKCAAoWkoKClIIAAhoADQSUgoCCuNaCkpSogpKUAAoWlICmqMr8goKUgpSUppSA3KSmyoKUAAkUuJLK3IKmggAHEgAFEgAKAoKCgqbKgpSC3AAHEAAIFIKWAA4WggACFgAKAoKUgIKkgIKCgpSUpqQAAhoADwKClIKChIKCAAgUgoKUkoKCgpSSloCCgoLcgoKCgoSCgpYABhgACwKClKakloKCggAIDoKSgpaCuJaCgraCgoKCqIKWgoKogoKoAAwgAAoCkoKUxoKUkoKC6ACBAa4CAAwCgoKCgoCCgpS4gpS0tLSmgIIAEzYAEAKCgoKUlJKQlIKCgqSCgpKClIKCloKCgpSChKaygoKCgoKClJSClJaCgoKClIKClJaCpKSCgpSEgoKCgpSCgoKUggAKDNKSkJKCkJKCgpSCgoKCyoKCgoKCgoLugpS4AAUQAAkCkpKCgqiCzIKCgoK2lMzCgpS0tLSCgoKCgoKCuJSmgpSClJS0xKSmooKqogAQJIKs8oKogIKCyoCCgqQADhwACwKChJKClICSgoKClIKCgoKUgoKWgoKCgoKCloKClMqUtLS0lJaUgoKCuoKCgqaCgoK4goKCAAgIAAsCgoSCgpSCgoKClIKEgoKClIKClJCShIKUhIKCgpSClIKCpoSCgtymqOjSgoKCgtqigoKAgqQADyCigIKkiKKCooKWtKQ=")]
-// </GoSourcePositionMaps>
-
 namespace go.@internal;
 
 [GoPackage("fuzz")]

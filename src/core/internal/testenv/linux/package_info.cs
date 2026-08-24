@@ -56,21 +56,6 @@ using static go.@internal.testenv_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
-// Go source positions are recorded here, one `GoPositionMap` attribute per converted
-// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
-// can name the GO file and line a frame was converted from rather than the emitted C# one.
-// Each record carries the Go file's identity and an encoded C#-line to Go-line table
-// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
-// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
-
-// <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/testenv/exec.go", "exec.cs", "ABZCAAwCgpSCAAsSgrgACxi4uoKClIKCAAUQsoSCgoKUggAHFAAIAoKUpoKmgpSUAAsWAAoCgoSagIiApoKAgoKClMqCgIIACxiEgLjqgqLc3JSUhKKClIKoqsKC")]
-[assembly: go.GoPositionMap("internal/testenv/opt.go", "opt.cs", "AAgUkg==")]
-[assembly: go.GoPositionMap("internal/testenv/testenv.go", "testenv.cs", "AC1SwgAICqLKltyCgoKCgpSCgoKUgIKCpgAIEoKCgoKCgpSCgoKUugAGFrKCgpSCgrqkqqKCvrKUpKqiggADEMKCgoLKgpQAChKCgoLcAAwegoKCloKCgpSCloCCgqaCgoKClIKUhIKCgoKUgswAAhTygoKClIKU2JKClIKUAAcUkpSkqqKssoKClIKC6pKCgoKUgoKCgpSCgqYABhKSgryirLKCgpS+soK+soK6koKqooKCusiqooLcgoKC+IKCgILKkpSkrsKCguqSgoIAChQACAKEgoKClpSCgoKCgpaCgpSCgpSCuoCCzKKssoKU")]
-[assembly: go.GoPositionMap("internal/testenv/testenv_notwin.go", "testenv_notwin.cs", "ABMgwpSu0oKUgpSCgIKkgIKClMg=")]
-[assembly: go.GoPositionMap("internal/testenv/testenv_unix.go", "testenv_unix.cs", "ABEmgoKWgoKYqPiClg==")]
-// </GoSourcePositionMaps>
-
 namespace go.@internal;
 
 [GoPackage("testenv")]

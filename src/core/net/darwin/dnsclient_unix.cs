@@ -52,15 +52,14 @@ internal static (uint16 id, slice<byte> udpReq, slice<byte> tcpReq, error err) n
 
     q = q.ΔClone();
     id = (uint16)randInt();
-    ref var b = ref heap<dnsmessage.Builder>(out var Ꮡb);
-    b = dnsmessage.NewBuilder(new slice<byte>(2, 514), new dnsmessage.Header(ID: id, RecursionDesired: true, AuthenticData: ad));
+    var b = dnsmessage.NewBuilder(new slice<byte>(2, 514), new dnsmessage.Header(ID: id, RecursionDesired: true, AuthenticData: ad));
     {
         var errΔ1 = b.StartQuestions(); if (errΔ1 != default!) {
             return (0, default!, default!, errΔ1);
         }
     }
     {
-        var errΔ2 = Ꮡb.Question(q); if (errΔ2 != default!) {
+        var errΔ2 = b.Question(q); if (errΔ2 != default!) {
             return (0, default!, default!, errΔ2);
         }
     }
@@ -80,7 +79,7 @@ internal static (uint16 id, slice<byte> udpReq, slice<byte> tcpReq, error err) n
             }
         }
         {
-            var errΔ5 = Ꮡb.OPTResource(rh, new dnsmessageꓸOPTResource(nil)); if (errΔ5 != default!) {
+            var errΔ5 = b.OPTResource(rh, new dnsmessageꓸOPTResource(nil)); if (errΔ5 != default!) {
                 return (0, default!, default!, errΔ5);
             }
         }

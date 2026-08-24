@@ -363,20 +363,6 @@ public static partial class GoReflect
         return result;
     }
 
-    // The 64-bit twin, for [GoArrayDims]. A Go array length is Go's `int`, 64-bit on a 64-bit
-    // platform, and the standard library uses the full range — runtime's `*[1<<50 - 1]byte`
-    // unbounded-array idiom. nint is already the destination width here, so the widening costs
-    // nothing: this overload exists because the CARRIER widened, not because the target did.
-    private static nint[] toNintDims(long[] dims)
-    {
-        nint[] result = new nint[dims.Length];
-
-        for (int i = 0; i < dims.Length; i++)
-            result[i] = (nint)dims[i];
-
-        return result;
-    }
-
     // -------- channel direction (abi.Type.ChanDir; rtype.String; assignability's chan arm) --------
     //
     // The same cargo shape as the array dims above, at the same finite set of positions, and for

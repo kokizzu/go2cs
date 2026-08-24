@@ -43,26 +43,9 @@ namespace go;
 /// <see cref="GoMapKeyDimsAttribute"/> instead.
 /// </para>
 /// </remarks>
-/// <para>
-/// The dimensions are <b>64-bit</b>, because a Go array length is Go's <c>int</c> — 64-bit on a
-/// 64-bit platform — and the standard library uses the full range. <c>runtime/vdso_linux.go</c>
-/// declares <c>symstrings *[vdsoArrayMax]byte</c> with <c>vdsoArrayMax = 1&lt;&lt;50 - 1</c>: Go's
-/// POINTER-TO-UNBOUNDED-ARRAY idiom, a type-level way to index arbitrary offsets off a pointer.
-/// No such array is ever allocated — and none could be, on either runtime — but the DIMENSION is
-/// part of the type, it is what <c>reflect.Type.Elem().Len()</c> answers, and this attribute is
-/// the only place it survives for a field behind a pointer. A 32-bit carrier could not hold it:
-/// the emission was a hard <c>CS1503</c> (<c>cannot convert from 'long' to 'int'</c>) the moment
-/// anyone regenerated the linux corpus, which is how it was found.
-/// </para>
-/// <para>
-/// <see cref="GoMapKeyDimsAttribute"/> is deliberately NOT widened with it. A map KEY is a VALUE
-/// array, so a map whose key type had such a dimension could never hold an entry; the unbounded
-/// idiom reaches the bridge only through a POINTER, which is this attribute's position, not that
-/// one.
-/// </para>
 [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
-public sealed class GoArrayDimsAttribute(params long[] dims) : Attribute
+public sealed class GoArrayDimsAttribute(params int[] dims) : Attribute
 {
     /// <summary>The Go array dimensions, outermost first.</summary>
-    public long[] Dims { get; } = dims;
+    public int[] Dims { get; } = dims;
 }

@@ -13,7 +13,6 @@ using sys = runtime.@internal.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using System.Runtime.InteropServices;
 using runtime.@internal;
 
 partial class runtime_package {
@@ -2203,9 +2202,9 @@ internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr 
 // The creator frees these.
 
 // gcBits is an alloc/mark bitmap. This is always used as gcBits.x.
-[GoType] [StructLayout(LayoutKind.Explicit, Size = 1)] partial struct gcBits {
-    [FieldOffset(0)] internal readonly sys.NotInHeap _;
-    [FieldOffset(0)] internal uint8 x;
+[GoType] partial struct gcBits {
+    internal sys.NotInHeap _;
+    internal uint8 x;
 }
 
 // bytep returns a pointer to the n'th byte of b.

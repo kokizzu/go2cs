@@ -5529,9 +5529,7 @@ internal static readonly @string missingMcacheˢ = "missing mcache?"u8;
 
 // init initializes pp, which may be a freshly allocated p or a
 // previously destroyed p, and transitions it to status _Pgcstop.
-internal static void init(this ж<Δp> Ꮡpp, int32 id) {
-    ref var pp = ref Ꮡpp.DerefOrNull();
-
+[GoRecv] internal static void init(this ref Δp pp, int32 id) {
     pp.id = id;
     pp.status = _Pgcstop;
     pp.sudogcache = pp.sudogbuf[..0];

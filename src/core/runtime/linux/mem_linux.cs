@@ -84,7 +84,7 @@ internal static void sysUnusedOS(@unsafe.Pointer v, uintptr n) {
 
     if (debug.harddecommit > 0) {
         var (Δp, err) = mmap(v, n, _PROT_NONE, (int32)((UntypedInt)(_MAP_ANON | _MAP_FIXED) | (int32)_MAP_PRIVATE), -1, 0);
-        if (Δp != v || err != 0) {
+        if (Δp.Value != v.Value || err != 0) {
             @throw(runtimeCannotDisableˢ);
         }
     }
@@ -100,7 +100,7 @@ internal static void sysUsedOS(@unsafe.Pointer v, uintptr n) {
         if (err == _ENOMEM) {
             @throw(runtimeOutOfMemoryˢ);
         }
-        if (Δp != v || err != 0) {
+        if (Δp.Value != v.Value || err != 0) {
             @throw(runtimeCannotRemapPagesˢ);
         }
         return;
@@ -188,7 +188,7 @@ internal static void sysMapOS(@unsafe.Pointer v, uintptr n) {
     if (err == _ENOMEM) {
         @throw(runtimeOutOfMemoryˢ);
     }
-    if (Δp != v || err != 0) {
+    if (Δp.Value != v.Value || err != 0) {
         print((@string)"runtime: mmap("u8, v, (@string)", "u8, n, (@string)") returned "u8, Δp, (@string)", "u8, err, (@string)"\n"u8);
         @throw(runtimeCannotMapPagesInˢ);
     }
