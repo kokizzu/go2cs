@@ -91,7 +91,7 @@ silently report a benchmark that computes something different in C#.
 
 <!-- PERF-RESULTS:BEGIN -->
 
-**Environment:** AMD Ryzen 5 PRO 6650U with Radeon Graphics · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-08-13
+**Environment:** AMD Ryzen 5 PRO 6650U with Radeon Graphics · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-08-24
 
 C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true` self-contained, partial trim. Median of 5 runs (1 discarded warmup). Workload time is measured in-program and excludes process startup; the Startup row is pure process wall time. Ratios are relative to Go.
 
@@ -99,39 +99,39 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 25.2 | 223.3 (8.88×) | 77.8 (3.09×) |
-| Fib | 116.5 | 191.2 (1.64×) | 172.8 (1.48×) |
-| Sieve | 65.6 | 105.4 (1.61×) | 215.2 (3.28×) |
-| MatMul | 104.3 | 173.0 (1.66×) | 523.2 (5.02×) |
-| String | 103.0 | 1,006.3 (9.77×) | 1,257.2 (12.21×) |
-| StringView | 19.7 | 20.5 (1.04×) | 18.5 (0.94×) |
-| StringMatch | 189.0 | 978.0 (5.18×) | 1,220.2 (6.46×) |
-| Map | 617.2 | 478.2 (0.77×) | 180.5 (0.29×) |
-| Sort | 136.8 | 429.6 (3.14×) | 438.3 (3.20×) |
-| Channel | 39.3 | 90.4 (2.30×) | 110.0 (2.80×) |
-| IfaceCall | 179.6 | 432.4 (2.41×) | 451.1 (2.51×) |
-| Iface | 94.9 | 543.6 (5.73×) | 452.5 (4.77×) |
-| IfaceShell | 21.4 | 865.2 (40.50×) | 1,288.6 (60.32×) |
-| RefLower | 226.3 | 660.6 (2.92×) | 1,827.8 (8.08×) |
+| Startup | 25.8 | 245.3 (9.52×) | 79.2 (3.07×) |
+| Fib | 119.8 | 180.3 (1.51×) | 175.3 (1.46×) |
+| Sieve | 71.7 | 128.3 (1.79×) | 265.4 (3.70×) |
+| MatMul | 105.6 | 209.3 (1.98×) | 598.5 (5.67×) |
+| String | 104.6 | 1,208.3 (11.56×) | 1,600.3 (15.31×) |
+| StringView | 19.5 | 21.7 (1.12×) | 18.9 (0.97×) |
+| StringMatch | 198.6 | 992.8 (5.00×) | 1,279.8 (6.44×) |
+| Map | 630.5 | 546.4 (0.87×) | 230.7 (0.37×) |
+| Sort | 135.0 | 461.4 (3.42×) | 497.8 (3.69×) |
+| Channel | 46.6 | 96.0 (2.06×) | 130.9 (2.81×) |
+| IfaceCall | 181.8 | 395.8 (2.18×) | 427.2 (2.35×) |
+| Iface | 96.5 | 538.7 (5.58×) | 462.7 (4.80×) |
+| IfaceShell | 21.3 | 871.9 (40.90×) | 1,319.0 (61.87×) |
+| RefLower | 239.1 | 624.7 (2.61×) | 1,890.7 (7.91×) |
 
 **Peak memory** (working set, MB -- lower is better):
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 3.0 | 45.1 | 78.4 |
-| Fib | 5.7 | 45.3 | 78.6 |
-| Sieve | 26.3 | 65.6 | 98.2 |
-| MatMul | 10.3 | 52.4 | 84.9 |
-| String | 5.8 | 55.1 | 87.3 |
-| StringView | 5.8 | 45.5 | 78.5 |
-| StringMatch | 5.8 | 55.5 | 88.7 |
-| Map | 158.8 | 164.8 | 197.0 |
-| Sort | 21.9 | 61.4 | 94.0 |
-| Channel | 5.7 | 51.0 | 86.3 |
-| IfaceCall | 5.7 | 46.2 | 78.7 |
-| Iface | 5.7 | 45.7 | 78.9 |
-| IfaceShell | 5.7 | 66.2 | 97.7 |
-| RefLower | 5.7 | 46.3 | 78.6 |
+| Startup | 2.5 | 46.1 | 76.9 |
+| Fib | 5.3 | 46.1 | 75.8 |
+| Sieve | 25.9 | 65.6 | 96.6 |
+| MatMul | 10.6 | 53.4 | 83.4 |
+| String | 5.2 | 55.8 | 85.7 |
+| StringView | 5.3 | 46.8 | 77.1 |
+| StringMatch | 5.3 | 56.1 | 87.0 |
+| Map | 157.9 | 165.8 | 187.1 |
+| Sort | 21.4 | 62.4 | 92.2 |
+| Channel | 5.3 | 52.0 | 84.3 |
+| IfaceCall | 5.3 | 46.3 | 77.4 |
+| Iface | 5.3 | 46.6 | 77.4 |
+| IfaceShell | 5.3 | 66.6 | 96.3 |
+| RefLower | 5.3 | 46.9 | 77.1 |
 
 <!-- PERF-RESULTS:END -->
 
@@ -204,3 +204,13 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   trails the JIT here by a wide margin (~8×) — ILC's codegen of the ref-lowered loop is a priced
   open question for the arc's next phase
   ([DESIGN-zh-box-reduction.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-zh-box-reduction.md)).
+
+## Performance-floor exploration
+
+The dated floor exploration (stock-SDK trim profiles vs bflat; concluded 2026-08-16 — the floor
+is a trim-rooting question, not a toolchain question) lives in
+[`docs/PLAN-bflat-perf-exploration.md`](https://github.com/ritchiecarroll/go2cs/blob/master/docs/PLAN-bflat-perf-exploration.md),
+results section included.
+[`run-performance-floor.ps1`](https://github.com/ritchiecarroll/go2cs/blob/master/src/tests/Performance/run-performance-floor.ps1)
+is its measurement harness and is not part of the canonical suite above. (Links are absolute
+because this file mirrors verbatim to `docs/Performance.md` after each canonical run.)
