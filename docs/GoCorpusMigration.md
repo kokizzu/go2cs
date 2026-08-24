@@ -274,6 +274,23 @@ skip a step of it, so the non-negotiables are restated rather than referenced:
 The step that distinguishes a corpus *upgrade* from a corpus *regeneration*, and the one a migration
 is most likely to skip **because everything compiles without it**.
 
+> **Instrument: [`src/handown-census.ps1`](../src/handown-census.ps1)** (runway dispatch,
+> 2026-08-24) — the differential CENSUS half of this gate, so the review starts from a list instead
+> of from everything. For every `[module: GoManualConversion]`-marked file (re-measured each run,
+> line-anchored, whole-file) it maps the upstream Go source the hand-own replaces and classifies it
+> across `-FromGoRoot`/`-ToGoRoot`: **untouched** / **touched-trivial** (comment-and-whitespace
+> only — Go `//go:` directives count as CODE, not comments) / **touched-substantive** (the review
+> list) / **no-upstream-counterpart** (hand-additions; reviewed via their principal). Read-only,
+> self-verifying (classes must sum to the marker census), and conservative in one direction only:
+> every stripper bailout classifies substantive, because over-reporting sends a human to look.
+> **What it does NOT do: the judgment.** Every substantive row still gets the human review below —
+> the instrument decides where H6 looks, never what H6 concludes.
+>
+> First execution (1.23.1 → 1.23.12): **73 marked files → 6 substantive** (`reflect/value.go`,
+> `runtime/runtime2.go` ×2 hand-owns, `syscall/exec_unix.go`, `syscall/dll_windows.go`,
+> `syscall/syscall_windows.go`), 50 untouched, 17 no-counterpart — each substantive row
+> independently cross-checked against `phase4/RECON-go12312-diff.md`'s package table.
+
 **The failure mode.** A hand-owned file is frozen at the semantics of the release it was written
 against. When upstream **adds** code inside that file — a new branch, a new field, a hardening fix —
 the hand-own does not receive it. Nothing fails: the file is excluded from the convert set, the corpus
