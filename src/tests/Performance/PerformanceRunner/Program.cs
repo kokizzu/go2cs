@@ -66,7 +66,18 @@ namespace PerformanceRunner
         private const int GoBuildTimeoutMs = 300_000;
         private const int BuildAllTimeoutMs = 600_000;
         private const int BuildOneTimeoutMs = 300_000;
-        private const int AotPublishTimeoutMs = 3_600_000;
+        // 4 hours since the .NET 10 hop: the 10-ILC's per-publish cost on the perf-canon laptop
+        // exceeded the 60-minute value outright — PerfStartup's FIRST publish (the smallest
+        // benchmark, again) was killed at 3,600s mid-compile with ILC healthy at near-full
+        // parallelism the whole way, and its one retry was on course for the same death. That is
+        // this constant's own 2026-08-10 lesson recurring at the next toolchain: the watchdog had
+        // quietly become a performance assumption the moment the toolchain under it changed.
+        // Overridable via GO2CS_AOT_PUBLISH_TIMEOUT (seconds) — the behavioral runner's pattern —
+        // so the next slower host or slower ILC opts up without an instrument edit.
+        private static readonly int AotPublishTimeoutMs =
+            int.TryParse(Environment.GetEnvironmentVariable("GO2CS_AOT_PUBLISH_TIMEOUT"), out int aotSeconds) && aotSeconds > 0
+                ? aotSeconds * 1000
+                : 14_400_000;
         private const int RunTimeoutMs = 120_000;
 
         private const string Config = "Release";
