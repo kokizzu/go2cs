@@ -38,7 +38,7 @@ on:
         required: false
         default: ''
       dotnet:
-        description: 'SDK channel for setup-dotnet. 9.0.x is the corpus TFM''s own runtime; 10.0.x runs a migration Stage-1 leg (SDK alone, TFM unmoved) on hardware the fleet does not own.'
+        description: 'SDK channel for setup-dotnet. 10.0.x (the default) is the corpus TFM''s own runtime. 9.0.x is the release-line CONTROL, kept for as long as 1.23.1.x anchors ship: selecting it against a net10.0 reference fails with NETSDK1045 BY DESIGN -- that is operator error, not a corpus regression.'
         type: choice
         required: false
         default: 10.0.x
@@ -187,12 +187,14 @@ jobs:
           check-latest: false
           cache-dependency-path: src/go2cs/go.sum
 
-      - name: Set up .NET 9
+      - name: Set up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          # Defaults to 9.0.x — the corpus TFM's runtime. A 10.0.x dispatch runs the .NET
-          # migration's Stage 1 on this flavor: the SDK moves, the TFM does not, so what is being
-          # measured is the new compiler (C# 14 via LangVersion=latest) against unmoved sources.
+          # Channel comes from the `dotnet` input; the default is 10.0.x, the corpus TFM's own
+          # runtime since the Stage-2 hop. Selecting 9.0.x against a net10.0 reference FAILS with
+          # NETSDK1045 -- an SDK cannot target a framework newer than itself. That is the
+          # release-line control behaving correctly on a 1.23.1.x anchor build, not a corpus break;
+          # read it as operator error and re-dispatch with 10.0.x.
           dotnet-version: ${{ inputs.dotnet }}
 
       - name: Environment report
