@@ -1,0 +1,65 @@
+# hop-A inputs — the recon's raw data, BANKED (was: stranded in a session scratchpad)
+
+The corpus-hop audit found the inputs behind
+[`RECON-go12312-diff.md`](../RECON-go12312-diff.md) living only in the recon session's scratchpad
+("Raw TSVs beside this file for re-derivation" — beside the *report*, but the report moved to the
+repo and the TSVs did not). A hop input that exists only in a session scratchpad re-derives from
+zero if that session dies. These are the same five files, **re-derived independently on a second
+machine and verified against every count the recon itself published** — which makes this bank
+stronger than a copy would have been: a copy proves the files were saved; a re-derivation proves
+the recon's numbers are reproducible.
+
+## The files
+
+| file | rows | what |
+|:--|--:|:--|
+| `commits.tsv` | 83 | `<sha>\t<date>\t<subject>` for every commit in go1.23.1..go1.23.12 |
+| `files-by-commit.tsv` | 215 | `<sha>\t<file>` — per-commit changed-file list (the compare API caps its files array; per-commit enumeration is ground truth, same rule the recon used) |
+| `files-unique.txt` | 161 | sorted unique changed files, repo-wide |
+| `src-files-classified.tsv` | 150 | `<class>\t<file>` for the `src/` subset; classes `cmd` / `runtime-tree` / `stdlib` |
+| `roster.txt` | 162 | the validated-package roster as read from `docs/ValidatedTestPackages.md` at this bank's commit |
+
+## Derivation (reproducible from a clean machine)
+
+```bash
+git clone --bare --shallow-exclude=go1.23.1 --branch go1.23.12 https://github.com/golang/go gogit
+git -C gogit fetch --deepen=1 origin   # REQUIRED: the shallow boundary commit is grafted, and a
+                                       # grafted commit's --name-only lists its ENTIRE TREE
+                                       # (13,261 phantom files); one deepen restores its parent
+git -C gogit log --format='%H%x09%ad%x09%s' --date=short go1.23.12            # commits.tsv
+git -C gogit log --format='COMMIT%x09%H' --name-only -83 go1.23.12            # files-by-commit
+```
+
+Classification rule (matches the recon's headline arithmetic): `cmd` = `src/cmd/**`;
+`runtime-tree` = `src/runtime*` **including `runtime/debug`** (the recon's package-bucketed table
+lists `runtime/debug` under stdlib-visible, but its headline's 42/59 split buckets it with the
+runtime tree — both conventions differ by exactly that one file, `runtime/debug/mod.go`);
+`stdlib` = the rest.
+
+## Verification against the recon's published counts — all exact
+
+| reading | recon | this bank |
+|:--|--:|--:|
+| commits in range | 83 | **83** |
+| unique changed files | 161 | **161** |
+| under `src/` | 150 | **150** |
+| outside `src/` | 11 | **11** |
+| `src/cmd/**` | 49 | **49** |
+| runtime tree | 42 | **42** |
+| stdlib-visible remainder | ~59 | **59** |
+| roster rows | 162 | **162** |
+
+## ⚠ The shard map — still unbanked, and its reserved-set gap is WIDER than the audit recorded
+
+The 28 KB shard-map draft and its generator (`shardmap.py`) remain on the coordinator machine's
+session scratchpad — not reachable from this lane, so not banked here; that half of the audit item
+stays open until the coordinator pushes them (or the generator is rewritten against banked data).
+
+What this lane could verify: the audit said the map's reserved set is missing **`go/parser` (90m)**
+and **`crypto/internal/mlkem768` (30m)**. Measured against the LIVE `$longTimeouts` table
+(`src/run-validated-sweep.ps1:495`) the gap is now **three** — `crypto/tls (30m)` joined after the
+audit — and two floors moved under it (`crypto/dsa` 60m→120m, `archive/zip` 30m→60m). The table has
+grown twice since CLAUDE.md described it as four rows. **Recommendation for the map's banking:
+the generator should DERIVE its reserved set from `$longTimeouts` at generation time, never carry a
+copied list** — a copied list has already drifted twice in the map's short life, which is the same
+hoist-vs-derive defect this campaign fixed in `_paths.ps1` the same week.
