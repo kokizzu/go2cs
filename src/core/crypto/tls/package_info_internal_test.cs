@@ -17,27 +17,20 @@ using static go.crypto.tls_internal_test_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<brokenConn, net_package.Conn>(Pointer = true)]
-[assembly: GoImplement<brokenConn, net_package.Conn>(Promoted = true)]
 [assembly: GoImplement<brokenSigner, crypto_package.Signer>(Promoted = true)]
 [assembly: GoImplement<changeImplConn, net_package.Conn>(Pointer = true)]
-[assembly: GoImplement<changeImplConn, net_package.Conn>(Promoted = true)]
 [assembly: GoImplement<discardConn, net_package.Conn>(Pointer = true)]
-[assembly: GoImplement<discardConn, net_package.Conn>(Promoted = true)]
 [assembly: GoImplement<go.crypto.tls_internal_test_package.zeroSource, io_package.Reader>]
 [assembly: GoImplement<hairpinConn, net_package.Conn>(Pointer = true)]
-[assembly: GoImplement<hairpinConn, net_package.Conn>(Promoted = true)]
 [assembly: GoImplement<opensslInput, io_package.Reader>]
 [assembly: GoImplement<opensslOutputSink, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<readerFunc, io_package.Reader>]
 [assembly: GoImplement<recordingConn, net_package.Conn>(Pointer = true)]
-[assembly: GoImplement<recordingConn, net_package.Conn>(Promoted = true)]
 [assembly: GoImplement<replayingConn, net_package.Conn>(Pointer = true)]
 [assembly: GoImplement<serializingClientCache, global::go.crypto.tls_package.ClientSessionCache>(Pointer = true)]
 [assembly: GoImplement<slowConn, net_package.Conn>(Pointer = true)]
-[assembly: GoImplement<slowConn, net_package.Conn>(Promoted = true)]
 [assembly: GoImplement<stringSlice, flag_package.Value>(Pointer = true)]
 [assembly: GoImplement<writeCountingConn, net_package.Conn>(Pointer = true)]
-[assembly: GoImplement<writeCountingConn, net_package.Conn>(Promoted = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

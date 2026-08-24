@@ -42,7 +42,6 @@ using static global::go.net.http.fcgi_internal_test_package;
 [assembly: GoImplement<rwNopCloser, io_package.ReadWriteCloser>]
 [assembly: GoImplement<rwNopCloser, io_package.Reader>(Promoted = true)]
 [assembly: GoImplement<rwNopCloser, io_package.Writer>(Promoted = true)]
-[assembly: GoImplement<signalingNopWriteCloser, io_package.ReadCloser>(Promoted = true)]
 [assembly: GoImplement<signalingNopWriteCloser, io_package.ReadWriteCloser>(Pointer = true)]
 [assembly: GoImplement<writeOnlyConn, io_package.ReadWriteCloser>(Pointer = true)]
 // </InterfaceImplementations>

@@ -50,7 +50,6 @@ using static go.testing.slogtest_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<wrapper, go.log.slog_package.ΔHandler>(Pointer = true)]
-[assembly: GoImplement<wrapper, go.log.slog_package.ΔHandler>(Promoted = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

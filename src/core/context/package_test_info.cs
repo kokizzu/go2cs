@@ -28,7 +28,6 @@ using static global::go.context_test_package;
 [assembly: GoImplement<afterFuncContext, context_package.Context>(Pointer = true)]
 [assembly: GoImplement<customCauseContext, context_package.Context>(Pointer = true)]
 [assembly: GoImplement<customDoneContext, context_package.Context>(Pointer = true)]
-[assembly: GoImplement<customDoneContext, context_package.Context>(Promoted = true)]
 [assembly: GoImplement<otherContext, context_package.Context>(Promoted = true)]
 [assembly: GoImplement<otherContext, context_package.Context>]
 [assembly: GoImplement<testing_package.T, global::go.context_internal_test_package.testingT>(Pointer = true)]
