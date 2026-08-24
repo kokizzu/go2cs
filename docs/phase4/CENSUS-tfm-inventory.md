@@ -230,6 +230,32 @@ the same derivation, and the PowerShell sites should read a single `$NetVersion`
 converts nine hand-edits into one, and makes hop N+1 free. **Recommend doing this AS Stage 2**, not
 after — a Stage 2 that only sed-replaces the strings leaves the same nine landmines for the next hop.
 
+> **⚠ AMENDMENT (post-execution, 2026-08-24 — this recommendation ROOT-CAUSED false-green route #6).**
+> The C# half was right and shipped as written. **The PowerShell half was wrong in a way worth
+> stating precisely: a HOIST is not a durable fix, it is a RELOCATED one.** Collapsing five spellings
+> into one `$NetVersion` literal in `src/_paths.ps1` removed five sites and **created a sixth** — and
+> the hop instrument built from this very census did not list it, because the census recommended the
+> hoist without adding the site it would create. At Stage 2 the property moved, 950 csproj and both
+> templates and nine pubxmls and the CI channel all levelled, and the one value the hoist had
+> invented stayed at `net9.0`. Two lanes lost time to it, with **different symptoms from one cause**:
+> `run-behavioral.ps1` threw a loud `CommandNotFoundException` on a `net9.0` exe path;
+> `run-performance.ps1` exited **0** having measured nothing. Neither symptom alone is a sufficient
+> check — "look for a thrown error" misses the silent one, "look for exit 0 and an empty log" misses
+> the loud one.
+>
+> **The corrected recommendation: DERIVE on both sides.** PowerShell can read the property of record
+> directly — `Directory.Build.props` sits beside `_paths.ps1` — so the script side needs no editor
+> either. Landed twice independently (`96746a27f` on the hop branch, `9de882f10` on master, master's
+> kept by position); master's additionally strips XML comments before matching and throws rather than
+> yielding an empty string, because **an empty `$NetVersion` is the same false-red the derivation
+> exists to prevent, in its worst form.**
+>
+> **The generalizable rule, which outlives this file:** *a hoist still needs an editor; a derivation
+> needs nobody.* Prefer a derivation wherever a single source of truth is readable from the consumer.
+> Where a hoist is genuinely unavoidable, **it is not complete until the migration instrument knows
+> about the site it just created** — the hoist and the instrument entry land in the same commit, or
+> the next hop pays for it exactly as this one did.
+
 ### Not owed, and say so rather than skipping silently
 
 - **`src/deploy-core.ps1`** — no TFM anywhere. Verified: the root props it writes
