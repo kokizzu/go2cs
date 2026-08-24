@@ -49,8 +49,20 @@ $src = $PSScriptRoot
 $repo = Split-Path $src -Parent
 
 function Read-Text([string]$Path) { [System.IO.File]::ReadAllText($Path) }
+# Does the file carry a UTF-8 BOM? Some tracked csproj do (golib, GenTests, UpdateTestTargets) and
+# rewriting them without one is a content change BEYOND the TFM line -- caught in execution
+# 2026-08-24, when the shape check showed '<Project Sdk=...>' as a changed line. The no-BOM rule
+# exists to dodge the PS 5.1 read-as-ANSI mojibake trap, and PRESERVING the file's own BOM state
+# satisfies it just as well: we never re-encode, we round-trip.
+function Test-Bom([string]$Path) {
+    $b = New-Object byte[] 3
+    $fs = [System.IO.File]::OpenRead($Path)
+    try { $n = $fs.Read($b, 0, 3) } finally { $fs.Dispose() }
+    return ($n -eq 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF)
+}
 function Write-Text([string]$Path, [string]$Text) {
-    [System.IO.File]::WriteAllText($Path, $Text, (New-Object System.Text.UTF8Encoding($false)))
+    $bom = Test-Bom $Path
+    [System.IO.File]::WriteAllText($Path, $Text, (New-Object System.Text.UTF8Encoding($bom)))
 }
 
 # --- The APPLY SET: every source-of-truth site, with the exact old/new text per site --------------
@@ -104,6 +116,45 @@ $applySites += @(
        Why = 'Class E: the emitted form as documented' }
 )
 
+# --- The HAND-OWNED csproj class (found in execution, 2026-08-24) --------------------------------
+# 16 project files NO emitter rewrites, so NO regen can ever level them. MEASURED, not theorized:
+# after a full three-target regen every one still read the old TFM in the staging root, because the
+# driver either skips the package (skip-listed hand-owns; unmarkedFileCount == 0 makes it 'continue'
+# before writeProjectFile) or the file is hand-written and was never emitted at all.
+#
+# IN-REPO THEY ARE INERT and this is NOT a build break: they carry the same CONDITIONED form the
+# generated corpus carries, the root props sets TargetFramework before the project body is read, and
+# MSBuild evaluates all of them at the NEW TFM (verified: dotnet msbuild <proj>
+# -getProperty:TargetFramework). A census that greps the FILE finds them either way -- ask MSBuild.
+#
+# THE EXPOSURE IS PROPS-LESS CONTEXTS: a deploy-core GOPATH tree (its generated props pins
+# $(go2csPath) ONLY, no TFM), a -recurse output root, a single-package conversion. There the
+# fallbacks govern, the tree goes mixed, and a LOWER-TFM project referencing a higher one is NU1201
+# (core/testing -> core/time is the live pair). So this class is CONSISTENCY, not an emergency.
+$handOwnedCsproj = @(
+    @{ Path = 'src\core\golib\golib.csproj'; Why = 'the hand-written runtime; never generated' },
+    @{ Path = 'src\core\testing\testing.csproj'; Why = 'skip-listed hand-own (isNonConvertedStdLibPackage)' },
+    @{ Path = 'src\core\unsafe\unsafe.csproj'; Why = 'skip-listed hand-own (isNonConvertedStdLibPackage)' },
+    @{ Path = 'src\core\internal\concurrent\internal.concurrent.csproj'; Why = 'hand-owned BY CONSEQUENCE: unmarkedFileCount == 0 continues before writeProjectFile' },
+    @{ Path = 'src\core\internal\godebug\internal.godebug.csproj'; Why = 'hand-owned BY CONSEQUENCE: same driver path' },
+    @{ Path = 'src\core\internal\weak\internal.weak.csproj'; Why = 'hand-owned BY CONSEQUENCE: same driver path' },
+    @{ Path = 'src\core\internal\runtime\syscall\internal.runtime.syscall.csproj'; Why = 'platform-remainder: the merge kept the seeded file, never re-emitted it' },
+    @{ Path = 'src\core\crypto\x509\internal\macos\crypto.x509.internal.macos.csproj'; Why = 'platform-exclusive remainder: seeded, never re-emitted' },
+    @{ Path = 'src\core\vendor\golang.org\x\net\route\vendor.golang.org.x.net.route.csproj'; Why = 'platform-remainder: seeded, never re-emitted' },
+    @{ Path = 'src\tests\Behavioral\BehavioralRunner\BehavioralRunner.csproj'; Why = 'LOAD-BEARING: derives its TFM from its own bin tail (Class D) -- a stale value makes it miss every assembly' },
+    @{ Path = 'src\tests\Behavioral\BehavioralTests\BehavioralTests.csproj'; Why = 'LOAD-BEARING: the MSTest harness, same derivation exposure' },
+    @{ Path = 'src\tests\ChannelTests\ChannelTests.csproj'; Why = 'hand-written test project' },
+    @{ Path = 'src\tests\GenTests\GenTests.csproj'; Why = 'hand-written test project' },
+    @{ Path = 'src\tests\GenericTests\GenericTests.csproj'; Why = 'hand-written test project' },
+    @{ Path = 'src\tests\GolibTests\GolibTests.csproj'; Why = 'hand-written test project (a Stage gate instrument)' },
+    @{ Path = 'src\utilities\UpdateTestTargets\UpdateTestTargets.csproj'; Why = 'hand-written utility: regenerates goldens' }
+)
+foreach ($h in $handOwnedCsproj) {
+    $applySites += @{ File = "$repo\$($h.Path)";
+                      Old  = "<TargetFramework Condition=`"'`$(TargetFramework)'==''`">$From</TargetFramework>";
+                      Why  = "hand-owned csproj (no regen reaches it): $($h.Why)" }
+}
+
 # --- MUST NOT CHANGE (Class C), enforced with reasons --------------------------------------------
 $mustNotChange = @(
     @{ File = "$src\gen\go2cs-gen\go2cs-gen.csproj"; Text = '<TargetFramework>netstandard2.0</TargetFramework>';
@@ -142,7 +193,8 @@ if ($moved.Count -gt 0) {
 
 # Generated corpus (Class A): counted, never edited.
 $classA = @(Get-ChildItem "$src\core", "$src\tests\Behavioral", "$src\tests\Performance" -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue |
-    Where-Object { (Read-Text $_.FullName).Contains(">$From<") })
+    Where-Object { (Read-Text $_.FullName).Contains(">$From<") -and
+                   $handOwnedCsproj.Path -notcontains $_.FullName.Substring($repo.Length + 1) })
 Write-Host ''
 Write-Host "Class A (generated; regen levels them, this script never touches them): $($classA.Count) csproj at $From"
 

@@ -5,7 +5,7 @@
        and never pack, so golib needs no version stamp there. -->
 
   <PropertyGroup>
-    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>go</RootNamespace>
     <AssemblyName>golib</AssemblyName>
