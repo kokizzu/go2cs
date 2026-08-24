@@ -89,9 +89,17 @@
     <Using Include="System.Numerics.BigInteger" Alias="GoBigConst" />
     <Using Include="System.ComponentModel.DescriptionAttribute" Alias="GoTagAttribute" />
     <Using Include="System.Runtime.CompilerServices.ModuleInitializerAttribute" Alias="GoInitAttribute" />
-
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
   </ItemGroup>
+
+  <!-- golib declares NO package dependencies. The one it used to carry is worth a note so it is
+       not reflexively restored: Microsoft.CSharp 4.7.0 supplies the runtime binder behind the C#
+       `dynamic` keyword, and golib uses `dynamic` nowhere — every occurrence of the word in this
+       library is prose in a doc comment, where it means a GO dynamic value (go2cs's own term),
+       not the C# feature. The compiler agreed: golib.dll carried no Microsoft.CSharp assembly
+       reference even while the PackageReference was declared. It was redundant regardless, the
+       assembly being part of the shared framework on .NET Core 3.0+. Its only real effect was to
+       propagate a spurious dependency into the published go.lib package — and from there into
+       every converted package in the corpus, all of which depend on go.lib. -->
 
   <!-- Deliberately keeps BACKSLASHES where the rest of this file moved to forward slashes (F5):
        this is Visual Studio's shared-project bookkeeping, not a converter-emitted reference. VS
