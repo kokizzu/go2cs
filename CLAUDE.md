@@ -312,6 +312,38 @@ ONE stdlib in a build; there is now only one on disk.
   the three predicate sources live under `src\tests`, outside `src\go2cs`. A narrowed predicate therefore
   reports `ok (cached)` and only fails under **`-count=1`** — so a change touching ONLY harness C# owes
   `go test -count=1 ./...`. The first guard has no such gap (every input it reads is inside the module).
+- **FALSE-GREEN route #6 — an instrument that cannot find its own runner reports SUCCESS (found
+  2026-08-24 by two lanes from opposite directions; closed the same day).** A different SHAPE from
+  #1–#5: those all run a gate and measure the WRONG thing — a stale binary, stale output, an
+  unenumerated package, an old front end — so each yields a verdict that is merely untrue. This one
+  measures **nothing** and prints a pass over the hole. `src\_paths.ps1` spelled the corpus TFM as a
+  **literal** (`$NetVersion = 'net9.0'`), the TFM census's Class-D hoist that had gathered nine
+  hardcoded sites out of six files into that one line. Hoisting fixes the SPREAD, not the KIND: a
+  hoisted literal is still a literal, and on a `net10.0` tree every consumer composes
+  `bin/Debug/net9.0/`, which does not exist. `run-behavioral.ps1` fails loudly; **`run-performance.ps1`
+  died in 20 seconds having run nothing**, and the only tell was the implausible speed — a full perf
+  run is HOURS on this machine class. **No existing gate can see it**, because each wrapper's only
+  preflight is the `dotnet build` exit code and **the build is genuinely green** (it writes to the TFM
+  the projects declare); the runner that would have counted anything is never reached, so there is no
+  phase to fail, no project list to come up short, and nothing to compare against a golden. Both
+  halves are closed. **(a) `$NetVersion` is DERIVED** from the property of record —
+  `src\Directory.Build.props`'s `<TargetFramework>` element, read by one file-read-plus-regex with no
+  MSBuild and no `dotnet` (this module is dot-sourced by every instrument on every invocation),
+  comments stripped so the props file's own prose cannot be read as the property, and **no fallback to
+  a literal**: an instrument that cannot know its TFM throws, naming the file. Replacing the literal
+  with `net10.0` is the tempting fix and the wrong one — it re-breaks at the next hop, which is what
+  `docs/DotNetMigration.md`'s *derivation, not replacement* means. It also makes `migrate-tfm.ps1`
+  honest: that instrument carries no site for `_paths.ps1` because its census already believed the
+  PowerShell probe derived. **(b) Every wrapper that launches a runner asserts the executable EXISTS**
+  before invoking it, and exits **non-zero** naming the expected path when it does not
+  (`run-behavioral.ps1`, `run-performance.ps1`, and `run-performance-floor.ps1`'s bflat arm — which
+  runs at `'Continue'`, so a missing compiler would otherwise report `ok` off a stale `$LASTEXITCODE`).
+  Derivation removes today's trigger; the guards close the class, since any future cause of a missing
+  runner is now loud. ⚠ The guards use an explicit `exit 1` rather than `throw` because the exit CODE
+  is the property that matters and a `throw` leaves it to the host: on Windows PowerShell 5.1 the
+  missing-runner path already exits 1 (measured, both wrappers, `-File` and `-Command`), so the
+  exit-**0** sighting is a host- or wrapper-dependent swallow — which is the argument for stating the
+  code rather than inheriting it.
 - **⚠ CASE-INSENSITIVE ENVIRONMENT-VARIABLE RACES — Windows-immune, POSIX-live, MSBuild is the
   collision site (root-caused 2026-08-21, fixed at the converter 2026-08-22).** A POSIX environment
   block is case-SENSITIVE, so `GO2CSPATH=/root/go2cs` and `go2csPath=/root/go2cs/src/` are two
