@@ -139,6 +139,57 @@ public static class ManagedPointerTokens
     }
 
     /// <summary>
+    /// Remembers that <paramref name="address"/> is the PINNED address of managed storage behind
+    /// <paramref name="box"/> -- the provenance record of
+    /// docs/phase4/DESIGN-pointer-provenance.md (RATIFIED), registered by the pointer-to-scalar
+    /// conversions at the moment they pin.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The withdrawn native-array-view SAFETY FLOOR proved (six behavioral counterexamples, three
+    /// classes) that no test on a pointee TYPE can decide whether reinterpreting an address is
+    /// sound -- the deciding fact is where the ADDRESS CAME FROM, and before this record nothing
+    /// carried that. With pins registered, a Resolve MISS becomes the meaningful statement
+    /// "this address is not managed storage this process pinned": the exact predicate the floor
+    /// needed and could not express, and the arm-selection test <c>unsafe.Slice</c> needs for the
+    /// same ambiguity one container over.
+    /// </para>
+    /// <para>
+    /// OVERWRITE-on-register, per the ratified OQ-P2 refinement: the latest pin owns the address,
+    /// so same-storage re-pins are benign and an entry left by a DEAD box is displaced the moment
+    /// the address is legitimately reused. The ABA residue -- a stale entry whose box is still
+    /// alive but no longer pinned there -- is closed at READ instead (see Resolve), so the record
+    /// needs no type key and no eager invalidation.
+    /// </para>
+    /// <para>
+    /// Cost, measured before the mechanism was built (gate #1): ~163 bytes per DISTINCT pin and
+    /// ~0 per repeat; the heaviest socket row on the roster (crypto/tls, 47.5k pins) holds ~500
+    /// RESIDENT entries (~88 KB) under exactly these semantics, flat across the run -- the weak
+    /// tie keeps the table at the LIVE population, not the cumulative one.
+    /// </para>
+    /// </remarks>
+    public static void RegisterPinned(nuint address, object box)
+    {
+        if (address == 0 || box is null)
+            return;
+
+        // The same no-allocation steady state Register keeps: a repeated pin of the same storage
+        // reports the same address, and 70% of real pins are repeats (gate #1's census).
+        if (s_table.TryGetValue(address, out WeakReference<object>? existing) &&
+            existing.TryGetTarget(out object? remembered) &&
+            ReferenceEquals(remembered, box))
+        {
+            return;
+        }
+
+        s_table[address] = new WeakReference<object>(box);
+        s_count = s_table.Count;
+
+        if (s_count >= s_sweepAt)
+            Sweep();
+    }
+
+    /// <summary>
     /// Converts a Go pointer to the opaque pointer-to-empty-struct form (Go's
     /// <c>type Pointer *struct{}</c>, e.g. <c>syscall.Pointer</c>) that Windows type definitions
     /// use for a "pointer to one of many types" field — preserving the REFERENT when the pointee
@@ -212,10 +263,15 @@ public static class ManagedPointerTokens
             return null;
         }
 
-        // Verify the box still answers to this token before handing it back: an entry whose box
-        // has been re-identified is stale, and a numeric collision with a real address must not
-        // be allowed to resolve to something that never carried that token.
-        return CurrentToken(box) == token ? box : null;
+        // Verify the box still answers for this scalar before handing it back -- by ORDER TOKEN
+        // for a projection entry, or by CURRENT PINNED ADDRESS for a provenance entry
+        // (validate-on-read, the ratified OQ-P2 refinement: alive + still pinned there, else
+        // MISS). A stale entry -- dead box, released pin, re-identified token -- must never
+        // resolve, because the number may by now be a real native address that never carried it.
+        if (CurrentToken(box) == token)
+            return box;
+
+        return box is INilPointer pointer && pointer.IsPinnedAt(token) ? box : null;
     }
 
     // The token the box would report today — the same projection reflect used to mint the entry.

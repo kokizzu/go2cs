@@ -1296,7 +1296,14 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         value.EnsureStableAddress();
 
         fixed (void* ptr = &value.Value)
+        {
+            // The PROVENANCE record (DESIGN-pointer-provenance.md, RATIFIED): the pin is the one
+            // moment the process KNOWS this number is managed storage held still, so it is the one
+            // moment that fact can be recorded. The reverse conversion consults the record, which
+            // is what makes its MISS mean "genuinely native".
+            ManagedPointerTokens.RegisterPinned((nuint)ptr, value);
             return (uintptr)ptr;
+        }
     }
 
     // Aliases the address rather than copying the pointed-at value — see the uintptr operator above.
@@ -1326,7 +1333,11 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         value.EnsureStableAddress();
 
         fixed (T* ptr = &value.Value)
+        {
+            // The provenance record -- see the uintptr operator above.
+            ManagedPointerTokens.RegisterPinned((nuint)ptr, value);
             return ptr;
+        }
     }
 
     /// <summary>
@@ -1371,6 +1382,20 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// finalizer frees.
     /// </para>
     /// </remarks>
+    /// <inheritdoc/>
+    public unsafe bool IsPinnedAt(nuint address)
+    {
+        // Validate-on-read for the provenance record: alive is already established by the caller
+        // (the weak entry resolved); "still pinned THERE" is re-derived from the same computation
+        // that registered it. No pin, no claim -- and a box whose storage moved or was re-pinned
+        // elsewhere answers false, which fails MISS-wards by design.
+        if (m_pin is null || m_nativeAddr != 0)
+            return false;
+
+        fixed (void* ptr = &this.ValueSlot)
+            return (nuint)ptr == address;
+    }
+
     private void EnsureStableAddress()
     {
         if (m_pin is not null)

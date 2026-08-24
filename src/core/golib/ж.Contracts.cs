@@ -250,6 +250,23 @@ public interface INilPointer
     /// <see cref="ReferentObject"/>.
     /// </remarks>
     object? PinnableStorage => null;
+
+    /// <summary>
+    /// Reports whether this pointer's storage is still pinned at <paramref name="address"/> -- the
+    /// validate-on-read half of the pointer-PROVENANCE record
+    /// (docs/phase4/DESIGN-pointer-provenance.md, RATIFIED).
+    /// </summary>
+    /// <remarks>
+    /// A pinned-address registration outlives neither its box nor its pin, but an ADDRESS can be
+    /// reused: after the box dies, the same numeric address may be handed out again by a later pin
+    /// or a native allocation. The ratified OQ-P2 refinement closes that window on liveness
+    /// itself -- an entry only answers when its box is ALIVE and still pinned at the very address
+    /// being resolved, so a live box that matches genuinely occupies the storage and no native
+    /// allocation can coexist there. The default is <c>false</c>: a type that never registers
+    /// (a generated named-pointer wrapper) can never validate, which fails MISS-wards -- the safe
+    /// direction, since a miss just takes the pre-existing native-address route.
+    /// </remarks>
+    bool IsPinnedAt(nuint address) => false;
 }
 
 /// <summary>
