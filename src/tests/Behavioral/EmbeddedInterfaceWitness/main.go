@@ -73,6 +73,7 @@ func main() {
 	check("plain", plain{tag: "p"})
 	check("holder", holder{Reader: iolike.Base{Tag: "held"}, prefix: "h:"})
 	LocalPromotion()
+	checkConflicted()
 }
 
 // LocalPromotion is Shape A's guard -- EXPORTED-case deliberately, because the defect needs the
@@ -99,4 +100,29 @@ func LocalPromotion() {
 	} else {
 		fmt.Println("local assert: no")
 	}
+}
+
+// conflicted is Shape C's guard: bilk embeds a STRUCT providing Read at depth 1 AND the Reader
+// INTERFACE also naming Read at depth 1. Go's promotion rule makes the equal-depth pair
+// AMBIGUOUS and removes Read from the method set entirely -- conflicted implements NOTHING, and
+// its Reader field stays nil by design. io_test.go's Buffer uses exactly this shape to knock
+// bytes.Buffer's fast paths out of io.Copy. The conversion once recorded the promoted pair
+// anyway; the generator amplified the record into a conformance member and a method-set twin,
+// and the method Go had deleted came back at runtime -- forwarding to the nil field (JOB-010
+// Shape C, eight io tests). The assert below must print no, and NumMethod must print 0.
+type conflicted struct {
+	iolike.Base   // struct embed: provides Read at depth 1
+	iolike.Reader // interface embed: also names Read at depth 1 -- ambiguous, both removed
+}
+
+func checkConflicted() {
+	var v any = conflicted{Base: iolike.Base{Tag: "conf"}}
+
+	if _, ok := v.(iolike.Reader); ok {
+		fmt.Println("conflicted Reader: yes")
+	} else {
+		fmt.Println("conflicted Reader: no")
+	}
+
+	fmt.Println("conflicted NumMethod:", reflect.TypeOf(v).NumMethod())
 }
