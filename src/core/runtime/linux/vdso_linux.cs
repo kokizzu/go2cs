@@ -67,13 +67,16 @@ internal static byte _ELF_ST_TYPE(byte val) {
     internal uintptr loadAddr;
     internal uintptr loadOffset; /* loadAddr - recorded vaddr */
     /* Symbol table */
+    [GoArrayDims(46912496118442)]
     internal ж<array<elfSym>> symtab;
+    [GoArrayDims(1125899906842623)]
     internal ж<array<byte>> symstrings;
     internal slice<uint32> chain;
     internal slice<uint32> bucket;
     internal uint32 symOff;
     internal bool isGNUHash;
     /* Version table */
+    [GoArrayDims(562949953421311)]
     internal ж<array<uint16>> versym;
     internal ж<elfVerdef> verdef;
 }

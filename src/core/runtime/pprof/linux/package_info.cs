@@ -65,6 +65,27 @@ using static go.runtime.pprof_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("runtime/pprof/elf.go", "elf.cs", "ABAqwoKCgpSUgIK4gpaClKS01oKSlKSCgpKUtIKCkpS2goCCpICSpJKUgqaClIKCgJKkgoKCgoKSlIKUgIKkpg==")]
+[assembly: go.GoPositionMap("runtime/pprof/label.go", "label.cs", "ABs2goKClAAEFMKClISCloSqooLIgpSClAACEgAIAoKUgoKUqqKCgqqigoKC")]
+[assembly: go.GoPositionMap("runtime/pprof/map.go", "map.cs", "ABw4lIKCgpSChpKCgoKUgoK4goKClMiClIKCgoSCpoKEgpSClIKCgpSClA==")]
+[assembly: go.GoPositionMap("runtime/pprof/pe.go", "pe.cs", "AAwawoKClA==")]
+[assembly: go.GoPositionMap("runtime/pprof/pprof.go", "pprof.cs", "AOwBwgOCgpQAChaCAAISAAgCgoKClIKUuILYsoKC2LKChIKClobYkqjSgoKClAAFKAAVAoKUgpaCgoKUloKCgpTa4oKCAAUkABECgpSCqIKCgpSWhMqAooCigAAMHrKCgoKmgoKCpu7UgoKCgoSEgoKCgoKmgoKUgtqkkoKCgoKUgoKUlIKCgoKCgoKClJaElIKCgoKUqIKCgoSCgoKmgoKCgpKCuJSCAAgSgKKAooKSkoKU2qKCgoKCgoKCyIKUgqamgpSuwqiSgqiS2qKmgoKmggABFPKCuIKCgoK6gpaIgoKEgoKCgoKCzAAGEIKCgpa6goKmgpSCuoKCgoKCgoKEgoKCgoKEgoKCgoKEgoKCgoKCgpaEgqiSgtjIgrqS2JKClKa4goKCgoKUlJSUgqaO4oKEuIKCgoKCugAHEICigKKAAAsmAA0UAAkEgoKCpoKUgoKCAAUQ5IKCgoKCgoCCpIKmppSCrNKChIKUgoLYkoKokoLYktiS6JKCgoKCgoKCqIiCloKChIKCgpSCgoKCgoKClIKCqIKUqKampqampqY=")]
+[assembly: go.GoPositionMap("runtime/pprof/pprof_rusage.go", "pprof_rusage.cs", "AA0ikoKUpKSkpoKCgg==")]
+[assembly: go.GoPositionMap("runtime/pprof/proto.go", "proto.cs", "ABQusABS3AGigoKCgpSmgoKCgrqSgoKCqJKCgoKClIKokoKCgoKokoKCgqiSgoKCgoKC7oKUpsqCgqaWgoKWppSCgoKUAA8swoIACBKCrsKUgpSCuIKCpgAQJIKClIKUgpSCgoKChJSC7paClOiyhIKSgoKCgpaChJKChIKCkoK6hJaCgryCggACGAALApaEgoKAAAsYgoCCgsqAgrjegqaCkoCCpIKWgIKC2oCCuICCgpSCtoCSpAA4dIKCgoKCrLKAppKSkpSSlpKUkraCgoKCgpQACw4ACAKClISCio6C3oKCgsSCgoKCgu6UgoKEgoKCppaCgoKCgoKCloIADAwAFCymgoKCgpaCgoKCgpSCgpSCgpSClJSCgpSCgoKUloKCgpbKAAgWgriCpoI=")]
+[assembly: go.GoPositionMap("runtime/pprof/proto_other.go", "proto_other.cs", "AA4i0oKCku6y")]
+[assembly: go.GoPositionMap("runtime/pprof/protobuf.go", "protobuf.cs", "AA4cgoKClKaCgqaUgqaClIKClIKCgoKCgpSCuIKClKaCgqaCgpSmgpSCgpSCgoKCgoKUgriCgqaCgriCgpSmgoKUuIKClMqCgqaCgoKCgoKCgg==")]
+[assembly: go.GoPositionMap("runtime/pprof/protomem.go", "protomem.cs", "ABUgkoKCgoKCgoKCloKCooKCuIKCgIK2gqaCgpSWgoKCgpSSgriCAAIYAAkCgpamloKE")]
+[assembly: go.GoPositionMap("runtime/pprof/runtime.go", "runtime.cs", "AAsgysampqqyggACFAAJAoKCgg==")]
+// </GoSourcePositionMaps>
+
 namespace go.runtime;
 
 [GoPackage("pprof")]
