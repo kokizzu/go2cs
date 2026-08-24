@@ -34,6 +34,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -83,9 +84,102 @@ internal static class ConverterBuildInputs
         if (!File.Exists(converterExePath))
             return true;
 
+        // FALSE-GREEN route #4 (CLAUDE.md; PLAN-corpus-upgrade H1.4): a TOOLCHAIN hop touches none
+        // of the build inputs below, so after installing a new Go release every mtime answer here
+        // still said "up to date" and every gate kept running a binary embedding the OLD release's
+        // go/parser + go/types front end against the NEW release's sources -- which does not fail
+        // cleanly, it degrades into the best-effort "did not fully type-check" path. The stamp is
+        // INHERENT: every Go binary embeds runtime.Version(), and `go version <exe>` reads it back
+        // (measured: `go version go2cs.exe` prints `<path>: go1.23.1`). A binary whose embedded
+        // release differs from the live `go env GOVERSION` is stale exactly as if a source file
+        // had changed, whatever its timestamp says.
+        //
+        // Failure shapes fail STALE-wards on purpose: an unreadable stamp (corrupt or non-Go exe)
+        // or an unanswerable GOVERSION forces a rebuild, and a rebuild without a working toolchain
+        // then fails LOUDLY at `go build` -- never a silent pass on an unverified binary. The two
+        // probes cost one short-lived `go` process each, once per staleness question, which every
+        // harness asks once per run.
+        string? embedded = EmbeddedGoRelease(converterExePath);
+        string? live = LiveGoRelease();
+
+        if (embedded is null || live is null || !string.Equals(embedded, live, StringComparison.Ordinal))
+            return true;
+
         DateTime built = File.GetLastWriteTimeUtc(converterExePath);
 
         return Enumerate(converterSrcDir).Any(input => File.GetLastWriteTimeUtc(input) > built);
+    }
+
+    /// <summary>
+    /// The Go release the binary at <paramref name="converterExePath"/> was built with, read from
+    /// the buildinfo every Go binary embeds (via <c>go version &lt;exe&gt;</c>), or <c>null</c>
+    /// when it cannot be read.
+    /// </summary>
+    public static string? EmbeddedGoRelease(string converterExePath)
+    {
+        // Output shape: `<path>: go1.23.1` (a devel toolchain prints a longer token; taken
+        // verbatim either way, since equality against GOVERSION is the only question asked).
+        string? output = RunGo($"version \"{converterExePath}\"");
+
+        if (output is null)
+            return null;
+
+        int separator = output.LastIndexOf(": ", StringComparison.Ordinal);
+
+        if (separator < 0)
+            return null;
+
+        string release = output[(separator + 2)..].Trim();
+
+        return release.StartsWith("go", StringComparison.Ordinal) ? release : null;
+    }
+
+    /// <summary>
+    /// The live toolchain's release (<c>go env GOVERSION</c>), or <c>null</c> when it cannot be
+    /// answered.
+    /// </summary>
+    public static string? LiveGoRelease()
+    {
+        string? output = RunGo("env GOVERSION");
+
+        return string.IsNullOrWhiteSpace(output) ? null : output.Trim();
+    }
+
+    // One `go` invocation, first stdout line, null on any failure -- the callers above treat null
+    // as "stale", so nothing here needs to throw.
+    private static string? RunGo(string arguments)
+    {
+        try
+        {
+            using Process process = new();
+
+            process.StartInfo.FileName = "go";
+            process.StartInfo.Arguments = arguments;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+
+            if (!process.Start())
+                return null;
+
+            string output = process.StandardOutput.ReadLine() ?? "";
+
+            process.StandardOutput.ReadToEnd();
+            process.StandardError.ReadToEnd();
+
+            if (!process.WaitForExit(30_000))
+            {
+                try { process.Kill(entireProcessTree: true); } catch { }
+                return null;
+            }
+
+            return process.ExitCode == 0 ? output : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     // Directory names excluded from the walk: the three Go itself ignores when loading packages

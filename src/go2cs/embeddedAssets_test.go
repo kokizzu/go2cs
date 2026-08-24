@@ -188,6 +188,53 @@ func TestHarnessRebuildPredicatesUseTheSharedConverterBuildInputs(t *testing.T) 
 	}
 }
 
+// TestConverterStalenessConsultsTheToolchain pins FALSE-GREEN route #4's remedy (H1.4) beside
+// route #5's above, in the same one-linked-file structure and for the same reason: the three
+// predicates share ConverterBuildInputs.cs, so the toolchain compare lives exactly once, and this
+// assertion is the tripwire that stops it being quietly edited back out. A toolchain hop touches
+// no build input, so the mtime walk alone answers "up to date" while the binary still embeds the
+// OLD release's go/parser + go/types front end -- the stamp is inherent (`go version <exe>` reads
+// the buildinfo every Go binary carries), and staleness must consult it against the live
+// `go env GOVERSION` before any mtime answer is allowed to say current.
+//
+// Same best-effort caveat as the sibling guard: this C# source lives outside the module root, so
+// cmd/go's test cache does not track it -- a change touching ONLY the C# owes `go test -count=1`.
+func TestConverterStalenessConsultsTheToolchain(t *testing.T) {
+	shared, err := os.ReadFile(filepath.FromSlash(converterBuildInputsSource))
+
+	if os.IsNotExist(err) {
+		t.Skipf("%s is not present; the C# harnesses are not part of this checkout", converterBuildInputsSource)
+	}
+
+	if err != nil {
+		t.Fatalf("reading %s: %v", converterBuildInputsSource, err)
+	}
+
+	text := string(shared)
+
+	// The two probes, by the exact command shapes they must keep: the embedded stamp is read with
+	// `go version <exe>` and the live release with `go env GOVERSION`. Renaming or re-plumbing is
+	// fine; ANSWERING THE QUESTION some other way that skips the toolchain is what this fails on.
+	for _, required := range []string{
+		"EmbeddedGoRelease(converterExePath)",
+		`"env GOVERSION"`,
+		"go version",
+	} {
+		if !strings.Contains(text, required) {
+			t.Errorf("%s no longer contains %q -- IsConverterStale must compare the binary's embedded Go release "+
+				"against the live toolchain (false-green route #4 / H1.4), or a toolchain hop leaves every "+
+				"harness validating the previous front end's emission as current", converterBuildInputsSource, required)
+		}
+	}
+
+	// Failure must lean STALE-wards: a null from either probe forces the rebuild rather than
+	// trusting an unverified binary. The null-propagating comparison below is that lean.
+	if !strings.Contains(text, "embedded is null || live is null") {
+		t.Errorf("%s has lost the stale-wards null handling -- an unreadable stamp or an unanswerable "+
+			"GOVERSION must force a rebuild, never a silent pass", converterBuildInputsSource)
+	}
+}
+
 // collectEmbedDirectives walks root for .go files and returns every //go:embed directive in them,
 // applying the same directory exclusions the C# side applies (Go's own `testdata`/dot/underscore
 // rule, plus the harness build output) so the two walk the same tree.
