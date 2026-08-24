@@ -41,7 +41,7 @@ $ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
 # failure. The C# harnesses DERIVE theirs from their own bin tail (BehavioralTestBase's pattern);
 # PowerShell has no bin tail to derive from at source time, so this is the one hand-edit a hop
 # owes on the script side -- one line here instead of five spread across three instruments.
-$NetVersion = 'net9.0'
+$NetVersion = 'net10.0'
 
 # The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
 # `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
