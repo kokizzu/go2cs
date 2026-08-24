@@ -303,6 +303,62 @@ file far larger than the executable. Run the disk preflight by hand first — th
 refuses below a documented free-space floor precisely because full-drive failures surface as *corpus
 failures* that name everything except the disk.
 
+### 6.1 Amendment — the control row is NAMED, allocation claims are COUNTED, and the scouting lessons are protocol (hop-era, per the user's perf directive)
+
+Two additions promoted from ratified doctrine into this protocol's numbered steps, and the
+pre-hop scouting folded in so its cost is paid once:
+
+**Step 3 is strengthened: the control row is named IN THE RECORD, and read FIRST.** "Within
+noise" is unfalsifiable until the row that *cannot* have changed is reported beside the rows that
+could. The span-tranche measurement that ratified this: the untouched control row moved **+5.0 %**
+and the unchanged Go binaries up to **+17 %** between two back-to-back same-session legs on the
+perf-canon laptop — a noise floor several times a typical effect. So every banked comparison names
+its control row (a benchmark the change cannot reach), reports it first, and a pass whose control
+moved more than its subject rows is **void**, not "within noise". If the change reaches every
+benchmark's path (a runtime hop does), the Go columns are the control — that is what step 3's
+reproduce-across-legs already demands; this amendment makes the *reporting* of it mandatory.
+
+**Step 4 gains a twin: where the claim is about ALLOCATION, gate by COUNT, never by time.**
+`AllocationCounter` counts are deterministic and host-independent; a timing gate on a laptop
+mostly measures the laptop (the ratified counting-gate doctrine, minted when a tranche of real
+allocation deletions produced timing deltas smaller than the control row's drift). A migration
+stage claiming "no allocation regressed" runs the count-gated GolibTests rows, not a stopwatch.
+
+**The scouting lessons (2026-08-23, SDK 10.0.400 on the perf-canon laptop), folded in as
+protocol facts:**
+
+1. **The ILC binds to the TFM, not the SDK** — measured, not just cataloged (trap 1): SDK 10.0.400
+   publishing `net9.0` resolves `ILCompiler 9.0.19`, and its "10-AOT" Fib is **identical** to the
+   9-AOT Fib (177.1 vs 178.2 ms). Corollary: *there is no AOT measurement worth taking between N1
+   and N3* — the AOT column cannot move until the TFM does, so scheduling one is spending hours to
+   measure the null hypothesis of a variable that has not moved.
+2. **A 51-second "publish" is the trap-2 tell on this corpus.** A real per-benchmark publish is
+   964–1,138 s on the perf-canon laptop and ~25 min on the i7-5820K. Any AOT leg whose publish came
+   in orders of magnitude under that re-measured a stale binary; purge and disbelieve.
+3. **Roslyn 10's CS7022** on the runner's top-level-statements shape is benign and expected at N1.
+4. **`net9.0` under the 10 SDK still executes on the 9 runtime** unless explicitly selected —
+   the `FrameworkDescription` probe (trap 4) is what makes any leg's identity a fact rather than
+   an assumption, and it runs on *both* legs, every time.
+
+### 6.2 The N5 close plan — the AOT leg's falsifiable prediction, stated before the run
+
+§7 demands the AOT stage state its expectation before running; this section states it now so N5
+inherits a prediction instead of writing one under its own results.
+
+**Background:** the bflat exploration's one CPU anomaly was Fib under bflat's .NET-10-preview
+codegen — unattributable to bflat itself (same ILC/RyuJIT family), and left standing as "an
+argument for measuring the hop itself". The scouting then showed the 10-SDK-on-net9.0 leg is
+byte-for-byte the 9-ILC (lesson 1), so the anomaly's candidate cause narrows to exactly one
+untested thing: **the real .NET 10 ILC/framework pair behind a `net10.0` TFM.**
+
+**Prediction N5, falsifiable in both directions:** *running the suite's AOT column at N5 (net10.0,
+ILC 10.x), the Fib row moves materially in the direction the bflat preview showed — closing the
+anomaly's attribution as "the 10 codegen" — or it lands within the named control row's envelope of
+the N2 9-AOT baseline, and the anomaly is attributed to the preview/bflat packaging and CLOSED as
+not-a-hop-question.* Either outcome resolves the attribution; the prediction exists so the outcome
+is information rather than narrative. The comparison base is N2's 9-AOT numbers, minted on the
+same host, banked in the README's History section; the control row is the Go column, per §6.1.
+
 ---
 
 ## 7. AOT / ILC verification
