@@ -316,6 +316,16 @@ built-in .NET type rather than onto `golib` or a source generator — e.g. Go `a
 the fixed-width integer aliases (`int32` = `System.Int32`), and the `System.Numerics` operator interfaces
 that generic constraints lift to.
 
+<a id="tfm"></a>**TFM — Target Framework Moniker.**
+The identifier a `.csproj` uses to declare which framework a project builds against: `<TargetFramework>net9.0</TargetFramework>`
+— the go2cs corpus's own value today. It selects the reference assemblies compiled against, the runtime the
+output binds to, and (per the migration runbook's trap 1) the **Native-AOT compiler**, since ILC arrives as a
+runtime pack chosen by the TFM rather than by the SDK performing the publish. That is why a .NET migration
+splits into two gated stages: the SDK alone moves first (§4 — the compiler and build tooling change while the
+TFM stays put, so C# language level and diagnostics move but the runtime does not), then the TFM moves (§5 —
+one line per project, after which the new runtime and its ILC are finally what is being measured). See
+[`DotNetMigration.md`](DotNetMigration.md).
+
 <a id="roslyn"></a>**Roslyn.**
 The .NET compiler platform — the C#/VB compiler plus its analyzer/codegen APIs. Its **source generator**
 feature lets code participate in compilation, and go2cs relies on it heavily: the generators in
