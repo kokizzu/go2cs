@@ -250,9 +250,12 @@ $editableSites = @(
     }
     @{
         File = 'src/go2cs/go.mod'; Class = 'SOURCE-OF-TRUTH'; Skip = { $SkipGoMod }
-        # \r? because the repository's working tree is pinned to CRLF: .NET's multiline `$` matches
-        # only before \n, so an unguarded anchor silently matches nothing on every checkout.
-        Find = '(?m)^go {OLD}\r?$'
+        # The end-of-line guard is a LOOKAHEAD, and both halves of that are load-bearing. It must be
+        # present because the working tree is pinned to CRLF and .NET's multiline `$` matches only
+        # before \n, so a bare `^go {OLD}$` silently matches nothing on every checkout. And it must
+        # not CONSUME the \r, or the replacement drops it and rewrites that one line to LF -- exactly
+        # the line-ending damage this script exists to avoid committing.
+        Find = '(?m)^go {OLD}(?=\r?$)'
         Replace = 'go {NEW}'
         Expect = 1
         Note = "the converter module's go directive (H1.2, ruled: it moves each migration). -SkipGoMod leaves it"
@@ -514,17 +517,40 @@ foreach ($site in $editableSites) {
     $text = (Read-RepoText $path).Text
     $count = ([regex]::Matches($text, $find)).Count
 
+    # The same anchor re-pointed at the incoming release. Finding the site ALREADY at the target,
+    # and none at the outgoing release, is the "this hop has landed" state -- the success condition
+    # of a re-run, not a defect. Without this distinction a post-migration census reports every site
+    # as a count mismatch and exits 1, which is the exact false red this repository keeps paying for
+    # elsewhere. $find carries the ESCAPED outgoing release, so that escaped form is what swaps.
+    $atTarget = 0
+
+    if ($toRelease) {
+        $targetFind = ($find -replace [regex]::Escape($oldPattern), [regex]::Escape($toRelease))
+        $atTarget = ([regex]::Matches($text, $targetFind)).Count
+    }
+
+    $state = 'mismatch'
+    if ($count -eq $site.Expect) { $state = 'pending' }
+    elseif ($count -eq 0 -and $toRelease -and $atTarget -eq $site.Expect) { $state = 'migrated' }
+
     [void]$plan.Add([pscustomobject]@{
-        File    = $site.File
-        Class   = $site.Class
-        Find    = $find
-        Replace = (Expand-Anchor $site.Replace -AsReplacement)
-        Expect  = $site.Expect
-        Found   = $count
-        Note    = $site.Note
-        Skipped = $skipped
+        File     = $site.File
+        Class    = $site.Class
+        Find     = $find
+        Replace  = (Expand-Anchor $site.Replace -AsReplacement)
+        Expect   = $site.Expect
+        Found    = $count
+        AtTarget = $atTarget
+        State    = $state
+        Note     = $site.Note
+        Skipped  = $skipped
     })
 }
+
+# "Already migrated" is a whole-tree verdict, not a per-site one: a tree with SOME sites moved and
+# some not is half-migrated and must still be reported as work outstanding.
+$active = @($plan | Where-Object { -not $_.Skipped })
+$alreadyMigrated = $toRelease -and $active.Count -gt 0 -and @($active | Where-Object { $_.State -ne 'migrated' }).Count -eq 0
 
 $lastFile = ''
 foreach ($row in $plan) {
@@ -534,23 +560,51 @@ foreach ($row in $plan) {
         $lastFile = $row.File
     }
 
-    $state = if ($row.Skipped) { 'skipped' } elseif ($row.Found -eq $row.Expect) { "$($row.Found) site(s)" } else { "$($row.Found) found, EXPECTED $($row.Expect)" }
-    $color = if ($row.Skipped) { 'DarkGray' } elseif ($row.Found -eq $row.Expect) { 'Green' } else { 'Red' }
+    if ($row.Skipped) {
+        $state = 'skipped'
+        $color = 'DarkGray'
+    }
+    elseif ($row.State -eq 'pending') {
+        $state = "$($row.Found) site(s)"
+        $color = 'Green'
+    }
+    elseif ($row.State -eq 'migrated') {
+        $state = "already at $toRelease ($($row.AtTarget) site(s))"
+        $color = 'DarkGray'
+    }
+    else {
+        $state = "$($row.Found) found, EXPECTED $($row.Expect)"
+        $color = 'Red'
+    }
 
     Write-Host ('    [{0}] {1}' -f $row.Class, $state) -ForegroundColor $color
     Write-Host "        $($row.Note)" -ForegroundColor DarkGray
 
-    if (-not $row.Skipped -and $row.Found -ne $row.Expect) {
-        [void]$failures.Add("$($row.File) -- anchor '$($row.Find)' matched $($row.Found) time(s), expected $($row.Expect). The prose moved underneath the site table; re-anchor it before applying.")
+    if (-not $row.Skipped -and $row.State -eq 'mismatch') {
+        $detail = "matched $($row.Found) time(s), expected $($row.Expect)"
+
+        if ($toRelease) { $detail += " (and $($row.AtTarget) at $toRelease)" }
+
+        [void]$failures.Add("$($row.File) -- anchor '$($row.Find)' $detail. The prose moved underneath the site table; re-anchor it before applying.")
     }
 }
 
-$editableTotal = ($plan | Where-Object { -not $_.Skipped } | Measure-Object -Property Found -Sum).Sum
+$editableTotal = ($active | Measure-Object -Property Found -Sum).Sum
 if ($null -eq $editableTotal) { $editableTotal = 0 }
+
+if ($alreadyMigrated) {
+    Write-Host ''
+    Write-Host "  ALREADY MIGRATED: every editable site reads $toRelease and none reads $fromRelease." -ForegroundColor Green
+}
 
 # ---- history anchors + review -------------------------------------------------------------------
 
 Write-Head 'history inside those same files -- MUST-NOT-CHANGE, verified present'
+
+if ($alreadyMigrated) {
+    Write-Host "  (the tree has already moved, so these anchors -- spelled at $fromRelease -- no longer" -ForegroundColor DarkGray
+    Write-Host '   apply; history keeps naming the release it happened in, which is the point)' -ForegroundColor DarkGray
+}
 
 $docFiles = $plan | Where-Object { $_.Class -eq 'DOC-STATEMENT' } | ForEach-Object { $_.File } | Sort-Object -Unique
 $historyCovered = @{}
@@ -563,8 +617,8 @@ foreach ($anchor in $historyAnchors) {
     $text = (Read-RepoText $path).Text
     $count = ([regex]::Matches($text, $find)).Count
 
-    $color = if ($count -gt 0) { 'DarkGray' } else { 'Yellow' }
-    $state = if ($count -gt 0) { "$count occurrence(s) preserved" } else { 'not present (prose may have moved)' }
+    $color = if ($count -gt 0 -or $alreadyMigrated) { 'DarkGray' } else { 'Yellow' }
+    $state = if ($count -gt 0) { "$count occurrence(s) preserved" } elseif ($alreadyMigrated) { 'n/a -- tree already migrated' } else { 'not present (prose may have moved)' }
     Write-Host ('  {0,-32} {1}' -f $anchor.File, $state) -ForegroundColor $color
     Write-Host "      $($anchor.Note)" -ForegroundColor DarkGray
 
@@ -582,6 +636,16 @@ foreach ($file in $docFiles) {
     $editAnchors = @($plan | Where-Object { $_.File -eq $file -and -not $_.Skipped } | ForEach-Object { $_.Find })
     $histAnchors = @()
     if ($historyCovered.ContainsKey($file)) { $histAnchors = @($historyCovered[$file]) }
+
+    # A site that has ALREADY moved still trips the outgoing-release scan, because `1.23.1` is a
+    # prefix of `1.23.12`. Count the target-pointed anchors as covering too, or a re-run lists every
+    # successfully migrated line as unreviewed -- which would train the reader to ignore the one
+    # section whose whole job is to be read.
+    if ($toRelease) {
+        foreach ($anchor in ($editAnchors + $histAnchors)) {
+            $editAnchors += ($anchor -replace [regex]::Escape($oldPattern), [regex]::Escape($toRelease))
+        }
+    }
 
     $lines = (Read-RepoText $path).Text -split "`r?`n"
 
@@ -644,8 +708,8 @@ foreach ($entry in $rawCounts) {
     if ($docFiles -contains $relPath) { continue }
     if ($relPath -eq 'src/version.props' -or $relPath -eq 'src/go2cs/go.mod') { continue }
 
-    # This script itself names the release only in its own examples.
-    if ($relPath -eq 'src/migrate-gorelease.ps1') { continue }
+    # This instrument and its launcher name the release only in their own worked examples.
+    if ($relPath -eq 'src/migrate-gorelease.ps1' -or $relPath -eq 'src/migrate-gorelease.bat') { continue }
 
     $class = ''
     $note = ''
@@ -743,8 +807,13 @@ if (-not $Apply) {
     Write-Handoff
 
     Write-Head 'census summary'
-    Write-Host "  editable sites at ${fromRelease}: $editableTotal occurrence(s) across $(@($plan | Where-Object { -not $_.Skipped -and $_.Found -gt 0 } | ForEach-Object { $_.File } | Sort-Object -Unique).Count) file(s)"
+    Write-Host "  editable sites at ${fromRelease}: $editableTotal occurrence(s) across $(@($active | Where-Object { $_.Found -gt 0 } | ForEach-Object { $_.File } | Sort-Object -Unique).Count) file(s)"
     Write-Host "  tracked occurrences in the whole tree: $sweptTotal"
+
+    if ($alreadyMigrated) {
+        Write-Host "  this hop has LANDED: re-running reports zero sites at $fromRelease -- idempotent" -ForegroundColor Green
+    }
+
     Write-Host '  changed: NOTHING (census is the default; pass -Apply to edit)' -ForegroundColor Green
 
     if ($failures.Count -gt 0) {
@@ -758,6 +827,15 @@ if (-not $Apply) {
 }
 
 # ---- apply --------------------------------------------------------------------------------------
+
+# Re-running -Apply on a tree that has already moved is a no-op, not an error. That is what makes
+# the instrument safe to re-run after a partial or interrupted migration.
+if ($alreadyMigrated) {
+    Write-Head 'nothing to apply'
+    Write-Host "  every editable site already reads $toRelease. No file written." -ForegroundColor Green
+    Write-Handoff
+    exit 0
+}
 
 if ($failures.Count -gt 0) {
     Write-Host ''
