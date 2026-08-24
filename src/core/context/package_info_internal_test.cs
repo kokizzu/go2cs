@@ -18,7 +18,6 @@ using static go.context_internal_test_package;
 [assembly: GoImplement<myCtx, global::go.context_package.Context>(Pointer = true)]
 [assembly: GoImplement<myCtx, global::go.context_package.Context>(Promoted = true)]
 [assembly: GoImplement<myDoneCtx, global::go.context_package.Context>(Pointer = true)]
-[assembly: GoImplement<myDoneCtx, global::go.context_package.Context>(Promoted = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

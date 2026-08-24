@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/tls` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-20 · converter `97ed58c5f`*
+*Validated 2026-08-24 · converter `2cac74170`*
 
 **400 matched · 2 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/crypto/tls`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/tls).
@@ -36,7 +36,7 @@ comparison — it is the evidence behind the `crypto/tls` row in
 | `TestAESCipherReorderingTLS13/server_has_hardware_AES,_client_doesn't_(pick_ChaCha)` | pass | pass |
 | `TestAlertFlushing` | pass | pass |
 | `TestAlertForwarding` | pass | pass |
-| `TestBogoSuite` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestBogoSuite` | fail | fail ([disclosed](#disclosed-divergences)) |
 | `TestBuffering` | pass | pass |
 | `TestBuffering/TLSv12` | pass | pass |
 | `TestBuffering/TLSv13` | pass | pass |

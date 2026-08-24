@@ -80,7 +80,6 @@ using static go.crypto.tls_package;
 [assembly: GoImplement<helloRequestMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<keyUpdateMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<listener, net_package.Listener>(Pointer = true)]
-[assembly: GoImplement<listener, net_package.Listener>(Promoted = true)]
 [assembly: GoImplement<lruSessionCache, ClientSessionCache>(Pointer = true)]
 [assembly: GoImplement<marshalingFunction, go.vendor.golang.org.x.crypto.cryptobyte_package.MarshalingValue>]
 [assembly: GoImplement<net_package.Conn, io_package.Reader>]

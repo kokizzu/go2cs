@@ -44,7 +44,6 @@ using static go.context_package;
 [assembly: GoImplement<afterFuncCtx, canceler>(Pointer = true)]
 [assembly: GoImplement<backgroundCtx, Context>]
 [assembly: GoImplement<cancelCtx, Context>(Pointer = true)]
-[assembly: GoImplement<cancelCtx, Context>(Promoted = true)]
 [assembly: GoImplement<cancelCtx, canceler>(Pointer = true)]
 [assembly: GoImplement<deadlineExceededError, error>]
 [assembly: GoImplement<emptyCtx, Context>]
@@ -54,7 +53,6 @@ using static go.context_package;
 [assembly: GoImplement<timerCtx, canceler>(Pointer = true)]
 [assembly: GoImplement<todoCtx, Context>]
 [assembly: GoImplement<valueCtx, Context>(Pointer = true)]
-[assembly: GoImplement<valueCtx, Context>(Promoted = true)]
 [assembly: GoImplement<withoutCancelCtx, Context>]
 // </InterfaceImplementations>
 
