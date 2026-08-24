@@ -212,6 +212,14 @@ from a forgotten one.
 
 ### 5.1 The bump is one line, and the inert copies are the interesting part
 
+> **Instrument: [`src/migrate-tfm.ps1`](../src/migrate-tfm.ps1)** (user directive, 2026-08-24) —
+> census by default, `-Apply` to act, `-WhatIf` honored. It edits exactly the SOURCE set (the
+> property of record, the two emission templates, the nine embedded publish profiles, the CI SDK
+> channel, the present-tense doc lines), refuses Class C by list with reasons, and self-verifies to
+> zero remaining sites. What it does NOT do — the regens, the §4 gate ladder, CNR's accounting, the
+> stale-profile purge, and the commit-message staleness statement — it prints as the operator's
+> checklist, in CENSUS-tfm-inventory.md §8 order.
+
 > **⚠ AMENDMENT (first-execution census, 2026-08-24 —
 > [`phase4/CENSUS-tfm-inventory.md`](phase4/CENSUS-tfm-inventory.md)). The one-line claim is
 > exactly right about csproj and INCOMPLETE about the harness.** Verified: all 1,127 tracked
