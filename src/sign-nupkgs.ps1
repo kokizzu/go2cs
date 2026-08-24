@@ -47,7 +47,11 @@ param(
     [string] $Fingerprint = $env:NuGetCertFingerprint,
     [string] $Timestamper = 'http://timestamp.digicert.com',
     [switch] $Apply,
-    [switch] $Overwrite
+    [switch] $Overwrite,
+
+    # One process per package: a PIN prompt EACH time, but a per-package pass/fail line.
+    # Use it to isolate a failure the batch run reported without a clear owner.
+    [switch] $PerPackage
 )
 
 $ErrorActionPreference = 'Stop'
@@ -139,9 +143,8 @@ if (-not $Apply) {
     Write-Host "  first : $($packages[0].Name)"
     Write-Host "  last  : $($packages[-1].Name)"
     Write-Host ''
-    Write-Host "  A card session signs them one at a time; if the card prompts for a PIN per" -ForegroundColor DarkGray
-    Write-Host "  signature rather than per session, $($packages.Count) prompts is what -Apply means." -ForegroundColor DarkGray
-    Write-Host "  Test the prompt behaviour on a COPY of two packages before committing to a full run." -ForegroundColor DarkGray
+    Write-Host "  -Apply signs all $($packages.Count) inside ONE process, so the card is unlocked ONCE." -ForegroundColor DarkGray
+    Write-Host "  (The Smart Card KSP caches a PIN per PROCESS; -PerPackage costs one prompt each.)" -ForegroundColor DarkGray
     exit 0
 }
 
@@ -155,32 +158,60 @@ $signArgs = @(
 )
 if ($Overwrite) { $signArgs += '--overwrite' }
 
-$signed = 0
-$failed = @()
 $started = Get-Date
 
-foreach ($pkg in $packages) {
-    if (-not $PSCmdlet.ShouldProcess($pkg.Name, 'sign')) { continue }
+# ONE PROCESS, ONE PIN. The Windows Smart Card KSP caches a card PIN for the LIFETIME OF THE
+# PROCESS that unlocked it -- so signing N packages with N invocations of `dotnet nuget sign`
+# costs N PIN prompts no matter what caching the card middleware offers, because each process
+# starts with an empty cache. Measured on the first real signing run: two packages, two prompts.
+# `dotnet nuget sign` takes multiple package paths (wildcards included) in a single invocation,
+# so the whole folder signs inside ONE process and the card is unlocked ONCE.
+#
+# The cost of batching is granularity: a failure names the package in NuGet's own output rather
+# than in a per-package progress line. That trade is worth one prompt versus three hundred, and
+# -PerPackage restores the old behaviour when a specific failure needs isolating.
 
-    Write-Host ("  [{0,3}/{1}] {2}" -f ($signed + $failed.Count + 1), $packages.Count, $pkg.Name) -NoNewline
+$glob = Join-Path $PackageDir '*.nupkg'
+$failed = @()
+$signed = 0
 
-    $out = & dotnet nuget sign $pkg.FullName @signArgs 2>&1
+if ($PerPackage) {
+    Write-Step "Signing one package per process (-PerPackage): expect a PIN prompt EACH time"
 
-    if ($LASTEXITCODE -eq 0) {
-        $signed++
-        Write-Host '  signed' -ForegroundColor Green
+    foreach ($pkg in $packages) {
+        if (-not $PSCmdlet.ShouldProcess($pkg.Name, 'sign')) { continue }
+
+        Write-Host ("  [{0,3}/{1}] {2}" -f ($signed + $failed.Count + 1), $packages.Count, $pkg.Name) -NoNewline
+        $out = & dotnet nuget sign $pkg.FullName @signArgs 2>&1
+
+        if ($LASTEXITCODE -eq 0) { $signed++; Write-Host '  signed' -ForegroundColor Green }
+        else {
+            $failed += $pkg.Name
+            Write-Host '  FAILED' -ForegroundColor Red
+            $out | Select-Object -Last 3 | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkGray }
+
+            # A card yanked mid-run, or a session that expired, fails every remaining package the
+            # same way. Three consecutive failures is the shape of that, and burning the rest of a
+            # 300-package run to re-learn it helps nobody.
+            if ($failed.Count -ge 3 -and $signed -eq 0) {
+                Write-Bad 'Three failures with no successes -- stopping. Check the card and the session.'
+                break
+            }
+        }
     }
-    else {
-        $failed += $pkg.Name
-        Write-Host '  FAILED' -ForegroundColor Red
-        $out | Select-Object -Last 3 | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkGray }
+}
+else {
+    Write-Step "Signing all $($packages.Count) package(s) in ONE process -- expect ONE PIN prompt"
 
-        # A card yanked mid-run, or a session that expired, fails every remaining package the
-        # same way. Three consecutive failures is the shape of that, and burning the rest of a
-        # 300-package run to re-learn it helps nobody.
-        if ($failed.Count -ge 3 -and $signed -eq 0) {
-            Write-Bad 'Three failures with no successes -- stopping. Check the card and the session.'
-            break
+    if ($PSCmdlet.ShouldProcess("$($packages.Count) package(s)", 'sign')) {
+        $out = & dotnet nuget sign $glob @signArgs 2>&1
+        $out | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+
+        if ($LASTEXITCODE -eq 0) { $signed = $packages.Count }
+        else {
+            # NuGet reports which package failed in its own output; re-deriving that here would
+            # duplicate a truth the tool already told. Point at it rather than restate it.
+            $failed = @("(batch failed -- see NuGet output above; re-run with -PerPackage to isolate)")
         }
     }
 }
