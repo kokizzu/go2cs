@@ -470,6 +470,12 @@ either reading.
    `VALIDATION.md` under an `Exists()` guard — so a missing snapshot page is **silent**, which is
    what phase 5's count check exists to catch.
 4. **Only then** apply §4's README/NEWS text (still user-owned).
+5. **Record whether the run printed `"repairing with a direct project build"`** — one line in the
+   release notes/commit is enough. This is the pack-race alternation discriminator (ledger #5,
+   closed measured-and-hardened): the script now disables MSBuild node reuse, and the
+   assert-and-repair stays as the instrument — if the repair never fires again after the flag,
+   node reuse is confirmed as the race's root by alternation, at zero repro cost; if it fires
+   WITH the flag set, the attribution is wrong and the forensics reopen with a binlog to catch it.
 
 ### 3.6 REHEARSAL — the dry run, executed (2026-08-22)
 

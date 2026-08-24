@@ -114,6 +114,16 @@ if (-not (Test-Path $versionProps)) { throw "version.props not found: $versionPr
 # in END USERS' builds (missing `global using` aliases, or a duplicate/absent interface adapter), not
 # here. Verify BEFORE anything is built, so the run fails at second zero rather than after a full
 # Release build. Regenerate with `go generate .` from src\go2cs and commit the result.
+# MSBuild worker nodes PERSIST after a build and are re-entered by the next one. This script runs
+# back-to-back solution builds (one per RID, different $(GoTargetOS) each), which is exactly the
+# shape the repo's standing rule prescribes this flag for -- and the 1.23.1.7 release's pack race
+# (gen's bin empty at pack time after a SUCCEEDED build, 3/3 in the full script, 0/3 isolated,
+# 0/2 in binlog-armed repro) fits stale node state around the clean/copy file ops better than
+# anything else measured. The healthy binlog shows 16 nodes; fresh nodes per pass cost seconds.
+# The assert-and-repair below STAYS: if it never fires again after this flag, node reuse is
+# confirmed by alternation at zero repro cost (ledger #5, closed measured-and-hardened).
+$env:MSBUILDDISABLENODEREUSE = '1'
+
 $converterDir = Join-Path $src 'go2cs'
 
 if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
