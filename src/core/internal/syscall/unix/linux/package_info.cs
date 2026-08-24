@@ -43,6 +43,27 @@ using static go.@internal.syscall.unix_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/syscall/unix/at.go", "at.cs", "AAscgoKCloKClqaCgoKWgoKW")]
+[assembly: go.GoPositionMap("internal/syscall/unix/at_fstatat.go", "at_fstatat.cs", "AAscgoKCgpaCgpY=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/copy_file_range_linux.go", "copy_file_range_linux.cs", "AAoYsgAGEIKClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/eaccess_linux.go", "eaccess_linux.cs", "AAkSgg==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/fcntl_unix.go", "fcntl_unix.cs", "AAsi9IKCgpQ=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/getrandom.go", "getrandom.cs", "ABIqkoKUgpS4goKUlA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/kernel_version_linux.go", "kernel_version_linux.cs", "AAkgAAgCgoCCpqiCgriCgoKUqA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/net.go", "net.cs", "AAsguLi4uLi4uA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/nonblocking_unix.go", "nonblocking_unix.cs", "AAoWgoKClKaC")]
+[assembly: go.GoPositionMap("internal/syscall/unix/pidfd_linux.go", "pidfd_linux.cs", "AAkSgoKClKaCgoKU")]
+[assembly: go.GoPositionMap("internal/syscall/unix/tcsetpgrp_linux.go", "tcsetpgrp_linux.cs", "AAoewoKClA==")]
+// </GoSourcePositionMaps>
+
 namespace go.@internal.syscall;
 
 [GoPackage("unix")]
@@ -57,6 +78,5 @@ public static partial class unix_package
     // <TypeAccessibility>
     internal partial struct siErrnoCode {}
     public partial struct GetRandomFlag {}
-    public partial struct SiginfoChild {}
     // </TypeAccessibility>
 }

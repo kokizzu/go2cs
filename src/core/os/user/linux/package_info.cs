@@ -54,6 +54,21 @@ using static go.os.user_package;
 [assembly: GoImplicitConv<os.File, ж<os.File>>(Indirect = true)]
 // </ImplicitConversions>
 
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("os/user/listgroups_unix.go", "listgroups_unix.cs", "ABMmgoKUgoKWgoKCloSCgoKCgoKUAAcUgroABhCClJSUlJSCqIKClJSCgpaWpqKCgpSU")]
+[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "AA4q0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS")]
+[assembly: go.GoPositionMap("os/user/lookup_stubs.go", "lookup_stubs.cs", "ABUugraCgpaSAAgQlIKUgtqClIKClIKClJSmgoCC2qaCgIKk")]
+[assembly: go.GoPositionMap("os/user/lookup_unix.go", "lookup_unix.cs", "ABI4AAkCloKCuoKChKaClLqCgpaogt6CgpSCgqiClIKU3IKCgpSCsoKmgsyUgIKkuIKAgqSkpoKAgqSkqqKCgpSCsoKmgoSUgIKkgIKkAAoWgriCgoKUgIKkpKaCgIKkpKaigoKUktaigoKUktaigoKUktaigoKUkg==")]
+[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "ADaKAYLOgs6CzoI=")]
+// </GoSourcePositionMaps>
+
 namespace go.os;
 
 [GoPackage("user")]

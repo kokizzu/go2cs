@@ -76,7 +76,6 @@ using static go.runtime_package;
 [assembly: GoImplicitConv<m, ж<m>>(Indirect = true)]
 [assembly: GoImplicitConv<metricValue, ж<metricValue>>(Indirect = true)]
 [assembly: GoImplicitConv<mspan, ж<mspan>>(Indirect = true)]
-[assembly: GoImplicitConv<nameOff, Δhex>(Inverted = true, ValueType = "int32")]
 [assembly: GoImplicitConv<pollDesc, ж<pollDesc>>(Indirect = true)]
 [assembly: GoImplicitConv<ptrtype, ж<ptrtype>>(Indirect = true)]
 [assembly: GoImplicitConv<spanClass, traceArg>(Inverted = true, ValueType = "uint8")]
@@ -84,10 +83,8 @@ using static go.runtime_package;
 [assembly: GoImplicitConv<stkframe, ж<stkframe>>]
 [assembly: GoImplicitConv<sudog, ж<sudog>>(Indirect = true)]
 [assembly: GoImplicitConv<sweepClass, spanClass>(Inverted = true, ValueType = "uint32")]
-[assembly: GoImplicitConv<textOff, Δhex>(Inverted = true, ValueType = "int32")]
 [assembly: GoImplicitConv<traceGoStatus, traceArg>(Inverted = true, ValueType = "uint8")]
 [assembly: GoImplicitConv<traceProcStatus, traceArg>(Inverted = true, ValueType = "uint8")]
-[assembly: GoImplicitConv<typeOff, Δhex>(Inverted = true, ValueType = "int32")]
 [assembly: GoImplicitConv<Δp, ж<Δp>>(Indirect = true)]
 [assembly: GoImplicitConv<Δsliceᴛ, ж<Δsliceᴛ>>(Indirect = true)]
 // </ImplicitConversions>
