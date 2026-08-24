@@ -316,6 +316,17 @@ built-in .NET type rather than onto `golib` or a source generator — e.g. Go `a
 the fixed-width integer aliases (`int32` = `System.Int32`), and the `System.Numerics` operator interfaces
 that generic constraints lift to.
 
+<a id="ilc"></a>**ILC — the IL Compiler (Native AOT).**
+.NET's ahead-of-time compiler: it consumes IL at **publish** time and emits native machine code, so the
+program starts without a JIT. go2cs measures it as the third column of the performance suite (Go binary /
+C# JIT / C# **Native AOT**), and it is expensive here — each AOT publish compiles the full converted-stdlib
+closure, ~25 min per benchmark on the current coordinator class, which is why a full perf run is hours and
+must run solo. **ILC arrives as a runtime pack selected by the [TFM](#tfm), not by the SDK performing the
+publish** — so a new SDK publishing an old TFM silently resolves the OLD ILC and produces the previous
+generation's codegen, presenting as a plausible "the new runtime changed nothing" rather than as an error
+(trap 1, [`DotNetMigration.md`](DotNetMigration.md) §3). Consequence: no AOT measurement of a new runtime
+exists before the TFM moves.
+
 <a id="tfm"></a>**TFM — Target Framework Moniker.**
 The identifier a `.csproj` uses to declare which framework a project builds against: `<TargetFramework>net9.0</TargetFramework>`
 — the go2cs corpus's own value today. It selects the reference assemblies compiled against, the runtime the
