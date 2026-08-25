@@ -7,7 +7,9 @@ import re
 import statistics
 from pathlib import Path
 
-DATA = Path(r"C:\Projects\go2cs\docs\phase4\DATA-sweep-row-walltimes.md")
+# Repo-relative off this file (docs/phase4/hopA-inputs/ -> docs/phase4/), never a clone path --
+# a hardcoded clone root ran on exactly one machine (found by the i9 on first cross-box use).
+DATA = Path(__file__).resolve().parent.parent / "DATA-sweep-row-walltimes.md"
 
 # ---------------------------------------------------------------- parse
 text = DATA.read_text(encoding="utf-8")
