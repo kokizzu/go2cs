@@ -163,6 +163,17 @@ the differential. This is a ruled decision, not a preference.
    insufficient as provisioning evidence, in opposite directions. Worked instance with the resolved
    per-box values: [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md), its hop-A
    section.
+   ⚠ **An `auto`-fetched toolchain is READ-ONLY, and the attribute travels** (measured 2026-08-25,
+   the i9's reserved shard). `GOTOOLCHAIN=auto` downloads into the per-user module cache, where Go
+   marks **every file read-only by design** — a manually provisioned side-by-side SDK
+   (`~/sdk/<release>`) is not. Any harness that COPIES fixtures out of that tree carries the
+   attribute along (`.NET`'s `File.Copy` propagates `ReadOnly` with the content), and the first
+   write onto a copy throws `UnauthorizedAccessException` — which presents as a mass
+   `Go="pass" C#=""` file-lock signature, and the stale partial copy it leaves behind then presents
+   as an unrelated `CS0234` on retry, convincingly mimicking other catalogued traps. **The fix is
+   one attribute strip, in place, once**: clear `IsReadOnly` recursively on the cached toolchain
+   directory — no copy, no relocation. A box-configuration trap, not a harness bug: an
+   `auto`-configured box meets it identically every hop, a manually-provisioned one never does.
 2. Move the converter module's `go` directive to the target (ruled: it moves each migration).
 3. Bump the `golang.org/x/tools` and `golang.org/x/mod` requirements to releases contemporary with
    the target. The export-data policy bounds how far they may lag. **This is a separate commit with
