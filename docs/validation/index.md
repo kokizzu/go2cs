@@ -146,6 +146,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `net/http/internal/ascii` | [`net.http.internal.ascii.md`](current/net.http.internal.ascii.md) | [`src/core/net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) |
 | `net/mail` | [`net.mail.md`](current/net.mail.md) | [`src/core/net/mail`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/mail) |
 | `net/rpc/jsonrpc` | [`net.rpc.jsonrpc.md`](current/net.rpc.jsonrpc.md) | [`src/core/net/rpc/jsonrpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc/jsonrpc) |
+| `net/smtp` | [`net.smtp.md`](current/net.smtp.md) | [`src/core/net/smtp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/smtp) |
 | `net/textproto` | [`net.textproto.md`](current/net.textproto.md) | [`src/core/net/textproto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/textproto) |
 | `net/url` | [`net.url.md`](current/net.url.md) | [`src/core/net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) |
 | `os/exec` | [`os.exec.md`](current/os.exec.md) | [`src/core/os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) |
