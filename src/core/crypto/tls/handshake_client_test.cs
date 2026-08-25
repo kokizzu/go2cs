@@ -917,7 +917,8 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     serverConfig = Ꮡ(new Config(
         MaxVersion: version,
         CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_RC4_128_SHA}.slice(),
-        Certificates: (~testConfig).Certificates
+        Certificates: (~testConfig).Certificates,
+        Time: testTime
     ));
     var (issuer, err) = Δx509.ParseCertificate(testRSACertificateIssuer);
     if (err != default!) {
@@ -930,7 +931,8 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
         CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA}.slice(),
         ClientSessionCache: NewLRUClientSessionCache(32),
         RootCAs: rootCAs,
-        ServerName: "example.golang"u8
+        ServerName: "example.golang"u8,
+        Time: testTime
     ));
     var clientConfigʗ1 = clientConfig;
     void testResumeState(@string test, bool didResume) {
@@ -980,19 +982,19 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     }
     // An old session ticket is replaced with a ticket encrypted with a fresh key.
     ticket = getTicket();
-    serverConfig.Value.Time = () => time_package.Now().Add((time.Duration)(86460000000000L));
+    serverConfig.Value.Time = () => testTime().Add((time.Duration)(86460000000000L));
     testResumeState(resumeWithOldTicketˢ, true);
     if (bytes.Equal(ticket, getTicket())) {
         Ꮡt.Fatal(oldFirstTicketMatchesTheˢ);
     }
     // Once the session master secret is expired, a full handshake should occur.
     ticket = getTicket();
-    serverConfig.Value.Time = () => time_package.Now().Add((time.Duration)(691260000000000L));
+    serverConfig.Value.Time = () => testTime().Add((time.Duration)(691260000000000L));
     testResumeState(resumeWithExpiredTicketˢ, false);
     if (bytes.Equal(ticket, getTicket())) {
         Ꮡt.Fatal(expiredFirstTicketˢ);
     }
-    serverConfig.Value.Time = () => time_package.Now(); // reset the time back;
+    serverConfig.Value.Time = testTime; // reset the time back
     var key1 = randomKey();
     serverConfig.SetSessionTicketKeys(new array<byte>[]{key1.Clone()}.slice());
     testResumeState(invalidSessionTicketKeyˢ, false);
@@ -1006,18 +1008,18 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     }
     testResumeState(keyChangeFinishˢ, true);
     // Age the session ticket a bit, but not yet expired.
-    serverConfig.Value.Time = () => time_package.Now().Add((time.Duration)(86460000000000L));
+    serverConfig.Value.Time = () => testTime().Add((time.Duration)(86460000000000L));
     testResumeState(oldSessionTicketˢ, true);
     ticket = getTicket();
     // Expire the session ticket, which would force a full handshake.
-    serverConfig.Value.Time = () => time_package.Now().Add((time.Duration)(691260000000000L));
+    serverConfig.Value.Time = () => testTime().Add((time.Duration)(691320000000000L));
     testResumeState(expiredSessionTicketˢ, false);
     if (bytes.Equal(ticket, getTicket())) {
         Ꮡt.Fatal(newTicketWasnTProvidedˢ);
     }
     // Age the session ticket a bit at a time, but don't expire it.
     var d = 0 * time_package.ΔHour;
-    serverConfig.Value.Time = () => time_package.Now().Add(d);
+    serverConfig.Value.Time = () => testTime().Add(d);
     deleteTicket();
     testResumeState(getFreshSessionTicketˢ, false);
     for (nint i = 0; i < 13; i++) {
@@ -1028,7 +1030,7 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     // handshake occurs for TLS 1.2. Resumption should still occur for
     // TLS 1.3 since the client should be using a fresh ticket sent over
     // by the server.
-    d += (time.Duration)(43200000000000L);
+    d += (time.Duration)(43260000000000L);
     if (version == VersionTLS13){
         testResumeState(expiredSessionTicketˢ, true);
     } else {
@@ -1042,7 +1044,8 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     serverConfig = Ꮡ(new Config(
         MaxVersion: version,
         CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_RC4_128_SHA}.slice(),
-        Certificates: (~testConfig).Certificates
+        Certificates: (~testConfig).Certificates,
+        Time: testTime
     ));
     serverConfig.SetSessionTicketKeys(new array<byte>[]{key2.Clone()}.slice());
     testResumeState(freshConfigˢ, true);
@@ -1063,7 +1066,8 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
 
             CurvePreferences: new global::go.crypto.tls_package.CurveID[]{CurveP521, CurveP384, CurveP256}.slice(),
             MaxVersion: version,
-            Certificates: (~testConfig).Certificates
+            Certificates: (~testConfig).Certificates,
+            Time: testTime
         ));
         testResumeState(initialHandshakeˢ, false);
         testResumeState(withHelloRetryRequestˢ, true);
@@ -1071,7 +1075,8 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
         serverConfig = Ꮡ(new Config(
             MaxVersion: version,
             CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_RC4_128_SHA}.slice(),
-            Certificates: (~testConfig).Certificates
+            Certificates: (~testConfig).Certificates,
+            Time: testTime
         ));
     }
     // Session resumption should work when using client certificates
@@ -1874,6 +1879,7 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
         var serverConfig = Ꮡ(new Config(
             MaxVersion: version,
             Certificates: new global::go.crypto.tls_package.Certificate[]{(~testConfig).Certificates[0]}.slice(),
+            Time: testTime,
             ClientCAs: rootCAs,
             NextProtos: new @string[]{"protocol1"u8}.slice()
         ));
@@ -1886,6 +1892,7 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
             RootCAs: rootCAs,
             ServerName: "example.golang"u8,
             Certificates: new global::go.crypto.tls_package.Certificate[]{(~testConfig).Certificates[0]}.slice(),
+            Time: testTime,
             NextProtos: new @string[]{"protocol1"u8}.slice()
         ));
         test.configureClient(clientConfig, ᏑclientCalled);
@@ -1941,7 +1948,6 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
     }
     var rootCAs = Δx509.NewCertPool();
     rootCAs.AddCert(issuer);
-    var now = () => time_package.Unix(1476984729, 0);
     var sentinelErr = errors.New("TestVerifyPeerCertificate"u8);
     error verifyPeerCertificateCallback(ж<bool> called, slice<slice<byte>> rawCerts, slice<slice<ж<Δx509.Certificate>>> validatedChains) {
         {
@@ -2218,7 +2224,6 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
         ref var clientCalled = ref heap(new bool(), out var ᏑclientCalled);
         ref var serverCalled = ref heap(new bool(), out var ᏑserverCalled);
         var doneʗ1 = done;
-        var nowʗ1 = now;
         var rootCAsʗ1 = rootCAs;
         var sʗ1 = s;
         var testʗ1 = test;
@@ -2227,7 +2232,7 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             configΔ1.Value.ServerName = exampleGolangˢ;
             configΔ1.Value.ClientAuth = RequireAndVerifyClientCert;
             configΔ1.Value.ClientCAs = rootCAsʗ1;
-            configΔ1.Value.Time = nowʗ1;
+            configΔ1.Value.Time = testTime;
             configΔ1.Value.MaxVersion = version;
             configΔ1.Value.Certificates = new slice<global::go.crypto.tls_package.Certificate>(1);
             (~configΔ1).Certificates[0].ΔCertificate = new slice<byte>[]{testRSACertificate}.slice();
@@ -2242,7 +2247,7 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
         var config = testConfig.Clone();
         config.Value.ServerName = exampleGolangˢ;
         config.Value.RootCAs = rootCAs;
-        config.Value.Time = now;
+        config.Value.Time = testTime;
         config.Value.MaxVersion = version;
         test.configureClient(config, ᏑclientCalled);
         var clientErr = Client(c, config).Handshake();
@@ -2581,7 +2586,7 @@ internal static void testGetClientCertificate(ж<testing.T> Ꮡt, uint16 version
         serverConfig.Value.RootCAs = Δx509.NewCertPool();
         (~serverConfig).RootCAs.AddCert(issuer);
         serverConfig.Value.ClientCAs = serverConfig.Value.RootCAs;
-        serverConfig.Value.Time = () => time_package.Unix(1476984729, 0);
+        serverConfig.Value.Time = testTime;
         serverConfig.Value.MaxVersion = version;
         var clientConfig = testConfig.Clone();
         clientConfig.Value.MaxVersion = version;
@@ -2803,7 +2808,8 @@ internal static void testResumptionKeepsOCSPAndSCT(ж<testing.T> Ꮡt, uint16 ve
         MaxVersion: ver,
         ClientSessionCache: NewLRUClientSessionCache(32),
         ServerName: "example.golang"u8,
-        RootCAs: roots
+        RootCAs: roots,
+        Time: testTime
     ));
     var serverConfig = testConfig.Clone();
     serverConfig.Value.MaxVersion = ver;
