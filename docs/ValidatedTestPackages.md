@@ -70,13 +70,13 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **162 / 215 testable packages validated — 75.3%**
+> ### Phase 4 progress: **163 / 215 testable packages validated — 75.8%**
 >
-> **18,598 matching test verdicts · 85 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **18,612 matching test verdicts · 86 disclosed** *(updated 2026-08-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Linux: 7 of 162 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
+> **Linux: 7 of 163 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -243,6 +243,7 @@ summed from the columns.
 | [`mime/multipart`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/multipart) | 52 | | MIME multipart reading and writing — the part reader's boundary scanner over slow, truncated and nested streams, `ReadForm`'s memory/disk spill with the `multipartmaxparts`/`multipartmaxheaders` godebug limits, quoted-printable part decoding, and the writer's boundary generation under concurrent use. Reaches `net/textproto`'s size-limited header reader through a cross-package `//go:linkname` pull — the forwarder that closed all 45 of this package's differential rows at once (L12). · [proof](validation/current/mime.multipart.md) |
 | [`mime/quotedprintable`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/quotedprintable) | 5 | | Quoted-printable encoding — the reader's soft-line-break and hex-escape state machine, the writer's line wrapping, and an exhaustive encode/decode round-trip. · [proof](validation/current/mime.quotedprintable.md) |
 | [`net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) | 12 |  | The FastCGI record protocol end to end — the child's record dispatch and `FCGI_GET_VALUES` reply, multiplexed request streams over a shared connection, the `ResponseWriter`'s content-type sniffing, and a served request torn down mid-flight. · [proof](validation/current/net.http.fcgi.md) |
+| [`net/http/internal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal) | 14 | 1 | HTTP chunked transfer-encoding end to end — the chunked reader/writer round-trip across partial, multiple and byte-at-a-time reads, hex chunk-size parsing with its overflow and empty-value error matrix, the incomplete-chunk and end-read error paths, the malicious-sender overhead detector, and the bare-LF rejection matrix (`TestChunkInvalidInputs`, four subtests) that hardens the reader against request smuggling; alloc-profile disclosure on the interface-shell allocation. · [proof](validation/current/net.http.internal.md) |
 | [`net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) | 13 | | ASCII case-insensitive helpers. · [proof](validation/current/net.http.internal.ascii.md) |
 | [`net/mail`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/mail) | 11 | | RFC 5322 mail message parsing end to end: the address-list grammar across quoted strings, comments and folding white space, RFC 2047 encoded-words in both `B` and `Q` form with a custom `WordDecoder`, group syntax, obsolete and malformed input driven through a shared error matrix, the `Address.String()` round trip back through the parser, and `Date` header parsing including the CFWS-bearing forms. Its verdicts ride `net/textproto`'s reader and `mime`'s word decoder underneath. · [proof](validation/current/net.mail.md) |
 | [`net/rpc/jsonrpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc/jsonrpc) | 9 |  | JSON-RPC 1.0 client and server codecs driven through the real `net/rpc` server over an in-memory `net.Pipe` — hand-coded request framing, out-of-order concurrent calls, the `map`/`slice`/`[1]int` builtin reply types the server allocates from the method type alone (`reflect.New(mtype.ReplyType.Elem())` — the row that made a fixed-size array's LENGTH reach reflect through a method's pointer parameter), malformed input and output, and the null-result error path. · [proof](validation/current/net.rpc.jsonrpc.md) |

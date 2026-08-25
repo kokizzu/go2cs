@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestChunkReaderAllocs",
+      "class": "alloc-profile",
+      "signature": "mallocs = ",
+      "reason": "exact-count AllocsPerRun assert (fails above 1.5, i.e. wants 1): the measured loop constructs a fresh reader every iteration, and the converted NewChunkedReader emits TWO managed objects where Go allocates one - the box Ꮡ(new chunkedReader(r: br)), which is the direct analogue of Go's &chunkedReader{}, plus a chunkedReaderжReader interface shell, because C# has no two-word interface value and the shell IS the itab+data fused into an object (docs/phase4/DESIGN-iface-shell-caching.md section 2). Measured 2 objects/run against Go's 1, deterministically. Not amortizable for this shape: P3's per-referent shell cache is keyed on the ж-box and this loop mints a new reader each iteration, so a fresh shell is required regardless - the same doc rules that nothing removes the shell allocation short of IDynamicInterfaceCastable. Distinct from alloc-count-semantics: go2cs's counter is a true object count here (a lower bound on the real total), not an incomparable byte-derived shim, so the divergence is a genuine profile difference and is disclosed as one"
+    }
+  ]
+}

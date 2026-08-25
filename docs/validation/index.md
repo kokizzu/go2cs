@@ -139,6 +139,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `mime/multipart` | [`mime.multipart.md`](current/mime.multipart.md) | [`src/core/mime/multipart`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/multipart) |
 | `mime/quotedprintable` | [`mime.quotedprintable.md`](current/mime.quotedprintable.md) | [`src/core/mime/quotedprintable`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/quotedprintable) |
 | `net/http/fcgi` | [`net.http.fcgi.md`](current/net.http.fcgi.md) | [`src/core/net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) |
+| `net/http/internal` | [`net.http.internal.md`](current/net.http.internal.md) | [`src/core/net/http/internal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal) |
 | `net/http/internal/ascii` | [`net.http.internal.ascii.md`](current/net.http.internal.ascii.md) | [`src/core/net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) |
 | `net/mail` | [`net.mail.md`](current/net.mail.md) | [`src/core/net/mail`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/mail) |
 | `net/rpc/jsonrpc` | [`net.rpc.jsonrpc.md`](current/net.rpc.jsonrpc.md) | [`src/core/net/rpc/jsonrpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc/jsonrpc) |
