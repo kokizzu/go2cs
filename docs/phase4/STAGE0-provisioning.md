@@ -96,6 +96,15 @@ machine default before Stage 0, so unlike R's box, an unproven "new-runtime leg"
 silently collide with an identically-versioned default — still probing per §2(3) regardless, since
 that discipline is the fleet's standing rule, not a per-box exception.
 
+**AOT capacity (measured 2026-08-24, farm-probe RAM report): 63.7 GB RAM, 16C/24T.** Against the
+measured ~15 GB working-set peak per 10-ILC publish of the full corpus closure, this is the one
+fleet machine that can run AOT publishes **concurrently** — three lanes safely, four at the
+margin (4 × 15 = 60 GB leaves no headroom for the end-phase spike). ILC is near-serial (~1.1–1.3
+effective cores), so concurrency multiplies throughput almost linearly: a full 14-row AOT
+re-baseline compiles here overnight instead of the perf-canon host's two days. The *measurement*
+half stays on the perf-canon host regardless — this row is about where binaries are compiled,
+never where they are timed.
+
 ## Machine: i7-5820K (win-x64, the interim coordinator)
 
 Provisioned 2026-08-24. Commands per *The commands* above, PowerShell native.
