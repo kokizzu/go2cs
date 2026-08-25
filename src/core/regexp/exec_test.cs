@@ -807,11 +807,7 @@ public static void BenchmarkMatch_onepass_regex(ж<testing.B> Ꮡb) {
     }
 }
 
-
-[GoType("dyn")] partial struct benchDataᴛ1 {
-    internal @string name, re;
-}
-internal static slice<benchDataᴛ1> benchData = new benchDataᴛ1[]{
+internal static slice<compileBenchDataᴛ1> benchData = new compileBenchDataᴛ1[]{
     new("Easy0"u8, "ABCDEFGHIJKLMNOPQRSTUVWXYZ$"u8),
     new("Easy0i"u8, "(?i)ABCDEFGHIJklmnopqrstuvwxyz$"u8),
     new("Easy1"u8, "A[AB]B[BC]C[CD]D[DE]E[EF]F[FG]G[GH]H[HI]I[IJ]J$"u8),

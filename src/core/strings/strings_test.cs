@@ -1704,12 +1704,7 @@ public static void TestContains(ж<testing.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct ContainsAnyTestsᴛ1 {
-    internal @string str, substr;
-    internal bool expected;
-}
-public static slice<ContainsAnyTestsᴛ1> ContainsAnyTests = new ContainsAnyTestsᴛ1[]{
+public static slice<ContainsTestsᴛ1> ContainsAnyTests = new ContainsTestsᴛ1[]{
     new(""u8, ""u8, false),
     new(""u8, "a"u8, false),
     new(""u8, "abc"u8, false),
@@ -2134,18 +2129,14 @@ internal static Func<@string> makeFieldsInputASCII = () => {
     return ((@string)x);
 };
 
-
-[GoType("dyn")] partial struct stringdataᴛ1 {
-    internal @string name, data;
-}
-internal static slice<stringdataᴛ1> stringdata = new stringdataᴛ1[]{
+internal static slice<mapdataᴛ1> stringdata = new mapdataᴛ1[]{
     new("ASCII"u8, makeFieldsInputASCII()),
     new("Mixed"u8, makeFieldsInput())
 }.slice();
 
 public static void BenchmarkFields(ж<testing.B> Ꮡb) {
     foreach (var (_, vᴛ1) in stringdata) {
-        ref var sd = ref heap(new stringdataᴛ1(), out var Ꮡsd);
+        ref var sd = ref heap(new mapdataᴛ1(), out var Ꮡsd);
         sd = vᴛ1;
 
         var sdʗ1 = sd;
@@ -2168,7 +2159,7 @@ public static void BenchmarkFields(ж<testing.B> Ꮡb) {
 
 public static void BenchmarkFieldsFunc(ж<testing.B> Ꮡb) {
     foreach (var (_, vᴛ1) in stringdata) {
-        ref var sd = ref heap(new stringdataᴛ1(), out var Ꮡsd);
+        ref var sd = ref heap(new mapdataᴛ1(), out var Ꮡsd);
         sd = vᴛ1;
 
         var sdʗ1 = sd;

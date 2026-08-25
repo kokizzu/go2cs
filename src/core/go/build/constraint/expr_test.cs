@@ -246,12 +246,7 @@ public static void TestExprEval(ж<testing.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct parsePlusBuildExprTestsᴛ1 {
-    internal @string @in;
-    internal global::go.go.build.constraint_package.Expr x;
-}
-internal static slice<parsePlusBuildExprTestsᴛ1> parsePlusBuildExprTests = new parsePlusBuildExprTestsᴛ1[]{
+internal static slice<parseExprTestsᴛ1> parsePlusBuildExprTests = new parseExprTestsᴛ1[]{
     new("x"u8, tag("x"u8)),
     new("x,y"u8, and(tag("x"u8), tag("y"u8))),
     new("x y"u8, or(tag("x"u8), tag("y"u8))),
@@ -267,7 +262,7 @@ internal static slice<parsePlusBuildExprTestsᴛ1> parsePlusBuildExprTests = new
 
 public static void TestParsePlusBuildExpr(ж<testing.T> Ꮡt) {
     foreach (var (i, vᴛ1) in parsePlusBuildExprTests) {
-        ref var tt = ref heap(new parsePlusBuildExprTestsᴛ1(), out var Ꮡtt);
+        ref var tt = ref heap(new parseExprTestsᴛ1(), out var Ꮡtt);
         tt = vᴛ1;
 
         var ttʗ1 = tt;
