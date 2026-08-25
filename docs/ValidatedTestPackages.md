@@ -91,13 +91,13 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **164 / 215 testable packages validated — 76.3%**
+> ### Phase 4 progress: **165 / 215 testable packages validated — 76.7%**
 >
-> **18,625 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **18,731 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Linux: 7 of 164 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
+> **Linux: 7 of 165 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -189,6 +189,7 @@ summed from the columns.
 | [`encoding/base64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base64) | 17 | | Base64 round-trips; goroutine + `time.After` timer path. · [proof](validation/current/encoding.base64.md) |
 | [`encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary) | 137 | 9 | Reflection-driven Read/Write — the bridge's construction/write-back surface. · [proof](validation/current/encoding.binary.md) |
 | [`encoding/csv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/csv) | 71 | | CSV parsing; wrapped-error `errors.Is` through the reflection bridge. · [proof](validation/current/encoding.csv.md) |
+| [`encoding/gob`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/gob) | 106 | | Go's self-describing binary serialization end to end — the encoder and decoder engines over every kind gob transmits, wire type-graph construction and the `Register`/`GobEncoder`/`GobDecoder`/`BinaryMarshaler` interface paths, indirection and recursive types, cross-type compatibility and the malformed-input regression set. Its last divergence, `TestIgnoreDepthLimit`, was the arc that put `reflect.ArrayOf` and `reflect.StructOf` in the bridge: the test builds a 101-deep nested array and a 101-deep nested struct at RUN TIME, so the row could not close until a Go type nothing declared could be constructed. 5 of the 106 skip identically on both runtimes. · [proof](validation/current/encoding.gob.md) |
 | [`encoding/hex`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/hex) | 12 | | Hex encode/decode and error paths. · [proof](validation/current/encoding.hex.md) |
 | [`encoding/json`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/json) | 491 | | JSON end to end — the `Marshal`/`Unmarshal` tables over the 40-field `All` fixture, struct-tag naming and options including `,string` and `omitempty`, embedding with Go's full dominance rules, `Marshaler`/`Unmarshaler`/`TextMarshaler` dispatch at every depth, `RawMessage`, `Number`, the streaming `Encoder`/`Decoder` with `Token`/`More`, `Compact`/`Indent`/`HTMLEscape`, and the cycle, depth and malformed-input error sets. Nearly every row is a reflection walk checked against Go's own answer, so this suite is the reflection bridge's broadest proof: ten of its roots were found here, and the last of them was a map entry read without its element type. · [proof](validation/current/encoding.json.md) |
 | [`encoding/xml`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/xml) | 386 | | XML end to end — the `Decoder`'s tokenizer over the whole grammar (nested elements, CDATA, directives, comments, processing instructions, character and HTML entities, `CharsetReader`, `RawToken`/`Skip`/`InputOffset`, and the syntax-error line/column set), namespace resolution and prefix scoping in both directions, `Marshal`/`Unmarshal` over the struct-tag grammar (`XMLName`, `attr`, `chardata`, `cdata`, `innerxml`, `comment`, `omitempty`, `a>b>c` nesting, `any`), `Marshaler`/`Unmarshaler` and their Attr/Text variants at every depth, `EncodeToken` streaming with its well-formedness rules, and the CVE and disallowed-character regression sets. The row is one long reflection walk checked against Go's own answer, which is why its last root was a `reflect.DeepEqual` that could not see a NAMED byte slice's backing array — `CopyToken` really did clone its buffer, and the comparison said otherwise. · [proof](validation/current/encoding.xml.md) |
