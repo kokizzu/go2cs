@@ -64,7 +64,7 @@
 namespace go;
 
 using bytes = bytes_package;
-using io = io_package;
+using Δio = io_package;
 using syntax = regexp.syntax_package;
 using strconv = strconv_package;
 using strings = strings_package;
@@ -493,7 +493,7 @@ internal const rune endOfText = -1;
 
 // inputReader scans a RuneReader.
 [GoType] partial struct inputReader {
-    internal io.RuneReader r;
+    internal Δio.RuneReader r;
     internal bool atEOT;
     internal nint pos;
 }
@@ -536,7 +536,7 @@ internal const rune endOfText = -1;
 
 // MatchReader reports whether the text returned by the [io.RuneReader]
 // contains any match of the regular expression re.
-public static bool MatchReader(this ж<Regexp> Ꮡre, io.RuneReader r) {
+public static bool MatchReader(this ж<Regexp> Ꮡre, Δio.RuneReader r) {
     return Ꮡre.doMatch(r, default!, ""u8);
 }
 
@@ -555,7 +555,7 @@ public static bool Match(this ж<Regexp> Ꮡre, slice<byte> b) {
 // MatchReader reports whether the text returned by the [io.RuneReader]
 // contains any match of the regular expression pattern.
 // More complicated queries need to use [Compile] and the full [Regexp] interface.
-public static (bool matched, error err) MatchReader(@string pattern, io.RuneReader r) {
+public static (bool matched, error err) MatchReader(@string pattern, Δio.RuneReader r) {
     error err = default!;
 
     (var re, err) = Compile(pattern);
@@ -885,7 +885,7 @@ public static slice<nint> /*loc*/ FindStringIndex(this ж<Regexp> Ꮡre, @string
 // the [io.RuneReader]. The match text was found in the input stream at
 // byte offset loc[0] through loc[1]-1.
 // A return value of nil indicates no match.
-public static slice<nint> /*loc*/ FindReaderIndex(this ж<Regexp> Ꮡre, io.RuneReader r) {
+public static slice<nint> /*loc*/ FindReaderIndex(this ж<Regexp> Ꮡre, Δio.RuneReader r) {
     var a = Ꮡre.doExecute(r, default!, ""u8, 0, 2, default!);
     if (a == default!) {
         return default!;
@@ -1093,7 +1093,7 @@ public static slice<nint> FindStringSubmatchIndex(this ж<Regexp> Ꮡre, @string
 // the [io.RuneReader], and the matches, if any, of its subexpressions, as defined
 // by the 'Submatch' and 'Index' descriptions in the package comment. A
 // return value of nil indicates no match.
-public static slice<nint> FindReaderSubmatchIndex(this ж<Regexp> Ꮡre, io.RuneReader r) {
+public static slice<nint> FindReaderSubmatchIndex(this ж<Regexp> Ꮡre, Δio.RuneReader r) {
     ref var re = ref Ꮡre.DerefOrNull();
 
     return re.pad(Ꮡre.doExecute(r, default!, ""u8, 0, (~re.prog).NumCap, default!));

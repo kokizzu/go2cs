@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/ed25519` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-18 · converter `0f3495688`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**8 matched · 1 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**8 matched · 1 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/crypto/ed25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ed25519).
 
 ## Verdicts

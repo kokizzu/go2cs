@@ -7,6 +7,7 @@
 global using static global::go.database.sql.driver_package;
 
 // <ImportedTypeAliases>
+global using Value = object;
 global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
 global using reflectꓸKind = go.reflect_package.ΔKind;
 global using reflectꓸMethod = go.reflect_package.ΔMethod;

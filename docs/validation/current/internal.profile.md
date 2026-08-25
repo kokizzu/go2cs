@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/profile` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-09 · converter `4990c0043`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**1 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**1 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile).
 
 ## Verdicts

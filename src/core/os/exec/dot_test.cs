@@ -32,6 +32,12 @@ internal static readonly @string testdirˢ = "testdir"u8;
 internal static readonly @string execabsTestˢ = "execabs-test"u8;
 internal static readonly @string pwdˢ = "PWD"u8;
 internal static readonly @string godebugˢ = "GODEBUG"u8;
+internal static readonly @string pathˢ = "PATH"u8;
+internal static readonly @string emptyˢ = "empty"u8;
+internal static readonly @string dotˢ = "dot"u8;
+internal static readonly @string dotdot1ˢ = "dotdot1"u8;
+internal static readonly @string abcˢ = "abc/.."u8;
+internal static readonly @string dotdot2ˢ = "dotdot2"u8;
 
 public static void TestLookPath(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
@@ -198,6 +204,57 @@ public static void TestLookPath(ж<testing.T> Ꮡt) {
                 tΔ4.Fatalf(@"LookPath(%#q) = %#q, %v, want %#q, nil"u8, execabsTestˢ, found, err, wantFound);
             }
         }
+    });
+    Action<ж<testing.T>> checker(@string test) => (ж<testing.T> tΔ5) => {
+            tΔ5.Helper();
+            tΔ5.Logf("PATH=%s"u8, os.Getenv(pathˢ));
+            var (p, err) = LookPath(test);
+            if (err == default!) {
+                tΔ5.Errorf("%q: error expected, got nil"u8, test);
+            }
+            if (p != ""u8) {
+                tΔ5.Errorf("%q: path returned should be \"\". Got %q"u8, test, p);
+            }
+        };
+    // Reference behavior for the next test
+    var checkerʗ1 = checker;
+    Ꮡt.Run(pathVar + "=$OTHER2"u8, (ж<testing.T> tΔ6) => {
+        tΔ6.Run(emptyˢ, checkerʗ1(""u8));
+        tΔ6.Run(dotˢ, checkerʗ1("."u8));
+        tΔ6.Run(dotdot1ˢ, checkerʗ1(abcˢ));
+        tΔ6.Run(dotdot2ˢ, checkerʗ1(".."u8));
+    });
+    // Test the behavior when PATH contains an executable file which is not a directory
+    var checkerʗ2 = checker;
+    Ꮡt.Run(pathVar + "=exe"u8, (ж<testing.T> tΔ7) => {
+        // Inject an executable file (not a directory) in PATH.
+        // Use our own binary os.Args[0].
+        testenv.MustHaveExec(new exec_test_package.testing_TжTB(tΔ7));
+        var (exe, err) = os.Executable();
+        if (err != default!) {
+            tΔ7.Fatal(err);
+        }
+        tΔ7.Setenv(pathVar, exe);
+        tΔ7.Run(emptyˢ, checkerʗ2(""u8));
+        tΔ7.Run(dotˢ, checkerʗ2("."u8));
+        tΔ7.Run(dotdot1ˢ, checkerʗ2(abcˢ));
+        tΔ7.Run(dotdot2ˢ, checkerʗ2(".."u8));
+    });
+    // Test the behavior when PATH contains an executable file which is not a directory
+    var checkerʗ3 = checker;
+    Ꮡt.Run(pathVar + "=exe/xx"u8, (ж<testing.T> tΔ8) => {
+        // Inject an executable file (not a directory) in PATH.
+        // Use our own binary os.Args[0].
+        testenv.MustHaveExec(new exec_test_package.testing_TжTB(tΔ8));
+        var (exe, err) = os.Executable();
+        if (err != default!) {
+            tΔ8.Fatal(err);
+        }
+        tΔ8.Setenv(pathVar, filepath.Join(exe, "xx"));
+        tΔ8.Run(emptyˢ, checkerʗ3(""u8));
+        tΔ8.Run(dotˢ, checkerʗ3("."u8));
+        tΔ8.Run(dotdot1ˢ, checkerʗ3(abcˢ));
+        tΔ8.Run(dotdot2ˢ, checkerʗ3(".."u8));
     });
 }
 

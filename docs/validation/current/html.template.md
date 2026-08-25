@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `html/template` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-20 · converter `86bc16510`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**243 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**243 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/html/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html/template).
 
 Both runtimes skip 2 of the matched tests identically.

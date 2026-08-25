@@ -12,6 +12,7 @@ using big = go.math.big_package;
 using rand = go.math.rand_package;
 using Δos = os_package;
 using Δruntime = runtime_package;
+using slices = slices_package;
 using strings = strings_package;
 using Δsync = sync_package;
 using Δtesting = testing_package;
@@ -1175,7 +1176,6 @@ public static void TestCountMallocs(ж<Δtesting.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string etcGmt1ˢ = "Etc/GMT+1"u8;
-internal static readonly object gmt1ˢ = (@string)"GMT+1"u8;
 
 public static void TestLoadFixed(ж<Δtesting.T> Ꮡt) {
     // Issue 4064: handle locations without any zone transitions.
@@ -1188,10 +1188,15 @@ public static void TestLoadFixed(ж<Δtesting.T> Ꮡt) {
     // So GMT+1 corresponds to -3600 in the Go zone, not +3600.
     var (name, offset) = Now().In(loc).Zone();
     // The zone abbreviation is "-01" since tzdata-2016g, and "GMT+1"
-    // on earlier versions; we accept both. (Issue #17276).
-    if (!(name == "GMT+1"u8 || name == "-01"u8) || offset != -1 * 60 * 60) {
-        Ꮡt.Errorf("Now().In(loc).Zone() = %q, %d, want %q or %q, %d"u8,
-            name, offset, gmt1ˢ, (@string)"-01"u8, (nint)(-1 * 60 * 60));
+    // on earlier versions; we accept both. (Issue 17276.)
+    var wantName = new @string[]{"GMT+1"u8, "-01"u8}.slice();
+    // The zone abbreviation may be "+01" on OpenBSD. (Issue 69840.)
+    if (Δruntime.GOOS == "openbsd"u8) {
+        wantName = append(wantName, "+01"u8);
+    }
+    if (!slices.Contains(wantName, name) || offset != -1 * 60 * 60) {
+        Ꮡt.Errorf("Now().In(loc).Zone() = %q, %d, want %q (one of), %d"u8,
+            name, offset, wantName, (nint)(-1 * 60 * 60));
     }
 }
 

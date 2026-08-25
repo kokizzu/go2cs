@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `io` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-10 · converter `1d21396bf`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**60 matched · 1 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**60 matched · 1 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io).
 
 ## Verdicts

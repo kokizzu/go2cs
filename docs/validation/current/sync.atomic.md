@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `sync/atomic` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-21 · converter `390e88956`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**108 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**108 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/sync/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync/atomic).
 
 Both runtimes skip 1 of the matched tests identically.
