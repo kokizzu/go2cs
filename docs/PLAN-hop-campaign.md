@@ -210,6 +210,16 @@ content-addressed over embedded assets (A/B-verified on the linked binary's hash
 
 ## 3. HOP N — the .NET 10 hop
 
+> **EXECUTED — this section is now largely a RECORD (2026-08-24).** N0 (fleet provisioning,
+> [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md)), N1 (the SDK alone) and **N3 (the
+> TFM)** are merged to master — Stage 2 at `925e48067`, the anchors table at `f630a6fde` — and **N5 is
+> RESOLVED** at `1e51e9ad5` (§3.3's prediction answered: the bflat anomaly was preview/packaging, not
+> .NET 10 codegen). The first execution was the runbook's own shakedown, so several of this section's
+> generalizable lessons have since moved INTO [`DotNetMigration.md`](DotNetMigration.md) — that
+> document leads on procedure, and the figures below stay here because they are this instance's.
+> **N6 / N7 / N8 have not landed**; their rows below are still forward-looking, and the hop's ordering
+> rule (§5's "hop N must complete, entirely, before hop A's H1") is unchanged by what has.
+
 **Procedure: [`DotNetMigration.md`](DotNetMigration.md).** This section supplies only what is specific
 to .NET 10 and to this fleet.
 
@@ -390,6 +400,20 @@ assignment, this hop's opening regen bundle, and the shard map.
 | **H11** NuGet + guards | coordinator, desktop | no | Monotonicity to verify: `1.23.1.7 → 1.23.12.1` |
 | **H12** docs / badges | one lane | no | The **19 GOROOT-vendored `golang.org/x/*`** packages re-pin — on a patch hop, the badge family most likely to actually move |
 
+> **A PRE-H10 OBLIGATION, named here because it is this hop's one open blocker (2026-08-24).**
+> The `time` row was pre-staged by measurement, not by reasoning
+> ([`phase4/hopA-time-prestage.md`](phase4/hopA-time-prestage.md)), and the answer was a fourth shape
+> nobody had offered: the banked 159 verdicts are **safe**, the fixed Stop/Reset semantics **already
+> hold** on the shipping modes — and `GODEBUG=asynctimerchan=2` **crashes the host** with an
+> `AccessViolationException` through `NewTimer`'s `unsafe.Pointer`-wrapped channel box
+> (`src/core/time/time_impl.cs:367` is the locus). **A disclosure cannot absorb a crash**: an AV kills
+> the process and takes ~100 later verdicts with it as the documented alphabetical-tail shape, so a
+> mode-2-scoped disclosure is unreachable until the host survives the test. The closure is **one
+> bounded piece of runtime work before H10** — fix the mode-2 path, or make the managed emulation
+> treat `asynctimerchan=2` as an unsupported debug mode that degrades without crashing and disclose
+> *that* choice. Left undone, H10 sees a `time` row failing with a mass-empty tail that reads like
+> total conversion failure and is one AV on an undocumented debug mode.
+
 ### 4.2 H4a — this hop's opening regen bundle: one regen, three families
 
 The board queues it explicitly (2026-08-21): *"**RIDES THE QUEUED LEVELING REBANK** (the time-class
@@ -416,6 +440,18 @@ resolution, the ledger, the signals, the incremental merge rule). This is the in
 
 **The reserved set — pinned to the i9, never sharded blind.** Rows carrying `$longTimeouts` floors or
 known to dominate:
+
+> ⚠ **SUPERSEDED BY GENERATOR (2026-08-24).** The table below is a **copied** list, and it had already
+> drifted **twice** by the time it was written: measured against the live `$longTimeouts`
+> (`src/run-validated-sweep.ps1:495`) it misses `go/parser` (90 m), `crypto/internal/mlkem768` (30 m)
+> and `crypto/tls`'s own 30 m floor, and it misquotes two more (`crypto/dsa` 60 m → **120 m**,
+> `archive/zip` 30 m → **60 m**). A missed floor is not cosmetic: it deals exactly the rows that need a
+> raised budget to a slow worker, which is the false red the floor table exists to prevent. **The
+> generator now DERIVES the reserved set from `$longTimeouts` at generation time**
+> ([`phase4/hopA-inputs/shardmap.py`](phase4/hopA-inputs/shardmap.py), `549b4e556`) — the same hoist-vs-derive
+> ruling `_paths.ps1` got the same week. Read the table as the drifted-twice copy that ruling retired,
+> kept for the reasoning in its *Why* column; the authoritative set is whatever the generator emits at
+> dispatch.
 
 | Row | Why | Measured |
 |:--|:--|:--|
@@ -461,6 +497,16 @@ known to dominate:
 > replaced by the calibration pair's fresh numbers at recon and the map re-emitted. `k` is
 > assumed 1 pending its recon measurement. The full per-row deal (every row named exactly once,
 > checksum 162 = 7 reserved + 155 bulk) is emitted to `SHARDMAP-go1.23.12.md` at dispatch.
+>
+> ⚠ **SUPERSEDED BY GENERATOR (2026-08-24), and no longer stranded.** The computed draft and its
+> generator banked out of the coordinator's scratchpad —
+> [`phase4/hopA-inputs/shard-map-draft.md`](phase4/hopA-inputs/shard-map-draft.md) and
+> [`phase4/hopA-inputs/shardmap.py`](phase4/hopA-inputs/shardmap.py) (`e0d8930e1`) — and the generator then stopped
+> carrying a copied reserved set at all, deriving it from `$longTimeouts` at generation time
+> (`549b4e556`). So the numbers below are the **generator's output at placeholder factors**, not a map:
+> re-run the generator with the recon's measured `s_w` and `k` and it re-emits. The **7 reserved / 155
+> bulk** split above is itself a reading of the drifted copy — the derived set is larger, so expect the
+> checksum's two halves to move even before calibration does.
 
 **The reserved set is the makespan from W = 4 up.** R's seven rows sum to **3,956 s (65.9 min)**
 serial on the i9 — and at W ≥ 4 the remaining 155 rows (3,745 i9-s) fit on the other workers
@@ -500,7 +546,17 @@ Findings the numbers force, stated before dispatch:
 
 ⚠ **The map's measured cost input is the anchor's consolidation sweep** ⟨OQ-H5⟩ — the Windows
 leg's per-row walls are **banked** (`phase4/DATA-sweep-row-walltimes.md`, JOB-007, the reading
-above); the Linux leg's ledger joins the same file when it posts. Future sweeps carry per-row
+above); the Linux leg's ledger **posted 2026-08-23** (`861475db0`) into the same file — 162 rows,
+149 PASS / 10 FAIL / 3 CVAC, aggregate 19,113 s, directly instrumented per row rather than
+mtime-derived ([`phase4/DATA-sweep-row-walltimes.md`](phase4/DATA-sweep-row-walltimes.md), the
+`linux · corpus 18770d083` section). ⚠ **It is a second SECTION, not a second column**, and the
+ratio is not uniform — `crypto/dsa` is 4,366 s there against Windows' 1,317 s — so `t_r` as written
+above is not OS-aware. **Which leg a row is costed from is not a fresh question**: it falls to the
+standing rule §4.3's `s_w` row and the shard-map draft's own banner already carry — *cost inputs and
+speed factors come from FRESH same-workload calibration at campaign recon, never from pre-anchor
+history* ([`phase4/LANES.md`](phase4/LANES.md)) — so the recon that measures `k` and every `s_w`
+measures the leg's row costs with them, on the leg the shard will actually run.
+Future sweeps carry per-row
 `[NNNs]` natively (`run-validated-sweep.ps1` since `4e91a03e2`), so this input is no longer
 unrecoverable.
 
