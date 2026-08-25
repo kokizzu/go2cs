@@ -926,6 +926,152 @@ public static void TestAdjustTimers(ж<Δtesting.T> Ꮡt) {
     }
 }
 
+// Timer is done. Swap with tail and remove.
+public static void TestStopResult(ж<Δtesting.T> Ꮡt) {
+    testStopResetResult(Ꮡt, true);
+}
+
+public static void TestResetResult(ж<Δtesting.T> Ꮡt) {
+    testStopResetResult(Ꮡt, false);
+}
+
+// Test that when racing between running a timer and stopping a timer Stop
+// consistently indicates whether a value can be read from the channel.
+// Issue #69312.
+internal static void testStopResetResult(ж<Δtesting.T> Ꮡt, bool testStop) {
+    foreach (var (_, name) in new @string[]{"0"u8, "1"u8, "2"u8}.slice()) {
+        Ꮡt.Run("asynctimerchan="u8 + name, (ж<Δtesting.T> tΔ1) => {
+            testStopResetResultGODEBUG(tΔ1, testStop, name);
+        });
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string godebugˢ = "GODEBUG"u8;
+
+internal static void testStopResetResultGODEBUG(ж<Δtesting.T> Ꮡt, bool testStop, @string godebug) {
+    Ꮡt.Setenv(godebugˢ, "asynctimerchan="u8 + godebug);
+    bool stopOrReset(ж<Δtime.Timer> timer) {
+        if (testStop){
+            return timer.Stop();
+        } else {
+            return timer.Reset((Δtime.Duration)(3600000000000L));
+        }
+    }
+    var start = new channel<EmptyStruct>(0);
+    ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
+    const nint N = 1000;
+    Ꮡwg.Add(N);
+    foreach (var _ᴛ1 in range(N)) {
+        var startʗ1 = start;
+        var stopOrResetʗ1 = stopOrReset;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                ᐸꟷ(startʗ1);
+                for (nint j = 0; j < 100; j++) {
+                    var timer1 = NewTimer(1 * Millisecond);
+                    var timer2 = NewTimer(1 * Millisecond);
+                    var selᴛ15 = (~timer1).C;
+                    var selᴛ16 = (~timer2).C;
+                    switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
+                    case 0 when selᴛ15.ꟷᐳ(out _): {
+                        if (!stopOrResetʗ1(timer2)) {
+                            // The test fails if this
+                            // channel read times out.
+                            ᐸꟷ((~timer2).C);
+                        }
+                        break;
+                    }
+                    case 1 when selᴛ16.ꟷᐳ(out _): {
+                        if (!stopOrResetʗ1(timer1)) {
+                            // The test fails if this
+                            // channel read times out.
+                            ᐸꟷ((~timer1).C);
+                        }
+                        break;
+                    }}
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+    }
+    close(start);
+    Ꮡwg.Wait();
+}
+
+// Test having a large number of goroutines wake up a ticker simultaneously.
+// This used to trigger a crash when run under x/tools/cmd/stress.
+public static void TestMultiWakeupTicker(ж<Δtesting.T> Ꮡt) {
+    if (Δtesting.Short()) {
+        Ꮡt.Skip(shortˢ);
+    }
+    nint goroutines = Δruntime.GOMAXPROCS(0);
+    var timer = NewTicker(Microsecond);
+    ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
+    Ꮡwg.Add(goroutines);
+    foreach (var _ᴛ1 in range(goroutines)) {
+        var timerʗ1 = timer;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                foreach (var _ᴛ2 in range(100000)) {
+                    var selᴛ17 = (~timerʗ1).C;
+                    var selᴛ18 = After(Millisecond);
+                    switch (select(ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
+                    case 0 when selᴛ17.ꟷᐳ(out _): {
+                        break;
+                    }
+                    case 1 when selᴛ18.ꟷᐳ(out _): {
+                        break;
+                    }}
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+    }
+    Ꮡwg.Wait();
+}
+
+// Test having a large number of goroutines wake up a timer simultaneously.
+// This used to trigger a crash when run under x/tools/cmd/stress.
+public static void TestMultiWakeupTimer(ж<Δtesting.T> Ꮡt) {
+    if (Δtesting.Short()) {
+        Ꮡt.Skip(shortˢ);
+    }
+    nint goroutines = Δruntime.GOMAXPROCS(0);
+    var timer = NewTimer(ΔNanosecond);
+    ref var wg = ref heap(new Δsync.WaitGroup(), out var Ꮡwg);
+    Ꮡwg.Add(goroutines);
+    foreach (var _ᴛ1 in range(goroutines)) {
+        var timerʗ1 = timer;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                foreach (var _ᴛ2 in range(10000)) {
+                    var selᴛ19 = (~timerʗ1).C;
+                    switch (trySelect(ᐸꟷ(selᴛ19, ꓸꓸꓸ))) {
+                    case 0 when selᴛ19.ꟷᐳ(out _): {
+                        break;
+                    }
+                    default: {
+                        break;
+                    }}
+                    timerʗ1.Reset(ΔNanosecond);
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+    }
+    Ꮡwg.Wait();
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object skippingWithGomaxprocs2ˢ = (@string)"skipping with GOMAXPROCS < 2 or NumCPU < GOMAXPROCS"u8;
 internal static readonly @string nsOpˢ = "ns/op"u8;
@@ -938,8 +1084,6 @@ internal static readonly @string maxLateNsˢ = "max-late-ns"u8;
     internal int64 count;
     internal array<int64> _ = new(5); // cache line padding
 }
-
-// Timer is done. Swap with tail and remove.
 
 // Benchmark timer latency when the thread that creates the timer is busy with
 // other work and the timers must be serviced by other threads.

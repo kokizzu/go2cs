@@ -356,8 +356,8 @@ public static void TestUnitIteration(ж<testing.T> Ꮡt) {
                     }
                 }
             }
-            tΔ1.Logf("skipping CUs:     %v"u8, units[0]);
-            tΔ1.Logf("not-skipping CUs: %v"u8, units[1]);
+            tΔ1.Logf("skipping CUs:     %v"u8, (any)(units[0]));
+            tΔ1.Logf("not-skipping CUs: %v"u8, (any)(units[1]));
             if (!reflect.DeepEqual(units[0], units[1])) {
                 tΔ1.Fatal(setOfCUsDifferˢ);
             }

@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `debug/dwarf` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-09 · converter `1242e74b5`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**40 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**40 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/debug/dwarf`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/dwarf).
 
 ## Verdicts

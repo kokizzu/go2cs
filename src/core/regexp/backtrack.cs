@@ -14,8 +14,8 @@ namespace go;
 
 using syntax = regexp.syntax_package;
 using Δsync = sync_package;
-using io = io_package;
 using regexp;
+using Δio = io_package;
 
 partial class regexp_package {
 

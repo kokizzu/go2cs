@@ -9,5 +9,12 @@ namespace go.@internal;
 partial class zstd_package {
     static zstd_package() {
         initᴛseqCodeInfo();
+        initᴛᴛtests();
     }
+
+    // -tests hook: implemented by the internal test variant's relocated-initializer
+    // file when its _test.go files need init-order relocation into this same class;
+    // erased entirely (declaration and call) when unimplemented — the production
+    // compile set excludes the *_test.cs implementation.
+    static partial void initᴛᴛtests();
 } // end zstd_package

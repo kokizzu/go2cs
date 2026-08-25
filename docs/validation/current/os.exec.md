@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `os/exec` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-15 · converter `f8958066f`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**74 matched · 27 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**89 matched · 27 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec).
 
 Both runtimes skip 8 of the matched tests identically.
@@ -73,7 +73,22 @@ Both runtimes skip 8 of the matched tests identically.
 | `TestLookPath/GODEBUG=execerrdot=1/PATH=.` | pass | pass |
 | `TestLookPath/GODEBUG=execerrdot=1/PATH=../testdir` | pass | pass |
 | `TestLookPath/PATH=$OTHER` | pass | pass |
+| `TestLookPath/PATH=$OTHER2` | pass | pass |
+| `TestLookPath/PATH=$OTHER2/dot` | pass | pass |
+| `TestLookPath/PATH=$OTHER2/dotdot1` | pass | pass |
+| `TestLookPath/PATH=$OTHER2/dotdot2` | pass | pass |
+| `TestLookPath/PATH=$OTHER2/empty` | pass | pass |
 | `TestLookPath/PATH=$PWD` | pass | pass |
+| `TestLookPath/PATH=exe` | pass | pass |
+| `TestLookPath/PATH=exe/dot` | pass | pass |
+| `TestLookPath/PATH=exe/dotdot1` | pass | pass |
+| `TestLookPath/PATH=exe/dotdot2` | pass | pass |
+| `TestLookPath/PATH=exe/empty` | pass | pass |
+| `TestLookPath/PATH=exe/xx` | pass | pass |
+| `TestLookPath/PATH=exe/xx/dot` | pass | pass |
+| `TestLookPath/PATH=exe/xx/dotdot1` | pass | pass |
+| `TestLookPath/PATH=exe/xx/dotdot2` | pass | pass |
+| `TestLookPath/PATH=exe/xx/empty` | pass | pass |
 | `TestLookPathNotFound` | pass | pass |
 | `TestLookPathWindows` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestLookPathWindows/directory,_no_extension` | pass | fail ([disclosed](#disclosed-divergences)) |

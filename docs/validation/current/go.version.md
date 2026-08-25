@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `go/version` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-02 · converter `8dc18ad33`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**3 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**3 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/go/version`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/version).
 
 ## Verdicts
