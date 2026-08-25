@@ -130,10 +130,26 @@ run a new-TFM binary on (see the trap-5 matrix, measured on this box).
 the usual user-level state and **replaced this account's ASP.NET Core HTTPS development certificate**.
 No machine-level effect; recorded because the next box may care.
 
-## Machine: G's laptop (win-x64) — PENDING, owner: G's session
+## Machine: G's laptop (win-x64)
 
-Commands per *The commands* above. Record the resolved SDK number, the resolved install root, and both
-hives' inventories here.
+**Resolved 2026-08-24 — provisioned by the earlier scouting run, probe-verified in place.** This box
+did not need the install step: the .NET 10 perf scout had already put the full SDK and runtime on it,
+user-local, and G's own probe confirmed the side-by-side root per §2(2) rather than inferring it.
+Source: **G's mailbox report, 2026-08-24.**
+
+| | value |
+|:--|:--|
+| Side-by-side root | user-local, established by the .NET 10 perf-scout run (`claude/dotnet10-perf-scout`), **not** by this stage |
+| SDK installed | **10.0.400** (the channel band's resolution on this box, matching the rest of the fleet) |
+| Machine default | untouched, per §2(1) |
+| Probe | verified per §2(2) — **both** hives read, including the path test on the runbook's own install target |
+| `global.json` | none, per §2(4) |
+
+⚠ **This box IS §2(2)'s hazard, and it is the reason that step exists.** `dotnet --list-sdks` reads
+the machine store and cannot see a user-local side-by-side install — so a box carrying a full new SDK
+from an earlier run reads as "clean, nothing new present" on the default hive's word alone. The
+one-line path test beside the two inventory commands is what distinguishes *"not provisioned"* from
+*"provisioned where the default hive cannot see it"*, and on this box the answer was the second.
 
 ---
 

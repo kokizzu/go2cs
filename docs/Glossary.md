@@ -302,6 +302,62 @@ Annotation in memory logs for a known debt: an *OWED merge* (a finished chip bra
 integrated), an *OWED guard* (a fix landed with its regression test deferred — rare and always
 tracked), or an owed documentation/log compaction.
 
+## Document types
+
+The repository's durable documents fall into five kinds, and which kind a document is decides who
+may edit it, what may be executed from it, and which one wins when two disagree. The ladder in one
+line: **runbooks lead on procedure; plans hold ruled strategy; records hold evidence; the board is
+the append-only findings ledger; the mailbox is transport.**
+
+<a id="runbook"></a>**Runbook.**
+A standing, **version-agnostic** procedure document that survives its instances — today the two
+migration runbooks, [`GoCorpusMigration.md`](GoCorpusMigration.md) and
+[`DotNetMigration.md`](DotNetMigration.md). A runbook **leads**: it is executed as written, and a
+deviation found mid-run fixes the runbook in the same stage that found it. It names instruments,
+gates and traps, never a particular release, and carries **no frozen figures** — budgets live in
+CLAUDE.md's measured table, counts with the instrument that re-measures them. A runbook edit never
+reopens a ruling.
+
+<a id="plan"></a>**Plan (strategy plan / instance plan).**
+A `PLAN-*.md`. A **strategy plan** ([`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md)) fixes a ruled
+frame — which targets, in which order — and holds its OQ rulings; it stays live until its ladder
+completes. An **instance plan** ([`PLAN-hop-campaign.md`](PLAN-hop-campaign.md)) supplies one
+campaign's fleet, readings and sequencing, quotes real figures **because it is an instance**, and
+**supplies no procedure** — procedure lives in the runbooks, referenced, never restated. When its
+instance executes, an instance plan becomes a record. Plans never override runbooks on procedure;
+runbooks never reopen plans' rulings.
+
+<a id="hop"></a>**Hop.**
+One release migration run as a unit: a **.NET hop** moves the runtime and TFM, a **Go corpus hop**
+moves the release the corpus converts from — one variable at a time, never both in one hop. Targets
+freeze at hop start (⟨OQ-1⟩). Lettering is per campaign (Hop N = .NET 10; Hop A = Go 1.23.12).
+
+<a id="record"></a>**Record (recon / rehearsal / census / data / stage ledger).**
+A point-in-time evidence document under `phase4/` — **RECON-** (a read-only survey before work),
+**REHEARSAL-** (a dry run of a procedure), **CENSUS-** (an enumeration of a population at a date,
+often later encoded into an instrument), **DATA-** (instrument output retained because it is
+unrecoverable), **STAGE-/MILESTONE-** (a ledger of one stage's execution). Records are **amended,
+never rewritten** — dated `⚠ AMENDMENT` blocks, findings marked with their disposition
+("landed: file / commit") when acted on — and they are **never executed from**: procedure extracted
+from a record moves to a runbook. Each carries a **state line** that moves:
+`DRAFT → RATIFIED → EXECUTED/CLOSED → SUPERSEDED-BY <path>`. And a record's file:line citations into
+other documents resolve against those files **at the record's banking commit**
+(`git show <sha>:<path>`), not against today's tree — a record that cites by line says so in a
+pin-note.
+
+<a id="board"></a>**Board.**
+[`phase4/BOARD-next-validation-candidates.md`](phase4/BOARD-next-validation-candidates.md) — the
+append-only findings ledger: durable findings, measurements and campaign rulings land there, inside
+the Liquid raw guard, and old entries are never edited. Delegated censuses are re-measured on the
+board rather than carried elsewhere.
+
+<a id="mailbox"></a>**Mailbox / lane.**
+The mailbox ([`phase4/MAILBOX.md`](phase4/MAILBOX.md), branch `claude/mailbox`) is the fleet's async
+**transport, not record**: questions, ready-signals, warnings — polled at session start and before
+final gates. Durable content routes by kind: procedure → the runbook in-stage, harness/gate doctrine
+→ CLAUDE.md, findings → the board. A **lane** is one worktree-plus-session executing an assigned
+slice of a campaign under the worker contract ([`GoCorpusMigration.md`](GoCorpusMigration.md) §3.6).
+
 ## .NET and tooling terms
 
 General .NET / C# / toolchain terms the conversion docs assume. (For the *emitted-code* glyphs

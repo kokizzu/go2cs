@@ -3,8 +3,17 @@
 > The standing runbook for moving the repository — the runtime library, the converted standard
 > library, the generated projects and the Phase-4 test host — from one .NET release to the next.
 > It is **version-agnostic by design**: it names instruments, gates and traps, never a particular
-> release. The .NET 10 move is its first instance, planned in
-> [`PLAN-hop-campaign.md`](PLAN-hop-campaign.md); the audience is every move after it.
+> release.
+>
+> **This runbook leads.** It is the living procedure for a .NET migration, amended in-stage as
+> lessons are learned; its first instance (the .NET 10 hop) was executed as written, every deviation
+> fixing this document in the stage that found it. **Instance plans** supply a given hop's fleet,
+> readings and sequencing ([`PLAN-hop-campaign.md`](PLAN-hop-campaign.md) was the first) and become
+> records when their hop completes; the **ruling frame**
+> ([`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md)) schedules .NET hops relative to Go hops and
+> holds the ruled decisions. **A runbook edit never reopens a ruling**; where this document and any
+> plan disagree about *procedure*, the plan is stale — fix this document if it is wrong, and mark the
+> plan superseded in the same change.
 >
 > Companion: [`GoCorpusMigration.md`](GoCorpusMigration.md), the same procedure for a new **Go**
 > release. The two are deliberately separate documents because they are deliberately separate hops.
@@ -19,10 +28,13 @@ started lying.
 
 ## 1. The invariant: one variable at a time
 
-> **Schedule fact (recon, 2026-08-23): .NET 9 reaches end of support 2026-11-10** — the STS
-> window was extended to 24 months, landing .NET 8 and 9 on the same EOL day. The .NET 10 hop is
-> therefore mandatory-by-November, not discretionary; .NET 10 has been GA since 2025-11-11 and is
-> LTS through 2028-11-14. Full survey: [`phase4/RECON-dotnet10.md`](phase4/RECON-dotnet10.md).
+> **A migration's schedule is set by the OUTGOING release's support window, not by the incoming
+> release's readiness.** *"Is the new one ready"* is almost never the live question — the target is
+> typically GA, and often LTS, long before the hop is scheduled; the question is how long the
+> **current** target may remain supported. Read both dates at the migration, and state in the record
+> which one makes the hop mandatory rather than discretionary. Worked instance, with the dates that
+> made the .NET 10 hop mandatory-by-November:
+> [`phase4/RECON-dotnet10.md`](phase4/RECON-dotnet10.md) §1.
 
 A .NET migration moves the runtime and the target framework moniker. **It moves nothing else.** In
 particular it does not move the Go toolchain, the corpus's Go release, or the converter's language
@@ -85,8 +97,36 @@ stage's gate accounting.
    >   `DOTNET_GENERATE_ASPNET_CERTIFICATE=false` for the first invocation where that matters, and
    >   say in the row which way it went.
    >
-   > The canonical per-OS command block lives with the rows it produced, in
-   > [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md).
+   > **The canonical shape, both OSes — written out here because a row cannot carry it.** A
+   > provisioning row records what a box *resolved to*, not what to type, and rows that cite each
+   > other (*"same commands as the row above"*) terminate in no command at all:
+   >
+   > ```
+   > # 0. BEFORE — probe BOTH hives (step 2). The path test is the one that catches a
+   > #    side-by-side install the default hive cannot report.
+   > dotnet --version ; dotnet --list-sdks ; dotnet --list-runtimes
+   > <path test on the runbook's own install target>
+   >
+   > # 1. INSTALL — official dotnet-install script, user-local, no PATH change.
+   > dotnet-install.{ps1,sh}  <channel-band>  <install-dir = derived from the running account>  -NoPath
+   >
+   > # 2. AFTER — both hives again. The DEFAULT's list must be UNCHANGED from step 0.
+   > dotnet --version ; dotnet --list-sdks
+   > <install-root>/dotnet --list-sdks ; <install-root>/dotnet --list-runtimes
+   > ```
+   >
+   > Three things the shape encodes, each of which a fleet has gotten wrong: **`<install-root>`
+   > derives from the running account** (`$env:USERPROFILE` / `$HOME`), never copied literally from
+   > a sibling's row; **install by channel BAND and record the patch it resolved to**, per box,
+   > because patch levels drift across a fleet and the band is the only portable instruction; and
+   > **`--list-runtimes` on the side-by-side root is not optional** — the SDK carries its own host,
+   > and the runtime patch it brings is the number every later leg's `FrameworkDescription` probe
+   > must match. The SDK number alone does not imply it.
+   >
+   > Each box's **resolved values** — install root, SDK and runtime patch, both hives before and
+   > after — are recorded in
+   > [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md). That file is the record; the
+   > shape above is the procedure.
 2. **Record both inventories per machine** — `dotnet --list-sdks` and `dotnet --list-runtimes` — in
    the machine's provisioning note, which lives in
    [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md) (one section per machine;
@@ -137,6 +177,14 @@ stage's gate accounting.
    fights. Choose the roll-forward policy deliberately — a pin to a *major* with tolerance inside it
    keeps a contributor on a different patch level working; a pin to an exact patch does not.
 
+   > ⚠ **Put nothing in it but the SDK pin — and specifically no `test` key.** `global.json` is also
+   > where `dotnet test`'s **runner selection** is configured, so a key added in passing opts the
+   > repository into a different test platform and changes the test host's shape in the middle of a
+   > migration. That is a second variable, introduced in the one stage whose entire purpose is to
+   > have one, and every testhost caveat the repository carries is written against the current
+   > runner. A runner change may well be the direction of travel; evaluate it as a **separate item
+   > after** the migration, never inside it.
+
 5. **Gate the stage on BOTH lanes, with built artifacts.** An inventory listing proves a directory
    exists, not that the box can use it, and the stage's whole purpose is a machine that can build the
    new TFM *without* having lost the old one. The bar is two builds and two probes, on throwaway
@@ -158,9 +206,10 @@ changes nothing in the repository. It is the one stage of a migration with no de
 
 ## 3. The toolchain trap catalog
 
-Four traps, each measured on a real scouting run, each stated here in the form that survives a
-version change. **Every one produces a number rather than an error** — which is what makes the
-catalog worth carrying.
+The traps below, each measured on a real run, each stated here in the form that survives a version
+change. **Every one produces a number rather than an error** — which is what makes the catalog worth
+carrying. The numbering is stable: entries are appended, never renumbered, because they are cited by
+number from other documents.
 
 ### Trap 1 — the AOT compiler binds to the TFM, not the SDK
 
@@ -274,6 +323,36 @@ on a non-Windows box fabricates failures that read exactly like runtime deltas �
 flavor's P/Invoke surface loads `kernel32.dll.so` and dies in type initializers. **A leg's
 instruments must name the flavor**, not inherit it.
 
+### Trap 6 — a new language version flips a `params` call between its normal and expanded forms
+
+**The overload-set audit is not enough, and this is the shape it misses.** A migration that surveys
+overload SETS looking for a changed *winner* can correctly find none — every emitted argument shape
+matching an overload by identity, and no rule outranking identity — and still ship a behavioral
+change. A `params` method has **two applicable forms**, and the language prefers the **normal** form
+whenever the argument converts to the collection type. So a new implicit conversion does not need a
+second candidate to change a call's meaning: it only needs to make the normal form applicable where
+previously only the expanded form was.
+
+**How it presents:** no compile error, no ambiguity diagnostic, no new warning. One argument that
+used to arrive as a single element arrives spread instead, and every value shifts by one level of
+nesting.
+
+**Detection was the VALIDATED SWEEP, not the behavioral suite.** The recorded instance surfaced as
+one ordinary failed assert inside one package's own upstream test table, in a stage whose full
+behavioral suite was green — the behavioral corpus simply does not exercise the argument shapes
+upstream test tables do. **A language-level change therefore owes a validated-roster reading**, and
+scheduling one is the whole of the remedy's detection half.
+
+Two survey conclusions to read as retracted wherever this shape is in scope, because both are the
+natural ones to reach and both are wrong here: *"the new conversions are widening, and a widening
+cannot break existing code"* is **false** for a `params` slot; and *"a single-candidate surface is
+structurally immune"* is exactly backwards — the single-candidate surface is the one that broke.
+
+**Remedy at the CONVERTER, not at the runtime library.** A slice or array of the variadic element
+type, passed as the sole argument of a non-spread variadic slot, is cast to the element type — which
+is what the language's own preference then binds, restoring the source semantics. Fixing it in the
+runtime library instead would mean withdrawing a conversion the corpus legitimately uses elsewhere.
+
 
 ## 4. Stage 1 — the SDK alone
 
@@ -343,8 +422,19 @@ from a forgotten one.
 > produces a verdict that means nothing. **And the durable fix is already in the tree**:
 > `BehavioralTestBase.cs` DERIVES its TFM from its own bin tail, which is exactly why it is the
 > one C# harness a hop does not touch. The runners adopt that derivation and the PowerShell
-> sites read one hoisted value from `src/_paths.ps1`; nine hand-edits become one, and the NEXT
-> hop is free. A Stage 2 that only search-and-replaces leaves the same landmines for hop N+1.
+> sites **derive** the TFM from `Directory.Build.props` through `src/_paths.ps1`; nine hand-edits
+> become **none**, and the NEXT hop is free. A Stage 2 that only search-and-replaces leaves the same
+> landmines for hop N+1.
+>
+> > ⚠ **The HOIST was tried here and falsified — this clause originally prescribed it** (*"the
+> > PowerShell sites read one hoisted value from `src/_paths.ps1`"*), and the correction is the
+> > generalizable half: **a hoist still needs an editor; a derivation needs nobody.** Prefer a
+> > derivation wherever a single source of truth is readable from the consumer — and make it throw
+> > rather than yield an empty value, because an empty derived TFM is the same false red the
+> > derivation exists to prevent, in its worst form. **Where a hoist is genuinely unavoidable, it is
+> > not complete until the migration instrument knows about the site it just created**: the hoist and
+> > the instrument's entry for it land in the SAME commit, or the next migration pays for it exactly
+> > as this one did.
 >
 > Three corrections the census also settled: **`push-nuget.ps1` is already TFM-agnostic** (its
 > merge globs `lib/*`, unions dependencies by the nuspec's own `targetFramework` attribute, and
@@ -478,10 +568,10 @@ file far larger than the executable. Run the disk preflight by hand first — th
 refuses below a documented free-space floor precisely because full-drive failures surface as *corpus
 failures* that name everything except the disk.
 
-### 6.1 Amendment — the control row is NAMED, allocation claims are COUNTED, and the scouting lessons are protocol (hop-era, per the user's perf directive)
+### 6.1 Amendment — the control row is NAMED and allocation claims are COUNTED (hop-era, per the user's perf directive)
 
-Two additions promoted from ratified doctrine into this protocol's numbered steps, and the
-pre-hop scouting folded in so its cost is paid once:
+Two additions promoted from ratified doctrine into this protocol's numbered steps, and one statement
+of where a scouting leg's numbers belong:
 
 **Step 3 is strengthened: the control row is named IN THE RECORD, and read FIRST.** "Within
 noise" is unfalsifiable until the row that *cannot* have changed is reported beside the rows that
@@ -499,53 +589,13 @@ mostly measures the laptop (the ratified counting-gate doctrine, minted when a t
 allocation deletions produced timing deltas smaller than the control row's drift). A migration
 stage claiming "no allocation regressed" runs the count-gated GolibTests rows, not a stopwatch.
 
-**The scouting lessons (2026-08-23, SDK 10.0.400 on the perf-canon laptop), folded in as
-protocol facts:**
-
-1. **The ILC binds to the TFM, not the SDK** — measured, not just cataloged (trap 1): SDK 10.0.400
-   publishing `net9.0` resolves `ILCompiler 9.0.19`, and its "10-AOT" Fib is **identical** to the
-   9-AOT Fib (177.1 vs 178.2 ms). Corollary: *there is no AOT measurement worth taking between N1
-   and N3* — the AOT column cannot move until the TFM does, so scheduling one is spending hours to
-   measure the null hypothesis of a variable that has not moved.
-2. **A 51-second "publish" is the trap-2 tell on this corpus.** A real per-benchmark publish is
-   964–1,138 s on the perf-canon laptop and ~25 min on the i7-5820K. Any AOT leg whose publish came
-   in orders of magnitude under that re-measured a stale binary; purge and disbelieve.
-3. **Roslyn 10's CS7022** on the runner's top-level-statements shape is benign and expected at N1.
-4. **`net9.0` under the 10 SDK still executes on the 9 runtime** unless explicitly selected —
-   the `FrameworkDescription` probe (trap 4) is what makes any leg's identity a fact rather than
-   an assumption, and it runs on *both* legs, every time.
-
-### 6.2 The N5 close plan — the AOT leg's falsifiable prediction, stated before the run
-
-§7 demands the AOT stage state its expectation before running; this section states it now so N5
-inherits a prediction instead of writing one under its own results.
-
-**Background:** the bflat exploration's one CPU anomaly was Fib under bflat's .NET-10-preview
-codegen — unattributable to bflat itself (same ILC/RyuJIT family), and left standing as "an
-argument for measuring the hop itself". The scouting then showed the 10-SDK-on-net9.0 leg is
-byte-for-byte the 9-ILC (lesson 1), so the anomaly's candidate cause narrows to exactly one
-untested thing: **the real .NET 10 ILC/framework pair behind a `net10.0` TFM.**
-
-**Prediction N5, falsifiable in both directions:** *running the suite's AOT column at N5 (net10.0,
-ILC 10.x), the Fib row moves materially in the direction the bflat preview showed — closing the
-anomaly's attribution as "the 10 codegen" — or it lands within the named control row's envelope of
-the N2 9-AOT baseline, and the anomaly is attributed to the preview/bflat packaging and CLOSED as
-not-a-hop-question.* Either outcome resolves the attribution; the prediction exists so the outcome
-is information rather than narrative. The comparison base is N2's 9-AOT numbers, minted on the
-same host, banked in the README's History section; the control row is the Go column, per §6.1.
-
-**RESOLVED 2026-08-24, branch two: 174.7 vs 175.3 ms (−0.3 %), control 0.0 % — attribution:
-preview/bflat packaging; corroborated independently by the route-#6 bflat-arm quarantine (the
-un-guarded arm could report `ok` for benchmarks it never compiled). The anomaly is closed as
-not-a-hop-question.** Two riders the resolution run established, both fleet-relevant: the first
-completed 10-ILC publish measured **11,862 s wall / ≥12,754 CPU-s** on the perf-canon host against
-the 9-era 894–953 s — ~10.6× CPU work, near-serial (a multi-hour ~1.0-core tail), uniform across
-benchmarks at the comparable wall point, so ladder arithmetic scales linearly — and working set
-peaked **14.9 GB** in the final phase, so **a 16 GB machine cannot run a 10-ILC publish of this
-closure without swapping** (a provisioning floor, not a tuning knob). What the compile work buys:
-on the resolved row the 10-AOT working set collapsed 75.8 → **15.5 MB** — below the unchanged JIT
-floor — so the 9-era "AOT trades memory for startup" reading does not survive on that row; whether
-the collapse generalizes is the full ladder's question, not this section's claim.
+**And the pre-hop scouting is not a protocol step — it is a MEASUREMENT, and it lives in a record.**
+A scouting leg's lessons that generalize are already in this document: the ILC binds to the TFM
+(trap 1), an implausibly fast publish has not happened (trap 2), a new compiler's diagnostics are
+classified rather than counted (trap 3), and an old-TFM binary runs on the old runtime unless
+explicitly selected (trap 4). Its **numbers** — which ILC version resolved, what the publish cost,
+what the Fib row read — belong to the hop that took them. Latest:
+[`phase4/DATA-hopN-perf.md`](phase4/DATA-hopN-perf.md).
 
 ---
 
@@ -560,6 +610,15 @@ order:
 3. **Verify** — identical timing-filtered stdout across Go, JIT and AOT.
 4. **Measure**, solo, on the perf-canon host, at the suite's own run counts.
 5. **Bank** through the runner's update flag.
+
+⚠ **An ILC publish of this closure has a real MEMORY floor, and it is a provisioning fact rather
+than a tuning knob.** A full-corpus publish's peak working set has been measured in the **tens of
+gigabytes** on a current compiler, so a machine sized comfortably for the build can still swap
+through the publish — and per-box concurrency is bounded by that peak, not by core count, because
+ILC is near-serial. Provision from the latest measured peak in
+[`phase4/DATA-hopN-perf.md`](phase4/DATA-hopN-perf.md) and **re-measure it at each migration**: the
+compiler's cost is one of the things a runtime hop moves, and it has moved by an order of magnitude
+across a single release.
 
 **State the expectation as a falsifiable prediction before running.** A migration whose AOT stage has
 no prediction cannot be surprised, and the surprise is the information. If an external toolchain's

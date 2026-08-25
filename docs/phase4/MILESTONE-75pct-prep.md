@@ -1,7 +1,21 @@
 <!-- {% raw %} — Jekyll/Liquid guard: this doc quotes Go/Liquid-ambiguous syntax and shell braces; keep the matching endraw as the final line. -->
 # MILESTONE — the 75% crossing, prepared
 
-> **Status: PREPARED, not executed.** This is the ritual package for Go 1.23.1's **terminal**
+> **✅ EXECUTED (2026-08-22) — this is now a RECORD of a ritual that ran.** The crossing happened and
+> the package below was used as written: tag **`stdlib-tests-75pct-2026-08-22`**, branch
+> **`release/go1.23`**, published **`nuget-1.23.1.7`** — all three present in the repository. The
+> roster header it waited on reads **162 / 215 (75.3 %)**, so the frame's precondition
+> (*"Complete 1.23.1"*) is satisfied, which is what opened the hop era. The `<PLACEHOLDER>` tokens
+> below were filled from the roster header at execution, exactly as the preparation required.
+>
+> Amended, never rewritten: everything under the original status line stands as prepared, including
+> the parts the execution changed — the superseded two-machine release flow is recorded as superseded
+> **in place** rather than deleted. One lesson this ritual earned is doctrine elsewhere now: the
+> **announcement text lands BEFORE the tag mints**, because the tag anchors the shipped tree and
+> cannot be moved afterward — see [`../GoCorpusMigration.md`](../GoCorpusMigration.md) H12, where the
+> release ritual is defined in five ordered elements.
+
+> **Status AS PREPARED: PREPARED, not executed.** This is the ritual package for Go 1.23.1's **terminal**
 > validation marker — 75 % of the testable standard library — assembled ahead of the crossing so the
 > crossing itself is review-and-execute rather than compose-under-pressure. Nothing here has been
 > run: no tag exists, no branch exists, no package is published, and no user-facing document has

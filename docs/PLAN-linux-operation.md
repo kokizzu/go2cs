@@ -1,5 +1,15 @@
 # PLAN — cross-platform operation (the big three: Windows, Linux, macOS)
 
+> **Document type: a findings LEDGER and execution RECORD, not a live plan.** Its F-numbers are a
+> **citation namespace** used from roughly two dozen source files, from `.gitattributes` and from
+> CLAUDE.md, so this file's path, its F-numbering and its §A/§P anchors are **frozen** — never
+> renamed, never renumbered, never dissolved — and its embedded rulings stay where their citations
+> point. Open items (F8, F9/N0, F12) are tracked where work is tracked: the board, and
+> [`phase4/DESIGN-multiplatform-corpus.md`](phase4/DESIGN-multiplatform-corpus.md). Do not re-plan
+> here. *(One reading below has been overtaken: the Linux compile wall FELL on 2026-08-14 at
+> 307/307, zero errors —* [`phase4/CENSUS-linux-compile-wall.md`](phase4/CENSUS-linux-compile-wall.md)
+> *§10. What remains beyond Windows is operational.)*
+
 > **Status:** partially executed. **Arcs 1–3 are complete** (F2, F3, F5, F6, F10 on the converter
 > side; F4 and F7 across the harness — every instrument now runs unmodified under `pwsh` on any
 > platform, and the last external Windows tool dependency is gone). As of the Arc-2 completion (lane

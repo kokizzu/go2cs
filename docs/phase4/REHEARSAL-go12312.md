@@ -1,4 +1,16 @@
-# REHEARSAL — hop A (Go 1.23.1 → 1.23.12), dry run — **DRAFT for coordinator review**
+# REHEARSAL — hop A (Go 1.23.1 → 1.23.12), dry run
+
+> **State: EXECUTED (2026-08-24).** Reviewed and acted on — every finding in §6 carries its
+> disposition in the sweep appended at the end of this document. Amended, never rewritten: the body
+> below stands exactly as the rehearsal lane wrote it, including the parts its own findings later
+> closed.
+>
+> ⚠ **Line-anchor note.** This document cites `PLAN-hop-campaign.md`, `RECON-go12312-diff.md`,
+> `LANES.md` and `ValidatedTestPackages.md` **by line number**. Those citations resolve against
+> those files **at this document's banking commit** (`27fe4632e`) — `git show 27fe4632e:<path>` —
+> not against today's tree: the consolidation that acted on these findings added status banners and
+> supersession notes that shift their lines. The *content* each citation names is still there; only
+> the numbers moved.
 
 Date: **2026-08-24** · Clone: `C:\Projects\go2cs` · Branch `master` @ `af84003f9` · tree **clean before and after**
 Toolchain on this box: `go1.23.1 windows/amd64` (`GOROOT=C:\Program Files\Go`, `GOROOT/VERSION` = `go1.23.1`)
@@ -611,4 +623,29 @@ Naming these is the point of a rehearsal, not an apology for it.
 
 ---
 
-*— DRAFT, rehearsal lane, 2026-08-24. Raw census output: `census-raw.txt`. Upstream file data: `h3-files.tsv`, `h3-compare-head.json`. Nothing in the repository was modified.*
+---
+
+## 8. Findings disposition (appended 2026-08-24 — every §6 finding, with what happened to it)
+
+The rehearsal's whole point was to surface these before the hop fired. Each is closed here against a
+commit or a document, or named as still open with its owner. **Nothing is marked closed by argument.**
+
+| # | Finding | Disposition |
+|:--|:--|:--|
+| **A** | Route #4 is CLOSED in code but documented as OPEN in three places | **CLOSED — `27fe4632e`.** All three surfaces levelled: `GoCorpusMigration.md` §1.2, `CLAUDE.md`'s route catalogue, and — the one that mattered — `migrate-gorelease.ps1`'s operator block, which was printing a falsehood at exactly H1 time. **One residual, since fixed:** the runbook's H1 step 5 still read *"close the stale-binary hole"*, a pending action for a closed hole; it now says **verify the guard held** |
+| **B** | Shard map: two reserved rows absent, two floors misquoted, assignments unbanked | **CLOSED, by removing the class rather than the instances.** The draft and generator banked (`e0d8930e1`), then `shardmap.py` was changed to **derive** the reserved set from `$longTimeouts` at generation time (`549b4e556`) — so the missing rows and misquoted floors cannot recur. `PLAN-hop-campaign.md` §4.3's static table is marked SUPERSEDED BY GENERATOR, and the derive-never-copy rule is generalized into `GoCorpusMigration.md` §3.2 |
+| **C** | The Linux-vs-Windows `t_r` ruling is unmade | **RESOLVED BY STANDING RULE — no new ruling owed.** `LANES.md`'s roster already rules that *"the hop shard map's speed factors come from FRESH same-workload calibration at campaign recon, never from pre-anchor history"*, and the shard-map draft's own banner repeats it. The leg a row is costed from is not a separate question: the recon that measures `k` and every `s_w` measures the row costs **with** them, on the leg the shard will actually run. `PLAN-hop-campaign.md` §4.3 and `GoCorpusMigration.md` §3.2 now both say so, with the measured non-uniformity (~2.5× overall, 3.3× on `crypto/dsa`) attached so the size of the effect is not lost |
+| **D** | H6 has no instrument | **CLOSED — `d215b9bf8`, `src/handown-census.ps1`.** The differential census half; it turned *"review all hand-owns"* into a six-row review list on its first run. The judgement stays human, and the runbook says so |
+| **E** | `time` can turn the hop into runtime work, and it has no manifest | **SUPERSEDED by measurement — [`hopA-time-prestage.md`](hopA-time-prestage.md) (`4f6906f40`).** The fear was falsified and something else was found: the banked 159 are safe, the fixed Stop/Reset semantics **already hold** on the shipping modes, and the real blocker is an **AV on `asynctimerchan=2`**. It is now a named pre-H10 obligation in `PLAN-hop-campaign.md` §4.1, and the rule it produced — *a disclosure cannot absorb a crash* — is in `GoCorpusMigration.md` §4 |
+| **F** | Two recon corrections worth banking | **APPLIED — `RECON-go12312-diff.md`'s dated ERRATA block** carries both verbatim |
+| **G** | Hand-own census re-measures to 73, not 70, one day later | **CARRIED, as evidence rather than as a number.** The runbook keeps the *shape* (a census of dozens reducing to a single-digit review list) and the census's own re-measure-never-carry rule; the 70 → 73 movement is recorded in `RECON-go12312-diff.md`'s amendment as what that rule looks like in practice |
+| **H** | A pattern: hop inputs are living in session scratchpads | **CLOSED, and generalized.** The recon's five raws banked by independent re-derivation (`5d4410b71`); the shard map and generator banked (`e0d8930e1`); and **this rehearsal's own three raws are banked verbatim** in [`hopA-inputs/`](hopA-inputs/) — `census-raw.txt` (152 lines, the census run behind §1), `h3-files.tsv` (160 rows, §2's independent derivation), `h3-compare-head.json` (the compare endpoint's headline, preserved as the evidence for the truncation the recon predicted). The rule the pattern earned is now `GoCorpusMigration.md` §3.4: *bank a migration's inputs in the commit that claims them; the report is not the artifact* |
+
+**One item from §7 has also been overtaken**, and is corrected here rather than in place: item 6
+asked whether `-p:GoTargetOS=linux` completes and said *"it does not today"*. The Linux compile wall
+**fell on 2026-08-14** — 307/307, zero errors
+([`CENSUS-linux-compile-wall.md`](CENSUS-linux-compile-wall.md) §10). What remains beyond Windows is
+operational, not a compile wall. Everything else in §7 stands: it names what a dry run structurally
+cannot reach, and that list does not expire.
+
+*— Rehearsal lane, 2026-08-24. Raw census output: `census-raw.txt`. Upstream file data: `h3-files.tsv`, `h3-compare-head.json` — **all three banked 2026-08-24 in [`hopA-inputs/`](hopA-inputs/)**, verbatim. Nothing in the repository was modified by the rehearsal itself.*

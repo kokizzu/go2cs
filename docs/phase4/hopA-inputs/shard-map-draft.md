@@ -343,6 +343,16 @@ Findings the numbers force, stated before dispatch:
 
 ## Appendix — reproduction
 
+> **⚠ AMENDMENT (2026-08-24) — this file and `shardmap.py` are BANKED, and the generator has moved
+> on.** "This scratchpad directory" is now `docs/phase4/hopA-inputs/` (`e0d8930e1`, banked as-found).
+> **`emit_md.py` was never banked** — it existed only in the session that wrote this file, and it is
+> gone; `shardmap.py` alone is the reproduction path, and the tables below are its output rather
+> than `emit_md.py`'s. `shardmap.py` has since changed in one load-bearing way (`549b4e556`): it
+> **derives** its reserved set from `run-validated-sweep.ps1`'s `$longTimeouts` at generation time
+> instead of carrying the copied list this draft was computed with — so re-running it today yields a
+> **larger** reserved set than the 7 rows below, before any factor calibration. Read the deal here as
+> the method's output at the placeholder factors *and* the drifted reserved set of its day.
+
 Computed by `shardmap.py` / `emit_md.py` in this scratchpad directory (Python 3; parses the
 fenced JOB-007 table from `docs/phase4/DATA-sweep-row-walltimes.md`, asserts 162 rows and the
 7 + 155 checksum, runs the §4.3 construction literally — reserved pin, DESC LPT to smallest

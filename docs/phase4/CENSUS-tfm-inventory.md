@@ -1,4 +1,15 @@
-# CENSUS — target-framework inventory for .NET migration Stage 2 (**DRAFT**, for coordinator review)
+# CENSUS — target-framework inventory for .NET migration Stage 2
+
+> **State: EXECUTED / ENCODED (2026-08-24).** Drafted for coordinator review; reviewed, acted on, and
+> **encoded into an instrument** — `src/migrate-tfm.ps1` carries this census's source set, its Class-C
+> refusals-with-reasons, and its §8 checklist, which it prints live rather than deferring to this
+> text. Stage 2 itself completed (the TFM moved across the tree at `925e48067`). Amended, never
+> rewritten: everything below stands as measured on the date it names.
+>
+> ⚠ **Line-anchor note.** This document cites `PLAN-hop-campaign.md` **by line number**. Those
+> citations resolve against that file **at this document's banking commit** —
+> `git show <sha>:docs/PLAN-hop-campaign.md` — not against today's tree, which has since gained
+> status banners and supersession notes that shift its lines.
 
 **Dated 2026-08-24.** Read-only census of `C:\Projects\go2cs` at `master` / `f534fcbfc`, working tree
 clean. Nothing was modified. Every claim below is a file:line read from the tree, not an inference.
@@ -399,4 +410,7 @@ Ordered so that no gate runs against a half-moved tree, and so the false-red gen
 
 ---
 
-*DRAFT — census only. No file in `C:\Projects\go2cs` was modified, committed, or pushed.*
+*Census only — no file in `C:\Projects\go2cs` was modified, committed, or pushed **by this census***.
+Its §8 checklist is **Stage-2 complete**, and the checklist itself now lives in `src/migrate-tfm.ps1`,
+which prints it in this document's order at every run: read the instrument's output, not this list,
+for what the current stage still owes.*

@@ -1,0 +1,152 @@
+﻿go-release migration
+  repository   C:\Projects\go2cs
+  pinned       1.23.1   (<GoStdLibVersion>, src/version.props)
+  target       1.23.12
+  toolchain    1.23.1   (via GOROOT/VERSION)
+  mode         CENSUS (read-only)
+
+editable sites -- the two classes -Apply touches
+
+  src/version.props
+    [SOURCE-OF-TRUTH] 1 site(s)
+        THE pin. Every runtime guard and the whole published version derive from this one element
+
+  src/go2cs/go.mod
+    [SOURCE-OF-TRUTH] 1 site(s)
+        the converter module's go directive (H1.2, ruled: it moves each migration). -SkipGoMod leaves it
+
+  CLAUDE.md
+    [DOC-STATEMENT] 1 site(s)
+        architecture row: the release the corpus on disk was converted from
+
+  docs/README.md
+    [DOC-STATEMENT] 1 site(s)
+        side-by-side sample section lead-in
+    [DOC-STATEMENT] 1 site(s)
+        side-by-side sample table header
+    [DOC-STATEMENT] 6 site(s)
+        the six blob links the sample table points at -- they must name the tree the committed C# came from
+    [DOC-STATEMENT] 1 site(s)
+        present-tense compile claim (the package COUNT is re-measured separately; only the release moves here)
+    [DOC-STATEMENT] 1 site(s)
+        the "Try it yourself" prerequisite -- a visitor installs this exact release or the sweep refuses
+
+  docs/ValidatedTestPackages.md
+    [DOC-STATEMENT] 1 site(s)
+        roster preamble: the release each row's test suite comes from
+    [DOC-STATEMENT] 1 site(s)
+        the denominator's definition (its VALUE is re-derived at H3/H10; only the release moves here)
+    [DOC-STATEMENT] 1 site(s)
+        the per-OS column rule names its era; H10 re-derives every column into the new one
+
+  docs/Roadmap.md
+    [DOC-STATEMENT] 1 site(s)
+        the converter-improvement loop names the toolchain it is run with
+
+  docs/Background.md
+    [DOC-STATEMENT] 1 site(s)
+        the published package version family a consumer sees on nuget.org
+    [DOC-STATEMENT] 1 site(s)
+        the completion-goal denominator's definition
+
+  docs/ConversionStrategies.md
+    [DOC-STATEMENT] 1 site(s)
+        the release the strategy summary draws its real converted snippets from
+
+history inside those same files -- MUST-NOT-CHANGE, verified present
+  CLAUDE.md                        1 occurrence(s) preserved
+      Phase-3 milestone, commit-anchored
+  CLAUDE.md                        1 occurrence(s) preserved
+      git-anchors table row
+  CLAUDE.md                        1 occurrence(s) preserved
+      git-anchors table row (the anchor NuGet release)
+  docs/README.md                   1 occurrence(s) preserved
+      the release Linux support FIRST shipped in
+  docs/README.md                   1 occurrence(s) preserved
+      milestone table row, tag-anchored
+  docs/README.md                   1 occurrence(s) preserved
+      milestone table row, tag-anchored
+  docs/Roadmap.md                  1 occurrence(s) preserved
+      dated Phase-3 status block, commit-anchored
+  docs/Roadmap.md                  1 occurrence(s) preserved
+      Phase-3 outcome over the retired src/go-src-converted tree
+  docs/Roadmap.md                  1 occurrence(s) preserved
+      the release Linux converter support FIRST shipped in
+
+unanchored occurrences in those files -- REVIEW (never auto-edited)
+  none -- every occurrence in the doc-statement files is classified
+
+whole-tree sweep for 1.23.1 -- every other site, by class
+
+  DERIVED-BY-REGEN
+     305 file(s),   651 occurrence(s)  converter-emitted badge line (readmeValidationBadge.go); moves by regen, never by edit
+     162 file(s),   162 occurrence(s)  re-derived per package by the -tests pipeline at H10
+       3 file(s),     3 occurrence(s)  converted from GOROOT's own generated zbootstrap.go
+       1 file(s),     1 occurrence(s)  GOROOT root attribution file, copied verbatim by the reconvert (core/VERSION is Go's own release record)
+
+  DERIVED-AT-RUNTIME
+       1 file(s),     7 occurrence(s)  reads <GoStdLibVersion>, owns <GoBuildNumber> per publish
+       1 file(s),     1 occurrence(s)  pin block: compares version.props against GOROOT/VERSION
+
+  MUST-NOT-CHANGE
+     653 file(s),   654 occurrence(s)  write-once published snapshot; the NuGet version pinning it is immutable
+      34 file(s),   192 occurrence(s)  design/finding record, written against a named release
+       5 file(s),    84 occurrence(s)  hermetic fixture: the release is an INPUT to the function under test, not a pin
+       5 file(s),    59 occurrence(s)  a plan NAMES the hop (X -> Y); substituting would destroy the very statement
+      31 file(s),    31 occurrence(s)  behavioral/performance fixture module floor; inert for release-tag expansion (that reads GOVERSION)
+       9 file(s),    28 occurrence(s)  illustrative comment; the code itself derives the release at runtime
+       3 file(s),    12 occurrence(s)  hermetic fixture: the version string is an INPUT to the function under test
+       1 file(s),    10 occurrence(s)  census records ("across the whole Go X stdlib, N sites") and illustrative doc-link examples
+       1 file(s),     7 occurrence(s)  the news archive: dated entries about what happened
+       1 file(s),     3 occurrence(s)  backlog items describing what a past release shipped
+       1 file(s),     2 occurrence(s)  tour prose naming the release its worked example was captured on
+       2 file(s),     2 occurrence(s)  the go.mod the tour EMITS carries a module floor, on the same reasoning as the fixtures
+       1 file(s),     2 occurrence(s)  illustrative comment showing go version go2cs.exe output shape
+       1 file(s),     1 occurrence(s)  measurement environment stamp: the toolchain a benchmark number was measured on
+       1 file(s),     1 occurrence(s)  the tour module floor; same reasoning as the fixtures
+       1 file(s),     1 occurrence(s)  archived record
+       1 file(s),     1 occurrence(s)  explanatory comment naming the era the roster columns were banked in
+       1 file(s),     1 occurrence(s)  stamps the CONVERTER TOOL version; its comment merely contrasts itself with version.props
+       1 file(s),     1 occurrence(s)  hand-owned test host: a measurement record naming the release it was measured on
+       1 file(s),     1 occurrence(s)  measurement environment stamp: the toolchain a number was measured on
+       1 file(s),     1 occurrence(s)  hermetic golden for the proof-page renderer; the release is fixture data
+
+  UNCLASSIFIED: none -- every tracked occurrence falls in a named class
+
+NOT done here -- the operator owns these
+  1. The toolchain (H1). Install Go 1.23.12 side-by-side, bump x/tools and x/mod as their OWN
+     commit with its own CNR, then rebuild the converter -- a toolchain hop invalidates
+     go2cs.exe in NO harness predicate, so the build is owed explicitly:
+        cd src/go2cs && go build -o bin/go2cs
+        go test ./...
+
+  2. The REGEN (H5, H8). Generated artifacts move by conversion, never by edit. Seed the
+     staging root FIRST -- an unseeded root gives the hand-own marker nothing to detect,
+     emits every whole-file hand-own as a plain .cs, and breaks per-GOOS layout adoption:
+
+        # seed: src/core, src/version.props and docs/validation, mirroring the src/ layout
+        # then, single-target (the default windows corpus):
+        go2cs -stdlib -comments -go2cspath <staging>/src
+
+        # and the layout-L3 multi-target emission this corpus actually carries:
+        go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 \
+              -platform-stage <stage> -go2cspath <staging>/src
+
+     Delete and re-seed per run; never convert twice into one staging root.
+
+  3. The GATES. converter go test, check-no-regression.ps1, the full behavioral suite,
+     go2cs-stdlib.slnx per target OS, and the roster sweep. None is run here.
+
+  4. The JUDGEMENT. The package census (H3), the hand-own .auto differential (H6), the
+     golden-drift triage, and the per-row roster re-derivation (H10) -- every roster row
+     re-validates from the new release's own test sources, and no substitution can do that.
+
+  5. The CONVERTER TOOL version. That is set-version.ps1's (the winres PE resource), and it
+     is independent of version.props. Untouched here on purpose.
+
+  Runbook: docs/GoCorpusMigration.md
+
+census summary
+  editable sites at 1.23.1: 20 occurrence(s) across 8 file(s)
+  tracked occurrences in the whole tree: 1963
+  changed: NOTHING (census is the default; pass -Apply to edit)

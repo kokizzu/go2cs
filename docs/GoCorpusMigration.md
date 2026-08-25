@@ -5,11 +5,17 @@
 > packages — from one Go release to the next. It is **version-agnostic by design**: it names
 > instruments, gates and traps, never a particular release.
 >
-> The **strategy** lives in [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — which releases, in
-> which order, under which ruled frame, with its H0–H12 step inventory and its ruled open questions.
-> **This document is the procedure**, generalized from that inventory so it can be run again without
-> re-reading a plan written for one rung of the ladder. Where the two disagree about *what* to do,
-> the plan governs; where they disagree about *how*, this document is the one being maintained.
+> **This runbook leads.** It is the living procedure for a corpus migration: the canonical
+> H0–H12 (+H4a) step inventory is the one maintained **here**, amended in-stage as lessons are
+> learned — the discipline its first execution already practiced, ratified as the era rule
+> (board, 2026-08-24: runbooks are *executed as written, deviations fixing the runbook in the stage
+> that finds them*). The **strategy** lives in
+> [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — which releases, in which order, under which
+> ruled frame — and every "(ruled)" below points at a ruling recorded there (§8) or in an instance
+> plan. **A runbook edit never reopens a ruling**: a change that would contradict one requires a new
+> ruling first, recorded where the old one lives. Where this document and any plan disagree about
+> *procedure*, the plan is stale — fix this document if it is wrong, and mark the plan superseded in
+> the same change.
 >
 > Companion: [`DotNetMigration.md`](DotNetMigration.md), the same for a new **.NET** release. The two
 > are separate documents because they are separate hops — **one variable at a time** is the rule that
@@ -72,27 +78,31 @@ fail cleanly — the old parser mis-parses or rejects new constructs and the run
 converter's best-effort *"did not fully type-check"* path, which `check-no-regression.ps1` reports as
 `NOT MEASURED` (good) and the runners do not.
 
-**CLOSED (2026-08-24, H1.4).** Every Go binary already embeds its toolchain release, so nothing
-needed stamping: `src/tests/ConverterBuildInputs.cs` reads it back and compares it against the live
-`go env GOVERSION` in the ONE shared helper all three rebuild predicates delegate to, failing
-stale-wards (an unreadable stamp or unanswerable GOVERSION forces the rebuild). **A toolchain hop
-now invalidates `go2cs.exe` automatically; no explicit `go build` is owed, and no gate can run
-against a stale converter.**
+**The hole is closed, and the closure is structural rather than remembered.** Every Go binary
+already embeds the release that built it, so nothing needed stamping: the three rebuild predicates
+delegate to ONE shared helper (`src/tests/ConverterBuildInputs.cs`) that reads the binary's embedded
+release back, compares it against the live `go env GOVERSION`, and fails **stale-wards** — an
+unreadable stamp or an unanswerable `GOVERSION` forces the rebuild rather than excusing it. **A
+toolchain hop invalidates `go2cs.exe` by itself; no explicit `go build` is owed, and no gate runs
+against a stale converter.** The same helper derives its input set from the converter's own
+`//go:embed` directives, so an embedded-asset edit — a csproj template, the `package_info.cs`
+skeleton, a publish profile — invalidates the binary too; that sibling route is why the compare
+landed in one place rather than three. Full statement:
+[`DotNetMigration.md`](DotNetMigration.md) §5.2. Closure record (⟨OQ-6⟩, landed 2026-08-24):
+[`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) §1.4.2.
 
-✅ **The sibling route closed with it**: the converter `//go:embed`s its csproj templates,
-`package_info.cs` skeleton, icons and publish profiles, and the predicates once filtered on `*.go`
-alone — so an embedded-asset edit changed emission while invalidating the binary in no harness
-(route #5). The same shared helper derives its input set from the embed directives, which is why
-the toolchain compare landed in one place rather than three.
-[`DotNetMigration.md`](DotNetMigration.md) §5.2 carries the full statement.
+⚠ **A stamp cannot close the CONFIGURATION form of the same shape** — a toolchain pin that silently
+substitutes another release at conversion time, while the stamp truthfully names the toolchain that
+built the exe. That one is H1 step 1's, and it is verified by running, never by reading.
 
 ---
 
 ## 2. The step ladder
 
-[`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) §2 defines the canonical H0–H12 inventory. This
-section is the procedure for each, generalized. **Steps marked GATE are pass/fail and block the next;
-steps marked ⟲ are re-measured at every migration and never carried forward.**
+**This section is the canonical H0–H12 (+H4a) inventory and its procedure.** It was generalized from
+[`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) §2, which now points here; the ⟨OQ-n⟩ rulings
+behind each "(ruled)" remain recorded in that plan's §8. **Steps marked GATE are pass/fail and block
+the next; steps marked ⟲ are re-measured at every migration and never carried forward.**
 
 **Three orderings are not negotiable**, and each has a mechanical reason rather than a preference:
 
@@ -124,24 +134,34 @@ the differential. This is a ruled decision, not a preference.
 ### H1 — Toolchain provisioning **GATE**
 
 1. Install the target release **side-by-side**; confirm the target actually **executes** — run
-   `<target-root>/bin/go version` and require its OUTPUT to name the exact target. Reading
-   `GOROOT/VERSION` is **not** a verification (measured 2026-08-24, hop-A provisioning): Go 1.21+
+   `<target-root>/bin/go version` and require its OUTPUT to name the exact target. **Reading
+   `GOROOT/VERSION` is not a verification** (measured 2026-08-24, hop-A provisioning). Go 1.21+
    toolchain switching obeys a `GOTOOLCHAIN` pin (`go env GOTOOLCHAIN`, persisted in the user's
-   `go/env`) **ahead of whichever binary is invoked**, and the redirect is **silent** — on a pinned
-   box `sdk/go1.23.12/VERSION` read `go1.23.12` while `sdk/go1.23.12/bin/go version` printed
-   `go1.23.1`, and even the official `go1.23.12` download shim was redirected. A leg that trusted
-   the file would emit the whole corpus with the OLD toolchain while believing otherwise — §1.2's
-   false-green shape arriving through **configuration**, which the stale-binary remedy (stamping the
-   binary) cannot catch, because the stamp truthfully names the toolchain that built the exe, not
-   the one the pin substitutes at conversion time. Check `go env GOTOOLCHAIN` explicitly; a pin
-   naming another release must be resolved (or overridden per-invocation with `GOTOOLCHAIN=local`)
-   before any step below runs.
+   `go/env`) **ahead of whichever binary is invoked**, and the redirect is **silent**: the `VERSION`
+   file, the target's own `bin/go`, and even the official download shim can disagree, and only the
+   ones that *run* tell the truth. A leg that trusted the file would emit the whole corpus with the
+   OLD toolchain while believing otherwise — §1.2's false-green shape arriving through
+   **configuration**, which no binary stamp can catch. Check `go env GOTOOLCHAIN` explicitly; a pin
+   naming another release must be resolved, or overridden per-invocation (`GOTOOLCHAIN=<target>`,
+   or `GOTOOLCHAIN=local` with the target's `GOROOT`), before any step below runs. Prefer the
+   per-invocation override to editing the pin: the pin is a machine default, outside the standing
+   install grant, and while the hop is in flight it is *protective* — it keeps every other process
+   on the box on the outgoing release until the migration deliberately moves.
+   ⚠ **Fleet boxes are configured oppositely and neither lane's experience predicts the other's**:
+   a *pinned* box switches DOWN, silently ignoring a newly installed release; an *`auto`* box
+   switches UP, silently downloading one a `go.mod` asks for. Both make "the SDK is installed"
+   insufficient as provisioning evidence, in opposite directions. Worked instance with the resolved
+   per-box values: [`phase4/STAGE0-provisioning.md`](phase4/STAGE0-provisioning.md), its hop-A
+   section.
 2. Move the converter module's `go` directive to the target (ruled: it moves each migration).
 3. Bump the `golang.org/x/tools` and `golang.org/x/mod` requirements to releases contemporary with
    the target. The export-data policy bounds how far they may lag. **This is a separate commit with
    its own CNR** (ruled) — a dependency bump that can move emitted bytes must be visible on its own.
 4. `go build` the converter **on the new toolchain**; converter `go test ./...` green.
-5. **Close the stale-binary hole** (§1.2) before any harness runs.
+5. **Verify the stale-binary guard held** (§1.2 — closed 2026-08-24; the harnesses compare the
+   binary's embedded release against the live toolchain) before any harness runs. This is a check,
+   not a task: the guard fires on its own, and the step exists only to confirm the rebuild it forces
+   actually happened.
 
 **Gate:** converter unit tests green **and** `go2cs.exe` demonstrably built by the new toolchain.
 
@@ -149,7 +169,9 @@ the differential. This is a ruled decision, not a preference.
 
 Bump `<GoStdLibVersion>` in `src/version.props` to the exact target release, and settle the build
 number's policy at the same moment (ruled: it **resets** per release). **Nothing else changes in this
-commit** — deliberately a one-line, reviewable, revertible move, landing as one pair with H1.
+commit beyond what the instrument itself edits** — the pin, the build-number reset, H1.2's `go`
+directive, and the prose that states the release as present-tense fact. Deliberately a small,
+reviewable, revertible move, landing as one pair with H1.
 
 **The instrument is [`src/migrate-gorelease.ps1`](../src/migrate-gorelease.ps1)** (`.bat` launcher
 beside it). A bare run is a **census**: it classifies every place in the tree that spells or derives
@@ -211,6 +233,14 @@ items*: converter emission changes that landed without their corpus regen, born-
 artifacts, and cosmetic emission nits explicitly deferred to "the next deliberate regen". Each is
 individually too small to justify a full reconvert, and the standing rule is **restore rather than
 level** until one regen can carry them all.
+
+**The queue is a LEDGER, not a memory, and it lives in three places a migration reads together**:
+[`CleanupBacklog.md`](CleanupBacklog.md) (numbered housekeeping items), the *unbanked intended
+drift* inventory under `docs/phase4/` (converter arcs that landed without their regen, each row
+carrying the evidence checkable against the committed tree today), and the BOARD's standing
+*born-stale, restore rather than level* entries, which name each deferred artifact **at its banked
+counts**. A queued item recorded in none of them is one nobody will find at the regen — so
+**deferring to "the next deliberate regen" is not complete until the deferral has a ledger row**.
 
 **A corpus migration is that regen.** Schedule the bundle **before H5**, for one reason: H5's overlay
 diff is the migration's primary signal, and every un-levelled artifact is noise inside it. Levelling
@@ -286,10 +316,14 @@ is most likely to skip **because everything compiles without it**.
 > **What it does NOT do: the judgment.** Every substantive row still gets the human review below —
 > the instrument decides where H6 looks, never what H6 concludes.
 >
-> First execution (1.23.1 → 1.23.12): **73 marked files → 6 substantive** (`reflect/value.go`,
-> `runtime/runtime2.go` ×2 hand-owns, `syscall/exec_unix.go`, `syscall/dll_windows.go`,
-> `syscall/syscall_windows.go`), 50 untouched, 17 no-counterpart — each substantive row
-> independently cross-checked against `phase4/RECON-go12312-diff.md`'s package table.
+> **The shape to expect: the review list is a small fraction of the census.** Its first execution
+> reduced a census of dozens of marked files to a **single-digit** substantive set, with the rest
+> split between untouched and no-upstream-counterpart. That ratio is the instrument's whole value and
+> it is also the reason to distrust a run that does not show it — a substantive class near the census
+> size means a stripper bailing out, not upstream churn. The figures of any one execution are that
+> migration's record, not this document's: the first run's are in
+> [`phase4/RECON-go12312-diff.md`](phase4/RECON-go12312-diff.md), where each substantive row was
+> independently cross-checked against the upstream package table.
 
 **The failure mode.** A hand-owned file is frozen at the semantics of the release it was written
 against. When upstream **adds** code inside that file — a new branch, a new field, a hardening fix —
@@ -397,6 +431,21 @@ Per banked package:
 5. **Re-check the per-package deadline floors** in the sweep's long-timeout table — a migration can
    change a suite's cost.
 
+> **Pre-staging a flagged row — the technique, and it is cheap.** A row the census or the upstream
+> survey flags as risky can be answered *before* the campaign reaches it: run the NEW release's test
+> suite against the **current** corpus through the real pipeline, with the Go control side on the
+> target toolchain (verified by `go version` OUTPUT, per H1, never by a file). Where the package's
+> production sources are identical across the two releases — the hand-own census says whether they
+> are — only the TESTS differ, so the reading isolates exactly the new assertions and answers three
+> questions at once: whether the banked verdicts are safe, whether the new assertions already pass,
+> and what the failure *is* if they do not. Two mechanics: the pin guard **refuses** such a run,
+> because the corpus is still pinned to the outgoing release — mimic H2 with a worktree-local pin
+> bump and restore it afterward — and the answer may be a shape nobody offered. In the recorded
+> instance all three dispatched closure options were wrong: the banked verdicts were safe, the
+> semantics under suspicion already held, and the real blocker was a **crash** on one debug mode.
+> **Pre-staging converts a migration-day surprise into a scheduled piece of work**, which is the
+> whole of its value.
+
 **Gate:** the roster's **absolute row count** ≥ the prior migration's (ruled), with rows lost to an
 **upstream-deleted package** admitted as **recorded exceptions**. **Both** numbers — absolute and
 percentage — are reported every migration, because they can move in opposite directions when a release
@@ -435,6 +484,29 @@ a migration ends with the two unequal the badge census miscounts — loudly, by 
   snapshot, both badge retargets, and the recomputed re-verification pass. The frame requires the
   ritual *rehearsed* at the parity gate; whether a given migration also **publishes** is the frame's
   decision, not this document's.
+
+> **The release ritual, DEFINED — so that "rehearsed" names something checkable.** Five elements, in
+> this order, and the order is the part that has been paid for:
+>
+> 1. **The announcement text lands on the branch BEFORE the tag mints.** The `nuget-<version>` tag
+>    deliberately mints at the pre-pack point, because the READMEs frozen *inside* the published
+>    packages link the tree at that tag — so announcement text applied after the release leaves a
+>    visitor browsing AT the tag looking at a NEWS block that predates the announcement, and the tag
+>    cannot be moved to fix it: it anchors the exact tree the shipped binaries were built from, and
+>    the post-release branch contains merged work those binaries do not. The version the text names
+>    is deterministic *before* the bump — it is the version the dry run already computes — and links
+>    into the write-once validation snapshot resolve on the live site regardless of which tree a
+>    visitor is browsing.
+> 2. **The pre-pack signed tag**, minted once and never moved.
+> 3. **The write-once proof snapshot** under the release's own validation directory.
+> 4. **Both badge retargets** — the proof link half and the source tag-and-message half. Retargeting
+>    one is the recorded way to ship a half-migrated badge family.
+> 5. **The recomputed re-verification pass**, which is what makes the snapshot evidence rather than a
+>    copy.
+>
+> A rehearsal exercises all five on the migration's own tree. **Signing is mandatory and
+> single-machine** — the feed rejects an unsigned push — so a rehearsal proves the ritual, never the
+> credential; the credential is proved once, by the machine that holds it.
 
 ---
 
@@ -487,6 +559,53 @@ suite are the reserved set. ⚠ **The floors are floors, not overrides** — a l
 for a slower box; a smaller one still loses. Under-budgeting exactly those rows is the false red the
 table exists to prevent.
 
+⚠ **DERIVE the reserved set at generation time; never carry a copy.** The long-timeout table is
+*edited* — floors get raised, packages get added — so a reserved set typed into a plan is stale by
+its second week. The recorded instance drifted **twice** in one map's short life (three floor rows
+missing, two floors misquoted) before the generator started reading the table itself. And a copied
+list fails in the one direction that matters: a missing floor deals exactly the row that needs a
+raised budget to the slowest worker, which is the false red the floors exist to prevent. *A hoist
+still needs an editor; a derivation needs nobody.* Keep the two halves of the set visibly separate —
+the **derived** floor rows, and any row pinned for raw wall time, which is an editorial choice and
+should not be mistaken for the derived half.
+
+**The map's construction, stated so two coordinators build the same one:**
+
+```
+1.  rows  := the roster's rows at the migration branch tip   (re-read, never carried)
+2.  R     := reserved set ∩ rows                             (DERIVED, then pinned to the fastest worker)
+3.  P     := rows \ R, sorted ASC by t_r                     → phase recon: deal round-robin across W
+4.  B     := rows \ R, sorted DESC by t_r                    → phase bulk: LPT-greedy — assign the
+             largest unassigned row to the bin with the smallest (load / s_w)
+5.  split any bin whose load/s_w exceeds C into ceil(load / (s_w·C)) sequential shards
+6.  emit  the migration's shard-map document — one table, W columns, every row named exactly once,
+          with a checksum line: |rows| == |R| + |B|
+```
+
+| Symbol | Meaning | Where it comes from |
+|:--|:--|:--|
+| `W` | worker count | the fleet as engaged |
+| `s_w` | worker speed factor, fastest worker = 1.00 | **measured at this migration's recon**, from a same-workload calibration pair, reported with the worker's first shard |
+| `t_r` | row `r`'s expected wall time | the preceding consolidation sweep's per-row log, × `k` |
+| `k` | the convert-and-build multiplier for a full test action against a build-skipping one | **measured** on the recon phase's first rows; never assumed |
+| `R` | the reserved set | derived from the long-timeout table, plus the editorially pinned rows |
+| `C` | target shard wall time | one session's worth, with margin |
+
+⚠ **Every factor above is re-measured at the migration, and pre-migration cross-machine ratios are
+SUSPECT** — including `t_r`, which is **not portable across operating systems**: the recorded
+instance measured one leg at roughly 2.5× the other overall and **three times** on the single row
+that bound the makespan. So the leg a row is costed from is not a separate question to rule; the
+recon that measures `k` and `s_w` measures the row costs with them, on the leg the shard will
+actually run. **A map built at placeholder factors is a projection, not a deal** — say which it is,
+and gate dispatch on it: at small `W` the campaign is capacity-bound and every factor error passes
+through, while at larger `W` the reserved set binds and placeholders cost projection accuracy rather
+than the target.
+
+**The calibration workload is part of the protocol, not an afterthought.** A row whose time is
+dominated by fixed convert-and-build overhead cannot discriminate a fast worker from a slow one — a
+few-second row measures the overhead, not the throughput. Pick a **mid-weight** row, state the
+repetition count and where the reading is recorded, and do it before the map leans on the number.
+
 ### 3.3 Preconditions a shard must confirm before its first row
 
 - **The worker's Go toolchain is the target release and its clone is at the migration branch tip.**
@@ -522,6 +641,45 @@ on any machine, and what makes a killed or rebooted worker cost minutes rather t
   many workers nobody reads every log unless the report points at one.
 - **The ledger is committed to the shard's branch** as the shard's own artifact, so the coordinator
   merges evidence rather than claims.
+
+**Bank a migration's INPUTS where the migration can find them — in the commit that claims them.**
+Per-row retention above is one instance of a rule the repository has paid for repeatedly. A *working
+input* — the upstream per-commit file map §4's triage resolves against, a shard map's actual deal, a
+census's raw output — that lives only in the session directory which produced it re-derives from zero
+when that session ends, and the standing tidiness habit actively deletes it. **The report is not the
+artifact.** Whatever a record says is "beside this file" must actually be beside it, in the
+repository, in the commit that makes the claim; the alternative is not *"we can re-derive it"* but
+*"we will re-derive it under migration-day time pressure"*. A record whose inputs genuinely cannot be
+banked says where they are instead of promising a location that is false.
+
+**Five ways a re-derived roster reads green and is not.** The repository's standing false-green
+catalogue covers gates; a shard *campaign* is a different surface, and these five have each been met:
+
+1. **The vacuous shard.** Every row PASSes because the worker's clone was never moved to the
+   migration's corpus commit — a perfect score, measured `W` ways, on the OLD corpus. The ledger's
+   corpus-commit field is the defense **and the merge asserts it**.
+2. **The rebased-disclosure launder.** A pin breaks when its test is reworded, and the fast fix —
+   editing the signature to match — turns a real, re-derivable divergence into a rubber stamp.
+   **Re-sign, never edit.** Where a disclosure class pins its rows *as failing*, laundering is
+   forbidden by the class's own text.
+3. **The disclosure that closed silently.** On a patch-level migration, closure is the *more* likely
+   direction. It is a good outcome and still owes evidence: the arithmetic must move, visibly.
+4. **The truncated artifact protected by an up-to-date check.** A transpile that times out can leave
+   a `.cs` **zero bytes on disk**, and an empty file is still newer than the converter binary, so the
+   next run's freshness check skips it. It has been measured failing loudly; the same mechanism could
+   hide a real result. Under many workers at budget pressure transpile timeouts are *more* likely,
+   not less — **a shard reporting zero timeouts on a slow box deserves a second look, not a
+   congratulation**.
+5. **A stale converter reaching one worker and not another.** Its worst form *is* a shard campaign:
+   the worker whose binary predates a change re-derives against the old emission and reports green
+   while a rebuilt worker reports drift, and the disagreement presents as a **machine** difference —
+   the hardest kind to chase across a fleet. The converter-commit field alone is not enough, which is
+   why the row above also carries the binary's modification time.
+
+**And the structural one, which is not a false green but reads like one**: the sweep collapses build
+errors into bare failure rows *with zero diagnostics*, so a compile error hides behind batches of
+silence and nobody reads `W × M` logs. **A shard's report must distinguish "failed with named
+verdicts" from "failed with none"** — the second is a build failure wearing a verdict's clothes.
 
 ### 3.5 Signals and incremental merging
 
@@ -574,6 +732,30 @@ Two operational rules that are not optional:
   the instrument's own budget is a false-red generator, and at the sweep's long-timeout floors the
   mismatch is easy to make.
 
+**When a worker dies mid-campaign, CLASSIFY before diagnosing.** A truncated log with no diagnostic
+has four known causes and only one of them is a defect: a sibling's bare-name process kill (which is
+machine-global — worktree isolation does not help, and neither does renaming an apphost); harness
+background-task **tree** reaping at a turn boundary (which walks parentage, not names, so the rename
+defense does nothing there either); a sibling's machine-global build-server shutdown; and an actual
+reboot. **Check uptime first** — one command, and on a box that reboots it is the likeliest answer.
+Then:
+
+- **Resume, do not restart.** Rows carrying a terminal verdict at the current corpus commit are
+  skipped; in-flight rows re-run. A reserved row re-runs *whole*, which is one more reason the
+  reserved set is pinned to the fastest worker.
+- **Re-dispatch at a RAISED budget, never the same one.** A floor lands differently on a slower box;
+  re-dealing at the original budget re-creates exactly the false red the floors exist to prevent.
+- **Do not let the coordinator absorb the reserved set silently.** It is the one machine whose
+  stalling stalls everyone — say so on the channel instead.
+- **Losing the control worker changes the CLASS of the campaign's findings, not just its speed.**
+  Where one machine runs the control legs that make another platform's findings attributable, its
+  absence degrades them from *measured* to *inferred*. That is not a scheduling problem to solve
+  inside a shard map; it is a fact the coordinator states in the record. The cheap insurance is a
+  **named fallback** rather than a standing duplicate: it runs the control leg at its own speed with
+  the budget raised, and its results carry its machine name — which is all attribution ever required.
+- **The one thing that does not survive a reap is the full-roster parity sweep.** Recovery is
+  `roster − logged`, re-run inline, with the verdict arithmetic checked to close.
+
 ---
 
 ## 4. Golden-drift triage
@@ -595,10 +777,43 @@ Test each diff against the classes **in this order**:
 | **T4 · hand-own consequence** | H6's differential classified the hunk (a)/(b)/(c) | H6 owns it; H10 must not silently absorb it |
 | **T5 · UNATTRIBUTED** | none of the above | **Stop.** The migration's real signal, and the only class that blocks. Root-cause before the branch merges |
 
+**A class that is not a diff at all, and belongs in the same triage: the EXPIRED FIXTURE.** Upstream
+test data with a wall-clock lifetime — certificates above all — makes a banked suite start failing on
+a date nobody changed anything on. Upstream fixes these by pinning the affected test's clock, so the
+failure is **already solved in the release the migration is moving to**: a row reading as a
+regression on the outgoing corpus is levelled for free by the migration. Check the fixture's clock
+before triaging any row that was green, is now red, and has no code change under it — and where the
+upstream survey names such a row in advance, put it in the triage record, because the cheapest
+attribution is the one written down before the false red arrives.
+
 **The movement class to expect and welcome**, and its trap: a disclosure pinned by exact failure
 signature **breaks when its test is reworded**, and the fast fix — editing the signature to match the
 new text — converts a real, re-derivable divergence into a rubber stamp. **Re-derive and re-sign;
 never edit.** Every re-signed entry names the upstream commit that moved the test.
+
+**Fragility has TWO axes, and a signature-oriented triage looks at only one of them.** A pin breaks
+by its SIGNATURE (the failure text is reworded) or by its NAME (the test or subtest label moves), and
+the two are independent:
+
+- **Name-fragile, signature-stable.** Where a manifest pins a host or runtime constant upstream
+  cannot touch, the signature is effectively immortal and the whole exposure is in the labels.
+  Subtest names *generated from a table upstream is rewriting* are the worst case: a renamed or
+  re-cased label breaks the pin while its signature stays perfectly valid.
+- **Signature-fragile.** Where a pin quotes an upstream `t.Errorf` format string, any rewording
+  invalidates it — and **a short, generic prefix is the dangerous shape**: a handful of characters
+  that is not a go2cs message at all, which upstream can reword *and* which can collide with another
+  test in the same package emitting the same prefix.
+- **A row with NO manifest compares strictly, and that is not a safe state.** Zero disclosed means
+  **no absorption path**: any verdict movement is a hard mismatch. So a migration's attention list
+  should rank strict-compare rows carrying upstream-changed *production* code ABOVE rows with large
+  manifests — the opposite of the intuitive ordering, and the ordering the evidence supports.
+
+**A CRASH is not a divergence, and no disclosure can absorb one.** Disclosures absorb verdict
+divergence; a host that dies takes every later verdict with it, and the tail that follows — ordered
+by test name, uniformly empty — is the crash's fallout, not a hundred findings. Read a mass-empty
+tail as **one** defect at its first empty row. And note the ordering consequence: a disclosure scoped
+to the crashing case is *unreachable* until the process survives the test, so the fix is the process
+first, the disclosure second, never the other way round.
 
 **And classify closures as carefully as breaks.** A row that *matched* because both runtimes were
 wrong the same way can newly diverge, and a **disclosed divergence can silently close**. A closure is
@@ -647,11 +862,13 @@ healthy run look hung — and, in the other direction, what lets a hung one look
 
 ## Sources
 
-- [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — the ruling frame, the canonical H0–H12
-  inventory this document generalizes, the parity-gate definitions, the risk register, and the ruled
-  open questions (toolchain stamp, fresh baselines, module directive, build-number reset, roster
-  gate on absolute count, version monotonicity, removed-package disposition, audit home, audit
-  population, experiment-gated packages, test-host ownership)
+- [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — the ruling frame, the release research for
+  the ladder's remaining rungs, the risk register, and **§8's nineteen ruled open questions**, which
+  every "(ruled)" above resolves against (toolchain stamp, fresh baselines, module directive,
+  build-number reset, roster gate on absolute count, version monotonicity, removed-package
+  disposition, audit home, audit population, experiment-gated packages, test-host ownership). Its
+  §2/§3/§4 are pointer shells into this document, which now maintains the inventory, the hand-own
+  audit and the parity gates
 - `CLAUDE.md` — the reconvert ritual and its marker-gate traps; the false-green route catalogue; the
   post-sweep dirt classification; the measured budget table; the concurrent-session and detachment
   rules; the banked-row merge protection

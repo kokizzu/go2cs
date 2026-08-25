@@ -8,9 +8,14 @@
 >
 > **What belongs here**: questions needing a coordinator answer, "branch pushed, ready for merge"
 > signals, small status handoffs, warnings to sibling lanes (e.g. "sweeping crypto/tls until ~HH:MM").
-> **What does NOT**: durable findings, measurements, and rulings — those go on the BOARD
-> (`BOARD-next-validation-candidates.md`) exactly as before; the mailbox is transport, not record.
-> A coordinator answer given here that changes doctrine is a defect — doctrine lands on the board.
+> **What does NOT**: durable content — route it **by kind**, the day it is learned:
+> **procedure lessons → the runbook, in-stage** ([`../GoCorpusMigration.md`](../GoCorpusMigration.md)
+> / [`../DotNetMigration.md`](../DotNetMigration.md)); **harness/gate doctrine → CLAUDE.md**;
+> **findings, measurements and campaign rulings → the BOARD**
+> (`BOARD-next-validation-candidates.md`). The mailbox is **transport, not record**; an answer given
+> here that changes doctrine is a defect until it lands in its durable home.
+> *(Amended 2026-08-24: the original routing predated the runbooks and sent all doctrine to the
+> board.)*
 >
 > **Entry format** (one blank line between entries):
 >

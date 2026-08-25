@@ -1,6 +1,13 @@
-# DRAFT — C# 14 span-overload exposure census: the corpus is protected by identity, not by luck (read-only, 2026-08-24)
+# CENSUS — C# 14 span-overload exposure: the corpus is protected by identity, not by luck (read-only, 2026-08-24)
 
-> **DRAFT for coordinator review.** Read-only census of `C:\Projects\go2cs` at `2e9d5f549` (master).
+> **State: EXECUTED / AMENDED (2026-08-24).** Reviewed and acted on. Its headline is **falsified in
+> part** by the amendment immediately below, and the generalizable, migration-side half has **landed
+> in the runbook** as [`../DotNetMigration.md`](../DotNetMigration.md) §3 **Trap 6** — the
+> normal-vs-expanded `params` flip, and the fact that its detection was the **validated sweep**
+> rather than the behavioral suite. Amended, never rewritten: the census body stands as measured,
+> with its two retracted claims marked in place.
+>
+> Read-only census of `C:\Projects\go2cs` at `2e9d5f549` (master).
 > Nothing in the repo was modified. Scopes the item `docs/phase4/RECON-dotnet10.md` §3 row 1 names as
 > "the highest-attention item of the hop" and §7 signal 1 names as the one that would DELAY it:
 > C# 14 first-class span conversions changing overload resolution against `src/core/golib/`.
