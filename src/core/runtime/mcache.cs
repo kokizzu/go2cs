@@ -233,6 +233,13 @@ internal static readonly @string spanHasNoFreeSpaceˢ = "span has no free space"
     // Put the large span in the mcentral swept list so that it's
     // visible to the background sweeper.
     mheap_.central[spc].mcentral.fullSwept(mheap_.sweepgen).push(s);
+    // Adjust s.limit down to the object-containing part of the span.
+    //
+    // This is just to create a slightly tighter bound on the limit.
+    // It's totally OK if the garbage collector, in particular
+    // conservative scanning, can temporarily observes an inflated
+    // limit. It will simply mark the whole object or just skip it
+    // since we're in the mark phase anyway.
     s.Value.limit = s.@base() + size;
     s.initHeapBits(false);
     return s;

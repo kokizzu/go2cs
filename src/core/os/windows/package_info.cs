@@ -79,7 +79,7 @@ using static go.os_package;
 [assembly: go.GoPositionMap("os/env.go", "env.cs", "AAwgopSCgoKClIKC7JSUgqaClKyyqqKUpKiSrLKUgpaSgoKUpqSmkpSssoKCAAIQ0oLaooKClKiSqJKqog==")]
 [assembly: go.GoPositionMap("os/error.go", "error.cs", "ACA8gAACEvAADB6ApICmkoKssoKUAAIS4gACEuIAAhLiAAIWAAgCgqa4goKmgqiSlKSklA==")]
 [assembly: go.GoPositionMap("os/exec.go", "exec.cs", "AEzSAYK4gqaCyoKCpoLcgoKmooKWgoKClIKClLiigpaCgoKCuJTclIKClIKUAAMS8oKWgoKC3JSmlIKClIKUuKKClqaiggAJFgAkTpCmkAACFgAJAgACIAANAoKsABUirLIAAhDSqqKokqiSrLKqoqyyAAIQ0g==")]
-[assembly: go.GoPositionMap("os/exec_posix.go", "exec_posix.cs", "ABw06IKAgoKCuMqCgoKmgoKWloSCqIKCgoKopoIACRaSpoKmgqaCpoLmooKUgoKUgpKkxrSCgsa0gpSq1IKU")]
+[assembly: go.GoPositionMap("os/exec_posix.go", "exec_posix.cs", "ABw06IKAgoKCuILKgoKCpoKClpaEgqiCgoKCqKaCAAkWkqaCpoKmgqaC5qKClIKClIKSpMa0goLGtIKUqtSClA==")]
 [assembly: go.GoPositionMap("os/exec_windows.go", "exec_windows.cs", "ABQkAAgCgpSkpISCpLSkpIKCgpSCgoKUggAKBqKClKSkhIKCgoKUgoKCptbcgIK4gqaC1oKEgoKUpoKCgoKUupKClKqigoKCgoKUgsaCuIKClJSUgrSCtIKClKyygoKCgpSCgpSmooKmgqaC")]
 [assembly: go.GoPositionMap("os/executable.go", "executable.cs", "AAckAAsC")]
 [assembly: go.GoPositionMap("os/executable_windows.go", "executable_windows.cs", "AAsYgoKCgoKCgpSCppSmgg==")]

@@ -1388,4 +1388,15 @@ internal static slice<@string> addCriticalEnv(slice<@string> env) {
 // to test whether a returned error err is due to this condition.
 public static error ErrDot = errors.New("cannot run executable found relative to current directory"u8);
 
+// validateLookPath excludes paths that can't be valid
+// executable names. See issue #74466 and CVE-2025-47906.
+internal static error validateLookPath(@string s) {
+    var exprᴛ1 = s;
+    if (exprᴛ1 == ""u8 || exprᴛ1 == "."u8 || exprᴛ1 == ".."u8) {
+        return ErrNotFound;
+    }
+
+    return default!;
+}
+
 } // end exec_package

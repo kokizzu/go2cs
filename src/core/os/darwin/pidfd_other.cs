@@ -8,11 +8,11 @@ using syscall = syscall_package;
 
 partial class os_package {
 
-internal static ж<syscall.SysProcAttr> ensurePidfd(ж<syscall.SysProcAttr> ᏑsysAttr) {
-    return ᏑsysAttr;
+internal static (ж<syscall.SysProcAttr>, bool) ensurePidfd(ж<syscall.SysProcAttr> ᏑsysAttr) {
+    return (ᏑsysAttr, false);
 }
 
-internal static (uintptr, bool) getPidfd(ж<syscall.SysProcAttr> _) {
+internal static (uintptr, bool) getPidfd(ж<syscall.SysProcAttr> _Δp0, bool _Δp1) {
     return (0, false);
 }
 

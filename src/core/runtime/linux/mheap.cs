@@ -1306,7 +1306,6 @@ internal static void initSpan(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocType
     if (typ.manual()){
         s.manualFreeList = 0;
         s.nelems = 0;
-        s.limit = s.@base() + s.npages * (uintptr)pageSize;
         Ꮡs.of(mspan.Ꮡstate).set(mSpanManual);
     } else {
         // We must set span properties before the span is published anywhere
@@ -1334,6 +1333,8 @@ internal static void initSpan(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocType
         s.allocCache = ~(uint64)0; // all 1s indicating all free.
         s.gcmarkBits = newMarkBits((uintptr)s.nelems);
         s.allocBits = newAllocBits((uintptr)s.nelems);
+        // Adjust s.limit down to the object-containing part of the span.
+        s.limit = s.@base() + (uintptr)s.elemsize * (uintptr)s.nelems;
         // It's safe to access h.sweepgen without the heap lock because it's
         // only ever updated with the world stopped and we run on the
         // systemstack which blocks a STW transition.
@@ -1620,6 +1621,7 @@ internal static void init(this ж<mspan> Ꮡspan, uintptr @base, uintptr npages)
     span.list = default!;
     span.startAddr = @base;
     span.npages = npages;
+    span.limit = @base + npages * (uintptr)pageSize; // see go.dev/issue/74288; adjusted later for heap spans
     span.allocCount = 0;
     span.spanclass = 0;
     span.elemsize = 0;
@@ -1981,8 +1983,16 @@ internal static @unsafe.Pointer internal_weak_runtime_registerWeakPointer(@unsaf
 //go:linkname internal_weak_runtime_makeStrongFromWeak internal/weak.runtime_makeStrongFromWeak
 internal static @unsafe.Pointer internal_weak_runtime_makeStrongFromWeak(@unsafe.Pointer u) {
     var handle = (ж<atomic.Uintptr>)(uintptr)(u);
-    // Prevent preemption. We want to make sure that another GC cycle can't start.
+    // Prevent preemption. We want to make sure that another GC cycle can't start
+    // and that work.strongFromWeak.block can't change out from under us.
     var mp = acquirem();
+    // Yield to the GC if necessary.
+    if (work.strongFromWeak.block) {
+        releasem(ref (mp).DerefOrNull());
+        // Try to park and wait for mark termination.
+        // N.B. gcParkStrongFromWeak calls acquirem before returning.
+        mp = gcParkStrongFromWeak();
+    }
     var Δp = handle.Load();
     if (Δp == 0) {
         releasem(ref (mp).DerefOrNull());
@@ -2004,8 +2014,52 @@ internal static @unsafe.Pointer internal_weak_runtime_makeStrongFromWeak(@unsafe
     // Even if we just swept some random span that doesn't contain this object, because
     // this object is long dead and its memory has since been reused, we'll just observe nil.
     @unsafe.Pointer ptr = (@unsafe.Pointer)handle.Load();
+    // This is responsible for maintaining the same GC-related
+    // invariants as the Yuasa part of the write barrier. During
+    // the mark phase, it's possible that we just created the only
+    // valid pointer to the object pointed to by ptr. If it's only
+    // ever referenced from our stack, and our stack is blackened
+    // already, we could fail to mark it. So, mark it now.
+    if (gcphase != _GCoff) {
+        shade((uintptr)ptr);
+    }
     releasem(ref (mp).DerefOrNull());
+    // Explicitly keep ptr alive. This seems unnecessary since we return ptr,
+    // but let's be explicit since it's important we keep ptr alive across the
+    // call to shade.
+    KeepAlive(ptr);
     return ptr;
+}
+
+// gcParkStrongFromWeak puts the current goroutine on the weak->strong queue and parks.
+internal static ж<m> gcParkStrongFromWeak() {
+    // Prevent preemption as we check strongFromWeak, so it can't change out from under us.
+    var mp = acquirem();
+    while (work.strongFromWeak.block) {
+        @lock(Ꮡwork.of(workType.ᏑstrongFromWeak).of(workType_strongFromWeak.Ꮡlock));
+        releasem(ref (mp).DerefOrNull()); // N.B. Holding the lock prevents preemption.
+        // Queue ourselves up.
+        Ꮡwork.of(workType.ᏑstrongFromWeak).of(workType_strongFromWeak.Ꮡq).pushBack(getg());
+        // Park.
+        goparkunlock(Ꮡwork.of(workType.ᏑstrongFromWeak).of(workType_strongFromWeak.Ꮡlock), waitReasonGCWeakToStrongWait, traceBlockGCWeakToStrongWait, 2);
+        // Re-acquire the current M since we're going to check the condition again.
+        mp = acquirem();
+    }
+    // Re-check condition. We may have awoken in the next GC's mark termination phase.
+    return mp;
+}
+
+// gcWakeAllStrongFromWeak wakes all currently blocked weak->strong
+// conversions. This is used at the end of a GC cycle.
+//
+// work.strongFromWeak.block must be false to prevent woken goroutines
+// from immediately going back to sleep.
+internal static void gcWakeAllStrongFromWeak() {
+    @lock(Ꮡwork.of(workType.ᏑstrongFromWeak).of(workType_strongFromWeak.Ꮡlock));
+    ref var list = ref heap<gList>(out var Ꮡlist);
+    list = Ꮡwork.of(workType.ᏑstrongFromWeak).of(workType_strongFromWeak.Ꮡq).popList();
+    injectglist(Ꮡlist);
+    unlock(Ꮡwork.of(workType.ᏑstrongFromWeak).of(workType_strongFromWeak.Ꮡlock));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -2016,6 +2070,9 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
     // First try to retrieve without allocating.
     {
         var handleΔ1 = getWeakHandle(Δp); if (handleΔ1 != nil) {
+            // Keep p alive for the duration of the function to ensure
+            // that it cannot die while we're trying to do this.
+            KeepAlive(Δp);
             return handleΔ1;
         }
     }
@@ -2039,7 +2096,16 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
             scanblock((uintptr)@unsafe.Pointer.FromRef(ref (s.of(specialWeakHandle.Ꮡhandle)).Value), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), gcw, nil);
             releasem(ref (mp).DerefOrNull());
         }
-        return (~s).handle;
+        // Keep p alive for the duration of the function to ensure
+        // that it cannot die while we're trying to do this.
+        //
+        // Same for handle, which is only stored in the special.
+        // There's a window where it might die if we don't keep it
+        // alive explicitly. Returning it here is probably good enough,
+        // but let's be defensive and explicit. See #70455.
+        KeepAlive(Δp);
+        KeepAlive(handle.OrTypedNil());
+        return handle;
     }
     // There was an existing handle. Free the special
     // and try again. We must succeed because we're explicitly
@@ -2055,8 +2121,11 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
         @throw(failedToGetOrCreateWeakˢ);
     }
     // Keep p alive for the duration of the function to ensure
-    // that it cannot die while we're trying to this.
+    // that it cannot die while we're trying to do this.
+    //
+    // Same for handle, just to be defensive.
     KeepAlive(Δp);
+    KeepAlive(handle.OrTypedNil());
     return handle;
 }
 
@@ -2083,6 +2152,9 @@ internal static ж<atomic.Uintptr> getWeakHandle(@unsafe.Pointer Δp) {
     }
     unlock(span.of(mspan.Ꮡspeciallock));
     releasem(ref (mp).DerefOrNull());
+    // Keep p alive for the duration of the function to ensure
+    // that it cannot die while we're trying to do this.
+    KeepAlive(Δp);
     return handle;
 }
 

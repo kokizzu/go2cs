@@ -592,6 +592,20 @@ internal static Func<ж<siginfo>, ж<sigctxt>, ж<g>, bool> testSigtrap;
 
 internal static Func<ж<g>, bool> testSigusr1;
 
+// sigsysIgnored is non-zero if we are currently ignoring SIGSYS. See issue #69065.
+internal static ж<uint32> ᏑsigsysIgnored = new(default(uint32));
+internal static ref uint32 sigsysIgnored => ref ᏑsigsysIgnored.Value;
+
+//go:linkname ignoreSIGSYS os.ignoreSIGSYS
+internal static void ignoreSIGSYS() {
+    atomic.Store(ᏑsigsysIgnored, 1);
+}
+
+//go:linkname restoreSIGSYS os.restoreSIGSYS
+internal static void restoreSIGSYS() {
+    atomic.Store(ᏑsigsysIgnored, 0);
+}
+
 // sighandler is invoked when a signal occurs. The global g will be
 // set to a gsignal goroutine and we will be running on the alternate
 // signal stack. The parameter gp will be the value of the global g
@@ -690,6 +704,9 @@ internal static void sighandler(uint32 sig, ж<siginfo> Ꮡinfo, @unsafe.Pointer
         }
     }
     if (c.sigFromUser() && signal_ignored(sig)) {
+        return;
+    }
+    if (sig == _SIGSYS && c.sigFromSeccomp() && atomic.Load(ᏑsigsysIgnored) != 0) {
         return;
     }
     if ((int32)(flags & (int32)_SigKill) != 0) {

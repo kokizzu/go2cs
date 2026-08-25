@@ -177,6 +177,7 @@ internal static void gcinit() {
     work.markDoneSema = 1;
     lockInit(ref work.sweepWaiters.@lock, lockRankSweepWaiters);
     lockInit(ref work.assistQueue.@lock, lockRankAssistQueue);
+    lockInit(ref work.strongFromWeak.@lock, lockRankStrongFromWeakQueue);
     lockInit(ref work.wbufSpans.@lock, lockRankWbufSpans);
 }
 
@@ -295,6 +296,23 @@ internal static ref workType work => ref Ꮡwork.Value;
     internal gList list;
 }
 
+[GoType("dyn")] partial struct workType_strongFromWeak {
+    // block is a flag set during mark termination that prevents
+    // new weak->strong conversions from executing by blocking the
+    // goroutine and enqueuing it onto q.
+    //
+    // Mutated only by one goroutine at a time in gcMarkDone,
+    // with globally-synchronizing events like forEachP and
+    // stopTheWorld.
+    internal bool block;
+    // q is a queue of goroutines that attempted to perform a
+    // weak->strong conversion during mark termination.
+    //
+    // Protected by lock.
+    internal mutex @lock;
+    internal gQueue q;
+}
+
 [GoType] partial struct workType {
     internal lfstack full;          // lock-free list of full blocks workbuf
     internal cpu.CacheLinePad _; // prevents false-sharing between full and empty
@@ -370,6 +388,9 @@ internal static ref workType work => ref Ꮡwork.Value;
     // sweepWaiters is a list of blocked goroutines to wake when
     // we transition from mark termination to sweep.
     internal workType_sweepWaiters sweepWaiters;
+    // strongFromWeak controls how the GC interacts with weak->strong
+    // pointer conversions.
+    internal workType_strongFromWeak strongFromWeak;
     // cycles is the number of completed GC cycles, where a GC
     // cycle is sweep termination, mark, mark termination, and
     // sweep. This differs from memstats.numgc, which is
@@ -689,6 +710,21 @@ internal static void gcStart(gcTrigger trigger) {
 internal static ж<uint32> ᏑgcMarkDoneFlushed = new(default(uint32));
 internal static ref uint32 gcMarkDoneFlushed => ref ᏑgcMarkDoneFlushed.Value;
 
+// gcDebugMarkDone contains fields used to debug/test mark termination.
+
+[GoType("dyn")] partial struct gcDebugMarkDoneᴛ1 {
+    // spinAfterRaggedBarrier forces gcMarkDone to spin after it executes
+    // the ragged barrier.
+    internal atomic.Bool spinAfterRaggedBarrier;
+    // restartedDueTo27993 indicates that we restarted mark termination
+    // due to the bug described in issue #27993.
+    //
+    // Protected by worldsema.
+    internal bool restartedDueTo27993;
+}
+internal static ж<gcDebugMarkDoneᴛ1> ᏑgcDebugMarkDone = new(default(gcDebugMarkDoneᴛ1));
+internal static ref gcDebugMarkDoneᴛ1 gcDebugMarkDone => ref ᏑgcDebugMarkDone.Value;
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string gcingˢ = "gcing"u8;
 
@@ -731,6 +767,9 @@ top:
     // forEachP needs worldsema to execute, and we'll need it to
     // stop the world later, so acquire worldsema now.
     semacquire(Ꮡworldsema);
+    // Prevent weak->strong conversions from generating additional
+    // GC work. forEachP will guarantee that it is observed globally.
+    work.strongFromWeak.block = true;
     // Flush all local buffers and collect flushedWork flags.
     gcMarkDoneFlushed = 0;
     forEachP(waitReasonGCMarkTermination, (ж<Δp> pp) => {
@@ -757,6 +796,9 @@ top:
         // ragged barrier, so re-check it.
         semrelease(Ꮡworldsema);
         goto top;
+    }
+    // For debugging/testing.
+    while (ᏑgcDebugMarkDone.of(gcDebugMarkDoneᴛ1.ᏑspinAfterRaggedBarrier).Load()) {
     }
     // There was no global work, no local work, and no Ps
     // communicated work since we took markDoneSema. Therefore
@@ -794,6 +836,7 @@ top:
         }
     });
     if (restart) {
+        gcDebugMarkDone.restartedDueTo27993 = true;
         getg().Value.m.Value.preemptoff = ""u8;
         systemstack(() => {
             // Accumulate the time we were stopped before we had to start again.
@@ -814,6 +857,10 @@ top:
     // Wake all blocked assists. These will run when we
     // start the world again.
     gcWakeAllAssists();
+    // Wake all blocked weak->strong conversions. These will run
+    // when we start the world again.
+    work.strongFromWeak.block = false;
+    gcWakeAllStrongFromWeak();
     // Likewise, release the transition lock. Blocked
     // workers and assists will run when we start the
     // world again.
@@ -848,7 +895,7 @@ internal static void gcMarkTermination(worldStop stw) {
     // N.B. The execution tracer is not aware of this status
     // transition and handles it specially based on the
     // wait reason.
-    casGToWaitingForGC(curgp, _Grunning, waitReasonGarbageCollection);
+    casGToWaitingForSuspendG(curgp, _Grunning, waitReasonGarbageCollection);
     // Run gc on the g0 stack. We do this so that the g stack
     // we're currently running on will no longer change. Cuts
     // the root set down a bit (g0 stacks are not scanned, and
@@ -1263,7 +1310,8 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
         var ppʗ1 = pp;
         systemstack(() => {
             // Mark our goroutine preemptible so its stack
-            // can be scanned. This lets two mark workers
+            // can be scanned or observed by the execution
+            // tracer. This, for example, lets two mark workers
             // scan each other (otherwise, they would
             // deadlock). We must not modify anything on
             // the G stack. However, stack shrinking is
@@ -1273,7 +1321,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
             // N.B. The execution tracer is not aware of this status
             // transition and handles it specially based on the
             // wait reason.
-            casGToWaitingForGC(gpʗ1, _Grunning, waitReasonGCWorkerActive);
+            casGToWaitingForSuspendG(gpʗ1, _Grunning, waitReasonGCWorkerActive);
             var exprᴛ1 = (~ppʗ1).gcMarkWorkerMode;
             if (exprᴛ1 == gcMarkWorkerDedicatedMode) {
                 gcDrainMarkWorkerDedicated(ppʗ1.of(runtime_package.Δp.Ꮡgcw), true);

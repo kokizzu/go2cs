@@ -29,7 +29,7 @@ partial class runtime_package {
     internal atomic.Uint8 astate; // atomic copy of state bits at last unlock
     internal uint8 state;        // state bits
     internal bool isChan;         // timer has a channel; immutable; can be read without lock
-    internal uint32 blocked;       // number of goroutines blocked on timer's channel
+    internal uint32 blocked; // number of goroutines blocked on timer's channel
     // Timer wakes up at when, and then at when+period, ... (period > 0 only)
     // each time calling f(arg, seq, delay) in the timer goroutine, so f must be
     // a well-behaved function and not block.
@@ -65,6 +65,19 @@ partial class runtime_package {
     // sendLock protects sends on the timer's channel.
     // Not used for async (pre-Go 1.23) behavior when debug.asynctimerchan.Load() != 0.
     internal mutex sendLock;
+    // isSending is used to handle races between running a
+    // channel timer and stopping or resetting the timer.
+    // It is used only for channel timers (t.isChan == true).
+    // It is not used for tickers.
+    // The value is incremented when about to send a value on the channel,
+    // and decremented after sending the value.
+    // The stop/reset code uses this to detect whether it
+    // stopped the channel send.
+    //
+    // isSending is incremented only when t.mu is held.
+    // isSending is decremented only when t.sendLock is held.
+    // isSending is read only when both t.mu and t.sendLock are held.
+    internal atomic.Int32 isSending;
 }
 
 // init initializes a newly allocated timer t.
@@ -443,6 +456,14 @@ internal static bool stop(this ж<timer> Ꮡt) {
         // Stop any future sends with stale values.
         // See timer.unlockAndRun.
         t.seq++;
+        // If there is currently a send in progress,
+        // incrementing seq is going to prevent that
+        // send from actually happening. That means
+        // that we should return true: the timer was
+        // stopped, even though t.when may be zero.
+        if (t.period == 0 && Ꮡt.of(timer.ᏑisSending).Load() > 0) {
+            pending = true;
+        }
     }
     Ꮡt.unlock();
     if (!async && t.isChan) {
@@ -511,6 +532,7 @@ internal static bool modify(this ж<timer> Ꮡt, int64 when, int64 period, Actio
         Ꮡt.maybeRunAsync();
     }
     Ꮡt.trace(modifyˢ);
+    var oldPeriod = t.period;
     t.period = period;
     if (f != default!) {
         t.f = f;
@@ -545,6 +567,14 @@ internal static bool modify(this ж<timer> Ꮡt, int64 when, int64 period, Actio
         // Stop any future sends with stale values.
         // See timer.unlockAndRun.
         t.seq++;
+        // If there is currently a send in progress,
+        // incrementing seq is going to prevent that
+        // send from actually happening. That means
+        // that we should return true: the timer was
+        // stopped, even though t.when may be zero.
+        if (oldPeriod == 0 && Ꮡt.of(timer.ᏑisSending).Load() > 0) {
+            pending = true;
+        }
     }
     Ꮡt.unlock();
     if (!async && t.isChan) {
@@ -1008,7 +1038,9 @@ Redo:
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string unlockAndRunˢ = "unlockAndRun"u8;
+internal static readonly @string tooManyConcurrentTimerˢ = "too many concurrent timer firings"u8;
 internal static readonly @string unexpectedRacectxˢ = "unexpected racectx"u8;
+internal static readonly @string mismatchedIsSendingˢ = "mismatched isSending updates"u8;
 
 // unlockAndRun unlocks and runs the timer t (which must be locked).
 // If t is in a timer set (t.ts != nil), the caller must also have locked the timer set,
@@ -1062,6 +1094,13 @@ internal static void unlockAndRun(this ж<timer> Ꮡt, int64 now) {
         }
         Ꮡt.updateHeap();
     }
+    var async = Ꮡdebug.of(debugᴛ1.Ꮡasynctimerchan).Load() != 0;
+    if (!async && t.isChan && t.period == 0) {
+        // Tell Stop/Reset that we are sending a value.
+        if (Ꮡt.of(timer.ᏑisSending).Add(1) < 0) {
+            @throw(tooManyConcurrentTimerˢ);
+        }
+    }
     Ꮡt.unlock();
     if (raceenabled) {
         // Temporarily use the current P's racectx for g0.
@@ -1074,7 +1113,6 @@ internal static void unlockAndRun(this ж<timer> Ꮡt, int64 now) {
     if (ts != nil) {
         ts.unlock();
     }
-    var async = Ꮡdebug.of(debugᴛ1.Ꮡasynctimerchan).Load() != 0;
     if (!async && t.isChan) {
         // For a timer channel, we want to make sure that no stale sends
         // happen after a t.stop or t.modify, but we cannot hold t.mu
@@ -1090,7 +1128,19 @@ internal static void unlockAndRun(this ж<timer> Ꮡt, int64 now) {
         // and double-check that t.seq is still the seq value we saw above.
         // If not, the timer has been updated and we should skip the send.
         // We skip the send by reassigning f to a no-op function.
+        //
+        // The isSending field tells t.stop or t.modify that we have
+        // started to send the value. That lets them correctly return
+        // true meaning that no value was sent.
         @lock(Ꮡt.of(timer.ᏑsendLock));
+        if (t.period == 0) {
+            // We are committed to possibly sending a value
+            // based on seq, so no need to keep telling
+            // stop/modify that we are sending.
+            if (Ꮡt.of(timer.ᏑisSending).Add(-1) < 0) {
+                @throw(mismatchedIsSendingˢ);
+            }
+        }
         if (t.seq != seq) {
             f = (any _Δp0, uintptr _Δp1, int64 _Δp2) => {
             };

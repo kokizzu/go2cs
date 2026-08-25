@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/math/big@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/math/big) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/math/big)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/math/big@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/math/big) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/math/big)
 
 Package big implements arbitrary-precision arithmetic (big numbers). The following numeric types are supported:
 
@@ -63,7 +63,7 @@ Methods which don't require a result value to be passed in (for instance, \[Int.
 
 Various methods support conversions between strings and corresponding numeric values, and vice versa: \*\[Int], \*\[Rat], and \*\[Float] values implement the Stringer interface for a (default) string representation of the value, but also provide SetString methods to initialize a value from a string in a variety of supported formats (see the respective SetString documentation).
 
-Finally, \*\[Int], \*\[Rat], and \*\[Float] satisfy [fmt.Scanner](https://pkg.go.dev/fmt@go1.23.1#Scanner) for scanning and (except for \*\[Rat]) the Formatter interface for formatted printing.
+Finally, \*\[Int], \*\[Rat], and \*\[Float] satisfy [fmt.Scanner](https://pkg.go.dev/fmt@go1.23.12#Scanner) for scanning and (except for \*\[Rat]) the Formatter interface for formatted printing.
 
 ---
 

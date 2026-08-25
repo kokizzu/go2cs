@@ -3646,9 +3646,6 @@ internal static slice<ж<ColumnType>> rowsColumnInfoSetupConnLocked(driver.Rows 
     return list;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string sqlScanCalledWithoutˢ = "sql: Scan called without calling Next"u8;
-
 // Scan copies the columns in the current row into the values pointed
 // at by dest. The number of values in dest must be the same as the
 // number of columns in [Rows].
@@ -3719,33 +3716,38 @@ public static error Scan(this ж<Rows> Ꮡrs, params ꓸꓸꓸany destʗp) {
         return fmt.Errorf("sql: Scan called without calling Next (closemuScanHold)"u8);
     }
     Ꮡrs.of(Rows.Ꮡclosemu).RLock();
-    if (rs.lasterr != default! && !AreEqual(rs.lasterr, io.EOF)) {
-        Ꮡrs.of(Rows.Ꮡclosemu).RUnlock();
-        return rs.lasterr;
-    }
-    if (rs.closed) {
-        var err = rs.lasterrOrErrLocked(errRowsClosed);
-        Ꮡrs.of(Rows.Ꮡclosemu).RUnlock();
-        return err;
-    }
-    if (scanArgsContainRawBytes(dest)){
+    rs.raw = rs.raw[..0];
+    var err = Ꮡrs.scanLocked(dest.ꓸꓸꓸ);
+    if (err == default! && scanArgsContainRawBytes(dest)){
         rs.closemuScanHold = true;
-        rs.raw = rs.raw[..0];
     } else {
         Ꮡrs.of(Rows.Ꮡclosemu).RUnlock();
     }
+    return err;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string sqlScanCalledWithoutˢ = "sql: Scan called without calling Next"u8;
+
+internal static error scanLocked(this ж<Rows> Ꮡrs, params ꓸꓸꓸany destʗp) {
+    var dest = destʗp.sslice();
+
+    ref var rs = ref Ꮡrs.DerefOrNull();
+    if (rs.lasterr != default! && !AreEqual(rs.lasterr, io.EOF)) {
+        return rs.lasterr;
+    }
+    if (rs.closed) {
+        return rs.lasterrOrErrLocked(errRowsClosed);
+    }
     if (rs.lastcols == default!) {
-        Ꮡrs.closemuRUnlockIfHeldByScan();
         return errors.New(sqlScanCalledWithoutˢ);
     }
     if (len(dest) != len(rs.lastcols)) {
-        Ꮡrs.closemuRUnlockIfHeldByScan();
         return fmt.Errorf("sql: expected %d destination arguments in Scan, not %d"u8, len(rs.lastcols), len(dest));
     }
     foreach (var (i, sv) in rs.lastcols) {
         var err = convertAssignRows(dest[i], sv, Ꮡrs);
         if (err != default!) {
-            Ꮡrs.closemuRUnlockIfHeldByScan();
             return fmt.Errorf(@"sql: Scan error on column index %d, name %q: %w"u8, i, rs.rowsi.Columns()[i], err);
         }
     }

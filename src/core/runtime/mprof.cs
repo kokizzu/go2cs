@@ -1145,11 +1145,12 @@ internal static void expandFrames(slice<BlockProfileRecord> Δp) {
     foreach (var (i, _) in Δp) {
         var cf = CallersFrames(Δp[i].StackRecord.Stack());
         nint j = 0;
-        for (; j < len(expandedStack); j++) {
+        while (j < len(expandedStack)) {
             var (f, more) = cf.Next();
             // f.PC is a "call PC", but later consumers will expect
             // "return PCs"
             expandedStack[j] = f.PC + 1;
+            j++;
             if (!more) {
                 break;
             }
@@ -1291,7 +1292,8 @@ internal static (nint n, bool ok) pprof_mutexProfileInternal(slice<profilerecord
 // of calling ThreadCreateProfile directly.
 public static (nint n, bool ok) ThreadCreateProfile(slice<StackRecord> Δp) {
     return threadCreateProfileInternal(len(Δp), (profilerecord.StackRecord r) => {
-        copy(Δp[0].Stack0[..], r.Stack);
+        nint i = copy(Δp[0].Stack0[..], r.Stack);
+        builtin.clear(Δp[0].Stack0[(int)(i)..]);
         Δp = Δp[1..];
     });
 }
@@ -1507,11 +1509,6 @@ internal static void tryRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbu
         // so here we check _Gdead first.
         return;
     }
-    if (isSystemGoroutine(ref (Ꮡgp1).DerefOrNull(), true)) {
-        // System goroutines should not appear in the profile. (The finalizer
-        // goroutine is marked as "already profiled".)
-        return;
-    }
     while (ᐧ) {
         var prev = Ꮡgp1.of(g.ᏑgoroutineProfiled).Load();
         if (prev == goroutineProfileSatisfied) {
@@ -1552,6 +1549,17 @@ internal static readonly @string cannotReadStackOfRunningˢ = "cannot read stack
 internal static void doRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbuf) {
     ref var gp1 = ref Ꮡgp1.DerefOrNull();
 
+    if (isSystemGoroutine(ref (Ꮡgp1).DerefOrNull(), false)) {
+        // System goroutines should not appear in the profile.
+        // Check this here and not in tryRecordGoroutineProfile because isSystemGoroutine
+        // may change on a goroutine while it is executing, so while the scheduler might
+        // see a system goroutine, goroutineProfileWithLabelsConcurrent might not, and
+        // this inconsistency could cause invariants to be violated, such as trying to
+        // record the stack of a running goroutine below. In short, we still want system
+        // goroutines to participate in the same state machine on gp1.goroutineProfiled as
+        // everything else, we just don't record the stack in the profile.
+        return;
+    }
     if (readgstatus(Ꮡgp1) == _Grunning) {
         print((@string)"doRecordGoroutineProfile gp1="u8, gp1.goid, (@string)"\n"u8);
         @throw(cannotReadStackOfRunningˢ);
@@ -1672,7 +1680,8 @@ public static (nint n, bool ok) GoroutineProfile(slice<StackRecord> Δp) {
         return (n, ok);
     }
     foreach (var (i, mr) in records[0..(int)(n)]) {
-        copy(Δp[i].Stack0[..], mr.Stack);
+        nint l = copy(Δp[i].Stack0[..], mr.Stack);
+        builtin.clear(Δp[i].Stack0[(int)(l)..]);
     }
     return (n, ok);
 }

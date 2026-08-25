@@ -677,10 +677,11 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
         time.Time deadline = c.deadline();
         ref var reqs = ref heap<slice<ж<Request>>>(out var Ꮡreqs);
         ref var resp = ref heap<ж<Response>>(out var Ꮡresp);
-        Action<ж<Request>> copyHeaders = Ꮡc.makeHeadersCopier(Ꮡreq);
+        Action<ж<Request>, bool> copyHeaders = Ꮡc.makeHeadersCopier(Ꮡreq);
         bool reqBodyClosed = false; // have we closed the current req.Body?
         ref var redirectMethod = ref heap(new @string(), out var ᏑredirectMethod);
-        bool includeBody = default!;
+        bool includeBody = true;
+        bool stripSensitiveHeaders = false;
         error uerr(error err) {
             // the body may have been closed already by c.send()
             if (!reqBodyClosed) {
@@ -748,7 +749,12 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                 // in case the user set Referer on their first request.
                 // If they really want to override, they can do it in
                 // their CheckRedirect func.
-                copyHeaders(Ꮡreq);
+                if (!stripSensitiveHeaders && (~(~reqs[0]).URL).Host != (~req.URL).Host) {
+                    if (!shouldCopyHeaderOnRedirect((~reqs[0]).URL, req.URL)) {
+                        stripSensitiveHeaders = true;
+                    }
+                }
+                copyHeaders(Ꮡreq, stripSensitiveHeaders);
                 // Add the Referer header from the most recent
                 // request URL to the new one, if it's not https->http:
                 {
@@ -815,7 +821,7 @@ internal static readonly @string cookieˢ = "Cookie"u8;
 // makeHeadersCopier makes a function that copies headers from the
 // initial Request, ireq. For every redirect, this function must be called
 // so that it can copy headers into the upcoming Request.
-internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<Request> Ꮡireq) {
+internal static Action<ж<Request>, bool> makeHeadersCopier(this ж<Client> Ꮡc, ж<Request> Ꮡireq) {
     ref var c = ref Ꮡc.DerefOrNull();
     ref var ireq = ref Ꮡireq.DerefOrNull();
 
@@ -830,11 +836,9 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
             icookies[(~cΔ1).Name] = append(icookies[(~cΔ1).Name], cΔ1);
         }
     }
-    ref var preq = ref heap<ж<Request>>(out var Ꮡpreq);
-    preq = Ꮡireq; // The previous request
     var icookiesʗ1 = icookies;
     var ireqhdrʗ1 = ireqhdr;
-    return (ж<Request> req) => {
+    return (ж<Request> req, bool stripSensitiveHeaders) => {
         // If Jar is present and there was some initial cookies provided
         // via the request header, then we may need to alter the initial
         // cookies as we follow redirects since each redirect may end up
@@ -872,11 +876,16 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
         // Copy the initial request's Header values
         // (at least the safe ones).
         foreach (var (k, vv) in ireqhdrʗ1) {
-            if (shouldCopyHeaderOnRedirect(k, (~Ꮡpreq.ValueSlot).URL, (~req).URL)) {
+            var sensitive = false;
+            var exprᴛ1 = CanonicalHeaderKey(k);
+            if (exprᴛ1 == "Authorization"u8 || exprᴛ1 == "Www-Authenticate"u8 || exprᴛ1 == "Cookie"u8 || exprᴛ1 == "Cookie2"u8 || exprᴛ1 == "Proxy-Authorization"u8 || exprᴛ1 == "Proxy-Authenticate"u8) {
+                sensitive = true;
+            }
+
+            if (!(sensitive && stripSensitiveHeaders)) {
                 req.Value.Header[k] = vv;
             }
         }
-        Ꮡpreq.ValueSlot = req; // Update previous Request with the current request
     };
 }
 
@@ -1075,29 +1084,23 @@ public static (ж<Response> resp, error err) Head(this ж<Client> Ꮡc, @string 
     return err;
 }
 
-internal static bool shouldCopyHeaderOnRedirect(@string headerKey, ж<url.URL> Ꮡinitial, ж<url.URL> Ꮡdest) {
+internal static bool shouldCopyHeaderOnRedirect(ж<url.URL> Ꮡinitial, ж<url.URL> Ꮡdest) {
     ref var initial = ref Ꮡinitial.DerefOrNull();
 
-    var exprᴛ1 = CanonicalHeaderKey(headerKey);
-    if (exprᴛ1 == "Authorization"u8 || exprᴛ1 == "Www-Authenticate"u8 || exprᴛ1 == "Cookie"u8 || exprᴛ1 == "Cookie2"u8) {
-        @string ihost = idnaASCIIFromURL(Ꮡinitial);
-        @string dhost = idnaASCIIFromURL(Ꮡdest);
-        return isDomainOrSubdomain(dhost, // Permit sending auth/cookie headers from "foo.com"
- // to "sub.foo.com".
- // Note that we don't send all cookies to subdomains
- // automatically. This function is only used for
- // Cookies set explicitly on the initial outgoing
- // client request. Cookies automatically added via the
- // CookieJar mechanism continue to follow each
- // cookie's scope as set by Set-Cookie. But for
- // outgoing requests with the Cookie header set
- // directly, we don't know their scope, so we assume
- // it's for *.domain.com.
- ihost);
-    }
-
-    // All other headers are copied:
-    return true;
+    // Permit sending auth/cookie headers from "foo.com"
+    // to "sub.foo.com".
+    // Note that we don't send all cookies to subdomains
+    // automatically. This function is only used for
+    // Cookies set explicitly on the initial outgoing
+    // client request. Cookies automatically added via the
+    // CookieJar mechanism continue to follow each
+    // cookie's scope as set by Set-Cookie. But for
+    // outgoing requests with the Cookie header set
+    // directly, we don't know their scope, so we assume
+    // it's for *.domain.com.
+    @string ihost = idnaASCIIFromURL(Ꮡinitial);
+    @string dhost = idnaASCIIFromURL(Ꮡdest);
+    return isDomainOrSubdomain(dhost, ihost);
 }
 
 // isDomainOrSubdomain reports whether sub is a subdomain (or exact

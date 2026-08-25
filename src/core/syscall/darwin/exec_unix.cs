@@ -244,6 +244,8 @@ internal static (nint pid, error err) forkExec(@string argv0, slice<@string> arg
         while (AreEqual(err1Δ1, EINTR)) {
             (_, err1Δ1) = Wait4(pid, Ꮡwstatus, 0, nil);
         }
+        // OS-specific cleanup on failure.
+        forkAndExecFailureCleanup(ref (Ꮡattr).DerefOrNull(), ref (sys).DerefOrNull());
         return (0, err);
     }
     // Read got EOF, so pipe closed on exec, so exec succeeded.

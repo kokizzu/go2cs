@@ -14,4 +14,11 @@ partial class runtime_package {
     return c.sigcode() == _SI_USER;
 }
 
+// sigFromSeccomp reports whether the signal was sent from seccomp.
+//
+//go:nosplit
+[GoRecv] internal static bool sigFromSeccomp(this ref sigctxt c) {
+    return false;
+}
+
 } // end runtime_package

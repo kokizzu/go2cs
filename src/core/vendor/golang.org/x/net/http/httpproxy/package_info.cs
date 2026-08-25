@@ -10,6 +10,8 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using netipꓸAddr = go.net.netip_package.ΔAddr;
+global using netipꓸPrefix = go.net.netip_package.ΔPrefix;
 global using netꓸAddr = go.net_package.ΔAddr;
 global using netꓸError = go.net_package.ΔError;
 global using osꓸDirEntry = go.io.fs_package.DirEntry;
@@ -61,7 +63,7 @@ using static go.vendor.golang.org.x.net.http.httpproxy_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http/httpproxy/proxy.go", "proxy.cs", "AFayAfIABxCigoCCtgACGgALBKaC1qKCgqSCgqaClIKWpoKCloK4gIK2gpSssoKUgoKUgpSCgoKohIKCgriCgqamgoCCpICCpqKCgpaCgoKogIKCuIKClJSCpqaAgoKmlN6ClIKCgpSAgqQACRaygoCCpIKClKqgpAAJFIKUpoKCgqYADRqC7oIABxCCgpQACBSCgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http/httpproxy/proxy.go", "proxy.cs", "AFe0AfIABxCigoCCtgACGgALBKaC1qKCgqSCgqaClIKWpoKCloK4gIK2gpSssoKUgoKUgpSCgoKCgqiEgoKCuIKCpqaCgIKkgIKmooKCloKCgqiAgoK4goKUlIKmpoCCgqaU3oKUgoKClICCpAAJFrKCgIKkgoKUqqCkAAkUgpSmgoKCpgANGoLuggAHEIKClAAIFIKClIKU")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.net.http;

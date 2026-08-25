@@ -222,55 +222,41 @@ internal static int32 cgocall(@unsafe.Pointer fn, @unsafe.Pointer arg) {
 //go:nosplit
 internal static void callbackUpdateSystemStack(ref m mp, uintptr sp, bool signal) {
     var g0 = mp.g0;
-    var inBound = sp > (~g0).stack.lo && sp <= (~g0).stack.hi;
-    if (mp.ncgo > 0 && !inBound) {
-        // ncgo > 0 indicates that this M was in Go further up the stack
-        // (it called C and is now receiving a callback).
-        //
-        // !inBound indicates that we were called with SP outside the
-        // expected system stack bounds (C changed the stack out from
-        // under us between the cgocall and cgocallback?).
-        //
-        // It is not safe for the C call to change the stack out from
-        // under us, so throw.
-        // Note that this case isn't possible for signal == true, as
-        // that is always passing a new M from needm.
-        // Stack is bogus, but reset the bounds anyway so we can print.
-        var hi = g0.Value.stack.hi;
-        var lo = g0.Value.stack.lo;
-        g0.Value.stack.hi = sp + 1024;
-        g0.Value.stack.lo = sp - 32 * 1024;
-        g0.Value.stackguard0 = (~g0).stack.lo + (uintptr)stackGuard;
-        g0.Value.stackguard1 = g0.Value.stackguard0;
-        print((@string)"M "u8, mp.id, (@string)" procid "u8, mp.procid, (@string)" runtime: cgocallback with sp="u8, ((Δhex)(uint64)sp), (@string)" out of bounds ["u8, ((Δhex)(uint64)lo), (@string)", "u8, ((Δhex)(uint64)hi), (@string)"]"u8);
-        print((@string)"\n"u8);
-        exit(2);
-    }
     if (!mp.isextra) {
         // We allocated the stack for standard Ms. Don't replace the
         // stack bounds with estimated ones when we already initialized
         // with the exact ones.
         return;
     }
-    // This M does not have Go further up the stack. However, it may have
-    // previously called into Go, initializing the stack bounds. Between
-    // that call returning and now the stack may have changed (perhaps the
-    // C thread is running a coroutine library). We need to update the
-    // stack bounds for this case.
+    var inBound = sp > (~g0).stack.lo && sp <= (~g0).stack.hi;
+    if (inBound && mp.g0StackAccurate) {
+        // This M has called into Go before and has the stack bounds
+        // initialized. We have the accurate stack bounds, and the SP
+        // is in bounds. We expect it continues to run within the same
+        // bounds.
+        return;
+    }
+    // We don't have an accurate stack bounds (either it never calls
+    // into Go before, or we couldn't get the accurate bounds), or the
+    // current SP is not within the previous bounds (the stack may have
+    // changed between calls). We need to update the stack bounds.
     //
     // N.B. we need to update the stack bounds even if SP appears to
-    // already be in bounds. Our "bounds" may actually be estimated dummy
-    // bounds (below). The actual stack bounds could have shifted but still
-    // have partial overlap with our dummy bounds. If we failed to update
-    // in that case, we could find ourselves seemingly called near the
-    // bottom of the stack bounds, where we quickly run out of space.
+    // already be in bounds, if our bounds are estimated dummy bounds
+    // (below). We may be in a different region within the same actual
+    // stack bounds, but our estimates were not accurate. Or the actual
+    // stack bounds could have shifted but still have partial overlap with
+    // our dummy bounds. If we failed to update in that case, we could find
+    // ourselves seemingly called near the bottom of the stack bounds, where
+    // we quickly run out of space.
     // Set the stack bounds to match the current stack. If we don't
     // actually know how big the stack is, like we don't know how big any
     // scheduling stack is, but we assume there's at least 32 kB. If we
     // can get a more accurate stack bound from pthread, use that, provided
-    // it actually contains SP..
+    // it actually contains SP.
     g0.Value.stack.hi = sp + 1024;
     g0.Value.stack.lo = sp - 32 * 1024;
+    mp.g0StackAccurate = false;
     if (!signal && _cgo_getstackbound != nil) {
         // Don't adjust if called from the signal handler.
         // We are on the signal stack, not the pthread stack.
@@ -281,12 +267,16 @@ internal static void callbackUpdateSystemStack(ref m mp, uintptr sp, bool signal
         asmcgocall(_cgo_getstackbound, new @unsafe.Pointer(Ꮡbounds));
         // getstackbound is an unsupported no-op on Windows.
         //
+        // On Unix systems, if the API to get accurate stack bounds is
+        // not available, it returns zeros.
+        //
         // Don't use these bounds if they don't contain SP. Perhaps we
         // were called by something not using the standard thread
         // stack.
         if (bounds[0] != 0 && sp > bounds[0] && sp <= bounds[1]) {
             g0.Value.stack.lo = bounds[0];
             g0.Value.stack.hi = bounds[1];
+            mp.g0StackAccurate = true;
         }
     }
     g0.Value.stackguard0 = (~g0).stack.lo + (uintptr)stackGuard;
@@ -306,6 +296,8 @@ internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uin
         exit(2);
     }
     var sp = gp.Value.m.Value.g0.Value.sched.sp; // system sp saved by cgocallback.
+    var oldStack = gp.Value.m.Value.g0.Value.stack;
+    var oldAccurate = gp.Value.m.Value.g0StackAccurate;
     callbackUpdateSystemStack(ref ((~gp).m).DerefOrNull(), sp, false);
     // The call from C is on gp.m's g0 stack, so we must ensure
     // that we stay on that M. We have to do this before calling
@@ -344,7 +336,9 @@ internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uin
     // This is enforced by checking incgo in the schedule function.
     gp.Value.m.Value.incgo = true;
     unlockOSThread();
-    if ((~(~gp).m).isextra) {
+    if ((~(~gp).m).isextra && (~(~gp).m).ncgo == 0) {
+        // There are no active cgocalls above this frame (ncgo == 0),
+        // thus there can't be more Go frames above this frame.
         gp.Value.m.Value.isExtraInC = true;
     }
     if ((~gp).m != checkm) {
@@ -354,6 +348,11 @@ internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uin
     // going back to cgo call
     reentersyscall(savedpc, (uintptr)savedsp, (uintptr)savedbp);
     gp.Value.m.Value.winsyscall = winsyscall;
+    // Restore the old g0 stack bounds
+    gp.Value.m.Value.g0.Value.stack = oldStack;
+    gp.Value.m.Value.g0.Value.stackguard0 = oldStack.lo + (uintptr)stackGuard;
+    gp.Value.m.Value.g0.Value.stackguard1 = gp.Value.m.Value.g0.Value.stackguard0;
+    gp.Value.m.Value.g0StackAccurate = oldAccurate;
 }
 
 internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, uintptr ctxt) {

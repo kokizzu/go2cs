@@ -359,6 +359,9 @@ internal static void panicrangestate(nint state) {
     @throw(unexpectedStatePassedToˢ);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string noDeferreturnˢ = "no deferreturn"u8;
+
 // deferrangefunc is called by functions that are about to
 // execute a range-over-function loop in which the loop body
 // may execute a defer statement. That defer needs to add to
@@ -432,10 +435,14 @@ internal static any deferrangefunc() {
         // go code on the system stack can't defer
         @throw(deferOnSystemStackˢ);
     }
+    var fn = findfunc(getcallerpc());
+    if (fn.deferreturn == 0) {
+        @throw(noDeferreturnˢ);
+    }
     var d = newdefer();
     d.Value.link = gp.Value._defer;
     gp.Value._defer = d;
-    d.Value.pc = getcallerpc();
+    d.Value.pc = fn.entry() + (uintptr)fn.deferreturn;
     // We must not be preempted between calling getcallersp and
     // storing it to d.sp because getcallersp's result is a
     // uintptr stack pointer.
@@ -1244,6 +1251,8 @@ internal static void recovery(ж<g> Ꮡgp) {
     // on arm64, the architectural bp points one word higher
     // than the sp. fp is totally useless to us here, because it
     // only gets us to the caller's fp.
+    // The value in ret is delivered IN A REGISTER, even if there is a
+    // stack ABI.
     gp.sched.ret = 1;
     gogo(Ꮡgp.of(g.Ꮡsched));
 }

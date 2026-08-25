@@ -90,6 +90,9 @@ internal static flag ro(this flag f) {
     return 0;
 }
 
+// typ returns the *abi.Type stored in the Value. This method is fast,
+// but it doesn't always return the correct type for the Value.
+// See abiType and Type, which do return the correct type.
 internal static ж<abi.Type> typ(this ΔValue v) {
     // Types are either static (for compiler-created types) or
     // heap-allocated but always reachable (for reflection-created
@@ -1877,13 +1880,26 @@ public static bool TrySend(this ΔValue v, ΔValue x) {
 // go2cs generated this placeholder — func Type is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // inline of toRType(v.typ()), for own inlining in inline test
+
+//go:noinline
 internal static ΔType typeSlow(this ΔValue v) {
+    return new rtypeжΔType(toRType(v.abiTypeSlow()));
+}
+
+internal static ж<abi.Type> abiType(this ΔValue v) {
+    if (v.flag != 0 && (flag)(v.flag & flagMethod) == 0) {
+        return v.typ();
+    }
+    return v.abiTypeSlow();
+}
+
+internal static ж<abi.Type> abiTypeSlow(this ΔValue v) {
     if (v.flag == 0) {
         throw panic(Ꮡ(new ValueError("reflect.Value.Type"u8, Invalid)));
     }
     var typ = v.typ();
     if ((flag)(v.flag & flagMethod) == 0) {
-        return new rtypeжΔType(toRType(v.typ()));
+        return v.typ();
     }
     // Method value.
     // v.typ describes the receiver, not the method type.
@@ -1895,7 +1911,7 @@ internal static ΔType typeSlow(this ΔValue v) {
             throw panic("reflect: internal error: invalid method index");
         }
         var mΔ1 = Ꮡ((~tt).Methods, i);
-        return new rtypeжΔType(toRType(typeOffFor(typ, (~mΔ1).Typ)));
+        return typeOffFor(typ, (~mΔ1).Typ);
     }
     // Method on concrete type.
     var ms = typ.ExportedMethods();
@@ -1903,7 +1919,7 @@ internal static ΔType typeSlow(this ΔValue v) {
         throw panic("reflect: internal error: invalid method index");
     }
     var m = ms[i];
-    return new rtypeжΔType(toRType(typeOffFor(typ, m.Mtyp)));
+    return typeOffFor(typ, m.Mtyp);
 }
 
 // CanUint reports whether [Value.Uint] can be used without panicking.

@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/runtime/trace@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/runtime/trace) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/runtime/trace)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/runtime/trace@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/runtime/trace) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/runtime/trace)
 
 Package trace contains facilities for programs to generate traces for the Go execution tracer.
 
@@ -21,7 +21,7 @@ There is also a standard HTTP interface to trace data. Adding the following line
 
 	import _ "net/http/pprof"
 
-See the [net/http/pprof](https://pkg.go.dev/net/http/pprof@go1.23.1) package for more details about all of the debug endpoints installed by this import.
+See the [net/http/pprof](https://pkg.go.dev/net/http/pprof@go1.23.12) package for more details about all of the debug endpoints installed by this import.
 
 ### User annotation
 
@@ -44,7 +44,7 @@ A region is for logging a time interval during a goroutine's execution. By defin
 	   trace.WithRegion(ctx, "mixMilkCoffee", mixMilkCoffee)
 	})
 
-A task is a higher-level component that aids tracing of logical operations such as an RPC request, an HTTP request, or an interesting local operation which may require multiple goroutines working together. Since tasks can involve multiple goroutines, they are tracked via a [context.Context](https://pkg.go.dev/context@go1.23.1#Context) object. \[NewTask] creates a new task and embeds it in the returned [context.Context](https://pkg.go.dev/context@go1.23.1#Context) object. Log messages and regions are attached to the task, if any, in the Context passed to \[Log] and \[WithRegion].
+A task is a higher-level component that aids tracing of logical operations such as an RPC request, an HTTP request, or an interesting local operation which may require multiple goroutines working together. Since tasks can involve multiple goroutines, they are tracked via a [context.Context](https://pkg.go.dev/context@go1.23.12#Context) object. \[NewTask] creates a new task and embeds it in the returned [context.Context](https://pkg.go.dev/context@go1.23.12#Context) object. Log messages and regions are attached to the task, if any, in the Context passed to \[Log] and \[WithRegion].
 
 For example, assume that we decided to froth milk, extract coffee, and mix milk and coffee in separate goroutines. With a task, the trace tool can identify the goroutines involved in a specific cappuccino order.
 

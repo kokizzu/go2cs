@@ -412,6 +412,9 @@ public static (ΔHandle fd, error err) Open(@string path, nint mode, uint32 perm
     // errors as Errno.Is checks for ErrNotExist.
     // Carry on to create the file.
     // Success or some different error.
+    if (createmode == CREATE_NEW) {
+        attrs |= (uint32)(FILE_FLAG_OPEN_REPARSE_POINT); // don't follow symlinks
+    }
     if (createmode == OPEN_EXISTING && access == GENERIC_READ) {
         // Necessary for opening directory handles.
         attrs |= (uint32)(FILE_FLAG_BACKUP_SEMANTICS);

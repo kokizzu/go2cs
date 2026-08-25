@@ -87,6 +87,7 @@ internal static traceBlockReason traceBlockPreempted => 11;
 internal static traceBlockReason traceBlockDebugCall => 12;
 internal static traceBlockReason traceBlockUntilGCEnds => 13;
 internal static traceBlockReason traceBlockSleep => 14;
+internal static traceBlockReason traceBlockGCWeakToStrongWait => 15;
 
 internal static array<@string> traceBlockReasonStrings = new golib.SparseArray<@string>{
     [traceBlockGeneric] = "unspecified"u8,
@@ -103,7 +104,8 @@ internal static array<@string> traceBlockReasonStrings = new golib.SparseArray<@
     [traceBlockPreempted] = "preempted"u8,
     [traceBlockDebugCall] = "wait for debug call"u8,
     [traceBlockUntilGCEnds] = "wait until GC ends"u8,
-    [traceBlockSleep] = "sleep"u8
+    [traceBlockSleep] = "sleep"u8,
+    [traceBlockGCWeakToStrongWait] = "GC weak to strong wait"u8
 }.array();
 
 [GoType("num:uint8")] partial struct traceGoStopReason;

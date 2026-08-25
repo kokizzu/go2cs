@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/log/slog@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/log/slog) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/log/slog)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/log/slog@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/log/slog) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/log/slog)
 
 Package slog provides structured logging, in which log records include a message, a severity level, and various other attributes expressed as key-value pairs.
 
@@ -19,7 +19,7 @@ creates a record containing the time of the call, a level of Info, the message "
 
 The \[Info] top-level function calls the \[Logger.Info] method on the default Logger. In addition to \[Logger.Info], there are methods for Debug, Warn and Error levels. Besides these convenience methods for common levels, there is also a \[Logger.Log] method which takes the level as an argument. Each of these methods has a corresponding top-level function that uses the default logger.
 
-The default handler formats the log record's message, time, level, and attributes as a string and passes it to the [log](https://pkg.go.dev/log@go1.23.1) package.
+The default handler formats the log record's message, time, level, and attributes as a string and passes it to the [log](https://pkg.go.dev/log@go1.23.12) package.
 
 	2022/11/08 15:28:26 INFO hello count=3
 
@@ -50,7 +50,7 @@ Setting a logger as the default with
 
 	slog.SetDefault(logger)
 
-will cause the top-level functions like \[Info] to use it. \[SetDefault] also updates the default logger used by the [log](https://pkg.go.dev/log@go1.23.1) package, so that existing applications that use [log.Printf](https://pkg.go.dev/log@go1.23.1#Printf) and related functions will send log records to the logger's handler without needing to be rewritten.
+will cause the top-level functions like \[Info] to use it. \[SetDefault] also updates the default logger used by the [log](https://pkg.go.dev/log@go1.23.12) package, so that existing applications that use [log.Printf](https://pkg.go.dev/log@go1.23.12#Printf) and related functions will send log records to the logger's handler without needing to be rewritten.
 
 Some attributes are common to many log calls. For example, you may wish to include the URL or trace identifier of a server request with all log events arising from the request. Rather than repeat the attribute with every log call, you can use \[Logger.With] to construct a new Logger containing the attributes:
 
@@ -107,7 +107,7 @@ When parseInput logs with parserLogger, its keys will be qualified with "parser"
 
 ### Contexts
 
-Some handlers may wish to include information from the [context.Context](https://pkg.go.dev/context@go1.23.1#Context) that is available at the call site. One example of such information is the identifier for the current span when tracing is enabled.
+Some handlers may wish to include information from the [context.Context](https://pkg.go.dev/context@go1.23.12#Context) that is available at the call site. One example of such information is the identifier for the current span when tracing is enabled.
 
 The \[Logger.Log] and \[Logger.LogAttrs] methods take a context as a first argument, as do their corresponding top-level functions.
 
@@ -201,7 +201,7 @@ Then use a value of that type in log calls:
 
 Now computeExpensiveValue will only be called when the line is enabled.
 
-The built-in handlers acquire a lock before calling [io.Writer.Write](https://pkg.go.dev/io@go1.23.1#Writer.Write) to ensure that exactly one \[Record] is written at a time in its entirety. Although each log record has a timestamp, the built-in handlers do not use that time to sort the written records. User-defined handlers are responsible for their own locking and sorting.
+The built-in handlers acquire a lock before calling [io.Writer.Write](https://pkg.go.dev/io@go1.23.12#Writer.Write) to ensure that exactly one \[Record] is written at a time in its entirety. Although each log record has a timestamp, the built-in handlers do not use that time to sort the written records. User-defined handlers are responsible for their own locking and sorting.
 
 ### Writing a handler
 

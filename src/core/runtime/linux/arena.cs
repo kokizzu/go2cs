@@ -1067,9 +1067,16 @@ internal static ж<mspan> allocUserArenaChunk(this ж<mheap> Ꮡh) {
     Ꮡh.initSpan(s, spanAllocHeap, spc, @base, userArenaChunkPages);
     s.Value.isUserArenaChunk = true;
     s.Value.elemsize -= userArenaChunkReserveBytes();
-    s.Value.limit = s.@base() + (~s).elemsize;
     s.Value.freeindex = 1;
     s.Value.allocCount = 1;
+    // Adjust s.limit down to the object-containing part of the span.
+    //
+    // This is just to create a slightly tighter bound on the limit.
+    // It's totally OK if the garbage collector, in particular
+    // conservative scanning, can temporarily observes an inflated
+    // limit. It will simply mark the whole chunk or just skip it
+    // since we're in the mark phase anyway.
+    s.Value.limit = s.@base() + (~s).elemsize;
     // Account for this new arena chunk memory.
     ᏑgcController.of(gcControllerState.ᏑheapInUse).add((int64)userArenaChunkBytes);
     ᏑgcController.of(gcControllerState.ᏑheapReleased).add(-(int64)userArenaChunkBytes);
