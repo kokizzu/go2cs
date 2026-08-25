@@ -465,6 +465,11 @@ known to dominate:
 
 **The map's construction**, deterministic so two coordinators build the same one:
 
+*[GENERALIZED 2026-08-24 into [`GoCorpusMigration.md`](GoCorpusMigration.md) §3.2, which is now the
+maintained copy of the construction, its symbol table, the derive-the-reserved-set rule and the
+calibration protocol. What stays below is this hop's INSTANCE: the symbols' sources, the numbers and
+the fleet.]*
+
 ```
 1.  rows  := roster rows at the hop branch tip          (162 today; re-read, never carried)
 2.  R     := reserved set ∩ rows                        (pinned to the i9)
@@ -658,6 +663,10 @@ Per the charter §7 (*"invest in adversarial review up front"*), applied to this
 The repository catalogues four false-green routes; a **re-derived roster** is a new surface. Five
 shapes deserve naming before they are met:
 
+*[GENERALIZED 2026-08-24 into [`GoCorpusMigration.md`](GoCorpusMigration.md) §3.4 — the five shapes
+and the structural build-error-without-diagnostics one now live in the runbook, version-agnostic.
+They stay here with this hop's specifics attached, which is what an instance plan is for.]*
+
 1. **The vacuous shard.** Every row PASSes because the clone was never moved to the hop's corpus SHA.
    The ledger's corpus-commit field is the defense and the merge asserts it. Without it, "162/162" can
    be a measurement of the *old* corpus, run six ways.
@@ -691,6 +700,11 @@ logs. **The shard's report must distinguish "failed with named verdicts" from "f
 the second is a build failure wearing a verdict's clothes.
 
 ### Lens 3 — what the fleet does when the i9 reboots mid-campaign
+
+*[GENERALIZED 2026-08-24 into [`GoCorpusMigration.md`](GoCorpusMigration.md) §3.6 — the
+classify-before-diagnosing ladder, the resume rule, the raised-budget re-dispatch, the named-fallback
+answer to losing a control worker, and the parity-sweep recovery. This lens keeps the i9's declared
+failure mode, the measured JOB-R2 reading and the unfinished GPG item, which are this fleet's.]*
 
 **Not hypothetical, and mostly already answered.** The i9 declares the failure mode as routine: *"⚠
 This box reboots randomly (~daily, pending RMA). That is expected. On session start after a restart I

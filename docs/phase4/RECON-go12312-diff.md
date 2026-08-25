@@ -190,4 +190,24 @@ line in H12's expectation statement so it isn't re-diagnosed.
    plan put it: the machinery (pin bump, `.auto` differential, badge churn, fleet H10), not the
    diff.
 
+> ## ⚠ AMENDMENT (2026-08-24) — H6's first-execution figures land here, from the runbook
+>
+> [`../GoCorpusMigration.md`](../GoCorpusMigration.md) H6 gained its instrument
+> (`src/handown-census.ps1`) and ran the hand-own differential against **this** range. The result:
+> **73 marked files → 6 substantive** — `reflect/value.go`, `runtime/runtime2.go` (two hand-owns),
+> `syscall/exec_unix.go`, `syscall/dll_windows.go`, `syscall/syscall_windows.go` — with **50
+> untouched** and **17 no-upstream-counterpart**. Every substantive row was independently
+> cross-checked against this document's package-bucketed table above, and all six fall inside the
+> packages it already flagged.
+>
+> **Why the figures live here rather than in the runbook.** The runbook carries **no frozen
+> figures** by charter: its H6 keeps the *shape* the instrument produces — a census of dozens
+> reducing to a single-digit review list, and a substantive class near the census size read as a
+> stripper bailing out rather than upstream churn — and points at this record for the instance. A
+> later migration's figures belong in *its* record, not in either of these two.
+>
+> One reading worth carrying: the marker census moved **70 → 73** in the single day between this
+> recon and that run. That is the re-measure-never-carry rule working exactly as written, not a
+> discrepancy to reconcile.
+
 — DRAFT, recon lane, 2026-08-23. Raw TSVs beside this file for re-derivation.
