@@ -212,26 +212,31 @@
     radius, not a side effect of the frame. Whether to take it is a real question with a real answer on
     both sides; it wants its own measurement (how many methods, what the emitted diff looks like, what
     it costs or saves) rather than a reflex.
-20. **A `-stdlib` reconvert PANICS on ~~two~~ THREE auto-sibling visits.** `internal/godebug/godebug.go`,
-    `internal/concurrent/hashtriemap.go` and — **re-measured r59, 2026-08-11** —
-    `internal/weak/pointer.go` report `visit file error: … invalid memory address or nil
-    pointer dereference` and their `.cs.auto` REVIEW siblings are skipped. Production emission and
-    package-wide state are unaffected — the auto-sibling pass is a separate re-visit whose only
-    output is the review file — so this shows up as ~~two~~ three of item 18's stale siblings rather than as
-    corpus damage. A/B'd at r41 against the master converter: identical, so it is pre-existing and
-    was not introduced by the frame arc. Worth rooting when item 18 is levelled, since `hashtriemap`
-    has never had a `.cs.auto` at all and `godebug`'s is frozen at whenever the panic started.
-    `pointer.cs` joined the hand-own census at r43e, AFTER this item was written, and like
-    `hashtriemap` has never had a `.cs.auto` — so the count tracks the hand-own census and must be
-    re-measured, not carried forward.
-    **What the three have in common, and it is the actual root shape:** each is a package whose
-    ENTIRE (single) Go file is hand-owned, so `unmarkedFileCount == 0` and the auto-sibling re-visit
-    is the only visit the package gets — which is why the panic costs nothing but the review file.
-    That also generalizes a fact CLAUDE.md records in the singular: `internal/godebug` is described as
-    the one package whose `.csproj`, `package_info.cs` and `README.md` are "hand-owned by
-    consequence" and never re-emitted. It is a **class of three** on the same mechanism
-    (`internal/concurrent`, `internal/godebug`, `internal/weak`), and r59's reconvert measured exactly
-    three un-emitted `package_info.cs` for that reason.
+20. ~~**A `-stdlib` reconvert PANICS on THREE auto-sibling visits.**~~ — **DISSOLVED 2026-08-24
+    (drift-bank).** The panic is gone, and the review siblings it used to cost are being written
+    again. A seeded whole-stdlib reconvert on this date — one `-stdlib -comments` run into a temp
+    root seeded per the corpus-mechanics ritual, Go 1.23.1 — finished **`Failed: 0 (0.0%)` in
+    10m 02s** with **22 stderr lines, every one of them an `unsafe.Sizeof` advisory WARNING**:
+    zero `visit file error`, zero panics, zero `nil pointer dereference`, and zero `DYNTYPE`
+    markers anywhere in the emitted corpus. All three packages emitted a **fresh `.cs.auto`** —
+    `internal/concurrent/hashtriemap.cs.auto`, `internal/godebug/godebug.cs.auto`,
+    `internal/weak/pointer.cs.auto` — which is precisely the output this item recorded as skipped,
+    and each was **byte-identical to the committed sibling**, so no refresh is owed on top of item
+    18's levelling. The marker gate over the same run read **73 marked files, 21 protected by a
+    fresh `.cs.auto`, 0 clobbered**, and the hand-owned `.cs` beside each of the three was left
+    untouched — so the auto-sibling pass is not merely quiet, it is doing its job at every path the
+    markers claim. This is the **third** independent confirmation: two earlier reconverts the same
+    evening measured the same three fresh siblings with 0 visit errors and 0 panics.
+    One clause of the original text was already stale when it was struck, and is corrected for the
+    record: `hashtriemap` and `pointer` are no longer the "never had a `.cs.auto` at all" cases —
+    the repository carries all three siblings today.
+    **What did NOT dissolve, and is still true:** the class is still a class of three, on exactly
+    the mechanism this item identified — each is a package whose ENTIRE (single) Go file is
+    hand-owned, so `unmarkedFileCount == 0` and the auto-sibling re-visit is the only visit the
+    package gets. That is why their `.csproj`, `package_info.cs` and `README.md` remain hand-owned
+    **by consequence** and are never re-emitted, a fact CLAUDE.md still records in the singular
+    against `internal/godebug` when it holds for `internal/concurrent` and `internal/weak` too.
+    Only the panic went away; the mechanism behind it did not.
 22. **The four items the warning-suppression arc deliberately did not take.** r46b landed the
     configuration half of [`phase4/DESIGN-warning-suppression.md`](phase4/DESIGN-warning-suppression.md)
     and stopped there on purpose; §5 and §7 of that doc carry the full detail, this is only the
