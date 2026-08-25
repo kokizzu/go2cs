@@ -91,13 +91,13 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **164 / 215 testable packages validated — 76.3%**
+> ### Phase 4 progress: **165 / 215 testable packages validated — 76.7%**
 >
-> **18,625 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **18,632 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Linux: 7 of 164 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
+> **Linux: 7 of 165 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -289,6 +289,7 @@ summed from the columns.
 | [`sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) | 44 | 7 | The concurrency crown — `Mutex`/`RWMutex`/`WaitGroup`/`Once`/`Cond`/`Map`/`Pool` over real parked-thread semaphores, a hand-owned lock-free pool ring, and GC-integrated cleanup; `Cond`'s copy detector on root-allocation identity; alloc-profile and codegen-liveness disclosures. · [proof](validation/current/sync.md) |
 | [`sync/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync/atomic) | 108 | | The atomic-operations matrix end to end — Load/Store/Swap/CompareAndSwap/Add/And/Or across every width in both the function and method forms, the racing hammer suites (4–8 goroutines × 10⁶ iterations per op over one shared word), `atomic.Value`'s store/swap/CAS semantics with the inconsistent-type and nil panics, Go's align64 GUARANTEE asserted through reflect (`StructField.Offset` and `Pointer()&7` answering from ONE layout walk — the alignment-truthful token), and `TestHammerStoreLoad`'s reinterpret of a single uint64 as `*int32`/`*uintptr`/`*unsafe.Pointer`/`*atomic.Pointer[byte]` in turn — the row that made a native-backed pointer slot hold the pointer's VALUE rather than a managed reference, closing a GC-invisible dangling-reference hazard along with it. · [proof](validation/current/sync.atomic.md) |
 | [`syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall) | 65 | | The Windows system-call surface itself — WTF-8/UTF-16 round-trips across the whole surrogate matrix (lone highs, lone lows, paired, and the astral characters between them), `EscapeArg`'s command-line quoting rules, the environment block, `StartupInfo`/handle inheritance and permuted-fd process launch, `TOKEN_ALL_ACCESS`'s version-dependent value, and `Getwd` over a path far past `MAX_PATH` — the row that needed a converted process to be long-path aware the way every Go binary is. · [proof](validation/current/syscall.md) |
+| [`testing/fstest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/fstest) | 7 | | The `fs.FS` conformance checker and the in-memory `MapFS` it validates — `TestFS` walking a tree to cross-check `Open`/`ReadDir`/`ReadFile`/`Stat`/`Glob`/`Sub` and every `fs` sub-interface for mutual agreement, `MapFS`'s synthesized directories and `FileInfo`, symlink resolution through `fs.ReadLink`/`Lstat`, the shuffled-order harness that proves `ReadDir` results are sorted independently of map iteration order, and `TestFSWrappedErrors`' `errors.Is`/`As` unwrapping contract. · [proof](validation/current/testing.fstest.md) |
 | [`testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) | 18 | | The `io` testing helpers — the half/one-byte/timeout/error reader wrappers, `DataErrReader`'s final-read fusion, and the read/write loggers' `log` output. · [proof](validation/current/testing.iotest.md) |
 | [`testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) | 8 | | Property testing — `reflect` value generation and `Value.Call` dynamic invocation. · [proof](validation/current/testing.quick.md) |
 | [`testing/slogtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/slogtest) | 17 | | The `slog.Handler` conformance harness Go ships for third-party handlers, run against the real `TextHandler`/`JSONHandler` — the whole 17-case matrix of groups, inline and empty groups, `WithAttrs`/`WithGroup` composition, and `LogValuer` resolution. · [proof](validation/current/testing.slogtest.md) |
