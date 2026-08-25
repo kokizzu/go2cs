@@ -97,9 +97,10 @@ silently collide with an identically-versioned default — still probing per §2
 that discipline is the fleet's standing rule, not a per-box exception.
 
 **AOT capacity (measured 2026-08-24, farm-probe RAM report): 63.7 GB RAM, 16C/24T.** Against the
-measured ~15 GB working-set peak per 10-ILC publish of the full corpus closure, this is the one
-fleet machine that can run AOT publishes **concurrently** — three lanes safely, four at the
-margin (4 × 15 = 60 GB leaves no headroom for the end-phase spike). ILC is near-serial (~1.1–1.3
+measured per-publish working-set peak of the full corpus closure — **17.662 GB** on this box's own
+Sieve probe (2026-08-25; an earlier canon-box reading said 14.9 GB — the floor moves with the
+corpus, budget ~18 GB and re-measure each hop) — this is the one fleet machine that can run
+AOT publishes **concurrently**: **three lanes** (3 × 17.7 = 53 GB); four does not fit (70.8 GB). ILC is near-serial (~1.1–1.3
 effective cores), so concurrency multiplies throughput almost linearly: a full 14-row AOT
 re-baseline compiles here overnight instead of the perf-canon host's two days. The *measurement*
 half stays on the perf-canon host regardless — this row is about where binaries are compiled,
