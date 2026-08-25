@@ -572,15 +572,30 @@ namespace PerformanceRunner
             {
                 // bin holds the publish outputs themselves (and obj the intermediates); neither is
                 // an input, and the output can never be newer than a file the publish itself wrote.
+                // Generated holds the source generators' EmitCompilerGeneratedFiles copies -- also
+                // OUTPUT, refreshed by any compile of the project, so counting it as an input made
+                // the predicate self-invalidating: the run's own JIT build phase re-emitted them
+                // and every publish older than that build spuriously republished (measured
+                // 2026-08-25, PerfIfaceCall -- a farm-adopted row re-paid 3.3h for a .g.cs whose
+                // real inputs had not moved). The generators' true upstream is the analyzer
+                // assembly, checked explicitly below.
                 string rel = Path.GetRelativePath(projPath, cs);
 
-                if (rel.StartsWith("bin", StringComparison.OrdinalIgnoreCase) || rel.StartsWith("obj", StringComparison.OrdinalIgnoreCase))
+                if (rel.StartsWith("bin", StringComparison.OrdinalIgnoreCase) || rel.StartsWith("obj", StringComparison.OrdinalIgnoreCase) || rel.StartsWith("Generated", StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 if (exeTime <= File.GetLastWriteTimeUtc(cs))
                     return false;
             }
 
+            // Deliberately NOT an input: the go2cs-gen analyzer assembly. Its mtime is rewritten
+            // by ordinary dependency builds of UNCHANGED sources (measured 2026-08-25: a
+            // benchmark's publish re-touched bin/Release/.../go2cs-gen.dll while nothing in the
+            // analyzer moved), so as a signal it is the same self-poisoning class as Generated.
+            // The accepted gap: an analyzer-SOURCE change can alter emitted C# with no
+            // project-local input moving -- such a change owes a manual bin purge (or a stamp
+            // scheme bump) before the next measured run, the same discipline a converter change
+            // already owes the corpus.
             why = $"output newer than all inputs, stamp matches [{currentStamp}]";
             return true;
         }
