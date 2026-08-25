@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `syscall` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-09 · converter `39f692d68`*
+*Validated 2026-08-25 · converter `e2182a59e`*
 
-**62 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**65 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall).
 
 Both runtimes skip 1 of the matched tests identically.
@@ -27,6 +27,9 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestGetwd_DoesNotPanicWhenPathIsLong` | pass | pass |
 | `TestOpen_Dir` | pass | pass |
 | `TestStdioAreInheritable` | skip | skip |
+| `TestSyscallAllocations` | pass | pass |
+| `TestSyscallAllocations/Syscall` | pass | pass |
+| `TestSyscallAllocations/SyscallN` | pass | pass |
 | `TestTOKEN_ALL_ACCESS` | pass | pass |
 | `TestWTF16Golden` | pass | pass |
 | `TestWTF16Golden/00` | pass | pass |

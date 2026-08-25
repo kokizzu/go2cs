@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.database;
 
+using bytes = bytes_package;
 using context = context_package;
 using driver = go.database.sql.driver_package;
 using errors = errors_package;
@@ -5304,20 +5305,12 @@ public static void TestContextCancelDuringRawBytesScan(ж<testing.T> Ꮡt) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string useRawbytesˢ = "USE_RAWBYTES"u8;
-
 // From go.dev/issue/60304
 internal static void testContextCancelDuringRawBytesScan(ж<testing.T> Ꮡt, @string mode) {
     GoFrame ᒐ = default;
     try {
         var db = newTestDB(new sql_test_package.testing_TжTB(Ꮡt), peopleˢ);
         defer(closeDB, new sql_test_package.testing_TжTB(Ꮡt), db, ref ᒐ);
-        {
-            var (_, errΔ1) = db.Exec(useRawbytesˢ); if (errΔ1 != default!) {
-                Ꮡt.Fatal(errΔ1);
-            }
-        }
         // cancel used to call close asynchronously.
         // This test checks that it waits so as not to interfere with RawBytes.
         var (ctx, cancel) = context.WithCancel(context.Background());
@@ -5382,8 +5375,8 @@ internal static void testContextCancelDuringRawBytesScan(ж<testing.T> Ꮡt, @st
         }
         case 2: {
             {
-                var errΔ3 = r.Err(); if (!AreEqual(errΔ3, context.Canceled)) {
-                    Ꮡt.Errorf("unexpected error: %v (%T)"u8, errΔ3, errΔ3);
+                var errΔ2 = r.Err(); if (!AreEqual(errΔ2, context.Canceled)) {
+                    Ꮡt.Errorf("unexpected error: %v (%T)"u8, errΔ2, errΔ2);
                 }
             }
             break;
@@ -5394,8 +5387,8 @@ internal static void testContextCancelDuringRawBytesScan(ж<testing.T> Ꮡt, @st
 
         // Made it to the end. This is rare, but fine. Permit it.
         {
-            var errΔ4 = r.Close(); if (errΔ4 != default!) {
-                Ꮡt.Fatal(errΔ4);
+            var errΔ3 = r.Close(); if (errΔ3 != default!) {
+                Ꮡt.Fatal(errΔ3);
             }
         }
     }
@@ -5423,6 +5416,71 @@ public static void TestContextCancelBetweenNextAndErr(ж<testing.T> Ꮡt) {
             var errΔ1 = r.Err(); if (errΔ1 != default!) {
                 Ꮡt.Fatal(errΔ1);
             }
+        }
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
+[GoType] internal partial struct testScanner {
+    internal Func<any, error> scanf;
+}
+
+internal static error Scan(this testScanner ts, any src) {
+    return ts.scanf(src);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string selectPeopleNameNameˢ = "SELECT|people|name|name=?"u8;
+
+public static void TestContextCancelDuringScan(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var db = newTestDB(new sql_test_package.testing_TжTB(Ꮡt), peopleˢ);
+        defer(closeDB, new sql_test_package.testing_TжTB(Ꮡt), db, ref ᒐ);
+        var (ctx, cancel) = context.WithCancel(context.Background());
+        var cancelʗ1 = cancel;
+        defer(() => cancelʗ1(), ref ᒐ);
+        var scanStart = new channel<any>(0);
+        var scanEnd = new channel<error>(0);
+            var scanEndʗ1 = scanEnd;
+            var scanStartʗ1 = scanStart;
+        var scanner = Ꮡ(new testScanner(
+            scanf: (any src) => {
+                scanStartʗ1.ᐸꟷ(src);
+                return ᐸꟷ(scanEndʗ1);
+            }
+        ));
+        // Start a query, and pause it mid-scan.
+        var want = slice<byte>("Alice"u8);
+        var (r, err) = db.QueryContext(ctx, selectPeopleNameNameˢ, ((@string)want));
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        if (!r.Next()) {
+            Ꮡt.Fatalf("r.Next() = false, want true"u8);
+        }
+        var rʗ1 = r;
+        var scannerʗ1 = scanner;
+        goǃ(() => {
+            rʗ1.Scan(scannerʗ1.OrTypedNil());
+        });
+        var got = ᐸꟷ(scanStart);
+        defer(ᴛ1 => builtin.close(ᴛ1), scanEnd, ref ᒐ);
+        var (gotBytes, ok) = got._<slice<byte>>(ᐧ);
+        if (!ok) {
+            Ꮡt.Fatalf("r.Scan returned %T, want []byte"u8, got);
+        }
+        if (!bytes.Equal(gotBytes, want)) {
+            Ꮡt.Fatalf("before cancel: r.Scan returned %q, want %q"u8, gotBytes, want);
+        }
+        // Cancel the query.
+        // Sleep to give it a chance to finish canceling.
+        cancel();
+        time.Sleep(10 * time.Millisecond);
+        // Cancelling the query should not have changed the result.
+        if (!bytes.Equal(gotBytes, want)) {
+            Ꮡt.Fatalf("after cancel: r.Scan result is now %q, want %q"u8, gotBytes, want);
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -5469,11 +5527,6 @@ public static void TestRawBytesReuse(ж<testing.T> Ꮡt) {
     try {
         var db = newTestDB(new sql_test_package.testing_TжTB(Ꮡt), peopleˢ);
         defer(closeDB, new sql_test_package.testing_TжTB(Ꮡt), db, ref ᒐ);
-        {
-            var (_, errΔ1) = db.Exec(useRawbytesˢ); if (errΔ1 != default!) {
-                Ꮡt.Fatal(errΔ1);
-            }
-        }
         ref var raw = ref heap<global::go.database.sql_package.RawBytes>(out var Ꮡraw);
         // The RawBytes in this query aliases driver-owned memory.
         var (rows, err) = db.Query(selectPeopleNameˢ);
@@ -5626,9 +5679,6 @@ public static void TestPing(ж<testing.T> Ꮡt) {
         }
     }
 }
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string selectPeopleNameNameˢ = "SELECT|people|name|name=?"u8;
 
 [GoType("@string")] internal partial struct TestTypedString_Str;
 

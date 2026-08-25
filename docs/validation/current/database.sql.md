@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `database/sql` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-17 · converter `876d78e27`*
+*Validated 2026-08-25 · converter `e2182a59e`*
 
-**137 matched · 2 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**138 matched · 2 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/database/sql`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql).
 
 ## Verdicts
@@ -50,6 +50,7 @@ comparison — it is the evidence behind the `database/sql` row in
 | `TestContextCancelDuringRawBytesScan/go` | pass | pass |
 | `TestContextCancelDuringRawBytesScan/nocancel` | pass | pass |
 | `TestContextCancelDuringRawBytesScan/top` | pass | pass |
+| `TestContextCancelDuringScan` | pass | pass |
 | `TestConversions` | pass | pass |
 | `TestCursorFake` | pass | pass |
 | `TestDecimal` | pass | pass |
