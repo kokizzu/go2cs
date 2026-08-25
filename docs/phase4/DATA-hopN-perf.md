@@ -79,6 +79,7 @@ Two riders the resolution run established, both fleet-relevant:
 |:--|:--|:--|
 | First completed 10-ILC publish | **11,862 s wall / ≥12,754 CPU-s** on the perf-canon host, against the 9-era **894–953 s** | **~10.6× CPU work**, near-serial (a multi-hour ~1.0-core tail), uniform across benchmarks at the comparable wall point — so ladder arithmetic scales linearly |
 | Peak working set during the publish | **14.9 GB** in the final phase | **A 16 GB machine cannot run a 10-ILC publish of this closure without swapping.** A provisioning floor, not a tuning knob |
+| ⚠ SUPERSEDED (2026-08-25): publish WS peak re-measured HIGHER | **17.662 GB** — the i9 farm probe's Sieve publish, `ilc.exe` sampled every 10 s, peak in the final seconds of compile | The floor moves with the corpus: budget **~18 GB per concurrent publish** and re-measure each hop. On the 63.7 GB i9 that means **three concurrent lanes, not four** (3 × 17.7 = 53 GB; 4 × 17.7 = 70.8 GB does not fit) |
 | 10-AOT working set on the resolved row | 75.8 → **15.5 MB**, below the unchanged JIT floor | The 9-era *"AOT trades memory for startup"* reading does **not** survive on that row. Whether the collapse generalizes is the full ladder's question, not this section's claim |
 
 ---
