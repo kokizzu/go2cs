@@ -1126,6 +1126,14 @@ Each rule below was paid for.
   reports zero, regress one site deliberately, confirm it reports exactly that site, then fix and
   re-verify — and confirm the restore is byte-identical. The same principle as the positive controls
   the corpus loop uses: a green that cannot go red is not a measurement.
+- **⚠ A merge that touches `package_info.cs` must carry the matching `stdlib-metadata.txt` change —
+  check it in the PREFLIGHT.** `stdlib-metadata.txt` is generated FROM the corpus (`go generate .` in
+  `src/go2cs`, gated by `TestStdLibMetadataInSync` under the converter's own `go test`), and a corpus
+  bank that moves `GoImplement` records without it leaves that guard red for whoever runs the
+  converter suite next. Three banked regens missed it in two days (2026-08-24/25) — the step was
+  documented and still skipped, because no MERGE checked for it: if
+  `git diff --name-only <base>..<branch>` lists a `package_info.cs` but no `stdlib-metadata.txt`,
+  stop and have the branch run the generate before it merges.
 
 ## Git anchors
 
