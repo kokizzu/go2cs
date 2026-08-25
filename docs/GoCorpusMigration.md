@@ -147,6 +147,16 @@ the differential. This is a ruled decision, not a preference.
    per-invocation override to editing the pin: the pin is a machine default, outside the standing
    install grant, and while the hop is in flight it is *protective* — it keeps every other process
    on the box on the outgoing release until the migration deliberately moves.
+   ⚠ **`GOTOOLCHAIN` is only HALF the override on a box that also pins `GOROOT`** (measured
+   2026-08-25, H2's smoke gate, first execution). A user-level `GOROOT` environment variable names
+   the TREE, and the two answers diverge silently: under `GOTOOLCHAIN=<target>`, `go env GOROOT`
+   reports the *selected toolchain's* root while the process environment still carries the pinned
+   one — and `-stdlib` converts the tree the ENVIRONMENT names. The leg would have emitted the OLD
+   release's sources into a corpus whose every gate then measures against NEW-release goldens, each
+   side internally consistent — except the converter's own pin-vs-tree guard refused, and its
+   message named the mechanism. A hop leg's environment therefore sets **both** —
+   `GOTOOLCHAIN=<target>` and `GOROOT=<target-root>` — per-invocation, both pins left in place.
+   Provisioning records which pins a box carries; the fleet has held every combination.
    ⚠ **Fleet boxes are configured oppositely and neither lane's experience predicts the other's**:
    a *pinned* box switches DOWN, silently ignoring a newly installed release; an *`auto`* box
    switches UP, silently downloading one a `go.mod` asks for. Both make "the SDK is installed"
