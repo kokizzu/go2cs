@@ -469,10 +469,32 @@ namespace PerformanceRunner
 
             Console.WriteLine($"[Build]    C# Native AOT ({projects.Count} publish(es), sequential -- slow)...");
 
+            // A publish costs hours under the 10-ILC (~3.3h each on the perf-canon host, measured
+            // 2026-08-24), so a completed publish must be reusable across runner invocations. The
+            // skip predicate has three legs, each closing a distinct staleness route: the output
+            // exists; it is newer than every publish input (all .cs including Generated, the
+            // csproj, and go2cs.exe -- same family as UpToDate above); and a stamp written at
+            // publish success matches the CURRENT toolchain, because a toolchain hop moves no
+            // source mtime at all -- reusing a 9-ILC binary for a 10-column is exactly the stale-
+            // publish trap this predicate exists to retire. No stamp (every pre-stamp publish, and
+            // any foreign binary placed without one) means publish, never skip. An unreadable SDK
+            // version disables skipping for the whole run rather than matching stamps vacuously.
+            ProcResult sdkProbe = Exec("dotnet", "--version", s_perfDir, 60_000, env);
+            string sdkVersion = sdkProbe.ExitCode == 0 ? sdkProbe.StdOut.Trim() : "";
+            string currentStamp = sdkVersion.Length > 0 ? $"sdk={sdkVersion};config={Config};rid=win-x64;mode=PerfAot" : "";
+
             foreach (string p in projects)
             {
                 string csproj = Path.Combine(s_perfDir, p, $"{p}.csproj");
                 string outDir = Path.GetDirectoryName(GetExePath(p, Variant.Aot))!;
+                string stampPath = Path.Combine(outDir, "publish.stamp");
+
+                if (currentStamp.Length > 0 && AotPublishUpToDate(p, stampPath, currentStamp, out string upToDateWhy))
+                {
+                    results[p].Variants[Variant.Aot].BuildOk = true;
+                    Console.WriteLine($"           {p}... SKIPPED (publish up to date: {upToDateWhy})");
+                    continue;
+                }
 
                 Console.Write($"           {p}... ");
                 Stopwatch sw = Stopwatch.StartNew();
@@ -508,6 +530,10 @@ namespace PerformanceRunner
                 if (r.ExitCode == 0)
                 {
                     results[p].Variants[Variant.Aot].BuildOk = true;
+
+                    if (currentStamp.Length > 0)
+                        File.WriteAllText(stampPath, currentStamp);
+
                     Console.WriteLine($"ok ({sw.Elapsed.TotalSeconds:N0}s)");
                 }
                 else
@@ -519,6 +545,44 @@ namespace PerformanceRunner
                     Console.WriteLine("FAILED (column reported as n/a)");
                 }
             }
+        }
+
+        private static bool AotPublishUpToDate(string p, string stampPath, string currentStamp, out string why)
+        {
+            why = "";
+            string exe = GetExePath(p, Variant.Aot);
+
+            if (!File.Exists(exe) || !File.Exists(stampPath))
+                return false;
+
+            if (!string.Equals(File.ReadAllText(stampPath).Trim(), currentStamp, StringComparison.Ordinal))
+                return false;
+
+            DateTime exeTime = File.GetLastWriteTimeUtc(exe);
+
+            if (exeTime <= File.GetLastWriteTimeUtc(s_go2csExe))
+                return false;
+
+            string projPath = Path.Combine(s_perfDir, p);
+
+            if (exeTime <= File.GetLastWriteTimeUtc(Path.Combine(projPath, $"{p}.csproj")))
+                return false;
+
+            foreach (string cs in Directory.GetFiles(projPath, "*.cs", SearchOption.AllDirectories))
+            {
+                // bin holds the publish outputs themselves (and obj the intermediates); neither is
+                // an input, and the output can never be newer than a file the publish itself wrote.
+                string rel = Path.GetRelativePath(projPath, cs);
+
+                if (rel.StartsWith("bin", StringComparison.OrdinalIgnoreCase) || rel.StartsWith("obj", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (exeTime <= File.GetLastWriteTimeUtc(cs))
+                    return false;
+            }
+
+            why = $"output newer than all inputs, stamp matches [{currentStamp}]";
+            return true;
         }
 
         // ---- Measurement configuration guard ----
