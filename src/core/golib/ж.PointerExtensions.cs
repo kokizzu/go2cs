@@ -154,6 +154,33 @@ public static class PointerExtensions
             return new ж<TDst>(box, ж<T>.ReinterpretRef<TDst>);
         }
 
+        // A destination that is (or contains) a managed REFERENCE can never take the address route:
+        // both fallbacks below read TDst out of raw storage bytes, and a reference materialized
+        // from bytes is a fabricated reference — the CLR type-safety break the alias gate's own
+        // remarks call strictly worse than a wrong-but-contained read. It is not hypothetical:
+        // converted time.syncTimer reinterprets channel<Time> → unsafe.Pointer (a CLASS) on every
+        // NewTimer, and the punned reference dispatched through Pointer.op_Implicit — junk on a
+        // quiet heap, an AccessViolationException when the punned bits landed unmapped (measured
+        // 2026-08-24, the full time suite under GODEBUG=asynctimerchan=2; three quiet-heap repros
+        // of the same structure pass, which is exactly the latent-with-live-trigger shape the
+        // byte-view census defines). The Go value of a pointer the managed model cannot represent
+        // is NIL — deterministic, and the live consumer (newTimer, which reads only the nil-bit
+        // contract and recomputes it from the GODEBUG setting anyway) is correct under it. A
+        // dormant site that ever WRITES through the derived pointer now stores into a detached box
+        // instead of corrupting punned memory. The refusal is a REAL box holding default(TDst) —
+        // NOT NilBox — because the emitted pattern is `~box.Reinterpret<…>()`: the result is
+        // dereferenced on the spot, a nil box panics under `~` (measured: syncTimer itself became
+        // the nil-deref it was being cured of, failing TestChan at modes 0 and 2), and the deref
+        // of the not-representable pointer should yield TDst's ZERO VALUE — for the live witness a
+        // null Pointer, whose uintptr bridge is 0, exactly Go's nil-pointer word.
+        // default(TDst) is spelled EXPLICITLY: a bare `default!` here is target-typed, both the
+        // `ж(in TDst)` and `ж(NilType)` constructors are applicable to it, and C#'s betterness
+        // rules prefer the by-value NilType candidate over the `in` one — so the refusal silently
+        // called the NIL constructor and the emitted `~` deref panicked inside the very expression
+        // being cured (measured: TestChan failed at modes 0 and 2 on syncTimer's own line).
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<TDst>())
+            return new ж<TDst>(default(TDst)!);
+
         // Not representable as an alias, so the derived pointer has to name the source's storage by
         // ADDRESS — which is only a pointer at all while that storage is held still. Pin it for the
         // derived box's lifetime where it can be pinned (see TryPinnedReinterpret, which also says why
