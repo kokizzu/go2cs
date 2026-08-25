@@ -19087,4 +19087,101 @@ against a stale target. `TestNewIntAllocs` re-measures verbatim (1 obj/run, all 
   the plausible surface is host progress reporting entangled with that global. A diagnosis lane
   is dispatched; the finding gates log/slog's row regardless of the alloc classes.
 
+### FINDING ROOTED — `log/slog`'s "harness termination" is not a harness defect: the host DIED, and it said so
+
+Lane `claude/slog-harness-halt` reproduced i9's tier-1 shape exactly at `cc90c2bf1` (Windows,
+go1.23.12, net10.0, `-test-timeout 15m`, 209 s): 181 terminal verdicts, the last of them
+`TestSetDefault` → `fail`, and then nothing for the ten ordinally-later top-level tests. The host
+did **not** stop advancing. It **exited on an unrecovered goroutine panic**, which is deliberate
+Go fidelity (`TestRunner.cs:158-170`), and it recorded exactly that before dying — the final event
+in `go2cs_test_results.json` is a package-level `fail` whose output reads *"test binary died on an
+unrecovered panic in a goroutine"*, and the host's stderr additionally prints Go's own crash-report
+form naming `log/slog.(*defaultHandler).Handle()` at `handler.go:117`. **The diagnosis was already
+in the artifacts; it was read as emptiness.** No host change is owed for the termination itself.
+
+**Root chain, mechanical.** Go guarantees an imported package is fully initialized before the
+importing package's own initialization. go2cs maps a Go `init` to `[GoInit]` = .NET
+`[ModuleInitializer]`, whose guarantee is weaker — a module constructor runs at first access to
+*that* module — and golib's `builtin.initPackage` (`src/core/golib/builtin.cs:213-236`, whose
+doc-comment states Go's rule verbatim) exists precisely to close that gap. But the converter emits
+that forcing **only for BLANK imports** (`src/go2cs/visitImportSpec.go:370`, into
+`v.blankImportInits`). For a NAMED import the ordering is therefore absent, and `log/slog` is a
+package where the difference is observable:
+
+1. `src/core/log/log.cs:268-269` — `log`'s `init` assigns `Δinternal.DefaultOutput`.
+2. `src/core/log/slog/logger.cs:57-59` — `log/slog`'s `init` READS `loginternal.DefaultOutput`.
+   The test host touches `slog` first, so slog's module ctor runs while `log`'s has not: the read
+   yields **nil**.
+3. `src/core/log/slog/handler.cs:92-97` — `newDefaultHandler(output)` stores that nil in
+   `defaultHandler.output`. The value is CAPTURED, never re-read, so `log`'s later initialization
+   (any test calling `log.SetOutput`) cannot repair it.
+4. `src/core/log/slog/handler.cs:120` — `return h.output(r.PC, buf.ValueSlot);` →
+   NullReferenceException → rendered as Go's *"invalid memory address or nil pointer dereference"*.
+
+The consequence then splits by THREAD, which is the whole reason this looked like two unrelated
+findings:
+
+- on the test's own thread — `TestLogLoggerLevelForDefaultHandler` (`logger_test.cs:513` via
+  `Debug`, `logger.cs:332`) — the panic is caught at `TestExecution.cs:609-613` and contained as
+  one ordinary `fail`. It is one of the five "logic divergences" listed in the `log/slog` entry
+  above, not an independent defect.
+- on a GOROUTINE — `TestSetDefault`'s `go func(){ Info("A"); … }` (`logger_test.cs:469` via `Info`,
+  `logger.cs:346`, through `Goroutine.Run`, `golib/runtime/Goroutine.cs:375`) — it escapes the
+  goroutine root, reaches `Goroutine.ObserveUnhandledPanic` → `TestHost.cs:413-425` →
+  `TestRunner.cs:205-217`, which flushes the evidence and lets the process die. Every ordinally
+  later test loses its verdict. **It IS a contiguous alphabetical tail**, so CLAUDE.md's
+  mass-empty classification held all along — it was produced by process death rather than by a
+  deadline, which is why no timeout signature appeared. Worth adding to that classification: a
+  contiguous alphabetical tail has THREE causes, not two, and the third names itself in the
+  results file's last event.
+
+**A/B proof.** One line at the top of slog's `init` — `builtin.initPackage(typeof(log_package))`,
+i.e. the forcing the converter already knows how to emit — moves `TestSetDefault` fail → **pass**
+and `TestLogLoggerLevelForDefaultHandler` fail → **pass**, and the whole tail executes:
+**214 terminal verdicts, 190 pass / 24 fail**, against 181 terminal with the run cut short —
+**+33**, i.e. the ten unreported top-level tests and their subtests. (Both figures derive from the
+strict 1:1 run/terminal event pairing the host emits: 362 events baseline, 428 with the probe.) The
+24 remaining failures are the alloc-assert rows plus the `Source`/`CallDepth`/`RecordSource`
+naming divergences already priced above — untouched by this, and unrelated to it. The probe was
+reverted; nothing is banked from it.
+
+**Classification: converter defect** (Go cross-package init ORDER not reproduced for named
+imports), surfacing as a converted-code nil-func panic. Not a test-host defect, not a golib
+defect, not a measurement artifact.
+
+**Priced remedy — NOT small, deliberately not started.** The machinery is all built and proven
+(hook emission, per-(assembly, package) dedup via `packageBlankImportForces`, the
+`noInitPseudoPackages` fence, the hand-own `.cs.auto` fence, the marker splice); what changes is
+only the TRIGGER. Two honest trigger sets:
+
+- **(a) every import.** Matches Go exactly. Largest footprint: a hook per import per package,
+  corpus-wide, and every referenced assembly loads eagerly at startup.
+- **(b) every import whose module ctor is non-empty transitively** — i.e. the package or any
+  package it imports has an `init`. Observationally EQUIVALENT to (a) (forcing an empty module
+  ctor is a guaranteed no-op — the same reasoning `noInitPseudoPackages` already applies to
+  `unsafe`/`builtin`/`C`), at a fraction of the emission. This is the recommended shape, and it
+  needs one new thing: the converter must KNOW whether an imported package initializes, which
+  means recording it where the other cross-package facts already live (a `package_info.cs`
+  assembly attribute, or `stdlib-metadata.txt`).
+
+⚠ **A read-set heuristic cannot substitute.** The tempting narrow rule — "force only imports whose
+symbols the importer's init references" — MISSES this exact case: slog's init reads
+`log/internal.DefaultOutput`, but the package whose init WRITES it is `log`. The dependency that
+must be forced is not the one the init statement names. Only the unconditional (or
+transitive-has-init) rule catches it.
+
+Cost to land: converter change + the recorded-init marker + `go generate .` for
+`stdlib-metadata.txt`; a full-corpus regen and rebank (the emission changes nearly everywhere);
+a roster re-sweep, because eager module-ctor execution can surface latent order dependence in any
+banked row (that is the point of the fix, and it is also its risk); and a behavioral guard in the
+class of the existing blank-import guard, exercising a NAMED import whose init side effect the
+importer's init reads. `log/slog`'s row is gated on it: with the fix the package reaches
+190/214 in one run, without it the suite cannot finish at all.
+
+Cheap optional follow-up, independent of the above: the comparison artifact
+(`go2cs_test_comparison.json`) does not lift the host's *"test binary died"* package event, so a
+consumer reading only that file sees an unexplained empty tail. The signal exists in
+`go2cs_test_results.json` and on stderr; surfacing it in the comparison would have made this a
+five-minute read instead of a lane.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
