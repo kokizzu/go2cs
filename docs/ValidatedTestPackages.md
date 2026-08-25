@@ -91,13 +91,13 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **165 / 215 testable packages validated — 76.7%**
+> ### Phase 4 progress: **166 / 215 testable packages validated — 77.2%**
 >
-> **18,632 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **18,717 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Linux: 7 of 165 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
+> **Linux: 7 of 166 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -200,6 +200,7 @@ summed from the columns.
 | [`go/ast`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/ast) | 9 |  | The Go syntax tree — comment maps and doc association, `FilterFile`/`FilterPackage` deduplication, `Walk`/`Preorder` traversal with early break, and `ast.Fprint`'s reflective dump of a parsed tree (map iteration and unnamed struct types through the reflection bridge). · [proof](validation/current/go.ast.md) |
 | [`go/build/constraint`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/build/constraint) | 89 | | Build-constraint expression parsing. · [proof](validation/current/go.build.constraint.md) |
 | [`go/constant`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/constant) | 9 | | Exact-precision Go constant arithmetic — the int/rational/float representation ladder, `Make`/`Bytes` round trips, `BitLen`, and the full binary/unary operator and comparison matrix. · [proof](validation/current/go.constant.md) |
+| [`go/doc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc) | 85 | | The godoc extractor itself — `New`/`NewFromFiles` building a `Package` from a parsed AST, run over the whole `testdata` package corpus in all three modes (`default`, `AllDecls`, `AllMethods`) against golden renderings, so each of the 19 fixture packages contributes three verdicts. Exercises type/method/field association including embedded and promoted methods, the exported-filter and blank-identifier paths, error-type recognition, generics with type parameters and constraints, `Synopsis` extraction, import-group detection, and `TestClassifyExamples`/`TestExamples`, which map `Example*` functions onto the identifiers they document. Its one runnable example, `ExampleNewFromFiles`, is deferred with every other `Example` and never factors into the row. · [proof](validation/current/go.doc.md) |
 | [`go/doc/comment`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc/comment) | 10059 | | Doc-comment parsing and re-printing to text/markdown/HTML over the whole `testdata` corpus, plus a sweep over **every doc comment in the converted standard library's Go sources** — 10,000+ subtests, the largest verdict set banked. · [proof](validation/current/go.doc.comment.md) |
 | [`go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) | 4 | | gofmt's public entry points — `format.Source` on whole files and partial fragments, and `format.Node`'s no-modify guarantee over a parsed AST. · [proof](validation/current/go.format.md) |
 | [`go/importer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/importer) | 3 |  | The compiler-keyed importer front end — `ForCompiler`'s dispatch for source, gc and gccgo, including the custom-lookup path. · [proof](validation/current/go.importer.md) |

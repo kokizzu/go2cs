@@ -75,6 +75,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `go/ast` | [`go.ast.md`](current/go.ast.md) | [`src/core/go/ast`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/ast) |
 | `go/build/constraint` | [`go.build.constraint.md`](current/go.build.constraint.md) | [`src/core/go/build/constraint`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/build/constraint) |
 | `go/constant` | [`go.constant.md`](current/go.constant.md) | [`src/core/go/constant`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/constant) |
+| `go/doc` | [`go.doc.md`](current/go.doc.md) | [`src/core/go/doc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc) |
 | `go/doc/comment` | [`go.doc.comment.md`](current/go.doc.comment.md) | [`src/core/go/doc/comment`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc/comment) |
 | `go/format` | [`go.format.md`](current/go.format.md) | [`src/core/go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) |
 | `go/importer` | [`go.importer.md`](current/go.importer.md) | [`src/core/go/importer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/importer) |
