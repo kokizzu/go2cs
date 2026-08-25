@@ -11,10 +11,12 @@ every listed package on demand, reading its own roster straight from the table b
 [Try it yourself](README.md#try-it-yourself--validate-a-converted-test-suite) to reproduce any row
 from a clone with one command.
 
-A disclosure is a specific Go assertion the converted suite provably cannot satisfy — not a skipped
-test, not a tolerance. Five classes exist: three name something the managed runtime cannot
-*measure*, one something the test host cannot *be*, and one something the managed runtime cannot
-truthfully *describe*. (The count has moved in both directions, and the committed manifests — never
+A disclosure is a specific Go assertion the converted suite provably cannot satisfy — never a
+tolerance, and never a test skipped to make a row pass. Six classes exist: three name something the
+managed runtime cannot *measure*, one something the test host cannot *be*, one something the managed
+runtime cannot truthfully *describe*, and one — `platform-skip`, minted 2026-08-25 — that is not a
+*cannot* at all, but a skip **Go's own test source defines** for a platform the converted corpus
+genuinely is. (The count has moved in both directions, and the committed manifests — never
 this prose — have always been the authority: it read "four" while five were in use, because
 `alloc-count-semantics` predates the newer classes and had lost its spot, restored 2026-08-20; then
 "five" for the rest of that day, until `chan-direction` retired that same evening; then "four"
@@ -65,18 +67,37 @@ once its remedy lands, because the arithmetic below moves when it goes.
   FAILING. The three it names assert only that a heap dump is non-empty and never parse it, so
   writing a single byte would pass them while proving nothing — and this class's own text forbids
   writing it.
+- **`platform-skip`** — a test whose converted side takes a skip **the upstream Go source itself
+  writes**, because the property that skip describes is one the converted corpus genuinely and
+  permanently holds. The divergence is between two *platforms'* verdicts on one test, not between Go
+  and the conversion on one platform. First and founding row: `crypto/cipher`'s `TestGCMAsm`, which
+  skips when the assembly GCM implementation is the same type as the generic one — true of the
+  converted corpus by design, since it has no `.s` codepaths at all, while the real toolchain's
+  windows/amd64 build has a distinct assembly GCM and therefore passes. `runtime-capability`'s
+  refusal stands and does not reach it: that class asks whether a truthful managed implementation
+  exists at any cost, and here the cost buys nothing Go's own source does not already define away —
+  building a second GCM whose only consumer is a differential test would manufacture a platform
+  property instead of measuring one. Its **admission test is binding**: the skip taken must be the
+  upstream test's own skip statement, conditioned on a platform property the deployment genuinely
+  and by-design holds — never a host-limit workaround, never a skip the harness injects, never a
+  skip added by conversion. Its **anti-laundering clause** is enforced in code rather than on trust:
+  this is the one class the compare oracle reads behaviorally, it is the sole key that admits a
+  Go=pass/C#=skip pair, and it admits nothing else — a `platform-skip` row whose converted side
+  *fails* is a hard mismatch even when the failure text contains the pinned message. The signature
+  pins Go's own skip message, and every such row records its verdict pair (Go pass / C# skip)
+  openly, in the roster and on the proof page.
 
 Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **163 / 215 testable packages validated — 75.8%**
+> ### Phase 4 progress: **164 / 215 testable packages validated — 76.3%**
 >
-> **18,612 matching test verdicts · 86 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **18,625 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Linux: 7 of 163 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
+> **Linux: 7 of 164 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -131,6 +152,7 @@ summed from the columns.
 | [`context`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/context) | 57 | 1 | Cancellation trees over real channel rendezvous — parent/child propagation, `Done` broadcast, `AfterFunc` registration races, `t.Deadline`-driven tree cancellation, value chains named through the reflectlite bridge; alloc-count disclosure. · [proof](validation/current/context.md) |
 | [`crypto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto) | 6 | | The root `crypto` package's cross-cipher invariants — every stream mode's out-of-bounds-write guard (CFB/CTR/OFB/RC4) and the `purego` build-tag assertion the converted corpus is built under. · [proof](validation/current/crypto.md) |
 | [`crypto/aes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/aes) | 13 | | AES over the `purego` generic implementation — key expansion, the S-box and Te/Td round tables, GF(2⁸) `mul`/`powx`, known-answer encrypt/decrypt vectors, and the CBC/CTR/GCM interface-upgrade probes. · [proof](validation/current/crypto.aes.md) |
+| [`crypto/cipher`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/cipher) | 13 | 1 | Go's block-cipher MODES over the converted AES — CBC/CFB/CTR/OFB encrypt and decrypt against the NIST SP 800-38A vectors, GCM authenticated encryption including the counter-wrap edge, invalid tag sizes, empty plaintext, and the tag-failure path that must overwrite its output buffer. `TestGCMAsm` is the founding `platform-skip` row: Go passes on a build with a distinct assembly GCM, the converted corpus takes gcm_test.go's own skip because it has no assembly codepaths at all. · [proof](validation/current/crypto.cipher.md) |
 | [`crypto/des`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/des) | 18 | | DES and Triple-DES — the initial/final permutation bit shuffles, the substitution tables, semi-weak key pairs, and the full known-answer vector matrix. · [proof](validation/current/crypto.des.md) |
 | [`crypto/dsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/dsa) | 4 | | DSA over the converted `math/big` — FIPS 186-3 parameter generation at all four key sizes (a probabilistic prime search run to completion), sign/verify round-trips, the bad-public-key rejection, and the degenerate-key signing contract. · [proof](validation/current/crypto.dsa.md) |
 | [`crypto/ecdh`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdh) | 47 | | ECDH key agreement over P-256/P-384/P-521 and X25519 — key generation, the `Bytes`/`NewPublicKey`/`NewPrivateKey` encoding round-trips, shared-secret agreement across curves, the low-order and non-canonical X25519 rejections, and the `crypto.PublicKey`/`crypto.PrivateKey` interface witnesses. · [proof](validation/current/crypto.ecdh.md) |

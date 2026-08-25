@@ -246,9 +246,30 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 	}
 
 	if len(disclosed) > 0 {
+		// The blanket "not a skipped test" wording is TRUE for every class except platform-skip,
+		// whose whole shape is a Go=pass/C#=skip pair. Rather than rewrite the sentence corpus-wide
+		// (which would churn the text of every existing proof page on its next regeneration), the
+		// clause is selected by what this package's manifest actually contains — so pages without a
+		// platform-skip row keep their exact wording, and the page that has one cannot state
+		// something false about itself.
+		hasPlatformSkip := false
+
+		for _, name := range disclosed {
+			if disclosure, pinned := disclosures[name]; pinned && disclosure.Class == platformSkipClass {
+				hasPlatformSkip = true
+				break
+			}
+		}
+
 		page.WriteString("\n## Disclosed divergences\n\n")
-		page.WriteString("A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not\n")
-		page.WriteString("a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's\n")
+
+		if hasPlatformSkip {
+			page.WriteString("A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — never\n")
+			page.WriteString("a tolerance, and never a test skipped to make a row pass. Each one is pinned by exact signature in the package's\n")
+		} else {
+			page.WriteString("A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not\n")
+			page.WriteString("a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's\n")
+		}
 		fmt.Fprintf(&page, "hand-owned [`go2cs_test_disclosures.json`](%s/blob/master/src/core/%s/go2cs_test_disclosures.json);\n",
 			go2csRepositoryURL, provenance.importPath)
 		page.WriteString("a disclosed test that fails any *other* way is still a hard mismatch.\n\n")
@@ -268,6 +289,24 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 			}
 
 			fmt.Fprintf(&page, "| `%s` | `%s` | %s |\n", escapeProofCell(name), escapeProofCell(class), escapeProofCell(reason))
+		}
+
+		// A platform-skip row's own note. The ruling's anti-laundering clause requires the verdict
+		// pair to be recorded OPENLY rather than folded into a count, so the page states it in
+		// words next to the table that already shows it — a reader must not have to know the class
+		// vocabulary to see that Go ran the test and the converted side did not.
+		for _, name := range disclosed {
+			disclosure, pinned := disclosures[name]
+
+			if !pinned || disclosure.Class != platformSkipClass {
+				continue
+			}
+
+			fmt.Fprintf(&page, "\n`%s` is a **source-defined platform skip**: `go test` reports **pass** and the converted\n"+
+				"suite reports **skip**, because the test's own upstream source skips on a platform property the\n"+
+				"converted corpus genuinely and permanently holds. The skip is Go's, not the harness's — it is pinned\n"+
+				"to that upstream message, so the row moves to a hard mismatch if the converted side ever skips for a\n"+
+				"different reason, or stops skipping.\n", escapeProofCell(name))
 		}
 
 		// A host-conditional row's own note, modeled on the roster's internal/zstd row: name the
