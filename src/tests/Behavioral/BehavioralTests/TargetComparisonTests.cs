@@ -1354,6 +1354,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReflectArrayOf() => CheckTarget("ReflectArrayOf");
+
+    [TestMethod]
     public void CheckReflectBridgeClosure() => CheckTarget("ReflectBridgeClosure");
 
     [TestMethod]

@@ -1351,6 +1351,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReflectArrayOf() => CheckTarget("ReflectArrayOf");
+
+    [TestMethod]
     public void CheckReflectBridgeClosure() => CheckTarget("ReflectBridgeClosure");
 
     [TestMethod]

@@ -2485,156 +2485,24 @@ internal static uintptr typeptrdata(ж<abi.Type> Ꮡt) {
 
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string iLengthˢ = "i < length"u8;
+// go2cs generated this placeholder — func ArrayOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// ArrayOf returns the array type with the given length and element type.
-// For example, if t represents int, ArrayOf(5, t) represents [5]int.
-//
-// If the resulting type would be larger than the available address space,
-// ArrayOf panics.
-public static ΔType ArrayOf(nint length, ΔType elem) {
-    if (length < 0) {
-        throw panic("reflect: negative length passed to ArrayOf");
-    }
-    var typ = elem.common();
-    // Look in cache.
-    var ckey = new cacheKey(Array, typ, nil, (uintptr)length);
-    {
-        var (arrayΔ1, ok) = ᏑlookupCache.Load(ckey); if (ok) {
-            return arrayΔ1._<ΔType>();
-        }
-    }
-    // Look in known types.
-    @string s = "["u8 + strconv.Itoa(length) + "]"u8 + stringFor(typ);
-    foreach (var (_, tt) in typesByString(s)) {
-        var arrayΔ2 = tt.Reinterpret<abi.Type, arrayType>();
-        if ((~arrayΔ2).Elem == typ) {
-            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt).OrTypedNil());
-            return tiΔ1._<ΔType>();
-        }
-    }
-    // Make an array type.
-    ref var iarray = ref heap<any>(out var Ꮡiarray);
-
-    iarray = new @unsafe.Pointer[]{}.array(1);
-    var prototype = ~Ꮡiarray.Reinterpret<any, ж<arrayType>>();
-    ref var Δarray = ref heap<abiꓸArrayType>(out var Ꮡarray);
-    Δarray = prototype.Value;
-    Δarray.TFlag = (abi.TFlag)((~typ).TFlag & abi.TFlagRegularMemory);
-    Δarray.Str = resolveReflectName(newName(s, ""u8, false, false));
-    Δarray.Hash = fnv1((~typ).Hash, (rune)'[');
-    for (var n = (uint32)length; n > 0; n >>= (int)(8)) {
-        Δarray.Hash = fnv1(Δarray.Hash, (byte)n);
-    }
-    Δarray.Hash = fnv1(Δarray.Hash, (rune)']');
-    Δarray.Elem = typ;
-    Δarray.PtrToThis = 0;
-    if ((~typ).Size_ > 0) {
-        var max = ~(uintptr)0 / (~typ).Size_;
-        if ((uintptr)length > max) {
-            throw panic("reflect.ArrayOf: array size would exceed virtual address space");
-        }
-    }
-    Δarray.Size_ = (~typ).Size_ * (uintptr)length;
-    if (length > 0 && typ.Pointers()) {
-        Δarray.PtrBytes = (~typ).Size_ * (uintptr)(length - 1) + (~typ).PtrBytes;
-    }
-    Δarray.Align_ = typ.Value.Align_;
-    Δarray.FieldAlign_ = typ.Value.FieldAlign_;
-    Δarray.Len = (uintptr)length;
-    Δarray.Slice = Ꮡ(((~SliceOf(elem)._<ж<rtype>>()).t));
-    switch (ᐧ) {
-    case {} when !typ.Pointers() || Δarray.Size_ == 0: {
-        Δarray.GCData = default!;
-        Δarray.PtrBytes = 0;
-        break;
-    }
-    case {} when length is 1: {
-        Δarray.Kind_ |= (abiꓸKind)((abiꓸKind)((~typ).Kind_ & abi.KindGCProg));
-        Δarray.GCData = typ.Value.GCData;
-        Δarray.PtrBytes = typ.Value.PtrBytes;
-        break;
-    }
-    case {} when (abiꓸKind)((~typ).Kind_ & abi.KindGCProg) == 0 && Δarray.Size_ <= abi.MaxPtrmaskBytes * 8 * goarch.PtrSize: {
-        var n = (Δarray.PtrBytes / (uintptr)goarch.PtrSize + 7) / 8;
-        n = (uintptr)((n + (uintptr)goarch.PtrSize - 1) & ~(uintptr)(goarch.PtrSize - 1));
-        var mask = new slice<byte>((nint)(n));
-        emitGCMask(mask, // No pointers.
- // In memory, 1-element array looks just like the element.
- // Element is small with pointer mask; array is still small.
- // Create direct pointer mask by turning each 1 bit in elem
- // into length 1 bits in larger mask.
- // Runtime needs pointer masks to be a multiple of uintptr in size.
- 0, typ, Δarray.Len);
-        Δarray.GCData = Ꮡ(mask, 0);
-        break;
-    }
-    default: {
-        var prog = new byte[]{ // Create program that emits one element
- // and then repeats to make the array.
-0, 0, 0, 0}.slice(); // will be length of prog
-        prog = appendGCProg(prog, typ);
-        var elemPtrs = (~typ).PtrBytes / (uintptr)goarch.PtrSize;
-        var elemWords = (~typ).Size_ / (uintptr)goarch.PtrSize;
-        if (elemPtrs < elemWords) {
-            // Pad from ptrdata to size.
-            // Emit literal 0 bit, then repeat as needed.
-            prog = builtin.append(prog, (byte)(0x01), (byte)(0x00));
-            if (elemPtrs + 1 < elemWords) {
-                prog = builtin.append(prog, (byte)(0x81));
-                prog = appendVarint(prog, elemWords - elemPtrs - 1);
-            }
-        }
-        if (elemWords < 0x80){
-            // Repeat length-1 times.
-            prog = builtin.append(prog, (byte)((uintptr)(elemWords | 0x80)));
-        } else {
-            prog = builtin.append(prog, (byte)(0x80));
-            prog = appendVarint(prog, elemWords);
-        }
-        prog = appendVarint(prog, (uintptr)length - 1);
-        prog = builtin.append(prog, (byte)(0));
-        (Ꮡ(prog, 0).Reinterpret<byte, uint32>()).Value = (uint32)(len(prog) - 4);
-        Δarray.Kind_ |= (abiꓸKind)(abi.KindGCProg);
-        Δarray.GCData = Ꮡ(prog, 0);
-        Δarray.PtrBytes = Δarray.Size_; // overestimate but ok; must match program
-        break;
-    }}
-
-    var etyp = typ;
-    var esize = etyp.Size();
-    Δarray.Equal = default!;
-    {
-        var eequal = etyp.Value.Equal; if (eequal != default!) {
-            var eequalʗ1 = eequal;
-            Δarray.Equal = (@unsafe.Pointer p, @unsafe.Pointer q) => {
-                for (nint i = 0; i < length; i++) {
-                    @unsafe.Pointer pi = (uintptr)arrayAt(p, i, esize, iLengthˢ);
-                    @unsafe.Pointer qi = (uintptr)arrayAt(q, i, esize, iLengthˢ);
-                    if (!eequalʗ1(pi, qi)) {
-                        return false;
-                    }
-                }
-                return true;
-            };
-        }
-    }
-    switch (ᐧ) {
-    case {} when length == 1 && !typ.IfaceIndir(): {
-        Δarray.Kind_ |= (abiꓸKind)(abi.KindDirectIface);
-        break;
-    }
-    default: {
-        Δarray.Kind_ &= unchecked((abiꓸKind)~(abiꓸKind)(abi.KindDirectIface));
-        break;
-    }}
-
-    // array of 1 direct iface type can be direct
-    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡarray.of(arrayType.ᏑType)).OrTypedNil());
-    return ti._<ΔType>();
-}
-
+// Look in cache.
+// Look in known types.
+// No pointers.
+// In memory, 1-element array looks just like the element.
+// Element is small with pointer mask; array is still small.
+// Create direct pointer mask by turning each 1 bit in elem
+// into length 1 bits in larger mask.
+// Runtime needs pointer masks to be a multiple of uintptr in size.
+// Create program that emits one element
+// and then repeats to make the array.
+// will be length of prog
+// Pad from ptrdata to size.
+// Emit literal 0 bit, then repeat as needed.
+// Repeat length-1 times.
+// overestimate but ok; must match program
+// array of 1 direct iface type can be direct
 internal static slice<byte> appendVarint(slice<byte> x, uintptr v) {
     for (; v >= 0x80; v >>= (int)(7)) {
         x = builtin.append(x, (byte)((uintptr)(v | 0x80)));
