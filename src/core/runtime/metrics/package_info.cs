@@ -51,8 +51,8 @@ using static go.runtime.metrics_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("runtime/metrics/description.go", "description.cs", "AO4ChAemgoKUgoKCggAHFKiS")]
-[assembly: global::go.GoPositionMap("runtime/metrics/value.go", "value.cs", "ABhKkqyygpSssoKUrLKClA==")]
+[assembly: go.GoPositionMap("runtime/metrics/description.go", "description.cs", "AO4ChAemgoKUgoKCggAHFKiS")]
+[assembly: go.GoPositionMap("runtime/metrics/value.go", "value.cs", "ABhKkqyygpSssoKUrLKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;

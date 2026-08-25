@@ -10,7 +10,7 @@ global using DecrypterOpts = object;
 namespace go;
 
 using hash = hash_package;
-using Δio = io_package;
+using io = io_package;
 using strconv = strconv_package;
 
 partial class crypto_package {
@@ -209,7 +209,7 @@ public static void RegisterHash(Hash h, Func<hash.Hash> f) {
     // Note that when a signature of a hash of a larger message is needed,
     // the caller is responsible for hashing the larger message and passing
     // the hash (as digest) and the hash function (as opts) to Sign.
-    (slice<byte> signature, error err) Sign(Δio.Reader rand, slice<byte> digest, SignerOpts opts);
+    (slice<byte> signature, error err) Sign(io.Reader rand, slice<byte> digest, SignerOpts opts);
 }
 
 // SignerOpts contains options for signing with a [Signer].
@@ -230,7 +230,7 @@ public static void RegisterHash(Hash h, Func<hash.Hash> f) {
     // Decrypt decrypts msg. The opts argument should be appropriate for
     // the primitive used. See the documentation in each implementation for
     // details.
-    (slice<byte> plaintext, error err) Decrypt(Δio.Reader rand, slice<byte> msg, DecrypterOpts opts);
+    (slice<byte> plaintext, error err) Decrypt(io.Reader rand, slice<byte> msg, DecrypterOpts opts);
 }
 
 } // end crypto_package

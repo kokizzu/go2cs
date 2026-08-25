@@ -10,12 +10,5 @@ partial class xml_package {
     static xml_package() {
         initᴛHTMLEntity();
         initᴛHTMLAutoClose();
-        initᴛᴛtests();
     }
-
-    // -tests hook: implemented by the internal test variant's relocated-initializer
-    // file when its _test.go files need init-order relocation into this same class;
-    // erased entirely (declaration and call) when unimplemented — the production
-    // compile set excludes the *_test.cs implementation.
-    static partial void initᴛᴛtests();
 } // end xml_package
