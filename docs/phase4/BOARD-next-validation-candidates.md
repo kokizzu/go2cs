@@ -18947,4 +18947,77 @@ corpus, zero goldens — so CNR is not owed, and the gate each commit DID carry 
 over its touched files. One tier of hygiene is deliberately deferred past the hop's start:
 `DotNetMigration.md`'s Stage-0 incident narratives, whose home is `STAGE0-provisioning.md`.
 
+## 2026-08-25 · `reflect.ArrayOf` LANDS as a standalone hand-own — the commission's one-liner held, and the guard found an EMISSION gap next door (lane `claude/reflect-arrayof`, coordinator i7)
+
+Queue item 2 from the `map-key-elem-cargo` lane's closing list, taken on its own merits. The
+prediction that arc made — *"`reflect.ArrayOf(n, elem)` is now nearly free … the hand-own is
+`synthType(typeof(array<>).MakeGenericType(elem), [n, …elemDims])`"* — is **confirmed**: the
+implementation is 14 lines in `reflect/value_impl.cs` beside its sibling constructor `PointerTo`,
+plus one `manualConversionFuncs["reflect"]["ArrayOf"]` registry entry and the reflect regen that
+turns the auto body into its placeholder. No `typelinks`, no linker table, no new machinery in golib
+or the descriptor layer — the dims cargo was already carrying everything the length needed.
+
+**What the auto form was doing, stated once more because it is the reusable shape:** it died in
+`typesByString` → `typelinks()` not because the caller asked for anything exotic but because it was
+reconstructing Go's linker-allocated `arrayType` record. Every accessor that record exists to feed —
+`Len`/`Elem`/`Size`/`Align`/`String` — the managed bridge already answers from `(System.Type, dims)`.
+The class generalizes: **a Go body that fails inside a LINKER-table lookup is usually not a hard
+wall, it is a body reconstructing something the managed side never lost.**
+
+**Identity, not resemblance.** `canonType` keys on the managed type PLUS the dims rendering, so
+`ArrayOf(3, TypeOf(byte))` and `TypeOf([3]byte{})` intern to the SAME `reflect.Type`. Every row of
+the new `ReflectArrayOf` behavioral guard is that identity claim — scalar, `[2]Celsius` (defined
+element), `[2]*uint8`, `[2]pair` (struct element, size from Go's own field layout), `[0]uint8`,
+nested `[2][3]uint8`, and a five-deep composition — plus the value side (`New`/`Index`/`SetUint`/
+`Zero`/`DeepEqual`) and the negative-length panic. **Failing-first proven**: at master the guard
+reports `exit code mismatch: C# 2 vs Go 0 — C# stderr: "System.NotImplementedException: typelinks:
+external (assembly or cgo) function is not implemented"`; with the change, PASS on all four phases.
+
+**This does NOT flip `encoding/gob`'s row and no claim is made that it does** —
+`TestIgnoreDepthLimit` wraps its 101-deep array in a `reflect.StructOf`, still the feature arc
+(`System.Reflection.Emit`, and an AOT question) the previous lane named. gob stays 105 of 106.
+
+**Recorded limitation, deliberately not worked around:** an array descriptor has no slot to hand a
+channel's DIRECTION or a map KEY's dims down — `abi.Type.Elem` descends those through a POINTER only
+— so `ArrayOf(n, chan<- T)` describes `[n]chan T`. A DECLARED `[n]chan<- T` reads back exactly the
+same way today, so this is the cargo model's shape rather than the constructor's (the r39d rule).
+
+### The find next door: an empty NESTED composite literal drops its inner dimension (NOT this lane's, not fixed)
+
+The guard's nested rows failed on their first run, and the cause is not `ArrayOf`. The converter
+emits the two forms differently:
+
+| Go | emitted C# | `TypeOf(x).Elem().Len()` |
+|:--|:--|:--|
+| `var x [2][3]uint8` | `new(2, () => new(3))` | **3** — correct |
+| `x := [2][3]uint8{}` | `new array<uint8>[]{}.array(2)` | **0** — Go says 3 |
+
+The empty literal's two elements are `default(array<uint8>)`, i.e. length ZERO, so the inner
+dimension is gone before reflection is involved at all — `ArrayDimsOfValue` then measures the first
+element honestly and reports `[2, 0]`. Confirmed by reading both emissions from a two-line probe
+(`go run` says `3 3`); the consequence was measured through the guard, where the constructed
+`[2][3]uint8` compared unequal to the literal-built one while every accessor on the constructed side
+answered correctly. **Reachable from any `[N][M]T{}` literal with no reflection in sight**, and it
+is an emission fix (converter + a corpus regen + CNR), so it is recorded here and left for whoever
+takes it. The guard compares against the declared `var` form, which is what "the type a declaration
+produces" honestly means on this bridge, and its source says so at the site so nobody switches it
+back.
+
+### Gates
+
+Converter `go test -count=1 ./...` **ok, 207.1 s, exit 0** — `TestStdLibMetadataInSync` included, and
+`go generate .` reproduced `stdlib-metadata.txt` byte-identical, so **no metadata was owed** and that
+is asserted rather than inferred. `GolibTests` **299 / 299, 0 failed** (112.9 s). Full
+`go2cs-stdlib.slnx` Debug (windows target) **0 errors, 315 s**. Filtered `ReflectArrayOf` all four
+phases **PASS**. The reflect regen ran seeded per the ritual, with a **control first**: the same
+seeded reconvert at master reproduced all 15 committed `reflect` files byte-identical, so the two
+files that moved afterwards are the change and nothing else.
+
+⚠ **Provisioning note for anyone gating on the coordinator i7:** the box's default `dotnet` is SDK
+**9.0.317**, which cannot target `net10.0` at all (`NETSDK1045`); the 10.0.400 SDK is a side-by-side
+install at `C:\Users\ritchie\dotnet10`. The default `go` is **1.23.1** out of `C:\Program Files\Go`
+and a machine-level `GOROOT` names that same 1.23.1 tree, while the corpus and `version.props` are
+**1.23.12** (at `%USERPROFILE%\sdk\go1.23.12`) — the exact both-pins-needed shape
+`GoCorpusMigration.md` §1 records. Both pins must be set in the SAME invocation as every gate.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

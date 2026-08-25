@@ -487,6 +487,21 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.send":    goosAny,
 		"PointerTo":     goosAny,
 		"Value.Convert": goosAny,
+		// ArrayOf is PointerTo's sibling — the other run-time TYPE CONSTRUCTOR — and it fails one
+		// step earlier than PointerTo did. Before it assembles its arrayType record (Str/Hash/
+		// GCData/PtrBytes/Equal, plus a SliceOf for the record's Slice field) it looks the type up
+		// by NAME through typesByString → typelinks(), the LINKER-BUILT type table, which has no
+		// managed form and is a NotImplementedException stub: so every call threw, whatever it was
+		// asked for, and the caller sees an infrastructure error rather than a wrong answer
+		// (encoding/gob's TestIgnoreDepthLimit is the measured consumer).
+		//
+		// None of that record is reconstructible here and none of it is needed: golib's array<T> IS
+		// the array type, and the one part of a Go array type the managed emission cannot hold —
+		// its LENGTH — is precisely what the reflection bridge's dims cargo already carries for
+		// every DECLARED array. So the hand-own composes the same (managed type, dims) pair
+		// abi.TypeOf reaches from a live [n]T value, and interning makes the constructed type and
+		// the declared one the SAME canonical reflect.Type. See reflect/value_impl.cs.
+		"ArrayOf": goosAny,
 		// rtype.FieldByName Reinterprets the descriptor as a structType and reads .Fields off
 		// the default promoted-embed box (gob's compileDec matching wire fields to the local
 		// struct). Bridged over the shared GoFields projection — the SAME field table

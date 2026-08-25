@@ -2138,6 +2138,55 @@ public static ΔType PointerTo(ΔType t) {
 
 // PtrTo is the deprecated spelling of PointerTo. (The auto form already delegates; kept auto.)
 
+// ArrayOf returns the array type with the given length and element type — PointerTo's sibling, the
+// other run-time TYPE CONSTRUCTOR, and the one that failed one step earlier. Before Go's own body
+// assembles its arrayType record (Str/Hash/GCData/PtrBytes/Equal, and a SliceOf for the record's
+// Slice field) it looks the type up by NAME through typesByString → typelinks(), the linker-built
+// type table, which has no managed form and is a NotImplementedException stub. So every call threw
+// whatever it was asked for — encoding/gob's TestIgnoreDepthLimit reports it as an infrastructure
+// error rather than a failure — and the throw is unrelated to what the caller wanted: it is the
+// reconstruction of a LINKER record, which this bridge never needs.
+//
+// golib's array<T> IS the array type. The one part of a Go array type the managed emission cannot
+// hold is its LENGTH (C# has no const generic parameter for the 4 in [4]byte), and that is exactly
+// what the descriptor's dims cargo already carries for every declared array. So the whole
+// construction is the (managed type, dims) pair abi.TypeOf reaches from a live [n]T value, and
+// interning does the rest: ArrayOf(3, TypeOf(byte)) and TypeOf([3]byte{}) intern to the SAME
+// canonical reflect.Type by identity (canonType keys on the managed type PLUS the dims rendering),
+// so Len/Elem/Size/Align/String/New/Zero all answer from one descriptor rather than agreeing by
+// coincidence. Guarded by the ReflectArrayOf behavioral test, whose every row is that identity.
+//
+// The dims COMPOSE — this array's length, then whatever the element's descriptor already carried —
+// and that is not a nested-array special case. The slot means "what Elem() hands down": an array
+// consumes the head and passes the tail, while a pointer's or a map's dims pass through unshifted.
+// So [n][3]byte and [n]*[3]int are both spelled [n, 3], and each accessor takes back its own share.
+//
+// What an array has NO slot to hand down is a channel's DIRECTION or a map KEY's dims: abi.Type.Elem
+// descends those through a POINTER only, so [n]chan<- T describes [n]chan T here. That is the cargo
+// model's shape rather than this function's — a DECLARED [n]chan<- T reads back exactly the same way
+// today — so it is recorded, not worked around (the r39d rule: never invent what no source knows).
+public static ΔType ArrayOf(nint length, ΔType elem) {
+    if (length < 0) {
+        throw panic("reflect: negative length passed to ArrayOf");
+    }
+    System.Type? st = sysTypeOfReflectType(elem);
+    if (st is null) {
+        throw panic("reflect: ArrayOf of non-synthesized type");
+    }
+    nint[]? elemDims = arrayDimsOfReflectType(elem);
+    nint[] dims = new nint[1 + (elemDims is null ? 0 : elemDims.Length)];
+    dims[0] = length;
+    elemDims?.CopyTo(dims, 1);
+    // Go's own address-space guard, over the size the bridge can know — GoSizeOf answers -1 for a
+    // type whose Go size is not derivable (a dimension-less array), and an unknown element size is
+    // no basis for a panic, so the check applies exactly where it has an answer.
+    nint elemSize = GoReflect.GoSizeOf(st, elemDims);
+    if (elemSize > 0 && (nuint)length > nuint.MaxValue / (nuint)elemSize) {
+        throw panic("reflect.ArrayOf: array size would exceed virtual address space");
+    }
+    return toType(abi.synthType(typeof(array<>).MakeGenericType(st), dims));
+}
+
 // Convert returns the value v converted to type t under Go's conversion rules, routed through
 // GoReflect.TryConvertTo — THE convertibility relation (assignability with adapter/box unwrap,
 // named-wrapper construction/unwrap, kinded scalar conversions with Go truncation semantics).

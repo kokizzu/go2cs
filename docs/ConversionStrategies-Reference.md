@@ -18748,6 +18748,72 @@ The `envs` half has its own **positive control**: export `GOROOT` into the host'
 link-time constant rather than to the snapshot — and it is the same probe to re-run if a future
 build-time `GOROOT` remedy is tried.
 
+### `reflect.ArrayOf` composes a descriptor; it does not reconstruct a linker record
+
+`ArrayOf(n, elem)` builds an array TYPE at run time, for a type no declaration in the program
+produced. Go's own body cannot be converted usefully, and it does not degrade: before it assembles
+its `arrayType` record (`Str`/`Hash`/`GCData`/`PtrBytes`/`Equal`, plus a `SliceOf` for the record's
+`Slice` field) it looks the type up **by name** through `typesByString` → `typelinks()`, the
+linker-built type table, which has no managed form and is a `NotImplementedException` stub. So every
+call threw whatever it was asked for — `encoding/gob`'s `TestIgnoreDepthLimit` reports it as an
+`infrastructure-error` rather than a failure — and the throw says nothing about the request: it is
+the reconstruction of a **linker** record, which the managed bridge never needs.
+
+golib's `array<T>` **is** the array type. The one part of a Go array type the managed emission
+cannot hold is its LENGTH (C# has no const generic parameter for the `4` in `[4]byte`), and that is
+exactly what the descriptor's **dims cargo** already carries for every declared array. So the whole
+construction is the `(managed type, dims)` pair `abi.TypeOf` reaches from a live `[n]T` value:
+
+```csharp
+// reflect/value_impl.cs — the hand-own, beside its sibling constructor PointerTo
+public static ΔType ArrayOf(nint length, ΔType elem) {
+    if (length < 0) {
+        throw panic("reflect: negative length passed to ArrayOf");
+    }
+    System.Type? st = sysTypeOfReflectType(elem);
+    ...
+    nint[]? elemDims = arrayDimsOfReflectType(elem);
+    nint[] dims = new nint[1 + (elemDims is null ? 0 : elemDims.Length)];
+    dims[0] = length;
+    elemDims?.CopyTo(dims, 1);
+    ...
+    return toType(abi.synthType(typeof(array<>).MakeGenericType(st), dims));
+}
+```
+
+**Interning is what makes it a round trip rather than a look-alike.** `canonType` keys the `ΔType`
+wrapper on the managed type PLUS the dims rendering, so `ArrayOf(3, TypeOf(byte))` and
+`TypeOf([3]byte{})` are the SAME canonical `reflect.Type` **by identity** — and `Len`/`Elem`/`Size`/
+`Align`/`String`/`New`/`Zero` then agree because they read one descriptor, not because each was
+separately made to agree.
+
+**The dims COMPOSE**, and that is not a nested-array special case. The slot means *what `Elem()`
+hands down*: an array consumes the head and passes the tail, while a pointer's and a map's dims pass
+through unshifted. So `[n][3]byte` and `[n]*[3]int` are both spelled `[n, 3]`, and each accessor
+takes back its own share. Repeated composition is therefore free, which is the shape `gob`'s
+depth-limit test builds 101 deep.
+
+What an array has **no slot** to hand down is a channel's DIRECTION or a map KEY's dims:
+`abi.Type.Elem` descends those through a POINTER only, so `[n]chan<- T` describes `[n]chan T` here.
+That is the cargo model's shape rather than this function's — a DECLARED `[n]chan<- T` reads back
+exactly the same way — so it is recorded, not worked around (the r39d rule).
+
+Guarded by the **`ReflectArrayOf`** behavioral test, whose every row is that identity claim. The
+registry entry is `manualConversionFuncs["reflect"]["ArrayOf"]` (`manualTypeOperations.go`), which is
+what turns the auto body into the placeholder the hand-own fills. Implementing `ArrayOf` alone does
+**not** flip `gob`'s last verdict — `TestIgnoreDepthLimit` wraps its 101-deep array in a
+`reflect.StructOf`, which is runtime struct synthesis over `System.Reflection.Emit` and a feature arc
+of its own.
+
+⚠ The guard's nested rows compare against a declared **variable**, not an empty composite literal,
+and the difference is load-bearing. `var x [2][3]uint8` emits as `new(2, () => new(3))` — the inner
+dimension is in the initializer, which is the source the bridge recovers a declared array's length
+from. The empty literal `[2][3]uint8{}` emits as `new array<uint8>[]{}.array(2)`, whose two elements
+are `default(array<uint8>)`, i.e. length ZERO — so the inner dimension is dropped and
+`reflect.TypeOf(lit).Elem().Len()` answers `0` where Go answers `3`. That is a converter EMISSION
+gap, older than and independent of this hand-own (it needs no reflection to reach), and it is
+recorded here rather than papered over.
+
 ## Comments
 
 Comment conversion is opt-in (`-comments`, default **off**) and two consumers require it: the
