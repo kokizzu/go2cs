@@ -66,6 +66,12 @@ private static readonly object structElemˢ = (@string)"struct elem:"u8;
 private static readonly object zeroLengthˢ = (@string)"zero length:"u8;
 private static readonly object deepequalˢ = (@string)"deepequal:"u8;
 private static readonly object nest5ˢ = (@string)"nest(5):"u8;
+private static readonly @string sliceOfUint8ˢ = "SliceOf(uint8)"u8;
+private static readonly object sliceIdenticalˢ = (@string)"slice identical:"u8;
+private static readonly object sliceOfArrayIdenticalToˢ = (@string)"slice of array identical to declared:"u8;
+private static readonly object arrayOfSliceˢ = (@string)"array of slice:"u8;
+private static readonly object sliceOfSliceˢ = (@string)"| slice of slice:"u8;
+private static readonly object sliceOfPointerˢ = (@string)"| slice of pointer:"u8;
 private static readonly object negativeLengthˢ = (@string)"negative length:"u8;
 
 internal static void Main() {
@@ -102,10 +108,29 @@ internal static void Main() {
     var deep = nest(5, byteT);
     fmt.Println(nest5ˢ, deep, sizeˢ, deep.Size(), lenˢ, deep.Len(),
         identicalˢ2, AreEqual(deep, reflect.TypeOf(deepDecl)));
+    var sl = reflect.SliceOf(byteT);
+    describeSlice(sliceOfUint8ˢ, sl);
+    fmt.Println(sliceIdenticalˢ, AreEqual(sl, reflect.TypeOf(new uint8[]{}.slice())), elemIdenticalˢ, AreEqual(sl.Elem(), byteT));
+    var slArr = reflect.SliceOf(reflect.ArrayOf(3, byteT));
+    fmt.Println(sliceOfArrayIdenticalToˢ, AreEqual(slArr, reflect.TypeOf(new array<uint8>[]{}.slice())));
+    fmt.Println(arrayOfSliceˢ, reflect.ArrayOf(2, sl),
+        identicalˢ2, AreEqual(reflect.ArrayOf(2, sl), reflect.TypeOf(new slice<uint8>[]{}.array(2))),
+        sliceOfSliceˢ, AreEqual(reflect.SliceOf(sl), reflect.TypeOf(new slice<uint8>[]{}.slice())),
+        sliceOfPointerˢ, AreEqual(reflect.SliceOf(reflect.PointerTo(byteT)), reflect.TypeOf(new ж<uint8>[]{}.slice())));
+    var sv = reflect.MakeSlice(sl, 2, 4);
+    sv.Index(0).SetUint(5);
+    sv.Index(1).SetUint(6);
+    fmt.Printf("makeslice: %v | len=%d cap=%d | asserted=%v\n"u8, sv.Interface(), sv.Len(), sv.Cap(),
+        sv.Interface()._<slice<uint8>>());
     var byteTʗ1 = byteT;
     fmt.Println(negativeLengthˢ, recovered(() => {
         reflect.ArrayOf(-1, byteTʗ1);
     }));
+}
+
+internal static void describeSlice(@string label, reflectꓸType t) {
+    fmt.Printf("%s: %v | kind=%v elem=%v size=%d align=%d name=%q\n"u8,
+        label, t, t.Kind(), t.Elem(), t.Size(), t.Align(), t.Name());
 }
 
 } // end main_package

@@ -18913,6 +18913,27 @@ field and a same-named regular field render **identically**, so a `String()`-bas
 red on the defect it exists to catch. The registry entry is
 `manualConversionFuncs["reflect"]["StructOf"]`.
 
+### `reflect.SliceOf` is the same one-liner as `PointerTo`
+
+`SliceOf(elem)` dies in the same `typesByString` → `typelinks()` lookup and needs nothing but the
+generic instantiation `typeof(slice<>).MakeGenericType(elem)` — the `PointerTo` shape exactly. The
+only decision it carries is what dims to hand the descriptor, and the answer is **none**: a declared
+`[]T` descriptor carries `null`, because `abi.TypeOf` measures dims for an ARRAY value and a POINTER's
+pointee only. Passing the element's dims through would break the identity that makes the constructed
+and the declared type one `reflect.Type`, and would not help either — `rtype.Elem`'s non-pointer,
+non-map arm consumes the head of the dims vector, so a one-element vector hands down nothing. So
+`SliceOf(ArrayOf(3, byte))` describes `[][3]byte` with the element's length unknown, which is exactly
+what `TypeOf([][3]byte{})` reads back today. That residual belongs to the cargo model — a slice type
+has no dims slot — not to this constructor.
+
+⚠ Two PRE-EXISTING residuals meet here and neither belongs to this constructor, so the guard
+asserts identity and deliberately does not print the name. go2cs renders a dims-less `array<T>` as
+`[]T` by design (`GoReflect.TypeNaming`: *"length is not carried on the managed type"*), so
+`fmt.Println(reflect.TypeOf([][3]uint8{}))` already prints `[][]uint8` at master, and
+`reflect.TypeOf([][3]uint8{}).Elem() == reflect.TypeOf([3]uint8{})` is already `false` — both with no
+reflection constructor in sight. One root: a slice type has no dims slot, so nothing survives the
+`Elem()` hop. Widening the cargo there is an arc of its own.
+
 ## Comments
 
 Comment conversion is opt-in (`-comments`, default **off**) and two consumers require it: the

@@ -2195,6 +2195,31 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
     return toType(abi.synthType(typeof(array<>).MakeGenericType(st), dims));
 }
 
+// SliceOf returns the slice type with element type t — the third run-time type constructor of the
+// family and the cheapest of them, the PointerTo shape exactly: golib's slice<T> IS Go's slice type,
+// so one MakeGenericType is the whole construction.
+//
+// It died in the same typesByString → typelinks() lookup ArrayOf's auto body died in, and was in
+// fact reached FROM there — Go's arrayType record carries a Slice field, so the auto ArrayOf called
+// SliceOf on its way to building one.
+//
+// The one decision here is what dims to hand the descriptor, and the answer is NONE. abi.TypeOf
+// measures dims for an ARRAY value and a POINTER's pointee only, so a DECLARED []T descriptor
+// carries null — and the identity that makes SliceOf(elem) and TypeOf([]T{}) one canonical
+// reflect.Type is exactly the property gob's type maps stand on. Handing the element's dims through
+// would break that identity and would not buy anything either: rtype.Elem's non-pointer, non-map arm
+// CONSUMES the head of the dims vector, so a one-element vector hands down nothing. So
+// SliceOf(ArrayOf(3, byte)) describes [][3]byte with its element's length unknown, which is exactly
+// what a declared [][3]byte reads back today — the cargo model's residual (a slice type has no dims
+// slot of its own), not this constructor's, and the r39d rule says record it rather than invent one.
+public static ΔType SliceOf(ΔType t) {
+    System.Type? st = sysTypeOfReflectType(t);
+    if (st is null) {
+        throw panic("reflect: SliceOf of non-synthesized type");
+    }
+    return toType(abi.synthType(typeof(slice<>).MakeGenericType(st)));
+}
+
 // StructOf returns the struct type containing fields — ArrayOf's sibling one order of magnitude up,
 // and the one run-time type constructor with nothing to compose from. PointerTo and ArrayOf hand
 // MakeGenericType an EXISTING managed type because ж<T> and array<T> ARE the Go type; a struct has

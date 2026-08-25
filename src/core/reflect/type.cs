@@ -1925,41 +1925,10 @@ internal static slice<byte> appendGCProg(slice<byte> dst, ж<abi.Type> Ꮡtyp) {
     return dst;
 }
 
-// SliceOf returns the slice type with element type t.
-// For example, if t represents int, SliceOf(t) represents []int.
-public static ΔType SliceOf(ΔType t) {
-    var typ = t.common();
-    // Look in cache.
-    var ckey = new cacheKey(ΔSlice, typ, nil, 0);
-    {
-        var (sliceΔ1, ok) = ᏑlookupCache.Load(ckey); if (ok) {
-            return sliceΔ1._<ΔType>();
-        }
-    }
-    // Look in known types.
-    @string s = "[]"u8 + stringFor(typ);
-    foreach (var (_, tt) in typesByString(s)) {
-        var sliceΔ2 = tt.Reinterpret<abi.Type, sliceType>();
-        if ((~sliceΔ2).Elem == typ) {
-            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt).OrTypedNil());
-            return tiΔ1._<ΔType>();
-        }
-    }
-    // Make a slice type.
-    ref var islice = ref heap<any>(out var Ꮡislice);
+// go2cs generated this placeholder — func SliceOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    islice = (slice<@unsafe.Pointer>)(default!);
-    var prototype = ~Ꮡislice.Reinterpret<any, ж<sliceType>>();
-    ref var Δslice = ref heap<sliceType>(out var Ꮡslice);
-    Δslice = prototype.Value;
-    Δslice.TFlag = 0;
-    Δslice.Str = resolveReflectName(newName(s, ""u8, false, false));
-    Δslice.Hash = fnv1((~typ).Hash, (rune)'[');
-    Δslice.Elem = typ;
-    Δslice.PtrToThis = 0;
-    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡslice.of(sliceType.ᏑType)).OrTypedNil());
-    return ti._<ΔType>();
-}
+// Look in cache.
+// Look in known types.
 
 // The structLookupCache caches StructOf lookups.
 // StructOf does not share the common lookupCache since we need to pin
