@@ -534,6 +534,19 @@ not-a-hop-question.* Either outcome resolves the attribution; the prediction exi
 is information rather than narrative. The comparison base is N2's 9-AOT numbers, minted on the
 same host, banked in the README's History section; the control row is the Go column, per §6.1.
 
+**RESOLVED 2026-08-24, branch two: 174.7 vs 175.3 ms (−0.3 %), control 0.0 % — attribution:
+preview/bflat packaging; corroborated independently by the route-#6 bflat-arm quarantine (the
+un-guarded arm could report `ok` for benchmarks it never compiled). The anomaly is closed as
+not-a-hop-question.** Two riders the resolution run established, both fleet-relevant: the first
+completed 10-ILC publish measured **11,862 s wall / ≥12,754 CPU-s** on the perf-canon host against
+the 9-era 894–953 s — ~10.6× CPU work, near-serial (a multi-hour ~1.0-core tail), uniform across
+benchmarks at the comparable wall point, so ladder arithmetic scales linearly — and working set
+peaked **14.9 GB** in the final phase, so **a 16 GB machine cannot run a 10-ILC publish of this
+closure without swapping** (a provisioning floor, not a tuning knob). What the compile work buys:
+on the resolved row the 10-AOT working set collapsed 75.8 → **15.5 MB** — below the unchanged JIT
+floor — so the 9-era "AOT trades memory for startup" reading does not survive on that row; whether
+the collapse generalizes is the full ladder's question, not this section's claim.
+
 ---
 
 ## 7. AOT / ILC verification
