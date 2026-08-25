@@ -549,10 +549,10 @@ internal static ж<reservedᴛ1> reserved = @new<reservedᴛ1>();
 // by embedded fields.
 [GoRecv] internal static void update(this ref parser p, typesꓸType t, slice<any> nlist) {
     if (AreEqual(t, reserved)) {
-        p.errorf("internal error: update(%v) invoked on reserved"u8, nlist);
+        p.errorf("internal error: update(%v) invoked on reserved"u8, (any)(nlist));
     }
     if (t == default!) {
-        p.errorf("internal error: update(%v) invoked on nil"u8, nlist);
+        p.errorf("internal error: update(%v) invoked on nil"u8, (any)(nlist));
     }
     foreach (var (_, n) in nlist) {
         switch (n.type()) {
@@ -1068,7 +1068,7 @@ internal static (typesꓸType t, nint n1) parseTypeAfterAngle(this ж<parser> �
     }
 
     if (t == default! || AreEqual(t, reserved)) {
-        p.errorf("internal error: bad return from parseType(%v)"u8, n);
+        p.errorf("internal error: bad return from parseType(%v)"u8, (any)(n));
     }
     p.expect((rune)'>');
     return (t, n1);
