@@ -1024,6 +1024,16 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
     3. **`.cs.auto` review siblings.** Tracked, and refreshed by a `-tests` run but NOT by an
        `-stdlib` overlay (which excludes them to protect the hand-owned `.cs` beside them). Restore
        them in a sweep; level all 16 together in their own commit (CleanupBacklog item 18).
+    4. **Deduplicated same-shape anonymous structs — LEVELED, so a reappearance is news.** The
+       converter binds a second anonymous `[GoType("dyn")]` struct of identical shape to the FIRST
+       declaration's type instead of minting its own (`e61758549`, the reflectlite arc). In a diff
+       that reads as the duplicate `[GoType("dyn")]` block vanishing while the slice and element
+       types rename onto the original's `ᴛ1`, with a knock-on in `package_test_info.cs`, whose
+       witness list sheds the declarations that no longer exist. A suite banked before that commit
+       keeps the old shape until its own pipeline rerun; the 2026-08-24 post-merge rebank ran the
+       last five (`math/cmplx`, `go/build/constraint`, `regexp`, `strings`, `time`). Unlike classes
+       1–3 this one does NOT stand: it is banked, so meeting it again means a NEW unbanked converter
+       change — find that commit rather than restoring the file.
     Anything that is none of these — a non-empty `numstat` on a production `.cs` that is not a closure
     re-flip, or any change to a production `.csproj` — is **real drift**: stop and root-cause it before
     landing. (A production-`.csproj` change specifically meant the validation-pack block had been
