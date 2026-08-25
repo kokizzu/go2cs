@@ -955,9 +955,10 @@ namespace BehavioralRunner
                     // crashing one (a C#-side success against a Go-side failure is a real shape, e.g.
                     // an oracle that cannot run on this host), and an empty stderr is itself a finding
                     // -- it says the process died without reporting, which points at the host rather
-                    // than at converted code. First line only, for the same reason the stderr
-                    // comparison below uses it: the rest is a machine-specific traceback.
-                    string csErr = FirstLine(cs.StdErr), goErr = FirstLine(go.StdErr);
+                    // than at converted code. StdErrSummary rather than FirstLine: the first line of a
+                    // WRAPPED managed failure names only the wrapper, which is the same evidence loss
+                    // one layer in (see that helper).
+                    string csErr = StdErrSummary(cs.StdErr), goErr = StdErrSummary(go.StdErr);
 
                     string detail = csErr.Length == 0 && goErr.Length == 0
                         ? " (neither side wrote to stderr)"
@@ -1487,6 +1488,58 @@ namespace BehavioralRunner
             int index = text.IndexOf('\n');
 
             return (index < 0 ? text : text[..index]).TrimEnd('\r');
+        }
+
+        /// <summary>
+        /// A crashed process's stderr reduced to its first line PLUS the inner-exception chain that
+        /// line hides, for reporting a run that died rather than diverged.
+        /// </summary>
+        /// <remarks>
+        /// FirstLine alone is the right reduction for COMPARING stderr (the rest is a machine-specific
+        /// traceback), but the wrong one for REPORTING a managed crash, because .NET's outermost line
+        /// is frequently just a wrapper: `System.TypeInitializationException: The type initializer for
+        /// '&lt;Module&gt;' threw an exception.` names no cause at all, and a module initializer is
+        /// exactly where a converted program fails first. golib's own crash handler learned this and
+        /// writes `ex.ToString()` for precisely that reason (builtin.cs) — this is the reading half of
+        /// the same lesson: taking line one threw the chain away again at the last step. The darwin
+        /// smoke of 2026-08-25 is the worked example — twenty programs reporting the wrapper, with
+        /// `NotImplementedException: syscall: external (assembly or cgo) function is not implemented`
+        /// sitting one `---&gt;` line below it.
+        ///
+        /// `--->` is the framework's own nesting marker in ToString() output, so keying on it needs no
+        /// exception types here and works for any depth. Capped at three levels: deeper chains are
+        /// real but the first two causes have always been the diagnosis, and this lands on ONE report
+        /// line per project.
+        /// </remarks>
+        private static string StdErrSummary(string text)
+        {
+            string first = FirstLine(text);
+
+            if (first.Length == 0)
+            {
+                return first;
+            }
+
+            List<string> inner = [];
+
+            foreach (string line in text.Replace("\r", "").Split('\n'))
+            {
+                string trimmed = line.TrimStart();
+
+                if (!trimmed.StartsWith("---> ", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                inner.Add(trimmed);
+
+                if (inner.Count == 3)
+                {
+                    break;
+                }
+            }
+
+            return inner.Count == 0 ? first : $"{first} {string.Join(" ", inner)}";
         }
 
         private static string Truncate(string s, int max = 300)

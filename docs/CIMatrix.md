@@ -168,7 +168,8 @@ a failure is recognized rather than re-diagnosed:
   The first darwin `behavioral-smoke` compiled and golden-matched 20/20, then failed all twenty at
   Output with `exit code mismatch: C# 2 vs Go 0`. Darwin's syscall entry points are libc **assembly**
   trampolines in Go, emitted as bodyless partials and filled with throwing stubs, so a converted
-  program dies on its first write. Evidence and remedy shapes:
+  program dies in a module initializer — before `Main`, whether or not it prints. Evidence and
+  remedy shapes:
   [`phase4/FINDING-darwin-run-layer.md`](phase4/FINDING-darwin-run-layer.md). Until that run layer
   exists a darwin `behavioral-smoke` or `sweep-shard` reports this uniformly — a known state, not a
   new finding, and not worth a runner hour to re-observe.

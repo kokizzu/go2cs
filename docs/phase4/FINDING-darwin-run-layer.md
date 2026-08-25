@@ -62,6 +62,33 @@ Note that even a correct `syscall` implementation would receive a **null functio
 because `FuncPCABI0` returns `default`. The trampoline mechanism is unimplemented end to end, not
 merely missing one entry point.
 
+(The trampoline's *own* stub is never reached: `libc_write_trampoline` is only converted to a
+delegate to be passed to `FuncPCABI0`, never invoked. It needs an implementing declaration purely
+because an accessibility-modified `partial` is a C# 9 *extended* partial rather than an erasable one
+— which is also why the package compiles at all. The throw comes from `syscall`.)
+
+### 2.1 Confirmed on the runner
+
+Re-dispatched on this lane's branch with the harness reporting stderr (run
+[32863205314](https://github.com/ritchiecarroll/go2cs/actions/runs/32863205314)), all twenty projects
+on **both** mac architectures now report:
+
+```
+exit code mismatch: C# 2 vs Go 0 -- C# stderr: "System.TypeInitializationException: The type
+initializer for '<Module>' threw an exception. ---> System.NotImplementedException: syscall:
+external (assembly or cgo) function is not implemented"; Go stderr: ""
+```
+
+Two things that predicted diagnosis did not, both worth carrying:
+
+- **`'<Module>'`** — the failure is in a **module initializer**, i.e. a converted Go `init()`
+  (`GoInitAttribute`), so the program dies *before* `Main`. That fits `os_package`'s static
+  constructor, which runs `initᴛStdin/Stdout/Stderr/initCwd` (`os/darwin/package_init.cs`); the
+  first of those to touch libc throws. So darwin does not fail when a program prints — it fails when
+  a program *starts*, and would fail identically for a program that prints nothing.
+- **Both architectures, identical message.** `osx-x64` matches the flavor's `_amd64` sources and
+  fails the same way, which is what rules the amd64-only committed flavor (§5) out as the cause.
+
 ## 3. The asymmetry, quantified
 
 Go's darwin syscalls do not use trap numbers; they call **libc** (`libSystem.B.dylib`) through
@@ -130,7 +157,16 @@ failure — `osx-x64`, where the arch matches, failed identically.
 ## 6. What this lane changed
 
 Only the harness's diagnosability, in `src/tests/Behavioral/BehavioralRunner/Program.cs`: an
-exit-code mismatch now quotes both sides' first stderr line. The runner already held that text and
-discarded it, which is why twenty identical `exit code mismatch: C# 2 vs Go 0` lines named none of
-the twenty causes and this diagnosis had to be reconstructed from the corpus instead of read from the
-log. The fix is platform-neutral and helps every leg of the matrix.
+exit-code mismatch now quotes both sides' stderr. The runner already held that text and discarded it,
+which is why twenty identical `exit code mismatch: C# 2 vs Go 0` lines named none of the twenty causes
+and this diagnosis had to be reconstructed from the corpus instead of read from the log. The fix is
+platform-neutral and helps every leg of the matrix.
+
+It took **two** passes, and the second is the more useful lesson. Quoting the first stderr line —
+the reduction the stderr *comparison* uses, and the obvious one to reach for — bought nothing here:
+the first line was `System.TypeInitializationException: The type initializer for '<Module>' threw an
+exception.`, a wrapper that names no cause. That is the same evidence loss one layer in, and golib's
+crash handler had already learned it from the other side (it writes `ex.ToString()` precisely because
+a `TypeInitializationException`'s own message says only "see inner exception"). `StdErrSummary` now
+carries the first line **plus** the `--->` inner-exception chain, so a wrapped managed failure names
+its cause on the report line. A Go panic report still reduces to its first line, unchanged.
