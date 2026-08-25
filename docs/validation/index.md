@@ -75,6 +75,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `go/ast` | [`go.ast.md`](current/go.ast.md) | [`src/core/go/ast`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/ast) |
 | `go/build/constraint` | [`go.build.constraint.md`](current/go.build.constraint.md) | [`src/core/go/build/constraint`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/build/constraint) |
 | `go/constant` | [`go.constant.md`](current/go.constant.md) | [`src/core/go/constant`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/constant) |
+| `go/doc` | [`go.doc.md`](current/go.doc.md) | [`src/core/go/doc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc) |
 | `go/doc/comment` | [`go.doc.comment.md`](current/go.doc.comment.md) | [`src/core/go/doc/comment`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc/comment) |
 | `go/format` | [`go.format.md`](current/go.format.md) | [`src/core/go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) |
 | `go/importer` | [`go.importer.md`](current/go.importer.md) | [`src/core/go/importer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/importer) |
@@ -164,6 +165,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `sync` | [`sync.md`](current/sync.md) | [`src/core/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) |
 | `sync/atomic` | [`sync.atomic.md`](current/sync.atomic.md) | [`src/core/sync/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync/atomic) |
 | `syscall` | [`syscall.md`](current/syscall.md) | [`src/core/syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall) |
+| `testing/fstest` | [`testing.fstest.md`](current/testing.fstest.md) | [`src/core/testing/fstest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/fstest) |
 | `testing/iotest` | [`testing.iotest.md`](current/testing.iotest.md) | [`src/core/testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) |
 | `testing/quick` | [`testing.quick.md`](current/testing.quick.md) | [`src/core/testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) |
 | `testing/slogtest` | [`testing.slogtest.md`](current/testing.slogtest.md) | [`src/core/testing/slogtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/slogtest) |
