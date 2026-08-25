@@ -279,15 +279,14 @@ public static class GoStructSynthesis
         // struct, and is guarded rather than merely argued (GolibTests).
         tb.SetCustomAttribute(new CustomAttributeBuilder(s_goTypeCtor, new object[] { "dyn" }));
 
-        FieldBuilder[] built = new FieldBuilder[fields.Length];
+        // Only the SEEDED fields are collected: the constructor below is the one thing emitted after
+        // the field walk, and it touches nothing else.
         List<(FieldBuilder field, int slot)>? seeded = null;
         int blanks = 0;
 
-        for (int i = 0; i < fields.Length; i++)
+        foreach (GoSynthField field in fields)
         {
-            GoSynthField field = fields[i];
             FieldBuilder fb = tb.DefineField(clrFieldName(field, ref blanks), field.Type, FieldAttributes.Public);
-            built[i] = fb;
 
             if (field.Tag.Length > 0)
                 fb.SetCustomAttribute(new CustomAttributeBuilder(s_goTagCtor, new object[] { field.Tag }));
