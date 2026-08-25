@@ -13449,6 +13449,54 @@ The caller writes the `WSABUF` bytes into the staged memory itself, exactly as i
 **The RECEIVE is the same family and a DIFFERENT remedy, and the distinction is worth carrying.** With the send working, `ReadFromInet4` panics `index out of range [0] with length 0` inside `rawToSockaddrInet4`. Do not attribute that to the `(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(...))` round-trip it panics in: the WRITE direction (`sockaddrInet4ToRaw`) runs the identical round-trip and works, and TCP exercises it. The fault is the box — `@new<syscall.RawSockaddrAny>()`, managed arrays inside, handed to `WSARecvFrom` by address. Per the AV-vs-panic triage rule (golib's `array<T>` indexer is bounds-checked), a clean bounds panic means the array is EMPTY: nothing was materialised at that address. Because a received address arrives *asynchronously*, the stack-buffer remedy does not apply — the native staging buffer must be decoded at HARVEST time, which is the decode-side problem `AcceptEx`'s output buffer also has. Send and receive are therefore separate increments, and the guard (`UdpLoopbackRoundTrip`, Linux-proven) waits for the second.
 
 
+### The pointer-word read — `*(*unsafe.Pointer)(unsafe.Pointer(&x))` emits a CARRYING pointer, never a byte pun
+
+Go's idiom for reading the pointer word stored at some location — `time.syncTimer`'s
+`*(*unsafe.Pointer)(unsafe.Pointer(&c))` reading a channel's header word, `runtime/stack.go`'s
+`*(*unsafe.Pointer)(&pp)` re-typing a `uintptr` — has ONE destination the managed storage
+reinterpret can never serve: `unsafe.Pointer` itself is a CLASS in the surrogate model, so golib's
+alias gate refuses it, and the pre-2026-08-25 fallback deref-copied whatever bits sat in the
+source's first reference-sized slot INTO a `Pointer` reference. A reference materialized from bytes
+is a CLR type-safety break: junk dispatch on a quiet heap, an `AccessViolationException` when the
+punned bits land unmapped — measured live on every `NewTimer` (the `asynctimerchan=2` witness,
+2026-08-24: two pipeline runs died in `Pointer.op_Implicit`; three structurally-faithful quiet-heap
+repros passed, the byte-view census's latent-with-live-trigger shape exactly).
+
+`reinterpretManagedEmission` (convCallExpr.go) therefore special-cases a target pointee of the
+`unsafe.Pointer` basic and emits the word the two ways the managed model can carry one:
+
+```go
+u := uintptr(0xC0FFEE)
+q := *(*unsafe.Pointer)(unsafe.Pointer(&u))   // the word IS the number
+
+c := make(chan int, 1)
+p := *(*unsafe.Pointer)(unsafe.Pointer(&c))   // the word is a REFERENCE
+```
+
+```csharp
+@unsafe.Pointer q = ~Ꮡ(new @unsafe.Pointer(~Ꮡu));           // exact fidelity: Pointer(value)
+@unsafe.Pointer p = ~Ꮡ(new @unsafe.Pointer((uintptr)Ꮡc));   // the source BOX's pin token
+```
+
+The uintptr arm is exact Go semantics. The managed arm carries the source box's
+`ManagedPointerTokens` pin token — non-nil for a live value, stable for the box's lifetime, and
+provenance-resolvable back to the storage it names. One corner is knowingly inexact and stated at
+the emission: a nil channel's word is 0 in Go while a box token is non-zero; the one stdlib
+consumer (`newTimer`) reads only the nil-bit and recomputes it from the GODEBUG setting, and no
+stdlib site passes a nil channel through this shape.
+
+**Deliberately NO golib-side guard backs this up**, and the history is the load-bearing part: a
+runtime refusal (return a zero-holding box for any reference-typed destination) was tried first and
+the full behavioral suite failed `PointerCastSliceRange` — the `ж<T> → ж<U>` DOUBLE-pointer pun
+(reflect `MapOf`'s `**(**mapType)(unsafe.Pointer(&imap))`) reads one ж instantiation's reference
+slot as another and works precisely because the generic layouts coincide, a distinction golib
+cannot draw generically and the converter draws exactly. Guarded by
+`tests/Behavioral/UnsafePointerWordRead` (both arms vs `go run`, token stability across re-reads);
+the corpus regen moved all 11 members of the shape (`sleep.cs` + ten runtime sites) and nothing
+else. The 10 runtime sites are dormant raw-metal; a site that WRITES through the derived pointer
+stores into a detached box rather than corrupting punned memory, and real write-through semantics
+belong to the provenance arc.
+
 ### A pointer `reflect` handed out as an `unsafe.Pointer` must convert BACK — the order token is remembered, not redefined
 
 A Go pointer to managed storage has no machine address to report, so every projection of one to a scalar answers with a stable **order token** instead: `INilPointer.PointerOrderToken`, whose own remarks say plainly that tokens "are order keys, never an identity substitute". `reflect.Value.Pointer` and `reflect.Value.UnsafePointer` both project through it (`reflect/value_impl.cs`'s `reflectPointerToken`), and that contract is exactly right for the consumers it was written for — `fmt`'s `%p`, and `internal/fmtsort`'s ordering of pointer-keyed map entries, which compares two tokens arithmetically.
