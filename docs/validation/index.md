@@ -27,6 +27,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `context` | [`context.md`](current/context.md) | [`src/core/context`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/context) |
 | `crypto` | [`crypto.md`](current/crypto.md) | [`src/core/crypto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto) |
 | `crypto/aes` | [`crypto.aes.md`](current/crypto.aes.md) | [`src/core/crypto/aes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/aes) |
+| `crypto/cipher` | [`crypto.cipher.md`](current/crypto.cipher.md) | [`src/core/crypto/cipher`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/cipher) |
 | `crypto/des` | [`crypto.des.md`](current/crypto.des.md) | [`src/core/crypto/des`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/des) |
 | `crypto/dsa` | [`crypto.dsa.md`](current/crypto.dsa.md) | [`src/core/crypto/dsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/dsa) |
 | `crypto/ecdh` | [`crypto.ecdh.md`](current/crypto.ecdh.md) | [`src/core/crypto/ecdh`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdh) |

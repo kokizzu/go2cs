@@ -205,6 +205,78 @@ func TestDisclosedDivergenceOracle(t *testing.T) {
 	}
 }
 
+// TestPlatformSkipDisclosureOracle guards the ONE disclosure class that is load-bearing in the
+// oracle rather than descriptive: platform-skip admits the Go=pass/C#=SKIP pair, and nothing else
+// does. Minted 2026-08-25 for crypto/cipher's TestGCMAsm, whose C# side takes gcm_test.go's OWN
+// skip because the converted corpus has no assembly GCM to compare against the generic one.
+//
+// The cases below are the ruling's anti-laundering clause expressed as code: the class is the sole
+// key to the shape, the shape is the sole thing the class admits, and the pin is the upstream skip
+// message so a harness-injected or drifted skip cannot ride through.
+func TestPlatformSkipDisclosureOracle(t *testing.T) {
+	const skipMsg = "no assembly implementation of GCM"
+
+	names := []string{"TestGCMAsm"}
+	goPass := map[string]string{"TestGCMAsm": "pass"}
+	csSkip := map[string]string{"TestGCMAsm": "skip"}
+	outputs := map[string]string{"TestGCMAsm": skipMsg}
+
+	platformSkip := map[string]testDisclosure{
+		"TestGCMAsm": {Name: "TestGCMAsm", Class: platformSkipClass, Signature: skipMsg,
+			Reason: "source-defined platform skip: the converted corpus has no assembly codepaths"},
+	}
+
+	// 1. The admitted shape: class matches, statuses are pass/skip, signature is present.
+	mismatches, _, disclosed, _ := matchTerminalStatuses(names, goPass, csSkip, platformSkip, outputs)
+	if len(mismatches) != 0 || !reflect.DeepEqual(disclosed, []string{"TestGCMAsm"}) {
+		t.Fatalf("a pinned platform skip must disclose: mismatches=%#v disclosed=%#v", mismatches, disclosed)
+	}
+
+	// 2. The pin holds: a skip for some OTHER reason has moved, and moving is a mismatch.
+	mismatches, _, disclosed, _ = matchTerminalStatuses(names, goPass, csSkip, platformSkip,
+		map[string]string{"TestGCMAsm": "skipping in short mode"})
+	if len(disclosed) != 0 || len(mismatches) != 1 || !strings.Contains(mismatches[0], "does not match the disclosed") {
+		t.Fatalf("a different skip reason must be a mismatch: mismatches=%#v disclosed=%#v", mismatches, disclosed)
+	}
+
+	// 3. The class is the SOLE key to the shape — any other class leaves pass/skip a mismatch,
+	//    even with an identical signature. This is what stops a skip being disclosed as an
+	//    allocation divergence.
+	otherClass := map[string]testDisclosure{
+		"TestGCMAsm": {Name: "TestGCMAsm", Class: "alloc-profile", Signature: skipMsg, Reason: "wrong class for this shape"},
+	}
+	mismatches, _, disclosed, _ = matchTerminalStatuses(names, goPass, csSkip, otherClass, outputs)
+	if len(disclosed) != 0 || len(mismatches) != 1 {
+		t.Fatalf("only platform-skip may admit Go=pass/C#=skip: mismatches=%#v disclosed=%#v", mismatches, disclosed)
+	}
+
+	// 4. And the shape is the SOLE thing the class admits — a platform-skip row whose C# side
+	//    FAILS has moved, even when the failure text contains the pinned message verbatim.
+	mismatches, _, disclosed, _ = matchTerminalStatuses(names, goPass,
+		map[string]string{"TestGCMAsm": "fail"}, platformSkip, outputs)
+	if len(disclosed) != 0 || len(mismatches) != 1 {
+		t.Fatalf("platform-skip must never disclose a FAILURE: mismatches=%#v disclosed=%#v", mismatches, disclosed)
+	}
+
+	// 5. Direction guard, matching the sibling oracle's: the reverse pair is never disclosed.
+	mismatches, _, disclosed, _ = matchTerminalStatuses(names,
+		map[string]string{"TestGCMAsm": "skip"}, map[string]string{"TestGCMAsm": "pass"},
+		platformSkip, outputs)
+	if len(disclosed) != 0 || len(mismatches) != 1 {
+		t.Fatalf("Go=skip/C#=pass must never be disclosed: mismatches=%#v disclosed=%#v", mismatches, disclosed)
+	}
+
+	// 6. Agreement is agreement: both sides skipping is a plain identical skip, counted as
+	//    skipped rather than disclosed, and the manifest entry is inert.
+	mismatches, skipped, disclosed, _ := matchTerminalStatuses(names,
+		map[string]string{"TestGCMAsm": "skip"}, map[string]string{"TestGCMAsm": "skip"},
+		platformSkip, outputs)
+	if len(disclosed) != 0 || len(mismatches) != 0 || !reflect.DeepEqual(skipped, []string{"TestGCMAsm"}) {
+		t.Fatalf("an identically-skipped test is agreement, not a disclosure: mismatches=%#v disclosed=%#v skipped=%#v",
+			mismatches, disclosed, skipped)
+	}
+}
+
 // Loader guards: an absent manifest is the normal no-disclosure case; a present manifest must be
 // complete — an empty signature would substring-match ANY failure and defeat the integrity pin,
 // and duplicate names would make the pin ambiguous.

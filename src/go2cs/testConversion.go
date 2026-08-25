@@ -5000,6 +5000,15 @@ type capabilityGatedDeclaration struct {
 	Rows         []string `json:"rows"`
 }
 
+// platformSkipClass is the ONE disclosure class that is load-bearing in the compare oracle
+// rather than descriptive. Every other class labels a Go=pass/C#=fail divergence and changes
+// nothing about how the pair is matched; this one is the sole key that admits the
+// Go=pass/C#=SKIP shape (matchTerminalStatuses), so the ruling's anti-laundering clause is
+// enforced structurally: a manifest cannot turn some other class's failure into a skip, and a
+// skip cannot be disclosed under some other class. Minted 2026-08-25 with crypto/cipher's
+// TestGCMAsm (board: "TestGCMAsm closes as a source-defined platform skip").
+const platformSkipClass = "platform-skip"
+
 // testDisclosure pins one test-level disclosed divergence — extending the declaration-level
 // "disclosed-unsupported" vocabulary (req §2.7) to individual test outcomes. A hand-owned,
 // repo-committed manifest beside the converted package lists tests whose Go=pass/C#=fail
@@ -5009,6 +5018,10 @@ type capabilityGatedDeclaration struct {
 // guard: the oracle reclassifies ONLY a failure whose captured C# output contains the pinned
 // substring — a disclosed test failing any OTHER way (a regression beyond the documented
 // divergence) is still a mismatch, and a package without a manifest compares strictly.
+//
+// The single exception to "Go=pass/C#=fail" is platformSkipClass, where the C# side SKIPS via
+// the upstream test's own skip statement because the managed corpus genuinely is the platform
+// that skip describes; see the arm in matchTerminalStatuses for the admission rule.
 type testDisclosure struct {
 	Name      string `json:"name"`
 	Class     string `json:"class"`
@@ -5236,7 +5249,42 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 				continue
 			}
 
-			if disclosure, ok := disclosures[name]; ok && goStatus == "pass" && csStatus == "fail" {
+			// The THIRD accepted shape: a SOURCE-DEFINED PLATFORM SKIP. Go's own test source
+			// writes a skip branch for a platform that lacks some property, and the managed
+			// corpus IS such a platform — by design and permanently (crypto/cipher's TestGCMAsm
+			// skips when the assembly GCM type equals the generic one; the converted corpus has
+			// no .s codepaths at all). So the divergence is between two PLATFORMS' verdicts on
+			// one test, not between Go and the conversion on one platform, and the honest record
+			// is the skip Go's source defines rather than a manufactured second implementation
+			// whose only consumer would be a differential test.
+			//
+			// Admission is deliberately narrow and structural: the class must be
+			// platformSkipClass (no other class unlocks this shape), and the signature must
+			// appear in the C# side's own skip output — which is the UPSTREAM skip message, so a
+			// harness-injected or conversion-added skip cannot be laundered through here. A
+			// platform-skip row whose C# side skips for some OTHER reason has MOVED, and moving
+			// is exactly what the pin exists to catch.
+			if disclosure, ok := disclosures[name]; ok && disclosure.Class == platformSkipClass &&
+				goOK && csOK && goStatus == "pass" && csStatus == "skip" {
+				if strings.Contains(csOutputs[name], disclosure.Signature) {
+					disclosed = append(disclosed, name)
+					disclosedNames.Add(name)
+					continue
+				}
+
+				mismatches = append(mismatches, fmt.Sprintf("%s: Go=%q C#=%q (skip does not match the disclosed %s signature %q)",
+					name, goStatus, csStatus, disclosure.Class, disclosure.Signature))
+				mismatchNames.Add(name)
+				continue
+			}
+
+			// platformSkipClass is EXCLUDED here on purpose: it admits exactly one shape (the skip
+			// arm above), so a platform-skip row whose C# side FAILS has moved and must read as a
+			// mismatch even if the failure text happens to contain the pinned skip message.
+			// Without this the class would be a second way to disclose a failure, which is the
+			// laundering the ruling forbids.
+			if disclosure, ok := disclosures[name]; ok && disclosure.Class != platformSkipClass &&
+				goStatus == "pass" && csStatus == "fail" {
 				if strings.Contains(csOutputs[name], disclosure.Signature) {
 					disclosed = append(disclosed, name)
 					disclosedNames.Add(name)
