@@ -253,6 +253,29 @@ foreach ($row in $linuxRows) {
     Assert-Equal "annotation is a real count: $($row.Package)" $true ($row.OS['linux'].Expected -gt 0)
 }
 
+# ---- 3. the RENDERED table's column integrity -----------------------------------------------------
+# Everything above guards what the roster MEANS to the parser. This guards what it LOOKS LIKE to a
+# reader, which nothing else does -- and the two can disagree silently.
+#
+# A literal '|' inside a cell ends that cell early: GFM splits a table row on '|' BEFORE inline code
+# spans are resolved, so backticks do not protect it. The `log` row carried (`63`|`65`) -- two
+# alternative line numbers -- and spilled its description into a phantom fifth column on the
+# published page (owner-reported 2026-08-25, escaped in the same change that added this check).
+#
+# Why no existing gate could catch it: `_roster.ps1` anchors on the LEADING cells, so the broken row
+# parses correctly, every arithmetic assertion above it passes, and the sweep's verdicts are right.
+# The damage is confined to the rendered page, which is why it survived until a human looked at one.
+# A well-formed four-column row has exactly five UNESCAPED pipes; the lookbehind keeps a deliberate
+# \| in prose legal, which is also the fix.
+foreach ($line in $lines) {
+    if ($line -notmatch $RosterRowPattern) { continue }
+
+    $rowPackage = $Matches[1]
+    $pipes = [regex]::Matches($line, '(?<!\\)\|').Count
+
+    Assert-Equal "row renders four columns: $rowPackage" 5 $pipes
+}
+
 if ($List) {
     Write-Host ''
     Write-Host 'per-OS annotations in the roster:' -ForegroundColor Cyan
