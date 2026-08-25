@@ -168,7 +168,7 @@ using static go.net_package;
 [assembly: go.GoPositionMap("net/port_unix.go", "port_unix.cs", "ABMkooKClJSUgIKkgoKUgoKClIKCgoKUgpIACA6Sgg==")]
 [assembly: go.GoPositionMap("net/rawconn.go", "rawconn.cs", "ABc0oKSigpSCgoKUpqKClIKCgpSmooKUgoKClAACFAAJAoKUpoIAAhTy7oKmgqaC")]
 [assembly: go.GoPositionMap("net/rlimit_unix.go", "rlimit_unix.cs", "AAoqAAoCgoCCpIKCpJQ=")]
-[assembly: go.GoPositionMap("net/sendfile_unix_alt.go", "sendfile_unix_alt.cs", "ABsyAAsM1IKCgoLKioKWgoKClgAGEIKCloKCloKCgpSCloKWgoKW")]
+[assembly: go.GoPositionMap("net/sendfile_unix_alt.go", "sendfile_unix_alt.cs", "ABsyAAsM1IKCgoLKioKWgoKClIKWAAYQgoKWgoKWgoKClIKWgpaCgpY=")]
 [assembly: go.GoPositionMap("net/sock_bsd.go", "sock_bsd.cs", "ABAcgpiUpMi0gsqClA==")]
 [assembly: go.GoPositionMap("net/sock_posix.go", "sock_posix.cs", "AA4k0oKClICCgqSAgoIAFzKClICCgqSkgIKCpLaAgoKkpoKUpJSkgpTWooKCgoKCpJSAgriCgoKAgqSAgtiCgoKAgqSAgqSUgIIACRKCgqKClKSmooKAgqSCgIKmgoKAgriAgqSAgqSAgqSCgqaiAAES8oCCpJKUpKS2goKAgqaCgoCCtoCCpICCpIKC")]
 [assembly: go.GoPositionMap("net/sockaddr_posix.go", "sockaddr_posix.cs", "AB5IgpSUpKTGlKSkxg==")]

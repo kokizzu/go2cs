@@ -4,6 +4,7 @@
 //go:build linux
 namespace go;
 
+using errpkg = errors_package;
 using itoa = @internal.itoa_package;
 using Δruntime = runtime_package;
 using @unsafe = unsafe_package;
@@ -370,6 +371,7 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
     if (clone3 != nil){
         (pid, err1) = rawVforkSyscall(_SYS_clone3, (uintptr)clone3, /* unsafe.Sizeof(*clone3) */ (uintptr)88, 0);
     } else {
+        // N.B. Keep in sync with doCheckClonePidfd.
         flags |= (uintptr)((uintptr)(nint)SIGCHLD);
         if (Δruntime.GOARCH == "s390x"u8){
             // On Linux/s390, the first two arguments of clone(2) are swapped.
@@ -772,6 +774,103 @@ internal static error writeUidGidMappings(nint pid, ref SysProcAttr sys) {
         }
     }
     return default!;
+}
+
+// forkAndExecFailureCleanup cleans up after an exec failure.
+internal static void forkAndExecFailureCleanup(ref ProcAttr attr, ref SysProcAttr sys) {
+    if (sys.PidFD != nil && sys.PidFD.Value != -1) {
+        Close(sys.PidFD.Value);
+        sys.PidFD.Value = -1;
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cloneClonePidfdFailedToˢ = "clone(CLONE_PIDFD) failed to return pidfd"u8;
+
+// checkClonePidfd verifies that clone(CLONE_PIDFD) works by actually doing a
+// clone.
+//
+//go:linkname os_checkClonePidfd os.checkClonePidfd
+internal static error os_checkClonePidfd() {
+    GoFrame ᒐ = default;
+    try {
+        ref var pidfd = ref heap<int32>(out var Ꮡpidfd);
+        pidfd = (int32)(-1);
+        var (pid, errno) = doCheckClonePidfd(Ꮡpidfd);
+        if (errno != 0) {
+            return errno;
+        }
+        if (pidfd == -1) {
+            // Bad: CLONE_PIDFD failed to provide a pidfd. Reap the process
+            // before returning.
+            error err = default!;
+            while (ᐧ) {
+                ref var status = ref heap(new WaitStatus(), out var Ꮡstatus);
+                // WCLONE is an untyped constant that sets bit 31, so
+                // it cannot convert directly to int on 32-bit
+                // GOARCHes. We must convert through another type
+                // first.
+                nuint flags = (nuint)WCLONE;
+                (_, err) = Wait4((nint)pid, Ꮡstatus, (nint)flags, nil);
+                if (!AreEqual(err, EINTR)) {
+                    break;
+                }
+            }
+            if (err != default!) {
+                return err;
+            }
+            return errpkg.New(cloneClonePidfdFailedToˢ);
+        }
+        // Good: CLONE_PIDFD provided a pidfd. Reap the process and close the
+        // pidfd.
+        defer(Close, (nint)pidfd, ref ᒐ);
+        while (ᐧ) {
+            uintptr _P_PIDFD = 3;
+            (_, _, errno) = Syscall6(SYS_WAITID, _P_PIDFD, (uintptr)pidfd, 0, (uintptr)((uintptr)WEXITED | (uintptr)WCLONE), 0, 0);
+            if (errno != EINTR) {
+                break;
+            }
+        }
+        if (errno != 0) {
+            return errno;
+        }
+        return default!;
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
+
+// doCheckClonePidfd implements the actual clone call of os_checkClonePidfd and
+// child execution. This is a separate function so we can separate the child's
+// and parent's stack frames if we're using vfork.
+//
+// This is go:noinline because the point is to keep the stack frames of this
+// and os_checkClonePidfd separate.
+//
+//go:noinline
+internal static (uintptr pid, Errno errno) doCheckClonePidfd(ж<int32> Ꮡpidfd) {
+    uintptr pid = default!;
+    Errno errno = default!;
+
+    var flags = (uintptr)((uintptr)((uintptr)(UntypedInt)(CLONE_VFORK | CLONE_VM) | (uintptr)CLONE_PIDFD));
+    if (Δruntime.GOARCH == "s390x"u8){
+        // On Linux/s390, the first two arguments of clone(2) are swapped.
+        (pid, errno) = rawVforkSyscall(SYS_CLONE, 0, flags, (uintptr)Ꮡpidfd);
+    } else {
+        (pid, errno) = rawVforkSyscall(SYS_CLONE, flags, 0, (uintptr)Ꮡpidfd);
+    }
+    if (errno != 0 || pid != 0) {
+        // If we're in the parent, we must return immediately
+        // so we're not in the same stack frame as the child.
+        // This can at most use the return PC, which the child
+        // will not modify, and the results of
+        // rawVforkSyscall, which must have been written after
+        // the child was replaced.
+        return (pid, errno);
+    }
+    while (ᐧ) {
+        RawSyscall(SYS_EXIT_GROUP, 0, 0, 0);
+    }
 }
 
 } // end syscall_package

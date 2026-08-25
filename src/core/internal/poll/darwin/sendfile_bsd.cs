@@ -41,24 +41,39 @@ public static (int64 written, error err, bool handled) SendFile(ж<FD> ᏑdstFD,
             if ((int64)n > remain) {
                 n = (nint)remain;
             }
+            nint m = n;
             ref var pos1 = ref heap<int64>(out var Ꮡpos1);
             pos1 = pos;
             (n, err) = Δsyscall.Sendfile(dst, src, Ꮡpos1, n);
-            if (n > 0) {
+            if (n > 0){
                 pos += (int64)n;
                 written += (int64)n;
                 remain -= (int64)n;
+                // (n, nil) indicates that sendfile(2) has transferred
+                // the exact number of bytes we requested, or some unretryable
+                // error have occurred with partial bytes sent. Either way, we
+                // don't need to go through the following logic to check EINTR
+                // or fell into dstFD.pd.waitWrite, just continue to send the
+                // next chunk or break the loop.
+                if (n == m){
+                    continue;
+                } else 
+                if (!AreEqual(err, Δsyscall.EAGAIN) && !AreEqual(err, Δsyscall.EINTR) && !AreEqual(err, Δsyscall.EBUSY)) {
+                    // Particularly, EPIPE. Errors like that would normally lead
+                    // the subsequent sendfile(2) call to (-1, EBADF).
+                    break;
+                }
+            } else 
+            if (!AreEqual(err, Δsyscall.EAGAIN) && !AreEqual(err, Δsyscall.EINTR)) {
+                // This includes syscall.ENOSYS (no kernel
+                // support) and syscall.EINVAL (fd types which
+                // don't implement sendfile), and other errors.
+                // We should end the loop when there is no error
+                // returned from sendfile(2) or it is not a retryable error.
+                break;
             }
             if (AreEqual(err, Δsyscall.EINTR)) {
                 continue;
-            }
-            // This includes syscall.ENOSYS (no kernel
-            // support) and syscall.EINVAL (fd types which
-            // don't implement sendfile), and other errors.
-            // We should end the loop when there is no error
-            // returned from sendfile(2) or it is not a retryable error.
-            if (!AreEqual(err, Δsyscall.EAGAIN)) {
-                break;
             }
             {
                 err = dstFD.pd.waitWrite(dstFD.isFile); if (err != default!) {
@@ -66,7 +81,10 @@ public static (int64 written, error err, bool handled) SendFile(ж<FD> ᏑdstFD,
                 }
             }
         }
-        handled = written != 0 || (!AreEqual(err, Δsyscall.ENOSYS) && !AreEqual(err, Δsyscall.EINVAL));
+        if (AreEqual(err, Δsyscall.EAGAIN)) {
+            err = default!;
+        }
+        handled = written != 0 || (!AreEqual(err, Δsyscall.ENOSYS) && !AreEqual(err, Δsyscall.EINVAL) && !AreEqual(err, Δsyscall.EOPNOTSUPP) && !AreEqual(err, Δsyscall.ENOTSUP));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }

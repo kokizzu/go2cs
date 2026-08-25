@@ -282,4 +282,10 @@ childerror:
     }
 }
 
+// forkAndExecFailureCleanup cleans up after an exec failure.
+internal static void forkAndExecFailureCleanup(ref ProcAttr attr, ref SysProcAttr sys) {
+}
+
+// Nothing to do.
+
 } // end syscall_package

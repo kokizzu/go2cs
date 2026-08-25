@@ -47,6 +47,7 @@ using static go.syscall_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
+[assembly: GoImplicitConv<SysProcAttr, ж<SysProcAttr>>(Indirect = true)]
 [assembly: GoImplicitConv<WaitStatus, ΔSignal>(Inverted = true, ValueType = "uint32")]
 [assembly: GoImplicitConv<_C_int, WaitStatus>(Inverted = true, ValueType = "int32")]
 // </ImplicitConversions>
@@ -61,7 +62,7 @@ using static go.syscall_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("syscall/dirent.go", "dirent.cs", "AA4ikoKUgpSmgpSkpKSkyIKUpKSkpAAEEOKCgoKCgpSCgoKCuJKUgoKClIKCgoK4gpSCgpQ=")]
 [assembly: go.GoPositionMap("syscall/env_unix.go", "env_unix.cs", "ABNAtJKCgoKCgoCC3KTcooSChICCgqSC1sKCgpaChIKClIKCgqbmooKClIKCuIKCgrqChIKCgpSClIKC1qKEgoSClILWooKCgoKCgqY=")]
-[assembly: go.GoPositionMap("syscall/exec_linux.go", "exec_linux.cs", "AIwB9AGikgABGgAQBoKClIKogoKWgoKmgoCCtoKWABQqkKaQABE4ABEEAAMmACwehISCgpaCgoSClJSouoKCgoKUlKiCgIKCuIKClIKmgriCgpSCzIKCgpSClJSm7ryCgoK6goCCpIKClIKClIKCuoKCgrqUgoKogoKChKiCgsyWgoKCloKCgIKkgoKUgIKmgIKkgoKUgIK4goKAgqSCgpSAggAKFoKCgsyCgoK6gIKCgoKUgoKCpoKClIKCuKaEgIKmxoKWgIKmooKCzIKCgrqCgoLMgoKCgoLegoKClIKUgoKSlIKClIK6goKClKaCgpS4goIABhCCqIKCgrqCgoK6gsyCgoK6uoSSgriCgoKUqJKCgpaAgoKmgIKmrsKCgoKWgoKUloCCgqaqooKCgIK4lICCpIKAgrg=")]
+[assembly: go.GoPositionMap("syscall/exec_linux.go", "exec_linux.cs", "AI0B9gGikgABGgAQBoKClIKogoKWgoKmgoCCtoKWABQqkKaQABE4ABEEAAMmACwehISCgpaCgoSClJSouoKCgoKUlKiCgIKCuIKClIKmgriCgpSCzIKCgqaClJSm7ryCgoK6goCCpIKClIKClIKCuoKCgrqUgoKogoKChKiCgsyWgoKCloKCgIKkgoKUgIKmgIKkgoKUgIK4goKAgqSCgpSAggAKFoKCgsyCgoK6gIKCgoKUgoKCpoKClIKCuKaEgIKmxoKWgIKmooKCzIKCgrqCgoLMgoKCgoLegoKClIKUgoKSlIKClIK6goKClKaCgpS4goIABhCCqIKCgrqCgoK6gsyCgoK6uoSSgriCgoKUqJKCgpaAgoKmgIKmrsKCgoKWgoKUloCCgqaqooKCgIK4lICCpIKAgriokoKCAAYQ4pKCgpaogoLKgoKCpoKWuoSCgoKCpoKWAAUWAAsCgpSUlO6Wgg==")]
 [assembly: go.GoPositionMap("syscall/flock_linux.go", "flock_linux.cs", "AA0ckoKClA==")]
 [assembly: go.GoPositionMap("syscall/forkpipe2.go", "forkpipe2.cs", "AAoaogAGHAAFFgALAoKElIKCqgALGoSChJiCqNrCgoSCloSU")]
 [assembly: go.GoPositionMap("syscall/lsf_linux.go", "lsf_linux.cs", "AAockqiSqJKmgoKUgoKCgoKCgpQABxKygoKUgoKCgoKUgpSUgoKU2JKCgoKokoI=")]

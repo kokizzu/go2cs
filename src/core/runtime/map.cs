@@ -1233,6 +1233,13 @@ internal static bool tooManyOverflowBuckets(uint16 noverflow, uint8 B) {
     return (uint8)(h.flags & (uint8)ΔsameSizeGrow) != 0;
 }
 
+//go:linkname sameSizeGrowForIssue69110Test
+internal static bool sameSizeGrowForIssue69110Test(ж<hmap> Ꮡh) {
+    ref var h = ref Ꮡh.DerefOrNull();
+
+    return h.sameSizeGrow();
+}
+
 // noldbuckets calculates the number of buckets prior to the current map growth.
 [GoRecv] internal static uintptr noldbuckets(this ref hmap h) {
     var oldB = h.B;
@@ -1722,7 +1729,16 @@ internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
     ref var t = ref Ꮡt.DerefOrNull();
     ref var src = ref Ꮡsrc.DerefOrNull();
 
-    var dst = makemap(Ꮡt, src.count, nil);
+    nint hint = src.count;
+    if (overLoadFactor(hint, src.B)) {
+        // Note: in rare cases (e.g. during a same-sized grow) the map
+        // can be overloaded. Make sure we don't allocate a destination
+        // bucket array larger than the source bucket array.
+        // This will cause the cloned map to be overloaded also,
+        // but that's better than crashing. See issue 69110.
+        hint = (nint)((uintptr)loadFactorNum * (bucketShift(src.B) / (uintptr)loadFactorDen));
+    }
+    var dst = makemap(Ꮡt, hint, nil);
     dst.Value.hash0 = src.hash0;
     dst.Value.nevacuate = 0;
     // flags do not need to be copied here, just like a new map has no flags.

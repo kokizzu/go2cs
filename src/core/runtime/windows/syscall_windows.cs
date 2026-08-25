@@ -468,43 +468,37 @@ internal static (uintptr outhandle, uintptr err) syscall_getprocaddress(uintptr 
 //go:linkname syscall_Syscall syscall.Syscall
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3) {
-    var args = new uintptr[]{a1, a2, a3}.array();
-    return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
+    return syscall_syscalln(fn, nargs, a1, a2, a3);
 }
 
 //go:linkname syscall_Syscall6 syscall.Syscall6
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall6(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6) {
-    var args = new uintptr[]{a1, a2, a3, a4, a5, a6}.array();
-    return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
+    return syscall_syscalln(fn, nargs, a1, a2, a3, a4, a5, a6);
 }
 
 //go:linkname syscall_Syscall9 syscall.Syscall9
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall9(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9) {
-    var args = new uintptr[]{a1, a2, a3, a4, a5, a6, a7, a8, a9}.array();
-    return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
+    return syscall_syscalln(fn, nargs, a1, a2, a3, a4, a5, a6, a7, a8, a9);
 }
 
 //go:linkname syscall_Syscall12 syscall.Syscall12
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall12(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9, uintptr a10, uintptr a11, uintptr a12) {
-    var args = new uintptr[]{a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12}.array();
-    return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
+    return syscall_syscalln(fn, nargs, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 }
 
 //go:linkname syscall_Syscall15 syscall.Syscall15
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall15(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9, uintptr a10, uintptr a11, uintptr a12, uintptr a13, uintptr a14, uintptr a15) {
-    var args = new uintptr[]{a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15}.array();
-    return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
+    return syscall_syscalln(fn, nargs, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
 }
 
 //go:linkname syscall_Syscall18 syscall.Syscall18
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall18(uintptr fn, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9, uintptr a10, uintptr a11, uintptr a12, uintptr a13, uintptr a14, uintptr a15, uintptr a16, uintptr a17, uintptr a18) {
-    var args = new uintptr[]{a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18}.array();
-    return syscall_SyscallN(fn, args[..(int)(nargs)].ꓸꓸꓸ);
+    return syscall_syscalln(fn, nargs, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18);
 }
 
 // maxArgs should be divisible by 2, as Windows stack
@@ -519,7 +513,17 @@ internal static UntypedInt maxArgs => 42;
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_SyscallN(uintptr fn, params ꓸꓸꓸuintptr argsʗp) {
     var args = argsʗp.slice();
 
-    if (len(args) > maxArgs) {
+    return syscall_syscalln(fn, (uintptr)len(args), args.ꓸꓸꓸ);
+}
+
+//go:nosplit
+internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscalln(uintptr fn, uintptr n, params ꓸꓸꓸuintptr argsʗp) {
+    var args = argsʗp.slice();
+
+    if (n > (uintptr)len(args)) {
+        throw panic("syscall: n > len(args)"); // should not be reachable from user code
+    }
+    if (n > maxArgs) {
         throw panic("runtime: SyscallN has too many arguments");
     }
     // The cgocall parameters are stored in m instead of in
@@ -527,7 +531,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_SyscallN(uintptr f
     // calls back into Go.
     var c = (~getg()).m.of(m.Ꮡwinsyscall);
     c.Value.fn = fn;
-    c.Value.n = (uintptr)len(args);
+    c.Value.n = n;
     if ((~c).n != 0) {
         c.Value.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(args, 0)).Value));
     }

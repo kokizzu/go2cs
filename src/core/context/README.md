@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-57%2F58_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.7/context.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/context@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/context) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/context)
+[![Tests](https://img.shields.io/badge/Tests-57%2F58_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.0/context.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/context@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/context) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/context)
 
 Package context defines the Context type, which carries deadlines, cancellation signals, and other request-scoped values across API boundaries and between processes.
 
@@ -21,7 +21,7 @@ Do not store Contexts inside a struct type; instead, pass a Context explicitly t
 		// ... use ctx ...
 	}
 
-Do not pass a nil \[Context], even if a function permits it. Pass [context.TODO](https://pkg.go.dev/context@go1.23.1#TODO) if you are unsure about which Context to use.
+Do not pass a nil \[Context], even if a function permits it. Pass [context.TODO](https://pkg.go.dev/context@go1.23.12#TODO) if you are unsure about which Context to use.
 
 Use context Values only for request-scoped data that transits processes and APIs, not for passing optional parameters to functions.
 

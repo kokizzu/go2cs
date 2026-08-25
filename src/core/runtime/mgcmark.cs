@@ -189,7 +189,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
             var userG = getg().Value.m.Value.curg;
             var selfScan = gpʗ1 == userG && readgstatus(userG) == _Grunning;
             if (selfScan) {
-                casGToWaitingForGC(userG, _Grunning, waitReasonGarbageCollectionScan);
+                casGToWaitingForSuspendG(userG, _Grunning, waitReasonGarbageCollectionScan);
             }
             // TODO: suspendG blocks (and spins) until gp
             // stops, which may take a while for
@@ -616,7 +616,7 @@ internal static void gcAssistAlloc1(ж<g> Ꮡgp, int64 scanWork) {
         @throw(nwaitWorkNprocsˢ);
     }
     // gcDrainN requires the caller to be preemptible.
-    casGToWaitingForGC(Ꮡgp, _Grunning, waitReasonGCAssistMarking);
+    casGToWaitingForSuspendG(Ꮡgp, _Grunning, waitReasonGCAssistMarking);
     // drain own cached work first in the hopes that it
     // will be more cache friendly.
     var gcw = (~(~getg()).m).p.ptr().of(runtime_package.Δp.Ꮡgcw);

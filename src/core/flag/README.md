@@ -2,14 +2,14 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-24%2F24_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.7/flag.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/flag@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/flag) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/flag)
+[![Tests](https://img.shields.io/badge/Tests-24%2F24_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.0/flag.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/flag@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/flag) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/flag)
 
 Package flag implements command-line flag parsing.
 
 ### Usage
 
-Define flags using [flag.String](https://pkg.go.dev/flag@go1.23.1#String), \[Bool], \[Int], etc.
+Define flags using [flag.String](https://pkg.go.dev/flag@go1.23.12#String), \[Bool], \[Int], etc.
 
 This declares an integer flag, -n, stored in the pointer nFlag, with type \*int:
 
@@ -40,7 +40,7 @@ Flags may then be used directly. If you're using the flags themselves, they are 
 	fmt.Println("ip has value ", *ip)
 	fmt.Println("flagvar has value ", flagvar)
 
-After parsing, the arguments following the flags are available as the slice [flag.Args](https://pkg.go.dev/flag@go1.23.1#Args) or individually as [flag.Arg](https://pkg.go.dev/flag@go1.23.1#Arg)(i). The arguments are indexed from 0 through [flag.NArg](https://pkg.go.dev/flag@go1.23.1#NArg)-1.
+After parsing, the arguments following the flags are available as the slice [flag.Args](https://pkg.go.dev/flag@go1.23.12#Args) or individually as [flag.Arg](https://pkg.go.dev/flag@go1.23.12#Arg)(i). The arguments are indexed from 0 through [flag.NArg](https://pkg.go.dev/flag@go1.23.12#NArg)-1.
 
 ### Command line flag syntax
 

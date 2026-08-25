@@ -61,6 +61,9 @@ internal static (int64 written, error err, bool handled) sendFile(ж<netFD> Ꮡc
         if (errΔ1 != default!) {
             return (0, errΔ1, false);
         }
+        if ((fs.FileMode)(fi.Mode() & ((fs.FileMode)((fs.FileMode)((fs.FileMode)(fs.ModeSymlink | fs.ModeDevice) | fs.ModeCharDevice) | fs.ModeIrregular))) != 0) {
+            return (0, default!, false);
+        }
         remain = fi.Size();
     }
     // The other quirk with Darwin/FreeBSD/DragonFly/Solaris's sendfile

@@ -42,10 +42,11 @@ internal static (ж<Process> p, error err) startProcess(@string name, slice<@str
             }
         }
     }
+    var (attrSys, shouldDupPidfd) = ensurePidfd(attr.Sys);
     var sysattr = Ꮡ(new syscall.ProcAttr(
         Dir: attr.Dir,
         Env: attr.Env,
-        Sys: ensurePidfd(attr.Sys)
+        Sys: attrSys
     ));
     if ((~sysattr).Env == default!) {
         (sysattr.Value.Env, err) = execenv.Default((~sysattr).Sys);
@@ -66,7 +67,7 @@ internal static (ж<Process> p, error err) startProcess(@string name, slice<@str
     // For Windows, syscall.StartProcess above already returned a process handle.
     if (Δruntime.GOOS != "windows"u8) {
         bool ok = default!;
-        (h, ok) = getPidfd(ref ((~sysattr).Sys).DerefOrNull());
+        (h, ok) = getPidfd(ref ((~sysattr).Sys).DerefOrNull(), shouldDupPidfd);
         if (!ok) {
             return (newPIDProcess(pid), default!);
         }

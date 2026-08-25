@@ -726,7 +726,7 @@ internal static ж<pollDesc> alloc(this ж<pollCache> Ꮡc) {
 
     @lock(Ꮡc.of(pollCache.Ꮡlock));
     if (c.first == nil) {
-        uintptr pdSize = /* unsafe.Sizeof(pollDesc{}) */ 264;
+        uintptr pdSize = /* unsafe.Sizeof(pollDesc{}) */ 280;
         var n = (uintptr)pollBlockSize / pdSize;
         if (n == 0) {
             n = 1;

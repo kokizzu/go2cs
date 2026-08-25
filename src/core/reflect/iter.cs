@@ -8,14 +8,21 @@ using abi = @internal.abi_package;
 
 partial class reflect_package {
 
-internal static iter.Seq<ΔValue> rangeNum<T, N>(N v)
+internal static iter.Seq<ΔValue> rangeNum<T, N>(N num, ΔType t)
     where T : /* int8 | int16 | int32 | int64 | int | uint8 | uint16 | uint32 | uint64 | uint | uintptr */ IAdditionOperators<T, T, T>, ISubtractionOperators<T, T, T>, IMultiplyOperators<T, T, T>, IDivisionOperators<T, T, T>, IIncrementOperators<T>, IDecrementOperators<T>, IUnaryNegationOperators<T, T>, IModulusOperators<T, T, T>, IBitwiseOperators<T, T, T>, IShiftOperators<T, int, T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>, new()
     where N : /* int64 | uint64 */ IAdditionOperators<N, N, N>, ISubtractionOperators<N, N, N>, IMultiplyOperators<N, N, N>, IDivisionOperators<N, N, N>, IIncrementOperators<N>, IDecrementOperators<N>, IUnaryNegationOperators<N, N>, IModulusOperators<N, N, N>, IBitwiseOperators<N, N, N>, IShiftOperators<N, int, N>, IEqualityOperators<N, N, bool>, IComparisonOperators<N, N, bool>, new()
 {
     return (Func<ΔValue, bool> yield) => {
+        var convert = t.PkgPath() != ""u8;
         // cannot use range T(v) because no core type.
-        for (var i = ConvertToType<T>(0); i < ConvertToType<T>(ConvertToUInt64<N>(v)); i++) {
-            if (!yield(ValueOf(i))) {
+        for (var i = ConvertToType<T>(0); i < ConvertToType<T>(ConvertToUInt64<N>(num)); i++) {
+            var tmp = ValueOf(i);
+            // if the iteration value type is define by
+            // type T built-in type.
+            if (convert) {
+                tmp = tmp.Convert(t);
+            }
+            if (!yield(tmp)) {
                 return;
             }
         }
@@ -30,45 +37,45 @@ internal static iter.Seq<ΔValue> rangeNum<T, N>(N v)
 // Uint, Uint8, Uint16, Uint32, Uint64, Uintptr,
 // Array, Chan, Map, Slice, or String.
 public static iter.Seq<ΔValue> Seq(this ΔValue v) {
-    if (canRangeFunc(v.typ())) {
+    if (canRangeFunc(v.abiType())) {
         return (Func<ΔValue, bool> yield) => {
             var rf = MakeFunc(v.Type().In(0), (slice<ΔValue> @in) => new ΔValue[]{ValueOf(yield(@in[0]))}.slice());
             v.Call(new ΔValue[]{rf}.slice());
         };
     }
-    var exprᴛ1 = v.Kind();
+    var exprᴛ1 = v.kind();
     if (exprᴛ1 == ΔInt) {
-        return rangeNum<nint, int64>(v.Int());
+        return rangeNum<nint, int64>(v.Int(), v.Type());
     }
     if (exprᴛ1 == Int8) {
-        return rangeNum<int8, int64>(v.Int());
+        return rangeNum<int8, int64>(v.Int(), v.Type());
     }
     if (exprᴛ1 == Int16) {
-        return rangeNum<int16, int64>(v.Int());
+        return rangeNum<int16, int64>(v.Int(), v.Type());
     }
     if (exprᴛ1 == Int32) {
-        return rangeNum<int32, int64>(v.Int());
+        return rangeNum<int32, int64>(v.Int(), v.Type());
     }
     if (exprᴛ1 == Int64) {
-        return rangeNum<int64, int64>(v.Int());
+        return rangeNum<int64, int64>(v.Int(), v.Type());
     }
     if (exprᴛ1 == ΔUint) {
-        return rangeNum<nuint, uint64>(v.Uint());
+        return rangeNum<nuint, uint64>(v.Uint(), v.Type());
     }
     if (exprᴛ1 == Uint8) {
-        return rangeNum<uint8, uint64>(v.Uint());
+        return rangeNum<uint8, uint64>(v.Uint(), v.Type());
     }
     if (exprᴛ1 == Uint16) {
-        return rangeNum<uint16, uint64>(v.Uint());
+        return rangeNum<uint16, uint64>(v.Uint(), v.Type());
     }
     if (exprᴛ1 == Uint32) {
-        return rangeNum<uint32, uint64>(v.Uint());
+        return rangeNum<uint32, uint64>(v.Uint(), v.Type());
     }
     if (exprᴛ1 == Uint64) {
-        return rangeNum<uint64, uint64>(v.Uint());
+        return rangeNum<uint64, uint64>(v.Uint(), v.Type());
     }
     if (exprᴛ1 == Uintptr) {
-        return rangeNum<uintptr, uint64>(v.Uint());
+        return rangeNum<uintptr, uint64>(v.Uint(), v.Type());
     }
     if (exprᴛ1 == ΔPointer) {
         do {
@@ -132,7 +139,7 @@ public static iter.Seq<ΔValue> Seq(this ΔValue v) {
 // If v's kind is Pointer, the pointer element type must have kind Array.
 // Otherwise v's kind must be Array, Map, Slice, or String.
 public static iter.Seq2<ΔValue, ΔValue> Seq2(this ΔValue v) {
-    if (canRangeFunc2(v.typ())) {
+    if (canRangeFunc2(v.abiType())) {
         return (Func<ΔValue, ΔValue, bool> yield) => {
             var rf = MakeFunc(v.Type().In(0), (slice<ΔValue> @in) => new ΔValue[]{ValueOf(yield(@in[0], @in[1]))}.slice());
             v.Call(new ΔValue[]{rf}.slice());

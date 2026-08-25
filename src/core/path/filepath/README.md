@@ -2,12 +2,12 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-61%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.7/path.filepath.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/path/filepath@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/path/filepath) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/path/filepath)
+[![Tests](https://img.shields.io/badge/Tests-61%2F61_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.0/path.filepath.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/path/filepath@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/path/filepath) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/path/filepath)
 
 Package filepath implements utility routines for manipulating filename paths in a way compatible with the target operating system-defined file paths.
 
-The filepath package uses either forward slashes or backslashes, depending on the operating system. To process paths such as URLs that always use forward slashes regardless of the operating system, see the [path](https://pkg.go.dev/path@go1.23.1) package.
+The filepath package uses either forward slashes or backslashes, depending on the operating system. To process paths such as URLs that always use forward slashes regardless of the operating system, see the [path](https://pkg.go.dev/path@go1.23.12) package.
 
 ---
 

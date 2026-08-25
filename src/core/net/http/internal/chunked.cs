@@ -158,6 +158,10 @@ internal static readonly @string malformedChunkedEncodingˢ = "malformed chunked
     return (n, cr.err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string chunkedLineEndsWithBareˢ = "chunked line ends with bare LF"u8;
+internal static readonly @string invalidCrInChunkedLineˢ = "invalid CR in chunked line"u8;
+
 // Read a line of bytes (up to \n) from b.
 // Give up if the line exceeds maxLineLength.
 // The returned bytes are owned by the bufio.Reader
@@ -177,6 +181,20 @@ internal static (slice<byte>, error) readChunkLine(ж<bufio.Reader> Ꮡb) {
         }
         return (default!, err);
     }
+    // RFC 9112 permits parsers to accept a bare \n as a line ending in headers,
+    // but not in chunked encoding lines. See https://www.rfc-editor.org/errata/eid7633,
+    // which explicitly rejects a clarification permitting \n as a chunk terminator.
+    //
+    // Verify that the line ends in a CRLF, and that no CRs appear before the end.
+    {
+        nint idx = bytes.IndexByte(p, (rune)'\r'); if (idx == -1){
+            return (default!, errors.New(chunkedLineEndsWithBareˢ));
+        } else 
+        if (idx != len(p) - 2) {
+            return (default!, errors.New(invalidCrInChunkedLineˢ));
+        }
+    }
+    p = p[..(int)(len(p) - 2)]; // trim CRLF
     if (len(p) >= maxLineLength) {
         return (default!, ErrLineTooLong);
     }
@@ -184,14 +202,14 @@ internal static (slice<byte>, error) readChunkLine(ж<bufio.Reader> Ꮡb) {
 }
 
 internal static slice<byte> trimTrailingWhitespace(slice<byte> b) {
-    while (len(b) > 0 && isASCIISpace(b[len(b) - 1])) {
+    while (len(b) > 0 && isOWS(b[len(b) - 1])) {
         b = b[..(int)(len(b) - 1)];
     }
     return b;
 }
 
-internal static bool isASCIISpace(byte b) {
-    return b == (rune)' ' || b == (rune)'\t' || b == (rune)'\n' || b == (rune)'\r';
+internal static bool isOWS(byte b) {
+    return b == (rune)' ' || b == (rune)'\t';
 }
 
 internal static slice<byte> semi = slice<byte>(";"u8);

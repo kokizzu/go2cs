@@ -2,12 +2,12 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.7/database.sql.driver.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/database/sql/driver@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/database/sql/driver) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/database/sql/driver)
+[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.0/database.sql.driver.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/database/sql/driver@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/database/sql/driver) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/database/sql/driver)
 
 Package driver defines interfaces to be implemented by database drivers as used by package sql.
 
-Most code should use the [database/sql](https://pkg.go.dev/database/sql@go1.23.1) package.
+Most code should use the [database/sql](https://pkg.go.dev/database/sql@go1.23.12) package.
 
 The driver interface has evolved over time. Drivers should implement \[Connector] and \[DriverContext] interfaces. The Connector.Connect and Driver.Open methods should never return \[ErrBadConn]. \[ErrBadConn] should only be returned from \[Validator], \[SessionResetter], or a query method if the connection is already in an invalid (e.g. closed) state.
 

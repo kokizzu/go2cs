@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/iter@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/iter) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/iter)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/iter@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/iter) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/iter)
 
 Package iter provides basic definitions and operations related to iterators over sequences.
 
@@ -112,7 +112,7 @@ If clients do not consume the sequence to completion, they must call stop, which
 
 ### Standard Library Usage
 
-A few packages in the standard library provide iterator-based APIs, most notably the [maps](https://pkg.go.dev/maps@go1.23.1) and [slices](https://pkg.go.dev/slices@go1.23.1) packages. For example, [maps.Keys](https://pkg.go.dev/maps@go1.23.1#Keys) returns an iterator over the keys of a map, while [slices.Sorted](https://pkg.go.dev/slices@go1.23.1#Sorted) collects the values of an iterator into a slice, sorts them, and returns the slice, so to iterate over the sorted keys of a map:
+A few packages in the standard library provide iterator-based APIs, most notably the [maps](https://pkg.go.dev/maps@go1.23.12) and [slices](https://pkg.go.dev/slices@go1.23.12) packages. For example, [maps.Keys](https://pkg.go.dev/maps@go1.23.12#Keys) returns an iterator over the keys of a map, while [slices.Sorted](https://pkg.go.dev/slices@go1.23.12#Sorted) collects the values of an iterator into a slice, sorts them, and returns the slice, so to iterate over the sorted keys of a map:
 
 	for _, key := range slices.Sorted(maps.Keys(m)) {
 		...
