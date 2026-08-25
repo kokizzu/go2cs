@@ -26,13 +26,14 @@ and the program dies on its first syscall.
 ## 2. The convicting path
 
 Every one of the twenty projects is a `Defer` test whose only observable act is printing through
-`fmt`. On darwin that reaches:
+`fmt`. Take that print as the worked example of the mechanism — it is the shortest path from
+converted Go to the gap, though §2.1 shows the program never survives long enough to run it:
 
 ```
 fmt.Println → os.Stdout.Write → internal/poll.FD.Write → syscall.Write → syscall.write
 ```
 
-and `write` is, verbatim from `src/core/syscall/darwin/zsyscall_darwin_amd64.cs:1738`:
+`write` is, verbatim from `src/core/syscall/darwin/zsyscall_darwin_amd64.cs:1738`:
 
 ```csharp
 var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_write_trampoline), (uintptr)fd, (uintptr)_p0, (uintptr)len(p));
@@ -65,27 +66,39 @@ merely missing one entry point.
 (The trampoline's *own* stub is never reached: `libc_write_trampoline` is only converted to a
 delegate to be passed to `FuncPCABI0`, never invoked. It needs an implementing declaration purely
 because an accessibility-modified `partial` is a C# 9 *extended* partial rather than an erasable one
-— which is also why the package compiles at all. The throw comes from `syscall`.)
+— which is also why the package compiles at all. The throw comes from the `syscall`/`rawSyscall`
+entry point, whichever the caller used.)
 
 ### 2.1 Confirmed on the runner
 
-Re-dispatched twice on this lane's branch with the harness reporting stderr — run
-[32863205314](https://github.com/ritchiecarroll/go2cs/actions/runs/32863205314) (all twenty projects)
-and [32864703627](https://github.com/ritchiecarroll/go2cs/actions/runs/32864703627)
-(`-f filter=DeferSimple`, to read the chain). The exception chain, identical on **both** mac
-architectures:
+Re-dispatched three times on this lane's branch as the harness's stderr reporting was sharpened —
+[32863205314](https://github.com/ritchiecarroll/go2cs/actions/runs/32863205314) (all twenty projects),
+then [32864703627](https://github.com/ritchiecarroll/go2cs/actions/runs/32864703627) and
+[32865899270](https://github.com/ritchiecarroll/go2cs/actions/runs/32865899270)
+(`-f filter=DeferSimple`, to read the chain). The final line, **identical on both mac
+architectures**:
 
 ```
-System.TypeInitializationException: The type initializer for '<Module>' threw an exception.
- ---> System.TypeInitializationException: The type initializer for '<Module>' threw an exception.
- ---> System.TypeInitializationException: The type initializer for 'go.os_package' threw an exception.
- ---> System.NotImplementedException: syscall: external (assembly or cgo) function is not implemented
+exit code mismatch: C# 2 vs Go 0 -- C# stderr: "System.TypeInitializationException: The type
+initializer for '<Module>' threw an exception. [+3 nested] ---> System.NotImplementedException:
+rawSyscall: external (assembly or cgo) function is not implemented"; Go stderr: ""
 ```
 
-`go.os_package`'s type initializer, naming the stubbed `syscall` — the §2 path, confirmed on the
-hardware rather than inferred from the corpus.
+with the intervening wrappers (read at run 32864703627, before the leaf-cause change) being
+`'<Module>'` again and then **`'go.os_package'`** — the §2 mechanism, confirmed on the hardware
+rather than inferred from the corpus.
 
-Two things that predicted diagnosis did not, both worth carrying:
+Two corrections to the predicted diagnosis, both worth carrying:
+
+- The leaf is **`rawSyscall`**, not `syscall`. Same family, different entry point: both are §2's
+  bodyless partials and both get the same generated stub, so this is the predicted *class* firing at
+  a sibling member. `rawSyscall`'s darwin users include `Getpid`, `Getuid`, `Getegid`, `ioctl` and
+  `pipe` — an `os` initializer reaches one of them before it ever reaches `write`.
+- **Which** call fires first is NOT pinned here. The report line carries the exception chain but no
+  frames, so naming the exact Go function would be speculation; it does not change the finding,
+  because every member of the family is equally unimplemented.
+
+And two things predicted correctly, now read off the runner:
 
 - **`'<Module>'`** — the failure is in a **module initializer**, i.e. a converted Go `init()`
   (`GoInitAttribute`), so the program dies *before* `Main`. That fits `os_package`'s static
