@@ -9,20 +9,17 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — Over 75% of Go's standard library validates in C#
+## 📰 NEWS — On .NET 10 and Go 1.23.12, the validated roster re-proves itself
 
-**162 of the 215 testable standard-library packages pass their own Go test suites in C#** —
-18,569 matching verdicts against `go test -json`, compared verdict for verdict, with
-85 divergences disclosed by exact failure signature and nothing else waived. A package
-appears on the [roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and
-every row links a [proof page](validation/index.md) listing Go's verdict beside go2cs's, test by
-test. Converted frames now report **Go file and line positions** — `runtime/debug.Stack()`,
-`log`'s file prefixes and `flag`'s error output name the Go source they came from, not the
-generated C#. Channel direction and array dimensions ride the type descriptor, so `reflect`
-answers about them the way Go does. And the numbers are the honest ones: packages that come
-close and do not fully agree are not on the roster, because a milestone you can trust is worth
-more than one you can round up to. Full detail in the
-[news archive entry](NEWS.md#august-22-2026--over-75-of-the-standard-librarys-test-suites-pass-in-c).
+**162 of the 215 testable standard-library packages pass their own Go test suites in C#** — every
+row re-derived from **Go 1.23.12**'s own test sources on **.NET 10**: 18,598 matching verdicts
+against `go test -json`, compared verdict for verdict, with 85 divergences disclosed by exact
+failure signature and nothing else waived. A package appears on the
+[roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and every row links a
+[proof page](validation/index.md) listing Go's verdict beside go2cs's, test by test. A version
+hop re-validates everything from scratch — numerator, denominator and disclosure set — because a
+milestone you can trust is worth more than one you can carry forward. Full detail in the
+[news archive entry](NEWS.md#august-25-2026--both-runtime-pins-move-net-10-go-12312--and-the-whole-roster-re-proves-itself).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
@@ -534,6 +531,7 @@ High level timeline of the project's major turning points.
 | 2026-08-08 | [**Over half the stdlib's test suites validate in C#**](NEWS.md#august-8-2026--over-half-the-standard-library-validates-defers-reach-zero-allocation) | [`stdlib-half-validated-2026-08-08`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-half-validated-2026-08-08) | **110/215** packages, 13,628 matching verdicts; zero-allocation `defer` frames; Docs+Tests badge trust chain in every package. |
 | 2026-08-08 | [**Go programs run on Linux**](NEWS.md#august-8-2026--go-programs-run-on-linux) | [`linux-first-run-2026-08-08`](https://github.com/ritchiecarroll/go2cs/releases/tag/linux-first-run-2026-08-08) | `hello, 世界`, an `os`/`time` program, and the real-world walkthrough (`fatih/color`, true ANSI colour) all byte-identical to `go run`; one L3 tree compiles windows+linux+darwin; one nupkg per package; one measured `libc syscall(2)` keystone. |
 | 2026-08-22 | [**Over 75% of the standard library's test suites pass in C#**](NEWS.md#august-22-2026--over-75-of-the-standard-librarys-test-suites-pass-in-c) | [`stdlib-tests-75pct-2026-08-22`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-tests-75pct-2026-08-22) | **162/215** packages, 18,569 matching verdicts, 85 disclosed; converted frames report Go file:line positions; Go 1.23.1's terminal validation marker, with `release/go1.23` cut. |
+| 2026-08-25 | [**Both runtime pins move: .NET 10 + Go 1.23.12**](NEWS.md#august-25-2026--both-runtime-pins-move-net-10-go-12312--and-the-whole-roster-re-proves-itself) | `925e48067` · `a2e079259` | 955 project files to `net10.0` with zero emission drift, three OS flavors green; the full roster re-derives from 1.23.12's own test sources — **162/162, 18,598** matching verdicts (+29, exactly the four re-derived rows). |
 
 ## C# to Go?
 

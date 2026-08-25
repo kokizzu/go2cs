@@ -8,6 +8,29 @@ their full text.
 
 ---
 
+## August 25, 2026 — Both runtime pins move: .NET 10, Go 1.23.12 — and the whole roster re-proves itself
+
+**go2cs now targets .NET 10 and converts Go 1.23.12**, and the validated roster crossed the hop the
+only honest way: re-derived, not carried. Every one of the **162 banked packages re-validated from
+the new release's own `_test.go` sources** — **18,598 matching verdicts** against a clean
+`go test -json` baseline at the new pins, with the 85 disclosures re-signed against the new
+sources — count and per-row set unchanged. The
+29 new verdicts over the 1.23.1 record come exactly from the four suites whose verdict counts
+moved with the release (`time`, `os/exec`, `syscall`, `database/sql`), reconciled to the digit
+across the machines that ran the re-validation shards. A version hop invalidates every row's numerator,
+denominator and disclosure set by design; there is no carry-forward path, so agreement at the new
+pins is measured, never assumed.
+
+The .NET half moved 955 project files to `net10.0` with zero corpus-emission drift across all three
+OS flavors — and immediately earned its keep: C# 14's new implicit array-to-span conversion
+changed which overload form a variadic call binds, exposing that the corpus's variadic-slice
+binding had been correct *by accident* under C# 13. The converter now emits the binding that is
+correct on purpose.
+
+The converted standard library publishes as **NuGet 1.23.12.1** — each package README freezing its
+validation badges against this release's own proof snapshot, with the exact shipped tree browsable
+at the `nuget-1.23.12.1` tag.
+
 ## August 22, 2026 — Over 75% of the standard library's test suites pass in C#
 
 **162 of the 215 testable standard-library packages (75.3%) validate their own Go 1.23.1 test
