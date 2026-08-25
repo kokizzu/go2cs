@@ -821,14 +821,20 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      regen bank (2026-08-11) the census is **49 marked files / 41 `*_impl.cs` companions / 59
      distinct hand-owns** — r52–r59 growth over r51b's 44; re-measure, never carry, as always.
      At the Linux regen wave (2026-08-14) it is **53 marked files / 42 `*_impl.cs` companions**,
-     0 violations across 3 targets × 2 merge passes.
+     0 violations across 3 targets × 2 merge passes. At the post-merge rebank (2026-08-24) it is
+     **73 marked files / 49 `*_impl.cs` companions / 24 whole-file rewrites**, 0 violations on the
+     windows and the linux target alike.
      The regen ritual also gained a check the seed makes necessary: because seeding puts every
      repo file in the temp root, an overlay can never reveal a file the converter has STOPPED
      emitting — classify emitted-vs-seeded by the sentinel mtime and report would-be deletions,
      which is what surfaced the hand-owned-by-consequence class below.) ⚠ The `.cs.auto` siblings are **tracked in git but are NOT refreshed by the
      overlay**: the same exclusion that protects the hand-owned `.cs` beside them also freezes
-     them, so they go stale on their own schedule (11 of 16 were stale at r40 — CleanupBacklog
-     item 18).
+     them, so they go stale on their own schedule and are RE-MEASURED at every rebank head rather
+     than assumed (CleanupBacklog item 18). The measurement moves: 11 of 16 were stale at r40,
+     and **0 of 23 at the 2026-08-24 post-merge rebank** — a seeded reconvert per target re-emits
+     each sibling, and CR-stripped equality against the committed file is the test (a raw byte
+     compare reports the whole set as differing, because a fresh emission carries the in-literal
+     LF the working tree holds as CRLF).
   1a. **⚠ SEED `version.props` AND `docs/validation` TOO, and MIRROR THE `src/` LAYOUT** (added
      2026-08-02 with the README validation badges). Each package README's badge LINE carries two
      badges, and the **Tests** one is composed from two REPOSITORY files, not from the conversion:
@@ -1023,7 +1029,8 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
        STANDING restore, not a one-off cleanup, until the two agree on one alias per import.
     3. **`.cs.auto` review siblings.** Tracked, and refreshed by a `-tests` run but NOT by an
        `-stdlib` overlay (which excludes them to protect the hand-owned `.cs` beside them). Restore
-       them in a sweep; level all 16 together in their own commit (CleanupBacklog item 18).
+       them in a sweep; re-measure the whole set at each rebank head, one seeded reconvert per
+       target, rather than banking a count (CleanupBacklog item 18).
     4. **Deduplicated same-shape anonymous structs — LEVELED, so a reappearance is news.** The
        converter binds a second anonymous `[GoType("dyn")]` struct of identical shape to the FIRST
        declaration's type instead of minting its own (`e61758549`, the reflectlite arc). In a diff
