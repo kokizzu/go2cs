@@ -304,6 +304,13 @@ approach ~71 ms rather than sitting at ~176 ms. **If it does, the halving was .N
 closes forever as a data point.** **If it does not, bflat's advantage is something else** and the
 finding reopens with a sharper question.
 
+**RESOLVED — it did not.** 174.7 vs 175.3 ms (−0.3 %) with the control row at 0.0 %: the advantage is
+attributed to the **preview/bflat packaging**, and the anomaly is closed as not-a-hop-question. The
+measurement, the prediction as stated before the run, and the two riders it established — the
+10-ILC's ~10.6× near-serial compile cost and its ~15 GB working-set floor — are banked in
+[`phase4/DATA-hopN-perf.md`](phase4/DATA-hopN-perf.md) §2, which is where this hop's numbers live now
+that [`DotNetMigration.md`](DotNetMigration.md) holds only the protocol.
+
 ### 3.4 N6 — the trim-safety numbers this hop inherits
 
 From the concluded exploration (laptop G, 2026-08-16, Ryzen 5 PRO 6650U — the perf-canon box):
