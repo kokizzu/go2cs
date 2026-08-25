@@ -18890,4 +18890,61 @@ fresh baselines with the bflat exploration''s lessons folded in and prediction N
 AOT leg; R owns Stage-0 fleet provisioning; the i9 owns the stage gates it has owned all along.
 ---
 
+## 2026-08-25 · THE DOC HIERARCHY INVERTS — the runbooks lead, and nothing was deleted to do it
+
+The era directive above says the runbooks are *executed AS WRITTEN, deviations fixing the runbook
+in-stage*. The tree did not say that. **Exactly one sentence** contradicted it —
+`GoCorpusMigration.md`'s header, *"where they disagree about what to do, the plan governs"* — and
+everything else pointed runbook-ward already. A five-commit docs train on `doc-consolidation`
+makes the tree state what it practices. Its internal amendments are stamped 2026-08-24, the day
+the design was ruled.
+
+**The ordering was load-bearing, not stylistic.** The plans carried four statements the runbooks
+and the tree had already falsified, so those were corrected FIRST (commit 1) and authority moved
+SECOND (commit 3). Inverting first would have crowned a falsehood in the new direction. The
+falsified four: H1 step 1 asking for `GOROOT/VERSION` (a pin redirects it silently); 1.4.2's
+"proposed remedy" for a hole closed at H1.4; "the Linux corpus does not yet build", overtaken when
+the wall fell 2026-08-14 at 307/307; and OQ-14's "every hop publishes", which was framed over
+Go-version hops and needed OQ-H3's scoping.
+
+**The runbooks caught up to their records** (commits 2a/2b) — nine lessons absorbed into
+`GoCorpusMigration.md`, four into `DotNetMigration.md`, each a rule that generalizes, each with its
+destination in the SAME commit as its removal so the diff proves nothing was lost. The sharpest:
+DERIVE the reserved set at generation time (the copied list drifted twice); a CRASH is not a
+divergence and no disclosure absorbs one; fragility has TWO axes and a signature-oriented triage
+looks at only one; a row with NO manifest compares strictly, so strict-compare rows with
+upstream-changed production code outrank big manifests; and bank a migration's INPUTS in the commit
+that claims them, because the report is not the artifact. `DotNetMigration.md` also stopped
+**prescribing a defect**: it told a hop to hoist the TFM, and the hoist was tried in that stage and
+falsified. A hoist still needs an editor; a derivation needs nobody.
+
+**Nothing was deleted.** `PLAN-corpus-upgrade.md` sections 2, 3 and 4 became anchor-preserving
+pointer shells: every H-heading survives because they are a citation namespace — `migrate-gorelease.ps1`
+cites H2 and `ConverterBuildInputs.cs` cites H1.4 by name — and all nineteen OQ-n marks survive
+because section 8's rulings are what a runbook "(ruled)" resolves against. Two readings with no
+other home were retained rather than shelled. The counterweight that makes the inversion safe is
+stated in both runbook headers: **a runbook edit never reopens a ruling.**
+
+**Records got their state lines** (commit 4). Five documents still said DRAFT while the work they
+scouted had shipped. The 1.23.12 rehearsal's eight findings each carry a disposition now: six
+closed against named commits, one (the Linux-vs-Windows `t_r` question) **resolved by standing
+rule** — LANES.md already rules that cost inputs come from fresh calibration at campaign recon, so
+the leg is measured with `k` and `s_w` rather than ruled separately — and one carried as evidence.
+Finding H's last third closed too: the rehearsal's own three raws are banked verbatim in
+`hopA-inputs/`, so no hop input is living in a session scratchpad any more.
+
+**Hop A's one open blocker is now visible from the campaign plan**, not only from an orphan record:
+the `asynctimerchan=2` AV, which is bounded runtime work owed BEFORE H10.
+
+**Doc types are defined** in `Glossary.md` — runbook, plan, hop, record, board, mailbox — and
+CLAUDE.md carries the one-paragraph ladder. Routing rule, in one line: **procedure to the runbook
+in-stage, harness and gate doctrine to CLAUDE.md, findings and measurements here.** The mailbox
+header said "doctrine lands on the board" and predated the runbooks; it now routes by kind. That
+header also lives on `claude/mailbox` and the coordinator mirrors it there.
+
+Docs-only: 21 files edited plus 4 created, all under `docs/` and `CLAUDE.md`. Zero source, zero
+corpus, zero goldens — so CNR is not owed, and the gate each commit DID carry is link integrity
+over its touched files. One tier of hygiene is deliberately deferred past the hop's start:
+`DotNetMigration.md`'s Stage-0 incident narratives, whose home is `STAGE0-provisioning.md`.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
