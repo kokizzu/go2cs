@@ -18989,4 +18989,102 @@ reading — class 3b, the escape-analysis elision.
    is one object and structurally inherent, and the disclosure IS correct — the two rows together are
    a usable worked example of where the line sits.)
 
+## 2026-08-25 · POST-HOP FRONTIER FOLD — the frontier re-derives twice and agrees to the digit, row 163 banks, tier-1 re-prices at the new pins, and three rulings land (coordinator)
+
+The march to 100% resumes on net10.0 + go1.23.12. The frontier was derived twice independently —
+a coordinator-side Opus lane and i9's JOB-019 step 1, different scripts, both under parse-count
+and subset controls — and agrees exactly: **215 testable − 162 banked = 53** at derivation time.
+Six of the 53 are ruled out on windows/amd64 (`internal/runtime/syscall`, `internal/syscall/unix`,
+`net/internal/socktest`, `log/syslog`, `runtime/race` — no eligible Test declarations on this
+target; `os/user` — Go's own oracle fails `TestGroupIds`, no clean baseline exists), so the honest
+Windows frontier was **47**, and with this fold's bank it is **46 of 52**. Four frontier rows are
+already Linux-proven at zero divergences (`net/smtp` 19, `net/http/httptest` 55,
+`net/http/httputil` 53, `net/rpc` 15 — the 2026-08-22 S3 ledger) and Windows-socket-walled; the
+per-OS roster-shape question they pose is HELD at the coordinator, unruled here.
+
+**Row 163 banks: `net/http/internal`, 14 matching + 1 disclosed at Go 1.23.12** (lane R,
+`claude/laneR-nethttp-mathbig`). The count MOVED from the board's 1.23.1 pricing of 9+1 — the
+release's bare-LF request-smuggling hardening added `TestChunkInvalidInputs` and its four
+subtests — which is the hop doctrine (measure, never assume) earning its keep on the first
+post-hop bank. Post-merge filtered sweep at the MERGE RESULT: PASS 14, exit 0; roster header
+recomputed from the table under a parse-count control: **163 rows / 18,612 matching / 86
+disclosed**, delta exactly this row.
+
+### RULING — the alloc-assert triage recipe is doctrine, and the row's disclosure class was corrected by it
+
+R's reclassification of `TestChunkReaderAllocs` from the dispatch's `alloc-count-semantics` to
+**`alloc-profile`** is RATIFIED, with its rooting: the converted `NewChunkedReader` allocates the
+box (Go's `&chunkedReader{}` analogue) PLUS a `chunkedReader`->`io.Reader` interface shell, and
+`DESIGN-iface-shell-caching.md` §2 rules the shell structural — C# has no two-word interface
+value; nothing removes it short of `IDynamicInterfaceCastable`; the measured loop mints a fresh
+reader per iteration so no cache amortizes it. The triage recipe generalizes and is now the
+standard (open the emission for the function under the assert; count the allocations on the
+measured path):
+
+1. the converted path allocates an object Go's does not (interface shell, ж box, captured-closure
+   frame) → **`alloc-profile`** — disclosable only when the extra object is structurally inherent;
+2. comparable counts, merely MORE of the same → a quantitative excess an arc can reduce — **never
+   disclosed**; route it (math/big is the worked example);
+3. the COUNTER itself is incomparable (context's byte-derived shim) → **`alloc-count-semantics`**,
+   the RARE class (6 rows corpus-wide), never the default.
+
+### RULING — `TestGCMAsm` closes as a source-defined platform skip; the manifest class `platform-skip` is minted
+
+Held since the 2026-08-20 measurement pass; i9's tier-1 re-measured the identical shape at the
+new pins (12/13, C# skips `"no assembly implementation of GCM"`, gcm_test.go's own skip). The
+ruling: the C# side executes the skip branch **Go's own test source defines** for a platform
+without a distinct assembly GCM implementation, and the managed corpus IS such a platform — by
+design and permanently (no `.s` codepaths). The divergence is between two PLATFORMS' verdicts on
+one test, not between Go and the conversion on one platform. `runtime-capability`'s refusal
+stands (a truthful second GCM exists at a cost); this class exists because that cost buys nothing
+Go's own source does not already define away — building a second GCM whose only consumer is a
+differential test manufactures a platform property instead of measuring one.
+
+**Admission test, binding**: the skip taken must be the UPSTREAM test's own skip statement,
+conditioned on a platform property the deployment genuinely and by-design holds — never a
+host-limit workaround, never a skip the harness injects, never a skip added by conversion.
+**Anti-laundering**: the signature pins Go's own skip message from the test source, and the row
+records the verdict pair (Go pass / C# skip) openly. `crypto/cipher` banks at **12 matching + 1
+disclosed (`platform-skip`)**; the banking lane implements; the class joins the roster preamble
+WITH the banking commit, per the `chan-direction`/`runtime-capability` precedent.
+
+### RULING — the ж-box arc re-sizes against 59x, not 51x
+
+R re-measured `math/big`'s `TestMulUnbalanced` at the new pins twice (0.07% apart): allocSize
+23.77 MB / ratio **59** vs the banked 51 — **+15.9% allocated bytes across the two hops**,
+unattributed by design (a measurement lane does not decompose; the arc owns the probe). The row
+stays with the ж-box/B' constituency per the 2026-08-21 ruling; an arc sized against 51x is sized
+against a stale target. `TestNewIntAllocs` re-measures verbatim (1 obj/run, all seven shapes);
+224 of 226, suite unchanged at 1.23.12.
+
+### Tier-1 shard, folded (i9 JOB-019 — measurement only, artifacts retained per row)
+
+- **`encoding/gob` 100/107** (5 matching skips): ONE divergence, `TestIgnoreDepthLimit` →
+  `typelinks` NotImplementedException via `reflect.typesByString` — consistent with the
+  StructOf/ArrayOf pricing. The `reflect.ArrayOf` hand-own is in flight, and
+  `DESIGN-reflect-structof.md` is **RATIFIED WITH AMENDMENTS** (nine, all applied by its lane):
+  an adversarial review measured three mechanism defects on paper before any implementation —
+  `collectGoFields` reads array dims from a ZERO INSTANCE (`FieldArrayDims` over
+  `Activator.CreateInstance`), not from `[GoArrayDims]`, so the synthesizer must emit a
+  parameterless ctor initializing array-kinded fields; the intern key must carry dims/chanDir/
+  keyDims cargo (a `System.Type` cannot separate `[1]int` from `[2]int`); embeddedness rides the
+  `ʗ` field-name prefix and a `String()`-based guard cannot see it. Plus: the per-type mint cost
+  is 875–925 µs WITH the forced `[GoType("dyn")]` stamp (the stamp costs +73–78%; TFM is not the
+  variable), and OQ-2's Run-vs-RunAndCollect delta was an in-process measurement-order artifact.
+  StructOf implementation staffs as its own lane AFTER ArrayOf merges.
+- **`net/netip` 210 + 58 alloc-assert fails** collapsing to 3 top-level tests — class TBD under
+  the recipe above; the emission read is dispatched. NOT pre-classified, deliberately.
+- **`crypto/cipher` 12/13** → banks under the `platform-skip` ruling; dispatched.
+- **`debug/pe` 9/10** — the `[3]uint8` aux-record read back as 8 elements, unchanged; rides the
+  zero-size-field LAYOUT arc or a one-file hand-own of the symbol reader.
+- **`log/slog`** — three shapes: (1) alloc-assert rows, class TBD under the recipe; (2) five
+  logic divergences (`TestJSONAndTextHandlers/Source/json`, `TestCallDepth`,
+  `TestLogLoggerLevelForDefaultHandler`, `TestRecordSource`, `TestSetDefault`); (3) a NEW
+  harness-termination finding — after `TestSetDefault` runs and fails, the host emits no further
+  run events for ~10 remaining top-level tests (`Go="pass" C#=""` mass-empty tail that is
+  neither the file-lock nor the deadline shape: no orphaned child, no partial run event — the
+  process stops advancing between tests). `TestSetDefault` mutates the package default logger;
+  the plausible surface is host progress reporting entangled with that global. A diagnosis lane
+  is dispatched; the finding gates log/slog's row regardless of the alloc classes.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
