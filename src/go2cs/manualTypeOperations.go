@@ -502,6 +502,27 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// abi.TypeOf reaches from a live [n]T value, and interning makes the constructed type and
 		// the declared one the SAME canonical reflect.Type. See reflect/value_impl.cs.
 		"ArrayOf": goosAny,
+		// StructOf is ArrayOf's sibling one order of magnitude up. PointerTo and ArrayOf hand
+		// MakeGenericType an EXISTING managed type, because ж<T> and array<T> ARE the Go type; a
+		// struct has no generic container to instantiate, so StructOf is the one caller that asks
+		// for a Go type NOTHING declared and a real CLR value type has to be MINTED for it.
+		//
+		// The auto body dies where ArrayOf's does — typesByString → typelinks(), the linker-built
+		// type table — and everything past that point is Go's runtime reconstructing linker output:
+		// structTypeFixedN prototypes, GC-program construction, resolveReflectName into the name
+		// blob, unsafe_New. Both of reflect's OWN callers of StructOf are exactly such
+		// reconstructions (describing a func's argument frame; getting an rtype followed in memory
+		// by a method array), so a hand-own owes them nothing — the census finds one real consumer,
+		// encoding/gob's TestIgnoreDepthLimit.
+		//
+		// The hand-own mints the type with System.Reflection.Emit (golib's GoStructSynthesis) and
+		// then does nothing else: abi.synthType describes the minted type exactly as it describes a
+		// converted struct, and GoFields / structLayoutOf / FieldAliasBox / ZeroValueOf /
+		// GoTypeName / canonType all run UNMODIFIED, because not one of them asks where a
+		// System.Type came from. That is the whole argument for the mechanism — a synthetic answer
+		// and the converted answer cannot disagree when there is only one path.
+		// See docs/phase4/DESIGN-reflect-structof.md and reflect/value_impl.cs.
+		"StructOf": goosAny,
 		// rtype.FieldByName Reinterprets the descriptor as a structType and reads .Fields off
 		// the default promoted-embed box (gob's compileDec matching wire fields to the local
 		// struct). Bridged over the shared GoFields projection — the SAME field table
