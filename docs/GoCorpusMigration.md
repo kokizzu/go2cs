@@ -432,7 +432,14 @@ denominator and disclosure set alike. There is no carry-forward path.
 
 Per banked package:
 
-1. Re-run the converted-test pipeline against the new GOROOT package.
+1. Re-run the converted-test pipeline against the new GOROOT package — **the pipeline itself**
+   (`go2cs -tests -test-action all <new-goroot-pkg> <core-pkg>`, both toolchain overrides set),
+   **never the sweep wrapper**: `run-validated-sweep.ps1` is the steady-state gate, enforcing the
+   exact *banked* count and a drift-clean corpus — both of which this step invalidates **by
+   design** (measured 2026-08-25: the wrapper reds every hop row in seconds — count mismatch, plus
+   the re-emitted test sources reading as unclassified drift). The re-emitted sources are the
+   **bank-in-waiting** for this step's own re-bank — leave them in the tree, restore only the
+   standing production-flip classes at the end. A wrapper `-Hop` mode is open instrument debt.
 2. **Re-derive the verdict count.** The denominator moves — tests are added and removed.
 3. **Re-derive the disclosure manifest.** Disclosures are pinned by **exact failure signature**, so a
    renamed or reworded test invalidates its pin and the manifest is **re-signed, never edited** (§4,
