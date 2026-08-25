@@ -64,6 +64,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `encoding/base64` | [`encoding.base64.md`](current/encoding.base64.md) | [`src/core/encoding/base64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base64) |
 | `encoding/binary` | [`encoding.binary.md`](current/encoding.binary.md) | [`src/core/encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary) |
 | `encoding/csv` | [`encoding.csv.md`](current/encoding.csv.md) | [`src/core/encoding/csv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/csv) |
+| `encoding/gob` | [`encoding.gob.md`](current/encoding.gob.md) | [`src/core/encoding/gob`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/gob) |
 | `encoding/hex` | [`encoding.hex.md`](current/encoding.hex.md) | [`src/core/encoding/hex`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/hex) |
 | `encoding/json` | [`encoding.json.md`](current/encoding.json.md) | [`src/core/encoding/json`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/json) |
 | `encoding/pem` | [`encoding.pem.md`](current/encoding.pem.md) | [`src/core/encoding/pem`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/pem) |

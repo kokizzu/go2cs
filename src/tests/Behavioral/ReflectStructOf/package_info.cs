@@ -1,4 +1,4 @@
-// go2cs code converter defines `global using` statements here for imported type
+﻿// go2cs code converter defines `global using` statements here for imported type
 // aliases as package references are encountered via `import' statements. Exported
 // type aliases that need a `global using` declaration will be loaded from the
 // referenced package by parsing its 'package_info.cs' source file and reading its
@@ -54,7 +54,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AA5IguiygoCCtoLqgoKUAB4GggAAGoKGgoKCgpiCmIKChoKGgpiCmIKClIKChoKegoIAAByChryCgoIAARKQtoI=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAtAgNSygoCCtoLoggArBoKCgoyCgoKYnoKCgoKUnMqCgoKmmIKCgpSCppjKggACEIK4gq64roK8goKUhpCSkJKAkqKUkpSC")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -70,7 +70,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    [GoValueClone("B")] internal partial struct pair {}
+    internal partial struct main_i {}
+    internal partial struct stringer {}
     public partial struct Celsius {}
     // </TypeAccessibility>
 }

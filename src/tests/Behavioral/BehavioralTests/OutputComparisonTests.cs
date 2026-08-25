@@ -1322,6 +1322,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectStringWindow() => CheckTarget("ReflectStringWindow");
 
     [TestMethod]
+    public void CheckReflectStructOf() => CheckTarget("ReflectStructOf");
+
+    [TestMethod]
     public void CheckReflectStructTagCopy() => CheckTarget("ReflectStructTagCopy");
 
     [TestMethod]

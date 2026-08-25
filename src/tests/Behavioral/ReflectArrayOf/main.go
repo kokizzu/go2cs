@@ -120,6 +120,52 @@ func main() {
 	fmt.Println("nest(5):", deep, "| size:", deep.Size(), "| len:", deep.Len(),
 		"| identical:", deep == reflect.TypeOf(deepDecl))
 
+	// ---- SliceOf: the same family, the cheapest member, and the same identity claim ----
+	// golib's slice<T> IS Go's slice type, so the whole construction is one generic instantiation --
+	// the PointerTo shape. It died in the same typelinks() lookup, and was in fact reached FROM
+	// ArrayOf's auto body, whose arrayType record carries a Slice field.
+	sl := reflect.SliceOf(byteT)
+	describeSlice("SliceOf(uint8)", sl)
+	fmt.Println("slice identical:", sl == reflect.TypeOf([]uint8{}), "| elem identical:", sl.Elem() == byteT)
+
+	// A slice type has NO dims slot of its own, so a slice OF an array reads its element's length
+	// back exactly the way a DECLARED [][3]uint8 does -- unknown. That is the cargo model's residual
+	// and it is PRE-EXISTING: go2cs renders a dims-less array<T> as "[]T" by design
+	// (GoReflect.TypeNaming: "length is not carried on the managed type"), so
+	// `fmt.Println(reflect.TypeOf([][3]uint8{}))` already prints `[][]uint8` at master with no
+	// reflection constructor in sight. So the row asserts the IDENTITY -- which is what SliceOf owes
+	// -- and deliberately does not print the name, whose divergence belongs to a different arc.
+	// Do not add the name back here; it will fail, and not for a reason about SliceOf.
+	// (The same residual reaches Elem(): `slArr.Elem() == reflect.ArrayOf(3, byteT)` is true in Go
+	// and false here, because a slice hands down no dims -- and so is
+	// `reflect.TypeOf([][3]uint8{}).Elem() == reflect.TypeOf([3]uint8{})`, at master, with no
+	// constructor involved. Same root, same arc, likewise not asserted.)
+	slArr := reflect.SliceOf(reflect.ArrayOf(3, byteT))
+	fmt.Println("slice of array identical to declared:", slArr == reflect.TypeOf([][3]uint8{}))
+
+	// ---- the family COMPOSES in both directions ----
+	fmt.Println("array of slice:", reflect.ArrayOf(2, sl),
+		"| identical:", reflect.ArrayOf(2, sl) == reflect.TypeOf([2][]uint8{}),
+		"| slice of slice:", reflect.SliceOf(sl) == reflect.TypeOf([][]uint8{}),
+		"| slice of pointer:", reflect.SliceOf(reflect.PointerTo(byteT)) == reflect.TypeOf([]*uint8{}))
+
+	// ---- the VALUE side: MakeSlice over a type no declaration produced ----
+	sv := reflect.MakeSlice(sl, 2, 4)
+	sv.Index(0).SetUint(5)
+	sv.Index(1).SetUint(6)
+	fmt.Printf("makeslice: %v | len=%d cap=%d | asserted=%v\n", sv.Interface(), sv.Len(), sv.Cap(),
+		sv.Interface().([]uint8))
+	// (reflect.Append is deliberately NOT exercised here: its auto extendSlice reads the
+	// never-populated v.ptr slice header and nil-derefs -- the same class as Value.Grow and
+	// Value.SetLen before they were bridged, and independent of SliceOf, since the constructed and
+	// the declared slice type are the SAME interned reflect.Type by the row above. Recorded on the
+	// board rather than fixed under this arc.)
+
 	// ---- the contract's own panic ----
 	fmt.Println("negative length:", recovered(func() { reflect.ArrayOf(-1, byteT) }))
+}
+
+func describeSlice(label string, t reflect.Type) {
+	fmt.Printf("%s: %v | kind=%v elem=%v size=%d align=%d name=%q\n",
+		label, t, t.Kind(), t.Elem(), t.Size(), t.Align(), t.Name())
 }

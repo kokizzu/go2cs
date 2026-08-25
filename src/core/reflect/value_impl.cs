@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Reflection;
 using abi = go.@internal.abi_package;
+using strconv = go.strconv_package;
 using @unsafe = go.unsafe_package;
 
 // Hand-finished conversion (the reflection bridge — Phase 4, value side). Go's reflect.Value reads the
@@ -1385,6 +1386,13 @@ private static GoChanDir chanDirOfReflectType(ΔType typ) {
     return ok && rt != nil ? rt.Value.t.chanDir : GoChanDir.Unstamped;
 }
 
+// keyDimsOfReflectType recovers the descriptor's carried map-KEY dims (non-identity cargo) — the
+// slot Key() hands down, which Elem()'s dims have no room for.
+private static nint[]? keyDimsOfReflectType(ΔType typ) {
+    var (rt, ok) = typ._<ж<rtype>>(ᐧ);
+    return ok && rt != nil ? rt.Value.t.keyDims : null;
+}
+
 private static nint[]? arrayDimsOfDescriptor(ж<abi.Type> Ꮡt) {
     return Ꮡt == nil ? null : Ꮡt.Value.arrayDims;
 }
@@ -2185,6 +2193,167 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
         throw panic("reflect.ArrayOf: array size would exceed virtual address space");
     }
     return toType(abi.synthType(typeof(array<>).MakeGenericType(st), dims));
+}
+
+// SliceOf returns the slice type with element type t — the third run-time type constructor of the
+// family and the cheapest of them, the PointerTo shape exactly: golib's slice<T> IS Go's slice type,
+// so one MakeGenericType is the whole construction.
+//
+// It died in the same typesByString → typelinks() lookup ArrayOf's auto body died in, and was in
+// fact reached FROM there — Go's arrayType record carries a Slice field, so the auto ArrayOf called
+// SliceOf on its way to building one.
+//
+// The one decision here is what dims to hand the descriptor, and the answer is NONE. abi.TypeOf
+// measures dims for an ARRAY value and a POINTER's pointee only, so a DECLARED []T descriptor
+// carries null — and the identity that makes SliceOf(elem) and TypeOf([]T{}) one canonical
+// reflect.Type is exactly the property gob's type maps stand on. Handing the element's dims through
+// would break that identity and would not buy anything either: rtype.Elem's non-pointer, non-map arm
+// CONSUMES the head of the dims vector, so a one-element vector hands down nothing. So
+// SliceOf(ArrayOf(3, byte)) describes [][3]byte with its element's length unknown, which is exactly
+// what a declared [][3]byte reads back today — the cargo model's residual (a slice type has no dims
+// slot of its own), not this constructor's, and the r39d rule says record it rather than invent one.
+public static ΔType SliceOf(ΔType t) {
+    System.Type? st = sysTypeOfReflectType(t);
+    if (st is null) {
+        throw panic("reflect: SliceOf of non-synthesized type");
+    }
+    return toType(abi.synthType(typeof(slice<>).MakeGenericType(st)));
+}
+
+// StructOf returns the struct type containing fields — ArrayOf's sibling one order of magnitude up,
+// and the one run-time type constructor with nothing to compose from. PointerTo and ArrayOf hand
+// MakeGenericType an EXISTING managed type because ж<T> and array<T> ARE the Go type; a struct has
+// no generic container to instantiate, so a real CLR value type is MINTED for each synthesized Go
+// struct (golib's GoStructSynthesis, System.Reflection.Emit).
+//
+// The auto body dies where ArrayOf's does — typesByString → typelinks(), the linker-built type
+// table, a NotImplementedException stub — and, as there, the throw is a red herring: everything
+// past that lookup is Go's runtime reconstructing LINKER OUTPUT (structTypeFixedN prototypes, GC
+// programs, resolveReflectName into the name blob, unsafe_New). reflect's own two callers of
+// StructOf are themselves such reconstructions — a fake struct describing a func's argument frame
+// (initFuncTypes), and `struct{S structType; U uncommonType; M [n]Method}` to get an rtype followed
+// in memory by a method array — so this hand-own owes them nothing, and the census finds exactly one
+// real consumer: encoding/gob's TestIgnoreDepthLimit.
+//
+// WHAT MAKES THIS HONEST rather than a second reflection path: once the CLR type exists, NOTHING
+// downstream is new. abi.synthType describes it exactly as it describes a converted struct, and
+// GoFields, structLayoutOf/GoFieldOffsets, structFieldOf, FieldAliasBox, ZeroValueOf,
+// haveIdenticalUnderlyingType, GoTypeName and canonType all run unmodified — none of them asks
+// where a System.Type came from. So gob's encoder walks a synthesized type through the SAME
+// machinery every converted struct uses; there is no synthetic branch for a green row to prove
+// instead of the bridge.
+//
+// Interning is the CONTRACT, not an optimization: gob keys `map[reflect.Type]gobType` and
+// `enc.sent map[reflect.Type]typeId` on the result, so a fresh descriptor per call would make every
+// recursion a cache miss and every mutually-recursive type an infinite regress. The shape key
+// carries each field's dims/direction rendering from abi.descriptorDimsKey — the SAME renderer the
+// descriptor and canonType intern on — because a System.Type alone cannot separate them: `[1]int`
+// and `[2]int` are one array<nint>, and `chan<- T` and `chan T` are one channel<T>.
+//
+// Recorded, not worked around: this interning is StructOf-LOCAL. A converter-lifted anonymous
+// struct of the same shape is a different CLR type, so `StructOf(f) == TypeOf(struct{F int}{})` is
+// false here and true in Go — the same class as the board's cross-context anonymous-lift identity
+// split. haveIdenticalUnderlyingType still answers TRUE for the pair, so AssignableTo,
+// ConvertibleTo, Convert and assignment all behave; only `==` on the Type splits, and no measured
+// consumer compares the two. The one shape exempt from it is `struct{}`, whose managed form golib
+// already declares (EmptyStruct IS Go's empty struct, and GoTypeName/HasGoName both special-case
+// it), so the degenerate call reaches the type a declaration produces rather than a twin of it.
+//
+// Also recorded: a directional-channel FIELD keeps its identity (the direction is in the shape key)
+// but not its description — the minted field is a plain channel<T>, so Field(i).Type.ChanDir()
+// answers BothDir. Carrying it is one more seeded field in a constructor that already exists; it is
+// held for a ruling rather than taken here.
+public static ΔType StructOf(slice<StructField> fields) {
+    nint n = len(fields);
+    if (n == 0) {
+        return toType(abi.synthType(typeof(EmptyStruct)));
+    }
+    var synth = new GoSynthField[(int)n];
+    @string pkgpath = ""u8;
+    nuint total = 0;
+    var seen = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+    for (nint i = 0; i < n; i++) {
+        StructField field = fields[i];
+        string name = field.Name;
+        // Go's own validations, in Go's own order and with Go's own messages (type.cs:2075-2081
+        // and runtimeStructField at :2438).
+        if (name.Length == 0) {
+            throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has no name");
+        }
+        if (!isValidFieldName(field.Name)) {
+            throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has invalid name");
+        }
+        if (field.Type == default!) {
+            throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has no type");
+        }
+        if (field.Anonymous && field.PkgPath != ""u8) {
+            throw panic("reflect.StructOf: field \"" + field.Name + "\" is anonymous but has PkgPath set");
+        }
+        if (field.IsExported()) {
+            // Go's own best-effort misuse check: a lower-case (or blank) first byte with no PkgPath.
+            char c = name[0];
+            if (('a' <= c && c <= 'z') || c == '_') {
+                throw panic("reflect.StructOf: field \"" + field.Name + "\" is unexported but missing PkgPath");
+            }
+        } else {
+            // Go requires every unexported field of ONE StructOf call to share a single pkgpath,
+            // which is what makes one package container per synthesized type the right granularity.
+            if (pkgpath == ""u8) {
+                pkgpath = field.PkgPath;
+            } else if (pkgpath != field.PkgPath) {
+                throw panic("reflect.Struct: fields with different PkgPath " + pkgpath + " and " + field.PkgPath);
+            }
+        }
+        System.Type? ft = sysTypeOfReflectType(field.Type);
+        if (ft is null) {
+            throw panic("reflect.StructOf: field " + strconv.Itoa(i) + " has non-synthesized type");
+        }
+        if (field.Anonymous) {
+            // Go rejects an embedded `**T` and `*interface{}` outright.
+            if (field.Type.Kind() == ΔPointer) {
+                var ek = field.Type.Elem().Kind();
+                if (ek == ΔPointer || ek == ΔInterface) {
+                    throw panic("reflect.StructOf: illegal embedded field type " + field.Type.String());
+                }
+            }
+            // Promoted methods of embedded fields are the documented gap in Go's OWN StructOf, and
+            // the way Go reaches even its partial support is the uncommonType layout trick this
+            // hand-own replaces (an rtype followed in memory by a method array). So the boundary is
+            // a loud panic, with Go's exact message wherever Go's own condition matches.
+            if (GoReflect.GoMethodCount(ft) > 0) {
+                if (i > 0) {
+                    throw panic("reflect: embedded type with methods not implemented if type is not first field");
+                }
+                if (n > 1) {
+                    throw panic(field.Type.Kind() == ΔPointer
+                        ? "reflect: embedded type with methods not implemented if there is more than one field"
+                        : "reflect: embedded type with methods not implemented for non-pointer type");
+                }
+                throw panic("reflect.StructOf: embedded type with methods is not implemented");
+            }
+        }
+        if (!seen.Add(name) && name != "_") {
+            throw panic("reflect.StructOf: duplicate field " + field.Name);
+        }
+        nint[]? dims = arrayDimsOfReflectType(field.Type);
+        nint[]? keyDims = keyDimsOfReflectType(field.Type);
+        // Go's address-space guard, over the sizes the bridge can know — GoSizeOf answers -1 for a
+        // type whose Go size is not derivable (a dimension-less array), and an unknown field size is
+        // no basis for a panic, so the accumulation covers exactly the fields that have an answer.
+        nint fieldSize = GoReflect.GoSizeOf(ft, GoReflect.KindOf(ft) == GoReflect.Array ? dims : null);
+        if (fieldSize > 0) {
+            nuint grown = total + (nuint)fieldSize;
+            if (grown < total) {
+                throw panic("reflect.StructOf: struct size would exceed virtual address space");
+            }
+            total = grown;
+        }
+        // The dims rendering comes from abi.descriptorDimsKey and is not restated, so a shape key
+        // and the descriptor it stands for can never separate the same two types differently.
+        string dimsKey = abi.descriptorDimsKey(dims, null, chanDirOfReflectType(field.Type), keyDims);
+        synth[(int)i] = new GoSynthField(name, ft, (@string)field.Tag, field.Anonymous, dims, keyDims, dimsKey);
+    }
+    return toType(abi.synthType(GoStructSynthesis.SynthesizeStructType(synth, pkgpath)));
 }
 
 // Convert returns the value v converted to type t under Go's conversion rules, routed through

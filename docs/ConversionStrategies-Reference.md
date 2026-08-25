@@ -18814,6 +18814,126 @@ are `default(array<uint8>)`, i.e. length ZERO — so the inner dimension is drop
 gap, older than and independent of this hand-own (it needs no reflection to reach), and it is
 recorded here rather than papered over.
 
+### `reflect.StructOf` MINTS a CLR value type, and then changes nothing else
+
+`StructOf(fields)` is `ArrayOf`'s sibling one order of magnitude up. `PointerTo` and `ArrayOf` hand
+`MakeGenericType` an **existing** managed type, because `ж<T>` and `array<T>` *are* the Go type; a
+struct has no generic container to instantiate, so `StructOf` is the one caller that asks for a Go
+type nothing declared and a real CLR **value type has to be minted** for it — with
+`System.Reflection.Emit`, in golib's `GoStructSynthesis`.
+
+The auto body dies where `ArrayOf`'s does, and one stub earlier than expected: measured, the first
+throw is `addReflectOff` (from `runtimeStructField` → `resolveReflectType`), not `typelinks`. That is
+the point rather than a detail — **everything past the validation loop is Go's runtime reconstructing
+linker output** (`structTypeFixedN` prototypes, GC-program construction, `resolveReflectName` into
+the linker's name blob, `unsafe_New`), so which stub is reached first is incidental. Both of
+`reflect`'s *own* callers of `StructOf` are themselves such reconstructions — a fake struct
+describing a func's argument frame (`initFuncTypes`), and `struct{S structType; U uncommonType; M
+[n]Method}` to obtain an rtype followed in memory by a method array — so a hand-own owes them
+nothing.
+
+**What makes the mechanism honest is that nothing downstream is new.** Once the CLR type exists,
+`abi.synthType` describes it exactly as it describes a converted struct, and `GoFields`,
+`structLayoutOf`/`GoFieldOffsets`, `structFieldOf`, `FieldAliasBox`, `ZeroValueOf`,
+`haveIdenticalUnderlyingType`, `GoTypeName` and `canonType` all run **unmodified** — not one of them
+asks where a `System.Type` came from. A descriptor-only synthetic type would instead have grown a
+second path in about ten places, and a green row would then prove the second path rather than the
+bridge.
+
+The mint carries five things, and each answers exactly one downstream reader:
+
+| Emitted | Read by | Why it cannot be dropped |
+|:--|:--|:--|
+| `[GoType("dyn")]` on the type | `HasGoName`, `GoTypeName` | a `StructOf` result is a Go ANONYMOUS struct: `Name()` must be `""` and `String()` must render structurally |
+| a **parameterless constructor** seeding every array-kinded field | `GoReflect.FieldArrayDims` | an array field's Go LENGTH |
+| `[GoTag("…")]` on a field | `goTagOf` | `StructField.Tag` |
+| `[GoArrayDims]` / `[GoMapKeyDims]` on a field | `FieldStampedDims` / `FieldMapKeyDims` | the pointer-hop and map hops |
+| a `ʗ`-prefixed CLR field name | `collectGoFields` | `StructField.Anonymous` |
+
+**The constructor is the piece that is easy to get backwards, so it is worth stating flatly.**
+`collectGoFields` reads an *array* field's dims from a cached **zero instance** —
+`Activator.CreateInstance(declaringType)` — because in converted code the converter emits the length
+as a field **initializer** (`= new(4)`) that the generated parameterless constructor runs. The
+`[GoArrayDims]` stamp is *not* that route: it exists for the pointer and map-element hops, where a
+zero instance holds a nil pointer or an empty map and has nothing to measure. A `TypeBuilder` struct
+has no field initializers, so **without an emitted constructor every synthesized array field would
+report length 0** — silently, `0` being a legal Go length, and mis-sizing the struct as well, since
+`structLayoutOf` sizes an array field from the same vector. Both routes are therefore emitted; they
+cover disjoint cases, under exactly the rule `fieldCargoDims` applies to declared fields.
+
+**Interning is the contract, not an optimization.** `encoding/gob` keys
+`map[reflect.Type]gobType` and `enc.sent map[reflect.Type]typeId` on the result, so a fresh
+descriptor per call makes every recursion a cache miss and every mutually recursive type an infinite
+regress. Two properties of the shape key are load-bearing:
+
+- it cannot be built from `System.Type`s. `[1]int` and `[2]int` are ONE `array<nint>` and
+  `chan<- T` and `chan T` are ONE `channel<T>` — length and direction live only as descriptor cargo —
+  so each field contributes its `abi.descriptorDimsKey` rendering, **reused rather than restated**,
+  so a shape key and the descriptor it stands for cannot separate the same two types differently;
+- the intern holds the **mint**, under a lock rather than a `ConcurrentDictionary` factory.
+  `GetOrAdd` runs its factory concurrently and discards the losers' work, but the work here is
+  `DefineType`, and a duplicate type name **throws** (measured on a bare probe: 3 of 4 racing threads
+  failed).
+
+**`PkgPath` nests.** `GoPackagePath(t)` is `GoPackageClassPath(t.DeclaringType)`, which reads the
+declaring class's namespace plus its name with `_package` trimmed — so a struct with an unexported
+field is minted **inside** a synthesized container class `<pkg>_package` in namespace
+`go.<parent-path>`: `go.encoding.gob_package` for `encoding/gob`. The obvious spelling
+`go.encoding.gob.gob_package` is measurably wrong and yields `"encoding/gob/gob"`. The container is
+minted only when a field actually carries a `PkgPath`, so the common all-exported case pays nothing.
+
+**Narrowings this hand-own ships with, recorded so they are met knowingly:**
+
+1. **Interning is `StructOf`-local.** A converter-lifted anonymous struct of the same shape is a
+   different CLR type, so `StructOf(f) == TypeOf(struct{F int}{})` is `false` here and `true` in Go —
+   the same class as the cross-context anonymous-lift identity split. `haveIdenticalUnderlyingType`
+   still answers `true` for the pair, so `AssignableTo`, `ConvertibleTo`, `Convert` and assignment
+   all behave; only `==` on the `Type` splits. The one shape exempt is `struct{}`, whose managed form
+   golib already declares (`EmptyStruct` *is* Go's empty struct), so the degenerate call reaches the
+   type a declaration produces.
+2. **A directional-channel field keeps its identity but not its description.** The direction is in
+   the shape key, so `struct{C chan<- T}` and `struct{C chan T}` are distinct types; the minted field
+   is a plain `channel<T>`, so `Field(i).Type.ChanDir()` answers bidirectional. Carrying it is one
+   more seeded field in a constructor that already exists.
+3. **Embedded fields with methods panic**, matching Go's own documented gap (*"StructOf currently
+   does not support promoted methods of embedded fields"*) — and using Go's exact message wherever
+   Go's own condition matches.
+4. **The type's own `PkgPath()` and its `StructField.PkgPath` are answered by different rules.**
+   `structFieldOf` uses `f.Exported ? "" : GoPackagePath(st)` and is exactly right; `rtype.PkgPath()`
+   reads the same call with no `HasGoName` gate, so a synthesized struct that needed a container
+   reports a package path for the TYPE where Go answers `""` for an unnamed type. That is
+   pre-existing and corpus-wide (every converter-lifted anonymous struct behaves the same way), so it
+   is pinned rather than changed here.
+
+Guarded by the **`ReflectStructOf`** behavioral test — the only gate that checks the answer against
+Go rather than against our own expectation — and by `GolibTests`' `GoStructSynthesisTests`, which
+pins the three mechanisms that fail *silently*: the constructor, the shape key, and the `ʗ` prefix.
+The last of those is asserted on `.Anonymous` and never on `Type.String()` on purpose: an embedded
+field and a same-named regular field render **identically**, so a `String()`-based check could not go
+red on the defect it exists to catch. The registry entry is
+`manualConversionFuncs["reflect"]["StructOf"]`.
+
+### `reflect.SliceOf` is the same one-liner as `PointerTo`
+
+`SliceOf(elem)` dies in the same `typesByString` → `typelinks()` lookup and needs nothing but the
+generic instantiation `typeof(slice<>).MakeGenericType(elem)` — the `PointerTo` shape exactly. The
+only decision it carries is what dims to hand the descriptor, and the answer is **none**: a declared
+`[]T` descriptor carries `null`, because `abi.TypeOf` measures dims for an ARRAY value and a POINTER's
+pointee only. Passing the element's dims through would break the identity that makes the constructed
+and the declared type one `reflect.Type`, and would not help either — `rtype.Elem`'s non-pointer,
+non-map arm consumes the head of the dims vector, so a one-element vector hands down nothing. So
+`SliceOf(ArrayOf(3, byte))` describes `[][3]byte` with the element's length unknown, which is exactly
+what `TypeOf([][3]byte{})` reads back today. That residual belongs to the cargo model — a slice type
+has no dims slot — not to this constructor.
+
+⚠ Two PRE-EXISTING residuals meet here and neither belongs to this constructor, so the guard
+asserts identity and deliberately does not print the name. go2cs renders a dims-less `array<T>` as
+`[]T` by design (`GoReflect.TypeNaming`: *"length is not carried on the managed type"*), so
+`fmt.Println(reflect.TypeOf([][3]uint8{}))` already prints `[][]uint8` at master, and
+`reflect.TypeOf([][3]uint8{}).Elem() == reflect.TypeOf([3]uint8{})` is already `false` — both with no
+reflection constructor in sight. One root: a slice type has no dims slot, so nothing survives the
+`Elem()` hop. Widening the cargo there is an arc of its own.
+
 ## Comments
 
 Comment conversion is opt-in (`-comments`, default **off**) and two consumers require it: the
