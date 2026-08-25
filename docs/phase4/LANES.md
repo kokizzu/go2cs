@@ -31,7 +31,8 @@
 
 ## Laptop provisioning (once per machine)
 
-Go **1.23.1 exactly** · .NET 9 SDK · `git clone https://github.com/ritchiecarroll/go2cs` · one
+Go **1.23.1 exactly** · a .NET SDK matching the corpus TFM in `src/Directory.Build.props` (currently
+**10**; an older SDK cannot build it — NETSDK1045) · `git clone https://github.com/ritchiecarroll/go2cs` · one
 interactive `git push` for the credential-manager browser auth · Claude Code. VS 2022 "Desktop
 development with C++" only if the lane runs Native-AOT work (none of the current lanes do).
 Optional 10-minute baseline: `./src/tests/Behavioral/run-behavioral.ps1 --filter Atomic` and one
