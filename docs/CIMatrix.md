@@ -164,13 +164,20 @@ a failure is recognized rather than re-diagnosed:
   more, or reach further before stopping. Expect a wall; the shape of it is the finding.
 - **Whether the two architectures wall identically.** `osx-arm64` and `osx-x64` compile the same
   sources, so a divergence between them is a finding about the corpus, not about macOS.
-- **Whether anything past the census can run at all.** `behavioral-smoke` and `sweep-shard` on
-  darwin both need a corpus flavor that compiles. Until the census is green, expect them to stop at
-  the same wall — dispatch them to confirm the wall moved, not to expect a pass.
-- **What an explicit `darwin` binding does.** The harness pins `GoTargetOS` for Linux only; on macOS
-  an unset property means the **windows** flavor, which faults on `kernel32.dll` the moment a
-  converted program touches it. This workflow sets `GoTargetOS` explicitly per leg, so a macOS run
-  is a darwin run — new behavior, and the first honest measurement of it.
+- ~~**Whether anything past the census can run at all.**~~ **SETTLED 2026-08-25 — it cannot, yet.**
+  The first darwin `behavioral-smoke` compiled and golden-matched 20/20, then failed all twenty at
+  Output with `exit code mismatch: C# 2 vs Go 0`. Darwin's syscall entry points are libc **assembly**
+  trampolines in Go, emitted as bodyless partials and filled with throwing stubs, so a converted
+  program dies on its first write. Evidence and remedy shapes:
+  [`phase4/FINDING-darwin-run-layer.md`](phase4/FINDING-darwin-run-layer.md). Until that run layer
+  exists a darwin `behavioral-smoke` or `sweep-shard` reports this uniformly — a known state, not a
+  new finding, and not worth a runner hour to re-observe.
+- ~~**What an explicit `darwin` binding does.**~~ **SETTLED 2026-08-25 — it works.** `GoTargetOS` in
+  this workflow's `env:` block does reach MSBuild, and a macOS leg builds and runs the darwin flavor.
+  Proved by the contrapositive: the identical env-only mechanism on Linux passed 20/20, and `fmt`'s
+  closure carries thirteen L3 packages including `os`, `runtime` and `syscall`, so a windows flavor
+  would have faulted on `kernel32.dll` just as uniformly. Do not re-diagnose a darwin failure as a
+  flavor-binding failure.
 - **Which platform the behavioral transpile targets.** The converter defaults `-platforms` to the
   *host*, so a mac leg re-transpiles the behavioral corpus for `darwin/arm64` (or `darwin/amd64`)
   and compares the result against goldens captured on Windows. Linux has already proven those

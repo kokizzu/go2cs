@@ -941,8 +941,30 @@ namespace BehavioralRunner
                 // deterministic report and is empty for clean runs.
                 if (cs.ExitCode != go.ExitCode)
                 {
+                    // Name the CAUSE, not just the symptom. An exit-code mismatch is overwhelmingly a
+                    // crash on the C# side, and golib's unrecovered-panic handler has already written
+                    // the reason to stderr before exiting 2 (builtin.cs) -- the panic value for a Go
+                    // panic, the full exception chain for a managed fault. Reporting the bare code
+                    // discarded that text while holding it in hand, which is how the first darwin
+                    // behavioral-smoke run (2026-08-25) reported twenty identical
+                    // "exit code mismatch: C# 2 vs Go 0" lines and named none of the twenty causes --
+                    // a whole CI leg whose log could not distinguish a corpus-flavor error from a
+                    // missing syscall from a startup fault. The mismatch branch is exactly where the
+                    // evidence matters MOST and was the one branch not printing it: the two branches
+                    // below already quote their diff. Both sides are quoted because either can be the
+                    // crashing one (a C#-side success against a Go-side failure is a real shape, e.g.
+                    // an oracle that cannot run on this host), and an empty stderr is itself a finding
+                    // -- it says the process died without reporting, which points at the host rather
+                    // than at converted code. First line only, for the same reason the stderr
+                    // comparison below uses it: the rest is a machine-specific traceback.
+                    string csErr = FirstLine(cs.StdErr), goErr = FirstLine(go.StdErr);
+
+                    string detail = csErr.Length == 0 && goErr.Length == 0
+                        ? " (neither side wrote to stderr)"
+                        : $" -- C# stderr: \"{Truncate(csErr)}\"; Go stderr: \"{Truncate(goErr)}\"";
+
                     results[p].Phases[Phase.Output] = Status.Fail;
-                    results[p].Messages.Add($"exit code mismatch: C# {cs.ExitCode} vs Go {go.ExitCode}");
+                    results[p].Messages.Add($"exit code mismatch: C# {cs.ExitCode} vs Go {go.ExitCode}{detail}");
                     failed++;
                 }
                 else if (!string.Equals(cs.StdOut, go.StdOut, StringComparison.Ordinal))
