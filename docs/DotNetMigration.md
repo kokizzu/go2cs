@@ -3,8 +3,17 @@
 > The standing runbook for moving the repository — the runtime library, the converted standard
 > library, the generated projects and the Phase-4 test host — from one .NET release to the next.
 > It is **version-agnostic by design**: it names instruments, gates and traps, never a particular
-> release. The .NET 10 move is its first instance, planned in
-> [`PLAN-hop-campaign.md`](PLAN-hop-campaign.md); the audience is every move after it.
+> release.
+>
+> **This runbook leads.** It is the living procedure for a .NET migration, amended in-stage as
+> lessons are learned; its first instance (the .NET 10 hop) was executed as written, every deviation
+> fixing this document in the stage that found it. **Instance plans** supply a given hop's fleet,
+> readings and sequencing ([`PLAN-hop-campaign.md`](PLAN-hop-campaign.md) was the first) and become
+> records when their hop completes; the **ruling frame**
+> ([`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md)) schedules .NET hops relative to Go hops and
+> holds the ruled decisions. **A runbook edit never reopens a ruling**; where this document and any
+> plan disagree about *procedure*, the plan is stale — fix this document if it is wrong, and mark the
+> plan superseded in the same change.
 >
 > Companion: [`GoCorpusMigration.md`](GoCorpusMigration.md), the same procedure for a new **Go**
 > release. The two are deliberately separate documents because they are deliberately separate hops.

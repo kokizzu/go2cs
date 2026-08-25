@@ -5,11 +5,17 @@
 > packages — from one Go release to the next. It is **version-agnostic by design**: it names
 > instruments, gates and traps, never a particular release.
 >
-> The **strategy** lives in [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — which releases, in
-> which order, under which ruled frame, with its H0–H12 step inventory and its ruled open questions.
-> **This document is the procedure**, generalized from that inventory so it can be run again without
-> re-reading a plan written for one rung of the ladder. Where the two disagree about *what* to do,
-> the plan governs; where they disagree about *how*, this document is the one being maintained.
+> **This runbook leads.** It is the living procedure for a corpus migration: the canonical
+> H0–H12 (+H4a) step inventory is the one maintained **here**, amended in-stage as lessons are
+> learned — the discipline its first execution already practiced, ratified as the era rule
+> (board, 2026-08-24: runbooks are *executed as written, deviations fixing the runbook in the stage
+> that finds them*). The **strategy** lives in
+> [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — which releases, in which order, under which
+> ruled frame — and every "(ruled)" below points at a ruling recorded there (§8) or in an instance
+> plan. **A runbook edit never reopens a ruling**: a change that would contradict one requires a new
+> ruling first, recorded where the old one lives. Where this document and any plan disagree about
+> *procedure*, the plan is stale — fix this document if it is wrong, and mark the plan superseded in
+> the same change.
 >
 > Companion: [`DotNetMigration.md`](DotNetMigration.md), the same for a new **.NET** release. The two
 > are separate documents because they are separate hops — **one variable at a time** is the rule that
@@ -93,9 +99,10 @@ built the exe. That one is H1 step 1's, and it is verified by running, never by 
 
 ## 2. The step ladder
 
-[`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) §2 defines the canonical H0–H12 inventory. This
-section is the procedure for each, generalized. **Steps marked GATE are pass/fail and block the next;
-steps marked ⟲ are re-measured at every migration and never carried forward.**
+**This section is the canonical H0–H12 (+H4a) inventory and its procedure.** It was generalized from
+[`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) §2, which now points here; the ⟨OQ-n⟩ rulings
+behind each "(ruled)" remain recorded in that plan's §8. **Steps marked GATE are pass/fail and block
+the next; steps marked ⟲ are re-measured at every migration and never carried forward.**
 
 **Three orderings are not negotiable**, and each has a mechanical reason rather than a preference:
 
@@ -855,11 +862,13 @@ healthy run look hung — and, in the other direction, what lets a hung one look
 
 ## Sources
 
-- [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — the ruling frame, the canonical H0–H12
-  inventory this document generalizes, the parity-gate definitions, the risk register, and the ruled
-  open questions (toolchain stamp, fresh baselines, module directive, build-number reset, roster
-  gate on absolute count, version monotonicity, removed-package disposition, audit home, audit
-  population, experiment-gated packages, test-host ownership)
+- [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) — the ruling frame, the release research for
+  the ladder's remaining rungs, the risk register, and **§8's nineteen ruled open questions**, which
+  every "(ruled)" above resolves against (toolchain stamp, fresh baselines, module directive,
+  build-number reset, roster gate on absolute count, version monotonicity, removed-package
+  disposition, audit home, audit population, experiment-gated packages, test-host ownership). Its
+  §2/§3/§4 are pointer shells into this document, which now maintains the inventory, the hand-own
+  audit and the parity gates
 - `CLAUDE.md` — the reconvert ritual and its marker-gate traps; the false-green route catalogue; the
   post-sweep dirt classification; the measured budget table; the concurrent-session and detachment
   rules; the banked-row merge protection

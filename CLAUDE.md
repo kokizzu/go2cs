@@ -5,6 +5,18 @@
 > trust this file and the source. See companion docs: [`docs/Architecture.md`](docs/Architecture.md),
 > [`docs/Roadmap.md`](docs/Roadmap.md).
 
+> **Document authority — one ladder.** This file is repo doctrine and gates. The two migration
+> **runbooks** — [`docs/GoCorpusMigration.md`](docs/GoCorpusMigration.md) and
+> [`docs/DotNetMigration.md`](docs/DotNetMigration.md) — are the **living procedure** for release
+> hops: they **lead**, amended in-stage from lessons learned, and no plan or record overrides them on
+> procedure. `docs/PLAN-*.md` hold ruled strategy and instance campaigns; their OQ rulings are
+> settled, and only a new ruling reopens one. `docs/phase4/` RECON-/REHEARSAL-/CENSUS-/DATA-/STAGE0-
+> files are point-in-time **records** — amended with dated blocks, never rewritten, never executed
+> from. The BOARD is the append-only findings ledger; the mailbox is transport, not record. A lesson
+> lands the day it is learned: procedure → the runbook; harness/gate doctrine → this file; findings
+> and measurements → the board. (Doc-type definitions: [`docs/Glossary.md`](docs/Glossary.md),
+> *Document types*.)
+
 ## What this is
 
 `go2cs` is a **transpiler that converts Go source code into C#** that is both *behaviorally* and
@@ -1070,7 +1082,9 @@ especially `$IsWindowsHost` (`$IsWindows` does not exist on PowerShell 5.1, so a
 reads backwards on the one platform 5.1 runs on).
 
 ### Known staleness (do not trust blindly)
-- `docs/README.md` is partly historical (ANTLR4-era prose) but now carries a banner and corrected references.
+- `docs/README.md` is a **maintained visitor surface** — its NEWS block is current and its references are
+  corrected. What is historical is its milestone table's ANTLR-era rows: read those as history, not as
+  instructions. (The older "carries a banner" note here was itself stale; there is no such banner.)
 - The retired `net6.0` C# converter scripts (`src/convert-gosrc.cmd` / `convert-gosrc.bat`) were **removed**
   2026-07-11; the current converter is the Go build with the flags listed above.
 
