@@ -49,7 +49,7 @@ public static void TestAll(ж<testing.T> Ꮡt) {
         if (info.Old != ""u8 && info.Changed == 0) {
             Ꮡt.Errorf("Name=%s has Old, missing Changed"u8, info.Name);
         }
-        if (!strings.Contains(doc, "`"u8 + info.Name + "`"u8)) {
+        if (!strings.Contains(doc, "`"u8 + info.Name + "`"u8) && !strings.Contains(doc, "`"u8 + info.Name + "="u8)) {
             Ꮡt.Errorf("Name=%s not documented in doc/godebug.md"u8, info.Name);
         }
         if (!info.Opaque && !incs[info.Name]) {

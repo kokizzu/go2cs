@@ -323,6 +323,7 @@ internal static class Go2CsTestHost
         registry.Add("TestGetwd_DoesNotPanicWhenPathIsLong", syscall_test_package.TestGetwd_DoesNotPanicWhenPathIsLong, "syscall_windows_test.go", 183);
         registry.Add("TestOpen_Dir", syscall_test_package.TestOpen_Dir, "syscall_windows_test.go", 18);
         registry.Add("TestStdioAreInheritable", syscall_test_package.TestStdioAreInheritable, "syscall_windows_test.go", 111);
+        registry.Add("TestSyscallAllocations", syscall_test_package.TestSyscallAllocations, "syscall_windows_test.go", 216);
         registry.Add("TestTOKEN_ALL_ACCESS", syscall_test_package.TestTOKEN_ALL_ACCESS, "syscall_windows_test.go", 105);
         registry.Add("TestWTF16Golden", syscall_test_package.TestWTF16Golden, "wtf8_windows_test.go", 146);
         registry.Add("TestWTF16Rountrip", syscall_test_package.TestWTF16Rountrip, "wtf8_windows_test.go", 134);

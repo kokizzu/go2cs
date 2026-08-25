@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `runtime/debug` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-22 · converter `25a44f45f`*
+*Validated 2026-08-25 · converter `e2182a59e`*
 
-**4 matched · 5 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**4 matched · 5 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/runtime/debug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/debug).
 
 Both runtimes skip 1 of the matched tests identically.

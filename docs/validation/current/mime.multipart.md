@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `mime/multipart` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-13 · converter `e1509715b`*
+*Validated 2026-08-25 · converter `e2182a59e`*
 
-**52 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**52 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/mime/multipart`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/multipart).
 
 ## Verdicts
