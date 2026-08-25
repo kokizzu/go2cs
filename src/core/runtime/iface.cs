@@ -534,7 +534,7 @@ internal static ж<itab> typeAssert(ж<abi.TypeAssert> Ꮡs, ж<_type> Ꮡt) {
     // Update cache. Use compare-and-swap so if multiple threads
     // are fighting to update the cache, at least one of their
     // updates will stick.
-    atomic_casPointer(Ꮡs.of(abi.TypeAssert.ᏑCache).Reinterpret<ж<abi.TypeAssertCache>, @unsafe.Pointer>(), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
+    atomic_casPointer(Ꮡ(new @unsafe.Pointer((uintptr)Ꮡs.of(abi.TypeAssert.ᏑCache))), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
     return tab;
 }
 
@@ -630,7 +630,7 @@ internal static (nint, ж<itab>) interfaceSwitch(ж<abi.InterfaceSwitch> Ꮡs, �
     // Update cache. Use compare-and-swap so if multiple threads
     // are fighting to update the cache, at least one of their
     // updates will stick.
-    atomic_casPointer(Ꮡs.of(abi.InterfaceSwitch.ᏑCache).Reinterpret<ж<abi.InterfaceSwitchCache>, @unsafe.Pointer>(), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
+    atomic_casPointer(Ꮡ(new @unsafe.Pointer((uintptr)Ꮡs.of(abi.InterfaceSwitch.ᏑCache))), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
     return (case_, tab);
 }
 
