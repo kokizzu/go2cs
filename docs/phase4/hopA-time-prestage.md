@@ -1,5 +1,15 @@
 # hop-A pre-stage — the `time` row (the boarded hand-own collision), ANSWERED BY MEASUREMENT
 
+> **State: EXECUTED, holding ONE LIVE OBLIGATION.** The measurement is complete and its two good
+> findings are closed — the banked 159 verdicts are safe, and the fixed Stop/Reset semantics already
+> hold on the shipping modes. What remains open is the third: **the `asynctimerchan=2`
+> `AccessViolationException` is hop A's one named pre-H10 blocker**, carried where the campaign can
+> see it ([`../PLAN-hop-campaign.md`](../PLAN-hop-campaign.md) §4.1's pre-H10 obligation) rather than
+> only here. The two rules this measurement earned — *a disclosure cannot absorb a crash*, and how to
+> read a mass-empty alphabetical tail — are generalized into
+> [`../GoCorpusMigration.md`](../GoCorpusMigration.md) §4, and the technique itself into its H10.
+> Amended, never rewritten.
+
 R-2 of the runway dispatch (2026-08-24). The board carried `time` as a known hop risk: upstream
 1.23.12 fixes timer races in `runtime/time.go`, our `time` rides a hand-owned managed timer, no
 regen updates it, and the row's **159 banked verdicts carry no disclosure manifest** to absorb a

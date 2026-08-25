@@ -1,10 +1,18 @@
-# .NET 10 migration recon — DRAFT for coordinator review
+# .NET 10 migration recon
 
+> **State: EXECUTED — ratified by use (2026-08-24).** The hop it scouted has run its Stage 0, 1 and
+> 2 against this survey, and its findings were treated as ruling inputs throughout, which is the
+> ratification the original DRAFT banner was waiting for. Two of its rows have since **landed in the
+> runbook**: §3's `dotnet test` runner-selection row is now
+> [`../DotNetMigration.md`](../DotNetMigration.md) §2 step 4's *"no `test` key in `global.json`"*
+> warning, and §3's C# 14 span row produced its own census
+> ([`CENSUS-csharp14-span-exposure.md`](CENSUS-csharp14-span-exposure.md)) and, through it, the
+> runbook's Trap 6. Amended, never rewritten.
+>
 > Read-only reconnaissance for the .NET 9 → 10 hop, slotted against the phases of
 > `docs/DotNetMigration.md` (read first, per the runbook's own instruction). Web research
 > performed 2026-08-23; repository facts measured against `C:\Projects\go2cs` (master).
-> Nothing in the repo was modified. **DRAFT — coordinator review owed before any figure
-> here is treated as a ruling input.**
+> Nothing in the repo was modified.
 
 ---
 

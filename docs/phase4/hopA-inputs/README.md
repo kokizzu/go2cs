@@ -19,6 +19,16 @@ the recon's numbers are reproducible.
 | `src-files-classified.tsv` | 150 | `<class>\t<file>` for the `src/` subset; classes `cmd` / `runtime-tree` / `stdlib` |
 | `roster.txt` | 162 | the validated-package roster as read from `docs/ValidatedTestPackages.md` at this bank's commit |
 
+**And the rehearsal's own raws, banked 2026-08-24** — [`../REHEARSAL-go12312.md`](../REHEARSAL-go12312.md)
+promised these "beside this file" and they were in a session scratchpad, one purge from gone. They are
+copied here **verbatim**, not re-derived:
+
+| file | rows | what |
+|:--|--:|:--|
+| `census-raw.txt` | 152 | the full stdout of `migrate-gorelease.ps1 -To 1.23.12` in census mode — the run behind the rehearsal's §1 arithmetic (20 sites / 8 files, UNCLASSIFIED: none) |
+| `h3-files.tsv` | 160 | `<status>\t<file>` for the compare endpoint's file list — the rehearsal's independent H3 derivation, a strict subset of `files-unique.txt` by exactly one `cmd/` test file |
+| `h3-compare-head.json` | 1 | the compare endpoint's headline object, `{"commits":83,"files":160,"status":"ahead"}` — the truncation the recon predicted, preserved as the evidence for it |
+
 ## Derivation (reproducible from a clean machine)
 
 ```bash
@@ -50,6 +60,15 @@ runtime tree — both conventions differ by exactly that one file, `runtime/debu
 | roster rows | 162 | **162** |
 
 ## ⚠ The shard map — still unbanked, and its reserved-set gap is WIDER than the audit recorded
+
+> **CLOSED, both halves, 2026-08-24.** The draft and its generator banked into this directory
+> verbatim ([`shard-map-draft.md`](shard-map-draft.md), [`shardmap.py`](shardmap.py), `e0d8930e1`) —
+> as found, so the *next* commit's subject was visible rather than smuggled — and the recommendation
+> at the end of this section then **landed**: `shardmap.py` derives its reserved set from
+> `$longTimeouts` at generation time (`549b4e556`, lines 71–88), so the copied list is gone rather
+> than corrected. `PLAN-hop-campaign.md` §4.3's static table is marked SUPERSEDED BY GENERATOR, and
+> the derive-never-copy rule is generalized into `GoCorpusMigration.md` §3.2. The paragraph below is
+> kept as written, because it is the reasoning that produced the fix.
 
 The 28 KB shard-map draft and its generator (`shardmap.py`) remain on the coordinator machine's
 session scratchpad — not reachable from this lane, so not banked here; that half of the audit item
