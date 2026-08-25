@@ -14,7 +14,7 @@ of **[Roslyn](Glossary.md#roslyn) source generators** (`src/gen/go2cs-gen/`) tha
 directly (interface satisfaction, receiver overloads, struct-embedding promotion, named-type operators).
 
 > The C# snippets below are drawn from the actual converted standard library (`src/core/`,
-> Go 1.23.1) wherever possible, paired with their original Go source. A few use small illustrative
+> Go 1.23.12) wherever possible, paired with their original Go source. A few use small illustrative
 > programs where that reads more clearly. Glyphs you will see throughout: **`ж<T>`** a heap "box"
 > (pointer, read "zhe"), **`Ꮡ`** address-of, **`Δ`** a disambiguation rename (read "delta"),
 > **`@string`** the Go string type, **`default!`** = `nil` in value position, and a handful of

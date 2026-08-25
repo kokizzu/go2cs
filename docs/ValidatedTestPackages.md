@@ -1,7 +1,7 @@
 <!-- {% raw %} — Jekyll/Liquid guard: this doc contains {{ sequences (Go template/composite syntax) that Liquid would otherwise parse or silently eat. Keep the matching endraw as the final line. -->
 # Validated Test Packages
 
-Each package below has its own Go 1.23.1 `_test.go` suite converted to C#, built against the
+Each package below has its own Go 1.23.12 `_test.go` suite converted to C#, built against the
 converted standard library, run under the Go-semantics test host, and differentially compared —
 verdict for verdict — against a clean `go test -json` baseline. A row appears only when *every*
 `Test` function's result matches `go test`; a package that almost passes never appears, which is
@@ -74,14 +74,14 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 >
 > **18,569 matching test verdicts · 85 disclosed** *(updated 2026-08-22 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
-> standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
+> standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
 > **Linux: 7 of 162 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
 302 eligible verdicts on Linux where Windows offers 298, and `path/filepath` 54 where Windows offers
-61. The **Tests** and **Disclosed** columns are the Windows record for the Go 1.23.1 era; a row that
+61. The **Tests** and **Disclosed** columns are the Windows record for the Go 1.23.12 era; a row that
 has validated on another OS records that OS's own arithmetic as a `linux: N + D` annotation at the
 end of its *What it exercises* cell — the matching count, then the disclosed count when there is
 one. Counts are never averaged, blended, or footnoted away: the sweep validates a row against its

@@ -96,7 +96,7 @@ more). So "green the loop" means **green `fmt`'s closure**, bottom-up.
   | 18 | CS1003 | syntax error, X expected | open (syntax cluster) |
   | 18 | CS0051 | inconsistent accessibility (param type less accessible) | open |
   | — | CS0103 | missing package-level lookup tables (e.g. `ntz8tab`/`pop8tab` in math/bits) | open |
-- **Converter-improvement loop (proven end-to-end):** edit `src/go2cs/*.go` → `go build` (Go 1.23.1) →
+- **Converter-improvement loop (proven end-to-end):** edit `src/go2cs/*.go` → `go build` (Go 1.23.12) →
   re-transpile → `dotnet build`. (For behavioral tests the harness runs this loop itself — see
   [`/CLAUDE.md`](../CLAUDE.md) "Test-harness mechanics".)
 - **Retarget detail:** the stdlib converter writes to **`<go2cspath>/core/<pkg>`** (hardcoded `core` subdir).

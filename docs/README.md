@@ -94,16 +94,16 @@ public static bool IsAdult(this Person p) {
 ### Real standard-library conversions, side by side
 
 The goal — *reads like Go* — is easiest to judge on real code. Below are converted standard-library files
-next to their original **Go 1.23.1** source, in order of increasing richness:
+next to their original **Go 1.23.12** source, in order of increasing richness:
 
-| Package | Go 1.23.1 source | Converted C# | What it shows |
+| Package | Go 1.23.12 source | Converted C# | What it shows |
 |:--|:--|:--|:--|
-| `errors` | [errors.go](https://github.com/golang/go/blob/go1.23.1/src/errors/errors.go) | [errors.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/errors/errors.cs) | Error values and an unexported type satisfying the `error` interface. |
-| `cmp` | [cmp.go](https://github.com/golang/go/blob/go1.23.1/src/cmp/cmp.go) | [cmp.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/cmp/cmp.cs) | Generics with an ordered-type constraint. |
-| `unicode/utf8` | [utf8.go](https://github.com/golang/go/blob/go1.23.1/src/unicode/utf8/utf8.go) | [utf8.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8.cs) | Constants keeping Go's hex/binary literal formatting; arrays and structs. |
-| `sort` | [search.go](https://github.com/golang/go/blob/go1.23.1/src/sort/search.go) | [search.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/sort/search.cs) | Binary search driven by a `func(int) bool` closure. |
-| `strings` | [reader.go](https://github.com/golang/go/blob/go1.23.1/src/strings/reader.go) | [reader.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/strings/reader.cs) | A struct with receiver methods, tuple returns, and interface implementation. |
-| `container/list` | [list.go](https://github.com/golang/go/blob/go1.23.1/src/container/list/list.go) | [list.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/container/list/list.cs) | A doubly-linked list — pointers and receiver methods. |
+| `errors` | [errors.go](https://github.com/golang/go/blob/go1.23.12/src/errors/errors.go) | [errors.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/errors/errors.cs) | Error values and an unexported type satisfying the `error` interface. |
+| `cmp` | [cmp.go](https://github.com/golang/go/blob/go1.23.12/src/cmp/cmp.go) | [cmp.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/cmp/cmp.cs) | Generics with an ordered-type constraint. |
+| `unicode/utf8` | [utf8.go](https://github.com/golang/go/blob/go1.23.12/src/unicode/utf8/utf8.go) | [utf8.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8.cs) | Constants keeping Go's hex/binary literal formatting; arrays and structs. |
+| `sort` | [search.go](https://github.com/golang/go/blob/go1.23.12/src/sort/search.go) | [search.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/sort/search.cs) | Binary search driven by a `func(int) bool` closure. |
+| `strings` | [reader.go](https://github.com/golang/go/blob/go1.23.12/src/strings/reader.go) | [reader.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/strings/reader.cs) | A struct with receiver methods, tuple returns, and interface implementation. |
+| `container/list` | [list.go](https://github.com/golang/go/blob/go1.23.12/src/container/list/list.go) | [list.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/container/list/list.cs) | A doubly-linked list — pointers and receiver methods. |
 
 Browse the whole set under [`src/core`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core).
 
@@ -440,7 +440,7 @@ Contributors: see [`CLAUDE.md`](../CLAUDE.md) for an architecture overview and
 The converter builds idiomatic C# for the full range of Go language features, gated by 519 Go-vs-C#
 behavioral regression projects — each transpiled, compiled, byte-compared against a committed golden and,
 where it is a runnable program, executed with its stdout compared against the Go original's. The entire Go
-standard library (302 packages, Go 1.23.1) compiles cleanly as .NET assemblies.
+standard library (302 packages, Go 1.23.12) compiles cleanly as .NET assemblies.
 
 The converted standard library reproduces **Go built with `-tags purego`** — a managed runtime cannot
 execute Go's hand-written `.s` assembly, so the portable pure-Go variants of the asm-backed crypto and hash
@@ -460,7 +460,7 @@ Every validated package ships its **converted C# test sources** next to the prod
 [`src/core`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core) (for example,
 [`unicode/utf8/utf8_test.cs`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8_test.cs)),
 so you can read the exact C# that runs — and re-run the validation yourself. You need
-**[Go 1.23.1](https://go.dev/dl/)** (for the reference `go test` run), the
+**[Go 1.23.12](https://go.dev/dl/)** (for the reference `go test` run), the
 **[.NET 10 SDK](https://dotnet.microsoft.com/download)**, and `go2cs` on your `PATH` (see
 [installing the converter](#installing-the-converter)):
 
