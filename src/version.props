@@ -20,8 +20,8 @@
         for version equality, so successive builds could not be pushed.
   -->
   <PropertyGroup>
-    <GoStdLibVersion>1.23.1</GoStdLibVersion>
-    <GoBuildNumber>7</GoBuildNumber>
+    <GoStdLibVersion>1.23.12</GoStdLibVersion>
+    <GoBuildNumber>0</GoBuildNumber>
     <Version>$(GoStdLibVersion).$(GoBuildNumber)</Version>
   </PropertyGroup>
 
