@@ -152,7 +152,9 @@ maps to C# (with [`ConversionStrategies-Reference.md`](ConversionStrategies-Refe
 
 ## Requirements
 
-- **[.NET 9.0 SDK](https://dotnet.microsoft.com/download)** — to build and run the converted C#.
+- **[.NET 10.0 SDK](https://dotnet.microsoft.com/download)** — to build and run the converted C#. Converted
+  projects target `net10.0`, the framework named by
+  [`src/Directory.Build.props`](https://github.com/ritchiecarroll/go2cs/blob/master/src/Directory.Build.props).
 - **[Go 1.23+](https://go.dev/dl/)** — the converter is a Go program, and it uses the Go toolchain to load
   and type-check the source being converted. Make sure your Go environment is set up (`GOROOT`/`GOPATH`)
   and the source you want to convert already builds with `go build`.
@@ -338,7 +340,8 @@ cd csharp/src/example.com/colordemo
 dotnet build example.com.colordemo.slnx -c Debug
 ```
 
-**4 — C#: run the converted app.** Navigate into the default .NET 9.0 debug build folder, and run demo:
+**4 — C#: run the converted app.** Navigate into the default debug build folder — named for the target
+framework — and run demo:
 ```shell
 cd bin/Debug/net10.0
 dotnet colordemo.dll
@@ -458,7 +461,7 @@ Every validated package ships its **converted C# test sources** next to the prod
 [`unicode/utf8/utf8_test.cs`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8_test.cs)),
 so you can read the exact C# that runs — and re-run the validation yourself. You need
 **[Go 1.23.1](https://go.dev/dl/)** (for the reference `go test` run), the
-**[.NET 9 SDK](https://dotnet.microsoft.com/download)**, and `go2cs` on your `PATH` (see
+**[.NET 10 SDK](https://dotnet.microsoft.com/download)**, and `go2cs` on your `PATH` (see
 [installing the converter](#installing-the-converter)):
 
 ```sh

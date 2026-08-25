@@ -65,8 +65,9 @@ cd src/tests/Performance
 ./run-performance.ps1 --runs 10 --update-readme   # refresh the results block below
 ```
 
-Requirements: Go toolchain, .NET 9 SDK, and — for the AOT column — a native linker and toolchain,
-which differs by host:
+Requirements: Go toolchain, a .NET SDK matching the corpus target framework (`net10.0`, named by
+`src/Directory.Build.props`), and — for the AOT column — a native linker and toolchain, which differs
+by host:
 
 | Host | Native AOT prerequisite |
 |:--|:--|

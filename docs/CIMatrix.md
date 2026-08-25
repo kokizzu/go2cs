@@ -64,10 +64,11 @@ timestamp, so an incremental build validates the other target's assemblies.
 
 It then reports the census the way the repository measures one — **packages-compiling first**:
 projects under `src/core`, assemblies actually produced (each project's own
-`bin/Debug/net9.0/<AssemblyName>.dll`), diagnostics bucketed by code (raw and distinct), the same
-buckets by project, and the first distinct errors inline. Everything lands in the job summary and
-in the artifact. Raw error count is deliberately *not* the headline: fixing a file-inclusion defect
-raises it by surfacing what was hiding behind the failure.
+`bin/Debug/<TargetFramework>/<AssemblyName>.dll` — the probe **derives** that folder rather than
+spelling it, so a framework hop cannot make it report zero on a green build), diagnostics bucketed
+by code (raw and distinct), the same buckets by project, and the first distinct errors inline.
+Everything lands in the job summary and in the artifact. Raw error count is deliberately *not* the
+headline: fixing a file-inclusion defect raises it by surfacing what was hiding behind the failure.
 
 ### `behavioral-smoke` — prove the harness runs on the runner
 
