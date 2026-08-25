@@ -54,41 +54,17 @@ public class ReinterpretFabricationTests
         internal string? name;
     }
 
-    [TestMethod]
-    public void ReferenceClassDestinationYieldsNilInsteadOfFabricatedReference()
-    {
-        ж<SingleRefStruct> box = new(new SingleRefStruct { core = new object() });
-
-        // TDst is a CLASS (ж<uintptr> stands in for unsafe.Pointer, which golib cannot name);
-        // the alias gate refuses (destination not a value type), and before this guard the
-        // fallback deref-copied the struct's reference bits INTO a ж<uintptr> reference slot.
-        ж<ж<uintptr>> derived = box.Reinterpret<SingleRefStruct, ж<uintptr>>();
-
-        // A REAL box holding the destination's zero value — because the emitted pattern derefs the
-        // result on the spot (`~box.Reinterpret<…>()`), and a nil BOX would turn the refusal into
-        // a nil-deref panic inside the very expression being cured (measured on syncTimer).
-        Assert.IsFalse(derived.IsNilPointer, "the refusal must survive the immediate deref the emission performs");
-
-        // Deref through the OPERATOR the emission actually uses (`~box.Reinterpret<…>()`), which
-        // reads ValueSlot; the Value property's value-peeking arm re-asks the nil question and
-        // panics on a null-holding reference pointee by design — the operator is the contract here.
-        Assert.IsNull(~derived,
-            "the dereffed value is the destination's ZERO — never a reference punned from storage bytes");
-    }
-
-    [TestMethod]
-    public void ReferenceCarryingStructDestinationYieldsNil()
-    {
-        ж<ulong> box = new(0xDEADBEEFDEADBEEFUL);
-
-        // Value-typed destination, but it CONTAINS a reference; punning it from a ulong's bits
-        // would fabricate a string reference at 0xDEADBEEFDEADBEEF.
-        ж<RefCarryingStruct> derived = box.Reinterpret<ulong, RefCarryingStruct>();
-
-        Assert.IsFalse(derived.IsNilPointer, "the refusal must survive the immediate deref the emission performs");
-        Assert.IsNull((~derived).name,
-            "the dereffed struct is the ZERO value — never references punned from numeric bits");
-    }
+    // There is deliberately NO golib-level refusal for a reference-typed destination, and the
+    // history is worth one paragraph: a refusal (return a default-holding box) was added when the
+    // asynctimerchan AV was rooted to syncTimer's channel->unsafe.Pointer pun -- and the full
+    // behavioral suite then failed PointerCastSliceRange, because the ж<T> -> ж<U> DOUBLE-POINTER
+    // pun (reflect MapOf's `**(**mapType)(unsafe.Pointer(&imap))`) reads one ж instantiation's
+    // reference slot as another, which works precisely because the generic layouts coincide -- a
+    // LOAD-BEARING pun the refusal broke. The AV is instead killed at its source: the CONVERTER
+    // emits the carrying form for unsafe.Pointer targets (see reinterpretManagedEmission), so no
+    // emission reaches this fallback with the one destination that measured fatal. The fallback
+    // keeps its pre-existing behavior for everything else -- never something newly wrong, in
+    // either direction.
 
     [TestMethod]
     public void ValueToValueReinterpretStillAliases()
