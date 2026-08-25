@@ -97,6 +97,12 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
+> **Against the implementable set (215 − 7 excluded = 208): 171 / 208 — 82.2%.** Both numbers are
+> always reported. The line above measures against every package that defines a `Test` function;
+> this one against the packages a faithful managed conversion can honestly validate at all. The
+> seven, each with its class, mechanism and evidence, are in
+> [Excluded packages](#excluded-packages) below.
+>
 > **Linux: 7 of 171 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
@@ -307,6 +313,61 @@ summed from the columns.
 | [`unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode) | 28 | | Category tables, case mapping (`SpecialCase`), script ranges. · [proof](validation/current/unicode.md) |
 | [`unicode/utf16`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf16) | 8 | 1 | Encode/decode round-trips via `reflect.DeepEqual`. · [proof](validation/current/unicode.utf16.md) |
 | [`unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf8) | 14 | | UTF-8 encode/decode — the first suite to pass (2026-07-17). · [proof](validation/current/unicode.utf8.md) |
+
+## Excluded packages
+
+The naive denominator above — 215 — counts every converted package whose Go 1.23.12 sources define
+a `Test` function. Seven of those cannot be validated *at all*, and not because the work is
+unfinished: each is blocked by a property of the target that no amount of converter effort changes.
+The campaign's real goal is 100% of what remains, so both denominators are always reported and
+nothing disappears quietly — every exclusion is carried here with its class, its mechanism and the
+measurement that put it there, exactly as every disclosure is pinned by exact failure signature.
+
+**The admission bar is the disclosure bar's sibling, and it is strict**: a package is excluded only
+when validation is **provably meaningless or impossible — never merely hard**, unimplemented, or
+expensive. Each exclusion is ruled individually, on measurement. Three classes are in evidence:
+
+- **E1 — no eligible tests on the target platform.** Go's own build constraints leave the eligible
+  test set empty on windows/amd64. There is nothing to validate; the comparison is vacuous by Go's
+  own definition.
+- **E2 — broken oracle.** Go's own suite fails on the reference side, so no clean differential
+  baseline exists to compare the conversion against.
+- **E3 — the test's subject *is* the replaced representation.** The suite measures the raw memory
+  model a safe managed runtime deliberately does not have, so any pass would be fabrication rather
+  than implementation.
+
+The **rejoin clause** is binding and works exactly like the disclosure classes' anti-laundering
+rule: an exclusion whose mechanism is later implemented — or whose oracle is fixed upstream, or
+whose platform gains the tests — **rejoins the denominator the day the evidence changes**, exactly
+as the `chan-direction` disclosure class retired itself the other way. An exclusion is a
+measurement with a date on it, never a permanent write-off.
+
+*Verdicts* below is the naive count the suite would contribute if it could be compared: `0` where
+the platform yields no eligible test, `—` where no baseline exists to count against. *Rooting*
+links the owner ruling that admitted the class; the per-package measurements behind each row are
+recorded on that same board.
+
+| Package | Verdicts | Class | Mechanism | Rooting |
+|:--|:--:|:--:|:--|:--:|
+| `internal/runtime/syscall` | 0 | E1 | Linux/Unix-only: the converter itself refuses with *build constraints exclude all Go files* on windows/amd64 — there is not even a package to convert. | [ruling][exclusion-ruling] |
+| `internal/syscall/unix` | 0 | E1 | A Unix-only package; no `Test` declaration survives the windows/amd64 build constraints, and the pipeline reports `not-applicable` with zero errors. | [ruling][exclusion-ruling] |
+| `net/internal/socktest` | 0 | E1 | A socket-testing helper library other packages' suites import, not a package with a suite of its own — it declares no test entry points to compare. | [ruling][exclusion-ruling] |
+| `log/syslog` | 0 | E1 | There is no syslog on Windows; Go's own constraints exclude the entire suite on this target. | [ruling][exclusion-ruling] |
+| `runtime/race` | 0 | E1 | Race-detector runtime support is only testable under the `-race` instrumented build; outside it Go declares no eligible tests, and the converted corpus has no such build at all. | [ruling][exclusion-ruling] |
+| `os/user` | — | E2 | Go's own `go test` fails `TestGroupIds` on the validation host — the reference side never produces a clean baseline, so the harness correctly declines to compare and every converted verdict reads `skip`. The conversion never gets a trial either way. Rejoins the moment the oracle passes. | [ruling][exclusion-ruling] |
+| `internal/unsafeheader` | 6 | E3 | The suite's entire subject is the raw `{Data, Len, Cap}` slice/string header: it fabricates a live slice or string by writing those fields and reinterpreting the struct, and Go's memory model lets the result alias the original storage. A managed slice is not that triple and cannot be aliased into existence — all 6 verdicts fail identically, structurally rather than by defect. | [ruling][exclusion-ruling] |
+
+Candidates that are *not* yet ruled are deliberately absent — `internal/concurrent`,
+`internal/weak` and `crypto/internal/boring/bcache` each await an individual ruling on their own
+measurement, and until one lands they stay inside the naive denominator rather than being counted
+out of it in advance.
+
+[exclusion-ruling]: phase4/BOARD-next-validation-candidates.md#ruling-owner-2026-08-25--the-campaigns-terminal-denominator-is-the-implementable-test-set-with-the-excluded-packages-fully-disclosed-each-with-its-why
+
+<!-- The ledger table above deliberately does NOT link its package names as [`pkg`](url): that shape
+     is what src/_roster.ps1 parses a ROSTER row by, and an excluded package is not a roster row.
+     Keep the first cell a plain code span so the two tables can never be confused by the parser
+     (check-roster-format.ps1 also asserts a four-column shape on anything that does parse as one). -->
 
 [^codegen-liveness]: A by-value struct argument wider than a machine word is passed by hidden
     reference, so the caller's temp is address-exposed and therefore untracked by liveness analysis.
