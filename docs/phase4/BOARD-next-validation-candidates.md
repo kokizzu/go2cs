@@ -19256,4 +19256,38 @@ and a machine-level `GOROOT` names that same 1.23.1 tree, while the corpus and `
 **1.23.12** (at `%USERPROFILE%\sdk\go1.23.12`) — the exact both-pins-needed shape
 `GoCorpusMigration.md` §1 records. Both pins must be set in the SAME invocation as every gate.
 
+## RULING (owner, 2026-08-25) — the campaign's terminal denominator is the IMPLEMENTABLE test set, with the excluded packages fully disclosed, each with its why
+
+The 100% march's target is ruled: **100% of the packages whose test suites a faithful managed
+conversion can honestly validate**, with every exclusion carried as a first-class, visitor-visible
+ledger — package, verdict count, exclusion class, one-line mechanism, link to the board rooting.
+Nothing disappears silently: BOTH numbers are always reported (the naive testable count and the
+honest denominator), exactly as the H10 gate already requires absolute-and-percentage together.
+
+**The admission bar for exclusion is the disclosure bar's sibling, and it is strict**: a package
+is excluded only when validation is PROVABLY meaningless or impossible — never because it is
+hard, unimplemented, or expensive. Three classes are in evidence so far; each future exclusion
+is ruled individually, on measurement, like every disclosure:
+
+- **E1 — no eligible tests on the target platform.** Go's own build constraints yield an empty
+  eligible set on windows/amd64: `internal/runtime/syscall`, `internal/syscall/unix`,
+  `net/internal/socktest`, `log/syslog`, `runtime/race` (five, measured in the frontier
+  derivation). There is nothing to validate; the comparison is vacuous by Go's own definition.
+- **E2 — broken oracle.** Go's own suite fails on the reference side (`os/user`:
+  `TestGroupIds` fails in `go test` itself), so no clean differential baseline exists.
+- **E3 — the test's subject IS the replaced representation.** The suite measures the raw memory
+  model a safe managed runtime deliberately does not have, so any pass would be fabrication:
+  `internal/unsafeheader` (fabricating live slices/strings by raw header aliasing) is the clean
+  case, rooted in JOB-019 tier-2. Candidates to be RULED when reached, not assumed:
+  `internal/concurrent` (whitebox consumer of the exact implementation the hand-own replaced,
+  ruled structurally unbankable 2026-08-19) and possibly `internal/weak` (same tension, 1 of 3).
+
+**Mechanics** (lands as one docs change when JOB-019 tier-2 completes, so the first ledger is
+complete rather than dribbled): `docs/ValidatedTestPackages.md` gains an "Excluded packages"
+section in the ledger shape above; the progress header reports `banked / honest-denominator`
+beside the naive count. No harness change — excluded packages simply are not rows, and the sweep
+already reads only rows. The anti-laundering clause carries over verbatim: an exclusion whose
+mechanism is later implemented (or whose oracle is fixed upstream) REJOINS the denominator the
+day the evidence changes, exactly as `chan-direction` retired the other way.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
