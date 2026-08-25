@@ -18947,4 +18947,46 @@ corpus, zero goldens — so CNR is not owed, and the gate each commit DID carry 
 over its touched files. One tier of hygiene is deliberately deferred past the hop's start:
 `DotNetMigration.md`'s Stage-0 incident narratives, whose home is `STAGE0-provisioning.md`.
 
+## 2026-08-25 · MEASURED at the new pins — `math/big` does NOT bank, and the `TestMulUnbalanced` ratio moved the WRONG way: 51x -> 59x across the hop (lane R, `claude/laneR-nethttp-mathbig`)
+
+The coordinator's addendum commissioned a re-measurement of `math/big` at net10.0 + Go 1.23.12 with an
+explicit either-way question: if .NET 10 brought the converted `nat.mul` inside Go's 10x bound the row
+banks at one disclosure; if not, the row stays with the zh-box/B' arc and the fresh reading is that
+arc's exhibit. **It is not inside the bound, and it is further out than it was.**
+
+| measurement | allocSize | ratio (Go's assert) | pins |
+|:--|--:|--:|:--|
+| board, r58b / r59 | 20,499,128 B | **51** | Go 1.23.1 · .NET 9 |
+| this lane, run 1 | 23,767,976 B | **59** | Go 1.23.12 · .NET 10 |
+| this lane, run 2 | 23,750,664 B | **59** | Go 1.23.12 · .NET 10 |
+| Go itself, same assert | — | passes (bound is 10) | Go 1.23.12 |
+
+`inputSize` is fixed by the test at (50000+40) x 8 = **400,320 B**, and the assert is
+`ratio := allocSize / inputSize; ratio > 10` — so the second `%d` in the failure text IS the computed
+ratio, not the bound. Read it that way; it is easy to misread as "59 times" being a budget. The two
+runs sit **0.07% apart** — the same noise scale as the board's own 20,499,128 against r58b's
+20,487,208 — so 59 is a stable reading, not a sample. **Across the two hops the converted path
+allocates +3,268,848 B more than it did: +15.9%.**
+
+Verdicts otherwise unmoved: **224 of 226**, the same two rows as at 1.23.1 (`TestMulUnbalanced`,
+`TestNewIntAllocs`). Unlike `net/http/internal`, whose count moved 9+1 -> 14+1 on the release's
+bare-LF hardening, math/big's suite did not grow at 1.23.12 — 226 on both sides. `TestNewIntAllocs`
+re-measures at exactly **1 obj/run on all seven `NewInt` shapes** (want 0), verbatim the prior
+reading — class 3b, the escape-analysis elision.
+
+**Consequences.**
+
+1. `math/big` stays OFF the near-term reserves, where the 2026-08-21 ruling placed it. Nothing about
+   the hop rehabilitates it, and the row's price went UP rather than down.
+2. The +15.9% is **not attributed here, deliberately**. This was a measurement lane; attributing it
+   would need the decomposition probe the arc owns, and a fix inside a measurement lane un-controls
+   the measurement. It is filed as a question the zh-box/B' arc should carry: whichever of net10.0 or
+   go1.23.12 moved it, the arc's target just got ~16% bigger, and an arc sized against 51x is sized
+   against a stale number.
+3. The row is **not disclosable** — the 2026-08-21 ruling stands, and this measurement reinforces it
+   rather than reopening it. A disclosure names what is provably unsatisfiable; a quantitative excess
+   an arc can reduce is not that. (Contrast the same day's `net/http/internal` call, where the excess
+   is one object and structurally inherent, and the disclosure IS correct — the two rows together are
+   a usable worked example of where the line sits.)
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
