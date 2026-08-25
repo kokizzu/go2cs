@@ -54,6 +54,13 @@ separately by the Startup row.
 - **Published tables come from a single designated host per era** — the Environment line names the
   part — so the History section's cross-toolchain comparisons (e.g., .NET 9 → 10) are always
   same-machine. Ratios from different hardware are not comparable and are never mixed.
+- **The AOT column's numbers are runtime numbers; producing them is expensive, and we say so.**
+  Each Native AOT publish compiles the entire converted-stdlib closure whole-program — hours per
+  publish, largely single-threaded, at a **15–18 GB** build-time working-set peak (re-measured per
+  hop) — which is also exactly what buys the column's lean images and runtime memory wins. The
+  full disclosure, the reasoning, and the compile-farm mitigation live in the suite README's
+  ["What the AOT column costs to produce"](https://github.com/ritchiecarroll/go2cs/blob/master/src/tests/Performance/README.md#what-the-aot-column-costs-to-produce--the-honesty-footnote)
+  section.
 
 ## Running it
 
