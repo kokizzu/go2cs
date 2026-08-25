@@ -1756,6 +1756,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckUnsafePointerReinterpret() => CheckTarget("UnsafePointerReinterpret");
 
     [TestMethod]
+    public void CheckUnsafePointerWordRead() => CheckTarget("UnsafePointerWordRead");
+
+    [TestMethod]
     public void CheckUnsafeSliceDataAliasing() => CheckTarget("UnsafeSliceDataAliasing");
 
     [TestMethod]

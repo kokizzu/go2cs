@@ -1682,6 +1682,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckUnsafePointerPrint() => CheckTarget("UnsafePointerPrint");
 
     [TestMethod]
+    public void CheckUnsafePointerWordRead() => CheckTarget("UnsafePointerWordRead");
+
+    [TestMethod]
     public void CheckUnsafeSliceDataAliasing() => CheckTarget("UnsafeSliceDataAliasing");
 
     [TestMethod]
