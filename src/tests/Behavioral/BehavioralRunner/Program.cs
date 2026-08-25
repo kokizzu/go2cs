@@ -1507,9 +1507,16 @@ namespace BehavioralRunner
         /// sitting one `---&gt;` line below it.
         ///
         /// `--->` is the framework's own nesting marker in ToString() output, so keying on it needs no
-        /// exception types here and works for any depth. Capped at three levels: deeper chains are
-        /// real but the first two causes have always been the diagnosis, and this lands on ONE report
-        /// line per project.
+        /// exception types here and works for any depth.
+        ///
+        /// Reported as the outermost line plus the INNERMOST cause, not the whole chain. Taking the
+        /// first few levels instead was tried and is wrong: managed startup failures nest wrappers of
+        /// the SAME type, so the darwin smoke's real chain reads `'&lt;Module&gt;'` → `'&lt;Module&gt;'`
+        /// → `'go.os_package'` → the actual fault, and quoting from the top spent the whole line
+        /// budget on three TypeInitializationExceptions and truncated the one exception that names
+        /// what broke. The outermost line says where the program died and the innermost says why;
+        /// everything between is plumbing. The intervening depth is reported as a count so a deep
+        /// chain is still visible as deep.
         /// </remarks>
         private static string StdErrSummary(string text)
         {
@@ -1526,20 +1533,18 @@ namespace BehavioralRunner
             {
                 string trimmed = line.TrimStart();
 
-                if (!trimmed.StartsWith("---> ", StringComparison.Ordinal))
+                if (trimmed.StartsWith("---> ", StringComparison.Ordinal))
                 {
-                    continue;
-                }
-
-                inner.Add(trimmed);
-
-                if (inner.Count == 3)
-                {
-                    break;
+                    inner.Add(trimmed);
                 }
             }
 
-            return inner.Count == 0 ? first : $"{first} {string.Join(" ", inner)}";
+            return inner.Count switch
+            {
+                0 => first,
+                1 => $"{first} {inner[^1]}",
+                _ => $"{first} [+{inner.Count - 1} nested] {inner[^1]}"
+            };
         }
 
         private static string Truncate(string s, int max = 300)

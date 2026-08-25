@@ -69,15 +69,21 @@ because an accessibility-modified `partial` is a C# 9 *extended* partial rather 
 
 ### 2.1 Confirmed on the runner
 
-Re-dispatched on this lane's branch with the harness reporting stderr (run
-[32863205314](https://github.com/ritchiecarroll/go2cs/actions/runs/32863205314)), all twenty projects
-on **both** mac architectures now report:
+Re-dispatched twice on this lane's branch with the harness reporting stderr — run
+[32863205314](https://github.com/ritchiecarroll/go2cs/actions/runs/32863205314) (all twenty projects)
+and [32864703627](https://github.com/ritchiecarroll/go2cs/actions/runs/32864703627)
+(`-f filter=DeferSimple`, to read the chain). The exception chain, identical on **both** mac
+architectures:
 
 ```
-exit code mismatch: C# 2 vs Go 0 -- C# stderr: "System.TypeInitializationException: The type
-initializer for '<Module>' threw an exception. ---> System.NotImplementedException: syscall:
-external (assembly or cgo) function is not implemented"; Go stderr: ""
+System.TypeInitializationException: The type initializer for '<Module>' threw an exception.
+ ---> System.TypeInitializationException: The type initializer for '<Module>' threw an exception.
+ ---> System.TypeInitializationException: The type initializer for 'go.os_package' threw an exception.
+ ---> System.NotImplementedException: syscall: external (assembly or cgo) function is not implemented
 ```
+
+`go.os_package`'s type initializer, naming the stubbed `syscall` — the §2 path, confirmed on the
+hardware rather than inferred from the corpus.
 
 Two things that predicted diagnosis did not, both worth carrying:
 
@@ -162,11 +168,17 @@ which is why twenty identical `exit code mismatch: C# 2 vs Go 0` lines named non
 and this diagnosis had to be reconstructed from the corpus instead of read from the log. The fix is
 platform-neutral and helps every leg of the matrix.
 
-It took **two** passes, and the second is the more useful lesson. Quoting the first stderr line —
+It took **three** passes, and the later two are the more useful lesson. Quoting the first stderr line —
 the reduction the stderr *comparison* uses, and the obvious one to reach for — bought nothing here:
 the first line was `System.TypeInitializationException: The type initializer for '<Module>' threw an
 exception.`, a wrapper that names no cause. That is the same evidence loss one layer in, and golib's
 crash handler had already learned it from the other side (it writes `ex.ToString()` precisely because
-a `TypeInitializationException`'s own message says only "see inner exception"). `StdErrSummary` now
-carries the first line **plus** the `--->` inner-exception chain, so a wrapped managed failure names
-its cause on the report line. A Go panic report still reduces to its first line, unchanged.
+a `TypeInitializationException`'s own message says only "see inner exception").
+
+Following the chain from the TOP was then wrong for a second reason the runner had to show: managed
+startup failures nest wrappers of the same type, so quoting the first few levels spent the whole line
+budget on three `TypeInitializationException`s and truncated the one exception that named what broke
+(`---> Syst ...`). `StdErrSummary` therefore reports the outermost line plus the **innermost** cause,
+with the intervening depth as a count — where the program died, and why. A Go panic report still
+reduces to its first line, unchanged, and an empty stderr stays empty so the "neither side wrote to
+stderr" branch still fires.
