@@ -188,6 +188,21 @@
     `runtime/mfinal`, `sync/{mutex,pool,poolqueue,rwmutex,waitgroup}`,
     `syscall/{dll_windows,exec_windows}`, `time/tick`.
 
+    **Re-levelled 2026-08-24 at the post-merge rebank head, and the answer is ZERO.** Two seeded
+    whole-stdlib reconverts — windows/amd64 and linux/amd64, marker gate **73 line-anchored
+    hand-owns / 0 clobbered** on each — re-emit 23 of the 24 tracked siblings between them (21 on
+    windows, 2 linux-only), and every one is CR-stripped identical to the committed file. Nothing
+    to bank. The instrument matters: a RAW byte compare calls 23 of 23 different, because a fresh
+    emission carries the in-literal LF that the working tree holds as CRLF, so equality is tested
+    CR-stripped. One sibling is target-shaped rather than stale — `runtime/runtime2.cs.auto`
+    differs under linux only, where `m` carries the POSIX `sigmask` field in its `GoValueClone`
+    list; the committed windows form is the right one for the default corpus.
+
+    The 24th, `math/unsafe.cs.auto`, is **DELETED here** — the orphan the r59 measurement flagged
+    and deferred to this leveling. Its principal shed its `GoManualConversion` marker at r41, so
+    no target emits a sibling for it any more and nothing reads it; it was a review file for a
+    review that no longer exists.
+
 19. **`bodyWrappedInDeferContext` no longer HAS to force the direct-`ж` receiver.** A method that
     defers at function level and references its receiver takes `this ж<T> Ꮡx` rather than
     `this ref T`, because a `ref T` receiver could not be referenced from inside the execution-context

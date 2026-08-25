@@ -34,6 +34,7 @@ using static global::go.go.build.constraint_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
+[assembly: global::go.GoPositionMap("go/build/constraint/expr_test.go", "expr_test.cs", "AClQgrKSgoIAGzSCspKCgoKCgpSClIKClJSC3OKCgIKAgoKkuIIAFySCspKCgpSCABQmgrKSgoKUggATJIKykoKClIKCgpSSgpSCggAUMIKykoKCABs2grKSgoKCpJSUgoKUggAXKoKykoKClIKCgqSUlIKClIKClIIADQyCABQqkoKCooKClAAMDoKCAAwakoKCpA==")]
 [assembly: global::go.GoPositionMap("go/build/constraint/vers_test.go", "vers_test.cs", "AB04goKCgpSCgoKklII=")]
 // </GoSourcePositionMaps>
 

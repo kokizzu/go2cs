@@ -935,13 +935,8 @@ public static void TestUnmarshalInvalidTimes(ж<Δtesting.T> Ꮡt) {
 internal static readonly @string jsonˢ = "JSON"u8;
 internal static readonly @string textˢ = "Text"u8;
 
-[GoType("dyn")] partial struct TestMarshalInvalidTimes_tests {
-    internal Δtime.Time time;
-    internal @string want;
-}
-
 public static void TestMarshalInvalidTimes(ж<Δtesting.T> Ꮡt) {
-    var tests = new TestMarshalInvalidTimes_tests[]{
+    var tests = new notEncodableTimesᴛ1[]{
         new(Date(10000, 1, 1, 0, 0, 0, 0, ΔUTC), "Time.MarshalJSON: year outside of range [0,9999]"u8),
         new(Date(-998, 1, 1, 0, 0, 0, 0, ΔUTC).Add(-ΔSecond), "Time.MarshalJSON: year outside of range [0,9999]"u8),
         new(Date(0, 1, 1, 0, 0, 0, 0, ΔUTC).Add(-ΔNanosecond), "Time.MarshalJSON: year outside of range [0,9999]"u8),
@@ -1261,12 +1256,7 @@ public static void TestDurationNanoseconds(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct usDurationTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal int64 want;
-}
-internal static slice<usDurationTestsᴛ1> usDurationTests = new usDurationTestsᴛ1[]{
+internal static slice<nsDurationTestsᴛ1> usDurationTests = new nsDurationTestsᴛ1[]{
     new(((Δtime.Duration)(-1000)), -1),
     new(((Δtime.Duration)1000), 1)
 }.slice();
@@ -1281,12 +1271,7 @@ public static void TestDurationMicroseconds(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct msDurationTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal int64 want;
-}
-internal static slice<msDurationTestsᴛ1> msDurationTests = new msDurationTestsᴛ1[]{
+internal static slice<nsDurationTestsᴛ1> msDurationTests = new nsDurationTestsᴛ1[]{
     new(((Δtime.Duration)(-1000000)), -1),
     new(((Δtime.Duration)1000000), 1)
 }.slice();
@@ -1320,12 +1305,7 @@ public static void TestDurationSeconds(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct minDurationTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal float64 want;
-}
-internal static slice<minDurationTestsᴛ1> minDurationTests = new minDurationTestsᴛ1[]{
+internal static slice<secDurationTestsᴛ1> minDurationTests = new secDurationTestsᴛ1[]{
     new(((Δtime.Duration)(-60000000000L)), -1D),
     new(((Δtime.Duration)(-1)), -1D / 60e9D),
     new(((Δtime.Duration)1), 1D / 60e9D),
@@ -1343,12 +1323,7 @@ public static void TestDurationMinutes(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct hourDurationTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal float64 want;
-}
-internal static slice<hourDurationTestsᴛ1> hourDurationTests = new hourDurationTestsᴛ1[]{
+internal static slice<secDurationTestsᴛ1> hourDurationTests = new secDurationTestsᴛ1[]{
     new(((Δtime.Duration)(-3600000000000L)), -1D),
     new(((Δtime.Duration)(-1)), -1D / 3600e9D),
     new(((Δtime.Duration)1), 1D / 3600e9D),
@@ -1397,13 +1372,7 @@ public static void TestDurationTruncate(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct durationRoundTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal Δtime.Duration m;
-    internal Δtime.Duration want;
-}
-internal static slice<durationRoundTestsᴛ1> durationRoundTests = new durationRoundTestsᴛ1[]{
+internal static slice<durationTruncateTestsᴛ1> durationRoundTests = new durationTruncateTestsᴛ1[]{
     new(0, ΔSecond, 0),
     new(ΔMinute, (Δtime.Duration)(-11000000000L), ΔMinute),
     new(ΔMinute, 0, ΔMinute),
