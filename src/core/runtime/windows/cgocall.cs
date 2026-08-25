@@ -407,7 +407,7 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
         ref var cb = ref heap<Action<@unsafe.Pointer>>(out var Ꮡcb);
         ref var cbFV = ref heap<funcval>(out var ᏑcbFV);
         cbFV = new funcval((uintptr)fn);
-        (Ꮡcb.Reinterpret<Action<@unsafe.Pointer>, @unsafe.Pointer>()).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑcbFV));
+        (Ꮡ(new @unsafe.Pointer((uintptr)Ꮡcb))).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑcbFV));
         cb(frame);
         if (raceenabled) {
             racereleasemerge(new @unsafe.Pointer(Ꮡracecgosync));

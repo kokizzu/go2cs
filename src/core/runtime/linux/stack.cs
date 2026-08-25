@@ -621,7 +621,7 @@ retry:
                     print((@string)"adjust ptr "u8, ((Δhex)(uint64)Δp), (@string)" "u8, funcname(f), (@string)"\n"u8);
                 }
                 if (useCAS){
-                    var ppu = pp.Reinterpret<uintptr, @unsafe.Pointer>();
+                    var ppu = Ꮡ(new @unsafe.Pointer(~pp));
                     if (!atomic.Casp1(ppu, (@unsafe.Pointer)Δp, (@unsafe.Pointer)(Δp + delta))) {
                         goto retry;
                     }

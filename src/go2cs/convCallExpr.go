@@ -3850,6 +3850,40 @@ func (v *Visitor) reinterpretManagedEmission(callExpr *ast.CallExpr, arg ast.Exp
 	identContext := DefaultIdentContext()
 	identContext.isPointer = true
 
+	// `unsafe.Pointer` as the TARGET pointee is the one destination the storage reinterpret can
+	// never serve: it is a CLASS, so golib's alias gate refuses it and the fallback deref-copied
+	// whatever bytes sat in the source's first reference-sized slot INTO a Pointer reference — a
+	// fabricated managed reference. time.syncTimer's `*(*unsafe.Pointer)(unsafe.Pointer(&c))` did
+	// that on EVERY NewTimer: junk dispatch on a quiet heap, an AccessViolationException inside
+	// Pointer.op_Implicit when the punned bits landed unmapped (measured twice, the 1.23.12 time
+	// suite at GODEBUG=asynctimerchan=2). Emit the CARRYING form instead — Go's semantics for the
+	// read is "the pointer word at that storage", and the managed model carries a word two ways:
+	//   - a uintptr source's word IS the number, so the derived Pointer holds the dereffed value —
+	//     exact Go fidelity (runtime/stack.go's `*(*unsafe.Pointer)(&pp)` shape);
+	//   - any other managed pointee's word is a REFERENCE, which no Pointer value can hold, so the
+	//     derived Pointer carries the source BOX's pin token (`(uintptr)Ꮡx` registers it with
+	//     ManagedPointerTokens) — non-nil, stable for the box's lifetime, and provenance-resolvable
+	//     back to the storage it names. One corner is knowingly inexact and harmless where the
+	//     stdlib uses the shape: a nil channel's word is 0 in Go, while the token of the box
+	//     HOLDING that nil channel is non-zero (syncTimer's consumer reads only the nil-bit and
+	//     recomputes it from the GODEBUG setting; no stdlib site passes a nil channel here).
+	// Both arms wrap in Ꮡ(…) so the expression stays a ж<unsafe.Pointer> for the deref/pointer
+	// contexts the four call sites serve. golib's Reinterpret keeps its own refusal for this shape
+	// as defense-in-depth for emissions that have not been reconverted yet.
+	if targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer); ok {
+		if basic, isBasic := types.Unalias(targetPtr.Elem()).(*types.Basic); isBasic && basic.Kind() == types.UnsafePointer {
+			boxExpr := v.convExpr(src, []ExprContext{identContext})
+
+			if srcPtr, isPtr := types.Unalias(v.info.TypeOf(src)).(*types.Pointer); isPtr {
+				if srcBasic, srcIsBasic := types.Unalias(srcPtr.Elem()).(*types.Basic); srcIsBasic && srcBasic.Kind() == types.Uintptr {
+					return fmt.Sprintf("Ꮡ(new @unsafe.Pointer(~%s))", boxExpr), true
+				}
+			}
+
+			return fmt.Sprintf("Ꮡ(new @unsafe.Pointer((uintptr)%s))", boxExpr), true
+		}
+	}
+
 	return fmt.Sprintf("%s.Reinterpret<%s, %s>()", v.convExpr(src, []ExprContext{identContext}), srcElem, targetElem), true
 }
 
