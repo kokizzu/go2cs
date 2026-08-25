@@ -433,7 +433,10 @@ denominator and disclosure set alike. There is no carry-forward path.
 Per banked package:
 
 1. Re-run the converted-test pipeline against the new GOROOT package — **the pipeline itself**
-   (`go2cs -tests -test-action all <new-goroot-pkg> <core-pkg>`, both toolchain overrides set),
+   (`go2cs -tests -test-action all <new-goroot-pkg> <core-pkg>`, **all four overrides** set --
+   the Go pair per H1.1, and the .NET pair (`DOTNET_ROOT` + PATH, [`DotNetMigration.md`](DotNetMigration.md)
+   trap 6) on any box whose machine-default SDK lags the corpus TFM; missing the .NET pair is a
+   NETSDK1045 wall, measured),
    **never the sweep wrapper**: `run-validated-sweep.ps1` is the steady-state gate, enforcing the
    exact *banked* count and a drift-clean corpus — both of which this step invalidates **by
    design** (measured 2026-08-25: the wrapper reds every hop row in seconds — count mismatch, plus
