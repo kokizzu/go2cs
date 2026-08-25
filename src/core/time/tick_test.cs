@@ -80,9 +80,9 @@ public static void TestTicker(ж<Δtesting.T> Ꮡt) {
         }
         // Now test that the ticker stopped.
         Sleep(2 * delta);
-        var selᴛ15 = (~ticker).C;
-        switch (trySelect(ᐸꟷ(selᴛ15, ꓸꓸꓸ))) {
-        case 0 when selᴛ15.ꟷᐳ(out _): {
+        var selᴛ20 = (~ticker).C;
+        switch (trySelect(ᐸꟷ(selᴛ20, ꓸꓸꓸ))) {
+        case 0 when selᴛ20.ꟷᐳ(out _): {
             errs = append(errs, "Ticker did not shut down"u8);
             continue;
             break;
@@ -229,22 +229,22 @@ public static void TestLongAdjustTimers(ж<Δtesting.T> Ꮡt) {
                         sendTo = outQʗ1;
                         send = q[0];
                     }
-                    var selᴛ16 = sendTo.ᐸꟷ(send, ꓸꓸꓸ);
-                    var selᴛ17 = inQʗ1;
-                    var selᴛ18 = doneʗ2;
-                    switch (select(selᴛ16, ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
+                    var selᴛ21 = sendTo.ᐸꟷ(send, ꓸꓸꓸ);
+                    var selᴛ22 = inQʗ1;
+                    var selᴛ23 = doneʗ2;
+                    switch (select(selᴛ21, ᐸꟷ(selᴛ22, ꓸꓸꓸ), ᐸꟷ(selᴛ23, ꓸꓸꓸ))) {
                     case 0: {
                         q = q[1..];
                         break;
                     }
-                    case 1 when selᴛ17.ꟷᐳ(out var f, out var ok): {
+                    case 1 when selᴛ22.ꟷᐳ(out var f, out var ok): {
                         if (!ok) {
                             return;
                         }
                         q = append(q, f);
                         break;
                     }
-                    case 2 when selᴛ18.ꟷᐳ(out _): {
+                    case 2 when selᴛ23.ꟷᐳ(out _): {
                         return;
                     }}
                 }
@@ -260,21 +260,21 @@ public static void TestLongAdjustTimers(ж<Δtesting.T> Ꮡt) {
                 });
             }
             foreach (var _ᴛ4 in range(@try)) {
-                var selᴛ19 = outQ;
-                var selᴛ20 = After((Δtime.Duration)(5000000000L));
-                var selᴛ21 = done;
-                switch (select(ᐸꟷ(selᴛ19, ꓸꓸꓸ), ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ(selᴛ21, ꓸꓸꓸ))) {
-                case 0 when selᴛ19.ꟷᐳ(out var _, out var ok): {
+                var selᴛ24 = outQ;
+                var selᴛ25 = After((Δtime.Duration)(5000000000L));
+                var selᴛ26 = done;
+                switch (select(ᐸꟷ(selᴛ24, ꓸꓸꓸ), ᐸꟷ(selᴛ25, ꓸꓸꓸ), ᐸꟷ(selᴛ26, ꓸꓸꓸ))) {
+                case 0 when selᴛ24.ꟷᐳ(out var _, out var ok): {
                     if (!ok) {
                         Ꮡt.Fatal(outputChannelIsClosedˢ);
                     }
                     break;
                 }
-                case 1 when selᴛ20.ꟷᐳ(out _): {
+                case 1 when selᴛ25.ꟷᐳ(out _): {
                     Ꮡt.Fatalf("failed to read work, iteration %d"u8, i);
                     break;
                 }
-                case 2 when selᴛ21.ꟷᐳ(out _): {
+                case 2 when selᴛ26.ꟷᐳ(out _): {
                     Ꮡt.Fatal(timerExpiredˢ);
                     break;
                 }}
@@ -377,7 +377,6 @@ public static void TestTimerGC(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string godebugˢ = "GODEBUG"u8;
 internal static readonly @string timerˢ = "Timer"u8;
 internal static readonly @string tickerˢ = "Ticker"u8;
 
@@ -443,9 +442,9 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
     var Cʗ1 = C;
     void drain1() {
         foreach (var _ᴛ1 in range(drainTries)) {
-            var selᴛ22 = Cʗ1;
-            switch (trySelect(ᐸꟷ(selᴛ22, ꓸꓸꓸ))) {
-            case 0 when selᴛ22.ꟷᐳ(out _): {
+            var selᴛ27 = Cʗ1;
+            switch (trySelect(ᐸꟷ(selᴛ27, ꓸꓸꓸ))) {
+            case 0 when selᴛ27.ꟷᐳ(out _): {
                 return;
             }
             default: {
@@ -484,9 +483,9 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
     var Cʗ2 = C;
     void noTick() {
         Ꮡt.Helper();
-        var selᴛ23 = Cʗ2;
-        switch (trySelect(ᐸꟷ(selᴛ23, ꓸꓸꓸ))) {
-        case 0 when selᴛ23.ꟷᐳ(out _): {
+        var selᴛ28 = Cʗ2;
+        switch (trySelect(ᐸꟷ(selᴛ28, ꓸꓸꓸ))) {
+        case 0 when selᴛ28.ꟷᐳ(out _): {
             Ꮡt.Errorf("extra tick"u8);
             break;
         }
@@ -497,9 +496,9 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
     var Cʗ3 = C;
     void assertTick() {
         Ꮡt.Helper();
-        var selᴛ24 = Cʗ3;
-        switch (trySelect(ᐸꟷ(selᴛ24, ꓸꓸꓸ))) {
-        case 0 when selᴛ24.ꟷᐳ(out _): {
+        var selᴛ29 = Cʗ3;
+        switch (trySelect(ᐸꟷ(selᴛ29, ꓸꓸꓸ))) {
+        case 0 when selᴛ29.ꟷᐳ(out _): {
             return;
         }
         default: {
@@ -507,9 +506,9 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
         }}
         foreach (var _ᴛ2 in range(tries)) {
             Sleep(sched);
-            var selᴛ25 = Cʗ3;
-            switch (trySelect(ᐸꟷ(selᴛ25, ꓸꓸꓸ))) {
-            case 0 when selᴛ25.ꟷᐳ(out _): {
+            var selᴛ30 = Cʗ3;
+            switch (trySelect(ᐸꟷ(selᴛ30, ꓸꓸꓸ))) {
+            case 0 when selᴛ30.ꟷᐳ(out _): {
                 return;
             }
             default: {
@@ -591,9 +590,9 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
     noTick();
     void notDone(channel<bool> doneΔ1) {
         Ꮡt.Helper();
-        var selᴛ26 = doneΔ1;
-        switch (trySelect(ᐸꟷ(selᴛ26, ꓸꓸꓸ))) {
-        case 0 when selᴛ26.ꟷᐳ(out _): {
+        var selᴛ31 = doneΔ1;
+        switch (trySelect(ᐸꟷ(selᴛ31, ꓸꓸꓸ))) {
+        case 0 when selᴛ31.ꟷᐳ(out _): {
             Ꮡt.Fatalf("early done"u8);
             break;
         }
@@ -605,9 +604,9 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
         Ꮡt.Helper();
         foreach (var _ᴛ4 in range(tries)) {
             Sleep(sched);
-            var selᴛ27 = doneΔ2;
-            switch (trySelect(ᐸꟷ(selᴛ27, ꓸꓸꓸ))) {
-            case 0 when selᴛ27.ꟷᐳ(out _): {
+            var selᴛ32 = doneΔ2;
+            switch (trySelect(ᐸꟷ(selᴛ32, ꓸꓸꓸ))) {
+            case 0 when selᴛ32.ꟷᐳ(out _): {
                 return;
             }
             default: {
@@ -658,14 +657,14 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
     var Cʗ6 = C;
     var done1ʗ1 = done1;
     goǃ(() => {
-        var selᴛ28 = Cʗ6;
-        var selᴛ29 = Ꮡstop.ValueSlot;
-        switch (select(ᐸꟷ(selᴛ28, ꓸꓸꓸ), ᐸꟷ(selᴛ29, ꓸꓸꓸ))) {
-        case 0 when selᴛ28.ꟷᐳ(out _): {
+        var selᴛ33 = Cʗ6;
+        var selᴛ34 = Ꮡstop.ValueSlot;
+        switch (select(ᐸꟷ(selᴛ33, ꓸꓸꓸ), ᐸꟷ(selᴛ34, ꓸꓸꓸ))) {
+        case 0 when selᴛ33.ꟷᐳ(out _): {
             Ꮡdone.ValueSlot.ᐸꟷ(true);
             break;
         }
-        case 1 when selᴛ29.ꟷᐳ(out _): {
+        case 1 when selᴛ34.ꟷᐳ(out _): {
             break;
         }}
         close(done1ʗ1);
@@ -673,14 +672,14 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
     var Cʗ7 = C;
     var done2ʗ1 = done2;
     goǃ(() => {
-        var selᴛ30 = Cʗ7;
-        var selᴛ31 = Ꮡstop.ValueSlot;
-        switch (select(ᐸꟷ(selᴛ30, ꓸꓸꓸ), ᐸꟷ(selᴛ31, ꓸꓸꓸ))) {
-        case 0 when selᴛ30.ꟷᐳ(out _): {
+        var selᴛ35 = Cʗ7;
+        var selᴛ36 = Ꮡstop.ValueSlot;
+        switch (select(ᐸꟷ(selᴛ35, ꓸꓸꓸ), ᐸꟷ(selᴛ36, ꓸꓸꓸ))) {
+        case 0 when selᴛ35.ꟷᐳ(out _): {
             Ꮡdone.ValueSlot.ᐸꟷ(true);
             break;
         }
-        case 1 when selᴛ31.ꟷᐳ(out _): {
+        case 1 when selᴛ36.ꟷᐳ(out _): {
             break;
         }}
         close(done2ʗ1);
@@ -697,18 +696,18 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
     if (isTicker) {
         // extra send might have sent done again
         // (handled by buffering done above).
-        var selᴛ32 = done;
-        switch (trySelect(ᐸꟷ(selᴛ32, ꓸꓸꓸ))) {
-        case 0 when selᴛ32.ꟷᐳ(out _): {
+        var selᴛ37 = done;
+        switch (trySelect(ᐸꟷ(selᴛ37, ꓸꓸꓸ))) {
+        case 0 when selᴛ37.ꟷᐳ(out _): {
             break;
         }
         default: {
             break;
         }}
         // extra send after that might have filled C.
-        var selᴛ33 = C;
-        switch (trySelect(ᐸꟷ(selᴛ33, ꓸꓸꓸ))) {
-        case 0 when selᴛ33.ꟷᐳ(out _): {
+        var selᴛ38 = C;
+        switch (trySelect(ᐸꟷ(selᴛ38, ꓸꓸꓸ))) {
+        case 0 when selᴛ38.ꟷᐳ(out _): {
             break;
         }
         default: {
@@ -722,14 +721,14 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
     foreach (var _ᴛ5 in range(2)) {
         var Cʗ8 = C;
         goǃ(() => {
-            var selᴛ34 = Cʗ8;
-            var selᴛ35 = Ꮡstop.ValueSlot;
-            switch (select(ᐸꟷ(selᴛ34, ꓸꓸꓸ), ᐸꟷ(selᴛ35, ꓸꓸꓸ))) {
-            case 0 when selᴛ34.ꟷᐳ(out _): {
+            var selᴛ39 = Cʗ8;
+            var selᴛ40 = Ꮡstop.ValueSlot;
+            switch (select(ᐸꟷ(selᴛ39, ꓸꓸꓸ), ᐸꟷ(selᴛ40, ꓸꓸꓸ))) {
+            case 0 when selᴛ39.ꟷᐳ(out _): {
                 throw panic("unexpected data");
                 break;
             }
-            case 1 when selᴛ35.ꟷᐳ(out _): {
+            case 1 when selᴛ40.ꟷᐳ(out _): {
                 break;
             }}
             Ꮡdone.ValueSlot.ᐸꟷ(true);

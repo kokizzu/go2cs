@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `regexp/syntax` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-04 · converter `f6e9c0cf0`*
+*Validated 2026-08-25 · converter `e2182a59e`*
 
-**12 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**12 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax).
 
 ## Verdicts

@@ -1361,7 +1361,6 @@ public static void TestConnectionState(ж<testing.T> Ꮡt) {
     }
     var rootCAs = Δx509.NewCertPool();
     rootCAs.AddCert(issuer);
-    var now = () => time_package.Unix(1476984729, 0);
     @string alpnProtocol = "golang"u8;
     @string serverName = "example.golang"u8;
     slice<slice<byte>> scts = new slice<byte>[]{slice<byte>("dummy sct 1"u8), slice<byte>("dummy sct 2"u8)}.slice();
@@ -1379,14 +1378,13 @@ public static void TestConnectionState(ж<testing.T> Ꮡt) {
             name = tlSv13ˢ;
         }
 
-        var nowʗ1 = now;
         var ocspʗ1 = ocsp;
         var rootCAsʗ1 = rootCAs;
         var sctsʗ1 = scts;
         var vʗ1 = v;
         Ꮡt.Run(name, (ж<testing.T> tΔ1) => {
             var config = Ꮡ(new Config(
-                Time: nowʗ1,
+                Time: testTime,
                 Rand: new zeroSource(nil),
                 Certificates: new slice<global::go.crypto.tls_package.Certificate>(1),
                 MaxVersion: vʗ1,
@@ -2049,7 +2047,7 @@ internal static void testVerifyCertificates(ж<testing.T> Ꮡt, uint16 version) 
             bool serverVerifyPeerCertificates = default!;
             bool clientVerifyPeerCertificates = default!;
             var clientConfig = testConfig.Clone();
-            clientConfig.Value.Time = () => time_package.Unix(1476984729, 0);
+            clientConfig.Value.Time = testTime;
             clientConfig.Value.MaxVersion = version;
             clientConfig.Value.MinVersion = version;
             clientConfig.Value.RootCAs = rootCAsʗ1;

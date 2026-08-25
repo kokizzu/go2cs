@@ -8,13 +8,13 @@ using static go.syscall_package;
 
 partial class syscall_internal_test_package {
 
-public static Func<uint32, (ж<global::go.syscall_package._PROC_THREAD_ATTRIBUTE_LIST>, error)> NewProcThreadAttributeList;
+internal static Func<uint32, (ж<global::go.syscall_package._PROC_THREAD_ATTRIBUTE_LIST>, error)> NewProcThreadAttributeList;
 internal static void initᴛNewProcThreadAttributeList() { NewProcThreadAttributeList = newProcThreadAttributeList; }
 
-public static Func<ж<global::go.syscall_package._PROC_THREAD_ATTRIBUTE_LIST>, uint32, uintptr, @unsafe.Pointer, uintptr, @unsafe.Pointer, ж<uintptr>, error> UpdateProcThreadAttribute;
+internal static Func<ж<global::go.syscall_package._PROC_THREAD_ATTRIBUTE_LIST>, uint32, uintptr, @unsafe.Pointer, uintptr, @unsafe.Pointer, ж<uintptr>, error> UpdateProcThreadAttribute;
 internal static void initᴛUpdateProcThreadAttribute() { UpdateProcThreadAttribute = updateProcThreadAttribute; }
 
-public static Action<ж<global::go.syscall_package._PROC_THREAD_ATTRIBUTE_LIST>> DeleteProcThreadAttributeList;
+internal static Action<ж<global::go.syscall_package._PROC_THREAD_ATTRIBUTE_LIST>> DeleteProcThreadAttributeList;
 internal static void initᴛDeleteProcThreadAttributeList() { DeleteProcThreadAttributeList = deleteProcThreadAttributeList; }
 
 public static UntypedInt PROC_THREAD_ATTRIBUTE_HANDLE_LIST => /* _PROC_THREAD_ATTRIBUTE_HANDLE_LIST */ 131074;

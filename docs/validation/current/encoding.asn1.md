@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `encoding/asn1` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-11 · converter `dc3035988`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**38 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**38 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/encoding/asn1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/asn1).
 
 ## Verdicts

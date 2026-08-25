@@ -245,6 +245,61 @@ public static void TestGetStartupInfo(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string syscallNˢ = "SyscallN"u8;
+internal static readonly @string syscallˢ = "Syscall"u8;
+
+public static void TestSyscallAllocations(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        ref var t = ref Ꮡt.DerefOrNull();
+
+        testenv.SkipIfOptimizationOff(new syscall_test_package.testing_TжTB(Ꮡt));
+        // Test that syscall.SyscallN arguments do not escape.
+        // The function used (in this case GetVersion) doesn't matter
+        // as long as it is always available and doesn't panic.
+        var (h, err) = syscall.LoadLibrary(kernel32Dllˢ);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        defer(syscall.FreeLibrary, h, ref ᒐ);
+        (var proc, err) = syscall.GetProcAddress(h, getVersionˢ);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        void testAllocs(ж<testing.T> tΔ1, @string name, Func<error> fn) {
+            tΔ1.Run(name, (ж<testing.T> tΔ2) => {
+                nint n = (nint)testing.AllocsPerRun(10, () => {
+                    {
+                        var errΔ1 = fn(); if (errΔ1 != default!) {
+                            tΔ2.Fatalf("%s: %v"u8, name, errΔ1);
+                        }
+                    }
+                });
+                if (n > 0) {
+                    tΔ2.Errorf("allocs = %d, want 0"u8, n);
+                }
+            });
+        }
+        testAllocs(Ꮡt, syscallNˢ, error () => {
+            var (r0, _, e1) = syscall.SyscallN(proc, 0, 0, 0);
+            if (r0 == 0) {
+                return e1;
+            }
+            return default!;
+        });
+        testAllocs(Ꮡt, syscallˢ, error () => {
+            var (r0, _, e1) = syscall.Syscall(proc, 3, 0, 0, 0);
+            if (r0 == 0) {
+                return e1;
+            }
+            return default!;
+        });
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
 public static void FuzzUTF16FromString(ж<testing.F> Ꮡf) {
     ref var f = ref Ꮡf.DerefOrNull();
 

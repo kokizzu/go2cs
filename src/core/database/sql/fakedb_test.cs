@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.database;
 
+using bytes = bytes_package;
 using context = context_package;
 using driver = go.database.sql.driver_package;
 using errors = errors_package;
@@ -13,11 +14,9 @@ using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using sync = sync_package;
-using atomic = go.sync.atomic_package;
 using testing = testing_package;
 using time = time_package;
 using go.database.sql;
-using go.sync;
 using static go.database.sql_package;
 using ꓸꓸꓸany = Span<any>;
 
@@ -95,7 +94,6 @@ internal static driver.DriverContext _ᴛ1ʗ = new sql_internal_test_package.fak
 
 [GoType] internal partial struct fakeDB {
     internal @string name;
-    internal atomic.Bool useRawBytes;
     internal sync.Mutex mu;
     internal map<@string, ж<Δtable>> tables;
     internal bool badConn;
@@ -790,9 +788,6 @@ internal static (driver.Stmt, error) PrepareContext(this ж<fakeConn> Ꮡc, cont
         var exprᴛ2 = cmd;
         if (exprᴛ2 == "WIPE"u8) {
         }
-        else if (exprᴛ2 == "USE_RAWBYTES"u8) {
-            c.db.of(fakeDB.ᏑuseRawBytes).Store(true);
-        }
         else if (exprᴛ2 == "SELECT"u8) {
             (stmt, err) = c.prepareSelect(stmt, // Nothing
  parts);
@@ -902,10 +897,6 @@ internal static (driver.Result, error) ExecContext(this ж<fakeStmt> Ꮡs, conte
     var exprᴛ1 = s.cmd;
     if (exprᴛ1 == "WIPE"u8) {
         db.wipe();
-        return (driver.ResultNoRows, default!);
-    }
-    if (exprᴛ1 == "USE_RAWBYTES"u8) {
-        (~s.c).db.of(fakeDB.ᏑuseRawBytes).Store(true);
         return (driver.ResultNoRows, default!);
     }
     if (exprᴛ1 == "CREATE"u8) {
@@ -1201,10 +1192,9 @@ internal static ref Func<bool> hookRollbackBadConn => ref ᏑhookRollbackBadConn
     // errPos and err are for making Next return early with error.
     internal nint errPos;
     internal error err;
-    // a clone of slices to give out to clients, indexed by the
-    // original slice's first byte address.  we clone them
-    // just so we're able to corrupt them on close.
-    internal map<ж<byte>, slice<byte>> bytesClone;
+    // Data returned to clients.
+    // We clone and stash it here so it can be invalidated by Close and Next.
+    internal slice<slice<byte>> driverOwnedMemory;
     // Every operation writes to line to enable the race detector
     // check for data races.
     // This is separate from the fakeConn.line to allow for drivers that
@@ -1219,9 +1209,19 @@ internal static ref Func<bool> hookRollbackBadConn => ref ᏑhookRollbackBadConn
     rc.line++;
 }
 
+[GoRecv] internal static void invalidateDriverOwnedMemory(this ref rowsCursor rc) {
+    foreach (var (_, buf) in rc.driverOwnedMemory) {
+        foreach (var (i, _) in buf) {
+            buf[i] = (rune)'x';
+        }
+    }
+    rc.driverOwnedMemory = default!;
+}
+
 [GoRecv] internal static error Close(this ref rowsCursor rc) {
     rc.touchMem();
     rc.parentMem.touchMem();
+    rc.invalidateDriverOwnedMemory();
     rc.closed = true;
     return rc.closeErr;
 }
@@ -1254,28 +1254,26 @@ internal static readonly @string fakedbCursorIsClosedˢ = "fakedb: cursor is clo
     if (rc.posRow >= len(rc.rows[rc.posSet])) {
         return io.EOF; // per interface spec
     }
-    foreach (var (i, v) in (~rc.rows[rc.posSet][rc.posRow]).cols) {
+    // Corrupt any previously returned bytes.
+    rc.invalidateDriverOwnedMemory();
+    foreach (var (i, vᴛ1) in (~rc.rows[rc.posSet][rc.posRow]).cols) {
+        var v = vᴛ1;
+
         // TODO(bradfitz): convert to subset types? naah, I
         // think the subset types should only be input to
         // driver, but the sql package should be able to handle
         // a wider range of types coming out of drivers. all
         // for ease of drivers, and to prevent drivers from
         // messing up conversions or doing them differently.
-        dest[i] = v;
         {
-            var (bs, ok) = v._<slice<byte>>(ᐧ); if (ok && !rc.db.of(fakeDB.ᏑuseRawBytes).Load()) {
-                if (rc.bytesClone == default!) {
-                    rc.bytesClone = new map<ж<byte>, slice<byte>>();
-                }
-                var (clone, okΔ1) = rc.bytesClone[Ꮡ(bs, 0), ꟷ];
-                if (!okΔ1) {
-                    clone = new slice<byte>(len(bs));
-                    copy(clone, bs);
-                    rc.bytesClone[Ꮡ(bs, 0)] = clone;
-                }
-                dest[i] = clone;
+            var (bs, ok) = v._<slice<byte>>(ᐧ); if (ok) {
+                // Clone []bytes and stash for later invalidation.
+                bs = bytes.Clone(bs);
+                rc.driverOwnedMemory = append(rc.driverOwnedMemory, bs);
+                v = bs;
             }
         }
+        dest[i] = v;
     }
     return default!;
 }

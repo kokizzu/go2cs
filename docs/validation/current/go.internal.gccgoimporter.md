@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `go/internal/gccgoimporter` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-09 · converter `4990c0043`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**4 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**4 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/go/internal/gccgoimporter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/internal/gccgoimporter).
 
 Both runtimes skip 2 of the matched tests identically.
