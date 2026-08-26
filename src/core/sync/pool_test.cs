@@ -20,6 +20,12 @@ using Δsync = sync_package;
 
 partial class sync_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object expectedEmptyˢ = (@string)"expected empty"u8;
 

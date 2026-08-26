@@ -12,6 +12,30 @@ using Δsync = sync_package;
 
 partial class sync_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object goroutineNotAsleepˢ = (@string)"goroutine not asleep"u8;
 internal static readonly object tooManyGoroutinesAwakeˢ = (@string)"too many goroutines awake"u8;

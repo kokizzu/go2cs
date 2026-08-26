@@ -19,6 +19,24 @@ using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
+    builtin.initPackage(typeof(@internal.testenv_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
+    builtin.initPackage(typeof(go.math.rand_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() {
+    builtin.initPackage(typeof(go.testing.quick_package));
+}
+
 [GoType("@string")] partial struct mapOp;
 
 internal static readonly mapOp opLoad = "Load"u8;

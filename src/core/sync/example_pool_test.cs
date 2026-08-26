@@ -12,6 +12,30 @@ using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸos() {
+    builtin.initPackage(typeof(os_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 // The Pool's New function should generally only return pointer
 // types, since a pointer can be put into the return interface
 // value without an allocation:
