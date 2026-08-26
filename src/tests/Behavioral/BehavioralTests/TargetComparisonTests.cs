@@ -1747,6 +1747,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckUdpLoopbackRoundTrip() => CheckTarget("UdpLoopbackRoundTrip");
 
     [TestMethod]
+    public void CheckUdpWriteMsgAddrPort() => CheckTarget("UdpWriteMsgAddrPort");
+
+    [TestMethod]
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
 
     [TestMethod]

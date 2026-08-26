@@ -1280,32 +1280,9 @@ public static error RawWrite(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
     finally { ᒐ.Run(); }
 }
 
-internal static int32 sockaddrInet4ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ref Δsyscall.SockaddrInet4 sa) {
-    ref var rsa = ref Ꮡrsa.DerefOrNull();
+// go2cs generated this placeholder — func sockaddrInet4ToRaw is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    rsa = new Δsyscall.RawSockaddrAny(nil);
-    var raw = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet4>();
-    raw.Value.Family = Δsyscall.AF_INET;
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(raw.of(Δsyscall.RawSockaddrInet4.ᏑPort)));
-    p.Value[0] = (byte)((sa.Port >> (int)(8)));
-    p.Value[1] = (byte)sa.Port;
-    raw.Value.Addr = sa.Addr.Clone();
-    return (int32)/* unsafe.Sizeof(*raw) */ (uintptr)16;
-}
-
-internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ref Δsyscall.SockaddrInet6 sa) {
-    ref var rsa = ref Ꮡrsa.DerefOrNull();
-
-    rsa = new Δsyscall.RawSockaddrAny(nil);
-    var raw = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet6>();
-    raw.Value.Family = Δsyscall.AF_INET6;
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(raw.of(Δsyscall.RawSockaddrInet6.ᏑPort)));
-    p.Value[0] = (byte)((sa.Port >> (int)(8)));
-    p.Value[1] = (byte)sa.Port;
-    raw.Value.Scope_id = sa.ZoneId;
-    raw.Value.Addr = sa.Addr.Clone();
-    return (int32)/* unsafe.Sizeof(*raw) */ (uintptr)28;
-}
+// go2cs generated this placeholder — func sockaddrInet6ToRaw is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func rawToSockaddrInet4 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

@@ -734,7 +734,7 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	"net": {
 		"adapterAddresses": goosWindows,
 	},
-	// internal/poll's two raw-sockaddr DECODERS. Go reads the address by pointer arithmetic over
+	// internal/poll's FOUR raw-sockaddr converters. Go moves the address by pointer arithmetic over
 	// flat bytes -- `(*RawSockaddrInet4)(unsafe.Pointer(rsa))` then `(*[2]byte)(unsafe.Pointer(
 	// &pp.Port))` -- and neither line survives the managed representation, in two DIFFERENT ways.
 	// The reinterpret asks golib to alias one reference-bearing struct as another, and the two
@@ -742,12 +742,24 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// object references where sockaddr_in has four inline octets), so `pp.Addr` reads the WRONG
 	// FIELD -- measured at Length=14, which is RawSockaddr.Data. The byte view reinterprets the
 	// pointed-at bytes as an `array<byte>` STRUCT and fabricates a managed reference out of them.
-	// The hand-owns route through syscall's already-hand-owned RawSockaddrAny.Sockaddr, which
-	// flattens the managed struct back to its 116-byte native image, so the sockaddr layout is
-	// spelled in exactly ONE place in the corpus. Windows-only: the decoders are fd_windows.go's.
+	// All four route through syscall's mirror, so the sockaddr layout is spelled in exactly ONE
+	// place in the corpus. Windows-only: these are fd_windows.go's.
+	//
+	// The DECODERS (rawToSockaddr*) came first and use RawSockaddrAny.Sockaddr, which flattens the
+	// managed struct back to its 116-byte native image. The ENCODERS (sockaddr*ToRaw) run the same
+	// two mechanisms in reverse and are the worse half by a distance: WRITING the wrong offsets
+	// deposits a uint16 over the low half of a live object reference, so where a bad decode returns
+	// a wrong answer, a bad encode corrupts the heap and kills the host at a death site that moves
+	// from run to run. Measured as `index out of range [0] with length 0` (v4) and the same panic
+	// with a garbage negative length (v6), and it is what capped `net` at a ~308-name empty tail.
+	// The v4 twin is GC-safe by layout ACCIDENT and is hand-owned anyway -- an accident about a
+	// field offset is not a contract. They use the inverse seam, GoRawSockaddrFromInet4/6, which
+	// names the same helper pair the decode does.
 	"internal/poll": {
 		"rawToSockaddrInet4": goosWindows,
 		"rawToSockaddrInet6": goosWindows,
+		"sockaddrInet4ToRaw": goosWindows,
+		"sockaddrInet6ToRaw": goosWindows,
 	},
 	// sync's copyChecker detects a copied Cond by storing its OWN ADDRESS in itself and comparing:
 	// `uintptr(*c) != uintptr(unsafe.Pointer(c))`. Both halves are raw-metal on a managed referent.
@@ -1116,6 +1128,27 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// [module: go.GoRequiresUnsafe] and the csproj flipping to true is part of the intended
 		// footprint — unlike `syscall`, which already emits true.
 		"WSAGetOverlappedResult": goosWindows,
+		// The SUBMIT half of the WriteMsg path, and the second defect on it. Its generated body hands
+		// the kernel `uintptr(unsafe.Pointer(msg))` -- the address of the MANAGED WSAMsg, whose
+		// syscall.Pointer class reference, ж<WSABuf> and inline reference-bearing Control land nowhere
+		// near native WSAMSG's 56 bytes of pointers and lengths. With internal/poll's encoders fixed
+		// the call stops corrupting the heap and starts REACHING Winsock, which rejects it: measured
+		// `wsasendmsg: An invalid argument was supplied` on both families and both entry points. The
+		// hand-own (windows/syscall_windows_impl.cs) builds the mirror in the operation's own staged
+		// memory -- overlapped, so a stack image would be a use-after-return -- and flattens the
+		// address through syscall's seam rather than learning the layout. Its harvest twin WSARecvMsg
+		// has the identical defect in the opposite direction and is deliberately NOT registered: no
+		// suite reaches it yet, and it needs a completion decode this one does not.
+		"WSASendMsg": goosWindows,
+		// The defect BENEATH WSASendMsg, and the one that fires first. WSASendMsg and WSARecvMsg are
+		// Winsock EXTENSIONS with no export to link: their addresses are fetched at run time by
+		// handing WSAIoctl a GUID, and Go does that with `(*byte)(unsafe.Pointer(&WSAID_WSASENDMSG))`.
+		// syscall.GUID's converted form is NOT blittable -- `Data4 [8]byte` is an array<byte> MANAGED
+		// REFERENCE where the native record has eight inline octets -- so ws2_32 reads sixteen bytes
+		// that are not the GUID and answers WSAEINVAL. That is what the encode fix left behind: the
+		// submission was never made, because the once-guarded lookup ahead of it had failed. Both
+		// directions need it, so fixing it here is what a future WSARecvMsg hand-own inherits.
+		"loadWSASendRecvMsg": goosWindows,
 	},
 }
 

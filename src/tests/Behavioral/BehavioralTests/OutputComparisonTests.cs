@@ -1673,6 +1673,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckUdpLoopbackRoundTrip() => CheckTarget("UdpLoopbackRoundTrip");
 
     [TestMethod]
+    public void CheckUdpWriteMsgAddrPort() => CheckTarget("UdpWriteMsgAddrPort");
+
+    [TestMethod]
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
 
     [TestMethod]
