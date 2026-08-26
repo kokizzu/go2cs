@@ -10,11 +10,17 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"strconv"
 )
 
 func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprContext) string {
 	var contexts []ExprContext
 	var ptrDeref string
+
+	// The call-site zero factory a map READ of a shape-carrying element type must supply, or "" —
+	// see mapReadShapedZero. Function-scoped because both the comma-ok arm (which returns early)
+	// and the single-value arm (which falls through to the shared tail) render it.
+	shapedZero := ""
 
 	if typeAndVal, ok := v.info.Types[indexExpr.X]; ok {
 		// Check if the type is a map and its key is an empty interface. A CONSTRAINED TYPE
@@ -84,6 +90,12 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 				}
 			}
 
+			// A READ whose element type's Go zero value carries SHAPE the C# type cannot supplies
+			// that zero from the call site — see mapReadShapedZero.
+			if !context.isAssignmentTarget {
+				shapedZero = v.mapReadShapedZero(mapType)
+			}
+
 			// Comma-ok map access (`v, ok := m[k]`): use golib's two-value indexer
 			// `m[key, ꟷ]`, which returns `(value, present)`.
 			if context.isTupleResult {
@@ -91,6 +103,10 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 				// pointer/untyped-const key machinery below is all for non-string key types, so a
 				// matched key skips it whole.
 				if keyExpr, matched := v.mapReadTmpStringKey(mapType, indexExpr.Index); matched {
+					if shapedZero != "" {
+						return fmt.Sprintf("%s[%s, %s, %s]", v.convExpr(indexExpr.X, nil), keyExpr, shapedZero, OverloadDiscriminator)
+					}
+
 					return fmt.Sprintf("%s[%s, %s]", v.convExpr(indexExpr.X, nil), keyExpr, OverloadDiscriminator)
 				}
 
@@ -117,6 +133,10 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 
 				keyExpr = v.boxUntypedConstAsDefaultType(mapType.Key(), indexExpr.Index, keyExpr)
 				keyExpr = v.boxPointerIntoEmptyInterface(mapType.Key(), indexExpr.Index, keyExpr)
+
+				if shapedZero != "" {
+					return fmt.Sprintf("%s[%s, %s, %s]", v.convExpr(indexExpr.X, nil), keyExpr, shapedZero, OverloadDiscriminator)
+				}
 
 				return fmt.Sprintf("%s[%s, %s]", v.convExpr(indexExpr.X, nil), keyExpr, OverloadDiscriminator)
 			}
@@ -283,7 +303,63 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 		baseExpr = "(" + baseExpr + ")"
 	}
 
+	// A map READ whose element carries shape takes golib's zero-factory indexer overload.
+	if shapedZero != "" {
+		return fmt.Sprintf("%s%s[%s, %s]", baseExpr, ptrDeref, index, shapedZero)
+	}
+
 	return fmt.Sprintf("%s%s[%s]", baseExpr, ptrDeref, index)
+}
+
+// mapReadShapedZero renders the CALL-SITE zero factory a map READ must supply when the map's
+// ELEMENT type's Go zero value carries run-time SHAPE its C# type does not — a fixed-size array,
+// whose Go length lives only in the constructed `array<T>` instance. Returns "" for every other
+// element shape, so the ordinary `m[key]` emission is unchanged.
+//
+// Go's read of an absent key (a nil map included) yields the element type's zero value, which for
+// `[N]T` is N zeroed elements. `map<TKey, TValue>`'s plain indexer hands back `default(TValue)`,
+// and `default(array<T>)` has LENGTH ZERO — so the first index into a missed entry panicked
+// `index out of range [0] with length 0` where Go reads a zero. The measured witness is `html`'s
+// `unescapeEntity`: `entity2` is `map[string][2]rune` and its miss is the normal path.
+//
+// The shape has to come from HERE. It is a property of the Go map TYPE, and neither the emitted
+// `map<TKey, TValue>` nor a nil one carries it; reading it off an existing entry would answer only
+// for a populated map. This is the same zero-value ladder every declaration site uses
+// (zeroValueInitializer / arrayZeroValueArgs) — a map read is simply a zero-value site the ladder
+// had never reached.
+//
+// The caller passes the RESOLVED map type, so all three map emissions are covered by one rule —
+// the plain `map<K, V>`, a NAMED map type's generated wrapper (which forwards the overload; see
+// go2cs-gen's IMapTypeTemplate) and a map-cored type parameter (which reaches it as the
+// `IMap<K, V>` default member). Two exclusions keep the emission unchanged where it is already
+// correct:
+//
+//   - a NAMED array element — its generated wrapper allocates its backing lazily from its own
+//     known size, so `default` is already its Go zero (the same exclusion arrayElemFactory
+//     documents); and
+//   - an assignment TARGET (the caller gates on isAssignmentTarget): a STORE carries a value and
+//     needs no zero.
+func (v *Visitor) mapReadShapedZero(mapType *types.Map) string {
+	if mapType == nil {
+		return ""
+	}
+
+	elemType := mapType.Elem()
+
+	if _, isNamed := types.Unalias(elemType).(*types.Named); isNamed {
+		return ""
+	}
+
+	array, isArray := elemType.Underlying().(*types.Array)
+
+	if !isArray {
+		return ""
+	}
+
+	// The element factory rides along for a NESTED shape (`map[k][2][3]int`), exactly as it does
+	// for a declaration — otherwise the inner arrays would themselves be length zero.
+	return fmt.Sprintf("() => new %s(%s)", v.getCSharpTypeName(elemType),
+		v.arrayZeroValueArgs(strconv.FormatInt(array.Len(), 10), array))
 }
 
 // mapReadTmpStringKey recognizes Go's `m[string(b)]` map-READ special case — the compiler avoids

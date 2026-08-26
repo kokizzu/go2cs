@@ -52,6 +52,19 @@ public interface IMap<TKey, TValue> : IMap, IDictionary<TKey, TValue> where TKey
     (TValue, bool) this[TKey key, bool _] { get; }
 
     /// <summary>
+    /// Reads an element whose Go zero value carries run-time SHAPE its C# type does not, taking
+    /// that zero from the CALL SITE. See <see cref="map{TKey, TValue}.this[TKey, Func{TValue}]"/>,
+    /// which is where the reasoning lives; this is the surface a map-cored TYPE PARAMETER reaches.
+    /// </summary>
+    TValue this[TKey key, Func<TValue> zero] => TryGetValue(key, out TValue? value) ? value : zero();
+
+    /// <summary>
+    /// Comma-ok form of the shaped-zero read, for a map-cored type parameter. See
+    /// <see cref="map{TKey, TValue}.this[TKey, Func{TValue}, bool]"/>.
+    /// </summary>
+    (TValue, bool) this[TKey key, Func<TValue> zero, bool _] => TryGetValue(key, out TValue? value) ? (value!, true) : (zero(), false);
+
+    /// <summary>
     /// Default <see cref="IMap.CloneMap"/> for any <see cref="IMap{TKey, TValue}"/> — covers both
     /// the concrete <see cref="map{TKey, TValue}"/> and the generated named-map wrappers (which
     /// wrap a shared <see cref="map{TKey, TValue}"/>). Builds a fresh <see cref="map{TKey, TValue}"/>
@@ -234,6 +247,45 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         // Comma-ok read of a nil (or absent) key yields (zero, false).
         get => TryGetValue(key, out TValue? value) ? (value!, true) : (default!, false);
     }
+
+    /// <summary>
+    /// Reads an element whose Go ZERO VALUE carries run-time SHAPE its C# type does not, taking
+    /// that zero from the CALL SITE — Go's <c>m[k]</c> where the element is a fixed-size array.
+    /// </summary>
+    /// <param name="key">Key to read.</param>
+    /// <param name="zero">
+    /// Factory for the element type's Go zero value, invoked ONLY on a miss. The converter emits a
+    /// non-capturing lambda, so the delegate is cached and a HIT costs nothing beyond the read.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// A Go map read of an absent key — including every read of a NIL map — yields the element
+    /// type's zero value, and for a fixed-size array that zero is <c>[N]T</c> with N zeroed
+    /// elements. <c>default(array&lt;T&gt;)</c> is a LENGTH-ZERO array instead (the Go length lives
+    /// only in the instance — see <see cref="IGoZeroShaped"/>), so the first index into a missed
+    /// entry panicked <c>index out of range [0] with length 0</c> where Go reads a zero. The live
+    /// witness is <c>html</c>'s <c>unescapeEntity</c>, whose <c>entity2 map[string][2]rune</c> miss
+    /// is the NORMAL path for any text whose <c>&amp;…</c> run is not a two-rune entity.
+    /// </para>
+    /// <para>
+    /// The shape cannot come from the map: it is a property of the Go map TYPE, and neither
+    /// <c>map&lt;TKey, TValue&gt;</c> nor a <c>default</c> (nil) one carries it — inferring it from
+    /// an existing entry would answer only for a POPULATED map and guess for an empty or nil one.
+    /// The READ SITE always knows it statically, and it is the same zero-value ladder every
+    /// declaration site already uses (the converter's <c>zeroValueInitializer</c>); this overload is
+    /// the seat that ladder had nowhere to sit for a map read.
+    /// </para>
+    /// </remarks>
+    public TValue this[TKey key, Func<TValue> zero] => TryGetValue(key, out TValue? value) ? value : zero();
+
+    /// <summary>
+    /// Comma-ok form of the shaped-zero read — Go's <c>v, ok := m[k]</c> where the element type's
+    /// zero value carries shape. See <see cref="this[TKey, Func{TValue}]"/>.
+    /// </summary>
+    /// <param name="key">Key to read.</param>
+    /// <param name="zero">Factory for the element's Go zero value, invoked ONLY on a miss.</param>
+    /// <param name="_">Overload discriminator (the emitted <c>ꟷ</c>).</param>
+    public (TValue, bool) this[TKey key, Func<TValue> zero, bool _] => TryGetValue(key, out TValue? value) ? (value!, true) : (zero(), false);
 
     /// <inheritdoc />
     public void Add(TKey key, TValue value)
