@@ -1785,6 +1785,20 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 						if !isDiscarded && !v.isReassignment(ident) && v.exprIsMethodGroup(rhs) {
 							if sig, ok := v.getExprType(rhs).(*types.Signature); ok {
 								methodGroupDelegateType = v.namedFuncTypeNameForSignature(sig)
+
+								// A VARIADIC signature with no named func type of its own cannot be
+								// left to `var` either: the RHS renders as a forwarding lambda whose
+								// tail is `params ꓸꓸꓸT`, and an inferred natural delegate type binds
+								// only THAT lambda — the reassignment one statement later (`errorf =
+								// t.Logf`, slices' TestGrow/TestConcat) is a second lambda C# has no
+								// reason to give the same type. Name golib's variadic delegate family
+								// instead (`Actionꓸꓸꓸ<@string, any>`), which both lambdas convert to
+								// and which carries the loose-argument call form — the same lowering
+								// getCSharpTypeName already gives every func type used as a value.
+								// Non-variadic signatures keep `var`, unchanged.
+								if methodGroupDelegateType == "" && sig.Variadic() && sig.Params().Len() > 0 {
+									methodGroupDelegateType = v.iifeDelegateType(sig)
+								}
 							}
 						}
 

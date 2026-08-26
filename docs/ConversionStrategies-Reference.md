@@ -10622,6 +10622,40 @@ group as a `map[string]any` element, through a plain assignment, and as an `[]an
 asserted back; plus a NON-variadic literal direct to `any` as the control that must keep matching
 without a cast. Neutering the cast prints `no match` on all four and leaves the control passing.)
 
+**A variadic METHOD VALUE was the one shape in the family still frozen at fixed arity (2026-08-26).**
+`errorf := t.Errorf` — go/types' and `slices`' own idiom, `errorf = t.Logf` one statement later, then
+loose Go-style calls — has TWO emissions, and both dropped the variadic tail. A bound method value
+forwards through a lambda carrying the method's own parameters, and that lambda rendered the tail as
+the plain `slice<T>` the signature *stores* rather than the `params ꓸꓸꓸT` convention every declared
+variadic function uses: `(@string p1, slice<any> p2) => Ꮡt.Errorf(p1, p2)`. Every call through the
+value was then an arity error — `errorf("…", n)` CS1503 on a bare `n` against `slice<any>`,
+`errorf("…", a, b)` CS1593 "does not take 3 arguments", `errorf("…")` CS7036 — which is the same
+family the lambda's explicit parameters were introduced to fix, one level in. The tail now renders
+through `variadicParamType`, the same routine the named-function convention uses (a file-local
+`using ꓸꓸꓸT = Span<…>;` alias where one is mintable, inline `Span<T>` otherwise), so the forwarded
+argument binds the receiving `params ꓸꓸꓸany` parameter directly and the call inside the lambda is
+unchanged.
+
+The DECLARATION is the second half, and it is not optional. A `params` lambda has no BCL delegate, so
+`var` gives it a **synthesized** natural type — which binds that lambda and gives C# no reason to hand
+the same type to the second lambda the reassignment installs. `visitAssignStmt`'s method-group branch
+therefore names golib's variadic delegate family when the signature is variadic and no package named
+func type matches — `Actionꓸꓸꓸ<@string, any> emit = (@string p1, params ꓸꓸꓸany p2) => …` — reusing
+`iifeDelegateType`, the same lowering `getCSharpTypeName` already gives every func type used as a
+value, so there is exactly one spelling of this type in the emission. Non-variadic method values keep
+`var`, unchanged. (Guarded by the `VariadicFuncValues` extension — a pointer receiver's variadic
+method bound by `:=`, conditionally reassigned to a second variadic method, then called with loose
+args, an empty tail and a spread; it fails on the pre-change converter with CS1503 + CS1593 + CS7036,
+which is exactly the `slices` `TestGrow`/`TestConcat` error set.)
+
+A/B footprint: this is the half of the arc that moves anything outside its own guard, and it moves
+two lines. CNR at 645 behavioral packages reports `DeferCallOrder` and `GoCallVariations`, both
+`f1 := fmt.Println` — a variadic PACKAGE function bound as a method value, which was the same
+`var`-inferred synthesized delegate and is now `Funcꓸꓸꓸ<any, (nint, error)>`. Both still compile and
+still match `go run`. The whole converted standard library re-emits byte-identically (4,173 artifacts,
+0 changed), because the rule fires on nothing else: a method value whose signature is not variadic
+never reaches it.
+
 ### `reflect.Value.Call` over a variadic func value is TYPED dispatch — no reflective invoke can carry the tail
 
 The `params Span<T>` tail above is what makes a converted variadic callable and readable from Go
