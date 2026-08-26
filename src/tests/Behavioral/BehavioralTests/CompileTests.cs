@@ -679,6 +679,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckImmediatelyInvokedFunc() => CheckTarget("ImmediatelyInvokedFunc");
 
     [TestMethod]
+    public void CheckImportSegmentTypeShadow() => CheckTarget("ImportSegmentTypeShadow");
+
+    [TestMethod]
     public void CheckIncDecPointerField() => CheckTarget("IncDecPointerField");
 
     [TestMethod]
