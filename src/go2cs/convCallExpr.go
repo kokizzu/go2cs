@@ -448,7 +448,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// operand then converts to uintptr directly, which is the same value by the same operator.
 		v.markDeadUnsafePointerBox(callExpr, arg)
 
-		expr := v.checkForImplicitConversion(funcType, arg, targetTypeName)
+		// A CONVERSION is transparent to the capture-copy hoist. Its operand can be a capturing
+		// func literal — `HandlerFunc(func(rw, req){ … conn … })` handed to `go Serve(ls, …)`
+		// (net/http serve_test) — whose snapshot declarations (`var connʗ1 = conn;`) are
+		// STATEMENTS and cannot stand in the argument list the conversion renders into. Every
+		// other position threads the enclosing statement's sink to convFuncLit; this one rendered
+		// its operand with NO contexts at all, so the wrapper made the literal invisible to the
+		// hoist and the decls landed inline (CS1003 + CS1026 + CS1002 + CS1513, seven sites across
+		// net/http's client_test and serve_test — the recorded `CS1002 ';' expected` wall). Adopt
+		// the ambient target exactly as the `&composite` and composite-literal arms do in convExpr.
+		//
+		// convFuncLit consults context.deferredDecls FIRST and v.hoistedDecls SECOND, so this is
+		// needed only where a statement supplies the explicit builder and no ambient one — the
+		// `go`, `defer` and `return` forms. Gated on a non-nil sink, which leaves every other
+		// conversion rendering with the same nil contexts it has always had.
+		var convContexts []ExprContext
+
+		if context.deferredDecls != nil {
+			convLambdaContext := DefaultLambdaContext()
+			convLambdaContext.deferredDecls = context.deferredDecls
+			convContexts = []ExprContext{convLambdaContext}
+		}
+
+		expr := v.checkForImplicitConversion(funcType, arg, targetTypeName, convContexts)
 
 		// A conversion whose TARGET is a non-empty INTERFACE and whose SOURCE is a POINTER —
 		// `image.Image(dst)` with `dst *image.RGBA` (image/draw) — is Go's ordinary
@@ -2867,8 +2889,12 @@ func (v *Visitor) identDeclaredFromMethodGroup(ident *ast.Ident) bool {
 // type-conversion branch of convCallExpr, which uses the returned text); a caller that only wants
 // the recording side effect calls applyImplicitConversion directly and skips the conversion — see
 // the argument loop at the end of convCallExpr.
-func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, targetTypeName string) string {
-	return v.applyImplicitConversion(funcType, arg, targetTypeName, v.convExpr(arg, nil))
+//
+// contexts carries the enclosing statement's capture-copy hoist sink so a CAPTURING func-literal
+// operand snapshots to a statement slot instead of inline (see the call site); every other
+// conversion passes nil, which is what this always did.
+func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, targetTypeName string, contexts []ExprContext) string {
+	return v.applyImplicitConversion(funcType, arg, targetTypeName, v.convExpr(arg, contexts))
 }
 
 // applyImplicitConversion records the implicit conversion, if any, between arg's type and the

@@ -157,6 +157,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckByteTableStringVar() => CheckTarget("ByteTableStringVar");
 
     [TestMethod]
+    public void CheckCaptureHoistThroughConversion() => CheckTarget("CaptureHoistThroughConversion");
+
+    [TestMethod]
     public void CheckCaptureModeFieldAddress() => CheckTarget("CaptureModeFieldAddress");
 
     [TestMethod]
