@@ -282,9 +282,17 @@ type Visitor struct {
 	// getSignature) that can never match the identEscapesHeap entries paramNeedsHeapBox keys
 	// on, so the box decision travels by name here.
 	funcLitHeapBoxParamNames HashSet[string]
-	varNames                 map[*types.Var]string
-	hasDefer                 bool
-	hasRecover               bool
+	// funcLitProxyParamTypes maps a function literal parameter's Go name to the CONSTRAINT-PROXY
+	// C# type it must be DECLARED as — for a literal passed to a generic call whose type argument
+	// resolved to a proxy (see constraintProxyLitParamTypes). Set transiently by convFuncLit around
+	// exactly the signature-generation call, like funcLitHeapBoxParamNames beside it, and nil
+	// otherwise: the parameter then arrives under a synthesized name at the proxy type and the
+	// body prologue re-declares the Go name at its natural type. Same incoming-name-plus-prologue
+	// shape the heap-box parameters use.
+	funcLitProxyParamTypes map[string]string
+	varNames               map[*types.Var]string
+	hasDefer               bool
+	hasRecover             bool
 	// pendingTypeAccess carries an explicit C# access modifier ("public ") for the type
 	// declaration currently being emitted — set by visitTypeSpec for an unexported type that
 	// must be publicized (used as an exported struct field; see packagePublicizedTypes), and

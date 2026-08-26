@@ -1451,6 +1451,18 @@ func (v *Visitor) generateParametersSignature(signature *types.Signature, addRec
 			// func literals and func types through convFuncType, interface methods through
 			// visitInterfaceType), so a Go func type's parameter dims are stated wherever its
 			// C# shape is written.
+			// A func-literal parameter at a CONSTRAINT-PROXY delegate position is DECLARED at the
+			// proxy under a synthesized incoming name; the literal's body prologue re-declares the
+			// Go name at this natural type (see constraintProxyLitParamTypes). Handled here rather
+			// than inside getCSharpTypeName because only the DECLARATION moves — every other
+			// rendering of the same Go type, the body's own uses included, stays as it was.
+			if proxyType, ok := v.funcLitProxyParamTypes[param.Name()]; ok {
+				result.WriteString(proxyType)
+				result.WriteRune(' ')
+				result.WriteString(getConstraintProxyLitParamName(param.Name()))
+				continue
+			}
+
 			result.WriteString(emitGoArrayDimsAttribute(param.Type()))
 
 			// A FUNC-LITERAL parameter typed as a `string | []byte`-union TYPE PARAMETER
@@ -1596,6 +1608,15 @@ func getHeapBoxParamName(param *types.Var) string {
 // SYNTHESIZED vars — see getSignature — that already carry the rendered name).
 func getHeapBoxLitParamName(renderedName string) string {
 	return fmt.Sprintf("%s%sp", getSanitizedIdentifier(renderedName), CapturedVarMarker)
+}
+
+// getConstraintProxyLitParamName renders the incoming name for a FUNCTION-LITERAL parameter
+// declared at a CONSTRAINT-PROXY type (see constraintProxyLitParamTypes). The Go name is re-declared
+// from it in the literal's body prologue, so the incoming name must not collide with it — the
+// shadow marker keeps them distinct while leaving the Go name readable in the emitted signature's
+// vicinity, matching the `ʗp` convention the heap-box parameter beside it uses for the same reason.
+func getConstraintProxyLitParamName(renderedName string) string {
+	return fmt.Sprintf("%s%sp", getSanitizedIdentifier(renderedName), ShadowVarMarker)
 }
 
 // paramNeedsHeapBox reports whether the value parameter — or a method's value RECEIVER, parameter 0

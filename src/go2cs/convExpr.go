@@ -88,6 +88,12 @@ type CallExprContext struct {
 	// `func() Point` field assigned `nistec.NewP224Point`, whose ж<P224Point> return needs the
 	// proxy — CS0407). The map value is the comma-joined lambda parameter list ("" for niladic).
 	wrapArgWithLambda map[int]string
+	// proxyLitParamTypes carries, per FUNC-LITERAL argument index, the constraint-proxy C# type
+	// each of that literal's own parameters must be DECLARED as (keyed by the literal's parameter
+	// index). The sibling above serves a method-group argument at the same delegate position; this
+	// serves the literal, which renders its own parameter list and so needs the proxy applied one
+	// position further in. See constraintProxyLitParamTypes.
+	proxyLitParamTypes map[int]map[int]string
 	// cloneArrayArg appends the strongly-typed `.Clone()` to the indexed element — a POSITIONAL
 	// composite-literal element that reads an ARRAY value out of existing storage (Go copies the
 	// array into the composite's slot; the emitted struct copy would alias its backing — see
@@ -255,6 +261,12 @@ type LambdaContext struct {
 	// closure and allocates nothing. Set by visitAssignStmt for the `name := func(…){…}` shape
 	// whose variable is only ever called (see localFunctionDefine).
 	localFuncName string
+	// proxyParamTypes, keyed by the literal's own parameter index, names the constraint-proxy C#
+	// type that parameter must be DECLARED as — set for a func LITERAL argument of a generic call
+	// whose type argument resolved to a proxy. convFuncLit declares those parameters at the proxy
+	// under synthesized names and opens the body with the natural-typed alias. See
+	// constraintProxyLitParamTypes.
+	proxyParamTypes map[int]string
 }
 
 func DefaultLambdaContext() LambdaContext {

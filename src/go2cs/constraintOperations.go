@@ -1644,6 +1644,89 @@ func (v *Visitor) constraintProxyLambdaParams(funIdent *ast.Ident, typeArgs *typ
 	return strings.Join(params, ", "), true
 }
 
+// constraintProxyLitParamTypes reports, for a FUNC-LITERAL argument at position `i` of a generic
+// FUNCTION call, the constraint-proxy C# type each of the literal's own parameters must be DECLARED
+// as — keyed by parameter index, empty when none.
+//
+// The sibling constraintProxyLambdaParams above handles a METHOD-GROUP argument at such a position
+// by re-wrapping it as a parameter-inferred lambda. A func LITERAL cannot take that remedy: it
+// already IS the lambda and it renders its own parameter list from the Go signature, so at
+// `T = ImplжConstrained` a `func(t T, mode int)` parameter emits `(ж<Impl> t, nint mode) => …`
+// against a delegate that requires `Action<ImplжConstrained, nint>`. C# applies no user-defined
+// conversion at a parameter DECLARATION — that is the whole of CS1678 + CS1661, one pair per call
+// site, and 48 of net/http's 81 body diagnostics: its `run[T TBRun[T]](t T, f func(t T, mode
+// testMode), opts ...any)` is called this way throughout the suite.
+//
+// The remedy is the same one the method-group case uses and the one convCompositeLit applies to a
+// proxied struct's func field — MOVE THE CONVERSION to a position where C# performs it. Here the
+// parameter is DECLARED at the proxy type under a synthesized name and the literal's body opens with
+// `ж<Impl> t = Δp0;`, an ordinary implicit conversion through the operator the proxy already
+// declares. Everything after that line is unchanged: the body still sees the Go name at its natural
+// type, so no member access, capture, or nested literal inside it renders differently. Declaring the
+// parameter at the proxy and letting the body use it directly would NOT work — the proxy's
+// forwarders are explicit interface implementations, reachable through a type parameter's constraint
+// but not by member lookup on the concrete proxy type.
+//
+// Restricted to a parameter whose type IS the proxied type parameter exactly. A type that merely
+// MENTIONS it (`[]T`, `map[K]T`, `func(T)`) is deliberately excluded: `slice<ImplжConstrained>` and
+// `slice<ж<Impl>>` are distinct generic instantiations with no conversion between them, so there is
+// no single assignment that could stand in the prologue, and a wrong guess would trade a clear
+// CS1678 for a wrong one. Such a shape does not occur in the corpus or in net/http; when one appears
+// it needs its own decision, not an extension of this one.
+func (v *Visitor) constraintProxyLitParamTypes(funIdent *ast.Ident, typeArgs *types.TypeList, i int) map[int]string {
+	typeParams := v.signatureTypeParams(funIdent)
+
+	if typeParams == nil || typeArgs == nil {
+		return nil
+	}
+
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return nil
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.Params() == nil || i >= sig.Params().Len() {
+		return nil
+	}
+
+	paramSig, ok := sig.Params().At(i).Type().Underlying().(*types.Signature)
+
+	if !ok || paramSig.Params() == nil {
+		return nil
+	}
+
+	proxyOf := map[*types.TypeParam]string{}
+
+	for p := 0; p < typeParams.Len() && p < typeArgs.Len(); p++ {
+		if proxyName, ok := v.constraintProxyFor(typeParams.At(p), typeArgs.At(p)); ok {
+			proxyOf[typeParams.At(p)] = proxyName
+		}
+	}
+
+	if len(proxyOf) == 0 {
+		return nil
+	}
+
+	proxied := map[int]string{}
+
+	for p := range paramSig.Params().Len() {
+		if typeParam, ok := types.Unalias(paramSig.Params().At(p).Type()).(*types.TypeParam); ok {
+			if proxyName, ok := proxyOf[typeParam]; ok {
+				proxied[p] = proxyName
+			}
+		}
+	}
+
+	if len(proxied) == 0 {
+		return nil
+	}
+
+	return proxied
+}
+
 // callNeedsConstraintProxy reports whether any type argument of a generic FUNCTION instantiation
 // resolves to a self-referential constraint proxy. Such a call must render its type arguments
 // EXPLICITLY even where Go inferred them from an ordinary value argument: C# would otherwise infer

@@ -404,15 +404,27 @@ func adapterStructQualifierClass(structBase string) string {
 // to the generator (`container == packageClassName` in its AdapterStructKey), so it composes the
 // bare simple name, never `io_test_Buffer`. The interface side mirrors adapterResolvedName's
 // collision handling on the same record spellings.
+//
+// ⚠ The shadow marker STAYS on the struct part. The generator names a local adapter from
+// `adapterBaseName`, which is the C# type name verbatim (`Δhandler`), and a foreign one from
+// `GetSimpleName(structName)` — neither strips the marker — so stripping it here composed a
+// reference to a class that is never emitted. net/http's internal test variant declares
+// `type handler struct{ i int }` (server_test.go), shadow-renamed to `Δhandler`: the generator
+// minted `ΔhandlerжΔHandler` while every cast site referenced `handlerжΔHandler`, CS0426 ×9. The
+// marker belongs to the C# IDENTITY of the type, not to a rendering convention — adapterStructKey
+// strips it for GROUPING, which is right, and that key must not double as the emitted name.
+// Reached only through the `-tests` metadata-anchored path (resolveAdapterNameMarkers takes an
+// anchor only from testConversion; a production conversion resolves through adapterResolvedName,
+// which never stripped), so the corpus cannot move.
 func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string {
-	structPart := strings.TrimPrefix(adapterStructKey(pair[0]), ShadowVarMarker)
+	structPart := adapterStructKey(pair[0])
 	ifaceSimple := adapterInterfaceSimpleName(pair[1])
 
 	if qualifier := adapterStructQualifierClass(pair[0]); qualifier != "" && qualifier == emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])] {
 		// The struct is qualified by the very anchor class the generator emits into, so it is
 		// LOCAL there and takes the bare simple name — never the foreign "<pkg>_<Simple>" form.
 		_, simpleName := splitAdapterStructReference(pair[0])
-		structPart = strings.TrimPrefix(stripSanitizationMarkers(simpleName), ShadowVarMarker)
+		structPart = stripSanitizationMarkers(simpleName)
 	}
 
 	if !colliding[adapterGroupKey(pair[0], pair[1])] {
