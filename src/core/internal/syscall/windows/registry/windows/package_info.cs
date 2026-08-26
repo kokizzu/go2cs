@@ -54,7 +54,6 @@ using static go.@internal.syscall.windows.registry_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("internal/syscall/windows/registry/key.go", "key.cs", "ADOKAZIAAhDSgoKUgoKClKjogoSmgoKCkoKCgpSUgoKUgpSUtAAFEPKCgpSClKiSAAwckoKmgpQ=")]
-[assembly: go.GoPositionMap("internal/syscall/windows/registry/value.go", "value.cs", "AB9qAA0CgoKUgoKUkoKClKaigoKUgpKCgoKUgpSClAADEtKCgpS2pIKUgt7CgoKWgoKEggAGEoKCgpSCgpaWkoKUgpaClqyygpSCgpSCgoKClIKUAAMS8oKClIKUgpSCgpSClIKCgoKCpgAGENKCgpSUgpSkgpSkAAQS0oKClIKUpoKCgpSClKrCqsKmgoKClIKqoqqi3LKCgoKCppSCgqqiqJKokoKClIKCgoKSgoKClJSCgpSClJS0")]
 [assembly: go.GoPositionMap("internal/syscall/windows/registry/zsyscall_windows.go", "zsyscall_windows.cs", "ABM0opSk2gAMIKKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUprKCgoKU")]
 // </GoSourcePositionMaps>
 
