@@ -167,6 +167,16 @@ partial class windows_package
         byte* block = (byte*)golib.GoAsyncIO.StageOperationBuffer(overlapped, checked(bufBytes + syscall.GoNativeSockaddrLen));
         staged = (NativeWSABuf*)block;
 
+        stageWSABufs(bufs, bufcnt, staged);
+
+        addr = block + bufBytes;
+        return native;
+    }
+
+    // Transcribes a Go WSABuf array into its native form. Shared by the two submits in this package
+    // (WSASendTo above, WSASendMsg in syscall_windows_impl.cs) so the one thing they genuinely have
+    // in common is written once; everything else about their staging differs.
+    private static unsafe void stageWSABufs(ж<syscall.WSABuf> bufs, uint32 bufcnt, NativeWSABuf* staged) {
         for (uint32 i = 0; i < bufcnt; i++) {
             // Index 0 is the common case and the only one a struct-FIELD reference can answer; a
             // multi-buffer submit names a slice element, which unsafe.Add steps through.
@@ -176,8 +186,6 @@ partial class windows_package
             staged[i].Len = buf.Len;
             staged[i].Buf = buf.Buf == nil ? null : (byte*)(void*)buf.Buf;
         }
-        addr = block + bufBytes;
-        return native;
     }
 
     // The one submit path both families share, so the kernel contract lives in exactly one place.
