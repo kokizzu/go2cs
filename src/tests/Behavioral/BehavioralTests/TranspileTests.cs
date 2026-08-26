@@ -412,6 +412,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckEmptyStructMapSet() => CheckTarget("EmptyStructMapSet");
 
     [TestMethod]
+    public void CheckEnvironBlockWalk() => CheckTarget("EnvironBlockWalk");
+
+    [TestMethod]
     public void CheckErrorfFormatting() => CheckTarget("ErrorfFormatting");
 
     [TestMethod]
