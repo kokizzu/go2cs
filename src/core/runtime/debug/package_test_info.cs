@@ -49,11 +49,11 @@ using static global::go.runtime.debug_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("runtime/debug/example_monitor_test.go", "example_monitor_test.cs", "AA8mwgACIAANApaCAAcS4oKUgoSCgpSUqIKClICCpICCpLqCgpSCgoKCgoKUgoCC")]
-[assembly: go.GoPositionMap("runtime/debug/garbage_test.go", "garbage_test.cs", "ABAgooSCgriCgpaChIKUgpSClIKClIKUgoKCgpSClIKUqIKCgpaCgrqClIKCgoKUAAgMuoKWhIKoAAgUhIK6ggAJFoKCgpSUlIIABhKiloKCgqiCgpSChJKCgoKCgoKWkoCCtoKUlIKCgIK4gpSUgoKUgoKCguiCgpSmAAgSgg==")]
+[assembly: go.GoPositionMap("runtime/debug/example_monitor_test.go", "example_monitor_test.cs", "AC0mwgACIAANApaCAAcS4oKUgoSCgpSUqIKClICCpICCpLqCgpSCgoKCgoKUgoCC")]
+[assembly: go.GoPositionMap("runtime/debug/garbage_test.go", "garbage_test.cs", "ACggooSCgriCgpaChIKUgpSClIKClIKUgoKCgpSClIKUqIKCgpaCgrqClIKCgoKUAAgMuoKWhIKoAAgUhIK6ggAJFoKCgpSUlIIABhKiloKCgqiCgpSChJKCgoKCgoKWkoCCtoKUlIKCgIK4gpSUgoKUgoKCguiCgpSmAAgSgg==")]
 [assembly: go.GoPositionMap("runtime/debug/heapdump_test.go", "heapdump_test.cs", "ABEcooKUgoKUgpKCgoKUgoCCAAsQqNKClIKClIKmgoKCgpaCloKCAAwS+qKClIKClIKSgoI=")]
-[assembly: go.GoPositionMap("runtime/debug/mod_test.go", "mod_test.cs", "AA0ekoKClAARBrSclgABEJ6MgoKUgrqCgoKWgg==")]
-[assembly: go.GoPositionMap("runtime/debug/stack_test.go", "stack_test.cs", "AB0sgpSCpoKClICCpIK4yoKkggANKrKCgoLegoDcgoKCgpSCgoKClLikgoKWgpKEgoKUhISCgpSUhIKCgoLmgoKCgpaEgoKCgoKClAAKGIKClIKClsqClIK6goKUgg==")]
+[assembly: go.GoPositionMap("runtime/debug/mod_test.go", "mod_test.cs", "ABkekoKClAARBrSclgABEJ6MgoKUgrqCgoKWgg==")]
+[assembly: go.GoPositionMap("runtime/debug/stack_test.go", "stack_test.cs", "AC8sgpSCpoKClICCpIK4yoKkggANKrKCgoLegoDcgoKCgpSCgoKClLikgoKWgpKEgoKUhISCgpSUhIKCgoLmgoKCgpaEgoKCgoKClAAKGIKClIKClsqClIK6goKUgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;
