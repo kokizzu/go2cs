@@ -42,6 +42,12 @@ using math;
 
 partial class fiat_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(math.bits_package));
+}
+
 [GoType("num:uint64")] partial struct p224Uint1;
 
 [GoType("num:int64")] partial struct p224Int1;

@@ -9,6 +9,24 @@ using time = time_package;
 
 partial class debug_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 // GCStats collect information about recent garbage collections.
 [GoType] partial struct GCStats {
     public time.Time LastGC;       // time of last collection

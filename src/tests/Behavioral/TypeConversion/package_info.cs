@@ -51,7 +51,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("TypeConversion.go", "TypeConversion.cs", "AB4aggAAEISEhIQ=")]
+[assembly: go.GoPositionMap("TypeConversion.go", "TypeConversion.cs", "ACQaggAAEISEhIQ=")]
 // </GoSourcePositionMaps>
 
 namespace go;

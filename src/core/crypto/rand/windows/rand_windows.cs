@@ -10,6 +10,12 @@ using go.@internal.syscall;
 
 partial class rand_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() {
+    builtin.initPackage(typeof(go.@internal.syscall.windows_package));
+}
+
 [GoInit] internal static void init() {
     Reader = new rngReaderжReader(Ꮡ(new rngReader(nil)));
 }

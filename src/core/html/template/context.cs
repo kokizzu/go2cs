@@ -9,6 +9,12 @@ using text.template;
 
 partial class template_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtextꓸtemplateꓸparse() {
+    builtin.initPackage(typeof(text.template.parse_package));
+}
+
 // context describes the state an HTML parser must be in when it reaches the
 // portion of HTML produced by evaluating a particular template node.
 //

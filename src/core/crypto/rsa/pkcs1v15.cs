@@ -15,6 +15,42 @@ using go.crypto.@internal;
 
 partial class rsa_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcrypto() {
+    builtin.initPackage(typeof(crypto_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸrandutil() {
+    builtin.initPackage(typeof(go.crypto.@internal.randutil_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
+    builtin.initPackage(typeof(go.crypto.subtle_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // This file implements encryption and decryption using PKCS #1 v1.5 padding.
 
 // PKCS1v15DecryptOptions is for passing options to PKCS #1 v1.5 decryption using

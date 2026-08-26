@@ -11,6 +11,12 @@ using math = math_package;
 
 partial class cmplx_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
 // Abs returns the absolute value (also called the modulus) of x.
 public static float64 Abs(complex128 x) {
     return math.Hypot(real(x), imag(x));

@@ -18,6 +18,18 @@ using unicode;
 
 partial class registry_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 public static UntypedInt NONE => 0;
 public static UntypedInt SZ => 1;
 public static UntypedInt EXPAND_SZ => 2;

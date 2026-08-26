@@ -11,6 +11,12 @@ using go.math;
 
 partial class rand_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(go.math.bits_package));
+}
+
 // https://numpy.org/devdocs/reference/random/upgrading-pcg64.html
 // https://github.com/imneme/pcg-cpp/commit/871d0494ee9c9a7b7c43f753e3d8ca47c26f8005
 

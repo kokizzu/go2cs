@@ -14,6 +14,18 @@ using slices = slices_package;
 
 partial class fmtsort_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
 [GoType("[]KeyValue")] partial struct SortedMap;
 
 // Note: Throughout this package we avoid calling reflect.Value.Interface as

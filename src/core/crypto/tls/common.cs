@@ -30,6 +30,54 @@ using go.crypto;
 
 partial class tls_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontext() {
+    builtin.initPackage(typeof(context_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
+    builtin.initPackage(typeof(go.crypto.rand_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() {
+    builtin.initPackage(typeof(go.crypto.sha512_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
+    builtin.initPackage(typeof(go.@internal.godebug_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnet() {
+    builtin.initPackage(typeof(net_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 public static UntypedInt VersionTLS10 => 0x0301;
 public static UntypedInt VersionTLS11 => 0x0302;
 public static UntypedInt VersionTLS12 => 0x0303;

@@ -51,8 +51,8 @@ using static go.net.@internal.socktest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/internal/socktest/switch.go", "switch.cs", "ABc0goKCqLKCgoKClIKosoKCgpSCAAQQkKaQppCkggAJFIIAEyyCyoKCgoKUAA00goKUAAQYgoKUqLKCgoI=")]
-[assembly: go.GoPositionMap("net/internal/socktest/switch_posix.go", "switch_posix.cs", "ABAcgpSkpKQACgiCgpSkpKSkpICCpPaClKSkpA==")]
+[assembly: go.GoPositionMap("net/internal/socktest/switch.go", "switch.cs", "ACM0goKCqLKCgoKClIKosoKCgpSCAAQQkKaQppCkggAJFIIAEyyCyoKCgoKUAA00goKUAAQYgoKUqLKCgoI=")]
+[assembly: go.GoPositionMap("net/internal/socktest/switch_posix.go", "switch_posix.cs", "ABYcgpSkpKQACgiCgpSkpKSkpICCpPaClKSkpA==")]
 [assembly: go.GoPositionMap("net/internal/socktest/switch_unix.go", "switch_unix.cs", "AAoYwoKCkoKU2sKCkoI=")]
 [assembly: go.GoPositionMap("net/internal/socktest/sys_unix.go", "sys_unix.cs", "AAoY8oSCgoKEgoKUgoCCgpSmgoKCgpSCgujigoKUgoKEgoKUgoCCpoKCgoKUgoLo4oKClIKChIKClIKAgqaCgoKClILo4oKClIKChIKClIKAgqaCgoKClILoAAgCgoKUgoKEgoKUgoCCgpSmgoKCgpSCgujSgoKUgoKEgoKUgoKAgqaClIKCgpQ=")]
 // </GoSourcePositionMaps>

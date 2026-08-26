@@ -11,6 +11,24 @@ using text;
 
 partial class printer_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸbuildꓸconstraint() {
+    builtin.initPackage(typeof(global::go.go.build.constraint_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtextꓸtabwriter() {
+    builtin.initPackage(typeof(text.tabwriter_package));
+}
+
 [GoRecv] internal static void fixGoBuildLines(this ref printer p) {
     if (len(p.goBuild) + len(p.plusBuild) == 0) {
         return;

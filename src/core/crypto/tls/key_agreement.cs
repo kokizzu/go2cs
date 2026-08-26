@@ -17,6 +17,18 @@ using hash = hash_package;
 
 partial class tls_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdh() {
+    builtin.initPackage(typeof(go.crypto.ecdh_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() {
+    builtin.initPackage(typeof(go.crypto.md5_package));
+}
+
 // A keyAgreement implements the client and server side of a TLS 1.0–1.2 key
 // agreement protocol by generating and processing key exchange messages.
 [GoType] partial interface keyAgreement {

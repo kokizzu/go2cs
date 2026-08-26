@@ -33,6 +33,18 @@ using time = time_package;
 
 partial class tls_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸpem() {
+    builtin.initPackage(typeof(encoding.pem_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸos() {
+    builtin.initPackage(typeof(os_package));
+}
+
 // Server returns a new TLS server side connection
 // using conn as the underlying transport.
 // The configuration config must be non-nil and must include

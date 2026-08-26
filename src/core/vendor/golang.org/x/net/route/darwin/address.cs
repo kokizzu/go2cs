@@ -9,6 +9,18 @@ using syscall = syscall_package;
 
 partial class route_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // An Addr represents an address associated with packet routing.
 [GoType] partial interface Addr {
     // Family returns an address family.

@@ -15,6 +15,12 @@ using io = io_package;
 
 partial class xml_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // BUG(rsc): Mapping between XML elements and data structures is inherently flawed:
 // an XML element is an order-dependent collection of anonymous
 // values, while a data structure is an order-independent collection

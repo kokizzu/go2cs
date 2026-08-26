@@ -11,6 +11,12 @@ using go.@internal;
 
 partial class buildcfg_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 // ExperimentFlags represents a set of GOEXPERIMENT flags relative to a baseline
 // (platform-default) experiment configuration.
 [GoType] partial struct ExperimentFlags {

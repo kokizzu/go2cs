@@ -8,6 +8,12 @@ using encoding;
 
 partial class norm_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
+    builtin.initPackage(typeof(encoding.binary_package));
+}
+
 // This file contains Form-specific logic and wrappers for data in tables.go.
 // Rune info is stored in a separate trie per composing form. A composing form
 // and its corresponding decomposing form share the same trie.  Each trie maps

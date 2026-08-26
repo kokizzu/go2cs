@@ -56,8 +56,8 @@ using static go.@internal.testpty_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/testpty/pty.go", "pty.cs", "ABQqgqaCpoDOsg==")]
-[assembly: go.GoPositionMap("internal/testpty/pty_darwin.go", "pty_darwin.cs", "ABMasoKClICCgqSAgoKkgoKClA==")]
+[assembly: go.GoPositionMap("internal/testpty/pty.go", "pty.cs", "ACYqgqaCpoDOsg==")]
+[assembly: go.GoPositionMap("internal/testpty/pty_darwin.go", "pty_darwin.cs", "AB8asoKClICCgqSAgoKkgoKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

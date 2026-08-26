@@ -61,9 +61,9 @@ using static go.sort_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("sort/search.go", "search.cs", "AAh0ADMGkoKUgpS4AAI2AB0IkoKUgpS4AAIS4r7CvsK4kKaQppA=")]
-[assembly: go.GoPositionMap("sort/slice.go", "slice.cs", "AAwwAAwCgoKCggACGAAJAoKCAAIQ0oKCgoKm")]
+[assembly: go.GoPositionMap("sort/slice.go", "slice.cs", "ABgwAAwCgoKCggACGAAJAoKCAAIQ0oKCgoKm")]
 [assembly: go.GoPositionMap("sort/sort.go", "sort.cs", "ACZa4oKClIIAChyCgoKCpoKCABAkkqiSrsKCgoKmAAQQkKKAooCmkMyAAAIQ4KKAppKokMqAooCigKaQrtCswKqwqrCswKqwAAJIACIC")]
-[assembly: go.GoPositionMap("sort/sort_impl_go121.go", "sort_impl_go121.cs", "AA4ggKKAooCkgKKAooA=")]
+[assembly: go.GoPositionMap("sort/sort_impl_go121.go", "sort_impl_go121.cs", "ABQggKKAooCkgKKAooA=")]
 [assembly: go.GoPositionMap("sort/zsortfunc.go", "zsortfunc.cs", "AAgUkoKCzqKCgoKClIKUgpSCuIKCgpaCqIKCAAMU4oSagoSCgqiCgqiCgpaCgriCqIKCzIKCgpaChJKCgoKClIKCAAQSwoKUgpSClIKClIKChIKClIKUgpSCgpSCqqKClIKClIKUgpSCgpSokpiCgoKWgpaClpaCgoKUuIKCgpS4qqKCgoKEgoKClAAEFNKahL6ClIKCppaUpKTKkoKClKiSgoKCqJKmgoKCgoKCuIKCuIKCkoKCgpSEgoKCgoKUgIKkAAMuABYIuIKCgoKClLiClMy4goKCgoKUuIKUloKCkoKClIKUhIKCgpSogoKUgpSCAAMQwoKEgoKClIK4")]
 [assembly: go.GoPositionMap("sort/zsortinterface.go", "zsortinterface.cs", "AAgUkoKCzqKCgoKClIKUgpSCuIKCgpaCqIKCAAMU4oSagoSCgqiCgqiCgpaCgriCqIKCzIKCgpaChJKCgoKClIKCAAQSwoKUgpSClIKClIKChIKClIKUgpSCgpSCqqKClIKClIKUgpSCgpSokpiCgoKWgpaClpaCgoKUuIKCgpS4qqKCgoKEgoKClAAEFNKahL6ClIKCppaUpKTKkoKClKiSgoKCqJKmgoKCgoKCuIKCuIKCkoKCgpSEgoKCgoKUgIKkAAMuABYIuIKCgoKClLiClMy4goKCgoKUuIKUloKCkoKClIKUhIKCgpSogoKUgpSCAAMQwoKEgoKClIK4")]
 // </GoSourcePositionMaps>

@@ -49,7 +49,7 @@ using static go.go.version_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/version/version.go", "version.cs", "ABMoooKClAACGgAKAoKClIKUAAMW8qiS")]
+[assembly: global::go.GoPositionMap("go/version/version.go", "version.cs", "ABkoooKClAACGgAKAoKClIKUAAMW8qiS")]
 // </GoSourcePositionMaps>
 
 namespace go.go;

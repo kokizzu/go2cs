@@ -52,8 +52,8 @@ using static go.@internal.filepathlite_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/filepathlite/path.go", "path.cs", "ACJAgoKUpoKCgoKUgpSCpqKCpoKClKiSgoKCgpSUlN6CkpKCgpaClra2gpaCwsiSlIKC6qKWkuyCloKokqaCgpSCgoKCgoKmgpSClKiSgpSokoKUqJKClKaCgpSCgoKmqJKCgoKUqJKCgqaokoKmgqaUgoKUgqaClKiSgoKClIKUlKiSqqI=")]
-[assembly: go.GoPositionMap("internal/filepathlite/path_windows.go", "path_windows.cs", "AA8kgqaCgpSUlKaUgoKCgoKUgqaClIKUpoKClLaChJKCgoKUgoKUgqaUgoKCppQAAhDkgoKU2IKUgpSC3ICCpOaCgpS2gpSClpSkAAkSgpSClKaCgpSCgqamgoKUqJKCgqaClIKClAAFEuIAARKoAAoQAAcU4pSCgpSotKyygpSCgoK2poKUrLKCgoKCgriokoKCpqiSqsKCyoKClIKC3II=")]
+[assembly: go.GoPositionMap("internal/filepathlite/path.go", "path.cs", "ADpAgoKUpoKCgoKUgpSCpqKCpoKClKiSgoKCgpSUlN6CkpKCgpaClra2gpaCwsiSlIKC6qKWkuyCloKokqaCgpSCgoKCgoKmgpSClKiSgpSokoKUqJKClKaCgpSCgoKmqJKCgoKUqJKCgqaokoKmgqaUgoKUgqaClKiSgoKClIKUlKiSqqI=")]
+[assembly: go.GoPositionMap("internal/filepathlite/path_windows.go", "path_windows.cs", "ABskgqaCgpSUlKaUgoKCgoKUgqaClIKUpoKClLaChJKCgoKUgoKUgqaUgoKCppQAAhDkgoKU2IKUgpSC3ICCpOaCgpS2gpSClpSkAAkSgpSClKaCgpSCgqamgoKUqJKCgqaClIKClAAFEuIAARKoAAoQAAcU4pSCgpSotKyygpSCgoK2poKUrLKCgoKCgriokoKCpqiSqsKCyoKClIKC3II=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

@@ -4,6 +4,12 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 internal static (ж<int64>, int64) next(int64 now) {
     ref var v = ref heap<int64>(out var Ꮡv);
     v = now * 2;

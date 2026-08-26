@@ -16,6 +16,12 @@ using ꓸꓸꓸAttr = Span<slog_package.Attr>;
 
 partial class slog_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
 // A Value can represent any Go value, but unlike type any,
 // it can represent most small values without an allocation.
 // The zero Value corresponds to nil.

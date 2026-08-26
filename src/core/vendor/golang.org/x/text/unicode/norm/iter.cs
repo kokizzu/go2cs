@@ -9,6 +9,12 @@ using go.unicode;
 
 partial class norm_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 // MaxSegmentSize is the maximum size of a byte buffer needed to consider any
 // sequence of starter and non-starter runes for the purpose of normalization.
 public static UntypedInt MaxSegmentSize => /* maxByteBufferSize */ 128;

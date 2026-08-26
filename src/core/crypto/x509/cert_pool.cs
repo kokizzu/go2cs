@@ -12,6 +12,30 @@ using go.crypto;
 
 partial class x509_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
+    builtin.initPackage(typeof(go.crypto.sha256_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸpem() {
+    builtin.initPackage(typeof(encoding.pem_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 [GoType("[28]byte")] /* [sha256.Size224]byte */
 partial struct sum224;
 

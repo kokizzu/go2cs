@@ -7,6 +7,12 @@ using strings = strings_package;
 
 partial class template_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // Skip handler names from
 // https://www.w3.org/TR/html5/webappapis.html#event-handlers-on-elements,-document-objects,-and-window-objects
 // since we have special handling in attrType.

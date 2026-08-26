@@ -21,6 +21,18 @@ using runtime.@internal;
 
 partial class runtime_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
+    builtin.initPackage(typeof(@internal.abi_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntimeꓸinternalꓸsys() {
+    builtin.initPackage(typeof(runtime.@internal.sys_package));
+}
+
 // finblock is an array of finalizers to be executed. finblocks are
 // arranged in a linked list for the finalizer queue.
 //

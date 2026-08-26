@@ -11,6 +11,24 @@ using io = io_package;
 
 partial class debug_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // exported from runtime.
 internal static partial @string modinfo();
 

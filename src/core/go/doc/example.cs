@@ -21,6 +21,42 @@ using ꓸꓸꓸжastꓸFile = Span<ж<global::go.go.ast_package.File>>;
 
 partial class doc_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸlazyregexp() {
+    builtin.initPackage(typeof(@internal.lazyregexp_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸpath() {
+    builtin.initPackage(typeof(path_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(global::go.unicode.utf8_package));
+}
+
 // An Example represents an example function found in a test source file.
 [GoType] partial struct Example {
     public @string Name; // name of the item being exemplified (including optional suffix)

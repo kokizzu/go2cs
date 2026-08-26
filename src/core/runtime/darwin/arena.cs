@@ -92,6 +92,12 @@ using runtime.@internal;
 
 partial class runtime_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntimeꓸinternalꓸsys() {
+    builtin.initPackage(typeof(runtime.@internal.sys_package));
+}
+
 // Functions starting with arena_ are meant to be exported to downstream users
 // of arenas. They should wrap these functions in a higher-lever API.
 //

@@ -52,9 +52,9 @@ using static go.crypto.rand_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/rand/rand.go", "rand.cs", "ABk0oqqigoKCgpSAgqSU")]
-[assembly: go.GoPositionMap("crypto/rand/rand_windows.go", "rand_windows.cs", "AAwcgNiCgIKk")]
-[assembly: go.GoPositionMap("crypto/rand/util.go", "util.cs", "ABEgooKWhIKCloKEgoCCuMqCpoKCuISCgszSgpSClIKUppSCgpaEgoKCuoSCgg==")]
+[assembly: go.GoPositionMap("crypto/rand/rand.go", "rand.cs", "AB80oqqigoKCgpSAgqSU")]
+[assembly: go.GoPositionMap("crypto/rand/rand_windows.go", "rand_windows.cs", "ABIcgNiCgIKk")]
+[assembly: go.GoPositionMap("crypto/rand/util.go", "util.cs", "ACMgooKWhIKCloKEgoCCuMqCpoKCuISCgszSgpSClIKUppSCgpaEgoKCuoSCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;

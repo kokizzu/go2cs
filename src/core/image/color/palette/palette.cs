@@ -9,6 +9,12 @@ using go.image;
 
 partial class palette_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() {
+    builtin.initPackage(typeof(go.image.color_package));
+}
+
 // Plan9 is a 256-color palette that partitions the 24-bit RGB space
 // into 4×4×4 subdivision, with 4 shades in each subcube. Compared to the
 // [WebSafe], the idea is to reduce the color resolution by dicing the

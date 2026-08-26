@@ -7,6 +7,12 @@ using path = path_package;
 
 partial class fs_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸpath() {
+    builtin.initPackage(typeof(path_package));
+}
+
 // A GlobFS is a file system with a Glob method.
 [GoType] partial interface GlobFS :
     FS

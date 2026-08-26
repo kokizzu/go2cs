@@ -22,6 +22,30 @@ using go.sync;
 
 partial class crc32_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸhash() {
+    builtin.initPackage(typeof(hash_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(go.sync.atomic_package));
+}
+
 // The size of a CRC-32 checksum in bytes.
 public static UntypedInt ΔSize => 4;
 

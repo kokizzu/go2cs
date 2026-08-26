@@ -5,6 +5,12 @@ using strconv = strconv_package;
 
 partial class syntax_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 internal static void _ᴛ1() {
     // An "invalid array index" compiler error signifies that the constant values have changed.
     // Re-run the stringer command to generate them again.

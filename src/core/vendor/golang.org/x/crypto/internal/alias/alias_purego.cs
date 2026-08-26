@@ -12,6 +12,12 @@ using reflect = reflect_package;
 
 partial class alias_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 // AnyOverlap reports whether x and y share memory at any (not necessarily
 // corresponding) index. The memory beyond the slice length is ignored.
 public static bool AnyOverlap(slice<byte> x, slice<byte> y) {

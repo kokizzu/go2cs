@@ -19,6 +19,24 @@ using go.vendor.golang.org.x.sys;
 
 partial class sha3_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
+    builtin.initPackage(typeof(go.crypto.subtle_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
+    builtin.initPackage(typeof(encoding.binary_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸsysꓸcpu() {
+    builtin.initPackage(typeof(go.vendor.golang.org.x.sys.cpu_package));
+}
+
 // xorIn xors the bytes in buf into the state.
 internal static void xorIn(ж<state> Ꮡd, slice<byte> buf) {
     ref var d = ref Ꮡd.DerefOrNull();

@@ -12,6 +12,12 @@ using go.net.http;
 
 partial class httputil_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternal() {
+    builtin.initPackage(typeof(go.net.http.internal_package));
+}
+
 // NewChunkedReader returns a new chunkedReader that translates the data read from r
 // out of HTTP "chunked" format before returning it.
 // The chunkedReader returns [io.EOF] when the final 0-length chunk is read.

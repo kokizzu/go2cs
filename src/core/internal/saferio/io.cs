@@ -14,6 +14,12 @@ using @unsafe = unsafe_package;
 
 partial class saferio_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // chunk is an arbitrary limit on how much memory we are willing
 // to allocate without concern.
 internal static UntypedInt chunk => /* 10 << 20 */ 10485760; // 10M

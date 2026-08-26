@@ -16,6 +16,36 @@ using go.log.slog.@internal;
 
 partial class benchmarks_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontext() {
+    builtin.initPackage(typeof(context_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlogꓸslogꓸinternalꓸbuffer() {
+    builtin.initPackage(typeof(go.log.slog.@internal.buffer_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 // A fastTextHandler writes a Record to an io.Writer in a format similar to
 // slog.TextHandler, but without quoting or locking. It has a few other
 // performance-motivated shortcuts, like writing times as seconds since the

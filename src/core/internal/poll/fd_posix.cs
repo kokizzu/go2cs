@@ -9,6 +9,12 @@ using Δsyscall = syscall_package;
 
 partial class poll_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // eofError returns io.EOF when fd is available for reading end of
 // file.
 [GoRecv] internal static error eofError(this ref FD fd, nint n, error err) {

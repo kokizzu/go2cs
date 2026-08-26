@@ -24,6 +24,12 @@ using go.sync;
 
 partial class tls_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
+    builtin.initPackage(typeof(go.crypto.subtle_package));
+}
+
 // A Conn represents a secured connection.
 // It implements the net.Conn interface.
 [GoType] partial struct Conn {

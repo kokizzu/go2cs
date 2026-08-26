@@ -811,15 +811,19 @@ That subprocess costs ~300 ms on Windows, so it is contained twice. Resolution i
 
 Guarded by `src/go2cs/buildConstraints_test.go` (release tags bare/negated/compound, the legacy `+build` grammar, extraction precedence, loader-toolchain resolution), each assertion verified to fail against the pre-fix converter.
 
-### A blank import forces the imported package's `init` to run
+### An import forces the imported package's `init` to run
 
-Go's `import _ "image/png"` imports a package **purely** for the side effects of its `init`, and the
-language guarantees that initializer runs before the importing package's own. A converted Go `init`
-becomes `[GoInit]`, which `csproj-template.xml` aliases to .NET's `[ModuleInitializer]` — the right
-shape and a **weaker guarantee**: a module constructor runs at first access to something in its
-module, so an assembly nothing in the program ever *names* is never loaded and never initializes. A
-blank import is by definition the case that names nothing, and the observable form is a registry that
-stays empty. `image/gif`'s `writer_test.go` blank-imports `image/png` so that png's `init` calls
+Go guarantees an imported package is fully initialized **before** the importing package's own
+initialization, for every form of import. A converted Go `init` becomes `[GoInit]`, which
+`csproj-template.xml` aliases to .NET's `[ModuleInitializer]` — the right shape and a **weaker
+guarantee**: a module constructor runs at first access to something in *its own* module, so an
+assembly nothing in the program has touched yet has not initialized. The converter closes that gap by
+emitting a hook that forces the imported package's module constructor.
+
+**Blank imports were forced first, and for years they were all that was.** `import _ "image/png"`
+imports a package purely for the side effects of its `init`, so it is by definition the case that
+names nothing, and the observable form is a registry that stays empty. `image/gif`'s `writer_test.go`
+blank-imports `image/png` so that png's `init` calls
 `image.RegisterFormat` (`image/png/reader.cs`); with the import emitted as a comment alone that never
 ran, `image.Decode` had no PNG entry, and `TestWriter` failed with
 `../testdata/video-001.png image: unknown format` — the package's only failure, at 27 of 28. The same
@@ -827,10 +831,62 @@ shape gates every registration-by-blank-import consumer: `database/sql` drivers 
 `net/http/pprof` (its `init` installs the `/debug/pprof` handlers), `image/png` and `image/jpeg` as
 decoders for anything calling `image.Decode`, and `time/tzdata`.
 
-The blank import still emits **no `using`** — `using _ = <ns>;` would hijack C#'s `_` discard for the
-whole file (CS0118 + CS0029 on any deconstruction discard) — so it stays a comment, and the
-initialization is forced by a generated module-initializer hook at the top of the importing file's
-class body:
+**That reading was true of blank imports and said nothing about the others** (2026-08-26). A NAMED
+import whose package is referenced only from a *function body* is equally untouched at
+module-initialization time, and Go orders it identically. `log/slog` is the case that made the
+difference observable: slog's `init` captures `log/internal.DefaultOutput`, which **`log`'s own
+`init`** installs. Whichever of the two is touched first wins, so a test host that touches `slog`
+first captured **nil** into `defaultHandler.output` — a value that is captured, never re-read, so
+`log`'s later initialization could not repair it. `handler.cs:120` then dereferenced a nil func: on
+the test's own thread that surfaced as one ordinary failure, and on a goroutine it escaped and killed
+the host outright, costing every ordinally later test its verdict. It is a *correctness* fix rather
+than a verdict fix — before it, any converted program that touched `log/slog` before `log` crashed.
+
+**The trigger is "the imported package initializes something, transitively."** Two honest trigger
+sets were available. Forcing **every** import matches Go exactly and costs a hook per import per
+package, corpus-wide. Forcing every import whose module constructor is non-empty *transitively* is
+observationally **equivalent** — running an empty module constructor is a guaranteed no-op, the same
+reasoning the pseudo-package skip below already applies to `unsafe`/`builtin`/`C` — at a fraction of
+the emission. The second is what the converter does.
+
+The fact behind it is computed in process from the loaded package graph (`packageInitFacts.go`)
+rather than published as metadata, and that is the one design decision in the change worth stating
+plainly. A package **initializes** when it declares a `func init()`, or when go/types'
+`Info.InitOrder` carries a package-level variable whose initialization expression is not a
+compile-time constant — Go's own definition of what runs at init time, read off Go's own analysis
+rather than re-derived. That answer is then closed transitively over the import graph, which is a
+DAG, so it terminates; and only *reachability* matters, because forcing a package runs the forcing
+hooks it carries in turn, so the runtime walks the graph one link at a time.
+
+Computing it in process is possible because `go/packages` is loaded with `LoadAllSyntax`, which
+carries **syntax and type information for every dependency**, not only for the package being
+converted (measured on `log/slog`: 66 transitive dependencies, 66 with `TypesInfo`, 65 with `Syntax`
+— the one without is `unsafe`, which the pseudo-package fence already answers). Three shapes make
+that materially better than publishing the fact as a `package_info.cs` record: the three
+**hand-owned-by-consequence** packages (`internal/concurrent`, `internal/godebug`, `internal/weak`)
+never re-emit a `package_info.cs` at all, so a published record could never appear for them — and
+`internal/godebug` has an `init`; a **hand-owned file** inside a converted package is not visited, so
+its `init` would be invisible to a record scraped from emitted output, while Go's own graph still
+sees it; and **layout L3** would need the record routed per `GOOS`, whereas the loader answers per
+target for free, since which files a package is built from is exactly what decides whether it has an
+`init`. The fact also stays deterministic from the Go sources alone, so the emission cannot vary with
+the state of the output tree — the failure mode the `-go2cspath` empty-`<ImportedTypeAliases>` trap
+is the standing example of.
+
+An import path this conversion has **no loaded handle for** answers *yes*. Forcing a module
+constructor that turns out to be empty is a guaranteed no-op; skipping one that is not loses Go's
+ordering silently, and silently is how this defect lived in the corpus for months. The trigger fails
+toward fidelity, never toward the smaller emission.
+
+⚠ **A read-set heuristic cannot substitute.** The tempting narrow rule — "force only the imports whose
+symbols the importer's own `init` references" — MISSES this exact case: slog's `init` reads
+`log/internal.DefaultOutput`, but the package whose `init` WRITES it is `log`. The dependency that
+must be forced is not the one the init statement names.
+
+A blank import still emits **no `using`** — `using _ = <ns>;` would hijack C#'s `_` discard for the
+whole file (CS0118 + CS0029 on any deconstruction discard) — so it stays a comment, and every import
+form, blank included, gets the same generated module-initializer hook at the top of the importing
+file's class body:
 
 ```go
 import (
@@ -846,10 +902,15 @@ using registry = BlankImportSideEffects.registry_package;
 
 partial class main_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸBlankImportSideEffectsꓸjpeglike() {
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸBlankImportSideEffectsꓸjpeglike() {
     builtin.initPackage(typeof(BlankImportSideEffects.jpeglike_package));
+}
+
+// …and the same hook for the NAMED import beside them, which Go orders identically.
+[GoInit] internal static void initᴛᴛimportꓸBlankImportSideEffectsꓸregistry() {
+    builtin.initPackage(typeof(BlankImportSideEffects.registry_package));
 }
 ```
 
@@ -858,7 +919,7 @@ Four decisions make that emission what it is.
 **The mechanism is `RuntimeHelpers.RunModuleConstructor`**, wrapped as golib's `builtin.initPackage(Type)`
 so the emitted line stays readable and the mechanism lives in exactly one place. It is the explicit,
 spec-defined way to run a module constructor, and the runtime guarantees a module constructor runs **at
-most once** — so several blank importers of one package, or a package forced after it has already
+most once** — so several importers of one package, or a package forced after it has already
 loaded, are no-ops rather than repeated `init` calls. Measured under **Native AOT** as well as the JIT:
 the call is AOT-safe, and under AOT the gap does not even arise (a single native image has no lazy
 assembly load, so every linked module's initializers run at startup regardless) — the forced call is
@@ -869,31 +930,31 @@ keeps the assembly the program otherwise never names.
 imported package's initialization before the importer's. Roslyn emits an assembly's module-initializer
 calls in compilation file order and then declaration order within a file, so leading the file's
 declarations is what that ordering buys — within one file it is exact. Across files of one package the
-order is Roslyn's, which is the same latitude the conversion already lives with for every *non*-blank
-import (whose initializer the CLR runs lazily at first use, not in Go's order); no converted package
-depends on the difference. Reproducing Go's ordering in full would mean forcing **every** import
-eagerly, in dependency order, from a single per-assembly driver — a strictly larger change that trades
-startup cost (loading the whole transitive assembly closure at module init) for fidelity nothing
-currently needs. Deliberately deferred, not overlooked.
+order is Roslyn's, and the conversion does not state it: an `init` in file B that depends on an import
+only file A names is ordered by the compiler rather than by go2cs. That residual is the one part of
+Go's rule the emission still approximates, and closing it would mean a single per-assembly driver that
+forces every import in dependency order — a strictly larger change, and one no measured case needs.
 
 **Exactly one hook per (assembly, imported package).** Go initializes a package once per program
 however many files import it, and a .NET module constructor likewise runs once per assembly, so the
-hook belongs to the first file that names the import; later files' blank imports of the same package
-emit nothing. The hook's name is derived from the import path (`image/png` →
-`initᴛᴛblankImportꓸimageꓸpng`), which makes it unique by construction — two blank imports in one file
+hook belongs to the first file that names the import; later files' imports of the same package
+emit nothing. Since the hook covers named imports too, that overlap is now the rule rather than the
+exception — most files of a package re-import what a sibling already forced. The hook's name is
+derived from the import path (`image/png` →
+`initᴛᴛimportꓸimageꓸpng`), which makes it unique by construction — two imports in one file
 are two methods, and a shared generated name would be CS0111 — and stable across runs without a
 counter or a file-name mangle. Path segments are reduced to C# identifier characters, so a module
 path's dots and hyphens (`github.com/mattn/go-isatty`) cannot break the identifier. The doubled temp
 marker keeps the name clear of the relocated-package-var method space (`initᴛ<varname>`, see
 [Package-Level Variable Initialization Order](#package-level-variable-initialization-order)) and the
-`blankImport` word clear of the `-tests` package-init hook (`initᴛᴛtests`).
+`import` word clear of the `-tests` package-init hook (`initᴛᴛtests`).
 
 **Go's pseudo-packages are skipped.** `unsafe` and `builtin` are compiler-provided and have no
 initialization at all, and `C` is cgo. `import _ "unsafe"` is the `//go:linkname` ritual — 67 files of
-the converted standard library — so forcing it would be a guaranteed no-op emitted 67 times. Only real
-packages get a hook, which is why the converted corpus's blast radius is three files
-(`crypto/x509` → sha1/sha256/sha512, `runtime/metrics` → runtime, `runtime/race` → its amd64v1 variant)
-rather than seventy.
+the converted standard library — so forcing it would be a guaranteed no-op emitted 67 times. They are
+answered before the loaded-handle lookup, which matters for `unsafe` specifically: it loads with type
+information but **no syntax**, otherwise indistinguishable from a package the loader failed to give
+this conversion, which fails open and would force it.
 
 **Only the module constructor is forced — that is exactly the package's `init` functions.** A package's
 own package-level variable initializers are C# static field initializers on the package class, which
@@ -902,18 +963,38 @@ package's own `init` touching them is what triggers them). The residual case is 
 registration is a package-level `var _ = pkg.Register(…)` rather than an `init`; closing it means
 additionally forcing the package class's type initializer, which is deliberately *not* done here
 because it would eagerly run `runtime`'s 291 package-level initializers on behalf of
-`runtime/metrics`'s linkname-only blank import for no measured benefit. No blank import in the
-converted standard library registers that way.
+`runtime/metrics`'s linkname-only import for no measured benefit. No import in the converted
+standard library registers that way.
+
+Note the deliberate asymmetry with the trigger above, which counts a non-constant package-level
+initializer as initialization. The FACT states what Go runs at init time; the HOOK runs what a .NET
+module constructor can run. Making the fact narrower — "only a `func init()` counts" — would tighten
+the emission today at the cost of encoding one property of the current emission model into a
+Go-level question, so a later change that moved relocated initializers into the module constructor
+would silently under-force. The looser fact costs a no-op hook for a package whose only
+initialization is variables; it cannot cost a missed one.
 
 The `-tests` emission carries all of this unchanged — the hook is written by the same import visitor,
-so a blank import in a `_test.go` file (which is where `image/gif`'s is) forces from the test assembly.
-Guarded by the `BlankImportSideEffects` behavioral test — a `registry` package that two blank-imported
+so an import in a `_test.go` file (which is where `image/gif`'s blank import is) forces from the test
+assembly. The one exception is the `-tests` external variant's import of the **package under test**,
+which binds to a class compiled into that same assembly: there is no separate module constructor to
+force, so no hook is emitted.
+Guarded by the `NamedImportInitOrder` behavioral test — four packages in the reduced `log/slog` shape,
+where `store` holds a value and initializes nothing, `writer`'s `init` writes it, `reader`'s `init`
+CAPTURES it, and `main` touches only `reader`, from a function body. Before the fix Go printed
+`written-by-writer-init` and the converted C# printed the empty string. It also pins the
+selectivity in the same run: `store` gets no hook, because it initializes nothing transitively. And by
+the `BlankImportSideEffects` behavioral test — a `registry` package that two blank-imported
 sibling packages fill from their `init`s, read back by an importer that never names either registrant,
 with the importer's own `init` recording the count to prove the ordering and an unregistered name as
 the negative control (without the hooks the program prints `count at init: 0` and three `missing:`
-lines; with them it matches `go run` exactly) — plus the `TestBlankImportInitName` and
-`TestNoInitPseudoPackages` converter unit tests, which lock the generated name's uniqueness and the
-pseudo-package skip.
+lines; with them it matches `go run` exactly) — plus four converter unit tests:
+`TestImportInitName` and `TestNoInitPseudoPackages` lock the generated name's uniqueness and the
+pseudo-package skip, while `TestPackageInitializesTransitively` and
+`TestPackageInitializesTransitivelyFailsOpen` lock the fact itself against a loaded fixture module
+covering each shape — no init at all, constant-only initializers, a `func init()`, a non-constant
+variable initializer, and reaching an initializing package one and two hops away — plus the
+unknown-path direction.
 
 ### A NuGet-referenced standard library carries its exported metadata IN THE CONVERTER
 
@@ -4034,19 +4115,19 @@ for the **INTERNAL** variant under the recompile model alone:
 |:--|:--|:--|
 | lifted type names | `Δtypeᴛ1` | two lifts of differently-shaped anonymous structs (encoding/gob) |
 | hoisted big-constant ordinals | `maskᶜ1` | two `const mask = <big>` hoists |
-| blank-import force hooks | `initᴛᴛblankImportꓸcryptoꓸsha256` | production and test files repeating one blank import |
+| import force hooks | `initᴛᴛimportꓸcryptoꓸsha256` | production and test files repeating one import |
 | the blank-identifier counter | `_ᴛ1ʗ` | a blank package-level `_` in each half |
 | `func init()` ordinals | `init` / `initΔ1` | production and test files each declaring `func init()` |
 
 The last three are `crypto/x509`'s, and they are ordinary Go, not exotica. `x509.go` and `x509_test.go`
 both `import _ "crypto/sha256"` and `_ "crypto/sha512"` — a test repeating a production blank import is
 what a test that exercises those registrations does — and each half emitted the same
-`[GoInit] internal static void initᴛᴛblankImportꓸcryptoꓸsha256()` into `x509_package`: CS0111. The
+`[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256()` into `x509_package`: CS0111. The
 `x509_package` class likewise already held `_ᴛ1ʗ` for `pem_decrypt.go`'s blank const heading an iota
 block when `oid_test.go`'s `var _ encoding.BinaryMarshaler = OID{}` re-minted it (CS0102), and
 `root_windows.go`'s `func init()` when `x509_test.go`'s own `init` claimed the bare name again (CS0111).
 
-The blank-import hook is the one whose OWNERSHIP is worth stating rather than merely its uniqueness:
+The import hook is the one whose OWNERSHIP is worth stating rather than merely its uniqueness:
 exactly one hook per (assembly, imported package) — Go initializes an imported package once per program
 and a .NET module constructor runs once per assembly — and the **production** half owns it whenever its
 file is in the compilation, because that file is the one a `-tests` run cannot rewrite. The seed is
@@ -5131,12 +5212,51 @@ index, and the `SparseArray` projection — still used for a key that is constan
 carries the declared length. (Guarded by the `ArrayLiteralDeclaredLength` behavioral test: empty,
 partial, full, ellipsis, keyed, zero-keyed, named, aliased, package-level, non-byte element types,
 a tail write proving the backing is really N long, and a `[]byte{}` slice control, output-compared
-vs `go run`; the pre-fix converter exits with the index-out-of-range panic. Note a NESTED fixed
-array's inner elements are still default-constructed — `[2][4]byte{}` gets the right outer length
-but inner length 0, and so does every element the padding itself creates, so
-`[2][4]byte{{1, 2, 3, 4}}` reads inner `4` then `0`. The `var` DECLARATION path is fixed by the
-element factory described in the next section, but `convCompositeLit` does not yet use it, so the
-LITERAL path stays open — chipped separately.)
+vs `go run`; the pre-fix converter exits with the index-out-of-range panic.)
+
+**…and the padding itself needs the element factory when the ELEMENT's zero value must be
+constructed** (closed 2026-08-26). The length argument sizes the OUTER dimension and fills it with
+`default(T)`, which is not usable storage for an unnamed nested fixed array (`[2][3]uint8` emits
+`array<array<uint8>>`, and the inner length lives only in the Go type) or for a struct whose
+fixed-array field initializer runs only inside a declared constructor. So `[2][3]uint8{}` came out
+2 long with two **zero-length** elements — `len(x[0])` reported 0 where Go says 3, and the first
+indexed write into one panicked — while the DECLARED form `var x [2][3]uint8` was correct all along,
+because it routes through the zero-value construction ladder instead. Two spellings of one Go type
+disagreeing is how it surfaced: through `reflect`, where a constructed `ArrayOf(2, TypeOf([3]uint8{}))`
+compared unequal to the literal-built value and `TypeOf(lit).Elem().Len()` answered 0.
+
+The padding now carries `arrayZeroValueArgs`' element factory — that same ladder's own renderer,
+reused rather than restated, so the literal and the declaration cannot drift apart. It recurses, so
+depth composes:
+
+```go
+n := [2][3]uint8{}
+d := [2][3][4]uint8{}
+c := [2]cell{}          // cell has a [4]uint8 field
+m := [2]named{}         // type named [6]byte
+```
+```csharp
+var n = new array<uint8>[]{}.array(2, () => new(3));
+var d = new array<array<uint8>>[]{}.array(2, () => new(3, () => new(4)));
+var c = new cell[]{}.array(2, () => new());
+var m = new named[]{}.array(2);           // NAMED element: its wrapper allocates its own backing
+```
+
+All **three** routes to the padding carry it: the positional projection above (golib's new
+`array<T>(T[], int, Func<T>)` extension), the constant-keyed indexed form
+(`new array<array<uint8>>(4, () => new(3)){[1] = …}`, through `array<T>`'s existing
+`(nint, Func<T>)` constructor), and the `SparseArray` projection for a key that is constant but not
+a literal. The sparse one is not simply the first with a different receiver: a sparse literal's zero
+values are its **gaps**, which can sit anywhere rather than only in a tail, and enumerating a
+`SparseArray` renders a gap as `default!` — indistinguishable afterwards from an element the literal
+genuinely wrote. So that overload asks the sparse array which indices were SET
+(`SparseArray<T>.TryGetItem`) and constructs the rest. An element whose `default(T)` is already the
+Go zero value — every scalar, and every NAMED array element, whose generated wrapper allocates its
+backing lazily from its own known size — renders the bare length exactly as before, so no existing
+golden moves. (Guarded by the same `ArrayLiteralDeclaredLength` test, extended with empty/partial/full
+nested, three-deep, a needy-struct element, a named-element counter-case, package-level, and both
+indexed forms; failing-first measured as `nested empty 2 0 0` against Go's `2 3 3`, followed by the
+panic, and `keyed nested 4 0 3 0 3` against Go's `4 3 3 3 3`.)
 
 ### An array or slice literal may MIX positional and keyed elements
 

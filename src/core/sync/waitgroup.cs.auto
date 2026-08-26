@@ -17,6 +17,12 @@ using sync;
 
 partial class sync_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(sync.atomic_package));
+}
+
 // A WaitGroup waits for a collection of goroutines to finish.
 // The main goroutine calls [WaitGroup.Add] to set the number of
 // goroutines to wait for. Then each of the goroutines

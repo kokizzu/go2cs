@@ -23,6 +23,18 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class filepath_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
+    builtin.initPackage(typeof(@internal.bytealg_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
+    builtin.initPackage(typeof(io.fs_package));
+}
+
 public static UntypedInt Separator => /* os.PathSeparator */ 47;
 public static UntypedInt ListSeparator => /* os.PathListSeparator */ 58;
 

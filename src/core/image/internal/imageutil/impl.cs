@@ -5,6 +5,12 @@ using image = image_package;
 
 partial class imageutil_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸimage() {
+    builtin.initPackage(typeof(image_package));
+}
+
 // DrawYCbCr draws the YCbCr source image on the RGBA destination image with
 // r.Min in dst aligned with sp in src. It reports whether the draw was
 // successful. If it returns false, no dst pixels were changed.

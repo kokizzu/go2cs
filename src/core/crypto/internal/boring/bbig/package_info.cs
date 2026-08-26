@@ -51,7 +51,7 @@ using static go.crypto.@internal.boring.bbig_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/boring/bbig/big.go", "big.cs", "AA0aooKUgoKUpoKClIKUgg==")]
+[assembly: go.GoPositionMap("crypto/internal/boring/bbig/big.go", "big.cs", "ABkaooKUgoKUpoKClIKUgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal.boring;

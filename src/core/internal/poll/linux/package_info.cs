@@ -56,13 +56,13 @@ using static go.@internal.poll_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/poll/copy_file_range_linux.go", "copy_file_range_linux.cs", "ABAciM7igpaCgoKUggABFAACLqQAIQqCuJSCpLaoABMYgIKkgoCCpIKCgoKCpg==")]
+[assembly: go.GoPositionMap("internal/poll/copy_file_range_linux.go", "copy_file_range_linux.cs", "ACIciM7igpaCgoKUggABFAACLqQAIQqCuJSCpLaoABMYgIKkgoCCpIKCgoKCpg==")]
 [assembly: go.GoPositionMap("internal/poll/errno_unix.go", "errno_unix.cs", "ABIqopSkpKSk")]
-[assembly: go.GoPositionMap("internal/poll/fd.go", "fd.cs", "ABcwwKSAooAADh6SgpQADRzAooCigO6SgoKCgpSCgg==")]
+[assembly: go.GoPositionMap("internal/poll/fd.go", "fd.cs", "AB0wwKSAooAADh6SgpQADRzAooCigO6SgoKCgpSCgg==")]
 [assembly: go.GoPositionMap("internal/poll/fd_fsync_posix.go", "fd_fsync_posix.cs", "AAoYsoCCpII=")]
-[assembly: go.GoPositionMap("internal/poll/fd_mutex.go", "fd_mutex.cs", "AC5qAA4CgoKClIKClILOooKCgqaCgqaCpoKClIKClM6igoKClIKCzqKigoKCgoKUgoKClIKCgpSClIKCuIKCpoKClAAEEMKigoKCgoKUgoKClIKCgqaCgpSCgpTMopjCgpSssoKUqsKClKyygrzCgpSssoI=")]
-[assembly: go.GoPositionMap("internal/poll/fd_poll_runtime.go", "fd_poll_runtime.cs", "AA4oxJKSkpKSkpKSAAgQooKCgpSCpoKClIKokoKUpoKClIKmgqaC1oKClIKmgqaCpoKClKaCAAwYgpSkpKSkgqiSqJKokqbCgoKCgqaAgqSCgpSCAAUeAAwC")]
-[assembly: go.GoPositionMap("internal/poll/fd_posix.go", "fd_posix.cs", "AAsgooKUqNKAgqSC2LKAgqSC3LKAgqSC3uKAgqSCggAFFPKCgoI=")]
+[assembly: go.GoPositionMap("internal/poll/fd_mutex.go", "fd_mutex.cs", "ADRqAA4CgoKClIKClILOooKCgqaCgqaCpoKClIKClM6igoKClIKCzqKigoKCgoKUgoKClIKCgpSClIKCuIKCpoKClAAEEMKigoKCgoKUgoKClIKCgqaCgpSCgpTMopjCgpSssoKUqsKClKyygrzCgpSssoI=")]
+[assembly: go.GoPositionMap("internal/poll/fd_poll_runtime.go", "fd_poll_runtime.cs", "ABQoxJKSkpKSkpKSAAgQooKCgpSCpoKClIKokoKUpoKClIKmgqaC1oKClIKmgqaCpoKClKaCAAwYgpSkpKSkgqiSqJKokqbCgoKCgqaAgqSCgpSCAAUeAAwC")]
+[assembly: go.GoPositionMap("internal/poll/fd_posix.go", "fd_posix.cs", "ABEgooKUqNKAgqSC2LKAgqSC3LKAgqSC3uKAgqSCggAFFPKCgoI=")]
 [assembly: go.GoPositionMap("internal/poll/fd_unix.go", "fd_unix.cs", "ACpu8paClIKClIKmlKrmhISCgqrCggAGEKgABhCClqjSgIKkuIIADBbSgIKkgtyUgIKkgpSCgoKCgoCCyILq6ICCpIKUmIKCgqaClIKCqNKAgqSCgIKkgoKCgpSCgoCCyILq0oCCpIKAgqSCgoKClIKCgILIgurSgIKkgoCCpIKCgoKUgoKAgsiC6tKAgqSCgIKkgoKCgqaCgILIgurSgIKkgoCCpIKCgoKmgoCCyILq0oCCpIKAgqSCgoKCpoKAgsiC6tKAgqSCgIKkgoKCgpSCgtyUlIKUgoCCtoKUgvwACAiAgqSCgoKCgpSCgpSClIKUgpSC/NKAgqSCgIKkgoKClIKAgraClOrSgIKkgoCCpIKCgpSCgIK2gpTq0oCCpIKAgqSCgoKUgoCCtoKU6tKAgqSCgIKkgoKClIKAgraClOrSgIKkgoCCpIKCgpSCgIK2gpTq0oCCpIKAgqSCgoKUgoCCtoKU6tKAgqSEgIKkgoKClJSkgoCC3tTqsoCCpILcsoCCpIIADBKSgoKClJqk5qjSgIKkgtyyqNKAgqSC2NKAgqSCgIKkgoKUgIIACAzSgIKkgoCCpIKClICCAAgMkoKCgg==")]
 [assembly: go.GoPositionMap("internal/poll/fd_unixjs.go", "fd_unixjs.cs", "AA8gpNzawoKCgoKUgtjSgIKkgtzygIKkgoKCgoKCgILa6tKAgqSC")]
 [assembly: go.GoPositionMap("internal/poll/fd_writev_unix.go", "fd_writev_unix.cs", "AAscgpiCgoKmgpQ=")]
@@ -73,7 +73,7 @@ using static go.@internal.poll_package;
 [assembly: go.GoPositionMap("internal/poll/sockopt_linux.go", "sockopt_linux.cs", "AAkU0oCCpII=")]
 [assembly: go.GoPositionMap("internal/poll/sockopt_unix.go", "sockopt_unix.cs", "AAoY0oCCpII=")]
 [assembly: go.GoPositionMap("internal/poll/sockoptip.go", "sockoptip.cs", "AAoY0oCCpILY0oCCpII=")]
-[assembly: go.GoPositionMap("internal/poll/splice_linux.go", "splice_linux.cs", "ABFEAAwCgoKUgpKCgoKUAAsYgoKUhIKCgoKmgpQABhoADgKAgqSCgIKkyoKClIKUgoCCAAkmABECgIKkgoCCpILKgoK4goKClIKUgoCCyN7CggAWLKaCgpSCqJKCgpSmxoKCgpSokoKAggAHEISosoI=")]
+[assembly: go.GoPositionMap("internal/poll/splice_linux.go", "splice_linux.cs", "ABdEAAwCgoKUgpKCgoKUAAsYgoKUhIKCgoKmgpQABhoADgKAgqSCgIKkyoKClIKUgoCCAAkmABECgIKkgoCCpILKgoK4goKClIKUgoCCyN7CggAWLKaCgpSCqJKCgpSmxoKCgpSokoKAggAHEISosoI=")]
 [assembly: go.GoPositionMap("internal/poll/writev.go", "writev.cs", "AAwg4oCCpIKAgqaCgsqClJaCgoKCgoKUgoKClIKCpoKUgpSEgoKClIKCgoKCgpSCgIK2lIKCpg==")]
 // </GoSourcePositionMaps>
 

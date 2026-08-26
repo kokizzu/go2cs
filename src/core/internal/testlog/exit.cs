@@ -8,6 +8,12 @@ using sync = sync_package;
 
 partial class testlog_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // PanicOnExit0 reports whether to panic on a call to os.Exit(0).
 // This is in the testlog package because, like other definitions in
 // package testlog, it is a hook between the testing package and the

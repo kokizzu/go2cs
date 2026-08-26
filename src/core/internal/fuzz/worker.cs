@@ -22,6 +22,18 @@ using global::go.os;
 
 partial class fuzz_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
+    builtin.initPackage(typeof(encoding.json_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 internal static time.Duration workerFuzzDuration => /* 100 * time.Millisecond */ 100000000;
 internal static time.Duration workerTimeoutDuration => /* 1 * time.Second */ 1000000000;
 internal static UntypedInt workerExitCode => 70;

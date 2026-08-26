@@ -9,6 +9,12 @@ using go.sync;
 
 partial class syscall_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(go.sync.atomic_package));
+}
+
 // origRlimitNofile, if non-nil, is the original soft RLIMIT_NOFILE.
 internal static ж<atomic.Pointer<Rlimit>> ᏑorigRlimitNofile = new(default(atomic.Pointer<Rlimit>));
 internal static ref atomic.Pointer<Rlimit> origRlimitNofile => ref ᏑorigRlimitNofile.Value;

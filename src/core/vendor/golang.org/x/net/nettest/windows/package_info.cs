@@ -73,9 +73,9 @@ using static go.vendor.golang.org.x.net.nettest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/conntest.go", "conntest.cs", "ACI80oCSgJKAkoCSgJKAkoCSgJKAkoCSgAAICqKCgoKUgpCSkpKCppIACAiSgoSCkoKAgqSAgriSgoCCpICCpJaAgszCgoSigoKCgoCCgpSmgoKClIKCloCCgraAguiCkqaAgvzChIKEgoKCooSCgoKCgoKCAAwSwoSChIKCgqKEgoKCgoKCggAMEJKEgoKCgILKkoSCgoKAgsyihISCgoKUgoKClITqwoKChIKygoKCgsSygoKClIKC1rKCgoKUgoIACg6igoSCooKCxKKCgoKUxISCgqrChIKCloKigoLEooKCgoLWooKCgoIADQ6igpSIooKCooLEooLEooLEooLEooLEooLEooLWhIKqooKAgoKClLjMooKAgqaCgoCCpICCpIK+soKCgpKClIKCgoKUgoKmgIIADBDCgoI=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest.go", "nettest.cs", "AClKgoCCpICCgqSAgqSAgoKkgpiikoKCtsiCgqqigqqigqqigq7CgpiUxpSkotiUpMaUxpSkpKqigKaSxgACENKClIKAgraCtoK2graCgpSk7sKClIKAgraCtoK2graCgpSk6qKCgpSCgpSCgoKu4rakgpSCgpSqooKClLKCpq7CtqSCgpSygpSAgqSUpoKCgpSClICC1oCC2KaCgpSUgILGkpSAgsaAgqSAgsY=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest_windows.go", "nettest_windows.cs", "AAkSAAcQgoKClIKU")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/conntest.go", "conntest.cs", "AFg80oCSgJKAkoCSgJKAkoCSgJKAkoCSgAAICqKCgoKUgpCSkpKCppIACAiSgoSCkoKAgqSAgriSgoCCpICCpJaAgszCgoSigoKCgoCCgpSmgoKClIKCloCCgraAguiCkqaAgvzChIKEgoKCooSCgoKCgoKCAAwSwoSChIKCgqKEgoKCgoKCggAMEJKEgoKCgILKkoSCgoKAgsyihISCgoKUgoKClITqwoKChIKygoKCgsSygoKClIKC1rKCgoKUgoIACg6igoSCooKCxKKCgoKUxISCgqrChIKCloKigoLEooKCgoLWooKCgoIADQ6igpSIooKCooLEooLEooLEooLEooLEooLEooLWhIKqooKAgoKClLjMooKAgqaCgoCCpICCpIK+soKCgpKClIKCgoKUgoKmgIIADBDCgoI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest.go", "nettest.cs", "AE1KgoCCpICCgqSAgqSAgoKkgpiikoKCtsiCgqqigqqigqqigq7CgpiUxpSkotiUpMaUxpSkpKqigKaSxgACENKClIKAgraCtoK2graCgpSk7sKClIKAgraCtoK2graCgpSk6qKCgpSCgpSCgoKu4rakgpSCgpSqooKClLKCpq7CtqSCgpSygpSAgqSUpoKCgpSClICC1oCC2KaCgpSUgILGkpSAgsaAgqSAgsY=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest_windows.go", "nettest_windows.cs", "AA8SAAcQgoKClIKU")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.net;

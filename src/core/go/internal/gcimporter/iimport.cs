@@ -25,6 +25,36 @@ using global::go.math;
 
 partial class gcimporter_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
+    builtin.initPackage(typeof(encoding.binary_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸconstant() {
+    builtin.initPackage(typeof(global::go.go.constant_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
+    builtin.initPackage(typeof(global::go.math.big_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
 [GoType] partial struct intReader {
     public partial ref ж<bufio_package.Reader> Reader { get; }
     internal @string path;

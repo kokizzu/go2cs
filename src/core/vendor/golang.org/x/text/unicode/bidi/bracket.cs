@@ -10,6 +10,18 @@ using container;
 
 partial class bidi_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsort() {
+    builtin.initPackage(typeof(sort_package));
+}
+
 [GoType("num:byte")] partial struct bracketType;
 
 // This file contains a port of the reference implementation of the

@@ -49,7 +49,7 @@ using static go.BlankImportSideEffects.jpeglike_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("jpeglike.go", "jpeglike.cs", "AAcQgg==")]
+[assembly: go.GoPositionMap("jpeglike.go", "jpeglike.cs", "AA0Qgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.BlankImportSideEffects;

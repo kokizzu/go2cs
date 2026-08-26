@@ -7,6 +7,12 @@ using sync = sync_package;
 
 partial class edwards25519_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // basepointTable is a set of 32 affineLookupTables, where table i is generated
 // from 256i * basepoint. It is precomputed the first time it's used.
 internal static ж<array<affineLookupTable>> basepointTable() {

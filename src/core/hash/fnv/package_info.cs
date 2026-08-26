@@ -55,7 +55,7 @@ using static go.hash.fnv_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("hash/fnv/fnv.go", "fnv.cs", "ACxYopKqopKqopKqopKqooKCgqqigoKCpoCigKKAooCigICigICkgKKAooCigKSCgoKClIKmgoKCgpSCpoKCgoKUgqaCgoKClIKmgpSClIKClKaCgpSClIKUpoCigKKAooCigKKApICigKKAooCigKKApIKCpoKCpoKCpoKCpoKCpoKCAAwegoKCgqaCgoKCpoKCgoKmgoKCgqaCgoKCgqaCgoKCguaCgpSClIKmgoKUgpSCpoKClIKUgqaCgpSClIKmgoKUgpSCgqaCgpSClIKC")]
+[assembly: go.GoPositionMap("hash/fnv/fnv.go", "fnv.cs", "AD5YopKqopKqopKqopKqooKCgqqigoKCpoCigKKAooCigICigICkgKKAooCigKSCgoKClIKmgoKCgpSCpoKCgoKUgqaCgoKClIKmgpSClIKClKaCgpSClIKUpoCigKKAooCigKKApICigKKAooCigKKApIKCpoKCpoKCpoKCpoKCpoKCAAwegoKCgqaCgoKCpoKCgoKmgoKCgqaCgoKCgqaCgoKCguaCgpSClIKmgoKUgpSCpoKClIKUgqaCgpSClIKmgoKUgpSCgqaCgpSClIKC")]
 // </GoSourcePositionMaps>
 
 namespace go.hash;

@@ -7,6 +7,12 @@ using Δsync = sync_package;
 
 partial class html_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // All entities that do not end with ';' are 6 or fewer bytes long.
 internal static UntypedInt longestEntityWithoutSemicolon => 6;
 

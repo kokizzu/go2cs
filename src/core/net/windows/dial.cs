@@ -13,6 +13,18 @@ using @internal;
 
 partial class net_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontext() {
+    builtin.initPackage(typeof(context_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 internal static time.Duration defaultTCPKeepAliveIdle => /* 15 * time.Second */ 15000000000;
 internal static time.Duration defaultTCPKeepAliveInterval => /* 15 * time.Second */ 15000000000;
 internal static UntypedInt defaultTCPKeepAliveCount => 9;

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"strconv"
 	"strings"
 )
 
@@ -181,6 +182,15 @@ type ArrayTypeContext struct {
 	compositeInitializer bool
 	indexedInitializer   bool
 	maxLength            int
+
+	// maxLengthElemFactory is the element-construction expression the `array<T>(maxLength)` render
+	// must ALSO pass — non-empty only when the element's own zero value has to be constructed
+	// (arrayElemFactory: another unnamed fixed array, or a struct needing its constructor). A
+	// constant-INDEXED fixed-array literal (`[4][3]uint8{1: {…}}`) fills every unset index with
+	// `default(T)`, which for those element types is not usable storage, so the gaps came out
+	// zero-LENGTH — the same defect the positional padding carries a factory for, reached by the
+	// indexed route. Empty for every other element type, so the plain `(N)` render is unchanged.
+	maxLengthElemFactory string
 }
 
 func DefaultArrayTypeContext() ArrayTypeContext {
@@ -188,7 +198,16 @@ func DefaultArrayTypeContext() ArrayTypeContext {
 		compositeInitializer: false,
 		indexedInitializer:   false,
 		maxLength:            0,
+		maxLengthElemFactory: "",
 	}
+}
+
+// lengthArgs renders the constructor arguments an `array<T>(…)` render owes for this context: the
+// maximum length, plus the element factory when one is owed. Shared by the three sites that emit
+// that form (the unnamed render in convArrayType, the aliased one in convCompositeLit, and the
+// named-array wrapper's), so a factory can never reach one of them and be missed by the others.
+func (c ArrayTypeContext) lengthArgs() string {
+	return arrayLengthArgs(strconv.Itoa(c.maxLength), c.maxLengthElemFactory)
 }
 
 func (c ArrayTypeContext) getDefault() StmtContext {

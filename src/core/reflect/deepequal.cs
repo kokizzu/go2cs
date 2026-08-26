@@ -10,6 +10,12 @@ using @internal;
 
 partial class reflect_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
+    builtin.initPackage(typeof(@internal.bytealg_package));
+}
+
 // During deepValueEqual, must keep track of checks that are
 // in progress. The comparison algorithm assumes that all
 // checks in progress are true when it reencounters them.

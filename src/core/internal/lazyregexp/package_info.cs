@@ -54,7 +54,7 @@ using static go.@internal.lazyregexp_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/lazyregexp/lazyre.go", "lazyre.cs", "ABcwooKmgoKmgqaCpoKmgqaCpoKmgqaCAAQQsoKUlA==")]
+[assembly: go.GoPositionMap("internal/lazyregexp/lazyre.go", "lazyre.cs", "AC8wooKmgoKmgqaCpoKmgqaCpoKmgqaCAAQQsoKUlA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

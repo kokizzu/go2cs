@@ -10,6 +10,12 @@ using go.database.sql;
 
 partial class sql_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontext() {
+    builtin.initPackage(typeof(context_package));
+}
+
 internal static (driver.Stmt, error) ctxDriverPrepare(context.Context ctx, driver.Conn ci, @string query) {
     {
         var (ciCtx, @is) = ci._<driver.ConnPrepareContext>(ᐧ); if (@is) {

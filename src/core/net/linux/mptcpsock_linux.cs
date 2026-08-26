@@ -14,6 +14,12 @@ using @internal.syscall;
 
 partial class net_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() {
+    builtin.initPackage(typeof(@internal.syscall.unix_package));
+}
+
 internal static ж<Δsync.Once> ᏑmptcpOnce = new(default(Δsync.Once));
 internal static ref Δsync.Once mptcpOnce => ref ᏑmptcpOnce.Value;
 internal static bool mptcpAvailable;

@@ -13,6 +13,12 @@ using go.math;
 
 partial class big_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(go.math.bits_package));
+}
+
 [GoType("num:nuint")] partial struct Word;
 
 internal static UntypedInt _S => /* _W / 8 */ 8; // word size in bytes

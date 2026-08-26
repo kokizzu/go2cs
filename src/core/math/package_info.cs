@@ -69,7 +69,7 @@ using static go.math_package;
 [assembly: go.GoPositionMap("math/expm1.go", "expm1.cs", "AAf8AQB3AoKUpoIADSSUpKaCgoKCqJKClJKqkoKSkpKCgoKUgoKmgpSUgoKUgrSUqIKCgoKCgpSCgpSkgpSkgoK0goKCgpSCgoKC")]
 [assembly: go.GoPositionMap("math/floor.go", "floor.cs", "AAcc8oKUpoKClIKCgpSUggACFPKClKaCAAIU8oKUpoKClIIAAhQAEBSCgpSCgr7CgoKUAAIUABEWgoKKwoKCtqaU")]
 [assembly: go.GoPositionMap("math/floor_asm.go", "floor_asm.cs", "AAoWuLg=")]
-[assembly: go.GoPositionMap("math/fma.go", "fma.cs", "AAoSgoKUqqKClKrSgoKmsoKCrgALCpSkpKSCtIK0pqKCgpSs8oKChJSCgqaUqqKWgriCuoKCqLqCgpaCgpaCqIKohqKUgoKCuIKCgoKCqJSUgoKClIKC")]
+[assembly: go.GoPositionMap("math/fma.go", "fma.cs", "ABASgoKUqqKClKrSgoKmsoKCrgALCpSkpKSCtIK0pqKCgpSs8oKChJSCgqaUqqKWgriCuoKCqLqCgpaCgpaCqIKohqKUgoKCuIKCgoKCqJSUgoKClIKC")]
 [assembly: go.GoPositionMap("math/frexp.go", "frexp.cs", "AAciAAoCgpSmxJSkpIKCgoKCgg==")]
 [assembly: go.GoPositionMap("math/gamma.go", "gamma.cs", "AF7IAfKClJiCgoKCkoKUlAACGgAKApSUpKSClKSCgoKCgsqCgIKkgoKClIKClIKCgoKUlKiCgoKUgoKUgpSCgpSCloKWgoKChIKClKaCgoKU")]
 [assembly: go.GoPositionMap("math/hypot.go", "hypot.cs", "AAcoAA0CgpSmgpSUpKSClIKUgg==")]

@@ -9,6 +9,12 @@ using unicode;
 
 partial class strconv_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(unicode.utf8_package));
+}
+
 internal static readonly @string lowerhex = "0123456789abcdef"u8;
 internal static readonly @string upperhex = "0123456789ABCDEF"u8;
 

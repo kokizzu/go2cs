@@ -14,6 +14,24 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class ast_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸos() {
+    builtin.initPackage(typeof(os_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 // type FieldFilter is a methodless func type — rendered inline as its base delegate
 
 // NotNilFilter is a [FieldFilter] that returns true for field values

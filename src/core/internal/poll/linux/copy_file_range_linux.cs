@@ -10,6 +10,24 @@ using go.@internal.syscall;
 
 partial class poll_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() {
+    builtin.initPackage(typeof(go.@internal.syscall.unix_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // copy_file_range(2) is broken in various ways on kernels older than 5.3,
 // see https://go.dev/issue/42400 and
 // https://man7.org/linux/man-pages/man2/copy_file_range.2.html#VERSIONS

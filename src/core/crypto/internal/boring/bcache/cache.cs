@@ -11,6 +11,12 @@ using sync;
 
 partial class bcache_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(sync.atomic_package));
+}
+
 // A Cache is a GC-friendly concurrent map from unsafe.Pointer to
 // unsafe.Pointer. It is meant to be used for maintaining shadow
 // BoringCrypto state associated with certain allocated structs, in

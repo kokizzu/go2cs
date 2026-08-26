@@ -18,6 +18,54 @@ using global::go.go.@internal;
 
 partial class importer_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸbuild() {
+    builtin.initPackage(typeof(global::go.go.build_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸgccgoimporter() {
+    builtin.initPackage(typeof(global::go.go.@internal.gccgoimporter_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸgcimporter() {
+    builtin.initPackage(typeof(global::go.go.@internal.gcimporter_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸsrcimporter() {
+    builtin.initPackage(typeof(global::go.go.@internal.srcimporter_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
+    builtin.initPackage(typeof(global::go.go.token_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() {
+    builtin.initPackage(typeof(global::go.go.types_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // type Lookup is a methodless func type — rendered inline as its base delegate
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

@@ -13,6 +13,12 @@ using global::go.net;
 
 partial class jsonrpc_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 internal static error errMissingParams = errors.New("jsonrpc: request body missing params"u8);
 
 [GoType] partial struct serverCodec {

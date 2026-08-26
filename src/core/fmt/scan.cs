@@ -16,6 +16,12 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class fmt_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
 // ScanState represents the scanner state passed to custom scanners.
 // Scanners may do rune-at-a-time scanning or ask the ScanState
 // to discover the next space-delimited token.

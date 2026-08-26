@@ -92,19 +92,31 @@ import "unicode/utf8"
 using utf8 = go.unicode.utf8_package;    // one alias; per-file `package_info.cs` carries the global usings
 ```
 
-A **blank** import — `import _ "image/png"`, imported purely so its `init` runs — emits no `using` (a
-`using _` alias would hijack C#'s discard) but must still initialize. A converted `init` is a .NET
-`[ModuleInitializer]`, which fires only at first use of something in its assembly, and a blank import
-names nothing — so the converter emits a hook that forces it, once per assembly, ahead of the file's
-own `init`s.
+Go initializes an imported package **before** the importer, whatever the import looks like. A converted
+`init` is a .NET `[ModuleInitializer]`, which fires only at first use of something in *its own*
+assembly — so an assembly the program has not touched yet has not initialized. The converter closes
+that gap with a hook, once per assembly, ahead of the file's own `init`s. It is emitted for any import
+whose package initializes something transitively; forcing an empty module constructor would be a
+guaranteed no-op, so those are skipped.
 
 ```go
-import _ "image/png"    // registers the PNG decoder with image.Decode
+import (
+    _ "image/png"    // registers the PNG decoder with image.Decode
+    "log/slog"       // its init captures a value log's init installs
+)
 ```
 ```csharp
 // blank import: go.image.png_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
-[GoInit] internal static void initᴛᴛblankImportꓸimageꓸpng() { builtin.initPackage(typeof(go.image.png_package)); }
+using slog = go.log.slog_package;
+
+[GoInit] internal static void initᴛᴛimportꓸimageꓸpng() { builtin.initPackage(typeof(go.image.png_package)); }
+[GoInit] internal static void initᴛᴛimportꓸlogꓸslog() { builtin.initPackage(typeof(go.log.slog_package)); }
 ```
+
+A blank import still emits no `using` (a `using _` alias would hijack C#'s discard) — it is a comment
+plus its hook. NAMED imports went unforced until 2026-08-26, which is why `log/slog` — whose `init`
+captures `log/internal.DefaultOutput`, a value **`log`'s** `init` installs — captured nil whenever a
+program touched `slog` first, and then dereferenced it.
 
 A package whose emitted C# differs by platform keeps the differing files in per-`GOOS` subfolders, and its
 `.csproj` compiles exactly one of them — `<Compile Include="$(GoTargetOS)/*.cs" />`, defaulting to
@@ -131,7 +143,7 @@ platform has one.
 **Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference.md#package-conversion) —
 cross-package imports & assembly references, module-aware resolution, exported type aliases crossing
 packages (the `ꓸ`-qualified `global using` round-trip), cross-package interface-satisfaction witnesses,
-[blank-import initialization](ConversionStrategies-Reference.md#a-blank-import-forces-the-imported-packages-init-to-run),
+[imported-package initialization order](ConversionStrategies-Reference.md#an-import-forces-the-imported-packages-init-to-run),
 build-tag/`GOOS`/`GOARCH` file selection,
 [per-`GOOS` source folders](ConversionStrategies-Reference.md#per-goos-sources-layout-l3-and-gotargetos),
 and the auto-generated `.slnx` solutions (the stdlib solution, and

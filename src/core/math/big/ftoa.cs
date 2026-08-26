@@ -13,6 +13,12 @@ using io = io_package;
 
 partial class big_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
 // Text converts the floating-point number x to a string according
 // to the given format and precision prec. The format is one of:
 //

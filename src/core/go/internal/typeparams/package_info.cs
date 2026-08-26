@@ -52,7 +52,7 @@ using static go.go.@internal.typeparams_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/internal/typeparams/typeparams.go", "typeparams.cs", "AAsYgpS0/gAaNIKmgpQACBAABxA=")]
+[assembly: global::go.GoPositionMap("go/internal/typeparams/typeparams.go", "typeparams.cs", "ABcYgpS0/gAaNIKmgpQACBAABxA=")]
 // </GoSourcePositionMaps>
 
 namespace go.go.@internal;

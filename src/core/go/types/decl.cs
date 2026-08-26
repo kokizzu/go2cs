@@ -15,6 +15,12 @@ using global::go.go;
 
 partial class types_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸbuildcfg() {
+    builtin.initPackage(typeof(global::go.@internal.buildcfg_package));
+}
+
 internal static void declare(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡscope, ж<ast.Ident> Ꮡid, Object obj, tokenꓸPos pos) {
     ref var check = ref Ꮡcheck.DerefOrNull();
 

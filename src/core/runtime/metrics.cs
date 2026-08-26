@@ -12,6 +12,12 @@ using ꓸꓸꓸstatDep = Span<runtime_package.statDep>;
 
 partial class runtime_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebugs() {
+    builtin.initPackage(typeof(@internal.godebugs_package));
+}
+
 internal static ж<uint32> ᏑmetricsSema = new(1);
 internal static ref uint32 metricsSema => ref ᏑmetricsSema.Value;
 internal static bool metricsInit;

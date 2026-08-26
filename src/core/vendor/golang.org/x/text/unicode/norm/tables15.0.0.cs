@@ -6,6 +6,12 @@ using sync = sync_package;
 
 partial class norm_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 public static readonly @string Version = "15.0.0"u8;
 public static UntypedInt MaxTransformChunkSize => /* 35 + maxNonStarters*4 */ 155;
 

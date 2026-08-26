@@ -9,6 +9,18 @@ using global::go.go.doc;
 
 partial class doc_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸdocꓸcomment() {
+    builtin.initPackage(typeof(global::go.go.doc.comment_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // ToHTML converts comment text to formatted HTML.
 //
 // Deprecated: ToHTML cannot identify documentation links

@@ -37,6 +37,48 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class cgi_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlog() {
+    builtin.initPackage(typeof(log_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() {
+    builtin.initPackage(typeof(go.net.textproto_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
+    builtin.initPackage(typeof(go.os.exec_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
+    builtin.initPackage(typeof(go.path.filepath_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸregexp() {
+    builtin.initPackage(typeof(regexp_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸhttpꓸhttpguts() {
+    builtin.initPackage(typeof(vendor.golang.org.x.net.http.httpguts_package));
+}
+
 internal static ж<regexp.Regexp> trailingPort = regexp.MustCompile(@":([0-9]+)$"u8);
 
 internal static slice<@string> osDefaultInheritEnv = ((Func<slice<@string>>)(() => {

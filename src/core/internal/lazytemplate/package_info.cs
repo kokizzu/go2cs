@@ -54,7 +54,7 @@ using static go.@internal.lazytemplate_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/lazytemplate/lazytemplate.go", "lazytemplate.cs", "ABk0ooKmgpKmggAEELKClJQ=")]
+[assembly: go.GoPositionMap("internal/lazytemplate/lazytemplate.go", "lazytemplate.cs", "ADc0ooKmgpKmggAEELKClJQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

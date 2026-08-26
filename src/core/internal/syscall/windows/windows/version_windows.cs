@@ -10,6 +10,12 @@ using @unsafe = unsafe_package;
 
 partial class windows_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfow
 [GoType] partial struct _OSVERSIONINFOW {
     internal uint32 osVersionInfoSize;

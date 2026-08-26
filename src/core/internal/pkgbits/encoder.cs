@@ -19,6 +19,18 @@ using math;
 
 partial class pkgbits_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() {
+    builtin.initPackage(typeof(crypto.md5_package));
+}
+
 // currentVersion is the current version number.
 //
 //   - v0: initial prototype

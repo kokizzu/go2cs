@@ -9,6 +9,12 @@ using go.@internal.syscall;
 
 partial class socktest_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() {
+    builtin.initPackage(typeof(go.@internal.syscall.windows_package));
+}
+
 // WSASocket wraps [syscall.WSASocket].
 public static (syscallꓸHandle s, error err) WSASocket(this ж<Switch> Ꮡsw, int32 family, int32 sotype, int32 proto, ж<syscall.WSAProtocolInfo> Ꮡprotinfo, uint32 group, uint32 flags) {
     syscallꓸHandle s = default!;

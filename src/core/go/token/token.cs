@@ -13,6 +13,18 @@ using global::go.unicode;
 
 partial class token_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(global::go.unicode.utf8_package));
+}
+
 [GoType("num:nint")] partial struct Token;
 
 // The list of tokens.

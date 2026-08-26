@@ -7,6 +7,12 @@ using iter = iter_package;
 
 partial class maps_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸiter() {
+    builtin.initPackage(typeof(iter_package));
+}
+
 // All returns an iterator over key-value pairs from m.
 // The iteration order is not specified and is not guaranteed
 // to be the same from one call to the next.

@@ -7,6 +7,12 @@ using runtime = runtime_package;
 
 partial class cpu_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // byteOrder is a subset of encoding/binary.ByteOrder.
 [GoType] partial interface byteOrder {
     uint32 Uint32(slice<byte> _);

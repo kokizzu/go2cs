@@ -50,7 +50,7 @@ using static go.crypto.rc4_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/rc4/rc4.go", "rc4.cs", "ABkygqqigoKUgoKUgoKClK7CgpSqooKUgpSCgoKCgoKCgoKU")]
+[assembly: go.GoPositionMap("crypto/rc4/rc4.go", "rc4.cs", "AB8ygqqigoKUgoKUgoKClK7CgpSqooKUgpSCgoKCgoKCgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;

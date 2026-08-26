@@ -18,6 +18,36 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class template_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸhtml() {
+    builtin.initPackage(typeof(html_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
+    builtin.initPackage(typeof(@internal.godebug_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸregexp() {
+    builtin.initPackage(typeof(regexp_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtextꓸtemplate() {
+    builtin.initPackage(typeof(text.template_package));
+}
+
 // escapeTemplate rewrites the named template, which must be
 // associated with t, to guarantee that the output of any of the named
 // templates is properly escaped. If no error is returned, then the named templates have

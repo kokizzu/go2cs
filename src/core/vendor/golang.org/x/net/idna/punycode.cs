@@ -12,6 +12,12 @@ using unicode;
 
 partial class idna_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
 // These parameter values are specified in section 5.
 //
 // All computation is done with int32s, so that overflow behavior is identical

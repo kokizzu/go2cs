@@ -12,6 +12,24 @@ using unicode;
 
 partial class httpguts_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnet() {
+    builtin.initPackage(typeof(net_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(unicode.utf8_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸidna() {
+    builtin.initPackage(typeof(go.vendor.golang.org.x.net.idna_package));
+}
+
 internal static array<bool> isTokenTable = new array<bool>(256){
     [(rune)'!'] = true,
     [(rune)'#'] = true,

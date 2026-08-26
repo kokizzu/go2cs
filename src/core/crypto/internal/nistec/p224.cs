@@ -13,6 +13,30 @@ using go.crypto.@internal.nistec;
 
 partial class nistec_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸnistecꓸfiat() {
+    builtin.initPackage(typeof(go.crypto.@internal.nistec.fiat_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
+    builtin.initPackage(typeof(go.crypto.subtle_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // p224ElementLength is the length of an element of the base or scalar field,
 // which have the same bytes length for all NIST P curves.
 internal static UntypedInt p224ElementLength => 28;

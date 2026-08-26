@@ -8,6 +8,12 @@ using iter = iter_package;
 
 partial class ast_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸiter() {
+    builtin.initPackage(typeof(iter_package));
+}
+
 // A Visitor's Visit method is invoked for each node encountered by [Walk].
 // If the result visitor w is not nil, [Walk] visits each of the children
 // of node with the visitor w, followed by a call of w.Visit(nil).

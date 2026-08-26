@@ -52,7 +52,7 @@ using static go.crypto.@internal.boring_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/boring/notboring.go", "notboring.cs", "ABEo2KrogMiAooCigKKAooCkgKKAooCigKKApICkgKKAAAoKgqSCpIKkgqSCAAoMgqSCpIKkgqSCpIKkgqSCpICigqSCpIKkggAIDICigKKAooCigKKA")]
+[assembly: go.GoPositionMap("crypto/internal/boring/notboring.go", "notboring.cs", "ACMo2KrogMiAooCigKKAooCkgKKAooCigKKApICkgKKAAAoKgqSCpIKkgqSCAAoMgqSCpIKkgqSCpIKkgqSCpICigqSCpIKkggAIDICigKKAooCigKKA")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal;

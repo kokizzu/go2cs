@@ -15,6 +15,12 @@ using vendor.golang.org.x.net.http;
 
 partial class http_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(go.unicode.utf8_package));
+}
+
 [GoType("[0]Action")] partial struct incomparable;
 
 // maxInt64 is the effective "infinite" value for the Server and

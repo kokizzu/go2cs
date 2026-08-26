@@ -32,6 +32,12 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class textproto_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnet() {
+    builtin.initPackage(typeof(net_package));
+}
+
 // An Error represents a numeric error response from a server.
 [GoType] partial struct ΔError {
     public nint Code;

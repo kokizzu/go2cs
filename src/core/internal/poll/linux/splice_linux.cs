@@ -12,6 +12,12 @@ using go.@internal.syscall;
 
 partial class poll_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 internal static UntypedInt spliceNonblock => 0x2;
 internal static UntypedInt maxSpliceSize => /* 1 << 20 */ 1048576;
 

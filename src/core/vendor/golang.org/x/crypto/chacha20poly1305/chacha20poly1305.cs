@@ -14,6 +14,18 @@ using go.crypto;
 
 partial class chacha20poly1305_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() {
+    builtin.initPackage(typeof(go.crypto.cipher_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 public static UntypedInt KeySize => 32;
 public static UntypedInt ΔNonceSize => 12;
 public static UntypedInt NonceSizeX => 24;

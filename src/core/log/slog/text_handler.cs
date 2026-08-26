@@ -19,6 +19,12 @@ using time = time_package;
 
 partial class slog_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
 // TextHandler is a [Handler] that writes Records to an [io.Writer] as a
 // sequence of key=value pairs separated by spaces and followed by a newline.
 [GoType] partial struct TextHandler {

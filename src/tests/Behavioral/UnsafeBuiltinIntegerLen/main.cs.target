@@ -5,6 +5,12 @@ using @unsafe = unsafe_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 internal static void Main() {
     ref var arr = ref heap<array<int32>>(out var Ꮡarr);
     arr = new int32[]{10, 20, 30, 40, 50}.array();

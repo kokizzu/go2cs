@@ -78,9 +78,9 @@ using static go.debug.macho_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/macho/fat.go", "fat.cs", "ACtcsoKogoKoooKCgpSmlpKCgpSEgrqEuIKClIKCgoKClISCgoKogoCCpJaClIKolqqigoKUgoKClIKmgoKCgpQ=")]
-[assembly: go.GoPositionMap("debug/macho/file.go", "file.cs", "ACpqgAAfQpKokAApVpKokAA0aIKCgpSCqJKCgpSCgoKUgqyygoKClKqigoiigIKkgoKUgqSCpLiAgriSgpSCgpSCgpSCgpSClIKClIKCgoKagoKAgqSCgpSCgqaCgoCCpIKClIKCgoKCpoKCgIKkgoKUgoKUlIKClIKClIKmgoKAgqSCpMi4goKUgoCCpIKCgoKCpoKCgIKkgoKCgoKCgoKCgoKCgoKCgoCCpIKCgoKCgoKCgoKAgtqCgoCCpIKCgoKCgoKCgoKCgoKCgoKAgqSCgoKCgoKCgoKCgIIABc8CAALYAoKClIKUgqamooKCgpSCgoKCgoCCtoKAgqSCgoKClIKmgoKUAAcQgoKCAAcQooKChIKCgpSEhIKChIKAgqaSgoKCgoKUlIKCgoKCpIKCgoKCpNymgoKClKiSgoCCtqqigoKmAAsIkoKUpKS4goKCloKCgoKClICCpICCpJScsoKCgpSAgqSCgpSWgoKogoKClICUpoKCloKUlIKorLKCloKCgoKUrLKCgoCCtg==")]
-[assembly: go.GoPositionMap("debug/macho/macho.go", "macho.cs", "ADBwgKKAABYygKKAABc0gKKAANIBugOCgoKClKY=")]
+[assembly: go.GoPositionMap("debug/macho/fat.go", "fat.cs", "AElcsoKogoKoooKCgpSmlpKCgpSEgrqEuIKClIKCgoKClISCgoKogoCCpJaClIKolqqigoKUgoKClIKmgoKCgpQ=")]
+[assembly: go.GoPositionMap("debug/macho/file.go", "file.cs", "AEJqgAAfQpKokAApVpKokAA0aIKCgpSCqJKCgpSCgoKUgqyygoKClKqigoiigIKkgoKUgqSCpLiAgriSgpSCgpSCgpSCgpSClIKClIKCgoKagoKAgqSCgpSCgqaCgoCCpIKClIKCgoKCpoKCgIKkgoKUgoKUlIKClIKClIKmgoKAgqSCpMi4goKUgoCCpIKCgoKCpoKCgIKkgoKCgoKCgoKCgoKCgoKCgoCCpIKCgoKCgoKCgoKAgtqCgoCCpIKCgoKCgoKCgoKCgoKCgoKAgqSCgoKCgoKCgoKCgIIABc8CAALYAoKClIKUgqamooKCgpSCgoKCgoCCtoKAgqSCgoKClIKmgoKUAAcQgoKCAAcQooKChIKCgpSEhIKChIKAgqaSgoKCgoKUlIKCgoKCpIKCgoKCpNymgoKClKiSgoCCtqqigoKmAAsIkoKUpKS4goKCloKCgoKClICCpICCpJScsoKCgpSAgqSCgpSWgoKogoKClICUpoKCloKUlIKorLKCloKCgoKUrLKCgoCCtg==")]
+[assembly: go.GoPositionMap("debug/macho/macho.go", "macho.cs", "ADZwgKKAABYygKKAABc0gKKAANIBugOCgoKClKY=")]
 [assembly: go.GoPositionMap("debug/macho/reloctype.go", "reloctype.cs", "ABEogAAPIoAADyKAABAkgA==")]
 [assembly: go.GoPositionMap("debug/macho/reloctype_string.go", "reloctype_string.cs", "/oaigoKCgoLugoKUpIaigoKCgoKCgoKC7oKClKSGooKCgoKCgoKCgu6CgpSkhqKCgoKCgoKCgoKC7oKClA==")]
 // </GoSourcePositionMaps>

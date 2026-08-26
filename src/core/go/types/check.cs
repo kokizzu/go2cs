@@ -22,6 +22,18 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
+    builtin.initPackage(typeof(global::go.@internal.godebug_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(global::go.sync.atomic_package));
+}
+
 // nopos, noposn indicate an unknown position
 internal static tokenꓸPos nopos;
 

@@ -937,6 +937,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckNamedFuncTypeStructuralField() => CheckTarget("NamedFuncTypeStructuralField");
 
     [TestMethod]
+    public void CheckNamedImportInitOrder() => CheckTarget("NamedImportInitOrder");
+
+    [TestMethod]
     public void CheckNamedInterfaceAdapterIdentity() => CheckTarget("NamedInterfaceAdapterIdentity");
 
     [TestMethod]

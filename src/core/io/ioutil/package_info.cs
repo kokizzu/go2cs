@@ -54,7 +54,7 @@ using static go.io.ioutil_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("io/ioutil/ioutil.go", "ioutil.cs", "ABU24gACEuIAAhDSAAIuABQCgoKUgoKClIauwg==")]
+[assembly: go.GoPositionMap("io/ioutil/ioutil.go", "ioutil.cs", "ADM24gACEuIAAhDSAAIuABQCgoKUgoKClIauwg==")]
 [assembly: go.GoPositionMap("io/ioutil/tempfile.go", "tempfile.cs", "AAkwAA0CAAIcAAsC")]
 // </GoSourcePositionMaps>
 

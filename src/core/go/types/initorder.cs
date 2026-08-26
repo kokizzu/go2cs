@@ -14,6 +14,18 @@ using errors = global::go.@internal.types.errors_package;
 
 partial class types_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontainerꓸheap() {
+    builtin.initPackage(typeof(container.heap_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsort() {
+    builtin.initPackage(typeof(sort_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object objectDependencyGraphˢ = (@string)"Object dependency graph:"u8;
 internal static readonly object transposedObjectˢ = (@string)"Transposed object dependency graph (functions eliminated):"u8;

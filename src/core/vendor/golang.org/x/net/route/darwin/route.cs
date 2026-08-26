@@ -17,6 +17,18 @@ using syscall = syscall_package;
 
 partial class route_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸos() {
+    builtin.initPackage(typeof(os_package));
+}
+
 internal static error errUnsupportedMessage = errors.New("unsupported message"u8);
 internal static error errMessageMismatch = errors.New("message mismatch"u8);
 internal static error errMessageTooShort = errors.New("message too short"u8);

@@ -19,6 +19,18 @@ using regexp;
 
 partial class regexp_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸregexpꓸsyntax() {
+    builtin.initPackage(typeof(regexp.syntax_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // A job is an entry on the backtracker's job stack. It holds
 // the instruction pc and the position in the input.
 [GoType] partial struct job {

@@ -55,12 +55,12 @@ using static go.vendor.golang.org.x.crypto.sha3_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/hashes.go", "hashes.cs", "AAwksqyyrLKssqaCpoKmgqaCrsCswKaygoKCqLKCgoKosoKCgqiygoKC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/hashes.go", "hashes.cs", "ABIksqyyrLKssqaCpoKmgqaCrsCswKaygoKCqLKCgoKosoKCgqiygoKC")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/hashes_noasm.go", "hashes_noasm.cs", "AAgSgqaCpoKmgg==")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/keccakf.go", "keccakf.cs", "ACdSpgAMBLqCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgg==")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/register.go", "register.cs", "AAsagoKCgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/keccakf.go", "keccakf.cs", "AC1SpgAMBLqCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKEgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgoSCgoKCgoKCgoKCgoKCgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/register.go", "register.cs", "ABEagoKCgg==")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/sha3.go", "sha3.cs", "ACZmkKaQqLSClIKmgpKqwpiigqiCguwACAqCgoKCypSCgoKq4oKUhIKUgoKmgoKUgpaCuqjkgpaWgoKCloKoqqKCuoKCgg==")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/shake.go", "shake.cs", "ADd6lIKCgoKmgoKUgoKmgqaCpoKCgoKCgqiygqiSgoKokqyyrLKmgqaCAAIS4oKUAAIS4oKUqJKCgqiSgoI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/shake.go", "shake.cs", "AEN6lIKCgoKmgoKUgoKmgqaCpoKCgoKCgqiygqiSgoKokqyyrLKmgqaCAAIS4oKUAAIS4oKUqJKCgqiSgoI=")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/crypto/sha3/shake_noasm.go", "shake_noasm.cs", "AAgSgqaC")]
 // </GoSourcePositionMaps>
 

@@ -62,10 +62,10 @@ using static go.@internal.coverage.cfile_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/cfile/apis.go", "apis.cs", "ABEikoKUqJKClIKUgqiSgpSokoKUgqaCgpSCloK4qJKCgpSCADl4goKUgoKmgoKmpg==")]
-[assembly: go.GoPositionMap("internal/coverage/cfile/emit.go", "emit.cs", "ACNKAESgAbKClIKCgoKmgoKWgoKCloCCgoLagoKUgoKUpoKCgpSsxN6Clt6EgoKCooKClJSCgoK6goKigIKkgoKClIKCuoKWgoKChKqigoKUgpaE3oCCuIKAgrassoKUgIKCgtykgpSWgqiCAAYQgIKkgqiAgqSAgsqAgqaokoCCpAACEAAIBoKCgpSCgoKCpqzSgoKCgoKCgpQAAhwADQKCgpSCloKAgraCgIK2rNKAgqSAgsqAgqasstaihIKigpSmgoSCgoKUloKCgpSCgqiCgoKCuoKCgoKmlIKWgoKCpgAHEoKCgqSAgpSCAAgQloKAgriUgqYABxDSgoKClIKCqsKCgIKkAAIQ0qaCgoSClIKCgoKigoKUlIKC")]
+[assembly: go.GoPositionMap("internal/coverage/cfile/apis.go", "apis.cs", "ACkikoKUqJKClIKUgqiSgpSokoKUgqaCgpSCloK4qJKCgpSCADl4goKUgoKmgoKmpg==")]
+[assembly: go.GoPositionMap("internal/coverage/cfile/emit.go", "emit.cs", "AFNKAESgAbKClIKCgoKmgoKWgoKCloCCgoLagoKUgoKUpoKCgpSsxN6Clt6EgoKCooKClJSCgoK6goKigIKkgoKClIKCuoKWgoKChKqigoKUgpaE3oCCuIKAgrassoKUgIKCgtykgpSWgqiCAAYQgIKkgqiAgqSAgsqAgqaokoCCpAACEAAIBoKCgpSCgoKCpqzSgoKCgoKCgpQAAhwADQKCgpSCloKAgraCgIK2rNKAgqSAgsqAgqasstaihIKigpSmgoSCgoKUloKCgpSCgqiCgoKCuoKCgoKmlIKWgoKCpgAHEoKCgqSAgpSCAAgQloKAgriUgqYABxDSgoKClIKCqsKCgIKkAAIQ0qaCgoSClIKCgoKigoKUlIKC")]
 [assembly: go.GoPositionMap("internal/coverage/cfile/hooks.go", "hooks.cs", "AAo4ABYIgoKU")]
-[assembly: go.GoPositionMap("internal/coverage/cfile/testsupport.go", "testsupport.cs", "AB484pKCqILKgIKkgIIABxCCgpiSgoKCgoKUkoKCzAAIEoKCgoKUgIK4goCCgILagIK4goCCpIKAgrgADBbkgoKUkpSCgoKUgoKUgoCCuJaygoKUkoKCgpSCgoKClIKogoCUgILGgoKU2IKAgsqCgoKCgoKUgoKCgoKAgraCgoKmgpSCgpS4AAkOhqKCgpSAggAHEIKCgIKkgoKAgrYAAhLigpSWgoKCgoKUgqaChIKUgoKCpqaClA==")]
+[assembly: go.GoPositionMap("internal/coverage/cfile/testsupport.go", "testsupport.cs", "AEg84pKCqILKgIKkgIIABxCCgpiSgoKCgoKUkoKCzAAIEoKCgoKUgIK4goCCgILagIK4goCCpIKAgrgADBbkgoKUkpSCgoKUgoKUgoCCuJaygoKUkoKCgpSCgoKClIKogoCUgILGgoKU2IKAgsqCgoKCgoKUgoKCgoKAgraCgoKmgpSCgpS4AAkOhqKCgpSAggAHEIKCgIKkgoKAgrYAAhLigpSWgoKCgoKUgqaChIKUgoKCpqaClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;

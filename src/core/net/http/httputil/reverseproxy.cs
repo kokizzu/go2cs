@@ -29,6 +29,42 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class httputil_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontext() {
+    builtin.initPackage(typeof(context_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlog() {
+    builtin.initPackage(typeof(log_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmime() {
+    builtin.initPackage(typeof(mime_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptrace() {
+    builtin.initPackage(typeof(go.net.http.httptrace_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸascii() {
+    builtin.initPackage(typeof(go.net.http.@internal.ascii_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸhttpꓸhttpguts() {
+    builtin.initPackage(typeof(vendor.golang.org.x.net.http.httpguts_package));
+}
+
 // A ProxyRequest contains a request to be rewritten by a [ReverseProxy].
 [GoType] partial struct ProxyRequest {
     // In is the request received by the proxy.

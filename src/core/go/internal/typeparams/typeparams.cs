@@ -9,6 +9,18 @@ using global::go.go;
 
 partial class typeparams_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸast() {
+    builtin.initPackage(typeof(global::go.go.ast_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
+    builtin.initPackage(typeof(global::go.go.token_package));
+}
+
 public static ast.Expr PackIndexExpr(ast.Expr x, tokenꓸPos lbrack, slice<ast.Expr> exprs, tokenꓸPos rbrack) {
     switch (len(exprs)) {
     case 0: {

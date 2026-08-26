@@ -12,6 +12,12 @@ using slices = slices_package;
 
 partial class sort_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
 internal static void intsImpl(slice<nint> x) {
     slices.Sort<slice<nint>, nint>(x);
 }

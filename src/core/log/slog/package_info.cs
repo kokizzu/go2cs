@@ -73,14 +73,14 @@ using static go.log.slog_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/slog/attr.go", "attr.cs", "ABAkkqiSqqKokqiSqJKqoqiSAAIUAAkCpoKYgoKUqqKokqaCqqI=")]
-[assembly: go.GoPositionMap("log/slog/handler.go", "handler.cs", "AFu+AYLcgqwACAKCgoKCkoKC1oKmggBCmAGUAAscwoKClKbmgpSUkoKCgIKCgsiCgoKmppTWgoKCqvKSgoKmgoKUgoKCgoKUuIKCgoKUpoKUgoKCgpSUgoKEgoKC1sSAgoKCgoLsgoLKgoKCgoKClJSCgqaUgqa6koKUAA8ggsai7oKClKaCgpSAgoKkpoKCAAYSooKCgpSCpoK6koKUpIKCvKKCgoKmrNKCgIKCgqaUtoKmgIKAgoKU2IKUypSClIKClIK4gpSmgqaCgpSUlIKUlKaCgoKCpoKU+sKSgNyAkoK4uIKClJSC6KKClLiKwoKCgoI=")]
-[assembly: go.GoPositionMap("log/slog/json_handler.go", "json_handler.cs", "ABw80oKUAAkYoqqipoIAAkIAIALYsoCmpIKCpqKUpKSqgLLGprSkgoKAgpTGpKakkoKCgIKkgoIABxDSgJKAlIKCgIKCgpSClIKUtLS0toKCxIKCpIKCgpSCgoIACBKCgpSCgoKClJSClA==")]
-[assembly: go.GoPositionMap("log/slog/level.go", "level.cs", "ADZ2AAkCgoKUlpSkpKTM2AACENKCgpSqogACENLW0oKCqIKCgIKCgoK2lKSkpKSkguqgAAsYkqiSpoKqoqqigoCCpII=")]
-[assembly: go.GoPositionMap("log/slog/logger.go", "logger.cs", "ABpWABgCgoKmgqiQrvLugIKSggAMGIKCgpSChJKCqIKClIIADBqCkqiQquKClIKCAAISAAgCgpSCgqiSgpSosqiSgpSssgACGgAMAqiyqLKosqiyqLKosqiyqLKosqzSgpSCgpSClIKCgpSosoKUgoKUgpSCgoKUqLKosqiyqLKosqiyqLKosqiyqLI=")]
+[assembly: go.GoPositionMap("log/slog/attr.go", "attr.cs", "ABYkkqiSqqKokqiSqJKqoqiSAAIUAAkCpoKYgoKUqqKokqaCqqI=")]
+[assembly: go.GoPositionMap("log/slog/handler.go", "handler.cs", "AIsBvgGC3IKsAAgCgoKCgpKCgtaCpoIAQpgBlAALHMKCgpSm5oKUlJKCgoCCgoLIgoKCpqaU1oKCgqrykoKCpoKClIKCgoKClLiCgoKClKaClIKCgoKUlIKChIKCgtbEgIKCgoKC7IKCyoKCgoKCgpSUgoKmlIKmupKClAAPIILGou6CgpSmgoKUgIKCpKaCggAGEqKCgoKUgqaCupKClKSCgryigoKCpqzSgoCCgoKmlLaCpoCCgIKClNiClMqUgpSCgpSCuIKUpoKmgoKUlJSClJSmgoKCgqaClPrCkoDcgJKCuLiCgpSUguiigpS4isKCgoKC")]
+[assembly: go.GoPositionMap("log/slog/json_handler.go", "json_handler.cs", "ADQ80oKUAAkYoqqipoIAAkIAIALYsoCmpIKCpqKUpKSqgLLGprSkgoKAgpTGpKakkoKCgIKkgoIABxDSgJKAlIKCgIKCgpSClIKUtLS0toKCxIKCpIKCgpSCgoIACBKCgpSCgoKClJSClA==")]
+[assembly: go.GoPositionMap("log/slog/level.go", "level.cs", "AEJ2AAkCgoKUlpSkpKTM2AACENKCgpSqogACENLW0oKCqIKCgIKCgoK2lKSkpKSkguqgAAsYkqiSpoKqoqqigoCCpII=")]
+[assembly: go.GoPositionMap("log/slog/logger.go", "logger.cs", "ACZWABgCgoKmgqiQrvLugIKSggAMGIKCgpSChJKCqIKClIIADBqCkqiQquKClIKCAAISAAgCgpSCgqiSgpSosqiSgpSssgACGgAMAqiyqLKosqiyqLKosqiyqLKosqzSgpSCgpSClIKCgpSosoKUgoKUgpSCgoKUqLKosqiyqLKosqiyqLKosqiyqLI=")]
 [assembly: go.GoPositionMap("log/slog/record.go", "record.cs", "AC900gAHFtKCqLKqwoKCpoKCAAgOwoKCgoKUgriCgpSCpoKCgoIABBDSgoKCgpSCgpSClMySgoKCgIK2AAQW4pSClKa2ABcowoKClIKUgpSu4oKC")]
-[assembly: go.GoPositionMap("log/slog/text_handler.go", "text_handler.cs", "ABs40oKUAAkYoqqipoIAAk4AJgKmopSkpICCgoKmgqSAlIKkpKSssoCCtoKClKaCgpSCgqaClIKUgoKUlA==")]
-[assembly: go.GoPositionMap("log/slog/value.go", "value.cs", "AEmWAYKClAAEEJKUpMSkpKS0vsKokqiSqJKokqiSgoKUAAYcosqUgoKUuKiSqviAgoKCgqakqJKCgoKmAAIkAA8ClKSkpKSkpKSkpKSkpKSkpKSkpKS0vrKUgIKkpKSkpKSkpKSkpM6ygIKkgqaCqqKAkqSqooCSpKqigJKkpoKqooCSpqaCqqKAkqamgqqigJKkqJKUgpSktMyiqqKAgqSmgqyygoKClJSkpKSkpKTKkoLKqqKUpKSkpKSkpKSkAA4qAAoCgoKAgriCgpSUggAJBoKCgoKUgoKCgoKCgpSCgoKm")]
+[assembly: go.GoPositionMap("log/slog/text_handler.go", "text_handler.cs", "ACE40oKUAAkYoqqipoIAAk4AJgKmopSkpICCgoKmgqSAlIKkpKSssoCCtoKClKaCgpSCgqaClIKUgoKUlA==")]
+[assembly: go.GoPositionMap("log/slog/value.go", "value.cs", "AE+WAYKClAAEEJKUpMSkpKS0vsKokqiSqJKokqiSgoKUAAYcosqUgoKUuKiSqviAgoKCgqakqJKCgoKmAAIkAA8ClKSkpKSkpKSkpKSkpKSkpKSkpKS0vrKUgIKkpKSkpKSkpKSkpM6ygIKkgqaCqqKAkqSqooCSpKqigJKkpoKqooCSpqaCqqKAkqamgqqigJKkqJKUgpSktMyiqqKAgqSmgqyygoKClJSkpKSkpKTKkoLKqqKUpKSkpKSkpKSkAA4qAAoCgoKAgriCgpSUggAJBoKCgoKUgoKCgoKCgpSCgoKm")]
 // </GoSourcePositionMaps>
 
 namespace go.log;

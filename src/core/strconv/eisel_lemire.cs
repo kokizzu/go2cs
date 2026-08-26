@@ -21,6 +21,12 @@ using go.math;
 
 partial class strconv_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(go.math.bits_package));
+}
+
 internal static (float64 f, bool ok) eiselLemire64(uint64 man, nint exp10, bool neg) {
     float64 f = default!;
 

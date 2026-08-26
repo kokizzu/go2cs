@@ -62,10 +62,10 @@ using static go.os.user_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/user/listgroups_unix.go", "listgroups_unix.cs", "ABMmgoKUgoKWgoKCloSCgoKCgoKUAAcUgroABhCClJSUlJSCqIKClJSCgpaWpqKCgpSU")]
-[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "AA4q0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS")]
-[assembly: go.GoPositionMap("os/user/lookup_stubs.go", "lookup_stubs.cs", "ABUugraCgpaSAAgQlIKUgtqClIKClIKClJSmgoCC2qaCgIKk")]
-[assembly: go.GoPositionMap("os/user/lookup_unix.go", "lookup_unix.cs", "ABI4AAkCloKCuoKChKaClLqCgpaogt6CgpSCgqiClIKU3IKCgpSCsoKmgsyUgIKkuIKAgqSkpoKAgqSkqqKCgpSCsoKmgoSUgIKkgIKkAAoWgriCgoKUgIKkpKaCgIKkpKaigoKUktaigoKUktaigoKUktaigoKUkg==")]
+[assembly: go.GoPositionMap("os/user/listgroups_unix.go", "listgroups_unix.cs", "AD0mgoKUgoKWgoKCloSCgoKCgoKUAAcUgroABhCClJSUlJSCqIKClJSCgpaWpqKCgpSU")]
+[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "ABQq0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS")]
+[assembly: go.GoPositionMap("os/user/lookup_stubs.go", "lookup_stubs.cs", "ABsugraCgpaSAAgQlIKUgtqClIKClIKClJSmgoCC2qaCgIKk")]
+[assembly: go.GoPositionMap("os/user/lookup_unix.go", "lookup_unix.cs", "ABg4AAkCloKCuoKChKaClLqCgpaogt6CgpSCgqiClIKU3IKCgpSCsoKmgsyUgIKkuIKAgqSkpoKAgqSkqqKCgpSCsoKmgoSUgIKkgIKkAAoWgriCgoKUgIKkpKaCgIKkpKaigoKUktaigoKUktaigoKUktaigoKUkg==")]
 [assembly: go.GoPositionMap("os/user/user.go", "user.cs", "ADaKAYLOgs6CzoI=")]
 // </GoSourcePositionMaps>
 

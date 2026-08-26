@@ -10,6 +10,12 @@ using @internal;
 
 partial class os_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestlog() {
+    builtin.initPackage(typeof(@internal.testlog_package));
+}
+
 // Expand replaces ${var} or $var in the string based on the mapping function.
 // For example, [os.ExpandEnv](s) is equivalent to [os.Expand](s, [os.Getenv]).
 public static @string Expand(@string s, Func<@string, @string> mapping) {

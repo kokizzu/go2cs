@@ -29,6 +29,30 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class parser_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸbuildꓸconstraint() {
+    builtin.initPackage(typeof(global::go.go.build.constraint_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸtypeparams() {
+    builtin.initPackage(typeof(global::go.go.@internal.typeparams_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸscanner() {
+    builtin.initPackage(typeof(global::go.go.scanner_package));
+}
+
 // The parser structure holds the parser's internal state.
 [GoType] partial struct parser {
     internal ж<tokenꓸFile> @file;

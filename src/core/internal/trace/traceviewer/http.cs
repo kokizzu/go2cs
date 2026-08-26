@@ -15,6 +15,18 @@ using net;
 
 partial class traceviewer_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸembed() {
+    builtin.initPackage(typeof(embed_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() {
+    builtin.initPackage(typeof(net.http_package));
+}
+
 public static httpꓸHandler MainHandler(slice<View> views) {
     var viewsʗ1 = views;
     return new http_HandlerFuncᴠΔHandler(new http.HandlerFunc((http.ResponseWriter w, ж<http.Request> _) => {

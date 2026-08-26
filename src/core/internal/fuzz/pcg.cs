@@ -14,6 +14,12 @@ using global::go.sync;
 
 partial class fuzz_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(global::go.sync.atomic_package));
+}
+
 [GoType] partial interface mutatorRand {
     uint32 uint32();
     nint intn(nint _);

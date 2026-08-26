@@ -18,6 +18,12 @@ using io = io_package;
 
 partial class format_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string expectedPackageˢ = "expected 'package'"u8;
 internal static readonly @string expectedDeclarationˢ = "expected declaration"u8;

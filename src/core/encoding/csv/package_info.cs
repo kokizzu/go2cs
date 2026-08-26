@@ -50,8 +50,8 @@ using static go.encoding.csv_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/csv/reader.go", "reader.cs", "AEqUAYKClIKUpoAADRyCAEKkAZIABR4ADAKCgpSUAAIS4oKUgqyyAAca8oKCgpSClAADEMKCgoKCgpSUgoKUgqaClICCgqSokoKUqJKCpoKCmJKCgoKCgpSCgpSUgpiSgoKSgoKCgoKCgoaCgpSClJSCgoKUpoKAgpKCtoKCgoKCgpSmgoKCgoKUgoKCgKaSgraCgpKCtpKCtsaS+IKClIKCgoKUgriCgpSCguqCuoKCgpSCgoKCqIKCAAgQlA==")]
-[assembly: go.GoPositionMap("encoding/csv/writer.go", "writer.cs", "ACVOkgAFFMKClqKCgILcgoCCpJaAgqSUgoKogIKkloKClLSCxoKUxoKCuICCtoKClJSqoqqigqqigoKCpgACHgAMAoKWgpaCgoKCuIKogg==")]
+[assembly: go.GoPositionMap("encoding/csv/reader.go", "reader.cs", "AHSUAYKClIKUpoAADRyCAEKkAZIABR4ADAKCgpSUAAIS4oKUgqyyAAca8oKCgpSClAADEMKCgoKCgpSUgoKUgqaClICCgqSokoKUqJKCpoKCmJKCgoKCgpSCgpSUgpiSgoKSgoKCgoKCgoaCgpSClJSCgoKUpoKAgpKCtoKCgoKCgpSmgoKCgoKUgoKCgKaSgraCgpKCtpKCtsaS+IKClIKCgoKUgriCgpSCguqCuoKCgpSCgoKCqIKCAAgQlA==")]
+[assembly: go.GoPositionMap("encoding/csv/writer.go", "writer.cs", "ACtOkgAFFMKClqKCgILcgoCCpJaAgqSUgoKogIKkloKClLSCxoKUxoKCuICCtoKClJSqoqqigqqigoKCpgACHgAMAoKWgpaCgoKCuIKogg==")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;

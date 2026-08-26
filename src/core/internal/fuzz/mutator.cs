@@ -11,6 +11,12 @@ using encoding;
 
 partial class fuzz_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
+    builtin.initPackage(typeof(encoding.binary_package));
+}
+
 [GoType] partial struct mutator {
     internal mutatorRand r;
     internal slice<byte> scratch; // scratch slice to avoid additional allocations

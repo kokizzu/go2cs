@@ -18,6 +18,30 @@ using ꓸꓸꓸbyte = Span<byte>;
 
 partial class filepathlite_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() {
+    builtin.initPackage(typeof(go.@internal.stringslite_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
+    builtin.initPackage(typeof(io.fs_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
 internal static error errInvalidPath = errors.New("invalid path"u8);
 
 // A lazybuf is a lazily constructed path buffer.
@@ -85,8 +109,7 @@ public static @string Clean(@string path) {
     //	dotdot is index in buf where .. must stop, either because
     //		it is the leading slash or it is a leading ../../.. prefix.
     nint n = len(path);
-    ref var @out = ref heap<lazybuf>(out var Ꮡout);
-    @out = new lazybuf(path: path, volAndPath: originalPath, volLen: volLen);
+    var @out = new lazybuf(path: path, volAndPath: originalPath, volLen: volLen);
     nint r = 0;
     nint dotdot = 0;
     if (rooted) {

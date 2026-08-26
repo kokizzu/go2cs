@@ -11,6 +11,12 @@ using @internal;
 
 partial class big_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // Gob codec version. Permits backward-compatible changes to the encoding.
 internal const byte floatGobVersion = 1;
 

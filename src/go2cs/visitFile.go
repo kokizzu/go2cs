@@ -17,11 +17,11 @@ import (
 const TypeAliasMarker = ">>MARKER:TYPEALIASES<<"
 const UsingsMarker = ">>MARKER:USINGS<<"
 
-// BlankImportInitMarker reserves the top of the file's class body for the blank-import
-// module-initializer hooks (writeBlankImportInit). The import declarations are visited as part of
+// ImportInitMarker reserves the top of the file's class body for the imported-package
+// module-initializer hooks (writeImportInit). The import declarations are visited as part of
 // the decl walk that follows the class-open line, so the hooks are only known afterwards — and
 // they must lead the class body, ahead of the file's own `init` functions.
-const BlankImportInitMarker = ">>MARKER:BLANKIMPORTINITS<<"
+const ImportInitMarker = ">>MARKER:IMPORTINITS<<"
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	if node != nil {
@@ -91,7 +91,7 @@ func (v *Visitor) visitFile(file *ast.File) {
 
 	v.writeOutput(UsingsMarker)
 	v.writeOutputLn("partial class %s {", packageClassName)
-	v.writeOutput(BlankImportInitMarker)
+	v.writeOutput(ImportInitMarker)
 
 	for _, decl := range file.Decls {
 		v.visitDecl(decl)
@@ -103,7 +103,7 @@ func (v *Visitor) visitFile(file *ast.File) {
 	// EMPTY (a doc-only or `//go:build ignore` source — hash/crc32/gen.cs, os/signal/doc.cs,
 	// regexp/syntax/doc.cs, strconv/doc.cs) ended in the marker text rather than a blank line and
 	// gained a spurious second one. Replacing before that check keeps a hookless file byte-identical.
-	v.replaceMarker(BlankImportInitMarker, v.blankImportInits.String())
+	v.replaceMarker(ImportInitMarker, v.importInits.String())
 
 	if v.options.includeComments {
 		// Add any remaining standalone comments

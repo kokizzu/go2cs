@@ -16,6 +16,30 @@ using go.math;
 
 partial class gob_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() {
+    builtin.initPackage(typeof(@internal.saferio_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(go.math.bits_package));
+}
+
 internal static error errBadUint = errors.New("gob: encoded unsigned integer out of range"u8);
 internal static error errBadType = errors.New("gob: unknown type id or corrupted data"u8);
 internal static error errRange = errors.New("gob: bad data: field numbers out of bounds"u8);

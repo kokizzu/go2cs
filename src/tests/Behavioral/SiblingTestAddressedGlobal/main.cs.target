@@ -4,6 +4,12 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 internal static ж<Func<@string, @string>> Ꮡlookup = new((@string key) => "prod:"u8 + key);
 internal static ref Func<@string, @string> lookup => ref Ꮡlookup.ValueSlot;
 

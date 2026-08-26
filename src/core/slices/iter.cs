@@ -8,6 +8,12 @@ using iter = iter_package;
 
 partial class slices_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸiter() {
+    builtin.initPackage(typeof(iter_package));
+}
+
 // All returns an iterator over index-value pairs in the slice
 // in the usual order.
 public static iter.Seq2<nint, E> All<Slice, E>(Slice s)

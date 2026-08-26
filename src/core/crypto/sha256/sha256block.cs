@@ -11,6 +11,12 @@ using math;
 
 partial class sha256_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(math.bits_package));
+}
+
 internal static slice<uint32> _K = new uint32[]{
     0x428a2f98,
     0x71374491,

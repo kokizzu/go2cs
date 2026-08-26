@@ -12,6 +12,12 @@ using @internal;
 
 partial class net_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() {
+    builtin.initPackage(typeof(@internal.poll_package));
+}
+
 // Network file descriptor.
 [GoType] partial struct netFD {
     internal poll.FD pfd;

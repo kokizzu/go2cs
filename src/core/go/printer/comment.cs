@@ -11,6 +11,24 @@ using global::go.go.doc;
 
 partial class printer_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸast() {
+    builtin.initPackage(typeof(global::go.go.ast_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸdocꓸcomment() {
+    builtin.initPackage(typeof(global::go.go.doc.comment_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // formatDocComment reformats the doc comment list,
 // returning the canonical formatting.
 internal static slice<ж<ast.Comment>> formatDocComment(slice<ж<ast.Comment>> list) {

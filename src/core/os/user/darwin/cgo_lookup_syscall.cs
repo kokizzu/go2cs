@@ -19,6 +19,18 @@ using @internal.syscall;
 
 partial class user_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() {
+    builtin.initPackage(typeof(@internal.syscall.unix_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 internal static _C_uid_t _C_pw_uid(ref _C_struct_passwd p) {
     return p.Uid;
 }

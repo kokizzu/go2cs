@@ -12,6 +12,12 @@ using unicode = unicode_package;
 
 partial class syntax_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
 // A Regexp is a node in a regular expression syntax tree.
 [GoType] partial struct Regexp {
     public Op Op; // operator

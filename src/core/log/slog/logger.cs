@@ -18,6 +18,18 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class slog_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlog() {
+    builtin.initPackage(typeof(log_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 internal static ж<atomic.Pointer<Logger>> ᏑdefaultLogger = new(default(atomic.Pointer<Logger>));
 internal static ref atomic.Pointer<Logger> defaultLogger => ref ᏑdefaultLogger.Value;
 

@@ -58,8 +58,8 @@ using static go.testing.iotest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("testing/iotest/logger.go", "logger.cs", "AA8isoKClJSssgAHELKCgpSUrLI=")]
-[assembly: go.GoPositionMap("testing/iotest/reader.go", "reader.cs", "AA4ioOyCgpSqoOyCAAIQ0AAIENaCgoKClIKUgpQABRCg/oKCgpSoku6CAAgSgoKUgoKClIKClIIABhTygoKCqIKClIKUgoKWgJSAgsqCgoCCpICCpICCyoCCuIKClIKogIKkgIK4goKUgqiAgqSCgpSCuICCgoKUgoKUgpaCgpaClIKClIKWgpSCgoKCgpSUgsg=")]
+[assembly: go.GoPositionMap("testing/iotest/logger.go", "logger.cs", "ABsisoKClJSssgAHELKCgpSUrLI=")]
+[assembly: go.GoPositionMap("testing/iotest/reader.go", "reader.cs", "ACAioOyCgpSqoOyCAAIQ0AAIENaCgoKClIKUgpQABRCg/oKCgpSoku6CAAgSgoKUgoKClIKClIIABhTygoKCqIKClIKUgoKWgJSAgsqCgoCCpICCpICCyoCCuIKClIKogIKkgIK4goKUgqiAgqSCgpSCuICCgoKUgoKUgpaCgpaClIKClIKWgpSCgoKCgpSUgsg=")]
 [assembly: go.GoPositionMap("testing/iotest/writer.go", "writer.cs", "AAkWogAHELKCpoKClIKCgpQ=")]
 // </GoSourcePositionMaps>
 

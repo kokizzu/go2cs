@@ -9,6 +9,18 @@ using go.@internal.coverage;
 
 partial class coverage_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸcfile() {
+    builtin.initPackage(typeof(go.@internal.coverage.cfile_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // initHook is invoked from main.init in programs built with -cover.
 // The call is emitted by the compiler.
 internal static void initHook(bool istest) {

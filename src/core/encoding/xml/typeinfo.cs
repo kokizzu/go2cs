@@ -10,6 +10,12 @@ using sync = sync_package;
 
 partial class xml_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // typeInfo holds details for the xml representation of a type.
 [GoType] partial struct typeInfo {
     internal ж<fieldInfo> xmlname;

@@ -49,7 +49,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("VariadicBoxReceiver.go", "VariadicBoxReceiver.cs", "AAsioqqCpoKCgoKCgoKUhoKCgg==")]
+[assembly: go.GoPositionMap("VariadicBoxReceiver.go", "VariadicBoxReceiver.cs", "ABEioqqCpoKCgoKCgoKUhoKCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go;

@@ -5,6 +5,12 @@ using Δruntime = runtime_package;
 
 partial class buildcfg_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 internal static readonly @string defaultGO386 = @"sse2"u8;
 
 internal static readonly @string defaultGOAMD64 = @"v1"u8;

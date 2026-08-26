@@ -59,8 +59,8 @@ using static go.@internal.syscall.unix_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/unix/arc4random_darwin.go", "arc4random_darwin.cs", "AAwcpqSClA==")]
-[assembly: go.GoPositionMap("internal/syscall/unix/at_libc2.go", "at_libc2.cs", "AAscgqaCpoKopqY=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/arc4random_darwin.go", "arc4random_darwin.cs", "ABIcpqSClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/at_libc2.go", "at_libc2.cs", "ABEcgqaCpoKopqY=")]
 [assembly: go.GoPositionMap("internal/syscall/unix/eaccess_darwin.go", "eaccess_darwin.cs", "AAwamJKCgpSCgpSmgg==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/fcntl_unix.go", "fcntl_unix.cs", "AAsi9IKCgpQ=")]
 [assembly: go.GoPositionMap("internal/syscall/unix/kernel_version_other.go", "kernel_version_other.cs", "AAgSgg==")]

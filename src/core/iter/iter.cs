@@ -197,6 +197,12 @@ using @internal;
 
 partial class iter_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 public delegate void Seq<V>(Func<V, bool> yield);
 
 public delegate void Seq2<K, V>(Func<K, V, bool> yield);

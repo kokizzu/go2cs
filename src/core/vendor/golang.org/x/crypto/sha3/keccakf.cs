@@ -9,6 +9,12 @@ using math;
 
 partial class sha3_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(math.bits_package));
+}
+
 // rc stores the round constants for use in the ι step.
 internal static array<uint64> rc = new uint64[]{
     0x0000000000000001,

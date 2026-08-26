@@ -8,6 +8,18 @@ using unicode = unicode_package;
 
 partial class ascii_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
 // EqualFold is [strings.EqualFold], ASCII only. It reports whether s and t
 // are equal, ASCII-case-insensitively.
 public static bool EqualFold(@string s, @string t) {

@@ -49,7 +49,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("MethodlessFuncType.go", "MethodlessFuncType.cs", "AAo0goKClM6CAAcWggAIBoKGgoKGgoKGgoKIgoaChII=")]
+[assembly: go.GoPositionMap("MethodlessFuncType.go", "MethodlessFuncType.cs", "ABA0goKClM6CAAcWggAIBoKGgoKGgoKGgoKIgoaChII=")]
 // </GoSourcePositionMaps>
 
 namespace go;

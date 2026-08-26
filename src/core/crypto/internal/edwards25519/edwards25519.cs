@@ -10,6 +10,18 @@ using ꓸꓸꓸжPoint = Span<ж<edwards25519_package.Point>>;
 
 partial class edwards25519_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸedwards25519ꓸfield() {
+    builtin.initPackage(typeof(go.crypto.@internal.edwards25519.field_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // Point types.
 [GoType] partial struct projP1xP1 {
     public field.Element X, Y, Z, T;

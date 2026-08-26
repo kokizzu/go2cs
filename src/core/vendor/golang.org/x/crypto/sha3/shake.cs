@@ -20,6 +20,18 @@ using encoding;
 
 partial class sha3_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
+    builtin.initPackage(typeof(encoding.binary_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // ShakeHash defines the interface to hash functions that support
 // arbitrary-length output. When used as a plain [hash.Hash], it
 // produces minimum-length outputs that provide full-strength generic

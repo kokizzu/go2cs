@@ -41,6 +41,12 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class http_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmaps() {
+    builtin.initPackage(typeof(maps_package));
+}
+
 // Errors used by the HTTP server.
 public static error ErrBodyNotAllowed = errors.New("http: request method or response status code does not allow body"u8);
 

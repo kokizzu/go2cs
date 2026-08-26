@@ -51,7 +51,7 @@ using static go.plugin_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("plugin/plugin.go", "plugin.cs", "AE+eAbKuwg==")]
-[assembly: go.GoPositionMap("plugin/plugin_stubs.go", "plugin_stubs.cs", "AA0WgqaC")]
+[assembly: go.GoPositionMap("plugin/plugin_stubs.go", "plugin_stubs.cs", "ABMWgqaC")]
 // </GoSourcePositionMaps>
 
 namespace go;

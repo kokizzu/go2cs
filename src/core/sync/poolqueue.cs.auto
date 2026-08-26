@@ -15,6 +15,12 @@ using sync;
 
 partial class sync_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(sync.atomic_package));
+}
+
 // poolDequeue is a lock-free fixed-size single-producer,
 // multi-consumer queue. The single producer can both push and pop
 // from the head, and consumers can pop from the tail.

@@ -9,6 +9,12 @@ using go.@internal;
 
 partial class des_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 internal static void cryptBlock(slice<uint64> subkeys, slice<byte> dst, slice<byte> src, bool decrypt) {
     var b = byteorder.BeUint64(src);
     b = permuteInitialBlock(b);

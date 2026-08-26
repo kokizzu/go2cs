@@ -49,7 +49,7 @@ using static go.runtime.coverage_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("runtime/coverage/coverage.go", "coverage.cs", "AAscogACENIAAhLiAAIU8gACEuIAAhLi")]
+[assembly: go.GoPositionMap("runtime/coverage/coverage.go", "coverage.cs", "ABccogACENIAAhLiAAIU8gACEuIAAhLi")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;

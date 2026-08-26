@@ -68,9 +68,9 @@ using static go.net.http.httptest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/httptest/httptest.go", "httptest.cs", "ABMmkgAINAAXAoKUgoKUloKChIKUtLTEpICClO6EgpaC3g==")]
-[assembly: go.GoPositionMap("net/http/httptest/recorder.go", "recorder.cs", "AC1mkgAKHsKCgoKUAAYU8oKUgpaEgoKCgpSWqqKCgpSqooKClKYACxiCupKCloKCgoKUqqKClAAGJAAPAoKUgpTugoKUgoKUlISAgoKCooKUlIKClIKCyIKClIKUgqYAAhDSgoKUgoKU")]
-[assembly: go.GoPositionMap("net/http/httptest/server.go", "server.cs", "ADp4goKCgpSUgoKAgrYADhyCgriCgoKmqqKCggACEuIACA6ygpSClIKCgoKCyrKClIKUgoKWgoKUlIKCgpSUgpSCgpSCgtyCgoKqooKCAAYS4oKCgoKCABImgriCpLqAgriCgIK4AAgGwoKCgoKClNjSgoKCgpQABhCCkoLo/sKuwqaCgqKC7MKCsoKElICCpIKYgoLqtoCCgpTGgIKClKSCuoCipsaC/qCoooKC")]
+[assembly: go.GoPositionMap("net/http/httptest/httptest.go", "httptest.cs", "AD0mkgAINAAXAoKUgoKUloKChIKUtLTEpICClO6EgpaC3g==")]
+[assembly: go.GoPositionMap("net/http/httptest/recorder.go", "recorder.cs", "AEVmkgAKHsKCgoKUAAYU8oKUgpaEgoKCgpSWqqKCgpSqooKClKYACxiCupKCloKCgoKUqqKClAAGJAAPAoKUgpTugoKUgoKUlISAgoKCooKUlIKClIKCyIKClIKUgqYAAhDSgoKUgoKU")]
+[assembly: go.GoPositionMap("net/http/httptest/server.go", "server.cs", "AGp4goKCgpSUgoKAgrYADhyCgriCgoKmqqKCggACEuIACA6ygpSClIKCgoKCyrKClIKUgoKWgoKUlIKCgpSUgpSCgpSCgtyCgoKqooKCAAYS4oKCgoKCABImgriCpLqAgriCgIK4AAgGwoKCgoKClNjSgoKCgpQABhCCkoLo/sKuwqaCgqKC7MKCsoKElICCpIKYgoLqtoCCgpTGgIKClKSCuoCipsaC/qCoooKC")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;

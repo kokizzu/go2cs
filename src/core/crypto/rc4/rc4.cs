@@ -15,6 +15,12 @@ using go.crypto.@internal;
 
 partial class rc4_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 // A Cipher is an instance of RC4 using a particular key.
 [GoType] partial struct Cipher {
     internal array<uint32> s = new(256);

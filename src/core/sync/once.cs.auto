@@ -14,6 +14,12 @@ using sync;
 
 partial class sync_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(sync.atomic_package));
+}
+
 // Once is an object that will perform exactly one action.
 //
 // A Once must not be copied after first use.

@@ -5,6 +5,12 @@ using go.BlankImportSideEffects;
 
 partial class jpeglike_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸBlankImportSideEffectsꓸregistry() {
+    builtin.initPackage(typeof(go.BlankImportSideEffects.registry_package));
+}
+
 [GoInit] internal static void init() {
     registry.Register("jpeglike"u8, "jpeglike decoder"u8);
 }

@@ -19,6 +19,12 @@ using go.@internal.coverage;
 
 partial class encodemeta_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbufio() {
+    builtin.initPackage(typeof(bufio_package));
+}
+
 // This package contains APIs and helpers for writing out a meta-data
 // file (composed of a file header, offsets/lengths, and then a series of
 // meta-data blobs emitted by the compiler, one per Go package).
