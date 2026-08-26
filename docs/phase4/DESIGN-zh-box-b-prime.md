@@ -343,6 +343,15 @@ a build error, which CNR and the behavioral suite catch as loudly as anything ca
 > reproducing the committed corpus byte-identically, then a box-mint diff. The census figure is an
 > upper bound on the constituency, never a prediction of the saving.
 >
+> **The arc's named instrument agrees, and says why.** `os.File.WriteString` measures **17.00
+> obj/op — UNMOVED** by this stage (three runs, golib's own `AllocationCounter`, the same counter
+> §7's targeted probes use; the byte figure is not comparable to the 2,368 stamp because the probe's
+> string and buffer shape is its own, and the object count is the shape-invariant half). That is the
+> correct result rather than a disappointing one: `WriteString` is emitted `this ж<File>` — a
+> **direct-ж** method, so it sits in the 448 that a ref-receiver primary would convert, not in what
+> S0b recovers. The instrument moving here would have meant the selection rule had reached a site it
+> should not have.
+>
 > That bound is still worth having, and it is genuinely smaller than §1.2 assumed: **448**, not
 > 1,016, of the receiver-position uses carry a box-consuming receiver at all. And B′'s own prospects
 > are NOT bounded by this stage's five: a direct-ж receiver IS really boxed by the emitter
