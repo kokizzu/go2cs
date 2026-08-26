@@ -74,8 +74,7 @@ internal static uint64 traceClockUnitsPerSecond() {
 //
 // freq is the number of trace clock units per second.
 internal static void traceFrequency(uintptr gen) {
-    ref var w = ref heap<traceWriter>(out var Ꮡw);
-    w = unsafeTraceWriter(gen, nil);
+    var w = unsafeTraceWriter(gen, nil);
     // Ensure we have a place to write to.
     (w, _) = w.ensure(1 + traceBytesPerNumber);
     /* traceEvFrequency + frequency */

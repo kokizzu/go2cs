@@ -160,6 +160,19 @@ ONE stdlib in a build; there is now only one on disk.
     trap below: **a path the converter half-recognizes is worse than one it rejects.** Native paths convert
     clean first time. (Durable fix if ever wanted: compare with `filepath.Clean` so the two spellings of
     one path cannot diverge.)
+    ⚠ **It bites through the ENVIRONMENT just as readily as through an argument, and the Bash tool is
+    where that happens** (paid again 2026-08-26). `run-validated-sweep.ps1` and the `-tests` pipeline
+    read `GOROOT` from the environment, so `export GOROOT="C:/Users/.../sdk/go1.23.12"` — the
+    forward-slash spelling a Bash-side lane naturally types, and which `go` itself accepts — routes the
+    whole emission into `namespace go.std.*` exactly as the argument form does. **The visible tell is the
+    project NAME**: the run writes `std.<pkg>.csproj` / `std.<pkg>.tests.csproj` beside the committed
+    `<pkg>.csproj`, and the failure surfaces as CS0246 on a generated adapter type in a CONSUMER file
+    (`writer.cs: 'sparseFileWriterжWriter' could not be found`) — which reads like a witness/generator
+    regression and invites a hunt in the wrong package. It also survives an A/B: running the SAME sweep on
+    a baseline converter reproduces it identically, so "it fails at master too" is NOT evidence the tree is
+    at fault when the environment is the variable. Check for `std.*` artifacts before believing any such
+    diagnosis, and set `GOROOT` from `go env GOROOT` verbatim (single-quoted in Bash so the backslashes
+    survive).
   - `-test-action convert|build|run|compare|all` (default `convert`) — `convert`/`all` convert-and-hook
     (production sources then tests); `build`/`run`/`compare` act on EXISTING digest-validated artifacts
     without reconverting; `compare` (and `all`) diffs the C# host's terminal results vs `go test -json -count=1`.
@@ -474,8 +487,26 @@ ONE stdlib in a build; there is now only one on disk.
   (`while` + explicit `exit 0`/`exit 1`), never `until ! powershell -Command "exit (Get-Process …)"`:
   `exit $true` is exit code 1, so that loop ends instantly and reports "exited" while the process
   still runs (measured 2026-08-16 — the false reading launched a SECOND CNR into the same tree, two
-  racing transpiles, caught only by PID inspection). Two adjacent PS 5.1 traps the same lanes
-  paid for: a repo script's `Write-Host` output goes to the INFORMATION stream, so capture with `*>&1`
+  racing transpiles, caught only by PID inspection).
+  ⚠ **The same false-"exited" reading has a SECOND, entirely different mechanism: Git Bash's
+  `kill -0 <pid>` cannot see a WINDOWS pid** (measured 2026-08-26). The Bash tool's `kill` resolves
+  pids in its own emulation namespace, so `while kill -0 $PID; do sleep 30; done` against a pid from
+  `Start-Process -PassThru` (or any `Get-Process` id) exits on the FIRST iteration and reports the
+  process gone while it is still running — no error, exit 0, indistinguishable from a real
+  completion. It reproduced the 2026-08-16 damage exactly and then some: two CNR runs believed dead
+  were alive, a third was launched, and THREE concurrent transpiles raced into one behavioral tree
+  (the r41 "never let two conversions overlap" hazard), with a partial 2-package `git status` that
+  read as a reassuring near-clean verdict. The tell was an mtime census — 288 of 641 packages never
+  re-transpiled — and the proof was `Get-CimInstance Win32_Process` showing both "dead" hosts alive
+  with live `go2cs.exe` children. **Rule: never wait on a Windows pid from Bash.** Wait from
+  PowerShell (`Get-Process -Id`), or — better — make the long run the harness BACKGROUND TASK itself
+  (`run_in_background`, the child of bash) so its real exit code is the task's, which is what
+  PROTOCOL v3's mailbox monitor already relies on. And when auditing for strays, exclude your own
+  querying process: a `Where-Object { $_.CommandLine -like '*check-no-regression*' }` sweep matches
+  the very command line performing the sweep, so it reports a phantom survivor and, if you kill it,
+  kills your own shell.
+  Two adjacent PS 5.1 traps the same lanes paid for:
+  a repo script's `Write-Host` output goes to the INFORMATION stream, so capture with `*>&1`
   (a bare `2>&1` silently drops every `==>` status line and the log reads as hung); and the sweep's
   `-SkipBuild` expects the converter at `src\go2cs\bin\go2cs.exe` — an outside-the-repo binary path is
   not consulted, so a lane that built elsewhere re-pays the build or copies the exe there first.

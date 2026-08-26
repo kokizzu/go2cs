@@ -79,8 +79,7 @@ internal static (ж<Header>, error) next(this ж<Reader> Ꮡtr) {
     // data that describes the next file. These meta data "files" should not
     // normally be visible to the outside. As such, this loop iterates through
     // one or more "header files" until it finds a "normal file".
-    ref var format = ref heap<Format>(out var Ꮡformat);
-    format = (Format)((Format)(FormatUSTAR | FormatPAX) | FormatGNU);
+    Format format = (Format)((Format)(FormatUSTAR | FormatPAX) | FormatGNU);
     while (ᐧ) {
         // Discard the remainder of the file and any padding.
         {
@@ -582,7 +581,7 @@ internal static (ж<Header>, ж<block>, error) readHeader(this ж<Reader> Ꮡtr)
 // As such, this library treats values as being encoded in decimal.
 internal static (sparseDatas, error) readGNUSparseMap1x0(io.Reader r) {
     int64 cntNewline = default!;
-    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+    bytes.Buffer buf = default!;
     ref var blk = ref heap(new block(), out var Ꮡblk);
     // feedTokens copies data in blocks from r into buf until there are
     // at least cnt newlines in buf. It will not read more blocks than needed.
@@ -594,7 +593,7 @@ internal static (sparseDatas, error) readGNUSparseMap1x0(io.Reader r) {
                     return errΔ1;
                 }
             }
-            Ꮡbuf.Value.Write(blkʗ1[..]);
+            buf.Write(blkʗ1[..]);
             foreach (var (_, c) in blkʗ1) {
                 if (c == (rune)'\n') {
                     cntNewline++;
@@ -607,7 +606,7 @@ internal static (sparseDatas, error) readGNUSparseMap1x0(io.Reader r) {
     // at least one newline exists in the buffer.
     @string nextToken() {
         cntNewline--;
-        var (tok, _) = Ꮡbuf.Value.ReadString((rune)'\n');
+        var (tok, _) = buf.ReadString((rune)'\n');
         return strings.TrimRight(tok, "\n"u8);
     }
     // Parse for the number of entries.

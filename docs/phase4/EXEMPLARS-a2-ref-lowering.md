@@ -292,6 +292,38 @@ internal static void mix(ref felem e, ref felem t, uint64 k) {
 }
 ```
 
+## 8 · The receiver comes home too (B′ §4.2, 2026-08-26)
+
+A2's reversion asked only where an *explicit* `&x` went. A pointer-receiver call takes an address
+too — implicitly — and the census charged every one of them a kept-reason, so a local that also fed
+a lowered position kept a box the emitted body never touched. Whether the box is really consumed
+turns on what the CALLEE's receiver is emitted as: a `[GoRecv] this ref T` binds an addressable
+receiver directly and needs none.
+
+`ClosureWriteVisibility`, from the behavioral corpus — a local written through a closure *and*
+mutated by a pointer-receiver method, which is the shape that makes the question interesting:
+
+```go
+t := Tally{5, "s"}
+bump := func() { t.total += 100 }
+bump()
+t.Add(3)          // ptr-receiver method, [GoRecv] ref
+```
+
+```csharp
+// before                                     // after
+ref var t = ref heap<Tally>(out var Ꮡt);      var t = new Tally(5, "s"u8);
+t = new Tally(5, "s"u8);                      void bump() {
+void bump() {                                     t.total += 100;
+    Ꮡt.Value.total += 100;                    }
+}
+```
+
+Nothing is lost by dropping the box, because C# hoists a captured local into a display class and
+rewrites *every* reference to it — the closure's write and the method's `ref t` bind one storage,
+exactly as the box used to guarantee. The test's own stdout comparison against `go run` is the
+proof, and it is unchanged.
+
 ## What deliberately stays boxed
 
 The `RefLoweredParams` guard keeps counter-examples beside the lowered ones, so the boundary is
@@ -305,6 +337,16 @@ itself under test:
 | in-lambda call sites | uniformly boxed-fallback wrapped `.DerefOrNull()` — identity-box aliasing preserved through captures |
 | string/numeric wrapper reinterprets | outside row 5's array-wrapper pairing family; a value copy would lose the write |
 | blank/unnamed pointer params (`func setup(_ *note)`) | nothing to gain — excluded after the vacuous lowering emitted an empty parameter name |
+| **receiver of a direct-ж callee** (`Ꮡz.FieldAddr()`) | the box IS that method's receiver — it takes `&recv.field`, so there is nothing for a `ref` to bind |
+| **receiver of a method VALUE** (`var g = Ꮡz.Square;`, `runIt(Ꮡz.Square)`) | a method group cannot close over a `ref` — the same reason `boxedBump` stays boxed above, one level up |
+| **receiver under defer/go** (`defer(Ꮡz.Square, …)`, `goǃ(Ꮡo.of(Outer.Ꮡt).Square)`) | the defer/go carve-out again: the delegate outlives the statement, so the box crosses |
+
+The receiver rows are guarded by `refLoweringAnalysis_test.go`'s `keptBoxMethod` / `keptMethodValue` /
+`keptDeferRecv` / `keptGoRecv` fixtures beside `revertsRefMethod`, and the guard was proven in both
+directions — restoring the blanket keep reds the revert row, dropping the carve-outs reds exactly
+these four. Note what is NOT on this list: a *closure*-captured receiver, and a call inside a
+deferred closure. Both revert, because C#'s own capture provides the frame lifetime the carve-out
+exists for — the box would be redundant, not protective.
 
 Every exclusion is the same statement: the lowering never guesses. A shape either carries its
 escape proof or it keeps the box that made it correct yesterday.

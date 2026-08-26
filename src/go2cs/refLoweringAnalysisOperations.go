@@ -1796,10 +1796,13 @@ func (a *refLoweringAnalysis) classifyLocalUse(ident *ast.Ident, bodyRoot ast.No
 
 			if method, ok := a.info.Uses[p.Sel].(*types.Func); ok {
 				if methodHasPointerReceiver(method) && !exprTypeIsPointer(a.info, node) {
-					// x.M() / x.f.M() on a VALUE chain with a ж receiver — implicit &x keeps the
-					// box. An already-pointer operand (t0 := new(T); t0.M()) carries its own box
-					// and takes no address of the local.
-					return "ptr-receiver", true
+					// x.M() / x.f.M() on a VALUE chain — an implicit &x. Whether that address
+					// needs the local's identity BOX is B′ §4.2's call-site selection question,
+					// and it is decided by what the callee's receiver is emitted AS, not by the
+					// mere fact of a pointer receiver. An already-pointer operand
+					// (t0 := new(T); t0.M()) carries its own box and takes no address of the
+					// local, so it never reaches here.
+					return receiverUseKeptReason(p, method, parents), true
 				}
 
 				return "", false
@@ -1847,6 +1850,71 @@ func (a *refLoweringAnalysis) classifyLocalUse(ident *ast.Ident, bodyRoot ast.No
 		default:
 			return "", false
 		}
+	}
+}
+
+// receiverUseKeptReason applies B′ §4.2's call-site selection to ONE receiver-position use of a
+// box-candidate local, returning the kept-reason that use imposes ("" when it imposes none, so the
+// local may still revert).
+//
+// The pointer-receiver call was a blanket "ptr-receiver" kept-reason until 2026-08-26, which is
+// strictly more conservative than the emission it is supposed to describe: a `[GoRecv] this ref T`
+// method binds an addressable receiver DIRECTLY (`z.Square()`), consuming no box at all, so a local
+// whose only other address use feeds a lowered position was minting a `heap()` box that the emitted
+// body never referenced. Measured on the probe corpus: `bLoweredPlusRefMethod` emitted
+// `ref var z = ref heap(new T(), out var Ꮡz)` with `Ꮡz` occurring nowhere else in the function.
+//
+// Three shapes DO consume the box, and each is a carve-out here rather than an accident of the
+// blanket reason:
+//
+//	ptr-receiver-box       the callee is direct-ж (`this ж<T>`) — the box IS its receiver
+//	ptr-receiver-value     a method VALUE, not a call — the delegate closes over `Ꮡz.M`
+//	ptr-receiver-defer-go  a receiver under defer/go — the frame outlives the statement, so the
+//	                       site keeps the boxed convention (§3.3's carve-out (a), mirrored)
+//
+// The first two are load-bearing beyond their own rows: performEscapeAnalysis's parameter arm
+// documents that a reverting verdict is mutually exclusive with captureMode, and captureMode is
+// exactly `bodyCallsCaptureModeMethodOn || pointerMethodValueAddressTaken` — the direct-ж call and
+// the method value. Keeping both as reasons is what preserves that invariant by construction
+// instead of by coincidence.
+//
+// Flavor is read from packageDirectBoxReceiverMethods, which collectCaptureModeMethods populates
+// BEFORE performRefLoweringAnalysis in every driver (conversionDriver.go's commented ordering, and
+// the census driver since this change). A nil map means no driver has answered the question, so the
+// reason falls back to the box — unknown flavor keeps today's emission rather than betting on it.
+func receiverUseKeptReason(sel *ast.SelectorExpr, method *types.Func, parents map[ast.Node]ast.Node) string {
+	// The nil arm is not redundant with the lookup: a nil map answers false, which would read as
+	// "ref-flavored" for a driver that never ran the pre-pass.
+	if packageDirectBoxReceiverMethods == nil || packageDirectBoxReceiverMethods[method.Origin()] {
+		return "ptr-receiver-box"
+	}
+
+	// Climb through parens to the enclosing call; the selector must be the CALLEE for this to be a
+	// call at all. Anything else — an argument, an assignment RHS, a composite-literal element —
+	// is a method value whose delegate needs the box.
+	var node ast.Node = sel
+
+	for {
+		call, ok := parents[node].(*ast.CallExpr)
+
+		if !ok {
+			if paren, isParen := parents[node].(*ast.ParenExpr); isParen {
+				node = paren
+				continue
+			}
+
+			return "ptr-receiver-value"
+		}
+
+		if ast.Unparen(call.Fun) != sel {
+			return "ptr-receiver-value"
+		}
+
+		if callIsDeferOrGo(call, parents) {
+			return "ptr-receiver-defer-go"
+		}
+
+		return ""
 	}
 }
 

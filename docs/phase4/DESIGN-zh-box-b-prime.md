@@ -275,6 +275,117 @@ a build error, which CNR and the behavioral suite catch as loudly as anything ca
 >    a satisfied invariant as a violation. It did, on the first run here, and the note is left
 >    standing so S1 does not re-learn it.
 
+> **MEASURED 2026-08-26 (S0b, call-site selection) — the receiver already renders directly; what
+> did NOT fall out of A2 is the REVERSION, and §1.2's "1,016-local class" is 55 % smaller than this
+> design assumed.** The stage's framing question was whether the receiver renders directly
+> (`z2.Square(…)`) or as its box (`Ꮡz2.Square(…)`), and whether that falls out of A2's local
+> reversion or needs its own rule. Both halves were driven with probes against the real machinery
+> before anything was cut, and they answer differently:
+>
+> 1. **Rendering needs no new rule, and did not before this stage either.** A probe over all
+>    eleven §4.2 receiver shapes plus ten adjacent ones (promotion, named non-struct receivers,
+>    array/slice elements, embedded chains) shows `convSelectorExpr`/`convCallExpr` already
+>    rendering an addressable receiver directly for every `[GoRecv] ref` method and boxing it for
+>    every direct-ж one. The discriminator is `selectorCallsDirectBoxMethod`, keyed on
+>    `packageDirectBoxReceiverMethods` — the emitted receiver FORM — and the §4.2 table reproduces
+>    its behavior row for row. B′'s primary changes which methods are ref-flavored; it does not
+>    need the selection machinery rewritten.
+> 2. **The reversion did NOT fall out of A2 — A2 actively blocked it.** `classifyLocalUse` returned
+>    a blanket `"ptr-receiver"` kept-reason for *any* pointer-receiver call on a value chain, so a
+>    local whose other address use fed a lowered position kept a box the emitted body never
+>    referenced. The instrument and the emitter therefore disagreed, and the census was the wrong
+>    one: `bLoweredPlusRefMethod` emitted `ref var z = ref heap(new T(), out var Ꮡz)` with `Ꮡz`
+>    occurring **nowhere else in the function**, while the shape one line shorter reverted. The
+>    unit fixture pinned the disagreement (`keptMethod` asserted a kept box for a `[GoRecv] ref`
+>    receiver the emitter had already left on the stack).
+>
+> **The rule** (`receiverUseKeptReason`) keeps the box only where a probe showed one consumed:
+> a **direct-ж callee** (`ptr-receiver-box`), a **method value** rather than a call
+> (`ptr-receiver-value`), or a **receiver under defer/go** (`ptr-receiver-defer-go`). Everything
+> else imposes no reason. The first two are load-bearing beyond their rows: `performEscapeAnalysis`
+> documents that a reverting verdict is mutually exclusive with captureMode, and captureMode is
+> exactly `bodyCallsCaptureModeMethodOn || pointerMethodValueAddressTaken` — those same two shapes
+> — so the invariant now holds by construction rather than by the old reason's breadth
+> (`collectCaptureModeMethods` writes both method sets under one condition, so they cannot diverge).
+>
+> **The split, re-derived corpus-wide on the pinned toolchain** (windows/amd64, go1.23.12). These
+> are CENSUS verdicts — read the emission measurement below before pricing anything off them:
+>
+> | | before | after |
+> |:--|--:|--:|
+> | `ptr-receiver` reason occurrences | **1,016** | — |
+> | → `ptr-receiver-box` (the real B′ target) | | **448** |
+> | → `ptr-receiver-defer-go` / `ptr-receiver-value` | | **5** / **3** |
+> | → imposes no reason (was pure conservatism) | | **560** |
+> | locals reverting corpus-wide | **231** | **621** |
+> | locals kept for the receiver reason ALONE | **693** | **0** |
+>
+> **⚠ THE EMISSION DELTA IS 5 BOXES, NOT 560 — and that gap is this stage's most useful finding.**
+> A seeded A/B reconvert settles it: the **baseline** converter reproduces the committed corpus
+> **byte-identically** (3,361 `.cs`, same hash — so the control holds and B − A is exactly this
+> change), and B differs in **5 files**: three sources shedding **5 `heap()` mints**
+> (`archive/tar/reader.cs` −2, `runtime/windows/proc.cs` −2, `runtime/windows/tracetime.cs` −1)
+> plus two `package_info.cs` position maps. Every other box-mint spelling (`new ж<`, `Ꮡ(`) is
+> unchanged to the occurrence.
+>
+> **Why the census moved 390 locals and the emission moved 5.** The census marks a local
+> address-taken on the IMPLICIT receiver take, but the EMITTER never boxed a receiver-only local in
+> the first place — `eRefMethodOnly` was already a plain local before this change. A box is actually
+> minted only where the local ALSO carries a real box-forcing address use that lowers, and
+> corpus-wide that co-occurrence is five sites. So the 560 were not boxes removed; they were census
+> verdicts that emission had always ignored. What this change buys at flag-off is therefore **an
+> instrument that describes the emission** — plus five genuinely redundant mints.
+>
+> **The consequence for S1's pricing, stated plainly: census local-counts are NOT emission counts.**
+> §1.2's 1,016 is a census figure, and so is the 448 below; pricing B′ off either would overstate
+> the win by orders of magnitude, exactly as it would have here. **S1 must be priced by EMISSION**,
+> using the instrument this stage established and controlled: seeded A/B reconvert, baseline
+> reproducing the committed corpus byte-identically, then a box-mint diff. The census figure is an
+> upper bound on the constituency, never a prediction of the saving.
+>
+> **The arc's named instrument agrees, and says why.** `os.File.WriteString` measures **17.00
+> obj/op — UNMOVED** by this stage (three runs, golib's own `AllocationCounter`, the same counter
+> §7's targeted probes use; the byte figure is not comparable to the 2,368 stamp because the probe's
+> string and buffer shape is its own, and the object count is the shape-invariant half). That is the
+> correct result rather than a disappointing one: `WriteString` is emitted `this ж<File>` — a
+> **direct-ж** method, so it sits in the 448 that a ref-receiver primary would convert, not in what
+> S0b recovers. The instrument moving here would have meant the selection rule had reached a site it
+> should not have.
+>
+> That bound is still worth having, and it is genuinely smaller than §1.2 assumed: **448**, not
+> 1,016, of the receiver-position uses carry a box-consuming receiver at all. And B′'s own prospects
+> are NOT bounded by this stage's five: a direct-ж receiver IS really boxed by the emitter
+> (`Ꮡz.FieldAddr()` mints), which is precisely why the ref-flavored case had so little left to
+> recover and why the primary's case has to be measured rather than inferred from either number.
+>
+> **S1's constituency, located.** Of the 448, `ptr-receiver-box` is the **SOLE** kept-reason for
+> **295** — those revert the moment the callee gains a primary, with no other analysis owed. The
+> remaining 153 carry a second reason (`unlowered-position`, `non-candidate-callee`, …) and need
+> Phase-A work as well, so they are not B′'s to claim alone. Where they live:
+>
+> | package | locals | package | locals |
+> |:--|--:|:--|--:|
+> | `runtime` | 83 | `crypto/tls` | 22 |
+> | `crypto/internal/edwards25519` | 46 | `crypto/internal/edwards25519/field` | 13 |
+> | `net/http` | 37 | `sync` | 13 |
+> | `math/big` | 32 | `strings` | 8 |
+> | `go/types` | 29 | `crypto/ecdh` | 7 |
+>
+> **§7's S0 acceptance target totals 59 locals** — `crypto/internal/edwards25519` (46) plus its
+> `field` subpackage (13) — which is the concrete size of what S0's two-package prototype is
+> reaching for; and §1.3's deferred "B′ share of `math/big`" now has its receiver-side term
+> measured at **32** (its 33 receiver locals, one of which reverted here), leaving the `nat`-flow
+> share to Phase C exactly as §1.3 refused to guess.
+>
+> Two mechanical notes for S1. **The census had to be taught the same fact**: `runRefLoweringCensus`
+> called `analyzeRefLowering` without `collectCaptureModeMethods`, so it could not see the receiver
+> FORM at all; it now mirrors the conversion driver's ordering against fresh per-package maps and
+> restores the drivers' state, keeping its standing "touch nothing" property. The unit harness owed
+> the same mirror, or every fixture would have taken the nil-map fallback and the rule would have
+> been untested. **And the guard was proven in both directions** before it was believed: restoring
+> the blanket behavior reds exactly the revert assertion; dropping every carve-out reds exactly the
+> four keep assertions; both restores byte-identical.
+
 ### 4.3 The retroactive widening of Phase A — a measured positive interaction
 
 A1 recorded that `edwards25519/field`'s `feMulGeneric`/`feSquareGeneric` are **X3-vetoed on their
