@@ -91,19 +91,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **174 / 215 testable packages validated — 80.9%**
+> ### Phase 4 progress: **175 / 215 testable packages validated — 81.4%**
 >
-> **18,976 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **18,979 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 174 / 208 — 83.7%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 175 / 208 — 84.1%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 7 of 174 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
+> **Linux: 7 of 175 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -226,6 +226,7 @@ summed from the columns.
 | [`hash/crc64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/crc64) | 5 | | CRC-64 checksum tables. · [proof](validation/current/hash.crc64.md) |
 | [`hash/fnv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/fnv) | 19 | | FNV-1/FNV-1a across widths. · [proof](validation/current/hash.fnv.md) |
 | [`hash/maphash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/maphash) | 22 | | Seeded and unseeded hash streams plus SMHasher avalanche/BIC quality checks; the 100,000-sample bounds exercise a computed float constant derived from a named untyped integer constant. · [proof](validation/current/hash.maphash.md) |
+| [`html`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html) | 3 | | HTML entity escaping and unescaping — the 2,138 single-rune and 91 two-rune named-entity tables walked longest-match-first, with and without the trailing semicolon, plus numeric references in decimal and hex with the Windows-1252 replacement table and the early-termination edges, and an `Unescape(Escape(s)) == s` round trip. Its hot path is what the array-zero-length fix bought: `entity2[name]` is a map whose VALUE is a `[2]rune`, so a miss returns the zero array and the very next expression indexes it — an index that panicked for as long as the map-miss zero carried no Go array shape. · [proof](validation/current/html.md) |
 | [`html/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html/template) | 243 | | Contextual auto-escaping, the security property `html/template` exists for: the escaper's state machine driven across HTML text, attributes, comments, `<script>`, `<style>`, URLs and JS string/regexp contexts, each with its own escaper and filter; the `Content` typed-string exemptions; template cloning, redefinition and `{{block}}` composition through the escaper; and the error matrix. Its verdicts ride the whole `text/template` engine underneath, so it is the largest single consumer of the reflection bridge's value plumbing on the roster. · [proof](validation/current/html.template.md) |
 | [`image`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image) | 8 | | The image model — `Rectangle` algebra, the `At`/`Set`/`SubImage`/`Opaque` contract over every concrete image type, `RGBA64Image` 16-bit access, YCbCr plane geometry and non-overlap, and `image.Decode` through the registered-format table. · [proof](validation/current/image.md) |
 | [`image/color`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image/color) | 10 | | The color models — RGBA/CMYK/YCbCr conversion round-trips and cross-model consistency, alpha-premultiplied NYCbCrA, and the palette's nearest-color search. · [proof](validation/current/image.color.md) |

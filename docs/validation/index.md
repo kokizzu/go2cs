@@ -95,6 +95,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `hash/crc64` | [`hash.crc64.md`](current/hash.crc64.md) | [`src/core/hash/crc64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/crc64) |
 | `hash/fnv` | [`hash.fnv.md`](current/hash.fnv.md) | [`src/core/hash/fnv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/fnv) |
 | `hash/maphash` | [`hash.maphash.md`](current/hash.maphash.md) | [`src/core/hash/maphash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/maphash) |
+| `html` | [`html.md`](current/html.md) | [`src/core/html`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html) |
 | `html/template` | [`html.template.md`](current/html.template.md) | [`src/core/html/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html/template) |
 | `image` | [`image.md`](current/image.md) | [`src/core/image`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image) |
 | `image/color` | [`image.color.md`](current/image.color.md) | [`src/core/image/color`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image/color) |
