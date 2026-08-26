@@ -9,6 +9,12 @@ using hash = hash_package;
 
 partial class sha3_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcrypto() {
+    builtin.initPackage(typeof(crypto_package));
+}
+
 [GoInit] internal static void init() {
     crypto.RegisterHash(crypto.SHA3_224, New224);
     crypto.RegisterHash(crypto.SHA3_256, New256);

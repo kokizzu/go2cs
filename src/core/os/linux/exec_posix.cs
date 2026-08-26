@@ -14,6 +14,12 @@ using fs = go.io.fs_package;
 
 partial class os_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸexecenv() {
+    builtin.initPackage(typeof(@internal.syscall.execenv_package));
+}
+
 // The only signal values guaranteed to be present in the os package on all
 // systems are os.Interrupt (send the process an interrupt) and os.Kill (force
 // the process to exit). On Windows, sending os.Interrupt to a process with

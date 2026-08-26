@@ -12,6 +12,18 @@ using container;
 
 partial class trace_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontainerꓸheap() {
+    builtin.initPackage(typeof(container.heap_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsort() {
+    builtin.initPackage(typeof(sort_package));
+}
+
 // MutatorUtil is a change in mutator utilization at a particular
 // time. Mutator utilization functions are represented as a
 // time-ordered []MutatorUtil.

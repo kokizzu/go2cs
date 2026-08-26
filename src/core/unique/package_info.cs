@@ -60,7 +60,7 @@ using static go.unique_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("unique/handle.go", "handle.cs", "ABo0sqrUgoKmgpSO+JKCgoKUlIKUgpSCuIKCuJSCABFC6riClIK2koKUppTukpSWgoKWgqiClJa+")]
+[assembly: go.GoPositionMap("unique/handle.go", "handle.cs", "ADg0sqrUgoKmgpSO+JKCgoKUlIKUgpSCuIKCuJSCABFC6riClIK2koKUppTukpSWgoKWgqiClJa+")]
 // </GoSourcePositionMaps>
 
 namespace go;

@@ -14,6 +14,12 @@ using go.@internal;
 
 partial class stringslite_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
+    builtin.initPackage(typeof(go.@internal.bytealg_package));
+}
+
 public static bool HasPrefix(@string s, @string prefix) {
     return len(s) >= len(prefix) && s[0..(int)(len(prefix))] == prefix;
 }

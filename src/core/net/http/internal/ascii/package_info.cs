@@ -49,7 +49,7 @@ using static go.net.http.@internal.ascii_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/internal/ascii/print.go", "print.cs", "AAocooKUgoKmqJKClKqigoKmqJKCgqaokoKU")]
+[assembly: go.GoPositionMap("net/http/internal/ascii/print.go", "print.cs", "ABYcooKUgoKmqJKClKqigoKmqJKCgqaokoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http.@internal;

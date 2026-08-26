@@ -20,6 +20,24 @@ using go.image.color;
 
 partial class gif_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸimageꓸcolorꓸpalette() {
+    builtin.initPackage(typeof(go.image.color.palette_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸimageꓸdraw() {
+    builtin.initPackage(typeof(go.image.draw_package));
+}
+
 // Graphic control extension fields.
 internal static UntypedInt gcLabel => 0xF9;
 

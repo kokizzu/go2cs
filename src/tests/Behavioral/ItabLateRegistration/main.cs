@@ -7,6 +7,24 @@ using ItabLateRegistration;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸItabLateRegistrationꓸlatelib() {
+    builtin.initPackage(typeof(ItabLateRegistration.latelib_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸItabLateRegistrationꓸlib() {
+    builtin.initPackage(typeof(ItabLateRegistration.lib_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object nameˢ = (@string)"name"u8;
 private static readonly object missˢ = (@string)"miss"u8;

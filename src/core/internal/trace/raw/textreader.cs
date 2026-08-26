@@ -15,6 +15,12 @@ using go.@internal.trace;
 
 partial class raw_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
 // TextReader parses a text format trace with only very basic validation
 // into an event stream.
 [GoType] partial struct TextReader {

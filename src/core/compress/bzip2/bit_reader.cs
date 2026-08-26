@@ -8,6 +8,18 @@ using io = io_package;
 
 partial class bzip2_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbufio() {
+    builtin.initPackage(typeof(bufio_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // bitReader wraps an io.Reader and provides the ability to read values,
 // bit-by-bit, from it. Its Read* methods don't return the usual error
 // because the error handling was verbose. Instead, any error is kept and can

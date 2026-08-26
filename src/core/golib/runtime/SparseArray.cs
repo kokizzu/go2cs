@@ -32,6 +32,23 @@ public class SparseArray<T> : IList<T>
     /// </remarks>
     public int Count => m_items.Count == 0 ? 0 : m_items.Keys.Max() + 1;
 
+    /// <summary>
+    /// Reads the item at <paramref name="index"/>, reporting whether the sparse initializer SET
+    /// that index at all.
+    /// </summary>
+    /// <remarks>
+    /// Enumeration deliberately renders a gap as <c>default!</c>, which is the Go zero value for
+    /// every element type whose all-bits-zero form is usable storage — and afterwards it is
+    /// indistinguishable from an element the literal genuinely wrote. An element type whose zero
+    /// value must be CONSTRUCTED (a nested fixed array, a struct needing its constructor) has to
+    /// tell the two apart, so it asks here instead; see ArrayExtensions.array(SparseArray, int,
+    /// Func).
+    /// </remarks>
+    public bool TryGetItem(int index, out T value)
+    {
+        return m_items.TryGetValue(index, out value!);
+    }
+
     /// <inheritdoc />
     public bool IsReadOnly => false;
 

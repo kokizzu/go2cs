@@ -12,6 +12,12 @@ using encoding;
 
 partial class x509_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 internal static (ж<CertPool>, error) loadSystemRoots() {
     return (Ꮡ(new CertPool(systemPool: true)), default!);
 }

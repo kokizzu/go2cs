@@ -6,9 +6,9 @@ using Δtime = time_package;
 
 partial class main_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸtimeꓸtzdata() {
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtimeꓸtzdata() {
     builtin.initPackage(typeof(go.time.tzdata_package));
 }
 

@@ -10,6 +10,18 @@ using net;
 
 partial class net_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸnetip() {
+    builtin.initPackage(typeof(net.netip_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsort() {
+    builtin.initPackage(typeof(sort_package));
+}
+
 internal static void sortByRFC6724(slice<IPAddr> addrs) {
     if (len(addrs) < 2) {
         return;

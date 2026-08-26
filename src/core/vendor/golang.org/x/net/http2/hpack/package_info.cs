@@ -51,9 +51,9 @@ using static go.vendor.golang.org.x.net.http2.hpack_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/encode.go", "encode.cs", "AB1GotyCgqzShIKCgpSCloKClIKCloKUpoKClAACFAAKAoKCloKClqyygpSClIKokgACFPKCgoK6kqqigoKCAAIU8oKCAAIU8oKCgpSUgoKqooKCggACENKCgpSCgoKUAAIQ0oKCgoKClIKUAAIQ0oKUgpQ=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/hpack.go", "hpack.cs", "ABUsgs6CAAsiwtaCgoKUqAAMGgAUOLLKgoKCAAYWwqyyAAIU8KigqqKssgAKFoKCpoKCgqiSgoKClKa4psSClIKUgsqCrgAIAoKCkJKAkoCCpICCpAAIDLKCgpSCprK4uIKUgoKWgoKM0oKUgpSCgqYADSCAooDcwoKaqgAICtra1qiSgoKClIKClIKokoKCgpaCgoKCgoKUlIKCpoKClIKCgoKmgoKmgoKUgqaCgoKmgpTotoKWgoKClIKUgoIABBoACgKClIKUgoKUgpaCgoKCgoKCgpSCkqau8oKUgoKClNyUgpSCggAHEIKClIKCgoKClIKC")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/huffman.go", "huffman.cs", "ABEq0oKCgoCCpNiygoKCgIKkAAkU0oK4ooKCgoKCgoKClIKClIKCgpS4goKClIKUgpSCgoKUppSAlKYADiaCAAYQgoKmgoKUlISChIKCgoKClJSClIKCgs6myIKCgoKCgoKCuICCqoKCtpSkpIKkgraCqqKCgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/encode.go", "encode.cs", "ACNGotyCgqzShIKCgpSCloKClIKCloKUpoKClAACFAAKAoKCloKClqyygpSClIKokgACFPKCgoK6kqqigoKCAAIU8oKCAAIU8oKCgpSUgoKqooKCggACENKCgpSCgoKUAAIQ0oKCgoKClIKUAAIQ0oKUgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/hpack.go", "hpack.cs", "ACcsgs6CAAsiwtaCgoKUqAAMGgAUOLLKgoKCAAYWwqyyAAIU8KigqqKssgAKFoKCpoKCgqiSgoKClKa4psSClIKUgsqCrgAIAoKCkJKAkoCCpICCpAAIDLKCgpSCprK4uIKUgoKWgoKM0oKUgpSCgqYADSCAooDcwoKaqgAICtra1qiSgoKClIKClIKokoKCgpaCgoKCgoKUlIKCpoKClIKCgoKmgoKmgoKUgqaCgoKmgpTotoKWgoKClIKUgoIABBoACgKClIKUgoKUgpaCgoKCgoKCgpSCkqau8oKUgoKClNyUgpSCggAHEIKClIKCgoKClIKC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/huffman.go", "huffman.cs", "ABcq0oKCgoCCpNiygoKCgIKkAAkU0oK4ooKCgoKCgoKClIKClIKCgpS4goKClIKUgpSCgoKUppSAlKYADiaCAAYQgoKmgoKUlISChIKCgoKClJSClIKCgs6myIKCgoKCgoKCuICCqoKCtpSkpIKkgraCqqKCgpQ=")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/tables.go", "tables.cs", "AClagoKokqiSgoKCqJKClIKCgoKUgIK2goKUgoKUAAIgAA8CgoCCtoCCpKrCgpSCgpQ=")]
 // </GoSourcePositionMaps>
 

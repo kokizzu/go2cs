@@ -60,8 +60,8 @@ using static go.net.rpc.jsonrpc_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("net/rpc/jsonrpc/client.go", "client.cs", "ACNKkgAQHLKCgoKCgoIACxKCgoLWsoKAgqaCgoKEgoKCgoKUgpSUpoKClKaCqqKokoKClA==")]
-[assembly: global::go.GoPositionMap("net/rpc/jsonrpc/server.go", "server.cs", "ACJKkgAQHIKCggALErKCgIKkuoKCgoKChKaCgpSCnMKCAAgKsoKCgoKUgoSUlIKClJSmgqyy")]
+[assembly: global::go.GoPositionMap("net/rpc/jsonrpc/client.go", "client.cs", "AEdKkgAQHLKCgoKCgoIACxKCgoLWsoKAgqaCgoKEgoKCgoKUgpSUpoKClKaCqqKokoKClA==")]
+[assembly: global::go.GoPositionMap("net/rpc/jsonrpc/server.go", "server.cs", "AChKkgAQHIKCggALErKCgIKkuoKCgoKChKaCgpSCnMKCAAgKsoKCgoKUgoSUlIKClJSmgqyy")]
 // </GoSourcePositionMaps>
 
 namespace go.net.rpc;

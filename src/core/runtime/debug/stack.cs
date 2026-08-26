@@ -14,6 +14,18 @@ using go.@internal;
 
 partial class debug_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() {
+    builtin.initPackage(typeof(go.@internal.poll_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸos() {
+    builtin.initPackage(typeof(os_package));
+}
+
 // PrintStack prints to standard error the stack trace returned by runtime.Stack.
 public static void PrintStack() {
     os.Stderr.Write(Stack());

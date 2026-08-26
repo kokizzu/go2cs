@@ -15,6 +15,12 @@ using go.math;
 
 partial class rsa_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸhash() {
+    builtin.initPackage(typeof(hash_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string cryptoRsaInputMustBeˢ2 = "crypto/rsa: input must be hashed with given hash"u8;
 

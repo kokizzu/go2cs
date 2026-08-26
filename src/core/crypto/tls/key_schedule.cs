@@ -19,6 +19,18 @@ using vendor.golang.org.x.crypto;
 
 partial class tls_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸhkdf() {
+    builtin.initPackage(typeof(vendor.golang.org.x.crypto.hkdf_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸsha3() {
+    builtin.initPackage(typeof(vendor.golang.org.x.crypto.sha3_package));
+}
+
 // This file contains the functions necessary to compute the TLS 1.3 key
 // schedule. See RFC 8446, Section 7.
 internal static readonly @string resumptionBinderLabel = "res binder"u8;

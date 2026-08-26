@@ -10,6 +10,12 @@ using io = io_package;
 
 partial class comment_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // An mdPrinter holds the state needed for printing a Doc as Markdown.
 [GoType] partial struct mdPrinter {
     public partial ref ж<Printer> Printer { get; }

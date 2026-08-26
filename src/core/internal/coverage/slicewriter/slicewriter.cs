@@ -8,6 +8,18 @@ using io = io_package;
 
 partial class slicewriter_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // WriteSeeker is a helper object that implements the io.WriteSeeker
 // interface. Clients can create a WriteSeeker, make a series of Write
 // calls to add data to it (and possibly Seek calls to update

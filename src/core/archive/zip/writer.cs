@@ -20,6 +20,12 @@ using unicode;
 
 partial class zip_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(unicode.utf8_package));
+}
+
 internal static error errLongName = errors.New("zip: FileHeader.Name too long"u8);
 internal static error errLongExtra = errors.New("zip: FileHeader.Extra too long"u8);
 

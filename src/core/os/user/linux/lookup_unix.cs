@@ -14,6 +14,12 @@ using strings = strings_package;
 
 partial class user_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // type lineFunc is a methodless func type — rendered inline as its base delegate
 
 // readColonFile parses r as an /etc/group or /etc/passwd style file, running

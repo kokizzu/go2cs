@@ -10,6 +10,12 @@ using Δsyscall = syscall_package;
 
 partial class poll_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // Writev wraps the writev system call.
 public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> Ꮡv) {
     GoFrame ᒐ = default;

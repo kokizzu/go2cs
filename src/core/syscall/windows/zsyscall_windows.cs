@@ -7,6 +7,12 @@ using @internal.syscall.windows;
 
 partial class syscall_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸsysdll() {
+    builtin.initPackage(typeof(@internal.syscall.windows.sysdll_package));
+}
+
 internal static @unsafe.Pointer _ᴛ1ʗ;
 
 // Do the interface allocations only once for common

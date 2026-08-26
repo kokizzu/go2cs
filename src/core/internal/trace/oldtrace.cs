@@ -37,6 +37,18 @@ using go.@internal.trace.@internal;
 
 partial class trace_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸinternalꓸoldtrace() {
+    builtin.initPackage(typeof(go.@internal.trace.@internal.oldtrace_package));
+}
+
 [GoType] partial struct oldTraceConverter {
     internal oldtrace.Trace trace;
     internal ж<evTable> evt;

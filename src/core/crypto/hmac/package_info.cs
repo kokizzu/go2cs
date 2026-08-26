@@ -50,7 +50,7 @@ using static go.crypto.hmac_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/hmac/hmac.go", "hmac.cs", "ACdwgoKEgoCCtoKUgqaCpoCigKSCgoCCpJaCAAYQgoKUgoKWgoKWgoKCgqiCggACEuKCgoK4goKCgrKUlILWgpSCgoKUgpSCgoKUgpSEqMg=")]
+[assembly: go.GoPositionMap("crypto/hmac/hmac.go", "hmac.cs", "ADlwgoKEgoCCtoKUgqaCpoCigKSCgoCCpJaCAAYQgoKUgoKWgoKWgoKCgqiCggACEuKCgoK4goKCgrKUlILWgpSCgoKUgpSCgoKUgpSEqMg=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;

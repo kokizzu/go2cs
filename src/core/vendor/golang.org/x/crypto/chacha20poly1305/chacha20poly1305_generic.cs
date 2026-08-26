@@ -13,6 +13,30 @@ using go.vendor.golang.org.x.crypto.@internal;
 
 partial class chacha20poly1305_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
+    builtin.initPackage(typeof(encoding.binary_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸchacha20() {
+    builtin.initPackage(typeof(go.vendor.golang.org.x.crypto.chacha20_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸinternalꓸalias() {
+    builtin.initPackage(typeof(go.vendor.golang.org.x.crypto.@internal.alias_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸinternalꓸpoly1305() {
+    builtin.initPackage(typeof(go.vendor.golang.org.x.crypto.@internal.poly1305_package));
+}
+
 internal static void writeWithPadding(ж<poly1305.MAC> Ꮡp, slice<byte> b) {
     Ꮡp.Write(b);
     {

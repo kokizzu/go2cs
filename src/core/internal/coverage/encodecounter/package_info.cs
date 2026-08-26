@@ -56,7 +56,7 @@ using static go.@internal.coverage.encodecounter_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/encodecounter/encode.go", "encode.cs", "ACRIgt6CggANJuKAgqSmooKCgoKCgIKktqa0goKmgIKkgpSAgraAgqSmsoCCpLqCgIKkhIKClISCgoKAgqSogIK2goKAgqSCgoCCtoCCpISqwoKChIKCgpaCgIKkgIKkgIKkgIKkgIKkgIKkgqa07oCCpKaCgpSCgpSClKbugpKCgoKCgqSCgoKUlICCpKSokoKAgqaAgqaAgqSCgIK2lICCpKaCgriAgqQ=")]
+[assembly: go.GoPositionMap("internal/coverage/encodecounter/encode.go", "encode.cs", "AFpIgt6CggANJuKAgqSmooKCgoKCgIKktqa0goKmgIKkgpSAgraAgqSmsoCCpLqCgIKkhIKClISCgoKAgqSogIK2goKAgqSCgoCCtoCCpISqwoKChIKCgpaCgIKkgIKkgIKkgIKkgIKkgIKkgqa07oCCpKaCgpSCgpSClKbugpKCgoKCgqSCgoKUlICCpKSokoKAgqaAgqaAgqSCgIK2lICCpKaCgriAgqQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;

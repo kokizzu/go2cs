@@ -28,6 +28,12 @@ using vendor.golang.org.x.net.http;
 
 partial class http_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternal() {
+    builtin.initPackage(typeof(go.net.http.internal_package));
+}
+
 // ErrLineTooLong is returned when reading request or response bodies
 // with malformed chunked encoding.
 public static error ErrLineTooLong = @internal.ErrLineTooLong;

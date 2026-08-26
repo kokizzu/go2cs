@@ -6,11 +6,26 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 [GoType("[6]byte")] partial struct named;
+
+[GoType] partial struct cell {
+    public array<uint8> Buf = new(4);
+    public @string Tag;
+}
+
+internal static UntypedInt idx => 2;
 
 internal static array<byte> pkgEmpty = new byte[]{}.array(8);
 
 internal static array<byte> pkgPartial = new byte[]{1, 2}.array(8);
+
+internal static array<array<uint8>> pkgNested = new array<uint8>[]{}.array(2, () => new(3));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object emptyˢ = (@string)"empty"u8;
@@ -28,6 +43,19 @@ private static readonly object intsˢ = (@string)"ints"u8;
 private static readonly object strsˢ = (@string)"strs"u8;
 private static readonly object sliceCtlˢ = (@string)"slice ctl"u8;
 private static readonly object writeˢ = (@string)"write"u8;
+private static readonly object nestedEmptyˢ = (@string)"nested empty"u8;
+private static readonly object nestedEmptyWriteˢ = (@string)"nested empty write"u8;
+private static readonly object nestedPartialˢ = (@string)"nested partial"u8;
+private static readonly object nestedFullˢ = (@string)"nested full"u8;
+private static readonly object deepˢ = (@string)"deep"u8;
+private static readonly object deepWriteˢ = (@string)"deep write"u8;
+private static readonly object namedElemsˢ = (@string)"named elems"u8;
+private static readonly object cellsˢ = (@string)"cells"u8;
+private static readonly object cellsWriteˢ = (@string)"cells write"u8;
+private static readonly object keyedNestedˢ = (@string)"keyed nested"u8;
+private static readonly object sparseNestedˢ = (@string)"sparse nested"u8;
+private static readonly object sparseNestedWriteˢ = (@string)"sparse nested write"u8;
+private static readonly object pkgNestedˢ = (@string)"pkg nested"u8;
 
 internal static void Main() {
     var empty = new byte[]{}.array(8);
@@ -57,6 +85,31 @@ internal static void Main() {
     var w = new byte[]{1}.array(8);
     w[7] = 42;
     fmt.Println(writeˢ, len(w), w[0], w[6], w[7]);
+    var nestedEmpty = new array<uint8>[]{}.array(2, () => new(3));
+    fmt.Println(nestedEmptyˢ, len(nestedEmpty), len(nestedEmpty[0]), len(nestedEmpty[1]));
+    nestedEmpty[1][2] = 7;
+    fmt.Println(nestedEmptyWriteˢ, nestedEmpty[1][2], nestedEmpty[0][2]);
+    var nestedPartial = new array<uint8>[]{new uint8[]{1, 2, 3}.array()}.array(2, () => new(3));
+    fmt.Println(nestedPartialˢ, len(nestedPartial), len(nestedPartial[0]), len(nestedPartial[1]), nestedPartial[0][1], nestedPartial[1][1]);
+    var nestedFull = new array<uint8>[]{new uint8[]{1, 2, 3}.array(), new uint8[]{4, 5, 6}.array()}.array();
+    fmt.Println(nestedFullˢ, len(nestedFull), len(nestedFull[1]), nestedFull[1][2]);
+    var deep = new array<array<uint8>>[]{}.array(2, () => new(3, () => new(4)));
+    fmt.Println(deepˢ, len(deep), len(deep[1]), len(deep[1][2]));
+    deep[1][2][3] = 9;
+    fmt.Println(deepWriteˢ, deep[1][2][3]);
+    var namedElems = new named[]{}.array(2);
+    fmt.Println(namedElemsˢ, len(namedElems), len(namedElems[0]), len(namedElems[1]));
+    var cells = new cell[]{}.array(2, () => new());
+    fmt.Println(cellsˢ, len(cells), len(cells[0].Buf), len(cells[1].Buf));
+    cells[1].Buf[3] = 5;
+    fmt.Println(cellsWriteˢ, cells[1].Buf[3], cells[0].Buf[3], cells[0].Tag == ""u8);
+    var keyedNested = new array<array<uint8>>(4, () => new(3)){[1] = new uint8[]{1, 2, 3}.array()};
+    fmt.Println(keyedNestedˢ, len(keyedNested), len(keyedNested[0]), len(keyedNested[1]), len(keyedNested[3]), keyedNested[1][2]);
+    var sparseNested = new golib.SparseArray<array<uint8>>{[idx] = new uint8[]{4, 5, 6}.array()}.array(4, () => new(3));
+    fmt.Println(sparseNestedˢ, len(sparseNested), len(sparseNested[0]), len(sparseNested[idx]), len(sparseNested[3]), sparseNested[idx][1]);
+    sparseNested[3][2] = 8;
+    fmt.Println(sparseNestedWriteˢ, sparseNested[3][2], sparseNested[0][2]);
+    fmt.Println(pkgNestedˢ, len(pkgNested), len(pkgNested[0]), len(pkgNested[1]));
 }
 
 } // end main_package

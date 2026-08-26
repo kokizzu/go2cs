@@ -9,6 +9,12 @@ using @internal;
 
 partial class strconv_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
+    builtin.initPackage(typeof(@internal.bytealg_package));
+}
+
 // index returns the index of the first instance of c in s, or -1 if missing.
 internal static nint index(@string s, byte c) {
     return bytealg.IndexByteString(s, c);

@@ -10,6 +10,12 @@ using syscall = syscall_package;
 
 partial class unix_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
+    builtin.initPackage(typeof(go.@internal.abi_package));
+}
+
 //go:cgo_import_dynamic libc_arc4random_buf arc4random_buf "/usr/lib/libSystem.B.dylib"
 internal static partial void libc_arc4random_buf_trampoline();
 

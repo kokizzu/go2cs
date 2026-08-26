@@ -53,7 +53,7 @@ using static go.crypto.aes_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("crypto/aes/block.go", "block.cs", "AClUkoKCgoKWgoKCqIKCsoKCgoKCgqiCgoKEgoKChIKCgoKokoKCgoKWgoKCqIKCsoKCgoKCgqiCgoKEgoKChIKCgoKokq6QqKSSgoKUgoKCpJTMgpSCgoKCgoKU")]
-[assembly: go.GoPositionMap("crypto/aes/cipher.go", "cipher.cs", "ABo0gq7CgpSktIKUqqKSgqaApIKClIKUgpSmgoKUgpSClA==")]
+[assembly: go.GoPositionMap("crypto/aes/cipher.go", "cipher.cs", "ACw0gq7CgpSktIKUqqKSgqaApIKClIKUgpSmgoKUgpSClA==")]
 [assembly: go.GoPositionMap("crypto/aes/cipher_generic.go", "cipher_generic.cs", "AAsk0qqi")]
 // </GoSourcePositionMaps>
 

@@ -52,9 +52,9 @@ using static go.go.token_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/token/position.go", "position.cs", "ACBEkAACFAAIAoKCgpSCgqaClAAKRJIAESiSqJKokqiygoKCrNKCgIKkrgAIAoKUgoKC7oLawoKCggACFgALBIKCgrqCgoKqwoKCgoKUgoK6goKs8oKUgoKClAAPHqIAAhYACgKCgIKkqJKUgsaCxriCyAACGAAJAgACGAAJAqqipoKGppSsAAgCgoKAgqSUgIKCgoCUgoLKyAAIDoKmsoKCggACEPKClKyyACJIks7igoKCAAIkABQEhIKCgpSClIKCpoKCpoKCggAFEgALAoSChICCgoL8woKCgoKUgoLKgoamlKbUgIKmgpaAgpSmgrbc0oKUruKCgIK2qqKsAAsUkoKUgpSm")]
+[assembly: global::go.GoPositionMap("go/token/position.go", "position.cs", "AD5EkAACFAAIAoKCgpSCgqaClAAKRJIAESiSqJKokqiygoKCrNKCgIKkrgAIAoKUgoKC7oLawoKCggACFgALBIKCgrqCgoKqwoKCgoKUgoK6goKs8oKUgoKClAAPHqIAAhYACgKCgIKkqJKUgsaCxriCyAACGAAJAgACGAAJAqqipoKGppSsAAgCgoKAgqSUgIKCgoCUgoLKyAAIDoKmsoKCggACEPKClKyyACJIks7igoKCAAIkABQEhIKCgpSClIKCpoKCpoKCggAFEgALAoSChICCgoL8woKCgoKUgoLKgoamlKbUgIKmgpaAgpSmgrbc0oKUruKCgIK2qqKsAAsUkoKUgpSm")]
 [assembly: global::go.GoPositionMap("go/token/serialize.go", "serialize.cs", "ABcssoKAgqaCgoKCggAHEIKChKiyhIKCgoKC7pSChA==")]
-[assembly: global::go.GoPositionMap("go/token/token.go", "token.cs", "AJsC4gPSgoKUgpQADSKylKSkpKSkyoKCgrqSgIKkrsCooqqgppKCqKSCrLKClIKCpg==")]
+[assembly: global::go.GoPositionMap("go/token/token.go", "token.cs", "AKcC4gPSgoKUgpQADSKylKSkpKSkyoKCgrqSgIKkrsCooqqgppKCqKSCrLKClIKCpg==")]
 // </GoSourcePositionMaps>
 
 namespace go.go;

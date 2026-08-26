@@ -49,8 +49,8 @@ using static go.@internal.testlog_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/testlog/exit.go", "exit.cs", "AAoi8oKCABAqAAwCgoI=")]
-[assembly: go.GoPositionMap("internal/testlog/log.go", "log.cs", "ACJCwoKUqqKCgpSokoCCypKAgsqSgII=")]
+[assembly: go.GoPositionMap("internal/testlog/exit.go", "exit.cs", "ABAi8oKCABAqAAwCgoI=")]
+[assembly: go.GoPositionMap("internal/testlog/log.go", "log.cs", "AChCwoKUqqKCgpSokoCCypKAgsqSgII=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

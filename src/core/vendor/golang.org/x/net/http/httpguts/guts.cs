@@ -15,6 +15,18 @@ using go.net;
 
 partial class httpguts_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() {
+    builtin.initPackage(typeof(go.net.textproto_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // ValidTrailerHeader reports whether name is a valid header field name to appear
 // in trailers.
 // See RFC 7230, Section 4.1.2

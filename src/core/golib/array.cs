@@ -707,6 +707,33 @@ public static class ArrayExtensions
         return new array<T>(padded);
     }
 
+    // The same padding for a SHORT literal whose ELEMENT zero value must itself be constructed,
+    // because default(T) is not usable storage - a nested fixed array (`[2][3]uint8{}`, whose inner
+    // length exists only in the Go type) or a struct whose own zero value needs construction. This
+    // is the composite-literal twin of the `array(nint, Func<T>)` constructor, and it exists for the
+    // same reason the padding above does: the length overload alone fixed the OUTER dimension while
+    // filling it with default(T), so `[2][3]uint8{}` was 2 long with two ZERO-length elements -
+    // `len(x[0])` reported 0 where Go says 3, and the first indexed write into one panicked. The
+    // declared form (`var x [2][3]uint8`) routes through the zero-value construction ladder instead
+    // and was always right, so the two spellings of one Go type disagreed.
+    //
+    // The converter supplies the factory, since only it knows the element's shape, and only when
+    // the element needs one - every other element type keeps the two-argument padding above.
+    public static array<T> array<T>(this T[] array, int length, Func<T> elementFactory)
+    {
+        T[] padded = AllocationCounter.NewArray<T>(length);
+        int written = Math.Min(array.Length, length);
+
+        array.AsSpan(0, written).CopyTo(padded);
+
+        // Only the ZERO-FILLED tail is constructed: the literal's own elements are already whatever
+        // it wrote, and re-running the factory over them would discard them.
+        for (int i = written; i < length; i++)
+            padded[i] = elementFactory();
+
+        return new array<T>(padded);
+    }
+
     // Same padding for the SparseArray projection of an INDEX-KEYED literal whose highest key
     // falls short of the declared length (`[8]byte{i: 1}` with a non-literal constant index):
     // SparseArray's own Count is `max index + 1`, which is the literal's extent, not the array's.
@@ -716,6 +743,29 @@ public static class ArrayExtensions
         // way are BCL-internal and, like every other BCL internal, deliberately uncharged.
         AllocationCounter.Count();
         return source.ToArray().array(length);
+    }
+
+    // …and the needy-element form of that projection. This one is NOT the T[] overload's story with
+    // a different receiver: a sparse literal's zero values are its GAPS, which can sit anywhere, not
+    // only in a tail — `[4][3]uint8{1: {…}}` needs indices 0, 2 and 3 constructed. Enumerating a
+    // SparseArray yields `default!` for a gap, indistinguishable afterwards from an element the
+    // literal genuinely wrote, so the set positions are asked for directly instead.
+    public static array<T> array<T>(this SparseArray<T> source, int length, Func<T> elementFactory)
+    {
+        T[] padded = AllocationCounter.NewArray<T>(length);
+
+        for (int i = 0; i < length; i++)
+            padded[i] = source.TryGetItem(i, out T value) ? value : elementFactory();
+
+        return new array<T>(padded);
+    }
+
+    // The general enumerable form, for a needy-element projection whose source is not a
+    // SparseArray. Every position past the source's own extent is constructed.
+    public static array<T> array<T>(this IEnumerable<T> source, int length, Func<T> elementFactory)
+    {
+        AllocationCounter.Count();
+        return source.ToArray().array(length, elementFactory);
     }
 
     // array initializer from Span

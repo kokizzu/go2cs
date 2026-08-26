@@ -21,6 +21,12 @@ using go.sync;
 
 partial class os_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
+    builtin.initPackage(typeof(@internal.godebug_package));
+}
+
 // This matches the value in syscall/syscall_windows.go.
 internal static UntypedInt _UTIME_OMIT => -1;
 

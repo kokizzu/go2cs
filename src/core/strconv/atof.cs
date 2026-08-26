@@ -12,6 +12,12 @@ using Δmath = math_package;
 
 partial class strconv_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
 internal static bool optimize = true; // set to false to force slow-path conversions for testing
 
 // commonPrefixLenIgnoreCase returns the length of the common

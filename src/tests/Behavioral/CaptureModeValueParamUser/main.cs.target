@@ -5,6 +5,18 @@ using CaptureModeValueParamLib = CaptureModeValueParamLib_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸCaptureModeValueParamLib() {
+    builtin.initPackage(typeof(CaptureModeValueParamLib_package));
+}
+
 internal static (@string, @string) render(CaptureModeValueParamLib.Config cfgʗp, @string label) {
     ref var cfg = ref heap(cfgʗp, out var Ꮡcfg);
 

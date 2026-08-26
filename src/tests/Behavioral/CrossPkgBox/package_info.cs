@@ -55,7 +55,7 @@ using static go.CrossPkgBox_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAoegg==")]
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "ABAegg==")]
 // </GoSourcePositionMaps>
 
 namespace go;

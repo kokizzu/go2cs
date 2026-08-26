@@ -49,7 +49,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AB8ihIKEgoaChoKIgoSChoKChIKChoaChIKGhoKC")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ADs+hIKEgoaChoKIgoSChoKChIKChoaChIKGhoKCAAAQgoKCiIKGgoaCgoKIgoiCgoKKgoiCgoKG")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -65,6 +65,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    [GoValueClone("Buf")] internal partial struct cell {}
     internal partial struct named {}
     // </TypeAccessibility>
 }

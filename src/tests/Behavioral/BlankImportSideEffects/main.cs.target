@@ -8,16 +8,28 @@ using BlankImportSideEffects;
 
 partial class main_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸBlankImportSideEffectsꓸjpeglike() {
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸBlankImportSideEffectsꓸjpeglike() {
     builtin.initPackage(typeof(BlankImportSideEffects.jpeglike_package));
 }
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸBlankImportSideEffectsꓸpnglike() {
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸBlankImportSideEffectsꓸpnglike() {
     builtin.initPackage(typeof(BlankImportSideEffects.pnglike_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸBlankImportSideEffectsꓸregistry() {
+    builtin.initPackage(typeof(BlankImportSideEffects.registry_package));
 }
 
 internal static nint countAtInit;

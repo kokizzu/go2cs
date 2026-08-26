@@ -8,6 +8,18 @@ using log = log_package;
 
 partial class iotest_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlog() {
+    builtin.initPackage(typeof(log_package));
+}
+
 [GoType] partial struct writeLogger {
     internal @string prefix;
     internal io.Writer w;

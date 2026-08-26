@@ -15,6 +15,12 @@ using global::go.go;
 
 partial class gcimporter_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
+    builtin.initPackage(typeof(global::go.@internal.godebug_package));
+}
+
 // A pkgReader holds the shared state for reading a unified IR package
 // description.
 [GoType] partial struct pkgReader {

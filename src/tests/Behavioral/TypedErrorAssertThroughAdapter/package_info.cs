@@ -51,7 +51,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("TypedErrorAssertThroughAdapter.go", "TypedErrorAssertThroughAdapter.cs", "AAokgu6CqoKmggASBoaCgoKGgoaAgpSkgIKUqKKCgIK2gsqAgpQ=")]
+[assembly: go.GoPositionMap("TypedErrorAssertThroughAdapter.go", "TypedErrorAssertThroughAdapter.cs", "ABAkgu6CqoKmggASBoaCgoKGgoaAgpSkgIKUqKKCgIK2gsqAgpQ=")]
 // </GoSourcePositionMaps>
 
 namespace go;

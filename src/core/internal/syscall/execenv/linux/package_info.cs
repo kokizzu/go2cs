@@ -50,7 +50,7 @@ using static go.@internal.syscall.execenv_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/execenv/execenv_default.go", "execenv_default.cs", "AAoi4g==")]
+[assembly: go.GoPositionMap("internal/syscall/execenv/execenv_default.go", "execenv_default.cs", "ABAi4g==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.syscall;

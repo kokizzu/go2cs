@@ -32,6 +32,12 @@ using math;
 
 partial class tls_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸmlkem768() {
+    builtin.initPackage(typeof(go.crypto.@internal.mlkem768_package));
+}
+
 [GoType] partial struct clientHandshakeState {
     internal ж<Conn> c;
     internal context.Context ctx;

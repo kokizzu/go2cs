@@ -588,6 +588,10 @@
     <Project Path="tests/Behavioral/NamedInterfaceLateAssert/latelib/NamedInterfaceLateAssert.latelib.csproj" />
     <Project Path="tests/Behavioral/NamedInterfacePointerMethodSet/NamedInterfacePointerMethodSet.csproj" />
     <Project Path="tests/Behavioral/NamedInterfacePointerMethodSet/pmslib/NamedInterfacePointerMethodSet.pmslib.csproj" />
+    <Project Path="tests/Behavioral/NamedImportInitOrder/NamedImportInitOrder.csproj" />
+    <Project Path="tests/Behavioral/NamedImportInitOrder/reader/NamedImportInitOrder.reader.csproj" />
+    <Project Path="tests/Behavioral/NamedImportInitOrder/store/NamedImportInitOrder.store.csproj" />
+    <Project Path="tests/Behavioral/NamedImportInitOrder/writer/NamedImportInitOrder.writer.csproj" />
     <Project Path="tests/Behavioral/NamedMapValuesCollision/NamedMapValuesCollision.csproj" />
     <Project Path="tests/Behavioral/NamedMapCrossPkgKey/NamedMapCrossPkgKey.csproj" />
     <Project Path="tests/Behavioral/NamedMapMakeNonNil/NamedMapMakeNonNil.csproj" />

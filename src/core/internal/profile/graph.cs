@@ -23,6 +23,12 @@ using strings = strings_package;
 
 partial class profile_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // Options encodes the options for constructing a graph
 [GoType] partial struct Options {
     public Func<slice<int64>, int64> SampleValue; // Function to compute the value of a sample

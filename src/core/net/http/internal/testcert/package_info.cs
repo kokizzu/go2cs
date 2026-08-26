@@ -49,7 +49,7 @@ using static go.net.http.@internal.testcert_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/internal/testcert/testcert.go", "testcert.cs", "AB2CAYA=")]
+[assembly: go.GoPositionMap("net/http/internal/testcert/testcert.go", "testcert.cs", "ACOCAYA=")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http.@internal;

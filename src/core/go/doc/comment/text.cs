@@ -13,6 +13,12 @@ using io = io_package;
 
 partial class comment_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsort() {
+    builtin.initPackage(typeof(sort_package));
+}
+
 // A textPrinter holds the state needed for printing a Doc as plain text.
 [GoType] partial struct textPrinter {
     public partial ref ж<Printer> Printer { get; }

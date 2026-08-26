@@ -55,7 +55,7 @@ using static go.errors_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("errors/errors.go", "errors.cs", "ADx6ogAHEII=")]
 [assembly: go.GoPositionMap("errors/join.go", "join.cs", "AAomAAoCgoKCpoKUpoKCpu6mgpaCgoKmpoI=")]
-[assembly: go.GoPositionMap("errors/wrap.go", "wrap.cs", "AA8i4oaClAACKAARAoKWggAOBoKCgpSAgqSUgoLGgoKmtAAELAARAoKUgpSCgoKUgoKUAA4GgoKCgpSAgqSUgoLGgoKUgqa0")]
+[assembly: go.GoPositionMap("errors/wrap.go", "wrap.cs", "ABUi4oaClAACKAARAoKWggAOBoKCgpSAgqSUgoLGgoKmtAAELAARAoKUgpSCgoKUgoKUAA4GgoKCgpSAgqSUgoLGgoKUgqa0")]
 // </GoSourcePositionMaps>
 
 namespace go;

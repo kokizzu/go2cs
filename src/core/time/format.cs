@@ -10,6 +10,18 @@ using @internal;
 
 partial class time_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() {
+    builtin.initPackage(typeof(@internal.stringslite_package));
+}
+
 // These are predefined layouts for use in [Time.Format] and [time.Parse].
 // The reference time used in these layouts is the specific time stamp:
 //

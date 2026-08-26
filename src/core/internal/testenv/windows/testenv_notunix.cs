@@ -11,6 +11,12 @@ using io;
 
 partial class testenv_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
+    builtin.initPackage(typeof(io.fs_package));
+}
+
 // Sigquit is the signal to send to kill a hanging subprocess.
 // On Unix we send SIGQUIT, but on non-Unix we only have os.Kill.
 public static osꓸSignal Sigquit = os.ΔKill;

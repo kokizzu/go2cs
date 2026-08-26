@@ -10,6 +10,12 @@ using io = io_package;
 
 partial class rand_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // Reader is a global, shared instance of a cryptographically
 // secure random number generator.
 //

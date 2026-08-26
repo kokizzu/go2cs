@@ -9,6 +9,12 @@ using io = io_package;
 
 partial class hash_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // Hash is the common interface implemented by all hash functions.
 //
 // Hash implementations in the standard library (e.g. [hash/crc32] and

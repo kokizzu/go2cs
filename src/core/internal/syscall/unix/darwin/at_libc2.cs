@@ -9,6 +9,12 @@ using syscall = syscall_package;
 
 partial class unix_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 public static error Unlinkat(nint dirfd, @string path, nint flags) {
     return unlinkat(dirfd, path, flags);
 }

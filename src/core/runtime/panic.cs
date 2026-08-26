@@ -15,6 +15,12 @@ using runtime.@internal;
 
 partial class runtime_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() {
+    builtin.initPackage(typeof(@internal.stringslite_package));
+}
+
 [GoType("num:uint32")] partial struct throwType;
 
 internal static throwType throwTypeNone => /* iota */ 0;

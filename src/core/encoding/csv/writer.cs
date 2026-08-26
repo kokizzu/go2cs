@@ -12,6 +12,12 @@ using go.unicode;
 
 partial class csv_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // A Writer writes records using CSV encoding.
 //
 // As returned by [NewWriter], a Writer writes records terminated by a

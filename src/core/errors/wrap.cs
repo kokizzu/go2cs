@@ -9,6 +9,12 @@ using abi = @internal.abi_package;
 
 partial class errors_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸreflectlite() {
+    builtin.initPackage(typeof(@internal.reflectlite_package));
+}
+
 [GoType("dyn")] partial interface Unwrap_type {
     error Unwrap();
 }

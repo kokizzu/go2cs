@@ -890,6 +890,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckNamedFuncTypeStructuralField() => CheckTarget("NamedFuncTypeStructuralField");
 
     [TestMethod]
+    public void CheckNamedImportInitOrder() => CheckTarget("NamedImportInitOrder");
+
+    [TestMethod]
     public void CheckNamedInterfaceAdapterIdentity() => CheckTarget("NamedInterfaceAdapterIdentity");
 
     [TestMethod]

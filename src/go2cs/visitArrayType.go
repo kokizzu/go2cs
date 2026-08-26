@@ -168,9 +168,20 @@ func (v *Visitor) arrayZeroValueArgs(lengthExpr string, arrayType types.Type) st
 		return lengthExpr
 	}
 
-	elemFactory := v.arrayElemFactory(array.Elem())
+	return arrayLengthArgs(lengthExpr, v.arrayElemFactory(array.Elem()))
+}
 
-	if len(elemFactory) == 0 {
+// arrayLengthArgs is the ONE place the `array<T>` length-plus-factory argument list is spelled:
+// the length alone when `default(T)` is already the element's Go zero value, and the length plus
+// the construction lambda when it is not.
+//
+// Four renderers reach the same argument list from different directions — the zero-value ladder
+// (arrayZeroValueArgs), the composite literal's short-literal padding, the constant-indexed
+// literal's `array<T>(N){[i] = v}` form, and the named-array wrapper's — and the defect this
+// closes was precisely that they did not all carry the factory. Spelling it once is what keeps a
+// fifth caller from being added without it.
+func arrayLengthArgs(lengthExpr string, elemFactory string) string {
+	if elemFactory == "" {
 		return lengthExpr
 	}
 

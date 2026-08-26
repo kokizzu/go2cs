@@ -6,6 +6,12 @@ using SynthesizedDelegateChildPkg;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 [GoType] partial struct registry {
     internal map<@string, ж<inner.Record>> cache;
     internal Func<map<@string, ж<inner.Record>>, @string, Func<@string, (@string, error)>, (ж<inner.Record>, error)> load;

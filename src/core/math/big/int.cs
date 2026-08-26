@@ -12,6 +12,12 @@ using go.math;
 
 partial class big_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
+    builtin.initPackage(typeof(go.math.rand_package));
+}
+
 // An Int represents a signed multi-precision integer.
 // The zero value for an Int represents the value 0.
 //

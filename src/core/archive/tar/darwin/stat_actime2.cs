@@ -9,6 +9,12 @@ using time = time_package;
 
 partial class tar_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 internal static time.Time statAtime(ж<syscall.Stat_t> Ꮡst) {
     ref var st = ref Ꮡst.DerefOrNull();
 

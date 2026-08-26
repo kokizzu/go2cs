@@ -9,6 +9,18 @@ using go.@internal.trace;
 
 partial class go122_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸevent() {
+    builtin.initPackage(typeof(go.@internal.trace.event_package));
+}
+
 public static @event.Type EvNone => /* iota */ 0; // unused
 public static @event.Type EvEventBatch => 1; // start of per-M batch of events [generation, M ID, timestamp, batch length]
 public static @event.Type EvStacks => 2; // start of a section of the stack table [...EvStack]

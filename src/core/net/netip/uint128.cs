@@ -8,6 +8,12 @@ using go.math;
 
 partial class netip_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(go.math.bits_package));
+}
+
 // uint128 represents a uint128 using two uint64s.
 //
 // When the methods below mention a bit number, bit 0 is the most

@@ -8,6 +8,12 @@ using go.sync;
 
 partial class poll_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(go.sync.atomic_package));
+}
+
 // fdMutex is a specialized synchronization primitive that manages
 // lifetime of an fd and serializes access to Read, Write and Close
 // methods on FD.

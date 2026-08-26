@@ -81,8 +81,8 @@ func emitAutoConversionSiblings(markedFiles []FileEntry, fset *token.FileSet, pa
 
 			// The SAME constructor the normal per-file path uses. This was a hand-rolled copy of
 			// newFileVisitor's literal until 2026-08-19, and it had drifted by two fields — which
-			// is precisely the failure mode a duplicated struct literal has. `blankImportInits`
-			// was nil, so visitFile's `v.blankImportInits.String()` nil-dereferenced and the
+			// is precisely the failure mode a duplicated struct literal has. `importInits`
+			// was nil, so visitFile's `v.importInits.String()` nil-dereferenced and the
 			// recover above reported "visit file error … (auto-conversion sibling skipped)" for
 			// every fully-hand-owned package: internal/concurrent, internal/godebug and
 			// internal/weak, the three whose single Go file is marked, so no sibling was EVER

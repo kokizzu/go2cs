@@ -11,6 +11,12 @@ using strconv = strconv_package;
 
 partial class user_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 internal static nint userBuffer = 0;
 internal static nint groupBuffer = 0;
 

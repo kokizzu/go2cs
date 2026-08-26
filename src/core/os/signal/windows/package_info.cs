@@ -61,8 +61,8 @@ using static go.os.signal_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/signal/signal.go", "signal.cs", "ACZIgqaCpoKs0oKEgoSCgoKCgrqWgoKmggAHEuKokoIABjgAFAKCloKEgoKClIKWkoKUgoKCqIKCuKiCgqaCAAcQ0qyyhIKCgpSEgoKCggANIISEhISCgoKoqtSigoKWgoSClAAKEIKCAA4uABICgsqCgoKStPoACRaCgu6CpoKCgoKCgoKCppSC")]
-[assembly: go.GoPositionMap("os/signal/signal_unix.go", "signal_unix.cs", "AAsewrKysrSCgriCzoKUgoKUtLiCpoKmgqaC")]
+[assembly: go.GoPositionMap("os/signal/signal.go", "signal.cs", "ADhIgqaCpoKs0oKEgoSCgoKCgrqWgoKmggAHEuKokoIABjgAFAKCloKEgoKClIKWkoKUgoKCqIKCuKiCgqaCAAcQ0qyyhIKCgpSEgoKCggANIISEhISCgoKoqtSigoKWgoSClAAKEIKCAA4uABICgsqCgoKStPoACRaCgu6CpoKCgoKCgoKCppSC")]
+[assembly: go.GoPositionMap("os/signal/signal_unix.go", "signal_unix.cs", "ABEewrKysrSCgriCzoKUgoKUtLiCpoKmgqaC")]
 // </GoSourcePositionMaps>
 
 namespace go.os;

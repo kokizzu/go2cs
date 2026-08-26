@@ -16,6 +16,12 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
 // conversion type-checks the conversion T(x).
 // The result is in x.
 internal static void conversion(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔType T) {

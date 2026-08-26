@@ -49,7 +49,7 @@ using static go.crypto.@internal.edwards25519.field_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe.go", "fe.cs", "AClQsoLMsoKoss6CgoKCqISCgoKCgoKClISo0oKCgoLKqPaCgoKCgqiSrLYACgSCgoKCgoKEgoKUhIKClISCgpSEgoKUhIKClISCgpSEgoKUhIKCgoKEqMKCAAUWAAoCgqiClIKUgpSCpoKEqJaipqKShIKCgoKCgoKUqKiygqiQptKCgoKCgoKosoKCgoKCgoKCgoKCgoKCgqiSqLKokoKokoKowoKCgoKCgoKCgqaowoKCgqiypIKCgoKCgoKCkpSCgpKUgoKSlIKCkpSCgpKUgoKSlIKCkpSCgoIABhgACQKWgoKChISCgoKElISC")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe.go", "fe.cs", "ADtQsoLMsoKoss6CgoKCqISCgoKCgoKClISo0oKCgoLKqPaCgoKCgqiSrLYACgSCgoKCgoKEgoKUhIKClISCgpSEgoKUhIKClISCgpSEgoKUhIKCgoKEqMKCAAUWAAoCgqiClIKUgpSCpoKEqJaipqKShIKCgoKCgoKUqKiygqiQptKCgoKCgoKosoKCgoKCgoKCgoKCgoKCgqiSqLKokoKokoKowoKCgoKCgoKCgqaowoKCgqiypIKCgoKCgoKCkpSCgpKUgoKSlIKCkpSCgpKUgoKSlIKCkpSCgoIABhgACQKWgoKChISCgoKElISC")]
 [assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_amd64_noasm.go", "fe_amd64_noasm.cs", "AAgSgKSA")]
 [assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_arm64_noasm.go", "fe_arm64_noasm.cs", "AAgSgg==")]
 [assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_generic.go", "fe_generic.cs", "ABAgkoKokoKCgqiSpqKCgoKChIKCgoIAH0SCgoKWgoKCgpaCgoKCloKCgoKWgoKCgpaCgoKCABo6goKCgoSCgoKCuoKmooKCgoIAGDaChIKChIKWgoKWgoKWgoKWgoKWgoKEgoKCgoSCgoKChIKqwoKCgoKogoKCgoQ=")]

@@ -13,6 +13,12 @@ using go.crypto.@internal;
 
 partial class cipher_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // AEAD is a cipher mode providing authenticated encryption with associated
 // data. For a description of the methodology, see
 // https://en.wikipedia.org/wiki/Authenticated_encryption.

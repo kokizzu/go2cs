@@ -19,6 +19,24 @@ using ꓸꓸꓸuintptr = Span<uintptr>;
 
 partial class syscall_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸsysdll() {
+    builtin.initPackage(typeof(@internal.syscall.windows.sysdll_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(go.sync.atomic_package));
+}
+
 // DLLError describes reasons for DLL load failures.
 [GoType] partial struct DLLError {
     public error Err;
@@ -54,6 +72,7 @@ public static partial (uintptr r1, uintptr r2, Errno err) Syscall15(uintptr trap
 // Deprecated: Use [SyscallN] instead.
 public static partial (uintptr r1, uintptr r2, Errno err) Syscall18(uintptr trap, uintptr nargs, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7, uintptr a8, uintptr a9, uintptr a10, uintptr a11, uintptr a12, uintptr a13, uintptr a14, uintptr a15, uintptr a16, uintptr a17, uintptr a18);
 
+//go:noescape
 public static partial (uintptr r1, uintptr r2, Errno err) SyscallN(uintptr trap, params ꓸꓸꓸuintptr argsʗp);
 
 internal static partial (uintptr handle, Errno err) loadlibrary(ж<uint16> filename);

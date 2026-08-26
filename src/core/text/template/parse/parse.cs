@@ -17,6 +17,18 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class parse_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // Tree is the representation of a single parsed template.
 [GoType] partial struct Tree {
     public @string Name;   // name of the template represented by the tree.

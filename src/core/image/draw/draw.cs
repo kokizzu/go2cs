@@ -16,6 +16,24 @@ using go.image.@internal;
 
 partial class draw_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸimage() {
+    builtin.initPackage(typeof(image_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() {
+    builtin.initPackage(typeof(go.image.color_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸimageꓸinternalꓸimageutil() {
+    builtin.initPackage(typeof(go.image.@internal.imageutil_package));
+}
+
 // m is the maximum color value returned by image.Color.RGBA.
 internal static UntypedInt m => /* 1<<16 - 1 */ 65535;
 

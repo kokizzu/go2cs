@@ -19,6 +19,24 @@ using go.@internal;
 
 partial class xcoff_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸdebugꓸdwarf() {
+    builtin.initPackage(typeof(debug.dwarf_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() {
+    builtin.initPackage(typeof(go.@internal.saferio_package));
+}
+
 // SectionHeader holds information about an XCOFF section header.
 [GoType] partial struct SectionHeader {
     public @string Name;

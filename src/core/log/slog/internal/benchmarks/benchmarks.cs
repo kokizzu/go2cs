@@ -30,6 +30,24 @@ using go.log;
 
 partial class benchmarks_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlogꓸslog() {
+    builtin.initPackage(typeof(go.log.slog_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 internal static readonly @string testMessage = "Test logging, but use a somewhat realistic message length."u8;
 
 internal static time.Time testTime = time.Date(2022, time.May, 1, 0, 0, 0, 0, time.ΔUTC);

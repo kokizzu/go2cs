@@ -8,6 +8,12 @@ using syscall = syscall_package;
 
 partial class sysinfo_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string machdepCpuBrandStringˢ = "machdep.cpu.brand_string"u8;
 

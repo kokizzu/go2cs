@@ -13,6 +13,12 @@ using go.sync;
 
 partial class syscall_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // Linux unshare/clone/clone2/clone3 flags, architecture-independent,
 // copied from linux/sched.h.
 public static UntypedInt CLONE_VM => 0x00000100; // set if VM shared between processes

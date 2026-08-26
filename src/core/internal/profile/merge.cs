@@ -10,6 +10,12 @@ using strings = strings_package;
 
 partial class profile_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 // Merge merges all the profiles in profs into a single Profile.
 // Returns a new profile independent of the input profiles. The merged
 // profile is compacted to eliminate unused samples, locations,

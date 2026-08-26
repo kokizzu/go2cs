@@ -12,6 +12,12 @@ using time = time_package;
 
 partial class poll_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 // runtimeNano returns the current value of the runtime clock in nanoseconds.
 //
 //go:linkname runtimeNano runtime.nanotime

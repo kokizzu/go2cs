@@ -8,6 +8,12 @@ using go.@internal.syscall;
 
 partial class rand_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() {
+    builtin.initPackage(typeof(go.@internal.syscall.unix_package));
+}
+
 [GoInit] internal static void init() {
     // arc4random_buf is the recommended application CSPRNG, accepts buffers of
     // any size, and never returns an error.

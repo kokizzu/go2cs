@@ -8,6 +8,12 @@ using syscall = syscall_package;
 
 partial class time_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // for testing: whatever interrupts a sleep
 internal static void interrupt() {
 }

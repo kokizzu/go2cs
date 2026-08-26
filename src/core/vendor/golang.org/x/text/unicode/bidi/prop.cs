@@ -8,6 +8,12 @@ using go.unicode;
 
 partial class bidi_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(go.unicode.utf8_package));
+}
+
 // Properties provides access to BiDi properties of runes.
 [GoType] partial struct Properties {
     internal uint8 entry;

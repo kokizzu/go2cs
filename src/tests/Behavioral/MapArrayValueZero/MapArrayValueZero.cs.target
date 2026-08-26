@@ -4,6 +4,12 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 internal static map<@string, array<rune>> entity2 = new map<@string, array<rune>>{
     ["NotEqualTilde;"u8] = new rune[]{(rune)'≂', (rune)'̸'}.array()
 };

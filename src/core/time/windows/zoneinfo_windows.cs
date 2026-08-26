@@ -10,6 +10,12 @@ using @internal.syscall.windows;
 
 partial class time_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸregistry() {
+    builtin.initPackage(typeof(@internal.syscall.windows.registry_package));
+}
+
 internal static slice<@string> platformZoneSources; // none: Windows uses system calls instead
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

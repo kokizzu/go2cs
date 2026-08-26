@@ -10,6 +10,12 @@ using syscall = syscall_package;
 
 partial class fdtest_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // Exists returns true if fd is a valid file descriptor.
 public static bool Exists(uintptr fd) {
     ref var s = ref heap(new syscall.Stat_t(), out var Ꮡs);

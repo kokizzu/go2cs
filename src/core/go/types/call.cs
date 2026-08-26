@@ -17,6 +17,12 @@ using ꓸꓸꓸastꓸExpr = Span<global::go.go.ast_package.Expr>;
 
 partial class types_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸtypeparams() {
+    builtin.initPackage(typeof(global::go.go.@internal.typeparams_package));
+}
+
 // funcInst type-checks a function instantiation.
 // The incoming x must be a generic function.
 // If ix != nil, it provides some or all of the type arguments (ix.Indices).

@@ -51,7 +51,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("LocalTypeAliasScope.go", "LocalTypeAliasScope.cs", "ABE8gAAPBoIAABiClLS4ABAMggAAGoSEgpS0uAAFHIKGhAAJKIKGhoKEpoKCgoKCgg==")]
+[assembly: go.GoPositionMap("LocalTypeAliasScope.go", "LocalTypeAliasScope.cs", "ABc8gAAPBoIAABiClLS4ABAMggAAGoSEgpS0uAAFHIKGhAAJKIKGhoKEpoKCgoKCgg==")]
 [assembly: go.GoPositionMap("LocalTypeAliasScopeSecond.go", "LocalTypeAliasScopeSecond.cs", "ABEcggAAEoSEgoCCuICCptqCiA==")]
 // </GoSourcePositionMaps>
 

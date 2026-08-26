@@ -8,6 +8,12 @@ using syscall = syscall_package;
 
 partial class nettest_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 internal static bool supportsRawSocket() {
     foreach (var (_, af) in new nint[]{syscall.AF_INET, syscall.AF_INET6}.slice()) {
         var (s, err) = syscall.Socket(af, syscall.SOCK_RAW, 0);

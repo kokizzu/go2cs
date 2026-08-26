@@ -9,6 +9,12 @@ using ꓸꓸꓸClass = Span<bidi_package.ΔClass>;
 
 partial class bidi_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlog() {
+    builtin.initPackage(typeof(log_package));
+}
+
 [GoType("num:int8")] partial struct level;
 
 // This implementation is a port based on the reference implementation found at:

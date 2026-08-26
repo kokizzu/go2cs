@@ -50,7 +50,7 @@ using static go.atomic_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("alias.go", "alias.cs", "AAkmgA==")]
+[assembly: go.GoPositionMap("alias.go", "alias.cs", "AA8mgA==")]
 // </GoSourcePositionMaps>
 
 namespace go;

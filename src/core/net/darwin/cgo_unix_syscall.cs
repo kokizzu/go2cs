@@ -21,6 +21,12 @@ using @internal.syscall;
 
 partial class net_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 internal static UntypedInt _C_AF_INET => /* syscall.AF_INET */ 2;
 internal static UntypedInt _C_AF_INET6 => /* syscall.AF_INET6 */ 30;
 internal static UntypedInt _C_AF_UNSPEC => /* syscall.AF_UNSPEC */ 0;

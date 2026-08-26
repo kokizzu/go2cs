@@ -73,7 +73,7 @@ using static go.debug.buildinfo_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/buildinfo/buildinfo.go", "buildinfo.cs", "AD6AAQAJAoKAkqS4goKUkuyygoKUgoKUggALIAAJBoKAgqaClIKClLSCgpS0goKUtIKClLSCgpS0goKUtAAHEIKClIKClJiCgoKUgoKUAAsagoKClIKCgpSUgoK0pJSClIKUppSWpoKCgpS2poKCgpSokoKClIKCgoKUAAcQgoKCgoKUpqaCgoKmgoKmAAcQgpSklKaCgoKCgoKUpqaEABEWgoSmAAcQgoKCgpSCgpSCgpSmppSCgqiSgoKCpgAKEIKCgoKClKamgoCCpAAKEIKAgqSmgoKCgoKUpg==")]
+[assembly: go.GoPositionMap("debug/buildinfo/buildinfo.go", "buildinfo.cs", "AJIBgAEACQKCgJKkuIKClJLssoKClIKClIIACyAACQaCgIKmgpSCgpS0goKUtIKClLSCgpS0goKUtIKClLQABxCCgpSCgpSYgoKClIKClAALGoKCgpSCgoKUlIKCtKSUgpSClKaUlqaCgoKUtqaCgoKUqJKCgpSCgoKClAAHEIKCgoKClKamgoKCpoKCpgAHEIKUpJSmgoKCgoKClKamhAARFoKEpgAHEIKCgoKUgoKUgoKUpqaUgoKokoKCgqYAChCCgoKCgpSmpoKAgqQAChCCgIKkpoKCgoKClKY=")]
 // </GoSourcePositionMaps>
 
 namespace go.debug;

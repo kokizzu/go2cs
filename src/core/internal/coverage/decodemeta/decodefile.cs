@@ -24,6 +24,18 @@ using go.@internal.coverage;
 
 partial class decodemeta_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbufio() {
+    builtin.initPackage(typeof(bufio_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() {
+    builtin.initPackage(typeof(crypto.md5_package));
+}
+
 // CoverageMetaFileReader provides state and methods for reading
 // a meta-data file from a code coverage run.
 [GoType] partial struct CoverageMetaFileReader {

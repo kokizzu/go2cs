@@ -69,9 +69,9 @@ using static go.os.exec_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/exec/exec.go", "exec.cs", "AHrsAYKmgAANGoKmggDOAeQDABgCuoCCpoKCgoKClJaAgqSWgoKCgpSCgoKUyoKCuJSCAAsWgIKUtgACGAALAoKUgoKWrsKUpoKCgoKUqsKClNaCgpSmooKCgpSCloCCpoKCloKCkoKClICCpJSmgqaCgpSuwoKCgpSCloCCpoKCloKCkoKClKaCggADIgANAoCCpAAMEgAMBoKWgoKChIKCqIKUgoKUlIKCuAABIAAOAoKCuIKUgqTagoKClIKCgpSCgoKUgoSCgpbcgpSWgoKEioKCooSSgpSCgpS4AAcSgoKClgAFFPK0yIKCgLjs7IKCloK46IKAyqTcgqiiAAQYhoIACwLclgASKIIABigAEwKClIKWgoKUhIKCgriCqIC4pIKEAAIUAAwCgoKUloKWgoKWpvyWtIaCpgAKDgAIAoKUgoSCgpaCgoCCttrCgpSClIKCgoIABhLigpSClIKClIKCggAFFgAIAoKUgpSCgpSCgoIABRYACAKClIKUgoKUgoKCAA0o8oKWgIKCpJaSgoKCgoKmqsKAgoKCpOaCgpSClIKCgoKCgoKCrLKEgoKCgqiCAAMagAAKAqTsgoKUqrSCAAIQ0ty2ooKCgqiCgpaCuJSCuJSUgoKUgpaCqIKCltyygpSCgoKUlKYACxyilKQ=")]
-[assembly: go.GoPositionMap("os/exec/exec_unix.go", "exec_unix.cs", "AAwg2II=")]
-[assembly: go.GoPositionMap("os/exec/lp_unix.go", "lp_unix.cs", "ABcsgoKClIKClLiClIKUAAUWAAsKgIKmgoKClJSCopSUgoCCgoKUlLaqog==")]
+[assembly: go.GoPositionMap("os/exec/exec.go", "exec.cs", "AMgB7AGCpoAADRqCpoIAzgHkAwAYArqAgqaCgoKCgpSWgIKkloKCgoKUgoKClMqCgriUggALFoCClLYAAhgACwKClIKClq7ClKaCgoKClKrCgpTWgoKUpqKCgoKUgpaAgqaCgpaCgpKCgpSAgqSUpoKmgoKUrsKCgoKUgpaAgqaCgpaCgpKCgpSmgoIAAyIADQKAgqQADBIADAaCloKCgoSCgqiClIKClJSCgrgAASAADgKCgriClIKk2oKCgpSCgoKUgoKClIKEgoKW3IKUloKChIqCgqKEkoKUgoKUuAAHEoKCgpYABRTytMiCgoC47OyCgpaCuOiCgMqk3IKoogAEGIaCAAsC3JYAEiiCAAYoABMCgpSCloKClISCgoK4gqiAuKSChAACFAAMAoKClJaCloKClqb8lrSGgqYACg4ACAKClIKEgoKWgoKAgrbawoKUgpSCgoKCAAYS4oKUgpSCgpSCgoIABRYACAKClIKUgoKUgoKCAAUWAAgCgpSClIKClIKCggANKPKCloCCgqSWkoKCgoKCpqrCgIKCgqTmgoKUgpSCgoKCgoKCgqyyhIKCgoKoggADGoAACgKk7IKClKq0ggACENLctqKCgoKogoKWgriUgriUlIKClIKWgqiCgpbcsoKUgoKClJSmAAscopSk")]
+[assembly: go.GoPositionMap("os/exec/exec_unix.go", "exec_unix.cs", "ABIg2II=")]
+[assembly: go.GoPositionMap("os/exec/lp_unix.go", "lp_unix.cs", "AB0sgoKClIKClLiClIKUAAUWAAsKgIKmgoKClJSCopSUgoCCgoKUlLaqog==")]
 // </GoSourcePositionMaps>
 
 namespace go.os;

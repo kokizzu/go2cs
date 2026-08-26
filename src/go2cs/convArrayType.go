@@ -112,7 +112,7 @@ func (v *Visitor) convArrayType(arrayType *ast.ArrayType, context ArrayTypeConte
 	var suffix string
 
 	if context.maxLength > 0 {
-		suffix = fmt.Sprintf("(%d)", context.maxLength)
+		suffix = fmt.Sprintf("(%s)", context.lengthArgs())
 	}
 
 	if v.options.preferVarDecl {

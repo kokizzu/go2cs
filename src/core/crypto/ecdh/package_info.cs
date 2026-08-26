@@ -62,9 +62,9 @@ using static go.crypto.ecdh_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ecdh/ecdh.go", "ecdh.cs", "AEeWAZaiAAIU8oKClKiCABQ2AAwCgpSolqIAAhTygoKUqIKmooLKgoKU3Kaqog==")]
-[assembly: go.GoPositionMap("crypto/ecdh/nist.go", "nist.cs", "ACNAosrCgoKClJaCgoKAgu6CzISCgpTowoKUgpSCgoKUlLimgsqm0oKClIKmlIK4lN6SgoKUqqKCzIKUgoKYkoKCqNbUgpS4goKClKaAgramAAsQgpaCgoKUgIKkAAIQ0AAPJtAAESrQ")]
-[assembly: go.GoPositionMap("crypto/ecdh/x25519.go", "x25519.cs", "ABIy0AAKDIKmgoKCgIKkpoKClNyigpS4goKmgoKUAAgMsoKCgpSmgoSCgoKE4oKCgoSCgoKCgoKChIKCgoKCgoKCgoKCgoSCgoKCloKEgoI=")]
+[assembly: go.GoPositionMap("crypto/ecdh/ecdh.go", "ecdh.cs", "AGuWAZaiAAIU8oKClKiCABQ2AAwCgpSolqIAAhTygoKUqIKmooLKgoKU3Kaqog==")]
+[assembly: go.GoPositionMap("crypto/ecdh/nist.go", "nist.cs", "ADVAosrCgoKClJaCgoKAgu6CzISCgpTowoKUgpSCgoKUlLimgsqm0oKClIKmlIK4lN6SgoKUqqKCzIKUgoKYkoKCqNbUgpS4goKClKaAgramAAsQgpaCgoKUgIKkAAIQ0AAPJtAAESrQ")]
+[assembly: go.GoPositionMap("crypto/ecdh/x25519.go", "x25519.cs", "ABgy0AAKDIKmgoKCgIKkpoKClNyigpS4goKmgoKUAAgMsoKCgpSmgoSCgoKE4oKCgoSCgoKCgoKChIKCgoKCgoKCgoKCgoSCgoKCloKEgoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;

@@ -61,7 +61,7 @@ using static go.net.http.httptrace_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/httptrace/trace.go", "trace.cs", "ABkwooIAAhDygpSChIKCuIKCpoKCgoKU7pQAWtgBooKUgoKCgoKCgpSSgpSCgrqmooKUABQuooKU")]
+[assembly: go.GoPositionMap("net/http/httptrace/trace.go", "trace.cs", "AD0wooIAAhDygpSChIKCuIKCpoKCgoKU7pQAWtgBooKUgoKCgoKCgpSSgpSCgrqmooKUABQuooKU")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;

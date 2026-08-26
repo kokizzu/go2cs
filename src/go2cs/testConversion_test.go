@@ -3402,11 +3402,11 @@ func TestTestVariantPinsProductionLiftedTypeNames(t *testing.T) {
 }
 
 // X1 guard (production-pinned BLANK-IMPORT FORCE hooks): a package blank-imported by BOTH a
-// production file and an internal `_test.go` gets ONE `[GoInit] initᴛᴛblankImportꓸ…` hook per
+// production file and an internal `_test.go` gets ONE `[GoInit] initᴛᴛimportꓸ…` hook per
 // assembly, and under the recompile model the production file — which this run does not rewrite —
 // is the half that owns it. Before the seed the counter of "already forced" paths restarted for the
 // test emission pass, so `crypto/x509`'s x509.go and x509_test.go each emitted
-// `initᴛᴛblankImportꓸcryptoꓸsha256` and `…sha512` into the one `x509_package` partial class: CS0111
+// `initᴛᴛimportꓸcryptoꓸsha256` and `…sha512` into the one `x509_package` partial class: CS0111
 // ×2, two of the five errors that stood between that package and any operational verdict.
 //
 // Both directions are pinned. UNSEEDED the test half legitimately emits its own hook (that is the
@@ -3432,7 +3432,7 @@ func TestTestVariantPinsProductionBlankImportForces(t *testing.T) {
 	}
 
 	options := Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}
-	hook := blankImportInitName("crypto/sha256")
+	hook := importInitName("crypto/sha256")
 
 	unseeded := t.TempDir()
 	if _, _, err := convertTestVariant(internal, testFileEntries(internal), unseeded, "go", productionSeed{}, options); err != nil {
@@ -3444,7 +3444,7 @@ func TestTestVariantPinsProductionBlankImportForces(t *testing.T) {
 	}
 
 	seeded := t.TempDir()
-	seed := productionSeed{blankImportForces: NewHashSet([]string{"crypto/sha256"})}
+	seed := productionSeed{importForces: NewHashSet([]string{"crypto/sha256"})}
 
 	if _, _, err := convertTestVariant(internal, testFileEntries(internal), seeded, "go", seed, options); err != nil {
 		t.Fatal(err)

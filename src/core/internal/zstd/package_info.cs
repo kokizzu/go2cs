@@ -50,14 +50,14 @@ using static go.@internal.zstd_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/zstd/bits.go", "bits.cs", "ABU0kgAGEqKCgpSCgoKUqJKCgoKokoKCupIADyDSgoKUAAcQqJKCloKCrLKCgpSCgoKClKiS")]
-[assembly: go.GoPositionMap("internal/zstd/block.go", "block.cs", "AA8i0oK4gpaAgqaCgoSCgpSEhIKClpSCloSWADFo0oKWgoKCloKCpIKUgpSClIKqgpSCgpSYgoKCloKCloKCltzSgpaCgqiilIKI/oKUgoCCpoKCqJKUhIKClISClISAgqaCgqiSlKT4xpKCloKCloKCloKCqoKCgpaCgoSCgpSEgoKUhIKClKiCgoKUgpSUtIKCtIKCgrSCgoLIgpSCgpSEgoKUhIKClKqCqIKUgoKWgoCCyoSCluiyggAGEIKCgoKCgpSCgpSClLqCgoKUgpQ=")]
+[assembly: go.GoPositionMap("internal/zstd/bits.go", "bits.cs", "ABs0kgAGEqKCgpSCgoKUqJKCgoKokoKCupIADyDSgoKUAAcQqJKCloKCrLKCgpSCgoKClKiS")]
+[assembly: go.GoPositionMap("internal/zstd/block.go", "block.cs", "ABUi0oK4gpaAgqaCgoSCgpSEhIKClpSCloSWADFo0oKWgoKCloKCpIKUgpSClIKqgpSCgpSYgoKCloKCloKCltzSgpaCgqiilIKI/oKUgoCCpoKCqJKUhIKClISClISAgqaCgqiSlKT4xpKCloKCloKCloKCqoKCgpaCgoSCgpSEgoKUhIKClKiCgoKUgpSUtIKCtIKCgrSCgoLIgpSCgpSEgoKUhIKClKqCqIKUgoKWgoCCyoSCluiyggAGEIKCgoKCgpSCgpSClLqCgoKUgpQ=")]
 [assembly: go.GoPositionMap("internal/zstd/fse.go", "fse.cs", "ABcwAAgCgoCCpoKCurqWlpaEhIKAgqa4goKCgoKAgraCgoKCgILehIKWgpaCloKClIKCpoKClIKWgoKUlIKUgoSEgoKogpaCloSAgqbssoKEhIKClIKCqIKCgoKCgoKCuIKWgoKChIKWhIKClgAuXJKCuIKClIKUgoKClJTYkoK4ggASKoKClIKUAB9EkoK4goKUgpSCgoKUlA==")]
 [assembly: go.GoPositionMap("internal/zstd/huff.go", "huff.cs", "ABQuAAsCgpaChIKClIKUgoKUhIKWgoKWgoKWgoK8goKCgpSCgoKWgoKUhIKWgoSEgoKUgoKCloKClISCloKWqIKClIKCgoK8goKCgpSCgqaCloKCloK6goKUgoKUgpSCgoSCzIKCgoKWgoKUgoKCgpSW")]
-[assembly: go.GoPositionMap("internal/zstd/literals.go", "literals.cs", "AAoc0oKogoSClAAIDKKEgpS0gpSCtIKUguyClpSClIKmgpSCgoKo6sKqlIKUgoKCgpTGgpSCgoK0gpSCgoLsgpaCgpaCqIKWgoKUhIKUgriCzoKClJaCltjWgoKWgoKEgoKWgoKCgpbq5oKUgtyCgpaCgoKEgoKUhIKChIKEgoSCqpKClpKClpKClpKCloKCgoSEhIKChIKEkoKUgpaCgpaCgpaCgpaCgoKUgoKWgoKEgoKEgoKW")]
+[assembly: go.GoPositionMap("internal/zstd/literals.go", "literals.cs", "ABAc0oKogoSClAAIDKKEgpS0gpSCtIKUguyClpSClIKmgpSCgoKo6sKqlIKUgoKCgpTGgpSCgoK0gpSCgoLsgpaCgpaCqIKWgoKUhIKUgriCzoKClJaCltjWgoKWgoKEgoKWgoKCgpbq5oKUgtyCgpaCgoKEgoKUhIKChIKEgoSCqpKClpKClpKClpKCloKCgoSEhIKChIKEkoKUgpaCgpaCgpaCgpaCgoKUgoKWgoKEgoKEgoKW")]
 [assembly: go.GoPositionMap("internal/zstd/window.go", "window.cs", "ABQqkoKClIKCqJKokoKUgpaCgoKCqIKCgoKUpoKUgs6igoKEgoKClIKCloKClA==")]
 [assembly: go.GoPositionMap("internal/zstd/xxhash.go", "xxhash.cs", "ABo8opaChIKWgoSClKiShIKCgpaCgoKCgoKCloKCgoKCloKCupKCgpSIgoKCloSCgoKCgoKCgpSCgoKClIKCgoKWgoKCgoSokoKCgqiSgoKC")]
-[assembly: go.GoPositionMap("internal/zstd/zstd.go", "zstd.cs", "AEawAZKCgqqiqIKCgoKCgoIAAiIAEQKAgqSCgqiygIKkgoKosoKAgqSUqLKCgIK2AAgIkoKWgJSClKaAgpSCgIKkgpamloCCpISEgoKWgoKUloKWgoKogoCCpoSEgIKqopSCgoKCgoKWgrqClIKCzIKCgpS0tLS0tOyCmJKCloSCgpaCgoKCgoKChKiShICCpoSCgoKWgIKmgoKUgoKUgoKogoKUgqaCgoKClICCpIKUgoKUgIKkloQACAiyloCCpoSEgoK6gqiUgoCCpIK0goCCpIKCgpS0goCCpLSmgoKUloKWgpSCpoKAgqaCgoKWlJaqooKClAAIEoKmgqaCpoKClKaCpoKClA==")]
+[assembly: go.GoPositionMap("internal/zstd/zstd.go", "zstd.cs", "AFKwAZKCgqqiqIKCgoKCgoIAAiIAEQKAgqSCgqiygIKkgoKosoKAgqSUqLKCgIK2AAgIkoKWgJSClKaAgpSCgIKkgpamloCCpISEgoKWgoKUloKWgoKogoCCpoSEgIKqopSCgoKCgoKWgrqClIKCzIKCgpS0tLS0tOyCmJKCloSCgpaCgoKCgoKChKiShICCpoSCgoKWgIKmgoKUgoKUgoKogoKUgqaCgoKClICCpIKUgoKUgIKkloQACAiyloCCpoSEgoK6gqiUgoCCpIK0goCCpIKCgpS0goCCpLSmgoKUloKWgpSCpoKAgqaCgoKWlJaqooKClAAIEoKmgqaCpoKClKaCpoKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

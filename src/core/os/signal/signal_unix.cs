@@ -9,6 +9,12 @@ using syscall = syscall_package;
 
 partial class signal_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // Defined by the runtime package.
 internal static void signal_disable(uint32 _) {
     go.runtime_package.signal_disable(_);

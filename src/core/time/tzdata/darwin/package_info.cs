@@ -53,7 +53,7 @@ using static go.time.tzdata_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("time/tzdata/tzdata.go", "tzdata.cs", "ABtA5IKokoKUqJKClN7CAAYWhIKChJSClIKCgoKCgoKCgpSCqIKIlIKClg==")]
+[assembly: go.GoPositionMap("time/tzdata/tzdata.go", "tzdata.cs", "ACdA5IKokoKUqJKClN7CAAYWhIKChJSClIKCgoKCgoKCgpSCqIKIlIKClg==")]
 // </GoSourcePositionMaps>
 
 namespace go.time;

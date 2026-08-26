@@ -55,8 +55,8 @@ using static go.crypto.sha512_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/sha512/sha512.go", "sha512.cs", "ABYqgoKCggAzhAGClIKCgoKCgoKkgoKCgoKCgqSCgoKCgoKCpIKCgoKCgoKkggALFoKClKSkpKSkgoKCgoKCgoKCgoLmgoKUAA0MpIKUgoKCgoKCgoKCgoKCpoKokoKUgoKokoKCqJKCgqiSgpSCgqaClKSkpMiApMKClIKCgoKCgoKUlIKCgpSClKaCgqaCgoKUpKSkyLSCgoKCgpSogriChIKWgoKCgoKCgoKClqiSgpSSgoKokoKUkoKCgoKokpKCgoKCqJKSgoKCgg==")]
-[assembly: go.GoPositionMap("crypto/sha512/sha512block.go", "sha512block.cs", "AGDAAYKCgoKCgpaCgoKChJaEgoSEgoKCgoKCgpaCgoKCgoKChJY=")]
+[assembly: go.GoPositionMap("crypto/sha512/sha512.go", "sha512.cs", "AC4qgoKCggAzhAGClIKCgoKCgoKkgoKCgoKCgqSCgoKCgoKCpIKCgoKCgoKkggALFoKClKSkpKSkgoKCgoKCgoKCgoLmgoKUAA0MpIKUgoKCgoKCgoKCgoKCpoKokoKUgoKokoKCqJKCgqiSgpSCgqaClKSkpMiApMKClIKCgoKCgoKUlIKCgpSClKaCgqaCgoKUpKSkyLSCgoKCgpSogriChIKWgoKCgoKCgoKClqiSgpSSgoKokoKUkoKCgoKokpKCgoKCqJKSgoKCgg==")]
+[assembly: go.GoPositionMap("crypto/sha512/sha512block.go", "sha512block.cs", "AGbAAYKCgoKCgpaCgoKChJaEgoSEgoKCgoKCgpaCgoKCgoKChJY=")]
 [assembly: go.GoPositionMap("crypto/sha512/sha512block_generic.go", "sha512block_generic.cs", "AAgSgg==")]
 // </GoSourcePositionMaps>
 

@@ -12,6 +12,12 @@ using go.sync;
 
 partial class testlog_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(go.sync.atomic_package));
+}
+
 // Interface is the interface required of test loggers.
 // The os package will invoke the interface's methods to indicate that
 // it is inspecting the given environment variables or files.

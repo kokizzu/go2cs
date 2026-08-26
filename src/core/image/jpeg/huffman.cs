@@ -7,6 +7,12 @@ using io = io_package;
 
 partial class jpeg_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // maxCodeLength is the maximum (inclusive) number of bits in a Huffman code.
 internal static UntypedInt maxCodeLength => 16;
 
