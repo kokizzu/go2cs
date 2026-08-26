@@ -3145,6 +3145,23 @@ func pointerBoxConversionRecord(sourceTypeName, targetTypeName string) bool {
 	return trimRoot(strings.TrimSuffix(inner, ">")) == trimRoot(sourceTypeName)
 }
 
+// pointerBoxRecordEitherOrientation reports the pointer-boxing route without regard to WHICH side of
+// a recorded pair holds the box. The record maps disagree about that: a conversion-site record is
+// stored argument-first, so the box lands on the target, while invertedImplicitConversions is keyed
+// by the INTERFACE parameter type and emits its attribute with the two arguments swapped — so the
+// same Go shape reaches the metadata with the box on either side depending on which site recorded it.
+//
+// Orientation does not change the fact the exemption rests on, because ImplicitConvGenerator refuses
+// the record from both directions. Whichever generic argument is the box, one of its two guards
+// fires: `ж<T>` is golib's generic CLASS, so it fails the `TypeKind.Struct` test when it lands in the
+// source position, and it has no local struct declaration to enumerate members from when it lands in
+// the target position. Either way the generator skips the pair before it chooses a host, so it can
+// neither mint a phantom nor extend a closed production assembly.
+func pointerBoxRecordEitherOrientation(sourceTypeName, targetTypeName string) bool {
+	return pointerBoxConversionRecord(sourceTypeName, targetTypeName) ||
+		pointerBoxConversionRecord(targetTypeName, sourceTypeName)
+}
+
 // whiteboxProductionDeclaration reports whether a named/aliased type is one the converted package
 // declares in GO but not in C# — a production declaration merged into the internal `-tests` variant
 // by go/packages, whose emitted type lives in the referenced production assembly. It is exactly the
