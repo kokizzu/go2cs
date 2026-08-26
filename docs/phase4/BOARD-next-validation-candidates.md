@@ -19315,4 +19315,42 @@ and ruled impossibilities withstanding, exactly as the Windows march defines the
    shape that reports all three without averaging — building on the existing linux-annotation
    convention.
 
+## 2026-08-26 · JOB-024 FOLD + TWO RULINGS — the Linux bill lands (honest 146/175 = 83.4%, 0.7pt from Windows); R2 is the parity arc; the ж-box sequence goes B1-design-first
+
+**The complete Linux re-measure at `59af260e0`** (R, all 175 rows, per-row logs, 4.3 h): 144
+PASS + 2 DISC-validating = **146/175 honest (83.4%)** vs Windows 84.1% on the same roster.
+Baseline chain 92/159 → 122/161 → 129/161 → 146/175. **Three seams COLLAPSED silently this
+season** — R5 sockaddr (json full 491; tls 0/3646 → 396 agree), R3 self-binary (the Linux
+apphost is genuine ELF), W1b mmap — while R1/R4/W1 hold closed at floor scale. **R2 (exec)
+absorbs 21 of 29 FAILs** with two shape regressions inside it (os/exec 16/72→1/88, gcimporter
+281→15 — same attribution, bigger crater, diff these first) and ONE new real test
+(`tls.TestCertCache`, unrooted). Standing: W2 ×2 converter fixes, W3 plugin crash, W6 caps, W7
+(ruled, honest FAIL, backoff changes nothing — re-confirmed), R6 zoneinfo (1 test), and a NEW
+host-limit family: `runtime/debug` `TestPanicOnFault` — the Linux CLR cannot recover hardware
+faults (no SEH), a structurally per-OS disclosure candidate. R''s shard-2 ed25519
+disclosure-capture finding is RETRACTED by its own re-read; disclosure machinery is
+per-OS-identical on the evidence (Windows A/B 8/8 ran anyway). Full ledger: R''s JOB-024 entries,
+2026-08-26.
+
+**RULING — the Linux parity arc is R2, and it is ONE design item.** 21 rows hang on the
+exec/process-launch surface; the arc''s docket: the two shape regressions first, then the design
+note over FINDING-linux-run-layer §5''s remaining surface (the landed exec-wall implementation is
+the foundation; `checkClonePidfd` and the go-build/testenv re-exec family are the new members),
+with `tls.TestCertCache` riding as its one unrooted test. The seven small items land as: two
+bare-annotation fixes (immediate), W2/W3 converter fixes (lane-sized), W6/R6 singletons, and the
+per-OS roster mechanics as their own DESIGN (annotation grammar, platform-exclusive rows —
+`internal/syscall/windows/registry` is the clean case — per-OS counts and floors; a design note
+is commissioned).
+
+**RULING — the ж-box sequence: B1''s design increment goes FIRST; B′-S1 is DEFERRED.** Grounds
+from S0b''s measurement: the receiver half was already near-optimal (emission delta 5 boxes vs
+the census''s 560 — census local-counts are NOT emission counts), and the arc''s measured
+allocation mass (WriteString''s 17 direct-ж, math/big''s 59x, netip''s gradient, nistec''s four
+curves) lives in mechanism-B/C territory, not the parameter half. S1 re-opens only if B1''s
+emission-priced numbers say the parameter half still matters. B1''s design must resolve P-F5
+(unsafe.Pointer-subclassing vs kind-as-type) and carry the P-F2 three-variant microbench
+precondition; the `Reinterpret` source-retention shape (NetShareAdd) is a named input. G''s two
+S0b riders bind: the slog-class A/Bs carry byte-identical controls, and census-grade figures are
+never quoted as emission-grade.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
