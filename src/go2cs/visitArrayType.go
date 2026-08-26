@@ -115,9 +115,9 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 		if tv, ok := v.info.Types[arrayType.Len]; ok {
 			// Check if it's a constant
 			if tv.Value != nil {
-				length := tv.Value
-				intLength, _ := constant.Int64Val(length)
-				arrayLenValue = strconv.FormatInt(intLength, 10)
+				if length, ok := constArrayLength(tv.Value); ok {
+					arrayLenValue = length
+				}
 			}
 		}
 
@@ -138,6 +138,53 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 	v.writeCommentString(target, comment, arrayType.Elt.End()+typeLenDeviation)
 	target.WriteString(v.newline)
 	finish()
+}
+
+// constArrayLength renders the exact decimal length of a CONSTANT array-length expression, or
+// reports false when the constant is not an integer the emission can carry (the caller then keeps
+// the converted length EXPRESSION, which is what it already does for a non-constant length).
+//
+// It exists because go/types does NOT normalise an array length's recorded constant value, and
+// `constant.Int64Val` PANICS — it does not return `(0, false)` — for any value that is neither Int
+// nor Unknown kind. `Checker.arrayLength` (go/types/typexpr.go:536) applies `constant.ToInt` to a
+// LOCAL copy purely to test representability and records the operand's own, un-normalised value, so
+// the perfectly legal
+//
+//	const S = 1e6
+//	var x [S]byte          // reflect/all_test.go:5185, TestSliceOverflow
+//
+// leaves `info.Types[arrayType.Len].Value` at **Float** kind (`1e+06`) — and a zero-imaginary
+// complex length (`const C = 1e1 + 0i; var x [C]byte`, equally legal) leaves it at **Complex** kind.
+// Both panicked the three array-length sites; `constant.ToInt` folds either into Int, and yields
+// unknownVal — hence `(0, false)`, never a panic — for anything it cannot.
+//
+// This is the ONE reachable arm of a two-position class. go/types leaves the recorded value
+// un-normalised wherever the spec says a constant must be *representable as* an integer rather than
+// *converted to* one, which is exactly two positions: array lengths and SHIFT COUNTS (`x << 1e0` is
+// legal and records Float kind too — measured). The shift arm already normalises correctly
+// (`constIntShiftValue`, convBinaryExpr.go), which is why only the array arm ever panicked. Every
+// other integer-required position — index, slice bound, `make` length/cap, composite-literal array
+// key — IS converted by go/types (`isValidIndex` → `convertUntyped`) and records Int kind, so none
+// of them can reach this shape; measured across 24 probe shapes rather than assumed.
+//
+// The remaining array-typed emissions are structurally immune and deliberately untouched: a struct
+// field, a func parameter/result, a composite-literal type, a pointer/map/slice element and a type
+// alias all resolve their length through `types.Array.Len()`, an `int64` go/types has already
+// normalised, never through the AST node's recorded constant.
+func constArrayLength(value constant.Value) (string, bool) {
+	intValue := constant.ToInt(value)
+
+	if intValue.Kind() != constant.Int {
+		return "", false
+	}
+
+	length, exact := constant.Int64Val(intValue)
+
+	if !exact {
+		return "", false
+	}
+
+	return strconv.FormatInt(length, 10), true
 }
 
 // arrayZeroValueArgs renders the constructor arguments for a fixed-size array's zero value: the
