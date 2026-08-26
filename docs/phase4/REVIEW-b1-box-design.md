@@ -138,3 +138,56 @@ B1-done/C-remaining boundary is never stated.
 
 Bench raw data: the review lane's scratch (`lane-b1rev-bench/`); read-only worktree left at
 `.claude/worktrees/lane-b1rev`.
+
+
+---
+
+# AMENDED 2026-08-26 — increment 2 (`claude/g-b1-box-design-i2` @ `b8688d839`) verification: **RATIFY WITH BINDING CORRECTIONS**
+
+Seven of eight amendments SATISFIED (five by new isolated-process measurement, independently
+spot-checked; the radius census 344+754=1,098 and the 67/21 `PointerPrefix` census reproduce
+exactly; the five reflect canaries recomputed exact incl. crypto/tls 400; the union-slot V2
+built in the parent''s mandated shape and eliminated on measurement; §4/§7.5 corrected; the
+mandated gates all present). Amendment 5 is PARTIAL by the increment''s own admission (the
+proposed `(T[]?, IArray?)` element shape remains unbenched; its OQ-4 deferral is GRANTED only
+as a B2 PRE-gate, never post-hoc).
+
+**Binding corrections before B2 implementation starts (fold as increment 2.1, text-only except
+where noted):**
+
+1. **N1 (material)** — §2.2''s "kind branches deleted, dispatch removed" is contradicted by the
+   cited file for at least six members (`PinnedBuffer` `ж.cs:445-475`; `EnsureStableAddress`/
+   `PinnableStorage` `:1399-1428` — `ж.Contracts.cs:245-252` says "implemented there per box
+   kind" verbatim; the `uintptr`/`void*` operators `:1266-1340`; `ArrayRef`/
+   `TryGetElementStorage`/`TryGetElementWindow` are element-ref machinery whose `ж<T>`-typed
+   call sites would need added dispatch; `IsNull` `:333`; plus unlisted `public virtual
+   ReferentObject` `:1056`). Rewrite per-member with the honest disposition and cost — the
+   first rejection''s Axis-2D stands re-opened until this lands.
+2. **N2 (material)** — the landing shape drops `m_pin` from field-ref and element-ref kinds
+   that take one today (`ж.cs:1399-1405` via the 875-site operator surface). Restore it and
+   correct §2.1''s byte figures (fieldRef 48→56, elemRef 40→48; the win survives V1''s 112).
+3. **N3 (material)** — promoting `CanonicalElement` from identity reduction to deref storage
+   creates an unstated obligation two of its five arms cannot meet (`PinnedBuffer` arm yields
+   `object?` `PinnedTarget`; the `default` arm''s `array.Source` may materialize a COPY).
+   Resolve explicitly: two slots (deref storage + canonical identity storage) or a stated,
+   enforced deref-equivalence obligation — the element-ref identity win and the `&StringData`
+   equality contract must not trade off silently.
+4. Add `GoReflect.TypeNaming.cs:250` to the §3 table (a `StandardBox<X>` reports `HasGoName`
+   true — the asn1 SET/SEQUENCE class).
+5. State that the Pointer-typed `Value` AOT reading (+6–8%, non-overlapping spreads) EXCEEDS
+   both the design''s ±3% band and the parent''s P-F4 rule, and that §7.2''s sealed-override
+   fallback is the pre-committed remedy tied to P-F4.
+6. **N5** — `ValueMarshalling.cs:235/249`''s prescribed `IsAssignableFrom` fix admits
+   `unsafe.Pointer` into a `ж<uintptr>` destination (wrong independently of the split); those
+   sites take the same M-guard as the naming sites.
+7. **N6** — carry the parent §4-item-4 `slice<T>`/`array<T>` overloads as the stated mechanism
+   of the element-ref −1-object claim.
+8. Correct the `-tests` closure figure to **401 occurrences across 44 directories** (243
+   `new ж<` + 158 target-typed), and either cite or re-measure math/big''s 59× (the parent
+   records 51.21×; the hop-delta note stands). Exhibits gain numeric obligations where
+   derivable; N4''s footnote is corrected to its own raws.
+
+The verification also recorded genuine improvements over the first review (the 754 target-typed
+census, the `-tests` route, the `GoMethodSets` mixed-feeds refinement) — re-derivation, not
+restatement. B2 implementation staffs when increment 2.1 lands and the elemRef pre-gate bench
+is green.
