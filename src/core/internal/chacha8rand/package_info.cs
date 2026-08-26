@@ -51,7 +51,7 @@ using static go.@internal.chacha8rand_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("internal/chacha8rand/chacha8.go", "chacha8.cs", "ABMoAA8wAAkCgoKUgqiyAAcSwoKCgoKs0oIABxCCgoKClIKCgoIAAxDigoKCgoKClKYAAhDygoKCgoKUAAgKgqiygpSCgpSClIKCgoKClA==")]
-[assembly: go.GoPositionMap("internal/chacha8rand/chacha8_generic.go", "chacha8_generic.cs", "ADh2xJaChIKEgoSChpKEgoKChIKCgoSCgoKEgoKChIKCgoSCgoKEgoKChIKCgpaCgpSCqIKCgoSCppSCgq7ihISUgoKCgoKCgoKCgoKCgoKCloKCgoKEgoKCAAYQgoKCgoKCgoKCgoKCgoKClriCzJKCgoKCgoKCgoKCgoI=")]
+[assembly: go.GoPositionMap("internal/chacha8rand/chacha8_generic.go", "chacha8_generic.cs", "ADqWAtSCggAEnAEADAKCgoKCgoKCgoKCgoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
