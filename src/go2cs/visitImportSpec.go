@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
+	"go/types"
 	"log"
 	"os"
 	"path/filepath"
@@ -399,8 +400,98 @@ func (v *Visitor) writeImportInit(csNamespace string) {
 	v.importInits.WriteString(fmt.Sprintf("%s// Go runs an imported package's `init` before this package's own; .NET would never load%s", v.newline, v.newline))
 	v.importInits.WriteString(fmt.Sprintf("// an assembly nothing has touched yet, so that initialization is forced here.%s", v.newline))
 	v.importInits.WriteString(fmt.Sprintf("[GoInit] internal static void %s() {%s", importInitName(v.currentImportPath), v.newline))
-	v.importInits.WriteString(fmt.Sprintf("%sbuiltin.initPackage(typeof(%s));%s", v.indent(1), csNamespace, v.newline))
+	forcingTarget := csNamespace
+
+	if v.forcingTargetShadowed(csNamespace) {
+		forcingTarget = globalQualifyForcingTarget(csNamespace)
+	}
+
+	v.importInits.WriteString(fmt.Sprintf("%sbuiltin.initPackage(typeof(%s));%s", v.indent(1), forcingTarget, v.newline))
 	v.importInits.WriteString(fmt.Sprintf("}%s", v.newline))
+}
+
+// forcingTargetShadowed reports whether the emitted `typeof(<ns>)` of a forcing hook would bind its
+// LEADING segment to a nested type of the class the hook is written into, rather than to the
+// namespace it names.
+//
+// This is the one emission that puts a raw namespace-qualified path inside a CLASS BODY. Every
+// other cross-package reference the converter emits goes through a file-scoped `using` alias, and a
+// using DIRECTIVE is resolved at namespace scope, where class members are not in play — which is
+// why `using palette = image.color.palette_package;` resolves while `typeof(image.color.palette_package)`
+// five lines below it does NOT. C# resolves the leading identifier of a namespace-or-type-name by
+// searching the enclosing type declarations OUTWARD FIRST, so a nested type named `image` occludes
+// the `go.image` namespace for the whole class body.
+//
+// The sighting: Go's own image_test.go declares a test-local `type image interface{…}`, emitted as a
+// nested `[GoType] internal partial interface image` of `image_internal_test_package`; the same
+// class's forcing hooks for `image/color` and `image/color/palette` then failed to compile with
+// CS0426 ("the type name 'color' does not exist in the type 'image_internal_test_package.image'").
+// A Go package may legally declare a type whose name matches the first path segment of a package it
+// imports, so the PRODUCTION emission has the same exposure — `type sync struct{}` alongside
+// `import "sync/atomic"` breaks identically, which is what tests/Behavioral/ImportSegmentTypeShadow
+// pins. Nothing in the converted standard library declares such a type today (it compiles, and this
+// collision is a hard error), so the guard costs the corpus nothing and covers the class rather than
+// the instance.
+//
+// Only a TYPE occludes: `typeof(a.b)` is a namespace-or-type-name, and that lookup considers types
+// and namespaces alone, so a same-named func/var/const is irrelevant. And only a type emitted into
+// THIS class occludes — packageScopeClassName answers which class declares a package-level object,
+// so a production type does not qualify a hook written into the test-variant class (and vice
+// versa), keeping the `-stdlib` and `-tests` emissions of the production files identical.
+func (v *Visitor) forcingTargetShadowed(csNamespace string) bool {
+	if strings.HasPrefix(csNamespace, "global::") || v.pkg == nil || v.emittedClassName == "" {
+		return false
+	}
+
+	leadSegment := csNamespace
+
+	if dot := strings.Index(csNamespace, "."); dot != -1 {
+		leadSegment = csNamespace[:dot]
+	}
+
+	// The emitted C# name is the sanitized form of the Go identifier (`internal` -> `@internal`), so
+	// compare against the sanitized spelling of each package-level type name rather than trying to
+	// unmake the escape.
+	for _, name := range v.pkg.Scope().Names() {
+		object := v.pkg.Scope().Lookup(name)
+
+		if _, isType := object.(*types.TypeName); !isType {
+			continue
+		}
+
+		if getSanitizedIdentifier(name) != leadSegment {
+			continue
+		}
+
+		return v.packageScopeClassName(object) == v.emittedClassName
+	}
+
+	return false
+}
+
+// globalQualifyForcingTarget makes a forcing hook's `typeof` target absolute, so no name declared in
+// the enclosing class can occlude it. `global::` is what makes it collision-PROOF rather than merely
+// collision-avoiding: it restarts lookup at the global namespace, skipping the enclosing types and
+// namespaces entirely.
+//
+// The rooting itself mirrors rootQualifyIfAmbiguous's own first branch — a go/*-package reference
+// whose root the redundant-root strip removed (`go.ast_package`, whose real namespace is `go.go`)
+// re-roots to `go.go.ast_package`, while a genuinely rooted path is prefixed as it stands — with the
+// ambiguity GATE removed, since the caller has already decided the reference is occluded.
+func globalQualifyForcingTarget(ns string) string {
+	if strings.HasPrefix(ns, "global::") {
+		return ns
+	}
+
+	if strings.HasPrefix(ns, RootNamespace+".") {
+		if isStrippedGoPathPackageRef(ns) {
+			return "global::" + RootNamespace + "." + ns
+		}
+
+		return "global::" + ns
+	}
+
+	return "global::" + RootNamespace + "." + ns
 }
 
 // importInitName builds the generated hook method's name from the Go IMPORT PATH — unique by

@@ -193,6 +193,12 @@ type Visitor struct {
 	// package's `init` to run before this package's own, for every import form (see
 	// writeImportInit). Spliced into the top of the file's class body at ImportInitMarker.
 	importInits *strings.Builder
+	// emittedClassName is the `partial class <name>` this FILE's declarations are emitted into —
+	// `<pkg>_package`, or the per-variant override under -tests (visitFile computes it; this is the
+	// same expression, recorded so emitters running INSIDE the class body can ask what encloses
+	// them). Read by forcingTargetShadowed, which needs to know which class's nested types can
+	// occlude a namespace-qualified reference written into that class's body.
+	emittedClassName string
 	// A cross-package type reference emits a short-alias form (`pkg.Type`, `@unsafe.Pointer`) that
 	// resolves only through a file-local alias `using <alias> = <namespace>;`. That alias is emitted
 	// when the file imports the package under its canonical (unaliased) name; a file can reference the
