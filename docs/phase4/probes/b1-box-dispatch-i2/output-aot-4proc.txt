@@ -1,0 +1,112 @@
+===== AOT process 1 =====
+runtime: Native AOT  10.0.11  X64  pid 13572
+rounds: 12 interleaved; cells report median [min-max] ns/op
+
+workload                             V1-current              (next arms)
+std-Value(rw)             4.149 [ 4.114- 4.222]    4.613 [ 4.569- 4.758]    3.701 [ 3.662- 3.813]     1.11x  0.89x   (V2u/V5)
+std-DerefOrNull           3.905 [ 3.891- 4.116]    2.757 [ 2.744- 2.841]    1.848 [ 1.821- 1.949]     0.71x  0.47x   (V2u/V5)
+fieldRef-Value            2.292 [ 2.272- 2.405]    2.527 [ 2.505- 2.663]    1.835 [ 1.818- 1.884]     1.10x  0.80x   (V2u/V5)
+mixed-90/8/1.5/.5         3.713 [ 3.396- 4.395]    4.759 [ 4.645- 4.988]    4.089 [ 3.992- 4.489]     1.28x  1.10x   (V2u/V5)
+native-Value              1.724 [ 1.709- 1.767]    1.863 [ 1.830- 1.985]    1.390 [ 1.372- 1.476]     1.08x  0.81x   (V2u/V5)
+token-std                 5.320 [ 5.246- 5.525]    3.231 [ 3.203- 3.426]     0.61x   (V5)
+token-elemRef             9.244 [ 9.126- 9.758]    3.445 [ 3.410- 3.957]     0.37x   (V5)
+equals-fieldRef           3.918 [ 3.879- 4.030]    2.756 [ 2.733- 2.838]     0.70x   (V5)
+hashcode-elemRef         11.266 [11.151-12.774]    5.539 [ 5.462- 5.664]     0.49x   (V5)
+elem-Value-managed        2.987 [ 2.963- 3.556]    3.450 [ 3.424- 3.531]     1.15x   (V5)
+elem-Value-foreign        2.768 [ 2.741- 2.881]    4.834 [ 4.797- 4.901]     1.75x   (V5)
+ptrVal-subtyped           1.718 [ 1.710- 1.754]    1.832 [ 1.825- 1.883]     1.07x   (V5)
+ptrVal-basetyped          1.718 [ 1.710- 1.755]    1.839 [ 1.824- 1.862]     1.07x   (V5)
+
+== per-box allocated bytes (median of 5x64 mints) ==
+kind                         V1      V2u     V5i2   (V2u objects vs today / V5 objects vs today)
+standard long               144       88       80   (2 vs 2 / 2 vs 2)
+standard managed(obj)       136      112       72   (2 vs 1: +1 COUNT / 1 vs 1)
+fieldRef long               112       96       48   (2 vs 1: +1 COUNT / 1 vs 1)
+elemRef managed             112       56       40   (1 vs 1 / 1 vs 1)
+native                      112       56       48   (1 vs 1 / 1 vs 1)
+
+(sinks 515126125963091736 0 False)
+===== AOT process 2 =====
+runtime: Native AOT  10.0.11  X64  pid 5280
+rounds: 12 interleaved; cells report median [min-max] ns/op
+
+workload                             V1-current              (next arms)
+std-Value(rw)             4.157 [ 4.131- 4.229]    4.654 [ 4.591- 4.823]    3.748 [ 3.675- 4.263]     1.12x  0.90x   (V2u/V5)
+std-DerefOrNull           3.963 [ 3.890- 3.987]    2.800 [ 2.758- 3.223]    1.861 [ 1.834- 2.013]     0.71x  0.47x   (V2u/V5)
+fieldRef-Value            2.338 [ 2.290- 2.587]    2.572 [ 2.520- 2.756]    1.846 [ 1.833- 1.954]     1.10x  0.79x   (V2u/V5)
+mixed-90/8/1.5/.5         3.629 [ 3.413- 4.443]    4.787 [ 4.633- 4.889]    4.206 [ 4.064- 4.436]     1.32x  1.16x   (V2u/V5)
+native-Value              1.743 [ 1.719- 1.792]    1.848 [ 1.836- 1.963]    1.401 [ 1.372- 1.466]     1.06x  0.80x   (V2u/V5)
+token-std                 5.356 [ 5.273- 7.138]    3.243 [ 3.217- 3.417]     0.61x   (V5)
+token-elemRef             9.259 [ 9.150- 9.507]    3.463 [ 3.428- 3.590]     0.37x   (V5)
+equals-fieldRef           3.956 [ 3.903- 4.083]    2.775 [ 2.746- 2.865]     0.70x   (V5)
+hashcode-elemRef         11.302 [11.231-11.671]    5.553 [ 5.487- 5.693]     0.49x   (V5)
+elem-Value-managed        3.021 [ 2.973- 3.063]    3.473 [ 3.435- 3.530]     1.15x   (V5)
+elem-Value-foreign        2.786 [ 2.754- 2.868]    4.880 [ 4.818- 5.027]     1.75x   (V5)
+ptrVal-subtyped           1.735 [ 1.720- 1.769]    1.846 [ 1.833- 1.882]     1.06x   (V5)
+ptrVal-basetyped          1.732 [ 1.718- 1.814]    1.853 [ 1.837- 1.872]     1.07x   (V5)
+
+== per-box allocated bytes (median of 5x64 mints) ==
+kind                         V1      V2u     V5i2   (V2u objects vs today / V5 objects vs today)
+standard long               144       88       80   (2 vs 2 / 2 vs 2)
+standard managed(obj)       136      112       72   (2 vs 1: +1 COUNT / 1 vs 1)
+fieldRef long               112       96       48   (2 vs 1: +1 COUNT / 1 vs 1)
+elemRef managed             112       56       40   (1 vs 1 / 1 vs 1)
+native                      112       56       48   (1 vs 1 / 1 vs 1)
+
+(sinks 1089725845177091736 0 False)
+===== AOT process 3 =====
+runtime: Native AOT  10.0.11  X64  pid 9460
+rounds: 12 interleaved; cells report median [min-max] ns/op
+
+workload                             V1-current              (next arms)
+std-Value(rw)             4.214 [ 4.145- 4.325]    4.638 [ 4.609- 4.688]    3.713 [ 3.677- 3.770]     1.10x  0.88x   (V2u/V5)
+std-DerefOrNull           3.933 [ 3.896- 4.010]    2.773 [ 2.750- 2.863]    1.852 [ 1.838- 1.905]     0.70x  0.47x   (V2u/V5)
+fieldRef-Value            2.310 [ 2.298- 2.447]    2.548 [ 2.526- 2.576]    1.852 [ 1.836- 1.909]     1.10x  0.80x   (V2u/V5)
+mixed-90/8/1.5/.5         4.370 [ 3.407- 4.436]    4.851 [ 4.650- 5.090]    4.175 [ 3.999- 4.285]     1.11x  0.96x   (V2u/V5)
+native-Value              1.738 [ 1.720- 1.764]    1.852 [ 1.847- 1.899]    1.388 [ 1.382- 1.404]     1.07x  0.80x   (V2u/V5)
+token-std                 5.325 [ 5.269- 5.418]    3.265 [ 3.219- 3.315]     0.61x   (V5)
+token-elemRef             9.231 [ 9.159- 9.309]    3.474 [ 3.439- 3.557]     0.38x   (V5)
+equals-fieldRef           3.947 [ 3.904- 4.016]    2.762 [ 2.748- 2.819]     0.70x   (V5)
+hashcode-elemRef         11.314 [11.245-13.753]    5.542 [ 5.498- 5.779]     0.49x   (V5)
+elem-Value-managed        3.041 [ 2.985- 3.179]    3.482 [ 3.451- 3.570]     1.15x   (V5)
+elem-Value-foreign        2.779 [ 2.755- 2.880]    4.887 [ 4.823- 4.961]     1.76x   (V5)
+ptrVal-subtyped           1.731 [ 1.717- 1.774]    1.872 [ 1.838- 1.886]     1.08x   (V5)
+ptrVal-basetyped          1.742 [ 1.720- 1.845]    1.867 [ 1.839- 1.964]     1.07x   (V5)
+
+== per-box allocated bytes (median of 5x64 mints) ==
+kind                         V1      V2u     V5i2   (V2u objects vs today / V5 objects vs today)
+standard long               144       88       80   (2 vs 2 / 2 vs 2)
+standard managed(obj)       136      112       72   (2 vs 1: +1 COUNT / 1 vs 1)
+fieldRef long               112       96       48   (2 vs 1: +1 COUNT / 1 vs 1)
+elemRef managed             112       56       40   (1 vs 1 / 1 vs 1)
+native                      112       56       48   (1 vs 1 / 1 vs 1)
+
+(sinks 1375328530333091736 0 False)
+===== AOT process 4 =====
+runtime: Native AOT  10.0.11  X64  pid 19876
+rounds: 12 interleaved; cells report median [min-max] ns/op
+
+workload                             V1-current              (next arms)
+std-Value(rw)             4.192 [ 4.166- 4.234]    4.659 [ 4.600- 4.716]    3.722 [ 3.703- 3.788]     1.11x  0.89x   (V2u/V5)
+std-DerefOrNull           3.933 [ 3.905- 3.993]    2.770 [ 2.757- 2.867]    1.848 [ 1.838- 1.898]     0.70x  0.47x   (V2u/V5)
+fieldRef-Value            2.308 [ 2.298- 2.345]    2.539 [ 2.527- 2.600]    1.845 [ 1.839- 1.951]     1.10x  0.80x   (V2u/V5)
+mixed-90/8/1.5/.5         4.395 [ 3.660- 4.493]    4.843 [ 4.700- 4.920]    4.136 [ 4.026- 4.330]     1.10x  0.94x   (V2u/V5)
+native-Value              1.734 [ 1.723- 1.739]    1.848 [ 1.839- 1.869]    1.386 [ 1.381- 1.402]     1.07x  0.80x   (V2u/V5)
+token-std                 5.336 [ 5.284- 5.444]    3.245 [ 3.221- 3.332]     0.61x   (V5)
+token-elemRef             9.252 [ 9.198- 9.575]    3.459 [ 3.444- 3.559]     0.37x   (V5)
+equals-fieldRef           3.936 [ 3.912- 4.025]    2.768 [ 2.755- 2.817]     0.70x   (V5)
+hashcode-elemRef         11.631 [11.549-11.734]    6.026 [ 6.003- 6.152]     0.52x   (V5)
+elem-Value-managed        3.003 [ 2.990- 3.088]    3.473 [ 3.447- 3.535]     1.16x   (V5)
+elem-Value-foreign        2.774 [ 2.766- 2.876]    4.857 [ 4.828- 4.978]     1.75x   (V5)
+ptrVal-subtyped           1.747 [ 1.721- 1.794]    1.851 [ 1.839- 1.880]     1.06x   (V5)
+ptrVal-basetyped          1.737 [ 1.726- 1.783]    1.861 [ 1.842- 1.907]     1.07x   (V5)
+
+== per-box allocated bytes (median of 5x64 mints) ==
+kind                         V1      V2u     V5i2   (V2u objects vs today / V5 objects vs today)
+standard long               144       88       80   (2 vs 2 / 2 vs 2)
+standard managed(obj)       136      112       72   (2 vs 1: +1 COUNT / 1 vs 1)
+fieldRef long               112       96       48   (2 vs 1: +1 COUNT / 1 vs 1)
+elemRef managed             112       56       40   (1 vs 1 / 1 vs 1)
+native                      112       56       48   (1 vs 1 / 1 vs 1)
+
+(sinks 1246216294837091736 0 False)
