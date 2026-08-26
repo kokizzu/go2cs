@@ -461,8 +461,13 @@ func (v *Visitor) markCaptureModeBoxedParams(params *ast.FieldList, body *ast.Bl
 
 			// ж-box A2 (§3.3's reversion): a value parameter address-taken ONLY into ref-lowered
 			// positions stays a plain parameter — `ref x` at those sites aliases its own storage.
-			// A reverting verdict is mutually exclusive with captureMode (a pointer-receiver
-			// call/value records a kept-reason in the census), so nothing capture-shaped is lost.
+			// A reverting verdict is mutually exclusive with captureMode, and since 2026-08-26
+			// that holds for a stated reason rather than by breadth: captureMode is exactly
+			// `bodyCallsCaptureModeMethodOn || pointerMethodValueAddressTaken`, and B′ §4.2's
+			// receiverUseKeptReason records a kept-reason for precisely those two shapes (the
+			// direct-ж callee and the method value — collectCaptureModeMethods writes both
+			// method sets under one condition, so they never diverge). What it no longer keeps
+			// is the ordinary call on a `[GoRecv] ref` method, which consumes no box.
 			if refLoweringLocalReverts(obj) {
 				continue
 			}
@@ -736,8 +741,15 @@ func (v *Visitor) performEscapeAnalysisForObject(identObj types.Object, parentBl
 
 	// ж-box A2 (§3.3's reversion): address-taken ONLY into Phase-A ref-lowered positions →
 	// stack. The classification already proved no other box-forcing use exists (no closure
-	// crossing, no defer/go feed, no pointer-receiver call, no escape), so the address-of walk
-	// below could only re-derive the box this refinement exists to remove.
+	// crossing, no defer/go feed, no BOX-CONSUMING receiver use, no escape), so the address-of
+	// walk below could only re-derive the box this refinement exists to remove.
+	//
+	// "Box-consuming receiver use" is B′ §4.2's call-site selection, not the blanket
+	// "any pointer-receiver call" this said until 2026-08-26: a `[GoRecv] this ref T` method
+	// binds the local's own storage, so an ordinary call on one consumes no box and must not
+	// hold the local off the stack (receiverUseKeptReason). The three shapes that DO consume it
+	// — a direct-ж callee, a method value, a defer/go receiver — still record a kept-reason, so
+	// this arm remains unreachable for them.
 	if refLoweringLocalReverts(identObj) {
 		v.identEscapesHeap[identObj] = false
 		return

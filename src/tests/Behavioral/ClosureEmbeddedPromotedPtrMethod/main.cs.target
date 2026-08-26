@@ -29,21 +29,21 @@ private static readonly object appliedˢ2 = (@string)"applied:"u8;
 }
 
 internal static (@string, nint) run() {
-    ref var rep = ref heap(new run_rep(), out var Ꮡrep);
+    run_rep rep = new(nil);
     rep.label = startˢ;
     nint build() {
-        Ꮡrep.of(run_rep.Ꮡcounter).bump();
-        Ꮡrep.Value.label = builtˢ;
-        return Ꮡrep.Value.n;
+        rep.counter.bump();
+        rep.label = builtˢ;
+        return rep.n;
     }
     fmt.Println(innerˢ, build(), rep.label);
     nint got = apply(() => {
         void touch() {
-            Ꮡrep.of(run_rep.Ꮡcounter).bump();
-            Ꮡrep.Value.label = appliedˢ;
+            rep.counter.bump();
+            rep.label = appliedˢ;
         }
         touch();
-        return Ꮡrep.Value.n;
+        return rep.n;
     });
     fmt.Println(appliedˢ2, got);
     return (rep.label, rep.n);

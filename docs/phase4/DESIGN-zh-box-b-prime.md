@@ -275,6 +275,64 @@ a build error, which CNR and the behavioral suite catch as loudly as anything ca
 >    a satisfied invariant as a violation. It did, on the first run here, and the note is left
 >    standing so S1 does not re-learn it.
 
+> **MEASURED 2026-08-26 (S0b, call-site selection) — the receiver already renders directly; what
+> did NOT fall out of A2 is the REVERSION, and §1.2's "1,016-local class" is 55 % smaller than this
+> design assumed.** The stage's framing question was whether the receiver renders directly
+> (`z2.Square(…)`) or as its box (`Ꮡz2.Square(…)`), and whether that falls out of A2's local
+> reversion or needs its own rule. Both halves were driven with probes against the real machinery
+> before anything was cut, and they answer differently:
+>
+> 1. **Rendering needs no new rule, and did not before this stage either.** A probe over all
+>    eleven §4.2 receiver shapes plus ten adjacent ones (promotion, named non-struct receivers,
+>    array/slice elements, embedded chains) shows `convSelectorExpr`/`convCallExpr` already
+>    rendering an addressable receiver directly for every `[GoRecv] ref` method and boxing it for
+>    every direct-ж one. The discriminator is `selectorCallsDirectBoxMethod`, keyed on
+>    `packageDirectBoxReceiverMethods` — the emitted receiver FORM — and the §4.2 table reproduces
+>    its behavior row for row. B′'s primary changes which methods are ref-flavored; it does not
+>    need the selection machinery rewritten.
+> 2. **The reversion did NOT fall out of A2 — A2 actively blocked it.** `classifyLocalUse` returned
+>    a blanket `"ptr-receiver"` kept-reason for *any* pointer-receiver call on a value chain, so a
+>    local whose other address use fed a lowered position kept a box the emitted body never
+>    referenced. The instrument and the emitter therefore disagreed, and the census was the wrong
+>    one: `bLoweredPlusRefMethod` emitted `ref var z = ref heap(new T(), out var Ꮡz)` with `Ꮡz`
+>    occurring **nowhere else in the function**, while the shape one line shorter reverted. The
+>    unit fixture pinned the disagreement (`keptMethod` asserted a kept box for a `[GoRecv] ref`
+>    receiver the emitter had already left on the stack).
+>
+> **The rule** (`receiverUseKeptReason`) keeps the box only where a probe showed one consumed:
+> a **direct-ж callee** (`ptr-receiver-box`), a **method value** rather than a call
+> (`ptr-receiver-value`), or a **receiver under defer/go** (`ptr-receiver-defer-go`). Everything
+> else imposes no reason. The first two are load-bearing beyond their rows: `performEscapeAnalysis`
+> documents that a reverting verdict is mutually exclusive with captureMode, and captureMode is
+> exactly `bodyCallsCaptureModeMethodOn || pointerMethodValueAddressTaken` — those same two shapes
+> — so the invariant now holds by construction rather than by the old reason's breadth
+> (`collectCaptureModeMethods` writes both method sets under one condition, so they cannot diverge).
+>
+> **The split, re-derived corpus-wide on the pinned toolchain** (windows/amd64, go1.23.12):
+>
+> | | before | after |
+> |:--|--:|--:|
+> | `ptr-receiver` reason occurrences | **1,016** | — |
+> | → `ptr-receiver-box` (the real B′ target) | | **448** |
+> | → `ptr-receiver-defer-go` / `ptr-receiver-value` | | **5** / **3** |
+> | → imposes no reason (was pure conservatism) | | **560** |
+> | locals reverting corpus-wide | **231** | **621** |
+> | locals kept for the receiver reason ALONE | **693** | **0** |
+>
+> So **§1.2 over-attributes its own headline**: of the 1,016 receiver-position uses it counts as
+> B′'s constituency, 560 never needed a box at all and are recovered here with no dual emission,
+> flag-off. **448 remain** — those are what a ref-receiver primary would actually convert, and S1
+> should be priced against that number, not 1,016. The reversion set grows 231 → 621 (2.7×).
+>
+> Two mechanical notes for S1. **The census had to be taught the same fact**: `runRefLoweringCensus`
+> called `analyzeRefLowering` without `collectCaptureModeMethods`, so it could not see the receiver
+> FORM at all; it now mirrors the conversion driver's ordering against fresh per-package maps and
+> restores the drivers' state, keeping its standing "touch nothing" property. The unit harness owed
+> the same mirror, or every fixture would have taken the nil-map fallback and the rule would have
+> been untested. **And the guard was proven in both directions** before it was believed: restoring
+> the blanket behavior reds exactly the revert assertion; dropping every carve-out reds exactly the
+> four keep assertions; both restores byte-identical.
+
 ### 4.3 The retroactive widening of Phase A — a measured positive interaction
 
 A1 recorded that `edwards25519/field`'s `feMulGeneric`/`feSquareGeneric` are **X3-vetoed on their

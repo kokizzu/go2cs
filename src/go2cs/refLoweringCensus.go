@@ -44,6 +44,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go/ast"
+	"go/types"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -340,8 +341,26 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 			}
 		}
 
+		// B′ §4.2: a receiver-position use's kept-reason turns on what the CALLEE's receiver is
+		// emitted as (direct-ж vs `[GoRecv] this ref T`), so the census has to know the same
+		// direct-ж set the conversion driver computes — otherwise the instrument and the emitter
+		// disagree about which locals keep a box, which is precisely the disagreement this stage
+		// exists to remove. Mirror the driver's ordering (collectCaptureModeMethods →
+		// performRefLoweringAnalysis, conversionDriver.go) against FRESH per-package maps, so the
+		// census still leaves the drivers' package state exactly as it found it.
+		censusCaptureModeMethods := packageCaptureModeMethods
+		censusDirectBoxMethods := packageDirectBoxReceiverMethods
+
+		packageCaptureModeMethods = make(map[*types.Func]bool)
+		packageDirectBoxReceiverMethods = make(map[*types.Func]bool)
+
+		collectCaptureModeMethods(pkg)
+
 		handles := censusLinknameHandles(syntax)
 		results[pkg.PkgPath] = analyzeRefLowering(pkg.Fset, syntax, pkg.Types, pkg.TypesInfo, handles, manualFiles)
+
+		packageCaptureModeMethods = censusCaptureModeMethods
+		packageDirectBoxReceiverMethods = censusDirectBoxMethods
 	}
 
 	// A′-world resolution: the union of every package's records, exported candidates included.

@@ -15,6 +15,7 @@ package main
 
 import (
 	"go/ast"
+	"go/types"
 	"strings"
 	"testing"
 
@@ -59,13 +60,26 @@ func loadRefLoweringFixture(t *testing.T, files map[string]string, withTests boo
 	return nil
 }
 
-// analyzeFixture runs the classification pass exactly as the census driver does.
+// analyzeFixture runs the classification pass exactly as the census driver does — including the
+// capture-mode pre-pass, without which every receiver-position use falls back to the box (see
+// receiverUseKeptReason's nil-map arm) and B′ §4.2's selection rule would be untested here.
 func analyzeFixture(t *testing.T, pkg *packages.Package) *refLoweringPackageResult {
 	t.Helper()
 
 	if len(pkg.Errors) > 0 {
 		t.Fatalf("fixture did not type-check cleanly: %v", pkg.Errors)
 	}
+
+	savedCaptureMode, savedDirectBox := packageCaptureModeMethods, packageDirectBoxReceiverMethods
+
+	packageCaptureModeMethods = make(map[*types.Func]bool)
+	packageDirectBoxReceiverMethods = make(map[*types.Func]bool)
+
+	defer func() {
+		packageCaptureModeMethods, packageDirectBoxReceiverMethods = savedCaptureMode, savedDirectBox
+	}()
+
+	collectCaptureModeMethods(pkg)
 
 	return analyzeRefLowering(pkg.Fset, pkg.Syntax, pkg.Types, pkg.TypesInfo, censusLinknameHandles(pkg.Syntax), nil)
 }
@@ -450,9 +464,20 @@ func TestRefLoweringCallSiteShapes(t *testing.T) {
 
 const refLoweringLocalsFixture = `package locals
 
-type mutexish struct{ held bool }
+type mutexish struct {
+	held  bool
+	spare uint64
+}
 
 func (m *mutexish) lock() { m.held = true }
+
+type boxy struct {
+	n     uint64
+	spare uint64
+}
+
+// Direct-ж: takes the address of a receiver field, so the box IS its emitted receiver.
+func (b *boxy) addr() *uint64 { return &b.n }
 
 var escape *uint64
 
@@ -482,11 +507,44 @@ func keptDefer() {
 	_ = z
 }
 
-// Kept: an implicit address-take by a pointer-receiver method.
-func keptMethod() {
+// Reverts (B′ §4.2): an implicit address-take by a pointer-receiver method whose receiver is
+// emitted as a [GoRecv] ref binds the local's own storage — no box is consumed, so the other
+// address use feeding a lowered position is free to revert.
+func revertsRefMethod() {
 	var m mutexish
 	m.lock()
+	sub3(&m.spare)
 	_ = m.held
+}
+
+// Kept: the callee is DIRECT-ж (it takes the address of a receiver field), so the box IS its
+// receiver.
+func keptBoxMethod() {
+	var b boxy
+	sub3(b.addr())
+	sub3(&b.spare)
+}
+
+// Kept: a method VALUE, not a call — the delegate closes over the box.
+func keptMethodValue() {
+	var m mutexish
+	f := m.lock
+	f()
+	sub3(&m.spare)
+}
+
+// Kept: a receiver under defer — the frame outlives the statement (§3.3 carve-out (a)).
+func keptDeferRecv() {
+	var m mutexish
+	defer m.lock()
+	sub3(&m.spare)
+}
+
+// Kept: a receiver under go — same carve-out.
+func keptGoRecv() {
+	var m mutexish
+	go m.lock()
+	sub3(&m.spare)
 }
 
 // Kept: slicing an array local aliases its storage.
@@ -528,13 +586,23 @@ func TestRefLoweringLocalsCensus(t *testing.T) {
 		t.Errorf("lowersLocal.x must revert (kept: %v)", v.KeptReasons)
 	}
 
+	// B′ §4.2: a `[GoRecv] this ref T` receiver consumes no box, so the receiver-position use
+	// imposes no kept-reason and the local reverts. Before 2026-08-26 this was a blanket
+	// "ptr-receiver" keep, which minted a `heap()` box the emitted body never referenced.
+	if v := verdictFor("revertsRefMethod", "m"); !v.Lowers {
+		t.Errorf("revertsRefMethod.m must revert — a ref-receiver call takes no box (kept: %v)", v.KeptReasons)
+	}
+
 	for _, tc := range []struct {
 		fn, name, reason string
 	}{
 		{"keptStore", "y", "addr-escapes"},
 		{"keptDefer", "z", "defer-go-arg"},
-		{"keptMethod", "m", "ptr-receiver"},
 		{"keptSlice", "a", "array-slice"},
+		{"keptBoxMethod", "b", "ptr-receiver-box"},
+		{"keptMethodValue", "m", "ptr-receiver-value"},
+		{"keptDeferRecv", "m", "ptr-receiver-defer-go"},
+		{"keptGoRecv", "m", "ptr-receiver-defer-go"},
 	} {
 		v := verdictFor(tc.fn, tc.name)
 

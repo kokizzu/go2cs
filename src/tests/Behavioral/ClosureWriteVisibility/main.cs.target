@@ -58,10 +58,9 @@ internal static void probeB2(Tally t) {
 }
 
 internal static void probeC1() {
-    ref var t = ref heap<Tally>(out var Ꮡt);
-    t = new Tally(5, "s"u8);
+    var t = new Tally(5, "s"u8);
     void bump() {
-        Ꮡt.Value.total += 100;
+        t.total += 100;
     }
     bump();
     t.Add(3);
@@ -70,9 +69,8 @@ internal static void probeC1() {
 }
 
 internal static void probeC2() {
-    ref var t = ref heap<Tally>(out var Ꮡt);
-    t = new Tally(5, "s"u8);
-    nint get() => Ꮡt.Value.total;
+    var t = new Tally(5, "s"u8);
+    nint get() => t.total;
     t.Add(3);
     fmt.Println((@string)"C2:"u8, get());
 }
