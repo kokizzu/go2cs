@@ -135,6 +135,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `io/fs` | [`io.fs.md`](current/io.fs.md) | [`src/core/io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) |
 | `io/ioutil` | [`io.ioutil.md`](current/io.ioutil.md) | [`src/core/io/ioutil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/ioutil) |
 | `log` | [`log.md`](current/log.md) | [`src/core/log`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log) |
+| `log/slog` | [`log.slog.md`](current/log.slog.md) | [`src/core/log/slog`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog) |
 | `log/slog/internal/benchmarks` | [`log.slog.internal.benchmarks.md`](current/log.slog.internal.benchmarks.md) | [`src/core/log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) |
 | `maps` | [`maps.md`](current/maps.md) | [`src/core/maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) |
 | `math` | [`math.md`](current/math.md) | [`src/core/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) |

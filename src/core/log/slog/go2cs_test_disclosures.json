@@ -102,6 +102,12 @@
       "class": "alloc-profile",
       "signature": "allocs, want zero",
       "reason": "want-zero AllocsPerRun assert: every Value constructor boxes through `any` into a heap shell, the direct managed counterpart of Go's inline-payload Value (DESIGN-iface-shell-caching §2 — the shell IS the interface value, and nothing short of IDynamicInterfaceCastable removes it)"
+    },
+    {
+      "name": "TestRecordSource",
+      "class": "host-identity",
+      "signature": "want (\"testing.tRunner\", \"testing.go\", true)",
+      "reason": "the depth-2 sub-case asserts that two frames above the test function sits `testing.tRunner` in `testing.go` — Go's own test binary, whose testing package is compiled from that source. The converted host is the hand-owned structural replacement (F15b): its runner lives in `go.testing_runtime`, so it is not a converted-Go frame at all and never enters the projected traceback, and it carries no position-map record, so its file half could only ever be `.cs`. Passing would require the host to claim `testing/testing.go`, which the standing position-map ruling forbids. The depth-1 sub-case of this SAME test asserts `log/slog.TestRecordSource` and passes — that was the internal-test-variant caller-info defect, fixed 2026-08-26 rather than disclosed, which is what fixes this class's boundary: only the host's own frame is disclosed here"
     }
   ]
 }
