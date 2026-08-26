@@ -77,7 +77,7 @@ public static E SumHalves<S, E>(S s)
         return s[0];
     }
     nint mid = len(s) / 2;
-    return SumHalves<S, E>(subslice<S, E>(s, -1, mid)) + SumHalves<S, E>(subslice<S, E>(s, mid, -1));
+    return SumHalves<S, E>(subslice<S, E>(s, 0, mid)) + SumHalves<S, E>(subslice<S, E>(s, mid));
 }
 
 public static S AppendKeep<S, E>(S s, E v)
