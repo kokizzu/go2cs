@@ -346,3 +346,77 @@ func TestWhiteboxProductionPointerBoxConvStillRecorded(t *testing.T) {
 		t.Errorf("a both-foreign pointer-box pair must stay declined; got %v", indirectImplicitConversions)
 	}
 }
+
+// TestPointerBoxRecordDoesNotForceRecompile guards the MODEL-SELECTION half of the pointer-boxing
+// rule, which is a different question from the RECORDING half its two neighbours above pin. A
+// record can be perfectly legal to keep (the generator hosts nothing, so nothing is mutated) and
+// still, if recordsRequireProductionMutation counts it as production-anchored, push the whole suite
+// off the white-box reference model onto the recompile fallback. That fallback compiles a SECOND
+// copy of every production type into the test assembly, so any referenced assembly that returns the
+// production copy no longer type-matches: an identity split, which no compile-set or reference
+// adjustment can repair.
+//
+// `crypto/x509` is the corpus's measured case. Its ONE production-typed record is
+// `Certificate -> ж<Certificate>` in implicitConversions — the exact shape the indirect map had
+// exempted since e61758549 — and the recompile fallback it forced made `hybrid_pool_test.go`'s
+// `c.ConnectionState().PeerCertificates` (a crypto/tls return, i.e. the PRODUCTION Certificate)
+// unassignable to the recompiled one: CS0012 x4 + CS1929 x2.
+//
+// Both direct maps are pinned, in both orientations, because the two disagree about which side
+// holds the box: a conversion site records argument-first, while invertedImplicitConversions is
+// keyed by the interface parameter and emits its attribute with the arguments swapped.
+//
+// The control case is the point of the test: a structural pair between two PRODUCTION types must
+// still force the fallback, or the guard would pass just as well with the predicate stubbed to
+// `return false`.
+func TestPointerBoxRecordDoesNotForceRecompile(t *testing.T) {
+	const productionClass = "x509_package"
+	const productionPackage = "x509"
+
+	cert := "global::go.crypto." + productionClass + ".Certificate"
+	certBox := PointerPrefix + "<" + cert + ">"
+	opts := "global::go.crypto." + productionClass + ".VerifyOptions"
+
+	saveImplicit, saveInverted := implicitConversions, invertedImplicitConversions
+	saveIndirect := indirectImplicitConversions
+	saveNumeric, saveIndirectNumeric := numericConversions, indirectNumericConversions
+
+	t.Cleanup(func() {
+		implicitConversions, invertedImplicitConversions = saveImplicit, saveInverted
+		indirectImplicitConversions = saveIndirect
+		numericConversions, indirectNumericConversions = saveNumeric, saveIndirectNumeric
+	})
+
+	for _, testCase := range []struct {
+		name           string
+		source, target string
+		into           func(map[string]HashSet[string])
+		want           bool
+	}{
+		{"implicit box on target", cert, certBox, func(m map[string]HashSet[string]) { implicitConversions = m }, false},
+		{"implicit box on source", certBox, cert, func(m map[string]HashSet[string]) { implicitConversions = m }, false},
+		{"inverted box on target", cert, certBox, func(m map[string]HashSet[string]) { invertedImplicitConversions = m }, false},
+		{"inverted box on source", certBox, cert, func(m map[string]HashSet[string]) { invertedImplicitConversions = m }, false},
+		{"indirect box on target", cert, certBox, func(m map[string]HashSet[string]) { indirectImplicitConversions = m }, false},
+
+		// The control: a production x production STRUCTURAL pair is not the boxing route, the
+		// generator really would host an operator on a closed type, and the fallback must fire.
+		{"structural production pair still falls back", cert, opts, func(m map[string]HashSet[string]) { implicitConversions = m }, true},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			implicitConversions = make(map[string]HashSet[string])
+			invertedImplicitConversions = make(map[string]HashSet[string])
+			indirectImplicitConversions = make(map[string]HashSet[string])
+			numericConversions = make(map[string]map[string]string)
+			indirectNumericConversions = make(map[string]map[string]string)
+
+			seeded := map[string]HashSet[string]{testCase.source: NewHashSet([]string{testCase.target})}
+			testCase.into(seeded)
+
+			if got := recordsRequireProductionMutation(productionClass, productionPackage); got != testCase.want {
+				t.Errorf("recordsRequireProductionMutation with %s -> %s = %v, want %v",
+					testCase.source, testCase.target, got, testCase.want)
+			}
+		})
+	}
+}
