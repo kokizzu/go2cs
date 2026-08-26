@@ -19290,4 +19290,29 @@ already reads only rows. The anti-laundering clause carries over verbatim: an ex
 mechanism is later implemented (or whose oracle is fixed upstream) REJOINS the denominator the
 day the evidence changes, exactly as `chan-direction` retired the other way.
 
+## RULING (owner, 2026-08-26) — the campaign's horizon extends to THREE-PLATFORM PARITY: 100% test validation on Windows, Linux and Darwin before leaving Go 1.24
+
+Ruled the night 1.23.12.1 published (175/208 = 84.1% honest on Windows). The goal: every platform
+reaches 100% of its own implementable denominator, with its own disclosure ledger — disclosures
+and ruled impossibilities withstanding, exactly as the Windows march defines them.
+
+**Sequencing is conditional on measured arc speed, not preference:**
+- Linux/Darwin parity arcs that move QUICKLY bank on 1.23.12, BEFORE the 1.24 corpus migration.
+- Arcs that will take a while do not gate the hop: 1.24 proceeds after Windows-100%, and parity
+  work continues on 1.24.
+- Either way, **parity is a 1.24-era exit criterion**.
+
+**What this queues immediately:**
+1. **A Linux seam-ledger re-measure at current master** before pricing the parity arc — the
+   ledger (R1 Stat_t by-address, R2 exec wall, R4 rawSyscallNoError, R5 sockaddr, W1b mmap, W6
+   cpu caps) predates weeks of arcs, and the Windows socket wall's silent collapse is the
+   standing precedent for why prices are re-measured, never carried.
+2. **The Darwin run layer** (FINDING-darwin-run-layer; linux's syscall keystone is the template)
+   is the LONG POLE — it gates every Darwin row and should start early, in parallel with the
+   Windows tail, regardless of which side of the hop Darwin parity lands on.
+3. **The per-OS roster mechanics ruling** (held since the four Linux-proven rows) becomes part of
+   this goal's design: per-OS honest denominators, per-OS disclosure ledgers, and the roster
+   shape that reports all three without averaging — building on the existing linux-annotation
+   convention.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
