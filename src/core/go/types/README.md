@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-557%2F557_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.0/go.types.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/go/types@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/go/types) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/go/types)
+[![Tests](https://img.shields.io/badge/Tests-557%2F557_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.1/go.types.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/go/types@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/go/types) [![Source](https://img.shields.io/badge/Source-@1.23.12.1-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.1/src/core/go/types)
 
 Package types declares the data types and implements the algorithms for type-checking of Go packages. Use \[Config.Check] to invoke the type checker for a package. Alternatively, create a new type checker with \[NewChecker] and invoke it incrementally by calling \[Checker.Files].
 

@@ -3,7 +3,7 @@
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
 [![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@v0.16.0-00ADD8?logo=go)](https://pkg.go.dev/golang.org/x/text@v0.16.0/unicode/norm)\
-[![Source](https://img.shields.io/badge/Source-@v0.16.0-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/vendor/golang.org/x/text/unicode/norm) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/vendor/golang.org/x/text/unicode/norm)
+[![Source](https://img.shields.io/badge/Source-@v0.16.0-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/vendor/golang.org/x/text/unicode/norm) [![Source](https://img.shields.io/badge/Source-@1.23.12.1-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.1/src/core/vendor/golang.org/x/text/unicode/norm)
 
 Package norm contains types and functions for normalizing Unicode strings.
 

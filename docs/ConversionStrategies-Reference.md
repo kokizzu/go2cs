@@ -5343,6 +5343,56 @@ it, which is what a built-in is handed. (Guarded by the `ClearBuiltinShadow` beh
 extended with `clear` over an array-element slice, a struct-with-array-field slice, and an
 array-of-arrays element, each written to after the clear and output-compared vs `go run`.)
 
+### A map READ of a shape-carrying element supplies the zero from the CALL SITE
+
+The sixth instance of the zero-value-construction class, and the last emission path that had no seat
+for it. Go's read of an ABSENT key — every read of a nil map included — yields the element type's
+zero value, and for `[N]T` that zero is N zeroed elements. golib's `map<TKey, TValue>` indexer
+answered `default(TValue)`, and `default(array<T>)` has **length zero**, so the first index into a
+missed entry panicked `index out of range [0] with length 0` where Go reads a zero:
+
+```go
+// html/escape.go — entity2 is map[string][2]rune
+if x := entity2[string(entityName)]; x[0] != 0 {
+```
+
+That is not an edge path. A miss is the NORMAL outcome for any `&…` run that is not a two-rune
+entity, so `html`'s `TestUnescape` died on ordinary input (the package measured 2 of 3).
+
+The shape cannot come from the map. It is a property of the Go map TYPE, and neither
+`map<TKey, TValue>` nor a `default` (nil) one carries it — reading it off an existing entry would
+answer only for a POPULATED map and guess for an empty or nil one. The READ SITE always knows it
+statically, so the same ladder every declaration site uses (`zeroValueInitializer` /
+`arrayZeroValueArgs`) is threaded into a golib indexer overload that invokes the factory **only on a
+miss**; the emitted lambda is non-capturing, so it is cached and a HIT costs nothing:
+
+```go
+x := entity2["notthere"]              // len 2, both runes 0
+n := nested["zzz"]                    // map[string][2][3]int — inner lengths survive too
+z, ok := entity2["alsomissing"]       // comma-ok form
+v := nilMap[7]                        // quadMap is map[int][4]byte, nil — len 4
+```
+```csharp
+var x = entity2[notthereˢ, () => new array<rune>(2)].Clone();
+var n = nested[zzzˢ, () => new array<array<nint>>(2, () => new(3))].Clone();
+var (z, ok) = entity2[alsomissingˢ, () => new array<rune>(2), ꟷ];
+var v = nilMap[7, () => new array<byte>(4)].Clone();
+```
+
+All three map surfaces answer it, so this is one rule rather than three: `map<TKey, TValue>` declares
+the two overloads, go2cs-gen's `IMapTypeTemplate` forwards them for a NAMED map type, and
+`IMap<TKey, TValue>` carries them as default members for a map-cored type parameter. Two exclusions
+keep the emission unchanged where it is already right — a NAMED array element (its wrapper allocates
+its backing lazily from its own known size, the same exclusion `arrayElemFactory` documents), and an
+assignment TARGET, which carries a value and needs no zero. The A/B footprint over the whole
+converted standard library is **one line**, `html/escape.cs:153` — the crash site itself.
+
+(Guarded by the `MapArrayValueZero` behavioral test: plain and comma-ok reads, hit and miss, a
+nested element, a named map type read both nil and empty, an unnamed map read both nil and empty,
+and a store-then-read control, all output-compared vs `go run`. Failing-first proof: transpiled with
+the pre-fix converter the same program panics `index out of range [0] with length 0` at
+`array.cs:284` — the html signature exactly.)
+
 ### A named slice wrapper's non-generic `ISlice.Append` is an EXPLICIT implementation
 
 The generated wrapper for `type S []E` implements both halves of the golib slice surface, and both
@@ -13353,6 +13403,10 @@ copy(b, ab[:])                        // squeeze
 — purely managed storage on both sides. A `byte[]` view over a `uint64[]` has no managed spelling (the same fact that made `crypto/subtle`'s `words()` — a `uintptr[]` view over a `byte[]` — hand-owned), so `pointerReinterpretManagedSource` excludes pointer-to-ARRAY targets and the site keeps the raw-address route: `(ж<array<byte>>)(uintptr)(new unsafe.Pointer(Ꮡd.of(state.Ꮡa)))`. That box is fine as an *address*; the defect is what happens when it is **dereferenced**. `~ab` reads an `array<byte>` STRUCT — a backing-store REFERENCE plus bounds — out of the keccak state's own DATA, i.e. fabricates a managed reference, and the first use of it is an `AccessViolationException` inside `slice<byte>`'s constructor that kills the process. **`crypto/tls` reached it on every TLS 1.3 ClientHello** (`mlkem768.NewKeyFromSeed → kemKeyGen → sha3.Sum512`), where it claimed 10 of the package's 17 remaining divergences.
 
 **The emission is not wrong** -- there is no correct alternative, so the site is hand-owned (`src/core/vendor/golang.org/x/crypto/sha3/xor.cs`, `[module: GoManualConversion]`), and the remedy is `crypto/subtle`'s: `MemoryMarshal.AsBytes` over the array's own span is a genuine ALIASING view of the same backing storage, so the absorb's XOR lands in the real state and the squeeze reads it. Go's `cpu.IsBigEndian` branch is left exactly as converted; only the reinterpreting branch changes. (Guarded by `GolibTests.Sha3ReinterpretVectorTests` -- FIPS-202 vectors plus lengths straddling SHA3-256's 136-byte rate and an unaligned sub-slice, checked against the OS SHA-3 implementation; the vendored package has no `_test.go` in GOROOT and is not importable from a behavioral test, and an MSTest tier binding a converted package follows `GenericTests`, which references `core/sort`. Neutering the fix is a RUN control: the auto-converted `xor.cs` does not merely fail the vectors, it KILLS the test host with the AccessViolation above.)
+
+**The same fork one RANK up — a NESTED array view, and why the native-array-view arc does not reach it (`internal/chacha8rand.setup`/`block_generic`, 2026-08-25).** sha3's is a `[200]byte` view of a `[25]uint64`: same rank, different element type. chacha8rand opens one `[32]uint64` allocation as `(*[16][4]uint32)(unsafe.Pointer(buf))` and that again as `(*[16][2]uint64)(unsafe.Pointer(b32))` — different element type **and** different RANK. The failure is the mild end of the fabrication: the buffer is ZEROED at the first call, so the `array<array<uint32>>` struct read out of it has a null backing, i.e. **length zero**, and the first index panics `index out of range [0] with length 0` rather than access-violating. `TestBlockGeneric` is the whole of the package's 1-of-4 gap, and the panic site — golib's `array<T>.get_Item` — is the same one `html`'s map-miss produced from a completely unrelated root, which is worth stating plainly: **`get_Item` is the DETECTOR of an unshaped array, never the defect**; two correlated crashes at one golib line were two different producers.
+
+**This one does not fall to `DESIGN-native-array-view.md`** (RATIFIED, §3 emission work HELD pending the provenance amendment) even when that arc lands, and the reason generalizes: a native-backed `array<T>` can hold blittable elements in raw bytes, and `array<uint32>` is not blittable — a `[16][4]uint32` view needs sixteen `array<uint32>` STRUCTS, which is exactly the thing that cannot live in the buffer. So the package is ROUTED AROUND rather than waiting on the arc: `manualConversionFuncs["internal/chacha8rand"]` suppresses both functions and `chacha8_impl.cs` provides them, taking `MemoryMarshal.Cast<uint64, uint>` over the array's own span — the sha3/subtle remedy, one rank up. `block` was already hand-owned there (Go implements it in ASSEMBLY on amd64/arm64) in a scratch-and-pack shape, and the new `block_generic` computes IN PLACE through the aliasing view using the package's own auto-converted `qr`, so `TestBlockGeneric` still compares two implementations that share no code — what it newly proves is that the aliasing view WRITES THROUGH. Measured: `internal/chacha8rand` **3 → 4 of 4, `"status": "validated"`, 0 disclosed**. The seam's kernel-free reproduction is preserved directly in golib by `GolibTests.ArrayShapeReinterpretTests`, which measures the raw route's length-zero answer and pins the span view's write-through in both directions — so routing the package around costs the arc nothing, and the witness can no longer be fixed away by a conversion change.
 
 **The same fork with a LOUD failure instead of a silent one — a reinterpret to a LARGER struct, and an assert that kills the process (`reflect.rtype.FieldByIndex`, 2026-08-19).** Every entry above turns on a fabricated managed reference; this one is decided a step earlier, by SIZE, and it is worth stating separately because the remedy is cheaper and the diagnosis is misleading in a new way. Go's `(*structType)(unsafe.Pointer(t))` re-views an `*rtype` as the struct-kind specialization that begins with the same `abi.Type`. `ReinterpretAliasesStorage` requires the destination to FIT in the source, and `structType` is strictly LARGER than `rtype` — it carries `PkgPath` and `Fields` past the embedded `Type` — so the alias arm never engages and the pair takes the raw-address route. The derived box therefore names storage that is not a `structType`, and the descent `Ꮡt.of(structType.ᏑType)` yields an `abi.Type` with no managed cargo: `sysType` is null. The very first statement of the auto body, `toType(&t.Type)`, then trips `canonType`'s synthType-was-bypassed assertion — a `System.Diagnostics.Debug.Assert`, which in a Debug build **terminates the process** (`0x80131623`).
 

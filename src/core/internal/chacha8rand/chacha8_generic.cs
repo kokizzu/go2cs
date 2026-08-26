@@ -54,73 +54,12 @@ using go.@internal;
 
 partial class chacha8rand_package {
 
-// setup sets up 4 ChaCha8 blocks in b32 with the counter and seed.
-// Note that b32 is [16][4]uint32 not [4][16]uint32: the blocks are interlaced
-// the same way they would be in a 4-way SIMD implementations.
-internal static void setup(ref array<uint64> seed, [GoArrayDims(16, 4)] ж<array<array<uint32>>> Ꮡb32, uint32 counter) {
-    // Convert to uint64 to do half as many stores to memory.
-    var b = (ж<array<array<uint64>>>)(uintptr)(new @unsafe.Pointer(Ꮡb32));
-    // Constants; same as in ChaCha20: "expand 32-byte k"
-    b.Value[0][0] = 0x61707865_61707865UL;
-    b.Value[0][1] = 0x61707865_61707865UL;
-    b.Value[1][0] = 0x3320646e_3320646eUL;
-    b.Value[1][1] = 0x3320646e_3320646eUL;
-    b.Value[2][0] = 0x79622d32_79622d32UL;
-    b.Value[2][1] = 0x79622d32_79622d32UL;
-    b.Value[3][0] = 0x6b206574_6b206574UL;
-    b.Value[3][1] = 0x6b206574_6b206574UL;
-    // Seed values.
-    uint64 x64 = default!;
-    uint32 x = default!;
-    x = (uint32)seed[0];
-    x64 = (uint64)(((uint64)x << (int)(32)) | (uint64)x);
-    b.Value[4][0] = x64;
-    b.Value[4][1] = x64;
-    x = (uint32)((seed[0] >> (int)(32)));
-    x64 = (uint64)(((uint64)x << (int)(32)) | (uint64)x);
-    b.Value[5][0] = x64;
-    b.Value[5][1] = x64;
-    x = (uint32)seed[1];
-    x64 = (uint64)(((uint64)x << (int)(32)) | (uint64)x);
-    b.Value[6][0] = x64;
-    b.Value[6][1] = x64;
-    x = (uint32)((seed[1] >> (int)(32)));
-    x64 = (uint64)(((uint64)x << (int)(32)) | (uint64)x);
-    b.Value[7][0] = x64;
-    b.Value[7][1] = x64;
-    x = (uint32)seed[2];
-    x64 = (uint64)(((uint64)x << (int)(32)) | (uint64)x);
-    b.Value[8][0] = x64;
-    b.Value[8][1] = x64;
-    x = (uint32)((seed[2] >> (int)(32)));
-    x64 = (uint64)(((uint64)x << (int)(32)) | (uint64)x);
-    b.Value[9][0] = x64;
-    b.Value[9][1] = x64;
-    x = (uint32)seed[3];
-    x64 = (uint64)(((uint64)x << (int)(32)) | (uint64)x);
-    b.Value[10][0] = x64;
-    b.Value[10][1] = x64;
-    x = (uint32)((seed[3] >> (int)(32)));
-    x64 = (uint64)(((uint64)x << (int)(32)) | (uint64)x);
-    b.Value[11][0] = x64;
-    b.Value[11][1] = x64;
-    // Counters.
-    if (goarch.BigEndian){
-        b.Value[12][0] = (uint64)(((uint64)(counter + 0) << (int)(32)) | (uint64)(counter + 1));
-        b.Value[12][1] = (uint64)(((uint64)(counter + 2) << (int)(32)) | (uint64)(counter + 3));
-    } else {
-        b.Value[12][0] = (uint64)((uint64)(counter + 0) | ((uint64)(counter + 1) << (int)(32)));
-        b.Value[12][1] = (uint64)((uint64)(counter + 2) | ((uint64)(counter + 3) << (int)(32)));
-    }
-    // Zeros.
-    b.Value[13][0] = 0;
-    b.Value[13][1] = 0;
-    b.Value[14][0] = 0;
-    b.Value[14][1] = 0;
-    b.Value[15][0] = 0;
-    b.Value[15][1] = 0;
-}
+// go2cs generated this placeholder — func setup is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// Convert to uint64 to do half as many stores to memory.
+// Constants; same as in ChaCha20: "expand 32-byte k"
+// Counters.
+// Zeros.
 internal static void _ᴛ1() {
     // block and block_generic must have same type
     var x = block;
@@ -128,75 +67,18 @@ internal static void _ᴛ1() {
     _ = x;
 }
 
-// block_generic is the non-assembly block implementation,
-// for use on systems without special assembly.
-// Even on such systems, it is quite fast: on GOOS=386,
-// ChaCha8 using this code generates random values faster than PCG-DXSM.
-internal static void block_generic([GoArrayDims(4)] ж<array<uint64>> Ꮡseed, [GoArrayDims(32)] ж<array<uint64>> Ꮡbuf, uint32 counter) {
-    ref var buf = ref Ꮡbuf.DerefOrNull();
+// go2cs generated this placeholder — func block_generic is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var b = (ж<array<array<uint32>>>)(uintptr)(new @unsafe.Pointer(Ꮡbuf));
-    setup(ref (Ꮡseed).DerefOrNull(), b, counter);
-    foreach (var (i, _) in b.Value[0]) {
-        // Load block i from b[*][i] into local variables.
-        var b0 = b.Value[0][i];
-        var b1 = b.Value[1][i];
-        var b2 = b.Value[2][i];
-        var b3 = b.Value[3][i];
-        var b4 = b.Value[4][i];
-        var b5 = b.Value[5][i];
-        var b6 = b.Value[6][i];
-        var b7 = b.Value[7][i];
-        var b8 = b.Value[8][i];
-        var b9 = b.Value[9][i];
-        var b10 = b.Value[10][i];
-        var b11 = b.Value[11][i];
-        var b12 = b.Value[12][i];
-        var b13 = b.Value[13][i];
-        var b14 = b.Value[14][i];
-        var b15 = b.Value[15][i];
-        // 4 iterations of eight quarter-rounds each is 8 rounds
-        for (nint round = 0; round < 4; round++) {
-            (b0, b4, b8, b12) = qr(b0, b4, b8, b12);
-            (b1, b5, b9, b13) = qr(b1, b5, b9, b13);
-            (b2, b6, b10, b14) = qr(b2, b6, b10, b14);
-            (b3, b7, b11, b15) = qr(b3, b7, b11, b15);
-            (b0, b5, b10, b15) = qr(b0, b5, b10, b15);
-            (b1, b6, b11, b12) = qr(b1, b6, b11, b12);
-            (b2, b7, b8, b13) = qr(b2, b7, b8, b13);
-            (b3, b4, b9, b14) = qr(b3, b4, b9, b14);
-        }
-        // Store block i back into b[*][i].
-        // Add b4..b11 back to the original key material,
-        // like in ChaCha20, to avoid trivial invertibility.
-        // There is no entropy in b0..b3 and b12..b15
-        // so we can skip the additions and save some time.
-        b.Value[0][i] = b0;
-        b.Value[1][i] = b1;
-        b.Value[2][i] = b2;
-        b.Value[3][i] = b3;
-        b.Value[4][i] += b4;
-        b.Value[5][i] += b5;
-        b.Value[6][i] += b6;
-        b.Value[7][i] += b7;
-        b.Value[8][i] += b8;
-        b.Value[9][i] += b9;
-        b.Value[10][i] += b10;
-        b.Value[11][i] += b11;
-        b.Value[12][i] = b12;
-        b.Value[13][i] = b13;
-        b.Value[14][i] = b14;
-        b.Value[15][i] = b15;
-    }
-    if (goarch.BigEndian) {
-        // On a big-endian system, reading the uint32 pairs as uint64s
-        // will word-swap them compared to little-endian, so we word-swap
-        // them here first to make the next swap get the right answer.
-        foreach (var (i, x) in buf) {
-            buf[i] = (uint64)((x >> (int)(32)) | (x << (int)(32)));
-        }
-    }
-}
+// Load block i from b[*][i] into local variables.
+// 4 iterations of eight quarter-rounds each is 8 rounds
+// Store block i back into b[*][i].
+// Add b4..b11 back to the original key material,
+// like in ChaCha20, to avoid trivial invertibility.
+// There is no entropy in b0..b3 and b12..b15
+// so we can skip the additions and save some time.
+// On a big-endian system, reading the uint32 pairs as uint64s
+// will word-swap them compared to little-endian, so we word-swap
+// them here first to make the next swap get the right answer.
 
 // qr is the (inlinable) ChaCha8 quarter round.
 internal static (uint32 _a, uint32 _b, uint32 _c, uint32 _d) qr(uint32 a, uint32 b, uint32 c, uint32 d) {

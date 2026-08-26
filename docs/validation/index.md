@@ -95,6 +95,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `hash/crc64` | [`hash.crc64.md`](current/hash.crc64.md) | [`src/core/hash/crc64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/crc64) |
 | `hash/fnv` | [`hash.fnv.md`](current/hash.fnv.md) | [`src/core/hash/fnv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/fnv) |
 | `hash/maphash` | [`hash.maphash.md`](current/hash.maphash.md) | [`src/core/hash/maphash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/maphash) |
+| `html` | [`html.md`](current/html.md) | [`src/core/html`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html) |
 | `html/template` | [`html.template.md`](current/html.template.md) | [`src/core/html/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/html/template) |
 | `image` | [`image.md`](current/image.md) | [`src/core/image`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image) |
 | `image/color` | [`image.color.md`](current/image.color.md) | [`src/core/image/color`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/image/color) |
@@ -105,6 +106,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `index/suffixarray` | [`index.suffixarray.md`](current/index.suffixarray.md) | [`src/core/index/suffixarray`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/index/suffixarray) |
 | `internal/abi` | [`internal.abi.md`](current/internal.abi.md) | [`src/core/internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/abi) |
 | `internal/buildcfg` | [`internal.buildcfg.md`](current/internal.buildcfg.md) | [`src/core/internal/buildcfg`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/buildcfg) |
+| `internal/chacha8rand` | [`internal.chacha8rand.md`](current/internal.chacha8rand.md) | [`src/core/internal/chacha8rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/chacha8rand) |
 | `internal/coverage/cformat` | [`internal.coverage.cformat.md`](current/internal.coverage.cformat.md) | [`src/core/internal/coverage/cformat`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cformat) |
 | `internal/coverage/cmerge` | [`internal.coverage.cmerge.md`](current/internal.coverage.cmerge.md) | [`src/core/internal/coverage/cmerge`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cmerge) |
 | `internal/coverage/pods` | [`internal.coverage.pods.md`](current/internal.coverage.pods.md) | [`src/core/internal/coverage/pods`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/pods) |
@@ -118,6 +120,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/godebugs` | [`internal.godebugs.md`](current/internal.godebugs.md) | [`src/core/internal/godebugs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/godebugs) |
 | `internal/gover` | [`internal.gover.md`](current/internal.gover.md) | [`src/core/internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/gover) |
 | `internal/itoa` | [`internal.itoa.md`](current/internal.itoa.md) | [`src/core/internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) |
+| `internal/platform` | [`internal.platform.md`](current/internal.platform.md) | [`src/core/internal/platform`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/platform) |
 | `internal/profile` | [`internal.profile.md`](current/internal.profile.md) | [`src/core/internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) |
 | `internal/reflectlite` | [`internal.reflectlite.md`](current/internal.reflectlite.md) | [`src/core/internal/reflectlite`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/reflectlite) |
 | `internal/saferio` | [`internal.saferio.md`](current/internal.saferio.md) | [`src/core/internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) |

@@ -181,7 +181,7 @@ internal static void compositeMapValueAndKey() {
     var a = new nint[]{1, 2, 3}.array();
     var mv = new map<@string, array<nint>>{["x"u8] = a.Clone()};
     a[0] = 99;
-    fmt.Println(mapValueˢ, mv["x"u8]);
+    fmt.Println(mapValueˢ, mv["x"u8, () => new array<nint>(3)]);
     var k = new nint[]{1, 2}.array();
     var mk = new map<array<nint>, @string>{[k.Clone()] = "kv"u8};
     k[0] = 99;
