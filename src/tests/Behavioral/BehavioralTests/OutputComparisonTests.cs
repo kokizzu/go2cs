@@ -848,6 +848,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
 
     [TestMethod]
+    public void CheckMultiValueReturnOrder() => CheckTarget("MultiValueReturnOrder");
+
+    [TestMethod]
     public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");
 
     [TestMethod]

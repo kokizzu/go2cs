@@ -115,7 +115,7 @@ public static (any key, error err) ParsePKCS8PrivateKey(slice<byte> der) {
             }
         }
         var (ᴛ1, ᴛ2) = ecdh.X25519().NewPrivateKey(curvePrivateKey);
-        return (~ᴛ1, ᴛ2);
+        return (ᴛ1.OrTypedNil(), ᴛ2);
     }
     default: {
         return (default!, fmt.Errorf("x509: PKCS#8 wrapping contained private key with unknown algorithm: %v"u8, privKey.Algo.Algorithm));

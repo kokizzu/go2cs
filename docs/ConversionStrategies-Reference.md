@@ -2829,6 +2829,35 @@ box to the same value the store did, or it matches no entry. None of the three h
 today (every `panic` argument in the standard library is an address-of composite, so the census is
 zero), but they are the same boundary and the guard exercises all three.
 
+A **FORWARDED multi-value return** is one more slot in that enumeration, and it was the one the
+enumeration missed. `return f()` where `f` returns `(*T, error)` and the function's own results are
+`(any, error)` cannot convert in place — C# tuple conversions do not consult user conversions
+element-wise — so the call is deconstructed into temporaries and each element converts on its own.
+Routing the `any` element through the ordinary interface-conversion machinery is wrong precisely
+because `any` has **no adapter to hold the box**: with no arm to take, that route falls through to
+its pointer-DEREF prefix and boxes a copy of the pointee. The element already *is* the box, so it
+takes the boundary treatment directly:
+
+```go
+func parsePublicKey(…) (any, error) {
+    …
+    return ecdh.X25519().NewPublicKey(der)   // (*ecdh.PublicKey, error) into (any, error)
+}
+```
+```csharp
+var (ᴛ1, ᴛ2) = ecdh.X25519().NewPublicKey(der);
+return (ᴛ1.OrTypedNil(), ᴛ2);               // NOT (~ᴛ1, ᴛ2) — that boxes a PublicKey VALUE
+```
+
+`crypto/x509`'s `parsePublicKey` and `parsePKCS8PrivateKey` are the corpus sites — the only two, and
+the deref is what made `%T`, `reflect.TypeOf` and every `case *ecdh.PublicKey` type-switch arm on the
+result disagree with Go, since `case ж<ecdhꓸPublicKey>` can never match a boxed value. The
+ASSIGNMENT sibling of this arm (`c, err = sd.dialTCP(…)`) is not affected: its target list is
+screened for *non-empty* interfaces only, so an `any` target never reaches the conversion machinery
+there at all. (Guarded by the `MultiValueReturnOrder` behavioral test's identity half — a
+`(*thing, error)` call forwarded into `(any, error)`, then read back through a type switch and both
+assertions; before the fix the switch takes the `case thing` arm and the `*thing` assertion panics.)
+
 The scope is a genuine `*T` (a `types.Pointer`). `unsafe.Pointer` is a Basic and renders as a
 struct, and a NAMED pointer type renders as its generated wrapper struct — neither can be a null
 reference, so neither has anything to carry. An address-of (`&x`), a `new(T)`, a `(*T)(nil)` and a
@@ -3227,6 +3256,48 @@ var (ᴛ1, ᴛ2) = Ꮡsd.dialTCP(ctx, laΔ1, raΔ1);
 ```
 
 The arm fires only for a statement-position deconstruction (one call RHS, several LHS) where some non-empty-interface target's tuple component is a non-identical, non-interface type; all other deconstructions keep the direct form. (Guarded by the `InterfaceCasting` extension `makeCounter` — a `(*Counter, error)` call deconstructed into an `Incrementer` — runtime-verified against Go.)
+
+### A multi-value RETURN reads its plain operands AFTER its calls
+
+The read-after-write hazard above has a **return-statement** sibling, and it arrives from the opposite direction: there Go's ordering is fixed and C#'s sequential emission breaks it; here Go's ordering is *free* and C#'s tuple literal fixes it the other way.
+
+Go's spec orders only a return statement's **calls** — "all function calls, method calls, receive operations, and binary logical operations are evaluated in lexical left-to-right order" — and leaves its plain operands deliberately unordered against them. gc resolves that freedom the same way every time, because its order pass rewrites the statement: each call is spilled to a temporary **first**, and the result list is then assembled from those temporaries and whatever plain operands remain. So under gc every plain operand is read *after* every call. A C# tuple literal has no such freedom — it evaluates strictly left to right — so a plain operand written before a mutating call is copied **before** the mutation:
+
+```go
+func ParseOID(oid string) (OID, error) {
+    var o OID
+    return o, o.unmarshalOIDText(oid)   // gc: the call runs, THEN o is read
+}
+```
+```csharp
+public static (OID, error) ParseOID(@string oid) {
+    OID o = default!;
+    var ᴛ1 = o.unmarshalOIDText(oid);   // gc's own rewrite, emitted
+    return (o, ᴛ1);
+}
+```
+
+Without the spill this emits `return (o, o.unmarshalOIDText(oid));`, which copies the **empty** `o` and only then fills the original — so `crypto/x509`'s `ParseOID` returned a zero-length OID beside a nil error, and every parse "succeeded" with no bytes. Nothing about it is visible at compile time: both sides compile, both return two values, and only the *content* of the first differs.
+
+The spill fires only where the ordering is **observable** — where a later operand's call receives an earlier operand's storage *by address*, the only way it can write what that operand reads. Three shapes hand a call that address:
+
+| Shape | Example | Storage the call can write |
+|---|---|---|
+| pointer-receiver method on a value | `return o, o.fill()` | `o` itself — the call takes `&o` |
+| explicit address argument | `return n, raise(&n)` | `n` itself |
+| a pointer operand handed over | `return c.n, c.bump()`, `c` a `*counter` | `*c`, so a read *through* `c` observes it |
+
+Whether the read and the write actually *meet* is decided by comparing **access paths** — a root variable (`types.Object`, exactly as in `lhsReusedInLaterRhs`, so a same-named but distinct variable is never a false positive) plus the hops from it to the storage in question, where a field or element hop stays *inside* the previous location and a deref *leaves* it. Two locations conflict when they share a root, agree on every hop they both have, and the longer path's extra hops contain no deref.
+
+A root plus a single "indirect" flag is not enough, and the corpus says so. `net/http`'s `return n.handler, n.pattern.String(), n.pattern, matches` reads storage inside `*n` while the call writes `*(n.pattern)`; the flag model reads both as one location — "something behind `n`" — and spills a call that provably cannot touch what the first operand reads. The paths diverge at `.handler` versus `.pattern`, so they do not conflict and nothing spills. The model holds the case one hop over just as firmly: `return nd.pat.n, nd.pat.bump()` reads *through* the very pointer the call writes through, the write path is a prefix of the read path with no deref between them, and it spills. Where a hop cannot be spelled exactly — a field promoted through embedding — the path is **truncated** rather than abandoned, naming the larger enclosing location, so imprecision can only ever over-report a conflict and never miss one.
+
+Every call-bearing operand at or **below** the hazardous index spills, not merely the hazardous one: the spec *does* fix the calls' order among themselves, so spilling `b.bump()` out of `return b.n, side(), b.bump()` while leaving `side()` in the tuple would run bump first. A channel **receive** spills with them, since the spec's sentence orders receives alongside calls. A type conversion and a pure builtin (`len(o.der)`) do not: both are calls syntactically and reads semantically, gc spills neither, and leaving them in the tuple is what puts their reads after the spilled calls — which is exactly where gc puts them. The temporaries are numbered from the file-monotonic `tupleTempIndex` the converter's other multi-value expansions already share, so two spills in one scope cannot collide.
+
+The scope is as much of the rule as the spill is: a rule that spilled every call-bearing operand would also be correct, and would rewrite most of the corpus for no correctness gain. Four controls therefore keep the call *in* the tuple — an operand that **is** the pointer (`return c, c.bump()`; both orders yield the same pointer, and the emitted pointer is the box rather than a copy), a call on unrelated storage (`return a.n, b.bump()`), a **value**-receiver method (`return c.n, c.peek()`; the receiver is a copy, so the caller can observe nothing), and the net/http pointer-field shape above. Deliberately *not* covered, each because deciding it needs more than the statement itself: an operand that contains a call of its own (`return o.f + g(), o.mutate()` — gc spills `g()` too and reads `o.f` last, so spilling the whole operand would re-create the problem rather than fix it; no corpus site), a pointer whose **pointee no path can name** (`f(getPtr())` — the interprocedural question one step removed), aliasing through a slice or map's **backing store** (`return s[0], fill(s)`, where no address is taken at the call site at all), and a call that reaches the operand through a package-level or captured variable, which is interprocedural outright.
+
+**Corpus footprint: 2 production files** (A/B of two seeded whole-stdlib reconverts, control binary versus fixed, 10,260 files emitted per side) — `crypto/x509/oid.cs`, where the spill is the bug fix, and `runtime/symtabinl.cs`'s `return u, u.resolveInternal(pc)`, where it is emission-only (the method reads its receiver and writes nothing, so gc's order and C#'s agree on the value; the spill simply stops relying on that). Their two `package_info.cs` position maps move with them, and nothing else in the corpus does.
+
+(Guarded by the `MultiValueReturnOrder` behavioral test — all five hazard shapes, a three-operand call-order case, and the four controls, output-compared vs `go run`; before the fix every hazard reports the pre-mutation value. `returnOperandOrder.go` owns the analysis and `returnOperandOrder_test.go` pins the emission against three neuters: the rule forced off, the rule forced on everywhere, and `pathsConflict` reduced to the root-plus-indirect model — the last reporting exactly the two controls the access path exists to separate.)
 
 ### A SELECTOR left-hand side counts as a reassignment — a field swap must stay simultaneous
 

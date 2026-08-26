@@ -505,9 +505,22 @@ Go's **partial redeclaration** (`a, b := f()` where `a` already exists) reuses `
 new names, so the converter emits `var` per newly-declared element: `(frac, var e) = normalize(frac);`. A
 blank element is a discard with no `var` (`_ = fi;`).
 
+A multi-value **`return`** needs the same care from the opposite direction. Go orders a return's *calls*
+and leaves its plain operands unordered against them; gc spills every call to a temporary first, so a plain
+operand is read **after** them. A C# tuple literal reads strictly left to right, so where a later call can
+write what an earlier operand reads, the converter emits gc's own rewrite:
+
+```go
+return o, o.unmarshalOIDText(oid)   // gc: the call runs, THEN o is read
+```
+```csharp
+var ᴛ1 = o.unmarshalOIDText(oid);
+return (o, ᴛ1);
+```
+
 **Full detail:** [Reference → Multi-Assignment and Evaluation Order](ConversionStrategies-Reference.md#multi-assignment-and-evaluation-order) —
-per-element `var` mechanics, escaping/heap-boxed tuple elements, interface-converting deconstruction, and
-address-taken value locals (the `Ꮡ(value)` copy-vs-box distinction).
+per-element `var` mechanics, escaping/heap-boxed tuple elements, interface-converting deconstruction,
+address-taken value locals (the `Ꮡ(value)` copy-vs-box distinction), and the return-operand spill's scope.
 
 ---
 
