@@ -105,6 +105,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `index/suffixarray` | [`index.suffixarray.md`](current/index.suffixarray.md) | [`src/core/index/suffixarray`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/index/suffixarray) |
 | `internal/abi` | [`internal.abi.md`](current/internal.abi.md) | [`src/core/internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/abi) |
 | `internal/buildcfg` | [`internal.buildcfg.md`](current/internal.buildcfg.md) | [`src/core/internal/buildcfg`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/buildcfg) |
+| `internal/chacha8rand` | [`internal.chacha8rand.md`](current/internal.chacha8rand.md) | [`src/core/internal/chacha8rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/chacha8rand) |
 | `internal/coverage/cformat` | [`internal.coverage.cformat.md`](current/internal.coverage.cformat.md) | [`src/core/internal/coverage/cformat`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cformat) |
 | `internal/coverage/cmerge` | [`internal.coverage.cmerge.md`](current/internal.coverage.cmerge.md) | [`src/core/internal/coverage/cmerge`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cmerge) |
 | `internal/coverage/pods` | [`internal.coverage.pods.md`](current/internal.coverage.pods.md) | [`src/core/internal/coverage/pods`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/pods) |

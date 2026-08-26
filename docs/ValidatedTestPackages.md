@@ -91,19 +91,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **173 / 215 testable packages validated — 80.5%**
+> ### Phase 4 progress: **174 / 215 testable packages validated — 80.9%**
 >
-> **18,972 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **18,976 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 173 / 208 — 83.2%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 174 / 208 — 83.7%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 7 of 173 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
+> **Linux: 7 of 174 rows validated at their Linux counts** — 1,259 matching verdicts · 1 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -236,6 +236,7 @@ summed from the columns.
 | [`index/suffixarray`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/index/suffixarray) | 12 | | SAIS suffix-array construction in both 32- and 64-bit index widths, verified exhaustively over every string up to length 8 on 2- and 3-letter alphabets, plus lookup, regexp `FindAllIndex`, and gob save/restore round trips. · [proof](validation/current/index.suffixarray.md) |
 | [`internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/abi) | 2 | | Runtime ABI helpers (`FuncPC`). · [proof](validation/current/internal.abi.md) |
 | [`internal/buildcfg`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/buildcfg) | 3 | | Toolchain build configuration — `GOARM64`/`GOAMD64` feature-level parsing and the `gogoarch` build-tag set. · [proof](validation/current/internal.buildcfg.md) |
+| [`internal/chacha8rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/chacha8rand) | 4 | | The ChaCha8 generator behind `math/rand/v2` and the runtime's per-`m` source — `TestOutput` walks the package's own vector through `Next`/`Refill`, `TestMarshal` marshals and unmarshals the state before every single draw, `TestReseed` proves reseeding moves it, and `TestBlockGeneric` compares the two block implementations word for word. That last row is the array-SHAPE reinterpret: Go's `block_generic` computes IN PLACE through `(*[16][4]uint32)(unsafe.Pointer(buf))`, a rank change no managed nested-array view can reconstruct, so it and `setup` are hand-owned over a `MemoryMarshal.Cast` alias of the same storage — kept independent of the assembly-replacing `block`, down to reusing the package's own auto-converted `qr`, so the test still compares two implementations rather than one against itself. · [proof](validation/current/internal.chacha8rand.md) |
 | [`internal/coverage/cformat`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cformat) | 2 | | Coverage report formatting — per-function and per-package percentage rollups, and the empty-package edge. · [proof](validation/current/internal.coverage.cformat.md) |
 | [`internal/coverage/cmerge`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cmerge) | 2 | | Coverage counter merging — the saturating-add merge policy and the conflicting-metadata clash path. · [proof](validation/current/internal.coverage.cmerge.md) |
 | [`internal/coverage/pods`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/pods) | 1 | | Coverage "pod" collection — grouping meta/counter data files on disk by package, over real temp-directory I/O. · [proof](validation/current/internal.coverage.pods.md) |
