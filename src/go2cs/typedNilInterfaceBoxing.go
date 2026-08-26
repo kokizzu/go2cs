@@ -117,6 +117,32 @@ func (v *Visitor) applyTypedNilPointerBox(value ast.Expr, rendered string) strin
 	return rendered + "." + TypedNilBoxAccessor
 }
 
+// applyTypedNilPointerBoxToType is applyTypedNilPointerBox for a caller that holds the value's TYPE
+// but has no AST expression for it: a tuple element DECONSTRUCTED from a multi-value call, which is
+// a temporary the converter minted rather than a node the Go source wrote. Same boundary, same two
+// mutually-exclusive treatments; only the pointer arm's null test differs, and here it has one
+// answer — pointerExprNeverRendersNull recognizes `&x`, `new(T)` and a nil conversion, and a call
+// result is none of them — so a pointer element always takes the accessor.
+//
+// The caller this exists for is visitReturnStmt's forwarded multi-value return. Its EMPTY-interface
+// elements must not go through convertToInterfaceType: `any` has no adapter to hold the box, so that
+// route falls through to the pointer-DEREF prefix and boxes a COPY OF THE POINTEE — dynamic type `T`
+// where Go says `*T`. That is this file's first property, reached by a path that had no boundary
+// treatment on it (crypto/x509 parsePublicKey / parsePKCS8PrivateKey forwarding
+// `ecdh.X25519().NewPublicKey(der)` into `(any, error)`: `%T`, reflect.TypeOf and every
+// `case *ecdh.PublicKey` type-switch arm disagreed with Go).
+func (v *Visitor) applyTypedNilPointerBoxToType(valueType types.Type, rendered string) string {
+	if rendered == "" || valueType == nil {
+		return rendered
+	}
+
+	if _, isPointer := valueType.(*types.Pointer); !isPointer {
+		return v.applyVariadicFuncBoxCast(valueType, rendered)
+	}
+
+	return rendered + "." + TypedNilBoxAccessor
+}
+
 // applyVariadicFuncBoxCast casts an already-rendered VARIADIC func value to its Go func type's C#
 // delegate so the empty-interface box carries the type Go names rather than the anonymous delegate
 // C# synthesizes for a `params` method group or literal. A no-op for every other value shape, and

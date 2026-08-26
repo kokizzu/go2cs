@@ -929,6 +929,52 @@ func (v *Visitor) renderedTypeArgs(funIdent *ast.Ident, typeArgs *types.TypeList
 	return names
 }
 
+// completedInstantiationTypeArgs renders the FULL resolved type-argument list for an explicit Go
+// instantiation whose written list is PARTIAL — fewer arguments than the emitted C# generic
+// parameter list has positions. Go allows a prefix (`Equal[Slice]` against `Equal[S ~[]E, E
+// comparable]`, slices' own iter_test) and infers the rest through core types; C# has no partial
+// instantiation at all, so the written prefix emits as `Equal<Slice>` against a two-parameter
+// method — CS0305, "requires 2 type arguments". go/types already resolved the whole list into
+// info.Instances keyed by the base's name ident.
+//
+// Returns nil — leaving the written list to render verbatim, byte for byte as before — whenever
+// the instantiation is COMPLETE (the overwhelmingly common case), the base is not a generic
+// function, or nothing was recorded. writtenCount is the count AFTER erasure filtering
+// (explicitTypeArgsAfterErasure), and the rendered list is filtered the same way, so an erased
+// pointer-core position cannot make a complete instantiation look partial.
+func (v *Visitor) completedInstantiationTypeArgs(x ast.Expr, writtenCount int) []string {
+	var funIdent *ast.Ident
+
+	switch e := x.(type) {
+	case *ast.Ident:
+		funIdent = e
+	case *ast.SelectorExpr:
+		funIdent = e.Sel
+	}
+
+	if funIdent == nil {
+		return nil
+	}
+
+	if _, isFunc := v.info.ObjectOf(funIdent).(*types.Func); !isFunc {
+		return nil
+	}
+
+	inst, ok := v.info.Instances[funIdent]
+
+	if !ok || inst.TypeArgs == nil {
+		return nil
+	}
+
+	rendered := v.renderedTypeArgs(funIdent, inst.TypeArgs)
+
+	if len(rendered) <= writtenCount {
+		return nil
+	}
+
+	return rendered
+}
+
 func (v *Visitor) getConstraintType(typeConstraint *types.TypeParam) types.Type {
 	if typeConstraint == nil {
 		return nil

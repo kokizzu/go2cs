@@ -11,6 +11,7 @@ import (
 	"go/ast"
 	"go/types"
 	"strconv"
+	"strings"
 )
 
 func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprContext) string {
@@ -185,15 +186,35 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 		xContext := DefaultLambdaContext()
 		xContext.suppressGenericTypeArgs = true
 
+		// The BARE-IDENT form of the same suppression: a same-package generic function referenced
+		// as a value appends its resolved instantiation in convIdent, and this branch appends the
+		// written `<Index>` — two copies would emit `Equal<Slice, E><Slice>`.
+		xIdentContext := DefaultIdentContext()
+		xIdentContext.suppressGenericTypeArgs = true
+		xContexts := []ExprContext{xContext, xIdentContext}
+
 		// A single written type argument pinning an ERASED (pointer-core) position — the partial
 		// instantiation `clone[*thing](…)` — drops entirely: the position no longer exists in the
 		// emitted C# generic parameter list, and the remaining parameters infer from the value
 		// arguments (see explicitTypeArgsAfterErasure).
-		if kept, erased := v.explicitTypeArgsAfterErasure(indexExpr.X, []ast.Expr{indexExpr.Index}); erased && len(kept) == 0 {
-			return fmt.Sprintf("%s%s", v.convExpr(indexExpr.X, []ExprContext{xContext}), ptrDeref)
+		writtenCount := 1
+
+		if kept, erased := v.explicitTypeArgsAfterErasure(indexExpr.X, []ast.Expr{indexExpr.Index}); erased {
+			if len(kept) == 0 {
+				return fmt.Sprintf("%s%s", v.convExpr(indexExpr.X, xContexts), ptrDeref)
+			}
+
+			writtenCount = len(kept)
 		}
 
-		return fmt.Sprintf("%s%s<%s>", v.convExpr(indexExpr.X, []ExprContext{xContext}), ptrDeref, v.convExpr(indexExpr.Index, contexts))
+		// A PARTIAL Go instantiation of a generic FUNCTION completes from the resolved instance —
+		// C# has no partial instantiation (CS0305). See completedInstantiationTypeArgs; a complete
+		// written list returns nil and the written argument renders verbatim.
+		if completed := v.completedInstantiationTypeArgs(indexExpr.X, writtenCount); completed != nil {
+			return fmt.Sprintf("%s%s<%s>", v.convExpr(indexExpr.X, xContexts), ptrDeref, strings.Join(completed, ", "))
+		}
+
+		return fmt.Sprintf("%s%s<%s>", v.convExpr(indexExpr.X, xContexts), ptrDeref, v.convExpr(indexExpr.Index, contexts))
 	}
 
 	index := v.convExpr(indexExpr.Index, contexts)

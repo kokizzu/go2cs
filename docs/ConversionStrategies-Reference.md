@@ -2829,6 +2829,35 @@ box to the same value the store did, or it matches no entry. None of the three h
 today (every `panic` argument in the standard library is an address-of composite, so the census is
 zero), but they are the same boundary and the guard exercises all three.
 
+A **FORWARDED multi-value return** is one more slot in that enumeration, and it was the one the
+enumeration missed. `return f()` where `f` returns `(*T, error)` and the function's own results are
+`(any, error)` cannot convert in place — C# tuple conversions do not consult user conversions
+element-wise — so the call is deconstructed into temporaries and each element converts on its own.
+Routing the `any` element through the ordinary interface-conversion machinery is wrong precisely
+because `any` has **no adapter to hold the box**: with no arm to take, that route falls through to
+its pointer-DEREF prefix and boxes a copy of the pointee. The element already *is* the box, so it
+takes the boundary treatment directly:
+
+```go
+func parsePublicKey(…) (any, error) {
+    …
+    return ecdh.X25519().NewPublicKey(der)   // (*ecdh.PublicKey, error) into (any, error)
+}
+```
+```csharp
+var (ᴛ1, ᴛ2) = ecdh.X25519().NewPublicKey(der);
+return (ᴛ1.OrTypedNil(), ᴛ2);               // NOT (~ᴛ1, ᴛ2) — that boxes a PublicKey VALUE
+```
+
+`crypto/x509`'s `parsePublicKey` and `parsePKCS8PrivateKey` are the corpus sites — the only two, and
+the deref is what made `%T`, `reflect.TypeOf` and every `case *ecdh.PublicKey` type-switch arm on the
+result disagree with Go, since `case ж<ecdhꓸPublicKey>` can never match a boxed value. The
+ASSIGNMENT sibling of this arm (`c, err = sd.dialTCP(…)`) is not affected: its target list is
+screened for *non-empty* interfaces only, so an `any` target never reaches the conversion machinery
+there at all. (Guarded by the `MultiValueReturnOrder` behavioral test's identity half — a
+`(*thing, error)` call forwarded into `(any, error)`, then read back through a type switch and both
+assertions; before the fix the switch takes the `case thing` arm and the `*thing` assertion panics.)
+
 The scope is a genuine `*T` (a `types.Pointer`). `unsafe.Pointer` is a Basic and renders as a
 struct, and a NAMED pointer type renders as its generated wrapper struct — neither can be a null
 reference, so neither has anything to carry. An address-of (`&x`), a `new(T)`, a `(*T)(nil)` and a
@@ -3227,6 +3256,48 @@ var (ᴛ1, ᴛ2) = Ꮡsd.dialTCP(ctx, laΔ1, raΔ1);
 ```
 
 The arm fires only for a statement-position deconstruction (one call RHS, several LHS) where some non-empty-interface target's tuple component is a non-identical, non-interface type; all other deconstructions keep the direct form. (Guarded by the `InterfaceCasting` extension `makeCounter` — a `(*Counter, error)` call deconstructed into an `Incrementer` — runtime-verified against Go.)
+
+### A multi-value RETURN reads its plain operands AFTER its calls
+
+The read-after-write hazard above has a **return-statement** sibling, and it arrives from the opposite direction: there Go's ordering is fixed and C#'s sequential emission breaks it; here Go's ordering is *free* and C#'s tuple literal fixes it the other way.
+
+Go's spec orders only a return statement's **calls** — "all function calls, method calls, receive operations, and binary logical operations are evaluated in lexical left-to-right order" — and leaves its plain operands deliberately unordered against them. gc resolves that freedom the same way every time, because its order pass rewrites the statement: each call is spilled to a temporary **first**, and the result list is then assembled from those temporaries and whatever plain operands remain. So under gc every plain operand is read *after* every call. A C# tuple literal has no such freedom — it evaluates strictly left to right — so a plain operand written before a mutating call is copied **before** the mutation:
+
+```go
+func ParseOID(oid string) (OID, error) {
+    var o OID
+    return o, o.unmarshalOIDText(oid)   // gc: the call runs, THEN o is read
+}
+```
+```csharp
+public static (OID, error) ParseOID(@string oid) {
+    OID o = default!;
+    var ᴛ1 = o.unmarshalOIDText(oid);   // gc's own rewrite, emitted
+    return (o, ᴛ1);
+}
+```
+
+Without the spill this emits `return (o, o.unmarshalOIDText(oid));`, which copies the **empty** `o` and only then fills the original — so `crypto/x509`'s `ParseOID` returned a zero-length OID beside a nil error, and every parse "succeeded" with no bytes. Nothing about it is visible at compile time: both sides compile, both return two values, and only the *content* of the first differs.
+
+The spill fires only where the ordering is **observable** — where a later operand's call receives an earlier operand's storage *by address*, the only way it can write what that operand reads. Three shapes hand a call that address:
+
+| Shape | Example | Storage the call can write |
+|---|---|---|
+| pointer-receiver method on a value | `return o, o.fill()` | `o` itself — the call takes `&o` |
+| explicit address argument | `return n, raise(&n)` | `n` itself |
+| a pointer operand handed over | `return c.n, c.bump()`, `c` a `*counter` | `*c`, so a read *through* `c` observes it |
+
+Whether the read and the write actually *meet* is decided by comparing **access paths** — a root variable (`types.Object`, exactly as in `lhsReusedInLaterRhs`, so a same-named but distinct variable is never a false positive) plus the hops from it to the storage in question, where a field or element hop stays *inside* the previous location and a deref *leaves* it. Two locations conflict when they share a root, agree on every hop they both have, and the longer path's extra hops contain no deref.
+
+A root plus a single "indirect" flag is not enough, and the corpus says so. `net/http`'s `return n.handler, n.pattern.String(), n.pattern, matches` reads storage inside `*n` while the call writes `*(n.pattern)`; the flag model reads both as one location — "something behind `n`" — and spills a call that provably cannot touch what the first operand reads. The paths diverge at `.handler` versus `.pattern`, so they do not conflict and nothing spills. The model holds the case one hop over just as firmly: `return nd.pat.n, nd.pat.bump()` reads *through* the very pointer the call writes through, the write path is a prefix of the read path with no deref between them, and it spills. Where a hop cannot be spelled exactly — a field promoted through embedding — the path is **truncated** rather than abandoned, naming the larger enclosing location, so imprecision can only ever over-report a conflict and never miss one.
+
+Every call-bearing operand at or **below** the hazardous index spills, not merely the hazardous one: the spec *does* fix the calls' order among themselves, so spilling `b.bump()` out of `return b.n, side(), b.bump()` while leaving `side()` in the tuple would run bump first. A channel **receive** spills with them, since the spec's sentence orders receives alongside calls. A type conversion and a pure builtin (`len(o.der)`) do not: both are calls syntactically and reads semantically, gc spills neither, and leaving them in the tuple is what puts their reads after the spilled calls — which is exactly where gc puts them. The temporaries are numbered from the file-monotonic `tupleTempIndex` the converter's other multi-value expansions already share, so two spills in one scope cannot collide.
+
+The scope is as much of the rule as the spill is: a rule that spilled every call-bearing operand would also be correct, and would rewrite most of the corpus for no correctness gain. Four controls therefore keep the call *in* the tuple — an operand that **is** the pointer (`return c, c.bump()`; both orders yield the same pointer, and the emitted pointer is the box rather than a copy), a call on unrelated storage (`return a.n, b.bump()`), a **value**-receiver method (`return c.n, c.peek()`; the receiver is a copy, so the caller can observe nothing), and the net/http pointer-field shape above. Deliberately *not* covered, each because deciding it needs more than the statement itself: an operand that contains a call of its own (`return o.f + g(), o.mutate()` — gc spills `g()` too and reads `o.f` last, so spilling the whole operand would re-create the problem rather than fix it; no corpus site), a pointer whose **pointee no path can name** (`f(getPtr())` — the interprocedural question one step removed), aliasing through a slice or map's **backing store** (`return s[0], fill(s)`, where no address is taken at the call site at all), and a call that reaches the operand through a package-level or captured variable, which is interprocedural outright.
+
+**Corpus footprint: 2 production files** (A/B of two seeded whole-stdlib reconverts, control binary versus fixed, 10,260 files emitted per side) — `crypto/x509/oid.cs`, where the spill is the bug fix, and `runtime/symtabinl.cs`'s `return u, u.resolveInternal(pc)`, where it is emission-only (the method reads its receiver and writes nothing, so gc's order and C#'s agree on the value; the spill simply stops relying on that). Their two `package_info.cs` position maps move with them, and nothing else in the corpus does.
+
+(Guarded by the `MultiValueReturnOrder` behavioral test — all five hazard shapes, a three-operand call-order case, and the four controls, output-compared vs `go run`; before the fix every hazard reports the pre-mutation value. `returnOperandOrder.go` owns the analysis and `returnOperandOrder_test.go` pins the emission against three neuters: the rule forced off, the rule forced on everywhere, and `pathsConflict` reduced to the root-plus-indirect model — the last reporting exactly the two controls the access path exists to separate.)
 
 ### A SELECTOR left-hand side counts as a reassignment — a field swap must stay simultaneous
 
@@ -7975,7 +8046,17 @@ a generic-method interface cast the single-package baseline cannot express; they
 
 Go infers a type parameter that appears only in *constraints* through core types — `func Twice[S ~[]E, E Integer](s S)` infers `E` from `S`'s underlying element; the `slices` package's whole `Sort[S ~[]E, E cmp.Ordered] → pdqsortOrdered` chain relies on this. C# never infers a type parameter that does not appear in the parameter list (CS0411 — at *every* call site, concrete instantiations included). When the callee declares such a constraint-only type parameter, the converter renders the call's type arguments explicitly from the instantiation `go/types` already resolved (`info.Instances`): `Twice<Point, int32>(p, 2)` at a concrete site, `Scale<S, E>(s, c)` inside a generic body. Calls to generics whose every type parameter is argument-visible keep their bare Go-shaped form — C# infers them as Go does, no churn. (Guarded by the `GenericTypeInference` extension — a constrained `S`/`E` pass-through chain plus a concrete call to a constraint-only-param generic, values vs Go; clears the 14 CS0411s in the slices/maps wave.)
 
-The same explicit-type-argument rule applies to a generic function referenced as a **method-group value**, not just a call. `slices.SortFunc(all, slices.Compare)` (runtime/pprof) passes `slices.Compare[S ~[]E, E cmp.Ordered]` as `SortFunc`'s comparison delegate; C# cannot infer a generic method group's constraint-only `E` when converting it to `Func<…>` (CS0411). `convSelectorExpr` now spells the arguments on the selector — `slices.Compare<slice<uintptr>, uintptr>` — when the selector is NOT the callee of a call (`!context.isCallExpr`, so convCallExpr's own type-arg site still owns the call form) and `info.Uses[Sel]` is a generic function with an `info.Instances` instantiation. Byte-identical across the behavioral corpus and across an A/B of pprof+slices+sort+maps+cmp+net+go/types (a single line moves — the `slices.Compare` argument; every `Compare(...)` **call** stays bare). GUARD OWED — the shape needs a cross-package generic function with a constraint-only type parameter passed as a method-group value, which the single-package baseline cannot express; the bare-IDENT variant (a same-package generic func passed as a method group) is a parallel latent case left unfixed because `convIdent`, unlike `convSelectorExpr`, carries no call-vs-value flag to gate against double-emitting a direct call's arguments.
+The same explicit-type-argument rule applies to a generic function referenced as a **method-group value**, not just a call. `slices.SortFunc(all, slices.Compare)` (runtime/pprof) passes `slices.Compare[S ~[]E, E cmp.Ordered]` as `SortFunc`'s comparison delegate; C# cannot infer a generic method group's constraint-only `E` when converting it to `Func<…>` (CS0411). `convSelectorExpr` now spells the arguments on the selector — `slices.Compare<slice<uintptr>, uintptr>` — when the selector is NOT the callee of a call (`!context.isCallExpr`, so convCallExpr's own type-arg site still owns the call form) and `info.Uses[Sel]` is a generic function with an `info.Instances` instantiation. Byte-identical across the behavioral corpus and across an A/B of pprof+slices+sort+maps+cmp+net+go/types (a single line moves — the `slices.Compare` argument; every `Compare(...)` **call** stays bare). GUARD OWED — the shape needs a cross-package generic function with a constraint-only type parameter passed as a method-group value, which the single-package baseline cannot express.
+
+**The bare-IDENT variant is no longer latent** (2026-08-26, the generic-inference arc that unblocked `slices`). `convIdent` now carries the same call-vs-value flag `convSelectorExpr` always had — `IdentContext.suppressGenericTypeArgs`, set by convCallExpr for a call's CALLEE and by convIndexExpr/convIndexListExpr for the base of an explicit instantiation — so a same-package generic function passed as a method group (`apply(s1, Reverse)` against `Reverse[S ~[]E, E any]`, slices' `TestInference`) spells its arguments out (`reverse<slice<nint>, nint>`) exactly as the qualified form does, and the two spellings of one Go reference cannot disagree. Without the flag there was no way to add the append without also writing every direct call in the corpus out longhand; with it, the value form is the only one that moves. The append rides on whichever spelling the ident's own tail arms produce (a `-tests` Δ-rename, a white-box bridge qualification), so a renamed generic function passed as a method group is covered too.
+
+Three further shapes in the same family were fixed with it, all first measured as compile errors in `slices`' converted test suite (16 errors across roughly six exported generics, every one CS0411/CS0305 or a CS1503 cascade behind one):
+
+- **An explicitly-instantiated generic function argument is still a method group.** `EqualFunc(s1, s2, equal[int])`, `CompareFunc(s1, s2, cmp.Compare[int])`, `CompactFunc(s, equal[int])`, `equalToCmp(equal[int])` — writing the type arguments fixes the group's *shape*, not its C#-inference status, so the enclosing generic call still needs its own arguments spelled. `exprIsMethodGroup` met an `*ast.IndexExpr`, matched neither of its two cases, and answered "not a method group"; it now peels `ParenExpr`/`IndexExpr`/`IndexListExpr` (indexing a function *value* is not legal Go, so peeling can never reclassify an ordinary map/slice index). Eight of the sixteen errors.
+- **A type parameter reachable only through an UNSUPPLIED parameter position.** `Insert[S ~[]E, E any](s S, i int, v ...E)` called as `Insert(s, 0)` hands C# an empty `params Span<E>`, and `E` is inferable from nothing — while `calleeHasConstraintOnlyTypeParam` cannot see it, because `E` *does* appear in a parameter type. `calleeTypeParamUnsuppliedByCall` asks the question C# inference actually asks — which parameter positions did this call supply — and since every non-variadic parameter is always supplied in a well-typed Go call, it can fire on nothing but an empty variadic. `Insert(s, 0, 7, 8)` keeps its bare form.
+- **A PARTIAL explicit instantiation.** Go allows a written prefix and infers the rest through core types (`Equal[Slice]` against `Equal[S ~[]E, E comparable]`, slices' own `iter_test`); C# has no partial instantiation, so the prefix alone is CS0305, "requires 2 type arguments". `completedInstantiationTypeArgs` replaces the written list with the resolved one *only* when the resolved list is longer — a complete instantiation, which is nearly all of them, renders verbatim and byte-identically. The comparison is made after erasure filtering on both sides, so an erased pointer-core position cannot make a complete instantiation look partial.
+
+Every one of the four is an ADDITION to the existing trigger set rather than a replacement, and each is gated on a property that is arithmetic rather than heuristic (is this argument a function reference; did this position receive an argument; is the written list shorter than the resolved one). That is what keeps the footprint at exactly the shapes that were failing: **CNR at 645 behavioral packages moves only the guard project itself, and a seeded reconvert of the whole converted standard library re-emits 4,173 artifacts byte for byte** (0 changed, 0 new; marker gate 0 violations across 78 marked files) — `slices` and `maps` included, whose own production code leans hardest on the inference this arc is about. Guarded by the `MethodGroupGenericArg` extension, which fails on the pre-change converter with exactly the `slices` error set — CS0411 ×4 (instantiated method-group argument, empty variadic, bare-ident generic value ×2) plus CS0305 ×1 (partial instantiation) — and passes after.
 
 ### The `comparable` constraint
 
@@ -10731,6 +10812,40 @@ the extension to `VariadicFuncTypeAssert` — a variadic func literal direct to 
 group as a `map[string]any` element, through a plain assignment, and as an `[]any{…}` element, each
 asserted back; plus a NON-variadic literal direct to `any` as the control that must keep matching
 without a cast. Neutering the cast prints `no match` on all four and leaves the control passing.)
+
+**A variadic METHOD VALUE was the one shape in the family still frozen at fixed arity (2026-08-26).**
+`errorf := t.Errorf` — go/types' and `slices`' own idiom, `errorf = t.Logf` one statement later, then
+loose Go-style calls — has TWO emissions, and both dropped the variadic tail. A bound method value
+forwards through a lambda carrying the method's own parameters, and that lambda rendered the tail as
+the plain `slice<T>` the signature *stores* rather than the `params ꓸꓸꓸT` convention every declared
+variadic function uses: `(@string p1, slice<any> p2) => Ꮡt.Errorf(p1, p2)`. Every call through the
+value was then an arity error — `errorf("…", n)` CS1503 on a bare `n` against `slice<any>`,
+`errorf("…", a, b)` CS1593 "does not take 3 arguments", `errorf("…")` CS7036 — which is the same
+family the lambda's explicit parameters were introduced to fix, one level in. The tail now renders
+through `variadicParamType`, the same routine the named-function convention uses (a file-local
+`using ꓸꓸꓸT = Span<…>;` alias where one is mintable, inline `Span<T>` otherwise), so the forwarded
+argument binds the receiving `params ꓸꓸꓸany` parameter directly and the call inside the lambda is
+unchanged.
+
+The DECLARATION is the second half, and it is not optional. A `params` lambda has no BCL delegate, so
+`var` gives it a **synthesized** natural type — which binds that lambda and gives C# no reason to hand
+the same type to the second lambda the reassignment installs. `visitAssignStmt`'s method-group branch
+therefore names golib's variadic delegate family when the signature is variadic and no package named
+func type matches — `Actionꓸꓸꓸ<@string, any> emit = (@string p1, params ꓸꓸꓸany p2) => …` — reusing
+`iifeDelegateType`, the same lowering `getCSharpTypeName` already gives every func type used as a
+value, so there is exactly one spelling of this type in the emission. Non-variadic method values keep
+`var`, unchanged. (Guarded by the `VariadicFuncValues` extension — a pointer receiver's variadic
+method bound by `:=`, conditionally reassigned to a second variadic method, then called with loose
+args, an empty tail and a spread; it fails on the pre-change converter with CS1503 + CS1593 + CS7036,
+which is exactly the `slices` `TestGrow`/`TestConcat` error set.)
+
+A/B footprint: this is the half of the arc that moves anything outside its own guard, and it moves
+two lines. CNR at 645 behavioral packages reports `DeferCallOrder` and `GoCallVariations`, both
+`f1 := fmt.Println` — a variadic PACKAGE function bound as a method value, which was the same
+`var`-inferred synthesized delegate and is now `Funcꓸꓸꓸ<any, (nint, error)>`. Both still compile and
+still match `go run`. The whole converted standard library re-emits byte-identically (4,173 artifacts,
+0 changed), because the rule fires on nothing else: a method value whose signature is not variadic
+never reaches it.
 
 ### `reflect.Value.Call` over a variadic func value is TYPED dispatch — no reflective invoke can carry the tail
 

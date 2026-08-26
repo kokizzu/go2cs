@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"strings"
 )
 
 func (v *Visitor) convIndexListExpr(indexListExpr *ast.IndexListExpr) string {
@@ -21,6 +22,11 @@ func (v *Visitor) convIndexListExpr(indexListExpr *ast.IndexListExpr) string {
 	xContext := DefaultLambdaContext()
 	xContext.suppressGenericTypeArgs = true
 
+	// The BARE-IDENT form of the same suppression — see convIndexExpr.
+	xIdentContext := DefaultIdentContext()
+	xIdentContext.suppressGenericTypeArgs = true
+	xContexts := []ExprContext{xContext, xIdentContext}
+
 	// An explicitly written instantiation of a pointer-core generic drops its ERASED positions
 	// (`clone[*thing, thing]` → `clone<thing>`, see explicitTypeArgsAfterErasure); a list that
 	// erases to empty leaves the base bare (C# infers from the remaining value arguments).
@@ -28,11 +34,17 @@ func (v *Visitor) convIndexListExpr(indexListExpr *ast.IndexListExpr) string {
 
 	if kept, erased := v.explicitTypeArgsAfterErasure(indexListExpr.X, indices); erased {
 		if len(kept) == 0 {
-			return v.convExpr(indexListExpr.X, []ExprContext{xContext})
+			return v.convExpr(indexListExpr.X, xContexts)
 		}
 
 		indices = kept
 	}
 
-	return fmt.Sprintf("%s<%s>", v.convExpr(indexListExpr.X, []ExprContext{xContext}), v.convExprList(indices, indexListExpr.Lbrack, callExprContext))
+	// A PARTIAL Go instantiation of a generic FUNCTION completes from the resolved instance —
+	// C# has no partial instantiation (CS0305). See completedInstantiationTypeArgs.
+	if completed := v.completedInstantiationTypeArgs(indexListExpr.X, len(indices)); completed != nil {
+		return fmt.Sprintf("%s<%s>", v.convExpr(indexListExpr.X, xContexts), strings.Join(completed, ", "))
+	}
+
+	return fmt.Sprintf("%s<%s>", v.convExpr(indexListExpr.X, xContexts), v.convExprList(indices, indexListExpr.Lbrack, callExprContext))
 }

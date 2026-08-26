@@ -936,6 +936,24 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 					}
 
 					name := fmt.Sprintf("p%d", i+1)
+
+					// A VARIADIC method's tail carries the `params ꓸꓸꓸT` convention through the
+					// forwarding lambda, exactly as a declared function's does. Rendering it as the
+					// plain `slice<T>` the signature stores froze the value at fixed arity: `errorf
+					// := t.Errorf` emitted `(@string p1, slice<any> p2) => …`, so Go's loose-argument
+					// calls through the value were CS1593 ("does not take 3 arguments") and CS1503
+					// (a bare `n` against `slice<any>`) — slices' TestGrow/TestConcat, and the same
+					// arity-mismatch family the explicit parameters themselves were introduced for.
+					// The receiving `params ꓸꓸꓸany` parameter binds the forwarded Span directly, so
+					// the call inside the lambda is unchanged.
+					if sig.Variadic() && i == sig.Params().Len()-1 {
+						if sliceType, isSlice := sig.Params().At(i).Type().Underlying().(*types.Slice); isSlice {
+							paramDecls.WriteString(fmt.Sprintf("params %s %s", v.variadicParamType(sliceType.Elem()), name))
+							paramUses.WriteString(name)
+							continue
+						}
+					}
+
 					paramDecls.WriteString(fmt.Sprintf("%s %s", convertToCSTypeName(v.getAliasQualifiedTypeName(sig.Params().At(i).Type(), false)), name))
 					paramUses.WriteString(name)
 				}

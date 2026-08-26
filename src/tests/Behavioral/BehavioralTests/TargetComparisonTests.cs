@@ -421,6 +421,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckEmptyStructMapSet() => CheckTarget("EmptyStructMapSet");
 
     [TestMethod]
+    public void CheckEnvironBlockWalk() => CheckTarget("EnvironBlockWalk");
+
+    [TestMethod]
     public void CheckErrorfFormatting() => CheckTarget("ErrorfFormatting");
 
     [TestMethod]
@@ -902,6 +905,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
+
+    [TestMethod]
+    public void CheckMultiValueReturnOrder() => CheckTarget("MultiValueReturnOrder");
 
     [TestMethod]
     public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");

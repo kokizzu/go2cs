@@ -1045,6 +1045,15 @@ func (v *Visitor) namedFuncTypeNameForSignature(sig *types.Signature) string {
 // exprIsMethodGroup reports whether expr is a bare reference to a function or method value (a C#
 // method group), i.e. an identifier or selector whose resolved object is a *types.Func and which is
 // not itself the call in a call expression. Such a value has no inferable delegate type under `var`.
+//
+// An EXPLICIT instantiation of a generic function — `equal[int]`, `cmp.Compare[int]`,
+// `Equal[Slice]` — is still a method group: writing the type arguments fixes the group's SHAPE, not
+// its C#-inference status. Peeling the index form matters most to callHasMethodGroupArg, where the
+// omission was eight of slices' seventeen compile errors (`EqualFunc(s1, s2, equal[int])`,
+// `CompareFunc(s1, s2, cmp.Compare[int])`, `CompactFunc(s, equal[int])`, `equalToCmp(equal[int])` —
+// every one CS0411): the predicate met an *ast.IndexExpr, which matched neither case, answered "not
+// a method group", and the enclosing generic call kept its uninferable bare form. Indexing a
+// function VALUE is not legal Go, so peeling can never reclassify an ordinary map/slice index.
 func (v *Visitor) exprIsMethodGroup(expr ast.Expr) bool {
 	var ident *ast.Ident
 
@@ -1053,6 +1062,12 @@ func (v *Visitor) exprIsMethodGroup(expr ast.Expr) bool {
 		ident = e
 	case *ast.SelectorExpr:
 		ident = e.Sel
+	case *ast.ParenExpr:
+		return v.exprIsMethodGroup(e.X)
+	case *ast.IndexExpr:
+		return v.exprIsMethodGroup(e.X)
+	case *ast.IndexListExpr:
+		return v.exprIsMethodGroup(e.X)
 	default:
 		return false
 	}

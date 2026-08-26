@@ -102,7 +102,36 @@ private static partial nint libc_syscall(nint number, nint a1, nint a2, nint a3,
 private static nint ToNative(uintptr value) => unchecked((nint)(nuint)value);
 
 public static partial (uintptr r1, uintptr r2, uintptr errno) Syscall6(uintptr num, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6) {
+    // THE KEYSTONE TETHER (the ж→uintptr lifetime gap, rooted 2026-08-26 from os/exec's GC-mark
+    // SIGSEGV; ruled to land here first as the minimal-general cut). A `(uintptr)Ꮡbuf` argument
+    // pins its managed storage via a pin that lives ON THE BOX, and the token registry holds the
+    // box WEAKLY — so the JIT is free to retire the caller's box local the moment the address is
+    // extracted, BEFORE this call runs. Box collected ⇒ pin released ⇒ storage moves ⇒ the
+    // kernel's write lands on whatever lives there now (measured: a live object's MethodTable
+    // zeroed, the GC's own mark phase the victim). The tether closes the window at the one point
+    // every Linux crossing funnels through: re-root each argument's box for the call's duration —
+    // Resolve recovers the box the address was minted from (null for genuinely native addresses
+    // and for scalar arguments, which is fine), the locals hold it strongly, and the KeepAlives
+    // pin the LOCALS' lifetime past the syscall's return. GC.KeepAlive(null) is a no-op, so the
+    // scalar-argument case costs a dictionary miss and nothing else. The residual race —
+    // retirement, a GC, the collection AND the pin's release all completing between the caller's
+    // address extraction and this prologue — is orders narrower than the window it replaces and
+    // is the box-model design conversation's to close structurally (routed; evidence first).
+    object? t1 = a1 != 0 ? go.ManagedPointerTokens.Resolve((nuint)a1) : null;
+    object? t2 = a2 != 0 ? go.ManagedPointerTokens.Resolve((nuint)a2) : null;
+    object? t3 = a3 != 0 ? go.ManagedPointerTokens.Resolve((nuint)a3) : null;
+    object? t4 = a4 != 0 ? go.ManagedPointerTokens.Resolve((nuint)a4) : null;
+    object? t5 = a5 != 0 ? go.ManagedPointerTokens.Resolve((nuint)a5) : null;
+    object? t6 = a6 != 0 ? go.ManagedPointerTokens.Resolve((nuint)a6) : null;
+
     nint result = libc_syscall(ToNative(num), ToNative(a1), ToNative(a2), ToNative(a3), ToNative(a4), ToNative(a5), ToNative(a6));
+
+    System.GC.KeepAlive(t1);
+    System.GC.KeepAlive(t2);
+    System.GC.KeepAlive(t3);
+    System.GC.KeepAlive(t4);
+    System.GC.KeepAlive(t5);
+    System.GC.KeepAlive(t6);
 
     // r1 is the raw return in both outcomes: on failure libc returns -1 and so does Go's asm
     // (`MOVQ $-1, AX`), so the same expression serves both branches.
