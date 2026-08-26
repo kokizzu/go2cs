@@ -270,6 +270,33 @@ public interface INilPointer
 }
 
 /// <summary>
+/// Marker for the ONE pointer type whose identity is the ADDRESS it carries rather than the
+/// storage it is: <c>@unsafe.Pointer</c>. Implemented only by that class.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The bridge used to detect it structurally — <c>t.BaseType == typeof(ж&lt;uintptr&gt;)</c> —
+/// which is exact today and becomes ambiguous in BOTH directions under B1's per-kind split
+/// (<c>Pointer : StandardBox&lt;uintptr&gt;</c> stops matching, while an ordinary
+/// <c>*uintptr</c> box's <c>BaseType</c> BECOMES <c>ж&lt;uintptr&gt;</c> and would claim the
+/// name — <c>encoding/json</c>'s <c>PUintptr</c> row is the banked instance). A marker is the
+/// only unambiguous probe: a base-chain walk cannot separate the two, because both carry
+/// <c>ж&lt;uintptr&gt;</c> in their chains. The probe ORDER at the consuming sites is
+/// load-bearing — this test runs BEFORE any ж-box classification, or the box arm claims
+/// <c>unsafe.Pointer</c> as an ordinary pointer first (<c>DESIGN-zh-box-b1.md</c> §3.1).
+/// </para>
+/// <para>
+/// It is also the N5 EXCLUSION guard: <c>unsafe.Pointer</c> must never marshal into a
+/// <c>ж&lt;uintptr&gt;</c> destination — it is not an ordinary <c>*uintptr</c>, and a
+/// subsumption test without this guard would admit it
+/// (<see cref="GoReflect"/>'s marshalling sites).
+/// </para>
+/// </remarks>
+public interface IUnsafePointer
+{
+}
+
+/// <summary>
 /// Defines an interface that represents a pointer <see cref="ж{T}"/> type.
 /// </summary>
 /// <typeparam name="T">Type for heap based reference.</typeparam>

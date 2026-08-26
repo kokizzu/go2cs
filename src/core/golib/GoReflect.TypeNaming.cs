@@ -140,6 +140,10 @@ public static partial class GoReflect
         if (t == typeof(@string) || t == typeof(string)) return "string";
         if (t == typeof(object)) return "interface {}";
 
+        // @unsafe.Pointer names itself by its marker — BEFORE the box arm, whose base-chain walk
+        // would otherwise render it `*uintptr` (M-before-W, DESIGN-zh-box-b1.md §3.1).
+        if (typeof(IUnsafePointer).IsAssignableFrom(t)) return "unsafe.Pointer";
+
         if (t.IsGenericType)
         {
             Type gd = t.GetGenericTypeDefinition();
@@ -152,14 +156,14 @@ public static partial class GoReflect
             // `map[[2]string][2]*float64` renders both lengths instead of neither.
             if (gd == typeof(map<,>)) return "map[" + GoTypeName(a[0], keyDims) + "]" + GoTypeName(a[1], arrayDims);
             if (gd == typeof(channel<>)) return "chan " + GoTypeName(a[0]);
-            // A pointer descriptor's dims are the POINTEE's, unshifted (the same rule Elem()
-            // hands the cargo down by) — so `*[10]int` renders its array, not `*[]int`. The
-            // channel direction and the map key dims ride down the same way, so `*chan<- string`
-            // keeps its arrow and `*map[[2]string]V` keeps its key length.
-            if (gd == typeof(ж<>)) return "*" + GoTypeName(a[0], arrayDims, chanDir, keyDims);
         }
 
-        if (t.BaseType == typeof(ж<uintptr>)) return "unsafe.Pointer";
+        // A pointer descriptor's dims are the POINTEE's, unshifted (the same rule Elem() hands the
+        // cargo down by) — so `*[10]int` renders its array, not `*[]int`. The channel direction and
+        // the map key dims ride down the same way, so `*chan<- string` keeps its arrow and
+        // `*map[[2]string]V` keeps its key length. Resolved by the base-chain walk (fix W) so a
+        // per-kind subclass instance names the same `*T` its declared type does.
+        if (TryBoxPointee(t, out Type? pointee)) return "*" + GoTypeName(pointee, arrayDims, chanDir, keyDims);
 
         // An UNNAMED func type renders STRUCTURALLY, exactly as an unnamed struct does — `func()`,
         // `func(*testing.T)`, `func(int, ...string) (bool, error)`. A Go DEFINED func type keeps its
@@ -247,9 +251,17 @@ public static partial class GoReflect
             Type gd = t.GetGenericTypeDefinition();
 
             if (gd == typeof(slice<>) || gd == typeof(array<>) || gd == typeof(map<,>) ||
-                gd == typeof(channel<>) || gd == typeof(ж<>))
+                gd == typeof(channel<>))
                 return false;
         }
+
+        // A ж box at any depth is unnamed too (fix W — a per-kind subclass instance must not fall
+        // past this arm and claim a Go name it does not have; the asn1 SET/SEQUENCE class). The
+        // M-before-W order holds here in the EXEMPTION polarity: @unsafe.Pointer's chain carries
+        // ж<uintptr>, but it is Go's one NAMED pointer type ("unsafe.Pointer") and must keep
+        // answering true through the fall-through, as it always has.
+        if (!typeof(IUnsafePointer).IsAssignableFrom(t) && TryBoxPointee(t, out _))
+            return false;
 
         // An adapter renders as what it stands for (R10): a pointer-sourced one as the unnamed
         // `*T`, a value-sourced one as the struct it wraps — whose own name is then the answer.

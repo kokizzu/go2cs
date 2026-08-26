@@ -72,6 +72,34 @@ public static partial class GoReflect
     // Keyed on the box object identity; weak so descriptors are not pinned.
     private static readonly ConditionalWeakTable<object, Type> s_sysTypes = new();
 
+    /// <summary>
+    /// Reports whether <paramref name="t"/> is a <see cref="ж{T}"/> box type — at any depth of its
+    /// base chain — and yields the pointee type when it is.
+    /// </summary>
+    /// <remarks>
+    /// The one shared answer to "is this runtime type a ж box?" (B1 §3.1's fix W, modeled on the
+    /// <c>PointeeTypeOf</c> walk that was already correct). A one-level
+    /// <c>GetGenericTypeDefinition() == typeof(ж&lt;&gt;)</c> test answers identically TODAY —
+    /// every box's runtime type sits at depth 0 — and wrongly under the per-kind split, where a
+    /// runtime instance is a subclass; the walk answers both worlds. ⚠ Callers that must treat
+    /// <c>@unsafe.Pointer</c> specially probe <see cref="IUnsafePointer"/> BEFORE this — its chain
+    /// carries <c>ж&lt;uintptr&gt;</c>, so this walk deliberately claims it as a box.
+    /// </remarks>
+    public static bool TryBoxPointee(Type? t, [NotNullWhen(true)] out Type? pointee)
+    {
+        for (Type? current = t; current is not null; current = current.BaseType)
+        {
+            if (current.IsGenericType && current.GetGenericTypeDefinition() == typeof(ж<>))
+            {
+                pointee = current.GetGenericArguments()[0];
+                return true;
+            }
+        }
+
+        pointee = null;
+        return false;
+    }
+
     /// <summary>Records the managed <see cref="Type"/> that a synthetic abi.Type descriptor box stands for.</summary>
     public static void Register(object descriptorBox, Type sysType)
     {
@@ -169,6 +197,13 @@ public static partial class GoReflect
         if (TryGoTypeDefinitionKind(t, out int defKind))
             return defKind;
 
+        // @unsafe.Pointer answers by its marker — BEFORE the box classification, because its base
+        // chain carries ж<uintptr> and the box arm would otherwise claim it as an ordinary pointer
+        // (the load-bearing M-before-W order, DESIGN-zh-box-b1.md §3.1; the marker replaces the
+        // old `BaseType == typeof(ж<uintptr>)` structural probe, which is ambiguous under B1's
+        // per-kind split in both directions).
+        if (typeof(IUnsafePointer).IsAssignableFrom(t)) return UnsafePointer;
+
         // golib generic containers → their Go kind, detected by open generic definition.
         if (t.IsGenericType)
         {
@@ -178,13 +213,10 @@ public static partial class GoReflect
             if (gd == typeof(array<>)) return Array;
             if (gd == typeof(map<,>)) return Map;
             if (gd == typeof(channel<>)) return Chan;
-            if (gd == typeof(ж<>)) return Pointer;
         }
 
-        // @unsafe.Pointer is a CONCRETE class `: ж<uintptr>` (not a generic ж<T>, so the check above
-        // misses it, and not a [GoType("num:uintptr")] value wrapper). golib cannot name the unsafe
-        // package's type directly, so detect it structurally: a reference type whose base is ж<uintptr>.
-        if (t.BaseType == typeof(ж<uintptr>)) return UnsafePointer;
+        // A ж box at any base-chain depth (fix W: today depth 0; a per-kind subclass under B1).
+        if (TryBoxPointee(t, out _)) return Pointer;
 
         // A NAMED container type (`type S []byte`, `type M map[K]V`, `type P *T`, ...) is a
         // generated wrapper struct/class implementing the golib container interface — classify

@@ -305,7 +305,9 @@ public static ΔValue Index(this ΔValue v, nint i) {
             throw panic("reflect: array index out of range");
         }
         nint[]? elemDims = v.typ_.Value.arrayDims is { Length: > 1 } dims ? dims[1..] : null;
-        if (v.addrBox is not null && v.addrBox.GetType() is { IsGenericType: true } boxType && boxType.GetGenericTypeDefinition() == typeof(ж<>)) {
+        // Fix W (B1 §3.1): the box test walks the base chain, so a per-kind subclass addrBox still
+        // takes the element-alias route (an addrBox is always a real box, never @unsafe.Pointer).
+        if (v.addrBox is not null && GoReflect.TryBoxPointee(v.addrBox.GetType(), out _)) {
             var elem = makeTypedValue(null, elemType, elemDims, ro);
             elem.flag |= flagAddr | flagIndir;
             elem.addrBox = GoReflect.ElementAliasBoxOfBox(v.addrBox, elemType, i);

@@ -216,8 +216,10 @@ public static partial class GoReflect
         Type receiverType = entry.Method.GetParameters()[0].ParameterType;
 
         // A value-receiver method reached through *X receives a COPY of the pointee (Go's rule).
+        // Fix W: the box test walks the base chain, so a per-kind subclass instance still takes
+        // the pointee-copy read (@unsafe.Pointer is inert here — it has no methods to reach).
         if (bindTarget is not null && !receiverType.IsInstanceOfType(bindTarget) &&
-            bindTarget.GetType() is { IsGenericType: true } boxType && boxType.GetGenericTypeDefinition() == typeof(ж<>))
+            TryBoxPointee(bindTarget.GetType(), out _))
             bindTarget = ReadPointerSlot(bindTarget);
 
         return s_boundFactories.GetOrAdd(entry.Method, static m => CompileBoundFactory(m))(bindTarget);

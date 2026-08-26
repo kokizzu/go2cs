@@ -203,7 +203,7 @@ unsafe partial class unsafe_package  {
 //	hdr.Data = uintptr(unsafe.Pointer(p))
 //	hdr.Len = n
 //	s := *(*string)(unsafe.Pointer(&hdr)) // p possibly already lost
-public class Pointer : ж<uintptr> {
+public class Pointer : ж<uintptr>, IUnsafePointer {
     // The ZERO address IS the nil pointer: Go's `unsafe.Pointer(uintptr(0)) == nil` holds, and
     // every uintptr round-trip of a nil pointer lands here (the converter bridges an
     // unsafe.Pointer-valued call through uintptr because unsafe lives in its own assembly and can
