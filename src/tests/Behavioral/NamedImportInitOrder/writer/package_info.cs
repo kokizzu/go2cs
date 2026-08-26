@@ -13,7 +13,7 @@
 // </ImportedTypeAliases>
 
 using go;
-using static go.main_package;
+using static go.NamedImportInitOrder.writer_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -49,14 +49,13 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ADs+hIKEgoaChoKIgoSChoKChIKChoaChIKGhoKCAAAQgoKCiIKGgoaCgoKIgoiCgoKKgoiCgoKG")]
+[assembly: go.GoPositionMap("writer.go", "writer.cs", "AAkmgg==")]
 // </GoSourcePositionMaps>
 
-namespace go;
+namespace go.NamedImportInitOrder;
 
-[GoTestMatchingConsoleOutput]
-[GoPackage("main")]
-public static partial class main_package
+[GoPackage("writer")]
+public static partial class writer_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -65,7 +64,5 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    [GoValueClone("Buf")] internal partial struct cell {}
-    internal partial struct named {}
     // </TypeAccessibility>
 }

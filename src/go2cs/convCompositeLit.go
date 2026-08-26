@@ -858,6 +858,14 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 
 				if definedLen > 0 {
 					arrayTypeContext.maxLength = definedLen
+
+					// A FIXED-SIZE array renders as `array<T>(N){[i] = v}`, whose ctor fills every
+					// unset index with `default(T)` — so an element whose zero value must itself be
+					// constructed needs the same factory the positional padding carries (see the
+					// `.array(N, () => …)` suffix below). Only the fixed-array branch: the slice
+					// form below renders a different type, whose constructor set this argument does
+					// not belong to.
+					arrayTypeContext.maxLengthElemFactory = v.arrayElemFactory(elementType)
 				} else {
 					arrayTypeContext.maxLength = maxKeyValue + 1
 				}
@@ -879,8 +887,23 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 	// its element count — already yields the right length and keeps the plain projection, so the
 	// goldens for those are unchanged. A SLICE literal is genuinely as long as its elements
 	// (`[]byte{}` IS empty), and its `.slice()` suffix never matches here.
+	//
+	// The length alone is not always enough. When the ELEMENT's own zero value must be CONSTRUCTED —
+	// another unnamed fixed array (`[2][3]uint8`, whose inner length lives only in the Go type and
+	// never in `array<T>`), or a struct whose fixed-array field initializer runs only inside a
+	// declared constructor — padding with `default(T)` sizes the OUTER dimension while leaving every
+	// zero-filled element unusable storage: `len(x[0])` reported 0 where Go says 3, and the first
+	// indexed write into one panicked. That is the SAME defect one level down, and it survived the
+	// length fix because the DECLARED form (`var x [2][3]uint8`) never takes this route — it goes
+	// through the zero-value construction ladder, and was correct all along, so the two spellings of
+	// one Go type disagreed (found through reflect, by the ArrayOf guard, whose constructed
+	// `[2][3]uint8` compared unequal to the literal-built one). Reuse that ladder's own element
+	// factory and its one argument-list renderer rather than a second copy of the rule, so the
+	// literal and the declaration cannot drift apart; the factory is empty for every element whose
+	// `default(T)` is already the Go zero value, which is nearly all of them, so the bare-length
+	// render — and every existing golden — is unchanged.
 	if definedLen > 0 && compositeSuffix == ".array()" && len(compositeLit.Elts) < definedLen {
-		compositeSuffix = fmt.Sprintf(".array(%d)", definedLen)
+		compositeSuffix = fmt.Sprintf(".array(%s)", arrayLengthArgs(strconv.Itoa(definedLen), v.arrayElemFactory(elementType)))
 	}
 
 	var newSpace string
@@ -926,7 +949,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		} else if arrayTypeContext.compositeInitializer {
 			typeRender = fmt.Sprintf("%s[]", csElementType)
 		} else if arrayTypeContext.maxLength > 0 {
-			typeRender = fmt.Sprintf("%s(%d)", typeRender, arrayTypeContext.maxLength)
+			typeRender = fmt.Sprintf("%s(%s)", typeRender, arrayTypeContext.lengthArgs())
 		}
 	}
 
@@ -958,7 +981,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 			// it with the indexer-capable golib `array<T>(length)` instead, mirroring the alias form
 			// (`new words(4){[2] = 30}`); the named ctor takes an `array<T>` just as the positional
 			// `.array()` path produces.
-			typeRender = fmt.Sprintf("%s(new array<%s>(%d)", typeRender, csElementType, arrayTypeContext.maxLength)
+			typeRender = fmt.Sprintf("%s(new array<%s>(%s)", typeRender, csElementType, arrayTypeContext.lengthArgs())
 			compositeSuffix += ")"
 		} else {
 			// Wrap the underlying array/slice literal in the named type's constructor:

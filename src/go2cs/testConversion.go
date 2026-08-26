@@ -699,7 +699,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		liftedTypeNames:      packageLiftedTypeNames,
 		hoistedConstOrdinals: packageHoistedConstOrdinals,
 		globalTempVarCounts:  globalTempVarCount,
-		blankImportForces:    packageBlankImportForces,
+		importForces:    packageImportForces,
 		initFuncs:            initFuncCounter,
 	}
 
@@ -1739,14 +1739,16 @@ type productionSeed struct {
 	// class — CS0102, one of the three roots that stood between that package and any verdict at all.
 	globalTempVarCounts map[string]int
 
-	// blankImportForces — the imported paths a `[GoInit] initᴛᴛblankImportꓸ…` hook was already
-	// emitted for. The hook forces a blank-imported package's module constructor and is idempotent
-	// by construction: exactly one per (assembly, imported package). A test file repeating a
-	// production blank import is the ordinary case, not an exotic one — `x509.go` and `x509_test.go`
-	// both blank-import `crypto/sha256` and `crypto/sha512`, and each half emitted the same hook
-	// into the same partial class (CS0111 ×2). The PRODUCTION half owns the hook whenever its file
-	// is in the compilation, because that file is the one this run cannot rewrite.
-	blankImportForces HashSet[string]
+	// importForces — the imported paths a `[GoInit] initᴛᴛimportꓸ…` hook was already emitted for.
+	// The hook forces an imported package's module constructor and is idempotent by construction:
+	// exactly one per (assembly, imported package). A test file repeating a production import is
+	// the ordinary case, not an exotic one — `x509.go` and `x509_test.go` both blank-import
+	// `crypto/sha256` and `crypto/sha512`, and each half emitted the same hook into the same
+	// partial class (CS0111 ×2). Since the hook covers NAMED imports too, that overlap is now the
+	// rule rather than the exception: nearly every test file re-imports something its production
+	// half already forced. The PRODUCTION half owns the hook whenever its file is in the
+	// compilation, because that file is the one this run cannot rewrite.
+	importForces HashSet[string]
 
 	// initFuncs — how many Go `func init()` declarations the class already carries. Go allows any
 	// number per package and C# needs a distinct name for each, so the first takes `init` and the
@@ -1787,8 +1789,8 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		globalTempVarCount[prefix] = count
 	}
 
-	for importPath := range seed.blankImportForces {
-		packageBlankImportForces.Add(importPath)
+	for importPath := range seed.importForces {
+		packageImportForces.Add(importPath)
 	}
 
 	initFuncCounter = seed.initFuncs

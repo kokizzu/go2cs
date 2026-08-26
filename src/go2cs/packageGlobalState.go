@@ -103,6 +103,20 @@ type importedPackageMeta struct {
 // repopulated per package alongside importPackageDirs.
 var importedPackageSources map[string]*packages.Package
 
+// importedPackages maps a REACHABLE imported package's IMPORT PATH to the same loaded go/packages
+// entry importedPackageSources holds by directory. The two exist for opposite lookups:
+// importedPackageSources answers "what did the loader see at this directory", while this answers
+// "what did the loader see for this import path" — the question visitImportSpec has in hand, and
+// the one packageInitializesTransitively is asked.
+//
+// A GOROOT-vendored package is registered under BOTH spellings — the path the type graph reports
+// (`golang.org/x/text/transform`) and the on-disk path the converter rewrites it to
+// (`vendor/golang.org/x/text/transform`, see resolveGorootVendoredPath) — because the emission side
+// has already rewritten by the time it asks. A single-spelling map would simply miss those 19
+// packages, and, the lookup failing open, would force every one of them unconditionally: correct
+// output, arrived at by accident. Reset and repopulated per package alongside importPackageDirs.
+var importedPackages map[string]*packages.Package
+
 var constImportedTypeAliases HashSet[string]
 
 // derivedTypeAliases marks the importedTypeAliases keys that were DERIVED from a dependency's own
@@ -275,13 +289,13 @@ var initFuncCounter int
 
 var usesUnsafeCode bool
 
-// packageBlankImportForces holds the import paths this package (this ASSEMBLY, i.e. the current
+// packageImportForces holds the import paths this package (this ASSEMBLY, i.e. the current
 // conversion pass) has already emitted a blank-import force hook for. Go initializes an imported
 // package exactly once per program regardless of how many files import it, and a .NET module
 // constructor likewise runs once per assembly — so a package blank-imported from several files
 // needs exactly ONE hook, and it belongs to the first file that names it. Reset per package/variant
 // by resetPackageState; written under packageLock.
-var packageBlankImportForces HashSet[string]
+var packageImportForces HashSet[string]
 
 // packageDoc holds the current package's Go doc comment as godoc-markup TEXT, for the NuGet README.
 // It is rendered to Markdown at emission time by renderPackageDoc, which is where the source

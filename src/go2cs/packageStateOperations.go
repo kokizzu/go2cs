@@ -94,7 +94,7 @@ func resetPackageState(pkg *packages.Package) {
 	packageDirectBoxReceiverMethods = make(map[*types.Func]bool)
 	initFuncCounter = 0
 	usesUnsafeCode = false
-	packageBlankImportForces = HashSet[string]{}
+	packageImportForces = HashSet[string]{}
 	packageRefLoweringResult = nil
 
 	// Capture the package-level Go doc (rendered to Markdown) for the NuGet README
@@ -112,6 +112,8 @@ func resetPackageState(pkg *packages.Package) {
 
 	importPackageDirs = make(map[string]importedPackageMeta)
 	importedPackageSources = make(map[string]*packages.Package)
+	importedPackages = make(map[string]*packages.Package)
+	packageInitFacts = make(map[string]bool)
 
 	var captureImportDirs func(imports map[string]*packages.Package)
 
@@ -127,6 +129,14 @@ func resetPackageState(pkg *packages.Package) {
 			// derive a dependency's collision renames when its package_info.cs is absent.
 			if importedPkg.Dir != "" {
 				importedPackageSources[filepath.Clean(importedPkg.Dir)] = importedPkg
+			}
+
+			// …and by import path, under both spellings a GOROOT-vendored path can take, for the
+			// callers that hold a path rather than a directory (see importedPackages).
+			importedPackages[importPath] = importedPkg
+
+			if vendored := resolveGorootVendoredPath(importPath); vendored != importPath {
+				importedPackages[vendored] = importedPkg
 			}
 
 			captureImportDirs(importedPkg.Imports)
@@ -165,7 +175,7 @@ func newFileVisitor(fset *token.FileSet, packageTypes *types.Package, info *type
 		liftedAnonStructNames:     map[string]string{},
 		subStructTypes:            map[types.Type][]types.Type{},
 		packageImports:            &strings.Builder{},
-		blankImportInits:          &strings.Builder{},
+		importInits:          &strings.Builder{},
 		requiredUsings:            HashSet[string]{},
 		importQueue:               HashSet[string]{},
 		referencedForeignPackages: HashSet[string]{},

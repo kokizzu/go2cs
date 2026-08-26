@@ -188,11 +188,11 @@ type Visitor struct {
 	importQueue           HashSet[string]
 	requiredUsings        HashSet[string]
 	typeAliasDeclarations *strings.Builder
-	// blankImportInits collects this FILE's blank-import module-initializer hooks — the
-	// `[GoInit] … builtin.initPackage(typeof(<pkg>_package));` methods that force a
-	// side-effects-only import's `init` to run (see visitImportSpec's blank-alias branch).
-	// Spliced into the top of the file's class body at BlankImportInitMarker.
-	blankImportInits *strings.Builder
+	// importInits collects this FILE's imported-package module-initializer hooks — the
+	// `[GoInit] … builtin.initPackage(typeof(<pkg>_package));` methods that force an imported
+	// package's `init` to run before this package's own, for every import form (see
+	// writeImportInit). Spliced into the top of the file's class body at ImportInitMarker.
+	importInits *strings.Builder
 	// A cross-package type reference emits a short-alias form (`pkg.Type`, `@unsafe.Pointer`) that
 	// resolves only through a file-local alias `using <alias> = <namespace>;`. That alias is emitted
 	// when the file imports the package under its canonical (unaliased) name; a file can reference the
