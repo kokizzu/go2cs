@@ -4,10 +4,15 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// Hand-written implementations of syscall_windows.go's WSASendMsg and loadWSASendRecvMsg -- the
-// SUBMIT half of the Windows WriteMsg path and the extension lookup beneath it. Its sibling
-// net_windows_impl.cs owns the sendto half of the same datagram seam and supplies the staging
-// primitives this file reuses.
+// Hand-written implementations of syscall_windows.go's WSASendMsg, WSARecvMsg and the
+// loadWSASendRecvMsg extension lookup beneath both -- the whole of the Windows WriteMsg/ReadMsg seam.
+// Its sibling net_windows_impl.cs owns the sendto half of the same datagram surface and supplies the
+// staging primitives this file reuses.
+//
+// The three below were not landed together. The SUBMIT direction came first (with the encode fix in
+// internal/poll that exposed it); the HARVEST twin followed once a suite reached it. Their remedies
+// are NOT mirror images, and the reason is at the top of WSARecvMsg's own note: a submit can finish
+// its work before it returns and a receive cannot.
 //
 // THREE DEFECTS STOOD BETWEEN `net` AND A WORKING WriteMsgUDP / WriteMsgUDPAddrPort, all three the
 // same struct-passing family, each hidden behind the one before it. They are listed in the order the
@@ -62,13 +67,8 @@
 // native this submit needs -- the WSAMSG, the WSABUF array, the address image -- is carved from ONE
 // staged block the operation record owns and frees, exactly as the sendto half does.
 //
-// DELIBERATELY NOT COVERED: WSARecvMsg, the harvest twin. It has the identical defect in the
-// opposite direction (the kernel writes the native record and the caller reads the managed one), so
-// internal/poll's ReadMsg/ReadMsgInet4/ReadMsgInet6 remain broken. It is not fixed here for the
-// board's standing reason -- fix a censused wrapper when a suite REACHES it -- and no suite does:
-// the guard beside this change reads with ReadFrom, whose recvfrom path is already hand-owned. What
-// it would need is this file's staging plus a completion decode through
-// golib.GoAsyncIO.SetOperationCompletion, since the OS writes after the wrapper has returned.
+// STILL NOT COVERED, and named so it is not rediscovered: TransmitFile, and the Unix-domain control
+// path. Neither is reachable from the Windows ReadMsg/WriteMsg family this file completes.
 
 using System;
 using System.Runtime.InteropServices;
@@ -292,6 +292,144 @@ partial class windows_package
             return syscall.EINVAL;
         }
 
+        return default!;
+    }
+
+    // The submitting package's own read mode, the sibling of net_windows_impl.cs's wsaModeWrite.
+    // golib treats it opaquely and `syscall` spells the same 'r' for its read submits, so the two
+    // agree without either exporting a constant.
+    private const nint wsaModeRead = 'r';
+
+    // ---- THE HARVEST TWIN -------------------------------------------------------------------------
+    //
+    // WSARecvMsg is WSASendMsg's mirror and carries the identical struct-passing defect -- the
+    // generated wrapper hands the kernel `uintptr(unsafe.Pointer(msg))`, the address of the managed
+    // WSAMsg -- but the REMEDY is not a mirror, and that asymmetry is the whole of this function.
+    //
+    // A submit can finish its work before it returns: the caller wrote the values, this file
+    // transcribes them, the kernel reads them. A RECEIVE cannot. The kernel fills the record AFTER
+    // the wrapper has returned, so there is no moment inside it at which a decode could run -- the
+    // decode has to be carried by the operation and run when it completes. That is what
+    // golib.GoAsyncIO.SetOperationCompletion exists for, and this package's own
+    // WSAGetOverlappedResult (zsyscall_windows_wsa_impl.cs) is where every asynchronous exit of
+    // execIO funnels through and runs it. `syscall`'s WSARecvFrom is the same shape one package over
+    // and is this function's template, down to capturing the staged addresses as INTEGERS -- a C#
+    // closure cannot capture a pointer local, and the staging outlives the operation by construction,
+    // so an address is the honest thing to carry.
+    //
+    // WHAT COMES BACK, and why each part matters:
+    //   * the ADDRESS -- transcribed into the very RawSockaddrAny box internal/poll then reads with
+    //     rawToSockaddrInet4/6 or RawSockaddrAny.Sockaddr, through syscall's ONE native->managed
+    //     transcription (GoReadNativeRawSockaddr). Without it ReadMsg reports whatever that box held
+    //     from the previous receive.
+    //   * Control.Len -- internal/poll returns it as `oobn`, the caller's count of control bytes.
+    //   * Flags -- internal/poll returns it as the third value; MSG_TRUNC/MSG_CTRUNC live here.
+    //
+    // WHAT DOES NOT NEED CARRYING BACK: the DATA. stageWSABufs points the native WSABUFs straight at
+    // the Go buffers' addresses, and golib's ж->pointer conversion holds that storage still for the
+    // box's lifetime (EnsureStableAddress), so the kernel writes into the caller's slice directly.
+    // `syscall` additionally pins through its own operation record; here the boxes stay reachable for
+    // the whole call by construction, because execIO blocks on the completion it submitted. The same
+    // reasoning covers the control buffer, which is the caller's own `oob` slice.
+    //
+    // ⚠ NET'S OWN WINDOWS TESTS NEVER PASS A NON-EMPTY oob (censused across the 1.23.12 suite: every
+    // Windows-reachable ReadMsg call site passes literal nil; the only non-empty case is
+    // unixsock_readmsg_test.go's SCM_RIGHTS, which is //go:build unix and never compiles here). So
+    // the control path below is structural rather than measured -- written to be correct rather than
+    // because something exercises it, and said plainly so a later reader does not mistake the guard's
+    // silence for coverage.
+    public static unsafe error WSARecvMsg(syscallꓸHandle fd, ж<WSAMsg> Ꮡmsg, ж<uint32> ᏑbytesReceived, ж<syscall.Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
+        var err = loadWSASendRecvMsg();
+
+        if (err != default!) {
+            return err;
+        }
+
+        ref var msg = ref Ꮡmsg.Value;
+
+        // Resolved BEFORE the rearm, so an early return owes the operation nothing. Unlike WriteMsg,
+        // internal/poll's ReadMsg ALWAYS sets Name -- a receive has nowhere to report the sender
+        // otherwise -- so a token that does not resolve is a real defect rather than a legal shape.
+        if (ManagedPointerTokens.Resolve((nuint)(uintptr)msg.Name) is not ж<syscall.RawSockaddrAny> Ꮡrsa) {
+            return syscall.EINVAL;
+        }
+
+        nuint native = golib.GoAsyncIO.RearmOperation((nuint)(uintptr)fd, Ꮡoverlapped, wsaModeRead);
+
+        uint32 slots = msg.BufferCount == 0 ? 1 : msg.BufferCount;
+        int bufBytes = checked((int)slots * sizeof(NativeWSABuf));
+        int msgBytes = sizeof(NativeWSAMsg);
+        byte* block = (byte*)golib.GoAsyncIO.StageOperationBuffer(Ꮡoverlapped, checked(msgBytes + bufBytes + syscall.GoNativeSockaddrLen));
+
+        NativeWSAMsg* nativeMsg = (NativeWSAMsg*)block;
+        NativeWSABuf* staged = (NativeWSABuf*)(block + msgBytes);
+        byte* addr = block + msgBytes + bufBytes;
+
+        stageWSABufs(msg.Buffers, msg.BufferCount, staged);
+
+        // ⚠ ZEROED EVERY SUBMIT, load-bearing rather than tidy. The staging block belongs to the
+        // OPERATION and is reused by every receive on this waiter, so the PREVIOUS datagram's sender
+        // address is still sitting here. The harvest transcribes the full record (see there), which
+        // is only exact because these bytes start at zero.
+        for (nint i = 0; i < syscall.GoNativeSockaddrLen; i++) {
+            addr[i] = 0;
+        }
+
+        nativeMsg->Name = addr;
+        // What the kernel is told it has ROOM for -- the sockaddr_storage buffer, not the 116-byte Go
+        // record the harvest transcribes into. Conflating the two is how a 128-byte write lands in a
+        // 116-byte struct.
+        nativeMsg->Namelen = syscall.GoNativeSockaddrLen;
+        nativeMsg->Buffers = staged;
+        nativeMsg->BufferCount = msg.BufferCount;
+        nativeMsg->Control.Len = msg.Control.Len;
+        nativeMsg->Control.Buf = msg.Control.Buf == nil ? null : (byte*)(void*)msg.Control.Buf;
+        // Flags is IN/OUT: internal/poll seeds it with the caller's flags and reads it back after.
+        nativeMsg->Flags = msg.Flags;
+
+        nuint msgAddress = (nuint)nativeMsg;
+        nuint addrAddress = (nuint)addr;
+        ж<WSAMsg> Ꮡdst = Ꮡmsg;
+
+        golib.GoAsyncIO.SetOperationCompletion(Ꮡoverlapped, _ => {
+            NativeWSAMsg* completed = (NativeWSAMsg*)msgAddress;
+
+            // The FULL record, not the returned namelen. Winsock's contract does not promise to
+            // update lpMsg->namelen on receive, and it does not need to: the buffer was zeroed at
+            // submit, so transcribing all 116 bytes reproduces exactly what the kernel wrote with
+            // zeros behind it. Depending on a length the contract does not guarantee would buy
+            // nothing and could silently truncate.
+            syscall.GoReadNativeRawSockaddr(Ꮡrsa, (byte*)addrAddress, syscall.GoRawSockaddrAnyLen);
+
+            Ꮡdst.Value.Control.Len = completed->Control.Len;
+            Ꮡdst.Value.Flags = completed->Flags;
+        });
+
+        uint32 recvd = 0;
+        var (r1, _, e1) = syscall.Syscall6(sendRecvMsgFunc.recvAddr, 5, (uintptr)fd, (uintptr)(void*)nativeMsg,
+                                           (uintptr)(void*)(&recvd), (uintptr)native, (uintptr)Ꮡcroutine, 0);
+
+        if (ᏑbytesReceived != nil) {
+            ᏑbytesReceived.Value = recvd;
+        }
+
+        if (r1 == socket_error) {
+            error e = e1 != 0 ? errnoErr(e1) : syscall.EINVAL;
+
+            // ERROR_IO_PENDING is the normal overlapped path: the harvest runs the transcription. Any
+            // OTHER error means no completion will arrive, so drop the pending work rather than leave
+            // it for the next submit on this waiter to inherit -- WSARecvFrom's own rule.
+            if (!AreEqual(e, syscall.ERROR_IO_PENDING)) {
+                golib.GoAsyncIO.CompleteOperation(Ꮡoverlapped, 0);
+            }
+
+            return e;
+        }
+
+        // Completed SYNCHRONOUSLY: the record is already filled and a descriptor carrying
+        // skipSyncNotif never harvests, so run the decode now. CompleteOperation removes before it
+        // runs, so a later harvest of the same operation cannot decode twice.
+        golib.GoAsyncIO.CompleteOperation(Ꮡoverlapped, (nint)recvd);
         return default!;
     }
 }

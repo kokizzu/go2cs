@@ -84,6 +84,8 @@ internal static void writeMsgAddrPortRoundTrip(@string network, @string host) {
         nint reads = 0;
         nint bytes = 0;
         nint sender = 0;
+        nint oob0 = 0;
+        nint flag0 = 0;
         for (nint i = 0; i < rounds; i++) {
             _ = new slice<byte>(512);
             var (n, oobn, err) = client.WriteMsgUDPAddrPort(payload, default!, target);
@@ -92,7 +94,7 @@ internal static void writeMsgAddrPortRoundTrip(@string network, @string host) {
             }
             writes++;
             server.SetReadDeadline(time.Now().Add((time.Duration)(5000000000L)));
-            (var rn, var from, err) = server.ReadFromUDPAddrPort(buf);
+            (var rn, var roobn, var flags, var from, err) = server.ReadMsgUDPAddrPort(buf, default!);
             if (err != default!) {
                 break;
             }
@@ -103,8 +105,15 @@ internal static void writeMsgAddrPortRoundTrip(@string network, @string host) {
             if (from.Port() == clientPort) {
                 sender++;
             }
+            if (roobn == 0) {
+                oob0++;
+            }
+            if (flags == 0) {
+                flag0++;
+            }
         }
-        fmt.Printf("addrport %s: writes=%d reads=%d bytes=%d sender=%d\n"u8, network, writes, reads, bytes, sender);
+        fmt.Printf("addrport %s: writes=%d reads=%d bytes=%d sender=%d oobn0=%d flags0=%d\n"u8,
+            network, writes, reads, bytes, sender, oob0, flag0);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
@@ -131,6 +140,8 @@ internal static void writeMsgUDPRoundTrip(@string network, @string host) {
         nint reads = 0;
         nint bytes = 0;
         nint sender = 0;
+        nint oob0 = 0;
+        nint flag0 = 0;
         for (nint i = 0; i < rounds; i++) {
             _ = new slice<byte>(512);
             var (n, oobn, err) = client.WriteMsgUDP(payload, default!, target);
@@ -139,7 +150,7 @@ internal static void writeMsgUDPRoundTrip(@string network, @string host) {
             }
             writes++;
             server.SetReadDeadline(time.Now().Add((time.Duration)(5000000000L)));
-            (var rn, var from, err) = server.ReadFromUDP(buf);
+            (var rn, var roobn, var flags, var from, err) = server.ReadMsgUDP(buf, default!);
             if (err != default!) {
                 break;
             }
@@ -150,8 +161,15 @@ internal static void writeMsgUDPRoundTrip(@string network, @string host) {
             if ((~from).Port == clientPort) {
                 sender++;
             }
+            if (roobn == 0) {
+                oob0++;
+            }
+            if (flags == 0) {
+                flag0++;
+            }
         }
-        fmt.Printf("udpaddr %s: writes=%d reads=%d bytes=%d sender=%d\n"u8, network, writes, reads, bytes, sender);
+        fmt.Printf("udpaddr %s: writes=%d reads=%d bytes=%d sender=%d oobn0=%d flags0=%d\n"u8,
+            network, writes, reads, bytes, sender, oob0, flag0);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }

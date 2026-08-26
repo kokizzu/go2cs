@@ -89,9 +89,12 @@
 // carries the full chain; together with these two, WriteMsgUDP and WriteMsgUDPAddrPort work on both
 // families (the UdpWriteMsgAddrPort guard).
 //
-// The HARVEST twin, WSARecvMsg, has the identical defect in the opposite direction and is still open,
-// so ReadMsg/ReadMsgInet4/ReadMsgInet6 do not work -- the decoders above are reached by ReadFrom's
-// recvfrom path, which does.
+// The HARVEST twin, WSARecvMsg, held the identical defect in the opposite direction and is hand-owned
+// in that same file now, which is what makes the DECODERS at the top of this file reachable from
+// ReadMsg/ReadMsgInet4/ReadMsgInet6 at all rather than only from ReadFrom's recvfrom path. All four
+// functions here are therefore live on both directions of the Windows datagram surface, and the
+// UdpWriteMsgAddrPort guard round-trips them: WriteMsg out through the encoders, ReadMsg back through
+// the decoders.
 
 using System;
 using golib = go.golib;
