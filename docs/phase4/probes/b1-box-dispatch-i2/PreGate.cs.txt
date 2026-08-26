@@ -1,0 +1,226 @@
+// B1 elemRef PRE-GATE bench (OQ-4, granted as a B2 pre-gate) — the FINAL ElemRefBox shape:
+//   (T[]? m_backing, IArray? m_foreign, nint m_index, object? m_pin) + base m_isNull,
+// null-test dispatch (the two-field refinement whose benched isinst form was the stated upper
+// bound), N2's pin field restored, N3's resolution embodied: the fast arm holds a
+// canonical-AND-deref-equivalent (T[], absolute index) pair — equivalence holding by the
+// indexer definitions of the three fast arms — while the foreign arm derefs through the
+// ORIGINAL IArray exactly as today and canonicalizes identity per-call exactly as today.
+//
+// Arms: W1 (current interface shape, transcribed) vs FINAL. Workloads: managed-arm Value,
+// foreign-arm Value, token-managed (construction-time vs per-call canonicalization).
+// 12 interleaved rounds; median [min-max]; run 4 isolated processes per runtime.
+
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
+#pragma warning disable CS0649
+
+internal interface IArrayM { object? Source { get; } }
+internal interface IArrayM<T> : IArrayM { ref T ElementRef(int index); }
+
+internal sealed class ArrayM<T> : IArrayM<T>
+{
+    private readonly T[] m_items;
+    public ArrayM(T[] items) => m_items = items;
+    public object? Source => m_items;
+    public ref T ElementRef(int index) => ref m_items[index];
+}
+
+internal sealed class ForeignArrayM<T> : IArrayM<T>
+{
+    private readonly T[] m_hidden;
+    public ForeignArrayM(T[] hidden) => m_hidden = hidden;
+    public object? Source => null;
+    public ref T ElementRef(int index) => ref m_hidden[index];
+}
+
+// W1: the current elem shape — (IArray, int) nullable tuple, interface deref, per-call canonical.
+internal sealed class W1Elem<T>
+{
+    private readonly (IArrayM, int)? m_arrayIndexRef;
+    private T m_val;                    // the dead inline value the split removes
+    private object? m_pin;
+
+    public W1Elem(IArrayM array, int index)
+    {
+        m_val = default!;
+        m_arrayIndexRef = (array, index);
+    }
+
+    public ref T Value
+    {
+        get
+        {
+            (IArrayM array, int index) = m_arrayIndexRef!.Value;
+
+            if (array is IArrayM<T> typedArray)
+                return ref typedArray.ElementRef(index);
+
+            throw new InvalidOperationException();
+        }
+    }
+
+    private static (object storage, nint index) Canonical(IArrayM array, int index) =>
+        array.Source is T[] backing ? (backing, index) : (array, index);
+
+    public nuint PointerOrderToken
+    {
+        get
+        {
+            (object storage, nint element) = Canonical(m_arrayIndexRef!.Value.Item1, m_arrayIndexRef.Value.Item2);
+            return unchecked((nuint)((ulong)(uint)RuntimeHelpers.GetHashCode(storage) << 32) + (nuint)(uint)element);
+        }
+    }
+}
+
+// FINAL: the increment-2.1 shape.
+internal abstract class FBox<T>
+{
+    protected readonly bool m_isNull;
+    protected FBox(bool isNull = false) => m_isNull = isNull;
+    public abstract ref T Value { get; }
+    public abstract nuint PointerOrderToken { get; }
+}
+
+internal sealed class FElem<T> : FBox<T>
+{
+    private readonly T[]? m_backing;     // fast arm: canonical AND deref-equivalent
+    private readonly IArrayM? m_foreign; // foreign arm: deref through the ORIGINAL, as today
+    private readonly nint m_index;
+    private object? m_pin;               // N2: restored — this kind's storage is pinnable
+
+    public FElem(IArrayM array, int index)
+    {
+        if (array.Source is T[] backing)
+        {
+            m_backing = backing;
+            m_index = index;
+        }
+        else
+        {
+            m_foreign = array;
+            m_index = index;
+        }
+    }
+
+    public override ref T Value
+    {
+        get
+        {
+            if (m_backing is not null)
+                return ref m_backing[m_index];
+
+            return ref Unsafe.As<IArrayM<T>>(m_foreign!).ElementRef((int)m_index);
+        }
+    }
+
+    public override nuint PointerOrderToken
+    {
+        get
+        {
+            if (m_backing is not null)
+                return unchecked((nuint)((ulong)(uint)RuntimeHelpers.GetHashCode(m_backing) << 32) + (nuint)(uint)m_index);
+
+            // foreign arm: canonicalize per-call, exactly today's cost
+            object storage = m_foreign!.Source ?? m_foreign;
+            return unchecked((nuint)((ulong)(uint)RuntimeHelpers.GetHashCode(storage) << 32) + (nuint)(uint)m_index);
+        }
+    }
+}
+
+internal static class Program
+{
+    private const int Rounds = 12;
+    private const int Iters = 40_000_000;
+    private static long s_sink;
+    private static nuint s_sinkN;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static double Time(Func<int, long> body, int iters)
+    {
+        Stopwatch sw = Stopwatch.StartNew();
+        s_sink += body(iters);
+        sw.Stop();
+        return sw.Elapsed.TotalNanoseconds / iters;
+    }
+
+    private static (double med, double min, double max) Stats(List<double> s0)
+    {
+        List<double> s = [.. s0];
+        s.Sort();
+        int n = s.Count;
+        return (n % 2 == 1 ? s[n / 2] : (s[n / 2 - 1] + s[n / 2]) / 2.0, s[0], s[^1]);
+    }
+
+    private static void Main()
+    {
+        bool isAot = !RuntimeFeature.IsDynamicCodeSupported;
+        Console.WriteLine($"runtime: {(isAot ? "AOT" : "JIT")}  {Environment.Version}  pid {Environment.ProcessId}");
+
+        long[] backing = new long[16];
+        var managed = new ArrayM<long>(backing);
+        var foreign = new ForeignArrayM<long>(new long[16]);
+
+        var w1m = new W1Elem<long>(managed, 3);
+        var w1f = new W1Elem<long>(foreign, 3);
+        var fm = (FBox<long>)new FElem<long>(managed, 3);
+        var ff = (FBox<long>)new FElem<long>(foreign, 3);
+
+        Func<int, long> w1MVal = it => { long a = 0; for (int i = 0; i < it; i++) a += w1m.Value; return a; };
+        Func<int, long> fMVal = it => { long a = 0; for (int i = 0; i < it; i++) a += fm.Value; return a; };
+        Func<int, long> w1FVal = it => { long a = 0; for (int i = 0; i < it; i++) a += w1f.Value; return a; };
+        Func<int, long> fFVal = it => { long a = 0; for (int i = 0; i < it; i++) a += ff.Value; return a; };
+        Func<int, long> w1Tok = it => { nuint a = 0; for (int i = 0; i < it; i++) a ^= w1m.PointerOrderToken; s_sinkN ^= a; return 0; };
+        Func<int, long> fTok = it => { nuint a = 0; for (int i = 0; i < it; i++) a ^= fm.PointerOrderToken; s_sinkN ^= a; return 0; };
+
+        Func<int, long>[] all = [w1MVal, fMVal, w1FVal, fFVal, w1Tok, fTok];
+
+        for (int w = 0; w < 3; w++)
+            foreach (Func<int, long> b in all)
+                Time(b, 1_000_000);
+
+        (string name, Func<int, long> a1, Func<int, long> a2)[] rows =
+        [
+            ("elem-Value-managed", w1MVal, fMVal),
+            ("elem-Value-foreign", w1FVal, fFVal),
+            ("elem-token-managed", w1Tok, fTok),
+        ];
+
+        var cells = new List<double>[rows.Length, 2];
+
+        for (int r = 0; r < rows.Length; r++)
+        {
+            cells[r, 0] = [];
+            cells[r, 1] = [];
+        }
+
+        for (int round = 0; round < Rounds; round++)
+            for (int r = 0; r < rows.Length; r++)
+            {
+                cells[r, 0].Add(Time(rows[r].a1, Iters));
+                cells[r, 1].Add(Time(rows[r].a2, Iters));
+            }
+
+        Console.WriteLine($"{"workload",-22} {"W1-current",24} {"FINAL",24}  ratio");
+
+        for (int r = 0; r < rows.Length; r++)
+        {
+            (double m1, double lo1, double hi1) = Stats(cells[r, 0]);
+            (double m2, double lo2, double hi2) = Stats(cells[r, 1]);
+            Console.WriteLine($"{rows[r].name,-22} {m1,8:F3} [{lo1,6:F3}-{hi1,6:F3}] {m2,8:F3} [{lo2,6:F3}-{hi2,6:F3}]  {m2 / m1,5:F2}x");
+        }
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        object?[] keep = new object?[64];
+        long before = GC.GetAllocatedBytesForCurrentThread();
+
+        for (int i = 0; i < 64; i++)
+            keep[i] = new FElem<long>(managed, 1);
+
+        long perBox = (GC.GetAllocatedBytesForCurrentThread() - before) / 64;
+        GC.KeepAlive(keep);
+        Console.WriteLine($"FINAL elemRef bytes/box: {perBox}");
+        Console.WriteLine($"(sinks {s_sink} {s_sinkN})");
+    }
+}
