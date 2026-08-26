@@ -1,9 +1,39 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+using System.Runtime.ExceptionServices;
+
+[module: go.GoManualConversion]
 namespace go;
 
 partial class sync_package {
+
+// Hand-owned (exec-wall design OQ-6, replay half — JOB-024, 2026-08-26). The converted OnceX
+// wrappers guard f with Go's own `defer { p = recover(); if !valid { panic(p) } }`, and the
+// frame-level foreign-unwind correction (GoFrame.Run, cc6454f5e) already preserves a FOREIGN
+// (.NET) exception's identity through that defer on the FIRST call. But Go's contract replays the
+// panic VALUE on every LATER call — `if !valid { panic(p) }` in the returned closure — and during
+// a foreign unwind recover() stored nil into p, so every later caller re-panicked `panic: nil`
+// with no trace of the original. JOB-024 measured that shape killing the os/exec host: 1.23.12's
+// TestConcurrentExec fans callers out on goroutines, one gets the preserved original, every other
+// goroutine gets the nil replay, and an unrecovered goroutine panic is process-fatal.
+//
+// This hand-own extends Go's replay contract to the interop reality, disturbing nothing else:
+//
+//   - The unwind classes are RECORDED by an exception FILTER that always declines the catch, so
+//     the first call's propagation — Go panic, adopted runtime fault, or foreign exception — is
+//     byte-for-byte what the caller saw before: same object, same stack, first pass uninterrupted.
+//   - A GO panic replays exactly as the converted code replayed it: `throw panic(p)` with the
+//     recovered value, on every later call.
+//   - A FOREIGN exception replays as ITSELF: the captured ExceptionDispatchInfo re-throws the
+//     original exception, identity intact, on every later call — where the converted shape
+//     replayed `panic(nil)`.
+//   - runtime.Goexit records nothing and unwinds freely, exactly as it fails GoFrame.IsPanic and
+//     the foreign-preservation filter today; a later call after a Goexit-abandoned once replays
+//     the nil panic the converted shape produced (Go itself leaves this corner undefined).
+//
+// Guarded by GolibTests/OnceForeignExceptionTests (the replay guards fail against the converted
+// shape and pass against this one; the Go-panic control passes against both).
 
 // OnceFunc returns a function that invokes f only once. The returned function
 // may be called concurrently.
@@ -11,32 +41,37 @@ partial class sync_package {
 // If f panics, the returned function will panic with the same value on every call.
 public static Action OnceFunc(Action f) {
     ref var once = ref heap(new Once(), out var Ꮡonce);
-    bool valid = default!;
-    ref var p = ref heap<any>(out var Ꮡp);
+    bool valid = false;
+    object? p = null;
+    ExceptionDispatchInfo? foreignUnwind = null;
+
+    bool recordUnwind(Exception ex) {
+        if (GoFrame.IsPanic(ex, out PanicException? gp)) {
+            p = gp.State;
+        }
+        else if (ex is not GoexitException) {
+            foreignUnwind = ExceptionDispatchInfo.Capture(ex);
+        }
+        return false; // never catch — the first call's unwind continues with its identity intact
+    }
+
     // Construct the inner closure just once to reduce costs on the fast path.
     var g = () => {
-        GoFrame ᒐ = default;
         try {
-            defer(() => {
-                Ꮡp.ValueSlot = recover();
-                if (!valid) {
-                    // Re-panic immediately so on the first call the user gets a
-                    // complete stack trace into f.
-                    throw panic(Ꮡp.ValueSlot);
-                }
-            }, ref ᒐ);
             f();
             f = default!; // Do not keep f alive after invoking it.
             valid = true; // Set only if f does not panic.
         }
-        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-        finally { ᒐ.Run(); }
+        catch (Exception ᒐex) when (recordUnwind(ᒐex)) { throw; } // unreachable: the filter declines
     };
     var gʗ1 = g;
     return () => {
         Ꮡonce.Do(gʗ1);
         if (!valid) {
-            throw panic(Ꮡp.ValueSlot);
+            if (foreignUnwind is { } fe) {
+                fe.Throw(); // replay the ORIGINAL foreign exception, identity intact
+            }
+            throw panic(p!);
         }
     };
 }
@@ -47,32 +82,39 @@ public static Action OnceFunc(Action f) {
 // If f panics, the returned function will panic with the same value on every call.
 public static Func<T> OnceValue<T>(Func<T> f) {
     ref var once = ref heap(new Once(), out var Ꮡonce);
-    bool valid = default!;
-    ref var p = ref heap<any>(out var Ꮡp);
-    ref var result = ref heap<T>(out var Ꮡresult);
+    bool valid = false;
+    object? p = null;
+    ExceptionDispatchInfo? foreignUnwind = null;
+    T result = default!;
+
+    bool recordUnwind(Exception ex) {
+        if (GoFrame.IsPanic(ex, out PanicException? gp)) {
+            p = gp.State;
+        }
+        else if (ex is not GoexitException) {
+            foreignUnwind = ExceptionDispatchInfo.Capture(ex);
+        }
+        return false; // never catch — the first call's unwind continues with its identity intact
+    }
+
     var g = () => {
-        GoFrame ᒐ = default;
         try {
-            defer(() => {
-                Ꮡp.ValueSlot = recover();
-                if (!valid) {
-                    throw panic(Ꮡp.ValueSlot);
-                }
-            }, ref ᒐ);
-            Ꮡresult.ValueSlot = f();
+            result = f();
             f = default!;
             valid = true;
         }
-        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-        finally { ᒐ.Run(); }
+        catch (Exception ᒐex) when (recordUnwind(ᒐex)) { throw; } // unreachable: the filter declines
     };
     var gʗ1 = g;
     return () => {
         Ꮡonce.Do(gʗ1);
         if (!valid) {
-            throw panic(Ꮡp.ValueSlot);
+            if (foreignUnwind is { } fe) {
+                fe.Throw(); // replay the ORIGINAL foreign exception, identity intact
+            }
+            throw panic(p!);
         }
-        return Ꮡresult.ValueSlot;
+        return result;
     };
 }
 
@@ -82,33 +124,40 @@ public static Func<T> OnceValue<T>(Func<T> f) {
 // If f panics, the returned function will panic with the same value on every call.
 public static Func<(T1, T2)> OnceValues<T1, T2>(Func<(T1, T2)> f) {
     ref var once = ref heap(new Once(), out var Ꮡonce);
-    bool valid = default!;
-    ref var p = ref heap<any>(out var Ꮡp);
-    ref var r1 = ref heap<T1>(out var Ꮡr1);
-    ref var r2 = ref heap<T2>(out var Ꮡr2);
+    bool valid = false;
+    object? p = null;
+    ExceptionDispatchInfo? foreignUnwind = null;
+    T1 r1 = default!;
+    T2 r2 = default!;
+
+    bool recordUnwind(Exception ex) {
+        if (GoFrame.IsPanic(ex, out PanicException? gp)) {
+            p = gp.State;
+        }
+        else if (ex is not GoexitException) {
+            foreignUnwind = ExceptionDispatchInfo.Capture(ex);
+        }
+        return false; // never catch — the first call's unwind continues with its identity intact
+    }
+
     var g = () => {
-        GoFrame ᒐ = default;
         try {
-            defer(() => {
-                Ꮡp.ValueSlot = recover();
-                if (!valid) {
-                    throw panic(Ꮡp.ValueSlot);
-                }
-            }, ref ᒐ);
-            (Ꮡr1.ValueSlot, Ꮡr2.ValueSlot) = f();
+            (r1, r2) = f();
             f = default!;
             valid = true;
         }
-        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-        finally { ᒐ.Run(); }
+        catch (Exception ᒐex) when (recordUnwind(ᒐex)) { throw; } // unreachable: the filter declines
     };
     var gʗ1 = g;
     return () => {
         Ꮡonce.Do(gʗ1);
         if (!valid) {
-            throw panic(Ꮡp.ValueSlot);
+            if (foreignUnwind is { } fe) {
+                fe.Throw(); // replay the ORIGINAL foreign exception, identity intact
+            }
+            throw panic(p!);
         }
-        return (Ꮡr1.ValueSlot, Ꮡr2.ValueSlot);
+        return (r1, r2);
     };
 }
 

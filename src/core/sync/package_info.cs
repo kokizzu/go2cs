@@ -55,7 +55,6 @@ using static go.sync_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("sync/cond.go", "cond.cs", "ADJgkgACJAARAoKCgoIAAhTygq7CggAVOLI=")]
 [assembly: go.GoPositionMap("sync/map.go", "map.cs", "AGfWAaKCgqaCgIKkrOKCgoK4goKCuJSUgpSmgoKClKiSqNKClJaChIKClpQABRLigoLMkoKClIKCAAQSwqyyrAAIBIKAgoKCuIKCgIKClKKCgpSmgpSCtIQAAhDSgoKUgsySgoKUgoKUgs7CgoKCgoKCgoK4lJSClKiSpoKCgoKUggAEEsKCgoKUgs7ygoCCgIKClMiCgoCCppSAgoLEgoCCgramgpS0gqwACAKCgIKkpoKCgoKAgqKC7rQABRDygoKCgoKCggAHEJSUgoKClIKmAAIcABEKgsqCgoKCkoKClJaCgoKUgsqigoKUgoKmooKWgoKCgsqCgoKClJQ=")]
-[assembly: go.GoPositionMap("sync/oncefunc.go", "oncefunc.cs", "AAcWwryigoKmpoKCxJKCggAEEsK8ooKCgqaCgsSSgoKUAAMQws6igoKCpoKCxJKCgpQ=")]
 [assembly: go.GoPositionMap("sync/runtime.go", "runtime.cs", "AAkcAAYUAAkCkgABEgAIBqampqaigoKqtqQ=")]
 // </GoSourcePositionMaps>
 
