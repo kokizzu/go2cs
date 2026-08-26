@@ -798,6 +798,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// because darwin declares both names too, with working libc-backed bodies.
 		"Fstat":                  goosLinux,
 		"fstatat":                goosLinux,
+		// The class's first BLOCKING member (the os/exec SIGSEGV arc, 2026-08-26): the generated
+		// wait4 handed the kernel two golib box addresses across a call that SLEEPS until a child
+		// changes state, so GC compaction relocated the boxes mid-wait and the kernel's eventual
+		// status/rusage write corrupted the heap — a SIGSEGV at a moving later point, 4-for-4 on
+		// os/exec's suite the day the exec wall opened. Hand-owned beside Fstat with stack-local
+		// native buffers that live for the whole call. Scoped to linux exactly as Fstat: darwin
+		// declares wait4 too, with a working libc-backed body.
+		"wait4":                  goosLinux,
 		"GetTimeZoneInformation": goosWindows,
 		// The same seam over a bigger record, and the first member of the class an actual suite
 		// reached: the kernel writes a 592-byte WIN32_FIND_DATAW, whose cFileName[260] and

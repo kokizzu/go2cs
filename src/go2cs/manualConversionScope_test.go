@@ -225,7 +225,7 @@ func TestWindowsOnlyEntriesAreScopedToWindows(t *testing.T) {
 // either, and an entry that claimed them there would be inert today and a trap tomorrow.
 func TestLinuxOnlyEntriesAreScopedToLinux(t *testing.T) {
 	linuxOnly := map[string][]string{
-		"syscall": {"Fstat", "fstatat"},
+		"syscall": {"Fstat", "fstatat", "wait4"},
 	}
 
 	for pkgPath, names := range linuxOnly {
