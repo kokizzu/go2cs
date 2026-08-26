@@ -109,8 +109,7 @@ public static @string Clean(@string path) {
     //	dotdot is index in buf where .. must stop, either because
     //		it is the leading slash or it is a leading ../../.. prefix.
     nint n = len(path);
-    ref var @out = ref heap<lazybuf>(out var Ꮡout);
-    @out = new lazybuf(path: path, volAndPath: originalPath, volLen: volLen);
+    var @out = new lazybuf(path: path, volAndPath: originalPath, volLen: volLen);
     nint r = 0;
     nint dotdot = 0;
     if (rooted) {

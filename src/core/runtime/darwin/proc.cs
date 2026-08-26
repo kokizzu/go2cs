@@ -3977,7 +3977,7 @@ internal static void injectglist(ж<gList> Ꮡglist) {
         return;
     }
     nint npidle = (nint)Ꮡsched.of(schedt.Ꮡnpidle).Load();
-    ref var globq = ref heap(new gQueue(), out var Ꮡglobq);
+    gQueue globq = default!;
     nint n = default!;
     for (n = 0; n < npidle && !q.empty(); n++) {
         var g = q.pop();
@@ -6787,7 +6787,7 @@ internal static bool runqputslow(ж<Δp> Ꮡpp, ж<g> Ꮡgp, uint32 h, uint32 t)
     for (var i = (uint32)0; i < n; i++) {
         batch[(nint)(i)].of(g.Ꮡschedlink).set(batch[(nint)(i + 1)]);
     }
-    ref var q = ref heap(new gQueue(), out var Ꮡq);
+    gQueue q = default!;
     q.head.set(batch[0]);
     q.tail.set(batch[(nint)(n)]);
     // Now put the batch on global queue.
