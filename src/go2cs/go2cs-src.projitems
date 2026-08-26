@@ -158,6 +158,8 @@
     <None Include="$(MSBuildThisFileDirectory)requiresUnsafeMarker_test.go" />
     <None Include="$(MSBuildThisFileDirectory)resolveBuildTags_test.go" />
     <None Include="$(MSBuildThisFileDirectory)resolveGo2CSPath_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)returnOperandOrder.go" />
+    <None Include="$(MSBuildThisFileDirectory)returnOperandOrder_test.go" />
     <None Include="$(MSBuildThisFileDirectory)rootShadowQualification_test.go" />
     <None Include="$(MSBuildThisFileDirectory)samePackageImplements.go" />
     <None Include="$(MSBuildThisFileDirectory)samePackageImplements_test.go" />

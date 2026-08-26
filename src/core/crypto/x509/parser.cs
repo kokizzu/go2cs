@@ -428,7 +428,7 @@ internal static (any, error) parsePublicKey(ref publicKeyInfo keyData) {
             return (default!, errors.New(x509X25519KeyEncodedWithˢ));
         }
         var (ᴛ1, ᴛ2) = ecdh.X25519().NewPublicKey(der);
-        return (~ᴛ1, ᴛ2);
+        return (ᴛ1.OrTypedNil(), ᴛ2);
     }
     case {} when oid.Equal(oidPublicKeyDSA): {
         var y = @new<bigꓸInt>();

@@ -892,6 +892,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
 
     [TestMethod]
+    public void CheckMultiValueReturnOrder() => CheckTarget("MultiValueReturnOrder");
+
+    [TestMethod]
     public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");
 
     [TestMethod]

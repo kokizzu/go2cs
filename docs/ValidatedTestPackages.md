@@ -91,19 +91,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **175 / 215 testable packages validated — 81.4%**
+> ### Phase 4 progress: **176 / 215 testable packages validated — 81.9%**
 >
-> **18,979 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **19,320 matching test verdicts · 87 disclosed** *(updated 2026-08-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 175 / 208 — 84.1%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 176 / 208 — 84.6%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 24 of 175 rows validated at their Linux counts** — 12,675 matching verdicts · 18 disclosed.
+> **Linux: 24 of 176 rows validated at their Linux counts** — 12,675 matching verdicts · 18 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -181,6 +181,7 @@ summed from the columns.
 | [`crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha512) | 36 | 1 | SHA-384/512/512-224/512-256 — the four-variant digest state machine. · [proof](validation/current/crypto.sha512.md) |
 | [`crypto/subtle`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/subtle) | 7 | | Constant-time primitives; word-at-a-time `XORBytes` over the full alignment matrix. · [proof](validation/current/crypto.subtle.md) |
 | [`crypto/tls`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/tls) | 400 | 2 | The flagship networking suite — one row over everything the Windows syscall arcs built: TLS 1.2 and 1.3 handshakes in both roles over real loopback sockets (the managed netpoller and the WSA submit family end to end), session tickets and resumption, QUIC transport events, ECH, the ALPN/SNI/client-auth matrices, certificate chain verification through the Windows system verifier (`CertGetCertificateChain` and the SSL policy check — the opaque-pointer mint round trip), name resolution (`GetAddrInfoW` + `adapterAddresses`), sha3-backed key schedules, and the zero-value regression sets. Four resumption/verification tests fail AGREEING on both runtimes (the suite's fixtures expired 2025-01-01 — the proof page carries the ceiling note); `TestBogoSuite`'s BoringSSL interop is proven by a filtered case end to end and disclosed host-limit in full (its child runner's own 10-minute `go test` deadline cannot hold 5,481 converted-shim spawns at ~87x managed startup). codegen-liveness + host-limit disclosures. · linux: 400 + 2 · · [proof](validation/current/crypto.tls.md) |
+| [`crypto/x509`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/x509) | 341 | | X.509 end to end — certificates, CSRs and CRLs parsed, created, marshalled and re-parsed across RSA, RSA-PSS, ECDSA, Ed25519, X25519 and DSA, every key encoding (PKCS#1, PKCS#8, SEC1, PKIX) with its mismatched-format and broken-signer rejections, chain building and verification — EKU enforcement, path building, the pathological and long-chain limits, and the Windows system verifier — name constraints with the RFC 2821 mailbox grammar and the bad-name sets, hostname and IP matching, the `OID` value type's marshal/unmarshal/equality round-trips, PEM encryption, certificate policies under GODEBUG, the system and hybrid certificate pools, and the duplicate-extension, negative-serial and critical-extension regression sets. The row is what the multi-value-`return` arc closed: `ParseOID` returned an EMPTY OID beside a nil error until the return-operand spill landed, and `parsePublicKey`/`parsePKCS8PrivateKey` forwarded a VALUE into `any` where Go holds `*ecdh.PublicKey`. 17 of the 341 skip identically on both sides. · [proof](validation/current/crypto.x509.md) |
 | [`database/sql`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql) | 138 | 2 | The connection pool and the driver contract end to end — `DB`/`Conn`/`Tx`/`Stmt`/`Rows` lifetimes against the `fakedb` driver, idle/open limits and connection reuse under concurrency, context cancellation and the `ErrBadConn` retry loop, prepared-statement dependency tracking and close ordering, and the `convertAssign` scan matrix through the reflection bridge (`driver.Valuer`, `sql.Scanner`, `RawBytes`, user-defined types). `TestConnRaw` is the row that measured the frame re-raise: a callee's `finally` re-raising a panic it never caught truncated `Conn.Raw`'s deferred release, so the connection stayed open and the test spent the package's entire deadline on a poll that could not come true; alloc-profile disclosures. · [proof](validation/current/database.sql.md) |
 | [`database/sql/driver`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql/driver) | 1 |  | The driver `Value` contract — `IsValue`/`IsScanValue` over every convertible Go kind and the default converter's integer-range and pointer-indirection rules. · [proof](validation/current/database.sql.driver.md) |
 | [`debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo) | 197 |  | Build-info extraction from real linked binaries — the ELF/Mach-O/PE/XCOFF reader matrix over the package's own `testdata` executables, and the blob scan repeated at every start offset. · linux: 204 · [proof](validation/current/debug.buildinfo.md) |

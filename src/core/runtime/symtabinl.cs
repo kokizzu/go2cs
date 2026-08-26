@@ -72,7 +72,8 @@ internal static (inlineUnwinder, inlineFrame) newInlineUnwinder(ΔfuncInfo f, ui
     }
     var inlTree = (ж<array<inlinedCall>>)(uintptr)(inldata);
     var u = new inlineUnwinder(f: f, inlTree: inlTree);
-    return (u, u.resolveInternal(pc));
+    var ᴛ1 = u.resolveInternal(pc);
+    return (u, ᴛ1);
 }
 
 [GoRecv] internal static inlineFrame resolveInternal(this ref inlineUnwinder u, uintptr pc) {
