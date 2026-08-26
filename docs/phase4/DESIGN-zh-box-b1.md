@@ -1,7 +1,9 @@
 # B1 — the box itself: per-kind representation (design increment 2)
 
-**Status: DESIGN, increment 2 — awaiting ratification against the eight-amendment bar of
-[`REVIEW-b1-box-design.md`](REVIEW-b1-box-design.md). Nothing here is implemented.**
+**Status: DESIGN, increment 2.1 — RATIFIED WITH BINDING CORRECTIONS (the dated AMENDED verdict
+in [`REVIEW-b1-box-design.md`](REVIEW-b1-box-design.md)); this revision FOLDS the eight-item
+correction list, and §5.1 records the OQ-4 elemRef PRE-gate as GREEN — B2 implementation may
+staff on this text. Nothing here is implemented.**
 
 Increment 1 (`claude/g-b1-box-design` @ `6815eba00`) was REJECTED for redesign on 2026-08-26;
 its §1 microbench **BANKED as accepted** — independently reproduced at 35/35 cells ≤ 1.00 with
@@ -18,7 +20,11 @@ The five-variant bench (probe: [`probes/b1-box-dispatch/`](probes/b1-box-dispatc
 raws: [`evidence-b1rev-bench.md`](evidence-b1rev-bench.md)) selected **V5** — per-kind sealed
 storage, virtual accessors, `m_isNull` as a non-virtual base field — at ≤ V1-current on every
 row of both runtimes, and eliminated the plain-fields V2 and the kind-byte-downcast V4 on time.
-Bytes: fieldRef of a 560 B pointee 672 → 48 (−93 %). Unchanged, cited, closed.
+Bytes: fieldRef of a 560 B pointee 672 → 48 as benched. **N2 corrects the LANDING figures**: the
+field-ref and element-ref kinds take a pin today (`EnsureStableAddress` via the 875-site operator
+surface pins any kind's storage), so both keep `m_pin` — **fieldRef 672 → 56 (−92 %), elemRef →
+56 in its final §5 shape**; the probe's 48/40 were the pin-less models, and the win against V1's
+112/672 survives untouched.
 
 ## 2. This increment's measurements — amendments 1A, 2A, 3, 4, 5 (one probe, both runtimes)
 
@@ -66,9 +72,11 @@ depends on them. JIT = CoreCLR 10.0.11 PGO-warmed; AOT = Native AOT 10.0.11; GRE
 
 ¹ This harness's V1 `DerefOrNull` routes through `Value` (with the nil gate), a transcription
 deviation the banked probe did not make — cite the BANKED 0.56–0.67× for this row, not these.
-² AOT mixed swings ±10 % ACROSS processes (V1 3.63–4.37; V5 4.18–4.21): the four processes read
-V5/V1 at 1.16/0.96/0.96/0.98 — parity within cross-process noise, and the review lane's own
-second-hardware reading is 0.74–0.82×. ³ and ⁴ are the two honest costs; §5 and §3 price them.
+² AOT mixed, corrected to its own raws: the four processes read V5/V1 at **1.10 / 1.16 / 0.96 /
+0.94** — and the spread is V1's, not V5's: V5's median is stable at 4.09–4.21 while V1's is
+bimodal at 3.63–4.40 (its per-round minima sit near 3.4 in every process), so the ratio tracks
+which mode V1's median lands in. The review lane's second-hardware reading for this cell is
+0.74–0.82× — the cleaner cross-check, and the basis on which the claim was banked. ³ the elem rows are the ISINST-form record — §5.1 re-benches the FINAL null-test shape and INVERTS both AOT regressions (managed 0.70×, foreign 0.82×). ⁴ priced in §2.3, band exceedance stated.
 **Dispersion (1A): the three shapes now separate cleanly on AOT** (std-Value V1 4.21 / V2u 4.64
 / V5 3.71 — 10–12 % apart, vs the first increment's 0.3 % collapse), and every cell carries its
 spread.
@@ -100,12 +108,30 @@ and **0.38–0.70× (AOT)** of the transcribed chains on token/equals/hashcode w
 element-ref rows (construction-time canonicalization replacing per-call `CanonicalElement`)
 the largest wins: token-elemRef 0.32×/0.38×, hashcode-elemRef 0.53×/0.49×. The map-keyed
 consumers this surface serves — the address-keyed runtime semaphores, fmtsort, cycle detection —
-sit on exactly these ops. The remaining unbenched kind-branching members (`IsNull`,
-`PinnedBuffer`, `EnsureStableAddress`, `pinnedArrayData`, `Slice`, `ArrayRef`, the
-`uintptr`/`void*` operators) are **standard-kind-only machinery**: under the split they move
-into `StandardBox<T>` as non-virtual members with their kind branches DELETED (the other kinds
-never reach them), which removes rather than adds dispatch — stated as a structural argument,
-with the wall-clock gate (§6) as the backstop.
+sit on exactly these ops.
+
+**The remaining kind-branching members, per-member (N1 — the increment-2 "branches deleted"
+sentence was wrong for most of these and is withdrawn; each row is the honest disposition, read
+from the cited body):**
+
+| member | today | disposition | cost class |
+|:--|:--|:--|:--|
+| `PinnedBuffer` (`ж.cs:445-475`) | kind-branch chain (std/fieldRef/elem size sources) | **goes virtual per-kind** | the §2.2-measured class: branch chain → tiny body, favorable |
+| `PinnableStorage` (`:1409-1428`) | kind-branch chain; `ж.Contracts.cs:245-252` says "implemented there per box kind" verbatim | **goes virtual per-kind** (the interface default stays) | same |
+| `EnsureStableAddress` (`:1399-1406`) | non-virtual; reads `PinnableStorage`, writes `m_pin` | stays a base non-virtual helper over the now-virtual `PinnableStorage` — **which is why every pinnable kind keeps `m_pin` (N2)** | +1 virtual call on the address-take path |
+| `uintptr`/`void*` operators (`:1266-1340`) | static, with inline kind tests (native early-out, nil, array-data, pin-then-fix) | static operators stay; their inline kind tests become **virtual probe calls** (the native early-out reads a per-kind member instead of a field) | +1–2 virtual calls at the syscall boundary — the same path 2A priced; gated by the sweeps + P-F4 |
+| `IsPinnedAt` (`:1386-1397`) | reads `m_pin`/`m_nativeAddr`/`ValueSlot` | **goes virtual per-kind** (each kind consults its own pin) | provenance validate-on-read path, not hot |
+| `ArrayRef` (`:477`), `TryGetElementStorage` (`:497`), `TryGetElementWindow` (`:533`) | `m_arrayIndexRef`-gated, base-resident | **virtual with base default (null/false), `ElemRefBox` overrides** — call sites are `ж<T>`-typed, so this **adds** dispatch where a field test answers today | added dispatch on the `unsafe.Slice`/element-window paths; honest cost, bounded by those paths' own rarity and the perf gates |
+| `TryPinnedReinterpret` (`:1485`) | `m_arrayIndexRef`-gated | same pattern — virtual, `ElemRefBox` override | rare (reinterpret fallback) |
+| `IsNull` (`:333`, five-term) | std-only value-peek behind guards | **virtual**: `StandardBox` keeps the peek (`s_valueCanBeNull && HeldValueIsNull`), the other kinds answer `m_isNull` alone — the current formula's own value on them | branch chain → tiny bodies, favorable |
+| `ReferentObject` (`:1056`, already virtual) | kind-branch body | per-kind overrides | favorable |
+| `pinnedArrayData` | std-kind fixed-array pinning | moves into `StandardBox`, branches genuinely deleted | the one member the withdrawn sentence was true of |
+
+The net statement replacing the withdrawn one: the split converts ~ten branch-chain members into
+per-kind bodies of the class §2.2 measured favorable, moves one into `StandardBox` outright, and
+**adds** dispatch at two surfaces — the element-window family and the address-take operators —
+both priced above and covered by the §6 gates. The first review's Axis-2D is answered member by
+member, not by category.
 
 ### 2.3 Amendment 2A discharged — the `Pointer`-typed `Value` site, measured
 
@@ -113,10 +139,13 @@ The review's core catch: `Value` is **non-virtual today** (`ж.cs:245`), so the 
 virtual for the first time at `unsafe.Pointer`'s 875 emitted conversion sites — unmeasured in
 increment 1. Measured now, on a model `Pointer` subclassing the (unsealed) standard kind, at
 both site shapes: **JIT 1.00× subtype-typed / 0.95× base-typed** (PGO devirtualizes the sealed
-leaf); **AOT +6–8 %** on both (1.06–1.08×), on a 1.7 ns op. That is the true cost §3 previously
-denied; it is bounded, it rides only `unsafe.Pointer`-typed dereferences, and the syscall-heavy
-packages that carry them are gated in §6 by the sweep rows that exercise them (`os`, `syscall`,
-`runtime` canaries) plus the perf suite. Stated, not hidden.
+leaf); **AOT +6–8 %** on both (1.06–1.08×, non-overlapping spreads), on a 1.7 ns op. **Stated
+plainly: this reading EXCEEDS both this design's ±3 % parity band and the parent's P-F4 rule —
+it is a real, measured regression on that op, not noise — and §7.2's sealed `Value` override on
+`Pointer` is the PRE-COMMITTED P-F4 remedy for it**, not a contingency: if any §6 gate row that
+exercises the `unsafe.Pointer` surface regresses past P-F4's threshold, the override lands as
+part of B2, no new ruling required. The cost rides only `unsafe.Pointer`-typed dereferences
+(875 conversion sites), and the syscall-heavy sweep rows plus the perf suite are the tripwire.
 
 ## 3. The landing shape, and the `.GetType()`/`BaseType` surface — amendment 1
 
@@ -129,8 +158,8 @@ public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     of()/at() minting, operators, ToString — public surface unchanged
 public class StandardBox<T> : ж<T>       UNSEALED (unsafe.Pointer derives)
     m_val; m_slot; m_pin; the standard-kind machinery of §2.2, kind branches deleted
-public sealed class FieldRefBox<T> : ж<T>     m_source; m_accessor; m_token
-public sealed class ElemRefBox<T>  : ж<T>     §5's shape
+public sealed class FieldRefBox<T> : ж<T>     m_source; m_accessor; m_token; m_pin (N2)
+public sealed class ElemRefBox<T>  : ж<T>     §5's shape; m_pin (N2)
 public sealed class NativeBox<T>   : ж<T>     m_nativeAddr; m_pin; m_retainedSource (§4)
 public sealed class Pointer : StandardBox<uintptr>   (in unsafe; implements IUnsafePointer)
 ```
@@ -150,12 +179,13 @@ in its chain (the review's both-directions break, with `fmt/scan.cs:1182` and
 |:--|:--|:--|:--|
 | `GoReflect.cs:187` (KindOf) | `gd == ж<>` on runtime type, then `BaseType == ж<uintptr>` | both break | **M first, then W** — order is load-bearing: `Pointer` has `ж<>` in its chain, so the Pointer probe must precede the box walk |
 | `GoReflect.TypeNaming.cs:159/162` | same pair (`%T` naming) | both break | **M first, then W** (same order) |
+| `GoReflect.TypeNaming.cs:250` | `gd == ж<>` in the named-wrapper probe | a `StandardBox<X>` falls past it and reports a Go name it does not have (the asn1 SET/SEQUENCE class) | **W** |
 | `GoReflect.FieldAccess.cs:157` | `gd == ж<>` → slot path | **severe**: silently flips to via-interface, `reflect.Value.Set` through `ж<ж<T>>` holding null starts panicking (the `ValueSlot` doc's own case) | **W**, before the `IPointer<>` probe |
 | `GoReflect.MethodSets.cs:220` | runtime `GetType()` test → pointee copy | **severe**: value-receiver-through-`*X` copy stops firing | **W** |
 | `TypeExtensions.GoMethodSets.cs:456` (`ResolveReceiverElement`) | mixed feeds (declared params hold; runtime values break) | pointer-receiver exclusion at `:321` mis-answers on runtime feeds | **W** (safe for both feeds) |
 | `TypeExtensions.ExtensionMethodRegistry.cs:262` | equality + `IsAssignableFrom` arms | generic arm breaks | **W**; the `IsAssignableFrom` arms already subsume subclasses |
 | `GoReflect.ValueMarshalling.cs:85` (canonical nil) | `gd == ж<>` → static `NilBox` | breaks | **W**, then read `NilBox` off the walked base type (statics on the abstract base remain valid) |
-| `GoReflect.ValueMarshalling.cs:235/249` | `GetType() == dstType` exact equality | runtime `StandardBox<X>` ≠ declared `ж<X>` | replace with `dstType.IsAssignableFrom(GetType())` (subsumption, not equality) |
+| `GoReflect.ValueMarshalling.cs:235/249` | `GetType() == dstType` exact equality | runtime `StandardBox<X>` ≠ declared `ж<X>` | `IsAssignableFrom` subsumption **plus the M-guard** (N5): `unsafe.Pointer` must NOT marshal into a `ж<uintptr>` destination — an admission plain subsumption would make, and one that is wrong INDEPENDENTLY of the split (the address-identity type is not an ordinary `*uintptr`) — so these sites EXCLUDE `IUnsafePointer` exactly as the naming sites include it |
 | `builtin.cs:2721` (printed names) | `gd == ж<>` | breaks | **W** |
 | `reflect/value_impl.cs:308` | `addrBox.GetType()` test | breaks | **W** |
 | `GoReflect.cs:297`, `AdapterBinder.cs:188` | tests on DECLARED parameter types | **hold** — emitted signatures stay `ж<T>` | none (recorded) |
@@ -212,35 +242,70 @@ block that ends immediately, `EnsureStableAddress` pins reference-free storage o
   **pinnability analysis itself does not change** — `PinnedBuffer.PinOnly` still gates on the
   backing's element type, and nothing in the split alters which storages are pinnable.
 
-## 5. The element-ref kind — amendment 5, benched in its real shape
+## 5. The element-ref kind — amendment 5 and N3, resolved and pre-gate benched
 
-`ElemRefBox<T>` holds the CONSTRUCTION-TIME canonicalization of `CanonicalElement`'s five arms,
-whose storages reduce to exactly two representations:
+**N3 first, because it constrains the shape.** Increment 2 promoted `CanonicalElement` from
+identity reduction to deref storage — an obligation two of its five arms cannot meet: the
+`PinnedBuffer` arm's `PinnedTarget` is `object?` (nullable, and not necessarily the deref
+storage), and the `default` arm's `array.Source` **may materialize a copy** (the `ISlice` arm's
+own comment: "`Source` cannot serve, it copies") — a deref through either would silently split
+storage, trading the `&StringData` equality contract against correctness. The resolution is
+**two slots, collapsed where equivalence is PROVEN**:
 
-| arm (`ж.cs CanonicalElement`) | canonical storage | lands as |
+```
+ElemRefBox<T>:  T[]? m_backing;  IArray? m_foreign;  nint m_index;  object? m_pin (N2)
+```
+
+| arm (`ж.cs CanonicalElement`) | lands as | why |
 |:--|:--|:--|
-| `PinnedBuffer` with `PinnedTarget` | the target `T[]` | fast arm |
-| `slice<T>` with backing | `m_array`, index + `Low` | fast arm |
-| named `ISlice<T>` view | unwrapped shared `m_array` | fast arm |
-| `array<T>` alias window | `Source`, index + `Low` | fast arm |
-| fallbacks (null-Source slice, `PinnedTarget`-less pin, foreign `IArray`) | the `IArray` itself | foreign arm |
+| `slice<T>` with backing | **fast**: (`m_array`, `Low`+i) | the slice indexer IS `m_array[Low+i]` — deref-equivalence by definition |
+| named `ISlice<T>` view | **fast**: unwrapped shared header | the view's indexer delegates to the same window — by definition |
+| `array<T>` alias window | **fast**: (`Source`, `Low`+i) | `Alias` shares storage — by definition |
+| `PinnedBuffer` arm | **foreign** — never fast | `PinnedTarget` is not a proven deref storage |
+| `default` (null-Source slice, foreign `IArray`) | **foreign** — never fast | `Source` may copy |
 
-Benched (§2) with `(object m_storage, nint m_index)` and a `storage is T[]` fast test: managed
-arm **0.49× JIT / 1.15× AOT**, foreign arm 1.31×/1.76×. Two consequences, both priced:
+The **fast arm holds a pair that is canonical AND deref-equivalent by the indexer definitions**
+— one storage serves `Value`, `PointerOrderToken`, `Equals`, `GetHashCode`. The **foreign arm
+derefs through the ORIGINAL `IArray` exactly as today** and canonicalizes identity **per-call
+exactly as today** — its cost and its correctness are both unchanged, so nothing is traded
+silently: the deref-equivalence obligation is not assumed anywhere it is not proven.
 
-- **The implementation refines the probe's shape to TWO fields** — `T[]? m_backing` +
-  `IArray? m_foreign` — replacing the isinst with a null test (strictly less work than the
-  benched form, so §2's AOT 1.15× is this shape's UPPER bound; the B2 gate re-measures on the
-  real type). Cost: the kind reads 48 B rather than 40.
+**The pre-gate bench (OQ-4, granted as a B2 PRE-gate) ran on this final shape** — pin field
+present, null-test dispatch — 4 isolated processes per runtime
+([`probes/b1-box-dispatch-i2/output-pregate.txt`](probes/b1-box-dispatch-i2/output-pregate.txt)):
+results recorded in §5.1 below. The increment-2 isinst numbers (managed 0.49× JIT / 1.15× AOT,
+foreign 1.31×/1.76×) stand as that shape's record.
+
 - **The native-backed slice route is untouched**: `Ꮡ(s, i)` on a native-backed `slice<T>`
-  already mints an address box (`builtin.cs:1712`) and continues to — it is a `NativeBox` under
-  the split, never an `ElemRefBox`, and its counter note reads unchanged.
+  already mints an address box (`builtin.cs:1712`) and continues to — a `NativeBox` under the
+  split, never an `ElemRefBox`; its counter note reads unchanged.
+- **N6 — the mechanism of the count claim, carried from the parent (§4 item 4):** the
+  `Ꮡ(slice<T> s, nint i)` / `Ꮡ(array<T> a, nint i)` **overloads** construct the fast arm
+  directly from the typed header — no `IArray<T>` interface boxing is ever minted at the call
+  site — which is where the **−1 object per managed-backed `&s[i]`/`&arr[i]` site** comes from.
+  Foreign-`IArray` and native-backed sites keep today's counts.
 
-The count claim is now scoped by emission: **−1 object per `&s[i]`/`&arr[i]` site whose slice
-is managed-backed** (the `IArray<T>` header boxing deleted at the caller); foreign-`IArray` and
-native-backed sites keep today's counts. The identity ops on this kind halve (§2.2) because
-canonicalization happens once at the mint instead of per-comparison — the parent design's
-accepted trade, now measured.
+### 5.1 Pre-gate results — GREEN, with the isinst regressions inverted
+
+4 isolated processes per runtime, 12 interleaved rounds each, median [min–max]; FINAL vs the
+current shape (ratios per process, all four listed):
+
+| workload | JIT | AOT |
+|:--|:--|:--|
+| elem-Value-managed | **0.24× / 0.24× / 0.24× / 0.24×** | **0.70× / 0.70× / 0.70× / 0.70×** |
+| elem-Value-foreign | 0.59× / 0.58× / 0.62× / 0.61× | 0.81× / 0.82× / 0.82× / 0.82× |
+| elem-token-managed | 0.50× / 0.50× / 0.50× / 0.50× | 0.47× / 0.47× / 0.47× / 0.47× |
+| bytes/box | **56** (all processes — N2's corrected figure, measured) | 56 |
+
+The null-test refinement did not merely bound the isinst form's AOT regressions (managed 1.15×,
+foreign 1.76×) — it **inverted them**: the final shape is faster than current on every row of
+both runtimes, 24/24 cells ≤ 0.82×. The foreign arm improves because the per-call interface
+type test is replaced by a null test plus an unchecked cast. B2's staffing condition ("the
+elemRef pre-gate bench is green") is met by this record.
+
+The identity ops on this kind halve (§2.2) because canonicalization happens once at the mint
+instead of per-comparison — the parent design's accepted trade, measured; the foreign arm keeps
+per-call canonicalization, so the trade never applies where equivalence is unproven.
 
 ## 6. Blast radius and gates — amendments 2 and 8
 
@@ -252,7 +317,7 @@ independent counts in parentheses):
 | `new ж<T>(…)` explicit | **344** (344) | emission change + regen |
 | `ж<T> x = new(…)` target-typed — `globalAddressOperations.go:190` and siblings | **754** (~693–740) | the SAME ctor, invisible to the increment-1 grep — the census-vs-emission error, corrected |
 | **total constructions** | **≈1,098** (~1,084) | |
-| of which in committed `*_test.cs` | **240 across 43 banked packages** (243/43) | the per-package **`-tests` pipeline**, NOT the `-stdlib` batch — refreshed per the validated-package commit policy, not by one regen |
+| of which in committed `*_test.cs` | **401 occurrences across 44 directories** — 243 explicit `new ж<` + 158 target-typed (the verifier's corrected figure; increment 2's 240/43 counted the explicit class only) | the per-package **`-tests` pipeline**, NOT the `-stdlib` batch — refreshed per the validated-package commit policy, not by one regen |
 | hand-edited | 22 golib + 12 in four hand-owned files | in-arc |
 | converter render sites for `PointerPrefix` ("ж") | **67 sites / 21 files** (67/21) | `symbols.go:32` renders BOTH declared-type and construction positions; the converter must first split the roles (declared stays `ж<T>`; constructions move to the standard-kind spelling) — OQ-1/OQ-2 are re-scoped to this 67-site audit, and "mechanical template swap" is withdrawn |
 
@@ -279,7 +344,7 @@ discipline; "unchanged" is a claim to verify, not assume):
 | exhibit | current | expected after B2 |
 |:--|:--|:--|
 | `os.File.WriteString` | 17.00 obj/op | **17 − (managed-backed `&s[i]` mints in the path)** — the probe's own per-site decomposition names the term at gate time; bytes/op DOWN by the shed dead-`m_val` mass of its fieldRef/native boxes |
-| `math/big` `TestMulUnbalanced` | **59×** (Go bound 10×) | bytes down where kind-slimming reaches `nat` box traffic; the arc owes the 51→59 hop-delta decomposition BEFORE claiming any share — a B2 pre-gate probe, per the re-sizing ruling |
+| `math/big` `TestMulUnbalanced` | **59×** (Go bound 10×) — the board's 2026-08-25 re-measure at go1.23.12/.NET 10, twice at 0.07 % apart (23.77 MB on 400,320 B); the parent §7's 51.21× is the SAME assert at the old pins, superseded by the re-sizing ruling | bytes down where kind-slimming reaches `nat` box traffic; the arc owes the 51→59 hop-delta decomposition BEFORE claiming any share — a B2 pre-gate probe, per that ruling |
 | `net/netip` gradient | 49 want-zero rows at 1–10; 5 want-one; `Addr.String()` IPv6 106 | counts move ONLY by the managed-backed element-ref term (several `TestNoAllocs` rows are `&s[i]`-shaped; the exact set is read from the counter's per-site charges at gate); everything else is the do-no-harm control — **B1 does NOT claim the want-zero rows**; their residual is Phase C's boundary, stated here so the headline yield reads honestly |
 | nistec four curves | P224 8,484 · P256 8,528 · P384 12,572 · P521 17,090 obj/run | **must not regress**; may improve by the element-ref term only; the four `Perf*` pointer benchmarks + `PerfRefLower` within P-F4 noise |
 
@@ -289,11 +354,11 @@ discipline; "unchanged" is a claim to verify, not assume):
    bodies, same harness, relative verdict; the B2 gates re-measure every exhibit on the real
    golib. The one transcription deviation found (¹ in §2) is disclosed and the banked probe's
    number is cited for that row instead.
-2. *"The Pointer +6–8 % AOT cost could bite a syscall-heavy row."* It rides only
-   `unsafe.Pointer`-typed dereferences (875 conversion sites), costs nothing on JIT, and the
-   sweeps that exercise those packages are in the gate list. If a gate row regresses past P-F4
-   noise, the recorded fallback is an overriding sealed `Value` on `Pointer` itself — legal (the
-   base is virtual now), zero-cost at subtype-typed sites, and confined to one class.
+2. *"The Pointer +6–8 % AOT cost could bite a syscall-heavy row."* It exceeds both stated bands
+   (§2.3) and is treated accordingly: the sealed `Value` override on `Pointer` — legal now that
+   the base is virtual, zero-cost at subtype-typed sites, confined to one class — is the
+   **pre-committed P-F4 remedy**, triggered by any §6 gate row on the `unsafe.Pointer` surface
+   regressing past P-F4's threshold, with no further ruling needed.
 3. *"The elem foreign arm got slower and netip might live there."* netip's element traffic is
    managed-backed slices (the fast arm); the foreign arm serves `CanonicalElement`'s fallback
    storages, which the counter's per-site charges can enumerate at gate time. The two-field
@@ -317,9 +382,8 @@ discipline; "unchanged" is a claim to verify, not assume):
 - **OQ-3** — probe records: increment 1's stays at `probes/b1-box-dispatch/` (banked); this
   increment's lands at `probes/b1-box-dispatch-i2/`; struck or kept at the coordinator's
   preference.
-- **OQ-4 (new)** — the two-field element-ref refinement (§5) is specified but its probe number
-  is an upper bound from the isinst form; confirm that re-measuring it on the real type at B2's
-  gate (rather than a third design increment) is acceptable.
+- **OQ-4 — DISCHARGED.** Granted as a B2 pre-gate; the pre-gate ran in this revision (§5.1) on
+  the final shape and is GREEN, 24/24 cells ≤ 0.82× — B2's staffing condition is met.
 
 ---
 

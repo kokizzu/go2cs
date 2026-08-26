@@ -15,3 +15,12 @@ Run: `dotnet run -c Release` ×4 (JIT arm), then publish `-p:PublishAot=true` an
 `output-jit-4proc.txt` / `output-aot-4proc.txt` (GRETCHEN-LAPTOP, CoreCLR/NativeAOT 10.0.11,
 2026-08-26; JIT processes 1–2 briefly overlapped a killed AOT warmup — verified equal to the
 solo processes 3–4 within ±1.2 % on the V1 baseline row).
+
+## Increment 2.1 addition — the elemRef PRE-gate (OQ-4)
+
+`PreGate.cs.txt` (a standalone program; .txt so no gate ever compiles it by accident) benches
+the FINAL ElemRefBox shape — `(T[]? m_backing, IArray? m_foreign, nint m_index, object? m_pin)`
+with null-test dispatch, N2's pin restored, N3's two-slot-collapsed resolution — against the
+current interface shape. `output-pregate.txt` holds 4 JIT + 4 AOT isolated processes: GREEN,
+24/24 cells at or below 0.82x, the isinst form's AOT regressions inverted (managed 1.15x ->
+0.70x, foreign 1.76x -> 0.82x), 56 B/box as N2 predicts.

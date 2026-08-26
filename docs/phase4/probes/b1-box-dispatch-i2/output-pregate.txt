@@ -1,0 +1,64 @@
+===== JIT process 1 =====
+runtime: JIT  10.0.11  pid 22396
+workload                             W1-current                    FINAL  ratio
+elem-Value-managed        2.763 [ 2.730- 4.086]    0.661 [ 0.646- 0.747]   0.24x
+elem-Value-foreign        2.757 [ 2.729- 3.416]    1.616 [ 1.593- 2.419]   0.59x
+elem-token-managed        3.692 [ 3.660- 5.067]    1.829 [ 1.815- 1.868]   0.50x
+FINAL elemRef bytes/box: 56
+(sinks 0 0)
+===== JIT process 2 =====
+runtime: JIT  10.0.11  pid 21728
+workload                             W1-current                    FINAL  ratio
+elem-Value-managed        2.766 [ 2.739- 3.413]    0.659 [ 0.647- 0.684]   0.24x
+elem-Value-foreign        2.769 [ 2.736- 3.740]    1.613 [ 1.603- 2.503]   0.58x
+elem-token-managed        3.669 [ 3.650- 5.328]    1.851 [ 1.831- 1.983]   0.50x
+FINAL elemRef bytes/box: 56
+(sinks 0 0)
+===== JIT process 3 =====
+runtime: JIT  10.0.11  pid 11480
+workload                             W1-current                    FINAL  ratio
+elem-Value-managed        2.774 [ 2.747- 3.401]    0.660 [ 0.650- 0.678]   0.24x
+elem-Value-foreign        2.987 [ 2.969- 3.777]    1.837 [ 1.832- 2.311]   0.62x
+elem-token-managed        3.677 [ 3.664- 5.477]    1.836 [ 1.822- 1.888]   0.50x
+FINAL elemRef bytes/box: 56
+(sinks 0 0)
+===== JIT process 4 =====
+runtime: JIT  10.0.11  pid 9380
+workload                             W1-current                    FINAL  ratio
+elem-Value-managed        2.768 [ 2.756- 3.544]    0.668 [ 0.653- 0.731]   0.24x
+elem-Value-foreign        3.005 [ 2.987- 3.689]    1.844 [ 1.835- 2.748]   0.61x
+elem-token-managed        3.694 [ 3.669- 4.886]    1.844 [ 1.826- 1.898]   0.50x
+FINAL elemRef bytes/box: 56
+(sinks 0 0)
+===== AOT process 1 =====
+runtime: AOT  10.0.11  pid 20164
+workload                             W1-current                    FINAL  ratio
+elem-Value-managed        2.322 [ 2.290- 2.359]    1.630 [ 1.610- 1.688]   0.70x
+elem-Value-foreign        2.548 [ 2.521- 2.657]    2.074 [ 2.060- 2.130]   0.81x
+elem-token-managed        7.403 [ 7.364- 7.619]    3.496 [ 3.436- 3.599]   0.47x
+FINAL elemRef bytes/box: 56
+(sinks 0 0)
+===== AOT process 2 =====
+runtime: AOT  10.0.11  pid 12024
+workload                             W1-current                    FINAL  ratio
+elem-Value-managed        2.325 [ 2.296- 2.480]    1.624 [ 1.607- 1.887]   0.70x
+elem-Value-foreign        2.556 [ 2.539- 2.932]    2.099 [ 2.065- 2.364]   0.82x
+elem-token-managed        7.401 [ 7.390- 8.099]    3.479 [ 3.448- 3.538]   0.47x
+FINAL elemRef bytes/box: 56
+(sinks 0 0)
+===== AOT process 3 =====
+runtime: AOT  10.0.11  pid 18416
+workload                             W1-current                    FINAL  ratio
+elem-Value-managed        2.319 [ 2.300- 2.363]    1.623 [ 1.614- 1.675]   0.70x
+elem-Value-foreign        2.554 [ 2.540- 2.621]    2.087 [ 2.067- 2.119]   0.82x
+elem-token-managed        7.421 [ 7.395- 7.572]    3.475 [ 3.452- 4.091]   0.47x
+FINAL elemRef bytes/box: 56
+(sinks 0 0)
+===== AOT process 4 =====
+runtime: AOT  10.0.11  pid 6100
+workload                             W1-current                    FINAL  ratio
+elem-Value-managed        2.313 [ 2.300- 2.331]    1.626 [ 1.615- 1.636]   0.70x
+elem-Value-foreign        2.545 [ 2.532- 2.595]    2.085 [ 2.071- 2.149]   0.82x
+elem-token-managed        7.406 [ 7.354- 7.463]    3.477 [ 3.456- 3.529]   0.47x
+FINAL elemRef bytes/box: 56
+(sinks 0 0)
