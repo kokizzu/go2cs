@@ -8004,7 +8004,17 @@ a generic-method interface cast the single-package baseline cannot express; they
 
 Go infers a type parameter that appears only in *constraints* through core types — `func Twice[S ~[]E, E Integer](s S)` infers `E` from `S`'s underlying element; the `slices` package's whole `Sort[S ~[]E, E cmp.Ordered] → pdqsortOrdered` chain relies on this. C# never infers a type parameter that does not appear in the parameter list (CS0411 — at *every* call site, concrete instantiations included). When the callee declares such a constraint-only type parameter, the converter renders the call's type arguments explicitly from the instantiation `go/types` already resolved (`info.Instances`): `Twice<Point, int32>(p, 2)` at a concrete site, `Scale<S, E>(s, c)` inside a generic body. Calls to generics whose every type parameter is argument-visible keep their bare Go-shaped form — C# infers them as Go does, no churn. (Guarded by the `GenericTypeInference` extension — a constrained `S`/`E` pass-through chain plus a concrete call to a constraint-only-param generic, values vs Go; clears the 14 CS0411s in the slices/maps wave.)
 
-The same explicit-type-argument rule applies to a generic function referenced as a **method-group value**, not just a call. `slices.SortFunc(all, slices.Compare)` (runtime/pprof) passes `slices.Compare[S ~[]E, E cmp.Ordered]` as `SortFunc`'s comparison delegate; C# cannot infer a generic method group's constraint-only `E` when converting it to `Func<…>` (CS0411). `convSelectorExpr` now spells the arguments on the selector — `slices.Compare<slice<uintptr>, uintptr>` — when the selector is NOT the callee of a call (`!context.isCallExpr`, so convCallExpr's own type-arg site still owns the call form) and `info.Uses[Sel]` is a generic function with an `info.Instances` instantiation. Byte-identical across the behavioral corpus and across an A/B of pprof+slices+sort+maps+cmp+net+go/types (a single line moves — the `slices.Compare` argument; every `Compare(...)` **call** stays bare). GUARD OWED — the shape needs a cross-package generic function with a constraint-only type parameter passed as a method-group value, which the single-package baseline cannot express; the bare-IDENT variant (a same-package generic func passed as a method group) is a parallel latent case left unfixed because `convIdent`, unlike `convSelectorExpr`, carries no call-vs-value flag to gate against double-emitting a direct call's arguments.
+The same explicit-type-argument rule applies to a generic function referenced as a **method-group value**, not just a call. `slices.SortFunc(all, slices.Compare)` (runtime/pprof) passes `slices.Compare[S ~[]E, E cmp.Ordered]` as `SortFunc`'s comparison delegate; C# cannot infer a generic method group's constraint-only `E` when converting it to `Func<…>` (CS0411). `convSelectorExpr` now spells the arguments on the selector — `slices.Compare<slice<uintptr>, uintptr>` — when the selector is NOT the callee of a call (`!context.isCallExpr`, so convCallExpr's own type-arg site still owns the call form) and `info.Uses[Sel]` is a generic function with an `info.Instances` instantiation. Byte-identical across the behavioral corpus and across an A/B of pprof+slices+sort+maps+cmp+net+go/types (a single line moves — the `slices.Compare` argument; every `Compare(...)` **call** stays bare). GUARD OWED — the shape needs a cross-package generic function with a constraint-only type parameter passed as a method-group value, which the single-package baseline cannot express.
+
+**The bare-IDENT variant is no longer latent** (2026-08-26, the generic-inference arc that unblocked `slices`). `convIdent` now carries the same call-vs-value flag `convSelectorExpr` always had — `IdentContext.suppressGenericTypeArgs`, set by convCallExpr for a call's CALLEE and by convIndexExpr/convIndexListExpr for the base of an explicit instantiation — so a same-package generic function passed as a method group (`apply(s1, Reverse)` against `Reverse[S ~[]E, E any]`, slices' `TestInference`) spells its arguments out (`reverse<slice<nint>, nint>`) exactly as the qualified form does, and the two spellings of one Go reference cannot disagree. Without the flag there was no way to add the append without also writing every direct call in the corpus out longhand; with it, the value form is the only one that moves. The append rides on whichever spelling the ident's own tail arms produce (a `-tests` Δ-rename, a white-box bridge qualification), so a renamed generic function passed as a method group is covered too.
+
+Three further shapes in the same family were fixed with it, all first measured as compile errors in `slices`' converted test suite (16 errors across roughly six exported generics, every one CS0411/CS0305 or a CS1503 cascade behind one):
+
+- **An explicitly-instantiated generic function argument is still a method group.** `EqualFunc(s1, s2, equal[int])`, `CompareFunc(s1, s2, cmp.Compare[int])`, `CompactFunc(s, equal[int])`, `equalToCmp(equal[int])` — writing the type arguments fixes the group's *shape*, not its C#-inference status, so the enclosing generic call still needs its own arguments spelled. `exprIsMethodGroup` met an `*ast.IndexExpr`, matched neither of its two cases, and answered "not a method group"; it now peels `ParenExpr`/`IndexExpr`/`IndexListExpr` (indexing a function *value* is not legal Go, so peeling can never reclassify an ordinary map/slice index). Eight of the sixteen errors.
+- **A type parameter reachable only through an UNSUPPLIED parameter position.** `Insert[S ~[]E, E any](s S, i int, v ...E)` called as `Insert(s, 0)` hands C# an empty `params Span<E>`, and `E` is inferable from nothing — while `calleeHasConstraintOnlyTypeParam` cannot see it, because `E` *does* appear in a parameter type. `calleeTypeParamUnsuppliedByCall` asks the question C# inference actually asks — which parameter positions did this call supply — and since every non-variadic parameter is always supplied in a well-typed Go call, it can fire on nothing but an empty variadic. `Insert(s, 0, 7, 8)` keeps its bare form.
+- **A PARTIAL explicit instantiation.** Go allows a written prefix and infers the rest through core types (`Equal[Slice]` against `Equal[S ~[]E, E comparable]`, slices' own `iter_test`); C# has no partial instantiation, so the prefix alone is CS0305, "requires 2 type arguments". `completedInstantiationTypeArgs` replaces the written list with the resolved one *only* when the resolved list is longer — a complete instantiation, which is nearly all of them, renders verbatim and byte-identically. The comparison is made after erasure filtering on both sides, so an erased pointer-core position cannot make a complete instantiation look partial.
+
+Every one of the four is an ADDITION to the existing trigger set rather than a replacement, and each is gated on a property that is arithmetic rather than heuristic (is this argument a function reference; did this position receive an argument; is the written list shorter than the resolved one). That is what keeps the footprint at exactly the shapes that were failing: **CNR at 645 behavioral packages moves only the guard project itself, and a seeded reconvert of the whole converted standard library re-emits 4,173 artifacts byte for byte** (0 changed, 0 new; marker gate 0 violations across 78 marked files) — `slices` and `maps` included, whose own production code leans hardest on the inference this arc is about. Guarded by the `MethodGroupGenericArg` extension, which fails on the pre-change converter with exactly the `slices` error set — CS0411 ×4 (instantiated method-group argument, empty variadic, bare-ident generic value ×2) plus CS0305 ×1 (partial instantiation) — and passes after.
 
 ### The `comparable` constraint
 
@@ -10760,6 +10770,40 @@ the extension to `VariadicFuncTypeAssert` — a variadic func literal direct to 
 group as a `map[string]any` element, through a plain assignment, and as an `[]any{…}` element, each
 asserted back; plus a NON-variadic literal direct to `any` as the control that must keep matching
 without a cast. Neutering the cast prints `no match` on all four and leaves the control passing.)
+
+**A variadic METHOD VALUE was the one shape in the family still frozen at fixed arity (2026-08-26).**
+`errorf := t.Errorf` — go/types' and `slices`' own idiom, `errorf = t.Logf` one statement later, then
+loose Go-style calls — has TWO emissions, and both dropped the variadic tail. A bound method value
+forwards through a lambda carrying the method's own parameters, and that lambda rendered the tail as
+the plain `slice<T>` the signature *stores* rather than the `params ꓸꓸꓸT` convention every declared
+variadic function uses: `(@string p1, slice<any> p2) => Ꮡt.Errorf(p1, p2)`. Every call through the
+value was then an arity error — `errorf("…", n)` CS1503 on a bare `n` against `slice<any>`,
+`errorf("…", a, b)` CS1593 "does not take 3 arguments", `errorf("…")` CS7036 — which is the same
+family the lambda's explicit parameters were introduced to fix, one level in. The tail now renders
+through `variadicParamType`, the same routine the named-function convention uses (a file-local
+`using ꓸꓸꓸT = Span<…>;` alias where one is mintable, inline `Span<T>` otherwise), so the forwarded
+argument binds the receiving `params ꓸꓸꓸany` parameter directly and the call inside the lambda is
+unchanged.
+
+The DECLARATION is the second half, and it is not optional. A `params` lambda has no BCL delegate, so
+`var` gives it a **synthesized** natural type — which binds that lambda and gives C# no reason to hand
+the same type to the second lambda the reassignment installs. `visitAssignStmt`'s method-group branch
+therefore names golib's variadic delegate family when the signature is variadic and no package named
+func type matches — `Actionꓸꓸꓸ<@string, any> emit = (@string p1, params ꓸꓸꓸany p2) => …` — reusing
+`iifeDelegateType`, the same lowering `getCSharpTypeName` already gives every func type used as a
+value, so there is exactly one spelling of this type in the emission. Non-variadic method values keep
+`var`, unchanged. (Guarded by the `VariadicFuncValues` extension — a pointer receiver's variadic
+method bound by `:=`, conditionally reassigned to a second variadic method, then called with loose
+args, an empty tail and a spread; it fails on the pre-change converter with CS1503 + CS1593 + CS7036,
+which is exactly the `slices` `TestGrow`/`TestConcat` error set.)
+
+A/B footprint: this is the half of the arc that moves anything outside its own guard, and it moves
+two lines. CNR at 645 behavioral packages reports `DeferCallOrder` and `GoCallVariations`, both
+`f1 := fmt.Println` — a variadic PACKAGE function bound as a method value, which was the same
+`var`-inferred synthesized delegate and is now `Funcꓸꓸꓸ<any, (nint, error)>`. Both still compile and
+still match `go run`. The whole converted standard library re-emits byte-identically (4,173 artifacts,
+0 changed), because the rule fires on nothing else: a method value whose signature is not variadic
+never reaches it.
 
 ### `reflect.Value.Call` over a variadic func value is TYPED dispatch — no reflective invoke can carry the tail
 

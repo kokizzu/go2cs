@@ -41,7 +41,7 @@ internal static void Main() {
         defer(ᴛ1 => fmt.Println(ᴛ1), firstˢ, ref ᒐ);
         defer(ᴛ1 => fmt.Println(ᴛ1), secondˢ, ref ᒐ);
         defer(ᴛ1 => fmt.Println(ᴛ1), thirdˢ, ref ᒐ);
-        var f1 = fmt.Println;
+        Funcꓸꓸꓸ<any, (nint, error)> f1 = fmt.Println;
         var f1ʗ1 = f1;
         defer(ᴛ1 => f1ʗ1(ᴛ1), fourthˢ, ref ᒐ);
         var msgs = new channel<@string>(2);
