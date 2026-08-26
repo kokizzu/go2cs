@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/internal/edwards25519/field` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-14 · converter `759dd673d`*
+*Validated 2026-08-25 · converter `e2182a59e`*
 
-**16 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**16 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/crypto/internal/edwards25519/field`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/edwards25519/field).
 
 ## Verdicts

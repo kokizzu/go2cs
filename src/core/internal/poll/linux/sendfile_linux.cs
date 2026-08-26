@@ -63,6 +63,9 @@ public static (int64 written, error err, bool handled) SendFile(ж<FD> ᏑdstFD,
                 }
             }
         }
+        if (AreEqual(err, Δsyscall.EAGAIN)) {
+            err = default!;
+        }
         handled = written != 0 || (!AreEqual(err, Δsyscall.ENOSYS) && !AreEqual(err, Δsyscall.EINVAL));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

@@ -14,7 +14,7 @@ of **[Roslyn](Glossary.md#roslyn) source generators** (`src/gen/go2cs-gen/`) tha
 directly (interface satisfaction, receiver overloads, struct-embedding promotion, named-type operators).
 
 > The C# snippets below are drawn from the actual converted standard library (`src/core/`,
-> Go 1.23.1) wherever possible, paired with their original Go source. A few use small illustrative
+> Go 1.23.12) wherever possible, paired with their original Go source. A few use small illustrative
 > programs where that reads more clearly. Glyphs you will see throughout: **`ж<T>`** a heap "box"
 > (pointer, read "zhe"), **`Ꮡ`** address-of, **`Δ`** a disambiguation rename (read "delta"),
 > **`@string`** the Go string type, **`default!`** = `nil` in value position, and a handful of
@@ -667,7 +667,13 @@ as `params ꓸꓸꓸT`, where `ꓸꓸꓸT` is a using alias for `Span<T>` whose 
 `params Span<T>` for an element type that cannot form a legal alias identifier (a type parameter, or a
 constructed type such as `[]byte`). At the top of the body, a variadic used only through `len`/`cap`,
 indexing, or range binds to the allocation-free stack view `sslice<T>`; a value that may escape, grow,
-or cross a closure/execution-wrapper boundary keeps the heap `slice<T>` fallback. From the real stdlib:
+or cross a closure/execution-wrapper boundary keeps the heap `slice<T>` fallback. On the CALL side, an
+argument that Go reads as one element but C# could bind as the whole pack is cast to the element type —
+a bare `nil`, and a `[]E`/`[N]E` passed without `...` (`f(a)` with `a []any` means a pack of ONE, since
+spreading needs `a...`); both otherwise bind C#'s preferred *normal* form and silently lose an argument
+or a level of nesting. See
+[untyped constants boxed as `any`](ConversionStrategies-Reference.md#an-untyped-constant-boxed-as-any-boxes-at-gos-default-type)
+in the reference. From the real stdlib:
 
 ```go
 func Join(errs ...error) error {          // errors/join.go

@@ -27,6 +27,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `context` | [`context.md`](current/context.md) | [`src/core/context`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/context) |
 | `crypto` | [`crypto.md`](current/crypto.md) | [`src/core/crypto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto) |
 | `crypto/aes` | [`crypto.aes.md`](current/crypto.aes.md) | [`src/core/crypto/aes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/aes) |
+| `crypto/cipher` | [`crypto.cipher.md`](current/crypto.cipher.md) | [`src/core/crypto/cipher`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/cipher) |
 | `crypto/des` | [`crypto.des.md`](current/crypto.des.md) | [`src/core/crypto/des`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/des) |
 | `crypto/dsa` | [`crypto.dsa.md`](current/crypto.dsa.md) | [`src/core/crypto/dsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/dsa) |
 | `crypto/ecdh` | [`crypto.ecdh.md`](current/crypto.ecdh.md) | [`src/core/crypto/ecdh`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdh) |
@@ -63,6 +64,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `encoding/base64` | [`encoding.base64.md`](current/encoding.base64.md) | [`src/core/encoding/base64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/base64) |
 | `encoding/binary` | [`encoding.binary.md`](current/encoding.binary.md) | [`src/core/encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary) |
 | `encoding/csv` | [`encoding.csv.md`](current/encoding.csv.md) | [`src/core/encoding/csv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/csv) |
+| `encoding/gob` | [`encoding.gob.md`](current/encoding.gob.md) | [`src/core/encoding/gob`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/gob) |
 | `encoding/hex` | [`encoding.hex.md`](current/encoding.hex.md) | [`src/core/encoding/hex`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/hex) |
 | `encoding/json` | [`encoding.json.md`](current/encoding.json.md) | [`src/core/encoding/json`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/json) |
 | `encoding/pem` | [`encoding.pem.md`](current/encoding.pem.md) | [`src/core/encoding/pem`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/pem) |
@@ -74,6 +76,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `go/ast` | [`go.ast.md`](current/go.ast.md) | [`src/core/go/ast`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/ast) |
 | `go/build/constraint` | [`go.build.constraint.md`](current/go.build.constraint.md) | [`src/core/go/build/constraint`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/build/constraint) |
 | `go/constant` | [`go.constant.md`](current/go.constant.md) | [`src/core/go/constant`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/constant) |
+| `go/doc` | [`go.doc.md`](current/go.doc.md) | [`src/core/go/doc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc) |
 | `go/doc/comment` | [`go.doc.comment.md`](current/go.doc.comment.md) | [`src/core/go/doc/comment`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc/comment) |
 | `go/format` | [`go.format.md`](current/go.format.md) | [`src/core/go/format`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/format) |
 | `go/importer` | [`go.importer.md`](current/go.importer.md) | [`src/core/go/importer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/importer) |
@@ -119,6 +122,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/reflectlite` | [`internal.reflectlite.md`](current/internal.reflectlite.md) | [`src/core/internal/reflectlite`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/reflectlite) |
 | `internal/saferio` | [`internal.saferio.md`](current/internal.saferio.md) | [`src/core/internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) |
 | `internal/singleflight` | [`internal.singleflight.md`](current/internal.singleflight.md) | [`src/core/internal/singleflight`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/singleflight) |
+| `internal/syscall/windows/registry` | [`internal.syscall.windows.registry.md`](current/internal.syscall.windows.registry.md) | [`src/core/internal/syscall/windows/registry`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/syscall/windows/registry) |
 | `internal/sysinfo` | [`internal.sysinfo.md`](current/internal.sysinfo.md) | [`src/core/internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) |
 | `internal/testenv` | [`internal.testenv.md`](current/internal.testenv.md) | [`src/core/internal/testenv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/testenv) |
 | `internal/types/errors` | [`internal.types.errors.md`](current/internal.types.errors.md) | [`src/core/internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) |
@@ -139,9 +143,14 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `mime/multipart` | [`mime.multipart.md`](current/mime.multipart.md) | [`src/core/mime/multipart`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/multipart) |
 | `mime/quotedprintable` | [`mime.quotedprintable.md`](current/mime.quotedprintable.md) | [`src/core/mime/quotedprintable`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/quotedprintable) |
 | `net/http/fcgi` | [`net.http.fcgi.md`](current/net.http.fcgi.md) | [`src/core/net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) |
+| `net/http/httptest` | [`net.http.httptest.md`](current/net.http.httptest.md) | [`src/core/net/http/httptest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/httptest) |
+| `net/http/httputil` | [`net.http.httputil.md`](current/net.http.httputil.md) | [`src/core/net/http/httputil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/httputil) |
+| `net/http/internal` | [`net.http.internal.md`](current/net.http.internal.md) | [`src/core/net/http/internal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal) |
 | `net/http/internal/ascii` | [`net.http.internal.ascii.md`](current/net.http.internal.ascii.md) | [`src/core/net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) |
 | `net/mail` | [`net.mail.md`](current/net.mail.md) | [`src/core/net/mail`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/mail) |
+| `net/rpc` | [`net.rpc.md`](current/net.rpc.md) | [`src/core/net/rpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc) |
 | `net/rpc/jsonrpc` | [`net.rpc.jsonrpc.md`](current/net.rpc.jsonrpc.md) | [`src/core/net/rpc/jsonrpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc/jsonrpc) |
+| `net/smtp` | [`net.smtp.md`](current/net.smtp.md) | [`src/core/net/smtp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/smtp) |
 | `net/textproto` | [`net.textproto.md`](current/net.textproto.md) | [`src/core/net/textproto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/textproto) |
 | `net/url` | [`net.url.md`](current/net.url.md) | [`src/core/net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) |
 | `os/exec` | [`os.exec.md`](current/os.exec.md) | [`src/core/os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) |
@@ -162,6 +171,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `sync` | [`sync.md`](current/sync.md) | [`src/core/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync) |
 | `sync/atomic` | [`sync.atomic.md`](current/sync.atomic.md) | [`src/core/sync/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync/atomic) |
 | `syscall` | [`syscall.md`](current/syscall.md) | [`src/core/syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall) |
+| `testing/fstest` | [`testing.fstest.md`](current/testing.fstest.md) | [`src/core/testing/fstest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/fstest) |
 | `testing/iotest` | [`testing.iotest.md`](current/testing.iotest.md) | [`src/core/testing/iotest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/iotest) |
 | `testing/quick` | [`testing.quick.md`](current/testing.quick.md) | [`src/core/testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/quick) |
 | `testing/slogtest` | [`testing.slogtest.md`](current/testing.slogtest.md) | [`src/core/testing/slogtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/slogtest) |

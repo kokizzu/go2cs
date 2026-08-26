@@ -1008,6 +1008,28 @@ internal static slice<uintptr> pprof_makeProfStack() {
     Ꮡsched.of(schedt.Ꮡneedspinning).Store(0);
 }
 
+// Take a snapshot of allp, for use after dropping the P.
+//
+// Must be called with a P, but the returned slice may be used after dropping
+// the P. The M holds a reference on the snapshot to keep the backing array
+// alive.
+//
+//go:yeswritebarrierrec
+[GoRecv] internal static slice<ж<Δp>> snapshotAllp(this ref m mp) {
+    mp.allpSnapshot = allp;
+    return mp.allpSnapshot;
+}
+
+// Clear the saved allp snapshot. Should be called as soon as the snapshot is
+// no longer required.
+//
+// Must be called after reacquiring a P, as it requires a write barrier.
+//
+//go:yeswritebarrierrec
+[GoRecv] internal static void clearAllpSnapshot(this ref m mp) {
+    mp.allpSnapshot = default!;
+}
+
 [GoRecv] internal static bool hasCgoOnStack(this ref m mp) {
     return mp.ncgo > 0 || mp.isextra;
 }
@@ -1299,15 +1321,15 @@ internal static void casGToWaiting(ж<g> Ꮡgp, uint32 old, waitReason reason) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string casGToWaitingForGCWithˢ = "casGToWaitingForGC with non-isWaitingForGC wait reason"u8;
+internal static readonly @string casGToWaitingForSuspendGˢ = "casGToWaitingForSuspendG with non-isWaitingForSuspendG wait reason"u8;
 
-// casGToWaitingForGC transitions gp from old to _Gwaiting, and sets the wait reason.
-// The wait reason must be a valid isWaitingForGC wait reason.
+// casGToWaitingForSuspendG transitions gp from old to _Gwaiting, and sets the wait reason.
+// The wait reason must be a valid isWaitingForSuspendG wait reason.
 //
 // Use this over casgstatus when possible to ensure that a waitreason is set.
-internal static void casGToWaitingForGC(ж<g> Ꮡgp, uint32 old, waitReason reason) {
-    if (!reason.isWaitingForGC()) {
-        @throw(casGToWaitingForGCWithˢ);
+internal static void casGToWaitingForSuspendG(ж<g> Ꮡgp, uint32 old, waitReason reason) {
+    if (!reason.isWaitingForSuspendG()) {
+        @throw(casGToWaitingForSuspendGˢ);
     }
     casGToWaiting(Ꮡgp, old, reason);
 }
@@ -1468,25 +1490,8 @@ internal static worldStop stopTheWorld(stwReason reason) {
     semacquire(Ꮡworldsema);
     var gp = getg();
     gp.Value.m.Value.preemptoff = reason.String();
-    var gpʗ1 = gp;
     systemstack(() => {
-        // Mark the goroutine which called stopTheWorld preemptible so its
-        // stack may be scanned.
-        // This lets a mark worker scan us while we try to stop the world
-        // since otherwise we could get in a mutual preemption deadlock.
-        // We must not modify anything on the G stack because a stack shrink
-        // may occur. A stack shrink is otherwise OK though because in order
-        // to return from this function (and to leave the system stack) we
-        // must have preempted all goroutines, including any attempting
-        // to scan our stack, in which case, any stack shrinking will
-        // have already completed by the time we exit.
-        //
-        // N.B. The execution tracer is not aware of this status
-        // transition and handles it specially based on the
-        // wait reason.
-        casGToWaitingForGC(gpʗ1, _Grunning, waitReasonStoppingTheWorld);
         stopTheWorldContext = stopTheWorldWithSema(reason); // avoid write to stack
-        casgstatus(gpʗ1, _Gwaiting, _Grunning);
     });
     return stopTheWorldContext;
 }
@@ -1585,7 +1590,29 @@ internal static readonly @string stopTheWorldBrokenCpuˢ = "stopTheWorld: broken
 //
 // Returns the STW context. When starting the world, this context must be
 // passed to startTheWorldWithSema.
+//
+//go:systemstack
 internal static worldStop stopTheWorldWithSema(stwReason reason) {
+    // Mark the goroutine which called stopTheWorld preemptible so its
+    // stack may be scanned by the GC or observed by the execution tracer.
+    //
+    // This lets a mark worker scan us or the execution tracer take our
+    // stack while we try to stop the world since otherwise we could get
+    // in a mutual preemption deadlock.
+    //
+    // We must not modify anything on the G stack because a stack shrink
+    // may occur, now that we switched to _Gwaiting, specifically if we're
+    // doing this during the mark phase (mark termination excepted, since
+    // we know that stack scanning is done by that point). A stack shrink
+    // is otherwise OK though because in order to return from this function
+    // (and to leave the system stack) we must have preempted all
+    // goroutines, including any attempting to scan our stack, in which
+    // case, any stack shrinking will have already completed by the time we
+    // exit.
+    //
+    // N.B. The execution tracer is not aware of this status transition and
+    // andles it specially based on the wait reason.
+    casGToWaitingForSuspendG((~(~getg()).m).curg, _Grunning, waitReasonStoppingTheWorld);
     var Δtrace = traceAcquire();
     if (Δtrace.ok()) {
         Δtrace.STWStart(reason);
@@ -1685,6 +1712,8 @@ internal static worldStop stopTheWorldWithSema(stwReason reason) {
         @throw(bad);
     }
     worldStopped();
+    // Switch back to _Grunning, now that the world is stopped.
+    casgstatus((~(~getg()).m).curg, _Gwaiting, _Grunning);
     return new worldStop(
         reason: reason,
         startedStopping: start,
@@ -2031,15 +2060,23 @@ found:
 internal static void forEachP(waitReason reason, Action<ж<Δp>> fn) {
     systemstack(() => {
         var gp = getg().Value.m.Value.curg;
-        // Mark the user stack as preemptible so that it may be scanned.
-        // Otherwise, our attempt to force all P's to a safepoint could
-        // result in a deadlock as we attempt to preempt a worker that's
-        // trying to preempt us (e.g. for a stack scan).
+        // Mark the user stack as preemptible so that it may be scanned
+        // by the GC or observed by the execution tracer. Otherwise, our
+        // attempt to force all P's to a safepoint could result in a
+        // deadlock as we attempt to preempt a goroutine that's trying
+        // to preempt us (e.g. for a stack scan).
+        //
+        // We must not modify anything on the G stack because a stack shrink
+        // may occur. A stack shrink is otherwise OK though because in order
+        // to return from this function (and to leave the system stack) we
+        // must have preempted all goroutines, including any attempting
+        // to scan our stack, in which case, any stack shrinking will
+        // have already completed by the time we exit.
         //
         // N.B. The execution tracer is not aware of this status
         // transition and handles it specially based on the
         // wait reason.
-        casGToWaitingForGC(gp, _Grunning, reason);
+        casGToWaitingForSuspendG(gp, _Grunning, reason);
         forEachPInternal(fn);
         casgstatus(gp, _Gwaiting, _Grunning);
     });
@@ -2547,6 +2584,7 @@ internal static void dropm() {
     g0.Value.stack.lo = 0;
     g0.Value.stackguard0 = 0;
     g0.Value.stackguard1 = 0;
+    mp.Value.g0StackAccurate = false;
     putExtraM(mp);
     msigrestore(sigmask);
 }
@@ -3278,6 +3316,10 @@ internal static (ж<g> gp, bool inheritTime, bool tryWakeP) findRunnable() {
     // findrunnable would return a G to run, handoffp must start
     // an M.
 top:
+    mp.clearAllpSnapshot();
+    // We may have collected an allp snapshot below. The snapshot is only
+    // required in each loop iteration. Clear it to all GC to collect the
+    // slice.
     var pp = (~mp).p.ptr();
     if (Ꮡsched.of(schedt.Ꮡgcwaiting).Load()) {
         gcstopm();
@@ -3439,7 +3481,11 @@ top:
     // which can change underfoot once we no longer block
     // safe-points. We don't need to snapshot the contents because
     // everything up to cap(allp) is immutable.
-    var allpSnapshot = allp;
+    //
+    // We clear the snapshot from the M after return via
+    // mp.clearAllpSnapshop (in schedule) and on each iteration of the top
+    // loop.
+    var allpSnapshot = mp.snapshotAllp();
     // Also snapshot masks. Value changes are OK, but we can't allow
     // len to change out from under us.
     var idlepMaskSnapshot = idlepMask;
@@ -3561,6 +3607,8 @@ top:
         // allowed when we don't have an active P.
         pollUntil = checkTimersNoP(allpSnapshot, timerpMaskSnapshot, pollUntil);
     }
+    // We don't need allp anymore at this pointer, but can't clear the
+    // snapshot without a P for the write barrier..
     // Poll network until next timer.
     if (netpollinited() && (netpollAnyWaiters() || pollUntil != 0) && Ꮡsched.of(schedt.Ꮡlastpoll).Swap(0) != 0){
         Ꮡsched.of(schedt.ᏑpollUntil).Store(pollUntil);
@@ -3883,22 +3931,22 @@ internal static void injectglist(ж<gList> Ꮡglist) {
     if (glist.empty()) {
         return;
     }
-    var Δtrace = traceAcquire();
-    if (Δtrace.ok()) {
-        for (var gp = glist.head.ptr(); gp != nil; gp = (~gp).schedlink.ptr()) {
-            Δtrace.GoUnpark(gp, 0);
-        }
-        traceRelease(Δtrace);
-    }
     // Mark all the goroutines as runnable before we put them
     // on the run queues.
     var head = glist.head.ptr();
     ж<g> tail = default!;
     nint qsize = 0;
+    var Δtrace = traceAcquire();
     for (var gp = head; gp != nil; gp = (~gp).schedlink.ptr()) {
         tail = gp;
         qsize++;
         casgstatus(gp, _Gwaiting, _Grunnable);
+        if (Δtrace.ok()) {
+            Δtrace.GoUnpark(gp, 0);
+        }
+    }
+    if (Δtrace.ok()) {
+        traceRelease(Δtrace);
     }
     // Turn the gList into a gQueue.
     ref var q = ref heap(new gQueue(), out var Ꮡq);
@@ -3992,6 +4040,10 @@ top:
         @throw(scheduleSpinningWithˢ);
     }
     var (gp, inheritTime, tryWakeP) = findRunnable(); // blocks until work is available
+    // findRunnable may have collected an allp snapshot. The snapshot is
+    // only required within findRunnable. Clear it to all GC to collect the
+    // slice.
+    mp.clearAllpSnapshot();
     if (debug.dontfreezetheworld > 0 && Ꮡfreezing.Load()) {
         // See comment in freezetheworld. We don't want to perturb
         // scheduler state, so we didn't gcstopm in findRunnable, but

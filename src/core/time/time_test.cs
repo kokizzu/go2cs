@@ -12,6 +12,7 @@ using big = go.math.big_package;
 using rand = go.math.rand_package;
 using Δos = os_package;
 using Δruntime = runtime_package;
+using slices = slices_package;
 using strings = strings_package;
 using Δsync = sync_package;
 using Δtesting = testing_package;
@@ -935,13 +936,8 @@ public static void TestUnmarshalInvalidTimes(ж<Δtesting.T> Ꮡt) {
 internal static readonly @string jsonˢ = "JSON"u8;
 internal static readonly @string textˢ = "Text"u8;
 
-[GoType("dyn")] partial struct TestMarshalInvalidTimes_tests {
-    internal Δtime.Time time;
-    internal @string want;
-}
-
 public static void TestMarshalInvalidTimes(ж<Δtesting.T> Ꮡt) {
-    var tests = new TestMarshalInvalidTimes_tests[]{
+    var tests = new notEncodableTimesᴛ1[]{
         new(Date(10000, 1, 1, 0, 0, 0, 0, ΔUTC), "Time.MarshalJSON: year outside of range [0,9999]"u8),
         new(Date(-998, 1, 1, 0, 0, 0, 0, ΔUTC).Add(-ΔSecond), "Time.MarshalJSON: year outside of range [0,9999]"u8),
         new(Date(0, 1, 1, 0, 0, 0, 0, ΔUTC).Add(-ΔNanosecond), "Time.MarshalJSON: year outside of range [0,9999]"u8),
@@ -1180,7 +1176,6 @@ public static void TestCountMallocs(ж<Δtesting.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string etcGmt1ˢ = "Etc/GMT+1"u8;
-internal static readonly object gmt1ˢ = (@string)"GMT+1"u8;
 
 public static void TestLoadFixed(ж<Δtesting.T> Ꮡt) {
     // Issue 4064: handle locations without any zone transitions.
@@ -1193,10 +1188,15 @@ public static void TestLoadFixed(ж<Δtesting.T> Ꮡt) {
     // So GMT+1 corresponds to -3600 in the Go zone, not +3600.
     var (name, offset) = Now().In(loc).Zone();
     // The zone abbreviation is "-01" since tzdata-2016g, and "GMT+1"
-    // on earlier versions; we accept both. (Issue #17276).
-    if (!(name == "GMT+1"u8 || name == "-01"u8) || offset != -1 * 60 * 60) {
-        Ꮡt.Errorf("Now().In(loc).Zone() = %q, %d, want %q or %q, %d"u8,
-            name, offset, gmt1ˢ, (@string)"-01"u8, (nint)(-1 * 60 * 60));
+    // on earlier versions; we accept both. (Issue 17276.)
+    var wantName = new @string[]{"GMT+1"u8, "-01"u8}.slice();
+    // The zone abbreviation may be "+01" on OpenBSD. (Issue 69840.)
+    if (Δruntime.GOOS == "openbsd"u8) {
+        wantName = append(wantName, "+01"u8);
+    }
+    if (!slices.Contains(wantName, name) || offset != -1 * 60 * 60) {
+        Ꮡt.Errorf("Now().In(loc).Zone() = %q, %d, want %q (one of), %d"u8,
+            name, offset, wantName, (nint)(-1 * 60 * 60));
     }
 }
 
@@ -1261,12 +1261,7 @@ public static void TestDurationNanoseconds(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct usDurationTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal int64 want;
-}
-internal static slice<usDurationTestsᴛ1> usDurationTests = new usDurationTestsᴛ1[]{
+internal static slice<nsDurationTestsᴛ1> usDurationTests = new nsDurationTestsᴛ1[]{
     new(((Δtime.Duration)(-1000)), -1),
     new(((Δtime.Duration)1000), 1)
 }.slice();
@@ -1281,12 +1276,7 @@ public static void TestDurationMicroseconds(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct msDurationTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal int64 want;
-}
-internal static slice<msDurationTestsᴛ1> msDurationTests = new msDurationTestsᴛ1[]{
+internal static slice<nsDurationTestsᴛ1> msDurationTests = new nsDurationTestsᴛ1[]{
     new(((Δtime.Duration)(-1000000)), -1),
     new(((Δtime.Duration)1000000), 1)
 }.slice();
@@ -1320,12 +1310,7 @@ public static void TestDurationSeconds(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct minDurationTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal float64 want;
-}
-internal static slice<minDurationTestsᴛ1> minDurationTests = new minDurationTestsᴛ1[]{
+internal static slice<secDurationTestsᴛ1> minDurationTests = new secDurationTestsᴛ1[]{
     new(((Δtime.Duration)(-60000000000L)), -1D),
     new(((Δtime.Duration)(-1)), -1D / 60e9D),
     new(((Δtime.Duration)1), 1D / 60e9D),
@@ -1343,12 +1328,7 @@ public static void TestDurationMinutes(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct hourDurationTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal float64 want;
-}
-internal static slice<hourDurationTestsᴛ1> hourDurationTests = new hourDurationTestsᴛ1[]{
+internal static slice<secDurationTestsᴛ1> hourDurationTests = new secDurationTestsᴛ1[]{
     new(((Δtime.Duration)(-3600000000000L)), -1D),
     new(((Δtime.Duration)(-1)), -1D / 3600e9D),
     new(((Δtime.Duration)1), 1D / 3600e9D),
@@ -1397,13 +1377,7 @@ public static void TestDurationTruncate(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-
-[GoType("dyn")] partial struct durationRoundTestsᴛ1 {
-    internal Δtime.Duration d;
-    internal Δtime.Duration m;
-    internal Δtime.Duration want;
-}
-internal static slice<durationRoundTestsᴛ1> durationRoundTests = new durationRoundTestsᴛ1[]{
+internal static slice<durationTruncateTestsᴛ1> durationRoundTests = new durationTruncateTestsᴛ1[]{
     new(0, ΔSecond, 0),
     new(ΔMinute, (Δtime.Duration)(-11000000000L), ΔMinute),
     new(ΔMinute, 0, ΔMinute),

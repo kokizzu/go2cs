@@ -9,20 +9,23 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — Over 75% of Go's standard library validates in C#
+## 📰 NEWS — 171 standard-library test suites pass in C#, on .NET 10 and Go 1.23.12
 
-**162 of the 215 testable standard-library packages pass their own Go test suites in C#** —
-18,569 matching verdicts against `go test -json`, compared verdict for verdict, with
-85 divergences disclosed by exact failure signature and nothing else waived. A package
-appears on the [roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and
-every row links a [proof page](validation/index.md) listing Go's verdict beside go2cs's, test by
-test. Converted frames now report **Go file and line positions** — `runtime/debug.Stack()`,
-`log`'s file prefixes and `flag`'s error output name the Go source they came from, not the
-generated C#. Channel direction and array dimensions ride the type descriptor, so `reflect`
-answers about them the way Go does. And the numbers are the honest ones: packages that come
-close and do not fully agree are not on the roster, because a milestone you can trust is worth
-more than one you can round up to. Full detail in the
-[news archive entry](NEWS.md#august-22-2026--over-75-of-the-standard-librarys-test-suites-pass-in-c).
+**171 of the 215 testable standard-library packages pass their own Go test suites in C#** — 18,965
+matching verdicts against `go test -json`, compared verdict for verdict, with 87 divergences
+disclosed by exact failure signature and nothing else waived. Seven of those 215 cannot be validated
+at all — no eligible tests on this platform, a broken upstream oracle, or a suite whose whole
+subject is the raw memory layout a managed runtime deliberately does not have — so the honest
+denominator is **208, putting the roster at 82.2%**. Each of the seven is listed with its class,
+mechanism and evidence in the [exclusion ledger](ValidatedTestPackages.md#excluded-packages), and
+any one of them rejoins the count the day its evidence changes. A package appears on the
+[roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and every row links a
+[proof page](validation/index.md) listing Go's verdict beside go2cs's, test by test.
+
+That roster was re-derived from scratch when **both** runtime pins moved in August 2026 — to
+**.NET 10** and **Go 1.23.12** — numerator, denominator and disclosure set alike, because a
+milestone you can trust is worth more than one you can carry forward. Full detail in the
+[news archive entry](NEWS.md#august-25-2026--both-runtime-pins-move-net-10-go-12312--and-the-whole-roster-re-proves-itself).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
@@ -94,16 +97,16 @@ public static bool IsAdult(this Person p) {
 ### Real standard-library conversions, side by side
 
 The goal — *reads like Go* — is easiest to judge on real code. Below are converted standard-library files
-next to their original **Go 1.23.1** source, in order of increasing richness:
+next to their original **Go 1.23.12** source, in order of increasing richness:
 
-| Package | Go 1.23.1 source | Converted C# | What it shows |
+| Package | Go 1.23.12 source | Converted C# | What it shows |
 |:--|:--|:--|:--|
-| `errors` | [errors.go](https://github.com/golang/go/blob/go1.23.1/src/errors/errors.go) | [errors.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/errors/errors.cs) | Error values and an unexported type satisfying the `error` interface. |
-| `cmp` | [cmp.go](https://github.com/golang/go/blob/go1.23.1/src/cmp/cmp.go) | [cmp.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/cmp/cmp.cs) | Generics with an ordered-type constraint. |
-| `unicode/utf8` | [utf8.go](https://github.com/golang/go/blob/go1.23.1/src/unicode/utf8/utf8.go) | [utf8.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8.cs) | Constants keeping Go's hex/binary literal formatting; arrays and structs. |
-| `sort` | [search.go](https://github.com/golang/go/blob/go1.23.1/src/sort/search.go) | [search.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/sort/search.cs) | Binary search driven by a `func(int) bool` closure. |
-| `strings` | [reader.go](https://github.com/golang/go/blob/go1.23.1/src/strings/reader.go) | [reader.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/strings/reader.cs) | A struct with receiver methods, tuple returns, and interface implementation. |
-| `container/list` | [list.go](https://github.com/golang/go/blob/go1.23.1/src/container/list/list.go) | [list.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/container/list/list.cs) | A doubly-linked list — pointers and receiver methods. |
+| `errors` | [errors.go](https://github.com/golang/go/blob/go1.23.12/src/errors/errors.go) | [errors.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/errors/errors.cs) | Error values and an unexported type satisfying the `error` interface. |
+| `cmp` | [cmp.go](https://github.com/golang/go/blob/go1.23.12/src/cmp/cmp.go) | [cmp.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/cmp/cmp.cs) | Generics with an ordered-type constraint. |
+| `unicode/utf8` | [utf8.go](https://github.com/golang/go/blob/go1.23.12/src/unicode/utf8/utf8.go) | [utf8.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8.cs) | Constants keeping Go's hex/binary literal formatting; arrays and structs. |
+| `sort` | [search.go](https://github.com/golang/go/blob/go1.23.12/src/sort/search.go) | [search.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/sort/search.cs) | Binary search driven by a `func(int) bool` closure. |
+| `strings` | [reader.go](https://github.com/golang/go/blob/go1.23.12/src/strings/reader.go) | [reader.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/strings/reader.cs) | A struct with receiver methods, tuple returns, and interface implementation. |
+| `container/list` | [list.go](https://github.com/golang/go/blob/go1.23.12/src/container/list/list.go) | [list.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/container/list/list.cs) | A doubly-linked list — pointers and receiver methods. |
 
 Browse the whole set under [`src/core`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core).
 
@@ -152,7 +155,9 @@ maps to C# (with [`ConversionStrategies-Reference.md`](ConversionStrategies-Refe
 
 ## Requirements
 
-- **[.NET 9.0 SDK](https://dotnet.microsoft.com/download)** — to build and run the converted C#.
+- **[.NET 10.0 SDK](https://dotnet.microsoft.com/download)** — to build and run the converted C#. Converted
+  projects target `net10.0`, the framework named by
+  [`src/Directory.Build.props`](https://github.com/ritchiecarroll/go2cs/blob/master/src/Directory.Build.props).
 - **[Go 1.23+](https://go.dev/dl/)** — the converter is a Go program, and it uses the Go toolchain to load
   and type-check the source being converted. Make sure your Go environment is set up (`GOROOT`/`GOPATH`)
   and the source you want to convert already builds with `go build`.
@@ -338,7 +343,8 @@ cd csharp/src/example.com/colordemo
 dotnet build example.com.colordemo.slnx -c Debug
 ```
 
-**4 — C#: run the converted app.** Navigate into the default .NET 9.0 debug build folder, and run demo:
+**4 — C#: run the converted app.** Navigate into the default debug build folder — named for the target
+framework — and run demo:
 ```shell
 cd bin/Debug/net10.0
 dotnet colordemo.dll
@@ -437,7 +443,7 @@ Contributors: see [`CLAUDE.md`](../CLAUDE.md) for an architecture overview and
 The converter builds idiomatic C# for the full range of Go language features, gated by 519 Go-vs-C#
 behavioral regression projects — each transpiled, compiled, byte-compared against a committed golden and,
 where it is a runnable program, executed with its stdout compared against the Go original's. The entire Go
-standard library (302 packages, Go 1.23.1) compiles cleanly as .NET assemblies.
+standard library (302 packages, Go 1.23.12) compiles cleanly as .NET assemblies.
 
 The converted standard library reproduces **Go built with `-tags purego`** — a managed runtime cannot
 execute Go's hand-written `.s` assembly, so the portable pure-Go variants of the asm-backed crypto and hash
@@ -457,8 +463,8 @@ Every validated package ships its **converted C# test sources** next to the prod
 [`src/core`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core) (for example,
 [`unicode/utf8/utf8_test.cs`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8_test.cs)),
 so you can read the exact C# that runs — and re-run the validation yourself. You need
-**[Go 1.23.1](https://go.dev/dl/)** (for the reference `go test` run), the
-**[.NET 9 SDK](https://dotnet.microsoft.com/download)**, and `go2cs` on your `PATH` (see
+**[Go 1.23.12](https://go.dev/dl/)** (for the reference `go test` run), the
+**[.NET 10 SDK](https://dotnet.microsoft.com/download)**, and `go2cs` on your `PATH` (see
 [installing the converter](#installing-the-converter)):
 
 ```sh
@@ -531,6 +537,7 @@ High level timeline of the project's major turning points.
 | 2026-08-08 | [**Over half the stdlib's test suites validate in C#**](NEWS.md#august-8-2026--over-half-the-standard-library-validates-defers-reach-zero-allocation) | [`stdlib-half-validated-2026-08-08`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-half-validated-2026-08-08) | **110/215** packages, 13,628 matching verdicts; zero-allocation `defer` frames; Docs+Tests badge trust chain in every package. |
 | 2026-08-08 | [**Go programs run on Linux**](NEWS.md#august-8-2026--go-programs-run-on-linux) | [`linux-first-run-2026-08-08`](https://github.com/ritchiecarroll/go2cs/releases/tag/linux-first-run-2026-08-08) | `hello, 世界`, an `os`/`time` program, and the real-world walkthrough (`fatih/color`, true ANSI colour) all byte-identical to `go run`; one L3 tree compiles windows+linux+darwin; one nupkg per package; one measured `libc syscall(2)` keystone. |
 | 2026-08-22 | [**Over 75% of the standard library's test suites pass in C#**](NEWS.md#august-22-2026--over-75-of-the-standard-librarys-test-suites-pass-in-c) | [`stdlib-tests-75pct-2026-08-22`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-tests-75pct-2026-08-22) | **162/215** packages, 18,569 matching verdicts, 85 disclosed; converted frames report Go file:line positions; Go 1.23.1's terminal validation marker, with `release/go1.23` cut. |
+| 2026-08-25 | [**Both runtime pins move: .NET 10 + Go 1.23.12**](NEWS.md#august-25-2026--both-runtime-pins-move-net-10-go-12312--and-the-whole-roster-re-proves-itself) | `925e48067` · `a2e079259` | 955 project files to `net10.0` with zero emission drift, three OS flavors green; the full roster re-derives from 1.23.12's own test sources — **162/162, 18,598** matching verdicts (+29, exactly the four re-derived rows). |
 
 ## C# to Go?
 

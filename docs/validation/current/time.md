@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `time` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-04 · converter `f96e7de5b`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**159 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**169 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/time`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/time).
 
 Both runtimes skip 2 of the matched tests identically.
@@ -97,6 +97,8 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestMonotonicOverflow` | pass | pass |
 | `TestMonotonicString` | pass | pass |
 | `TestMonotonicSub` | pass | pass |
+| `TestMultiWakeupTicker` | pass | pass |
+| `TestMultiWakeupTimer` | pass | pass |
 | `TestNanosecondsToLocalTime` | pass | pass |
 | `TestNanosecondsToUTC` | pass | pass |
 | `TestNanosecondsToUTCAndBack` | pass | pass |
@@ -122,6 +124,10 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestRFC3339Conversion` | pass | pass |
 | `TestReadFileLimit` | skip | skip |
 | `TestReset` | pass | pass |
+| `TestResetResult` | pass | pass |
+| `TestResetResult/asynctimerchan=0` | pass | pass |
+| `TestResetResult/asynctimerchan=1` | pass | pass |
+| `TestResetResult/asynctimerchan=2` | pass | pass |
 | `TestRubyParse` | pass | pass |
 | `TestSecondsToLocalTime` | pass | pass |
 | `TestSecondsToUTC` | pass | pass |
@@ -129,6 +135,10 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestSleep` | pass | pass |
 | `TestSleepZeroDeadlock` | pass | pass |
 | `TestStd0xParseError` | pass | pass |
+| `TestStopResult` | pass | pass |
+| `TestStopResult/asynctimerchan=0` | pass | pass |
+| `TestStopResult/asynctimerchan=1` | pass | pass |
+| `TestStopResult/asynctimerchan=2` | pass | pass |
 | `TestSub` | pass | pass |
 | `TestTeardown` | pass | pass |
 | `TestTick` | pass | pass |

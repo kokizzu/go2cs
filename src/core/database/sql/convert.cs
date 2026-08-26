@@ -378,7 +378,6 @@ internal static error convertAssignRows(any dest, any src, ж<Rows> Ꮡrows) {
             if (Ꮡrows == nil) {
                 return errors.New(invalidContextToConvertˢ);
             }
-            Ꮡrows.of(Rows.Ꮡclosemu).Lock();
             d.Value = new Rows(
                 dc: rows.dc,
                 releaseConn: (error _) => {
@@ -396,7 +395,6 @@ internal static error convertAssignRows(any dest, any src, ж<Rows> Ꮡrows) {
                     parentCancelʗ1();
                 }
             };
-            Ꮡrows.of(Rows.Ꮡclosemu).Unlock();
             return default!;
         }}
         break;

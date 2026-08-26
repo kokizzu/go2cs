@@ -487,6 +487,56 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.send":    goosAny,
 		"PointerTo":     goosAny,
 		"Value.Convert": goosAny,
+		// ArrayOf is PointerTo's sibling — the other run-time TYPE CONSTRUCTOR — and it fails one
+		// step earlier than PointerTo did. Before it assembles its arrayType record (Str/Hash/
+		// GCData/PtrBytes/Equal, plus a SliceOf for the record's Slice field) it looks the type up
+		// by NAME through typesByString → typelinks(), the LINKER-BUILT type table, which has no
+		// managed form and is a NotImplementedException stub: so every call threw, whatever it was
+		// asked for, and the caller sees an infrastructure error rather than a wrong answer
+		// (encoding/gob's TestIgnoreDepthLimit is the measured consumer).
+		//
+		// None of that record is reconstructible here and none of it is needed: golib's array<T> IS
+		// the array type, and the one part of a Go array type the managed emission cannot hold —
+		// its LENGTH — is precisely what the reflection bridge's dims cargo already carries for
+		// every DECLARED array. So the hand-own composes the same (managed type, dims) pair
+		// abi.TypeOf reaches from a live [n]T value, and interning makes the constructed type and
+		// the declared one the SAME canonical reflect.Type. See reflect/value_impl.cs.
+		"ArrayOf": goosAny,
+		// StructOf is ArrayOf's sibling one order of magnitude up. PointerTo and ArrayOf hand
+		// MakeGenericType an EXISTING managed type, because ж<T> and array<T> ARE the Go type; a
+		// struct has no generic container to instantiate, so StructOf is the one caller that asks
+		// for a Go type NOTHING declared and a real CLR value type has to be MINTED for it.
+		//
+		// The auto body dies where ArrayOf's does — typesByString → typelinks(), the linker-built
+		// type table — and everything past that point is Go's runtime reconstructing linker output:
+		// structTypeFixedN prototypes, GC-program construction, resolveReflectName into the name
+		// blob, unsafe_New. Both of reflect's OWN callers of StructOf are exactly such
+		// reconstructions (describing a func's argument frame; getting an rtype followed in memory
+		// by a method array), so a hand-own owes them nothing — the census finds one real consumer,
+		// encoding/gob's TestIgnoreDepthLimit.
+		//
+		// The hand-own mints the type with System.Reflection.Emit (golib's GoStructSynthesis) and
+		// then does nothing else: abi.synthType describes the minted type exactly as it describes a
+		// converted struct, and GoFields / structLayoutOf / FieldAliasBox / ZeroValueOf /
+		// GoTypeName / canonType all run UNMODIFIED, because not one of them asks where a
+		// System.Type came from. That is the whole argument for the mechanism — a synthetic answer
+		// and the converted answer cannot disagree when there is only one path.
+		// See docs/phase4/DESIGN-reflect-structof.md and reflect/value_impl.cs.
+		"StructOf": goosAny,
+		// SliceOf is the third of the family and the cheapest — the PointerTo shape exactly, one
+		// MakeGenericType over golib's slice<T>, which IS Go's slice type. It dies in the same
+		// typesByString → typelinks() lookup ArrayOf's auto body died in, and was in fact reached
+		// FROM there: Go's arrayType record carries a Slice field, so ArrayOf called SliceOf.
+		//
+		// The one decision it carries is what dims to hand the descriptor, and the answer is NONE.
+		// abi.TypeOf measures dims for an ARRAY value and a POINTER's pointee only, so a DECLARED
+		// []T descriptor carries null; handing the element's dims through would break the identity
+		// that makes the constructed and the declared type ONE reflect.Type, and would not help
+		// either, since rtype.Elem's non-pointer, non-map arm consumes the head of the vector. So
+		// SliceOf(ArrayOf(3, byte)) describes [][3]byte with its element's length unknown — exactly
+		// what TypeOf([][3]byte{}) reads back today. That residual is the cargo model's (a slice
+		// type has no dims slot), not this constructor's.
+		"SliceOf": goosAny,
 		// rtype.FieldByName Reinterprets the descriptor as a structType and reads .Fields off
 		// the default promoted-embed box (gob's compileDec matching wire fields to the local
 		// struct). Bridged over the shared GoFields projection — the SAME field table

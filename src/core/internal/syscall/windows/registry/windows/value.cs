@@ -2,6 +2,22 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //go:build windows
+
+// Hand-owned: SetDWordValue/SetQWordValue are the "caller-reinterpreted byte buffer" class from
+// CLAUDE.md's syscall-wrapper census -- the CALLER (not a syscall wrapper) reinterprets a
+// scalar's address as a byte array via `(*[N]byte)(unsafe.Pointer(&value))[:]`, which the
+// auto-conversion renders as
+// `(~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡvalue)))[..]` -- casting a raw native address
+// straight to `ж<array<byte>>` and dereferencing it. `array<byte>` is a managed wrapper (a backing
+// reference + length), not 4/8 raw bytes, so that dereference reads the value's raw bytes AS IF
+// they were an object reference and length, then Slice()s through the bogus "reference" --
+// `invalid memory address or nil pointer dereference` in slice.cs, measured via TestValues.
+// Unlike the read-direction CryptoAPI members of this class (still open, no wrapper at fault),
+// this is write-only data handed to regSetValueEx, so no identity needs to survive the call --
+// building the byte representation explicitly and handing that over is the whole fix, no mirror
+// or native call needed. Rest of this file is otherwise the ordinary conversion.
+[module: go.GoManualConversion]
+
 namespace go.@internal.syscall.windows;
 
 using errors = errors_package;
@@ -280,17 +296,13 @@ internal static error setValue(this Key k, @string name, uint32 valtype, slice<b
 // SetDWordValue sets the data and type of a name value
 // under key k to value and DWORD.
 public static error SetDWordValue(this Key k, @string name, uint32 valueʗp) {
-    ref var value = ref heap(valueʗp, out var Ꮡvalue);
-
-    return k.setValue(name, DWORD, (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡvalue)))[..]);
+    return k.setValue(name, DWORD, new slice<byte>(System.BitConverter.GetBytes(valueʗp)));
 }
 
 // SetQWordValue sets the data and type of a name value
 // under key k to value and QWORD.
 public static error SetQWordValue(this Key k, @string name, uint64 valueʗp) {
-    ref var value = ref heap(valueʗp, out var Ꮡvalue);
-
-    return k.setValue(name, QWORD, (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡvalue)))[..]);
+    return k.setValue(name, QWORD, new slice<byte>(System.BitConverter.GetBytes(valueʗp)));
 }
 
 internal static unsafe error setStringValue(this Key k, @string name, uint32 valtype, @string value) {

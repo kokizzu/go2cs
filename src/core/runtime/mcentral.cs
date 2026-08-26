@@ -250,15 +250,10 @@ internal static readonly @string uncachingSpanButSˢ = "uncaching span but s.all
 // grow allocates a new empty span from the heap and initializes it for c's size class.
 [GoRecv] internal static ж<mspan> grow(this ref mcentral c) {
     var npages = (uintptr)class_to_allocnpages[c.spanclass.sizeclass()];
-    var size = (uintptr)class_to_size[c.spanclass.sizeclass()];
     var s = Ꮡmheap_.alloc(npages, c.spanclass);
     if (s == nil) {
         return default!;
     }
-    // Use division by multiplication and shifts to quickly compute:
-    // n := (npages << _PageShift) / size
-    var n = s.divideByElemSize((npages << (int)(_PageShift)));
-    s.Value.limit = s.@base() + size * n;
     s.initHeapBits(false);
     return s;
 }

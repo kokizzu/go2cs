@@ -54,6 +54,13 @@ separately by the Startup row.
 - **Published tables come from a single designated host per era** — the Environment line names the
   part — so the History section's cross-toolchain comparisons (e.g., .NET 9 → 10) are always
   same-machine. Ratios from different hardware are not comparable and are never mixed.
+- **The AOT column's numbers are runtime numbers; producing them is expensive, and we say so.**
+  Each Native AOT publish compiles the entire converted-stdlib closure whole-program — hours per
+  publish, largely single-threaded, at a **15–18 GB** build-time working-set peak (re-measured per
+  hop) — which is also exactly what buys the column's lean images and runtime memory wins. The
+  full disclosure, the reasoning, and the compile-farm mitigation live in the suite README's
+  ["What the AOT column costs to produce"](https://github.com/ritchiecarroll/go2cs/blob/master/src/tests/Performance/README.md#what-the-aot-column-costs-to-produce--the-honesty-footnote)
+  section.
 
 ## Running it
 
@@ -65,8 +72,9 @@ cd src/tests/Performance
 ./run-performance.ps1 --runs 10 --update-readme   # refresh the results block below
 ```
 
-Requirements: Go toolchain, .NET 9 SDK, and — for the AOT column — a native linker and toolchain,
-which differs by host:
+Requirements: Go toolchain, a .NET SDK matching the corpus target framework (`net10.0`, named by
+`src/Directory.Build.props`), and — for the AOT column — a native linker and toolchain, which differs
+by host:
 
 | Host | Native AOT prerequisite |
 |:--|:--|
@@ -204,6 +212,39 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   trails the JIT here by a wide margin (~8×) — ILC's codegen of the ref-lowered loop is a priced
   open question for the arc's next phase
   ([DESIGN-zh-box-reduction.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-zh-box-reduction.md)).
+
+### What the AOT column costs to produce — the honesty footnote
+
+The table above shows what a Native AOT binary does at **run time**. It does not show what that
+binary costs to **build**, and the cost is large enough that omitting it would mislead:
+
+- **Build time.** Each benchmark is its own self-contained publish, and ILC compiles the **entire
+  converted-stdlib closure** (~three hundred packages) into it, largely single-threaded (~1.1–1.3
+  effective cores regardless of machine). Measured at the .NET 10 hop: **hours per publish** on
+  laptop-class hardware — roughly an order of magnitude over the .NET 9 era on identical input —
+  so a full 14-row AOT re-baseline is days serial, overnight when publishes run concurrently on a
+  high-memory box (measured figures and the run series:
+  [DATA-hopN-perf.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DATA-hopN-perf.md)).
+- **Build memory.** A publish peaks at roughly **15–18 GB working set** (re-measure at each hop —
+  the floor moves with the corpus). A 16 GB machine swaps; concurrent publishes need that much
+  *per lane*. The produced images are ~300 MB self-contained, sized by the closure rather than the
+  benchmark — while the same binaries **run** in tens of megabytes.
+- **Why it is this way.** ILC is a **whole-program** compiler: reachability, the generic
+  instantiation closure, cross-assembly inlining and tree-shaking are all computed per-application
+  from that application's roots. Nothing is reusable between applications and there is no
+  incremental mode — which is also precisely what pays for the AOT column's wins (the dead-code-free
+  images and the runtime working-set reductions the memory row shows). The compile cost and the
+  lean output are two ends of one design choice, so quoting the wins without the costs would be
+  quoting half the trade.
+- **Contrast, and a future direction.** Go's toolchain compiles packages **separately into
+  reusable, cached per-package objects** and links quickly, so its equivalent of this table's
+  whole column rebuilds in seconds — the model a future ILC-side improvement would want (a
+  persistent compilation cache, or per-assembly pre-optimized inputs; ReadyToRun is today's
+  cacheable cousin, at materially weaker optimization). Until something like that exists, the
+  working mitigation here is a **compile farm**: publishes parallelized across a high-memory
+  machine, binaries adopted onto the measuring host only after measurement-identity is proven —
+  hashes cannot certify AOT builds, which are size-deterministic but not byte-deterministic
+  (fresh module IDs each rebuild).
 
 ## History
 

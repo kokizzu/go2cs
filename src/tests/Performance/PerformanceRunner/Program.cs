@@ -66,18 +66,23 @@ namespace PerformanceRunner
         private const int GoBuildTimeoutMs = 300_000;
         private const int BuildAllTimeoutMs = 600_000;
         private const int BuildOneTimeoutMs = 300_000;
-        // 4 hours since the .NET 10 hop: the 10-ILC's per-publish cost on the perf-canon laptop
-        // exceeded the 60-minute value outright — PerfStartup's FIRST publish (the smallest
-        // benchmark, again) was killed at 3,600s mid-compile with ILC healthy at near-full
-        // parallelism the whole way, and its one retry was on course for the same death. That is
-        // this constant's own 2026-08-10 lesson recurring at the next toolchain: the watchdog had
-        // quietly become a performance assumption the moment the toolchain under it changed.
+        // 12 hours since the .NET 10 hop, and sized from MEASUREMENT rather than hope: the first
+        // COMPLETED 10-ILC publish measured 11,862s (~3.3h) on the perf-canon laptop — so the 4h
+        // interim value this moved to first held only ~20% headroom on the FASTEST measuring box,
+        // and the slowest-legitimate-host doctrine above prices an i7-5820K-class publish at
+        // roughly 8-10h. Both prior values died the same death this constant's 2026-08-10 comment
+        // predicted: the 60-minute value killed PerfStartup mid-compile on the canon laptop, and
+        // the i9 sweeper then reproduced the identical false red at exactly 3,600s (kill within
+        // 5s of the constant, ILC verifiably healthy at ~1.3 cores throughout) — a watchdog that
+        // quietly became a performance assumption the moment the toolchain under it changed.
         // Overridable via GO2CS_AOT_PUBLISH_TIMEOUT (seconds) — the behavioral runner's pattern —
-        // so the next slower host or slower ILC opts up without an instrument edit.
+        // so a fast lane opts DOWN for fail-fast, and a still-slower host opts up, without an
+        // instrument edit. At 12h this only ever fires on a genuine hang, which is the only thing
+        // a safety net is for.
         private static readonly int AotPublishTimeoutMs =
             int.TryParse(Environment.GetEnvironmentVariable("GO2CS_AOT_PUBLISH_TIMEOUT"), out int aotSeconds) && aotSeconds > 0
                 ? aotSeconds * 1000
-                : 14_400_000;
+                : 43_200_000;
         private const int RunTimeoutMs = 120_000;
 
         private const string Config = "Release";

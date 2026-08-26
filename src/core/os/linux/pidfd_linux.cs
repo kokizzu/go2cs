@@ -7,10 +7,15 @@
 //  v5.3: pidfd_open syscall, clone3 syscall;
 //  v5.4: P_PIDFD idtype support for waitid syscall;
 //  v5.6: pidfd_getfd syscall.
+//
+// N.B. Alternative Linux implementations may not follow this ordering. e.g.,
+// QEMU user mode 7.2 added pidfd_open, but CLONE_PIDFD was not added until
+// 8.0.
 namespace go;
 
 using errors = errors_package;
 using unix = @internal.syscall.unix_package;
+using Δruntime = runtime_package;
 using Δsync = sync_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
@@ -18,32 +23,45 @@ using @internal.syscall;
 
 partial class os_package {
 
-internal static ж<syscall.SysProcAttr> ensurePidfd(ж<syscall.SysProcAttr> ᏑsysAttr) {
+// ensurePidfd initializes the PidFD field in sysAttr if it is not already set.
+// It returns the original or modified SysProcAttr struct and a flag indicating
+// whether the PidFD should be duplicated before using.
+internal static (ж<syscall.SysProcAttr>, bool) ensurePidfd(ж<syscall.SysProcAttr> ᏑsysAttr) {
     ref var sysAttr = ref ᏑsysAttr.DerefOrNull();
 
     if (!pidfdWorks()) {
-        return ᏑsysAttr;
+        return (ᏑsysAttr, false);
     }
     ref var pidfd = ref heap(new nint(), out var Ꮡpidfd);
     if (ᏑsysAttr == nil) {
-        return Ꮡ(new syscall.SysProcAttr(
+        return (Ꮡ(new syscall.SysProcAttr(
             PidFD: Ꮡpidfd
-        ));
+        )), false);
     }
     if (sysAttr.PidFD == nil) {
         ref var newSys = ref heap<syscall.SysProcAttr>(out var ᏑnewSys);
         newSys = sysAttr; // copy
         newSys.PidFD = Ꮡpidfd;
-        return ᏑnewSys;
+        return (ᏑnewSys, false);
     }
-    return ᏑsysAttr;
+    return (ᏑsysAttr, true);
 }
 
-internal static (uintptr, bool) getPidfd(ref syscall.SysProcAttr sysAttr) {
+// getPidfd returns the value of sysAttr.PidFD (or its duplicate if needDup is
+// set) and a flag indicating whether the value can be used.
+internal static (uintptr, bool) getPidfd(ref syscall.SysProcAttr sysAttr, bool needDup) {
     if (!pidfdWorks()) {
         return (0, false);
     }
-    return ((uintptr)(sysAttr.PidFD.Value), true);
+    nint h = sysAttr.PidFD.Value;
+    if (needDup) {
+        var (dupH, e) = unix.Fcntl(h, syscall.F_DUPFD_CLOEXEC, 0);
+        if (e != default!) {
+            return (0, false);
+        }
+        h = dupH;
+    }
+    return ((uintptr)h, true);
 }
 
 internal static (uintptr, error) pidfdFind(nint pid) {
@@ -142,9 +160,9 @@ internal static readonly @string pidfdOpenˢ = "pidfd_open"u8;
 internal static readonly @string pidfdWaitˢ = "pidfd_wait"u8;
 internal static readonly @string pidfdSendSignalˢ = "pidfd_send_signal"u8;
 
-// checkPidfd checks whether all required pidfd-related syscalls work.
-// This consists of pidfd_open and pidfd_send_signal syscalls, and waitid
-// syscall with idtype of P_PIDFD.
+// checkPidfd checks whether all required pidfd-related syscalls work. This
+// consists of pidfd_open and pidfd_send_signal syscalls, waitid syscall with
+// idtype of P_PIDFD, and clone(CLONE_PIDFD).
 //
 // Reasons for non-working pidfd syscalls include an older kernel and an
 // execution environment in which the above system calls are restricted by
@@ -152,6 +170,12 @@ internal static readonly @string pidfdSendSignalˢ = "pidfd_send_signal"u8;
 internal static error checkPidfd() {
     GoFrame ᒐ = default;
     try {
+        // In Android version < 12, pidfd-related system calls are not allowed
+        // by seccomp and trigger the SIGSYS signal. See issue #69065.
+        if (Δruntime.GOOS == "android"u8) {
+            ignoreSIGSYS();
+            defer(restoreSIGSYS, ref ᒐ);
+        }
         // Get a pidfd of the current process (opening of "/proc/self" won't
         // work for waitid).
         var (fd, err) = unix.PidFDOpen(syscall.Getpid(), 0);
@@ -177,10 +201,33 @@ internal static error checkPidfd() {
                 return NewSyscallError(pidfdSendSignalˢ, errΔ1);
             }
         }
+        // Verify that clone(CLONE_PIDFD) works.
+        //
+        // This shouldn't be necessary since pidfd_open was added in Linux 5.3,
+        // after CLONE_PIDFD in Linux 5.2, but some alternative Linux
+        // implementations may not adhere to this ordering.
+        {
+            var errΔ2 = checkClonePidfd(); if (errΔ2 != default!) {
+                return errΔ2;
+            }
+        }
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
 }
+
+// Provided by syscall.
+//
+//go:linkname checkClonePidfd
+internal static partial error checkClonePidfd();
+
+// Provided by runtime.
+//
+//go:linkname ignoreSIGSYS
+internal static partial void ignoreSIGSYS();
+
+//go:linkname restoreSIGSYS
+internal static partial void restoreSIGSYS();
 
 } // end os_package

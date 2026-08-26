@@ -575,14 +575,16 @@ public static void TestCrossVersionResume(ж<testing.T> Ꮡt) {
 internal static void testCrossVersionResume(ж<testing.T> Ꮡt, uint16 version) {
     var serverConfig = Ꮡ(new Config(
         CipherSuites: new uint16[]{TLS_RSA_WITH_AES_128_CBC_SHA}.slice(),
-        Certificates: (~testConfig).Certificates
+        Certificates: (~testConfig).Certificates,
+        Time: testTime
     ));
     var clientConfig = Ꮡ(new Config(
         CipherSuites: new uint16[]{TLS_RSA_WITH_AES_128_CBC_SHA}.slice(),
         InsecureSkipVerify: true,
         ClientSessionCache: NewLRUClientSessionCache(1),
         ServerName: "servername"u8,
-        MinVersion: VersionTLS12
+        MinVersion: VersionTLS12,
+        Time: testTime
     ));
     // Establish a session at TLS 1.3.
     clientConfig.Value.MaxVersion = VersionTLS13;

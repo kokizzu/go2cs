@@ -213,6 +213,16 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
     // directly if possible.
     setGNoWB(mp.of(m.Ꮡcurg), gnext);
     setMNoWB(gnext.of(g.Ꮡm), mp);
+    // Synchronize with any out-standing goroutine profile. We're about to start
+    // executing, and an invariant of the profiler is that we tryRecordGoroutineProfile
+    // whenever a goroutine is about to start running.
+    //
+    // N.B. We must do this before transitioning to _Grunning but after installing gnext
+    // in curg, so that we have a valid curg for allocation (tryRecordGoroutineProfile
+    // may allocate).
+    if (goroutineProfile.active) {
+        tryRecordGoroutineProfile(gnext, default!, osyield);
+    }
     if (!gnext.of(g.Ꮡatomicstatus).CompareAndSwap(_Gwaiting, _Grunning)) {
         // The CAS failed: use casgstatus, which will take care of
         // coordinating with the garbage collector about the state change.

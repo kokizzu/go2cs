@@ -1292,6 +1292,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReflectArrayOf() => CheckTarget("ReflectArrayOf");
+
+    [TestMethod]
     public void CheckReflectBridgeClosure() => CheckTarget("ReflectBridgeClosure");
 
     [TestMethod]
@@ -1317,6 +1320,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckReflectStringWindow() => CheckTarget("ReflectStringWindow");
+
+    [TestMethod]
+    public void CheckReflectStructOf() => CheckTarget("ReflectStructOf");
 
     [TestMethod]
     public void CheckReflectStructTagCopy() => CheckTarget("ReflectStructTagCopy");
@@ -1680,6 +1686,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckUnsafePointerPrint() => CheckTarget("UnsafePointerPrint");
+
+    [TestMethod]
+    public void CheckUnsafePointerWordRead() => CheckTarget("UnsafePointerWordRead");
 
     [TestMethod]
     public void CheckUnsafeSliceDataAliasing() => CheckTarget("UnsafeSliceDataAliasing");

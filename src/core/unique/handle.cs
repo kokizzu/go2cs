@@ -55,13 +55,13 @@ public static Handle<T> Make<T>(T value)
     
     ref var toInsertWeak = ref heap(new weak.Pointer<T>(), out var ᏑtoInsertWeak);
     var mʗ1 = m;
-    weak.Pointer<T> newValue() {
+    (T, weak.Pointer<T>) newValue() {
         if (ᏑtoInsert.ValueSlot == nil) {
             ᏑtoInsert.ValueSlot = @new<T>();
             ᏑtoInsert.ValueSlot.ValueSlot = clone(value, mʗ1.of(uniqueMap<T>.ᏑcloneSeq));
             ᏑtoInsertWeak.Value = weak.Make<T>(ᏑtoInsert.ValueSlot);
         }
-        return ᏑtoInsertWeak.Value;
+        return (ᏑtoInsert.ValueSlot.ValueSlot, ᏑtoInsertWeak.Value);
     }
     ж<T> ptr = default!;
     while (ᐧ) {
@@ -69,7 +69,8 @@ public static Handle<T> Make<T>(T value)
         var (wp, okΔ1) = m.Value.HashTrieMap.Value.Load(value);
         if (!okΔ1) {
             // Try to insert a new value into the map.
-            (wp, _) = m.Value.HashTrieMap.LoadOrStore(value, newValue());
+            var (k, v) = newValue();
+            (wp, _) = m.Value.HashTrieMap.LoadOrStore(k, v);
         }
         // Now that we're sure there's a value in the map, let's
         // try to get the pointer we need out of it.

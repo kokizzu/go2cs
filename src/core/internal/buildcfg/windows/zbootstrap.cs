@@ -27,7 +27,7 @@ internal static readonly @string defaultGO_EXTLINK_ENABLED = @""u8;
 
 internal static readonly @string defaultGO_LDSO = @""u8;
 
-internal static readonly @string version = @"go1.23.1"u8;
+internal static readonly @string version = @"go1.23.12"u8;
 
 internal static readonly @string defaultGOOS = "windows";
 

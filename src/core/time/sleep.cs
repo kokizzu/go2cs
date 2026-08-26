@@ -43,7 +43,7 @@ internal static @unsafe.Pointer syncTimer(channel<Time> cʗp) {
     // If we decide to keep the sync channels, we can delete all the
     // handling of asynctimerchan in the runtime and keep just this
     // function to handle asynctimerchan=1.
-    return ~Ꮡc.Reinterpret<channel<Time>, @unsafe.Pointer>();
+    return ~Ꮡ(new @unsafe.Pointer((uintptr)Ꮡc));
 }
 
 // when is a helper function for setting the 'when' field of a runtimeTimer.

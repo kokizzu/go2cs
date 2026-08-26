@@ -1,6 +1,13 @@
-# DRAFT — C# 14 span-overload exposure census: the corpus is protected by identity, not by luck (read-only, 2026-08-24)
+# CENSUS — C# 14 span-overload exposure: the corpus is protected by identity, not by luck (read-only, 2026-08-24)
 
-> **DRAFT for coordinator review.** Read-only census of `C:\Projects\go2cs` at `2e9d5f549` (master).
+> **State: EXECUTED / AMENDED (2026-08-24).** Reviewed and acted on. Its headline is **falsified in
+> part** by the amendment immediately below, and the generalizable, migration-side half has **landed
+> in the runbook** as [`../DotNetMigration.md`](../DotNetMigration.md) §3 **Trap 6** — the
+> normal-vs-expanded `params` flip, and the fact that its detection was the **validated sweep**
+> rather than the behavioral suite. Amended, never rewritten: the census body stands as measured,
+> with its two retracted claims marked in place.
+>
+> Read-only census of `C:\Projects\go2cs` at `2e9d5f549` (master).
 > Nothing in the repo was modified. Scopes the item `docs/phase4/RECON-dotnet10.md` §3 row 1 names as
 > "the highest-attention item of the hop" and §7 signal 1 names as the one that would DELAY it:
 > C# 14 first-class span conversions changing overload resolution against `src/core/golib/`.
@@ -9,6 +16,43 @@
 > ⚠ **No .NET 10 SDK is installed on this machine** (`dotnet --list-sdks` → 2.1.x, 5.0.100, **9.0.317**),
 > so nothing below was compiled. Every verdict is a reading of the conversion/overload rules against
 > measured repo shapes. §6 names exactly what settles the two rows that reading cannot close.
+
+---
+
+> ## ⚠ AMENDMENT (2026-08-24, jsval-rootcause lane) — the headline is FALSIFIED, by row 3
+>
+> Compiled, on the .NET 10 SDK this census could not reach. The mechanism §1(b) describes is **real
+> and confirmed** (`slice<T>` → `T[]` → `Span<T>` is an implicit conversion under C# 14 and does not
+> exist under C# 13 — measured both ways, same TFM and same runtime, LangVersion the only variable).
+> What is wrong is the *assessment* attached to it. Row 3 calls the new conversions "**widening —
+> cannot break existing code**"; **they broke `html/template`'s `TestJSValEscaper`**, silently and
+> without a compile error, and that was the one FAIL of the hop's 161/1 validated sweep.
+>
+> **The missed shape: normal-vs-expanded form within a SINGLE `params` candidate.** This census
+> searched for overload SETS whose *winner* could change, and correctly found none — every emitted
+> argument shape has an identity match. But a `params` method has **two applicable forms**, and C#
+> prefers the normal form whenever the argument converts to the collection type. A new conversion
+> therefore does not need a second candidate to change a call's meaning: it only needs to make the
+> normal form applicable where previously only the expanded form was. `jsValEscaper(a)` with
+> `a` a `slice<any>` against `params ꓸꓸꓸany` (== `params Span<any>`) bound the expanded form under
+> C# 13 (one element, matching Go) and the normal form under C# 14 (the slice spread), losing exactly
+> one level of nesting on every row of the test table.
+>
+> Two specific claims to read as retracted:
+> - **§5's "`variadic.cs` … a single-candidate surface, structurally immune."** Single-candidate is
+>   precisely *not* immune — it is the surface that broke. Every `params Span<T>` in the tree
+>   (the `Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` families and every converted `...T` signature) is exposed wherever a
+>   call passes one argument of a type that C# 14 newly converts to `Span<T>`.
+> - **§4.3's detector claim.** A flipped pick was predicted to surface only as an *allocation*
+>   regression in the disclosure arithmetic. This one surfaced as an ordinary behavioral divergence
+>   in an ordinary test assert. Both detectors matter; the second is not the only one.
+>
+> Everything else in the census stands as written, including the finding that identity protects every
+> multi-candidate set (§3, §4) — no CS0121 and no changed winner has been observed. The fix is in the
+> **converter**, not golib: a slice/array of the variadic element type passed as the sole argument of
+> a non-spread variadic slot is now cast to the element type, exactly as the untyped-`nil` variadic
+> slot already was. See `docs/ConversionStrategies-Reference.md` (§ "An untyped constant boxed as
+> `any` boxes at Go's DEFAULT TYPE") and the `VariadicSlotInterfaces` behavioral guard.
 
 ---
 
@@ -345,7 +389,7 @@ it is cheap: 8 of the 59 impl files touch spans at all (`internal/chacha8rand`, 
 |:--|:--|:--|:--|
 | 1 | `new @string(<Span<byte>>)` — `ROS<byte>` ctor beside `slice<byte>` ctor | string.cs:92 vs :105 | 🟠 **newly-ambiguous IF reached — 0 call sites found** (145 `new @string(` sites, none span-typed; golib's two near-misses dodge via `: this(…)` exclusion and an explicit cast at string.cs:137) |
 | 2 | `new sstring(<Span<byte>>)` — same shape | sstring.cs:58 vs :70 | 🟠 same, **0 call sites found** |
-| 3 | New allocating conversions `slice<T>`/`array<T>`/`@string` → `Span`/`ROS` | slice.cs:737, array.cs:528, string.cs:528/444 | 🟡 **widening — cannot break existing code**; a future-hazard footgun (every route copies) and the engine behind rows 1–2 |
+| 3 | New allocating conversions `slice<T>`/`array<T>`/`@string` → `Span`/`ROS` | slice.cs:737, array.cs:528, string.cs:528/444 | 🔴 **FIRED — see the amendment above.** Assessed here as "widening — cannot break existing code"; that is false for a `params` parameter, where a new conversion flips the call from the EXPANDED form to the preferred NORMAL form with no second candidate and no compile error. Broke `html/template` `TestJSValEscaper`; fixed in the converter (`variadicArgBindsParamsCollection`). Still also a future-hazard footgun — every route copies |
 | 4 | `builtin.append` 7-overload family | builtin.cs:292–379, 1134, 1149 | 🟢 **unaffected** — identity at `:358` for 4,812 spread sites, at `:1149` for u8 sites |
 | 5 | u8-literal operator families (`@string`, `sstring`, named-string wrappers) | string.cs:647–733; sstring.cs:278–459; template :260–264 | 🟢 **unaffected** — doubly-exact operators outrank the one new candidate; 79,010 literal sites |
 | 6 | `slice<T>.Append` `params ROS<T>` beside `params T[]` | slice.cs:1052, :1108 | 🟢 **unaffected** — the C4 disposition already chose the one-span-overload shape for this reason |

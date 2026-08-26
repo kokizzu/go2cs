@@ -8,6 +8,14 @@
 > never as an unresolved item. The prose at each ⟨OQ-n⟩ site is left exactly as drafted, so where that
 > prose merely *proposes* an answer, §8's ruling is what governs.
 >
+> **Amended 2026-08-24 — the RUNBOOK now leads.** §2 (the step inventory), §3 (the hand-own re-audit)
+> and §4 (the parity gates) were generalized into
+> [`GoCorpusMigration.md`](GoCorpusMigration.md), which is the maintained procedure and is amended
+> in-stage as it is executed; those three sections here are **pointer shells**, kept for their
+> anchors and their ruling context. §0, §1, §5, §6, §7 and §8 remain this document's living content
+> and govern hops B–D. **§8's rulings remain the citable record** — a runbook *"(ruled)"* resolves
+> here, and a runbook edit never reopens one.
+>
 > Measured-bill-first: every number below is either a measurement with its date and machine, or is
 > explicitly named as unmeasured. Two whole classes of number — the hand-own census and the per-hop
 > stdlib delta — are **re-measured at the hop**, never carried; the figures quoted are last-banked
@@ -72,6 +80,11 @@ loudly rather than lingering, which is what happened here.
 Read 2026-08-13 from [go.dev/doc/devel/release](https://go.dev/doc/devel/release) and cross-checked
 against [endoflife.date/go](https://endoflife.date/go).
 
+**As-of 2026-08-13, and stale by construction.** The table below is a dated reading, not a set of
+targets to convert against — the section's own closing instruction (*"Re-read this table at the hop"*,
+⟨OQ-1⟩) is the operative rule, and hops C and D re-read before they start. Hops A and B are the two
+whose patch series are **closed**, so only their rows can be trusted to have held.
+
 | Minor | Released | Final / latest patch | Patch date | Status | Ladder role |
 |:--|:--|:--|:--|:--|:--|
 | **1.23** | 2024-08-13 | **1.23.12** | 2025-08-06 | **EOL** 2025-08-12 (at 1.25.0) | current pin is `1.23.1`; rehearsal target is `1.23.12` |
@@ -100,7 +113,7 @@ Sources: [Go 1.24 release notes](https://go.dev/doc/go1.24), [Go 1.25](https://g
 
 **Packages ADDED (visible by default):** `weak` · `crypto/mlkem` · `crypto/hkdf` · `crypto/pbkdf2` ·
 `crypto/sha3` · `crypto/fips140`. These are exactly the six that
-[`FINDING-toolchain-goroot-divergence.md`](../../docs/phase4/FINDING-toolchain-goroot-divergence.md) §3
+[`FINDING-toolchain-goroot-divergence.md`](phase4/FINDING-toolchain-goroot-divergence.md) §3
 identifies as the reporter's NU1101 wall — `go.crypto.sha3` 404s on nuget.org today because no 1.23.1
 conversion ever contained it. Note `weak` is the **promotion** of the existing `internal/weak`, not a new
 implementation; the corpus already hand-owns `internal/weak/pointer.cs` (joined the marker census at
@@ -296,79 +309,82 @@ that embeds **Go 1.23.1's `go/parser` and `go/types`** — i.e. the old standard
 mis-parse the new constructs and the run degrades into the converter's *best-effort* "did not fully
 type-check" path, which CNR reports as **NOT MEASURED** (good) but which the runners do not.
 
-**Proposed remedy (H1.4):** make the rebuild predicate toolchain-aware — stamp `runtime.Version()` into
-`go2cs.exe` (it already reads it via `publishedStdLibRelease`) and have each harness compare the binary's
-stamped release against the live `go env GOVERSION`, rebuilding on mismatch exactly as it does on an mtime
-change. A cheaper interim: make H1 end with an explicit `go build` of the converter and a recorded
-`go2cs -version`-style echo, and forbid any hop gate from running before it. ⟨OQ-6⟩
+**Remedy (H1.4) — CLOSED (2026-08-24, per ⟨OQ-6⟩, in an equivalent form).** The stamp turned out to be
+unnecessary: every Go binary **already** embeds the release that built it, so nothing needed stamping.
+`src/tests/ConverterBuildInputs.cs` reads it back and compares it against the live `go env GOVERSION` in
+the ONE shared helper all three rebuild predicates delegate to, failing stale-wards (an unreadable stamp
+or an unanswerable `GOVERSION` forces the rebuild). A toolchain hop now invalidates `go2cs.exe`
+automatically, no explicit `go build` is owed, and no gate can run against a stale converter. The same
+helper closed route #5 (the `//go:embed` assets) with it. Full statement:
+[`GoCorpusMigration.md`](GoCorpusMigration.md) §1.2. ⟨OQ-6⟩
 
 ---
 
 ## 2. What one hop is — the step inventory
 
+> **GENERALIZED — the maintained inventory is [`GoCorpusMigration.md`](GoCorpusMigration.md) §2.**
+> This section drafted the canonical H0–H12 ladder. The runbook now carries it, amended in-stage as
+> its first execution taught it — and it has since grown **H4a**, the opening deliberate-regen slot,
+> which never existed here. What survives below is one status note per step, kept deliberately:
+> the H-numbers are a **citation namespace** (shipped source cites `H2` and `H1.4` by name), and
+> several steps carry the ⟨OQ-n⟩ marks that point into §8's rulings, which the runbook's terse
+> *"(ruled)"* annotations resolve against. **Where a note below and the runbook disagree about
+> procedure, the runbook is right and this is stale.**
+
 Every hop runs H0 → H12 in order. Steps marked **GATE** are pass/fail and block the next step. Steps
 marked ⟲ are re-measured at each hop and never carried forward.
 
 ### H0 — Branch and baseline capture
-Cut `upgrade/go1.NN` from master. Capture, on the **outgoing** toolchain and the **new** converter build,
-the artifacts the hop will diff against: the `.cs.auto` baseline (§3), the package census, the roster
-snapshot, the disclosure manifests. ⟲
 
-⚠ **`.cs.auto` staleness is a prerequisite, not a finding.** The `-stdlib` overlay rule excludes
-`*.cs.auto` in order to protect the hand-owned `.cs` beside it, so the tracked `.cs.auto` siblings are
-frozen on their own schedule — 11 of 16 were stale at r40; r49a's control measured 12 content differences
-and classified all 12 as exactly this (CleanupBacklog item 18). **A stale baseline poisons the first
-hop's differential.** Either level item 18 immediately before H0, or generate the baseline fresh in H0
-from a seeded old-Go regen rather than reading the committed siblings. The second is strictly safer and
-is what this plan proposes. ⟨OQ-7⟩
+Cut the version branch; capture, on the **outgoing** toolchain and the **new** converter build, the
+artifacts the hop diffs against — the `.cs.auto` baseline (§3), the package census, the roster
+snapshot, the disclosure manifests. ⟲ Ruled: generate the baseline fresh from a seeded old-release
+regen, never from the committed `.cs.auto` siblings, which the overlay rule freezes by design.
+⟨OQ-7⟩ · Procedure: runbook H0.
 
 ### H1 — Toolchain provisioning **GATE**
-1. Install the target Go release side-by-side; confirm `GOROOT/VERSION` reads the exact target.
-2. Bump `src/go2cs/go.mod`'s `go` directive ⟨OQ-8⟩ and the `golang.org/x/tools` / `golang.org/x/mod`
-   requirements to releases contemporary with the target (§1.4's export-data policy bounds the lag).
-3. `go build` the converter **on the new toolchain**; `go test ./...` green (200 s solo / 332 s loaded on
-   the i7-5820K at the current tree — budget 3–4× any i9 figure).
-4. **Close the route-#4 hole** (§1.4.2) before any harness runs.
 
-**Gate:** converter unit tests green **and** `go2cs.exe` demonstrably built by the new toolchain.
+Install the target side-by-side and confirm it **executes** (the correction at the head of §1.4.2's
+neighbourhood applies: `bin/go version` OUTPUT, never `GOROOT/VERSION`); move the converter module's
+`go` directive ⟨OQ-8⟩; bump `golang.org/x/tools` and `golang.org/x/mod` as a **separate commit with
+its own CNR** ⟨OQ-5⟩; rebuild the converter on the new toolchain and green its `go test ./...`.
+Procedure: runbook H1.
 
 ### H2 — The pin bump **GATE**
-Bump `<GoStdLibVersion>` in `src/version.props` to the exact target release. Decide `<GoBuildNumber>`
-policy at the same moment ⟨OQ-9⟩. Nothing else in the repo changes in this commit — it is deliberately a
-one-line, reviewable, revertible move, and it is what unblocks `-stdlib`/`-tests` under
-`checkCorpusToolchainPin`.
 
-**Gate:** a single-package `-stdlib` smoke conversion no longer refuses.
+Bump `<GoStdLibVersion>` in `src/version.props` to the exact target; `<GoBuildNumber>` **resets** per
+release ⟨OQ-9⟩. Lands as **one reviewable pair with H1** (R8), and **precedes** the reconvert, which
+`checkCorpusToolchainPin` enforces in its own error text. Procedure and instrument (`migrate-gorelease.ps1`):
+runbook H2.
 
 ### H3 — Package census ⟲
-Run the conversion queue and diff the package set against the outgoing corpus: **added**, **removed**,
-**renamed/promoted** (e.g. `internal/weak` → `weak`), **experiment-gated and therefore absent**. This is
-the hop's size estimate and the input to every subsequent step. For the 1.24 hop this is where the
-`crypto/internal/fips140/...` tree gets its real number — §1.2 deliberately does not guess it.
 
-Deliverable: a `CENSUS-go1.NN-packages.md` under `docs/phase4/`, in the shape of the existing census docs.
+Diff the conversion queue's package set against the outgoing corpus: added, removed, renamed or
+promoted, and experiment-gated-and-therefore-absent — that last category named explicitly, because
+experiment-gated packages stay out until they graduate ⟨OQ-2⟩. Deliverable: a census document under
+`docs/phase4/`. Procedure: runbook H3.
 
 ### H4 — Converter feature work **GATE**
-Whatever §1.3 names for this hop, plus whatever H3's census surfaces. Each item follows the standing
-repo discipline: root-cause against emitted `.cs`, land a behavioral regression test, update
-`ConversionStrategies-Reference.md` (and the summary only if the headline mapping moved), prove
-`check-no-regression` clean **on the outgoing corpus** where the change is supposed to be neutral.
 
-**Gate:** CNR byte-identical over the full behavioral corpus (≈580 packages at the last measure), zero
-NOT MEASURED. Budget 1,505 s solo / ~3,190 s with two sibling lanes on the i7-5820K.
+Whatever §1.3 names for this hop plus whatever H3 surfaces, each item under the standing repository
+discipline. Two work items belong here by ruling rather than as audit findings: the hand-owned
+`src/core/testing` host, which follows nothing automatically ⟨OQ-3⟩, and the `go.mod` readers.
+Procedure: runbook H4.
+
+*The runbook also carries **H4a**, the opening deliberate-regen slot that levels the queued-leveling
+bundle before H5 so H5's overlay diff is readable. It postdates this plan and has no note here.*
 
 ### H5 — Seeded full reconvert **GATE**
-Exactly CLAUDE.md's reconvert ritual, unchanged:
-seed `<tmp>/src/core` + `<tmp>/src/version.props` + `<tmp>/docs/validation` mirroring the `src/` layout →
-`go2cs -stdlib -comments -go2cspath <tmp>/src` → path-precise marker gate → overlay `.cs`/`.csproj`/
-`README.md` excluding `*.cs.auto`.
 
-Non-negotiables carried verbatim from CLAUDE.md, because a hop is the *most* likely moment to skip one:
-- **Seed first.** An unseeded root clobbers every whole-file hand-own with an auto conversion that
-  compiles and is operationally broken, and — since L3 — also breaks layout adoption.
-- **Never convert twice into one temp root**; delete and re-seed per run; confirm no `go2cs.exe` is alive.
-- **Marker gate is PATH-PRECISE, line-anchored, and re-measured.** ⟲ Measured on this checkout
-  **2026-08-13**, and it has already moved off the last banked reading:
+CLAUDE.md's reconvert ritual, unabridged — seed first, never convert twice into one staging root,
+wrap the converter call so its stderr does not abort the wrapper, path-precise line-anchored marker
+gate ⟲, classify emitted-vs-seeded by sentinel mtime, overlay `.cs`/`.csproj`/`README.md` excluding
+`*.cs.auto`. The three **hand-owned-by-consequence** packages never re-emit their project files, and
+a hop that adds a package to that class must notice. Procedure and every trap: runbook H5.
+
+**Retained reading — not procedure.** Measured on this checkout **2026-08-13**, kept because it is a
+dated measurement with no other home, and because the two-day movement in it is the argument for the
+re-measure-never-carry rule:
 
   | Quantity | r59 banked (2026-08-11) | Measured 2026-08-13 |
   |:--|--:|--:|
@@ -378,264 +394,141 @@ Non-negotiables carried verbatim from CLAUDE.md, because a hop is the *most* lik
   | Converted package `.csproj` (excl. `*.tests.csproj`) | — | **306** |
   | Banked `*.tests.csproj` | — | **130** |
 
-  Two things worth carrying. **First, the doctrine is vindicated in two days:** the marker census moved
-  49 → 53 between a Saturday bank and a Monday reading, which is precisely why CLAUDE.md says re-measure
-  and never assert last session's number. **Second, a free corroboration:** the 130 banked
-  `*.tests.csproj` exactly equals the 130 roster rows in `ValidatedTestPackages.md`, which is the
-  committed-evidence half of the green-badge rule (a badge is green only when the committed
-  `.tests.csproj` and the proof page agree). If a hop ever ends with those two numbers unequal, the
-  badge census will miscount — loudly, by design — and that is a cheap arithmetic check to run at H10.
-  *(The "302 converted packages" figure in CLAUDE.md's prose is older than the 306 package `.csproj` on
-  disk; H3's census re-derives the package set anyway, so treat neither number as the ladder's input.)*
-- The three **hand-owned-by-consequence** packages (`internal/concurrent`, `internal/godebug`,
-  `internal/weak`) never re-emit their `.csproj`/`package_info.cs`/`README.md`. A hop that *adds* a
-  package to this class must notice.
-
-**Gate:** overlay completes with the marker gate at zero violations and every diff classified (§7 risk R1).
+  The marker census moved 49 → 53 between a Saturday bank and a Monday reading. And the free
+  corroboration: the banked `*.tests.csproj` count exactly equalled the roster's row count, which is
+  the committed-evidence half of the green-badge rule — a hop that ends with those two unequal makes
+  the badge census miscount, loudly, by design. (Both readings have moved again since; the runbook's
+  H10 carries the arithmetic check, and every number here is re-measured at the hop.)
 
 ### H6 — The hand-own re-audit ⟲ **GATE** — *see §3, this is the mandatory step*
 
 ### H7 — Compile parity **GATE**
-Full `go2cs-stdlib.slnx` build, `-p:UseSharedCompilation=false`, zero errors, skipped-dependents checked
-(a dependent of a failed project is skipped, not errored — count them). Last measured 92–188 s on the i9;
-budget 3–4× on the i7-5820K class.
 
-**Gate:** **100 % of the hop's package set compiles.** Not "as many as before" — 100 %, per the frame.
+Full `go2cs-stdlib.slnx` build with shared compilation disabled: **zero errors and zero
+skipped-dependents**, at **100 %** of the hop's package set — not "as many as before". Every
+buildable target-OS flavor, purging between switches. Procedure: runbook H7.
 
-### H8 — Multi-platform L3 re-emission **GATE**
-`go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 -go2cspath <repo>\src`
-(~545–560 s measured at r50a/r51b for three targets). A hop changes the platform axis in two ways at
-once: new packages may be platform-varying, and existing ones may stop being so. Re-run
-`-platform-census` and diff the manifest against the outgoing one; the **37 L3 packages** figure is a
-measurement, not a constant. ⟲
+### H8 — Multi-platform L3 re-emission **GATE** ⟲
 
-The **1.26 hop has a named L3 consequence**: `windows/arm` is removed. That is a GOARCH the corpus does
-not currently target, so the expected impact is nil — but it is the first hop where a *port* disappears,
-and the census should say so explicitly rather than be silent.
+Re-run the multi-target emission and the platform census; diff the manifest against the outgoing one.
+A hop moves the platform axis in **both** directions at once, and the per-GOOS package count is a
+measurement, not a constant. Procedure and gate: runbook H8.
 
-**Gate:** the platform manifest's marker gate is zero per target; `-p:GoTargetOS=windows` reproduces the
-default build byte-for-byte (the control r48a established).
+*Hop-specific research with no other home: the **1.26 hop removes the `windows/arm` port**. That is a
+GOARCH the corpus does not target, so the expected impact is nil — but it is the first hop where a
+port disappears, and the census should say so explicitly rather than be silent.*
 
 ### H9 — Behavioral golden rebank **GATE**
-Behavioral goldens are conversions of go2cs's *own* Go programs, so a stdlib hop reaches them by three
-channels — and all three are real:
-1. **Imported type aliases.** A test's emitted `.cs` reads each imported package's `package_info.cs` to
-   mint its `<ImportedTypeAliases>` block. A hopped `fmt`/`strings`/`time` moves that block.
-2. **Release tags** (§1.4) change which files a referenced stdlib package includes.
-3. **Go-side stdout** in `OutputComparisonTests` — 1.25's nil-check fix and 1.26's `image/jpeg` rewrite are
-   the two known candidates.
 
-Procedure: re-transpile everything (CNR or a runner pass — `UpdateTestTargets --createTargetFiles` copies
-on-disk `.cs`, it does **not** re-transpile), then `UpdateTestTargets --createTargetFiles`, then classify
-**every** moved golden before banking. A hop is not a licence to rebank unexamined diffs.
-
-**Gate:** full `run-behavioral.ps1` (4 phases) green — transpile + compile + target + output. Budget from
-the top of the range and note `BehavioralRunner`'s own internal budgets are independent of the caller's
-(`--build-timeout` 2400 s default, etc.); a slow host reports `NOT MEASURED`, which fails the run and must
-never be read as a corpus regression.
+Behavioral goldens move through §1.1's three channels, and which are live is knowable in advance —
+**predict the diff's size before running the rebank**, because a diff that materially exceeds the
+prediction is a finding rather than a rebank. Re-transpile **first**; the golden-update utility copies
+on-disk `.cs` and does not run the converter. Procedure: runbook H9.
 
 ### H10 — Roster / proof-page / disclosure migration ⟲ **GATE** — *the hop's largest step*
-**Every banked `_test.go` suite changes between minors, so every roster row re-validates from scratch.**
-There is no "carry the row forward" path: the row's numerator, denominator and disclosure set are all
-derived from the new release's test sources.
 
-Per banked package:
-1. Re-run `go2cs -tests -test-action all -test-timeout <n>` against the new GOROOT package.
-2. Re-derive the verdict count. **The denominator moves** — tests are added and removed every release.
-3. Re-derive the disclosure manifest. Disclosures are **pinned by exact failure signature**, so a
-   renamed or reworded test invalidates its pin and the manifest must be re-signed rather than edited.
-   The 1.26 crypto "randomness parameter is ignored" change (§1.2) rewrites `crypto/dsa`'s determinism
-   mechanism outright.
-4. Regenerate the proof page under `docs/validation/current/<dot-id>.md`, and let the README Tests badge
-   recompose from it.
-5. Re-check the four long-timeout floors in `run-validated-sweep.ps1` (`hash/maphash`,
-   `index/suffixarray`, `crypto/dsa`, `archive/zip`) — a hop can change a suite's cost.
-
-**Gate:** roster % **≥ prior hop's %**. ⟨OQ-10⟩ — the *denominator* (215 testable at 1.23.1) is itself
-re-derived at each hop from the new release's `func Test…` census, so "≥ prior" needs a ruling on whether
-it compares percentages or absolute package counts. Percentages can fall while absolute counts rise (a
-release that adds testable packages faster than the ladder validates them); absolute counts can fall
-legitimately when upstream deletes a package.
-
-Budget: the full sweep measured 3,138 s at 109 packages / 13,611 verdicts on the i9; the roster is now
-**130 / 215 (60.5 %, 14,764 matching verdicts, 47 disclosed, updated 2026-08-13)**. At the completion bar
-(162) on the i7-5820K class this is plausibly a **multi-hour, background, coordinator-owned** run — and
-per CLAUDE.md a lane that parks a detached sweep and ends its turn gets it killed.
+Every banked suite re-validates from scratch — numerator, denominator and disclosure set alike, with
+no carry-forward path. Disclosures are **re-signed, never edited**. The gate is on the **absolute row
+count** ≥ prior, with upstream-deleted-package losses admitted as recorded exceptions, and **both**
+numbers reported every hop ⟨OQ-10⟩. Procedure, the per-package steps and the pre-staging technique:
+runbook H10; the shardable-campaign procedure is runbook §3.
 
 ### H11 — NuGet versioning + compat guards **GATE**
-- `version.props` is already bumped (H2). The published version becomes
-  `<GoStdLibVersion>.<GoBuildNumber>` = e.g. `1.24.13.1`.
-- **Ordering claim to verify, not assume:** NuGet compares version components numerically, so
-  `1.23.12.1 > 1.23.1.6` (Patch 12 > 1) and `1.24.13.1 > 1.23.12.n`. Monotonicity therefore holds across
-  the whole ladder *if* the four-part form is preserved. Verify with `NuGetVersion.Compare` before the
-  first hop publishes; a non-monotonic sequence on a public feed is not correctable. ⟨OQ-11⟩
-- **`checkNuGetStdLibCompatibility` moves with the hop for free**, because
-  `publishedStdLibRelease()` reads `runtime.Version()` of the converter binary — which H1 rebuilt. But
-  that coupling has a sharp edge: between H1 and H2 the binary claims the new release while
-  `version.props` still names the old one, so a `-recurse=nuget` run in that window refuses legitimate
-  old-pin modules and accepts new-pin ones for a corpus that does not exist yet. **H1 → H2 must be a
-  single reviewable pair, not two independently-mergeable commits.**
-- The design note flagged in FINDING-toolchain-goroot-divergence §5B is now *more* pressing, not less:
-  `publishedStdLibRelease()` is blind to what is actually on nuget.org, so during a hop the guard will
-  happily approve a release that has been built but never published. ⟨OQ-12⟩
-- New packages need new package IDs (`go.crypto.sha3`, `go.weak`, …). Removed packages need a
-  **deprecation/unlisting policy** — a consumer pinned to `go.crypto.elliptic`'s removed methods is not
-  served by silence. ⟨OQ-13⟩
+
+The published version is the pinned release plus the build counter, already set at H2. **Verify
+monotonicity with a scripted comparison before the first publish** ⟨OQ-11⟩ — a non-monotonic public
+sequence is not correctable. `checkNuGetStdLibCompatibility` follows the hop for free because it
+reads the converter binary's own runtime version, which is exactly the H1↔H2 window R8 names. The
+published-release stamp is a repository-recorded fact; a feed query is advisory only ⟨OQ-12⟩. New
+packages need new IDs; removed packages are **deprecated with a pointer, never unlisted** ⟨OQ-13⟩.
+Procedure: runbook H11.
 
 ### H12 — Docs, badges, READMEs **GATE**
-- The **Docs** and **Source·Go** badges read the toolchain (`go env GOVERSION`, GOROOT's
-  `src/vendor/modules.txt`) and follow the hop automatically. The **Tests** and **Source·C#** badges read
-  `version.props` and follow H2. So a hop moves **all four badges on ~305 READMEs** as a matter of course
-  — the diff is enormous and entirely expected, and its expected size should be stated *before* the
-  overlay so it is not mistaken for drift.
-- The **eight hand-owned READMEs** (`internal/godebug`, `internal/concurrent`, `internal/weak`, `unsafe`,
-  `testing`, `crypto/x509/internal/macos`, `internal/runtime/syscall`,
-  `vendor/golang.org/x/net/route`) do **not** follow. They are hand-edited, and per refinement 14 the
-  edits are *derived and proved against the converter's own output*, never typed. Re-run that derivation
-  as a control at each hop.
-- The **19 GOROOT-vendored `golang.org/x/*` packages** re-pin from the new GOROOT's `modules.txt`.
-- `docs/README.md`, `docs/Roadmap.md`, `docs/ValidatedTestPackages.md`, `CLAUDE.md`'s architecture row and
-  the NEWS entry all carry the Go version in prose.
-- **Release ritual rehearsal:** `push-nuget.ps1 -WhatIf`-equivalent dry run, exercising the pre-pack
-  signed `nuget-<version>` tag, the write-once `docs/validation/<version>/` snapshot, the badge retarget
-  (both halves — Tests proof link **and** Source·C# tag+message), and the recomputed re-verification pass.
-  The frame requires the ritual **rehearsed** at the parity gate; whether the hop also **publishes** is
-  ⟨OQ-14⟩.
+
+All four README badges move as a matter of course — two read the toolchain and follow H1, two read
+`version.props` and follow H2 — so **state the expected diff size before the overlay**. The
+hand-owned READMEs do **not** follow, and their derivation is re-run as a control. The
+GOROOT-vendored `golang.org/x/*` packages re-pin from the new GOROOT's own vendor manifest. The frame
+requires the release ritual **rehearsed** at the parity gate; whether a hop also **publishes** is
+⟨OQ-14⟩. Procedure, and the ritual's five defined elements: runbook H12.
 
 ---
 
 ## 3. H6 — The hand-own re-audit, driven by `.cs.auto` (mandatory, per user steer)
 
-This is the step that distinguishes a corpus *upgrade* from a corpus *regeneration*, and it is the one a
-hop is most likely to skip because everything compiles without it.
+> **GENERALIZED — the maintained procedure is [`GoCorpusMigration.md`](GoCorpusMigration.md) H6.**
+> This section specified the audit; the runbook carries it, and it has since gained the instrument
+> this section only proposed. Kept here: the ruling context, and the ⟨OQ-n⟩ marks §8 resolves.
 
-### 3.1 The failure mode being defended against
+**The failure mode** (§3.1 as drafted): a hand-owned file is frozen at the semantics of the release it
+was written against, so when upstream **adds** code inside it — a branch, a field, a hardening fix —
+the hand-own does not receive it, and *nothing fails*. The file is excluded from the convert set, the
+corpus compiles, the suites are green. **The defect is silent and operational**, and *newly-added*
+upstream code is the dangerous class: a changed line often shows up as a divergence, an added branch
+shows up as nothing.
 
-A hand-owned file is frozen at the semantics of the Go release it was written against. When upstream
-**adds** code inside that file — a new branch, a new field, a new call, a hardening fix — the hand-own
-does not receive it. Nothing fails: the file is excluded from the convert set by
-`containsManualConversionMarker`, the corpus compiles clean, the behavioral suite is green, and the
-package's own test suite may not cover the added path. **The defect is silent and operational, and it
-surfaces later as an inexplicable divergence in a package nobody was working on.**
+**The instrument** (§3.2/§3.3 as drafted): `.cs.auto`, diffed **`.auto`(old release) against
+`.auto`(new release), per hand-own — never `.auto` against the hand-owned `.cs`** — with **both sides
+produced by the SAME converter binary**, each staging root seeded and carrying its own matching
+`version.props` so the pin guard passes on both. Every delta is classified **(a) ABSORBED /
+(b) N/A with the reason written out / (c) REWRITE OWED with a named work item**; an empty diff still
+gets a record, and a hand-own the run emitted **no** `.auto` for is a **defect in the audit, not a
+pass**.
 
-Newly-added upstream code is the dangerous class. A *changed* line often shows up as a behavioral
-divergence; an *added* branch shows up as nothing at all.
+**Where it is recorded** (§3.4): `docs/phase4/AUDIT-handowns-go1.NN.md`, one file per hop, committed
+with the hop's corpus — one file rather than per-package notes, because the completeness gate has to
+be checkable in one place. Alternatives considered and rejected: a per-package sheet (spreads the
+completeness question across dozens of files) and an in-source comment beside each marker (invisible
+to a gate, and the marker file is the thing being audited). ⟨OQ-15⟩
 
-### 3.2 The instrument
-
-`.cs.auto` is exactly the right instrument because it is the converter's answer to the question *"what
-would the automatic conversion of this file be, today, from this Go tree?"* — emitted beside the hand-own
-whenever a seeded root holds the marked `.cs` at that path.
-
-**The diff is `.auto`(old Go) vs `.auto`(new Go), per hand-own — never `.auto` vs the hand-owned `.cs`.**
-The latter diff is dominated by the hand-own's *intended* divergence and is unreadable. The former
-isolates the upstream delta.
-
-**Both `.auto` files must be produced by the SAME converter binary.** Otherwise converter drift
-contaminates the Go-version axis and the classification is worthless. Concretely:
-
-```
-run A: go2cs.exe(NEW build) -stdlib -comments -go2cspath <tmpA>/src   with GOROOT = old release
-run B: go2cs.exe(NEW build) -stdlib -comments -go2cspath <tmpB>/src   with GOROOT = new release
-```
-
-both roots seeded per the ritual, each seeded `version.props` carrying **its own** matching
-`<GoStdLibVersion>` so `checkCorpusToolchainPin` passes on both sides (§1.4.1 point 3). Run A is the
-baseline that H0 captures; run B is H5's own staging root, so the marginal cost of the instrument is
-**one extra full reconvert** (~200–240 s on the i9, 3–4× on the i7 class) plus the diff.
-
-*Named blind spot:* if the new converter build cannot parse the OLD tree cleanly — unlikely, since Go's
-parser is backward-compatible — run A degrades and the baseline is suspect. Assert run A's package count
-and marker gate match the outgoing corpus's before trusting it.
-
-### 3.3 The classification — every delta, explicitly, one of three
-
-For each hand-own with a non-empty `.auto`↔`.auto` diff, every hunk is classified:
-
-| Class | Meaning | Required record |
-|:--|:--|:--|
-| **(a) ABSORBED** | The upstream change is real and has been carried into the hand-own | The commit that carried it; a test or gate that observes it |
-| **(b) N/A** | The upstream change does not apply to the managed implementation | **The reason, written out.** "Go's sleeping semaphore has no managed analogue; the `SemaphoreSlim` rewrite is unaffected by a change to the futex fast path" — not "n/a" |
-| **(c) REWRITE OWED** | The hand-own must change and has not yet | A named work item, gating the hop or explicitly deferred with the deferral's owner and reason |
-
-A hand-own with an **empty** diff still gets a record — `unchanged`, with the two `.auto` hashes. A
-hand-own the run emitted **no** `.auto` for gets a record too, and that record is a **defect in the
-audit**, not a pass: it means either the seed did not take at that path or the marker predicate could not
-see the marker. *(That second case is not hypothetical — the r47d census found `runtime/runtime2_impl.cs`
-carrying a marker the predicate cannot see, because an earlier `//` comment contains `*g/*p` and the `/*`
-opens a phantom block comment the file never closes. Inert today; exactly the shape that would silently
-clobber a whole-file hand-own.)*
-
-### 3.4 Where it is recorded
-
-Proposed: **`docs/phase4/AUDIT-handowns-go1.NN.md`**, one file per hop, committed with the hop's corpus.
-Table shape:
-
-| Hand-own path | Principal | `.auto` old ↔ new | Hunks | (a) | (b) | (c) | Verdict |
-|:--|:--|:--:|--:|--:|--:|--:|:--|
-
-plus a prose subsection per non-empty diff carrying the (b) reasons and (c) work items in full. One file
-rather than per-package notes, because the completeness gate below has to be checkable in one place.
-
-⟨OQ-15⟩ — alternative homes considered and not chosen: a `docs/validation/`-style per-package sheet
-(spreads the completeness question across 59 files), or an in-source comment beside each marker (invisible
-to a gate, and the marker file is the thing being audited).
-
-### 3.5 The completeness gate
+**The completeness gate** (§3.5):
 
 > **No hop's corpus is adopted until every hand-own in the re-measured census has a classified delta
-> record in that hop's audit file, and every (c) is either closed or explicitly deferred with an owner.**
+> record in that hop's audit file, and every (c) is either closed or explicitly deferred with an
+> owner.**
 
-Mechanically: a script — proposed `src/check-handown-audit.ps1`, sibling to
-`check-solution-integrity.ps1`, and run as an **H5 overlay preflight** the way solution-integrity runs as
-CNR's preflight — asserts
+⚠ **Two populations, and conflating them makes the gate either a false alarm or a rubber stamp**: the
+*audit* covers **all** hand-owns; the *`.auto` differential* reaches only the ones the converter
+re-emits. A `*_impl.cs` companion has no Go counterpart and therefore no `.auto` — it is audited
+against its principal's diff; a hand-owned **package** is audited by manual upstream diff; and every
+record names its evidence class. ⟨OQ-16⟩
 
-1. the line-anchored marker census over `src/core` (re-measured, not asserted against a constant);
-2. every marked path appears exactly once in the hop's audit file;
-3. every audit row's class is one of `unchanged` / `a` / `b` / `c`;
-4. every `b` row carries a non-empty reason;
-5. every `c` row carries a work-item reference;
-6. **zero** rows in the "no `.auto` emitted" state.
+**The instrument landed** as **[`src/handown-census.ps1`](../src/handown-census.ps1)** (2026-08-24),
+under the proposed `check-handown-audit.ps1`'s intent rather than its spelling: it is the differential
+**census** half — read-only, self-verifying against the re-measured marker census, classifying each
+marked file `untouched` / `touched-trivial` / `touched-substantive` / `no-upstream-counterpart` across
+two GOROOTs, so the review starts from a list instead of from everything. **It decides where H6 looks,
+never what H6 concludes.** The mechanical assertions this section specified, and the human
+classification they gate, are runbook H6's.
 
-Exit 1 on any violation. This is deliberately the same shape as the repo's existing preflights: cheap,
-by-path, and impossible to pass vacuously.
-
-The one **known** marker-visibility hazard the gate would have inherited — `runtime/runtime2_impl.cs`'s
-header comment spelling `*g/*p/*m`, whose `/*` opens a phantom block comment for any comment-aware
-scanner (§3.3) — **is fixed as of this commit series**: the comment now reads `*g / *p / *m` and the
-line-anchored marker is visible to a scanner that honors block comments.
-
-⚠ **Scale.** Measured 2026-08-13: the audit has **53 marked files / 42 `*_impl.cs` companions** to cover
-(59 distinct hand-owns at the r59 bank, itself now two days stale — re-measure at the hop), of which the
-`.cs.auto`-producing subset is much smaller — **19 tracked `.cs.auto` siblings** today against 15 of 41 at
-r44a; the rest are `*_impl.cs` companions and hand-owned packages the converter never re-emits at that
-path. **Those two populations are
-different and the gate must not conflate them**: the *audit* covers all hand-owns; the *`.auto`
-differential* only reaches the ones the converter re-emits. A `*_impl.cs` companion has no Go counterpart
-and therefore no `.auto` — its record is legitimately "no automatic counterpart; audited against its
-principal's `.auto`". Getting this distinction wrong in either direction is how the gate becomes either a
-false alarm or a rubber stamp. ⟨OQ-16⟩
+*(The one known marker-visibility hazard this gate would have inherited — a header comment whose `/*`
+opens a phantom block comment for any comment-aware scanner — was fixed at the source; the census is
+line-anchored and sees the marker.)*
 
 ---
 
 ## 4. Parity-gate definitions
 
+> **GENERALIZED — the maintained definitions are [`GoCorpusMigration.md`](GoCorpusMigration.md) §5.**
+> The five gates and their arithmetic are stated there, in the form the runbook maintains. This table
+> survives as the P-number namespace and its instrument column.
+
 A hop merges to master only when **all five** hold. Each is stated so it can be checked, not felt.
 
 | # | Gate | Definition | Instrument |
 |:--|:--|:--|:--|
-| **P1** | **Compile parity** | 100 % of the hop's package set compiles under the default `$(GoTargetOS)`, zero errors; skipped-dependents enumerated and zero | `dotnet build src/go2cs-stdlib.slnx -c Debug -p:UseSharedCompilation=false -clp:ErrorsOnly` |
-| **P2** | **Roster parity** | Roster ≥ prior hop, per the ⟨OQ-10⟩ ruling on % vs absolute; every row backed by a regenerated proof page and a re-derived disclosure manifest | `run-validated-sweep.ps1` full roster, coordinator-owned, backgrounded |
-| **P3** | **Behavioral parity** | Full 4-phase suite green; every moved golden classified before rebank; **zero** `NOT MEASURED` | `run-behavioral.ps1` (full) + CNR |
-| **P4** | **Hand-own audit complete** | §3.5's gate passes | `check-handown-audit.ps1` (proposed) |
-| **P5** | **Release ritual rehearsed** | Tag mint, write-once snapshot, both badge retargets, recomputed re-verification — all exercised on the hop's tree | `push-nuget.ps1` dry run |
+| **P1** | **Compile parity** | runbook §5 | `dotnet build src/go2cs-stdlib.slnx -c Debug -p:UseSharedCompilation=false -clp:ErrorsOnly` |
+| **P2** | **Roster parity** | runbook §5, per the ⟨OQ-10⟩ ruling on % vs absolute | `run-validated-sweep.ps1` full roster, coordinator-owned, backgrounded |
+| **P3** | **Behavioral parity** | runbook §5 | `run-behavioral.ps1` (full) + CNR |
+| **P4** | **Hand-own audit complete** | §3.5's gate, procedure at runbook H6 | `src/handown-census.ps1` (the census half) + the audit file's own assertions |
+| **P5** | **Release ritual rehearsed** | runbook §5, and its five elements at runbook H12 | `push-nuget.ps1` dry run |
 
-**Master cuts over only at P1–P5.** The version branch may carry a red P2 for a long time — that is what
-the branch is *for*.
+**Master cuts over only at P1–P5.** The version branch may carry a red P2 for a long time — that is
+what the branch is *for*.
 
-**A note on what is NOT a parity gate.** Performance is not one: a Native-AOT publish now ILC-compiles the
-full converted-stdlib closure per benchmark (~25 min each on the i7-5820K), so a full perf run is hours
-and must run solo. Propose measuring perf **once per ladder**, not once per hop. ⟨OQ-17⟩
+**A note on what is NOT a parity gate.** Performance is not one: a Native-AOT publish ILC-compiles the
+full converted-stdlib closure per benchmark, so a full perf run is hours and must run solo. Measure
+perf **once per ladder**, not once per hop. ⟨OQ-17⟩
 
 ---
 
@@ -646,7 +539,7 @@ and must run solo. Propose measuring perf **once per ladder**, not once per hop.
 | **R1** | **Hand-own drift — added upstream code silently absent** | The whole reason §3 exists. Compiles clean, gates green, fails operationally, surfaces months later in an unrelated package | §3's `.auto` differential + P4. This is the mitigation; there is no second line of defence |
 | **R2** | **Test-suite churn invalidates every differential baseline** | Disclosures are pinned by **exact failure signature**; a reworded test breaks the pin. Denominators move. 1.26 rewrites `crypto/dsa`'s determinism mechanism outright | H10 treats every row as re-derived from zero. Never carry a disclosure across a hop; re-sign each |
 | **R3** | **The `go/types` checker wall meets newer `go/types` source** | Already open: the converted `go/types` fails to type-check generic source (92 bogus type-parameter errors, 91 nil-panics through `check.cs:430`'s re-panic arm), and `go/internal/gcimporter`'s 184 rows are downstream of it. **1.24 adds materialized generic aliases with `Alias.TypeParams`/`TypeArgs`; 1.26 adds self-referential constraints.** The wall gets taller at exactly the two hops that matter | Do **not** make `go/types` a hop blocker. Treat it as a standing board item whose row moves independently. But **do** measure it per hop, because a hop that makes the wall *worse* is information the frame's "roster % ≥ prior" gate would otherwise hide inside an aggregate |
-| **R4** | **Stale `go2cs.exe` after a toolchain hop** (§1.4.2) | No harness's up-to-date predicate observes the toolchain; a hop touches no `.go` | H1.4 — stamp the build release into the binary and compare, or force-rebuild as H1's last act |
+| **R4** ✅ **CLOSED 2026-08-24** | **Stale `go2cs.exe` after a toolchain hop** (§1.4.2) | No harness's up-to-date predicate observed the toolchain; a hop touches no `.go` | **Closed by H1.4** — the three rebuild predicates delegate to one shared helper (`src/tests/ConverterBuildInputs.cs`) that compares the binary's embedded release against the live `go env GOVERSION` and fails stale-wards. No stamping was needed; route #5 (embedded assets) closed with it |
 | **R5** | **Unseeded or double-converted staging root** | The single most expensive recorded mistake in the repo's history (14 hand-owns clobbered; a false operational-break alarm; and separately, one corrupted `runtime/arena.cs` with nine `«DYNTYPE»` markers from two overlapping conversions). A hop runs *more* conversions than normal work does | Mechanical: delete + re-seed per run, confirm no live `go2cs.exe`, wrap converter calls in `$ErrorActionPreference = 'Continue'` |
 | **R6** | **`.cs.auto` baseline stale at H0** | 11 of 16 stale at r40; the overlay rule freezes them by design | Generate the baseline from a seeded old-Go regen, never from committed siblings (§H0) |
 | **R7** | **Corpus growth outruns validation** — roster % falls while absolute rises | 1.24's FIPS-140 reorg is expected to add substantially more than its six named packages, and every added testable package enlarges the denominator | ⟨OQ-10⟩'s ruling. Whichever way it goes, report **both** numbers every hop |
@@ -668,8 +561,8 @@ validation sweep. The full roster sweep is a separate, larger unit and is counte
 
 | Phase | Gate-cycles | Sweep-runs | Notes |
 |:--|:--:|:--:|:--|
-| **Complete 1.23.1** (130 → 162 rows) | — | many | Not part of this plan's step inventory; it is the frame's precondition. 32 rows to go from the 2026-08-13 reading |
-| **Tag + branch `release/go1.23`** | 1 | 1 | The full P1–P5 set, run once, as the ladder's zero point |
+| ~~**Complete 1.23.1** (130 → 162 rows)~~ ✅ **CROSSED 2026-08-22** | — | many | Not part of this plan's step inventory; it is the frame's precondition. 32 rows to go from the 2026-08-13 reading — **all 32 landed**: the roster reads 162 / 215 (75.3 %) |
+| ~~**Tag + branch `release/go1.23`**~~ ✅ **DONE** | 1 | 1 | The full P1–P5 set, run once, as the ladder's zero point — tag `stdlib-tests-75pct-2026-08-22`, branch `release/go1.23`, published `nuget-1.23.1.7` ([`phase4/MILESTONE-75pct-prep.md`](phase4/MILESTONE-75pct-prep.md)) |
 | **Hop A — 1.23.12 (REHEARSAL)** | 2–3 | 1 full | H4 should be ~empty (no language delta). The cycles buy the *machinery*: the pin bump, the `.auto` differential's first real exercise, the badge churn, the ritual rehearsal |
 | **Hop B — 1.24.13** | 5–8 | 2 full | The big one. Generic type aliases (H4, likely its own DESIGN), the FIPS-140 tree (H3/H7), six new packages with new NuGet IDs, the `testing` host, and the largest expected `.auto` differential |
 | **Hop C — 1.25.x** | 3–5 | 2 full | No language delta; cost is behavioral (nil-check fix, `unicode` tables, `AllocsPerRun`) and roster re-derivation |
@@ -706,6 +599,10 @@ Named honestly, in the house habit, so the gaps are visible rather than discover
 5. **Multi-platform beyond Windows.** H8 keeps the three-target emission honest, but the Linux corpus does
    not yet build (`docs/PLAN-linux-operation.md`, DESIGN-multiplatform-corpus §12), and this plan does not
    change that. A hop neither helps nor hurts it.
+   *[Overtaken 2026-08-14: the compile wall FELL — the Linux flavor last measured **307/307, 0 errors**
+   (`phase4/CENSUS-linux-compile-wall.md` §10; carried as `PLAN-hop-campaign.md` §4.1's H7 row). What
+   remains beyond Windows is operational, not a compile wall; the sentence above is kept as the
+   period-accurate reading it was.]*
 6. **Whether any hop publishes to nuget.org, or only rehearses.** ⟨OQ-14⟩.
 
 ---
@@ -730,7 +627,7 @@ table; where the prose at that mark proposes an answer, the ruling here is what 
 | **OQ-11** | Confirm NuGet version monotonicity across the ladder before the first publish | `1.23.1.6` → `1.23.12.1` → `1.24.13.1`. Believed monotonic by numeric component comparison; **not verified** | **A scripted `NuGetVersion.Compare` assertion is added to H11**, and runs **before the first publish** |
 | **OQ-12** | Close the `publishedStdLibRelease()` gap (built-but-not-published) with an embedded `version.props` value or a feed query? | Inherited open question from FINDING-toolchain-goroot-divergence §5; a hop makes the window wider | **Embedded publish-stamp**, per the standing **L5 ruling**. A feed query is **advisory** only, never the gate |
 | **OQ-13** | Policy for **removed** upstream packages on the NuGet feed — unlist, deprecate, or leave? | First arises at hop D (`cmd/doc`; the `windows/arm` port). No precedent exists | **Deprecate, with a pointer to the last release that carried it. Never unlist** |
-| **OQ-14** | Does each hop **publish**, or only **rehearse** the ritual until the ladder completes? | The frame says "rehearsed" at the parity gate; publishing every hop quadruples the public surface and the OQ-13 exposure | **Every hop publishes** — AMENDED 2026-08-13 with the frame: 1.23.12 is the 1.23 story's living corpus and supersedes `.1` on the feed, so hop A publishes too (original ruling had A rehearse-only; superseded by the frame amendment) |
+| **OQ-14** | Does each hop **publish**, or only **rehearse** the ritual until the ladder completes? | The frame says "rehearsed" at the parity gate; publishing every hop quadruples the public surface and the OQ-13 exposure | **Every hop publishes** — AMENDED 2026-08-13 with the frame: 1.23.12 is the 1.23 story's living corpus and supersedes `.1` on the feed, so hop A publishes too (original ruling had A rehearse-only; superseded by the frame amendment). *Scoped 2026-08-22 by ⟨OQ-H3⟩ ([`PLAN-hop-campaign.md`](PLAN-hop-campaign.md) §7): this ruling was framed over **Go-version** hops, which is the only kind in view here — a **.NET runtime** hop rehearses the ritual without publishing, because the version scheme carries no runtime signal* |
 | **OQ-15** | Confirm `docs/phase4/AUDIT-handowns-go1.NN.md` as the audit's home | §3.4. Alternatives considered and rejected there | **Confirmed** |
 | **OQ-16** | Confirm the audit covers **all** hand-owns while the `.auto` differential covers only re-emitted ones | §3.5's sharpest edge; getting it wrong makes the gate either a false alarm or a rubber stamp | **Confirmed** — plus: an `*_impl.cs` companion is audited **against its principal's `.auto` diff**; a hand-owned **package** is audited by **manual upstream diff**; and **every record names its evidence class** |
 | **OQ-17** | Perf suite: once per ladder, or once per hop? | Hours per run, must be solo. Proposed: once per ladder | **Once per ladder, plus coordinator discretion** |

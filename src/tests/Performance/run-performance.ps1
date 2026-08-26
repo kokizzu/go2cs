@@ -46,6 +46,20 @@ Write-Host "==> building PerformanceRunner..." -ForegroundColor Cyan
 & dotnet build $runnerProj -c Debug -clp:ErrorsOnly --nologo | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "PerformanceRunner build failed ($LASTEXITCODE)" }
 
+# A GREEN build does not prove the runner is where this script expects it: the build writes to the
+# TFM the projects declare, while the path above is composed from $NetVersion. Disagree on that and
+# the suite measures NOTHING while every check above it passes -- and this wrapper is where that was
+# first seen, dying in 20 seconds with an empty log (false-green route #6, CLAUDE.md). Explicit
+# `exit 1` rather than `throw`: the exit CODE is the property that matters here, and it is the one
+# thing a throw leaves to the host's discretion.
+if (-not (Test-Path -LiteralPath $runnerExe)) {
+    Write-Host "*** PerformanceRunner built, but no executable at the expected path ***" -ForegroundColor Red
+    Write-Host "    expected: $runnerExe" -ForegroundColor Red
+    Write-Host "    NOTHING RAN. Check that `$NetVersion ($NetVersion) matches the framework the build" -ForegroundColor Red
+    Write-Host "    emitted -- it is derived from src/Directory.Build.props (see src/_paths.ps1)." -ForegroundColor Red
+    exit 1
+}
+
 & $runnerExe @RunnerArgs
 $runnerExit = $LASTEXITCODE
 

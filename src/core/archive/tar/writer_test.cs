@@ -505,8 +505,9 @@ public static void TestWriter(ж<testing.T> Ꮡt) {
             var tw = NewWriter(iotest.TruncateWriter(new tar_test_package.bytes_BufferжWriter(buf), maxSize));
             foreach (var (i, tf) in vʗ1.tests) {
                 switch (tf.type()) {
-                case TestWriter_testHeader tfΔ1: {
-                    var err = tw.WriteHeader(Ꮡ(tfΔ1).of(TestWriter_testHeader.Ꮡhdr));
+                case TestWriter_testHeader tfΔ1ᴛ1: {
+                    ref var tfΔ1 = ref heap(tfΔ1ᴛ1, out var ᏑtfΔ1);
+                    var err = tw.WriteHeader(ᏑtfΔ1.of(TestWriter_testHeader.Ꮡhdr));
                     if (!equalErrorʗ1(err, tfΔ1.wantErr)) {
                         tΔ1.Fatalf("test %d, WriteHeader() = %v, want %v"u8, i, err, tfΔ1.wantErr);
                     }

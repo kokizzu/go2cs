@@ -88,7 +88,7 @@ partial class runtime_package {
     // in the trace.
     internal array<array<traceArg>> markWorkerLabels = new(2, () => new(4));
     internal array<array<traceArg>> goStopReasons = new(2, () => new(3));
-    internal array<array<traceArg>> goBlockReasons = new(2, () => new(15));
+    internal array<array<traceArg>> goBlockReasons = new(2, () => new(16));
     // enabled indicates whether tracing is enabled, but it is only an optimization,
     // NOT the source of truth on whether tracing is enabled. Tracing is only truly
     // enabled if gen != 0. This is used as an optimistic fast path check.
@@ -348,7 +348,7 @@ internal static void traceAdvance(bool stopTrace) {
             var me = getg().Value.m.Value.curg;
             // We don't have to handle this G status transition because we
             // already eliminated ourselves from consideration above.
-            casGToWaitingForGC(me, _Grunning, waitReasonTraceGoroutineStatus);
+            casGToWaitingForSuspendG(me, _Grunning, waitReasonTraceGoroutineStatus);
             // We need to suspend and take ownership of the G to safely read its
             // goid. Note that we can't actually emit the event at this point
             // because we might stop the G in a window where it's unsafe to write

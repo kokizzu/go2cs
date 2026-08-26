@@ -2,12 +2,12 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-52%2F52_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.1.7/text.template.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/text/template@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/text/template) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/text/template)
+[![Tests](https://img.shields.io/badge/Tests-52%2F52_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.0/text.template.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/text/template@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/text/template) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/text/template)
 
 Package template implements data-driven templates for generating textual output.
 
-To generate HTML output, see [html/template](https://pkg.go.dev/html/template@go1.23.1), which has the same interface as this package but automatically secures HTML output against certain attacks.
+To generate HTML output, see [html/template](https://pkg.go.dev/html/template@go1.23.12), which has the same interface as this package but automatically secures HTML output against certain attacks.
 
 Templates are executed by applying them to a data structure. Annotations in the template refer to elements of the data structure (typically a field of a struct or a key in a map) to control execution and derive values to be displayed. Execution of the template walks the structure and sets the cursor, represented by a period '.' and called "dot", to the value at the current location in the structure as execution proceeds.
 

@@ -1,4 +1,10 @@
-# RECON — upstream diff go1.23.1 → go1.23.12 (hop A input) — **DRAFT for coordinator review**
+# RECON — upstream diff go1.23.1 → go1.23.12 (hop A input)
+
+> **State: EXECUTED (2026-08-24).** Reviewed, independently re-derived, and used: its H3 = ∅ verdict
+> was confirmed by a second derivation
+> ([`REHEARSAL-go12312.md`](REHEARSAL-go12312.md) §2), its attention list drove the rehearsal's
+> four-row characterization, and its raw inputs are **banked** (below). It carries two errata and one
+> amendment, all dated and in place. Amended, never rewritten.
 
 Date: 2026-08-23 · Method: `gh api repos/golang/go/compare/go1.23.1...go1.23.12` for the commit
 list (83 commits), then per-commit `/commits/<sha>` file lists (the compare endpoint caps its files
@@ -7,7 +13,8 @@ array, so per-commit enumeration is the ground truth). Cross-referenced against
 line-anchored `[module: GoManualConversion]` census (**70 marked files** on this checkout — up again
 from the plan's "66–67 across the 2026-08-22 lanes"; it moves weekly, re-measured here, not
 carried), and `PLAN-hop-campaign.md` §0.2's two instance facts. Raw data in this scratchpad:
-`commits.tsv`, `files-by-commit.tsv`, `files-unique.txt`, `src-files-classified.tsv`, `roster.txt`.
+`commits.tsv`, `files-by-commit.tsv`, `files-unique.txt`, `src-files-classified.tsv`, `roster.txt`
+— *all five **banked** 2026-08-24 in [`hopA-inputs/`](hopA-inputs/); see the closing note.*
 
 ---
 
@@ -190,4 +197,44 @@ line in H12's expectation statement so it isn't re-diagnosed.
    plan put it: the machinery (pin bump, `.auto` differential, badge churn, fleet H10), not the
    diff.
 
-— DRAFT, recon lane, 2026-08-23. Raw TSVs beside this file for re-derivation.
+> ## ⚠ ERRATA (2026-08-24), from the rehearsal's independent re-derivation
+>
+> Two attributions in the tables above are wrong. The conclusions they support are unaffected; the
+> attributions are corrected so a later reader does not hunt for something that cannot exist.
+>
+> 1. **`exec_posix_test.go` is misattributed to `os/exec`.** Upstream the file is
+>    `src/os/exec_posix_test.go`, and this document's own package-bucketed table puts
+>    `exec_posix.go` under **`os`**. There is **no banked `exec_posix_test.cs`** anywhere under
+>    `src/core/os/`, and `os` is not a roster row — so the H10 movement-candidate row for `os/exec`
+>    should read only `dot_test.go` for that package. Its conclusion (*"likely linux-gated → the
+>    Windows count may not see it"*) stands.
+> 2. **`src/core/time/time_impl.cs` is NOT in the marker census.** It carries
+>    `[module: go.GoRequiresUnsafe]`, present because `[LibraryImport]` requires `/unsafe`, not
+>    `GoManualConversion`. Anyone reconciling `time` against a census total should expect **one**
+>    marked file in that package, not two.
+>
+> ## ⚠ AMENDMENT (2026-08-24) — H6's first-execution figures land here, from the runbook
+>
+> [`../GoCorpusMigration.md`](../GoCorpusMigration.md) H6 gained its instrument
+> (`src/handown-census.ps1`) and ran the hand-own differential against **this** range. The result:
+> **73 marked files → 6 substantive** — `reflect/value.go`, `runtime/runtime2.go` (two hand-owns),
+> `syscall/exec_unix.go`, `syscall/dll_windows.go`, `syscall/syscall_windows.go` — with **50
+> untouched** and **17 no-upstream-counterpart**. Every substantive row was independently
+> cross-checked against this document's package-bucketed table above, and all six fall inside the
+> packages it already flagged.
+>
+> **Why the figures live here rather than in the runbook.** The runbook carries **no frozen
+> figures** by charter: its H6 keeps the *shape* the instrument produces — a census of dozens
+> reducing to a single-digit review list, and a substantive class near the census size read as a
+> stripper bailing out rather than upstream churn — and points at this record for the instance. A
+> later migration's figures belong in *its* record, not in either of these two.
+>
+> One reading worth carrying: the marker census moved **70 → 73** in the single day between this
+> recon and that run. That is the re-measure-never-carry rule working exactly as written, not a
+> discrepancy to reconcile.
+
+— Recon lane, 2026-08-23. Raw TSVs beside this file for re-derivation. *(Amended 2026-08-24: they
+were not, in fact, beside this file — they lived in the recon session's scratchpad. They are now
+**banked** in [`hopA-inputs/`](hopA-inputs/) (`5d4410b71`), re-derived independently on a second
+machine with every count above reproduced exactly, and the derivation is written out in that
+directory's README. "Beside this file" is true again.)*

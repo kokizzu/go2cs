@@ -17,7 +17,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
     <RootNamespace>go.net.http.@internal</RootNamespace>
     <AssemblyName>net.http.internal.ascii.tests</AssemblyName>
     <Product>go2cs</Product>

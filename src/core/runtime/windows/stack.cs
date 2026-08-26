@@ -65,7 +65,7 @@ StackGuard - StackSmall bytes at the bottom.
 The linkers explore all possible call traces involving non-splitting
 functions to make sure that this limit cannot be violated.
 */
-internal static UntypedInt stackSystem => /* goos.IsWindows*512*goarch.PtrSize + goos.IsPlan9*512 + goos.IsIos*goarch.IsArm64*1024 */ 4096;
+internal static UntypedInt stackSystem => /* goos.IsWindows*4096 + goos.IsPlan9*512 + goos.IsIos*goarch.IsArm64*1024 */ 4096;
 internal static UntypedInt stackMin => 2048;
 internal static UntypedInt fixedStack0 => /* stackMin + stackSystem */ 6144;
 internal static UntypedInt fixedStack1 => /* fixedStack0 - 1 */ 6143;
@@ -621,7 +621,7 @@ retry:
                     print((@string)"adjust ptr "u8, ((Δhex)(uint64)Δp), (@string)" "u8, funcname(f), (@string)"\n"u8);
                 }
                 if (useCAS){
-                    var ppu = pp.Reinterpret<uintptr, @unsafe.Pointer>();
+                    var ppu = Ꮡ(new @unsafe.Pointer(~pp));
                     if (!atomic.Casp1(ppu, (@unsafe.Pointer)Δp, (@unsafe.Pointer)(Δp + delta))) {
                         goto retry;
                     }
@@ -1153,14 +1153,14 @@ internal static bool isShrinkStackSafe(ж<g> Ꮡgp) {
         return false;
     }
     // We also can't copy the stack while tracing is enabled, and
-    // gp is in _Gwaiting solely to make itself available to the GC.
+    // gp is in _Gwaiting solely to make itself available to suspendG.
     // In these cases, the G is actually executing on the system
     // stack, and the execution tracer may want to take a stack trace
     // of the G's stack. Note: it's safe to access gp.waitreason here.
     // We're only checking if this is true if we took ownership of the
     // G with the _Gscan bit. This prevents the goroutine from transitioning,
     // which prevents gp.waitreason from changing.
-    if (traceEnabled() && (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan) == _Gwaiting && gp.waitreason.isWaitingForGC()) {
+    if (traceEnabled() && (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan) == _Gwaiting && gp.waitreason.isWaitingForSuspendG()) {
         return false;
     }
     return true;
@@ -1322,7 +1322,7 @@ internal static void morestackc() {
 }
 
 // startingStackSize is the amount of stack that new goroutines start with.
-// It is a power of 2, and between _FixedStack and maxstacksize, inclusive.
+// It is a power of 2, and between fixedStack and maxstacksize, inclusive.
 // startingStackSize is updated every GC by tracking the average size of
 // stacks scanned during the GC.
 internal static uint32 startingStackSize = fixedStack;

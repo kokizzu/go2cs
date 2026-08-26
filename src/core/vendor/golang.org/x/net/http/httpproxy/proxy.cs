@@ -13,6 +13,7 @@ namespace go.vendor.golang.org.x.net.http;
 using errors = errors_package;
 using fmt = fmt_package;
 using net = net_package;
+using netip = go.net.netip_package;
 using url = go.net.url_package;
 using os = os_package;
 using strings = strings_package;
@@ -192,8 +193,10 @@ internal static (ж<url.URL>, error) parseProxy(@string proxy) {
     if (host == "localhost"u8) {
         return false;
     }
-    var ip = net.ParseIP(host);
-    if (ip != default!) {
+    (var nip, err) = netip.ParseAddr(host);
+    net.IP ip = default!;
+    if (err == default!) {
+        ip = ((net.IP)nip.AsSlice());
         if (ip.IsLoopback()) {
             return false;
         }
@@ -385,6 +388,9 @@ internal static bool match(this ipMatch m, @string host, @string port, net.IP ip
 }
 
 internal static bool match(this domainMatch m, @string host, @string port, net.IP ip) {
+    if (ip != default!) {
+        return false;
+    }
     if (strings.HasSuffix(host, m.host) || (m.matchHost && host == m.host[1..])) {
         return m.port == ""u8 || m.port == port;
     }

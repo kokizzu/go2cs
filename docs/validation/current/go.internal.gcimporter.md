@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `go/internal/gcimporter` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-15 · converter `1ae49db8a`*
+*Validated 2026-08-25 · converter `e2182a59e`*
 
-**583 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**583 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/go/internal/gcimporter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/internal/gcimporter).
 
 Both runtimes skip 14 of the matched tests identically.

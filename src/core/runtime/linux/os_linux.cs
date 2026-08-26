@@ -900,6 +900,7 @@ internal static void runPerThreadSyscall() {
 
 internal static UntypedInt _SI_USER => 0;
 internal static UntypedInt _SI_TKILL => -6;
+internal static UntypedInt _SYS_SECCOMP => 1;
 
 // sigFromUser reports whether the signal was sent because of a call
 // to kill or tgkill.
@@ -908,6 +909,14 @@ internal static UntypedInt _SI_TKILL => -6;
 [GoRecv] internal static bool sigFromUser(this ref sigctxt c) {
     var code = (int32)c.sigcode();
     return code == _SI_USER || code == _SI_TKILL;
+}
+
+// sigFromSeccomp reports whether the signal was sent from seccomp.
+//
+//go:nosplit
+[GoRecv] internal static bool sigFromSeccomp(this ref sigctxt c) {
+    var code = (int32)c.sigcode();
+    return code == _SYS_SECCOMP;
 }
 
 //go:nosplit

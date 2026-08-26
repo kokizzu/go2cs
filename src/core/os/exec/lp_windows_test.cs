@@ -307,7 +307,6 @@ internal static slice<lookPathTest> lookPathTests = new lookPathTest[]{
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string printpathˢ = "printpath"u8;
 internal static readonly @string pathextˢ = "PATHEXT"u8;
-internal static readonly @string pathˢ = "PATH"u8;
 
 public static void TestLookPathWindows(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();

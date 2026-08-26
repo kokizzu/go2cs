@@ -67,7 +67,7 @@ using static go.@internal.poll_package;
 [assembly: go.GoPositionMap("internal/poll/fd_unixjs.go", "fd_unixjs.cs", "AA8gpNzawoKCgoKUgtjSgIKkgtzygIKkgoKCgoKCgILa6tKAgqSC")]
 [assembly: go.GoPositionMap("internal/poll/fd_writev_libc.go", "fd_writev_libc.cs", "AAse")]
 [assembly: go.GoPositionMap("internal/poll/iovec_unix.go", "iovec_unix.cs", "AAoWgg==")]
-[assembly: go.GoPositionMap("internal/poll/sendfile_bsd.go", "sendfile_bsd.cs", "AA4gAAgCgpSAgqSEgIKmgoKCgpSSgoKCgpSC7oKUgIK2gg==")]
+[assembly: go.GoPositionMap("internal/poll/sendfile_bsd.go", "sendfile_bsd.cs", "AA4gAAgCgpSAgqSEgIKmgoKCgpSCkoKCgoLugswACBCUgpSAgraClII=")]
 [assembly: go.GoPositionMap("internal/poll/sockopt.go", "sockopt.cs", "AAoY0oCCpILY4oCCpILY0oCCpILY0oCCpII=")]
 [assembly: go.GoPositionMap("internal/poll/sockopt_unix.go", "sockopt_unix.cs", "AAoY0oCCpII=")]
 [assembly: go.GoPositionMap("internal/poll/sockoptip.go", "sockoptip.cs", "AAoY0oCCpILY0oCCpII=")]

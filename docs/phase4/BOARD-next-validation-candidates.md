@@ -17714,7 +17714,7 @@ Two harness findings, both budget rather than corpus, and both worth not re-payi
 
 ## 2026-08-22 · The .NET 10 performance scout — same-silicon three-way: broad 10–20% JIT wins, String HALVES, three named regressions, and the bflat Fib anomaly attributed (lane G, `claude/dotnet10-perf-scout`)
 
-**Method.** SDK 10.0.400 (GA-line — "current .NET 10", not an RC) installed side-by-side to a user-local dir; the machine's 9.0 default untouched. Because the corpus targets `net9.0`, the 10 leg selects the runtime via env (`DOTNET_ROOT` + `DOTNET_ROLL_FORWARD=LatestMajor`), verified by a `FrameworkDescription` probe (ambient `.NET 9.0.18` → leg-B `.NET 10.0.11` → restored) — both legs execute IDENTICAL IL, so the delta is pure runtime/JIT codegen. All legs same-day, same silicon (Ryzen 7 PRO 6850U, GRETCHEN-LAPTOP — NOT the perf-canon 6650U host; ratios are internal to this box), quiet box, `run-performance.ps1 --no-aot`, median-of-5 discipline unchanged. Go columns reproduce across legs within noise (e.g. Fib 118.3 vs 119.0) — the same-day control the method demands.
+**Method.** SDK 10.0.400 (GA-line — "current .NET 10", not an RC) installed side-by-side to a user-local dir; the machine's 9.0 default untouched. Because the corpus targets `net9.0`, the 10 leg selects the runtime via env (`DOTNET_ROOT` + `DOTNET_ROLL_FORWARD=LatestMajor`), verified by a `FrameworkDescription` probe (ambient `.NET 9.0.18` → leg-B `.NET 10.0.11` → restored) — both legs execute IDENTICAL IL, so the delta is pure runtime/JIT codegen. All legs same-day, same silicon (Ryzen 5 PRO 6650U, 6C/12T, GRETCHEN-LAPTOP — CORRECTED 2026-08-22 from an original "Ryzen 7 PRO 6850U … NOT the perf-canon 6650U host": the pre-anchor fleet records had both laptops as 6850U, and this box probes as a 6650U, the perf-canon CLASS. Nothing in this entry moves — every figure here is a same-machine A/B and the ratios were always internal to this box — but the silicon is now named correctly per LANES.md), quiet box, `run-performance.ps1 --no-aot`, median-of-5 discipline unchanged. Go columns reproduce across legs within noise (e.g. Fib 118.3 vs 119.0) — the same-day control the method demands.
 
 **Execution time, milliseconds (Go | 9-JIT | 10-JIT | 10Δ vs 9):**
 
@@ -18889,5 +18889,405 @@ from real per-row wall times). Seats: G owns the .NET 10 before/after performanc
 fresh baselines with the bflat exploration''s lessons folded in and prediction N5 closed on the
 AOT leg; R owns Stage-0 fleet provisioning; the i9 owns the stage gates it has owned all along.
 ---
+
+## 2026-08-25 · THE DOC HIERARCHY INVERTS — the runbooks lead, and nothing was deleted to do it
+
+The era directive above says the runbooks are *executed AS WRITTEN, deviations fixing the runbook
+in-stage*. The tree did not say that. **Exactly one sentence** contradicted it —
+`GoCorpusMigration.md`'s header, *"where they disagree about what to do, the plan governs"* — and
+everything else pointed runbook-ward already. A five-commit docs train on `doc-consolidation`
+makes the tree state what it practices. Its internal amendments are stamped 2026-08-24, the day
+the design was ruled.
+
+**The ordering was load-bearing, not stylistic.** The plans carried four statements the runbooks
+and the tree had already falsified, so those were corrected FIRST (commit 1) and authority moved
+SECOND (commit 3). Inverting first would have crowned a falsehood in the new direction. The
+falsified four: H1 step 1 asking for `GOROOT/VERSION` (a pin redirects it silently); 1.4.2's
+"proposed remedy" for a hole closed at H1.4; "the Linux corpus does not yet build", overtaken when
+the wall fell 2026-08-14 at 307/307; and OQ-14's "every hop publishes", which was framed over
+Go-version hops and needed OQ-H3's scoping.
+
+**The runbooks caught up to their records** (commits 2a/2b) — nine lessons absorbed into
+`GoCorpusMigration.md`, four into `DotNetMigration.md`, each a rule that generalizes, each with its
+destination in the SAME commit as its removal so the diff proves nothing was lost. The sharpest:
+DERIVE the reserved set at generation time (the copied list drifted twice); a CRASH is not a
+divergence and no disclosure absorbs one; fragility has TWO axes and a signature-oriented triage
+looks at only one; a row with NO manifest compares strictly, so strict-compare rows with
+upstream-changed production code outrank big manifests; and bank a migration's INPUTS in the commit
+that claims them, because the report is not the artifact. `DotNetMigration.md` also stopped
+**prescribing a defect**: it told a hop to hoist the TFM, and the hoist was tried in that stage and
+falsified. A hoist still needs an editor; a derivation needs nobody.
+
+**Nothing was deleted.** `PLAN-corpus-upgrade.md` sections 2, 3 and 4 became anchor-preserving
+pointer shells: every H-heading survives because they are a citation namespace — `migrate-gorelease.ps1`
+cites H2 and `ConverterBuildInputs.cs` cites H1.4 by name — and all nineteen OQ-n marks survive
+because section 8's rulings are what a runbook "(ruled)" resolves against. Two readings with no
+other home were retained rather than shelled. The counterweight that makes the inversion safe is
+stated in both runbook headers: **a runbook edit never reopens a ruling.**
+
+**Records got their state lines** (commit 4). Five documents still said DRAFT while the work they
+scouted had shipped. The 1.23.12 rehearsal's eight findings each carry a disposition now: six
+closed against named commits, one (the Linux-vs-Windows `t_r` question) **resolved by standing
+rule** — LANES.md already rules that cost inputs come from fresh calibration at campaign recon, so
+the leg is measured with `k` and `s_w` rather than ruled separately — and one carried as evidence.
+Finding H's last third closed too: the rehearsal's own three raws are banked verbatim in
+`hopA-inputs/`, so no hop input is living in a session scratchpad any more.
+
+**Hop A's one open blocker is now visible from the campaign plan**, not only from an orphan record:
+the `asynctimerchan=2` AV, which is bounded runtime work owed BEFORE H10.
+
+**Doc types are defined** in `Glossary.md` — runbook, plan, hop, record, board, mailbox — and
+CLAUDE.md carries the one-paragraph ladder. Routing rule, in one line: **procedure to the runbook
+in-stage, harness and gate doctrine to CLAUDE.md, findings and measurements here.** The mailbox
+header said "doctrine lands on the board" and predated the runbooks; it now routes by kind. That
+header also lives on `claude/mailbox` and the coordinator mirrors it there.
+
+Docs-only: 21 files edited plus 4 created, all under `docs/` and `CLAUDE.md`. Zero source, zero
+corpus, zero goldens — so CNR is not owed, and the gate each commit DID carry is link integrity
+over its touched files. One tier of hygiene is deliberately deferred past the hop's start:
+`DotNetMigration.md`'s Stage-0 incident narratives, whose home is `STAGE0-provisioning.md`.
+
+## 2026-08-25 · MEASURED at the new pins — `math/big` does NOT bank, and the `TestMulUnbalanced` ratio moved the WRONG way: 51x -> 59x across the hop (lane R, `claude/laneR-nethttp-mathbig`)
+
+The coordinator's addendum commissioned a re-measurement of `math/big` at net10.0 + Go 1.23.12 with an
+explicit either-way question: if .NET 10 brought the converted `nat.mul` inside Go's 10x bound the row
+banks at one disclosure; if not, the row stays with the zh-box/B' arc and the fresh reading is that
+arc's exhibit. **It is not inside the bound, and it is further out than it was.**
+
+| measurement | allocSize | ratio (Go's assert) | pins |
+|:--|--:|--:|:--|
+| board, r58b / r59 | 20,499,128 B | **51** | Go 1.23.1 · .NET 9 |
+| this lane, run 1 | 23,767,976 B | **59** | Go 1.23.12 · .NET 10 |
+| this lane, run 2 | 23,750,664 B | **59** | Go 1.23.12 · .NET 10 |
+| Go itself, same assert | — | passes (bound is 10) | Go 1.23.12 |
+
+`inputSize` is fixed by the test at (50000+40) x 8 = **400,320 B**, and the assert is
+`ratio := allocSize / inputSize; ratio > 10` — so the second `%d` in the failure text IS the computed
+ratio, not the bound. Read it that way; it is easy to misread as "59 times" being a budget. The two
+runs sit **0.07% apart** — the same noise scale as the board's own 20,499,128 against r58b's
+20,487,208 — so 59 is a stable reading, not a sample. **Across the two hops the converted path
+allocates +3,268,848 B more than it did: +15.9%.**
+
+Verdicts otherwise unmoved: **224 of 226**, the same two rows as at 1.23.1 (`TestMulUnbalanced`,
+`TestNewIntAllocs`). Unlike `net/http/internal`, whose count moved 9+1 -> 14+1 on the release's
+bare-LF hardening, math/big's suite did not grow at 1.23.12 — 226 on both sides. `TestNewIntAllocs`
+re-measures at exactly **1 obj/run on all seven `NewInt` shapes** (want 0), verbatim the prior
+reading — class 3b, the escape-analysis elision.
+
+**Consequences.**
+
+1. `math/big` stays OFF the near-term reserves, where the 2026-08-21 ruling placed it. Nothing about
+   the hop rehabilitates it, and the row's price went UP rather than down.
+2. The +15.9% is **not attributed here, deliberately**. This was a measurement lane; attributing it
+   would need the decomposition probe the arc owns, and a fix inside a measurement lane un-controls
+   the measurement. It is filed as a question the zh-box/B' arc should carry: whichever of net10.0 or
+   go1.23.12 moved it, the arc's target just got ~16% bigger, and an arc sized against 51x is sized
+   against a stale number.
+3. The row is **not disclosable** — the 2026-08-21 ruling stands, and this measurement reinforces it
+   rather than reopening it. A disclosure names what is provably unsatisfiable; a quantitative excess
+   an arc can reduce is not that. (Contrast the same day's `net/http/internal` call, where the excess
+   is one object and structurally inherent, and the disclosure IS correct — the two rows together are
+   a usable worked example of where the line sits.)
+
+## 2026-08-25 · POST-HOP FRONTIER FOLD — the frontier re-derives twice and agrees to the digit, row 163 banks, tier-1 re-prices at the new pins, and three rulings land (coordinator)
+
+The march to 100% resumes on net10.0 + go1.23.12. The frontier was derived twice independently —
+a coordinator-side Opus lane and i9's JOB-019 step 1, different scripts, both under parse-count
+and subset controls — and agrees exactly: **215 testable − 162 banked = 53** at derivation time.
+Six of the 53 are ruled out on windows/amd64 (`internal/runtime/syscall`, `internal/syscall/unix`,
+`net/internal/socktest`, `log/syslog`, `runtime/race` — no eligible Test declarations on this
+target; `os/user` — Go's own oracle fails `TestGroupIds`, no clean baseline exists), so the honest
+Windows frontier was **47**, and with this fold's bank it is **46 of 52**. Four frontier rows are
+already Linux-proven at zero divergences (`net/smtp` 19, `net/http/httptest` 55,
+`net/http/httputil` 53, `net/rpc` 15 — the 2026-08-22 S3 ledger) and Windows-socket-walled; the
+per-OS roster-shape question they pose is HELD at the coordinator, unruled here.
+
+**Row 163 banks: `net/http/internal`, 14 matching + 1 disclosed at Go 1.23.12** (lane R,
+`claude/laneR-nethttp-mathbig`). The count MOVED from the board's 1.23.1 pricing of 9+1 — the
+release's bare-LF request-smuggling hardening added `TestChunkInvalidInputs` and its four
+subtests — which is the hop doctrine (measure, never assume) earning its keep on the first
+post-hop bank. Post-merge filtered sweep at the MERGE RESULT: PASS 14, exit 0; roster header
+recomputed from the table under a parse-count control: **163 rows / 18,612 matching / 86
+disclosed**, delta exactly this row.
+
+### RULING — the alloc-assert triage recipe is doctrine, and the row's disclosure class was corrected by it
+
+R's reclassification of `TestChunkReaderAllocs` from the dispatch's `alloc-count-semantics` to
+**`alloc-profile`** is RATIFIED, with its rooting: the converted `NewChunkedReader` allocates the
+box (Go's `&chunkedReader{}` analogue) PLUS a `chunkedReader`->`io.Reader` interface shell, and
+`DESIGN-iface-shell-caching.md` §2 rules the shell structural — C# has no two-word interface
+value; nothing removes it short of `IDynamicInterfaceCastable`; the measured loop mints a fresh
+reader per iteration so no cache amortizes it. The triage recipe generalizes and is now the
+standard (open the emission for the function under the assert; count the allocations on the
+measured path):
+
+1. the converted path allocates an object Go's does not (interface shell, ж box, captured-closure
+   frame) → **`alloc-profile`** — disclosable only when the extra object is structurally inherent;
+2. comparable counts, merely MORE of the same → a quantitative excess an arc can reduce — **never
+   disclosed**; route it (math/big is the worked example);
+3. the COUNTER itself is incomparable (context's byte-derived shim) → **`alloc-count-semantics`**,
+   the RARE class (6 rows corpus-wide), never the default.
+
+### RULING — `TestGCMAsm` closes as a source-defined platform skip; the manifest class `platform-skip` is minted
+
+Held since the 2026-08-20 measurement pass; i9's tier-1 re-measured the identical shape at the
+new pins (12/13, C# skips `"no assembly implementation of GCM"`, gcm_test.go's own skip). The
+ruling: the C# side executes the skip branch **Go's own test source defines** for a platform
+without a distinct assembly GCM implementation, and the managed corpus IS such a platform — by
+design and permanently (no `.s` codepaths). The divergence is between two PLATFORMS' verdicts on
+one test, not between Go and the conversion on one platform. `runtime-capability`'s refusal
+stands (a truthful second GCM exists at a cost); this class exists because that cost buys nothing
+Go's own source does not already define away — building a second GCM whose only consumer is a
+differential test manufactures a platform property instead of measuring one.
+
+**Admission test, binding**: the skip taken must be the UPSTREAM test's own skip statement,
+conditioned on a platform property the deployment genuinely and by-design holds — never a
+host-limit workaround, never a skip the harness injects, never a skip added by conversion.
+**Anti-laundering**: the signature pins Go's own skip message from the test source, and the row
+records the verdict pair (Go pass / C# skip) openly. `crypto/cipher` banks at **12 matching + 1
+disclosed (`platform-skip`)**; the banking lane implements; the class joins the roster preamble
+WITH the banking commit, per the `chan-direction`/`runtime-capability` precedent.
+
+### RULING — the ж-box arc re-sizes against 59x, not 51x
+
+R re-measured `math/big`'s `TestMulUnbalanced` at the new pins twice (0.07% apart): allocSize
+23.77 MB / ratio **59** vs the banked 51 — **+15.9% allocated bytes across the two hops**,
+unattributed by design (a measurement lane does not decompose; the arc owns the probe). The row
+stays with the ж-box/B' constituency per the 2026-08-21 ruling; an arc sized against 51x is sized
+against a stale target. `TestNewIntAllocs` re-measures verbatim (1 obj/run, all seven shapes);
+224 of 226, suite unchanged at 1.23.12.
+
+### Tier-1 shard, folded (i9 JOB-019 — measurement only, artifacts retained per row)
+
+- **`encoding/gob` 100/107** (5 matching skips): ONE divergence, `TestIgnoreDepthLimit` →
+  `typelinks` NotImplementedException via `reflect.typesByString` — consistent with the
+  StructOf/ArrayOf pricing. The `reflect.ArrayOf` hand-own is in flight, and
+  `DESIGN-reflect-structof.md` is **RATIFIED WITH AMENDMENTS** (nine, all applied by its lane):
+  an adversarial review measured three mechanism defects on paper before any implementation —
+  `collectGoFields` reads array dims from a ZERO INSTANCE (`FieldArrayDims` over
+  `Activator.CreateInstance`), not from `[GoArrayDims]`, so the synthesizer must emit a
+  parameterless ctor initializing array-kinded fields; the intern key must carry dims/chanDir/
+  keyDims cargo (a `System.Type` cannot separate `[1]int` from `[2]int`); embeddedness rides the
+  `ʗ` field-name prefix and a `String()`-based guard cannot see it. Plus: the per-type mint cost
+  is 875–925 µs WITH the forced `[GoType("dyn")]` stamp (the stamp costs +73–78%; TFM is not the
+  variable), and OQ-2's Run-vs-RunAndCollect delta was an in-process measurement-order artifact.
+  StructOf implementation staffs as its own lane AFTER ArrayOf merges.
+- **`net/netip` 210 + 58 alloc-assert fails** collapsing to 3 top-level tests — class TBD under
+  the recipe above; the emission read is dispatched. NOT pre-classified, deliberately.
+- **`crypto/cipher` 12/13** → banks under the `platform-skip` ruling; dispatched.
+- **`debug/pe` 9/10** — the `[3]uint8` aux-record read back as 8 elements, unchanged; rides the
+  zero-size-field LAYOUT arc or a one-file hand-own of the symbol reader.
+- **`log/slog`** — three shapes: (1) alloc-assert rows, class TBD under the recipe; (2) five
+  logic divergences (`TestJSONAndTextHandlers/Source/json`, `TestCallDepth`,
+  `TestLogLoggerLevelForDefaultHandler`, `TestRecordSource`, `TestSetDefault`); (3) a NEW
+  harness-termination finding — after `TestSetDefault` runs and fails, the host emits no further
+  run events for ~10 remaining top-level tests (`Go="pass" C#=""` mass-empty tail that is
+  neither the file-lock nor the deadline shape: no orphaned child, no partial run event — the
+  process stops advancing between tests). `TestSetDefault` mutates the package default logger;
+  the plausible surface is host progress reporting entangled with that global. A diagnosis lane
+  is dispatched; the finding gates log/slog's row regardless of the alloc classes.
+
+### FINDING ROOTED — `log/slog`'s "harness termination" is not a harness defect: the host DIED, and it said so
+
+Lane `claude/slog-harness-halt` reproduced i9's tier-1 shape exactly at `cc90c2bf1` (Windows,
+go1.23.12, net10.0, `-test-timeout 15m`, 209 s): 181 terminal verdicts, the last of them
+`TestSetDefault` → `fail`, and then nothing for the ten ordinally-later top-level tests. The host
+did **not** stop advancing. It **exited on an unrecovered goroutine panic**, which is deliberate
+Go fidelity (`TestRunner.cs:158-170`), and it recorded exactly that before dying — the final event
+in `go2cs_test_results.json` is a package-level `fail` whose output reads *"test binary died on an
+unrecovered panic in a goroutine"*, and the host's stderr additionally prints Go's own crash-report
+form naming `log/slog.(*defaultHandler).Handle()` at `handler.go:117`. **The diagnosis was already
+in the artifacts; it was read as emptiness.** No host change is owed for the termination itself.
+
+**Root chain, mechanical.** Go guarantees an imported package is fully initialized before the
+importing package's own initialization. go2cs maps a Go `init` to `[GoInit]` = .NET
+`[ModuleInitializer]`, whose guarantee is weaker — a module constructor runs at first access to
+*that* module — and golib's `builtin.initPackage` (`src/core/golib/builtin.cs:213-236`, whose
+doc-comment states Go's rule verbatim) exists precisely to close that gap. But the converter emits
+that forcing **only for BLANK imports** (`src/go2cs/visitImportSpec.go:370`, into
+`v.blankImportInits`). For a NAMED import the ordering is therefore absent, and `log/slog` is a
+package where the difference is observable:
+
+1. `src/core/log/log.cs:268-269` — `log`'s `init` assigns `Δinternal.DefaultOutput`.
+2. `src/core/log/slog/logger.cs:57-59` — `log/slog`'s `init` READS `loginternal.DefaultOutput`.
+   The test host touches `slog` first, so slog's module ctor runs while `log`'s has not: the read
+   yields **nil**.
+3. `src/core/log/slog/handler.cs:92-97` — `newDefaultHandler(output)` stores that nil in
+   `defaultHandler.output`. The value is CAPTURED, never re-read, so `log`'s later initialization
+   (any test calling `log.SetOutput`) cannot repair it.
+4. `src/core/log/slog/handler.cs:120` — `return h.output(r.PC, buf.ValueSlot);` →
+   NullReferenceException → rendered as Go's *"invalid memory address or nil pointer dereference"*.
+
+The consequence then splits by THREAD, which is the whole reason this looked like two unrelated
+findings:
+
+- on the test's own thread — `TestLogLoggerLevelForDefaultHandler` (`logger_test.cs:513` via
+  `Debug`, `logger.cs:332`) — the panic is caught at `TestExecution.cs:609-613` and contained as
+  one ordinary `fail`. It is one of the five "logic divergences" listed in the `log/slog` entry
+  above, not an independent defect.
+- on a GOROUTINE — `TestSetDefault`'s `go func(){ Info("A"); … }` (`logger_test.cs:469` via `Info`,
+  `logger.cs:346`, through `Goroutine.Run`, `golib/runtime/Goroutine.cs:375`) — it escapes the
+  goroutine root, reaches `Goroutine.ObserveUnhandledPanic` → `TestHost.cs:413-425` →
+  `TestRunner.cs:205-217`, which flushes the evidence and lets the process die. Every ordinally
+  later test loses its verdict. **It IS a contiguous alphabetical tail**, so CLAUDE.md's
+  mass-empty classification held all along — it was produced by process death rather than by a
+  deadline, which is why no timeout signature appeared. Worth adding to that classification: a
+  contiguous alphabetical tail has THREE causes, not two, and the third names itself in the
+  results file's last event.
+
+**A/B proof.** One line at the top of slog's `init` — `builtin.initPackage(typeof(log_package))`,
+i.e. the forcing the converter already knows how to emit — moves `TestSetDefault` fail → **pass**
+and `TestLogLoggerLevelForDefaultHandler` fail → **pass**, and the whole tail executes:
+**214 terminal verdicts, 190 pass / 24 fail**, against 181 terminal with the run cut short —
+**+33**, i.e. the ten unreported top-level tests and their subtests. (Both figures derive from the
+strict 1:1 run/terminal event pairing the host emits: 362 events baseline, 428 with the probe.) The
+24 remaining failures are the alloc-assert rows plus the `Source`/`CallDepth`/`RecordSource`
+naming divergences already priced above — untouched by this, and unrelated to it. The probe was
+reverted; nothing is banked from it.
+
+**Classification: converter defect** (Go cross-package init ORDER not reproduced for named
+imports), surfacing as a converted-code nil-func panic. Not a test-host defect, not a golib
+defect, not a measurement artifact.
+
+**Priced remedy — NOT small, deliberately not started.** The machinery is all built and proven
+(hook emission, per-(assembly, package) dedup via `packageBlankImportForces`, the
+`noInitPseudoPackages` fence, the hand-own `.cs.auto` fence, the marker splice); what changes is
+only the TRIGGER. Two honest trigger sets:
+
+- **(a) every import.** Matches Go exactly. Largest footprint: a hook per import per package,
+  corpus-wide, and every referenced assembly loads eagerly at startup.
+- **(b) every import whose module ctor is non-empty transitively** — i.e. the package or any
+  package it imports has an `init`. Observationally EQUIVALENT to (a) (forcing an empty module
+  ctor is a guaranteed no-op — the same reasoning `noInitPseudoPackages` already applies to
+  `unsafe`/`builtin`/`C`), at a fraction of the emission. This is the recommended shape, and it
+  needs one new thing: the converter must KNOW whether an imported package initializes, which
+  means recording it where the other cross-package facts already live (a `package_info.cs`
+  assembly attribute, or `stdlib-metadata.txt`).
+
+⚠ **A read-set heuristic cannot substitute.** The tempting narrow rule — "force only imports whose
+symbols the importer's init references" — MISSES this exact case: slog's init reads
+`log/internal.DefaultOutput`, but the package whose init WRITES it is `log`. The dependency that
+must be forced is not the one the init statement names. Only the unconditional (or
+transitive-has-init) rule catches it.
+
+Cost to land: converter change + the recorded-init marker + `go generate .` for
+`stdlib-metadata.txt`; a full-corpus regen and rebank (the emission changes nearly everywhere);
+a roster re-sweep, because eager module-ctor execution can surface latent order dependence in any
+banked row (that is the point of the fix, and it is also its risk); and a behavioral guard in the
+class of the existing blank-import guard, exercising a NAMED import whose init side effect the
+importer's init reads. `log/slog`'s row is gated on it: with the fix the package reaches
+190/214 in one run, without it the suite cannot finish at all.
+
+Cheap optional follow-up, independent of the above: the comparison artifact
+(`go2cs_test_comparison.json`) does not lift the host's *"test binary died"* package event, so a
+consumer reading only that file sees an unexplained empty tail. The signal exists in
+`go2cs_test_results.json` and on stderr; surfacing it in the comparison would have made this a
+five-minute read instead of a lane.
+## 2026-08-25 · `reflect.ArrayOf` LANDS as a standalone hand-own — the commission's one-liner held, and the guard found an EMISSION gap next door (lane `claude/reflect-arrayof`, coordinator i7)
+
+Queue item 2 from the `map-key-elem-cargo` lane's closing list, taken on its own merits. The
+prediction that arc made — *"`reflect.ArrayOf(n, elem)` is now nearly free … the hand-own is
+`synthType(typeof(array<>).MakeGenericType(elem), [n, …elemDims])`"* — is **confirmed**: the
+implementation is 14 lines in `reflect/value_impl.cs` beside its sibling constructor `PointerTo`,
+plus one `manualConversionFuncs["reflect"]["ArrayOf"]` registry entry and the reflect regen that
+turns the auto body into its placeholder. No `typelinks`, no linker table, no new machinery in golib
+or the descriptor layer — the dims cargo was already carrying everything the length needed.
+
+**What the auto form was doing, stated once more because it is the reusable shape:** it died in
+`typesByString` → `typelinks()` not because the caller asked for anything exotic but because it was
+reconstructing Go's linker-allocated `arrayType` record. Every accessor that record exists to feed —
+`Len`/`Elem`/`Size`/`Align`/`String` — the managed bridge already answers from `(System.Type, dims)`.
+The class generalizes: **a Go body that fails inside a LINKER-table lookup is usually not a hard
+wall, it is a body reconstructing something the managed side never lost.**
+
+**Identity, not resemblance.** `canonType` keys on the managed type PLUS the dims rendering, so
+`ArrayOf(3, TypeOf(byte))` and `TypeOf([3]byte{})` intern to the SAME `reflect.Type`. Every row of
+the new `ReflectArrayOf` behavioral guard is that identity claim — scalar, `[2]Celsius` (defined
+element), `[2]*uint8`, `[2]pair` (struct element, size from Go's own field layout), `[0]uint8`,
+nested `[2][3]uint8`, and a five-deep composition — plus the value side (`New`/`Index`/`SetUint`/
+`Zero`/`DeepEqual`) and the negative-length panic. **Failing-first proven**: at master the guard
+reports `exit code mismatch: C# 2 vs Go 0 — C# stderr: "System.NotImplementedException: typelinks:
+external (assembly or cgo) function is not implemented"`; with the change, PASS on all four phases.
+
+**This does NOT flip `encoding/gob`'s row and no claim is made that it does** —
+`TestIgnoreDepthLimit` wraps its 101-deep array in a `reflect.StructOf`, still the feature arc
+(`System.Reflection.Emit`, and an AOT question) the previous lane named. gob stays 105 of 106.
+
+**Recorded limitation, deliberately not worked around:** an array descriptor has no slot to hand a
+channel's DIRECTION or a map KEY's dims down — `abi.Type.Elem` descends those through a POINTER only
+— so `ArrayOf(n, chan<- T)` describes `[n]chan T`. A DECLARED `[n]chan<- T` reads back exactly the
+same way today, so this is the cargo model's shape rather than the constructor's (the r39d rule).
+
+### The find next door: an empty NESTED composite literal drops its inner dimension (NOT this lane's, not fixed)
+
+The guard's nested rows failed on their first run, and the cause is not `ArrayOf`. The converter
+emits the two forms differently:
+
+| Go | emitted C# | `TypeOf(x).Elem().Len()` |
+|:--|:--|:--|
+| `var x [2][3]uint8` | `new(2, () => new(3))` | **3** — correct |
+| `x := [2][3]uint8{}` | `new array<uint8>[]{}.array(2)` | **0** — Go says 3 |
+
+The empty literal's two elements are `default(array<uint8>)`, i.e. length ZERO, so the inner
+dimension is gone before reflection is involved at all — `ArrayDimsOfValue` then measures the first
+element honestly and reports `[2, 0]`. Confirmed by reading both emissions from a two-line probe
+(`go run` says `3 3`); the consequence was measured through the guard, where the constructed
+`[2][3]uint8` compared unequal to the literal-built one while every accessor on the constructed side
+answered correctly. **Reachable from any `[N][M]T{}` literal with no reflection in sight**, and it
+is an emission fix (converter + a corpus regen + CNR), so it is recorded here and left for whoever
+takes it. The guard compares against the declared `var` form, which is what "the type a declaration
+produces" honestly means on this bridge, and its source says so at the site so nobody switches it
+back.
+
+### Gates
+
+Converter `go test -count=1 ./...` **ok, 207.1 s, exit 0** — `TestStdLibMetadataInSync` included, and
+`go generate .` reproduced `stdlib-metadata.txt` byte-identical, so **no metadata was owed** and that
+is asserted rather than inferred. `GolibTests` **299 / 299, 0 failed** (112.9 s). Full
+`go2cs-stdlib.slnx` Debug (windows target) **0 errors, 315 s**. Filtered `ReflectArrayOf` all four
+phases **PASS**. The reflect regen ran seeded per the ritual, with a **control first**: the same
+seeded reconvert at master reproduced all 15 committed `reflect` files byte-identical, so the two
+files that moved afterwards are the change and nothing else.
+
+⚠ **Provisioning note for anyone gating on the coordinator i7:** the box's default `dotnet` is SDK
+**9.0.317**, which cannot target `net10.0` at all (`NETSDK1045`); the 10.0.400 SDK is a side-by-side
+install at `C:\Users\ritchie\dotnet10`. The default `go` is **1.23.1** out of `C:\Program Files\Go`
+and a machine-level `GOROOT` names that same 1.23.1 tree, while the corpus and `version.props` are
+**1.23.12** (at `%USERPROFILE%\sdk\go1.23.12`) — the exact both-pins-needed shape
+`GoCorpusMigration.md` §1 records. Both pins must be set in the SAME invocation as every gate.
+
+## RULING (owner, 2026-08-25) — the campaign's terminal denominator is the IMPLEMENTABLE test set, with the excluded packages fully disclosed, each with its why
+
+The 100% march's target is ruled: **100% of the packages whose test suites a faithful managed
+conversion can honestly validate**, with every exclusion carried as a first-class, visitor-visible
+ledger — package, verdict count, exclusion class, one-line mechanism, link to the board rooting.
+Nothing disappears silently: BOTH numbers are always reported (the naive testable count and the
+honest denominator), exactly as the H10 gate already requires absolute-and-percentage together.
+
+**The admission bar for exclusion is the disclosure bar's sibling, and it is strict**: a package
+is excluded only when validation is PROVABLY meaningless or impossible — never because it is
+hard, unimplemented, or expensive. Three classes are in evidence so far; each future exclusion
+is ruled individually, on measurement, like every disclosure:
+
+- **E1 — no eligible tests on the target platform.** Go's own build constraints yield an empty
+  eligible set on windows/amd64: `internal/runtime/syscall`, `internal/syscall/unix`,
+  `net/internal/socktest`, `log/syslog`, `runtime/race` (five, measured in the frontier
+  derivation). There is nothing to validate; the comparison is vacuous by Go's own definition.
+- **E2 — broken oracle.** Go's own suite fails on the reference side (`os/user`:
+  `TestGroupIds` fails in `go test` itself), so no clean differential baseline exists.
+- **E3 — the test's subject IS the replaced representation.** The suite measures the raw memory
+  model a safe managed runtime deliberately does not have, so any pass would be fabrication:
+  `internal/unsafeheader` (fabricating live slices/strings by raw header aliasing) is the clean
+  case, rooted in JOB-019 tier-2. Candidates to be RULED when reached, not assumed:
+  `internal/concurrent` (whitebox consumer of the exact implementation the hand-own replaced,
+  ruled structurally unbankable 2026-08-19) and possibly `internal/weak` (same tension, 1 of 3).
+
+**Mechanics** (lands as one docs change when JOB-019 tier-2 completes, so the first ledger is
+complete rather than dribbled): `docs/ValidatedTestPackages.md` gains an "Excluded packages"
+section in the ledger shape above; the progress header reports `banked / honest-denominator`
+beside the naive count. No harness change — excluded packages simply are not rows, and the sweep
+already reads only rows. The anti-laundering clause carries over verbatim: an exclusion whose
+mechanism is later implemented (or whose oracle is fixed upstream) REJOINS the denominator the
+day the evidence changes, exactly as `chan-direction` retired the other way.
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

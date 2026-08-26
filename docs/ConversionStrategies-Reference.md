@@ -2962,6 +2962,8 @@ pre-fix converter diverges on 13 of its lines.)
 
 **An untyped `nil` in a VARIADIC slot states its element type for a different reason — arity, not dynamic type.** The constants above are cast so the *box* matches Go's; a bare `nil` is cast so the argument *exists at all*. C# prefers a call's **normal** form over its **expanded** one whenever the argument converts to the params ARRAY, and a typeless `default!` converts to `any[]` exactly as readily as to `any` — so `exec(t, db, "INSERT|t|id=10,name=?", nil)` (database/sql's `sql_test.go`) emitted `exec(…, insertTId10Nameˢ, default!)` against `params ꓸꓸꓸany argsʗp` and bound it as a **null array**. The callee saw `len(args) == 0` where Go passes one nil element (a bare `nil` is always ONE variadic element; passing the slice itself requires `nil...`), and the fake driver answered `sql: expected 1 arguments, got 0`. That is the significant part: it is a **silent behavioral divergence, not a compile error** — the emission is perfectly valid C# that means something else — which is why the variadic position needs the cast while an ordinary parameter does not (a non-variadic slot has only one form to bind, so `f(nil)` there is already unambiguous and stays bare). The fix reuses the same `castArgToType` plumbing: every trailing argument of an expanded variadic call that is the predeclared `nil` renders `(any)(default!)` — at the parameter's ELEMENT type, which `getParameterType` already yields for the variadic slot — and the nil need not be first, so the whole tail is checked. A SPREAD call (`f(args...)`) is excluded: it passes the slice whole, so there is no expansion to disambiguate and `describe(none...)` correctly yields length 0. (Guarded by the `VariadicSlotInterfaces` extension — arity read back for `nil` alone, leading, trailing and repeated, in both an `...any` and a named-interface `...Shape` slot, against no-argument, typed-value and `nil...`-spread controls, output-compared vs `go run`.)
 
+**A SLICE or ARRAY of the ELEMENT type, passed as the SOLE argument of a variadic slot, states its element type for the SAME arity reason — and it is a C# 14 regression, not a standing defect (2026-08-24).** Go spreads a variadic argument only on an explicit `a...`; a bare `a` is one value, even when its type is exactly `[]E`. `jsValEscaper(a)` with `a []any` against `func jsValEscaper(args ...any)` (html/template `js_test.go`, whose whole table nests each case as `[]any{x}` and expects one more level of array wrapping) therefore means a pack of length one. The emission is `jsValEscaper(a)` with `a` a `slice<any>` against `params ꓸꓸꓸany argsʗp`, and `using ꓸꓸꓸany = Span<any>` — so whether Go's meaning survives depends entirely on whether C# finds the callee applicable in its NORMAL form. Under C# 13 it did not: reaching `Span<any>` from `slice<any>` needed golib's `implicit operator T[]` (slice.cs) followed by array→span, which was itself a **user-defined** operator on `Span<T>`, and C# never composes two user-defined conversions. Only the expanded form was applicable, so the slice arrived as one element and the corpus was correct **by accident**. C# 14 made array→span and string→span **standard** implicit conversions; a user-defined conversion admits one standard conversion on each side, so `slice<any>` → `any[]` → `Span<any>` became implicit, the normal form became applicable, and C# prefers the normal form — the slice silently became the entire argument list. Exactly one level of nesting disappears, never zero and never two: `"[42]"` renders as `" 42 "`, `"[[42,\"foo\",null]]"` as `"[42,\"foo\",null]"`. The remedy is the sibling rule's cast at the same `castArgToType` plumbing — `jsValEscaper((any)(a))` — which removes the normal form from consideration (nothing converts `any` to `Span<any>`) and restores the expanded one. Three deliberate narrowings keep the footprint at the mechanism: a SPREAD call is excluded (it passes the slice whole, and `anys...` really is the pack); a tail of two or more arguments is excluded (the normal form is only applicable at arity one); and a NAMED slice/array type is excluded, because its only route to a span is wrapper→`slice<T>`→`T[]`→span — two user-defined conversions, which C# 14 still does not compose. The cast is always legal where the call already compiled: binding the expanded form at all required an implicit conversion from the argument to the element type, so making it explicit cannot fail where the implicit one succeeded. (Guarded by the `VariadicSlotInterfaces` extension — a `[]any` and a `[2]any` passed whole, their `...` spread controls, a nil-slice pair separating "passed whole" from "spread", a two-argument tail control, and a named-slice control pinning the exclusion; read back both as ARITY and as rendered OUTPUT, output-compared vs `go run`. The pre-fix converter diverges on 6 of its lines under C# 14 and none under C# 13.)
+
 **An untyped STRING constant takes the same treatment, under the MIRROR-IMAGE shape rule (2026-07-25).**
 Go's default type for an untyped string constant is `string` — golib `@string` — and here it is the
 LITERAL that boxes wrong: `convBasicLit` renders a string literal as a plain C# `"seed"`
@@ -13447,6 +13449,54 @@ The caller writes the `WSABUF` bytes into the staged memory itself, exactly as i
 **The RECEIVE is the same family and a DIFFERENT remedy, and the distinction is worth carrying.** With the send working, `ReadFromInet4` panics `index out of range [0] with length 0` inside `rawToSockaddrInet4`. Do not attribute that to the `(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(...))` round-trip it panics in: the WRITE direction (`sockaddrInet4ToRaw`) runs the identical round-trip and works, and TCP exercises it. The fault is the box — `@new<syscall.RawSockaddrAny>()`, managed arrays inside, handed to `WSARecvFrom` by address. Per the AV-vs-panic triage rule (golib's `array<T>` indexer is bounds-checked), a clean bounds panic means the array is EMPTY: nothing was materialised at that address. Because a received address arrives *asynchronously*, the stack-buffer remedy does not apply — the native staging buffer must be decoded at HARVEST time, which is the decode-side problem `AcceptEx`'s output buffer also has. Send and receive are therefore separate increments, and the guard (`UdpLoopbackRoundTrip`, Linux-proven) waits for the second.
 
 
+### The pointer-word read — `*(*unsafe.Pointer)(unsafe.Pointer(&x))` emits a CARRYING pointer, never a byte pun
+
+Go's idiom for reading the pointer word stored at some location — `time.syncTimer`'s
+`*(*unsafe.Pointer)(unsafe.Pointer(&c))` reading a channel's header word, `runtime/stack.go`'s
+`*(*unsafe.Pointer)(&pp)` re-typing a `uintptr` — has ONE destination the managed storage
+reinterpret can never serve: `unsafe.Pointer` itself is a CLASS in the surrogate model, so golib's
+alias gate refuses it, and the pre-2026-08-25 fallback deref-copied whatever bits sat in the
+source's first reference-sized slot INTO a `Pointer` reference. A reference materialized from bytes
+is a CLR type-safety break: junk dispatch on a quiet heap, an `AccessViolationException` when the
+punned bits land unmapped — measured live on every `NewTimer` (the `asynctimerchan=2` witness,
+2026-08-24: two pipeline runs died in `Pointer.op_Implicit`; three structurally-faithful quiet-heap
+repros passed, the byte-view census's latent-with-live-trigger shape exactly).
+
+`reinterpretManagedEmission` (convCallExpr.go) therefore special-cases a target pointee of the
+`unsafe.Pointer` basic and emits the word the two ways the managed model can carry one:
+
+```go
+u := uintptr(0xC0FFEE)
+q := *(*unsafe.Pointer)(unsafe.Pointer(&u))   // the word IS the number
+
+c := make(chan int, 1)
+p := *(*unsafe.Pointer)(unsafe.Pointer(&c))   // the word is a REFERENCE
+```
+
+```csharp
+@unsafe.Pointer q = ~Ꮡ(new @unsafe.Pointer(~Ꮡu));           // exact fidelity: Pointer(value)
+@unsafe.Pointer p = ~Ꮡ(new @unsafe.Pointer((uintptr)Ꮡc));   // the source BOX's pin token
+```
+
+The uintptr arm is exact Go semantics. The managed arm carries the source box's
+`ManagedPointerTokens` pin token — non-nil for a live value, stable for the box's lifetime, and
+provenance-resolvable back to the storage it names. One corner is knowingly inexact and stated at
+the emission: a nil channel's word is 0 in Go while a box token is non-zero; the one stdlib
+consumer (`newTimer`) reads only the nil-bit and recomputes it from the GODEBUG setting, and no
+stdlib site passes a nil channel through this shape.
+
+**Deliberately NO golib-side guard backs this up**, and the history is the load-bearing part: a
+runtime refusal (return a zero-holding box for any reference-typed destination) was tried first and
+the full behavioral suite failed `PointerCastSliceRange` — the `ж<T> → ж<U>` DOUBLE-pointer pun
+(reflect `MapOf`'s `**(**mapType)(unsafe.Pointer(&imap))`) reads one ж instantiation's reference
+slot as another and works precisely because the generic layouts coincide, a distinction golib
+cannot draw generically and the converter draws exactly. Guarded by
+`tests/Behavioral/UnsafePointerWordRead` (both arms vs `go run`, token stability across re-reads);
+the corpus regen moved all 11 members of the shape (`sleep.cs` + ten runtime sites) and nothing
+else. The 10 runtime sites are dormant raw-metal; a site that WRITES through the derived pointer
+stores into a detached box rather than corrupting punned memory, and real write-through semantics
+belong to the provenance arc.
+
 ### A pointer `reflect` handed out as an `unsafe.Pointer` must convert BACK — the order token is remembered, not redefined
 
 A Go pointer to managed storage has no machine address to report, so every projection of one to a scalar answers with a stable **order token** instead: `INilPointer.PointerOrderToken`, whose own remarks say plainly that tokens "are order keys, never an identity substitute". `reflect.Value.Pointer` and `reflect.Value.UnsafePointer` both project through it (`reflect/value_impl.cs`'s `reflectPointerToken`), and that contract is exactly right for the consumers it was written for — `fmt`'s `%p`, and `internal/fmtsort`'s ordering of pointer-keyed map entries, which compares two tokens arithmetically.
@@ -18697,6 +18747,192 @@ The `envs` half has its own **positive control**: export `GOROOT` into the host'
 `TestBug3486` *passes*, nothing else changed. That is what isolates the residual to the empty
 link-time constant rather than to the snapshot — and it is the same probe to re-run if a future
 build-time `GOROOT` remedy is tried.
+
+### `reflect.ArrayOf` composes a descriptor; it does not reconstruct a linker record
+
+`ArrayOf(n, elem)` builds an array TYPE at run time, for a type no declaration in the program
+produced. Go's own body cannot be converted usefully, and it does not degrade: before it assembles
+its `arrayType` record (`Str`/`Hash`/`GCData`/`PtrBytes`/`Equal`, plus a `SliceOf` for the record's
+`Slice` field) it looks the type up **by name** through `typesByString` → `typelinks()`, the
+linker-built type table, which has no managed form and is a `NotImplementedException` stub. So every
+call threw whatever it was asked for — `encoding/gob`'s `TestIgnoreDepthLimit` reports it as an
+`infrastructure-error` rather than a failure — and the throw says nothing about the request: it is
+the reconstruction of a **linker** record, which the managed bridge never needs.
+
+golib's `array<T>` **is** the array type. The one part of a Go array type the managed emission
+cannot hold is its LENGTH (C# has no const generic parameter for the `4` in `[4]byte`), and that is
+exactly what the descriptor's **dims cargo** already carries for every declared array. So the whole
+construction is the `(managed type, dims)` pair `abi.TypeOf` reaches from a live `[n]T` value:
+
+```csharp
+// reflect/value_impl.cs — the hand-own, beside its sibling constructor PointerTo
+public static ΔType ArrayOf(nint length, ΔType elem) {
+    if (length < 0) {
+        throw panic("reflect: negative length passed to ArrayOf");
+    }
+    System.Type? st = sysTypeOfReflectType(elem);
+    ...
+    nint[]? elemDims = arrayDimsOfReflectType(elem);
+    nint[] dims = new nint[1 + (elemDims is null ? 0 : elemDims.Length)];
+    dims[0] = length;
+    elemDims?.CopyTo(dims, 1);
+    ...
+    return toType(abi.synthType(typeof(array<>).MakeGenericType(st), dims));
+}
+```
+
+**Interning is what makes it a round trip rather than a look-alike.** `canonType` keys the `ΔType`
+wrapper on the managed type PLUS the dims rendering, so `ArrayOf(3, TypeOf(byte))` and
+`TypeOf([3]byte{})` are the SAME canonical `reflect.Type` **by identity** — and `Len`/`Elem`/`Size`/
+`Align`/`String`/`New`/`Zero` then agree because they read one descriptor, not because each was
+separately made to agree.
+
+**The dims COMPOSE**, and that is not a nested-array special case. The slot means *what `Elem()`
+hands down*: an array consumes the head and passes the tail, while a pointer's and a map's dims pass
+through unshifted. So `[n][3]byte` and `[n]*[3]int` are both spelled `[n, 3]`, and each accessor
+takes back its own share. Repeated composition is therefore free, which is the shape `gob`'s
+depth-limit test builds 101 deep.
+
+What an array has **no slot** to hand down is a channel's DIRECTION or a map KEY's dims:
+`abi.Type.Elem` descends those through a POINTER only, so `[n]chan<- T` describes `[n]chan T` here.
+That is the cargo model's shape rather than this function's — a DECLARED `[n]chan<- T` reads back
+exactly the same way — so it is recorded, not worked around (the r39d rule).
+
+Guarded by the **`ReflectArrayOf`** behavioral test, whose every row is that identity claim. The
+registry entry is `manualConversionFuncs["reflect"]["ArrayOf"]` (`manualTypeOperations.go`), which is
+what turns the auto body into the placeholder the hand-own fills. Implementing `ArrayOf` alone does
+**not** flip `gob`'s last verdict — `TestIgnoreDepthLimit` wraps its 101-deep array in a
+`reflect.StructOf`, which is runtime struct synthesis over `System.Reflection.Emit` and a feature arc
+of its own.
+
+⚠ The guard's nested rows compare against a declared **variable**, not an empty composite literal,
+and the difference is load-bearing. `var x [2][3]uint8` emits as `new(2, () => new(3))` — the inner
+dimension is in the initializer, which is the source the bridge recovers a declared array's length
+from. The empty literal `[2][3]uint8{}` emits as `new array<uint8>[]{}.array(2)`, whose two elements
+are `default(array<uint8>)`, i.e. length ZERO — so the inner dimension is dropped and
+`reflect.TypeOf(lit).Elem().Len()` answers `0` where Go answers `3`. That is a converter EMISSION
+gap, older than and independent of this hand-own (it needs no reflection to reach), and it is
+recorded here rather than papered over.
+
+### `reflect.StructOf` MINTS a CLR value type, and then changes nothing else
+
+`StructOf(fields)` is `ArrayOf`'s sibling one order of magnitude up. `PointerTo` and `ArrayOf` hand
+`MakeGenericType` an **existing** managed type, because `ж<T>` and `array<T>` *are* the Go type; a
+struct has no generic container to instantiate, so `StructOf` is the one caller that asks for a Go
+type nothing declared and a real CLR **value type has to be minted** for it — with
+`System.Reflection.Emit`, in golib's `GoStructSynthesis`.
+
+The auto body dies where `ArrayOf`'s does, and one stub earlier than expected: measured, the first
+throw is `addReflectOff` (from `runtimeStructField` → `resolveReflectType`), not `typelinks`. That is
+the point rather than a detail — **everything past the validation loop is Go's runtime reconstructing
+linker output** (`structTypeFixedN` prototypes, GC-program construction, `resolveReflectName` into
+the linker's name blob, `unsafe_New`), so which stub is reached first is incidental. Both of
+`reflect`'s *own* callers of `StructOf` are themselves such reconstructions — a fake struct
+describing a func's argument frame (`initFuncTypes`), and `struct{S structType; U uncommonType; M
+[n]Method}` to obtain an rtype followed in memory by a method array — so a hand-own owes them
+nothing.
+
+**What makes the mechanism honest is that nothing downstream is new.** Once the CLR type exists,
+`abi.synthType` describes it exactly as it describes a converted struct, and `GoFields`,
+`structLayoutOf`/`GoFieldOffsets`, `structFieldOf`, `FieldAliasBox`, `ZeroValueOf`,
+`haveIdenticalUnderlyingType`, `GoTypeName` and `canonType` all run **unmodified** — not one of them
+asks where a `System.Type` came from. A descriptor-only synthetic type would instead have grown a
+second path in about ten places, and a green row would then prove the second path rather than the
+bridge.
+
+The mint carries five things, and each answers exactly one downstream reader:
+
+| Emitted | Read by | Why it cannot be dropped |
+|:--|:--|:--|
+| `[GoType("dyn")]` on the type | `HasGoName`, `GoTypeName` | a `StructOf` result is a Go ANONYMOUS struct: `Name()` must be `""` and `String()` must render structurally |
+| a **parameterless constructor** seeding every array-kinded field | `GoReflect.FieldArrayDims` | an array field's Go LENGTH |
+| `[GoTag("…")]` on a field | `goTagOf` | `StructField.Tag` |
+| `[GoArrayDims]` / `[GoMapKeyDims]` on a field | `FieldStampedDims` / `FieldMapKeyDims` | the pointer-hop and map hops |
+| a `ʗ`-prefixed CLR field name | `collectGoFields` | `StructField.Anonymous` |
+
+**The constructor is the piece that is easy to get backwards, so it is worth stating flatly.**
+`collectGoFields` reads an *array* field's dims from a cached **zero instance** —
+`Activator.CreateInstance(declaringType)` — because in converted code the converter emits the length
+as a field **initializer** (`= new(4)`) that the generated parameterless constructor runs. The
+`[GoArrayDims]` stamp is *not* that route: it exists for the pointer and map-element hops, where a
+zero instance holds a nil pointer or an empty map and has nothing to measure. A `TypeBuilder` struct
+has no field initializers, so **without an emitted constructor every synthesized array field would
+report length 0** — silently, `0` being a legal Go length, and mis-sizing the struct as well, since
+`structLayoutOf` sizes an array field from the same vector. Both routes are therefore emitted; they
+cover disjoint cases, under exactly the rule `fieldCargoDims` applies to declared fields.
+
+**Interning is the contract, not an optimization.** `encoding/gob` keys
+`map[reflect.Type]gobType` and `enc.sent map[reflect.Type]typeId` on the result, so a fresh
+descriptor per call makes every recursion a cache miss and every mutually recursive type an infinite
+regress. Two properties of the shape key are load-bearing:
+
+- it cannot be built from `System.Type`s. `[1]int` and `[2]int` are ONE `array<nint>` and
+  `chan<- T` and `chan T` are ONE `channel<T>` — length and direction live only as descriptor cargo —
+  so each field contributes its `abi.descriptorDimsKey` rendering, **reused rather than restated**,
+  so a shape key and the descriptor it stands for cannot separate the same two types differently;
+- the intern holds the **mint**, under a lock rather than a `ConcurrentDictionary` factory.
+  `GetOrAdd` runs its factory concurrently and discards the losers' work, but the work here is
+  `DefineType`, and a duplicate type name **throws** (measured on a bare probe: 3 of 4 racing threads
+  failed).
+
+**`PkgPath` nests.** `GoPackagePath(t)` is `GoPackageClassPath(t.DeclaringType)`, which reads the
+declaring class's namespace plus its name with `_package` trimmed — so a struct with an unexported
+field is minted **inside** a synthesized container class `<pkg>_package` in namespace
+`go.<parent-path>`: `go.encoding.gob_package` for `encoding/gob`. The obvious spelling
+`go.encoding.gob.gob_package` is measurably wrong and yields `"encoding/gob/gob"`. The container is
+minted only when a field actually carries a `PkgPath`, so the common all-exported case pays nothing.
+
+**Narrowings this hand-own ships with, recorded so they are met knowingly:**
+
+1. **Interning is `StructOf`-local.** A converter-lifted anonymous struct of the same shape is a
+   different CLR type, so `StructOf(f) == TypeOf(struct{F int}{})` is `false` here and `true` in Go —
+   the same class as the cross-context anonymous-lift identity split. `haveIdenticalUnderlyingType`
+   still answers `true` for the pair, so `AssignableTo`, `ConvertibleTo`, `Convert` and assignment
+   all behave; only `==` on the `Type` splits. The one shape exempt is `struct{}`, whose managed form
+   golib already declares (`EmptyStruct` *is* Go's empty struct), so the degenerate call reaches the
+   type a declaration produces.
+2. **A directional-channel field keeps its identity but not its description.** The direction is in
+   the shape key, so `struct{C chan<- T}` and `struct{C chan T}` are distinct types; the minted field
+   is a plain `channel<T>`, so `Field(i).Type.ChanDir()` answers bidirectional. Carrying it is one
+   more seeded field in a constructor that already exists.
+3. **Embedded fields with methods panic**, matching Go's own documented gap (*"StructOf currently
+   does not support promoted methods of embedded fields"*) — and using Go's exact message wherever
+   Go's own condition matches.
+4. **The type's own `PkgPath()` and its `StructField.PkgPath` are answered by different rules.**
+   `structFieldOf` uses `f.Exported ? "" : GoPackagePath(st)` and is exactly right; `rtype.PkgPath()`
+   reads the same call with no `HasGoName` gate, so a synthesized struct that needed a container
+   reports a package path for the TYPE where Go answers `""` for an unnamed type. That is
+   pre-existing and corpus-wide (every converter-lifted anonymous struct behaves the same way), so it
+   is pinned rather than changed here.
+
+Guarded by the **`ReflectStructOf`** behavioral test — the only gate that checks the answer against
+Go rather than against our own expectation — and by `GolibTests`' `GoStructSynthesisTests`, which
+pins the three mechanisms that fail *silently*: the constructor, the shape key, and the `ʗ` prefix.
+The last of those is asserted on `.Anonymous` and never on `Type.String()` on purpose: an embedded
+field and a same-named regular field render **identically**, so a `String()`-based check could not go
+red on the defect it exists to catch. The registry entry is
+`manualConversionFuncs["reflect"]["StructOf"]`.
+
+### `reflect.SliceOf` is the same one-liner as `PointerTo`
+
+`SliceOf(elem)` dies in the same `typesByString` → `typelinks()` lookup and needs nothing but the
+generic instantiation `typeof(slice<>).MakeGenericType(elem)` — the `PointerTo` shape exactly. The
+only decision it carries is what dims to hand the descriptor, and the answer is **none**: a declared
+`[]T` descriptor carries `null`, because `abi.TypeOf` measures dims for an ARRAY value and a POINTER's
+pointee only. Passing the element's dims through would break the identity that makes the constructed
+and the declared type one `reflect.Type`, and would not help either — `rtype.Elem`'s non-pointer,
+non-map arm consumes the head of the dims vector, so a one-element vector hands down nothing. So
+`SliceOf(ArrayOf(3, byte))` describes `[][3]byte` with the element's length unknown, which is exactly
+what `TypeOf([][3]byte{})` reads back today. That residual belongs to the cargo model — a slice type
+has no dims slot — not to this constructor.
+
+⚠ Two PRE-EXISTING residuals meet here and neither belongs to this constructor, so the guard
+asserts identity and deliberately does not print the name. go2cs renders a dims-less `array<T>` as
+`[]T` by design (`GoReflect.TypeNaming`: *"length is not carried on the managed type"*), so
+`fmt.Println(reflect.TypeOf([][3]uint8{}))` already prints `[][]uint8` at master, and
+`reflect.TypeOf([][3]uint8{}).Elem() == reflect.TypeOf([3]uint8{})` is already `false` — both with no
+reflection constructor in sight. One root: a slice type has no dims slot, so nothing survives the
+`Elem()` hop. Widening the cargo there is an arc of its own.
 
 ## Comments
 

@@ -173,7 +173,6 @@ using static go.net.http_package;
 [assembly: GoImplement<ioFile, File>]
 [assembly: GoImplement<io_package.ReadWriteCloser, io_package.ReadCloser>]
 [assembly: GoImplement<loggingConn, net_package.Conn>(Pointer = true)]
-[assembly: GoImplement<loggingConn, net_package.Conn>(Promoted = true)]
 [assembly: GoImplement<maskedSig, sniffSig>(Pointer = true)]
 [assembly: GoImplement<maxBytesReader, io_package.ReadCloser>(Pointer = true)]
 [assembly: GoImplement<mp4Sig, sniffSig>]
@@ -187,16 +186,13 @@ using static go.net.http_package;
 [assembly: GoImplement<nothingWrittenError, error>(Promoted = true)]
 [assembly: GoImplement<nothingWrittenError, error>]
 [assembly: GoImplement<onceCloseListener, net_package.Listener>(Pointer = true)]
-[assembly: GoImplement<onceCloseListener, net_package.Listener>(Promoted = true)]
 [assembly: GoImplement<os_package.File, File>(Pointer = true)]
 [assembly: GoImplement<persistConn, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<persistConnWriter, io_package.ReaderFrom>(Pointer = true)]
 [assembly: GoImplement<persistConnWriter, io_package.Writer>]
 [assembly: GoImplement<populateResponse, ResponseWriter>(Pointer = true)]
 [assembly: GoImplement<readTrackingBody, io_package.ReadCloser>(Pointer = true)]
-[assembly: GoImplement<readTrackingBody, io_package.ReadCloser>(Promoted = true)]
 [assembly: GoImplement<readWriteCloserBody, io_package.ReadWriteCloser>(Pointer = true)]
-[assembly: GoImplement<readWriteCloserBody, io_package.ReadWriteCloser>(Promoted = true)]
 [assembly: GoImplement<redirectHandler, ΔHandler>(Pointer = true)]
 [assembly: GoImplement<requestBodyReadError, error>(Promoted = true)]
 [assembly: GoImplement<requestBodyReadError, error>]
@@ -243,7 +239,7 @@ using static go.net.http_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/client.go", "client.cs", "AI8BpgIACQqClIKWgu6ClKjigoKmgoKUgoCCtqaCgpSmgoKUAAsQ8pSCgpaCgpaCgrqCgoLegoKWgIKCgoKCpoKUhIKCgoKUgLiCtpSClAAKFoKUlILcrLKCgpQAAhDSlICCpMQABxCClAAIGAAMAoKUgoSmgpaCgqSEgoKWgoSkhoKCuIKCoqKCgrqChMLEgrSCtLgAAhDSggACOAAZAgAFNAAZAoKClKaAAAgUooKClKrylIKCjMLGgoKEysbaooKUgIKkAAJQACUCAAgK8oKApIKCyoQABhaUgpSCgpSU3KaCgriUgoKClJK4gIK2ggAIEoKCgoKU3qiAgqS6ggABENKClITKgoKogoKCgJSCgpSmgoKClgAKDubIgoKCqJIADRiCgoKCgIKCtoKCgoKCpoLMgoKo6IKClAACJgAQAgAGIgAQAoKClIIAAiYAEAIABSIADgIAAiIADgIABR4ADgKCgpQABhTyhoIADhyygoKUgpSClKaCgoKmogABHoKCAA4GrsKCyoLKgpSmooKClA==")]
+[assembly: go.GoPositionMap("net/http/client.go", "client.cs", "AI8BpgIACQqClIKWgu6ClKjigoKmgoKUgoCCtqaCgpSmgoKUAAsQ8pSCgpaCgpaCgrqCgoLegoKWgIKCgoKCpoKUhIKCgoKUgLiCtpSClAAKFoKUlILcrLKCgpQAAhDSlICCpMQABxCClAAIGAAMAoKUgoSmgpaCgqSEgoKWgoSkhoKCuIKCoqKCgrqChMLEgrSCtLgAAhDSggACOAAZAgAFNAAZAoKClKaAAAgUooKClKrylIKCjMLGgoKEysbaooKUgIKkAAJQACUCAAgK8oKApIKCyoQABxiUgpSCgpSU3KaCgriUgoKClJK4gIK2ggAIEoKCgoKU3oKCpqiAgqS6ggABENKClITKgoKogoKCgJSCgpSmgoKClgAKDubIgoKCqAANGIKCgoKAgoK2goKCgoKmgsyCgpakggAIDIKClAACJgAQAgAGIgAQAoKClIIAAiYAEAIABSIADgIAAiIADgIABR4ADgKCgpQABhTyhoIADhyygoKUgpSClKaCgoKmAA0cgoKuwoLKgsqClKaigoKU")]
 [assembly: go.GoPositionMap("net/http/clone.go", "clone.cs", "AA4uAAkCgrgAAhgACwKClIKCgoKUAAIYAAsCgpSmgoKCgoKUlJQAAhgACwKClIKCggACHgAMAoKClA==")]
 [assembly: go.GoPositionMap("net/http/cookie.go", "cookie.cs", "ADeMAbKCgpSCooKigpSClJKClJTaooKClIKigpSCgpSSgpTcgoKCloKCgpSCgoKWlIKCgpSUpKSkpKSCpIKkgrSCgpSClILEgoKCgoKCpoK0gqSCpJTaooKClIKCgIK2rLKAggAREOKCmKKCgoKChIKClILKgoKUgpSmgoKClIKCpJSClIKUuKSktIKUAAkIsoKUgpSClIKCpoKCgriCgqaCgqauwoKCloKihIKSgoKClKKCgpSClJKClKaokoKUgpSopKyygpSClpSUgoKCgoKUpoK2trKUtpKUgpS0lIKWyoIABSIADgKCgpSClKaC2qKmgqaCgoKClIKClIKUgoKAgrYAAhgADASCgpSCgqamgoKU")]
 [assembly: go.GoPositionMap("net/http/filetransport.go", "filetransport.cs", "ABE+AA0CAAIiAA4Cpu6CkoKUpoKCAAoWAA8ggoKUgpSmgoKUhIKUpoKmgoKUhIKmgoKUgoKU")]

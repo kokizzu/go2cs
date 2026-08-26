@@ -242,7 +242,7 @@ internal static void debugCallWrap2(uintptr dispatch) {
         ref var dispatchF = ref heap<Action>(out var ᏑdispatchF);
         ref var dispatchFV = ref heap<funcval>(out var ᏑdispatchFV);
         dispatchFV = new funcval(dispatch);
-        (ᏑdispatchF.Reinterpret<Action, @unsafe.Pointer>()).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑdispatchFV));
+        (Ꮡ(new @unsafe.Pointer((uintptr)ᏑdispatchF))).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑdispatchFV));
         bool ok = default!;
         defer(() => {
             if (!ok) {

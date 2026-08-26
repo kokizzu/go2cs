@@ -9,6 +9,7 @@ using pkix = go.crypto.x509.pkix_package;
 using errors = errors_package;
 using fmt = fmt_package;
 using net = net_package;
+using netip = go.net.netip_package;
 using url = go.net.url_package;
 using reflect = reflect_package;
 using runtime = runtime_package;
@@ -418,8 +419,13 @@ internal static (bool, error) matchURIConstraint(ж<url.URL> Ꮡuri, @string con
             return (false, err);
         }
     }
-    if (strings.HasPrefix(host, "["u8) && strings.HasSuffix(host, "]"u8) || net.ParseIP(host) != default!) {
-        return (false, fmt.Errorf("URI with IP (%q) cannot be matched against constraints"u8, uri.String()));
+    // netip.ParseAddr will reject the URI IPv6 literal form "[...]", so we
+    // check if _either_ the string parses as an IP, or if it is enclosed in
+    // square brackets.
+    {
+        var (_, err) = netip.ParseAddr(host); if (err == default! || (strings.HasPrefix(host, "["u8) && strings.HasSuffix(host, "]"u8))) {
+            return (false, fmt.Errorf("URI with IP (%q) cannot be matched against constraints"u8, uri.String()));
+        }
     }
     return matchDomainConstraint(host, constraint);
 }

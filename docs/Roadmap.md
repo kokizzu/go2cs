@@ -16,6 +16,16 @@ the full conversion.
 > **`src/core`** and the hand-finished stub baseline is retired (commit `2e8066da6`). Everything below
 > that spells `src/go-src-converted` is a period-accurate record of where the tree stood at the time —
 > read it as history, not as instructions. See [`/CLAUDE.md`](../CLAUDE.md) *One tree*.
+>
+> **⚠ Where the road goes after Phase 4 — the hop era.** Beyond the phases below, the project moves
+> by **release migrations**: the Go release the corpus converts from, and the .NET runtime it runs
+> on, one variable at a time and never both in one hop. Three documents carry that work, and this
+> roadmap routes to them rather than restating them — the ruled frame in
+> [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) (which releases, in which order, and its ruled
+> open questions), and the two standing **runbooks** that lead on procedure:
+> [`GoCorpusMigration.md`](GoCorpusMigration.md) for a Go corpus migration and
+> [`DotNetMigration.md`](DotNetMigration.md) for a .NET one. What each document type may be used for,
+> and which one wins when two disagree: [`Glossary.md`](Glossary.md), *Document types*.
 
 *Phase 2's 57-package `fmt` closure, considered and rejected as a bootstrap in 2026-06, is now simply
 what the behavioral suite builds: cold ~48 s, warm ~4 s.*
@@ -86,7 +96,7 @@ more). So "green the loop" means **green `fmt`'s closure**, bottom-up.
   | 18 | CS1003 | syntax error, X expected | open (syntax cluster) |
   | 18 | CS0051 | inconsistent accessibility (param type less accessible) | open |
   | — | CS0103 | missing package-level lookup tables (e.g. `ntz8tab`/`pop8tab` in math/bits) | open |
-- **Converter-improvement loop (proven end-to-end):** edit `src/go2cs/*.go` → `go build` (Go 1.23.1) →
+- **Converter-improvement loop (proven end-to-end):** edit `src/go2cs/*.go` → `go build` (Go 1.23.12) →
   re-transpile → `dotnet build`. (For behavioral tests the harness runs this loop itself — see
   [`/CLAUDE.md`](../CLAUDE.md) "Test-harness mechanics".)
 - **Retarget detail:** the stdlib converter writes to **`<go2cspath>/core/<pkg>`** (hardcoded `core` subdir).
@@ -853,7 +863,7 @@ so Go-faithful per-platform semantics never fork the package graph.
 | Behavioral suite passing | `BehavioralTests` / `BehavioralRunner` | ✅ 555 projects transpile+compile+golden, 529 output-compared (2026-08-10) |
 | Full packages compiling | `src/go2cs-stdlib.slnx` (307 projects since layout L3) | ✅ **302 / 302** packages (2026-07-10, `51ba5d9cf`) |
 | Full-conversion error count | build-error buckets | ✅ **0** |
-| Converted package tests | [`ValidatedTestPackages.md`](ValidatedTestPackages.md) — the authoritative roster | ◻ Phase 4 **in flight — 126 / 215 validated (58.6%)**, 14,643 matching verdicts, 50 disclosed (2026-08-10) |
+| Converted package tests | [`ValidatedTestPackages.md`](ValidatedTestPackages.md) — the authoritative roster | ◻ Phase 4 **in flight**. The roster's own header carries the current count, verdict total and disclosure total, recomputed from its table — read it there rather than here, so this row cannot go stale against it |
 | Assembly-backed implementations | Phase 5 external-declaration ledger | ◻ Phase 5 planned — gated by Phase 4 validation |
 | Linux / multi-target | Platforms section above | ◻ converts + runs `fmt`/`os`/`time`-class programs; `syscall` surface in progress |
 

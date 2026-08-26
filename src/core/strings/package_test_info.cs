@@ -52,6 +52,7 @@ using static global::go.strings_test_package;
 [assembly: go.GoPositionMap("strings/reader_test.go", "reader_test.cs", "ABkggoIACiiCgoKClIKClIKUgoKCgpSCgsqCgoCCpICCAAsIgoIABxqCgoKCgpSCysaCgoKCsoKC1qbYgoKCgrKCgsSygtamgoKCgoKCgoCCpIKUgpSC/JKCgoKUgriCgoCCpoKCgIKkgoKUgILIgoCCpoCCpoCCpoCCpoCCpoCCpoCCpoKWgpaAgg==")]
 [assembly: go.GoPositionMap("strings/replace_test.go", "replace_test.cs", "ACI+koKCgoKCAC4Msp6GloKClJYACBqCgoKClJSWAAkeAAgcAAsaAAYSurzeAAYSuszMqAAJHoKClIK6AAQQgoKCgoKCggAWQIQABhSCAAUSgr6CgIKkgoKCgpSCgoKUggATJpKCgoL+gqqigoKCAAgQ0gANWoKCgoKWlIKCgqaEgsqigoKCuKKCgoLoooKCuKKCgoKCuKKmouaCpqKCgriigoK4ooKC6KKCgriigoK4ooKCgoK4ooKCgoK6soKCurKCgpSkpJSCABASgoiSsqKCzIKClIKUlpKyooI=")]
 [assembly: go.GoPositionMap("strings/search_test.go", "search_test.cs", "ABEaggAQKoKCgoIACgqCABY4ooSCgoKUgqiC")]
+[assembly: go.GoPositionMap("strings/strings_test.go", "strings_test.cs", "ABgsgoKUgoKmAKcBzgKigoKC+oDSgNKA0oKmgoKClIKCyoIACxCCgoLKgoKCgqamgoKCkoKClIKCgoKCgoKUgoKCAA8OggAXOoKAgriCgoCCpICCtoLcooCCpILcooCCpIK4ooCCpIK4ooCCpIK4ooCCpIK4ooCCpIIAIUSCgoKCgpSClIKClIKCggAVLIKCgoKClIKClIKCggAcOoKCgoKCAAsYgoKCgoKmgoKCggAJGKKCgoIANmaCgoKUqJKCgpSClAAMBpSUgoKCgqiCgoKCqIKCgqiCgoKogoKUlIKCgqiGgoKCqIKClJSCgoKogpSkpJSCgoKClIKCqIKClJSCgoLogNSAABkugoKCgsqCspKCgoLugrKSgoKCAAkOooaC+IKCgoKClIKClIKClIKC6IAAKEyCgoKClKSkpKSkpIKCyqKEgoKCgpSkpKSkpKSCggAKDKIABBCCgrKSggAVKoIAO2qCggAEEoKCggAhQIKCgoKUgoLKgoKUgoKCgpSCgoKmAAoGlIKClIKClJSCloCCpICCpIKUggAUKIKClAAdMoKCgoKCyrKCgIKUxNqEAA4Iko6CgoKClJaCuoQACBSCgpbKgoKUgoKmABIiooKCgoKUlIKC3IKCgoKAgqSCgoKClIKClJSCgoKUgoKClIKCpoLKgoKCgoCCpIKCgoKUgoKUlIKCgpSCgoKUgoKUgoKmggALEqKioqK2goKCgJSkgoKCACFAgoKAgqSCgoIAFSiCgoCCAFOeAYKCggATLoKCggAWKoKCgtyCspYAGjKigoCCpICCAAwKgoKCgoCC3IKEgoKogoKogoIAFiqCgoCCABYogoKAggAUJIKCgIIAFCSCgoCC2oLKgoKCgpSUyqKCuKKCuKKCuIDSgNKA0oKmgKKAooCkgKKAooDqooK4ooLoooKCgriCgpSCgoKmgpLuhIKktIKClLS2yISCgpSmAAcQgrKSkpKCgoKCAAcQgrKSkpKCgoKCAAcQooK4ooK4ooK4ooK4ooK4goKCgoKC7oKCgoKCgoKUgoKU3KKCgriCgoKSkoKCAAkOgoKCkpKCgu6CgoKSkoKC7oKCgpKSgoLugoKSkoKCggAJDqKCgriCgoKCgoIACAyCgpKSgoKCAAkMgtyykoIAChCigoI=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -75,13 +76,11 @@ public static partial class strings_test_package
     internal partial struct indexFuncTestsᴛ1 {}
     internal partial struct mapdataᴛ1 {}
     internal partial struct predicate {}
-    internal partial struct stringdataᴛ1 {}
     internal partial struct toValidUTF8Testsᴛ1 {}
     internal partial struct trimFuncTestsᴛ1 {}
     internal partial struct trimTestsᴛ1 {}
     public partial struct BenchmarkToValidUTF8_tests {}
     public partial struct BenchmarkTrimSpace_tests {}
-    public partial struct ContainsAnyTestsᴛ1 {}
     public partial struct ContainsRuneTestsᴛ1 {}
     public partial struct ContainsTestsᴛ1 {}
     public partial struct CountTestsᴛ1 {}

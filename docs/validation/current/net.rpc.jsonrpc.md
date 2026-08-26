@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `net/rpc/jsonrpc` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-14 · converter `114a9a890`*
+*Validated 2026-08-25 · converter `a338d351d`*
 
-**9 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**9 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/net/rpc/jsonrpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc/jsonrpc).
 
 ## Verdicts

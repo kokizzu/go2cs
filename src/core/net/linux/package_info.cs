@@ -106,7 +106,6 @@ using static go.net_package;
 [assembly: GoImplement<goLookupIPCNAMEOrder_result, error>(Promoted = true)]
 [assembly: GoImplement<notFoundError, error>(Pointer = true)]
 [assembly: GoImplement<onlyValuesCtx, context_package.Context>(Pointer = true)]
-[assembly: GoImplement<onlyValuesCtx, context_package.Context>(Promoted = true)]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<pipe, Conn>(Pointer = true)]
 [assembly: GoImplement<pipeAddr, ΔAddr>]

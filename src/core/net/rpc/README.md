@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.1-00ADD8?logo=go)](https://pkg.go.dev/net/rpc@go1.23.1)\
-[![Source](https://img.shields.io/badge/Source-@1.23.1-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.1/src/net/rpc) [![Source](https://img.shields.io/badge/Source-@1.23.1.7-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.1.7/src/core/net/rpc)
+[![Tests](https://img.shields.io/badge/Tests-15%2F15_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.0/net.rpc.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/net/rpc@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/net/rpc) [![Source](https://img.shields.io/badge/Source-@1.23.12.0-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.0/src/core/net/rpc)
 
 Package rpc provides access to the exported methods of an object across a network or other I/O connection.  A server registers an object, making it visible as a service with the name of the type of the object.  After registration, exported methods of the object will be accessible remotely.  A server may register multiple objects (services) of different types but it is an error to register multiple objects of the same type.
 
@@ -21,7 +21,7 @@ In effect, the method must look schematically like
 
 where T1 and T2 can be marshaled by encoding/gob. These requirements apply even if a different codec is used. (In the future, these requirements may soften for custom codecs.)
 
-The method's first argument represents the arguments provided by the caller; the second argument represents the result parameters to be returned to the caller. The method's return value, if non-nil, is passed back as a string that the client sees as if created by [errors.New](https://pkg.go.dev/errors@go1.23.1#New).  If an error is returned, the reply parameter will not be sent back to the client.
+The method's first argument represents the arguments provided by the caller; the second argument represents the result parameters to be returned to the caller. The method's return value, if non-nil, is passed back as a string that the client sees as if created by [errors.New](https://pkg.go.dev/errors@go1.23.12#New).  If an error is returned, the reply parameter will not be sent back to the client.
 
 The server may handle requests on a single connection by calling \[ServeConn].  More typically it will create a network listener and call \[Accept] or, for an HTTP listener, \[HandleHTTP] and \[http.Serve].
 
@@ -29,7 +29,7 @@ A client wishing to use the service establishes a connection and then invokes \[
 
 The Call method waits for the remote call to complete while the Go method launches the call asynchronously and signals completion using the Call structure's Done channel.
 
-Unless an explicit codec is set up, package [encoding/gob](https://pkg.go.dev/encoding/gob@go1.23.1) is used to transport the data.
+Unless an explicit codec is set up, package [encoding/gob](https://pkg.go.dev/encoding/gob@go1.23.12) is used to transport the data.
 
 Here is a simple example.  A server wishes to export an object of type Arith:
 

@@ -944,7 +944,7 @@ public static void TestEscapeSet(ж<testing.T> Ꮡt) {
                 }
             }
         }
-        return (default!, fmt.Errorf("undefined pred(%v)"u8, a));
+        return (default!, fmt.Errorf("undefined pred(%v)"u8, (any)(a)));
     }))
     });
     foreach (var (_, test) in tests) {

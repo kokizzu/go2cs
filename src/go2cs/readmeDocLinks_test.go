@@ -183,11 +183,19 @@ func TestRenderPackageDocQualifiesLinksAndPassesAbsolutesThrough(t *testing.T) {
 
 	rendered := renderPackageDoc(markup, sourceDir, Options{goRoot: goRoot})
 
+	// Derived, not spelled: renderPackageDoc pins its links to goVersion() — the ACTIVE toolchain —
+	// so the expectations must derive from the same source or this test goes stale at every Go
+	// release hop. It did exactly that at the 1.23.1→1.23.12 hop (hop A, 2026-08-25): hardcoded
+	// "@go1.23.1" wants failed the H1↔H2 window and would have kept failing after the pair landed.
+	// The resolveDocLinkURL table above stays hermetic the other way — it INJECTS its version, so
+	// its pinned wants can never drift from its pinned input.
+	v := goVersion()
+
 	for _, want := range []string{
-		"(https://pkg.go.dev/io@go1.23.1#Reader)",
-		"(https://pkg.go.dev/io@go1.23.1)",
-		"(https://pkg.go.dev/io@go1.23.1#Writer.Write)",
-		"(https://pkg.go.dev/path/filepath@go1.23.1#Walk)",
+		"(https://pkg.go.dev/io@go" + v + "#Reader)",
+		"(https://pkg.go.dev/io@go" + v + ")",
+		"(https://pkg.go.dev/io@go" + v + "#Writer.Write)",
+		"(https://pkg.go.dev/path/filepath@go" + v + "#Walk)",
 		"(https://go.dev/ref/spec)",
 		"(https://go.dev/blog)",
 	} {

@@ -17,7 +17,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework Condition="'$(TargetFramework)'==''">net9.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
     <RootNamespace>go.database</RootNamespace>
     <AssemblyName>database.sql.tests</AssemblyName>
     <Product>go2cs</Product>
@@ -96,6 +96,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(go2csPath)core/bytes/bytes.csproj" />
     <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
     <ProjectReference Include="$(go2csPath)core/database/sql/driver/database.sql.driver.csproj" />
     <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />

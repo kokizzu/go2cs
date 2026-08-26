@@ -12,8 +12,10 @@
          parsing lives rather than where the sweep runs.
 
       2. THE ROSTER'S OWN ARITHMETIC, derived from the table every time -- the progress header's
-         package count, verdict sum and disclosed sum against the columns, and the Linux progress
-         line against the per-OS annotations. Nothing is hand-listed here: a hand-maintained roster
+         package count, verdict sum and disclosed sum against the columns, the Linux progress
+         line against the per-OS annotations, and the implementable-set line against the exclusion
+         ledger (excluded count, denominator and percentage all recomputed, every ledger class one
+         of the ruled ones). Nothing is hand-listed here: a hand-maintained roster
          mirror is the exact debt the sweep's own drift section records going unpaid twice, so
          every number this asserts is computed from the table it is asserting about.
 
@@ -38,6 +40,7 @@ $table = Join-Path $repo 'docs/ValidatedTestPackages.md'
 
 $dot = [string][char]0x00B7      # U+00B7 MIDDLE DOT -- the cell-segment separator
 $dash = [string][char]0x2014     # U+2014 EM DASH -- the header's clause separator
+$minus = [string][char]0x2212    # U+2212 MINUS SIGN -- the implementable line's subtraction sign
 
 $failures = New-Object System.Collections.Generic.List[string]
 $checks = 0
@@ -80,6 +83,25 @@ function Read-FixtureRoster {
     try {
         [System.IO.File]::WriteAllText($path, (($header + $Rows) -join "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         return @(Get-ValidatedRosterRows -Path $path)
+    }
+    finally {
+        if (Test-Path $path) { Remove-Item $path -Force }
+    }
+}
+
+# The exclusion-ledger sibling of Read-FixtureRoster: same unique temp file, the ledger's header.
+function Read-FixtureLedger {
+    param([string[]] $Rows)
+
+    $header = @(
+        '| Package | Verdicts | Class | Mechanism | Rooting |'
+        '|:--|:--:|:--:|:--|:--:|'
+    )
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('go2cs-ledger-fixture-' + [guid]::NewGuid().ToString('n') + '.md')
+
+    try {
+        [System.IO.File]::WriteAllText($path, (($header + $Rows) -join "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
+        return @(Get-ExclusionLedgerRows -Path $path)
     }
     finally {
         if (Test-Path $path) { Remove-Item $path -Force }
@@ -192,6 +214,26 @@ Assert-Equal 'linux: an unannotated row off the windows count is comparison-vali
 Assert-Equal 'linux: a lost verdict on an unannotated row is also unbanked, never a silent pass' 'unbanked-count' `
     (Get-SweepRowClassification -Expectation $linPlain -Got 1 -GotDisclosed 0 -TargetGoos 'linux')
 
+# ---- 1c. the exclusion-ledger parser's contract --------------------------------------------------
+# The ledger row's first cell is a PLAIN code span and the roster row's is a LINKED one -- the shape
+# difference is the only thing keeping two tables in one document apart, so it is pinned in BOTH
+# directions: a roster-shaped row must not read as a ledger row, and a ledger row must not read as
+# a roster row.
+$ledgerFixture = Read-FixtureLedger @(
+    "| ``ex/one`` | 0 | E1 | Nothing eligible on this target. | [ruling][r] |"
+    "| ``ex/two`` | $dash | E2 | The oracle fails. | [ruling][r] |"
+    "| ``ex/three`` | 6 | E3 | The subject is the replaced representation. | [ruling][r] |"
+    "| [``ros/row``](https://x/ros) | 12 |  | A roster-shaped row. $dot [proof](p.md) |"
+)
+
+Assert-Equal 'ledger fixture: plain-code-span rows parse, the roster-shaped row does not' 3 $ledgerFixture.Count
+Assert-Equal 'ledger columns: package' 'ex/one' $ledgerFixture[0].Package
+Assert-Equal 'ledger columns: verdicts is the raw cell text' '0' $ledgerFixture[0].Verdicts
+Assert-Equal 'ledger columns: class' 'E1' $ledgerFixture[0].Class
+Assert-Equal 'ledger columns: a dashed verdicts cell still carries its class' 'E2' $ledgerFixture[1].Class
+Assert-Equal 'ledger row does not read as a roster row' 0 `
+    (@(Read-FixtureRoster @("| ``ex/one`` | 0 | E1 | Nothing eligible on this target. | [ruling][r] |")).Count)
+
 # ---- 2. the roster's own arithmetic --------------------------------------------------------------
 $rows = @(Get-ValidatedRosterRows -Path $table)
 $lines = [System.IO.File]::ReadAllLines($table)
@@ -228,6 +270,52 @@ if ($testable -gt 0) {
     Assert-Equal 'header: the percentage follows from the two counts' ('{0:0.0}' -f $expectedPercent) $percentText
 }
 
+# The implementable-set line, derived the same way as everything above it: the excluded count from
+# the ledger table, the denominator as the subtraction it states, the percentage recomputed. This
+# line was the header's one hand-computed exception when it landed; now it can go stale as silently
+# as its siblings can -- which is to say, not at all.
+$ledger = @(Get-ExclusionLedgerRows -Path $table)
+
+# Every ledger row's class must be one of the ruled exclusion classes -- an unruled class name is a
+# row admitted outside the admission bar, not a new class this guard should learn silently.
+foreach ($row in $ledger) {
+    Assert-Equal "ledger: $($row.Package) carries a ruled class ($($ExclusionLedgerClasses -join '/'), got '$($row.Class)')" `
+        $true ($ExclusionLedgerClasses -contains $row.Class)
+}
+
+# Excluded and validated are disjoint by construction: a package that validates has rejoined the
+# denominator, and a row counted on both sides of the subtraction counts itself twice.
+$rosterPackages = @($rows | ForEach-Object { $_.Package })
+$excludedAndValidated = @($ledger | Where-Object { $rosterPackages -contains $_.Package } | ForEach-Object { $_.Package })
+Assert-Equal 'ledger: no excluded package is also a roster row' '' ($excludedAndValidated -join ', ')
+
+# The subtraction sign admits an ASCII hyphen beside U+2212 -- the arithmetic, not the glyph, is
+# what this guards.
+$minusClass = '[\-' + $minus + ']'
+$honestSetPattern = '\((\d+)\s*' + $minusClass + '\s*(\d+)\s+excluded\s*=\s*(\d+)\)'
+$honestRatioPattern = ':\s*(\d+)\s*/\s*(\d+)'
+$implementable = $testable - $ledger.Count
+
+Assert-Equal 'honest header: restates the naive denominator' $testable `
+    (Get-HeaderNumber $lines 'Against the implementable set' $honestSetPattern)
+Assert-Equal 'honest header: excluded count equals the ledger row count' $ledger.Count `
+    (Get-HeaderNumber $lines 'Against the implementable set' $honestSetPattern 2)
+Assert-Equal 'honest header: stated difference equals naive minus excluded' $implementable `
+    (Get-HeaderNumber $lines 'Against the implementable set' $honestSetPattern 3)
+Assert-Equal 'honest header: numerator equals the table row count' $rows.Count `
+    (Get-HeaderNumber $lines 'Against the implementable set' $honestRatioPattern)
+Assert-Equal 'honest header: denominator equals the implementable set' $implementable `
+    (Get-HeaderNumber $lines 'Against the implementable set' $honestRatioPattern 2)
+
+$honestPercentText = ''
+foreach ($line in $lines) {
+    if ($line -match 'Against the implementable set' -and $line -match '([\d.]+)%') { $honestPercentText = $Matches[1]; break }
+}
+if ($implementable -gt 0) {
+    $expectedHonestPercent = [math]::Round(($rows.Count / [double]$implementable) * 100, 1, [MidpointRounding]::AwayFromZero)
+    Assert-Equal 'honest header: the percentage follows from the two counts' ('{0:0.0}' -f $expectedHonestPercent) $honestPercentText
+}
+
 # The Linux progress line is summed from the annotations exactly as the header above it is summed
 # from the columns -- derived on both sides, so neither can drift from the table it describes.
 $linuxRows = @($rows | Where-Object { $_.OS.ContainsKey('linux') })
@@ -253,6 +341,40 @@ foreach ($row in $linuxRows) {
     Assert-Equal "annotation is a real count: $($row.Package)" $true ($row.OS['linux'].Expected -gt 0)
 }
 
+# ---- 3. the RENDERED table's column integrity -----------------------------------------------------
+# Everything above guards what the roster MEANS to the parser. This guards what it LOOKS LIKE to a
+# reader, which nothing else does -- and the two can disagree silently.
+#
+# A literal '|' inside a cell ends that cell early: GFM splits a table row on '|' BEFORE inline code
+# spans are resolved, so backticks do not protect it. The `log` row carried (`63`|`65`) -- two
+# alternative line numbers -- and spilled its description into a phantom fifth column on the
+# published page (owner-reported 2026-08-25, escaped in the same change that added this check).
+#
+# Why no existing gate could catch it: `_roster.ps1` anchors on the LEADING cells, so the broken row
+# parses correctly, every arithmetic assertion above it passes, and the sweep's verdicts are right.
+# The damage is confined to the rendered page, which is why it survived until a human looked at one.
+# A well-formed four-column row has exactly five UNESCAPED pipes; the lookbehind keeps a deliberate
+# \| in prose legal, which is also the fix.
+foreach ($line in $lines) {
+    if ($line -notmatch $RosterRowPattern) { continue }
+
+    $rowPackage = $Matches[1]
+    $pipes = [regex]::Matches($line, '(?<!\\)\|').Count
+
+    Assert-Equal "row renders four columns: $rowPackage" 5 $pipes
+}
+
+# The exclusion ledger is the same kind of visitor-facing table with the same hazard, five columns
+# wide -- its Mechanism cells are exactly the prose an unescaped '|' would one day land in.
+foreach ($line in $lines) {
+    if ($line -notmatch $ExclusionLedgerRowPattern) { continue }
+
+    $rowPackage = $Matches[1]
+    $pipes = [regex]::Matches($line, '(?<!\\)\|').Count
+
+    Assert-Equal "ledger row renders five columns: $rowPackage" 6 $pipes
+}
+
 if ($List) {
     Write-Host ''
     Write-Host 'per-OS annotations in the roster:' -ForegroundColor Cyan
@@ -272,5 +394,5 @@ if ($failures.Count -gt 0) {
     exit 1
 }
 
-Write-Host "roster format guard: $checks checks pass ($($rows.Count) rows, $($linuxRows.Count) with a linux annotation)" -ForegroundColor Green
+Write-Host "roster format guard: $checks checks pass ($($rows.Count) rows, $($linuxRows.Count) with a linux annotation, $($ledger.Count) excluded)" -ForegroundColor Green
 exit 0

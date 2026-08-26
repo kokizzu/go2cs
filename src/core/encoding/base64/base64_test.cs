@@ -473,7 +473,7 @@ public static void TestNewLineCharacters(ж<testing.T> Ꮡt) {
 // and with the errors as written to nextc.
 [GoType] internal partial struct faultInjectReader {
     internal @string source;
-    internal /*<-*/channel<nextRead> nextc;
+    internal /*<-*/channel<nextRead> nextc = /*<-*/channel<nextRead>.RecvOnly;
 }
 
 [GoRecv] internal static (nint, error) Read(this ref faultInjectReader r, slice<byte> p) {

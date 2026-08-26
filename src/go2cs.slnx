@@ -723,6 +723,7 @@
     <Project Path="tests/Behavioral/ReceiverFieldMethodCall/ReceiverFieldMethodCall.csproj" />
     <Project Path="tests/Behavioral/ReceiverNestedFieldAddress/ReceiverNestedFieldAddress.csproj" />
     <Project Path="tests/Behavioral/ReceiverPointerValue/ReceiverPointerValue.csproj" />
+    <Project Path="tests/Behavioral/ReflectArrayOf/ReflectArrayOf.csproj" />
     <Project Path="tests/Behavioral/ReflectBridgeClosure/ReflectBridgeClosure.csproj" />
     <Project Path="tests/Behavioral/ReflectChanDirection/ReflectChanDirection.csproj" />
     <Project Path="tests/Behavioral/ReflectConvertAssignable/ReflectConvertAssignable.csproj" />
@@ -731,6 +732,7 @@
     <Project Path="tests/Behavioral/ReflectMapRangeNilKey/ReflectMapRangeNilKey.csproj" />
     <Project Path="tests/Behavioral/ReflectMethodTableWalk/ReflectMethodTableWalk.csproj" />
     <Project Path="tests/Behavioral/ReflectStringWindow/ReflectStringWindow.csproj" />
+    <Project Path="tests/Behavioral/ReflectStructOf/ReflectStructOf.csproj" />
     <Project Path="tests/Behavioral/ReflectStructTagCopy/ReflectStructTagCopy.csproj" />
     <Project Path="tests/Behavioral/ReflectTypedNilInterface/ReflectTypedNilInterface.csproj" />
     <Project Path="tests/Behavioral/ReflectUnexportedFieldFlags/ReflectUnexportedFieldFlags.csproj" />
@@ -852,6 +854,7 @@
     <Project Path="tests/Behavioral/UintptrUnsafePointerIdiom/UintptrUnsafePointerIdiom.csproj" />
     <Project Path="tests/Behavioral/UnexportedEmbeddedMarker/UnexportedEmbeddedMarker.csproj" />
     <Project Path="tests/Behavioral/UnicodeConsoleOutput/UnicodeConsoleOutput.csproj" />
+    <Project Path="tests/Behavioral/UnsafePointerWordRead/UnsafePointerWordRead.csproj" />
     <Project Path="tests/Behavioral/UntypedIntInterfaceBox/UntypedIntInterfaceBox.csproj" />
     <Project Path="tests/Behavioral/UntypedNestedSliceComposite/UntypedNestedSliceComposite.csproj" />
     <Project Path="tests/Behavioral/UnnamedMapNilConversion/UnnamedMapNilConversion.csproj" />

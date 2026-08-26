@@ -1432,6 +1432,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// A SLICE or ARRAY of the variadic ELEMENT type, passed as the SOLE argument of the
+			// variadic slot, needs the identical cast for the identical reason — C# binding the
+			// NORMAL form where Go means one element — but reached through a conversion rather
+			// than through typelessness. `jsValEscaper(a)` with `a []any` against
+			// `params ꓸꓸꓸany argsʗp` (html/template js_test's nesting cases) bound the EXPANDED
+			// form under C# 13 and binds the NORMAL form under C# 14, which spreads the slice and
+			// loses exactly one level of nesting: `[42]` renders as ` 42 `, `[[42,"foo",null]]` as
+			// `[42,"foo",null]`. See variadicArgBindsParamsCollection for the conversion chain
+			// C# 14 newly admits (`slice<any>` → `any[]` → `Span<any>`) and why a NAMED slice type
+			// is not affected. Gated on the tail holding EXACTLY ONE argument, because that is the
+			// only arity at which the normal form is applicable at all.
+			if funcSignature.Variadic() && i == params.Len()-1 && !callExprContext.hasSpreadOperator && len(callExpr.Args) == params.Len() {
+				if variadicArgBindsParamsCollection(v.info.TypeOf(callExpr.Args[i]), paramType) {
+					if callExprContext.castArgToType == nil {
+						callExprContext.castArgToType = make(map[int]string)
+					}
+
+					if _, exists := callExprContext.castArgToType[i]; !exists {
+						callExprContext.castArgToType[i] = convertToCSTypeName(v.getAliasQualifiedTypeName(paramType, false))
+					}
+				}
+			}
+
 			// A Go string passed to a generic type-parameter parameter must be cast to
 			// golib's `@string` (a struct). Without a target type, a bare string literal
 			// converts to a .NET `System.String`, so C# infers the type argument as
@@ -3826,6 +3849,40 @@ func (v *Visitor) reinterpretManagedEmission(callExpr *ast.CallExpr, arg ast.Exp
 
 	identContext := DefaultIdentContext()
 	identContext.isPointer = true
+
+	// `unsafe.Pointer` as the TARGET pointee is the one destination the storage reinterpret can
+	// never serve: it is a CLASS, so golib's alias gate refuses it and the fallback deref-copied
+	// whatever bytes sat in the source's first reference-sized slot INTO a Pointer reference — a
+	// fabricated managed reference. time.syncTimer's `*(*unsafe.Pointer)(unsafe.Pointer(&c))` did
+	// that on EVERY NewTimer: junk dispatch on a quiet heap, an AccessViolationException inside
+	// Pointer.op_Implicit when the punned bits landed unmapped (measured twice, the 1.23.12 time
+	// suite at GODEBUG=asynctimerchan=2). Emit the CARRYING form instead — Go's semantics for the
+	// read is "the pointer word at that storage", and the managed model carries a word two ways:
+	//   - a uintptr source's word IS the number, so the derived Pointer holds the dereffed value —
+	//     exact Go fidelity (runtime/stack.go's `*(*unsafe.Pointer)(&pp)` shape);
+	//   - any other managed pointee's word is a REFERENCE, which no Pointer value can hold, so the
+	//     derived Pointer carries the source BOX's pin token (`(uintptr)Ꮡx` registers it with
+	//     ManagedPointerTokens) — non-nil, stable for the box's lifetime, and provenance-resolvable
+	//     back to the storage it names. One corner is knowingly inexact and harmless where the
+	//     stdlib uses the shape: a nil channel's word is 0 in Go, while the token of the box
+	//     HOLDING that nil channel is non-zero (syncTimer's consumer reads only the nil-bit and
+	//     recomputes it from the GODEBUG setting; no stdlib site passes a nil channel here).
+	// Both arms wrap in Ꮡ(…) so the expression stays a ж<unsafe.Pointer> for the deref/pointer
+	// contexts the four call sites serve. golib's Reinterpret keeps its own refusal for this shape
+	// as defense-in-depth for emissions that have not been reconverted yet.
+	if targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer); ok {
+		if basic, isBasic := types.Unalias(targetPtr.Elem()).(*types.Basic); isBasic && basic.Kind() == types.UnsafePointer {
+			boxExpr := v.convExpr(src, []ExprContext{identContext})
+
+			if srcPtr, isPtr := types.Unalias(v.info.TypeOf(src)).(*types.Pointer); isPtr {
+				if srcBasic, srcIsBasic := types.Unalias(srcPtr.Elem()).(*types.Basic); srcIsBasic && srcBasic.Kind() == types.Uintptr {
+					return fmt.Sprintf("Ꮡ(new @unsafe.Pointer(~%s))", boxExpr), true
+				}
+			}
+
+			return fmt.Sprintf("Ꮡ(new @unsafe.Pointer((uintptr)%s))", boxExpr), true
+		}
+	}
 
 	return fmt.Sprintf("%s.Reinterpret<%s, %s>()", v.convExpr(src, []ExprContext{identContext}), srcElem, targetElem), true
 }

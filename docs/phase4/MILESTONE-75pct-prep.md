@@ -1,7 +1,21 @@
 <!-- {% raw %} — Jekyll/Liquid guard: this doc quotes Go/Liquid-ambiguous syntax and shell braces; keep the matching endraw as the final line. -->
 # MILESTONE — the 75% crossing, prepared
 
-> **Status: PREPARED, not executed.** This is the ritual package for Go 1.23.1's **terminal**
+> **✅ EXECUTED (2026-08-22) — this is now a RECORD of a ritual that ran.** The crossing happened and
+> the package below was used as written: tag **`stdlib-tests-75pct-2026-08-22`**, branch
+> **`release/go1.23`**, published **`nuget-1.23.1.7`** — all three present in the repository. The
+> roster header it waited on reads **162 / 215 (75.3 %)**, so the frame's precondition
+> (*"Complete 1.23.1"*) is satisfied, which is what opened the hop era. The `<PLACEHOLDER>` tokens
+> below were filled from the roster header at execution, exactly as the preparation required.
+>
+> Amended, never rewritten: everything under the original status line stands as prepared, including
+> the parts the execution changed — the superseded two-machine release flow is recorded as superseded
+> **in place** rather than deleted. One lesson this ritual earned is doctrine elsewhere now: the
+> **announcement text lands BEFORE the tag mints**, because the tag anchors the shipped tree and
+> cannot be moved afterward — see [`../GoCorpusMigration.md`](../GoCorpusMigration.md) H12, where the
+> release ritual is defined in five ordered elements.
+
+> **Status AS PREPARED: PREPARED, not executed.** This is the ritual package for Go 1.23.1's **terminal**
 > validation marker — 75 % of the testable standard library — assembled ahead of the crossing so the
 > crossing itself is review-and-execute rather than compose-under-pressure. Nothing here has been
 > run: no tag exists, no branch exists, no package is published, and no user-facing document has
@@ -281,7 +295,19 @@ a green sweep** — is offered as a recommendation, not a ruling.
 > board's condition-(d) arithmetic entry. Per-row wall tables for both legs are banked in
 > [`DATA-sweep-row-walltimes.md`](DATA-sweep-row-walltimes.md).
 
-> **⚠ USER-EXECUTED IN FULL.** Publishing to nuget.org is an irreversible act — a version can be
+> **⚠ SUPERSEDED FOR FUTURE RELEASES (2026-08-24) — the ritual is now ONE MACHINE, and the only
+> human act is the card PIN.** The owner's code-signing certificate now lives on the release
+> machine, so `release-nuget.bat` runs pack → sign → push → record as four phases of one
+> command: Phase 0 proves every precondition (clean tree, API key, certificate reachable) before
+> anything moves, Phase 2 signs the whole set in ONE process so the card is unlocked ONCE, and
+> Phase 3 gates the irreversible push behind an explicit confirmation. The owner delegated the
+> ritual on that basis. Two facts make the delegation safe, and both are enforced in the script
+> rather than remembered: a published version can be unlisted but never deleted (hence the
+> gate), and **signing is now MANDATORY** — the certificate is registered with nuget.org, which
+> rejects any unsigned package pushed under the account. The text below records the two-machine
+> flow this supersedes; `-OfflineSigning` still executes it.
+>
+> **⚠ USER-EXECUTED IN FULL** (the superseded flow). Publishing to nuget.org is an irreversible act — a version can be
 > unlisted, never deleted — and no lane and no coordinator session runs `push-nuget.ps1 -Push`. The
 > checklist below is what the user reads while running it. Every mechanic is read out of
 > [`../../src/push-nuget.ps1`](../../src/push-nuget.ps1) at the line noted; nothing is inferred from

@@ -67,7 +67,7 @@ using static go.@internal.testenv_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("internal/testenv/exec.go", "exec.cs", "ABVCAAwCgpSCAAsSgrgACxi4uoKClIKCAAUQsoSCgoKUggAHFAAIAoKUpoKmgpSUAAsWAAoCgoSagIiApoKAgoKClMqCgIIACxiEgLjqgqLc3JSUhKKClIKoqsKC")]
 [assembly: go.GoPositionMap("internal/testenv/opt.go", "opt.cs", "AAgUkg==")]
-[assembly: go.GoPositionMap("internal/testenv/testenv.go", "testenv.cs", "AC1SwgAICqLKltyCgoKCgpSCgoKUgIKCpgAIEoKCgoKCgpSCgoKUugAGFrKCgpSCgrqkqqKCvrKUpKqiggADEMKCgoLKgpQAChKCgoLcAAwegoKCloKCgpSCloCCgqaCgoKClIKUhIKCgoKUgswAAhTygoKClIKU2JKClIKUAAcUkpSkqqKssoKClIKC6pKCgoKUgoKCgpSCgqYABhKSgryirLKCgpS+soK+soK6koKqooKCusiqooLcgoKC+IKCgILKkpSkrsKCguqSgoIAChQACAKEgoKClpSCgoKCgpaCgpSCgpSCuoCCzKKssoKU")]
+[assembly: go.GoPositionMap("internal/testenv/testenv.go", "testenv.cs", "AC1SwgAICqLKltyCgoKCgpSCgoKUgIKCpgAIEoKCgoKCgpSCgoKUugAGFrKCgpSCgrqkqqKCvrKUpKqiggADEMKCgoLKgpQAChKCgoLcAAwegoKCloKCgpSCloCCgqaCgoKClIKUhIKCgoKUgswAAhTygoKClIKU2JKClIKUAAcUkpSkqqKssoKClIKC6pKCgoKUgoKCgpSCgqYABhKSgryirLKCgpS+soK+soK6koKqooKCusiqooLcgoKC+IKCgILKkpSkrsKCguqSgoIAChQACAKEgoKClpSCgoKCgpaCgpSCgpSCuoCCzKKssoKUqqKWpqakxLg=")]
 [assembly: go.GoPositionMap("internal/testenv/testenv_notunix.go", "testenv_notunix.cs", "ABEmgg==")]
 [assembly: go.GoPositionMap("internal/testenv/testenv_windows.go", "testenv_windows.cs", "ABciooKClISCgoKUAAwKgoSUpKSm")]
 // </GoSourcePositionMaps>

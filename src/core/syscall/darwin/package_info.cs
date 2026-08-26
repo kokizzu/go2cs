@@ -58,6 +58,7 @@ using static go.syscall_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
+[assembly: GoImplicitConv<SysProcAttr, ж<SysProcAttr>>(Indirect = true)]
 [assembly: GoImplicitConv<WaitStatus, ΔSignal>(Inverted = true, ValueType = "uint32")]
 [assembly: GoImplicitConv<_C_int, WaitStatus>(Inverted = true, ValueType = "int32")]
 // </ImplicitConversions>
@@ -73,8 +74,8 @@ using static go.syscall_package;
 [assembly: go.GoPositionMap("syscall/bpf_bsd.go", "bpf_bsd.cs", "AAsgkqiSqJKCgoKUqLKCgpSokoKCgpSosoKClKiygoKUqJKCgpQABxKSgoKClKiSgoKCgpSokoKCgpSokoKClKiSgoKClKiygoKUqJKCgoKCgpSokoKCgpSClKiSgoKClKiygoKU")]
 [assembly: go.GoPositionMap("syscall/dirent.go", "dirent.cs", "AA4ikoKUgpSmgpSkpKSkyIKUpKSkpAAEEOKCgoKCgpSCgoKCuJKUgoKClIKCgoK4gpSCgpQ=")]
 [assembly: go.GoPositionMap("syscall/env_unix.go", "env_unix.cs", "ABNAtJKCgoKCgoCC3KTcooSChICCgqSC1sKCgpaChIKClIKCgqbmooKClIKCuIKCgrqChIKCgpSClIKC1qKEgoSClILWooKCgoKCgqY=")]
-[assembly: go.GoPositionMap("syscall/exec_libc2.go", "exec_libc2.cs", "ACZQopIAARoADQYADxS6goKCgpSUqIKCgoKWlIK8goCCgsqCgoK6lIKCqKaCgoKClKiCgsyWgoKCuoCCgoKClIKCgqaCgpSCgsqCgoLMgoKUgoKUlIKUgpSCgpKUgpSCgpSUgpSCuoKCgpSmgoKUuIKCAAYQgqiCgoK6goKCuoKouoSSgg==")]
-[assembly: go.GoPositionMap("syscall/exec_unix.go", "exec_unix.cs", "AEKQAdKCgpSCrLKCgoKUlIKCgoKCgpSmgKSigoKUgpSClJSCAB4wwoKCgoSClIKCqIKClIKClIKCloKWgoKCgqaCgoKCzIKUgpaWgIKCuIKCgoKClJaCgoKCpoKCgpSCuoKClKiokqjCgqiiAAkSsoKClIKClIKClISCgpaClOy2lNqC")]
+[assembly: go.GoPositionMap("syscall/exec_libc2.go", "exec_libc2.cs", "ACZQopIAARoADQYADxS6goKCgpSUqIKCgoKWlIK8goCCgsqCgoK6lIKCqKaCgoKClKiCgsyWgoKCuoCCgoKClIKCgqaCgpSCgsqCgoLMgoKUgoKUlIKUgpSCgpKUgpSCgpSUgpSCuoKCgpSmgoKUuIKCAAYQgqiCgoK6goKCuoKouoSSgro=")]
+[assembly: go.GoPositionMap("syscall/exec_unix.go", "exec_unix.cs", "AEKQAdKCgpSCrLKCgoKUlIKCgoKCgpSmgKSigoKUgpSClJSCAB4wwoKCgoSClIKCqIKClIKClIKCloKWgoKCgqaCgoKCzIKUgpaWgIKCuIKCgoKClJaCgoKCpoKCgpSCuoKCqISoqJKowoKoogAJErKCgpSCgpSCgpSEgoKWgpTstpTagg==")]
 [assembly: go.GoPositionMap("syscall/flock_bsd.go", "flock_bsd.cs", "AAoYkoI=")]
 [assembly: go.GoPositionMap("syscall/forkpipe.go", "forkpipe.cs", "AAgWooKClIKClIKmgqaC")]
 [assembly: go.GoPositionMap("syscall/rlimit.go", "rlimit.cs", "AA88AA4CgoCCgpKCgsiCppQ=")]

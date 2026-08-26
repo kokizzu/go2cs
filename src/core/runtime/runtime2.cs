@@ -424,6 +424,8 @@ internal static readonly UntypedInt freeMWait = 2; // M still in use.
     internal puintptr nextp;
     internal puintptr oldp; // the p that was attached before executing a syscall
     internal int64 id;
+    internal bool g0StackAccurate; // whether the g0 stack has accurate bounds
+    internal slice<ж<Δp>> allpSnapshot; // Snapshot of allp for use after dropping P in findRunnable, nil otherwise.
     internal int32 mallocing;
     internal throwType throwing;
     internal @string preemptoff; // if != "", keep curg running on this m
@@ -893,6 +895,7 @@ internal static readonly waitReason waitReasonTraceGoroutineStatus = 33; // "tra
 internal static readonly waitReason waitReasonTraceProcStatus = 34;      // "trace proc status"
 internal static readonly waitReason waitReasonPageTraceFlush = 35;       // "page trace flush"
 internal static readonly waitReason waitReasonCoroutine = 36;            // "coroutine"
+internal static readonly waitReason waitReasonGCWeakToStrongWait = 37;   // "GC weak to strong wait"
 
 internal static array<@string> waitReasonStrings = new golib.SparseArray<@string>{
     [waitReasonZero] = ""u8,
@@ -931,7 +934,8 @@ internal static array<@string> waitReasonStrings = new golib.SparseArray<@string
     [waitReasonTraceGoroutineStatus] = "trace goroutine status"u8,
     [waitReasonTraceProcStatus] = "trace proc status"u8,
     [waitReasonPageTraceFlush] = "page trace flush"u8,
-    [waitReasonCoroutine] = "coroutine"u8
+    [waitReasonCoroutine] = "coroutine"u8,
+    [waitReasonGCWeakToStrongWait] = "GC weak to strong wait"u8
 }.array();
 
 internal static @string String(this waitReason w) {
@@ -945,17 +949,17 @@ internal static bool isMutexWait(this waitReason w) {
     return w == waitReasonSyncMutexLock || w == waitReasonSyncRWMutexRLock || w == waitReasonSyncRWMutexLock;
 }
 
-internal static bool isWaitingForGC(this waitReason w) {
-    return ΔisWaitingForGC[w];
+internal static bool isWaitingForSuspendG(this waitReason w) {
+    return ΔisWaitingForSuspendG[w];
 }
 
-// isWaitingForGC indicates that a goroutine is only entering _Gwaiting and
-// setting a waitReason because it needs to be able to let the GC take ownership
-// of its stack. The G is always actually executing on the system stack, in
-// these cases.
+// isWaitingForSuspendG indicates that a goroutine is only entering _Gwaiting and
+// setting a waitReason because it needs to be able to let the suspendG
+// (used by the GC and the execution tracer) take ownership of its stack.
+// The G is always actually executing on the system stack in these cases.
 //
 // TODO(mknyszek): Consider replacing this with a new dedicated G status.
-internal static array<bool> ΔisWaitingForGC = new golib.SparseArray<bool>{
+internal static array<bool> ΔisWaitingForSuspendG = new golib.SparseArray<bool>{
     [waitReasonStoppingTheWorld] = true,
     [waitReasonGCMarkTermination] = true,
     [waitReasonGarbageCollection] = true,
