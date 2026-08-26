@@ -29,7 +29,29 @@ const RequiresUnsafeMarker = "GoRequiresUnsafe"     // [module: go.GoRequiresUns
 // characters, combining characters, or formatting characters. Some character variants will
 // be better suited to different fonts or display environments. Defaults have been chosen
 // based on better appearance with common Visual Studio code fonts, e.g., "Cascadia Mono".
-const PointerPrefix = "\u0436"                   // Variants: ж Ж ǂ
+const PointerPrefix = "\u0436" // Variants: ж Ж ǂ
+
+// BoxConstructPrefix is the spelling of the STANDARD-KIND box class at CONSTRUCTION
+// positions - the B1 role split (docs/phase4/DESIGN-zh-box-b1.md §6, OQ-1): a DECLARED
+// pointer type renders PointerPrefix (the polymorphic base under the per-kind split) and
+// never changes; a CONSTRUCTED box must name the concrete standard-kind class once the base
+// goes abstract. Equal to PointerPrefix until B2-I3 flips it, so introducing the role is
+// byte-inert (CNR-proven at B2-I2).
+//
+// The 67-site audit this constant closes (B2-I2): every other PointerPrefix use in the
+// converter is a DECLARED type render (convStarExpr, iifeOperations,
+// constraintOperations:1053, typeNameResolution:1474, visitFuncDecl, and the heap()
+// out-parameter declarations - the out var's type remains the base; golib's heap mints the
+// concrete kind internally), an ADAPTER-NAME component (adapterNameCollisions,
+// interfaceConversion, constraintOperations:1408 - the glyph inside adapter class names, a
+// naming convention, not a box type), a string PARSE (the CutPrefix/HasPrefix family -
+// declared types keep their spelling, so parsers are unchanged), or the
+// identifier-sanitization list. The ONE construction-position emitter is
+// globalAddressOperations.go's package-level `= new(...)` (target-typed today, so nothing
+// renders here yet); the corpus's other explicit-new occurrences are 304 array-ELEMENT-type
+// positions (declared role, unchanged forever) and ~40 golib/hand-own/generator
+// constructions edited by hand at I3.
+const BoxConstructPrefix = PointerPrefix
 const AddressPrefix = "\u13D1"                   // Variants: Ꮡ ꝸ
 const ShadowVarMarker = "\u0394"                 // Variants: Δ Ʌ ꞥ
 const TypeAliasDot = "\uA4F8"                    // Variants: ꓸ
