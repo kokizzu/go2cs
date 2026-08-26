@@ -50,6 +50,82 @@ public class OnceForeignExceptionTests
             $"a later panic reported '{later.Message}' — state leaked from the once guard's unwind.");
     }
 
+    // --- the REPLAY half (JOB-024, 2026-08-26) -------------------------------------------------
+    //
+    // The frame-level correction above fixed the FIRST unwind: the original exception leaves
+    // Once.Do with its identity intact. But Go's OnceX contract replays the panic VALUE on every
+    // LATER call — `if !valid { panic(p) }` in the returned closure — and during a foreign unwind
+    // recover() stored nil into p, so every later caller gets `panic: nil` with no trace of the
+    // original. That is exactly what JOB-024 measured killing the os/exec host: 1.23.12's
+    // TestConcurrentExec fans callers out on goroutines, ONE gets the preserved original, every
+    // other goroutine gets the nil replay, and a goroutine panic is process-fatal. These guards
+    // pin the replay: later calls must surface the SAME foreign exception, identity intact.
+
+    [TestMethod]
+    public void OnceValueForeignExceptionReplaysWithItsIdentityOnLaterCalls()
+    {
+        var probe = sync.OnceValue<int>(() => throw new NotImplementedException("replay-marker"));
+
+        Capture(() => probe());                     // first call: consumed by the frame correction
+        Exception? second = Capture(() => probe()); // the replay path — oncefunc.cs's `panic(p)`
+
+        Assert.IsNotNull(second, "the replay vanished entirely");
+        Assert.IsTrue(
+            second is NotImplementedException || second.ToString().Contains("replay-marker"),
+            $"the SECOND call surfaced '{second.GetType().Name}: {second.Message}' — the foreign " +
+            "exception's identity was masked on replay (the panic-nil shape that killed os/exec's " +
+            "TestConcurrentExec goroutines).");
+    }
+
+    [TestMethod]
+    public void OnceFuncForeignExceptionReplaysWithItsIdentityOnLaterCalls()
+    {
+        var probe = sync.OnceFunc(() => throw new NotImplementedException("replay-marker-fn"));
+
+        Capture(() => probe());
+        Exception? second = Capture(() => probe());
+
+        Assert.IsNotNull(second, "the replay vanished entirely");
+        Assert.IsTrue(
+            second is NotImplementedException || second.ToString().Contains("replay-marker-fn"),
+            $"OnceFunc's SECOND call surfaced '{second.GetType().Name}: {second.Message}' — " +
+            "identity masked on replay.");
+    }
+
+    [TestMethod]
+    public void OnceValuesForeignExceptionReplaysWithItsIdentityOnLaterCalls()
+    {
+        var probe = sync.OnceValues<int, int>(() => throw new NotImplementedException("replay-marker-2"));
+
+        Capture(() => probe());
+        Exception? second = Capture(() => probe());
+
+        Assert.IsNotNull(second, "the replay vanished entirely");
+        Assert.IsTrue(
+            second is NotImplementedException || second.ToString().Contains("replay-marker-2"),
+            $"OnceValues' SECOND call surfaced '{second.GetType().Name}: {second.Message}' — " +
+            "identity masked on replay.");
+    }
+
+    [TestMethod]
+    public void OnceValueGoPanicStillReplaysItsValueOnEveryCall()
+    {
+        // The CONTROL: Go's own contract — "If f panics, the returned function will panic with
+        // the same value on every call" — must hold unchanged for a REAL Go panic. Green before
+        // and after the replay fix; a fix that breaks this has overreached.
+        var probe = sync.OnceValue<int>(() => throw go.builtin.panic("go-panic-value"));
+
+        Exception? first = Capture(() => probe());
+        Exception? second = Capture(() => probe());
+
+        Assert.IsNotNull(first);
+        Assert.IsNotNull(second);
+        Assert.IsTrue(first.Message.Contains("go-panic-value"),
+            $"first call lost the Go panic value: '{first.Message}'");
+        Assert.IsTrue(second.Message.Contains("go-panic-value"),
+            $"replay lost the Go panic value: '{second.Message}'");
+    }
+
     private static Exception? Capture(Action action)
     {
         try
