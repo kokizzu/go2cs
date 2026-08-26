@@ -239,3 +239,68 @@ lane measures, not this paragraph.
 *Prepared by lane G (`claude/design-linux-exec`), 2026-08-22, against master `786f9b225` +
 R's `184308a04` merge signal. For ratification: the §3 shape, the §6 recommendations (OQ-6
 sequenced first), and the OQ-3 posture change.*
+
+---
+
+## 8. AMENDMENT (2026-08-26, lane R) — the bill re-measured at `59af260e0` by JOB-024: 21 rows, three walls-behind-the-wall gone, the ratified shape unchanged
+
+JOB-024 re-swept the full 175-row roster on Linux at current master (go1.23.12, .NET 10; per-row
+logs + retained comparison JSONs; mailbox final shard + addendum, board fold `7bc998da1`). Nothing
+below reopens a ruling — every §6 recommendation survives contact with the new data, two of them
+(OQ-6, §3.5) now carry measured proof of their sequencing. What changes is the BILL and the YIELD.
+
+**8.1 The bill: 18 rows → 21.** Three additions, each landing in an existing reaching path:
+
+- Path 1 (self-re-exec): **`flag`** (`TestExitCode` → `checkClonePidfd`
+  NotImplementedException — dies on the pidfd PROBE, before any spawn; §3.5's "ensurePidfd
+  reports unsupported, one honest probe result" is exactly the fix, and this row proves the probe
+  must be the FIRST honest answer, not a consequence of the spawn landing). **`os/exec`'s
+  1.23.12 suite adds `TestConcurrentExec`**, which turns the wall PROCESS-FATAL: the pidfd throw
+  surfaces inside a test-started goroutine, the converted `sync.OnceValue` re-panics it as
+  `panic: nil` (`oncefunc.cs:73`), and an unrecovered goroutine panic correctly kills the host —
+  1 of 88 verdicts survive, and the results stream is left unfinalized. This is §1's honesty
+  defect delivering a measured crater: **OQ-6's ratified land-FIRST sequencing is load-bearing,
+  not hygiene.**
+- Path 2 (go-build/testenv): **`internal/platform`** (row 173, `TestGenerated` — a whole
+  toolchain round trip), and **`crypto/tls`** is now measurable past the fallen R5 wall: its
+  residual is `TestLinkerGC` ×4 and `TestBogoSuite` (the harness builds the bogo shim via the Go
+  toolchain) — plus `TestCertCache`, which is NOT new surface: it fails with the committed
+  codegen-liveness disclosure signature VERBATIM (`timed out waiting for expected ref count`) and
+  will disclose once the host survives to finalize its stream. tls contributes ZERO genuinely new
+  failing tests to this design's scope.
+- Path 3 (go list): unchanged in membership. `go/internal/gcimporter`'s agree-count shift
+  (281 → 15) is a GO-BASELINE effect — census-era agreements were both-sides-failing before
+  build-essential (JOB-005); the Go side now passes those tests and the same C# failures read as
+  divergences. The C# side is unchanged; do not price it as a widened wall.
+
+**8.2 The walls-behind-the-wall (§7's caveat list) shrank by three.** Measured at `59af260e0`:
+**R5 is GONE** (encoding/json full 491, `TestHTTPDecoding` pass/pass; the whole net/* sub-family
+passes; tls runs to 396 agree), **R3 is GONE** (debug/elf 31/31 — the Linux apphost is a genuine
+ELF), **W1b is GONE** (bytes ×4 page-boundary + sha1 `TestOutOfBoundsRead` pass/pass). What still
+stands behind R2 rows: **R6** (`time.TestEnvVarUsage`, 1 test — proven the row's ONLY divergence
+by a 90m re-run, 166/167), the per-OS count/roster mechanics (routed to the coordinator's design
+note), and W6/W7 (ruled elsewhere). §7's honest-expectation paragraph therefore prices UP: of the
+21 rows, **17 carry R2 as their only correctness residual** — sync (`TestMutexMisuse` alone, 7
+disclosures firing), text/template (`TestLinkerGC` alone), crypto ×3 (one test each), the go/*
+family, flag, internal/* ×5, math/rand, debug/* — and the remaining 4 (os/exec, tls, time,
+debug/gosym) are R2 + exactly one named non-R2 item each (the OnceValue fatality's bookkeeping,
+the CertCache disclosure, R6, and `TestSymVersion` go=pass/cs=skip respectively).
+
+**8.3 One implementation-lane note for OQ-7's ladder:** the measurement plan should count a row's
+results stream being FINALIZED as part of the yield — tonight's two abnormal-end rows (os/exec,
+tls) show the disclosure pass degrading exactly when the host dies mid-suite, so "the disclosures
+fire" is itself evidence the wall fell. And `runtime/debug`'s `TestPanicOnFault` fatal
+`AccessViolationException` is explicitly NOT this design's scope (no exec involved — the Linux CLR
+cannot recover hardware faults); it is routed to the per-OS mechanics note as a
+`platform-skip`/host-limit candidate so this seam's boundary stays clean.
+
+**8.4 OQ-3's posture datum:** JOB-024 ran as root (the standing WSL posture); the non-root
+recommendation stands un-exercised and nothing in tonight's data weakens it. One floor datum for
+the harness rider: `time` needs ~48 min wall on laptop-class Linux against the script's 40m floor
+(the 90m re-run completed in 2,890 s and collapsed the row to R6-only) — the floor table is
+Windows-shaped for this row, which is per-OS-mechanics territory, named here only because OQ-7's
+re-sweep will hit it.
+
+*Amended by lane R (`claude/laneR-r2-design-amendment`) from the JOB-024 ledger, 2026-08-26,
+against master `782bb1c99`. The §3 shape, §6 rulings and OQ-6-first sequencing are unchanged and
+re-affirmed by measurement.*
