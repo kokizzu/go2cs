@@ -99,7 +99,7 @@ silently report a benchmark that computes something different in C#.
 
 <!-- PERF-RESULTS:BEGIN -->
 
-**Environment:** AMD Ryzen 5 PRO 6650U with Radeon Graphics · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-08-24
+**Environment:** AMD Ryzen 5 PRO 6650U with Radeon Graphics · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 10.0.400 · 2026-08-25
 
 C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true` self-contained, partial trim. Median of 5 runs (1 discarded warmup). Workload time is measured in-program and excludes process startup; the Startup row is pure process wall time. Ratios are relative to Go.
 
@@ -107,39 +107,39 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 25.8 | 245.3 (9.52×) | 79.2 (3.07×) |
-| Fib | 119.8 | 180.3 (1.51×) | 175.3 (1.46×) |
-| Sieve | 71.7 | 128.3 (1.79×) | 265.4 (3.70×) |
-| MatMul | 105.6 | 209.3 (1.98×) | 598.5 (5.67×) |
-| String | 104.6 | 1,208.3 (11.56×) | 1,600.3 (15.31×) |
-| StringView | 19.5 | 21.7 (1.12×) | 18.9 (0.97×) |
-| StringMatch | 198.6 | 992.8 (5.00×) | 1,279.8 (6.44×) |
-| Map | 630.5 | 546.4 (0.87×) | 230.7 (0.37×) |
-| Sort | 135.0 | 461.4 (3.42×) | 497.8 (3.69×) |
-| Channel | 46.6 | 96.0 (2.06×) | 130.9 (2.81×) |
-| IfaceCall | 181.8 | 395.8 (2.18×) | 427.2 (2.35×) |
-| Iface | 96.5 | 538.7 (5.58×) | 462.7 (4.80×) |
-| IfaceShell | 21.3 | 871.9 (40.90×) | 1,319.0 (61.87×) |
-| RefLower | 239.1 | 624.7 (2.61×) | 1,890.7 (7.91×) |
+| Startup | 22.9 | 279.4 (12.20×) | 36.7 (1.60×) |
+| Fib | 120.4 | 163.7 (1.36×) | 178.0 (1.48×) |
+| Sieve | 68.5 | 126.1 (1.84×) | 242.4 (3.54×) |
+| MatMul | 107.3 | 216.3 (2.02×) | 594.9 (5.55×) |
+| String | 103.6 | 701.7 (6.78×) | 1,272.5 (12.29×) |
+| StringView | 19.3 | 19.5 (1.01×) | 22.0 (1.14×) |
+| StringMatch | 199.2 | 935.7 (4.70×) | 1,156.7 (5.81×) |
+| Map | 631.2 | 422.3 (0.67×) | 248.8 (0.39×) |
+| Sort | 141.3 | 405.9 (2.87×) | 473.5 (3.35×) |
+| Channel | 39.4 | 92.2 (2.34×) | 113.3 (2.87×) |
+| IfaceCall | 182.2 | 398.1 (2.19×) | 439.2 (2.41×) |
+| Iface | 94.8 | 557.4 (5.88×) | 476.8 (5.03×) |
+| IfaceShell | 21.7 | 757.0 (34.88×) | 1,255.2 (57.84×) |
+| RefLower | 234.4 | 643.8 (2.75×) | 1,852.3 (7.90×) |
 
 **Peak memory** (working set, MB -- lower is better):
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 2.5 | 46.1 | 76.9 |
-| Fib | 5.3 | 46.1 | 75.8 |
-| Sieve | 25.9 | 65.6 | 96.6 |
-| MatMul | 10.6 | 53.4 | 83.4 |
-| String | 5.2 | 55.8 | 85.7 |
-| StringView | 5.3 | 46.8 | 77.1 |
-| StringMatch | 5.3 | 56.1 | 87.0 |
-| Map | 157.9 | 165.8 | 187.1 |
-| Sort | 21.4 | 62.4 | 92.2 |
-| Channel | 5.3 | 52.0 | 84.3 |
-| IfaceCall | 5.3 | 46.3 | 77.4 |
-| Iface | 5.3 | 46.6 | 77.4 |
-| IfaceShell | 5.3 | 66.6 | 96.3 |
-| RefLower | 5.3 | 46.9 | 77.1 |
+| Startup | 4.3 | 47.4 | 12.5 |
+| Fib | 5.7 | 48.5 | 14.1 |
+| Sieve | 26.4 | 67.3 | 33.8 |
+| MatMul | 11.0 | 54.4 | 20.4 |
+| String | 5.7 | 57.2 | 23.0 |
+| StringView | 5.7 | 48.7 | 14.1 |
+| StringMatch | 5.7 | 57.2 | 22.9 |
+| Map | 158.8 | 164.2 | 130.4 |
+| Sort | 21.9 | 64.7 | 29.4 |
+| Channel | 5.7 | 53.4 | 19.3 |
+| IfaceCall | 5.7 | 48.0 | 14.1 |
+| Iface | 5.7 | 48.4 | 14.4 |
+| IfaceShell | 5.7 | 68.4 | 35.7 |
+| RefLower | 5.8 | 48.3 | 15.3 |
 
 <!-- PERF-RESULTS:END -->
 
@@ -212,6 +212,122 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
   trails the JIT here by a wide margin (~8×) — ILC's codegen of the ref-lowered loop is a priced
   open question for the arc's next phase
   ([DESIGN-zh-box-reduction.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DESIGN-zh-box-reduction.md)).
+
+### What the AOT column costs to produce — the honesty footnote
+
+The table above shows what a Native AOT binary does at **run time**. It does not show what that
+binary costs to **build**, and the cost is large enough that omitting it would mislead:
+
+- **Build time.** Each benchmark is its own self-contained publish, and ILC compiles the **entire
+  converted-stdlib closure** (~three hundred packages) into it, largely single-threaded (~1.1–1.3
+  effective cores regardless of machine). Measured at the .NET 10 hop: **hours per publish** on
+  laptop-class hardware — roughly an order of magnitude over the .NET 9 era on identical input —
+  so a full 14-row AOT re-baseline is days serial, overnight when publishes run concurrently on a
+  high-memory box (measured figures and the run series:
+  [DATA-hopN-perf.md](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/DATA-hopN-perf.md)).
+- **Build memory.** A publish peaks at roughly **15–18 GB working set** (re-measure at each hop —
+  the floor moves with the corpus). A 16 GB machine swaps; concurrent publishes need that much
+  *per lane*. The produced images are ~300 MB self-contained, sized by the closure rather than the
+  benchmark — while the same binaries **run** in tens of megabytes.
+- **Why it is this way.** ILC is a **whole-program** compiler: reachability, the generic
+  instantiation closure, cross-assembly inlining and tree-shaking are all computed per-application
+  from that application's roots. Nothing is reusable between applications and there is no
+  incremental mode — which is also precisely what pays for the AOT column's wins (the dead-code-free
+  images and the runtime working-set reductions the memory row shows). The compile cost and the
+  lean output are two ends of one design choice, so quoting the wins without the costs would be
+  quoting half the trade.
+- **Contrast, and a future direction.** Go's toolchain compiles packages **separately into
+  reusable, cached per-package objects** and links quickly, so its equivalent of this table's
+  whole column rebuilds in seconds — the model a future ILC-side improvement would want (a
+  persistent compilation cache, or per-assembly pre-optimized inputs; ReadyToRun is today's
+  cacheable cousin, at materially weaker optimization). Until something like that exists, the
+  working mitigation here is a **compile farm**: publishes parallelized across a high-memory
+  machine, binaries adopted onto the measuring host only after measurement-identity is proven —
+  hashes cannot certify AOT builds, which are size-deterministic but not byte-deterministic
+  (fresh module IDs each rebuild).
+
+## History
+
+Prior toolchain tables live here so cross-toolchain comparisons stay honest: same benchmarks, same
+harness, same methodology, same host — only the toolchain moved.
+
+### Compile provenance of the current (.NET 10) table
+
+The Native AOT column above is **mixed-provenance**, deliberately and under a measured licence. A
+single Native AOT publish of this corpus costs ~3.3 h on the measurement host, so the fourteen-cell
+AOT ladder was completed by publishing eight of the binaries on a second fleet machine and adopting
+them here, each SHA-256-verified on receipt:
+
+| provenance | rows |
+|:--|:--|
+| **canon** — published on the measurement host itself | Startup, Fib, Sieve, MatMul, String, RefLower |
+| **farm-adopted** — published on the fleet's i9-13900K, hash-verified, then measured here | StringView, StringMatch, Map, Sort, Channel, IfaceCall, Iface, IfaceShell |
+
+Every row, whatever its provenance, was **measured on the canon host only**, and every adopted
+binary passed the suite's own Verify phase (output-identical to Go) before it was timed. The
+adoption is licensed by a direct A/B rather than by assumption: one benchmark published on both
+machines measured **0.25 %** apart, against a **1.19 %** empirical null established by two
+known-equivalent binaries from the same host — that is, the cross-machine difference is smaller
+than the host's own run-to-run spread. Raw data, including all four binary hashes:
+[`docs/phase4/evidence-aot-farm-ab-session.md`](https://github.com/ritchiecarroll/go2cs/blob/master/docs/phase4/evidence-aot-farm-ab-session.md).
+
+### .NET 9 (SDK 9.0.316) — 2026-08-24
+
+**Environment:** AMD Ryzen 5 PRO 6650U with Radeon Graphics · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-08-24
+
+**Execution time** (milliseconds -- lower is better):
+
+| Benchmark | Go | C# (JIT) | C# (Native AOT) |
+|---|---:|---:|---:|
+| Startup | 25.8 | 245.3 (9.52×) | 79.2 (3.07×) |
+| Fib | 119.8 | 180.3 (1.51×) | 175.3 (1.46×) |
+| Sieve | 71.7 | 128.3 (1.79×) | 265.4 (3.70×) |
+| MatMul | 105.6 | 209.3 (1.98×) | 598.5 (5.67×) |
+| String | 104.6 | 1,208.3 (11.56×) | 1,600.3 (15.31×) |
+| StringView | 19.5 | 21.7 (1.12×) | 18.9 (0.97×) |
+| StringMatch | 198.6 | 992.8 (5.00×) | 1,279.8 (6.44×) |
+| Map | 630.5 | 546.4 (0.87×) | 230.7 (0.37×) |
+| Sort | 135.0 | 461.4 (3.42×) | 497.8 (3.69×) |
+| Channel | 46.6 | 96.0 (2.06×) | 130.9 (2.81×) |
+| IfaceCall | 181.8 | 395.8 (2.18×) | 427.2 (2.35×) |
+| Iface | 96.5 | 538.7 (5.58×) | 462.7 (4.80×) |
+| IfaceShell | 21.3 | 871.9 (40.90×) | 1,319.0 (61.87×) |
+| RefLower | 239.1 | 624.7 (2.61×) | 1,890.7 (7.91×) |
+
+**Peak memory** (working set, MB -- lower is better):
+
+| Benchmark | Go | C# (JIT) | C# (Native AOT) |
+|---|---:|---:|---:|
+| Startup | 2.5 | 46.1 | 76.9 |
+| Fib | 5.3 | 46.1 | 75.8 |
+| Sieve | 25.9 | 65.6 | 96.6 |
+| MatMul | 10.6 | 53.4 | 83.4 |
+| String | 5.2 | 55.8 | 85.7 |
+| StringView | 5.3 | 46.8 | 77.1 |
+| StringMatch | 5.3 | 56.1 | 87.0 |
+| Map | 157.9 | 165.8 | 187.1 |
+| Sort | 21.4 | 62.4 | 92.2 |
+| Channel | 5.3 | 52.0 | 84.3 |
+| IfaceCall | 5.3 | 46.3 | 77.4 |
+| Iface | 5.3 | 46.6 | 77.4 |
+| IfaceShell | 5.3 | 66.6 | 96.3 |
+| RefLower | 5.3 | 46.9 | 77.1 |
+
+**What the .NET 10 hop changed.** Two results dominate, and they are why this table is kept:
+
+- **The Native AOT working-set penalty inverted, and did so universally.** Under .NET 9, AOT's peak
+  working set was *higher than the JIT's on all fourteen rows* (Startup 76.9 MB vs 46.1). Under
+  .NET 10 it is *lower on all fourteen* (Startup 12.5 vs 47.4; Fib 14.1 vs 48.5; IfaceShell 35.7
+  vs 68.4). The self-contained floor that made Native AOT the memory-expensive choice is gone.
+  Both C# variants still sit well above Go, which holds 4–6 MB on most rows.
+- **AOT startup more than halved** — 79.2 ms to 36.7 ms, 3.07× to 1.60× Go — while **JIT startup
+  regressed ~14 %** (245.3 to 279.4 ms). The two variants moving in opposite directions on the same
+  benchmark is what identifies that regression as runtime-load-side rather than
+  converted-closure-side: the closure is identical in both.
+
+Elsewhere the hop is mostly favourable and often within the noise band. The largest single JIT gain
+is String (11.56× to 6.78× Go), with StringMatch (5.00× to 4.70×) and IfaceShell (40.90× to 34.88×)
+following it down; the AOT column's time cells are broadly flat outside Startup.
 
 ## Performance-floor exploration
 
