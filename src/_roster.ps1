@@ -29,7 +29,13 @@
                    columns ARE the Windows expectation, and a row claiming otherwise is a
                    contradiction the parser refuses rather than silently prefers one half of.
 
-    Nothing here has side effects; it defines three functions and returns.
+    The same document also carries the EXCLUSION LEDGER (the "Excluded packages" table), read by
+    Get-ExclusionLedgerRows. A ledger row's first cell is a PLAIN code span on purpose -- the
+    roster row's linked [`pkg`](url) shape is what $RosterRowPattern anchors on, so the two tables
+    in one document can never be confused by either parser; the document's own HTML comment
+    beneath the ledger states the same rule from the other side.
+
+    Nothing here has side effects; it defines four functions and returns.
 
 .NOTES
     Requires PowerShell 5.1 (Windows) or PowerShell 7+ (any platform).
@@ -60,6 +66,16 @@ $RosterOsPattern =
     [regex]::Escape($RosterSegmentSeparator) +
     '\s*([a-z][a-z0-9]*)\s*:\s*(\d+)\s*(?:\+\s*(\d+)\s*)?(?=' +
     [regex]::Escape($RosterSegmentSeparator) + '|\||$)'
+
+# One row of the exclusion ledger (the "Excluded packages" table in the same document). Its first
+# cell is a PLAIN code span, never the roster row's linked [`pkg`](url) shape -- that difference is
+# what keeps the two tables apart. Row shape:
+#   | `os/user` | <verdicts> | E2 | Mechanism prose. | [ruling][exclusion-ruling] |
+$ExclusionLedgerRowPattern = '^\|\s*`([^`]+)`\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|'
+
+# The ruled exclusion classes (owner ruling 2026-08-25): E1 no eligible tests on the target
+# platform, E2 broken oracle, E3 the test's subject is the replaced representation.
+$ExclusionLedgerClasses = @('E1', 'E2', 'E3')
 
 <#
 .SYNOPSIS
@@ -152,6 +168,36 @@ function Get-ValidatedRosterRows {
             Disclosed   = $rowDisclosed
             Conditional = $rowConditional
             OS          = $rowOs
+        })
+    }
+
+    return $rows.ToArray()
+}
+
+<#
+.SYNOPSIS
+    Parses the exclusion-ledger table ("Excluded packages") into row objects.
+.OUTPUTS
+    One PSCustomObject per row: Package, Verdicts (the raw cell text -- a naive count where one
+    exists, an em dash where no baseline exists to count against), Class.
+#>
+function Get-ExclusionLedgerRows {
+    param([Parameter(Mandatory)][string] $Path)
+
+    if (-not (Test-Path $Path)) { throw "Cannot find the validated-package table at $Path" }
+
+    # ReadAllLines for the same encoding reason Get-ValidatedRosterRows states.
+    $lines = [System.IO.File]::ReadAllLines($Path)
+
+    $rows = New-Object System.Collections.Generic.List[object]
+
+    foreach ($line in $lines) {
+        if ($line -notmatch $ExclusionLedgerRowPattern) { continue }
+
+        [void]$rows.Add([PSCustomObject]@{
+            Package  = $Matches[1]
+            Verdicts = $Matches[2]
+            Class    = $Matches[3]
         })
     }
 
