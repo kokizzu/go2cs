@@ -102,13 +102,33 @@ internal class InterfaceImplTemplate : TemplateBase
             if (twins.Length == 0)
                 return "";
 
-            // Named for the pair so two generated files can never collide; generic arity and
-            // keyword escapes cannot appear in a class name, so they are stripped — the name only
-            // has to be unique and legal, never resolvable back to anything.
+            // Named for the OWNING PACKAGE plus the pair, so two generated files can never collide;
+            // generic arity and keyword escapes cannot appear in a class name, so they are stripped —
+            // the name only has to be unique and legal, never resolvable back to anything.
+            //
+            // The package half is what makes "can never collide" true rather than merely intended.
+            // This class lands at NAMESPACE scope (see TemplateFooter — a sibling class, deliberately
+            // outside the package class), while the pair it is named for is scoped to a package CLASS,
+            // and one namespace holds several of those. A `-tests` conversion is where that bites: Go's
+            // internal (`package http`) and external (`package http_test`) test variants are DISTINCT
+            // packages that may each declare a type of the same name, and they emit correctly into
+            // distinct classes — net/http declares `dumpConn` in both `requestwrite_test.go` and
+            // `transport_test.go`. Each promotes io.Reader and io.Writer, so the pair name alone
+            // produced `dumpConnᴛReaderᴛpromoted` and `dumpConnᴛWriterᴛpromoted` twice in namespace
+            // `go.net` — CS0101 ×2, the last wall in front of net/http's test suite. Nothing about the
+            // type model is wrong there; only this cargo name was under-qualified.
+            //
+            // Qualifying UNCONDITIONALLY rather than on a measured collision, which is the opposite of
+            // the collision-conditional rule the pointer-ADAPTER names follow: an adapter name appears
+            // at thousands of construction sites, so renaming it has real blast radius, whereas no
+            // source-level call ever binds a twin (the struct MEMBER always wins) and the method-set
+            // registry discovers these by scanning every non-nested static class, never by name. The
+            // rename is therefore invisible everywhere except in this declaration.
+            string packagePart = PackageName.Replace("@", "");
             string structPart = StructName.Split('<')[0].Replace("@", "");
             string interfacePart = GetSimpleName(InterfaceName).Replace("@", "");
 
-            return $"\r\n\r\ninternal static class {structPart}{TempVarMarker}{interfacePart}{TempVarMarker}promoted\r\n{{{twins}\r\n}}";
+            return $"\r\n\r\ninternal static class {packagePart}{TempVarMarker}{structPart}{TempVarMarker}{interfacePart}{TempVarMarker}promoted\r\n{{{twins}\r\n}}";
         }
     }
 

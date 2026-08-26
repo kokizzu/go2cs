@@ -257,6 +257,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckConstrainedSliceParamInPlace() => CheckTarget("ConstrainedSliceParamInPlace");
 
     [TestMethod]
+    public void CheckConstraintProxyEmbeddedInterface() => CheckTarget("ConstraintProxyEmbeddedInterface");
+
+    [TestMethod]
     public void CheckConstShadowsParam() => CheckTarget("ConstShadowsParam");
 
     [TestMethod]

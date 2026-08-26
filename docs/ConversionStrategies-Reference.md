@@ -7861,10 +7861,52 @@ Four coordinated pieces make it convert **and dispatch**:
    such an initializer as a lambda, `newPoint: () => nistec.NewP224Point()`, whose *return* position
    does apply the conversion.
 
+5. **The proxy forwards the WHOLE method set, embedded interfaces included.** A Go constraint
+   interface may embed others, and Go embedding emits as C# interface inheritance — so the members a
+   proxy must forward are not the ones the constraint DECLARES but the ones its method set CONTAINS.
+   The emitter walked `GetMembers()` only, which is the declared half, and any member reached through
+   an embed was simply absent: the proxy did not implement its own interface (CS0535, one per
+   inherited member). It surfaced at full size in `net/http`, whose `clientserver_test.go` declares
+
+   ```go
+   type TBRun[T any] interface {
+       testing.TB
+       Run(string, func(T)) bool
+   }
+   ```
+
+   giving proxies for `*testing.T` and `*testing.B` that forwarded `Run` and were each missing all 18
+   members of the embedded `testing.TB` — 36 diagnostics, and the last wall but one in front of a
+   1,352-verdict suite. `AllInterfaces` is already transitive, so a two-level embed needs no recursion
+   of the emitter's own.
+
+   Each member is qualified by **its own declaring interface**, not by the constraint: C# explicit
+   interface implementation must name the interface that declares the member, so `void Derived.M()` is
+   CS0539 when `M` comes from `Base`. A generic embed is closed over the proxy exactly as the
+   constraint itself is (`Bar<T>` embedded in `Foo<T>` forwards as `Bar<proxy>.M`), reusing the same
+   `RenderWithProxy` substitution. The constraint's OWN members are emitted first in declaration order,
+   so a proxy that embeds nothing is byte-identical to what the emitter always produced; the embedded
+   sets follow, ordered by rendered reference so the emission does not depend on the order
+   `AllInterfaces` happens to report. This also brings the constraint-proxy path into line with the
+   interface-ADAPTER path beside it, which had walked base interfaces from the start.
+
 (Guarded by `GenericPointerInterfaceImpl` — a self-referential `curve[Point point[Point]]` implementing
 `Curve` via pointer receiver, instantiated two ways, with a `newPoint func() Point` field and a
-`(T, error)`-returning constraint method, values vs Go. Embedding the constrained generic and greening
-the whole crypto-curve family is the next subsection.)
+`(T, error)`-returning constraint method, values vs Go — and by `ConstraintProxyEmbeddedInterface` for
+the method-set walk: a constraint embedding `Middle` embedding `Base`, so one member arrives one level
+deep and another two, recorded from two instantiation sites to exercise the per-pair de-duplication,
+output-compared vs `go run`. Reverting the walk reproduces CS0535 on `Middle.Size()` and `Base.Name()`
+— both levels. Embedding the constrained generic and greening the whole crypto-curve family is the
+next subsection.)
+
+⚠ One adjacent surface is deliberately NOT addressed and is worth naming, since a reader meeting it
+will otherwise read it as this defect: a `T` RETURNED out of a constrained generic into concrete code
+arrives as the proxy TYPE, whose forwarders are explicit interface implementations and so are
+unreachable by member lookup there (`r := second(p); r.Name()` — CS1929, resolving instead to the
+element's own extension whose receiver it cannot satisfy). The proxy carries an implicit conversion
+back to `ж<element>`, but C# does not apply a user conversion during member lookup. Nothing in the
+corpus or in `net/http` reaches it; the guard's `second` builds its result inside the generic context
+on purpose.
 
 ### A struct embedding the constrained generic promotes its members — three residual crypto-curve fixes
 
@@ -12545,6 +12587,61 @@ recurring in net/rpc and httputil) and a **foreign-struct value** conversion
 `convertToInterfaceType`) and skipped by the prune. (Guarded by `IfaceToIfaceNarrow` — one source
 interface converted to a full-surface embedded-interface target AND to its narrower bases at
 argument, assignment, and return positions, dispatch output-compared vs Go.)
+
+#### A `global::` root escape is a THIRD spelling of one type, and the record sets dedupe on text
+
+The de-duplication above compares rendered attribute lines, so every distinct spelling of one type is
+a distinct record. The alias case is the one that section documents; the **root escape** is the same
+defect reached by a different route, and it is invisible in a production conversion. `-tests` alone
+mints `global::` — `testAliasShadowOperations` / `convSelectorExpr` escape to the root whenever a test
+package's own class shadows the leading segment of a qualified reference — so one test package can
+register the same (impl, interface) pair from an escaped site and a bare site and emit both records.
+go2cs-gen resolves both to the SAME symbol and mints the adapter twice: `net/http`'s
+`http_HandlerFuncᴠΔHandler` came out as both `-val.g.cs` and `-val.1.g.cs`, giving CS0102 + CS0111 ×5
++ CS8646 ×2 against a test suite that had never run.
+
+`dedupeRootEscapedRecords` collapses lines that differ only by root escapes, as a shared pass over
+**both** record sections — `GoImplement` and `GoImplicitConv` are built by the same
+`qualifyLocalTypeRef` rendering over the same registries, so they carry the same exposure and a fix in
+one alone would only wait for the other. It runs BEFORE `recordEmittedPointerAdapterPairs`, so the
+adapter-naming authority sees the deduplicated set and cannot manufacture the false collision that the
+alias case's third spelling came from.
+
+The **escaped** spelling wins a collapse: it is shadow-proof by construction, which is why the
+machinery minted it, and keeping the bare form could reintroduce the shadow the escape exists to
+defeat. That is the opposite preference from the alias case — there the ALIASED (simple) form wins
+because the qualified form breaks generator name resolution — and the two are consistent once stated
+as one rule: **keep the spelling that resolves under the most conditions.** A root escape adds
+resolution guarantees; a package qualifier removed one. Ties fall to the lexicographically smaller
+line so the output stays deterministic. The pass is an exact identity on any record set without an
+escape, which is what makes the whole production corpus provably unaffected. (Guarded by
+`rootEscapedRecordDedupe_test.go`, whose four cases pin the collapse, the escape-count preference
+independent of sort order, a negative control that distinct records all survive, and the
+production-inertness identity.)
+
+#### The promoted-method twins class is named for the PACKAGE and the pair, not the pair alone
+
+A struct that satisfies an interface member by **promotion** gets an `internal static class
+<pkg>ᴛ<struct>ᴛ<iface>ᴛpromoted` of extension twins, because go2cs's runtime method set is built from
+extension methods and a promoted method is the one kind of Go method that never became one. The class
+sits at NAMESPACE scope — deliberately a sibling of the package class, so its twins cannot intercept a
+bare-name call — and it was named for the (struct, interface) pair alone.
+
+That name is unique per package class, and a namespace holds several of them. Go's **internal**
+(`package http`) and **external** (`package http_test`) test variants are distinct packages that may
+each declare a type of the same name; they emit correctly into distinct classes
+(`http_internal_test_package`, `http_test_package`) and share one namespace. `net/http` declares
+`dumpConn` in both `requestwrite_test.go` and `transport_test.go`, each promoting `io.Reader` and
+`io.Writer`, so `dumpConnᴛReaderᴛpromoted` and `dumpConnᴛWriterᴛpromoted` were each declared twice in
+`go.net` — CS0101 ×2. Nothing about the type model is wrong there; only this cargo name was
+under-qualified, and adding the owning package makes "two generated files can never collide" true
+rather than merely intended.
+
+Qualified **unconditionally**, which is the opposite of the collision-conditional rule the pointer
+ADAPTER names follow, and the difference is blast radius rather than principle: an adapter name
+appears at thousands of construction sites, whereas no source-level call ever binds a twin (the struct
+MEMBER always wins) and the method-set registry discovers them by scanning every non-nested static
+class, never by name. The rename is invisible everywhere except in its own declaration.
 
 ### Anonymous interfaces used as an adapter target are lifted package-wide
 

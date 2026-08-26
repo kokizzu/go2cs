@@ -268,6 +268,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckConstrainedSliceParamInPlace() => CheckTarget("ConstrainedSliceParamInPlace");
 
     [TestMethod]
+    public void CheckConstraintProxyEmbeddedInterface() => CheckTarget("ConstraintProxyEmbeddedInterface");
+
+    [TestMethod]
     public void CheckConstraints() => CheckTarget("Constraints");
 
     [TestMethod]
