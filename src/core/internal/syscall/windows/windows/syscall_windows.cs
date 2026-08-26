@@ -256,59 +256,12 @@ internal static ref sendRecvMsgFuncᴛ1 sendRecvMsgFunc => ref ᏑsendRecvMsgFun
     public uint32 Flags;
 }
 
+// go2cs generated this placeholder — func loadWSASendRecvMsg is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// go2cs generated this placeholder — func WSASendMsg is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
 //sys	WSASocket(af int32, typ int32, protocol int32, protinfo *syscall.WSAProtocolInfo, group uint32, flags uint32) (handle syscall.Handle, err error) [failretval==syscall.InvalidHandle] = ws2_32.WSASocketW
 //sys	WSAGetOverlappedResult(h syscall.Handle, o *syscall.Overlapped, bytes *uint32, wait bool, flags *uint32) (err error) = ws2_32.WSAGetOverlappedResult
-internal static error loadWSASendRecvMsg() {
-    ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.Ꮡonce).Do(() => {
-        GoFrame ᒐ = default;
-        try {
-            syscallꓸHandle s = default!;
-            (s, sendRecvMsgFunc.err) = syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, syscall.IPPROTO_UDP);
-            if (sendRecvMsgFunc.err != default!) {
-                return;
-            }
-            defer(syscall.CloseHandle, s, ref ᒐ);
-            ref var n = ref heap(new uint32(), out var Ꮡn);
-            sendRecvMsgFunc.err = syscall.WSAIoctl(s,
-                syscall.SIO_GET_EXTENSION_FUNCTION_POINTER,
-                ᏑWSAID_WSARECVMSG.Reinterpret<syscall.GUID, byte>(),
-                (uint32)/* unsafe.Sizeof(WSAID_WSARECVMSG) */ (uintptr)16,
-                ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.ᏑrecvAddr).Reinterpret<uintptr, byte>(),
-                (uint32)/* unsafe.Sizeof(sendRecvMsgFunc.recvAddr) */ (uintptr)8,
-                Ꮡn, nil, 0);
-            if (sendRecvMsgFunc.err != default!) {
-                return;
-            }
-            sendRecvMsgFunc.err = syscall.WSAIoctl(s,
-                syscall.SIO_GET_EXTENSION_FUNCTION_POINTER,
-                ᏑWSAID_WSASENDMSG.Reinterpret<syscall.GUID, byte>(),
-                (uint32)/* unsafe.Sizeof(WSAID_WSASENDMSG) */ (uintptr)16,
-                ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.ᏑsendAddr).Reinterpret<uintptr, byte>(),
-                (uint32)/* unsafe.Sizeof(sendRecvMsgFunc.sendAddr) */ (uintptr)8,
-                Ꮡn, nil, 0);
-        }
-        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-        finally { ᒐ.Run(); }
-    });
-    return sendRecvMsgFunc.err;
-}
-
-public static error WSASendMsg(syscallꓸHandle fd, ж<WSAMsg> Ꮡmsg, uint32 flags, ж<uint32> ᏑbytesSent, ж<syscall.Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
-    var err = loadWSASendRecvMsg();
-    if (err != default!) {
-        return err;
-    }
-    var (r1, _, e1) = syscall.Syscall6(sendRecvMsgFunc.sendAddr, 6, (uintptr)fd, (uintptr)Ꮡmsg, (uintptr)flags, (uintptr)ᏑbytesSent, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine);
-    if (r1 == socket_error) {
-        if (e1 != 0){
-            err = errnoErr(e1);
-        } else {
-            err = syscall.EINVAL;
-        }
-    }
-    return err;
-}
-
 public static error WSARecvMsg(syscallꓸHandle fd, ж<WSAMsg> Ꮡmsg, ж<uint32> ᏑbytesReceived, ж<syscall.Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
     var err = loadWSASendRecvMsg();
     if (err != default!) {

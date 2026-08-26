@@ -1741,6 +1741,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckUdpLoopbackRoundTrip() => CheckTarget("UdpLoopbackRoundTrip");
 
     [TestMethod]
+    public void CheckUdpWriteMsgAddrPort() => CheckTarget("UdpWriteMsgAddrPort");
+
+    [TestMethod]
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
 
     [TestMethod]
