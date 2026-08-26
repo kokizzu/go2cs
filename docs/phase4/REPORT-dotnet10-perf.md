@@ -1,10 +1,10 @@
 # REPORT — go2cs performance across the .NET 9 → 10 hop (JOB-018)
 
-> Lane G (perf-canon host), 2026-08-24. Stages N4 (JIT CPU) and N5 (AOT/ILC) of the
-> `docs/DotNetMigration.md` §6 ladder, measured against the N2-banked .NET 9 baseline minted on
-> this same host earlier the same day. **STATUS: N4 closed, prediction N5 closed; the full
-> 14-row AOT ladder (the README bank run) is in flight — its cells and the History-section bank
-> land in the PENDING section's place when it completes.**
+> Lane G (perf-canon host), 2026-08-24, completed 2026-08-25. Stages N4 (JIT CPU) and N5 (AOT/ILC)
+> of the `docs/DotNetMigration.md` §6 ladder, measured against the N2-banked .NET 9 baseline minted
+> on this same host earlier the same day. **STATUS: COMPLETE — N4 closed, prediction N5 closed,
+> and the full 14-row AOT ladder measured and banked to the README + `docs/Performance.md` tables,
+> with the .NET 9 table it replaces moved to their new History section. JOB-018 is closed.**
 
 ## Environment
 
@@ -94,13 +94,99 @@ uniform (PerfStartup's censored trajectory was identical at the comparable wall 
 without swapping** — provisioning constraint for any fleet box that runs AOT legs. Prepared for
 a dotnet/runtime report at the owner's discretion; not sent.
 
-## PENDING — lands at ladder completion
+## Ladder complete — the 14-row table, banked
 
-- The full 14-row 10-AOT column (in flight: ~46 h of publishes at the measured per-publish cost;
-  Fib's completed publish is legitimately reused — same tree, same ILC, same day).
-- README `PERF-RESULTS` bank via `--update-readme` (N2 9-table moves to the History section) and
-  the `docs/Performance.md` mirror.
-- The ladder-wide ILC series (`g-ilc-ladder-series.csv` → banked beside this report): 13–14
-  replicates of the CPU-vs-wall arc, per-publish by PID.
-- Generalization verdict on the AOT working-set collapse, and Startup's AOT time cell against the
-  N4 Startup regression.
+The full table lives in
+[`src/tests/Performance/README.md`](https://github.com/ritchiecarroll/go2cs/blob/master/src/tests/Performance/README.md)
+and its `docs/Performance.md` mirror, with the .NET 9 table it replaces moved into that file's new
+**History** section alongside the per-row compile-provenance note. Fourteen rows, three variants,
+no `n/a` cells; Verify passed all fourteen three-ways, so every farm-compiled binary was proven
+output-identical to Go before it was timed.
+
+### The two headline verdicts
+
+**1. The AOT working-set collapse GENERALIZES — it is universal.** N5's Fib observation (75.8 →
+15.5 MB; the ladder's own measurement of that row reads 14.1) was not a one-row curiosity. On all
+fourteen rows the .NET 10 AOT working set is *below* the JIT's, where under .NET 9 it was *above*
+the JIT's on every one of the fourteen:
+
+| | .NET 9 | .NET 10 |
+|:--|:--|:--|
+| rows where AOT WS > JIT WS | **14 / 14** | **0 / 14** |
+| Startup | 76.9 vs 46.1 MB | 12.5 vs 47.4 MB |
+| Fib | 75.8 vs 46.1 | 14.1 vs 48.5 |
+| IfaceShell (heaviest row) | 96.3 vs 66.6 | 35.7 vs 68.4 |
+
+The 9-era "AOT trades memory for startup" reading is retired for this corpus. The hypothesis
+offered at N5 — that the 10-ILC's much larger compile work buys aggressive whole-program
+trimming/DCE, i.e. compile time traded for image and working set — survives the full ladder, and
+the compile-cost finding above is its price tag. Both C# variants still sit far above Go, which
+holds 4–6 MB on most rows.
+
+**2. Startup's AOT cell answers N4's open discriminator.** N4 recorded one unambiguous JIT
+regression — Startup +13…15 % against a control that had itself improved — and could not say
+whether the cause was runtime-load-side or converted-closure-side. The AOT cell settles it: the
+same closure, published AOT, moved the OTHER way (79.2 → 36.7 ms, 3.07× → 1.60× Go) while the JIT
+cell kept its regression (245.3 → 279.4 ms, +14 %). A closure-init cause would have moved both in
+the same direction. **The regression is runtime-load-side**, and it is a JIT-only cost the AOT
+deployment does not pay.
+
+### Per-publish economics
+
+Seven canon publishes across six rows, each of the full converted-stdlib closure:
+
+| publish | wall (s) | note |
+|:--|--:|:--|
+| Startup | 13,144 | ladder maximum |
+| Fib #1 | 11,862 | ladder minimum; the N5 row, and the A/A null's pub1 |
+| Fib #2 | 12,173 | A/A pub2 — same tree, ILC and config, ~15 h later |
+| Sieve | 12,869 | the A/B's canon side |
+| MatMul | 11,976 | |
+| String | 12,389 | |
+| RefLower | 12,356 | the ladder's last publish |
+
+Band **11,862–13,144 s**, mean ≈ 12,400 s (**~3 h 27 m**) — a ±5 % spread that confirms, across
+seven independent publishes, the closure-dominated and row-insensitive cost model N5 could only
+propose from a single data point. The remaining eight rows cost **zero** canon publish-hours: they
+were farm-compiled on the fleet's i9 and adopted under the A/B licence recorded in
+`evidence-aot-farm-ab-session.md` (provenance table in the README History section).
+
+### WS-peak series — the provisioning constraint, per publish
+
+Attributed by sampler window (120 s cadence, PID-stable); decimal GB, matching the convention used
+above:
+
+| publish | peak working set |
+|:--|--:|
+| Startup | 18.4 GB |
+| RefLower | 17.6 GB |
+| String | 17.0 GB |
+| Sieve | 16.5 GB |
+| Fib #2 | 13.3 GB |
+
+MatMul's publish window falls in a sampler gap and is uncaptured. One single-sample reading of
+**18.6 GB** at 07:04, between the Sieve and MatMul publishes, is the highest value the ladder
+observed; it is left unattributed rather than assigned to a row on one sample. **N5's provisioning
+constraint hardens across the ladder: a 16 GB box cannot publish this closure without swapping** —
+all five captured publishes exceeded 13 GB and four of the five exceeded 16 GB.
+
+Series banked beside this report: `evidence-ilc-ladder-peaks-partial.csv` (Startup, Fib #2, Sieve)
+and `evidence-ilc-resume-peaks.csv` (String, RefLower).
+
+### Measurement integrity — one voided pass, disclosed
+
+The ladder's first in-run bank (17:57) and an immediate re-measure both carried a **Sieve row
+inflated ~52 %**: its Go control read 108.7 ms against a 66–72 ms four-reading baseline, with all
+three Sieve cells moving together while the other thirteen controls held within ±3 %. Control-row
+discipline classifies that **void, not noise**, so the table was banked from neither pass. The
+cause was rooted to a host-state change (streaming-bandwidth class — every other suspect measured
+and eliminated, and it persisted across processes), the owner rebooted the host, and the table
+banked here is a third pass on the quiet box: **Sieve's Go control returned to 68.5 ms** (isolated
+pre-check: 65.3/71.5/70.6/71.4/67.6/71.6) and the other thirteen rows matched the two prior passes
+within a few percent. The first pass stands as the run-to-run spread datum.
+
+The discipline cost about four minutes, not another 46 hours, because every AOT publish was reused
+by the up-to-date predicate — **14 SKIPPED, 0 publishes**, each printing its stamp. That predicate,
+and the `Generated/` exclusion that stopped it self-invalidating, are what made a void row
+re-measurable at all; without them a single contaminated control would have forced a choice between
+banking known-bad data and re-paying the ladder.
