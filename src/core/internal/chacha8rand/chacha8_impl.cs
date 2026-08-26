@@ -4,7 +4,15 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
+using System;
+using System.Runtime.InteropServices;
+using go;
 using go.golib;
+
+// The marker every manualConversionFuncs companion carries: `setup` and `block_generic` are
+// suppressed at emission and provided here (see the second header block below). `block` alone
+// needed no marker — a bodyless partial has nothing to protect — so this arrives with them.
+[module: GoManualConversion]
 
 namespace go.@internal;
 
@@ -26,6 +34,29 @@ namespace go.@internal;
 // give the 8 rounds, rows 4..11 are added back to the original key material, and the uint32 words
 // are packed back into the uint64 buffer little-endian. Verified bit-exact against Go by
 // internal/chacha8rand's own vectors through math/rand/v2's TestChaCha8* suite.
+//
+// ── `setup` and `block_generic` join it (2026-08-25) ─────────────────────────────────────────────
+// The same reinterpret the paragraph above declines is what the package's OWN `block_generic` and
+// `setup` are built on, so the auto conversion of both took the raw-address route and panicked
+// `index out of range [0] with length 0` on the zeroed buffer — `TestBlockGeneric`, and the whole
+// of this package's 1-of-4 validation gap. Their emission is suppressed
+// (`manualConversionFuncs["internal/chacha8rand"]`, whose entry carries the rooting) and the bodies
+// live here.
+//
+// They are NOT a second copy of `block`, and the difference is the point. `block` computes into a
+// stackalloc scratch and PACKS the result into the caller's buffer at the end; these two follow
+// chacha8_generic.go's own shape and work IN PLACE through a genuine aliasing view of that buffer —
+// `MemoryMarshal.Cast` over `array<uint64>.ToSpan()`, the remedy vendor/…/sha3's `xor.cs` and
+// crypto/subtle's `xor_generic.cs` already take for this class. `setup` writes the uint64 pairs Go's
+// own `(*[16][2]uint64)` view writes; `block_generic` reads and stores through the `[16][4]uint32`
+// view. So `TestBlockGeneric` still compares two independently written implementations — what it
+// newly proves is that the aliasing view WRITES THROUGH, which is exactly what was broken.
+//
+// The general repair of the seam is `docs/phase4/DESIGN-native-array-view.md` (RATIFIED; its §3
+// emission work is HELD pending the provenance amendment). This package would not be fixed by it
+// even so: a native-backed `array<T>` cannot carry `array<uint32>` ELEMENTS in raw bytes, which is
+// what a `[16][4]uint32` view needs. The seam's kernel-free golib witness is preserved directly, in
+// GolibTests' ArrayShapeReinterpretTests, so routing this package around it costs the arc nothing.
 partial class chacha8rand_package
 {
     // ChaCha20's "expand 32-byte k" constants, one per matrix row 0..3.
@@ -138,5 +169,129 @@ partial class chacha8rand_package
         c += d;
         b ^= c;
         b = b << 7 | b >> 25;
+    }
+
+    // chacha8_generic.go's setup, transcribed. Go's own body immediately re-views its `*[16][4]uint32`
+    // parameter as `(*[16][2]uint64)` to halve the stores, so THAT view is the parameter here: `b` is
+    // the caller's `[32]uint64` buffer read as 16 rows of 2 uint64s (row r, half h => b[r * 2 + h]),
+    // which is the same storage under a shape the managed model can hold. The `*[16][4]uint32`
+    // parameter Go declares is the un-representable one and has no counterpart; the caller is
+    // block_generic, the only caller Go has.
+    private static void setup(ж<array<uint64>> Ꮡseed, Span<uint64> b, uint32 counter)
+    {
+        ref array<uint64> seed = ref Ꮡseed.Value;
+
+        // Constants; same as in ChaCha20: "expand 32-byte k".
+        b[0 * 2 + 0] = 0x61707865_61707865UL;
+        b[0 * 2 + 1] = 0x61707865_61707865UL;
+
+        b[1 * 2 + 0] = 0x3320646e_3320646eUL;
+        b[1 * 2 + 1] = 0x3320646e_3320646eUL;
+
+        b[2 * 2 + 0] = 0x79622d32_79622d32UL;
+        b[2 * 2 + 1] = 0x79622d32_79622d32UL;
+
+        b[3 * 2 + 0] = 0x6b206574_6b206574UL;
+        b[3 * 2 + 1] = 0x6b206574_6b206574UL;
+
+        // Seed values: rows 4..11, each carrying one 32-bit half of one seed word, duplicated into
+        // all four lanes (Go writes the pair `uint64(x)<<32 | uint64(x)` into both halves of a row).
+        for (int word = 0; word < 8; word++)
+        {
+            uint x = (uint)(seed[word / 2] >> (32 * (word % 2)));
+            uint64 x64 = ((uint64)x << 32) | x;
+
+            b[(4 + word) * 2 + 0] = x64;
+            b[(4 + word) * 2 + 1] = x64;
+        }
+
+        // Counters — lane i takes counter+i. Which END of the uint64 pair each lane occupies is the
+        // byte order of the uint32 view this row is really written for, so it flips with endianness
+        // exactly as Go's goarch.BigEndian branch does.
+        if (!BitConverter.IsLittleEndian)
+        {
+            b[12 * 2 + 0] = ((uint64)(counter + 0) << 32) | (counter + 1);
+            b[12 * 2 + 1] = ((uint64)(counter + 2) << 32) | (counter + 3);
+        }
+        else
+        {
+            b[12 * 2 + 0] = (counter + 0) | ((uint64)(counter + 1) << 32);
+            b[12 * 2 + 1] = (counter + 2) | ((uint64)(counter + 3) << 32);
+        }
+
+        // Zeros.
+        b[13 * 2 + 0] = 0;
+        b[13 * 2 + 1] = 0;
+        b[14 * 2 + 0] = 0;
+        b[14 * 2 + 1] = 0;
+        b[15 * 2 + 0] = 0;
+        b[15 * 2 + 1] = 0;
+    }
+
+    // chacha8_generic.go's block_generic, transcribed. Go views the caller's `*[32]uint64` output
+    // buffer as `(*[16][4]uint32)` and computes IN PLACE through it; `MemoryMarshal.Cast` over the
+    // array's own span is that view — a genuine alias of the same backing storage, in the same
+    // word order (a uint32 cast of a uint64 span puts word 2k at the same byte offset Go's does, on
+    // either endianness), so every store below lands in the caller's buffer.
+    internal static void block_generic([GoArrayDims(4)] ж<array<uint64>> Ꮡseed, [GoArrayDims(32)] ж<array<uint64>> Ꮡbuf, uint32 counter)
+    {
+        Span<uint64> buf = Ꮡbuf.Value.ToSpan();
+        Span<uint> b = MemoryMarshal.Cast<uint64, uint>(buf);
+
+        setup(Ꮡseed, buf, counter);
+
+        for (int i = 0; i < 4; i++)
+        {
+            // Load block i from b[*][i] into local variables.
+            uint b0 = b[0 * 4 + i], b1 = b[1 * 4 + i], b2 = b[2 * 4 + i], b3 = b[3 * 4 + i];
+            uint b4 = b[4 * 4 + i], b5 = b[5 * 4 + i], b6 = b[6 * 4 + i], b7 = b[7 * 4 + i];
+            uint b8 = b[8 * 4 + i], b9 = b[9 * 4 + i], b10 = b[10 * 4 + i], b11 = b[11 * 4 + i];
+            uint b12 = b[12 * 4 + i], b13 = b[13 * 4 + i], b14 = b[14 * 4 + i], b15 = b[15 * 4 + i];
+
+            // 4 iterations of eight quarter-rounds each is 8 rounds. `qr` is the package's OWN
+            // auto-converted quarter round (chacha8_generic.go's, which carries no reinterpret and
+            // so converts faithfully) — deliberately not `block`'s hand-written QuarterRound, so
+            // the two implementations TestBlockGeneric compares share no code at all.
+            for (int round = 0; round < 4; round++)
+            {
+                (b0, b4, b8, b12) = qr(b0, b4, b8, b12);
+                (b1, b5, b9, b13) = qr(b1, b5, b9, b13);
+                (b2, b6, b10, b14) = qr(b2, b6, b10, b14);
+                (b3, b7, b11, b15) = qr(b3, b7, b11, b15);
+
+                (b0, b5, b10, b15) = qr(b0, b5, b10, b15);
+                (b1, b6, b11, b12) = qr(b1, b6, b11, b12);
+                (b2, b7, b8, b13) = qr(b2, b7, b8, b13);
+                (b3, b4, b9, b14) = qr(b3, b4, b9, b14);
+            }
+
+            // Store block i back into b[*][i]. Rows 4..11 are ADDED back to the original key
+            // material, like in ChaCha20, to avoid trivial invertibility; there is no entropy in
+            // rows 0..3 and 12..15, so those are plain stores.
+            b[0 * 4 + i] = b0;
+            b[1 * 4 + i] = b1;
+            b[2 * 4 + i] = b2;
+            b[3 * 4 + i] = b3;
+            b[4 * 4 + i] += b4;
+            b[5 * 4 + i] += b5;
+            b[6 * 4 + i] += b6;
+            b[7 * 4 + i] += b7;
+            b[8 * 4 + i] += b8;
+            b[9 * 4 + i] += b9;
+            b[10 * 4 + i] += b10;
+            b[11 * 4 + i] += b11;
+            b[12 * 4 + i] = b12;
+            b[13 * 4 + i] = b13;
+            b[14 * 4 + i] = b14;
+            b[15 * 4 + i] = b15;
+        }
+
+        if (!BitConverter.IsLittleEndian)
+        {
+            // On a big-endian system, reading the uint32 pairs as uint64s word-swaps them compared
+            // to little-endian, so word-swap here first to make the next swap get the right answer.
+            for (int i = 0; i < buf.Length; i++)
+                buf[i] = buf[i] >> 32 | buf[i] << 32;
+        }
     }
 }

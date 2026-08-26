@@ -13,7 +13,7 @@
 // </ImportedTypeAliases>
 
 using go;
-using static go.@internal.chacha8rand_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -36,7 +36,6 @@ using static go.@internal.chacha8rand_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<errUnmarshalChaCha8, error>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -50,14 +49,14 @@ using static go.@internal.chacha8rand_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/chacha8rand/chacha8.go", "chacha8.cs", "ABMoAA8wAAkCgoKUgqiyAAcSwoKCgoKs0oIABxCCgoKClIKCgoIAAxDigoKCgoKClKYAAhDygoKCgoKUAAgKgqiygpSCgpSClIKCgoKClA==")]
-[assembly: go.GoPositionMap("internal/chacha8rand/chacha8_generic.go", "chacha8_generic.cs", "ADqWAtSCggAEnAEADAKCgoKCgoKCgoKCgoI=")]
+[assembly: go.GoPositionMap("MapArrayValueZero.go", "MapArrayValueZero.cs", "ABMwgoKEgoSChIIACQyCgoSCAAkMgoKChIKChIKC6IKCgoSCgviCgoKCpoKCgoKC")]
 // </GoSourcePositionMaps>
 
-namespace go.@internal;
+namespace go;
 
-[GoPackage("chacha8rand")]
-public static partial class chacha8rand_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -66,7 +65,6 @@ public static partial class chacha8rand_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct errUnmarshalChaCha8 {}
-    [GoValueClone("buf", "seed")] public partial struct State {}
+    internal partial struct quadMap {}
     // </TypeAccessibility>
 }

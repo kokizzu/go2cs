@@ -280,6 +280,28 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	"internal/cpu": {
 		"getGOAMD64level": goosAny,
 	},
+	// internal/chacha8rand's two ARRAY-SHAPE reinterpreters. Go opens the `*[32]uint64` output
+	// buffer as `(*[16][4]uint32)(unsafe.Pointer(buf))` (block_generic) and that in turn as
+	// `(*[16][2]uint64)(unsafe.Pointer(b32))` (setup) — a differently-typed, differently-RANKED
+	// view of one allocation. `array<T>` is a window on a real `T[]`, so a nested `uint32` view
+	// over a `ulong[]` has no managed spelling; the literal conversion takes the raw-ADDRESS route
+	// and dereferences an `array<…>` STRUCT out of the buffer's own DATA. On the zeroed buffer that
+	// reads a null backing, i.e. a LENGTH-ZERO array, and the first index panics `index out of
+	// range [0] with length 0` — the package's own TestBlockGeneric, which is the whole of its
+	// 1-of-4 gap. It is the STRONGEST form of the address-reinterpret seam
+	// (`docs/phase4/DESIGN-native-array-view.md`, RATIFIED with its §3 emission work HELD pending
+	// the provenance amendment) and does NOT fall with that arc even when it lands: a native-backed
+	// `array<T>` still cannot carry `array<uint32>` ELEMENTS in raw bytes. So this is a per-package
+	// ROUTE-AROUND, the remedy vendor/…/sha3's xor.cs and crypto/subtle's xor_generic.cs already
+	// take for the same class: chacha8_impl.cs takes the view over the array's own SPAN
+	// (MemoryMarshal.Cast), a genuine ALIASING view of the same backing storage, so the writes land
+	// in the caller's buffer. `block` was ALREADY hand-owned here (Go implements it in assembly),
+	// independently and in a scratch-and-pack shape, so TestBlockGeneric still compares two
+	// distinct implementations rather than a function with itself.
+	"internal/chacha8rand": {
+		"setup":         goosAny,
+		"block_generic": goosAny,
+	},
 	// reflect.Value's entry + value-reader methods (the reflection bridge, Phase 2). Go reads the
 	// value through v.ptr as flat memory at computed offsets — no managed form. value_impl.cs carries
 	// the boxed managed value directly (a companion `partial struct Value { object boxed }` field) and

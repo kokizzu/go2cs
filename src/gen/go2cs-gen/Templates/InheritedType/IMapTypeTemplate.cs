@@ -32,7 +32,13 @@ internal static class IMapTypeTemplate
                 }
                 
                 public ({{valueTypeName}}, bool) this[{{keyTypeName}} key, bool _] => m_value[key, _];
-                
+
+                /// <summary>Shaped-zero read — an element type whose Go zero carries run-time shape (a fixed-size array) takes its zero from the call site.</summary>
+                public {{valueTypeName}} this[{{keyTypeName}} key, global::System.Func<{{valueTypeName}}> zero] => m_value[key, zero];
+
+                /// <summary>Comma-ok shaped-zero read.</summary>
+                public ({{valueTypeName}}, bool) this[{{keyTypeName}} key, global::System.Func<{{valueTypeName}}> zero, bool _] => m_value[key, zero, _];
+
                 public void Add({{keyTypeName}} key, {{valueTypeName}} value) => m_value.Add(key, value);
                 
                 public bool Remove({{keyTypeName}} key) => m_value.Remove(key);

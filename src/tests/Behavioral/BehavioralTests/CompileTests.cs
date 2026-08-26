@@ -835,6 +835,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckMapAnonStructValue() => CheckTarget("MapAnonStructValue");
 
     [TestMethod]
+    public void CheckMapArrayValueZero() => CheckTarget("MapArrayValueZero");
+
+    [TestMethod]
     public void CheckMapCloneLinkname() => CheckTarget("MapCloneLinkname");
 
     [TestMethod]

@@ -547,6 +547,7 @@
     <Project Path="tests/Behavioral/ManagedAtomicPointer/ManagedAtomicPointer.csproj" />
     <Project Path="tests/Behavioral/ManualConversionSiblingState/ManualConversionSiblingState.csproj" />
     <Project Path="tests/Behavioral/MapAnonStructValue/MapAnonStructValue.csproj" />
+    <Project Path="tests/Behavioral/MapArrayValueZero/MapArrayValueZero.csproj" />
     <Project Path="tests/Behavioral/MapCloneLinkname/MapCloneLinkname.csproj" />
     <Project Path="tests/Behavioral/MapCommaOk/MapCommaOk.csproj" />
     <Project Path="tests/Behavioral/MapPointerElementLiteral/MapPointerElementLiteral.csproj" />
