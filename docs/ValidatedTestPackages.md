@@ -12,8 +12,9 @@ every listed package on demand, reading its own roster straight from the table b
 from a clone with one command.
 
 A disclosure is a specific Go assertion the converted suite provably cannot satisfy — never a
-tolerance, and never a test skipped to make a row pass. Six classes exist: three name something the
-managed runtime cannot *measure*, one something the test host cannot *be*, one something the managed
+tolerance, and never a test skipped to make a row pass. Seven classes exist: three name something the
+managed runtime cannot *measure*, two something the test host cannot *be* or must not *claim*, one
+something the managed
 runtime cannot truthfully *describe*, and one — `platform-skip`, minted 2026-08-25 — that is not a
 *cannot* at all, but a skip **Go's own test source defines** for a platform the converted corpus
 genuinely is. (The count has moved in both directions, and the committed manifests — never
@@ -41,6 +42,18 @@ once its remedy lands, because the arithmetic below moves when it goes.
 - **`codegen-liveness`** — a test asserts, from inside its own frame, that an object it just stopped
   using is now collectible. Go's GC drops a local at its last use via per-safepoint liveness maps;
   the CLR reports a frame's slots live for the frame's whole lifetime.[^codegen-liveness]
+- **`host-identity`** — a test's assert can be satisfied only by the test-hosting machinery claiming
+  Go's testing-package identity (`testing.tRunner`, `testing.go`) for a frame that is actually the
+  hand-owned test host. The host is a structural replacement (F15b: one testing package), and the
+  standing position-map ruling — the host never claims `testing/testing.go` — forbids the
+  fabrication passing would require: truth here is the divergence. The bar is deliberately narrow:
+  the frame must belong to the HOST ITSELF; a missing or misnamed frame of converted user code or
+  converted stdlib is a defect, never this class. The worked proof of that boundary is the
+  internal-test-variant caller-info fix (2026-08-26), where four rows that looked like this one were
+  defects in the converted side's own frame naming and were fixed rather than disclosed. Like
+  `codegen-liveness` it is permanent by design, retiring only if the hand-owned host were ever
+  replaced by converted Go `testing`. Minted 2026-08-26 with `log/slog`'s `TestRecordSource`, which
+  asserts that two frames above itself sits `testing.tRunner` in `testing.go`.
 - **`host-limit`** — a test's premise rests on a property of the test *binary* that the converted
   host's deployment shape structurally lacks. One capability is named today, a **relocatable
   single-file test executable**: Go's test binary is statically linked, so `os/exec` copies it into
@@ -91,19 +104,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **176 / 215 testable packages validated — 81.9%**
+> ### Phase 4 progress: **177 / 215 testable packages validated — 82.3%**
 >
-> **19,320 matching test verdicts · 87 disclosed** *(updated 2026-08-26 — maintained as part of the
+> **19,514 matching test verdicts · 106 disclosed** *(updated 2026-08-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 176 / 208 — 84.6%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 177 / 208 — 85.1%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 24 of 176 rows validated at their Linux counts** — 12,675 matching verdicts · 18 disclosed.
+> **Linux: 24 of 177 rows validated at their Linux counts** — 12,675 matching verdicts · 18 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -267,6 +280,7 @@ summed from the columns.
 | [`io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) | 18 | | The `fs.FS` interface family — named-interface runtime shells, `fs.Glob` deep recursion, `dirFS` walks. · [proof](validation/current/io.fs.md) |
 | [`io/ioutil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/ioutil) | 28 | | The deprecated pre-`os`/`io` shims — `ReadAll`/`ReadFile`/`WriteFile`, `TempFile`/`TempDir` including their bad-pattern and bad-directory matrices, and `TestReadDir`, which lists the PARENT directory and expects the sibling `io` package's own `io_test.go` to be there. · [proof](validation/current/io.ioutil.md) |
 | [`log`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log) | 8 | 1 | The standard logger — the whole flag matrix (`Ldate`/`Ltime`/`Lmicroseconds`/`Llongfile`/`Lshortfile`/`LUTC`/`Lmsgprefix`) rendered against regexps, prefix placement, `SetOutput`/`SetFlags`/`SetPrefix` on both the package logger and a fresh one, concurrent `Output` under `-race`, and the empty-`Print` newline rule. `TestAll` pins **`log_test.go`'s own line numbers** (`63`\|`65`) behind the `Llongfile`/`Lshortfile` prefixes — the assertion the position map exists to answer, and the one that moved this row: the file half alone made it `log/log_test.go:69`, a position in neither tree. alloc-profile disclosure. · [proof](validation/current/log.md) |
+| [`log/slog`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog) | 194 | 19 | Structured logging end to end — the `Record`/`Attr`/`Value` model including the packed-payload `Value` across every `Kind`, `LogValuer` resolution with its cycle guard, `Logger`/`Handler` composition through `WithAttrs`/`WithGroup`, the built-in JSON and text handlers compared output-for-output over a ~50-case table (escapes, empty groups, `ReplaceAttr` rewriting, `json.RawMessage`, `TextMarshaler` errors), level parsing/marshalling and `LevelVar`, the `log` package bridge, and `testing/slogtest`'s own conformance suite run against both handlers. Its caller-info tests are what rooted the `-tests` pipeline's internal-test-variant naming defect: an in-package test file is compiled INTO its package, so `TestCallDepth` asserts `log/slog.TestCallDepth` where the derivation had been leaking the converter's own `_internal_test` class token — a systemic frame-naming bug, fixed rather than disclosed, worth four rows. alloc-profile disclosures on the `...any`/`Value` boxing the two-word Go interface avoids; `TestRecordSource` is the founding **host-identity** row — its depth-1 case passes on that same fix, while its depth-2 case asks the hand-owned test host to answer `testing.tRunner` in `testing.go`. · [proof](validation/current/log.slog.md) |
 | [`log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) | 3 |  | The two hand-written `slog.Handler` implementations `log/slog`'s benchmarks measure against, checked for correctness rather than speed — a minimal text handler's rendered output byte-for-byte, and an async handler's ring-buffered `Record` compared attribute by attribute through `slices.EqualFunc` over `slog.Attr.Equal`. · [proof](validation/current/log.slog.internal.benchmarks.md) |
 | [`maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) | 14 | | Generic map helpers and iterators. · [proof](validation/current/maps.md) |
 | [`math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) | 76 | | The core numeric package — IEEE edge cases, rounding, `Inf`/`NaN`. · [proof](validation/current/math.md) |

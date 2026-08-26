@@ -89,6 +89,11 @@ func (v *Visitor) visitFile(file *ast.File) {
 		v.addRequiredUsing(fmt.Sprintf("static %s", globalQualifyRooted(packageNamespace+"."+v.options.testInternalBridgeName)))
 	}
 
+	// Record the enclosing class for emitters that write INTO its body and must reason about what
+	// its nested types occlude — see forcingTargetShadowed. Set before the decl walk below, since
+	// import specs are the first decls of every file and consult it as they are visited.
+	v.emittedClassName = packageClassName
+
 	v.writeOutput(UsingsMarker)
 	v.writeOutputLn("partial class %s {", packageClassName)
 	v.writeOutput(ImportInitMarker)

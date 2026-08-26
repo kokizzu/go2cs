@@ -641,6 +641,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckImmediatelyInvokedFunc() => CheckTarget("ImmediatelyInvokedFunc");
 
     [TestMethod]
+    public void CheckImportSegmentTypeShadow() => CheckTarget("ImportSegmentTypeShadow");
+
+    [TestMethod]
     public void CheckIncDecPointerField() => CheckTarget("IncDecPointerField");
 
     [TestMethod]
