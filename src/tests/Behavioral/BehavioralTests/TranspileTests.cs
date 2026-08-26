@@ -679,6 +679,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckImmediatelyInvokedFunc() => CheckTarget("ImmediatelyInvokedFunc");
 
     [TestMethod]
+    public void CheckImportSegmentTypeShadow() => CheckTarget("ImportSegmentTypeShadow");
+
+    [TestMethod]
     public void CheckIncDecPointerField() => CheckTarget("IncDecPointerField");
 
     [TestMethod]

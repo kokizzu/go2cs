@@ -356,6 +356,24 @@ diagnostic output and must never be the thing that takes a program down.
   `runtime/debug/stack_test.go` is what the converter saw. They remain necessary and unchanged for
   the FUNCTION half (`goFrameName`), where Go genuinely does keep `_test`
   (`runtime/debug_test.T.method`). §11.1 flags this as a departure from the ruling's phrasing.
+
+  > **Amendment, 2026-08-26 (lane `claude/slog-callerinfo`).** "Remain necessary and unchanged for
+  > the FUNCTION half" was true as a REQUIREMENT and false as a description of the code: only the
+  > `_test` half was ever satisfied there, and it was satisfied by accident — `goFrameName` derives
+  > the import path straight off the class name, so an external suite's `<pkg>_test_package` came
+  > out right without any rule, and an internal suite's `<pkg>_internal_test_package` came out
+  > WRONG for the same reason. The sentence above reads as if both were handled because both are
+  > phrased as one pair of rules; they are not a pair. Go strips nothing and keeps nothing — it
+  > compiles an internal test file INTO the package under test (so the frame is
+  > `callerprobe.TestInternalCallerName`, no suffix) and leaves an external one a separate package
+  > (`callerprobe_test.TestExternalCallerName`), measured against go1.23.12. The internal-test
+  > strip landed in `goFrameName` on this date; the effect was systemic rather than
+  > `log/slog`-specific — any converted suite reading caller info reported
+  > `<import path>_internal_test.<func>` — and it is now pinned in all three emitted shapes by
+  > `GolibTests/CallerFrameTestVariantNamingTests`. The design's POSITION is unchanged and was
+  > right; what this amendment records is that a stated-as-existing rule was never landed, which is
+  > exactly the class of gap a design document can create by describing intent in the present
+  > tense.
 - **`goImportPath` stays** — the function half still derives the import path at run time, and that is
   correct: a function name IS a property of the package, and Go's own traceback spells it from the
   package, not from the file.

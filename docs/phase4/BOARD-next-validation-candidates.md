@@ -19354,3 +19354,87 @@ S0b riders bind: the slog-class A/Bs carry byte-identical controls, and census-g
 never quoted as emission-grade.
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+
+---
+
+## 2026-08-26 — The fold: stop-the-line resolved as three mechanisms; two corruption classes named; the giants re-censused; host-identity minted; row 176
+
+**Context.** JOB-023 (the 175-row confirmation sweep at the rebank tip) went red on three rows and
+stop-the-line held all banking. Resolution: THREE distinct mechanisms, one real. Master was never
+regressed — the union train's one latent defect was invisible to every merge gate because gates
+run BANKED (pre-union) test sources; only re-derivation exposes that class. All figures below
+banked at master 57339895d.
+
+**1. The one real defect — self-shadowing forcing hooks (FIXED, merged).** The init-order arc's
+`typeof(<pkg>.<pkg>_package)` forcing references are captured by a package-level type named for
+the target's leading segment emitted into the same class (Go's own `image_test.go` declares
+`type image interface`). Fix: collision-gated `global::` root-qualification — footprint
+provably zero AND complete (the corpus compiles ⟹ no production instance can exist); CNR 646/646
+byte-identical; `image` re-derives 8/8 = banked. Guard: `ImportSegmentTypeShadow` (both
+production- and test-scope shadowing).
+
+**2. gcimporter — COUNT-BINDING RULING (no defect).** 583 = 303 (TestImportStdLib) + 266
+(TestImportTypeparamTests) + 14 standalone, confirmed to the digit. A GOTOOLCHAIN-resolved
+module-cache GOROOT ships no `test/` tree → 318 = 303+1+14, the typeparam parent running with
+zero subtests, silently. **Ruling: banked counts bind to a full-SDK GOROOT; a sweep host
+resolving a toolchain-download GOROOT is a SWEEP-ENV defect, never row variance.**
+
+**3. srcimporter — sweep-host capability gap (no defect).** Go's own oracle needs a C toolchain
+(`go tool cgo` walk); on a cgo-less host the GO side fails while the converted side passes.
+Routes to a cgo-capable host. **Sweep-host doctrine (new):** a sweeper needs (a) full-SDK GOROOT
+with `test/`, (b) `GOTOOLCHAIN=local` beside the explicit GOROOT (else silent redirect),
+(c) per-box profile paths — never another box's home path (silent fallback), (d) a C toolchain
+for cgo-oracle rows.
+
+**Row 176 — log/slog banked** (213 terminal / 194 matching / 19 disclosed) behind the caller-info
+fix: `-tests` emits internal-test files as `<pkg>_internal_test_package` and the frame-name
+derivation kept the suffix where Go strips it — the external half had worked by accident.
+**host-identity minted (seventh disclosure class):** an assert satisfiable only by the hand-owned
+test host claiming `testing.tRunner`/`testing.go` identity — F15b makes the host a structural
+replacement and the position-map ruling forbids the fabrication; truth IS the divergence. Bar:
+host frames only — a missing converted-code frame is a DEFECT (the same test carried both sides:
+four look-alike rows fixed, one disclosed). Permanent by design, like codegen-liveness.
+
+**Two corruption classes, now distinct (both with the moving-ExecutionEngineException signature):**
+- **Sockaddr FIELD OVERLAY** — `sockaddrInet4/6ToRaw`, the un-hand-owned ENCODE twins of the
+  hand-owned decode halves: `Family` writes at offset 8 over the low half of a live object
+  reference (v4 safe by layout accident). THE `net` host-killer (308-name tail). Fix in flight:
+  `claude/poll-sockaddr-encode`. NOTE: syscall.Environ was EXONERATED by measurement (faithful,
+  now guarded by `EnvironBlockWalk`) — the census's Environ attribution was the moving-site
+  signature sampling the next allocator. CENSUS AMENDMENT: CENSUS-giants-2026-08-26 §3/§7
+  "Environ first" sequencing dissolves; net/http has NO prerequisite.
+- **ж→uintptr LIFETIME GAP** — the pin lives on the box, the registry is deliberately weak, and
+  the JIT retires the box at address-extraction BEFORE the consuming native call. Convicted on
+  Linux by symbolized GC frames (mark phase reading a NULL MethodTable); platform-independent in
+  principle. Fix order ruled: R prototypes the Linux KEYSTONE TETHER (strong ref for syscall
+  duration, one file, no emission change); emission-level KeepAlive / strong-RegisterPinned route
+  to the ж-box design on the tether's evidence. **OPEN census item: enumerate Windows
+  `(uintptr)Ꮡx` zsyscall crossings reachable from banked rows.**
+
+**The giants (CENSUS-giants-2026-08-26, merged):** 3,105 verdicts, zero capability walls.
+`net` RUNS (120 matching; ~85% reach behind the overlay fix). `net/http` = 1,352 verdicts
+behind ONE capture-prologue defect (staffed). `reflect` = one `constant.ToInt` construct at
+the surface (unstaffed). `runtime` = closure-dependent linkname lowering closing a 2-node csproj
+cycle — design question, do not staff.
+
+**slices arc (branch green, next window):** conversion-blocked → 114/122; the "one gap" wore four
+faces (all fact-gated fixes) + a fifth variadic-method-value defect. NEW GOLIB ITEMS (5 verdicts,
+one mini-arc): zero-size-element slice allocation (`[]struct{}` of MaxInt must not allocate);
+`subslice` −1 sentinel colliding with a real negative index (Go's `s[-1:]` panic never fires);
+operator-bound `min`/`max` not propagating NaN. Plus 3 AllocsPerRun rows for the manifest at
+bank time. **mvreturn arc (in flight, banks x509):** defect A = return-operand evaluation order
+(`return o, o.mutate()` — gc evaluates the call first, C# tuple literals left-to-right; NOVEL);
+defect B = multi-value return `~`-unwrapping a box into an interface result.
+
+**Findings collection:** (a) FOURTH all-empty cause — a hard test-host build failure (the tell is
+`error CS…` in converter stderr; by shape indistinguishable from the file lock). (b) CNR is
+silent during transpile BY DESIGN — liveness = process churn, never log growth. (c) CNR's git
+status is scoped to the behavioral tree; concurrent `-tests` corpus writes cannot pollute it.
+(d) PS 5.1 hashtables are case-INsensitive by default — a name-collision census reported
+`Image`/`image` phantoms; censuses need `[StringComparer]::Ordinal` (the false-POSITIVE
+sibling of the `grep -P` false-empty). (e) Mailbox appends via Get-Content/Out-File flip every
+line's EOL — the ReadAllText/WriteAllText UTF8-no-BOM pattern is mandatory.
+
+**Rebank state:** JOB-023 closed 172/175 with exactly the three explained reds; the leveling
+rebank re-derives at 57339895d. Stale-source members enumerated: corpus-wide init hooks + flag,
+log, runtime/debug, sync, syscall, log/slog/internal/benchmarks.
