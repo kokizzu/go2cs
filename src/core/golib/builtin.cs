@@ -2718,7 +2718,9 @@ public static partial class builtin
             // A pointer box renders as Go's *T, a generated interface adapter as the Go dynamic
             // type it stands in for, and a converted named type package-qualifies (main.Point) —
             // GoReflect.GoTypeName covers all three; everything else keeps the raw managed name.
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ж<>) ||
+            // Fix W with the M exemption: the box test walks the base chain; @unsafe.Pointer keeps
+            // its raw-managed-name route here, exactly as today.
+            if (!typeof(IUnsafePointer).IsAssignableFrom(type) && GoReflect.TryBoxPointee(type, out Type? _0) ||
                 GoReflect.TryAdapterWrappedType(type, out Type? _1, out bool _2) ||
                 type.DeclaringType?.Name.EndsWith(PackageSuffix, StringComparison.Ordinal) == true)
             {

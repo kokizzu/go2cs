@@ -451,11 +451,16 @@ public static partial class TypeExtensions
     }
 
     // Splits a receiver type into its concrete element type and whether it is a pointer box ж<X>.
+    // Fix W (B1 §3.1): the box test walks the base chain, so both the DECLARED receiver-parameter
+    // feed (always exactly ж<X> — walk depth 0, unchanged) and a RUNTIME value-type feed (a
+    // per-kind subclass under the split) answer the same isPointer — the :321 pointer-receiver
+    // exclusion depends on it. @unsafe.Pointer is exempt and keeps its non-pointer route: it has
+    // no method set, and reclassifying it would change which (empty) candidate arm it takes.
     internal static void ResolveReceiverElement(Type type, out Type element, out bool isPointer)
     {
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ж<>))
+        if (!typeof(IUnsafePointer).IsAssignableFrom(type) && GoReflect.TryBoxPointee(type, out Type? pointee))
         {
-            element = type.GetGenericArguments()[0];
+            element = pointee;
             isPointer = true;
         }
         else

@@ -82,8 +82,13 @@ public static partial class GoReflect
     {
         return s_canonicalNils.GetOrAdd(pointerType, static t =>
         {
-            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ж<>))
-                return t.GetProperty(nameof(ж<int>.NilBox), BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+            // Fix W with the M exemption: a ж box at any base-chain depth answers the base's
+            // static NilBox (read off the WALKED ж<T> type, where the static lives — identical to
+            // reading off t itself today, when every box type sits at depth 0). @unsafe.Pointer is
+            // exempt and keeps its NilInstance-probe fall-through: its canonical nil is its own,
+            // never the raw ж<uintptr> box's.
+            if (!typeof(IUnsafePointer).IsAssignableFrom(t) && TryBoxPointee(t, out Type? pointee))
+                return typeof(ж<>).MakeGenericType(pointee).GetProperty(nameof(ж<int>.NilBox), BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
 
             // A generated NAMED pointer wrapper exposes its canonical typed nil as NilInstance
             // (declared internal by the template — probe both visibilities).
@@ -232,7 +237,12 @@ public static partial class GoReflect
         else if (dynamicSrc is IValueAdapter { Value: not null } valueAdapter)
             dynamicSrc = valueAdapter.Value;
 
-        if (dynamicSrc.GetType() == dstType)
+        // Subsumption rather than exact equality (fix W: a per-kind box subclass instance fills a
+        // declared ж<T> slot), with the N5 M-guard: @unsafe.Pointer must never marshal into a
+        // ж<uintptr> destination — it is not an ordinary *uintptr, and plain subsumption would
+        // admit it. Its own exact type remains assignable to itself.
+        if (dstType.IsAssignableFrom(dynamicSrc.GetType()) &&
+            (dynamicSrc.GetType() == dstType || dynamicSrc is not IUnsafePointer))
         {
             marshalled = dynamicSrc;
             return true;
@@ -252,7 +262,10 @@ public static partial class GoReflect
             return true;
         }
 
-        if (TryUnwrapWrapperValue(dynamicSrc, out object? unwrappedSrc) && unwrappedSrc.GetType() == dstType)
+        // Same subsumption + N5 M-guard as the direct arm above, on the unwrapped value.
+        if (TryUnwrapWrapperValue(dynamicSrc, out object? unwrappedSrc) &&
+            dstType.IsAssignableFrom(unwrappedSrc.GetType()) &&
+            (unwrappedSrc.GetType() == dstType || unwrappedSrc is not IUnsafePointer))
         {
             marshalled = unwrappedSrc;
             return true;

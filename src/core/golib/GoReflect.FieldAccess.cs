@@ -154,9 +154,14 @@ public static partial class GoReflect
         if (boxType is null)
             return false;
 
-        if (boxType.IsGenericType && boxType.GetGenericTypeDefinition() == typeof(ж<>))
+        // Fix W with the M exemption: a ж box at any base-chain depth takes the slot pair — the
+        // severe B1 §3.1 site, where falling through to the interface arm silently flips
+        // ReadPointerSlot/WritePointerSlot semantics (a ж<ж<T>> holding null starts panicking
+        // where it succeeds — ValueSlot's own documented case). @unsafe.Pointer keeps its
+        // interface route, exactly as it takes today.
+        if (!typeof(IUnsafePointer).IsAssignableFrom(boxType) && TryBoxPointee(boxType, out Type? pointee))
         {
-            elemType = boxType.GetGenericArguments()[0];
+            elemType = pointee;
             return true;
         }
 

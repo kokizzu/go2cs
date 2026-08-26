@@ -259,6 +259,17 @@ public static partial class TypeExtensions
         {
             (MethodInfo method, Type type)[] extensionMethods = GetExtensionMethods();
 
+            // Fix W (B1 §3.1): normalize a ж box at any base-chain depth to its ж<X> base BEFORE
+            // the generic-match split, so a per-kind subclass instance matches the extension
+            // methods registered against the box family (a no-op today — every box type IS its
+            // own ж<X>). @unsafe.Pointer is exempt and keeps its assignability route.
+            if (!typeof(IUnsafePointer).IsAssignableFrom(targetType) &&
+                GoReflect.TryBoxPointee(targetType, out Type? boxPointee) &&
+                !(targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(ж<>)))
+            {
+                targetType = typeof(ж<>).MakeGenericType(boxPointee);
+            }
+
             bool isGenericType = (targetType == typeof(ж<>) ? targetType.GetGenericArguments()[0] : targetType).IsGenericType;
 
             if (isGenericType)
