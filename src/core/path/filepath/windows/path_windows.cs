@@ -6,6 +6,12 @@ using syscall = syscall_package;
 
 partial class filepath_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // HasPrefix exists for historical compatibility and should not be used.
 //
 // Deprecated: HasPrefix does not respect path boundaries and

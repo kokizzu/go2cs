@@ -49,7 +49,7 @@ using static go.@internal.coverage.stringtab_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/stringtab/stringtab.go", "stringtab.cs", "ABk2koKokqqigIKkgpSCgoKqooKCgoKCgoKClKrCgoKCgIKkpJSAgqSCgIKkgIKktq7CAAkYoqaokoKCgoK6kqiS")]
+[assembly: go.GoPositionMap("internal/coverage/stringtab/stringtab.go", "stringtab.cs", "ACs2koKokqqigIKkgpSCgoKqooKCgoKCgoKClKrCgoKCgIKkpJSAgqSCgIKkgIKktq7CAAkYoqaokoKCgoK6kqiS")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;

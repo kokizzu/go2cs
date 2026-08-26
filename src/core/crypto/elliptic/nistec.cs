@@ -11,6 +11,18 @@ using math;
 
 partial class elliptic_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸnistec() {
+    builtin.initPackage(typeof(go.crypto.@internal.nistec_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 internal static ж<nistCurve<P224PointжnistPoint>> p224 = Ꮡ(new nistCurve<P224PointжnistPoint>(
     newPoint: () => nistec.NewP224Point()
 ));

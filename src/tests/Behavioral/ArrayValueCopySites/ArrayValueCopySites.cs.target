@@ -4,6 +4,12 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 [GoType("[3]nint")] partial struct Row;
 
 [GoType] partial struct holder {
@@ -194,7 +200,7 @@ private static readonly object anyBoxedˢ = (@string)"anyBoxed:"u8;
 
 internal static void compositeSparseAndAny() {
     var a = new nint[]{1, 2, 3}.array();
-    var sp = new array<array<nint>>(4){[2] = a.Clone()};
+    var sp = new array<array<nint>>(4, () => new(3)){[2] = a.Clone()};
     a[1] = 88;
     fmt.Println(sparseˢ, sp[2]);
     var b = new nint[]{7, 8, 9}.array();

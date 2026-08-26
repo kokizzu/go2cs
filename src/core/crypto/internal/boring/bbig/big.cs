@@ -11,6 +11,18 @@ using math;
 
 partial class bbig_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() {
+    builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
+    builtin.initPackage(typeof(math.big_package));
+}
+
 public static boring.BigInt Enc(ж<bigꓸInt> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 

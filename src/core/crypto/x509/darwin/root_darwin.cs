@@ -10,6 +10,12 @@ using time = time_package;
 
 partial class x509_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509ꓸinternalꓸmacos() {
+    builtin.initPackage(typeof(go.crypto.x509.@internal.macOS_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string invalidLeafCertificateˢ = "invalid leaf certificate"u8;
 internal static readonly @string x509MacOSCertificateˢ = "x509: macOS certificate verification internal error"u8;

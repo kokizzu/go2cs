@@ -18,6 +18,12 @@ using go.sync;
 
 partial class os_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() {
+    builtin.initPackage(typeof(@internal.syscall.unix_package));
+}
+
 internal static UntypedInt _UTIME_OMIT => /* unix.UTIME_OMIT */ -2;
 
 // fixLongPath is a noop on non-Windows platforms.

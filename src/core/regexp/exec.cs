@@ -10,6 +10,12 @@ using regexp;
 
 partial class regexp_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 // A queue is a 'sparse array' holding pending threads of execution.
 // See https://research.swtch.com/2008/03/using-uninitialized-memory-for-fun-and.html
 [GoType] partial struct queue {

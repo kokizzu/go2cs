@@ -51,7 +51,7 @@ using static go.hash.maphash_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("hash/maphash/maphash.go", "maphash.cs", "AB9MAAgCgoKWgoKCgqYAAhYACAKCgpSCgpQAJ1rSgoKCvKKClIKCqqK4goKClJSCuIKCgoK4goKqtIKCgoKClIKUgoKCgqaCgqiSggACENKClIKCqqKCgqiSgpSCggACFPKCqJKCgqaCpqyyggAKGJCmkA==")]
-[assembly: go.GoPositionMap("hash/maphash/maphash_purego.go", "maphash_purego.cs", "AA8egoKUpoKmgoKCAAocgoKCkoSCgoKCgoKCgpSUgoKmlKS0goK0poKmgqaCpoKS")]
+[assembly: go.GoPositionMap("hash/maphash/maphash_purego.go", "maphash_purego.cs", "ABsegoKUpoKmgoKCAAocgoKCkoSCgoKCgoKCgpSUgoKmlKS0goK0poKmgqaCpoKS")]
 // </GoSourcePositionMaps>
 
 namespace go.hash;

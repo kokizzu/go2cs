@@ -62,8 +62,8 @@ using static go.crypto.x509.@internal.macOS_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/x509/internal/macos/corefoundation.go", "corefoundation.cs", "ABY+4oKCgqqigoKUgoKokoKCAAgUkoKCgqSasoKkgqSYspSClKTskoKUgpSkmJKCpJiSgqSYkoKkmJKCpJiSgqSYkqSYkpKkmJKkmJKCpJiSgqSYkqTIkoKClKSWqrKCgpQ=")]
-[assembly: go.GoPositionMap("crypto/x509/internal/macos/security.go", "security.cs", "ADWIAYIAFy6ylIKklKS8spSCpJSkmJKClIKUpJiygoKmgpTUmLKCgoKUkoKU1JiSgoKUpJiSgoKClKSYspKUgpSkmJKCgoKCgoKCgpSkmJKCpJiSgoKUpMiSgoKUgoKk")]
+[assembly: go.GoPositionMap("crypto/x509/internal/macos/corefoundation.go", "corefoundation.cs", "ADQ+4oKCgqqigoKUgoKokoKCAAgUkoKCgqSasoKkgqSYspSClKTskoKUgpSkmJKCpJiSgqSYkoKkmJKCpJiSgqSYkqSYkpKkmJKkmJKCpJiSgqSYkqTIkoKClKSWqrKCgpQ=")]
+[assembly: go.GoPositionMap("crypto/x509/internal/macos/security.go", "security.cs", "ADuIAYIAFy6ylIKklKS8spSCpJSkmJKClIKUpJiygoKmgpTUmLKCgoKUkoKU1JiSgoKUpJiSgoKClKSYspKUgpSkmJKCgoKCgoKCgpSkmJKCpJiSgoKUpMiSgoKUgoKk")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.x509.@internal;

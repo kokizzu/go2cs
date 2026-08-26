@@ -11,6 +11,12 @@ using syscall = syscall_package;
 
 partial class pprof_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // Adds MaxRSS to platforms that are supported.
 internal static void addMaxRSS(io.Writer w) {
     uintptr rssToBytes = default!;

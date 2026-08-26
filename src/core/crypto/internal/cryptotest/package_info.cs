@@ -53,7 +53,7 @@ using static go.crypto.@internal.cryptotest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/cryptotest/hash.go", "hash.cs", "ABgo1oKChIKCgpaWgoSWgqiAgriAktyCgoSCgoKWhIKogoKEloKCgoKEgrqCgoKEgoKChJaClIKChIKEgrqCgoSCgpaCgoSWgpaCzJKEgoSCgpaCurKEgoSCloKWpoKCgg==")]
+[assembly: go.GoPositionMap("crypto/internal/cryptotest/hash.go", "hash.cs", "ADwo1oKChIKCgpaWgoSWgqiAgriAktyCgoSCgoKWhIKogoKEloKCgoKEgrqCgoKEgoKChJaClIKChIKEgrqCgoSCgpaCgoSWgpaCzJKEgoSCgpaCurKEgoSCloKWpoKCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal;

@@ -11,6 +11,12 @@ using compress;
 
 partial class zip_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcompressꓸflate() {
+    builtin.initPackage(typeof(compress.flate_package));
+}
+
 // type Compressor is a methodless func type — rendered inline as its base delegate
 
 // type Decompressor is a methodless func type — rendered inline as its base delegate

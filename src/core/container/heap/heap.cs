@@ -19,6 +19,12 @@ using sort = sort_package;
 
 partial class heap_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsort() {
+    builtin.initPackage(typeof(sort_package));
+}
+
 // The Interface type describes the requirements
 // for a type using the routines in this package.
 // Any type that implements it may be used as a

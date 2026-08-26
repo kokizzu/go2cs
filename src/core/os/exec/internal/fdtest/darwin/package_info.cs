@@ -50,7 +50,7 @@ using static go.os.exec.@internal.fdtest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/exec/internal/fdtest/exists_unix.go", "exists_unix.cs", "AAwekoKC")]
+[assembly: go.GoPositionMap("os/exec/internal/fdtest/exists_unix.go", "exists_unix.cs", "ABIekoKC")]
 // </GoSourcePositionMaps>
 
 namespace go.os.exec.@internal;

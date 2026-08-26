@@ -51,9 +51,9 @@ using static go.@internal.trace.raw_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/trace/raw/event.go", "event.cs", "ABw+woSCgoKCgoKUgoKCgpSUgoKmgoKU")]
-[assembly: go.GoPositionMap("internal/trace/raw/reader.go", "reader.cs", "ABg0koKSgpSokqiSgoKUgpSClIKCgoKUgoKUgoKUpoKCgoKmAAcQgoKCgoKUlKaCgoKUgoKCgpSU")]
-[assembly: go.GoPositionMap("internal/trace/raw/textreader.go", "textreader.cs", "AB06koKCgpSCgpSCgpSCgpSCgpSCgoKCgqaokqiSgoKUgoKClIKCgpSCgoKCgpSClIKClKaCgoKClIKUgoKmAAcQgoKCgIKklIKCgpTcgoKCgoKUgpSClIKCpqbSgoKClIKClIKCgpSmgoKCgpSCgqaClIKCgoKmgpSmgoKClIKClA==")]
+[assembly: go.GoPositionMap("internal/trace/raw/event.go", "event.cs", "ADQ+woSCgoKCgoKUgoKCgpSUgoKmgoKU")]
+[assembly: go.GoPositionMap("internal/trace/raw/reader.go", "reader.cs", "ADA0koKSgpSokqiSgoKUgpSClIKCgoKUgoKUgoKUpoKCgoKmAAcQgoKCgoKUlKaCgoKUgoKCgpSU")]
+[assembly: go.GoPositionMap("internal/trace/raw/textreader.go", "textreader.cs", "ACM6koKCgpSCgpSCgpSCgpSCgpSCgoKCgqaokqiSgoKUgoKClIKCgpSCgoKCgpSClIKClKaCgoKClIKUgoKmAAcQgoKCgIKklIKCgpTcgoKCgoKUgpSClIKCpqbSgoKClIKClIKCgpSmgoKCgpSCgqaClIKCgoKmgpSmgoKClIKClA==")]
 [assembly: go.GoPositionMap("internal/trace/raw/textwriter.go", "textwriter.cs", "ABIqkoKClKikgqiC")]
 [assembly: go.GoPositionMap("internal/trace/raw/writer.go", "writer.cs", "ABw8koKopIKoloKClIKCgrqCqIKCgqiCgpQ=")]
 // </GoSourcePositionMaps>

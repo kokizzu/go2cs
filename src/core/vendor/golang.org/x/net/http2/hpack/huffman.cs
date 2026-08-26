@@ -10,6 +10,12 @@ using sync = sync_package;
 
 partial class hpack_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 internal static ж<sync.Pool> ᏑbufPool = new(new sync.Pool(
     New: () => @new<bytes.Buffer>()
 ));

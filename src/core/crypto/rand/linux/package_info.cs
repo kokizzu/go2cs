@@ -65,10 +65,10 @@ using static go.crypto.rand_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/rand/rand.go", "rand.cs", "ABk0oqqigoKCgpSAgqSU")]
-[assembly: go.GoPositionMap("crypto/rand/rand_getrandom.go", "rand_getrandom.cs", "AA0egoKcpKTkAAIU8oKClIKU")]
-[assembly: go.GoPositionMap("crypto/rand/rand_unix.go", "rand_unix.cs", "ABcygoKClAANHIKm4oKmgqSClIKCgoKCgpSClJQADBKygoKU")]
-[assembly: go.GoPositionMap("crypto/rand/util.go", "util.cs", "ABEgooKWhIKCloKEgoCCuMqCpoKCuISCgszSgpSClIKUppSCgpaEgoKCuoSCgg==")]
+[assembly: go.GoPositionMap("crypto/rand/rand.go", "rand.cs", "AB80oqqigoKCgpSAgqSU")]
+[assembly: go.GoPositionMap("crypto/rand/rand_getrandom.go", "rand_getrandom.cs", "AB8egoKcpKTkAAIU8oKClIKU")]
+[assembly: go.GoPositionMap("crypto/rand/rand_unix.go", "rand_unix.cs", "ADsygoKClAANHIKm4oKmgqSClIKCgoKCgpSClJQADBKygoKU")]
+[assembly: go.GoPositionMap("crypto/rand/util.go", "util.cs", "AB0gooKWhIKCloKEgoCCuMqCpoKCuISCgszSgpSClIKUppSCgpaEgoKCuoSCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;

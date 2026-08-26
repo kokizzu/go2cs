@@ -10,6 +10,18 @@ using math;
 
 partial class sort_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸreflectlite() {
+    builtin.initPackage(typeof(@internal.reflectlite_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(math.bits_package));
+}
+
 // Slice sorts the slice x given the provided less function.
 // It panics if x is not a slice.
 //

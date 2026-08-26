@@ -52,9 +52,9 @@ using static go.os.user_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "AA4q0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS")]
-[assembly: go.GoPositionMap("os/user/lookup_windows.go", "lookup_windows.cs", "AA8egoKCgoKUgqaCuKKCgpSCgpSCgoKUgoLWgoKCgoKmgoLKqqKSgoKCgpSClILM0oKClIKU2NKCgpSCgoKU6JKCggAHEIKUqsSSgoKUlIKClIIACRKCgpSCgpSCgoKClIKClJTWgpKSgpTuAAUUooKClIKCgpSCgpSCgpSCgpSCgpSCgpTc5IKClIKUgoIADh6CggAHEIKClIKClIKCgpSCgtaCgoKUgoKUgoIAChaCyoKClJSmgoKClIKUpoKCgpSmgpKClKaCgoKUkoKUgpSmgoKClIKClIKCuIKCpg==")]
-[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "ADaKAYLOgs6CzoI=")]
+[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "ABQq0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS")]
+[assembly: go.GoPositionMap("os/user/lookup_windows.go", "lookup_windows.cs", "ACcegoKCgoKUgqaCuKKCgpSCgpSCgoKUgoLWgoKCgoKmgoLKqqKSgoKCgpSClILM0oKClIKU2NKCgpSCgoKU6JKCggAHEIKUqsSSgoKUlIKClIIACRKCgpSCgpSCgoKClIKClJTWgpKSgpTuAAUUooKClIKCgpSCgpSCgpSCgpSCgpSCgpTc5IKClIKUgoIADh6CggAHEIKClIKClIKCgpSCgtaCgoKUgoKUgoIAChaCyoKClJSmgoKClIKUpoKCgpSmgpKClKaCgoKUkoKUgpSmgoKClIKClIKCuIKCpg==")]
+[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "ADyKAYLOgs6CzoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.os;

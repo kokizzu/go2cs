@@ -18,6 +18,12 @@ using @internal;
 
 partial class syscall_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸoserror() {
+    builtin.initPackage(typeof(@internal.oserror_package));
+}
+
 public static nint Stdin = 0;
 public static nint Stdout = 1;
 public static nint Stderr = 2;

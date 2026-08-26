@@ -23,6 +23,18 @@ using runtime.@internal;
 
 partial class runtime_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
+    builtin.initPackage(typeof(@internal.abi_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntimeꓸinternalꓸsys() {
+    builtin.initPackage(typeof(runtime.@internal.sys_package));
+}
+
 // G status
 //
 // Beyond indicating the general state of a G, the G status
@@ -424,11 +436,13 @@ internal static UntypedInt freeMWait => 2; // M still in use.
     internal int8 printlock;
     internal bool incgo;          // m is executing a cgo call
     internal bool isextra;          // m is an extra m
-    internal bool isExtraInC;          // m is an extra m that is not executing Go code
+    internal bool isExtraInC;          // m is an extra m that does not have any Go frames
     internal bool isExtraInSig;          // m is an extra m in a signal handler
     internal atomic.Uint32 freeWait; // Whether it is safe to free g0 and delete m (one of freeMRef, freeMStack, freeMWait)
     internal bool needextram;
+    internal bool g0StackAccurate; // whether the g0 stack has accurate bounds
     internal uint8 traceback;
+    internal slice<ж<Δp>> allpSnapshot; // Snapshot of allp for use after dropping P in findRunnable, nil otherwise.
     internal uint64 ncgocall;        // number of cgo calls in total
     internal int32 ncgo;         // number of cgo calls currently in progress
     internal atomic.Uint32 cgoCallersUse; // if non-zero, cgoCallers in use temporarily
@@ -881,6 +895,7 @@ internal static waitReason waitReasonTraceGoroutineStatus => 33; // "trace gorou
 internal static waitReason waitReasonTraceProcStatus => 34;      // "trace proc status"
 internal static waitReason waitReasonPageTraceFlush => 35;       // "page trace flush"
 internal static waitReason waitReasonCoroutine => 36;            // "coroutine"
+internal static waitReason waitReasonGCWeakToStrongWait => 37;   // "GC weak to strong wait"
 
 internal static array<@string> waitReasonStrings = new golib.SparseArray<@string>{
     [waitReasonZero] = ""u8,
@@ -919,7 +934,8 @@ internal static array<@string> waitReasonStrings = new golib.SparseArray<@string
     [waitReasonTraceGoroutineStatus] = "trace goroutine status"u8,
     [waitReasonTraceProcStatus] = "trace proc status"u8,
     [waitReasonPageTraceFlush] = "page trace flush"u8,
-    [waitReasonCoroutine] = "coroutine"u8
+    [waitReasonCoroutine] = "coroutine"u8,
+    [waitReasonGCWeakToStrongWait] = "GC weak to strong wait"u8
 }.array();
 
 internal static @string String(this waitReason w) {
@@ -933,17 +949,17 @@ internal static bool isMutexWait(this waitReason w) {
     return w == waitReasonSyncMutexLock || w == waitReasonSyncRWMutexRLock || w == waitReasonSyncRWMutexLock;
 }
 
-internal static bool isWaitingForGC(this waitReason w) {
-    return ΔisWaitingForGC[w];
+internal static bool isWaitingForSuspendG(this waitReason w) {
+    return ΔisWaitingForSuspendG[w];
 }
 
-// isWaitingForGC indicates that a goroutine is only entering _Gwaiting and
-// setting a waitReason because it needs to be able to let the GC take ownership
-// of its stack. The G is always actually executing on the system stack, in
-// these cases.
+// isWaitingForSuspendG indicates that a goroutine is only entering _Gwaiting and
+// setting a waitReason because it needs to be able to let the suspendG
+// (used by the GC and the execution tracer) take ownership of its stack.
+// The G is always actually executing on the system stack in these cases.
 //
 // TODO(mknyszek): Consider replacing this with a new dedicated G status.
-internal static array<bool> ΔisWaitingForGC = new golib.SparseArray<bool>{
+internal static array<bool> ΔisWaitingForSuspendG = new golib.SparseArray<bool>{
     [waitReasonStoppingTheWorld] = true,
     [waitReasonGCMarkTermination] = true,
     [waitReasonGarbageCollection] = true,
@@ -954,7 +970,7 @@ internal static array<bool> ΔisWaitingForGC = new golib.SparseArray<bool>{
     [waitReasonGCAssistMarking] = true,
     [waitReasonGCWorkerActive] = true,
     [waitReasonFlushProcCaches] = true
-}.array(37);
+}.array(38);
 
 internal static ж<ж<m>> Ꮡallm = new(default(ж<m>));
 internal static ref ж<m> allm => ref Ꮡallm.ValueSlot;

@@ -10,6 +10,12 @@ using @internal;
 
 partial class rand_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // A ChaCha8 is a ChaCha8-based cryptographically strong
 // random number generator.
 [GoType] partial struct ChaCha8 {

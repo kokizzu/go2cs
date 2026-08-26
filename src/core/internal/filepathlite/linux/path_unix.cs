@@ -10,6 +10,12 @@ using go.@internal;
 
 partial class filepathlite_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
+    builtin.initPackage(typeof(go.@internal.bytealg_package));
+}
+
 public static UntypedInt Separator => /* '/' */ 47; // OS-specific path separator
 public static UntypedInt ListSeparator => /* ':' */ 58; // OS-specific path list separator
 

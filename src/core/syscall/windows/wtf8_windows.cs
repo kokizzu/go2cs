@@ -24,6 +24,12 @@ using unicode;
 
 partial class syscall_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(unicode.utf8_package));
+}
+
 internal static UntypedInt surr1 => 0xd800;
 internal static UntypedInt surr2 => 0xdc00;
 internal static UntypedInt surr3 => 0xe000;

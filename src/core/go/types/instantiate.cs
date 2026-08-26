@@ -17,6 +17,12 @@ using global::go.go;
 
 partial class types_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // A genericType implements access to its type parameters.
 [GoType] partial interface ΔgenericType :
     ΔType

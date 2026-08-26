@@ -7,6 +7,12 @@ using runtime = runtime_package;
 
 partial class chacha20_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // Platforms that have fast unaligned 32-bit little endian accesses.
 internal const bool unaligned = /* runtime.GOARCH == "386" ||
 	runtime.GOARCH == "amd64" ||

@@ -7,6 +7,12 @@ using time = time_package;
 
 partial class fs_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 // FormatFileInfo returns a formatted version of info for human readability.
 // Implementations of [FileInfo] can call this from a String method.
 // The output for a file named "hello.go", 100 bytes, mode 0o644, created

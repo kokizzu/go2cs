@@ -9,6 +9,12 @@ using ꓸꓸꓸbyte = Span<byte>;
 
 partial class cryptobyte_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // A Builder builds byte strings from fixed-length and length-prefixed values.
 // Builders either allocate space as needed, or are ‘fixed’, which means that
 // they write into a given buffer and produce an error if it's exhausted.

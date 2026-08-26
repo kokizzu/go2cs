@@ -9,6 +9,12 @@ using go.io;
 
 partial class exec_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
+    builtin.initPackage(typeof(go.io.fs_package));
+}
+
 // skipStdinCopyError optionally specifies a function which reports
 // whether the provided stdin copy error should be ignored.
 internal static bool skipStdinCopyError(error err) {

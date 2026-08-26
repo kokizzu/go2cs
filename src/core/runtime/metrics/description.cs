@@ -8,6 +8,12 @@ using go.@internal;
 
 partial class metrics_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebugs() {
+    builtin.initPackage(typeof(go.@internal.godebugs_package));
+}
+
 // Description describes a runtime metric.
 [GoType] partial struct Description {
     // Name is the full name of the metric which includes the unit.

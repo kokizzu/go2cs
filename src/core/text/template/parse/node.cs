@@ -10,6 +10,12 @@ using strings = strings_package;
 
 partial class parse_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 internal static @string textFormat = "%s"u8; // Changed to "%q" in tests for better error messages.
 
 // A Node is an element in the parse tree. The interface is trivial.

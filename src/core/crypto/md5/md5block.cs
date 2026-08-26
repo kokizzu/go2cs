@@ -11,6 +11,12 @@ using math;
 
 partial class md5_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(math.bits_package));
+}
+
 internal static void blockGeneric(ref digest dig, slice<byte> p) {
     // load state
     var (a, b, c, d) = (dig.s[0], dig.s[1], dig.s[2], dig.s[3]);

@@ -12,6 +12,12 @@ using @internal;
 
 partial class syscall_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // readInt returns the size-bytes unsigned integer in native byte order at offset off.
 internal static (uint64 u, bool ok) readInt(slice<byte> b, uintptr off, uintptr size) {
     if (len(b) < (nint)(off + size)) {

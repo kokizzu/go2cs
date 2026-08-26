@@ -12,6 +12,12 @@ using go.@internal;
 
 partial class sysinfo_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 public static Func<@string> CPUName = sync.OnceValue(@string () => {
     {
         @string name = cpu.Name(); if (name != ""u8) {

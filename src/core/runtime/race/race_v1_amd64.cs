@@ -8,10 +8,4 @@ namespace go.runtime;
 
 partial class race_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸruntimeꓸraceꓸinternalꓸamd64v1() {
-    builtin.initPackage(typeof(go.runtime.race.@internal.amd64v1_package));
-}
-
 } // end race_package

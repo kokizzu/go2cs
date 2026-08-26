@@ -58,8 +58,8 @@ using static go.net.smtp_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/smtp/auth.go", "auth.cs", "ACxqAAgCpoL2/IKUgpSC1oKUlAAGFsLWgqaCgoKCgpQ=")]
-[assembly: go.GoPositionMap("net/smtp/smtp.go", "smtp.cs", "ADpqooKClIKqooKCgoKUgoKokqiygoKCgqYABRDygIKkgpSCqOKCgpSCgoIACArCgoLqwoKClIKCgoKCgqaAgqSC2sKAgqSCgpSCgoKs4oKClN7CgIKkgIKkgqzSgIKkgoKCgpSCgqKCgpS2tMSClJSCgpSClIKClAAGEPKAgqSAgqSCgoCCpICCtoLcsoCCpIIABxCCgoLe4oKClAAHMgAWAoCCpIKAgraCgpSSgIKkgIKCgpSAgsaCgIKkgIK2gIKkgoCCtoKClIKClIKClN7igIKkgpSCgtqigIKkgtqigIKkgtiygIKkgoKU2JKClA==")]
+[assembly: go.GoPositionMap("net/smtp/auth.go", "auth.cs", "AERqAAgCpoL2/IKUgpSC1oKUlAAGFsLWgqaCgoKCgpQ=")]
+[assembly: go.GoPositionMap("net/smtp/smtp.go", "smtp.cs", "AF5qooKClIKqooKCgoKUgoKokqiygoKCgqYABRDygIKkgpSCqOKCgpSCgoIACArCgoLqwoKClIKCgoKCgqaAgqSC2sKAgqSCgpSCgoKs4oKClN7CgIKkgIKkgqzSgIKkgoKCgpSCgqKCgpS2tMSClJSCgpSClIKClAAGEPKAgqSAgqSCgoCCpICCtoLcsoCCpIIABxCCgoLe4oKClAAHMgAWAoCCpIKAgraCgpSSgIKkgIKCgpSAgsaCgIKkgIK2gIKkgoCCtoKClIKClIKClN7igIKkgpSCgtqigIKkgtqigIKkgtiygIKkgoKU2JKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.net;

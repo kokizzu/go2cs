@@ -13,6 +13,18 @@ using @internal;
 
 partial class gob_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbufio() {
+    builtin.initPackage(typeof(bufio_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // tooBig provides a sanity check for sizes; used in several places. Upper limit
 // of is 1GB on 32-bit systems, 8GB on 64-bit, allowing room to grow a little
 // without overflow.

@@ -67,7 +67,7 @@ using static go.crypto.ecdsa_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa.go", "ecdsa.cs", "AD964oKClIKUAAIQ0oKClAAQIrKCgpSCgpSmgpSkpKTKkqyygoKUqtIAAhTyAAIQ0oSCgoKUlISUpKSkpMjCgoKWgoKCgoKUqgAIAoKCgoCC7oCmgpTugIKmgqiCAAomAAoChIKCgpSUhIKCloCCppSkpKSkAAgI1oKCqIKEgoKUgoLMgpaChIKClIKCloKWpoKCooKU2sKClIKClJKClLrSgpSCgoKUzKoACAqAgoKAgoKCgoLqgoIAAxAADxqCgIK4goKCgqiCgpqiAAoWkoIAAhDygoKClJSEgIKmlKSkpKTIwoKCloKCqoKClIKCloKWgpaCgqaCgqaCgpaCgpbWsoKCipQAGSrylIKUgqaCgoKCgtjigpSUgoKC/IKCppT8goKmlPyCgqaU/IKCppSmooKCgoKClA==")]
+[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa.go", "ecdsa.cs", "AKsBeuKCgpSClAACENKCgpQAECKygoKUgoKUpoKUpKSkypKssoKClKrSAAIU8gACENKEgoKClJSElKSkpKTIwoKCloKCgoKClKoACAKCgoKAgu6ApoKU7oCCpoKoggAKJgAKAoSCgoKUlISCgpaAgqaUpKSkpAAICNaCgqiChIKClIKCzIKWgoSCgpSCgpaClqaCgqKClNrCgpSCgpSSgpS60oKUgoKClMyqAAgKgIKCgIKCgoKC6oKCAAMQAA8agoCCuIKCgoKogoKaogAKFpKCAAIQ8oKCgpSUhICCppSkpKSkyMKCgpaCgqqCgpSCgpaCloKWgoKmgoKmgoKWgoKW1rKCgoqUABkq8pSClIKmgoKCgoLY4oKUlIKCgvyCgqaU/IKCppT8goKmlPyCgqaUpqKCgoKCgpQ=")]
 [assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_legacy.go", "ecdsa_legacy.cs", "ABIoooKCloKCgoKssoKCgpaCgoKUAAcUAAkCgoKWgoKCipSmopaCgpSygoKCgpaEgoKCqIKCgoKCgqgAAhIACQKClIKClKaCgoKUhIKEgpSCqIKEgoKChIKChIKUgs4ACAiCgoKAgqSAgqSCgg==")]
 [assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_noasm.go", "ecdsa_noasm.cs", "AAoWgqaC")]
 [assembly: go.GoPositionMap("crypto/ecdsa/notboring.go", "notboring.cs", "AAsWgqSC")]

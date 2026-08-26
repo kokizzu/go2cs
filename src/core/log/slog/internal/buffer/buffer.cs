@@ -9,6 +9,12 @@ using sync = sync_package;
 
 partial class buffer_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 [GoType("[]byte")] partial struct Buffer;
 
 // Having an initial size gives a dramatic speedup.

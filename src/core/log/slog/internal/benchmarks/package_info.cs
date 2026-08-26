@@ -58,7 +58,7 @@ using static go.log.slog.@internal.benchmarks_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers.go", "handlers.cs", "AB08gqaA9NKClIKCgpSCgoKCgpKCgoKClIKC1qKUpKSkpKSkpIKUxMbIoqaCpoIADyCCpoCkooKCpoKmguyAooCkgqaC")]
+[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers.go", "handlers.cs", "ADs8gqaA9NKClIKCgpSCgoKCgpKCgoKClIKC1qKUpKSkpKSkpIKUxMbIoqaCpoIADyCCpoCkooKCpoKmguyAooCkgqaC")]
 // </GoSourcePositionMaps>
 
 namespace go.log.slog.@internal;

@@ -19,6 +19,18 @@ using unicode;
 
 partial class fs_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸoserror() {
+    builtin.initPackage(typeof(@internal.oserror_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(unicode.utf8_package));
+}
+
 // An FS provides access to a hierarchical file system.
 //
 // The FS interface is the minimum implementation required of the file system.

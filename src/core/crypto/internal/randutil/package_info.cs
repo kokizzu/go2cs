@@ -49,7 +49,7 @@ using static go.crypto.@internal.randutil_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/randutil/randutil.go", "randutil.cs", "ABEy4oKClrSkgg==")]
+[assembly: go.GoPositionMap("crypto/internal/randutil/randutil.go", "randutil.cs", "AB0y4oKClrSkgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal;

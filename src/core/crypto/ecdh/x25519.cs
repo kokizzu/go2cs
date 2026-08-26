@@ -12,6 +12,12 @@ using go.crypto.@internal.edwards25519;
 
 partial class ecdh_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸedwards25519ꓸfield() {
+    builtin.initPackage(typeof(go.crypto.@internal.edwards25519.field_package));
+}
+
 internal static nint x25519PublicKeySize = 32;
 internal static nint x25519PrivateKeySize = 32;
 internal static nint x25519SharedSecretSize = 32;

@@ -50,7 +50,7 @@ using static go.vendor.golang.org.x.crypto.hkdf_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/hkdf/hkdf.go", "hkdf.cs", "ABU04oKUgoIADhyUgoKCpoKWgoKUgoKCgpaCgqaEAAIS4oKqooI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/hkdf/hkdf.go", "hkdf.cs", "AC004oKUgoIADhyUgoKCpoKWgoKUgoKCgpaCgqaEAAIS4oKqooI=")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.crypto;

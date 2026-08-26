@@ -9,6 +9,12 @@ using @unsafe = unsafe_package;
 
 partial class windows_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // CanUseLongPaths is true when the OS supports opting into
 // proper long path handling without the need for fixups.
 //

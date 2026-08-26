@@ -22,6 +22,24 @@ using global::go.unicode;
 
 partial class build_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbufio() {
+    builtin.initPackage(typeof(bufio_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸparser() {
+    builtin.initPackage(typeof(global::go.go.parser_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸscanner() {
+    builtin.initPackage(typeof(global::go.go.scanner_package));
+}
+
 [GoType] partial struct importReader {
     internal ж<bufio.Reader> b;
     internal slice<byte> buf;

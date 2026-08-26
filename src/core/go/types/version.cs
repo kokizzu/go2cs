@@ -14,6 +14,12 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸversion() {
+    builtin.initPackage(typeof(global::go.go.version_package));
+}
+
 [GoType("@string")] partial struct goVersion;
 
 // asGoVersion returns v as a goVersion (e.g., "go1.20.1" becomes "go1.20").

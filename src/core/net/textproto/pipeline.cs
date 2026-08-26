@@ -7,6 +7,12 @@ using sync = sync_package;
 
 partial class textproto_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // A Pipeline manages a pipelined in-order request/response sequence.
 //
 // To use a Pipeline p to manage multiple clients on a connection,

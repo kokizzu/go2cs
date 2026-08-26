@@ -52,9 +52,9 @@ using static go.compress.bzip2_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("compress/bzip2/bit_reader.go", "bit_reader.cs", "ABUyooKClKzSgoKClIKClIKCAA8igoKmgoKmgoKmgg==")]
+[assembly: go.GoPositionMap("compress/bzip2/bit_reader.go", "bit_reader.cs", "ACEyooKClKzSgoKClIKClIKCAA8igoKmgoKmgoKmgg==")]
 [assembly: go.GoPositionMap("compress/bzip2/bzip2.go", "bzip2.cs", "AA0mwgAVNLKCggANELKEgoKCqIKCloKCloKCgpSmwoKWgoKCgpSClJaCgoKUpu6CAAcUgoKCgoKUloKCgoSCgoKWgpSUhIKWAAgGooKCgoKogoKogpyCkrqCkpSCgpyylIKCgoKUgoKUgoKClIKUgpSAggAEXwATbsKCgoKCgoKUuoKCgoKCgoKCgsyUqIKCuoKogoKCgoKClJSClLqCgoKCgqaEgpaClIKCgoKUgpSClKaUgoKogoKUgpSCyoKWhIKCgoKUgpSCgpaChJSClIKogpSWpoKUgoKCgpSWuAAHEoKClIKCloK6goKCgoKEAAIaAAoCgoKCloKCgpYABhCCgoKCgoKUpryigoKU")]
-[assembly: go.GoPositionMap("compress/bzip2/huffman.go", "huffman.cs", "ACNO0oSChIKUgsq6hIKUlqaCgpSUzgAJEoKWqIKCgpaCgIKk3oKEgoKClIKCprqIgoIAEybyloKCgoKogoQACxqCzMqWgpSWgoKElIKUloKWlIKUlg==")]
+[assembly: go.GoPositionMap("compress/bzip2/huffman.go", "huffman.cs", "AClO0oSChIKUgsq6hIKUlqaCgpSUzgAJEoKWqIKCgpaCgIKk3oKEgoKClIKCprqIgoIAEybyloKCgoKogoQACxqCzMqWgpSWgoKElIKUloKWlIKUlg==")]
 [assembly: go.GoPositionMap("compress/bzip2/move_to_front.go", "move_to_front.cs", "AAkkooKUqqKCloKClKbqgoKCqJI=")]
 // </GoSourcePositionMaps>
 

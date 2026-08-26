@@ -14,6 +14,18 @@ using vendor.golang.org.x.net.dns;
 
 partial class net_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸdnsꓸdnsmessage() {
+    builtin.initPackage(typeof(vendor.golang.org.x.net.dns.dnsmessage_package));
+}
+
 // provided by runtime
 //
 //go:linkname runtime_rand runtime.rand

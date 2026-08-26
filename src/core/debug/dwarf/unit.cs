@@ -8,6 +8,12 @@ using strconv = strconv_package;
 
 partial class dwarf_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsort() {
+    builtin.initPackage(typeof(sort_package));
+}
+
 // DWARF debug info is split into a sequence of compilation units.
 // Each unit has its own abbreviation table and address size.
 [GoType] partial struct unit {

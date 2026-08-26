@@ -8,6 +8,12 @@ using @internal.syscall.windows;
 
 partial class mime_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸregistry() {
+    builtin.initPackage(typeof(@internal.syscall.windows.registry_package));
+}
+
 [GoInit] internal static void init() {
     osInitMime = initMimeWindows;
 }

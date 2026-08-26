@@ -12,6 +12,12 @@ using go.@internal;
 
 partial class macOS_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 [GoType("num:int32")] partial struct SecTrustSettingsResult;
 
 // Security.framework linker flags for the external linker. See Issue 42459.

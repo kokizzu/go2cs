@@ -13,6 +13,12 @@ using go.net;
 
 partial class http_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
 // A pattern is something that can be matched against an HTTP request.
 // It has an optional method, an optional host, and a path.
 [GoType] partial struct pattern {

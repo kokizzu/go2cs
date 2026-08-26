@@ -8,6 +8,12 @@ using syscall = syscall_package;
 
 partial class windows_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyscall() {
+    builtin.initPackage(typeof(syscall_package));
+}
+
 // go2cs generated this placeholder — func WSASendtoInet4 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func WSASendtoInet6 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])

@@ -56,8 +56,8 @@ using static go.@internal.sysinfo_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/sysinfo/cpuinfo_linux.go", "cpuinfo_linux.cs", "ABAeooKClJSCgpbWgoKWgoKCloKCgoKUlKS4gpaC3oKCgqg=")]
-[assembly: go.GoPositionMap("internal/sysinfo/sysinfo.go", "sysinfo.cs", "ABAegIKmgIKm")]
+[assembly: go.GoPositionMap("internal/sysinfo/cpuinfo_linux.go", "cpuinfo_linux.cs", "AC4eooKClJSCgpbWgoKWgoKCloKCgoKUlKS4gpaC3oKCgqg=")]
+[assembly: go.GoPositionMap("internal/sysinfo/sysinfo.go", "sysinfo.cs", "ABYegIKmgIKm")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

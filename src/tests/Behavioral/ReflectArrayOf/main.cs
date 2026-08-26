@@ -5,6 +5,18 @@ using reflect = reflect_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 [GoType("num:float64")] partial struct Celsius;
 
 [GoType] partial struct pair {
@@ -94,7 +106,7 @@ internal static void Main() {
     fmt.Println(pointerElemˢ, ptr, elemˢ, ptr.Elem(), identicalˢ2, AreEqual(ptr, reflect.TypeOf(new ж<uint8>[]{}.array(2))));
     var structs = reflect.ArrayOf(2, reflect.TypeOf(new pair(nil)));
     fmt.Println(structElemˢ, structs, lenˢ, structs.Len(), sizeˢ, structs.Size(),
-        identicalˢ2, AreEqual(structs, reflect.TypeOf(new pair[]{}.array(2))));
+        identicalˢ2, AreEqual(structs, reflect.TypeOf(new pair[]{}.array(2, () => new()))));
     var empty = reflect.ArrayOf(0, byteT);
     fmt.Println(zeroLengthˢ, empty, lenˢ, empty.Len(), sizeˢ, empty.Size(),
         identicalˢ2, AreEqual(empty, reflect.TypeOf(new uint8[]{}.array())));

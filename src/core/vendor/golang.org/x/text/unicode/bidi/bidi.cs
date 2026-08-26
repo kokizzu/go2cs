@@ -19,6 +19,12 @@ using bytes = bytes_package;
 
 partial class bidi_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
 [GoType("num:nint")] partial struct ΔDirection;
 
 // This API tries to avoid dealing with embedding levels for now. Under the hood

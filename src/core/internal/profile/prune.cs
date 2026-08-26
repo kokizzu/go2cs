@@ -9,6 +9,12 @@ using regexp = regexp_package;
 
 partial class profile_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸregexp() {
+    builtin.initPackage(typeof(regexp_package));
+}
+
 // Prune removes all nodes beneath a node matching dropRx, and not
 // matching keepRx. If the root node of a Sample matches, the sample
 // will have an empty stack.

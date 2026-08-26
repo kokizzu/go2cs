@@ -4,6 +4,12 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 internal static slice<int32> interesting32 = new int32[]{-2147483648, -2_147_483_648, -2147483647, -100663046, -32769, 2147483647}.slice();
 
 internal static slice<int64> interesting64 = new int64[]{-9223372036854775808L, -9223372036854775807L, -2147483649L, 9223372036854775807L}.slice();

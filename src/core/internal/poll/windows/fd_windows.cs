@@ -18,6 +18,18 @@ using unicode;
 
 partial class poll_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() {
+    builtin.initPackage(typeof(go.@internal.syscall.windows_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(unicode.utf8_package));
+}
+
 internal static error initErr;
 internal static ж<uint64> ᏑioSync = new(default(uint64));
 internal static ref uint64 ioSync => ref ᏑioSync.Value;

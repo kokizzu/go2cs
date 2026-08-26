@@ -5,6 +5,18 @@ using Δmath = math_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
 public static UntypedFloat MaxFloat32 => /* 0x1p127 * (1 + (1 - 0x1p-23)) */ 3.4028234663852886e+38;
 public static UntypedFloat SmallestNonzeroFloat32 => /* 0x1p-126 * 0x1p-23 */ 1.401298464324817e-45;
 public static UntypedFloat MaxFloat64 => /* 0x1p1023 * (1 + (1 - 0x1p-52)) */ 1.7976931348623157e+308;

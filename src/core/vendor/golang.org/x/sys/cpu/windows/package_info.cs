@@ -57,11 +57,11 @@ using static go.vendor.golang.org.x.sys.cpu_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/byteorder.go", "byteorder.cs", "ABUogoKmgoKogoKmgoKsogABFAACEKQ=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu.go", "cpu.cs", "ANgBlAOCgoIAFCSCgoKCgoKClJSClIKCgpSUgpSkpIKmgoKClJaCgoKCqLaCgpaCgpaCgpY=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/byteorder.go", "byteorder.cs", "ABsogoKmgoKogoKmgoKsogABFAACEKQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu.go", "cpu.cs", "AOQBlAOCgoIAFCSCgoKCgoKClJSClIKCgpSUgpSkpIKmgoKClJaCgoKCqLaCgpaCgpaCgpY=")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu_gc_x86.go", "cpu_gc_x86.cs", "AAgWuA==")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/cpu_x86.go", "cpu_x86.cs", "AAwaggAuYISEhIKWgoSCgoKCgoKCgoKChKSClIS4pqiEgpaCgoKCgoKEgoKCgoKCgoKCgoKCgoKCgoKCgoSCloKCpoI=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/parse.go", "parse.cs", "AAkcAAsEgoKCqIKCgoKCpoKClICCpICCpII=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/parse.go", "parse.cs", "AA8cAAsEgoKCqIKCgoKCpoKClICCpICCpII=")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/runtime_auxv.go", "runtime_auxv.cs", "AAsWgoKU")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/sys/cpu/runtime_auxv_go121.go", "runtime_auxv_go121.cs", "AAocpII=")]
 // </GoSourcePositionMaps>

@@ -13,6 +13,12 @@ using errors = errors_package;
 
 partial class poll_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
 // errNetClosing is the type of the variable ErrNetClosing.
 // This is used to implement the net.Error interface.
 [GoType] public partial struct errNetClosing {

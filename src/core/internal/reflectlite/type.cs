@@ -25,6 +25,12 @@ using go.@internal;
 
 partial class reflectlite_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
+    builtin.initPackage(typeof(go.@internal.abi_package));
+}
+
 // Type is the representation of a Go type.
 //
 // Not all methods apply to all kinds of types. Restrictions,

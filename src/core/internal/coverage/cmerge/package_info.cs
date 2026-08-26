@@ -49,7 +49,7 @@ using static go.@internal.coverage.cmerge_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/cmerge/merge.go", "merge.cs", "AB5EgqqigpSCgoK4gqaCgqyygoKUqqKCgoKCgpQAAhDSlIKmgriCgriCuKaCgoKmgqaC")]
+[assembly: go.GoPositionMap("internal/coverage/cmerge/merge.go", "merge.cs", "ADBEgqqigpSCgoK4gqaCgqyygoKUqqKCgoKCgpQAAhDSlIKmgriCgriCuKaCgoKmgqaC")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;

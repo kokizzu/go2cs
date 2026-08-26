@@ -8,6 +8,12 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class gob_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 // Errors in decoding and encoding are handled using panic and recover.
 // Panics caused by user error (that is, everything except run-time panics
 // such as "index out of bounds" errors) do not leave the file that caused

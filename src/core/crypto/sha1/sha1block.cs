@@ -8,6 +8,12 @@ using math;
 
 partial class sha1_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
+    builtin.initPackage(typeof(math.bits_package));
+}
+
 internal static UntypedInt _K0 => 0x5A827999;
 internal static UntypedInt _K1 => 0x6ED9EBA1;
 internal static UntypedInt _K2 => 0x8F1BBCDC;

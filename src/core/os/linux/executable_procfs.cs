@@ -11,6 +11,12 @@ using @internal;
 
 partial class os_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() {
+    builtin.initPackage(typeof(@internal.stringslite_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string procSelfExeˢ = "/proc/self/exe"u8;
 internal static readonly @string procCurprocExeˢ = "/proc/curproc/exe"u8;

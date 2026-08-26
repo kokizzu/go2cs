@@ -14,6 +14,12 @@ using context = context_package;
 
 partial class net_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontext() {
+    builtin.initPackage(typeof(context_package));
+}
+
 // cgoAvailable set to false to indicate that the cgo resolver
 // is not available on this system.
 internal const bool cgoAvailable = false;

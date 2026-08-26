@@ -15,6 +15,18 @@ using time = time_package;
 
 partial class httputil_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() {
+    builtin.initPackage(typeof(go.net.textproto_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 public static ж<http.ProtocolError> ErrPersistEOF = Ꮡ(new http.ProtocolError(ErrorString: "persistent connection closed"u8));
 public static ж<http.ProtocolError> ErrClosed = Ꮡ(new http.ProtocolError(ErrorString: "connection closed by user"u8));
 public static ж<http.ProtocolError> ErrPipeline = Ꮡ(new http.ProtocolError(ErrorString: "pipeline error"u8));

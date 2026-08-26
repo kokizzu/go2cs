@@ -18,6 +18,12 @@ using path;
 
 partial class exec_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() {
+    builtin.initPackage(typeof(@internal.syscall.unix_package));
+}
+
 // ErrNotFound is the error resulting if a path search failed to find an executable file.
 public static error ErrNotFound = errors.New("executable file not found in $PATH"u8);
 

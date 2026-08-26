@@ -50,8 +50,8 @@ using static go.runtime.trace_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("runtime/trace/annotation.go", "annotation.cs", "ABFMABYCgpKCggACLAASAoCCpAAHFLLalAAFELKCqLKmggAGIAAXIIKCggAFFgAIAoKUkoIAChiygpSssgACEOampg==")]
-[assembly: go.GoPositionMap("runtime/trace/trace.go", "trace.cs", "AHbyAdKChICCpIKCgoKUpoLawoKChA==")]
+[assembly: go.GoPositionMap("runtime/trace/annotation.go", "annotation.cs", "ACNMABYCgpKCggACLAASAoCCpAAHFLLalAAFELKCqLKmggAGIAAXIIKCggAFFgAIAoKUkoIAChiygpSssgACEOampg==")]
+[assembly: go.GoPositionMap("runtime/trace/trace.go", "trace.cs", "AIgB8gHSgoSAgqSCgoKClKaC2sKCgoQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;

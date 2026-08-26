@@ -9,6 +9,18 @@ using reflect = reflect_package;
 
 partial class gob_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 internal static map<reflectꓸKind, Func<ж<decoderState>, reflectꓸValue, nint, error, bool>> decArrayHelper;
 internal static void initᴛdecArrayHelper() { decArrayHelper = new map<reflectꓸKind, Func<ж<decoderState>, reflectꓸValue, nint, error, bool>>{
     [reflect.ΔBool] = decBoolArray,

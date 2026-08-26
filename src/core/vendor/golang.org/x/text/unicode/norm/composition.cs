@@ -8,6 +8,12 @@ using go.unicode;
 
 partial class norm_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(go.unicode.utf8_package));
+}
+
 internal static UntypedInt maxNonStarters => 30;
 internal static UntypedInt maxBufferSize => /* maxNonStarters + 2 */ 32;
 internal static UntypedInt maxNFCExpansion => 3; // NFC(0x1D160)

@@ -12,6 +12,12 @@ using Δsync = sync_package;
 
 partial class mime_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 internal static ж<Δsync.Map> ᏑmimeTypes = new(default(Δsync.Map));
 internal static ref Δsync.Map mimeTypes => ref ᏑmimeTypes.Value;  // map[string]string; ".Z" => "application/x-compress"
 internal static ж<Δsync.Map> ᏑmimeTypesLower = new(default(Δsync.Map));

@@ -53,7 +53,7 @@ using static go.log.slog.@internal.slogtest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/slog/internal/slogtest/slogtest.go", "slogtest.cs", "AAwasoKU")]
+[assembly: go.GoPositionMap("log/slog/internal/slogtest/slogtest.go", "slogtest.cs", "ABIasoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.log.slog.@internal;

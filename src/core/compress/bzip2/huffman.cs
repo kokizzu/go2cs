@@ -8,6 +8,12 @@ using slices = slices_package;
 
 partial class bzip2_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
 // A huffmanTree is a binary tree which is navigated, bit-by-bit to reach a
 // symbol.
 [GoType] partial struct huffmanTree {

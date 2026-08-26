@@ -12,6 +12,18 @@ using vendor.golang.org.x.crypto;
 
 partial class tls_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸhpke() {
+    builtin.initPackage(typeof(go.crypto.@internal.hpke_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸcryptobyte() {
+    builtin.initPackage(typeof(vendor.golang.org.x.crypto.cryptobyte_package));
+}
+
 [GoType] public partial struct echCipher {
     public uint16 KDFID;
     public uint16 AEADID;

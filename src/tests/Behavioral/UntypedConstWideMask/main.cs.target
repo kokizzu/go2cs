@@ -4,6 +4,12 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 // Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
 private static readonly GoBigConst maskᶜ = GoBigConst.Parse("10633823862292363665388054147449749504");
 

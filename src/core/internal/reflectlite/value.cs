@@ -12,6 +12,12 @@ using go.@internal;
 
 partial class reflectlite_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // Value is the reflection interface to a Go value.
 //
 // Not all methods apply to all kinds of values. Restrictions,

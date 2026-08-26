@@ -10,6 +10,12 @@ using Δsync = sync_package;
 
 partial class syscall_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 internal static ж<Δsync.Once> ᏑenvOnce = new(default(Δsync.Once));
 internal static ref Δsync.Once envOnce => ref ᏑenvOnce.Value;
 internal static ж<Δsync.RWMutex> ᏑenvLock = new(default(Δsync.RWMutex));
