@@ -324,7 +324,16 @@ type IdentContext struct {
 	isPointer bool
 	isType    bool
 	isMethod  bool
-	ident     *ast.Ident
+	// suppressGenericTypeArgs tells convIdent NOT to append a generic function's inferred
+	// instantiation to a bare function reference. Two callers set it, for the two reasons the
+	// append would be wrong: a call's CALLEE (`Reverse(s)`), whose type arguments convCallExpr
+	// owns and emits only where C# cannot infer — appending here as well would write every
+	// generic call in the corpus out longhand; and the BASE of an explicit instantiation
+	// (`Equal[Slice]`), where convIndexExpr/convIndexListExpr append the list themselves and a
+	// second copy would emit `Equal<Slice, E><Slice>`. Twin of the LambdaContext field of the
+	// same name, which gates the identical selector-form path in convSelectorExpr.
+	suppressGenericTypeArgs bool
+	ident                   *ast.Ident
 	// fieldCollidesWithType marks a struct-field selector whose name equals its enclosing
 	// struct's type name. C# forbids a member sharing the enclosing type's name (CS0542), so
 	// the field is emitted with the disambiguation marker (matching its renamed declaration).
@@ -338,10 +347,11 @@ type IdentContext struct {
 
 func DefaultIdentContext() IdentContext {
 	return IdentContext{
-		isPointer:             false,
-		isType:                false,
-		isMethod:              false,
-		ident:                 nil,
+		isPointer:               false,
+		isType:                  false,
+		isMethod:                false,
+		suppressGenericTypeArgs: false,
+		ident:                   nil,
 		fieldCollidesWithType: false,
 		fieldTypeIsRenamed:    false,
 	}

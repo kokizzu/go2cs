@@ -2351,6 +2351,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
 				if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil &&
 					(v.calleeHasConstraintOnlyTypeParam(funIdent) || v.callHasMethodGroupArg(callExpr) ||
+						v.calleeTypeParamUnsuppliedByCall(callExpr, funIdent) ||
 						v.callNeedsConstraintProxy(funIdent, instance.TypeArgs)) {
 					// Erased (pointer-core) callee positions leave the emitted list — `clone[P *T,
 					// T any]` emits `clone<ΔSignature>(…)` (see renderedTypeArgs); a list that
@@ -2572,7 +2573,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	}
 
 	if funcName == "" {
-		funcName = v.convExpr(callExpr.Fun, []ExprContext{lambdaContext})
+		// The CALLEE's ident context suppresses the generic-function-VALUE type-argument append —
+		// phase 8 below owns a call's type arguments, and emits them only where C# cannot infer.
+		// The selector form is gated the same way through LambdaContext.isCallExpr
+		// (convSelectorExpr).
+		calleeIdentContext := DefaultIdentContext()
+		calleeIdentContext.suppressGenericTypeArgs = true
+
+		funcName = v.convExpr(callExpr.Fun, []ExprContext{lambdaContext, calleeIdentContext})
 	}
 
 	// A VARIADIC func-literal callee renders as `(params ꓸꓸꓸ@string dirsʗp) => …`, which C# can
@@ -4668,15 +4676,60 @@ func getCallFunIdent(fun ast.Expr) *ast.Ident {
 // excluded; only a *types.Func (package function or method) counts.
 func (v *Visitor) callHasMethodGroupArg(callExpr *ast.CallExpr) bool {
 	for _, arg := range callExpr.Args {
-		switch a := arg.(type) {
-		case *ast.Ident:
-			if _, ok := v.info.Uses[a].(*types.Func); ok {
-				return true
+		if v.exprIsMethodGroup(arg) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// calleeTypeParamUnsuppliedByCall reports whether the CALL leaves a declared type parameter with no
+// argument to infer it from. Every non-variadic parameter is always supplied in a well-typed Go
+// call, so the only way a position goes unsupplied is a VARIADIC parameter that received nothing:
+// `slices.Insert(s, 0)` against `Insert[S ~[]E, E any](s S, i int, v ...E) S` hands C# an empty
+// `params Span<E>` and E is inferable from nothing (CS0411, cascading into CS1503 as the wrong
+// overload binds). Go infers E through S's core type; C# has no such rule.
+//
+// calleeHasConstraintOnlyTypeParam cannot see this one — E DOES appear in a parameter type — and
+// the predicate is deliberately about the ARGUMENTS rather than about variadics as such, because
+// "the parameter positions this call actually supplied" is the property C# inference works from.
+// It happens to be able to fire on nothing else, which is what holds the emission footprint to
+// exactly this shape: a call that passes at least one variadic value, or forwards a slice with
+// `...`, keeps its bare form.
+func (v *Visitor) calleeTypeParamUnsuppliedByCall(callExpr *ast.CallExpr, funIdent *ast.Ident) bool {
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || sig.TypeParams().Len() == 0 || !sig.Variadic() {
+		return false
+	}
+
+	variadicIndex := sig.Params().Len() - 1
+
+	// A forwarded slice (`f(xs...)`) supplies the position, as does any value in it.
+	if callExpr.Ellipsis != token.NoPos || len(callExpr.Args) > variadicIndex {
+		return false
+	}
+
+	for i := range sig.TypeParams().Len() {
+		tp := sig.TypeParams().At(i)
+		supplied := false
+
+		for j := 0; j < variadicIndex; j++ {
+			if typeUsesTypeParam(sig.Params().At(j).Type(), tp) {
+				supplied = true
+				break
 			}
-		case *ast.SelectorExpr:
-			if _, ok := v.info.Uses[a.Sel].(*types.Func); ok {
-				return true
-			}
+		}
+
+		if !supplied {
+			return true
 		}
 	}
 
