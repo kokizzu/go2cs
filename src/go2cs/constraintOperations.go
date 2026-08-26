@@ -1165,10 +1165,14 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 						// constraint can express that set: golib's comparable<T> CRTP is
 						// implemented by NOTHING (every real instantiation failed — blocking
 						// maps.Keys), and lifting IEqualityOperators would reject structs, which
-						// Go admits. Emit NO C# constraint beyond new(): Go's checker already
-						// validated every instantiation, and emitted equality on type parameters
-						// routes through AreEqual (object equality), not operator ==.
-						constraintNames = append(constraintNames, fmt.Sprintf("%s%s    where %s : %s new()", v.newline, v.indent(v.indentLevel), typeParamNames[i], originalConstraint))
+						// Go admits. Emit NO C# constraint at all: Go's checker already validated
+						// every instantiation, and emitted equality on type parameters routes
+						// through AreEqual (object equality), not operator ==. The `new()` this
+						// arm used to emit is gone with the B1 per-kind split — a Go pointer type
+						// argument now instantiates at the abstract `ж<T>`, which no constructor
+						// constraint can admit (unique's HashTrieMap[*abi.Type, any] was the
+						// corpus witness), and nothing needed it: golib `@new<T>` constructs via
+						// the runtime and no comparable-constrained body constructs its parameter.
 						continue
 					}
 				}

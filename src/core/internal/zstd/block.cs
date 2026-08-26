@@ -80,7 +80,7 @@ internal static seqCode seqMatch => 2;
 }
 
 // seqCodeInfo is the seqCodeInfoData for each kind of sequence code.
-internal static ж<array<seqCodeInfoData>> ᏑseqCodeInfo = new(default(array<seqCodeInfoData>));
+internal static ж<array<seqCodeInfoData>> ᏑseqCodeInfo = new StandardBox<array<seqCodeInfoData>>(default(array<seqCodeInfoData>));
 internal static ref array<seqCodeInfoData> seqCodeInfo => ref ᏑseqCodeInfo.Value;
 internal static void initᴛseqCodeInfo() { seqCodeInfo = new golib.SparseArray<seqCodeInfoData>{
     [(int)seqLiteral] = new(

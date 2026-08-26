@@ -131,7 +131,7 @@ internal static ж<dlogger> dlog() {
 // allDloggers is a list of all dloggers, linked through
 // dlogger.allLink. This is accessed atomically. This is prepend only,
 // so it doesn't need to protect against ABA races.
-internal static ж<ж<dlogger>> ᏑallDloggers = new(default(ж<dlogger>));
+internal static ж<ж<dlogger>> ᏑallDloggers = new StandardBox<ж<dlogger>>(default(ж<dlogger>));
 internal static ref ж<dlogger> allDloggers => ref ᏑallDloggers.ValueSlot;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

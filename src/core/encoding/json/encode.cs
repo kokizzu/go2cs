@@ -297,7 +297,7 @@ internal static readonly @string hex = "0123456789abcdef"u8;
 
 internal static UntypedInt startDetectingCyclesAfter => 1000;
 
-internal static ж<sync.Pool> ᏑencodeStatePool = new(default(sync.Pool));
+internal static ж<sync.Pool> ᏑencodeStatePool = new StandardBox<sync.Pool>(default(sync.Pool));
 internal static ref sync.Pool encodeStatePool => ref ᏑencodeStatePool.Value;
 
 internal static ж<encodeState> newEncodeState() {
@@ -378,7 +378,7 @@ internal static void reflectValue(this ж<encodeState> Ꮡe, reflectꓸValue v, 
 
 // type encoderFunc is a methodless func type — rendered inline as its base delegate
 
-internal static ж<sync.Map> ᏑencoderCache = new(default(sync.Map));
+internal static ж<sync.Map> ᏑencoderCache = new StandardBox<sync.Map>(default(sync.Map));
 internal static ref sync.Map encoderCache => ref ᏑencoderCache.Value; // map[reflect.Type]encoderFunc
 
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> valueEncoder(reflectꓸValue v) {
@@ -1378,7 +1378,7 @@ internal static (field, bool) dominantField(slice<field> fields) {
     return (fields[0], true);
 }
 
-internal static ж<sync.Map> ᏑfieldCache = new(default(sync.Map));
+internal static ж<sync.Map> ᏑfieldCache = new StandardBox<sync.Map>(default(sync.Map));
 internal static ref sync.Map fieldCache => ref ᏑfieldCache.Value; // map[reflect.Type]structFields
 
 // cachedTypeFields is like typeFields but uses a cache to avoid repeated work.

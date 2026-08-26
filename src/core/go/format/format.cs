@@ -74,7 +74,7 @@ internal static printer.Mode printerMode => /* printer.UseSpaces | printer.TabIn
 
 internal static UntypedInt printerNormalizeNumbers => /* 1 << 30 */ 1073741824;
 
-internal static ж<printer.Config> Ꮡconfig = new(new printer.Config(Mode: printerMode, Tabwidth: tabWidth));
+internal static ж<printer.Config> Ꮡconfig = new StandardBox<printer.Config>(new printer.Config(Mode: printerMode, Tabwidth: tabWidth));
 internal static ref printer.Config config => ref Ꮡconfig.Value;
 
 internal static parser.Mode parserMode => /* parser.ParseComments | parser.SkipObjectResolution */ 68;

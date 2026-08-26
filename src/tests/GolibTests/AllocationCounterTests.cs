@@ -182,7 +182,70 @@ public class AllocationCounterTests
         // The canonical divergence: Go's `&x` is ONE malloc; the CLR box additionally allocates the
         // one-element pinnable slot its address stability requires. Two objects, and the count says
         // two — this is the shape r56d decomposed nistec's per-run bill into.
-        AssertCharge(2L, () => { ж<long> _ = new(42L); }, "ж<long> — box plus eager pinnable slot");
+        AssertCharge(2L, () => { ж<long> _ = new StandardBox<long>(42L); }, "ж<long> — box plus eager pinnable slot");
+    }
+
+    // ---- the B1 per-kind split's leaf-ctor census (DESIGN-zh-box-b1.md §5) ----
+    // One exact number per kind ctor: the base charges nothing, each leaf charges what the
+    // pre-split unified ctor charged for its shape. These are the numbers the ratified design
+    // binds; a kind that starts charging differently is a census change, not a refactor.
+
+    [TestMethod]
+    public void HeapBoxOverAManagedValueChargesBoxAlone()
+    {
+        // With a managed T there is no eager pinnable slot (pinning managed storage is
+        // meaningless), so the standard kind charges exactly the box — the split's std-managed 1.
+        @string held = "abc";
+
+        AssertCharge(1L, () => { ж<@string> _ = new StandardBox<@string>(held); },
+            "ж<@string> — box only, no slot for managed T");
+    }
+
+    [TestMethod]
+    public void NilBoxChargesBoxAlone()
+    {
+        // The nil ctor never materializes a slot, unmanaged T included — nothing dereferences a
+        // nil box without panicking first, so there is no address to stabilize.
+        AssertCharge(1L, () => { ж<long> _ = new StandardBox<long>(nil); },
+            "ж<long> nil — box only");
+    }
+
+    [TestMethod]
+    public void FieldReferenceMintChargesBoxAlone()
+    {
+        // Go's `&x.field` — the accessor delegate is compiler-cached at real call sites, so the
+        // mint itself is one object: the FieldRefBox.
+        ж<FieldHost> host = new StandardBox<FieldHost>(default(FieldHost));
+
+        AssertCharge(1L, () => { ж<long> _ = host.of(s_hostField); },
+            "of(...) — the field-ref box only");
+    }
+
+    private struct FieldHost
+    {
+        public long Field;
+    }
+
+    private static readonly FieldRefFunc<long> s_hostField = static p => ref ((ж<FieldHost>)p).Value.Field;
+
+    [TestMethod]
+    public void ElementReferenceMintChargesBoxAlone()
+    {
+        // Go's `&s[i]` — the element kind charges its box; the backing array was charged where it
+        // was made. (builtin's public Ꮡ path documents one extra charge for the caller's IArray
+        // boxing temp; that is the call site's census, not this ctor's.)
+        array<byte> backing = new(4);
+
+        AssertCharge(1L, () => { ж<byte> _ = new ElemRefBox<byte>(backing, 1); },
+            "element reference — the elem-ref box only");
+    }
+
+    [TestMethod]
+    public void NativeAddressBoxChargesBoxAlone()
+    {
+        // A uintptr round-trip mints the address-identity kind: one box, no slot, no referent.
+        AssertCharge(1L, () => { ж<nint> _ = new NativeBox<nint>(0x4000u); },
+            "native address box — the box only");
     }
 
     [TestMethod]
@@ -225,7 +288,7 @@ public class AllocationCounterTests
             ("ToString()",        () => { string _ = new @string("materialize").ToString(); }),
             ("ToRunes()",         () => { rune[] _ = new @string("räng").ToRunes(); }),
             ("for range s",       () => { foreach ((nint _, rune _) in new @string("räng")) { } }),
-            ("ж<long>",           () => { ж<long> _ = new(42L); }),
+            ("ж<long>",           () => { ж<long> _ = new StandardBox<long>(42L); }),
             ("make([]byte, n)",   () => { slice<byte> _ = new(s_sliceLength); }),
             ("make(map)",         () => { map<@string, nint> _ = new(); }),
             ("make(chan, 4)",     () => { channel<nint> _ = new(4); })

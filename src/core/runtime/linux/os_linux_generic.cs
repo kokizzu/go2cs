@@ -14,7 +14,7 @@ internal static UntypedInt _SIG_SETMASK => 2;
 
 [GoType("[2]uint32")] partial struct sigset;
 
-internal static ж<sigset> Ꮡsigset_all = new(new sigset(new uint32[]{~(uint32)0, ~(uint32)0}.array()));
+internal static ж<sigset> Ꮡsigset_all = new StandardBox<sigset>(new sigset(new uint32[]{~(uint32)0, ~(uint32)0}.array()));
 internal static ref sigset sigset_all => ref Ꮡsigset_all.Value;
 
 //go:nosplit

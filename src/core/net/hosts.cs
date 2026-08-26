@@ -48,7 +48,7 @@ internal static @string parseLiteralIP(@string addr) {
     internal time.Time mtime;
     internal int64 size;
 }
-internal static ж<hostsᴛ1> Ꮡhosts = new(new hostsᴛ1(nil));
+internal static ж<hostsᴛ1> Ꮡhosts = new StandardBox<hostsᴛ1>(new hostsᴛ1(nil));
 internal static ref hostsᴛ1 hosts => ref Ꮡhosts.Value;
 
 internal static void readHosts() {

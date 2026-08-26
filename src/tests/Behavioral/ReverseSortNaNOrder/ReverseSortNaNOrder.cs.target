@@ -80,9 +80,7 @@ internal static bool less<T>(T x, T y)
     return (isNaN(x) && !isNaN(y)) || x < y;
 }
 
-internal static bool eq<T>(T a, T b)
-    where T : /* comparable */ new()
-{
+internal static bool eq<T>(T a, T b) {
     return AreEqual(a, b);
 }
 

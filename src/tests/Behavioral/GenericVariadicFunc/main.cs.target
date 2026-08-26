@@ -35,9 +35,7 @@ public static nint DeferredCount<T>(params Span<T> valsʗp) {
     finally { ᒐ.Run(); }
 }
 
-public static T Or<T>(params Span<T> valsʗp)
-    where T : /* comparable */ new()
-{
+public static T Or<T>(params Span<T> valsʗp) {
     var vals = valsʗp.sslice();
 
     T zero = default!;

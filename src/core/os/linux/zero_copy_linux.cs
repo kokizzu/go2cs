@@ -10,9 +10,9 @@ using @internal;
 
 partial class os_package {
 
-internal static ж<Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)>> ᏑpollCopyFileRange = new(poll.CopyFileRange);
+internal static ж<Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)>> ᏑpollCopyFileRange = new StandardBox<Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)>>(poll.CopyFileRange);
 internal static ref Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)> pollCopyFileRange => ref ᏑpollCopyFileRange.ValueSlot;
-internal static ж<Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)>> ᏑpollSplice = new(poll.Splice);
+internal static ж<Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)>> ᏑpollSplice = new StandardBox<Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)>>(poll.Splice);
 internal static ref Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)> pollSplice => ref ᏑpollSplice.ValueSlot;
 
 // wrapSyscallError takes an error and a syscall name. If the error is

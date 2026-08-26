@@ -36,7 +36,7 @@ public class LinuxSpawnSeamTests
         var (pid, _, err) = syscall.StartProcess(
             "/nonexistent-go2cs-spawn-gate"u8,
             new slice<@string>(new @string[] { "/nonexistent-go2cs-spawn-gate"u8 }),
-            new ж<go.syscall_package.ProcAttr>(attr));
+            new StandardBox<go.syscall_package.ProcAttr>(attr));
 
         Assert.AreEqual((nint)0, pid, "a failed spawn must not report a pid");
         Assert.IsNotNull(err, "spawning a missing binary must fail synchronously");
@@ -71,7 +71,7 @@ public class LinuxSpawnSeamTests
         var (pid, _, err) = syscall.StartProcess(
             "/bin/true"u8,
             new slice<@string>(new @string[] { "/bin/true"u8 }),
-            new ж<go.syscall_package.ProcAttr>(attr));
+            new StandardBox<go.syscall_package.ProcAttr>(attr));
 
         Assert.IsNull(err, $"spawning /bin/true failed: {err}");
         Assert.IsTrue(pid > 0, "no pid from a successful spawn");

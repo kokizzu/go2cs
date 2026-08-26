@@ -26,7 +26,6 @@ partial class slices_package {
 // Floating point NaNs are not considered equal.
 public static bool Equal<S, E>(S s1, S s2)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
-    where E : /* comparable */ new()
 {
     if (len(s1) != len(s2)) {
         return false;
@@ -118,7 +117,6 @@ public static nint CompareFunc<S1, S2, E1, E2>(S1 s1, S2 s2, Func<E1, E2, nint> 
 // or -1 if not present.
 public static nint Index<S, E>(S s, E v)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
-    where E : /* comparable */ new()
 {
     foreach (var (i, _) in s) {
         if (AreEqual(v, s[i])) {
@@ -144,7 +142,6 @@ public static nint IndexFunc<S, E>(S s, Func<E, bool> f)
 // Contains reports whether v is present in s.
 public static bool Contains<S, E>(S s, E v)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
-    where E : /* comparable */ new()
 {
     return Index(s, v) >= 0;
 }
@@ -384,7 +381,6 @@ public static S Clone<S, E>(S s)
 // Compact zeroes the elements between the new length and the original length.
 public static S Compact<S, E>(S s)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
-    where E : /* comparable */ new()
 {
     if (len(s) < 2) {
         return s;

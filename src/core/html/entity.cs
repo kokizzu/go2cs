@@ -28,7 +28,7 @@ internal static map<@string, rune> entity;
 internal static map<@string, array<rune>> entity2;
 
 // populateMapsOnce guards calling populateMaps.
-internal static ж<Δsync.Once> ᏑpopulateMapsOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑpopulateMapsOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once populateMapsOnce => ref ᏑpopulateMapsOnce.Value;
 
 // populateMaps populates entity and entity2.

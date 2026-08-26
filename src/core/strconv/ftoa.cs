@@ -19,10 +19,10 @@ partial class strconv_package {
     internal nint bias;
 }
 
-internal static ж<floatInfo> Ꮡfloat32info = new(new floatInfo(23, 8, -127));
+internal static ж<floatInfo> Ꮡfloat32info = new StandardBox<floatInfo>(new floatInfo(23, 8, -127));
 internal static ref floatInfo float32info => ref Ꮡfloat32info.Value;
 
-internal static ж<floatInfo> Ꮡfloat64info = new(new floatInfo(52, 11, -1023));
+internal static ж<floatInfo> Ꮡfloat64info = new StandardBox<floatInfo>(new floatInfo(52, 11, -1023));
 internal static ref floatInfo float64info => ref Ꮡfloat64info.Value;
 
 // FormatFloat converts the floating-point number f to a string,

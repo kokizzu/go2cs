@@ -138,11 +138,11 @@ public static UntypedInt CLONE_NEWTIME => 0x00000080; // New time namespace
     public ж<nint> PidFD;
 }
 
-internal static ж<array<byte>> Ꮡnone = new(new byte[]{(rune)'n', (rune)'o', (rune)'n', (rune)'e', 0}.array());
+internal static ж<array<byte>> Ꮡnone = new StandardBox<array<byte>>(new byte[]{(rune)'n', (rune)'o', (rune)'n', (rune)'e', 0}.array());
 internal static ref array<byte> none => ref Ꮡnone.Value;
-internal static ж<array<byte>> Ꮡslash = new(new byte[]{(rune)'/', 0}.array());
+internal static ж<array<byte>> Ꮡslash = new StandardBox<array<byte>>(new byte[]{(rune)'/', 0}.array());
 internal static ref array<byte> slash => ref Ꮡslash.Value;
-internal static ж<bool> ᏑforceClone3 = new(false);
+internal static ж<bool> ᏑforceClone3 = new StandardBox<bool>(false);
 internal static ref bool forceClone3 => ref ᏑforceClone3.Value; // Used by unit tests only.
 
 // Implemented in runtime package.

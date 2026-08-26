@@ -142,7 +142,7 @@ public static class PointerExtensions
 
         // A native-backed box IS its address; reinterpreting it keeps aliasing that address.
         if (box.IsNative)
-            return new ж<TDst>(box.NativeAddress);
+            return new NativeBox<TDst>(box.NativeAddress);
 
         if (ReinterpretAliasesStorage<T, TDst>.Value)
         {
@@ -151,7 +151,7 @@ public static class PointerExtensions
             // reference, so a collection that moves the box is invisible here. ValueSlot also
             // composes through the field-ref and array-element reference kinds, so a reinterpret of
             // `&s.f` or `&a[i]` aliases the real storage rather than a copy.
-            return new ж<TDst>(box, ж<T>.ReinterpretRef<TDst>);
+            return new FieldRefBox<TDst>(box, ж<T>.ReinterpretRef<TDst>);
         }
 
         // Not representable as an alias, so the derived pointer has to name the source's storage by

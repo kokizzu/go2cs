@@ -161,7 +161,7 @@ public class GoAsyncIOTests
         // pointer, field identity) rather than object identity — that is what makes three separate
         // mints of `&o.o` at three call sites resolve to ONE record. The table must therefore use the
         // KEY's equality, never ReferenceEquals.
-        ж<pairOfInts> box = new(new pairOfInts());
+        ж<pairOfInts> box = new StandardBox<pairOfInts>(new pairOfInts());
         object first = GoAsyncIO.GetOrCreateOperationState(box.of(pairOfInts.Ꮡsecond), () => new object());
         object again = GoAsyncIO.GetOrCreateOperationState(box.of(pairOfInts.Ꮡsecond), () => new object());
 

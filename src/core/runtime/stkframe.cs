@@ -268,7 +268,7 @@ internal static readonly @string badSymbolTableˢ = "bad symbol table"u8;
     return (locals, args, objs);
 }
 
-internal static ж<array<stackObjectRecord>> ᏑmethodValueCallFrameObjs = new(new array<stackObjectRecord>(1));
+internal static ж<array<stackObjectRecord>> ᏑmethodValueCallFrameObjs = new StandardBox<array<stackObjectRecord>>(new array<stackObjectRecord>(1));
 internal static ref array<stackObjectRecord> methodValueCallFrameObjs => ref ᏑmethodValueCallFrameObjs.Value;    // initialized in stackobjectinit
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

@@ -20,7 +20,7 @@ partial class main_package {
     public bool Verbose;
     public nint Retries;
 }
-internal static ж<settingsᴛ1> Ꮡsettings = new(new settingsᴛ1(Verbose: true, Retries: 3));
+internal static ж<settingsᴛ1> Ꮡsettings = new StandardBox<settingsᴛ1>(new settingsᴛ1(Verbose: true, Retries: 3));
 internal static ref settingsᴛ1 settings => ref Ꮡsettings.Value;
 
 [GoType("dyn")] partial struct processAnonymousStruct_data {

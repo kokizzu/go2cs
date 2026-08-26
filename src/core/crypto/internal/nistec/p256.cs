@@ -121,7 +121,7 @@ public static (ж<P256Point>, error) SetBytes(this ж<P256Point> Ꮡp, slice<byt
 
 internal static ж<fiat.P256Element> _p256B;
 
-internal static ж<sync.Once> Ꮡ_p256BOnce = new(default(sync.Once));
+internal static ж<sync.Once> Ꮡ_p256BOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once _p256BOnce => ref Ꮡ_p256BOnce.Value;
 
 internal static ж<fiat.P256Element> p256B() {
@@ -408,7 +408,7 @@ public static (ж<P256Point>, error) ScalarMult(this ж<P256Point> Ꮡp, ж<P256
 
 internal static ж<array<p256Table>> p256GeneratorTable;
 
-internal static ж<sync.Once> Ꮡp256GeneratorTableOnce = new(default(sync.Once));
+internal static ж<sync.Once> Ꮡp256GeneratorTableOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once p256GeneratorTableOnce => ref Ꮡp256GeneratorTableOnce.Value;
 
 // generatorTable returns a sequence of p256Tables. The first table contains

@@ -867,7 +867,7 @@ internal static bool http2shouldRetryDial(ref http2dialCall call, ж<Request> �
 // TODO: Benchmark to determine if the pools are necessary. The GC may have
 // improved enough that we can instead allocate chunks like this:
 // make([]byte, max(16<<10, expectedBytesRemaining))
-internal static ж<array<sync.Pool>> Ꮡhttp2dataChunkPools = new(new sync.Pool[]{
+internal static ж<array<sync.Pool>> Ꮡhttp2dataChunkPools = new StandardBox<array<sync.Pool>>(new sync.Pool[]{
     new(New: () => Ꮡ(new array<byte>(1024))),
     new(New: () => Ꮡ(new array<byte>(2048))),
     new(New: () => Ꮡ(new array<byte>(4096))),
@@ -1456,7 +1456,7 @@ internal static void writeDebug(this http2FrameHeader h, ж<bytes.Buffer> Ꮡbuf
 
 // frame header bytes.
 // Used only by ReadFrameHeader.
-internal static ж<sync.Pool> Ꮡhttp2fhBytes = new(new sync.Pool(
+internal static ж<sync.Pool> Ꮡhttp2fhBytes = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => {
         var buf = new slice<byte>(http2frameHeaderLen);
         return Ꮡ(buf);
@@ -3108,7 +3108,7 @@ internal static uint64 http2curGoroutineID() {
     finally { ᒐ.Run(); }
 }
 
-internal static ж<sync.Pool> Ꮡhttp2littleBuf = new(new sync.Pool(
+internal static ж<sync.Pool> Ꮡhttp2littleBuf = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => {
         var buf = new slice<byte>(64);
         return Ꮡ(buf);
@@ -3226,7 +3226,7 @@ internal static uint64 http2cutoff64(nint @base) {
     return (18446744073709551615UL) / (uint64)@base + 1;
 }
 
-internal static ж<sync.Once> Ꮡhttp2commonBuildOnce = new(default(sync.Once));
+internal static ж<sync.Once> Ꮡhttp2commonBuildOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once http2commonBuildOnce => ref Ꮡhttp2commonBuildOnce.Value;
 internal static map<@string, @string> http2commonLowerHeader; // Go-Canonical-Case -> lower-case
 internal static map<@string, @string> http2commonCanonHeader; // lower-case -> Go-Canonical-Case
@@ -3531,7 +3531,7 @@ internal static ж<http2bufferedWriter> http2newBufferedWriter(io.Writer w) {
 // not much thought went into it.
 internal static UntypedInt http2bufWriterPoolBufferSize => /* 4 << 10 */ 4096;
 
-internal static ж<sync.Pool> Ꮡhttp2bufWriterPool = new(new sync.Pool(
+internal static ж<sync.Pool> Ꮡhttp2bufWriterPool = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => bufio.NewWriterSize(default!, http2bufWriterPoolBufferSize).OrTypedNil()
 ));
 internal static ref sync.Pool http2bufWriterPool => ref Ꮡhttp2bufWriterPool.Value;
@@ -3612,7 +3612,7 @@ internal static error http2errTimeout = new http2httpErrorжerror(Ꮡ(new http2h
     tlsꓸConnectionState ConnectionState();
 }
 
-internal static ж<sync.Pool> Ꮡhttp2sorterPool = new(new sync.Pool(New: () => @new<http2sorter>()));
+internal static ж<sync.Pool> Ꮡhttp2sorterPool = new StandardBox<sync.Pool>(new sync.Pool(New: () => @new<http2sorter>()));
 internal static ref sync.Pool http2sorterPool => ref Ꮡhttp2sorterPool.Value;
 
 [GoType] partial struct http2sorter {
@@ -3938,7 +3938,7 @@ internal static error http2errClosedBody = errors.New("body closed by handler"u8
 internal static error http2errHandlerComplete = errors.New("http2: request body closed due to handler exiting"u8);
 internal static error http2errStreamClosed = errors.New("http2: stream closed"u8);
 
-internal static ж<sync.Pool> Ꮡhttp2responseWriterStatePool = new(new sync.Pool(
+internal static ж<sync.Pool> Ꮡhttp2responseWriterStatePool = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => {
         var rws = Ꮡ(new http2responseWriterState(nil));
         rws.Value.bw = bufio.NewWriterSize(new http2chunkWriter(rws), http2handlerChunkWriteSize);
@@ -5127,12 +5127,12 @@ internal static error readPreface(this ж<http2serverConn> Ꮡsc) {
     finally { ᒐ.Run(); }
 }
 
-internal static ж<sync.Pool> Ꮡhttp2errChanPool = new(new sync.Pool(
+internal static ж<sync.Pool> Ꮡhttp2errChanPool = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => new channel<error>(1)
 ));
 internal static ref sync.Pool http2errChanPool => ref Ꮡhttp2errChanPool.Value;
 
-internal static ж<sync.Pool> Ꮡhttp2writeDataPool = new(new sync.Pool(
+internal static ж<sync.Pool> Ꮡhttp2writeDataPool = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => @new<http2writeData>()
 ));
 internal static ref sync.Pool http2writeDataPool => ref Ꮡhttp2writeDataPool.Value;
@@ -9614,7 +9614,7 @@ internal static error http2errReqBodyTooLong = errors.New("http2: request body l
 // In practice, the maximum scratch buffer size should not exceed 512 KB due to
 // frameScratchBufferLen(maxFrameSize), thus the "infinity pool" should never be used.
 // It exists mainly as a safety measure, for potential future increases in max buffer size.
-internal static ж<array<sync.Pool>> Ꮡhttp2bufPools = new(new array<sync.Pool>(7));
+internal static ж<array<sync.Pool>> Ꮡhttp2bufPools = new StandardBox<array<sync.Pool>>(new array<sync.Pool>(7));
 internal static ref array<sync.Pool> http2bufPools => ref Ꮡhttp2bufPools.Value; // of *[]byte
 
 internal static nint http2bufPoolIndex(nint size) {

@@ -551,7 +551,7 @@ public static partial class GoReflect
     private static object makeFieldBox<F>(object parentBox, Delegate accessor)
     {
         FieldRefFunc<F> fieldRef = (FieldRefFunc<F>)accessor;
-        return new ж<F>(parentBox, fieldRef, accessor);
+        return new FieldRefBox<F>(parentBox, fieldRef, accessor);
     }
 
     private static string fieldPathKey(GoFieldInfo field)
@@ -644,7 +644,7 @@ public static partial class GoReflect
 
     private static object elementBoxOfArray<E>(object arrayValue, int index)
     {
-        return new ж<E>((IArray)arrayValue, index);
+        return new ElemRefBox<E>((IArray)arrayValue, index);
     }
 
     private static readonly ConcurrentDictionary<Type, Func<object, nint, nint, object>> s_sliceWindowMakers = new();

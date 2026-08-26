@@ -107,8 +107,6 @@ public static void PassSlice<S, E>(S s, E v)
 
 public static bool EqualMaps<M, K, V>(M m1, M m2)
     where M : /* ~map[K]V */ IMap<K, V>, ISupportMake<M>, new()
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     if (len(m1) != len(m2)) {
         return false;
@@ -145,8 +143,6 @@ internal static KVSeq<@string, nint> letters() {
 
 public static M CloneOrNil<M, K, V>(M m)
     where M : /* ~map[K]V */ IMap<K, V>, ISupportMake<M>, new()
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     if (m.IsNil) {
         return default!;
@@ -160,8 +156,6 @@ public static M CloneOrNil<M, K, V>(M m)
 
 public static void DropKey<M, K, V>(M m, K key)
     where M : /* ~map[K]V */ IMap<K, V>, ISupportMake<M>, new()
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     delete(m, key);
 }

@@ -72,7 +72,7 @@ partial class sql_package {
     builtin.initPackage(typeof(go.sync.atomic_package));
 }
 
-internal static ж<sync.RWMutex> ᏑdriversMu = new(default(sync.RWMutex));
+internal static ж<sync.RWMutex> ᏑdriversMu = new StandardBox<sync.RWMutex>(default(sync.RWMutex));
 internal static ref sync.RWMutex driversMu => ref ᏑdriversMu.Value;
 
 // drivers should be an internal detail,

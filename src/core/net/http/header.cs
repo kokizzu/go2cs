@@ -160,7 +160,7 @@ internal static (nint n, error err) WriteString(this stringWriter w, @string s) 
     internal slice<keyValues> kvs;
 }
 
-internal static ж<sync.Pool> ᏑheaderSorterPool = new(new sync.Pool(
+internal static ж<sync.Pool> ᏑheaderSorterPool = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => @new<headerSorter>()
 ));
 internal static ref sync.Pool headerSorterPool => ref ᏑheaderSorterPool.Value;

@@ -46,7 +46,7 @@ internal static class PointerTypeTemplate
 
                 public static unsafe implicit operator {{className}}(uintptr value)
                 {
-                    return new {{className}}(new {{PointerPrefix}}<{{targetTypeName}}>(*({{targetTypeName}}*)value));
+                    return new {{className}}(new {{BoxConstructPrefix}}<{{targetTypeName}}>(*({{targetTypeName}}*)value));
                 }
                 
                 public static unsafe implicit operator uintptr({{className}} value)
@@ -57,7 +57,7 @@ internal static class PointerTypeTemplate
                 
                 public static unsafe implicit operator {{className}}(void* value)
                 {
-                    return new {{className}}(new {{PointerPrefix}}<{{targetTypeName}}>(*({{targetTypeName}}*)value));
+                    return new {{className}}(new {{BoxConstructPrefix}}<{{targetTypeName}}>(*({{targetTypeName}}*)value));
                 }
                 
                 public static unsafe implicit operator void*({{className}} value)

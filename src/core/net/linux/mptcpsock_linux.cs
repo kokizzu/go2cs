@@ -20,7 +20,7 @@ partial class net_package {
     builtin.initPackage(typeof(@internal.syscall.unix_package));
 }
 
-internal static ж<Δsync.Once> ᏑmptcpOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑmptcpOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once mptcpOnce => ref ᏑmptcpOnce.Value;
 internal static bool mptcpAvailable;
 internal static bool hasSOLMPTCP;

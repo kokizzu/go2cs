@@ -12,7 +12,6 @@ partial class main_package {
 
 public static nint Index<S, E>(S s, E v)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
-    where E : /* comparable */ new()
 {
     foreach (var (i, _) in s) {
         if (AreEqual(s[i], v)) {

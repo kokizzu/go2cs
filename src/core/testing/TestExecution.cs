@@ -590,7 +590,7 @@ public sealed class TestExecution
         testing_package.T t = new() { Execution = this };
         try
         {
-            action(new ж<testing_package.T>(t));
+            action(new StandardBox<testing_package.T>(t));
         }
         catch (TestAbortException)
         {

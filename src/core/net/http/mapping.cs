@@ -8,16 +8,12 @@ partial class http_package {
 // A mapping is a collection of key-value pairs where the keys are unique.
 // A zero mapping is empty and ready to use.
 // A mapping tries to pick a representation that makes [mapping.find] most efficient.
-[GoType] partial struct mapping<K, V>
-    where K : /* comparable */ new()
-{
+[GoType] partial struct mapping<K, V> {
     internal slice<entry<K, V>> s; // for few pairs
     internal map<K, V> m;     // for many pairs
 }
 
-[GoType] partial struct entry<K, V>
-    where K : /* comparable */ new()
-{
+[GoType] partial struct entry<K, V> {
     internal K key;
     internal V value;
 }
@@ -27,9 +23,7 @@ partial class http_package {
 internal static nint maxSlice = 8;
 
 // add adds a key-value pair to the mapping.
-[GoRecv] internal static void add<K, V>(this ref mapping<K, V> h, K k, V v)
-    where K : /* comparable */ new()
-{
+[GoRecv] internal static void add<K, V>(this ref mapping<K, V> h, K k, V v) {
     if (h.m == default! && builtin.len(h.s) < maxSlice){
         h.s = append(h.s, new entry<K, V>(k, v));
     } else {
@@ -47,9 +41,7 @@ internal static nint maxSlice = 8;
 // find returns the value corresponding to the given key.
 // The second return value is false if there is no value
 // with that key.
-internal static (V v, bool found) find<K, V>(this ж<mapping<K, V>> Ꮡh, K k)
-    where K : /* comparable */ new()
-{
+internal static (V v, bool found) find<K, V>(this ж<mapping<K, V>> Ꮡh, K k) {
     V v = default!;
     bool found = default!;
 
@@ -71,9 +63,7 @@ internal static (V v, bool found) find<K, V>(this ж<mapping<K, V>> Ꮡh, K k)
 
 // eachPair calls f for each pair in the mapping.
 // If f returns false, pairs returns immediately.
-internal static void eachPair<K, V>(this ж<mapping<K, V>> Ꮡh, Func<K, V, bool> f)
-    where K : /* comparable */ new()
-{
+internal static void eachPair<K, V>(this ж<mapping<K, V>> Ꮡh, Func<K, V, bool> f) {
     ref var h = ref Ꮡh.DerefOrNull();
 
     if (Ꮡh == nil) {

@@ -1429,7 +1429,7 @@ internal static Mode normalizeNumbers => /* 1 << 30 */ 1073741824;
 // Whitespace sequences are short.
 // We start the printer with a 16K output buffer, which is currently
 // larger than about 80% of Go files in the standard library.
-internal static ж<sync.Pool> ᏑprinterPool = new(new sync.Pool(
+internal static ж<sync.Pool> ᏑprinterPool = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => Ꮡ(new printer(
             wsbuf: new slice<whiteSpace>(0, 16),
             output: new slice<byte>(0, (16 << (int)(10)))

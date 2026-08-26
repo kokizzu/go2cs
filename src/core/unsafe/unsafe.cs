@@ -203,7 +203,7 @@ unsafe partial class unsafe_package  {
 //	hdr.Data = uintptr(unsafe.Pointer(p))
 //	hdr.Len = n
 //	s := *(*string)(unsafe.Pointer(&hdr)) // p possibly already lost
-public class Pointer : ж<uintptr>, IUnsafePointer {
+public class Pointer : StandardBox<uintptr>, IUnsafePointer {
     // The ZERO address IS the nil pointer: Go's `unsafe.Pointer(uintptr(0)) == nil` holds, and
     // every uintptr round-trip of a nil pointer lands here (the converter bridges an
     // unsafe.Pointer-valued call through uintptr because unsafe lives in its own assembly and can
@@ -588,22 +588,22 @@ public static ж<T> Add<T, TLen>(ж<T> ptr, TLen len) where TLen : System.Numeri
     int n = int.CreateTruncating(len);
 
     if (ptr == nil)
-        return new ж<T>();
+        return new StandardBox<T>(nil);
 
     // A pointer that ALIASES a native address offsets that address directly. Go's unsafe.Add is
     // byte arithmetic (its argument is an unsafe.Pointer), which is what a native alias reproduces;
     // the managed array-element path below is an element step against a managed backing store.
     if (ptr.IsNative)
-        return new ж<T>((nuint)((nint)ptr.NativeAddress + n));
+        return new NativeBox<T>((nuint)((nint)ptr.NativeAddress + n));
 
     (IArray array, int index)? arrayRef  = ptr.ArrayRef;
 
     if (arrayRef is null)
-        return new ж<T>();
+        return new StandardBox<T>(nil);
 
     (IArray array, int index) = arrayRef.Value;
 
-    return new ж<T>(array, index + n);
+    return new ElemRefBox<T>(array, index + n);
 }
 
 // The function Slice returns a slice whose underlying array starts at ptr
@@ -690,7 +690,7 @@ public static slice<T> Slice<T, TLen>(ж<T> ptr, TLen len) where TLen : System.N
 //     unspecified memory address.
 public static ж<T> SliceData<T>(slice<T> slice) {
     if (slice == nil)
-        return new ж<T>();
+        return new StandardBox<T>(nil);
 
     // Go DEFINES this as `&slice[:1][0]` — an INTERIOR POINTER into the slice's own backing store —
     // so the faithful model is the array-element reference `Ꮡ(s, 0)`, which is exactly what the
@@ -776,10 +776,10 @@ public static ж<byte> StringData(@string str) {
     // across DISTINCT empty strings) — each call here pins a fresh buffer, so only nil
     // preserves that identity.
     if (str.Length == 0)
-        return new ж<byte>(nil);
+        return new StandardBox<byte>(nil);
 
     PinnedBuffer buffer = str.buffer;
-    return new ж<byte>(buffer, 0);
+    return new ElemRefBox<byte>(buffer, 0);
 }
 
 } // end unsafe_package

@@ -48,7 +48,7 @@ internal static void recordForPanic(slice<byte> b) {
     printunlock();
 }
 
-internal static ж<mutex> Ꮡdebuglock = new(new mutex(nil));
+internal static ж<mutex> Ꮡdebuglock = new StandardBox<mutex>(new mutex(nil));
 internal static ref mutex debuglock => ref Ꮡdebuglock.Value;
 
 // The compiler emits calls to printlock and printunlock around

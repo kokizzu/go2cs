@@ -55,7 +55,7 @@ partial class nettest_package {
     builtin.initPackage(typeof(strings_package));
 }
 
-internal static ж<sync.Once> ᏑstackOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑstackOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once stackOnce => ref ᏑstackOnce.Value;
 internal static bool ipv4Enabled;
 internal static bool canListenTCP4OnLoopback;

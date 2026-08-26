@@ -192,7 +192,7 @@ func (v *Visitor) writeAddressedGlobalDecl(access, csTypeName, csIDName, initExp
 	// `new(...)` constructs the box, and B2-I3 rewrites it to name the concrete standard-kind
 	// class — `new BoxConstructPrefix<T>(...)` — when the base goes abstract. This line is the
 	// 754-site class of the design's emission-priced radius.
-	v.writeOutput("%s static %s<%s> %s = new(%s);", access, PointerPrefix, csTypeName, box, initExpr)
+	v.writeOutput("%s static %s<%s> %s = new %s<%s>(%s);", access, PointerPrefix, csTypeName, box, BoxConstructPrefix, csTypeName, initExpr)
 	v.outputBuilder.WriteString(v.newline)
 	v.writeOutput("%s static ref %s %s => ref %s.%s;", access, csTypeName, csIDName, box, accessor)
 }

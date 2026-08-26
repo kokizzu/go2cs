@@ -16,9 +16,9 @@ partial class syscall_package {
     builtin.initPackage(typeof(sync_package));
 }
 
-internal static ж<Δsync.Once> ᏑenvOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑenvOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once envOnce => ref ᏑenvOnce.Value;
-internal static ж<Δsync.RWMutex> ᏑenvLock = new(default(Δsync.RWMutex));
+internal static ж<Δsync.RWMutex> ᏑenvLock = new StandardBox<Δsync.RWMutex>(default(Δsync.RWMutex));
 internal static ref Δsync.RWMutex envLock => ref ᏑenvLock.Value;
 internal static map<@string, nint> env;
 internal static slice<@string> envs = runtime_envs();

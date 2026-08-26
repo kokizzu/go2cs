@@ -71,7 +71,7 @@ public class ReinterpretFabricationTests
     {
         // The control: the guard must not reach the representable arm. A float64's bits read as
         // uint64 through the alias, exactly as before.
-        ж<double> box = new(1.0);
+        ж<double> box = new StandardBox<double>(1.0);
 
         ж<ulong> derived = box.Reinterpret<double, ulong>();
 

@@ -19,7 +19,7 @@ partial class main_package {
     return h.count;
 }
 
-internal static ж<heap> Ꮡmheap = new(default(heap));
+internal static ж<heap> Ꮡmheap = new StandardBox<heap>(default(heap));
 internal static ref heap mheap => ref Ꮡmheap.Value;
 
 internal static void keep(ж<heap> Ꮡh) {

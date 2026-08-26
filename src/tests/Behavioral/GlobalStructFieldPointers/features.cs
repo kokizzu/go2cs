@@ -8,7 +8,7 @@ partial class main_package {
     public bool HasWide;
     public nint Level;
 }
-public static ж<Featuresᴛ1> ᏑFeatures = new(default(Featuresᴛ1));
+public static ж<Featuresᴛ1> ᏑFeatures = new StandardBox<Featuresᴛ1>(default(Featuresᴛ1));
 public static ref Featuresᴛ1 Features => ref ᏑFeatures.Value;
 
 [GoType] partial struct option {

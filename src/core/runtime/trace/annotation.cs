@@ -103,7 +103,7 @@ internal static ж<Task> fromContext(context.Context ctx) {
     userTaskEnd(t.id);
 }
 
-internal static ж<uint64> ᏑlastTaskID = new(0);
+internal static ж<uint64> ᏑlastTaskID = new StandardBox<uint64>(0);
 internal static ref uint64 lastTaskID => ref ᏑlastTaskID.Value; // task id issued last time
 
 internal static uint64 newID() {
@@ -111,7 +111,7 @@ internal static uint64 newID() {
     return atomic.AddUint64(ᏑlastTaskID, 1);
 }
 
-internal static ж<Task> ᏑbgTask = new(new Task(id: (uint64)0));
+internal static ж<Task> ᏑbgTask = new StandardBox<Task>(new Task(id: (uint64)0));
 internal static ref Task bgTask => ref ᏑbgTask.Value;
 
 // Log emits a one-off event with the given category and message.

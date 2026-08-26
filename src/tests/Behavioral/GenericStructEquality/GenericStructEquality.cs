@@ -10,9 +10,7 @@ partial class main_package {
     builtin.initPackage(typeof(fmt_package));
 }
 
-[GoType] partial struct handle<T>
-    where T : /* comparable */ new()
-{
+[GoType] partial struct handle<T> {
     internal ж<T> p;
 }
 
@@ -29,9 +27,7 @@ partial class main_package {
     internal bool valid;
 }
 
-[GoType] partial struct outer<T>
-    where T : /* comparable */ new()
-{
+[GoType] partial struct outer<T> {
     internal box<T> inner;
     internal nint n;
 }

@@ -175,16 +175,19 @@ public static class FieldRef<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         return (FieldRefFunc<TElem>)method.CreateDelegate(typeof(FieldRefFunc<TElem>));
     }
 
-    // Type of ж<T>
+    // Type of the STANDARD box kind — the one kind whose value storage these accessors address
+    // (the pre-split comment above already said so: a field or element reference keeps its
+    // storage elsewhere; under B1's split the fields simply LIVE on StandardBox<T>, and the IL
+    // cast is the same standard-only contract stated as a type).
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-    private static readonly Type s_ptrType = typeof(ж<T>);
+    private static readonly Type s_ptrType = typeof(StandardBox<T>);
 
-    // FieldInfo for m_val in ж<T>
-    private static readonly FieldInfo s_ptrValField = s_ptrType.GetField("m_val", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    // FieldInfo for the inline managed-T value storage in StandardBox<T>
+    private static readonly FieldInfo s_ptrValField = s_ptrType.GetField(StandardBox<T>.ValueFieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-    // FieldInfo for m_slot in ж<T> — the pinnable value storage used in place of m_val for a T that
-    // contains no references.
-    private static readonly FieldInfo s_ptrSlotField = s_ptrType.GetField("m_slot", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    // FieldInfo for the pinnable slot used in place of the inline field for a T that contains no
+    // references.
+    private static readonly FieldInfo s_ptrSlotField = s_ptrType.GetField(StandardBox<T>.SlotFieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
 }
 
 /// <summary>

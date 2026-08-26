@@ -18,16 +18,16 @@ using runtime.@internal;
 partial class runtime_package {
 
 // NOTE(rsc): Everything here could use cas if contention became an issue.
-internal static ж<mutex> ᏑprofInsertLock = new(new mutex(nil));
+internal static ж<mutex> ᏑprofInsertLock = new StandardBox<mutex>(new mutex(nil));
 internal static ref mutex profInsertLock => ref ᏑprofInsertLock.Value;
 
-internal static ж<mutex> ᏑprofBlockLock = new(new mutex(nil));
+internal static ж<mutex> ᏑprofBlockLock = new StandardBox<mutex>(new mutex(nil));
 internal static ref mutex profBlockLock => ref ᏑprofBlockLock.Value;
 
-internal static ж<mutex> ᏑprofMemActiveLock = new(new mutex(nil));
+internal static ж<mutex> ᏑprofMemActiveLock = new StandardBox<mutex>(new mutex(nil));
 internal static ref mutex profMemActiveLock => ref ᏑprofMemActiveLock.Value;
 
-internal static ж<array<mutex>> ᏑprofMemFutureLock = new(new array<mutex>(3, () => new(nil)));
+internal static ж<array<mutex>> ᏑprofMemFutureLock = new StandardBox<array<mutex>>(new array<mutex>(3, () => new(nil)));
 internal static ref array<mutex> profMemFutureLock => ref ᏑprofMemFutureLock.Value;
 
 // All memory allocations are local and do not escape outside of the profiler.
@@ -148,15 +148,15 @@ internal static UntypedInt maxProfStackDepth => 1024;
     internal int64 cycles;
 }
 
-internal static ж<atomic.UnsafePointer> Ꮡmbuckets = new(default(atomic.UnsafePointer));
+internal static ж<atomic.UnsafePointer> Ꮡmbuckets = new StandardBox<atomic.UnsafePointer>(default(atomic.UnsafePointer));
 internal static ref atomic.UnsafePointer mbuckets => ref Ꮡmbuckets.Value;                    // *bucket, memory profile buckets
-internal static ж<atomic.UnsafePointer> Ꮡbbuckets = new(default(atomic.UnsafePointer));
+internal static ж<atomic.UnsafePointer> Ꮡbbuckets = new StandardBox<atomic.UnsafePointer>(default(atomic.UnsafePointer));
 internal static ref atomic.UnsafePointer bbuckets => ref Ꮡbbuckets.Value;                    // *bucket, blocking profile buckets
-internal static ж<atomic.UnsafePointer> Ꮡxbuckets = new(default(atomic.UnsafePointer));
+internal static ж<atomic.UnsafePointer> Ꮡxbuckets = new StandardBox<atomic.UnsafePointer>(default(atomic.UnsafePointer));
 internal static ref atomic.UnsafePointer xbuckets => ref Ꮡxbuckets.Value;                    // *bucket, mutex profile buckets
-internal static ж<atomic.UnsafePointer> Ꮡbuckhash = new(default(atomic.UnsafePointer));
+internal static ж<atomic.UnsafePointer> Ꮡbuckhash = new StandardBox<atomic.UnsafePointer>(default(atomic.UnsafePointer));
 internal static ref atomic.UnsafePointer buckhash => ref Ꮡbuckhash.Value;                    // *buckhashArray
-internal static ж<mProfCycleHolder> ᏑmProfCycle = new(default(mProfCycleHolder));
+internal static ж<mProfCycleHolder> ᏑmProfCycle = new StandardBox<mProfCycleHolder>(default(mProfCycleHolder));
 internal static ref mProfCycleHolder mProfCycle => ref ᏑmProfCycle.Value;
 
 [GoType("[179999]@internal.runtime.atomic_package.UnsafePointer")] /* [buckHashSize]@internal.runtime.atomic_package.UnsafePointer */
@@ -474,7 +474,7 @@ internal static void mProf_Free(ж<bucket> Ꮡb, uintptr size) {
     unlock(ᏑprofMemFutureLock.at<mutex>((nint)(index)));
 }
 
-internal static ж<uint64> Ꮡblockprofilerate = new(default(uint64));
+internal static ж<uint64> Ꮡblockprofilerate = new StandardBox<uint64>(default(uint64));
 internal static ref uint64 blockprofilerate => ref Ꮡblockprofilerate.Value; // in CPU ticks
 
 // SetBlockProfileRate controls the fraction of goroutine blocking events
@@ -871,7 +871,7 @@ internal static void saveBlockEventStack(int64 cycles, int64 rate, slice<uintptr
     unlock(ᏑprofBlockLock);
 }
 
-internal static ж<uint64> Ꮡmutexprofilerate = new(default(uint64));
+internal static ж<uint64> Ꮡmutexprofilerate = new StandardBox<uint64>(default(uint64));
 internal static ref uint64 mutexprofilerate => ref Ꮡmutexprofilerate.Value; // fraction sampled
 
 // SetMutexProfileFraction controls the fraction of mutex contention events
@@ -1348,7 +1348,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabels(slice<profilerecord
     internal slice<profilerecord.StackRecord> records;
     internal slice<@unsafe.Pointer> labels;
 }
-internal static ж<goroutineProfileᴛ1> ᏑgoroutineProfile = new(new goroutineProfileᴛ1(
+internal static ж<goroutineProfileᴛ1> ᏑgoroutineProfile = new StandardBox<goroutineProfileᴛ1>(new goroutineProfileᴛ1(
     sema: 1
 ));
 internal static ref goroutineProfileᴛ1 goroutineProfile => ref ᏑgoroutineProfile.Value;

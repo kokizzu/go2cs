@@ -104,7 +104,7 @@ public class PointerDereferenceAllocationTests
     private static ж<string?> TakeNamePointer(ж<Record> p) => p.of<string?>(NameOf);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static ж<string?> NewStringBox(string? value) => new(value);
+    private static ж<string?> NewStringBox(string? value) => new StandardBox<string?>(value);
 
     private static long Measure(Action body)
     {
@@ -122,7 +122,7 @@ public class PointerDereferenceAllocationTests
     [TestMethod]
     public void DereferencingAStandardBoxAllocatesNothing()
     {
-        ж<BigValue> p = new(new BigValue { A = 7 });
+        ж<BigValue> p = new StandardBox<BigValue>(new BigValue { A = 7 });
         long sum = 0;
 
         long bytes = Measure(() => sum += ReadA(p));
@@ -137,7 +137,7 @@ public class PointerDereferenceAllocationTests
     [TestMethod]
     public void DereferencingAStandardBoxOfAReferenceBearingStructAllocatesNothing()
     {
-        ж<BigRefValue> p = new(new BigRefValue { A = 3, Tag = "t" });
+        ж<BigRefValue> p = new StandardBox<BigRefValue>(new BigRefValue { A = 3, Tag = "t" });
         long sum = 0;
 
         long bytes = Measure(() => sum += ReadA(p));
@@ -153,7 +153,7 @@ public class PointerDereferenceAllocationTests
     {
         // The shape the write path walks: a pointer to a field, read repeatedly. Resolving it runs
         // the untyped wrapper, which dereferences the PARENT box — the link that was boxing.
-        ж<Record> p = new(new Record { Name = "n", Count = 5 });
+        ж<Record> p = new StandardBox<Record>(new Record { Name = "n", Count = 5 });
         ж<long> count = p.of<long>(CountOf);
         long sum = 0;
 
@@ -168,28 +168,31 @@ public class PointerDereferenceAllocationTests
     [TestMethod]
     public void TakingAFieldPointerCostsNoMoreThanTheBoxItself()
     {
-        // A field-reference ж<string?> and a standard ж<string?> are the same object — same type,
-        // same size, and neither carries a pinnable slot (string is a reference). So taking a field
-        // pointer may cost at most what allocating the box costs, and anything above that is the
-        // per-call wrapper: a display class plus a delegate, ~88 bytes, which the accessor-keyed
-        // cache removes. Stated as a comparison rather than a byte count so it survives any future
-        // change to ж<T>'s layout.
-        ж<Record> p = new(new Record { Name = "n", Count = 5 });
+        // Under the B1 per-kind split a field reference is its own class (FieldRefBox: source +
+        // accessor + token) and legitimately outweighs a standard ж<string?> by a field — the
+        // premise this test used to lean on (same type, same size) retired with the unified box.
+        // The defect it guards is unchanged: the TYPED of(...) overload must resolve its untyped
+        // wrapper from the accessor-keyed cache, not mint a display class plus delegate (~88 B)
+        // per call. So the control is the same field-ref box minted with the wrapper already in
+        // hand — any difference is exactly the per-call wrapper cost, and it must be zero.
+        ж<Record> p = new StandardBox<Record>(new Record { Name = "n", Count = 5 });
 
-        long boxOnly = Measure(() => NewStringBox("n"));
-        long fieldPointer = Measure(() => TakeNamePointer(p));
+        long direct = Measure(() => { ж<string?> _ = new FieldRefBox<string?>(p, s_untypedNameOf); });
+        long typedOf = Measure(() => TakeNamePointer(p));
 
-        Assert.IsTrue(boxOnly > 0, "control did not measure the cost of allocating one ж<string?>");
-        Assert.IsTrue(fieldPointer <= boxOnly,
-            $"of(...) allocated {fieldPointer / (double)Runs:F1} B/call against a {boxOnly / (double)Runs:F1} " +
-            "B/call bare box — the untyped accessor wrapper is being minted per call instead of once " +
-            "per accessor.");
+        Assert.IsTrue(direct > 0, "control did not measure the cost of allocating one field-ref box");
+        Assert.IsTrue(typedOf <= direct,
+            $"of(...) allocated {typedOf / (double)Runs:F1} B/call against a {direct / (double)Runs:F1} " +
+            "B/call direct field-ref box — the untyped accessor wrapper is being minted per call " +
+            "instead of once per accessor.");
     }
+
+    private static readonly FieldRefFunc<string?> s_untypedNameOf = static s => ref ((ж<Record>)s).Value.Name;
 
     [TestMethod]
     public void FieldPointerSemanticsSurviveTheSharedWrapper()
     {
-        ж<Record> p = new(new Record { Name = "before", Count = 1 });
+        ж<Record> p = new StandardBox<Record>(new Record { Name = "before", Count = 1 });
 
         ж<string?> n1 = p.of<string?>(NameOf);
         ж<string?> n2 = p.of<string?>(NameOf);
@@ -214,21 +217,21 @@ public class PointerDereferenceAllocationTests
     {
         // IsNull's value-peeking term is only SKIPPED where it was constant-false. Every answer it
         // could actually give must be unchanged.
-        Assert.IsTrue(new ж<BigValue>(nil).IsNull, "a nil-constructed box is nil");
-        Assert.IsFalse(new ж<BigValue>(new BigValue()).IsNull, "a box holding a zero struct is not nil");
+        Assert.IsTrue(new StandardBox<BigValue>(nil).IsNull, "a nil-constructed box is nil");
+        Assert.IsFalse(new StandardBox<BigValue>(new BigValue()).IsNull, "a box holding a zero struct is not nil");
 
         // A reference-typed T whose held value IS null: a real box holding a nil value. That is the
         // one case the term exists for, and it must still report true.
-        Assert.IsTrue(new ж<string?>((string?)null).IsNull, "a box holding a null reference reports IsNull");
-        Assert.IsFalse(new ж<string?>("x").IsNull, "a box holding a reference is not null");
-        Assert.IsFalse(new ж<string?>((string?)null).IsNilPointer, "holding null is not STRUCTURAL nilness");
+        Assert.IsTrue(new StandardBox<string?>((string?)null).IsNull, "a box holding a null reference reports IsNull");
+        Assert.IsFalse(new StandardBox<string?>("x").IsNull, "a box holding a reference is not null");
+        Assert.IsFalse(new StandardBox<string?>((string?)null).IsNilPointer, "holding null is not STRUCTURAL nilness");
 
         // Nullable<T> is the value type whose default IS null, so the term stays live for it too.
-        Assert.IsTrue(new ж<int?>((int?)null).IsNull, "a box holding an empty Nullable reports IsNull");
-        Assert.IsFalse(new ж<int?>(5).IsNull, "a box holding a Nullable with a value is not null");
+        Assert.IsTrue(new StandardBox<int?>((int?)null).IsNull, "a box holding an empty Nullable reports IsNull");
+        Assert.IsFalse(new StandardBox<int?>(5).IsNull, "a box holding a Nullable with a value is not null");
 
         // A field reference is a real address even when the field holds nil.
-        ж<Record> p = new(new Record { Name = null });
+        ж<Record> p = new StandardBox<Record>(new Record { Name = null });
         Assert.IsFalse(p.of<string?>(NameOf).IsNull, "&x.f is an address even while f holds nil");
     }
 }

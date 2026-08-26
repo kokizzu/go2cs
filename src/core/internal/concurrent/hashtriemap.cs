@@ -69,8 +69,6 @@ partial class concurrent_package {
 // and deletes as well, especially if the map is larger. It's primary use-case is
 // the unique package, but can be used elsewhere as well.
 [GoType] partial struct HashTrieMap<K, V>
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     // The whole of the map's state, held behind a REFERENCE exactly as Go holds it behind the
     // `root *indirect[K, V]` pointer: a by-value copy of a HashTrieMap shares one map, and
@@ -85,16 +83,12 @@ partial class concurrent_package {
 // mismatch would need (a Go map key is never a null reference).
 #pragma warning disable CS8714
 internal sealed class mapStore<K, V> : ConcurrentDictionary<K, V>
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
 }
 #pragma warning restore CS8714
 
 // NewHashTrieMap creates a new HashTrieMap for the provided key and value.
 public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     return Ꮡ(new HashTrieMap<K, V>(store: new mapStore<K, V>()));
 }
@@ -103,8 +97,6 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
 // value is present.
 // The ok result indicates whether value was found in the map.
 [GoRecv] public static (V value, bool ok) Load<K, V>(this ref HashTrieMap<K, V> ht, K key)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     if (storeOf(ref ht).TryGetValue(key, out V? value)) {
         return (value!, true);
@@ -120,8 +112,6 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
 // to keep one canonical value per key: TryAdd fails for every loser, and the retry then finds the
 // winner's value. (GetOrAdd would be a single call but cannot report WHICH outcome occurred.)
 public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K key, V value)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     mapStore<K, V> store = storeOf(ref Ꮡht.Value);
     while (ᐧ) {
@@ -139,8 +129,6 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
 // If there is no current value for key in the map, CompareAndDelete returns false
 // (even if the old value is the nil interface value).
 [GoRecv] public static bool /*deleted*/ CompareAndDelete<K, V>(this ref HashTrieMap<K, V> ht, K key, V old)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     mapStore<K, V> store = storeOf(ref ht);
     // Go reaches its value comparison only once the key is found, and only then can that comparison
@@ -164,8 +152,6 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
 // concurrent mutation, so unique's cleanup pass can CompareAndDelete while it walks), it yields each
 // live key once, and it promises no order.
 public static Action<Func<K, V, bool>> All<K, V>(this ж<HashTrieMap<K, V>> Ꮡht)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     mapStore<K, V> store = storeOf(ref Ꮡht.Value);
     return (Func<K, V, bool> yield) => {
@@ -183,8 +169,6 @@ public static Action<Func<K, V, bool>> All<K, V>(this ж<HashTrieMap<K, V>> Ꮡh
 // and seeding lazily costs one null check while removing a whole class of null dereference from the
 // accessors. Same idiom, and same reasoning, as sync.Mutex's gateOf.
 private static mapStore<K, V> storeOf<K, V>(ref HashTrieMap<K, V> ht)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
 {
     mapStore<K, V>? store = Volatile.Read(ref ht.store);
 

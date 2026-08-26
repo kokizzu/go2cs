@@ -48,24 +48,18 @@ partial class unique_package {
 // Two handles compare equal exactly if the two values used to create the handles
 // would have also compared equal. The comparison of two handles is trivial and
 // typically much more efficient than comparing the values used to create them.
-[GoType] partial struct Handle<T>
-    where T : /* comparable */ new()
-{
+[GoType] partial struct Handle<T> {
     internal ж<T> value;
 }
 
 // Value returns a shallow copy of the T value that produced the Handle.
-public static T Value<T>(this Handle<T> h)
-    where T : /* comparable */ new()
-{
+public static T Value<T>(this Handle<T> h) {
     return h.value.ValueSlot;
 }
 
 // Make returns a globally unique handle for a value of type T. Handles
 // are equal if and only if the values used to produce them are equal.
-public static Handle<T> Make<T>(T value)
-    where T : /* comparable */ new()
-{
+public static Handle<T> Make<T>(T value) {
     // Find the map for type T.
     var typ = abi.TypeFor<T>();
     var (ma, ok) = uniqueMaps.Load(typ);
@@ -117,23 +111,19 @@ public static Handle<T> Make<T>(T value)
 }
 
 internal static ж<concurrent.HashTrieMap<ж<abi.Type>, any>> uniqueMaps = concurrent.NewHashTrieMap<ж<abi.Type>, any>();                             // any is always a *uniqueMap[T].
-internal static ж<Δsync.Mutex> ᏑcleanupMu = new(default(Δsync.Mutex));
+internal static ж<Δsync.Mutex> ᏑcleanupMu = new StandardBox<Δsync.Mutex>(default(Δsync.Mutex));
 internal static ref Δsync.Mutex cleanupMu => ref ᏑcleanupMu.Value;
-internal static ж<Δsync.Mutex> ᏑcleanupFuncsMu = new(default(Δsync.Mutex));
+internal static ж<Δsync.Mutex> ᏑcleanupFuncsMu = new StandardBox<Δsync.Mutex>(default(Δsync.Mutex));
 internal static ref Δsync.Mutex cleanupFuncsMu => ref ᏑcleanupFuncsMu.Value;
 internal static slice<Action> cleanupFuncs;
 internal static slice<Action> cleanupNotify; // One-time notifications when cleanups finish.
 
-[GoType] partial struct uniqueMap<T>
-    where T : /* comparable */ new()
-{
+[GoType] partial struct uniqueMap<T> {
     public partial ref ж<@internal.concurrent_package.HashTrieMap<T, @internal.weak_package.Pointer<T>>> HashTrieMap { get; }
     internal partial ref cloneSeq cloneSeq { get; }
 }
 
-internal static ж<uniqueMap<T>> addUniqueMap<T>(ж<abi.Type> Ꮡtyp)
-    where T : /* comparable */ new()
-{
+internal static ж<uniqueMap<T>> addUniqueMap<T>(ж<abi.Type> Ꮡtyp) {
     // Create a map for T and try to register it. We could
     // race with someone else, but that's fine; it's one
     // small, stray allocation. The number of allocations
@@ -164,7 +154,7 @@ internal static ж<uniqueMap<T>> addUniqueMap<T>(ж<abi.Type> Ꮡtyp)
 }
 
 // setupMake is used to perform initial setup for unique.Make.
-internal static ж<Δsync.Once> ᏑsetupMake = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑsetupMake = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once setupMake => ref ᏑsetupMake.Value;
 
 // startBackgroundCleanup sets up a background goroutine to occasionally call cleanupFuncs.

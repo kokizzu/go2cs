@@ -10,10 +10,10 @@ partial class main_package {
     builtin.initPackage(typeof(fmt_package));
 }
 
-internal static ж<Func<@string, @string>> Ꮡlookup = new((@string key) => "prod:"u8 + key);
+internal static ж<Func<@string, @string>> Ꮡlookup = new StandardBox<Func<@string, @string>>((@string key) => "prod:"u8 + key);
 internal static ref Func<@string, @string> lookup => ref Ꮡlookup.ValueSlot;
 
-internal static ж<nint> Ꮡcounter = new(default(nint));
+internal static ж<nint> Ꮡcounter = new StandardBox<nint>(default(nint));
 internal static ref nint counter => ref Ꮡcounter.Value;
 
 internal static nint untouched = 5;
@@ -22,7 +22,7 @@ internal static nint untouched = 5;
     internal @string name;
 }
 
-internal static ж<entry> Ꮡhead = new(default(entry));
+internal static ж<entry> Ꮡhead = new StandardBox<entry>(default(entry));
 internal static ref entry head => ref Ꮡhead.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

@@ -452,7 +452,7 @@ internal static (ж<File>, error) openDir(@string name) {
 }
 
 // lstat is overridden in tests.
-internal static ж<Func<@string, (FileInfo, error)>> Ꮡlstat = new(Lstat);
+internal static ж<Func<@string, (FileInfo, error)>> Ꮡlstat = new StandardBox<Func<@string, (FileInfo, error)>>(Lstat);
 internal static ref Func<@string, (FileInfo, error)> lstat => ref Ꮡlstat.ValueSlot;
 
 // Rename renames (moves) oldpath to newpath.

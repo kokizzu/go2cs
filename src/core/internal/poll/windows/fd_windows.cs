@@ -31,7 +31,7 @@ partial class poll_package {
 }
 
 internal static error initErr;
-internal static ж<uint64> ᏑioSync = new(default(uint64));
+internal static ж<uint64> ᏑioSync = new StandardBox<uint64>(default(uint64));
 internal static ref uint64 ioSync => ref ᏑioSync.Value;
 
 // This package uses the SetFileCompletionNotificationModes Windows
@@ -286,7 +286,7 @@ internal static fileKind kindConsole => 2;
 internal static fileKind kindPipe => 3;
 
 // logInitFD is set by tests to enable file descriptor initialization logging.
-internal static ж<Action<@string, ж<FD>, error>> ᏑlogInitFD = new(default(Action<@string, ж<FD>, error>));
+internal static ж<Action<@string, ж<FD>, error>> ᏑlogInitFD = new StandardBox<Action<@string, ж<FD>, error>>(default(Action<@string, ж<FD>, error>));
 internal static ref Action<@string, ж<FD>, error> logInitFD => ref ᏑlogInitFD.ValueSlot;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

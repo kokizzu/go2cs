@@ -82,11 +82,11 @@ public class ErrorShellCarrierEqualityTests
     [TestMethod]
     public void PointerBackedShellsCompareByBoxIdentity()
     {
-        ж<refErrTarget> box = new(new refErrTarget());
+        ж<refErrTarget> box = new StandardBox<refErrTarget>(new refErrTarget());
 
         error viaSameBox1 = error.As(box);
         error viaSameBox2 = error.As(box);
-        error viaOtherBox = error.As(new ж<refErrTarget>(new refErrTarget()));
+        error viaOtherBox = error.As(new StandardBox<refErrTarget>(new refErrTarget()));
 
         Assert.IsTrue(AreEqual(viaSameBox1, viaSameBox2), "pointer-backed shells over ONE box are Go-equal pointers");
         Assert.IsFalse(AreEqual(viaSameBox1, viaOtherBox), "distinct boxes are distinct Go pointers, whatever their pointees hold");

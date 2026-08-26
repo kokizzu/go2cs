@@ -182,7 +182,7 @@ public static void Stop() {
     public partial ref sync_package.Mutex Mutex { get; } // gate mutators (Start, Stop)
     internal atomic.Bool enabled;
 }
-internal static ж<tracingᴛ1> Ꮡtracing = new(new tracingᴛ1(nil));
+internal static ж<tracingᴛ1> Ꮡtracing = new StandardBox<tracingᴛ1>(new tracingᴛ1(nil));
 internal static ref tracingᴛ1 tracing => ref Ꮡtracing.Value;
 
 } // end trace_package

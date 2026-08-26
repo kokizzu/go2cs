@@ -14,7 +14,7 @@ partial class os_package {
     public partial ref sync_package.Mutex Mutex { get; }
     internal @string dir;
 }
-internal static ж<getwdCacheᴛ1> ᏑgetwdCache = new(new getwdCacheᴛ1(nil));
+internal static ж<getwdCacheᴛ1> ᏑgetwdCache = new StandardBox<getwdCacheᴛ1>(new getwdCacheᴛ1(nil));
 internal static ref getwdCacheᴛ1 getwdCache => ref ᏑgetwdCache.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

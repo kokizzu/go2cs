@@ -68,7 +68,7 @@ public class GoMethodNameProjectionTests
 
         Assert.IsNotNull(byPtr);
         Assert.AreEqual("Scribe", byPtr.Name);
-        Assert.AreEqual("plain", byPtr.Invoke(null, [new ж<BothNamesScribe>(new BothNamesScribe()), "x"]));
+        Assert.AreEqual("plain", byPtr.Invoke(null, [new StandardBox<BothNamesScribe>(new BothNamesScribe()), "x"]));
     }
 
     // The projection recovers a NAME; it must not weaken the signature match that name gates. A

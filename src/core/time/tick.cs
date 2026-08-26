@@ -83,7 +83,7 @@ public static ж<Ticker> NewTicker(Duration d) {
     // on the floor until the client catches up.
     var c = new channel<Time>(1);
     // Go: t := (*Ticker)(unsafe.Pointer(newTimer(when(d), int64(d), sendTime, c, syncTimer(c))))
-    var t = new ж<Ticker>(new Ticker{ initTicker = true });
+    var t = new StandardBox<Ticker>(new Ticker{ initTicker = true });
     // Go's `syncTimer(c)` argument, modeled by its ANSWER rather than by its pointer: the pointer
     // is unusable here for the same reason the reinterprets above are, and its nil-ness is only a
     // re-encoding of the setting syncTimerChanEnabled reads directly. newTimer resolves it the same

@@ -452,7 +452,7 @@ internal static (ж<File>, error) openDir(@string name) {
 }
 
 // lstat is overridden in tests.
-internal static ж<Func<@string, (FileInfo, error)>> Ꮡlstat = new(default(Func<@string, (FileInfo, error)>));
+internal static ж<Func<@string, (FileInfo, error)>> Ꮡlstat = new StandardBox<Func<@string, (FileInfo, error)>>(default(Func<@string, (FileInfo, error)>));
 internal static ref Func<@string, (FileInfo, error)> lstat => ref Ꮡlstat.ValueSlot;
 internal static void initᴛlstat() { lstat = Lstat; }
 

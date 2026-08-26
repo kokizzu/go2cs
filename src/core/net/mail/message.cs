@@ -189,7 +189,7 @@ internal static (map<@string, slice<@string>>, error) readHeader(ж<textproto.Re
 
 // Layouts suitable for passing to time.Parse.
 // These are tried in order.
-internal static ж<sync.Once> ᏑdateLayoutsBuildOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑdateLayoutsBuildOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once dateLayoutsBuildOnce => ref ᏑdateLayoutsBuildOnce.Value;
 
 internal static slice<@string> dateLayouts;
@@ -1006,7 +1006,7 @@ internal static readonly @string mailCommentDoesNotStartˢ = "mail: comment does
     return (s, false, default!);
 }
 
-internal static ж<mime.WordDecoder> Ꮡrfc2047Decoder = new(new mime.WordDecoder(
+internal static ж<mime.WordDecoder> Ꮡrfc2047Decoder = new StandardBox<mime.WordDecoder>(new mime.WordDecoder(
     CharsetReader: (@string charset, io.Reader input) => (default!, ((charsetError)charset))
 ));
 internal static ref mime.WordDecoder rfc2047Decoder => ref Ꮡrfc2047Decoder.Value;

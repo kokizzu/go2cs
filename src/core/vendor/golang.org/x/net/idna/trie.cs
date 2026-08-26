@@ -17,7 +17,7 @@ partial class idna_package {
     internal slice<uint16> offset;
 }
 
-internal static ж<sparseBlocks> ᏑidnaSparse = new(default(sparseBlocks));
+internal static ж<sparseBlocks> ᏑidnaSparse = new StandardBox<sparseBlocks>(default(sparseBlocks));
 internal static ref sparseBlocks idnaSparse => ref ᏑidnaSparse.Value;
 internal static void initᴛidnaSparse() { idnaSparse = new sparseBlocks(
     values: idnaSparseValues[..],

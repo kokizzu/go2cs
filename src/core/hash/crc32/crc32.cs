@@ -96,10 +96,10 @@ internal static ж<slicing8Table> castagnoliTable8;
 
 internal static Func<uint32, slice<byte>, uint32> updateCastagnoli;
 
-internal static ж<sync.Once> ᏑcastagnoliOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑcastagnoliOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once castagnoliOnce => ref ᏑcastagnoliOnce.Value;
 
-internal static ж<atomic.Bool> ᏑhaveCastagnoli = new(default(atomic.Bool));
+internal static ж<atomic.Bool> ᏑhaveCastagnoli = new StandardBox<atomic.Bool>(default(atomic.Bool));
 internal static ref atomic.Bool haveCastagnoli => ref ᏑhaveCastagnoli.Value;
 
 internal static void castagnoliInit() {
@@ -123,7 +123,7 @@ internal static ж<slicing8Table> ieeeTable8;
 
 internal static Func<uint32, slice<byte>, uint32> updateIEEE;
 
-internal static ж<sync.Once> ᏑieeeOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑieeeOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once ieeeOnce => ref ᏑieeeOnce.Value;
 
 internal static void ieeeInit() {

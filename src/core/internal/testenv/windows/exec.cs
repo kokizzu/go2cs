@@ -106,7 +106,7 @@ public static void MustHaveExec(testing.TB t) {
     }
 }
 
-internal static ж<sync.Once> ᏑtryExecOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑtryExecOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once tryExecOnce => ref ᏑtryExecOnce.Value;
 internal static error tryExecErr;
 
@@ -148,7 +148,7 @@ internal static error tryExec() {
     return cmd.Run();
 }
 
-internal static ж<sync.Map> ᏑexecPaths = new(default(sync.Map));
+internal static ж<sync.Map> ᏑexecPaths = new StandardBox<sync.Map>(default(sync.Map));
 internal static ref sync.Map execPaths => ref ᏑexecPaths.Value; // path -> error
 
 // MustHaveExecPath checks that the current system can start the named executable

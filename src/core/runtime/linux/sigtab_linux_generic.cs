@@ -74,7 +74,7 @@ partial class runtime_package {
 /* 62 */
 /* 63 */
 /* 64 */
-internal static ж<array<sigTabT>> Ꮡsigtable = new(new sigTabT[]{
+internal static ж<array<sigTabT>> Ꮡsigtable = new StandardBox<array<sigTabT>>(new sigTabT[]{
     new(0, "SIGNONE: no trap"u8),
     new(_SigNotify + _SigKill, "SIGHUP: terminal line hangup"u8),
     new(_SigNotify + _SigKill, "SIGINT: interrupt"u8),

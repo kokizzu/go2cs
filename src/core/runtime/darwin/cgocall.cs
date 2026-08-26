@@ -116,7 +116,7 @@ internal static uintptr syscall_cgocaller(@unsafe.Pointer fn, params ꓸꓸꓸui
     return @as.retval;
 }
 
-internal static ж<uint64> Ꮡncgocall = new(default(uint64));
+internal static ж<uint64> Ꮡncgocall = new StandardBox<uint64>(default(uint64));
 internal static ref uint64 ncgocall => ref Ꮡncgocall.Value; // number of cgo calls in total for dead m
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -463,7 +463,7 @@ internal static void cgounimpl() {
     @throw(cgoNotImplementedˢ);
 }
 
-internal static ж<uint64> Ꮡracecgosync = new(default(uint64));
+internal static ж<uint64> Ꮡracecgosync = new StandardBox<uint64>(default(uint64));
 internal static ref uint64 racecgosync => ref Ꮡracecgosync.Value; // represents possible synchronization in C code
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

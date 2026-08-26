@@ -67,7 +67,7 @@ public class PointerNilPredicateTests
     public void DerefOfRealAddressHoldingNilPointerYieldsNil()
     {
         // Go: `p := (*int)(nil); q := &p; *q` is nil — q is a real address, no dereference happens.
-        ж<ж<nint>> q = new(default(ж<nint>)!);
+        ж<ж<nint>> q = new StandardBox<ж<nint>>(default(ж<nint>)!);
 
         Assert.IsTrue(~q == nil);
         Assert.IsTrue(derefViaInterface<ж<ж<nint>>, ж<nint>>(q) == nil);
@@ -85,7 +85,7 @@ public class PointerNilPredicateTests
     [TestMethod]
     public void DerefOfFieldReferenceReadsTheFieldNotTheUnusedSlot()
     {
-        ж<pair> owner = new(new pair());
+        ж<pair> owner = new StandardBox<pair>(new pair());
         ж<ж<nint>> fieldPointer = owner.of(FieldRef<pair>.Create<ж<nint>>(nameof(pair.p)));
 
         // While the field holds nil the field reference is still a real address that reads as nil.
@@ -93,7 +93,7 @@ public class PointerNilPredicateTests
         Assert.IsFalse(fieldPointer.IsNull);
         Assert.IsTrue(~fieldPointer == nil);
 
-        ж<nint> target = new(7);
+        ж<nint> target = new StandardBox<nint>(7);
         owner.ValueSlot.p = target;
 
         // ... and once assigned it reads the FIELD's value, not the box's unused default slot.
@@ -104,8 +104,8 @@ public class PointerNilPredicateTests
     [TestMethod]
     public void ReadPointerSlotResolvesAFieldReferenceOverAReferenceTypedField()
     {
-        ж<pair> owner = new(new pair());
-        ж<nint> target = new(9);
+        ж<pair> owner = new StandardBox<pair>(new pair());
+        ж<nint> target = new StandardBox<nint>(9);
         owner.ValueSlot.p = target;
 
         ж<ж<nint>> fieldPointer = owner.of(FieldRef<pair>.Create<ж<nint>>(nameof(pair.p)));
@@ -121,20 +121,20 @@ public class PointerNilPredicateTests
     [TestMethod]
     public void ReadPointerSlotOfANamedPointerWrapper()
     {
-        ж<nint> target = new(21);
+        ж<nint> target = new StandardBox<nint>(21);
 
-        Assert.AreSame(target, GoReflect.ReadPointerSlot(new namedPointer(new ж<ж<nint>>(target))));
+        Assert.AreSame(target, GoReflect.ReadPointerSlot(new namedPointer(new StandardBox<ж<nint>>(target))));
 
         // A real address whose pointee is nil reads as nil; the nil pointer reads as the zero value.
-        Assert.IsNull(GoReflect.ReadPointerSlot(new namedPointer(new ж<ж<nint>>(default(ж<nint>)!))));
+        Assert.IsNull(GoReflect.ReadPointerSlot(new namedPointer(new StandardBox<ж<nint>>(default(ж<nint>)!))));
         Assert.IsNull(GoReflect.ReadPointerSlot(new namedPointer(canonicalNilPointer)));
     }
 
     [TestMethod]
     public void DerefOrNilOfARealAddressReturnsTheRealSlot()
     {
-        ж<ж<nint>> box = new(default(ж<nint>)!);
-        ж<nint> target = new(11);
+        ж<ж<nint>> box = new StandardBox<ж<nint>>(default(ж<nint>)!);
+        ж<nint> target = new StandardBox<nint>(11);
 
         ref ж<nint> slot = ref box.DerefOrNil();
         slot = target;
@@ -150,7 +150,7 @@ public class PointerNilPredicateTests
         ж<ж<nint>> nilPointer = canonicalNilPointer;
 
         ref ж<nint> slot = ref nilPointer.DerefOrNil();
-        slot = new ж<nint>(13);
+        slot = new StandardBox<nint>(13);
 
         // The canonical typed-nil singleton must stay unwritten — it is shared process-wide.
         Assert.IsTrue(canonicalNilPointer.IsNilPointer);
@@ -160,10 +160,10 @@ public class PointerNilPredicateTests
     [TestMethod]
     public void PointerHashIsStableWhileThePointeeIsAssigned()
     {
-        ж<ж<nint>> key = new(default(ж<nint>)!);
+        ж<ж<nint>> key = new StandardBox<ж<nint>>(default(ж<nint>)!);
         Dictionary<ж<ж<nint>>, string> map = new() { [key] = "present" };
 
-        key.ValueSlot = new ж<nint>(17);
+        key.ValueSlot = new StandardBox<nint>(17);
 
         // An address does not move when the value at it changes.
         Assert.IsTrue(map.TryGetValue(key, out string found));
@@ -173,9 +173,9 @@ public class PointerNilPredicateTests
     [TestMethod]
     public void DistinctBoxesOverOneReferentAreDistinctAddresses()
     {
-        ж<nint> shared = new(19);
-        ж<ж<nint>> a = new(shared);
-        ж<ж<nint>> b = new(shared);
+        ж<nint> shared = new StandardBox<nint>(19);
+        ж<ж<nint>> a = new StandardBox<ж<nint>>(shared);
+        ж<ж<nint>> b = new StandardBox<ж<nint>>(shared);
 
         // Go: `c := &v; d := &v; &c == &d` is false — two variables, two addresses.
         Assert.IsFalse(a == b);
@@ -188,9 +188,9 @@ public class PointerNilPredicateTests
     {
         // Go: `(*T)(unsafe.Pointer(p)) == (*T)(unsafe.Pointer(p))` — a uintptr round-trip yields a
         // fresh box each time, and the aliased address is the whole of its identity.
-        ж<nint> a = new(0x1000u);
-        ж<nint> b = new(0x1000u);
-        ж<nint> c = new(0x2000u);
+        ж<nint> a = new NativeBox<nint>(0x1000u);
+        ж<nint> b = new NativeBox<nint>(0x1000u);
+        ж<nint> c = new NativeBox<nint>(0x2000u);
 
         Assert.IsTrue(a == b);
         Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
@@ -223,7 +223,7 @@ public class PointerNilPredicateTests
     [TestMethod]
     public void AddressOfAPointerToPointerIsNotAKernelWritableSlot()
     {
-        ж<ж<nint>> outParam = new(default(ж<nint>)!);
+        ж<ж<nint>> outParam = new StandardBox<ж<nint>>(default(ж<nint>)!);
 
         // It is a REAL pointer — structurally non-nil — that nonetheless reports address 0.
         Assert.IsFalse(outParam.IsNilPointer);
@@ -231,7 +231,7 @@ public class PointerNilPredicateTests
         Assert.AreEqual((nuint)0, (nuint)(uintptr)outParam);
 
         // Once the held pointer is non-null the SAME operator hands out a live managed address.
-        outParam.ValueSlot = new ж<nint>(7);
+        outParam.ValueSlot = new StandardBox<nint>(7);
 
         Assert.IsFalse(outParam.IsNull);
         Assert.AreNotEqual((nuint)0, (nuint)(uintptr)outParam,
@@ -244,7 +244,7 @@ public class PointerNilPredicateTests
         // What the hand-owned wrappers do after the call: turn the raw word the kernel wrote into
         // a pointer box and store it through ValueSlot (never Value, whose nil guard value-peeks
         // and would panic on the very write that fills the slot in).
-        ж<ж<nint>> outParam = new(default(ж<nint>)!);
+        ж<ж<nint>> outParam = new StandardBox<ж<nint>>(default(ж<nint>)!);
 
         outParam.ValueSlot = (ж<nint>)(uintptr)(nuint)0x4000;
 
@@ -319,9 +319,9 @@ public class PointerNilPredicateTests
 
         // And each one still READS, so the classification and the slot accessor cannot disagree:
         // both now come from one predicate.
-        ж<nint> target = new(23);
-        Assert.AreSame(target, GoReflect.ReadPointerSlot(new ж<ж<nint>>(target)));
-        Assert.AreSame(target, GoReflect.ReadPointerSlot(new namedPointer(new ж<ж<nint>>(target))));
+        ж<nint> target = new StandardBox<nint>(23);
+        Assert.AreSame(target, GoReflect.ReadPointerSlot(new StandardBox<ж<nint>>(target)));
+        Assert.AreSame(target, GoReflect.ReadPointerSlot(new namedPointer(new StandardBox<ж<nint>>(target))));
     }
 
     // ---- The element/key resolution the abi descriptor's Elem()/Key() now stands on ----

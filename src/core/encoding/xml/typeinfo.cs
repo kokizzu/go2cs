@@ -44,7 +44,7 @@ internal static fieldFlags fOmitEmpty => 128;
 internal static fieldFlags fMode => /* fElement | fAttr | fCDATA | fCharData | fInnerXML | fComment | fAny */ 127;
 internal static readonly @string xmlName = "XMLName"u8;
 
-internal static ж<sync.Map> ᏑtinfoMap = new(default(sync.Map));
+internal static ж<sync.Map> ᏑtinfoMap = new StandardBox<sync.Map>(default(sync.Map));
 internal static ref sync.Map tinfoMap => ref ᏑtinfoMap.Value; // map[reflect.Type]*typeInfo
 
 internal static reflectꓸType nameType = reflect.TypeFor<Name>();

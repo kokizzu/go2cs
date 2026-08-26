@@ -85,7 +85,7 @@ internal static FuncMap builtins() {
     public partial ref sync_package.Once Once { get; }
     internal map<@string, reflectꓸValue> v;
 }
-internal static ж<builtinFuncsOnceᴛ1> ᏑbuiltinFuncsOnce = new(new builtinFuncsOnceᴛ1(nil));
+internal static ж<builtinFuncsOnceᴛ1> ᏑbuiltinFuncsOnce = new StandardBox<builtinFuncsOnceᴛ1>(new builtinFuncsOnceᴛ1(nil));
 internal static ref builtinFuncsOnceᴛ1 builtinFuncsOnce => ref ᏑbuiltinFuncsOnce.Value;
 
 // builtinFuncsOnce lazily computes & caches the builtinFuncs map.

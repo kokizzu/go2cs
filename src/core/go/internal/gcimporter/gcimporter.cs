@@ -99,7 +99,7 @@ partial class gcimporter_package {
 // debugging/development support
 internal const bool debug = false;
 
-internal static ж<sync.Map> ᏑexportMap = new(default(sync.Map));
+internal static ж<sync.Map> ᏑexportMap = new StandardBox<sync.Map>(default(sync.Map));
 internal static ref sync.Map exportMap => ref ᏑexportMap.Value; // package dir → func() (string, error)
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

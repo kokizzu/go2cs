@@ -22,7 +22,7 @@ partial class main_package {
     internal atomic.Int64 count;
 }
 
-internal static ж<holder> ᏑgHolder = new(default(holder));
+internal static ж<holder> ᏑgHolder = new StandardBox<holder>(default(holder));
 internal static ref holder gHolder => ref ᏑgHolder.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

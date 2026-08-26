@@ -25,7 +25,7 @@ internal static @unsafe.Pointer _cgo_sys_thread_create;
 internal static @unsafe.Pointer _cgo_notify_runtime_init_done;
 internal static @unsafe.Pointer _cgo_callers;
 internal static @unsafe.Pointer _cgo_set_context_function;
-internal static ж<@unsafe.Pointer> Ꮡ_cgo_yield = new(default(@unsafe.Pointer));
+internal static ж<@unsafe.Pointer> Ꮡ_cgo_yield = new StandardBox<@unsafe.Pointer>(default(@unsafe.Pointer));
 internal static ref @unsafe.Pointer _cgo_yield => ref Ꮡ_cgo_yield.Value;
 internal static @unsafe.Pointer _cgo_pthread_key_created;
 internal static @unsafe.Pointer _cgo_bindm;

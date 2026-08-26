@@ -972,7 +972,7 @@ internal static array<bool> ΔisWaitingForSuspendG = new golib.SparseArray<bool>
     [waitReasonFlushProcCaches] = true
 }.array();
 
-internal static ж<ж<m>> Ꮡallm = new(default(ж<m>));
+internal static ж<ж<m>> Ꮡallm = new StandardBox<ж<m>>(default(ж<m>));
 internal static ref ж<m> allm => ref Ꮡallm.ValueSlot;
 // Hand-adjusted (this file carries the GoManualConversion marker above so a reconvert keeps this
 // seed): in Go these are populated by
@@ -980,18 +980,18 @@ internal static ref ж<m> allm => ref Ꮡallm.ValueSlot;
 // runtime. Left zero they break consumers at runtime while compiling clean (sync.Pool's pinSlow
 // sizes its poolLocal array from runtime.GOMAXPROCS(0) → make(…, 0) → index out of range on the
 // first fmt.Println). Seed them from the real environment instead.
-internal static ж<int32> Ꮡgomaxprocs = new((int32)Environment.ProcessorCount);
+internal static ж<int32> Ꮡgomaxprocs = new StandardBox<int32>((int32)Environment.ProcessorCount);
 internal static ref int32 gomaxprocs => ref Ꮡgomaxprocs.Value;
 internal static int32 ncpu = (int32)Environment.ProcessorCount;
-internal static ж<forcegcstate> Ꮡforcegc = new(default(forcegcstate));
+internal static ж<forcegcstate> Ꮡforcegc = new StandardBox<forcegcstate>(default(forcegcstate));
 internal static ref forcegcstate forcegc => ref Ꮡforcegc.Value;
-internal static ж<schedt> Ꮡsched = new(default(schedt));
+internal static ж<schedt> Ꮡsched = new StandardBox<schedt>(default(schedt));
 internal static ref schedt sched => ref Ꮡsched.Value;
 internal static int32 newprocs;
 
-internal static ж<mutex> ᏑallpLock = new(new mutex(nil));
+internal static ж<mutex> ᏑallpLock = new StandardBox<mutex>(new mutex(nil));
 internal static ref mutex allpLock => ref ᏑallpLock.Value;
-internal static ж<slice<ж<Δp>>> Ꮡallp = new(default(slice<ж<Δp>>));
+internal static ж<slice<ж<Δp>>> Ꮡallp = new StandardBox<slice<ж<Δp>>>(default(slice<ж<Δp>>));
 internal static ref slice<ж<Δp>> allp => ref Ꮡallp.ValueSlot;
 internal static pMask idlepMask;
 internal static pMask timerpMask;
@@ -999,7 +999,7 @@ internal static pMask timerpMask;
 // goarmsoftfp is used by runtime/cgo assembly.
 //
 //go:linkname goarmsoftfp
-internal static ж<lfstack> ᏑgcBgMarkWorkerPool = new(default(lfstack));
+internal static ж<lfstack> ᏑgcBgMarkWorkerPool = new StandardBox<lfstack>(default(lfstack));
 internal static ref lfstack gcBgMarkWorkerPool => ref ᏑgcBgMarkWorkerPool.Value;
 internal static int32 gcBgMarkWorkerCount;
 internal static uint32 processorVersionInfo;

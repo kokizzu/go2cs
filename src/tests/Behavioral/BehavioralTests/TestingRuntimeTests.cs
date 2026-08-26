@@ -501,7 +501,7 @@ public class TestingRuntimeTests
         // strings/bytes suites reference must exist on the compile-only shim, through both
         // receiver shapes converted code binds (the ж<B> box and the ref-local value), and
         // stay a safe non-throwing no-op.
-        ж<testing_package.B> benchmark = new(new testing_package.B());
+        ж<testing_package.B> benchmark = new StandardBox<testing_package.B>(new testing_package.B());
 
         benchmark.ReportAllocs();
         benchmark.SetBytes(1024L);
@@ -538,7 +538,7 @@ public class TestingRuntimeTests
         // still COMPILE — math/big's `func FuzzExpMont(f *testing.F)` failed the whole package
         // build with CS0426 before F existed. Every member must be present on both receiver shapes
         // converted code binds, and stay a safe non-throwing no-op.
-        ж<testing_package.F> fuzz = new(new testing_package.F());
+        ж<testing_package.F> fuzz = new StandardBox<testing_package.F>(new testing_package.F());
 
         fuzz.Add(1, "seed");
         fuzz.Error("error");
@@ -625,7 +625,7 @@ public class TestingRuntimeTests
             // be deferred. Two is therefore the exact expected COUNT; the same run allocates on the
             // order of 72-80 BYTES, so this assert distinguishes the units outright and fails if
             // the counter is ever removed or stops being read.
-            boxAllocs = testing_package.AllocsPerRun(100, () => boxSink = new ж<long>(1L));
+            boxAllocs = testing_package.AllocsPerRun(100, () => boxSink = new StandardBox<long>(1L));
 
             // UNCOUNTED: a raw byte[64] is allocated by the C# compiler in this assembly, never
             // through golib, so the counter charges nothing for it. Reporting the count's zero here
@@ -658,7 +658,7 @@ public class TestingRuntimeTests
         string counted = RunAndCaptureJUnit("runtime/alloccount-counted", static () =>
         {
             ж<long>? sink = null;
-            testing_package.AllocsPerRun(100, () => sink = new ж<long>(1L));
+            testing_package.AllocsPerRun(100, () => sink = new StandardBox<long>(1L));
             GC.KeepAlive(sink);
         });
 
@@ -810,14 +810,14 @@ public class TestingRuntimeTests
         // sync/internal-poll implementations never paired Semrelease with Semacquire (the
         // ConvertedTestHarness os.ReadFile close hang). Equality now compares the field's
         // identity token: same box + same accessor = equal pointer, across call sites.
-        ж<SemaHolder> box = new(new SemaHolder());
+        ж<SemaHolder> box = new StandardBox<SemaHolder>(new SemaHolder());
         ж<uint> first = box.of<uint>(SemaField);
         ж<uint> second = box.of<uint>(SemaField);
 
         Assert.IsTrue(first.Equals(second));
         Assert.AreEqual(first.GetHashCode(), second.GetHashCode());
 
-        ж<SemaHolder> otherBox = new(new SemaHolder());
+        ж<SemaHolder> otherBox = new StandardBox<SemaHolder>(new SemaHolder());
         Assert.IsFalse(first.Equals(otherBox.of<uint>(SemaField)));
     }
 

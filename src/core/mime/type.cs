@@ -18,13 +18,13 @@ partial class mime_package {
     builtin.initPackage(typeof(sync_package));
 }
 
-internal static ж<Δsync.Map> ᏑmimeTypes = new(default(Δsync.Map));
+internal static ж<Δsync.Map> ᏑmimeTypes = new StandardBox<Δsync.Map>(default(Δsync.Map));
 internal static ref Δsync.Map mimeTypes => ref ᏑmimeTypes.Value;  // map[string]string; ".Z" => "application/x-compress"
-internal static ж<Δsync.Map> ᏑmimeTypesLower = new(default(Δsync.Map));
+internal static ж<Δsync.Map> ᏑmimeTypesLower = new StandardBox<Δsync.Map>(default(Δsync.Map));
 internal static ref Δsync.Map mimeTypesLower => ref ᏑmimeTypesLower.Value; // map[string]string; ".z" => "application/x-compress"
-internal static ж<Δsync.Mutex> ᏑextensionsMu = new(default(Δsync.Mutex));
+internal static ж<Δsync.Mutex> ᏑextensionsMu = new StandardBox<Δsync.Mutex>(default(Δsync.Mutex));
 internal static ref Δsync.Mutex extensionsMu => ref ᏑextensionsMu.Value; // Guards stores (but not loads) on extensions.
-internal static ж<Δsync.Map> Ꮡextensions = new(default(Δsync.Map));
+internal static ж<Δsync.Map> Ꮡextensions = new StandardBox<Δsync.Map>(default(Δsync.Map));
 internal static ref Δsync.Map extensions => ref Ꮡextensions.Value; // map[string][]string; slice values are append-only.
 
 // setMimeTypes is used by initMime's non-test path, and by tests.
@@ -79,7 +79,7 @@ internal static map<@string, @string> builtinTypesLower = new map<@string, @stri
     [".xml"u8] = "text/xml; charset=utf-8"u8
 };
 
-internal static ж<Δsync.Once> Ꮡonce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> Ꮡonce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once once => ref Ꮡonce.Value;    // guards initMime
 
 internal static Action testInitMime;

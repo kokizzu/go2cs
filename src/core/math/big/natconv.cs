@@ -447,7 +447,7 @@ internal static nint leafSize = 8; // number of Word-size binary values treat as
     public partial ref sync_package.Mutex Mutex { get; }
     internal array<divisor> table = new(64); // cached divisors for base 10
 }
-internal static ж<cacheBase10ᴛ1> ᏑcacheBase10 = new(new cacheBase10ᴛ1(nil));
+internal static ж<cacheBase10ᴛ1> ᏑcacheBase10 = new StandardBox<cacheBase10ᴛ1>(new cacheBase10ᴛ1(nil));
 internal static ref cacheBase10ᴛ1 cacheBase10 => ref ᏑcacheBase10.Value;
 
 // expWW computes x**y

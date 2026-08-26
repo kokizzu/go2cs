@@ -17,7 +17,7 @@ partial class testenv_package {
     builtin.initPackage(typeof(syscall_package));
 }
 
-internal static ж<sync.Once> ᏑsymlinkOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑsymlinkOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once symlinkOnce => ref ᏑsymlinkOnce.Value;
 
 internal static error winSymlinkErr;

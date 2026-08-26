@@ -43,11 +43,11 @@ public static UntypedInt ECMA => 0xC96C5795D7870F42;
 
 [GoType("[256]uint64")] partial struct Table;
 
-internal static ж<sync.Once> Ꮡslicing8TablesBuildOnce = new(default(sync.Once));
+internal static ж<sync.Once> Ꮡslicing8TablesBuildOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once slicing8TablesBuildOnce => ref Ꮡslicing8TablesBuildOnce.Value;
-internal static ж<ж<array<Table>>> Ꮡslicing8TableISO = new(default(ж<array<Table>>));
+internal static ж<ж<array<Table>>> Ꮡslicing8TableISO = new StandardBox<ж<array<Table>>>(default(ж<array<Table>>));
 internal static ref ж<array<Table>> slicing8TableISO => ref Ꮡslicing8TableISO.ValueSlot;
-internal static ж<ж<array<Table>>> Ꮡslicing8TableECMA = new(default(ж<array<Table>>));
+internal static ж<ж<array<Table>>> Ꮡslicing8TableECMA = new StandardBox<ж<array<Table>>>(default(ж<array<Table>>));
 internal static ref ж<array<Table>> slicing8TableECMA => ref Ꮡslicing8TableECMA.ValueSlot;
 
 internal static void buildSlicing8TablesOnce() {

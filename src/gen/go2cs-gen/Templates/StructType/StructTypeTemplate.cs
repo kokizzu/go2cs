@@ -1089,7 +1089,7 @@ internal class StructTypeTemplate : TemplateBase
                 result.Append($"{TypeElemIndent}    ");
                 // A keyword-named embed composes the box field from the UNESCAPED member name
                 // ('@' is only valid leading an identifier - 'Ꮡʗ@base' is CS1002).
-                result.AppendLine($"{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)} = new {typeName}(nil);");
+                result.AppendLine($"{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)} = new {PointerConstructedTypeName(typeName)}(nil);");
                 continue;
             }
 
@@ -1099,6 +1099,26 @@ internal class StructTypeTemplate : TemplateBase
             result.Append($"{TypeElemIndent}    ");
             result.AppendLine($"this.{memberName} = new {typeName}(nil);");
         }
+    }
+
+    // The TYPE a pointer member declares (`ж<T>`) is abstract under the B1 per-kind split, so a
+    // CONSTRUCTION of it names the standard kind instead (`new StandardBox<T>(nil)`) — the same
+    // declared-type/constructed-type pairing the converter's global-address emission uses. Only an
+    // OUTER pointer spelling maps (flat or `global::go.`-rooted); a pointer nested inside another
+    // type's generic arguments is that type's business, and a non-pointer name passes through.
+    private static string PointerConstructedTypeName(string typeName)
+    {
+        string flat = PointerPrefix + "<";
+
+        if (typeName.StartsWith(flat, StringComparison.Ordinal))
+            return BoxConstructPrefix + typeName.Substring(PointerPrefix.Length);
+
+        string rooted = "global::go." + flat;
+
+        if (typeName.StartsWith(rooted, StringComparison.Ordinal))
+            return "global::go." + BoxConstructPrefix + typeName.Substring("global::go.".Length + PointerPrefix.Length);
+
+        return typeName;
     }
 
     private readonly Dictionary<string, bool> m_needsConstructionCache = new(StringComparer.Ordinal);
@@ -1253,7 +1273,7 @@ internal class StructTypeTemplate : TemplateBase
             // the NilType/parameterless constructors, so a genuine deref of the nil embed panics
             // (Go nil-pointer semantics) rather than NREs, and a nil embed compares equal
             // regardless of which constructor produced it (ж.Equals: nil == nil).
-            string memberValue = isPromotedStruct && isReferenceType ? $"{memberName} ?? new {typeName}(nil)" : memberName;
+            string memberValue = isPromotedStruct && isReferenceType ? $"{memberName} ?? new {PointerConstructedTypeName(typeName)}(nil)" : memberName;
 
             // A fixed-size array member (`[N]T` → golib array<T>) carries a `= new(N)` field
             // initializer that gives the field its Go length; an OMITTED argument arrives as the

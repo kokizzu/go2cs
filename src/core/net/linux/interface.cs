@@ -195,7 +195,7 @@ public static (ж<Interface>, error) InterfaceByName(@string name) {
     internal map<nint, @string> toName; // interface index to its name
 }
 
-internal static ж<ipv6ZoneCache> ᏑzoneCache = new(new ipv6ZoneCache(
+internal static ж<ipv6ZoneCache> ᏑzoneCache = new StandardBox<ipv6ZoneCache>(new ipv6ZoneCache(
     toIndex: new map<@string, nint>(),
     toName: new map<nint, @string>()
 ));

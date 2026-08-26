@@ -53,7 +53,7 @@ internal static UntypedInt maxBacktrackVector => /* 256 * 1024 */ 262144; // bit
     internal inputs inputs;
 }
 
-internal static ж<Δsync.Pool> ᏑbitStatePool = new(default(Δsync.Pool));
+internal static ж<Δsync.Pool> ᏑbitStatePool = new StandardBox<Δsync.Pool>(default(Δsync.Pool));
 internal static ref Δsync.Pool bitStatePool => ref ᏑbitStatePool.Value;
 
 internal static ж<bitState> newBitState() {

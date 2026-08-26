@@ -404,14 +404,14 @@ public class GoReflectBridgeClosureTests
         // A POINTER carries its pointee's dims unshifted — the rule Elem() already applies when it
         // hands the cargo down. Nothing populated it, so `reflect.TypeOf(new([3]int)).Elem()`
         // described a dimension-LESS array and reflect.New of it allocated a zero-length one.
-        ж<array<nint>> box = new(new array<nint>(3));
+        ж<array<nint>> box = new StandardBox<array<nint>>(new array<nint>(3));
 
         CollectionAssert.AreEqual(new nint[] { 3 }, GoReflect.PointeeArrayDims(box));
 
         // Not a pointer to an array, a nil pointer, and a non-pointer each answer null rather than
         // guessing (the r39d rule).
-        Assert.IsNull(GoReflect.PointeeArrayDims(new ж<nint>(1)));
-        Assert.IsNull(GoReflect.PointeeArrayDims(new ж<array<nint>>(nil)));
+        Assert.IsNull(GoReflect.PointeeArrayDims(new StandardBox<nint>(1)));
+        Assert.IsNull(GoReflect.PointeeArrayDims(new StandardBox<array<nint>>(nil)));
         Assert.IsNull(GoReflect.PointeeArrayDims(new array<nint>(3)));
         Assert.IsNull(GoReflect.PointeeArrayDims(null));
     }

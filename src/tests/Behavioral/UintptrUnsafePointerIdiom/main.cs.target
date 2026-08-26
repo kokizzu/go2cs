@@ -15,7 +15,7 @@ partial class main_package {
     internal int32 x, y;
 }
 
-internal static ж<point> Ꮡorigin = new(new point(x: 3, y: 4));
+internal static ж<point> Ꮡorigin = new StandardBox<point>(new point(x: 3, y: 4));
 internal static ref point origin => ref Ꮡorigin.Value;
 
 internal static uintptr addrOf(ж<point> Ꮡp) {

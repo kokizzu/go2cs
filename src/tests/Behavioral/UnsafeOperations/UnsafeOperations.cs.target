@@ -29,7 +29,7 @@ partial class main_package {
     internal Inner @in;
 }
 
-internal static ж<Outer> ᏑgOuter = new(default(Outer));
+internal static ж<Outer> ᏑgOuter = new StandardBox<Outer>(default(Outer));
 internal static ref Outer gOuter => ref ᏑgOuter.Value;
 
 [GoType] partial struct Padded {

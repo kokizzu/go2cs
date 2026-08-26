@@ -74,9 +74,8 @@
     },
     {
       "name": "BoxConstructPrefix",
-      "value": "\u0436",
-      "goEscape": true,
-      "goExpr": "PointerPrefix",
+      "value": "StandardBox",
+      "csharp": true,
       "comment": [
         "BoxConstructPrefix is the spelling of the STANDARD-KIND box class at CONSTRUCTION",
         "positions - the B1 role split (docs/phase4/DESIGN-zh-box-b1.md \u00A76, OQ-1): a DECLARED",

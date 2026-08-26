@@ -7014,7 +7014,7 @@ internal static array<valueRange> nfkcSparseValues = new valueRange[]{
 // recompMap: 7528 bytes (entries only)
 internal static map<uint32, rune> recompMap;
 
-internal static ж<sync.Once> ᏑrecompMapOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑrecompMapOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once recompMapOnce => ref ᏑrecompMapOnce.Value;
 
 // 0x00410300: 0x000000C0
