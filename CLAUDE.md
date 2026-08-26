@@ -160,6 +160,19 @@ ONE stdlib in a build; there is now only one on disk.
     trap below: **a path the converter half-recognizes is worse than one it rejects.** Native paths convert
     clean first time. (Durable fix if ever wanted: compare with `filepath.Clean` so the two spellings of
     one path cannot diverge.)
+    ⚠ **It bites through the ENVIRONMENT just as readily as through an argument, and the Bash tool is
+    where that happens** (paid again 2026-08-26). `run-validated-sweep.ps1` and the `-tests` pipeline
+    read `GOROOT` from the environment, so `export GOROOT="C:/Users/.../sdk/go1.23.12"` — the
+    forward-slash spelling a Bash-side lane naturally types, and which `go` itself accepts — routes the
+    whole emission into `namespace go.std.*` exactly as the argument form does. **The visible tell is the
+    project NAME**: the run writes `std.<pkg>.csproj` / `std.<pkg>.tests.csproj` beside the committed
+    `<pkg>.csproj`, and the failure surfaces as CS0246 on a generated adapter type in a CONSUMER file
+    (`writer.cs: 'sparseFileWriterжWriter' could not be found`) — which reads like a witness/generator
+    regression and invites a hunt in the wrong package. It also survives an A/B: running the SAME sweep on
+    a baseline converter reproduces it identically, so "it fails at master too" is NOT evidence the tree is
+    at fault when the environment is the variable. Check for `std.*` artifacts before believing any such
+    diagnosis, and set `GOROOT` from `go env GOROOT` verbatim (single-quoted in Bash so the backslashes
+    survive).
   - `-test-action convert|build|run|compare|all` (default `convert`) — `convert`/`all` convert-and-hook
     (production sources then tests); `build`/`run`/`compare` act on EXISTING digest-validated artifacts
     without reconverting; `compare` (and `all`) diffs the C# host's terminal results vs `go test -json -count=1`.

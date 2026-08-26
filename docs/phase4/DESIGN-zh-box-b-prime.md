@@ -308,7 +308,8 @@ a build error, which CNR and the behavioral suite catch as loudly as anything ca
 > — so the invariant now holds by construction rather than by the old reason's breadth
 > (`collectCaptureModeMethods` writes both method sets under one condition, so they cannot diverge).
 >
-> **The split, re-derived corpus-wide on the pinned toolchain** (windows/amd64, go1.23.12):
+> **The split, re-derived corpus-wide on the pinned toolchain** (windows/amd64, go1.23.12). These
+> are CENSUS verdicts — read the emission measurement below before pricing anything off them:
 >
 > | | before | after |
 > |:--|--:|--:|
@@ -319,10 +320,53 @@ a build error, which CNR and the behavioral suite catch as loudly as anything ca
 > | locals reverting corpus-wide | **231** | **621** |
 > | locals kept for the receiver reason ALONE | **693** | **0** |
 >
-> So **§1.2 over-attributes its own headline**: of the 1,016 receiver-position uses it counts as
-> B′'s constituency, 560 never needed a box at all and are recovered here with no dual emission,
-> flag-off. **448 remain** — those are what a ref-receiver primary would actually convert, and S1
-> should be priced against that number, not 1,016. The reversion set grows 231 → 621 (2.7×).
+> **⚠ THE EMISSION DELTA IS 5 BOXES, NOT 560 — and that gap is this stage's most useful finding.**
+> A seeded A/B reconvert settles it: the **baseline** converter reproduces the committed corpus
+> **byte-identically** (3,361 `.cs`, same hash — so the control holds and B − A is exactly this
+> change), and B differs in **5 files**: three sources shedding **5 `heap()` mints**
+> (`archive/tar/reader.cs` −2, `runtime/windows/proc.cs` −2, `runtime/windows/tracetime.cs` −1)
+> plus two `package_info.cs` position maps. Every other box-mint spelling (`new ж<`, `Ꮡ(`) is
+> unchanged to the occurrence.
+>
+> **Why the census moved 390 locals and the emission moved 5.** The census marks a local
+> address-taken on the IMPLICIT receiver take, but the EMITTER never boxed a receiver-only local in
+> the first place — `eRefMethodOnly` was already a plain local before this change. A box is actually
+> minted only where the local ALSO carries a real box-forcing address use that lowers, and
+> corpus-wide that co-occurrence is five sites. So the 560 were not boxes removed; they were census
+> verdicts that emission had always ignored. What this change buys at flag-off is therefore **an
+> instrument that describes the emission** — plus five genuinely redundant mints.
+>
+> **The consequence for S1's pricing, stated plainly: census local-counts are NOT emission counts.**
+> §1.2's 1,016 is a census figure, and so is the 448 below; pricing B′ off either would overstate
+> the win by orders of magnitude, exactly as it would have here. **S1 must be priced by EMISSION**,
+> using the instrument this stage established and controlled: seeded A/B reconvert, baseline
+> reproducing the committed corpus byte-identically, then a box-mint diff. The census figure is an
+> upper bound on the constituency, never a prediction of the saving.
+>
+> That bound is still worth having, and it is genuinely smaller than §1.2 assumed: **448**, not
+> 1,016, of the receiver-position uses carry a box-consuming receiver at all. And B′'s own prospects
+> are NOT bounded by this stage's five: a direct-ж receiver IS really boxed by the emitter
+> (`Ꮡz.FieldAddr()` mints), which is precisely why the ref-flavored case had so little left to
+> recover and why the primary's case has to be measured rather than inferred from either number.
+>
+> **S1's constituency, located.** Of the 448, `ptr-receiver-box` is the **SOLE** kept-reason for
+> **295** — those revert the moment the callee gains a primary, with no other analysis owed. The
+> remaining 153 carry a second reason (`unlowered-position`, `non-candidate-callee`, …) and need
+> Phase-A work as well, so they are not B′'s to claim alone. Where they live:
+>
+> | package | locals | package | locals |
+> |:--|--:|:--|--:|
+> | `runtime` | 83 | `crypto/tls` | 22 |
+> | `crypto/internal/edwards25519` | 46 | `crypto/internal/edwards25519/field` | 13 |
+> | `net/http` | 37 | `sync` | 13 |
+> | `math/big` | 32 | `strings` | 8 |
+> | `go/types` | 29 | `crypto/ecdh` | 7 |
+>
+> **§7's S0 acceptance target totals 59 locals** — `crypto/internal/edwards25519` (46) plus its
+> `field` subpackage (13) — which is the concrete size of what S0's two-package prototype is
+> reaching for; and §1.3's deferred "B′ share of `math/big`" now has its receiver-side term
+> measured at **32** (its 33 receiver locals, one of which reverted here), leaving the `nat`-flow
+> share to Phase C exactly as §1.3 refused to guess.
 >
 > Two mechanical notes for S1. **The census had to be taught the same fact**: `runRefLoweringCensus`
 > called `analyzeRefLowering` without `collectCaptureModeMethods`, so it could not see the receiver
