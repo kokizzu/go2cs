@@ -306,6 +306,7 @@
     <Project Path="tests/Behavioral/AtomicFieldThroughPointer/AtomicFieldThroughPointer.csproj" />
     <Project Path="tests/Behavioral/AtomicPointerToNil/AtomicPointerToNil.csproj" />
     <Project Path="tests/Behavioral/AtomicValues/AtomicValues.csproj" />
+    <Project Path="tests/Behavioral/CaptureHoistThroughConversion/CaptureHoistThroughConversion.csproj" />
     <Project Path="tests/Behavioral/CaptureModeFieldAddress/CaptureModeFieldAddress.csproj" />
     <Project Path="tests/Behavioral/CaptureModeFuncLitParam/CaptureModeFuncLitParam.csproj" />
     <Project Path="tests/Behavioral/CaptureModeParamClosure/CaptureModeParamClosure.csproj" />

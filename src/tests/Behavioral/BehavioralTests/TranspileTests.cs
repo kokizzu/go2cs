@@ -157,6 +157,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckByteTableStringVar() => CheckTarget("ByteTableStringVar");
 
     [TestMethod]
+    public void CheckCaptureHoistThroughConversion() => CheckTarget("CaptureHoistThroughConversion");
+
+    [TestMethod]
     public void CheckCaptureModeFieldAddress() => CheckTarget("CaptureModeFieldAddress");
 
     [TestMethod]
