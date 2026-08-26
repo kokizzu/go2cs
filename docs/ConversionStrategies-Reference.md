@@ -949,6 +949,47 @@ marker keeps the name clear of the relocated-package-var method space (`initᴛ<
 [Package-Level Variable Initialization Order](#package-level-variable-initialization-order)) and the
 `import` word clear of the `-tests` package-init hook (`initᴛᴛtests`).
 
+**The forcing `typeof` is root-qualified when the enclosing class shadows its leading segment.**
+The hook body is the ONE place the converter spells a namespace-qualified path where C# *class*-member
+lookup applies. Every other cross-package reference is emitted through a file-scoped `using` alias, and
+a using **directive** resolves at namespace scope, where class members are not in play; the hook sits
+inside the class body, and C# resolves the leading identifier of a namespace-or-type-name by searching
+the enclosing type declarations **outward first**. A nested type sharing that identifier therefore
+occludes the namespace for the whole class body — while the alias a few lines above keeps working, which
+is what makes the failure read like a converter regression somewhere else entirely:
+
+```csharp
+using palette = image.color.palette_package;   // namespace scope — resolves
+
+partial class image_internal_test_package {
+
+[GoInit] internal static void initᴛᴛimportꓸimageꓸcolorꓸpalette() {
+    builtin.initPackage(typeof(image.color.palette_package));   // CS0426
+}
+
+[GoType] internal partial interface image : Image { … }         // ← occludes `image`
+```
+
+Go's own `image_test.go` declares a test-local `type image interface{…}`, and `package image` is free to:
+importing `image/color/palette` binds `palette`, not `image`. The same shape is available to production
+code — `type sync struct{}` beside `import "sync/atomic"` breaks identically — so the remedy covers the
+class, not the instance: `writeImportInit` root-qualifies the target with `global::` (which restarts
+lookup at the global namespace and so cannot be occluded at all) whenever `forcingTargetShadowed` finds a
+package-level **type** named for the target's leading segment that emits into **this** class.
+
+Both halves of that gate are narrow on purpose, and both directions cost something. Only a *type*
+occludes: `typeof(a.b)` is a namespace-or-type-name, and that lookup considers types and namespaces
+alone, so a same-named func or var is irrelevant. And only a type emitted into the *same* class occludes,
+which is what keeps a production hook bare when the shadow lives in the test-variant class — the two are
+sibling partial classes, and a `using static` import of one loses to the namespace's own members at
+namespace scope — so the `-stdlib` and `-tests` emissions of the same production file stay identical.
+Over-qualifying would be valid C# but would churn every hook in the corpus (2,147 sites across 691 files
+at the time of the fix, 606 behavioral goldens among them); under-qualifying is a hard CS0426. An ordinal
+census of the converted standard library finds **exactly one** shadow site — `image`'s — which is why the
+guard costs the corpus nothing: every site it changes is a site that did not compile. Guarded by
+`tests/Behavioral/ImportSegmentTypeShadow` (production scope, compiled and output-compared) and by
+`importSegmentShadow_test.go` (the test-local half, the gate's four quadrants, and the rooting shapes).
+
 **Go's pseudo-packages are skipped.** `unsafe` and `builtin` are compiler-provided and have no
 initialization at all, and `C` is cgo. `import _ "unsafe"` is the `//go:linkname` ritual — 67 files of
 the converted standard library — so forcing it would be a guaranteed no-op emitted 67 times. They are
