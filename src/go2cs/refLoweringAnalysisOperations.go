@@ -52,18 +52,18 @@ import (
 // Veto reasons — callee-side (§3.2). Every veto carries one of these tags so the census can
 // aggregate honestly; the whitelist default arm uses refVetoOtherUse.
 const (
-	refVetoX1Identity    = "X1-identity"        // p == nil / p == q / switch p / case p / map key
-	refVetoX2Escape      = "X2-escape"          // stored, composite lit, channel send
-	refVetoX2Return      = "X2-return"          // p returned — the constructor/self-return shape (§9 item f's bucket)
-	refVetoX2Capture     = "X2-capture"         // referenced inside a nested closure body
-	refVetoX2DeferArg    = "X2-defer-arg"       // address-carrying use in a defer/go argument frame
-	refVetoX3Repr        = "X3-representation"  // unsafe.Pointer/uintptr conversion, interface arg, method on p
-	refVetoX4Repoint     = "X4-repoint"         // p = q assignment to the parameter itself
-	refVetoX5NamedPtr    = "X5-named-pointer"   // parameter type is a named pointer type (type P *T)
-	refVetoOtherUse      = "other-use"          // whitelist default: unrecognized use shape
-	refVetoPtrSlice      = "other-use-ptr-slice" // p[:] over a pointer-to-array parameter — not a §3.2 D row; distinct tag so the class is measurable
-	refVetoForward       = "forward-unlowered"  // D2/D1' target position is not (or no longer) lowered
-	refVetoCallerShape   = "caller-shape"       // stripped by an other-veto argument shape at a call site
+	refVetoX1Identity  = "X1-identity"         // p == nil / p == q / switch p / case p / map key
+	refVetoX2Escape    = "X2-escape"           // stored, composite lit, channel send
+	refVetoX2Return    = "X2-return"           // p returned — the constructor/self-return shape (§9 item f's bucket)
+	refVetoX2Capture   = "X2-capture"          // referenced inside a nested closure body
+	refVetoX2DeferArg  = "X2-defer-arg"        // address-carrying use in a defer/go argument frame
+	refVetoX3Repr      = "X3-representation"   // unsafe.Pointer/uintptr conversion, interface arg, method on p
+	refVetoX4Repoint   = "X4-repoint"          // p = q assignment to the parameter itself
+	refVetoX5NamedPtr  = "X5-named-pointer"    // parameter type is a named pointer type (type P *T)
+	refVetoOtherUse    = "other-use"           // whitelist default: unrecognized use shape
+	refVetoPtrSlice    = "other-use-ptr-slice" // p[:] over a pointer-to-array parameter — not a §3.2 D row; distinct tag so the class is measurable
+	refVetoForward     = "forward-unlowered"   // D2/D1' target position is not (or no longer) lowered
+	refVetoCallerShape = "caller-shape"        // stripped by an other-veto argument shape at a call site
 )
 
 // A variadic `...*T` parameter needs no veto arm: its type is a SLICE of pointers, so the
@@ -119,15 +119,15 @@ func refCanonicalPkgPath(path string) string {
 // Call-site argument shapes — the §3.3 emission rows plus the defer/go carve-out and the veto
 // bucket. Shape names are stable strings because they land in the census JSON.
 const (
-	refShapeFieldAddr  = "row1-field-addr"  // &e.x — field of a deref'd base
-	refShapeLocalAddr  = "row2-local-addr"  // &x — address-taken local/param/result (globals sub-tagged)
-	refShapePointerVar = "row3-pointer-var" // a pointer-valued variable read (extended carriers sub-tagged)
-	refShapeElemAddr   = "row4-elem-addr"   // &s[i]
+	refShapeFieldAddr  = "row1-field-addr"   // &e.x — field of a deref'd base
+	refShapeLocalAddr  = "row2-local-addr"   // &x — address-taken local/param/result (globals sub-tagged)
+	refShapePointerVar = "row3-pointer-var"  // a pointer-valued variable read (extended carriers sub-tagged)
+	refShapeElemAddr   = "row4-elem-addr"    // &s[i]
 	refShapePtrConv    = "row5-pointer-conv" // (*T2)(&v.x) — the conversion shape (§10.3: hoisted-temp rule)
-	refShapeTempNeeded = "row6-temp"        // &T{…}, new(T), call results — hoisted temp
-	refShapeNilLit     = "row7-nil"         // the literal nil
-	refShapeDeferGo    = "defer-go"         // boxed carve-out: the site keeps today's boxed emission
-	refShapeOtherVeto  = "other-veto"       // no emission row — strips the position (two-sided fixed point)
+	refShapeTempNeeded = "row6-temp"         // &T{…}, new(T), call results — hoisted temp
+	refShapeNilLit     = "row7-nil"          // the literal nil
+	refShapeDeferGo    = "defer-go"          // boxed carve-out: the site keeps today's boxed emission
+	refShapeOtherVeto  = "other-veto"        // no emission row — strips the position (two-sided fixed point)
 )
 
 // refPosKey names one pointer-parameter position of one package-level function — the unit the
@@ -151,9 +151,9 @@ type refForward struct {
 
 // refParamVerdict is the per-parameter classification record.
 type refParamVerdict struct {
-	Index    int      `json:"index"`
-	Name     string   `json:"name"`
-	Vetoes   []string `json:"vetoes,omitempty"`   // immediate callee-side vetoes (empty = candidate)
+	Index    int          `json:"index"`
+	Name     string       `json:"name"`
+	Vetoes   []string     `json:"vetoes,omitempty"`   // immediate callee-side vetoes (empty = candidate)
 	Forwards []refForward `json:"forwards,omitempty"` // D2/D1' dependencies resolved by the fixed point
 	// Final verdicts, filled from the fixed-point sets: LoweredA is the Phase-A (unexported-only)
 	// verdict — the one A2's emission will read; LoweredAPrime is the A′-world verdict the census
@@ -211,6 +211,10 @@ type refLoweringPackageResult struct {
 	// MethodPtrParams counts pointer-parameter positions on METHODS (receivers stay ж in Phase A;
 	// the count prices B′'s constituency, nothing more).
 	MethodPtrParams int `json:"methodPtrParams,omitempty"`
+	// Methods holds B′ §4.1 receiver-eligibility verdicts, keyed `<Recv>.<Name>` (see
+	// refReceiverEligibility.go). Analysis only at S0a — nothing emission-side reads it, exactly as
+	// nothing read Funcs at A1.
+	Methods map[string]*refMethodVerdict `json:"methods,omitempty"`
 	// TypeParamPointerCoreParams counts parameters typed by a type parameter whose core type is a
 	// pointer (`p P` under `[P *T]`) — not classified in Phase A, counted for honesty.
 	TypeParamPointerCoreParams int `json:"typeParamPointerCoreParams,omitempty"`
@@ -386,6 +390,16 @@ func (a *refLoweringAnalysis) collectFunc(funcDecl *ast.FuncDecl, fileIsHandOwne
 			if _, isPtr := types.Unalias(params.At(i).Type()).(*types.Pointer); isPtr {
 				a.result.MethodPtrParams++
 			}
+		}
+
+		// B′ §4.1 receiver eligibility (S0a) — recorded beside the count, still emitting nothing.
+		// Phase A's verdict for this declaration is unchanged and remains "does not lower".
+		if verdict := a.classifyMethodReceiver(funcDecl, obj, signature, fileIsHandOwned); verdict != nil {
+			if a.result.Methods == nil {
+				a.result.Methods = map[string]*refMethodVerdict{}
+			}
+
+			a.result.Methods[verdict.Recv+"."+verdict.Name] = verdict
 		}
 
 		return
@@ -2015,6 +2029,16 @@ type refLoweringSummary struct {
 	ShapeCounts        map[string]int `json:"shapeCounts,omitempty"`
 	VetoCounts         map[string]int `json:"vetoCounts,omitempty"`
 	KeptLocalReasons   map[string]int `json:"keptLocalReasons,omitempty"`
+
+	// ---- B′ §4.1 receiver eligibility (S0a) ----
+
+	// MethodsSeen counts every method declaration classified, eligible or not — the denominator
+	// that keeps MethodsEligible from being read as a rate against nothing.
+	MethodsSeen int `json:"methodsSeen,omitempty"`
+	// MethodsEligible counts methods that may carry the ref-receiver primary (no §4.1 veto).
+	MethodsEligible int `json:"methodsEligible,omitempty"`
+	// MethodRecvVetoCounts breaks the ineligible remainder down by XM arm.
+	MethodRecvVetoCounts map[string]int `json:"methodRecvVetoCounts,omitempty"`
 }
 
 // summarizeRefLowering rolls one package result up. Shape counts include only arguments whose
@@ -2022,9 +2046,27 @@ type refLoweringSummary struct {
 // actually rewrite (the strip events are visible through VetoCounts's caller-shape entries).
 func summarizeRefLowering(result *refLoweringPackageResult) refLoweringSummary {
 	summary := refLoweringSummary{
-		ShapeCounts:      map[string]int{},
-		VetoCounts:       map[string]int{},
-		KeptLocalReasons: map[string]int{},
+		ShapeCounts:          map[string]int{},
+		VetoCounts:           map[string]int{},
+		KeptLocalReasons:     map[string]int{},
+		MethodRecvVetoCounts: map[string]int{},
+	}
+
+	// B′ §4.1 (S0a). Counted per METHOD, and every veto on a method is counted, so the arm tallies
+	// answer "how often did this arm fire" rather than "how many methods did this arm alone stop" —
+	// the same convention Phase A's VetoCounts uses, and the reason a single method can appear under
+	// two arms without the totals lying.
+	for _, verdict := range result.Methods {
+		summary.MethodsSeen++
+
+		if verdict.Eligible() {
+			summary.MethodsEligible++
+			continue
+		}
+
+		for _, veto := range verdict.Vetoes {
+			summary.MethodRecvVetoCounts[veto]++
+		}
 	}
 
 	loweredPositions := map[refPosKey]bool{}

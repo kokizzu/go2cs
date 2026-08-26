@@ -251,6 +251,30 @@ must-not-select case either fails to compile on the primary or resolves to the t
 overload rules.** There is no silent-wrong-selection class; the selection rule's failure mode is
 a build error, which CNR and the behavioral suite catch as loudly as anything can be caught.
 
+> **MEASURED 2026-08-26 (S0's binding guard) — the invariant HOLDS, and two details in the sentence
+> above are corrected by measurement.** The ratification's compile-probe matrix is live at
+> `src/tests/GolibTests/ZhBoxSelectionProbeTests.cs`, run against the **real** production pair
+> (`sync/atomic`'s `[GoRecv] this ref Int32` primary + `RecvGenerator`'s `this ж<Int32>` twin) with
+> Roslyn's own `SemanticModel` and diagnostic bag as the verdict. 15/15 green, and proven
+> non-vacuous: injecting a by-value `Add` overload — a faithful simulation of the hazard — turns
+> 10 of the 15 red, including every must-not-select row, and the matrix returns to green when it is
+> removed. Corrections:
+>
+> 1. **The cited codes are incomplete, and the one named most is not the one that fires most.** The
+>    measured refusals are **CS0206** ("a property or indexer may not be passed as an out or ref
+>    parameter") for the map-index and property-shaped arms, and **CS1510** for the conditional
+>    expression. **CS1657 does not fire anywhere in the matrix.** The codes are now pinned by a test
+>    rather than cited from memory, so a compiler change that moves one — or worse, stops refusing —
+>    is caught here.
+> 2. **"Resolves to the twin" overstates what the refusal arm does.** On the non-ref-addressable
+>    shapes, overload resolution still *selects the primary* — it is the only applicable overload for
+>    a receiver of type `Int32` — and the refusal happens later, at argument conversion. Roslyn
+>    therefore reports the primary as the site's symbol **on a build that does not compile**. The
+>    invariant is unaffected, because it is a disjunction about the BUILD OUTCOME, not about which
+>    symbol the compiler names; but a guard that asserts on the symbol instead of the outcome reads
+>    a satisfied invariant as a violation. It did, on the first run here, and the note is left
+>    standing so S1 does not re-learn it.
+
 ### 4.3 The retroactive widening of Phase A — a measured positive interaction
 
 A1 recorded that `edwards25519/field`'s `feMulGeneric`/`feSquareGeneric` are **X3-vetoed on their

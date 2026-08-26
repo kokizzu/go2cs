@@ -79,9 +79,9 @@ type refCensusReport struct {
 
 // refCensusTarget is one GOOS/GOARCH target's full classification.
 type refCensusTarget struct {
-	Target   string                        `json:"target"`
-	Packages map[string]*refCensusPackage  `json:"packages"`
-	Totals   refCensusTotals               `json:"totals"`
+	Target   string                       `json:"target"`
+	Packages map[string]*refCensusPackage `json:"packages"`
+	Totals   refCensusTotals              `json:"totals"`
 	// ExportedCandidates is §9 item f: exported package-level functions with ≥1 parameter lowered
 	// in the A′-world fixed point, with their corpus call-site traffic.
 	ExportedCandidates []refCensusExportedCandidate `json:"exportedCandidates,omitempty"`
@@ -103,22 +103,26 @@ type refCensusPackage struct {
 
 // refCensusTotals is the corpus-wide roll-up per target.
 type refCensusTotals struct {
-	Packages           int            `json:"packages"`
-	Funcs              int            `json:"funcs"`
-	CandidateFuncs     int            `json:"candidateFuncs"`
-	PtrParams          int            `json:"ptrParams"`
-	LoweredParamsA     int            `json:"loweredParamsA"`
-	LoweredParamsAPrime int           `json:"loweredParamsAPrime"`
-	LocalsAddressTaken int            `json:"localsAddressTaken"`
-	LocalsRevert       int            `json:"localsRevert"`
-	ShapeCounts        map[string]int `json:"shapeCounts"`
-	VetoCounts         map[string]int `json:"vetoCounts"`
-	KeptLocalReasons   map[string]int `json:"keptLocalReasons"`
-	MethodPtrParams    int            `json:"methodPtrParams"`
-	ExportedCandidateFuncs int        `json:"exportedCandidateFuncs"`
+	Packages               int            `json:"packages"`
+	Funcs                  int            `json:"funcs"`
+	CandidateFuncs         int            `json:"candidateFuncs"`
+	PtrParams              int            `json:"ptrParams"`
+	LoweredParamsA         int            `json:"loweredParamsA"`
+	LoweredParamsAPrime    int            `json:"loweredParamsAPrime"`
+	LocalsAddressTaken     int            `json:"localsAddressTaken"`
+	LocalsRevert           int            `json:"localsRevert"`
+	ShapeCounts            map[string]int `json:"shapeCounts"`
+	VetoCounts             map[string]int `json:"vetoCounts"`
+	KeptLocalReasons       map[string]int `json:"keptLocalReasons"`
+	MethodPtrParams        int            `json:"methodPtrParams"`
+	ExportedCandidateFuncs int            `json:"exportedCandidateFuncs"`
 	// ExportedReturnShaped counts exported functions with ≥1 pointer parameter vetoed X2-return —
 	// the "constructor-shaped" bucket of the design's 2026-08-10 measurement (§9 item f).
 	ExportedReturnShaped int `json:"exportedReturnShaped"`
+	// B′ §4.1 receiver eligibility (S0a): analysis only, nothing emission-side reads it.
+	MethodsSeen          int            `json:"methodsSeen"`
+	MethodsEligible      int            `json:"methodsEligible"`
+	MethodRecvVetoCounts map[string]int `json:"methodRecvVetoCounts"`
 }
 
 // refCensusExportedCandidate is one §9(f) exported candidate with its measured call-site traffic.
@@ -132,11 +136,11 @@ type refCensusExportedCandidate struct {
 // refCensusHandOwn is the §3.5 hand-own cross-reference: the re-measured marker census plus every
 // candidate referenced from a hand-owned file of its own package.
 type refCensusHandOwn struct {
-	CorpusRoot        string   `json:"corpusRoot"`
-	MarkedFiles       []string `json:"markedFiles"`
-	ImplFiles         []string `json:"implFiles"`
-	MarkedFileCount   int      `json:"markedFileCount"`
-	ImplFileCount     int      `json:"implFileCount"`
+	CorpusRoot      string   `json:"corpusRoot"`
+	MarkedFiles     []string `json:"markedFiles"`
+	ImplFiles       []string `json:"implFiles"`
+	MarkedFileCount int      `json:"markedFileCount"`
+	ImplFileCount   int      `json:"implFileCount"`
 	// References: lowered candidates whose name appears (word-anchored) in a hand-owned file of
 	// the SAME package — the set A2 must resolve per instance before any regen. Cross-package
 	// references cannot bind a lowered candidate (unexported ⇒ C# internal, no InternalsVisibleTo
@@ -171,9 +175,9 @@ type refCensusGoosDelta struct {
 }
 
 type refCensusGoosDeltaPackage struct {
-	PkgPath    string `json:"pkg"`
-	Positions  int    `json:"positions"`
-	AlreadyL3  bool   `json:"alreadyL3"`
+	PkgPath   string `json:"pkg"`
+	Positions int    `json:"positions"`
+	AlreadyL3 bool   `json:"alreadyL3"`
 }
 
 // runRefLoweringCensus is the -ref-census entry point (main.go dispatches here under -stdlib).
@@ -282,9 +286,10 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 		Target:   target,
 		Packages: map[string]*refCensusPackage{},
 		Totals: refCensusTotals{
-			ShapeCounts:      map[string]int{},
-			VetoCounts:       map[string]int{},
-			KeptLocalReasons: map[string]int{},
+			ShapeCounts:          map[string]int{},
+			VetoCounts:           map[string]int{},
+			KeptLocalReasons:     map[string]int{},
+			MethodRecvVetoCounts: map[string]int{},
 		},
 	}
 
@@ -404,6 +409,12 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 		totals.LocalsAddressTaken += summary.LocalsAddressTaken
 		totals.LocalsRevert += summary.LocalsRevert
 		totals.MethodPtrParams += result.MethodPtrParams
+		totals.MethodsSeen += summary.MethodsSeen
+		totals.MethodsEligible += summary.MethodsEligible
+
+		for veto, count := range summary.MethodRecvVetoCounts {
+			totals.MethodRecvVetoCounts[veto] += count
+		}
 
 		for shape, count := range summary.ShapeCounts {
 			totals.ShapeCounts[shape] += count
@@ -807,6 +818,9 @@ func printRefCensusSummary(report *refCensusReport) {
 		printCountMap("  call-arg shapes at lowered positions", totals.ShapeCounts)
 		printCountMap("  veto reasons", totals.VetoCounts)
 		printCountMap("  kept-local reasons", totals.KeptLocalReasons)
+		fmt.Printf("  [B'] methods seen %d: receiver-eligible %d (%.1f%%)\n",
+			totals.MethodsSeen, totals.MethodsEligible, percentOf(totals.MethodsEligible, totals.MethodsSeen))
+		printCountMap("  [B'] receiver vetoes", totals.MethodRecvVetoCounts)
 	}
 
 	if report.HandOwn != nil {

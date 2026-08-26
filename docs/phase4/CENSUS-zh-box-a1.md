@@ -281,3 +281,110 @@ Recorded by the lane at commit time — see the lane report; the coordinator re-
   `packageStateOperations.go`; flag surface in `main.go`/`commandLineOptions.go`.
 - The JSON report is regenerable by §1's command and is deliberately not committed (the numbers
   above are its digest; the pinned-machine re-derivation supersedes them at merge).
+
+---
+
+## 8. AMENDMENT 2026-08-26 — the pinned-machine re-derivation, and what the delta actually is
+
+> Added, not rewritten (§ doc-type rule). §5.1 recorded a toolchain debt: the numbers above were
+> measured on **go1.23.2** against a corpus then pinned to **1.23.1**. That debt is now paid on
+> **go1.23.12** — the pin the corpus re-banked at (`a2e079259`) — on the perf-canon host
+> (GRETCHEN-LAPTOP), converter rebuilt on 1.23.12 and stamp-verified (`go version <exe>` →
+> `go1.23.12`, closing false-green route #4). Wall time **13.2 s** for all three targets, exit 0,
+> empty stderr, nothing emitted.
+
+### 8.1 The headline: the delta is the INSTRUMENT, not the hop
+
+The numbers moved a lot, and the obvious reading — "the 1.23.1 → 1.23.12 corpus hop moved the
+constituency" — is **wrong**. Six commits touched the classifier between this census and today,
+`0c631dd7a` ("the A2 hand-own arms and the emittability narrowing") among them. Attributing their
+effect to the hop would have mis-priced both B′ and B1, so the delta was decomposed rather than
+reported.
+
+**Method — single-variable A/B.** The A1-era instrument was rebuilt from `44f3ea609` (the parent of
+`0c631dd7a`, the first A2 classifier commit) in a temporary worktree, **with the same go1.23.12
+toolchain** (both binaries stamp `go1.23.12`), and run against **the same GOROOT and the same
+corpus** as the current instrument. Only the instrument source differs. The opposite A/B — current
+instrument at GOROOT 1.23.1 — **cannot be run, by design**: the converter refuses `-stdlib` when
+GOROOT's release disagrees with `version.props`'s `<GoStdLibVersion>`, naming the exact silent
+divergence it prevents. That guard is working as intended and is noted here as a positive control,
+not an obstacle.
+
+windows/amd64, all three columns on the current corpus except the first:
+
+| | A1 as banked (go1.23.2, corpus 1.23.1) | **A1-era instrument @ 1.23.12** | **current instrument @ 1.23.12** |
+|:--|--:|--:|--:|
+| package-level funcs | 7,736 | 7,741 | 7,741 |
+| pointer params | 2,819 | **2,819** | 2,750 |
+| lowered (Phase A) | 564 | **564** | 528 |
+| lowered (A′) | 632 | **632** | 590 |
+| **method ptr-params (B′ context)** | **1,609** | **1,609** | **1,609** |
+| address-taken locals / revert | 2,771 / 236 | 2,766 / **236** | 2,794 / 231 |
+| row 1 field addr | 281 | **282** | 178 |
+| row 2 local addr | 286 | **286** | 276 |
+| row 3 pointer var | 806 | **808** | 768 |
+| row 4 elem addr | 17 | **17** | 16 |
+| row 5 pointer conv | 31 | **31** | 26 |
+| row 6 temp | 11 | **11** | 11 |
+| row 7 nil | 1 | **1** | 0 |
+| defer-go carve-out | 13 | **13** | 13 |
+| **other-veto at lowered positions** | **0** | **0** | **0** |
+
+**Read the middle column against the first**: the A1-era instrument, run on the *new* corpus,
+reproduces the *old* banked numbers — row 1 282 vs 281, row 3 808 vs 806, funcs 7,741 vs 7,736,
+and `lowered`, `revert`, rows 2/4/5/6/7 and defer-go **exactly**. **The corpus hop moved essentially
+nothing.** Every material difference between this census and today is A2's own deliberate
+narrowing, doing what its commit messages say it does.
+
+### 8.2 What A2 added, quantified
+
+New veto arms present only in the current instrument (windows/amd64):
+
+| arm | A1-era | current | note |
+|:--|--:|--:|:--|
+| `X5-hand-owned` | — | **96** | the A2 hand-own arm (§6.6's "declared-in-hand-own") |
+| `X5-hand-own-caller` | — | **3** | its caller-side mirror |
+| `caller-shape` | — | **22** | the emittability narrowing's caller-side strip |
+| `X5-linkname` | 177 | **192** | +15, the curated-registry `std/` prefix normalization (`bdb703c0c`) |
+| `other-use` | — | **2** | see §8.3 |
+
+Everything else is untouched to the unit: `X1-identity` 239, `X2-capture` 51, `X2-return` 26,
+`X3-representation` 1,159, `X4-repoint` 47, `X5-bodiless` 465, `X5-func-value` 545,
+`other-use-ptr-slice` 19 — identical across both instruments. The classifier's core did not drift;
+A2 added arms beside it.
+
+**Hand-own census, re-measured (both instruments agree, so it is a corpus fact):** **76 marked
+files, 59 `*_impl.cs` companions** — against §5.4's 49/41. Grown, per CLAUDE.md's re-measure-never-
+carry rule. The A2 arms are visibly doing their job here: **candidate references still to resolve
+falls 24 → 11**.
+
+### 8.3 The completeness property still holds — and one reading trap inside it
+
+`other-veto` **remains 0 at lowered positions on all three targets**, so §2(b)'s completeness proof
+survives both the hop and the narrowing. This is the quantity B′'s S1 gate re-checks, and it is
+green in advance.
+
+⚠ The trap: the A2 instrument added a **new diagnostic array**, `otherVetoSites`, which the A1-era
+instrument did not emit at all (0 occurrences in its JSON, 380 in today's). Counting raw
+`"other-veto"` strings in the report therefore reads as a completeness regression when nothing
+regressed. The discriminator is structural, not textual: `"other-veto"` never appears as a
+**shapeCounts key** (0 occurrences — which is what a lowered-position shape would be); all 380 are
+`"shape": "other-veto"` **values** inside `otherVetoSites`, recording shapes at *non-lowered*
+positions for A2/B′ input. Two of them surface parameter-side as the `other-use` arm above.
+
+### 8.4 What this means for the arc
+
+1. **A1's conclusions stand; its numbers are superseded by A2, not by the hop.** The branch
+   confirmation (§10.3's hoisted-temp rule), the zero-unclassifiable-shape proof, and the
+   no-new-layout-L3 result are all re-confirmed on the pinned toolchain.
+2. **B′'s constituency is invariant.** `method ptr-params (B′ context) = 1,609` is identical across
+   all three measurements — unmoved by the hop *and* unmoved by A2's narrowing. B′-S0 starts from a
+   stable evidence base, which is the single most useful thing this re-derivation establishes.
+3. **B1 inherits the narrowed Phase-A world**, not the A1-era one: 528 lowered params and 231
+   reverting locals are the current facts, and any B1 pricing that quotes 564/236 is quoting a
+   superseded instrument.
+
+Linux and darwin re-derived in the same run and move the same way; their current-instrument
+figures are `2,469 / 530 / 589` and `2,522 / 537 / 597` (pointer params / lowered A / lowered A′),
+with `other-veto` 0 on both. Report regenerable by §1's command; it remains deliberately
+uncommitted.
