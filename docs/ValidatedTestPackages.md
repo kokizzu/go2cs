@@ -116,7 +116,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 24 of 177 rows validated at their Linux counts** — 12,675 matching verdicts · 18 disclosed.
+> **Linux: 25 of 177 rows validated at their Linux counts** — 12,842 matching verdicts · 18 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -328,7 +328,7 @@ summed from the columns.
 | [`text/tabwriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/tabwriter) | 3 | | Elastic-tab column formatting; panic-during-write recovery. · [proof](validation/current/text.tabwriter.md) |
 | [`text/template`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/template) | 52 | | Go's template engine end to end — the exec matrix over structs, maps, methods, pipelines and variables; `text/template`'s own reflection-heavy value plumbing (`Value.Call` including variadic and method values, `Index`/`Slice`/`Slice3` over strings and containers, typed-nil rendering); template composition, `{{block}}` redefinition, `html`/`js`/`urlquery` builtins, and the error and recovery matrix. The last two verdicts were channels: `TestExecute` ranges a bidirectional `chan string` through `reflect.Value.Recv`, and `TestIssue43065` ranges a `make(chan<- int)` and needs Go's `range over send-only channel` — one needs the recv bridge, the other the direction that had to land with it. · linux: 52 · · [proof](validation/current/text.template.md) |
 | [`text/template/parse`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/text/template/parse) | 52 | | Template lexing and parse-tree construction — the item stream, custom and alphanumeric delimiters, actions/pipelines/variables, `{{block}}` and tree copying, and the full parse-error matrix. · [proof](validation/current/text.template.parse.md) |
-| [`time`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/time) | 169 | | Monotonic and wall clocks, timer/ticker delivery including Go 1.23's synchronous timer channel, RFC 3339 and layout parse/format, zone loading. · [proof](validation/current/time.md) |
+| [`time`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/time) | 169 | | Monotonic and wall clocks, timer/ticker delivery including Go 1.23's synchronous timer channel, RFC 3339 and layout parse/format, zone loading. · linux: 167 · [proof](validation/current/time.md) |
 | [`unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode) | 28 | | Category tables, case mapping (`SpecialCase`), script ranges. · [proof](validation/current/unicode.md) |
 | [`unicode/utf16`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf16) | 8 | 1 | Encode/decode round-trips via `reflect.DeepEqual`. · [proof](validation/current/unicode.utf16.md) |
 | [`unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf8) | 14 | | UTF-8 encode/decode — the first suite to pass (2026-07-17). · [proof](validation/current/unicode.utf8.md) |
