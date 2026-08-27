@@ -349,6 +349,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckDeferValueFieldPtrReceiver() => CheckTarget("DeferValueFieldPtrReceiver");
 
     [TestMethod]
+    public void CheckDeferVariadicCallee() => CheckTarget("DeferVariadicCallee");
+
+    [TestMethod]
     public void CheckDefinedElemStringConversion() => CheckTarget("DefinedElemStringConversion");
 
     [TestMethod]
