@@ -138,6 +138,23 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"notesleep":           goosAny,
 		"notetsleep_internal": goosAny,
 		"notetsleepg":         goosAny,
+		// The os/signal OS-handler-INSTALL layer (linux/signal_posix_impl.cs). sigenable/sigdisable/
+		// sigignore are the three functions signal_enable/signal_disable/signal_ignore (sigqueue.go,
+		// which stay auto) call to reach the kernel: the converted bodies install Go's own sigtramp
+		// via setsig → sysSigaction → rt_sigaction, and sigenable/sigdisable additionally hand off to
+		// ensureSigM's goroutine over sigprocmask. Both syscalls are unimplemented external stubs on
+		// the CLR (which owns Linux signal handling), so every signal.Notify/Ignore threw. The
+		// hand-own routes the install through .NET PosixSignalRegistration whose handler feeds the
+		// EXISTING sigqueue (sigsend → signal_recv → the os/signal channel), keeping every line of the
+		// wanted/ignored bookkeeping and the delivery path auto; only the kernel-install layer is
+		// displaced, and ensureSigM's sigprocmask handshake is elided with it. Scoped goosLinux — the
+		// linux flavor of signal_unix.go — since PosixSignalRegistration is the linux target's bridge;
+		// darwin's copy stays auto until its own arc. Signals outside .NET's PosixSignal enum
+		// (SIGUSR*, SIGPIPE, the real-time signals) have no registration and stay the honest
+		// rt_sigaction residual. See docs/phase4/DESIGN-signal-posix-bridge.md.
+		"sigenable":  goosLinux,
+		"sigdisable": goosLinux,
+		"sigignore":  goosLinux,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and
@@ -808,8 +825,8 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// Lstat are pure Go over fstatat (syscall_linux_amd64.go) and convert faithfully, and every
 		// other wrapper in the generated file passes scalars or a byte pointer. Scoped to linux
 		// because darwin declares both names too, with working libc-backed bodies.
-		"Fstat":                  goosLinux,
-		"fstatat":                goosLinux,
+		"Fstat":   goosLinux,
+		"fstatat": goosLinux,
 		// The class's first BLOCKING member (the os/exec SIGSEGV arc, 2026-08-26): the generated
 		// wait4 handed the kernel two golib box addresses across a call that SLEEPS until a child
 		// changes state, so GC compaction relocated the boxes mid-wait and the kernel's eventual
