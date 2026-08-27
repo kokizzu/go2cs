@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestNewIntAllocs",
+      "class": "alloc-profile",
+      "signature": "wanted 0 allocations, got ",
+      "reason": "want-zero AllocsPerRun assert: every leg is x.Add(x, NewInt(k)), and Go's escape analysis proves the NewInt(k) argument non-escaping so it lives on the stack; the managed model mints exactly ONE golib box per run for it (measured 1.0 at the B2 kind-split emission) — the one structural object the assert forbids"
+    }
+  ]
+}

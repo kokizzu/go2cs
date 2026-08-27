@@ -41,6 +41,89 @@ func TestIsGoTestName(t *testing.T) {
 	}
 }
 
+// The FLAVOR census gap: a native-flavor-only `_test.go` (excluded by the conversion's tags,
+// included by a bare `go test` on the same platform) must contribute disclosed-unsupported
+// declarations, a purego-selected file must not be re-declared, and a file excluded on BOTH sides
+// (another OS) must contribute nothing. nistec's p256_asm_table_test.go is the measured instance.
+func TestFlavorExcludedTestDeclarations(t *testing.T) {
+	dir := t.TempDir()
+
+	write := func(name, content string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write("p256_asm_table_test.go", `//go:build !purego && (amd64 || arm64)
+
+package nistec
+
+import "testing"
+
+func TestNativeTable(t *testing.T) {}
+func BenchmarkNativeTable(b *testing.B) {}
+func helperNotATest(t *testing.T) {}
+func TestMain(m *testing.M) {}
+`)
+	write("portable_test.go", `//go:build purego || (!amd64 && !arm64)
+
+package nistec
+
+import "testing"
+
+func TestPortable(t *testing.T) {}
+`)
+	write("linux_only_test.go", `//go:build linux && !purego
+
+package nistec
+
+import "testing"
+
+func TestLinuxOnly(t *testing.T) {}
+`)
+
+	options := Options{targetPlatform: "windows/amd64", buildTags: []string{"purego"}}
+	declared := []testDeclaration{{Name: "TestPortable", Kind: "test", Status: "included"}}
+
+	got := flavorExcludedTestDeclarations(dir, options, declared)
+
+	if len(got) != 2 {
+		t.Fatalf("flavor census = %d declarations, want 2 (TestNativeTable, BenchmarkNativeTable): %+v", len(got), got)
+	}
+
+	byName := map[string]testDeclaration{}
+	for _, decl := range got {
+		byName[decl.Name] = decl
+	}
+
+	native, ok := byName["TestNativeTable"]
+	if !ok || native.Kind != "test" || native.Status != "unsupported" {
+		t.Fatalf("TestNativeTable must be declared kind=test status=unsupported: %+v", native)
+	}
+
+	if !strings.Contains(native.Reason, "native implementation flavor") || !strings.Contains(native.Reason, "purego") {
+		t.Fatalf("the reason must name the flavor gap and the tags: %q", native.Reason)
+	}
+
+	if bench, ok := byName["BenchmarkNativeTable"]; !ok || bench.Kind != "benchmark" {
+		t.Fatalf("BenchmarkNativeTable must be declared kind=benchmark: %+v", bench)
+	}
+
+	if _, ok := byName["TestLinuxOnly"]; ok {
+		t.Fatal("a file excluded on both sides (another OS) must contribute nothing — go test never runs it either")
+	}
+
+	if _, ok := byName["TestPortable"]; ok {
+		t.Fatal("a declaration the conversion already carries must not be re-declared")
+	}
+
+	// With no tags the two constraint checks are identical and no gap can exist.
+	if extra := flavorExcludedTestDeclarations(dir, Options{targetPlatform: "windows/amd64"}, declared); len(extra) != 0 {
+		t.Fatalf("a tag-free conversion has no flavor gap, got %+v", extra)
+	}
+}
+
 func TestManifestEligibility(t *testing.T) {
 	manifest := testManifest{Tests: []testDeclaration{
 		{Name: "BenchmarkOnly", Kind: "benchmark", Status: "unsupported"},

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestAllocations",
+      "class": "alloc-profile",
+      "signature": "expected zero allocations, got ",
+      "reason": "want-zero AllocsPerRun assert over a point addition plus scalar/point encode round-trips: Go's escape analysis proves every Point, Scalar and field-element temporary non-escaping (even NewIdentityPoint()/NewGeneratorPoint() stay on the stack), while the managed model heap-boxes each one — 98 golib objects per run at the B2 kind-split emission, so zero is structurally unreachable"
+    }
+  ]
+}
