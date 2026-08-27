@@ -174,7 +174,7 @@ private static Dictionary<string, string> parseGodebugEnv(string raw) {
 [GoType] partial struct runtimeStderr {
 }
 
-internal static ж<runtimeStderr> Ꮡstderr = new(default(runtimeStderr));
+internal static ж<runtimeStderr> Ꮡstderr = new StandardBox<runtimeStderr>(default(runtimeStderr));
 internal static ref runtimeStderr stderr => ref Ꮡstderr.Value;
 
 [GoRecv] internal static (nint, error) Write(this ref runtimeStderr _, slice<byte> b) {

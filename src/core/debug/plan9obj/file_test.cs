@@ -9,13 +9,25 @@ using static go.debug.plan9obj_package;
 
 partial class plan9obj_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 [GoType] internal partial struct fileTest {
     internal @string @file;
     internal global::go.debug.plan9obj_package.FileHeader hdr;
     internal slice<ж<global::go.debug.plan9obj_package.SectionHeader>> sections;
 }
 
-internal static ж<slice<fileTest>> ᏑfileTests = new(new fileTest[]{
+internal static ж<slice<fileTest>> ᏑfileTests = new StandardBox<slice<fileTest>>(new fileTest[]{
     new(
         "testdata/386-plan9-exec"u8,
         new FileHeader(Magic386, 0x324, 0x14, 4, 0x1000, 32),

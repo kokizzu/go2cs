@@ -15,7 +15,7 @@ partial class main_package {
     internal nint x;
 }
 
-internal static ж<T> Ꮡglobal = new(new T(x: 42));
+internal static ж<T> Ꮡglobal = new StandardBox<T>(new T(x: 42));
 internal static ref T global => ref Ꮡglobal.Value;
 
 internal static uintptr gPtr = (uintptr)Ꮡglobal;

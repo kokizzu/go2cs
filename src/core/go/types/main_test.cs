@@ -15,6 +15,12 @@ using static global::go.go.types_internal_test_package;
 
 partial class types_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸbuild() {
+    builtin.initPackage(typeof(global::go.go.build_package));
+}
+
 public static void TestMain(ж<testing.M> Ꮡm) {
     Δbuild.Default.GOROOT = testenv.GOROOT(default!);
     os.Exit(Ꮡm.Run());

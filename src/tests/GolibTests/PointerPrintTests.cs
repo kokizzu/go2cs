@@ -21,7 +21,7 @@ public class PointerPrintTests
     public void PrintPointerOnePastEndElementReferenceDoesNotThrow()
     {
         array<byte> backing = new(1);
-        ж<byte> oob = new(backing, 1); // one-past-the-end
+        ж<byte> oob = new ElemRefBox<byte>(backing, 1); // one-past-the-end
 
         string text = oob.ToString();
 
@@ -32,7 +32,7 @@ public class PointerPrintTests
     public void PrintPointerEmptyBackingZeroIndexDoesNotThrow()
     {
         array<byte> backing = new(0);
-        ж<byte> oob = new(backing, 0); // zero index of an EMPTY backing (unsafe.StringData shape)
+        ж<byte> oob = new ElemRefBox<byte>(backing, 0); // zero index of an EMPTY backing (unsafe.StringData shape)
 
         string text = oob.ToString();
 
@@ -43,7 +43,7 @@ public class PointerPrintTests
     public void PrintPointerInRangeElementReferenceStillPrintsAddressToken()
     {
         array<byte> backing = new(1);
-        ж<byte> element = new(backing, 0);
+        ж<byte> element = new ElemRefBox<byte>(backing, 0);
 
         string text = element.ToString();
 

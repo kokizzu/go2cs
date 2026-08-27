@@ -57,7 +57,7 @@ partial class runtime_package {
     internal atomic.Uint32 delivering;
     internal bool inuse;
 }
-internal static ж<sigᴛ1> Ꮡsig = new(new sigᴛ1());
+internal static ж<sigᴛ1> Ꮡsig = new StandardBox<sigᴛ1>(new sigᴛ1());
 internal static ref sigᴛ1 sig => ref Ꮡsig.Value;
 
 internal static UntypedInt sigIdle => iota;

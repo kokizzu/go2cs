@@ -22,7 +22,7 @@ partial class main_package {
     internal atomic.Int64 total;
 }
 
-internal static ж<controller> Ꮡctrl = new(default(controller));
+internal static ж<controller> Ꮡctrl = new StandardBox<controller>(default(controller));
 internal static ref controller ctrl => ref Ꮡctrl.Value;
 
 internal static void keep(ж<controller> Ꮡc) {

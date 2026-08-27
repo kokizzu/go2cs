@@ -18,7 +18,7 @@ partial class main_package {
     c.n++;
 }
 
-internal static ж<array<counter>> Ꮡpool = new(new array<counter>(3));
+internal static ж<array<counter>> Ꮡpool = new StandardBox<array<counter>>(new array<counter>(3));
 internal static ref array<counter> pool => ref Ꮡpool.Value;
 
 internal static void Main() {

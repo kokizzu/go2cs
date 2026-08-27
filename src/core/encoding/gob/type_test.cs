@@ -12,6 +12,12 @@ using static go.encoding.gob_package;
 
 partial class gob_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 [GoType] internal partial struct typeT {
     internal global::go.encoding.gob_package.typeId id;
     internal @string str;

@@ -49,7 +49,7 @@ public class ArrayShapeReinterpretTests
     public void TheRawAddressRouteCannotReconstructANestedArrayShape()
     {
         array<uint64> buf = new(BufferWords);
-        ж<array<uint64>> pointer = new(buf);
+        ж<array<uint64>> pointer = new StandardBox<array<uint64>>(buf);
 
         // Go's `(*[16][4]uint32)(unsafe.Pointer(buf))`. The emitted form routes through
         // unsafe.Pointer, which is a uintptr carrier and nothing else — these two operators ARE the

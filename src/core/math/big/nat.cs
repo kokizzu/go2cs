@@ -632,7 +632,7 @@ internal static void putNat(ж<nat> Ꮡx) {
     ᏑnatPool.Put(Ꮡx.OrTypedNil());
 }
 
-internal static ж<sync.Pool> ᏑnatPool = new(default(sync.Pool));
+internal static ж<sync.Pool> ᏑnatPool = new StandardBox<sync.Pool>(default(sync.Pool));
 internal static ref sync.Pool natPool => ref ᏑnatPool.Value;
 
 // bitLen returns the length of x in bits.

@@ -21,7 +21,7 @@ partial class zip_package {
 
 // type Decompressor is a methodless func type — rendered inline as its base delegate
 
-internal static ж<sync.Pool> ᏑflateWriterPool = new(default(sync.Pool));
+internal static ж<sync.Pool> ᏑflateWriterPool = new StandardBox<sync.Pool>(default(sync.Pool));
 internal static ref sync.Pool flateWriterPool => ref ᏑflateWriterPool.Value;
 
 internal static io.WriteCloser newFlateWriter(io.Writer w) {
@@ -80,7 +80,7 @@ internal static error Close(this ж<pooledFlateWriter> Ꮡw) {
     finally { ᒐ.Run(); }
 }
 
-internal static ж<sync.Pool> ᏑflateReaderPool = new(default(sync.Pool));
+internal static ж<sync.Pool> ᏑflateReaderPool = new StandardBox<sync.Pool>(default(sync.Pool));
 internal static ref sync.Pool flateReaderPool => ref ᏑflateReaderPool.Value;
 
 internal static io.ReadCloser newFlateReader(io.Reader r) {
@@ -139,9 +139,9 @@ internal static error Close(this ж<pooledFlateReader> Ꮡr) {
     finally { ᒐ.Run(); }
 }
 
-internal static ж<sync.Map> Ꮡcompressors = new(default(sync.Map));
+internal static ж<sync.Map> Ꮡcompressors = new StandardBox<sync.Map>(default(sync.Map));
 internal static ref sync.Map compressors => ref Ꮡcompressors.Value; // map[uint16]Compressor
-internal static ж<sync.Map> Ꮡdecompressors = new(default(sync.Map));
+internal static ж<sync.Map> Ꮡdecompressors = new StandardBox<sync.Map>(default(sync.Map));
 internal static ref sync.Map decompressors => ref Ꮡdecompressors.Value; // map[uint16]Decompressor
 
 [GoInit] internal static void init() {

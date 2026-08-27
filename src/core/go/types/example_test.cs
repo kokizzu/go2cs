@@ -29,6 +29,18 @@ using static global::go.go.types_internal_test_package;
 
 partial class types_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸformat() {
+    builtin.initPackage(typeof(global::go.go.format_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlog() {
+    builtin.initPackage(typeof(log_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string temperatureˢ = "temperature"u8;
 internal static readonly @string aFAFDˢ = @" 0x[a-fA-F\d]*"u8;

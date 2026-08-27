@@ -47,7 +47,7 @@ internal static UntypedInt uint64Size => 8;
     internal array<byte> scratch = new(64);
 }
 
-internal static ж<sync.Pool> ᏑencBufferPool = new(new sync.Pool(
+internal static ж<sync.Pool> ᏑencBufferPool = new StandardBox<sync.Pool>(new sync.Pool(
     New: () => {
         var e = @new<encBuffer>();
         e.Value.data = (~e).scratch[0..0];

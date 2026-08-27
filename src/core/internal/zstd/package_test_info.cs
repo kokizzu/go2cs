@@ -43,11 +43,11 @@ using static global::go.@internal.zstd_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/zstd/fse_test.go", "fse_test.cs", "ACtQwgAWOoKSkoKCgIKmgoCCpoI=")]
-[assembly: go.GoPositionMap("internal/zstd/fuzz_test.go", "fuzz_test.cs", "AB9AsoKUgpSCggADEOKEgqiCgoKUgoSCgoKCgoKAgqaCgoKUgv7ihIKogoCUgoKEgoKCgoKChIKCAAsagoKUgoKCgoKC")]
-[assembly: go.GoPositionMap("internal/zstd/window_test.go", "window_test.cs", "AAwaooKUpoKSgoKCgoKEsgAHFKKChIKChIKCgoSCloKWkoKCgoSC")]
-[assembly: go.GoPositionMap("internal/zstd/xxhash_test.go", "xxhash_test.cs", "AB86goKCgoKAggAJCoKCloKCloKCgpSCgpSCloKCgviCgoKU1qKEgpSCgoKUgoSCgoKCgoCCpIKCgpaCgoKEgg==")]
-[assembly: go.GoPositionMap("internal/zstd/zstd_test.go", "zstd_test.cs", "AEPiAYKCkpKCgoKUgoLcgoKCgpKygoKCgpSCggAKGpKCgoKmgpTmgoKClAAHGLKEhJKCgoKCgoCCgqaUgpSqooKWgoSEgoKCloLqkoKClIKCgpSCgoKU+oKCgpaCgoKygoKUgviCgoKWgoKCloKCgpaCgoCCpISCggAIDIKCgoKC3KKChISEgoSCgoKC")]
+[assembly: go.GoPositionMap("internal/zstd/fse_test.go", "fse_test.cs", "ADdQwgAWOoKSkoKCgIKmgoCCpoI=")]
+[assembly: go.GoPositionMap("internal/zstd/fuzz_test.go", "fuzz_test.cs", "ADdAsoKUgpSCggADEOKEgqiCgoKUgoSCgoKCgoKAgqaCgoKUgv7ihIKogoCUgoKEgoKCgoKChIKCAAsagoKUgoKCgoKC")]
+[assembly: go.GoPositionMap("internal/zstd/window_test.go", "window_test.cs", "ABIaooKUpoKSgoKCgoKEsgAHFKKChIKChIKCgoSCloKWkoKCgoSC")]
+[assembly: go.GoPositionMap("internal/zstd/xxhash_test.go", "xxhash_test.cs", "ACU6goKCgoKAggAJCoKCloKCloKCgpSCgpSCloKCgviCgoKU1qKEgpSCgoKUgoSCgoKCgoCCpIKCgpaCgoKEgg==")]
+[assembly: go.GoPositionMap("internal/zstd/zstd_test.go", "zstd_test.cs", "AGHiAYKCkpKCgoKUgoLcgoKCgpKygoKCgpSCggAKGpKCgoKmgpTmgoKClAAHGLKEhJKCgoKCgoCCgqaUgpSqooKWgoSEgoKCloLqkoKClIKCgpSCgoKU+oKCgpaCgoKygoKUgviCgoKWgoKCloKCgpaCgoCCpISCggAIDIKCgoKC3KKChISEgoSCgoKC")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

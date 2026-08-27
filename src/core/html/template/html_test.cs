@@ -10,6 +10,12 @@ using static go.html.template_package;
 
 partial class template_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸhtml() {
+    builtin.initPackage(typeof(html_package));
+}
+
 public static void TestHTMLNospaceEscaper(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 

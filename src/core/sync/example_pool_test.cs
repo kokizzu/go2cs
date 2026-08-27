@@ -39,7 +39,7 @@ partial class sync_test_package {
 // The Pool's New function should generally only return pointer
 // types, since a pointer can be put into the return interface
 // value without an allocation:
-internal static ж<Δsync.Pool> ᏑbufPool = new(new Δsync.Pool(
+internal static ж<Δsync.Pool> ᏑbufPool = new StandardBox<Δsync.Pool>(new Δsync.Pool(
     New: () => @new<bytes.Buffer>()
 ));
 internal static ref Δsync.Pool bufPool => ref ᏑbufPool.Value;

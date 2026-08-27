@@ -10,6 +10,18 @@ using static go.maps_package;
 
 partial class maps_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 internal static map<nint, nint> m1 = new map<nint, nint>{[1] = 2, [2] = 4, [4] = 8, [8] = 16};
 
 internal static map<nint, @string> m2 = new map<nint, @string>{[1] = "2"u8, [2] = "4"u8, [4] = "8"u8, [8] = "16"u8};
@@ -43,16 +55,12 @@ public static void TestEqual(ж<testing.T> Ꮡt) {
 }
 
 // equal is simply ==.
-internal static bool equal<T>(T v1, T v2)
-    where T : /* comparable */ new()
-{
+internal static bool equal<T>(T v1, T v2) {
     return AreEqual(v1, v2);
 }
 
 // equalNaN is like == except that all NaNs are equal.
-internal static bool equalNaN<T>(T v1, T v2)
-    where T : /* comparable */ new()
-{
+internal static bool equalNaN<T>(T v1, T v2) {
     bool isNaN(T f) => !AreEqual(f, f);
     return AreEqual(v1, v2) || (isNaN(v1) && isNaN(v2));
 }

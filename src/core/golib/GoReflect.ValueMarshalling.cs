@@ -445,7 +445,7 @@ public static partial class GoReflect
 
     private static object newBox<T>(object? value)
     {
-        return value is null ? new ж<T>(default(T)!) : new ж<T>((T)value);
+        return value is null ? new StandardBox<T>(default(T)!) : new StandardBox<T>((T)value);
     }
 
     // -------- the []byte VIEW of any Uint8-element slice (reflect.Value.Bytes / SetBytes) --------

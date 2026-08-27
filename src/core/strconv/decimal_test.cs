@@ -16,7 +16,7 @@ partial class strconv_test_package {
     internal @string @out;
 }
 
-internal static ж<slice<shiftTest>> Ꮡshifttests = new(new shiftTest[]{
+internal static ж<slice<shiftTest>> Ꮡshifttests = new StandardBox<slice<shiftTest>>(new shiftTest[]{
     new(0, -100, "0"u8),
     new(0, 100, "0"u8),
     new(1, 100, "1267650600228229401496703205376"u8),
@@ -50,7 +50,7 @@ public static void TestDecimalShift(ж<testing.T> Ꮡt) {
     internal uint64 @int;
 }
 
-internal static ж<slice<roundTest>> Ꮡroundtests = new(new roundTest[]{
+internal static ж<slice<roundTest>> Ꮡroundtests = new StandardBox<slice<roundTest>>(new roundTest[]{
     new(0, 4, "0"u8, "0"u8, "0"u8, 0),
     new(12344999, 4, "12340000"u8, "12340000"u8, "12350000"u8, 12340000),
     new(12345000, 4, "12340000"u8, "12340000"u8, "12350000"u8, 12340000),

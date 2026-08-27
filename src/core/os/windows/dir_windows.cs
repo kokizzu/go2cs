@@ -56,7 +56,7 @@ partial class os_package {
 internal static UntypedInt dirBufSize => /* 64 * 1024 */ 65536; // 64kB
 
 // The buffer must be at least a block long.
-internal static ж<Δsync.Pool> ᏑdirBufPool = new(new Δsync.Pool(
+internal static ж<Δsync.Pool> ᏑdirBufPool = new StandardBox<Δsync.Pool>(new Δsync.Pool(
     New: () => {
         var buf = new slice<byte>(dirBufSize);
         return Ꮡ(buf);
@@ -75,7 +75,7 @@ internal static ref Δsync.Pool dirBufPool => ref ᏑdirBufPool.Value;
 // allowReadDirFileID indicates whether File.readdir should try to use FILE_ID_BOTH_DIR_INFO
 // if the underlying file system supports it.
 // Useful for testing purposes.
-internal static ж<bool> ᏑallowReadDirFileID = new(true);
+internal static ж<bool> ᏑallowReadDirFileID = new StandardBox<bool>(true);
 internal static ref bool allowReadDirFileID => ref ᏑallowReadDirFileID.Value;
 
 internal static void init(this ж<dirInfo> Ꮡd, syscallꓸHandle h) {

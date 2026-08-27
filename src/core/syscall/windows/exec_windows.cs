@@ -310,10 +310,10 @@ internal static (@string name, error err) joinExeDirAndFName(@string dir, @strin
     public ΔHandle ParentProcess;            // if non-zero, the new process regards the process given by this handle as its parent process, and AdditionalInheritedHandles, if set, should exist in this parent process
 }
 
-internal static ж<ProcAttr> ᏑzeroProcAttr = new(default(ProcAttr));
+internal static ж<ProcAttr> ᏑzeroProcAttr = new StandardBox<ProcAttr>(default(ProcAttr));
 internal static ref ProcAttr zeroProcAttr => ref ᏑzeroProcAttr.Value;
 
-internal static ж<SysProcAttr> ᏑzeroSysProcAttr = new(default(SysProcAttr));
+internal static ж<SysProcAttr> ᏑzeroSysProcAttr = new StandardBox<SysProcAttr>(default(SysProcAttr));
 internal static ref SysProcAttr zeroSysProcAttr => ref ᏑzeroSysProcAttr.Value;
 
 // ---- native Win32 layout mirrors and entry points (see the file header) ----

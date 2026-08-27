@@ -268,7 +268,7 @@ public static class TestHost
             return runner.RunAll();
 
         testing_package.M m = new() { Runner = runner };
-        registry.TestMain(new ж<testing_package.M>(m));
+        registry.TestMain(new StandardBox<testing_package.M>(m));
         return runner.HasRun ? runner.ExitCode : 0;
     }
 

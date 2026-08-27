@@ -443,7 +443,7 @@ internal static readonly @string fmtScanningCalledˢ = "fmt: scanning called Unr
     return default!;
 }
 
-internal static ж<Δsync.Pool> ᏑssFree = new(new Δsync.Pool(
+internal static ж<Δsync.Pool> ᏑssFree = new StandardBox<Δsync.Pool>(new Δsync.Pool(
     New: () => @new<ss>()
 ));
 internal static ref Δsync.Pool ssFree => ref ᏑssFree.Value;

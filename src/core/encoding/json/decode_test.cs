@@ -23,6 +23,54 @@ using static go.encoding.json_package;
 
 partial class json_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸimage() {
+    builtin.initPackage(typeof(image_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
+    builtin.initPackage(typeof(go.math.big_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnet() {
+    builtin.initPackage(typeof(net_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 [GoType] public partial struct T {
     public @string X;
     public nint Y;
@@ -150,14 +198,14 @@ internal static error errMissingU8Prefix = errors.New("missing 'u' prefix"u8);
 
 internal static encoding.TextUnmarshaler _ᴛ2ʗ = new json_internal_test_package.u8marshalжTextUnmarshaler(((ж<u8marshal>)nil));
 
-internal static ж<unmarshaler> Ꮡumtrue = new(new unmarshaler(true));
+internal static ж<unmarshaler> Ꮡumtrue = new StandardBox<unmarshaler>(new unmarshaler(true));
 internal static ref unmarshaler umtrue => ref Ꮡumtrue.Value;
-internal static ж<slice<unmarshaler>> Ꮡumslice = new(new unmarshaler[]{new(true)}.slice());
+internal static ж<slice<unmarshaler>> Ꮡumslice = new StandardBox<slice<unmarshaler>>(new unmarshaler[]{new(true)}.slice());
 internal static ref slice<unmarshaler> umslice => ref Ꮡumslice.ValueSlot;
 internal static ustruct umstruct = new ustruct(new unmarshaler(true));
-internal static ж<unmarshalerText> ᏑumtrueXY = new(new unmarshalerText("x"u8, "y"u8));
+internal static ж<unmarshalerText> ᏑumtrueXY = new StandardBox<unmarshalerText>(new unmarshalerText("x"u8, "y"u8));
 internal static ref unmarshalerText umtrueXY => ref ᏑumtrueXY.Value;
-internal static ж<slice<unmarshalerText>> ᏑumsliceXY = new(new unmarshalerText[]{new("x"u8, "y"u8)}.slice());
+internal static ж<slice<unmarshalerText>> ᏑumsliceXY = new StandardBox<slice<unmarshalerText>>(new unmarshalerText[]{new("x"u8, "y"u8)}.slice());
 internal static ref slice<unmarshalerText> umsliceXY => ref ᏑumsliceXY.ValueSlot;
 internal static ustructText umstructXY = new ustructText(new unmarshalerText("x"u8, "y"u8));
 internal static map<unmarshalerText, bool> ummapXY = new map<unmarshalerText, bool>{[new("x"u8, "y"u8)] = true};
@@ -1489,7 +1537,7 @@ public static void TestErrorMessageFromMisusedString(ж<testing.T> Ꮡt) {
     public @string Tag;
 }
 
-internal static ж<All> ᏑallValue = new(new All(
+internal static ж<All> ᏑallValue = new StandardBox<All>(new All(
     Bool: true,
     Int: 2,
     Int8: 3,
@@ -1529,7 +1577,7 @@ internal static ж<All> ᏑallValue = new(new All(
 ));
 internal static ref All allValue => ref ᏑallValue.Value;
 
-internal static ж<All> ᏑpallValue = new(new All(
+internal static ж<All> ᏑpallValue = new StandardBox<All>(new All(
     PBool: ᏑallValue.of(All.ᏑBool),
     PInt: ᏑallValue.of(All.ᏑInt),
     PInt8: ᏑallValue.of(All.ᏑInt8),

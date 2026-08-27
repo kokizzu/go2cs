@@ -18,7 +18,6 @@ partial class maps_package {
 // to be the same from one call to the next.
 public static iter.Seq2<K, V> All<Map, K, V>(Map m)
     where Map : /* ~map[K]V */ IMap<K, V>, ISupportMake<Map>, new()
-    where K : /* comparable */ new()
 {
     return (Func<K, V, bool> yield) => {
         foreach (var (k, v) in m) {
@@ -34,7 +33,6 @@ public static iter.Seq2<K, V> All<Map, K, V>(Map m)
 // to be the same from one call to the next.
 public static iter.Seq<K> Keys<Map, K, V>(Map m)
     where Map : /* ~map[K]V */ IMap<K, V>, ISupportMake<Map>, new()
-    where K : /* comparable */ new()
 {
     return (Func<K, bool> yield) => {
         foreach (var (k, _) in m) {
@@ -50,7 +48,6 @@ public static iter.Seq<K> Keys<Map, K, V>(Map m)
 // to be the same from one call to the next.
 public static iter.Seq<V> Values<Map, K, V>(Map m)
     where Map : /* ~map[K]V */ IMap<K, V>, ISupportMake<Map>, new()
-    where K : /* comparable */ new()
 {
     return (Func<V, bool> yield) => {
         foreach (var (_, v) in m) {
@@ -65,7 +62,6 @@ public static iter.Seq<V> Values<Map, K, V>(Map m)
 // If a key in seq already exists in m, its value will be overwritten.
 public static void Insert<Map, K, V>(Map m, iter.Seq2<K, V> seq)
     where Map : /* ~map[K]V */ IMap<K, V>, ISupportMake<Map>, new()
-    where K : /* comparable */ new()
 {
     foreach (var (k, v) in range<K, V>(seq.Invoke)) {
         m[k] = v;
@@ -74,9 +70,7 @@ public static void Insert<Map, K, V>(Map m, iter.Seq2<K, V> seq)
 
 // Collect collects key-value pairs from seq into a new map
 // and returns it.
-public static map<K, V> Collect<K, V>(iter.Seq2<K, V> seq)
-    where K : /* comparable */ new()
-{
+public static map<K, V> Collect<K, V>(iter.Seq2<K, V> seq) {
     var m = new map<K, V>();
     Insert(m, seq);
     return m;

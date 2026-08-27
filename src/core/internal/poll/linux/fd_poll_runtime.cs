@@ -45,7 +45,7 @@ internal static partial bool runtime_isPollServerDescriptor(uintptr fd);
     internal uintptr runtimeCtx;
 }
 
-internal static ж<sync.Once> ᏑserverInit = new(default(sync.Once));
+internal static ж<sync.Once> ᏑserverInit = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once serverInit => ref ᏑserverInit.Value;
 
 [GoRecv] internal static error init(this ref pollDesc pd, ж<FD> Ꮡfd) {

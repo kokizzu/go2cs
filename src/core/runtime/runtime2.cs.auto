@@ -972,20 +972,20 @@ internal static array<bool> ΔisWaitingForSuspendG = new golib.SparseArray<bool>
     [waitReasonFlushProcCaches] = true
 }.array(38);
 
-internal static ж<ж<m>> Ꮡallm = new(default(ж<m>));
+internal static ж<ж<m>> Ꮡallm = new StandardBox<ж<m>>(default(ж<m>));
 internal static ref ж<m> allm => ref Ꮡallm.ValueSlot;
-internal static ж<int32> Ꮡgomaxprocs = new(default(int32));
+internal static ж<int32> Ꮡgomaxprocs = new StandardBox<int32>(default(int32));
 internal static ref int32 gomaxprocs => ref Ꮡgomaxprocs.Value;
 internal static int32 ncpu;
-internal static ж<forcegcstate> Ꮡforcegc = new(new forcegcstate());
+internal static ж<forcegcstate> Ꮡforcegc = new StandardBox<forcegcstate>(new forcegcstate());
 internal static ref forcegcstate forcegc => ref Ꮡforcegc.Value;
-internal static ж<schedt> Ꮡsched = new(new schedt());
+internal static ж<schedt> Ꮡsched = new StandardBox<schedt>(new schedt());
 internal static ref schedt sched => ref Ꮡsched.Value;
 internal static int32 newprocs;
 
-internal static ж<mutex> ᏑallpLock = new(new mutex(nil));
+internal static ж<mutex> ᏑallpLock = new StandardBox<mutex>(new mutex(nil));
 internal static ref mutex allpLock => ref ᏑallpLock.Value;
-internal static ж<slice<ж<Δp>>> Ꮡallp = new(default(slice<ж<Δp>>));
+internal static ж<slice<ж<Δp>>> Ꮡallp = new StandardBox<slice<ж<Δp>>>(default(slice<ж<Δp>>));
 internal static ref slice<ж<Δp>> allp => ref Ꮡallp.ValueSlot;
 internal static pMask idlepMask;
 internal static pMask timerpMask;
@@ -993,7 +993,7 @@ internal static pMask timerpMask;
 // goarmsoftfp is used by runtime/cgo assembly.
 //
 //go:linkname goarmsoftfp
-internal static ж<lfstack> ᏑgcBgMarkWorkerPool = new(default(lfstack));
+internal static ж<lfstack> ᏑgcBgMarkWorkerPool = new StandardBox<lfstack>(default(lfstack));
 internal static ref lfstack gcBgMarkWorkerPool => ref ᏑgcBgMarkWorkerPool.Value;
 internal static int32 gcBgMarkWorkerCount;
 internal static uint32 processorVersionInfo;

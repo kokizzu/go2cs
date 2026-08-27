@@ -272,7 +272,7 @@ public static (ж<File> r, ж<File> w, error err) Pipe() {
     return (newFile(p[0], "|0"u8, pipeˢ), newFile(p[1], "|1"u8, pipeˢ), default!);
 }
 
-internal static ж<Δsync.Once> ᏑuseGetTempPath2Once = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑuseGetTempPath2Once = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once useGetTempPath2Once => ref ᏑuseGetTempPath2Once.Value;
 internal static bool useGetTempPath2;
 

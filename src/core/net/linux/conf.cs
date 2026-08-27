@@ -119,7 +119,7 @@ internal static mdnsTest mdnsFromSystem => /* iota */ 0;
 internal static mdnsTest mdnsAssumeExists => 1;
 internal static mdnsTest mdnsAssumeDoesNotExist => 2;
 
-internal static ж<Δsync.Once> ᏑconfOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑconfOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once confOnce => ref ᏑconfOnce.Value; // guards init of confVal via initConfVal
 internal static ж<conf> confVal = Ꮡ(new conf(goos: Δruntime.GOOS));
 

@@ -467,7 +467,7 @@ internal static map<@string, bool> excluded = new map<@string, bool>{
 //
 // Without synchronization, package files may be interleaved during concurrent
 // type-checking.
-internal static ж<sync.Mutex> ᏑprintPackageMu = new(default(sync.Mutex));
+internal static ж<sync.Mutex> ᏑprintPackageMu = new StandardBox<sync.Mutex>(default(sync.Mutex));
 internal static ref sync.Mutex printPackageMu => ref ᏑprintPackageMu.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

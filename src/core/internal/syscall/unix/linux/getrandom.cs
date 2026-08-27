@@ -17,7 +17,7 @@ partial class unix_package {
     builtin.initPackage(typeof(sync.atomic_package));
 }
 
-internal static ж<atomic.Bool> ᏑgetrandomUnsupported = new(default(atomic.Bool));
+internal static ж<atomic.Bool> ᏑgetrandomUnsupported = new StandardBox<atomic.Bool>(default(atomic.Bool));
 internal static ref atomic.Bool getrandomUnsupported => ref ᏑgetrandomUnsupported.Value;
 
 [GoType("num:uintptr")] partial struct GetRandomFlag;

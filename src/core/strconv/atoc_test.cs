@@ -14,6 +14,24 @@ using strconv = strconv_package;
 
 partial class strconv_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸcmplx() {
+    builtin.initPackage(typeof(go.math.cmplx_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 internal static complex128 infp0 = complex(Δmath.Inf(+1), 0D);
 internal static complex128 infm0 = complex(Δmath.Inf(-1), 0D);
 internal static complex128 inf0p = complex(0D, Δmath.Inf(+1));

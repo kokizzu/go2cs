@@ -96,7 +96,7 @@ internal static ж<pollOperation> pollOperationFromOverlappedEntry(ref overlappe
 }
 
 internal static uintptr iocphandle = _INVALID_HANDLE_VALUE; // completion port io handle
-internal static ж<atomic.Uint32> ᏑnetpollWakeSig = new(default(atomic.Uint32));
+internal static ж<atomic.Uint32> ᏑnetpollWakeSig = new StandardBox<atomic.Uint32>(default(atomic.Uint32));
 internal static ref atomic.Uint32 netpollWakeSig => ref ᏑnetpollWakeSig.Value; // used to avoid duplicate calls of netpollBreak
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

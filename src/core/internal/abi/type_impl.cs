@@ -282,7 +282,7 @@ private static ж<ΔStructType> synthesizeStructType(ж<Type> Ꮡt) {
         );
     }
 
-    return new ж<ΔStructType>(new ΔStructType(
+    return new StandardBox<ΔStructType>(new ΔStructType(
         Type: Ꮡt.Value,
         PkgPath: default!,
         Fields: new slice<StructField>(fields)
@@ -420,7 +420,7 @@ private static ж<ΔArrayType> synthesizeArrayType(ж<Type> Ꮡt) {
     }
     nint[]? elemDims = dims.Length > 1 ? dims[1..] : null;
 
-    return new ж<ΔArrayType>(new ΔArrayType(
+    return new StandardBox<ΔArrayType>(new ΔArrayType(
         Type: Ꮡt.Value,
         Elem: synthType(elem, elemDims),
         Slice: synthType(typeof(slice<>).MakeGenericType(elem)),

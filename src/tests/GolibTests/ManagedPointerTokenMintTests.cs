@@ -67,7 +67,7 @@ public class ManagedPointerTokenMintTests
 
         Assert.AreEqual((nuint)0x2000, (nuint)(uintptr)ManagedPointerTokens.MintOpaque(native));
         Assert.AreEqual((nuint)0, (nuint)(uintptr)ManagedPointerTokens.MintOpaque<ReferenceBearing>(null));
-        Assert.AreEqual((nuint)0, (nuint)(uintptr)ManagedPointerTokens.MintOpaque(new ж<ReferenceBearing>(nil)));
+        Assert.AreEqual((nuint)0, (nuint)(uintptr)ManagedPointerTokens.MintOpaque(new StandardBox<ReferenceBearing>(nil)));
     }
 
     [TestMethod]

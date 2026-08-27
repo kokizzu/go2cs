@@ -13,7 +13,7 @@ partial class big_package {
     public partial ref sync_package.Once Once { get; }
     internal ж<Float> v;
 }
-internal static ж<threeOnceᴛ1> ᏑthreeOnce = new(new threeOnceᴛ1(nil));
+internal static ж<threeOnceᴛ1> ᏑthreeOnce = new StandardBox<threeOnceᴛ1>(new threeOnceᴛ1(nil));
 internal static ref threeOnceᴛ1 threeOnce => ref ᏑthreeOnce.Value;
 
 internal static ж<Float> three() {

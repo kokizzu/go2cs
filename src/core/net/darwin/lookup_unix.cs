@@ -12,7 +12,7 @@ using dnsmessage = vendor.golang.org.x.net.dns.dnsmessage_package;
 
 partial class net_package {
 
-internal static ж<Δsync.Once> ᏑonceReadProtocols = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑonceReadProtocols = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once onceReadProtocols => ref ᏑonceReadProtocols.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

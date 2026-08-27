@@ -26,6 +26,36 @@ using static go.@internal.zstd_package;
 
 partial class zstd_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
+    builtin.initPackage(typeof(crypto.sha256_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
+    builtin.initPackage(typeof(go.@internal.testenv_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
+    builtin.initPackage(typeof(path.filepath_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // a small compressed .debug_ranges section.
 // tests holds some simple test cases, including some found by fuzzing.
 
@@ -108,7 +138,7 @@ public static void TestReset(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static ж<sync.Once> ᏑbigDataOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑbigDataOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once bigDataOnce => ref ᏑbigDataOnce.Value;
 internal static slice<byte> bigDataBytes;
 internal static error bigDataErr;
@@ -139,7 +169,7 @@ internal static @string findZstd(testing.TB t) {
     return zstd;
 }
 
-internal static ж<sync.Once> ᏑzstdBigOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑzstdBigOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once zstdBigOnce => ref ᏑzstdBigOnce.Value;
 internal static slice<byte> zstdBigBytes;
 internal static error zstdBigErr;

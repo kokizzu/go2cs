@@ -76,7 +76,7 @@ internal static void initᴛΔUTC() { ΔUTC = ᏑutcLoc; }
 // utcLoc is separate so that get can refer to &utcLoc
 // and ensure that it never returns a nil *Location,
 // even if a badly behaved client has changed UTC.
-internal static ж<ΔLocation> ᏑutcLoc = new(new ΔLocation(name: "UTC"u8));
+internal static ж<ΔLocation> ᏑutcLoc = new StandardBox<ΔLocation>(new ΔLocation(name: "UTC"u8));
 internal static ref ΔLocation utcLoc => ref ᏑutcLoc.Value;
 
 // Local represents the system's local time zone.
@@ -90,10 +90,10 @@ internal static void initᴛΔLocal() { ΔLocal = ᏑlocalLoc; }
 
 // localLoc is separate so that initLocal can initialize
 // it even if a client has changed Local.
-internal static ж<ΔLocation> ᏑlocalLoc = new(default(ΔLocation));
+internal static ж<ΔLocation> ᏑlocalLoc = new StandardBox<ΔLocation>(default(ΔLocation));
 internal static ref ΔLocation localLoc => ref ᏑlocalLoc.Value;
 
-internal static ж<Δsync.Once> ᏑlocalOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑlocalOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once localOnce => ref ᏑlocalOnce.Value;
 
 internal static ж<ΔLocation> get(this ж<ΔLocation> Ꮡl) {
@@ -114,7 +114,7 @@ public static @string String(this ж<ΔLocation> Ꮡl) {
 
 internal static slice<ж<ΔLocation>> unnamedFixedZones;
 
-internal static ж<Δsync.Once> ᏑunnamedFixedZonesOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑunnamedFixedZonesOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once unnamedFixedZonesOnce => ref ᏑunnamedFixedZonesOnce.Value;
 
 // FixedZone returns a [Location] that always uses
@@ -653,7 +653,7 @@ internal static error errLocation = errors.New("time: invalid location name"u8);
 
 internal static ж<@string> zoneinfo;
 
-internal static ж<Δsync.Once> ᏑzoneinfoOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑzoneinfoOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once zoneinfoOnce => ref ᏑzoneinfoOnce.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

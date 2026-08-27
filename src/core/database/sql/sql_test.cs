@@ -28,6 +28,24 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class sql_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
+    builtin.initPackage(typeof(@internal.testenv_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
+    builtin.initPackage(typeof(math.rand_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(go.sync.atomic_package));
+}
+
 [GoType("dyn")] [GoLocalName("dbConn")] internal partial struct init_dbConn {
     internal ж<global::go.database.sql_package.DB> db;
     internal ж<global::go.database.sql_package.driverConn> c;
@@ -2158,7 +2176,7 @@ public static void TestQueryRowClosingStmt(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-internal static ж<atomic.Value> ᏑatomicRowsCloseHook = new(default(atomic.Value));
+internal static ж<atomic.Value> ᏑatomicRowsCloseHook = new StandardBox<atomic.Value>(default(atomic.Value));
 internal static ref atomic.Value atomicRowsCloseHook => ref ᏑatomicRowsCloseHook.Value; // of func(*Rows, *error)
 
 [GoInit] internal static void initΔ2() {

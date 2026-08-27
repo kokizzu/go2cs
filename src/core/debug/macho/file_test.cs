@@ -13,6 +13,36 @@ using static go.debug.macho_package;
 
 partial class macho_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸobscuretestdata() {
+    builtin.initPackage(typeof(@internal.obscuretestdata_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 [GoType] internal partial struct fileTest {
     internal @string @file;
     internal global::go.debug.macho_package.FileHeader hdr;
@@ -62,7 +92,7 @@ partial class macho_internal_test_package {
 // LC_LOAD_DYLIB
 // LC_FUNCTION_STARTS
 // LC_DATA_IN_CODE
-internal static ж<slice<fileTest>> ᏑfileTests = new(new fileTest[]{
+internal static ж<slice<fileTest>> ᏑfileTests = new StandardBox<slice<fileTest>>(new fileTest[]{
     new(
         "testdata/gcc-386-darwin-exec.base64"u8,
         new FileHeader(0xfeedfaceU, Cpu386, 0x3, 0x2, 0xc, 0x3c0, 0x85),

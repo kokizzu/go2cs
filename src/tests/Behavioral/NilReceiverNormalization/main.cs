@@ -15,7 +15,7 @@ partial class main_package {
     internal nint offset;
 }
 
-internal static ж<loc> ᏑutcLoc = new(new loc(name: "UTC"u8, offset: 0));
+internal static ж<loc> ᏑutcLoc = new StandardBox<loc>(new loc(name: "UTC"u8, offset: 0));
 internal static ref loc utcLoc => ref ᏑutcLoc.Value;
 
 internal static ж<loc> get(this ж<loc> Ꮡl) {

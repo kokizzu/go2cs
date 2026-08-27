@@ -11,6 +11,18 @@ using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸrandꓸv2() {
+    builtin.initPackage(typeof(global::go.math.rand.rand_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 // This test is first, in its own file with an alphabetically early name,
 // to try to make sure that it runs early. It has the best chance of
 // detecting deterministic seeding if it's the first test that runs.

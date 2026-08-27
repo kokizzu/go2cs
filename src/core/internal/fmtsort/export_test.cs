@@ -8,6 +8,12 @@ using static go.@internal.fmtsort_package;
 
 partial class fmtsort_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 public static nint Compare(reflectꓸValue a, reflectꓸValue b) {
     return compare(a, b);
 }

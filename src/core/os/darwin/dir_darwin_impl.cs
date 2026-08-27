@@ -102,7 +102,7 @@ private static extern int readdir_r_native(nint dir, nint entry, nint result);
 
     // If this file has no dirinfo, create one. The atomic field is reached through the corpus's
     // own field-pointer idiom (`Ꮡfile.of(File.Ꮡdirinfo)`), the same one file.cs uses for it.
-    var d = new ж<dirInfo>();
+    var d = new StandardBox<dirInfo>(nil);
     while (ᐧ) {
         d = Ꮡfile.of(File.Ꮡdirinfo).Load();
         if (d != nil) {
@@ -112,7 +112,7 @@ private static extern int readdir_r_native(nint dir, nint entry, nint result);
         if (errno != default!) {
             return (default!, default!, default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: call, Path: file.name, Err: errno))));
         }
-        d = new ж<dirInfo>(new dirInfo(dir: dir));
+        d = new StandardBox<dirInfo>(new dirInfo(dir: dir));
         if (Ꮡfile.of(File.Ꮡdirinfo).CompareAndSwap(default!, d)) {
             break;
         }

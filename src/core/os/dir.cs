@@ -138,7 +138,7 @@ public static (slice<DirEntry>, error) ReadDir(this ж<File> Ꮡf, nint n) {
 
 // testingForceReadDirLstat forces ReadDir to call Lstat, for testing that code path.
 // This can be difficult to provoke on some Unix systems otherwise.
-internal static ж<bool> ᏑtestingForceReadDirLstat = new(default(bool));
+internal static ж<bool> ᏑtestingForceReadDirLstat = new StandardBox<bool>(default(bool));
 internal static ref bool testingForceReadDirLstat => ref ᏑtestingForceReadDirLstat.Value;
 
 // ReadDir reads the named directory,

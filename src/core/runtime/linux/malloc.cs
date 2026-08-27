@@ -738,7 +738,7 @@ internal static void enableMetadataHugePages(this ж<mheap> Ꮡh) {
 }
 
 // base address for all 0-byte allocations
-internal static ж<uintptr> Ꮡzerobase = new(default(uintptr));
+internal static ж<uintptr> Ꮡzerobase = new StandardBox<uintptr>(default(uintptr));
 internal static ref uintptr zerobase => ref Ꮡzerobase.Value;
 
 // nextFreeFast returns the next free object if one is quickly available.
@@ -1389,7 +1389,7 @@ internal static uintptr nextSampleNoFP() {
     internal partial ref mutex mutex { get; }
     internal partial ref persistentAlloc persistentAlloc { get; }
 }
-internal static ж<globalAllocᴛ1> ᏑglobalAlloc = new(new globalAllocᴛ1(nil));
+internal static ж<globalAllocᴛ1> ᏑglobalAlloc = new StandardBox<globalAllocᴛ1>(new globalAllocᴛ1(nil));
 internal static ref globalAllocᴛ1 globalAlloc => ref ᏑglobalAlloc.Value;
 
 // persistentChunkSize is the number of bytes we allocate when we grow
@@ -1399,7 +1399,7 @@ internal static UntypedInt persistentChunkSize => /* 256 << 10 */ 262144;
 // persistentChunks is a list of all the persistent chunks we have
 // allocated. The list is maintained through the first word in the
 // persistent chunk. This is updated atomically.
-internal static ж<ж<notInHeap>> ᏑpersistentChunks = new(default(ж<notInHeap>));
+internal static ж<ж<notInHeap>> ᏑpersistentChunks = new StandardBox<ж<notInHeap>>(default(ж<notInHeap>));
 internal static ref ж<notInHeap> persistentChunks => ref ᏑpersistentChunks.ValueSlot;
 
 // Wrapper around sysAlloc that can allocate small chunks.

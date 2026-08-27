@@ -43,7 +43,7 @@ using static global::go.@internal.xcoff_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/xcoff/ar_test.go", "ar_test.cs", "AClQgoKCgoKClIKCloKClIKCgpaCgoKUgqaCgoI=")]
+[assembly: go.GoPositionMap("internal/xcoff/ar_test.go", "ar_test.cs", "ADVQgoKCgoKClIKCloKClIKCgpaCgoKUgqaCgoI=")]
 [assembly: go.GoPositionMap("internal/xcoff/file_test.go", "file_test.cs", "ADhwgoKEgoKClIKCloKClIKCgqaCgoKUgoKClIL6ooKCgg==")]
 // </GoSourcePositionMaps>
 

@@ -24,9 +24,7 @@ internal static E foldSlice<S, E>(S s, Func<E, E, E> combine)
     return acc;
 }
 
-internal static bool equalPair<T>(T a, T b)
-    where T : /* comparable */ new()
-{
+internal static bool equalPair<T>(T a, T b) {
     return AreEqual(a, b);
 }
 
@@ -73,7 +71,6 @@ internal static void applyTo<S>(S v, Action<S> f) {
 
 internal static bool sliceEq<S, E>(S a, S b)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
-    where E : /* comparable */ new()
 {
     if (len(a) != len(b)) {
         return false;

@@ -800,7 +800,7 @@ internal static readonly @string ecdsaPublicKeyPointIsTheˢ = "ecdsa: public key
     return (x, y, default!);
 }
 
-internal static ж<sync.Once> Ꮡp224Once = new(default(sync.Once));
+internal static ж<sync.Once> Ꮡp224Once = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once p224Once => ref Ꮡp224Once.Value;
 
 internal static ж<nistCurve<P224PointжnistPoint>> _p224;
@@ -815,7 +815,7 @@ internal static ж<nistCurve<P224PointжnistPoint>> p224() {
     return _p224;
 }
 
-internal static ж<sync.Once> Ꮡp256Once = new(default(sync.Once));
+internal static ж<sync.Once> Ꮡp256Once = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once p256Once => ref Ꮡp256Once.Value;
 
 internal static ж<nistCurve<P256PointжnistPoint>> _p256;
@@ -830,7 +830,7 @@ internal static ж<nistCurve<P256PointжnistPoint>> p256() {
     return _p256;
 }
 
-internal static ж<sync.Once> Ꮡp384Once = new(default(sync.Once));
+internal static ж<sync.Once> Ꮡp384Once = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once p384Once => ref Ꮡp384Once.Value;
 
 internal static ж<nistCurve<P384PointжnistPoint>> _p384;
@@ -845,7 +845,7 @@ internal static ж<nistCurve<P384PointжnistPoint>> p384() {
     return _p384;
 }
 
-internal static ж<sync.Once> Ꮡp521Once = new(default(sync.Once));
+internal static ж<sync.Once> Ꮡp521Once = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once p521Once => ref Ꮡp521Once.Value;
 
 internal static ж<nistCurve<P521PointжnistPoint>> _p521;

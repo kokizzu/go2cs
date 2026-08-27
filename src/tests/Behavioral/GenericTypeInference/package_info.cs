@@ -49,7 +49,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("GenericTypeInference.go", "GenericTypeInference.cs", "ACAqgqiygoKUqIKCrrKssoKCgoKssoKClIKosoKoooK+sgAEEMKClIKAgrYABhSCgoKC3IKCvMKClIKClKjCpoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKClJSCgpSCgoKCgoKCgoKCgoKUgqyigpQAAhCygoKCAAUQsoKSgoKClKauooKUqqI=")]
+[assembly: go.GoPositionMap("GenericTypeInference.go", "GenericTypeInference.cs", "ACAqgqiygoKUqIKCrrKssoKCgoKssoKClIKosoKoooK+sgAEEKKClIKAgrYABhSCgoKC3IKCvKKClIKClKiipoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKClJSCgpSCgoKCgoKCgoKCgoKUgqyigpQAAhCygoKCAAUQsoKSgoKClKauooKUqqI=")]
 // </GoSourcePositionMaps>
 
 namespace go;

@@ -89,7 +89,7 @@ public static bool Initialized;
     public bool HasSSE42; // Streaming SIMD extension 4 and 4.2
     internal CacheLinePad __;
 }
-public static ж<X86ᴛ1> ᏑX86 = new(default(X86ᴛ1));
+public static ж<X86ᴛ1> ᏑX86 = new StandardBox<X86ᴛ1>(default(X86ᴛ1));
 public static ref X86ᴛ1 X86 => ref ᏑX86.Value;
 
 // ARM64 contains the supported CPU features of the

@@ -32,7 +32,7 @@ internal static void bump(this ж<buf> Ꮡb) {
     internal slice<buf> tabs;
 }
 
-internal static ж<tracer> Ꮡtr = new(default(tracer));
+internal static ж<tracer> Ꮡtr = new StandardBox<tracer>(default(tracer));
 internal static ref tracer tr => ref Ꮡtr.Value;
 
 internal static void keep(ж<tracer> Ꮡt) {

@@ -40,7 +40,7 @@ partial class runtime_package {
     internal array<finalizer> fin = new((uintptr)(_FinBlockSize - 2 * goarch.PtrSize - 2 * 4) / @unsafe.Sizeof(new finalizer(nil)));
 }
 
-internal static ж<atomic.Uint32> ᏑfingStatus = new(default(atomic.Uint32));
+internal static ж<atomic.Uint32> ᏑfingStatus = new StandardBox<atomic.Uint32>(default(atomic.Uint32));
 internal static ref atomic.Uint32 fingStatus => ref ᏑfingStatus.Value;
 
 // finalizer goroutine status.
@@ -54,17 +54,17 @@ internal const uint32 fingWait = 4;
 
 internal const uint32 fingWake = 8;
 
-internal static ж<mutex> Ꮡfinlock = new(new mutex(nil));
+internal static ж<mutex> Ꮡfinlock = new StandardBox<mutex>(new mutex(nil));
 internal static ref mutex finlock => ref Ꮡfinlock.Value; // protects the following variables
 
 internal static ж<g> fing; // goroutine that runs finalizers
 
-internal static ж<ж<finblock>> Ꮡfinq = new(default(ж<finblock>));
+internal static ж<ж<finblock>> Ꮡfinq = new StandardBox<ж<finblock>>(default(ж<finblock>));
 internal static ref ж<finblock> finq => ref Ꮡfinq.ValueSlot;  // list of finalizers that are to be executed
 
 internal static ж<finblock> finc;  // cache of free blocks
 
-internal static ж<array<byte>> Ꮡfinptrmask = new(new array<byte>(64));
+internal static ж<array<byte>> Ꮡfinptrmask = new StandardBox<array<byte>>(new array<byte>(64));
 internal static ref array<byte> finptrmask => ref Ꮡfinptrmask.Value;
 
 internal static ж<finblock> allfin; // list of all blocks

@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/tls` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-24 · converter `2cac74170`*
+*Validated 2026-08-27 · converter `2ac5e6646`*
 
-**400 matched · 2 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**400 matched · 2 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/crypto/tls`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/tls).
 
 > ⚠ Four tests fail AGREEING on both runtimes — `TestResumption`, `TestResumptionKeepsOCSPAndSCT`, `TestVerifyConnection`, `TestCrossVersionResume` — because the suite's test certificates expired 2025-01-01, and both languages report the same `x509: certificate has expired` text. The expired-fixture ceiling is re-confirmed rather than carried: **180 of 184 is the most this host can score in either language, it worsens with time, and a Go patch release or regenerated fixtures changes the shape.**
@@ -73,9 +73,9 @@ comparison — it is the evidence behind the `crypto/tls` row in
 | `TestConnectionState/TLSv12` | pass | pass |
 | `TestConnectionState/TLSv13` | pass | pass |
 | `TestConnectionStateMarshal` | pass | pass |
-| `TestCrossVersionResume` | fail | fail |
-| `TestCrossVersionResume/TLSv12` | fail | fail |
-| `TestCrossVersionResume/TLSv13` | fail | fail |
+| `TestCrossVersionResume` | pass | pass |
+| `TestCrossVersionResume/TLSv12` | pass | pass |
+| `TestCrossVersionResume/TLSv13` | pass | pass |
 | `TestDeadlineOnWrite` | pass | pass |
 | `TestDecodeECHConfigLists` | pass | pass |
 | `TestDeriveSecret` | pass | pass |
@@ -332,12 +332,12 @@ comparison — it is the evidence behind the `crypto/tls` row in
 | `TestRenegotiationExtension` | pass | pass |
 | `TestRenegotiationRejected` | pass | pass |
 | `TestRenegotiationRejected/TLSv12` | pass | pass |
-| `TestResumption` | fail | fail |
-| `TestResumption/TLSv12` | fail | fail |
-| `TestResumption/TLSv13` | fail | fail |
-| `TestResumptionKeepsOCSPAndSCT` | fail | fail |
-| `TestResumptionKeepsOCSPAndSCT/TLSv12` | fail | fail |
-| `TestResumptionKeepsOCSPAndSCT/TLSv13` | fail | fail |
+| `TestResumption` | pass | pass |
+| `TestResumption/TLSv12` | pass | pass |
+| `TestResumption/TLSv13` | pass | pass |
+| `TestResumptionKeepsOCSPAndSCT` | pass | pass |
+| `TestResumptionKeepsOCSPAndSCT/TLSv12` | pass | pass |
+| `TestResumptionKeepsOCSPAndSCT/TLSv13` | pass | pass |
 | `TestRoundUp` | pass | pass |
 | `TestSCTHandshake` | pass | pass |
 | `TestSCTHandshake/TLSv12` | pass | pass |
@@ -402,9 +402,9 @@ comparison — it is the evidence behind the `crypto/tls` row in
 | `TestVerifyCertificates/TLSv13/VerifyClientCertIfGiven_with_certs` | pass | pass |
 | `TestVerifyCertificates/TLSv13/VerifyClientCertIfGiven_with_no_certs` | pass | pass |
 | `TestVerifyCertificates/TLSv13/defaults` | pass | pass |
-| `TestVerifyConnection` | fail | fail |
-| `TestVerifyConnection/TLSv12` | fail | fail |
-| `TestVerifyConnection/TLSv13` | fail | fail |
+| `TestVerifyConnection` | pass | pass |
+| `TestVerifyConnection/TLSv12` | pass | pass |
+| `TestVerifyConnection/TLSv13` | pass | pass |
 | `TestVerifyHostname` | pass | pass |
 | `TestVerifyPeerCertificate` | pass | pass |
 | `TestVerifyPeerCertificate/TLSv12` | pass | pass |

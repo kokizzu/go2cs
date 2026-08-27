@@ -31,6 +31,30 @@ using static go.crypto.rsa_internal_test_package;
 
 partial class rsa_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() {
+    builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸflag() {
+    builtin.initPackage(typeof(flag_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
+    builtin.initPackage(typeof(go.@internal.testenv_package));
+}
+
 public static void TestKeyGeneration(ж<testing.T> Ꮡt) {
     foreach (var (_, size) in new nint[]{128, 1024, 2048, 3072}.slice()) {
         var (priv, err) = GenerateKey(rand.Reader, size);
@@ -378,7 +402,7 @@ internal static ж<rsa.PrivateKey> parseKey(@string s) {
     return k;
 }
 
-internal static ж<ж<rsa.PrivateKey>> Ꮡtest2048Key = new(parseKey(testingKey("""
+internal static ж<ж<rsa.PrivateKey>> Ꮡtest2048Key = new StandardBox<ж<rsa.PrivateKey>>(parseKey(testingKey("""
 -----BEGIN TESTING KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDNoyFUYeDuqw+k
 iyv47iBy/udbWmQdpbUZ8JobHv8uQrvL7sQN6l83teHgNJsXqtiLF3MC+K+XI6Dq

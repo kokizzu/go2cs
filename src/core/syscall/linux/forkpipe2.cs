@@ -14,7 +14,7 @@ internal static error forkExecPipe(slice<nint> p) {
     return Pipe2(p, O_CLOEXEC);
 }
 
-internal static ж<Δsync.Mutex> ᏑforkingLock = new(default(Δsync.Mutex));
+internal static ж<Δsync.Mutex> ᏑforkingLock = new StandardBox<Δsync.Mutex>(default(Δsync.Mutex));
 internal static ref Δsync.Mutex forkingLock => ref ᏑforkingLock.Value;
 internal static nint forking;
 

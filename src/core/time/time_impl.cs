@@ -499,7 +499,7 @@ partial class time_package
 
         channel<Time> syncChan = syncTimerChanEnabled() && arg is channel<Time> c ? c : default;
 
-        ж<Timer> box = new(new Timer{ initTimer = true });
+        ж<Timer> box = new StandardBox<Timer>(new Timer{ initTimer = true });
         armNewTimer(box, when, period, f, arg, syncChan);
         return box;
     }

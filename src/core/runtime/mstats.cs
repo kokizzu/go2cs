@@ -38,7 +38,7 @@ partial class runtime_package {
     internal bool enablegc;
 }
 
-internal static ж<mstats> Ꮡmemstats = new(new mstats());
+internal static ж<mstats> Ꮡmemstats = new StandardBox<mstats>(new mstats());
 internal static ref mstats memstats => ref Ꮡmemstats.Value;
 
 [GoType("dyn")] partial struct MemStats_BySize {
@@ -317,7 +317,7 @@ internal static ref mstats memstats => ref Ꮡmemstats.Value;
 // doubleCheckReadMemStats controls a double-check mode for ReadMemStats that
 // ensures consistency between the values that ReadMemStats is using and the
 // runtime-internal stats.
-internal static ж<bool> ᏑdoubleCheckReadMemStats = new(false);
+internal static ж<bool> ᏑdoubleCheckReadMemStats = new StandardBox<bool>(false);
 internal static ref bool doubleCheckReadMemStats => ref ᏑdoubleCheckReadMemStats.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

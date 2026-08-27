@@ -35,7 +35,7 @@ partial class testlog_package {
 // That must not cause a race detector failure,
 // although it will still result in limited visibility
 // into exactly what those goroutines do.
-internal static ж<atomic.Value> Ꮡlogger = new(default(atomic.Value));
+internal static ж<atomic.Value> Ꮡlogger = new StandardBox<atomic.Value>(default(atomic.Value));
 internal static ref atomic.Value logger => ref Ꮡlogger.Value;
 
 // SetLogger sets the test logger implementation for the current process.

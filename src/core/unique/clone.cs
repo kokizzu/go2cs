@@ -60,7 +60,6 @@ partial class unique_package {
 // strings if value is of interface or slice type (that is, found via an
 // indirection).
 internal static T clone<T>(T value, ж<cloneSeq> Ꮡseq)
-    where T : /* comparable */ new()
 {
     // A value that IS a string takes Go's clone verbatim: one right-sized copy. The typeof test is
     // a JIT-time constant per instantiation, and Unsafe.As over the proven-identical T is the golib

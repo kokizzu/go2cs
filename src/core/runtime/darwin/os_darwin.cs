@@ -219,7 +219,7 @@ internal static uintptr getPageSize() {
     return 0;
 }
 
-internal static ж<slice<byte>> Ꮡurandom_dev = new(slice<byte>("/dev/urandom\x00"u8));
+internal static ж<slice<byte>> Ꮡurandom_dev = new StandardBox<slice<byte>>(slice<byte>("/dev/urandom\x00"u8));
 internal static ref slice<byte> urandom_dev => ref Ꮡurandom_dev.ValueSlot;
 
 //go:nosplit
@@ -399,7 +399,7 @@ internal static UntypedInt _SS_DISABLE => 4;
 [GoType("num:uint32")] partial struct sigset;
 
 //extern SigTabTT runtime·sigtab[];
-internal static ж<sigset> Ꮡsigset_all = new(~((sigset)((sigset)0)));
+internal static ж<sigset> Ꮡsigset_all = new StandardBox<sigset>(~((sigset)((sigset)0)));
 internal static ref sigset sigset_all => ref Ꮡsigset_all.Value;
 
 //go:nosplit

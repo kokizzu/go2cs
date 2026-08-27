@@ -6,12 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `os/exec` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-08-27 · converter `2ac5e6646`*
 
 **89 matched · 27 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec).
 
-Both runtimes skip 8 of the matched tests identically.
+Both runtimes skip 7 of the matched tests identically.
 
 ## Verdicts
 
@@ -123,7 +123,7 @@ Both runtimes skip 8 of the matched tests identically.
 | `TestPrefixSuffixSaver` | pass | pass |
 | `TestStdinClose` | pass | pass |
 | `TestStdinCloseRace` | pass | pass |
-| `TestString` | skip | skip |
+| `TestString` | pass | pass |
 | `TestStringPathNotResolved` | pass | pass |
 | `TestWaitInterrupt` | pass | pass |
 | `TestWaitInterrupt/Exit-hang` | pass | pass |

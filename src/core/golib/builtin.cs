@@ -1882,7 +1882,7 @@ public static partial class builtin
     /// <returns>Pointer to heap allocated copy of <paramref name="target"/> value.</returns>
     public static ж<T> Ꮡ<T>(in T target)
     {
-        return new ж<T>(target);
+        return new StandardBox<T>(target);
     }
 
     /// <summary>
@@ -1917,12 +1917,12 @@ public static partial class builtin
         {
             unsafe
             {
-                return new ж<T>(view.NativeElementAddress(index));
+                return new NativeBox<T>(view.NativeElementAddress(index));
             }
         }
 
         AllocationCounter.Count();
-        return new ж<T>(target, index);
+        return new ElemRefBox<T>(target, index);
     }
 
     /// <summary>
@@ -1944,13 +1944,13 @@ public static partial class builtin
         {
             unsafe
             {
-                return new ж<T>(view.NativeElementAddress(index));
+                return new NativeBox<T>(view.NativeElementAddress(index));
             }
         }
 
         // The caller's boxing temp, exactly as in the int overload above.
         AllocationCounter.Count();
-        return new ж<T>(target, (int)index);
+        return new ElemRefBox<T>(target, (int)index);
     }
 
     /// <summary>
@@ -2046,7 +2046,7 @@ public static partial class builtin
         // any field initializers, e.g. fixed-size array fields); a reference/delegate type is null — with
         // the one kind-family where running that ctor is NOT Go's zero carved out by GoNewZero.
         T value = GoNewZero<T>.UseDefault ? default! : Activator.CreateInstance<T>();
-        return new ж<T>(value);
+        return new StandardBox<T>(value);
     }
 
     // Whether `new(T)` must take `default(T)` rather than run T's parameterless constructor.
@@ -2088,7 +2088,7 @@ public static partial class builtin
         // caller's params array and the boxes of its arguments are emitted at the call site and,
         // like every other compiler-emitted allocation in converted code, are not charged.
         AllocationCounter.Count();
-        return new ж<T>((T)Activator.CreateInstance(typeof(T), inputs)!);
+        return new StandardBox<T>((T)Activator.CreateInstance(typeof(T), inputs)!);
     }
 
     /// <summary>

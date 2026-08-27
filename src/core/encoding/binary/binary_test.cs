@@ -16,6 +16,54 @@ using static go.encoding.binary_package;
 
 partial class binary_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 [GoType] [GoValueClone("Array", "BoolArray")] public partial struct Struct {
     public int8 Int8;
     public int16 Int16;
@@ -41,7 +89,7 @@ partial class binary_internal_test_package {
     public array<nint> Array = new(4);
 }
 
-internal static ж<Struct> Ꮡs = new(new Struct(
+internal static ж<Struct> Ꮡs = new StandardBox<Struct>(new Struct(
     0x01,
     0x0203,
     0x04050607,
@@ -870,7 +918,7 @@ internal static slice<any> sizableTypes = new any[]{
     Ꮡ(new Struct(nil)),
     new Struct[]{}.slice(),
     (slice<Struct>)(default!),
-    new Struct[]{}.array(1)
+    new Struct[]{}.array(1, () => new())
 }.slice();
 
 public static void TestSizeAllocs(ж<testing.T> Ꮡt) {

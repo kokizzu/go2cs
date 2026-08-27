@@ -79,7 +79,7 @@ internal static UntypedInt maxlines => /* 64 * 1024 */ 65536;
 }
 
 internal static slice<nint> fakeLines;
-internal static ж<sync.Once> ᏑfakeLinesOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑfakeLinesOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once fakeLinesOnce => ref ᏑfakeLinesOnce.Value;
 
 internal static types.ChanDir chanDir(nint d) {

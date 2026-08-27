@@ -15,6 +15,12 @@ using static go.encoding.xml_package;
 
 partial class xml_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(go.unicode.utf8_package));
+}
+
 [GoType] internal partial struct toks {
     internal bool earlyEOF;
     internal slice<ΔToken> t;
@@ -625,7 +631,7 @@ internal static void initᴛall() { all = new allScalars(
     PtrString: Ꮡsixteen
 ); }
 
-internal static ж<@string> Ꮡsixteen = new("16"u8);
+internal static ж<@string> Ꮡsixteen = new StandardBox<@string>("16"u8);
 internal static ref @string sixteen => ref Ꮡsixteen.Value;
 
 internal static readonly @string testScalarsInput = """

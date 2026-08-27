@@ -19,7 +19,7 @@ partial class main_package {
     internal nint tag;
 }
 
-internal static ж<outer> Ꮡg = new(default(outer));
+internal static ж<outer> Ꮡg = new StandardBox<outer>(default(outer));
 internal static ref outer g => ref Ꮡg.Value;
 
 internal static void keep(ж<outer> Ꮡp) {

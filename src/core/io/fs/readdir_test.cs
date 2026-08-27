@@ -15,6 +15,18 @@ using go.testing;
 
 partial class fs_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtestingꓸfstest() {
+    builtin.initPackage(typeof(go.testing.fstest_package));
+}
+
 [GoType] partial struct readDirOnly {
     public go.io.fs_package.ReadDirFS ReadDirFS;
 }

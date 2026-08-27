@@ -144,7 +144,7 @@ public static bool HasGoBuild() {
     return goBuildErr == default!;
 }
 
-internal static ж<sync.Once> ᏑgoBuildOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑgoBuildOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once goBuildOnce => ref ᏑgoBuildOnce.Value;
 internal static error goBuildErr;
 
@@ -215,7 +215,7 @@ public static @string GoToolPath(testing.TB t) {
     return path;
 }
 
-internal static ж<sync.Once> ᏑgorootOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑgorootOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once gorootOnce => ref ᏑgorootOnce.Value;
 internal static @string gorootPath;
 internal static error gorootErr;
@@ -322,7 +322,7 @@ public static (@string, error) GoTool() {
     return (goToolPath, goToolErr);
 }
 
-internal static ж<sync.Once> ᏑgoToolOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑgoToolOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once goToolOnce => ref ᏑgoToolOnce.Value;
 internal static @string goToolPath;
 internal static error goToolErr;
@@ -381,7 +381,7 @@ public static bool HasCGO() {
     return hasCgo;
 }
 
-internal static ж<sync.Once> ᏑhasCgoOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑhasCgoOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once hasCgoOnce => ref ᏑhasCgoOnce.Value;
 internal static bool hasCgo;
 

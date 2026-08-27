@@ -1153,7 +1153,7 @@ internal static ж<abi.Type> rtypeOf(any i) {
 }
 
 // ptrMap is the cache for PointerTo.
-internal static ж<Δsync.Map> ᏑptrMap = new(default(Δsync.Map));
+internal static ж<Δsync.Map> ᏑptrMap = new StandardBox<Δsync.Map>(default(Δsync.Map));
 internal static ref Δsync.Map ptrMap => ref ᏑptrMap.Value; // map[*rtype]*ptrType
 
 // PtrTo returns the pointer type with element t.
@@ -1410,7 +1410,7 @@ internal static slice<ж<abi.Type>> typesByString(@string s) {
 }
 
 // The lookupCache caches ArrayOf, ChanOf, MapOf and SliceOf lookups.
-internal static ж<Δsync.Map> ᏑlookupCache = new(default(Δsync.Map));
+internal static ж<Δsync.Map> ᏑlookupCache = new StandardBox<Δsync.Map>(default(Δsync.Map));
 internal static ref Δsync.Map lookupCache => ref ᏑlookupCache.Value; // map[cacheKey]*rtype
 
 // A cacheKey is the key for use in the lookupCache.
@@ -1433,7 +1433,7 @@ internal static ref Δsync.Map lookupCache => ref ᏑlookupCache.Value; // map[c
     // Elements of m are append-only and thus safe for concurrent reading.
     internal Δsync.Map m;
 }
-internal static ж<funcLookupCacheᴛ1> ᏑfuncLookupCache = new(new funcLookupCacheᴛ1(nil));
+internal static ж<funcLookupCacheᴛ1> ᏑfuncLookupCache = new StandardBox<funcLookupCacheᴛ1>(new funcLookupCacheᴛ1(nil));
 internal static ref funcLookupCacheᴛ1 funcLookupCache => ref ᏑfuncLookupCache.Value;
 
 // ChanOf returns the channel type with the given direction and element type.
@@ -1576,7 +1576,7 @@ public static ΔType MapOf(ΔType key, ΔType elem) {
 
 internal static slice<ΔType> funcTypes;
 
-internal static ж<Δsync.Mutex> ᏑfuncTypesMutex = new(default(Δsync.Mutex));
+internal static ж<Δsync.Mutex> ᏑfuncTypesMutex = new StandardBox<Δsync.Mutex>(default(Δsync.Mutex));
 internal static ref Δsync.Mutex funcTypesMutex => ref ᏑfuncTypesMutex.Value;
 
 internal static ΔType initFuncTypes(nint n) {
@@ -1957,7 +1957,7 @@ internal static slice<byte> appendGCProg(slice<byte> dst, ж<abi.Type> Ꮡtyp) {
 // The structLookupCache caches StructOf lookups.
 // StructOf does not share the common lookupCache since we need to pin
 // the memory associated with *structTypeFixedN.
-internal static ж<funcLookupCacheᴛ1> ᏑstructLookupCache = new(new funcLookupCacheᴛ1(nil));
+internal static ж<funcLookupCacheᴛ1> ᏑstructLookupCache = new StandardBox<funcLookupCacheᴛ1>(new funcLookupCacheᴛ1(nil));
 internal static ref funcLookupCacheᴛ1 structLookupCache => ref ᏑstructLookupCache.Value;
 
 [GoType] partial struct structTypeUncommon {
@@ -2179,7 +2179,7 @@ internal static slice<byte> appendVarint(slice<byte> x, uintptr v) {
     internal abiDesc abid;
 }
 
-internal static ж<Δsync.Map> ᏑlayoutCache = new(default(Δsync.Map));
+internal static ж<Δsync.Map> ᏑlayoutCache = new StandardBox<Δsync.Map>(default(Δsync.Map));
 internal static ref Δsync.Map layoutCache => ref ᏑlayoutCache.Value; // map[layoutKey]layoutType
 
 // funcLayout computes a struct type representing the layout of the

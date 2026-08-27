@@ -33,7 +33,7 @@ partial class buildcfg_package {
 // experimentBaseline specifies the experiment flags that are enabled by
 // default in the current toolchain. This is, in effect, the "control"
 // configuration and any variation from this is an experiment.
-public static ж<ExperimentFlags> ᏑExperiment = new(default(ExperimentFlags));
+public static ж<ExperimentFlags> ᏑExperiment = new StandardBox<ExperimentFlags>(default(ExperimentFlags));
 public static ref ExperimentFlags Experiment => ref ᏑExperiment.Value;
 internal static void initᴛExperiment() { Experiment = ((Func<ExperimentFlags>)(() => {
     var (flags, err) = ParseGOEXPERIMENT(GOOS, GOARCH, envOr("GOEXPERIMENT"u8, defaultGOEXPERIMENT));

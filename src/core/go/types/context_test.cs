@@ -11,6 +11,12 @@ using token = global::go.go.token_package;
 
 partial class types_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object hashCollisionsAreˢ = (@string)"hash collisions are expected, and would fail debug assertions"u8;
 internal static readonly object badˢ = (@string)"bad"u8;

@@ -25,10 +25,10 @@ internal static void mark(this tagger _) {
     internal nint extra;
 }
 
-internal static ж<holder> Ꮡh = new(default(holder));
+internal static ж<holder> Ꮡh = new StandardBox<holder>(default(holder));
 internal static ref holder h => ref Ꮡh.Value;
 
-internal static ж<Δmark> Ꮡgm = new(default(Δmark));
+internal static ж<Δmark> Ꮡgm = new StandardBox<Δmark>(default(Δmark));
 internal static ref Δmark gm => ref Ꮡgm.Value;
 
 internal static nint localShadowsCollisionType() {

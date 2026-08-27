@@ -46,7 +46,7 @@ partial class os_package {
 internal static UntypedInt blockSize => 8192;
 
 // The buffer must be at least a block long.
-internal static ж<Δsync.Pool> ᏑdirBufPool = new(new Δsync.Pool(
+internal static ж<Δsync.Pool> ᏑdirBufPool = new StandardBox<Δsync.Pool>(new Δsync.Pool(
     New: () => {
         var buf = new slice<byte>(blockSize);
         return Ꮡ(buf);

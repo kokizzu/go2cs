@@ -16,6 +16,18 @@ using static global::go.@internal.reflectlite_internal_test_package;
 
 partial class reflectlite_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 public static void TestImplicitSetConversion(ж<testing.T> Ꮡt) {
     // Assume TestImplicitMapConversion covered the basics.
     // Just make sure conversions are being applied at all.

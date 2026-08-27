@@ -33,7 +33,7 @@ internal static ж<array<affineLookupTable>> basepointTable() {
     internal array<affineLookupTable> table = new(32, () => new());
     internal sync.Once initOnce;
 }
-internal static ж<basepointTablePrecompᴛ1> ᏑbasepointTablePrecomp = new(new basepointTablePrecompᴛ1());
+internal static ж<basepointTablePrecompᴛ1> ᏑbasepointTablePrecomp = new StandardBox<basepointTablePrecompᴛ1>(new basepointTablePrecompᴛ1());
 internal static ref basepointTablePrecompᴛ1 basepointTablePrecomp => ref ᏑbasepointTablePrecomp.Value;
 
 // ScalarBaseMult sets v = x * B, where B is the canonical generator, and
@@ -142,7 +142,7 @@ internal static ж<nafLookupTable8> basepointNafTable() {
     internal nafLookupTable8 table;
     internal sync.Once initOnce;
 }
-internal static ж<basepointNafTablePrecompᴛ1> ᏑbasepointNafTablePrecomp = new(new basepointNafTablePrecompᴛ1());
+internal static ж<basepointNafTablePrecompᴛ1> ᏑbasepointNafTablePrecomp = new StandardBox<basepointNafTablePrecompᴛ1>(new basepointNafTablePrecompᴛ1());
 internal static ref basepointNafTablePrecompᴛ1 basepointNafTablePrecomp => ref ᏑbasepointNafTablePrecomp.Value;
 
 // VarTimeDoubleScalarBaseMult sets v = a * A + b * B, where B is the canonical

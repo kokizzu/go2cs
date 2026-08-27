@@ -196,7 +196,7 @@ internal static array<huffmanSpec> theHuffmanSpec = new huffmanSpec[]{
 }
 
 // theHuffmanLUT are compiled representations of theHuffmanSpec.
-internal static ж<array<huffmanLUT>> ᏑtheHuffmanLUT = new(new array<huffmanLUT>(4));
+internal static ж<array<huffmanLUT>> ᏑtheHuffmanLUT = new StandardBox<array<huffmanLUT>>(new array<huffmanLUT>(4));
 internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Value;
 
 [GoInit] internal static void initΔ1() {

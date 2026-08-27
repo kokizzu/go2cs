@@ -49,7 +49,7 @@ using static go.cmp_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("cmp/cmp.go", "cmp.cs", "ABk40gACFgAKAoKCgoKUlIKUgpSClKrCquKCgoKm")]
+[assembly: go.GoPositionMap("cmp/cmp.go", "cmp.cs", "ABk40gACFgAKAoKCgoKUlIKUgpSClKrCqsKCgoKm")]
 // </GoSourcePositionMaps>
 
 namespace go;

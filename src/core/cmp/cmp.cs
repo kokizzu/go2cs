@@ -73,9 +73,7 @@ internal static bool isNaN<T>(T x)
 
 // Or returns the first of its arguments that is not equal to the zero value.
 // If no argument is non-zero, it returns the zero value.
-public static T Or<T>(params Span<T> valsʗp)
-    where T : /* comparable */ new()
-{
+public static T Or<T>(params Span<T> valsʗp) {
     var vals = valsʗp.sslice();
 
     T zero = default!;

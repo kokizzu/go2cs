@@ -8,6 +8,12 @@ using static go.encoding.xml_package;
 
 partial class xml_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 internal static ж<Feed> atomValue = Ꮡ(new Feed(
     XMLName: new Name("http://www.w3.org/2005/Atom"u8, "feed"u8),
     Title: "Example Feed"u8,

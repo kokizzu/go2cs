@@ -36,9 +36,7 @@ partial class unique_package {
 // and will clone value if it itself is a string. It will not, however, clone
 // strings if value is of interface or slice type (that is, found via an
 // indirection).
-internal static T clone<T>(T valueʗp, ж<cloneSeq> Ꮡseq)
-    where T : /* comparable */ new()
-{
+internal static T clone<T>(T valueʗp, ж<cloneSeq> Ꮡseq) {
     ref var seq = ref Ꮡseq.DerefOrNull();
 
     ref var value = ref heap(valueʗp, out var Ꮡvalue);

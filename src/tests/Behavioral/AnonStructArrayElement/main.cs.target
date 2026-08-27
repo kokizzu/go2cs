@@ -29,7 +29,7 @@ internal static array<poolᴛ1> pool = new(2, () => new());
 
 internal static array<nint> nums = new(3);
 
-internal static ж<array<nint>> Ꮡaddr = new(new array<nint>(2));
+internal static ж<array<nint>> Ꮡaddr = new StandardBox<array<nint>>(new array<nint>(2));
 internal static ref array<nint> addr => ref Ꮡaddr.Value;
 
 [GoType("dyn")] partial struct Composed_Ptrs {

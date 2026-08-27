@@ -208,7 +208,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
         {
             nint available = backing.Length - index;
 
-            return new ж<array<T>>(new array<T>(backing, (int)index, (int)(length < available ? length : available)));
+            return new StandardBox<array<T>>(new array<T>(backing, (int)index, (int)(length < available ? length : available)));
         }
 
         return (ж<array<T>>)(uintptr)element!;

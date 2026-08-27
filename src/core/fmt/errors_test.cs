@@ -11,6 +11,30 @@ using static go.fmt_internal_test_package;
 
 partial class fmt_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string innerErrorˢ = "inner error"u8;
 internal static readonly object prefixˢ = (@string)"prefix"u8;
@@ -28,7 +52,7 @@ internal static readonly object notAnErrorˢ = (@string)"not-an-error"u8;
 public static void TestErrorf(ж<Δtesting.T> Ꮡt) {
     // noVetErrorf is an alias for fmt.Errorf that does not trigger vet warnings for
     // %w format strings.
-    var noVetErrorf = fmt.Errorf;
+    Funcꓸꓸꓸ<@string, any, error> noVetErrorf = fmt.Errorf;
     var wrapped = errors.New(innerErrorˢ);
     foreach (var (_, test) in new TestErrorf_type[]{new(
         err: fmt.Errorf("%w"u8, wrapped),

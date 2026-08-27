@@ -62,10 +62,10 @@ using static global::go.@internal.reflectlite_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("internal/reflectlite/all_test.go", "all_test.cs", "ABkmgqaCABAggoKCAKAC4gKCgoK4goKCuIKC6IKCgpSkpKSkpKSkpKSkpKSkpKSkgoIAMAqCACWAAbKSgoKCgpSUgIIAFyyCgoKCyoKSkoKCgriCkoKCggAICIKChIiCggAKBqKGgoKUgoSCgIL4gpKCgpQACxSCgpSCgqYACgaCgoKGggAHEIKCgoKCABUoABEWgoKEggBAigGUgIKkgoKClIKCyoKCgriCgoIAKwimAAgSgoKCmJaCgoSGgoKEhoKChIaCgoSGgoKEhoKCrLKClNaCgoCCAAgSkqikqJKCqLrSgoKCgpYADxSiAB5EgoCCAAkKgoKUgpSCgoKUgriCgoKEgoKCpoKChIKCggAcCoKAkoKAlAAAMpKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQpoKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQtqKCgqYAChCCgoKCgoIACQqEhoKUgoIAIz6CgoKAggAJFNKChpKSogAWKoKCgoKCloKCgoI=")]
-[assembly: global::go.GoPositionMap("internal/reflectlite/reflect_mirror_test.go", "reflect_mirror_test.cs", "ACZIgoKEpIKCgqamgpSCgIKCgoKClOqmgoSGgoKWhIIADAiUgoKApqaChL6SgrKC1oSCloKCgpSCgII=")]
-[assembly: global::go.GoPositionMap("internal/reflectlite/set_test.go", "set_test.cs", "ABIghqKCgoKCABowgKKAogANFIDqooKCgoCCABUuooKCgoCC")]
-[assembly: global::go.GoPositionMap("internal/reflectlite/tostring_test.go", "tostring_test.cs", "ABAmovaCgoKUgpSkpKSCpKSClLaCgoKUlIKkgoKCgoKUlIKkgoKCgqSCpIKCgoKCgpSUgqSkpA==")]
+[assembly: global::go.GoPositionMap("internal/reflectlite/all_test.go", "all_test.cs", "AEkmgqaCABAggoKCAKAC4gKCgoK4goKCuIKC6IKCgpSkpKSkpKSkpKSkpKSkpKSkgoIAMAqCACWAAbKSgoKCgpSUgIIAFyyCgoKCyoKSkoKCgriCkoKCggAICIKChIiCggAKBqKGgoKUgoSCgIL4gpKCgpQACxSCgpSCgqYACgaCgoKGggAHEIKCgoKCABUoABEWgoKEggBAigGUgIKkgoKClIKCyoKCgriCgoIAKwimAAgSgoKCmJaCgoSGgoKEhoKChIaCgoSGgoKEhoKCrLKClNaCgoCCAAgSkqikqJKCqLrSgoKCgpYADxSiAB5EgoCCAAkKgoKUgpSCgoKUgriCgoKEgoKCpoKChIKCggAcCoKAkoKAlAAAMpKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQpoKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQkpCSkJKQtqKCgqYAChCCgoKCgoIACQqEhoKUgoIAIz6CgoKAggAJFNKChpKSogAWKoKCgoKCloKCgoI=")]
+[assembly: global::go.GoPositionMap("internal/reflectlite/reflect_mirror_test.go", "reflect_mirror_test.cs", "AFZIgoKEpIKCgqamgpSCgIKCgoKClOqmgoSGgoKWhIIADAiUgoKApqaChL6SgrKC1oSCloKCgpSCgII=")]
+[assembly: global::go.GoPositionMap("internal/reflectlite/set_test.go", "set_test.cs", "AB4ghqKCgoKCABowgKKAogANFIDqooKCgoCCABUuooKCgoCC")]
+[assembly: global::go.GoPositionMap("internal/reflectlite/tostring_test.go", "tostring_test.cs", "ABYmovaCgoKUgpSkpKSCpKSClLaCgoKUlIKkgoKCgoKUlIKkgoKCgqSCpIKCgoKCgpSUgqSkpA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;

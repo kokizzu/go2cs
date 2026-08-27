@@ -9,6 +9,18 @@ using static go.text.template.parse_package;
 
 partial class parse_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 // keywords
 // Make the types prettyprint.
 internal static map<global::go.text.template.parse_package.itemType, @string> itemName = new map<global::go.text.template.parse_package.itemType, @string>{

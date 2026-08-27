@@ -449,7 +449,7 @@ internal static void appendNonBuiltIns(this ж<handleState> Ꮡs, Record r) {
     internal ж<slice<@string>> groups; // pool-allocated slice of active groups, for ReplaceAttr
 }
 
-internal static ж<sync.Pool> ᏑgroupPool = new(new sync.Pool(New: () => {
+internal static ж<sync.Pool> ᏑgroupPool = new StandardBox<sync.Pool>(new sync.Pool(New: () => {
     var s = new slice<@string>(0, 10);
     return Ꮡ(s);
 }

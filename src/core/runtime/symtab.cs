@@ -364,7 +364,7 @@ internal static ΔfuncInfo funcInfo(this ж<_func> Ꮡf) {
 // To make sure the map isn't collected, we keep a second reference here.
 internal static slice<map<typeOff, ж<_type>>> pinnedTypemaps;
 
-internal static ж<moduledata> Ꮡfirstmoduledata = new(new moduledata(nil));
+internal static ж<moduledata> Ꮡfirstmoduledata = new StandardBox<moduledata>(new moduledata(nil));
 internal static ref moduledata firstmoduledata => ref Ꮡfirstmoduledata.Value; // linker symbol
 
 // lastmoduledatap should be an internal detail,
@@ -378,7 +378,7 @@ internal static ref moduledata firstmoduledata => ref Ꮡfirstmoduledata.Value; 
 //go:linkname lastmoduledatap
 internal static ж<moduledata> lastmoduledatap; // linker symbol
 
-internal static ж<ж<slice<ж<moduledata>>>> ᏑmodulesSlice = new(default(ж<slice<ж<moduledata>>>));
+internal static ж<ж<slice<ж<moduledata>>>> ᏑmodulesSlice = new StandardBox<ж<slice<ж<moduledata>>>>(default(ж<slice<ж<moduledata>>>));
 internal static ref ж<slice<ж<moduledata>>> modulesSlice => ref ᏑmodulesSlice.ValueSlot;    // see activeModules
 
 // activeModules returns a slice of active modules.

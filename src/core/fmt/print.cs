@@ -187,7 +187,7 @@ public static @string FormatString(State state, rune verb) {
     internal slice<nint> wrappedErrs;
 }
 
-internal static ж<Δsync.Pool> ᏑppFree = new(new Δsync.Pool(
+internal static ж<Δsync.Pool> ᏑppFree = new StandardBox<Δsync.Pool>(new Δsync.Pool(
     New: () => @new<pp>()
 ));
 internal static ref Δsync.Pool ppFree => ref ᏑppFree.Value;

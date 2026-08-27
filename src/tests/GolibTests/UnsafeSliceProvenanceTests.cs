@@ -51,7 +51,7 @@ public unsafe class UnsafeSliceProvenanceTests
     {
         // A heap box, pinned by its own uintptr conversion — the registration the mechanism makes
         // at the only moment the address is known to be managed-held-still.
-        ж<ulong> box = new ж<ulong>(0x1122334455667788UL);
+        ж<ulong> box = new StandardBox<ulong>(0x1122334455667788UL);
         uintptr address = (uintptr)box;
 
         // The CROSS-TYPED rebuild: Resolve answers the ж<ulong>, the ж<byte> pattern cannot take

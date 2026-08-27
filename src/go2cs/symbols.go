@@ -51,7 +51,7 @@ const PointerPrefix = "\u0436" // Variants: ж Ж ǂ
 // renders here yet); the corpus's other explicit-new occurrences are 304 array-ELEMENT-type
 // positions (declared role, unchanged forever) and ~40 golib/hand-own/generator
 // constructions edited by hand at I3.
-const BoxConstructPrefix = PointerPrefix
+const BoxConstructPrefix = "StandardBox"
 const AddressPrefix = "\u13D1"                   // Variants: Ꮡ ꝸ
 const ShadowVarMarker = "\u0394"                 // Variants: Δ Ʌ ꞥ
 const TypeAliasDot = "\uA4F8"                    // Variants: ꓸ

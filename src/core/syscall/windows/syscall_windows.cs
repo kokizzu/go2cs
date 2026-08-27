@@ -510,7 +510,7 @@ public static error WriteFile(ΔHandle fd, slice<byte> p, ж<uint32> Ꮡdone, ж
     return err;
 }
 
-internal static ж<int64> ᏑioSync = new(default(int64));
+internal static ж<int64> ᏑioSync = new StandardBox<int64>(default(int64));
 internal static ref int64 ioSync => ref ᏑioSync.Value;
 
 internal static ж<LazyProc> procSetFilePointerEx;
@@ -1056,7 +1056,7 @@ public static error LoadGetAddrInfo() {
     internal uintptr addr;
     internal error err;
 }
-internal static ж<connectExFuncᴛ1> ᏑconnectExFunc = new(default(connectExFuncᴛ1));
+internal static ж<connectExFuncᴛ1> ᏑconnectExFunc = new StandardBox<connectExFuncᴛ1>(default(connectExFuncᴛ1));
 internal static ref connectExFuncᴛ1 connectExFunc => ref ᏑconnectExFunc.Value;
 
 // go2cs generated this placeholder — func LoadConnectEx is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])

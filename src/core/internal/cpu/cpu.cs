@@ -54,7 +54,7 @@ public static uintptr CacheLineSize = CacheLinePadSize;
     public bool HasSSE42;
     internal CacheLinePad __;
 }
-public static ж<X86ᴛ1> ᏑX86 = new(default(X86ᴛ1));
+public static ж<X86ᴛ1> ᏑX86 = new StandardBox<X86ᴛ1>(default(X86ᴛ1));
 public static ref X86ᴛ1 X86 => ref ᏑX86.Value;
 
 // The booleans in ARM contain the correspondingly named cpu feature bit.

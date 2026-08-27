@@ -393,7 +393,7 @@ internal static error SetWriteBuffer(this ж<conn> Ꮡc, nint bytes) {
     public partial ref sync_package.Once Once { get; }
     internal nint val;
 }
-internal static ж<listenerBacklogCacheᴛ1> ᏑlistenerBacklogCache = new(new listenerBacklogCacheᴛ1(nil));
+internal static ж<listenerBacklogCacheᴛ1> ᏑlistenerBacklogCache = new StandardBox<listenerBacklogCacheᴛ1>(new listenerBacklogCacheᴛ1(nil));
 internal static ref listenerBacklogCacheᴛ1 listenerBacklogCache => ref ᏑlistenerBacklogCache.Value;
 
 // listenerBacklog is a caching wrapper around maxListenerBacklog.
@@ -885,7 +885,7 @@ internal static (int64 n, error err) genericWriteTo(ж<TCPConn> Ꮡc, Δio.Write
 // thread, and the system or the program runs out of threads.
 internal static channel<EmptyStruct> threadLimit;
 
-internal static ж<Δsync.Once> ᏑthreadOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑthreadOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once threadOnce => ref ᏑthreadOnce.Value;
 
 internal static error acquireThread(context.Context ctx) {

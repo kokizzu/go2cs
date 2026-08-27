@@ -23,7 +23,7 @@ partial class randutil_package {
     builtin.initPackage(typeof(sync_package));
 }
 
-internal static ж<sync.Once> ᏑclosedChanOnce = new(default(sync.Once));
+internal static ж<sync.Once> ᏑclosedChanOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once closedChanOnce => ref ᏑclosedChanOnce.Value;
 internal static channel<EmptyStruct> closedChan;
 

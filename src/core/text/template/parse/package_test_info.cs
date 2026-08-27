@@ -31,8 +31,8 @@ using static global::go.text.template.parse_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("text/template/parse/lex_test.go", "lex_test.cs", "ADBkgoKClAAIEoIAxQKUBcKCyoKCgoKmpoKClIKClIKUgpSCpqaisoKCgpQAGzqisoKCAAkKogAJEISCuKIAChKEggAqWsKygoKClIKCgoIACBYACQKCgoKCgoI=")]
-[assembly: go.GoPositionMap("text/template/parse/parse_test.go", "parse_test.cs", "AFuyAaKGooKCgpSCgqaCgoKClIKClIKClJSClIKClIK2lIKClIK2lIKClIK2lIKClIK2AK4B4ALCgoCSgoKUgrSCtpKUtIKClJSC+oKokqbCgoCS3LKSgoKCgpSAggAMDPiCgJSChsaCgqimgoIACwrCgoKAkoKCgoKUgoCCABsqooKUgoKCgpSAggAICoKCgpSCgoKClIIAatYBgrKSgoKUggAKDIKqgoKClICSpIKClICSAAgIhJKCgoK4goKUgoKUgoLKooKCgoIACg6ipoKCgpSCAAgIogAAJIKClIKCgpSC")]
+[assembly: go.GoPositionMap("text/template/parse/lex_test.go", "lex_test.cs", "ADxkgoKClAAIEoIAxQKUBcKCyoKCgoKmpoKClIKClIKUgpSCpqaisoKCgpQAGzqisoKCAAkKogAJEISCuKIAChKEggAqWsKygoKClIKCgoIACBYACQKCgoKCgoI=")]
+[assembly: go.GoPositionMap("text/template/parse/parse_test.go", "parse_test.cs", "AGeyAaKGooKCgpSCgqaCgoKClIKClIKClJSClIKClIK2lIKClIK2lIKClIK2lIKClIK2AK4B4ALCgoCSgoKUgrSCtpKUtIKClJSC+oKokqbCgoCS3LKSgoKCgpSAggAMDPiCgJSChsaCgqimgoIACwrCgoKAkoKCgoKUgoCCABsqooKUgoKCgpSAggAICoKCgpSCgoKClIIAatYBgrKSgoKUggAKDIKqgoKClICSpIKClICSAAgIhJKCgoK4goKUgoKUgoLKooKCgoIACg6ipoKCgpSCAAgIogAAJIKClIKCgpSC")]
 // </GoSourcePositionMaps>
 
 namespace go.text.template;

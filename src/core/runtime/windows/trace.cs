@@ -123,13 +123,13 @@ partial class runtime_package {
     // debugMalloc is the value of debug.malloc before tracing began.
     internal bool debugMalloc;
 }
-internal static ж<Δtraceᴛ1> ᏑΔtrace = new(new Δtraceᴛ1());
+internal static ж<Δtraceᴛ1> ᏑΔtrace = new StandardBox<Δtraceᴛ1>(new Δtraceᴛ1());
 internal static ref Δtraceᴛ1 Δtrace => ref ᏑΔtrace.Value;
 
 // Trace public API.
-internal static ж<uint32> ᏑtraceAdvanceSema = new(1);
+internal static ж<uint32> ᏑtraceAdvanceSema = new StandardBox<uint32>(1);
 internal static ref uint32 traceAdvanceSema => ref ᏑtraceAdvanceSema.Value;
-internal static ж<uint32> ᏑtraceShutdownSema = new(1);
+internal static ж<uint32> ᏑtraceShutdownSema = new StandardBox<uint32>(1);
 internal static ref uint32 traceShutdownSema => ref ᏑtraceShutdownSema.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -898,7 +898,7 @@ internal static ж<g> traceReaderAvailable() {
 }
 
 // Trace advancer goroutine.
-internal static ж<traceAdvancerState> ᏑtraceAdvancer = new(default(traceAdvancerState));
+internal static ж<traceAdvancerState> ᏑtraceAdvancer = new StandardBox<traceAdvancerState>(default(traceAdvancerState));
 internal static ref traceAdvancerState traceAdvancer => ref ᏑtraceAdvancer.Value;
 
 [GoType] partial struct traceAdvancerState {

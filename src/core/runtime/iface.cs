@@ -16,12 +16,12 @@ partial class runtime_package {
 
 internal static UntypedInt itabInitSize => 512;
 
-internal static ж<mutex> ᏑitabLock = new(new mutex(nil));
+internal static ж<mutex> ᏑitabLock = new StandardBox<mutex>(new mutex(nil));
 internal static ref mutex itabLock => ref ᏑitabLock.Value;                         // lock for accessing itab table
-internal static ж<ж<itabTableType>> ᏑitabTable = new(default(ж<itabTableType>));
+internal static ж<ж<itabTableType>> ᏑitabTable = new StandardBox<ж<itabTableType>>(default(ж<itabTableType>));
 internal static ref ж<itabTableType> itabTable => ref ᏑitabTable.ValueSlot;
 internal static void initᴛitabTable() { itabTable = ᏑitabTableInit; }                    // pointer to current table
-internal static ж<itabTableType> ᏑitabTableInit = new(new itabTableType(size: itabInitSize));
+internal static ж<itabTableType> ᏑitabTableInit = new StandardBox<itabTableType>(new itabTableType(size: itabInitSize));
 internal static ref itabTableType itabTableInit => ref ᏑitabTableInit.Value; // starter table
 
 // Note: change the formula in the mallocgc call in itabAdd if you change these fields.
@@ -328,15 +328,15 @@ internal static void panicnildottype(ж<_type> Ꮡwant) {
 // TODO: Add the static type we're converting from as well.
 // It might generate a better error message.
 // Just to match other nil conversion errors, we don't for now.
-internal static ж<any> Ꮡuint16Eface = new(((uint16InterfacePtr)0));
+internal static ж<any> Ꮡuint16Eface = new StandardBox<any>(((uint16InterfacePtr)0));
 internal static ref any uint16Eface => ref Ꮡuint16Eface.ValueSlot;
-internal static ж<any> Ꮡuint32Eface = new(((uint32InterfacePtr)0));
+internal static ж<any> Ꮡuint32Eface = new StandardBox<any>(((uint32InterfacePtr)0));
 internal static ref any uint32Eface => ref Ꮡuint32Eface.ValueSlot;
-internal static ж<any> Ꮡuint64Eface = new(((uint64InterfacePtr)0));
+internal static ж<any> Ꮡuint64Eface = new StandardBox<any>(((uint64InterfacePtr)0));
 internal static ref any uint64Eface => ref Ꮡuint64Eface.ValueSlot;
-internal static ж<any> ᏑstringEface = new(((stringInterfacePtr)(@string)""u8));
+internal static ж<any> ᏑstringEface = new StandardBox<any>(((stringInterfacePtr)(@string)""u8));
 internal static ref any stringEface => ref ᏑstringEface.ValueSlot;
-internal static ж<any> ᏑsliceEface = new(((sliceInterfacePtr)default!));
+internal static ж<any> ᏑsliceEface = new StandardBox<any>(((sliceInterfacePtr)default!));
 internal static ref any sliceEface => ref ᏑsliceEface.ValueSlot;
 internal static ж<_type> uint16Type = (~efaceOf(Ꮡuint16Eface))._type;
 internal static ж<_type> uint32Type = (~efaceOf(Ꮡuint32Eface))._type;
@@ -717,7 +717,7 @@ internal static void iterate_itabs(Action<ж<itab>> fn) {
 }
 
 // staticuint64s is used to avoid allocating in convTx for small integer values.
-internal static ж<array<uint64>> Ꮡstaticuint64s = new(new uint64[]{
+internal static ж<array<uint64>> Ꮡstaticuint64s = new StandardBox<array<uint64>>(new uint64[]{
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,

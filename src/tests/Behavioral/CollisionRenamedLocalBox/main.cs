@@ -32,7 +32,7 @@ internal static void bump(ref nint np) {
     np += 100;
 }
 
-internal static ж<box> ᏑΔcounter = new(default(box));
+internal static ж<box> ᏑΔcounter = new StandardBox<box>(default(box));
 internal static ref box Δcounter => ref ᏑΔcounter.Value;
 
 internal static nint counter(this tagger _) {

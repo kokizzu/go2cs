@@ -12,9 +12,9 @@ using @internal.runtime;
 partial class runtime_package {
 
 internal static int32 epfd = -1;           // epoll descriptor
-internal static ж<uintptr> ᏑnetpollEventFd = new(default(uintptr));
+internal static ж<uintptr> ᏑnetpollEventFd = new StandardBox<uintptr>(default(uintptr));
 internal static ref uintptr netpollEventFd => ref ᏑnetpollEventFd.Value; // eventfd for netpollBreak
-internal static ж<atomic.Uint32> ᏑnetpollWakeSig = new(default(atomic.Uint32));
+internal static ж<atomic.Uint32> ᏑnetpollWakeSig = new StandardBox<atomic.Uint32>(default(atomic.Uint32));
 internal static ref atomic.Uint32 netpollWakeSig => ref ᏑnetpollWakeSig.Value;     // used to avoid duplicate calls of netpollBreak
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

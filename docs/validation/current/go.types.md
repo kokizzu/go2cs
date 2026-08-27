@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `go/types` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-15 · converter `fa50e4d7a`*
+*Validated 2026-08-27 · converter `2ac5e6646`*
 
-**557 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**557 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/go/types`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/types).
 
 Both runtimes skip 1 of the matched tests identically.

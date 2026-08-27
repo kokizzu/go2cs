@@ -83,7 +83,7 @@ public static PEMCipher PEMCipherAES256 => 5;
 
 // rfc1423Algos holds a slice of the possible ways to encrypt a PEM
 // block. The ivSize numbers were taken from the OpenSSL source.
-internal static ж<slice<rfc1423Algo>> Ꮡrfc1423Algos = new(new rfc1423Algo[]{new(
+internal static ж<slice<rfc1423Algo>> Ꮡrfc1423Algos = new StandardBox<slice<rfc1423Algo>>(new rfc1423Algo[]{new(
     cipher: PEMCipherDES,
     name: "DES-CBC"u8,
     cipherFunc: des.NewCipher,

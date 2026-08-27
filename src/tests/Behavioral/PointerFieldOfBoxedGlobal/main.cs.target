@@ -37,7 +37,7 @@ internal static void appendInt(ref slice<nint> s, nint v) {
     internal ж<profBuf> log;
 }
 
-internal static ж<cpuProfile> Ꮡcpuprof = new(default(cpuProfile));
+internal static ж<cpuProfile> Ꮡcpuprof = new StandardBox<cpuProfile>(default(cpuProfile));
 internal static ref cpuProfile cpuprof => ref Ꮡcpuprof.Value;
 
 internal static void incr(ref nint p) {

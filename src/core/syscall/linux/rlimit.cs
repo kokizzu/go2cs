@@ -16,7 +16,7 @@ partial class syscall_package {
 }
 
 // origRlimitNofile, if non-nil, is the original soft RLIMIT_NOFILE.
-internal static ж<atomic.Pointer<Rlimit>> ᏑorigRlimitNofile = new(default(atomic.Pointer<Rlimit>));
+internal static ж<atomic.Pointer<Rlimit>> ᏑorigRlimitNofile = new StandardBox<atomic.Pointer<Rlimit>>(default(atomic.Pointer<Rlimit>));
 internal static ref atomic.Pointer<Rlimit> origRlimitNofile => ref ᏑorigRlimitNofile.Value;
 
 // Some systems set an artificially low soft limit on open file count, for compatibility

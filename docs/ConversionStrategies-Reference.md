@@ -8179,7 +8179,9 @@ Every one of the four is an ADDITION to the existing trigger set rather than a r
 
 ### The `comparable` constraint
 
-Go's built-in `comparable` admits every `==`-able Go type — numerics, strings, pointers, channels, and comparable structs/arrays/interfaces. No C# constraint can express that set: golib's old `comparable<T>` CRTP interface was implemented by *nothing* (every real instantiation failed — `maps.Keys[M ~map[K]V, K comparable]` could not be used at all), and lifting `IEqualityOperators` would reject structs, which Go admits. A `comparable` type parameter therefore emits **no C# constraint** beyond the standard `new()` — `where K : /* comparable */ new()` — relying on the two facts that make it sound: Go's checker already validated every instantiation, and emitted equality on type parameters routes through `AreEqual`, never operator `==`.
+Go's built-in `comparable` admits every `==`-able Go type — numerics, strings, pointers, channels, and comparable structs/arrays/interfaces. No C# constraint can express that set: golib's old `comparable<T>` CRTP interface was implemented by *nothing* (every real instantiation failed — `maps.Keys[M ~map[K]V, K comparable]` could not be used at all), and lifting `IEqualityOperators` would reject structs, which Go admits. A `comparable` type parameter therefore emits **no C# constraint at all** — no `where` clause — relying on the two facts that make it sound: Go's checker already validated every instantiation, and emitted equality on type parameters routes through `AreEqual`, never operator `==`.
+
+Until the B1 per-kind box split (2026-08-26) this arm emitted `where K : /* comparable */ new()`. The `new()` was a holdover nothing needed — golib's `@new<T>` constructs through the runtime, and no comparable-constrained body in the corpus constructs its parameter — and the split turned it from dead weight into a defect: Go pointers are comparable, a Go pointer type argument instantiates at the abstract `ж<T>`, and no abstract class satisfies a constructor constraint. `unique`'s `HashTrieMap[*abi.Type, any]` was the corpus witness (CS0310); `slices`/`maps`/`cmp` instantiations at pointer element types were the latent class behind it. Guarded by the corpus compile plus the `Constraints`-family behavioral goldens, which now pin the clause-free form.
 
 An interface that **embeds** `comparable` inherits that fact whole, and both sides of the emission
 have to say so. `type netipTypeCmp interface { comparable; netipType }` (net/netip's `fuzz_test.go`)
@@ -8216,7 +8218,7 @@ A generic `[GoType]` struct's synthesized `Equals` (see [Struct Types](#struct-t
 the struct's TYPE PARAMETERS: unless every parameter carried an `IEqualityOperators`-implementing
 constraint (and, stricter still, every *constraint* of every parameter implemented it), the whole
 struct's `Equals` body was the constant **`false /* missing equality constraints */`**. Since a
-`comparable` parameter deliberately emits no C# constraint beyond `new()` (previous subsection),
+`comparable` parameter deliberately emits no C# constraint (previous subsection),
 essentially every generic struct in the corpus — all 22 generic `[GoType]` declarations at the time
 of the fix — carried a constant-false `Equals`, breaking equality that never depended on the
 parameter at all. `unique.Handle[T]`'s only field is `*T` (`ж<T>`), whose pointer-identity `==` is

@@ -18,7 +18,7 @@ partial class main_package {
     internal sub inner;
 }
 
-internal static ж<array<item>> Ꮡpool = new(new array<item>(3));
+internal static ж<array<item>> Ꮡpool = new StandardBox<array<item>>(new array<item>(3));
 internal static ref array<item> pool => ref Ꮡpool.Value;
 
 
@@ -26,7 +26,7 @@ internal static ref array<item> pool => ref Ꮡpool.Value;
     internal sub cell;
     internal array<byte> pad = new(4);
 }
-internal static ж<array<gridᴛ1>> Ꮡgrid = new(new array<gridᴛ1>(3, () => new()));
+internal static ж<array<gridᴛ1>> Ꮡgrid = new StandardBox<array<gridᴛ1>>(new array<gridᴛ1>(3, () => new()));
 internal static ref array<gridᴛ1> grid => ref Ꮡgrid.Value;
 
 internal static void setInt(ref nint p) {
