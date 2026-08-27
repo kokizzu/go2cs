@@ -4,7 +4,7 @@
 // production types and no production class partial may be declared here. The first —
 // and only — class is the test metadata class the go2cs-gen generators anchor
 // generated adapters and partials to.
-global using static global::go.crypto.@internal.edwards25519.field_package;
+global using static global::go.crypto.@internal.edwards25519_package;
 
 // <ImportedTypeAliases>
 global using bigꓸInt = go.math.big_package.ΔInt;
@@ -14,18 +14,23 @@ global using reflectꓸKind = go.reflect_package.ΔKind;
 global using reflectꓸMethod = go.reflect_package.ΔMethod;
 global using reflectꓸType = go.reflect_package.ΔType;
 global using reflectꓸValue = go.reflect_package.ΔValue;
+using testing = go.testing_package;
 // </ImportedTypeAliases>
 
 using go;
-using static global::go.crypto.@internal.edwards25519.field_internal_test_package;
+using static global::go.crypto.@internal.edwards25519_internal_test_package;
 
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
+[assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
+[assembly: GoImplicitConv<global::go.crypto.@internal.edwards25519_package.Point, ж<global::go.crypto.@internal.edwards25519_package.Point>>(Indirect = true)]
+[assembly: GoImplicitConv<global::go.crypto.@internal.edwards25519_package.affineCached, ж<global::go.crypto.@internal.edwards25519_package.affineCached>>(Indirect = true)]
+[assembly: GoImplicitConv<global::go.crypto.@internal.edwards25519_package.projCached, ж<global::go.crypto.@internal.edwards25519_package.projCached>>(Indirect = true)]
 // </ImplicitConversions>
 
 // Go source positions are recorded here, one `GoPositionMap` attribute per converted
@@ -36,14 +41,17 @@ using static global::go.crypto.@internal.edwards25519.field_internal_test_packag
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_alias_test.go", "fe_alias_test.cs", "ABgYgqK2gIK4gIK4uIKyxoCCuIKAgraCgIK4gIK4goCCtoKAgraCgIK4AAkcAAoCABAwggALIIKUtLSC")]
-[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_test.go", "fe_test.cs", "AEcogqqigoKUpqKCAClWogAIEqKClKrCroLEgoKWgoKCgoSWgILIgoKCgoKWgoKCgpaCgoKCgoKCggAJCIKiqISUgIKmorqCgpSAgqgACR6ygoKCyoKClKaCsoSCgoSCloKElICCyrKCloKigoKUgqiCpoKCgpSokoSCgoKClIKopoKCgIIABBL+0oKUgoKEgpaEgoKUhIKEgriCkpSCgpaCgriCkoKUgoKEgpaEgoKUhIKChIKWkoKAgqTIgpKUlIKEgpaEgpaEgriCkoKCloKEgoKWloCCAAsIhAAnXIKCgoKCgsqCkoKEgoSClpaAgqaCuIKCkpSChIKWloCCyIKCkpKSlIKEgoKWmICCyIKCgpQ=")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/edwards25519_test.go", "edwards25519_test.cs", "ADUkooKCsoKCgorSgoKCpoKCgsrGgoKAgqSAgqSCpgAIBoKEgoKCgoKUhIKCgoKUgpSClNaCggAICJSCgoCCpKSk9oIAjgGoArKSgoKUgoKUgpSAgqTugoSAgoKCgoKUyIKCgpSmooKCgoKC")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/scalar_alias_test.go", "scalar_alias_test.cs", "ABIYgqK2gIK4gIK4lrLGgIK4goCCtoKAgriAgriCgIK2goCCtoKAgriWABAE1tbW5urqqoKC")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/scalar_test.go", "scalar_test.cs", "ACYmooKClAAMEsKCgsa0toK2goK6ggAIBpKSlKaCkpSAgsiCtIKAgqSClICCpqKAgqSUgIKmgoKCgIKkpMiCgoKygoKClIKClICCyJaCgoKCgIKmgoKCgoCCpoKCgoKAgsiCgoKUpoK0koKGkoKCgoSEloCCyIKkkoaSgoSWgILIgt4ACRaEgoLugoKCgoKkpoKClII=")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/scalarmult_test.go", "scalarmult_test.cs", "ABMmgoKCgoKUhIKCgpTWgoKCgpSmgoKCgpSmgoKCgoKUgoKClKaCooKCsoKCgoKCloCCyKiSkoKEgoSEloCCyKaEgoKCgoKUlIKogoKClIKCuIKSkoKCgpaAgviCgoSCuIKitISCgoSCloCCzLKEgriihIK4ooSC")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/tables_test.go", "tables_test.cs", "AAoWgoKEooKCloKEgoKCgoKEgriCgoSigoKWgoSCgoKCgoSCuIKChLKCgoKWgoKEgoKChIKCgoSCuIKChLKCgoKWgoKEgoKChIKCgoSC")]
 // </GoSourcePositionMaps>
 
-namespace go.crypto.@internal.edwards25519;
+namespace go.crypto.@internal;
 
-[GoPackage("field")]
-public static partial class field_internal_test_package
+[GoPackage("edwards25519")]
+public static partial class edwards25519_internal_test_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
