@@ -104,19 +104,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **179 / 215 testable packages validated — 83.3%**
+> ### Phase 4 progress: **180 / 215 testable packages validated — 83.7%**
 >
-> **21,724 matching test verdicts · 111 disclosed** *(updated 2026-08-27 — maintained as part of the
+> **21,778 matching test verdicts · 112 disclosed** *(updated 2026-08-27 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 179 / 208 — 86.1%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 180 / 208 — 86.5%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 26 of 179 rows validated at their Linux counts** — 12,848 matching verdicts · 20 disclosed.
+> **Linux: 26 of 180 rows validated at their Linux counts** — 12,848 matching verdicts · 20 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -182,6 +182,7 @@ summed from the columns.
 | [`crypto/internal/alias`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/alias) | 1 | | The buffer-overlap predicate every cipher mode's in-place guard is built on, over the full offset matrix. · [proof](validation/current/crypto.internal.alias.md) |
 | [`crypto/internal/bigmod`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/bigmod) | 14 | | Constant-time modular arithmetic on big naturals — Montgomery domain round-trips, `Exp`, modular add/sub identities, limb expansion and `SetBytes` bounds, all on the `purego` word-at-a-time path. · [proof](validation/current/crypto.internal.bigmod.md) |
 | [`crypto/internal/boring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/boring) | 3 |  | The not-BoringCrypto build's own contract — `Enabled` false, and the `Unreachable`/`UnreachableExceptTests` guards that a BoringCrypto-only path must never execute staying quiet under it. · [proof](validation/current/crypto.internal.boring.md) |
+| [`crypto/internal/edwards25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/edwards25519) | 54 | 1 | The edwards25519 group law behind Ed25519 and X25519 — generator/identity arithmetic against Dalek-derived vectors, `ScalarBaseMult`/`ScalarMult`/`VarTimeDoubleScalarBaseMult` cross-checked against each other and against `crypto/elliptic`-independent references, scalar field arithmetic with `SetUniformBytes`' 64-byte wide reduction, aliasing-safety sweeps over every receiver/argument overlap, and the lookup-table selectors. The one disclosure is the nistec shape at small scale: `TestAllocations` wants zero over a point addition plus encode round-trips, where Go stack-allocates every temporary and the managed model's 98 golib boxes per run are structural. · [proof](validation/current/crypto.internal.edwards25519.md) |
 | [`crypto/internal/edwards25519/field`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/edwards25519/field) | 16 |  | The Ed25519 base field mod 2²⁵⁵−19 — the 51-bit limb representation's carry propagation and 64×64→128 multiply, `Multiply`/`Square`/`Invert`/`SqrtRatio`, constant-time `Select`/`Swap`, canonical `SetBytes`/`Bytes` round-trips at the edge cases, and `TestBytesBigEquivalence`, which cross-checks the whole encoding against `math/big` over randomized inputs — the row the `array<T>` unshaped-instance class held. `TestAliasing` additionally drives every method with its receiver aliasing an argument. · [proof](validation/current/crypto.internal.edwards25519.field.md) |
 | [`crypto/internal/hpke`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/hpke) | 19 |  | Hybrid public-key encryption against the RFC 9180 vector set — DHKEM(X25519, HKDF-SHA256) base-mode setup over both AEADs, the exporter secret, and `Seal`/`Open` at every sequence number in the vectors including the 255→256 nonce-width boundary; the P-256/P-521 suites reach Go's own `SupportedKEMs` guard and skip identically on both sides. The whole vector set is `encoding/json`-decoded into a slice of a converter-**lifted anonymous struct** — the shape that held this package until the lift's element Kind reached `Unmarshal`. · [proof](validation/current/crypto.internal.hpke.md) |
 | [`crypto/internal/mlkem768`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/mlkem768) | 12 |  | ML-KEM-768 (Kyber) end to end — the mod-3329 field arithmetic checked EXHAUSTIVELY (`TestFieldReduce` walks all 2q² inputs; add/sub/mul walk every ordered pair below q), compress/decompress at every bit width against a `math/big` rational reference, the ζ and γ constant tables re-derived by modular exponentiation, key-generation/encapsulate/decapsulate round trips, and the encapsulation-key/ciphertext length-validation matrix. `TestPQCrystalsAccumulated` drives 10,000 reference-implementation vectors through the full KEM and checks the accumulated SHAKE-128 digest — 417 s of this row's runtime, and the reason it exists: it is the operational guard for the hand-owned `sha3` array-reinterpret fix, which the vendored package's own sources cannot provide. · [proof](validation/current/crypto.internal.mlkem768.md) |
