@@ -16,7 +16,7 @@ partial class xcoff_internal_test_package {
     internal slice<@string> needed;
 }
 
-internal static ж<slice<fileTest>> ᏑfileTests = new(new fileTest[]{
+internal static ж<slice<fileTest>> ᏑfileTests = new StandardBox<slice<fileTest>>(new fileTest[]{
     new(
         "testdata/gcc-ppc32-aix-dwarf2-exec"u8,
         new FileHeader(U802TOCMAGIC),

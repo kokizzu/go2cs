@@ -12,6 +12,12 @@ using static go.html.template_package;
 
 partial class template_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string aHrefExampleComFooˢ = @"a[href =~ ""//example.com""]#foo"u8;
 internal static readonly @string helloBWorldBAmpTcˢ = @"Hello, <b>World</b> &amp;tc!"u8;

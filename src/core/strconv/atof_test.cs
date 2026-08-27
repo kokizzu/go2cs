@@ -16,6 +16,24 @@ using strconv = strconv_package;
 
 partial class strconv_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
+    builtin.initPackage(typeof(go.math.rand_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 [GoType] partial struct atofTest {
     internal @string @in;
     internal @string @out;
@@ -91,7 +109,7 @@ partial class strconv_test_package {
 // (15497564393479157p+46, should round to even 15497564393479156p+46, issue 36657)
 // slightly above, rounds up
 // Underscores.
-internal static ж<slice<atofTest>> Ꮡatoftests = new(new atofTest[]{
+internal static ж<slice<atofTest>> Ꮡatoftests = new StandardBox<slice<atofTest>>(new atofTest[]{
     new(""u8, "0"u8, ErrSyntax),
     new("1"u8, "1"u8, default!),
     new("+1"u8, "1"u8, default!),
@@ -389,7 +407,7 @@ internal static ref slice<atofTest> atoftests => ref Ꮡatoftests.ValueSlot;
 // The float32 before is 16777215p+68 = 4.95175986e+27
 // The halfway is 4.951760009. A bad algorithm that thinks the previous
 // float32 is 8388607p+69 will shorten incorrectly to 4.95176e+27.
-internal static ж<slice<atofTest>> Ꮡatof32tests = new(new atofTest[]{
+internal static ж<slice<atofTest>> Ꮡatof32tests = new StandardBox<slice<atofTest>>(new atofTest[]{
     new("0x1p-100"u8, "7.888609e-31"u8, default!),
     new("0x1p100"u8, "1.2676506e+30"u8, default!),
     new("1.000000059604644775390625"u8, "1"u8, default!),
@@ -452,7 +470,7 @@ internal static ref slice<atofTest> atof32tests => ref Ꮡatof32tests.ValueSlot;
     internal @string s;
 }
 
-internal static ж<Δsync.Once> ᏑatofOnce = new(default(Δsync.Once));
+internal static ж<Δsync.Once> ᏑatofOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once atofOnce => ref ᏑatofOnce.Value;
 internal static slice<atofSimpleTest> atofRandomTests;
 internal static array<@string> benchmarksRandomBits = new(1024);

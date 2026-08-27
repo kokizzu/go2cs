@@ -22,6 +22,18 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class template_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸflag() {
+    builtin.initPackage(typeof(flag_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 internal static ж<bool> debug = flag.Bool("debug"u8, false, "show the errors produced by the tests"u8);
 
 // T has lots of interesting pieces to use to test execution.
@@ -135,7 +147,7 @@ public static @string Error(this ж<W> Ꮡw) {
     return fmt.Sprintf("[%d]"u8, w.k);
 }
 
-internal static ж<I> ᏑsiVal = new(((I)new S(new @string[]{"a"u8, "b"u8}.slice())));
+internal static ж<I> ᏑsiVal = new StandardBox<I>(((I)new S(new @string[]{"a"u8, "b"u8}.slice())));
 internal static ref I siVal => ref ᏑsiVal.ValueSlot;
 
 // leave V2 as nil
@@ -207,7 +219,7 @@ internal static slice<ж<T>> tSliceOfNil = new ж<T>[]{default!}.slice();
     @string Method0();
 }
 
-internal static ж<I> ᏑiVal = new(new template_internal_test_package.TжI(tVal));
+internal static ж<I> ᏑiVal = new StandardBox<I>(new template_internal_test_package.TжI(tVal));
 internal static ref I iVal => ref ᏑiVal.ValueSlot;
 
 // Helpers for creation.

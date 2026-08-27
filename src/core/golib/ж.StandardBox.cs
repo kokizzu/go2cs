@@ -167,6 +167,4 @@ public class StandardBox<T> : ж<T>
 
     // FieldInfo access for the contracts IL builder (ж.Contracts.cs) — the fields the split moved
     // here from the old single-class box; the builder targets THIS type now.
-    internal const string ValueFieldName = nameof(m_val);
-    internal const string SlotFieldName = nameof(m_slot);
 }

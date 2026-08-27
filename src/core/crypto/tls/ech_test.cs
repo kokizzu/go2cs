@@ -10,6 +10,12 @@ using static go.crypto.tls_package;
 
 partial class tls_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
+    builtin.initPackage(typeof(encoding.hex_package));
+}
+
 [GoType("dyn")] internal partial struct TestDecodeECHConfigLists_type {
     internal @string list;
     internal nint numConfigs;

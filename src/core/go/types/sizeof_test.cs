@@ -9,6 +9,12 @@ using static global::go.go.types_package;
 
 partial class types_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 [GoType("dyn")] internal partial struct TestSizeof_type {
     internal any val;     // type as a value
     internal uintptr _32bit; // size on 32bit platforms

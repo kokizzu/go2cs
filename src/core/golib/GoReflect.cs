@@ -135,14 +135,42 @@ public static partial class GoReflect
             value = interfaceAdapter.Value;
 
         if (value is IжAdapter { Box: not null } pointerAdapter)
-            return pointerAdapter.Box.GetType();
+            return CanonicalBoxType(pointerAdapter.Box.GetType());
 
         // A value-sourced adapter (IValueAdapter) wraps a COPY of a struct this assembly cannot
         // partial — Go's dynamic type is that struct, never the adapter class.
         if (value is IValueAdapter { Value: not null } valueAdapter)
             return valueAdapter.Value.GetType();
 
-        return value.GetType();
+        return CanonicalBoxType(value.GetType());
+    }
+
+    /// <summary>
+    /// Canonicalizes a per-kind box class to the one <c>ж&lt;T&gt;</c> identity Go's <c>*T</c> has.
+    /// </summary>
+    /// <remarks>
+    /// Under the B1 per-kind split, one Go pointer type is FOUR managed classes (standard, field
+    /// reference, element reference, native address), and the R10 interning law above — one Go type,
+    /// one canonical <c>reflect.Type</c> — must hold across them: <c>reflect.DeepEqual(&amp;x.f,
+    /// &amp;table[i])</c> compares a field-ref box against a standard box and dies at DeepEqual's
+    /// <c>v1.Type() != v2.Type()</c> gate if each kind interns its own descriptor
+    /// (debug/plan9obj's <c>TestOpen</c> was the witness — four banked binary-format suites turned
+    /// red on exactly this). The walked <c>ж&lt;T&gt;</c> base IS that identity.
+    /// <c>unsafe.Pointer</c> is exempt by its marker, as at every walk site: it is Go's one NAMED
+    /// pointer type, and its identity is its own.
+    /// </remarks>
+    internal static Type CanonicalBoxType(Type type)
+    {
+        if (typeof(IUnsafePointer).IsAssignableFrom(type))
+            return type;
+
+        for (Type? walk = type; walk is not null; walk = walk.BaseType)
+        {
+            if (walk.IsGenericType && walk.GetGenericTypeDefinition() == typeof(ж<>))
+                return walk;
+        }
+
+        return type;
     }
 
     /// <summary>

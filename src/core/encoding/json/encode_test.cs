@@ -20,6 +20,18 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class json_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸlog() {
+    builtin.initPackage(typeof(log_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() {
+    builtin.initPackage(typeof(go.runtime.debug_package));
+}
+
 [GoType] public partial struct Optionals {
     [GoTag(@"json:""sr""")]
     public @string Sr;

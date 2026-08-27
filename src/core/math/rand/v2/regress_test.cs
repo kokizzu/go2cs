@@ -27,6 +27,24 @@ using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸflag() {
+    builtin.initPackage(typeof(flag_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸformat() {
+    builtin.initPackage(typeof(global::go.go.format_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
 internal static ж<bool> update = flag.Bool("update"u8, false, "update golden results for regression test"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

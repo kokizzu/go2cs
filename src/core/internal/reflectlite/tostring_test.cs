@@ -14,6 +14,12 @@ using static global::go.@internal.reflectlite_internal_test_package;
 
 partial class reflectlite_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 // valueToString returns a textual representation of the reflection value val.
 // For debugging only.
 internal static @string valueToString(reflectlite.Value v) {

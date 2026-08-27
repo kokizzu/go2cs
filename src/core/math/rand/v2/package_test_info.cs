@@ -51,13 +51,13 @@ using static global::go.math.rand.rand_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("math/rand/v2/auto_test.go", "auto_test.cs", "AA0g2LKC3oKCgoKCgoI=")]
-[assembly: global::go.GoPositionMap("math/rand/v2/chacha8_test.go", "chacha8_test.cs", "ABYigoKCgIK4goKAgtqCgoSCgIKkpIKAgqaChIKAgqSCgIKmgoSAgqSmgoKCgoKUgpSAgraCgpSCgoCCpKSUgILIgoKCgoKUgpSCgIKkgILagoKCgoKUgpSCgIKkuKKCgoKUpqKCgoKCgoKU")]
-[assembly: global::go.GoPositionMap("math/rand/v2/example_test.go", "example_test.cs", "ABUmogAVLAAPCviWgpKSqIKWlrqCgqiCgpYABR4ADAKCAAMQxJbWgoKSlKaCgpSigpSCuIKCgg==")]
+[assembly: global::go.GoPositionMap("math/rand/v2/auto_test.go", "auto_test.cs", "ABkg2LKC3oKCgoKCgoI=")]
+[assembly: global::go.GoPositionMap("math/rand/v2/chacha8_test.go", "chacha8_test.cs", "ADQigoKCgIK4goKAgtqCgoSCgIKkpIKAgqaChIKAgqSCgIKmgoSAgqSmgoKCgoKUgpSAgraCgpSCgoCCpKSUgILIgoKCgoKUgpSCgIKkgILagoKCgoKUgpSCgIKkuKKCgoKUpqKCgoKCgoKU")]
+[assembly: global::go.GoPositionMap("math/rand/v2/example_test.go", "example_test.cs", "ADMmogAVLAAPCviWgpKSqIKWlrqCgqiCgpYABR4ADAKCAAMQxJbWgoKSlKaCgpSigpSCuIKCgg==")]
 [assembly: global::go.GoPositionMap("math/rand/v2/pcg_test.go", "pcg_test.cs", "AA0YooKCgpSmgoKqgoKCloKAgqSCloKCgriCggAVLoKAgg==")]
-[assembly: global::go.GoPositionMap("math/rand/v2/race_test.go", "race_test.cs", "AAwewpiCgoKCooKCgoKCgoKCgoKCgoKm")]
-[assembly: global::go.GoPositionMap("math/rand/v2/rand_test.go", "rand_test.cs", "ACxEgoKSlM7CgoKClIKCgpSmgoKSgoKUgoKmgoKCgoK4goKCgoKCgpSUAAMQsoKCgpSmloKClpaWqpKCuIKCgoKClIKCgoKCAAYWsoKCgpSmlpKUgoKWlpaqkoK4goKCgoIABRTygqyCgoSCgoKCgoKCgoKCgoKUpsKCrIKChIKCgoKCgoKCgoKCgpSssoKClJSCgqassoKClJSCgqamgoKAgqSAgqSAgsiCgoCCpICCpICC+IKUqtTWlLiCloKCgoLKlIKSgM7EgoKCgsqCgoKClPiSgoKClJKkgoKoggAKEIKUkJKostqCgpSChJKCgqaCgoKClIKokoKCgoIAChaCpqKCgoKUpqKCgpSmgoKCgpS4ooKClKaCgoKClLiigoKClMqigpSmooKCgpSmooKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgpSmooKCgpSmooKCgpSmooKCgpSmooKCgpSoooKCgpSmooKCgoKClJCSlKrCgoKCgtyCgoKCgqKCguimgoKCgg==")]
-[assembly: global::go.GoPositionMap("math/rand/v2/regress_test.go", "regress_test.cs", "ACM6ooKCgoKEgoKCgpSCgpSCgoKCgoKUgoKCgoKqgoKUgriCgpSClLaClIKCgoKUgpSmpqamAAJbAAJggpaCgoKUgpSCgoKUpJSUpJSCgpSClIKmpoL4woKWgpKWgoKUkpSigoKClIKCloKCgoKoloIABRoACgKCgoKClIKClIKClIKCgpSAgg==")]
+[assembly: global::go.GoPositionMap("math/rand/v2/race_test.go", "race_test.cs", "ABIewpiCgoKCooKCgoKCgoKCgoKCgoKm")]
+[assembly: global::go.GoPositionMap("math/rand/v2/rand_test.go", "rand_test.cs", "AEpEgoKSlM7CgoKClIKCgpSmgoKSgoKUgoKmgoKCgoK4goKCgoKCgpSUAAMQsoKCgpSmloKClpaWqpKCuIKCgoKClIKCgoKCAAYWsoKCgpSmlpKUgoKWlpaqkoK4goKCgoIABRTygqyCgoSCgoKCgoKCgoKCgoKUpsKCrIKChIKCgoKCgoKCgoKCgpSssoKClJSCgqassoKClJSCgqamgoKAgqSAgqSAgsiCgoCCpICCpICC+IKUqtTWlLiCloKCgoLKlIKSgM7EgoKCgsqCgoKClPiSgoKClJKkgoKoggAKEIKUkJKostqCgpSChJKCgqaCgoKClIKokoKCgoIAChaCpqKCgoKUpqKCgpSmgoKCgpS4ooKClKaCgoKClLiigoKClMqigpSmooKCgpSmooKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgoKUpqKCgoKClKaigoKCgpSmooKCgpSmooKCgpSmooKCgpSmooKCgpSmooKCgpSoooKCgpSmooKCgoKClJCSlKrCgoKCgtyCgoKCgqKCguimgoKCgg==")]
+[assembly: global::go.GoPositionMap("math/rand/v2/regress_test.go", "regress_test.cs", "ADU6ooKCgoKEgoKCgpSCgpSCgoKCgoKUgoKCgoKqgoKUgriCgpSClLaClIKCgoKUgpSmpqamAAJbAAJggpaCgoKUgpSCgoKUpJSUpJSCgpSClIKmpoL4woKWgpKWgoKUkpSigoKClIKCloKCgoKoloIABRoACgKCgoKClIKClIKClIKCgpSAgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.math.rand;

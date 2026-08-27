@@ -57,7 +57,7 @@ using static global::go.encoding.gob_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/gob/example_interface_test.go", "example_interface_test.cs", "ABQmggAGFLK6loKCqIKCggAGFAANDoKC6paigoKU")]
+[assembly: go.GoPositionMap("encoding/gob/example_interface_test.go", "example_interface_test.cs", "ADImggAGFLK6loKCqIKCggAGFAANDoKC6paigoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;

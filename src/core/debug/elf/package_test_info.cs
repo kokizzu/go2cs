@@ -51,8 +51,8 @@ using static global::go.debug.elf_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/elf/elf_test.go", "elf_test.cs", "ACtYgoKCgg==")]
-[assembly: go.GoPositionMap("debug/elf/file_test.go", "file_test.cs", "AMgDiAeigoSCgoKCgIK2lIKClJKCgpSCgpSCgqaCgpSCgqaCgoKUgoKClIKCgpSClIKCgpSCpoKUggAIEMKCgpSSgoKUgoIAxQOGB4KCkpKCgoKUgoKUgoKCgpSCgoKmgoKClIKUgoKUggAJDqaCgpSCgpSCgoKCgpSClJSC+KaCgpSCAA4ggoKUgqiigoCCpICCpIKUgoKClKSkpIKClIKogoKUgoKUgoKClKaCuLSUpIKCgoKUgoKCpoKCgpSCuoKogoKElIIACQ6igoKClJSChIKCloKCgoLsADZohIKEAAoWlqiCgqiCgpSCgqiCgoKCgoKClIKClIKCqJQABxAABxAABxCCAAcQpgAJFO4AChYACRQABxAABxKEgoKUlAAIEoKWgoKWAAgSguiCiIKCuKKCgoKUlIKCloLohJKCgpSEgoKWgoKEgoKUgpSCgoSChIKCloKCgrjCgoKClJKCgoKClIL6woKCgpSSgoKCgpSC")]
+[assembly: go.GoPositionMap("debug/elf/elf_test.go", "elf_test.cs", "ADdYgoKCgg==")]
+[assembly: go.GoPositionMap("debug/elf/file_test.go", "file_test.cs", "AKIEiAeigoSCgoKCgIK2lIKClJKCgpSCgpSCgqaCgpSCgqaCgoKUgoKClIKCgpSClIKCgpSCpoKUggAIEMKCgpSSgoKUgoIAxQOGB4KCkpKCgoKUgoKUgoKCgpSCgoKmgoKClIKUgoKUggAJDqaCgpSCgpSCgoKCgpSClJSC+KaCgpSCAA4ggoKUgqiigoCCpICCpIKUgoKClKSkpIKClIKogoKUgoKUgoKClKaCuLSUpIKCgoKUgoKCpoKCgpSCuoKogoKElIIACQ6igoKClJSChIKCloKCgoLsADZohIKEAAoWlqiCgqiCgpSCgqiCgoKCgoKClIKClIKCqJQABxAABxAABxCCAAcQpgAJFO4AChYACRQABxAABxKEgoKUlAAIEoKWgoKWAAgSguiCiIKCuKKCgoKUlIKCloLohJKCgpSEgoKWgoKEgoKUgpSCgoSChIKCloKCgrjCgoKClJKCgoKClIL6woKCgpSSgoKCgpSC")]
 [assembly: go.GoPositionMap("debug/elf/symbols_test.go", "symbols_test.cs", "AA0ekqKCgoKCgIK2lIKClJKCgoKklILWgpSC")]
 // </GoSourcePositionMaps>
 

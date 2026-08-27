@@ -21,6 +21,12 @@ using static global::go.go.types_internal_test_package;
 
 partial class types_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
+    builtin.initPackage(typeof(global::go.@internal.godebug_package));
+}
+
 internal static void testEval(ж<testing.T> Ꮡt, ж<token.FileSet> Ꮡfset, ж<types.Package> Ꮡpkg, tokenꓸPos pos, @string expr, typesꓸType typ, @string typStr, @string valStr) {
     var (gotTv, err) = Eval(Ꮡfset, Ꮡpkg, pos, expr);
     if (err != default!) {

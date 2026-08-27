@@ -16,6 +16,24 @@ using static go.crypto.tls_package;
 
 partial class tls_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸmlkem768() {
+    builtin.initPackage(typeof(go.crypto.@internal.mlkem768_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸhash() {
+    builtin.initPackage(typeof(hash_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
 // This file contains tests derived from draft-ietf-tls-tls13-vectors-07.
 internal static slice<byte> parseVector(@string v) {
     v = strings.Map((rune c) => {

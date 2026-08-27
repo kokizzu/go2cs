@@ -21,6 +21,36 @@ using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
+    builtin.initPackage(typeof(@internal.testenv_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(global::go.sync.atomic_package));
+}
+
 internal static UntypedInt numTestSamples => 10000;
 
 internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ1ʗ = rand_internal_test_package.GetNormalDistributionParameters();
@@ -505,7 +535,7 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
 }
 
 // Benchmarks
-public static ж<uint64> ᏑSink = new(default(uint64));
+public static ж<uint64> ᏑSink = new StandardBox<uint64>(default(uint64));
 public static ref uint64 Sink => ref ᏑSink.Value;
 
 internal static ж<rand.Rand> testRand() {

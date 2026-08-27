@@ -9,6 +9,12 @@ using static go.os.exec_package;
 
 partial class exec_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
 [GoType("dyn")] internal partial struct TestPrefixSuffixSaver_tests {
     public nint N;
     internal slice<@string> writes;

@@ -13,6 +13,12 @@ using static go.@internal.zstd_package;
 
 partial class zstd_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 
 [GoType("dyn")] partial struct xxHashTestsᴛ1 {
     internal @string data;

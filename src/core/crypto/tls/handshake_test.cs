@@ -31,6 +31,24 @@ using static go.crypto.tls_package;
 
 partial class tls_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbufio() {
+    builtin.initPackage(typeof(bufio_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸed25519() {
+    builtin.initPackage(typeof(go.crypto.ed25519_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // TLS reference tests run a connection against a reference implementation
 // (OpenSSL) of TLS and record the bytes of the resulting connection. The Go
 // code, during a test, is configured with deterministic randomness and so the
@@ -378,7 +396,7 @@ internal static @string tempFile(@string contents) {
     internal netꓸAddr addr;
     internal channel<net.Conn> ch;
 }
-internal static ж<localListenerᴛ1> ᏑlocalListener = new(default(localListenerᴛ1));
+internal static ж<localListenerᴛ1> ᏑlocalListener = new StandardBox<localListenerᴛ1>(default(localListenerᴛ1));
 internal static ref localListenerᴛ1 localListener => ref ᏑlocalListener.Value;
 
 internal static UntypedInt localFlakes => 0; // change to 1 or 2 to exercise localServer/localPipe handling of mismatches

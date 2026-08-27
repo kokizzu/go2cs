@@ -28,6 +28,12 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class types_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸdiff() {
+    builtin.initPackage(typeof(global::go.@internal.diff_package));
+}
+
 internal static ж<@string> filesToWrite = flag.String("write"u8, ""u8, @"go/types files to generate, or ""all"" for all files"u8);
 
 internal static readonly @string srcDir = "/src/cmd/compile/internal/types2/"u8;

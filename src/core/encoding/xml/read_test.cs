@@ -15,6 +15,12 @@ using static go.encoding.xml_package;
 
 partial class xml_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // Stripped down Atom feed data structures.
 public static void TestUnmarshalFeed(ж<testing.T> Ꮡt) {
     ref var f = ref heap(new Feed(), out var Ꮡf);

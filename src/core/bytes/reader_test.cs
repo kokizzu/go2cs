@@ -13,6 +13,12 @@ using static go.bytes_internal_test_package;
 
 partial class bytes_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 [GoType("dyn")] partial struct TestReader_tests {
     internal int64 off;
     internal nint seek;

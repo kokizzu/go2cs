@@ -17,6 +17,12 @@ using text.template;
 
 partial class template_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸarchiveꓸzip() {
+    builtin.initPackage(typeof(archive.zip_package));
+}
+
 // User-defined function: test argument evaluator.
 internal static slice<execTest> multiExecTests;
 internal static void initᴛmultiExecTests() { multiExecTests = new execTest[]{

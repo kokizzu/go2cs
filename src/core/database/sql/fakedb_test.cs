@@ -22,6 +22,42 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class sql_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcontext() {
+    builtin.initPackage(typeof(context_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
 // fakeDriver is a fake database that implements Go's driver.Driver
 // interface, just for testing.
 //
@@ -226,7 +262,7 @@ public static void TestDrivers(ж<testing.T> Ꮡt) {
     public partial ref sync_package.Mutex Mutex { get; }
     internal Func<error> fn;
 }
-internal static ж<hookOpenErrᴛ1> ᏑhookOpenErr = new(new hookOpenErrᴛ1(nil));
+internal static ж<hookOpenErrᴛ1> ᏑhookOpenErr = new StandardBox<hookOpenErrᴛ1>(new hookOpenErrᴛ1(nil));
 internal static ref hookOpenErrᴛ1 hookOpenErr => ref ᏑhookOpenErr.Value;
 
 internal static void setHookOpenErr(Func<error> fn) {
@@ -431,7 +467,7 @@ internal static (driver.Tx, error) Begin(this ж<fakeConn> Ꮡc) {
     public partial ref sync_package.Mutex Mutex { get; }
     internal Action<ж<fakeConn>, error> fn;
 }
-internal static ж<hookPostCloseConnᴛ1> ᏑhookPostCloseConn = new(new hookPostCloseConnᴛ1(nil));
+internal static ж<hookPostCloseConnᴛ1> ᏑhookPostCloseConn = new StandardBox<hookPostCloseConnᴛ1>(new hookPostCloseConnᴛ1(nil));
 internal static ref hookPostCloseConnᴛ1 hookPostCloseConn => ref ᏑhookPostCloseConn.Value;
 
 internal static void setHookpostCloseConn(Action<ж<fakeConn>, error> fn) {
@@ -711,7 +747,7 @@ internal static (ж<fakeStmt>, error) prepareInsert(this ж<fakeConn> Ꮡc, cont
 }
 
 // hook to simulate broken connections
-internal static ж<Func<bool>> ᏑhookPrepareBadConn = new(default(Func<bool>));
+internal static ж<Func<bool>> ᏑhookPrepareBadConn = new StandardBox<Func<bool>>(default(Func<bool>));
 internal static ref Func<bool> hookPrepareBadConn => ref ᏑhookPrepareBadConn.ValueSlot;
 
 [GoRecv] internal static (driver.Stmt, error) Prepare(this ref fakeConn c, @string query) {
@@ -853,7 +889,7 @@ internal static (driver.Stmt, error) PrepareContext(this ж<fakeConn> Ꮡc, cont
 internal static error errClosed = errors.New("fakedb: statement has been closed"u8);
 
 // hook to simulate broken connections
-internal static ж<Func<bool>> ᏑhookExecBadConn = new(default(Func<bool>));
+internal static ж<Func<bool>> ᏑhookExecBadConn = new StandardBox<Func<bool>>(default(Func<bool>));
 internal static ref Func<bool> hookExecBadConn => ref ᏑhookExecBadConn.ValueSlot;
 
 [GoRecv] internal static (driver.Result, error) Exec(this ref fakeStmt s, slice<driverꓸValue> args) {
@@ -991,7 +1027,7 @@ internal static (driver.Result, error) execInsert(this ж<fakeStmt> Ꮡs, slice<
 }
 
 // hook to simulate broken connections
-internal static ж<Func<bool>> ᏑhookQueryBadConn = new(default(Func<bool>));
+internal static ж<Func<bool>> ᏑhookQueryBadConn = new StandardBox<Func<bool>>(default(Func<bool>));
 internal static ref Func<bool> hookQueryBadConn => ref ᏑhookQueryBadConn.ValueSlot;
 
 [GoRecv] internal static (driver.Rows, error) Query(this ref fakeStmt s, slice<driverꓸValue> args) {
@@ -1155,7 +1191,7 @@ break_rows:;
 }
 
 // hook to simulate broken connections
-internal static ж<Func<bool>> ᏑhookCommitBadConn = new(default(Func<bool>));
+internal static ж<Func<bool>> ᏑhookCommitBadConn = new StandardBox<Func<bool>>(default(Func<bool>));
 internal static ref Func<bool> hookCommitBadConn => ref ᏑhookCommitBadConn.ValueSlot;
 
 [GoRecv] internal static error Commit(this ref fakeTx tx) {
@@ -1168,7 +1204,7 @@ internal static ref Func<bool> hookCommitBadConn => ref ᏑhookCommitBadConn.Val
 }
 
 // hook to simulate broken connections
-internal static ж<Func<bool>> ᏑhookRollbackBadConn = new(default(Func<bool>));
+internal static ж<Func<bool>> ᏑhookRollbackBadConn = new StandardBox<Func<bool>>(default(Func<bool>));
 internal static ref Func<bool> hookRollbackBadConn => ref ᏑhookRollbackBadConn.ValueSlot;
 
 [GoRecv] internal static error Rollback(this ref fakeTx tx) {

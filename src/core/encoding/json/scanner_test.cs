@@ -14,6 +14,12 @@ using static go.encoding.json_package;
 
 partial class json_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
+    builtin.initPackage(typeof(go.math.rand_package));
+}
+
 internal static @string indentNewlines(@string s) {
     return strings.Join(strings.Split(s, "\n"u8), "\n\t"u8);
 }

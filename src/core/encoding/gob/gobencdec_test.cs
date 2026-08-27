@@ -17,6 +17,12 @@ using static go.encoding.gob_package;
 
 partial class gob_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnet() {
+    builtin.initPackage(typeof(net_package));
+}
+
 // Types that implement the GobEncoder/Decoder interfaces.
 [GoType] public partial struct ByteStruct {
     internal byte a; // not an exported field

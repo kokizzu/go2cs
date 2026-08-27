@@ -10,6 +10,12 @@ using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
 // TestConcurrent exercises the rand API concurrently, triggering situations
 // where the race detector is likely to detect issues.
 public static void TestConcurrent(ж<testing.T> Ꮡt) {

@@ -20,6 +20,36 @@ using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
+    builtin.initPackage(typeof(crypto.sha256_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
+    builtin.initPackage(typeof(encoding.hex_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() {
+    builtin.initPackage(typeof(global::go.testing.iotest_package));
+}
+
 public static void TestChaCha8(ж<testing.T> Ꮡt) {
     var p = NewChaCha8(chacha8seed);
     foreach (var (i, x) in chacha8output) {

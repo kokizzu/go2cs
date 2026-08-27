@@ -23,6 +23,54 @@ using ꓸꓸꓸPoint = Span<reflectlite_test_package.Point>;
 
 partial class reflectlite_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
+    builtin.initPackage(typeof(encoding.base64_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
+    builtin.initPackage(typeof(global::go.@internal.abi_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸinternalꓸreflectlite() {
+    builtin.initPackage(typeof(global::go.@internal.reflectlite_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 public static reflectꓸValue ToValue(reflectlite.Value v) {
     return reflect.ValueOf(reflectlite_internal_test_package.ToInterface(v));
 }
@@ -527,7 +575,7 @@ public static void TestCanSetField(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static ж<nint> Ꮡ_i = new(7);
+internal static ж<nint> Ꮡ_i = new StandardBox<nint>(7);
 internal static ref nint _i => ref Ꮡ_i.Value;
 
 internal static slice<pair> valueToStringTests = new pair[]{
@@ -704,14 +752,14 @@ internal static Action fn3 = () => {
 
 [GoType("ж<Loop>")] partial class Loop;
 
-internal static ж<Loop> Ꮡloop1 = new(default(Loop));
+internal static ж<Loop> Ꮡloop1 = new StandardBox<Loop>(default(Loop));
 internal static ref Loop loop1 => ref Ꮡloop1.ValueSlot;
-internal static ж<Loop> Ꮡloop2 = new(default(Loop));
+internal static ж<Loop> Ꮡloop2 = new StandardBox<Loop>(default(Loop));
 internal static ref Loop loop2 => ref Ꮡloop2.ValueSlot;
 
-internal static ж<Loopy> Ꮡloopy1 = new(default(Loopy));
+internal static ж<Loopy> Ꮡloopy1 = new StandardBox<Loopy>(default(Loopy));
 internal static ref Loopy loopy1 => ref Ꮡloopy1.ValueSlot;
-internal static ж<Loopy> Ꮡloopy2 = new(default(Loopy));
+internal static ж<Loopy> Ꮡloopy2 = new StandardBox<Loopy>(default(Loopy));
 internal static ref Loopy loopy2 => ref Ꮡloopy2.ValueSlot;
 
 [GoInit] internal static void init() {

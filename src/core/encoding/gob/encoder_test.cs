@@ -18,6 +18,30 @@ using static go.encoding.gob_package;
 
 partial class gob_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
+    builtin.initPackage(typeof(go.encoding.hex_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object encoderFailˢ = (@string)"encoder fail:"u8;
 
@@ -470,22 +494,22 @@ public static void TestDefaultsInArray(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static ж<nint> ᏑtestInt = new(default(nint));
+internal static ж<nint> ᏑtestInt = new StandardBox<nint>(default(nint));
 internal static ref nint testInt => ref ᏑtestInt.Value;
 
-internal static ж<float32> ᏑtestFloat32 = new(default(float32));
+internal static ж<float32> ᏑtestFloat32 = new StandardBox<float32>(default(float32));
 internal static ref float32 testFloat32 => ref ᏑtestFloat32.Value;
 
-internal static ж<@string> ᏑtestString = new(default(@string));
+internal static ж<@string> ᏑtestString = new StandardBox<@string>(default(@string));
 internal static ref @string testString => ref ᏑtestString.Value;
 
-internal static ж<slice<@string>> ᏑtestSlice = new(default(slice<@string>));
+internal static ж<slice<@string>> ᏑtestSlice = new StandardBox<slice<@string>>(default(slice<@string>));
 internal static ref slice<@string> testSlice => ref ᏑtestSlice.ValueSlot;
 
-internal static ж<map<@string, nint>> ᏑtestMap = new(default(map<@string, nint>));
+internal static ж<map<@string, nint>> ᏑtestMap = new StandardBox<map<@string, nint>>(default(map<@string, nint>));
 internal static ref map<@string, nint> testMap => ref ᏑtestMap.ValueSlot;
 
-internal static ж<array<nint>> ᏑtestArray = new(new array<nint>(7));
+internal static ж<array<nint>> ᏑtestArray = new StandardBox<array<nint>>(new array<nint>(7));
 internal static ref array<nint> testArray => ref ᏑtestArray.Value;
 
 [GoType] public partial struct SingleTest {

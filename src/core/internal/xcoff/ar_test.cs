@@ -9,6 +9,18 @@ using static go.@internal.xcoff_package;
 
 partial class xcoff_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 [GoType] internal partial struct archiveTest {
     internal @string @file;
     internal global::go.@internal.xcoff_package.ArchiveHeader hdr;
@@ -16,7 +28,7 @@ partial class xcoff_internal_test_package {
     internal slice<global::go.@internal.xcoff_package.FileHeader> membersFileHeader;
 }
 
-internal static ж<slice<archiveTest>> ᏑarchTest = new(default(slice<archiveTest>));
+internal static ж<slice<archiveTest>> ᏑarchTest = new StandardBox<slice<archiveTest>>(default(slice<archiveTest>));
 internal static ref slice<archiveTest> archTest => ref ᏑarchTest.ValueSlot;
 internal static void initᴛarchTest() { archTest = new archiveTest[]{
     new(

@@ -11,6 +11,18 @@ using static go.text.template.parse_package;
 
 partial class parse_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸflag() {
+    builtin.initPackage(typeof(flag_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 internal static ж<bool> debug = flag.Bool("debug"u8, false, "show the errors produced by the main tests"u8);
 
 [GoType] internal partial struct numberTest {

@@ -10,6 +10,18 @@ using static go.crypto.tls_package;
 
 partial class tls_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸcrypto() {
+    builtin.initPackage(typeof(crypto_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 [GoType("dyn")] internal partial struct TestSignatureSelection_tests {
     internal ж<global::go.crypto.tls_package.Certificate> cert;
     internal slice<global::go.crypto.tls_package.SignatureScheme> peerSigAlgs;

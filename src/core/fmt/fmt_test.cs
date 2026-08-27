@@ -21,6 +21,48 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class fmt_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
 [GoType("bool")] partial struct renamedBool;
 
 [GoType("num:nint")] partial struct renamedInt;
@@ -69,15 +111,15 @@ public static void TestFmtInterface(ж<Δtesting.T> Ꮡt) {
 public static float64 NaN = Δmath.NaN();
 internal static float64 posInf = Δmath.Inf(1);
 internal static float64 negInf = Δmath.Inf(-1);
-internal static ж<nint> ᏑintVar = new(0);
+internal static ж<nint> ᏑintVar = new StandardBox<nint>(0);
 internal static ref nint intVar => ref ᏑintVar.Value;
-internal static ж<array<nint>> ᏑΔarray = new(new nint[]{1, 2, 3, 4, 5}.array());
+internal static ж<array<nint>> ᏑΔarray = new StandardBox<array<nint>>(new nint[]{1, 2, 3, 4, 5}.array());
 internal static ref array<nint> Δarray => ref ᏑΔarray.Value;
-internal static ж<array<any>> Ꮡiarray = new(new any[]{(nint)(1), (@string)"hello"u8, 2.5D, default!}.array());
+internal static ж<array<any>> Ꮡiarray = new StandardBox<array<any>>(new any[]{(nint)(1), (@string)"hello"u8, 2.5D, default!}.array());
 internal static ref array<any> iarray => ref Ꮡiarray.Value;
-internal static ж<slice<nint>> ᏑΔslice = new(Δarray[..]);
+internal static ж<slice<nint>> ᏑΔslice = new StandardBox<slice<nint>>(Δarray[..]);
 internal static ref slice<nint> Δslice => ref ᏑΔslice.ValueSlot;
-internal static ж<slice<any>> Ꮡislice = new(iarray[..]);
+internal static ж<slice<any>> Ꮡislice = new StandardBox<slice<any>>(iarray[..]);
 internal static ref slice<any> islice => ref Ꮡislice.ValueSlot;
 
 [GoType] partial struct A {
@@ -126,7 +168,7 @@ public static @string GoString(this G g) {
 
 [GoType("num:nint")] partial struct P;
 
-internal static ж<P> ᏑpValue = new(default(P));
+internal static ж<P> ᏑpValue = new StandardBox<P>(default(P));
 internal static ref P pValue => ref ᏑpValue.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -136,10 +178,10 @@ internal static readonly @string stringPˢ = "String(p)"u8;
     return stringPˢ;
 }
 
-internal static ж<array<renamedUint8>> Ꮡbarray = new(new renamedUint8[]{1, 2, 3, 4, 5}.array());
+internal static ж<array<renamedUint8>> Ꮡbarray = new StandardBox<array<renamedUint8>>(new renamedUint8[]{1, 2, 3, 4, 5}.array());
 internal static ref array<renamedUint8> barray => ref Ꮡbarray.Value;
 
-internal static ж<slice<renamedUint8>> Ꮡbslice = new(barray[..]);
+internal static ж<slice<renamedUint8>> Ꮡbslice = new StandardBox<slice<renamedUint8>>(barray[..]);
 internal static ref slice<renamedUint8> bslice => ref Ꮡbslice.ValueSlot;
 
 [GoType("num:byte")] partial struct byteStringer;
@@ -1469,7 +1511,7 @@ public static void BenchmarkFprintIntNoAlloc(ж<Δtesting.B> Ꮡb) {
     }
 }
 
-internal static ж<bytes.Buffer> ᏑmallocBuf = new(default(bytes.Buffer));
+internal static ж<bytes.Buffer> ᏑmallocBuf = new StandardBox<bytes.Buffer>(default(bytes.Buffer));
 internal static ref bytes.Buffer mallocBuf => ref ᏑmallocBuf.Value;
 
 internal static ж<nint> mallocPointer; // A pointer so we know the interface value won't allocate.

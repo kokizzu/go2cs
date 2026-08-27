@@ -28,12 +28,12 @@ using static go.go.types_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/types/context_test.go", "context_test.cs", "ABEcooIACRzSlIKUlIKUlIKClpaCgILKgILKgIK4gII=")]
+[assembly: global::go.GoPositionMap("go/types/context_test.go", "context_test.cs", "ABccooIACRzSlIKUlIKUlIKClpaCgILKgILKgIK4gII=")]
 [assembly: global::go.GoPositionMap("go/types/errors_test.go", "errors_test.cs", "ABAYgoKCgIKmgoKAgqaCgoCCAAgIggAGEoKC")]
-[assembly: global::go.GoPositionMap("go/types/sizeof_test.go", "sizeof_test.cs", "ABEakoQAHUiCgoKClII=")]
-[assembly: global::go.GoPositionMap("go/types/termlist_test.go", "termlist_test.cs", "AA0gkoKCgoKUpoKCuIIAChaAgtqCAAgSgoKCyoIACRSCgoIACAqCAA0ggoKCAAgKggAPJoKCgoIACAqCABEqgoKCggAJCoIAChyCgoKCAAkKggAMIIKCgoIACQqCABY0goKCggAJCoIAESqCgoKC")]
-[assembly: global::go.GoPositionMap("go/types/token_test.go", "token_test.cs", "ABw6hJKCuJSCgoKCgg==")]
-[assembly: global::go.GoPositionMap("go/types/typeset_test.go", "typeset_test.cs", "ABEcgoLoggAXOIKCgoKYkoKCqIKClIKCqIKC")]
+[assembly: global::go.GoPositionMap("go/types/sizeof_test.go", "sizeof_test.cs", "ABcakoQAHUiCgoKClII=")]
+[assembly: global::go.GoPositionMap("go/types/termlist_test.go", "termlist_test.cs", "ABMgkoKCgoKUpoKCuIIAChaAgtqCAAgSgoKCyoIACRSCgoIACAqCAA0ggoKCAAgKggAPJoKCgoIACAqCABEqgoKCggAJCoIAChyCgoKCAAkKggAMIIKCgoIACQqCABY0goKCggAJCoIAESqCgoKC")]
+[assembly: global::go.GoPositionMap("go/types/token_test.go", "token_test.cs", "ACI6hJKCuJSCgoKCgg==")]
+[assembly: global::go.GoPositionMap("go/types/typeset_test.go", "typeset_test.cs", "AB0cgoLoggAXOIKCgoKYkoKCqIKClIKCqIKC")]
 [assembly: global::go.GoPositionMap("go/types/typeterm_test.go", "typeterm_test.cs", "ABAgggANGoKCgILagoKClKaCgoKUpoIADyCCgoKCgIK2goCC2qIAH0KCgoKCgoCC2oIAESSCgoKCgIK2goCC2oIACRSCgoKCgILaggASJoKCgoKAgtqCAAsYgoKCgoCCtoKAgg==")]
 [assembly: global::go.GoPositionMap("go/types/util_test.go", "util_test.cs", "AA8igKSgooA=")]
 // </GoSourcePositionMaps>

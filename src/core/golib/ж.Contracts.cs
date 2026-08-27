@@ -149,24 +149,17 @@ public static class FieldRef<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
         ILGenerator il = method.GetILGenerator();
 
-        // Emit IL code to load the field address: ((ж<T>)obj).<value storage>.fieldName
-        il.Emit(OpCodes.Ldarg_0);               // Load the object argument
-        il.Emit(OpCodes.Castclass, s_ptrType);  // Cast to ж<T>
-
-        // Which field IS the value storage depends on T: a box over a pinnable T keeps its value in a
-        // one-element array so the collector can be told to hold it still, and m_val goes unused there
-        // (see ж<T>.m_slot). The probe is the same one the constructors branch on, so the two never
-        // disagree.
-        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-        {
-            il.Emit(OpCodes.Ldflda, s_ptrValField); // Load address of ж<T>.m_val struct, type &T
-        }
-        else
-        {
-            il.Emit(OpCodes.Ldfld, s_ptrSlotField); // Load ж<T>.m_slot, type T[]
-            il.Emit(OpCodes.Ldc_I4_0);              // Element 0 — the slot holds exactly one value
-            il.Emit(OpCodes.Ldelema, typeof(T));    // Load address of the slot element, type &T
-        }
+        // Emit IL code to load the field address: ((ж<T>)obj).ValueSlot.fieldName. The storage is
+        // resolved through the KIND's own ValueSlot override — under the B1 per-kind split the box
+        // arriving here can be ANY kind (a field reference into another allocation, an element
+        // reference, the standard heap box), and the pre-split IL that cast to the standard kind
+        // and poked its m_val/m_slot directly turned every other kind into an InvalidCastException
+        // the caller read as "pointee unreadable" (debug/plan9obj's DeepEqual over &sh.SectionHeader
+        // was the witness). Same shape as GoReflect.FieldAccess's accessor builder.
+        il.Emit(OpCodes.Ldarg_0);                     // Load the object argument
+        il.Emit(OpCodes.Castclass, typeof(ж<T>));     // Cast to the abstract box
+        il.Emit(OpCodes.Callvirt,                     // ref T — the kind's own storage
+            typeof(ж<T>).GetProperty(nameof(ж<T>.ValueSlot))!.GetGetMethod()!);
 
         il.Emit(OpCodes.Ldflda, structField);   // Load address of the struct field, type &TElem
         il.Emit(OpCodes.Ret);                   // Return
@@ -175,19 +168,6 @@ public static class FieldRef<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         return (FieldRefFunc<TElem>)method.CreateDelegate(typeof(FieldRefFunc<TElem>));
     }
 
-    // Type of the STANDARD box kind — the one kind whose value storage these accessors address
-    // (the pre-split comment above already said so: a field or element reference keeps its
-    // storage elsewhere; under B1's split the fields simply LIVE on StandardBox<T>, and the IL
-    // cast is the same standard-only contract stated as a type).
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-    private static readonly Type s_ptrType = typeof(StandardBox<T>);
-
-    // FieldInfo for the inline managed-T value storage in StandardBox<T>
-    private static readonly FieldInfo s_ptrValField = s_ptrType.GetField(StandardBox<T>.ValueFieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-    // FieldInfo for the pinnable slot used in place of the inline field for a T that contains no
-    // references.
-    private static readonly FieldInfo s_ptrSlotField = s_ptrType.GetField(StandardBox<T>.SlotFieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
 }
 
 /// <summary>

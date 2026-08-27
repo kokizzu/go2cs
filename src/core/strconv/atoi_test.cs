@@ -13,6 +13,18 @@ using strconv = strconv_package;
 
 partial class strconv_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 [GoType] partial struct parseUint64Test {
     internal @string @in;
     internal uint64 @out;
@@ -20,7 +32,7 @@ partial class strconv_test_package {
 }
 
 // base=10 so no underscores allowed
-internal static ж<slice<parseUint64Test>> ᏑparseUint64Tests = new(new parseUint64Test[]{
+internal static ж<slice<parseUint64Test>> ᏑparseUint64Tests = new StandardBox<slice<parseUint64Test>>(new parseUint64Test[]{
     new(""u8, 0, ErrSyntax),
     new("0"u8, 0, default!),
     new("1"u8, 1, default!),
@@ -58,7 +70,7 @@ internal static ref slice<parseUint64Test> parseUint64Tests => ref ᏑparseUint6
 // base 8
 // base 0 => 2 (0b101)
 // base 2
-internal static ж<slice<parseUint64BaseTest>> ᏑparseUint64BaseTests = new(new parseUint64BaseTest[]{
+internal static ж<slice<parseUint64BaseTest>> ᏑparseUint64BaseTests = new StandardBox<slice<parseUint64BaseTest>>(new parseUint64BaseTest[]{
     new(""u8, 0, 0, ErrSyntax),
     new("0"u8, 0, 0, default!),
     new("0x"u8, 0, 0, ErrSyntax),
@@ -144,7 +156,7 @@ internal static ref slice<parseUint64BaseTest> parseUint64BaseTests => ref Ꮡpa
 }
 
 // base=10 so no underscores allowed
-internal static ж<slice<parseInt64Test>> ᏑparseInt64Tests = new(new parseInt64Test[]{
+internal static ж<slice<parseInt64Test>> ᏑparseInt64Tests = new StandardBox<slice<parseInt64Test>>(new parseInt64Test[]{
     new(""u8, 0, ErrSyntax),
     new("0"u8, 0, default!),
     new("-0"u8, 0, default!),
@@ -187,7 +199,7 @@ internal static ref slice<parseInt64Test> parseInt64Tests => ref ᏑparseInt64Te
 // underscores
 // octal
 // octal
-internal static ж<slice<parseInt64BaseTest>> ᏑparseInt64BaseTests = new(new parseInt64BaseTest[]{
+internal static ж<slice<parseInt64BaseTest>> ᏑparseInt64BaseTests = new StandardBox<slice<parseInt64BaseTest>>(new parseInt64BaseTest[]{
     new(""u8, 0, 0, ErrSyntax),
     new("0"u8, 0, 0, default!),
     new("-0"u8, 0, 0, default!),
@@ -258,7 +270,7 @@ internal static ref slice<parseInt64BaseTest> parseInt64BaseTests => ref Ꮡpars
 }
 
 // base=10 so no underscores allowed
-internal static ж<slice<parseUint32Test>> ᏑparseUint32Tests = new(new parseUint32Test[]{
+internal static ж<slice<parseUint32Test>> ᏑparseUint32Tests = new StandardBox<slice<parseUint32Test>>(new parseUint32Test[]{
     new(""u8, 0, ErrSyntax),
     new("0"u8, 0, default!),
     new("1"u8, 1, default!),
@@ -283,7 +295,7 @@ internal static ref slice<parseUint32Test> parseUint32Tests => ref ᏑparseUint3
 }
 
 // base=10 so no underscores allowed
-internal static ж<slice<parseInt32Test>> ᏑparseInt32Tests = new(new parseInt32Test[]{
+internal static ж<slice<parseInt32Test>> ᏑparseInt32Tests = new StandardBox<slice<parseInt32Test>>(new parseInt32Test[]{
     new(""u8, 0, ErrSyntax),
     new("0"u8, 0, default!),
     new("-0"u8, 0, default!),
@@ -529,7 +541,7 @@ internal static error noErrStub(@string name, nint arg) {
     internal Func<@string, nint, error> errStub;
 }
 
-internal static ж<slice<parseErrorTest>> ᏑparseBitSizeTests = new(new parseErrorTest[]{
+internal static ж<slice<parseErrorTest>> ᏑparseBitSizeTests = new StandardBox<slice<parseErrorTest>>(new parseErrorTest[]{
     new(-1, bitSizeErrStub),
     new(0, noErrStub),
     new(64, noErrStub),
@@ -537,7 +549,7 @@ internal static ж<slice<parseErrorTest>> ᏑparseBitSizeTests = new(new parseEr
 }.slice());
 internal static ref slice<parseErrorTest> parseBitSizeTests => ref ᏑparseBitSizeTests.ValueSlot;
 
-internal static ж<slice<parseErrorTest>> ᏑparseBaseTests = new(new parseErrorTest[]{
+internal static ж<slice<parseErrorTest>> ᏑparseBaseTests = new StandardBox<slice<parseErrorTest>>(new parseErrorTest[]{
     new(-1, baseErrStub),
     new(0, noErrStub),
     new(1, baseErrStub),

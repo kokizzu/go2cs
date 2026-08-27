@@ -20,6 +20,24 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class template_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
+    builtin.initPackage(typeof(encoding.json_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸos() {
+    builtin.initPackage(typeof(os_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtextꓸtemplate() {
+    builtin.initPackage(typeof(text.template_package));
+}
+
 [GoType] internal partial struct badMarshaler {
 }
 

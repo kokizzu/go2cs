@@ -18,6 +18,60 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class xml_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸerrors() {
+    builtin.initPackage(typeof(errors_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrconv() {
+    builtin.initPackage(typeof(strconv_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsync() {
+    builtin.initPackage(typeof(sync_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 [GoType("num:nint")] public partial struct DriveType;
 
 public static DriveType HyperDrive => /* iota */ 0;
@@ -680,13 +734,13 @@ internal static ж<@string> stringptr(@string xʗp) {
     public T X;
 }
 
-internal static ж<@string> ᏑnameAttr = new("Sarah"u8);
+internal static ж<@string> ᏑnameAttr = new StandardBox<@string>("Sarah"u8);
 internal static ref @string nameAttr => ref ᏑnameAttr.Value;
-internal static ж<nuint> ᏑageAttr = new((nuint)12);
+internal static ж<nuint> ᏑageAttr = new StandardBox<nuint>((nuint)12);
 internal static ref nuint ageAttr => ref ᏑageAttr.Value;
-internal static ж<@string> ᏑcontentsAttr = new("lorem ipsum"u8);
+internal static ж<@string> ᏑcontentsAttr = new StandardBox<@string>("lorem ipsum"u8);
 internal static ref @string contentsAttr => ref ᏑcontentsAttr.Value;
-internal static ж<@string> Ꮡempty = new(""u8);
+internal static ж<@string> Ꮡempty = new StandardBox<@string>(""u8);
 internal static ref @string empty => ref Ꮡempty.Value;
 
 // Test nil marshals to nothing

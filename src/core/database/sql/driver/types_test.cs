@@ -10,6 +10,24 @@ using static go.database.sql.driver_package;
 
 partial class driver_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 [GoType] internal partial struct valueConverterTest {
     internal global::go.database.sql.driver_package.ValueConverter c;
     internal any @in;
@@ -17,10 +35,10 @@ partial class driver_internal_test_package {
     internal @string err;
 }
 
-internal static ж<time.Time> Ꮡnow = new(time.Now());
+internal static ж<time.Time> Ꮡnow = new StandardBox<time.Time>(time.Now());
 internal static ref time.Time now => ref Ꮡnow.Value;
 
-internal static ж<int64> Ꮡanswer = new(42);
+internal static ж<int64> Ꮡanswer = new StandardBox<int64>(42);
 internal static ref int64 answer => ref Ꮡanswer.Value;
 
 [GoType("num:int64")] internal partial struct i;

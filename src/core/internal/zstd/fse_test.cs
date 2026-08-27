@@ -9,6 +9,18 @@ using static go.@internal.zstd_package;
 
 partial class zstd_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸslices() {
+    builtin.initPackage(typeof(slices_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
 // literalPredefinedDistribution is the predefined distribution table
 // for literal lengths. RFC 3.1.1.3.2.2.1.
 internal static slice<int16> literalPredefinedDistribution = new int16[]{

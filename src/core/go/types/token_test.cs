@@ -12,6 +12,12 @@ using static global::go.go.types_package;
 
 partial class types_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
+    builtin.initPackage(typeof(global::go.go.token_package));
+}
+
 internal static map<token.Token, token.Token> assignOps = new map<token.Token, token.Token>{
     [token.ADD_ASSIGN] = token.ADD,
     [token.SUB_ASSIGN] = token.SUB,
