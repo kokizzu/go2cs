@@ -466,6 +466,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckFloatFormatting() => CheckTarget("FloatFormatting");
 
     [TestMethod]
+    public void CheckFloatKindConstArrayLength() => CheckTarget("FloatKindConstArrayLength");
+
+    [TestMethod]
     public void CheckForeignPairNumericConv() => CheckTarget("ForeignPairNumericConv");
 
     [TestMethod]
