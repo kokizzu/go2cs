@@ -260,24 +260,10 @@ internal static ref sendRecvMsgFuncᴛ1 sendRecvMsgFunc => ref ᏑsendRecvMsgFun
 
 // go2cs generated this placeholder — func WSASendMsg is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// go2cs generated this placeholder — func WSARecvMsg is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
 //sys	WSASocket(af int32, typ int32, protocol int32, protinfo *syscall.WSAProtocolInfo, group uint32, flags uint32) (handle syscall.Handle, err error) [failretval==syscall.InvalidHandle] = ws2_32.WSASocketW
 //sys	WSAGetOverlappedResult(h syscall.Handle, o *syscall.Overlapped, bytes *uint32, wait bool, flags *uint32) (err error) = ws2_32.WSAGetOverlappedResult
-public static error WSARecvMsg(syscallꓸHandle fd, ж<WSAMsg> Ꮡmsg, ж<uint32> ᏑbytesReceived, ж<syscall.Overlapped> Ꮡoverlapped, ж<byte> Ꮡcroutine) {
-    var err = loadWSASendRecvMsg();
-    if (err != default!) {
-        return err;
-    }
-    var (r1, _, e1) = syscall.Syscall6(sendRecvMsgFunc.recvAddr, 5, (uintptr)fd, (uintptr)Ꮡmsg, (uintptr)ᏑbytesReceived, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine, 0);
-    if (r1 == socket_error) {
-        if (e1 != 0){
-            err = errnoErr(e1);
-        } else {
-            err = syscall.EINVAL;
-        }
-    }
-    return err;
-}
-
 public static UntypedInt ComputerNameNetBIOS => 0;
 public static UntypedInt ComputerNameDnsHostname => 1;
 public static UntypedInt ComputerNameDnsDomain => 2;

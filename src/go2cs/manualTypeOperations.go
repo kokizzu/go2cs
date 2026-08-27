@@ -1136,10 +1136,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// `wsasendmsg: An invalid argument was supplied` on both families and both entry points. The
 		// hand-own (windows/syscall_windows_impl.cs) builds the mirror in the operation's own staged
 		// memory -- overlapped, so a stack image would be a use-after-return -- and flattens the
-		// address through syscall's seam rather than learning the layout. Its harvest twin WSARecvMsg
-		// has the identical defect in the opposite direction and is deliberately NOT registered: no
-		// suite reaches it yet, and it needs a completion decode this one does not.
+		// address through syscall's seam rather than learning the layout.
 		"WSASendMsg": goosWindows,
+		// The HARVEST twin -- the same defect in the opposite direction, which is exactly why it does
+		// NOT take a mirrored remedy. A submit finishes its work before it returns; a receive cannot,
+		// because the kernel fills the record AFTER the wrapper has returned. So the decode is carried
+		// by the operation and run at completion through golib's GoAsyncIO.SetOperationCompletion --
+		// syscall's WSARecvFrom is the same shape one package over, and this package's own
+		// WSAGetOverlappedResult is where every asynchronous execIO exit runs it. Three things come
+		// back that nothing else could supply: the sender ADDRESS (transcribed into the RawSockaddrAny
+		// box internal/poll then decodes, through syscall's ONE native->managed transcription),
+		// Control.Len (internal/poll's `oobn`) and Flags (its third return). Unblocks
+		// ReadMsg/ReadMsgInet4/ReadMsgInet6 -- the whole Windows ReadMsgUDP/ReadMsgUDPAddrPort family.
+		"WSARecvMsg": goosWindows,
 		// The defect BENEATH WSASendMsg, and the one that fires first. WSASendMsg and WSARecvMsg are
 		// Winsock EXTENSIONS with no export to link: their addresses are fetched at run time by
 		// handing WSAIoctl a GUID, and Go does that with `(*byte)(unsafe.Pointer(&WSAID_WSASENDMSG))`.

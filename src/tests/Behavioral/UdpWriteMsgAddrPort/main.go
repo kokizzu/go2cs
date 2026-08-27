@@ -35,17 +35,26 @@
 // poll.WriteMsg, which calls them through sockaddrToRaw. They are separate call sites in the
 // converted package and a hand-own that covered only one would pass a guard that used only one.
 //
-// THREE HAND-OWNS STAND BEHIND THESE LINES, not one, and each was found only once its predecessor
-// was fixed: the encoders here, then internal/syscall/windows's loadWSASendRecvMsg (whose GUID for
-// the WSASendMsg extension is not blittable, so the lookup failed and reported the CALLER's name),
-// then WSASendMsg itself (which handed the kernel the address of the managed WSAMsg). The counts
-// below therefore guard the whole chain: the first defect kills the process, and either of the other
-// two leaves every `writes` at zero.
+// FOUR HAND-OWNS STAND BEHIND THESE LINES, and each was found only once its predecessor was fixed:
+// the encoders here, then internal/syscall/windows's loadWSASendRecvMsg (whose GUID for the
+// WSASendMsg extension is not blittable, so the lookup failed and reported the CALLER's name), then
+// WSASendMsg itself (which handed the kernel the address of the managed WSAMsg), then its HARVEST
+// twin WSARecvMsg. The counts below guard the whole chain: the first defect kills the process, and
+// any of the other three leaves a column at zero.
 //
-// The READ side is deliberately ReadFrom rather than ReadMsg. WSARecvMsg -- the harvest twin of
-// WSASendMsg -- carries the same defect in the opposite direction and is still open, so ReadMsgUDP
-// does not work; recvfrom's path is hand-owned and does. Keeping the read on a working path is what
-// makes this guard measure the WRITE chain rather than the intersection of two.
+// IT IS A ROUND TRIP ON PURPOSE. The read side used ReadFrom while WSARecvMsg was still open, so the
+// guard measured the write chain alone; it now reads with ReadMsg, which is what makes the DECODERS
+// reachable from this program at all -- ReadFrom takes recvfrom, a different seam. Write and read
+// therefore exercise the two directions of one surface, and `sender` is the line that binds them:
+// the address the server reads back is transcribed by the harvest out of native memory into the very
+// box internal/poll then decodes, so a wrong transcription cannot produce the client's own port.
+//
+// The oob buffer is nil, matching net's real Windows surface: censused across the 1.23.12 suite,
+// every Windows-reachable ReadMsg call site passes literal nil, and the only non-empty case is
+// unixsock_readmsg_test.go's SCM_RIGHTS, which is //go:build unix. `oobn0` therefore asserts that a
+// nil control buffer reports zero control bytes rather than whatever the previous receive left --
+// which is a real assertion about the harvest's writeback, not a tautology. `flags0` asserts the
+// other writeback the harvest owes; no test in net's own suite ever reads that value.
 //
 // The rounds count is not decoration. The first call is enough to panic, but the reference the
 // encoder overwrites is only fatal once the collector reaches it, so the loop allocates on every
@@ -109,7 +118,7 @@ func writeMsgAddrPortRoundTrip(network, host string) {
 
 	payload := []byte("write-msg-addr-port-payload")
 	buf := make([]byte, 64)
-	writes, reads, bytes, sender := 0, 0, 0, 0
+	writes, reads, bytes, sender, oob0, flag0 := 0, 0, 0, 0, 0, 0
 
 	for i := 0; i < rounds; i++ {
 		// Keep a collection likely while a corrupted reference would still be reachable; the
@@ -123,7 +132,7 @@ func writeMsgAddrPortRoundTrip(network, host string) {
 		writes++
 
 		server.SetReadDeadline(time.Now().Add(5 * time.Second))
-		rn, from, err := server.ReadFromUDPAddrPort(buf)
+		rn, roobn, flags, from, err := server.ReadMsgUDPAddrPort(buf, nil)
 		if err != nil {
 			break
 		}
@@ -134,9 +143,16 @@ func writeMsgAddrPortRoundTrip(network, host string) {
 		if from.Port() == clientPort {
 			sender++
 		}
+		if roobn == 0 {
+			oob0++
+		}
+		if flags == 0 {
+			flag0++
+		}
 	}
 
-	fmt.Printf("addrport %s: writes=%d reads=%d bytes=%d sender=%d\n", network, writes, reads, bytes, sender)
+	fmt.Printf("addrport %s: writes=%d reads=%d bytes=%d sender=%d oobn0=%d flags0=%d\n",
+		network, writes, reads, bytes, sender, oob0, flag0)
 }
 
 // writeMsgUDPRoundTrip drives the generic poll.WriteMsg, which reaches the same two encoders through
@@ -158,7 +174,7 @@ func writeMsgUDPRoundTrip(network, host string) {
 
 	payload := []byte("write-msg-udpaddr-payload")
 	buf := make([]byte, 64)
-	writes, reads, bytes, sender := 0, 0, 0, 0
+	writes, reads, bytes, sender, oob0, flag0 := 0, 0, 0, 0, 0, 0
 
 	for i := 0; i < rounds; i++ {
 		_ = make([]byte, 512)
@@ -170,7 +186,7 @@ func writeMsgUDPRoundTrip(network, host string) {
 		writes++
 
 		server.SetReadDeadline(time.Now().Add(5 * time.Second))
-		rn, from, err := server.ReadFromUDP(buf)
+		rn, roobn, flags, from, err := server.ReadMsgUDP(buf, nil)
 		if err != nil {
 			break
 		}
@@ -181,7 +197,14 @@ func writeMsgUDPRoundTrip(network, host string) {
 		if from.Port == clientPort {
 			sender++
 		}
+		if roobn == 0 {
+			oob0++
+		}
+		if flags == 0 {
+			flag0++
+		}
 	}
 
-	fmt.Printf("udpaddr %s: writes=%d reads=%d bytes=%d sender=%d\n", network, writes, reads, bytes, sender)
+	fmt.Printf("udpaddr %s: writes=%d reads=%d bytes=%d sender=%d oobn0=%d flags0=%d\n",
+		network, writes, reads, bytes, sender, oob0, flag0)
 }
