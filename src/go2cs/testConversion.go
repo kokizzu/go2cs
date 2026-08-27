@@ -4870,10 +4870,12 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 
 	switch options.testAction {
 	case "build":
-		_, err := runCommandWithTimeout(options.testTimeout, outputPath, options, "dotnet", "build", testProject)
-		return err
+		return publishTestHost(outputPath, testProject, options)
 	case "run":
-		output, err := runCommandWithTimeout(testChildTimeout(options), outputPath, options, "dotnet", "run", "--project", testProject, "--",
+		if err := publishTestHost(outputPath, testProject, options); err != nil {
+			return err
+		}
+		output, err := runCommandWithTimeout(testChildTimeout(options), outputPath, options, publishedTestHostPath(outputPath, testProject),
 			"--json", "-timeout", options.testTimeout.String())
 		fmt.Print(output)
 		return err
@@ -4882,6 +4884,35 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 	default:
 		return nil
 	}
+}
+
+// publishTestHost builds the converted test host as the RELOCATABLE SINGLE-FILE executable the
+// run/compare actions execute — the host-limit retirement (the -tests csproj template's
+// publish-gated SelfContained+PublishSingleFile block; the deployment property Go's statically
+// linked test binary has, which os/exec-style tests copy to a temp directory and re-exec).
+// `-c Debug` is LOAD-BEARING twice over: `dotnet publish` defaults to Release since SDK 8, and the
+// template resolves `$(go2csPath)` per configuration — a Release publish silently re-points every
+// stdlib reference at the deployed `~/go2cs` root instead of this tree. Publish is incremental
+// (MSBuild's up-to-date checks carry; only the bundling step re-runs warm), so build/run/compare
+// can each call this without re-paying the build.
+func publishTestHost(outputPath, testProject string, options Options) error {
+	_, err := runCommandWithTimeout(options.testTimeout, outputPath, options, "dotnet", "publish", testProject,
+		"-c", "Debug", "-o", filepath.Join(outputPath, "bin", "tests", "publish"))
+	return err
+}
+
+// publishedTestHostPath is the single-file executable publishTestHost produces: the test project's
+// own base name (which the template also uses as the AssemblyName), under the deterministic
+// publish directory, with the HOST platform's executable suffix — the run always happens on the
+// machine that published.
+func publishedTestHostPath(outputPath, testProject string) string {
+	name := strings.TrimSuffix(filepath.Base(testProject), filepath.Ext(testProject))
+
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+
+	return filepath.Join(outputPath, "bin", "tests", "publish", name)
 }
 
 func readTestManifest(outputPath string) (testManifest, error) {
@@ -5560,7 +5591,15 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	// (the C# suite needs ~15 min where Go's needs 7.6 s — a performance gap, not a correctness one).
 	goOutput, goErr := runCommandWithTimeout(testChildTimeout(options), inputPath, options, "go", "test", "-json", "-count=1",
 		"-timeout", options.testTimeout.String(), ".")
-	csOutput, csErr := runCommandWithTimeout(testChildTimeout(options), outputPath, options, "dotnet", "run", "--project", testProject, "--", "--json",
+
+	// The converted side runs the PUBLISHED single-file host (the host-limit retirement) — the
+	// same relocatable artifact an os/exec-style test copies and re-execs, so what the comparison
+	// measures is the deployment shape the verdicts claim.
+	if err := publishTestHost(outputPath, testProject, options); err != nil {
+		return err
+	}
+
+	csOutput, csErr := runCommandWithTimeout(testChildTimeout(options), outputPath, options, publishedTestHostPath(outputPath, testProject), "--json",
 		"-timeout", options.testTimeout.String(),
 		"--result", filepath.Join(outputPath, "go2cs_test_results.json"), "--junit", filepath.Join(outputPath, "go2cs_test_results.xml"))
 

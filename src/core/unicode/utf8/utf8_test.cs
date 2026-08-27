@@ -11,6 +11,36 @@ using static go.unicode.utf8_package;
 
 partial class utf8_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸbytes() {
+    builtin.initPackage(typeof(bytes_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicode() {
+    builtin.initPackage(typeof(unicode_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
+    builtin.initPackage(typeof(go.unicode.utf8_package));
+}
+
 // Validate the constants redefined from unicode.
 [GoInit] internal static void init() {
     if (MaxRune != unicode.MaxRune) {

@@ -55,21 +55,28 @@ once its remedy lands, because the arithmetic below moves when it goes.
   replaced by converted Go `testing`. Minted 2026-08-26 with `log/slog`'s `TestRecordSource`, which
   asserts that two frames above itself sits `testing.tRunner` in `testing.go`.
 - **`host-limit`** — a test's premise rests on a property of the test *binary* that the converted
-  host's deployment shape structurally lacks. One capability is named today, a **relocatable
-  single-file test executable**: Go's test binary is statically linked, so `os/exec` copies it into
-  a temporary directory and runs the copy, while a .NET apphost is bound at build time to a
-  same-basename managed assembly that must sit beside it — a lone relocated file gets hostfxr's
-  `LibHostAppRootFindFailure`. The bar is deliberately narrow: an entry must name a structural
-  property of the deployment shape, never an unimplemented-but-fixable defect. It is also written to
-  retire itself, because the tests keep running and keep being compared — publish the host
-  self-contained and single-file and those rows begin passing, which breaks the arithmetic below
-  until the entry is removed. Not every entry retires that way, and one says so: `runtime/debug`'s
-  `TestStack` asserts that the testing framework's own frame names `testing/testing.go`, which is a
-  property of Go's test *binary*, whose testing package is compiled from that source. The converted
-  host is hand-written C# with no line-for-line relationship to it — the design, not a gap — so no
-  single-file publish makes that frame true. That entry is **structural and permanent**, and it
-  retires only if the host itself becomes a conversion of Go's `testing`, which the
-  one-testing-package rule forecloses.
+  host's deployment shape structurally lacks. The class's FOUNDING capability — a **relocatable
+  single-file test executable** (Go's test binary is statically linked, so `os/exec` copies it into
+  a temporary directory and runs the copy, while a framework-dependent .NET apphost is bound at
+  build time to a same-basename managed assembly beside it, and a lone relocated file died in
+  hostfxr) — **RETIRED on 2026-08-27, exactly as its own text said it would**: the `-tests` host
+  now publishes as a self-contained single-file executable (the .NET 10 hop deliverable the hop
+  had left standing, `PLAN-corpus-upgrade`'s ruled schedule), the copies run, `os/exec`'s 27
+  pinned verdicts pass on their own measurement, and the entry is removed with the arithmetic
+  moving — the `chan-direction` precedent. Two entries remain, each naming what it needs.
+  `crypto/tls`'s `TestBogoSuite` names **fast process startup**: BoringSSL's runner spawns the
+  host once per case — 5,481 spawns inside Go's own 10-minute test-binary wall — and managed CLR
+  startup leaves the runner a ~20x shortfall against Go's 0.038 s statically linked start (the
+  entry's own manifest carries the measured number per deployment shape); it retires the same
+  self-retiring way, when startup work (ReadyToRun/AOT) makes the shim fast enough that its row
+  starts passing. And `runtime/debug`'s `TestStack` asserts that the testing framework's own frame
+  names `testing/testing.go`, which is a property of Go's test *binary*, whose testing package is
+  compiled from that source. The converted host is hand-written C# with no line-for-line
+  relationship to it — the design, not a gap — so no deployment shape makes that frame true. That
+  entry is **structural and permanent**, and it retires only if the host itself becomes a
+  conversion of Go's `testing`, which the one-testing-package rule forecloses. The bar is
+  unchanged: an entry must name a structural property of the deployment shape, never an
+  unimplemented-but-fixable defect.
 - **`runtime-capability`** — a test exercises a runtime facility whose output or behavior is
   *defined over the replaced runtime's own internals*: Go's type descriptors, its heap layout, its
   GC bookkeeping. Any managed rendering would be fabrication rather than implementation. The
@@ -106,7 +113,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 > ### Phase 4 progress: **180 / 215 testable packages validated — 83.7%**
 >
-> **21,778 matching test verdicts · 112 disclosed** *(updated 2026-08-27 — maintained as part of the
+> **21,805 matching test verdicts · 85 disclosed** *(updated 2026-08-27 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
@@ -305,7 +312,7 @@ summed from the columns.
 | [`net/smtp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/smtp) | 19 | | The SMTP client end to end, and the first roster row driven through **real loopback TCP sockets** rather than an in-memory pipe: `TestSendMail`, `TestSendMailWithAuth`, `TestTLSClient` and `TestTLSConnState` each stand up a `net.Listen("tcp", "127.0.0.1:0")` (or `tls.Listen`) server and speak the real dialogue to it, so the converted socket stack is under test alongside the protocol. Covers the AUTH mechanisms with their RFC-required TLS/localhost guards (CRAM-MD5, PLAIN, the trailing-space trim, and the failure path), HELO-vs-EHLO negotiation with the 8BITMIME and SMTPUTF8 extension advertisements across five subtests, per-command hello-first ordering, and a STARTTLS upgrade whose `ConnectionState` is read back through the converted `crypto/tls` handshake against a self-signed certificate. · [proof](validation/current/net.smtp.md) |
 | [`net/textproto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/textproto) | 26 | | Text-protocol primitives under HTTP/SMTP — MIME header reading with canonicalization (including the want-ZERO `AllocsPerRun` asserts over the common-header fast path, satisfied by the `m[string(b)]` transient-key lookup, hoisted big-const masks and `Once.Do`'s zero-alloc fast path — L11), dot-encoding reader/writer, continued lines, and pipelined request sequencing. · [proof](validation/current/net.textproto.md) |
 | [`net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) | 48 | | URL parsing, escaping and reference resolution — the query encode/decode matrix including semicolon rejection, userinfo, opaque and relative references, `JoinPath`, and `gob`/`JSON`/`TextMarshaler` round-trips of a parsed `URL`. · [proof](validation/current/net.url.md) |
-| [`os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) | 89 | 27 | Running external processes end to end, driven by Go's own helper protocol — which re-executes the test binary itself as the child, so every `Cmd` path here is exercised against a real process tree: pipes and `StdinPipe`/`StdoutPipe` teardown, `Output`/`CombinedOutput`/`Wait`, `ExtraFiles` handle inheritance, environment de-duplication and NUL rejection, `LookPath` with Windows `PATHEXT` and `ErrDot`, exit-status plumbing, and `context` cancellation with `Cancel`/`WaitDelay` including the interrupt-and-hang matrix. The 27 disclosed rows are the roster's first **`host-limit`** class (relocatable single-file test executable): `TestCommand` and `TestLookPathWindows` build fixtures by COPYING the test executable and running the copy, which a .NET apphost bound to a same-basename assembly beside it cannot be — 25 leaves pinned by signature, their 2 parents by aggregation, every one named on the proof page. · [proof](validation/current/os.exec.md) |
+| [`os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) | 116 | | Running external processes end to end, driven by Go's own helper protocol — which re-executes the test binary itself as the child, so every `Cmd` path here is exercised against a real process tree: pipes and `StdinPipe`/`StdoutPipe` teardown, `Output`/`CombinedOutput`/`Wait`, `ExtraFiles` handle inheritance, environment de-duplication and NUL rejection, `LookPath` with Windows `PATHEXT` and `ErrDot`, exit-status plumbing, and `context` cancellation with `Cancel`/`WaitDelay` including the interrupt-and-hang matrix. The 27 verdicts once disclosed as the roster's first **`host-limit`** class — `TestCommand` and `TestLookPathWindows` COPY the test executable and run the copy, which a framework-dependent apphost could not survive — **pass on their own measurement since 2026-08-27**: the `-tests` host publishes as a self-contained single-file executable, the lone relocated copy runs exactly as Go's statically linked binary does, and the class entry retired with them per its own self-retiring text. · [proof](validation/current/os.exec.md) |
 | [`os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) | 1 |  | The file-descriptor existence probe; its one test is Windows-gated and the converted run reaches Go's own `runtime.GOOS` guard and skips exactly where Go does. · [proof](validation/current/os.exec.internal.fdtest.md) |
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. On Linux the whole POSIX surface validates through the PosixSignalRegistration bridge carrying Go's sighandler decision — Notify/Stop/Reset/Ignore, the nohup families over inherited SIG_IGN (seeded from real dispositions at start, exactly Go's initsig), NotifyContext, the stress and timing suites, and `TestAllThreadsSyscallSignals` matching Go's own cgo skip via the ENOTSUP hand-own; the two disclosed rows are the execution tracer and the cgo pty controlling terminal, runtime capabilities the managed host does not model. · linux: 29 + 2 · [proof](validation/current/os.signal.md) |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). · [proof](validation/current/path.md) |

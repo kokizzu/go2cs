@@ -380,6 +380,17 @@ public static class TestHost
                 !target.StartsWith(runRoot, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"fixture escapes run root: {relativePath}");
 
+            // A RELOCATED copy of the single-file host has no fixture sources beside it — the
+            // os/exec-style tests copy the lone executable to a temp directory and re-exec it,
+            // exactly as they do Go's statically linked test binary, which carries no fixtures
+            // either. Go's shape is that the binary STARTS and a test missing its testdata fails
+            // at its own read with a file-not-found; a startup throw here instead killed the
+            // helper-process reentry before TestMain ever ran. Skip what is absent (after the
+            // containment check above — an escaping path is still a defect) and let each test
+            // meet the same ENOENT Go's copy would hand it.
+            if (!File.Exists(source))
+                continue;
+
             // The ancestry view may hold a LINK at the fixture's parent — compress/{flate,zlib,lzw}
             // all stage into `../testdata` — and writing through one would put staged fixtures inside
             // the real Go installation. EnsureWritable makes every component below the run root a
