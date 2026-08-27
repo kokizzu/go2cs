@@ -3,9 +3,9 @@
   "disclosures": [
     {
       "name": "TestStack",
-      "class": "host-limit",
+      "class": "host-identity",
       "signature": "expected prefix \"\\ttesting/testing.go\"",
-      "reason": "the fifth frame() assert requires the testing framework's own frame to name GOROOT/src/testing/testing.go, which is a property of Go's test BINARY: its testing package is compiled from that source. The converted deployment's testing package is the hand-owned host (src/core/testing) — the ONE-testing-package ruling's design, not an unimplemented conversion — so no conversion recorded a position for it and it honestly reports its own .cs position, exactly as golib and the BCL do. STRUCTURAL AND PERMANENT: unlike the relocatable-single-file entries, this does NOT retire when the host publishes self-contained and single-file, because the host would still be hand-written C# with no line-for-line relationship to Go's testing.go. It retires only if the test host itself becomes a conversion of Go's testing package, which the ONE-testing-package ruling deliberately forecloses"
+      "reason": "the fifth frame() assert requires the testing framework's own frame to name GOROOT/src/testing/testing.go — an assert satisfiable only by the test-hosting machinery claiming Go's testing-package identity, this class's exact bar. The converted deployment's testing package is the hand-owned host (src/core/testing) — the ONE-testing-package ruling's design, not an unimplemented conversion — so no conversion recorded a position for it and it honestly reports its own .cs position, exactly as golib and the BCL do; the position-map ruling forbids the fabrication passing would require. Permanent by design like the class's founding entry (log/slog's TestRecordSource, the tRunner frame): it retires only if the test host itself becomes a conversion of Go's testing package, which the ONE-testing-package ruling deliberately forecloses"
     },
     {
       "name": "TestWriteHeapDumpNonempty",
