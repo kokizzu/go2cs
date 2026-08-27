@@ -65,9 +65,41 @@ func second[T Constrained[T]](v T) string {
 	return fmt.Sprint(c.Name(), "/", c.Size(), "/", v.Name(), "/", v.Size())
 }
 
+// callback exercises the T-boundary at a LAMBDA PARAMETER — the position net/http's
+// `run[T TBRun[T]](t T, f func(t T, mode testMode), opts ...any)` uses everywhere. At
+// T = ImplжConstrained the C# delegate is `Action<ImplжConstrained, nint>`, and a lambda PARAMETER
+// declaration must match the delegate exactly (C# applies no user-defined conversion there), so
+// rendering the natural box `ж<Impl>` is CS1678 + CS1661 — one pair per call site, 48 of net/http's
+// 81. The callback BODY then calls constraint members on that parameter, which is the second half
+// of the same boundary: the parameter is a concrete proxy there, not a type parameter, so the
+// members have to be reachable by ordinary lookup.
+func callback[T Constrained[T]](v T, f func(t T, mode int)) {
+	f(v, 7)
+	f(v.Clone(), 8)
+}
+
 func main() {
 	use(&Impl{"alpha", 1})
 	use(&Impl{"beta", 10})
 
 	fmt.Println(second(&Impl{"gamma", 100}))
+
+	callback(&Impl{"delta", 1000}, func(t *Impl, mode int) {
+		fmt.Println(t.Name(), t.Size(), mode)
+	})
+
+	// The SHADOWED spelling, which is the one net/http actually has: its
+	// `run(t, func(t *testing.T, mode testMode){…})` inner `t` shadows the outer `t` and so
+	// shadow-renames to `tΔ1`. A literal's signature is generated from synthesized vars carrying
+	// the RENDERED name, so a proxy map keyed by the Go name misses every renamed parameter — and
+	// misses it ASYMMETRICALLY, since the body prologue keys off the same map: the first cut
+	// emitted the prologue while leaving the declaration at the natural type, producing a
+	// same-named local beside the parameter. Both halves must key on the rendered name.
+	t := "outer"
+
+	callback(&Impl{"epsilon", 2000}, func(t *Impl, mode int) {
+		fmt.Println(t.Name(), t.Size(), mode)
+	})
+
+	fmt.Println(t)
 }

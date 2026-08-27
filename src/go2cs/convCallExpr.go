@@ -1387,8 +1387,18 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// its delegate over the proxy (`Func<P224PointжnistPoint>` for `newPoint func() P`),
 			// so a method-group / func-value argument must be re-wrapped as a lambda — a C#
 			// method-group conversion cannot apply the ж↔proxy user-defined conversion (CS0407 on
-			// `testEquivalents(t, nistec.NewP224Point, …)`). A FuncLit already targets the proxy
-			// and nil stays bare, exactly as in the composite-literal field case.
+			// `testEquivalents(t, nistec.NewP224Point, …)`); nil stays bare, exactly as in the
+			// composite-literal field case.
+			//
+			// A FuncLit needs the SAME remedy applied one position further in, and the claim it
+			// once carried here — that a literal "already targets the proxy" — was the premise this
+			// missed on. A literal renders its OWN parameter list from the Go signature, so a
+			// `func(t T, mode int)` argument emits `(ж<Impl> t, nint mode) => …` against a delegate
+			// requiring `Action<ImplжConstrained, nint>`: CS1678 + CS1661 per site, and 48 of
+			// net/http's 81. It is marked here and carried to convFuncLit, which declares those
+			// parameters at the proxy under synthesized names and opens the body with the natural-
+			// typed alias — the conversion moved to a position C# performs it, leaving the body
+			// itself byte-for-byte what it was. See constraintProxyLitParamTypes.
 			if paramHasArg {
 				if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
 					if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil {
@@ -1402,6 +1412,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 									callExprContext.wrapArgWithLambda[i] = params
 								}
 							}
+						} else if proxied := v.constraintProxyLitParamTypes(funIdent, instance.TypeArgs, i); proxied != nil {
+							if callExprContext.proxyLitParamTypes == nil {
+								callExprContext.proxyLitParamTypes = make(map[int]map[int]string)
+							}
+
+							callExprContext.proxyLitParamTypes[i] = proxied
 						}
 					}
 				}

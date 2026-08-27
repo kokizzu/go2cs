@@ -126,6 +126,12 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			lambdaContext.deferredDecls = callContext.deferredDecls
 			lambdaContext.untypedInterfaceTarget = callContext.emptyInterfaceArgs[i]
 			lambdaContext.genericResultInferenceTarget = callContext.genericResultInferredFuncArgs[i]
+
+			// A func-literal argument at a constraint-proxy delegate position declares its proxied
+			// parameters at the proxy type (see CallExprContext.proxyLitParamTypes).
+			if callContext.proxyLitParamTypes != nil {
+				lambdaContext.proxyParamTypes = callContext.proxyLitParamTypes[i]
+			}
 		}
 
 		contexts := []ExprContext{basicLitContext, identContext, keyValueContext, lambdaContext, callContext}

@@ -8027,6 +8027,68 @@ output-compared vs `go run`. Reverting the walk reproduces CS0535 on `Middle.Siz
 — both levels. Embedding the constrained generic and greening the whole crypto-curve family is the
 next subsection.)
 
+#### A func LITERAL at a proxied delegate position declares its parameters AT the proxy
+
+Item 4 above moves a METHOD GROUP's T-boundary into a lambda body, because a method-group conversion
+will not apply the user-defined conversion. A func literal meets the same wall one position further
+in and cannot take that remedy — it already *is* the lambda, and it renders its own parameter list
+from the Go signature. At `T = ImplжConstrained` a `func(t T, mode int)` argument emits
+`(ж<Impl> t, nint mode) => …` against a delegate requiring `Action<ImplжConstrained, nint>`, and
+**C# applies no user-defined conversion at a parameter DECLARATION**: CS1678 + CS1661, one pair per
+call site. net/http's suite is written on this shape throughout —
+`run[T TBRun[T]](t T, f func(t T, mode testMode), opts ...any)` — and it was 48 of its 81 body
+diagnostics.
+
+The remedy is the same principle: **move the conversion to a position C# performs it.** The parameter
+is declared at the proxy under a synthesized name and the body opens with the natural-typed alias:
+
+```csharp
+run<TжTBRun>(Ꮡt, (TжTBRun tΔ1Δp, testMode mode) => {
+    var tΔ1 = (ж<testing.T>)tΔ1Δp;      // the proxy's own implicit operator
+    …                                    // body unchanged, byte for byte
+});
+```
+
+Everything after that line is the body exactly as it would have been emitted, so no member access,
+capture, or nested literal inside it renders differently. Declaring the parameter at the proxy and
+letting the body use it *directly* would not work: the forwarders are explicit interface
+implementations, reachable through a type parameter's constraint but not by member lookup on the
+concrete proxy type.
+
+Restricted to a parameter whose type **is** the proxied type parameter exactly. One that merely
+MENTIONS it (`[]T`, `map[K]T`, `func(T)`) is excluded — `slice<ImplжConstrained>` and
+`slice<ж<Impl>>` are distinct instantiations with no conversion between them, so no single assignment
+could stand in the prologue, and guessing would trade a clear diagnostic for a wrong one.
+
+⚠ **Both halves key on the RENDERED name.** A literal's signature is generated from synthesized vars
+carrying the shadow-renamed name, so keying the proxy map on the Go name misses every renamed
+parameter — and misses it *asymmetrically*, because the body prologue reads the same map from the
+AST, where the Go name is present. The first cut did exactly that: it emitted the prologue while
+leaving the declaration at its natural type, producing a local with the same name as the parameter
+beside it. net/http is entirely the renamed case (its inner `t` shadows the outer), so the guard
+carries both spellings and the un-renamed one alone would have passed over the real defect.
+
+#### The anchored adapter REFERENCE keeps the shadow marker
+
+The `-tests` metadata-anchored resolution composes the adapter class reference a cast site will use
+(`anchoredAdapterMemberName`) while go2cs-gen composes the class it emits. The two must agree
+character for character, and they disagreed on the shadow marker: the generator names a local adapter
+from `adapterBaseName` — the C# type name verbatim, `Δhandler` — and a foreign one from
+`GetSimpleName(structName)`, neither of which strips it, while the reference side stripped it and
+named a class that is never emitted. net/http's internal test variant declares
+`type handler struct{ i int }` (server_test.go), shadow-renamed to `Δhandler`, so the generator minted
+`ΔhandlerжΔHandler` and every cast site referenced `handlerжΔHandler` — CS0426 ×9.
+
+The rule the strip violated: **the marker belongs to the C# IDENTITY of the type, not to a rendering
+convention.** `adapterStructKey` strips it for GROUPING, which is right and unchanged — a collision
+group must not depend on which side got renamed — but that key must not double as the emitted name.
+Only the `-tests` anchored path was affected: a production conversion resolves through
+`adapterResolvedName`, which never stripped, so the corpus could not move (and CNR confirms it did
+not). The measured shape here also **corrects a plausible-looking diagnosis** worth recording: the
+symptom reads as an adapter minted for one test variant and referenced from the other, and it is not
+— the record is correctly bridge-anchored in `package_info_internal_test.cs` and the class is minted
+in `http_internal_test_package`, exactly where the reference looks for it. Only the NAME differed.
+
 ⚠ One adjacent surface is deliberately NOT addressed and is worth naming, since a reader meeting it
 will otherwise read it as this defect: a `T` RETURNED out of a constrained generic into concrete code
 arrives as the proxy TYPE, whose forwarders are explicit interface implementations and so are
