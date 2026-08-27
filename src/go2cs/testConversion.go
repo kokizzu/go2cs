@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/token"
 	"go/types"
 	"io/fs"
@@ -474,6 +475,12 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	allImports := conversion.allImports
 	requiredCapabilities := conversion.requiredCapabilities
 	includedSources := conversion.includedSources
+
+	// The FLAVOR gap: a `_test.go` the conversion's build tags exclude but a plain `go test` on
+	// the same platform includes declares tests that are real on exactly one side of the
+	// differential oracle. Declare them disclosed-unsupported so the F6 census accounts for every
+	// name go test runs (see flavorExcludedTestDeclarations).
+	declarations = append(declarations, flavorExcludedTestDeclarations(inputPath, options, declarations)...)
 
 	sort.Slice(declarations, func(i, j int) bool {
 		if declarations[i].Name == declarations[j].Name {
@@ -5360,6 +5367,125 @@ func underDisclosureRoot(name string, roots HashSet[string]) bool {
 			return true
 		}
 	}
+}
+
+// flavorExcludedTestDeclarations returns manifest declarations for the Test/Benchmark/Fuzz/Example
+// functions in `_test.go` files that the CONVERSION's build tags exclude but a plain `go test` on
+// the same platform includes — the flavor gap the F6 census gate below would otherwise report as
+// undeclared tests. The corpus reproduces Go's pure-Go flavor (`-tags purego`, the -stdlib/-tests
+// default), while the differential baseline runs the platform's NATIVE flavor, so a test file gated
+// `!purego && (amd64 || …)` (crypto/internal/nistec's p256_asm_table_test.go and
+// p256_ordinv_test.go, the first measured instances) is real on exactly one side. Declaring its
+// tests disclosed-unsupported keeps the census honest — every name `go test` runs is accounted for,
+// filtered from BOTH sides of the oracle like any excluded declaration — and the proof page names
+// the flavor each one needs. Files are parsed STANDALONE (no type-check): they are outside the
+// loaded package by construction, and the census needs names, kinds and positions, nothing more, so
+// the *testing.T/B/F parameter shape is matched on the AST. A file excluded under BOTH tag sets
+// (another OS/arch) contributes nothing — `go test` never runs it either.
+func flavorExcludedTestDeclarations(inputPath string, options Options, declared []testDeclaration) []testDeclaration {
+	// The gap can only exist when the conversion applied tags a bare `go test` does not.
+	if len(options.buildTags) == 0 {
+		return nil
+	}
+
+	paths, err := filepath.Glob(filepath.Join(inputPath, "*_test.go"))
+	if err != nil {
+		return nil
+	}
+
+	seen := HashSet[string]{}
+	for _, decl := range declared {
+		seen.Add(decl.Name)
+	}
+
+	result := make([]testDeclaration, 0)
+
+	for _, filePath := range paths {
+		converted, err := CheckBuildConstraints(filePath, options.targetPlatform, options.buildTags, inputPath)
+		if err != nil || converted {
+			continue // in the conversion's own set (or unreadable, which the loader reports)
+		}
+
+		native, err := CheckBuildConstraints(filePath, options.targetPlatform, nil, inputPath)
+		if err != nil || !native {
+			continue // excluded on both sides — go test never runs it either
+		}
+
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, filePath, nil, parser.SkipObjectResolution)
+		if err != nil || file.Name == nil {
+			continue
+		}
+
+		relPath, _ := filepath.Rel(inputPath, filePath)
+		reason := fmt.Sprintf("requires the native implementation flavor: %s is excluded by the conversion's build tags (%s), and the corpus reproduces the pure-Go flavor",
+			filepath.Base(filePath), strings.Join(options.buildTags, ","))
+
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Recv != nil || fn.Name == nil || fn.Name.Name == "TestMain" || seen.Contains(fn.Name.Name) {
+				continue
+			}
+
+			if fn.Type.Results.NumFields() != 0 {
+				continue
+			}
+
+			name := fn.Name.Name
+			kind := ""
+
+			switch {
+			case isGoTestName(name, "Example") && fn.Type.Params.NumFields() == 0:
+				kind = "example"
+			case isGoTestName(name, "Test") && hasSingleTestingParam(fn, "T"):
+				kind = "test"
+			case isGoTestName(name, "Benchmark") && hasSingleTestingParam(fn, "B"):
+				kind = "benchmark"
+			case isGoTestName(name, "Fuzz") && hasSingleTestingParam(fn, "F"):
+				kind = "fuzz"
+			}
+
+			if kind == "" {
+				continue
+			}
+
+			seen.Add(name)
+			result = append(result, testDeclaration{
+				Name:        name,
+				PackageName: file.Name.Name,
+				Source:      filepath.ToSlash(relPath),
+				Line:        fset.Position(fn.Pos()).Line,
+				Kind:        kind,
+				Status:      "unsupported",
+				Reason:      reason,
+			})
+		}
+	}
+
+	return result
+}
+
+// hasSingleTestingParam reports whether fn takes exactly one parameter spelled `*testing.<typeName>`
+// — the AST-textual form of discoverTestDeclarations' typed check, for files parsed standalone.
+func hasSingleTestingParam(fn *ast.FuncDecl, typeName string) bool {
+	params := fn.Type.Params
+
+	if params.NumFields() != 1 || len(params.List[0].Names) > 1 {
+		return false
+	}
+
+	star, ok := params.List[0].Type.(*ast.StarExpr)
+	if !ok {
+		return false
+	}
+
+	sel, ok := star.X.(*ast.SelectorExpr)
+	if !ok || sel.Sel == nil || sel.Sel.Name != typeName {
+		return false
+	}
+
+	ident, ok := sel.X.(*ast.Ident)
+	return ok && ident.Name == "testing"
 }
 
 // manifestCensusGaps returns the top-level test names present in the RAW `go test -json` results
