@@ -176,7 +176,7 @@ internal static uintptr interhash(@unsafe.Pointer Δp, uintptr h) {
         throw panic(((errorString)("hash of unhashable type "u8 + toRType(t).@string())));
     }
     if (isDirectIface(ref (t).DerefOrNull())){
-        return c1 * typehash(t, @unsafe.Pointer.FromRef(ref (a.of(iface.Ꮡdata)).Value), (uintptr)(h ^ c0));
+        return c1 * typehash(t, @unsafe.Pointer.FromBox(a.of(iface.Ꮡdata)), (uintptr)(h ^ c0));
     } else {
         return c1 * typehash(t, (~a).data, (uintptr)(h ^ c0));
     }
@@ -203,7 +203,7 @@ internal static uintptr nilinterhash(@unsafe.Pointer Δp, uintptr h) {
         throw panic(((errorString)("hash of unhashable type "u8 + toRType(t).@string())));
     }
     if (isDirectIface(ref (t).DerefOrNull())){
-        return c1 * typehash(t, @unsafe.Pointer.FromRef(ref (a.of(eface.Ꮡdata)).Value), (uintptr)(h ^ c0));
+        return c1 * typehash(t, @unsafe.Pointer.FromBox(a.of(eface.Ꮡdata)), (uintptr)(h ^ c0));
     } else {
         return c1 * typehash(t, (~a).data, (uintptr)(h ^ c0));
     }
@@ -337,7 +337,7 @@ internal static error mapKeyError2(ж<_type> Ꮡt, @unsafe.Pointer Δp) {
             return ((errorString)("hash of unhashable type "u8 + toRType(tΔ2).@string()));
         }
         if (isDirectIface(ref (tΔ2).DerefOrNull())){
-            return mapKeyError2(tΔ2, @unsafe.Pointer.FromRef(ref (pdata).Value));
+            return mapKeyError2(tΔ2, @unsafe.Pointer.FromBox(pdata));
         } else {
             return mapKeyError2(tΔ2, pdata.Value);
         }

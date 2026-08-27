@@ -340,3 +340,35 @@ public interface IPointer<T>
     /// <returns>Dereferenced pointer value.</returns>
     static abstract T operator ~(IPointer<T> value);
 }
+
+/// <summary>
+/// Untyped (object-form) access to the slot a pointer names — the store-through/load-through seam
+/// behind the bare-<c>unsafe.Pointer</c> atomic primitives (<c>StorepNoWB</c>/<c>Loadp</c>, the I5
+/// ruling): <c>*(*unsafe.Pointer)(ptr) = val</c> must reach the slot the RETAINED referent names,
+/// and the retainer holds that referent only as <see cref="object"/> — it cannot name the slot's
+/// <c>T</c>. Implemented by <see cref="ж{T}"/> over its own kind's <c>ValueSlot</c>, so all four
+/// kinds answer through one body.
+/// </summary>
+/// <remarks>
+/// INTERNAL by design: this is a runtime seam for the hand-owned <c>unsafe.Pointer</c> recovery
+/// path (reachable there via golib's existing <c>InternalsVisibleTo("unsafe")</c>), not part of any
+/// Go surface — converted code never stores an untyped value through a pointer except via those
+/// primitives. Both members fail SOFT (<c>false</c>) rather than throwing, so the caller owns the
+/// loud named residual: a nil pointer cannot be stored through, and a value the slot's type cannot
+/// hold is the caller's next candidate, not a fault here.
+/// </remarks>
+internal interface IUntypedSlotAccess
+{
+    /// <summary>
+    /// Stores <paramref name="value"/> into the slot this pointer names, when the slot's type can
+    /// hold it — <c>false</c> for a nil pointer or a type the slot cannot accept (a <c>null</c>
+    /// stores the nil form into a reference-typed slot and is refused by a value-typed one).
+    /// </summary>
+    bool TryStoreThrough(object? value);
+
+    /// <summary>
+    /// Loads the slot this pointer names as an <see cref="object"/> — <c>false</c> for a nil
+    /// pointer, which cannot be loaded through.
+    /// </summary>
+    bool TryLoadThrough(out object? value);
+}

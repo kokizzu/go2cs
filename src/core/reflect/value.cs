@@ -451,11 +451,11 @@ internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @
                 storeRcvr(rcvr, stackArgs);
             }
             else if (exprᴛ1 == abiStepPointer) { matchᴛ1 = true;
-                storeRcvr(rcvr, @unsafe.Pointer.FromRef(ref (ᏑregArgs.at(abi.RegArgs.ᏑPtrs, st.ireg)).Value));
+                storeRcvr(rcvr, @unsafe.Pointer.FromBox(ᏑregArgs.at(abi.RegArgs.ᏑPtrs, st.ireg)));
                 fallthrough = true;
             }
             if (fallthrough || !matchᴛ1 && exprᴛ1 == abiStepIntReg) { matchᴛ1 = true;
-                storeRcvr(rcvr, @unsafe.Pointer.FromRef(ref (ᏑregArgs.at(abi.RegArgs.ᏑInts, st.ireg)).Value));
+                storeRcvr(rcvr, @unsafe.Pointer.FromBox(ᏑregArgs.at(abi.RegArgs.ᏑInts, st.ireg)));
             }
             else if (exprᴛ1 == abiStepFloatReg) {
                 storeRcvr(rcvr, new @unsafe.Pointer(ᏑregArgs.at(abi.RegArgs.ᏑFloats, st.freg)));
@@ -863,7 +863,7 @@ internal static (ж<abi.Type> rcvrtype, ж<funcType> t, @unsafe.Pointer fn) meth
             throw panic("reflect: " + op + " of method on nil interface value");
         }
         rcvrtype = iface.Value.itab.Value.Type;
-        fn = @unsafe.Pointer.FromRef(ref (Ꮡ(@unsafe.Slice((~iface).itab.at(abi.ITab.ᏑFun, 0), i + 1), i)).Value);
+        fn = @unsafe.Pointer.FromBox(Ꮡ(@unsafe.Slice((~iface).itab.at(abi.ITab.ᏑFun, 0), i + 1), i));
         t = tt.typeOff((~m).Typ).Reinterpret<abi.Type, funcType>();
     } else {
         rcvrtype = v.typ();
@@ -877,7 +877,7 @@ internal static (ж<abi.Type> rcvrtype, ж<funcType> t, @unsafe.Pointer fn) meth
         }
         ref var ifn = ref heap<@unsafe.Pointer>(out var Ꮡifn);
         ifn = (uintptr)textOffFor(v.typ(), m.Ifn);
-        fn = @unsafe.Pointer.FromRef(ref (Ꮡifn).Value);
+        fn = @unsafe.Pointer.FromBox(Ꮡifn);
         t = typeOffFor(v.typ(), m.Mtyp).Reinterpret<abi.Type, funcType>();
     }
     return (rcvrtype, t, fn);
@@ -966,11 +966,11 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
         }
         else if (exprᴛ1 == abiStepPointer) { matchᴛ1 = true;
             storeRcvr(rcvr, // Put the receiver in a register.
- @unsafe.Pointer.FromRef(ref (ᏑmethodRegs.at(abi.RegArgs.ᏑPtrs, st.ireg)).Value));
+ @unsafe.Pointer.FromBox(ᏑmethodRegs.at(abi.RegArgs.ᏑPtrs, st.ireg)));
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ1 == abiStepIntReg) { matchᴛ1 = true;
-            storeRcvr(rcvr, @unsafe.Pointer.FromRef(ref (ᏑmethodRegs.at(abi.RegArgs.ᏑInts, st.ireg)).Value));
+            storeRcvr(rcvr, @unsafe.Pointer.FromBox(ᏑmethodRegs.at(abi.RegArgs.ᏑInts, st.ireg)));
         }
         else if (exprᴛ1 == abiStepFloatReg) {
             storeRcvr(rcvr, new @unsafe.Pointer(ᏑmethodRegs.at(abi.RegArgs.ᏑFloats, st.freg)));
@@ -2252,7 +2252,7 @@ public static (nint chosen, ΔValue recv, bool recvOK) Select(slice<SelectCase> 
                 if ((flag)(v.flag & flagIndir) != 0){
                     rc.Value.val = v.ptr;
                 } else {
-                    rc.Value.val = @unsafe.Pointer.FromRef(ref (Ꮡv.of(reflect_package.ΔValue.Ꮡptr)).Value);
+                    rc.Value.val = @unsafe.Pointer.FromBox(Ꮡv.of(reflect_package.ΔValue.Ꮡptr));
                 }
                 escapes((~rc).val);
             } while (false);

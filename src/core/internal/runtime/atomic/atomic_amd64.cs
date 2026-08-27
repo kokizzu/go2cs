@@ -21,11 +21,7 @@ public static uint32 Load(ж<uint32> Ꮡptr) {
     return ptr;
 }
 
-//go:nosplit
-//go:noinline
-public static @unsafe.Pointer Loadp(@unsafe.Pointer ptr) {
-    return ~(ж<@unsafe.Pointer>)(uintptr)(ptr);
-}
+// go2cs generated this placeholder — func Loadp is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 //go:nosplit
 //go:noinline

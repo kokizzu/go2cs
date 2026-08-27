@@ -382,7 +382,7 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
             si.Value.ShowWindow = SW_HIDE;
         }
         if ((~sys).ParentProcess != 0) {
-            err = updateProcThreadAttribute((~si).ProcThreadAttributeList, 0, _PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, @unsafe.Pointer.FromRef(ref (sys.of(SysProcAttr.ᏑParentProcess)).Value), /* unsafe.Sizeof(sys.ParentProcess) */ (uintptr)8, nil, nil);
+            err = updateProcThreadAttribute((~si).ProcThreadAttributeList, 0, _PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, @unsafe.Pointer.FromBox(sys.of(SysProcAttr.ᏑParentProcess)), /* unsafe.Sizeof(sys.ParentProcess) */ (uintptr)8, nil, nil);
             if (err != default!) {
                 (pid, handle, err) = (0, 0, err); goto ᒐdone;
             }
@@ -404,7 +404,7 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
         var willInheritHandles = len(fd) > 0 && !(~sys).NoInheritHandles;
         // Do not accidentally inherit more than these handles.
         if (willInheritHandles) {
-            err = updateProcThreadAttribute((~si).ProcThreadAttributeList, 0, _PROC_THREAD_ATTRIBUTE_HANDLE_LIST, @unsafe.Pointer.FromRef(ref (Ꮡ(fd, 0)).Value), (uintptr)len(fd) * /* unsafe.Sizeof(fd[0]) */ (uintptr)8, nil, nil);
+            err = updateProcThreadAttribute((~si).ProcThreadAttributeList, 0, _PROC_THREAD_ATTRIBUTE_HANDLE_LIST, @unsafe.Pointer.FromBox(Ꮡ(fd, 0)), (uintptr)len(fd) * /* unsafe.Sizeof(fd[0]) */ (uintptr)8, nil, nil);
             if (err != default!) {
                 (pid, handle, err) = (0, 0, err); goto ᒐdone;
             }

@@ -139,7 +139,7 @@ internal static uint64 put(this ж<traceStackTable> Ꮡt, slice<uintptr> pcs) {
     if (len(pcs) == 0) {
         return 0;
     }
-    var (id, _) = Ꮡt.of(traceStackTable.Ꮡtab).put((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(pcs, 0)).Value)), (uintptr)len(pcs) * /* unsafe.Sizeof(uintptr(0)) */ (uintptr)8);
+    var (id, _) = Ꮡt.of(traceStackTable.Ꮡtab).put((uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡ(pcs, 0))), (uintptr)len(pcs) * /* unsafe.Sizeof(uintptr(0)) */ (uintptr)8);
     return id;
 }
 

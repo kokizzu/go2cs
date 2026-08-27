@@ -87,7 +87,7 @@ public static (CFRef certArray, error err) SecTrustSettingsCopyCertificates(SecT
     ref var certArray = ref heap(new CFRef(), out var ᏑcertArray);
 
     var ret = syscall(abi.FuncPCABI0(x509_SecTrustSettingsCopyCertificates_trampoline), (uintptr)(int32)domain,
-        (uintptr)@unsafe.Pointer.FromRef(ref (ᏑcertArray).Value), 0, 0, 0, 0D);
+        (uintptr)@unsafe.Pointer.FromBox(ᏑcertArray), 0, 0, 0, 0D);
     if ((int32)ret == errSecNoTrustSettings){
         return (0, ErrNoTrustSettings);
     } else 
@@ -106,7 +106,7 @@ public static (CFRef trustSettings, error err) SecTrustSettingsCopyTrustSettings
     ref var trustSettings = ref heap(new CFRef(), out var ᏑtrustSettings);
 
     var ret = syscall(abi.FuncPCABI0(x509_SecTrustSettingsCopyTrustSettings_trampoline), (uintptr)cert, (uintptr)(int32)domain,
-        (uintptr)@unsafe.Pointer.FromRef(ref (ᏑtrustSettings).Value), 0, 0, 0D);
+        (uintptr)@unsafe.Pointer.FromBox(ᏑtrustSettings), 0, 0, 0D);
     if ((int32)ret == errSecItemNotFound){
         return (0, ErrNoTrustSettings);
     } else 
@@ -122,7 +122,7 @@ internal static partial void x509_SecTrustSettingsCopyTrustSettings_trampoline()
 public static (CFRef, error) SecTrustCreateWithCertificates(CFRef certs, CFRef policies) {
     ref var trustObj = ref heap(new CFRef(), out var ᏑtrustObj);
     var ret = syscall(abi.FuncPCABI0(x509_SecTrustCreateWithCertificates_trampoline), (uintptr)certs, (uintptr)policies,
-        (uintptr)@unsafe.Pointer.FromRef(ref (ᏑtrustObj).Value), 0, 0, 0D);
+        (uintptr)@unsafe.Pointer.FromBox(ᏑtrustObj), 0, 0, 0D);
     if ((int32)ret != 0) {
         return (0, new OSStatus("SecTrustCreateWithCertificates"u8, (int32)ret));
     }
@@ -187,7 +187,7 @@ internal static partial void x509_SecTrustSetVerifyDate_trampoline();
 //go:cgo_import_dynamic x509_SecTrustEvaluate SecTrustEvaluate "/System/Library/Frameworks/Security.framework/Versions/A/Security"
 public static (CFRef, error) SecTrustEvaluate(CFRef trustObj) {
     ref var result = ref heap(new CFRef(), out var Ꮡresult);
-    var ret = syscall(abi.FuncPCABI0(x509_SecTrustEvaluate_trampoline), (uintptr)trustObj, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡresult).Value), 0, 0, 0, 0D);
+    var ret = syscall(abi.FuncPCABI0(x509_SecTrustEvaluate_trampoline), (uintptr)trustObj, (uintptr)@unsafe.Pointer.FromBox(Ꮡresult), 0, 0, 0, 0D);
     if ((int32)ret != 0) {
         return (0, new OSStatus("SecTrustEvaluate"u8, (int32)ret));
     }
@@ -202,8 +202,8 @@ public static (CFRef, CFRef, error) SecTrustGetResult(CFRef trustObj, CFRef resu
 
     ref var chain = ref heap(new CFRef(), out var Ꮡchain);
     ref var info = ref heap(new CFRef(), out var Ꮡinfo);
-    var ret = syscall(abi.FuncPCABI0(x509_SecTrustGetResult_trampoline), (uintptr)trustObj, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡresult).Value),
-        (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡchain).Value), (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡinfo).Value), 0, 0D);
+    var ret = syscall(abi.FuncPCABI0(x509_SecTrustGetResult_trampoline), (uintptr)trustObj, (uintptr)@unsafe.Pointer.FromBox(Ꮡresult),
+        (uintptr)@unsafe.Pointer.FromBox(Ꮡchain), (uintptr)@unsafe.Pointer.FromBox(Ꮡinfo), 0, 0D);
     if ((int32)ret != 0) {
         return (0, 0, new OSStatus("SecTrustGetResult"u8, (int32)ret));
     }
@@ -215,7 +215,7 @@ internal static partial void x509_SecTrustGetResult_trampoline();
 //go:cgo_import_dynamic x509_SecTrustEvaluateWithError SecTrustEvaluateWithError "/System/Library/Frameworks/Security.framework/Versions/A/Security"
 public static (nint, error) SecTrustEvaluateWithError(CFRef trustObj) {
     ref var errRef = ref heap(new CFRef(), out var ᏑerrRef);
-    var ret = syscall(abi.FuncPCABI0(x509_SecTrustEvaluateWithError_trampoline), (uintptr)trustObj, (uintptr)@unsafe.Pointer.FromRef(ref (ᏑerrRef).Value), 0, 0, 0, 0D);
+    var ret = syscall(abi.FuncPCABI0(x509_SecTrustEvaluateWithError_trampoline), (uintptr)trustObj, (uintptr)@unsafe.Pointer.FromBox(ᏑerrRef), 0, 0, 0, 0D);
     if ((int32)ret != 1) {
         var errStr = CFErrorCopyDescription(errRef);
         var err = errors.New(CFStringToString(errStr));

@@ -479,7 +479,7 @@ internal static @unsafe.Pointer userArenaNextFree(this ж<mspan> Ꮡs, ж<_type>
         size *= (uintptr)cap;
     }
     if (size == 0 || cap == 0) {
-        return @unsafe.Pointer.FromRef(ref (Ꮡzerobase).Value);
+        return @unsafe.Pointer.FromBox(Ꮡzerobase);
     }
     if (size > userArenaChunkMaxAllocBytes) {
         // Redirect allocations that don't fit into a chunk well directly

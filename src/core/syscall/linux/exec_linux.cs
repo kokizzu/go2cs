@@ -193,7 +193,7 @@ internal static (nint pid, Errno err) forkAndExecInChild(ж<byte> Ꮡargv0, slic
                 }
             }
         }
-        RawSyscall(SYS_WRITE, (uintptr)mapPipe[1], (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡerr2).Value), /* unsafe.Sizeof(err2) */ (uintptr)8);
+        RawSyscall(SYS_WRITE, (uintptr)mapPipe[1], (uintptr)@unsafe.Pointer.FromBox(Ꮡerr2), /* unsafe.Sizeof(err2) */ (uintptr)8);
         Close(mapPipe[1]);
     }
     return (pid, 0);
@@ -410,7 +410,7 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
                 goto childerror;
             }
         }
-        (pid, _, err1) = RawSyscall(SYS_READ, (uintptr)mapPipe[0], (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡerr2).Value), /* unsafe.Sizeof(err2) */ (uintptr)8);
+        (pid, _, err1) = RawSyscall(SYS_READ, (uintptr)mapPipe[0], (uintptr)@unsafe.Pointer.FromBox(Ꮡerr2), /* unsafe.Sizeof(err2) */ (uintptr)8);
         if (err1 != 0) {
             goto childerror;
         }
@@ -691,11 +691,11 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
     // Time to exec.
     (_, _, err1) = RawSyscall(SYS_EXECVE,
         (uintptr)Ꮡargv0,
-        (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(argv, 0)).Value),
-        (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(envv, 0)).Value));
+        (uintptr)@unsafe.Pointer.FromBox(Ꮡ(argv, 0)),
+        (uintptr)@unsafe.Pointer.FromBox(Ꮡ(envv, 0)));
 childerror:
     RawSyscall(SYS_WRITE, // send error code on pipe
- (uintptr)pipe, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡerr1).Value), /* unsafe.Sizeof(err1) */ (uintptr)8);
+ (uintptr)pipe, (uintptr)@unsafe.Pointer.FromBox(Ꮡerr1), /* unsafe.Sizeof(err1) */ (uintptr)8);
     while (ᐧ) {
         RawSyscall(SYS_EXIT, 253, 0, 0);
     }

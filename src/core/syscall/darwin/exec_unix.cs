@@ -317,8 +317,8 @@ public static error /*err*/ Exec(@string argv0, slice<@string> argv, slice<@stri
         // RawSyscall should never be used on Solaris, illumos, or AIX.
         err1 = execveLibc(
             (uintptr)argv0p,
-            (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(argvp, 0)).Value),
-            (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(envvp, 0)).Value));
+            (uintptr)@unsafe.Pointer.FromBox(Ꮡ(argvp, 0)),
+            (uintptr)@unsafe.Pointer.FromBox(Ꮡ(envvp, 0)));
     } else 
     if (Δruntime.GOOS == "darwin"u8 || Δruntime.GOOS == "ios"u8){
         // Similarly on Darwin.
@@ -330,8 +330,8 @@ public static error /*err*/ Exec(@string argv0, slice<@string> argv, slice<@stri
     } else {
         var (ᴛ1, ᴛ2, ᴛ3) = RawSyscall(SYS_EXECVE,
             (uintptr)argv0p,
-            (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(argvp, 0)).Value),
-            (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(envvp, 0)).Value));
+            (uintptr)@unsafe.Pointer.FromBox(Ꮡ(argvp, 0)),
+            (uintptr)@unsafe.Pointer.FromBox(Ꮡ(envvp, 0)));
         (_, _, err1) = (ᴛ1, ᴛ2, ᴛ3);
     }
     runtime_AfterExec();

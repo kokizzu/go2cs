@@ -297,7 +297,7 @@ internal static void sysargs(int32 argc, ж<ж<byte>> Ꮡargv) {
         munmap(Δp, size);
         return;
     }
-    n = read(fd, (uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡauxvreadbuf.at<uintptr>(0)).Value)), (int32)/* unsafe.Sizeof(auxvreadbuf) */ (uintptr)1024);
+    n = read(fd, (uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡauxvreadbuf.at<uintptr>(0))), (int32)/* unsafe.Sizeof(auxvreadbuf) */ (uintptr)1024);
     closefd(fd);
     if (n < 0) {
         return;

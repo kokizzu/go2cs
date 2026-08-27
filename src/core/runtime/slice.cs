@@ -202,7 +202,7 @@ internal static Δsliceᴛ growslice(@unsafe.Pointer oldPtr, nint newLen, nint o
     if (et.Size_ == 0) {
         // append should not create a slice with nil pointer but non-zero len.
         // We assume that append doesn't need to preserve oldPtr in this case.
-        return new Δsliceᴛ(@unsafe.Pointer.FromRef(ref (Ꮡzerobase).Value), newLen, newLen);
+        return new Δsliceᴛ(@unsafe.Pointer.FromBox(Ꮡzerobase), newLen, newLen);
     }
     nint newcap = nextslicecap(newLen, oldCap);
     bool overflow = default!;

@@ -246,11 +246,11 @@ internal static pinState ofObject(this ж<pinnerBits> Ꮡp, uintptr n) {
 //
 //go:nosplit
 internal static ж<pinnerBits> getPinnerBits(this ж<mspan> Ꮡs) {
-    return (ж<pinnerBits>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡs.of(mspan.ᏑpinnerBits)).Value)));
+    return (ж<pinnerBits>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡs.of(mspan.ᏑpinnerBits))));
 }
 
 internal static void setPinnerBits(this ж<mspan> Ꮡs, ж<pinnerBits> Ꮡp) {
-    atomicstorep(@unsafe.Pointer.FromRef(ref (Ꮡs.of(mspan.ᏑpinnerBits)).Value), new @unsafe.Pointer(Ꮡp));
+    atomicstorep(@unsafe.Pointer.FromBox(Ꮡs.of(mspan.ᏑpinnerBits)), new @unsafe.Pointer(Ꮡp));
 }
 
 // refreshPinnerBits replaces pinnerBits with a fresh copy in the arenas for the

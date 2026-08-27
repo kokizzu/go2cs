@@ -49,7 +49,7 @@ namespace go;
 /// wrong-kind box.
 /// </para>
 /// </remarks>
-public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
+public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer, IUntypedSlotAccess
 {
     // The ONE storage fact every kind shares: whether this box IS the nil pointer. STRUCTURAL —
     // set only at construction, by the kind ctor contracts (see the class remarks); the
@@ -336,6 +336,48 @@ public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     {
         m_pin ??= new PinnedBuffer(arr.Source, arr.Length);
         return m_pin.Pointer;
+    }
+
+    // ---- untyped slot access (the bare-unsafe.Pointer store/load-through seam — I5) ----
+    //
+    // One body serves all four kinds because ValueSlot already dispatches per kind. Explicit
+    // implementations: the interface is the internal recovery seam for unsafe.Pointer's retained
+    // referent, never a surface converted code calls.
+
+    bool IUntypedSlotAccess.TryStoreThrough(object? value)
+    {
+        // A nil pointer cannot be stored through (Go faults; the caller owns the loud form).
+        if (IsNilPointer)
+            return false;
+
+        switch (value)
+        {
+            case T typed:
+                ValueSlot = typed;
+                return true;
+
+            // Storing the nil pointer form: a reference-typed slot (a *T location holding a
+            // pointer/map/func/…) takes null; a value-typed slot refuses, and the caller's
+            // candidate ladder supplies the value-form nil (e.g. a zero uintptr) instead.
+            case null when !typeof(T).IsValueType:
+                ValueSlot = default!;
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    bool IUntypedSlotAccess.TryLoadThrough(out object? value)
+    {
+        if (IsNilPointer)
+        {
+            value = null;
+            return false;
+        }
+
+        value = ValueSlot;
+        return true;
     }
 
     // ---- the dereference operator and equality operators ----

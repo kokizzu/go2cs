@@ -555,7 +555,7 @@ Read:
         // goroutine and uses atomics to write the updated queue indices,
         // and then the read-out from the signal handler buffer uses
         // atomics to read those queue indices.
-        raceacquire(@unsafe.Pointer.FromRef(ref (ᏑlabelSync).Value));
+        raceacquire(@unsafe.Pointer.FromBox(ᏑlabelSync));
     }
     return (data[..(int)(di)], tags[..(int)(ti)], false);
 }

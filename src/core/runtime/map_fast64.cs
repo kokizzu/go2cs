@@ -233,7 +233,7 @@ internal static @unsafe.Pointer mapassign_fast64ptr(ж<maptype> Ꮡt, ж<hmap> �
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapWritesˢ);
     }
-    var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡkey).Value)), (uintptr)h.hash0);
+    var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡkey)), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
     h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {

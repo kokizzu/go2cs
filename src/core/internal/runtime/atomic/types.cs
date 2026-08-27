@@ -467,7 +467,7 @@ public static void Store(this ж<Float64> Ꮡf, float64 valueʗp) {
 //
 //go:nosplit
 public static @unsafe.Pointer Load(this ж<UnsafePointer> Ꮡu) {
-    return (uintptr)Loadp(@unsafe.Pointer.FromRef(ref (Ꮡu.of(UnsafePointer.Ꮡvalue)).Value));
+    return (uintptr)Loadp(@unsafe.Pointer.FromBox(Ꮡu.of(UnsafePointer.Ꮡvalue)));
 }
 
 // StoreNoWB updates the value atomically.
@@ -480,7 +480,7 @@ public static @unsafe.Pointer Load(this ж<UnsafePointer> Ꮡu) {
 //
 //go:nosplit
 public static void StoreNoWB(this ж<UnsafePointer> Ꮡu, @unsafe.Pointer value) {
-    StorepNoWB(@unsafe.Pointer.FromRef(ref (Ꮡu.of(UnsafePointer.Ꮡvalue)).Value), value);
+    StorepNoWB(@unsafe.Pointer.FromBox(Ꮡu.of(UnsafePointer.Ꮡvalue)), value);
 }
 
 // Store updates the value atomically.

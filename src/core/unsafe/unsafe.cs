@@ -219,6 +219,31 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
     {
     }
 
+    // ---- referent retention (I5: the bare-unsafe.Pointer store/load-through seam) ----
+    //
+    // The mint for `unsafe.Pointer(&x)` flattens a managed pointer to its numeric address, and for
+    // storage the collector may move, that number alone can neither keep the alias nor recover it —
+    // which is how StorepNoWB lost its writes (the I5 ruling: the store landed in the argument
+    // box's own uintptr slot, never the memory it names). The NativeBox §4 retention pattern
+    // applied here closes that: a Pointer minted FROM a managed box CARRIES the box, so the
+    // bare-unsafe.Pointer atomic primitives — the only surface that must WRITE or READ through a
+    // bare Pointer — recover the referent and reach the very slot the pointer names. Retention
+    // pins nothing and roots only what the minting frame already rooted, exactly
+    // NativeBox.m_retainedSource's contract.
+    private readonly object? m_retainedSource;
+
+    private Pointer(uintptr value, object? retainedSource) : this(value)
+    {
+        m_retainedSource = retainedSource;
+    }
+
+    /// <summary>
+    /// The managed box this pointer was minted from, when there is one — the recovery surface for
+    /// the bare-<c>unsafe.Pointer</c> primitives (<see cref="StoreThrough"/>/<see cref="LoadThrough"/>).
+    /// Null for numeric and native mints.
+    /// </summary>
+    public object? RetainedSource => m_retainedSource;
+
     // An unsafe.Pointer's VALUE is the address itself (a real pinned/native address), so its
     // pointer-order token is that address — Go's Value.Pointer() ordering (internal/fmtsort's
     // unsafe.Pointer map-key ordering) reads through unchanged: same-array element addresses
@@ -331,6 +356,123 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
     {
         fixed (T* ptr = &type)
             return new Pointer((uintptr)ptr);
+    }
+
+    // The converter's mint for `unsafe.Pointer(p)` where p is a managed Go pointer (`ж<T>`): the
+    // numeric value is byte-compatible with the FromRef form it replaces (the transient address of
+    // the storage the box names — still not GC-stable, the same caveat as every
+    // unsafe.Pointer-as-number use), and the BOX rides along so the bare-Pointer primitives can
+    // recover the alias the number cannot carry. Nil is the 0 address rather than FromRef's
+    // nil-deref panic — Go's `unsafe.Pointer(nil)` — the same fix the pointer-parameter emission
+    // took for the syscall wrappers' idiomatic nil out-pointers.
+    public static Pointer FromBox<T>(ж<T> box)
+    {
+        if (box is null || box.IsNilPointer)
+            return new Pointer(nil);
+
+        // A native alias's number IS its meaning — carry it exactly; the retained box still rides
+        // along so a store through it reaches the aliased memory via the box's own slot access.
+        if (box.NativeAddress != 0)
+            return new Pointer((uintptr)box.NativeAddress, box);
+
+        fixed (T* ptr = &box.ValueSlot)
+            return new Pointer((uintptr)ptr, box);
+    }
+
+    // ---- the bare-unsafe.Pointer primitives' recovery and through-ops (I5) ----
+
+    // The referent this pointer can store/load through: the retained box first; else whatever the
+    // provenance/token registry can recover for the number (a pointer-parameter mint's pinned
+    // registration, a reflect projection's token) — validate-on-read protected, so a stale entry
+    // never answers.
+    private object? ResolveReferent()
+    {
+        if (m_retainedSource is not null)
+            return m_retainedSource;
+
+        return IsNull ? null : ManagedPointerTokens.Resolve(Value.Value);
+    }
+
+    /// <summary>
+    /// Performs Go's <c>*(*unsafe.Pointer)(ptr) = val</c> — the store the bare-Pointer atomic
+    /// primitives (<c>StorepNoWB</c>) are defined as. Panics, loudly and by name, when this
+    /// pointer carries no recoverable managed referent or the named slot cannot hold the value:
+    /// the silent alternative is a lost write into a fresh box's own slot (the I5 probe), which
+    /// is exactly what this member exists to end.
+    /// </summary>
+    public void StoreThrough(Pointer? val)
+    {
+        if (ResolveReferent() is not IUntypedSlotAccess slot)
+            throw panic("unsafe.Pointer store-through: the pointer carries no recoverable managed referent (raw-address stores are not part of the managed model)");
+
+        if (val is null || val.IsNull)
+        {
+            // The nil store: a pointer-typed slot takes the null form; a uintptr-shaped slot
+            // (reached through reinterpret games) takes the zero address.
+            if (slot.TryStoreThrough(null) || slot.TryStoreThrough((uintptr)0))
+                return;
+        }
+        else
+        {
+            // The slot's own type selects from the candidates: the retained referent serves a
+            // `*T` location, the Pointer itself a `*unsafe.Pointer` location, a registry recovery
+            // the pointer-parameter mints, and the raw number a `*uintptr` location.
+            if (val.RetainedSource is { } referent && slot.TryStoreThrough(referent))
+                return;
+
+            if (slot.TryStoreThrough(val))
+                return;
+
+            if (ManagedPointerTokens.Resolve(val.Value.Value) is { } resolved && slot.TryStoreThrough(resolved))
+                return;
+
+            if (slot.TryStoreThrough(val.Value))
+                return;
+        }
+
+        throw panic("unsafe.Pointer store-through: the named slot cannot hold the stored pointer value");
+    }
+
+    /// <summary>
+    /// Performs Go's <c>*(*unsafe.Pointer)(ptr)</c> — the load the bare-Pointer atomic primitives
+    /// (<c>Loadp</c>) are defined as. Same recovery, same loud residual, as
+    /// <see cref="StoreThrough"/>.
+    /// </summary>
+    public Pointer LoadThrough()
+    {
+        if (ResolveReferent() is not IUntypedSlotAccess slot)
+            throw panic("unsafe.Pointer load-through: the pointer carries no recoverable managed referent (raw-address loads are not part of the managed model)");
+
+        if (!slot.TryLoadThrough(out object? value))
+            throw panic("unsafe.Pointer load-through: nil pointer dereference");
+
+        return value switch
+        {
+            null => new Pointer(nil),
+            Pointer p => p,
+            uintptr u => new Pointer(u),
+            INilPointer referent => FromReferent(referent),
+            _ => throw panic("unsafe.Pointer load-through: the named slot does not hold a pointer-shaped value"),
+        };
+    }
+
+    // Wraps a loaded managed pointer as an unsafe.Pointer without knowing its T: the scalar is the
+    // referent's own order token, REGISTERED so the numeric round-trip a typed cast takes —
+    // `(*T)(loaded)` emits `(ж<T>)(uintptr)(…)` — resolves back to the very box (MintOpaque's
+    // pattern, the fourth minter); the retention slot carries the recovery for the primitives
+    // themselves.
+    private static Pointer FromReferent(INilPointer referent)
+    {
+        if (referent.IsNilPointer)
+            return new Pointer(nil);
+
+        nuint token = referent.PointerOrderToken;
+
+        if (token == 0)
+            return new Pointer(nil);
+
+        ManagedPointerTokens.Register(token, referent);
+        return new Pointer((uintptr)token, referent);
     }
 }
 

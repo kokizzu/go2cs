@@ -30,7 +30,7 @@ internal static uint64 put(this ж<traceTypeTable> Ꮡt, ж<abi.Type> Ꮡtyp) {
         return 0;
     }
     // Insert the pointer to the type itself.
-    var (id, _) = Ꮡt.of(traceTypeTable.Ꮡtab).put((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(typ)).Value)), goarch.PtrSize);
+    var (id, _) = Ꮡt.of(traceTypeTable.Ꮡtab).put((uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡ(typ))), goarch.PtrSize);
     return id;
 }
 

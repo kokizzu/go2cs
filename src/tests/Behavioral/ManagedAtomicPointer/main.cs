@@ -58,8 +58,8 @@ internal static void identity() {
     }
     fmt.Println(same, diff);
     ref var l = ref heap(new lazyProc(), out var Ꮡl);
-    @unsafe.Pointer fp = @unsafe.Pointer.FromRef(ref (Ꮡl.of(lazyProc.Ꮡp)).Value);
-    fmt.Println(fp == @unsafe.Pointer.FromRef(ref (Ꮡl.of(lazyProc.Ꮡp)).Value), fp == pa);
+    @unsafe.Pointer fp = @unsafe.Pointer.FromBox(Ꮡl.of(lazyProc.Ꮡp));
+    fmt.Println(fp == @unsafe.Pointer.FromBox(Ꮡl.of(lazyProc.Ꮡp)), fp == pa);
 }
 
 internal static void Main() {

@@ -615,12 +615,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 
 		// unsafe.Pointer(ptr) where ptr is a Go pointer (`*T`, emitted as the managed box `ж<T>`).
 		// A managed box has no conversion to the numeric Pointer (`ж<uintptr>`), so a plain cast is
-		// CS0030 — e.g. `unsafe.Pointer(&u.value)` → `(@unsafe.Pointer)(Ꮡu.of(…))`. Pin the
-		// pointed-to storage instead via the golib helper: `@unsafe.Pointer.FromRef(ref (box).Value)`.
-		// (`uintptr`/`unsafe.Pointer` args are not boxes and keep the implicit-cast path below; only
-		// a genuine pointer arg needs this.) The numeric address is not GC-stable — the same caveat
-		// that applies to every unsafe.Pointer-as-uintptr use; the atomic intrinsics consuming it are
-		// asm stubs, so this is purely about producing compilable C#.
+		// CS0030 — e.g. `unsafe.Pointer(&u.value)` → `(@unsafe.Pointer)(Ꮡu.of(…))`. Mint through
+		// the referent-RETAINING helper instead: `@unsafe.Pointer.FromBox(box)` carries the same
+		// transient numeric address the old `FromRef(ref (box).Value)` form produced AND the box
+		// itself, so the bare-unsafe.Pointer atomic primitives (StorepNoWB/Loadp — the I5 ruling:
+		// FromRef flattened the alias to a number in a fresh box and the store never landed) can
+		// recover the referent and reach the very slot the pointer names. (`uintptr`/
+		// `unsafe.Pointer` args are not boxes and keep the implicit-cast path below; only a genuine
+		// pointer arg needs this.) The numeric address is still not GC-stable — the same caveat as
+		// every unsafe.Pointer-as-uintptr use; the RETAINED box is what survives a move.
 		if targetTypeName == "@unsafe.Pointer" {
 			// A NAMED-numeric arg whose underlying is uintptr — `unsafe.Pointer(v)` where v is
 			// `type gclinkptr uintptr` (runtime malloc/mcache/stack: the allocator's span-address
@@ -669,12 +672,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 
 				// A deref-aliased pointer RECEIVER renders as the pointed-to VALUE alias
 				// (`ref var pc0 = ref Ꮡpc0.Value`) and has NO box to address — a value-ref receiver is
-				// `this ref T r` — so its address must come from the alias itself.
+				// `this ref T r` — so its address must come from the alias itself. This is the one
+				// mint that cannot retain (FromRef sees only the ref); a recorded residual, loud at
+				// the primitives if ever reached.
 				if v.exprIsDerefAliasedPointer(arg) {
 					return fmt.Sprintf("@unsafe.Pointer.FromRef(ref %s)", expr)
 				}
 
-				return fmt.Sprintf("@unsafe.Pointer.FromRef(ref (%s).Value)", expr)
+				return fmt.Sprintf("@unsafe.Pointer.FromBox(%s)", expr)
 			}
 		}
 

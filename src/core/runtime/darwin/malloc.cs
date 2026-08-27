@@ -592,7 +592,7 @@ mapped:
             } else {
                 sysNoHugePage(new @unsafe.Pointer(l2), /* unsafe.Sizeof(*l2) */ (uintptr)33554432);
             }
-            atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (Ꮡ(h.arenas, (int)(ri.l1()))).Value), new @unsafe.Pointer(l2));
+            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡ(h.arenas, (int)(ri.l1()))), new @unsafe.Pointer(l2));
         }
         if (l2.Value[ri.l2()] != nil) {
             @throw(arenaAlreadyInitializedˢ);
@@ -631,7 +631,7 @@ mapped:
         // new heap arena becomes visible before the heap lock
         // is released (which shouldn't happen, but there's
         // little downside to this).
-        atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (l2.at<ж<heapArena>>((nint)(ri.l2()))).Value), new @unsafe.Pointer(r));
+        atomic.StorepNoWB(@unsafe.Pointer.FromBox(l2.at<ж<heapArena>>((nint)(ri.l2()))), new @unsafe.Pointer(r));
 continue_mapped:;
     }
 break_mapped:;
@@ -729,7 +729,7 @@ internal static void enableMetadataHugePages(this ж<mheap> Ꮡh) {
     // N.B. The arenas L1 map is quite small on all platforms, so it's fine to
     // just iterate over the whole thing.
     foreach (var (i, _) in h.arenas) {
-        var l2 = (ж<array<ж<heapArena>>>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡ(h.arenas, i)).Value)));
+        var l2 = (ж<array<ж<heapArena>>>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡ(h.arenas, i))));
         if (l2 == nil) {
             continue;
         }
@@ -836,7 +836,7 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
         @throw(mallocgcCalledWithˢ);
     }
     if (size == 0) {
-        return @unsafe.Pointer.FromRef(ref (Ꮡzerobase).Value);
+        return @unsafe.Pointer.FromBox(Ꮡzerobase);
     }
     // It's possible for any malloc to trigger sweeping, which may in
     // turn queue finalizers. Record this dynamic lock edge.

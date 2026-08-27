@@ -385,7 +385,7 @@ internal static void callbackWrap(ref callbackArgs a) {
             memmove((uintptr)add(goArgs, part.dstStackOffset), (uintptr)add(a.args, part.srcStackOffset), part.len);
         }
         else if (exprᴛ1 == abiPartReg) {
-            @unsafe.Pointer goReg = @unsafe.Pointer.FromRef(ref (Ꮡregs.at(abi.RegArgs.ᏑInts, part.dstRegister)).Value);
+            @unsafe.Pointer goReg = @unsafe.Pointer.FromBox(Ꮡregs.at(abi.RegArgs.ᏑInts, part.dstRegister));
             memmove(goReg, (uintptr)add(a.args, part.srcStackOffset), part.len);
         }
         else { /* default: */
@@ -533,7 +533,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscalln(uintptr f
     c.Value.fn = fn;
     c.Value.n = n;
     if ((~c).n != 0) {
-        c.Value.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(args, 0)).Value));
+        c.Value.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡ(args, 0)));
     }
     cgocall(asmstdcallAddr, new @unsafe.Pointer(c));
     // cgocall may reschedule us on to a different M,

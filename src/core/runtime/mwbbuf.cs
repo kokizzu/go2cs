@@ -63,13 +63,13 @@ internal static readonly @string badWriteBarrierBufferˢ = "bad write barrier bu
 
 // reset empties b by resetting its next and end pointers.
 [GoRecv] internal static void reset(this ref wbBuf b) {
-    var start = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, 0)).Value);
+    var start = (uintptr)@unsafe.Pointer.FromBox(Ꮡ(b.buf, 0));
     b.next = start;
     if (testSmallBuf){
         // For testing, make the buffer smaller but more than
         // 1 write barrier's worth, so it tests both the
         // immediate flush and delayed flush cases.
-        b.end = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, wbMaxEntriesPerCall + 1)).Value);
+        b.end = (uintptr)@unsafe.Pointer.FromBox(Ꮡ(b.buf, wbMaxEntriesPerCall + 1));
     } else {
         b.end = start + (uintptr)len(b.buf) * /* unsafe.Sizeof(b.buf[0]) */ (uintptr)8;
     }
@@ -84,12 +84,12 @@ internal static readonly @string badWriteBarrierBufferˢ = "bad write barrier bu
 //
 //go:nosplit
 [GoRecv] internal static void discard(this ref wbBuf b) {
-    b.next = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, 0)).Value);
+    b.next = (uintptr)@unsafe.Pointer.FromBox(Ꮡ(b.buf, 0));
 }
 
 // empty reports whether b contains no pointers.
 [GoRecv] internal static bool empty(this ref wbBuf b) {
-    return b.next == (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, 0)).Value);
+    return b.next == (uintptr)@unsafe.Pointer.FromBox(Ꮡ(b.buf, 0));
 }
 
 // getX returns space in the write barrier buffer to store X pointers.
@@ -180,7 +180,7 @@ internal static void wbBufFlush1(ж<Δp> Ꮡpp) {
     ref var pp = ref Ꮡpp.DerefOrNull();
 
     // Get the buffered pointers.
-    var start = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡpp.of(runtime_package.Δp.ᏑwbBuf).at(wbBuf.Ꮡbuf, 0)).Value);
+    var start = (uintptr)@unsafe.Pointer.FromBox(Ꮡpp.of(runtime_package.Δp.ᏑwbBuf).at(wbBuf.Ꮡbuf, 0));
     var n = (pp.wbBuf.next - start) / /* unsafe.Sizeof(pp.wbBuf.buf[0]) */ (uintptr)8;
     var ptrs = pp.wbBuf.buf[..(int)(n)];
     // Poison the buffer to make extra sure nothing is enqueued

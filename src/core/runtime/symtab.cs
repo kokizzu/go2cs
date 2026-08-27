@@ -392,7 +392,7 @@ internal static ref ж<slice<ж<moduledata>>> modulesSlice => ref ᏑmodulesSlic
 //go:nosplit
 //go:nowritebarrier
 internal static slice<ж<moduledata>> activeModules() {
-    var Δp = (ж<slice<ж<moduledata>>>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (ᏑmodulesSlice).Value)));
+    var Δp = (ж<slice<ж<moduledata>>>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(ᏑmodulesSlice)));
     if (Δp == nil) {
         return default!;
     }
@@ -448,7 +448,7 @@ internal static void modulesinit() {
             break;
         }
     }
-    atomicstorep(@unsafe.Pointer.FromRef(ref (ᏑmodulesSlice).Value), new @unsafe.Pointer(modules));
+    atomicstorep(@unsafe.Pointer.FromBox(ᏑmodulesSlice), new @unsafe.Pointer(modules));
 }
 
 [GoType] partial struct functab {
