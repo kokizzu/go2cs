@@ -669,7 +669,7 @@ internal static void allgadd(ж<g> Ꮡgp) {
     @lock(Ꮡallglock);
     allgs = append(allgs, Ꮡgp);
     if (Ꮡ(allgs, 0) != allgptr) {
-        atomicstorep(@unsafe.Pointer.FromRef(ref (Ꮡallgptr).Value), @unsafe.Pointer.FromRef(ref (Ꮡ(allgs, 0)).Value));
+        atomicstorep(@unsafe.Pointer.FromBox(Ꮡallgptr), @unsafe.Pointer.FromBox(Ꮡ(allgs, 0)));
     }
     atomic.Storeuintptr(Ꮡallglen, (uintptr)len(allgs));
     unlock(Ꮡallglock);
@@ -691,7 +691,7 @@ internal static slice<ж<g>> allGsSnapshot() {
 // atomicAllG returns &allgs[0] and len(allgs) for use with atomicAllGIndex.
 internal static (ж<ж<g>>, uintptr) atomicAllG() {
     var length = atomic.Loaduintptr(Ꮡallglen);
-    var ptr = (ж<ж<g>>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡallgptr).Value)));
+    var ptr = (ж<ж<g>>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡallgptr)));
     return (ptr, length);
 }
 
@@ -955,7 +955,7 @@ internal static void mcommoninit(ж<m> Ꮡmp, int64 id) {
     mp.alllink = allm;
     // NumCgoCall() and others iterate over allm w/o schedlock,
     // so we need to publish it safely.
-    atomicstorep(@unsafe.Pointer.FromRef(ref (Ꮡallm).Value), new @unsafe.Pointer(Ꮡmp));
+    atomicstorep(@unsafe.Pointer.FromBox(Ꮡallm), new @unsafe.Pointer(Ꮡmp));
     unlock(Ꮡsched.of(schedt.Ꮡlock));
     // Allocate memory to hold a cgo traceback if the cgo call crashes.
     if (iscgo || GOOS == "solaris"u8 || GOOS == "illumos"u8 || GOOS == "windows"u8) {
@@ -1851,7 +1851,7 @@ internal static void mstart0() {
         if (size == 0) {
             size = 16384 * sys.StackGuardMultiplier;
         }
-        gp.Value.stack.hi = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡsize).Value));
+        gp.Value.stack.hi = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡsize));
         gp.Value.stack.lo = (~gp).stack.hi - size + 1024;
     }
     // Initialize stack guard so that we can start calling regular
@@ -5137,7 +5137,7 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
         if ((~newg).labels != nil) {
             // See note in proflabel.go on labelSync's role in synchronizing
             // with the reads in the signal handler.
-            racereleasemergeg(ref (newg).DerefOrNull(), @unsafe.Pointer.FromRef(ref (ᏑlabelSync).Value));
+            racereleasemergeg(ref (newg).DerefOrNull(), @unsafe.Pointer.FromBox(ᏑlabelSync));
         }
     }
     releasem(ref (mp).DerefOrNull());
@@ -5754,7 +5754,7 @@ internal static ж<Δp> procresize(int32 nprocs) {
             pp = @new<Δp>();
         }
         pp.init(i);
-        atomicstorep(@unsafe.Pointer.FromRef(ref (Ꮡ(allp, i)).Value), new @unsafe.Pointer(pp));
+        atomicstorep(@unsafe.Pointer.FromBox(Ꮡ(allp, i)), new @unsafe.Pointer(pp));
     }
     var gp = getg();
     if ((~(~gp).m).p != 0 && (~(~(~gp).m).p.ptr()).id < nprocs){

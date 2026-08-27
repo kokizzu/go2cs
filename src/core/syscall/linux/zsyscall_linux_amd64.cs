@@ -135,7 +135,7 @@ internal static (nint n, error err) readlinkat(nint dirfd, @string path, slice<b
     if (len(buf) > 0){
         _p1 = new @unsafe.Pointer(Ꮡ(buf, 0));
     } else {
-        _p1 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall6(SYS_READLINKAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)_p1, (uintptr)len(buf), 0, 0);
     n = (nint)r0;
@@ -207,7 +207,7 @@ public static (nint n, error err) Getcwd(slice<byte> buf) {
     if (len(buf) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall(SYS_GETCWD, (uintptr)_p0, (uintptr)len(buf), 0);
     n = (nint)r0;
@@ -508,7 +508,7 @@ public static (nint n, error err) Getdents(nint fd, slice<byte> buf) {
     if (len(buf) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall(SYS_GETDENTS64, (uintptr)fd, (uintptr)_p0, (uintptr)len(buf));
     n = (nint)r0;
@@ -601,7 +601,7 @@ public static (nint sz, error err) Getxattr(@string path, @string attr, slice<by
     if (len(dest) > 0){
         _p2 = new @unsafe.Pointer(Ꮡ(dest, 0));
     } else {
-        _p2 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p2 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall6(SYS_GETXATTR, (uintptr)_p0, (uintptr)_p1, (uintptr)_p2, (uintptr)len(dest), 0, 0);
     sz = (nint)r0;
@@ -675,7 +675,7 @@ public static (nint n, error err) Klogctl(nint typ, slice<byte> buf) {
     if (len(buf) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall(SYS_SYSLOG, (uintptr)typ, (uintptr)_p0, (uintptr)len(buf));
     n = (nint)r0;
@@ -699,7 +699,7 @@ public static (nint sz, error err) Listxattr(@string path, slice<byte> dest) {
     if (len(dest) > 0){
         _p1 = new @unsafe.Pointer(Ꮡ(dest, 0));
     } else {
-        _p1 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall(SYS_LISTXATTR, (uintptr)_p0, (uintptr)_p1, (uintptr)len(dest));
     sz = (nint)r0;
@@ -793,7 +793,7 @@ internal static (nint n, error err) read(nint fd, slice<byte> p) {
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall(SYS_READ, (uintptr)fd, (uintptr)_p0, (uintptr)len(p));
     n = (nint)r0;
@@ -832,7 +832,7 @@ public static error /*err*/ Setdomainname(slice<byte> p) {
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = Syscall(SYS_SETDOMAINNAME, (uintptr)_p0, (uintptr)len(p), 0);
     if (e1 != 0) {
@@ -849,7 +849,7 @@ public static error /*err*/ Sethostname(slice<byte> p) {
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = Syscall(SYS_SETHOSTNAME, (uintptr)_p0, (uintptr)len(p), 0);
     if (e1 != 0) {
@@ -922,7 +922,7 @@ public static error /*err*/ Setxattr(@string path, @string attr, slice<byte> dat
     if (len(data) > 0){
         _p2 = new @unsafe.Pointer(Ꮡ(data, 0));
     } else {
-        _p2 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p2 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = Syscall6(SYS_SETXATTR, (uintptr)_p0, (uintptr)_p1, (uintptr)_p2, (uintptr)len(data), (uintptr)flags, 0);
     if (e1 != 0) {
@@ -1041,7 +1041,7 @@ internal static (nint n, error err) write(nint fd, slice<byte> p) {
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall(SYS_WRITE, (uintptr)fd, (uintptr)_p0, (uintptr)len(p));
     n = (nint)r0;
@@ -1094,7 +1094,7 @@ public static error /*err*/ Madvise(slice<byte> b, nint advice) {
     if (len(b) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = Syscall(SYS_MADVISE, (uintptr)_p0, (uintptr)len(b), (uintptr)advice);
     if (e1 != 0) {
@@ -1111,7 +1111,7 @@ public static error /*err*/ Mprotect(slice<byte> b, nint prot) {
     if (len(b) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = Syscall(SYS_MPROTECT, (uintptr)_p0, (uintptr)len(b), (uintptr)prot);
     if (e1 != 0) {
@@ -1128,7 +1128,7 @@ public static error /*err*/ Mlock(slice<byte> b) {
     if (len(b) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = Syscall(SYS_MLOCK, (uintptr)_p0, (uintptr)len(b), 0);
     if (e1 != 0) {
@@ -1145,7 +1145,7 @@ public static error /*err*/ Munlock(slice<byte> b) {
     if (len(b) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = Syscall(SYS_MUNLOCK, (uintptr)_p0, (uintptr)len(b), 0);
     if (e1 != 0) {
@@ -1336,7 +1336,7 @@ internal static (nint n, error err) pread(nint fd, slice<byte> p, int64 offset) 
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall6(SYS_PREAD64, (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)offset, 0, 0);
     n = (nint)r0;
@@ -1355,7 +1355,7 @@ internal static (nint n, error err) pwrite(nint fd, slice<byte> p, int64 offset)
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall6(SYS_PWRITE64, (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)offset, 0, 0);
     n = (nint)r0;
@@ -1664,7 +1664,7 @@ internal static (nint n, error err) recvfrom(nint fd, slice<byte> p, nint flags,
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall6(SYS_RECVFROM, (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)flags, (uintptr)Ꮡfrom, (uintptr)Ꮡfromlen);
     n = (nint)r0;
@@ -1682,7 +1682,7 @@ internal static error /*err*/ sendto(nint s, slice<byte> buf, nint flags, @unsaf
     if (len(buf) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = Syscall6(SYS_SENDTO, (uintptr)s, (uintptr)_p0, (uintptr)len(buf), (uintptr)flags, (uintptr)to, (uintptr)(uint32)addrlen);
     if (e1 != 0) {
@@ -1739,7 +1739,7 @@ public static (nint n, error err) EpollWait(nint epfd, slice<EpollEvent> events,
     if (len(events) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(events, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = Syscall6(SYS_EPOLL_WAIT, (uintptr)epfd, (uintptr)_p0, (uintptr)len(events), (uintptr)msec, 0, 0);
     n = (nint)r0;

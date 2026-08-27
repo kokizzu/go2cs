@@ -727,7 +727,7 @@ internal static readonly @string badTopFramePointerˢ = "bad top frame pointer"u
 internal static void adjustctxt(ж<g> Ꮡgp, ref adjustinfo adjinfo) {
     ref var gp = ref Ꮡgp.DerefOrNull();
 
-    adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡctxt)).Value));
+    adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡctxt)));
     if (!framepointer_enabled) {
         return;
     }
@@ -740,7 +740,7 @@ internal static void adjustctxt(ж<g> Ꮡgp, ref adjustinfo adjinfo) {
         }
     }
     var oldfp = gp.sched.bp;
-    adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡbp)).Value));
+    adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡbp)));
     if (GOARCH == "arm64"u8) {
         // On ARM64, the frame pointer is saved one word *below* the SP,
         // which is not copied or adjusted in any frame. Do it explicitly
@@ -758,25 +758,25 @@ internal static void adjustdefers(ж<g> Ꮡgp, ref adjustinfo adjinfo) {
     // Adjust pointers in the Defer structs.
     // We need to do this first because we need to adjust the
     // defer.link fields so we always work on the new stack.
-    adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡ_defer)).Value));
+    adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(Ꮡgp.of(g.Ꮡ_defer)));
     for (var d = gp._defer; d != nil; d = d.Value.link) {
         adjustpointer(ref adjinfo, new @unsafe.Pointer(d.of(_defer.Ꮡfn)));
-        adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (d.of(_defer.Ꮡsp)).Value));
-        adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (d.of(_defer.Ꮡlink)).Value));
+        adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(d.of(_defer.Ꮡsp)));
+        adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(d.of(_defer.Ꮡlink)));
     }
 }
 
 internal static void adjustpanics(ж<g> Ꮡgp, ref adjustinfo adjinfo) {
     // Panics are on stack and already adjusted.
     // Update pointer to head of list in G.
-    adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡ_panic)).Value));
+    adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(Ꮡgp.of(g.Ꮡ_panic)));
 }
 
 internal static void adjustsudogs(ref g gp, ref adjustinfo adjinfo) {
     // the data elements pointed to by a SudoG structure
     // might be in the stack.
     for (var s = gp.waiting; s != nil; s = s.Value.waitlink) {
-        adjustpointer(ref adjinfo, @unsafe.Pointer.FromRef(ref (s.of(sudog.Ꮡelem)).Value));
+        adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(s.of(sudog.Ꮡelem)));
     }
 }
 

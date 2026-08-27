@@ -28,7 +28,7 @@ public static (int32 n, uintptr errno) EpollWait(int32 epfd, slice<EpollEvent> e
     if (len(events) > 0){
         ev = new @unsafe.Pointer(Ꮡ(events, 0));
     } else {
-        ev = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        ev = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r1, _, e) = Syscall6(SYS_EPOLL_PWAIT, (uintptr)epfd, (uintptr)ev, (uintptr)maxev, (uintptr)waitms, 0, 0);
     return ((int32)r1, e);

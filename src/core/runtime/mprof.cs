@@ -1079,13 +1079,13 @@ internal static void copyMemProfileRecord(ж<MemProfileRecord> Ꮡdst, profilere
     dst.AllocObjects = src.AllocObjects;
     dst.FreeObjects = src.FreeObjects;
     if (raceenabled) {
-        racewriterangepc(@unsafe.Pointer.FromRef(ref (Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)).Value), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256, getcallerpc(), abi.FuncPCABIInternal(MemProfile));
+        racewriterangepc(@unsafe.Pointer.FromBox(Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256, getcallerpc(), abi.FuncPCABIInternal(MemProfile));
     }
     if (msanenabled) {
-        msanwrite(@unsafe.Pointer.FromRef(ref (Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)).Value), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
+        msanwrite(@unsafe.Pointer.FromBox(Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
     }
     if (asanenabled) {
-        asanwrite(@unsafe.Pointer.FromRef(ref (Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)).Value), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
+        asanwrite(@unsafe.Pointer.FromBox(Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
     }
     nint i = copy(dst.Stack0[..], src.Stack);
     builtin.clear(dst.Stack0[(int)(i)..]);
@@ -1202,13 +1202,13 @@ internal static void copyBlockProfileRecord(ж<BlockProfileRecord> Ꮡdst, profi
     dst.Count = src.Count;
     dst.Cycles = src.Cycles;
     if (raceenabled) {
-        racewriterangepc(@unsafe.Pointer.FromRef(ref (Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)).Value), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256, getcallerpc(), abi.FuncPCABIInternal(BlockProfile));
+        racewriterangepc(@unsafe.Pointer.FromBox(Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256, getcallerpc(), abi.FuncPCABIInternal(BlockProfile));
     }
     if (msanenabled) {
-        msanwrite(@unsafe.Pointer.FromRef(ref (Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)).Value), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
+        msanwrite(@unsafe.Pointer.FromBox(Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
     }
     if (asanenabled) {
-        asanwrite(@unsafe.Pointer.FromRef(ref (Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)).Value), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
+        asanwrite(@unsafe.Pointer.FromBox(Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
     }
     // We just copy the stack here without inline expansion
     // (needed if frame pointer unwinding is used)
@@ -1305,7 +1305,7 @@ internal static (nint n, bool ok) threadCreateProfileInternal(nint size, Action<
     nint n = default!;
     bool ok = default!;
 
-    var first = (ж<m>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡallm).Value)));
+    var first = (ж<m>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡallm)));
     for (var mp = first; mp != nil; mp = mp.Value.alllink) {
         n++;
     }
@@ -1465,7 +1465,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<pro
         gp1.of(g.ᏑgoroutineProfiled).Store(goroutineProfileAbsent);
     });
     if (raceenabled) {
-        raceacquire(@unsafe.Pointer.FromRef(ref (ᏑlabelSync).Value));
+        raceacquire(@unsafe.Pointer.FromBox(ᏑlabelSync));
     }
     if (n != (nint)endOffset) {
     }
@@ -1658,7 +1658,7 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
         });
     }
     if (raceenabled) {
-        raceacquire(@unsafe.Pointer.FromRef(ref (ᏑlabelSync).Value));
+        raceacquire(@unsafe.Pointer.FromBox(ᏑlabelSync));
     }
     startTheWorld(stw);
     return (n, ok);

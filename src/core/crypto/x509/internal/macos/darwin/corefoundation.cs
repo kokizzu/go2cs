@@ -117,7 +117,7 @@ public static (CFRef value, bool ok) CFDictionaryGetValueIfPresent(CFRef dict, C
     ref var value = ref heap(new CFRef(), out var Ꮡvalue);
 
     var ret = syscall(abi.FuncPCABI0(x509_CFDictionaryGetValueIfPresent_trampoline), (uintptr)dict, (uintptr)key,
-        (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡvalue).Value), 0, 0, 0D);
+        (uintptr)@unsafe.Pointer.FromBox(Ꮡvalue), 0, 0, 0D);
     if (ret == 0) {
         return (0, false);
     }

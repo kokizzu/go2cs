@@ -458,7 +458,7 @@ internal static void recordspan(@unsafe.Pointer vh, @unsafe.Pointer Δp) {
         var oldAllspans = h.Value.allspans;
         (h.of(mheap.Ꮡallspans).Reinterpret<slice<ж<mspan>>, notInHeapSlice>()).Value = (Ꮡnew.Reinterpret<slice<ж<mspan>>, notInHeapSlice>()).Value;
         if (len(oldAllspans) != 0) {
-            sysFree(@unsafe.Pointer.FromRef(ref (Ꮡ(oldAllspans, 0)).Value), (uintptr)cap(oldAllspans) * /* unsafe.Sizeof(oldAllspans[0]) */ (uintptr)8, Ꮡmemstats.of(mstats.Ꮡother_sys));
+            sysFree(@unsafe.Pointer.FromBox(Ꮡ(oldAllspans, 0)), (uintptr)cap(oldAllspans) * /* unsafe.Sizeof(oldAllspans[0]) */ (uintptr)8, Ꮡmemstats.of(mstats.Ꮡother_sys));
         }
     }
     h.Value.allspans = (~h).allspans[..(int)(len((~h).allspans) + 1)];
@@ -1920,7 +1920,7 @@ internal static bool addfinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡf, uintptr
             }
             // Mark the finalizer itself, since the
             // special isn't part of the GC'd heap.
-            scanblock((uintptr)@unsafe.Pointer.FromRef(ref (s.of(specialfinalizer.Ꮡfn)).Value), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), gcw, nil);
+            scanblock((uintptr)@unsafe.Pointer.FromBox(s.of(specialfinalizer.Ꮡfn)), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), gcw, nil);
             releasem(ref (mp).DerefOrNull());
         }
         return true;
@@ -2093,7 +2093,7 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
             var gcw = (~mp).p.ptr().of(runtime_package.Δp.Ꮡgcw);
             // Mark the weak handle itself, since the
             // special isn't part of the GC'd heap.
-            scanblock((uintptr)@unsafe.Pointer.FromRef(ref (s.of(specialWeakHandle.Ꮡhandle)).Value), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), gcw, nil);
+            scanblock((uintptr)@unsafe.Pointer.FromBox(s.of(specialWeakHandle.Ꮡhandle)), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), gcw, nil);
             releasem(ref (mp).DerefOrNull());
         }
         // Keep p alive for the duration of the function to ensure
@@ -2346,7 +2346,7 @@ internal static ж<gcBits> newMarkBits(uintptr nelems) {
     var blocksNeeded = (nelems + 63) / 64;
     var bytesNeeded = blocksNeeded * 8;
     // Try directly allocating from the current head arena.
-    var head = (ж<gcBitsArena>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)).Value)));
+    var head = (ж<gcBitsArena>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext))));
     {
         var pΔ1 = head.tryAlloc(bytesNeeded); if (pΔ1 != nil) {
             return pΔ1;
@@ -2387,7 +2387,7 @@ internal static ж<gcBits> newMarkBits(uintptr nelems) {
     }
     // Add the fresh arena to the "next" list.
     fresh.Value.next = gcBitsArenas.next;
-    atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)).Value), new @unsafe.Pointer(fresh));
+    atomic.StorepNoWB(@unsafe.Pointer.FromBox(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)), new @unsafe.Pointer(fresh));
     unlock(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡlock));
     return Δp;
 }
@@ -2432,7 +2432,7 @@ internal static void nextMarkBitArenaEpoch() {
     }
     gcBitsArenas.previous = gcBitsArenas.current;
     gcBitsArenas.current = gcBitsArenas.next;
-    atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)).Value), nil); // newMarkBits calls newArena when needed
+    atomic.StorepNoWB(@unsafe.Pointer.FromBox(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)), nil); // newMarkBits calls newArena when needed
     unlock(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡlock));
 }
 

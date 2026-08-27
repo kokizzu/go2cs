@@ -759,7 +759,7 @@ internal static any /*i*/ makeArg(this ж<pollDesc> Ꮡpd) {
 
     var x = Ꮡi.Reinterpret<any, eface>();
     x.Value._type = pdType;
-    x.Value.data = @unsafe.Pointer.FromRef(ref (Ꮡpd.of(pollDesc.Ꮡself)).Value);
+    x.Value.data = @unsafe.Pointer.FromBox(Ꮡpd.of(pollDesc.Ꮡself));
     return i;
 }
 

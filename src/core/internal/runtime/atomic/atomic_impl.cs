@@ -32,11 +32,13 @@
 //   - 8-bit (And8/Or8): the CLR has no byte-width Interlocked. A read-modify-write under a
 //     shared latch is atomic with respect to every other 8-bit atomic here, which is the only
 //     guarantee Go's callers rely on (bitmap bytes are never touched non-atomically).
-//   - the unsafe.Pointer family (Casp1/StorepNoWB/storePointer/casPointer): golib models
+//   - the unsafe.Pointer family (Casp1/StorepNoWB/Loadp/storePointer/casPointer): golib models
 //     unsafe.Pointer as a CLASS wrapping a uintptr, so the "pointer word" is the wrapped NUMBER,
 //     not the object reference — a CAS must compare the numbers (two distinct Pointer objects
 //     addressing the same location are the same pointer to Go). Interlocked cannot express
-//     "compare the wrapped field, swap the reference", so these take the same latch.
+//     "compare the wrapped field, swap the reference", so these take the same latch. The BARE
+//     unsafe.Pointer members (StorepNoWB, Loadp) additionally reach their location through the
+//     mint's RETAINED referent — see the family header below (the I5 ruling).
 // The latch is a plain object monitor, uncontended in practice; correctness, not throughput, is
 // the requirement here.
 //
@@ -209,13 +211,34 @@ partial class atomic_package
     }
 
     // ---- unsafe.Pointer family (latched — compares the WRAPPED NUMBER) ----------------------
+    //
+    // The four Pointer primitives split exactly on signature (the I5 ruling, 2026-08-26). The
+    // `*unsafe.Pointer` members below carry an aliasing ж<unsafe.Pointer> and write it directly.
+    // The BARE `unsafe.Pointer` members (StorepNoWB, Loadp) receive a pointer whose alias the mint
+    // flattened to a number — writing ptr's own uintptr slot was a silent LOST WRITE into a fresh
+    // box (TestStorepNoWB's 14/15). Both now go through the referent the mint RETAINS
+    // (@unsafe.Pointer.FromBox carries the source box; StoreThrough/LoadThrough recover it and
+    // reach the very slot the pointer names), and a pointer with no recoverable referent panics
+    // by name instead of losing the write.
 
     public static partial void StorepNoWB(@unsafe.Pointer ptr, @unsafe.Pointer val)
     {
-        // Go's StorepNoWB writes val into the location ptr addresses. golib models an
-        // unsafe.Pointer as a box over a uintptr, so the addressed location is ptr itself.
+        // Go's StorepNoWB is *(*unsafe.Pointer)(ptr) = val — the store lands in the location ptr
+        // NAMES, reached through the mint's retained referent. Latched for coherence with the
+        // sibling CAS family against the same location.
         lock (s_wideLatch)
-            ptr.Value = val is null ? default : val.Value;
+            ptr.StoreThrough(val);
+    }
+
+    // Loadp is *(*unsafe.Pointer)(ptr) — Go's body is real (atomic_amd64.go), but its converted
+    // form round-trips through the numeric address ((ж<Pointer>)(uintptr)(ptr)), which for a
+    // managed referent is a transient number that keeps accidentally aliasing the slot only until
+    // the collector moves it. Registered in manualConversionFuncs so the emission is a placeholder
+    // and the load goes through the same retained-referent recovery as the store above.
+    public static @unsafe.Pointer Loadp(@unsafe.Pointer ptr)
+    {
+        lock (s_wideLatch)
+            return ptr.LoadThrough();
     }
 
     public static partial bool Casp1(ж<@unsafe.Pointer> ptr, @unsafe.Pointer old, @unsafe.Pointer @new) =>

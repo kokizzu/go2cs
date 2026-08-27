@@ -280,6 +280,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	"internal/cpu": {
 		"getGOAMD64level": goosAny,
 	},
+	// internal/runtime/atomic's Loadp — *(*unsafe.Pointer)(ptr) over a BARE unsafe.Pointer (the I5
+	// ruling, 2026-08-26). Go's body is real (atomic_amd64.go), but its converted form round-trips
+	// through the numeric address (`~(ж<Pointer>)(uintptr)(ptr)`), and for a managed referent that
+	// number is a transient GC-heap address: the deref keeps accidentally aliasing the slot only
+	// until the collector moves it, and resolves to a wild native read after. The mint for
+	// `unsafe.Pointer(&x)` now RETAINS the source box (@unsafe.Pointer.FromBox), so atomic_impl.cs
+	// hand-owns Loadp over that retained referent (LoadThrough) — the same recovery its sibling
+	// StorepNoWB (already hand-owned; its Go body is a `.s` file) takes for the store direction.
+	// The *unsafe.Pointer siblings (Casp1/storePointer/casPointer) carry an aliasing
+	// ж<unsafe.Pointer> by signature and stay auto-hooked partials.
+	"internal/runtime/atomic": {
+		"Loadp": goosAny,
+	},
 	// internal/chacha8rand's two ARRAY-SHAPE reinterpreters. Go opens the `*[32]uint64` output
 	// buffer as `(*[16][4]uint32)(unsafe.Pointer(buf))` (block_generic) and that in turn as
 	// `(*[16][2]uint64)(unsafe.Pointer(b32))` (setup) — a differently-typed, differently-RANKED

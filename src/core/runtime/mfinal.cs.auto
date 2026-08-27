@@ -301,7 +301,7 @@ internal static void runfinq() {
 
 internal static bool isGoPointerWithoutSpan(@unsafe.Pointer Δp) {
     // 0-length objects are okay.
-    if (Δp == @unsafe.Pointer.FromRef(ref (Ꮡzerobase).Value)) {
+    if (Δp == @unsafe.Pointer.FromBox(Ꮡzerobase)) {
         return true;
     }
     // Global initializers might be linker-allocated.

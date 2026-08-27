@@ -103,7 +103,6 @@ using static go.os_package;
 [assembly: go.GoPositionMap("os/tempfile.go", "tempfile.cs", "AA4o9IIAAhgACQKCloKClISCgoKCgoCCpJQABRDSgoKmgIKUpAACFgAIAoKWgoKUhIKCgoKClIKAgqSUgoCCtriCgpQ=")]
 [assembly: go.GoPositionMap("os/types.go", "types.cs", "AA4akAAsXoCigAACEOKCgoKU")]
 [assembly: go.GoPositionMap("os/types_unix.go", "types_unix.cs", "ABQugKKAooCigKSC")]
-[assembly: go.GoPositionMap("os/wait_waitid.go", "wait_waitid.cs", "ABAu2sKCgoKCgqaCuIKUlA==")]
 [assembly: go.GoPositionMap("os/zero_copy_linux.go", "zero_copy_linux.cs", "ABEoooCCpNbClIKWgoKWkoKWgpamAAoMgpaCgpTWwpiAgqYABxCCloSClubCmICCpoKUtMSWppaCgpT8soKClIKClIiClKyyhIKCloKmgpSk")]
 // </GoSourcePositionMaps>
 

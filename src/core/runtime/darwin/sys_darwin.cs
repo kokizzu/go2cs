@@ -109,7 +109,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscall9(uintptr f
 
     ref var fn = ref heap(fnʗp, out var Ꮡfn);
     entersyscall();
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall9), @unsafe.Pointer.FromRef(ref (Ꮡfn).Value));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall9), @unsafe.Pointer.FromBox(Ꮡfn));
     exitsyscall();
     return (r1, r2, err);
 }
@@ -235,7 +235,7 @@ internal static partial void syscall_x509();
 internal static int32 pthread_attr_init(ж<pthreadattr> Ꮡattr) {
     ref var attr = ref Ꮡattr.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_attr_init_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(attr)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_attr_init_trampoline), @unsafe.Pointer.FromBox(Ꮡ(attr)));
     KeepAlive(Ꮡattr.OrTypedNil());
     return ret;
 }
@@ -247,7 +247,7 @@ internal static partial void pthread_attr_init_trampoline();
 internal static int32 pthread_attr_getstacksize(ж<pthreadattr> Ꮡattr, ж<uintptr> Ꮡsize) {
     ref var attr = ref Ꮡattr.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_attr_getstacksize_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(attr)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_attr_getstacksize_trampoline), @unsafe.Pointer.FromBox(Ꮡ(attr)));
     KeepAlive(Ꮡattr.OrTypedNil());
     KeepAlive(Ꮡsize.OrTypedNil());
     return ret;
@@ -260,7 +260,7 @@ internal static partial void pthread_attr_getstacksize_trampoline();
 internal static int32 pthread_attr_setdetachstate(ж<pthreadattr> Ꮡattr, nint state) {
     ref var attr = ref Ꮡattr.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_attr_setdetachstate_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(attr)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_attr_setdetachstate_trampoline), @unsafe.Pointer.FromBox(Ꮡ(attr)));
     KeepAlive(Ꮡattr.OrTypedNil());
     return ret;
 }
@@ -272,7 +272,7 @@ internal static partial void pthread_attr_setdetachstate_trampoline();
 internal static int32 pthread_create(ж<pthreadattr> Ꮡattr, uintptr start, @unsafe.Pointer arg) {
     ref var attr = ref Ꮡattr.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_create_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(attr)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_create_trampoline), @unsafe.Pointer.FromBox(Ꮡ(attr)));
     KeepAlive(Ꮡattr.OrTypedNil());
     KeepAlive(arg); // Just for consistency. Arg of course needs to be kept alive for the start function.
     return ret;
@@ -295,7 +295,7 @@ internal static partial void raise_trampoline();
 internal static pthread /*t*/ pthread_self() {
     ref var t = ref heap(new pthread(), out var Ꮡt);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_self_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡt).Value));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_self_trampoline), @unsafe.Pointer.FromBox(Ꮡt));
     return t;
 }
 
@@ -306,7 +306,7 @@ internal static partial void pthread_self_trampoline();
 internal static void pthread_kill(pthread tʗp, uint32 sig) {
     ref var t = ref heap(tʗp, out var Ꮡt);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_kill_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡt).Value));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_kill_trampoline), @unsafe.Pointer.FromBox(Ꮡt));
     return;
 }
 
@@ -383,7 +383,7 @@ internal static partial void mmap_trampoline();
 internal static void munmap(@unsafe.Pointer addrʗp, uintptr n) {
     ref var addr = ref heap(addrʗp, out var Ꮡaddr);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(munmap_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡaddr).Value));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(munmap_trampoline), @unsafe.Pointer.FromBox(Ꮡaddr));
     KeepAlive(addr); // Just for consistency. Hopefully addr is not a Go address.
 }
 
@@ -394,7 +394,7 @@ internal static partial void munmap_trampoline();
 internal static void madvise(@unsafe.Pointer addrʗp, uintptr n, int32 flags) {
     ref var addr = ref heap(addrʗp, out var Ꮡaddr);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(madvise_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡaddr).Value));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(madvise_trampoline), @unsafe.Pointer.FromBox(Ꮡaddr));
     KeepAlive(addr); // Just for consistency. Hopefully addr is not a Go address.
 }
 
@@ -405,7 +405,7 @@ internal static partial void madvise_trampoline();
 internal static void mlock(@unsafe.Pointer addrʗp, uintptr n) {
     ref var addr = ref heap(addrʗp, out var Ꮡaddr);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(mlock_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡaddr).Value));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(mlock_trampoline), @unsafe.Pointer.FromBox(Ꮡaddr));
     KeepAlive(addr); // Just for consistency. Hopefully addr is not a Go address.
 }
 
@@ -479,7 +479,7 @@ internal static void usleep_no_g(uint32 usecʗp) {
 internal static int32 write1(uintptr fdʗp, @unsafe.Pointer Δp, int32 n) {
     ref var fd = ref heap(fdʗp, out var Ꮡfd);
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(write_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡfd).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(write_trampoline), @unsafe.Pointer.FromBox(Ꮡfd));
     KeepAlive(Δp);
     return ret;
 }
@@ -492,7 +492,7 @@ internal static int32 /*ret*/ open(ж<byte> Ꮡname, int32 mode, int32 perm) {
     int32 ret = default!;
 
     ref var name = ref Ꮡname.DerefOrNull();
-    ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(open_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(name)).Value));
+    ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(open_trampoline), @unsafe.Pointer.FromBox(Ꮡ(name)));
     KeepAlive(Ꮡname.OrTypedNil());
     return ret;
 }
@@ -579,7 +579,7 @@ internal static void sigaltstack(ж<stackt> Ꮡnew, ж<stackt> Ꮡold) {
         // ref: http://lists.llvm.org/pipermail/llvm-commits/Week-of-Mon-20140421/214296.html
         @new.ss_size = 32768;
     }
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(sigaltstack_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(@new)).Value));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(sigaltstack_trampoline), @unsafe.Pointer.FromBox(Ꮡ(@new)));
     KeepAlive(Ꮡnew.OrTypedNil());
     KeepAlive(Ꮡold.OrTypedNil());
 }
@@ -613,7 +613,7 @@ internal static partial void setitimer_trampoline();
 internal static int32 sysctl(ж<uint32> Ꮡmib, uint32 miblen, ж<byte> Ꮡoldp, ж<uintptr> Ꮡoldlenp, ж<byte> Ꮡnewp, uintptr newlen) {
     ref var mib = ref Ꮡmib.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(sysctl_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(mib)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(sysctl_trampoline), @unsafe.Pointer.FromBox(Ꮡ(mib)));
     KeepAlive(Ꮡmib.OrTypedNil());
     KeepAlive(Ꮡoldp.OrTypedNil());
     KeepAlive(Ꮡoldlenp.OrTypedNil());
@@ -628,7 +628,7 @@ internal static partial void sysctl_trampoline();
 internal static int32 sysctlbyname(ж<byte> Ꮡname, ж<byte> Ꮡoldp, ж<uintptr> Ꮡoldlenp, ж<byte> Ꮡnewp, uintptr newlen) {
     ref var name = ref Ꮡname.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(sysctlbyname_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(name)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(sysctlbyname_trampoline), @unsafe.Pointer.FromBox(Ꮡ(name)));
     KeepAlive(Ꮡname.OrTypedNil());
     KeepAlive(Ꮡoldp.OrTypedNil());
     KeepAlive(Ꮡoldlenp.OrTypedNil());
@@ -682,7 +682,7 @@ internal static partial void kevent_trampoline();
 internal static int32 pthread_mutex_init(ж<pthreadmutex> Ꮡm, ж<pthreadmutexattr> Ꮡattr) {
     ref var m = ref Ꮡm.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_mutex_init_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(m)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_mutex_init_trampoline), @unsafe.Pointer.FromBox(Ꮡ(m)));
     KeepAlive(Ꮡm.OrTypedNil());
     KeepAlive(Ꮡattr.OrTypedNil());
     return ret;
@@ -695,7 +695,7 @@ internal static partial void pthread_mutex_init_trampoline();
 internal static int32 pthread_mutex_lock(ж<pthreadmutex> Ꮡm) {
     ref var m = ref Ꮡm.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_mutex_lock_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(m)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_mutex_lock_trampoline), @unsafe.Pointer.FromBox(Ꮡ(m)));
     KeepAlive(Ꮡm.OrTypedNil());
     return ret;
 }
@@ -707,7 +707,7 @@ internal static partial void pthread_mutex_lock_trampoline();
 internal static int32 pthread_mutex_unlock(ж<pthreadmutex> Ꮡm) {
     ref var m = ref Ꮡm.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_mutex_unlock_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(m)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_mutex_unlock_trampoline), @unsafe.Pointer.FromBox(Ꮡ(m)));
     KeepAlive(Ꮡm.OrTypedNil());
     return ret;
 }
@@ -719,7 +719,7 @@ internal static partial void pthread_mutex_unlock_trampoline();
 internal static int32 pthread_cond_init(ж<pthreadcond> Ꮡc, ж<pthreadcondattr> Ꮡattr) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_cond_init_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(c)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_cond_init_trampoline), @unsafe.Pointer.FromBox(Ꮡ(c)));
     KeepAlive(Ꮡc.OrTypedNil());
     KeepAlive(Ꮡattr.OrTypedNil());
     return ret;
@@ -732,7 +732,7 @@ internal static partial void pthread_cond_init_trampoline();
 internal static int32 pthread_cond_wait(ж<pthreadcond> Ꮡc, ж<pthreadmutex> Ꮡm) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_cond_wait_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(c)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_cond_wait_trampoline), @unsafe.Pointer.FromBox(Ꮡ(c)));
     KeepAlive(Ꮡc.OrTypedNil());
     KeepAlive(Ꮡm.OrTypedNil());
     return ret;
@@ -745,7 +745,7 @@ internal static partial void pthread_cond_wait_trampoline();
 internal static int32 pthread_cond_timedwait_relative_np(ж<pthreadcond> Ꮡc, ж<pthreadmutex> Ꮡm, ж<timespec> Ꮡt) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_cond_timedwait_relative_np_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(c)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_cond_timedwait_relative_np_trampoline), @unsafe.Pointer.FromBox(Ꮡ(c)));
     KeepAlive(Ꮡc.OrTypedNil());
     KeepAlive(Ꮡm.OrTypedNil());
     KeepAlive(Ꮡt.OrTypedNil());
@@ -759,7 +759,7 @@ internal static partial void pthread_cond_timedwait_relative_np_trampoline();
 internal static int32 pthread_cond_signal(ж<pthreadcond> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_cond_signal_trampoline), @unsafe.Pointer.FromRef(ref (Ꮡ(c)).Value));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_cond_signal_trampoline), @unsafe.Pointer.FromBox(Ꮡ(c)));
     KeepAlive(Ꮡc.OrTypedNil());
     return ret;
 }

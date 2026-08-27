@@ -209,7 +209,7 @@ internal static (nint n, error err) recvfrom(nint fd, slice<byte> p, nint flags,
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_recvfrom_trampoline), (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)flags, (uintptr)Ꮡfrom, (uintptr)Ꮡfromlen);
     n = (nint)r0;
@@ -230,7 +230,7 @@ internal static error /*err*/ sendto(nint s, slice<byte> buf, nint flags, @unsaf
     if (len(buf) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_sendto_trampoline), (uintptr)s, (uintptr)_p0, (uintptr)len(buf), (uintptr)flags, (uintptr)to, (uintptr)(uint32)addrlen);
     if (e1 != 0) {
@@ -1070,7 +1070,7 @@ public static error /*err*/ Mlock(slice<byte> b) {
     if (len(b) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mlock_trampoline), (uintptr)_p0, (uintptr)len(b), 0);
     if (e1 != 0) {
@@ -1104,7 +1104,7 @@ public static error /*err*/ Mprotect(slice<byte> b, nint prot) {
     if (len(b) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mprotect_trampoline), (uintptr)_p0, (uintptr)len(b), (uintptr)prot);
     if (e1 != 0) {
@@ -1124,7 +1124,7 @@ internal static error /*err*/ msync(slice<byte> b, nint flags) {
     if (len(b) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = syscall(abi.FuncPCABI0(libc_msync_trampoline), (uintptr)_p0, (uintptr)len(b), (uintptr)flags);
     if (e1 != 0) {
@@ -1144,7 +1144,7 @@ public static error /*err*/ Munlock(slice<byte> b) {
     if (len(b) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = syscall(abi.FuncPCABI0(libc_munlock_trampoline), (uintptr)_p0, (uintptr)len(b), 0);
     if (e1 != 0) {
@@ -1221,7 +1221,7 @@ internal static (nint n, error err) pread(nint fd, slice<byte> p, int64 offset) 
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_pread_trampoline), (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)offset, 0, 0);
     n = (nint)r0;
@@ -1243,7 +1243,7 @@ internal static (nint n, error err) pwrite(nint fd, slice<byte> p, int64 offset)
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_pwrite_trampoline), (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)offset, 0, 0);
     n = (nint)r0;
@@ -1265,7 +1265,7 @@ internal static (nint n, error err) read(nint fd, slice<byte> p) {
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_read_trampoline), (uintptr)fd, (uintptr)_p0, (uintptr)len(p));
     n = (nint)r0;
@@ -1304,7 +1304,7 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
     if (len(buf) > 0){
         _p1 = new @unsafe.Pointer(Ꮡ(buf, 0));
     } else {
-        _p1 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_readlink_trampoline), (uintptr)_p0, (uintptr)_p1, (uintptr)len(buf));
     n = (nint)r0;
@@ -1733,7 +1733,7 @@ internal static (nint n, error err) write(nint fd, slice<byte> p) {
     if (len(p) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_write_trampoline), (uintptr)fd, (uintptr)_p0, (uintptr)len(p));
     n = (nint)r0;
@@ -1755,7 +1755,7 @@ internal static (uintptr cnt, error err) writev(nint fd, slice<Iovec> iovecs) {
     if (len(iovecs) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(iovecs, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = syscallX(abi.FuncPCABI0(libc_writev_trampoline), (uintptr)fd, (uintptr)_p0, (uintptr)len(iovecs));
     cnt = (uintptr)r0;
@@ -1850,7 +1850,7 @@ internal static error /*err*/ sysctl(slice<_C_int> mib, ж<byte> Ꮡold, ж<uint
     if (len(mib) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(mib, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_sysctl_trampoline), (uintptr)_p0, (uintptr)len(mib), (uintptr)Ꮡold, (uintptr)Ꮡoldlen, (uintptr)Ꮡnew, (uintptr)newlen);
     if (e1 != 0) {
@@ -1911,7 +1911,7 @@ internal static (nint n, error err) getcwd(slice<byte> buf) {
     if (len(buf) > 0){
         _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
     } else {
-        _p0 = @unsafe.Pointer.FromRef(ref (Ꮡ_zero).Value);
+        _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_getcwd_trampoline), (uintptr)_p0, (uintptr)len(buf), 0);
     n = (nint)r0;
