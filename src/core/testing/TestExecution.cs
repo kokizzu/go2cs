@@ -429,9 +429,34 @@ public sealed class TestExecution
         if (m_parallel)
             throw new InvalidOperationException("testing: t.Setenv called after t.Parallel");
 
-        string? previous = Environment.GetEnvironmentVariable(key);
+        // Write BOTH env stores the corpus reads through. The corpus has two disjoint env-reader
+        // paths on the Linux flavor, and a foundational test host must feed both or it fixes one
+        // consumer while breaking the other:
+        //   - syscall.Getenv reads golib's PRIVATE `envs` copy (syscall/linux/env_unix.cs). This is
+        //     what time.LoadLocation reads for ZONEINFO — and t.Setenv writing ONLY the managed
+        //     store left ZONEINFO invisible there, so time.TestEnvVarUsage read empty on Linux (R6;
+        //     it passed on Windows because there syscall.Getenv reads the same Win32 block the
+        //     managed store updates — the two coincide on Windows and diverge on Linux).
+        //   - Environment.GetEnvironmentVariable is what internal/godebug's GODEBUG reader observes.
+        //     Writing ONLY the syscall store regressed every GODEBUG-driven test (archive/tar's
+        //     tarinsecurepath, mime/multipart's multipartmax*, go/types' gotypesalias) — measured.
+        // Writing both keeps every reader consistent; each store's previous value is captured and
+        // restored on cleanup. (Go itself needs only os.Setenv because its runtime and os share one
+        // environ; the managed split is a go2cs-specific fact of the two-store corpus.)
+        var (syscallPrevious, syscallHad) = go.syscall_package.Getenv(key);
+        string? managedPrevious = Environment.GetEnvironmentVariable(key);
+
+        go.syscall_package.Setenv(key, value);
         Environment.SetEnvironmentVariable(key, value);
-        Cleanup(() => Environment.SetEnvironmentVariable(key, previous));
+
+        Cleanup(() =>
+        {
+            if (syscallHad)
+                go.syscall_package.Setenv(key, syscallPrevious);
+            else
+                go.syscall_package.Unsetenv(key);
+            Environment.SetEnvironmentVariable(key, managedPrevious);
+        });
     }
 
     internal string NextSubtestName(string requested)
