@@ -383,8 +383,17 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 						declared := resultParams.At(i).Type()
 						actual := tuple.At(i).Type()
 
-						if declaredIsIface, _ := isInterface(declared); declaredIsIface && !types.Identical(declared, actual) {
-							result.WriteString(v.convertToInterfaceType(declared, actual, tempNames[i]))
+						if declaredIsIface, declaredIfaceEmpty := isInterface(declared); declaredIsIface && !types.Identical(declared, actual) {
+							if declaredIfaceEmpty {
+								// The EMPTY interface takes the boundary treatment directly, NOT
+								// the adapter route: `any` has no adapter to hold a pointer box, so
+								// convertToInterfaceType finds no arm and falls through to its
+								// pointer-DEREF prefix — boxing a COPY of the pointee where Go's
+								// interface holds the pointer. See typedNilInterfaceBoxing.go.
+								result.WriteString(v.applyTypedNilPointerBoxToType(actual, tempNames[i]))
+							} else {
+								result.WriteString(v.convertToInterfaceType(declared, actual, tempNames[i]))
+							}
 						} else {
 							result.WriteString(tempNames[i])
 						}
@@ -397,10 +406,23 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 		}
 
 		if !forwarded {
+			// gc spills a return's CALLS to temporaries before assembling the result list, so every
+			// plain operand is read AFTER them; a C# tuple literal evaluates strictly left to right
+			// and would read an operand BEFORE a later call mutates it. Emit gc's own rewrite where
+			// that difference is observable — see returnOperandOrder.go, and lhsReusedInLaterRhs for
+			// the parallel-assignment sibling of the same C#-sequencing-versus-Go-freedom problem.
+			hoistThrough := v.returnMultiValueHoistThrough(returnStmt.Results)
+
 			for i, expr := range returnStmt.Results {
 				if i > 0 {
 					result.WriteString(", ")
 				}
+
+				// The operand is rendered into its own builder so a hoisted one can be redirected
+				// whole — every treatment below (interface conversion, clone, the narrowing and
+				// constant casts) belongs to the VALUE, so it must land in the temporary, leaving
+				// the tuple naming nothing but the temporary.
+				elem := strings.Builder{}
 
 				var replacementVal string
 
@@ -534,7 +556,7 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 
 				if resultParamIsInterface != nil && i < len(resultParamIsInterface) && resultParamIsInterface[i] {
 					resultParamType := resultParams.At(i).Type()
-					result.WriteString(v.convertToInterfaceType(resultParamType, v.getType(expr, false), resultExpr))
+					elem.WriteString(v.convertToInterfaceType(resultParamType, v.getType(expr, false), resultExpr))
 				} else {
 					var narrowCast string
 					var lambdaConstCast string
@@ -557,17 +579,17 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 					}
 
 					if recvIndex != -1 && i == recvIndex {
-						result.WriteString(capturedRecvName)
+						elem.WriteString(capturedRecvName)
 					} else if len(crossBaseCast) > 0 {
 						// A CONSTANT result whose type is defined over a CROSS-PACKAGE named base
 						// (`return 0, err` with a registry Key result) hops through the base — the
 						// [GoType("syscall_package.ΔHandle")] wrapper has no numeric bridge (CS0029).
-						result.WriteString(crossBaseCast + "(" + resultExpr + ")")
+						elem.WriteString(crossBaseCast + "(" + resultExpr + ")")
 					} else if len(lambdaConstCast) > 0 {
 						// A constant integer-literal return inside a lambda whose result is an unsigned/
 						// pointer-sized integer must be cast to that type so the delegate return type is
 						// inferable (CS8917) — see lambdaConstReturnCastType.
-						result.WriteString("(" + lambdaConstCast + ")(" + resultExpr + ")")
+						elem.WriteString("(" + lambdaConstCast + ")(" + resultExpr + ")")
 					} else if len(narrowCast) > 0 {
 						// A narrow-integer (byte/int8/uint8/int16/uint16) arithmetic RESULT is promoted to
 						// `int` by C#, so returning it from a narrow-typed function needs the cast back to
@@ -576,11 +598,35 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 						// the return path had omitted it. narrowArithmeticCastTypeFor gates on a binary/unary
 						// arith RHS whose Go type matches the (narrow) result type, and skips a whole-expr
 						// already-cast RHS — so a bare ident / call / already-narrowed return is untouched.
-						result.WriteString("(" + narrowCast + ")(" + resultExpr + ")")
+						elem.WriteString("(" + narrowCast + ")(" + resultExpr + ")")
 					} else {
-						result.WriteString(resultExpr)
+						elem.WriteString(resultExpr)
 					}
 				}
+
+				// Spill this operand's call to a temporary ahead of the statement so the tuple's
+				// PLAIN operands are read after it, as gc reads them. Every call-bearing operand at
+				// or below the hazard index spills, keeping the calls in their own lexical order —
+				// the one ordering Go's spec does fix.
+				if i <= hoistThrough && v.exprEvaluatesCall(expr) {
+					v.tupleTempIndex++
+					temp := fmt.Sprintf("%s%d", TempVarMarker, v.tupleTempIndex)
+
+					// The slot's leading newline is written once: a second spill in the same
+					// return would otherwise leave a blank line between the two declarations.
+					if pending := deferredDecls.String(); pending == "" || !strings.HasSuffix(pending, v.newline) {
+						deferredDecls.WriteString(v.newline)
+					}
+
+					deferredDecls.WriteString(v.indent(v.indentLevel))
+					deferredDecls.WriteString("var " + temp + " = " + elem.String() + ";")
+					deferredDecls.WriteString(v.newline)
+
+					elem.Reset()
+					elem.WriteString(temp)
+				}
+
+				result.WriteString(elem.String())
 			}
 
 			if len(returnStmt.Results) > 1 {

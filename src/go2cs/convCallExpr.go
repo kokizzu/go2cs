@@ -448,7 +448,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// operand then converts to uintptr directly, which is the same value by the same operator.
 		v.markDeadUnsafePointerBox(callExpr, arg)
 
-		expr := v.checkForImplicitConversion(funcType, arg, targetTypeName)
+		// A CONVERSION is transparent to the capture-copy hoist. Its operand can be a capturing
+		// func literal — `HandlerFunc(func(rw, req){ … conn … })` handed to `go Serve(ls, …)`
+		// (net/http serve_test) — whose snapshot declarations (`var connʗ1 = conn;`) are
+		// STATEMENTS and cannot stand in the argument list the conversion renders into. Every
+		// other position threads the enclosing statement's sink to convFuncLit; this one rendered
+		// its operand with NO contexts at all, so the wrapper made the literal invisible to the
+		// hoist and the decls landed inline (CS1003 + CS1026 + CS1002 + CS1513, seven sites across
+		// net/http's client_test and serve_test — the recorded `CS1002 ';' expected` wall). Adopt
+		// the ambient target exactly as the `&composite` and composite-literal arms do in convExpr.
+		//
+		// convFuncLit consults context.deferredDecls FIRST and v.hoistedDecls SECOND, so this is
+		// needed only where a statement supplies the explicit builder and no ambient one — the
+		// `go`, `defer` and `return` forms. Gated on a non-nil sink, which leaves every other
+		// conversion rendering with the same nil contexts it has always had.
+		var convContexts []ExprContext
+
+		if context.deferredDecls != nil {
+			convLambdaContext := DefaultLambdaContext()
+			convLambdaContext.deferredDecls = context.deferredDecls
+			convContexts = []ExprContext{convLambdaContext}
+		}
+
+		expr := v.checkForImplicitConversion(funcType, arg, targetTypeName, convContexts)
 
 		// A conversion whose TARGET is a non-empty INTERFACE and whose SOURCE is a POINTER —
 		// `image.Image(dst)` with `dst *image.RGBA` (image/draw) — is Go's ordinary
@@ -1365,8 +1387,18 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// its delegate over the proxy (`Func<P224PointжnistPoint>` for `newPoint func() P`),
 			// so a method-group / func-value argument must be re-wrapped as a lambda — a C#
 			// method-group conversion cannot apply the ж↔proxy user-defined conversion (CS0407 on
-			// `testEquivalents(t, nistec.NewP224Point, …)`). A FuncLit already targets the proxy
-			// and nil stays bare, exactly as in the composite-literal field case.
+			// `testEquivalents(t, nistec.NewP224Point, …)`); nil stays bare, exactly as in the
+			// composite-literal field case.
+			//
+			// A FuncLit needs the SAME remedy applied one position further in, and the claim it
+			// once carried here — that a literal "already targets the proxy" — was the premise this
+			// missed on. A literal renders its OWN parameter list from the Go signature, so a
+			// `func(t T, mode int)` argument emits `(ж<Impl> t, nint mode) => …` against a delegate
+			// requiring `Action<ImplжConstrained, nint>`: CS1678 + CS1661 per site, and 48 of
+			// net/http's 81. It is marked here and carried to convFuncLit, which declares those
+			// parameters at the proxy under synthesized names and opens the body with the natural-
+			// typed alias — the conversion moved to a position C# performs it, leaving the body
+			// itself byte-for-byte what it was. See constraintProxyLitParamTypes.
 			if paramHasArg {
 				if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
 					if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil {
@@ -1380,6 +1412,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 									callExprContext.wrapArgWithLambda[i] = params
 								}
 							}
+						} else if proxied := v.constraintProxyLitParamTypes(funIdent, instance.TypeArgs, i); proxied != nil {
+							if callExprContext.proxyLitParamTypes == nil {
+								callExprContext.proxyLitParamTypes = make(map[int]map[int]string)
+							}
+
+							callExprContext.proxyLitParamTypes[i] = proxied
 						}
 					}
 				}
@@ -2351,6 +2389,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
 				if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil &&
 					(v.calleeHasConstraintOnlyTypeParam(funIdent) || v.callHasMethodGroupArg(callExpr) ||
+						v.calleeTypeParamUnsuppliedByCall(callExpr, funIdent) ||
 						v.callNeedsConstraintProxy(funIdent, instance.TypeArgs)) {
 					// Erased (pointer-core) callee positions leave the emitted list — `clone[P *T,
 					// T any]` emits `clone<ΔSignature>(…)` (see renderedTypeArgs); a list that
@@ -2572,7 +2611,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	}
 
 	if funcName == "" {
-		funcName = v.convExpr(callExpr.Fun, []ExprContext{lambdaContext})
+		// The CALLEE's ident context suppresses the generic-function-VALUE type-argument append —
+		// phase 8 below owns a call's type arguments, and emits them only where C# cannot infer.
+		// The selector form is gated the same way through LambdaContext.isCallExpr
+		// (convSelectorExpr).
+		calleeIdentContext := DefaultIdentContext()
+		calleeIdentContext.suppressGenericTypeArgs = true
+
+		funcName = v.convExpr(callExpr.Fun, []ExprContext{lambdaContext, calleeIdentContext})
 	}
 
 	// A VARIADIC func-literal callee renders as `(params ꓸꓸꓸ@string dirsʗp) => …`, which C# can
@@ -2867,8 +2913,12 @@ func (v *Visitor) identDeclaredFromMethodGroup(ident *ast.Ident) bool {
 // type-conversion branch of convCallExpr, which uses the returned text); a caller that only wants
 // the recording side effect calls applyImplicitConversion directly and skips the conversion — see
 // the argument loop at the end of convCallExpr.
-func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, targetTypeName string) string {
-	return v.applyImplicitConversion(funcType, arg, targetTypeName, v.convExpr(arg, nil))
+//
+// contexts carries the enclosing statement's capture-copy hoist sink so a CAPTURING func-literal
+// operand snapshots to a statement slot instead of inline (see the call site); every other
+// conversion passes nil, which is what this always did.
+func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, targetTypeName string, contexts []ExprContext) string {
+	return v.applyImplicitConversion(funcType, arg, targetTypeName, v.convExpr(arg, contexts))
 }
 
 // applyImplicitConversion records the implicit conversion, if any, between arg's type and the
@@ -3143,6 +3193,23 @@ func pointerBoxConversionRecord(sourceTypeName, targetTypeName string) bool {
 	trimRoot := func(name string) string { return strings.TrimPrefix(name, "global::") }
 
 	return trimRoot(strings.TrimSuffix(inner, ">")) == trimRoot(sourceTypeName)
+}
+
+// pointerBoxRecordEitherOrientation reports the pointer-boxing route without regard to WHICH side of
+// a recorded pair holds the box. The record maps disagree about that: a conversion-site record is
+// stored argument-first, so the box lands on the target, while invertedImplicitConversions is keyed
+// by the INTERFACE parameter type and emits its attribute with the two arguments swapped — so the
+// same Go shape reaches the metadata with the box on either side depending on which site recorded it.
+//
+// Orientation does not change the fact the exemption rests on, because ImplicitConvGenerator refuses
+// the record from both directions. Whichever generic argument is the box, one of its two guards
+// fires: `ж<T>` is golib's generic CLASS, so it fails the `TypeKind.Struct` test when it lands in the
+// source position, and it has no local struct declaration to enumerate members from when it lands in
+// the target position. Either way the generator skips the pair before it chooses a host, so it can
+// neither mint a phantom nor extend a closed production assembly.
+func pointerBoxRecordEitherOrientation(sourceTypeName, targetTypeName string) bool {
+	return pointerBoxConversionRecord(sourceTypeName, targetTypeName) ||
+		pointerBoxConversionRecord(targetTypeName, sourceTypeName)
 }
 
 // whiteboxProductionDeclaration reports whether a named/aliased type is one the converted package
@@ -4668,15 +4735,60 @@ func getCallFunIdent(fun ast.Expr) *ast.Ident {
 // excluded; only a *types.Func (package function or method) counts.
 func (v *Visitor) callHasMethodGroupArg(callExpr *ast.CallExpr) bool {
 	for _, arg := range callExpr.Args {
-		switch a := arg.(type) {
-		case *ast.Ident:
-			if _, ok := v.info.Uses[a].(*types.Func); ok {
-				return true
+		if v.exprIsMethodGroup(arg) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// calleeTypeParamUnsuppliedByCall reports whether the CALL leaves a declared type parameter with no
+// argument to infer it from. Every non-variadic parameter is always supplied in a well-typed Go
+// call, so the only way a position goes unsupplied is a VARIADIC parameter that received nothing:
+// `slices.Insert(s, 0)` against `Insert[S ~[]E, E any](s S, i int, v ...E) S` hands C# an empty
+// `params Span<E>` and E is inferable from nothing (CS0411, cascading into CS1503 as the wrong
+// overload binds). Go infers E through S's core type; C# has no such rule.
+//
+// calleeHasConstraintOnlyTypeParam cannot see this one — E DOES appear in a parameter type — and
+// the predicate is deliberately about the ARGUMENTS rather than about variadics as such, because
+// "the parameter positions this call actually supplied" is the property C# inference works from.
+// It happens to be able to fire on nothing else, which is what holds the emission footprint to
+// exactly this shape: a call that passes at least one variadic value, or forwards a slice with
+// `...`, keeps its bare form.
+func (v *Visitor) calleeTypeParamUnsuppliedByCall(callExpr *ast.CallExpr, funIdent *ast.Ident) bool {
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || sig.TypeParams().Len() == 0 || !sig.Variadic() {
+		return false
+	}
+
+	variadicIndex := sig.Params().Len() - 1
+
+	// A forwarded slice (`f(xs...)`) supplies the position, as does any value in it.
+	if callExpr.Ellipsis != token.NoPos || len(callExpr.Args) > variadicIndex {
+		return false
+	}
+
+	for i := range sig.TypeParams().Len() {
+		tp := sig.TypeParams().At(i)
+		supplied := false
+
+		for j := 0; j < variadicIndex; j++ {
+			if typeUsesTypeParam(sig.Params().At(j).Type(), tp) {
+				supplied = true
+				break
 			}
-		case *ast.SelectorExpr:
-			if _, ok := v.info.Uses[a.Sel].(*types.Func); ok {
-				return true
-			}
+		}
+
+		if !supplied {
+			return true
 		}
 	}
 

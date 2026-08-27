@@ -292,9 +292,12 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 								if tv, ok := v.info.Types[arrayType.Len]; ok {
 									// Check if it's a constant
 									if tv.Value != nil {
-										length := tv.Value
-										intLength, _ := constant.Int64Val(length)
-										arrayLenValue = strconv.FormatInt(intLength, 10)
+										// constArrayLength, not a bare constant.Int64Val: a legal
+										// float- or complex-kind length constant (`const S = 1e6`)
+										// panics that call — see visitArrayType.go.
+										if length, ok := constArrayLength(tv.Value); ok {
+											arrayLenValue = length
+										}
 									}
 								}
 
@@ -341,8 +344,11 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							arrayLenValue = v.convExpr(arrayType.Len, nil)
 
 							if tv, ok := v.info.Types[arrayType.Len]; ok && tv.Value != nil {
-								intLength, _ := constant.Int64Val(tv.Value)
-								arrayLenValue = strconv.FormatInt(intLength, 10)
+								// constArrayLength, not a bare constant.Int64Val: see the local
+								// branch above and visitArrayType.go.
+								if length, ok := constArrayLength(tv.Value); ok {
+									arrayLenValue = length
+								}
 							}
 						} else if arrayType, ok := types.Unalias(def.Type()).(*types.Array); ok {
 							// Alias-typed global (`var gw words` where `type words = [4]uint64`):

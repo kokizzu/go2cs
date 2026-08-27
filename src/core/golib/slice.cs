@@ -336,7 +336,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (low < 0)
             throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, array.Length);
 
-        if (high < low || max < high || max > array.Length)
+        // A ZERO-SIZE element type has no backing to bound against — its array is the shared
+        // zerobase placeholder (GoZeroSizeFacts) whose length says nothing about the slice — so the
+        // `max > array.Length` arm is dropped there. The Go bound it stands in for, `max <= cap(s)`,
+        // is enforced by the caller that HAS a capacity: Reslice checks it against m_capacity, and
+        // the array/@string slice extensions check it against their own window before reaching here.
+        if (high < low || max < high || (max > array.Length && !GoZeroSizeFacts<T>.IsZeroSize))
             throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, array.Length);
 
         m_array = array;
@@ -351,6 +356,35 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         // over-allocatable length/capacity ("runtime error: makeslice: len/cap out of range");
         // the .NET ArgumentOutOfRange/OverflowException raised here before could not be caught
         // by recover(). .NET's heap ceiling for a T[] is Array.MaxLength.
+        //
+        // ZERO-SIZE ELEMENTS HAVE NO CEILING, because they have nothing to allocate: Go's makeslice
+        // multiplies the element size by the capacity and compares THAT against maxAlloc, so a
+        // `make([]struct{}, math.MaxInt)` computes 0 bytes and succeeds. The Array.MaxLength tests
+        // below are golib's allocation ceiling standing in for Go's memory ceiling, and applying
+        // them to a type that allocates nothing invented a panic Go does not have (slices'
+        // TestRepeat and TestConcat_too_large both die on their OWN `make([]struct{}, MaxInt)`
+        // before reaching the function under test). Only Go's own len/cap rules apply here.
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+        {
+            if (length < 0)
+                throw RuntimeErrorPanic.MakeSliceLenOutOfRange();
+
+            if (low < 0)
+                throw new ArgumentOutOfRangeException(nameof(low), "Value is less than zero.");
+
+            if (capacity <= 0)
+                capacity = length;
+
+            // The shared zerobase element stands in for the backing: non-null, so `== nil` is false
+            // exactly as for any other `make`d slice, and never indexed — every window bound is
+            // checked against m_length/m_capacity, which is all a zero-size slice has.
+            m_array = GoZeroSizeFacts<T>.Storage;
+            m_low = low;
+            m_length = length;
+            m_capacity = capacity - low;
+            return;
+        }
+
         if (length < 0 || length > Array.MaxLength)
             throw RuntimeErrorPanic.MakeSliceLenOutOfRange();
 
@@ -421,7 +455,11 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             // native branch (and its `unsafe` block) inline here cost PerfSieve +30% (110.5 →
             // 145.9/144.2 ms, two runs), because the method stopped being an inlinable array
             // access. The rare branch moves behind a NoInlining helper so the hot path JITs
-            // exactly as it did before this arc.
+            // exactly as it did before this arc. The zero-size gate is a folded per-T constant,
+            // so it disappears entirely from every ordinary element type's codegen.
+            if (GoZeroSizeFacts<T>.IsZeroSize)
+                return ref ZeroSizeElementRef();
+
             if (m_nativeBase == 0)
                 return ref m_array[m_low + index];
 
@@ -435,6 +473,14 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     [MethodImpl(MethodImplOptions.NoInlining)]
     private unsafe ref T NativeElementRef(nint index) => ref Unsafe.AsRef<T>(NativeElementPointer(index));
 
+    // Every element of a zero-size slice IS the same element: Go computes `&s[i]` as
+    // `data + i*0`, so each index names the one address the slice was built over — the runtime's
+    // global `zerobase` for a `make`d one. Answering the single shared slot is that, exactly, and it
+    // is what lets a slice whose length exceeds any array's still be indexed within its bounds. The
+    // Go bounds check has already run in the caller; this only supplies the storage.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ref T ZeroSizeElementRef() => ref GoZeroSizeFacts<T>.Storage[0];
+
     public ref T this[nint index]
     {
         get
@@ -445,6 +491,9 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             // Managed path first and inline (the int overload documents the measurement); the
             // native element IS the memory at the computed address, so reads observe the kernel's
             // writes and writes reach its pages (unmanaged T by construction, see OverNativeMemory).
+            if (GoZeroSizeFacts<T>.IsZeroSize)
+                return ref ZeroSizeElementRef();
+
             if (m_nativeBase == 0)
                 return ref m_array[m_low + index];
 
@@ -490,6 +539,13 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (low < 0 || high < low || max < high || max > m_capacity)
             throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, m_capacity);
 
+        // Zero-size backing: the Go bound check above is the WHOLE check — there is no storage whose
+        // extent could disagree with it — so the window is rebuilt directly. Going through the
+        // array-taking constructor would have measured the shared zerobase placeholder's length
+        // instead of the slice's capacity.
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+            return new slice<T>(GoZeroSizeFacts<T>.Storage, m_low + low, m_low + high, m_low + max);
+
         // Native backing: same window arithmetic over the same base — reslicing never copies, so
         // the result aliases the identical memory and Ꮡ over it names the offset addresses.
         if (m_nativeBase != 0)
@@ -503,6 +559,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public nint IndexOf(in T item)
     {
+        // A zero-size type has exactly ONE value, so every element of a non-empty slice equals the
+        // item and the first index is the answer. Walking a backing that does not exist would be
+        // both wrong and unbounded.
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+            return m_length > 0 ? 0 : -1;
+
         if (m_nativeBase != 0)
         {
             Span<T> span = ToSpan();
@@ -538,6 +600,18 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public Span<T> ToSpan()
     {
+        // A zero-size slice has no storage a span could view, and its LENGTH is a Go `int` — 64-bit —
+        // while Span<T>.Length is int32. Both facts are handled here rather than pushed onto callers:
+        // the window is materialized as real storage (every element is the zero value, which for a
+        // fieldless type is the only value there is, so a fresh array is indistinguishable from an
+        // alias), and a length no span can express raises Go's own recoverable panic rather than
+        // silently truncating to a shorter one — a shorter span would make `append` produce a slice of
+        // the wrong LENGTH, which is the one thing about a zero-size slice that IS observable.
+        // golib's bulk operations over such a slice — copy, clear, append — never arrive here: each
+        // answers from length arithmetic alone, which is what Go's own zero-size paths do.
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+            return ZeroSizeSpan();
+
         // The design's §2.4 unification point: pay the backing discriminant ONCE per bulk
         // operation, then run flat. A native window's span is the mapping itself.
         if (m_nativeBase != 0)
@@ -549,6 +623,18 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         }
 
         return new Span<T>(m_array, (int)m_low, (int)m_length);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private Span<T> ZeroSizeSpan()
+    {
+        if (m_length == 0)
+            return Span<T>.Empty;
+
+        if (m_length > Array.MaxLength)
+            throw new PanicException($"runtime error: zero-size slice of length {m_length} exceeds the {Array.MaxLength}-element ceiling a managed span can address");
+
+        return new Span<T>(AllocationCounter.NewArray<T>((int)m_length));
     }
 
     public slice<T> Append(T[] elems)
@@ -616,6 +702,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         {
             get
             {
+                // A zero-size element is the same value at every index (see ZeroSizeElementRef), and
+                // its slice has no backing to read — `for range make([]struct{}, n)` is a counted
+                // loop in Go and is one here.
+                if (GoZeroSizeFacts<T>.IsZeroSize)
+                    return (m_current - m_start, GoZeroSizeFacts<T>.Storage[0]);
+
                 if (m_nativeBase != 0)
                 {
                     unsafe
@@ -984,6 +1076,11 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
                 if (m_current >= m_end)
                     throw new InvalidOperationException("slice enumeration has ended.");
 
+                // Zero-size elements: the shared value, never a backing read (see the struct
+                // Enumerator's Current).
+                if (GoZeroSizeFacts<T>.IsZeroSize)
+                    return GoZeroSizeFacts<T>.Storage[0];
+
                 if (m_nativeBase != 0)
                 {
                     unsafe
@@ -1059,6 +1156,27 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             return slice;
 
         T[] newArray;
+
+        // Appending zero-size elements moves no bytes — Go's own growslice special-cases
+        // `et.Size_ == 0` to bump the length and return the same (zerobase) data pointer — so the
+        // whole operation is the length/capacity arithmetic. Doing it here rather than falling
+        // through keeps a `make([]struct{}, n)` slice from ever needing storage it has no reason to
+        // own, and keeps the growth rule identical to the backed path so `cap` still agrees with Go
+        // wherever Go's own answer is observable.
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+        {
+            nint zeroSizeLength = slice.m_length + elems.Length;
+
+            // Within capacity: the same window, one longer — the in-place arm, with no place to write.
+            if (slice != nil && elems.Length <= slice.Available)
+                return new slice<T>(GoZeroSizeFacts<T>.Storage, slice.m_low, slice.m_low + zeroSizeLength, slice.m_low + slice.m_capacity);
+
+            // Nil source or beyond capacity: Go reallocates and DETACHES, so the result starts at
+            // offset 0 exactly as the backed path's fresh array does.
+            nint zeroSizeCapacity = slice == nil ? elems.Length : CalculateNewCapacity(slice, zeroSizeLength);
+
+            return new slice<T>(GoZeroSizeFacts<T>.Storage, 0, zeroSizeLength, zeroSizeCapacity);
+        }
 
         if (slice == nil)
         {

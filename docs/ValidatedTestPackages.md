@@ -12,8 +12,9 @@ every listed package on demand, reading its own roster straight from the table b
 from a clone with one command.
 
 A disclosure is a specific Go assertion the converted suite provably cannot satisfy — never a
-tolerance, and never a test skipped to make a row pass. Six classes exist: three name something the
-managed runtime cannot *measure*, one something the test host cannot *be*, one something the managed
+tolerance, and never a test skipped to make a row pass. Seven classes exist: three name something the
+managed runtime cannot *measure*, two something the test host cannot *be* or must not *claim*, one
+something the managed
 runtime cannot truthfully *describe*, and one — `platform-skip`, minted 2026-08-25 — that is not a
 *cannot* at all, but a skip **Go's own test source defines** for a platform the converted corpus
 genuinely is. (The count has moved in both directions, and the committed manifests — never
@@ -41,6 +42,18 @@ once its remedy lands, because the arithmetic below moves when it goes.
 - **`codegen-liveness`** — a test asserts, from inside its own frame, that an object it just stopped
   using is now collectible. Go's GC drops a local at its last use via per-safepoint liveness maps;
   the CLR reports a frame's slots live for the frame's whole lifetime.[^codegen-liveness]
+- **`host-identity`** — a test's assert can be satisfied only by the test-hosting machinery claiming
+  Go's testing-package identity (`testing.tRunner`, `testing.go`) for a frame that is actually the
+  hand-owned test host. The host is a structural replacement (F15b: one testing package), and the
+  standing position-map ruling — the host never claims `testing/testing.go` — forbids the
+  fabrication passing would require: truth here is the divergence. The bar is deliberately narrow:
+  the frame must belong to the HOST ITSELF; a missing or misnamed frame of converted user code or
+  converted stdlib is a defect, never this class. The worked proof of that boundary is the
+  internal-test-variant caller-info fix (2026-08-26), where four rows that looked like this one were
+  defects in the converted side's own frame naming and were fixed rather than disclosed. Like
+  `codegen-liveness` it is permanent by design, retiring only if the hand-owned host were ever
+  replaced by converted Go `testing`. Minted 2026-08-26 with `log/slog`'s `TestRecordSource`, which
+  asserts that two frames above itself sits `testing.tRunner` in `testing.go`.
 - **`host-limit`** — a test's premise rests on a property of the test *binary* that the converted
   host's deployment shape structurally lacks. One capability is named today, a **relocatable
   single-file test executable**: Go's test binary is statically linked, so `os/exec` copies it into
@@ -91,19 +104,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **175 / 215 testable packages validated — 81.4%**
+> ### Phase 4 progress: **177 / 215 testable packages validated — 82.3%**
 >
-> **18,979 matching test verdicts · 87 disclosed** *(updated 2026-08-25 — maintained as part of the
+> **19,514 matching test verdicts · 106 disclosed** *(updated 2026-08-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 175 / 208 — 84.1%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 177 / 208 — 85.1%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 24 of 175 rows validated at their Linux counts** — 12,675 matching verdicts · 18 disclosed.
+> **Linux: 24 of 177 rows validated at their Linux counts** — 12,675 matching verdicts · 18 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -181,6 +194,7 @@ summed from the columns.
 | [`crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha512) | 36 | 1 | SHA-384/512/512-224/512-256 — the four-variant digest state machine. · [proof](validation/current/crypto.sha512.md) |
 | [`crypto/subtle`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/subtle) | 7 | | Constant-time primitives; word-at-a-time `XORBytes` over the full alignment matrix. · [proof](validation/current/crypto.subtle.md) |
 | [`crypto/tls`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/tls) | 400 | 2 | The flagship networking suite — one row over everything the Windows syscall arcs built: TLS 1.2 and 1.3 handshakes in both roles over real loopback sockets (the managed netpoller and the WSA submit family end to end), session tickets and resumption, QUIC transport events, ECH, the ALPN/SNI/client-auth matrices, certificate chain verification through the Windows system verifier (`CertGetCertificateChain` and the SSL policy check — the opaque-pointer mint round trip), name resolution (`GetAddrInfoW` + `adapterAddresses`), sha3-backed key schedules, and the zero-value regression sets. Four resumption/verification tests fail AGREEING on both runtimes (the suite's fixtures expired 2025-01-01 — the proof page carries the ceiling note); `TestBogoSuite`'s BoringSSL interop is proven by a filtered case end to end and disclosed host-limit in full (its child runner's own 10-minute `go test` deadline cannot hold 5,481 converted-shim spawns at ~87x managed startup). codegen-liveness + host-limit disclosures. · linux: 400 + 2 · · [proof](validation/current/crypto.tls.md) |
+| [`crypto/x509`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/x509) | 341 | | X.509 end to end — certificates, CSRs and CRLs parsed, created, marshalled and re-parsed across RSA, RSA-PSS, ECDSA, Ed25519, X25519 and DSA, every key encoding (PKCS#1, PKCS#8, SEC1, PKIX) with its mismatched-format and broken-signer rejections, chain building and verification — EKU enforcement, path building, the pathological and long-chain limits, and the Windows system verifier — name constraints with the RFC 2821 mailbox grammar and the bad-name sets, hostname and IP matching, the `OID` value type's marshal/unmarshal/equality round-trips, PEM encryption, certificate policies under GODEBUG, the system and hybrid certificate pools, and the duplicate-extension, negative-serial and critical-extension regression sets. The row is what the multi-value-`return` arc closed: `ParseOID` returned an EMPTY OID beside a nil error until the return-operand spill landed, and `parsePublicKey`/`parsePKCS8PrivateKey` forwarded a VALUE into `any` where Go holds `*ecdh.PublicKey`. 17 of the 341 skip identically on both sides. · [proof](validation/current/crypto.x509.md) |
 | [`database/sql`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql) | 138 | 2 | The connection pool and the driver contract end to end — `DB`/`Conn`/`Tx`/`Stmt`/`Rows` lifetimes against the `fakedb` driver, idle/open limits and connection reuse under concurrency, context cancellation and the `ErrBadConn` retry loop, prepared-statement dependency tracking and close ordering, and the `convertAssign` scan matrix through the reflection bridge (`driver.Valuer`, `sql.Scanner`, `RawBytes`, user-defined types). `TestConnRaw` is the row that measured the frame re-raise: a callee's `finally` re-raising a panic it never caught truncated `Conn.Raw`'s deferred release, so the connection stayed open and the test spent the package's entire deadline on a poll that could not come true; alloc-profile disclosures. · [proof](validation/current/database.sql.md) |
 | [`database/sql/driver`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql/driver) | 1 |  | The driver `Value` contract — `IsValue`/`IsScanValue` over every convertible Go kind and the default converter's integer-range and pointer-indirection rules. · [proof](validation/current/database.sql.driver.md) |
 | [`debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo) | 197 |  | Build-info extraction from real linked binaries — the ELF/Mach-O/PE/XCOFF reader matrix over the package's own `testdata` executables, and the blob scan repeated at every start offset. · linux: 204 · [proof](validation/current/debug.buildinfo.md) |
@@ -266,6 +280,7 @@ summed from the columns.
 | [`io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) | 18 | | The `fs.FS` interface family — named-interface runtime shells, `fs.Glob` deep recursion, `dirFS` walks. · [proof](validation/current/io.fs.md) |
 | [`io/ioutil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/ioutil) | 28 | | The deprecated pre-`os`/`io` shims — `ReadAll`/`ReadFile`/`WriteFile`, `TempFile`/`TempDir` including their bad-pattern and bad-directory matrices, and `TestReadDir`, which lists the PARENT directory and expects the sibling `io` package's own `io_test.go` to be there. · [proof](validation/current/io.ioutil.md) |
 | [`log`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log) | 8 | 1 | The standard logger — the whole flag matrix (`Ldate`/`Ltime`/`Lmicroseconds`/`Llongfile`/`Lshortfile`/`LUTC`/`Lmsgprefix`) rendered against regexps, prefix placement, `SetOutput`/`SetFlags`/`SetPrefix` on both the package logger and a fresh one, concurrent `Output` under `-race`, and the empty-`Print` newline rule. `TestAll` pins **`log_test.go`'s own line numbers** (`63`\|`65`) behind the `Llongfile`/`Lshortfile` prefixes — the assertion the position map exists to answer, and the one that moved this row: the file half alone made it `log/log_test.go:69`, a position in neither tree. alloc-profile disclosure. · [proof](validation/current/log.md) |
+| [`log/slog`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog) | 194 | 19 | Structured logging end to end — the `Record`/`Attr`/`Value` model including the packed-payload `Value` across every `Kind`, `LogValuer` resolution with its cycle guard, `Logger`/`Handler` composition through `WithAttrs`/`WithGroup`, the built-in JSON and text handlers compared output-for-output over a ~50-case table (escapes, empty groups, `ReplaceAttr` rewriting, `json.RawMessage`, `TextMarshaler` errors), level parsing/marshalling and `LevelVar`, the `log` package bridge, and `testing/slogtest`'s own conformance suite run against both handlers. Its caller-info tests are what rooted the `-tests` pipeline's internal-test-variant naming defect: an in-package test file is compiled INTO its package, so `TestCallDepth` asserts `log/slog.TestCallDepth` where the derivation had been leaking the converter's own `_internal_test` class token — a systemic frame-naming bug, fixed rather than disclosed, worth four rows. alloc-profile disclosures on the `...any`/`Value` boxing the two-word Go interface avoids; `TestRecordSource` is the founding **host-identity** row — its depth-1 case passes on that same fix, while its depth-2 case asks the hand-owned test host to answer `testing.tRunner` in `testing.go`. · [proof](validation/current/log.slog.md) |
 | [`log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) | 3 |  | The two hand-written `slog.Handler` implementations `log/slog`'s benchmarks measure against, checked for correctness rather than speed — a minimal text handler's rendered output byte-for-byte, and an async handler's ring-buffered `Record` compared attribute by attribute through `slices.EqualFunc` over `slog.Attr.Equal`. · [proof](validation/current/log.slog.internal.benchmarks.md) |
 | [`maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) | 14 | | Generic map helpers and iterators. · [proof](validation/current/maps.md) |
 | [`math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) | 76 | | The core numeric package — IEEE edge cases, rounding, `Inf`/`NaN`. · [proof](validation/current/math.md) |

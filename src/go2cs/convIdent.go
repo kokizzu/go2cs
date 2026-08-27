@@ -287,13 +287,18 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 		}
 	}
 
+	// The arms below each decide the identifier's SPELLING, and the generic-function-VALUE
+	// type-argument append at the end applies to whichever one wins — so a Δ-renamed or
+	// bridge-qualified generic function passed as a method group is spelled out too.
+	name := ""
+
 	// A `-tests` variant Δ-renamed this test-file declarator to keep production symbol names
 	// immutable (see performNameCollisionAnalysis). A METHOD name reaches the isMethod arm above,
 	// but a package-level FREE FUNCTION referenced as a call target or a function value falls
 	// through to here — and its reference must follow the rename or it binds to nothing (CS0103).
 	// Object identity, so a same-named production symbol keeps its plain emission.
 	if testMethodRenames[v.info.ObjectOf(ident)] {
-		return ShadowVarMarker + getSanitizedIdentifier(v.getIdentName(ident))
+		name = ShadowVarMarker + getSanitizedIdentifier(v.getIdentName(ident))
 	}
 
 	// A production package-level member the WHITE-BOX BRIDGE declares a same-named member for.
@@ -303,19 +308,50 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 	// `[GoRecv] Pop(this ref myHeap)` hid `heap_package.Pop(Interface)`; every `Pop(h)`/`Push(h,
 	// x)` in heap_test then bound the extension by value — CS1620 ×8). Qualify through the
 	// production class, which nothing declared in the bridge can shadow.
-	if obj := v.info.ObjectOf(ident); v.whiteboxProductionNameShadowed(obj) {
-		return globalQualifyRooted(packageNamespace+"."+getSanitizedImport(v.options.testProductionName+PackageSuffix)) +
+	if obj := v.info.ObjectOf(ident); name == "" && v.whiteboxProductionNameShadowed(obj) {
+		name = globalQualifyRooted(packageNamespace+"."+getSanitizedImport(v.options.testProductionName+PackageSuffix)) +
 			"." + getSanitizedIdentifier(v.getIdentName(ident))
 	}
 
 	// A DOT-IMPORTED (`. "time"`) package member is referenced BARE, so there is no selector for
 	// the qualified-name resolver to rewrite — yet the member may be collision-renamed inside its
 	// own package, in which case the raw Go name binds nothing (CS0103).
-	if renamed, isRenamed := v.dotImportedRenamedMember(ident); isRenamed {
-		return renamed
+	if name == "" {
+		if renamed, isRenamed := v.dotImportedRenamedMember(ident); isRenamed {
+			return renamed
+		}
 	}
 
-	return getSanitizedIdentifier(v.getIdentName(ident))
+	if name == "" {
+		name = getSanitizedIdentifier(v.getIdentName(ident))
+	}
+
+	// A SAME-PACKAGE generic function referenced as a VALUE — the bare-ident method group
+	// `apply(s1, Reverse)` against `Reverse[S ~[]E, E any](s S)` — must spell its type arguments:
+	// C# infers a method group's type parameters only from the target delegate's own parameter
+	// types, and E is reachable from none of them (CS0411, slices' TestInference). go/types
+	// already resolved the instantiation into info.Instances keyed by this ident.
+	//
+	// This is the QUALIFIED path's twin: convSelectorExpr has emitted the same list for
+	// `pkg.Func` since the SortFunc/bytes.Compare fix, and a bare reference to a function in the
+	// current package reached no equivalent — one Go reference cannot have two spellings
+	// depending on whether the source named it bare or through its package. The callee and
+	// explicit-instantiation-base positions are excluded (see
+	// IdentContext.suppressGenericTypeArgs); so is every non-generic ident, which has no recorded
+	// instance and renders unchanged.
+	if !context.suppressGenericTypeArgs && !context.isMethod && !context.isType {
+		if _, isFunc := v.info.Uses[ident].(*types.Func); isFunc {
+			if inst, ok := v.info.Instances[ident]; ok && inst.TypeArgs != nil && inst.TypeArgs.Len() > 0 {
+				// Erased (pointer-core) positions leave the emitted list (see renderedTypeArgs);
+				// a list that erases to empty falls through to the bare form.
+				if typeArgs := v.renderedTypeArgs(ident, inst.TypeArgs); len(typeArgs) > 0 {
+					return fmt.Sprintf("%s<%s>", name, strings.Join(typeArgs, ", "))
+				}
+			}
+		}
+	}
+
+	return name
 }
 
 // dotImportedRenamedMember resolves a BARE reference to a package-level CONST or VAR declared in

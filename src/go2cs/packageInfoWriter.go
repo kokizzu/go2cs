@@ -32,6 +32,59 @@ import (
 // block for migrateProseBlock whatever the rest of it says.
 const legacyInterfaceImplementationsFirstLine = "// As types are cast to interfaces in Go source code, the go2cs code converter"
 
+// rootEscapePrefix is the C# root-namespace escape. The `-tests` alias-shadow machinery mints it
+// (testAliasShadowOperations / convSelectorExpr) whenever a test package's own class shadows the
+// leading segment of a qualified reference; a site that needs no escape renders the same type bare.
+const rootEscapePrefix = "global::"
+
+// dedupeRootEscapedRecords collapses assembly-record lines that differ ONLY by `global::` root
+// escapes, returning the surviving lines still sorted.
+//
+// The record sections are HashSets of RENDERED TEXT, so two spellings of one type are two entries.
+// That is invisible in a production conversion — the escape is a `-tests` phenomenon — but a test
+// package registers the same (impl, interface) pair from several cast sites, and one escaped site
+// is enough to double the record. go2cs-gen resolves both spellings to the SAME symbol, so it mints
+// the adapter twice: net/http's `http_HandlerFuncᴠΔHandler` was emitted as both `-val.g.cs` and
+// `-val.1.g.cs`, giving CS0102 + CS0111 ×5 + CS8646 ×2. Same family as the alias-spelling duplicate
+// the covered-set skip above resolves for `os`'s dirEntry — a different way to spell one type, with
+// the same consequence — which is why this is a shared pass over both record sections rather than a
+// second special case inside either.
+//
+// The ESCAPED spelling wins a collapse. It is shadow-proof by construction, which is the whole
+// reason the machinery minted it; keeping the bare form could reintroduce the very shadow the escape
+// was emitted to defeat. Ties (each side escaped in a different record) fall to the lexicographically
+// smaller line so the output stays deterministic. Merging is safe even where the bare form WOULD
+// resolve elsewhere: that case means the bare record was already naming the wrong type.
+func dedupeRootEscapedRecords(sortedLines []string) []string {
+	best := map[string]string{}
+	order := []string{}
+
+	for _, line := range sortedLines {
+		key := strings.ReplaceAll(line, rootEscapePrefix, "")
+		existing, seen := best[key]
+
+		if !seen {
+			best[key] = line
+			order = append(order, key)
+			continue
+		}
+
+		if escapes, priorEscapes := strings.Count(line, rootEscapePrefix), strings.Count(existing, rootEscapePrefix); escapes > priorEscapes || (escapes == priorEscapes && line < existing) {
+			best[key] = line
+		}
+	}
+
+	result := make([]string, 0, len(order))
+
+	for _, key := range order {
+		result = append(result, best[key])
+	}
+
+	sort.Strings(result)
+
+	return result
+}
+
 // interfaceImplementationsProseLines returns the <InterfaceImplementations> section's explanatory
 // comment. Like every emitted-artifact comment it states what the section holds and the constraint
 // that shape serves, and nothing about how it came to be that way — this text ships in every
@@ -481,6 +534,12 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		sortedLines := lines.Keys()
 		sort.Strings(sortedLines)
 
+		// Collapse records that differ ONLY by a `global::` root escape — they name the same type
+		// and the generator resolves them to the same symbol, so emitting both mints the adapter
+		// twice. Applied BEFORE recordEmittedPointerAdapterPairs so the adapter-naming authority
+		// below sees the deduplicated set and cannot manufacture a false collision.
+		sortedLines = dedupeRootEscapedRecords(sortedLines)
+
 		// These lines ARE the adapter-naming authority: go2cs-gen composes each pointer-adapter
 		// class from exactly this pair set, and resolveAdapterNameMarkers resolves the cast sites
 		// from the same set, so the two cannot disagree. Captured from the FINAL lines rather than
@@ -635,6 +694,12 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		// Sort lines
 		sortedLines := lines.Keys()
 		sort.Strings(sortedLines)
+
+		// Same root-escape collapse the GoImplement section applies — these records are built by
+		// the same qualifyLocalTypeRef rendering over the same registries, so they carry the same
+		// duplicate-spelling exposure (ImplicitConvGenerator emits one conversion operator per
+		// record, and a duplicate pair is CS0557).
+		sortedLines = dedupeRootEscapedRecords(sortedLines)
 
 		// Insert implicit conversions into package info file
 		packageInfoLines = append(packageInfoLines[:startLineIndex+1],

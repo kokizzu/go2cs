@@ -48,10 +48,10 @@ using static global::go.syscall_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("syscall/exec_windows_test.go", "exec_windows_test.cs", "ABgiggAWMoKAggALCqKogpaUgoKClIKCgpSqgoKCgpSSgqqCgoKkgpSEgqaCgoKUgoKUgJI=")]
-[assembly: go.GoPositionMap("syscall/syscall_test.go", "syscall_test.cs", "AA8egoKClIKClIL4gpSqooSCgoLogoKUgoCCpII=")]
-[assembly: go.GoPositionMap("syscall/syscall_windows_test.go", "syscall_windows_test.cs", "ABgkgoSCgpSCgoKUlIKClOiCgoKUggAMCIKEgoKClISOlIKCgpSCgpaCuIIACAaigoKUgoKClIKCgoLWgoIADAiCgoKEhgADHoKCgpSCgoKCmAADFoKCgoKClIKCloKCloKCgoK4AAgMgoSCgpSCgriE1oKCgpT4wrqCgpSCgoKWgoKCgIK2grqCgoKUlIKCgpToooKCgoKCgoSCgoKClJSEgpSC")]
-[assembly: go.GoPositionMap("syscall/wtf8_windows_test.go", "wtf8_windows_test.cs", "AIUBjAKCspKCgoLcgrKSgoLcooKUlIKCuIKC3KKCgpSCgoK4goK4goI=")]
+[assembly: go.GoPositionMap("syscall/exec_windows_test.go", "exec_windows_test.cs", "AEIiggAWMoKAggALCqKogpaUgoKClIKCgpSqgoKCgpSSgqqCgoKkgpSEgqaCgoKUgoKUgJI=")]
+[assembly: go.GoPositionMap("syscall/syscall_test.go", "syscall_test.cs", "ABsegoKClIKClIL4gpSqooSCgoLogoKUgoCCpII=")]
+[assembly: go.GoPositionMap("syscall/syscall_windows_test.go", "syscall_windows_test.cs", "AB4kgoSCgpSCgoKUlIKClOiCgoKUggAMCIKEgoKClISOlIKCgpSCgpaCuIIACAaigoKUgoKClIKCgoLWgoIADAiCgoKEhgADHoKCgpSCgoKCmAADFoKCgoKClIKCloKCloKCgoK4AAgMgoSCgpSCgriE1oKCgpT4wrqCgpSCgoKWgoKCgIK2grqCgoKUlIKCgpToooKCgoKCgoSCgoKClJSEgpSC")]
+[assembly: go.GoPositionMap("syscall/wtf8_windows_test.go", "wtf8_windows_test.cs", "AJEBjAKCspKCgoLcgrKSgoLcooKUlIKCuIKC3KKCgpSCgoK4goK4goI=")]
 // </GoSourcePositionMaps>
 
 namespace go;

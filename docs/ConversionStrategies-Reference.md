@@ -949,6 +949,47 @@ marker keeps the name clear of the relocated-package-var method space (`initᴛ<
 [Package-Level Variable Initialization Order](#package-level-variable-initialization-order)) and the
 `import` word clear of the `-tests` package-init hook (`initᴛᴛtests`).
 
+**The forcing `typeof` is root-qualified when the enclosing class shadows its leading segment.**
+The hook body is the ONE place the converter spells a namespace-qualified path where C# *class*-member
+lookup applies. Every other cross-package reference is emitted through a file-scoped `using` alias, and
+a using **directive** resolves at namespace scope, where class members are not in play; the hook sits
+inside the class body, and C# resolves the leading identifier of a namespace-or-type-name by searching
+the enclosing type declarations **outward first**. A nested type sharing that identifier therefore
+occludes the namespace for the whole class body — while the alias a few lines above keeps working, which
+is what makes the failure read like a converter regression somewhere else entirely:
+
+```csharp
+using palette = image.color.palette_package;   // namespace scope — resolves
+
+partial class image_internal_test_package {
+
+[GoInit] internal static void initᴛᴛimportꓸimageꓸcolorꓸpalette() {
+    builtin.initPackage(typeof(image.color.palette_package));   // CS0426
+}
+
+[GoType] internal partial interface image : Image { … }         // ← occludes `image`
+```
+
+Go's own `image_test.go` declares a test-local `type image interface{…}`, and `package image` is free to:
+importing `image/color/palette` binds `palette`, not `image`. The same shape is available to production
+code — `type sync struct{}` beside `import "sync/atomic"` breaks identically — so the remedy covers the
+class, not the instance: `writeImportInit` root-qualifies the target with `global::` (which restarts
+lookup at the global namespace and so cannot be occluded at all) whenever `forcingTargetShadowed` finds a
+package-level **type** named for the target's leading segment that emits into **this** class.
+
+Both halves of that gate are narrow on purpose, and both directions cost something. Only a *type*
+occludes: `typeof(a.b)` is a namespace-or-type-name, and that lookup considers types and namespaces
+alone, so a same-named func or var is irrelevant. And only a type emitted into the *same* class occludes,
+which is what keeps a production hook bare when the shadow lives in the test-variant class — the two are
+sibling partial classes, and a `using static` import of one loses to the namespace's own members at
+namespace scope — so the `-stdlib` and `-tests` emissions of the same production file stay identical.
+Over-qualifying would be valid C# but would churn every hook in the corpus (2,147 sites across 691 files
+at the time of the fix, 606 behavioral goldens among them); under-qualifying is a hard CS0426. An ordinal
+census of the converted standard library finds **exactly one** shadow site — `image`'s — which is why the
+guard costs the corpus nothing: every site it changes is a site that did not compile. Guarded by
+`tests/Behavioral/ImportSegmentTypeShadow` (production scope, compiled and output-compared) and by
+`importSegmentShadow_test.go` (the test-local half, the gate's four quadrants, and the rooting shapes).
+
 **Go's pseudo-packages are skipped.** `unsafe` and `builtin` are compiler-provided and have no
 initialization at all, and `C` is cgo. `import _ "unsafe"` is the `//go:linkname` ritual — 67 files of
 the converted standard library — so forcing it would be a guaranteed no-op emitted 67 times. They are
@@ -2788,6 +2829,35 @@ box to the same value the store did, or it matches no entry. None of the three h
 today (every `panic` argument in the standard library is an address-of composite, so the census is
 zero), but they are the same boundary and the guard exercises all three.
 
+A **FORWARDED multi-value return** is one more slot in that enumeration, and it was the one the
+enumeration missed. `return f()` where `f` returns `(*T, error)` and the function's own results are
+`(any, error)` cannot convert in place — C# tuple conversions do not consult user conversions
+element-wise — so the call is deconstructed into temporaries and each element converts on its own.
+Routing the `any` element through the ordinary interface-conversion machinery is wrong precisely
+because `any` has **no adapter to hold the box**: with no arm to take, that route falls through to
+its pointer-DEREF prefix and boxes a copy of the pointee. The element already *is* the box, so it
+takes the boundary treatment directly:
+
+```go
+func parsePublicKey(…) (any, error) {
+    …
+    return ecdh.X25519().NewPublicKey(der)   // (*ecdh.PublicKey, error) into (any, error)
+}
+```
+```csharp
+var (ᴛ1, ᴛ2) = ecdh.X25519().NewPublicKey(der);
+return (ᴛ1.OrTypedNil(), ᴛ2);               // NOT (~ᴛ1, ᴛ2) — that boxes a PublicKey VALUE
+```
+
+`crypto/x509`'s `parsePublicKey` and `parsePKCS8PrivateKey` are the corpus sites — the only two, and
+the deref is what made `%T`, `reflect.TypeOf` and every `case *ecdh.PublicKey` type-switch arm on the
+result disagree with Go, since `case ж<ecdhꓸPublicKey>` can never match a boxed value. The
+ASSIGNMENT sibling of this arm (`c, err = sd.dialTCP(…)`) is not affected: its target list is
+screened for *non-empty* interfaces only, so an `any` target never reaches the conversion machinery
+there at all. (Guarded by the `MultiValueReturnOrder` behavioral test's identity half — a
+`(*thing, error)` call forwarded into `(any, error)`, then read back through a type switch and both
+assertions; before the fix the switch takes the `case thing` arm and the `*thing` assertion panics.)
+
 The scope is a genuine `*T` (a `types.Pointer`). `unsafe.Pointer` is a Basic and renders as a
 struct, and a NAMED pointer type renders as its generated wrapper struct — neither can be a null
 reference, so neither has anything to carry. An address-of (`&x`), a `new(T)`, a `(*T)(nil)` and a
@@ -3186,6 +3256,48 @@ var (ᴛ1, ᴛ2) = Ꮡsd.dialTCP(ctx, laΔ1, raΔ1);
 ```
 
 The arm fires only for a statement-position deconstruction (one call RHS, several LHS) where some non-empty-interface target's tuple component is a non-identical, non-interface type; all other deconstructions keep the direct form. (Guarded by the `InterfaceCasting` extension `makeCounter` — a `(*Counter, error)` call deconstructed into an `Incrementer` — runtime-verified against Go.)
+
+### A multi-value RETURN reads its plain operands AFTER its calls
+
+The read-after-write hazard above has a **return-statement** sibling, and it arrives from the opposite direction: there Go's ordering is fixed and C#'s sequential emission breaks it; here Go's ordering is *free* and C#'s tuple literal fixes it the other way.
+
+Go's spec orders only a return statement's **calls** — "all function calls, method calls, receive operations, and binary logical operations are evaluated in lexical left-to-right order" — and leaves its plain operands deliberately unordered against them. gc resolves that freedom the same way every time, because its order pass rewrites the statement: each call is spilled to a temporary **first**, and the result list is then assembled from those temporaries and whatever plain operands remain. So under gc every plain operand is read *after* every call. A C# tuple literal has no such freedom — it evaluates strictly left to right — so a plain operand written before a mutating call is copied **before** the mutation:
+
+```go
+func ParseOID(oid string) (OID, error) {
+    var o OID
+    return o, o.unmarshalOIDText(oid)   // gc: the call runs, THEN o is read
+}
+```
+```csharp
+public static (OID, error) ParseOID(@string oid) {
+    OID o = default!;
+    var ᴛ1 = o.unmarshalOIDText(oid);   // gc's own rewrite, emitted
+    return (o, ᴛ1);
+}
+```
+
+Without the spill this emits `return (o, o.unmarshalOIDText(oid));`, which copies the **empty** `o` and only then fills the original — so `crypto/x509`'s `ParseOID` returned a zero-length OID beside a nil error, and every parse "succeeded" with no bytes. Nothing about it is visible at compile time: both sides compile, both return two values, and only the *content* of the first differs.
+
+The spill fires only where the ordering is **observable** — where a later operand's call receives an earlier operand's storage *by address*, the only way it can write what that operand reads. Three shapes hand a call that address:
+
+| Shape | Example | Storage the call can write |
+|---|---|---|
+| pointer-receiver method on a value | `return o, o.fill()` | `o` itself — the call takes `&o` |
+| explicit address argument | `return n, raise(&n)` | `n` itself |
+| a pointer operand handed over | `return c.n, c.bump()`, `c` a `*counter` | `*c`, so a read *through* `c` observes it |
+
+Whether the read and the write actually *meet* is decided by comparing **access paths** — a root variable (`types.Object`, exactly as in `lhsReusedInLaterRhs`, so a same-named but distinct variable is never a false positive) plus the hops from it to the storage in question, where a field or element hop stays *inside* the previous location and a deref *leaves* it. Two locations conflict when they share a root, agree on every hop they both have, and the longer path's extra hops contain no deref.
+
+A root plus a single "indirect" flag is not enough, and the corpus says so. `net/http`'s `return n.handler, n.pattern.String(), n.pattern, matches` reads storage inside `*n` while the call writes `*(n.pattern)`; the flag model reads both as one location — "something behind `n`" — and spills a call that provably cannot touch what the first operand reads. The paths diverge at `.handler` versus `.pattern`, so they do not conflict and nothing spills. The model holds the case one hop over just as firmly: `return nd.pat.n, nd.pat.bump()` reads *through* the very pointer the call writes through, the write path is a prefix of the read path with no deref between them, and it spills. Where a hop cannot be spelled exactly — a field promoted through embedding — the path is **truncated** rather than abandoned, naming the larger enclosing location, so imprecision can only ever over-report a conflict and never miss one.
+
+Every call-bearing operand at or **below** the hazardous index spills, not merely the hazardous one: the spec *does* fix the calls' order among themselves, so spilling `b.bump()` out of `return b.n, side(), b.bump()` while leaving `side()` in the tuple would run bump first. A channel **receive** spills with them, since the spec's sentence orders receives alongside calls. A type conversion and a pure builtin (`len(o.der)`) do not: both are calls syntactically and reads semantically, gc spills neither, and leaving them in the tuple is what puts their reads after the spilled calls — which is exactly where gc puts them. The temporaries are numbered from the file-monotonic `tupleTempIndex` the converter's other multi-value expansions already share, so two spills in one scope cannot collide.
+
+The scope is as much of the rule as the spill is: a rule that spilled every call-bearing operand would also be correct, and would rewrite most of the corpus for no correctness gain. Four controls therefore keep the call *in* the tuple — an operand that **is** the pointer (`return c, c.bump()`; both orders yield the same pointer, and the emitted pointer is the box rather than a copy), a call on unrelated storage (`return a.n, b.bump()`), a **value**-receiver method (`return c.n, c.peek()`; the receiver is a copy, so the caller can observe nothing), and the net/http pointer-field shape above. Deliberately *not* covered, each because deciding it needs more than the statement itself: an operand that contains a call of its own (`return o.f + g(), o.mutate()` — gc spills `g()` too and reads `o.f` last, so spilling the whole operand would re-create the problem rather than fix it; no corpus site), a pointer whose **pointee no path can name** (`f(getPtr())` — the interprocedural question one step removed), aliasing through a slice or map's **backing store** (`return s[0], fill(s)`, where no address is taken at the call site at all), and a call that reaches the operand through a package-level or captured variable, which is interprocedural outright.
+
+**Corpus footprint: 2 production files** (A/B of two seeded whole-stdlib reconverts, control binary versus fixed, 10,260 files emitted per side) — `crypto/x509/oid.cs`, where the spill is the bug fix, and `runtime/symtabinl.cs`'s `return u, u.resolveInternal(pc)`, where it is emission-only (the method reads its receiver and writes nothing, so gc's order and C#'s agree on the value; the spill simply stops relying on that). Their two `package_info.cs` position maps move with them, and nothing else in the corpus does.
+
+(Guarded by the `MultiValueReturnOrder` behavioral test — all five hazard shapes, a three-operand call-order case, and the four controls, output-compared vs `go run`; before the fix every hazard reports the pre-mutation value. `returnOperandOrder.go` owns the analysis and `returnOperandOrder_test.go` pins the emission against three neuters: the rule forced off, the rule forced on everywhere, and `pathsConflict` reduced to the root-plus-indirect model — the last reporting exactly the two controls the access path exists to separate.)
 
 ### A SELECTOR left-hand side counts as a reassignment — a field swap must stay simultaneous
 
@@ -3849,6 +3961,43 @@ The same rule applies to an **escaping local** whose address is taken — `var p
 
 #### A nested closure must not clobber the enclosing closure's capture state
 The per-lambda conversion state — `conversionInLambda` (are we inside a closure body?) plus the capture-name maps (`currentLambdaVars`/`currentLambdaVarObjs`) — is what makes closure-body emission rewrite captured references to their box/copy forms: a captured local `s` reads as `sʗ1`, and the current method's **direct-ж receiver** (`func (s *Stmt) …` emitted `this ж<Stmt> Ꮡs`, whose body alias `ref var s = ref Ꮡs.Value` is a `ref`-local that **cannot** be captured by a C# closure) reads through its box as `Ꮡs.Value`. That state was *set* on entering a closure but **reset to `false`/`nil` on exit**, not restored — so a closure that contains an **inner** closure had its state wiped the moment the inner one finished, and every reference in the *outer* closure body **after** the inner one fell back to the bare, un-rewritten name. For a receiver field-read that is a bare ref-local capture — `database/sql (*Stmt).QueryContext`'s `s.db.retry(func(){ …; rows.releaseConn = func(err){…}; if s.cg != nil { … } })`, where `s.cg` sits after the inner `releaseConn` closure — the emission was `s.cg` (CS8175, "cannot use ref local `s` inside an anonymous method/lambda"); the equivalent captured-local case silently split a variable between its bare form and its `ʗ1` copy within one closure. The fix makes `enterLambdaConversion`/`exitLambdaConversion` a proper **LIFO save/restore stack** (`conversionStack`): entering pushes the current state and installs fresh state; exiting **restores the enclosing closure's** state instead of resetting. A closure at top level still restores to `false`/empty (unchanged), so the change is inert except where a closure body continues after a nested closure — there the receiver box-read (`Ꮡs.Value.cg`, `Ꮡs.Value.cg.txCtx()`) and the captured-local copy name are now applied consistently across the whole body. (Guarded by the `NestedLambdaReceiverField` behavioral test — a direct-ж receiver method whose closure holds a nested closure followed by a non-call receiver field read, a field-method call, and another field read, all verified to render `Ꮡs.Value.<field>` and output-compared vs Go; cleared `database/sql`'s 2×CS8175 and re-baselined `DeferValueFieldPtrReceiver` whose defer-then-body sequence exercises the same restore.)
+
+#### The capture snapshot is a STATEMENT, so every position that can hold a func literal owes it a hoist target
+`var sʗ1 = s;` is a declaration statement, and C# has no statement slot inside an argument list — so a
+capturing literal in expression position must send its snapshot to a **hoist sink** the enclosing
+statement flushes ahead of itself. `convFuncLit` consults two, in order: the explicit
+`LambdaContext.deferredDecls` builder that `go`/`defer`/`return` thread through the expression
+contexts, then the ambient `v.hoistedDecls` that the assignment, expression-statement, `if`, `for`,
+`range` and var-spec forms install. With neither, the decls emit **inline** and the file stops
+parsing — `CS1003 ',' expected` + `CS1026 ')' expected` + `CS1002 ';' expected` + `CS1513 '}' expected`,
+per site, the first of which reads as a defect in whatever token happens to follow.
+
+Two positions had no sink, and between them they were the entire parse wall that kept `net/http`'s
+1,352-verdict suite from ever running (28 diagnostics, 7 clusters, 2 of 35 converted test files):
+
+- **A CONVERSION is transparent to the hoist.** `HandlerFunc(func(rw, req){ … conn … })` handed to
+  `go Serve(ls, …)` (serve_test) is a *type conversion* whose operand is the literal. The conversion
+  fork of `convCallExpr` rendered that operand with **no expression contexts at all**, so the wrapper
+  made the literal invisible to the sink the `go` statement had already provided, and the snapshot
+  landed inside the delegate-creation argument list `new Δhttp.HandlerFunc(var connʗ1 = conn; …)`.
+  The fix adopts the ambient target for the conversion operand exactly as the `&composite` and
+  composite-literal arms of `convExpr` already do — gated on a non-nil sink, so every other
+  conversion keeps rendering with the nil contexts it always had. It matters only where a statement
+  supplies the *explicit* builder and no ambient one, i.e. the `go`, `defer` and `return` forms; the
+  statement forms that install `v.hoistedDecls` were already served by the second lookup.
+- **A channel SEND supplied no sink of either kind.** `handlerc <- HandlerFunc(func(w, r){ … ts … })`
+  (client_test) broke for the same reason with the wrapper, and a **bare** capturing literal sent to a
+  channel broke without one. `visitSendStmt` now installs `v.hoistedDecls` and writes it before the
+  send, the same shape `visitExprStmt` uses — under the same `useNewLine` test, because a `SendStmt`
+  is a `SimpleStmt` and can also be a `for`/`if` init-or-post clause, where there is no statement slot
+  to hoist into and the enclosing statement's own sink must stand.
+
+The general rule the two share: **a conversion, an adapter wrap, or any other expression wrapper must
+not be able to hide a func literal from the enclosing statement's hoist.** (Guarded by the
+`CaptureHoistThroughConversion` behavioral test — ten shapes covering `go`, `defer`, channel send,
+interface-element send, plain call, return and assignment positions, wrapped and bare, all
+output-compared against `go run`; the seven affected shapes reproduce the CS1003/CS1026/CS1002
+cluster with the fix reverted.)
 
 ### Test-variant name coherence: production names are pinned, test-side method declarators Δ-rename
 
@@ -5107,6 +5256,61 @@ by the `SliceNilVsEmpty` behavioral test — every row of the table probed with 
 `cap` against `go run`; `resliceTailCapZero` discriminates the operator fix, `nilReslice` the
 `Reslice` fix, and `appendNilNothing` the `Append` fix. `NilSliceConversion` continues to guard the
 `[]T(nil)` conversion row.)
+
+### A slice of a ZERO-SIZE element type carries no storage — `make([]struct{}, math.MaxInt)` allocates nothing
+
+Go's `struct{}` has size 0, so `mallocgc(0, …)` returns the address of the runtime's global
+`zerobase` and charges no malloc: `makeslice` multiplies the element size by the capacity and compares
+*that* against `maxAlloc`, which for a zero-size element is 0 whatever the length. `make([]struct{}, n)`
+therefore succeeds for every `n` up to `math.MaxInt`, and Go's own library leans on it — `slices.Concat`,
+`slices.Repeat` and their tests use `[]struct{}` precisely BECAUSE it exercises the length arithmetic at
+`MaxInt` without touching memory.
+
+golib allocated a real backing array for the same expression and panicked `makeslice: len out of range`
+at `Array.MaxLength` — a ceiling Go does not have here, because Go has nothing to allocate. Both
+`slices.TestRepeat` and `slices.TestConcat_too_large` died on their OWN `make([]struct{}, MaxInt)` before
+reaching the function under test.
+
+**The predicate is a SHAPE question, not a size question.** `Unsafe.SizeOf<T>()` cannot answer it: C#
+gives an empty struct one byte, so every zero-size Go type measures 1. What survives the conversion
+faithfully is the FIELD SET — a Go struct is zero-size exactly when it has no fields of nonzero size, and
+the emitted C# struct carries the same fields — so `GoZeroSizeFacts<T>` asks that instead, recursively,
+with "no instance fields at all" as the base case (golib's `EmptyStruct` for an anonymous `struct{}`, and
+every `[GoType] partial struct noCopy { }` the converter emits for a named one). The answer is a
+`static readonly` per closed `T`, so every gate written against it folds at JIT time and no ordinary
+element type pays for the branch.
+
+Under it, a zero-size slice's `m_array` is a **non-null placeholder** — one shared single-element array,
+golib's `zerobase` — so `s == nil` keeps the representation-nilness rule above (a `make`d one is never
+nil, the zero header still is), while every window bound is checked against `m_length`/`m_capacity`
+alone. Each operation Go answers from length arithmetic does the same here: `make` skips the allocation
+and the `Array.MaxLength` ceiling (Go's `len < 0` rule stays), `Reslice` rebuilds the header directly,
+`append` bumps the length and applies the identical growth rule, `copy` returns `min(len(dst), len(src))`
+and moves nothing (Go's `memmove` of `n * 0` bytes), `clear` is complete before it starts, indexing
+answers the ONE shared element (Go computes `&s[i]` as `data + i*0`, so every index names the same
+address), and `range` is a counted loop.
+
+**One honest ceiling remains, and it is the managed platform's:** `Span<T>.Length` is `int32` while a Go
+slice length is `int`. A zero-size window longer than `Array.MaxLength` cannot cross that boundary, so
+`ToSpan()` raises Go's own recoverable panic naming the limit rather than truncating — a shorter span
+would make `append` produce a slice of the wrong LENGTH, which is the one property of a zero-size slice
+that IS observable. golib's own bulk operations never arrive there (each answers from length arithmetic
+per the paragraph above), but a VARIADIC SPREAD does: `append(dst, src...)` emits `append(dst, src.ꓸꓸꓸ)`,
+and `ꓸꓸꓸ` is a `Span<T>`. That is why `slices.Grow`'s `append(s[:cap(s)], make([]E, n)...)` still cannot
+reach `n == MaxInt`, and it is a defect with a known price rather than a limit: a spread whose operand is
+a slice would have to travel AS a slice (an `ISlice<T>`-taking `append` overload plus the matching
+emission), which is a corpus-wide change to the most common builtin and is not this entry's scope.
+
+Known and deliberate divergence: Go's OTHER zero-size shape is the zero-length array (`[0]T`, and
+`[N]struct{}`). go2cs emits a Go array as `array<T>`, whose backing is a managed reference field, so such
+a type classifies as NON-zero-size and keeps the allocating path — the honest answer for the
+representation as it stands, since claiming zero-size for a type whose C# shape genuinely carries a
+reference would put a wrong element ref in front of every consumer.
+
+(Guarded by `GolibTests.ZeroSizeSliceSemanticsTests`, which pins every operation at `MaxInt` scale plus
+the positive controls — a negative `make` length still panics, and an ordinary element type keeps its
+allocation ceiling — because a fix that got any ONE operation wrong would still let a package row go
+green while leaving the storage-free path unsound for the next consumer.)
 
 **Named slice/map/channel wrappers (defined types).** The distinction extends to DEFINED types
 (`type S []int`, generated as go2cs-gen `InheritedTypeTemplate` wrappers). The comparison Go permits on
@@ -7637,9 +7841,11 @@ The lifted Integer operator set constrains shifts as `IShiftOperators<T, int, T>
 
 ### Builtins over constrained slice type parameters
 
-golib's builtins carry **interface-typed overloads** so a value held as a constrained type parameter (`S ~[]E`, boxed to its `ISlice<E>` constraint) binds directly: `copy(ISlice<T1> dst, ISlice<T2> src)` (plus an `ISlice<byte>`/`@string` form), `clear(ISlice<T> s)`, and two-argument `min`/`max` constrained on `IComparisonOperators` (Go's `cmp.Ordered` lifts to operator interfaces; a constrained `E` has no `IComparable<E>` conversion). The box wraps the same backing array, so interface writes land in the caller's storage — `copy`/`clear` into an `S` are true write-throughs (span windows, memmove semantics for overlap). Overload resolution keeps concrete calls on the exact `slice<T>` overloads (an exact parameter beats a boxing conversion), so nothing outside generic bodies changes. Cleared ~37 of the slices package's constraint seams. (Guarded by the `GenericTypeInference` extension `CopyClearMinMax` — copy into and clear through constrained values, write-through verified by value vs Go.)
+golib's builtins carry **interface-typed overloads** so a value held as a constrained type parameter (`S ~[]E`, boxed to its `ISlice<E>` constraint) binds directly: `copy(ISlice<T1> dst, ISlice<T2> src)` (plus an `ISlice<byte>`/`@string` form), `clear(ISlice<T> s)`, and two-argument `min`/`max` constrained on `IComparisonOperators` (Go's `cmp.Ordered` lifts to operator interfaces; a constrained `E` has no `IComparable<E>` conversion). **All four `min`/`max` overloads PROPAGATE NaN**, which is Go's own spec rule — if any argument is a NaN the result is a NaN — and which neither natural C# spelling gives for free: the operator form `x < y ? x : y` answers the NON-NaN side whenever the NaN sits on the left, because every C# comparison involving a NaN is false; and the params form's `IComparable<T>` total order sorts NaN BELOW everything, which happens to be Go's answer for `min` and is the OPPOSITE of Go's answer for `max`. Both test explicitly now, through one shared per-`T` fact (`builtin.OrderedFacts<T>`) that classifies the floating kinds — the two BCL primitives, and the generated single-field `[GoType("num:floatNN")]` wrapper a NAMED Go float becomes, recognized by walking that one field so a wrapper-over-a-wrapper resolves for free. The gate is a `static readonly` per closed `T`, so it folds at JIT time and no integer instantiation pays for it, and the fact carries a same-width reinterpret rather than an operator because `CompareTo`/`Equals` cannot see a NaN at all (`double.NaN.CompareTo(double.NaN)` is 0 and `double.NaN.Equals(double.NaN)` is true, both by BCL design). Measured by `slices`' `TestMinMaxNaNs`, which replaces each element of a float64 slice with NaN in turn and requires `slices.Min` AND `slices.Max` to propagate it; guarded by `GolibTests.OrderedMinMaxNaNTests`, which holds all four overloads including a named-float wrapper. The box wraps the same backing array, so interface writes land in the caller's storage — `copy`/`clear` into an `S` are true write-throughs (span windows, memmove semantics for overlap). Overload resolution keeps concrete calls on the exact `slice<T>` overloads (an exact parameter beats a boxing conversion), so nothing outside generic bodies changes. Cleared ~37 of the slices package's constraint seams. (Guarded by the `GenericTypeInference` extension `CopyClearMinMax` — copy into and clear through constrained values, write-through verified by value vs Go.)
 
-**S-preserving sub-slice and append.** Go's sub-slice of a named slice type yields the *same named type sharing the same backing* — pdqsort's recursion depends on it (`pdqsort(s[:mid])` with `s S`). The `ISliceWrap<TSelf, T>` static-abstract factory (`TSelf Wrap(in slice<T> source)`) supplies the non-copying reconstruction: `slice<T>` implements it as identity, every generated named-slice wrapper wraps the window in its own type, and the `~[]E` where-clause carries it (`ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>`). A sub-slice of a constrained type parameter emits golib's `subslice<S, E>(s, lo, hi)` (type arguments explicit — `E` is constraint-only) which routes `S.Wrap(new slice<E>(s.Slice(…)))`; the new `slice<T>(ISlice<T> view)` constructor SHARES storage (unboxes a `slice<T>`, reconstructs any other implementer from its source array and window). `append` on a constrained value binds golib's `append<S, T>(S, params ReadOnlySpan<T>)` (S from the first argument, T from the span — fully inferrable) and wraps the result back to S; its body routes to the core `slice<T>.Append` directly, since a recursive `append(…)` call would resolve back to itself (`slice<T>` satisfies the constraints). The same change fixed the named-slice WRAPPER template's sub-slice members, which routed through `ToSpan()` — *detached copies*, a silent write-through divergence for named slice types generally; they now route through the wrapped `m_value` (sharing). (Guarded by the `GenericTypeInference` extensions `SumHalves` — recursion over sub-slices of S with a write through the deepest view, verified against the caller's array — and `AppendKeep`.)
+**S-preserving sub-slice and append.** Go's sub-slice of a named slice type yields the *same named type sharing the same backing* — pdqsort's recursion depends on it (`pdqsort(s[:mid])` with `s S`). The `ISliceWrap<TSelf, T>` static-abstract factory (`TSelf Wrap(in slice<T> source)`) supplies the non-copying reconstruction: `slice<T>` implements it as identity, every generated named-slice wrapper wraps the window in its own type, and the `~[]E` where-clause carries it (`ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>`). A sub-slice of a constrained type parameter emits golib's `subslice<S, E>(s, lo, hi)` (type arguments explicit — `E` is constraint-only) which routes `S.Wrap(window.Reslice(…))`; the new `slice<T>(ISlice<T> view)` constructor SHARES storage (unboxes a `slice<T>`, reconstructs any other implementer from its source array and window). `append` on a constrained value binds golib's `append<S, T>(S, params ReadOnlySpan<T>)` (S from the first argument, T from the span — fully inferrable) and wraps the result back to S; its body routes to the core `slice<T>.Append` directly, since a recursive `append(…)` call would resolve back to itself (`slice<T>` satisfies the constraints). The same change fixed the named-slice WRAPPER template's sub-slice members, which routed through `ToSpan()` — *detached copies*, a silent write-through divergence for named slice types generally; they now route through the wrapped `m_value` (sharing). (Guarded by the `GenericTypeInference` extensions `SumHalves` — recursion over sub-slices of S with a write through the deepest view, verified against the caller's array — and `AppendKeep`.)
+**No bound of a constrained sub-slice is a SENTINEL** (2026-08-26). The omitted-high form used to travel as `high = -1` through the three-argument method and the omitted-low form as `low = -1`, so `s[i:]` and `s[i:-1]` were the identical call — and the low convention was worse than an ambiguity, because the method clamped EVERY negative low to 0 rather than only the sentinel. Go panics for a negative index, so `slices.Insert(s, -1, …)` and `slices.Replace(s, -1, 2, …)` — whose bodies OPEN with `_ = s[i:]` and `_ = s[i:j]` as their bounds check, the expressions existing for no other purpose — silently succeeded. The remedy removes both sentinels rather than moving them: an omitted LOW is emitted as the `0` it means (Go's `s[:h]` *is* `s[0:h]`, so no overload is needed), and an omitted HIGH selects a two-argument `subslice<S, E>(s, low)` overload. `subslice3` needs no companion — Go's grammar requires the high bound in a full slice expression — and all three now route `slice<T>.Reslice` directly rather than the `slice()` extension, whose own `-1` defaulting convention would have re-opened the collision one layer down. A golib-only remedy was impossible and the reason is worth stating: with one signature and the converter passing `-1` for "omitted", the two calls are byte-identical at the boundary, so no amount of golib logic can separate them — the honest layer is the emission. The corpus footprint is `core/slices/{slices,iter}.cs` and two behavioral goldens, since `subslice` is emitted only for type-parameter receivers. **Residual, recorded not fixed:** the ORDINARY (non-type-parameter) path emits `s[Low..]`, whose `int`→`Index` conversion throws `ArgumentOutOfRangeException` for a negative bound — a .NET exception, not a Go panic, so it is neither `recover`-able nor contained the way `RuntimeErrorPanic.SliceBoundsOutOfRange` is; and `SliceExtensions.slice`'s `-1` default still collides at exactly `-1` for the three-index form. Neither is reachable from a banked row today. (Measured by `slices`' `TestInsertPanics` and `TestReplacePanics`; guarded by `GolibTests.ConstrainedSubsliceBoundsTests`, which holds the negative, out-of-range, valid and backing-shared cases together.)
+
 Every generated named-slice wrapper also implements the non-generic `IArray` surface explicitly. The public typed `Source` remains `T[]` for the concrete wrapper, but the interface member is emitted as `Array IArray.Source => ((IArray)m_value).Source!;`, matching golib's `IArray.Source` contract and keeping `len(IArray)`, element-address helpers, and interface-typed builtins bound to the wrapper. Pointer elements use the same form, e.g. `type queue []*item` emits `ISlice<ж<item>>` plus the explicit `Array IArray.Source` member. (Guarded by `NamedSlicePointerElements`.)
 
 **S where `[]E` is expected.** Go assignability lets a named-slice-typed value pass where the unnamed `[]E` is expected (`rotateRight(s[m:i], …)`, `pdqsortOrdered(x, …)`); the converter materializes such an argument through the SHARING `slice<T>(ISlice<T>)` constructor — `pdqsortOrdered(new slice<E>(x), …)` — a cast cannot apply (interface-constrained source; C# forbids user conversions from interfaces). The constructor unboxes a boxed `slice<T>` directly and otherwise takes the implementer's full-window interface sub-slice, which every golib implementer returns as a boxed shared `slice<T>` — NOT `Source`, which materializes a detached copy (caught by the write-through gate: the helper's write must land in the caller's array). The 3-index form on a constrained value emits `subslice3<S, E>`, and a constrained spread (`append(s, v.ꓸꓸꓸ)` — a `Span<E>`) binds an exact `params Span<T>` twin of the constrained append (betterness otherwise picked the legacy `params T[]` candidate with `T = Span<E>`, a ref struct as type argument — CS9244). (Guarded by the `GenericTypeInference` extension `PassSlice` — S passed to a concrete `[]E` helper, write-through verified by value vs Go — and by the `ConstrainedSliceParamInPlace` behavioral test, which drives a *full in-place mutation* through the materialized `slice<E>` — an element reversal and a real insertion sort mirroring `slices.Sort`/`SortStableFunc` and `internal/fmtsort`'s make+append-built `SortedMap` — over plain, named, and `[]string` sequences, asserting the caller observes the reordering. A detached copy would leave the caller's slice untouched.)
@@ -7783,10 +7989,114 @@ Four coordinated pieces make it convert **and dispatch**:
    such an initializer as a lambda, `newPoint: () => nistec.NewP224Point()`, whose *return* position
    does apply the conversion.
 
+5. **The proxy forwards the WHOLE method set, embedded interfaces included.** A Go constraint
+   interface may embed others, and Go embedding emits as C# interface inheritance — so the members a
+   proxy must forward are not the ones the constraint DECLARES but the ones its method set CONTAINS.
+   The emitter walked `GetMembers()` only, which is the declared half, and any member reached through
+   an embed was simply absent: the proxy did not implement its own interface (CS0535, one per
+   inherited member). It surfaced at full size in `net/http`, whose `clientserver_test.go` declares
+
+   ```go
+   type TBRun[T any] interface {
+       testing.TB
+       Run(string, func(T)) bool
+   }
+   ```
+
+   giving proxies for `*testing.T` and `*testing.B` that forwarded `Run` and were each missing all 18
+   members of the embedded `testing.TB` — 36 diagnostics, and the last wall but one in front of a
+   1,352-verdict suite. `AllInterfaces` is already transitive, so a two-level embed needs no recursion
+   of the emitter's own.
+
+   Each member is qualified by **its own declaring interface**, not by the constraint: C# explicit
+   interface implementation must name the interface that declares the member, so `void Derived.M()` is
+   CS0539 when `M` comes from `Base`. A generic embed is closed over the proxy exactly as the
+   constraint itself is (`Bar<T>` embedded in `Foo<T>` forwards as `Bar<proxy>.M`), reusing the same
+   `RenderWithProxy` substitution. The constraint's OWN members are emitted first in declaration order,
+   so a proxy that embeds nothing is byte-identical to what the emitter always produced; the embedded
+   sets follow, ordered by rendered reference so the emission does not depend on the order
+   `AllInterfaces` happens to report. This also brings the constraint-proxy path into line with the
+   interface-ADAPTER path beside it, which had walked base interfaces from the start.
+
 (Guarded by `GenericPointerInterfaceImpl` — a self-referential `curve[Point point[Point]]` implementing
 `Curve` via pointer receiver, instantiated two ways, with a `newPoint func() Point` field and a
-`(T, error)`-returning constraint method, values vs Go. Embedding the constrained generic and greening
-the whole crypto-curve family is the next subsection.)
+`(T, error)`-returning constraint method, values vs Go — and by `ConstraintProxyEmbeddedInterface` for
+the method-set walk: a constraint embedding `Middle` embedding `Base`, so one member arrives one level
+deep and another two, recorded from two instantiation sites to exercise the per-pair de-duplication,
+output-compared vs `go run`. Reverting the walk reproduces CS0535 on `Middle.Size()` and `Base.Name()`
+— both levels. Embedding the constrained generic and greening the whole crypto-curve family is the
+next subsection.)
+
+#### A func LITERAL at a proxied delegate position declares its parameters AT the proxy
+
+Item 4 above moves a METHOD GROUP's T-boundary into a lambda body, because a method-group conversion
+will not apply the user-defined conversion. A func literal meets the same wall one position further
+in and cannot take that remedy — it already *is* the lambda, and it renders its own parameter list
+from the Go signature. At `T = ImplжConstrained` a `func(t T, mode int)` argument emits
+`(ж<Impl> t, nint mode) => …` against a delegate requiring `Action<ImplжConstrained, nint>`, and
+**C# applies no user-defined conversion at a parameter DECLARATION**: CS1678 + CS1661, one pair per
+call site. net/http's suite is written on this shape throughout —
+`run[T TBRun[T]](t T, f func(t T, mode testMode), opts ...any)` — and it was 48 of its 81 body
+diagnostics.
+
+The remedy is the same principle: **move the conversion to a position C# performs it.** The parameter
+is declared at the proxy under a synthesized name and the body opens with the natural-typed alias:
+
+```csharp
+run<TжTBRun>(Ꮡt, (TжTBRun tΔ1Δp, testMode mode) => {
+    var tΔ1 = (ж<testing.T>)tΔ1Δp;      // the proxy's own implicit operator
+    …                                    // body unchanged, byte for byte
+});
+```
+
+Everything after that line is the body exactly as it would have been emitted, so no member access,
+capture, or nested literal inside it renders differently. Declaring the parameter at the proxy and
+letting the body use it *directly* would not work: the forwarders are explicit interface
+implementations, reachable through a type parameter's constraint but not by member lookup on the
+concrete proxy type.
+
+Restricted to a parameter whose type **is** the proxied type parameter exactly. One that merely
+MENTIONS it (`[]T`, `map[K]T`, `func(T)`) is excluded — `slice<ImplжConstrained>` and
+`slice<ж<Impl>>` are distinct instantiations with no conversion between them, so no single assignment
+could stand in the prologue, and guessing would trade a clear diagnostic for a wrong one.
+
+⚠ **Both halves key on the RENDERED name.** A literal's signature is generated from synthesized vars
+carrying the shadow-renamed name, so keying the proxy map on the Go name misses every renamed
+parameter — and misses it *asymmetrically*, because the body prologue reads the same map from the
+AST, where the Go name is present. The first cut did exactly that: it emitted the prologue while
+leaving the declaration at its natural type, producing a local with the same name as the parameter
+beside it. net/http is entirely the renamed case (its inner `t` shadows the outer), so the guard
+carries both spellings and the un-renamed one alone would have passed over the real defect.
+
+#### The anchored adapter REFERENCE keeps the shadow marker
+
+The `-tests` metadata-anchored resolution composes the adapter class reference a cast site will use
+(`anchoredAdapterMemberName`) while go2cs-gen composes the class it emits. The two must agree
+character for character, and they disagreed on the shadow marker: the generator names a local adapter
+from `adapterBaseName` — the C# type name verbatim, `Δhandler` — and a foreign one from
+`GetSimpleName(structName)`, neither of which strips it, while the reference side stripped it and
+named a class that is never emitted. net/http's internal test variant declares
+`type handler struct{ i int }` (server_test.go), shadow-renamed to `Δhandler`, so the generator minted
+`ΔhandlerжΔHandler` and every cast site referenced `handlerжΔHandler` — CS0426 ×9.
+
+The rule the strip violated: **the marker belongs to the C# IDENTITY of the type, not to a rendering
+convention.** `adapterStructKey` strips it for GROUPING, which is right and unchanged — a collision
+group must not depend on which side got renamed — but that key must not double as the emitted name.
+Only the `-tests` anchored path was affected: a production conversion resolves through
+`adapterResolvedName`, which never stripped, so the corpus could not move (and CNR confirms it did
+not). The measured shape here also **corrects a plausible-looking diagnosis** worth recording: the
+symptom reads as an adapter minted for one test variant and referenced from the other, and it is not
+— the record is correctly bridge-anchored in `package_info_internal_test.cs` and the class is minted
+in `http_internal_test_package`, exactly where the reference looks for it. Only the NAME differed.
+
+⚠ One adjacent surface is deliberately NOT addressed and is worth naming, since a reader meeting it
+will otherwise read it as this defect: a `T` RETURNED out of a constrained generic into concrete code
+arrives as the proxy TYPE, whose forwarders are explicit interface implementations and so are
+unreachable by member lookup there (`r := second(p); r.Name()` — CS1929, resolving instead to the
+element's own extension whose receiver it cannot satisfy). The proxy carries an implicit conversion
+back to `ж<element>`, but C# does not apply a user conversion during member lookup. Nothing in the
+corpus or in `net/http` reaches it; the guard's `second` builds its result inside the generic context
+on purpose.
 
 ### A struct embedding the constrained generic promotes its members — three residual crypto-curve fixes
 
@@ -7855,7 +8165,17 @@ a generic-method interface cast the single-package baseline cannot express; they
 
 Go infers a type parameter that appears only in *constraints* through core types — `func Twice[S ~[]E, E Integer](s S)` infers `E` from `S`'s underlying element; the `slices` package's whole `Sort[S ~[]E, E cmp.Ordered] → pdqsortOrdered` chain relies on this. C# never infers a type parameter that does not appear in the parameter list (CS0411 — at *every* call site, concrete instantiations included). When the callee declares such a constraint-only type parameter, the converter renders the call's type arguments explicitly from the instantiation `go/types` already resolved (`info.Instances`): `Twice<Point, int32>(p, 2)` at a concrete site, `Scale<S, E>(s, c)` inside a generic body. Calls to generics whose every type parameter is argument-visible keep their bare Go-shaped form — C# infers them as Go does, no churn. (Guarded by the `GenericTypeInference` extension — a constrained `S`/`E` pass-through chain plus a concrete call to a constraint-only-param generic, values vs Go; clears the 14 CS0411s in the slices/maps wave.)
 
-The same explicit-type-argument rule applies to a generic function referenced as a **method-group value**, not just a call. `slices.SortFunc(all, slices.Compare)` (runtime/pprof) passes `slices.Compare[S ~[]E, E cmp.Ordered]` as `SortFunc`'s comparison delegate; C# cannot infer a generic method group's constraint-only `E` when converting it to `Func<…>` (CS0411). `convSelectorExpr` now spells the arguments on the selector — `slices.Compare<slice<uintptr>, uintptr>` — when the selector is NOT the callee of a call (`!context.isCallExpr`, so convCallExpr's own type-arg site still owns the call form) and `info.Uses[Sel]` is a generic function with an `info.Instances` instantiation. Byte-identical across the behavioral corpus and across an A/B of pprof+slices+sort+maps+cmp+net+go/types (a single line moves — the `slices.Compare` argument; every `Compare(...)` **call** stays bare). GUARD OWED — the shape needs a cross-package generic function with a constraint-only type parameter passed as a method-group value, which the single-package baseline cannot express; the bare-IDENT variant (a same-package generic func passed as a method group) is a parallel latent case left unfixed because `convIdent`, unlike `convSelectorExpr`, carries no call-vs-value flag to gate against double-emitting a direct call's arguments.
+The same explicit-type-argument rule applies to a generic function referenced as a **method-group value**, not just a call. `slices.SortFunc(all, slices.Compare)` (runtime/pprof) passes `slices.Compare[S ~[]E, E cmp.Ordered]` as `SortFunc`'s comparison delegate; C# cannot infer a generic method group's constraint-only `E` when converting it to `Func<…>` (CS0411). `convSelectorExpr` now spells the arguments on the selector — `slices.Compare<slice<uintptr>, uintptr>` — when the selector is NOT the callee of a call (`!context.isCallExpr`, so convCallExpr's own type-arg site still owns the call form) and `info.Uses[Sel]` is a generic function with an `info.Instances` instantiation. Byte-identical across the behavioral corpus and across an A/B of pprof+slices+sort+maps+cmp+net+go/types (a single line moves — the `slices.Compare` argument; every `Compare(...)` **call** stays bare). GUARD OWED — the shape needs a cross-package generic function with a constraint-only type parameter passed as a method-group value, which the single-package baseline cannot express.
+
+**The bare-IDENT variant is no longer latent** (2026-08-26, the generic-inference arc that unblocked `slices`). `convIdent` now carries the same call-vs-value flag `convSelectorExpr` always had — `IdentContext.suppressGenericTypeArgs`, set by convCallExpr for a call's CALLEE and by convIndexExpr/convIndexListExpr for the base of an explicit instantiation — so a same-package generic function passed as a method group (`apply(s1, Reverse)` against `Reverse[S ~[]E, E any]`, slices' `TestInference`) spells its arguments out (`reverse<slice<nint>, nint>`) exactly as the qualified form does, and the two spellings of one Go reference cannot disagree. Without the flag there was no way to add the append without also writing every direct call in the corpus out longhand; with it, the value form is the only one that moves. The append rides on whichever spelling the ident's own tail arms produce (a `-tests` Δ-rename, a white-box bridge qualification), so a renamed generic function passed as a method group is covered too.
+
+Three further shapes in the same family were fixed with it, all first measured as compile errors in `slices`' converted test suite (16 errors across roughly six exported generics, every one CS0411/CS0305 or a CS1503 cascade behind one):
+
+- **An explicitly-instantiated generic function argument is still a method group.** `EqualFunc(s1, s2, equal[int])`, `CompareFunc(s1, s2, cmp.Compare[int])`, `CompactFunc(s, equal[int])`, `equalToCmp(equal[int])` — writing the type arguments fixes the group's *shape*, not its C#-inference status, so the enclosing generic call still needs its own arguments spelled. `exprIsMethodGroup` met an `*ast.IndexExpr`, matched neither of its two cases, and answered "not a method group"; it now peels `ParenExpr`/`IndexExpr`/`IndexListExpr` (indexing a function *value* is not legal Go, so peeling can never reclassify an ordinary map/slice index). Eight of the sixteen errors.
+- **A type parameter reachable only through an UNSUPPLIED parameter position.** `Insert[S ~[]E, E any](s S, i int, v ...E)` called as `Insert(s, 0)` hands C# an empty `params Span<E>`, and `E` is inferable from nothing — while `calleeHasConstraintOnlyTypeParam` cannot see it, because `E` *does* appear in a parameter type. `calleeTypeParamUnsuppliedByCall` asks the question C# inference actually asks — which parameter positions did this call supply — and since every non-variadic parameter is always supplied in a well-typed Go call, it can fire on nothing but an empty variadic. `Insert(s, 0, 7, 8)` keeps its bare form.
+- **A PARTIAL explicit instantiation.** Go allows a written prefix and infers the rest through core types (`Equal[Slice]` against `Equal[S ~[]E, E comparable]`, slices' own `iter_test`); C# has no partial instantiation, so the prefix alone is CS0305, "requires 2 type arguments". `completedInstantiationTypeArgs` replaces the written list with the resolved one *only* when the resolved list is longer — a complete instantiation, which is nearly all of them, renders verbatim and byte-identically. The comparison is made after erasure filtering on both sides, so an erased pointer-core position cannot make a complete instantiation look partial.
+
+Every one of the four is an ADDITION to the existing trigger set rather than a replacement, and each is gated on a property that is arithmetic rather than heuristic (is this argument a function reference; did this position receive an argument; is the written list shorter than the resolved one). That is what keeps the footprint at exactly the shapes that were failing: **CNR at 645 behavioral packages moves only the guard project itself, and a seeded reconvert of the whole converted standard library re-emits 4,173 artifacts byte for byte** (0 changed, 0 new; marker gate 0 violations across 78 marked files) — `slices` and `maps` included, whose own production code leans hardest on the inference this arc is about. Guarded by the `MethodGroupGenericArg` extension, which fails on the pre-change converter with exactly the `slices` error set — CS0411 ×4 (instantiated method-group argument, empty variadic, bare-ident generic value ×2) plus CS0305 ×1 (partial instantiation) — and passes after.
 
 ### The `comparable` constraint
 
@@ -10614,6 +10934,40 @@ group as a `map[string]any` element, through a plain assignment, and as an `[]an
 asserted back; plus a NON-variadic literal direct to `any` as the control that must keep matching
 without a cast. Neutering the cast prints `no match` on all four and leaves the control passing.)
 
+**A variadic METHOD VALUE was the one shape in the family still frozen at fixed arity (2026-08-26).**
+`errorf := t.Errorf` — go/types' and `slices`' own idiom, `errorf = t.Logf` one statement later, then
+loose Go-style calls — has TWO emissions, and both dropped the variadic tail. A bound method value
+forwards through a lambda carrying the method's own parameters, and that lambda rendered the tail as
+the plain `slice<T>` the signature *stores* rather than the `params ꓸꓸꓸT` convention every declared
+variadic function uses: `(@string p1, slice<any> p2) => Ꮡt.Errorf(p1, p2)`. Every call through the
+value was then an arity error — `errorf("…", n)` CS1503 on a bare `n` against `slice<any>`,
+`errorf("…", a, b)` CS1593 "does not take 3 arguments", `errorf("…")` CS7036 — which is the same
+family the lambda's explicit parameters were introduced to fix, one level in. The tail now renders
+through `variadicParamType`, the same routine the named-function convention uses (a file-local
+`using ꓸꓸꓸT = Span<…>;` alias where one is mintable, inline `Span<T>` otherwise), so the forwarded
+argument binds the receiving `params ꓸꓸꓸany` parameter directly and the call inside the lambda is
+unchanged.
+
+The DECLARATION is the second half, and it is not optional. A `params` lambda has no BCL delegate, so
+`var` gives it a **synthesized** natural type — which binds that lambda and gives C# no reason to hand
+the same type to the second lambda the reassignment installs. `visitAssignStmt`'s method-group branch
+therefore names golib's variadic delegate family when the signature is variadic and no package named
+func type matches — `Actionꓸꓸꓸ<@string, any> emit = (@string p1, params ꓸꓸꓸany p2) => …` — reusing
+`iifeDelegateType`, the same lowering `getCSharpTypeName` already gives every func type used as a
+value, so there is exactly one spelling of this type in the emission. Non-variadic method values keep
+`var`, unchanged. (Guarded by the `VariadicFuncValues` extension — a pointer receiver's variadic
+method bound by `:=`, conditionally reassigned to a second variadic method, then called with loose
+args, an empty tail and a spread; it fails on the pre-change converter with CS1503 + CS1593 + CS7036,
+which is exactly the `slices` `TestGrow`/`TestConcat` error set.)
+
+A/B footprint: this is the half of the arc that moves anything outside its own guard, and it moves
+two lines. CNR at 645 behavioral packages reports `DeferCallOrder` and `GoCallVariations`, both
+`f1 := fmt.Println` — a variadic PACKAGE function bound as a method value, which was the same
+`var`-inferred synthesized delegate and is now `Funcꓸꓸꓸ<any, (nint, error)>`. Both still compile and
+still match `go run`. The whole converted standard library re-emits byte-identically (4,173 artifacts,
+0 changed), because the rule fires on nothing else: a method value whose signature is not variadic
+never reaches it.
+
 ### `reflect.Value.Call` over a variadic func value is TYPED dispatch — no reflective invoke can carry the tail
 
 The `params Span<T>` tail above is what makes a converted variadic callable and readable from Go
@@ -12469,6 +12823,61 @@ recurring in net/rpc and httputil) and a **foreign-struct value** conversion
 `convertToInterfaceType`) and skipped by the prune. (Guarded by `IfaceToIfaceNarrow` — one source
 interface converted to a full-surface embedded-interface target AND to its narrower bases at
 argument, assignment, and return positions, dispatch output-compared vs Go.)
+
+#### A `global::` root escape is a THIRD spelling of one type, and the record sets dedupe on text
+
+The de-duplication above compares rendered attribute lines, so every distinct spelling of one type is
+a distinct record. The alias case is the one that section documents; the **root escape** is the same
+defect reached by a different route, and it is invisible in a production conversion. `-tests` alone
+mints `global::` — `testAliasShadowOperations` / `convSelectorExpr` escape to the root whenever a test
+package's own class shadows the leading segment of a qualified reference — so one test package can
+register the same (impl, interface) pair from an escaped site and a bare site and emit both records.
+go2cs-gen resolves both to the SAME symbol and mints the adapter twice: `net/http`'s
+`http_HandlerFuncᴠΔHandler` came out as both `-val.g.cs` and `-val.1.g.cs`, giving CS0102 + CS0111 ×5
++ CS8646 ×2 against a test suite that had never run.
+
+`dedupeRootEscapedRecords` collapses lines that differ only by root escapes, as a shared pass over
+**both** record sections — `GoImplement` and `GoImplicitConv` are built by the same
+`qualifyLocalTypeRef` rendering over the same registries, so they carry the same exposure and a fix in
+one alone would only wait for the other. It runs BEFORE `recordEmittedPointerAdapterPairs`, so the
+adapter-naming authority sees the deduplicated set and cannot manufacture the false collision that the
+alias case's third spelling came from.
+
+The **escaped** spelling wins a collapse: it is shadow-proof by construction, which is why the
+machinery minted it, and keeping the bare form could reintroduce the shadow the escape exists to
+defeat. That is the opposite preference from the alias case — there the ALIASED (simple) form wins
+because the qualified form breaks generator name resolution — and the two are consistent once stated
+as one rule: **keep the spelling that resolves under the most conditions.** A root escape adds
+resolution guarantees; a package qualifier removed one. Ties fall to the lexicographically smaller
+line so the output stays deterministic. The pass is an exact identity on any record set without an
+escape, which is what makes the whole production corpus provably unaffected. (Guarded by
+`rootEscapedRecordDedupe_test.go`, whose four cases pin the collapse, the escape-count preference
+independent of sort order, a negative control that distinct records all survive, and the
+production-inertness identity.)
+
+#### The promoted-method twins class is named for the PACKAGE and the pair, not the pair alone
+
+A struct that satisfies an interface member by **promotion** gets an `internal static class
+<pkg>ᴛ<struct>ᴛ<iface>ᴛpromoted` of extension twins, because go2cs's runtime method set is built from
+extension methods and a promoted method is the one kind of Go method that never became one. The class
+sits at NAMESPACE scope — deliberately a sibling of the package class, so its twins cannot intercept a
+bare-name call — and it was named for the (struct, interface) pair alone.
+
+That name is unique per package class, and a namespace holds several of them. Go's **internal**
+(`package http`) and **external** (`package http_test`) test variants are distinct packages that may
+each declare a type of the same name; they emit correctly into distinct classes
+(`http_internal_test_package`, `http_test_package`) and share one namespace. `net/http` declares
+`dumpConn` in both `requestwrite_test.go` and `transport_test.go`, each promoting `io.Reader` and
+`io.Writer`, so `dumpConnᴛReaderᴛpromoted` and `dumpConnᴛWriterᴛpromoted` were each declared twice in
+`go.net` — CS0101 ×2. Nothing about the type model is wrong there; only this cargo name was
+under-qualified, and adding the owning package makes "two generated files can never collide" true
+rather than merely intended.
+
+Qualified **unconditionally**, which is the opposite of the collision-conditional rule the pointer
+ADAPTER names follow, and the difference is blast radius rather than principle: an adapter name
+appears at thousands of construction sites, whereas no source-level call ever binds a twin (the struct
+MEMBER always wins) and the method-set registry discovers them by scanning every non-nested static
+class, never by name. The rename is invisible everywhere except in its own declaration.
 
 ### Anonymous interfaces used as an adapter target are lifted package-wide
 
@@ -18696,6 +19105,36 @@ precisely over the remaining *resolvable* tokens, mirroring Go's two-frame prefe
 edge, recorded: Go's `<autogenerated>` promoted-method wrappers can occupy PC slots in a raw Go
 `Callers` capture, while here **all** synthesized wrappers (Go-side and go2cs-side alike) are
 uniformly invisible — refine only if a consumer differential ever lands on it.
+
+**The two test-variant suffixes are NOT symmetric — `_internal_test` is stripped, `_test` is kept
+(2026-08-26).** `goFrameName` derives the reported import path from the emitted namespace plus
+package-class name, and the `-tests` pipeline emits a package's two test variants as two separate
+classes: `<pkg>_test_package` for an external suite (`package slog_test`) and
+`<pkg>_internal_test_package` for an in-package one (`package slog`). Go treats those two cases
+differently, measured against the go1.23.12 toolchain rather than reasoned about:
+
+| the test file declares | Go names the frame | why |
+|:--|:--|:--|
+| `package callerprobe` (internal) | `callerprobe.TestInternalCallerName` | the file is compiled INTO the package under test, so there is no separate package to name |
+| `package callerprobe_test` (external) | `callerprobe_test.TestExternalCallerName` | a genuinely separate Go package, and Go spells it |
+
+So `_internal_test` is a go2cs emission detail that must be stripped back off, while `_test` is a
+fact about the Go build that must survive. The tempting generalization — strip any trailing `_test`
+— is wrong in a way a banked row already measures: `runtime/debug`'s own `TestStack` greps a
+rendered traceback for `runtime/debug_test.(*T).ptrmethod`.
+
+[`DESIGN-position-map.md`](phase4/DESIGN-position-map.md) §8 records that these two suffix rules
+retire from the FILE half (which is RECORDED, so nothing is derived from a namespace any more) but
+"remain necessary and unchanged for the FUNCTION half"; the internal-test half of that rule was
+never actually landed there, and the leak was **systemic to the `-tests` pipeline rather than
+package-specific** — every converted suite that inspects caller info saw it. `log/slog`'s
+`logger_test.go` asserts `wantFunc = "log/slog.TestCallDepth"` and got
+`log/slog_internal_test.TestCallDepth`; the fix moves that row from 190 to 194 matching verdicts
+(`TestCallDepth`, `TestJSONAndTextHandlers` and its `/Source` + `/Source/json` subtests, plus
+`TestRecordSource`'s depth-1 case). (Guarded by `GolibTests/CallerFrameTestVariantNamingTests`,
+which pins all THREE emitted shapes — production, internal-test, external-test — in one file, so
+neither rule can be "fixed" into the other; measured failing-first, the guard reports exactly the
+internal-test shape and leaves the other two green.)
 
 **`runtime.Caller` works by severing the FUNNEL, not by hand-owning another public API
 (2026-08-07).** The 2026-07-31 landing above hand-owned the exported `Callers`, which left

@@ -802,6 +802,9 @@ public static partial class builtin
     {
         nint min = Min(dst.Length, src.Length);
 
+        if (ZeroSizeCopy<T1, T2>())
+            return min;
+
         if (min > 0)
         {
             // Same-type sources copy via the window spans: ToSpan() views each side's true slice
@@ -834,6 +837,9 @@ public static partial class builtin
     public static nint copy<T1, T2>(in slice<T1> dst, in slice<T2> src)
     {
         nint min = Min(dst.Length, src.Length);
+
+        if (ZeroSizeCopy<T1, T2>())
+            return min;
 
         if (min > 0)
         {
@@ -985,6 +991,9 @@ public static partial class builtin
     {
         nint min = Min(dst.Length, src.Length);
 
+        if (ZeroSizeCopy<T1, T2>())
+            return min;
+
         if (min > 0)
         {
             if (src is ISlice<T1> same)
@@ -1014,6 +1023,25 @@ public static partial class builtin
     // no-conversion path exact and pays for ChangeType only where the direct unbox could not have
     // worked at all; the arm already boxes per element, so this is not the per-element allocation
     // the NumericConversions header warns against introducing.
+    /// <summary>
+    /// Whether a <c>copy</c> between these element types moves nothing because the elements occupy no
+    /// storage — Go's <c>copy</c> is <c>memmove(dst, src, n * elemSize)</c>, which for a zero-size
+    /// element is a memmove of zero bytes that still RETURNS <c>n</c>.
+    /// </summary>
+    /// <remarks>
+    /// The return value is the whole observable result there, so every <c>copy</c> overload answers it
+    /// from the length arithmetic it has already done and never reaches for storage: a zero-size slice
+    /// may be longer than any array or span, so the span path would raise the ceiling panic
+    /// (<c>slice&lt;T&gt;.ToSpan</c>) on a copy Go performs for free. Both sides are tested because a
+    /// mixed pair — which converted Go cannot produce, since Go's <c>copy</c> requires identical
+    /// element types — would still owe a real conversion. Folded per closed pair, so no ordinary copy
+    /// pays for the test.
+    /// </remarks>
+    private static bool ZeroSizeCopy<T1, T2>()
+    {
+        return GoZeroSizeFacts<T1>.IsZeroSize && GoZeroSizeFacts<T2>.IsZeroSize;
+    }
+
     private static T ConvertElement<T>(object element)
     {
         object converted = TypeExtensions.ConvertToType((IConvertible)element);
@@ -1093,28 +1121,63 @@ public static partial class builtin
     /// </summary>
     public static void clear<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>(ISlice<T> slice)
     {
+        // A zero-size element has one value and it IS the zero value, so clearing is complete before
+        // it starts — and asking for the span would be asking for storage the slice does not own.
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+            return;
+
         clear(slice.ToSpan());
     }
 
     /// <summary>
-    /// Sub-slices a value held as a constrained slice type parameter (<c>S ~[]E</c>),
-    /// PRESERVING its type: Go's <c>s[low:high]</c> on a named slice type yields the same named
-    /// type sharing the same backing storage. The converter emits the type arguments explicitly
-    /// (T is constraint-only and C# cannot infer it).
+    /// Sub-slices a value held as a constrained slice type parameter (<c>S ~[]E</c>) to the END of
+    /// its window — Go's <c>s[low:]</c> — PRESERVING its type: a sub-slice of a named slice type
+    /// yields the same named type sharing the same backing storage. The converter emits the type
+    /// arguments explicitly (T is constraint-only and C# cannot infer it).
     /// </summary>
     /// <param name="s">Constrained slice value.</param>
-    /// <param name="low">Low bound (-1 for the window start).</param>
-    /// <param name="high">High bound (-1 for the window end).</param>
+    /// <param name="low">Low bound. Every value is a real bound; a negative one panics like Go.</param>
+    /// <returns>The sub-slice, as the same constrained type.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>This overload exists so that no bound is ever a SENTINEL.</b> The omitted-high form used to
+    /// travel as <c>high = -1</c> through the three-argument method, which made <c>s[i:]</c> and
+    /// <c>s[i:-1]</c> the identical call — and the same convention on <c>low</c> was worse, because
+    /// the method clamped EVERY negative low to 0 rather than only the sentinel. Go panics for a
+    /// negative index, so `slices.Insert(s, -1, …)` and `slices.Replace(s, -1, 2, …)` — whose whole
+    /// bodies begin with the bounds-check expressions `_ = s[i:]` and `_ = s[i:j]` — silently
+    /// succeeded where Go's own tests require a panic (slices' TestInsertPanics, TestReplacePanics).
+    /// </para>
+    /// <para>
+    /// The omitted LOW needed no overload: Go's <c>s[:high]</c> IS <c>s[0:high]</c>, so the converter
+    /// emits the 0 and the ambiguity disappears at the source. A three-index expression cannot omit
+    /// its high bound at all (Go's grammar requires it), so <see cref="subslice3{S, T}"/> takes three
+    /// real bounds and needs no companion.
+    /// </para>
+    /// </remarks>
+    public static S subslice<S, T>(S s, nint low) where S : ISlice<T>, ISliceWrap<S, T>
+    {
+        slice<T> window = new(s);
+
+        return S.Wrap(window.Reslice(low, window.Length, window.Capacity));
+    }
+
+    /// <summary>
+    /// Sub-slices a value held as a constrained slice type parameter (<c>S ~[]E</c>) — Go's
+    /// <c>s[low:high]</c> — PRESERVING its type. Both bounds are real; see the two-argument
+    /// <see cref="subslice{S, T}(S, nint)"/> remarks for why neither is a sentinel.
+    /// </summary>
+    /// <param name="s">Constrained slice value.</param>
+    /// <param name="low">Low bound.</param>
+    /// <param name="high">High bound.</param>
     /// <returns>The sub-slice, as the same constrained type.</returns>
     public static S subslice<S, T>(S s, nint low, nint high) where S : ISlice<T>, ISliceWrap<S, T>
     {
-        if (low < 0)
-            low = 0;
+        slice<T> window = new(s);
 
-        if (high < 0)
-            high = s.Length;
-
-        return S.Wrap(new slice<T>(s.Slice(low, high - low)));
+        // Reslice, not the `slice()` extension: the extension carries golib's own -1 defaulting
+        // convention, which would re-open the collision this overload pair closes.
+        return S.Wrap(window.Reslice(low, high, window.Capacity));
     }
 
     /// <summary>
@@ -1138,12 +1201,14 @@ public static partial class builtin
 
     /// <summary>
     /// Full (3-index) sub-slice of a constrained slice type parameter, preserving its type —
-    /// Go's <c>s[low:high:max]</c> on a named slice type. Bounds follow the golib
-    /// <c>slice()</c> convention (-1 for defaults).
+    /// Go's <c>s[low:high:max]</c> on a named slice type. All three bounds are real: Go's grammar
+    /// requires the high bound in a full slice expression, and the converter emits <c>0</c> for an
+    /// omitted low, so this method has no defaults to apply and no sentinel to mistake for one
+    /// (see <see cref="subslice{S, T}(S, nint)"/>).
     /// </summary>
     public static S subslice3<S, T>(S s, nint low, nint high, nint max) where S : ISlice<T>, ISliceWrap<S, T>
     {
-        return S.Wrap(new slice<T>(s).slice(low, high, max));
+        return S.Wrap(new slice<T>(s).Reslice(low, high, max));
     }
 
     public static S append<S, T>(S s, params ReadOnlySpan<T> items) where S : ISlice<T>, ISliceWrap<S, T>
@@ -1161,6 +1226,10 @@ public static partial class builtin
 
     public static void clear<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>(slice<T> slice)
     {
+        // See the ISlice overload: zero-size elements are already their own zero value.
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+            return;
+
         clear(slice.ToSpan());
     }
 
@@ -1295,28 +1364,68 @@ public static partial class builtin
     }
 
     /// <summary>
-    /// Returns the smallest value among its ordered arguments (the Go 1.21 <c>min</c> built-in).
-    /// </summary>
-    /// <param name="x">First value (Go requires at least one argument).</param>
-    /// <param name="y">Remaining values to compare.</param>
-    /// <returns>The minimum of <paramref name="x"/> and <paramref name="y"/>.</returns>
-    /// <remarks>For floating-point arguments this follows <see cref="IComparable{T}"/> ordering, which
-    /// sorts NaN below all other values — matching Go's <c>min</c> (which yields NaN if any argument is NaN).</remarks>
-    /// <summary>
     /// Returns the smaller of two values via comparison operators — the form a constrained type
     /// parameter satisfies (Go's <c>cmp.Ordered</c> lifts to IComparisonOperators; such a
     /// parameter has no IComparable&lt;T&gt; conversion). Exact two-argument calls on
     /// operator-capable types prefer this normal form over the params overload below.
     /// </summary>
+    /// <param name="x">First value (Go requires at least one argument).</param>
+    /// <param name="y">Second value.</param>
+    /// <returns>The minimum of <paramref name="x"/> and <paramref name="y"/>, NaN if either is NaN.</returns>
+    /// <remarks>
+    /// The NaN arm is Go's own rule, not a courtesy: the spec states that <c>min</c>/<c>max</c> yield
+    /// NaN when ANY argument is a NaN. C#'s comparison operators answer <c>false</c> for every
+    /// comparison involving a NaN, so the bare <c>x &lt; y ? x : y</c> this replaced silently returned
+    /// the NON-NaN side whenever the NaN sat on the left (`min(NaN, 1)` answered 1). Only <c>x</c>
+    /// needs the test: when <c>y</c> is the NaN, <c>x &lt; y</c> is already false and <c>y</c> — the NaN
+    /// — is what comes back. Measured by slices' <c>TestMinMaxNaNs</c>, which replaces each element of a
+    /// float64 slice with NaN in turn and requires both <c>Min</c> and <c>Max</c> to propagate it.
+    /// <see cref="OrderedFacts{T}"/>.IsFloating is a static readonly per-T constant, so the whole arm
+    /// folds away for every integer instantiation and the integer path keeps the codegen it had.
+    /// </remarks>
     public static T min<T>(T x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool>
     {
+        if (OrderedFacts<T>.IsFloating && OrderedFacts<T>.IsNaN(in x))
+            return x;
+
         return x < y ? x : y;
     }
 
-    /// <inheritdoc cref="builtin.min{T}(T, T)"/>
+    /// <summary>
+    /// Returns the smallest value among its ordered arguments (the Go 1.21 <c>min</c> built-in) — the
+    /// form a three-or-more-argument call binds, and the form a type with <see cref="IComparable{T}"/>
+    /// but no comparison operators binds at two.
+    /// </summary>
+    /// <param name="x">First value (Go requires at least one argument).</param>
+    /// <param name="y">Remaining values to compare.</param>
+    /// <returns>The minimum of <paramref name="x"/> and <paramref name="y"/>, NaN if any is NaN.</returns>
+    /// <remarks>
+    /// <see cref="IComparable{T}"/> ordering sorts NaN BELOW every other value, which happens to be
+    /// Go's answer for <c>min</c> and is the opposite of Go's answer for <c>max</c> — so the NaN rule
+    /// is applied explicitly here rather than inherited from the total order, and both overloads carry
+    /// the same arm. (The remark this replaced claimed the total order matched Go for both; it does
+    /// not, and <c>max</c> was wrong.)
+    /// </remarks>
     public static T min<T>(T x, params ReadOnlySpan<T> y) where T : IComparable<T>
     {
         T result = x;
+
+        if (OrderedFacts<T>.IsFloating)
+        {
+            if (OrderedFacts<T>.IsNaN(in x))
+                return x;
+
+            foreach (T value in y)
+            {
+                if (OrderedFacts<T>.IsNaN(in value))
+                    return value;
+
+                if (value.CompareTo(result) < 0)
+                    result = value;
+            }
+
+            return result;
+        }
 
         foreach (T value in y)
         {
@@ -1328,24 +1437,47 @@ public static partial class builtin
     }
 
     /// <summary>
-    /// Returns the largest value among its ordered arguments (the Go 1.21 <c>max</c> built-in).
+    /// Returns the larger of two values via comparison operators — see the two-argument
+    /// <see cref="builtin.min{T}(T, T)"/> remarks, NaN rule included.
     /// </summary>
     /// <param name="x">First value (Go requires at least one argument).</param>
-    /// <param name="y">Remaining values to compare.</param>
-    /// <returns>The maximum of <paramref name="x"/> and <paramref name="y"/>.</returns>
-    /// <summary>
-    /// Returns the larger of two values via comparison operators — see the two-argument
-    /// <see cref="builtin.min{T}(T, T)"/> remarks.
-    /// </summary>
+    /// <param name="y">Second value.</param>
+    /// <returns>The maximum of <paramref name="x"/> and <paramref name="y"/>, NaN if either is NaN.</returns>
     public static T max<T>(T x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool>
     {
+        if (OrderedFacts<T>.IsFloating && OrderedFacts<T>.IsNaN(in x))
+            return x;
+
         return x > y ? x : y;
     }
 
-    /// <inheritdoc cref="builtin.max{T}(T, T)"/>
+    /// <summary>
+    /// Returns the largest value among its ordered arguments (the Go 1.21 <c>max</c> built-in) — see
+    /// the params <see cref="builtin.min{T}(T, ReadOnlySpan{T})"/> remarks.
+    /// </summary>
+    /// <param name="x">First value (Go requires at least one argument).</param>
+    /// <param name="y">Remaining values to compare.</param>
+    /// <returns>The maximum of <paramref name="x"/> and <paramref name="y"/>, NaN if any is NaN.</returns>
     public static T max<T>(T x, params ReadOnlySpan<T> y) where T : IComparable<T>
     {
         T result = x;
+
+        if (OrderedFacts<T>.IsFloating)
+        {
+            if (OrderedFacts<T>.IsNaN(in x))
+                return x;
+
+            foreach (T value in y)
+            {
+                if (OrderedFacts<T>.IsNaN(in value))
+                    return value;
+
+                if (value.CompareTo(result) > 0)
+                    result = value;
+            }
+
+            return result;
+        }
 
         foreach (T value in y)
         {
@@ -1354,6 +1486,78 @@ public static partial class builtin
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// The per-<typeparamref name="T"/> facts Go's <c>min</c>/<c>max</c> need about an ORDERED type:
+    /// whether its value set contains a NaN, and how to recognize one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Go's <c>cmp.Ordered</c> admits <c>~float32 | ~float64</c>, so the floating kinds arrive both as
+    /// the BCL primitives and as the generated <c>[GoType("num:floatNN")]</c> wrapper a NAMED Go float
+    /// becomes. The wrapper is a single-instance-field struct over its underlying — the shape
+    /// <c>NumericTypeTemplate</c> emits — so the classification walks that one field rather than
+    /// parsing the attribute's definition string, which is what makes a wrapper-over-a-wrapper resolve
+    /// for free.
+    /// </para>
+    /// <para>
+    /// <b>Why not <c>x != x</c>:</b> the operator overloads could ask that (their constraint extends
+    /// <see cref="System.Numerics.IEqualityOperators{T, T, TResult}"/>), but the params overloads
+    /// cannot — <see cref="IComparable{T}"/> has no operators, and neither <c>CompareTo</c> nor
+    /// <c>Equals</c> can see a NaN: <c>double.NaN.CompareTo(double.NaN)</c> is 0 and
+    /// <c>double.NaN.Equals(double.NaN)</c> is true, both by BCL design. One mechanism serving all four
+    /// overloads is what keeps the family from answering the same question two ways.
+    /// </para>
+    /// <para>
+    /// The re-spelling is the blessed same-representation reinterpret, not a general cast: it runs only
+    /// after the classification has established that <typeparamref name="T"/> is a value type whose
+    /// single field chain ends at the primitive AND that the two are the same width, which is the same
+    /// pair of facts <c>slice&lt;T&gt;.AliasOfElement</c>'s caller establishes before re-spelling a
+    /// backing array.
+    /// </para>
+    /// </remarks>
+    internal static class OrderedFacts<T>
+    {
+        // 8 = double, 4 = float, 0 = not a floating kind. A single field so the JIT folds both the
+        // IsFloating gate and the width switch inside IsNaN per closed T.
+        //
+        // Same width or no reinterpret: a wrapper that padded or laid itself out explicitly is not one
+        // representation under two names, and answering NaN off its first bytes would be a guess.
+        // Reporting "not floating" there costs Go's NaN rule for a type nothing emits; reporting a
+        // wrong NaN would corrupt every comparison it touched.
+        private static readonly int s_floatWidth =
+            Classify(typeof(T)) is int width && width != 0 && Unsafe.SizeOf<T>() == width ? width : 0;
+
+        internal static readonly bool IsFloating = s_floatWidth != 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNaN(in T value)
+        {
+            return s_floatWidth switch
+            {
+                8 => double.IsNaN(Unsafe.As<T, double>(ref Unsafe.AsRef(in value))),
+                4 => float.IsNaN(Unsafe.As<T, float>(ref Unsafe.AsRef(in value))),
+                _ => false
+            };
+        }
+
+        private static int Classify(Type type)
+        {
+            if (type == typeof(double))
+                return 8;
+
+            if (type == typeof(float))
+                return 4;
+
+            if (!type.IsValueType || type.IsPrimitive || type.IsEnum)
+                return 0;
+
+            // A generated numeric wrapper carries exactly one instance field, its underlying value.
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            return fields.Length == 1 ? Classify(fields[0].FieldType) : 0;
+        }
     }
 
     /// <summary>

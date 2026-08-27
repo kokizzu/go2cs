@@ -17,6 +17,18 @@ using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸmath() {
+    builtin.initPackage(typeof(math_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() {
+    builtin.initPackage(typeof(go.runtime.debug_package));
+}
+
 // We assume that the Once.Do tests have already covered parallelism.
 public static void TestOnceFunc(ж<Δtesting.T> Ꮡt) {
     nint calls = 0;

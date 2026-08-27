@@ -439,23 +439,40 @@ partial class syscall_package
 
         byte* buffer = stackalloc byte[nativeSockaddrLen];
 
-        // Family is a plain uint16 in host order on both sides -- the port is the field that is not.
+        flattenRawSockaddr(ref rsa, buffer);
+
+        // The length matters only to the AF_UNIX arm, which scans sun_path for a NUL: Go bounds that
+        // scan by len(RawSockaddrUnix.Path), so the equivalent bound here is 2 + UNIX_PATH_MAX.
+        return readNativeSockaddr(buffer, (int32)(2 + UNIX_PATH_MAX));
+    }
+
+    // THE MANAGED RawSockaddrAny IS A TRANSCRIPTION, and this pair is the whole of what that means.
+    //
+    // Its fields are a field-for-field record of the 116-byte native sockaddr the kernel reads and
+    // writes -- Family at 0, Addr.Data covering 2..15, Pad covering 16..115 (2 + 14 + 100 = 116,
+    // which is what Go's unsafe.Sizeof(RawSockaddrAny{}) reports and what internal/poll hard-codes as
+    // the AcceptEx per-address length; nativeSockaddrLen, 128, a sockaddr_storage, covers it with
+    // room to spare). Family is a plain uint16 in host order on both sides -- the port, inside Data,
+    // is the field that is not, which is why neither direction interprets these bytes at all.
+    //
+    // The mapping is the Go declaration's own, so only ONE function in the corpus states it in each
+    // direction. Who USES each: MANAGED->NATIVE (here) serves the decode (Sockaddr above, and through
+    // it net's accept path) and the WriteMsg encode; NATIVE->MANAGED is `fillRawSockaddrAny` in the
+    // sibling zsyscall_windows_wsa_impl.cs, which the AcceptEx and WSARecvFrom harvests already own
+    // and which this file therefore CALLS rather than restates -- they are one partial class, and a
+    // second copy of a layout is exactly what this pair exists to prevent. (The first cut of the
+    // WriteMsg arc did write a second copy, `unflattenRawSockaddr`; it was folded into
+    // fillRawSockaddrAny when the RecvMsg direction needed the bounded form the harvest already had.)
+    private static unsafe void flattenRawSockaddr(ref RawSockaddrAny rsa, byte* buffer) {
         *(uint16*)buffer = rsa.Addr.Family;
 
         for (nint i = 0; i < 14; i++) {
             buffer[2 + i] = (byte)rsa.Addr.Data[i];
         }
 
-        // 2 + 14 + 100 = 116, which is what Go's unsafe.Sizeof(RawSockaddrAny{}) reports and what
-        // internal/poll hard-codes as the AcceptEx per-address length; nativeSockaddrLen (128, a
-        // sockaddr_storage) covers it with room to spare.
         for (nint i = 0; i < 100; i++) {
             buffer[16 + i] = (byte)rsa.Pad[i];
         }
-
-        // The length matters only to the AF_UNIX arm, which scans sun_path for a NUL: Go bounds that
-        // scan by len(RawSockaddrUnix.Path), so the equivalent bound here is 2 + UNIX_PATH_MAX.
-        return readNativeSockaddr(buffer, (int32)(2 + UNIX_PATH_MAX));
     }
 
     // Getsockname/Getpeername go through the Syscall trampoline directly rather than their
@@ -507,4 +524,105 @@ partial class syscall_package
 
     public static unsafe (int32 len, error err) GoWriteNativeSockaddrInet6(ж<SockaddrInet6> sa, byte* buffer) =>
         writeNativeSockaddr(new SockaddrInet6жΔSockaddr(sa), buffer);
+
+    // ---- the RAW-SOCKADDR ENCODE: internal/poll's WriteMsg seam, and Sockaddr's exact inverse -----
+    //
+    // internal/poll's sockaddrInet4ToRaw / sockaddrInet6ToRaw (fd_windows.go) fill a CALLER-OWNED
+    // RawSockaddrAny by the same two mechanisms rawToSockaddrInet4/6 read one back through, run in
+    // reverse -- and writing is by far the worse direction:
+    //
+    //     raw := (*syscall.RawSockaddrInet6)(unsafe.Pointer(rsa))
+    //     raw.Family = syscall.AF_INET6
+    //     p := (*[2]byte)(unsafe.Pointer(&raw.Port))
+    //
+    // The reinterpret aliases one reference-bearing struct as another whose managed layout shares no
+    // offset with it, so `raw.Value.Family = AF_INET6` deposits a uint16 over the LOW HALF OF A LIVE
+    // OBJECT REFERENCE; the two-byte view then fabricates an `array<byte>` out of the bytes that
+    // follow. Reading the same wrong offsets merely returns a wrong answer -- writing them corrupts
+    // the heap, which is why this pair killed the whole `net` host rather than failing a test.
+    //
+    // The remedy is the one the DECODE already uses, run the other way: build the native image
+    // through the single definition of it (writeNativeSockaddr), then transcribe that image into the
+    // managed struct's own field encoding (unflattenRawSockaddr). No caller learns a layout, and the
+    // encode and decode cannot drift because they name the same two helpers.
+    //
+    // Typed to the two INET families and taking Go FIELDS rather than a struct, for the same reason
+    // GoWriteNativeSockaddrInet4/6 above are typed: internal/poll's hand-own then reads exactly the
+    // fields its decode sibling writes (Port, Addr, ZoneId) and carries no layout knowledge at all.
+    public static unsafe int32 GoRawSockaddrFromInet4(ж<RawSockaddrAny> Ꮡrsa, nint port, array<byte> addr) {
+        var sa = @new<SockaddrInet4>();
+
+        sa.Value.Port = port;
+        sa.Value.Addr = addr.Clone();
+
+        return writeRawSockaddr(Ꮡrsa, new SockaddrInet4жΔSockaddr(sa));
+    }
+
+    public static unsafe int32 GoRawSockaddrFromInet6(ж<RawSockaddrAny> Ꮡrsa, nint port, uint32 zoneId, array<byte> addr) {
+        var sa = @new<SockaddrInet6>();
+
+        sa.Value.Port = port;
+        sa.Value.ZoneId = zoneId;
+        sa.Value.Addr = addr.Clone();
+
+        return writeRawSockaddr(Ꮡrsa, new SockaddrInet6жΔSockaddr(sa));
+    }
+
+    // The flatten, exposed. internal/syscall/windows's WSASendMsg hand-own is handed a RawSockaddrAny
+    // that internal/poll has ALREADY encoded (through the two seams above), so what it needs is not
+    // another encode but the native image of a record it did not build -- the same flatten the decode
+    // performs, reached across the assembly boundary. The caller supplies its own `namelen`: the
+    // record is 116 bytes but the family's image inside it is 16 or 28, and only the record's owner
+    // knows which, so reporting a length here would invite the wrong one to be used.
+    public static unsafe void GoWriteNativeRawSockaddr(ж<RawSockaddrAny> Ꮡrsa, byte* buffer) =>
+        flattenRawSockaddr(ref Ꮡrsa.Value, buffer);
+
+    // The transcription, exposed -- the mirror of the seam above and what internal/syscall/windows's
+    // WSARecvMsg harvest owes the caller. `available` is what the KERNEL wrote, not what the record
+    // can hold: a sockaddr_in is 16 bytes inside a 116-byte record, and reading past the write would
+    // transcribe whatever the staging held from a previous receive. The bound is the same one
+    // WSARecvFrom's own harvest passes, because this IS that function.
+    public static unsafe void GoReadNativeRawSockaddr(ж<RawSockaddrAny> Ꮡrsa, byte* native, nint available) =>
+        fillRawSockaddrAny(Ꮡrsa, native, available);
+
+    // The 116-byte record length, exposed for a caller that must tell the kernel how much room the
+    // address has and then clamp what came back. GoNativeSockaddrLen (128, a sockaddr_storage) is the
+    // BUFFER size; this is the size of the Go struct that buffer is transcribed into, and conflating
+    // them would let a 128-byte write land in a 116-byte record.
+    public const int GoRawSockaddrAnyLen = rawSockaddrAnyLen;
+
+    private static unsafe int32 writeRawSockaddr(ж<RawSockaddrAny> Ꮡrsa, ΔSockaddr sa) {
+        ref var rsa = ref Ꮡrsa.Value;
+
+        // Go's own first line in both encoders -- `*rsa = syscall.RawSockaddrAny{}` -- and it is
+        // load-bearing rather than tidy: the family's image is 16 or 28 bytes and the trailing
+        // 100-or-88 must read as zero to whoever hands the record to the kernel.
+        rsa = new RawSockaddrAny(nil);
+
+        byte* buffer = stackalloc byte[nativeSockaddrLen];
+
+        // Zeroed explicitly rather than relying on the JIT's locals-init, because the transcribe
+        // below reads all 116 bytes while the encode writes only the family's own 16 or 28.
+        for (nint i = 0; i < nativeSockaddrLen; i++) {
+            buffer[i] = 0;
+        }
+
+        var (len, err) = writeNativeSockaddr(sa, buffer);
+
+        if (err != default!) {
+            // Go's encoders have no error return -- their only failure mode, a port outside
+            // 0..65535, is unreachable from every caller (a netip.AddrPort or *UDPAddr port is a
+            // uint16 by construction). A zero LENGTH is the honest answer that keeps the signature,
+            // and it leaves `rsa` zeroed, which is exactly the state Go's first line put it in.
+            return 0;
+        }
+
+        // The whole record: the encode zeroed the buffer above, so the trailing bytes transcribe as
+        // the zeros Go's `*rsa = RawSockaddrAny{}` put there.
+        fillRawSockaddrAny(Ꮡrsa, buffer, rawSockaddrAnyLen);
+
+        // Go returns int32(unsafe.Sizeof(*raw)) -- 16 for sockaddr_in, 28 for sockaddr_in6 -- which
+        // is the same number writeNativeSockaddr reports as the image it just wrote.
+        return len;
+    }
 }

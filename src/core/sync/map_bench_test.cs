@@ -13,6 +13,12 @@ using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
+    builtin.initPackage(typeof(go.sync.atomic_package));
+}
+
 [GoType] partial struct bench {
     internal Action<ж<Δtesting.B>, mapInterface> setup;
     internal Action<ж<Δtesting.B>, ж<Δtesting.PB>, nint, mapInterface> perG;

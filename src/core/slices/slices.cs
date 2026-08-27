@@ -166,7 +166,7 @@ public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
 {
     var v = vʗp.slice();
 
-    _ = subslice<S, E>(s, i, -1); // bounds check
+    _ = subslice<S, E>(s, i); // bounds check
     nint m = len(v);
     if (m == 0) {
         return s;
@@ -180,12 +180,12 @@ public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
         // the slice up to the next storage class.
         // This is what Grow does but we don't call Grow because
         // that might copy the values twice.
-        var s2 = append(subslice<S, E>(s, -1, i), make<S>(n + m - i).ꓸꓸꓸ);
-        copy(subslice<S, E>(s2, i, -1), v);
-        copy(subslice<S, E>(s2, i + m, -1), subslice<S, E>(s, i, -1));
+        var s2 = append(subslice<S, E>(s, 0, i), make<S>(n + m - i).ꓸꓸꓸ);
+        copy(subslice<S, E>(s2, i), v);
+        copy(subslice<S, E>(s2, i + m), subslice<S, E>(s, i));
         return s2;
     }
-    s = subslice<S, E>(s, -1, n + m);
+    s = subslice<S, E>(s, 0, n + m);
     // before:
     // s: aaaaaaaabbbbccccccccdddd
     //            ^   ^       ^   ^
@@ -199,17 +199,17 @@ public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
     // v are the values copied in from v.
     // b and c are the values from s that are shifted up in index.
     // d are the values that get overwritten, never to be seen again.
-    if (!overlaps(v, new slice<E>(subslice<S, E>(s, i + m, -1)))) {
+    if (!overlaps(v, new slice<E>(subslice<S, E>(s, i + m)))) {
         // Easy case - v does not overlap either the c or d regions.
         // (It might be in some of a or b, or elsewhere entirely.)
         // The data we copy up doesn't write to v at all, so just do it.
-        copy(subslice<S, E>(s, i + m, -1), subslice<S, E>(s, i, -1));
+        copy(subslice<S, E>(s, i + m), subslice<S, E>(s, i));
         // Now we have
         // s: aaaaaaaabbbbbbbbcccccccc
         //            ^   ^       ^   ^
         //            i  i+m      n  n+m
         // Note the b values are duplicated.
-        copy(subslice<S, E>(s, i, -1), v);
+        copy(subslice<S, E>(s, i), v);
         // Now we have
         // s: aaaaaaaavvvvbbbbcccccccc
         //            ^   ^       ^   ^
@@ -221,12 +221,12 @@ public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
     // the data because we'd move or clobber the values we're trying
     // to insert.
     // So instead, write v on top of d, then rotate.
-    copy(subslice<S, E>(s, n, -1), v);
+    copy(subslice<S, E>(s, n), v);
     // Now we have
     // s: aaaaaaaabbbbccccccccvvvv
     //            ^   ^       ^   ^
     //            i  i+m      n  n+m
-    rotateRight(new slice<E>(subslice<S, E>(s, i, -1)), m);
+    rotateRight(new slice<E>(subslice<S, E>(s, i)), m);
     // Now we have
     // s: aaaaaaaavvvvbbbbcccccccc
     //            ^   ^       ^   ^
@@ -248,7 +248,7 @@ public static S Delete<S, E>(S s, nint i, nint j)
         return s;
     }
     nint oldlen = len(s);
-    s = append(subslice<S, E>(s, -1, i), subslice<S, E>(s, j, -1).ꓸꓸꓸ);
+    s = append(subslice<S, E>(s, 0, i), subslice<S, E>(s, j).ꓸꓸꓸ);
     clear(subslice<S, E>(s, len(s), oldlen)); // zero/nil out the obsolete elements, for GC
     return s;
 }
@@ -272,8 +272,8 @@ public static S DeleteFunc<S, E>(S s, Func<E, bool> del)
             }
         }
     }
-    clear(subslice<S, E>(s, i, -1)); // zero/nil out the obsolete elements, for GC
-    return subslice<S, E>(s, -1, i);
+    clear(subslice<S, E>(s, i)); // zero/nil out the obsolete elements, for GC
+    return subslice<S, E>(s, 0, i);
 }
 
 // Replace replaces the elements s[i:j] by the given v, and returns the
@@ -290,26 +290,26 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
         return Insert(s, i, v.ꓸꓸꓸ);
     }
     if (j == len(s)) {
-        var s2 = append(subslice<S, E>(s, -1, i), v.ꓸꓸꓸ);
+        var s2 = append(subslice<S, E>(s, 0, i), v.ꓸꓸꓸ);
         if (len(s2) < len(s)) {
-            clear(subslice<S, E>(s, len(s2), -1)); // zero/nil out the obsolete elements, for GC
+            clear(subslice<S, E>(s, len(s2))); // zero/nil out the obsolete elements, for GC
         }
         return s2;
     }
-    nint tot = len(subslice<S, E>(s, -1, i)) + len(v) + len(subslice<S, E>(s, j, -1));
+    nint tot = len(subslice<S, E>(s, 0, i)) + len(v) + len(subslice<S, E>(s, j));
     if (tot > cap(s)) {
         // Too big to fit, allocate and copy over.
-        var s2 = append(subslice<S, E>(s, -1, i), make<S>(tot - i).ꓸꓸꓸ); // See Insert
-        copy(subslice<S, E>(s2, i, -1), v);
-        copy(subslice<S, E>(s2, i + len(v), -1), subslice<S, E>(s, j, -1));
+        var s2 = append(subslice<S, E>(s, 0, i), make<S>(tot - i).ꓸꓸꓸ); // See Insert
+        copy(subslice<S, E>(s2, i), v);
+        copy(subslice<S, E>(s2, i + len(v)), subslice<S, E>(s, j));
         return s2;
     }
-    var r = subslice<S, E>(s, -1, tot);
+    var r = subslice<S, E>(s, 0, tot);
     if (i + len(v) <= j) {
         // Easy, as v fits in the deleted portion.
-        copy(subslice<S, E>(r, i, -1), v);
-        copy(subslice<S, E>(r, i + len(v), -1), subslice<S, E>(s, j, -1));
-        clear(subslice<S, E>(s, tot, -1)); // zero/nil out the obsolete elements, for GC
+        copy(subslice<S, E>(r, i), v);
+        copy(subslice<S, E>(r, i + len(v)), subslice<S, E>(s, j));
+        clear(subslice<S, E>(s, tot)); // zero/nil out the obsolete elements, for GC
         return r;
     }
     // We are expanding (v is bigger than j-i).
@@ -322,10 +322,10 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
     // x: deleted range
     // b: more of s
     // y: area to expand into
-    if (!overlaps(new slice<E>(subslice<S, E>(r, i + len(v), -1)), v)) {
+    if (!overlaps(new slice<E>(subslice<S, E>(r, i + len(v))), v)) {
         // Easy, as v is not clobbered by the first copy.
-        copy(subslice<S, E>(r, i + len(v), -1), subslice<S, E>(s, j, -1));
-        copy(subslice<S, E>(r, i, -1), v);
+        copy(subslice<S, E>(r, i + len(v)), subslice<S, E>(s, j));
+        copy(subslice<S, E>(r, i), v);
         return r;
     }
     // This is a situation where we don't have a single place to which
@@ -343,14 +343,14 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
     nint y = len(v) - (j - i); // length of y portion
     if (!overlaps(new slice<E>(subslice<S, E>(r, i, j)), v)) {
         copy(subslice<S, E>(r, i, j), v[(int)(y)..]);
-        copy(subslice<S, E>(r, len(s), -1), v[..(int)(y)]);
-        rotateRight(new slice<E>(subslice<S, E>(r, i, -1)), y);
+        copy(subslice<S, E>(r, len(s)), v[..(int)(y)]);
+        rotateRight(new slice<E>(subslice<S, E>(r, i)), y);
         return r;
     }
-    if (!overlaps(new slice<E>(subslice<S, E>(r, len(s), -1)), v)) {
-        copy(subslice<S, E>(r, len(s), -1), v[..(int)(y)]);
+    if (!overlaps(new slice<E>(subslice<S, E>(r, len(s))), v)) {
+        copy(subslice<S, E>(r, len(s)), v[..(int)(y)]);
         copy(subslice<S, E>(r, i, j), v[(int)(y)..]);
-        rotateRight(new slice<E>(subslice<S, E>(r, i, -1)), y);
+        rotateRight(new slice<E>(subslice<S, E>(r, i)), y);
         return r;
     }
     // Now we know that v overlaps both x and y.
@@ -358,9 +358,9 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
     // So we don't need to preserve b at all; instead we
     // can copy v first, then copy the b part of v out of
     // v to the right destination.
-    nint k = startIdx(v, new slice<E>(subslice<S, E>(s, j, -1)));
-    copy(subslice<S, E>(r, i, -1), v);
-    copy(subslice<S, E>(r, i + len(v), -1), subslice<S, E>(r, i + k, -1));
+    nint k = startIdx(v, new slice<E>(subslice<S, E>(s, j)));
+    copy(subslice<S, E>(r, i), v);
+    copy(subslice<S, E>(r, i + len(v)), subslice<S, E>(r, i + k));
     return r;
 }
 
@@ -371,7 +371,7 @@ public static S Clone<S, E>(S s)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
 {
     // The s[:0:0] preserves nil in case it matters.
-    return append(subslice3<S, E>(s, -1, 0, 0), s.ꓸꓸꓸ);
+    return append(subslice3<S, E>(s, 0, 0, 0), s.ꓸꓸꓸ);
 }
 
 // Compact replaces consecutive runs of equal elements with a single copy.
@@ -387,15 +387,15 @@ public static S Compact<S, E>(S s)
     }
     for (nint k = 1; k < len(s); k++) {
         if (AreEqual(s[k], s[k - 1])) {
-            var s2 = subslice<S, E>(s, k, -1);
+            var s2 = subslice<S, E>(s, k);
             for (nint k2 = 1; k2 < len(s2); k2++) {
                 if (!AreEqual(s2[k2], s2[k2 - 1])) {
                     s[k] = s2[k2];
                     k++;
                 }
             }
-            clear(subslice<S, E>(s, k, -1)); // zero/nil out the obsolete elements, for GC
-            return subslice<S, E>(s, -1, k);
+            clear(subslice<S, E>(s, k)); // zero/nil out the obsolete elements, for GC
+            return subslice<S, E>(s, 0, k);
         }
     }
     return s;
@@ -412,15 +412,15 @@ public static S CompactFunc<S, E>(S s, Func<E, E, bool> eq)
     }
     for (nint k = 1; k < len(s); k++) {
         if (eq(s[k], s[k - 1])) {
-            var s2 = subslice<S, E>(s, k, -1);
+            var s2 = subslice<S, E>(s, k);
             for (nint k2 = 1; k2 < len(s2); k2++) {
                 if (!eq(s2[k2], s2[k2 - 1])) {
                     s[k] = s2[k2];
                     k++;
                 }
             }
-            clear(subslice<S, E>(s, k, -1)); // zero/nil out the obsolete elements, for GC
-            return subslice<S, E>(s, -1, k);
+            clear(subslice<S, E>(s, k)); // zero/nil out the obsolete elements, for GC
+            return subslice<S, E>(s, 0, k);
         }
     }
     return s;
@@ -438,7 +438,7 @@ public static S Grow<S, E>(S s, nint n)
     }
     {
         n -= cap(s) - len(s); if (n > 0) {
-            s = subslice<S, E>(append(subslice<S, E>(s, -1, cap(s)), new slice<E>(n).ꓸꓸꓸ), -1, len(s));
+            s = subslice<S, E>(append(subslice<S, E>(s, 0, cap(s)), new slice<E>(n).ꓸꓸꓸ), 0, len(s));
         }
     }
     return s;
@@ -448,7 +448,7 @@ public static S Grow<S, E>(S s, nint n)
 public static S Clip<S, E>(S s)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
 {
-    return subslice3<S, E>(s, -1, len(s), len(s));
+    return subslice3<S, E>(s, 0, len(s), len(s));
 }
 
 // TODO: There are other rotate algorithms.
@@ -543,7 +543,7 @@ public static S Repeat<S, E>(S x, nint count)
     var newslice = make<S>(len(x) * count);
     nint n = copy(newslice, x);
     while (n < len(newslice)) {
-        n += copy(subslice<S, E>(newslice, n, -1), subslice<S, E>(newslice, -1, n));
+        n += copy(subslice<S, E>(newslice, n), subslice<S, E>(newslice, 0, n));
     }
     return newslice;
 }

@@ -50,6 +50,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `crypto/sha512` | [`crypto.sha512.md`](current/crypto.sha512.md) | [`src/core/crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha512) |
 | `crypto/subtle` | [`crypto.subtle.md`](current/crypto.subtle.md) | [`src/core/crypto/subtle`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/subtle) |
 | `crypto/tls` | [`crypto.tls.md`](current/crypto.tls.md) | [`src/core/crypto/tls`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/tls) |
+| `crypto/x509` | [`crypto.x509.md`](current/crypto.x509.md) | [`src/core/crypto/x509`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/x509) |
 | `database/sql` | [`database.sql.md`](current/database.sql.md) | [`src/core/database/sql`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql) |
 | `database/sql/driver` | [`database.sql.driver.md`](current/database.sql.driver.md) | [`src/core/database/sql/driver`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql/driver) |
 | `debug/buildinfo` | [`debug.buildinfo.md`](current/debug.buildinfo.md) | [`src/core/debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo) |
@@ -135,6 +136,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `io/fs` | [`io.fs.md`](current/io.fs.md) | [`src/core/io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/fs) |
 | `io/ioutil` | [`io.ioutil.md`](current/io.ioutil.md) | [`src/core/io/ioutil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io/ioutil) |
 | `log` | [`log.md`](current/log.md) | [`src/core/log`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log) |
+| `log/slog` | [`log.slog.md`](current/log.slog.md) | [`src/core/log/slog`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog) |
 | `log/slog/internal/benchmarks` | [`log.slog.internal.benchmarks.md`](current/log.slog.internal.benchmarks.md) | [`src/core/log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) |
 | `maps` | [`maps.md`](current/maps.md) | [`src/core/maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) |
 | `math` | [`math.md`](current/math.md) | [`src/core/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) |

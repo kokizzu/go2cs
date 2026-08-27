@@ -88,6 +88,12 @@ type CallExprContext struct {
 	// `func() Point` field assigned `nistec.NewP224Point`, whose ж<P224Point> return needs the
 	// proxy — CS0407). The map value is the comma-joined lambda parameter list ("" for niladic).
 	wrapArgWithLambda map[int]string
+	// proxyLitParamTypes carries, per FUNC-LITERAL argument index, the constraint-proxy C# type
+	// each of that literal's own parameters must be DECLARED as (keyed by the literal's parameter
+	// index). The sibling above serves a method-group argument at the same delegate position; this
+	// serves the literal, which renders its own parameter list and so needs the proxy applied one
+	// position further in. See constraintProxyLitParamTypes.
+	proxyLitParamTypes map[int]map[int]string
 	// cloneArrayArg appends the strongly-typed `.Clone()` to the indexed element — a POSITIONAL
 	// composite-literal element that reads an ARRAY value out of existing storage (Go copies the
 	// array into the composite's slot; the emitted struct copy would alias its backing — see
@@ -255,6 +261,12 @@ type LambdaContext struct {
 	// closure and allocates nothing. Set by visitAssignStmt for the `name := func(…){…}` shape
 	// whose variable is only ever called (see localFunctionDefine).
 	localFuncName string
+	// proxyParamTypes, keyed by the literal's own parameter index, names the constraint-proxy C#
+	// type that parameter must be DECLARED as — set for a func LITERAL argument of a generic call
+	// whose type argument resolved to a proxy. convFuncLit declares those parameters at the proxy
+	// under synthesized names and opens the body with the natural-typed alias. See
+	// constraintProxyLitParamTypes.
+	proxyParamTypes map[int]string
 }
 
 func DefaultLambdaContext() LambdaContext {
@@ -324,7 +336,16 @@ type IdentContext struct {
 	isPointer bool
 	isType    bool
 	isMethod  bool
-	ident     *ast.Ident
+	// suppressGenericTypeArgs tells convIdent NOT to append a generic function's inferred
+	// instantiation to a bare function reference. Two callers set it, for the two reasons the
+	// append would be wrong: a call's CALLEE (`Reverse(s)`), whose type arguments convCallExpr
+	// owns and emits only where C# cannot infer — appending here as well would write every
+	// generic call in the corpus out longhand; and the BASE of an explicit instantiation
+	// (`Equal[Slice]`), where convIndexExpr/convIndexListExpr append the list themselves and a
+	// second copy would emit `Equal<Slice, E><Slice>`. Twin of the LambdaContext field of the
+	// same name, which gates the identical selector-form path in convSelectorExpr.
+	suppressGenericTypeArgs bool
+	ident                   *ast.Ident
 	// fieldCollidesWithType marks a struct-field selector whose name equals its enclosing
 	// struct's type name. C# forbids a member sharing the enclosing type's name (CS0542), so
 	// the field is emitted with the disambiguation marker (matching its renamed declaration).
@@ -338,10 +359,11 @@ type IdentContext struct {
 
 func DefaultIdentContext() IdentContext {
 	return IdentContext{
-		isPointer:             false,
-		isType:                false,
-		isMethod:              false,
-		ident:                 nil,
+		isPointer:               false,
+		isType:                  false,
+		isMethod:                false,
+		suppressGenericTypeArgs: false,
+		ident:                   nil,
 		fieldCollidesWithType: false,
 		fieldTypeIsRenamed:    false,
 	}

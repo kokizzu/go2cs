@@ -160,6 +160,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckByteTableStringVar() => CheckTarget("ByteTableStringVar");
 
     [TestMethod]
+    public void CheckCaptureHoistThroughConversion() => CheckTarget("CaptureHoistThroughConversion");
+
+    [TestMethod]
     public void CheckCaptureModeFieldAddress() => CheckTarget("CaptureModeFieldAddress");
 
     [TestMethod]
@@ -263,6 +266,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckConstrainedSliceParamInPlace() => CheckTarget("ConstrainedSliceParamInPlace");
+
+    [TestMethod]
+    public void CheckConstraintProxyEmbeddedInterface() => CheckTarget("ConstraintProxyEmbeddedInterface");
 
     [TestMethod]
     public void CheckConstraints() => CheckTarget("Constraints");
@@ -415,6 +421,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckEmptyStructMapSet() => CheckTarget("EmptyStructMapSet");
 
     [TestMethod]
+    public void CheckEnvironBlockWalk() => CheckTarget("EnvironBlockWalk");
+
+    [TestMethod]
     public void CheckErrorfFormatting() => CheckTarget("ErrorfFormatting");
 
     [TestMethod]
@@ -458,6 +467,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckFloatFormatting() => CheckTarget("FloatFormatting");
+
+    [TestMethod]
+    public void CheckFloatKindConstArrayLength() => CheckTarget("FloatKindConstArrayLength");
 
     [TestMethod]
     public void CheckForeignPairNumericConv() => CheckTarget("ForeignPairNumericConv");
@@ -682,6 +694,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckImmediatelyInvokedFunc() => CheckTarget("ImmediatelyInvokedFunc");
 
     [TestMethod]
+    public void CheckImportSegmentTypeShadow() => CheckTarget("ImportSegmentTypeShadow");
+
+    [TestMethod]
     public void CheckIncDecPointerField() => CheckTarget("IncDecPointerField");
 
     [TestMethod]
@@ -893,6 +908,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckMultiPointerEmbedPromotion() => CheckTarget("MultiPointerEmbedPromotion");
+
+    [TestMethod]
+    public void CheckMultiValueReturnOrder() => CheckTarget("MultiValueReturnOrder");
 
     [TestMethod]
     public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");
@@ -1730,6 +1748,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckUdpLoopbackRoundTrip() => CheckTarget("UdpLoopbackRoundTrip");
+
+    [TestMethod]
+    public void CheckUdpWriteMsgAddrPort() => CheckTarget("UdpWriteMsgAddrPort");
 
     [TestMethod]
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");

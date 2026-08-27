@@ -24,7 +24,15 @@ func (v *Visitor) convSliceExpr(sliceExpr *ast.SliceExpr) string {
 	// explicitly (E is constraint-only — C# cannot infer it).
 	if tp, ok := types.Unalias(v.info.TypeOf(sliceExpr.X)).(*types.TypeParam); ok {
 		if sliceType := typeParamSliceCore(tp); sliceType != nil {
-			low, high, max := "-1", "-1", "-1"
+			// NO BOUND IS A SENTINEL. An omitted LOW is emitted as the 0 it means — Go's `s[:h]` IS
+			// `s[0:h]` — and an omitted HIGH selects the two-argument `subslice` overload rather than
+			// travelling as -1. Both bounds used to default to "-1", which made `s[i:]` and `s[i:-1]`
+			// the same call and (worse) made golib clamp every negative low to 0, so Go's panic for a
+			// negative index never fired: slices' TestInsertPanics and TestReplacePanics measured
+			// exactly that, since `slices.Insert`/`Replace` open with `_ = s[i:]` / `_ = s[i:j]` as
+			// their bounds check. A three-index expression always carries its high bound (Go's
+			// grammar requires it), so subslice3 keeps three real arguments.
+			low, high, max := "0", "", ""
 
 			if sliceExpr.Low != nil {
 				low = v.convExpr(sliceExpr.Low, nil)
@@ -42,6 +50,10 @@ func (v *Visitor) convSliceExpr(sliceExpr *ast.SliceExpr) string {
 
 			if sliceExpr.Max != nil {
 				return fmt.Sprintf("subslice3<%s, %s>(%s, %s, %s, %s)", getSanitizedIdentifier(tp.Obj().Name()), elemType, ident, low, high, max)
+			}
+
+			if sliceExpr.High == nil {
+				return fmt.Sprintf("subslice<%s, %s>(%s, %s)", getSanitizedIdentifier(tp.Obj().Name()), elemType, ident, low)
 			}
 
 			return fmt.Sprintf("subslice<%s, %s>(%s, %s, %s)", getSanitizedIdentifier(tp.Obj().Name()), elemType, ident, low, high)

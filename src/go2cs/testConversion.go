@@ -235,8 +235,9 @@ func recordsRequireProductionAnchor(productionClassName, productionPackageName s
 // qualified production structs are foreign to the test compilation, so go2cs-gen emits value or
 // pointer adapter classes in the test anchor instead of partial production structs. Structural
 // conversions involving a production type still require a partial conversion operator on that
-// closed type. Numeric conversions can relocate to the test-local operand, but not when both
-// operands belong to production.
+// closed type — except for the pointer-boxing route, whose operator the generator never hosts at
+// all (pointerBoxRecordEitherOrientation). Numeric conversions can relocate to the test-local
+// operand, but not when both operands belong to production.
 func recordsRequireProductionMutation(productionClassName, productionPackageName string) bool {
 	aliasPrefix := getSanitizedIdentifier(productionPackageName) + TypeAliasDot
 	shadowAliasPrefix := ShadowVarMarker + getSanitizedIdentifier(productionPackageName) + "."
@@ -252,26 +253,30 @@ func recordsRequireProductionMutation(productionClassName, productionPackageName
 			strings.Contains(name, shadowAliasPrefix)
 	}
 
-	for _, conversions := range []map[string]HashSet[string]{implicitConversions, invertedImplicitConversions} {
+	for _, conversions := range []map[string]HashSet[string]{implicitConversions, invertedImplicitConversions, indirectImplicitConversions} {
 		for sourceType, targetTypes := range conversions {
 			for targetType := range targetTypes {
+				if pointerBoxRecordEitherOrientation(sourceType, targetType) {
+					// T -> ж<T> is the shared Go pointer-boxing route. The generator intentionally
+					// emits no type-owned operator for a foreign T, so it does not mutate production.
+					// Same predicate conversionRecordHasLocalOperand reads to admit the record at all.
+					//
+					// The exemption belongs to the SHAPE, not to the map that happens to hold it.
+					// It lived on indirectImplicitConversions alone until 2026-08-26, which read as
+					// sufficient because a conversion SITE routes a pointer target there — but the
+					// dynamic-struct implicit-cast site records into implicitConversions whatever the
+					// target's pointer-ness, so the identical pair can arrive in a direct map. That
+					// omission is what forced `crypto/x509` off the reference model: its ONE
+					// production-typed record is `Certificate -> ж<Certificate>` in
+					// implicitConversions, and the recompile fallback then compiled a SECOND
+					// Certificate into the test assembly while `crypto/tls` — a referenced assembly —
+					// kept returning the production one, splitting the type's identity (CS0012 x4 +
+					// CS1929 x2 in hybrid_pool_test.cs, the one file that reaches x509 through tls).
+					continue
+				}
 				if isProductionType(sourceType) || isProductionType(targetType) {
 					return true
 				}
-			}
-		}
-	}
-
-	for sourceType, targetTypes := range indirectImplicitConversions {
-		for targetType := range targetTypes {
-			if pointerBoxConversionRecord(sourceType, targetType) {
-				// T -> ж<T> is the shared Go pointer-boxing route. The generator intentionally
-				// emits no type-owned operator for a foreign T, so it does not mutate production.
-				// Same predicate conversionRecordHasLocalOperand reads to admit the record at all.
-				continue
-			}
-			if isProductionType(sourceType) || isProductionType(targetType) {
-				return true
 			}
 		}
 	}

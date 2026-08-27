@@ -37,6 +37,39 @@ internal static void report(Actionꓸꓸꓸ<@string, any> emit) {
     emit(bareˢ);
 }
 
+[GoType] partial struct logger {
+    internal @string tag;
+}
+
+[GoRecv] internal static void errorf(this ref logger l, @string format, params ꓸꓸꓸany argsʗp) {
+    var args = argsʗp.slice();
+
+    fmt.Printf(l.tag + "!"u8 + format + "\n"u8, args.ꓸꓸꓸ);
+}
+
+[GoRecv] internal static void logf(this ref logger l, @string format, params ꓸꓸꓸany argsʗp) {
+    var args = argsʗp.slice();
+
+    fmt.Printf(l.tag + "~"u8 + format + "\n"u8, args.ꓸꓸꓸ);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string oneDˢ = "one %d"u8;
+private static readonly @string twoDDˢ = "two %d %d"u8;
+private static readonly @string noneˢ = "none"u8;
+
+internal static void swapEmitter(ж<logger> Ꮡl, bool swap) {
+    Actionꓸꓸꓸ<@string, any> emit = (@string p1, params ꓸꓸꓸany p2) => Ꮡl.errorf(p1, p2);
+    if (swap) {
+        emit = (@string p1, params ꓸꓸꓸany p2) => Ꮡl.logf(p1, p2);
+    }
+    emit(oneDˢ, (nint)(1));
+    emit(twoDDˢ, (nint)(2), (nint)(3));
+    emit(noneˢ);
+    var rest = new any[]{(nint)(4), (nint)(5)}.slice();
+    emit("spread %d %d"u8, rest.ꓸꓸꓸ);
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object nilFuncValueˢ = (@string)"nil func value"u8;
 
@@ -56,6 +89,9 @@ internal static void Main() {
         var args = argsʗp.slice();
         fmt.Printf(format + "\n"u8, args.ꓸꓸꓸ);
     });
+    var lg = Ꮡ(new logger(tag: "L"u8));
+    swapEmitter(lg, false);
+    swapEmitter(lg, true);
 }
 
 } // end main_package

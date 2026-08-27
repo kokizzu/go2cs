@@ -193,6 +193,12 @@ type Visitor struct {
 	// package's `init` to run before this package's own, for every import form (see
 	// writeImportInit). Spliced into the top of the file's class body at ImportInitMarker.
 	importInits *strings.Builder
+	// emittedClassName is the `partial class <name>` this FILE's declarations are emitted into —
+	// `<pkg>_package`, or the per-variant override under -tests (visitFile computes it; this is the
+	// same expression, recorded so emitters running INSIDE the class body can ask what encloses
+	// them). Read by forcingTargetShadowed, which needs to know which class's nested types can
+	// occlude a namespace-qualified reference written into that class's body.
+	emittedClassName string
 	// A cross-package type reference emits a short-alias form (`pkg.Type`, `@unsafe.Pointer`) that
 	// resolves only through a file-local alias `using <alias> = <namespace>;`. That alias is emitted
 	// when the file imports the package under its canonical (unaliased) name; a file can reference the
@@ -276,9 +282,17 @@ type Visitor struct {
 	// getSignature) that can never match the identEscapesHeap entries paramNeedsHeapBox keys
 	// on, so the box decision travels by name here.
 	funcLitHeapBoxParamNames HashSet[string]
-	varNames                 map[*types.Var]string
-	hasDefer                 bool
-	hasRecover               bool
+	// funcLitProxyParamTypes maps a function literal parameter's Go name to the CONSTRAINT-PROXY
+	// C# type it must be DECLARED as — for a literal passed to a generic call whose type argument
+	// resolved to a proxy (see constraintProxyLitParamTypes). Set transiently by convFuncLit around
+	// exactly the signature-generation call, like funcLitHeapBoxParamNames beside it, and nil
+	// otherwise: the parameter then arrives under a synthesized name at the proxy type and the
+	// body prologue re-declares the Go name at its natural type. Same incoming-name-plus-prologue
+	// shape the heap-box parameters use.
+	funcLitProxyParamTypes map[string]string
+	varNames               map[*types.Var]string
+	hasDefer               bool
+	hasRecover             bool
 	// pendingTypeAccess carries an explicit C# access modifier ("public ") for the type
 	// declaration currently being emitted — set by visitTypeSpec for an unexported type that
 	// must be publicized (used as an exported struct field; see packagePublicizedTypes), and

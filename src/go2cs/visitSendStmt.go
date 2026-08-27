@@ -10,16 +10,30 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"strings"
 )
 
 func (v *Visitor) visitSendStmt(sendStmt *ast.SendStmt, format FormattingContext) {
+	// A SENT func literal that captures (`handlerc <- HandlerFunc(func(w, r){ … ts … })`,
+	// net/http client_test) snapshots its captures as `var tsʗ1 = ts;` — a STATEMENT, invalid
+	// inside the send's argument list. The send was the one statement form that supplied no
+	// hoist sink at all, neither the explicit builder go/defer thread nor the ambient
+	// v.hoistedDecls every other statement sets, so those decls emitted inline (CS1003 cascade).
+	// Collect them and write them before the send, exactly as visitExprStmt does for a call
+	// argument. Save/restore guards nesting; the render must therefore precede the newline.
+	// A SendStmt is a SimpleStmt, so it can also be a for-loop init/post or an if/switch init
+	// clause (`for ch <- 1; …`) — no standalone statement slot there, so that form does NOT
+	// hoist and keeps the enclosing statement's own sink, the same useNewLine test visitExprStmt
+	// applies for the same reason.
+	savedHoist := v.hoistedDecls
+	var hoistBuf *strings.Builder
+
 	if format.useNewLine {
-		v.outputBuilder.WriteString(v.newline)
+		hoistBuf = &strings.Builder{}
+		v.hoistedDecls = hoistBuf
 	}
 
-	if format.useIndent {
-		v.outputBuilder.WriteString(v.indent(v.indentLevel))
-	}
+	defer func() { v.hoistedDecls = savedHoist }()
 
 	var channelOperation string
 
@@ -29,7 +43,20 @@ func (v *Visitor) visitSendStmt(sendStmt *ast.SendStmt, format FormattingContext
 		channelOperation = "Send"
 	}
 
-	v.outputBuilder.WriteString(fmt.Sprintf("%s.%s(%s)", v.convExpr(sendStmt.Chan, nil), channelOperation, v.convSendValueExpr(sendStmt)))
+	sendExpr := fmt.Sprintf("%s.%s(%s)", v.convExpr(sendStmt.Chan, nil), channelOperation, v.convSendValueExpr(sendStmt))
+
+	if hoistBuf != nil && hoistBuf.Len() > 0 {
+		// The hoisted decls carry their own leading newline + per-line indentation.
+		v.outputBuilder.WriteString(hoistBuf.String())
+	} else if format.useNewLine {
+		v.outputBuilder.WriteString(v.newline)
+	}
+
+	if format.useIndent {
+		v.outputBuilder.WriteString(v.indent(v.indentLevel))
+	}
+
+	v.outputBuilder.WriteString(sendExpr)
 
 	if format.includeSemiColon {
 		v.outputBuilder.WriteRune(';')

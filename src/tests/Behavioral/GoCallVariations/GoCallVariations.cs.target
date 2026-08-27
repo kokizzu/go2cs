@@ -33,7 +33,7 @@ internal static void Main() {
     goǃ(ᴛ1 => fmt.Println(ᴛ1), firstˢ);
     goǃ(ᴛ1 => fmt.Println(ᴛ1), secondˢ);
     goǃ(ᴛ1 => fmt.Println(ᴛ1), thirdˢ);
-    var f1 = fmt.Println;
+    Funcꓸꓸꓸ<any, (nint, error)> f1 = fmt.Println;
     var f1ʗ1 = f1;
     goǃ(ᴛ1 => f1ʗ1(ᴛ1), fourthˢ);
     goǃ(GetPrintLn(), fifthˢ);

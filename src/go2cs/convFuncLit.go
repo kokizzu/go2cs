@@ -515,6 +515,34 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		}
 	}
 
+	// A literal passed to a generic call whose type argument resolved to a CONSTRAINT PROXY must
+	// declare each proxied parameter AT the proxy type: C# applies no user-defined conversion at a
+	// parameter declaration, so the natural box is CS1678 + CS1661 against the delegate. Same
+	// incoming-name-plus-prologue shape as the boxed params above — the parameter arrives under a
+	// synthesized name and the prologue below re-declares the Go name at its natural type, leaving
+	// the whole body unchanged. Keyed by the RENDERED name, exactly as funcLitHeapBoxParamNames
+	// beside it: a literal's signature is generated from SYNTHESIZED vars (see getSignature) that
+	// already carry the shadow-renamed name, so keying on the Go name silently misses every
+	// renamed parameter — and net/http renames the common one, its `run(t, func(t *testing.T, mode
+	// testMode))` inner `t` shadowing the outer (`tΔ1`). That miss is not inert: the prologue keys
+	// off the same map, so it fired while the signature did not, emitting the natural type in the
+	// declaration AND a same-named local beside it.
+	proxyParamNames := map[string]string{}
+
+	if len(context.proxyParamTypes) > 0 && funcLit.Type.Params != nil {
+		index := 0
+
+		for _, field := range funcLit.Type.Params.List {
+			for _, name := range field.Names {
+				if proxyType, ok := context.proxyParamTypes[index]; ok && name.Name != "" && name.Name != "_" {
+					proxyParamNames[v.getIdentName(name)] = proxyType
+				}
+
+				index++
+			}
+		}
+	}
+
 	var parameterSignature string
 
 	// For C#, lambda return type is inferred and not explicitly declared. The transient
@@ -522,10 +550,17 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	// generated from SYNTHESIZED vars (see getSignature) that carry the rendered names but
 	// never match identEscapesHeap, so generateParametersSignature reads the set to emit a
 	// boxed param under its incoming `ʗp` name. Cleared before the body conversion so a
-	// NESTED literal's signature cannot inherit it.
+	// NESTED literal's signature cannot inherit it. The proxy-param map is scoped identically
+	// and for the same reason.
 	v.funcLitHeapBoxParamNames = boxedParamNames
+
+	if len(proxyParamNames) > 0 {
+		v.funcLitProxyParamTypes = proxyParamNames
+	}
+
 	_, parameterSignature = v.convFuncType(funcLit.Type)
 	v.funcLitHeapBoxParamNames = nil
+	v.funcLitProxyParamTypes = nil
 
 	blockStatementContext := DefaultBlockStmtContext()
 	blockStatementContext.format.useNewLine = false
@@ -600,6 +635,41 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				} else {
 					csTypeName := v.getCSharpTypeName(v.getIdentType(ident))
 					prologue.WriteString(fmt.Sprintf("%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(bodyIndent), csTypeName, getSanitizedIdentifier(renderedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, renderedName))
+				}
+			}
+
+			body = "{" + prologue.String() + strings.TrimPrefix(trimmedBody, "{")
+		}
+	}
+
+	// A CONSTRAINT-PROXY parameter (see constraintProxyLitParamTypes) arrives under its synthesized
+	// name AT the proxy type, because C# applies no user-defined conversion at a parameter
+	// declaration. The literal's first statements re-declare the Go name at its natural type, which
+	// IS a position C# performs the conversion — the proxy's own `implicit operator ж<T>(proxy)`.
+	// Everything after this line is the body exactly as it would have been emitted, so no member
+	// access, capture, or nested literal inside it renders differently; only the boundary moved.
+	if len(proxyParamNames) > 0 && funcLit.Type.Params != nil {
+		trimmedBody := strings.TrimSpace(body)
+
+		if strings.HasPrefix(trimmedBody, "{") {
+			prologue := strings.Builder{}
+
+			// Declaration order, so the emitted prologue matches the signature it mirrors.
+			for _, field := range funcLit.Type.Params.List {
+				for _, name := range field.Names {
+					renderedName := v.getIdentName(name)
+
+					if _, ok := proxyParamNames[renderedName]; !ok {
+						continue
+					}
+
+					incomingName := getConstraintProxyLitParamName(renderedName)
+
+					if v.options.preferVarDecl {
+						prologue.WriteString(fmt.Sprintf("%s%svar %s = (%s)%s;", v.newline, v.indent(bodyIndent), getSanitizedIdentifier(renderedName), v.getCSharpTypeName(v.getIdentType(name)), incomingName))
+					} else {
+						prologue.WriteString(fmt.Sprintf("%s%s%s %s = %s;", v.newline, v.indent(bodyIndent), v.getCSharpTypeName(v.getIdentType(name)), getSanitizedIdentifier(renderedName), incomingName))
+					}
 				}
 			}
 

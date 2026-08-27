@@ -306,6 +306,7 @@
     <Project Path="tests/Behavioral/AtomicFieldThroughPointer/AtomicFieldThroughPointer.csproj" />
     <Project Path="tests/Behavioral/AtomicPointerToNil/AtomicPointerToNil.csproj" />
     <Project Path="tests/Behavioral/AtomicValues/AtomicValues.csproj" />
+    <Project Path="tests/Behavioral/CaptureHoistThroughConversion/CaptureHoistThroughConversion.csproj" />
     <Project Path="tests/Behavioral/CaptureModeFieldAddress/CaptureModeFieldAddress.csproj" />
     <Project Path="tests/Behavioral/CaptureModeFuncLitParam/CaptureModeFuncLitParam.csproj" />
     <Project Path="tests/Behavioral/CaptureModeParamClosure/CaptureModeParamClosure.csproj" />
@@ -343,6 +344,7 @@
     <Project Path="tests/Behavioral/ConstShadowsParam/ConstShadowsParam.csproj" />
     <Project Path="tests/Behavioral/ConstSubexprOverflow/ConstSubexprOverflow.csproj" />
     <Project Path="tests/Behavioral/ConstrainedSliceParamInPlace/ConstrainedSliceParamInPlace.csproj" />
+    <Project Path="tests/Behavioral/ConstraintProxyEmbeddedInterface/ConstraintProxyEmbeddedInterface.csproj" />
     <Project Path="tests/Behavioral/Constraints/Constraints.csproj" />
     <Project Path="tests/Behavioral/CrossPackageArrayZeroValue/CrossPackageArrayZeroValue.csproj" />
     <Project Path="tests/Behavioral/CrossPackageArrayZeroValue/bufpkg/CrossPackageArrayZeroValue.bufpkg.csproj" />
@@ -397,6 +399,7 @@
     <Project Path="tests/Behavioral/EmbeddedTypeNameCollision/inner/EmbeddedTypeNameCollision.inner.csproj" />
     <Project Path="tests/Behavioral/EmbeddedValuePointerMethod/EmbeddedValuePointerMethod.csproj" />
     <Project Path="tests/Behavioral/EmptyStructMapSet/EmptyStructMapSet.csproj" />
+    <Project Path="tests/Behavioral/EnvironBlockWalk/EnvironBlockWalk.csproj" />
     <Project Path="tests/Behavioral/ErrorfFormatting/ErrorfFormatting.csproj" />
     <Project Path="tests/Behavioral/EscapedLoopVarSiblingIndex/EscapedLoopVarSiblingIndex.csproj" />
     <Project Path="tests/Behavioral/ExprSwitch/ExprSwitch.csproj" />
@@ -412,6 +415,7 @@
     <Project Path="tests/Behavioral/FixedArrayBufferPointer/FixedArrayBufferPointer.csproj" />
     <Project Path="tests/Behavioral/FloatConstIntContext/FloatConstIntContext.csproj" />
     <Project Path="tests/Behavioral/FloatFormatting/FloatFormatting.csproj" />
+    <Project Path="tests/Behavioral/FloatKindConstArrayLength/FloatKindConstArrayLength.csproj" />
     <Project Path="tests/Behavioral/ForInitMixedTypes/ForInitMixedTypes.csproj" />
     <Project Path="tests/Behavioral/ForInitShadowedUse/ForInitShadowedUse.csproj" />
     <Project Path="tests/Behavioral/ForLoopPerIterationVars/ForLoopPerIterationVars.csproj" />
@@ -492,6 +496,7 @@
     <Project Path="tests/Behavioral/IncDecPointerField/IncDecPointerField.csproj" />
     <Project Path="tests/Behavioral/IndexedElementDirectBoxMethod/IndexedElementDirectBoxMethod.csproj" />
     <Project Path="tests/Behavioral/ImmediatelyInvokedFunc/ImmediatelyInvokedFunc.csproj" />
+    <Project Path="tests/Behavioral/ImportSegmentTypeShadow/ImportSegmentTypeShadow.csproj" />
     <Project Path="tests/Behavioral/IfaceFieldEmbedAdapter/IfaceFieldEmbedAdapter.csproj" />
     <Project Path="tests/Behavioral/IfaceFieldMethodValueBind/IfaceFieldMethodValueBind.csproj" />
     <Project Path="tests/Behavioral/IndexExprCaseLabel/IndexExprCaseLabel.csproj" />
@@ -567,6 +572,7 @@
     <Project Path="tests/Behavioral/MinMaxBuiltin/MinMaxBuiltin.csproj" />
     <Project Path="tests/Behavioral/MultiFileInitOrder/MultiFileInitOrder.csproj" />
     <Project Path="tests/Behavioral/MultiPointerEmbedPromotion/MultiPointerEmbedPromotion.csproj" />
+    <Project Path="tests/Behavioral/MultiValueReturnOrder/MultiValueReturnOrder.csproj" />
     <Project Path="tests/Behavioral/NamedAnySliceType/NamedAnySliceType.csproj" />
     <Project Path="tests/Behavioral/NamedArrayAnonElement/NamedArrayAnonElement.csproj" />
     <Project Path="tests/Behavioral/NamedArrayComposite/NamedArrayComposite.csproj" />
@@ -856,6 +862,7 @@
     <Project Path="tests/Behavioral/TypedNilInterface/TypedNilInterface.csproj" />
     <Project Path="tests/Behavioral/TypedPointerCastDeref/TypedPointerCastDeref.csproj" />
     <Project Path="tests/Behavioral/UdpLoopbackRoundTrip/UdpLoopbackRoundTrip.csproj" />
+    <Project Path="tests/Behavioral/UdpWriteMsgAddrPort/UdpWriteMsgAddrPort.csproj" />
     <Project Path="tests/Behavioral/UintptrUnsafePointerIdiom/UintptrUnsafePointerIdiom.csproj" />
     <Project Path="tests/Behavioral/UnexportedEmbeddedMarker/UnexportedEmbeddedMarker.csproj" />
     <Project Path="tests/Behavioral/UnicodeConsoleOutput/UnicodeConsoleOutput.csproj" />

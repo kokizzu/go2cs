@@ -437,6 +437,9 @@ partial class runtime_package
     // `go.sync_test_package.onceFuncPanic` -> `sync_test.onceFuncPanic`;
     // `go.runtime.debug_package.Stack`     -> `runtime/debug.Stack` (Go names a package by its
     //                                         import path, and the namespace mirrors it);
+    // `go.log.slog_internal_test_package.TestCallDepth` -> `log/slog.TestCallDepth` (an internal
+    //                                         test file is compiled INTO the package under test —
+    //                                         see the suffix rule below);
     // a closure's compiler-generated `<Outer>b__N` on a nested display class -> `<pkg>.Outer.funcN`,
     // Go's own spelling for a function literal. A frame that is not converted Go code (golib, the
     // BCL, the test host) keeps its .NET name — inventing a Go name for it would be a lie.
@@ -458,6 +461,47 @@ partial class runtime_package
 
         // "go.runtime.debug_package" -> "runtime/debug"
         string importPath = typeName[3..packageSuffix].Replace('.', '/');
+
+        // An INTERNAL test file (`package slog`, in logger_test.go) is compiled INTO the package
+        // under test, so Go names its frames with that package's own import path and NO suffix at
+        // all. The `-tests` pipeline cannot compile it into the production class — it emits a
+        // separate `<pkg>_internal_test_package` (testConversion.go's `production.Name +
+        // "_internal_test" + PackageSuffix`) — and that token is a go2cs emission detail rather
+        // than anything Go ever spells, so it is stripped back off here.
+        //
+        // An EXTERNAL test file (`package slog_test`) is a genuinely separate Go package and Go
+        // KEEPS its `_test`. The two suffixes are therefore deliberately NOT symmetric, and the
+        // tempting generalization — strip any trailing `_test` — is wrong in a way a banked row
+        // already measures: runtime/debug's own TestStack greps a rendered traceback for
+        // `runtime/debug_test.(*T).ptrmethod`.
+        //
+        // Measured against the go1.23.12 toolchain rather than reasoned about:
+        //     internal (`package callerprobe`)      -> callerprobe.TestInternalCallerName
+        //     external (`package callerprobe_test`) -> callerprobe_test.TestExternalCallerName
+        //
+        // DESIGN-position-map.md §8 records that the two suffix rules retire from the FILE half
+        // (which is RECORDED, so there is nothing to derive) but "remain necessary and unchanged
+        // for the FUNCTION half" — this is that rule, which the file-half arc never actually
+        // landed here. Without it log/slog's logger_test.go reads
+        // `log/slog_internal_test.TestCallDepth` where it asserts `log/slog.TestCallDepth`, and the
+        // leak is systemic rather than slog-specific: every package whose suite inspects caller
+        // info shows it. Guarded by GolibTests/CallerFrameTestVariantNamingTests, which pins all
+        // three shapes so neither rule can be "fixed" into the other.
+        //
+        // Known edge, stated rather than guarded: a Go package genuinely NAMED `<x>_internal_test`
+        // would emit the same class name and be stripped wrongly. It is not resolvable at this
+        // layer — the emission spells both cases identically — and the durable fix would be for the
+        // converter to RECORD the package identity the way the file half is recorded (§11.1). No
+        // such package exists in GOROOT, and the shape is pathological in user code, so the
+        // derivation stands as the design ruled it (§8: "goImportPath stays").
+        const string internalTestSuffix = "_internal_test";
+
+        if (importPath.Length > internalTestSuffix.Length &&
+            importPath.EndsWith(internalTestSuffix, StringComparison.Ordinal))
+        {
+            importPath = importPath[..^internalTestSuffix.Length];
+        }
+
         string name = method.Name;
 
         // A lambda is emitted as `<Outer>b__N` on a `<>c__DisplayClassX_Y` nested in the package

@@ -20,6 +20,18 @@ using Δsync = sync_package;
 
 partial class sync_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
+    builtin.initPackage(typeof(go.os.exec_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 public static void HammerSemaphore(ж<uint32> Ꮡs, nint loops, channel<bool> cdone) {
     for (nint i = 0; i < loops; i++) {
         sync_internal_test_package.Runtime_Semacquire(Ꮡs);

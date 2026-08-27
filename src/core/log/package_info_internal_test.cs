@@ -29,7 +29,7 @@ using static go.log_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/log_test.go", "log_test.cs", "ADtykoKCgoKClJSCgoKCgpSClKaCgILIgoKCuIKCgoKCgILIgoKCpoKCgoKCgrKCgtb2goKCgoKUgoKClIKClIKCgqaCgoKClIKogoKCgoCCyIKCgpSCgpSCgriClIKU9oKCgoKCgoCCpICCyIKCgpC2griikoKCgoKCgoKCuKKCgoKCgoK4ooKCgoKCggAIEILmgoKCgoKygpTW1qKCgoI=")]
+[assembly: go.GoPositionMap("log/log_test.go", "log_test.cs", "AHdykoKCgoKClJSCgoKCgpSClKaCgILIgoKCuIKCgoKCgILIgoKCpoKCgoKCgrKCgtb2goKCgoKUgoKClIKClIKCgqaCgoKClIKogoKCgoCCyIKCgpSCgpSCgriClIKU9oKCgoKCgoCCpICCyIKCgpC2griikoKCgoKCgoKCuKKCgoKCgoK4ooKCgoKCggAIEILmgoKCgoKygpTW1qKCgoI=")]
 // </GoSourcePositionMaps>
 
 namespace go;

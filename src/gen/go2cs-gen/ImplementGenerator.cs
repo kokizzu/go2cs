@@ -1238,17 +1238,46 @@ public class ImplementGenerator : ISourceGenerator
         ITypeParameterSymbol selfParameter = interfaceDef.TypeParameters[0];
         StringBuilder methods = new();
 
-        foreach (IMethodSymbol method in interfaceDef.GetMembers().OfType<IMethodSymbol>().Where(member => member.MethodKind == MethodKind.Ordinary && !member.IsStatic))
+        // A Go constraint interface may EMBED other interfaces, and Go embedding emits as C#
+        // interface inheritance (`interface Constrained<T> : Middle`, `interface Middle : Base`).
+        // The proxy must forward EVERY member of its method set, not only the ones the constraint
+        // declares directly: a member reached through an embed is still part of the interface the
+        // proxy claims to implement, and omitting it leaves the proxy not implementing its own
+        // interface (CS0535, one per inherited member). net/http's whole test suite sat behind
+        // this — `type TBRun[T any] interface { testing.TB; Run(string, func(T)) bool }` gave
+        // proxies for *testing.T and *testing.B that each forwarded only Run and were missing all
+        // 18 members of the embedded testing.TB (36 diagnostics).
+        //
+        // C# explicit interface implementation must name the interface that DECLARES the member —
+        // `void Derived.M()` is CS0539 when M comes from Base — so each member is qualified by its
+        // own declaring interface, closed over the proxy wherever it names the self parameter
+        // (`Bar<T>` embedded in `Foo<T>` forwards as `Bar<proxy>.M`).
+        //
+        // The constraint's OWN members are emitted FIRST, in declaration order, exactly as before,
+        // so every proxy that embeds nothing is byte-identical to what this always produced. The
+        // embedded interfaces follow, ordered by their rendered reference so the emission is
+        // deterministic regardless of the order AllInterfaces happens to report (it is transitive,
+        // so a two-level embed needs no recursion of our own).
+        List<(string DeclaringRef, INamedTypeSymbol Interface)> methodSets = [(interfaceRef, interfaceDef)];
+
+        methodSets.AddRange(interfaceDef.AllInterfaces
+            .Select(embedded => (DeclaringRef: RenderWithProxy(embedded, selfParameter, proxyName), Interface: embedded))
+            .OrderBy(entry => entry.DeclaringRef, StringComparer.Ordinal));
+
+        foreach ((string declaringRef, INamedTypeSymbol methodSet) in methodSets)
         {
-            string methodName = EscapeCsKeyword(method.Name);
-            string returnType = RenderWithProxy(method.ReturnType, selfParameter, proxyName);
-            string parameters = string.Join(", ", method.Parameters.Select((parameter, index) => $"{RenderWithProxy(parameter.Type, selfParameter, proxyName)} {SafeParameterName(parameter.Name, index)}"));
-            string arguments = string.Join(", ", method.Parameters.Select((parameter, index) => SafeParameterName(parameter.Name, index)));
+            foreach (IMethodSymbol method in methodSet.GetMembers().OfType<IMethodSymbol>().Where(member => member.MethodKind == MethodKind.Ordinary && !member.IsStatic))
+            {
+                string methodName = EscapeCsKeyword(method.Name);
+                string returnType = RenderWithProxy(method.ReturnType, selfParameter, proxyName);
+                string parameters = string.Join(", ", method.Parameters.Select((parameter, index) => $"{RenderWithProxy(parameter.Type, selfParameter, proxyName)} {SafeParameterName(parameter.Name, index)}"));
+                string arguments = string.Join(", ", method.Parameters.Select((parameter, index) => SafeParameterName(parameter.Name, index)));
 
-            if (methods.Length > 0)
-                methods.Append("\r\n\r\n        ");
+                if (methods.Length > 0)
+                    methods.Append("\r\n\r\n        ");
 
-            methods.Append($"{returnType} {interfaceRef}.{methodName}({parameters}) => m_box.{methodName}({arguments});");
+                methods.Append($"{returnType} {declaringRef}.{methodName}({parameters}) => m_box.{methodName}({arguments});");
+            }
         }
 
         // Each forwarder calls the boxed element's box extension methods (`m_box.Bytes()`), declared

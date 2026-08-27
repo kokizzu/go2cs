@@ -445,11 +445,27 @@ public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         if (value is null || value.IsNull)
             return default;
 
-        // A pointer to a Go fixed array (`unsafe.Pointer(&arr)`): the native address must
-        // reference the array's DATA (element 0), pinned so a syscall can fill it in. Slices
-        // keep header semantics, so they fall through to the value-slot path.
+        // A pointer to a Go fixed array (`unsafe.Pointer(&arr)`): the native address must reference the
+        // array's DATA (element 0), pinned so a syscall can fill it in and the managed reads afterward
+        // observe the result — not the transient address of the `array<T>` struct wrapper. Slices keep
+        // header semantics (`&s` is the slice header in Go), so they fall through to the value-slot path.
+        //
+        // REGISTERED like every other pinned conversion (the os/exec heap-corruption arc,
+        // 2026-08-26): this path returned the data address WITHOUT the RegisterPinned record the
+        // ratified provenance design requires of the pin moment — so the reverse conversion read
+        // these addresses as "genuinely native", and the keystone tether (which re-roots a
+        // syscall argument's box by resolving its address) could not see fixed-array BUFFER
+        // arguments at all. The pin still lives on the box, the box still dies at JIT retirement,
+        // and a blocking read(2) into such a buffer then lands the kernel's write on recycled
+        // heap — HeapVerify caught exactly that shape (a range-smashed victim under pipe-buffer
+        // load) once the other corridors were closed. Recording the address is what makes the
+        // tether's Resolve, and the provenance record itself, honest for case 1.
         if (value.Value is IArray arr && arr is not ISlice)
-            return (uintptr)value.pinnedArrayData(arr);
+        {
+            uintptr dataAddr = (uintptr)value.pinnedArrayData(arr);
+            ManagedPointerTokens.RegisterPinned((nuint)dataAddr.Value, value);
+            return dataAddr;
+        }
 
         // Hold the storage still BEFORE reading its address: `fixed` pins only for its own
         // statement, and the address outlives that statement by definition.
@@ -477,8 +493,15 @@ public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         if (value is null || value.IsNull)
             return null;
 
+        // A pointer to a Go fixed array resolves to the pinned address of the array data — see the
+        // uintptr operator above for the full rationale, including why the address is REGISTERED
+        // (the provenance record and the keystone tether must see buffer addresses too).
         if (value.Value is IArray arr && arr is not ISlice)
-            return value.pinnedArrayData(arr);
+        {
+            void* dataAddr = value.pinnedArrayData(arr);
+            ManagedPointerTokens.RegisterPinned((nuint)dataAddr, value);
+            return dataAddr;
+        }
 
         value.EnsureStableAddress();
 
