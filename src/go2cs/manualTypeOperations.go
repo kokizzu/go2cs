@@ -155,6 +155,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"sigenable":  goosLinux,
 		"sigdisable": goosLinux,
 		"sigignore":  goosLinux,
+		// runtime.StartTrace (trace.go, linux flavor): the execution tracer is a serialization of
+		// the scheduler the managed host does not have — the converted body's first step is
+		// semacquire → getg, an unimplemented g-model intrinsic, so every trace.Start THREW as an
+		// infrastructure error. Go's StartTrace returns an error by signature, and a capability the
+		// host cannot provide is honestly an ERROR, not a crash (the AllThreadsSyscall→ENOTSUP
+		// pattern): the hand-own (linux/trace_impl.cs) returns a named tracing-not-supported error,
+		// so runtime/trace.Start propagates it and a test asserting trace output fails cleanly with
+		// a disclosable signature (os/signal's TestSignalTrace is the measured consumer). Scoped
+		// linux because that is the flavor the Phase-4 Linux measurements compile; darwin's copy
+		// stays auto until its own arc.
+		"StartTrace": goosLinux,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and
