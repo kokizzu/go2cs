@@ -17,28 +17,46 @@ using go;
 // signal.Notify/Ignore threw (rt_sigaction) or threw on a background goroutine (rt_sigprocmask). That
 // is the os/exec-family wall: TestWaitInterrupt/*, TestSIGQUIT, TestSIGCHLD.
 //
-// THE BRIDGE. .NET exposes exactly the async-notify primitive os/signal needs: PosixSignalRegistration
-// delivers SIGINT/SIGQUIT/SIGTERM/SIGCHLD/SIGHUP/SIGCONT/SIGWINCH to a managed handler, and a handler
-// that sets ctx.Cancel suppresses the default disposition (probe-confirmed, 2026-08-27). So the install
-// layer registers, and the handler feeds the signal into the EXISTING sigqueue via sigsend — the same
-// path the native sighandler used. sigsend re-checks sig.wanted itself, which is why ONE handler serves
-// both Notify and Ignore: after Notify (wanted=1) sigsend delivers to the os/signal channel; after
-// Ignore (wanted=0) sigsend drops it and ctx.Cancel has already suppressed the default. The whole
+// THE BRIDGE, v2 — PERSISTENT registrations carrying Go's sighandler DECISION. Go does not install
+// handlers per-Notify: initsig installs the runtime's handler for every _SigNotify signal at PROCESS
+// START, and Notify/Stop toggle FORWARDING (sig.wanted), never installation. The observable
+// consequences are what os/signal's own suite asserts: an unwanted SIGUSR1/SIGWINCH is SWALLOWED by
+// the runtime handler (TestStop sends both before Notify and after Stop, and the process must
+// survive), while an unwanted SIGHUP/SIGINT/SIGTERM/SIGQUIT still DIES (_SigKill — the
+// default-death-after-Reset shape TestNohup's uncaught family pins). v1 installed on Notify and
+// disposed on Stop, which got the deaths right and the swallows fatally wrong — TestStop's
+// pre-Notify SIGUSR1 hit the kernel default and took the whole test host down (exit 138), leaving
+// every later test unmeasured. v2 therefore registers ONCE, at runtime-assembly load, for the whole
+// mapped set, and the handler makes Go's decision per delivery:
+//
+//     sigsend(s) delivered   -> ctx.Cancel = true   (wanted: os/signal channel has it)
+//     signal_ignored(s)      -> ctx.Cancel = true   (user- or inherited-ignored: swallow)
+//     _SigKill member        -> ctx.Cancel = false  (die by the signal, like Go's dieFromSignal)
+//     otherwise              -> ctx.Cancel = true   (_SigNotify-only: swallow, like Go)
+//
+// sigsend re-checks sig.wanted itself, which is why the ONE handler serves Notify, Ignore and Stop
+// alike: the auto sigqueue bookkeeping above this file remains the single source of truth. The whole
 // delivery machinery below sigsend — signal_recv, the note wakeup, the channel — stays auto.
+// sigdisable therefore does NOTHING kernel-side (Go never uninstalls either); sigenable/sigignore
+// merely ensure the persistent registration exists (a no-op after module init).
 //
 // ensureSigM and its enableSigChan/maskUpdatedChan handshake are ELIDED, not reimplemented: they were
 // the protocol of the rt_sigprocmask goroutine, and PosixSignalRegistration owns its own delivery
 // thread and mask. Those members remain in the auto file, now unreferenced.
 //
-// THE RESIDUAL. .NET's PosixSignal enum is a fixed set. Signals with no member — SIGUSR1/2, SIGPIPE,
-// the real-time signals — cannot be registered and stay the honest rt_sigaction refusal (MapPosixSignal
-// returns null; the install is a no-op and any test that needs them stays disclosed). SIGKILL/SIGSTOP
-// are uncatchable in both runtimes by design. The wall bisects exactly at the enum boundary.
+// THE RESIDUAL. v1 called this the PosixSignal enum boundary; that was wrong. The enum members carry
+// NEGATIVE values, and .NET's Unix implementation deliberately passes a POSITIVE value through as the
+// raw platform signal number — probe-measured 2026-08-27: Create((PosixSignal)10) registers, SIGUSR1
+// delivers, ctx.Cancel suppresses the default death. The honest residual is the set the raw cast
+// cannot serve: the synchronous faults the CLR owns (SIGILL/SIGABRT/SIGBUS/SIGFPE/SIGSEGV — Go's
+// _SigPanic/_SigThrow world), SIGPIPE (registers but does not deliver — .NET handles EPIPE
+// internally; probe-measured timeout), SIGPROF (sigenable's own guard), the real-time range, and
+// SIGKILL/SIGSTOP (uncatchable everywhere). Tests needing those stay the rt_sigaction disclosure.
 //
 // PLACEMENT. The three names are registered goosLinux in manualConversionFuncs (manualTypeOperations.go),
 // so a Linux -stdlib emission drops the auto bodies to placeholders and this file supplies them; the
 // other ~1,440 lines of signal_unix.cs keep reconverting. Darwin's copy stays auto until its own arc.
-// Design: docs/phase4/DESIGN-signal-posix-bridge.md.
+// Design: docs/phase4/DESIGN-signal-posix-bridge.md (v2 amendment dated 2026-08-27).
 [module: GoManualConversion]
 
 namespace go;
@@ -49,9 +67,9 @@ using @internal.runtime;
 
 partial class runtime_package
 {
-    // The live registrations, keyed by system signal number. Guarded by s_sigPosixLock because
-    // os/signal.enableSignal/disableSignal already serialize on the handlers lock, but a converted
-    // caller reaching signal_enable off that path must not race the dictionary.
+    // The persistent registrations, keyed by system signal number. Created at module init for the
+    // whole mapped set and NEVER disposed — Go never uninstalls its runtime handler either. The lock
+    // guards the once-only install against a converted caller reaching signal_enable concurrently.
     private static readonly object s_sigPosixLock = new object();
     private static readonly Dictionary<int, PosixSignalRegistration> s_sigPosixRegs = new Dictionary<int, PosixSignalRegistration>();
 
@@ -61,22 +79,19 @@ partial class runtime_package
     [DllImport("libc", EntryPoint = "signal", SetLastError = true)]
     private static extern IntPtr sys_signal(int signum, IntPtr handler);
 
+    // The libc sigaction READ side (act = NULL), used only to observe dispositions this process
+    // INHERITED — a pure read conflicts with nothing the CLR owns, unlike the install side the
+    // bridge exists to route. glibc's struct sigaction leads with the sa_handler union on linux-x64;
+    // 160 bytes generously covers the 152-byte struct. SIG_IGN is (void*)1.
+    [DllImport("libc", EntryPoint = "sigaction", SetLastError = false)]
+    private static extern int sys_sigaction_read(int signum, IntPtr act, IntPtr oldact);
+
+    private static readonly IntPtr SIG_IGN_HANDLER = (IntPtr)1;
+
     // MapPosixSignal maps a Linux/amd64 signal number to the .NET PosixSignal value that carries it,
     // or null for the residual. Numbers are the stable Linux ABI values mirrored by
-    // defs_linux_amd64.cs (_SIGHUP=1, _SIGINT=2, _SIGQUIT=3, _SIGTERM=15, _SIGCHLD=17, _SIGCONT=18,
-    // _SIGWINCH=28).
-    //
-    // The enum members carry NEGATIVE values, and .NET's Unix implementation deliberately passes a
-    // POSITIVE value through as the raw platform signal number — probe-measured 2026-08-27:
-    // Create((PosixSignal)10) registers, SIGUSR1 delivers to the handler, and ctx.Cancel suppresses
-    // the default death. So the wall is NOT the enum: SIGUSR1/SIGUSR2 ride the raw cast (before
-    // this, TestStop/user_defined_signal_1's self-kill took the whole test host down with it, exit
-    // 138, leaving every later test unmeasured). The residual is now the set the raw cast cannot
-    // honestly serve: the synchronous faults the CLR owns (SIGILL/SIGABRT/SIGBUS/SIGFPE/SIGSEGV —
-    // registering those would sit under the CLR's own fault handling), SIGPIPE (registers but does
-    // not deliver — .NET handles EPIPE internally and the same probe measured the timeout),
-    // SIGPROF (sigenable's own guard), the real-time range, and SIGKILL/SIGSTOP (uncatchable
-    // everywhere).
+    // defs_linux_amd64.cs. Positive values ride .NET's raw-number pass-through (see THE RESIDUAL in
+    // the file header); the named members are kept for the signals that have them.
     private static PosixSignal? MapPosixSignal(uint32 sig)
     {
         switch ((int)sig)
@@ -94,23 +109,69 @@ partial class runtime_package
         }
     }
 
-    // The libc sigaction READ side (act = NULL), used only to observe dispositions this process
-    // INHERITED — a pure read conflicts with nothing the CLR owns, unlike the install side the
-    // bridge exists to avoid. glibc's struct sigaction leads with the sa_handler union on
-    // linux-x64; 160 bytes generously covers the 152-byte struct. SIG_IGN is (void*)1.
-    [DllImport("libc", EntryPoint = "sigaction", SetLastError = false)]
-    private static extern int sys_sigaction_read(int signum, IntPtr act, IntPtr oldact);
+    // Whether an UNWANTED, un-ignored delivery of sig kills the process — Go's _SigKill (SIGQUIT
+    // carries _SigThrow, but without a Go traceback to print the observable is the same death by
+    // signal). Linux sigtab rows for the mapped set: HUP/INT/QUIT/TERM die; USR1/USR2/CHLD/CONT/
+    // WINCH are _SigNotify-only and are swallowed.
+    private static bool sigDiesByDefault(uint32 sig)
+    {
+        switch ((int)sig)
+        {
+            case 1:
+            case 2:
+            case 3:
+            case 15:
+                return true;
+            default:
+                return false;
+        }
+    }
 
-    private static readonly IntPtr SIG_IGN_HANDLER = (IntPtr)1;
+    // installPosixSignal (called under s_sigPosixLock) creates the PERSISTENT registration for sig
+    // if it does not exist yet. The handler makes Go's sighandler decision per delivery — see the
+    // file header. Go's signal.Notify OVERRIDES an inherited SIG_IGN (setsig installs
+    // unconditionally); .NET's PosixSignalRegistration RESPECTS it and won't install a handler for a
+    // signal it saw ignored, so the disposition is cleared to SIG_DFL first — AFTER module init has
+    // seeded sig.ignored from the inherited state, so nothing observable is lost: an
+    // inherited-ignored SIGHUP keeps surviving (the handler swallows via signal_ignored) exactly as
+    // under Go, whose initsig records the same fact in the same mask.
+    private static void installPosixSignal(uint32 sig, PosixSignal ps)
+    {
+        int key = (int)sig;
+        if (s_sigPosixRegs.ContainsKey(key))
+        {
+            return;
+        }
+        uint32 s = sig;
+        sys_signal((int)sig, SIG_DFL);
+        s_sigPosixRegs[key] = PosixSignalRegistration.Create(ps, ctx =>
+        {
+            if (sigsend(s))
+            {
+                ctx.Cancel = true;      // wanted: delivered to the os/signal queue
+            }
+            else if (signal_ignored(s))
+            {
+                ctx.Cancel = true;      // user- or inherited-ignored: swallow
+            }
+            else if (sigDiesByDefault(s))
+            {
+                ctx.Cancel = false;     // unwanted _SigKill: die by the signal, like Go
+            }
+            else
+            {
+                ctx.Cancel = true;      // unwanted _SigNotify-only: swallow, like Go
+            }
+        });
+    }
 
     // Seeds runtime.sig.ignored with the dispositions this process INHERITED, the way Go's initsig
-    // does via getsig(i) == _SIG_IGN -> sigInitIgnored(i). Runs once when the runtime assembly
-    // loads — before any test or user code can ask os/signal.Ignored, and before the bridge's own
-    // installs (which deliberately clear an inherited SIG_IGN) could repaint the picture. This is
-    // what makes a child under nohup answer Ignored(SIGHUP) == true (TestDetectNohup's second
-    // half, TestNohup's whole nohup family).
+    // does (getsig(i) == _SIG_IGN -> sigInitIgnored(i)), then installs the persistent registrations
+    // for the whole mapped set — Go's initsig moment, at runtime-assembly load: before any user code
+    // can ask os/signal.Ignored, send a signal, or Notify. Seeding MUST precede installing, because
+    // installing clears an inherited SIG_IGN disposition to let .NET take the signal.
     [System.Runtime.CompilerServices.ModuleInitializer]
-    internal static void InitInheritedIgnoredSignals()
+    internal static void InitPosixSignalBridge()
     {
         if (!OperatingSystem.IsLinux())
             return;
@@ -141,36 +202,25 @@ partial class runtime_package
         {
             Marshal.FreeHGlobal(old);
         }
-    }
 
-    // installPosixSignal (called under s_sigPosixLock) creates or replaces the registration for sig.
-    // The handler suppresses the default disposition (a handler is installed) and feeds the existing
-    // sigqueue; sigsend re-checks sig.wanted, so this one handler is correct for Notify and Ignore.
-    private static void installPosixSignal(uint32 sig, PosixSignal ps)
-    {
-        int key = (int)sig;
-        if (s_sigPosixRegs.TryGetValue(key, out PosixSignalRegistration existing))
+        lock (s_sigPosixLock)
         {
-            existing.Dispose();
-            s_sigPosixRegs.Remove(key);
+            foreach (uint32 sig in new uint32[] { 1, 2, 3, 10, 12, 15, 17, 18, 28 })
+            {
+                PosixSignal? ps = MapPosixSignal(sig);
+                if (ps is not null)
+                {
+                    installPosixSignal(sig, ps.Value);
+                }
+            }
         }
-        uint32 s = sig;
-        // Go's signal.Notify OVERRIDES an inherited SIG_IGN (setsig installs unconditionally); .NET's
-        // PosixSignalRegistration RESPECTS it and won't install a handler for a signal it saw ignored.
-        // Clear the ignore to SIG_DFL so .NET installs its handler — the faithful analog of Go's
-        // override, applied only to a signal actually being enabled/ignored through os/signal, and
-        // done before Create because .NET decides installation from the disposition it sees then.
-        sys_signal((int)sig, SIG_DFL);
-        s_sigPosixRegs[key] = PosixSignalRegistration.Create(ps, ctx =>
-        {
-            ctx.Cancel = true;
-            sigsend(s);
-        });
     }
 
     // sigenable enables the Go signal handler to catch the signal sig.
     // It is only called while holding the os/signal.handlers lock,
-    // via os/signal.enableSignal and signal_enable.
+    // via os/signal.enableSignal and signal_enable. The persistent registration already exists for
+    // the mapped set; this merely guarantees it (idempotent) and keeps handlingSig's book. The
+    // wanted-bit the caller just set is what flips the handler's decision to delivery.
     internal static void sigenable(uint32 sig)
     {
         if (sig >= (uint32)len(sigtable))
@@ -188,7 +238,7 @@ partial class runtime_package
             PosixSignal? ps = MapPosixSignal(sig);
             if (ps is null)
             {
-                return; // residual: no PosixSignal member — stays the rt_sigaction refusal
+                return; // residual: no honest .NET carrier — stays the rt_sigaction refusal
             }
             lock (s_sigPosixLock)
             {
@@ -200,9 +250,11 @@ partial class runtime_package
 
     // sigdisable disables the Go signal handler for the signal sig.
     // It is only called while holding the os/signal.handlers lock,
-    // via os/signal.disableSignal and signal_disable. Stop/Reset returns the signal to DEFAULT
-    // handling, so the registration is DISPOSED, not merely detached — disposing the last
-    // registration restores the previous (default) disposition, so default-death-after-Reset holds.
+    // via os/signal.disableSignal and signal_disable. Kernel-side this is a deliberate NO-OP: Go
+    // never uninstalls its runtime handler either — Stop/Reset semantics live entirely in the
+    // wanted-bit the caller just cleared, which routes the next delivery to the handler's
+    // default decision (die for the _SigKill set, swallow otherwise), exactly Go's
+    // default-handling-after-Reset observable.
     internal static void sigdisable(uint32 sig)
     {
         if (sig >= (uint32)len(sigtable))
@@ -218,12 +270,6 @@ partial class runtime_package
         {
             lock (s_sigPosixLock)
             {
-                int key = (int)sig;
-                if (s_sigPosixRegs.TryGetValue(key, out PosixSignalRegistration reg))
-                {
-                    reg.Dispose();
-                    s_sigPosixRegs.Remove(key);
-                }
                 atomic.Store(ᏑhandlingSig.at<uint32>((nint)(sig)), 0);
             }
         }
@@ -231,9 +277,10 @@ partial class runtime_package
 
     // sigignore ignores the signal sig.
     // It is only called while holding the os/signal.handlers lock,
-    // via os/signal.ignoreSignal and signal_ignore. The registration is kept (Cancel suppresses the
-    // default); delivery is gated by sig.wanted, which signal_ignore has already cleared, so sigsend
-    // drops the signal — which IS ignore's observable behavior.
+    // via os/signal.ignoreSignal and signal_ignore. The caller has already set sig.ignored and
+    // cleared sig.wanted, which is the whole observable: the persistent handler swallows the next
+    // delivery via signal_ignored. Guaranteeing the registration here (idempotent) is what makes
+    // Ignore suppress a signal whose default would kill.
     internal static void sigignore(uint32 sig)
     {
         if (sig >= (uint32)len(sigtable))

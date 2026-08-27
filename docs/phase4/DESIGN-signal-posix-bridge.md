@@ -90,3 +90,32 @@ SIGTERM 15, SIGCHLD 17, SIGCONT 18, SIGWINCH 28.
   reproduces the placeholders on a linux emission, the wait4 ritual — not only that Windows CNR is
   inert); the os/exec signal-family re-measure (retire the interim named-refusals as they pass); the
   os/signal suite measure (unbanked — may mint a new row on both platforms); GPG.
+
+## v2 amendment (2026-08-27, the os/signal measure) — PERSISTENT registrations carrying Go's sighandler decision
+
+The v1 install-on-Notify/dispose-on-Stop model measured wrong against os/signal's own suite, and in
+a way v1's design could not express: **Go installs its runtime handler for every `_SigNotify` signal
+at process start (initsig); Notify/Stop toggle FORWARDING (`sig.wanted`), never installation.** The
+observable v1 missed: an **unwanted** SIGUSR1/SIGWINCH must be *swallowed* (TestStop sends both
+before Notify and after Stop and the process must survive — under v1 the pre-Notify SIGUSR1 hit the
+kernel default and killed the whole test host, exit 138, leaving every later test unmeasured), while
+an unwanted SIGHUP/SIGINT/SIGQUIT/SIGTERM still dies (`_SigKill` — the default-death shape v1 got
+right via disposal). v2 registers ONCE per mapped signal at runtime-assembly load and the handler
+makes Go's decision per delivery: `sigsend` delivered → suppress; `signal_ignored` → suppress;
+`_SigKill` member → let the default kill; otherwise suppress. `sigdisable` becomes kernel-side
+no-op (Go never uninstalls either); Stop/Reset semantics live in the wanted-bit.
+
+Three companion findings, all probe- or measure-backed:
+- **The "fixed enum" residual framing was wrong.** .NET's Unix implementation passes a POSITIVE
+  `PosixSignal` value through as the raw platform number: `Create((PosixSignal)10)` registers,
+  SIGUSR1 delivers, `ctx.Cancel` suppresses the default death. SIGUSR1/SIGUSR2 join the mapped set.
+  The honest residual: the CLR-owned synchronous faults, SIGPIPE (registers but does not deliver —
+  probed), SIGPROF, the real-time range, SIGKILL/SIGSTOP.
+- **Inherited dispositions seed `sig.ignored` at module init** via read-only
+  `sigaction(sig, NULL, &old)` — Go's `initsig → sigInitIgnored` analogue; a pure read conflicts
+  with nothing the CLR owns. This is what makes a child under nohup answer `Ignored(SIGHUP) == true`
+  (TestDetectNohup's second half) and *survive* an uncaught SIGHUP (TestNohup's nohup family) — the
+  seed and the handler's ignored-check compose.
+- **The test HOST owed `m.Run`'s `flag.Parse()`** (TestFlagBridge.Parse, testing package): a custom
+  test flag registered but its value never landed for a TestMain-less package, so TestDetectNohup's
+  child re-exec recursed unboundedly. Host-side fix, measured first.
