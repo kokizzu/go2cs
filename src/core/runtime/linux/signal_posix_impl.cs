@@ -55,6 +55,12 @@ partial class runtime_package
     private static readonly object s_sigPosixLock = new object();
     private static readonly Dictionary<int, PosixSignalRegistration> s_sigPosixRegs = new Dictionary<int, PosixSignalRegistration>();
 
+    // libc signal(2), used only to clear an inherited SIG_IGN so .NET will install its handler.
+    // SIG_DFL is the null handler on Linux.
+    private static readonly IntPtr SIG_DFL = IntPtr.Zero;
+    [DllImport("libc", EntryPoint = "signal", SetLastError = true)]
+    private static extern IntPtr sys_signal(int signum, IntPtr handler);
+
     // MapPosixSignal maps a Linux/amd64 signal number to the .NET PosixSignal member that carries it,
     // or null when no member exists (the rt_sigaction residual). Numbers are the stable Linux ABI
     // values mirrored by defs_linux_amd64.cs (_SIGHUP=1, _SIGINT=2, _SIGQUIT=3, _SIGTERM=15,
@@ -86,6 +92,12 @@ partial class runtime_package
             s_sigPosixRegs.Remove(key);
         }
         uint32 s = sig;
+        // Go's signal.Notify OVERRIDES an inherited SIG_IGN (setsig installs unconditionally); .NET's
+        // PosixSignalRegistration RESPECTS it and won't install a handler for a signal it saw ignored.
+        // Clear the ignore to SIG_DFL so .NET installs its handler — the faithful analog of Go's
+        // override, applied only to a signal actually being enabled/ignored through os/signal, and
+        // done before Create because .NET decides installation from the disposition it sees then.
+        sys_signal((int)sig, SIG_DFL);
         s_sigPosixRegs[key] = PosixSignalRegistration.Create(ps, ctx =>
         {
             ctx.Cancel = true;
