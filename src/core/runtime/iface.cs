@@ -68,7 +68,7 @@ internal static ж<itab> getitab(ж<interfacetype> Ꮡinter, ж<_type> Ꮡtyp, b
     // This is by far the most common case, so do it without locks.
     // Use atomic to ensure we see any previous writes done by the thread
     // that updates the itabTable field (with atomic.Storep in itabAdd).
-    var t = (ж<itabTableType>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (ᏑitabTable).Value)));
+    var t = (ж<itabTableType>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(ᏑitabTable)));
     {
         m = t.find(Ꮡinter, Ꮡtyp); if (m != nil) {
             goto finish;
@@ -126,7 +126,7 @@ internal static ж<itab> find(this ж<itabTableType> Ꮡt, ж<interfacetype> Ꮡ
         // Use atomic read here so if we see m != nil, we also see
         // the initializations of the fields of m.
         // m := *p
-        var m = (ж<itab>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Δp).Value)));
+        var m = (ж<itab>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Δp)));
         if (m == nil) {
             return default!;
         }
@@ -171,7 +171,7 @@ internal static void itabAdd(ж<itab> Ꮡm) {
             @throw(mismatchedCountDuringˢ);
         }
         // Publish new hash table. Use an atomic write: see comment in getitab.
-        atomicstorep(@unsafe.Pointer.FromRef(ref (ᏑitabTable).Value), new @unsafe.Pointer(t2));
+        atomicstorep(@unsafe.Pointer.FromBox(ᏑitabTable), new @unsafe.Pointer(t2));
         // Adopt the new table as our own.
         t = itabTable;
     }
@@ -204,7 +204,7 @@ internal static void add(this ж<itabTableType> Ꮡt, ж<itab> Ꮡm) {
             // sees the correctly initialized fields of m.
             // NoWB is ok because m is not in heap memory.
             // *p = m
-            atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (Δp).Value), new @unsafe.Pointer(Ꮡm));
+            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Δp), new @unsafe.Pointer(Ꮡm));
             t.count++;
             return;
         }
@@ -233,7 +233,7 @@ internal static unsafe @string itabInit(ж<itab> Ꮡm, bool firstTime) {
     nint nt = (nint)(~x).Mcount;
     var xmhdr = new slice<abi.Method>(new ReadOnlySpan<abi.Method>((abi.Method*)(uintptr)(add(new @unsafe.Pointer(x), (uintptr)(~x).Moff)), (int)(nt)));
     nint j = 0;
-    var methods = new slice<@unsafe.Pointer>(new ReadOnlySpan<@unsafe.Pointer>((@unsafe.Pointer*)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡm.at(itab.ᏑFun, 0)).Value)), (int)(ni)));
+    var methods = new slice<@unsafe.Pointer>(new ReadOnlySpan<@unsafe.Pointer>((@unsafe.Pointer*)(uintptr)(@unsafe.Pointer.FromBox(Ꮡm.at(itab.ᏑFun, 0))), (int)(ni)));
     @unsafe.Pointer fun0 = default!;
 imethods:
     for (nint k = 0; k < ni; k++) {
@@ -523,7 +523,7 @@ internal static ж<itab> typeAssert(ж<abi.TypeAssert> Ꮡs, ж<_type> Ꮡt) {
         return tab;
     }
     // Load the current cache.
-    var oldC = (ж<abi.TypeAssertCache>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡs.of(abi.TypeAssert.ᏑCache)).Value)));
+    var oldC = (ж<abi.TypeAssertCache>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡs.of(abi.TypeAssert.ᏑCache))));
     if ((uint32)(cheaprand() & (uint32)(~oldC).Mask) != 0) {
         // As cache gets larger, choose to update it less often
         // so we can amortize the cost of building a new cache.
@@ -618,7 +618,7 @@ internal static (nint, ж<itab>) interfaceSwitch(ж<abi.InterfaceSwitch> Ꮡs, �
         return (case_, tab);
     }
     // Load the current cache.
-    var oldC = (ж<abi.InterfaceSwitchCache>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡs.of(abi.InterfaceSwitch.ᏑCache)).Value)));
+    var oldC = (ж<abi.InterfaceSwitchCache>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡs.of(abi.InterfaceSwitch.ᏑCache))));
     if ((uint32)(cheaprand() & (uint32)(~oldC).Mask) != 0) {
         // As cache gets larger, choose to update it less often
         // so we can amortize the cost of building a new cache

@@ -40,7 +40,7 @@ internal static void runtime_setProfLabel(@unsafe.Pointer labels) {
     // a dependency on the previous racereleasemerge, which
     // ultimately carries forward to the acquire in profBuf.read.
     if (raceenabled) {
-        racereleasemerge(@unsafe.Pointer.FromRef(ref (ᏑlabelSync).Value));
+        racereleasemerge(@unsafe.Pointer.FromBox(ᏑlabelSync));
     }
     getg().Value.labels = labels;
 }

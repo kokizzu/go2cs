@@ -487,7 +487,7 @@ internal static bool empty(ж<Δhchan> Ꮡc) {
 
     // c.dataqsiz is immutable.
     if (c.dataqsiz == 0) {
-        return (uintptr)atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡc.of(runtime_package.Δhchan.Ꮡsendq).of(waitq.Ꮡfirst)).Value)) == nil;
+        return (uintptr)atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡc.of(runtime_package.Δhchan.Ꮡsendq).of(waitq.Ꮡfirst))) == nil;
     }
     // c.timer is also immutable (it is set after make(chan) but before any channel operations).
     // All timer channels have dataqsiz > 0.
@@ -910,7 +910,7 @@ internal static @unsafe.Pointer raceaddr(this ж<Δhchan> Ꮡc) {
     // or dataqsiz, because the len() and cap() builtins read
     // those addresses, and we don't want them racing with
     // operations like close().
-    return @unsafe.Pointer.FromRef(ref (Ꮡc.of(runtime_package.Δhchan.Ꮡbuf)).Value);
+    return @unsafe.Pointer.FromBox(Ꮡc.of(runtime_package.Δhchan.Ꮡbuf));
 }
 
 internal static void racesync(ж<Δhchan> Ꮡc, ref sudog sg) {

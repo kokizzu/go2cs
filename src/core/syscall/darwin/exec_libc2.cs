@@ -278,11 +278,11 @@ internal static (nint pid, Errno err1) forkAndExecInChild(ж<byte> Ꮡargv0, sli
     // Time to exec.
     (_, _, err1) = rawSyscall(abi.FuncPCABI0(libc_execve_trampoline),
         (uintptr)Ꮡargv0,
-        (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(argv, 0)).Value),
-        (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(envv, 0)).Value));
+        (uintptr)@unsafe.Pointer.FromBox(Ꮡ(argv, 0)),
+        (uintptr)@unsafe.Pointer.FromBox(Ꮡ(envv, 0)));
 childerror:
     rawSyscall(abi.FuncPCABI0(libc_write_trampoline), // send error code on pipe
- (uintptr)pipe, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡerr1).Value), /* unsafe.Sizeof(err1) */ (uintptr)8);
+ (uintptr)pipe, (uintptr)@unsafe.Pointer.FromBox(Ꮡerr1), /* unsafe.Sizeof(err1) */ (uintptr)8);
     while (ᐧ) {
         rawSyscall(abi.FuncPCABI0(libc_exit_trampoline), 253, 0, 0);
     }

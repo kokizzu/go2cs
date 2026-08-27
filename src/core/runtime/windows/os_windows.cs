@@ -302,7 +302,7 @@ internal static void monitorSuspendResume() {
     ref var fn = ref heap<any>(out var Ꮡfn);
 
     fn = (uintptr context, uint32 changeType, uintptr setting) => {
-        for (var mp = (ж<m>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡallm).Value))); mp != nil; mp = mp.Value.alllink) {
+        for (var mp = (ж<m>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡallm))); mp != nil; mp = mp.Value.alllink) {
             if ((~mp).resumesema != 0) {
                 stdcall1(_SetEvent, (~mp).resumesema);
             }
@@ -316,13 +316,13 @@ internal static void monitorSuspendResume() {
     ref var handle = ref heap<uintptr>(out var Ꮡhandle);
     handle = (uintptr)0;
     stdcall3(powerRegisterSuspendResumeNotification, _DEVICE_NOTIFY_CALLBACK,
-        (uintptr)Ꮡparams, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡhandle).Value));
+        (uintptr)Ꮡparams, (uintptr)@unsafe.Pointer.FromBox(Ꮡhandle));
 }
 
 internal static int32 getproccount() {
     ref var mask = ref heap(new uintptr(), out var Ꮡmask);
     ref var sysmask = ref heap(new uintptr(), out var Ꮡsysmask);
-    var ret = stdcall3(_GetProcessAffinityMask, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡmask).Value), (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡsysmask).Value));
+    var ret = stdcall3(_GetProcessAffinityMask, currentProcess, (uintptr)@unsafe.Pointer.FromBox(Ꮡmask), (uintptr)@unsafe.Pointer.FromBox(Ꮡsysmask));
     if (ret != 0) {
         nint n = 0;
         nint maskbits = (nint)(/* unsafe.Sizeof(mask) */ (uintptr)8 * 8);
@@ -831,7 +831,7 @@ internal static readonly @string badG0Stackˢ = "bad g0 stack"u8;
 // Called on the new thread, cannot allocate Go memory.
 internal static void minit() {
     ref var thandle = ref heap(new uintptr(), out var Ꮡthandle);
-    if (stdcall7(_DuplicateHandle, currentProcess, currentThread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthandle).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
+    if (stdcall7(_DuplicateHandle, currentProcess, currentThread, currentProcess, (uintptr)@unsafe.Pointer.FromBox(Ꮡthandle), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
         print((@string)"runtime.minit: duplicatehandle failed; errno="u8, getlasterror(), (@string)"\n"u8);
         @throw(runtimeMinitˢ);
     }
@@ -854,7 +854,7 @@ internal static void minit() {
             @throw(createWaitableTimerExˢ);
         }
         uintptr GENERIC_ALL = 0x10000000;
-        var errno = stdcall3(_NtCreateWaitCompletionPacket, (uintptr)@unsafe.Pointer.FromRef(ref (mp.of(m.ᏑwaitIocpHandle)).Value), GENERIC_ALL, 0);
+        var errno = stdcall3(_NtCreateWaitCompletionPacket, (uintptr)@unsafe.Pointer.FromBox(mp.of(m.ᏑwaitIocpHandle)), GENERIC_ALL, 0);
         if ((~mp).waitIocpHandle == 0) {
             print((@string)"runtime: NtCreateWaitCompletionPacket failed; errno="u8, errno, (@string)"\n"u8);
             @throw("NtCreateWaitCompletionPacket failed"u8);
@@ -988,7 +988,7 @@ internal static uintptr stdcall1(stdFunction fn, uintptr a0ʗp) {
 
     var mp = getg().Value.m;
     mp.Value.libcall.n = 1;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡa0));
     return stdcall(fn);
 }
 
@@ -999,7 +999,7 @@ internal static uintptr stdcall2(stdFunction fn, uintptr a0ʗp, uintptr a1) {
 
     var mp = getg().Value.m;
     mp.Value.libcall.n = 2;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡa0));
     return stdcall(fn);
 }
 
@@ -1010,7 +1010,7 @@ internal static uintptr stdcall3(stdFunction fn, uintptr a0ʗp, uintptr a1, uint
 
     var mp = getg().Value.m;
     mp.Value.libcall.n = 3;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡa0));
     return stdcall(fn);
 }
 
@@ -1021,7 +1021,7 @@ internal static uintptr stdcall4(stdFunction fn, uintptr a0ʗp, uintptr a1, uint
 
     var mp = getg().Value.m;
     mp.Value.libcall.n = 4;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡa0));
     return stdcall(fn);
 }
 
@@ -1032,7 +1032,7 @@ internal static uintptr stdcall5(stdFunction fn, uintptr a0ʗp, uintptr a1, uint
 
     var mp = getg().Value.m;
     mp.Value.libcall.n = 5;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡa0));
     return stdcall(fn);
 }
 
@@ -1043,7 +1043,7 @@ internal static uintptr stdcall6(stdFunction fn, uintptr a0ʗp, uintptr a1, uint
 
     var mp = getg().Value.m;
     mp.Value.libcall.n = 6;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡa0));
     return stdcall(fn);
 }
 
@@ -1054,7 +1054,7 @@ internal static uintptr stdcall7(stdFunction fn, uintptr a0ʗp, uintptr a1, uint
 
     var mp = getg().Value.m;
     mp.Value.libcall.n = 7;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡa0));
     return stdcall(fn);
 }
 
@@ -1065,7 +1065,7 @@ internal static uintptr stdcall8(stdFunction fn, uintptr a0ʗp, uintptr a1, uint
 
     var mp = getg().Value.m;
     mp.Value.libcall.n = 8;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡa0));
     return stdcall(fn);
 }
 
@@ -1088,7 +1088,7 @@ internal static void usleep_no_g(uint32 us) {
     var timeout = (uintptr)us / 1000; // ms units
     ref var args = ref heap<array<uintptr>>(out var Ꮡargs);
     args = new uintptr[]{_INVALID_HANDLE_VALUE, timeout}.array();
-    stdcall_no_g(_WaitForSingleObject, len(args), (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡargs.at<uintptr>(0)).Value)));
+    stdcall_no_g(_WaitForSingleObject, len(args), (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡargs.at<uintptr>(0))));
 }
 
 //go:nosplit
@@ -1181,7 +1181,7 @@ internal static void profileLoop() {
     stdcall2(_SetThreadPriority, currentThread, _THREAD_PRIORITY_HIGHEST);
     while (ᐧ) {
         stdcall2(_WaitForSingleObject, profiletimer, _INFINITE);
-        var first = (ж<m>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡallm).Value)));
+        var first = (ж<m>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromBox(Ꮡallm)));
         for (var mp = first; mp != nil; mp = mp.Value.alllink) {
             if (mp == (~getg()).m) {
                 // Don't profile ourselves.
@@ -1197,7 +1197,7 @@ internal static void profileLoop() {
             }
             // Acquire our own handle to the thread.
             ref var thread = ref heap(new uintptr(), out var Ꮡthread);
-            if (stdcall7(_DuplicateHandle, currentProcess, (~mp).thread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthread).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
+            if (stdcall7(_DuplicateHandle, currentProcess, (~mp).thread, currentProcess, (uintptr)@unsafe.Pointer.FromBox(Ꮡthread), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
                 print((@string)"runtime: duplicatehandle failed; errno="u8, getlasterror(), (@string)"\n"u8);
                 @throw(duplicatehandleFailedˢ);
             }
@@ -1285,7 +1285,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
         return;
     }
     ref var thread = ref heap(new uintptr(), out var Ꮡthread);
-    if (stdcall7(_DuplicateHandle, currentProcess, mp.thread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthread).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
+    if (stdcall7(_DuplicateHandle, currentProcess, mp.thread, currentProcess, (uintptr)@unsafe.Pointer.FromBox(Ꮡthread), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
         print((@string)"runtime.preemptM: duplicatehandle failed; errno="u8, getlasterror(), (@string)"\n"u8);
         @throw(runtimePreemptMˢ);
     }

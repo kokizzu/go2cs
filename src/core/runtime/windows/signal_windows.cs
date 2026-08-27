@@ -25,7 +25,7 @@ internal static void preventErrorDialogs() {
     // as WER might be enabled later with setTraceback("wer")
     // and we still want the fault reporting UI to be disabled if this happens.
     ref var werflags = ref heap(new uintptr(), out var Ꮡwerflags);
-    stdcall2(_WerGetFlags, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡwerflags).Value));
+    stdcall2(_WerGetFlags, currentProcess, (uintptr)@unsafe.Pointer.FromBox(Ꮡwerflags));
     stdcall1(_WerSetFlags, (uintptr)(werflags | (uintptr)_WER_FAULT_REPORTING_NO_UI));
 }
 
@@ -314,11 +314,11 @@ internal static int32 sehhandler(ж<exceptionrecord> _Δp0, uint64 _Δp1, ж<con
     ref var @base = ref heap(new uintptr(), out var Ꮡbase);
     ref var sp = ref heap(new uintptr(), out var Ꮡsp);
     while (ᐧ) {
-        var entry = stdcall3(_RtlLookupFunctionEntry, ctxt.ip(), (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡbase).Value), 0);
+        var entry = stdcall3(_RtlLookupFunctionEntry, ctxt.ip(), (uintptr)@unsafe.Pointer.FromBox(Ꮡbase), 0);
         if (entry == 0) {
             break;
         }
-        stdcall8(_RtlVirtualUnwind, 0, @base, ctxt.ip(), entry, (uintptr)ctxt, 0, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡsp).Value), 0);
+        stdcall8(_RtlVirtualUnwind, 0, @base, ctxt.ip(), entry, (uintptr)ctxt, 0, (uintptr)@unsafe.Pointer.FromBox(Ꮡsp), 0);
         if (sp < (~gp).stack.lo || (~gp).stack.hi <= sp) {
             break;
         }

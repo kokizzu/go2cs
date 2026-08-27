@@ -438,7 +438,7 @@ internal static ж<workbuf> handoff(ж<workbuf> Ꮡb) {
     nint n = b.nobj / 2;
     b.nobj -= n;
     b1.Value.nobj = n;
-    memmove(@unsafe.Pointer.FromRef(ref (b1.at(workbuf.Ꮡobj, 0)).Value), @unsafe.Pointer.FromRef(ref (Ꮡb.at(workbuf.Ꮡobj, b.nobj)).Value), (uintptr)n * /* unsafe.Sizeof(b1.obj[0]) */ (uintptr)8);
+    memmove(@unsafe.Pointer.FromBox(b1.at(workbuf.Ꮡobj, 0)), @unsafe.Pointer.FromBox(Ꮡb.at(workbuf.Ꮡobj, b.nobj)), (uintptr)n * /* unsafe.Sizeof(b1.obj[0]) */ (uintptr)8);
     // Put b on full list - let first half of b get stolen.
     putfull(Ꮡb);
     return b1;

@@ -368,12 +368,12 @@ internal static void markrootSpans(ж<gcWork> Ꮡgcw, nint shard) {
                         // we'll never collect it).
                         scanobject(Δp, Ꮡgcw);
                     }
-                    scanblock((uintptr)@unsafe.Pointer.FromRef(ref (spf.of(specialfinalizer.Ꮡfn)).Value), // The special itself is a root.
+                    scanblock((uintptr)@unsafe.Pointer.FromBox(spf.of(specialfinalizer.Ꮡfn)), // The special itself is a root.
  goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, nil);
                 }
                 else if (exprᴛ1 == _KindSpecialWeakHandle) {
                     var spw = sp.Reinterpret<special, specialWeakHandle>();
-                    scanblock((uintptr)@unsafe.Pointer.FromRef(ref (spw.of(specialWeakHandle.Ꮡhandle)).Value), // The special itself is a root.
+                    scanblock((uintptr)@unsafe.Pointer.FromBox(spw.of(specialWeakHandle.Ꮡhandle)), // The special itself is a root.
  goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, nil);
                 }
 
@@ -845,7 +845,7 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
     // register that gets moved back and forth between the
     // register and sched.ctxt without a write barrier.
     if (gp.sched.ctxt != nil) {
-        scanblock((uintptr)@unsafe.Pointer.FromRef(ref (Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡctxt)).Value), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, Ꮡstate);
+        scanblock((uintptr)@unsafe.Pointer.FromBox(Ꮡgp.of(g.Ꮡsched).of(gobuf.Ꮡctxt)), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, Ꮡstate);
     }
     // Scan the stack. Accumulate a list of stack objects.
     ref var u = ref heap(new unwinder(), out var Ꮡu);
@@ -866,13 +866,13 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
         if ((~d).link != nil) {
             // The link field of a stack-allocated defer record might point
             // to a heap-allocated defer record. Keep that heap record live.
-            scanblock((uintptr)@unsafe.Pointer.FromRef(ref (d.of(_defer.Ꮡlink)).Value), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, Ꮡstate);
+            scanblock((uintptr)@unsafe.Pointer.FromBox(d.of(_defer.Ꮡlink)), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, Ꮡstate);
         }
         // Retain defers records themselves.
         // Defer records might not be reachable from the G through regular heap
         // tracing because the defer linked list might weave between the stack and the heap.
         if ((~d).heap) {
-            scanblock((uintptr)@unsafe.Pointer.FromRef(ref (Ꮡd).Value), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, Ꮡstate);
+            scanblock((uintptr)@unsafe.Pointer.FromBox(Ꮡd), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, Ꮡstate);
         }
         dᴛ1 = d;
     }

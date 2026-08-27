@@ -111,7 +111,7 @@ internal static uintptr syscall_cgocaller(@unsafe.Pointer fn, params ꓸꓸꓸui
     var args = argsʗp.slice();
 
     ref var @as = ref heap<argset>(out var Ꮡas);
-    @as = new argset(args: @unsafe.Pointer.FromRef(ref (Ꮡ(args, 0)).Value));
+    @as = new argset(args: @unsafe.Pointer.FromBox(Ꮡ(args, 0)));
     cgocall(fn, new @unsafe.Pointer(Ꮡas));
     return @as.retval;
 }
@@ -372,7 +372,7 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
             // handler always sees a valid slice, so set the
             // values in an order such that it always does.
             var Δp = gp.of(g.ᏑcgoCtxt).Reinterpret<slice<uintptr>, Δsliceᴛ>();
-            atomicstorep(@unsafe.Pointer.FromRef(ref (Δp.of(runtime_package.Δsliceᴛ.ᏑΔarray)).Value), @unsafe.Pointer.FromRef(ref (Ꮡ(s, 0)).Value));
+            atomicstorep(@unsafe.Pointer.FromBox(Δp.of(runtime_package.Δsliceᴛ.ᏑΔarray)), @unsafe.Pointer.FromBox(Ꮡ(s, 0)));
             Δp.Value.cap = cap(s);
             Δp.Value.len = len(s);
             defer((ж<g> gpΔ1) => {

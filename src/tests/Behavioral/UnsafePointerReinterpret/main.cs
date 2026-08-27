@@ -36,7 +36,7 @@ internal static uintptr throughPointer(linkaddr v) {
 
 internal static void Main() {
     ref var backing = ref heap(new uintptr(), out var Ꮡbacking);
-    @unsafe.Pointer p = @unsafe.Pointer.FromRef(ref (Ꮡbacking).Value);
+    @unsafe.Pointer p = @unsafe.Pointer.FromBox(Ꮡbacking);
     writeBarrier(p, p);
     _ = (uintptr)indirectKey(p);
     ref var fslot = ref heap<Action>(out var Ꮡfslot);
