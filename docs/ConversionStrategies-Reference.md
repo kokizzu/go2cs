@@ -8824,6 +8824,27 @@ temp-parameter force alone gives CS0411 ×4, the delegate cast alone gives CS014
    ...int)` answers `parts == nil` as `true` in Go and `false` here. Visible from a plain direct call
    — no defer, no literal — so it is an argument-CONSTRUCTION difference with corpus-wide reach.
 
+### A ZERO-ARG deferred/spawned call of a NAMED variadic callee keeps the lambda — the group carries `params`
+
+The named-callee sibling of the literal cast above, found blocking os/signal's test-host compile
+(`defer Reset()` on `func Reset(sig ...os.Signal)`, 2026-08-27 — the same variadic-binding family as
+the C#14 params-flip fix). The zero-argument arm of `visitDeferStmt`/`visitGoStmt` trims `f()` back
+to the method group `f` so golib's arity-0 `defer`/`goǃ` take it as an `Action` — valid only when the
+callee's C# arity is genuinely zero. A variadic callee's C# form **always** carries the `params`
+parameter, so its method group converts to no `Action` (defer) and no `WaitCallback` (go) —
+**CS1503** at both statements, measured as the failing-first red of the guard below. The with-args
+forms were never exposed: `getFunctionParamCount` answers `-1` for a variadic signature, which
+already forces the temp-parameter ladder.
+
+The guard is signature-level (`types.Signature.Variadic()`) in both statements' zero-arg arms, and it
+covers the pointer-receiver **box method group** too — a variadic method's box overload carries the
+same `params` parameter (`defer c.bump()` on `func (c *counter) bump(deltas ...int)`). The emission
+keeps the invocation and wraps it: `defer(() => Reset(), ref ᒐ)`. Wrapping a zero-operand call
+disturbs no defer-time evaluation — there are no operands to evaluate. Emission-inert corpus-wide by
+construction: an existing zero-arg variadic defer/go site would have been a compile error, and the
+corpus compiles. Guarded by `DeferVariadicCallee` (both statements, both arities, plain func and
+pointer-receiver method, output-compared vs `go run`).
+
 ### `defer panic(v)` captures its value at the defer, and the sequence survives it
 
 `panic` is the one built-in emitted as a `throw` **statement** rather than as a call, and that made it
