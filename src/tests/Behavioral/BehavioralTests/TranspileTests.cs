@@ -1585,6 +1585,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckStdLibInternalAbi() => CheckTarget("StdLibInternalAbi");
 
     [TestMethod]
+    public void CheckStdoutCloseEofBarrier() => CheckTarget("StdoutCloseEofBarrier");
+
+    [TestMethod]
     public void CheckStringByteSemantics() => CheckTarget("StringByteSemantics");
 
     [TestMethod]

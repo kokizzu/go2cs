@@ -807,6 +807,7 @@
     <Project Path="tests/Behavioral/SpreadOperator/SpreadOperator.csproj" />
     <Project Path="tests/Behavioral/StatLayoutTruth/StatLayoutTruth.csproj" />
     <Project Path="tests/Behavioral/StdLibInternalAbi/StdLibInternalAbi.csproj" />
+    <Project Path="tests/Behavioral/StdoutCloseEofBarrier/StdoutCloseEofBarrier.csproj" />
     <Project Path="tests/Behavioral/StringByteSemantics/StringByteSemantics.csproj" />
     <Project Path="tests/Behavioral/StringByteUnionConstraint/StringByteUnionConstraint.csproj" />
     <Project Path="tests/Behavioral/StringConvNamedInt/StringConvNamedInt.csproj" />
