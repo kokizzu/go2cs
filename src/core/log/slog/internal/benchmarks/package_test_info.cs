@@ -40,8 +40,8 @@ using static global::go.log.slog.@internal.benchmarks_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/slog/internal/benchmarks/benchmarks_test.go", "benchmarks_test.cs", "ABQiggAVDrKCAAkWgrKClAAPFgAKGAAKGAAQJAAuWpKCkoI=")]
-[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers_test.go", "handlers_test.cs", "ABUegoKSgqKCgoCCpIKCpqKCgIKkgoLKooKAgJI=")]
+[assembly: go.GoPositionMap("log/slog/internal/benchmarks/benchmarks_test.go", "benchmarks_test.cs", "ADIiggAVDrKCAAkWgrKClAAPFgAKGAAKGAAQJAAuWpKCkoI=")]
+[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers_test.go", "handlers_test.cs", "ACEegoKSgqKCgoCCpIKCpqKCgIKkgoLKooKAgJI=")]
 // </GoSourcePositionMaps>
 
 namespace go.log.slog.@internal;

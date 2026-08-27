@@ -11,6 +11,12 @@ using static go.flag_internal_test_package;
 
 partial class flag_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
+    builtin.initPackage(typeof(go.net.url_package));
+}
+
 [GoType] partial struct URLValue {
     public ж<url.URL> URL;
 }

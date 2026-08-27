@@ -11,6 +11,18 @@ using go.runtime;
 
 partial class debug_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸreflect() {
+    builtin.initPackage(typeof(reflect_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸstrings() {
+    builtin.initPackage(typeof(strings_package));
+}
+
 // strip removes two leading tabs after each newline of s.
 internal static @string strip(@string s) {
     @string replaced = strings.ReplaceAll(s, "\n\t\t"u8, "\n"u8);

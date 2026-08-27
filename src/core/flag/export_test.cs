@@ -9,6 +9,18 @@ using static go.flag_package;
 
 partial class flag_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸio() {
+    builtin.initPackage(typeof(io_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸos() {
+    builtin.initPackage(typeof(os_package));
+}
+
 // Additional routines compiled into the package only during testing.
 public static Action DefaultUsage;
 internal static void initᴛDefaultUsage() { DefaultUsage = Usage; }
