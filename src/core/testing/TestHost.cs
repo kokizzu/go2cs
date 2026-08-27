@@ -147,6 +147,13 @@ public static class TestHost
                 return 2;
             }
 
+            // Go's m.Run parses the command line if nothing has yet (`if !flag.Parsed() {
+            // flag.Parse() }`) — the step that writes the VALUES into the definitions above. A
+            // package with custom test flags but no TestMain gets them populated by exactly this
+            // and nothing else; without it every such flag silently keeps its default (the
+            // os/signal TestDetectNohup re-exec recursion). See TestFlagBridge.Parse.
+            TestFlagBridge.Parse();
+
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
 
