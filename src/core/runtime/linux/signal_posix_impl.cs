@@ -88,6 +88,15 @@ partial class runtime_package
 
     private static readonly IntPtr SIG_IGN_HANDLER = (IntPtr)1;
 
+    // The dispositions this process INHERITED, snapshotted at module init before anything repaints
+    // them. This is the bridge's fwdSig: Go's sigdisable RESTORES the pre-Go disposition when the
+    // handler is no longer needed (sigInstallGoHandler false -> setsig(fwdSig)), so a post-Stop
+    // SIGHUP under nohup lands on the restored SIG_IGN and the process survives — TestNohup's
+    // nohup/2 shape. sig.ignored cannot carry this fact through a Notify (signal_enable clears the
+    // bit, correctly), so the handler's die decision consults the snapshot instead of re-dying on a
+    // signal the process was born ignoring.
+    private static uint s_inheritedIgnoredMask;
+
     // MapPosixSignal maps a Linux/amd64 signal number to the .NET PosixSignal value that carries it,
     // or null for the residual. Numbers are the stable Linux ABI values mirrored by
     // defs_linux_amd64.cs. Positive values ride .NET's raw-number pass-through (see THE RESIDUAL in
@@ -131,10 +140,17 @@ partial class runtime_package
     // if it does not exist yet. The handler makes Go's sighandler decision per delivery — see the
     // file header. Go's signal.Notify OVERRIDES an inherited SIG_IGN (setsig installs
     // unconditionally); .NET's PosixSignalRegistration RESPECTS it and won't install a handler for a
-    // signal it saw ignored, so the disposition is cleared to SIG_DFL first — AFTER module init has
-    // seeded sig.ignored from the inherited state, so nothing observable is lost: an
-    // inherited-ignored SIGHUP keeps surviving (the handler swallows via signal_ignored) exactly as
-    // under Go, whose initsig records the same fact in the same mask.
+    // signal it saw ignored, so an INHERITED SIG_IGN — and ONLY that — is cleared to SIG_DFL first.
+    // The guard is load-bearing, not an optimization (strace-measured 2026-08-27): .NET installs its
+    // own native handlers for the signals it tracks (SIGINT for Console, SIGCONT for terminal
+    // reinit, SIGCHLD for process reaping) and its per-signal enable is refcounted, so an
+    // UNCONDITIONAL signal(sig, SIG_DFL) here CLOBBERED a live .NET install and the following
+    // Create was a native no-op — the disposition stayed SIG_DFL and delivery never reached any
+    // handler (TestSIGCONT's timeout; TestNotifyContextNotifications' child dying from a SIGINT it
+    // had asked for). For the inherited-IGN case the clear is safe by the same fact: .NET respected
+    // that SIG_IGN and installed nothing there to clobber. Module init has already seeded
+    // sig.ignored from the same read, so nothing observable is lost: an inherited-ignored SIGHUP
+    // keeps surviving (the handler swallows via signal_ignored) exactly as under Go.
     private static void installPosixSignal(uint32 sig, PosixSignal ps)
     {
         int key = (int)sig;
@@ -143,7 +159,10 @@ partial class runtime_package
             return;
         }
         uint32 s = sig;
-        sys_signal((int)sig, SIG_DFL);
+        if (((s_inheritedIgnoredMask >> (int)sig) & 1) != 0)
+        {
+            sys_signal((int)sig, SIG_DFL);
+        }
         s_sigPosixRegs[key] = PosixSignalRegistration.Create(ps, ctx =>
         {
             if (sigsend(s))
@@ -154,13 +173,15 @@ partial class runtime_package
             {
                 ctx.Cancel = true;      // user- or inherited-ignored: swallow
             }
-            else if (sigDiesByDefault(s))
+            else if (sigDiesByDefault(s) && ((s_inheritedIgnoredMask >> (int)s) & 1) == 0)
             {
                 ctx.Cancel = false;     // unwanted _SigKill: die by the signal, like Go
             }
             else
             {
-                ctx.Cancel = true;      // unwanted _SigNotify-only: swallow, like Go
+                // Unwanted _SigNotify-only, or a _SigKill signal the process was born ignoring
+                // (Go restores that inherited SIG_IGN on Stop — fwdSig): swallow, like Go.
+                ctx.Cancel = true;
             }
         });
     }
@@ -190,7 +211,10 @@ partial class runtime_package
                     continue;
 
                 if (Marshal.ReadIntPtr(old) == SIG_IGN_HANDLER)
+                {
                     sigInitIgnored((uint32)signum);
+                    s_inheritedIgnoredMask |= 1u << signum;
+                }
             }
         }
         catch
