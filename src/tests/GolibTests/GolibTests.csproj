@@ -76,6 +76,12 @@
          Int.SetBits/Int.Mul. Same precedent as sha3 above — an MSTest tier binding a converted
          package to reach a measurement no other harness can take. -->
     <ProjectReference Include="..\..\core\math\big\math.big.csproj" />
+
+    <!-- UnsafePointerRetentionTests: the bare-unsafe.Pointer atomic primitives (StorepNoWB/Loadp,
+         the I5 ruling) driven through the mint the converter emits for `unsafe.Pointer(&x)`. Same
+         MSTest-tier-binds-a-converted-package precedent as math/big above; the *unsafe.Pointer
+         siblings are correct by signature and need no guard here. -->
+    <ProjectReference Include="..\..\core\internal\runtime\atomic\internal.runtime.atomic.csproj" />
   </ItemGroup>
 
 </Project>
