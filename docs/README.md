@@ -9,7 +9,7 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — 177 standard-library test suites pass in C#, on .NET 10 and Go 1.23.12
+## 📰 NEWS — Over 80% of the standard-library test suites pass in C#, on .NET 10 and Go 1.23.12
 
 **171 of the 215 testable standard-library packages pass their own Go test suites in C#** — 18,965
 matching verdicts against `go test -json`, compared verdict for verdict, with 87 divergences
@@ -22,9 +22,8 @@ any one of them rejoins the count the day its evidence changes. A package appear
 [roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and every row links a
 [proof page](validation/index.md) listing Go's verdict beside go2cs's, test by test.
 
-That roster was re-derived from scratch when **both** runtime pins moved in August 2026 — to
-**.NET 10** and **Go 1.23.12** — numerator, denominator and disclosure set alike, because a
-milestone you can trust is worth more than one you can carry forward. Full detail in the
+Roster re-derived from scratch when **both** runtime pins moved to **.NET 10** and **Go 1.23.12** — 
+numerator, denominator and disclosure set. Full detail in the
 [news archive entry](NEWS.md#august-25-2026--both-runtime-pins-move-net-10-go-12312--and-the-whole-roster-re-proves-itself).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
