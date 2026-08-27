@@ -1060,8 +1060,16 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
        emissions (`Δio` alias, `global::go.*` root escape, the using-block REORDER the alias
        causes, and — the FOURTH shape, named 2026-08-17 — the `initᴛᴛtests()` hook a `-tests` run
        adds to a package's `package_init.cs` as +7 REAL lines `-stdlib` omits, which survives a
-       numstat check that filters phantoms; same class, restore it) because the `-tests` closure
-       imports more. Whether a sweep SHOWS them depends on which
+       numstat check that filters phantoms; same class, restore it — **AMENDED 2026-08-26,
+       ratified at the leveling-rebank floor: for a row whose test sources are REBANKED at or
+       after the init-order arc, the `initᴛᴛtests()` hook is BANKED, not restored** — a
+       re-derived suite does not compile without it, so those packages' `package_init.cs` rests
+       on the `-tests` side and it is the `-stdlib` overlay ritual that must classify-and-KEEP
+       it; the restore rule stands only for rows still carrying pre-arc sources) because the
+       `-tests` closure imports more. **Staging corollary (paid for 2026-08-26): never
+       `git add -A`/`git add .` on a tree that has had a sweep or `-tests` run against it — name
+       the paths; the hook shape survives numstat filters and lands in the commit silently.**
+       Whether a sweep SHOWS them depends on which
        side the committed tree currently rests on, so do not treat either state as the invariant:
        when the tree rests on the `-tests` side they are invisible to a sweep and surface only under
        an `-stdlib` reconvert control; when it rests on the `-stdlib` side — **where r40 left it** —

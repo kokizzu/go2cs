@@ -19438,3 +19438,71 @@ line's EOL — the ReadAllText/WriteAllText UTF8-no-BOM pattern is mandatory.
 **Rebank state:** JOB-023 closed 172/175 with exactly the three explained reds; the leveling
 rebank re-derives at 57339895d. Stale-source members enumerated: corpus-wide init hooks + flag,
 log, runtime/debug, sync, syscall, log/slog/internal/benchmarks.
+
+---
+
+## 2026-08-26 (evening) — Fold #2: four windows in one day; the giants' walls fall; the corruption hunt reaches a single hypothesis; the arc queue for the reset
+
+**Day's arithmetic at window four (0a03b7ac7):** 175 → **177 rows** (log/slog 194+19 with the
+host-identity class minted; crypto/x509 **341/341, zero disclosed**), 18,979 → **19,514+**
+matching, **85.1% honest of 208**. Four union-gated windows, zero rollbacks, every merge
+preflighted from its base and duplication-audited.
+
+**The giants, end-of-day state:**
+- `net`: **120 → 291 matching**, crash class EXTINCT (the sockaddr chain: three struct-passing
+  defects each behind the last; the WSAEINVAL-behind-a-lazy-extension-pointer diagnosis lesson).
+  ReadMsg family flips with the WSARecvMsg completion-carried decode (merge pending its final).
+  Remaining, all named: the DETERMINISTIC sendfile-family stop (time-independent — 60m released
+  nothing), netpoll-deadline family (43), writev (9), DNS/environmental (17), two array<T> items.
+- `net/http`: 46 declaration diagnostics → 0 → 81 body diagnostics → **24**, across three
+  commissions on one lane. Remaining: C1 (ImplementGenerator single-hop embed selection cannot
+  serve MIXED embed kinds — per-member resolution is a shape DESIGN in the most
+  collision-sensitive area), C2 (forwarder-side distinct-instantiations wall — silent-behavior
+  risk, wants a guard-driven pass), D (http.Header map-reference modeling — DESIGN), E/F smalls.
+- `reflect`: conversion wall FALLS (constant.ToInt, class bounded by 24-shape measurement).
+  Residual is NOT B2-gated: ONE mechanism (function-local type-lift does not handle foreign
+  underlying types — the 73-diagnostic wall + 14 of 15 semantic sites) + one capability ceiling
+  (19-param func exceeds Func<> arity — needs a generated delegate). all_test.cs (10,639 lines):
+  zero diagnostics. Go denominator measured 388, not the census's 396 (−8 flagged, unexplained).
+- `runtime`: unchanged — design question, unstaffed by ruling.
+
+**os/exec corruption hunt (R, 12+ reproductions):** every native corridor cleared by three landed
+soundness fixes (wait buffers; keystone tether; array-provenance registration — case 1 of
+PinnableStorage's taxonomy had never joined the provenance record). Fingerprint: a byte-block
+smash into managed heap (verifyheap: 4 contiguous errors, unaligned member as SIDE EFFECT).
+Bisect session 1 cleared hashtriemap (VICTIM, not writer), ReinterpretRef (size guard forbids
+widening), and golib has NO unaligned-write primitive — the single surviving hypothesis is a
+BLOCK COPY into managed heap with a native-slice-derived WRONG COUNT (copy/ToSpan paths), one
+count-vs-extent assert from conviction. B2 clause: conviction in kind-split files routes the fix
+to that arc with an interim guard.
+
+**Rulings this fold:** (1) count-binding — banked counts bind to a full-SDK GOROOT; a
+toolchain-download GOROOT on a sweep host is a sweep-env defect, never row variance (proven:
+583 = 303+266+14; the 265 is GOROOT/test/typeparam). (2) The initᴛᴛtests hook-banking amendment
+(now in CLAUDE.md, dated). (3) The slice-shaped-spread arc (Span int32 length ceiling under
+append spreads; 679 sites/225 files priced) is APPROVED, sequenced POST-B2, before the full
+leveling. (4) Full-roster test-source leveling: POST-B2, one deliberate pass (r40 precedent);
+the floor (8 noisy rows) is merged. (5) slices banks at 119+3 when the spread arc lands (alloc
+rows pre-classified: Concat/Grow = alloc-count-semantics, Insert = alloc-profile).
+
+**Findings collection (each paid for today):** git add -A after a sweep stages the hook shape
+silently (staging corollary, now in CLAUDE.md); `tr -d '\r\ufeff'` has no \u escape — it
+strips u/f/e from PATHS and fakes a death (false-red sibling of route #6; use sed or no-BOM
+writes); go test's 10m default panic-timeout fires under CNR-concurrent load with zero FAIL
+lines — pass explicit -timeout on loaded runs; ALL-EMPTY has a documented SECOND cause (test
+assembly never built — check converter/build stderr for CS lines before the file-lock
+diagnosis); the production recover path UNWINDS PAST THE EMIT — a panicking file is silently
+missing at exit 0 and surfaces as consumer CS0103/CS0246 pointing away from the cause;
+GCStress is impractical at corpus scale (starves startup JIT, stresses the build) — HeapVerify
+is the corpus-scale instrument; CoreCLR's crash-handler fork/wait choreography defeats naive
+live-attach and masquerades as a corpus wait.
+
+**Sweep-host doctrine (from fold #1, now proven end to end on the sweeper):** full-SDK GOROOT
+with test/, explicit `GOTOOLCHAIN=local`, per-box profile paths, C toolchain for cgo-oracle
+rows (the fleet currently has NO cgo-capable host — G's box untested, owner-batched otherwise).
+
+**Arc queue at the reset (post-budget, ranked):** local-type-lift (reflect's first-order
+residual); C1 mixed-embed per-member design + C2 forwarder marshal; slice-shaped-spread
+(post-B2); http.Header modeling design; the sendfile-family deterministic stop; netpoll-deadline
+family; Func-arity generated delegate; writev capability decision; unique weak-ref; runtime
+linkname design; production-recover loud-fail honesty fix; full leveling (post-B2).
