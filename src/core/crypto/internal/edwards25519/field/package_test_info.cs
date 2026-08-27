@@ -36,8 +36,8 @@ using static global::go.crypto.@internal.edwards25519.field_internal_test_packag
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_alias_test.go", "fe_alias_test.cs", "AAwYgqK2gIK4gIK4uIKyxoCCuIKAgraCgIK4gIK4goCCtoKAgraCgIK4AAkcAAoCABAwggALIIKUtLSC")]
-[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_test.go", "fe_test.cs", "ABcogqqigoKUpqKCAClWogAIEqKClKrCroLEgoKWgoKCgoSWgILIgoKCgoKWgoKCgpaCgoKCgoKCggAJCIKiqISUgIKmorqCgpSAgqgACR6ygoKCyoKClKaCsoSCgoSCloKElICCyrKCloKigoKUgqiCpoKCgpSokoSCgoKClIKopoKCgIIABBL+0oKUgoKEgpaEgoKUhIKEgriCkpSCgpaCgriCkoKUgoKEgpaEgoKUhIKChIKWkoKAgqTIgpKUlIKEgpaEgpaEgriCkoKCloKEgoKWloCCAAsIhAAnXIKCgoKCgsqCkoKEgoSClpaAgqaCuIKCkpSChIKWloCCyIKCkpKSlIKEgoKWmICCyIKCgpQ=")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_alias_test.go", "fe_alias_test.cs", "ABgYgqK2gIK4gIK4uIKyxoCCuIKAgraCgIK4gIK4goCCtoKAgraCgIK4AAkcAAoCABAwggALIIKUtLSC")]
+[assembly: go.GoPositionMap("crypto/internal/edwards25519/field/fe_test.go", "fe_test.cs", "AEcogqqigoKUpqKCAClWogAIEqKClKrCroLEgoKWgoKCgoSWgILIgoKCgoKWgoKCgpaCgoKCgoKCggAJCIKiqISUgIKmorqCgpSAgqgACR6ygoKCyoKClKaCsoSCgoSCloKElICCyrKCloKigoKUgqiCpoKCgpSokoSCgoKClIKopoKCgIIABBL+0oKUgoKEgpaEgoKUhIKEgriCkpSCgpaCgriCkoKUgoKEgpaEgoKUhIKChIKWkoKAgqTIgpKUlIKEgpaEgpaEgriCkoKCloKEgoKWloCCAAsIhAAnXIKCgoKCgsqCkoKEgoSClpaAgqaCuIKCkpSChIKWloCCyIKCkpKSlIKEgoKWmICCyIKCgpQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal.edwards25519;

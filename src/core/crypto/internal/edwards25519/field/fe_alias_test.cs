@@ -10,6 +10,18 @@ using static go.crypto.@internal.edwards25519.field_package;
 
 partial class field_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtesting() {
+    builtin.initPackage(typeof(testing_package));
+}
+
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() {
+    builtin.initPackage(typeof(go.testing.quick_package));
+}
+
 internal static Func<global::go.crypto.@internal.edwards25519.field_package.Element, global::go.crypto.@internal.edwards25519.field_package.Element, bool> checkAliasingOneArg(Func<ж<global::go.crypto.@internal.edwards25519.field_package.Element>, ж<global::go.crypto.@internal.edwards25519.field_package.Element>, ж<global::go.crypto.@internal.edwards25519.field_package.Element>> f) {
     return (global::go.crypto.@internal.edwards25519.field_package.Element vʗp, global::go.crypto.@internal.edwards25519.field_package.Element xʗp) => {
         ref var v = ref heap(vʗp, out var Ꮡv);
