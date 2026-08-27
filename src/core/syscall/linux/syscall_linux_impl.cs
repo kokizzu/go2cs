@@ -84,4 +84,17 @@ internal static partial (uintptr r1, uintptr r2) rawSyscallNoError(uintptr trap,
     return (r1, r2);
 }
 
+// AllThreadsSyscall's kernel half. Go's contract: the runtime stops the world and replays the
+// syscall on EVERY thread (setuid/setgid class calls must change credentials process-wide), and a
+// process that CANNOT make that guarantee answers ENOTSUP — which is exactly what Go's own
+// cgo-enabled binaries do (syscall_linux.go: `if cgo_libc_setegid != nil { return minus1, minus1,
+// ENOTSUP }`), because foreign threads exist that the runtime cannot broadcast over. A managed
+// host is that shape taken further — the CLR owns threads Go's runtime never sees — so ENOTSUP is
+// the faithful Go answer, not a stub: callers get the same errno a cgo build gives them, and Go's
+// own TestAllThreadsSyscallSignals skips on it identically on both sides. (The previous state was
+// a throwing PartialStubGenerator stub, which turned that skip into an infrastructure-error.)
+internal static partial (uintptr r1, uintptr r2, uintptr err) runtime_doAllThreadsSyscall(uintptr trap, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6) {
+    return (~(uintptr)0, ~(uintptr)0, (uintptr)ENOTSUP);
+}
+
 } // end syscall_package

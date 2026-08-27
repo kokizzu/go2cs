@@ -61,10 +61,22 @@ partial class runtime_package
     [DllImport("libc", EntryPoint = "signal", SetLastError = true)]
     private static extern IntPtr sys_signal(int signum, IntPtr handler);
 
-    // MapPosixSignal maps a Linux/amd64 signal number to the .NET PosixSignal member that carries it,
-    // or null when no member exists (the rt_sigaction residual). Numbers are the stable Linux ABI
-    // values mirrored by defs_linux_amd64.cs (_SIGHUP=1, _SIGINT=2, _SIGQUIT=3, _SIGTERM=15,
-    // _SIGCHLD=17, _SIGCONT=18, _SIGWINCH=28).
+    // MapPosixSignal maps a Linux/amd64 signal number to the .NET PosixSignal value that carries it,
+    // or null for the residual. Numbers are the stable Linux ABI values mirrored by
+    // defs_linux_amd64.cs (_SIGHUP=1, _SIGINT=2, _SIGQUIT=3, _SIGTERM=15, _SIGCHLD=17, _SIGCONT=18,
+    // _SIGWINCH=28).
+    //
+    // The enum members carry NEGATIVE values, and .NET's Unix implementation deliberately passes a
+    // POSITIVE value through as the raw platform signal number — probe-measured 2026-08-27:
+    // Create((PosixSignal)10) registers, SIGUSR1 delivers to the handler, and ctx.Cancel suppresses
+    // the default death. So the wall is NOT the enum: SIGUSR1/SIGUSR2 ride the raw cast (before
+    // this, TestStop/user_defined_signal_1's self-kill took the whole test host down with it, exit
+    // 138, leaving every later test unmeasured). The residual is now the set the raw cast cannot
+    // honestly serve: the synchronous faults the CLR owns (SIGILL/SIGABRT/SIGBUS/SIGFPE/SIGSEGV —
+    // registering those would sit under the CLR's own fault handling), SIGPIPE (registers but does
+    // not deliver — .NET handles EPIPE internally and the same probe measured the timeout),
+    // SIGPROF (sigenable's own guard), the real-time range, and SIGKILL/SIGSTOP (uncatchable
+    // everywhere).
     private static PosixSignal? MapPosixSignal(uint32 sig)
     {
         switch ((int)sig)
@@ -72,11 +84,62 @@ partial class runtime_package
             case 1:  return PosixSignal.SIGHUP;
             case 2:  return PosixSignal.SIGINT;
             case 3:  return PosixSignal.SIGQUIT;
+            case 10: return (PosixSignal)10;  // SIGUSR1, raw platform number
+            case 12: return (PosixSignal)12;  // SIGUSR2, raw platform number
             case 15: return PosixSignal.SIGTERM;
             case 17: return PosixSignal.SIGCHLD;
             case 18: return PosixSignal.SIGCONT;
             case 28: return PosixSignal.SIGWINCH;
             default: return null;
+        }
+    }
+
+    // The libc sigaction READ side (act = NULL), used only to observe dispositions this process
+    // INHERITED — a pure read conflicts with nothing the CLR owns, unlike the install side the
+    // bridge exists to avoid. glibc's struct sigaction leads with the sa_handler union on
+    // linux-x64; 160 bytes generously covers the 152-byte struct. SIG_IGN is (void*)1.
+    [DllImport("libc", EntryPoint = "sigaction", SetLastError = false)]
+    private static extern int sys_sigaction_read(int signum, IntPtr act, IntPtr oldact);
+
+    private static readonly IntPtr SIG_IGN_HANDLER = (IntPtr)1;
+
+    // Seeds runtime.sig.ignored with the dispositions this process INHERITED, the way Go's initsig
+    // does via getsig(i) == _SIG_IGN -> sigInitIgnored(i). Runs once when the runtime assembly
+    // loads — before any test or user code can ask os/signal.Ignored, and before the bridge's own
+    // installs (which deliberately clear an inherited SIG_IGN) could repaint the picture. This is
+    // what makes a child under nohup answer Ignored(SIGHUP) == true (TestDetectNohup's second
+    // half, TestNohup's whole nohup family).
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void InitInheritedIgnoredSignals()
+    {
+        if (!OperatingSystem.IsLinux())
+            return;
+
+        IntPtr old = Marshal.AllocHGlobal(160);
+        try
+        {
+            // The classic asynchronous range. 9/19 are SIGKILL/SIGSTOP (their dispositions cannot
+            // differ from default); 32/33 are NPTL-reserved and not observable signals.
+            for (int signum = 1; signum <= 31; signum++)
+            {
+                if (signum == 9 || signum == 19)
+                    continue;
+
+                if (sys_sigaction_read(signum, IntPtr.Zero, old) != 0)
+                    continue;
+
+                if (Marshal.ReadIntPtr(old) == SIG_IGN_HANDLER)
+                    sigInitIgnored((uint32)signum);
+            }
+        }
+        catch
+        {
+            // Defensive: an unreadable disposition just leaves that signal reported non-ignored,
+            // which is where the mask already was.
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(old);
         }
     }
 
