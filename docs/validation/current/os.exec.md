@@ -6,12 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `os/exec` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-27 · converter `2ac5e6646`*
+*Validated 2026-08-27 · converter `6a5916169`*
 
-**89 matched · 27 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**116 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec).
 
-Both runtimes skip 7 of the matched tests identically.
+Both runtimes skip 8 of the matched tests identically.
 
 ## Verdicts
 
@@ -30,24 +30,24 @@ Both runtimes skip 7 of the matched tests identically.
 | `TestCatStdin` | pass | pass |
 | `TestChildCriticalEnv` | pass | pass |
 | `TestClosePipeOnCopyError` | pass | pass |
-| `TestCommand` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/current_directory` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/from_PATH_with_no_match_in_Dir` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestCommand` | pass | pass |
+| `TestCommand/current_directory` | pass | pass |
+| `TestCommand/from_PATH_with_no_match_in_Dir` | pass | pass |
 | `TestCommand/not_found_before_Dir` | pass | pass |
-| `TestCommand/relative_to_Dir` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestCommand/relative_to_Dir` | pass | pass |
 | `TestCommand/relative_to_Dir_with_different_extension` | pass | pass |
-| `TestCommand/relative_to_Dir_with_dot_and_extra_PATH` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/relative_to_Dir_with_dot_and_extra_PATH_and_no_extension` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/relative_to_Dir_with_explicit_dot` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/relative_to_Dir_with_extra_PATH` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/relative_to_Dir_with_extra_PATH_and_no_extension` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestCommand/relative_to_Dir_with_dot_and_extra_PATH` | pass | pass |
+| `TestCommand/relative_to_Dir_with_dot_and_extra_PATH_and_no_extension` | pass | pass |
+| `TestCommand/relative_to_Dir_with_explicit_dot` | pass | pass |
+| `TestCommand/relative_to_Dir_with_extra_PATH` | pass | pass |
+| `TestCommand/relative_to_Dir_with_extra_PATH_and_no_extension` | pass | pass |
 | `TestCommand/resolved_before_Dir` | pass | pass |
-| `TestCommand/with_dir` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/with_explicit_dot` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/with_extra_PATH` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/with_extra_PATH_and_no_extension` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/with_irrelevant_PATH` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestCommand/with_slash_and_no_extension` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestCommand/with_dir` | pass | pass |
+| `TestCommand/with_explicit_dot` | pass | pass |
+| `TestCommand/with_extra_PATH` | pass | pass |
+| `TestCommand/with_extra_PATH_and_no_extension` | pass | pass |
+| `TestCommand/with_irrelevant_PATH` | pass | pass |
+| `TestCommand/with_slash_and_no_extension` | pass | pass |
 | `TestCommandRelativeName` | pass | pass |
 | `TestConcurrentExec` | pass | pass |
 | `TestContext` | pass | pass |
@@ -90,18 +90,18 @@ Both runtimes skip 7 of the matched tests identically.
 | `TestLookPath/PATH=exe/xx/dotdot2` | pass | pass |
 | `TestLookPath/PATH=exe/xx/empty` | pass | pass |
 | `TestLookPathNotFound` | pass | pass |
-| `TestLookPathWindows` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/directory,_no_extension` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/dirs_with_extensions` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/doubled_extension` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/extension_not_in_PATHEXT` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/extensionless_file_in_CWD_ignored` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/extensionless_file_in_PATH_ignored` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/first_PATHEXT_entry` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/first_allowed_by_PATHEXT` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestLookPathWindows` | pass | pass |
+| `TestLookPathWindows/directory,_no_extension` | pass | pass |
+| `TestLookPathWindows/dirs_with_extensions` | pass | pass |
+| `TestLookPathWindows/doubled_extension` | pass | pass |
+| `TestLookPathWindows/extension_not_in_PATHEXT` | pass | pass |
+| `TestLookPathWindows/extensionless_file_in_CWD_ignored` | pass | pass |
+| `TestLookPathWindows/extensionless_file_in_PATH_ignored` | pass | pass |
+| `TestLookPathWindows/first_PATHEXT_entry` | pass | pass |
+| `TestLookPathWindows/first_allowed_by_PATHEXT` | pass | pass |
 | `TestLookPathWindows/first_directory_containing_a_PATHEXT_match` | pass | pass |
-| `TestLookPathWindows/first_match` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestLookPathWindows/first_with_extension` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestLookPathWindows/first_match` | pass | pass |
+| `TestLookPathWindows/first_with_extension` | pass | pass |
 | `TestLookPathWindows/ignore_dir_with_PATHEXT_extension` | pass | pass |
 | `TestLookPathWindows/ignore_empty_PATH_entry` | pass | pass |
 | `TestLookPathWindows/mismatched_extension` | pass | pass |
@@ -110,7 +110,7 @@ Both runtimes skip 7 of the matched tests identically.
 | `TestLookPathWindows/no_match_with_dir` | pass | pass |
 | `TestLookPathWindows/return_ErrDot_if_found_by_a_different_absolute_path` | pass | pass |
 | `TestLookPathWindows/specific_extension` | pass | pass |
-| `TestLookPathWindows/specific_name` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestLookPathWindows/specific_name` | pass | pass |
 | `TestLookPathWindows/suppress_ErrDot_if_also_found_in_absolute_path` | pass | pass |
 | `TestNoExistExecutable` | pass | pass |
 | `TestNoInheritHandles` | pass | pass |
@@ -123,7 +123,7 @@ Both runtimes skip 7 of the matched tests identically.
 | `TestPrefixSuffixSaver` | pass | pass |
 | `TestStdinClose` | pass | pass |
 | `TestStdinCloseRace` | pass | pass |
-| `TestString` | pass | pass |
+| `TestString` | skip | skip |
 | `TestStringPathNotResolved` | pass | pass |
 | `TestWaitInterrupt` | pass | pass |
 | `TestWaitInterrupt/Exit-hang` | pass | pass |
@@ -133,43 +133,6 @@ Both runtimes skip 7 of the matched tests identically.
 | `TestWaitInterrupt/SIGQUIT` | skip | skip |
 | `TestWaitInterrupt/Wait` | pass | pass |
 | `TestWaitInterrupt/WaitDelay` | skip | skip |
-
-## Disclosed divergences
-
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
-a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
-hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/os/exec/go2cs_test_disclosures.json);
-a disclosed test that fails any *other* way is still a hard mismatch.
-
-| Test | Class | Pinned reason |
-|:--|:--|:--|
-| `TestCommand` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
-| `TestCommand/current_directory` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/from_PATH_with_no_match_in_Dir` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/relative_to_Dir` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/relative_to_Dir_with_dot_and_extra_PATH` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/relative_to_Dir_with_dot_and_extra_PATH_and_no_extension` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/relative_to_Dir_with_explicit_dot` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/relative_to_Dir_with_extra_PATH` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/relative_to_Dir_with_extra_PATH_and_no_extension` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/with_dir` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/with_explicit_dot` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/with_extra_PATH` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/with_extra_PATH_and_no_extension` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/with_irrelevant_PATH` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestCommand/with_slash_and_no_extension` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
-| `TestLookPathWindows/directory,_no_extension` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/dirs_with_extensions` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/doubled_extension` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/extension_not_in_PATHEXT` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/extensionless_file_in_CWD_ignored` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/extensionless_file_in_PATH_ignored` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/first_PATHEXT_entry` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/first_allowed_by_PATHEXT` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/first_match` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/first_with_extension` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
-| `TestLookPathWindows/specific_name` | `host-limit` | the fixture is a COPY of the test executable (installExe) run through exec.Command, and a single relocated file can never start: the apphost is bound at build time to a same-basename managed assembly that must sit beside it, so hostfxr answers LibHostAppRootFindFailure (0x8000809a, "The application to execute does not exist") |
 
 ## Excluded declarations
 
