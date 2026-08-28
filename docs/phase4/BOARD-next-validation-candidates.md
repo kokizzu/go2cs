@@ -19506,3 +19506,528 @@ residual); C1 mixed-embed per-member design + C2 forwarder marshal; slice-shaped
 (post-B2); http.Header modeling design; the sendfile-family deterministic stop; netpoll-deadline
 family; Func-arity generated delegate; writev capability decision; unique weak-ref; runtime
 linkname design; production-recover loud-fail honesty fix; full leveling (post-B2).
+
+---
+
+## 2026-08-29 · Fold #3: net's empty class goes extinct; the fixture saga ends on the BUNDLER; a silent SUBTRACTION reds the linux corpus at master; pprof reclassifies to a frontier; the defer/go capture defect is narrowed to synthesized lambdas
+
+*Source: the fleet mailbox, 2026-08-28 and 2026-08-29 entries (R/RITCHIE-LAPTOP, G/laptop,
+i9/sweeper, the local lanes, and COORD rulings). Folded here per the doc-authority ladder — the
+mailbox is transport, this is the record. Where an item exists only as a coordinator relay of a
+LOCAL lane's report, it is attributed as such.*
+
+**Window ledger for the two days:** master `1d01200a9` (ten) → `9f2973b96` (eleven — the Uname
+root and the five proactive struct-passing mirrors) → `45e0a97a8` (thirteen — smalls-sweep,
+local-type-lift, net-residuals, net/http's first run) → `5ff05d8b6` (fourteen — the Uname restore
++ the newUnixFile linkname registry row; **the linux corpus green AT MASTER for the first time
+since the subtraction**, 0 errors, 8m26s). Window twelve (the composed host pair + the fixture
+pair + the bogo record) gated at `f477da149` on `g-seam-verify`, sequenced BEHIND fourteen so
+G's two-sided guard would land on a base where Uname's body exists.
+
+### 1. The TransmitFile netpoll seam — net 291 → 440, the EMPTY class extinct; and the two-phase ordering rule
+
+The net-residuals lane (local; reported through COORD's 2026-08-29 entry) landed the
+**TransmitFile seam hand-own**, and the arithmetic closed exactly: **net 291 → 440 matching**,
+with the **empty class now EXTINCT** (the crash class had gone extinct at 291 in fold #2). The
+**155 unreported verdicts were ONE deadlock seen from two phases** — the serial tail plus the
+parked parallel batch — not 155 divergences.
+
+**The bridging arithmetic (COORD reconciliation — derived from the lane's recorded figures; each
+equation closes exactly).** Three of this story's figures sit at different scales — 155 unreported,
+43 deadline-named, 149 gained — so the bridge is stated as a ledger rather than left to inference.
+net's suite is **475**. Pre-fix the run held **291 matching + 155 unreported + 29 mismatched**, the
+155 being the serial tail past the deadlock point plus the parked parallel batch — and **the
+43-name deadline family is the deadline-named SUBSET of that parked batch, not a third
+population**. The TransmitFile fix **un-parked all 155**, of which **149 became matching**
+(291 → 440) and **6 newly mismatched** (29 + 6 = **35**, the residual inventory the lane named).
+Provenance, so the ledger is auditable rather than believed: **291, 440, 155, 35 and 43 are
+recorded figures**; **475** is forced by two of them (440 + 35), and **29** (475 − 291 − 155),
+**149** (440 − 291) and **6** (35 − 29) are each forced by two more. Post-fix the ledger closes at
+440 + 35 = 475 with **zero unreported** — the empty class's extinction, stated as arithmetic.
+
+**The ordering-rule clause this mints, fold-bound by COORD and now in CLAUDE.md's
+`-test-timeout` taxonomy:** the converted host reports in **two phases** — serial tests first,
+then the parallel batch. A single serial-phase death therefore leaves a contiguous tail in the
+serial phase AND parks the whole parallel batch unreported; the union reads as **SCATTERED**
+because the parallel names interleave alphabetically with the serial ones. So the existing tell
+("contiguous alphabetical tail = died partway; scattered = genuine divergence") has exactly one
+exception: **a scattered empty set that EXACTLY EQUALS the package's `t.Parallel()` set is one
+serial-phase death, not divergence.** Compare the empty set against the parallel set — one grep —
+before believing "scattered". `net`'s "deadline family" (43 names in fold #2's own residual
+inventory) was precisely this shape.
+
+**Fold-bound alongside it, flagged and deliberately NOT chased:** a **load-induced
+`NativeOverlapped` lifetime death**, nondeterministic, named by the net lane. Recorded so the
+next sighting is a second sighting rather than a discovery.
+
+**Three rulings from the same report:**
+- **`writev` is an ARC, not a capability** (accepted as briefed): an **unexported same-package
+  interface reached only through a dynamic assertion gets no `GoImplement` record** — the
+  exported-only gate's premise fails there — plus the layer-2 adapter-resolution question. A
+  converter EMISSION arc, and the class reaches beyond `net`.
+- **The "17 DNS/environmental" classification is CORRECTED on the record**: they are a **real
+  resolver divergence** — the converted resolver answers no-record for **MX/NS/TXT/SRV/PTR** — an
+  arc, not weather. The residual-35 inventory stands as the lane named it.
+- **The defer-loop-capture class is a CORRECTNESS ARC, top of the converter queue** (see §5).
+
+### 2. The publish-fixture saga: the deleter is the single-file BUNDLER
+
+The longest thread of the two days, and the one where both lanes' proposed fixes were the same
+non-fix. Reconstructed in order because the ORDER is the lesson.
+
+1. **R's report (2026-08-29):** the `time` row's `TestLoadLocationFromTZDataSlim` — banked
+   **pass/pass** in `docs/validation/current/time.md`, and `time` carries **no disclosures
+   manifest** so it compares strictly — was FAILING, taking the banked `linux: 167` to 166. Root
+   as read: the fixtures exist in GOROOT, in the converted package, and in the RID build output,
+   but `bin/tests/publish/` held an **EMPTY `testdata/`**, and the pipeline runs the host from
+   `publish/`. `CopyFixtures` then **deliberately skips what is absent**
+   (`if (!File.Exists(source)) continue;`) — correct for a relocated lone-exe copy, and here it
+   converted "the publish step dropped every fixture" into a quiet per-test ENOENT. Proposed fix:
+   emit `CopyToPublishDirectory="PreserveNewest"` in the `-tests` csproj template.
+2. **G measured Windows and found publish CORRECT** — `crypto/tls` 122/122 fixtures in publish,
+   `time` 4/4 from a fresh convert-then-publish — and reported **"blast radius on this platform
+   is ZERO rows"**, hypothesising a Linux `AppContext.BaseDirectory` self-extraction difference.
+3. **R withdrew his own report**: a FRESH Linux convert+publish carries all 4. He had read an
+   **existing** publish tree and reported it as what publish produces. (His stated rule: *an
+   artifact's PRESENCE says nothing about what the current inputs produce — wipe and regenerate
+   before reading a build tree as evidence.* He had caught the identical shape an hour earlier on
+   stale `PartialStubGenerator` stubs and still did not apply it one directory over.) G then
+   dropped his re-added `CopyToPublishDirectory` half as unmeasured emission churn.
+4. **R isolated the real mechanism** with three plain `dotnet publish` commands, no pipeline, no
+   test host: **publish #1 → 4 files, publish #2 → 0, publish #3 → 0**, exit 0 every time,
+   monotonic not alternating. **The act of measuring removed the fixtures** — `compareGoAndConverted
+   Tests` calls `publishTestHost` itself, so his "count taken just before the compare" was taken
+   before the publish that destroyed it. **R then ran the Windows arm: 4 → 0 → 0, identical.**
+   The mechanism is the SDK's, not a platform's; no contradiction between the two lanes' results
+   had ever existed.
+5. **The exposure rule, from source:** `publishTestHost` runs `dotnet publish -o
+   <outputPath>/bin/tests/publish` — a **deterministic path that is never cleaned**
+   (`testConversion.go`). So `-test-action build` publishes and `-test-action compare` publishes
+   **again** (a build-then-compare sequence IS the 4→0 repro by construction); `-test-action all`
+   (the sweep's invocation) publishes exactly once per row per invocation; `bin/` is gitignored,
+   so a row never published **on that box** gets publish #1 and its fixtures. **A fixture-declaring
+   row is therefore correct on its FIRST run on a given box and silently fixture-less on every
+   subsequent one.** No banked verdict is retroactively wrong — the rows banked on the runs that
+   HAD their fixtures. What is wrong is every RE-measurement of such a row since the single-file
+   arc, **including any future banked-row protection sweep**, which is exactly the gate that would
+   have caught a real regression.
+6. **G's three-arm isolation named the deleter and killed both proposals:**
+
+   | arm | publish #1 | #2 | #3 |
+   |---|---|---|---|
+   | as emitted today (single-file) | 4 | **0** | **0** |
+   | `CopyToPublishDirectory="PreserveNewest"` added | 4 | **0** | **0** |
+   | `-p:PublishSingleFile=false` | 4 | 4 | 4 |
+   | **`ExcludeFromSingleFile="true"`** (single-file kept) | **4** | **4** | **4** |
+
+   **The deleter is the single-file BUNDLER**, which on a republish reclaims the output directory
+   for the files it owns and takes the loose content with it. The item was reaching publish the
+   whole time — the bundler removed it afterwards, which is why `CopyToPublishDirectory` changes
+   nothing. `ExcludeFromSingleFile` is the right SHAPE rather than a workaround: a fixture MUST be
+   a loose file because the test opens it by relative path (`os.Open("testdata/x")`), and the
+   attribute states exactly that property, so the bundler stops claiming a file it should never
+   have claimed. Landed in the **converter** (`testConversion.go`, BOTH emission sites — the plain
+   fixture and the shared `up<N>` link form) with the three-arm table in the comment, verified end
+   to end (rebuild → reconvert `time` → attribute present → three publishes → **4/4/4**).
+   It also satisfies R's design constraint on its own terms: nothing is staged BEFORE publish (a
+   pre-publish copy step would simply be undone) — the file is removed from the bundler's claim.
+7. **The loud-skip companion, and why it is not merely a guard rail.** The silent skip is G's own
+   from the single-file arc and had a real reason (a relocated lone-exe copy legitimately has no
+   fixtures beside it and must still start). The discriminator landed with the fix: **fail the run
+   when a suite declares fixtures and none resolve WHILE the host is not a lone relocated copy** (a
+   published host's directory holds many files; a relocated copy holds one) — which keeps
+   `os/exec`'s re-exec path working. Under the bundler mechanism it fires on exactly the runs that
+   would otherwise report a silent false failure. Both lanes converged on it: the diagnosis was
+   partly wrong for an hour precisely because the harness said nothing either way.
+
+**The publish-#1 doctrine, ratified by COORD and fold-bound:** *a blast-radius-zero claim must
+state what observation would have made it non-zero.* Every count in G's Windows negative was a
+**publish #1**, which is **structurally blind to a republish-only bug** — so the negative was
+unsupported even though every measurement inside it was sound. (G's own correction on the record:
+"sound as measurements, wrong as a conclusion".) The companion methodological line from the same
+thread: **naming a mechanism justifies re-landing A fix, not THAT fix** — G nearly re-landed
+`CopyToPublishDirectory` as "measurement-justified" on the strength of the mechanism being named
+rather than on its own measurement; the three-arm table is what stopped it.
+
+### 3. The Uname silent SUBTRACTION — the linux corpus RED at master with a clean `git status`
+
+**The defect.** The converter registration that DISPLACES the generated `syscall.Uname` wrapper
+merged; the hand-own `*_impl.cs` **BODY it displaces to did not**. Master's
+`zsyscall_linux_amd64.cs:979` held a placeholder comment pointing at a body that does not exist,
+and **both** `_impl.cs` files DISCUSS `Uname` — G's header even promises "Uname is below" — while
+nothing in `syscall/linux` defined it. Clean merge, no conflict, no warning, clean working tree;
+the whole linux stdlib failed `-p:GoTargetOS=linux` on
+`kernel_version_linux.cs(21,27): error CS0117: 'syscall_package' does not contain a definition for
+'Uname'`. Found by the local linkname-seam lane against master's own blobs, days after the seam.
+
+**The fix (R, `dcac8df44` on `claude/laneR-uname`):** `48abfbc54`'s body **transplanted verbatim**
+onto current master — **76 insertions, zero deletions**, uniformly CRLF. R deliberately did NOT
+re-apply his old header prose, since G's `8ac224105` rewrite supersedes it and the narrative needs
+no second telling.
+
+**Measured A/B** on `internal/syscall/unix` (the consumer holding the call site), at
+`-p:GoTargetOS=linux --no-incremental`:
+
+| | `Uname` definitions | verdict |
+|---|---|---|
+| RED (master) | 0 | Build FAILED, exit 1 — the CS0117 by name |
+| GREEN (`dcac8df44`) | 1 | Build succeeded, exit 0 |
+
+**Full linux corpus gate** (`go2cs-stdlib.slnx -c Debug -p:GoTargetOS=linux --no-incremental
+-p:UseSharedCompilation=false`): **0 errors, 153 warnings, 7m40s — 307 projects. Uname was the
+whole of it**; closing the leaf-most CS0117 un-skipped no tail of latent dependents. R stated the
+discriminators rather than trusting "Build succeeded" on an 84-byte `-clp:ErrorsOnly` log: the
+**7m40s elapsed** (squarely on CLAUDE.md's linux-corpus figure, impossible for a no-op) and
+**freshly written assemblies across the tree inside the build window** (syscall 31,
+internal/syscall/unix 32, os 48, fmt 54, runtime 20, net 61; timestamps 09:32–09:34).
+
+**One process disclosure R volunteered because it would have FLATTERED the fix:** his first
+reproduction attempt is discarded, not reported — he launched it and then edited the tree while
+that build was still reading it. It returned "Build succeeded, 0 errors", the answer that would
+have looked like evidence. *A build whose inputs changed under it measures nothing.*
+
+**The preflight adopted (now in CLAUDE.md's concurrent-lanes section).** This is the **mirror of
+the silent DUPLICATION** the integration rules already catch: a silent **SUBTRACTION**, where one
+lane removes a definition because another lane's branch supplies it and the merge drops the
+supplier. Both diffs are pure additions/removals, git merges them without complaint, and the
+result compiles nowhere. Mechanical remedy: **if `git diff --name-only <base>..<branch>` shows a
+`manualConversionFuncs` registration or a generated-body deletion, assert the matching `*_impl.cs`
+body is present in the MERGE RESULT** — the same shape as the existing `package_info.cs` ⟹
+`stdlib-metadata.txt` preflight.
+
+**G's two-sided guard, and the one-sided-property lesson (also now in CLAUDE.md).** G named his
+own check's blind spot after the field beat it. The **ten-names/zero-bodies** property he offered
+the fleet as the merge-seam instrument — every linux-scoped struct-passing name has ZERO generated
+bodies and EXACTLY ONE placeholder, run twice over all ten names — **verifies the generated wrapper
+was DISPLACED and never that the displacement has a DESTINATION.** A placeholder pointing at a
+non-existent hand-own passes it cleanly, which is exactly what master held; verified rather than
+assumed, **`g-seam-verify` carried the same gap** (registration present, placeholder present, body
+absent) and the window-twelve unit would have shipped it had R's fix not landed first. The guard
+G built in response is a **converter-suite test** (the `go test ./...` tier, beside
+`projitemsIntegrity_test`): for every `manualConversionFuncs` entry the corpus must contain a
+**DEFINITION** for that name under the scoped platform — **registration ⇒ displaced wrapper ⇒
+body**, all three, or the test names the missing leg; plus the reverse direction (a dead hand-own
+nothing displaces) where the corpus shape allows it cheaply. That turns the class into a red
+converter suite at the merge instead of a red linux corpus days later. **COORD's fold-bound
+statement:** *a displacement property must assert the destination exists — every seam check carries
+both sides of the ledger, or it passes the exact failure it was written for in mirror form.*
+Merge order was adjusted for it: thirteen → `claude/laneR-uname` → G's twelve re-signal, so the
+guard would land on a base where the body exists.
+
+### 4. `runtime/pprof` reclassified: a CAPABILITY FRONTIER, not a row waiting on one stub (R)
+
+R measured the wall ladder to the bottom with three runs on the same published host, each
+excluding what the previous proved fatal. **Four rungs, not one**, and the hopeful "183 rows behind
+the stub" figure does not survive measurement — COORD retracted it on the record (the "183 rows
+enumerate" phrasing in window thirteen's merge message stands as a **BUILD statement only**).
+
+1. **`nanotime1` — CLEARED.** `claude/laneR-nanotime` @ `b15d01641`:
+   `MonotonicClock.Nanoseconds()` in golib (Stopwatch-derived, seconds/remainder split so the ns
+   multiply cannot overflow) behind per-GOOS `runtime/{windows,linux}/nanotime_impl.cs` — per-GOOS
+   because darwin already carries a real body. Failing-first proven as a **PROPERTY**: two throwing
+   `nanotime1` stubs before, **0 after a clean rebuild**, with the build succeeding (a stub plus a
+   body would be CS0111). GolibTests **389/389** (386→389, three clock guards each pinned to a
+   distinct failure mode); windows runtime `--no-incremental` exit 0; and the linux leg verified
+   **DISCRIMINATINGLY** — no `nanotime1` stub generated against the bodyless partial at
+   `linux/stubs3.cs:10`, because a green build alone would not prove the file was in the compile
+   set. (The branch is gated on both targets but was never queued into a window — window FIFTEEN
+   material.)
+2. **`getg` / the CPU-profile family — NON-fatal** (per-test `infrastructure-error`, the run
+   continues) **and NOT a bounded single.** R scouted it because the queue would otherwise have
+   paid for the framing, and found **three frames, not one**: `setcpuprofilerate`
+   (`windows/proc.cs:5556`) uses `getg()` for `gp.m.locks++/--` ONLY — a preemption-disable pair
+   that is a no-op in the managed model, and this frame alone WOULD be a narrow hand-own;
+   `setThreadCPUProfiler` (`windows/os_windows.cs:1238`) calls `getg()` again and stores into
+   **`m.profilehz`**, a real `m` field; `setProcessCPUProfiler` (`:1225`) calls
+   **`newm(profileLoop, nil, -1)`** — it spawns an M running Go's profile loop, and sample delivery
+   then walks goroutine stacks from another thread, i.e. the same **cross-thread stack-walk
+   boundary the SIGQUIT arc measured**. There are **560 `getg()` call sites corpus-wide** reading
+   `stack.lo/hi`, `m`, `p`, `goid`, `preempt`, `gsignal`; `stubs_impl.cs` left `getg` throwing **on
+   purpose**, with the rationale written down (any path reaching it "surfaces as a loud, locatable
+   failure rather than quietly operating on a fabricated goroutine descriptor"). A managed `getg`
+   can return an identity; it cannot make those fields true — **implementing it converts one loud
+   failure into 559 quiet ones**, the exact trade the repo's doctrine refuses. Recommendation:
+   classify the CPU-profile family **`runtime-capability`**. The cheap honest lever, if the row is
+   ever worth carrying, is the narrow one — hand-own `setcpuprofilerate` to drop the managed no-op
+   `m.locks` pair (the `systemstack` "that branch is the only branch" argument) — clearing frame 1
+   without minting a fabricated `g`. NOT cut.
+3. **`awaitBlockedGoroutine` — the host-killer, and it is a SHARED TEST HELPER, not a test.**
+   Excluding `TestBlockMutexProfileInlineExpansion` moved the identical death to `TestBlockProfile`
+   — same helper, same panic, same masking. It spins until a stack dump shows a goroutine in a
+   **NAMED wait state** (`[chan receive]`, `[sync.Mutex.Lock]`, `[select]`, `[sync.Cond.Wait]`); on
+   timeout it panics **ON A GOROUTINE**, which kills the binary — and that is **faithful: Go does
+   the same**. **13 call sites.** This is what produced the first run's contiguous alphabetical
+   tail (2 reported / 181 empty — read correctly by the existing CLAUDE.md tell as a run that died
+   partway, not 181 divergences). **R corrected himself twice here:** he first blamed a single test
+   (wrong — it is the helper) and called it a hang (wrong — the deadline fired correctly both
+   times; it panics). So the row needs **goroutine wait-state names in stack dumps** before the
+   block/mutex family can even report.
+4. **SIGSEGV.** With the whole block/mutex family excluded the host reached 15 verdicts and died
+   with **exit 139** inside `TestGenericsHashKeyInPprofBuilder` (`protomem_test.go:121`) — not a
+   throw, not a deadline, a hard access violation.
+
+**The measured tally behind the stub: 37 tests requested, 15 reached, then the crash — 1 pass**
+(`TestContextLabels`), 10 fail, 3 infrastructure-error, 1 skip. `TestFakeMapping`'s
+infrastructure-error comes up through `WriteTo → writeHeap → writeHeapInternal`, so the
+**heap-profile writer is stubbed too**.
+
+**Disposition.** The board takes `runtime/pprof` **off the near-bankable shelf**: it is a
+capability frontier (goroutine wait-state reporting, an M-spawning profile loop, a cross-thread
+stack walk, a stubbed heap-profile writer) — **sequenced LAST in the Windows chase queue, possibly
+the release's honest disclosure story**. The Windows chase to 100% now reads: net residual-35 (five
+named arcs), net/http (AV root, then buckets), internal/trace (staging fix rides window twelve),
+reflect (4 diagnostics — the Δ-marker arc plus the arity single), pprof (frontier, last).
+
+**Rung-4 disposition, and it is a clean acquittal.** R flagged the caveat against his own finding:
+all four rungs ran on a **throwaway composition** — his clock plus `origin/claude/smalls-sweep`,
+whose fixes live in `constraintOperations.go`, i.e. **GENERICS CONSTRAINT EMISSION** — and rung 4's
+segfault is in a **generics** test. Plausible causal link, so **not attributable to master**.
+Routed to i9 (serial, bounded, Windows) once smalls-sweep was genuinely on master. i9's
+methodology note is worth keeping: `claude/laneR-nanotime` is **NOT** an ancestor of `45e0a97a8`,
+so testing bare master would have answered nothing (every pprof test throws at rung 1 first) — so
+i9 recreated R's effective composition **on top of real master** (window-thirteen worktree +
+`claude/laneR-nanotime` merged locally, never pushed). **Result: NO SEGFAULT on the real merged
+tree.** `TestGenericsHashKeyInPprofBuilder` in isolation gives a clean managed
+`INFRASTRUCTURE-ERROR — System.NotImplementedException: pprof_memProfileInternal: external
+(assembly or cgo) function is not implemented`, at
+`pprof_package.pprof_memProfileInternal.3.stub.g.cs:27` via `writeHeapInternal → writeHeap →
+WriteHeapProfile`; **process exit 1**, a normal exception caught and reported by the framework — no
+access violation, no unhandled native fault, nothing resembling exit 139. i9 stated the limit
+rather than the flattering read: this cannot distinguish "purely a composition artifact" from
+"platform-specific to begin with" (R's report did not name the box). **The Linux-at-real-master leg
+stays deliberately UNMEASURED and parked** — it gates nothing until the pprof frontier work begins,
+and nobody spends a hard window on it. The stub it now surfaces
+(`pprof_memProfileInternal` feeding `WriteHeapProfile`) is not a new finding — it is rung 3's
+heap-profile-writer gap, confirmed still present.
+
+### 5. The defer/`go` capture defect, as R narrowed it: the transform misses SYNTHESIZED lambdas
+
+Commissioned as the correctness arc off the net root-cause (witness: `TestConcurrentSetDeadline`).
+R rooted it against **real emission** before touching anything — branch `claude/laneR-defer-loop`,
+base `45e0a97a8`, probe `src/tests/Behavioral/DeferLoopCapture`, every shape measured Go-vs-C#
+rather than reasoned about — and **the arc is both NARROWER and WIDER than briefed**:
+
+| shape | Go | C# | verdict |
+|---|---|---|---|
+| receiver reassigned after defer, NO loop | `close first` | `close first` | ALREADY CORRECT |
+| **`defer c[i].Close()` in a 3-clause loop** (the witness) | conn2/1/0 | **PANIC: index out of range [3] with length 3** | **BROKEN** |
+| closure capture, 3-clause loop | 2,1,0 | 2,1,0 | ALREADY CORRECT |
+| closure capture, range loop | z,y,x | z,y,x | ALREADY CORRECT |
+| deferred plain ARGUMENTS | 2,1,0 | 2,1,0 | ALREADY CORRECT |
+| **`go c[i].Close()` in a 3-clause loop** | g2/g1/g0 | same defect (emission confirmed) | **BROKEN** |
+
+**Both halves of the brief were wrong as stated, and COORD owned the overstatement.** (a) For a
+**source-level func literal** the converter ALREADY implements Go ≥1.22 per-iteration semantics —
+it renames the loop variable and emits the per-iteration copy,
+`for (nint iᴛ1 = 0; …) { var i = iᴛ1; … }`; that path is correct today and needs no work. (b) The
+deferred receiver is ALREADY hoisted for **simple receivers** by the `ʗ` capture-snapshot
+machinery — `var xʗ1 = x; defer(() => xʗ1.Close(), …)` — proven by the no-loop probe behaving
+exactly like Go.
+
+**The actual defect, stated precisely.** The per-iteration transform is triggered by the
+variable-analysis pass finding a func literal **in the Go SOURCE**. `defer c[i].Close()` and
+`go c[i].Close()` contain **no func literal** — `visitDeferStmt.go:188` / `visitGoStmt.go:202`
+**SYNTHESIZE** one (`callExpr = "() => " + callExpr`) long AFTER that analysis has run. So the
+synthesized lambda captures variables the capture analysis never knew about, and consequently:
+the loop variable gets **no** per-iteration copy (`for (nint i …)`, not `iᴛ1`), and the `ʗ` hoist
+is **SHALLOW** — it snapshots the receiver's ROOT (`var cʗ1 = c;`) but leaves the **SUBSCRIPT** to
+be read at run time. Emission proof, verbatim, at both sites:
+
+```csharp
+for (nint i = 0; i < 3; i++) {
+    c[i] = new connжcloser(…);
+    var cʗ1 = c;
+    defer(() => cʗ1[i].Close(), ref ᒐ);   // and: goǃ(() => cʗ1[i].Close());
+}
+```
+
+with `i == 3` when it fires. **Why the witness reaches the lambda arm at all:** `net.Conn.Close()`
+RETURNS `error`, so `hasResults == true` forces the `"() => " + callExpr` fallback instead of the
+method-group form (which binds its receiver eagerly and is correct). Same for `namedFuncType`,
+`variadicCallee`, `variadicLit`. The file's own variadic comment reasons about exactly this hazard
+— "there are no arguments whose defer-time evaluation the wrap could disturb" — **but the
+reasoning was applied to ARGUMENTS only; the RECEIVER was never in scope.**
+
+**Consequences for the arc:** (1) **`go` statements are in scope** and were not named in the brief
+— same mechanism, same line, different file; (2) the guard's briefed "three shapes each proven red
+with its own fix removed" re-bases — three of the briefed shapes are green at master, so they are
+**green CONTROLS that must stay green**, and the genuinely red shapes are the two synthesized-lambda
+ones; (3) corpus reach is narrower than "every 3-clause loop" — it is deferred/`go` calls whose
+callee forces the lambda arm AND whose receiver expression is not a plain identifier.
+
+**Fix in flight, direction ratified:** hoist the **RESOLVED receiver expression** (not its root)
+into a **defer-statement-time temp** in both synthesized-lambda arms. It also yields the Go-correct
+per-iteration value without touching the source-literal transform, and preserves Go's
+statement-time evaluation of side-effecting subscripts (`c[f()]` runs `f` once, at the right time)
+for free. Deliverables still owed: the behavioral guard with its controls, CNR, and — because the
+reach is corpus-wide — a **seeded reconvert-and-BUILD census** of how many emission sites move.
+
+### 6. Named, priced, and deliberately NOT chased
+
+- **The CS1113 value-receiver method-group defect** (R, incidental to §5, same file, adjacent
+  decision): `defer xs[i].show()` where `show` has a **VALUE receiver** emits a method group that
+  **does not compile** — `CS1113: Extension method … defined on value type … cannot be used to
+  create delegates`. Ordinary Go; **no stdlib package writes it**, which is why the corpus is
+  green. Logged as a named arc candidate, priced accordingly, separate from the capture arc.
+- **The load-induced `NativeOverlapped` lifetime death** (net lane): nondeterministic, flagged,
+  not chased. See §1.
+- **`-test-action compare` alone does not stage testdata** (the net lane's four hosts-file tests
+  prove it) — a measured member of G's staging fix's scope, folded into the same fix.
+- **The DNS record-type divergence** — reclassified out of "environmental": the converted resolver
+  answers **no-record for MX/NS/TXT/SRV/PTR**, 17 verdicts, a real arc. See §1.
+- **`writev`** — ruled a converter EMISSION arc, not a capability. See §1.
+- **The Δ-collision-marker accessibility arc (commissioned to G, post-window-twelve)** — the
+  reflect final's declined rider, now its own campaign. `generatedTypeScope` (converter) and
+  `Common.GetScope` (go2cs-gen) **both read the leading `Δ` as an export capital → public**, while
+  nested siblings are internal; the fix strips the marker in **BOTH, together** (go2cs-gen already
+  has `GetSimpleName(…, dropCollisionPrefix: true)`). **Leveling-scale** — it moves effective
+  accessibility of every Δ-renamed type and method across 305 packages — so it owes its own corpus
+  proof: seeded reconvert, corpus build on **windows AND linux** (L3), goldens re-baselined if
+  behavioral emission moves, and the reflect-canary five at the lane gate. Payoff: **3 of reflect's
+  remaining 4 diagnostics** (the wall having already fallen 73 → 4 on the local-type-lift arc in
+  window thirteen).
+- **The `Func 17–24` arity ladder (local lane)** — reflect's 4th and last diagnostic, and worth
+  recording that **R REFUSED it as first written** and was right to: `golib/variadic.cs` tops out
+  at 8 fixed params, so "17+" did not match the file the item named. Re-specified: it is NOT the
+  `ꓸꓸꓸ` variadic family — the BCL's `System.Func<>` tops out at **17 generic parameters** (16 args
+  + result) and reflect's `abi_test.go` needs **21**. The work: declare plain `go.Func`/`go.Action`
+  delegates in golib (a new file beside `variadic.cs` is fine) for parameter counts **17 through
+  24**, BCL-style variance (`in` params, `out` result), namespace `go`, and **only 17+** so arities
+  ≤16 keep binding `System.Func` unambiguously. **Zero converter change** — the emitted name is
+  unqualified and C# lookup is arity-aware. Guard: one GolibTests case constructing and invoking a
+  20-param `go.Func`. Golib API change ⟹ one full `go2cs.slnx` build before banking.
+
+### 7. Instrument-discipline collection (each paid for in these two days)
+
+The two days produced one family repeatedly, and both lanes named it the same way: **the absence
+of a failure signal is not the presence of correctness.** Members, in the order they were paid for:
+
+- **A verdict rule that tests for the ABSENCE of crash strings reports a FALSE GREEN when nothing
+  ran.** R's Uname A/B printed "0 crash / 4 clean of 4" while `dotnet publish` had failed — FALSE-
+  GREEN route #6's exact shape. Two tells were in hand and rationalized away: the published host's
+  **mtime was unchanged** across the "rebuild", and his own displacement check printed
+  `generated wrapper displaced? 1` — the literal answer that it had NOT been. Remedy: the round
+  verdict now requires **positive evidence** (≥20 `"action":"pass"` records) and reports **NOT RUN**
+  otherwise, naming the log line to read.
+- **The same instrument then produced the mirror FALSE RED**, matching
+  `TestWaitInterrupt/SIGQUIT`'s own **expected** `signal: quit (core dumped)` payload as a host
+  crash. **Both errors share one root: pattern-matching TEXT instead of asserting a PROPERTY of the
+  run.** The ground truth that settled it was three indicators sharing no machinery — pass records
+  **flat at 72 across 7 rounds vs ragged 45–59**, every death marker (`^panic:`,
+  `Process terminated`, `test binary died`) present before and absent after, and the pipeline's own
+  verdict moving from *killed by SIGSEGV* to *exit status 1*.
+- **A build claim read off a `Select-String` for `0 Error(s)` would also match a build that never
+  compiled the file.** G re-ran asserting the **process exit code** plus **positive existence of the
+  five mirror types in the BUILT linux `syscall.dll`**. *Absence of failure is not presence of the
+  fix.*
+- **Git reading "no textual conflict" as a correct merge.** `zsyscall_linux_amd64.cs` auto-merged
+  cleanly (R's body deletion and G's placeholder replacements touched disjoint regions) into a file
+  that compiles and that **no converter run would ever emit**. Rule, now in the class header: **a
+  generated file a hand-own partly displaces is REGENERATED at a seam, never merged**; a clean
+  auto-merge there is evidence of nothing, and the checkable property is the ten-names/zero-bodies
+  assertion (with §3's destination half added).
+- **`git checkout --ours`/`--theirs` is a DELETE of everything the other side added, and it looks
+  like no decision at all.** Resolving `TestHost.cs` with `--theirs` silently reverted G's own
+  pass-through fix; caught by asserting the PROPERTY (verdict call sites must be 0). **A merge
+  resolution is a change, and it gets checked like one.**
+- **A revert of anything another lane may have merged is a CROSS-LANE change.** R reverted a
+  superseded commit and reasoned "nets to nil" from `master..HEAD`; G **simulated** the merge and
+  measured the parse relocation **STRIPPED** with no conflict. The merge base was R's own fix
+  commit, not master. **A branch's diff against master says nothing about what it contributes
+  against a merge base that master does not contain — assert at the merge RESULT, always.** Adopted
+  as window ritual for host-touching merges (the four pair-properties table).
+- **`git add <path>` commits whatever that path currently holds**, not the change you have in mind
+  — R's unmeasured TZ hunks rode into an ordering commit whose message described only the
+  relocation, and reached the window-twelve unit. *A commit message describing one change is not a
+  claim the commit contains only that change; assert `git show --stat` against the intent before
+  pushing.*
+- **`$?` after a pipeline whose last element is an `echo` reports the echo**, so G's first
+  witness-sweep attempt died on `[CmdletBinding()]` (a `.ps1` invoked from the bash tool) and
+  printed exit 0. Two rules: **never invoke a repo `.ps1` from the bash tool**, and assert
+  `$LASTEXITCODE` explicitly.
+- **A naive string grep cannot tell code from prose ABOUT code** — G's post-merge property check
+  matched the old error message inside his own explanatory comment and read as the merge
+  reintroducing the fix he had removed. **A false RED costs the same trust as a false green.**
+- **A stage log that reads a verdict out of an EMPTY log is the "never ran" shape, not a red** —
+  R's rebuilt TZ instrument asserts each stage's exit code, keeps full output, requires the host
+  binary's **mtime to move**, and refuses to read a verdict out of a zero-byte compare log.
+- **An artifact's PRESENCE says nothing about what current inputs produce** — wipe and regenerate
+  before reading a build tree as evidence (§2, twice in one session).
+- **A build whose inputs changed under it measures nothing** (§3, R's discarded first repro).
+- **A system-wide Go on PATH beat an explicitly set GOROOT**, so the Go side silently never built
+  (`compile: version go1.23.12 does not match go tool version go1.23.2`) — the standing pin already
+  puts the SDK's bin FIRST on PATH, and this is the measurement of WHY that ordering is
+  load-bearing. Second confident-looking-output env trap on that box, beside the GOROOT
+  slash-spelling trap. **A comparison where one side didn't compile isn't a measurement.**
+- **The `CurrentDirectory` cross-worktree hazard** (local linkname-seam lane): .NET pins the
+  process `CurrentDirectory` to the session's **ORIGINAL** worktree regardless of `Set-Location`,
+  so any RELATIVE path handed to the static file APIs touches **ANOTHER LANE'S TREE**. Absolute
+  paths only.
+
+### 8. Ledger of what else landed in these two days (context for the rows, not the fold's subject)
+
+- **`syscall.Uname` was the os/exec heap corruptor** — `uname(2)` writing 390 bytes of inline
+  character data over six `array<int8>` **managed reference slots** (and ~246 bytes past the
+  object), convicted by `verifyheap` (118,832 objects, 6 errors in one contiguous ~0x180-byte run
+  holding a `go.array<System.SByte>+<GetEnumerator>d__50`) and by 7 rounds dead / 7 rounds complete
+  at a flat 72 passes. The struct-passing class's deferral rule is **corrected**: "per-member, WHEN
+  REACHED" is right for a wrongness class and **wrong for a corruption sub-class** — for
+  `array<>`-bearing members the kernel writes over GC-tracked references, so the five remaining
+  members (`Select`/`FdSet`, `FcntlFlock`, `Statfs`/`Fstatfs`, `Sysinfo`, `Adjtimex`) were closed
+  **proactively** on the mechanism. Landing rule minted: **a struct-passing hand-own is not landable
+  without its generated body in the same commit** (`manualConversionFuncs` displaces at CONVERSION
+  time, and the `-tests` pipeline never regenerates `syscall`, so the CS0111 appears only at a build
+  of that flavor).
+- **os/exec Linux climbed 45–59 ragged (host killed by SIGSEGV, 7/7) → 72 (Uname mirror) → 81
+  (helper-gate made effective) → 83 (PWD follows the chdir) → 85 (SIGQUIT).** Residual is **two**,
+  both ruled: `TestCredentialNoSetGroups` **DECLINED** as a named refusal (a truthful implementation
+  needs credential/setgroups manipulation between fork and exec — the fork-exec dance this corpus
+  deliberately retired for FD-hygiene soundness, and `posix_spawn` offers no setgroups file-action;
+  one test does not buy back a retired hazard), and `TestExtraFilesRace`/`newUnixFile` commissioned
+  to a local lane as a **converter-level linkname seam** (landed window fourteen).
+- **SIGQUIT's root was better than its brief:** SIGQUIT is `_SigThrow`, **not `_SigKill`** —
+  Go prints the traceback and calls `exit(2)`; dying by the signal happens only under
+  `GOTRACEBACK=crash`. One root, two defects (signal 3 was in `sigDiesByDefault` AND there was no
+  report). The **truthful half passes honestly**, and the deliberate convention break is the honesty
+  call: the capturing thread is .NET's signal-dispatch thread and **not a goroutine**, so the block
+  writes `goroutine (signal handler) [running]:`, reports the live goroutine COUNT (which the
+  registry genuinely knows), and declares the unwalkable stacks **missing rather than
+  reconstructed**. Regression witness: banked os/signal **29 + 2, unchanged**.
+- **The TZ pin finding narrowed twice.** R's "corpus-wide inert" was wrong in scope; G measured the
+  Windows flavor as genuinely effective (`env_windows.cs` implements `Getenv` over Win32
+  `GetEnvironmentVariable`, which reads the live block .NET updates) and left a permanent GolibTests
+  guard. The inert half is **linux/darwin only**, with **two independent breaks** there (`env_unix.cs`
+  answers from a `runtime_envs()` startup snapshot, AND .NET on unix never calls `setenv(3)`). Then
+  R's own A/B — the two crossed window-twelve tips differing by exactly the two lines — measured the
+  publishing hunks **INERT on the `time` row** (byte-comparable logs, the same single mismatch on
+  both arms), and R said so rather than letting G's drop look vindicated by a result it did not
+  produce. It was that control run that surfaced §2.
+- **The bogo/host-limit arc closed with the class NOT emptied, on honest evidence.** Two real host
+  defects were exposed and fixed en route — the host **pre-empting unrecognized flags** with its own
+  verdict (any package that overrides `flag.Usage` diverged), and `TestFlagBridge.Parse()` running
+  in `Run()` **before** `RunTests` reaches `TestMain` (relocated to `M.Run`, Go's own position at
+  `testing.go:1944`; the no-TestMain branch routes through `m.Run()` as Go's generated main does,
+  leaving ONE parse site). i9's exit-code discriminator is what rooted the second — *2 is flag's
+  default Usage, 89 is the package's override, so 2 proves the override was not in effect.* The
+  isolated run: **861 PASS / 2,381 SKIP / 0 FAIL, exit 0, wall 1,046.3 s** against a 600 s wall on a
+  24-thread box (1,316 s on the 6650U). Four measurements across two machines fixed the partition as
+  a **property**: runnable 861 / skipped 2,381, invariant under ~4× timeout pressure — contention
+  only redistributes PASS/FAIL inside the runnable set. Same verdict as before, **entirely different
+  evidence**: the entry now stands on Go's own contract rather than on a host defect, with the
+  retirement path updated from "fast startup" to "steady-state TLS throughput". G's own correction:
+  the lone `0xc0000409` he said "will not be explained by a busy box" was, and is gone on the clean
+  run.
+- **Two lanes independently cut the same `M.Run` relocation within minutes** — the silent-duplication
+  hazard arriving exactly as the integration rules advertise. **What caught it was not tooling: it
+  was the coordinator reading two entries describing one job.** Worth recording as a limit — that
+  hazard is invisible to every mechanical check the fleet has.
+
+**Arc queue after this fold (Windows chase to 100%, ranked):** net residual-35 (five named arcs);
+net/http (AV root, then buckets); internal/trace (staging fix rides window twelve); reflect (the
+Δ-collision-marker accessibility leveling + the `Func 17–24` arity single); the defer/`go`
+synthesized-lambda capture arc (in flight); `runtime/pprof` (capability frontier — last, possibly
+the release's honest disclosure story). Also queued: the TZ unix half (R's family, on its own
+evidence); the netip **deref-only box-chain** arc (retitled on the record — NOT B′-S1 re-opened;
+the 50/33/17 decomposition has the receiver third smallest, and `halves()` censused **1-of-1**
+corpus-wide with the `Ꮡ(value).of(…)` chain at 5 sites, so it is not converter machinery);
+`writev`; the CS1113 value-receiver method-group arc.
