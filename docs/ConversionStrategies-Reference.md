@@ -17421,6 +17421,54 @@ the `wanted` bit was unset, `sigsend` correctly returned false, the default hand
 its buffered stdout went with it. That is the machinery working exactly as specified. Wait for the
 child to announce readiness rather than sleeping on a timer.
 
+**`net.newUnixFile` — the row where the precondition was ALREADY true, and where the tempting substitution is
+the wrong answer** (2026-08-28). `os/file_unix.go` pushes a hidden `*os.File` constructor into `net`:
+
+```go
+// os/file_unix.go (package os) — the PUSHER
+//go:linkname net_newUnixFile net.newUnixFile
+func net_newUnixFile(fd int, name string) *File {
+	if fd < 0 {
+		panic("invalid FD")
+	}
+	return newFile(fd, name, kindSock, true)
+}
+
+// net/fd_unix.go — the CONSUMER, bare shape
+// Defined in os package.
+func newUnixFile(fd int, name string) *os.File
+```
+
+Every other honorable row in this registry had to answer "what else must move before the forwarder is honest?"
+— Go's `osinit` had not filled `sysDirectory`, `argslice` was empty, `metricsLock` could not be taken.
+**Here nothing else had to move.** `os.newFile` is the same function `os.NewFile` and `os.Pipe` reach; it is
+exercised on every row that opens anything, and the `kindSock` path differs from the `kindPipe` path only in
+skipping the `SetNonblock` call — the descriptor is already non-blocking — while still registering with the
+poller. So the row is one line, the forwarder is `return os.net_newUnixFile(fd, name);`, and
+`packageFuncAccess` widens the pushing definition to `public` from the reverse index. No new project reference
+and no cycle: `net` already imports `os` (`fd_unix.go`'s own `dup()` calls `os.NewSyscallError`), and `os`
+imports no part of `net`.
+
+**Why `os.NewFile` is not a substitute, which is what makes this a registry row rather than a hand-patch in
+`net`.** `kind` is precisely the distinction Go's own comment on `net_newUnixFile` exists to preserve:
+`kindSock` sets `f.nonblock = true` so a later `Fd()` hands back a **blocking** descriptor — the historical
+behavior `net.conn.File` callers depend on — while `kindNewFile` on an already-non-blocking descriptor leaves
+it non-blocking. Substituting would compile, run, and quietly change the descriptor's mode: a
+plausible-looking wrong answer, which is the failure this project rules against. The seam is also why the
+other tempting framing — "emit `InternalsVisibleTo` so the puller can see the private symbol" — is not reached
+for: the push machinery already crosses the assembly boundary by publicizing exactly the one symbol Go opened
+with its directive, rather than widening a package's whole private surface to another assembly.
+
+What the stub was costing on Linux: `(*net.TCPListener).File()` → `netFD.dup()` bottoms out here, so
+`os/exec`'s `TestExtraFilesRace` — which builds its `ExtraFiles` out of listener files — died on the
+`PartialStubGenerator` throw as an infrastructure-error, the last named residual of that row. Windows never
+surfaced it: `net/fd_unix.go` is `//go:build unix` and `os/file_unix.go` is
+`//go:build unix || (js && wasm) || wasip1`, so neither declaration exists there at all — the same
+platform-blindness that hid `syscall.runtime_envs` and `runtime.fcntl`. Guarded by
+`TestLinknamePushRoutesNetNewUnixFile`, which re-derives both halves of the pair from GOROOT and then asserts
+the routing, the honorable disposition, and — exercising `packageFuncAccess` rather than the index it reads —
+the publicization that makes the cross-assembly call compile.
+
 ### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
 
 `internal/concurrent` is the whole of `unique`'s storage, and `unique` is `net/netip`'s address interner —

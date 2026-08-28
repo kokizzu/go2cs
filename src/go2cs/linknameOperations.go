@@ -208,6 +208,36 @@ var linknamePushTargets = map[string]linknamePush{
 	// slow path reachable): os/exec's TestPipes drove ForkLock contention into the probe and died
 	// on the announcing stub — the last named residual of the exec-wall arc's own row.
 	"syscall.hasWaitingReaders": {source: "sync.syscall_hasWaitingReaders", bareDecl: true},
+	// net's hidden *os.File constructor for a dup'd socket descriptor, pushed by os/file_unix.go
+	// (`//go:linkname net_newUnixFile net.newUnixFile`). BARE consumer shape: net/fd_unix.go declares
+	// `func newUnixFile(fd int, name string) *os.File` under the prose comment "Defined in os
+	// package", with no directive of its own — the syscall.runtime_envs shape.
+	//
+	// The pushed body is three lines of ORDINARY CONVERTED Go — a negative-fd panic and
+	// `newFile(fd, name, kindSock, true)` — and the precondition the os.runtime_args and
+	// GetSystemDirectory rows insist on is already TRUE here rather than needing a companion:
+	// os.newFile is the same function os.NewFile and os.Pipe reach, it is exercised on every Linux
+	// row that opens anything, and the kindSock path differs from the kindPipe path only in skipping
+	// the SetNonblock call (the descriptor is already non-blocking) while still registering with the
+	// poller. So the forwarder calls something that genuinely works, and nothing else had to move.
+	//
+	// os.NewFile is NOT a faithful substitute for the forward, which is why this is a registry row
+	// and not a hand-patch in net: `kind` is exactly the distinction Go's own comment on
+	// net_newUnixFile exists to preserve. kindSock sets `f.nonblock = true` so a later `Fd()` hands
+	// back a BLOCKING descriptor — the historical behavior net.conn.File callers depend on — whereas
+	// kindNewFile on an already-non-blocking descriptor leaves it non-blocking. A substitution would
+	// compile, run, and quietly change the descriptor's mode: a plausible-looking wrong answer.
+	//
+	// No new project reference and no cycle: net already imports os (fd_unix.go's own dup() calls
+	// os.NewSyscallError), so net.csproj's `core/os` reference and the file's `using os = os_package;`
+	// are both already there, and os imports no part of net.
+	//
+	// What the stub was costing on Linux: (*net.TCPListener).File() -> netFD.dup() bottoms out here,
+	// so os/exec's TestExtraFilesRace — which builds its ExtraFiles out of listener files — died on
+	// the PartialStubGenerator throw as an infrastructure-error. Windows never surfaced it: both
+	// halves are unix-only (net/fd_unix.go is `//go:build unix`, os/file_unix.go is
+	// `//go:build unix || (js && wasm) || wasip1`), so neither declaration exists there at all.
+	"net.newUnixFile": {source: "os.net_newUnixFile", bareDecl: true},
 	// internal/syscall/windows's system-directory query, pushed by runtime/os_windows.go. Unlike the
 	// two rows above this is the HANDLE consumer shape — security_windows.go carries its own one-arg
 	// `//go:linkname GetSystemDirectory` above a bodyless `func GetSystemDirectory() string` — so
