@@ -26,6 +26,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"go/build"
@@ -72,6 +73,47 @@ func resolveGo2CSPathDefault(goPath string) string {
 	}
 
 	return filepath.Join(homeDir, "go2cs")
+}
+
+// checkGoRootSpelling reports a resolved GOROOT that this host cannot resolve to a Go source tree.
+//
+// GOROOT is the axis EVERY standard-library decision keys off: which packages are stdlib, where their
+// sources are, what each one's import path is, and therefore what namespace the emission lands in. A
+// value that is merely MISSPELLED — naming the right toolchain in a form the host's filesystem does
+// not answer to — is the worst of the three states, because it is neither absent (the converter would
+// derive one) nor usable. It reaches getProjectName, fails the under-GOROOT test there, sends every
+// standard-library package into the `module std` walk-up, and produces a complete `namespace go.std.*`
+// emission at exit code 0.
+//
+// The check is deliberately about RESOLVABILITY, not agreement. A GOROOT that names a genuinely
+// different toolchain than the one on PATH is legitimate and supported — that is what -goroot and the
+// resolveLoaderGoRoot toolchain switch below are for — so this must never turn a deliberate choice
+// into an error. What it rejects is the value that answers no directory at all: the MSYS/Cygwin
+// `/c/Users/<user>/sdk/go1.23.12` spelling of a Windows path, a stale root whose directory has moved,
+// a typo. Requiring `<goRoot>/src` rather than merely `<goRoot>` is what makes it specific: every Go
+// distribution ships its sources there, the converter cannot convert a line without them, and a
+// directory that exists but holds no `src` is not a toolchain root whatever its name suggests.
+//
+// The error names the toolchain's OWN answer when it can get one, because the fix is almost always
+// "use that spelling" and the two strings side by side are the whole diagnosis.
+func checkGoRootSpelling(goRoot string) error {
+	if info, err := os.Stat(filepath.Join(goRoot, "src")); err == nil && info.IsDir() {
+		return nil
+	}
+
+	// %s, not %q: on Windows %q escapes every separator in the paths it is asking the reader to compare.
+	message := fmt.Sprintf("GOROOT is set to \"%s\", which is not a Go toolchain root on this host — no src directory under it.\n"+
+		"       Every standard-library decision keys off GOROOT, so a spelling this host cannot resolve would\n"+
+		"       silently emit the whole standard library into namespace go.std.* and exit 0.", goRoot)
+
+	if reported, err := getGoEnv("GOROOT"); err == nil {
+		if reported = strings.TrimSpace(reported); reported != "" {
+			message += fmt.Sprintf("\n       The go command on PATH reports its GOROOT as \"%s\" — set GOROOT to exactly that spelling,\n"+
+				"       or pass -goroot with it. An MSYS/Cygwin-style \"/c/...\" path is the usual cause on Windows.", reported)
+		}
+	}
+
+	return errors.New(message)
 }
 
 func main() {
@@ -247,6 +289,23 @@ Examples:
 			goRootPinned = true
 		}
 	})
+
+	// Normalize the RESOLVED GOROOT once, here, rather than at each of the dozen sites that compare a
+	// path against it. filepath.Clean folds the spelling variants of one directory that this host can
+	// still resolve — forward slashes on Windows, a trailing separator, a doubled one, an interior
+	// `.` — so no downstream comparison has to know which spelling arrived. Cheap, and it makes the
+	// value that every stdlib decision keys off single-valued by construction.
+	*goRootCmd = filepath.Clean(*goRootCmd)
+
+	// Clean is normalization, not validation, and it cannot rescue a spelling that names no directory
+	// on this host — an MSYS/Cygwin `/c/Users/...` GOROOT Cleans to `\c\Users\...`, which is still not
+	// a path Windows resolves. Reject that here. The doctrine this enforces is the one the
+	// forward-slash-GOROOT finding paid for: A PATH THE CONVERTER HALF-RECOGNIZES IS WORSE THAN ONE
+	// IT REJECTS. A run that proceeds on an unresolvable GOROOT does not fail — it silently reclassifies
+	// the entire standard library (see getProjectName) and exits 0 over a poisoned emission.
+	if err := checkGoRootSpelling(*goRootCmd); err != nil {
+		log.Fatalf("%v\n", err)
+	}
 
 	if !goRootPinned {
 		if resolved, loaderVersion, switched := resolveLoaderGoRoot(inputFilePath, *goRootCmd); switched {

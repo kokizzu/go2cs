@@ -45,10 +45,32 @@ type PackageInfo struct {
 }
 
 func getProjectName(importPath string, options Options) (string, string) {
-	if strings.HasPrefix(importPath, options.goRoot) {
-		// A no-match is tolerable here: the guard only proves the path is under GOROOT, not under
-		// GOROOT/src, and the untrimmed value still names the package sensibly for the caller.
-		importPath, _ = pathReplace(importPath, filepath.Join(options.goRoot, "src"), "")
+	// isPathUnder, not strings.HasPrefix. The two operands are the SAME directory reached by two
+	// routes — options.goRoot as the environment or the operator spelled it, importPath as go/build
+	// or the command line spelled it — so a raw byte-prefix test promotes every difference in
+	// SPELLING to a difference in MEANING. filepath.Rel (isPathUnder's engine) Cleans both sides, so
+	// a forward-slash GOROOT on Windows, a trailing separator, and a doubled one all compare equal;
+	// it folds case on Windows, where one directory legitimately has several spellings; and it is
+	// boundary-correct, which the prefix test was not (`/usr/lib/go` prefix-matched `/usr/lib/gopher`).
+	//
+	// The HALF-recognized GOROOT is the expensive failure here, not the unrecognized one. When this
+	// test wrongly says no for a package that IS under GOROOT/src, the else branch walks up looking
+	// for a module root and finds $GOROOT/src/go.mod — which declares `module std`. Every
+	// standard-library package is then named `std/<pkg>`, the whole emission lands in
+	// `namespace go.std.*` with a 0 exit code and no warning, and the damage surfaces only in the
+	// CONSUMER packages as `CS0117: 'utf8_package' does not contain a definition for …` — pointing
+	// away from the cause and reading exactly like a converter regression that dropped public
+	// members. Guarded by stdNamespaceGuard_test.go, which is where the spelling variants are
+	// enumerated.
+	if isPathUnder(importPath, options.goRoot) {
+		// Clean the SUBJECT too. pathReplace's literal match still needs one separator spelling on
+		// both sides, and a no-match at this step is not benign: the untrimmed absolute path becomes
+		// the dotted project name (`C:.Users.…`), so the normalization the test above just did has
+		// to reach the trim as well or it only moves the failure one line down.
+		//
+		// A no-match after that IS tolerable: the guard only proves the path is under GOROOT, not
+		// under GOROOT/src, and the untrimmed value still names the package sensibly for the caller.
+		importPath, _ = pathReplace(filepath.Clean(importPath), filepath.Join(options.goRoot, "src"), "")
 	} else {
 		// Check if current folder has go.mod or main.go
 		if _, err := os.Stat(filepath.Join(importPath, "go.mod")); err == nil {
