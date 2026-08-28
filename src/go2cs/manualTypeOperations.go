@@ -984,8 +984,20 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// GetAcceptExSockaddrs/RawSockaddrAny.Sockaddr pair: stage native, transcribe at harvest
 		// (netpoll design SS4.8, RATIFIED).
 		"WSARecvFrom": goosWindows,
-		// WSASendto and its Inet4/Inet6 variants and TransmitFile are the same machinery with more
-		// staging and remain absent for the reason WSARecvFrom no longer is: nothing on the TCP
+		// TransmitFile joined on 2026-08-28, by the same rule: net's sendfile family REACHED it.
+		// TestSendfileParts and TestSendfileSeeked copy through io.CopyN, whose *io.LimitedReader is
+		// not an io.WriterTo, so io.Copy takes the ReaderFrom branch into net.sendFile ->
+		// internal/poll.SendFile -> here; TestSendfile passes *os.File directly and os.File.WriteTo
+		// wins the WriterTo branch first (go.dev/issue/67042), which is why the family split
+		// three-to-two and why the stop looked like a sendfile bug TestSendfile disproved. The
+		// generated body created NO operation record, so the socket was never associated with the
+		// CLR's completion port and the kernel's completion had nowhere to arrive: execIO's
+		// pd.wait('w') blocked forever and beheaded net's whole alphabetical tail. It is also the one
+		// member that READS the overlapped -- SendFile publishes the file offset in Offset/OffsetHigh
+		// -- so the hand-own carries those onto the record's own control block.
+		"TransmitFile": goosWindows,
+		// WSASendto and its Inet4/Inet6 variants are the same machinery with more staging and remain
+		// absent for the reason WSARecvFrom and TransmitFile no longer are: nothing on the TCP
 		// listen/dial/accept/read/write path reaches them, and the board's ruling is to fix a
 		// censused wrapper when a suite REACHES it. (The Inet4/Inet6 SENDERS are hand-owned in
 		// internal/syscall/windows, where their linkname declarations live.)
