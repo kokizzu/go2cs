@@ -94,27 +94,55 @@ public static class TestHost
         CultureInfo previousUICulture = CultureInfo.CurrentUICulture;
         string previousDirectory = Environment.CurrentDirectory;
         string? previousTimezone = Environment.GetEnvironmentVariable("TZ");
+
+        // A RE-EXEC'D HELPER of an outer host run keeps the state its parent assigned instead of
+        // sandboxing again. Go's re-exec'd test binary performs no chdir of its own, and the
+        // helper protocol depends on cmd.Dir surviving into the child — os/exec's
+        // TestImplicitPWD/TestExplicitPWD assert the child's os.Getwd() against the directory the
+        // TEST chose, and a fresh GUID sandbox here answered with its own root instead. The outer
+        // host plants this marker in its own environment immediately after creating its sandbox,
+        // so every descendant — including one spawned with a cmd.Environ()-derived environment —
+        // identifies itself here and leaves the inherited working directory, fixtures and TZ
+        // alone. Its working directory is previousDirectory by definition: that IS the directory
+        // the parent spawned it in.
+        string? inheritedSandbox = Environment.GetEnvironmentVariable(SandboxMarkerVariable);
+        bool helperReExec = !string.IsNullOrEmpty(inheritedSandbox);
+
         // The isolated run directory reproduces the SHAPE `go test` gives a package, not just a
         // scratch space: its own last segment is the package's directory name, and its parent holds
         // nothing else. A test may walk out of the working directory and back in by name — io/fs's
         // TestGlob globs `*/glob.go` against os.DirFS("..") and expects `fs/glob.go` — which a bare
         // GUID directory answers with the GUID (and, worse, with every SIBLING run still on disk).
-        (string runRoot, string workingDirectory) = CreateRunDirectory(registry.Package);
+        (string runRoot, string workingDirectory) = helperReExec
+            ? (inheritedSandbox!, previousDirectory)
+            : CreateRunDirectory(registry.Package);
+
+        if (!helperReExec)
+            Environment.SetEnvironmentVariable(SandboxMarkerVariable, runRoot);
+
         options.ResolveOutputPaths(previousDirectory);
 
         try
         {
-            // The ancestry goes in FIRST, so the fixture staging that follows can replace any linked
-            // component it needs to write into with a real one. GOROOT is what the pipeline exports to
-            // both sides; when there is none, staging is skipped and the sandbox is what it always was.
-            PackageAncestry.TryStage(Environment.GetEnvironmentVariable("GOROOT"), registry.Package, runRoot, workingDirectory);
+            if (!helperReExec)
+            {
+                // The ancestry goes in FIRST, so the fixture staging that follows can replace any linked
+                // component it needs to write into with a real one. GOROOT is what the pipeline exports to
+                // both sides; when there is none, staging is skipped and the sandbox is what it always was.
+                PackageAncestry.TryStage(Environment.GetEnvironmentVariable("GOROOT"), registry.Package, runRoot, workingDirectory);
 
-            CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory, runRoot);
-            CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
-            Environment.CurrentDirectory = workingDirectory;
+                CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory, runRoot);
+                CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
+                Environment.CurrentDirectory = workingDirectory;
+
+                // The helper skips this with the rest: a parent test that hands its child an
+                // explicit TZ through cmd.Env must see that value in the child, exactly as Go's
+                // helper — which has no TZ logic at all — would show it.
+                Environment.SetEnvironmentVariable("TZ", "UTC");
+            }
+
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
-            Environment.SetEnvironmentVariable("TZ", "UTC");
 
             // Go's package-level variable initializers run BEFORE main, so a package that declares
             // `var mode = flag.Bool("bogo-mode", ...)` has already put that name on
@@ -228,8 +256,10 @@ public static class TestHost
                 // The whole run root, so the package-named directory's private parent goes with it.
                 // Junction-aware: a recursive delete does not FOLLOW a link (which is what keeps the
                 // real GOROOT safe) but it does not remove one either, so the ancestry's links are
-                // unlinked first.
-                PackageAncestry.Delete(runRoot);
+                // unlinked first. A helper re-exec never deletes: its runRoot is the PARENT run's
+                // sandbox, which the parent is still using and owns.
+                if (!helperReExec)
+                    PackageAncestry.Delete(runRoot);
             }
             catch
             {
@@ -282,6 +312,13 @@ public static class TestHost
     // Output-directory folder holding fixtures that reach ABOVE the package. MUST match the
     // converter's SharedFixtureStagingRoot, which emits the matching csproj <Link>.
     private const string SharedFixtureStagingRoot = "go2cs_shared_fixtures";
+
+    // Planted in the host's own environment the moment its sandbox exists, so every descendant
+    // process can tell it is a RE-EXEC'D HELPER of this run rather than a fresh host — the value
+    // is the outer run root, and its presence is what Run's helper gate keys on. Environment
+    // inheritance is the delivery mechanism: it survives cmd.Environ()-derived child environments
+    // by construction, which is how the os/exec helpers build theirs.
+    private const string SandboxMarkerVariable = "GO2CS_TEST_SANDBOX";
 
     /// <summary>
     /// Creates this run's isolated directory pair — the run root and the package working directory
