@@ -755,6 +755,10 @@ every newly-`sstring` site) + a re-run of the performance suite to quantify the 
 assembler, cgo, runtime/compiler intrinsics, or platform services with maintainable C# implementations,
 proved package by package by Phase 4.
 
+cgo's own slice of this phase — closing the `import "C"` gap that predates the stub-inventory
+machinery below entirely — has a proposed, unratified phased plan in
+[`PLAN-cgo-interop.md`](PLAN-cgo-interop.md).
+
 ### Phase 5A — inventory and classify the external surface
 
 - Produce a deterministic inventory of every bodyless partial declaration and generated throwing stub,
