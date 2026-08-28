@@ -1,8 +1,18 @@
 # The cooperative scheduler — owning goroutine capacity instead of renting the ThreadPool's heuristics
 
-> **STATUS: DESIGN — PROPOSED (2026-08-12, lane scheduler-design). Nothing in this document is
-> ratified.** Every decision below is a proposal with a recommendation; §11 collects the ones that
-> need a coordinator ruling before any implementation lane starts. Commissioned by the singleflight
+> **STATUS: RATIFIED AND LANDED (coordinator; chartered 2026-08-13 at `0b8287f07` — all seventeen
+> OQs ruled, recommendations ratified — formerly PROPOSED 2026-08-12, lane scheduler-design).
+> SCHED-S1 LANDED at `4f06d78ae` (2026-08-13): goroutines get their own threads — the runtime owns
+> capacity, and the pool floor retires.** Consequence for reading this document (dated amendment
+> 2026-08-29, from the owner's staleness report): §1 and §2 describe the PRE-LANDING launch path —
+> `ThreadPool.QueueUserWorkItem` and the `max(4×cores, 256)` min-thread floor — as the measured
+> bill this design was written against; both are RETIRED. The current source is
+> `Goroutine.cs:202-209` (`new Thread(() => Run(body), s_stackReserve)`, one dedicated thread per
+> goroutine; `Goroutine.cs:26` records the history), and `builtin.cs:73` deliberately carries NO
+> `SetMinThreads` floor any more. The 28.7-minute singleflight ladder in §1 is the HISTORICAL
+> pathology that motivated the fix, not a live one — any plan citing this document's §1/§2 in the
+> present tense (the trap `PLAN-cgo-interop.md`'s blocking-call section fell into) must re-derive
+> against current source. Commissioned by the singleflight
 > convergence measurement (branch `claude/singleflight-convergence`, board append at `e6f331cd2`):
 > *"the row is ultimately a scheduler-arc row, and any floor is a bridge across it, not a fix for
 > it."* Companions: `src/core/golib/builtin.cs` (the thread floor and its own self-indictment),

@@ -858,7 +858,15 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// os/exec's suite the day the exec wall opened. Hand-owned beside Fstat with stack-local
 		// native buffers that live for the whole call. Scoped to linux exactly as Fstat: darwin
 		// declares wait4 too, with a working libc-backed body.
-		"wait4":                  goosLinux,
+		"wait4": goosLinux,
+		// The class's third member, reached 2026-08-28 by os/exec's TestFindExecutableVsNoexec:
+		// the kernel writes six 65-byte INLINE character arrays (390 bytes of `struct utsname`)
+		// where the converted Utsname is six `array<int8>` references and no characters at all,
+		// so `unix.KernelVersion()` — whose whole body is Uname plus a parse of Release — read
+		// (0, 0) and the test took Go's OWN v5.8 skip on a 5.15 kernel that has faccessat2. A
+		// quiet wrong answer of the Stat_t kind, one level removed. Hand-owned beside Fstat with
+		// a blittable mirror; scoped to linux because Uname is a Linux-only declaration.
+		"Uname":                  goosLinux,
 		"GetTimeZoneInformation": goosWindows,
 		// The same seam over a bigger record, and the first member of the class an actual suite
 		// reached: the kernel writes a 592-byte WIN32_FIND_DATAW, whose cFileName[260] and
@@ -956,6 +964,32 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// and the first that kills the process (net.Interfaces() -> NetlinkRIB -> AccessViolation).
 		// syscall/linux/sockaddr_linux_impl.cs answers it with the mirror's native image + typed decode.
 		"Recvfrom": goosLinux,
+		// The class's remaining LINUX members, closed PROACTIVELY on 2026-08-28 rather than when
+		// reached — the one place this table's per-member-when-reached rule was deliberately not
+		// followed, and the reason is measured. verifyheap on a crashed os/exec host found the
+		// managed heap genuinely corrupt (6 errors in one contiguous ~0x180-byte run: a zeroed
+		// method table, members that are text where pointers belong, a syncblock index of
+		// 21,840,206), the smashed run held an `array<System.SByte>` enumerator, and the object
+		// referencing into it was ManagedPointerTokens.s_table's own node array. That is what this
+		// class's write actually is: the kernel does not merely produce a wrong ANSWER in the
+		// caller's struct, it writes its bytes over MANAGED REFERENCES in a GC-tracked slot, and
+		// the collector then follows them. A wrong answer is local and shows up in its own test; a
+		// smashed reference is not, and surfaces as an unattributable crash somewhere else. So for
+		// the write-into-struct members "no roster row reached it" is a statement about COVERAGE,
+		// not about execution, and the deferral is unsafe on its own terms.
+		//
+		// Bodies in syscall/linux/structclass_linux_impl.cs, each the established remedy (blittable
+		// mirror, size check at the boundary, field-for-field copy). Select and FcntlFlock are
+		// two-way — the kernel reads the caller's image AND writes its answer back — and both also
+		// BLOCK, which is the lifetime hazard wait4 was hand-owned for. All goosLinux: darwin
+		// declares Select/Statfs/Fstatfs with its own layouts and non-defective bodies, and
+		// Sysinfo/Adjtimex/FcntlFlock are Linux-only declarations.
+		"Select":     goosLinux,
+		"FcntlFlock": goosLinux,
+		"Statfs":     goosLinux,
+		"Fstatfs":    goosLinux,
+		"Sysinfo":    goosLinux,
+		"Adjtimex":   goosLinux,
 		// The OVERLAPPED family — the SUBMIT SEAM of the managed netpoller arc
 		// (docs/phase4/DESIGN-netpoll-managed-poller.md §4.3/§4.4/§4.5;
 		// syscall/windows/zsyscall_windows_wsa_impl.cs carries the full write-up). Same

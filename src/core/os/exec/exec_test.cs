@@ -276,7 +276,7 @@ internal static ж<Δexec.Cmd> /*cmd*/ helperCommandContext(ж<testing.T> Ꮡt, 
     ᏑhelperCommandUsed.LoadOrStore(name, true);
     Ꮡt.Helper();
     testenv.MustHaveExec(new exec_test_package.testing_TжTB(Ꮡt));
-    var cs = append(new @string[]{name}.slice(), args.ꓸꓸꓸ);
+    var cs = appendꓸꓸꓸ(new @string[]{name}.slice(), args);
     if (ctx != default!){
         cmd = Δexec.CommandContext(ctx, exePath(new exec_test_package.testing_TжTB(Ꮡt)), cs.ꓸꓸꓸ);
     } else {
@@ -1635,7 +1635,7 @@ internal static ж<Δexec.Cmd> startHang(ж<testing.T> Ꮡt, context.Context ctx
     var flags = flagsʗp.slice();
 
     Ꮡt.Helper();
-    var args = append(new @string[]{hangTime.String()}.slice(), flags.ꓸꓸꓸ);
+    var args = appendꓸꓸꓸ(new @string[]{hangTime.String()}.slice(), flags);
     var cmd = helperCommandContext(Ꮡt, ctx, "hang"u8, args.ꓸꓸꓸ);
     cmd.Value.Stdin = new exec_test_package.tickReaderжReader(newTickReader(1 * time.Millisecond));
     cmd.Value.Stderr = new exec_test_package.strings_BuilderжWriter(@new<strings.Builder>());
