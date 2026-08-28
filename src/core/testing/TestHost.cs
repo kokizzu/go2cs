@@ -150,7 +150,7 @@ public static class TestHost
                 // The helper skips this with the rest: a parent test that hands its child an
                 // explicit TZ through cmd.Env must see that value in the child, exactly as Go's
                 // helper — which has no TZ logic at all — would show it.
-                Environment.SetEnvironmentVariable("TZ", "UTC");
+                PublishEnvironmentVariable("TZ", "UTC");
             }
 
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -187,12 +187,6 @@ public static class TestHost
                 return 2;
             }
 
-            // Go's m.Run parses the command line if nothing has yet (`if !flag.Parsed() {
-            // flag.Parse() }`) — the step that writes the VALUES into the definitions above. A
-            // package with custom test flags but no TestMain gets them populated by exactly this
-            // and nothing else; without it every such flag silently keeps its default (the
-            // os/signal TestDetectNohup re-exec recursion). See TestFlagBridge.Parse.
-            TestFlagBridge.Parse();
 
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
@@ -261,7 +255,7 @@ public static class TestHost
             Environment.CurrentDirectory = previousDirectory;
             CultureInfo.CurrentCulture = previousCulture;
             CultureInfo.CurrentUICulture = previousUICulture;
-            Environment.SetEnvironmentVariable("TZ", previousTimezone);
+            PublishEnvironmentVariable("TZ", previousTimezone);
 
             try
             {
@@ -313,10 +307,14 @@ public static class TestHost
 
     private static nint RunTests(TestRegistry registry, TestRunner runner)
     {
-        if (registry.TestMain is null)
-            return runner.RunAll();
-
         testing_package.M m = new() { Runner = runner };
+
+        // No TestMain: Go's generated main is `os.Exit(m.Run())`, so this goes through M.Run for
+        // the same reason it does there -- M.Run is where the flag parse lives, and a package with
+        // custom test flags and no TestMain has nothing else to populate them.
+        if (registry.TestMain is null)
+            return m.Run();
+
         registry.TestMain(new StandardBox<testing_package.M>(m));
         return runner.HasRun ? runner.ExitCode : 0;
     }
@@ -371,15 +369,34 @@ public static class TestHost
     /// inherits.
     /// </summary>
     /// <inheritdoc cref="PublishSandboxMarker" path="/remarks"/>
-    private static void PublishEnvironmentVariable(string name, string value)
+    private static void PublishEnvironmentVariable(string name, string? value)
     {
+        // A null value CLEARS on both sides: that is what the TZ restore asks for when the run
+        // inherited no TZ at all, and leaving a stale "UTC" behind would be a different bug from
+        // the one this method exists to fix.
         Environment.SetEnvironmentVariable(name, value);
 
         try
         {
             Type? syscallPackage = Type.GetType(SyscallPackageTypeName, throwOnError: false);
 
-            MethodInfo? setenv = syscallPackage?.GetMethod(
+            if (syscallPackage is null)
+                return;
+
+            if (value is null)
+            {
+                MethodInfo? unsetenv = syscallPackage.GetMethod(
+                    "Unsetenv",
+                    BindingFlags.Public | BindingFlags.Static,
+                    binder: null,
+                    types: [typeof(@string)],
+                    modifiers: null);
+
+                unsetenv?.Invoke(null, [(@string)name]);
+                return;
+            }
+
+            MethodInfo? setenv = syscallPackage.GetMethod(
                 "Setenv",
                 BindingFlags.Public | BindingFlags.Static,
                 binder: null,
