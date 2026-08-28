@@ -872,6 +872,7 @@
     <Project Path="tests/Behavioral/UdpWriteMsgAddrPort/UdpWriteMsgAddrPort.csproj" />
     <Project Path="tests/Behavioral/UintptrUnsafePointerIdiom/UintptrUnsafePointerIdiom.csproj" />
     <Project Path="tests/Behavioral/UnexportedEmbeddedMarker/UnexportedEmbeddedMarker.csproj" />
+    <Project Path="tests/Behavioral/UnexportedIfaceDynamicAssert/UnexportedIfaceDynamicAssert.csproj" />
     <Project Path="tests/Behavioral/UnicodeConsoleOutput/UnicodeConsoleOutput.csproj" />
     <Project Path="tests/Behavioral/UnsafePointerWordRead/UnsafePointerWordRead.csproj" />
     <Project Path="tests/Behavioral/UntypedIntInterfaceBox/UntypedIntInterfaceBox.csproj" />
