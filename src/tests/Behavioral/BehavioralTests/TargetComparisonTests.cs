@@ -1783,6 +1783,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckUnexportedEmbeddedMarker() => CheckTarget("UnexportedEmbeddedMarker");
 
     [TestMethod]
+    public void CheckUnexportedIfaceDynamicAssert() => CheckTarget("UnexportedIfaceDynamicAssert");
+
+    [TestMethod]
     public void CheckUnicodeConsoleOutput() => CheckTarget("UnicodeConsoleOutput");
 
     [TestMethod]

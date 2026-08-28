@@ -12385,6 +12385,54 @@ Only the **collection** gate widened. The return-type relaxation's OTHER arm
 the narrow condition, because it answers a different question — a cross-package call the converter emits
 as a bare `Ꮡt.M()` — which remains the unexported-embed case alone.
 
+**Third gate, same reasoning — the promoted METHOD's own exportedness (2026-08-29).** The shim above kept
+one more `GetScope(…) == "public"` test, this one on the **method name**, on the argument that "an
+unexported method is never reachable across packages, so it needs no shim and its in-package callers keep
+the inline descent". That is true of the **call sites** and false of the **method set** — the identical
+distinction the embed-exportedness paragraph draws, one gate over. `net`'s vectored write is the reached
+case, and it is a **silent behavioral divergence rather than any diagnostic**:
+
+```go
+type buffersWriter interface{ writeBuffers(*Buffers) (int64, error) }   // UNEXPORTED, package net
+
+func (v *Buffers) WriteTo(w io.Writer) (int64, error) {
+	if wv, ok := w.(buffersWriter); ok {      // the ONLY thing that ever asks
+		return wv.writeBuffers(v)             // writev fast path
+	}
+	…                                          // per-chunk fallback
+}
+```
+
+`*net.TCPConn` satisfies it **only** by promoting the unexported `writeBuffers` from its embedded
+unexported `conn`, and `conn`'s methods are direct-ж primaries (`ok` compares the receiver against `nil`),
+so the promotion is exactly the box shim this subsection emits. With the shim withheld, the emitted method
+set had no `writeBuffers`, `StructurallyImplements` answered **False**, the assert MISSED, and the fallback
+ran — the program is correct, just not vectored, which surfaces only as `TestBuffers_WriteTo`'s
+`write calls = 0; want 1` (nine verdicts, `writev_test.go:91`). Measured on the built `net` assembly, before
+and after:
+
+```
+method-set entry : writeBuffers ABSENT from *TCPConn's Go method set   |  net_package.writeBuffers(this ж`1 …) [internal]
+structural probe : False                                              |  True
+type assert      : False -> <miss>                                    |  True -> ΔbuffersWriter`1
+```
+
+The shim for an unexported method is emitted **`internal`**, not at `methodScope`: that keeps an unexported
+Go method off the assembly's public surface while leaving it inside the set the run-time probe reads, since
+`GetGoMethodSetCandidates` resolves extension methods through `NonPublic` binding flags exactly as it does
+the converter's own `internal static M(this ж<T> …)` primaries. Guarded by the `UnexportedIfaceDynamicAssert`
+behavioral test, whose `conn` (method declared directly) and `ValueSink` (value method set) rows are the
+controls that hold while the promoted `TCPConn` row diverges.
+
+**No `GoImplement` record is involved, and none would have helped.** The pair is same-package and the
+interface is unexported, so `recordSamePackageImplements`' exported-interface gate declines it by design —
+correctly, since a record is a **cross-assembly** contract and no other assembly can name `buffersWriter`.
+The resolution path for such a pair is the run-time tier alone: `TryTypeAssert` unwraps the `io.Writer`
+adapter to the `ж<TCPConn>` box, misses the nominal `AdapterRegistry`, and binds `AdapterBinder`'s
+generated `ΔbuffersWriter<>` delegate shell — which needs no record and no `AdapterRegistry` change, only a
+complete method set. That is why the fix belongs to promotion emission and not to record emission: the
+record layer was never the variable.
+
 ### A named field whose name equals its interface type is NOT an embedded interface
 `ImplementGenerator` forwards an interface member it cannot bind directly through an **embedded interface
 field** (zip's `type nopCloser struct{ io.Writer }` → `m_box.Value.Writer.Write(…)`), and detects one by

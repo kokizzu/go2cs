@@ -725,18 +725,37 @@ internal class StructTypeTemplate : TemplateBase
                 // The shim scope is the shared `methodScope` (the STRUCT's exportedness, downgraded for a
                 // non-public return type) — an unexported enclosing struct (context's `afterFuncCtx`,
                 // reflect's `structTypeUncommon`) has an internal receiver `ж<T>`, so a `public` shim there
-                // is CS0051. It is additionally gated to an EXPORTED promoted method: an unexported method
-                // is never reachable across packages (Go forbids it), so it needs no shim and its
-                // in-package callers keep the inline descent. So the shim is public only for an EXPORTED
-                // method on an EXPORTED struct returning void/public — exactly the reachable-cross-package
-                // case (testing.T.Errorf/Helper/Logf).
+                // is CS0051. So the shim is public only for an EXPORTED method on an EXPORTED struct
+                // returning void/public — exactly the reachable-cross-package case
+                // (testing.T.Errorf/Helper/Logf).
+                //
+                // ⚠ NOT gated on the METHOD's exportedness, for the same reason the harvest above is not
+                // gated on the EMBED's. It was, on the reasoning that "an unexported method is never
+                // reachable across packages, so it needs no shim and its in-package callers keep the
+                // inline descent" — true of the CALL SITES the converter emits, and false of the METHOD
+                // SET. Go puts a value embed's pointer-receiver methods in the outer type's pointer
+                // method set whatever their case, and go2cs reconstructs that set at run time by reading
+                // these EMITTED extension methods (GetGoMethodSetCandidates), so an unemitted promotion is
+                // an ABSENT Go method — invisible to StructurallyImplements, to AdapterBinder, and to
+                // every type assert and type switch built on them. `net`'s writev fast path is the
+                // measured case: `*TCPConn` promotes the unexported `writeBuffers` from its embedded
+                // `conn`, `Buffers.WriteTo` reaches it ONLY through `w.(buffersWriter)` — an unexported
+                // SAME-PACKAGE interface, so no `GoImplement` record exists or is needed — and with the
+                // promotion unemitted the assertion missed, the per-chunk fallback ran, and
+                // `TestBuffers_WriteTo` failed nine verdicts with `write calls = 0; want 1` rather than
+                // any compile error. An unexported method's shim is emitted `internal`, which is what
+                // keeps it off the public surface while leaving it inside the method set the run-time
+                // probe reads (an internal extension method is resolved through NonPublic binding flags,
+                // exactly as the converter's own `internal static M(this ж<T> …)` primaries are).
+                // Guarded by the UnexportedIfaceDynamicAssert behavioral test.
                 if (method.IsValueEmbedBoxRecv)
                 {
-                    if (structTypeParamStart < 0 && GetScope(GetSimpleName(method.Name)) == "public")
+                    if (structTypeParamStart < 0)
                     {
                         string embedBox = GetUnsanitizedIdentifier(promotedMemberName);
+                        string shimScope = GetScope(GetSimpleName(method.Name)) == "public" ? methodScope : "internal";
 
-                        result.Append($"\r\n    {methodScope} static {returnType} {method.Name}(this {PointerPrefix}<{StructName}> {AddressPrefix}target");
+                        result.Append($"\r\n    {shimScope} static {returnType} {method.Name}(this {PointerPrefix}<{StructName}> {AddressPrefix}target");
 
                         if (method.Parameters.Length > 1)
                         {

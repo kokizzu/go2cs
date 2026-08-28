@@ -1780,6 +1780,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckUnexportedEmbeddedMarker() => CheckTarget("UnexportedEmbeddedMarker");
 
     [TestMethod]
+    public void CheckUnexportedIfaceDynamicAssert() => CheckTarget("UnexportedIfaceDynamicAssert");
+
+    [TestMethod]
     public void CheckUnicodeConsoleOutput() => CheckTarget("UnicodeConsoleOutput");
 
     [TestMethod]
