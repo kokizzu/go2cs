@@ -334,6 +334,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckDeferLambdaParam() => CheckTarget("DeferLambdaParam");
 
     [TestMethod]
+    public void CheckDeferLoopCapture() => CheckTarget("DeferLoopCapture");
+
+    [TestMethod]
     public void CheckDeferPanicArg() => CheckTarget("DeferPanicArg");
 
     [TestMethod]

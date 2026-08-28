@@ -311,6 +311,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDeferLambdaParam() => CheckTarget("DeferLambdaParam");
 
     [TestMethod]
+    public void CheckDeferLoopCapture() => CheckTarget("DeferLoopCapture");
+
+    [TestMethod]
     public void CheckDeferPanicArg() => CheckTarget("DeferPanicArg");
 
     [TestMethod]
