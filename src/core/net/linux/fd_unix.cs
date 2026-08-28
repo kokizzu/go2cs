@@ -254,7 +254,9 @@ internal static (ж<netFD> netfd, error err) accept(this ж<netFD> Ꮡfd) {
 }
 
 // Defined in os package.
-internal static partial ж<os.File> newUnixFile(nint fd, @string name);
+internal static ж<os.File> newUnixFile(nint fd, @string name) {
+    return os.net_newUnixFile(fd, name);
+}
 
 internal static (ж<os.File> f, error err) dup(this ж<netFD> Ꮡfd) {
     error err = default!;
