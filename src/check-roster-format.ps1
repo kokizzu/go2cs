@@ -235,9 +235,66 @@ $absentComparison = [PSCustomObject]@{
     go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
     csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
 }
+# The shape a REAL capability-less host produces, measured 2026-08-28: the block root FAILS on both
+# runtimes (Go's own oracle t.Fatal's -- crypto/tls's TestBogoSuite has no capability-absent skip
+# branch at all), and the converter accounts a host-conditionally annotated root as DISCLOSED in
+# exactly that shape, so the live disclosed count is the banked one PLUS the root.
+$absentFailComparison = [PSCustomObject]@{
+    go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+    csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+    disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+}
 
 Assert-Equal 'capability-absent: the clean collapse is accepted' $true `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $absentComparison -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: the MEASURED collapse -- agreeing FAIL with the root disclosed -- is accepted' $true `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $absentFailComparison -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: an agreeing FAIL whose extra disclosure is some OTHER row is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        disclosed = @('TestSomethingElse (alloc-profile): unrelated')
+    }) -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: an agreeing FAIL that discloses nothing at all is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+    }) -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: an agreeing SKIP that nonetheless discloses the root is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames).Accepted
+# THE control that keeps a capable-but-slow host red. Identical shortfall, identical 1 matched,
+# identical absent fan-out -- and Go PASSED, so the matrix was established and the loss is the
+# converted side's alone. This is the i7-5820K's real crypto/tls shape; absorbing it would convert a
+# measured divergence into a green.
+Assert-Equal 'capability-absent: Go pass / C# fail (capability PRESENT, converted side missed it) is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames).Accepted
+# The control the i7-5820K's real crypto/tls run produced on 2026-08-28, and the one every count
+# above fails to tell apart: fail/fail, one collapsed root, the disclosed count exactly where an
+# absent capability would put it -- and the capability was PRESENT, Go's flaky handful of failures
+# inside a matrix it fully fanned out. The withdrawn rows are the only evidence that says so.
+Assert-Equal 'capability-absent: an agreeing FAIL whose Go side DID fan out (rows withdrawn) is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+    }) -BankedNames $fullBankedNames).Accepted
+# ...and a withdrawal that belongs to some OTHER disclosed root says nothing about this block.
+Assert-Equal 'capability-absent: a withdrawal outside the block does not disqualify the collapse' $true `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+        withdrawn = @('TestSomethingElse/case1')
+    }) -BankedNames $fullBankedNames).Accepted
 Assert-Equal 'capability-absent: a shortfall that is not the registered block size is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 2 -Comparison $absentComparison -BankedNames $fullBankedNames).Accepted
 Assert-Equal 'capability-absent: a surplus (the surplus mechanism''s job, not this one''s) is refused' $false `
@@ -252,8 +309,15 @@ Assert-Equal 'capability-absent: the top-level test agreeing on PASS instead of 
         go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass' }
         csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass' }
     }) -BankedNames $fullBankedNames).Accepted
+# A disclosed count that moved for an unrelated reason. The banked shape here is 4 matched + 1
+# disclosed (TestPinned), the collapse is the clean skip -- so the expected live count is that same
+# 1, and a second disclosure means something OTHER than the capability moved.
 Assert-Equal 'capability-absent: a moved disclosed count is refused, not a capability shape' $false `
-    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 1 -Block $block -Got 1 -Comparison $absentComparison -BankedNames $fullBankedNames).Accepted
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 1 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestPinned = 'pass'; TestFakeSuite = 'skip' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestPinned = 'fail'; TestFakeSuite = 'skip' }
+        disclosed = @('TestPinned (alloc-profile): x', 'TestOther (alloc-profile): y')
+    }) -BankedNames @('TestOther', 'TestPinned', 'TestFakeSuite', 'TestFakeSuite/case1', 'TestFakeSuite/case2')).Accepted
 Assert-Equal 'capability-absent: an unaccounted extra live verdict is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
         go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }

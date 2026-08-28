@@ -291,16 +291,37 @@ function Get-SweepRowClassification {
 # Get-SweepRowClassification above assumes a surplus is the only host-dependent shape: the roster
 # banks a FLOOR and a more-capable host produces EXTRA verdicts (host-conditional). Some
 # capability-bound test blocks run the opposite way -- the roster banks the CEILING, every case the
-# capability enables, and a host lacking the prerequisite sees Go's own top-level test collapse to
-# ONE skip instead of spawning its whole case matrix. crypto/tls's TestBogoSuite is the first of
+# capability enables, and a host lacking the prerequisite never spawns the case matrix at all, so
+# the whole block collapses to the ONE top-level verdict. crypto/tls's TestBogoSuite is the first of
 # these (the BoGo/BoringSSL shim runner): 3,243 sub-verdicts -- 1 parent + 861 pass + 2,381 skip --
-# collapse to exactly one skip verdict without it, both runtimes agreeing, because Go's own oracle
-# skips identically absent the runner. "A lost verdict is never host-conditional" stays true for
-# every OTHER shortfall: a caller engages this ONLY for a package it registers, and ONLY when the
-# shortfall matches that package's block size exactly -- run-validated-sweep.ps1's
+# collapse to exactly one. "A lost verdict is never host-conditional" stays true for every OTHER
+# shortfall: a caller engages this ONLY for a package it registers, and ONLY when the shortfall
+# matches that package's block size exactly -- run-validated-sweep.ps1's
 # $capabilityConditionalBlocks table is where that registration lives; this function is the pure
 # rule, proven directly by check-roster-format.ps1's fixtures rather than through a roster row (the
 # evidence is a comparison record and a proof page, not a table cell).
+#
+# ⚠ WHAT THE COLLAPSED VERDICT ACTUALLY IS, MEASURED (2026-08-28, the bogo skip-parity lane).
+# This rule was first written expecting SKIP on both sides -- "Go's own oracle skips identically
+# absent the runner". Go's oracle does no such thing, and the difference is the whole mechanism.
+# `TestBogoSuite`'s only skip branches (`bogo_shim_test.go:337-347`) are short-mode, js/wasip1, no
+# `go build`, no exec, and the builders' Windows-flake guard -- NONE of them is "the BoGo runner is
+# absent". Absent the runner the test **FAILS**, at `bogo_shim_test.go:364`
+# (`t.Fatalf("failed to download boringssl: %s", err)`) -- measured directly by pointing GOMODCACHE
+# at an empty directory with GOPROXY=off: `--- FAIL: TestBogoSuite (0.35s)`, never a skip.
+# So the shape a genuinely capability-less host produces is Go **fail** / C# **fail**, which is
+# precisely the SECOND accepted shape of a host-conditional disclosure -- and the converter accounts
+# that root as DISCLOSED rather than matched (`matchTerminalStatuses`, testConversion.go), so on
+# such a host the live disclosed count is the banked one PLUS the root, by construction. Demanding
+# skip-on-both AND an unmoved disclosed count therefore made this rule unfireable for its only
+# registered member, in two independent ways at once.
+#
+# What is NOT capability-absent, and must stay red: the block root AGREEING is the load-bearing
+# evidence, because a Go side that PASSED established the whole matrix -- the shortfall is then the
+# converted side's alone (crypto/tls on a host whose managed shims miss the BoGo runner's own
+# 600 s deadline reads exactly this way: Go pass / C# fail, same 3,243 shortfall, same 400 matched).
+# Absorbing that would wave through a real, measured divergence, so the rule below accepts only an
+# AGREEING NON-PASS root and refuses every other combination by name.
 function Test-CapabilityAbsentDelta {
     param(
         [int] $Expected,           # banked matching-verdict count (roster column 2, the CEILING here)
@@ -323,10 +344,6 @@ function Test-CapabilityAbsentDelta {
         return New-CapabilityAbsentResult $false 'comparison record carries no per-test verdict maps'
     }
 
-    $liveDisclosed = if ($null -eq $Comparison.disclosed) { 0 } else { @($Comparison.disclosed).Count }
-    if ($liveDisclosed -ne $Disclosed) {
-        return New-CapabilityAbsentResult $false "disclosed count moved ($liveDisclosed live vs $Disclosed banked) -- not a capability-conditional shape"
-    }
     if ($BankedNames.Count -ne ($Expected + $Disclosed)) {
         return New-CapabilityAbsentResult $false "committed proof page lists $($BankedNames.Count) verdicts where the roster banks $Expected matched + $Disclosed disclosed -- page and table disagree"
     }
@@ -353,23 +370,71 @@ function Test-CapabilityAbsentDelta {
     }
 
     # No block subtest may appear at all (they were never spawned), and the top-level name must be
-    # present, agreeing, and specifically SKIP on both sides -- not merely equal to each other.
+    # present and AGREEING -- see the measured note above for why "agreeing" is the test and "skip"
+    # is not.
     $liveBlockNames = @($liveNames | Where-Object { $_ -eq $Block.Test -or $_.StartsWith($blockPrefix) })
     if (@($liveBlockNames | Where-Object { $_ -ne $Block.Test }).Count -gt 0) {
         return New-CapabilityAbsentResult $false "subtests under $($Block.Test) appear in this run -- the capability is not cleanly absent, re-diagnose rather than absorb"
     }
     if ($liveBlockNames -notcontains $Block.Test) {
-        return New-CapabilityAbsentResult $false "$($Block.Test) itself is missing from this run -- an absent capability must still report the one skip"
+        return New-CapabilityAbsentResult $false "$($Block.Test) itself is missing from this run -- an absent capability must still report its one collapsed verdict"
     }
 
     $goVerdict = $goProperties[$Block.Test].Value
     $csProperty = $csProperties[$Block.Test]
     $csVerdict = if ($null -eq $csProperty) { 'absent' } else { $csProperty.Value }
-    if ($goVerdict -ne 'skip' -or $csVerdict -ne 'skip') {
-        return New-CapabilityAbsentResult $false "$($Block.Test): go '$goVerdict' vs C# '$csVerdict' -- an absent capability must show exactly SKIP on both sides, not any other agreement"
+    if ($goVerdict -ne $csVerdict) {
+        return New-CapabilityAbsentResult $false "$($Block.Test): go '$goVerdict' vs C# '$csVerdict' -- an absent capability collapses IDENTICALLY on both runtimes; a disagreement here is a real divergence on a host that has the capability, not a missing one"
+    }
+    if ($goVerdict -ne 'skip' -and $goVerdict -ne 'fail') {
+        return New-CapabilityAbsentResult $false "$($Block.Test): both runtimes report '$goVerdict' -- a PASSING oracle established the case matrix, so the shortfall is the converted side's and is never capability-absent"
     }
 
-    # Nothing live may go unaccounted for: the outside names plus the one top-level skip, exactly.
+    # THE discriminator, and the reason agreement alone is not enough (measured 2026-08-28 on the
+    # i7-5820K). A host that HAS the capability but whose converted side misses the runner's own
+    # deadline can ALSO show fail/fail: Go fans out all 3,242 BoGo cases and fails a handful of them
+    # flakily, the converted side fails at the wall, and every count above is bit-for-bit identical
+    # to the capability-absent shape. What is not identical is the FAN-OUT: those 3,242 Go-side rows
+    # exist, and `matchTerminalStatuses` withdraws them by name into the comparison record. An
+    # absent capability produces NO such rows, because the test dies before its case matrix exists.
+    # So a withdrawal under the block is proof the capability was present, and the shortfall is the
+    # converted side's alone. (`withdrawn` is omitempty, so a record without one withdrew nothing.)
+    $withdrawnUnderBlock = @()
+    if ($null -ne $Comparison.withdrawn) {
+        $withdrawnUnderBlock = @($Comparison.withdrawn | Where-Object { $_ -eq $Block.Test -or $_.StartsWith($blockPrefix) })
+    }
+    if ($withdrawnUnderBlock.Count -gt 0) {
+        return New-CapabilityAbsentResult $false "$($withdrawnUnderBlock.Count) Go-side verdict(s) under $($Block.Test) were withdrawn -- the case matrix DID fan out, so the capability was present on this host and the lost verdicts are the converted side's, not the capability's"
+    }
+
+    # The disclosed accounting is decided by WHICH collapsed verdict this is, because the converter
+    # accounts the two shapes differently and the roster's banked number was taken on a host that
+    # had the capability:
+    #   fail/fail -- the host-conditional shape. matchTerminalStatuses accounts the annotated root
+    #                as DISCLOSED (never as an agreed match), so the live count is banked + 1 and
+    #                the extra entry must BE this block's root.
+    #   skip/skip -- no disclosure fires (a skip is not the pinned failure), so the count is banked
+    #                exactly and the root must NOT appear among the disclosures.
+    # Anything else is a disclosure that moved for some unrelated reason, which is what this check
+    # has always existed to catch.
+    $liveDisclosedEntries = @()
+    if ($null -ne $Comparison.disclosed) { $liveDisclosedEntries = @($Comparison.disclosed) }
+    $liveDisclosed = $liveDisclosedEntries.Count
+    # A disclosure entry reads "<TestName> (<class>): <reason>"; the name is everything before the
+    # first " (" and is compared whole, so a prefix can never pass for the root.
+    $rootIsDisclosed = @($liveDisclosedEntries | Where-Object { ($_ -split ' \(', 2)[0] -eq $Block.Test }).Count -gt 0
+    $expectedDisclosed = if ($goVerdict -eq 'fail') { $Disclosed + 1 } else { $Disclosed }
+    if ($liveDisclosed -ne $expectedDisclosed) {
+        return New-CapabilityAbsentResult $false "disclosed count moved ($liveDisclosed live vs $expectedDisclosed expected for an agreeing '$goVerdict' collapse of $($Block.Test), against $Disclosed banked) -- not a capability-conditional shape"
+    }
+    if ($goVerdict -eq 'fail' -and -not $rootIsDisclosed) {
+        return New-CapabilityAbsentResult $false "$($Block.Test) fails on both runtimes but is not among this run's disclosures -- the extra disclosure is some other row, so this is not the collapse it looks like"
+    }
+    if ($goVerdict -eq 'skip' -and $rootIsDisclosed) {
+        return New-CapabilityAbsentResult $false "$($Block.Test) skips on both runtimes yet is disclosed -- the pinned divergence fired on a shape it does not describe, re-diagnose rather than absorb"
+    }
+
+    # Nothing live may go unaccounted for: the outside names plus the one collapsed root, exactly.
     $accountedFor = @($expectedOutside) + @($Block.Test)
     $unaccounted = @($liveNames | Where-Object { $accountedFor -notcontains $_ })
     if ($unaccounted.Count -gt 0) {
