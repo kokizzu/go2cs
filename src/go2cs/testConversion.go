@@ -4376,8 +4376,9 @@ func productionCSFilesIn(directory string, relativeTo string) ([]string, error) 
 	return result, nil
 }
 
-// testFixturePaths enumerates the package's test fixture inputs — every top-level *.go source
-// plus the full testdata/ tree — as sorted slash-relative paths. Shared by copyTestFixtures and
+// testFixturePaths enumerates the package's test fixture inputs — every top-level *.go source, the
+// full testdata/ tree, the testdata trees of the package's NESTED sub-directories, and the fixtures
+// its tests read from ABOVE it — as sorted slash-relative paths. Shared by copyTestFixtures and
 // testInputDigest so staleness detection always sees the CURRENT fixture set (a newly added
 // testdata file changes the digest; the manifest's recorded list plays no part — F7).
 func testFixturePaths(inputPath string) ([]string, error) {
@@ -4412,6 +4413,12 @@ func testFixturePaths(inputPath string) ([]string, error) {
 		}
 	}
 
+	nested, err := nestedFixturePaths(inputPath)
+	if err != nil {
+		return nil, err
+	}
+	paths = append(paths, nested...)
+
 	shared, err := parentRelativeFixturePaths(inputPath)
 	if err != nil {
 		return nil, err
@@ -4419,6 +4426,94 @@ func testFixturePaths(inputPath string) ([]string, error) {
 	paths = append(paths, shared...)
 
 	sort.Strings(paths)
+	return paths, nil
+}
+
+// nestedFixturePaths enumerates the testdata trees held by the package's NESTED sub-directories —
+// the sibling packages that live under it on disk — as slash-relative paths ("internal/oldtrace/
+// testdata/user_task_region_1_21_good"). They keep that shape all the way through: the csproj
+// copies each to the matching relative location in the build output, and TestHost.CopyFixtures
+// re-creates the same relative path inside the run sandbox, so a test's own relative read resolves.
+//
+// `go test` runs a package in its real source directory, where the whole subtree below it is
+// present, and a test may read into it: internal/trace's TestOldtrace globs
+// "./internal/oldtrace/testdata/*_good" for the twelve traces it drives its twelve subtests from.
+// Staging only the package's OWN testdata/ left the run directory holding an EMPTY `internal/`
+// (the sibling-shape pass creates immediate subdirectory NAMES), the glob matched nothing, and the
+// parent failed on "didn't see expected test case user_task_region_1_21_good" — 13 verdicts, the
+// parent plus twelve subtests that were never created.
+//
+// The rule is the SIMPLE one, deliberately: every `testdata` directory below the package, staged
+// whole, with no reference analysis. It is the same rule the package's own testdata already gets,
+// just applied to the rest of the tree the package occupies on disk, so there is one thing to know
+// rather than two — and no test can read a fixture the staging failed to predict. The blast radius
+// is bounded by Go's own convention of keeping fixtures in `testdata`: measured over all of
+// $GOROOT/src (2026-08-28, Go 1.23.12), sixteen packages gain anything at all, 401 files and 3.6 MB
+// in total, the largest single package being internal/trace itself at 1.13 MB.
+//
+// Only `testdata` is staged, never a nested package's SOURCES: a sibling package is compiled and
+// referenced as its own assembly, and its .go files are staged by its own conversion run. A
+// directory whose name begins with "." or "_" is not descended into, matching go/build's own
+// ignored-directory convention — neither can hold a package, and skipping them keeps a VCS
+// directory out of the fixture set when -tests converts a package inside a user's module.
+func nestedFixturePaths(inputPath string) ([]string, error) {
+	paths := make([]string, 0)
+
+	err := filepath.WalkDir(inputPath, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !entry.IsDir() {
+			return nil
+		}
+
+		relative, err := filepath.Rel(inputPath, path)
+		if err != nil {
+			return err
+		}
+		if relative == "." {
+			return nil
+		}
+		relative = filepath.ToSlash(relative)
+
+		name := entry.Name()
+		if strings.HasPrefix(name, ".") || strings.HasPrefix(name, "_") {
+			return fs.SkipDir
+		}
+		if name != "testdata" {
+			return nil
+		}
+
+		// The package's OWN testdata/ is a single path segment and is staged by testFixturePaths
+		// itself; descending here would list every one of its files twice.
+		if !strings.Contains(relative, "/") {
+			return fs.SkipDir
+		}
+
+		if err := filepath.WalkDir(path, func(fixture string, fixtureEntry fs.DirEntry, fixtureErr error) error {
+			if fixtureErr != nil {
+				return fixtureErr
+			}
+			if fixtureEntry.IsDir() {
+				return nil
+			}
+			fixtureRelative, err := filepath.Rel(inputPath, fixture)
+			if err != nil {
+				return err
+			}
+			paths = append(paths, filepath.ToSlash(fixtureRelative))
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		return fs.SkipDir
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
 	return paths, nil
 }
 
@@ -4432,12 +4527,18 @@ func testFixturePaths(inputPath string) ([]string, error) {
 // "exec directory not found". That is environment fidelity, not conversion — os.ReadDir itself was
 // probed against `go run` over the same 201-entry directory and is byte-identical, IsDir() included.
 //
-// NAMES ONLY, one level deep, and empty: that is the measured requirement (across the whole
-// validated roster only os, io and math/rand have any subdirectory at all beyond the `testdata`
-// already staged with its contents), and mirroring a sibling package's files would stage a second
-// copy of the tree for no test that reads one. A test that reads INTO a sibling directory would
-// still need its content — none does, and such a read would be a fixture reference, which the
-// fixture pass already covers.
+// NAMES ONLY, one level deep, and empty: the name is what such a test observes, and mirroring a
+// sibling package's SOURCES would stage a second copy of a tree no test reads — each sibling is
+// compiled and referenced as its own assembly, and its own conversion run stages its files.
+//
+// A test that reads INTO a sibling directory needs that directory's CONTENT, and one does:
+// internal/trace's TestOldtrace globs "./internal/oldtrace/testdata/*_good" (measured 2026-08-28 —
+// this comment used to say none did, and its "such a read would be a fixture reference, which the
+// fixture pass already covers" was wrong twice over, because the fixture pass then staged only the
+// package's own testdata/ and an empty `internal/` created here matched the glob to nothing). It is
+// covered now, and by the fixture pass as that sentence expected: nestedFixturePaths stages every
+// testdata tree below the package, and the fixture copy creates the intermediate directories on its
+// way. This pass keeps its narrow job — the SHAPE of the package directory, one level, empty.
 func testFixtureDirectories(inputPath string) ([]string, error) {
 	entries, err := os.ReadDir(inputPath)
 	if err != nil {

@@ -366,6 +366,7 @@
     <Project Path="tests/Behavioral/DeferHeapLocalPtrMethod/DeferHeapLocalPtrMethod.csproj" />
     <Project Path="tests/Behavioral/DeferInterfaceReturn/DeferInterfaceReturn.csproj" />
     <Project Path="tests/Behavioral/DeferLambdaParam/DeferLambdaParam.csproj" />
+    <Project Path="tests/Behavioral/DeferLoopCapture/DeferLoopCapture.csproj" />
     <Project Path="tests/Behavioral/DeferPanicArg/DeferPanicArg.csproj" />
     <Project Path="tests/Behavioral/DeferSimple/DeferSimple.csproj" />
     <Project Path="tests/Behavioral/DeferTypelessReturns/DeferTypelessReturns.csproj" />

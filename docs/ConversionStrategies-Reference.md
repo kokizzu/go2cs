@@ -15712,6 +15712,47 @@ for (nint iᴛ1 = 0; iᴛ1 < 3; iᴛ1++) {
 
 Loops whose clause variables are neither captured nor boxed emit exactly as before — the shared clause variable is then unobservable, so there is no churn. A read-only captured variable skips the copy-backs. Every clause reference (init/cond/post) renders the carrier, so the body keeps the variable's Go name — nested same-name loops compose with shadow renames (`iΔ1` gets carrier `iΔ1ᴛ1`), and a multi-variable clause transforms only the variables that need it. One legacy fallback: a heap-boxed variable that a **clause** func literal references keeps the old hoisted whole-loop box, since the body-scoped box would not be in scope at the clause. (Guarded by the `ForLoopPerIterationVars` behavioral test — read-only capture, body write + unlabeled `continue`, stored `&i` distinctness, boxed + captured closures, labeled continue with a write, nested same-name loops, a multi-variable clause, a struct-typed clause variable, and an immediately-invoked writing closure — values vs Go. `EscapedLoopVarSiblingIndex`, `ForVariants`, and `RingPointerMethods` re-baselined to the per-iteration shape.)
 
+
+#### The capture that has no func literal: `defer`/`go` on an indexed receiver
+
+The trigger above asks whether a clause variable is heap-boxed or referenced inside a **func literal
+in the Go source**. A `defer`/`go` statement can capture one with no func literal present at all:
+`visitDeferStmt`/`visitGoStmt` SYNTHESIZE a lambda (`() => recv.M()`) for every callee the
+method-group form cannot express -- a **result-returning** method, a named func type
+(`context.CancelFunc`), a variadic callee -- and that synthesis happens long after the analysis has
+run. The clause variable therefore stayed SHARED and the synthesized lambda read its post-loop value:
+
+```go
+var c [3]closer                     // Conn-shaped: Close() returns error
+for i := 0; i < 3; i++ {
+    c[i] = dial(i)
+    defer c[i].Close()              // Go: closes 2, 1, 0
+}
+```
+
+```csharp
+for (nint i = 0; i < 3; i++) {      // BEFORE: shared i
+    var cʗ1 = c;                    // the capture snapshot hoists the ARRAY...
+    defer(() => cʗ1[i].Close(), ref ᒐ);  // ...but the SUBSCRIPT is read when the defer fires: c[3]
+}
+```
+
+net's `TestConcurrentSetDeadline` is the witness -- `defer c[i].Close()` over a `[10]Conn` indexed
+`c[10]` and panicked with index out of range, a hard failure rather than a wrong answer.
+`deferOrGoCalleeReferences` joins the trigger so the transform fires, and the emission takes the
+ordinary per-iteration shape above. Only the **callee** is consulted: a deferred call's ARGUMENTS
+are already evaluated at the defer statement exactly as Go requires
+(`defer((ᴛ1, ᴛ2) => f(ᴛ1, ᴛ2), a, i, ref ᒐ)`), so a clause variable appearing only in an
+argument needs no per-iteration copy -- and minting one would move emission at every such site for
+no behavioral gain. That restriction is why the corpus census measured **zero** moved files across
+307 projects: the sole production site with the shape (`net/http/h2_bundle.go`'s
+`defer http2bufPools[index].Put(bp)`) indexes a plain local outside any loop. The shape occurs in
+`net/dial_test.go` and `net/timeout_test.go`, so the fix's reach is TEST conversions -- which is
+where the defect was found. (Guarded by the `DeferLoopCapture` behavioral test: the defer witness
+and the `go` equivalent as red shapes, plus four controls -- a receiver reassigned after the defer,
+3-clause and range closure capture, and deferred plain arguments -- that were already correct and
+must stay green.)
+
 ### A range-over-int index is `nint` (golib's `range` helper yields Go's `int`)
 Go 1.22's `for i := range n` (range over an integer) produces `i` of type `int`, which go2cs maps to `nint`. The converter lowers it to a `foreach` over golib's `range` helper, and — with `-var` (the default) — leaves the index as the idiomatic `var`:
 ```go

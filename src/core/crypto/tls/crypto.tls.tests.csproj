@@ -111,169 +111,169 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="alert.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="auth.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="auth_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="bogo_shim_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="boring.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="boring_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="cache.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="cache_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="cipher_suites.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="common.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="common_string.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="conn.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="conn_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="defaults.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ech.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ech_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="generate_cert.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_client.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_client_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_client_tls13.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_messages.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_messages_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_server.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_server_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_server_tls13.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handshake_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="key_agreement.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="key_schedule.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="key_schedule_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="link_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="notboring.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="prf.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="prf_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="quic.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="quic_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-ClientCert-ECDSA-ECDSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-ClientCert-ECDSA-RSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-ClientCert-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-ClientCert-RSA-ECDSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-ClientCert-RSA-RSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-ECDHE-RSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv10-RSA-RC4" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv11-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv11-ECDHE-RSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv11-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv11-RSA-RC4" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-AES128-GCM-SHA256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-AES256-GCM-SHA384" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ALPN" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ALPN-NoMatch" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ClientCert-ECDSA-ECDSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ClientCert-ECDSA-RSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ClientCert-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ClientCert-RSA-AES256-GCM-SHA384" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ClientCert-RSA-ECDSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ClientCert-RSA-RSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ClientCert-RSA-RSAPKCS1v15" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ClientCert-RSA-RSAPSS" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-AES-GCM" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-AES256-GCM-SHA384" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-CHACHA20-POLY1305" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ECDHE-RSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ECDHE-RSA-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ECDHE-RSA-CHACHA20-POLY1305" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-P256-ECDHE" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-RSA-RC4" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-RenegotiateOnce" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-RenegotiateTwice" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-RenegotiateTwiceRejected" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-RenegotiationRejected" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-SCT" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv12-X25519-ECDHE" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-AES256-SHA384" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-ALPN" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-CHACHA20-SHA256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-ClientCert-ECDSA-RSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-ClientCert-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-ClientCert-RSA-ECDSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-ClientCert-RSA-RSAPSS" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-ECDSA" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-HelloRetryRequest" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-KeyUpdate" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-P256-ECDHE" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Client-TLSv13-X25519-ECDHE" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv10-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv10-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv10-RSA-3DES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv10-RSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv10-RSA-RC4" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv11-FallbackSCSV" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv11-RSA-RC4" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ALPN" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ALPN-Fallback" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ALPN-NoMatch" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ALPN-NotConfigured" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ClientAuthRequestedAndECDSAGiven" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ClientAuthRequestedAndEd25519Given" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ClientAuthRequestedAndGiven" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ClientAuthRequestedAndPKCS1v15Given" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ClientAuthRequestedNotGiven" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-IssueTicket" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-IssueTicketPreDisable" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-P256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-RSA-3DES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-RSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-RSA-AES-GCM" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-RSA-AES256-GCM-SHA384" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-RSA-RC4" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-RSA-RSAPKCS1v15" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-RSA-RSAPSS" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-Resume" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-ResumeDisabled" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-SNI" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-SNI-GetCertificate" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-SNI-GetCertificateNotFound" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv12-X25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-AES256-SHA384" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ALPN" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ALPN-Fallback" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ALPN-NoMatch" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ALPN-NotConfigured" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-CHACHA20-SHA256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ClientAuthRequestedAndECDSAGiven" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ClientAuthRequestedAndEd25519Given" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ClientAuthRequestedAndGiven" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ClientAuthRequestedNotGiven" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-Ed25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-HelloRetryRequest" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-IssueTicket" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-IssueTicketPreDisable" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-KeySharePreference" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-P256" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-RSA-RSAPSS" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-RSA-RSAPSS-TooSmall" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-Resume" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-Resume-HelloRetryRequest" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-ResumeDisabled" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/Server-TLSv13-X25519" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/example-cert.pem" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/example-key.pem" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ticket.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ticket_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tls.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tls_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="alert.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="auth.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="auth_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="bogo_shim_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="boring.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="boring_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cache.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cache_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cipher_suites.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="common.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="common_string.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="conn.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="conn_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="defaults.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ech.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ech_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="generate_cert.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_client.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_client_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_client_tls13.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_messages.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_messages_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_server.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_server_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_server_tls13.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handshake_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="key_agreement.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="key_schedule.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="key_schedule_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="link_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="notboring.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="prf.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="prf_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="quic.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="quic_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-ClientCert-ECDSA-ECDSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-ClientCert-ECDSA-RSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-ClientCert-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-ClientCert-RSA-ECDSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-ClientCert-RSA-RSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-ECDHE-RSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv10-RSA-RC4" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv11-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv11-ECDHE-RSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv11-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv11-RSA-RC4" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-AES128-GCM-SHA256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-AES256-GCM-SHA384" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ALPN" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ALPN-NoMatch" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ClientCert-ECDSA-ECDSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ClientCert-ECDSA-RSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ClientCert-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ClientCert-RSA-AES256-GCM-SHA384" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ClientCert-RSA-ECDSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ClientCert-RSA-RSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ClientCert-RSA-RSAPKCS1v15" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ClientCert-RSA-RSAPSS" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-AES-GCM" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-AES256-GCM-SHA384" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ECDHE-ECDSA-CHACHA20-POLY1305" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ECDHE-RSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ECDHE-RSA-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ECDHE-RSA-CHACHA20-POLY1305" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-P256-ECDHE" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-RSA-RC4" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-RenegotiateOnce" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-RenegotiateTwice" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-RenegotiateTwiceRejected" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-RenegotiationRejected" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-SCT" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv12-X25519-ECDHE" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-AES256-SHA384" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-ALPN" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-CHACHA20-SHA256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-ClientCert-ECDSA-RSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-ClientCert-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-ClientCert-RSA-ECDSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-ClientCert-RSA-RSAPSS" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-ECDSA" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-HelloRetryRequest" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-KeyUpdate" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-P256-ECDHE" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Client-TLSv13-X25519-ECDHE" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv10-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv10-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv10-RSA-3DES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv10-RSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv10-RSA-RC4" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv11-FallbackSCSV" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv11-RSA-RC4" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ALPN" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ALPN-Fallback" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ALPN-NoMatch" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ALPN-NotConfigured" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ClientAuthRequestedAndECDSAGiven" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ClientAuthRequestedAndEd25519Given" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ClientAuthRequestedAndGiven" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ClientAuthRequestedAndPKCS1v15Given" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ClientAuthRequestedNotGiven" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-IssueTicket" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-IssueTicketPreDisable" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-P256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-RSA-3DES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-RSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-RSA-AES-GCM" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-RSA-AES256-GCM-SHA384" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-RSA-RC4" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-RSA-RSAPKCS1v15" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-RSA-RSAPSS" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-Resume" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-ResumeDisabled" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-SNI" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-SNI-GetCertificate" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-SNI-GetCertificateNotFound" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv12-X25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-AES128-SHA256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-AES256-SHA384" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ALPN" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ALPN-Fallback" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ALPN-NoMatch" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ALPN-NotConfigured" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-CHACHA20-SHA256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ClientAuthRequestedAndECDSAGiven" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ClientAuthRequestedAndEd25519Given" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ClientAuthRequestedAndGiven" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ClientAuthRequestedNotGiven" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ECDHE-ECDSA-AES" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-Ed25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ExportKeyingMaterial" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-HelloRetryRequest" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-IssueTicket" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-IssueTicketPreDisable" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-KeySharePreference" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-P256" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-RSA-RSAPSS" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-RSA-RSAPSS-TooSmall" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-Resume" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-Resume-HelloRetryRequest" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-ResumeDisabled" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/Server-TLSv13-X25519" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/example-cert.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/example-key.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ticket.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ticket_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tls.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tls_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

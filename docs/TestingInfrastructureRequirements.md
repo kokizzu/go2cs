@@ -191,6 +191,21 @@ Three parts make it work, and all three are required:
 Staging only the package's own `testdata/` left these opens failing, which is what held `compress/flate`
 at 61 of 64 tests and blocked `compress/zlib` and `compress/lzw` from validating at all.
 
+**Nested (descendant) fixtures.** The same principle reaches DOWNWARD, and for the same reason: `go test`
+runs a package in its real source directory, where the sibling packages nested under it are present with
+their own `testdata` beside them. `internal/trace`'s `TestOldtrace` globs
+`./internal/oldtrace/testdata/*_good` and drives one subtest per trace it finds. The staging created
+`internal/` as an empty NAME (the sibling-shape pass, which reproduces the package directory's shape one
+level deep), the glob matched nothing, and the parent failed on
+`didn't see expected test case user_task_region_1_21_good` — 13 verdicts, the parent plus twelve subtests
+that were never created. The rule is therefore: **every `testdata` directory below the package is staged
+whole**, keeping its relative shape, with no reference analysis — the same rule the package's own
+`testdata/` already gets, applied to the rest of the tree the package occupies on disk. Only `testdata` is
+staged, never a nested package's sources: a sibling package is compiled and referenced as its own
+assembly, and its own conversion run stages its files. Go's convention of keeping fixtures under
+`testdata` is what bounds the cost — measured over all of `$GOROOT/src`, sixteen packages gain anything at
+all, a few hundred files in total.
+
 The orchestrator shall pass a controlled environment and record relevant values in the result manifest:
 GOOS, GOARCH, Go version, .NET runtime, culture, timezone, test seed, package source revision, and
 converter revision. Default culture shall be invariant unless the matched Go test explicitly requires
