@@ -423,14 +423,18 @@ function Get-HostConditionalVerdict {
 # ---- capability-conditional verdicts (the MIRROR of the surplus mechanism above) -----------------
 # The mechanism above assumes the roster banks a FLOOR and a more-capable host produces EXTRA
 # verdicts. Some capability-bound test blocks run the opposite way: the roster banks the CEILING --
-# every case the capability enables -- and a host lacking the prerequisite sees Go's own top-level
-# test collapse to ONE skip instead of spawning its whole case matrix. crypto/tls's TestBogoSuite is
+# every case the capability enables -- and a host lacking the prerequisite never spawns the case
+# matrix at all, so Go's own top-level test collapses to ONE verdict. crypto/tls's TestBogoSuite is
 # the first of these (the BoGo/BoringSSL shim runner): 3,243 sub-verdicts -- 1 parent + 861 pass +
-# 2,381 skip -- collapse to exactly one skip verdict without it, both runtimes agreeing, because
-# Go's own oracle skips identically absent the runner. "A lost verdict is never host-conditional"
-# above stays true for every OTHER shortfall: this path engages ONLY for a package registered here,
-# and ONLY when the shortfall matches that package's registered block size exactly -- anything else
-# still falls through to the same hard failure as before.
+# 2,381 skip -- collapse to exactly one, both runtimes agreeing, because Go's own oracle collapses
+# identically absent the runner. That collapsed verdict is a FAIL, not a skip, and the disclosed
+# count moves with it: see the measured note over Test-CapabilityAbsentDelta in _roster.ps1, which
+# is where the rule and its evidence live. "A lost verdict is never host-conditional" above stays
+# true for every OTHER shortfall: this path engages ONLY for a package registered here, and ONLY
+# when the shortfall matches that package's registered block size exactly -- anything else still
+# falls through to the same hard failure as before. In particular a host that HAS the capability but
+# whose converted side misses the runner's own deadline produces the identical shortfall with Go
+# PASSING, and is refused: that is a real divergence, and the row routes to a faster host.
 #
 # Registered by package; BlockSize is the full-capability verdict count for Test (the top-level test
 # itself plus every Go subtest under it) -- re-derive it from the committed proof page rather than

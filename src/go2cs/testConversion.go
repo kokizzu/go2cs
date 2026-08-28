@@ -5207,6 +5207,36 @@ type testDisclosure struct {
 	// side is decided by network reachability of the boringssl module and the runner's own
 	// 10-minute child deadline, is the first and only member.
 	HostConditional string `json:"hostConditional,omitempty"`
+
+	// HostConditionalSignature is the SECOND accepted failure text, and it exists because an
+	// environmentally-conditional test does not fail the same way for both of its environmental
+	// reasons. crypto/tls's TestBogoSuite is pinned on `bogo failed: exit status 1` — the arm
+	// taken when the BoGo runner RAN and outlived its own deadline (bogo_shim_test.go:414). A
+	// host that simply does not have the runner never reaches that arm: it dies four lines into
+	// the test at bogo_shim_test.go:364, `failed to download boringssl`, and so does Go —
+	// identically, at the same line, for the same reason. Measured 2026-08-28 by pointing
+	// GOMODCACHE at an empty directory with GOPROXY=off: both runtimes report
+	// `--- FAIL: TestBogoSuite`, the comparison calls the C# side MOVED, and the package cannot
+	// validate at all on a host that never had the capability.
+	//
+	// Admission is deliberately confined to the HostConditional fail/fail shape, and the
+	// confinement is the whole safety argument: there, GO ITSELF failed the same way, so the
+	// converted side is provably not the half that moved. In the Go pass / C# fail shape the
+	// primary Signature still governs alone — a run whose Go side downloaded the module fine
+	// while the converted side could not is a real divergence, and pinning it is exactly what
+	// this field must never launder. Empty for every disclosure that is not host-conditional.
+	HostConditionalSignature string `json:"hostConditionalSignature,omitempty"`
+}
+
+// hostConditionalFailureMatches reports whether a C# failure text is one of the environmental
+// failure arms an annotated disclosure accepts in its fail/fail shape. Only reachable from that
+// shape; the primary signature governs everywhere else.
+func hostConditionalFailureMatches(disclosure testDisclosure, csOutput string) bool {
+	if strings.Contains(csOutput, disclosure.Signature) {
+		return true
+	}
+
+	return disclosure.HostConditionalSignature != "" && strings.Contains(csOutput, disclosure.HostConditionalSignature)
 }
 
 type testDisclosureManifest struct {
@@ -5256,6 +5286,19 @@ func loadTestDisclosures(outputPath string) (map[string]testDisclosure, []string
 		// disclosure must fail loudly rather than quietly tolerate more.
 		if disclosure.HostConditional != "" && strings.TrimSpace(disclosure.HostConditional) == "" {
 			return nil, nil, fmt.Errorf("host-conditional disclosure %s must name its environmental dependency", disclosure.Name)
+		}
+
+		// The second failure arm is admitted ONLY inside the host-conditional fail/fail shape, so
+		// on an unannotated entry it would be a pin that never governs anything — a widening its
+		// author would read as recorded. Refused rather than ignored, and blank-checked for the
+		// same reason the signature is: an empty substring matches every failure.
+		if disclosure.HostConditionalSignature != "" {
+			if disclosure.HostConditional == "" {
+				return nil, nil, fmt.Errorf("disclosure %s carries a hostConditionalSignature without being host-conditional; the second arm is only ever admitted in the fail/fail shape", disclosure.Name)
+			}
+			if strings.TrimSpace(disclosure.HostConditionalSignature) == "" {
+				return nil, nil, fmt.Errorf("host-conditional disclosure %s has a blank hostConditionalSignature, which would match every failure", disclosure.Name)
+			}
 		}
 		disclosures[disclosure.Name] = disclosure
 	}
@@ -5368,11 +5411,18 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 	// strict.
 	disclosureRoots := HashSet[string]{}
 	for name, disclosure := range disclosures {
-		if csResults[name] != "fail" || !strings.Contains(csOutputs[name], disclosure.Signature) {
+		if csResults[name] != "fail" {
 			continue
 		}
 
-		if goResults[name] == "pass" || (goResults[name] == "fail" && disclosure.HostConditional != "") {
+		if goResults[name] == "pass" && strings.Contains(csOutputs[name], disclosure.Signature) {
+			disclosureRoots.Add(name)
+			continue
+		}
+
+		// The fail/fail shape admits the annotated row's SECOND environmental arm as well, so a
+		// root that withdrew its fan-out under one arm withdraws it under the other too.
+		if goResults[name] == "fail" && disclosure.HostConditional != "" && hostConditionalFailureMatches(disclosure, csOutputs[name]) {
 			disclosureRoots.Add(name)
 		}
 	}
@@ -5395,7 +5445,7 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 		// first shape uses.
 		if disclosure, ok := disclosures[name]; ok && disclosure.HostConditional != "" &&
 			goOK && csOK && goStatus == "fail" && csStatus == "fail" {
-			if strings.Contains(csOutputs[name], disclosure.Signature) {
+			if hostConditionalFailureMatches(disclosure, csOutputs[name]) {
 				disclosed = append(disclosed, name)
 				disclosedNames.Add(name)
 				continue

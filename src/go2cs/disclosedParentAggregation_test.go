@@ -246,6 +246,69 @@ func TestHostConditionalDisclosureAccountsInBothShapes(t *testing.T) {
 	}
 }
 
+// The SECOND ENVIRONMENTAL ARM. An environmentally-conditional test does not fail the same way for
+// both of its environmental reasons, and crypto/tls's TestBogoSuite is pinned on the arm that is
+// NOT the one a capability-less host takes: `bogo failed: exit status 1` is bogo_shim_test.go:414,
+// reached only when the BoGo runner RAN and outlived its own deadline. A host with no BoringSSL
+// module dies fifty lines earlier at bogo_shim_test.go:364 — `failed to download boringssl` — and
+// so does Go, identically, at the same line. Measured 2026-08-28 (GOMODCACHE at an empty directory,
+// GOPROXY=off): both runtimes report `--- FAIL: TestBogoSuite`, and before this arm existed the
+// comparison called the CONVERTED side moved and crypto/tls could not validate at all there.
+//
+// The confinement is the safety argument, and it is asserted here as hard as the admission: the arm
+// is honored ONLY in the fail/fail shape, where Go itself failed the same way. In Go pass / C# fail
+// the primary signature still governs alone.
+func TestHostConditionalSecondFailureArmIsAdmittedOnlyWhenGoFailsToo(t *testing.T) {
+	disclosures := map[string]testDisclosure{
+		"TestBogo": {
+			Name: "TestBogo", Class: "host-limit", Signature: "bogo failed: exit status 1", Reason: "r",
+			HostConditional:          "The Go baseline depends on network reachability of the boringssl module.",
+			HostConditionalSignature: "failed to download boringssl",
+		},
+	}
+
+	names := []string{"TestBogo", "TestOther"}
+	csOutputs := map[string]string{"TestBogo": "bogo_shim_test.go:364: failed to download boringssl: exit status 1"}
+
+	// The capability-absent shape: both sides die on the download arm, and the row accounts as
+	// disclosed exactly as it does on the deadline arm.
+	goResults := map[string]string{"TestBogo": "fail", "TestOther": "pass"}
+	csResults := map[string]string{"TestBogo": "fail", "TestOther": "pass"}
+
+	mismatches, _, disclosed, _ := matchTerminalStatuses(names, goResults, csResults, disclosures, csOutputs)
+
+	if len(mismatches) != 0 {
+		t.Fatalf("the second environmental arm must be admitted in the fail/fail shape, got mismatches: %v", mismatches)
+	}
+	if !containsName(disclosed, "TestBogo") {
+		t.Fatalf("the second arm must account as DISCLOSED, never as an agreed match, got disclosed: %v", disclosed)
+	}
+
+	// THE confinement. Go passed, so the module WAS reachable — a converted side reporting that it
+	// could not download it is a real divergence, and the second arm must not launder it.
+	goResults["TestBogo"] = "pass"
+
+	mismatches, _, disclosed, _ = matchTerminalStatuses(names, goResults, csResults, disclosures, csOutputs)
+
+	if len(mismatches) != 1 || !strings.HasPrefix(mismatches[0], "TestBogo:") {
+		t.Fatalf("the second arm must NOT be admitted when Go passed, got mismatches: %v disclosed: %v", mismatches, disclosed)
+	}
+	if containsName(disclosed, "TestBogo") {
+		t.Fatal("a Go-passing run whose converted side failed on the OTHER arm is a real divergence, never disclosed")
+	}
+
+	// And an UNANNOTATED entry can carry no second arm at all: loadTestDisclosures refuses the
+	// manifest rather than accepting a pin that would never govern anything.
+	dir := t.TempDir()
+	manifest := `{"schemaVersion":1,"disclosures":[{"name":"TestBogo","class":"host-limit","signature":"s","reason":"r","hostConditionalSignature":"failed to download boringssl"}]}`
+	if err := os.WriteFile(filepath.Join(dir, testDisclosureFileName), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := loadTestDisclosures(dir); err == nil {
+		t.Fatal("a hostConditionalSignature on an unannotated disclosure must be refused, not silently ignored")
+	}
+}
+
 // The FLOOD exclusion. Shape (b) is precisely the shape in which the Go side DID reach its case
 // fan-out, so an annotated root must withdraw its Go-only descendants exactly as a shape-(a) root
 // does. Without it TestBogoSuite's 3,243 BoGo subtest rows land as one-sided mismatches — a
