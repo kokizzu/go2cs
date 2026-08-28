@@ -100,9 +100,10 @@ working-directory class. It cannot close this one, and the reason is measured, n
 
 ## 4. Options, with what each was measured to do
 
-All rows below are `go build` of Go's own `internal/trace/testdata/testprog/cpu-profile.go` (the file
-that imports `internal/profile`), or of a minimal equivalent, on Go 1.23.12 / Windows. Scripts:
-`sibdata-internal-probe.ps1`, `sibdata-internal-probe2.ps1` (scratchpad, lane-prefixed).
+Every row below is one `go build` of Go's own `internal/trace/testdata/testprog/cpu-profile.go` — the
+file that imports `internal/profile` — or of a two-line equivalent, on Go 1.23.12 / Windows. Each row
+is reproducible from its own description in a scratch directory; the shapes differ only in how the
+directory holding the file was staged, and the CONTROL row is the shape the harness stages today.
 
 | # | staged shape | result |
 |---|---|---|
