@@ -696,7 +696,7 @@ internal static (ж<recordingConn> conn, ж<exec.Cmd> child, error err) connFrom
         defer(() => lʗ1.Close(), ref ᒐ);
         nint port = l.Addr()._<ж<net.TCPAddr>>().Value.Port;
         slice<@string> command = default!;
-        command = append(command, test.command.ꓸꓸꓸ);
+        command = appendꓸꓸꓸ(command, test.command);
         if (len(command) == 0) {
             command = defaultClientCommand;
         }
@@ -878,7 +878,7 @@ internal static void runServerTestForVersion(ж<testing.T> Ꮡt, ж<serverTest> 
     if (len(test.command) == 0) {
         test.command = defaultClientCommand;
     }
-    test.command = append(slice<@string>(default!), test.command.ꓸꓸꓸ);
+    test.command = appendꓸꓸꓸ(slice<@string>(default!), test.command);
     test.command = append(test.command, option);
     runTestAndUpdateIfNeeded(Ꮡt, version, Ꮡtest.run, test.wait);
 }
