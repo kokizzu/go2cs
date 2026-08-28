@@ -42,8 +42,31 @@
 // The corpus converts exactly that GOARCH; another Linux arch's Stat_t (386, arm64, …) has a
 // different layout and would need its own mirror in its own zsyscall_<arch>_impl.cs — stated
 // rather than generalized, because no such flavor exists in the corpus to measure against.
-// Statfs_t (Fstatfs/Statfs, `Spare [4]int64`) and Sysinfo_t/Utsname/… are the same class and are
-// NOT taken here: no roster row reached them, and the class doctrine is per-member, when reached.
+// THE DEFERRAL RULE THIS HEADER USED TO STATE IS RETIRED (2026-08-28). It read: Statfs_t,
+// Sysinfo_t, Utsname and the rest "are NOT taken here: no roster row reached them, and the class
+// doctrine is per-member, when reached." That rule was written for the symptom Stat_t
+// demonstrated — a quiet wrong ANSWER — and it is unsafe for what the write actually does. These
+// structs hold their `array<>` fields as MANAGED REFERENCES in a GC-tracked slot, so the kernel
+// writes its bytes over reference slots and the collector then follows the wreckage: not a bad
+// value in the caller's struct, but heap corruption surfacing arbitrarily far away. Uname proved
+// it — it sat on that deferred list, with that reason, WHILE os/exec reached it, and `uname(2)`
+// writing 390 bytes over six reference slots was the corruptor behind a campaign of
+// unattributable crashes (verifyheap: 6 errors in one contiguous run; ground truth: the host
+// killed by SIGSEGV before the mirror, an ordinary exit after). "No roster row reached it" is a
+// statement about COVERAGE, not about execution.
+//
+// So the rule is now: a member of this class whose converted struct carries `array<>` fields is
+// taken ON THE MECHANISM, before it is reached. Uname is below; Select, FcntlFlock, Statfs,
+// Fstatfs, Sysinfo and Adjtimex — the rest of the linux/amd64 surface — are in
+// structclass_linux_impl.cs. What remains genuinely not done is the ARCH dimension above: another
+// Linux arch's layouts would need their own mirrors in their own zsyscall_<arch>_impl.cs.
+//
+// And the landing rule both halves of the fleet learned the same day, by each hitting it: a
+// hand-own here is not landable without its GENERATED body going in the same commit.
+// `manualConversionFuncs` displaces a wrapper at CONVERSION time, so a committed corpus file that
+// still carries the generated body gives `CS0111: already defines a member` — visible only at a
+// build of this flavor, because the `-tests` pipeline converts only the package under test and
+// never regenerates `syscall`.
 
 using System;
 using System.Runtime.InteropServices;
