@@ -404,7 +404,7 @@ public static void TestBitwiseContended(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestCasRel_x {
+[GoType("dyn")] internal partial struct TestCasRel_x {
     internal uint32 before;
     internal uint32 i;
     internal uint32 after;
