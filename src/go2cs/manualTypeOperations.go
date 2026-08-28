@@ -858,7 +858,15 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// os/exec's suite the day the exec wall opened. Hand-owned beside Fstat with stack-local
 		// native buffers that live for the whole call. Scoped to linux exactly as Fstat: darwin
 		// declares wait4 too, with a working libc-backed body.
-		"wait4":                  goosLinux,
+		"wait4": goosLinux,
+		// The class's third member, reached 2026-08-28 by os/exec's TestFindExecutableVsNoexec:
+		// the kernel writes six 65-byte INLINE character arrays (390 bytes of `struct utsname`)
+		// where the converted Utsname is six `array<int8>` references and no characters at all,
+		// so `unix.KernelVersion()` — whose whole body is Uname plus a parse of Release — read
+		// (0, 0) and the test took Go's OWN v5.8 skip on a 5.15 kernel that has faccessat2. A
+		// quiet wrong answer of the Stat_t kind, one level removed. Hand-owned beside Fstat with
+		// a blittable mirror; scoped to linux because Uname is a Linux-only declaration.
+		"Uname":                  goosLinux,
 		"GetTimeZoneInformation": goosWindows,
 		// The same seam over a bigger record, and the first member of the class an actual suite
 		// reached: the kernel writes a 592-byte WIN32_FIND_DATAW, whose cFileName[260] and
