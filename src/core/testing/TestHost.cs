@@ -176,16 +176,27 @@ public static class TestHost
             // already running where `go test` put it, and no test code has run yet.
             TestFlagBridge.Register(options);
 
-            // The deferred verdict on an unrecognized flag (see TestOptions.Parse). Both vocabularies
-            // now exist — the package's, from the initialization above, and the host's, from the
-            // registration — which is the state Go's single flag.Parse() sees. A name neither one
-            // defines is the command line being wrong, and it is still rejected, in flag's own
-            // wording and with flag's ExitOnError code.
-            if (options.UnrecognizedFlag is { } unrecognized && !TestFlagBridge.IsDefined(unrecognized))
-            {
-                Console.Error.WriteLine($"flag provided but not defined: -{unrecognized}");
-                return 2;
-            }
+            // NO VERDICT HERE — the unrecognized flag PASSES THROUGH to the converted flag package,
+            // which is the only party entitled to rule on it. This block used to answer the name
+            // itself ("flag provided but not defined: -x", return 2), reproducing flag's wording and
+            // flag's exit code — and that looked right precisely because the code matched. It was
+            // still wrong, because it took the decision in the WRONG PLACE and TOO EARLY: Go's test
+            // binary reaches exactly one flag.Parse(), by which time the package under test has
+            // installed whatever flag.Usage it wants, and Usage is entitled to do something other
+            // than exit 2.
+            //
+            // crypto/tls is the measured witness (2026-08-28). Its TestMain sets
+            // `flag.Usage = func() { …; if *bogoMode { os.Exit(89) } }`, and BoGo's runner reads
+            // exit 89 as errUnimplemented → SKIP (runner.go:1685, 20380). Go's shim defines ~45 of
+            // the ~100 flags the runner uses and INTENDS the rest to exit 89 and skip; answering
+            // here turned 1,902 of those into hard failures instead. The class is wider than BoGo —
+            // any package whose Usage does anything but flag's default diverged the same way.
+            //
+            // Nothing is lost by deferring: TestFlagBridge.Register above put the host's own
+            // vocabulary on the converted flag package and InitializePackageUnderTest put the
+            // package's there, so the flag.Parse below sees exactly the single combined flag set
+            // Go's one parse sees — and rejects a genuinely undefined name with Go's message, Go's
+            // Usage, and Go's status, decided by Go's code.
 
             // Go's m.Run parses the command line if nothing has yet (`if !flag.Parsed() {
             // flag.Parse() }`) — the step that writes the VALUES into the definitions above. A

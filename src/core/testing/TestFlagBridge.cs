@@ -176,10 +176,14 @@ internal static class TestFlagBridge
     /// Ordering with a package's own <c>TestMain</c> is preserved in effect: a <c>TestMain</c> that
     /// calls <c>flag.Parse()</c> re-parses the same arguments into the same definitions (the call
     /// is idempotent over an unchanged command line), and one that never calls it was relying on
-    /// <c>m.Run</c>'s parse — which is exactly the step being restored. Every argument on the host's
-    /// command line is defined by the time this runs — the package's own flags via
-    /// <c>InitializePackageUnderTest</c>, the host's via <see cref="Register"/> — so the
-    /// <c>ExitOnError</c> path is unreachable for a command line the host already accepted.
+    /// <c>m.Run</c>'s parse — which is exactly the step being restored. Both vocabularies are on the
+    /// converted flag package by the time this runs — the package's own flags via
+    /// <c>InitializePackageUnderTest</c>, the host's via <see cref="Register"/> — so this parse sees
+    /// exactly the one combined flag set Go's single <c>flag.Parse()</c> sees. An UNDEFINED name
+    /// reaches it too, deliberately (the host stopped ruling on those, 2026-08-28): <c>flag</c> then
+    /// applies Go's own contract — its message, the package's <c>flag.Usage</c>, and
+    /// <c>ExitOnError</c>'s status — which is the only way a package that overrides <c>Usage</c>
+    /// (crypto/tls's bogo <c>os.Exit(89)</c>) can behave as Go specifies.
     /// </para>
     /// </remarks>
     public static void Parse()
