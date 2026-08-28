@@ -106,6 +106,7 @@
     <None Include="$(MSBuildThisFileDirectory)localTypeLift_test.go" />
     <None Include="$(MSBuildThisFileDirectory)localValueIfaceCallConversion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)main.go" />
+    <None Include="$(MSBuildThisFileDirectory)manualConversionDestination_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionMarker_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionScope_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualTypeOperations.go" />
