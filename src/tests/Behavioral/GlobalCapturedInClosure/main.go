@@ -22,6 +22,28 @@ func keep(h *heap) { _ = h } // takes &mheap so it is heap-boxed
 //go:noinline
 func run(f func()) { f() }
 
+// boxedLocal is a NEGATIVE control this file happens to be the natural home for. The type declared
+// above is named `heap`, which is also go2cs's own boxing intrinsic (golib's
+// `heap(value, out var Ꮡname)`, in scope through `using static go.builtin`), and an address-taken
+// local below needs that intrinsic in the same package. The two must NOT be treated as colliding.
+//
+// A local or parameter named `heap` genuinely does shadow the intrinsic, and BuiltinShadowLocal
+// guards that (the emission qualifies to `builtin.heap(...)` there). A package-level TYPE does not:
+// C#'s invocable-member rule ignores non-invocable type members when a simple name is the target of
+// an invocation, so `heap(new heap(), out var Ꮡh)` still binds the `using static` method group. The
+// first version of the shadowing check did not make that distinction and qualified here too —
+// harmless output, but a golden change no defect required, which is exactly what this control now
+// prevents. The emission below must stay the bare `heap(...)`.
+//
+//go:noinline
+func boxedLocal() int {
+	var h heap
+	p := &h // address-taken struct local: emitted through the boxing intrinsic
+	p.count += 7
+
+	return h.count
+}
+
 func main() {
 	keep(&mheap)
 	var got int
@@ -31,4 +53,5 @@ func main() {
 		*p += 10
 	})
 	fmt.Println(got, mheap.count) // 1 11
+	fmt.Println(boxedLocal())     // 7
 }

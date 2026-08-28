@@ -30,6 +30,13 @@ internal static void run(Action f) {
     f();
 }
 
+internal static nint boxedLocal() {
+    ref var h = ref heap(new heap(), out var Ꮡh);
+    var p = Ꮡh;
+    p.Value.count += 7;
+    return h.count;
+}
+
 internal static void Main() {
     keep(Ꮡmheap);
     nint got = default!;
@@ -39,6 +46,7 @@ internal static void Main() {
         p.Value += 10;
     });
     fmt.Println(got, mheap.count);
+    fmt.Println(boxedLocal());
 }
 
 } // end main_package

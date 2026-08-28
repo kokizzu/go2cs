@@ -51,6 +51,27 @@ internal static @string describeSignal(nint sig) {
 
 [GoType("[3]nint")] partial struct arr;
 
+[GoType] partial struct counter {
+    internal nint n;
+}
+
+internal static nint sumHeap(slice<nint> heap) {
+    ref var c = ref builtin.heap(new counter(), out var Ꮡc);
+    var p = Ꮡc;
+    foreach (var (_, v) in heap) {
+        p.Value.n += v;
+    }
+    return c.n;
+}
+
+internal static nint scaleHeap(nint heapʗp, nint factor) {
+    ref var heap = ref builtin.heap(heapʗp, out var Ꮡheap);
+
+    var p = Ꮡheap;
+    p.Value *= factor;
+    return heap;
+}
+
 internal static (nint, nint) unshadowed() {
     var s = new slice<nint>(2, 5);
     return (len(s), cap(s));
@@ -74,6 +95,7 @@ internal static void shadowedCalls() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object heapˢ = (@string)"heap"u8;
 private static readonly object builtinˢ = (@string)"builtin"u8;
 
 internal static void Main() {
@@ -83,6 +105,7 @@ internal static void Main() {
     fmt.Println(describeSignal(9));
     fmt.Println(describeSignal(1));
     shadowedCalls();
+    fmt.Println(heapˢ, sumHeap(new nint[]{4, 5, 6}.slice()), scaleHeap(7, 6));
     var (l, c) = unshadowed();
     fmt.Println(builtinˢ, l, c);
 }

@@ -94,7 +94,7 @@ internal static T orZero<T>(ж<T> Ꮡp)
 
 [GoType] partial interface PtrOf<T> {
     //  Type constraints: *T
-    // Derived operators: ==, !=
+    // Derived operators: none
 }
 
 internal static ж<T> cloneNamed<T>(ж<T> Ꮡp)

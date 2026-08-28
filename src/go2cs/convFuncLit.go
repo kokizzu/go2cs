@@ -372,6 +372,18 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 	savedInFunction := v.inFunction
 	v.inFunction = true
 
+	// The literal's OWN parameters and locals can shadow golib's `heap` intrinsic even when the
+	// enclosing declaration's do not — and a literal in a PACKAGE-LEVEL initializer has no enclosing
+	// declaration at all, so the flag would otherwise carry whatever function was visited last. Rebase
+	// on the package answer in that case, then OR in this literal's own declarations; restored below.
+	savedHeapIntrinsicShadowed := v.heapIntrinsicShadowed
+
+	if !savedInFunction {
+		v.heapIntrinsicShadowed = v.packageDeclaresHeapIntrinsicIdent()
+	}
+
+	v.heapIntrinsicShadowed = v.heapIntrinsicShadowed || v.declaresHeapIntrinsicIdent(funcLit)
+
 	// `inFunction` says the BODY is function scope; it does NOT say there is an enclosing function
 	// DECLARATION. currentFuncName and currentFuncPrefix are owned by visitFuncDecl (allocated
 	// together there), so for a literal in a package-level initializer they hold whatever the
@@ -423,6 +435,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		v.namedReturnNames = savedNamedReturnNames
 		v.currentReturnSignature = savedReturnSignature
 		v.inFunction = savedInFunction
+		v.heapIntrinsicShadowed = savedHeapIntrinsicShadowed
 		v.inGoFrame = savedInGoFrame
 		v.goFrameNamedExit = savedGoFrameNamedExit
 		v.openGoFrames = savedOpenGoFrames
@@ -631,10 +644,10 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				}
 
 				if v.options.preferVarDecl {
-					prologue.WriteString(fmt.Sprintf("%s%sref var %s = ref heap(%s, out var %s%s);", v.newline, v.indent(bodyIndent), getSanitizedIdentifier(renderedName), incomingName, AddressPrefix, renderedName))
+					prologue.WriteString(fmt.Sprintf("%s%sref var %s = ref %s(%s, out var %s%s);", v.newline, v.indent(bodyIndent), getSanitizedIdentifier(renderedName), v.heapIntrinsicName(), incomingName, AddressPrefix, renderedName))
 				} else {
 					csTypeName := v.getCSharpTypeName(v.getIdentType(ident))
-					prologue.WriteString(fmt.Sprintf("%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(bodyIndent), csTypeName, getSanitizedIdentifier(renderedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, renderedName))
+					prologue.WriteString(fmt.Sprintf("%s%sref %s %s = ref %s(%s, out %s<%s> %s%s);", v.newline, v.indent(bodyIndent), csTypeName, getSanitizedIdentifier(renderedName), v.heapIntrinsicName(), incomingName, PointerPrefix, csTypeName, AddressPrefix, renderedName))
 				}
 			}
 

@@ -53,6 +53,49 @@ func describeSignal(sig int) string {
 
 type arr [3]int
 
+// `heap` is NOT a Go built-in — it is go2cs's OWN boxing intrinsic (golib's
+// `heap(value, out var Ꮡname)`, in scope in every converted file through `using static
+// go.builtin`). So this collision is one the converter INVENTS: a Go program may legally name
+// anything `heap`, and nothing in the Go source hints at a conflict. The failure is the same
+// CS0149 the shadowed built-ins above produce — the parameter wins C# simple-name lookup over the
+// `using static` member — but it lands at a line the Go source did not write, the boxing prologue
+// the converter emits for an address-taken local, so it reads as an emitter defect rather than as
+// a name collision.
+//
+// The remedy is therefore the OPPOSITE of the renames above: the Go identifier is what the Go
+// program chose and is preserved, and the INTRINSIC is qualified instead (`builtin.heap`), only
+// where a `heap` declaration is actually in scope. Reproduces internal/trace's
+// `heapDebugString(heap []*batchCursor)`, whose `strings.Builder` local needs a box — the whole of
+// that package's 92-verdict build wall.
+//
+// ⚠ Only the ARGUMENT-CARRYING box form collides, and the guard is written to produce it. The
+// parameterless form the converter emits for a scalar carries an explicit type argument
+// (`heap<nint>(out var Ꮡtotal)`), and a C# simple name followed by a type-argument list considers
+// only generic methods — a local or parameter is never a candidate — so THAT call binds the
+// intrinsic even while `heap` is shadowed. A guard built on a scalar local therefore compiles with
+// the fix reverted and proves nothing. Both colliding shapes are covered below: an address-taken
+// STRUCT local (`heap(new counter(), out var Ꮡc)`, internal/trace's shape) and an address-taken
+// value PARAMETER that is itself named `heap` (`heap(heapʗp, out var Ꮡheap)`).
+type counter struct{ n int }
+
+func sumHeap(heap []int) int {
+	var c counter // struct local, address-taken below: boxed with `new counter()` as an argument
+	p := &c
+
+	for _, v := range heap {
+		p.n += v
+	}
+
+	return c.n
+}
+
+func scaleHeap(heap int, factor int) int {
+	p := &heap // the shadowing PARAMETER is itself the boxed one
+	*p *= factor
+
+	return heap
+}
+
 // The built-ins still mean the built-ins in a scope that does NOT shadow them.
 func unshadowed() (int, int) {
 	s := make([]int, 2, 5)
@@ -90,6 +133,8 @@ func main() {
 	fmt.Println(describeSignal(1))                  // [SIG?]
 
 	shadowedCalls()
+
+	fmt.Println("heap", sumHeap([]int{4, 5, 6}), scaleHeap(7, 6)) // heap 15 42
 
 	l, c := unshadowed()
 	fmt.Println("builtin", l, c) // builtin 2 5

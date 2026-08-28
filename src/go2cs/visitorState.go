@@ -238,8 +238,18 @@ type Visitor struct {
 	importPathAliases map[string]string
 
 	// FuncDecl variables
-	inFunction           bool
-	currentFuncDecl      *ast.FuncDecl
+	inFunction      bool
+	currentFuncDecl *ast.FuncDecl
+	// heapIntrinsicShadowed reports that a Go DECLARATION named `heap` is visible where the
+	// current function's heap-box emissions land, so each of them must spell golib's boxing
+	// intrinsic as `builtin.heap` rather than the bare `heap` (see heapIntrinsicName). Set per
+	// function declaration, and OR-ed with a function literal's own declarations (save/restore in
+	// convFuncLit) so a literal nested inside a clean function is still covered by its own params.
+	heapIntrinsicShadowed bool
+	// heapIdentInPackage caches whether the package under conversion declares `heap` at ALL (see
+	// packageMentionsHeapIntrinsicIdent) — the gate that keeps the per-declaration scan from
+	// costing every package a second AST traversal to learn a package-wide fact.
+	heapIdentInPackage   *bool
 	currentFuncSignature *types.Signature
 	// currentReturnSignature is the signature whose RESULTS a `return` currently emits against — the
 	// enclosing function's, or a nested function literal's own (set with save/restore in convFuncLit).
