@@ -60,7 +60,7 @@ partial class trace_package {
     return b.exp == @event.NoExperiment && len(b.data) > 0 && ((@event.Type)b.data[0]) == go122.EvFrequency;
 }
 
-[GoType("dyn")] partial interface readBatch_r :
+[GoType("dyn")] internal partial interface readBatch_r :
     io.Reader,
     io.ByteReader
 {

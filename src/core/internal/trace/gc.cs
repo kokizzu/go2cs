@@ -43,7 +43,7 @@ public static UtilFlags UtilSweep => 8;
 public static UtilFlags UtilPerProc => 16;
 
 // Set up a bunch of analysis state.
-[GoType("dyn")] partial struct MutatorUtilizationV2_perP {
+[GoType("dyn")] internal partial struct MutatorUtilizationV2_perP {
     // gc > 0 indicates that GC is active on this P.
     internal nint gc;
     // series the logical series number for this P. This
@@ -52,7 +52,7 @@ public static UtilFlags UtilPerProc => 16;
     internal nint series;
 }
 
-[GoType("dyn")] partial struct MutatorUtilizationV2_procsCount {
+[GoType("dyn")] internal partial struct MutatorUtilizationV2_procsCount {
     // time at which procs changed.
     internal int64 time;
     // n is the number of procs at that point.
