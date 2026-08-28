@@ -452,7 +452,7 @@ internal static bool knownRoundTripperImpl(RoundTripper rt, ж<Request> Ꮡreq) 
 
 // The first way, used only for RoundTripper
 // implementations written before Go 1.5 or Go 1.6.
-[GoType("dyn")] partial interface setRequestCancel_canceler {
+[GoType("dyn")] internal partial interface setRequestCancel_canceler {
     void CancelRequest(ж<Request> _);
 }
 
@@ -1122,7 +1122,7 @@ public static (ж<Response> resp, error err) Head(this ж<Client> Ꮡc, @string 
     return Ꮡc.Do(req);
 }
 
-[GoType("dyn")] partial interface CloseIdleConnections_closeIdler {
+[GoType("dyn")] internal partial interface CloseIdleConnections_closeIdler {
     void CloseIdleConnections();
 }
 

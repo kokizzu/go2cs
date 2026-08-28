@@ -284,7 +284,7 @@ internal static void loadOptionalSyscalls() {
     _RtlGetVersion = windowsFindfunc(n32, slice<byte>("RtlGetVersion\u0000"u8));
 }
 
-[GoType("dyn")] partial struct monitorSuspendResume__DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS {
+[GoType("dyn")] internal partial struct monitorSuspendResume__DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS {
     internal uintptr callback;
     internal uintptr context;
 }

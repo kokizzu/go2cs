@@ -151,6 +151,40 @@ func generatedTypeScope(identifier string) string {
 		return "internal"
 	}
 
+	// The collision marker is an EMISSION artifact, not part of the Go identifier, so it comes off
+	// before the export rule reads anything. Δ is a Greek CAPITAL, so reading it verbatim answered
+	// "exported" for every Δ-renamed UNEXPORTED type — 34 in the corpus (Δsockaddr, Δcommon,
+	// ΔgobType, …), each emitted public while its un-renamed siblings stayed internal. The marker
+	// records that a name COLLIDED; it says nothing about whether Go exported it.
+	//
+	// go2cs-gen's Common.GetScope strips the same prefix in the same place, and the two MUST move
+	// together: they decide the modifier of two partial declarations of ONE type, and C# rejects
+	// conflicting accessibility (CS0262).
+	identifier = strings.TrimPrefix(identifier, ShadowVarMarker)
+
+	if identifier == "" {
+		return "internal"
+	}
+
+	// An ANONYMOUS-type lift is not a Go identifier and carries no export status to read. Every
+	// anonymous struct/interface/composite-literal type is named with the placeholder "type"
+	// (convInterfaceType.go, convStructType.go, convCompositeLit.go, visitStructType.go), which the
+	// sanitizer then marks — so the name arriving here is Δtype, or Δtypeᴛ<N> when arity-suffixed.
+	// "type" is a Go KEYWORD and can never be a user type name, so the match is unambiguous.
+	//
+	// These must stay public: a lifted anonymous interface is emitted as a BASE of the named type
+	// that embedded it, and C# rejects a public interface whose base is less accessible (CS0061).
+	// Measured on the AnonymousInterfaces behavioral test, whose Go declares
+	//
+	//	type InlineEmbed interface { interface{ Close() error }; Flush() error }
+	//
+	// This is the same principle go2cs-gen already applies to function-local type lifts: a name is
+	// the wrong oracle for anything go2cs SYNTHESIZED. Stripping the marker exposes the Go
+	// identifier where there IS one; where there is none, there is no export rule to apply.
+	if isAnonymousTypePlaceholder(identifier) {
+		return "public"
+	}
+
 	first, size := utf8.DecodeRuneInString(identifier)
 
 	// A '_'-prefixed identifier (other than the bare blank '_') is unexported → internal.
@@ -167,6 +201,36 @@ func generatedTypeScope(identifier string) string {
 	}
 
 	return "internal"
+}
+
+// isAnonymousTypePlaceholder reports whether name — already stripped of its ShadowVarMarker — is the
+// converter's SYNTHESIZED anonymous-type name rather than a Go identifier: the literal placeholder
+// "type", optionally carrying the temp-var arity suffix the emitter appends when one scope lifts
+// more than one (typeᴛ1, typeᴛ2, …).
+//
+// It deliberately does NOT match a user type whose name merely begins with "type" (typeDecl,
+// typeParam) — those are real Go identifiers whose case does encode export status — nor a sanitized
+// user type carrying the same suffix marker (Δsliceᴛ, from a Go `slice`).
+func isAnonymousTypePlaceholder(name string) bool {
+	const placeholder = "type"
+
+	if name == placeholder {
+		return true
+	}
+
+	suffix, found := strings.CutPrefix(name, placeholder+TempVarMarker)
+
+	if !found || suffix == "" {
+		return false
+	}
+
+	for _, r := range suffix {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // typeAccessibilityKey is the sort key of a `<TypeAccessibility>` entry: the declaration with its

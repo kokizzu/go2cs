@@ -83,9 +83,9 @@ public static partial class reflectlite_package
     internal partial struct dummyᴛ1 {}
     internal partial struct flag {}
     internal partial struct rtype {}
+    internal partial struct Δname {}
     public partial interface ΔType {}
     public partial struct Value {}
     public partial struct ValueError {}
-    public partial struct Δname {}
     // </TypeAccessibility>
 }

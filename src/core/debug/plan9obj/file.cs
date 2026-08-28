@@ -176,7 +176,7 @@ internal static (uint32, error) parseMagic(slice<byte> magic) {
     return (0, new formatErrorжerror(Ꮡ(new formatError(0, "bad magic number"u8, magic))));
 }
 
-[GoType("dyn")] partial struct NewFile_type {
+[GoType("dyn")] internal partial struct NewFile_type {
     internal @string name;
     internal uint32 size;
 }

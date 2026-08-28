@@ -694,11 +694,11 @@ internal static void resyncConn(ж<testing.T> Ꮡt, net.Conn c) {
     }
 }
 
-[GoType("dyn")] partial struct chunkedCopy_dst {
+[GoType("dyn")] internal partial struct chunkedCopy_dst {
     public io_package.Writer Writer;
 }
 
-[GoType("dyn")] partial struct chunkedCopy_src {
+[GoType("dyn")] internal partial struct chunkedCopy_src {
     public io_package.Reader Reader;
 }
 

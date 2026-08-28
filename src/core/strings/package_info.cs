@@ -85,6 +85,7 @@ public static partial class strings_package
 
     // <TypeAccessibility>
     internal partial interface replacer {}
+    [GoLocalName("span")] internal partial struct FieldsFunc_span {}
     internal partial struct appendSliceWriter {}
     internal partial struct asciiSet {}
     internal partial struct byteReplacer {}
@@ -95,7 +96,6 @@ public static partial class strings_package
     internal partial struct stringWriter {}
     internal partial struct trieNode {}
     public partial struct Builder {}
-    [GoLocalName("span")] public partial struct FieldsFunc_span {}
     public partial struct Reader {}
     public partial struct Replacer {}
     // </TypeAccessibility>

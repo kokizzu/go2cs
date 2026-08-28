@@ -1153,7 +1153,7 @@ internal static void skipInlineBody(this ж<parser> Ꮡp) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct parseTypes_typeOffset {
+[GoType("dyn")] internal partial struct parseTypes_typeOffset {
     internal nint offset;
     internal nint length;
 }

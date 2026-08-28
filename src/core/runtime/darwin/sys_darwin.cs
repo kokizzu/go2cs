@@ -11,7 +11,7 @@ using @internal.runtime;
 
 partial class runtime_package {
 
-[GoType("dyn")] partial struct syscall_syscall_args {
+[GoType("dyn")] internal partial struct syscall_syscall_args {
     internal uintptr fn, a1, a2, a3, r1, r2, err;
 }
 
@@ -42,7 +42,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscall(uintptr fn
 
 internal static partial void syscall();
 
-[GoType("dyn")] partial struct syscall_syscallX_args {
+[GoType("dyn")] internal partial struct syscall_syscallX_args {
     internal uintptr fn, a1, a2, a3, r1, r2, err;
 }
 
@@ -63,7 +63,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscallX(uintptr f
 
 internal static partial void syscallX();
 
-[GoType("dyn")] partial struct syscall_syscall6_args {
+[GoType("dyn")] internal partial struct syscall_syscall6_args {
     internal uintptr fn, a1, a2, a3, a4, a5, a6, r1, r2, err;
 }
 
@@ -116,7 +116,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscall9(uintptr f
 
 internal static partial void syscall9();
 
-[GoType("dyn")] partial struct syscall_syscall6X_args {
+[GoType("dyn")] internal partial struct syscall_syscall6X_args {
     internal uintptr fn, a1, a2, a3, a4, a5, a6, r1, r2, err;
 }
 
@@ -137,7 +137,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscall6X(uintptr 
 
 internal static partial void syscall6X();
 
-[GoType("dyn")] partial struct syscall_syscallPtr_args {
+[GoType("dyn")] internal partial struct syscall_syscallPtr_args {
     internal uintptr fn, a1, a2, a3, r1, r2, err;
 }
 
@@ -162,7 +162,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscallPtr(uintptr
 
 internal static partial void syscallPtr();
 
-[GoType("dyn")] partial struct syscall_rawSyscall_args {
+[GoType("dyn")] internal partial struct syscall_rawSyscall_args {
     internal uintptr fn, a1, a2, a3, r1, r2, err;
 }
 
@@ -183,7 +183,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_rawSyscall(uintptr
     return (args.r1, args.r2, args.err);
 }
 
-[GoType("dyn")] partial struct syscall_rawSyscall6_args {
+[GoType("dyn")] internal partial struct syscall_rawSyscall6_args {
     internal uintptr fn, a1, a2, a3, a4, a5, a6, r1, r2, err;
 }
 
@@ -204,7 +204,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_rawSyscall6(uintpt
     return (args.r1, args.r2, args.err);
 }
 
-[GoType("dyn")] partial struct crypto_x509_syscall_args {
+[GoType("dyn")] internal partial struct crypto_x509_syscall_args {
     internal uintptr fn, a1, a2, a3, a4, a5;
     internal float64 f1;
     internal uintptr r1;
@@ -355,7 +355,7 @@ internal static void osinit_hack() {
 
 internal static partial void osinit_hack_trampoline();
 
-[GoType("dyn")] partial struct mmap_args {
+[GoType("dyn")] internal partial struct mmap_args {
     internal @unsafe.Pointer addr;
     internal uintptr n;
     internal int32 prot, flags, fd;
@@ -499,7 +499,7 @@ internal static int32 /*ret*/ open(ж<byte> Ꮡname, int32 mode, int32 perm) {
 
 internal static partial void open_trampoline();
 
-[GoType("dyn")] partial struct nanotime1_r {
+[GoType("dyn")] internal partial struct nanotime1_r {
     internal int64 t;  // raw timer
     internal uint32 numer, denom; // conversion factors. nanoseconds = t * numer / denom.
 }
@@ -638,7 +638,7 @@ internal static int32 sysctlbyname(ж<byte> Ꮡname, ж<byte> Ꮡoldp, ж<uintpt
 
 internal static partial void sysctlbyname_trampoline();
 
-[GoType("dyn")] partial struct fcntl_args {
+[GoType("dyn")] internal partial struct fcntl_args {
     internal int32 fd, cmd, arg;
     internal int32 ret, errno;
 }
@@ -788,7 +788,7 @@ internal static int32 issetugid() {
 
 internal static partial void issetugid_trampoline();
 
-[GoType("dyn")] partial struct mach_vm_region_args {
+[GoType("dyn")] internal partial struct mach_vm_region_args {
     internal ж<uint64> address;
     internal ж<uint64> size;
     internal machVMRegionFlavour flavor;
@@ -830,7 +830,7 @@ internal static int32 mach_vm_region(ж<uint64> Ꮡaddress, ж<uint64> Ꮡregion
 
 internal static partial void mach_vm_region_trampoline();
 
-[GoType("dyn")] partial struct proc_regionfilename_args {
+[GoType("dyn")] internal partial struct proc_regionfilename_args {
     internal nint pid;
     internal uint64 address;
     internal ж<byte> buf;

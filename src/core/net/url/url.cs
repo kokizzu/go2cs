@@ -71,7 +71,7 @@ partial class url_package {
     return fmt.Sprintf("%s %q: %s"u8, e.Op, e.URL, e.Err);
 }
 
-[GoType("dyn")] partial interface Timeout_type {
+[GoType("dyn")] internal partial interface Timeout_type {
     bool Timeout();
 }
 
@@ -80,7 +80,7 @@ partial class url_package {
     return ok && t.Timeout();
 }
 
-[GoType("dyn")] partial interface Temporary_type {
+[GoType("dyn")] internal partial interface Temporary_type {
     bool Temporary();
 }
 

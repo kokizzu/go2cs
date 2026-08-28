@@ -446,7 +446,7 @@ internal static readonly @string constˢ = "const"u8;
 internal static readonly @string restrictˢ = "restrict"u8;
 internal static readonly @string volatileˢ = "volatile"u8;
 
-[GoType("dyn")] partial interface readType_type {
+[GoType("dyn")] internal partial interface readType_type {
     ж<BasicType> Basic();
 }
 

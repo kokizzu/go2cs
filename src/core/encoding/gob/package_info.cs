@@ -94,6 +94,7 @@ public static partial class gob_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface ΔgobType {}
     internal partial struct decBuffer {}
     internal partial struct decEngine {}
     internal partial struct decInstr {}
@@ -116,7 +117,6 @@ public static partial class gob_package
     internal partial struct wireType {}
     public partial interface GobDecoder {}
     public partial interface GobEncoder {}
-    public partial interface ΔgobType {}
     public partial struct CommonType {}
     public partial struct Decoder {}
     [GoValueClone("byteBuf")] public partial struct Encoder {}

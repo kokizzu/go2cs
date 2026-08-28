@@ -699,7 +699,7 @@ internal static readonly @string testGoˢ = "_test.go"u8;
 internal static readonly @string testˢ = "_test"u8;
 internal static readonly @string cgoˢ = "cgo"u8;
 
-[GoType("dyn")] partial struct Import_tried {
+[GoType("dyn")] internal partial struct Import_tried {
     internal slice<@string> vendor;
     internal @string goroot;
     internal slice<@string> gopath;

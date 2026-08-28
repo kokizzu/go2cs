@@ -68,7 +68,7 @@ public static partial class dag_package
     // <TypeAccessibility>
     internal partial struct rule {}
     internal partial struct rulesParser {}
+    internal partial struct ΔsyntaxError {}
     public partial struct Graph {}
-    public partial struct ΔsyntaxError {}
     // </TypeAccessibility>
 }

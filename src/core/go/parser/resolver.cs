@@ -21,7 +21,7 @@ internal static readonly @string unbalancedLabelScopesˢ = "unbalanced label sco
 internal static readonly @string objectAlreadyResolvedˢ = "object already resolved"u8;
 internal static readonly @string resolvedSVToPackageˢ = "resolved %s@%v to package object %v"u8;
 
-[GoType("dyn")] partial interface resolveFile_type {
+[GoType("dyn")] internal partial interface resolveFile_type {
     tokenꓸPos Pos();
 }
 

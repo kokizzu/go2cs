@@ -68,6 +68,6 @@ public static partial class main_package
     internal partial struct holder {}
     internal partial struct tagger {}
     internal partial struct w {}
-    public partial struct Δmark {}
+    internal partial struct Δmark {}
     // </TypeAccessibility>
 }

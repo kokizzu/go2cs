@@ -130,6 +130,7 @@ public static partial class reflect_package
     internal partial struct structTypeUncommon {}
     internal partial struct visibleFieldsWalker {}
     internal partial struct visit {}
+    internal partial struct Δcommon {}
     public partial interface ΔType {}
     public partial struct MapIter {}
     public partial struct SelectCase {}
@@ -143,6 +144,5 @@ public static partial class reflect_package
     public partial struct ΔKind {}
     public partial struct ΔMethod {}
     public partial struct ΔValue {}
-    public partial struct Δcommon {}
     // </TypeAccessibility>
 }

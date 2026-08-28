@@ -4153,7 +4153,7 @@ internal static void startGracefulShutdown(this ж<http2serverInternalState> Ꮡ
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string http11ˢ = "http/1.1"u8;
 
-[GoType("dyn")] partial interface http2ConfigureServer_baseContexter {
+[GoType("dyn")] internal partial interface http2ConfigureServer_baseContexter {
     context.Context BaseContext();
 }
 
@@ -7577,7 +7577,7 @@ internal static HandlerFunc http2new400Handler(error err) {
     };
 }
 
-[GoType("dyn")] partial interface http2h1ServerKeepAlivesDisabled_I {
+[GoType("dyn")] internal partial interface http2h1ServerKeepAlivesDisabled_I {
     bool doKeepAlives();
 }
 
@@ -8147,7 +8147,7 @@ internal static @string Error(this http2noCachedConnError _) {
     return http2NoCachedConnectionˢ;
 }
 
-[GoType("dyn")] partial interface http2isNoCachedConnError_type {
+[GoType("dyn")] internal partial interface http2isNoCachedConnError_type {
     void IsHTTP2NoCachedConnError();
 }
 

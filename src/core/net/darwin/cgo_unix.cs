@@ -73,7 +73,7 @@ internal static bool Timeout(this addrinfoErrno eai) {
 internal static void isAddrinfoErrno(this addrinfoErrno eai) {
 }
 
-[GoType("dyn")] partial struct doBlockingWithCtx_result<T> {
+[GoType("dyn")] internal partial struct doBlockingWithCtx_result<T> {
     internal T res;
     internal error err;
 }

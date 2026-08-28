@@ -70,6 +70,7 @@ public static partial class errors_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface Unwrap_type {}
     internal partial interface as_type {}
     internal partial interface as_typeᴛ1 {}
     internal partial interface as_typeᴛ2 {}
@@ -78,6 +79,5 @@ public static partial class errors_package
     internal partial interface is_typeᴛ2 {}
     internal partial struct errorString {}
     internal partial struct joinError {}
-    public partial interface Unwrap_type {}
     // </TypeAccessibility>
 }

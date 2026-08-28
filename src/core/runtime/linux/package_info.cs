@@ -585,6 +585,16 @@ public static partial class runtime_package
     [GoValueClone("pad")] internal partial struct writeBarrierᴛ1 {}
     [GoValueClone("element")] internal partial struct xmmreg {}
     [GoValueClone("element")] internal partial struct xmmreg1 {}
+    internal partial struct ΔcgoCallers {}
+    internal partial struct ΔfuncInfo {}
+    internal partial struct Δhchan {}
+    internal partial struct Δhex {}
+    internal partial struct Δrtype {}
+    internal partial struct Δscavengeᴛ1 {}
+    internal partial struct Δsliceᴛ {}
+    internal partial struct ΔsrcFunc {}
+    [GoValueClone("full", "doneSema", "stackTab", "stringTab", "typeTab", "cpuLogRead", "cpuLogWrite", "cpuBuf", "markWorkerLabels", "goStopReasons", "goBlockReasons")] internal partial struct Δtraceᴛ1 {}
+    internal partial struct ΔwriteUserArenaHeapBits {}
     public partial interface ΔError {}
     public partial struct BlockProfileRecord {}
     public partial struct Frame {}
@@ -597,15 +607,5 @@ public static partial class runtime_package
     public partial struct Pinner {}
     [GoValueClone("Stack0")] public partial struct StackRecord {}
     public partial struct TypeAssertionError {}
-    public partial struct ΔcgoCallers {}
-    public partial struct ΔfuncInfo {}
-    public partial struct Δhchan {}
-    public partial struct Δhex {}
-    public partial struct Δrtype {}
-    public partial struct Δscavengeᴛ1 {}
-    public partial struct Δsliceᴛ {}
-    public partial struct ΔsrcFunc {}
-    [GoValueClone("full", "doneSema", "stackTab", "stringTab", "typeTab", "cpuLogRead", "cpuLogWrite", "cpuBuf", "markWorkerLabels", "goStopReasons", "goBlockReasons")] public partial struct Δtraceᴛ1 {}
-    public partial struct ΔwriteUserArenaHeapBits {}
     // </TypeAccessibility>
 }

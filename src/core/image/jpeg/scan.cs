@@ -72,7 +72,7 @@ internal static readonly @string progressiveAcˢ = "progressive AC coefficients 
 internal static readonly @string badSuccessiveˢ = "bad successive approximation values"u8;
 internal static readonly @string excessiveDcComponentˢ = "excessive DC component"u8;
 
-[GoType("dyn")] partial struct processSOS_scan {
+[GoType("dyn")] internal partial struct processSOS_scan {
     internal uint8 compIndex;
     internal uint8 td; // DC table selector.
     internal uint8 ta; // AC table selector.

@@ -117,6 +117,7 @@ public static partial class sql_package
     internal partial struct driverResult {}
     internal partial struct driverStmt {}
     internal partial struct dsnConnector {}
+    internal partial struct ΔconnStmt {}
     public partial interface Result {}
     public partial interface Scanner {}
     public partial struct ColumnType {}
@@ -142,6 +143,5 @@ public static partial class sql_package
     public partial struct Tx_stmts {}
     public partial struct ΔConn {}
     public partial struct ΔStmt {}
-    public partial struct ΔconnStmt {}
     // </TypeAccessibility>
 }

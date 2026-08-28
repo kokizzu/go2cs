@@ -69,11 +69,11 @@ public static partial class main_package
     internal partial struct @scoped {}
     internal partial struct box {}
     internal partial struct record {}
+    internal partial struct Δany {}
+    internal partial struct Δbuiltin {}
+    internal partial struct Δnint {}
+    internal partial struct Δrune {}
+    internal partial struct Δsstring {}
     public partial struct ΔGoFrame {}
-    public partial struct Δany {}
-    public partial struct Δbuiltin {}
-    public partial struct Δnint {}
-    public partial struct Δrune {}
-    public partial struct Δsstring {}
     // </TypeAccessibility>
 }

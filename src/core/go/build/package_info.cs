@@ -82,6 +82,7 @@ public static partial class build_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct Import_tried {}
     internal partial struct fileEmbed {}
     internal partial struct fileImport {}
     internal partial struct fileInfo {}
@@ -89,7 +90,6 @@ public static partial class build_package
     public partial struct Context {}
     public partial struct Directive {}
     public partial struct ImportMode {}
-    public partial struct Import_tried {}
     public partial struct MultiplePackageError {}
     public partial struct NoGoError {}
     public partial struct Package {}

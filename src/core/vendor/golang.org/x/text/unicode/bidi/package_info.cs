@@ -80,6 +80,7 @@ public static partial class bidi_package
     [GoValueClone("embeddingLevelStack", "overrideStatusStack", "isolateStatusStack")] internal partial struct directionalStatusStack {}
     internal partial struct level {}
     internal partial struct paragraph {}
+    internal partial struct ΔisolatingRunSequence {}
     public partial struct Ordering {}
     public partial struct Paragraph {}
     public partial struct Properties {}
@@ -87,6 +88,5 @@ public static partial class bidi_package
     public partial struct ΔClass {}
     public partial struct ΔDirection {}
     public partial struct ΔRun {}
-    public partial struct ΔisolatingRunSequence {}
     // </TypeAccessibility>
 }

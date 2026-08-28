@@ -592,7 +592,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
 internal static readonly @string rangePartiallyOverlapsˢ = "range partially overlaps"u8;
 internal static readonly @string badSummaryDataˢ = "bad summary data"u8;
 
-[GoType("dyn")] partial struct find_firstFree {
+[GoType("dyn")] internal partial struct find_firstFree {
     internal offAddr @base, bound;
 }
 

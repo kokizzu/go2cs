@@ -760,7 +760,7 @@ internal static readonly @string missingSosMarkerˢ = "missing SOS marker"u8;
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string unknownColorModel4ˢ = "unknown color model: 4-component JPEG doesn't have Adobe APP14 metadata"u8;
 
-[GoType("dyn")] partial struct applyBlack_translations {
+[GoType("dyn")] internal partial struct applyBlack_translations {
     internal slice<byte> src;
     internal nint stride;
 }

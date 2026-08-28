@@ -68,8 +68,8 @@ public static partial class main_package
     internal partial struct keeper {}
     internal partial struct tag<T> {}
     internal partial struct wrapped<T> {}
+    internal partial struct Δpool<T> {}
     public partial struct Container {}
     public partial struct Result<T> {}
-    public partial struct Δpool<T> {}
     // </TypeAccessibility>
 }

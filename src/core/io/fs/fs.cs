@@ -289,7 +289,7 @@ public static FileMode Type(this FileMode m) {
     return e.Err;
 }
 
-[GoType("dyn")] partial interface Timeout_type {
+[GoType("dyn")] internal partial interface Timeout_type {
     bool Timeout();
 }
 

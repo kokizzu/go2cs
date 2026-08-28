@@ -144,7 +144,7 @@ internal static (io.ReadSeeker reader, io.Closer closer, error err) openExportFi
 
 // type Importer is a methodless func type — rendered inline as its base delegate
 
-[GoType("dyn")] partial interface GetImporter_type {
+[GoType("dyn")] internal partial interface GetImporter_type {
     @string Name();
 }
 

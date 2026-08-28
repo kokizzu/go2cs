@@ -130,7 +130,7 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
     );
 }
 
-[GoType("dyn")] partial struct SplittingTraceConsumer_eventSz {
+[GoType("dyn")] internal partial struct SplittingTraceConsumer_eventSz {
     public float64 Time;
     public nint Sz;
     public slice<nint> Frames;

@@ -71,6 +71,8 @@ public static partial class gosym_package
     [GoLocalName("stackEnt")] internal partial struct lineFromAline_stackEnt {}
     internal partial struct sym {}
     internal partial struct version {}
+    internal partial struct ΔfuncData {}
+    internal partial struct ΔfuncTab {}
     public partial struct DecodingError {}
     public partial struct Func {}
     public partial struct LineTable {}
@@ -79,7 +81,5 @@ public static partial class gosym_package
     public partial struct Table {}
     public partial struct UnknownFileError {}
     public partial struct UnknownLineError {}
-    public partial struct ΔfuncData {}
-    public partial struct ΔfuncTab {}
     // </TypeAccessibility>
 }

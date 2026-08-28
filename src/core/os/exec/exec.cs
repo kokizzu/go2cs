@@ -704,7 +704,7 @@ internal static readonly @string execAlreadyStartedˢ = "exec: already started"u
 internal static readonly @string execNoCommandˢ = "exec: no command"u8;
 internal static readonly @string execCommandWithANonNilˢ = "exec: command with a non-nil Cancel was not created with CommandContext"u8;
 
-[GoType("dyn")] partial struct Start_goroutineStatus {
+[GoType("dyn")] internal partial struct Start_goroutineStatus {
     internal nint running;
     internal error firstErr;
 }

@@ -276,6 +276,7 @@ public static partial class types_package
     internal partial interface decl {}
     internal partial interface dependency {}
     internal partial interface positioner {}
+    internal partial interface ΔgenericType {}
     internal partial struct @object {}
     internal partial struct _TypeSet {}
     internal partial struct action {}
@@ -331,12 +332,17 @@ public static partial class types_package
     internal partial struct unifyMode {}
     internal partial struct valueMap {}
     internal partial struct valueType {}
+    internal partial struct ΔconstDecl {}
+    internal partial struct ΔfuncDecl {}
+    internal partial struct Δinstance {}
+    internal partial struct Δtermlist {}
+    internal partial struct ΔtypeDecl {}
+    internal partial struct ΔvarDecl {}
     public partial interface Importer {}
     public partial interface ImporterFrom {}
     public partial interface Object {}
     public partial interface Sizes {}
     public partial interface ΔType {}
-    public partial interface ΔgenericType {}
     public partial struct Alias {}
     public partial struct ArgumentError {}
     public partial struct Array {}
@@ -383,11 +389,5 @@ public static partial class types_package
     public partial struct ΔSignature {}
     public partial struct ΔTerm {}
     public partial struct Δcolor {}
-    public partial struct ΔconstDecl {}
-    public partial struct ΔfuncDecl {}
-    public partial struct Δinstance {}
-    public partial struct Δtermlist {}
-    public partial struct ΔtypeDecl {}
-    public partial struct ΔvarDecl {}
     // </TypeAccessibility>
 }
