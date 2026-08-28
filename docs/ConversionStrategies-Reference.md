@@ -7055,6 +7055,72 @@ var c = new channel<nint>(3);
 
 Map reads honor Go's nil-map and comma-ok semantics (see [Nil and Zero Values](#nil-and-zero-values) and [Multi-Result Values and Comma-Ok Forms](#multi-result-values-and-comma-ok-forms)).
 
+### A `range` body may MUTATE the map it is ranging over — the enumerator walks a KEY SNAPSHOT
+
+Go's spec permits the body of a `range` to add to and delete from the very map being ranged:
+
+> "If a map entry that has not yet been reached is removed during iteration, the corresponding
+> iteration value will not be produced. If a map entry is created during iteration, that entry may
+> be produced during the iteration or may be skipped."
+
+.NET's `Dictionary<TKey, TValue>` enumerator permits neither reading. A structural **add** bumps its
+internal version and the next `MoveNext` throws
+`InvalidOperationException: Collection was modified; enumeration operation may not execute`. Two
+adjacent mutations do *not* throw, which is exactly what made this so easy to miss: since .NET Core
+3.0 an **overwrite** of an existing key and a **`Remove`** are both version-free. Only the insert
+bites — and only when the inserted key is genuinely new.
+
+golib's `map<K,V>` used to hand out that enumerator directly, so every legal Go range-with-insert
+became a runtime fault. It now implements Go's contract itself: the range takes a **snapshot of the
+keys** and re-reads each value at the moment it is visited
+([`map.cs`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/map.cs),
+`enumerateStore`). That lands every clause of the spec —
+
+* an entry **removed** before it is reached fails the visit-time lookup and is not produced, which
+  is the half Go *guarantees*;
+* an entry **created** during the range is absent from the snapshot and so is never produced, which
+  is the "or may be skipped" half Go leaves free;
+* a value **overwritten** during the range is produced at its current value, which is what Go's own
+  range reads out of the bucket when it arrives there;
+* every pre-existing entry is still produced **exactly once**, so a body that inserts cannot be
+  re-entered for a key it has already handled.
+
+The nil-key entry (see [The NIL map key](#the-nil-map-key)) is produced first; Go's range order is
+unspecified and deliberately randomized, so the position is free.
+
+```go
+// Legal Go: the body inserts a new key into the map it is ranging.
+for k, v := range m {
+    if len(k) == 1 {
+        m[k+"!"] = v * 10
+    }
+}
+```
+```csharp
+foreach (var (k, v) in m) {
+    if (len(k) == 1) {
+        m[k + "!"u8] = v * 10;
+    }
+}
+```
+
+The emission is an ordinary `foreach` — the fidelity lives in the runtime type, not in the emitted
+shape, so nothing about the converted code advertises the difference.
+
+The cost is one `TKey[]` per non-empty range where there was none. That is a deliberate trade: this
+is the construct's *semantics*, and go2cs converts behavior first. If a range ever measures hot
+enough to care, the snapshot is the one thing to pool; the shape above does not change.
+
+This is not an exotic corner. `net/http`'s HTTP/2 server hits it in `promoteUndeclaredTrailers`,
+which ranges the handler's header map and writes each promoted `"Trailer:Foo"` entry back under
+`"Foo"` — a new key. The exception escaped the handler goroutine, the Phase-4 test host's
+containment policy absorbed it as a test failure, the h2 stream was therefore never completed with
+its trailers and `END_STREAM`, and the client blocked in `http2pipe.Read` forever. That was the
+deterministic hang of `TestServerUndeclaredTrailers/h2`, and it stalled the whole `net/http` row —
+the hang, not any divergence, is what left the rest of the suite unreached. Guarded from the Go side
+by `tests/Behavioral/MapMutateDuringRange`, which covers insert, overwrite, delete, insert-with-delete
+and a control that mutates a *different* map.
+
 ### `m[string(b)]` — the map-READ key does not copy (`tmpstring`)
 
 The Go compiler special-cases `m[string(b)]`: because a map lookup hashes and compares its key but

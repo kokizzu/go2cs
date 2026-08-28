@@ -413,15 +413,70 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         return false;
     }
 
-    // Yields the nil-key entry ahead of the dictionary's buckets. Go's range order over a map is
-    // unspecified (and deliberately randomized), so the position is free — putting it first keeps
-    // every map WITHOUT a nil key on the dictionary's own enumerator, unwrapped.
-    private static IEnumerator<KeyValuePair<TKey, TValue>> enumerateWithNilKey(NilKeyDictionary store)
+    // Go's RANGE-OVER-MAP contract, which is NOT Dictionary's enumeration contract.
+    //
+    // The Go spec permits the body of a range to mutate the map it is ranging over:
+    //
+    //     "If a map entry that has not yet been reached is removed during iteration, the
+    //      corresponding iteration value will not be produced. If a map entry is created during
+    //      iteration, that entry may be produced during the iteration or may be skipped."
+    //
+    // Dictionary<TKey, TValue>'s enumerator permits neither reading: a structural ADD bumps its
+    // version and the very next MoveNext throws InvalidOperationException ("Collection was
+    // modified"). (An overwrite of an existing key, and a Remove, are both version-free since
+    // .NET Core 3.0 — only the insert bites, which is what made this so easy to miss.) Handing
+    // that enumerator to converted code turned a legal Go loop into a runtime fault.
+    //
+    // It is not a corner case. net/http's h2 server hits it in promoteUndeclaredTrailers, which
+    // ranges the handler's header map and writes each promoted "Trailer:Foo" entry back under
+    // "Foo" — a NEW key. The exception escaped the handler goroutine, the Phase-4 test host's
+    // containment policy absorbed it, the h2 stream was consequently never completed with its
+    // trailers and END_STREAM, and the client blocked in http2pipe.Read forever. That is the
+    // deterministic hang of TestServerUndeclaredTrailers/h2, and it is guarded from the Go side
+    // by tests/Behavioral/MapMutateDuringRange.
+    //
+    // So range walks a SNAPSHOT OF THE KEYS and re-reads each value at the moment it is visited:
+    //
+    //   * an entry removed before it is reached fails the lookup and is not produced — exactly
+    //     the clause Go guarantees;
+    //   * an entry created during the range is absent from the snapshot and so is never produced
+    //     — the "or may be skipped" half of the clause Go leaves free;
+    //   * a value overwritten during the range is produced at its CURRENT value, which is what
+    //     Go's own range reads out of the bucket when it arrives there;
+    //   * every pre-existing entry is still produced exactly once, so a body that inserts cannot
+    //     be re-entered for a key it has already handled.
+    //
+    // The cost is one TKey[] per non-empty range where there was none. That is deliberate: this
+    // is the construct's SEMANTICS, and go2cs converts behavior first. If a range ever measures
+    // hot enough to care, the snapshot is the one thing to pool here — the shape above does not
+    // change.
+    //
+    // The nil-key entry goes first. Go's range order over a map is unspecified (and deliberately
+    // randomized), so the position is free.
+    private static IEnumerator<KeyValuePair<TKey, TValue>> enumerateStore(NilKeyDictionary store)
     {
-        yield return new KeyValuePair<TKey, TValue>(default!, store.NilKeyValue);
+        // The snapshot is taken BEFORE anything is produced — including before the nil-key entry —
+        // so "created during the range is never produced" holds UNIFORMLY. Taking it after that
+        // first yield would leave an entry the body inserted while handling the nil key inside the
+        // snapshot and therefore produced, while every later insert was skipped. Both readings are
+        // legal Go ("may be produced… or may be skipped"), but only one of them is a rule.
+        int count = store.Count;
+        TKey[] keys = count == 0 ? [] : new TKey[count];
 
-        foreach (KeyValuePair<TKey, TValue> entry in (Dictionary<TKey, TValue>)store)
-            yield return entry;
+        if (count > 0)
+            store.Keys.CopyTo(keys, 0);
+
+        // Go's range visits the nil key like any other key.
+        if (!typeof(TKey).IsValueType && store.HasNilKey)
+            yield return new KeyValuePair<TKey, TValue>(default!, store.NilKeyValue);
+
+        foreach (TKey key in keys)
+        {
+            // Re-read rather than carrying the value from the snapshot: the body may have
+            // overwritten it, and Go reads the bucket on arrival.
+            if (store.TryGetValue(key, out TValue? value))
+                yield return new KeyValuePair<TKey, TValue>(key, value);
+        }
     }
 
     #endregion
@@ -610,11 +665,9 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (m_map is null)
             return Enumerable.Empty<KeyValuePair<TKey, TValue>>().GetEnumerator();
 
-        // Go's range visits the nil key like any other key.
-        if (!typeof(TKey).IsValueType && m_map.HasNilKey)
-            return enumerateWithNilKey(m_map);
-
-        return ((IEnumerable<KeyValuePair<TKey, TValue>>)m_map).GetEnumerator();
+        // Go's range-over-map contract — including the nil-key entry, and including a body that
+        // mutates the map it is ranging over. See enumerateStore.
+        return enumerateStore(m_map);
     }
 
     IEnumerator IEnumerable.GetEnumerator()
