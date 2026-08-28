@@ -36,6 +36,17 @@ type Middle interface {
 type Constrained[T any] interface {
 	Middle
 	Clone() T
+	// A member whose parameter is a DELEGATE over the SELF type — net/http's own constraint is
+	// `Run(string, func(T)) bool`. The proxy declares it as `Action<ImplжConstrained>` while the box
+	// extension its body forwards to declares `Action<ж<Impl>>`, and the two implicit conversions
+	// that marshal a bare T argument for free cannot lift through a delegate: C# variance requires a
+	// REFERENCE conversion and does not apply a user-defined one inside `Action<>`/`Func<>`. The
+	// forwarder then binds nothing and reports CS1929 against the ref-receiver overload — an error
+	// naming the RECEIVER when it is the argument that does not fit.
+	Each(label string, f func(T)) bool
+	// The self type in a delegate's RESULT position — the same boundary crossed the other way, so a
+	// remedy that marshalled only the inbound direction cannot pass this guard.
+	Pick(gen func() T) T
 }
 
 type Impl struct {
@@ -47,11 +58,27 @@ func (p *Impl) Name() string { return p.n }
 func (p *Impl) Size() int    { return p.s }
 func (p *Impl) Clone() *Impl { return &Impl{p.n, p.s + 1} }
 
+func (p *Impl) Each(label string, f func(*Impl)) bool {
+	f(&Impl{p.n + "/" + label, p.s})
+	return true
+}
+
+func (p *Impl) Pick(gen func() *Impl) *Impl { return gen() }
+
 // use is instantiated at T = *Impl, which is the site that records the constraint proxy.
 func use[T Constrained[T]](v T) {
 	c := v.Clone()
 	// Name() arrives through TWO levels of embedding, Size() through one, Clone() directly.
 	fmt.Println(c.Name(), c.Size(), v.Name(), v.Size())
+
+	// The delegate-typed self boundary, both directions, called THROUGH the constraint.
+	ok := v.Each("leaf", func(child T) {
+		fmt.Println("each", child.Name(), child.Size())
+	})
+
+	picked := v.Pick(func() T { return v.Clone() })
+
+	fmt.Println(ok, picked.Name(), picked.Size())
 }
 
 // second records the SAME (element, open-interface) pair at a second instantiation site, so the

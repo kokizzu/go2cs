@@ -4357,7 +4357,7 @@ A census (2026-07-16) of every non-function predeclared Go identifier, the golib
 - **`required` and `scoped`** are C# 11 contextual keywords banned as *type* names (CS9029/CS9062, surfacing in both the converted declaration and the TypeGenerator's output). Both joined the `keywords` `@`-escape set like `file` (`partial struct @required` — the `@` escape is valid in every position and the generator carries it through). `record`, `partial`, and the other contextual keywords compile clean as type names on C# 13/net9 (verified empirically) and stay unescaped.
 - The keyword set carried the typo **`__argslist`**, which covered nothing: a Go local named `__arglist` hit the real (undocumented) Roslyn keyword and failed to parse (CS1002). Corrected — the local now emits `nint @__arglist = 5;`.
 
-Census rows verified fine with **no action needed** (each proven by a transpile-run-compare repro): locals named any predeclared identifier (`nil`, `iota`, `error`, `any`, `comparable`, `rune`, the numeric type names — Go-consistent shadowing carries over); user types named `error` or a predeclared type name in the common self-consistent cases; embedded predeclared fields (`struct{ float64; rune; any; int; string }` — the color-color form `internal rune rune;` compiles, with keyword-mapped embeds escaping only the field NAME: `internal nint @int;`); the golib `Defer`/`Recover` delegates (never spelled in emitted code — the defer machinery's lambda parameters are inferred); and a local named `heap` alongside heap-boxing machinery (`heap<nint>(out var Ꮡx)` is a *generic* invocation, which a non-generic local simple name cannot shadow). Known residuals, documented rather than fixed (unreachable under default flags in any constructed repro, or pathological): a user TYPE named a numeric alias name (`float64`, `int32`, `uintptr`, `complex64`, …) in a package where an emission would be *forced* to spell that predeclared name through inference; and `type string struct{}` (the golib `@string` spelling is escape-identical to the keyword-escaped user name).
+Census rows verified fine with **no action needed** (each proven by a transpile-run-compare repro): locals named any predeclared identifier (`nil`, `iota`, `error`, `any`, `comparable`, `rune`, the numeric type names — Go-consistent shadowing carries over); user types named `error` or a predeclared type name in the common self-consistent cases; embedded predeclared fields (`struct{ float64; rune; any; int; string }` — the color-color form `internal rune rune;` compiles, with keyword-mapped embeds escaping only the field NAME: `internal nint @int;`); the golib `Defer`/`Recover` delegates (never spelled in emitted code — the defer machinery's lambda parameters are inferred); and a local named `heap` alongside heap-boxing machinery (`heap<nint>(out var Ꮡx)` is a *generic* invocation, which a non-generic local simple name cannot shadow) — **half right, corrected 2026-08-28**: the generic form is genuinely immune for exactly the reason given, but the ARGUMENT-CARRYING form `heap(new T(), out var Ꮡx)` carries no type argument and does collide, which this row's repro never reached (see *A declaration named `heap` qualifies the boxing intrinsic* below). Known residuals, documented rather than fixed (unreachable under default flags in any constructed repro, or pathological): a user TYPE named a numeric alias name (`float64`, `int32`, `uintptr`, `complex64`, …) in a package where an emission would be *forced* to spell that predeclared name through inference; and `type string struct{}` (the golib `@string` spelling is escape-identical to the keyword-escaped user name).
 
 ### A parameter that shadows an imported package is renamed at its declaration too
 A function parameter whose name equals an imported package the function references — crypto/rsa's `func emsaPSSEncode(…, hash hash.Hash)`, where `hash` shadows the `hash` package named in the signature type `hash.Hash` — is shadow-renamed by the variable analysis (`hash` → `hashΔ1`) so it does not bind the `using hash = hash_package;` alias. Every **usage** already rendered the renamed name (convIdent reads `v.varNames`), but the parameter **declaration** was emitted from the raw `param.Name()`, so the signature kept `hash.Hash hash` while its uses were `hashΔ1` — CS0103 at every use (40 sites in crypto/rsa, 27 in testing/quick's `rand`). The declaration now resolves through the same `v.varNames` map, so it matches the usages:
@@ -4407,6 +4407,63 @@ Note this is the **opposite** direction from `packageBuiltinShadows` (see *Type-
 Collisions*): there the call genuinely *is* the built-in and a same-named package method shadows the
 C# `using static go.builtin`, so the call is emitted **qualified** as `builtin.<name>(…)`. Here the
 call is not a built-in at all. (Guarded by the `BuiltinShadowLocal` behavioral test.)
+
+### A declaration named `heap` qualifies the boxing intrinsic
+
+Every collision above is between two things the *Go source* names. This one the converter **invents**:
+`heap` is not a Go built-in, it is go2cs's own boxing helper (`golib`'s
+`heap(value, out var Ꮡname)` / `heap<T>(out var Ꮡname)`, in scope in every converted file through
+`using static go.builtin`), so a Go program may legally name anything `heap` with nothing in its source
+hinting at a conflict.
+
+The failure is the same CS0149 a shadowed built-in produces — a C# local or parameter wins simple-name
+lookup outright over a `using static` member — but it lands at a line the Go source did not write: the
+boxing prologue the converter emits for an address-taken local. It therefore reads as an emitter defect
+at the box site rather than as a name collision. `internal/trace`'s
+`func heapDebugString(heap []*batchCursor) string`, whose `strings.Builder` local needs a box, was the
+whole of that package's 92-verdict build wall:
+
+```csharp
+ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);   // CS0149: Method name expected
+```
+
+The remedy is the **opposite** of the shadow-renames elsewhere in this section: `heap` is the name the
+Go program chose and nothing about it is ambiguous in Go, so the identifier is preserved and the
+INTRINSIC is qualified instead — `builtin.heap(…)` — and only where a `heap` declaration is actually in
+scope, so the corpus stays byte-identical everywhere else. `heapIntrinsicName` supplies the spelling at
+all fourteen emission sites; `declaresHeapIntrinsicIdent` answers per function declaration (walking
+nested function literals, and OR-ed with a literal's own declarations in `convFuncLit`), and
+`packageDeclaresHeapIntrinsicIdent` covers the one package-level shape that can also collide.
+
+**What does and does not shadow is decided by C#'s invocable-member rule, and every boundary below was
+measured rather than reasoned into place.** A simple name used as the target of an invocation ignores
+type members that are not invocable, so only a genuine method group — or a nearer *local* declaration
+space — can displace the `using static` import:
+
+* **A local or parameter named `heap` DOES shadow.** Both argument-carrying shapes collide: an
+  address-taken struct local, and an address-taken value parameter itself named `heap` (which adds
+  `CS0841: cannot use local variable 'heap' before it is declared`). The invocable-member filter
+  applies to type members, not to the local declaration space.
+* **A type-argument-carrying call is immune.** `heap<nint>(out var Ꮡx)` is a generic invocation, and a
+  simple name followed by a type-argument list considers only generic methods — a local is never a
+  candidate. This is why the 2026-07-16 census cleared the case, and why a guard built on a *scalar*
+  local (which takes exactly this form) proves nothing.
+* **A package-level TYPE or VAR named `heap` does NOT shadow**, because neither emits an invocable
+  member. The first version of this check tested "any non-`PkgName` object" and was falsified by its
+  own A/B: `GlobalCapturedInClosure` declares `type heap` at package level, and with the fix reverted
+  it still compiled — the broad form was only over-qualifying, changing a golden no defect required.
+  The check is narrowed to `*types.Func`, the one package-level shape that is a real method group.
+  Nothing in the corpus declares that, so the positive case is reasoned from the lookup rule rather
+  than reproduced; the negative side is guarded.
+* **An import ALIAS named `heap` does NOT shadow.** `import "container/heap"` renders as
+  `using heap = go.container.heap_package;`, and a using-alias does not displace a `using static`
+  method group in an invocation — proven by `container/heap`'s own banked `example_pq_test.cs`, which
+  carries the alias and two heap-box emissions and compiles. `*types.PkgName` is excluded for that
+  reason.
+
+(Guarded from both directions: `BuiltinShadowLocal` carries the two colliding shapes plus a
+non-shadowing function that must keep the bare `heap<arr>(…)`; `GlobalCapturedInClosure` carries the
+package-level-type control that must keep the bare `heap(new heap(), …)`.)
 
 ### A local that shadows a PACKAGE name is not a package qualifier
 
@@ -7739,6 +7796,47 @@ Greened `crypto/internal/mlkem768` (census 254 → 255); the reconvert A/B chang
 four constraint lines. (Guarded by `GenericArrayConstraint` — two array-wrapper types over a shared
 `~[4]fieldElement` core through a generic function that indexes, index-ranges, value-ranges, and
 constructs the type parameter, values vs Go.)
+
+### A type set of COMPOSITE terms lifts nothing — the union survives only as a comment
+
+The array-core entry above fixed one SHAPE of a wider defect, and the rest of it surfaced on
+`runtime/pprof`'s `testProfileRecordNullPadding[T runtime.StackRecord | runtime.MemProfileRecord |
+runtime.BlockProfileRecord]` — a union whose terms are all plain structs, which was the whole of that
+package's build wall (five call sites, `error CS0315` on each).
+
+The root is what `IEqualityOperators<T, T, bool>` MEANS on each side. Go's `==` works on any comparable
+type, so the operator-set resolver listed `Struct`, `Array`, `Pointer` and `Channel` in
+`comparableOperatorTypes` and lifted that interface for them. But a C# `where` clause is a claim about
+the type ARGUMENT implementing a BCL interface, not about an operator being available, and nothing on
+the Go side of the corpus implements it: a `[GoType]` struct, `array<T>`, `ж<T>` and `channel<T>` all
+compare through `Equals`/`AreEqual`. The lifted clause was therefore unsatisfiable by construction, and
+the diagnostic named the concrete struct rather than the constraint that could not admit it.
+
+Two changes, both in `constraintOperations.go`. The composite kinds leave `comparableOperatorTypes`, so
+the rule is stated once where the operator sets are defined instead of per constraint shape (the
+array-core branch's hand-written `suppressLiftedConstraints` was the same rule applied to one shape; a
+union of *named array types* took no such branch). That alone exposed the fall-through underneath: with
+no operator lift and no interface to name, `getGenericDefinition`'s generic tail emitted the Go union
+text VERBATIM as a C# constraint list — `where T : runtime.StackRecord | runtime.MemProfileRecord | …`,
+`error CS1003` ×4, a syntax error rather than a type error. So `constraintTypeSetIsInexpressible` closes
+it, asked LAST after every shape with a real emission has been tried: a non-empty type set whose
+operator set is empty emits the union as a breadcrumb comment plus the one constraint C# can still
+express —
+
+```csharp
+internal static T testProfileRecordNullPadding<T>(ж<testing.T> Ꮡt, @string name, Func<slice<T>, (nint, bool)> fn)
+    where T : /* runtime.StackRecord | runtime.MemProfileRecord | runtime.BlockProfileRecord */ new()
+```
+
+— the same answer, for the same reason, the built-in [`comparable`](#the-comparable-constraint) arm
+reaches: Go's own checker validated every instantiation before conversion, so the C# clause has nothing
+left to enforce. `new()` is kept (unlike that arm) because a composite type set admits no pointer type
+argument. The corpus footprint is one line: censused at the fix, this was the ONLY converter-emitted
+`IEqualityOperators` clause in the whole corpus that is not on a numeric or ordered union — which is the
+shape's own signature, since a composite type set is a subset of no other operator set and so lifts the
+comparable operators ALONE, with no arithmetic siblings. (Guarded by `Constraints` — a struct-only
+`recordA | recordB | recordC` union through a generic function instantiated at each term; without the
+fix it reproduces CS0315 at all three sites.)
 
 ### A single-term pointer constraint `[P *T]` erases the parameter to `ж<T>`
 
@@ -17322,6 +17420,54 @@ losing that race looks alarming rather than obviously benign — the child dies 
 the `wanted` bit was unset, `sigsend` correctly returned false, the default handler killed it, and
 its buffered stdout went with it. That is the machinery working exactly as specified. Wait for the
 child to announce readiness rather than sleeping on a timer.
+
+**`net.newUnixFile` — the row where the precondition was ALREADY true, and where the tempting substitution is
+the wrong answer** (2026-08-28). `os/file_unix.go` pushes a hidden `*os.File` constructor into `net`:
+
+```go
+// os/file_unix.go (package os) — the PUSHER
+//go:linkname net_newUnixFile net.newUnixFile
+func net_newUnixFile(fd int, name string) *File {
+	if fd < 0 {
+		panic("invalid FD")
+	}
+	return newFile(fd, name, kindSock, true)
+}
+
+// net/fd_unix.go — the CONSUMER, bare shape
+// Defined in os package.
+func newUnixFile(fd int, name string) *os.File
+```
+
+Every other honorable row in this registry had to answer "what else must move before the forwarder is honest?"
+— Go's `osinit` had not filled `sysDirectory`, `argslice` was empty, `metricsLock` could not be taken.
+**Here nothing else had to move.** `os.newFile` is the same function `os.NewFile` and `os.Pipe` reach; it is
+exercised on every row that opens anything, and the `kindSock` path differs from the `kindPipe` path only in
+skipping the `SetNonblock` call — the descriptor is already non-blocking — while still registering with the
+poller. So the row is one line, the forwarder is `return os.net_newUnixFile(fd, name);`, and
+`packageFuncAccess` widens the pushing definition to `public` from the reverse index. No new project reference
+and no cycle: `net` already imports `os` (`fd_unix.go`'s own `dup()` calls `os.NewSyscallError`), and `os`
+imports no part of `net`.
+
+**Why `os.NewFile` is not a substitute, which is what makes this a registry row rather than a hand-patch in
+`net`.** `kind` is precisely the distinction Go's own comment on `net_newUnixFile` exists to preserve:
+`kindSock` sets `f.nonblock = true` so a later `Fd()` hands back a **blocking** descriptor — the historical
+behavior `net.conn.File` callers depend on — while `kindNewFile` on an already-non-blocking descriptor leaves
+it non-blocking. Substituting would compile, run, and quietly change the descriptor's mode: a
+plausible-looking wrong answer, which is the failure this project rules against. The seam is also why the
+other tempting framing — "emit `InternalsVisibleTo` so the puller can see the private symbol" — is not reached
+for: the push machinery already crosses the assembly boundary by publicizing exactly the one symbol Go opened
+with its directive, rather than widening a package's whole private surface to another assembly.
+
+What the stub was costing on Linux: `(*net.TCPListener).File()` → `netFD.dup()` bottoms out here, so
+`os/exec`'s `TestExtraFilesRace` — which builds its `ExtraFiles` out of listener files — died on the
+`PartialStubGenerator` throw as an infrastructure-error, the last named residual of that row. Windows never
+surfaced it: `net/fd_unix.go` is `//go:build unix` and `os/file_unix.go` is
+`//go:build unix || (js && wasm) || wasip1`, so neither declaration exists there at all — the same
+platform-blindness that hid `syscall.runtime_envs` and `runtime.fcntl`. Guarded by
+`TestLinknamePushRoutesNetNewUnixFile`, which re-derives both halves of the pair from GOROOT and then asserts
+the routing, the honorable disposition, and — exercising `packageFuncAccess` rather than the index it reads —
+the publicization that makes the cross-assembly call compile.
 
 ### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
 

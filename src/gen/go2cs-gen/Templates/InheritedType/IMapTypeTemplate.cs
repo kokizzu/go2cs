@@ -25,7 +25,19 @@ internal static class IMapTypeTemplate
 
                 public int Count => m_value.Count;
                 
-                public {{valueTypeName}} this[{{keyTypeName}} key]
+                /// <summary>
+                /// READONLY, and that is what makes `f()[k] = v` legal — Go's own rule for a named
+                /// map type, which IS a reference: `w.Header()[k] = v` is ordinary Go. A struct's
+                /// indexer SET on an rvalue receiver is CS1612 ("cannot modify the return value …
+                /// because it is not a variable") unless the member is readonly, because C# assumes
+                /// the mutation would be lost to the temporary. Here nothing is lost: the setter
+                /// writes through m_value, and m_value is a readonly field of golib's own `map` —
+                /// itself a `readonly struct` wrapping the shared dictionary — so the write lands on
+                /// storage the copy shares, exactly as Go's map header does. Marking the member
+                /// readonly states that fact to the compiler; it changes no generated body.
+                /// net/http's whole test suite sat behind this (`w.Header()[k] = v`, 6 sites).
+                /// </summary>
+                public readonly {{valueTypeName}} this[{{keyTypeName}} key]
                 {
                     get => m_value[key];
                     set => m_value[key] = value;

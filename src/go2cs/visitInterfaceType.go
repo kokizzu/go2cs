@@ -282,7 +282,28 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 					v.removeLastLineFeed(v.outputBuilder)
 				}
 
-				inheritedInterfaces = append(inheritedInterfaces, v.convExpr(method.Type, nil))
+				// A LIFTED interface EMBEDDED in another interface must name the lifted
+				// declaration. reflect's TestMethodPkgPath declares `type I interface{…}` and
+				// then `type i interface{ I; … }` in the same function body: both hoist to
+				// member level, but the embed rendered the bare Go name `I`, which exists
+				// nowhere after the hoist — CS0246, with the rest of all_test.cs behind it.
+				// Re-resolve through liftedNameFor first: the same hoist-aware lookup
+				// visitArrayType / visitChanType / visitMapType already make for their element,
+				// key and value types. A package-level embed is not in the map and renders
+				// exactly as before, so nothing else in the corpus moves.
+				embedName := ""
+
+				if embedType := v.getType(method.Type, false); embedType != nil {
+					if liftedEmbed, ok := v.liftedNameFor(embedType); ok {
+						embedName = getSanitizedIdentifier(liftedEmbed)
+					}
+				}
+
+				if embedName == "" {
+					embedName = v.convExpr(method.Type, nil)
+				}
+
+				inheritedInterfaces = append(inheritedInterfaces, embedName)
 
 				// Track the CANONICAL (full-name) render too: the duplicate-implementation
 				// prune keys interfaceImplementations by getFullyQualifiedTypeName (a FOREIGN embed

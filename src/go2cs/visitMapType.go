@@ -19,8 +19,7 @@ func (v *Visitor) visitMapType(mapType *ast.MapType, identType types.Type, name 
 	// old stub emitted only a comment, leaving the type undeclared (CS0246).
 	keyType := convertToCSTypeName(v.getAliasQualifiedTypeName(v.info.TypeOf(mapType.Key), false))
 	valueType := convertToCSTypeName(v.getAliasQualifiedTypeName(v.info.TypeOf(mapType.Value), false))
-	access := v.pendingTypeAccess
-	v.pendingTypeAccess = ""
+	access := v.consumePendingTypeAccess()
 
 	// A map type declared inside a function body (`type M map[int]bool`, maps_test.go) cannot be a
 	// method-body statement in C#; hoist it to member level (see liftLocalTypeDecl). A package-level

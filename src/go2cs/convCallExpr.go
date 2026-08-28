@@ -130,7 +130,13 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	// must be scoped to itself. Emit it as a `func((defer, recover) => body)` execution-context
 	// call, which both wraps (its own defer/recover scope) and runs immediately — so no trailing
 	// call `()` is appended. (Argument-taking IIFEs are handled by the normal call path.)
-	if funcLit, ok := callExpr.Fun.(*ast.FuncLit); ok && !context.deferOrGoCall {
+	// The callee is UNPARENTHESIZED first. Go's own idiomatic spelling of an IIFE carries the parens
+	// — `(func(){ … })()` — and go/parser puts an *ast.ParenExpr in Fun for it, so a direct assertion
+	// declined the interception: the general call path then rendered a bare C# lambda through
+	// convParenExpr and appended `(args)`, which cannot be invoked (CS0149, "Method name expected").
+	// net/http's clientserver_test.go writes it that way. Both spellings are the same Go program and
+	// must convert alike.
+	if funcLit, ok := ast.Unparen(callExpr.Fun).(*ast.FuncLit); ok && !context.deferOrGoCall {
 		// A C# lambda cannot be invoked directly, so an IIFE is cast to a delegate and then
 		// called: `((Action)(() => …))()`, `((Func<nint>)(() => …))()`, `((Action<nint>)(n =>
 		// …))(7)`, etc. The literal's body picks up its own `func((defer, recover) => …)`
@@ -769,6 +775,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// `new metricReader(read)` (accepts a compatible delegate or method group).
 		if named, ok := v.info.TypeOf(callExpr).(*types.Named); ok {
 			if _, isSig := named.Underlying().(*types.Signature); isSig {
+				// `T(nil)` for a func type is the TYPED NIL delegate, and delegate CREATION cannot
+				// express it: `new HandlerFunc(default!)` asks for a method group or a delegate value
+				// (CS0149) and gives `default` no target type (CS8716) — net/http's server_test.go
+				// writes exactly `HandlerFunc(nil)`. A cast is the whole conversion here, since the
+				// operand carries no delegate to wrap.
+				if argIsUntypedNil(arg, v.info) {
+					return fmt.Sprintf("default(%s)!", targetTypeName)
+				}
+
 				return fmt.Sprintf("new %s(%s)", targetTypeName, expr)
 			}
 		}

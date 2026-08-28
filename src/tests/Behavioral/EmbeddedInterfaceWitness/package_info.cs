@@ -72,10 +72,10 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    [GoLocalName("inner")] internal partial struct LocalPromotion_inner {}
     internal partial struct conflicted {}
     internal partial struct holder {}
     internal partial struct plain {}
     internal partial struct wrapper {}
-    [GoLocalName("inner")] public partial struct LocalPromotion_inner {}
     // </TypeAccessibility>
 }

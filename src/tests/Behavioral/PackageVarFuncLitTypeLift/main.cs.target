@@ -28,7 +28,7 @@ internal static @string Greet(this namedGreeter g) {
     internal Func<@string, Greeter> build;
 }
 
-[GoType("dyn")] partial struct makers_type {
+[GoType("dyn")] internal partial struct makers_type {
     public Greeter Greeter;
 }
 internal static slice<makersᴛ1> makers = new makersᴛ1[]{

@@ -64,7 +64,7 @@ internal static (bool, nint, nint, bool) composedReads() {
     return (composed.Ptrs[0] == nil, len(composed.Slice), composed.ByKey[absentˢ].Count, composed.Tagged[absentˢ] == default!);
 }
 
-[GoType("dyn")] partial struct reservedIsNil_type {
+[GoType("dyn")] internal partial struct reservedIsNil_type {
     internal nint r7;
 }
 
@@ -77,7 +77,7 @@ internal static nint statsTotal() {
     return s.Total;
 }
 
-[GoType("dyn")] partial struct localHeapAnon_firstFree {
+[GoType("dyn")] internal partial struct localHeapAnon_firstFree {
     internal nint @base, bound;
 }
 

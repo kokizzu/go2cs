@@ -1069,4 +1069,84 @@ partial class syscall_package
         return default!;
     }
 
+    // ---- TransmitFile: the SENDFILE submit, and the one member that reads the OVERLAPPED ----------
+
+    // Native TRANSMIT_FILE_BUFFERS. The converted `TransmitFileBuffers` is all-scalar
+    // (uintptr/uint32 ×2), so unlike WSABuf it is not a LAYOUT defect -- but it is still a MANAGED
+    // struct whose address the kernel would have to keep for the flight, which is the same lifetime
+    // wall the file header states for the overlapped. Mirrored into the record's staging for the
+    // same reason, and it costs four field copies.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeTransmitFileBuffers
+    {
+        public nuint Head;
+        public uint32 HeadLength;
+        public nuint Tail;
+        public uint32 TailLength;
+    }
+
+    // Go: TransmitFile(s, handle, bytesToWrite, bytsPerSend, overlapped, transmitFileBuf, flags).
+    //
+    // WHY IT JOINS THE SEAM NOW, by the rule this file's header states: a suite REACHED it. net's
+    // own sendfile family does -- TestSendfileParts and TestSendfileSeeked copy through
+    // `io.CopyN(conn, f, n)`, whose `*io.LimitedReader` is not an `io.WriterTo`, so `io.Copy` takes
+    // the `ReaderFrom` branch into net.sendFile -> internal/poll.SendFile -> here. (TestSendfile,
+    // one name earlier, passes `*os.File` DIRECTLY, and `os.File.WriteTo` wins the `WriterTo`
+    // branch ahead of `ReaderFrom` -- go.dev/issue/67042, which the test's own comment cites -- so
+    // it never reaches TransmitFile at all. That is why the family split three-to-two and why the
+    // stop looked like a sendfile bug that TestSendfile disproved.)
+    //
+    // WHAT THE GENERATED BODY DID. It handed the kernel `(uintptr)Ꮡoverlapped` -- the pinned-for-one-
+    // statement interior address of the managed `internal/poll.operation`, which holds references, so
+    // golib's address model cannot hold it still -- and, decisively, it created NO operation record.
+    // With no record there is no completion-port binding for the socket and no readiness sink, so the
+    // kernel's completion had nowhere to arrive: `execIO` fell through to `pd.wait('w')` and
+    // `runtime_pollWait` blocked on `Monitor.Wait` FOREVER, with the peer blocked in `Read` waiting
+    // for bytes that were queued but never reported. A deterministic two-sided deadlock -- which is
+    // exactly the shape it was measured as (time-independent: a 60m deadline released nothing a 30m
+    // one had not), and it beheaded the whole alphabetical tail of net's suite from
+    // `TestSendfileParts` on.
+    //
+    // THE ONE THING THIS MEMBER NEEDS THAT THE SOCKET SENDS DO NOT: the FILE OFFSET travels in the
+    // OVERLAPPED. `internal/poll.SendFile` writes `o.o.Offset` / `o.o.OffsetHigh` before every submit
+    // and re-seeks between chunks; WSASend/WSARecv ignore those fields, so `Rearm()` -- which hands
+    // back a FRESH, zeroed control block each submit -- has never had to carry anything across. Here
+    // it must: without the copy every chunk would transmit from offset 0, which is not a hang but a
+    // silent wrong answer (TestSendfileSeeked's whole subject).
+    public static unsafe error /*err*/ TransmitFile(ΔHandle s, ΔHandle handle, uint32 bytesToWrite, uint32 bytsPerSend, ж<Overlapped> Ꮡoverlapped, ж<TransmitFileBuffers> ᏑtransmitFileBuf, uint32 flags) {
+        OverlappedOp operation = operationFor(s, Ꮡoverlapped, wsaModeWrite);
+        NativeOverlapped* native = operation.Rearm();
+
+        // The file offset the caller published in its own OVERLAPPED, carried onto the control block
+        // the kernel will actually read. `unchecked` because NativeOverlapped spells both halves
+        // `int` while Go (and Windows) spell them DWORD.
+        if (Ꮡoverlapped != nil) {
+            native->OffsetLow = unchecked((int)Ꮡoverlapped.Value.Offset);
+            native->OffsetHigh = unchecked((int)Ꮡoverlapped.Value.OffsetHigh);
+        }
+
+        // The head/tail buffers are OPTIONAL and the corpus's only caller passes nil; mirrored
+        // anyway rather than passed through, so a caller that does use them is not a latent
+        // lifetime defect waiting to be discovered by a suite. Head and Tail are already `uintptr`
+        // -- raw addresses the caller owns -- so the mirror is a straight copy with nothing to pin.
+        NativeTransmitFileBuffers* buffers = null;
+
+        if (ᏑtransmitFileBuf != nil) {
+            buffers = (NativeTransmitFileBuffers*)operation.Staging((nuint)sizeof(NativeTransmitFileBuffers));
+
+            ref TransmitFileBuffers managed = ref ᏑtransmitFileBuf.Value;
+
+            buffers->Head = (nuint)managed.Head.Value;
+            buffers->HeadLength = managed.HeadLength;
+            buffers->Tail = (nuint)managed.Tail.Value;
+            buffers->TailLength = managed.TailLength;
+        }
+
+        // TransmitFile answers BOOL, not SOCKET_ERROR -- the generated wrapper's own convention.
+        var (r1, _, e1) = Syscall9(procTransmitFile.Addr(), 7, (uintptr)s, (uintptr)handle, (uintptr)bytesToWrite,
+                                   (uintptr)bytsPerSend, (uintptr)native, (uintptr)(void*)buffers, (uintptr)flags, 0, 0);
+
+        return r1 == 0 ? errnoErr(e1) : default!;
+    }
+
 }

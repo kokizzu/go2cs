@@ -36,6 +36,19 @@ internal class ValueAdapterImplTemplate : TemplateBase
     public bool ImplementsFormattable;
     public required List<MethodInfo> Methods;
 
+    /// <summary>
+    /// Members the wrapped struct satisfies by PROMOTION through an embedded interface FIELD rather
+    /// than by a method of its own, mapped to that field's name.
+    /// </summary>
+    /// <remarks>
+    /// net/http's <c>type nothingWrittenError struct { error }</c> is the shape: its only declared
+    /// method is <c>Unwrap</c>, and <c>Error()</c> lives on the embedded <c>error</c> VALUE. Composed
+    /// as an extension call on the copy (<c>http_package.Error(m_value)</c>) it bound whatever
+    /// one-argument <c>Error</c> the package happened to declare — <c>http2ConnectionError</c>'s —
+    /// and reported CS1503 against a type the source never mentions. Forward through the field.
+    /// </remarks>
+    public Dictionary<string, string>? PromotedFieldForwards;
+
     public override string TemplateBody =>
         $$"""
              /// <summary>
@@ -121,6 +134,14 @@ internal class ValueAdapterImplTemplate : TemplateBase
                 if (method.IsInaccessibleMarker)
                 {
                     result.Append($"{method.ReturnType} {method.GetSignature()}{(method.ReturnType == "void" ? " { }" : " => default!;")}");
+                    continue;
+                }
+
+                // Promoted through an embedded interface FIELD — the member is on the field's
+                // interface value, not on the struct, so no extension form can reach it.
+                if (PromotedFieldForwards is not null && PromotedFieldForwards.TryGetValue(simpleMethodName, out string? promotedField))
+                {
+                    result.Append($"{method.ReturnType} {method.GetSignature()} => m_value.{promotedField}.{forwardName}{method.GetGenericSignature()}({method.CallParameters});");
                     continue;
                 }
 

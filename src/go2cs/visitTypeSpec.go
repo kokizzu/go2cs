@@ -190,18 +190,18 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 	// Publicization therefore outranks the default, and the inline arm supplies that default.
 	if v.isPublicizedType(typeSpec.Name) {
 		v.pendingTypeAccess = "public "
+	} else if localAccess := v.localTypeAccess(); localAccess != "" {
+		// A FUNCTION-LOCAL declaration takes the local-type rule, in EVERY conversion: its Go name
+		// carries no export meaning, and the hoisted `<Func>_<name>` identifier the name-based rules
+		// actually read begins with the enclosing function's first letter. Deriving a modifier from
+		// that splits the types ONE function declares between public and internal and breaks C#'s
+		// accessibility consistency — reflect's `type BigP *big` inside TestExported is the
+		// production-side witness (localTypeAccess carries the full case).
+		v.pendingTypeAccess = localAccess
 	} else if v.options.testInlineTypeAccess {
 		// Bridge-owned named types carry accessibility inline. Their metadata anchor can be a
 		// different test class, where an accessibility-only partial would declare a second type.
-		//
-		// A FUNCTION-LOCAL declaration takes the local-type rule instead: its Go name carries no
-		// export meaning, so deriving a modifier from it splits the types ONE function declares
-		// between public and internal and breaks C#'s accessibility consistency (localTypeAccess).
-		if localAccess := v.localTypeAccess(); localAccess != "" {
-			v.pendingTypeAccess = localAccess
-		} else {
-			v.pendingTypeAccess = generatedTypeScope(getSanitizedIdentifier(name)) + " "
-		}
+		v.pendingTypeAccess = generatedTypeScope(getSanitizedIdentifier(name)) + " "
 	}
 
 	defer func() { v.pendingTypeAccess = "" }()
@@ -238,19 +238,30 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			csName = strings.ReplaceAll(csName, "@unsafe.", "unsafe_package.")
 			csName = canonicalizeQualifierRename(csName)
 
-			access := v.pendingTypeAccess
-			v.pendingTypeAccess = ""
+			access := v.consumePendingTypeAccess()
+
+			// A defined type over a FOREIGN named type declared inside a function body — reflect's
+			// `type MyBuffer bytes.Buffer` in set_test.go's TestImplicitMapConversion. C# forbids a
+			// type declaration in a method body, and this was the ONE local type-declaration kind
+			// that did not take the lift: the `[GoType] partial struct` landed inline in the block
+			// it was written in, and that single site cost 73 parse diagnostics — the whole file,
+			// and the whole package's suite behind it. Take the same hoist the StarExpr arm above
+			// and visitIdent/visitStructType/visitInterfaceType already take. The GoType STRING is
+			// unaffected: it names the wrapped foreign type, which the generated `<X>.g.cs` resolves
+			// identically wherever the declaration itself sits (the corpus already emits exactly this
+			// rendering for the package-level form — flag's `[GoType("time_package.Duration")]`).
+			name, target, finish := v.liftLocalTypeDecl(name, identType)
 
 			if !v.inFunction {
-				v.outputBuilder.WriteString(v.newline)
+				target.WriteString(v.newline)
 			}
 
 			// Cross-package twin of visitIdent's stamp: a defined type over a struct carrying
 			// fixed-size ARRAY fields needs the forwarded `Clone()` (see wrapperValueCloneAttr).
 			inlineAttrs := v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access, wrapperValueCloneAttr(rhsType))
 
-			v.writeOutput("[GoType(\"%s\")] %s%spartial struct %s;", csName, inlineAttrs, access, getSanitizedIdentifier(name))
-			v.outputBuilder.WriteString(v.newline)
+			v.writeStringLn(target, "[GoType(\"%s\")] %s%spartial struct %s;", csName, inlineAttrs, access, getSanitizedIdentifier(name))
+			finish()
 		} else {
 			v.outputBuilder.WriteString(v.convSelectorExpr(typeSpecType, DefaultLambdaContext()))
 		}
@@ -261,8 +272,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			// wave-1 error); emit the `[GoType("ж<T>")] partial class` forward declaration whose
 			// Pointer template go2cs-gen implements (the generator matches a CLASS declaration
 			// for ж<-prefixed definitions — a named pointer is reference-like).
-			access := v.pendingTypeAccess
-			v.pendingTypeAccess = ""
+			access := v.consumePendingTypeAccess()
 
 			// A pointer type declared inside a function body (`type Rec ***Rec`, gob's
 			// codec_test.go) cannot be a method-body statement in C#; hoist it to member level

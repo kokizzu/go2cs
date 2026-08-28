@@ -36,7 +36,7 @@ private static readonly object nameˢ = (@string)"Name:"u8;
 private static readonly object deadlineˢ = (@string)"deadline:"u8;
 private static readonly object noDeadlineˢ = (@string)"no deadline"u8;
 
-[GoType("dyn")] partial interface commandContext_type :
+[GoType("dyn")] internal partial interface commandContext_type :
     TB
 {
     (nint, bool) Deadline();
@@ -72,7 +72,7 @@ internal static @string Kind(this gate g) {
 private static readonly object directˢ = (@string)"direct:"u8;
 private static readonly object noDirectˢ = (@string)"no direct"u8;
 
-[GoType("dyn")] partial interface direct_type {
+[GoType("dyn")] internal partial interface direct_type {
     void @private();
     @string Kind();
 }

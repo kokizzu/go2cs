@@ -46,7 +46,7 @@ private static readonly object unreachableˢ = (@string)"unreachable"u8;
 private static readonly object ifaceAssertˢ = (@string)"iface-assert"u8;
 private static readonly object ifaceAssertMissedˢ = (@string)"iface-assert-missed"u8;
 
-[GoType("dyn")] partial interface main_type {
+[GoType("dyn")] internal partial interface main_type {
     @string Error();
 }
 

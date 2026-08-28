@@ -10,6 +10,9 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using timeꓸLocation = go.time_package.ΔLocation;
+global using timeꓸMonth = go.time_package.ΔMonth;
+global using timeꓸWeekday = go.time_package.ΔWeekday;
 // </ImportedTypeAliases>
 
 using go;
@@ -36,6 +39,7 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<embedImpl, localInterfaceEmbed_i>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -49,7 +53,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AAwSgoIACgaIgoKCjpSChIQAFRaCAAAohoaChoKEkpKCgoKM")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABMYgoIACgaIgoKCjpSChISCgoIAFRaCAAAohoaChoKEkpKCgoKMAAsShISCgoIAABKEgoiChAAHEIKIkgAMEoIAABLegKKA")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -65,11 +69,19 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface localInterfaceEmbed_I {}
+    internal partial interface localInterfaceEmbed_i {}
+    internal partial struct embedImpl {}
     internal partial struct embeddedLocalTypes_MyInt {}
     [GoLocalName("embed")] internal partial struct embeddedLocalTypes_embed {}
     [GoLocalName("holder")] internal partial struct embeddedLocalTypes_holder {}
     internal partial struct embeddedLocalTypes_myInt {}
     [GoLocalName("ptrHolder")] internal partial struct embeddedLocalTypes_ptrHolder {}
+    internal partial struct foreignUnderlyingLocalTypesAgain_myDur {}
+    internal partial struct foreignUnderlyingLocalTypesAgain_myTime {}
+    internal partial struct foreignUnderlyingLocalTypes_inner {}
+    internal partial struct foreignUnderlyingLocalTypes_myDur {}
+    internal partial struct foreignUnderlyingLocalTypes_myTime {}
     internal partial struct main_a {}
     [GoLocalName("point")] internal partial struct main_point {}
     // </TypeAccessibility>

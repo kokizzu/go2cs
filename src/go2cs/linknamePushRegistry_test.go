@@ -98,6 +98,89 @@ func TestLinknamePushRegistryMatchesGoSource(t *testing.T) {
 	}
 }
 
+// TestLinknamePushRoutesNetNewUnixFile pins ONE pair the registry must keep routing: os's
+// `net_newUnixFile`, pushed into net's bodyless `newUnixFile`. The guard above verifies the rows the
+// registry HAS against Go's source; nothing there notices a row that is DELETED, and this is a pair
+// whose absence is expensive to rediscover — the only symptom is os/exec's TestExtraFilesRace
+// returning to an infrastructure-error on a Linux sweep, which runs rarely and off this machine.
+//
+// It is deliberately not a map lookup against itself. Both halves of the pair are re-derived from
+// GOROOT — the consumer's bodyless bare declaration and the pusher's two-arg directive — so Go's
+// source is the input and the converter's routing is the thing under test; and the last assertion
+// exercises packageFuncAccess itself rather than the reverse index it reads, because publicizing the
+// pushing definition is what makes the forwarder compile across the assembly boundary at all. Remove
+// the row, break the reverse index, or narrow that access rule, and this goes red first.
+func TestLinknamePushRoutesNetNewUnixFile(t *testing.T) {
+	const (
+		consumerKey = "net.newUnixFile"
+		pusherPkg   = "os"
+		pusherFunc  = "net_newUnixFile"
+	)
+
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	if goRoot == "" {
+		t.Skip("GOROOT not resolvable; nothing to verify the pair against")
+	}
+
+	// Half one, from Go's source: net declares the symbol bodyless, in the BARE shape (no directive
+	// of its own). Both properties are what the matcher requires before it will forward.
+	decl := findGoFuncDecl(t, goRoot, "net", "newUnixFile")
+
+	if decl == nil {
+		t.Fatalf("net.newUnixFile is not declared in %s/src/net — the pair this guard pins no longer exists in Go's source", goRoot)
+	}
+
+	if decl.Body != nil {
+		t.Fatal("net.newUnixFile HAS a body in Go's source, so it is no longer a linkname push consumer")
+	}
+
+	if declHasLinknameDirective(decl) {
+		t.Error("net.newUnixFile now carries a //go:linkname directive of its own — the registry row records the BARE shape and the matcher fails closed, so the row would silently forward nothing")
+	}
+
+	// Half two, from Go's source: os performs the push.
+	if !pkgHasLinknamePush(t, goRoot, pusherPkg, pusherFunc, consumerKey) {
+		t.Errorf("%s does not carry `//go:linkname %s %s` — the push this pair depends on does not exist in Go's source", pusherPkg, pusherFunc, consumerKey)
+	}
+
+	// The converter's side: the pair is routed, and routed HONORABLY. An unhonorable disposition
+	// would announce the wall instead of forwarding, which for this pair would be wrong — os carries
+	// the real body and it runs.
+	push, routed := linknamePushTargets[consumerKey]
+
+	if !routed {
+		t.Fatalf("linknamePushTargets has no row for %q: net's bodyless declaration falls back to a throwing PartialStubGenerator stub, and (*net.TCPListener).File() dies in it", consumerKey)
+	}
+
+	if push.source != pusherPkg+"."+pusherFunc {
+		t.Errorf("row %q pushes from %q, want %q", consumerKey, push.source, pusherPkg+"."+pusherFunc)
+	}
+
+	if !push.bareDecl {
+		t.Errorf("row %q records bareDecl=false, but net's declaration carries no directive — the matcher would reject it", consumerKey)
+	}
+
+	if push.reason != "" {
+		t.Errorf("row %q is recorded UNHONORABLE (%q), so it emits a panicking stub — but os carries the real body (newFile with kindSock) and it runs", consumerKey, push.reason)
+	}
+
+	// The access rule, exercised rather than assumed: os's pushing definition is unexported in Go, so
+	// only this arm makes it reachable from net's forwarder in another assembly.
+	savedPath := currentPackagePath
+	currentPackagePath = pusherPkg
+
+	defer func() { currentPackagePath = savedPath }()
+
+	if access := packageFuncAccess(pusherFunc, true); access != "public" {
+		t.Errorf("packageFuncAccess(%q) = %q, want \"public\": net's forwarder calls it across an assembly boundary and an unexported Go name is otherwise emitted internal", pusherFunc, access)
+	}
+}
+
 // splitLastDot splits a "<pkgPath>.<name>" record at its LAST dot, so an import path containing dots
 // or slashes (internal/weak, golang.org/x/...) keeps its shape.
 func splitLastDot(qualified string) (pkgPath string, name string, ok bool) {

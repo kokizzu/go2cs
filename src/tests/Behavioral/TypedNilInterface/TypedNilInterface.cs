@@ -54,19 +54,19 @@ private static readonly object assertOkˢ = (@string)"assert-ok"u8;
 private static readonly object assertFailedˢ = (@string)"assert-failed"u8;
 private static readonly object deleteˢ = (@string)"delete"u8;
 
-[GoType("dyn")] partial struct main_type {
+[GoType("dyn")] internal partial struct main_type {
     internal nint r;
 }
 
-[GoType("dyn")] partial struct main_st {
+[GoType("dyn")] internal partial struct main_st {
     public ж<AErr> P;
 }
 
-[GoType("dyn")] partial struct main_holder {
+[GoType("dyn")] internal partial struct main_holder {
     public any V;
 }
 
-[GoType("dyn")] partial struct main_rows {
+[GoType("dyn")] internal partial struct main_rows {
     internal any value;
     internal bool want;
 }

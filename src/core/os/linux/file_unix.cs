@@ -138,7 +138,7 @@ public static ж<File> NewFile(uintptr fd, @string name) {
 // retain that behavior because existing code expects it and depends on it.
 //
 //go:linkname net_newUnixFile net.newUnixFile
-internal static ж<File> net_newUnixFile(nint fd, @string name) {
+public static ж<File> net_newUnixFile(nint fd, @string name) {
     if (fd < 0) {
         throw panic("invalid FD");
     }

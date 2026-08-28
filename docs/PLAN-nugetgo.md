@@ -29,6 +29,13 @@ and not an authority over package CONTENT — it maps names, verifies provenance
 It also does not replace `-recurse`'s local conversion, which remains the default for unmapped
 dependencies and the fallback for everything.
 
+**Seed targets — the [Target Atlas](https://go2cs.net/TargetAtlas.html)** (owner study,
+2026-08-29): a survey of the Go ecosystem's conversion candidates, designed to pick the registry's
+FIRST real operational conversions — three or four packages alongside the planned HashSet — once
+the validation campaign reaches 100% of the implementable set. Interim conversions live on the
+`rcarroll` org (as HashSet does) and yield to any official conversion an original code owner later
+publishes on their own org, per the canonicality rules in §2.
+
 ---
 
 ## 1. The registry — the file is the database

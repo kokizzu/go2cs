@@ -34,11 +34,11 @@ internal static error Unwrap(this singleWrap s) {
     return s.err;
 }
 
-[GoType("dyn")] partial interface classify_type {
+[GoType("dyn")] internal partial interface classify_type {
     error Unwrap();
 }
 
-[GoType("dyn")] partial interface classify_typeᴛ1 {
+[GoType("dyn")] internal partial interface classify_typeᴛ1 {
     slice<error> Unwrap();
 }
 
@@ -55,11 +55,11 @@ internal static (bool single, bool multi) classify(any v) {
 private static readonly object multiUnwrapCountˢ = (@string)"multi unwrap count:"u8;
 private static readonly object singleUnwrapˢ = (@string)"single unwrap:"u8;
 
-[GoType("dyn")] partial interface main_type {
+[GoType("dyn")] internal partial interface main_type {
     slice<error> Unwrap();
 }
 
-[GoType("dyn")] partial interface main_typeᴛ1 {
+[GoType("dyn")] internal partial interface main_typeᴛ1 {
     error Unwrap();
 }
 

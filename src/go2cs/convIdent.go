@@ -339,6 +339,34 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 	// explicit-instantiation-base positions are excluded (see
 	// IdentContext.suppressGenericTypeArgs); so is every non-generic ident, which has no recorded
 	// instance and renders unchanged.
+	// A function whose parameters Phase A REF-LOWERED, referenced as a VALUE. The emitted signature
+	// takes `ref T` where the Go signature says `*T`, but a func value's delegate type is rendered
+	// from the GO signature — every pointer parameter as `ж<T>` — and C# has no method-group
+	// conversion that can absorb a `ref` parameter (CS0123). net/http's export_test.go is the shape:
+	// `var ExportRefererForURL = refererForURL`, whose second parameter lowered because the
+	// production body only reads its fields.
+	//
+	// The X5-func-value veto exists to stop exactly this, and it holds for every reference the
+	// analysis can SEE — but that scan skips `_test.go` by a standing ruling (emission determinism
+	// between the `-stdlib` and `-tests` runs), so a test-only func value reaches emission with the
+	// callee already lowered. Adapt at the REFERENCE rather than reopening the ruling: wrap in a
+	// lambda that re-derives the ref at each lowered position, which is the same
+	// `ref (…).DerefOrNull()` the call-site rows emit, and leaves the production emission — and the
+	// corpus — untouched. Parameters are typed explicitly so the wrapper is valid in a position with
+	// no target-typed delegate, and a variadic signature is declined (its `params` rendering has no
+	// delegate to convert to, exactly as the IIFE machinery declines it).
+	//
+	// This arm shares the generic-value append's guard below, which is what keeps it off a CALLEE:
+	// a call's callee suppresses that flag (convCallExpr's calleeIdentContext), and the generic
+	// append has depended on precisely that for as long as it has existed.
+	if !context.suppressGenericTypeArgs && !context.isMethod && !context.isType {
+		if funcObj, isFunc := v.info.Uses[ident].(*types.Func); isFunc {
+			if wrapper, wrapped := v.refLoweredFuncValueWrapper(funcObj, name); wrapped {
+				return wrapper
+			}
+		}
+	}
+
 	if !context.suppressGenericTypeArgs && !context.isMethod && !context.isType {
 		if _, isFunc := v.info.Uses[ident].(*types.Func); isFunc {
 			if inst, ok := v.info.Instances[ident]; ok && inst.TypeArgs != nil && inst.TypeArgs.Len() > 0 {

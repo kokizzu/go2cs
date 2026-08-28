@@ -13,7 +13,7 @@ partial class main_package {
     builtin.initPackage(typeof(fmt_package));
 }
 
-[GoType("dyn")] partial struct test_R0 {
+[GoType("dyn")] internal partial struct test_R0 {
     internal @string @string;
     internal ж<nint> @int;
     public P P;

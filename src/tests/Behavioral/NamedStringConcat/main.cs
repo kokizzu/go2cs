@@ -23,7 +23,7 @@ internal static version bump(version v) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string go121ˢ = "go1.21"u8;
 
-[GoType("dyn")] partial struct main_rec {
+[GoType("dyn")] internal partial struct main_rec {
     internal version v;
 }
 

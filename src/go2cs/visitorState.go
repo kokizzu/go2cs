@@ -238,9 +238,27 @@ type Visitor struct {
 	importPathAliases map[string]string
 
 	// FuncDecl variables
-	inFunction           bool
-	currentFuncDecl      *ast.FuncDecl
+	inFunction      bool
+	currentFuncDecl *ast.FuncDecl
+	// heapIntrinsicShadowed reports that a Go DECLARATION named `heap` is visible where the
+	// current function's heap-box emissions land, so each of them must spell golib's boxing
+	// intrinsic as `builtin.heap` rather than the bare `heap` (see heapIntrinsicName). Set per
+	// function declaration, and OR-ed with a function literal's own declarations (save/restore in
+	// convFuncLit) so a literal nested inside a clean function is still covered by its own params.
+	heapIntrinsicShadowed bool
+	// heapIdentInPackage caches whether the package under conversion declares `heap` at ALL (see
+	// packageMentionsHeapIntrinsicIdent) — the gate that keeps the per-declaration scan from
+	// costing every package a second AST traversal to learn a package-wide fact.
+	heapIdentInPackage   *bool
 	currentFuncSignature *types.Signature
+	// funcSignatureIsLiteralSeed records that currentFuncSignature is a func LITERAL's own signature,
+	// seeded by convFuncLit because there was no enclosing declaration to take it from — the state a
+	// package-level `var` initializer's literal converts in. The seed exists for nil-safety (the
+	// receiver/parameter detection dereferences the field unguarded), but it is NOT an enclosing
+	// signature: a literal's pointer parameter is the raw box `ж<T>` with no deref alias, where a
+	// DECLARATION's is a value alias over one. Every predicate that reads the signature to decide
+	// "is this ident a parameter of the function being emitted" must decline while this is set.
+	funcSignatureIsLiteralSeed bool
 	// currentReturnSignature is the signature whose RESULTS a `return` currently emits against — the
 	// enclosing function's, or a nested function literal's own (set with save/restore in convFuncLit).
 	// Distinct from currentFuncSignature (which stays the enclosing func for receiver/param detection).

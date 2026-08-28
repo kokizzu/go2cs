@@ -49,6 +49,7 @@ using static go.constraints_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("Constraints.go", "Constraints.cs", "AF7YAaKEgpaogoKChA==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -63,6 +64,9 @@ public static partial class constraints_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct recordA {}
+    internal partial struct recordB {}
+    internal partial struct recordC {}
     public partial interface Complex<ΔT> {}
     public partial interface ConstraintTest1<ΔT> {}
     public partial interface ConstraintTest2<ΔT> {}
@@ -72,6 +76,7 @@ public static partial class constraints_package
     public partial interface PromotedTest1<ΔT> {}
     public partial interface PromotedTest2<ΔT> {}
     public partial interface PromotedTest3<ΔT> {}
+    public partial interface RecordUnion<ΔT> {}
     public partial interface Signed<ΔT> {}
     public partial interface Unsigned<ΔT> {}
     public partial struct Frog {}

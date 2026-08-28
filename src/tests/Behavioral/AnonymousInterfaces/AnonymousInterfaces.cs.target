@@ -21,7 +21,7 @@ partial class main_package {
 private static readonly object typeSwitchUnwrapˢ = (@string)"TypeSwitch: Unwrap ="u8;
 private static readonly object typeSwitchNoMatchˢ = (@string)"TypeSwitch: No match"u8;
 
-[GoType("dyn")] partial interface testTypeSwitch_type {
+[GoType("dyn")] internal partial interface testTypeSwitch_type {
     error Unwrap();
 }
 
@@ -42,7 +42,7 @@ internal static void testTypeSwitch(error err) {
 private static readonly object typeAssertionIsNilˢ = (@string)"TypeAssertion: Is(nil) ="u8;
 private static readonly object typeAssertionNoMatchˢ = (@string)"TypeAssertion: No match"u8;
 
-[GoType("dyn")] partial interface testTypeAssertion_type {
+[GoType("dyn")] internal partial interface testTypeAssertion_type {
     bool Is(error _);
 }
 
@@ -59,7 +59,7 @@ internal static void testTypeAssertion(error err) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object funcParamReadˢ = (@string)"FuncParam: Read ="u8;
 
-[GoType("dyn")] partial interface takesReader_r {
+[GoType("dyn")] internal partial interface takesReader_r {
     (nint, error) Read(slice<byte> _Δp0);
 }
 
@@ -72,7 +72,7 @@ internal static void takesReader(takesReader_r r) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object compositeLiteralReadˢ = (@string)"CompositeLiteral: Read ="u8;
 
-[GoType("dyn")] partial interface testCompositeLiteral_readers {
+[GoType("dyn")] internal partial interface testCompositeLiteral_readers {
     (nint, error) Read(slice<byte> _Δp0);
 }
 
@@ -165,7 +165,7 @@ internal static bool Is(this fakeError _, error err) {
     return (len(p), default!);
 }
 
-[GoType("dyn")] partial struct fill_dst {
+[GoType("dyn")] internal partial struct fill_dst {
     public io_package.Writer Writer;
 }
 

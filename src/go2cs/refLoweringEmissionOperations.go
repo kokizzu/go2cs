@@ -640,3 +640,62 @@ func (v *Visitor) refLoweredCompositeTempArg(arg ast.Expr, deferredDecls *string
 
 	return "ref " + temp
 }
+
+// refLoweredFuncValueWrapper renders a func VALUE reference to a function with Phase-A ref-lowered
+// parameters as a lambda that re-derives the ref at each lowered position, and reports whether it
+// wrapped. A function with no lowered parameter — every function, in a `-stdlib` conversion, that the
+// X5-func-value veto did its job on — is left exactly as it was spelled.
+//
+// The wrapper's parameters are the GO-facing shapes the func value's delegate type is rendered from
+// (a pointer parameter as its `ж<T>` box), and each lowered position hands the callee
+// `ref <p>.DerefOrNull()` — the same nil-DEFERRING accessor the call-site rows use, so a nil argument
+// still faults at Go's own point rather than at the wrapper's entry.
+//
+// Declined for a VARIADIC signature: its emitted form is a `params` array, which converts to no
+// delegate at all (the same reason variadicFuncLitCallee exists), so a wrapper there would trade one
+// diagnostic for another. Declined too when the callee is generic, whose type arguments the caller's
+// own instantiation append owns.
+func (v *Visitor) refLoweredFuncValueWrapper(funcObj *types.Func, renderedName string) (string, bool) {
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.Variadic() || sig.Recv() != nil || sig.TypeParams().Len() > 0 {
+		return "", false
+	}
+
+	params := sig.Params()
+
+	if params.Len() == 0 {
+		return "", false
+	}
+
+	anyLowered := false
+
+	for i := range params.Len() {
+		if v.paramIsRefLowered(params.At(i)) {
+			anyLowered = true
+			break
+		}
+	}
+
+	if !anyLowered {
+		return "", false
+	}
+
+	declarations := make([]string, params.Len())
+	arguments := make([]string, params.Len())
+
+	for i := range params.Len() {
+		param := params.At(i)
+		name := fmt.Sprintf("%s%d", TempVarMarker, i)
+
+		declarations[i] = fmt.Sprintf("%s %s", v.getCSharpTypeName(param.Type()), name)
+
+		if v.paramIsRefLowered(param) {
+			arguments[i] = fmt.Sprintf("ref %s.%s", name, NilDeferringDerefAccessor)
+		} else {
+			arguments[i] = name
+		}
+	}
+
+	return fmt.Sprintf("(%s) => %s(%s)", strings.Join(declarations, ", "), renderedName, strings.Join(arguments, ", ")), true
+}

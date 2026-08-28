@@ -432,7 +432,7 @@ func (v *Visitor) selectCommBinding(lhs ast.Expr, isDefine bool) (boundName stri
 				csIDName := v.getIdentName(ident)
 				tempName := getGlobalTempVarName(csIDName)
 
-				return tempName, fmt.Sprintf("ref var %s = ref heap(%s, out var %s%s);", getSanitizedIdentifier(csIDName), tempName, AddressPrefix, csIDName)
+				return tempName, fmt.Sprintf("ref var %s = ref %s(%s, out var %s%s);", getSanitizedIdentifier(csIDName), v.heapIntrinsicName(), tempName, AddressPrefix, csIDName)
 			}
 		}
 	}

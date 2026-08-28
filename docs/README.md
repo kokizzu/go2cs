@@ -220,7 +220,7 @@ go2cs -tests -test-action all goroot_pkg_dir converted_pkg_dir   # ...and build,
 | `-csproj <file>` | Generate project files from a custom `.csproj` template instead of the embedded one. |
 | `-tree` | Print each file's Go parse tree (`go/ast`) to stdout during conversion — a diagnostic aid. |
 | `-debug` | Disable the converter's per-file panic recovery, so a conversion failure crashes with a full stack trace instead of being reported as a warning. |
-| ~~`-cgo`~~ | ~~Also convert cgo-targeted files.~~ |
+| ~~`-cgo`~~ | ~~Also convert cgo-targeted files.~~ Not yet functional — but planned, not abandoned: the ratified [cgo interop plan](PLAN-cgo-interop.md) lays out the `import "C"` ladder (P/Invoke-backed, staged after the current validation campaign), and this flag comes alive with it. |
 
 All converted C# code references a hand-written runtime library (`golib`, published as the [`go.lib`](https://www.nuget.org/packages/go.lib)
 NuGet package) plus a set of Roslyn source generators that supply Go semantics at compile time (published as
@@ -235,6 +235,10 @@ open and build. With `-recurse=nuget` the standard library, the `golib` runtime 
 analyzer come from [nuget.org](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll), so nothing has to
 be staged on the machine beforehand. (Prefer the standard library as local C# source? See
 [building against a local standard library](#optional-build-against-a-local-standard-library) below.)
+
+Wondering which real-world Go packages make good conversions? The
+**[go2cs Target Atlas](https://go2cs.net/TargetAtlas.html)** surveys the Go ecosystem's best
+candidates — the study behind the first operational package conversions now being planned.
 
 Here is the full round-trip for a small CLI that uses [`github.com/fatih/color`](https://github.com/fatih/color),
 which itself pulls in `github.com/mattn/go-colorable`, `github.com/mattn/go-isatty`, and `golang.org/x/sys` —

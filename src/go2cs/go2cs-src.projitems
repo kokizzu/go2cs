@@ -103,6 +103,7 @@
     <None Include="$(MSBuildThisFileDirectory)linknameOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)linknamePush_test.go" />
     <None Include="$(MSBuildThisFileDirectory)linknamePushRegistry_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)localTypeLift_test.go" />
     <None Include="$(MSBuildThisFileDirectory)localValueIfaceCallConversion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)main.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionMarker_test.go" />

@@ -3,7 +3,7 @@ namespace go;
 partial class main_package {
 
 
-[GoType("dyn")] partial struct varFirst_type {
+[GoType("dyn")] internal partial struct varFirst_type {
     public Greeter Greeter;
 }
 internal static Greeter varFirst = ((Func<@string, Greeter>)(s => {

@@ -74,8 +74,7 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 		return
 	}
 
-	access := v.pendingTypeAccess
-	v.pendingTypeAccess = ""
+	access := v.consumePendingTypeAccess()
 
 	// A slice/array type declared inside a function body (`type People []Person`, example_test.go)
 	// cannot be a method-body statement in C#; hoist it to member level (see liftLocalTypeDecl). A

@@ -140,7 +140,7 @@ using static go.net_package;
 [assembly: go.GoPositionMap("net/error_posix.go", "error_posix.cs", "AAsgooCCpA==")]
 [assembly: go.GoPositionMap("net/error_unix.go", "error_unix.cs", "AAoWgoCCpA==")]
 [assembly: go.GoPositionMap("net/fd_posix.go", "fd_posix.cs", "ACA6ooKCpoKC1oKCgqaCpoKmsoKCpsKCgqSygoKmsoKCpuKCgqbSgoKm0oKCprKCgqaygoKmsoKCprKCgqbCgoKmwoKCpsKCgqaCpoKmgg==")]
-[assembly: go.GoPositionMap("net/fd_unix.go", "fd_unix.cs", "ABc0ggAJFKaipoKSgpSClOYACQiA1qTGgIKkgq7SlKS0gIKkgIKCAAcQgqaCgqKCgO6CtrK6goK0+gAIEoCCpMakgoKUgMaqgLLGtPjCgoKClJaAgoKkgIKCpIKCqKSygoKClJY=")]
+[assembly: go.GoPositionMap("net/fd_unix.go", "fd_unix.cs", "ABc0ggAJFKaipoKSgpSClOYACQiA1qTGgIKkgq7SlKS0gIKkgIKCAAcQgqaCgqKCgO6CtrK6goK0+gAIEoCCpMakgoKUgMaqgLLGtPjCgoKClJaAgoKkgIKCpIKCqMSygoKClJY=")]
 [assembly: go.GoPositionMap("net/file.go", "file.cs", "AA4coKKArAAIAoKClK4ACAKCgpSuAAgCgoKU")]
 [assembly: go.GoPositionMap("net/file_unix.go", "file_unix.cs", "ABEegoKCgpSUgIKCpKaCgoKUgoKCgpSCgpS0tLSCpIKCgpSCgoKAgoKkgqaCgoKUlKSkpKSCpoKCgpSUpJSCpoKCgpSUpKSkgg==")]
 [assembly: go.GoPositionMap("net/hosts.go", "hosts.cs", "ABMkgoKClAAcOqKChIKUgoKCloKEgoKCqIKSgoCUpIKClIKCloKCgoKChIKWhICCuKYABxCCgoKCgtiygoKCgoKCgpSAgoKCttiygoKCgoKUgoCCgoK2")]

@@ -148,9 +148,32 @@ var integerOperatorTypes = NewHashSet([]ConstraintType{
 // comparableOperatorTypes are types that can be compared for equality, i.e.,
 // those that support the `==` and `!=` operators. This is the widest set of
 // supported operator types.
+//
+// ⚠ Widest here means widest that the LIFT can express, which is narrower than Go's `==`. These
+// sets decide whether `IEqualityOperators<T, T, bool>` is written into a C# `where` clause, and
+// that constraint is a claim about the type ARGUMENT implementing a BCL interface — not about the
+// operator being available. The composite Go kinds Go compares perfectly well (Pointer, Channel,
+// Array, Struct) implement nothing of the sort: golib's `ж<T>`/`channel<T>`/`array<T>` and every
+// `[GoType]` struct compare through Equals/AreEqual, never through `op_Equality`. Lifting for them
+// therefore produced a constraint NO instantiation can satisfy — CS0315 at every call site, with
+// the diagnostic naming the concrete type rather than the constraint that cannot admit it.
+//
+// The corpus witness is runtime/pprof's `testProfileRecordNullPadding[T runtime.StackRecord |
+// runtime.MemProfileRecord | runtime.BlockProfileRecord]`, whose five call sites were the whole of
+// that package's 174-verdict build wall. It is also the ONLY converter-emitted IEqualityOperators
+// clause in the corpus that is not on a numeric or ordered union (censused at the fix), which is
+// the shape's own signature: a composite type set lifts the comparable operators ALONE, with no
+// arithmetic siblings, because it is a subset of no other set here.
+//
+// The array-core constraint branch in getGenericDefinition already suppressed the same spurious
+// lift by hand (`suppressLiftedConstraints`, ~[N]E). Removing the composite kinds states that rule
+// once, where the operator sets are defined, instead of per constraint SHAPE — a union of named
+// array types took no such branch. Go's own comparability is unaffected: the checker validated
+// every instantiation before conversion, and emitted equality on a type parameter routes through
+// AreEqual, exactly as the built-in `comparable` arm already documents.
 var comparableOperatorTypes = NewHashSet([]ConstraintType{
 	Bool, Int, Int8, Int16, Int32, Int64, Uint, Uint8, Uint16, Uint32, Uint64,
-	Float32, Float64, Complex64, Complex128, String, Pointer, Channel, Array, Struct,
+	Float32, Float64, Complex64, Complex128, String,
 })
 
 // orderedOperatorTypes are types that can be ordered, i.e., those that support
@@ -575,6 +598,26 @@ func (v *Visitor) getConstraintsFromType(typ types.Type) []types.Type {
 
 func (v *Visitor) getConstraintTypeSetFromType(typ types.Type) HashSet[ConstraintType] {
 	return getConstraintTypeSet(v.getConstraintsFromType(typ))
+}
+
+// constraintTypeSetIsInexpressible reports whether a constraint names a real Go type set that no C#
+// `where` clause can express — every term is a COMPOSITE kind (struct, array, pointer, channel), so
+// the terms share no liftable operator (see comparableOperatorTypes) and no single golib interface
+// covers them.
+//
+// It is deliberately the LAST question getGenericDefinition asks, after every shape with an answer
+// (`string | []byte`, slice, array-core, map, channel, func, the bare `string`/`[]byte`/`comparable`
+// cases) has been tried, so it never intercepts a constraint that has an emission. An EMPTY type set
+// is not this: that is a method-set or unconstrained interface, which the arms after the chain
+// handle on their own terms.
+func (v *Visitor) constraintTypeSetIsInexpressible(constraint types.Type) bool {
+	typeSet := v.getConstraintTypeSetFromType(constraint)
+
+	if typeSet.IsEmpty() {
+		return false
+	}
+
+	return getOperatorSet(typeSet).IsEmpty()
 }
 
 func getConstraintTypeSet(constraintTypes []types.Type) HashSet[ConstraintType] {
@@ -1219,6 +1262,25 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 						// constraint can admit (unique's HashTrieMap[*abi.Type, any] was the
 						// corpus witness), and nothing needed it: golib `@new<T>` constructs via
 						// the runtime and no comparable-constrained body constructs its parameter.
+						continue
+					} else if v.constraintTypeSetIsInexpressible(constraint) {
+						// A union whose terms are all COMPOSITE Go types — runtime/pprof's
+						// `[T runtime.StackRecord | runtime.MemProfileRecord |
+						// runtime.BlockProfileRecord]`. Every earlier arm in this chain has been
+						// tried, so there is no interface to name: the terms share no operator (see
+						// comparableOperatorTypes) and no golib surface, and their only common C#
+						// property is being constructible. Falling through to the generic tail below
+						// would emit the Go union text verbatim as a C# constraint list
+						// (`where T : runtime.StackRecord | runtime.MemProfileRecord | …`) —
+						// CS1003 ×4, a syntax error rather than a type error.
+						//
+						// Emit the constraint as the breadcrumb comment plus `new()`, the same
+						// answer the `comparable` arm above reaches for the same reason: Go's own
+						// checker validated every instantiation before conversion, so the C# clause
+						// has nothing left to enforce. `new()` is kept (unlike that arm) because a
+						// composite type set admits no pointer type argument — every term is a
+						// value type — and the generic tail would have appended it anyway.
+						constraintNames = append(constraintNames, fmt.Sprintf("%s%s    where %s : %s new()", v.newline, v.indent(v.indentLevel), typeParamNames[i], originalConstraint))
 						continue
 					}
 				}

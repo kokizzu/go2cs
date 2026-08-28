@@ -52,7 +52,7 @@ internal static labelerᴛ1 labeler = new thingжlabelerᴛ1(Ꮡ(new thing(n: 41
 }
 internal static originᴛ1 origin = new originᴛ1(x: 3, y: 4);
 
-[GoType("dyn")] partial interface main_eq {
+[GoType("dyn")] internal partial interface main_eq {
     bool Equal(any x);
 }
 

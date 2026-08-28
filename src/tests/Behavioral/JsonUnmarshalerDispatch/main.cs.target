@@ -38,7 +38,7 @@ partial class main_package {
     return default!;
 }
 
-[GoType("dyn")] partial struct main_s {
+[GoType("dyn")] internal partial struct main_s {
     public time.Time T;
     public Celsius C;
 }

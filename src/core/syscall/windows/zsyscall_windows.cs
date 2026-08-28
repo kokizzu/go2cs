@@ -1320,15 +1320,7 @@ internal static error /*err*/ writeFile(ΔHandle handle, slice<byte> buf, ж<uin
 
 // go2cs generated this placeholder — func GetAcceptExSockaddrs is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*err*/ TransmitFile(ΔHandle s, ΔHandle handle, uint32 bytesToWrite, uint32 bytsPerSend, ж<Overlapped> Ꮡoverlapped, ж<TransmitFileBuffers> ᏑtransmitFileBuf, uint32 flags) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall9(procTransmitFile.Addr(), 7, (uintptr)s, (uintptr)handle, (uintptr)bytesToWrite, (uintptr)bytsPerSend, (uintptr)Ꮡoverlapped, (uintptr)ᏑtransmitFileBuf, (uintptr)flags, 0, 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func TransmitFile is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*neterr*/ NetApiBufferFree(ж<byte> Ꮡbuf) {
     error neterr = default!;
