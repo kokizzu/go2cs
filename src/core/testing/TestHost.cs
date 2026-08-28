@@ -150,6 +150,14 @@ public static class TestHost
                 // The helper skips this with the rest: a parent test that hands its child an
                 // explicit TZ through cmd.Env must see that value in the child, exactly as Go's
                 // helper — which has no TZ logic at all — would show it.
+                //
+                // DELIBERATELY the CLR-only form, not PublishEnvironmentVariable (2026-08-29). The
+                // publishing variant rode into 83ea02659 unannounced alongside the parse
+                // relocation, and it is an UNMEASURED behavior change: it would make this pin
+                // actually reach converted code on linux/darwin, where the pipeline hands the
+                // `go test` side no TZ at all — so the two sides could start disagreeing about the
+                // local zone rather than agreeing. That is the TZ arc's own question, with its own
+                // measurement in flight; this merge unit carries only what its gates measured.
                 Environment.SetEnvironmentVariable("TZ", "UTC");
             }
 
@@ -176,23 +184,31 @@ public static class TestHost
             // already running where `go test` put it, and no test code has run yet.
             TestFlagBridge.Register(options);
 
-            // The deferred verdict on an unrecognized flag (see TestOptions.Parse). Both vocabularies
-            // now exist — the package's, from the initialization above, and the host's, from the
-            // registration — which is the state Go's single flag.Parse() sees. A name neither one
-            // defines is the command line being wrong, and it is still rejected, in flag's own
-            // wording and with flag's ExitOnError code.
-            if (options.UnrecognizedFlag is { } unrecognized && !TestFlagBridge.IsDefined(unrecognized))
-            {
-                Console.Error.WriteLine($"flag provided but not defined: -{unrecognized}");
-                return 2;
-            }
+            // NO VERDICT HERE — the unrecognized flag PASSES THROUGH to the converted flag package,
+            // which is the only party entitled to rule on it. This block used to answer the name
+            // itself ("flag provided but not defined: -x", return 2), reproducing flag's wording and
+            // flag's exit code — and that looked right precisely because the code matched. It was
+            // still wrong, because it took the decision in the WRONG PLACE and TOO EARLY: Go's test
+            // binary reaches exactly one flag.Parse(), by which time the package under test has
+            // installed whatever flag.Usage it wants, and Usage is entitled to do something other
+            // than exit 2.
+            //
+            // crypto/tls is the measured witness (2026-08-28). Its TestMain sets
+            // `flag.Usage = func() { …; if *bogoMode { os.Exit(89) } }`, and BoGo's runner reads
+            // exit 89 as errUnimplemented → SKIP (runner.go:1685, 20380). Go's shim defines ~45 of
+            // the ~100 flags the runner uses and INTENDS the rest to exit 89 and skip; answering
+            // here turned 1,902 of those into hard failures instead. The class is wider than BoGo —
+            // any package whose Usage does anything but flag's default diverged the same way.
+            //
+            // This is the FIRST of the two ordering defects; the second was the parse itself
+            // happening here rather than in M.Run, and the pair is why NEITHER fix alone produced a
+            // single 89 (i9's re-run of the first was byte-identical, 1,340/1,902/0). Nothing is
+            // lost by deferring: TestFlagBridge.Register above put the host's own vocabulary on the
+            // converted flag package and InitializePackageUnderTest put the package's there, so the
+            // one parse M.Run performs sees exactly the combined flag set Go's single parse sees —
+            // and rejects a genuinely undefined name with Go's message, Go's Usage and Go's status,
+            // decided by Go's code.
 
-            // Go's m.Run parses the command line if nothing has yet (`if !flag.Parsed() {
-            // flag.Parse() }`) — the step that writes the VALUES into the definitions above. A
-            // package with custom test flags but no TestMain gets them populated by exactly this
-            // and nothing else; without it every such flag silently keeps its default (the
-            // os/signal TestDetectNohup re-exec recursion). See TestFlagBridge.Parse.
-            TestFlagBridge.Parse();
 
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
@@ -261,6 +277,8 @@ public static class TestHost
             Environment.CurrentDirectory = previousDirectory;
             CultureInfo.CurrentCulture = previousCulture;
             CultureInfo.CurrentUICulture = previousUICulture;
+            // The CLR-only form, matching the pin above — see its note: the publishing variant is
+            // the TZ arc's unmeasured half and does not ride in this merge unit.
             Environment.SetEnvironmentVariable("TZ", previousTimezone);
 
             try
@@ -313,10 +331,14 @@ public static class TestHost
 
     private static nint RunTests(TestRegistry registry, TestRunner runner)
     {
-        if (registry.TestMain is null)
-            return runner.RunAll();
-
         testing_package.M m = new() { Runner = runner };
+
+        // No TestMain: Go's generated main is `os.Exit(m.Run())`, so this goes through M.Run for
+        // the same reason it does there -- M.Run is where the flag parse lives, and a package with
+        // custom test flags and no TestMain has nothing else to populate them.
+        if (registry.TestMain is null)
+            return m.Run();
+
         registry.TestMain(new StandardBox<testing_package.M>(m));
         return runner.HasRun ? runner.ExitCode : 0;
     }
@@ -371,15 +393,34 @@ public static class TestHost
     /// inherits.
     /// </summary>
     /// <inheritdoc cref="PublishSandboxMarker" path="/remarks"/>
-    private static void PublishEnvironmentVariable(string name, string value)
+    private static void PublishEnvironmentVariable(string name, string? value)
     {
+        // A null value CLEARS on both sides: that is what the TZ restore asks for when the run
+        // inherited no TZ at all, and leaving a stale "UTC" behind would be a different bug from
+        // the one this method exists to fix.
         Environment.SetEnvironmentVariable(name, value);
 
         try
         {
             Type? syscallPackage = Type.GetType(SyscallPackageTypeName, throwOnError: false);
 
-            MethodInfo? setenv = syscallPackage?.GetMethod(
+            if (syscallPackage is null)
+                return;
+
+            if (value is null)
+            {
+                MethodInfo? unsetenv = syscallPackage.GetMethod(
+                    "Unsetenv",
+                    BindingFlags.Public | BindingFlags.Static,
+                    binder: null,
+                    types: [typeof(@string)],
+                    modifiers: null);
+
+                unsetenv?.Invoke(null, [(@string)name]);
+                return;
+            }
+
+            MethodInfo? setenv = syscallPackage.GetMethod(
                 "Setenv",
                 BindingFlags.Public | BindingFlags.Static,
                 binder: null,
@@ -471,6 +512,8 @@ public static class TestHost
 
     private static void CopyFixtures(IReadOnlyList<string> fixtures, string workingDirectory, string runRoot)
     {
+        int staged = 0;
+
         foreach (string relativePath in fixtures)
         {
             string normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);
@@ -510,6 +553,49 @@ public static class TestHost
             // real directory first.
             PackageAncestry.EnsureWritable(Path.GetDirectoryName(target)!, runRoot);
             File.Copy(source, target, true);
+            staged++;
+        }
+
+        // …but a suite that declares fixtures and stages NONE of them is not that case, and it is
+        // not a shrug either: it means the staging path itself is broken, and every test that reads
+        // a fixture is about to fail its own read for a reason no gate would attribute. That is
+        // exactly how time's banked TestLoadLocationFromTZDataSlim (pass/pass) reached master
+        // failing on the published path — R found it by A/B, because nothing in the harness said a
+        // word (2026-08-29). The per-file skip above stays for the relocated lone copy; the
+        // ALL-of-them case becomes the gate failure it should always have been.
+        //
+        // The discriminator is the host's own directory, because both situations reach here. A
+        // relocated copy is one executable someone copied out on its own; a published or built host
+        // sits among its dependencies and staged sources. So "alone" means alone: anything more
+        // than the executable itself says the fixtures were supposed to be here and are not.
+        if (fixtures.Count > 0 && staged == 0 && !HostIsLoneRelocatedCopy())
+        {
+            throw new InvalidOperationException(
+                $"fixture staging found none of the {fixtures.Count} fixture(s) this suite declares, " +
+                $"under '{AppContext.BaseDirectory}' — the run would proceed with an empty testdata and " +
+                "fail each reader with a bare file-not-found. This is a broken build/publish staging " +
+                "path, not a missing test input.");
+        }
+    }
+
+    // Whether this host is a lone executable someone copied out — os/exec's TestCommand and
+    // TestLookPathWindows do exactly that, mirroring what they do to Go's statically linked test
+    // binary, and such a copy legitimately carries no fixtures. Counting entries rather than
+    // probing for a marker keeps it honest for both the single-file shape (one file) and any
+    // future one, and it never mistakes a real host for a copy: a published host's directory holds
+    // its dependencies and staged sources, a built one holds its whole output.
+    private static bool HostIsLoneRelocatedCopy()
+    {
+        try
+        {
+            return Directory.EnumerateFileSystemEntries(AppContext.BaseDirectory).Take(2).Count() <= 1;
+        }
+        catch (Exception)
+        {
+            // Unreadable base directory: say NOT a lone copy, so the louder branch wins. A wrong
+            // guess here fails a run that would otherwise have failed each test individually — the
+            // safer direction of the two.
+            return false;
         }
     }
 

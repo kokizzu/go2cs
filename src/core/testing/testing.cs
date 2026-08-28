@@ -333,6 +333,22 @@ public static partial class testing_package
     [GoRecv] public static nint Run(this ref M m)
     {
         TestRunner runner = m.Runner ?? throw new InvalidOperationException("testing.M is not attached to a test registry");
+
+        // Go's M.Run opens with exactly this, under exactly this reasoning -- its comment reads
+        // "TestMain may have already called flag.Parse.":
+        //
+        //     if !flag.Parsed() { flag.Parse() }
+        //
+        // The POSITION is the contract, not the call. A package with a TestMain sets flag.Usage and
+        // parses INSIDE it, before reaching m.Run; a package without one is run by a generated main
+        // that calls m.Run directly, and this is the only thing that populates its custom flags.
+        // Parsing any earlier takes the decision away from a TestMain written to make it -- which is
+        // what happened when this lived in TestHost.Run: crypto/tls's TestMain installs a flag.Usage
+        // that exits 89 for the bogo runner, and an earlier parse resolved the same arguments through
+        // the DEFAULT Usage and exited 2, so the override never applied and the wall was measured on
+        // an accident rather than on Go's contract (i9's bogo re-run, rooted 2026-08-29).
+        TestFlagBridge.Parse();
+
         return runner.RunAll();
     }
 

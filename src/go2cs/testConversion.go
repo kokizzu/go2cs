@@ -3216,13 +3216,31 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 		// it into a staging root under the output directory, keyed by how far up it reaches, and
 		// TestHost.CopyFixtures maps it back to the true relative path inside the run sandbox
 		// (SharedFixtureStagingRoot there — keep the two in sync).
+		// ExcludeFromSingleFile keeps a fixture LOOSE beside the published executable, and it is
+		// what makes a fixture survive being published TWICE into one directory. Measured
+		// 2026-08-29, three publishes into the same output, counting `testdata/`:
+		//
+		//     single-file, as emitted before this            4 -> 0 -> 0   (exit 0 every time)
+		//     -p:PublishSingleFile=false                     4 -> 4 -> 4
+		//     single-file + ExcludeFromSingleFile="true"     4 -> 4 -> 4
+		//
+		// So the deleter is the single-file BUNDLER, not the copy: on a republish it reclaims the
+		// output directory for the files it owns and takes the loose content with it. The first
+		// publish into a fresh directory is always correct, which is exactly why this hid — every
+		// bank re-converts fresh, and only a re-measurement over an existing publish tree can see
+		// it (R's isolation, both platforms, 2026-08-29). CopyToPublishDirectory does NOT fix it;
+		// measured too, and left out for that reason — the item was already reaching publish, the
+		// bundler was removing it afterwards.
+		//
+		// A fixture must be loose because a test opens it by relative path (`os.Open("testdata/x")`)
+		// — bundling it into the executable would take it out of the filesystem the test reads.
 		if up, tail, isShared := sharedFixtureStagingParts(slashed); isShared {
-			fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" Link=\"%s/up%d/%s\" CopyToOutputDirectory=\"PreserveNewest\" />",
+			fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" Link=\"%s/up%d/%s\" CopyToOutputDirectory=\"PreserveNewest\" ExcludeFromSingleFile=\"true\" />",
 				escapeXMLAttributeValue(slashed), SharedFixtureStagingRoot, up, escapeXMLAttributeValue(tail)))
 			continue
 		}
 
-		fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" CopyToOutputDirectory=\"PreserveNewest\" />", escapeXMLAttributeValue(slashed)))
+		fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" CopyToOutputDirectory=\"PreserveNewest\" ExcludeFromSingleFile=\"true\" />", escapeXMLAttributeValue(slashed)))
 	}
 
 	var referenceItems strings.Builder

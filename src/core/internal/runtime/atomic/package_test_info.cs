@@ -47,6 +47,6 @@ public static partial class atomic_test_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial struct TestCasRel_x {}
+    internal partial struct TestCasRel_x {}
     // </TypeAccessibility>
 }
