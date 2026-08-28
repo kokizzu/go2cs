@@ -19,7 +19,7 @@ internal static ж<Δtype> bReserved = ((ж<Δtype>)nil);
 [GoType] partial struct Bee {
 }
 
-[GoType("dyn")] partial struct probe_inner {
+[GoType("dyn")] internal partial struct probe_inner {
     internal nint n;
 }
 

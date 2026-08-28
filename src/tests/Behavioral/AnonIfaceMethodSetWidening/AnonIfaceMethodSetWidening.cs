@@ -35,12 +35,12 @@ private static readonly object valueNotWidenedOkˢ = (@string)"value-not-widened
 private static readonly object pointerWidenedOkˢ = (@string)"pointer-widened-ok"u8;
 private static readonly object pointerNotWidenedWrongˢ = (@string)"pointer-not-widened-wrong"u8;
 
-[GoType("dyn")] partial interface main_type {
+[GoType("dyn")] internal partial interface main_type {
     @string Foo();
     @string Bar();
 }
 
-[GoType("dyn")] partial interface main_typeᴛ1 {
+[GoType("dyn")] internal partial interface main_typeᴛ1 {
     @string Foo();
     @string Bar();
 }

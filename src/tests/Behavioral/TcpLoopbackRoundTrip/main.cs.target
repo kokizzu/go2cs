@@ -49,7 +49,7 @@ internal static uint32 checksum(slice<byte> b) {
     return sum;
 }
 
-[GoType("dyn")] partial struct roundTrip_accepted {
+[GoType("dyn")] internal partial struct roundTrip_accepted {
     internal Δnet.Conn conn;
     internal error err;
 }

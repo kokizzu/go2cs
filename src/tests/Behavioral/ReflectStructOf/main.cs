@@ -88,7 +88,7 @@ private static readonly object duplicateˢ = (@string)"duplicate:"u8;
 private static readonly object unexportedNoPkgpathˢ = (@string)"unexported no pkgpath:"u8;
 private static readonly object anonymousWithPkgpathˢ = (@string)"anonymous with pkgpath:"u8;
 
-[GoType("dyn")] partial struct main_i {
+[GoType("dyn")] internal partial struct main_i {
     public int64 Q;
 }
 

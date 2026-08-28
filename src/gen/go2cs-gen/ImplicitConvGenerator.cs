@@ -170,13 +170,16 @@ public class ImplicitConvGenerator : ISourceGenerator
             // hosting in the MORE accessible type makes the less-accessible parameter fail
             // CS0057. Relocate into the LESS accessible side — a public operator inside an
             // internal struct is legal, and both operand types are visible there.
-            // Accessibility derives from the GO export rule (GetScope on the Δ-stripped name):
-            // at analysis time the [GoType] partials are modifier-less — the public/internal
-            // modifier lives on the TypeGenerator's OWN output, which single-pass generators
-            // cannot see (DeclaredAccessibility reads Private for both).
+            // Accessibility comes from EffectiveScopeIsPublic: a modifier the converter WROTE wins,
+            // and the GO export rule (GetScope on the Δ-stripped name) is the fallback for a bare
+            // [GoType] partial, whose public/internal modifier lives on the TypeGenerator's OWN
+            // output — invisible to a single-pass sibling generator, which reads Private for it.
+            // The written half is what a lifted function-local type needs: `TestExported_BigP`
+            // reads public off its enclosing Test while the declaration is `internal`, so the name
+            // alone put the operator on the wrong side of the pair.
             if (hostTypeNameOverride is null &&
-                GetScope(GetSimpleName(sourceType.Name, dropCollisionPrefix: true)) == "public" &&
-                GetScope(GetSimpleName(targetType.Name, dropCollisionPrefix: true)) != "public" &&
+                EffectiveScopeIsPublic(sourceType, GetSimpleName(sourceType.Name, dropCollisionPrefix: true)) &&
+                !EffectiveScopeIsPublic(targetType, GetSimpleName(targetType.Name, dropCollisionPrefix: true)) &&
                 SymbolEqualityComparer.Default.Equals(targetType.ContainingAssembly, context.Compilation.Assembly))
             {
                 hostTypeNameOverride = targetType.Name;
@@ -295,9 +298,9 @@ public class ImplicitConvGenerator : ISourceGenerator
 
     // True when exactly one side of the pair is declared in ANOTHER assembly and that foreign side is
     // less accessible than the local side — the only side that could host the operator. The local
-    // side's accessibility comes from the GO export rule, not from the symbol: at analysis time the
-    // [GoType] partials are modifier-less, and the public/internal modifier lives on the
-    // TypeGenerator's own output, which a single-pass sibling generator cannot see (see the
+    // side goes through EffectiveScopeIsPublic: a modifier the converter WROTE wins, and the GO
+    // export rule is the fallback for a bare [GoType] partial, whose modifier lives on the
+    // TypeGenerator's own output and is invisible to a single-pass sibling generator (see the
     // relocation block above). The FOREIGN side is read from metadata, where it is already final.
     private static bool ForeignSideIsLessAccessible(ITypeSymbol sourceType, ITypeSymbol targetType, IAssemblySymbol thisAssembly)
     {
@@ -310,7 +313,7 @@ public class ImplicitConvGenerator : ISourceGenerator
         (ITypeSymbol foreignType, ITypeSymbol localType) = sourceIsForeign ? (sourceType, targetType) : (targetType, sourceType);
 
         return foreignType.DeclaredAccessibility != Accessibility.Public &&
-               GetScope(GetSimpleName(localType.Name, dropCollisionPrefix: true)) == "public";
+               EffectiveScopeIsPublic(localType, GetSimpleName(localType.Name, dropCollisionPrefix: true));
     }
 
     private static string? GetNamespace(FileScopedNamespaceDeclarationSyntax? namespaceSyntax)

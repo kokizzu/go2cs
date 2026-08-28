@@ -73,7 +73,7 @@ internal static void typeSwitchCase(any v) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object anonˢ = (@string)"anon:"u8;
 
-[GoType("dyn")] partial struct anonStruct_x {
+[GoType("dyn")] internal partial struct anonStruct_x {
     internal atomic.Int32 i;
 }
 

@@ -60,7 +60,7 @@ internal static @string zone(nint kind, @string s) {
     return @out;
 }
 
-[GoType("dyn")] partial struct main_cases {
+[GoType("dyn")] internal partial struct main_cases {
     internal nint kind;
     internal @string s;
 }

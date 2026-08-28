@@ -14,7 +14,7 @@ internal static slice<@string> take(slice<@string> s) {
     return s;
 }
 
-[GoType("dyn")] partial struct main_rec {
+[GoType("dyn")] internal partial struct main_rec {
     internal @string a, b;
 }
 

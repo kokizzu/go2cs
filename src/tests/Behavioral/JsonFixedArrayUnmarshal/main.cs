@@ -32,7 +32,7 @@ private static readonly object anyifaceˢ = (@string)"anyiface:"u8;
 private static readonly object badtargetˢ = (@string)"badtarget:"u8;
 private static readonly object badmapˢ = (@string)"badmap:"u8;
 
-[GoType("dyn")] partial struct main_point {
+[GoType("dyn")] internal partial struct main_point {
     [GoTag(@"json:""x""")]
     public nint X;
     [GoTag(@"json:""y""")]

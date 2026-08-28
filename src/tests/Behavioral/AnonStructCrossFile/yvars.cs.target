@@ -13,7 +13,7 @@ internal static ж<Δtypeᴛ1> yReserved = ((ж<Δtypeᴛ1>)nil);
 [GoType] partial struct Why {
 }
 
-[GoType("dyn")] partial struct probe_innerᴛ1 {
+[GoType("dyn")] internal partial struct probe_innerᴛ1 {
     internal @string s;
 }
 

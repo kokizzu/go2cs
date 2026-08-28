@@ -75,8 +75,7 @@ func (v *Visitor) visitIdent(ident *ast.Ident, identType types.Type, name string
 
 	// Consume any pending publicized-type access modifier (an unexported type used as an
 	// exported field — CS0051/CS0052).
-	access := v.pendingTypeAccess
-	v.pendingTypeAccess = ""
+	access := v.consumePendingTypeAccess()
 
 	if strings.HasPrefix(name, PointerPrefix) {
 		// Handle pointer types

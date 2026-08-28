@@ -14,7 +14,7 @@ public static uintptr MaxU => /* ^uintptr(0) */ unchecked((uintptr)1844674407370
 
 internal static UntypedInt ptrSize => 8;
 
-[GoType("dyn")] partial struct main_rows {
+[GoType("dyn")] internal partial struct main_rows {
     internal uintptr a, b;
 }
 

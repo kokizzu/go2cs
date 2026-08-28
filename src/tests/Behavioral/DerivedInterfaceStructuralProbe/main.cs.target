@@ -33,7 +33,7 @@ partial class main_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string notTemporaryˢ = "not temporary"u8;
 
-[GoType("dyn")] partial interface classify_type :
+[GoType("dyn")] internal partial interface classify_type :
     error
 {
     bool Temporary();
@@ -89,7 +89,7 @@ internal static @string classify(error err) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string notDeepˢ = "not deep"u8;
 
-[GoType("dyn")] partial interface describe_type :
+[GoType("dyn")] internal partial interface describe_type :
     named
 {
     nint Depth();

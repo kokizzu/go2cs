@@ -267,7 +267,7 @@ func (v *Visitor) recordTypeAccessibility(kind string, identifier string, typePa
 // package scope under a `<Func>_<name>` identifier, and both name-based accessibility rules then
 // read an export meaning into a name that never carried one:
 //
-//   - the bridge arm of visitTypeSpec asks generatedTypeScope for the LOCAL name, so the siblings
+//   - visitTypeSpec's bridge arm asks generatedTypeScope for the LOCAL name, so the siblings
 //     declared by one function split between public and internal;
 //   - a lifted ANONYMOUS struct/interface carries no modifier at all, so go2cs-gen's GetScope reads
 //     the MANGLED name and inherits the case of the ENCLOSING FUNCTION — `TestEncoderSetEscapeHTML_type`
@@ -287,19 +287,64 @@ func (v *Visitor) recordTypeAccessibility(kind string, identifier string, typePa
 // bare one (measured — `internal partial struct TestUnmarshalEmbeddedUnexported_embed2` is
 // reproduced verbatim in the generated part, while the bare lifts were regenerated `public`).
 //
-// Deliberately scoped to the bridge. The PRODUCTION path leaves access empty and lets
-// recordTypeAccessibility pin generatedTypeScope of the MANGLED name, which gives every local type
-// of one function the SAME modifier — uniform, and consistent for that reason rather than by
-// design. The identical latent mixture exists there (a function-local struct with an exported field
-// of a package-level unexported type), but no corpus package exhibits it today, and flipping
-// production local types to internal would move a public value adapter's operand out from under it.
-// Measured and boarded rather than changed speculatively.
+// It was scoped to the bridge until 2026-08-28, on the recorded grounds that "no corpus package
+// exhibits it today" outside one and that flipping production local types to internal "would move a
+// public value adapter's operand out from under it". reflect's own suite is the package that
+// exhibits it, and it does so in the EXTERNAL test variant, where the bridge flag is never set:
+//
+//   - `BenchmarkIsZero` lifts its anonymous `s` struct to `BenchmarkIsZero_s`, which reads PUBLIC
+//     off the enclosing benchmark's capital B, while its exported fields hold the package-level
+//     unexported `_Complex` — CS0052 on the fields, CS0050/CS0051 on the accessors and constructor
+//     go2cs-gen generates from them.
+//   - `TestExported` declares `type BigP *big`, lifted to `TestExported_BigP` — public off `Test`,
+//     wrapping the unexported `big`, so the generated Value property, constructor and both implicit
+//     operators are CS0053/CS0051/CS0056/CS0057.
+//
+// The rule is the same one the bridge already states, and the mangling is what makes the name-based
+// alternative arbitrary: a lifted local type's C# identifier begins with the ENCLOSING FUNCTION's
+// first letter, which carries no Go export meaning whatsoever. `internal` is the only answer that is
+// both faithful (no Go consumer outside the function can name the type) and closed (it never forces
+// a package-level unexported type public to keep a local one company).
+//
+// The recorded value-adapter risk was real and is now closed at its source: go2cs-gen's
+// ImplementGenerator picked its adapter scope from `DeclaredAccessibility == Public ||
+// GetScope(name) == "public"`, so a name that READS public re-widened an operand the converter had
+// deliberately narrowed. An accessibility WRITTEN in source is authoritative there now, and the name
+// rule stays the fallback for a bare `[GoType]` partial — the same `GetExplicitAccessModifier ??
+// GetScope` precedence TypeGenerator has always used.
+//
+// Writing the modifier INLINE is what makes go2cs-gen follow: the generator honors a modifier the
+// declaration already carries and falls back to its own name rule only for a bare one.
 func (v *Visitor) localTypeAccess() string {
-	if v.inFunction && v.options.testInlineTypeAccess {
+	if v.inFunction {
 		return "internal "
 	}
 
 	return ""
+}
+
+// consumePendingTypeAccess returns the access modifier the declaration now being emitted must
+// carry: the pending publicized modifier when one is set, otherwise the function-local rule
+// (localTypeAccess), otherwise "" — leaving the name-based rule to decide, as it always has.
+//
+// Every simple type-kind emitter takes it, because a declaration can lift a NESTED type first and
+// that nested visit consumes the pending modifier before the outer emitter ever reads it. reflect's
+// TestIssue22031 declares `type s []struct{ C int }` inside the function: the anonymous element
+// lifts (taking the pending value with it) and the slice declaration was then emitted BARE, so the
+// generated slice partial scoped itself `public` off the hoisted `TestIssue22031_sᴛ1` while its
+// element was `internal` — CS0050/CS0051/CS0053/CS0054/CS0056 across the whole partial.
+//
+// visitStructType and visitInterfaceType keep their own inline sequence: both interpose the
+// publicized-LIFT question (isPublicizedLiftedType) between the pending modifier and this rule.
+func (v *Visitor) consumePendingTypeAccess() string {
+	access := v.pendingTypeAccess
+	v.pendingTypeAccess = ""
+
+	if access == "" {
+		access = v.localTypeAccess()
+	}
+
+	return access
 }
 
 // packagePublicizedTypes holds unexported named types in the package that must be emitted as

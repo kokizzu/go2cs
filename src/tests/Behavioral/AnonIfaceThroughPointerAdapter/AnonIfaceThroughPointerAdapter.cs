@@ -37,16 +37,16 @@ private static readonly object bothMissedˢ = (@string)"both-missed"u8;
 private static readonly object quitMatchedWrongˢ = (@string)"quit-matched-wrong"u8;
 private static readonly object quitMissedOkˢ = (@string)"quit-missed-ok"u8;
 
-[GoType("dyn")] partial interface main_type {
+[GoType("dyn")] internal partial interface main_type {
     @string Ping();
 }
 
-[GoType("dyn")] partial interface main_typeᴛ1 {
+[GoType("dyn")] internal partial interface main_typeᴛ1 {
     @string Ping();
     @string Pong();
 }
 
-[GoType("dyn")] partial interface main_typeᴛ2 {
+[GoType("dyn")] internal partial interface main_typeᴛ2 {
     void Quit();
 }
 

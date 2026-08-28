@@ -14,7 +14,7 @@ internal static uint32 lowestSetBit(uint32 x) {
     return (uint32)(x & ((uint32)0 - x));
 }
 
-[GoType("dyn")] partial struct main_bitfield {
+[GoType("dyn")] internal partial struct main_bitfield {
     internal uint64 cache;
 }
 

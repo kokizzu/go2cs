@@ -44,7 +44,7 @@ internal static @string Mixed(this calc c, @string name, bool flag, nint n) {
     return fmt.Sprintf("m(%d,%s,%t,%d)"u8, (nint)c, name, flag, n);
 }
 
-[GoType("dyn")] partial interface main_type {
+[GoType("dyn")] internal partial interface main_type {
     @string Zero();
     @string One(nint a);
     @string Two(nint a, nint b);

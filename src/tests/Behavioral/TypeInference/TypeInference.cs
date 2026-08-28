@@ -27,7 +27,7 @@ internal static @string String(this main_MyBool b) {
     return falseIshˢ;
 }
 
-[GoType("bool")] partial struct main_MyBoolᴛ1;
+[GoType("bool")] internal partial struct main_MyBoolᴛ1;
 
 internal static void Main() {
     const bool c = /* 3 < 4 */ true;

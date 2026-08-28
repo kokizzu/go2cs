@@ -11,7 +11,7 @@ partial class main_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object secondWriteOpsˢ = (@string)"secondWriteOps:"u8;
 
-[GoType("dyn")] partial struct secondWriteOps_readOp {
+[GoType("dyn")] internal partial struct secondWriteOps_readOp {
     internal nint cnt;
 }
 

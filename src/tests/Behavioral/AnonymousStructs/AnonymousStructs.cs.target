@@ -23,7 +23,7 @@ partial class main_package {
 internal static ж<settingsᴛ1> Ꮡsettings = new StandardBox<settingsᴛ1>(new settingsᴛ1(Verbose: true, Retries: 3));
 internal static ref settingsᴛ1 settings => ref Ꮡsettings.Value;
 
-[GoType("dyn")] partial struct processAnonymousStruct_data {
+[GoType("dyn")] internal partial struct processAnonymousStruct_data {
     public @string Name;
     public nint Age;
 }
@@ -32,7 +32,7 @@ internal static void processAnonymousStruct(processAnonymousStruct_data data) {
     fmt.Printf("Processing: %s, %d years old\n"u8, data.Name, data.Age);
 }
 
-[GoType("dyn")] partial struct cycleMemo_memo {
+[GoType("dyn")] internal partial struct cycleMemo_memo {
     internal any ptr;
     internal nint len;
 }
@@ -57,22 +57,22 @@ private static readonly object packageGlobalAnonymousˢ = (@string)"\n=== Packag
 private static readonly object inFunctionVarSliceOfˢ = (@string)"\n=== In-Function var Slice of Anonymous Struct ==="u8;
 private static readonly object anonymousStructWithEmptyˢ = (@string)"\n=== Anonymous Struct With Empty Interface Field ==="u8;
 
-[GoType("dyn")] partial struct main_anonPerson {
+[GoType("dyn")] internal partial struct main_anonPerson {
     public @string Name;
     public nint Age;
 }
 
-[GoType("dyn")] partial struct main_type {
+[GoType("dyn")] internal partial struct main_type {
     public @string Name;
     public nint Age;
 }
 
-[GoType("dyn")] partial struct main_typeᴛ1 {
+[GoType("dyn")] internal partial struct main_typeᴛ1 {
     public @string Name;
     public nint Age;
 }
 
-[GoType("dyn")] partial struct main_typeᴛ2 {
+[GoType("dyn")] internal partial struct main_typeᴛ2 {
     internal @string name;
     internal uint32 size;
 }
