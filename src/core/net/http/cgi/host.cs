@@ -267,7 +267,7 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
             }
         }
         if (h.Env != default!) {
-            env = append(env, h.Env.ꓸꓸꓸ);
+            env = appendꓸꓸꓸ(env, h.Env);
         }
         env = removeLeadingDuplicates(env);
         ref var cwd = ref heap(new @string(), out var Ꮡcwd);
@@ -287,7 +287,7 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
         }
         var cmd = Ꮡ(new exec.Cmd(
             Path: path,
-            Args: append(new @string[]{h.Path}.slice(), h.Args.ꓸꓸꓸ),
+            Args: appendꓸꓸꓸ(new @string[]{h.Path}.slice(), h.Args),
             Dir: cwd,
             Env: env,
             Stderr: h.stderr()

@@ -181,7 +181,7 @@ internal static (nint n, error err) Read(this ж<state> Ꮡd, slice<byte> @out) 
     var dup = d.clone();
     var hash = new slice<byte>((~dup).outputLen, 64); // explicit cap to allow stack allocation
     dup.Read(hash);
-    return append(@in, hash.ꓸꓸꓸ);
+    return appendꓸꓸꓸ(@in, hash);
 }
 
 } // end sha3_package

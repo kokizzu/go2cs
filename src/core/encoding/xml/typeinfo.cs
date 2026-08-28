@@ -82,7 +82,7 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
                     foreach (var (_, vᴛ1) in (~inner).fields) {
                         var finfoΔ1 = vᴛ1;
 
-                        finfoΔ1.idx = append(new nint[]{i}.slice(), finfoΔ1.idx.ꓸꓸꓸ);
+                        finfoΔ1.idx = appendꓸꓸꓸ(new nint[]{i}.slice(), finfoΔ1.idx);
                         {
                             var errΔ2 = addFieldInfo(typ, tinfo, ref finfoΔ1); if (errΔ2 != default!) {
                                 return (default!, errΔ2);

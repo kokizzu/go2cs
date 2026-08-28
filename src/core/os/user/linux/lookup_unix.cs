@@ -57,7 +57,7 @@ internal static (any v, error err) readColonFile(io.Reader r, Func<slice<byte>, 
                 wholeLine = line;
                 break;
             }
-            wholeLine = append(wholeLine, line.ꓸꓸꓸ);
+            wholeLine = appendꓸꓸꓸ(wholeLine, line);
             // Check if we read the whole line (or enough columns)
             // already.
             if (!isPrefix || bytes.Count(wholeLine, new byte[]{(rune)':'}.slice()) >= readCols) {

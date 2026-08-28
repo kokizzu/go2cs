@@ -160,7 +160,7 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
         var serialSum = getSum(tΔ5, h, default!);
         h.Reset();
         // Write prefix and suffix at the same time and record resulting hash
-        writeToHash(tΔ5, h, append(prefix, suffix.ꓸꓸꓸ));
+        writeToHash(tΔ5, h, appendꓸꓸꓸ(prefix, suffix));
         var compositeSum = getSum(tΔ5, h, default!);
         // Check that sequential writing results in the same as writing all at once
         if (!bytes.Equal(compositeSum, serialSum)) {

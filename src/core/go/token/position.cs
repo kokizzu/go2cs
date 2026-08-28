@@ -574,7 +574,7 @@ public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) {
         {
             nint i = searchFiles(s.files, @file.@base); if (i >= 0 && s.files[i] == Ꮡfile) {
                 var last = Ꮡ(s.files, len(s.files) - 1);
-                s.files = append(s.files[..(int)(i)], s.files[(int)(i + 1)..].ꓸꓸꓸ);
+                s.files = appendꓸꓸꓸ(s.files[..(int)(i)], s.files[(int)(i + 1)..]);
                 last.ValueSlot = default!; // don't prolong lifetime when popping last element
             }
         }

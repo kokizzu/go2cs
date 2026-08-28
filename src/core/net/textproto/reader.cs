@@ -119,7 +119,7 @@ public static ж<Reader> NewReader(ж<bufio.Reader> Ꮡr) {
         if (line == default! && !more) {
             return (l, default!);
         }
-        line = append(line, l.ꓸꓸꓸ);
+        line = appendꓸꓸꓸ(line, l);
         if (!more) {
             break;
         }
@@ -209,7 +209,7 @@ internal static slice<byte> trim(slice<byte> s) {
     }
     // ReadByte or the next readLineSlice will flush the read buffer;
     // copy the slice into buf.
-    r.buf = append(r.buf[..0], trim(line).ꓸꓸꓸ);
+    r.buf = appendꓸꓸꓸ(r.buf[..0], trim(line));
     if (lim < 0) {
         lim = math.MaxInt64;
     }
@@ -224,7 +224,7 @@ internal static slice<byte> trim(slice<byte> s) {
         if (errΔ2 != default!) {
             break;
         }
-        r.buf = append(r.buf, trim(lineΔ1).ꓸꓸꓸ);
+        r.buf = appendꓸꓸꓸ(r.buf, trim(lineΔ1));
     }
     return (r.buf, default!);
 }

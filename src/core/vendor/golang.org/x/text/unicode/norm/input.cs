@@ -62,7 +62,7 @@ internal static input inputString(@string str) {
 
 [GoRecv] internal static slice<byte> appendSlice(this ref input @in, slice<byte> buf, nint b, nint e) {
     if (@in.bytes != default!) {
-        return append(buf, @in.bytes[(int)(b)..(int)(e)].ꓸꓸꓸ);
+        return appendꓸꓸꓸ(buf, @in.bytes[(int)(b)..(int)(e)]);
     }
     for (nint i = b; i < e; i++) {
         buf = append(buf, @in.str[i]);

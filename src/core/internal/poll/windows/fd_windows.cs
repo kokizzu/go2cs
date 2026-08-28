@@ -786,7 +786,7 @@ public static (nint, error) Write(this ж<FD> Ꮡfd, slice<byte> buf) {
     nint n = len(b);
     var runes = new slice<rune>(0, 256);
     if (len(fd.lastbits) > 0) {
-        b = append(fd.lastbits, b.ꓸꓸꓸ);
+        b = appendꓸꓸꓸ(fd.lastbits, b);
         fd.lastbits = default!;
     }
     while (len(b) >= utf8.UTFMax || utf8.FullRune(b)) {

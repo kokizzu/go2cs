@@ -197,9 +197,9 @@ internal static slice<potentialParent> findPotentialParents(this ж<CertPool> �
         return default!;
     }
     var candidates = new slice<potentialParent>(0, found);
-    candidates = append(candidates, matchingKeyID.ꓸꓸꓸ);
-    candidates = append(candidates, oneKeyID.ꓸꓸꓸ);
-    candidates = append(candidates, mismatchKeyID.ꓸꓸꓸ);
+    candidates = appendꓸꓸꓸ(candidates, matchingKeyID);
+    candidates = appendꓸꓸꓸ(candidates, oneKeyID);
+    candidates = appendꓸꓸꓸ(candidates, mismatchKeyID);
     return candidates;
 }
 

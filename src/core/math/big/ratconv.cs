@@ -387,14 +387,14 @@ public static @string FloatString(this ж<ΔRat> Ꮡx, nint prec) {
     if (x.a.neg) {
         buf = append(buf, (byte)((rune)'-'));
     }
-    buf = append(buf, q.utoa(10).ꓸꓸꓸ); // itoa ignores sign if q == 0
+    buf = appendꓸꓸꓸ(buf, q.utoa(10)); // itoa ignores sign if q == 0
     if (prec > 0) {
         buf = append(buf, (byte)((rune)'.'));
         var rs = r.utoa(10);
         for (nint i = prec - len(rs); i > 0; i--) {
             buf = append(buf, (byte)((rune)'0'));
         }
-        buf = append(buf, rs.ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, rs);
     }
     return ((@string)buf);
 }

@@ -291,7 +291,7 @@ public static error UnmarshalJSON(this ж<RawMessage> Ꮡm, slice<byte> data) {
     if (Ꮡm == nil) {
         return errors.New(jsonRawMessageˢ);
     }
-    m = append((m)[0..0], data.ꓸꓸꓸ);
+    m = appendꓸꓸꓸ((m)[0..0], data);
     return default!;
 }
 

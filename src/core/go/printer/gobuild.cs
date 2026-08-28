@@ -101,10 +101,10 @@ partial class printer_package {
         // Bring all the lines together but leave them alone.
         // Note that these are already tabwriter-escaped.
         foreach (var (_, pos) in p.goBuild) {
-            block = append(block, p.lineAt(pos).ꓸꓸꓸ);
+            block = appendꓸꓸꓸ(block, p.lineAt(pos));
         }
         foreach (var (_, pos) in p.plusBuild) {
-            block = append(block, p.lineAt(pos).ꓸꓸꓸ);
+            block = appendꓸꓸꓸ(block, p.lineAt(pos));
         }
     } else {
         block = append(block, (byte)(tabwriter.Escape));
@@ -125,7 +125,7 @@ partial class printer_package {
     }
     block = append(block, (byte)((rune)'\n'));
     // Build sorted list of lines to delete from remainder of output.
-    var toDelete = append(p.goBuild, p.plusBuild.ꓸꓸꓸ);
+    var toDelete = appendꓸꓸꓸ(p.goBuild, p.plusBuild);
     slices.Sort<slice<nint>, nint>(toDelete);
     // Collect output after insertion point, with lines deleted, into after.
     slice<byte> after = default!;
@@ -144,8 +144,8 @@ partial class printer_package {
         }
     }
     p.output = p.output[..(int)(insert)];
-    p.output = append(p.output, block.ꓸꓸꓸ);
-    p.output = append(p.output, after.ꓸꓸꓸ);
+    p.output = appendꓸꓸꓸ(p.output, block);
+    p.output = appendꓸꓸꓸ(p.output, after);
 }
 
 // appendLines is like append(x, y...)
@@ -159,7 +159,7 @@ internal static slice<byte> appendLines(slice<byte> x, slice<byte> y) {
         // x is empty or ends in blank line
         y = y[1..]; // delete y's leading blank line
     }
-    return append(x, y.ꓸꓸꓸ);
+    return appendꓸꓸꓸ(x, y);
 }
 
 [GoRecv] internal static slice<byte> lineAt(this ref printer p, nint start) {

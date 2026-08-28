@@ -179,7 +179,7 @@ internal static (slice<byte> d, @string s) formatBits(slice<byte> dst, uint64 u,
         a[i] = (rune)'-';
     }
     if (append_) {
-        d = append(dst, a[(int)(i)..].ꓸꓸꓸ);
+        d = appendꓸꓸꓸ(dst, a[(int)(i)..]);
         return (d, s);
     }
     s = ((@string)(a[(int)(i)..]));

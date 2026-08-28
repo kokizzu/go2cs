@@ -361,6 +361,26 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// Appends a whole slice's elements — Go's <c>append(s, t...)</c> with a slice-typed spread
+    /// operand, the spread riding on the NAME (<c>appendꓸꓸꓸ(s, t)</c>, the same glyph the operand
+    /// spread and the variadic delegate families already use). The operand arrives AS THE SLICE IT
+    /// IS rather than projected to a <see cref="Span{T}"/> at the call boundary (the
+    /// slice-shaped-spread arc): lengths stay <c>nint</c> end to end, and a window no span can
+    /// express meets Go's own <c>len out of range</c> panic instead of a span-construction
+    /// failure. A DISTINCT name by design: sharing <c>append</c>'s overload set re-entered the
+    /// params/betterness thicket the C#14 flip re-tiled (measured CS0121 against the
+    /// constrained span twin), and the converter alone mints these calls.
+    /// </summary>
+    /// <typeparam name="T">Type of slice.</typeparam>
+    /// <param name="slice">Destination slice pointer.</param>
+    /// <param name="elems">Slice whose elements are appended.</param>
+    /// <returns>New slice with specified values appended.</returns>
+    public static slice<T> appendꓸꓸꓸ<T>(slice<T> slice, ISlice<T> elems)
+    {
+        return go.slice<T>.Append(slice, elems);
+    }
+
+    /// <summary>
     /// Appends runes to the end of a byte slice. If it has sufficient capacity, the destination is
     /// resliced to accommodate the new elements. If it does not, a new underlying array will be
     /// allocated.
@@ -1195,6 +1215,20 @@ public static partial class builtin
     /// normal form wins instead.
     /// </summary>
     public static S append<S, T>(S s, params Span<T> items) where S : ISlice<T>, ISliceWrap<S, T>
+    {
+        return S.Wrap(go.slice<T>.Append(new slice<T>(s), items));
+    }
+
+    /// <summary>
+    /// Slice-shaped twin of the constrained append: a spread whose operand is itself
+    /// slice-shaped (<c>append(s, v...)</c> in a generic body over <c>S ~[]E</c>) passes the
+    /// operand AS A SLICE instead of projecting it through the interface's spread property to a
+    /// <see cref="Span{T}"/> — the slice-shaped-spread arc's constrained form. Both type
+    /// arguments are EXPLICIT at the emission (<c>T</c> cannot be inferred from <c>S</c>'s
+    /// constraint surface), and the name carries the spread for the same reason as the
+    /// <c>slice&lt;T&gt;</c> form above.
+    /// </summary>
+    public static S appendꓸꓸꓸ<S, T>(S s, ISlice<T> items) where S : ISlice<T>, ISliceWrap<S, T>
     {
         return S.Wrap(go.slice<T>.Append(new slice<T>(s), items));
     }

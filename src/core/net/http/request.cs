@@ -1302,7 +1302,7 @@ internal static readonly @string httpRequestBodyTooLargeˢ = "http: request body
 
 internal static void copyValues(urlpkg.Values dst, urlpkg.Values src) {
     foreach (var (k, vs) in src) {
-        dst[k] = append(dst[k], vs.ꓸꓸꓸ);
+        dst[k] = appendꓸꓸꓸ(dst[k], vs);
     }
 }
 
@@ -1458,9 +1458,9 @@ public static error ParseMultipartForm(this ж<Request> Ꮡr, int64 maxMemory) {
         r.PostForm = new urlpkg.Values(0);
     }
     foreach (var (k, v) in (~f).Value) {
-        r.Form[k] = append(r.Form[k], v.ꓸꓸꓸ);
+        r.Form[k] = appendꓸꓸꓸ(r.Form[k], v);
         // r.PostForm should also be populated. See Issue 9305.
-        r.PostForm[k] = append(r.PostForm[k], v.ꓸꓸꓸ);
+        r.PostForm[k] = appendꓸꓸꓸ(r.PostForm[k], v);
     }
     r.MultipartForm = f;
     return parseFormErr;

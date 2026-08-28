@@ -5290,16 +5290,38 @@ and moves nothing (Go's `memmove` of `n * 0` bytes), `clear` is complete before 
 answers the ONE shared element (Go computes `&s[i]` as `data + i*0`, so every index names the same
 address), and `range` is a counted loop.
 
-**One honest ceiling remains, and it is the managed platform's:** `Span<T>.Length` is `int32` while a Go
-slice length is `int`. A zero-size window longer than `Array.MaxLength` cannot cross that boundary, so
-`ToSpan()` raises Go's own recoverable panic naming the limit rather than truncating — a shorter span
-would make `append` produce a slice of the wrong LENGTH, which is the one property of a zero-size slice
-that IS observable. golib's own bulk operations never arrive there (each answers from length arithmetic
-per the paragraph above), but a VARIADIC SPREAD does: `append(dst, src...)` emits `append(dst, src.ꓸꓸꓸ)`,
-and `ꓸꓸꓸ` is a `Span<T>`. That is why `slices.Grow`'s `append(s[:cap(s)], make([]E, n)...)` still cannot
-reach `n == MaxInt`, and it is a defect with a known price rather than a limit: a spread whose operand is
-a slice would have to travel AS a slice (an `ISlice<T>`-taking `append` overload plus the matching
-emission), which is a corpus-wide change to the most common builtin and is not this entry's scope.
+**One honest ceiling remained, and the slice-shaped-spread arc retired it (2026-08-27, ruled
+post-B2):** `Span<T>.Length` is `int32` while a Go slice length is `int`, and a VARIADIC SPREAD used
+to cross exactly that boundary — `append(dst, src...)` emitted `append(dst, src.ꓸꓸꓸ)`, and `ꓸꓸꓸ` is a
+`Span<T>`, so `slices.Grow`'s `append(s[:cap(s)], make([]E, n)...)` could not reach `n == MaxInt`.
+The priced remedy landed as priced: a slice-typed spread operand now travels **AS THE SLICE IT IS** —
+the emission routes it to golib's `ISlice<T>`-taking forms, whose name carries the spread the way the
+operand property did:
+
+```go
+hello.cipherSuites = append(hello.cipherSuites, defaultCipherSuitesTLS13...)
+s2 := append(s[:i], v...)        // in a generic body over S ~[]E
+```
+```csharp
+hello.Value.cipherSuites = appendꓸꓸꓸ((~hello).cipherSuites, defaultCipherSuitesTLS13);
+var s2 = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), v);
+```
+
+Inside golib the window's own span still serves every copy a span can express (managed backings are
+int-bounded by `T[]`, so allocation counts and in-place/grow behavior are byte-identical to the span
+core), zero-size windows route by pure length arithmetic BEFORE any span form (which is what lets
+`TestConcat_too_large`'s `make([]struct{}, math.MaxInt)` fakes flow through `Concat`'s Grow chain
+allocation-free, with the growth rule's even-rounding guarded against wrapping past `MaxInt`), and a
+named-slice wrapper arriving through the boxed interface lends its own `ꓸꓸꓸ` projection — one
+interface call, inside the core. Two shapes are deliberate: the constrained form takes BOTH type
+arguments explicitly (`appendꓸꓸꓸ<S, E>`), because a constraint surface does not participate in C#
+inference; and the name is DISTINCT from `append` by design — sharing the overload set re-entered
+the C#14 params/betterness thicket (measured CS0121 against the constrained span twin), and the
+converter alone mints these calls. Census at the landing: 401 corpus sites across 151 files routed;
+string spreads keep the span route (their spread is a byte projection, not a slice). Emission:
+`convCallExpr`'s append classification (`spreadArgAsSlice`/`appendTypeArgs`) + `convExprList`'s
+spread arm; golib: `builtin.appendꓸꓸꓸ` ×2 over `slice<T>.Append(in slice<T>, ISlice<T>)`. The row
+this unlocked: `slices` validates 119 matched · 3 disclosed the moment the arc lands.
 
 Known and deliberate divergence: Go's OTHER zero-size shape is the zero-length array (`[0]T`, and
 `[N]struct{}`). go2cs emits a Go array as `array<T>`, whose backing is a managed reference field, so such

@@ -947,7 +947,7 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) buildChains(th
         else if (exprᴛ1 == intermediateCertificate) {
             slice<slice<ж<Certificate>>> childChains = default!;
             (childChains, err) = candidate.cert.buildChains(appendToFreshChain(currentChainʗ1, candidate.cert), ᏑsigChecks, Ꮡopts);
-            chains = append(chains, childChains.ꓸꓸꓸ);
+            chains = appendꓸꓸꓸ(chains, childChains);
         }
 
     }

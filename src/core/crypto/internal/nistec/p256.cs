@@ -177,8 +177,8 @@ internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256El
     var x = @new<fiat.P256Element>().Mul(p.x, zinv);
     var y = @new<fiat.P256Element>().Mul(p.y, zinv);
     var buf = append(@out[..0], (byte)(4));
-    buf = append(buf, x.Bytes().ꓸꓸꓸ);
-    buf = append(buf, y.Bytes().ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, x.Bytes());
+    buf = appendꓸꓸꓸ(buf, y.Bytes());
     return buf;
 }
 
@@ -202,7 +202,7 @@ private static readonly @string p256PointIsThePointAtˢ = "P256 point is the poi
     }
     var zinv = @new<fiat.P256Element>().Invert(p.z);
     var x = @new<fiat.P256Element>().Mul(p.x, zinv);
-    return (append(@out[..0], x.Bytes().ꓸꓸꓸ), default!);
+    return (appendꓸꓸꓸ(@out[..0], x.Bytes()), default!);
 }
 
 // BytesCompressed returns the compressed or infinity encoding of p, as
@@ -228,7 +228,7 @@ private static readonly @string p256PointIsThePointAtˢ = "P256 point is the poi
     // bit) as the encoding type (2 or 3).
     var buf = append(@out[..0], (byte)(2));
     buf[0] |= (byte)((byte)(y.Bytes()[p256ElementLength - 1] & 1));
-    buf = append(buf, x.Bytes().ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, x.Bytes());
     return buf;
 }
 

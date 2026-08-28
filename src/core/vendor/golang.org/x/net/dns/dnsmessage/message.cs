@@ -1273,7 +1273,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     var b = new Builder(msg: buf, start: len(buf));
     (b.header.id, b.header.bits) = h.pack();
     array<byte> hb = new(12); /* headerLen */
-    b.msg = append(b.msg, hb[..].ꓸꓸꓸ);
+    b.msg = appendꓸꓸꓸ(b.msg, hb[..]);
     b.section = sectionHeader;
     return b;
 }
@@ -2080,7 +2080,7 @@ internal static (@string, nint, error) unpackText(slice<byte> msg, nint off) {
 
 // packBytes appends the wire format of field to msg.
 internal static slice<byte> packBytes(slice<byte> msg, slice<byte> field) {
-    return append(msg, field.ꓸꓸꓸ);
+    return appendꓸꓸꓸ(msg, field);
 }
 
 internal static (nint, error) unpackBytes(slice<byte> msg, nint off, slice<byte> field) {
@@ -2240,7 +2240,7 @@ Loop:
                     return (off, errInvalidName);
                 }
             }
-            name = append(name, msg[(int)(currOff)..(int)(endOff)].ꓸꓸꓸ);
+            name = appendꓸꓸꓸ(name, msg[(int)(currOff)..(int)(endOff)]);
             name = append(name, (byte)((rune)'.'));
             currOff = endOff;
             break;

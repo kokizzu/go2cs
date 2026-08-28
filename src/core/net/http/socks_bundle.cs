@@ -117,12 +117,12 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
                 {
                     var ip4 = ip.To4(); if (ip4 != default!){
                         b = append(b, (byte)(socksAddrTypeIPv4));
-                        b = append(b, ip4.ꓸꓸꓸ);
+                        b = appendꓸꓸꓸ(b, ip4);
                     } else 
                     {
                         var ip6 = ip.To16(); if (ip6 != default!){
                             b = append(b, (byte)(socksAddrTypeIPv6));
-                            b = append(b, ip6.ꓸꓸꓸ);
+                            b = appendꓸꓸꓸ(b, ip6);
                         } else {
                             (_ᴛ1, ctxErr) = (default!, errors.New(unknownAddressTypeˢ)); goto ᒐdone;
                         }

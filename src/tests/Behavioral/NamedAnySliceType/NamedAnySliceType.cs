@@ -42,7 +42,7 @@ internal static void Main() {
     }
     fmt.Println();
     var t = new SE(new any[]{}.slice());
-    t = append(t, s.ꓸꓸꓸ);
+    t = appendꓸꓸꓸ(t, s);
     fmt.Println(len(t), t);
     var ops = new fileOps(new any[]{(@string)"ab"u8, (int64)3, (@string)"cde"u8}.slice());
     fmt.Println(len(ops), ops, ops[1..2]);

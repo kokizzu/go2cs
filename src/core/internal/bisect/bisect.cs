@@ -437,7 +437,7 @@ internal static slice<byte> appendFileLine(slice<byte> dst, @string @file, nint 
         buf[i] = (byte)((rune)'0' + (byte)(u % 10));
         u /= 10;
     }
-    dst = append(dst, buf[(int)(i)..].ꓸꓸꓸ);
+    dst = appendꓸꓸꓸ(dst, buf[(int)(i)..]);
     return dst;
 }
 
@@ -523,10 +523,10 @@ internal static error printStack(Writer w, uint64 h, slice<uintptr> stk) {
     var frames = Δruntime.CallersFrames(stk);
     while (ᐧ) {
         var (f, more) = frames.Next();
-        buf = append(buf, prefix.ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, prefix);
         buf = append(buf, f.Function.ꓸꓸꓸ);
         buf = append(buf, ((@string)"()\n"u8).ꓸꓸꓸ);
-        buf = append(buf, prefix.ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, prefix);
         buf = append(buf, (byte)((rune)'\t'));
         buf = appendFileLine(buf, f.File, f.Line);
         buf = append(buf, (byte)((rune)'\n'));
@@ -534,7 +534,7 @@ internal static error printStack(Writer w, uint64 h, slice<uintptr> stk) {
             break;
         }
     }
-    buf = append(buf, prefix.ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, prefix);
     buf = append(buf, (byte)((rune)'\n'));
     var (_, err) = w.Write(buf);
     return err;
@@ -557,7 +557,7 @@ public static slice<byte> AppendMarker(slice<byte> dst, uint64 id) {
         id <<= (int)(4);
     }
     buf[len(prefix) + 16] = (rune)']';
-    return append(dst, buf[..].ꓸꓸꓸ);
+    return appendꓸꓸꓸ(dst, buf[..]);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

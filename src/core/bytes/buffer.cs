@@ -288,7 +288,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) {
             // we could rely purely on append to determine the growth rate.
             c = 2 * cap(b);
         }
-        var b2 = append(slice<byte>(default!), new slice<byte>(c).ꓸꓸꓸ);
+        var b2 = appendꓸꓸꓸ(slice<byte>(default!), new slice<byte>(c));
         copy(b2, b);
         return b2[..(int)(len(b))];
     }
@@ -490,7 +490,7 @@ internal static error errUnreadByte = errors.New("bytes.Buffer: UnreadByte: prev
     (var Δslice, err) = b.readSlice(delim);
     // return a copy of slice. The buffer's backing array may
     // be overwritten by later calls.
-    line = append(line, Δslice.ꓸꓸꓸ);
+    line = appendꓸꓸꓸ(line, Δslice);
     return (line, err);
 }
 

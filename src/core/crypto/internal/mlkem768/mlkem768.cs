@@ -251,11 +251,11 @@ internal static ж<DecapsulationKey> kemKeyGen(ж<DecapsulationKey> Ꮡdk, [GoAr
     foreach (var (i, _) in t.Value) {
         dkB = polyByteEncode(dkB, t.Value[i]);
     }
-    dkB = append(dkB, ρ.ꓸꓸꓸ);
+    dkB = appendꓸꓸꓸ(dkB, ρ);
     var H = sha3.New256();
     H.Write(dkB[(int)(decryptionKeySize)..]);
     dkB = H.Sum(dkB);
-    dkB = append(dkB, z[..].ꓸꓸꓸ);
+    dkB = appendꓸꓸꓸ(dkB, z[..]);
     if (len(dkB) != len(dk.dk)) {
         throw panic("mlkem768: internal error: invalid decapsulation key size");
     }

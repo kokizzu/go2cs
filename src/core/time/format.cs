@@ -494,7 +494,7 @@ internal static slice<byte> appendInt(slice<byte> b, nint x, nint width) {
     if (len(b) + n <= cap(b)){
         b = b[..(int)(len(b) + n)];
     } else {
-        b = append(b, new slice<byte>(n).ꓸꓸꓸ);
+        b = appendꓸꓸꓸ(b, new slice<byte>(n));
     }
     // Assemble decimal in reverse order.
     nint i = len(b) - 1;

@@ -308,7 +308,7 @@ internal static error handleRecord(this ж<child> Ꮡc, ж<record> Ꮡrec) {
         if (len(rec.content()) > 0) {
             // NOTE(eds): Technically a key-value pair can straddle the boundary
             // between two packets. We buffer until we've received all parameters.
-            req.Value.rawParams = append((~req).rawParams, rec.content().ꓸꓸꓸ);
+            req.Value.rawParams = appendꓸꓸꓸ((~req).rawParams, rec.content());
             return default!;
         }
         req.parseParams();

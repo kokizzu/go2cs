@@ -122,11 +122,11 @@ internal static (ж<paragraph>, error) newParagraph(slice<ΔClass> types, slice<
         }
     }
     var p = Ꮡ(new paragraph(
-        initialTypes: append(slice<ΔClass>(default!), types.ꓸꓸꓸ),
+        initialTypes: appendꓸꓸꓸ(slice<ΔClass>(default!), types),
         embeddingLevel: levels,
         pairTypes: pairTypes,
         pairValues: pairValues,
-        resultTypes: append(slice<ΔClass>(default!), types.ꓸꓸꓸ)
+        resultTypes: appendꓸꓸꓸ(slice<ΔClass>(default!), types)
     ));
     p.run();
     return (p, default!);
@@ -824,7 +824,7 @@ internal static slice<ж<ΔisolatingRunSequence>> determineIsolatingRunSequences
             // int run = i;
             while (ᐧ) {
                 // Copy this level run into currentRunSequence
-                currentRunSequence = append(currentRunSequence, run.ꓸꓸꓸ);
+                currentRunSequence = appendꓸꓸꓸ(currentRunSequence, run);
                 nint last = currentRunSequence[len(currentRunSequence) - 1];
                 ΔClass lastT = p.initialTypes[last];
                 if (lastT.@in(LRI, RLI, FSI) && p.matchingPDI[last] != p.Len()){
@@ -887,7 +887,7 @@ internal static slice<ж<ΔisolatingRunSequence>> determineIsolatingRunSequences
     // These codes are treated like WS in this implementation,
     // so they don't interrupt sequences of WS.
     validateLineBreaks(linebreaks, p.Len());
-    var result = append(slice<level>(default!), p.resultLevels.ꓸꓸꓸ);
+    var result = appendꓸꓸꓸ(slice<level>(default!), p.resultLevels);
     // don't worry about linebreaks since if there is a break within
     // a series of WS values preceding S, the linebreak itself
     // causes the reset.

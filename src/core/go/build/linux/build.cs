@@ -512,8 +512,8 @@ internal static Context defaultContext() {
     }
     c.GOPATH = envOr(gopathˢ, defaultGOPATH());
     c.Compiler = runtime.Compiler;
-    c.ToolTags = append(c.ToolTags, buildcfg.ToolTags.ꓸꓸꓸ);
-    defaultToolTags = append(new @string[]{}.slice(), c.ToolTags.ꓸꓸꓸ); // our own private copy
+    c.ToolTags = appendꓸꓸꓸ(c.ToolTags, buildcfg.ToolTags);
+    defaultToolTags = appendꓸꓸꓸ(new @string[]{}.slice(), c.ToolTags); // our own private copy
     // Each major Go release in the Go 1.x series adds a new
     // "go1.x" release tag. That is, the go1.x tag is present in
     // all releases >= Go 1.x. Code that requires Go 1.x or later
@@ -524,7 +524,7 @@ internal static Context defaultContext() {
     for (nint i = 1; i <= goversion.Version; i++) {
         c.ReleaseTags = append(c.ReleaseTags, "go1."u8 + strconv.Itoa(i));
     }
-    defaultReleaseTags = append(new @string[]{}.slice(), c.ReleaseTags.ꓸꓸꓸ); // our own private copy
+    defaultReleaseTags = appendꓸꓸꓸ(new @string[]{}.slice(), c.ReleaseTags); // our own private copy
     @string env = os.Getenv(cgoEnabledˢ);
     if (env == ""u8) {
         env = defaultCGO_ENABLED;
@@ -1202,7 +1202,7 @@ Found:
             }
         }
         if (directives != nil) {
-            directives.ValueSlot = append(directives.ValueSlot, (~info).directives.ꓸꓸꓸ);
+            directives.ValueSlot = appendꓸꓸꓸ(directives.ValueSlot, (~info).directives);
         }
     }
     foreach (var (tag, _) in allTags) {
@@ -1219,10 +1219,10 @@ Found:
     // (which means gcc will compile them).
     // The standard assemblers expect .s files.
     if (len((~p).CgoFiles) > 0){
-        p.Value.SFiles = append((~p).SFiles, Sfiles.ꓸꓸꓸ);
+        p.Value.SFiles = appendꓸꓸꓸ((~p).SFiles, Sfiles);
         slices.Sort<slice<@string>, @string>((~p).SFiles);
     } else {
-        p.Value.IgnoredOtherFiles = append((~p).IgnoredOtherFiles, Sfiles.ꓸꓸꓸ);
+        p.Value.IgnoredOtherFiles = appendꓸꓸꓸ((~p).IgnoredOtherFiles, Sfiles);
         slices.Sort<slice<@string>, @string>((~p).IgnoredOtherFiles);
     }
     if (badGoError != default!) {
@@ -1953,22 +1953,22 @@ internal static error saveCgo(this ж<Context> Ꮡctxt, @string filename, ж<Pac
 
         var exprᴛ2 = verb;
         if (exprᴛ2 == "CFLAGS"u8) {
-            di.CgoCFLAGS = append(di.CgoCFLAGS, args.ꓸꓸꓸ);
+            di.CgoCFLAGS = appendꓸꓸꓸ(di.CgoCFLAGS, args);
         }
         else if (exprᴛ2 == "CPPFLAGS"u8) {
-            di.CgoCPPFLAGS = append(di.CgoCPPFLAGS, args.ꓸꓸꓸ);
+            di.CgoCPPFLAGS = appendꓸꓸꓸ(di.CgoCPPFLAGS, args);
         }
         else if (exprᴛ2 == "CXXFLAGS"u8) {
-            di.CgoCXXFLAGS = append(di.CgoCXXFLAGS, args.ꓸꓸꓸ);
+            di.CgoCXXFLAGS = appendꓸꓸꓸ(di.CgoCXXFLAGS, args);
         }
         else if (exprᴛ2 == "FFLAGS"u8) {
-            di.CgoFFLAGS = append(di.CgoFFLAGS, args.ꓸꓸꓸ);
+            di.CgoFFLAGS = appendꓸꓸꓸ(di.CgoFFLAGS, args);
         }
         else if (exprᴛ2 == "LDFLAGS"u8) {
-            di.CgoLDFLAGS = append(di.CgoLDFLAGS, args.ꓸꓸꓸ);
+            di.CgoLDFLAGS = appendꓸꓸꓸ(di.CgoLDFLAGS, args);
         }
         else if (exprᴛ2 == "pkg-config"u8) {
-            di.CgoPkgConfig = append(di.CgoPkgConfig, args.ꓸꓸꓸ);
+            di.CgoPkgConfig = appendꓸꓸꓸ(di.CgoPkgConfig, args);
         }
         else { /* default: */
             return fmt.Errorf("%s: invalid #cgo verb: %s"u8, filename, orig);

@@ -1631,7 +1631,7 @@ internal static void logWrite(this ж<http2Framer> Ꮡf) {
 }
 
 [GoRecv] internal static void writeBytes(this ref http2Framer f, slice<byte> v) {
-    f.wbuf = append(f.wbuf, v.ꓸꓸꓸ);
+    f.wbuf = appendꓸꓸꓸ(f.wbuf, v);
 }
 
 [GoRecv] internal static void writeUint16(this ref http2Framer f, uint16 v) {
@@ -1958,8 +1958,8 @@ internal static error WriteDataPadded(this ж<http2Framer> Ꮡf, uint32 streamID
     if (pad != default!) {
         f.wbuf = append(f.wbuf, (byte)builtin.len(pad));
     }
-    f.wbuf = append(f.wbuf, data.ꓸꓸꓸ);
-    f.wbuf = append(f.wbuf, pad.ꓸꓸꓸ);
+    f.wbuf = appendꓸꓸꓸ(f.wbuf, data);
+    f.wbuf = appendꓸꓸꓸ(f.wbuf, pad);
     return default!;
 }
 
@@ -2438,8 +2438,8 @@ internal static error WriteHeaders(this ж<http2Framer> Ꮡf, http2HeadersFrameP
         f.writeUint32(v);
         f.writeByte(p.Priority.Weight);
     }
-    f.wbuf = append(f.wbuf, p.BlockFragment.ꓸꓸꓸ);
-    f.wbuf = append(f.wbuf, http2padZeros[..(int)(p.PadLength)].ꓸꓸꓸ);
+    f.wbuf = appendꓸꓸꓸ(f.wbuf, p.BlockFragment);
+    f.wbuf = appendꓸꓸꓸ(f.wbuf, http2padZeros[..(int)(p.PadLength)]);
     return Ꮡf.endWrite();
 }
 
@@ -2599,7 +2599,7 @@ internal static error WriteContinuation(this ж<http2Framer> Ꮡf, uint32 stream
         flags |= (http2Flags)(http2FlagContinuationEndHeaders);
     }
     f.startWrite(http2FrameContinuation, flags, streamID);
-    f.wbuf = append(f.wbuf, headerBlockFragment.ꓸꓸꓸ);
+    f.wbuf = appendꓸꓸꓸ(f.wbuf, headerBlockFragment);
     return Ꮡf.endWrite();
 }
 
@@ -2714,8 +2714,8 @@ internal static error WritePushPromise(this ж<http2Framer> Ꮡf, http2PushPromi
         return http2errStreamID;
     }
     f.writeUint32(p.PromiseID);
-    f.wbuf = append(f.wbuf, p.BlockFragment.ꓸꓸꓸ);
-    f.wbuf = append(f.wbuf, http2padZeros[..(int)(p.PadLength)].ꓸꓸꓸ);
+    f.wbuf = appendꓸꓸꓸ(f.wbuf, p.BlockFragment);
+    f.wbuf = appendꓸꓸꓸ(f.wbuf, http2padZeros[..(int)(p.PadLength)]);
     return Ꮡf.endWrite();
 }
 
@@ -7872,7 +7872,7 @@ internal static (ж<http2Transport>, error) http2configureTransports(ж<Transpor
         t1.TLSClientConfig = @new<tls.Config>();
     }
     if (!http2strSliceContains((~t1.TLSClientConfig).NextProtos, "h2"u8)) {
-        t1.TLSClientConfig.Value.NextProtos = append(new @string[]{"h2"u8}.slice(), (~t1.TLSClientConfig).NextProtos.ꓸꓸꓸ);
+        t1.TLSClientConfig.Value.NextProtos = appendꓸꓸꓸ(new @string[]{"h2"u8}.slice(), (~t1.TLSClientConfig).NextProtos);
     }
     if (!http2strSliceContains((~t1.TLSClientConfig).NextProtos, http11ˢ)) {
         t1.TLSClientConfig.Value.NextProtos = append((~t1.TLSClientConfig).NextProtos, "http/1.1"u8);
@@ -8353,7 +8353,7 @@ internal static (ж<http2ClientConn>, error) dialClientConn(this ж<http2Transpo
         cfg.Value = t.TLSClientConfig.Clone().Value.ΔClone();
     }
     if (!http2strSliceContains((~cfg).NextProtos, http2NextProtoTLS)) {
-        cfg.Value.NextProtos = append(new @string[]{http2NextProtoTLS}.slice(), (~cfg).NextProtos.ꓸꓸꓸ);
+        cfg.Value.NextProtos = appendꓸꓸꓸ(new @string[]{http2NextProtoTLS}.slice(), (~cfg).NextProtos);
     }
     if ((~cfg).ServerName == ""u8) {
         cfg.Value.ServerName = host;

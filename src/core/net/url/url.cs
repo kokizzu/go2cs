@@ -1368,7 +1368,7 @@ internal static (@string host, @string port) splitHostPort(@string hostPort) {
 [GoRecv] public static ж<URL> JoinPath(this ref URL u, params ꓸꓸꓸstring elemʗp) {
     var elem = elemʗp.slice();
 
-    elem = append(new @string[]{u.EscapedPath()}.slice(), elem.ꓸꓸꓸ);
+    elem = appendꓸꓸꓸ(new @string[]{u.EscapedPath()}.slice(), elem);
     @string p = default!;
     if (!strings.HasPrefix(elem[0], "/"u8)){
         // Return a relative path if u is relative,

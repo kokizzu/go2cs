@@ -86,7 +86,7 @@ using encoding = encoding_package;
 using errors = errors_package;
 using fmt = fmt_package;
 using Δio = io_package;
-using Δos = os_package;
+using os = os_package;
 using reflect = reflect_package;
 using Δruntime = runtime_package;
 using slices = slices_package;
@@ -546,7 +546,7 @@ internal static slice<ж<Flag>> sortFlags(map<@string, ж<Flag>> flags) {
 // output was not set or was set to nil.
 [GoRecv] public static Δio.Writer Output(this ref FlagSet f) {
     if (f.output == default!) {
-        return new Δos.FileжWriter(Δos.Stderr);
+        return new os.FileжWriter(os.Stderr);
     }
     return f.output;
 }
@@ -872,7 +872,7 @@ internal static void defaultUsage(this ж<FlagSet> Ꮡf) {
 // [ExitOnError].
 public static Action Usage;
 internal static void initᴛUsage() { Usage = () => {
-    fmt.Fprintf(CommandLine.Output(), "Usage of %s:\n"u8, Δos.Args[0]);
+    fmt.Fprintf(CommandLine.Output(), "Usage of %s:\n"u8, os.Args[0]);
     PrintDefaults();
 }; }
 
@@ -1372,9 +1372,9 @@ public static error Parse(this ж<FlagSet> Ꮡf, slice<@string> arguments) {
         }
         if (exprᴛ1 == ExitOnError) {
             if (AreEqual(err, ErrHelp)) {
-                Δos.Exit(0);
+                os.Exit(0);
             }
-            Δos.Exit(2);
+            os.Exit(2);
         }
         else if (exprᴛ1 == PanicOnError) {
             throw panic(err);
@@ -1393,7 +1393,7 @@ public static error Parse(this ж<FlagSet> Ꮡf, slice<@string> arguments) {
 // after all flags are defined and before flags are accessed by the program.
 public static void Parse() {
     // Ignore errors; CommandLine is set for ExitOnError.
-    CommandLine.Parse(Δos.Args[1..]);
+    CommandLine.Parse(os.Args[1..]);
 }
 
 // Parsed reports whether the command-line flags have been parsed.
@@ -1405,7 +1405,7 @@ public static bool Parsed() {
 // The top-level functions such as [BoolVar], [Arg], and so on are wrappers for the
 // methods of CommandLine.
 public static ж<FlagSet> CommandLine;
-internal static void initᴛCommandLine() { CommandLine = NewFlagSet(Δos.Args[0], ExitOnError); }
+internal static void initᴛCommandLine() { CommandLine = NewFlagSet(os.Args[0], ExitOnError); }
 
 [GoInit] internal static void init() {
     // Override generic FlagSet default Usage with call to global Usage.

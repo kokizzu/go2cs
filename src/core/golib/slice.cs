@@ -1223,6 +1223,65 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         return new slice<T>(newArray, 0, slice.Length + elems.Length);
     }
 
+    // The SLICE-SHAPED SPREAD route (the Span int32-ceiling arc): `append(s, t...)` arrives with
+    // the operand AS THE SLICE IT IS instead of projected through `.ꓸꓸꓸ` to a Span at the call
+    // boundary. The window's own span still serves the copy wherever a span can express it — a
+    // managed backing is int-bounded by T[] by construction — so the allocation count and the
+    // in-place/grow behavior are byte-identical to the span core; what changes is the boundary:
+    // lengths stay nint end to end, and a window no span can express (a native backing past the
+    // int ceiling) meets Go's own `len out of range` panic from the growth arithmetic instead of
+    // an ArgumentOutOfRange from span construction. A FOREIGN ISlice<T> (a named-slice wrapper
+    // reaching here through the boxed interface) has no zero-copy window to lend and is copied
+    // element-by-element through its ref indexer — grow-once, allocation-exact, nint-indexed.
+    public static slice<T> Append(in slice<T> slice, ISlice<T>? elems)
+    {
+        if (elems is null)
+            return slice;
+
+        if (elems is slice<T> window)
+        {
+            // Zero-size elements move no bytes, and their windows are the one place a LENGTH can
+            // legitimately exceed every span (`make([]struct{}, math.MaxInt)` is legal Go —
+            // slices' own TestConcat_too_large drives exactly these through Concat's Grow): route
+            // by arithmetic before any span form, mirroring the span core's own zero-size arm.
+            if (GoZeroSizeFacts<T>.IsZeroSize)
+            {
+                nint zeroAdded = window.m_length;
+
+                if (zeroAdded == 0)
+                    return slice;
+
+                nint zeroLength = slice.m_length + zeroAdded;
+
+                if (slice != nil && zeroAdded <= slice.Available)
+                    return new slice<T>(GoZeroSizeFacts<T>.Storage, slice.m_low, slice.m_low + zeroLength, slice.m_low + slice.m_capacity);
+
+                nint zeroCapacity = slice == nil ? zeroAdded : CalculateNewCapacity(slice, zeroLength);
+
+                // The growth rule's even-rounding wraps past MaxInt for the giant lengths only
+                // zero-size elements can reach — exact need is the honest capacity there.
+                if (zeroCapacity < zeroLength)
+                    zeroCapacity = zeroLength;
+
+                return new slice<T>(GoZeroSizeFacts<T>.Storage, 0, zeroLength, zeroCapacity);
+            }
+
+            if (window.m_nativeBase == 0 || window.m_length <= int.MaxValue)
+                return Append(slice, window.ToSpan());
+
+            // A native window past the span ceiling cannot land in any managed backing either —
+            // Go's growslice answers the same impossible request with this panic.
+            throw new PanicException("runtime error: growslice: len out of range");
+        }
+
+        // A named-slice wrapper (or any foreign ISlice<T>): its own spread property is the same
+        // zero-copy window projection the call boundary used to make — one interface call, now
+        // inside the core, where the slice-shaped fast path above no longer pays it. Managed
+        // backings are int-bounded by construction, so the span expresses every wrapper window
+        // and the allocation count is byte-identical to the old boundary's.
+        return Append(slice, (ReadOnlySpan<T>)elems.ꓸꓸꓸ);
+    }
+
     public static slice<T> Append(in slice<T> slice, params T[] elems)
     {
         return Append(slice, elems.AsSpan());

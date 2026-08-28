@@ -173,14 +173,14 @@ public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
     }
     nint n = len(s);
     if (i == n) {
-        return append(s, v.ꓸꓸꓸ);
+        return appendꓸꓸꓸ<S, E>(s, v);
     }
     if (n + m > cap(s)) {
         // Use append rather than make so that we bump the size of
         // the slice up to the next storage class.
         // This is what Grow does but we don't call Grow because
         // that might copy the values twice.
-        var s2 = append(subslice<S, E>(s, 0, i), make<S>(n + m - i).ꓸꓸꓸ);
+        var s2 = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), make<S>(n + m - i));
         copy(subslice<S, E>(s2, i), v);
         copy(subslice<S, E>(s2, i + m), subslice<S, E>(s, i));
         return s2;
@@ -248,7 +248,7 @@ public static S Delete<S, E>(S s, nint i, nint j)
         return s;
     }
     nint oldlen = len(s);
-    s = append(subslice<S, E>(s, 0, i), subslice<S, E>(s, j).ꓸꓸꓸ);
+    s = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), subslice<S, E>(s, j));
     clear(subslice<S, E>(s, len(s), oldlen)); // zero/nil out the obsolete elements, for GC
     return s;
 }
@@ -290,7 +290,7 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
         return Insert(s, i, v.ꓸꓸꓸ);
     }
     if (j == len(s)) {
-        var s2 = append(subslice<S, E>(s, 0, i), v.ꓸꓸꓸ);
+        var s2 = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), v);
         if (len(s2) < len(s)) {
             clear(subslice<S, E>(s, len(s2))); // zero/nil out the obsolete elements, for GC
         }
@@ -299,7 +299,7 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
     nint tot = len(subslice<S, E>(s, 0, i)) + len(v) + len(subslice<S, E>(s, j));
     if (tot > cap(s)) {
         // Too big to fit, allocate and copy over.
-        var s2 = append(subslice<S, E>(s, 0, i), make<S>(tot - i).ꓸꓸꓸ); // See Insert
+        var s2 = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), make<S>(tot - i)); // See Insert
         copy(subslice<S, E>(s2, i), v);
         copy(subslice<S, E>(s2, i + len(v)), subslice<S, E>(s, j));
         return s2;
@@ -371,7 +371,7 @@ public static S Clone<S, E>(S s)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
 {
     // The s[:0:0] preserves nil in case it matters.
-    return append(subslice3<S, E>(s, 0, 0, 0), s.ꓸꓸꓸ);
+    return appendꓸꓸꓸ<S, E>(subslice3<S, E>(s, 0, 0, 0), s);
 }
 
 // Compact replaces consecutive runs of equal elements with a single copy.
@@ -438,7 +438,7 @@ public static S Grow<S, E>(S s, nint n)
     }
     {
         n -= cap(s) - len(s); if (n > 0) {
-            s = subslice<S, E>(append(subslice<S, E>(s, 0, cap(s)), new slice<E>(n).ꓸꓸꓸ), 0, len(s));
+            s = subslice<S, E>(appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, cap(s)), new slice<E>(n)), 0, len(s));
         }
     }
     return s;
@@ -518,7 +518,7 @@ public static S Concat<S, E>(params Span<S> slicesʗp)
     }
     var newslice = Grow<S, E>(default!, size);
     foreach (var (_, s) in slices) {
-        newslice = append(newslice, s.ꓸꓸꓸ);
+        newslice = appendꓸꓸꓸ<S, E>(newslice, s);
     }
     return newslice;
 }

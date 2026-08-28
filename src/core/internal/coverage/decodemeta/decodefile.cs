@@ -138,7 +138,7 @@ internal static error readFileHeader(this ж<CoverageMetaFileReader> Ꮡr) {
 
 [GoRecv] internal static (uint64, error) rdUint64(this ref CoverageMetaFileReader r) {
     r.tmp = r.tmp[..0];
-    r.tmp = append(r.tmp, new slice<byte>(8).ꓸꓸꓸ);
+    r.tmp = appendꓸꓸꓸ(r.tmp, new slice<byte>(8));
     var (n, err) = r.fileRdr.Read(r.tmp);
     if (err != default!) {
         return (0, err);
@@ -224,7 +224,7 @@ internal static error readFileHeader(this ж<CoverageMetaFileReader> Ꮡr) {
     if (cap(payload) < (nint)len) {
         payload = new slice<byte>(0, (nint)(len));
     }
-    payload = append(payload, new slice<byte>((nint)(len)).ꓸꓸꓸ);
+    payload = appendꓸꓸꓸ(payload, new slice<byte>((nint)(len)));
     {
         var (_, err) = r.f.Seek((int64)off, io.SeekStart); if (err != default!) {
             return (default!, err);

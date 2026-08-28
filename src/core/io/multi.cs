@@ -157,7 +157,7 @@ public static Writer MultiWriter(params ꓸꓸꓸWriter writersʗp) {
     foreach (var (_, w) in writers) {
         {
             var (mw, ok) = w._<ж<multiWriter>>(ᐧ); if (ok){
-                allWriters = append(allWriters, (~mw).writers.ꓸꓸꓸ);
+                allWriters = appendꓸꓸꓸ(allWriters, (~mw).writers);
             } else {
                 allWriters = append(allWriters, w);
             }

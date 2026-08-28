@@ -51,7 +51,7 @@ internal static void Main() {
     probe(appendNilNothingˢ, appendNilNothing == default!, len(appendNilNothing), cap(appendNilNothing));
     var appendEmptyNothing = append(new byte[]{}.slice());
     probe(appendEmptyNothingˢ, appendEmptyNothing == default!, len(appendEmptyNothing), cap(appendEmptyNothing));
-    var cloneShape = append(new byte[]{}.slice(), x[..0].ꓸꓸꓸ);
+    var cloneShape = appendꓸꓸꓸ(new byte[]{}.slice(), x[..0]);
     probe(cloneShapeˢ, cloneShape == default!, len(cloneShape), cap(cloneShape));
     var trim = x;
     while (len(trim) > 0) {

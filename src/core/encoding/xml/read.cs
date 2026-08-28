@@ -246,7 +246,7 @@ internal static error unmarshalInterface(this ж<Decoder> Ꮡd, Unmarshaler val,
         switch (t.type()) {
         case CharData tΔ1: {
             if (depth == 1) {
-                buf = append(buf, tΔ1.ꓸꓸꓸ);
+                buf = appendꓸꓸꓸ(buf, tΔ1);
             }
             break;
         }
@@ -590,13 +590,13 @@ Loop:
         }
         case CharData t: {
             if (saveData.IsValid()) {
-                data = append(data, t.ꓸꓸꓸ);
+                data = appendꓸꓸꓸ(data, t);
             }
             break;
         }
         case Comment t: {
             if (saveComment.IsValid()) {
-                comment = append(comment, t.ꓸꓸꓸ);
+                comment = appendꓸꓸꓸ(comment, t);
             }
             break;
         }}

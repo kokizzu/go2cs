@@ -656,7 +656,7 @@ internal static slice<byte> replaceAll(this ж<Regexp> Ꮡre, slice<byte> bsrc, 
         }
         // Copy the unmatched characters before this match.
         if (bsrc != default!){
-            buf = append(buf, bsrc[(int)(lastMatchEnd)..(int)(a[0])].ꓸꓸꓸ);
+            buf = appendꓸꓸꓸ(buf, bsrc[(int)(lastMatchEnd)..(int)(a[0])]);
         } else {
             buf = append(buf, src[(int)(lastMatchEnd)..(int)(a[0])].ꓸꓸꓸ);
         }
@@ -688,7 +688,7 @@ internal static slice<byte> replaceAll(this ж<Regexp> Ꮡre, slice<byte> bsrc, 
     }
     // Copy the unmatched characters after the last match.
     if (bsrc != default!){
-        buf = append(buf, bsrc[(int)(lastMatchEnd)..].ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, bsrc[(int)(lastMatchEnd)..]);
     } else {
         buf = append(buf, src[(int)(lastMatchEnd)..].ꓸꓸꓸ);
     }
@@ -722,7 +722,7 @@ public static slice<byte> ReplaceAll(this ж<Regexp> Ꮡre, slice<byte> src, sli
 // without using [Regexp.Expand].
 public static slice<byte> ReplaceAllLiteral(this ж<Regexp> Ꮡre, slice<byte> src, slice<byte> repl) {
     var replʗ1 = repl;
-    return Ꮡre.replaceAll(src, ""u8, 2, (slice<byte> dst, slice<nint> match) => append(dst, replʗ1.ꓸꓸꓸ));
+    return Ꮡre.replaceAll(src, ""u8, 2, (slice<byte> dst, slice<nint> match) => appendꓸꓸꓸ(dst, replʗ1));
 }
 
 // ReplaceAllFunc returns a copy of src in which all matches of the
@@ -731,7 +731,7 @@ public static slice<byte> ReplaceAllLiteral(this ж<Regexp> Ꮡre, slice<byte> s
 // directly, without using [Regexp.Expand].
 public static slice<byte> ReplaceAllFunc(this ж<Regexp> Ꮡre, slice<byte> src, Func<slice<byte>, slice<byte>> repl) {
     var srcʗ1 = src;
-    return Ꮡre.replaceAll(src, ""u8, 2, (slice<byte> dst, slice<nint> match) => append(dst, repl(srcʗ1[(int)(match[0])..(int)(match[1])]).ꓸꓸꓸ));
+    return Ꮡre.replaceAll(src, ""u8, 2, (slice<byte> dst, slice<nint> match) => appendꓸꓸꓸ(dst, repl(srcʗ1[(int)(match[0])..(int)(match[1])])));
 }
 
 // Bitmap used by func special to check whether a character needs to be escaped.
@@ -979,7 +979,7 @@ public static slice<slice<byte>> FindSubmatch(this ж<Regexp> Ꮡre, slice<byte>
         if (num >= 0){
             if (2 * num + 1 < len(match) && match[2 * num] >= 0) {
                 if (bsrc != default!){
-                    dst = append(dst, bsrc[(int)(match[2 * num])..(int)(match[2 * num + 1])].ꓸꓸꓸ);
+                    dst = appendꓸꓸꓸ(dst, bsrc[(int)(match[2 * num])..(int)(match[2 * num + 1])]);
                 } else {
                     dst = append(dst, src[(int)(match[2 * num])..(int)(match[2 * num + 1])].ꓸꓸꓸ);
                 }
@@ -988,7 +988,7 @@ public static slice<slice<byte>> FindSubmatch(this ж<Regexp> Ꮡre, slice<byte>
             foreach (var (i, namei) in re.subexpNames) {
                 if (name == namei && 2 * i + 1 < len(match) && match[2 * i] >= 0) {
                     if (bsrc != default!){
-                        dst = append(dst, bsrc[(int)(match[2 * i])..(int)(match[2 * i + 1])].ꓸꓸꓸ);
+                        dst = appendꓸꓸꓸ(dst, bsrc[(int)(match[2 * i])..(int)(match[2 * i + 1])]);
                     } else {
                         dst = append(dst, src[(int)(match[2 * i])..(int)(match[2 * i + 1])].ꓸꓸꓸ);
                     }

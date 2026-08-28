@@ -176,8 +176,8 @@ internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521El
     var x = @new<fiat.P521Element>().Mul(p.x, zinv);
     var y = @new<fiat.P521Element>().Mul(p.y, zinv);
     var buf = append(@out[..0], (byte)(4));
-    buf = append(buf, x.Bytes().ꓸꓸꓸ);
-    buf = append(buf, y.Bytes().ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, x.Bytes());
+    buf = appendꓸꓸꓸ(buf, y.Bytes());
     return buf;
 }
 
@@ -201,7 +201,7 @@ private static readonly @string p521PointIsThePointAtˢ = "P521 point is the poi
     }
     var zinv = @new<fiat.P521Element>().Invert(p.z);
     var x = @new<fiat.P521Element>().Mul(p.x, zinv);
-    return (append(@out[..0], x.Bytes().ꓸꓸꓸ), default!);
+    return (appendꓸꓸꓸ(@out[..0], x.Bytes()), default!);
 }
 
 // BytesCompressed returns the compressed or infinity encoding of p, as
@@ -227,7 +227,7 @@ private static readonly @string p521PointIsThePointAtˢ = "P521 point is the poi
     // bit) as the encoding type (2 or 3).
     var buf = append(@out[..0], (byte)(2));
     buf[0] |= (byte)((byte)(y.Bytes()[p521ElementLength - 1] & 1));
-    buf = append(buf, x.Bytes().ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, x.Bytes());
     return buf;
 }
 

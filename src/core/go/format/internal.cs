@@ -48,7 +48,7 @@ internal static (ж<ast.File> @file, Func<slice<byte>, nint, slice<byte>> source
     // by inserting a package clause.
     // Insert using a ';', not a newline, so that the line numbers
     // in psrc match the ones in src.
-    var psrc = append(slice<byte>("package p;"u8), src.ꓸꓸꓸ);
+    var psrc = appendꓸꓸꓸ(slice<byte>("package p;"u8), src);
     (@file, err) = parser.ParseFile(Ꮡfset, filename, psrc, parserMode);
     if (err == default!) {
         sourceAdj = (slice<byte> srcΔ1, nint indent) => {
@@ -71,7 +71,7 @@ internal static (ж<ast.File> @file, Func<slice<byte>, nint, slice<byte>> source
     // Insert using a ';', not a newline, so that the line numbers
     // in fsrc match the ones in src. Add an extra '\n' before the '}'
     // to make sure comments are flushed before the '}'.
-    var fsrc = append(append(slice<byte>("package p; func _() {"u8), src.ꓸꓸꓸ), (byte)((rune)'\n'), (byte)((rune)'\n'), (byte)((rune)'}'));
+    var fsrc = append(appendꓸꓸꓸ(slice<byte>("package p; func _() {"u8), src), (byte)((rune)'\n'), (byte)((rune)'\n'), (byte)((rune)'}'));
     (@file, err) = parser.ParseFile(Ꮡfset, filename, fsrc, parserMode);
     if (err == default!) {
         sourceAdj = (slice<byte> srcΔ2, nint indent) => {
@@ -121,7 +121,7 @@ internal static (slice<byte>, error) format(ж<token.FileSet> Ꮡfset, ж<ast.Fi
         j++;
     }
     slice<byte> res = default!;
-    res = append(res, src[..(int)(i)].ꓸꓸꓸ);
+    res = appendꓸꓸꓸ(res, src[..(int)(i)]);
     // Determine and prepend indentation of first code line.
     // Spaces are ignored unless there are no tabs,
     // in which case spaces count as one tab.
@@ -161,13 +161,13 @@ internal static (slice<byte>, error) format(ж<token.FileSet> Ꮡfset, ж<ast.Fi
         return (src, default!);
     }
     // Otherwise, append output to leading space.
-    res = append(res, @out.ꓸꓸꓸ);
+    res = appendꓸꓸꓸ(res, @out);
     // Determine and append trailing space.
     i = len(src);
     while (i > 0 && isSpace(src[i - 1])) {
         i--;
     }
-    return (append(res, src[(int)(i)..].ꓸꓸꓸ), default!);
+    return (appendꓸꓸꓸ(res, src[(int)(i)..]), default!);
 }
 
 // isSpace reports whether the byte is a space character.

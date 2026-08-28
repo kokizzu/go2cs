@@ -49,9 +49,9 @@ internal static S insertAt<S, E>(S s, nint i, params Span<E> vʗp)
     var v = vʗp.slice();
 
     var @out = make<S>(0, len(s) + len(v));
-    @out = append(@out, subslice<S, E>(s, 0, i).ꓸꓸꓸ);
-    @out = append(@out, v.ꓸꓸꓸ);
-    @out = append(@out, subslice<S, E>(s, i).ꓸꓸꓸ);
+    @out = appendꓸꓸꓸ<S, E>(@out, subslice<S, E>(s, 0, i));
+    @out = appendꓸꓸꓸ<S, E>(@out, v);
+    @out = appendꓸꓸꓸ<S, E>(@out, subslice<S, E>(s, i));
     return @out;
 }
 

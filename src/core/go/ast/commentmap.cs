@@ -263,7 +263,7 @@ public static Node Update(this CommentMap cmap, Node old, Node @new) {
     {
         var list = cmap[old]; if (len(list) > 0) {
             delete(cmap, old);
-            cmap[@new] = append(cmap[@new], list.ꓸꓸꓸ);
+            cmap[@new] = appendꓸꓸꓸ(cmap[@new], list);
         }
     }
     return @new;
@@ -292,7 +292,7 @@ public static CommentMap Filter(this CommentMap cmap, Node node) {
 public static slice<ж<CommentGroup>> Comments(this CommentMap cmap) {
     var list = new slice<ж<CommentGroup>>(0, len(cmap));
     foreach (var (_, e) in cmap) {
-        list = append(list, e.ꓸꓸꓸ);
+        list = appendꓸꓸꓸ(list, e);
     }
     sortComments(list);
     return list;

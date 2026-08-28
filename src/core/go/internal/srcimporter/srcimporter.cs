@@ -190,8 +190,8 @@ public static (ж<types.Package>, error) ImportFrom(this ж<Importer> Ꮡp, @str
             }
         }, ref ᒐ);
         slice<@string> filenames = default!;
-        filenames = append(filenames, (~bp).GoFiles.ꓸꓸꓸ);
-        filenames = append(filenames, (~bp).CgoFiles.ꓸꓸꓸ);
+        filenames = appendꓸꓸꓸ(filenames, (~bp).GoFiles);
+        filenames = appendꓸꓸꓸ(filenames, (~bp).CgoFiles);
         (var files, err) = Ꮡp.parseFiles((~bp).Dir, filenames);
         if (err != default!) {
             return (default!, err);
@@ -325,20 +325,20 @@ internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Packa
 
         }
         args = append(args, "--"u8);
-        args = append(args, strings.Fields(os.Getenv(cgoCppflagsˢ)).ꓸꓸꓸ);
-        args = append(args, bp.CgoCPPFLAGS.ꓸꓸꓸ);
+        args = appendꓸꓸꓸ(args, strings.Fields(os.Getenv(cgoCppflagsˢ)));
+        args = appendꓸꓸꓸ(args, bp.CgoCPPFLAGS);
         if (len(bp.CgoPkgConfig) > 0) {
-            var cmdΔ1 = exec.Command("pkg-config"u8, append(new @string[]{"--cflags"u8}.slice(), bp.CgoPkgConfig.ꓸꓸꓸ).ꓸꓸꓸ);
+            var cmdΔ1 = exec.Command("pkg-config"u8, appendꓸꓸꓸ(new @string[]{"--cflags"u8}.slice(), bp.CgoPkgConfig).ꓸꓸꓸ);
             var (@out, errΔ1) = cmdΔ1.Output();
             if (errΔ1 != default!) {
                 return (default!, fmt.Errorf("pkg-config --cflags: %w"u8, errΔ1));
             }
-            args = append(args, strings.Fields(((@string)@out)).ꓸꓸꓸ);
+            args = appendꓸꓸꓸ(args, strings.Fields(((@string)@out)));
         }
         args = append(args, "-I"u8, tmpdir);
-        args = append(args, strings.Fields(os.Getenv(cgoCflagsˢ)).ꓸꓸꓸ);
-        args = append(args, bp.CgoCFLAGS.ꓸꓸꓸ);
-        args = append(args, bp.CgoFiles.ꓸꓸꓸ);
+        args = appendꓸꓸꓸ(args, strings.Fields(os.Getenv(cgoCflagsˢ)));
+        args = appendꓸꓸꓸ(args, bp.CgoCFLAGS);
+        args = appendꓸꓸꓸ(args, bp.CgoFiles);
         var cmd = exec.Command(args[0], args[1..].ꓸꓸꓸ);
         cmd.Value.Dir = bp.Dir;
         {

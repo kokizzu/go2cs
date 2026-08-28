@@ -236,7 +236,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         // TODO(jayconrod): do we want to support fuzzing different binaries?
         @string dir = ""u8; // same as self
         @string binPath = os.Args[0];
-        var args = append(new @string[]{"-test.fuzzworker"u8}.slice(), os.Args[1..].ꓸꓸꓸ);
+        var args = appendꓸꓸꓸ(new @string[]{"-test.fuzzworker"u8}.slice(), os.Args[1..]);
         var env = os.Environ(); // same as self
         var errC = new channel<error>(0);
         var workers = new slice<ж<worker>>(opts.Parallel);

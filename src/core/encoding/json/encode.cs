@@ -193,7 +193,7 @@ public static (slice<byte>, error) Marshal(any v) {
         if (err != default!) {
             return (default!, err);
         }
-        var buf = append(slice<byte>(default!), e.of(encodeState.ᏑBuffer).Bytes().ꓸꓸꓸ);
+        var buf = appendꓸꓸꓸ(slice<byte>(default!), e.of(encodeState.ᏑBuffer).Bytes());
         return (buf, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }

@@ -102,7 +102,7 @@ public static (ж<TextReader>, error) NewTextReader(io.Reader r) {
             if (errΔ1 != default!) {
                 return (new Event(nil), errΔ1);
             }
-            args = append(args, frame.ꓸꓸꓸ);
+            args = appendꓸꓸꓸ(args, frame);
         }
     }
     slice<byte> data = default!;

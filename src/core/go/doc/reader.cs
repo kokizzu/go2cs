@@ -866,7 +866,7 @@ internal static ж<Func> customizeRecv(ж<Func> Ꮡf, @string recvTypeName, bool
             // move any associated values, funcs, and methods back to the top-level so
             // that they are not lost.
             // 1) move values
-            r.values = append(r.values, (~t).values.ꓸꓸꓸ);
+            r.values = appendꓸꓸꓸ(r.values, (~t).values);
             // 2) move factory functions
             foreach (var (name, f) in (~t).funcs) {
                 // in a correct AST, package-level function names

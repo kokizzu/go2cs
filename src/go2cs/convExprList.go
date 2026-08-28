@@ -333,9 +333,14 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 
 		arg.WriteString(resultExpr)
 
+		// The slice-shaped spread route (the Span int32-ceiling arc): the operand goes across AS
+		// THE SLICE IT IS — golib's ISlice<T>-taking append overloads receive the window whole —
+		// so neither the string wraps nor the `.ꓸꓸꓸ` span projection below apply.
+		spreadAsSlice := callContext != nil && callContext.spreadArgAsSlice
+
 		// If the last expression has a spread operator, use elipsis property as source
 		// this way elements are passed as arguments instead of a slice or array
-		if hasSpreadOperator && i == len(exprs)-1 {
+		if hasSpreadOperator && i == len(exprs)-1 && !spreadAsSlice {
 			// A STRING-LITERAL spread — `append(b, "runtime error: "...)` (runtime error.go) — renders
 			// the literal as a `"…"u8` ReadOnlySpan<byte>, which has no spread property (CS1061). Wrap
 			// it as the member-accessible @string, whose `ꓸꓸꓸ` returns the Span<byte> the variadic

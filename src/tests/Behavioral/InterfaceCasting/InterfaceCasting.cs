@@ -326,7 +326,7 @@ internal static @string runPlumbing() {
     var p = new plumbing(name: "n1"u8);
     var batch = new sinks(new sink[]{new basin(tag: "x"u8), new basin(tag: "y"u8)}.slice());
     slice<sink> all = default!;
-    all = append(all, batch.ꓸꓸꓸ);
+    all = appendꓸꓸꓸ(all, batch);
     return p.name + ":"u8 + all[0].drain() + ","u8 + all[1].drain();
 }
 

@@ -360,7 +360,7 @@ internal static UntypedInt runeSize => 4; // rune is int32
         return false;
     }
     // Push re1 into re2.
-    re2.Value.Rune = builtin.append((~re2).Rune, (~re1).Rune.ꓸꓸꓸ);
+    re2.Value.Rune = builtin.appendꓸꓸꓸ((~re2).Rune, (~re1).Rune);
     // Reuse re1 if possible.
     if (r >= 0) {
         re1.Value.Rune = (~re1).Rune0[..1];
@@ -539,7 +539,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
         if (builtin.cap(re.Rune) - len(re.Rune) > 100) {
             // re.Rune will not grow any more.
             // Make a copy or inline to reclaim storage.
-            re.Rune = builtin.append(re.Rune0[..0], re.Rune.ꓸꓸꓸ);
+            re.Rune = builtin.appendꓸꓸꓸ(re.Rune0[..0], re.Rune);
         }
     }
 
@@ -557,7 +557,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
     re.Value.Sub = (~re).Sub0[..0];
     foreach (var (_, sub) in subs) {
         if ((~sub).Op == op){
-            re.Value.Sub = builtin.append((~re).Sub, (~sub).Sub.ꓸꓸꓸ);
+            re.Value.Sub = builtin.appendꓸꓸꓸ((~re).Sub, (~sub).Sub);
             p.reuse(sub);
         } else {
             re.Value.Sub = builtin.append((~re).Sub, sub);
@@ -637,7 +637,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
             // Construct factored form: prefix(suffix1|suffix2|...)
             var prefix = p.newRegexp(OpLiteral);
             prefix.Value.Flags = strflags;
-            prefix.Value.Rune = builtin.append((~prefix).Rune[..0], str.ꓸꓸꓸ);
+            prefix.Value.Rune = builtin.appendꓸꓸꓸ((~prefix).Rune[..0], str);
             for (nint j = start; j < i; j++) {
                 sub[j] = p.removeLeadingString(sub[j], len(str));
                 p.checkLimits(sub[j]);

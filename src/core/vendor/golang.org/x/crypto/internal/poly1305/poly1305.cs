@@ -102,7 +102,7 @@ public static (nint n, error err) Write(this ж<MAC> Ꮡh, slice<byte> p) {
     ref var mac = ref heap(new array<byte>(16), out var Ꮡmac);
     h.mac.macGeneric.Sum(Ꮡmac);
     h.finalized = true;
-    return append(b, mac[..].ꓸꓸꓸ);
+    return appendꓸꓸꓸ(b, mac[..]);
 }
 
 // Verify returns whether the authenticator of all data written to

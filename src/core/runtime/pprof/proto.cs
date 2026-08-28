@@ -572,7 +572,7 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
         }
     }
     d.pcs = append(d.pcs, pc);
-    d.frames = append(d.frames, frames.ꓸꓸꓸ);
+    d.frames = appendꓸꓸꓸ(d.frames, frames);
     d.symbolizeResult |= (symbolizeFlag)(symbolizeResult);
     if (len(d.pcs) == 1) {
         d.firstPCFrames = len(d.frames);
@@ -609,9 +609,9 @@ internal static uint64 emitLocation(this ж<profileBuilder> Ꮡb) {
         var id = (uint64)len(b.locs) + 1;
         b.locs[addr] = new locInfo(
             id: id,
-            pcs: append(new uintptr[]{}.slice(), b.deck.pcs.ꓸꓸꓸ),
+            pcs: appendꓸꓸꓸ(new uintptr[]{}.slice(), b.deck.pcs),
             firstPCSymbolizeResult: b.deck.firstPCSymbolizeResult,
-            firstPCFrames: append(new runtime.Frame[]{}.slice(), b.deck.frames[..(int)(b.deck.firstPCFrames)].ꓸꓸꓸ)
+            firstPCFrames: appendꓸꓸꓸ(new runtime.Frame[]{}.slice(), b.deck.frames[..(int)(b.deck.firstPCFrames)])
         );
         msgOffset start = b.pb.startMessage();
         b.pb.uint64Opt(tagLocation_ID, id);

@@ -1275,8 +1275,8 @@ internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ref C
         slice<byte> ipAndMask(ж<net.IPNet> ipNet) {
             var maskedIP = (~ipNet).IP.Mask((~ipNet).Mask);
             var ipAndMaskΔ1 = new slice<byte>(0, builtin.len(maskedIP) + builtin.len((~ipNet).Mask));
-            ipAndMaskΔ1 = append(ipAndMaskΔ1, maskedIP.ꓸꓸꓸ);
-            ipAndMaskΔ1 = append(ipAndMaskΔ1, (~ipNet).Mask.ꓸꓸꓸ);
+            ipAndMaskΔ1 = appendꓸꓸꓸ(ipAndMaskΔ1, maskedIP);
+            ipAndMaskΔ1 = appendꓸꓸꓸ(ipAndMaskΔ1, (~ipNet).Mask);
             return ipAndMaskΔ1;
         }
         var ipAndMaskʗ1 = ipAndMask;
@@ -1385,7 +1385,7 @@ internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ref C
     // Adding another extension here? Remember to update the maximum number
     // of elements in the make() at the top of the function and the list of
     // template fields used in CreateCertificate documentation.
-    return (append(ret[..(int)(n)], template.ExtraExtensions.ꓸꓸꓸ), default!);
+    return (appendꓸꓸꓸ(ret[..(int)(n)], template.ExtraExtensions), default!);
 }
 
 internal static (pkix.Extension, error) marshalKeyUsage(KeyUsage ku) {
@@ -1490,7 +1490,7 @@ internal static (slice<pkix.Extension>, error) buildCSRExtensions(ref Certificat
             Value: sanBytes
         ));
     }
-    return (append(ret, template.ExtraExtensions.ꓸꓸꓸ), default!);
+    return (appendꓸꓸꓸ(ret, template.ExtraExtensions), default!);
 }
 
 internal static (slice<byte>, error) subjectBytes(ref Certificate cert) {
@@ -2000,7 +2000,7 @@ internal static (slice<pkix.Extension>, error) parseCSRExtensions(slice<asn1.Raw
             }
             requestedExts[oidStr] = true;
         }
-        ret = append(ret, extensions.ꓸꓸꓸ);
+        ret = appendꓸꓸꓸ(ret, extensions);
     }
     return (ret, default!);
 }
@@ -2078,7 +2078,7 @@ public static (slice<byte> csr, error err) CreateCertificateRequest(io.Reader ra
                 }
             }
             var newValue = new slice<pkix.AttributeTypeAndValue>(0, builtin.len(atvSet.Value[0]) + builtin.len(extensions));
-            newValue = append(newValue, atvSet.Value[0].ꓸꓸꓸ);
+            newValue = appendꓸꓸꓸ(newValue, atvSet.Value[0]);
             foreach (var (_, e) in extensions) {
                 if (specifiedExtensions[e.Id.String()]) {
                     // Attributes already contained a value for
@@ -2486,7 +2486,7 @@ public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<Revoc
         tbsCertList.RevokedCertificates = revokedCerts;
     }
     if (builtin.len(template.ExtraExtensions) > 0) {
-        tbsCertList.Extensions = append(tbsCertList.Extensions, template.ExtraExtensions.ꓸꓸꓸ);
+        tbsCertList.Extensions = appendꓸꓸꓸ(tbsCertList.Extensions, template.ExtraExtensions);
     }
     (var tbsCertListContents, err) = asn1.Marshal(tbsCertList);
     if (err != default!) {

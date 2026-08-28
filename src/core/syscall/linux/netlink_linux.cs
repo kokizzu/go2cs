@@ -98,7 +98,7 @@ done:
                 return (default!, EINVAL);
             }
             rb = rb[..(int)(nr)];
-            tab = append(tab, rb.ꓸꓸꓸ);
+            tab = appendꓸꓸꓸ(tab, rb);
             (var msgs, errΔ3) = ParseNetlinkMessage(rb);
             if (errΔ3 != default!) {
                 return (default!, errΔ3);

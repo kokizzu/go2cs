@@ -159,9 +159,9 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
             hello.Value.cipherSuites = default!;
         }
         if (hasAESGCMHardwareSupport){
-            hello.Value.cipherSuites = append((~hello).cipherSuites, defaultCipherSuitesTLS13.ꓸꓸꓸ);
+            hello.Value.cipherSuites = appendꓸꓸꓸ((~hello).cipherSuites, defaultCipherSuitesTLS13);
         } else {
-            hello.Value.cipherSuites = append((~hello).cipherSuites, defaultCipherSuitesTLS13NoAES.ꓸꓸꓸ);
+            hello.Value.cipherSuites = appendꓸꓸꓸ((~hello).cipherSuites, defaultCipherSuitesTLS13NoAES);
         }
         ref var curveID = ref heap<CurveID>(out var ᏑcurveID);
         curveID = config.curvePreferences(maxVersion)[0];
@@ -186,8 +186,8 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
             // support the latter. We reuse the same X25519 ephemeral key for
             // both, as allowed by draft-ietf-tls-hybrid-design-09, Section 3.2.
             hello.Value.keyShares = new keyShare[]{
-                new(group: x25519Kyber768Draft00, data: append((~keyShareKeys).ecdhe.PublicKey().Bytes(),
-                    (~keyShareKeys).kyber.EncapsulationKey().ꓸꓸꓸ)),
+                new(group: x25519Kyber768Draft00, data: appendꓸꓸꓸ((~keyShareKeys).ecdhe.PublicKey().Bytes(),
+                    (~keyShareKeys).kyber.EncapsulationKey())),
                 new(group: X25519, data: (~keyShareKeys).ecdhe.PublicKey().Bytes())
             }.slice();
         } else {
@@ -247,7 +247,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
             return (default!, default!, default!, errΔ4);
         }
         (ech.Value.kdfID, ech.Value.aeadID) = (suite.KDFID, suite.AEADID);
-        var info = append(slice<byte>("tls ech\x00"u8), (~(~ech).config).raw.ꓸꓸꓸ);
+        var info = appendꓸꓸꓸ(slice<byte>("tls ech\x00"u8), (~(~ech).config).raw);
         (ech.Value.encapsulatedKey, ech.Value.hpkeContext, errΔ4) = hpke.SetupSender((~(~ech).config).KemID, suite.KDFID, suite.AEADID, echPK.OrTypedNil(), info);
         if (errΔ4 != default!) {
             return (default!, default!, default!, errΔ4);

@@ -427,7 +427,7 @@ internal static (slice<ж<Address>>, error) parseAddressList(this ж<addrParser>
         if (err != default!) {
             return (default!, err);
         }
-        list = append(list, addrs.ꓸꓸꓸ);
+        list = appendꓸꓸꓸ(list, addrs);
         if (!p.skipCFWS()) {
             return (default!, errors.New(mailMisformattedˢ));
         }
@@ -579,7 +579,7 @@ internal static (slice<ж<Address>>, error) consumeGroupList(this ж<addrParser>
         if (err != default!) {
             return (default!, err);
         }
-        group = append(group, addrs.ꓸꓸꓸ);
+        group = appendꓸꓸꓸ(group, addrs);
         if (!p.skipCFWS()) {
             return (default!, errors.New(mailMisformattedˢ));
         }

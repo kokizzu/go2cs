@@ -539,7 +539,7 @@ internal static readonly @string derivedˢ = "derived"u8;
             c.sendAlert(alertIllegalParameter);
             return errors.New(tlsInvalidKyberServerKeyˢ);
         }
-        sharedKey = append(sharedKey, kyberShared.ꓸꓸꓸ);
+        sharedKey = appendꓸꓸꓸ(sharedKey, kyberShared);
     }
     c.Value.curveID = hs.serverHello.Value.serverShare.group;
     var earlySecret = hs.earlySecret;

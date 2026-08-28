@@ -395,8 +395,8 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
         else if (exprᴛ1 == syntax.InstCapture || exprᴛ1 == syntax.InstNop) {
             ok = Ꮡcheck.ValueSlot((~inst).Out, mΔ1);
             mΔ1[(nint)(pc)] = mΔ1[(nint)((~inst).Out)];
-            onePassRunesʗ1[(nint)(pc)] = append(new rune[]{}.slice(), // pass matching runes back through these no-ops.
- onePassRunesʗ1[(nint)((~inst).Out)].ꓸꓸꓸ);
+            onePassRunesʗ1[(nint)(pc)] = appendꓸꓸꓸ(new rune[]{}.slice(), // pass matching runes back through these no-ops.
+ onePassRunesʗ1[(nint)((~inst).Out)]);
             inst.Value.Next = new slice<uint32>(len(onePassRunesʗ1[(nint)(pc)]) / 2 + 1);
             foreach (var (i, _) in (~inst).Next) {
                 inst.Value.Next[i] = inst.Value.Out;
@@ -405,7 +405,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
         else if (exprᴛ1 == syntax.InstEmptyWidth) {
             ok = Ꮡcheck.ValueSlot((~inst).Out, mΔ1);
             mΔ1[(nint)(pc)] = mΔ1[(nint)((~inst).Out)];
-            onePassRunesʗ1[(nint)(pc)] = append(new rune[]{}.slice(), onePassRunesʗ1[(nint)((~inst).Out)].ꓸꓸꓸ);
+            onePassRunesʗ1[(nint)(pc)] = appendꓸꓸꓸ(new rune[]{}.slice(), onePassRunesʗ1[(nint)((~inst).Out)]);
             inst.Value.Next = new slice<uint32>(len(onePassRunesʗ1[(nint)(pc)]) / 2 + 1);
             foreach (var (i, _) in (~inst).Next) {
                 inst.Value.Next[i] = inst.Value.Out;
@@ -435,7 +435,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
                     }
                     slices.Sort<slice<rune>, rune>(runes);
                 } else {
-                    runes = append(runes, (~inst).Rune.ꓸꓸꓸ);
+                    runes = appendꓸꓸꓸ(runes, (~inst).Rune);
                 }
                 onePassRunesʗ1[(nint)(pc)] = runes;
                 inst.Value.Next = new slice<uint32>(len(onePassRunesʗ1[(nint)(pc)]) / 2 + 1);
@@ -479,7 +479,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
                     break;
                 }
                 instQueueʗ1.insert((~inst).Out);
-                onePassRunesʗ1[(nint)(pc)] = append(new rune[]{}.slice(), anyRune.ꓸꓸꓸ);
+                onePassRunesʗ1[(nint)(pc)] = appendꓸꓸꓸ(new rune[]{}.slice(), anyRune);
                 inst.Value.Next = new uint32[]{(~inst).Out}.slice();
             } while (false);
         }
@@ -490,7 +490,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
                     break;
                 }
                 instQueueʗ1.insert((~inst).Out);
-                onePassRunesʗ1[(nint)(pc)] = append(new rune[]{}.slice(), anyRuneNotNL.ꓸꓸꓸ);
+                onePassRunesʗ1[(nint)(pc)] = appendꓸꓸꓸ(new rune[]{}.slice(), anyRuneNotNL);
                 inst.Value.Next = new slice<uint32>(len(onePassRunesʗ1[(nint)(pc)]) / 2 + 1);
                 foreach (var (i, _) in (~inst).Next) {
                     inst.Value.Next[i] = inst.Value.Out;

@@ -92,20 +92,20 @@ internal static Func<(ж<ecdh.PrivateKey>, error)> testingOnlyGenerateKey;
 
 public static slice<byte> LabeledExtract(this ж<hkdfKDF> Ꮡkdf, slice<byte> suiteID, slice<byte> salt, @string label, slice<byte> inputKey) {
     var labeledIKM = new slice<byte>(0, 7 + len(suiteID) + len(label) + len(inputKey));
-    labeledIKM = append(labeledIKM, slice<byte>("HPKE-v1"u8).ꓸꓸꓸ);
-    labeledIKM = append(labeledIKM, suiteID.ꓸꓸꓸ);
+    labeledIKM = appendꓸꓸꓸ(labeledIKM, slice<byte>("HPKE-v1"u8));
+    labeledIKM = appendꓸꓸꓸ(labeledIKM, suiteID);
     labeledIKM = append(labeledIKM, label.ꓸꓸꓸ);
-    labeledIKM = append(labeledIKM, inputKey.ꓸꓸꓸ);
+    labeledIKM = appendꓸꓸꓸ(labeledIKM, inputKey);
     return hkdf.Extract(() => Ꮡkdf.Value.hash.New(), labeledIKM, salt);
 }
 
 public static slice<byte> LabeledExpand(this ж<hkdfKDF> Ꮡkdf, slice<byte> suiteID, slice<byte> randomKey, @string label, slice<byte> info, uint16 length) {
     var labeledInfo = new slice<byte>(0, 2 + 7 + len(suiteID) + len(label) + len(info));
     labeledInfo = binary.BigEndian.AppendUint16(labeledInfo, length);
-    labeledInfo = append(labeledInfo, slice<byte>("HPKE-v1"u8).ꓸꓸꓸ);
-    labeledInfo = append(labeledInfo, suiteID.ꓸꓸꓸ);
+    labeledInfo = appendꓸꓸꓸ(labeledInfo, slice<byte>("HPKE-v1"u8));
+    labeledInfo = appendꓸꓸꓸ(labeledInfo, suiteID);
     labeledInfo = append(labeledInfo, label.ꓸꓸꓸ);
-    labeledInfo = append(labeledInfo, info.ꓸꓸꓸ);
+    labeledInfo = appendꓸꓸꓸ(labeledInfo, info);
     var @out = new slice<byte>(length);
     var (n, err) = hkdf.Expand(() => Ꮡkdf.Value.hash.New(), randomKey, labeledInfo).Read(@out);
     if (err != default! || n != (nint)length) {
@@ -180,7 +180,7 @@ internal static (slice<byte> sharedSecret, slice<byte> encapPub, error err) Enca
     }
     var encPubEph = privEph.PublicKey().Bytes();
     var encPubRecip = pubRecipient.Bytes();
-    var kemContext = append(encPubEph, encPubRecip.ꓸꓸꓸ);
+    var kemContext = appendꓸꓸꓸ(encPubEph, encPubRecip);
     return (Ꮡdh.ExtractAndExpand(dhVal, kemContext), encPubEph, default!);
 }
 
@@ -257,8 +257,8 @@ public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 
     }
     var pskIDHash = kdf.LabeledExtract(suiteID, default!, pskIdHashˢ, default!);
     var infoHash = kdf.LabeledExtract(suiteID, default!, infoHashˢ, info);
-    var ksContext = append(new byte[]{0}.slice(), pskIDHash.ꓸꓸꓸ);
-    ksContext = append(ksContext, infoHash.ꓸꓸꓸ);
+    var ksContext = appendꓸꓸꓸ(new byte[]{0}.slice(), pskIDHash);
+    ksContext = appendꓸꓸꓸ(ksContext, infoHash);
     var secret = kdf.LabeledExtract(suiteID, sharedSecret, secretˢ, default!);
     var key = kdf.LabeledExpand(suiteID, secret, keyˢ, ksContext, (uint16)aeadInfo.keySize);
     /* Nk - key size for AEAD */
@@ -302,7 +302,7 @@ public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 
 
 public static slice<byte> SuiteID(uint16 kemID, uint16 kdfID, uint16 aeadID) {
     var suiteID = new slice<byte>(0, 4 + 2 + 2 + 2);
-    suiteID = append(suiteID, slice<byte>("HPKE"u8).ꓸꓸꓸ);
+    suiteID = appendꓸꓸꓸ(suiteID, slice<byte>("HPKE"u8));
     suiteID = binary.BigEndian.AppendUint16(suiteID, kemID);
     suiteID = binary.BigEndian.AppendUint16(suiteID, kdfID);
     suiteID = binary.BigEndian.AppendUint16(suiteID, aeadID);

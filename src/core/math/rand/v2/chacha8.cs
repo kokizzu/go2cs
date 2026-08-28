@@ -126,8 +126,8 @@ public static (slice<byte>, error) MarshalBinary(this ж<ChaCha8> Ꮡc) {
     if (c.readLen > 0) {
         var @out = slice<byte>("readbuf:"u8);
         @out = append(@out, (uint8)c.readLen);
-        @out = append(@out, c.readBuf[(int)(len(c.readBuf) - c.readLen)..].ꓸꓸꓸ);
-        return (append(@out, chacha8rand.Marshal(Ꮡc.of(ChaCha8.Ꮡstate)).ꓸꓸꓸ), default!);
+        @out = appendꓸꓸꓸ(@out, c.readBuf[(int)(len(c.readBuf) - c.readLen)..]);
+        return (appendꓸꓸꓸ(@out, chacha8rand.Marshal(Ꮡc.of(ChaCha8.Ꮡstate))), default!);
     }
     return (chacha8rand.Marshal(Ꮡc.of(ChaCha8.Ꮡstate)), default!);
 }

@@ -88,7 +88,7 @@ public static (ж<Reader>, error) NewReader(io.Reader r) {
             if (errΔ1 != default!) {
                 return (new Event(nil), errΔ1);
             }
-            args = append(args, frame.ꓸꓸꓸ);
+            args = appendꓸꓸꓸ(args, frame);
         }
     }
     slice<byte> data = default!;

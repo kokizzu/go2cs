@@ -68,7 +68,7 @@ internal static readonly @string targetˢ = "Target: "u8;
     error err = default!;
     var args = argsʗp.slice();
 
-    var argv = append(new @string[]{"-###"u8, "-S"u8, "-x"u8, "go"u8, "-"u8}.slice(), args.ꓸꓸꓸ);
+    var argv = appendꓸꓸꓸ(new @string[]{"-###"u8, "-S"u8, "-x"u8, "go"u8, "-"u8}.slice(), args);
     var cmd = exec.Command(gccgoPath, argv.ꓸꓸꓸ);
     (var stderr, err) = cmd.StderrPipe();
     if (err != default!) {
@@ -97,7 +97,7 @@ internal static readonly @string targetˢ = "Target: "u8;
         }}
 
     }
-    argv = append(new @string[]{"-dumpversion"u8}.slice(), args.ꓸꓸꓸ);
+    argv = appendꓸꓸꓸ(new @string[]{"-dumpversion"u8}.slice(), args);
     (var stdout, err) = exec.Command(gccgoPath, argv.ꓸꓸꓸ).Output();
     if (err != default!) {
         return err;
@@ -124,14 +124,14 @@ internal static readonly @string targetˢ = "Target: "u8;
         }
         paths = append(paths, spath);
     }
-    paths = append(paths, inst.LibPaths.ꓸꓸꓸ);
+    paths = appendꓸꓸꓸ(paths, inst.LibPaths);
     return paths;
 }
 
 // Return an importer that searches incpaths followed by the gcc installation's
 // built-in search paths and the current directory.
 [GoRecv] public static Func<map<@string, ж<types.Package>>, @string, @string, Func<@string, (io.ReadCloser, error)>, (ж<types.Package>, error)> GetImporter(this ref GccgoInstallation inst, slice<@string> incpaths, map<ж<types.Package>, InitData> initmap) {
-    return GetImporter(append(append(incpaths, inst.SearchPaths().ꓸꓸꓸ), "."u8), initmap);
+    return GetImporter(append(appendꓸꓸꓸ(incpaths, inst.SearchPaths()), "."u8), initmap);
 }
 
 } // end gccgoimporter_package

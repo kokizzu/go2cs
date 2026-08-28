@@ -2231,6 +2231,42 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 		}
 
+		// THE SLICE-SHAPED SPREAD (the Span int32-ceiling arc, ruled post-B2): a slice-typed
+		// spread operand passes AS THE SLICE IT IS — binding golib's ISlice<T>-taking append
+		// overloads — instead of projecting through `.ꓸꓸꓸ` to a Span at the call boundary, so
+		// lengths stay nint end to end and a constrained (generic-body) spread stops needing a
+		// span the interface must mint. Strings keep the span route: their spread is a byte
+		// projection, not a slice. types.CoreType answers uniformly for unnamed slices, named
+		// slice types and `~[]E`-constrained type parameters.
+		if ident.Name == "append" && callExpr.Ellipsis.IsValid() && len(callExpr.Args) == 2 {
+			if operandType := v.info.TypeOf(callExpr.Args[1]); operandType != nil {
+				_, operandIsSlice := operandType.Underlying().(*types.Slice)
+
+				if !operandIsSlice {
+					if tp, ok := types.Unalias(operandType).(*types.TypeParam); ok && typeParamSliceCore(tp) != nil {
+						operandIsSlice = true
+					}
+				}
+
+				if operandIsSlice {
+					callExprContext.spreadArgAsSlice = true
+
+					// A constrained DESTINATION (`append(s, v...)` over `S ~[]E`) binds the
+					// S-generic ISlice overload, whose element type never infers from a
+					// constraint surface — emit both type arguments explicitly.
+					if dstType := v.info.TypeOf(callExpr.Args[0]); dstType != nil {
+						if tp, ok := types.Unalias(dstType).(*types.TypeParam); ok {
+							if dstCore := typeParamSliceCore(tp); dstCore != nil {
+								callExprContext.appendTypeArgs = fmt.Sprintf("<%s, %s>",
+									convertToCSTypeName(v.getAliasQualifiedTypeName(dstType, false)),
+									convertToCSTypeName(v.getAliasQualifiedTypeName(dstCore.Elem(), false)))
+							}
+						}
+					}
+				}
+			}
+		}
+
 		// `delete(m, k)` on an `any`-KEYED map is the third built-in whose argument crosses into
 		// interface space without passing a declared parameter (see append above and panic below):
 		// the key is boxed to look the entry up, so a pointer key must cross as its box carrying
@@ -2821,6 +2857,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	//
 	// Everything above decided HOW each piece renders; this assembles the final text and then
 	// re-walks the arguments purely to record implicit conversions as a side effect.
+
+	// The slice-shaped spread rides on the NAME — `appendꓸꓸꓸ(s, t)` for Go's `append(s, t...)`,
+	// the same glyph the operand spread uses — binding golib's ISlice-taking forms with no
+	// overload interplay against append's params families (a shared name re-entered the
+	// C#14 params/betterness thicket: measured CS0121). The constrained form additionally
+	// carries its explicit type arguments (see CallExprContext.appendTypeArgs).
+	if callExprContext.spreadArgAsSlice {
+		funcName = strings.TrimSuffix(funcName, "append") + "appendꓸꓸꓸ" + callExprContext.appendTypeArgs
+	}
 
 	var result string
 

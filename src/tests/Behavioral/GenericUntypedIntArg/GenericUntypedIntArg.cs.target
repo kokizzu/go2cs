@@ -26,7 +26,7 @@ internal static S appendAll<S, E>(S s, params Span<E> vʗp)
 {
     var v = vʗp.slice();
 
-    return append(s, v.ꓸꓸꓸ);
+    return appendꓸꓸꓸ<S, E>(s, v);
 }
 
 [GoType("[]nint")] partial struct numbers;

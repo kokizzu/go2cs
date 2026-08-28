@@ -149,7 +149,7 @@ public static @string FormatString(State state, rune verb) {
 [GoType("[]byte")] partial struct buffer;
 
 [GoRecv] internal static void write(this ref buffer b, slice<byte> p) {
-    b = append(b, p.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, p);
 }
 
 [GoRecv] internal static void writeString(this ref buffer b, @string s) {
@@ -312,7 +312,7 @@ public static slice<byte> Appendf(slice<byte> b, @string format, params ꓸꓸ�
 
     var p = newPrinter();
     p.doPrintf(format, a);
-    b = append(b, (~p).buf.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, (~p).buf);
     p.free();
     return b;
 }
@@ -362,7 +362,7 @@ public static slice<byte> Append(slice<byte> b, params ꓸꓸꓸany aʗp) {
 
     var p = newPrinter();
     p.doPrint(a);
-    b = append(b, (~p).buf.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, (~p).buf);
     p.free();
     return b;
 }
@@ -415,7 +415,7 @@ public static slice<byte> Appendln(slice<byte> b, params ꓸꓸꓸany aʗp) {
 
     var p = newPrinter();
     p.doPrintln(a);
-    b = append(b, (~p).buf.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, (~p).buf);
     p.free();
     return b;
 }

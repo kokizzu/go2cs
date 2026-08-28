@@ -44,7 +44,7 @@ partial class zstd_package {
     }
     if (builtin.len(buf) >= w.size) {
         nint from = builtin.len(buf) - w.size;
-        w.data = append(w.data[..0], buf[(int)(from)..].ꓸꓸꓸ);
+        w.data = appendꓸꓸꓸ(w.data[..0], buf[(int)(from)..]);
         w.off = 0;
         return;
     }
@@ -59,9 +59,9 @@ partial class zstd_package {
         }
     } else {
         if (free >= builtin.len(buf)){
-            w.data = append(w.data, buf.ꓸꓸꓸ);
+            w.data = appendꓸꓸꓸ(w.data, buf);
         } else {
-            w.data = append(w.data, buf[..(int)(free)].ꓸꓸꓸ);
+            w.data = appendꓸꓸꓸ(w.data, buf[..(int)(free)]);
             w.off = copy(w.data, buf[(int)(free)..]);
         }
     }
@@ -83,10 +83,10 @@ partial class zstd_package {
         wrap = !wrap;
     }
     if (wrap){
-        buf = append(buf, w.data[(int)(from)..].ꓸꓸꓸ);
-        return append(buf, w.data[..(int)(to)].ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, w.data[(int)(from)..]);
+        return appendꓸꓸꓸ(buf, w.data[..(int)(to)]);
     } else {
-        return append(buf, w.data[(int)(from)..(int)(to)].ꓸꓸꓸ);
+        return appendꓸꓸꓸ(buf, w.data[(int)(from)..(int)(to)]);
     }
 }
 

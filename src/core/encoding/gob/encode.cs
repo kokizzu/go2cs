@@ -61,7 +61,7 @@ internal static ref sync.Pool encBufferPool => ref ᏑencBufferPool.Value;
 }
 
 [GoRecv] internal static (nint, error) Write(this ref encBuffer e, slice<byte> p) {
-    e.data = append(e.data, p.ꓸꓸꓸ);
+    e.data = appendꓸꓸꓸ(e.data, p);
     return (len(p), default!);
 }
 

@@ -164,7 +164,7 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
     if (sigType == signatureEd25519) {
         slice<byte> signed = default!;
         foreach (var (_, Δslice) in slices) {
-            signed = append(signed, Δslice.ꓸꓸꓸ);
+            signed = appendꓸꓸꓸ(signed, Δslice);
         }
         return signed;
     }

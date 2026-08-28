@@ -300,7 +300,7 @@ private static readonly @string cryptobyteBuilderIsˢ = "cryptobyte: Builder is 
         b.err = errors.New(cryptobyteBuilderIsˢ);
         return;
     }
-    b.result = append(b.result, bytes.ꓸꓸꓸ);
+    b.result = appendꓸꓸꓸ(b.result, bytes);
 }
 
 // Unwrite rolls back non-negative n bytes written directly to the Builder.

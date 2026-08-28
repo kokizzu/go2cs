@@ -641,7 +641,7 @@ internal static (ж<Template>, error) parseFS(ж<Template> Ꮡt, fs.FS fsys, sli
         if (len(list) == 0) {
             return (default!, fmt.Errorf("template: pattern matches no files: %#q"u8, pattern));
         }
-        filenames = append(filenames, list.ꓸꓸꓸ);
+        filenames = appendꓸꓸꓸ(filenames, list);
     }
     return parseFiles(Ꮡt, readFileFS(fsys), filenames.ꓸꓸꓸ);
 }

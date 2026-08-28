@@ -282,7 +282,7 @@ internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) {
                 t.errorf("%s: third Open: ReadDir(%d) after %d: %d entries (too many)"u8, dir, n, len(list2), len(frag));
                 return;
             }
-            list2 = append(list2, frag.ꓸꓸꓸ);
+            list2 = appendꓸꓸꓸ(list2, frag);
             if (AreEqual(errΔ2, io.EOF)) {
                 break;
             }

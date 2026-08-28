@@ -158,11 +158,11 @@ internal static bool patchTail(ж<reorderBuffer> Ꮡrb) {
         // Potentially allocating memory. However, this only
         // happens with ill-formed UTF-8.
         var x = new slice<byte>(0);
-        x = append(x, rb.@out[(int)(len(rb.@out) - extra)..].ꓸꓸꓸ);
+        x = appendꓸꓸꓸ(x, rb.@out[(int)(len(rb.@out) - extra)..]);
         rb.@out = rb.@out[..(int)(end)];
         decomposeToLastBoundary(Ꮡrb);
         Ꮡrb.doFlush();
-        rb.@out = append(rb.@out, x.ꓸꓸꓸ);
+        rb.@out = appendꓸꓸꓸ(rb.@out, x);
         return false;
     }
     var buf = rb.@out[(int)(p)..];

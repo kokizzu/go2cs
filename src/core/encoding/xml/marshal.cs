@@ -572,7 +572,7 @@ internal static error marshalValue(this ж<printer> Ꮡp, reflectꓸValue val, �
     ref var start = ref heap(new StartElement(), out var Ꮡstart);
     if (ᏑstartTemplate != nil){
         start.Name = startTemplate.Name;
-        start.Attr = append(start.Attr, startTemplate.Attr.ꓸꓸꓸ);
+        start.Attr = appendꓸꓸꓸ(start.Attr, startTemplate.Attr);
     } else 
     if ((~tinfo).xmlname != nil) {
         var xmlname = tinfo.Value.xmlname;
@@ -749,7 +749,7 @@ internal static StartElement defaultStart(reflectꓸType typ, ж<fieldInfo> Ꮡf
     // except that we do not look inside structs for the first field.
     if (ᏑstartTemplate != nil){
         start.Name = startTemplate.Name;
-        start.Attr = append(start.Attr, startTemplate.Attr.ꓸꓸꓸ);
+        start.Attr = appendꓸꓸꓸ(start.Attr, startTemplate.Attr);
     } else 
     if (Ꮡfinfo != nil && finfo.name != ""u8){
         start.Name.Local = finfo.name;
@@ -1257,7 +1257,7 @@ internal static readonly @string useOfClosedEncoderˢ = "use of closed Encoder"u
             }
         }
     }
-    s.stack = append(s.stack, parents.ꓸꓸꓸ);
+    s.stack = appendꓸꓸꓸ(s.stack, parents);
     return default!;
 }
 

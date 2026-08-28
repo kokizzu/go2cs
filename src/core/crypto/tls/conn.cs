@@ -378,8 +378,8 @@ internal static nint roundUp(nint a, nint b) {
             if (hc.version == VersionTLS13){
                 additionalData = record[..(int)(recordHeaderLen)];
             } else {
-                additionalData = append(hc.scratchBuf[..0], hc.seq[..].ꓸꓸꓸ);
-                additionalData = append(additionalData, record[..3].ꓸꓸꓸ);
+                additionalData = appendꓸꓸꓸ(hc.scratchBuf[..0], hc.seq[..]);
+                additionalData = appendꓸꓸꓸ(additionalData, record[..3]);
                 nint n = len(payload) - c.Overhead();
                 additionalData = append(additionalData, (byte)((n >> (int)(8))), (byte)n);
             }
@@ -488,7 +488,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 // appends it to record, which must already contain the record header.
 [GoRecv] internal static (slice<byte>, error) encrypt(this ref halfConn hc, slice<byte> record, slice<byte> payload, io.Reader rand) {
     if (hc.cipher == default!) {
-        return (append(record, payload.ꓸꓸꓸ), default!);
+        return (appendꓸꓸꓸ(record, payload), default!);
     }
     slice<byte> explicitNonce = default!;
     {
@@ -531,7 +531,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
             nonce = hc.seq[..];
         }
         if (hc.version == VersionTLS13){
-            record = append(record, payload.ꓸꓸꓸ);
+            record = appendꓸꓸꓸ(record, payload);
             // Encrypt the actual ContentType and replace the plaintext one.
             record = append(record, record[0]);
             record[0] = (byte)recordTypeApplicationData;
@@ -541,8 +541,8 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
             record = c.Seal(record[..(int)(recordHeaderLen)],
                 nonce, record[(int)(recordHeaderLen)..], record[..(int)(recordHeaderLen)]);
         } else {
-            var additionalData = append(hc.scratchBuf[..0], hc.seq[..].ꓸꓸꓸ);
-            additionalData = append(additionalData, record[..(int)(recordHeaderLen)].ꓸꓸꓸ);
+            var additionalData = appendꓸꓸꓸ(hc.scratchBuf[..0], hc.seq[..]);
+            additionalData = appendꓸꓸꓸ(additionalData, record[..(int)(recordHeaderLen)]);
             record = c.Seal(record, nonce, payload, additionalData);
         }
         break;
@@ -975,7 +975,7 @@ internal static UntypedInt recordSizeBoostThreshold => /* 128 * 1024 */ 131072;
 
 [GoRecv] internal static (nint, error) write(this ref Conn c, slice<byte> data) {
     if (c.buffering) {
-        c.sendBuf = append(c.sendBuf, data.ꓸꓸꓸ);
+        c.sendBuf = appendꓸꓸꓸ(c.sendBuf, data);
         return (len(data), default!);
     }
     var (n, err) = c.conn.Write(data);
@@ -1264,7 +1264,7 @@ internal static (handshakeMessage, error) unmarshalHandshakeMessage(this ж<Conn
     // The handshake message unmarshalers
     // expect to be able to keep references to data,
     // so pass in a fresh copy that won't be overwritten.
-    data = append(slice<byte>(default!), data.ꓸꓸꓸ);
+    data = appendꓸꓸꓸ(slice<byte>(default!), data);
     if (!m.unmarshal(data)) {
         return (default!, c.@in.setErrorLocked(Ꮡc.sendAlert(alertUnexpectedMessage)));
     }
