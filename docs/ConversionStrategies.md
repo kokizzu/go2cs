@@ -1717,7 +1717,9 @@ principal generators:
 - **`RecvGenerator`** (`[GoRecv]`) — emits the pointer/box (`ж<T>`) overload of each value-receiver method.
 - **`ImplicitConvGenerator`** — the implicit operators letting a named type and its underlying interconvert.
 - **`PartialStubGenerator`** — a throwing stub for any bodyless partial (asm/cgo) with no real
-  implementation.
+  implementation. (For cgo specifically the stubs are an interim state, not a dead end: the
+  ratified [cgo interop plan](PLAN-cgo-interop.md) maps the `import "C"` ladder that replaces
+  them with real P/Invoke-backed bindings.)
 
 Common attributes: `[GoType]`, `[GoRecv]`, `[GoTag]`, `[GoPackage]`, and the test-only
 `[GoTestMatchingConsoleOutput]`.

@@ -220,7 +220,7 @@ go2cs -tests -test-action all goroot_pkg_dir converted_pkg_dir   # ...and build,
 | `-csproj <file>` | Generate project files from a custom `.csproj` template instead of the embedded one. |
 | `-tree` | Print each file's Go parse tree (`go/ast`) to stdout during conversion — a diagnostic aid. |
 | `-debug` | Disable the converter's per-file panic recovery, so a conversion failure crashes with a full stack trace instead of being reported as a warning. |
-| ~~`-cgo`~~ | ~~Also convert cgo-targeted files.~~ |
+| ~~`-cgo`~~ | ~~Also convert cgo-targeted files.~~ Not yet functional — but planned, not abandoned: the ratified [cgo interop plan](PLAN-cgo-interop.md) lays out the `import "C"` ladder (P/Invoke-backed, staged after the current validation campaign), and this flag comes alive with it. |
 
 All converted C# code references a hand-written runtime library (`golib`, published as the [`go.lib`](https://www.nuget.org/packages/go.lib)
 NuGet package) plus a set of Roslyn source generators that supply Go semantics at compile time (published as
