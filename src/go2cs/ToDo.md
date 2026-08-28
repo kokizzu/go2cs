@@ -45,7 +45,7 @@ xx) ~~Setup reference code packages / path options for Go modules~~
        a) ~~If original path is: `$GOPATH/pkg/mod/github.com/cosiner\argv@v0.1.0`~~
        b) ~~Converted path is: `$GOPATH/../go2cs/pkg/mod/github.com/cosiner\argv@v0.1.0`~~
 xx) ~~Add support for comment based directives~~
-xx) Add support for "cgo" targets
+xx) Add support for "cgo" targets — phased plan proposed: docs/PLAN-cgo-interop.md
 xx) Add suport for Go assembler targets (*.s files)
     1) Current thinking is to let Go compile to object code for a platform then
        wrap in a .dll/.so/.dynlib with callable entry points options from C# code
