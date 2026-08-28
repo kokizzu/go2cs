@@ -128,10 +128,23 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		// semantics.
 		hasResults := false
 		namedFuncType := false
+		variadicCallee := false
 
 		if funType := v.getType(deferStmt.Call.Fun, false); funType != nil {
-			if sig, ok := funType.(*types.Signature); ok && sig.Results() != nil && sig.Results().Len() > 0 {
-				hasResults = true
+			if sig, ok := funType.(*types.Signature); ok {
+				if sig.Results() != nil && sig.Results().Len() > 0 {
+					hasResults = true
+				}
+
+				// A VARIADIC callee's C# form always carries the params parameter, so its
+				// method group converts to no Action even when the Go call site passes zero
+				// arguments — `defer Reset()` on `Reset(sig ...Signal)` trimmed to the group
+				// was CS1503 (os/signal, 2026-08-27). Keep the lambda so the zero-operand
+				// call invokes through the params overload; there are no arguments whose
+				// defer-time evaluation the wrap could disturb.
+				if sig.Variadic() {
+					variadicCallee = true
+				}
 			}
 
 			// A NAMED func-type callee (context.CancelFunc) is a DISTINCT C# delegate with
@@ -150,22 +163,26 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		// VALUE against the [GoRecv] ref extension, which cannot create a delegate (CS1113).
 		// `Ꮡconf.releaseSema` binds the ж<T> overload and captures the receiver at defer
 		// time — exactly Go's binding.
+		// The variadic-callee guard covers the box group too: a pointer-receiver variadic
+		// method's box overload carries the same params parameter, so its group is exactly as
+		// inconvertible as the plain one (`defer c.bump()` on `bump(deltas ...int)`).
 		boxGroup := ""
 
-		if !hasResults && !namedFuncType {
+		if !hasResults && !namedFuncType && !variadicCallee {
 			boxGroup = v.pointerReceiverBoxMethodGroup(deferStmt.Call.Fun)
 		}
 
 		// The trim turns an invocation back into a method group, which golib's arity-0 `defer`
 		// takes as its `Action`. A VARIADIC func literal has no method group to expose: what
 		// convCallExpr produced is `((Actionꓸꓸꓸ<T>)(<literal>))()`, and trimming leaves the family
-		// delegate itself, which is not an `Action` (CS1503). Keep the invocation and let the
-		// lambda arm below wrap it.
+		// delegate itself, which is not an `Action` (CS1503) — and a VARIADIC named callee's
+		// group carries the params parameter, inconvertible the same way. Keep the invocation
+		// and let the lambda arm below wrap it.
 		variadicLit := v.variadicFuncLitCallee(deferStmt.Call) != nil
 
 		if boxGroup != "" {
 			callExpr = boxGroup
-		} else if !hasResults && !namedFuncType && !variadicLit && strings.HasSuffix(callExpr, "()") {
+		} else if !hasResults && !namedFuncType && !variadicLit && !variadicCallee && strings.HasSuffix(callExpr, "()") {
 			callExpr = strings.TrimSuffix(callExpr, "()")
 		} else {
 			callExpr = "() => " + callExpr

@@ -61,11 +61,22 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 	// NAMED func type. Both decide how the call is adapted to goǃ's void Action delegate below.
 	hasResults := false
 	namedFuncType := false
+	variadicCallee := false
 
 	if _, isFuncLit := goStmt.Call.Fun.(*ast.FuncLit); !isFuncLit {
 		if funType := v.getType(goStmt.Call.Fun, false); funType != nil {
-			if sig, ok := funType.(*types.Signature); ok && sig.Results() != nil && sig.Results().Len() > 0 {
-				hasResults = true
+			if sig, ok := funType.(*types.Signature); ok {
+				if sig.Results() != nil && sig.Results().Len() > 0 {
+					hasResults = true
+				}
+
+				// A VARIADIC callee's C# form always carries the params parameter, so its
+				// method group converts to neither Action nor WaitCallback even at a
+				// zero-argument call site — the exact mirror of the defer arm's guard
+				// (`go signalDone()` on `signalDone(chans ...chan struct{})` was CS1503).
+				if sig.Variadic() {
+					variadicCallee = true
+				}
 			}
 
 			if named, ok := types.Unalias(funType).(*types.Named); ok {
@@ -163,23 +174,26 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 		// A pointer-receiver nullary callee binds the BOX method group (see
 		// pointerReceiverBoxMethodGroup — the trimmed deref-alias form is CS1113). A NAMED
 		// func-type or value-returning callee keeps the lambda form instead.
+		// The variadic-callee guard covers the box group too — a pointer-receiver variadic
+		// method's box overload carries the same params parameter (see the defer arm).
 		boxGroup := ""
 
-		if !hasResults && !namedFuncType {
+		if !hasResults && !namedFuncType && !variadicCallee {
 			boxGroup = v.pointerReceiverBoxMethodGroup(goStmt.Call.Fun)
 		}
 
 		// C# `go` method implementation expects an Action (or WaitCallback delegate)
 		// A VARIADIC func literal has no method group to expose — convCallExpr produced
 		// `((Actionꓸꓸꓸ<T>)(<literal>))()` and the trim would leave the family delegate, which is
-		// not an `Action` (CS1503). Keep the invocation and take the wrapping arm below.
+		// not an `Action` (CS1503) — and a VARIADIC named callee's group carries the params
+		// parameter, inconvertible the same way. Keep the invocation and take the wrapping arm.
 		variadicLit := v.variadicFuncLitCallee(goStmt.Call) != nil
 
 		if boxGroup != "" {
 			callExpr = boxGroup
-		} else if !hasResults && !namedFuncType && !valueRecvMethodGroup && !variadicLit && strings.HasSuffix(callExpr, "()") {
+		} else if !hasResults && !namedFuncType && !valueRecvMethodGroup && !variadicLit && !variadicCallee && strings.HasSuffix(callExpr, "()") {
 			callExpr = strings.TrimSuffix(callExpr, "()") // Action delegate
-		} else if (hasResults || namedFuncType || valueRecvMethodGroup || variadicLit) && strings.HasSuffix(callExpr, "()") {
+		} else if (hasResults || namedFuncType || valueRecvMethodGroup || variadicLit || variadicCallee) && strings.HasSuffix(callExpr, "()") {
 			// A NAMED func-type callee (context.CancelFunc) is a DISTINCT C# delegate with no
 			// conversion to Action, and a value-returning callee's bare method group is a
 			// Func<...> (CS0407); keep the invocation and wrap it in an Action lambda that

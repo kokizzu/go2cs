@@ -8824,6 +8824,27 @@ temp-parameter force alone gives CS0411 ×4, the delegate cast alone gives CS014
    ...int)` answers `parts == nil` as `true` in Go and `false` here. Visible from a plain direct call
    — no defer, no literal — so it is an argument-CONSTRUCTION difference with corpus-wide reach.
 
+### A ZERO-ARG deferred/spawned call of a NAMED variadic callee keeps the lambda — the group carries `params`
+
+The named-callee sibling of the literal cast above, found blocking os/signal's test-host compile
+(`defer Reset()` on `func Reset(sig ...os.Signal)`, 2026-08-27 — the same variadic-binding family as
+the C#14 params-flip fix). The zero-argument arm of `visitDeferStmt`/`visitGoStmt` trims `f()` back
+to the method group `f` so golib's arity-0 `defer`/`goǃ` take it as an `Action` — valid only when the
+callee's C# arity is genuinely zero. A variadic callee's C# form **always** carries the `params`
+parameter, so its method group converts to no `Action` (defer) and no `WaitCallback` (go) —
+**CS1503** at both statements, measured as the failing-first red of the guard below. The with-args
+forms were never exposed: `getFunctionParamCount` answers `-1` for a variadic signature, which
+already forces the temp-parameter ladder.
+
+The guard is signature-level (`types.Signature.Variadic()`) in both statements' zero-arg arms, and it
+covers the pointer-receiver **box method group** too — a variadic method's box overload carries the
+same `params` parameter (`defer c.bump()` on `func (c *counter) bump(deltas ...int)`). The emission
+keeps the invocation and wraps it: `defer(() => Reset(), ref ᒐ)`. Wrapping a zero-operand call
+disturbs no defer-time evaluation — there are no operands to evaluate. Emission-inert corpus-wide by
+construction: an existing zero-arg variadic defer/go site would have been a compile error, and the
+corpus compiles. Guarded by `DeferVariadicCallee` (both statements, both arities, plain func and
+pointer-receiver method, output-compared vs `go run`).
+
 ### `defer panic(v)` captures its value at the defer, and the sequence survives it
 
 `panic` is the one built-in emitted as a `throw` **statement** rather than as a call, and that made it
@@ -17431,6 +17452,17 @@ A converted program is an ordinary .NET process and gets none of that. The diver
 **What is deliberately left alone.** `initLongPathSupport` also sets `internal/syscall/windows.CanUseLongPaths`, which makes `os.fixLongPath` stop adding the prefix. That flag lives in a converted package golib cannot reference — golib is the root of the dependency graph — and `false` is the conservative side: the extended-prefix spelling still reaches the kernel with the PEB bit set, so the only difference is which spelling it sees.
 
 Guarded by `syscall`'s own `TestGetwd_DoesNotPanicWhenPathIsLong`, which skipped on `Chdir failed: … The filename or extension is too long` until this landed, and passes on both sides now.
+
+### Linux standard-descriptor hygiene is process SETUP too — Go's close-of-stdout must release the pipe
+
+The Linux member of the same `osinit`-parity family. A Go process holds exactly one file descriptor per standard stream, so closing `os.Stdout` releases the last reference to a stdout pipe's write end and the parent reading it sees EOF **immediately** — the readiness-barrier idiom Go programs use and os/exec's own test suite is built on ("Wait for cmd to close stdout to signal that its handlers are installed", the `startHang` shape behind `TestWaitInterrupt/*`).
+
+The .NET runtime breaks the invariant before user code runs: at startup on Linux it duplicates each standard descriptor — `fcntl(0/1/2, F_DUPFD_CLOEXEC)` landing at the first free slots, observed unconditionally on linux-x64 net10.0 via strace with an empty `Main` and zero `Console` touches. Those duplicates hold the underlying pipe description open for the life of the process, so a converted child's `os.Stdout.Close()` no longer EOFs the parent: the pipe releases only at child **exit**. Measured, not theoretical — the pipe-EOF-barrier witness reads EOF 1.1 ms after the child's close in native Go and 8.27 s (exactly the child's lifetime) in the unfixed conversion. The same duplicates are what a `/proc` fd census of a hung child shows as "leaked parent pipes", which is how this was first misdiagnosed as spawn-side fd leakage — the `posix_spawn` hand-own (`syscall/linux/exec_unix.cs`) produces a clean child; the write-end holder was the child's *own* runtime duplicate, born after exec (it carries `FD_CLOEXEC`, which no inherited descriptor can).
+
+`golib/builtin.LinuxStdDescriptors.cs` therefore closes the duplicates from `InitializeGoLib`, first thing, Linux-gated: every fd above 2 whose `/proc/self/fd` target equals that of fd 0, 1 or 2 **and** which carries `FD_CLOEXEC`. Both conditions are load-bearing — an inherited descriptor can never carry `FD_CLOEXEC` (it would not have survived the exec), so a deliberately passed `ExtraFiles` duplicate of a standard stream is untouchable by construction; and at module-initialization time no managed user code has run, so every close-on-exec alias is the runtime's own. The timing is the safety contract: `System.Console` creates its *own* on-demand duplicates when first touched (sweeping after that point kills a live `SafeFileHandle` — measured as `ConsolePal` "Bad file descriptor"), and a full-lifecycle strace shows the runtime never operates on the startup duplicates again, so closing them at managed dawn orphans nothing.
+
+Guarded by the `StdoutCloseEofBarrier` behavioral test, deliberately deadlock-shaped rather than timed: the child closes stdout and then blocks on stdin until the parent — who must first see the EOF — writes the release byte. A regression deadlocks both sides into the harness run-timeout instead of flaking on a threshold. The residual is documented in the golib file: `println` routes through `Console.Error`, whose on-demand duplicate of fd 2 would hold a *stderr* pipe the same way; no measured row needs stderr-close EOF propagation yet.
+
 ### `internal/weak.Pointer` — the CLR already has weak references, so the runtime handle becomes one
 
 `internal/weak` is `unique`'s liveness model, one layer below `internal/concurrent.HashTrieMap` and in

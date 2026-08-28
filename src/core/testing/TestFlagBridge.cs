@@ -157,6 +157,47 @@ internal static class TestFlagBridge
     }
 
     /// <summary>
+    /// Runs the converted <c>flag.Parse()</c> if nothing has parsed yet — Go's <c>m.Run</c> step
+    /// (<c>if !flag.Parsed() { flag.Parse() }</c>), which is what actually writes the command
+    /// line's VALUES into the registered flags. A no-op when the converted <c>flag</c> package is
+    /// absent, exactly like <see cref="Register"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Without this step a package that declares its own test flags but has NO <c>TestMain</c>
+    /// never parses them: registration alone leaves every custom flag at its default, which is a
+    /// silently wrong program rather than an error. Measured on <c>os/signal</c>
+    /// (2026-08-27): <c>TestDetectNohup</c> re-execs itself with <c>-check_sighup_ignored</c>, the
+    /// child's <c>*checkSighupIgnored</c> read <c>false</c>, so the child ran the PARENT branch and
+    /// re-exec'd again — an unbounded spawn recursion that ate the package deadline and reported as
+    /// a hang. In Go the flag is true in the child because <c>m.Run</c> parses; this is that parse.
+    /// </para>
+    /// <para>
+    /// Ordering with a package's own <c>TestMain</c> is preserved in effect: a <c>TestMain</c> that
+    /// calls <c>flag.Parse()</c> re-parses the same arguments into the same definitions (the call
+    /// is idempotent over an unchanged command line), and one that never calls it was relying on
+    /// <c>m.Run</c>'s parse — which is exactly the step being restored. Every argument on the host's
+    /// command line is defined by the time this runs — the package's own flags via
+    /// <c>InitializePackageUnderTest</c>, the host's via <see cref="Register"/> — so the
+    /// <c>ExitOnError</c> path is unreachable for a command line the host already accepted.
+    /// </para>
+    /// </remarks>
+    public static void Parse()
+    {
+        Type? flagPackage = Type.GetType(FlagPackageTypeName, throwOnError: false);
+
+        if (flagPackage is null)
+            return;
+
+        MethodInfo parsed = Bind(flagPackage, "Parsed");
+
+        if (parsed.Invoke(null, []) is bool alreadyParsed && alreadyParsed)
+            return;
+
+        Bind(flagPackage, "Parse").Invoke(null, []);
+    }
+
+    /// <summary>
     /// Whether the converted <c>flag.CommandLine</c> defines <paramref name="name"/> — the question
     /// that decides an unrecognized host flag, once the package under test has initialized.
     /// </summary>

@@ -370,6 +370,7 @@
     <Project Path="tests/Behavioral/DeferSimple/DeferSimple.csproj" />
     <Project Path="tests/Behavioral/DeferTypelessReturns/DeferTypelessReturns.csproj" />
     <Project Path="tests/Behavioral/DeferValueFieldPtrReceiver/DeferValueFieldPtrReceiver.csproj" />
+    <Project Path="tests/Behavioral/DeferVariadicCallee/DeferVariadicCallee.csproj" />
     <Project Path="tests/Behavioral/DefinedElemStringConversion/DefinedElemStringConversion.csproj" />
     <Project Path="tests/Behavioral/DefinedOverNamedComposite/DefinedOverNamedComposite.csproj" />
     <Project Path="tests/Behavioral/DefinedOverNamedComposite/fslike/DefinedOverNamedComposite.fslike.csproj" />
@@ -807,6 +808,7 @@
     <Project Path="tests/Behavioral/SpreadOperator/SpreadOperator.csproj" />
     <Project Path="tests/Behavioral/StatLayoutTruth/StatLayoutTruth.csproj" />
     <Project Path="tests/Behavioral/StdLibInternalAbi/StdLibInternalAbi.csproj" />
+    <Project Path="tests/Behavioral/StdoutCloseEofBarrier/StdoutCloseEofBarrier.csproj" />
     <Project Path="tests/Behavioral/StringByteSemantics/StringByteSemantics.csproj" />
     <Project Path="tests/Behavioral/StringByteUnionConstraint/StringByteUnionConstraint.csproj" />
     <Project Path="tests/Behavioral/StringConvNamedInt/StringConvNamedInt.csproj" />
