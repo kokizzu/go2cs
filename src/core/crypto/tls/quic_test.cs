@@ -331,10 +331,10 @@ public static void TestQUICPostHandshakeClientAuthentication(ж<testing.T> Ꮡt)
         Ꮡt.Fatal(err);
     }
     {
-        var errΔ2 = (~cli).conn.HandleData(QUICEncryptionLevelApplication, append(new byte[]{
+        var errΔ2 = (~cli).conn.HandleData(QUICEncryptionLevelApplication, appendꓸꓸꓸ(new byte[]{
             (byte)typeCertificateRequest,
             (byte)0, (byte)0, (byte)len(certReqBytes)
-        }.slice(), certReqBytes.ꓸꓸꓸ)); if (errΔ2 == default!) {
+        }.slice(), certReqBytes)); if (errΔ2 == default!) {
             Ꮡt.Fatalf("post-handshake authentication request: got no error, want one"u8);
         }
     }
@@ -359,10 +359,10 @@ public static void TestQUICPostHandshakeKeyUpdate(ж<testing.T> Ꮡt) {
         Ꮡt.Fatal(err);
     }
     {
-        var errΔ2 = (~cli).conn.HandleData(QUICEncryptionLevelApplication, append(new byte[]{
+        var errΔ2 = (~cli).conn.HandleData(QUICEncryptionLevelApplication, appendꓸꓸꓸ(new byte[]{
             (byte)typeKeyUpdate,
             (byte)0, (byte)0, (byte)len(keyUpdateBytes)
-        }.slice(), keyUpdateBytes.ꓸꓸꓸ)); if (!errors.Is(errΔ2, alertUnexpectedMessage)) {
+        }.slice(), keyUpdateBytes)); if (!errors.Is(errΔ2, alertUnexpectedMessage)) {
             Ꮡt.Fatalf("key update request: got error %v, want alertUnexpectedMessage"u8, errΔ2);
         }
     }

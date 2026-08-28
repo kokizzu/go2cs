@@ -322,8 +322,19 @@ public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer, IUnty
     /// </remarks>
     public unsafe bool IsPinnedAt(nuint address)
     {
-        if (m_pin is null || NativeAddress != 0)
+        PinnedBuffer? pin = m_pin;
+
+        if (pin is null || NativeAddress != 0)
             return false;
+
+        // A fixed-array buffer's provenance entry records the pinned DATA address
+        // (pinnedArrayData) — a different allocation than the value slot — so the pin answers
+        // for its own storage first. Without this arm those entries register but never resolve,
+        // and the keystone tether is blind to exactly the buffer arguments (pipe2's `*[2]int32`,
+        // readlinkat's `*[N]byte`) whose mid-syscall unpinning the record exists to prevent.
+        // Pin-only holds are zero-length by construction and never take this arm.
+        if (pin.Length > 0 && pin.PinnedTarget is not null && (nuint)pin.Pointer == address)
+            return true;
 
         fixed (void* ptr = &this.ValueSlot)
             return (nuint)ptr == address;

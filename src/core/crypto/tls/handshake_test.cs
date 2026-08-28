@@ -148,7 +148,7 @@ internal static (nint n, error err) Read(this ж<recordingConn> Ꮡr, slice<byte
                 copy(buf, b);
                 r.flows = append(r.flows, buf);
             } else {
-                r.flows[l - 1] = append(r.flows[l - 1], b[..(int)(n)].ꓸꓸꓸ);
+                r.flows[l - 1] = appendꓸꓸꓸ(r.flows[l - 1], b[..(int)(n)]);
             }
         }
         r.reading = true;
@@ -179,7 +179,7 @@ internal static (nint n, error err) Write(this ж<recordingConn> Ꮡr, slice<byt
                 copy(buf, b);
                 r.flows = append(r.flows, buf);
             } else {
-                r.flows[l - 1] = append(r.flows[l - 1], b[..(int)(n)].ꓸꓸꓸ);
+                r.flows[l - 1] = appendꓸꓸꓸ(r.flows[l - 1], b[..(int)(n)]);
             }
         }
         r.reading = false;

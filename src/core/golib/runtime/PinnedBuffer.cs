@@ -40,12 +40,6 @@ internal class PinnedBuffer : IArray<byte>, IDisposable
         m_len = len;
     }
 
-    private PinnedBuffer(GCHandle handle, int len)
-    {
-        m_handle = handle;
-        m_len = len;
-    }
-
     ~PinnedBuffer()
     {
         Dispose(false);
@@ -173,7 +167,11 @@ internal class PinnedBuffer : IArray<byte>, IDisposable
 
     public object Clone()
     {
-        return new PinnedBuffer(m_handle, m_len);
+        // Re-pin the target rather than copying the handle struct: two buffers over one handle
+        // slot would both finalize it, and the second Free lands on whatever the runtime re-issued
+        // the slot to — GC handle-table corruption. A pinned object cannot move, so the fresh pin
+        // answers the same address.
+        return new PinnedBuffer(PinnedTarget, m_len);
     }
 
     public static implicit operator PinnedBuffer(byte[] array)

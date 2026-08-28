@@ -559,10 +559,10 @@ public static void TestRejectEmptySCTList(ж<testing.T> Ꮡt) {
         Ꮡt.Fatal(cannotFindSctInˢ);
     }
     slice<byte> serverHelloEmptySCT = default!;
-    serverHelloEmptySCT = append(serverHelloEmptySCT, serverHelloBytes[..(int)(i - 6)].ꓸꓸꓸ);
+    serverHelloEmptySCT = appendꓸꓸꓸ(serverHelloEmptySCT, serverHelloBytes[..(int)(i - 6)]);
     // Append the extension length and SCT list length for an empty list.
-    serverHelloEmptySCT = append(serverHelloEmptySCT, new byte[]{0, 2, 0, 0}.slice().ꓸꓸꓸ);
-    serverHelloEmptySCT = append(serverHelloEmptySCT, serverHelloBytes[(int)(i + 4)..].ꓸꓸꓸ);
+    serverHelloEmptySCT = appendꓸꓸꓸ(serverHelloEmptySCT, new byte[]{0, 2, 0, 0}.slice());
+    serverHelloEmptySCT = appendꓸꓸꓸ(serverHelloEmptySCT, serverHelloBytes[(int)(i + 4)..]);
     // Update the handshake message length.
     serverHelloEmptySCT[1] = (byte)(((len(serverHelloEmptySCT) - 4) >> (int)(16)));
     serverHelloEmptySCT[2] = (byte)(((len(serverHelloEmptySCT) - 4) >> (int)(8)));

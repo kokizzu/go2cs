@@ -171,7 +171,7 @@ public sealed class TestExecution
                 // AppDomain backstop, which prints the report to stderr and exits 2 (like Go):
                 // the whole run dies mid-flight with NO result files and every unrelated test
                 // killed, instead of one attributed infrastructure failure.
-                m_runner.RecordInfrastructureFailure(Name, $"test host failure: {ex}");
+                ReportHostFailure(ex);
             }
             finally
             {
@@ -184,6 +184,47 @@ public sealed class TestExecution
         };
 
         thread.Start();
+    }
+
+    // The containment report is this thread's LAST WORD, so it must not be lost to its own
+    // machinery: the interpolation below allocates through the shared char pool, and an exception
+    // it raises would escape the containment catch to the AppDomain backstop wearing the REPORT
+    // path's stack — the primary exception masked entirely (measured under compare load,
+    // 2026-08-28: nine crashes reported only the reporter's own SharedArrayPool NRE; nine
+    // primaries unknown). Each fallback asks strictly less of the runtime than the one before it,
+    // and the primary's TYPE is written before anything that formats a stack.
+    private void ReportHostFailure(Exception primary)
+    {
+        try
+        {
+            m_runner.RecordInfrastructureFailure(Name, $"test host failure: {primary}");
+        }
+        catch (Exception reporterEx)
+        {
+            try
+            {
+                Console.Error.Write("test host failure (report path failed): primary ");
+                Console.Error.WriteLine(primary.GetType().FullName);
+                Console.Error.WriteLine(primary.StackTrace);
+                Console.Error.Write("reporter ");
+                Console.Error.WriteLine(reporterEx.GetType().FullName);
+                Console.Error.WriteLine(reporterEx.StackTrace);
+            }
+            catch
+            {
+                // Nothing further can be said on stderr; the record attempt below still runs.
+            }
+
+            try
+            {
+                m_runner.RecordInfrastructureFailure(Name,
+                    "test host failure: report path failed; primary exception type and stack are on stderr");
+            }
+            catch
+            {
+                // The runner itself cannot record; Completion still resolves in the finally.
+            }
+        }
     }
 
     internal void Wait() => Completion.GetAwaiter().GetResult();

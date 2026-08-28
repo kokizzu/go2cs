@@ -153,8 +153,8 @@ internal static readonly @string opensslEndOfHandshake = "SSL_accept:SSLv3/TLS w
 internal static readonly @string opensslReadKeyUpdate = "SSL_accept:TLSv1.3 read client key update"u8;
 
 [GoRecv] internal static (nint n, error err) Write(this ref opensslOutputSink o, slice<byte> data) {
-    o.line = append(o.line, data.ꓸꓸꓸ);
-    o.all = append(o.all, data.ꓸꓸꓸ);
+    o.line = appendꓸꓸꓸ(o.line, data);
+    o.all = appendꓸꓸꓸ(o.all, data);
     while (ᐧ) {
         var (line, next, ok) = bytes.Cut(o.line, slice<byte>("\n"u8));
         if (!ok) {
@@ -249,8 +249,8 @@ internal static (ж<recordingConn> conn, ж<exec.Cmd> child, opensslInput stdin,
         @string keyPath = tempFile(ᏑpemOut.String());
         defer(os.Remove, keyPath, ref ᒐ);
         slice<@string> command = default!;
-        command = append(command, serverCommand.ꓸꓸꓸ);
-        command = append(command, test.args.ꓸꓸꓸ);
+        command = appendꓸꓸꓸ(command, serverCommand);
+        command = appendꓸꓸꓸ(command, test.args);
         command = append(command, "-cert"u8, certPath, "-certform", "DER", "-key", keyPath);
         // serverPort contains the port that OpenSSL will listen on. OpenSSL
         // can't take "0" as an argument here so we have to pick a number and
@@ -567,7 +567,7 @@ internal static void runClientTestForVersion(ж<testing.T> Ꮡt, ж<clientTest> 
         test.config = template.config.Clone();
     }
     test.name = version + "-"u8 + test.name;
-    test.args = append(new @string[]{option}.slice(), test.args.ꓸꓸꓸ);
+    test.args = appendꓸꓸꓸ(new @string[]{option}.slice(), test.args);
     runTestAndUpdateIfNeeded(Ꮡt, version, Ꮡtest.run, false);
 }
 
