@@ -42,10 +42,49 @@
 // The corpus converts exactly that GOARCH; another Linux arch's Stat_t (386, arm64, …) has a
 // different layout and would need its own mirror in its own zsyscall_<arch>_impl.cs — stated
 // rather than generalized, because no such flavor exists in the corpus to measure against.
-// Statfs_t (Fstatfs/Statfs, `Spare [4]int64`) and Sysinfo_t/… are the same class and are NOT taken
-// here: no roster row reached them, and the class doctrine is per-member, when reached. Utsname WAS
-// on that deferred list and came OFF it on 2026-08-28, when os/exec's TestFindExecutableVsNoexec
-// reached it — the doctrine's own trigger, honored rather than re-argued (see Uname below).
+// THE DEFERRAL RULE THIS HEADER USED TO STATE IS RETIRED (2026-08-28). It read: Statfs_t,
+// Sysinfo_t, Utsname and the rest "are NOT taken here: no roster row reached them, and the class
+// doctrine is per-member, when reached." That rule was written for the symptom Stat_t
+// demonstrated — a quiet wrong ANSWER — and it is unsafe for what the write actually does. These
+// structs hold their `array<>` fields as MANAGED REFERENCES in a GC-tracked slot, so the kernel
+// writes its bytes over reference slots and the collector then follows the wreckage: not a bad
+// value in the caller's struct, but heap corruption surfacing arbitrarily far away. Uname proved
+// it — it sat on that deferred list, with that reason, WHILE os/exec reached it, and `uname(2)`
+// writing 390 bytes over six reference slots was the corruptor behind a campaign of
+// unattributable crashes (verifyheap: 6 errors in one contiguous run; ground truth: the host
+// killed by SIGSEGV before the mirror, an ordinary exit after). "No roster row reached it" is a
+// statement about COVERAGE, not about execution.
+//
+// So the rule is now: a member of this class whose converted struct carries `array<>` fields is
+// taken ON THE MECHANISM, before it is reached. Uname is below; Select, FcntlFlock, Statfs,
+// Fstatfs, Sysinfo and Adjtimex — the rest of the linux/amd64 surface — are in
+// structclass_linux_impl.cs. What remains genuinely not done is the ARCH dimension above: another
+// Linux arch's layouts would need their own mirrors in their own zsyscall_<arch>_impl.cs.
+//
+// And the landing rule both halves of the fleet learned the same day, by each hitting it: a
+// hand-own here is not landable without its GENERATED body going in the same commit.
+// `manualConversionFuncs` displaces a wrapper at CONVERSION time, so a committed corpus file that
+// still carries the generated body gives `CS0111: already defines a member` — visible only at a
+// build of this flavor, because the `-tests` pipeline converts only the package under test and
+// never regenerates `syscall`.
+//
+// THE SEAM RULE, which generalizes past this class: A GENERATED FILE THAT A HAND-OWN PARTLY
+// DISPLACES IS REGENERATED AT A MERGE, NEVER MERGED. When two lanes displace different wrappers in
+// one generated file their edits touch disjoint regions, so git auto-merges them WITHOUT A
+// CONFLICT — producing a file that compiles and that no converter run would ever emit. Measured
+// 2026-08-28 at exactly that seam: one lane had hand-deleted `Uname`'s body while the other's
+// reconvert had emitted placeholder comments for six more members, and the clean auto-merge kept
+// the deletion without the placeholder, because a hand-deletion and a reconvert express the same
+// fact in different text. A clean auto-merge here is evidence of NOTHING — the generator is the
+// only authority on this file's content, so re-run it and let the registrations decide. The
+// property that makes it checkable: every name registered for this flavor has ZERO bodies and
+// EXACTLY ONE placeholder in the generated file. Assert that after the reconvert, before the
+// build.
+//
+// That is the same shape as the two false verdicts the os/exec arc paid for on the same day — an
+// instrument reading "no crash strings" as a clean run when nothing had run, then the same
+// instrument reading a test's own `core dumped` payload as a host crash. THE ABSENCE OF A FAILURE
+// SIGNAL IS NOT THE PRESENCE OF CORRECTNESS. Assert the property; never the silence.
 
 using System;
 using System.Runtime.InteropServices;
@@ -264,81 +303,5 @@ partial class syscall_package
         }
 
         return (wpid, default!);
-    }
-
-    // ── Uname: the class's THIRD member, and the one that is ALL inline storage ──────────────
-    //
-    // Reached 2026-08-28 by os/exec's TestFindExecutableVsNoexec, which gates itself on
-    // `unix.KernelVersion()` — and that function's whole body is `syscall.Uname` plus a parse of
-    // the Release field (internal/syscall/unix/kernel_version_linux.go). The generated wrapper
-    // hands the kernel `(uintptr)Ꮡbuf`, and the converted Utsname is SIX `array<int8>` MANAGED
-    // REFERENCES where the kernel's `struct utsname` is six 65-byte character arrays INLINE. So
-    // this member is the class taken to its limit: not a struct with one array field at the end,
-    // but a struct that is nothing BUT inline arrays — 390 native bytes against a managed image
-    // that is six references and no characters at all.
-    //
-    // The observable was a quiet wrong ANSWER of the Stat_t kind, one level further removed:
-    // KernelVersion returned (0, 0) — the version parse reading a Release field the kernel never
-    // filled — so the test took Go's own `t.Skip("requires Linux kernel v5.8 with faccessat2(2)
-    // syscall")` on a WSL2 kernel that is 5.15 and has the syscall. Go passes the test; the
-    // converted side skipped it. That divergence is a DEFECT, never a platform-skip disclosure:
-    // the class's admission test requires the skipped-on property to be one the deployment
-    // genuinely holds, and this kernel genuinely has faccessat2 — the conversion simply could not
-    // read its own uname. A disclosure here would have laundered a fixable seam into a permanent
-    // one, which is exactly what that class's anti-laundering clause exists to prevent.
-    //
-    // Remedy identical to Fstat's, and simpler for having no scalars: a blittable mirror the
-    // kernel writes, then a field-for-field copy back. //sysnb in Go, so RawSyscall with no
-    // enter/exitsyscall bracket, exactly as the generated wrapper had it.
-    [StructLayout(LayoutKind.Sequential)]
-    private unsafe struct NativeUtsnameLinux
-    {
-        public fixed int8 Sysname[utsnameFieldLength];
-        public fixed int8 Nodename[utsnameFieldLength];
-        public fixed int8 Release[utsnameFieldLength];
-        public fixed int8 Version[utsnameFieldLength];
-        public fixed int8 Machine[utsnameFieldLength];
-        public fixed int8 Domainname[utsnameFieldLength];
-    }
-
-    // _UTSNAME_LENGTH on Linux: 65 per field (64 characters plus the NUL), six fields, no padding.
-    private const int utsnameFieldLength = 65;
-    private const int nativeUtsnameSizeLinux = 390;
-
-    public static unsafe error /*err*/ Uname(ж<Utsname> Ꮡbuf) {
-        if (sizeof(NativeUtsnameLinux) != nativeUtsnameSizeLinux)
-            throw new InvalidOperationException($"syscall: NativeUtsnameLinux is {sizeof(NativeUtsnameLinux)} bytes, the kernel's struct utsname is {nativeUtsnameSizeLinux}");
-
-        NativeUtsnameLinux native = default;
-        // A nil *Utsname reaches the kernel as address 0 in Go and answers EFAULT; keep that.
-        uintptr bufAddr = Ꮡbuf is null ? (uintptr)0 : (uintptr)(nint)(&native);
-
-        var (_, _, e1) = RawSyscall(SYS_UNAME, bufAddr, 0, 0);
-        if (e1 != 0) {
-            return errnoErr(e1);
-        }
-
-        ref var uts = ref Ꮡbuf!.Value;
-        copyNativeUtsnameField(native.Sysname, ref uts.Sysname);
-        copyNativeUtsnameField(native.Nodename, ref uts.Nodename);
-        copyNativeUtsnameField(native.Release, ref uts.Release);
-        copyNativeUtsnameField(native.Version, ref uts.Version);
-        copyNativeUtsnameField(native.Machine, ref uts.Machine);
-        copyNativeUtsnameField(native.Domainname, ref uts.Domainname);
-        return default!;
-    }
-
-    // One field's 65 inline characters into the converted `array<int8>`. Reuses a backing store
-    // that is already the right length — a default Utsname carries zero-length arrays, the
-    // converted initializer 65-long ones — so the copy allocates only when it must, the same rule
-    // copyNativeStat applies to X__unused. The NUL and everything after it are copied verbatim
-    // rather than trimmed: Go's caller receives the kernel's bytes exactly, and the callers that
-    // want a string (KernelVersion's parse, os.Hostname's) do their own scan for the terminator.
-    private static unsafe void copyNativeUtsnameField(int8* source, ref array<int8> destination) {
-        if (destination.Length != utsnameFieldLength)
-            destination = new array<int8>(utsnameFieldLength);
-
-        for (int i = 0; i < utsnameFieldLength; i++)
-            destination[i] = source[i];
     }
 }
