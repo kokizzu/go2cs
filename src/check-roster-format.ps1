@@ -214,6 +214,52 @@ Assert-Equal 'linux: an unannotated row off the windows count is comparison-vali
 Assert-Equal 'linux: a lost verdict on an unannotated row is also unbanked, never a silent pass' 'unbanked-count' `
     (Get-SweepRowClassification -Expectation $linPlain -Got 1 -GotDisclosed 0 -TargetGoos 'linux')
 
+Assert-Equal 'windows: a proven capability-absent shortfall passes' 'capability-absent' `
+    (Get-SweepRowClassification -Expectation $winPlain -Got 6 -GotDisclosed 0 -TargetGoos 'windows' -CapabilityAbsentAccepted)
+Assert-Equal 'linux: a moved disclosure is never absorbed as capability-absent either' 'disclosed-moved' `
+    (Get-SweepRowClassification -Expectation $linAnnotated -Got 12 -GotDisclosed 0 -TargetGoos 'linux' -CapabilityAbsentAccepted)
+
+# ---- 1b2. the capability-absent mirror check, exercised end to end ------------------------------
+# Test-CapabilityAbsentDelta/Get-CapabilityAbsentVerdict have no roster-row fixture of their own
+# (they read a comparison record and a committed proof page, not a table row), so this proves the
+# PURE function directly with a synthetic block and verdict maps -- the same evidence shape a real
+# sweep run hands it, built by hand instead of by a pipeline. Six sub-tests spawn under a
+# three-verdict block for a small, readable fixture; the real crypto/tls block is 3,243.
+$block = [PSCustomObject]@{ Test = 'TestFakeSuite'; BlockSize = 3 }
+$fullBankedNames = @('TestOther', 'TestFakeSuite', 'TestFakeSuite/case1', 'TestFakeSuite/case2')
+$fullComparison = [PSCustomObject]@{
+    go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass'; 'TestFakeSuite/case1' = 'pass'; 'TestFakeSuite/case2' = 'skip' }
+    csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass'; 'TestFakeSuite/case1' = 'pass'; 'TestFakeSuite/case2' = 'skip' }
+}
+$absentComparison = [PSCustomObject]@{
+    go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+    csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+}
+
+Assert-Equal 'capability-absent: the clean collapse is accepted' $true `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $absentComparison -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: a shortfall that is not the registered block size is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 2 -Comparison $absentComparison -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: a surplus (the surplus mechanism''s job, not this one''s) is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 5 -Comparison $fullComparison -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: a subtest surviving alongside the collapse is refused, not absorbed' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; 'TestFakeSuite/case1' = 'skip' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; 'TestFakeSuite/case1' = 'skip' }
+    }) -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: the top-level test agreeing on PASS instead of SKIP is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+    }) -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: a moved disclosed count is refused, not a capability shape' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 1 -Block $block -Got 1 -Comparison $absentComparison -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'capability-absent: an unaccounted extra live verdict is refused' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
+        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
+    }) -BankedNames $fullBankedNames).Accepted
+
 # ---- 1c. the exclusion-ledger parser's contract --------------------------------------------------
 # The ledger row's first cell is a PLAIN code span and the roster row's is a LINKED one -- the shape
 # difference is the only thing keeping two tables in one document apart, so it is pinned in BOTH
