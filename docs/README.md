@@ -236,6 +236,10 @@ analyzer come from [nuget.org](https://www.nuget.org/packages?q=go2cs%20ritchiec
 be staged on the machine beforehand. (Prefer the standard library as local C# source? See
 [building against a local standard library](#optional-build-against-a-local-standard-library) below.)
 
+Wondering which real-world Go packages make good conversions? The
+**[go2cs Target Atlas](https://go2cs.net/TargetAtlas.html)** surveys the Go ecosystem's best
+candidates — the study behind the first operational package conversions now being planned.
+
 Here is the full round-trip for a small CLI that uses [`github.com/fatih/color`](https://github.com/fatih/color),
 which itself pulls in `github.com/mattn/go-colorable`, `github.com/mattn/go-isatty`, and `golang.org/x/sys` —
 a genuine dependency graph:

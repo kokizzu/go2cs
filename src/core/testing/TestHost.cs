@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -94,27 +95,66 @@ public static class TestHost
         CultureInfo previousUICulture = CultureInfo.CurrentUICulture;
         string previousDirectory = Environment.CurrentDirectory;
         string? previousTimezone = Environment.GetEnvironmentVariable("TZ");
+
+        // A RE-EXEC'D HELPER of an outer host run keeps the state its parent assigned instead of
+        // sandboxing again. Go's re-exec'd test binary performs no chdir of its own, and the
+        // helper protocol depends on cmd.Dir surviving into the child — os/exec's
+        // TestImplicitPWD/TestExplicitPWD assert the child's os.Getwd() against the directory the
+        // TEST chose, and a fresh GUID sandbox here answered with its own root instead. The outer
+        // host plants this marker in its own environment immediately after creating its sandbox,
+        // so every descendant — including one spawned with a cmd.Environ()-derived environment —
+        // identifies itself here and leaves the inherited working directory, fixtures and TZ
+        // alone. Its working directory is previousDirectory by definition: that IS the directory
+        // the parent spawned it in.
+        string? inheritedSandbox = Environment.GetEnvironmentVariable(SandboxMarkerVariable);
+        bool helperReExec = !string.IsNullOrEmpty(inheritedSandbox);
+
         // The isolated run directory reproduces the SHAPE `go test` gives a package, not just a
         // scratch space: its own last segment is the package's directory name, and its parent holds
         // nothing else. A test may walk out of the working directory and back in by name — io/fs's
         // TestGlob globs `*/glob.go` against os.DirFS("..") and expects `fs/glob.go` — which a bare
         // GUID directory answers with the GUID (and, worse, with every SIBLING run still on disk).
-        (string runRoot, string workingDirectory) = CreateRunDirectory(registry.Package);
+        (string runRoot, string workingDirectory) = helperReExec
+            ? (inheritedSandbox!, previousDirectory)
+            : CreateRunDirectory(registry.Package);
+
+        if (!helperReExec)
+            PublishSandboxMarker(runRoot);
+
         options.ResolveOutputPaths(previousDirectory);
 
         try
         {
-            // The ancestry goes in FIRST, so the fixture staging that follows can replace any linked
-            // component it needs to write into with a real one. GOROOT is what the pipeline exports to
-            // both sides; when there is none, staging is skipped and the sandbox is what it always was.
-            PackageAncestry.TryStage(Environment.GetEnvironmentVariable("GOROOT"), registry.Package, runRoot, workingDirectory);
+            if (!helperReExec)
+            {
+                // The ancestry goes in FIRST, so the fixture staging that follows can replace any linked
+                // component it needs to write into with a real one. GOROOT is what the pipeline exports to
+                // both sides; when there is none, staging is skipped and the sandbox is what it always was.
+                PackageAncestry.TryStage(Environment.GetEnvironmentVariable("GOROOT"), registry.Package, runRoot, workingDirectory);
 
-            CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory, runRoot);
-            CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
-            Environment.CurrentDirectory = workingDirectory;
+                CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory, runRoot);
+                CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
+                Environment.CurrentDirectory = workingDirectory;
+
+                // PWD follows the chdir, because on Unix it is the SHELL's job to keep them equal
+                // and nothing else will do it here. `go test` starts its binary in the package
+                // directory with PWD already naming it, so Go's tests may assume PWD == cwd — and
+                // os/exec's TestImplicitPWD asserts exactly that, comparing the PWD entries
+                // Cmd.Environ() derives against the working directory it expects. Leaving the
+                // inherited value in place points it at whatever directory the pipeline was
+                // invoked from, which is neither this run's cwd nor anything a Go test could
+                // predict. Published to the converted environment as well as the CLR's, for the
+                // reason PublishSandboxMarker gives: Cmd.Environ() reads syscall.envs.
+                PublishEnvironmentVariable("PWD", workingDirectory);
+
+                // The helper skips this with the rest: a parent test that hands its child an
+                // explicit TZ through cmd.Env must see that value in the child, exactly as Go's
+                // helper — which has no TZ logic at all — would show it.
+                Environment.SetEnvironmentVariable("TZ", "UTC");
+            }
+
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
-            Environment.SetEnvironmentVariable("TZ", "UTC");
 
             // Go's package-level variable initializers run BEFORE main, so a package that declares
             // `var mode = flag.Bool("bogo-mode", ...)` has already put that name on
@@ -228,8 +268,10 @@ public static class TestHost
                 // The whole run root, so the package-named directory's private parent goes with it.
                 // Junction-aware: a recursive delete does not FOLLOW a link (which is what keeps the
                 // real GOROOT safe) but it does not remove one either, so the ancestry's links are
-                // unlinked first.
-                PackageAncestry.Delete(runRoot);
+                // unlinked first. A helper re-exec never deletes: its runRoot is the PARENT run's
+                // sandbox, which the parent is still using and owns.
+                if (!helperReExec)
+                    PackageAncestry.Delete(runRoot);
             }
             catch
             {
@@ -282,6 +324,77 @@ public static class TestHost
     // Output-directory folder holding fixtures that reach ABOVE the package. MUST match the
     // converter's SharedFixtureStagingRoot, which emits the matching csproj <Link>.
     private const string SharedFixtureStagingRoot = "go2cs_shared_fixtures";
+
+    // Planted in the host's own environment the moment its sandbox exists, so every descendant
+    // process can tell it is a RE-EXEC'D HELPER of this run rather than a fresh host — the value
+    // is the outer run root, and its presence is what Run's helper gate keys on. Environment
+    // inheritance is the delivery mechanism: it survives cmd.Environ()-derived child environments
+    // by construction, which is how the os/exec helpers build theirs.
+    private const string SandboxMarkerVariable = "GO2CS_TEST_SANDBOX";
+
+    // The converted syscall package: type `go.syscall_package` in assembly `syscall`. Resolved by
+    // name, for the reason TestFlagBridge gives at length — the generated test projects set
+    // DisableTransitiveProjectReferences, so a `testing` -> `syscall` reference would not deploy
+    // syscall.dll beside a host whose own package does not import it.
+    private const string SyscallPackageTypeName = "go.syscall_package, syscall";
+
+    /// <summary>
+    /// Publishes the sandbox marker so a re-exec'd HELPER of this run can recognize itself.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It has to be published TWICE, and the second half is the one that matters. Setting it with
+    /// <see cref="Environment.SetEnvironmentVariable"/> alone reaches this process — which is what
+    /// the helper gate reads on the way IN — but it does not reach a child, because a child's
+    /// environment is built by <c>Cmd.Environ()</c> from the converted <c>os.Environ()</c>, and
+    /// that reads <c>syscall.envs</c>: a slice initialized ONCE from a static field initializer
+    /// (<c>envs = runtime_envs()</c>) when the syscall package's static constructor runs, which is
+    /// long before this method is reached. A variable set in the CLR's environment afterwards is
+    /// therefore invisible to every converted child — measured, not assumed: with only the CLR
+    /// half published, os/exec's nine PWD subtests kept failing with the child reporting its own
+    /// fresh sandbox GUID.
+    /// </para>
+    /// <para>
+    /// The converted <c>syscall.Setenv</c> is what updates that slice (Go's own implementation
+    /// appends the pair to <c>envs</c> and indexes it in <c>env</c>), so calling it is what makes
+    /// the marker inheritable. Absent syscall.dll there is nothing to publish into and nothing that
+    /// could spawn a child to inherit it, so doing nothing is correct rather than merely safe —
+    /// the same argument the flag bridge makes for its own late binding.
+    /// </para>
+    /// </remarks>
+    private static void PublishSandboxMarker(string runRoot) =>
+        PublishEnvironmentVariable(SandboxMarkerVariable, runRoot);
+
+    /// <summary>
+    /// Sets an environment variable in BOTH environments this process has — the CLR's, which the
+    /// host itself reads, and the converted <c>syscall</c> package's, which is what a child
+    /// inherits.
+    /// </summary>
+    /// <inheritdoc cref="PublishSandboxMarker" path="/remarks"/>
+    private static void PublishEnvironmentVariable(string name, string value)
+    {
+        Environment.SetEnvironmentVariable(name, value);
+
+        try
+        {
+            Type? syscallPackage = Type.GetType(SyscallPackageTypeName, throwOnError: false);
+
+            MethodInfo? setenv = syscallPackage?.GetMethod(
+                "Setenv",
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: [typeof(@string), typeof(@string)],
+                modifiers: null);
+
+            setenv?.Invoke(null, [(@string)name, (@string)value]);
+        }
+        catch (Exception ex)
+        {
+            // A failure here costs this one variable and nothing else: the run continues, and
+            // whatever reads it behaves exactly as it did before this was published.
+            Console.Error.WriteLine($"testing: could not publish {name} to the converted environment: {ex.Message}");
+        }
+    }
 
     /// <summary>
     /// Creates this run's isolated directory pair — the run root and the package working directory

@@ -229,7 +229,19 @@ partial class runtime_package
 
         lock (s_sigPosixLock)
         {
-            foreach (uint32 sig in new uint32[] { 1, 2, 3, 10, 12, 15, 17, 18, 28 })
+            // SIGCHLD (17) is deliberately ABSENT from the eager set, and the omission is
+            // measured, not stylistic: with an eager SIGCHLD registration, os/exec's full
+            // parallel suite SEGFAULTED in bundled-native runtime frames (crash-on-first-run,
+            // reproducible; core's faulting thread parked in coreclr's own crash machinery, the
+            // interrupted context unsymbolized runtime internals) — every child exit fired the
+            // extra managed dispatch concurrently with the CLR's own SIGCHLD reaping under spawn
+            // storms. Without it: four consecutive full-suite runs clean (2026-08-28). The
+            // omission costs NO Go observable — SIGCHLD's default action IS ignore, so eager
+            // swallow and kernel default are indistinguishable — and signal.Notify(SIGCHLD)
+            // still installs on demand through sigenable (os/exec's TestSIGCHLD is the measured
+            // consumer). The suspected runtime-internal dispatch/reap race is noted for
+            // upstream; the bridge simply declines to enter it for a signal that gains nothing.
+            foreach (uint32 sig in new uint32[] { 1, 2, 3, 10, 12, 15, 18, 28 })
             {
                 PosixSignal? ps = MapPosixSignal(sig);
                 if (ps is not null)

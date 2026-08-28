@@ -11,13 +11,6 @@ partial class syscall_package {
 // systems by flock_linux_32bit.go to be SYS_FCNTL64.
 internal static uintptr fcntl64Syscall = SYS_FCNTL;
 
-// FcntlFlock performs a fcntl syscall for the [F_GETLK], [F_SETLK] or [F_SETLKW] command.
-public static error FcntlFlock(uintptr fd, nint cmd, ж<Flock_t> Ꮡlk) {
-    var (_, _, errno) = Syscall(fcntl64Syscall, fd, (uintptr)cmd, (uintptr)Ꮡlk);
-    if (errno == 0) {
-        return default!;
-    }
-    return errno;
-}
+// go2cs generated this placeholder — func FcntlFlock is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 } // end syscall_package
