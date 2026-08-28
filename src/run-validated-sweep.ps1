@@ -420,6 +420,61 @@ function Get-HostConditionalVerdict {
         -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray()
 }
 
+# ---- capability-conditional verdicts (the MIRROR of the surplus mechanism above) -----------------
+# The mechanism above assumes the roster banks a FLOOR and a more-capable host produces EXTRA
+# verdicts. Some capability-bound test blocks run the opposite way: the roster banks the CEILING --
+# every case the capability enables -- and a host lacking the prerequisite sees Go's own top-level
+# test collapse to ONE skip instead of spawning its whole case matrix. crypto/tls's TestBogoSuite is
+# the first of these (the BoGo/BoringSSL shim runner): 3,243 sub-verdicts -- 1 parent + 861 pass +
+# 2,381 skip -- collapse to exactly one skip verdict without it, both runtimes agreeing, because
+# Go's own oracle skips identically absent the runner. "A lost verdict is never host-conditional"
+# above stays true for every OTHER shortfall: this path engages ONLY for a package registered here,
+# and ONLY when the shortfall matches that package's registered block size exactly -- anything else
+# still falls through to the same hard failure as before.
+#
+# Registered by package; BlockSize is the full-capability verdict count for Test (the top-level test
+# itself plus every Go subtest under it) -- re-derive it from the committed proof page rather than
+# trust this number cold if the suite's own case matrix ever changes.
+$capabilityConditionalBlocks = @{
+    'crypto/tls' = @{ Test = 'TestBogoSuite'; BlockSize = 3243 }
+}
+
+# Test-CapabilityAbsentDelta -- the pure decision rule -- lives in _roster.ps1 beside
+# Get-SweepRowClassification, so check-roster-format.ps1 can fixture-test it the same way; this
+# file only reads the evidence and calls it, mirroring Get-HostConditionalVerdict above.
+#
+# Reads the same two evidence artifacts Get-HostConditionalVerdict does and applies
+# Test-CapabilityAbsentDelta instead. Every unreadable input is a rejection, never an acceptance.
+function Get-CapabilityAbsentVerdict {
+    param([PSCustomObject] $Row, [int] $Got, [string] $OutDir, [PSCustomObject] $Block)
+
+    $comparisonPath = Join-Path $OutDir 'go2cs_test_comparison.json'
+    if (-not (Test-Path $comparisonPath)) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "no comparison record at $comparisonPath" }
+    }
+    $comparison = $null
+    try { $comparison = [System.IO.File]::ReadAllText($comparisonPath) | ConvertFrom-Json } catch {}
+    if ($null -eq $comparison) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "unreadable comparison record at $comparisonPath" }
+    }
+
+    $pageRel = 'docs/validation/current/' + ($Row.Package -replace '/', '.') + '.md'
+    $pageLines = & git -C $repo show "HEAD:$pageRel" 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $pageLines) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "no committed proof page at HEAD:$pageRel" }
+    }
+
+    $bankedNames = New-Object System.Collections.Generic.List[string]
+    $inVerdicts = $false
+    foreach ($pageLine in @($pageLines)) {
+        if ($pageLine -match '^##\s') { $inVerdicts = [bool]($pageLine -match '^##\s+Verdicts\b'); continue }
+        if ($inVerdicts -and $pageLine -match '^\|\s*`([^`]+)`\s*\|') { [void]$bankedNames.Add($Matches[1]) }
+    }
+
+    return Test-CapabilityAbsentDelta -Expected $Row.Effective.Expected -Disclosed $Row.Effective.Disclosed -Block $Block `
+        -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray()
+}
+
 # Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
 # SMHasher matrix runs ~15 minutes in C# (7.6 s in Go — a performance gap, not a correctness one)
 # and was BANKED under 30m; at the default it reports a timeout with every test up to the cut
@@ -553,6 +608,21 @@ foreach ($row in $rows) {
             }
         }
 
+        # The mirror check: a package registered in $capabilityConditionalBlocks whose shortfall
+        # matches its block exactly gets the same one chance to PROVE the shape, via evidence alone
+        # -- no host probe, the comparison record and proof page either show the collapse or they
+        # don't. Consulted only when the plain classification already failed, same cost discipline
+        # as the surplus check above.
+        $capabilityAbsent = $null
+        if ($class -ne 'pass' -and $capabilityConditionalBlocks.ContainsKey($pkg)) {
+            $capabilityAbsent = Get-CapabilityAbsentVerdict -Row $row -Got $got -OutDir $outDir -Block $capabilityConditionalBlocks[$pkg]
+
+            if ($capabilityAbsent.Accepted) {
+                $class = Get-SweepRowClassification -Expectation $row.Effective -Got $got -GotDisclosed $gotDisclosed `
+                    -TargetGoos $targetGoos -CapabilityAbsentAccepted
+            }
+        }
+
         switch ($class) {
             'pass' {
                 $pass++
@@ -561,6 +631,11 @@ foreach ($row in $rows) {
             'host-conditional' {
                 $pass++
                 Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked + $($hostConditional.Extras.Count) host-conditional [${rowSecs}s]" -ForegroundColor Green
+            }
+            'capability-absent' {
+                $pass++
+                $block = $capabilityConditionalBlocks[$pkg]
+                Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked - $($block.BlockSize) ($($block.Test) capability absent) [${rowSecs}s]" -ForegroundColor Green
             }
             'unbanked-count' {
                 # COMPARISON-VALIDATED-AT-COUNT, the honest interim the per-OS ruling names. The
@@ -587,6 +662,9 @@ foreach ($row in $rows) {
                 Write-Host "  COUNT $label $got, banked $($row.Effective.Expected) [${rowSecs}s]" -ForegroundColor Yellow
                 if ($null -ne $hostConditional -and $hostConditional.Reason) {
                     Write-Host "        host-conditional check: $($hostConditional.Reason)" -ForegroundColor Yellow
+                }
+                if ($null -ne $capabilityAbsent -and $capabilityAbsent.Reason) {
+                    Write-Host "        capability-absent check: $($capabilityAbsent.Reason)" -ForegroundColor Yellow
                 }
             }
         }
