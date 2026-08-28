@@ -150,7 +150,15 @@ public static class TestHost
                 // The helper skips this with the rest: a parent test that hands its child an
                 // explicit TZ through cmd.Env must see that value in the child, exactly as Go's
                 // helper — which has no TZ logic at all — would show it.
-                PublishEnvironmentVariable("TZ", "UTC");
+                //
+                // DELIBERATELY the CLR-only form, not PublishEnvironmentVariable (2026-08-29). The
+                // publishing variant rode into 83ea02659 unannounced alongside the parse
+                // relocation, and it is an UNMEASURED behavior change: it would make this pin
+                // actually reach converted code on linux/darwin, where the pipeline hands the
+                // `go test` side no TZ at all — so the two sides could start disagreeing about the
+                // local zone rather than agreeing. That is the TZ arc's own question, with its own
+                // measurement in flight; this merge unit carries only what its gates measured.
+                Environment.SetEnvironmentVariable("TZ", "UTC");
             }
 
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -269,7 +277,9 @@ public static class TestHost
             Environment.CurrentDirectory = previousDirectory;
             CultureInfo.CurrentCulture = previousCulture;
             CultureInfo.CurrentUICulture = previousUICulture;
-            PublishEnvironmentVariable("TZ", previousTimezone);
+            // The CLR-only form, matching the pin above — see its note: the publishing variant is
+            // the TZ arc's unmeasured half and does not ride in this merge unit.
+            Environment.SetEnvironmentVariable("TZ", previousTimezone);
 
             try
             {
