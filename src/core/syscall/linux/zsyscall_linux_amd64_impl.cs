@@ -67,6 +67,24 @@
 // still carries the generated body gives `CS0111: already defines a member` — visible only at a
 // build of this flavor, because the `-tests` pipeline converts only the package under test and
 // never regenerates `syscall`.
+//
+// THE SEAM RULE, which generalizes past this class: A GENERATED FILE THAT A HAND-OWN PARTLY
+// DISPLACES IS REGENERATED AT A MERGE, NEVER MERGED. When two lanes displace different wrappers in
+// one generated file their edits touch disjoint regions, so git auto-merges them WITHOUT A
+// CONFLICT — producing a file that compiles and that no converter run would ever emit. Measured
+// 2026-08-28 at exactly that seam: one lane had hand-deleted `Uname`'s body while the other's
+// reconvert had emitted placeholder comments for six more members, and the clean auto-merge kept
+// the deletion without the placeholder, because a hand-deletion and a reconvert express the same
+// fact in different text. A clean auto-merge here is evidence of NOTHING — the generator is the
+// only authority on this file's content, so re-run it and let the registrations decide. The
+// property that makes it checkable: every name registered for this flavor has ZERO bodies and
+// EXACTLY ONE placeholder in the generated file. Assert that after the reconvert, before the
+// build.
+//
+// That is the same shape as the two false verdicts the os/exec arc paid for on the same day — an
+// instrument reading "no crash strings" as a clean run when nothing had run, then the same
+// instrument reading a test's own `core dumped` payload as a host crash. THE ABSENCE OF A FAILURE
+// SIGNAL IS NOT THE PRESENCE OF CORRECTNESS. Assert the property; never the silence.
 
 using System;
 using System.Runtime.InteropServices;
