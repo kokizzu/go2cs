@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestCredentialNoSetGroups",
+      "class": "host-limit",
+      "signature": "posix_spawn seam: SysProcAttr.Credential is not supported",
+      "reason": "the test's premise is that the child's credentials can be set between fork and exec: it runs a helper under SysProcAttr.Credential{NoSetGroups: true} and asserts that setgroups was not called. The converted deployment spawns children through posix_spawn(3), and POSIX defines no credential file-action -- there is no setuid/setgid/setgroups step expressible in a spawn_file_actions list, so the seam names the request and refuses it rather than silently ignoring it. The structural property this deployment lacks is therefore CREDENTIAL-CAPABLE CHILD SPAWN, and the reason it lacks it is a ruled correctness decision rather than an omission: the managed fork-window dance that could express it was DELIBERATELY retired for file-descriptor-hygiene soundness (a multi-threaded CLR process between fork and exec is the hazard posix_spawn exists to remove), and one test does not buy back a retired hazard. Per this class's bar the entry names that property rather than an unimplemented-but-fixable defect, and it retires itself the moment the spawn seam gains a credential-setting step -- a glibc posix_spawn credential file-action, or a spawn helper that applies the credentials and execs, whichever the deployment adopts. Cross-platform: the test is unix-only (exec_posix_test.go), so no Windows row ever asserted this property and the Windows count is complete without it. Coordinator ruling, 2026-08-29"
+    }
+  ]
+}

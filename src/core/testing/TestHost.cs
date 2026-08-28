@@ -150,7 +150,7 @@ public static class TestHost
                 // The helper skips this with the rest: a parent test that hands its child an
                 // explicit TZ through cmd.Env must see that value in the child, exactly as Go's
                 // helper — which has no TZ logic at all — would show it.
-                Environment.SetEnvironmentVariable("TZ", "UTC");
+                PublishEnvironmentVariable("TZ", "UTC");
             }
 
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -192,21 +192,15 @@ public static class TestHost
             // here turned 1,902 of those into hard failures instead. The class is wider than BoGo —
             // any package whose Usage does anything but flag's default diverged the same way.
             //
-            // Nothing is lost by deferring: TestFlagBridge.Register above put the host's own
-            // vocabulary on the converted flag package and InitializePackageUnderTest put the
-            // package's there, so the flag.Parse below sees exactly the single combined flag set
-            // Go's one parse sees — and rejects a genuinely undefined name with Go's message, Go's
-            // Usage, and Go's status, decided by Go's code.
+            // This is the FIRST of the two ordering defects; the second was the parse itself
+            // happening here rather than in M.Run, and the pair is why NEITHER fix alone produced a
+            // single 89 (i9's re-run of the first was byte-identical, 1,340/1,902/0). Nothing is
+            // lost by deferring: TestFlagBridge.Register above put the host's own vocabulary on the
+            // converted flag package and InitializePackageUnderTest put the package's there, so the
+            // one parse M.Run performs sees exactly the combined flag set Go's single parse sees —
+            // and rejects a genuinely undefined name with Go's message, Go's Usage and Go's status,
+            // decided by Go's code.
 
-            // NO PARSE HERE either — it moved into RunTests, where Go keeps it. Go's ONLY parse is
-            // inside m.Run (testing.go:1944: `// TestMain may have already called flag.Parse.` /
-            // `if !flag.Parsed() { flag.Parse() }`), which runs AFTER TestMain. Parsing here made
-            // the host decide the moment for a package written to decide it itself: crypto/tls's
-            // TestMain installs `flag.Usage = …os.Exit(89)` and only then parses, and a parse that
-            // has already happened applies the DEFAULT Usage — exit 2 — so the override never
-            // fires. Measured: removing this file's unrecognized-flag verdict alone left BoGo's
-            // numbers byte-identical (1,340/1,902/0), because this call still ran first. The parse
-            // is not deleted, only relocated — the no-TestMain case still needs it, and gets it.
 
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
@@ -275,7 +269,7 @@ public static class TestHost
             Environment.CurrentDirectory = previousDirectory;
             CultureInfo.CurrentCulture = previousCulture;
             CultureInfo.CurrentUICulture = previousUICulture;
-            Environment.SetEnvironmentVariable("TZ", previousTimezone);
+            PublishEnvironmentVariable("TZ", previousTimezone);
 
             try
             {
@@ -327,19 +321,14 @@ public static class TestHost
 
     private static nint RunTests(TestRegistry registry, TestRunner runner)
     {
-        if (registry.TestMain is null)
-        {
-            // No TestMain: Go's generated main calls m.Run() directly, and m.Run parses. This path
-            // bypasses M.Run (it goes straight to the runner), so it performs that parse itself —
-            // which is what a package with custom test flags and no TestMain depends on entirely
-            // (os/signal's TestDetectNohup re-exec recursion is the corpus's witness).
-            TestFlagBridge.Parse();
-            return runner.RunAll();
-        }
-
-        // With a TestMain, Go runs it BEFORE any parse so it can install flag.Usage and call
-        // flag.Parse itself; whatever it leaves unparsed, M.Run parses. Nothing may parse here.
         testing_package.M m = new() { Runner = runner };
+
+        // No TestMain: Go's generated main is `os.Exit(m.Run())`, so this goes through M.Run for
+        // the same reason it does there -- M.Run is where the flag parse lives, and a package with
+        // custom test flags and no TestMain has nothing else to populate them.
+        if (registry.TestMain is null)
+            return m.Run();
+
         registry.TestMain(new StandardBox<testing_package.M>(m));
         return runner.HasRun ? runner.ExitCode : 0;
     }
@@ -394,15 +383,34 @@ public static class TestHost
     /// inherits.
     /// </summary>
     /// <inheritdoc cref="PublishSandboxMarker" path="/remarks"/>
-    private static void PublishEnvironmentVariable(string name, string value)
+    private static void PublishEnvironmentVariable(string name, string? value)
     {
+        // A null value CLEARS on both sides: that is what the TZ restore asks for when the run
+        // inherited no TZ at all, and leaving a stale "UTC" behind would be a different bug from
+        // the one this method exists to fix.
         Environment.SetEnvironmentVariable(name, value);
 
         try
         {
             Type? syscallPackage = Type.GetType(SyscallPackageTypeName, throwOnError: false);
 
-            MethodInfo? setenv = syscallPackage?.GetMethod(
+            if (syscallPackage is null)
+                return;
+
+            if (value is null)
+            {
+                MethodInfo? unsetenv = syscallPackage.GetMethod(
+                    "Unsetenv",
+                    BindingFlags.Public | BindingFlags.Static,
+                    binder: null,
+                    types: [typeof(@string)],
+                    modifiers: null);
+
+                unsetenv?.Invoke(null, [(@string)name]);
+                return;
+            }
+
+            MethodInfo? setenv = syscallPackage.GetMethod(
                 "Setenv",
                 BindingFlags.Public | BindingFlags.Static,
                 binder: null,
