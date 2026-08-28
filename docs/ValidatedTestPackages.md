@@ -64,7 +64,16 @@ once its remedy lands, because the arithmetic below moves when it goes.
   end — in 1,316 s against that 600 s wall, 2.2x over on a 6-core host (down from ~20x), and the
   arithmetic shows the wall is now THROUGHPUT-bound, not startup-bound: the zero-startup (AOT)
   floor computes to ~980 s there, so no startup work alone retires it (the manifest carries the
-  full per-shape record). The interop itself is no longer in question at any width; the entry
+  full per-shape record). **Confirmed on a second box 2026-08-29, and that run is the first whose
+  numbers come from Go's contract rather than partly from a harness defect**: 861 PASS / 2,381
+  SKIP / 0 FAIL, exit 0 — identical on all three buckets — wall 1,046.3 s, ~20% faster and still
+  not crossing. Getting there forced two ordering defects out of the converted test host (it ruled
+  on an unrecognized flag, and parsed, both before a package's `TestMain` could install the
+  `flag.Usage` that exits 89 — which BoGo reads as unimplemented-and-skip), so 1,902 cases had been
+  failing on flag parsing rather than on anything about TLS. Same verdict, entirely different
+  evidence. The 861/2,381 partition is now known to be contract-determined and load-INVARIANT
+  across four runs on two machines, so a later split that differs is a real change rather than
+  noise. The interop itself is no longer in question at any width; the entry
   retires when managed steady-state TLS throughput on the sweep host crosses the runner's own
   deadline — and the class empties and is removed with it, the `chan-direction` precedent, exactly
   as its founding entry (the relocatable single-file executable, whose 27 `os/exec` verdicts now
