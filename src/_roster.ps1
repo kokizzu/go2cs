@@ -269,13 +269,15 @@ function Get-SweepRowClassification {
         [Parameter(Mandatory)][int] $Got,
         [int] $GotDisclosed = 0,
         [Parameter(Mandatory)][string] $TargetGoos,
-        [switch] $HostConditionalAccepted
+        [switch] $HostConditionalAccepted,
+        [switch] $CapabilityAbsentAccepted
     )
 
     $disclosedAgrees = ($Expectation.Source -eq 'columns') -or ($GotDisclosed -eq $Expectation.Disclosed)
 
     if (-not $disclosedAgrees) { return 'disclosed-moved' }
     if ($HostConditionalAccepted) { return 'host-conditional' }
+    if ($CapabilityAbsentAccepted) { return 'capability-absent' }
     if ($Got -eq $Expectation.Expected) { return 'pass' }
 
     if ($TargetGoos.Trim().ToLowerInvariant() -ne 'windows' -and $Expectation.Source -eq 'columns') {
@@ -283,4 +285,96 @@ function Get-SweepRowClassification {
     }
 
     return 'count'
+}
+
+# ---- capability-conditional verdicts (the MIRROR of the host-conditional surplus above) ----------
+# Get-SweepRowClassification above assumes a surplus is the only host-dependent shape: the roster
+# banks a FLOOR and a more-capable host produces EXTRA verdicts (host-conditional). Some
+# capability-bound test blocks run the opposite way -- the roster banks the CEILING, every case the
+# capability enables, and a host lacking the prerequisite sees Go's own top-level test collapse to
+# ONE skip instead of spawning its whole case matrix. crypto/tls's TestBogoSuite is the first of
+# these (the BoGo/BoringSSL shim runner): 3,243 sub-verdicts -- 1 parent + 861 pass + 2,381 skip --
+# collapse to exactly one skip verdict without it, both runtimes agreeing, because Go's own oracle
+# skips identically absent the runner. "A lost verdict is never host-conditional" stays true for
+# every OTHER shortfall: a caller engages this ONLY for a package it registers, and ONLY when the
+# shortfall matches that package's block size exactly -- run-validated-sweep.ps1's
+# $capabilityConditionalBlocks table is where that registration lives; this function is the pure
+# rule, proven directly by check-roster-format.ps1's fixtures rather than through a roster row (the
+# evidence is a comparison record and a proof page, not a table cell).
+function Test-CapabilityAbsentDelta {
+    param(
+        [int] $Expected,           # banked matching-verdict count (roster column 2, the CEILING here)
+        [int] $Disclosed,
+        [PSCustomObject] $Block,   # @{ Test = <top-level name>; BlockSize = <int> }
+        [int] $Got,
+        $Comparison,
+        [string[]] $BankedNames
+    )
+
+    function New-CapabilityAbsentResult([bool] $accepted, [string] $reason) {
+        return [PSCustomObject]@{ Accepted = $accepted; Reason = $reason }
+    }
+
+    $shortfall = $Expected - $Got
+    if ($shortfall -ne $Block.BlockSize) {
+        return New-CapabilityAbsentResult $false "shortfall $shortfall does not match $($Block.Test)'s registered block size $($Block.BlockSize) -- a lost verdict outside the named block is never capability-conditional"
+    }
+    if ($null -eq $Comparison -or $null -eq $Comparison.go -or $null -eq $Comparison.csharp) {
+        return New-CapabilityAbsentResult $false 'comparison record carries no per-test verdict maps'
+    }
+
+    $liveDisclosed = if ($null -eq $Comparison.disclosed) { 0 } else { @($Comparison.disclosed).Count }
+    if ($liveDisclosed -ne $Disclosed) {
+        return New-CapabilityAbsentResult $false "disclosed count moved ($liveDisclosed live vs $Disclosed banked) -- not a capability-conditional shape"
+    }
+    if ($BankedNames.Count -ne ($Expected + $Disclosed)) {
+        return New-CapabilityAbsentResult $false "committed proof page lists $($BankedNames.Count) verdicts where the roster banks $Expected matched + $Disclosed disclosed -- page and table disagree"
+    }
+
+    # The block is every banked name that IS the top-level test or one of its Go subtests (the '/'
+    # naming go test -json itself uses). This must be exactly BlockSize names, or the committed
+    # evidence disagrees with the registered size and nothing below can be trusted.
+    $blockPrefix = "$($Block.Test)/"
+    $blockNames = @($BankedNames | Where-Object { $_ -eq $Block.Test -or $_.StartsWith($blockPrefix) })
+    if ($blockNames.Count -ne $Block.BlockSize) {
+        return New-CapabilityAbsentResult $false "the committed proof page names $($blockNames.Count) verdicts under $($Block.Test), not the registered $($Block.BlockSize) -- re-derive the block size before trusting this row"
+    }
+
+    $goProperties = $Comparison.go.PSObject.Properties
+    $csProperties = $Comparison.csharp.PSObject.Properties
+    $liveNames = @($goProperties | ForEach-Object { $_.Name })
+
+    # Every banked name OUTSIDE the block must still be present live -- the mechanism absorbs the
+    # named block collapsing, nothing else.
+    $expectedOutside = @($BankedNames | Where-Object { $blockNames -notcontains $_ })
+    $missingOutside = @($expectedOutside | Where-Object { $liveNames -notcontains $_ })
+    if ($missingOutside.Count -gt 0) {
+        return New-CapabilityAbsentResult $false "banked verdicts outside the block missing from this run: $($missingOutside -join ', ')"
+    }
+
+    # No block subtest may appear at all (they were never spawned), and the top-level name must be
+    # present, agreeing, and specifically SKIP on both sides -- not merely equal to each other.
+    $liveBlockNames = @($liveNames | Where-Object { $_ -eq $Block.Test -or $_.StartsWith($blockPrefix) })
+    if (@($liveBlockNames | Where-Object { $_ -ne $Block.Test }).Count -gt 0) {
+        return New-CapabilityAbsentResult $false "subtests under $($Block.Test) appear in this run -- the capability is not cleanly absent, re-diagnose rather than absorb"
+    }
+    if ($liveBlockNames -notcontains $Block.Test) {
+        return New-CapabilityAbsentResult $false "$($Block.Test) itself is missing from this run -- an absent capability must still report the one skip"
+    }
+
+    $goVerdict = $goProperties[$Block.Test].Value
+    $csProperty = $csProperties[$Block.Test]
+    $csVerdict = if ($null -eq $csProperty) { 'absent' } else { $csProperty.Value }
+    if ($goVerdict -ne 'skip' -or $csVerdict -ne 'skip') {
+        return New-CapabilityAbsentResult $false "$($Block.Test): go '$goVerdict' vs C# '$csVerdict' -- an absent capability must show exactly SKIP on both sides, not any other agreement"
+    }
+
+    # Nothing live may go unaccounted for: the outside names plus the one top-level skip, exactly.
+    $accountedFor = @($expectedOutside) + @($Block.Test)
+    $unaccounted = @($liveNames | Where-Object { $accountedFor -notcontains $_ })
+    if ($unaccounted.Count -gt 0) {
+        return New-CapabilityAbsentResult $false "live verdicts this row does not account for: $($unaccounted -join ', ')"
+    }
+
+    return New-CapabilityAbsentResult $true $null
 }
