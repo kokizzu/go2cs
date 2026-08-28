@@ -99,19 +99,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **180 / 215 testable packages validated — 83.7%**
+> ### Phase 4 progress: **181 / 215 testable packages validated — 84.2%**
 >
-> **21,805 matching test verdicts · 85 disclosed** *(updated 2026-08-27 — maintained as part of the
+> **21,924 matching test verdicts · 88 disclosed** *(updated 2026-08-27 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 180 / 208 — 86.5%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 181 / 208 — 87.0%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 26 of 180 rows validated at their Linux counts** — 12,848 matching verdicts · 20 disclosed.
+> **Linux: 26 of 181 rows validated at their Linux counts** — 12,848 matching verdicts · 20 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -312,6 +312,7 @@ summed from the columns.
 | [`runtime/internal/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/math) | 1 |  | The allocator's overflow-checked `MulUintptr` across its boundary table — the `uintptr`-typed constant shift whose width decides whether the fast path guards at 2³² or at 1. · [proof](validation/current/runtime.internal.math.md) |
 | [`runtime/internal/sys`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/sys) | 4 |  | The runtime's own bit intrinsics — `Bswap32`/`Bswap64` and `TrailingZeros32`/`TrailingZeros64` across their full input matrices. · [proof](validation/current/runtime.internal.sys.md) |
 | [`runtime/metrics`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/metrics) | 2 |  | The runtime metrics table end to end — `All()`'s sorted-name/regexp contract against `doc.go`, and a full `metrics.Read` round trip computing a kind for every published metric through the first linkname push into a `_test` package, the managed `metricsLock`, and every stat-aggregate compute closure. · [proof](validation/current/runtime.metrics.md) |
+| [`slices`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/slices) | 119 | 3 | The generic slice algorithms over `S ~[]E` end to end — sort/stable-sort with cmp variants, binary search, Insert/Delete/Replace/Compact/Reverse/Rotate at every boundary, the iterator surface (`All`/`Values`/`Backward`/`Collect`/`Sorted*`), and `TestConcat_too_large`'s overflow matrix, whose `make([]struct{}, math.MaxInt)` fakes flow through Concat's Grow chain allocation-free — the slice-shaped-spread arc's own target, the row this arc was priced to unlock (`append(s, t...)` travels as the slice it is; the Span int32 ceiling left the call boundary). The three disclosures are the pre-ruled classes: `TestConcat`/`TestGrow` assert allocation counts the managed regime cannot denominate in Go mallocs (alloc-count-semantics), and `TestInsert`'s rotation budget meets the model's structural heap boxes (alloc-profile, 242 golib objects against a want-below-25). · [proof](validation/current/slices.md) |
 | [`sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sort) | 63 | | Interface-driven sort, `sort.Slice` reflection swaps, NaN-aware ordering, stability. · [proof](validation/current/sort.md) |
 | [`strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) | 55 | 11 | Number↔string conversion at full precision — Ryū/Grisu float formatting, arbitrary-precision decimal shifts, complex parsing; alloc-profile disclosures. · [proof](validation/current/strconv.md) |
 | [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strings) | 68 | 4 | String algorithms; alloc-count/alloc-profile disclosures. · [proof](validation/current/strings.md) |
