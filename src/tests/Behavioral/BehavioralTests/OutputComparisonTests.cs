@@ -818,6 +818,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckMapCommaOk() => CheckTarget("MapCommaOk");
 
     [TestMethod]
+    public void CheckMapMutateDuringRange() => CheckTarget("MapMutateDuringRange");
+
+    [TestMethod]
     public void CheckMapPointerElementLiteral() => CheckTarget("MapPointerElementLiteral");
 
     [TestMethod]
