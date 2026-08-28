@@ -82,6 +82,12 @@
          MSTest-tier-binds-a-converted-package precedent as math/big above; the *unsafe.Pointer
          siblings are correct by signature and need no guard here. -->
     <ProjectReference Include="..\..\core\internal\runtime\atomic\internal.runtime.atomic.csproj" />
+
+    <!-- HostTestMainParseOrderTests: Go's m.Run parses only `if !flag.Parsed()` (testing.go:1944),
+         so a TestMain is entitled to install flag.Usage BEFORE any parse — crypto/tls's bogo
+         os.Exit(89) override is exactly that. Proving the host stays out of the way needs the real
+         converted flag package, because "has a parse happened yet" is only observable there. -->
+    <ProjectReference Include="..\..\core\flag\flag.csproj" />
   </ItemGroup>
 
 </Project>

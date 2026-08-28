@@ -333,6 +333,19 @@ public static partial class testing_package
     [GoRecv] public static nint Run(this ref M m)
     {
         TestRunner runner = m.Runner ?? throw new InvalidOperationException("testing.M is not attached to a test registry");
+
+        // Go's m.Run, testing.go:1944 — verbatim in effect:
+        //
+        //     // TestMain may have already called flag.Parse.
+        //     if !flag.Parsed() { flag.Parse() }
+        //
+        // TestFlagBridge.Parse() is idempotent (it asks flag.Parsed() first), so this IS that
+        // guard. It belongs here and nowhere earlier: a TestMain is entitled to install flag.Usage
+        // before the parse — crypto/tls's `if (bogoMode.Value) os.Exit(89)` override is exactly
+        // that, and BoGo reads the 89 as unimplemented-and-skip — which a host-side parse would
+        // preempt by applying flag's DEFAULT Usage instead.
+        TestFlagBridge.Parse();
+
         return runner.RunAll();
     }
 

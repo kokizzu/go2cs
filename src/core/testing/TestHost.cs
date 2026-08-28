@@ -198,12 +198,15 @@ public static class TestHost
             // Go's one parse sees — and rejects a genuinely undefined name with Go's message, Go's
             // Usage, and Go's status, decided by Go's code.
 
-            // Go's m.Run parses the command line if nothing has yet (`if !flag.Parsed() {
-            // flag.Parse() }`) — the step that writes the VALUES into the definitions above. A
-            // package with custom test flags but no TestMain gets them populated by exactly this
-            // and nothing else; without it every such flag silently keeps its default (the
-            // os/signal TestDetectNohup re-exec recursion). See TestFlagBridge.Parse.
-            TestFlagBridge.Parse();
+            // NO PARSE HERE either — it moved into RunTests, where Go keeps it. Go's ONLY parse is
+            // inside m.Run (testing.go:1944: `// TestMain may have already called flag.Parse.` /
+            // `if !flag.Parsed() { flag.Parse() }`), which runs AFTER TestMain. Parsing here made
+            // the host decide the moment for a package written to decide it itself: crypto/tls's
+            // TestMain installs `flag.Usage = …os.Exit(89)` and only then parses, and a parse that
+            // has already happened applies the DEFAULT Usage — exit 2 — so the override never
+            // fires. Measured: removing this file's unrecognized-flag verdict alone left BoGo's
+            // numbers byte-identical (1,340/1,902/0), because this call still ran first. The parse
+            // is not deleted, only relocated — the no-TestMain case still needs it, and gets it.
 
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
@@ -325,8 +328,17 @@ public static class TestHost
     private static nint RunTests(TestRegistry registry, TestRunner runner)
     {
         if (registry.TestMain is null)
+        {
+            // No TestMain: Go's generated main calls m.Run() directly, and m.Run parses. This path
+            // bypasses M.Run (it goes straight to the runner), so it performs that parse itself —
+            // which is what a package with custom test flags and no TestMain depends on entirely
+            // (os/signal's TestDetectNohup re-exec recursion is the corpus's witness).
+            TestFlagBridge.Parse();
             return runner.RunAll();
+        }
 
+        // With a TestMain, Go runs it BEFORE any parse so it can install flag.Usage and call
+        // flag.Parse itself; whatever it leaves unparsed, M.Run parses. Nothing may parse here.
         testing_package.M m = new() { Runner = runner };
         registry.TestMain(new StandardBox<testing_package.M>(m));
         return runner.HasRun ? runner.ExitCode : 0;
