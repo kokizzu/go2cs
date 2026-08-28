@@ -640,7 +640,7 @@ ID: id, goroutineSummary: Ꮡ(new goroutineSummary(nil))));
 // out of GoWaiting. If there was an active goroutine when this
 // happened, then we know that active goroutine unblocked another.
 // Scribble all these down so we can process them.
-[GoType("dyn")] partial struct RelatedGoroutinesV2_unblockEdge {
+[GoType("dyn")] internal partial struct RelatedGoroutinesV2_unblockEdge {
     internal GoID @operator;
     internal GoID operand;
 }
