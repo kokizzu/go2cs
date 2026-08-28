@@ -956,6 +956,32 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// and the first that kills the process (net.Interfaces() -> NetlinkRIB -> AccessViolation).
 		// syscall/linux/sockaddr_linux_impl.cs answers it with the mirror's native image + typed decode.
 		"Recvfrom": goosLinux,
+		// The class's remaining LINUX members, closed PROACTIVELY on 2026-08-28 rather than when
+		// reached — the one place this table's per-member-when-reached rule was deliberately not
+		// followed, and the reason is measured. verifyheap on a crashed os/exec host found the
+		// managed heap genuinely corrupt (6 errors in one contiguous ~0x180-byte run: a zeroed
+		// method table, members that are text where pointers belong, a syncblock index of
+		// 21,840,206), the smashed run held an `array<System.SByte>` enumerator, and the object
+		// referencing into it was ManagedPointerTokens.s_table's own node array. That is what this
+		// class's write actually is: the kernel does not merely produce a wrong ANSWER in the
+		// caller's struct, it writes its bytes over MANAGED REFERENCES in a GC-tracked slot, and
+		// the collector then follows them. A wrong answer is local and shows up in its own test; a
+		// smashed reference is not, and surfaces as an unattributable crash somewhere else. So for
+		// the write-into-struct members "no roster row reached it" is a statement about COVERAGE,
+		// not about execution, and the deferral is unsafe on its own terms.
+		//
+		// Bodies in syscall/linux/structclass_linux_impl.cs, each the established remedy (blittable
+		// mirror, size check at the boundary, field-for-field copy). Select and FcntlFlock are
+		// two-way — the kernel reads the caller's image AND writes its answer back — and both also
+		// BLOCK, which is the lifetime hazard wait4 was hand-owned for. All goosLinux: darwin
+		// declares Select/Statfs/Fstatfs with its own layouts and non-defective bodies, and
+		// Sysinfo/Adjtimex/FcntlFlock are Linux-only declarations.
+		"Select":     goosLinux,
+		"FcntlFlock": goosLinux,
+		"Statfs":     goosLinux,
+		"Fstatfs":    goosLinux,
+		"Sysinfo":    goosLinux,
+		"Adjtimex":   goosLinux,
 		// The OVERLAPPED family — the SUBMIT SEAM of the managed netpoller arc
 		// (docs/phase4/DESIGN-netpoll-managed-poller.md §4.3/§4.4/§4.5;
 		// syscall/windows/zsyscall_windows_wsa_impl.cs carries the full write-up). Same
