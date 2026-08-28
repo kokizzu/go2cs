@@ -512,6 +512,8 @@ public static class TestHost
 
     private static void CopyFixtures(IReadOnlyList<string> fixtures, string workingDirectory, string runRoot)
     {
+        int staged = 0;
+
         foreach (string relativePath in fixtures)
         {
             string normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);
@@ -551,6 +553,49 @@ public static class TestHost
             // real directory first.
             PackageAncestry.EnsureWritable(Path.GetDirectoryName(target)!, runRoot);
             File.Copy(source, target, true);
+            staged++;
+        }
+
+        // …but a suite that declares fixtures and stages NONE of them is not that case, and it is
+        // not a shrug either: it means the staging path itself is broken, and every test that reads
+        // a fixture is about to fail its own read for a reason no gate would attribute. That is
+        // exactly how time's banked TestLoadLocationFromTZDataSlim (pass/pass) reached master
+        // failing on the published path — R found it by A/B, because nothing in the harness said a
+        // word (2026-08-29). The per-file skip above stays for the relocated lone copy; the
+        // ALL-of-them case becomes the gate failure it should always have been.
+        //
+        // The discriminator is the host's own directory, because both situations reach here. A
+        // relocated copy is one executable someone copied out on its own; a published or built host
+        // sits among its dependencies and staged sources. So "alone" means alone: anything more
+        // than the executable itself says the fixtures were supposed to be here and are not.
+        if (fixtures.Count > 0 && staged == 0 && !HostIsLoneRelocatedCopy())
+        {
+            throw new InvalidOperationException(
+                $"fixture staging found none of the {fixtures.Count} fixture(s) this suite declares, " +
+                $"under '{AppContext.BaseDirectory}' — the run would proceed with an empty testdata and " +
+                "fail each reader with a bare file-not-found. This is a broken build/publish staging " +
+                "path, not a missing test input.");
+        }
+    }
+
+    // Whether this host is a lone executable someone copied out — os/exec's TestCommand and
+    // TestLookPathWindows do exactly that, mirroring what they do to Go's statically linked test
+    // binary, and such a copy legitimately carries no fixtures. Counting entries rather than
+    // probing for a marker keeps it honest for both the single-file shape (one file) and any
+    // future one, and it never mistakes a real host for a copy: a published host's directory holds
+    // its dependencies and staged sources, a built one holds its whole output.
+    private static bool HostIsLoneRelocatedCopy()
+    {
+        try
+        {
+            return Directory.EnumerateFileSystemEntries(AppContext.BaseDirectory).Take(2).Count() <= 1;
+        }
+        catch (Exception)
+        {
+            // Unreadable base directory: say NOT a lone copy, so the louder branch wins. A wrong
+            // guess here fails a run that would otherwise have failed each test individually — the
+            // safer direction of the two.
+            return false;
         }
     }
 

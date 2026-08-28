@@ -34,9 +34,22 @@ public class HostTestMainParseOrderTests
     // This binds the real converted flag package (see the csproj note) because "has a parse
     // happened yet" is only observable there.
 
+    // flag.Parsed() is PROCESS-global, and every TestHost.Run in this assembly reaches a parse, so
+    // these two guards would otherwise report whatever an unrelated test did first — the order
+    // dependence is in the observation, not in the host. Replacing flag.CommandLine with a fresh
+    // FlagSet resets Parsed() to the state a real test binary starts in, which is what makes the
+    // assertions mean anything regardless of execution order. (Found the honest way: adding the
+    // fixture guards made this file fail without touching it.)
+    private static void ResetConvertedFlagState()
+    {
+        flag_package.CommandLine = flag_package.NewFlagSet("guard", flag_package.ContinueOnError);
+    }
+
     [TestMethod]
     public void TestMainRunsBeforeTheCommandLineIsParsed()
     {
+        ResetConvertedFlagState();
+
         // Failing-first record (2026-08-28): flag.Parsed() was already TRUE here — the host had
         // parsed in Run() before RunTests invoked TestMain, so a Usage installed by this TestMain
         // could never apply to that parse.
@@ -60,6 +73,8 @@ public class HostTestMainParseOrderTests
         // TestMain relies on exactly that — os/signal's TestDetectNohup re-exec recursion is the
         // corpus's witness, where an unparsed -check_sighup_ignored read false in the child and it
         // re-exec'd itself without bound. So the parse moves rather than disappears.
+        ResetConvertedFlagState();
+
         TestRegistry registry = new("guard", []);
 
         TestHost.Run(registry, []);
