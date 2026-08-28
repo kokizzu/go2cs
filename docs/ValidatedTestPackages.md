@@ -58,13 +58,17 @@ once its remedy lands, because the arithmetic below moves when it goes.
   host's deployment shape structurally lacks. The bar: an entry must name a structural property of
   the deployment shape, never an unimplemented-but-fixable defect — and every entry is written to
   retire itself when the shape gains its named property. **One entry holds the class**:
-  `crypto/tls`'s `TestBogoSuite` names **fast process startup** — BoringSSL's runner spawns the
-  host once per case, 5,481 spawns inside Go's own 10-minute test-binary wall, and managed CLR
-  startup leaves the runner a ~20x shortfall against Go's 0.038 s statically linked start (the
-  manifest carries the measured number per deployment shape). It retires the way this class's
-  founding entry did — the relocatable single-file executable, whose 27 `os/exec` verdicts now
-  simply pass — when startup work (ReadyToRun/AOT) makes the shim fast enough that its row starts
-  passing; the class empties and is removed with it, the `chan-direction` precedent.
+  `crypto/tls`'s `TestBogoSuite` — BoringSSL's runner spawns the host once per case inside Go's
+  own 10-minute test-binary wall. The ReadyToRun rung was measured 2026-08-28: with 0.74 s shim
+  startup the runner completes the WHOLE configuration — 3,242 cases, zero failures, `ok` end to
+  end — in 1,316 s against that 600 s wall, 2.2x over on a 6-core host (down from ~20x), and the
+  arithmetic shows the wall is now THROUGHPUT-bound, not startup-bound: the zero-startup (AOT)
+  floor computes to ~980 s there, so no startup work alone retires it (the manifest carries the
+  full per-shape record). The interop itself is no longer in question at any width; the entry
+  retires when managed steady-state TLS throughput on the sweep host crosses the runner's own
+  deadline — and the class empties and is removed with it, the `chan-direction` precedent, exactly
+  as its founding entry (the relocatable single-file executable, whose 27 `os/exec` verdicts now
+  simply pass) already demonstrated.
 - **`runtime-capability`** — a test exercises a runtime facility whose output or behavior is
   *defined over the replaced runtime's own internals*: Go's type descriptors, its heap layout, its
   GC bookkeeping. Any managed rendering would be fabrication rather than implementation. The
