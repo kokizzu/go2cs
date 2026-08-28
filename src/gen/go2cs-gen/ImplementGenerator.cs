@@ -407,6 +407,7 @@ public class ImplementGenerator : ISourceGenerator
             // strands the extension receiver (CS1929 x2); project the field's box through the
             // generated ref accessor instead: `this.TCPConn.of(TCPConn.Rconn).Read(p)`.
             Dictionary<string, string> embedHopDeepPaths = new(StringComparer.Ordinal);
+            HashSet<string> embedHopValueMethods = new(StringComparer.Ordinal);
 
             if (embedHops.Count == 1)
             {
@@ -416,6 +417,8 @@ public class ImplementGenerator : ISourceGenerator
                 {
                     string hopSimpleName = GetSimpleName(embedHops[0].TypeName);
 
+                    embedHopValueMethods.UnionWith(hopDecl.GetExtensionMethods(hopCompilation).Select(method => GetSimpleName(method.Name)));
+
                     foreach ((string fieldName, string fieldTypeName) in hopDecl.GetEmbeddedValueHopNames())
                     {
                         foreach (string deepMethod in StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNames(fieldTypeName, hopCompilation))
@@ -424,6 +427,47 @@ public class ImplementGenerator : ISourceGenerator
                                 embedHopDeepPaths[deepMethod] = $".of({packageClassName}.{hopSimpleName}.Ꮡ{fieldName})";
                         }
                     }
+                }
+            }
+
+            // A pointer embed is not a struct's ONLY promotion source, so "one hop takes every
+            // unbound member" holds only while it is the ONLY depth-1 embed. net/http's
+            // `type breakableConn struct { net.Conn; *brokenState }` is the counter-example: Read,
+            // Close, LocalAddr, RemoteAddr and the three deadline setters promote from the
+            // INTERFACE embed, yet the single-hop arm claimed them all and emitted
+            // `m_box.Value.brokenState.Value.Read(p)` — CS1929 ×7 naming brokenState from a
+            // transport test, which is the several-pointer-embeds signature all over again, one
+            // embed KIND further out.
+            //
+            // Go decides depth-1 promotion PER MEMBER, routing each name to the embed whose method
+            // set declares it. So with MIXED embed kinds present, gate the hop on the members it
+            // actually provides — box-receiver methods, value-receiver methods, and the deep paths
+            // resolved above, plus a FOREIGN hop's metadata forms — and let everything else fall
+            // through to the interface-field and value-embed arms below, exactly as it would if
+            // there were no pointer embed at all. A member NEITHER arm places still lands on the
+            // template's bare `m_box` default: a loud CS1929 naming it, never a silent wrong
+            // receiver.
+            //
+            // With the pointer embed as the SOLE depth-1 embed there is nothing to decide — that
+            // member's promotion is what type-checked the cast — so the gate stays null and the
+            // unconditional path is byte-identical to what it always emitted.
+            HashSet<string>? embedHopMemberNames = null;
+
+            if (embedHops.Count == 1 &&
+                ((structDecl?.GetEmbeddedValueHopNames().Count ?? 0) > 0 || GetEmbeddedInterfaceFieldMembers(structType).Count > 0))
+            {
+                embedHopMemberNames = new HashSet<string>(embedHopBoxMethods, StringComparer.Ordinal);
+
+                embedHopMemberNames.UnionWith(embedHopValueMethods);
+                embedHopMemberNames.UnionWith(embedHopDeepPaths.Keys);
+
+                INamedTypeSymbol? gateHopElement = StructDeclarationSyntaxExtensions.GetPointerEmbeds(structType)
+                    .FirstOrDefault(embed => embed.Name == embedHops[0].Name).Type;
+
+                if (gateHopElement is not null &&
+                    !SymbolEqualityComparer.Default.Equals(gateHopElement.ContainingAssembly, syntaxContext.SemanticModel.Compilation.Assembly))
+                {
+                    embedHopMemberNames.UnionWith(StructDeclarationSyntaxExtensions.GetForeignValueReceiverMethods(gateHopElement).Keys);
                 }
             }
 
@@ -662,6 +706,11 @@ public class ImplementGenerator : ISourceGenerator
                     {
                         string simpleName = GetSimpleName(method.Name);
 
+                        // MIXED embed kinds: the hop takes only what it provides (see
+                        // embedHopMemberNames); the rest falls to the arms below.
+                        if (embedHopMemberNames is not null && !embedHopMemberNames.Contains(simpleName))
+                            continue;
+
                         if (!forwardReceivers.ContainsKey(simpleName))
                         {
                             if (embedHopDeepPaths.TryGetValue(simpleName, out string? deepPath))
@@ -719,16 +768,7 @@ public class ImplementGenerator : ISourceGenerator
                 // net.Conn) each member routes to the UNIQUE field declaring it — Go's
                 // promotion ambiguity rules reject a member two fields declare unless the
                 // struct overrides it, which forwardReceivers already resolved above.
-                List<(string FieldName, HashSet<string> Members)> embeddedIfaceFieldMembers = structType.GetMembers()
-                    .OfType<IFieldSymbol>()
-                    .Where(field => !field.IsStatic && field.Type.TypeKind == TypeKind.Interface &&
-                                    field.Type is INamedTypeSymbol &&
-                                    (field.Name == field.Type.Name || ShadowVarMarker + field.Name == field.Type.Name))
-                    .Select(field => (field.Name, new HashSet<string>(((INamedTypeSymbol)field.Type).AllInterfaces
-                        .Concat([(INamedTypeSymbol)field.Type])
-                        .SelectMany(iface => iface.GetMembers().OfType<IMethodSymbol>())
-                        .Select(method => method.Name), StringComparer.Ordinal)))
-                    .ToList();
+                List<(string FieldName, HashSet<string> Members)> embeddedIfaceFieldMembers = GetEmbeddedInterfaceFieldMembers(structType);
 
                 if (embeddedIfaceFieldMembers.Count > 0)
                 {
@@ -836,6 +876,31 @@ public class ImplementGenerator : ISourceGenerator
                             {
                                 forwardReceivers[methodName] = $"{receiver}.Value";
                                 break;
+                            }
+
+                            // The hop type may promote the member from an embedded INTERFACE of its
+                            // OWN — net/http's `closeWriteTestConn` value-embeds `rwTestConn`, which
+                            // embeds `io.Reader` and `io.Writer`, so Read and Write live on those
+                            // FIELDS' interface values. The depth-1 interface arm above looks at the
+                            // adapted struct's own fields only, so both members stayed unbound and
+                            // fell to the bare `m_box.Read(p)` default (CS1929 ×2). Ask the same
+                            // question at every hop level, keeping the arms in the same order the
+                            // outer ladder uses — the hop's own methods first, its embedded
+                            // interfaces next, a deeper value embed after that — which is Go's
+                            // shallower-wins rule applied one level down. A name SEVERAL of the
+                            // hop's interface fields declare is promoted from none of them (Go
+                            // rejects the tie), so it is left for the loud default.
+                            if (currentTypeSymbol is not null)
+                            {
+                                List<(string FieldName, HashSet<string> Members)> hopIfaceFields = GetEmbeddedInterfaceFieldMembers(currentTypeSymbol)
+                                    .Where(field => field.Members.Contains(methodName))
+                                    .ToList();
+
+                                if (hopIfaceFields.Count == 1)
+                                {
+                                    forwardReceivers[methodName] = $"{receiver}.Value.{hopIfaceFields[0].FieldName}";
+                                    break;
+                                }
                             }
                         }
                     }
@@ -958,8 +1023,43 @@ public class ImplementGenerator : ISourceGenerator
                 string valueAdapterScope = (interfaceType.DeclaredAccessibility == Accessibility.Public || GetScope(GetSimpleName(interfaceName)) == "public") &&
                                            (structType.DeclaredAccessibility == Accessibility.Public || GetScope(GetSimpleName(structName)) == "public") ? "public" : "internal";
 
+                // A FOREIGN struct can satisfy the interface by PROMOTION through an embedded
+                // interface FIELD instead of by a method of its own. Index those members here — a
+                // member the struct itself declares (in either receiver form) always wins, and a
+                // name SEVERAL embedded interfaces declare is promoted from none of them, exactly
+                // as the pointer adapter's own interface-field arm decides it.
+                Dictionary<string, string> valuePromotedFieldForwards = new(StringComparer.Ordinal);
+
+                if (structType is INamedTypeSymbol valueStructType)
+                {
+                    List<(string FieldName, HashSet<string> Members)> valueIfaceFields = GetEmbeddedInterfaceFieldMembers(valueStructType);
+
+                    if (valueIfaceFields.Count > 0)
+                    {
+                        HashSet<string> ownValueMembers = new(StructDeclarationSyntaxExtensions.GetForeignValueReceiverMethods(valueStructType).Keys, StringComparer.Ordinal);
+
+                        ownValueMembers.UnionWith(StructDeclarationSyntaxExtensions.GetForeignBoxReceiverMethodNames(valueStructType));
+
+                        foreach (MethodInfo valueMethod in methods)
+                        {
+                            string valueSimpleName = GetSimpleName(valueMethod.Name);
+
+                            if (ownValueMembers.Contains(valueSimpleName))
+                                continue;
+
+                            List<(string FieldName, HashSet<string> Members)> valueDeclaringFields = valueIfaceFields
+                                .Where(field => field.Members.Contains(valueSimpleName))
+                                .ToList();
+
+                            if (valueDeclaringFields.Count == 1)
+                                valuePromotedFieldForwards[valueSimpleName] = valueDeclaringFields[0].FieldName;
+                        }
+                    }
+                }
+
                 string valueAdapterSource = new ValueAdapterImplTemplate
                 {
+                    PromotedFieldForwards = valuePromotedFieldForwards,
                     PackageNamespace = packageNamespace,
                     PackageName = packageName,
                     // FULLY-qualified: the bare name resolves to the LOCAL same-named type
@@ -1271,7 +1371,7 @@ public class ImplementGenerator : ISourceGenerator
                 string methodName = EscapeCsKeyword(method.Name);
                 string returnType = RenderWithProxy(method.ReturnType, selfParameter, proxyName);
                 string parameters = string.Join(", ", method.Parameters.Select((parameter, index) => $"{RenderWithProxy(parameter.Type, selfParameter, proxyName)} {SafeParameterName(parameter.Name, index)}"));
-                string arguments = string.Join(", ", method.Parameters.Select((parameter, index) => SafeParameterName(parameter.Name, index)));
+                string arguments = string.Join(", ", method.Parameters.Select((parameter, index) => RenderForwardedArgument(parameter.Type, SafeParameterName(parameter.Name, index), selfParameter, elementName)));
 
                 if (methods.Length > 0)
                     methods.Append("\r\n\r\n        ");
@@ -1306,7 +1406,75 @@ public class ImplementGenerator : ISourceGenerator
         context.AddSource(GetUniqueHintName(emittedHintNames, GetValidFileName($"{packageNamespace}.{packageClassName}.{proxyName}-proxy.g.cs")), proxySource);
     }
 
+    /// <summary>
+    /// Gets a struct's DEPTH-1 embedded INTERFACE fields, each paired with every member name its
+    /// interface declares — including everything that interface itself embeds.
+    /// </summary>
+    /// <remarks>
+    /// Detection is SEMANTIC by name (the field's name equals its interface type's simple name),
+    /// because the converter names an embed field after the Go embed and a Δ-renamed interface TYPE
+    /// keeps a markerless FIELD (slogtest's <c>wrapper</c> embeds <c>slog.ΔHandler</c> as
+    /// <c>Handler</c>). It is a heuristic — an ordinary named field whose name happens to equal its
+    /// type's simple name matches too — which is why every caller resolves a hard marker FIRST and
+    /// consults this only for what remains. Enumeration order follows <c>GetMembers</c>, i.e.
+    /// declaration order, so the emission it feeds is deterministic.
+    /// </remarks>
+    private static List<(string FieldName, HashSet<string> Members)> GetEmbeddedInterfaceFieldMembers(ITypeSymbol structType) =>
+        structType.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Where(field => !field.IsStatic && field.Type.TypeKind == TypeKind.Interface &&
+                            field.Type is INamedTypeSymbol &&
+                            (field.Name == field.Type.Name || ShadowVarMarker + field.Name == field.Type.Name))
+            .Select(field => (field.Name, new HashSet<string>(((INamedTypeSymbol)field.Type).AllInterfaces
+                .Concat([(INamedTypeSymbol)field.Type])
+                .SelectMany(iface => iface.GetMembers().OfType<IMethodSymbol>())
+                .Select(method => method.Name), StringComparer.Ordinal)))
+            .ToList();
+
     private static string SafeParameterName(string name, int index) => string.IsNullOrEmpty(name) ? $"arg{index}" : EscapeCsKeyword(name);
+
+    // Renders ONE forwarded argument in a constraint-proxy forwarder body.
+    //
+    // A parameter whose type mentions the interface's self parameter is DECLARED on the proxy
+    // closed over the PROXY (`Action<TжTBRun>`), while the box extension the body forwards to is
+    // declared closed over the BOX (`Action<ж<testing.T>>`). At the TOP level the two implicit
+    // conversions the proxy emits marshal that boundary for free — a bare `T` argument converts
+    // proxy→box, a `T` result converts box→proxy. NESTED inside a delegate they cannot: C#
+    // delegate variance requires a REFERENCE conversion and does not lift a user-defined one
+    // through `Action<>`/`Func<>`. The forwarder then binds nothing (CS1929, reported against the
+    // ref-receiver overload because no ж-twin is applicable). net/http's own constraint is the
+    // shape — `type TBRun[T any] interface { testing.TB; Run(string, func(T)) bool }`.
+    //
+    // Re-wrap in a lambda whose parameters are typed with the self parameter substituted by the
+    // BOX, so every crossing takes an implicit conversion in whichever direction that position
+    // needs: box→proxy for an argument going IN, proxy→box for a self-typed RESULT coming OUT
+    // (the lambda's return type is inferred from the target delegate, where the conversion
+    // applies). The lambda parameters are named positionally with the temp marker, which no Go
+    // identifier can spell, so they cannot shadow the forwarder's own parameters.
+    //
+    // Anything that is NOT a delegate is returned untouched — the top-level implicit conversions
+    // already cover it — and so is a delegate with a by-ref parameter, which Go cannot express:
+    // a guess there would trade a clear diagnostic for a wrong marshalling.
+    private static string RenderForwardedArgument(ITypeSymbol parameterType, string parameterName, ITypeParameterSymbol selfParameter, string elementName)
+    {
+        if (SymbolEqualityComparer.Default.Equals(parameterType, selfParameter) ||
+            !ContainsTypeParameter(parameterType, selfParameter) ||
+            parameterType is not INamedTypeSymbol { TypeKind: TypeKind.Delegate } delegateType ||
+            delegateType.DelegateInvokeMethod is not { } invoke ||
+            invoke.Parameters.Any(parameter => parameter.RefKind != RefKind.None))
+        {
+            return parameterName;
+        }
+
+        string boxRef = $"{PointerPrefix}<{elementName}>";
+
+        string lambdaParameters = string.Join(", ", invoke.Parameters.Select((parameter, index) =>
+            $"{RenderWithProxy(parameter.Type, selfParameter, boxRef)} {TempVarMarker}{index}"));
+
+        string lambdaArguments = string.Join(", ", invoke.Parameters.Select((_, index) => $"{TempVarMarker}{index}"));
+
+        return $"({lambdaParameters}) => {parameterName}({lambdaArguments})";
+    }
 
     // Reports whether a type mentions the interface's self-type parameter anywhere in its shape.
     private static bool ContainsTypeParameter(ITypeSymbol type, ITypeParameterSymbol typeParameter) => type switch

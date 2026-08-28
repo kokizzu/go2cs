@@ -166,7 +166,9 @@ func (v *Visitor) iifeParamName(param *types.Var) string {
 // html/template's examplefiles_test.go:90, the only site in the Go 1.23 tree). Callers pair it with
 // iifeDelegateType, which already renders the matching `Actionꓸꓸꓸ`/`Funcꓸꓸꓸ` family type.
 func (v *Visitor) variadicFuncLitCallee(callExpr *ast.CallExpr) *types.Signature {
-	funcLit, ok := callExpr.Fun.(*ast.FuncLit)
+	// Unparenthesized, for the same reason convCallExpr's IIFE interception is: Go's idiomatic
+	// `(func(…){ … })(…)` puts an *ast.ParenExpr in Fun, and the two spellings are one program.
+	funcLit, ok := ast.Unparen(callExpr.Fun).(*ast.FuncLit)
 
 	if !ok {
 		return nil

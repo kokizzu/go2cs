@@ -1147,14 +1147,29 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 								return fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, nil), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
 							}
 
-							// Check if it's a function parameter
-							params := v.currentFuncSignature.Params()
-
-							for i := range params.Len() {
-								// It's a function parameter, skip dereferencing
-								if params.At(i) == selVar {
-									return fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, nil), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
-								}
+							// Check if it's a function parameter — asked of the enclosing DECLARATION's
+							// parameter objects, never of currentFuncSignature.
+							//
+							// The exemption is only true of a parameter visitFuncDecl emitted, because
+							// that is what gives a pointer parameter its deref ALIAS (`ж<T> Ꮡp` in the
+							// signature plus `ref var p = ref Ꮡp.DerefOrNull()` at entry), leaving the
+							// Go name already a value. A func LITERAL's pointer parameter has no such
+							// alias — the name IS the raw box — so it must take the deref below.
+							//
+							// currentFuncSignature cannot tell the two apart: convFuncLit SEEDS it with
+							// the literal's OWN signature when it is nil (needed for nil-safety at the
+							// receiver test just above), and nil is exactly the state of a package-level
+							// `var` initializer converted before any func declaration in its file. The
+							// literal's own parameter then matched this loop and the deref was dropped:
+							// net/http's `var hostPortHandler = HandlerFunc(func(w ResponseWriter, r
+							// *Request){…})` emitted `r.Close` / `r.RemoteAddr` on a `ж<Request>` (CS1061
+							// x2), while every sibling handler literal inside a function body — where the
+							// signature is the ENCLOSING declaration's — emitted `(~r).RemoteAddr`
+							// correctly. Method calls on the same parameter were never affected: their
+							// branches below already ask identIsParameter, which is object-identity based
+							// and populated only by visitFuncDecl. Ask the same question here.
+							if v.identIsParameter(exprIdent) {
+								return fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, nil), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
 							}
 						}
 					}
@@ -1341,6 +1356,75 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 
 								return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s%s.%s", xExpr,
 									v.structFieldBoxName(&ast.Ident{Name: embedField.Name()}, selectorExpr.X), deref, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+							}
+						}
+
+						// A POINTER embed followed by an all-VALUE tail. net/http's transport test is
+						// the shape — `type breakableConn struct { net.Conn; *brokenState }` over
+						// `type brokenState struct { sync.Mutex; broken bool }` — so `w.Lock()` inside
+						// `(*breakableConn).Write` promotes TWO hops. Neither arm claimed it: the
+						// cross-package pointer arm just above is single-level by construction, and the
+						// all-value descent below refuses a chain that STARTS at a pointer embed. It
+						// fell through to the bare `Ꮡw.Lock()`, which binds nothing on the box and lets
+						// overload resolution reach an unrelated same-named extension — CS1929 naming
+						// `http_package.fakeLocker` from a transport test, the same misleading shape a
+						// missing hop always produces.
+						//
+						// The first hop needs no &-machinery precisely BECAUSE it is a pointer embed:
+						// the field's VALUE already IS the `ж<brokenState>` box (the reason the arm
+						// above leaves pointer embeds to ordinary field access). Every remaining hop is
+						// a value embed, so it composes as the same `.of(<Owner>.Ꮡ<field>)` view the
+						// all-value descent uses, landing on the ж<> box of the method's receiver type:
+						// `w.brokenState.of(brokenState.ᏑMutex).Lock()`. A tail broken by a second
+						// pointer embed or a non-struct hop falls through unchanged, as before.
+						if len(sel.Index()) > 2 {
+							tailStruct, tailOK := ptr.Elem().Underlying().(*types.Struct)
+							tailFields := make([]*types.Var, 0, len(sel.Index())-2)
+							allValueTail := true
+
+							for _, idx := range sel.Index()[1 : len(sel.Index())-1] {
+								if !tailOK {
+									allValueTail = false
+									break
+								}
+
+								hop := tailStruct.Field(idx)
+
+								if !hop.Embedded() {
+									allValueTail = false
+									break
+								}
+
+								if _, isHopPtr := hop.Type().Underlying().(*types.Pointer); isHopPtr {
+									allValueTail = false
+									break
+								}
+
+								tailFields = append(tailFields, hop)
+								tailStruct, tailOK = hop.Type().Underlying().(*types.Struct)
+							}
+
+							if allValueTail && len(tailFields) > 0 {
+								xExpr := v.convExpr(selectorExpr.X, nil)
+
+								// X itself may render as a raw BOX (a ж local rather than a
+								// deref-aliased param/receiver) — hop through its Value first, exactly
+								// as the single-level pointer arm above does.
+								if _, xIsPtr := v.info.TypeOf(selectorExpr.X).Underlying().(*types.Pointer); xIsPtr && !v.exprIsDerefAliasedPointer(selectorExpr.X) {
+									xExpr += ".Value"
+								}
+
+								hopExpr := fmt.Sprintf("%s.%s", xExpr, v.structFieldBoxName(&ast.Ident{Name: embedField.Name()}, selectorExpr.X))
+								owner := ptr.Elem()
+
+								for _, hop := range tailFields {
+									ownerTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(owner, false))
+									hopExpr = fmt.Sprintf("%s.of(%s.%s%s)", hopExpr, v.boxAccessorType(ownerTypeName, "", owner),
+										AddressPrefix, v.structFieldBoxName(&ast.Ident{Name: hop.Name()}, selectorExpr.X))
+									owner = hop.Type()
+								}
+
+								return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", hopExpr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
 							}
 						}
 					} else {

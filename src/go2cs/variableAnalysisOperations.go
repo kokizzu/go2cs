@@ -2657,6 +2657,14 @@ func (v *Visitor) varIsDerefdPointerParam(varObj types.Object) bool {
 		return false
 	}
 
+	// A SELF-SEEDED signature is a func literal's own, not an enclosing declaration's (see
+	// convFuncLit's seed), and a literal's pointer parameter carries no deref alias — it IS the box
+	// — which is the exact property this predicate reports. Answering true there marks the literal's
+	// own parameter as box-ref-captured, so a NESTED literal renders the undeclared `Ꮡp` (CS0103).
+	if v.funcSignatureIsLiteralSeed {
+		return false
+	}
+
 	if _, isVar := varObj.(*types.Var); !isVar {
 		return false
 	}
