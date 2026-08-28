@@ -97,26 +97,26 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="atomic_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_andor_generic.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_andor_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_loong64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_mips64x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_mipsx.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_ppc64x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_s390x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atomic_wasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="bench_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="doc.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="stubs.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_64bit.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="unaligned.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="atomic_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_andor_generic.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_andor_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_loong64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_mips64x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_mipsx.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_ppc64x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_s390x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atomic_wasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="bench_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="doc.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="stubs.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_64bit.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unaligned.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
