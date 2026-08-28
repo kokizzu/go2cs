@@ -4357,7 +4357,7 @@ A census (2026-07-16) of every non-function predeclared Go identifier, the golib
 - **`required` and `scoped`** are C# 11 contextual keywords banned as *type* names (CS9029/CS9062, surfacing in both the converted declaration and the TypeGenerator's output). Both joined the `keywords` `@`-escape set like `file` (`partial struct @required` — the `@` escape is valid in every position and the generator carries it through). `record`, `partial`, and the other contextual keywords compile clean as type names on C# 13/net9 (verified empirically) and stay unescaped.
 - The keyword set carried the typo **`__argslist`**, which covered nothing: a Go local named `__arglist` hit the real (undocumented) Roslyn keyword and failed to parse (CS1002). Corrected — the local now emits `nint @__arglist = 5;`.
 
-Census rows verified fine with **no action needed** (each proven by a transpile-run-compare repro): locals named any predeclared identifier (`nil`, `iota`, `error`, `any`, `comparable`, `rune`, the numeric type names — Go-consistent shadowing carries over); user types named `error` or a predeclared type name in the common self-consistent cases; embedded predeclared fields (`struct{ float64; rune; any; int; string }` — the color-color form `internal rune rune;` compiles, with keyword-mapped embeds escaping only the field NAME: `internal nint @int;`); the golib `Defer`/`Recover` delegates (never spelled in emitted code — the defer machinery's lambda parameters are inferred); and a local named `heap` alongside heap-boxing machinery (`heap<nint>(out var Ꮡx)` is a *generic* invocation, which a non-generic local simple name cannot shadow). Known residuals, documented rather than fixed (unreachable under default flags in any constructed repro, or pathological): a user TYPE named a numeric alias name (`float64`, `int32`, `uintptr`, `complex64`, …) in a package where an emission would be *forced* to spell that predeclared name through inference; and `type string struct{}` (the golib `@string` spelling is escape-identical to the keyword-escaped user name).
+Census rows verified fine with **no action needed** (each proven by a transpile-run-compare repro): locals named any predeclared identifier (`nil`, `iota`, `error`, `any`, `comparable`, `rune`, the numeric type names — Go-consistent shadowing carries over); user types named `error` or a predeclared type name in the common self-consistent cases; embedded predeclared fields (`struct{ float64; rune; any; int; string }` — the color-color form `internal rune rune;` compiles, with keyword-mapped embeds escaping only the field NAME: `internal nint @int;`); the golib `Defer`/`Recover` delegates (never spelled in emitted code — the defer machinery's lambda parameters are inferred); and a local named `heap` alongside heap-boxing machinery (`heap<nint>(out var Ꮡx)` is a *generic* invocation, which a non-generic local simple name cannot shadow) — **half right, corrected 2026-08-28**: the generic form is genuinely immune for exactly the reason given, but the ARGUMENT-CARRYING form `heap(new T(), out var Ꮡx)` carries no type argument and does collide, which this row's repro never reached (see *A declaration named `heap` qualifies the boxing intrinsic* below). Known residuals, documented rather than fixed (unreachable under default flags in any constructed repro, or pathological): a user TYPE named a numeric alias name (`float64`, `int32`, `uintptr`, `complex64`, …) in a package where an emission would be *forced* to spell that predeclared name through inference; and `type string struct{}` (the golib `@string` spelling is escape-identical to the keyword-escaped user name).
 
 ### A parameter that shadows an imported package is renamed at its declaration too
 A function parameter whose name equals an imported package the function references — crypto/rsa's `func emsaPSSEncode(…, hash hash.Hash)`, where `hash` shadows the `hash` package named in the signature type `hash.Hash` — is shadow-renamed by the variable analysis (`hash` → `hashΔ1`) so it does not bind the `using hash = hash_package;` alias. Every **usage** already rendered the renamed name (convIdent reads `v.varNames`), but the parameter **declaration** was emitted from the raw `param.Name()`, so the signature kept `hash.Hash hash` while its uses were `hashΔ1` — CS0103 at every use (40 sites in crypto/rsa, 27 in testing/quick's `rand`). The declaration now resolves through the same `v.varNames` map, so it matches the usages:
@@ -4407,6 +4407,47 @@ Note this is the **opposite** direction from `packageBuiltinShadows` (see *Type-
 Collisions*): there the call genuinely *is* the built-in and a same-named package method shadows the
 C# `using static go.builtin`, so the call is emitted **qualified** as `builtin.<name>(…)`. Here the
 call is not a built-in at all. (Guarded by the `BuiltinShadowLocal` behavioral test.)
+
+### A declaration named `heap` qualifies the boxing intrinsic
+
+Every collision above is between two things the *Go source* names. This one the converter **invents**:
+`heap` is not a Go built-in, it is go2cs's own boxing helper (`golib`'s
+`heap(value, out var Ꮡname)` / `heap<T>(out var Ꮡname)`, in scope in every converted file through
+`using static go.builtin`), so a Go program may legally name anything `heap` with nothing in its source
+hinting at a conflict.
+
+The failure is the same CS0149 a shadowed built-in produces — a C# local or parameter wins simple-name
+lookup outright over a `using static` member — but it lands at a line the Go source did not write: the
+boxing prologue the converter emits for an address-taken local. It therefore reads as an emitter defect
+at the box site rather than as a name collision. `internal/trace`'s
+`func heapDebugString(heap []*batchCursor) string`, whose `strings.Builder` local needs a box, was the
+whole of that package's 92-verdict build wall:
+
+```csharp
+ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);   // CS0149: Method name expected
+```
+
+The remedy is the **opposite** of the shadow-renames elsewhere in this section: `heap` is the name the
+Go program chose and nothing about it is ambiguous in Go, so the identifier is preserved and the
+INTRINSIC is qualified instead — `builtin.heap(…)` — and only where a `heap` declaration is actually in
+scope, so the corpus stays byte-identical everywhere else. `heapIntrinsicName` supplies the spelling at
+all fourteen emission sites; `declaresHeapIntrinsicIdent` answers per function declaration (walking
+nested function literals, and OR-ed with a literal's own declarations in `convFuncLit`) and
+`packageDeclaresHeapIntrinsicIdent` per package, since a package-level `heap` emits as a member of the
+`<pkg>_package` class and wins lookup inside every method of it.
+
+Two boundaries are load-bearing. **A type-argument-carrying call is immune**: `heap<nint>(out var Ꮡx)`
+is a generic invocation, and a C# simple name followed by a type-argument list considers only generic
+methods — a local is never a candidate — which is why the 2026-07-16 census cleared this case and why a
+guard built on a scalar local proves nothing. Only the argument-carrying overload collides, in both its
+shapes: an address-taken struct local, and an address-taken value parameter that is itself named `heap`
+(which adds `CS0841: cannot use local variable 'heap' before it is declared`). **An import ALIAS named
+`heap` is not shadowing**: `import "container/heap"` renders as `using heap = go.container.heap_package;`,
+and a using-alias does not displace a `using static` method group in an invocation — proven by
+`container/heap`'s own banked `example_pq_test.cs`, which carries the alias and two heap-box emissions
+and compiles. `*types.PkgName` objects are excluded from the scan for that reason. (Guarded by the
+`BuiltinShadowLocal` behavioral test, which carries both colliding shapes and one non-shadowing control
+function that must keep the bare `heap<arr>(…)`.)
 
 ### A local that shadows a PACKAGE name is not a package qualifier
 

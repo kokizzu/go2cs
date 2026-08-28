@@ -1878,17 +1878,17 @@ func (v *Visitor) convertToHeapTypeDecl(ident *ast.Ident, createNew bool) string
 
 		if v.options.preferVarDecl {
 			if createNew {
-				return fmt.Sprintf("ref var %s = ref heap(new array<%s>(%s), out var %s%s);", varName, arrayType, arrayCtorArgs, AddressPrefix, csIDName)
+				return fmt.Sprintf("ref var %s = ref %s(new array<%s>(%s), out var %s%s);", varName, v.heapIntrinsicName(), arrayType, arrayCtorArgs, AddressPrefix, csIDName)
 			}
 
-			return fmt.Sprintf("ref var %s = ref heap<array<%s>>(out var %s%s);", varName, arrayType, AddressPrefix, csIDName)
+			return fmt.Sprintf("ref var %s = ref %s<array<%s>>(out var %s%s);", varName, v.heapIntrinsicName(), arrayType, AddressPrefix, csIDName)
 		}
 
 		if createNew {
-			return fmt.Sprintf("ref array<%s> %s = ref heap(new array<%s>(%s), out %s<array<%s>> %s%s);", arrayType, varName, arrayType, arrayCtorArgs, PointerPrefix, arrayType, AddressPrefix, csIDName)
+			return fmt.Sprintf("ref array<%s> %s = ref %s(new array<%s>(%s), out %s<array<%s>> %s%s);", arrayType, varName, v.heapIntrinsicName(), arrayType, arrayCtorArgs, PointerPrefix, arrayType, AddressPrefix, csIDName)
 		}
 
-		return fmt.Sprintf("ref array<%s> %s = ref heap<array<%s>>(out %s%s);", arrayType, varName, arrayType, AddressPrefix, csIDName)
+		return fmt.Sprintf("ref array<%s> %s = ref %s<array<%s>>(out %s%s);", arrayType, varName, v.heapIntrinsicName(), arrayType, AddressPrefix, csIDName)
 	}
 
 	csTypeName := convertToCSTypeName(goTypeName)
@@ -1902,17 +1902,17 @@ func (v *Visitor) convertToHeapTypeDecl(ident *ast.Ident, createNew bool) string
 
 	if v.options.preferVarDecl {
 		if createNew {
-			return fmt.Sprintf("ref var %s = ref heap(new %s(), out var %s%s);", varName, csTypeName, AddressPrefix, csIDName)
+			return fmt.Sprintf("ref var %s = ref %s(new %s(), out var %s%s);", varName, v.heapIntrinsicName(), csTypeName, AddressPrefix, csIDName)
 		}
 
-		return fmt.Sprintf("ref var %s = ref heap<%s>(out var %s%s);", varName, csTypeName, AddressPrefix, csIDName)
+		return fmt.Sprintf("ref var %s = ref %s<%s>(out var %s%s);", varName, v.heapIntrinsicName(), csTypeName, AddressPrefix, csIDName)
 	}
 
 	if createNew {
-		return fmt.Sprintf("ref %s %s = ref heap(out %s<%s> %s%s);", csTypeName, varName, PointerPrefix, csTypeName, AddressPrefix, csIDName)
+		return fmt.Sprintf("ref %s %s = ref %s(out %s<%s> %s%s);", csTypeName, varName, v.heapIntrinsicName(), PointerPrefix, csTypeName, AddressPrefix, csIDName)
 	}
 
-	return fmt.Sprintf("ref %s %s = ref heap<%s>(out %s%s);", csTypeName, varName, csTypeName, AddressPrefix, csIDName)
+	return fmt.Sprintf("ref %s %s = ref %s<%s>(out %s%s);", csTypeName, varName, v.heapIntrinsicName(), csTypeName, AddressPrefix, csIDName)
 }
 
 // isBoxedPointerLocal reports whether ident is a box-ref LOCAL of an inherently heap-allocated type

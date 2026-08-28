@@ -264,6 +264,11 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	v.useUnsafeFunc = false
 	v.loopCopyBackStack = nil
 
+	// Does anything in this declaration — or the package it lives in — name an identifier `heap`?
+	// If so, every heap-box emission below spells golib's intrinsic `builtin.heap` (see
+	// heapIntrinsicName); otherwise the bare `heap` the corpus reads everywhere.
+	v.heapIntrinsicShadowed = v.packageDeclaresHeapIntrinsicIdent() || v.declaresHeapIntrinsicIdent(funcDecl)
+
 	// Plan which repeated `string(x)` sstring conversions to lift to a single function-scope temp
 	// (loop-invariant / repeated-conversion hoisting — see planSStringHoists). Runs after tempVarCount
 	// is reset so the temp names are function-scoped, and before the body is emitted so visitBlockStmt
@@ -787,10 +792,10 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 				}
 
 				if v.options.preferVarDecl {
-					v.writeString(paramHeapBoxes, "%s%sref var %s = ref heap(%s, out var %s%s);", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(analyzedName), incomingName, AddressPrefix, analyzedName)
+					v.writeString(paramHeapBoxes, "%s%sref var %s = ref %s(%s, out var %s%s);", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(analyzedName), v.heapIntrinsicName(), incomingName, AddressPrefix, analyzedName)
 				} else {
 					csTypeName := v.getCSharpTypeName(param.Type())
-					v.writeString(paramHeapBoxes, "%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(v.indentLevel+1), csTypeName, getSanitizedIdentifier(analyzedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, analyzedName)
+					v.writeString(paramHeapBoxes, "%s%sref %s %s = ref %s(%s, out %s<%s> %s%s);", v.newline, v.indent(v.indentLevel+1), csTypeName, getSanitizedIdentifier(analyzedName), v.heapIntrinsicName(), incomingName, PointerPrefix, csTypeName, AddressPrefix, analyzedName)
 				}
 			}
 

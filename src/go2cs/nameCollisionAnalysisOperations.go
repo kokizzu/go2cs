@@ -395,3 +395,126 @@ func registerTestMethodRenames(objects []types.Object) {
 		testMethodRenames[obj] = true
 	}
 }
+
+// heapIntrinsicIdent is the Go identifier that shadows golib's heap-boxing intrinsic. Unlike the
+// name collisions above — which are Go declarations colliding with each OTHER through the emitter's
+// naming rules — this one is a collision go2cs INVENTS: `heap` is an ordinary, legal Go identifier
+// that no Go program is constrained by, and it only becomes a hazard because the converter emits
+// address-taken locals through golib's `heap(value, out var Ꮡname)` helper, imported by every
+// converted file via `using static go.builtin`.
+const heapIntrinsicIdent = "heap"
+
+// heapIntrinsicName is the spelling a heap-box emission must use for golib's boxing intrinsic in
+// the CURRENT function. Bare `heap` normally — that is what the whole corpus reads — and the
+// fully-qualified `builtin.heap` where a Go declaration of that name is in scope.
+//
+// A C# local, parameter or containing-class member wins simple-name lookup outright over a member
+// imported by `using static`, so a Go body that both declares `heap` and needs a heap box emits
+// `ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);` with `heap` bound to the DECLARATION
+// — `CS0149: Method name expected`, which reads as an emitter defect at the box site rather than as
+// a name collision (internal/trace's `heapDebugString(heap []*batchCursor)`, the whole of that
+// package's 92-verdict build wall). Qualifying is the minimal remedy: it renames nothing the Go
+// source chose, and it is conditional so the corpus stays byte-identical everywhere the collision
+// does not exist.
+//
+// An IMPORT alias named `heap` (`import "container/heap"`, which the converter renders as
+// `using heap = go.container.heap_package;`) is deliberately NOT treated as shadowing: a using-alias
+// does not displace a `using static` method group in an invocation, proven by container/heap's own
+// banked example_pq_test.cs, which carries both the alias and two heap-box emissions and compiles.
+func (v *Visitor) heapIntrinsicName() string {
+	if v.heapIntrinsicShadowed {
+		return "builtin." + heapIntrinsicIdent
+	}
+
+	return heapIntrinsicIdent
+}
+
+// declaresHeapIntrinsicIdent reports whether node declares — anywhere inside it, nested function
+// literals included — a Go object named `heap` that would win C# simple-name lookup over golib's
+// intrinsic. Package names are excluded (see heapIntrinsicName); everything else that Defs records
+// is a local, parameter, result, field, constant, type or function whose emitted C# name is exactly
+// `heap`.
+func (v *Visitor) declaresHeapIntrinsicIdent(node ast.Node) bool {
+	if node == nil || v.info == nil || !v.packageMentionsHeapIntrinsicIdent() {
+		return false
+	}
+
+	shadowed := false
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		if shadowed {
+			return false
+		}
+
+		ident, ok := n.(*ast.Ident)
+
+		if !ok || ident.Name != heapIntrinsicIdent {
+			return true
+		}
+
+		obj := v.info.Defs[ident]
+
+		if obj == nil {
+			return true
+		}
+
+		if _, isPackageName := obj.(*types.PkgName); isPackageName {
+			return true
+		}
+
+		shadowed = true
+
+		return false
+	})
+
+	return shadowed
+}
+
+// packageMentionsHeapIntrinsicIdent reports whether the package under conversion declares an object
+// named `heap` ANYWHERE, at any scope. It is the cheap gate in front of declaresHeapIntrinsicIdent's
+// per-declaration AST walk: without it every function in every package pays a second full traversal
+// to learn what one pass over the package's own Defs map answers for all of them. Computed once and
+// cached; the overwhelmingly common answer is false, and a false answer means no walk happens at all.
+func (v *Visitor) packageMentionsHeapIntrinsicIdent() bool {
+	if v.heapIdentInPackage == nil {
+		mentions := false
+
+		for ident, obj := range v.info.Defs {
+			if ident == nil || ident.Name != heapIntrinsicIdent || obj == nil {
+				continue
+			}
+
+			if _, isPackageName := obj.(*types.PkgName); isPackageName {
+				continue
+			}
+
+			mentions = true
+
+			break
+		}
+
+		v.heapIdentInPackage = &mentions
+	}
+
+	return *v.heapIdentInPackage
+}
+
+// packageDeclaresHeapIntrinsicIdent reports whether the package under conversion declares `heap` at
+// PACKAGE level. Such a declaration emits as a member of the `<pkg>_package` class, which wins
+// simple-name lookup inside every method of that class — so the qualification is package-wide, not
+// per function.
+func (v *Visitor) packageDeclaresHeapIntrinsicIdent() bool {
+	if v.pkg == nil || v.pkg.Scope() == nil {
+		return false
+	}
+
+	obj := v.pkg.Scope().Lookup(heapIntrinsicIdent)
+
+	if obj == nil {
+		return false
+	}
+
+	_, isPackageName := obj.(*types.PkgName)
+
+	return !isPackageName
+}

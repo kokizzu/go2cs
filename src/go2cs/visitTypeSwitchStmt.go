@@ -226,7 +226,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 					rawName := v.getIdentName(guardIdent)
 					tempName := getGlobalTempVarName(rawName)
 					bindIdent = tempName
-					boxBindingDecl = fmt.Sprintf("ref var %s = ref heap(%s, out var %s%s);", getSanitizedIdentifier(rawName), tempName, AddressPrefix, rawName)
+					boxBindingDecl = fmt.Sprintf("ref var %s = ref %s(%s, out var %s%s);", getSanitizedIdentifier(rawName), v.heapIntrinsicName(), tempName, AddressPrefix, rawName)
 				}
 			}
 
