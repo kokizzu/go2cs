@@ -55,28 +55,16 @@ once its remedy lands, because the arithmetic below moves when it goes.
   replaced by converted Go `testing`. Minted 2026-08-26 with `log/slog`'s `TestRecordSource`, which
   asserts that two frames above itself sits `testing.tRunner` in `testing.go`.
 - **`host-limit`** — a test's premise rests on a property of the test *binary* that the converted
-  host's deployment shape structurally lacks. The class's FOUNDING capability — a **relocatable
-  single-file test executable** (Go's test binary is statically linked, so `os/exec` copies it into
-  a temporary directory and runs the copy, while a framework-dependent .NET apphost is bound at
-  build time to a same-basename managed assembly beside it, and a lone relocated file died in
-  hostfxr) — **RETIRED on 2026-08-27, exactly as its own text said it would**: the `-tests` host
-  now publishes as a self-contained single-file executable (the .NET 10 hop deliverable the hop
-  had left standing, `PLAN-corpus-upgrade`'s ruled schedule), the copies run, `os/exec`'s 27
-  pinned verdicts pass on their own measurement, and the entry is removed with the arithmetic
-  moving — the `chan-direction` precedent. Two entries remain, each naming what it needs.
-  `crypto/tls`'s `TestBogoSuite` names **fast process startup**: BoringSSL's runner spawns the
-  host once per case — 5,481 spawns inside Go's own 10-minute test-binary wall — and managed CLR
+  host's deployment shape structurally lacks. The bar: an entry must name a structural property of
+  the deployment shape, never an unimplemented-but-fixable defect — and every entry is written to
+  retire itself when the shape gains its named property. **One entry holds the class**:
+  `crypto/tls`'s `TestBogoSuite` names **fast process startup** — BoringSSL's runner spawns the
+  host once per case, 5,481 spawns inside Go's own 10-minute test-binary wall, and managed CLR
   startup leaves the runner a ~20x shortfall against Go's 0.038 s statically linked start (the
-  entry's own manifest carries the measured number per deployment shape); it retires the same
-  self-retiring way, when startup work (ReadyToRun/AOT) makes the shim fast enough that its row
-  starts passing. And `runtime/debug`'s `TestStack` asserts that the testing framework's own frame
-  names `testing/testing.go`, which is a property of Go's test *binary*, whose testing package is
-  compiled from that source. The converted host is hand-written C# with no line-for-line
-  relationship to it — the design, not a gap — so no deployment shape makes that frame true. That
-  entry is **structural and permanent**, and it retires only if the host itself becomes a
-  conversion of Go's `testing`, which the one-testing-package rule forecloses. The bar is
-  unchanged: an entry must name a structural property of the deployment shape, never an
-  unimplemented-but-fixable defect.
+  manifest carries the measured number per deployment shape). It retires the way this class's
+  founding entry did — the relocatable single-file executable, whose 27 `os/exec` verdicts now
+  simply pass — when startup work (ReadyToRun/AOT) makes the shim fast enough that its row starts
+  passing; the class empties and is removed with it, the `chan-direction` precedent.
 - **`runtime-capability`** — a test exercises a runtime facility whose output or behavior is
   *defined over the replaced runtime's own internals*: Go's type descriptors, its heap layout, its
   GC bookkeeping. Any managed rendering would be fabrication rather than implementation. The
