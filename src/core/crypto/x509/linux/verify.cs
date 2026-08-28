@@ -833,7 +833,7 @@ internal static slice<ж<Certificate>> appendToFreshChain(slice<ж<Certificate>>
     return n;
 }
 
-[GoType("dyn")] partial interface alreadyInChain_pubKeyEqual {
+[GoType("dyn")] internal partial interface alreadyInChain_pubKeyEqual {
     bool Equal(cryptoꓸPublicKey _);
 }
 

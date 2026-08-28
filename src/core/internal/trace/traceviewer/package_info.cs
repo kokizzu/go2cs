@@ -102,6 +102,7 @@ public static partial class traceviewer_package
     // via declarations below.
 
     // <TypeAccessibility>
+    [GoLocalName("eventSz")] internal partial struct SplittingTraceConsumer_eventSz {}
     internal partial struct countingWriter {}
     internal partial struct frameNode {}
     internal partial struct heapStats {}
@@ -118,7 +119,6 @@ public static partial class traceviewer_package
     public partial struct ProfileRecord {}
     public partial struct Range {}
     public partial struct SliceEvent {}
-    [GoLocalName("eventSz")] public partial struct SplittingTraceConsumer_eventSz {}
     public partial struct ThreadState {}
     public partial struct TimeHistogram {}
     public partial struct TraceConsumer {}

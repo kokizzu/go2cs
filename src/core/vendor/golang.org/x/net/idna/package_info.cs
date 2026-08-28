@@ -84,8 +84,8 @@ public static partial class idna_package
     internal partial struct runeError {}
     internal partial struct sparseBlocks {}
     internal partial struct valueRange {}
+    internal partial struct Δcategory {}
     public partial struct Profile {}
     public partial struct options {}
-    public partial struct Δcategory {}
     // </TypeAccessibility>
 }

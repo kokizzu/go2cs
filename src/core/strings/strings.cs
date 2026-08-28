@@ -398,7 +398,7 @@ public static slice<@string> Fields(@string s) {
 
 // A span is used to record a slice of s of the form s[start:end].
 // The start index is inclusive and the end index is exclusive.
-[GoType("dyn")] partial struct FieldsFunc_span {
+[GoType("dyn")] internal partial struct FieldsFunc_span {
     internal nint start;
     internal nint end;
 }

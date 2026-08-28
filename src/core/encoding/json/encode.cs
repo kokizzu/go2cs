@@ -881,7 +881,7 @@ internal static void encodeByteSlice(ж<encodeState> Ꮡe, reflectꓸValue v, en
     internal Action<ж<encodeState>, reflectꓸValue, encOpts> arrayEnc;
 }
 
-[GoType("dyn")] partial struct encode_ptr {
+[GoType("dyn")] internal partial struct encode_ptr {
     internal any ptr;         // always an unsafe.Pointer, but avoids a dependency on package unsafe
     internal nint len;
 }

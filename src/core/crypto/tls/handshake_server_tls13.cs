@@ -442,7 +442,7 @@ internal static readonly @string tlsInvalidPskBinderˢ = "tls: invalid PSK binde
 }
 
 // Recreate the interface to avoid importing encoding.
-[GoType("dyn")] partial interface cloneHash_binaryMarshaler {
+[GoType("dyn")] internal partial interface cloneHash_binaryMarshaler {
     (slice<byte> data, error err) MarshalBinary();
     error UnmarshalBinary(slice<byte> data);
 }

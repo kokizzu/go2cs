@@ -4192,8 +4192,30 @@ func TestGeneratedTypeScopeMirrorsGeneratorRule(t *testing.T) {
 		{"_", "public"},
 		{"_func", "internal"},
 		{"@decimal", "internal"},
+		// The collision marker is STRIPPED before the export rule reads the name (2026-08-29). It
+		// is an emission artifact, not part of the Go identifier: Δ is a Greek CAPITAL, so reading
+		// it verbatim made every Δ-renamed UNEXPORTED type public — 34 in the corpus (Δsockaddr,
+		// Δcommon, ΔgobType, …) — while their un-renamed siblings stayed internal. The marker says
+		// "this name collided", never "this name is exported".
 		{ShadowVarMarker + "Month", "public"},
-		{ShadowVarMarker + "guintptr", "public"},
+		{ShadowVarMarker + "guintptr", "internal"},
+		// ...but a SYNTHESIZED anonymous-type lift is not a Go identifier at all, so there is no
+		// export rule to apply and it stays public. The converter names every anonymous
+		// struct/interface/composite-literal type with the placeholder "type" — a Go KEYWORD, so no
+		// user type can collide with the match. Demoting these broke the AnonymousInterfaces
+		// behavioral test with CS0061: a lifted anonymous interface is emitted as the BASE of the
+		// exported named interface that embedded it, and C# forbids a public interface whose base
+		// is less accessible.
+		{ShadowVarMarker + "type", "public"},
+		{ShadowVarMarker + "type" + TempVarMarker + "1", "public"},
+		{ShadowVarMarker + "type" + TempVarMarker + "12", "public"},
+		// The placeholder match must not swallow real Go identifiers that merely start with "type",
+		// nor a sanitized user type carrying the same arity marker (Δsliceᴛ comes from a Go `slice`).
+		{ShadowVarMarker + "typeDecl", "internal"},
+		{ShadowVarMarker + "TypeDecl", "public"},
+		{ShadowVarMarker + "slice" + TempVarMarker, "internal"},
+		{ShadowVarMarker + "type" + TempVarMarker, "internal"},
+		{ShadowVarMarker + "type" + TempVarMarker + "x", "internal"},
 		{PointerPrefix + "Elem", "internal"},
 		{"", "internal"},
 	}

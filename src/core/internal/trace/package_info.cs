@@ -107,6 +107,9 @@ public static partial class trace_package
 
     // <TypeAccessibility>
     internal partial interface readBatch_r {}
+    [GoLocalName("perP")] internal partial struct MutatorUtilizationV2_perP {}
+    [GoLocalName("procsCount")] internal partial struct MutatorUtilizationV2_procsCount {}
+    [GoLocalName("unblockEdge")] internal partial struct RelatedGoroutinesV2_unblockEdge {}
     internal partial struct accumulator {}
     internal partial struct bandUtil {}
     internal partial struct bandUtilHeap {}
@@ -159,13 +162,10 @@ public static partial class trace_package
     public partial struct GoroutineSummary {}
     public partial struct MMUCurve {}
     public partial struct MutatorUtil {}
-    [GoLocalName("perP")] public partial struct MutatorUtilizationV2_perP {}
-    [GoLocalName("procsCount")] public partial struct MutatorUtilizationV2_procsCount {}
     public partial struct ProcID {}
     public partial struct ProcState {}
     public partial struct RangeAttribute {}
     public partial struct Reader {}
-    [GoLocalName("unblockEdge")] public partial struct RelatedGoroutinesV2_unblockEdge {}
     public partial struct ResourceID {}
     public partial struct ResourceKind {}
     public partial struct StackFrame {}

@@ -66,7 +66,7 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial struct builder {}
+    internal partial struct Δsliceᴛ {}
     public partial struct Sieve {}
-    public partial struct Δsliceᴛ {}
     // </TypeAccessibility>
 }

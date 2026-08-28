@@ -83,6 +83,6 @@ public static partial class testenv_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial interface CommandContext_type {}
+    internal partial interface CommandContext_type {}
     // </TypeAccessibility>
 }

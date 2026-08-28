@@ -515,7 +515,7 @@ internal static uintptr efaceHash(any iʗp, uintptr seed) {
     return nilinterhash((uintptr)noescape(new @unsafe.Pointer(Ꮡi)), seed);
 }
 
-[GoType("dyn")] partial interface ifaceHash_i {
+[GoType("dyn")] internal partial interface ifaceHash_i {
     void F();
 }
 

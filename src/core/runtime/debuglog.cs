@@ -698,14 +698,14 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
 }
 
 // Prepare read state for all logs.
-[GoType("dyn")] partial struct printDebugLog_readState {
+[GoType("dyn")] internal partial struct printDebugLog_readState {
     internal partial ref debugLogReader debugLogReader { get; }
     internal bool first;
     internal uint64 lost;
     internal uint64 nextTick;
 }
 
-[GoType("dyn")] partial struct printDebugLog_best {
+[GoType("dyn")] internal partial struct printDebugLog_best {
     internal uint64 tick;
     internal nint i;
 }

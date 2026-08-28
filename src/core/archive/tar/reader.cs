@@ -763,7 +763,7 @@ internal static (sparseDatas, error) readGNUSparseMap0x1(map<@string, @string> p
 
 }
 
-[GoType("dyn")] partial struct WriteTo_src {
+[GoType("dyn")] internal partial struct WriteTo_src {
     public io_package.Reader Reader;
 }
 

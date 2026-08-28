@@ -1059,7 +1059,7 @@ Type: raw.typ, P: p.lastP, G: p.lastG);
 // time stamps that do not respect actual event ordering.
 public static error ErrTimeOrder = errors.New("time stamps out of order"u8);
 
-[GoType("dyn")] partial struct postProcessTrace_gdesc {
+[GoType("dyn")] internal partial struct postProcessTrace_gdesc {
     internal nint state;
     internal ж<Event> ev;
     internal ж<Event> evStart;
@@ -1067,7 +1067,7 @@ public static error ErrTimeOrder = errors.New("time stamps out of order"u8);
     internal ж<Event> evMarkAssist;
 }
 
-[GoType("dyn")] partial struct postProcessTrace_pdesc {
+[GoType("dyn")] internal partial struct postProcessTrace_pdesc {
     internal bool running;
     internal uint64 g;
     internal ж<Event> evSweep;

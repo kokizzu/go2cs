@@ -211,6 +211,7 @@ public static partial class tls_package
     [GoValueClone("aesKey", "hmacKey")] internal partial struct ticketKey {}
     internal partial struct timeoutError {}
     [GoValueClone("nonceMask")] internal partial struct xorNonceAEAD {}
+    internal partial struct ΔfinishedHash {}
     public partial interface ClientSessionCache {}
     public partial struct AlertError {}
     public partial struct Certificate {}
@@ -238,6 +239,5 @@ public static partial class tls_package
     public partial struct echCipher {}
     public partial struct echExtension {}
     public partial struct ΔConnectionState {}
-    public partial struct ΔfinishedHash {}
     // </TypeAccessibility>
 }

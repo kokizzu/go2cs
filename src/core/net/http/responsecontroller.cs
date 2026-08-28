@@ -42,7 +42,7 @@ public static ж<ResponseController> NewResponseController(ResponseWriter rw) {
     ResponseWriter Unwrap();
 }
 
-[GoType("dyn")] partial interface Flush_type {
+[GoType("dyn")] internal partial interface Flush_type {
     error FlushError();
 }
 
@@ -89,7 +89,7 @@ public static ж<ResponseController> NewResponseController(ResponseWriter rw) {
     }
 }
 
-[GoType("dyn")] partial interface SetReadDeadline_type {
+[GoType("dyn")] internal partial interface SetReadDeadline_type {
     error SetReadDeadline(time.Time _);
 }
 
@@ -116,7 +116,7 @@ public static ж<ResponseController> NewResponseController(ResponseWriter rw) {
     }
 }
 
-[GoType("dyn")] partial interface SetWriteDeadline_type {
+[GoType("dyn")] internal partial interface SetWriteDeadline_type {
     error SetWriteDeadline(time.Time _);
 }
 
@@ -144,7 +144,7 @@ public static ж<ResponseController> NewResponseController(ResponseWriter rw) {
     }
 }
 
-[GoType("dyn")] partial interface EnableFullDuplex_type {
+[GoType("dyn")] internal partial interface EnableFullDuplex_type {
     error EnableFullDuplex();
 }
 

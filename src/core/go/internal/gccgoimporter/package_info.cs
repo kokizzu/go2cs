@@ -94,13 +94,13 @@ public static partial class gccgoimporter_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface GetImporter_type {}
     internal partial struct fixupRecord {}
     internal partial struct importError {}
     [GoLocalName("typeOffset")] internal partial struct parseTypes_typeOffset {}
     internal partial struct parser {}
     internal partial struct reservedᴛ1 {}
     internal partial struct seekerReadAt {}
-    public partial interface GetImporter_type {}
     public partial struct GccgoInstallation {}
     public partial struct InitData {}
     public partial struct PackageInit {}

@@ -110,7 +110,10 @@ public static partial class x509_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface CreateCertificate_privateKey {}
     internal partial interface alreadyInChain_pubKeyEqual {}
+    internal partial struct AppendCertsFromPEM_lazyCert {}
+    internal partial struct CreateCertificateRequest_attr {}
     internal partial struct authKeyId {}
     internal partial struct authorityInfoAccess {}
     internal partial struct basicConstraints {}
@@ -134,14 +137,11 @@ public static partial class x509_package
     internal partial struct rfc2821Mailbox {}
     internal partial struct signatureAlgorithmDetailsᴛ1 {}
     internal partial struct sum224 {}
-    public partial interface CreateCertificate_privateKey {}
-    public partial struct AppendCertsFromPEM_lazyCert {}
     public partial struct CertPool {}
     public partial struct Certificate {}
     public partial struct CertificateInvalidError {}
     public partial struct CertificateRequest {}
     public partial struct ConstraintViolationError {}
-    public partial struct CreateCertificateRequest_attr {}
     public partial struct ExtKeyUsage {}
     public partial struct HostnameError {}
     public partial struct InsecureAlgorithmError {}

@@ -207,6 +207,7 @@ public static partial class net_package
     internal partial interface sendFile_type {}
     internal partial interface temporary {}
     internal partial interface timeout {}
+    internal partial interface Δsockaddr {}
     internal partial struct addrList {}
     internal partial struct addrPortUDPAddr {}
     internal partial struct addrinfoErrno {}
@@ -253,12 +254,13 @@ public static partial class net_package
     internal partial struct tcpConnWithoutWriteTo {}
     internal partial struct temporaryError {}
     internal partial struct timeoutError {}
+    internal partial struct Δfile {}
+    internal partial struct ΔhostLookupOrder {}
     public partial interface Conn {}
     public partial interface Listener {}
     public partial interface PacketConn {}
     public partial interface ΔAddr {}
     public partial interface ΔError {}
-    public partial interface Δsockaddr {}
     public partial struct AddrError {}
     public partial struct Buffers {}
     public partial struct DNSConfigError {}
@@ -291,7 +293,5 @@ public static partial class net_package
     public partial struct UnixListener {}
     public partial struct UnknownNetworkError {}
     public partial struct scope {}
-    public partial struct Δfile {}
-    public partial struct ΔhostLookupOrder {}
     // </TypeAccessibility>
 }

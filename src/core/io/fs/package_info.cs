@@ -77,6 +77,7 @@ public static partial class fs_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface Timeout_type {}
     internal partial struct dirInfo {}
     internal partial struct subFS {}
     public partial interface DirEntry {}
@@ -89,7 +90,6 @@ public static partial class fs_package
     public partial interface ReadFileFS {}
     public partial interface StatFS {}
     public partial interface SubFS {}
-    public partial interface Timeout_type {}
     public partial struct FileMode {}
     public partial struct PathError {}
     // </TypeAccessibility>

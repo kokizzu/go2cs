@@ -108,6 +108,6 @@ public static partial class gcimporter_package
     internal partial struct readerDict {}
     internal partial struct setConstraintArgs {}
     internal partial struct typeInfo {}
-    public partial struct Δident {}
+    internal partial struct Δident {}
     // </TypeAccessibility>
 }

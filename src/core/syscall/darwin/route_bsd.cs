@@ -68,7 +68,7 @@ internal static (ж<SockaddrDatalink>, error) parseSockaddrLink(slice<byte> b) {
 // +----------------------------+
 // | Data            (variable) |
 // +----------------------------+
-[GoType("dyn")] partial struct parseLinkLayerAddr_linkLayerAddr {
+[GoType("dyn")] internal partial struct parseLinkLayerAddr_linkLayerAddr {
     public byte Type;
     public byte Nlen;
     public byte Alen;

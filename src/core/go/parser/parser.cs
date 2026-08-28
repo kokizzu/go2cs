@@ -2678,7 +2678,7 @@ internal static readonly @string varDeclarationNotAllowedˢ = "var declaration n
 internal static readonly @string booleanExpressionˢ = "boolean expression"u8;
 internal static readonly @string unexpectedNewlineˢ = "unexpected newline, expecting { after if clause"u8;
 
-[GoType("dyn")] partial struct parseIfHeader_semi {
+[GoType("dyn")] internal partial struct parseIfHeader_semi {
     internal tokenꓸPos pos;
     internal @string lit; // ";" or "\n"; valid if pos.IsValid()
 }

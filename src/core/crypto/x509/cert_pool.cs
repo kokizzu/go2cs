@@ -247,7 +247,7 @@ internal static bool contains(this ж<CertPool> Ꮡs, ж<Certificate> Ꮡcert) {
     s.byName[rawSubject] = append(s.byName[rawSubject], builtin.len(s.lazyCerts) - 1);
 }
 
-[GoType("dyn")] partial struct AppendCertsFromPEM_lazyCert {
+[GoType("dyn")] internal partial struct AppendCertsFromPEM_lazyCert {
     public partial ref sync_package.Once Once { get; }
     internal ж<Certificate> v;
 }

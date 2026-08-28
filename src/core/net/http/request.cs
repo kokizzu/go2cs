@@ -1258,7 +1258,7 @@ internal static readonly @string httpRequestBodyTooLargeˢ = "http: request body
 // cmd/go) from also linking in the HTTP server, don't
 // use a static type assertion to the server
 // "*response" type. Check this interface instead:
-[GoType("dyn")] partial interface Read_requestTooLarger {
+[GoType("dyn")] internal partial interface Read_requestTooLarger {
     void requestTooLarge();
 }
 

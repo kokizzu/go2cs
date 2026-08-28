@@ -92,9 +92,9 @@ public static partial class template_package
     internal partial struct option {}
     internal partial struct state {}
     internal partial struct variable {}
+    internal partial struct ΔwriteError {}
     public partial struct ExecError {}
     public partial struct FuncMap {}
     public partial struct Template {}
-    public partial struct ΔwriteError {}
     // </TypeAccessibility>
 }

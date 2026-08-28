@@ -278,6 +278,12 @@ public static partial class http_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface CloseIdleConnections_closeIdler {}
+    internal partial interface EnableFullDuplex_type {}
+    internal partial interface Flush_type {}
+    internal partial interface Read_requestTooLarger {}
+    internal partial interface SetReadDeadline_type {}
+    internal partial interface SetWriteDeadline_type {}
     internal partial interface anyDirs {}
     internal partial interface closeWriter {}
     internal partial interface erringRoundTripper {}
@@ -300,6 +306,7 @@ public static partial class http_package
     internal partial interface rwUnwrapper {}
     internal partial interface setRequestCancel_canceler {}
     internal partial interface sniffSig {}
+    internal partial struct Write_r1 {}
     internal partial struct body {}
     internal partial struct bodyEOFSignal {}
     internal partial struct bodyLocked {}
@@ -481,21 +488,16 @@ public static partial class http_package
     internal partial struct wantConn {}
     internal partial struct wantConnQueue {}
     internal partial struct writerOnly {}
-    public partial interface CloseIdleConnections_closeIdler {}
+    internal partial struct ΔwriteRequest {}
     public partial interface CloseNotifier {}
     public partial interface CookieJar {}
-    public partial interface EnableFullDuplex_type {}
     public partial interface File {}
     public partial interface FileSystem {}
-    public partial interface Flush_type {}
     public partial interface Flusher {}
     public partial interface Hijacker {}
     public partial interface Pusher {}
-    public partial interface Read_requestTooLarger {}
     public partial interface ResponseWriter {}
     public partial interface RoundTripper {}
-    public partial interface SetReadDeadline_type {}
-    public partial interface SetWriteDeadline_type {}
     public partial interface http2ClientConnPool {}
     public partial interface http2WriteScheduler {}
     public partial interface ΔHandler {}
@@ -512,7 +514,6 @@ public static partial class http_package
     public partial struct ServeMux {}
     public partial struct Server {}
     public partial struct Transport {}
-    public partial struct Write_r1 {}
     public partial struct contextKey {}
     public partial struct http2ClientConn {}
     public partial struct http2ClientConnState {}
@@ -528,6 +529,5 @@ public static partial class http_package
     public partial struct socksAuthMethod {}
     public partial struct ΔCookie {}
     public partial struct ΔHeader {}
-    public partial struct ΔwriteRequest {}
     // </TypeAccessibility>
 }

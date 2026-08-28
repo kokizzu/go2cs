@@ -238,7 +238,7 @@ internal static readonly @string traceNonEmptyFullTraceˢ2 = "trace: non-empty f
 internal static readonly @string traceReadingAfterˢ = "trace: reading after shutdown"u8;
 
 // Collect all the untraced Gs.
-[GoType("dyn")] partial struct traceAdvance_untracedG {
+[GoType("dyn")] internal partial struct traceAdvance_untracedG {
     internal ж<g> gp;
     internal uint64 goid;
     internal int64 mid;

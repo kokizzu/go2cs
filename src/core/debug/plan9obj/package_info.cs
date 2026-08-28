@@ -74,12 +74,12 @@ public static partial class plan9obj_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct NewFile_type {}
     internal partial struct formatError {}
     internal partial struct prog {}
     internal partial struct sym {}
     public partial struct File {}
     public partial struct FileHeader {}
-    public partial struct NewFile_type {}
     public partial struct SectionHeader {}
     public partial struct Sym {}
     public partial struct ΔSection {}

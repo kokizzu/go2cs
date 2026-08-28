@@ -244,7 +244,7 @@ internal static readonly @string cannotRenameImportCˢ = @"cannot rename import 
 internal static readonly @string cannotImportPackageAsˢ = "cannot import package as init - init must be a func"u8;
 internal static readonly @string methodHasNoReceiverˢ = "method has no receiver"u8;
 
-[GoType("dyn")] partial struct collectObjects_methodInfo {
+[GoType("dyn")] internal partial struct collectObjects_methodInfo {
     internal ж<Func> obj;   // method
     internal bool ptr;       // true if pointer receiver
     internal ж<ast.Ident> recv; // receiver type name

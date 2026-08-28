@@ -68,9 +68,9 @@ public static partial class url_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface Temporary_type {}
+    internal partial interface Timeout_type {}
     internal partial struct encoding {}
-    public partial interface Temporary_type {}
-    public partial interface Timeout_type {}
     public partial struct EscapeError {}
     public partial struct InvalidHostError {}
     public partial struct URL {}

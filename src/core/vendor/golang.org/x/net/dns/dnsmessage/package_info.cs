@@ -90,6 +90,7 @@ public static partial class dnsmessage_package
     // <TypeAccessibility>
     internal partial struct nestedError {}
     internal partial struct section {}
+    internal partial struct Δheader {}
     public partial interface ResourceBody {}
     public partial struct Builder {}
     public partial struct Class {}
@@ -115,6 +116,5 @@ public static partial class dnsmessage_package
     [GoValueClone("Target")] public partial struct ΔSRVResource {}
     public partial struct ΔTXTResource {}
     public partial struct ΔUnknownResource {}
-    public partial struct Δheader {}
     // </TypeAccessibility>
 }

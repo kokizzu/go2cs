@@ -67,6 +67,6 @@ public static partial class main_package
     // <TypeAccessibility>
     internal partial struct box {}
     internal partial struct tagger {}
-    public partial struct Δp {}
+    internal partial struct Δp {}
     // </TypeAccessibility>
 }

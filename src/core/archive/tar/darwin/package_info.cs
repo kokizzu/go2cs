@@ -101,6 +101,8 @@ public static partial class tar_package
     internal partial interface fileReader {}
     internal partial interface fileState {}
     internal partial interface fileWriter {}
+    internal partial struct ReadFrom_dst {}
+    internal partial struct WriteTo_src {}
     internal partial struct block {}
     internal partial struct formatter {}
     internal partial struct headerError {}
@@ -124,9 +126,7 @@ public static partial class tar_package
     public partial interface FileInfoNames {}
     public partial struct Format {}
     public partial struct Header {}
-    public partial struct ReadFrom_dst {}
     [GoValueClone("blk")] public partial struct Reader {}
-    public partial struct WriteTo_src {}
     [GoValueClone("blk")] public partial struct Writer {}
     // </TypeAccessibility>
 }

@@ -545,6 +545,37 @@ public static class Common
 
     public static string GetScope(string identifier)
     {
+        // The collision marker is an EMISSION artifact, not part of the Go identifier, so it comes
+        // off before the export rule reads anything. Δ is a Greek CAPITAL, so reading it verbatim
+        // answered "exported" for every Δ-renamed UNEXPORTED type — 34 in the corpus (Δsockaddr,
+        // Δcommon, ΔgobType, …), each made public while its un-renamed siblings stayed internal.
+        // The marker records that a name COLLIDED; it says nothing about whether Go exported it.
+        //
+        // The converter's generatedTypeScope strips the same prefix in the same place, and the two
+        // MUST move together: they decide the modifier of two partial declarations of ONE type, and
+        // C# rejects conflicting accessibility (CS0262).
+        if (identifier.StartsWith(ShadowVarMarker, StringComparison.Ordinal))
+            identifier = identifier.Substring(ShadowVarMarker.Length);
+
+        if (identifier.Length == 0)
+            return "internal";
+
+        // An ANONYMOUS-type lift is not a Go identifier and carries no export status to read. The
+        // converter names every anonymous struct/interface/composite-literal type with the
+        // placeholder "type", which the sanitizer then marks — so the name arriving here is Δtype,
+        // or Δtypeᴛ<N> when arity-suffixed. "type" is a Go KEYWORD and can never be a user type
+        // name, so the match is unambiguous.
+        //
+        // These must stay public: a lifted anonymous interface is emitted as a BASE of the named
+        // type that embedded it, and C# rejects a public interface whose base is less accessible
+        // (CS0061). Measured on the AnonymousInterfaces behavioral test, whose Go declares
+        // `type InlineEmbed interface { interface{ Close() error }; Flush() error }`.
+        //
+        // Same principle as IsEffectivelyPublic's note below: a name is the wrong oracle for
+        // anything go2cs SYNTHESIZED. The converter's generatedTypeScope carries the mirror.
+        if (IsAnonymousTypePlaceholder(identifier))
+            return "public";
+
         char firstChar = identifier[0];
 
         // A '_'-prefixed Go identifier (other than the bare blank '_') is unexported → internal,
@@ -555,6 +586,44 @@ public static class Common
             return identifier.Length == 1 ? "public" : "internal";
 
         return char.IsUpper(firstChar) ? "public" : "internal";
+    }
+
+    /// <summary>
+    /// Reports whether <paramref name="name"/> — already stripped of its <c>ShadowVarMarker</c> — is
+    /// the converter's SYNTHESIZED anonymous-type name rather than a Go identifier.
+    /// </summary>
+    /// <remarks>
+    /// Matches the literal placeholder <c>type</c>, optionally carrying the temp-var arity suffix
+    /// the emitter appends when one scope lifts more than one (<c>typeᴛ1</c>, <c>typeᴛ2</c>, …). It
+    /// deliberately does NOT match a user type whose name merely begins with "type" (<c>typeDecl</c>,
+    /// <c>typeParam</c>) — those are real Go identifiers whose case does encode export status — nor a
+    /// sanitized user type carrying the same suffix marker (<c>Δsliceᴛ</c>, from a Go <c>slice</c>).
+    /// Mirrors the converter's <c>isAnonymousTypePlaceholder</c>.
+    /// </remarks>
+    private static bool IsAnonymousTypePlaceholder(string name)
+    {
+        const string Placeholder = "type";
+
+        if (name == Placeholder)
+            return true;
+
+        string prefix = Placeholder + TempVarMarker;
+
+        if (!name.StartsWith(prefix, StringComparison.Ordinal))
+            return false;
+
+        string suffix = name.Substring(prefix.Length);
+
+        if (suffix.Length == 0)
+            return false;
+
+        foreach (char c in suffix)
+        {
+            if (!char.IsDigit(c))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>

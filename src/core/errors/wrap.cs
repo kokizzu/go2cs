@@ -15,7 +15,7 @@ partial class errors_package {
     builtin.initPackage(typeof(@internal.reflectlite_package));
 }
 
-[GoType("dyn")] partial interface Unwrap_type {
+[GoType("dyn")] internal partial interface Unwrap_type {
     error Unwrap();
 }
 
@@ -58,15 +58,15 @@ public static bool Is(error err, error target) {
     return @is(err, target, isComparable);
 }
 
-[GoType("dyn")] partial interface is_type {
+[GoType("dyn")] internal partial interface is_type {
     bool Is(error _);
 }
 
-[GoType("dyn")] partial interface is_typeᴛ1 {
+[GoType("dyn")] internal partial interface is_typeᴛ1 {
     error Unwrap();
 }
 
-[GoType("dyn")] partial interface is_typeᴛ2 {
+[GoType("dyn")] internal partial interface is_typeᴛ2 {
     slice<error> Unwrap();
 }
 
@@ -139,15 +139,15 @@ public static bool As(error err, any target) {
     return @as(err, target, val, targetType);
 }
 
-[GoType("dyn")] partial interface as_type {
+[GoType("dyn")] internal partial interface as_type {
     bool As(any _);
 }
 
-[GoType("dyn")] partial interface as_typeᴛ1 {
+[GoType("dyn")] internal partial interface as_typeᴛ1 {
     error Unwrap();
 }
 
-[GoType("dyn")] partial interface as_typeᴛ2 {
+[GoType("dyn")] internal partial interface as_typeᴛ2 {
     slice<error> Unwrap();
 }
 

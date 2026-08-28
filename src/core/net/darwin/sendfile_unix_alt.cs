@@ -18,7 +18,7 @@ internal const bool supportsSendfile = true;
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sendfileˢ = "sendfile"u8;
 
-[GoType("dyn")] partial interface sendFile_type :
+[GoType("dyn")] internal partial interface sendFile_type :
     fs.File,
     Δio.Seeker,
     syscall.Conn

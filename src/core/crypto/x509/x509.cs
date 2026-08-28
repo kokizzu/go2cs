@@ -1609,7 +1609,7 @@ internal static readonly @string x509InternalErrorˢ = "x509: internal error: su
 internal static readonly @string x509ProvidedPrivateKeyˢ = "x509: provided PrivateKey doesn't match parent's PublicKey"u8;
 
 // Check that the signer's public key matches the private key, if available.
-[GoType("dyn")] partial interface CreateCertificate_privateKey {
+[GoType("dyn")] internal partial interface CreateCertificate_privateKey {
     bool Equal(cryptoꓸPublicKey _);
 }
 
@@ -1965,7 +1965,7 @@ internal static slice<pkix.AttributeTypeAndValueSET> parseRawAttributes(slice<as
 internal static readonly @string x509CertificateRequestˢ = "x509: certificate request contains duplicate requested extensions"u8;
 
 // pkcs10Attribute reflects the Attribute structure from RFC 2986, Section 4.1.
-[GoType("dyn")] partial struct parseCSRExtensions_pkcs10Attribute {
+[GoType("dyn")] internal partial struct parseCSRExtensions_pkcs10Attribute {
     public asn1.ObjectIdentifier Id;
     [GoTag(@"asn1:""set""")]
     public slice<asn1.RawValue> Values;
@@ -2005,7 +2005,7 @@ internal static (slice<pkix.Extension>, error) parseCSRExtensions(slice<asn1.Raw
     return (ret, default!);
 }
 
-[GoType("dyn")] partial struct CreateCertificateRequest_attr {
+[GoType("dyn")] internal partial struct CreateCertificateRequest_attr {
     public asn1.ObjectIdentifier Type;
     [GoTag(@"asn1:""set""")]
     public slice<slice<pkix.Extension>> Value;

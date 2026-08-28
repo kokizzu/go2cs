@@ -66,10 +66,10 @@ public static partial class bytes_package
     // via declarations below.
 
     // <TypeAccessibility>
+    [GoLocalName("span")] internal partial struct FieldsFunc_span {}
     internal partial struct asciiSet {}
     internal partial struct readOp {}
     public partial struct Buffer {}
-    [GoLocalName("span")] public partial struct FieldsFunc_span {}
     public partial struct Reader {}
     // </TypeAccessibility>
 }

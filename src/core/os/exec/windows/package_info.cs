@@ -88,13 +88,13 @@ public static partial class exec_package
     // via declarations below.
 
     // <TypeAccessibility>
+    [GoLocalName("goroutineStatus")] internal partial struct Start_goroutineStatus {}
     internal partial struct ctxResult {}
     internal partial struct prefixSuffixSaver {}
     internal partial struct wrappedError {}
     public partial struct Cmd {}
     public partial struct Cmd_cachedLookExtensions {}
     public partial struct ExitError {}
-    [GoLocalName("goroutineStatus")] public partial struct Start_goroutineStatus {}
     public partial struct ΔError {}
     // </TypeAccessibility>
 }
