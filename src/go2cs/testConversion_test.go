@@ -1122,6 +1122,85 @@ func TestFixtureDirectoriesStagePackageShape(t *testing.T) {
 	}
 }
 
+// A NESTED sub-directory's testdata is part of the package's own tree on disk, and `go test` runs
+// the package where that tree is present: internal/trace's TestOldtrace globs
+// "./internal/oldtrace/testdata/*_good" for the twelve traces its twelve subtests come from, and
+// staging only the package's own testdata/ matched that glob to nothing (13 verdicts). The rule is
+// every testdata tree below the package, staged whole, keeping its relative shape — and NOT a
+// nested package's sources, which its own conversion run stages.
+func TestNestedSiblingTestdataIsStaged(t *testing.T) {
+	dir := t.TempDir()
+
+	write := func(relative, contents string) {
+		path := filepath.Join(dir, filepath.FromSlash(relative))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(contents), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write("oldtrace_test.go", "package trace\n")
+	write("testdata/own_fixture", "own\n")
+	write("internal/oldtrace/parser.go", "package oldtrace\n")
+	write("internal/oldtrace/testdata/user_task_region_1_21_good", "trace\n")
+	write("internal/oldtrace/testdata/stress_1_11_good", "trace\n")
+	write("internal/testgen/go122/generator.go", "package go122\n")
+	write(".ignored/testdata/vcs_blob", "ignored\n")
+	write("_ignored/testdata/underscore_blob", "ignored\n")
+
+	fixtures, err := testFixturePaths(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := strings.Join(fixtures, ",")
+	want := strings.Join([]string{
+		"internal/oldtrace/testdata/stress_1_11_good",
+		"internal/oldtrace/testdata/user_task_region_1_21_good",
+		"oldtrace_test.go",
+		"testdata/own_fixture",
+	}, ",")
+
+	// The exact set, not a containment check: a nested package's SOURCES must not be staged
+	// (parser.go, generator.go), an ignored directory's testdata must not be reached, and the
+	// package's own testdata must appear exactly once rather than twice.
+	if got != want {
+		t.Fatalf("fixture paths = %q, want %q", got, want)
+	}
+
+	// The relative shape survives the copy — it is what makes the test's own relative glob resolve.
+	out := t.TempDir()
+	if _, err := copyTestFixtures(dir, out); err != nil {
+		t.Fatal(err)
+	}
+	for _, relative := range []string{
+		"internal/oldtrace/testdata/user_task_region_1_21_good",
+		"internal/oldtrace/testdata/stress_1_11_good",
+	} {
+		if _, err := os.Stat(filepath.Join(out, filepath.FromSlash(relative))); err != nil {
+			t.Fatalf("nested fixture %q was not staged: %v", relative, err)
+		}
+	}
+
+	// F7: a nested fixture is a conversion INPUT, so adding one invalidates a prior comparison
+	// exactly as a top-level testdata file does.
+	options := Options{targetPlatform: "windows/amd64"}
+	first, err := testInputDigest(dir, out, options, "converter")
+	if err != nil {
+		t.Fatal(err)
+	}
+	write("internal/oldtrace/testdata/http_1_19_good", "trace\n")
+	second, err := testInputDigest(dir, out, options, "converter")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first == second {
+		t.Fatal("input digest did not change after a nested sibling testdata fixture was added")
+	}
+}
+
 func TestWhiteboxAdapterAnchoringOnlyRelocatesEmittedPairs(t *testing.T) {
 	pairs := [][2]string{{"io_package.PipeWriter", "io_package.Writer"}}
 	pair, ok := emittedAdapterPair(pairs, "io_PipeWriter", "io_package.Writer")
