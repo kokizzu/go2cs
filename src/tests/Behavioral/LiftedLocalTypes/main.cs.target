@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using time = time_package;
 
 partial class main_package {
 
@@ -10,16 +11,22 @@ partial class main_package {
     builtin.initPackage(typeof(fmt_package));
 }
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸtime() {
+    builtin.initPackage(typeof(time_package));
+}
+
 internal static void describe(any f) {
     _ = f;
     fmt.Println((@string)"ok"u8);
 }
 
-[GoType("dyn")] partial struct main_a {
+[GoType("dyn")] internal partial struct main_a {
     public nint X;
 }
 
-[GoType("dyn")] partial struct main_point {
+[GoType("dyn")] internal partial struct main_point {
     public nint X, Y;
 }
 
@@ -34,23 +41,26 @@ internal static void Main() {
     fmt.Printf("%T %T\n"u8, p, Ꮡp);
     describe(nint (nint x) => 0);
     embeddedLocalTypes();
+    foreignUnderlyingLocalTypes();
+    foreignUnderlyingLocalTypesAgain();
+    localInterfaceEmbed();
 }
 
-[GoType("num:nint")] partial struct embeddedLocalTypes_myInt;
+[GoType("num:nint")] internal partial struct embeddedLocalTypes_myInt;
 
-[GoType("num:nint")] partial struct embeddedLocalTypes_MyInt;
+[GoType("num:nint")] internal partial struct embeddedLocalTypes_MyInt;
 
-[GoType("dyn")] partial struct embeddedLocalTypes_embed {
+[GoType("dyn")] internal partial struct embeddedLocalTypes_embed {
     public nint Q;
 }
 
-[GoType("dyn")] partial struct embeddedLocalTypes_holder {
+[GoType("dyn")] internal partial struct embeddedLocalTypes_holder {
     internal partial ref embeddedLocalTypes_myInt myInt { get; }
     public partial ref embeddedLocalTypes_MyInt MyInt { get; }
     internal partial ref embeddedLocalTypes_embed embed { get; }
 }
 
-[GoType("dyn")] partial struct embeddedLocalTypes_ptrHolder {
+[GoType("dyn")] internal partial struct embeddedLocalTypes_ptrHolder {
     internal partial ref ж<embeddedLocalTypes_myInt> myInt { get; }
     internal partial ref ж<embeddedLocalTypes_embed> embed { get; }
 }
@@ -72,6 +82,67 @@ internal static void embeddedLocalTypes() {
     pp.embed.Value.Q = 11;
     fmt.Println(pp.myInt.Value, (~pp.embed).Q, pp.Q);
     fmt.Printf("%T\n"u8, h.embed);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sevenˢ = "seven"u8;
+
+[GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_myTime;
+
+[GoType("time_package.Duration")] internal partial struct foreignUnderlyingLocalTypes_myDur;
+
+[GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_inner;
+
+internal static void foreignUnderlyingLocalTypes() {
+    var m = new map<ж<foreignUnderlyingLocalTypes_myTime>, @string>();
+    var t = @new<foreignUnderlyingLocalTypes_myTime>();
+    m[t] = sevenˢ;
+    var (v, ok) = m[t, ꟷ];
+    fmt.Println(v, ok, len(m));
+    foreignUnderlyingLocalTypes_myDur d = default!;
+    var pd = @new<foreignUnderlyingLocalTypes_myDur>();
+    fmt.Println(d == pd.Value, pd != nil);
+    {
+        var pi = @new<foreignUnderlyingLocalTypes_inner>();
+        fmt.Println(pi != nil);
+    }
+}
+
+[GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypesAgain_myTime;
+
+[GoType("time_package.Duration")] internal partial struct foreignUnderlyingLocalTypesAgain_myDur;
+
+internal static void foreignUnderlyingLocalTypesAgain() {
+    var t = @new<foreignUnderlyingLocalTypesAgain_myTime>();
+    foreignUnderlyingLocalTypesAgain_myDur d = default!;
+    foreignUnderlyingLocalTypesAgain_myDur d2 = default!;
+    fmt.Println(t != nil, d == d2);
+}
+
+[GoType("dyn")] internal partial interface localInterfaceEmbed_I {
+    nint x();
+}
+
+[GoType("dyn")] internal partial interface localInterfaceEmbed_i :
+    localInterfaceEmbed_I
+{
+    nint y();
+}
+
+internal static void localInterfaceEmbed() {
+    localInterfaceEmbed_i v = new embedImpl(nil);
+    fmt.Println(v.x(), v.y(), v.x() + v.y());
+}
+
+[GoType] partial struct embedImpl {
+}
+
+internal static nint x(this embedImpl _) {
+    return 3;
+}
+
+internal static nint y(this embedImpl _) {
+    return 4;
 }
 
 } // end main_package

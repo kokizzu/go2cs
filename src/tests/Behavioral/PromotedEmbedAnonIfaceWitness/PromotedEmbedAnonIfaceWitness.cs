@@ -70,19 +70,19 @@ private static readonly object ptrCommonWithNilFieldˢ = (@string)"ptr Common wi
 private static readonly object ptrAfterWriteThroughˢ = (@string)"ptr after write through Common:"u8;
 private static readonly object ptrFieldNodeˢ = (@string)"ptr field node:"u8;
 
-[GoType("dyn")] partial interface main_type {
+[GoType("dyn")] internal partial interface main_type {
     ж<Base> Basic();
 }
 
-[GoType("dyn")] partial interface main_typeᴛ1 {
+[GoType("dyn")] internal partial interface main_typeᴛ1 {
     ж<Base> Basic();
 }
 
-[GoType("dyn")] partial interface main_typeᴛ2 {
+[GoType("dyn")] internal partial interface main_typeᴛ2 {
     ж<Base> Basic();
 }
 
-[GoType("dyn")] partial interface main_typeᴛ3 {
+[GoType("dyn")] internal partial interface main_typeᴛ3 {
     ж<Base> Basic();
 }
 

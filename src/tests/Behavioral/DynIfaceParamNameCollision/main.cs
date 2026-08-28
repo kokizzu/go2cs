@@ -43,7 +43,7 @@ private static readonly object errˢ = (@string)"err:"u8;
 private static readonly @string styleCssˢ = "/style.css"u8;
 private static readonly object notAPusherˢ = (@string)"not a pusher"u8;
 
-[GoType("dyn")] partial interface serve_type {
+[GoType("dyn")] internal partial interface serve_type {
     error Push(@string target, nint weight);
     @string Label();
 }
@@ -62,7 +62,7 @@ internal static void serve(any v) {
 private static readonly @string blueˢ = "blue"u8;
 private static readonly object notASetterˢ = (@string)"not a setter"u8;
 
-[GoType("dyn")] partial interface apply_type {
+[GoType("dyn")] internal partial interface apply_type {
     void Set(@string value);
 }
 

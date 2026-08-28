@@ -108,7 +108,7 @@ internal static @string panicValueKind(Action f) {
     return @out;
 }
 
-[GoType("@string")] partial struct panicValues_label;
+[GoType("@string")] internal partial struct panicValues_label;
 
 internal static void panicValues() {
     fmt.Println(panicValueKind(() => {

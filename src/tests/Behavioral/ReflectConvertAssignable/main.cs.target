@@ -95,7 +95,7 @@ private static readonly object structˢ = (@string)"struct"u8;
 private static readonly object funcˢ = (@string)"func"u8;
 private static readonly object chanˢ = (@string)"chan"u8;
 
-[GoType("dyn")] partial struct main_i {
+[GoType("dyn")] internal partial struct main_i {
     public slice<byte> B;
     public map<@string, nint> M;
 }

@@ -20,14 +20,14 @@ partial class main_package {
     public ж<Person_Address> Address;
 }
 
-[GoType("dyn")] partial struct main_data_Address {
+[GoType("dyn")] internal partial struct main_data_Address {
     [GoTag(@"json:""street""")]
     public @string Street;
     [GoTag(@"json:""city""")]
     public @string City;
 }
 
-[GoType("dyn")] partial struct main_data {
+[GoType("dyn")] internal partial struct main_data {
     [GoTag(@"json:""name""")]
     public @string Name;
     [GoTag(@"json:""address""")]

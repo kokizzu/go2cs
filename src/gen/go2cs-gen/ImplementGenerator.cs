@@ -200,8 +200,7 @@ public class ImplementGenerator : ISourceGenerator
 
                 bool interfaceAdapterImplementsFormattable = interfaceAdapterMethods.RemoveAll(m => m.Name.StartsWith("System.IFormattable.")) > 0;
                 bool foreignSourceInterface = !SymbolEqualityComparer.Default.Equals(structType.ContainingAssembly, syntaxContext.SemanticModel.Compilation.Assembly);
-                string adapterScope = (interfaceType.DeclaredAccessibility == Accessibility.Public || GetScope(GetSimpleName(interfaceName)) == "public") &&
-                                      (structType.DeclaredAccessibility == Accessibility.Public || GetScope(GetSimpleName(structName)) == "public") ? "public" : "internal";
+                string adapterScope = AdapterSidePublic(interfaceType, interfaceName) && AdapterSidePublic(structType, structName) ? "public" : "internal";
 
                 // Compose the class name from UNESCAPED simple names: a keyword-named side arrives
                 // "@"-escaped from its display string, and "@" is only legal at the START of an
@@ -868,7 +867,7 @@ public class ImplementGenerator : ISourceGenerator
                 // made io/fs's PathErrorжerror internal - unreachable from os (CS0122 x40).
                 // Interface side is symbol-OR-name for the same reason: a SAME-assembly interface
                 // (CrossPkgLib.Reporter) gets its public modifier from a sibling generator too.
-                string adapterScope = (GetScope(structName) == "public" || structType.DeclaredAccessibility == Accessibility.Public) && (interfaceType.DeclaredAccessibility == Accessibility.Public || GetScope(GetSimpleName(interfaceName)) == "public") ? "public" : "internal";
+                string adapterScope = AdapterSidePublic(structType, structName) && AdapterSidePublic(interfaceType, interfaceName) ? "public" : "internal";
 
                 // A GENERIC struct (crypto/elliptic's nistCurve[Point nistPoint[Point]]) adapts
                 // through ONE generic adapter class over its OPEN type parameters —
@@ -955,8 +954,7 @@ public class ImplementGenerator : ISourceGenerator
                 // Symbol-OR-name on BOTH sides (mirrors the pointer arm): a public adapter
                 // whose ctor takes an INTERNAL wrapped type is CS0051 (flag's internal
                 // funcValue delegate under the public Value interface).
-                string valueAdapterScope = (interfaceType.DeclaredAccessibility == Accessibility.Public || GetScope(GetSimpleName(interfaceName)) == "public") &&
-                                           (structType.DeclaredAccessibility == Accessibility.Public || GetScope(GetSimpleName(structName)) == "public") ? "public" : "internal";
+                string valueAdapterScope = AdapterSidePublic(interfaceType, interfaceName) && AdapterSidePublic(structType, structName) ? "public" : "internal";
 
                 string valueAdapterSource = new ValueAdapterImplTemplate
                 {
@@ -1028,6 +1026,14 @@ public class ImplementGenerator : ISourceGenerator
                 // generic struct arrives here in its OPEN form.
                 StructName = implStructName,
                 InterfaceName = interfaceName,
+                // The comparison operators this partial emits take BOTH sides as parameters, so
+                // their scope may not out-rank either. The template can only see NAMES, and a name
+                // is the wrong oracle for a lifted function-local type — `TestInterfaceSet_s_P`
+                // reads public off its enclosing Test while the declaration is `internal`, and a
+                // public `operator ==(Point, TestInterfaceSet_s_P)` is CS0057. Resolve both sides
+                // here, where the SYMBOLS are, and hand the answer down.
+                StructIsPublic = AdapterSidePublic(structType, implStructName),
+                InterfaceIsPublic = AdapterSidePublic(interfaceType, interfaceName),
                 Promoted = promoted || promotedPairs.Contains($"{structType.ToDisplayString()}|{interfaceType.ToDisplayString()}"),
                 Overrides = overrides,
                 Methods = partialMethods,
@@ -1340,6 +1346,10 @@ public class ImplementGenerator : ISourceGenerator
                 return GlobalQualify(type.ToDisplayString());
         }
     }
+
+    // Shorthand for the shared rule (Common.EffectiveScopeIsPublic) at this generator's adapter and
+    // operator scope decisions, where the name is already in hand.
+    private static bool AdapterSidePublic(ITypeSymbol type, string name) => EffectiveScopeIsPublic(type, GetSimpleName(name));
 
     private static string? GetNamespace(FileScopedNamespaceDeclarationSyntax? namespaceSyntax)
     {

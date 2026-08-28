@@ -17,7 +17,7 @@ partial class main_package {
     builtin.initPackage(typeof(net_package));
 }
 
-[GoType("dyn")] partial struct main_queries {
+[GoType("dyn")] internal partial struct main_queries {
     internal @string network;
     internal @string service;
 }

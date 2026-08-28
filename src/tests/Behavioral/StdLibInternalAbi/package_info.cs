@@ -79,6 +79,14 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    [GoLocalName("u")] internal partial struct Uncommon_u {}
+    [GoLocalName("u")] internal partial struct Uncommon_uᴛ1 {}
+    [GoLocalName("u")] internal partial struct Uncommon_uᴛ2 {}
+    [GoLocalName("u")] internal partial struct Uncommon_uᴛ3 {}
+    [GoLocalName("u")] internal partial struct Uncommon_uᴛ4 {}
+    [GoLocalName("u")] internal partial struct Uncommon_uᴛ5 {}
+    [GoLocalName("u")] internal partial struct Uncommon_uᴛ6 {}
+    [GoLocalName("u")] internal partial struct Uncommon_uᴛ7 {}
     internal partial struct structTypeUncommon {}
     public partial struct ArchFamilyType {}
     public partial struct ChanType {}
@@ -106,14 +114,6 @@ public static partial class main_package
     public partial struct TypeAssertCacheEntry {}
     public partial struct TypeOff {}
     public partial struct UncommonType {}
-    [GoLocalName("u")] public partial struct Uncommon_u {}
-    [GoLocalName("u")] public partial struct Uncommon_uᴛ1 {}
-    [GoLocalName("u")] public partial struct Uncommon_uᴛ2 {}
-    [GoLocalName("u")] public partial struct Uncommon_uᴛ3 {}
-    [GoLocalName("u")] public partial struct Uncommon_uᴛ4 {}
-    [GoLocalName("u")] public partial struct Uncommon_uᴛ5 {}
-    [GoLocalName("u")] public partial struct Uncommon_uᴛ6 {}
-    [GoLocalName("u")] public partial struct Uncommon_uᴛ7 {}
     public partial struct ΔArrayType {}
     public partial struct ΔChanDir {}
     public partial struct ΔFuncType {}

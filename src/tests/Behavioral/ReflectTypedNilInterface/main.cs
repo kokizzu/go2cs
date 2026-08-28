@@ -103,15 +103,15 @@ internal static void report(@string label, reflectꓸValue v) {
 private static readonly @string newBlobElemˢ = "new(*Blob).Elem()"u8;
 private static readonly object assertErrorOkFalseˢ = (@string)"  assert error ok=false"u8;
 
-[GoType("dyn")] partial struct main_si {
+[GoType("dyn")] internal partial struct main_si {
     public any I;
 }
 
-[GoType("dyn")] partial struct main_sp {
+[GoType("dyn")] internal partial struct main_sp {
     public ж<Blob> P;
 }
 
-[GoType("dyn")] partial struct main_sh {
+[GoType("dyn")] internal partial struct main_sh {
     public ж<Stamp> S;
 }
 

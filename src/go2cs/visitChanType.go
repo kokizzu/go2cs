@@ -21,8 +21,7 @@ func (v *Visitor) visitChanType(chanType *ast.ChanType, identType types.Type, na
 	// (CS0246). The descriptor is direction-agnostic: golib's `channel<T>` does not model
 	// `<-chan`/`chan<-` restrictions, so a directional named type wraps the same surface.
 	elemType := convertToCSTypeName(v.getAliasQualifiedTypeName(v.info.TypeOf(chanType.Value), false))
-	access := v.pendingTypeAccess
-	v.pendingTypeAccess = ""
+	access := v.consumePendingTypeAccess()
 
 	// A channel type declared inside a function body cannot be a method-body statement in C#; hoist
 	// it to member level (see liftLocalTypeDecl). A package-level declaration is unaffected — target

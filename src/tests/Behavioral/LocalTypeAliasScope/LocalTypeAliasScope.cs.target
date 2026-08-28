@@ -30,11 +30,11 @@ private static readonly object writeˢ = (@string)"write:"u8;
 private static readonly object closeˢ = (@string)"close:"u8;
 private static readonly object writeOpsOpsˢ = (@string)"writeOps ops:"u8;
 
-[GoType("dyn")] partial struct writeOps_opWrite {
+[GoType("dyn")] internal partial struct writeOps_opWrite {
     internal @string str;
 }
 
-[GoType("dyn")] partial struct writeOps_opClose {
+[GoType("dyn")] internal partial struct writeOps_opClose {
     internal @string err;
 }
 
@@ -59,11 +59,11 @@ private static readonly object fileOpsMakersˢ = (@string)"fileOps makers:"u8;
 private static readonly object testsˢ = (@string)"tests:"u8;
 private static readonly object totalˢ = (@string)"total:"u8;
 
-[GoType("dyn")] partial struct fileOps_makeReg {
+[GoType("dyn")] internal partial struct fileOps_makeReg {
     internal int64 size;
 }
 
-[GoType("dyn")] partial struct fileOps_makeSparse {
+[GoType("dyn")] internal partial struct fileOps_makeSparse {
     internal int64 size;
     internal int64 holes;
 }

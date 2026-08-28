@@ -12,7 +12,7 @@ partial class main_package {
     @string Name();
 }
 
-[GoType("dyn")] partial interface describe_thing :
+[GoType("dyn")] internal partial interface describe_thing :
     Sizer,
     Namer
 {

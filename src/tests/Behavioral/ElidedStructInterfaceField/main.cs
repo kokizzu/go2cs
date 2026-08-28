@@ -26,12 +26,12 @@ internal static @string Error(this valueErr v) {
     return v.msg;
 }
 
-[GoType("dyn")] partial struct main_cases {
+[GoType("dyn")] internal partial struct main_cases {
     internal error err;
     internal @string want;
 }
 
-[GoType("dyn")] partial struct main_ptrCases {
+[GoType("dyn")] internal partial struct main_ptrCases {
     internal @string want;
     internal error error;
 }

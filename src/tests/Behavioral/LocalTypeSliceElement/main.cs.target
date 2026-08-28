@@ -10,7 +10,7 @@ partial class main_package {
     builtin.initPackage(typeof(fmt_package));
 }
 
-[GoType("dyn")] partial struct process_entry {
+[GoType("dyn")] internal partial struct process_entry {
     internal nint id;
     internal nint val;
 }
@@ -27,7 +27,7 @@ internal static nint process() {
     return total;
 }
 
-[GoType("dyn")] partial struct arr_pair {
+[GoType("dyn")] internal partial struct arr_pair {
     internal nint a, b;
 }
 

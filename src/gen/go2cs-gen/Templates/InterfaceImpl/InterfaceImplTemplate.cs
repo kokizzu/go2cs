@@ -48,6 +48,13 @@ internal class InterfaceImplTemplate : TemplateBase
     // directly: `global::go.net.netip_package.String(this.AddrPort)`.
     public string? ValueEmbedHopStaticClass;
 
+    // Both sides' effective accessibility, resolved by the GENERATOR from the SYMBOLS (see
+    // ImplementGenerator.AdapterSidePublic / Common.EffectiveScopeIsPublic). The template cannot ask
+    // that question itself — it holds only names — and a name is the wrong oracle for a lifted
+    // function-local type, which is the very trap the twins below are `internal` to avoid.
+    public bool StructIsPublic;
+    public bool InterfaceIsPublic;
+
     // The promoted-method extension twins below are ALWAYS `internal`, and that is a decision,
     // not a default. The twin is reflective cargo only: the registry that builds the Go method
     // set discovers with BindingFlags.NonPublic, and no source-level call ever binds it — a
@@ -296,13 +303,7 @@ internal class InterfaceImplTemplate : TemplateBase
         }
     }
 
-    private string OperatorScope
-    {
-        get
-        {
-            string structNameScope = GetScope(StructName);
-            string interfaceNameScope = GetScope(GetSimpleName(InterfaceName));
-            return structNameScope == interfaceNameScope ? structNameScope : "internal";
-        }
-    }
+    // The comparison operators take one of each side as parameters, so the pair's scope may not
+    // out-rank either operand: public only when BOTH are, internal otherwise.
+    private string OperatorScope => StructIsPublic && InterfaceIsPublic ? "public" : "internal";
 }

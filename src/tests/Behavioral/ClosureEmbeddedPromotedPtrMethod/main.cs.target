@@ -29,7 +29,7 @@ private static readonly object innerˢ = (@string)"inner:"u8;
 private static readonly @string appliedˢ = "applied"u8;
 private static readonly object appliedˢ2 = (@string)"applied:"u8;
 
-[GoType("dyn")] partial struct run_rep {
+[GoType("dyn")] internal partial struct run_rep {
     internal partial ref counter counter { get; }
     internal @string label;
 }

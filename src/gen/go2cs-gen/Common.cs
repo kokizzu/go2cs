@@ -557,6 +557,34 @@ public static class Common
         return char.IsUpper(firstChar) ? "public" : "internal";
     }
 
+    /// <summary>
+    /// Reports whether <paramref name="type"/> is effectively PUBLIC, for a generated member whose
+    /// own scope may not out-rank it.
+    /// </summary>
+    /// <remarks>
+    /// An accessibility WRITTEN in source is authoritative; the Go export rule on the NAME is only
+    /// the fallback for a declaration carrying none. That is the same
+    /// <c>GetExplicitAccessModifier ?? GetScope</c> precedence <see cref="TypeGenerator"/> uses, and
+    /// it matters because a name is the wrong oracle for anything go2cs SYNTHESIZED: a
+    /// function-local type hoists to <c>&lt;Func&gt;_&lt;name&gt;</c>, whose leading case belongs to
+    /// the ENCLOSING FUNCTION and says nothing about Go exportedness. The converter pins such a type
+    /// <c>internal</c> (localTypeAccess), and reading the name here re-widened what it narrowed — a
+    /// public adapter, twin or operator over an internal operand (CS0051/CS0052/CS0057). Foreign
+    /// metadata is authoritative for the same reason: an internal type in another assembly is
+    /// unreachable however its name reads.
+    ///
+    /// The name fallback is not vestigial. A bare <c>[GoType]</c> partial takes its modifier from the
+    /// TypeGenerator's OWN output, which a single-pass sibling generator cannot see, and a nested
+    /// type with no modifier reads <c>Private</c> here — that is the case the name rule answers.
+    /// golib's lowercase-but-public <c>error</c> is the mirror case, and the symbol arm answers it.
+    /// </remarks>
+    public static bool EffectiveScopeIsPublic(ITypeSymbol type, string simpleName) => type.DeclaredAccessibility switch
+    {
+        Accessibility.Public => true,
+        Accessibility.Internal or Accessibility.ProtectedOrInternal => false,
+        _ => GetScope(simpleName) == "public"
+    };
+
     // Returns the explicit C# access modifier on a type declaration (e.g. the converter-emitted
     // `public partial struct d`), or null when none is present. This lets an explicit modifier
     // from the converter override the name-based GetScope — e.g. an unexported type that the

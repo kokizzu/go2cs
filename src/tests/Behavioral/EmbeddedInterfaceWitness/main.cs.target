@@ -92,7 +92,7 @@ private static readonly object localDirectˢ = (@string)"local direct:"u8;
 private static readonly object localAssertˢ = (@string)"local assert:"u8;
 private static readonly object localAssertNoˢ = (@string)"local assert: no"u8;
 
-[GoType("dyn")] partial struct LocalPromotion_inner {
+[GoType("dyn")] internal partial struct LocalPromotion_inner {
     public EmbeddedInterfaceWitness.iolike_package.Reader Reader;
 }
 

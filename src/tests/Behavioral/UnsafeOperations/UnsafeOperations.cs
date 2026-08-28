@@ -69,7 +69,7 @@ public static float64 Float64frombits(uint64 bʗp) {
 private static readonly object valueOfTheNextElementˢ = (@string)"Value of the next element:"u8;
 private static readonly object valueOfT2Aˢ = (@string)"Value of t2.a:"u8;
 
-[GoType("dyn")] partial struct main_x {
+[GoType("dyn")] internal partial struct main_x {
     internal int64 a;
     internal bool b;
     internal @string c;
