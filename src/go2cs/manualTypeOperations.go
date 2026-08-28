@@ -1106,6 +1106,23 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// this file did not build.
 		"GetAddrInfoW":  goosWindows,
 		"FreeAddrInfoW": goosWindows,
+		// The DNS RECORD pair, the same transcription shape one class over — and the member the
+		// ptrout census deferred BY NAME ("it belongs to a `net` DNS arc"). Two defects meet here:
+		// _DnsQuery's `qrs` is a `**DNSRecord` OUT-parameter, so the generated `(uintptr)Ꮡqrs`
+		// handed DnsQuery_W a NULL ppQueryResults and every MX/NS/TXT/SRV/PTR/CNAME lookup answered
+		// "no record"; and the pointee is a linked native chain whose payload structs carry MANAGED
+		// references, so publishing the address alone — the ptrout remedy — would let net's
+		// `Reinterpret<byte, DNSSRVData>` load eight raw bytes AS an object reference. Contained
+		// wrong answer traded for a CLR type-safety break, which is why the fix is a PAIR: this
+		// wrapper plus the hand-owned consumer at net/windows/lookup_windows.cs.
+		//
+		// DnsRecordListFree is hand-owned as a NO-OP for exactly FreeAddrInfoW's reason: the native
+		// chain is freed eagerly at the copy, so net's `defer syscall.DnsRecordListFree(rec, 1)`
+		// has nothing to do, and handing a managed object's address to dnsapi would release memory
+		// it does not own. Only _DnsQuery is registered, not the exported DnsQuery — that wrapper
+		// only converts the name to UTF-16 and delegates, so its generated body stays correct.
+		"_DnsQuery":         goosWindows,
+		"DnsRecordListFree": goosWindows,
 		// The `**T` OUT-PARAMETER class — a SECOND syscall class, distinct from every member
 		// above (zsyscall_windows_ptrout_impl.cs carries the full write-up). The members above
 		// fail on a struct's LAYOUT; these fail with no struct in sight, because the argument is
