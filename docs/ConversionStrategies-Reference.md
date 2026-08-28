@@ -4432,22 +4432,38 @@ Go program chose and nothing about it is ambiguous in Go, so the identifier is p
 INTRINSIC is qualified instead — `builtin.heap(…)` — and only where a `heap` declaration is actually in
 scope, so the corpus stays byte-identical everywhere else. `heapIntrinsicName` supplies the spelling at
 all fourteen emission sites; `declaresHeapIntrinsicIdent` answers per function declaration (walking
-nested function literals, and OR-ed with a literal's own declarations in `convFuncLit`) and
-`packageDeclaresHeapIntrinsicIdent` per package, since a package-level `heap` emits as a member of the
-`<pkg>_package` class and wins lookup inside every method of it.
+nested function literals, and OR-ed with a literal's own declarations in `convFuncLit`), and
+`packageDeclaresHeapIntrinsicIdent` covers the one package-level shape that can also collide.
 
-Two boundaries are load-bearing. **A type-argument-carrying call is immune**: `heap<nint>(out var Ꮡx)`
-is a generic invocation, and a C# simple name followed by a type-argument list considers only generic
-methods — a local is never a candidate — which is why the 2026-07-16 census cleared this case and why a
-guard built on a scalar local proves nothing. Only the argument-carrying overload collides, in both its
-shapes: an address-taken struct local, and an address-taken value parameter that is itself named `heap`
-(which adds `CS0841: cannot use local variable 'heap' before it is declared`). **An import ALIAS named
-`heap` is not shadowing**: `import "container/heap"` renders as `using heap = go.container.heap_package;`,
-and a using-alias does not displace a `using static` method group in an invocation — proven by
-`container/heap`'s own banked `example_pq_test.cs`, which carries the alias and two heap-box emissions
-and compiles. `*types.PkgName` objects are excluded from the scan for that reason. (Guarded by the
-`BuiltinShadowLocal` behavioral test, which carries both colliding shapes and one non-shadowing control
-function that must keep the bare `heap<arr>(…)`.)
+**What does and does not shadow is decided by C#'s invocable-member rule, and every boundary below was
+measured rather than reasoned into place.** A simple name used as the target of an invocation ignores
+type members that are not invocable, so only a genuine method group — or a nearer *local* declaration
+space — can displace the `using static` import:
+
+* **A local or parameter named `heap` DOES shadow.** Both argument-carrying shapes collide: an
+  address-taken struct local, and an address-taken value parameter itself named `heap` (which adds
+  `CS0841: cannot use local variable 'heap' before it is declared`). The invocable-member filter
+  applies to type members, not to the local declaration space.
+* **A type-argument-carrying call is immune.** `heap<nint>(out var Ꮡx)` is a generic invocation, and a
+  simple name followed by a type-argument list considers only generic methods — a local is never a
+  candidate. This is why the 2026-07-16 census cleared the case, and why a guard built on a *scalar*
+  local (which takes exactly this form) proves nothing.
+* **A package-level TYPE or VAR named `heap` does NOT shadow**, because neither emits an invocable
+  member. The first version of this check tested "any non-`PkgName` object" and was falsified by its
+  own A/B: `GlobalCapturedInClosure` declares `type heap` at package level, and with the fix reverted
+  it still compiled — the broad form was only over-qualifying, changing a golden no defect required.
+  The check is narrowed to `*types.Func`, the one package-level shape that is a real method group.
+  Nothing in the corpus declares that, so the positive case is reasoned from the lookup rule rather
+  than reproduced; the negative side is guarded.
+* **An import ALIAS named `heap` does NOT shadow.** `import "container/heap"` renders as
+  `using heap = go.container.heap_package;`, and a using-alias does not displace a `using static`
+  method group in an invocation — proven by `container/heap`'s own banked `example_pq_test.cs`, which
+  carries the alias and two heap-box emissions and compiles. `*types.PkgName` is excluded for that
+  reason.
+
+(Guarded from both directions: `BuiltinShadowLocal` carries the two colliding shapes plus a
+non-shadowing function that must keep the bare `heap<arr>(…)`; `GlobalCapturedInClosure` carries the
+package-level-type control that must keep the bare `heap(new heap(), …)`.)
 
 ### A local that shadows a PACKAGE name is not a package qualifier
 

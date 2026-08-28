@@ -499,22 +499,32 @@ func (v *Visitor) packageMentionsHeapIntrinsicIdent() bool {
 	return *v.heapIdentInPackage
 }
 
-// packageDeclaresHeapIntrinsicIdent reports whether the package under conversion declares `heap` at
-// PACKAGE level. Such a declaration emits as a member of the `<pkg>_package` class, which wins
-// simple-name lookup inside every method of that class — so the qualification is package-wide, not
-// per function.
+// packageDeclaresHeapIntrinsicIdent reports whether the package under conversion declares a package
+// level FUNC named `heap`, which emits as a member of the `<pkg>_package` class and so wins
+// simple-name lookup inside every method of that class — a package-wide qualification, not a
+// per-function one.
+//
+// ⚠ FUNC specifically, and the narrowing is measured, not assumed. C#'s invocable-member rule
+// (§12.8.4 — a simple name used as the target of an invocation ignores TYPE MEMBERS that are not
+// invocable) means a package-level Go `type heap` or `var heap`, both of which emit as non-invocable
+// members, are skipped in `heap(…)` and the `using static go.builtin` method group is found anyway.
+// The first version of this check tested "any non-PkgName object" and was falsified by its own A/B:
+// GlobalCapturedInClosure declares `type heap` at package level, and with the fix REVERTED it still
+// compiled — so the broad form was only over-qualifying, changing a golden no defect required. A
+// LOCAL or PARAMETER named `heap` is a different rule and does win (see declaresHeapIntrinsicIdent);
+// the invocable-member filter applies to type members, not to the local declaration space.
+//
+// The func shape is therefore the one package-level case that can genuinely collide. Nothing in the
+// corpus declares it — GOROOT's only `heap` declarations are internal/trace/batchcursor.go's
+// parameters and runtime/time.go's locals, both function-scoped — so it is reasoned from the lookup
+// rule rather than reproduced; the NEGATIVE side (a package-level type must NOT trigger) is what
+// GlobalCapturedInClosure guards.
 func (v *Visitor) packageDeclaresHeapIntrinsicIdent() bool {
 	if v.pkg == nil || v.pkg.Scope() == nil {
 		return false
 	}
 
-	obj := v.pkg.Scope().Lookup(heapIntrinsicIdent)
+	_, isFunc := v.pkg.Scope().Lookup(heapIntrinsicIdent).(*types.Func)
 
-	if obj == nil {
-		return false
-	}
-
-	_, isPackageName := obj.(*types.PkgName)
-
-	return !isPackageName
+	return isFunc
 }
